@@ -1,0 +1,15 @@
+# Build output
+bin/
+bin-int/
+
+# Object and library files
+*.o
+*.so
+*.a
+
+# VS Code local config
+.vscode/
+
+# Misc
+compile_commands.json
+
