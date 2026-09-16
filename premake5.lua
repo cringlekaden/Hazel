@@ -60,6 +60,9 @@ project "Hazel"
     kind "SharedLib"
     language "C++"
     cppdialect "C++17"
+    
+    pchheader "hzpch.h"
+    pchsource "Hazel/src/hzpch.cpp"
 
     targetdir (binRoot .. "/%{prj.name}")
     objdir    (binIntRoot .. "/%{prj.name}")
