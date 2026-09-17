@@ -47,6 +47,16 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 local binRoot    = workspaceRoot .. "/bin/" .. outputdir
 local binIntRoot = workspaceRoot .. "/bin-int/" .. outputdir
 
+group "Dependencies"
+    include "Hazel/vendor/GLFW"
+group ""
+
+project "GLFW"
+    filter "system:windows"
+        staticruntime "On"
+
+filter {}
+
 
 
 -- ================================================================
@@ -76,7 +86,13 @@ project "Hazel"
     includedirs
     {
         "Hazel/src",
-        "Hazel/vendor/spdlog/include"
+        "Hazel/vendor/spdlog/include",
+        "Hazel/vendor/GLFW/include"
+    }
+
+    links
+    {
+        "GLFW"
     }
 
 
@@ -95,6 +111,16 @@ project "Hazel"
         {
             "HZ_PLATFORM_WINDOWS",
             "HZ_BUILD_DLL"
+        }
+
+        removefiles
+        {
+            "Hazel/src/Platform/Linux/**.cpp"
+        }
+
+        links
+        {
+            "opengl32.lib"
         }
 
         --
@@ -129,6 +155,24 @@ project "Hazel"
         {
             "HZ_PLATFORM_LINUX",
             "HZ_BUILD_DLL"
+        }
+
+        removefiles
+        {
+            "Hazel/src/Platform/Windows/**.cpp"
+        }
+
+        links
+        {
+            "GL",
+            "X11",
+            "Xrandr",
+            "Xi",
+            "Xcursor",
+            "Xinerama",
+            "pthread",
+            "dl",
+            "m"
         }
 
         --

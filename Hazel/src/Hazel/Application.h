@@ -2,6 +2,8 @@
 
 #include "Hazel/Core.h"
 #include "Hazel/Events/Event.h"
+#include "Hazel/Window.h"
+#include <memory>
 
 namespace Hazel
 {
@@ -11,6 +13,8 @@ namespace Hazel
         Application();
         virtual ~Application();
         void Run();
+    private:
+        std::unique_ptr<Window> m_Window;
     };
 
     // To be defined in Client App
