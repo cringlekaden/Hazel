@@ -7,11 +7,13 @@
 --   Linux   x86_64 - GNU Make / GCC
 --
 -- Projects:
+--   GLFW    - static dependency
 --   Hazel   - shared engine library
 --   Sandbox - executable using Hazel
 --
 
 local workspaceRoot = path.getabsolute(".")
+
 
 workspace "Hazel"
     architecture "x64"
@@ -26,8 +28,6 @@ workspace "Hazel"
 
 
 --
--- Output directory naming
---
 -- Examples:
 --
 -- Debug-windows-x86_64
@@ -37,25 +37,53 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 
 --
--- Common absolute output locations.
+-- Absolute output locations.
 --
--- Using absolute paths here prevents generated project files located
--- inside Hazel/ or Sandbox/ from accidentally rebasing paths into
--- ../../bin or other incorrect locations.
+-- These prevent generated project files inside Hazel/ and Sandbox/
+-- from incorrectly rebasing paths through ../ or ../../.
 --
-
 local binRoot    = workspaceRoot .. "/bin/" .. outputdir
 local binIntRoot = workspaceRoot .. "/bin-int/" .. outputdir
+
+
+
+-- ================================================================
+-- Dependencies
+-- ================================================================
 
 group "Dependencies"
     include "Hazel/vendor/GLFW"
 group ""
 
-project "GLFW"
-    filter "system:windows"
-        staticruntime "On"
 
-filter {}
+--
+-- Ensure GLFW uses the same Windows CRT as Hazel and Sandbox.
+--
+-- staticruntime "Off":
+--     Debug   -> /MDd
+--     Release -> /MD
+--     Dist    -> /MD
+--
+-- TheCherno's current GLFW Premake script already uses the dynamic
+-- runtime, but keeping this explicit makes our intended configuration
+-- clear and prevents CRT mismatches.
+--
+
+project "GLFW"
+
+    filter "system:windows"
+        staticruntime "Off"
+
+    filter { "system:windows", "configurations:Debug" }
+        runtime "Debug"
+
+    filter { "system:windows", "configurations:Release" }
+        runtime "Release"
+
+    filter { "system:windows", "configurations:Dist" }
+        runtime "Release"
+
+    filter {}
 
 
 
@@ -70,18 +98,20 @@ project "Hazel"
     kind "SharedLib"
     language "C++"
     cppdialect "C++17"
-    
+
     pchheader "hzpch.h"
     pchsource "Hazel/src/hzpch.cpp"
 
     targetdir (binRoot .. "/%{prj.name}")
     objdir    (binIntRoot .. "/%{prj.name}")
 
+
     files
     {
         "Hazel/src/**.h",
         "Hazel/src/**.cpp"
     }
+
 
     includedirs
     {
@@ -90,22 +120,32 @@ project "Hazel"
         "Hazel/vendor/GLFW/include"
     }
 
+
     links
     {
         "GLFW"
     }
 
 
-    --
+
+    -- ============================================================
     -- Windows
-    --
-    -- HZ_BUILD_DLL tells Core.h that Hazel is PRODUCING
-    -- the DLL, so HAZEL_API becomes __declspec(dllexport).
-    --
+    -- ============================================================
+
     filter "system:windows"
 
         systemversion "latest"
-        staticruntime "On"
+
+        --
+        -- Use Microsoft's dynamic CRT.
+        --
+        -- Combined with runtime "Debug"/"Release" below:
+        --
+        -- Debug   -> /MDd
+        -- Release -> /MD
+        -- Dist    -> /MD
+        --
+        staticruntime "Off"
 
         defines
         {
@@ -113,6 +153,9 @@ project "Hazel"
             "HZ_BUILD_DLL"
         }
 
+        --
+        -- Do not compile Linux platform implementation files.
+        --
         removefiles
         {
             "Hazel/src/Platform/Linux/**.cpp"
@@ -126,26 +169,42 @@ project "Hazel"
         --
         -- Put Hazel.dll directly beside Sandbox.exe.
         --
-        -- This achieves the same runtime layout as Cherno's
-        -- post-build DLL copy without relying on fragile shell
-        -- copy commands.
+        -- This avoids needing a fragile post-build copy command.
         --
         targetdir (binRoot .. "/Sandbox")
 
         --
         -- Keep Hazel.lib in Hazel's own output directory.
         --
-        -- Sandbox links against this import library.
-        --
         implibdir (binRoot .. "/Hazel")
 
 
     --
+    -- Windows Debug CRT -> /MDd
+    --
+    filter { "system:windows", "configurations:Debug" }
+        runtime "Debug"
+
+
+    --
+    -- Windows Release CRT -> /MD
+    --
+    filter { "system:windows", "configurations:Release" }
+        runtime "Release"
+
+
+    --
+    -- Windows Distribution CRT -> /MD
+    --
+    filter { "system:windows", "configurations:Dist" }
+        runtime "Release"
+
+
+
+    -- ============================================================
     -- Linux
-    --
-    -- HAZEL_API is intentionally blank on Linux for now.
-    -- Symbols in the shared object are visible normally.
-    --
+    -- ============================================================
+
     filter "system:linux"
 
         toolset "gcc"
@@ -157,6 +216,9 @@ project "Hazel"
             "HZ_BUILD_DLL"
         }
 
+        --
+        -- Do not compile Windows platform implementation files.
+        --
         removefiles
         {
             "Hazel/src/Platform/Windows/**.cpp"
@@ -176,14 +238,16 @@ project "Hazel"
         }
 
         --
-        -- Linux keeps libHazel.so in Hazel's output directory.
+        -- Keep libHazel.so in Hazel's output directory.
         --
         targetdir (binRoot .. "/Hazel")
 
 
-    --
-    -- Debug
-    --
+
+    -- ============================================================
+    -- Configurations
+    -- ============================================================
+
     filter "configurations:Debug"
 
         defines
@@ -194,9 +258,6 @@ project "Hazel"
         symbols "On"
 
 
-    --
-    -- Release
-    --
     filter "configurations:Release"
 
         defines
@@ -207,9 +268,6 @@ project "Hazel"
         optimize "On"
 
 
-    --
-    -- Distribution
-    --
     filter "configurations:Dist"
 
         defines
@@ -239,11 +297,13 @@ project "Sandbox"
     targetdir (binRoot .. "/%{prj.name}")
     objdir    (binIntRoot .. "/%{prj.name}")
 
+
     files
     {
         "Sandbox/src/**.h",
         "Sandbox/src/**.cpp"
     }
+
 
     includedirs
     {
@@ -251,24 +311,26 @@ project "Sandbox"
         "Hazel/vendor/spdlog/include"
     }
 
+
     links
     {
         "Hazel"
     }
 
 
-    --
+
+    -- ============================================================
     -- Windows
-    --
-    -- Sandbox CONSUMES Hazel.dll.
-    --
-    -- HZ_BUILD_DLL is deliberately NOT defined here, therefore
-    -- HAZEL_API becomes __declspec(dllimport).
-    --
+    -- ============================================================
+
     filter "system:windows"
 
         systemversion "latest"
-        staticruntime "On"
+
+        --
+        -- Sandbox must use the same CRT as Hazel and GLFW.
+        --
+        staticruntime "Off"
 
         defines
         {
@@ -277,8 +339,31 @@ project "Sandbox"
 
 
     --
-    -- Linux
+    -- Windows Debug CRT -> /MDd
     --
+    filter { "system:windows", "configurations:Debug" }
+        runtime "Debug"
+
+
+    --
+    -- Windows Release CRT -> /MD
+    --
+    filter { "system:windows", "configurations:Release" }
+        runtime "Release"
+
+
+    --
+    -- Windows Distribution CRT -> /MD
+    --
+    filter { "system:windows", "configurations:Dist" }
+        runtime "Release"
+
+
+
+    -- ============================================================
+    -- Linux
+    -- ============================================================
+
     filter "system:linux"
 
         toolset "gcc"
@@ -289,11 +374,12 @@ project "Sandbox"
         }
 
         --
-        -- Tell the Linux dynamic loader where libHazel.so lives.
+        -- libHazel.so stays in:
         --
-        -- Premake turns this into the appropriate runtime search
-        -- path during linking. No manual -rpath/-Xlinker flags and
-        -- no copying of libHazel.so are required.
+        -- bin/<config>-linux-x86_64/Hazel/
+        --
+        -- Tell Linux's dynamic loader to search that directory
+        -- when launching Sandbox.
         --
         runpathdirs
         {
@@ -301,9 +387,11 @@ project "Sandbox"
         }
 
 
-    --
-    -- Debug
-    --
+
+    -- ============================================================
+    -- Configurations
+    -- ============================================================
+
     filter "configurations:Debug"
 
         defines
@@ -314,9 +402,6 @@ project "Sandbox"
         symbols "On"
 
 
-    --
-    -- Release
-    --
     filter "configurations:Release"
 
         defines
@@ -327,9 +412,6 @@ project "Sandbox"
         optimize "On"
 
 
-    --
-    -- Distribution
-    --
     filter "configurations:Dist"
 
         defines
