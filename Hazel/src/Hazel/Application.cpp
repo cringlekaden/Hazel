@@ -5,7 +5,7 @@
 #include "Hazel/Log.h"
 #include <memory>
 
-#include <GLFW/glfw3.h>
+#include <glad/glad.h>
 namespace Hazel
 {
     Application::Application()
@@ -47,7 +47,6 @@ namespace Hazel
     {
         EventDispatcher dispatcher(e);
         dispatcher.Dispatch<WindowCloseEvent>(HZ_BIND_EVENT_FN(Application::OnWindowClose));
-        HZ_TRACE("{0}", e.ToString());
         for(auto it = m_LayerStack.end(); it != m_LayerStack.begin(); )
         {
             (*--it)->OnEvent(e);

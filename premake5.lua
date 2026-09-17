@@ -53,6 +53,7 @@ local binIntRoot = workspaceRoot .. "/bin-int/" .. outputdir
 
 group "Dependencies"
     include "Hazel/vendor/GLFW"
+    include "Hazel/vendor/Glad"
 group ""
 
 
@@ -117,13 +118,20 @@ project "Hazel"
     {
         "Hazel/src",
         "Hazel/vendor/spdlog/include",
-        "Hazel/vendor/GLFW/include"
+        "Hazel/vendor/GLFW/include",
+        "Hazel/vendor/Glad/include"
     }
 
 
     links
     {
-        "GLFW"
+        "GLFW",
+        "Glad"
+    }
+
+    defines
+    {
+        "GLFW_INCLUDE_NONE"
     }
 
 

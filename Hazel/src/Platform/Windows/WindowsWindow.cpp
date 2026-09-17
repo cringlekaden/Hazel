@@ -5,6 +5,7 @@
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Events/MouseEvent.h"
 #include "Hazel/Events/KeyEvent.h"
+#include <glad/glad.h>
 
 namespace Hazel {
 
@@ -41,14 +42,20 @@ namespace Hazel {
         if (!s_GLFWInitialized)
         {
             int success = glfwInit();
-            HZ_CORE_ASSERT(success, "Could not initialize GLFW!");
+            HZ_CORE_ASSERT(success, "Could not initialize GLFW...");
             glfwSetErrorCallback(GLFWErrorCallback);
             s_GLFWInitialized = true;
         }
 
         m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
-        HZ_CORE_ASSERT(m_Window, "Failed to create GLFW window!");
+        HZ_CORE_ASSERT(m_Window, "Failed to create GLFW window...");
         glfwMakeContextCurrent(m_Window);
+        int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+        HZ_CORE_ASSERT(status, "Failed to initialize Glad...");
+        HZ_CORE_INFO("OpenGL Info:");
+        HZ_CORE_INFO("  Vendor: {0}", (const char*)glGetString(GL_VENDOR));
+        HZ_CORE_INFO("  Renderer: {0}", (const char*)glGetString(GL_RENDERER));
+        HZ_CORE_INFO("  Version: {0}", (const char*)glGetString(GL_VERSION));
         glfwSetWindowUserPointer(m_Window, &m_Data);
         SetVSync(true);
         glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
