@@ -17,7 +17,10 @@ namespace Hazel
         void OnEvent(Event& e);
         void PushLayer(Layer* layer);
         void PushOverlay(Layer* overlay);
+        Window& GetWindow() { return *m_Window; }
+        static Application& Get() { return *s_Instance; }
     private:
+        static Application* s_Instance;
         std::unique_ptr<Window> m_Window;
         LayerStack m_LayerStack;
         bool m_Running = true;

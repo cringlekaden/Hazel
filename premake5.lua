@@ -13,6 +13,8 @@
 --
 
 local workspaceRoot = path.getabsolute(".")
+local imguiDir = workspaceRoot .. "/Hazel/vendor/imgui"
+local glfwDir = workspaceRoot .. "/Hazel/vendor/GLFW"
 
 
 workspace "Hazel"
@@ -55,6 +57,80 @@ group "Dependencies"
     include "Hazel/vendor/GLFW"
     include "Hazel/vendor/Glad"
 group ""
+
+
+
+--
+-- Extend the vendor ImGui project with needed backends.
+--
+project "ImGui"
+
+    location "build/ImGui"
+
+    kind "StaticLib"
+    language "C++"
+    cppdialect "C++17"
+
+    targetdir (binRoot .. "/%{prj.name}")
+    objdir (binIntRoot .. "/%{prj.name}")
+
+    files
+    {
+        imguiDir .. "/imconfig.h",
+        imguiDir .. "/imgui.h",
+        imguiDir .. "/imgui.cpp",
+        imguiDir .. "/imgui_draw.cpp",
+        imguiDir .. "/imgui_tables.cpp",
+        imguiDir .. "/imgui_widgets.cpp",
+        imguiDir .. "/imgui_demo.cpp",
+
+        imguiDir .. "/backends/imgui_impl_glfw.h",
+        imguiDir .. "/backends/imgui_impl_glfw.cpp",
+
+        imguiDir .. "/backends/imgui_impl_opengl3.h",
+        imguiDir .. "/backends/imgui_impl_opengl3.cpp",
+        imguiDir .. "/backends/imgui_impl_opengl3_loader.h"
+    }
+
+    includedirs
+    {
+        imguiDir,
+        imguiDir .. "/backends",
+        glfwDir .. "/include"
+    }
+
+    defines
+    {
+        "GLFW_INCLUDE_NONE"
+    }
+
+    filter "system:windows"
+        systemversion "latest"
+        staticruntime "Off"
+
+    filter { "system:windows", "configurations:Debug" }
+        runtime "Debug"
+
+    filter { "system:windows", "configurations:Release" }
+        runtime "Release"
+
+    filter { "system:windows", "configurations:Dist" }
+        runtime "Release"
+
+    filter "system:linux"
+        pic "On"
+
+    filter "configurations:Debug"
+        symbols "On"
+
+    filter "configurations:Release"
+        optimize "On"
+
+    filter "configurations:Dist"
+        optimize "On"
+
+    filter {}
+
 
 
 --
@@ -119,14 +195,17 @@ project "Hazel"
         "Hazel/src",
         "Hazel/vendor/spdlog/include",
         "Hazel/vendor/GLFW/include",
-        "Hazel/vendor/Glad/include"
+        "Hazel/vendor/Glad/include",
+        "Hazel/vendor/imgui",
+        "Hazel/vendor/imgui/backends"
     }
 
 
     links
     {
         "GLFW",
-        "Glad"
+        "Glad",
+        "ImGui"
     }
 
     defines
