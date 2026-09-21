@@ -14,5 +14,9 @@ namespace Hazel {
         void OnDetach();
         void OnUpdate();
         void OnEvent(Event& e);
+
+        void BlockEvents(bool block) { m_BlockEvents = block; }
+    private:
+        bool m_BlockEvents;
     };
 }

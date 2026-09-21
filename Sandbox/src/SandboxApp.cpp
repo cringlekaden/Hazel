@@ -1,4 +1,7 @@
+#include "Hazel/Events/Event.h"
+#include "Hazel/Events/KeyEvent.h"
 #include "Hazel/ImGui/ImGuiLayer.h"
+#include "Hazel/Log.h"
 #include <Hazel.h>
 
 class ExampleLayer : public Hazel::Layer
