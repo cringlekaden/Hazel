@@ -49,6 +49,34 @@ local binIntRoot = workspaceRoot .. "/bin-int/" .. outputdir
 
 
 
+--
+-- Compatibility for older vendor Premake scripts.
+--
+-- Current Premake removed the legacy flags() API in favor of
+-- dedicated settings. TheCherno's GLFW Premake file still uses
+-- NoRuntimeChecks and NoIncrementalLink for its Debug-AS config.
+--
+if flags == nil then
+    function flags(values)
+        for _, value in ipairs(values) do
+            if value == "NoRuntimeChecks" then
+                runtimechecks "Off"
+
+            elseif value == "NoIncrementalLink" then
+                incrementallink "Off"
+
+            else
+                error(
+                    "Unsupported legacy Premake flag in vendor script: "
+                    .. tostring(value)
+                )
+            end
+        end
+    end
+end
+
+
+
 -- ================================================================
 -- Dependencies
 -- ================================================================
@@ -107,6 +135,11 @@ project "ImGui"
     filter "system:windows"
         systemversion "latest"
         staticruntime "Off"
+
+        defines
+        {
+            "IMGUI_API=__declspec(dllexport)"
+        }
 
     filter { "system:windows", "configurations:Debug" }
         runtime "Debug"
@@ -208,6 +241,8 @@ project "Hazel"
         "Glad",
         "ImGui"
     }
+
+    wholearchive { "ImGui" }
 
     defines
     {
@@ -397,7 +432,8 @@ project "Sandbox"
     {
         "Hazel/src",
         "Hazel/vendor/spdlog/include",
-        "Hazel/vendor/glm"
+        "Hazel/vendor/glm",
+        "Hazel/vendor/imgui"
     }
 
 
