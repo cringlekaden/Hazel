@@ -1,6 +1,6 @@
+#include "hzpch.h"
 #include "Hazel/Core.h"
 #include "Hazel/Events/Event.h"
-#include "hzpch.h"
 
 #include "Hazel/ImGui/ImGuiLayer.h"
 #include "Hazel/Application.h"
