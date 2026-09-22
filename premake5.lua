@@ -197,7 +197,8 @@ project "Hazel"
         "Hazel/vendor/GLFW/include",
         "Hazel/vendor/Glad/include",
         "Hazel/vendor/imgui",
-        "Hazel/vendor/imgui/backends"
+        "Hazel/vendor/imgui/backends",
+        "Hazel/vendor/glm"
     }
 
 
@@ -395,7 +396,8 @@ project "Sandbox"
     includedirs
     {
         "Hazel/src",
-        "Hazel/vendor/spdlog/include"
+        "Hazel/vendor/spdlog/include",
+        "Hazel/vendor/glm"
     }
 
 
