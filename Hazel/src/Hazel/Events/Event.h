@@ -30,7 +30,7 @@ namespace Hazel {
 
 #define EVENT_CLASS_CATEGORY(category) virtual int GetCategoryFlags() const override { return category; }
 
-    class HAZEL_API Event
+    class Event
     {
         friend class EventDispatcher;
     public:
@@ -39,6 +39,7 @@ namespace Hazel {
         virtual const char* GetName() const = 0;
         virtual int GetCategoryFlags() const = 0;
         virtual std::string ToString() const { return GetName(); }
+        virtual ~Event() = default;
 
         inline bool IsInCategory(EventCategory category)
         {

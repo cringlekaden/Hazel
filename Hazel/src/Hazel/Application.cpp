@@ -27,13 +27,11 @@ namespace Hazel
     void Application::PushLayer(Layer* layer)
     {
         m_LayerStack.PushLayer(layer);
-        layer->OnAttach();
     }
 
     void Application::PushOverlay(Layer* overlay)
     {
         m_LayerStack.PushOverlay(overlay);
-        overlay->OnAttach();
     }
 
     void Application::Run()
@@ -64,7 +62,7 @@ namespace Hazel
         }
     }
 
-    bool Application::OnWindowClose(WindowCloseEvent& e)
+    bool Application::OnWindowClose(WindowCloseEvent&)
 	{
 		m_Running = false;
 		return true;

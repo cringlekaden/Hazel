@@ -15,9 +15,7 @@ public:
     {
     }
 
-    void OnEvent(Hazel::Event& e) override
-    {
-    }
+    void OnEvent(Hazel::Event&) override;
 
     void OnImGuiRender() override
     {

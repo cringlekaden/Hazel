@@ -1,18 +1,13 @@
 #pragma once
 
-#ifdef HZ_PLATFORM_WINDOWS
-    #ifdef HZ_BUILD_DLL
-        #define HAZEL_API __declspec(dllexport)
-    #else
-        #define HAZEL_API __declspec(dllimport)
-    #endif
+#if defined(HZ_PLATFORM_WINDOWS)
     #define HZ_DEBUGBREAK() __debugbreak()
 #elif defined(HZ_PLATFORM_LINUX)
     #include <signal.h>
     #define HAZEL_API
     #define HZ_DEBUGBREAK() raise(SIGTRAP)
 #else
-    #error Hazel only supports Windows and Linux!
+    #error Hazel only supports Windows and Linux...
 #endif
 
 #define BIT(x) (1 << x)

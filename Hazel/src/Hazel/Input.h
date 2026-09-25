@@ -6,7 +6,7 @@
 
 namespace Hazel {
 
-    class HAZEL_API Input
+    class Input
     {
     public:
         inline static bool IsKeyPressed(int keycode) { return s_Instance->IsKeyPressedImpl(keycode); }
@@ -14,6 +14,7 @@ namespace Hazel {
         inline static std::pair<float, float> GetMousePosition() { return s_Instance->GetMousePositionImpl(); }
         inline static float GetMouseX() { return s_Instance->GetMouseXImpl(); }
         inline static float GetMouseY() { return s_Instance->GetMouseYImpl(); }
+        virtual ~Input() = default;
     protected:
         virtual bool IsKeyPressedImpl(int keycode) = 0;
         virtual bool IsMouseButtonPressedImpl(int button) = 0;

@@ -136,10 +136,6 @@ project "ImGui"
         systemversion "latest"
         staticruntime "Off"
 
-        defines
-        {
-            "IMGUI_API=__declspec(dllexport)"
-        }
 
     filter { "system:windows", "configurations:Debug" }
         runtime "Debug"
@@ -151,7 +147,6 @@ project "ImGui"
         runtime "Release"
 
     filter "system:linux"
-        pic "On"
 
     filter "configurations:Debug"
         symbols "On"
@@ -205,9 +200,10 @@ project "Hazel"
 
     location "Hazel"
 
-    kind "SharedLib"
+    kind "StaticLib"
     language "C++"
     cppdialect "C++17"
+    warnings "Extra"
 
     pchheader "hzpch.h"
     pchsource "Hazel/src/hzpch.cpp"
@@ -225,7 +221,11 @@ project "Hazel"
 
     includedirs
     {
-        "Hazel/src",
+        "Hazel/src"
+    }
+
+    externalincludedirs
+    {
         "Hazel/vendor/spdlog/include",
         "Hazel/vendor/GLFW/include",
         "Hazel/vendor/Glad/include",
@@ -234,15 +234,6 @@ project "Hazel"
         "Hazel/vendor/glm"
     }
 
-
-    links
-    {
-        "GLFW",
-        "Glad",
-        "ImGui"
-    }
-
-    wholearchive { "ImGui" }
 
     defines
     {
@@ -272,8 +263,7 @@ project "Hazel"
 
         defines
         {
-            "HZ_PLATFORM_WINDOWS",
-            "HZ_BUILD_DLL"
+            "HZ_PLATFORM_WINDOWS"
         }
 
         --
@@ -283,23 +273,6 @@ project "Hazel"
         {
             "Hazel/src/Platform/Linux/**.cpp"
         }
-
-        links
-        {
-            "opengl32.lib"
-        }
-
-        --
-        -- Put Hazel.dll directly beside Sandbox.exe.
-        --
-        -- This avoids needing a fragile post-build copy command.
-        --
-        targetdir (binRoot .. "/Sandbox")
-
-        --
-        -- Keep Hazel.lib in Hazel's own output directory.
-        --
-        implibdir (binRoot .. "/Hazel")
 
 
     --
@@ -331,12 +304,10 @@ project "Hazel"
     filter "system:linux"
 
         toolset "gcc"
-        pic "On"
 
         defines
         {
-            "HZ_PLATFORM_LINUX",
-            "HZ_BUILD_DLL"
+            "HZ_PLATFORM_LINUX"
         }
 
         --
@@ -347,19 +318,7 @@ project "Hazel"
             "Hazel/src/Platform/Windows/**.cpp"
         }
 
-        links
-        {
-            "GL",
-            "X11",
-            "Xrandr",
-            "Xi",
-            "Xcursor",
-            "Xinerama",
-            "pthread",
-            "dl",
-            "m"
-        }
-
+        
         --
         -- Keep libHazel.so in Hazel's output directory.
         --
@@ -416,6 +375,7 @@ project "Sandbox"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++17"
+    warnings "Extra"
 
     targetdir (binRoot .. "/%{prj.name}")
     objdir    (binIntRoot .. "/%{prj.name}")
@@ -430,7 +390,11 @@ project "Sandbox"
 
     includedirs
     {
-        "Hazel/src",
+        "Hazel/src"
+    }
+
+    externalincludedirs
+    {
         "Hazel/vendor/spdlog/include",
         "Hazel/vendor/glm",
         "Hazel/vendor/imgui"
@@ -439,9 +403,11 @@ project "Sandbox"
 
     links
     {
-        "Hazel"
+        "Hazel",
+        "ImGui",
+        "GLFW",
+        "Glad"
     }
-
 
 
     -- ============================================================
@@ -462,6 +428,10 @@ project "Sandbox"
             "HZ_PLATFORM_WINDOWS"
         }
 
+        links
+        {
+            "opengl32"
+        }
 
     --
     -- Windows Debug CRT -> /MDd
@@ -498,19 +468,19 @@ project "Sandbox"
             "HZ_PLATFORM_LINUX"
         }
 
-        --
-        -- libHazel.so stays in:
-        --
-        -- bin/<config>-linux-x86_64/Hazel/
-        --
-        -- Tell Linux's dynamic loader to search that directory
-        -- when launching Sandbox.
-        --
-        runpathdirs
-        {
-            binRoot .. "/Hazel"
-        }
 
+        links
+        {
+            "GL",
+            "X11",
+            "Xrandr",
+            "Xi",
+            "Xcursor",
+            "Xinerama",
+            "pthread",
+            "dl",
+            "m"
+        }
 
 
     -- ============================================================

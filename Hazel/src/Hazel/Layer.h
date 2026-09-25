@@ -5,7 +5,7 @@
 
 namespace Hazel
 {
-    class HAZEL_API Layer
+    class Layer
     {
     public:
         Layer(const std::string& name = "Layer");
@@ -15,7 +15,7 @@ namespace Hazel
         virtual void OnDetach() {}
         virtual void OnUpdate() {}
         virtual void OnImGuiRender() {}
-        virtual void OnEvent(Event& event) {}
+        virtual void OnEvent(Event&) {}
 
         inline const std::string& GetName() const { return m_DebugName; }
     protected:

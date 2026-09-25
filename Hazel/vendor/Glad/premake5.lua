@@ -45,13 +45,6 @@ project "Glad"
         runtime "Release"
 
 
-    -- Linux
-    filter "system:linux"
-
-        -- Glad is a static library linked into libHazel.so.
-        pic "On"
-
-
     filter "configurations:Debug"
         symbols "On"
 
