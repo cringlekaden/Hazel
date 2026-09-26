@@ -34,10 +34,33 @@ namespace Hazel
         glGenBuffers(1, &m_IndexBuffer);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IndexBuffer);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+        const std::string vertexSrc = R"glsl(#version 330 core
+        layout(location = 0) in vec3 a_Position;
+        out vec3 v_Position;
+        void main()
+        {
+            v_Position = a_Position;
+            gl_Position = vec4(a_Position, 1.0);
+        }
+        )glsl";
+        const std::string fragmentSrc = R"glsl(#version 330 core
+        layout(location = 0) out vec4 color;
+        in vec3 v_Position;
+        void main()
+        {
+            color = vec4(v_Position * 0.5 + 0.5, 1.0);
+        }
+        )glsl";
+        m_Shader = std::make_unique<Shader>(vertexSrc, fragmentSrc);
     }
 
     Application::~Application()
     {
+        if(m_Shader)
+        {
+            m_Shader->Unbind();
+            m_Shader.reset();
+        }
         glDeleteBuffers(1, &m_IndexBuffer);
         glDeleteBuffers(1, &m_VertexBuffer);
         glDeleteVertexArrays(1, &m_VertexArray);
@@ -60,6 +83,7 @@ namespace Hazel
             glClearColor(0.1f,0.1f, 0.1f, 1);
             glClear(GL_COLOR_BUFFER_BIT);
 
+            m_Shader->Bind();
             glBindVertexArray(m_VertexArray);
             glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
 
