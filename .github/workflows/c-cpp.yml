@@ -2,22 +2,67 @@ name: C/C++ CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [master]
   pull_request:
-    branches: [ "master" ]
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
+  linux-build:
+    name: Linux Debug and Release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
 
     steps:
-    - uses: actions/checkout@v4
-    - name: configure
-      run: ./configure
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: make distcheck
-      run: make distcheck
+      - name: Check out Hazel and its pinned submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            uuid-dev \
+            libx11-dev \
+            libxext-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libgl1-mesa-dev \
+            libegl1-mesa-dev
+
+      # Hazel's current Premake script uses APIs newer than 5.0.0-beta8.
+      # Pin a development revision so clean builds do not change when
+      # premake-core's default branch advances.
+      - name: Build a compatible Premake 5
+        run: |
+          git clone --filter=blob:none \
+            https://github.com/premake/premake-core.git \
+            "$RUNNER_TEMP/premake-core"
+          git -C "$RUNNER_TEMP/premake-core" checkout --detach \
+            71f2d33946947e9cf704f00c24200381e360f593
+          make -C "$RUNNER_TEMP/premake-core" -f Bootstrap.mak linux \
+            PREMAKE_OPTS=--curl-src=none
+          echo "$RUNNER_TEMP/premake-core/bin/release" >> "$GITHUB_PATH"
+
+      - name: Generate GNU Make projects
+        run: premake5 gmake
+
+      - name: Build Debug
+        run: make config=debug -j2
+
+      - name: Build Release
+        run: make config=release -j2
+
+      - name: Verify build outputs
+        run: |
+          test -f bin/Debug-linux-x86_64/Hazel/libHazel.a
+          test -x bin/Debug-linux-x86_64/Sandbox/Sandbox
+          test -f bin/Release-linux-x86_64/Hazel/libHazel.a
+          test -x bin/Release-linux-x86_64/Sandbox/Sandbox
