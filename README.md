@@ -1,17 +1,86 @@
 # Hazel
 
-[![C/C++ CI](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml/badge.svg?branch=master)](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml)
+[![Linux build](https://img.shields.io/github/check-runs/cringlekaden/Hazel/master?nameFilter=Linux%20Debug%20and%20Release&label=Linux)](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml)
+[![Windows build](https://img.shields.io/github/check-runs/cringlekaden/Hazel/master?nameFilter=Windows%20Debug%20and%20Release&label=Windows)](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml)
 
-Following TheCherno's Hazel Game Engine Series, but adding complete Linux support while keeping complete Windows support.
+A learning project following [TheCherno's Hazel engine](https://github.com/TheCherno/Hazel), with separate Linux and Windows platform implementations. Both use GLFW for window creation; rendering uses OpenGL. The repository builds Hazel as a static library and runs it through the Sandbox application.
 
-## Build on Linux
+The badges show the Linux and Windows **build jobs** on `master`. CI builds Debug and Release, but does not open the application or test rendering.
 
-Install GCC, GNU Make, a recent development build of Premake 5, and the
-development headers for OpenGL and X11. Clone the pinned dependencies and build:
+## Requirements
+
+| Platform | Tools |
+| --- | --- |
+| Linux x86_64 | GCC, GNU Make, Git, OpenGL and X11 development libraries |
+| Windows x64 | Visual Studio 2022 with **Desktop development with C++** and a Windows SDK, Git |
+
+The project uses a pinned Premake 5 development revision because its Premake scripts require features unavailable in the 5.0.0-beta8 release. The commands below build the same revision used by CI. If you already have a compatible `premake5`, you can use it instead.
+
+## Clone
+
+Clone with submodules on either platform:
 
 ```sh
 git clone --recurse-submodules https://github.com/cringlekaden/Hazel.git
 cd Hazel
-premake5 gmake
-make config=debug -j2
 ```
+
+For an existing clone without its submodules, run `git submodule update --init --recursive` from the repository root.
+
+## Build on Linux
+
+Install the native development packages. On CachyOS or Arch Linux:
+
+```sh
+sudo pacman -S --needed base-devel git util-linux-libs libx11 libxext libxrandr libxinerama libxcursor libxi libglvnd mesa
+```
+
+On Ubuntu 24.04:
+
+```sh
+sudo apt-get update
+sudo apt-get install -y build-essential git uuid-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libegl1-mesa-dev
+```
+
+From the Hazel repository root, build Premake, generate Makefiles, and build Debug:
+
+```sh
+git clone --filter=blob:none https://github.com/premake/premake-core.git ../premake-core
+git -C ../premake-core checkout --detach 71f2d33946947e9cf704f00c24200381e360f593
+make -C ../premake-core -f Bootstrap.mak linux PREMAKE_OPTS=--curl-src=none
+../premake-core/bin/release/premake5 gmake
+make config=debug -j2
+./bin/Debug-linux-x86_64/Sandbox/Sandbox
+```
+
+Build Release with `make config=release -j2`. Its executable is `bin/Release-linux-x86_64/Sandbox/Sandbox`.
+
+## Build on Windows
+
+Open the **x64 Native Tools Command Prompt for VS 2022**. From that prompt, clone the repository using the commands under [Clone](#clone), then run these commands from the Hazel repository root:
+
+```bat
+git clone --filter=blob:none https://github.com/premake/premake-core.git ..\premake-core
+git -C ..\premake-core checkout --detach 71f2d33946947e9cf704f00c24200381e360f593
+pushd ..\premake-core
+call Bootstrap.bat vs2022 "PREMAKE_OPTS=--curl-src=none"
+popd
+..\premake-core\bin\release\premake5.exe vs2022
+msbuild Hazel.sln /m:2 /p:Configuration=Debug /p:Platform=x64
+bin\Debug-windows-x86_64\Sandbox\Sandbox.exe
+```
+
+Build Release with `msbuild Hazel.sln /m:2 /p:Configuration=Release /p:Platform=x64`. Its executable is `bin\Release-windows-x86_64\Sandbox\Sandbox.exe`. You can also open `Hazel.sln` in Visual Studio.
+
+## Project layout
+
+| Path | Purpose |
+| --- | --- |
+| `Hazel/src/Hazel/` | Engine API, events, layers, and renderer |
+| `Hazel/src/Platform/Windows/` | Windows window and input implementations |
+| `Hazel/src/Platform/Linux/` | Linux window and input implementations |
+| `Hazel/src/Platform/OpenGL/` | Shared OpenGL implementation |
+| `Sandbox/src/` | Example application and rendering code |
+| `Hazel/vendor/` | Pinned GLFW, spdlog, ImGui, and GLM submodules; checked-in GLAD |
+
+The current Sandbox shaders use GLSL 3.30. Running Sandbox requires a working OpenGL 3.3-capable graphics driver and a desktop session; CI only compiles and links the projects.

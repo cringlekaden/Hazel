@@ -7,9 +7,9 @@
 --   Linux   x86_64 - GNU Make / GCC
 --
 -- Projects:
---   GLFW    - static dependency
---   Hazel   - shared engine library
---   Sandbox - executable using Hazel
+--   GLFW, Glad, ImGui - static dependencies
+--   Hazel             - static engine library
+--   Sandbox           - executable using Hazel
 --
 
 local workspaceRoot = path.getabsolute(".")
@@ -246,6 +246,11 @@ project "Hazel"
     -- Windows
     -- ============================================================
 
+    filter { "system:windows", "action:vs*" }
+        -- fmt/spdlog requires UTF-8 source and execution character sets
+        -- when compiled with MSVC.
+        buildoptions { "/utf-8" }
+
     filter "system:windows"
 
         systemversion "latest"
@@ -320,7 +325,7 @@ project "Hazel"
 
         
         --
-        -- Keep libHazel.so in Hazel's output directory.
+        -- Keep libHazel.a in Hazel's output directory.
         --
         targetdir (binRoot .. "/Hazel")
 
@@ -413,6 +418,10 @@ project "Sandbox"
     -- ============================================================
     -- Windows
     -- ============================================================
+
+    filter { "system:windows", "action:vs*" }
+        -- Hazel's public headers include spdlog/fmt.
+        buildoptions { "/utf-8" }
 
     filter "system:windows"
 
