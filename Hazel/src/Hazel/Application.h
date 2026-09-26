@@ -7,6 +7,7 @@
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/ImGui/ImGuiLayer.h"
 #include "Hazel/Renderer/Shader.h"
+#include "Hazel/Renderer/Buffer.h"
 
 #include <memory>
 
@@ -30,8 +31,8 @@ namespace Hazel
         ImGuiLayer* m_ImGuiLayer;
         bool m_Running = true;
         unsigned int m_VertexArray = 0;
-        unsigned int m_VertexBuffer = 0;
-        unsigned int m_IndexBuffer = 0;
+        std::unique_ptr<VertexBuffer> m_VertexBuffer;
+        std::unique_ptr<IndexBuffer> m_IndexBuffer;
         std::unique_ptr<Shader> m_Shader;
         bool OnWindowClose(WindowCloseEvent& e);
     };
