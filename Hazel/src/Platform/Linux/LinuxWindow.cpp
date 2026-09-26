@@ -5,7 +5,7 @@
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Events/MouseEvent.h"
 #include "Hazel/Events/KeyEvent.h"
-#include "glad/glad.h"
+#include "Platform/OpenGL/OpenGLContext.h"
 
 namespace Hazel {
 
@@ -36,9 +36,7 @@ namespace Hazel {
         m_Data.Title = props.Title;
         m_Data.Width = props.Width;
         m_Data.Height = props.Height;
-
         HZ_CORE_INFO("Creating window {0} ({1}, {2})", props.Title, props.Width, props.Height);
-
         if (!s_GLFWInitialized)
         {
             int success = glfwInit();
@@ -46,16 +44,10 @@ namespace Hazel {
             glfwSetErrorCallback(GLFWErrorCallback);
             s_GLFWInitialized = true;
         }
-
         m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
         HZ_CORE_ASSERT(m_Window, "Failed to create GLFW window...");
-        glfwMakeContextCurrent(m_Window);
-        int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-        HZ_CORE_ASSERT(status, "Failed to initialize Glad...");
-        HZ_CORE_INFO("OpenGL Info:");
-        HZ_CORE_INFO("  Vendor: {0}", (const char*)glGetString(GL_VENDOR));
-        HZ_CORE_INFO("  Renderer: {0}", (const char*)glGetString(GL_RENDERER));
-        HZ_CORE_INFO("  Version: {0}", (const char*)glGetString(GL_VERSION));
+        m_Context = std::make_unique<OpenGLContext>(m_Window);
+        m_Context->Init();
         glfwSetWindowUserPointer(m_Window, &m_Data);
         SetVSync(true);
         glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
@@ -138,13 +130,14 @@ namespace Hazel {
 
     void LinuxWindow::Shutdown()
     {
+        m_Context.reset();
         glfwDestroyWindow(m_Window);
     }
 
     void LinuxWindow::OnUpdate()
     {
         glfwPollEvents();
-        glfwSwapBuffers(m_Window);
+        m_Context->SwapBuffers();
     }
 
     void LinuxWindow::SetVSync(bool enabled)
