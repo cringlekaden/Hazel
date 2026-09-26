@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #if defined(HZ_PLATFORM_WINDOWS)
     #define HZ_DEBUGBREAK() __debugbreak()
 #elif defined(HZ_PLATFORM_LINUX)
@@ -23,3 +25,13 @@
     #define HZ_ASSERT(x, ...)
     #define HZ_CORE_ASSERT(x, ...)
 #endif
+
+namespace Hazel {
+
+    template<typename T>
+    using Scope = std::unique_ptr<T>;
+
+    template<typename T>
+    using Ref = std::shared_ptr<T>;
+
+}

@@ -215,7 +215,9 @@ project "Hazel"
     files
     {
         "Hazel/src/**.h",
-        "Hazel/src/**.cpp"
+        "Hazel/src/**.cpp",
+        "Hazel/vendor/stb_image/**.h",
+        "Hazel/vendor/stb_image/**.cpp"
     }
 
 
@@ -231,8 +233,14 @@ project "Hazel"
         "Hazel/vendor/Glad/include",
         "Hazel/vendor/imgui",
         "Hazel/vendor/imgui/backends",
-        "Hazel/vendor/glm"
+        "Hazel/vendor/glm",
+        "Hazel/vendor/stb_image"
     }
+
+    -- stb_image is third-party code. Keep Hazel's warnings enabled.
+    filter "files:Hazel/vendor/stb_image/**.cpp"
+        warnings "Off"
+    filter {}
 
 
     defines
@@ -384,6 +392,7 @@ project "Sandbox"
 
     targetdir (binRoot .. "/%{prj.name}")
     objdir    (binIntRoot .. "/%{prj.name}")
+    debugdir  (workspaceRoot .. "/Sandbox")
 
 
     files
