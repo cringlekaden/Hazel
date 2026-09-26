@@ -1,14 +1,12 @@
 #pragma once
 
 #include "Hazel/Core.h"
+#include "Hazel/Core/Timestep.h"
 #include "Hazel/Window.h"
 #include "Hazel/LayerStack.h"
 #include "Hazel/Events/Event.h"
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/ImGui/ImGuiLayer.h"
-#include "Hazel/Renderer/Shader.h"
-#include "Hazel/Renderer/VertexArray.h"
-#include "Hazel/Renderer/OrthographicCamera.h"
 
 #include <memory>
 
@@ -22,7 +20,6 @@ namespace Hazel
 
         void Run();
         void OnEvent(Event& e);
-
         void PushLayer(Layer* layer);
         void PushOverlay(Layer* overlay);
 
@@ -35,14 +32,7 @@ namespace Hazel
         LayerStack m_LayerStack;
         ImGuiLayer* m_ImGuiLayer;
         bool m_Running = true;
-
-        std::shared_ptr<VertexArray> m_VertexArray;
-        std::shared_ptr<Shader> m_Shader;
-
-        std::shared_ptr<VertexArray> m_SquareVA;
-        std::shared_ptr<Shader> m_BlueShader;
-
-        OrthographicCamera m_Camera;
+        float m_LastFrameTime = 0.0f;
 
         bool OnWindowClose(WindowCloseEvent& e);
     };
