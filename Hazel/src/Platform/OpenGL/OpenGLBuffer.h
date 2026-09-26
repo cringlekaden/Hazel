@@ -13,8 +13,18 @@ namespace Hazel {
         void Bind() const override;
         void Unbind() const override;
 
+        const BufferLayout& GetLayout() const override
+        {
+            return m_Layout;
+        }
+
+        void SetLayout(const BufferLayout& layout) override
+        {
+            m_Layout = layout;
+        }
     private:
         std::uint32_t m_RendererID = 0;
+        BufferLayout m_Layout;
     };
 
     class OpenGLIndexBuffer : public IndexBuffer
@@ -27,7 +37,6 @@ namespace Hazel {
         void Unbind() const override;
 
         std::uint32_t GetCount() const override { return m_Count; }
-
     private:
         std::uint32_t m_RendererID = 0;
         std::uint32_t m_Count = 0;
