@@ -7,7 +7,7 @@
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/ImGui/ImGuiLayer.h"
 #include "Hazel/Renderer/Shader.h"
-#include "Hazel/Renderer/Buffer.h"
+#include "Hazel/Renderer/VertexArray.h"
 
 #include <memory>
 
@@ -18,22 +18,29 @@ namespace Hazel
     public:
         Application();
         virtual ~Application();
+
         void Run();
         void OnEvent(Event& e);
+
         void PushLayer(Layer* layer);
         void PushOverlay(Layer* overlay);
+
         Window& GetWindow() { return *m_Window; }
         static Application& Get() { return *s_Instance; }
     private:
         static Application* s_Instance;
+
         std::unique_ptr<Window> m_Window;
         LayerStack m_LayerStack;
         ImGuiLayer* m_ImGuiLayer;
         bool m_Running = true;
-        unsigned int m_VertexArray = 0;
-        std::unique_ptr<VertexBuffer> m_VertexBuffer;
-        std::unique_ptr<IndexBuffer> m_IndexBuffer;
-        std::unique_ptr<Shader> m_Shader;
+
+        std::shared_ptr<VertexArray> m_VertexArray;
+        std::shared_ptr<Shader> m_Shader;
+
+        std::shared_ptr<VertexArray> m_SquareVA;
+        std::shared_ptr<Shader> m_BlueShader;
+
         bool OnWindowClose(WindowCloseEvent& e);
     };
 
