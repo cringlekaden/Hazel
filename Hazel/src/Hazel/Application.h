@@ -8,6 +8,7 @@
 #include "Hazel/ImGui/ImGuiLayer.h"
 #include "Hazel/Renderer/Shader.h"
 #include "Hazel/Renderer/VertexArray.h"
+#include "Hazel/Renderer/OrthographicCamera.h"
 
 #include <memory>
 
@@ -40,6 +41,8 @@ namespace Hazel
 
         std::shared_ptr<VertexArray> m_SquareVA;
         std::shared_ptr<Shader> m_BlueShader;
+
+        OrthographicCamera m_Camera;
 
         bool OnWindowClose(WindowCloseEvent& e);
     };
