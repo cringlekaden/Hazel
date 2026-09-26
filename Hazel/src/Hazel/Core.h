@@ -4,7 +4,6 @@
     #define HZ_DEBUGBREAK() __debugbreak()
 #elif defined(HZ_PLATFORM_LINUX)
     #include <signal.h>
-    #define HAZEL_API
     #define HZ_DEBUGBREAK() raise(SIGTRAP)
 #else
     #error Hazel only supports Windows and Linux...
