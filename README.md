@@ -2,7 +2,7 @@
 
 [![C/C++ CI](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml/badge.svg?branch=master)](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml)
 
-Following The Cherno's Game Engine Series on Linux.
+Following TheCherno's Hazel Game Engine Series, but adding complete Linux support while keeping complete Windows support.
 
 ## Build on Linux
 
@@ -15,6 +15,3 @@ cd Hazel
 premake5 gmake
 make config=debug -j2
 ```
-
-The CI workflow builds both Debug and Release from a fresh checkout on Ubuntu.
-It checks compilation and linking; it does not launch the graphical Sandbox.
