@@ -15,8 +15,6 @@ public:
     {
     }
 
-    void OnEvent(Hazel::Event&) override;
-
     void OnImGuiRender() override
     {
         static bool showDemo = true;
