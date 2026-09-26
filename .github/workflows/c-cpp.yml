@@ -66,3 +66,55 @@ jobs:
           test -x bin/Debug-linux-x86_64/Sandbox/Sandbox
           test -f bin/Release-linux-x86_64/Hazel/libHazel.a
           test -x bin/Release-linux-x86_64/Sandbox/Sandbox
+
+  windows-build:
+    name: Windows Debug and Release
+    runs-on: windows-2022
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out Hazel and its pinned submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Use the same pinned Premake revision as the Linux job. The checked-in
+      # Premake scripts need APIs that the last released beta does not have.
+      - name: Build a compatible Premake 5
+        shell: cmd
+        run: |
+          git clone --filter=blob:none https://github.com/premake/premake-core.git "%RUNNER_TEMP%\premake-core"
+          if errorlevel 1 exit /b 1
+          git -C "%RUNNER_TEMP%\premake-core" checkout --detach 71f2d33946947e9cf704f00c24200381e360f593
+          if errorlevel 1 exit /b 1
+          cd /d "%RUNNER_TEMP%\premake-core"
+          call Bootstrap.bat vs2022 "PREMAKE_OPTS=--curl-src=none"
+          if errorlevel 1 exit /b 1
+          echo %RUNNER_TEMP%\premake-core\bin\release>>"%GITHUB_PATH%"
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Generate Visual Studio projects
+        run: premake5 vs2022
+
+      - name: Build Debug
+        run: msbuild Hazel.sln /m:2 /p:Configuration=Debug /p:Platform=x64 /verbosity:minimal
+
+      - name: Build Release
+        run: msbuild Hazel.sln /m:2 /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+
+      - name: Verify build outputs
+        shell: pwsh
+        run: |
+          $files = @(
+            'bin/Debug-windows-x86_64/Hazel/Hazel.lib',
+            'bin/Debug-windows-x86_64/Sandbox/Sandbox.exe',
+            'bin/Release-windows-x86_64/Hazel/Hazel.lib',
+            'bin/Release-windows-x86_64/Sandbox/Sandbox.exe'
+          )
+          foreach ($file in $files) {
+            if (-not (Test-Path $file -PathType Leaf)) {
+              throw "Expected build output is missing: $file"
+            }
+          }
