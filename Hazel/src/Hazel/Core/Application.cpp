@@ -15,23 +15,24 @@ namespace Hazel {
     Application::Application()
     {
         s_Instance = this;
-        m_Window = std::unique_ptr<Window>(Window::Create());
+        m_Window = Window::Create();
         m_Window->SetEventCallback(HZ_BIND_EVENT_FN(Application::OnEvent));
         Renderer::Init();
-        m_ImGuiLayer = new ImGuiLayer();
-        PushOverlay(m_ImGuiLayer);
+        Scope<ImGuiLayer> overlay = CreateScope<ImGuiLayer>();
+        m_ImGuiLayer.reset(overlay.get());
+        PushOverlay(std::move(overlay));
     }
 
     Application::~Application() = default;
 
-    void Application::PushLayer(Layer* layer)
+    void Application::PushLayer(Scope<Layer> layer)
     {
-        m_LayerStack.PushLayer(layer);
+        m_LayerStack.PushLayer(std::move(layer));
     }
 
-    void Application::PushOverlay(Layer* overlay)
+    void Application::PushOverlay(Scope<Layer> overlay)
     {
-        m_LayerStack.PushOverlay(overlay);
+        m_LayerStack.PushOverlay(std::move(overlay));
     }
 
     void Application::Run()
@@ -43,11 +44,11 @@ namespace Hazel {
             m_LastFrameTime = time;
             if(!m_Minimized)
             {
-                for (Layer* layer : m_LayerStack)
+                for (auto& layer : m_LayerStack)
                     layer->OnUpdate(timestep);
             }
             m_ImGuiLayer->Begin();
-            for (Layer* layer : m_LayerStack)
+            for (auto& layer : m_LayerStack)
                 layer->OnImGuiRender();
             m_ImGuiLayer->End();
             m_Window->OnUpdate();

@@ -16,8 +16,7 @@ public:
     ExampleLayer() : Layer("Example"), m_CameraController(1280.0f / 720.0f)
     {
         // Colored triangle.
-        m_VertexArray.reset(
-            Hazel::VertexArray::Create());
+        m_VertexArray = Hazel::VertexArray::Create();
 
         float vertices[] = {
             // position                // color
@@ -27,9 +26,7 @@ public:
         };
 
         Hazel::Ref<Hazel::VertexBuffer> vertexBuffer;
-        vertexBuffer.reset(
-            Hazel::VertexBuffer::Create(
-                vertices, sizeof(vertices)));
+        vertexBuffer = Hazel::VertexBuffer::Create(vertices, sizeof(vertices));
         vertexBuffer->SetLayout({
             { Hazel::ShaderDataType::Float3, "a_Position" },
             { Hazel::ShaderDataType::Float4, "a_Color" }
@@ -38,15 +35,11 @@ public:
 
         std::uint32_t indices[] = { 0, 1, 2 };
         Hazel::Ref<Hazel::IndexBuffer> indexBuffer;
-        indexBuffer.reset(
-            Hazel::IndexBuffer::Create(
-                indices,
-                sizeof(indices) / sizeof(std::uint32_t)));
+        indexBuffer = Hazel::IndexBuffer::Create(indices, sizeof(indices) / sizeof(std::uint32_t));
         m_VertexArray->SetIndexBuffer(indexBuffer);
 
         // Square geometry, reused for every grid cell.
-        m_SquareVA.reset(
-            Hazel::VertexArray::Create());
+        m_SquareVA = Hazel::VertexArray::Create();
 
         float squareVertices[] = {
             // position                         // UV
@@ -57,10 +50,7 @@ public:
         };
 
         Hazel::Ref<Hazel::VertexBuffer> squareVB;
-        squareVB.reset(
-            Hazel::VertexBuffer::Create(
-                squareVertices,
-                sizeof(squareVertices)));
+        squareVB = Hazel::VertexBuffer::Create(squareVertices, sizeof(squareVertices));
         squareVB->SetLayout({
             { Hazel::ShaderDataType::Float3, "a_Position" },
             { Hazel::ShaderDataType::Float2, "a_TexCoord" }
@@ -70,11 +60,7 @@ public:
         std::uint32_t squareIndices[] =
             { 0, 1, 2, 2, 3, 0 };
         Hazel::Ref<Hazel::IndexBuffer> squareIB;
-        squareIB.reset(
-            Hazel::IndexBuffer::Create(
-                squareIndices,
-                sizeof(squareIndices) /
-                    sizeof(std::uint32_t)));
+        squareIB = Hazel::IndexBuffer::Create(squareIndices, sizeof(squareIndices) / sizeof(std::uint32_t));
         m_SquareVA->SetIndexBuffer(squareIB);
 
         const std::string vertexSrc =
@@ -262,11 +248,11 @@ class Sandbox : public Hazel::Application
 public:
     Sandbox()
     {
-        PushLayer(new ExampleLayer());
+        PushLayer(Hazel::CreateScope<ExampleLayer>());
     }
 };
 
-Hazel::Application* Hazel::CreateApplication()
+Hazel::Scope<Hazel::Application> Hazel::CreateApplication()
 {
-    return new Sandbox();
+    return Hazel::CreateScope<Sandbox>();
 }

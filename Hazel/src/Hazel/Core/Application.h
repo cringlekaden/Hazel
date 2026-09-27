@@ -20,17 +20,17 @@ namespace Hazel
 
         void Run();
         void OnEvent(Event& e);
-        void PushLayer(Layer* layer);
-        void PushOverlay(Layer* overlay);
+        void PushLayer(Scope<Layer> layer);
+        void PushOverlay(Scope<Layer> overlay);
 
         Window& GetWindow() { return *m_Window; }
         static Application& Get() { return *s_Instance; }
     private:
         static Application* s_Instance;
 
-        std::unique_ptr<Window> m_Window;
+        Scope<Window> m_Window;
         LayerStack m_LayerStack;
-        ImGuiLayer* m_ImGuiLayer;
+        Scope<ImGuiLayer> m_ImGuiLayer;
         bool m_Running = true;
         bool m_Minimized = false;
         float m_LastFrameTime = 0.0f;
@@ -40,5 +40,5 @@ namespace Hazel
     };
 
     // To be defined in Client App
-    Application* CreateApplication();
+    Scope<Application> CreateApplication();
 }
