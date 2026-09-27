@@ -28,6 +28,17 @@ namespace Hazel {
         HZ_CORE_INFO("  Vendor: {0}", (const char*)glGetString(GL_VENDOR));
         HZ_CORE_INFO("  Renderer: {0}", (const char*)glGetString(GL_RENDERER));
         HZ_CORE_INFO("  Version: {0}", (const char*)glGetString(GL_VERSION));
+        GLint versionMajor = 0;
+        GLint versionMinor = 0;
+        glGetIntegerv(GL_MAJOR_VERSION, &versionMajor);
+        glGetIntegerv(GL_MINOR_VERSION, &versionMinor);
+        const bool supportsOpenGL42 = versionMajor > 4 || (versionMajor == 4 && versionMinor >= 2);
+        HZ_CORE_ASSERT(supportsOpenGL42, "Hazel requires OpenGL 4.2 or newer...");
+        if (!supportsOpenGL42)
+        {
+            HZ_CORE_ERROR("Hazel requires OpenGL 4.2 or newer; this context reports {}.{}", versionMajor, versionMinor);
+            std::abort();
+        }
     }
 
     void OpenGLContext::SwapBuffers()

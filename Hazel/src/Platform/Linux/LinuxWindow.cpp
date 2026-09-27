@@ -7,6 +7,8 @@
 #include "Hazel/Events/KeyEvent.h"
 #include "Platform/OpenGL/OpenGLContext.h"
 
+#include <cstdlib>
+
 namespace Hazel {
 
     static bool s_GLFWInitialized = false;
@@ -44,8 +46,11 @@ namespace Hazel {
             glfwSetErrorCallback(GLFWErrorCallback);
             s_GLFWInitialized = true;
         }
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
-        HZ_CORE_ASSERT(m_Window, "Failed to create GLFW window...");
+        HZ_CORE_ASSERT(m_Window, "Failed to create an OpenGL 4.2 core window...");
         m_Context = CreateScope<OpenGLContext>(m_Window);
         m_Context->Init();
         glfwSetWindowUserPointer(m_Window, &m_Data);
