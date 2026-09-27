@@ -32,9 +32,11 @@ namespace Hazel
         LayerStack m_LayerStack;
         ImGuiLayer* m_ImGuiLayer;
         bool m_Running = true;
+        bool m_Minimized = false;
         float m_LastFrameTime = 0.0f;
 
         bool OnWindowClose(WindowCloseEvent& e);
+        bool OnWindowResize(WindowResizeEvent& e);
     };
 
     // To be defined in Client App
