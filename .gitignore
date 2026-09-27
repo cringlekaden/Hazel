@@ -2,6 +2,9 @@
 bin/
 bin-int/
 
+# Profiling traces written using Sandbox as the working directory
+/Sandbox/HazelProfile-*.json
+
 # Premake generated GNU Make files
 /Makefile
 /Hazel/Makefile

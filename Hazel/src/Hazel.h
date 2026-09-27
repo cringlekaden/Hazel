@@ -2,6 +2,7 @@
 
 // For use by Hazel applications
 #include "Hazel/Core/Log.h"
+#include "Hazel/Debug/Instrumentor.h"
 
 #include "Hazel/Core/Application.h"
 #include "Hazel/Core/Layer.h"

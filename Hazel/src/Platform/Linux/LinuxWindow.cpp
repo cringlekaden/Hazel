@@ -25,16 +25,19 @@ namespace Hazel {
 
     LinuxWindow::LinuxWindow(const WindowProps& props)
     {
+        HZ_PROFILE_FUNCTION();
         Init(props);
     }
 
     LinuxWindow::~LinuxWindow()
     {
+        HZ_PROFILE_FUNCTION();
         Shutdown();
     }
 
     void LinuxWindow::Init(const WindowProps& props)
     {
+        HZ_PROFILE_FUNCTION();
         m_Data.Title = props.Title;
         m_Data.Width = props.Width;
         m_Data.Height = props.Height;
@@ -42,7 +45,11 @@ namespace Hazel {
         if (s_GLFWWindowCount == 0)
         {
             HZ_CORE_INFO("Initializing GLFW");
-            int success = glfwInit();
+            int success = 0;
+            {
+                HZ_PROFILE_SCOPE("glfwInit");
+                success = glfwInit();
+            }
             HZ_CORE_ASSERT(success, "Could not initialize GLFW...");
             if (!success)
             {
@@ -54,7 +61,15 @@ namespace Hazel {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
+        {
+            HZ_PROFILE_SCOPE("glfwCreateWindow");
+            m_Window = glfwCreateWindow(
+                (int)props.Width,
+                (int)props.Height,
+                m_Data.Title.c_str(),
+                nullptr,
+                nullptr);
+        }
         HZ_CORE_ASSERT(m_Window, "Failed to create an OpenGL 4.2 core window...");
         if (!m_Window)
         {
@@ -146,6 +161,7 @@ namespace Hazel {
 
     void LinuxWindow::Shutdown()
     {
+        HZ_PROFILE_FUNCTION();
         m_Context.reset();
         glfwDestroyWindow(m_Window);
         if (--s_GLFWWindowCount == 0)
@@ -157,12 +173,14 @@ namespace Hazel {
 
     void LinuxWindow::OnUpdate()
     {
+        HZ_PROFILE_FUNCTION();
         glfwPollEvents();
         m_Context->SwapBuffers();
     }
 
     void LinuxWindow::SetVSync(bool enabled)
     {
+        HZ_PROFILE_FUNCTION();
         if (enabled)
             glfwSwapInterval(1);
         else

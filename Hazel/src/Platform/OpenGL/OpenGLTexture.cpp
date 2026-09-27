@@ -16,6 +16,7 @@ namespace Hazel {
           m_InternalFormat(GL_RGBA8),
           m_DataFormat(GL_RGBA)
     {
+        HZ_PROFILE_FUNCTION();
         if (width == 0 || height == 0)
             throw std::runtime_error("Texture dimensions must be positive...");
         glGenTextures(1, &m_RendererID);
@@ -45,16 +46,21 @@ namespace Hazel {
 
     OpenGLTexture2D::OpenGLTexture2D(const std::string& path) : m_Path(path)
     {
+        HZ_PROFILE_FUNCTION();
         stbi_set_flip_vertically_on_load(1);
         int width = 0;
         int height = 0;
         int channels = 0;
-        stbi_uc* pixels = stbi_load(
-            path.c_str(),
-            &width,
-            &height,
-            &channels,
-            0);
+        stbi_uc* pixels = nullptr;
+        {
+            HZ_PROFILE_SCOPE("stbi_load");
+            pixels = stbi_load(
+                path.c_str(),
+                &width,
+                &height,
+                &channels,
+                0);
+        }
         if (!pixels)
         {
             HZ_CORE_ERROR("Failed to load texture '{}': {}", path, stbi_failure_reason());
@@ -111,12 +117,14 @@ namespace Hazel {
 
     OpenGLTexture2D::~OpenGLTexture2D()
     {
+        HZ_PROFILE_FUNCTION();
         if (m_RendererID != 0)
             glDeleteTextures(1, &m_RendererID);
     }
 
     void OpenGLTexture2D::SetData(const void* data, std::uint32_t size)
     {
+        HZ_PROFILE_FUNCTION();
         const std::uint32_t bytesPerPixel = m_DataFormat == GL_RGBA ? 4u : 3u;
         const std::uint64_t expectedSize =
             static_cast<std::uint64_t>(m_Width) *
@@ -144,6 +152,7 @@ namespace Hazel {
 
     void OpenGLTexture2D::Bind(std::uint32_t slot) const
     {
+        HZ_PROFILE_FUNCTION();
         glActiveTexture(GL_TEXTURE0 + slot);
         glBindTexture(GL_TEXTURE_2D, m_RendererID);
     }
