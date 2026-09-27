@@ -23,7 +23,10 @@ namespace Hazel {
         PushOverlay(std::move(overlay));
     }
 
-    Application::~Application() = default;
+    Application::~Application()
+    {
+        Renderer::Shutdown();
+    }
 
     void Application::PushLayer(Scope<Layer> layer)
     {

@@ -1,6 +1,7 @@
 #include "hzpch.h"
 
 #include "Hazel/Renderer/Renderer.h"
+#include "Hazel/Renderer/Renderer2D.h"
 #include "Platform/OpenGL/OpenGLShader.h"
 
 namespace Hazel {
@@ -10,6 +11,12 @@ namespace Hazel {
     void Renderer::Init()
     {
         RenderCommand::Init();
+        Renderer2D::Init();
+    }
+
+    void Renderer::Shutdown()
+    {
+        Renderer2D::Shutdown();
     }
 
     void Renderer::BeginScene(OrthographicCamera& camera)
