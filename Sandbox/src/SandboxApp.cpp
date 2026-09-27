@@ -13,10 +13,7 @@
 class ExampleLayer : public Hazel::Layer
 {
 public:
-    ExampleLayer()
-        : Layer("Example"),
-          m_Camera(-1.6f, 1.6f, -0.9f, 0.9f),
-          m_CameraPosition(0.0f)
+    ExampleLayer() : Layer("Example"), m_CameraController(1280.0f / 720.0f)
     {
         // Colored triangle.
         m_VertexArray.reset(
@@ -176,42 +173,18 @@ public:
 
     void OnUpdate(Hazel::Timestep ts) override
     {
-        if (Hazel::Input::IsKeyPressed(HZ_KEY_LEFT))
-            m_CameraPosition.x -=
-                m_CameraMoveSpeed * ts;
-        else if (Hazel::Input::IsKeyPressed(HZ_KEY_RIGHT))
-            m_CameraPosition.x +=
-                m_CameraMoveSpeed * ts;
+        m_CameraController.OnUpdate(ts);
 
-        if (Hazel::Input::IsKeyPressed(HZ_KEY_UP))
-            m_CameraPosition.y +=
-                m_CameraMoveSpeed * ts;
-        else if (Hazel::Input::IsKeyPressed(HZ_KEY_DOWN))
-            m_CameraPosition.y -=
-                m_CameraMoveSpeed * ts;
-
-        if (Hazel::Input::IsKeyPressed(HZ_KEY_A))
-            m_CameraRotation +=
-                m_CameraRotationSpeed * ts;
-        if (Hazel::Input::IsKeyPressed(HZ_KEY_D))
-            m_CameraRotation -=
-                m_CameraRotationSpeed * ts;
-
-        m_Camera.SetPosition(m_CameraPosition);
-        m_Camera.SetRotation(m_CameraRotation);
-
-        Hazel::RenderCommand::SetClearColor(
-            { 0.1f, 0.1f, 0.1f, 1.0f });
+        Hazel::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1.0f });
         Hazel::RenderCommand::Clear();
 
-        Hazel::Renderer::BeginScene(m_Camera);
+        Hazel::Renderer::BeginScene(m_CameraController.GetCamera());
 
         auto openGLShader =
             std::dynamic_pointer_cast<Hazel::OpenGLShader>(
                 m_FlatColorShader);
         openGLShader->Bind();
-        openGLShader->UploadUniformFloat3(
-            "u_Color", m_SquareColor);
+        openGLShader->UploadUniformFloat3("u_Color", m_SquareColor);
 
         const glm::mat4 scale =
             glm::scale(
@@ -238,24 +211,21 @@ public:
             }
         }
         const glm::mat4 squareTransform =
-    glm::scale(
-        glm::mat4(1.0f),
-        glm::vec3(1.5f));
-    m_Texture->Bind(0);
-    auto textureShader = m_ShaderLibrary.Get("Texture");
-    Hazel::Renderer::Submit(
-        textureShader,
-        m_SquareVA,
-        squareTransform);
+        glm::scale(
+            glm::mat4(1.0f),
+            glm::vec3(1.5f));
+        m_Texture->Bind(0);
+        auto textureShader = m_ShaderLibrary.Get("Texture");
+        Hazel::Renderer::Submit(
+            textureShader,
+            m_SquareVA,
+            squareTransform);
 
-    m_ChernoLogoTexture->Bind(0);
-    Hazel::Renderer::Submit(
-        textureShader,
-        m_SquareVA,
-        squareTransform);
-
-        // Cherno pauses drawing the triangle for this example.
-        // Hazel::Renderer::Submit(m_Shader, m_VertexArray);
+        m_ChernoLogoTexture->Bind(0);
+        Hazel::Renderer::Submit(
+            textureShader,
+            m_SquareVA,
+            squareTransform);
         Hazel::Renderer::EndScene();
     }
 
@@ -268,7 +238,13 @@ public:
         ImGui::End();
     }
 
+    void OnEvent(Hazel::Event& e) override
+    {
+        m_CameraController.OnEvent(e);
+    }
+
 private:
+    Hazel::ShaderLibrary m_ShaderLibrary;
     Hazel::Ref<Hazel::Shader> m_Shader;
     Hazel::Ref<Hazel::VertexArray> m_VertexArray;
     Hazel::Ref<Hazel::Shader> m_FlatColorShader;
@@ -276,16 +252,9 @@ private:
 
     Hazel::Ref<Hazel::Texture2D> m_Texture;
     Hazel::Ref<Hazel::Texture2D> m_ChernoLogoTexture;
-
-    Hazel::ShaderLibrary m_ShaderLibrary;
     
-    Hazel::OrthographicCamera m_Camera;
-    glm::vec3 m_CameraPosition;
-    float m_CameraMoveSpeed = 5.0f;
-    float m_CameraRotation = 0.0f;
-    float m_CameraRotationSpeed = 180.0f;
-    glm::vec3 m_SquareColor =
-        { 0.2f, 0.3f, 0.8f };
+    Hazel::OrthographicCameraController m_CameraController;
+    glm::vec3 m_SquareColor = { 0.2f, 0.3f, 0.8f };
 };
 
 class Sandbox : public Hazel::Application
