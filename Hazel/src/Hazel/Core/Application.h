@@ -30,7 +30,7 @@ namespace Hazel
 
         Scope<Window> m_Window;
         LayerStack m_LayerStack;
-        Scope<ImGuiLayer> m_ImGuiLayer;
+        ImGuiLayer* m_ImGuiLayer = nullptr;
         bool m_Running = true;
         bool m_Minimized = false;
         float m_LastFrameTime = 0.0f;

@@ -15,11 +15,20 @@ namespace Hazel
 
         void PushLayer(Scope<Layer> layer);
         void PushOverlay(Scope<Layer> overlay);
-        void PopLayer(Scope<Layer> layer);
-        void PopOverlay(Scope<Layer> overlay);
 
-        std::vector<Scope<Layer>>::iterator begin() { return m_Layers.begin(); }
-        std::vector<Scope<Layer>>::iterator end() { return m_Layers.end(); }
+        void PopLayer(Layer* layer);
+        void PopOverlay(Layer* overlay);
+
+        std::vector<Scope<Layer>>::iterator begin()
+        {
+            return m_Layers.begin();
+        }
+
+        std::vector<Scope<Layer>>::iterator end()
+        {
+            return m_Layers.end();
+        }
+
     private:
         std::vector<Scope<Layer>> m_Layers;
         unsigned int m_LayerInsertIndex = 0;

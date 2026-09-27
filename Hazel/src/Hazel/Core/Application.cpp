@@ -19,7 +19,7 @@ namespace Hazel {
         m_Window->SetEventCallback(HZ_BIND_EVENT_FN(Application::OnEvent));
         Renderer::Init();
         Scope<ImGuiLayer> overlay = CreateScope<ImGuiLayer>();
-        m_ImGuiLayer.reset(overlay.get());
+        m_ImGuiLayer = overlay.get();
         PushOverlay(std::move(overlay));
     }
 
