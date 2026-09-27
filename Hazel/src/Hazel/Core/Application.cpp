@@ -1,7 +1,7 @@
-#include "Hazel/Events/ApplicationEvent.h"
 #include "hzpch.h"
 
 #include "Hazel/Core/Application.h"
+#include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Core/Window.h"
 #include "Hazel/Core/Log.h"
 #include "Hazel/Renderer/Renderer.h"
@@ -14,6 +14,7 @@ namespace Hazel {
 
     Application::Application()
     {
+        HZ_CORE_ASSERT(!s_Instance, "Application already exists...");
         s_Instance = this;
         m_Window = Window::Create();
         m_Window->SetEventCallback(HZ_BIND_EVENT_FN(Application::OnEvent));

@@ -122,7 +122,7 @@ namespace Hazel {
             std::uint32_t shaderType = 0;
             if (type == "vertex")
                 shaderType = GL_VERTEX_SHADER;
-            else if (type == "fragment")
+            else if (type == "fragment" || type == "pixel")
                 shaderType = GL_FRAGMENT_SHADER;
             else
                 throw std::runtime_error("Unknown shader stage: " + type);
