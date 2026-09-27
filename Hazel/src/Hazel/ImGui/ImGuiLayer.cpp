@@ -1,10 +1,10 @@
 #include "hzpch.h"
-#include "Hazel/Core.h"
+#include "Hazel/Core/Core.h"
 #include "Hazel/Events/Event.h"
 
 #include "Hazel/ImGui/ImGuiLayer.h"
-#include "Hazel/Application.h"
-#include "Hazel/Log.h"
+#include "Hazel/Core/Application.h"
+#include "Hazel/Core/Log.h"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>

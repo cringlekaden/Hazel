@@ -1,13 +1,13 @@
 #include "hzpch.h"
 #include "LinuxInput.h"
 
-#include "Hazel/Application.h"
+#include "Hazel/Core/Application.h"
 
 #include <GLFW/glfw3.h>
 
 namespace Hazel {
 
-    Input* Input::s_Instance = new LinuxInput();
+    Scope<Input> Input::s_Instance = CreateScope<LinuxInput>();
 
     bool LinuxInput::IsKeyPressedImpl(int keycode)
     {

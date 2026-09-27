@@ -1,7 +1,7 @@
 #include "hzpch.h"
 
 #include "Platform/Linux/LinuxWindow.h"
-#include "Hazel/Log.h"
+#include "Hazel/Core/Log.h"
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Events/MouseEvent.h"
 #include "Hazel/Events/KeyEvent.h"

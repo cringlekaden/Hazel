@@ -1,9 +1,9 @@
 #include "Hazel/Events/ApplicationEvent.h"
 #include "hzpch.h"
 
-#include "Hazel/Application.h"
-#include "Hazel/Window.h"
-#include "Hazel/Log.h"
+#include "Hazel/Core/Application.h"
+#include "Hazel/Core/Window.h"
+#include "Hazel/Core/Log.h"
 #include "Hazel/Renderer/Renderer.h"
 
 #include <GLFW/glfw3.h>
