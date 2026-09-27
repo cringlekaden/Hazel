@@ -5,12 +5,15 @@
 #include <glm/glm.hpp>
 
 #include <cstdint>
+#include <string>
+#include <unordered_map>
 
 namespace Hazel {
 
     class OpenGLShader : public Shader
     {
     public:
+        explicit OpenGLShader(const std::string& filepath);
         OpenGLShader(const std::string& vertexSource, const std::string& fragmentSource);
         ~OpenGLShader() override;
 
@@ -25,6 +28,10 @@ namespace Hazel {
         void UploadUniformMat3(const std::string& name, const glm::mat3& matrix);
         void UploadUniformMat4(const std::string& name, const glm::mat4& matrix);
     private:
+        static std::string ReadFile(const std::string& filepath);
+        static std::unordered_map<std::uint32_t, std::string>
+        PreProcess(const std::string& source);
+        void Compile(const std::unordered_map<std::uint32_t, std::string>& shaderSources);
         std::uint32_t m_RendererID = 0;
     };
 }

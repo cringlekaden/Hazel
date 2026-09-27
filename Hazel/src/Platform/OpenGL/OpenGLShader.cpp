@@ -9,6 +9,9 @@
 #include <cstddef>
 #include <stdexcept>
 #include <string>
+#include <fstream>
+#include <sstream>
+#include <vector>
 
 namespace Hazel {
 
@@ -64,49 +67,117 @@ namespace Hazel {
         }
     }
 
+    OpenGLShader::OpenGLShader(const std::string& filepath)
+    {
+        const std::string source = ReadFile(filepath);
+        const auto shaderSources = PreProcess(source);
+        Compile(shaderSources);
+    }
+
     OpenGLShader::OpenGLShader(const std::string& vertexSource, const std::string& fragmentSource)
     {
-        unsigned int vertexShader = 0;
-        unsigned int fragmentShader = 0;
-        unsigned int program = 0;
+        Compile({
+            { GL_VERTEX_SHADER, vertexSource },
+            { GL_FRAGMENT_SHADER, fragmentSource }
+        });
+    }
+
+    std::string OpenGLShader::ReadFile(const std::string& filepath)
+    {
+        std::ifstream input(filepath, std::ios::in | std::ios::binary);
+        if (!input)
+        {
+            HZ_CORE_ERROR("Could not open shader file '{}'", filepath);
+            throw std::runtime_error("Could not open shader file: " + filepath);
+        }
+        std::ostringstream contents;
+        contents << input.rdbuf();
+        if (input.bad())
+            throw std::runtime_error("Could not read shader file: " + filepath);
+        return contents.str();
+    }
+
+    std::unordered_map<std::uint32_t, std::string>
+    OpenGLShader::PreProcess(const std::string& source)
+    {
+        std::unordered_map<std::uint32_t, std::string> shaderSources;
+        const std::string token = "#type";
+        std::size_t pos = source.find(token);
+        while (pos != std::string::npos)
+        {
+            const std::size_t eol = source.find_first_of("\r\n", pos);
+            if (eol == std::string::npos)
+                throw std::runtime_error("Shader #type line has no newline");
+            std::string type = source.substr(pos + token.size(), eol - pos - token.size());
+            const std::size_t begin = type.find_first_not_of(" \t");
+            const std::size_t end = type.find_last_not_of(" \t");
+            if (begin == std::string::npos)
+                throw std::runtime_error("Shader #type has no stage name");
+            type = type.substr(begin, end - begin + 1);
+            std::uint32_t shaderType = 0;
+            if (type == "vertex")
+                shaderType = GL_VERTEX_SHADER;
+            else if (type == "fragment")
+                shaderType = GL_FRAGMENT_SHADER;
+            else
+                throw std::runtime_error("Unknown shader stage: " + type);
+            const std::size_t nextLine =
+                source.find_first_not_of("\r\n", eol);
+            if (nextLine == std::string::npos)
+                throw std::runtime_error("Shader stage has no source: " + type);
+            const std::size_t nextType = source.find(token, nextLine);
+            const std::string stageSource =
+                source.substr(nextLine, nextType == std::string::npos ? std::string::npos : nextType - nextLine);
+            if (!shaderSources.emplace(shaderType, stageSource).second)
+                throw std::runtime_error("Duplicate shader stage: " + type);
+            pos = nextType;
+        }
+        if (shaderSources.size() != 2 || shaderSources.count(GL_VERTEX_SHADER) == 0 || shaderSources.count(GL_FRAGMENT_SHADER) == 0)
+        {
+            throw std::runtime_error("Shader requires one vertex and one fragment stage");
+        }
+        return shaderSources;
+    }
+
+    void OpenGLShader::Compile(const std::unordered_map<std::uint32_t, std::string>& shaderSources)
+    {
+        if (shaderSources.size() != 2 || shaderSources.count(GL_VERTEX_SHADER) == 0 || shaderSources.count(GL_FRAGMENT_SHADER) == 0)
+        {
+            throw std::runtime_error("Shader requires one vertex and one fragment stage");
+        }
+        const unsigned int program = glCreateProgram();
+        if (program == 0)
+            throw std::runtime_error("OpenGL program creation failed...");
+        std::vector<unsigned int> shaders;
+        shaders.reserve(2);
         try
         {
-            vertexShader = CompileShader(GL_VERTEX_SHADER, vertexSource, "Vertex");
-            fragmentShader = CompileShader(GL_FRAGMENT_SHADER, fragmentSource, "Fragment");
-            program = glCreateProgram();
-            if (program == 0)
+            for (const auto& [type, source] : shaderSources)
             {
-                HZ_CORE_ERROR("Failed to create OpenGL shader program...");
-                throw std::runtime_error("OpenGL program creation failed...");
+                const unsigned int shader = CompileShader(type, source, type == GL_VERTEX_SHADER ? "Vertex" : "Fragment");
+                shaders.push_back(shader);
+                glAttachShader(program, shader);
             }
-            glAttachShader(program, vertexShader);
-            glAttachShader(program, fragmentShader);
             glLinkProgram(program);
             int linked = GL_FALSE;
-            glGetProgramiv(
-                program, GL_LINK_STATUS, &linked);
+            glGetProgramiv(program, GL_LINK_STATUS, &linked);
             if (linked == GL_FALSE)
             {
                 HZ_CORE_ERROR("Shader program link failed:\n{}", GetProgramLog(program));
-                throw std::runtime_error(
-                    "OpenGL shader program link failed...");
+                throw std::runtime_error("OpenGL shader program link failed...");
             }
-            glDetachShader(program, vertexShader);
-            glDetachShader(program, fragmentShader);
-            glDeleteShader(vertexShader);
-            glDeleteShader(fragmentShader);
-            vertexShader = 0;
-            fragmentShader = 0;
+            for (unsigned int shader : shaders)
+            {
+                glDetachShader(program, shader);
+                glDeleteShader(shader);
+            }
             m_RendererID = program;
         }
         catch (...)
         {
-            if (program != 0)
-                glDeleteProgram(program);
-            if (fragmentShader != 0)
-                glDeleteShader(fragmentShader);
-            if (vertexShader != 0)
-                glDeleteShader(vertexShader);
+            glDeleteProgram(program);
+            for (unsigned int shader : shaders)
+                glDeleteShader(shader);
             throw;
         }
     }
