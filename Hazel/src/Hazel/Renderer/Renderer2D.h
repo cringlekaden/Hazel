@@ -5,6 +5,8 @@
 
 #include <glm/glm.hpp>
 
+#include <cstdint>
+
 namespace Hazel {
 
     class Renderer2D
@@ -12,8 +14,10 @@ namespace Hazel {
     public:
         static void Init();
         static void Shutdown();
+
         static void BeginScene(const OrthographicCamera& camera);
         static void EndScene();
+        static void Flush();
 
         static void DrawQuad(
             const glm::vec2& position,
@@ -67,5 +71,28 @@ namespace Hazel {
             const Ref<Texture2D>& texture,
             float tilingFactor = 1.0f,
             const glm::vec4& tintColor = glm::vec4(1.0f));
+
+        struct Statistics
+        {
+            std::uint32_t DrawCalls = 0;
+            std::uint32_t QuadCount = 0;
+
+            std::uint32_t GetTotalVertexCount() const
+            {
+                return QuadCount * 4;
+            }
+
+            std::uint32_t GetTotalIndexCount() const
+            {
+                return QuadCount * 6;
+            }
+        };
+
+        static void ResetStats();
+        static Statistics GetStats();
+
+    private:
+        static void FlushAndReset();
+        static float GetTextureIndex(const Ref<Texture2D>& texture);
     };
 }

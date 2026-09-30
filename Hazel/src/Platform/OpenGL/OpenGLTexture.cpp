@@ -156,4 +156,10 @@ namespace Hazel {
         glActiveTexture(GL_TEXTURE0 + slot);
         glBindTexture(GL_TEXTURE_2D, m_RendererID);
     }
+
+    bool OpenGLTexture2D::operator==(const Texture& other) const
+    {
+        const auto* otherTexture = dynamic_cast<const OpenGLTexture2D*>(&other);
+        return otherTexture && m_RendererID == otherTexture->m_RendererID;
+    }
 }
