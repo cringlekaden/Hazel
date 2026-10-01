@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "Hazel/Renderer/Font.h"
 
 #include "Hazel/Renderer/Renderer2D.h"
 #include "Hazel/Renderer/RenderCommand.h"
@@ -110,6 +111,7 @@ namespace Hazel {
     {
         HZ_PROFILE_FUNCTION();
         s_Data.reset();
+        Font::Shutdown();
     }
 
     void Renderer2D::BeginScene(const OrthographicCamera& camera)

@@ -574,3 +574,4 @@ end
 
 include "scripts/dependencies"
 include "scripts/dependencies/scene-foundation.lua"
+include "scripts/dependencies/fonts.lua"

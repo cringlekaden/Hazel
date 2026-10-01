@@ -12,7 +12,7 @@ import tempfile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', choices=('Debug', 'Release'), required=True)
-    parser.add_argument('--stage', choices=('stage3', 'stage4a'), default='stage3')
+    parser.add_argument('--stage', choices=('stage3', 'stage4a', 'stage4b'), default='stage3')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     binaries = root / 'bin' / f'{args.config}-linux-x86_64'
@@ -30,9 +30,15 @@ def main():
         )
         if args.stage == 'stage4a':
             profiles = profiles[:1]
+        elif args.stage == 'stage4b':
+            profiles = profiles[:2]
         for profile, overrides in profiles:
             if args.stage == 'stage4a':
                 checks = ['SceneFoundationSmoke', 'CoreSmoke', 'Sandbox']
+            elif args.stage == 'stage4b':
+                checks = ['FontSmoke']
+                if profile == 'native':
+                    checks += ['SceneFoundationSmoke', 'CoreSmoke', 'Sandbox']
             else:
                 checks = ['RendererFeaturesSmoke']
                 if profile != 'software':

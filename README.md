@@ -151,3 +151,9 @@ and pins YAML to its target commit. SceneCamera keeps a finite default projectio
 and retains it for minimized viewports. `MigrationSceneFoundationSmoke` checks
 CPU camera/ECS/YAML behavior; the complete Scene and SceneSerializer integration
 remains in progress.
+
+The font prerequisite imports the target MSDF generator and nested FreeType pins,
+all OpenSans assets/license, and target component definitions. Font files load
+through native filesystem paths, and the default font atlas releases with the
+renderer before window shutdown. `MigrationFontSmoke` checks GPU atlas data and
+repeated lifetime/UTF-8/error behavior; complete text drawing remains a later gate.

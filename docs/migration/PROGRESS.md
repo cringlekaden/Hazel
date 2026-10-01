@@ -51,7 +51,8 @@ local Debug/Release core, renderer and graceful Sandbox shutdown runtime checks
 on Intel HD 4000/OpenGL 4.2. Windows engine runtime is untested. Stage 3 backend integration is locally
 verified in Debug/Release on native 4.2, forced 4.1 and software 4.6; integrated
 Linux/Windows Debug/Release compilation and optimized CPU shader tests passed CI.
-Stage 4 foundation is in progress; stages 4–9 remain incomplete. The sections below retain initial-session evidence, followed by
+Stage 4a foundation passed both OS builds/CPU runtime; stage 4b font prerequisite
+is locally verified and awaiting its compilation CI. Stages 4–9 remain incomplete. The sections below retain initial-session evidence, followed by
 resumed-session results that supersede the initial unrun CI status.
 
 ## Stage 1 source provenance
@@ -567,3 +568,96 @@ Font prerequisite imports/local Debug build were prepared while CI was pending;
 that independent uncommitted work is retained while this stage 4a failure is
 resolved. Do not advance that checkpoint before the CI fix is tested. Checkpoint
 subject: `Resolve YAML compatibility include from Windows solution root`.
+
+
+Stage 4a path-fix checkpoint: `8948e89b7df9fc9a7a256a3d9c78827cc1303305`,
+pushed only migration branch. CI run 36889492677 is pending. The commit contains
+only the YAML path fix and stage 4a failure evidence; separate prepared font
+changes were preserved in the working tree/index, not included in that checkpoint.
+
+### Stage 4b font/component prerequisite (in progress)
+
+Actual target Font.h/.cpp, MSDFData.h and Components.h imported; exact source/asset
+blobs and relocation to Sandbox's runtime assets are in stage4b-imports.json.
+All target OpenSans variants and their license are retained. Original Sandbox
+assets were not overwritten. New submodule matches target atlas pin
+`b50e101d24b1f6009841ce3a386e1bc9365dc66a`; nested msdfgen
+`b9061f976e79fcc0b20ac6fcd5abaa8fafaf6f91`, FreeType (2.11.0)
+`2d57b0592805c76d676b51fbf9553de71c5a5c78`, dlg
+`d142e646e263c89f93663e027c2f0d03739ab42d`. Actual vendor Premake/source inspected;
+all four clean pins verified in stage4b-font-pins.json. Keep exact source and
+existing glyph generation, overlap/scanline processing, metrics and Latin-1
+charset. No dependency pin was silently upgraded.
+
+Root-owned scripts/dependencies/fonts.lua includes the target build scripts then
+sets absolute generated/output paths, C++17 where appropriate, dynamic MSVC CRT,
+UTF-8 and Debug/Release/Dist consistently. FreeType remains C. Archives stay
+separate; final applications link atlas -> msdfgen -> FreeType. Build and font
+atlas worker concurrency are capped at two (atlas target default was eight).
+The existing Premake shim is unchanged. Vendor Makefiles are retained.
+
+Concrete lifecycle adaptation: the target function-static default Font retains a
+GPU texture past application/context shutdown. Keep shared default-font behavior
+but move that owner to an explicit cache reset by Renderer2D::Shutdown. Core
+stage-2 layer -> ImGui -> renderer -> window ordering is retained. MSDF state uses
+Scope, and a local RAII guard releases both FreeType handles on success/failure.
+Load actual pinned msdfgen::loadFontData from FileSystem bytes rather than a narrow
+OS filename, supporting native UTF-8 paths through the shared filesystem API.
+Missing/invalid fonts and atlas failures throw in Debug and Release instead of
+leaving an unusable partial Font. No OS or OpenGL version branch is added to Font,
+components or asset formats; atlas uploads use the existing Texture API/backend.
+
+All actual target component shapes are present, including text, scripts and both
+physics collider kinds. Native script factory/destructor pointers default null;
+headers explicitly include their prerequisites and guard the GLM experimental
+macro. Full Scene/entity/native-script lifecycle and serializers remain pending;
+component declarations are not a claim that those runtimes are integrated.
+
+Debug full build passed (0), with vendor source unchanged: stage4b-debug.log.
+The sequential --stage stage4b desktop runner passed five Debug checks (0):
+native 4.2 FontSmoke/foundation/core/Sandbox, then forced 4.1 FontSmoke. Logs:
+`stage4b-debug-{native,gl41}-*.log`. FontSmoke creates/destroys two Applications,
+checks shared default TextComponent assets, 191 actual glyphs/metrics (target
+range requests 224 codepoints), reads RGB signed-distance atlas data back from the
+GPU, loads a copied UTF-8 font path, rejects missing/invalid files and proves the
+default cache expires each shutdown. Both forced contexts identify Intel HD 4000.
+This proves atlas generation/upload and cache lifetime; complete text drawing is
+a later Renderer2D gate. Forced 4.1 is Mesa evidence, not a macOS run.
+
+Release build passed (0), followed by all five Release runtime checks (0),
+sequentially with Debug/runtime already complete. Evidence: stage4b-release.log
+and `stage4b-release-{native,gl41}-*.log`. Windows font compilation remains pending. Do not commit this prerequisite until the
+stage 4a Windows fix result is known and investigated if it fails. Windows font/
+engine/window/GPU runtime has not been run or claimed.
+
+
+Stage 4a fix [Actions run 36889492677](https://github.com/cringlekaden/Hazel/actions/runs/36889492677)
+passed both Linux and Windows Debug/Release compilation and both CPU shader and
+camera/ECS/YAML runtime suites. Evidence: stage4a-fixed-actions.json. The actual
+Windows compile confirms the macro-rooted /FI path fix. Windows CPU foundation
+runtime is verified; application/window/input/dialog/GPU runtime remains untested.
+The stage 4a failure gate is resolved before the next prerequisite checkpoint.
+
+Stage 4b VS2022 generation and inspection passed for fifteen native projects:
+per-config dynamic CRT, UTF-8, FreeType .c sources, font/YAML project references
+and external matching shader libraries. Evidence: stage4b-vs2022.log and
+stage4b-vs2022-inspection.txt. Initial inspection assumptions were corrected:
+.c extensions imply C when no CompileAs override exists, and Premake emits native
+static dependency links as ProjectReferences, not AdditionalDependencies strings.
+These are inspection corrections, not compiler failures or Windows runtime passes.
+
+Both local config builds and five-check runtime matrices pass. Clean exact font
+pins and original vendor source/pins are retained. Checkpoint subject:
+`Integrate upstream font atlas and component prerequisites`. Push only migration
+branch for actual Windows font compilation; FontSmoke execution remains a Linux
+GPU test here. Stage 4 is still incomplete: full Scene/Entity/SceneSerializer,
+physics/scripts/project integration and complete Renderer2D behavior gates remain.
+
+Next concrete renderer portability issue is confirmed on native hardware:
+`glxinfo -l` reports 16 fragment texture units, 80 combined and 16 vertex texture
+units on Intel HD 4000 core 4.2. Evidence excerpt: stage4c-native-texture-limits.txt.
+Preserve the original local 16-slot fix while allowing the target's 32 slots on
+capable devices: query backend limits, specialize the actual shader sampler array
+and switch cases to the chosen capacity, include that capacity in cache identity,
+and flush batches at the same boundary. Common renderer-facing APIs should expose
+semantic limits, with GL queries/version requirements inside the OpenGL backend.

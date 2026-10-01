@@ -1,0 +1,77 @@
+[
+  {
+    "path": "Hazel/src/Hazel/Renderer/Font.h",
+    "upstream_path": "Hazel/src/Hazel/Renderer/Font.h",
+    "target_blob": "0949263c3221924b36c70c23f7a87fde5acc2f5b"
+  },
+  {
+    "path": "Hazel/src/Hazel/Renderer/Font.cpp",
+    "upstream_path": "Hazel/src/Hazel/Renderer/Font.cpp",
+    "target_blob": "bc205998e403c91ae16e61a799db24d8aa00a4e4"
+  },
+  {
+    "path": "Hazel/src/Hazel/Renderer/MSDFData.h",
+    "upstream_path": "Hazel/src/Hazel/Renderer/MSDFData.h",
+    "target_blob": "ada7ff65efdd6ea3397202404832780504688c52"
+  },
+  {
+    "path": "Hazel/src/Hazel/Scene/Components.h",
+    "upstream_path": "Hazel/src/Hazel/Scene/Components.h",
+    "target_blob": "a22f9122b2d7699c0316b6e69c314516edb31398"
+  },
+  {
+    "path": "Sandbox/assets/fonts/opensans/LICENSE.txt",
+    "upstream_path": "Hazelnut/assets/fonts/opensans/LICENSE.txt",
+    "target_blob": "d645695673349e3947e8e5ae42332d0ac3164cd7"
+  },
+  {
+    "path": "Sandbox/assets/fonts/opensans/OpenSans-Bold.ttf",
+    "upstream_path": "Hazelnut/assets/fonts/opensans/OpenSans-Bold.ttf",
+    "target_blob": "efdd5e84a0397ecada7b9cfde51db87db08766bd"
+  },
+  {
+    "path": "Sandbox/assets/fonts/opensans/OpenSans-BoldItalic.ttf",
+    "upstream_path": "Hazelnut/assets/fonts/opensans/OpenSans-BoldItalic.ttf",
+    "target_blob": "9bf9b4e97b6576c8cc3d4527073731fd9cc57493"
+  },
+  {
+    "path": "Sandbox/assets/fonts/opensans/OpenSans-ExtraBold.ttf",
+    "upstream_path": "Hazelnut/assets/fonts/opensans/OpenSans-ExtraBold.ttf",
+    "target_blob": "67fcf0fb2af0c069495fbc7fe7ab0e442a86e357"
+  },
+  {
+    "path": "Sandbox/assets/fonts/opensans/OpenSans-ExtraBoldItalic.ttf",
+    "upstream_path": "Hazelnut/assets/fonts/opensans/OpenSans-ExtraBoldItalic.ttf",
+    "target_blob": "086722809c74d5031c2427b31262de14e4a10560"
+  },
+  {
+    "path": "Sandbox/assets/fonts/opensans/OpenSans-Italic.ttf",
+    "upstream_path": "Hazelnut/assets/fonts/opensans/OpenSans-Italic.ttf",
+    "target_blob": "117856707b9b867863a9b48b127f756ee25fe109"
+  },
+  {
+    "path": "Sandbox/assets/fonts/opensans/OpenSans-Light.ttf",
+    "upstream_path": "Hazelnut/assets/fonts/opensans/OpenSans-Light.ttf",
+    "target_blob": "6580d3a169e895d914f159c060b947e36746f275"
+  },
+  {
+    "path": "Sandbox/assets/fonts/opensans/OpenSans-LightItalic.ttf",
+    "upstream_path": "Hazelnut/assets/fonts/opensans/OpenSans-LightItalic.ttf",
+    "target_blob": "1e0c3319810ad7a0312e10c3d62da6beea7f1c58"
+  },
+  {
+    "path": "Sandbox/assets/fonts/opensans/OpenSans-Regular.ttf",
+    "upstream_path": "Hazelnut/assets/fonts/opensans/OpenSans-Regular.ttf",
+    "target_blob": "29bfd35a2bfdd92b6e8b4ec2970f4d1eebf49357"
+  },
+  {
+    "path": "Sandbox/assets/fonts/opensans/OpenSans-SemiBold.ttf",
+    "upstream_path": "Hazelnut/assets/fonts/opensans/OpenSans-SemiBold.ttf",
+    "target_blob": "54e7059cf36359cb5a3860085714a95306af0dea"
+  },
+  {
+    "path": "Sandbox/assets/fonts/opensans/OpenSans-SemiBoldItalic.ttf",
+    "upstream_path": "Hazelnut/assets/fonts/opensans/OpenSans-SemiBoldItalic.ttf",
+    "target_blob": "aebcf1421226d045b8043d26433d780fa365b7de"
+  }
+]

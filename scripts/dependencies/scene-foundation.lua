@@ -38,7 +38,7 @@ project "yaml-cpp"
 
 local consumers = { "Hazel", "Sandbox" }
 if _OPTIONS["migration-tests"] then
-    for _, name in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke" } do
+    for _, name in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke" } do
         table.insert(consumers, "Migration" .. name)
     end
 end

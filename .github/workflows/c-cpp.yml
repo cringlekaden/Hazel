@@ -97,6 +97,8 @@ jobs:
           test -x bin/Release-linux-x86_64/MigrationRendererFeaturesSmoke/MigrationRendererFeaturesSmoke
           test -x bin/Debug-linux-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke
           test -x bin/Release-linux-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke
+          test -x bin/Debug-linux-x86_64/MigrationFontSmoke/MigrationFontSmoke
+          test -x bin/Release-linux-x86_64/MigrationFontSmoke/MigrationFontSmoke
 
   windows-build:
     name: Windows Debug and Release
@@ -169,7 +171,9 @@ jobs:
             'bin/Debug-windows-x86_64/MigrationRendererFeaturesSmoke/MigrationRendererFeaturesSmoke.exe',
             'bin/Release-windows-x86_64/MigrationRendererFeaturesSmoke/MigrationRendererFeaturesSmoke.exe',
             'bin/Debug-windows-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke.exe',
-            'bin/Release-windows-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke.exe'
+            'bin/Release-windows-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke.exe',
+            'bin/Debug-windows-x86_64/MigrationFontSmoke/MigrationFontSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationFontSmoke/MigrationFontSmoke.exe'
           )
           foreach ($file in $files) {
             if (-not (Test-Path $file -PathType Leaf)) {
