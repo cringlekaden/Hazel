@@ -1241,3 +1241,15 @@ EditorSmoke then failed strict temporary-directory deletion with sharing violati
 path/native-cwd/remaining-file diagnostics and rerun, preserving every functional
 check. The process had exited; no surviving CI runtime is assumed. Raw failed job
 log is ignored stage8-ci-windows.log. Linux run is finishing Release/CPU gates.
+
+Stage8 Windows diagnostic Actions36934638145 again passed Debug/Release native
+compilation and the first six software46 renderer/scene suites. Editor workflow
+and engine shutdown passed; strict fixture deletion stopped at MonoDebugger.log
+(error32), with both C++ and Win32 current directories correctly restored.
+Actual Mono 6.12.0.206 source opens the debugger logfile with fopen and its cleanup
+never closes that stream:
+https://github.com/mono/mono/blob/mono-6.12.0.206/mono/mini/debugger-agent.c
+Use Mono's documented default stdout sink, retaining loglevel3, soft breakpoints
+and the debugger agent. Keep strict fixture removal and diagnostics; no vendor
+patch or suppressed failure. Linux recompilation/runtime and Windows rerun are
+pending for this correction; existing source/build gates remain recorded above.
