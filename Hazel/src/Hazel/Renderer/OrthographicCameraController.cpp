@@ -75,13 +75,20 @@ namespace Hazel {
         return false;
     }
 
+    // Actual target public resize API; retain the local minimized-window guard.
+    void OrthographicCameraController::OnResize(float width, float height)
+    {
+        if (width <= 0 || height <= 0) return;
+        m_AspectRatio = width / height;
+        m_Camera.SetProjection(-m_AspectRatio * m_ZoomLevel, m_AspectRatio * m_ZoomLevel, -m_ZoomLevel, m_ZoomLevel);
+    }
+
     bool OrthographicCameraController::OnWindowResized(WindowResizeEvent& e)
     {
         HZ_PROFILE_FUNCTION();
         if (e.GetWidth() == 0 || e.GetHeight() == 0)
             return false;
-        m_AspectRatio = static_cast<float>(e.GetWidth()) / static_cast<float>(e.GetHeight());
-        m_Camera.SetProjection(-m_AspectRatio * m_ZoomLevel, m_AspectRatio * m_ZoomLevel, -m_ZoomLevel, m_ZoomLevel);
+        OnResize(static_cast<float>(e.GetWidth()), static_cast<float>(e.GetHeight()));
         return false;
     }
 }

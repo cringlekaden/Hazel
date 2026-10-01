@@ -242,6 +242,25 @@ jobs:
           & bin/Release-windows-x86_64/MigrationMonoSmoke/MigrationMonoSmoke.exe bin/Release-windows-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Release-windows-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Verify Windows software OpenGL and editor runtime
+        shell: pwsh
+        run: |
+          python scripts/migration/windows-desktop-checks.py --config Debug
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/migration/windows-desktop-checks.py --config Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Preserve Windows runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-runtime-evidence
+          path: |
+            build/migration/evidence/windows-*.log
+            build/migration/windows-mesa/readme*
+            build/migration/windows-mesa/license*
+          if-no-files-found: ignore
+
       - name: Verify complete CPU scene, scripts, reload and watcher lifetimes
         shell: pwsh
         run: |

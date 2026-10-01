@@ -12,7 +12,7 @@ import tempfile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', choices=('Debug', 'Release'), required=True)
-    parser.add_argument('--stage', choices=('stage3', 'stage4a', 'stage4b', 'stage4c', 'stage4d', 'stage4e', 'stage4f', 'stage5', 'stage6', 'stage7'), default='stage3')
+    parser.add_argument('--stage', choices=('stage3', 'stage4a', 'stage4b', 'stage4c', 'stage4d', 'stage4e', 'stage4f', 'stage5', 'stage6', 'stage7', 'stage8'), default='stage3')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     binaries = root / 'bin' / f'{args.config}-linux-x86_64'
@@ -34,7 +34,10 @@ def main():
         elif args.stage == 'stage4b':
             profiles = profiles[:2]
         for profile, overrides in profiles:
-            if args.stage == 'stage6':
+            if args.stage == 'stage8':
+                checks = ['EditorSmoke', 'SceneGPUSmoke', 'RendererFeaturesSmoke']
+                if profile == 'native': checks += ['SceneSmoke', 'CoreSmoke', 'Sandbox']
+            elif args.stage == 'stage6':
                 checks = ['SceneGPUSmoke', 'RendererFeaturesSmoke']
                 if profile == 'native':
                     checks += ['SceneSmoke', 'ProjectPhysicsSmoke', 'CoreSmoke', 'Sandbox']
@@ -73,6 +76,9 @@ def main():
                 if name in ('MonoSmoke', 'SceneSmoke', 'SceneGPUSmoke'):
                     command += [str(binaries / 'Hazel-ScriptCore/Hazel-ScriptCore.dll'),
                                 str(binaries / 'MigrationManagedFixture/MigrationManagedFixture.dll')]
+                if name == 'EditorSmoke':
+                    command += [str(binaries / 'Hazel-ScriptCore/Hazel-ScriptCore.dll'),
+                                str(binaries / 'SandboxScripts/Sandbox.dll'), str(root / 'Hazelnut')]
                 if name == 'Sandbox':
                     command = [sys.executable, str(root / 'scripts/migration/sandbox-smoke.py'),
                                str(executable), '--assets', str(root / 'Sandbox'), '--require-order']

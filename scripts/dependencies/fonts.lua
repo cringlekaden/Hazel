@@ -30,9 +30,9 @@ project "msdf-atlas-gen"
     removelinks { "msdfgen" }
     dependson { "msdfgen" }
 
-local consumers = { "Hazel", "Sandbox" }
+local consumers = { "Hazel", "Sandbox", "Hazelnut" }
 if _OPTIONS["migration-tests"] then
-    for _, name in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke" } do
+    for _, name in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke" } do
         table.insert(consumers, "Migration" .. name)
     end
 end

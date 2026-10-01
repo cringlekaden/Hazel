@@ -132,6 +132,8 @@ project "ImGui"
         imguiDir .. "/imgui_tables.cpp",
         imguiDir .. "/imgui_widgets.cpp",
         imguiDir .. "/imgui_demo.cpp",
+        imguiDir .. "/misc/cpp/imgui_stdlib.cpp",
+        imguiDir .. "/misc/cpp/imgui_stdlib.h",
 
         imguiDir .. "/backends/imgui_impl_glfw.h",
         imguiDir .. "/backends/imgui_impl_glfw.cpp",
@@ -566,6 +568,10 @@ project "Sandbox"
 
     filter {}
 
+HazelGTKIncludes = gtkIncludes
+MigrationLinuxLinks = gtkLinks
+include "Hazelnut"
+
 -- Opt-in GPU verification; requires a real desktop context when executed.
 if _OPTIONS["migration-tests"] then
     MigrationLinuxLinks = gtkLinks
@@ -579,3 +585,5 @@ include "scripts/dependencies/fonts.lua"
 include "scripts/dependencies/physics.lua"
 
 include "scripts/dependencies/mono.lua"
+
+include "scripts/dependencies/editor.lua"

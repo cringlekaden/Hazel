@@ -5,25 +5,28 @@ Baseline: `b030be7`. Fixed target: `1feb70572fa87fa1c4ba784a2cfeada5b4a500db`.
 
 ## Resume here
 
-Stage7 complete locally: full Debug/Release builds and all sixteen sequential
-desktop checks per configuration passed. Actual upstream Player/Camera and every
-published managed component call passed in real Application contexts. TypeDef
-token discovery fixes a reproduced Mono abort from compiler-generated nested
-types. Example scenes/textures/project/scripts and a portable root/standalone
-Premake C# build are imported with provenance. Stage7 checkpoint/CI is next;
-continue stage8 editor, then stage9 and all final acceptance work.
+Stage8 complete locally: full Debug/Release builds and twelve desktop checks per
+configuration passed. Actual docked editor/panels, Unicode paths, save/reopen,
+duplicate, gizmo shortcuts/drawing, play/pause/step/simulate/stop and shutdown pass
+on native Intel 4.2, forced Mesa 4.1 and software 4.6. Physical mouse drag/file-dialog
+interaction remain untested. Stage8 checkpoint and branch Windows compile/software
+runtime CI are next. Continue stage9 and all final acceptance work.
 
-Stage6 `c86d1dd` [Actions36927686042](https://github.com/cringlekaden/Hazel/actions/runs/36927686042)
-passed Linux/Windows Debug/Release compilation and CPU runtime suites. Windows
-GUI/editor/GPU/input and queued automatic Application reload remain untested.
-No local build, runtime or debugger process remains. Do not merge into master.
+Stage7 correction aaf145a/Actions36930517894 passed Windows builds and CPU runtime;
+Linux CI is still finishing. Stage6 c86d1dd/Actions36927686042 passed both OS/config
+builds and CPU suites. Windows graphics runtime is pending the new test-only CI
+runner and must not be described as verified yet.
+
+Current implementation changes are migration-owned; no unrelated work found.
+Proceed through stage8 and stage9/final acceptance without optional pauses. Do
+not merge into master. No local build/test/debugger process is running. New raw logs remain ignored.
 
 Local dependency prefix: `--mono-root=build/dependencies/mono/linux/usr`.
 Gmake flags: `--migration-tests --shader-tools`; builds use
 `make config=debug|release -j2 --jobserver-style=pipe` with CSC set to the relocated
 Mono executable, `--config` build/dependencies/mono/linux/etc/mono/config and
 build/dependencies/mono/linux/usr/lib/mono/4.5/mcs.exe. Desktop runtime:
-`python3 scripts/migration/desktop-checks.py --config Debug|Release --stage stage7`.
+`python3 scripts/migration/desktop-checks.py --config Debug|Release --stage stage8`.
 Routine logs go to ignored build/migration/evidence. Read PLAN.md, PRESERVATION.md
 and COMPARISON.md and check status/submodules before edits. Actual pinned upstream
 source is /tmp/hazel-upstream-1feb705.
@@ -1164,6 +1167,27 @@ passed; standalone workspace build will also be checked during final clean build
 Checkpoint subject: `Verify managed components and import upstream example project`.
 Windows stage7 compilation/CPU runtime awaits branch CI; GPU remains untested.
 
+## Stage 8 in progress: actual Hazelnut editor
+
+Stage7 checkpoint f3eff4a is committed/pushed; CI pending. Import exact editor,
+panels, icons, fonts and layout from the fixed checkpoint; provenance recorded
+in stage8-imports.json. Keep the actual ImGuizmo 218d60b pin, clean vendor source
+and current official docking ImGui/backends. Root-owned ImGuizmo settings provide
+math operators and matching CRT/UTF-8. Imported editor now uses Scope application/
+layer ownership, actual upstream ImGui fonts/theme/BeginFrame/widget-ID flow and
+separate UTF-8 content payloads/paths on both OSes. Local fixes keep NewScene's
+editor scene consistent, save the editor scene during play, stop runtime before
+project switches/teardown, remove global GPU font ownership and expose all three
+body types in the inspector. Complete builds/runtime workflow gate pending.
+
+Initial editor Debug compilation exposed the previously missing target public
+OrthographicCameraController::OnResize API and an indirect KeyPressedEvent include.
+Import the actual target resize operation, keep minimized-size protection and
+reuse it for window resize; add the direct event include. The exact ImGuizmo pin
+already compiled against retained official ImGui without source patches. Windows
+command-line UTF-16 conversion now lives exclusively in Platform/Windows and
+feeds UTF-8 to common Application args, keeping editor/project paths portable.
+
 Stage7 Windows deployment investigation: Actions36928990041's Windows Debug
 compilation produced the native and managed binaries, then SandboxScripts failed
 MSB3073 because its C# post-build event resolved a relative copy source from the
@@ -1172,3 +1196,39 @@ working GNU Make path for Linux. VS generation confirms the expanded post-build
 command. Linux Debug/Release/runtime source is unchanged by this build-script fix.
 A separate stage7 CI correction checkpoint preserves all in-progress stage8 edits;
 Windows Release and CPU suites must be rerun before claiming stage7 CI passed.
+
+Stage7 correction checkpoint `aaf145aa892f0f835a18fc8a7722cc31d25e9e3e`:
+[Actions36930517894](https://github.com/cringlekaden/Hazel/actions/runs/36930517894)
+Windows job passed Debug/Release builds and shader/project/physics/Mono/full CPU
+scene/script/reload/watcher suites. This includes token-based discovery with the
+nested-type fixture. Linux CI remains in dependency installation; previous local
+Debug/Release and sixteen desktop checks passed. No Windows graphics test yet.
+Stage8 full Debug build now passed (0), including Hazelnut/real editor smoke and
+exact clean ImGuizmo source. Official ImGui stdlib and popup API flags replace
+target fork include paths/obsolete signature, and portable snprintf preserves
+inspector string controls. The twelve-check Debug desktop suite is running.
+
+Stage8 Debug's twelve sequential desktop checks passed (0), including actual
+editor workflow on native Intel 4.2, forced Mesa 4.1 and software 4.6. Docked panels,
+UTF-8/non-BMP project/scene/texture paths, save/reopen, duplicate, gizmo shortcuts/
+drawing, managed play/pause/step/restart, simulation, project reopen and ordered
+shutdown passed. The test invokes actual editor commands; it does not claim a
+physical mouse drag or file-dialog user interaction. Release build/runtime next.
+
+Stage8 full Release build and all twelve desktop checks passed (0), after the
+Debug gate. VS2022 generation confirms MDd Debug/MD Release+Dist and UTF-8 on editor,
+engine and ImGuizmo, with OS source exclusion retained. All submodules are clean,
+including the exact new ImGuizmo gitlink. No local build/test/debugger remains.
+Checkpoint subject: `Integrate and verify upstream Hazelnut editor`.
+
+Windows graphics execution is now scheduled in branch CI: a test-only Mesa
+26.2.3 MSVC WGL package from pal1000/mesa-dist-win, exact release URL/SHA256 in
+scripts/migration/windows-mesa.json (verified against GitHub release digest and
+local download). Runner copies DLLs beside temporary executables, selects llvmpipe
+with two threads, tests software 4.6 and forced 4.1, then removes temporary files.
+No system driver install, hardware override in engine code or macOS claim.
+Actual Windows results are pending; Python syntax/VS generation on Linux are
+preflight checks only. It exercises rendering, actual editor workflow, queued
+reload and both applications' native graceful close, including Unicode CLI project
+arguments. Raw evidence becomes CI artifacts/ignored output. Physical mouse drag
+and native file-dialog interaction still require separate execution.
