@@ -1,3 +1,4 @@
+#include "Hazel/Core/MouseCodes.h"
 #pragma once
 
 // From glfw3.h

@@ -2,12 +2,12 @@
 
 Target complete public functionality and architecture of
 `1feb70572fa87fa1c4ba784a2cfeada5b4a500db`, with deliberate local improvements,
-native Linux and Windows support, and a working OpenGL 4.2 path. Preparation and
-the first implementation stage are this session's scope; later stages remain
-explicitly pending. Use actual target source, recording imports and adaptations.
+native Linux and Windows support, and a working OpenGL 4.2 path. Stages 2–9 are authorized for this resumed session; continue in order through
+buildable checkpoints. Use actual target source, recording imports and adaptations.
 
 Each stage ends with a local Git checkpoint on `migration/upstream-1feb705`.
-Retain Sandbox as a runnable integration target throughout. Do not push/merge.
+Retain Sandbox as a runnable integration target throughout. Branch pushes are
+authorized for CI after local checkpoints; never merge into master.
 Use at most two concurrent compiler jobs, one build invocation at a time.
 
 | Stage | Implementation boundary | Exit gate |
@@ -45,7 +45,8 @@ disable upstream features to make an integration compile.
    those change. Generation on Linux does not count as an MSVC build or Windows
    runtime. Retain CI coverage and arrange Windows execution before final parity.
 7. Update PROGRESS.md and provenance; commit only task-owned files, then report
-   checkpoint hashes and remaining gates. No push or merge.
+   checkpoint hashes and remaining gates. Push only the migration branch for CI;
+   never merge into master.
 
 Stage 1 can be a Linux-verified checkpoint with Windows execution explicitly
 pending. Future cross-platform build-system/dependency integration must not be

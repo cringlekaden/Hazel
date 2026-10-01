@@ -5,13 +5,16 @@
 class Sandbox : public Hazel::Application
 {
 public:
-    Sandbox()
+    Sandbox(const Hazel::ApplicationSpecification& specification) : Application(specification)
     {
         PushLayer(Hazel::CreateScope<Sandbox2D>());
     }
 };
 
-Hazel::Scope<Hazel::Application> Hazel::CreateApplication()
+Hazel::Scope<Hazel::Application> Hazel::CreateApplication(Hazel::ApplicationCommandLineArgs args)
 {
-    return Hazel::CreateScope<Sandbox>();
+    Hazel::ApplicationSpecification specification;
+    specification.Name = "Hazel Engine";
+    specification.CommandLineArgs = args;
+    return Hazel::CreateScope<Sandbox>(specification);
 }

@@ -1,0 +1,10 @@
+make: jobserver mkfifo: /tmp/GMfifo4: File exists
+==== Building GLFW (debug) ====
+==== Building Glad (debug) ====
+==== Building ImGui (debug) ====
+==== Building Hazel (debug) ====
+==== Building Sandbox (debug) ====
+==== Building MigrationRendererSmoke (debug) ====
+==== Building MigrationCoreSmoke (debug) ====
+CoreSmoke.cpp
+Linking MigrationCoreSmoke

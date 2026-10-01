@@ -15,6 +15,13 @@ namespace Hazel {
         HZ_CORE_ASSERT(windowHandle, "Failed to initialize OpenGLContext: Window handle is null...");
     }
 
+    void OpenGLContext::ConfigureWindowHints()
+    {
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    }
+
     void OpenGLContext::Init()
     {
         HZ_PROFILE_FUNCTION();

@@ -1,0 +1,16 @@
+==== Building GLFW (debug) ====
+==== Building Glad (debug) ====
+==== Building ImGui (debug) ====
+==== Building Hazel (debug) ====
+stb_image.cpp
+Linking Hazel
+==== Building Sandbox (debug) ====
+==== Building MigrationRendererSmoke (debug) ====
+RendererSmoke.cpp
+Sandbox2D.cpp
+SandboxApp.cpp
+Linking MigrationRendererSmoke
+==== Building MigrationCoreSmoke (debug) ====
+CoreSmoke.cpp
+Linking Sandbox
+Linking MigrationCoreSmoke

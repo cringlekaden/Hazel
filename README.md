@@ -32,14 +32,14 @@ For an existing clone without its submodules, run `git submodule update --init -
 Install the native development packages. On CachyOS or Arch Linux:
 
 ```sh
-sudo pacman -S --needed base-devel git util-linux-libs libx11 libxext libxrandr libxinerama libxcursor libxi libglvnd mesa
+sudo pacman -S --needed base-devel git util-linux-libs libx11 libxext libxrandr libxinerama libxcursor libxi libglvnd mesa gtk3 pkgconf
 ```
 
 On Ubuntu 24.04:
 
 ```sh
 sudo apt-get update
-sudo apt-get install -y build-essential git uuid-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libegl1-mesa-dev
+sudo apt-get install -y build-essential git uuid-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libegl1-mesa-dev libgtk-3-dev pkg-config
 ```
 
 From the Hazel repository root, build Premake, generate Makefiles, and build Debug:
@@ -105,3 +105,8 @@ To build the focused GPU verification executable, generate with
 `premake5 --migration-tests gmake` (or `vs2022` on Windows), then use the normal
 Debug/Release build commands above. Execution requires a working desktop and
 OpenGL 4.2; CI compiles the executable on both platforms and checks its presence.
+
+Stage 2 adds the upstream application specification, main-thread queue, typed
+input/events, filesystem/buffers/UUID/timer and editor camera/math. Native Linux
+file dialogs require GTK3 development libraries; Windows uses native wide dialogs.
+Layers detach and release their resources before renderer and window shutdown.

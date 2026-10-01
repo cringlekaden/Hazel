@@ -11,6 +11,7 @@ namespace Hazel {
     public:
         explicit OpenGLContext(GLFWwindow* windowHandle);
 
+        static void ConfigureWindowHints();
         void Init() override;
         void SwapBuffers() override;
 

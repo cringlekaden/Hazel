@@ -34,4 +34,5 @@ shader syntax, but baseline windows and context already require OpenGL 4.2.
 
 Stage 1 leaves the core/ownership, OS, ImGui, dependency and build-setting
 invariants above unchanged except for opt-in verification tooling/CI branch
-coverage. No push or merge is authorized.
+coverage. The resumed user instruction authorizes migration-branch pushes for CI; merging
+into master remains prohibited.

@@ -1,0 +1,36 @@
+==== Building GLFW (release) ====
+==== Building Glad (release) ====
+==== Building ImGui (release) ====
+==== Building Hazel (release) ====
+hzpch.h
+Application.cpp
+Buffer.cpp
+EditorCamera.cpp
+FileSystem.cpp
+GraphicsContext.cpp
+ImGuiLayer.cpp
+src/Hazel/ImGui/ImGuiLayer.cpp: In member function ‘virtual void Hazel::ImGuiLayer::OnAttach()’:
+src/Hazel/ImGui/ImGuiLayer.cpp:44:14: warning: unused variable ‘glfwStatus’ [-Wunused-variable]
+   44 |         bool glfwStatus = ImGui_ImplGlfw_InitForOpenGL(window, true);
+      |              ^~~~~~~~~~
+src/Hazel/ImGui/ImGuiLayer.cpp:46:14: warning: unused variable ‘openglStatus’ [-Wunused-variable]
+   46 |         bool openglStatus = ImGui_ImplOpenGL3_Init("#version 130");
+      |              ^~~~~~~~~~~~
+Layer.cpp
+LayerStack.cpp
+LinuxInput.cpp
+LinuxPlatformUtils.cpp
+LinuxWindow.cpp
+Log.cpp
+Math.cpp
+OpenGLBuffer.cpp
+OpenGLContext.cpp
+OpenGLRendererAPI.cpp
+OpenGLShader.cpp
+OpenGLTexture.cpp
+OpenGLUniformBuffer.cpp
+OpenGLVertexArray.cpp
+OrthographicCamera.cpp
+OrthographicCameraController.cpp
+RenderCommand.cpp
+Renderer.cpp

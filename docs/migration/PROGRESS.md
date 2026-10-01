@@ -8,7 +8,8 @@ Baseline: `b030be7`. Fixed target: `1feb70572fa87fa1c4ba784a2cfeada5b4a500db`.
 Read PLAN.md, PRESERVATION.md and COMPARISON.md. Check `git status` and submodule
 cleanliness before edits. The upstream source checkout is in
 `/tmp/hazel-upstream-1feb705`; if absent, clone TheCherno/Hazel and detach at the
-fixed hash. Do not use a moving master. Do not push or merge. Build sequentially
+fixed hash. Do not use a moving master. Branch pushes are now authorized for CI; never merge
+into master. Build sequentially
 with at most two jobs.
 
 ## Preparation status
@@ -137,3 +138,103 @@ Logs under evidence/ are actual command output. Distinguish full and incremental
 builds, timeout-limited startup and clean shutdown, project generation and MSVC
 execution, and synthetic checks from real GPU rendering/readback. Logs and tree
 comparison are a snapshot; update this document as each gate completes.
+
+## Resumed scope and verified stage 1 CI
+
+Resumed at clean `81b3861`, with unchanged clean dependency pins. Verified via
+GitHub API that [Actions run 36801823201](https://github.com/cringlekaden/Hazel/actions/runs/36801823201)
+completed successfully for `81b38617fb7fbdbd65d861929c69537332077c0a`:
+Linux Debug/Release and Windows Debug/Release compilation passed. Raw job data
+is in evidence/stage1-actions.json. This supersedes the earlier unrun compilation
+status, but **Windows runtime remains untested**.
+
+The user authorized stages 2–9 without stopping for checkpoint confirmations
+and migration-branch pushes for Windows compilation CI. Preserve the fixed
+upstream, ownership, official ImGui, platform/API separation and pin decisions.
+No master merge. Keep future macOS portability in APIs/data formats without
+adding speculative platform code or claiming support. Stage 3 will evaluate a
+real GLSL/OpenGL 4.1 fallback while retaining Grandpa's tested 4.2 behavior;
+4.2 context hints/assertions stay until that path is actually implemented/tested.
+
+Stage 2 started: target core/platform/camera/math imports recorded by blob in
+evidence/stage2-imports.json. Baseline graceful-close experiment uses a copied
+Sandbox working directory and normal X11 WM_DELETE_WINDOW, not forced termination.
+
+Stage 2 early investigation: baseline normal-close returned 0, but shutdown trace
+showed Renderer2D shutdown before Sandbox/ImGui OnDetach. Explicit Scope LayerStack
+Clear now detaches/destroys layers while renderer, ImGui (for user layers), and
+graphics context remain alive; renderer shuts down before window/context. Clear
+is idempotent and resets the insertion index. Windows glfwInit was called twice
+inside the first-window branch; it now runs once with the error callback installed
+before initialization. The first Debug attempt found missing KeyEvent includes
+in the new focused test (not engine failure); corrected explicitly. Removed an
+unused upstream math variable warning.
+
+Native dialogs: GTK3 only in Platform/Linux (new native build dependency), wide
+Win32 only in Platform/Windows, UTF-8 public paths, standard filesystem in common
+FileSystem. Common scene/project path strings will use UTF-8 and relative/generic
+paths when those stages arrive. Future macOS requires a native dialog adapter;
+no GTK/Win32 types enter common APIs. Typed input has separate native implementations;
+Unicode character events retain 32-bit codepoints rather than upstream 16-bit
+key IDs. OpenGL context hints now live in Platform/OpenGL, selected by the
+graphics-context factory; native window files contain no OpenGL-version literals.
+
+GCC also exposed upstream Timer.h extra class qualifications on in-class methods;
+removed those nonstandard qualifications and retained monotonic steady_clock.
+The immediate retry was interrupted to apply this already-known correction
+before compiling the test; no overlapping builds.
+
+Final lifecycle review also found that queued callbacks can retain GPU resources
+until member destruction after window reset. Cancelled queue captures now release
+before layer/renderer/window teardown, with a focused destructor probe. Restored
+explicit Ref logger types and separated the existing ownership helpers into
+Memory.h to make Base/Log/Assert headers self-contained without include cycles.
+PCH now includes upstream Base.h (as target hzpch.h does). An optional GLM
+PCH include was tried and removed during the investigation below. The first Release attempt
+was interrupted before completion for these final changes; builds remain sequential.
+
+The full PCH rebuild exposed a namespace lookup collision between new assertion
+helpers in Hazel::detail and upstream math's unqualified detail::scale. Qualified
+the intended glm::detail::scale calls; no vendor changes. Earlier math smoke
+checks had passed without Base in this translation unit's PCH.
+
+GCC 16 Debug also rejected stb_image SSE immediate operands after GLM's SIMD
+headers were placed in the PCH. Removed that optional GLM PCH include (upstream
+PCH includes Base, not GLM); vendor source remains untouched and SIMD is retained.
+A few preliminary Debug runtime checks overlapped the interrupted first Release
+attempt; the final Debug-build/runtime then Release-build/runtime verification
+sequence is strictly serial, with at most -j2.
+
+Removing GLM from PCH alone did not solve the GCC 16 SSE failure. An isolated
+compile of the unchanged stb_image.cpp without forced PCH passed at -O0. Verified
+the installed development Premake exposes enablepch (legacy flags is absent).
+The root-owned stb_image file filter now uses enablepch Off; the wrapper still
+includes hzpch.h normally, SIMD stays enabled, and vendor source is unchanged.
+The engine retains its upstream-style Base PCH.
+
+
+## Stage 2 verification and checkpoint
+
+Final verification ran sequentially: Debug build, Debug runtime checks, Release
+build, Release runtime checks, with `make --jobserver-style=pipe config=debug -j2`
+and then `config=release -j2`. The pipe jobserver avoids stale FIFO warnings after
+an interrupted local Make 4.4 build; CI does not need this local option.
+
+| Check | Actual result | Evidence |
+| --- | --- | --- |
+| Linux Debug compile/link | Pass (0), final PCH rebuild across the recorded attempts | stage2-debug-pass.log and preceding failure logs |
+| Linux Release compile/link | Pass (0), final rebuilt engine and all three clients | stage2-release-final.log |
+| Core Debug/Release runtime | Pass (0), real HD 4000 context; layer ownership/partitions, Unicode events, owning buffers, filesystem, UUID, timer, math/camera, arguments, native input, reentrant queue, repeated application creation, live ImGui/renderer/context during user detach and queued capture destruction | stage2-core-debug.log, stage2-core-release.log |
+| Renderer Debug/Release regression | Pass (0), stage 1 UBO and integer/matrix vertex attributes and actual color/entity readback | stage2-renderer-debug.log, stage2-renderer-release.log |
+| Sandbox normal close Debug/Release | Pass (0), WM_DELETE_WINDOW; detach user layers then ImGui, shut down renderer, destroy window | stage2-graceful-after-debug.log, stage2-graceful-after-release.log |
+| Windows VS2022 generation and inspection | Pass; seven native projects keep /MDd Debug and /MD Release/Dist, UTF-8 consumers, Windows-only OS sources, and stb_image without forced PCH | stage2-windows-generation.log, stage2-windows-settings.txt |
+| Vendor preservation | Four original submodules clean at unchanged pins; stb_image unchanged | git submodule status / foreach status inspected before checkpoint |
+
+Native file dialog code compiled on Linux, but interactive open/save selection,
+cancellation and Unicode path behavior have not been exercised. Windows runtime
+is untested. Windows compilation for this stage is pending the authorized branch
+push and Actions result; VS generation is not a substitute.
+
+Checkpoint subject: `Import upstream core and platform architecture with safe shutdown`.
+Source provenance: evidence/stage2-imports.json. Continue with stage 3 after the
+Windows compilation result; preserve all earlier ownership and platform decisions.

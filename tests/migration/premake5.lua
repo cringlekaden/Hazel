@@ -1,7 +1,8 @@
 local repoRoot = _MAIN_SCRIPT_DIR
 
-project "MigrationRendererSmoke"
-    location (repoRoot .. "/build/MigrationRendererSmoke")
+for _, test in ipairs { "RendererSmoke", "CoreSmoke" } do
+project ("Migration" .. test)
+    location (repoRoot .. "/build/Migration" .. test)
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++17"
@@ -9,11 +10,12 @@ project "MigrationRendererSmoke"
     staticruntime "Off"
     targetdir (repoRoot .. "/bin/" .. outputdir .. "/%{prj.name}")
     objdir (repoRoot .. "/bin-int/" .. outputdir .. "/%{prj.name}")
-    files { repoRoot .. "/tests/migration/RendererSmoke.cpp" }
+    files { repoRoot .. "/tests/migration/" .. test .. ".cpp" }
     includedirs { repoRoot .. "/Hazel/src" }
     externalincludedirs
     {
         repoRoot .. "/Hazel/vendor/spdlog/include",
+        repoRoot .. "/Hazel/vendor/imgui",
         repoRoot .. "/Hazel/vendor/glm",
         repoRoot .. "/Hazel/vendor/Glad/include",
         repoRoot .. "/Hazel/vendor/GLFW/include"
@@ -24,11 +26,12 @@ project "MigrationRendererSmoke"
     filter "system:linux"
         defines { "HZ_PLATFORM_LINUX" }
         toolset "gcc"
+        links (MigrationLinuxLinks)
         links { "GL", "X11", "Xrandr", "Xi", "Xcursor", "Xinerama", "pthread", "dl", "m" }
     filter "system:windows"
         defines { "HZ_PLATFORM_WINDOWS" }
         systemversion "latest"
-        links { "opengl32" }
+        links { "opengl32", "Comdlg32" }
     filter { "system:windows", "action:vs*" }
         buildoptions { "/utf-8" }
     filter "configurations:Debug"
@@ -44,3 +47,5 @@ project "MigrationRendererSmoke"
         runtime "Release"
         optimize "On"
     filter {}
+
+end

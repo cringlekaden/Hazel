@@ -1,106 +1,169 @@
+// Adapted upstream Application: Scope lifetime and reentrant main-thread queue.
 #include "hzpch.h"
-
 #include "Hazel/Core/Application.h"
-#include "Hazel/Events/ApplicationEvent.h"
-#include "Hazel/Core/Window.h"
-#include "Hazel/Core/Log.h"
-#include "Hazel/Renderer/Renderer.h"
 
-#include <GLFW/glfw3.h>
+#include "Hazel/Core/Log.h"
+
+#include "Hazel/Renderer/Renderer.h"
+// Script lifecycle is integrated in stage 7.
+
+#include "Hazel/Core/Input.h"
+#include "Hazel/Utils/PlatformUtils.h"
 
 namespace Hazel {
-    
-    Application* Application::s_Instance = nullptr;
 
-    Application::Application()
-    {
-        HZ_PROFILE_FUNCTION();
-        HZ_CORE_ASSERT(!s_Instance, "Application already exists...");
-        s_Instance = this;
-        m_Window = Window::Create();
-        m_Window->SetEventCallback(HZ_BIND_EVENT_FN(Application::OnEvent));
-        Renderer::Init();
-        Scope<ImGuiLayer> overlay = CreateScope<ImGuiLayer>();
+	Application* Application::s_Instance = nullptr;
+
+	Application::Application(const ApplicationSpecification& specification)
+		: m_Specification(specification)
+	{
+		HZ_PROFILE_FUNCTION();
+
+		HZ_CORE_ASSERT(!s_Instance, "Application already exists!");
+		s_Instance = this;
+
+		// Set working directory here
+		if (!m_Specification.WorkingDirectory.empty())
+			std::filesystem::current_path(std::filesystem::u8path(m_Specification.WorkingDirectory));
+
+		m_Window = Window::Create(WindowProps(m_Specification.Name));
+		m_Window->SetEventCallback(HZ_BIND_EVENT_FN(Application::OnEvent));
+
+		Renderer::Init();
+
+		auto overlay = CreateScope<ImGuiLayer>();
         m_ImGuiLayer = overlay.get();
         PushOverlay(std::move(overlay));
-    }
+	}
 
-    Application::~Application()
-    {
-        HZ_PROFILE_FUNCTION();
-        Renderer::Shutdown();
-    }
+	Application::~Application()
+	{
+		HZ_PROFILE_FUNCTION();
 
-    void Application::PushLayer(Scope<Layer> layer)
-    {
-        HZ_PROFILE_FUNCTION();
-        m_LayerStack.PushLayer(std::move(layer));
-    }
-
-    void Application::PushOverlay(Scope<Layer> overlay)
-    {
-        HZ_PROFILE_FUNCTION();
-        m_LayerStack.PushOverlay(std::move(overlay));
-    }
-
-    void Application::Run()
-    {
-        HZ_PROFILE_FUNCTION();
-        while (m_Running)
+        // Cancel pending captures while their renderer/context resources remain valid.
+        std::vector<std::function<void()>> cancelled;
         {
-            HZ_PROFILE_SCOPE("RunLoop");
-            const float time = static_cast<float>(glfwGetTime());
-            Timestep timestep = time - m_LastFrameTime;
-            m_LastFrameTime = time;
-            if (!m_Minimized)
-            {
-                {
-                    HZ_PROFILE_SCOPE("LayerStack OnUpdate");
-                    for (auto& layer : m_LayerStack)
-                        layer->OnUpdate(timestep);
-                }
-                m_ImGuiLayer->Begin();
-                {
-                    HZ_PROFILE_SCOPE("LayerStack OnImGuiRender");
-                    for (auto& layer : m_LayerStack)
-                        layer->OnImGuiRender();
-                }
-                m_ImGuiLayer->End();
-            }
-            m_Window->OnUpdate();
+            std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
+            cancelled.swap(m_MainThreadQueue);
         }
-    }
+        cancelled.clear();
+		m_LayerStack.Clear();
+        m_ImGuiLayer = nullptr;
+		Renderer::Shutdown();
+        m_Window.reset();
+        s_Instance = nullptr;
+	}
 
-    void Application::OnEvent(Event& e)
+	void Application::PushLayer(Scope<Layer> layer)
+	{
+		HZ_PROFILE_FUNCTION();
+
+		m_LayerStack.PushLayer(std::move(layer));
+	}
+
+	void Application::PushOverlay(Scope<Layer> layer)
+	{
+		HZ_PROFILE_FUNCTION();
+
+		m_LayerStack.PushOverlay(std::move(layer));
+	}
+
+	void Application::Close()
+	{
+		m_Running = false;
+	}
+
+	void Application::SubmitToMainThread(const std::function<void()>& function)
+	{
+		std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
+
+		m_MainThreadQueue.emplace_back(function);
+	}
+
+	void Application::OnEvent(Event& e)
+	{
+		HZ_PROFILE_FUNCTION();
+
+		EventDispatcher dispatcher(e);
+		dispatcher.Dispatch<WindowCloseEvent>(HZ_BIND_EVENT_FN(Application::OnWindowClose));
+		dispatcher.Dispatch<WindowResizeEvent>(HZ_BIND_EVENT_FN(Application::OnWindowResize));
+
+		for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
+		{
+			if (e.Handled)
+				break;
+			(*it)->OnEvent(e);
+		}
+	}
+
+	void Application::Run()
+	{
+		HZ_PROFILE_FUNCTION();
+
+		while (m_Running)
+		{
+			HZ_PROFILE_SCOPE("RunLoop");
+
+			float time = Time::GetTime();
+			Timestep timestep = time - m_LastFrameTime;
+			m_LastFrameTime = time;
+
+			ExecuteMainThreadQueue();
+
+			if (!m_Minimized)
+			{
+				{
+					HZ_PROFILE_SCOPE("LayerStack OnUpdate");
+
+					for (auto& layer : m_LayerStack)
+						layer->OnUpdate(timestep);
+				}
+
+				m_ImGuiLayer->Begin();
+				{
+					HZ_PROFILE_SCOPE("LayerStack OnImGuiRender");
+
+					for (auto& layer : m_LayerStack)
+						layer->OnImGuiRender();
+				}
+				m_ImGuiLayer->End();
+			}
+
+			m_Window->OnUpdate();
+		}
+	}
+
+	bool Application::OnWindowClose(WindowCloseEvent&)
+	{
+		m_Running = false;
+		return true;
+	}
+
+	bool Application::OnWindowResize(WindowResizeEvent& e)
+	{
+		HZ_PROFILE_FUNCTION();
+
+		if (e.GetWidth() == 0 || e.GetHeight() == 0)
+		{
+			m_Minimized = true;
+			return false;
+		}
+
+		m_Minimized = false;
+		Renderer::OnWindowResize(e.GetWidth(), e.GetHeight());
+
+		return false;
+	}
+
+    void Application::ExecuteMainThreadQueue()
     {
-        HZ_PROFILE_FUNCTION();
-        EventDispatcher dispatcher(e);
-        dispatcher.Dispatch<WindowCloseEvent>(HZ_BIND_EVENT_FN(Application::OnWindowClose));
-        dispatcher.Dispatch<WindowResizeEvent>(HZ_BIND_EVENT_FN(Application::OnWindowResize));
-        for (auto it = m_LayerStack.end(); it != m_LayerStack.begin(); )
+        std::vector<std::function<void()>> queue;
         {
-            (*--it)->OnEvent(e);
-            if (e.Handled)
-                break;
+            std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
+            queue.swap(m_MainThreadQueue);
         }
+        // Execute outside the mutex: callbacks may enqueue work for the next frame.
+        for (auto& function : queue) function();
     }
 
-    bool Application::OnWindowClose(WindowCloseEvent&)
-    {
-        m_Running = false;
-        return true;
-    }
-
-    bool Application::OnWindowResize(WindowResizeEvent& e)
-    {
-        HZ_PROFILE_FUNCTION();
-        if (e.GetWidth() == 0 || e.GetHeight() == 0)
-        {
-            m_Minimized = true;
-            return false;
-        }
-        m_Minimized = false;
-        Renderer::OnWindowResize(e.GetWidth(), e.GetHeight());
-        return false;
-    }
 }
