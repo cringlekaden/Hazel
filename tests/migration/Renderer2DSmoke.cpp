@@ -68,6 +68,19 @@ static void Textures() {
     sprite.Texture.reset(); sprite.Color={0,1,0,1};
     Begin(); Renderer2D::DrawSprite(Transform(),sprite,44); End();
     Check(ID()==44 && Color()[1]>250,"Untextured sprite mismatch");
+    TextureSpecification single; single.GenerateMips=false; auto white=Texture2D::Create(single);
+    const unsigned whitePixel=0xffffffff; white->SetData(&whitePixel,sizeof(whitePixel));
+    for(int variant=0;variant<4;++variant) {
+        Begin();
+        if(variant==0) Renderer2D::DrawQuad(glm::vec2(0),{1,1},white,2,{0,1,0,1});
+        if(variant==1) Renderer2D::DrawQuad(glm::vec3(0),{1,1},white,2,{0,1,0,1});
+        if(variant==2) Renderer2D::DrawRotatedQuad(glm::vec2(0),{1,1},45,white,2,{0,1,0,1});
+        if(variant==3) Renderer2D::DrawRotatedQuad(glm::vec3(0),{1,1},45,white,2,{0,1,0,1});
+        End(); Check(Color()[1]>250 && Color()[0]<5 && ID()==-1,"Position/rotated textured quad overload failed tint or default entity ID");
+        if(variant>=2) Check(Color(96,64)[1]>250 && Color(96,96)[1]<5,"Rotated textured quad lost rotation");
+        const auto stats=Renderer2D::GetStats();
+        Check(stats.DrawCalls==1 && stats.QuadCount==1 && stats.GetTotalVertexCount()==4 && stats.GetTotalIndexCount()==6,"Published renderer statistics helpers changed");
+    }
     const unsigned limit=std::min(32u,RenderCommand::GetMaxTextureSlots());
     std::vector<Ref<Texture2D>> textures;
     Begin();
@@ -92,6 +105,10 @@ static void Text() {
     Check(Renderer2D::GetStats().DrawCalls==2 && Pixels(92)>50 && Pixels(93)>50,"Font atlas switch lost pending text");
     Begin(); Renderer2D::DrawString("",font,glm::mat4(1),parameters); End();
     Check(Renderer2D::GetStats().DrawCalls==0,"Empty text produced draw");
+    Begin(); Renderer2D::DrawString("?",font,Transform(-.3f,-.3f,1),parameters,94); End();
+    const auto fallbackPixels=Pixels(94);
+    Begin(); Renderer2D::DrawString(u8"🙂",font,Transform(-.3f,-.3f,1),parameters,94); End();
+    Check(Renderer2D::GetStats().QuadCount==1 && Pixels(94)==fallbackPixels,"Non-Latin1 UTF-8 fallback changed target atlas behavior");
     bool rejected=false;
     try { Renderer2D::DrawString("A",{},glm::mat4(1),parameters); } catch(const std::invalid_argument&) { rejected=true; }
     Check(rejected,"Invalid text font accepted");

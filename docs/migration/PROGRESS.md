@@ -5,15 +5,24 @@ Baseline: `b030be7`. Fixed target: `1feb70572fa87fa1c4ba784a2cfeada5b4a500db`.
 
 ## Resume here
 
+Stage5's dedicated renderer/text gate passed Linux Debug/Release builds and all
+13 checks per configuration. Checkpoint subject: `Verify complete 2D renderer and
+text parity`; local commit/push and its CI are next. Continue stage6 scene physics,
+then stage7 dedicated scripting/project gates, editor and final hardening. Stage4f
+CI passed both OS/config builds and CPU scene/engine/watcher runtime. Final
+Premake-only dependency and cleanup/capability/cache acceptance gates remain unmet.
+
 Stage 4f (complete Scene/Entity/Serializer/ScriptEngine/Glue) has passed final
 Linux Debug/Release builds and 16 sequential desktop checks per configuration.
 VS2022 generation/source/CRT/UTF-8/link/managed build-dependency inspection passed;
 this is not an MSVC build. Checkpoint subject: `Integrate and verify upstream
-scenes and script lifetimes`; local commit and migration-branch CI are next.
+scenes and script lifetimes`; checkpoint
+`04b562278589e951008ee751168c09d8b51d21c2` is committed and pushed.
 CPU tests include initialization failure recovery and standalone native scenes.
 Previous checkpoint `f9f55c6` (stage4e), Actions36905876374 passed both OS/config
-builds and Mono runtime. Stage4f Windows compilation/full engine/watcher runtime
-await CI; Windows GUI/editor/GPU runtime remains untested. Continue stages5–9
+builds and Mono runtime. Stage4f Actions36921981641 passed both OS/config builds
+and full CPU scene/engine/watcher runtime. Windows GUI/editor/GPU/input and queued
+automatic Application reload remain untested. Continue stages5–9
 without an optional continuation question; investigate any CI failure first.
 
 Local dependency prefix: `--mono-root=build/dependencies/mono/linux/usr`.
@@ -1042,3 +1051,40 @@ places dependson edges in solution ProjectDependencies, as verified. No MSVC or
 Windows runtime result is inferred from generation. No routine raw logs are
 newly tracked. Stage4's scene/serialization/render/lifetime Linux gate is met;
 the dedicated stages5–7 and Windows CI gates remain ahead.
+
+Stage4f checkpoint `04b562278589e951008ee751168c09d8b51d21c2` is pushed;
+[Actions run 36921981641](https://github.com/cringlekaden/Hazel/actions/runs/36921981641)
+passed both Linux and Windows Debug/Release compilation and all CPU runtime steps,
+including actual full ScriptEngine/Glue/scene/YAML/physics/manual reload, invalid
+initial/reload recovery, native script ownership and UTF-8/atomic watcher events
+with stable resource counts. Windows automatic Application queue reload and GPU/
+input/editor runtime are not inferred. No master merge.
+
+## Stage 5 in progress: renderer/text consumer and API parity
+
+All target rendering/font implementations and shaders entered as the documented
+stage4 prerequisites. A fresh comparison with pinned Renderer2D.h confirms its
+complete public API; the sole functional signature adaptation is DrawLine's const
+second endpoint. Reuse actual TextParams/Statistics/Font APIs and initialization
+instead of introducing settings types. The dedicated gate now adds pixel tests
+for all four 2D/3D position and rotated textured quad overloads, tint/default
+picking ID, Statistics vertex/index helpers and multi-byte non-Latin1 glyph fallback
+to the actual target '?' atlas glyph. Existing font loading/failure, primitives,
+spacing, atlas switch, texture-slot limits and all capacity overflows remain.
+No larger Unicode atlas or macOS/backend implementation is implied. Stage5 builds
+and 13-check desktop suites per configuration are pending; raw evidence ignored.
+
+Stage5 Debug renderer test build passed (0), followed by all 13 sequential desktop
+checks (0) on native Intel 4.2, forced Mesa 4.1 and separate software 4.6 profiles.
+The new overload/statistics/fallback cases pass alongside existing renderer/font/
+framebuffer/core/Sandbox and CPU shader-tool regressions. Release test build is
+running; that configuration's desktop suite remains pending. Evidence:
+ignored build/migration/evidence/stage5-*.log.
+
+Stage5 Release build passed (0), followed by all 13 desktop checks (0), after
+Debug's equivalent pass. Native 4.2 functionality is retained; overrides/software
+are separate test profiles, not macOS/hardware validation. The dedicated stage5
+gate is complete locally. Windows compile of the expanded GPU test will be checked
+by the branch CI; Windows GPU execution remains untested. Checkpoint subject:
+`Verify complete 2D renderer and text parity`. Proceed to actual scene physics
+integration tests, preserving pinned Box2D and its target material/body APIs.

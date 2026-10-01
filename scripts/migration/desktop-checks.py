@@ -12,7 +12,7 @@ import tempfile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', choices=('Debug', 'Release'), required=True)
-    parser.add_argument('--stage', choices=('stage3', 'stage4a', 'stage4b', 'stage4c', 'stage4d', 'stage4e', 'stage4f'), default='stage3')
+    parser.add_argument('--stage', choices=('stage3', 'stage4a', 'stage4b', 'stage4c', 'stage4d', 'stage4e', 'stage4f', 'stage5'), default='stage3')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     binaries = root / 'bin' / f'{args.config}-linux-x86_64'
@@ -50,7 +50,7 @@ def main():
                 checks = ['FontSmoke']
                 if profile == 'native':
                     checks += ['SceneFoundationSmoke', 'CoreSmoke', 'Sandbox']
-            elif args.stage == 'stage4c':
+            elif args.stage in ('stage4c', 'stage5'):
                 checks = ['Renderer2DSmoke', 'RendererFeaturesSmoke']
                 if profile == 'native':
                     checks += ['FontSmoke', 'SceneFoundationSmoke', 'CoreSmoke', 'Sandbox', 'RendererSmoke', 'ShaderToolsSmoke']
