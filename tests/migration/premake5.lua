@@ -1,6 +1,6 @@
 local repoRoot = _MAIN_SCRIPT_DIR
 
-for _, test in ipairs { "RendererSmoke", "CoreSmoke" } do
+for _, test in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke" } do
 project ("Migration" .. test)
     location (repoRoot .. "/build/Migration" .. test)
     kind "ConsoleApp"

@@ -1,0 +1,35 @@
+Context: 4.2 (Core Profile) Mesa 26.2.3-arch3.1; GLSL 4.20
+Sample limits: renderbuffer=8, integer texture=0, color texture=8, depth texture=8
+[10:07:32] HAZEL: OpenGLShader::Reflect - fragment pipeline-é.glsl: 0 uniform buffers, 1 sampled images
+[10:07:32] HAZEL: OpenGLShader::Reflect - vertex pipeline-é.glsl: 1 uniform buffers, 0 sampled images
+[10:07:32] HAZEL:   Camera: size 64, binding 3, members 1
+[10:07:33] HAZEL: Shader pipeline-é loaded through GLSL 410 fallback
+[10:07:33] HAZEL: Shader creation took 2437.269 ms
+[10:07:33] HAZEL: Shader cache hit: assets/cache/shader/opengl/c139327666560714.cached_vulkan.fragment
+[10:07:33] HAZEL: OpenGLShader::Reflect - fragment pipeline-é.glsl: 0 uniform buffers, 1 sampled images
+[10:07:33] HAZEL: Shader cache hit: assets/cache/shader/opengl/f14fdad96c68fcd7.cached_vulkan.vertex
+[10:07:33] HAZEL: OpenGLShader::Reflect - vertex pipeline-é.glsl: 1 uniform buffers, 0 sampled images
+[10:07:33] HAZEL:   Camera: size 64, binding 3, members 1
+[10:07:33] HAZEL: Shader cache hit: assets/cache/shader/opengl/f14fdad96c68fcd7.cached_opengl.vertex
+[10:07:33] HAZEL: Shader cache hit: assets/cache/shader/opengl/c139327666560714.cached_opengl.fragment
+[10:07:33] HAZEL: Shader pipeline-é loaded through GLSL 410 fallback
+[10:07:33] HAZEL: Shader creation took 4.2529616 ms
+Hardware integer MSAA unavailable; verified explicit rejection and retained single-sample picking
+Readback samples=1: 128,64,192,255; entity=73
+[10:07:33] HAZEL: Attempted to resize framebuffer to 0, 0
+PASS: four-sample color/depth framebuffer and resolved color readback
+[10:07:35] HAZEL: OpenGLShader::Reflect - fragment pipeline-é.glsl: 0 uniform buffers, 1 sampled images
+[10:07:35] HAZEL: Shader cache hit: assets/cache/shader/opengl/f14fdad96c68fcd7.cached_vulkan.vertex
+[10:07:35] HAZEL: OpenGLShader::Reflect - vertex pipeline-é.glsl: 1 uniform buffers, 0 sampled images
+[10:07:35] HAZEL:   Camera: size 64, binding 3, members 1
+[10:07:35] HAZEL: Shader cache hit: assets/cache/shader/opengl/f14fdad96c68fcd7.cached_opengl.vertex
+[10:07:36] HAZEL: Shader pipeline-é loaded through GLSL 410 fallback
+[10:07:36] HAZEL: Shader creation took 2399.0674 ms
+[10:07:37] HAZEL: OpenGLShader::Reflect - fragment pipeline-é.glsl: 0 uniform buffers, 1 sampled images
+[10:07:37] HAZEL: OpenGLShader::Reflect - vertex pipeline-é.glsl: 1 uniform buffers, 0 sampled images
+[10:07:37] HAZEL:   Camera: size 64, binding 3, members 1
+[10:07:38] HAZEL: Shader pipeline-é loaded through GLSL 410 fallback
+[10:07:38] HAZEL: Shader creation took 2363.138 ms
+[10:07:39] HAZEL: Shader compilation failed (bad): bad:2: error: '' :  syntax error, unexpected IDENTIFIER
+
+PASS: real-context texture formats/mips/UTF-8/alignment/state, reflected shader bindings, cold/warm/changed/corrupt caches, framebuffer color/entity readback, full clear, resize, depth-only and MSAA resolve

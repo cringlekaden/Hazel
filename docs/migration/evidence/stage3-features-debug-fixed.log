@@ -1,0 +1,16 @@
+Context: 4.2 (Core Profile) Mesa 26.2.3-arch3.1; GLSL 4.20
+[09:23:30] HAZEL: OpenGLShader::Reflect - fragment pipeline-é.glsl: 0 uniform buffers, 1 sampled images
+[09:23:30] HAZEL: OpenGLShader::Reflect - vertex pipeline-é.glsl: 1 uniform buffers, 0 sampled images
+[09:23:30] HAZEL:   _27_29: size 64, binding 3, members 1
+[09:23:32] HAZEL: Shader pipeline-é loaded through GLSL 410 fallback
+[09:23:32] HAZEL: Shader creation took 2620.8225 ms
+[09:23:32] HAZEL: Shader cache hit: assets/cache/shader/opengl/2eba10021cbb9eed.cached_vulkan.fragment
+[09:23:32] HAZEL: OpenGLShader::Reflect - fragment pipeline-é.glsl: 0 uniform buffers, 1 sampled images
+[09:23:32] HAZEL: Shader cache hit: assets/cache/shader/opengl/58bb480075a47d20.cached_vulkan.vertex
+[09:23:32] HAZEL: OpenGLShader::Reflect - vertex pipeline-é.glsl: 1 uniform buffers, 0 sampled images
+[09:23:32] HAZEL:   _27_29: size 64, binding 3, members 1
+[09:23:32] HAZEL: Shader cache hit: assets/cache/shader/opengl/58bb480075a47d20.cached_opengl.vertex
+[09:23:32] HAZEL: Shader cache hit: assets/cache/shader/opengl/2eba10021cbb9eed.cached_opengl.fragment
+[09:23:32] HAZEL: Shader pipeline-é loaded through GLSL 410 fallback
+[09:23:32] HAZEL: Shader creation took 5.1673965 ms
+FAIL: Color readback or reflected sampler binding failed

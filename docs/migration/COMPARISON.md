@@ -74,9 +74,18 @@ OpenGL 4.2 / GLSL 4.20. Target source requests/asserts 4.5 and uses features abo
 | glCreateTextures/glTexture*/glBindTextureUnit | glGenTextures + bind-based storage/upload/parameters and active unit; retain formats, alignment and slot behavior |
 | glCreateFramebuffers and glClearTexImage | Bind-based framebuffer setup; clear integer color attachments via glClearBufferiv on the correct FBO/draw-buffer index; preserve readback, MSAA and resize |
 | glDebugMessageCallback/control | Check extension and loaded function availability; supply compatible diagnostics rather than requiring unsupported core debug output |
-| glShaderBinary/glSpecializeShader (SPIR-V) | Retain shaderc/Cross pipeline and reflection/cache; generate GLSL 4.20 and compile/link on 4.2. Capability-gate SPIR-V loading where actually supported; cache hits must still provide GLSL for fallback |
-| Renderer2D GLSL 450 | Audit interfaces, explicit locations, UBO and sampler bindings, integer entity outputs and text math; use 420-compatible stage interfaces, then compile/link on the driver |
+| glShaderBinary/glSpecializeShader (SPIR-V) | Retain shaderc/Cross pipeline and reflection/cache; generate GLSL 410 without 420pack and apply reflected UBO/sampler bindings manually. Capability-gate native specialization on core 4.6/loaded functions; cache hits still provide fallback GLSL |
+| Renderer2D GLSL 450 | Audit interfaces, explicit locations, UBO and sampler bindings, integer entity outputs and text math; retain actual target source and compile through the tested 410 fallback, then prove color/entity readback on the driver |
 | 32 texture slots | Query fragment and combined limits. If required, select a supported batch capacity and flush at that boundary; retain textured batching rather than removing texture features |
 
 Stage gates require actual compile/link and framebuffer readback where applicable.
 Hardware/runtime evidence must stay distinct from generation-only Windows checks.
+
+Stage 3 now implements the texture/shader/framebuffer adaptations. Exact imported
+target blobs are in evidence/stage3-imports.json; failure investigations and
+native 4.2, forced 4.1 and software 4.6 results are in PROGRESS.md. Target-style
+shaders retain optimization and original resource names. Integer multisample
+textures are unsupported on HD 4000 (reported limit 0), so unsupported combined
+requests fail explicitly; color/depth MSAA and single-sample picking are tested
+there, and combined integer MSAA is tested on software 4.6. No macOS support is
+implemented or claimed. Scene/complete Renderer2D dependencies remain next stages.

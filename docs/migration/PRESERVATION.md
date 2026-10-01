@@ -36,3 +36,16 @@ Stage 1 leaves the core/ownership, OS, ImGui, dependency and build-setting
 invariants above unchanged except for opt-in verification tooling/CI branch
 coverage. The resumed user instruction authorizes migration-branch pushes for CI; merging
 into master remains prohibited.
+
+Stage 2 resolved both recorded lifecycle defects: Windows initializes GLFW once;
+application shutdown releases queued captures and owned layers/ImGui before
+renderer/window teardown, resetting the singleton and insertion boundary for
+repeated applications. Debug/Release Linux lifecycle and graceful-close evidence
+is recorded in PROGRESS.md; Windows compilation passed, engine runtime is untested.
+
+Stage 3 retains the texture's deliberate nearest magnification filter, validates
+full uploads in both configurations and extends state restoration to unpack
+row/skip/PBO state. Target reflection/cache/SPIR-V paths remain available alongside
+the tested GLSL 410 fallback. Backend capability checks keep supported 4.2 features
+and reject unsupported MSAA formats explicitly. A process-local Mesa 4.1 test is
+evidence for this backend path, not a macOS platform/runtime claim.

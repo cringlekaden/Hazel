@@ -4,6 +4,7 @@ ShaderToolsRoot = repoRoot .. "/build/dependencies/install/" .. outputdir
 ShaderToolsIncludes = ShaderToolsRoot .. "/include"
 ShaderToolsLinks = { "shaderc_combined", "spirv-cross-glsl", "spirv-cross-core" }
 
+if _OPTIONS["shader-tools"] then
 project "MigrationShaderToolsSmoke"
     location (repoRoot .. "/build/MigrationShaderToolsSmoke")
     kind "ConsoleApp"
@@ -37,3 +38,28 @@ project "MigrationShaderToolsSmoke"
         externalincludedirs { repoRoot .. "/build/dependencies/install/Release-%{cfg.system}-%{cfg.architecture}/include" }
         libdirs { repoRoot .. "/build/dependencies/install/Release-%{cfg.system}-%{cfg.architecture}/lib" }
     filter {}
+
+end
+
+-- The engine needs the public headers; final native applications resolve its
+-- static shader-library references using matching configuration/CRT libraries.
+project "Hazel"
+    externalincludedirs { ShaderToolsIncludes }
+    filter "configurations:Dist"
+        externalincludedirs { repoRoot .. "/build/dependencies/install/Release-%{cfg.system}-%{cfg.architecture}/include" }
+    filter {}
+
+local consumers = { "Sandbox" }
+if _OPTIONS["migration-tests"] then
+    table.insert(consumers, "MigrationRendererSmoke")
+    table.insert(consumers, "MigrationCoreSmoke")
+    table.insert(consumers, "MigrationRendererFeaturesSmoke")
+end
+for _, consumer in ipairs(consumers) do
+    project (consumer)
+        libdirs { ShaderToolsRoot .. "/lib" }
+        links (ShaderToolsLinks)
+        filter "configurations:Dist"
+            libdirs { repoRoot .. "/build/dependencies/install/Release-%{cfg.system}-%{cfg.architecture}/lib" }
+        filter {}
+end

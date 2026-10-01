@@ -48,9 +48,10 @@ inventory and plan, committed before any engine implementation changes.
 Stage 1 checkpoint `81b3861` and stage 2 checkpoint `92eb60a` have passed
 Linux and Windows Debug/Release compilation in Actions. Stage 2 also passed
 local Debug/Release core, renderer and graceful Sandbox shutdown runtime checks
-on Intel HD 4000/OpenGL 4.2. Windows engine runtime is untested. Stage 3 is in
-progress (dependency toolchain and pending backend integration); stages 4–9
-remain pending. The sections below retain initial-session evidence, followed by
+on Intel HD 4000/OpenGL 4.2. Windows engine runtime is untested. Stage 3 backend integration is locally
+verified in Debug/Release on native 4.2, forced 4.1 and software 4.6; integrated
+Windows compilation CI is pending the checkpoint push. Stage 4 prerequisites
+are inventoried; stages 4–9 remain incomplete. The sections below retain initial-session evidence, followed by
 resumed-session results that supersede the initial unrun CI status.
 
 ## Stage 1 source provenance
@@ -358,3 +359,124 @@ Replaced the fixture with actual target-style vertex attributes and engine VAO/
 vertex buffers. Legacy GLSL 330/420 direct compilation retains gl_VertexID support.
 Failure evidence: stage3-features-debug.log. Added depth-occlusion readback coverage
 for both single-sample and multisample attachments before the next run.
+
+
+The next GPU run rendered the entity ID correctly but failed color readback.
+Investigation of the pinned shaderc compiler.cc showed that its performance
+optimization profile inserts StripDebugInfo unless GenerateDebugInfo is enabled;
+this removed original sampled-image names used by manual GLSL binding. Enable
+GenerateDebugInfo while retaining performance optimization, and include that
+policy in the cache contract (v2). Extend the CPU tool test to cover optimized
+resource-name preservation as well. Failure evidence: stage3-features-debug-fixed.log.
+The framebuffer/shader stage remains unverified until rerun; no assertion/version
+change was used to bypass the failed test.
+
+
+Stage 3 GPU investigation now verifies the optimized names fix: correct color
+128,64,192,255 and entity ID 73, followed by passing single-sample depth/clear/
+resize checks. Four-sample combined integer picking hit a real hardware limit:
+GL_MAX_SAMPLES/color/depth texture samples=8, GL_MAX_INTEGER_SAMPLES=0. A diagnostic
+GL_R32I four-sample renderbuffer also failed with GL_INVALID_OPERATION (1282),
+so switching storage kinds cannot fix it. Evidence: stage3-features-debug-names.log,
+stage3-msaa-probe-build.log, stage3-msaa-probe.log.
+
+Retain integer MSAA allocation/resolve on capable GPUs, explicitly reject unsupported
+requests with the reported limit, and test color/depth MSAA plus single-sample
+integer picking on HD 4000. Do not silently downgrade sample counts or remove
+MSAA/picking. Run the combined path on a software GL context as additional evidence.
+The target editor uses single-sample framebuffer attachments; if future Linux/
+Windows editor MSAA is enabled on this device, a separate picking draw pass is the
+likely adaptation. This is a hardware obstacle, unrelated to speculative macOS code.
+
+Stage 3a fix checkpoint: `ba10ef8`, pushed only to migration branch.
+[Actions run 36867983531](https://github.com/cringlekaden/Hazel/actions/runs/36867983531)
+passed both OS Debug/Release library and engine compilation and executed the CPU
+shader-tool test successfully on both OSes. Raw step evidence is in
+stage3-tools-fixed-actions.json. This verifies **Windows shader-tool CPU runtime**;
+Windows engine/window/input/dialog/GPU runtime remains untested. The later optimized
+name test and pending backend integration are not part of that CI checkpoint.
+
+
+Corrected Debug GPU feature checks passed (0) on accelerated HD 4000 native 4.2
+and a process-local Mesa 4.1/GLSL 410 override: stage3-features-debug-capabilities.log
+and stage3-features-debug-gl41.log. Both prove texture formats/mips/UTF-8/uploads,
+manual bindings, cache paths, color/integer/depth readback, clears/resize and
+color/depth MSAA. The override is a Mesa compatibility test, not a macOS run.
+
+A separate software context reported OpenGL 4.6 and integer sample limit 8, and
+passed both single-sample and four-sample color/entity/depth tests (0):
+stage3-features-debug-software.log. It exercised native SPIR-V specialization
+(the GLSL fallback branch did not execute), including warm and damaged caches.
+Added explicit backend-mode and renderer-name logging for final evidence.
+
+Only after these operation/shader/readback checks did OpenGLContext's hints and
+release/debug version guard change to minimum 4.1. Final Application/Sandbox tests
+under that minimum and both build configurations are next. No macOS port or runtime
+support is implemented or claimed. Grandpa's native 4.2 checks remain in the suite.
+
+
+### Stage 3 final local verification
+
+The new root-owned `scripts/migration/desktop-checks.py --config Debug` runs a
+fixed test matrix sequentially and records each subprocess exit. All nine checks
+passed (0): native 4.2 features/core/graceful Sandbox/foundation/CPU tools; forced
+4.1 features/core/graceful Sandbox; software 4.6 features. Logs use
+`stage3-debug-{native,gl41,software}-*.log`. Explicit renderer/mode logging proves
+Intel hardware for native/4.1, llvmpipe for 4.6, GLSL 410 fallback for older contexts,
+and native OpenGL SPIR-V specialization for 4.6. The preserved foundation test
+still compiles/renders GLSL 420 and checks integer/matrix attributes on native 4.2.
+Core repeats application create/destroy; Sandbox returns 0 after WM_DELETE_WINDOW
+with layer -> ImGui -> renderer -> window teardown. Its X11 window lookup now
+requires the spawned PID as well as title, preserving unrelated desktop windows.
+
+Debug final build passed (stage3-debug-final.log). Release full integration build
+also passed (0), followed by all nine Release runtime checks (0):
+`stage3-release.log` and `stage3-release-{native,gl41,software}-*.log`. Command:
+`make --jobserver-style=pipe config=release -j2`, then
+`python3 scripts/migration/desktop-checks.py --config Release`. The pipe jobserver avoids GNU Make 4.4's
+stale FIFO from a previously interrupted build; vendor Makefiles are retained.
+
+VS2022 generation and XML inspection passed for all nine native projects: /MDd
+Debug, /MD Release/Dist, applicable UTF-8 options, Windows sources included/Linux
+translation units excluded, OpenGL kept separate, and matching configuration
+shader libraries linked by final applications. Evidence: stage3-vs2022.log and
+stage3-vs2022-inspection.txt. This is project inspection, not an MSVC build or
+Windows engine runtime. New branch CI will compile the integrated backend and
+feature tests on both OSes and run the extended optimized-resource-name CPU test.
+
+`.gitattributes` disables whitespace warnings only for raw evidence logs so actual
+compiler/Actions output can be retained byte-for-byte; source/script/document
+whitespace checks remain active.
+
+### Stage 4 dependency inspection
+
+The actual target Scene.cpp directly calls Renderer2D's camera/sprite/circle/text
+APIs, Box2D and ScriptEngine. Components.h initializes TextComponent with the
+default Font; SceneSerializer.cpp requires Project asset roots and ScriptEngine
+field reflection/persistence. Those implementations were originally assigned to
+stages 5–7. A monolithic stage-4 import cannot link against the current engine.
+Do not replace these functions with stubs or remove component/serialized fields.
+
+Split stage 4 into buildable prerequisites: camera/ECS/YAML and filewatch source
+inventory first, then introduce the needed font/rendering, physics and managed
+script/project dependencies in explicitly recorded sub-checkpoints, followed by
+full Scene/entity/serialization integration and its round-trip/runtime gates.
+Stages 5–7 retain their dedicated completeness and behavior verification gates.
+The pinned target source and public component/asset formats remain the authority.
+This dependency ordering is an implementation subdivision permitted by PLAN.md;
+no stage is declared complete before its required features and checks pass.
+
+
+Stage 3 local exit gates passed: two sequential full engine builds, both nine-test
+runtime matrices, generated Windows project inspection and clean vendor/source
+pins. Expected rejection/invalid-shader diagnostics in passing test logs are
+intentional negative checks; every runtime subprocess returned 0. Release retains
+exceptions and validation when assertions are disabled. Shader-tools optimized
+name preservation is verified in both configs. MSAA integer limit is reported,
+not silently reduced; software 4.6 covers the retained combined path.
+
+Checkpoint subject: `Integrate upstream shader, texture and framebuffer features`.
+Push only this migration branch for integrated Windows compilation/CPU test CI.
+No Windows engine, GPU, dialog or macOS runtime has been executed or claimed.
+Continue directly with stage 4 prerequisites; record CI result before declaring
+cross-platform stage 3 compilation verified.

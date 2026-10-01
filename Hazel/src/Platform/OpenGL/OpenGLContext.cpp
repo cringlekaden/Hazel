@@ -15,10 +15,11 @@ namespace Hazel {
         HZ_CORE_ASSERT(windowHandle, "Failed to initialize OpenGLContext: Window handle is null...");
     }
 
+    // Minimum backend version, verified with GLSL 410 and bind-based operations.
     void OpenGLContext::ConfigureWindowHints()
     {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     }
 
@@ -40,11 +41,11 @@ namespace Hazel {
         GLint versionMinor = 0;
         glGetIntegerv(GL_MAJOR_VERSION, &versionMajor);
         glGetIntegerv(GL_MINOR_VERSION, &versionMinor);
-        const bool supportsOpenGL42 = versionMajor > 4 || (versionMajor == 4 && versionMinor >= 2);
-        HZ_CORE_ASSERT(supportsOpenGL42, "Hazel requires OpenGL 4.2 or newer...");
-        if (!supportsOpenGL42)
+        const bool supportsOpenGL41 = versionMajor > 4 || (versionMajor == 4 && versionMinor >= 1);
+        HZ_CORE_ASSERT(supportsOpenGL41, "Hazel requires OpenGL 4.1 or newer...");
+        if (!supportsOpenGL41)
         {
-            HZ_CORE_ERROR("Hazel requires OpenGL 4.2 or newer; this context reports {}.{}", versionMajor, versionMinor);
+            HZ_CORE_ERROR("Hazel requires OpenGL 4.1 or newer; this context reports {}.{}", versionMajor, versionMinor);
             std::abort();
         }
     }

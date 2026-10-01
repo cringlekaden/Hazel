@@ -11,8 +11,8 @@ The badges show the Linux and Windows **build jobs** on `master`. CI builds Debu
 
 | Platform | Tools |
 | --- | --- |
-| Linux x86_64 | GCC, GNU Make, Git, OpenGL and X11 development libraries |
-| Windows x64 | Visual Studio 2022 with **Desktop development with C++** and a Windows SDK, Git |
+| Linux x86_64 | GCC, GNU Make, CMake 3.19+, Python 3, Git, OpenGL, GTK3 and X11 development libraries |
+| Windows x64 | Visual Studio 2022 with **Desktop development with C++** and a Windows SDK, CMake 3.19+, Python 3, Git |
 
 The project uses a pinned Premake 5 development revision because its Premake scripts require features unavailable in the 5.0.0-beta8 release. The commands below build the same revision used by CI. If you already have a compatible `premake5`, you can use it instead.
 
@@ -32,14 +32,14 @@ For an existing clone without its submodules, run `git submodule update --init -
 Install the native development packages. On CachyOS or Arch Linux:
 
 ```sh
-sudo pacman -S --needed base-devel git util-linux-libs libx11 libxext libxrandr libxinerama libxcursor libxi libglvnd mesa gtk3 pkgconf
+sudo pacman -S --needed base-devel git cmake python util-linux-libs libx11 libxext libxrandr libxinerama libxcursor libxi libglvnd mesa gtk3 pkgconf
 ```
 
 On Ubuntu 24.04:
 
 ```sh
 sudo apt-get update
-sudo apt-get install -y build-essential git uuid-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libegl1-mesa-dev libgtk-3-dev pkg-config
+sudo apt-get install -y build-essential git cmake python3 uuid-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libegl1-mesa-dev libgtk-3-dev pkg-config
 ```
 
 From the Hazel repository root, build Premake, generate Makefiles, and build Debug:
@@ -48,9 +48,10 @@ From the Hazel repository root, build Premake, generate Makefiles, and build Deb
 git clone --filter=blob:none https://github.com/premake/premake-core.git ../premake-core
 git -C ../premake-core checkout --detach 71f2d33946947e9cf704f00c24200381e360f593
 make -C ../premake-core -f Bootstrap.mak linux PREMAKE_OPTS=--curl-src=none
+python3 scripts/dependencies/build-shader-tools.py --jobs 2
 ../premake-core/bin/release/premake5 gmake
 make config=debug -j2
-./bin/Debug-linux-x86_64/Sandbox/Sandbox
+(cd Sandbox && ../bin/Debug-linux-x86_64/Sandbox/Sandbox)
 ```
 
 Build Release with `make config=release -j2`. Its executable is `bin/Release-linux-x86_64/Sandbox/Sandbox`.
@@ -65,9 +66,12 @@ git -C ..\premake-core checkout --detach 71f2d33946947e9cf704f00c24200381e360f59
 pushd ..\premake-core
 call Bootstrap.bat vs2022 "PREMAKE_OPTS=--curl-src=none"
 popd
+python scripts/dependencies/build-shader-tools.py --jobs 2
 ..\premake-core\bin\release\premake5.exe vs2022
 msbuild Hazel.sln /m:2 /p:Configuration=Debug /p:Platform=x64
-bin\Debug-windows-x86_64\Sandbox\Sandbox.exe
+pushd Sandbox
+..\bin\Debug-windows-x86_64\Sandbox\Sandbox.exe
+popd
 ```
 
 Build Release with `msbuild Hazel.sln /m:2 /p:Configuration=Release /p:Platform=x64`. Its executable is `bin\Release-windows-x86_64\Sandbox\Sandbox.exe`. You can also open `Hazel.sln` in Visual Studio.
@@ -83,9 +87,12 @@ Build Release with `msbuild Hazel.sln /m:2 /p:Configuration=Release /p:Platform=
 | `Sandbox/src/` | Example application and rendering code |
 | `Hazel/vendor/` | Pinned GLFW, spdlog, ImGui, and GLM submodules; checked-in GLAD |
 
-The current Sandbox shaders use GLSL 3.30. Running Sandbox requires an OpenGL 4.2
-core-capable graphics driver and a desktop session; CI only compiles and links
-the projects.
+The current Sandbox shaders use GLSL 3.30. Running Sandbox requires an OpenGL 4.1
+core-capable graphics driver and a desktop session. The original regression probe
+still uses GLSL/OpenGL 4.2. New GLSL 450 assets go through shaderc/SPIRV-Cross,
+reflection/caching and generated GLSL 410 on older contexts. CI compiles both
+configurations and runs the CPU shader-tool test; engine GPU/window runtime
+checks remain separately documented.
 
 ## Upstream migration
 
@@ -127,4 +134,14 @@ The setup builds Debug and Release sequentially under ignored `build/dependencie
 source pins are in `scripts/dependencies/shader-tools.json`, and each installed
 configuration has a provenance manifest. Dependencies use the dynamic MSVC CRT.
 `MigrationShaderToolsSmoke` verifies compilation/reflection and GLSL 410 generation;
-it does not establish an engine OpenGL 4.1 or macOS runtime port.
+the renderer backend is tested separately on native HD 4000 4.2, a Mesa 4.1
+override and software OpenGL. macOS platform support is not implemented.
+
+
+Stage 3 adds texture specifications (R8, RGB8, RGBA8, RGBA32F and mipmaps),
+framebuffers with picking/depth/MSAA/resolve, and the target shader pipeline with
+checked source-based caches and failure handling. HD 4000 supports color/depth
+MSAA but reports zero integer multisample texture support; integer picking uses
+single-sample attachments there, and unsupported combined requests report that
+limit. Integer MSAA is retained for capable devices and tested separately in
+software. These capability decisions stay inside the OpenGL backend.

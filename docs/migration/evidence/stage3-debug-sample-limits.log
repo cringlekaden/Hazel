@@ -1,0 +1,16 @@
+==== Building Glad (debug) ====
+==== Building GLFW (debug) ====
+==== Building ImGui (debug) ====
+==== Building Hazel (debug) ====
+==== Building MigrationShaderToolsSmoke (debug) ====
+OpenGLFramebuffer.cpp
+Linking Hazel
+==== Building Sandbox (debug) ====
+==== Building MigrationRendererSmoke (debug) ====
+Linking MigrationRendererSmoke
+Linking Sandbox
+==== Building MigrationCoreSmoke (debug) ====
+Linking MigrationCoreSmoke
+==== Building MigrationRendererFeaturesSmoke (debug) ====
+RendererFeaturesSmoke.cpp
+Linking MigrationRendererFeaturesSmoke

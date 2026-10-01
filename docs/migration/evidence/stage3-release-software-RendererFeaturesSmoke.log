@@ -1,0 +1,36 @@
+Renderer: llvmpipe (LLVM 22.1.8, 256 bits); Context: 4.6 (Core Profile) Mesa 26.2.3-arch3.1; GLSL 4.60
+Sample limits: renderbuffer=8, integer texture=8, color texture=8, depth texture=8
+[10:56:55] HAZEL: OpenGLShader::Reflect - fragment pipeline-é.glsl: 0 uniform buffers, 1 sampled images
+[10:56:55] HAZEL: OpenGLShader::Reflect - vertex pipeline-é.glsl: 1 uniform buffers, 0 sampled images
+[10:56:55] HAZEL:   Camera: size 64, binding 3, members 1
+[10:56:55] HAZEL: Shader pipeline-é loaded through native OpenGL SPIR-V specialization
+[10:56:55] HAZEL: Shader creation took 476.22153 ms
+[10:56:55] HAZEL: Shader cache hit: assets/cache/shader/opengl/c139327666560714.cached_vulkan.fragment
+[10:56:55] HAZEL: OpenGLShader::Reflect - fragment pipeline-é.glsl: 0 uniform buffers, 1 sampled images
+[10:56:55] HAZEL: Shader cache hit: assets/cache/shader/opengl/f14fdad96c68fcd7.cached_vulkan.vertex
+[10:56:55] HAZEL: OpenGLShader::Reflect - vertex pipeline-é.glsl: 1 uniform buffers, 0 sampled images
+[10:56:55] HAZEL:   Camera: size 64, binding 3, members 1
+[10:56:55] HAZEL: Shader cache hit: assets/cache/shader/opengl/f14fdad96c68fcd7.cached_opengl.vertex
+[10:56:55] HAZEL: Shader cache hit: assets/cache/shader/opengl/c139327666560714.cached_opengl.fragment
+[10:56:55] HAZEL: Shader pipeline-é loaded through native OpenGL SPIR-V specialization
+[10:56:55] HAZEL: Shader creation took 3.3125594 ms
+Readback samples=1: 128,64,192,255; entity=73
+[10:56:55] HAZEL: Attempted to resize framebuffer to 0, 0
+Readback samples=4: 128,64,192,255; entity=73
+[10:56:55] HAZEL: Attempted to resize framebuffer to 0, 0
+PASS: four-sample color/depth framebuffer and resolved color readback
+[10:56:55] HAZEL: OpenGLShader::Reflect - fragment pipeline-é.glsl: 0 uniform buffers, 1 sampled images
+[10:56:55] HAZEL: Shader cache hit: assets/cache/shader/opengl/f14fdad96c68fcd7.cached_vulkan.vertex
+[10:56:55] HAZEL: OpenGLShader::Reflect - vertex pipeline-é.glsl: 1 uniform buffers, 0 sampled images
+[10:56:55] HAZEL:   Camera: size 64, binding 3, members 1
+[10:56:55] HAZEL: Shader cache hit: assets/cache/shader/opengl/f14fdad96c68fcd7.cached_opengl.vertex
+[10:56:55] HAZEL: Shader pipeline-é loaded through native OpenGL SPIR-V specialization
+[10:56:55] HAZEL: Shader creation took 498.24957 ms
+[10:56:56] HAZEL: OpenGLShader::Reflect - fragment pipeline-é.glsl: 0 uniform buffers, 1 sampled images
+[10:56:56] HAZEL: OpenGLShader::Reflect - vertex pipeline-é.glsl: 1 uniform buffers, 0 sampled images
+[10:56:56] HAZEL:   Camera: size 64, binding 3, members 1
+[10:56:56] HAZEL: Shader pipeline-é loaded through native OpenGL SPIR-V specialization
+[10:56:56] HAZEL: Shader creation took 357.76584 ms
+[10:56:56] HAZEL: Shader compilation failed (bad): bad:2: error: '' :  syntax error, unexpected IDENTIFIER
+
+PASS: real-context texture formats/mips/UTF-8/alignment/state, reflected shader bindings, cold/warm/changed/corrupt caches, framebuffer color/entity readback, full clear, resize, depth-only and MSAA resolve

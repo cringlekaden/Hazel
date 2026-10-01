@@ -572,6 +572,4 @@ if _OPTIONS["migration-tests"] then
     include "tests/migration"
 end
 
-if _OPTIONS["shader-tools"] then
-    include "scripts/dependencies"
-end
+include "scripts/dependencies"

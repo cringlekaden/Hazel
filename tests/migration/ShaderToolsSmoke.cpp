@@ -18,6 +18,10 @@ static std::vector<uint32_t> Compile(shaderc::Compiler& compiler, shaderc_shader
     shaderc::CompileOptions options;
     options.SetTargetEnvironment(vulkan ? shaderc_target_env_vulkan : shaderc_target_env_opengl,
                                  vulkan ? shaderc_env_version_vulkan_1_2 : shaderc_env_version_opengl_4_5);
+    if (vulkan) {
+        options.SetGenerateDebugInfo();
+        options.SetOptimizationLevel(shaderc_optimization_level_performance);
+    }
     auto module = compiler.CompileGlslToSpv(source, kind, "migration-toolchain", options);
     if (module.GetCompilationStatus() != shaderc_compilation_status_success)
         throw std::runtime_error(module.GetErrorMessage());
@@ -49,11 +53,13 @@ void main() { color=texture(image,uv); }
             if (kind == shaderc_glsl_vertex_shader) {
                 Check(resources.uniform_buffers.size()==1, "Uniform block reflection lost");
                 auto resource=resources.uniform_buffers.front();
+                Check(cross.get_name(resource.base_type_id)=="Camera", "Optimized UBO name lost");
                 Check(cross.get_decoration(resource.id,spv::DecorationBinding)==3, "UBO binding lost");
                 Check(cross.get_declared_struct_size(cross.get_type(resource.base_type_id))==64,
                       "UBO layout differs");
             } else {
                 Check(resources.sampled_images.size()==1, "Sampler reflection lost");
+                Check(resources.sampled_images.front().name=="image", "Optimized sampler name lost");
                 Check(cross.get_decoration(resources.sampled_images.front().id,spv::DecorationBinding)==5,
                       "Sampler binding lost");
             }

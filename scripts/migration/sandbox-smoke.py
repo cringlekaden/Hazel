@@ -31,25 +31,34 @@ def main():
         ('XQueryTree',C.c_int,[C.c_void_p,C.c_ulong,C.POINTER(C.c_ulong),C.POINTER(C.c_ulong),C.POINTER(C.POINTER(C.c_ulong)),C.POINTER(C.c_uint)]),
         ('XFetchName',C.c_int,[C.c_void_p,C.c_ulong,C.POINTER(C.c_void_p)]),
         ('XInternAtom',C.c_ulong,[C.c_void_p,C.c_char_p,C.c_int]),
+        ('XGetWindowProperty',C.c_int,[C.c_void_p,C.c_ulong,C.c_ulong,C.c_long,C.c_long,C.c_int,C.c_ulong,C.POINTER(C.c_ulong),C.POINTER(C.c_int),C.POINTER(C.c_ulong),C.POINTER(C.c_ulong),C.POINTER(C.c_void_p)]),
         ('XSendEvent',C.c_int,[C.c_void_p,C.c_ulong,C.c_int,C.c_long,C.POINTER(Event)]),
         ('XFlush',C.c_int,[C.c_void_p]), ('XFree',C.c_int,[C.c_void_p]),
         ('XCloseDisplay',C.c_int,[C.c_void_p])]:
         f=getattr(x,name); f.restype=restype; f.argtypes=argtypes
     display=x.XOpenDisplay(None)
     if not display: raise RuntimeError('Cannot open X11 display')
-    def find(window,title):
+    pid_atom=x.XInternAtom(display,b'_NET_WM_PID',0)
+    def owned_by(window,pid):
+        kind=C.c_ulong(); fmt=C.c_int(); count=C.c_ulong(); remaining=C.c_ulong(); data=C.c_void_p()
+        status=x.XGetWindowProperty(display,window,pid_atom,0,1,0,6,C.byref(kind),C.byref(fmt),C.byref(count),C.byref(remaining),C.byref(data))
+        try:
+            return status==0 and kind.value==6 and fmt.value==32 and count.value==1 and bool(data) and C.cast(data,C.POINTER(C.c_ulong))[0]==pid
+        finally:
+            if data: x.XFree(data)
+    def find(window,title,pid):
         name=C.c_void_p()
         if x.XFetchName(display,window,C.byref(name)) and name:
             found=C.string_at(name).decode(errors='replace')==title
             x.XFree(name)
-            if found: return window
+            if found and owned_by(window,pid): return window
         root,parent=C.c_ulong(),C.c_ulong()
         children=C.POINTER(C.c_ulong)(); count=C.c_uint()
         if x.XQueryTree(display,window,C.byref(root),C.byref(parent),C.byref(children),C.byref(count)):
             ids=[children[i] for i in range(count.value)]
             if children: x.XFree(children)
             for child in ids:
-                result=find(child,title)
+                result=find(child,title,pid)
                 if result: return result
         return None
     with tempfile.TemporaryDirectory(prefix='hazel-graceful-') as directory:
@@ -62,7 +71,7 @@ def main():
                 deadline=time.monotonic()+20
                 window=None
                 while not window and time.monotonic()<deadline and process.poll() is None:
-                    window=find(x.XDefaultRootWindow(display),'Hazel Engine')
+                    window=find(x.XDefaultRootWindow(display),'Hazel Engine',process.pid)
                     time.sleep(0.1)
                 if not window: raise RuntimeError('Sandbox window did not appear')
                 time.sleep(2)

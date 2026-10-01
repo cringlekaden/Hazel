@@ -1,0 +1,3 @@
+# Preserve raw compiler/Actions/runtime output, including its trailing spaces.
+# Keep whitespace checking enabled for engine, scripts and documentation.
+docs/migration/evidence/*.log -whitespace

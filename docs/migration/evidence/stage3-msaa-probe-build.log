@@ -1,0 +1,7 @@
+==== Building Hazel (debug) ====
+==== Building ImGui (debug) ====
+==== Building GLFW (debug) ====
+==== Building Glad (debug) ====
+==== Building MigrationRendererFeaturesSmoke (debug) ====
+RendererFeaturesSmoke.cpp
+Linking MigrationRendererFeaturesSmoke
