@@ -83,6 +83,11 @@ jobs:
           bin/Debug-linux-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke
           bin/Release-linux-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke
 
+      - name: Verify project and physics prerequisites
+        run: |
+          bin/Debug-linux-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke
+          bin/Release-linux-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke
+
       - name: Verify build outputs
         run: |
           test -f bin/Debug-linux-x86_64/Hazel/libHazel.a
@@ -101,6 +106,8 @@ jobs:
           test -x bin/Release-linux-x86_64/MigrationFontSmoke/MigrationFontSmoke
           test -x bin/Debug-linux-x86_64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke
           test -x bin/Release-linux-x86_64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke
+          test -x bin/Debug-linux-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke
+          test -x bin/Release-linux-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke
 
   windows-build:
     name: Windows Debug and Release
@@ -177,7 +184,9 @@ jobs:
             'bin/Debug-windows-x86_64/MigrationFontSmoke/MigrationFontSmoke.exe',
             'bin/Release-windows-x86_64/MigrationFontSmoke/MigrationFontSmoke.exe',
             'bin/Debug-windows-x86_64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke.exe',
-            'bin/Release-windows-x86_64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke.exe'
+            'bin/Release-windows-x86_64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke.exe',
+            'bin/Debug-windows-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke.exe'
           )
           foreach ($file in $files) {
             if (-not (Test-Path $file -PathType Leaf)) {
@@ -191,4 +200,12 @@ jobs:
           & bin/Debug-windows-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke.exe
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & bin/Release-windows-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify project and physics prerequisites
+        shell: pwsh
+        run: |
+          & bin/Debug-windows-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & bin/Release-windows-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke.exe
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

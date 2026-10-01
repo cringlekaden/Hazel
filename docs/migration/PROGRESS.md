@@ -745,3 +745,53 @@ Next: actual pinned Box2D and project prerequisites, then real Mono integration
 and full scene integration (no scripting stubs or omitted serializer fields).
 Final Premake-only dependencies, consolidated capabilities/cache audit and
 repository cleanup remain acceptance requirements, not completed work.
+
+Stage 4c checkpoint `9c80938c9c074f5b3bdeb6dca4ed7986a48ad248`
+[Actions run 36898770968](https://github.com/cringlekaden/Hazel/actions/runs/36898770968)
+passed Linux and Windows Debug/Release compilation, new Renderer2DSmoke output
+checks, and existing CPU shader/foundation runtimes. Windows renderer/application/
+font GPU tests were not executed. The compilation gate is resolved before the
+next prerequisite checkpoint.
+
+## Stage 4d in progress: Box2D and project prerequisites
+
+Box2D uses exact target gitlink `80e17bef53f217fa8b1696718a047e29e9f25def`
+(TheCherno/box2d), inspected from actual source before integration. Its source
+reports version 2.4.0 and has no nested submodules. Its own Premake project is
+included unchanged; root-owned physics.lua directs generated files/outputs and
+GCC/Windows CRT/UTF-8 settings. No vendor patches or CMake are introduced here.
+Project/ProjectSerializer are imported from target blobs in stage4d-imports.json,
+preserving all target config fields and active-project flow. Native streams accept
+filesystem paths, persisted paths use generic UTF-8, and reads decode UTF-8; failed
+parses/saves preserve live configuration and active project state. This addresses
+concrete Windows narrow-filename/common-format issues in actual target source.
+Build and CPU project/Box2D checks are pending. Scene's Box2D integration and
+managed fields/runtime remain later gates, not claims from this prerequisite.
+
+Stage 4d Debug build passed (0), followed sequentially by ProjectPhysicsSmoke
+and graceful Sandbox shutdown (both 0) on native Intel HD 4000/OpenGL 4.2.
+Project tests cover all config fields and Unicode filename/content round trips,
+relative asset resolution, no-active-project diagnostics, missing/invalid/partial
+loads and failed-save preservation. Box2D tests exercise gravity, both box/circle
+contacts, static/dynamic/kinematic bodies, density/friction/restitution threshold,
+fixed rotation, destruction and repeated worlds. These are CPU prerequisite tests;
+full Scene start/stop/copy/physics integration remains pending. Logs are ignored
+build/migration/evidence/stage4d-debug*.log. Release and Windows checks are pending.
+
+Read-only next-prerequisite inspection: actual target Mono static archives embed
+version 6.12.0 and DEFAULTLIB directives MSVCRTD (Debug)/MSVCRT (Release), matching
+our required dynamic CRT. This removes the need to guess or discard target Windows
+libraries. Linux Mono is not installed (mono/mcs/mono-2 pkg-config absent); available
+CachyOS/Arch package metadata lists 6.12.0.206-1. No Mono runtime integration is
+claimed from this inspection, and no system installation has been performed.
+
+Stage 4d Release build passed (0), followed sequentially by ProjectPhysicsSmoke
+and graceful Sandbox shutdown (both 0) on native 4.2. Debug completed before
+Release, with two build jobs maximum. Logs: ignored build/migration/evidence/
+stage4d-release*.log. Both OS CI jobs now build/check the new executable and run
+its CPU project/physics checks in Debug/Release. VS2022 generation and inspection
+of Box2D/new test passed matching dynamic CRT and UTF-8; actual MSVC compilation
+is pending the next branch push, and no Windows GPU runtime is claimed.
+Checkpoint subject: `Import pinned Box2D and portable upstream projects`.
+Continue with real Mono dependencies/integration and full scenes; stages 4–9 and
+final acceptance requirements remain incomplete.
