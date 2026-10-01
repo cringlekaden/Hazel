@@ -31,7 +31,7 @@ namespace Hazel {
 			m_Window = Window::Create(WindowProps(m_Specification.Name));
 			m_Window->SetEventCallback(HZ_BIND_EVENT_FN(Application::OnEvent));
 
-			Renderer::Init();
+			Renderer::Init(m_Specification.Rendering);
 
 			auto overlay = CreateScope<ImGuiLayer>();
 			m_ImGuiLayer = overlay.get();

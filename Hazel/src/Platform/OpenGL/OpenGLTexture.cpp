@@ -1,6 +1,7 @@
 // Adapted upstream texture specifications and loading with bind-based 4.1 operations.
 #include "hzpch.h"
 #include "Platform/OpenGL/OpenGLTexture.h"
+#include "Platform/OpenGL/OpenGLCapabilities.h"
 #include "Hazel/Core/FileSystem.h"
 #include <stb_image.h>
 #include <limits>
@@ -104,8 +105,7 @@ OpenGLTexture2D::OpenGLTexture2D(const std::string& path) : m_Path(path)
 
 void OpenGLTexture2D::AllocateStorage(const void* data)
 {
-    GLint maximum=0;
-    glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maximum);
+    const auto maximum=OpenGLCapabilities::Get().MaxTextureSize;
     if (!m_Width || !m_Height || m_Width>static_cast<uint32_t>(maximum) || m_Height>static_cast<uint32_t>(maximum))
         throw std::invalid_argument("Texture dimensions exceed supported positive range");
     glGenTextures(1,&m_RendererID);
@@ -148,7 +148,7 @@ void OpenGLTexture2D::SetData(const void* data,uint32_t size)
 void OpenGLTexture2D::Bind(uint32_t slot) const
 {
     HZ_PROFILE_FUNCTION();
-    GLint maximum=0; glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,&maximum);
+    const auto maximum=OpenGLCapabilities::Get().MaxTextureBindings;
     if (slot>=static_cast<uint32_t>(maximum)) throw std::out_of_range("Texture slot exceeds hardware limit");
     glActiveTexture(GL_TEXTURE0+slot);
     glBindTexture(GL_TEXTURE_2D,m_RendererID);

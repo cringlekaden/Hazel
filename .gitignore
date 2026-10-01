@@ -1,6 +1,8 @@
 # Build output
 bin/
 bin-int/
+__pycache__/
+/docs/migration/evidence/*.log
 
 # Profiling traces written using Sandbox as the working directory
 /Sandbox/HazelProfile-*.json

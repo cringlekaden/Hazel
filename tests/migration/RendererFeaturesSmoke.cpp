@@ -6,6 +6,9 @@
 #include "Hazel/Renderer/Shader.h"
 #include "Hazel/Renderer/Texture.h"
 #include "Hazel/Renderer/UniformBuffer.h"
+#include "Hazel/Renderer/RenderCommand.h"
+#include "Platform/OpenGL/OpenGLCapabilities.h"
+#include "Platform/OpenGL/OpenGLShader.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <array>
@@ -143,8 +146,15 @@ static void CheckFramebuffersAndShaders()
     if (std::filesystem::exists("assets/cache/shader/opengl")) initial=CountCache();
     auto shader=Shader::Create(source.u8string()); const auto cold=CountCache();
     Check(cold>=4 && cold>=initial,"SPIR-V cache files absent");
+    std::vector<std::pair<std::filesystem::path,std::filesystem::file_time_type>> cacheTimes;
+    for (const auto& entry:std::filesystem::directory_iterator("assets/cache/shader/opengl"))
+        cacheTimes.emplace_back(entry.path(),std::filesystem::last_write_time(entry.path()));
     shader.reset(); shader=Shader::Create(source.u8string());
     Check(CountCache()==cold,"Warm cache created duplicate files");
+    for (const auto& [path,time]:cacheTimes)
+        Check(std::filesystem::last_write_time(path)==time,"Warm shader cache recompiled or rewrote a valid module");
+    const auto expectedPath=OpenGLCapabilities::UseShaderBinaries() ? OpenGLShader::ProgramLoadingPath::SPIRV : OpenGLShader::ProgramLoadingPath::GeneratedGLSL;
+    Check(std::dynamic_pointer_cast<OpenGLShader>(shader)->GetProgramLoadingPath()==expectedPath,"Selected shader loading path differs from capabilities/settings");
     auto camera=UniformBuffer::Create(64,3);
     const std::array<float,16> identity={1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1}; camera->SetData(identity.data(),64);
     TextureSpecification textureSpecification; textureSpecification.GenerateMips=false;
@@ -220,13 +230,37 @@ static void CheckFramebuffersAndShaders()
     specification.Samples=1;
     auto framebuffer=Framebuffer::Create(specification); framebuffer->Bind(); glDrawArrays(GL_TRIANGLES,0,3);
     auto half=ReadColor(framebuffer); Check(std::abs(static_cast<int>(half[0])-64)<=1,"Content change/corrupt cache recovery rendered stale shader"); framebuffer->Unbind();
+    // Preserve the container and SPIR-V headers and byte count, corrupt only
+    // instruction payload. A magic/length-only reader would accept this cache.
+    for (const auto& entry:std::filesystem::directory_iterator("assets/cache/shader/opengl")) {
+        std::fstream damaged(entry.path(),std::ios::binary|std::ios::in|std::ios::out);
+        damaged.seekg(0,std::ios::end);
+        if (damaged.tellg()>56) {
+            damaged.seekg(52); char byte=0; damaged.read(&byte,1); byte^=0x7f;
+            damaged.seekp(52); damaged.write(&byte,1);
+        }
+    }
+    shader.reset(); shader=Shader::Create(source.u8string());
+    shader->Bind(); texture->Bind(5); framebuffer->Bind();
+    // No clear is needed for overwritten pixels. Verify integer replacement
+    // semantics while color blending remains enabled, not inherited old IDs.
+    Check(!glIsEnabledi(GL_BLEND,1) && glIsEnabledi(GL_BLEND,0),"Integer target did not isolate its blend state");
+    glDrawArrays(GL_TRIANGLES,0,3);
+    half=ReadColor(framebuffer);
+    const auto recoveredEntity=framebuffer->ReadPixel(1,8,8);
+    const auto recoveryError=glGetError();
+    std::cout << "Valid-header cache recovery: color=" << int(half[0]) << ',' << int(half[1]) << ',' << int(half[2])
+        << "; entity=" << recoveredEntity << "; GL error=" << recoveryError << '\n';
+    Check(std::abs(static_cast<int>(half[0])-64)<=1 && recoveredEntity==73 && recoveryError==GL_NO_ERROR,
+        "Valid-header corrupted-cache recovery lost color/entity output");
+    framebuffer->Unbind();
+    Check(glIsEnabledi(GL_BLEND,1),"Framebuffer unbind did not restore caller blend state");
     MustThrow([] { Shader::Create("bad","#version 450\ninvalid","#version 450\ninvalid"); },"Invalid shader compiled without an exception");
     std::filesystem::remove(source); vao->Unbind();
     NoErrors("Cold/warm/changed/corrupt shader caches and depth-only framebuffer");
 }
 int main()
 {
-    FixtureDirectory fixtures;
     Hazel::Log::Init();
     glfwSetErrorCallback([](int code,const char* message){std::cerr<<"GLFW "<<code<<": "<<message<<'\n';});
     if (!glfwInit()) { std::cerr<<"FAIL: GLFW initialization\n"; return 1; }
@@ -243,8 +277,25 @@ int main()
         glGetIntegerv(GL_MAX_COLOR_TEXTURE_SAMPLES,&maxColorSamples); glGetIntegerv(GL_MAX_DEPTH_TEXTURE_SAMPLES,&maxDepthSamples);
         std::cout<<"Sample limits: renderbuffer="<<maxSamples<<", integer texture="<<maxIntegerSamples
                  <<", color texture="<<maxColorSamples<<", depth texture="<<maxDepthSamples<<'\n';
-        CheckTextures(); CheckFramebuffersAndShaders();
-        std::cout<<"PASS: real-context texture formats/mips/UTF-8/alignment/state, reflected shader bindings, cold/warm/changed/corrupt caches, framebuffer color/entity readback, full clear, resize, depth-only and MSAA resolve\n";
+        for (bool preferBinary : {true, false}) {
+            FixtureDirectory fixtures;
+            Hazel::RendererSettings requested;
+            requested.PreferShaderBinaries=preferBinary;
+            requested.TextureSlots=preferBinary ? 1000u : 2u;
+            Hazel::RenderCommand::Init(requested);
+            const auto& caps=Hazel::RenderCommand::GetCapabilities();
+            const auto& selected=Hazel::RenderCommand::GetSettings();
+            Check(selected.TextureSlots==std::min(requested.TextureSlots,std::min(32u,caps.MaxTextureSlots)),"Texture settings did not clamp to batch/device limits");
+            Check(selected.EnableDebugOutput== (requested.EnableDebugOutput && caps.DebugOutput),"Diagnostic settings differ from available path");
+            auto legacy=Hazel::Shader::Create("comment-version",
+                "/*\n#version 450\n*/\n// #version 450\n#version 330 core\nvoid main(){gl_Position=vec4(0,0,0,1);}",
+                "#version 330 core\nlayout(location=0) out vec4 color; void main(){color=vec4(1);}");
+            Check(std::dynamic_pointer_cast<Hazel::OpenGLShader>(legacy)->GetProgramLoadingPath()==Hazel::OpenGLShader::ProgramLoadingPath::LegacyGLSL,
+                "Version inside a comment incorrectly selected the target pipeline");
+            CheckTextures(); CheckFramebuffersAndShaders();
+            Hazel::RenderCommand::Shutdown();
+        }
+        std::cout<<"PASS: selected/default and forced GLSL paths, device-constrained settings, real-context texture formats/mips/UTF-8/alignment/state, reflected shader bindings, cold/warm/changed/corrupt caches, framebuffer color/entity readback, full clear, resize, depth-only and MSAA resolve\n";
     } catch (const std::exception& error) { std::cerr<<"FAIL: "<<error.what()<<'\n'; result=1; }
     glfwDestroyWindow(window); glfwTerminate(); return result;
 }

@@ -12,7 +12,7 @@ import tempfile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', choices=('Debug', 'Release'), required=True)
-    parser.add_argument('--stage', choices=('stage3', 'stage4a', 'stage4b', 'stage4c', 'stage4d', 'stage4e', 'stage4f', 'stage5', 'stage6', 'stage7', 'stage8'), default='stage3')
+    parser.add_argument('--stage', choices=('stage3', 'stage4a', 'stage4b', 'stage4c', 'stage4d', 'stage4e', 'stage4f', 'stage5', 'stage6', 'stage7', 'stage8', 'final'), default='stage3')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     binaries = root / 'bin' / f'{args.config}-linux-x86_64'
@@ -34,7 +34,11 @@ def main():
         elif args.stage == 'stage4b':
             profiles = profiles[:2]
         for profile, overrides in profiles:
-            if args.stage == 'stage8':
+            if args.stage == 'final':
+                checks = ['RendererFeaturesSmoke', 'Renderer2DSmoke', 'FontSmoke', 'SceneGPUSmoke', 'EditorSmoke', 'CoreSmoke', 'Sandbox', 'Hazelnut']
+                if profile == 'native':
+                    checks += ['RendererSmoke', 'ShaderToolsSmoke', 'SceneFoundationSmoke', 'ProjectPhysicsSmoke', 'MonoSmoke', 'SceneSmoke']
+            elif args.stage == 'stage8':
                 checks = ['EditorSmoke', 'SceneGPUSmoke', 'RendererFeaturesSmoke']
                 if profile == 'native': checks += ['SceneSmoke', 'CoreSmoke', 'Sandbox']
             elif args.stage == 'stage6':
@@ -70,7 +74,7 @@ def main():
                 if profile == 'native':
                     checks += ['RendererSmoke', 'ShaderToolsSmoke']
             for name in checks:
-                target = name if name == 'Sandbox' else 'Migration' + name
+                target = name if name in ('Sandbox', 'Hazelnut') else 'Migration' + name
                 executable = binaries / target / target
                 command = [str(executable)]
                 if name in ('MonoSmoke', 'SceneSmoke', 'SceneGPUSmoke'):
@@ -79,9 +83,10 @@ def main():
                 if name == 'EditorSmoke':
                     command += [str(binaries / 'Hazel-ScriptCore/Hazel-ScriptCore.dll'),
                                 str(binaries / 'SandboxScripts/Sandbox.dll'), str(root / 'Hazelnut')]
-                if name == 'Sandbox':
+                if name in ('Sandbox', 'Hazelnut'):
                     command = [sys.executable, str(root / 'scripts/migration/sandbox-smoke.py'),
-                               str(executable), '--assets', str(root / 'Sandbox'), '--require-order']
+                               str(executable), '--assets', str(root / name), '--require-order']
+                    if name == 'Hazelnut': command += ['--editor']
                 log = evidence / f'{args.stage}-{args.config.lower()}-{profile}-{name}.log'
                 environment = os.environ.copy()
                 # A native profile must not inherit another test's overrides.

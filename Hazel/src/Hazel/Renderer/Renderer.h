@@ -9,7 +9,9 @@ namespace Hazel {
     class Renderer
     {
     public:
-        static void Init();
+        static void Init(const RendererSettings& settings = {});
+        static const RendererCapabilities& GetCapabilities() { return RenderCommand::GetCapabilities(); }
+        static const RendererSettings& GetSettings() { return RenderCommand::GetSettings(); }
         static void Shutdown();
         static void BeginScene(OrthographicCamera& camera);
         static void EndScene();

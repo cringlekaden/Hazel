@@ -1,4 +1,0 @@
-'$(Configuration)|$(Platform)'=='Debug|x64': MultiThreadedDebugDLL; /utf-8 %(AdditionalOptions)
-'$(Configuration)|$(Platform)'=='Release|x64': MultiThreadedDLL; /utf-8 %(AdditionalOptions)
-'$(Configuration)|$(Platform)'=='Dist|x64': MultiThreadedDLL; /utf-8 %(AdditionalOptions)
-CRT and UTF-8 inspection passed; generation/static inspection only, not an MSVC build.

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "Hazel/Core/Window.h"
+#include "Hazel/Renderer/RendererCapabilities.h"
 #include "Hazel/Core/LayerStack.h"
 #include "Hazel/Events/Event.h"
 #include "Hazel/Events/ApplicationEvent.h"
@@ -38,6 +39,7 @@ namespace Hazel {
 		std::string Name = "Hazel Application";
 		std::string WorkingDirectory;
 		ApplicationCommandLineArgs CommandLineArgs;
+        RendererSettings Rendering;
 	};
 
 	class Application

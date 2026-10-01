@@ -4,10 +4,10 @@
 #include "Platform/OpenGL/OpenGLCapabilities.h"
 
 #include <glad/glad.h>
+#include <algorithm>
 
 namespace Hazel {
 
-#ifdef HZ_DEBUG
     // Adapted target diagnostics; debug output became core in 4.3.
     static void APIENTRY OpenGLMessageCallback(GLenum, GLenum, GLuint, GLenum severity,
                                                GLsizei, const GLchar* message, const void*)
@@ -19,21 +19,31 @@ namespace Hazel {
             default: HZ_CORE_TRACE("OpenGL: {}", message); break;
         }
     }
-#endif
 
 
-    void OpenGLRendererAPI::Init()
+    void OpenGLRendererAPI::Init(const RendererSettings& requested)
     {
         HZ_PROFILE_FUNCTION();
-#ifdef HZ_DEBUG
-        if (GLAD_GL_VERSION_4_3 && glDebugMessageCallback && glDebugMessageControl) {
+        OpenGLCapabilities::Configure(requested);
+        const auto& caps = OpenGLCapabilities::Get();
+        const auto& settings = OpenGLCapabilities::GetSettings();
+        HZ_CORE_INFO("Renderer paths: bind-based OpenGL 4.1 resources; {}; {} texture slots (device {}); debug output {}",
+            OpenGLCapabilities::UseShaderBinaries() ? "SPIR-V specialization" : "shaderc/Cross to GLSL 410",
+            settings.TextureSlots, caps.MaxTextureSlots, settings.EnableDebugOutput);
+        HZ_CORE_INFO("Framebuffer limits: size {}; color attachments {}; draw buffers {}; samples color/integer/depth {}/{}/{}",
+            caps.MaxTextureSize, caps.MaxColorAttachments, caps.MaxDrawBuffers, caps.MaxColorSamples, caps.MaxIntegerSamples, caps.MaxDepthSamples);
+        if (caps.DebugOutput) {
+            glDisable(GL_DEBUG_OUTPUT);
+            glDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+            glDebugMessageCallback(nullptr, nullptr);
+        }
+        if (settings.EnableDebugOutput) {
             glEnable(GL_DEBUG_OUTPUT);
             glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
             glDebugMessageCallback(OpenGLMessageCallback, nullptr);
             glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION,
                                   0, nullptr, GL_FALSE);
         }
-#endif
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_DEPTH_TEST);
@@ -66,9 +76,15 @@ namespace Hazel {
         vertexArray->Bind();
         glDrawArrays(GL_LINES,0,static_cast<GLsizei>(count));
     }
-    void OpenGLRendererAPI::SetLineWidth(float width) { glLineWidth(width); }
+    void OpenGLRendererAPI::SetLineWidth(float width) {
+        const auto& caps = OpenGLCapabilities::Get();
+        glLineWidth(std::clamp(width, caps.MinLineWidth, caps.MaxLineWidth));
+    }
+    void OpenGLRendererAPI::Shutdown() { OpenGLCapabilities::Reset(); }
+    const RendererCapabilities& OpenGLRendererAPI::GetCapabilities() const { return OpenGLCapabilities::Get(); }
+    const RendererSettings& OpenGLRendererAPI::GetSettings() const { return OpenGLCapabilities::GetSettings(); }
     std::uint32_t OpenGLRendererAPI::GetMaxTextureSlots() const
     {
-        return OpenGLCapabilities::FragmentTextureSlots();
+        return OpenGLCapabilities::GetSettings().TextureSlots;
     }
 }

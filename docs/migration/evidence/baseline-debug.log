@@ -1,8 +1,0 @@
-==== Building GLFW (debug) ====
-==== Building Glad (debug) ====
-==== Building ImGui (debug) ====
-==== Building Hazel (debug) ====
-Renderer2D.cpp
-Linking Hazel
-==== Building Sandbox (debug) ====
-Linking Sandbox

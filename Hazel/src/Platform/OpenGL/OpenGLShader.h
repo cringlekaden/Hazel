@@ -16,6 +16,8 @@ namespace Hazel {
 	class OpenGLShader : public Shader
 	{
 	public:
+        enum class ProgramLoadingPath { LegacyGLSL, GeneratedGLSL, SPIRV };
+        ProgramLoadingPath GetProgramLoadingPath() const { return m_LoadingPath; }
 		OpenGLShader(const std::string& filepath);
 		OpenGLShader(const std::string& name, const std::string& vertexSrc, const std::string& fragmentSrc);
 		virtual ~OpenGLShader();
@@ -58,6 +60,7 @@ namespace Hazel {
         std::unordered_map<std::string, uint32_t> m_UniformBufferBindings, m_SamplerBindings, m_SamplerCounts;
 	private:
 		uint32_t m_RendererID = 0;
+        ProgramLoadingPath m_LoadingPath = ProgramLoadingPath::LegacyGLSL;
 		std::string m_FilePath;
 		std::string m_Name;
 

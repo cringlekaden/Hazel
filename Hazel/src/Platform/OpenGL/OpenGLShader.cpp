@@ -7,6 +7,7 @@
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <shaderc/shaderc.hpp>
+#include <spirv-tools/libspirv.hpp>
 #include <spirv_cross/spirv_cross.hpp>
 #include <spirv_cross/spirv_glsl.hpp>
 #include <fstream>
@@ -76,36 +77,86 @@ std::filesystem::path GetCacheDirectory() { return "assets/cache/shader/opengl";
 std::string CacheKey(GLenum stage,const std::string& source)
 {
     // Stable across processes and OSes; filenames alone cannot identify cached source.
-    const std::string input="hazel-pipeline-v2-debugnames-glsl410-vulkan12-74a79040df6d52c4667ed87c9c70904c7561aef8d61f1fb981c947ba76a5fdec-"+std::to_string(stage)+source;
+    const std::string input="hazel-pipeline-v3-validated-cache-debugnames-glsl410-vulkan12-74a79040df6d52c4667ed87c9c70904c7561aef8d61f1fb981c947ba76a5fdec-"+std::to_string(stage)+source;
     uint64_t hash=14695981039346656037ull;
     for (unsigned char byte:input) { hash^=byte; hash*=1099511628211ull; }
     std::ostringstream output; output<<std::hex<<std::setw(16)<<std::setfill('0')<<hash;
     return output.str();
 }
-bool ReadCache(const std::filesystem::path& path,std::vector<uint32_t>& words)
+uint64_t CacheChecksum(const void* data, std::size_t bytes)
+{
+    uint64_t hash=14695981039346656037ull;
+    const auto* input=static_cast<const unsigned char*>(data);
+    for (std::size_t i=0;i<bytes;++i) { hash^=input[i]; hash*=1099511628211ull; }
+    return hash;
+}
+bool ReadCache(const std::filesystem::path& path,std::vector<uint32_t>& words,spv_target_env environment)
 {
     std::ifstream input(path,std::ios::binary|std::ios::ate);
     if (!input) return false;
-    const auto size=input.tellg();
-    if (size<20 || size%4 || size>128*1024*1024) return false;
-    words.resize(static_cast<std::size_t>(size)/4);
-    input.seekg(0); input.read(reinterpret_cast<char*>(words.data()),size);
-    if (!input || words.front()!=0x07230203u) { words.clear(); return false; }
+    words.clear();
+    const auto size=static_cast<std::streamoff>(input.tellg());
+    // Private cache container: magic/version/count, payload checksum and cache
+    // identity checksum. Validate before reflection or passing data to a driver.
+    if (size<52 || size%4 || size>128*1024*1024) return false;
+    uint32_t header[8]{};
+    input.seekg(0); input.read(reinterpret_cast<char*>(header),sizeof(header));
+    const auto name=path.filename().generic_u8string();
+    const auto identity=CacheChecksum(name.data(),name.size());
+    if (!input || header[0]!=0x485a5343u || header[1]!=1 || header[2]!=(size-32)/4 || header[3]!=0 ||
+        (uint64_t(header[6]) | (uint64_t(header[7])<<32))!=identity) return false;
+    words.resize(header[2]);
+    input.read(reinterpret_cast<char*>(words.data()),size-32);
+    const auto checksum=CacheChecksum(words.data(),words.size()*4);
+    if (!input || words.front()!=0x07230203u ||
+        (uint64_t(header[4]) | (uint64_t(header[5])<<32))!=checksum ||
+        !spvtools::SpirvTools(environment).Validate(words)) {
+        words.clear();
+        HZ_CORE_WARN("Ignoring corrupted shader cache '{}'",path.generic_u8string());
+        return false;
+    }
     return true;
 }
 void WriteCache(const std::filesystem::path& path,const std::vector<uint32_t>& words)
 {
+    const auto checksum=CacheChecksum(words.data(),words.size()*4);
+    const auto name=path.filename().generic_u8string();
+    const auto identity=CacheChecksum(name.data(),name.size());
+    const uint32_t header[8]={0x485a5343u,1,static_cast<uint32_t>(words.size()),0,
+        static_cast<uint32_t>(checksum),static_cast<uint32_t>(checksum>>32),
+        static_cast<uint32_t>(identity),static_cast<uint32_t>(identity>>32)};
     std::ofstream output(path,std::ios::binary|std::ios::trunc);
     if (!output) { HZ_CORE_WARN("Could not write shader cache '{}'",path.generic_u8string()); return; }
+    output.write(reinterpret_cast<const char*>(header),sizeof(header));
     output.write(reinterpret_cast<const char*>(words.data()),static_cast<std::streamsize>(words.size()*4));
     if (!output) HZ_CORE_WARN("Incomplete shader cache write '{}'",path.generic_u8string());
 }
 bool UsesTargetPipeline(const std::unordered_map<GLenum,std::string>& sources)
 {
     for (const auto& entry:sources) {
-        const auto version=entry.second.find("#version");
-        if (version==std::string::npos) return false;
-        std::istringstream value(entry.second.substr(version+8)); int number=0; value>>number;
+        // Select from an actual directive, never a comment mentioning a version.
+        bool comment=false;
+        std::string visible;
+        for (std::size_t i=0;i<entry.second.size();++i) {
+            const char c=entry.second[i];
+            const char next=i+1<entry.second.size() ? entry.second[i+1] : '\0';
+            if (comment) {
+                if (c=='*' && next=='/') { comment=false; ++i; }
+                else if (c=='\n') visible+='\n';
+            } else if (c=='/' && next=='*') { comment=true; visible+=' '; ++i; }
+            else if (c=='/' && next=='/') {
+                while (i<entry.second.size() && entry.second[i]!='\n') ++i;
+                visible+='\n';
+            } else visible+=c;
+        }
+        std::istringstream lines(visible); std::string line; int number=0;
+        while (std::getline(lines,line)) {
+            const auto first=line.find_first_not_of(" \t\r");
+            if (first==std::string::npos || line[first]!='#') continue;
+            std::istringstream directive(line.substr(first+1)); std::string name;
+            directive>>name;
+            if (name=="version") { directive>>number; break; }
+        }
         // Existing GLSL 330/420 shaders retain their default-uniform/direct-compile API.
         if (number<450) return false;
     }
@@ -146,7 +197,7 @@ void OpenGLShader::CompilePipeline(const std::unordered_map<GLenum,std::string>&
     for (auto& [stage,source]:specialized) {
         const auto position=source.find(declaration);
         if (position!=std::string::npos) {
-            const auto limit=std::min(32u,OpenGLCapabilities::FragmentTextureSlots());
+            const auto limit=OpenGLCapabilities::GetSettings().TextureSlots;
             source.replace(position,declaration.size(),"#define HZ_MAX_TEXTURE_SLOTS "+std::to_string(limit));
             HZ_CORE_TRACE("Shader {} texture capacity: {}",m_Name,limit);
         }
@@ -174,7 +225,7 @@ void OpenGLShader::CompileOrGetVulkanBinaries(const std::unordered_map<GLenum,st
         m_CacheKeys[stage]=CacheKey(stage,source);
         const auto path=GetCacheDirectory()/(m_CacheKeys[stage]+".cached_vulkan."+GLShaderStageToString(stage));
         auto& data=m_VulkanSPIRV[stage];
-        if (ReadCache(path,data)) HZ_CORE_TRACE("Shader cache hit: {}",path.generic_u8string());
+        if (ReadCache(path,data,SPV_ENV_VULKAN_1_2)) HZ_CORE_TRACE("Shader cache hit: {}",path.generic_u8string());
         else {
             auto module=compiler.CompileGlslToSpv(source,GLShaderStageToShaderC(stage),m_FilePath.c_str(),options);
             if (module.GetCompilationStatus()!=shaderc_compilation_status_success) {
@@ -202,7 +253,7 @@ void OpenGLShader::CompileOrGetOpenGLBinaries()
         m_OpenGLSourceCode[stage]=glslCompiler.compile();
         const auto path=GetCacheDirectory()/(m_CacheKeys.at(stage)+".cached_opengl."+GLShaderStageToString(stage));
         auto& data=m_OpenGLSPIRV[stage];
-        if (ReadCache(path,data)) HZ_CORE_TRACE("Shader cache hit: {}",path.generic_u8string());
+        if (ReadCache(path,data,SPV_ENV_OPENGL_4_5)) HZ_CORE_TRACE("Shader cache hit: {}",path.generic_u8string());
         else {
             glslOptions.version=450; glslOptions.enable_420pack_extension=true;
             glslCompiler.set_common_options(glslOptions);
@@ -221,9 +272,10 @@ void OpenGLShader::CreateProgram()
 {
     // 4.6 core provides the generated loader's specialization entry point.
     // Extension-only or older contexts use equivalent generated GLSL semantics.
-    if (!GLAD_GL_VERSION_4_6 || !glShaderBinary || !glSpecializeShader) {
+    if (!OpenGLCapabilities::UseShaderBinaries()) {
         CompileLegacy(m_OpenGLSourceCode);
         ApplyResourceBindings();
+        m_LoadingPath=ProgramLoadingPath::GeneratedGLSL;
         HZ_CORE_TRACE("Shader {} loaded through GLSL 410 fallback",m_Name);
         return;
     }
@@ -245,6 +297,7 @@ void OpenGLShader::CreateProgram()
         if (!linked) throw std::runtime_error(GetProgramLog(program));
         for (GLuint shader:shaders) { glDetachShader(program,shader); glDeleteShader(shader); }
         m_RendererID=program;
+        m_LoadingPath=ProgramLoadingPath::SPIRV;
         HZ_CORE_TRACE("Shader {} loaded through native OpenGL SPIR-V specialization",m_Name);
     } catch (const std::exception& error) {
         HZ_CORE_ERROR("SPIR-V program creation failed ({}): {}",m_FilePath,error.what());

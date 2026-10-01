@@ -1,6 +1,3 @@
-# Preserve raw compiler/Actions/runtime output, including its trailing spaces.
-# Keep whitespace checking enabled for engine, scripts and documentation.
-docs/migration/evidence/*.log -whitespace
 # Retain this copied target vendor blob byte-for-byte, including its whitespace.
 Hazel/vendor/filewatch/FileWatch.h -whitespace
 # The exact target EnTT amalgamation ends with a blank line.

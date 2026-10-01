@@ -1,3 +1,0 @@
-GPU: Mesa Intel(R) HD Graphics 4000 (IVB GT2)
-OpenGL: 4.2 (Core Profile) Mesa 26.2.3-arch3.1
-PASS: Camera, UBO binding/upload/readback, float/int/bool/Mat3/Mat4 attributes, instanced color/entity rendering

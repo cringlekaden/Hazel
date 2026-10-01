@@ -7,10 +7,14 @@ namespace Hazel {
     class RenderCommand
     {
     public:
-        static void Init()
+        static void Init(const RendererSettings& settings = {})
         {
-            s_RendererAPI->Init();
+            s_RendererAPI->Init(settings);
         }
+
+        static void Shutdown() { s_RendererAPI->Shutdown(); }
+        static const RendererCapabilities& GetCapabilities() { return s_RendererAPI->GetCapabilities(); }
+        static const RendererSettings& GetSettings() { return s_RendererAPI->GetSettings(); }
 
         static void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
         {

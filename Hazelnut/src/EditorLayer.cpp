@@ -257,7 +257,7 @@ namespace Hazel {
 		ImGui::Begin("Settings");
 		ImGui::Checkbox("Show physics colliders", &m_ShowPhysicsColliders);
 
-		ImGui::Image((ImTextureID)m_Font->GetAtlasTexture()->GetRendererID(), { 512,512 }, {0, 1}, {1, 0});
+		ImGui::Image((ImTextureID)(uintptr_t)m_Font->GetAtlasTexture()->GetRendererID(), { 512,512 }, {0, 1}, {1, 0});
 
 
 		ImGui::End();

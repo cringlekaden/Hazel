@@ -23,6 +23,7 @@ def main():
     parser.add_argument('executable', type=Path)
     parser.add_argument('--assets', type=Path, default=Path('Sandbox'))
     parser.add_argument('--require-order', action='store_true')
+    parser.add_argument('--editor', action='store_true', help='Exercise Hazelnut with an isolated Unicode project argument')
     args=parser.parse_args()
     x=C.CDLL('libX11.so.6')
     for name, restype, argtypes in [
@@ -64,16 +65,24 @@ def main():
     with tempfile.TemporaryDirectory(prefix='hazel-graceful-') as directory:
         run=Path(directory)
         shutil.copytree(args.assets/'assets',run/'assets')
+        command=[str(args.executable.resolve())]
+        title='Hazelnut' if args.editor else 'Hazel Engine'
+        if args.editor:
+            shutil.copytree(args.assets/'Resources',run/'Resources')
+            shutil.copytree(args.assets/'SandboxProject',run/'SandboxProject')
+            project=run/'SandboxProject/project-é-🚀.hproj'
+            shutil.copyfile(run/'SandboxProject/Sandbox.hproj',project)
+            command.append(str(project))
         if (args.assets/'imgui.ini').exists(): shutil.copyfile(args.assets/'imgui.ini',run/'imgui.ini')
         with (run/'runtime.log').open('w') as log:
-            process=subprocess.Popen([str(args.executable.resolve())],cwd=run,stdout=log,stderr=subprocess.STDOUT)
+            process=subprocess.Popen(command,cwd=run,stdout=log,stderr=subprocess.STDOUT)
             try:
                 deadline=time.monotonic()+20
                 window=None
                 while not window and time.monotonic()<deadline and process.poll() is None:
-                    window=find(x.XDefaultRootWindow(display),'Hazel Engine',process.pid)
+                    window=find(x.XDefaultRootWindow(display),title,process.pid)
                     time.sleep(0.1)
-                if not window: raise RuntimeError('Sandbox window did not appear')
+                if not window: raise RuntimeError(f'{title} window did not appear')
                 time.sleep(2)
                 event=Event(); event.client.type=33; event.client.send_event=1
                 event.client.display=display; event.client.window=window
@@ -85,19 +94,19 @@ def main():
                 x.XFlush(display)
                 result=process.wait(timeout=20)
                 print((run/'runtime.log').read_text())
-                if result: raise RuntimeError(f'Sandbox exited {result}')
+                if result: raise RuntimeError(f'{title} exited {result}')
                 shutdown=json.loads((run/'HazelProfile-Shutdown.json').read_text())
                 names=[item['name'] for item in shutdown['traceEvents']]
                 print('Shutdown trace functions:',json.dumps(names))
                 if args.require_order:
                     renderer=next(i for i,n in enumerate(names) if 'Renderer2D::Shutdown' in n)
-                    layer=next(i for i,n in enumerate(names) if 'Sandbox2D::OnDetach' in n)
+                    layer=next(i for i,n in enumerate(names) if ('EditorLayer::OnDetach' if args.editor else 'Sandbox2D::OnDetach') in n)
                     imgui=next(i for i,n in enumerate(names) if 'ImGuiLayer::OnDetach' in n)
                     window=next(i for i,n in enumerate(names) if 'LinuxWindow::Shutdown' in n)
                     if not layer < imgui < renderer < window:
                         raise RuntimeError('Unexpected layer/ImGui/renderer/window shutdown order')
                     print('PASS: user layer and ImGui detach before renderer shutdown; renderer before native window')
-                print('PASS: WM_DELETE_WINDOW delivered; Sandbox returned 0 and shutdown trace is valid JSON')
+                print(f'PASS: WM_DELETE_WINDOW delivered; {title} returned 0 and shutdown trace is valid JSON')
             finally:
                 if process.poll() is None:
                     process.terminate()

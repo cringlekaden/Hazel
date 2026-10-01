@@ -90,7 +90,12 @@ static void Textures() {
         current->SetData(&data,sizeof(data)); textures.push_back(current);
         Renderer2D::DrawQuad(Transform(),current,1,glm::vec4(1),100+i);
     }
-    End(); Check(Renderer2D::GetStats().DrawCalls==2 && ID()==int(100+limit),"Texture slot overflow lost final quad");
+    End();
+    // White reserves one slot: with a two-slot setting each unique texture
+    // occupies its own batch. Larger tested capacities require two batches.
+    const auto expectedBatches=(limit+1+(limit-2))/(limit-1);
+    Check(Renderer2D::GetStats().DrawCalls==expectedBatches,"Texture slot overflow produced incorrect batch count");
+    Check(ID()==int(100+limit),"Texture slot overflow lost final quad");
     std::cout<<"Selected fragment texture batch capacity: "<<limit<<'\n';
 }
 static void Text() {
@@ -149,8 +154,9 @@ int main() {
         ApplicationSpecification invalid; invalid.Name="Migration Missing Shader"; invalid.WorkingDirectory=fixture.Directory.u8string();
         bool rejected=false; try { Application failed(invalid); } catch(const std::exception&) { rejected=true; }
         Check(rejected && std::filesystem::current_path()==cwd,"Failed renderer startup did not recover working directory");
-        {
+        for (bool reduced : {false, true}) {
             ApplicationSpecification specification; specification.Name="Migration Renderer2D";
+            if (reduced) { specification.Rendering.TextureSlots=2; specification.Rendering.PreferShaderBinaries=false; }
             Application application(specification);
             struct TargetCleanup { ~TargetCleanup() { target.reset(); } } targetCleanup;
             glfwHideWindow(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()));
@@ -158,11 +164,12 @@ int main() {
             FramebufferSpecification framebuffer; framebuffer.Width=128; framebuffer.Height=128;
             framebuffer.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
             target=Framebuffer::Create(framebuffer);
+            Check(Renderer::GetSettings().TextureSlots==(reduced ? 2u : std::min(32u,Renderer::GetCapabilities().MaxTextureSlots)),"Application renderer settings mismatch");
             Primitives(); Textures(); Text(); Overflow(); GenericSubmit();
             Check(glGetError()==GL_NO_ERROR,"Final renderer GL error");
             target->Unbind(); target.reset(); glEnable(GL_DEPTH_TEST);
         }
-        std::cout<<"PASS: actual quad/circle/line/text shaders, color/entity picking, rotation/tiling/tint/sprites, UTF-8/atlas switch, all primitive capacity flushes, generic submit and failed-constructor recovery\n";
+        std::cout<<"PASS: default and two-slot/GLSL settings, actual quad/circle/line/text shaders, color/entity picking, rotation/tiling/tint/sprites, UTF-8/atlas switch, all primitive capacity flushes, generic submit and failed-constructor recovery\n";
         return 0;
     } catch(const std::exception& e) { std::cerr<<"FAIL: "<<e.what()<<'\n'; target.reset(); return 1; }
 }

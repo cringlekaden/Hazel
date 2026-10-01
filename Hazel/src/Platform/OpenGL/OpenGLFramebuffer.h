@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Hazel/Renderer/Framebuffer.h"
+#include <utility>
 
 namespace Hazel {
 
@@ -26,6 +27,9 @@ namespace Hazel {
 		virtual const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
 	private:
 		void Release();
+        void DisableIntegerBlending();
+        void RestoreBlending();
+        std::vector<std::pair<uint32_t, bool>> m_PreviousBlending;
         void Resolve() const;
         uint32_t m_ResolveRendererID = 0;
         std::vector<uint32_t> m_ResolveColorAttachments;

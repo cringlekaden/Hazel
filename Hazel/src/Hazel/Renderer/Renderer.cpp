@@ -7,16 +7,17 @@ namespace Hazel {
 
     Scope<Renderer::SceneData> Renderer::s_SceneData = CreateScope<Renderer::SceneData>();
 
-    void Renderer::Init()
+    void Renderer::Init(const RendererSettings& settings)
     {
         HZ_PROFILE_FUNCTION();
-        RenderCommand::Init();
+        RenderCommand::Init(settings);
         Renderer2D::Init();
     }
 
     void Renderer::Shutdown()
     {
         Renderer2D::Shutdown();
+        RenderCommand::Shutdown();
     }
 
     void Renderer::BeginScene(OrthographicCamera& camera)

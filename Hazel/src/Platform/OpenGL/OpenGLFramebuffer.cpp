@@ -1,6 +1,7 @@
 // Adapted upstream framebuffer: binding-based 4.1 allocation, clearing and MSAA resolve.
 #include "hzpch.h"
 #include "Platform/OpenGL/OpenGLFramebuffer.h"
+#include "Platform/OpenGL/OpenGLCapabilities.h"
 #include <glad/glad.h>
 #include <algorithm>
 #include <stdexcept>
@@ -85,6 +86,7 @@ OpenGLFramebuffer::OpenGLFramebuffer(const FramebufferSpecification& spec):m_Spe
 
 void OpenGLFramebuffer::Release()
 {
+    RestoreBlending();
     glDeleteFramebuffers(1,&m_RendererID);
     glDeleteFramebuffers(1,&m_ResolveRendererID);
     glDeleteTextures(static_cast<GLsizei>(m_ColorAttachments.size()),m_ColorAttachments.data());
@@ -98,25 +100,21 @@ OpenGLFramebuffer::~OpenGLFramebuffer() { Release(); }
 void OpenGLFramebuffer::Invalidate()
 {
     if (m_Specification.SwapChainTarget) return;
-    GLint maximum=0,drawBuffers=0,colorAttachments=0,samples=0;
-    glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maximum);
-    glGetIntegerv(GL_MAX_DRAW_BUFFERS,&drawBuffers);
-    glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS,&colorAttachments);
-    glGetIntegerv(GL_MAX_SAMPLES,&samples);
+    const auto& caps = OpenGLCapabilities::Get();
+    const auto maximum = caps.MaxTextureSize;
+    const auto drawBuffers = caps.MaxDrawBuffers, colorAttachments = caps.MaxColorAttachments;
+    auto samples = caps.MaxSamples;
     for (const auto& attachment:m_ColorAttachmentSpecifications) {
-        GLint supported=0;
-        glGetIntegerv(attachment.TextureFormat==FramebufferTextureFormat::RED_INTEGER ? GL_MAX_INTEGER_SAMPLES : GL_MAX_COLOR_TEXTURE_SAMPLES,&supported);
-        if (attachment.TextureFormat==FramebufferTextureFormat::RED_INTEGER && m_Specification.Samples>1 &&
-            m_Specification.Samples>static_cast<uint32_t>(std::max(supported,0)))
+        const auto supported = attachment.TextureFormat==FramebufferTextureFormat::RED_INTEGER ? caps.MaxIntegerSamples : caps.MaxColorSamples;
+        if (attachment.TextureFormat==FramebufferTextureFormat::RED_INTEGER && m_Specification.Samples>1 && m_Specification.Samples>supported)
             throw std::invalid_argument("Integer multisample textures unsupported at requested sample count (limit "+std::to_string(supported)+")");
         samples=std::min(samples,supported);
     }
-    if (m_DepthAttachmentSpecification.TextureFormat!=FramebufferTextureFormat::None) {
-        GLint supported=0; glGetIntegerv(GL_MAX_DEPTH_TEXTURE_SAMPLES,&supported); samples=std::min(samples,supported);
-    }
+    if (m_DepthAttachmentSpecification.TextureFormat!=FramebufferTextureFormat::None)
+        samples=std::min(samples,caps.MaxDepthSamples);
     if (!m_Specification.Width || !m_Specification.Height || m_Specification.Width>static_cast<uint32_t>(maximum) ||
         m_Specification.Height>static_cast<uint32_t>(maximum) || !m_Specification.Samples ||
-        m_Specification.Samples>static_cast<uint32_t>(std::max(samples,1)) ||
+        m_Specification.Samples>static_cast<uint32_t>(std::max(samples,1u)) ||
         m_ColorAttachmentSpecifications.size()>static_cast<std::size_t>(std::min(drawBuffers,colorAttachments)))
         throw std::invalid_argument("Framebuffer specification exceeds hardware limits");
     Utils::FramebufferState state;
@@ -162,7 +160,7 @@ void OpenGLFramebuffer::Invalidate()
             if (glCheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE)
                 throw std::runtime_error("Multisample resolve framebuffer is incomplete");
         }
-        if (restoreDraw) state.Draw=m_RendererID;
+        if (restoreDraw) { state.Draw=m_RendererID; DisableIntegerBlending(); }
         if (restoreRead) state.Read=m_RendererID;
     } catch (...) {
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER,unpackBuffer);
@@ -174,9 +172,27 @@ void OpenGLFramebuffer::Invalidate()
 void OpenGLFramebuffer::Bind()
 {
     glBindFramebuffer(GL_FRAMEBUFFER,m_RendererID);
+    DisableIntegerBlending();
     glViewport(0,0,m_Specification.Width,m_Specification.Height);
 }
-void OpenGLFramebuffer::Unbind() { glBindFramebuffer(GL_FRAMEBUFFER,0); }
+void OpenGLFramebuffer::DisableIntegerBlending()
+{
+    // Integer outputs have replacement semantics. Explicit indexed state avoids
+    // native Intel/Mesa producing zero IDs when blending is globally enabled.
+    if (m_PreviousBlending.empty()) {
+        for (uint32_t i=0;i<m_ColorAttachmentSpecifications.size();++i)
+            if (m_ColorAttachmentSpecifications[i].TextureFormat==FramebufferTextureFormat::RED_INTEGER)
+                m_PreviousBlending.emplace_back(i,glIsEnabledi(GL_BLEND,i)==GL_TRUE);
+    }
+    for (const auto& [index,enabled]:m_PreviousBlending) glDisablei(GL_BLEND,index);
+}
+void OpenGLFramebuffer::RestoreBlending()
+{
+    for (const auto& [index,enabled]:m_PreviousBlending)
+        if (enabled) glEnablei(GL_BLEND,index); else glDisablei(GL_BLEND,index);
+    m_PreviousBlending.clear();
+}
+void OpenGLFramebuffer::Unbind() { glBindFramebuffer(GL_FRAMEBUFFER,0); RestoreBlending(); }
 void OpenGLFramebuffer::Resize(uint32_t width,uint32_t height)
 {
     if (!width || !height || width>s_MaxFramebufferSize || height>s_MaxFramebufferSize) {
@@ -236,9 +252,9 @@ void OpenGLFramebuffer::ClearAttachment(uint32_t index,int value)
     if (index>=m_ColorAttachments.size()) throw std::out_of_range("Framebuffer attachment index");
     Utils::FramebufferState state;
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER,m_RendererID);
-    GLint maximum=0; glGetIntegerv(GL_MAX_DRAW_BUFFERS,&maximum);
+    const auto maximum=OpenGLCapabilities::Get().MaxDrawBuffers;
     std::vector<GLenum> previous(static_cast<std::size_t>(maximum));
-    for (GLint i=0;i<maximum;++i) { GLint buffer=0; glGetIntegerv(GL_DRAW_BUFFER0+i,&buffer); previous[i]=buffer; }
+    for (uint32_t i=0;i<maximum;++i) { GLint buffer=0; glGetIntegerv(GL_DRAW_BUFFER0+i,&buffer); previous[i]=buffer; }
     GLboolean mask[4]; glGetBooleani_v(GL_COLOR_WRITEMASK,0,mask);
     const GLboolean scissor=glIsEnabled(GL_SCISSOR_TEST); glDisable(GL_SCISSOR_TEST);
     glColorMaski(0,GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);

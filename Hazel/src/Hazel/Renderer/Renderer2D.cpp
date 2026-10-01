@@ -128,7 +128,7 @@ namespace Hazel {
 		HZ_PROFILE_FUNCTION();
 
 		s_Data = CreateScope<Renderer2DData>();
-		s_Data->TextureSlotLimit = std::min(Renderer2DData::MaxTextureSlots, RenderCommand::GetMaxTextureSlots());
+		s_Data->TextureSlotLimit = RenderCommand::GetSettings().TextureSlots;
 		HZ_CORE_INFO("Renderer2D texture slots: {}", s_Data->TextureSlotLimit);
 		s_Data->QuadVertexArray = VertexArray::Create();
 

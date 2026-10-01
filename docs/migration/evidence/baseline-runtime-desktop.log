@@ -1,7 +1,0 @@
-[21:09:55] HAZEL: Initialized Log...
-[21:09:55] HAZEL: Creating window Hazel Engine (1280, 720)
-[21:09:55] HAZEL: Initializing GLFW
-[21:09:56] HAZEL: OpenGL Info:
-[21:09:56] HAZEL:   Vendor: Intel
-[21:09:56] HAZEL:   Renderer: Mesa Intel(R) HD Graphics 4000 (IVB GT2)
-[21:09:56] HAZEL:   Version: 4.2 (Core Profile) Mesa 26.2.3-arch3.1
