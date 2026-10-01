@@ -1,6 +1,7 @@
 // Adapted actual target shader pipeline: source pins, robust caches and GLSL 410 fallback.
 #include "hzpch.h"
 #include "Platform/OpenGL/OpenGLShader.h"
+#include "Platform/OpenGL/OpenGLCapabilities.h"
 #include "Hazel/Core/Timer.h"
 #include "Hazel/Core/FileSystem.h"
 #include <glad/glad.h>
@@ -138,11 +139,23 @@ std::string OpenGLShader::ReadFile(const std::string& filepath)
 void OpenGLShader::CompilePipeline(const std::unordered_map<GLenum,std::string>& sources)
 {
     if (!UsesTargetPipeline(sources)) { CompileLegacy(sources); return; }
+    auto specialized=sources;
+    // The actual target quad shader retains all 32 cases. Specialize its declared
+    // capacity here before shaderc/cache hashing, matching the renderer's limit.
+    const std::string declaration="#define HZ_MAX_TEXTURE_SLOTS 32";
+    for (auto& [stage,source]:specialized) {
+        const auto position=source.find(declaration);
+        if (position!=std::string::npos) {
+            const auto limit=std::min(32u,OpenGLCapabilities::FragmentTextureSlots());
+            source.replace(position,declaration.size(),"#define HZ_MAX_TEXTURE_SLOTS "+std::to_string(limit));
+            HZ_CORE_TRACE("Shader {} texture capacity: {}",m_Name,limit);
+        }
+    }
     std::error_code error;
     std::filesystem::create_directories(GetCacheDirectory(),error);
     if (error) HZ_CORE_WARN("Shader cache unavailable: {}",error.message());
     Timer timer;
-    CompileOrGetVulkanBinaries(sources);
+    CompileOrGetVulkanBinaries(specialized);
     CompileOrGetOpenGLBinaries();
     try { CreateProgram(); }
     catch (...) { if (m_RendererID) glDeleteProgram(m_RendererID); m_RendererID=0; throw; }

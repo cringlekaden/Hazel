@@ -9,6 +9,7 @@
 
 #include "Hazel/Core/Input.h"
 #include "Hazel/Utils/PlatformUtils.h"
+#include <stdexcept>
 
 namespace Hazel {
 
@@ -19,27 +20,41 @@ namespace Hazel {
 	{
 		HZ_PROFILE_FUNCTION();
 
-		HZ_CORE_ASSERT(!s_Instance, "Application already exists!");
+		if (s_Instance) throw std::logic_error("Application already exists");
+		const auto previousDirectory = std::filesystem::current_path();
 		s_Instance = this;
+		try {
+			// Set working directory here
+			if (!m_Specification.WorkingDirectory.empty())
+				std::filesystem::current_path(std::filesystem::u8path(m_Specification.WorkingDirectory));
 
-		// Set working directory here
-		if (!m_Specification.WorkingDirectory.empty())
-			std::filesystem::current_path(std::filesystem::u8path(m_Specification.WorkingDirectory));
+			m_Window = Window::Create(WindowProps(m_Specification.Name));
+			m_Window->SetEventCallback(HZ_BIND_EVENT_FN(Application::OnEvent));
 
-		m_Window = Window::Create(WindowProps(m_Specification.Name));
-		m_Window->SetEventCallback(HZ_BIND_EVENT_FN(Application::OnEvent));
+			Renderer::Init();
 
-		Renderer::Init();
-
-		auto overlay = CreateScope<ImGuiLayer>();
-        m_ImGuiLayer = overlay.get();
-        PushOverlay(std::move(overlay));
+			auto overlay = CreateScope<ImGuiLayer>();
+			m_ImGuiLayer = overlay.get();
+			PushOverlay(std::move(overlay));
+		} catch (...) {
+			// Renderer initialization can throw (for example, a missing shader).
+			// A failed constructor must release GPU owners before its native window,
+			// cancel queued captures, and permit a later valid Application.
+			ShutdownResources();
+			std::error_code ignored;
+			std::filesystem::current_path(previousDirectory, ignored);
+			throw;
+		}
 	}
 
 	Application::~Application()
 	{
 		HZ_PROFILE_FUNCTION();
+		ShutdownResources();
+	}
 
+	void Application::ShutdownResources()
+	{
         // Cancel pending captures while their renderer/context resources remain valid.
         std::vector<std::function<void()>> cancelled;
         {

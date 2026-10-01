@@ -5,6 +5,15 @@ Baseline: `b030be7`. Fixed target: `1feb70572fa87fa1c4ba784a2cfeada5b4a500db`.
 
 ## Resume here
 
+Final acceptance requirements added during stage 4c are recorded in PLAN.md.
+Continue the current stage. Final completion additionally requires concise
+progress/preservation/provenance/limitations records, ignored routine logs,
+validated Premake-only dependencies with no CMake, consolidated source-informed
+capabilities/path choices, shader/cache hardening, and fresh Linux/Windows builds
+and runtime evidence after cleanup. Premake-only shader dependencies are currently
+**unmet**: the existing validated shader-tool build still requires CMake. No new
+rendering backend or macOS support is authorized; the upstream target stays pinned.
+
 Read PLAN.md, PRESERVATION.md and COMPARISON.md. Check `git status` and submodule
 cleanliness before edits. The upstream source checkout is in
 `/tmp/hazel-upstream-1feb705`; if absent, clone TheCherno/Hazel and detach at the
@@ -51,8 +60,8 @@ local Debug/Release core, renderer and graceful Sandbox shutdown runtime checks
 on Intel HD 4000/OpenGL 4.2. Windows engine runtime is untested. Stage 3 backend integration is locally
 verified in Debug/Release on native 4.2, forced 4.1 and software 4.6; integrated
 Linux/Windows Debug/Release compilation and optimized CPU shader tests passed CI.
-Stage 4a foundation passed both OS builds/CPU runtime; stage 4b font prerequisite
-is locally verified and awaiting its compilation CI. Stages 4–9 remain incomplete. The sections below retain initial-session evidence, followed by
+Stage 4a foundation and stage 4b font prerequisite passed both OS builds/CPU
+runtime; stage 4c complete Renderer2D prerequisites are being verified. Stages 4–9 remain incomplete. The sections below retain initial-session evidence, followed by
 resumed-session results that supersede the initial unrun CI status.
 
 ## Stage 1 source provenance
@@ -661,3 +670,78 @@ capable devices: query backend limits, specialize the actual shader sampler arra
 and switch cases to the chosen capacity, include that capacity in cache identity,
 and flush batches at the same boundary. Common renderer-facing APIs should expose
 semantic limits, with GL queries/version requirements inside the OpenGL backend.
+
+Stage 4b checkpoint `d39a2ad` [Actions run 36891314760](https://github.com/cringlekaden/Hazel/actions/runs/36891314760)
+passed Linux and Windows Debug/Release builds and both CPU shader/foundation
+runtime suites. Windows font/application/GPU runtime remains untested.
+
+## Stage 4c in progress: actual upstream Renderer2D
+
+Imports and target blob IDs are in evidence/stage4c-imports.json. The actual
+quad/circle/line/text implementations and shaders replace the tutorial renderer;
+retain Scope-owned CPU arrays and explicit context-bound renderer teardown.
+Backend factories and generic Shader::SetMat4 follow the target, removing the
+legacy Renderer::Submit OpenGL cast. Primitive/text capacity checks and font-atlas
+switch flushes preserve geometry; text decodes UTF-8 with the pinned atlas library.
+Native 16-slot hardware batches and the shader array/cases use the same limit;
+32-slot hardware retains the full target limit. The selected capacity is included
+in shader cache identity through specialized source. Application startup failures
+now release partial renderer resources before the window and restore the previous
+working directory/singleton. Runtime verification of these changes is pending.
+
+An initial Debug link failed because forwarding Scope array sizes ODR-used target
+static const capacities. C++17 static constexpr capacities fix this without
+changing their values (20,000 quads/80,000 vertices/120,000 indices). Debug then
+compiled/linked successfully. The expanded pixel/overflow/recovery suite is being
+built before runtime verification and Release work.
+
+Public upstream capability inspection, 2026-10-01: a fresh origin/master fetch
+resolves to the pinned `1feb70572fa87fa1c4ba784a2cfeada5b4a500db`; target
+Renderer2D.cpp:66 retains only `TODO: RenderCaps`. Available public refs inspected:
+asset-manager `cca493f4abbbfd759fc624b3cc58d338cd316b5b`, projects
+`e4b0493999206bd2c3ff9d30fa333bcf81f313c8`, scripting
+`f8f8e3089b47c8371dc61448c3d47d43cad31079`, text at the pinned commit.
+They likewise expose no RenderCaps/RendererCapabilities/RendererSettings system.
+The current semantic texture-limit accessor and backend query are local
+extensions. A consolidated record remains a final acceptance requirement; use
+existing specification/factory patterns, keeping OpenGL versions/functions/path
+selection inside that backend. No attribution to an unavailable implementation.
+
+New routine logs go to ignored build/migration/evidence; the desktop runner now
+uses that directory. Prior tracked raw logs will be removed during final cleanup;
+provenance/pins/licenses and useful regression sources remain tracked. The current
+CMake shader dependency build remains an unmet final acceptance requirement.
+
+Stage 4c Debug runtime matrix passed all 13 checks (exit 0), sequentially:
+native Intel HD 4000/OpenGL 4.2 Renderer2D/readback/features/font/foundation/core/
+graceful Sandbox/legacy GLSL 420 renderer/CPU shader checks; process-only Mesa 4.1
+Renderer2D/features/graceful Sandbox; llvmpipe software OpenGL 4.6 Renderer2D and
+features. Renderer2DSmoke verifies solid/textured/transformed/rotated/sprite quads,
+tiling and tint, circles/rings, lines and both rectangle overloads, color and
+integer entity outputs, UTF-8 glyph picking/whitespace, atlas-switch flushing,
+texture-limit flushing (16 native/forced, 32 software), and quad/circle/line/text
+buffer overflow including final visible geometry and statistics. Generic Submit
+uses the target Shader interface and uploads transform/view-projection correctly.
+A missing-shader Application failure restores working directory and permits a
+subsequent valid Application; owners are released with their context alive.
+Logs are ignored build/migration/evidence/stage4c-debug-*.log. Forced 4.1 and
+software 4.6 are test paths, not macOS or hardware 4.6 validation. Release and
+this checkpoint's Windows compilation are still pending.
+
+Stage 4c Release build passed (0), followed by the same 13-check runtime matrix
+(all 0), with Debug and Release builds/tests sequential and maximum two compiler
+jobs. Logs: ignored build/migration/evidence/stage4c-release*.log. VS2022 generation
+and new test dynamic-CRT/UTF-8 inspection passed; both CI jobs retain Debug/Release
+and now require the new Renderer2DSmoke executable. Generation is not MSVC/runtime
+verification. The runner clears inherited Mesa/software test overrides before
+applying a profile, so native labels cannot silently inherit those test settings.
+No OS window/input/filesystem code or vendor sources/pins were changed.
+
+Stage 4c checkpoint subject: `Integrate and verify complete upstream Renderer2D`.
+Push only the migration branch for MSVC compilation. Windows application/GPU
+runtime remains untested; stage 4 remains incomplete pending physics, managed
+script/project prerequisites and complete Scene/Entity/SceneSerializer gates.
+Next: actual pinned Box2D and project prerequisites, then real Mono integration
+and full scene integration (no scripting stubs or omitted serializer fields).
+Final Premake-only dependencies, consolidated capabilities/cache audit and
+repository cleanup remain acceptance requirements, not completed work.

@@ -12,11 +12,12 @@ import tempfile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', choices=('Debug', 'Release'), required=True)
-    parser.add_argument('--stage', choices=('stage3', 'stage4a', 'stage4b'), default='stage3')
+    parser.add_argument('--stage', choices=('stage3', 'stage4a', 'stage4b', 'stage4c'), default='stage3')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     binaries = root / 'bin' / f'{args.config}-linux-x86_64'
-    evidence = root / 'docs/migration/evidence'
+    evidence = root / 'build/migration/evidence'
+    evidence.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='hazel-desktop-checks-') as directory:
         working = Path(directory)
         shutil.copytree(root / 'Sandbox/assets', working / 'assets')
@@ -39,6 +40,12 @@ def main():
                 checks = ['FontSmoke']
                 if profile == 'native':
                     checks += ['SceneFoundationSmoke', 'CoreSmoke', 'Sandbox']
+            elif args.stage == 'stage4c':
+                checks = ['Renderer2DSmoke', 'RendererFeaturesSmoke']
+                if profile == 'native':
+                    checks += ['FontSmoke', 'SceneFoundationSmoke', 'CoreSmoke', 'Sandbox', 'RendererSmoke', 'ShaderToolsSmoke']
+                elif profile == 'gl41':
+                    checks += ['Sandbox']
             else:
                 checks = ['RendererFeaturesSmoke']
                 if profile != 'software':
@@ -54,6 +61,10 @@ def main():
                                str(executable), '--assets', str(root / 'Sandbox'), '--require-order']
                 log = evidence / f'{args.stage}-{args.config.lower()}-{profile}-{name}.log'
                 environment = os.environ.copy()
+                # A native profile must not inherit another test's overrides.
+                for variable in ('MESA_GL_VERSION_OVERRIDE', 'MESA_GLSL_VERSION_OVERRIDE',
+                                 'LIBGL_ALWAYS_SOFTWARE', 'LP_NUM_THREADS'):
+                    environment.pop(variable, None)
                 environment.update(overrides)
                 print(f'RUN {args.config} {profile} {name}: {log.relative_to(root)}', flush=True)
                 with log.open('w') as output:

@@ -68,6 +68,7 @@ namespace Hazel {
 		bool OnWindowResize(WindowResizeEvent& e);
 
 		void ExecuteMainThreadQueue();
+		void ShutdownResources();
 	private:
 		ApplicationSpecification m_Specification;
 		Scope<Window> m_Window;

@@ -2,7 +2,6 @@
 
 #include "Hazel/Renderer/Renderer.h"
 #include "Hazel/Renderer/Renderer2D.h"
-#include "Platform/OpenGL/OpenGLShader.h"
 
 namespace Hazel {
 
@@ -35,9 +34,8 @@ namespace Hazel {
         const glm::mat4& transform)
     {
         shader->Bind();
-        auto openGLShader = std::dynamic_pointer_cast<OpenGLShader>(shader);
-        openGLShader->UploadUniformMat4("u_ViewProjection", s_SceneData->ViewProjectionMatrix);
-        openGLShader->UploadUniformMat4("u_Transform", transform);
+        shader->SetMat4("u_ViewProjection", s_SceneData->ViewProjectionMatrix);
+        shader->SetMat4("u_Transform", transform);
         vertexArray->Bind();
         RenderCommand::DrawIndexed(vertexArray);
     }

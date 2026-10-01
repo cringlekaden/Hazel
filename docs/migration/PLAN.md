@@ -59,3 +59,33 @@ incomplete until the full scene round-trip/copy/render/runtime gate passes.
 Stage 1 can be a Linux-verified checkpoint with Windows execution explicitly
 pending. Future cross-platform build-system/dependency integration must not be
 described as fully verified without Windows results.
+
+## Final acceptance gates added during stage 4c
+
+The current stage continues. These requirements must pass before declaring the
+migration complete, and take precedence over earlier dependency/logging choices:
+
+1. Clean the finished repository. Consolidate migration documentation into
+   concise progress, preservation, provenance and known-limitations records.
+   Stop tracking routine raw build/runtime logs; place those in ignored output
+   or CI artifacts. Retain useful regression tests, exact dependency pins,
+   licenses and required build scripts.
+2. A clean checkout must build with Premake and require no CMake. Replace the
+   current CMake shader dependency build with validated Premake integration,
+   preserving compilation, optimization, reflection, caching, generated inputs
+   and configuration-matched Windows CRT settings. Until validated on both OSes,
+   this remains an explicitly unmet final acceptance requirement.
+3. Consolidate graphics capability detection and document every selected path.
+   Inspect the pinned checkpoint and available newer relevant public upstream
+   source before designing capability/settings records. Prefer actual upstream
+   types, naming, initialization and consumers; record source commit/files and
+   adaptations. If none exists, document the implementation as a local extension
+   following Hazel specification structs and renderer architecture. Do not
+   attribute it to Cherno or speculate about unavailable Hazel-dev source.
+4. Preserve Grandpa's native 4.2 functionality and the architecture needed for
+   future macOS/Metal. Keep Mesa overrides/software rendering confined to tests
+   and distinguish them from hardware/macOS validation. Add no rendering backend.
+   Audit shader-path selection and corrupted-cache recovery during hardening.
+5. After cleanup, rerun clean Linux and Windows builds and relevant runtime
+   tests. The final parity report must list remaining limitations. Never merge
+   into master; no checkpoint or successful partial test waives an unmet gate.

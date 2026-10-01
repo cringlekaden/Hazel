@@ -12,5 +12,8 @@ namespace Hazel {
         void SetClearColor(const glm::vec4& color) override;
         void Clear() override;
         void DrawIndexed(const Ref<VertexArray>& vertexArray, std::uint32_t indexCount = 0) override;
+        void DrawLines(const Ref<VertexArray>& vertexArray, std::uint32_t vertexCount) override;
+        void SetLineWidth(float width) override;
+        std::uint32_t GetMaxTextureSlots() const override;
     };
 }

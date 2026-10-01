@@ -1,0 +1,62 @@
+[
+  {
+    "path": "Hazel/src/Hazel/Renderer/Renderer2D.cpp",
+    "upstream_path": "Hazel/src/Hazel/Renderer/Renderer2D.cpp",
+    "target_blob": "a4907f5d75dc145d05b5047da665e0abda3b2029"
+  },
+  {
+    "path": "Hazel/src/Hazel/Renderer/Renderer2D.h",
+    "upstream_path": "Hazel/src/Hazel/Renderer/Renderer2D.h",
+    "target_blob": "244bd035ecc23b823af0638ccc3409025e094d08"
+  },
+  {
+    "path": "Hazel/src/Hazel/Renderer/RendererAPI.cpp",
+    "upstream_path": "Hazel/src/Hazel/Renderer/RendererAPI.cpp",
+    "target_blob": "d0dea128bb03cc57e2b06108d107b95592af5ef9"
+  },
+  {
+    "path": "Hazel/src/Hazel/Renderer/RendererAPI.h",
+    "upstream_path": "Hazel/src/Hazel/Renderer/RendererAPI.h",
+    "target_blob": "56a48aecde715fc9cf72cd79a5cf045579a6b83f"
+  },
+  {
+    "path": "Hazel/src/Hazel/Renderer/RenderCommand.h",
+    "upstream_path": "Hazel/src/Hazel/Renderer/RenderCommand.h",
+    "target_blob": "d03d73b317516772e282d8147199af2fa88a411a"
+  },
+  {
+    "path": "Hazel/src/Platform/OpenGL/OpenGLRendererAPI.h",
+    "upstream_path": "Hazel/src/Platform/OpenGL/OpenGLRendererAPI.h",
+    "target_blob": "7e1864ef5b567a9da8b3f999c48ebbc3a24437b1"
+  },
+  {
+    "path": "Hazel/src/Platform/OpenGL/OpenGLRendererAPI.cpp",
+    "upstream_path": "Hazel/src/Platform/OpenGL/OpenGLRendererAPI.cpp",
+    "target_blob": "341e46534881fa6407f28306d474d741130e7702"
+  },
+  {
+    "path": "Sandbox/assets/shaders/Renderer2D_Circle.glsl",
+    "upstream_path": "Hazelnut/assets/shaders/Renderer2D_Circle.glsl",
+    "target_blob": "c1f9124d166890c5b553fb8d9a9d59c00d7f5d9f"
+  },
+  {
+    "path": "Sandbox/assets/shaders/Renderer2D_Line.glsl",
+    "upstream_path": "Hazelnut/assets/shaders/Renderer2D_Line.glsl",
+    "target_blob": "be9f3a368c0e95206498649e30011d1263f598e6"
+  },
+  {
+    "path": "Sandbox/assets/shaders/Renderer2D_Quad.glsl",
+    "upstream_path": "Hazelnut/assets/shaders/Renderer2D_Quad.glsl",
+    "target_blob": "59e6b66cd9314572bd6835a0d05b5e99157f054d"
+  },
+  {
+    "path": "Sandbox/assets/shaders/Renderer2D_Text.glsl",
+    "upstream_path": "Hazelnut/assets/shaders/Renderer2D_Text.glsl",
+    "target_blob": "ecbd1b9f918e03b354445862fc7ee9674aea23bc"
+  },
+  {
+    "path": "Hazel/src/Hazel/Renderer/Renderer.cpp",
+    "upstream_path": "Hazel/src/Hazel/Renderer/Renderer.cpp",
+    "target_blob": "51ff72612a651b4055d807a23551357932dc8cfb"
+  }
+]
