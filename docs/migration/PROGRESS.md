@@ -5,50 +5,40 @@ Baseline: `b030be7`. Fixed target: `1feb70572fa87fa1c4ba784a2cfeada5b4a500db`.
 
 ## Resume here
 
-Stage5's dedicated renderer/text gate passed Linux Debug/Release builds and all
-13 checks per configuration. Checkpoint subject: `Verify complete 2D renderer and
-text parity`; local commit/push and its CI are next. Continue stage6 scene physics,
-then stage7 dedicated scripting/project gates, editor and final hardening. Stage4f
-CI passed both OS/config builds and CPU scene/engine/watcher runtime. Final
-Premake-only dependency and cleanup/capability/cache acceptance gates remain unmet.
+Resumed 2026-10-01 on `migration/upstream-1feb705` at `f37b3e6`, preserving the
+five uncommitted stage6 files. No build, test or debugger process survived the
+session restart; no work was interrupted or restarted in parallel. Stage6 full
+Debug build and all ten sequential desktop checks passed before the restart.
+Release full build and all ten desktop checks also passed (0); stage6 Windows
+compilation remains pending until this checkpoint runs in branch CI. The live-duplicate physics crash was reproduced and fixed by
+reusing actual upstream body/fixture setup in private SynchronizePhysics2D.
 
-Stage 4f (complete Scene/Entity/Serializer/ScriptEngine/Glue) has passed final
-Linux Debug/Release builds and 16 sequential desktop checks per configuration.
-VS2022 generation/source/CRT/UTF-8/link/managed build-dependency inspection passed;
-this is not an MSVC build. Checkpoint subject: `Integrate and verify upstream
-scenes and script lifetimes`; checkpoint
-`04b562278589e951008ee751168c09d8b51d21c2` is committed and pushed.
-CPU tests include initialization failure recovery and standalone native scenes.
-Previous checkpoint `f9f55c6` (stage4e), Actions36905876374 passed both OS/config
-builds and Mono runtime. Stage4f Actions36921981641 passed both OS/config builds
-and full CPU scene/engine/watcher runtime. Windows GUI/editor/GPU/input and queued
-automatic Application reload remain untested. Continue stages5–9
-without an optional continuation question; investigate any CI failure first.
+Stage5 [Actions36924603403](https://github.com/cringlekaden/Hazel/actions/runs/36924603403)
+passed Linux/Windows Debug/Release compilation and CPU suites. Stage4f
+[Actions36921981641](https://github.com/cringlekaden/Hazel/actions/runs/36921981641)
+passed both OS/config builds and full CPU scene/engine/watcher runtime. Windows
+GUI/editor/GPU/input and queued automatic Application reload remain untested.
+Continue stage6, stage7 scripting/projects, stage8 editor and stage9 hardening in
+order; no optional continuation questions. Do not merge into master.
 
 Local dependency prefix: `--mono-root=build/dependencies/mono/linux/usr`.
 Gmake flags: `--migration-tests --shader-tools`; builds use
-`make config=debug|release -j2 --jobserver-style=pipe` and the relocated SDK CSC
-override (mono --config build/dependencies/mono/linux/etc/mono/config
-build/dependencies/mono/linux/usr/lib/mono/4.5/mcs.exe). Desktop runtime:
-`python3 scripts/migration/desktop-checks.py --config Debug|Release --stage stage4f`.
-Routine new logs are ignored build/migration/evidence; actual source blob records
-remain docs/migration/evidence/stage4f-imports.json. Stages5–9 remain ahead.
+`make config=debug|release -j2 --jobserver-style=pipe` with CSC set to the relocated
+Mono executable, `--config` build/dependencies/mono/linux/etc/mono/config and
+build/dependencies/mono/linux/usr/lib/mono/4.5/mcs.exe. Desktop runtime:
+`python3 scripts/migration/desktop-checks.py --config Debug|Release --stage stage6`.
+Routine logs go to ignored build/migration/evidence. Read PLAN.md, PRESERVATION.md
+and COMPARISON.md and check status/submodules before edits. Actual pinned upstream
+source is /tmp/hazel-upstream-1feb705.
 
-Final acceptance requirements added during stage 4c are recorded in PLAN.md.
-Continue the current stage. Final completion additionally requires concise
-progress/preservation/provenance/limitations records, ignored routine logs,
-validated Premake-only dependencies with no CMake, consolidated source-informed
-capabilities/path choices, shader/cache hardening, and fresh Linux/Windows builds
-and runtime evidence after cleanup. Premake-only shader dependencies are currently
-**unmet**: the existing validated shader-tool build still requires CMake. No new
-rendering backend or macOS support is authorized; the upstream target stays pinned.
-
-Read PLAN.md, PRESERVATION.md and COMPARISON.md. Check `git status` and submodule
-cleanliness before edits. The upstream source checkout is in
-`/tmp/hazel-upstream-1feb705`; if absent, clone TheCherno/Hazel and detach at the
-fixed hash. Do not use a moving master. Branch pushes are now authorized for CI; never merge
-into master. Build sequentially
-with at most two jobs.
+Final acceptance remains unmet: replace CMake shader dependency builds with
+validated Premake-only integration, consolidate capability/settings detection,
+audit shader selection/corrupt caches, complete editor and parity gates, clean
+tracked raw logs and consolidate concise provenance/limitations records, then
+fresh Linux/Windows builds and relevant runtime checks. Keep native Grandpa 4.2,
+separate test overrides/software profiles, clean dependencies, both OS coverage,
+future Mac/Metal architecture and all upstream features. No macOS implementation
+or validation is claimed. Upstream remains pinned to the hash above.
 
 ## Preparation status
 
@@ -1088,3 +1078,45 @@ gate is complete locally. Windows compile of the expanded GPU test will be check
 by the branch CI; Windows GPU execution remains untested. Checkpoint subject:
 `Verify complete 2D renderer and text parity`. Proceed to actual scene physics
 integration tests, preserving pinned Box2D and its target material/body APIs.
+
+Stage5 checkpoint `f37b3e6d4183928fd9e359a8a91cf042ac7c234c` is pushed;
+[Actions36924603403](https://github.com/cringlekaden/Hazel/actions/runs/36924603403)
+passed both OS/config builds and CPU suites. Expanded GPU test compilation passed
+Windows, but Windows GPU execution is still untested. Stage6 is active,
+preserving exact Box2D source/pin.
+
+## Stage 6 in progress: complete scene physics gate
+
+New CPU ScenePhysicsChecks exercise actual Scene start/update/stop/restart,
+box/circle contacts, all body types, material/density/fixed rotation, transform
+updates, pause/step, live scene copy, entity/component removal and live duplication/
+addition. The Debug probe builds (0), then runtime crashes (139) on live body
+duplication. Investigating the null runtime body observation before any advance;
+ignored evidence stage6-scene-before.log and native backtrace. The proposed local
+adaptation will reuse actual target body/fixture setup for newly added observations
+instead of retaining copied pointers or dropping components/features. No success
+is claimed yet. Windows stage5 CI must be checked before another checkpoint.
+
+GDB confirms SIGSEGV at Scene.cpp's runtime transform read (body observation null)
+from ScenePhysicsChecks live duplication. Sandbox ptrace denial was rerun through
+the required tool escalation; the valid native backtrace is ignored evidence.
+Private SynchronizePhysics2D now reuses the exact target body/box/circle fixture
+definitions/materials to initialize missing observations at start and before
+updates (including after native callbacks). Component additions clear borrowed
+body/fixture observations; world ownership and removal/stop cleanup are preserved.
+Debug build and expanded CPU SceneSmoke now pass (0), including actual scene
+contacts/gravity/transform updates, static/dynamic/kinematic types, fixed rotation/
+density/materials, pause/step, copy, stop/restart, runtime duplicate/remove/re-add
+body/collider lifetimes and the earlier serialization/managed/watcher checks.
+Stage6 full Debug/Release relinks and desktop checks are next. This is a local
+lifetime adaptation of Scene.cpp from the fixed source, with no Box2D pin/vendor
+changes, renderer/backend change or macOS implementation.
+
+Stage6 final Linux gate: full Debug/Release builds and ten sequential desktop
+checks per configuration passed (0). Native Intel HD4000 4.2 scene contacts,
+rendering/picking, serialization/scripts/physics/core and graceful Sandbox close
+passed; forced Mesa 4.1 and software 4.6 are distinct test profiles. Evidence is
+ignored build/migration/evidence/stage6-*.log. No process survives the gate.
+Checkpoint subject: `Verify scene physics and live body ownership`. Windows
+build/CPU runtime is pending branch CI; Windows graphics runtime is untested.
+Continue stage7 dedicated managed component/input/example/project gates.

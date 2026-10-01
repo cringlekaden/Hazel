@@ -12,7 +12,7 @@ import tempfile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', choices=('Debug', 'Release'), required=True)
-    parser.add_argument('--stage', choices=('stage3', 'stage4a', 'stage4b', 'stage4c', 'stage4d', 'stage4e', 'stage4f', 'stage5'), default='stage3')
+    parser.add_argument('--stage', choices=('stage3', 'stage4a', 'stage4b', 'stage4c', 'stage4d', 'stage4e', 'stage4f', 'stage5', 'stage6'), default='stage3')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     binaries = root / 'bin' / f'{args.config}-linux-x86_64'
@@ -34,7 +34,11 @@ def main():
         elif args.stage == 'stage4b':
             profiles = profiles[:2]
         for profile, overrides in profiles:
-            if args.stage == 'stage4f':
+            if args.stage == 'stage6':
+                checks = ['SceneGPUSmoke', 'RendererFeaturesSmoke']
+                if profile == 'native':
+                    checks += ['SceneSmoke', 'ProjectPhysicsSmoke', 'CoreSmoke', 'Sandbox']
+            elif args.stage == 'stage4f':
                 checks = ['SceneGPUSmoke', 'Renderer2DSmoke', 'RendererFeaturesSmoke']
                 if profile == 'native':
                     checks += ['SceneSmoke', 'FontSmoke', 'SceneFoundationSmoke', 'CoreSmoke', 'MonoSmoke', 'Sandbox']

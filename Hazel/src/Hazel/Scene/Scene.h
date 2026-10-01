@@ -64,6 +64,7 @@ namespace Hazel {
 
 		void OnPhysics2DStart();
 		void OnPhysics2DStop();
+		void SynchronizePhysics2D();
 
 		void RenderScene(EditorCamera& camera);
 	private:

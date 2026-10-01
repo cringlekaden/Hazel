@@ -186,6 +186,7 @@ namespace Hazel {
 		if (!m_IsPaused || m_StepFrames > 0)
 		{
 			if (m_IsPaused) --m_StepFrames;
+			SynchronizePhysics2D(); // Components added between frames are ready for scripts.
 			// Update scripts
 			{
 				// C# Entity OnUpdate
@@ -213,6 +214,7 @@ namespace Hazel {
 
 			// Physics
 			{
+				SynchronizePhysics2D(); // Native callbacks may add entities/components too.
 				const int32_t velocityIterations = 6;
 				const int32_t positionIterations = 2;
 				m_PhysicsWorld->Step(ts, velocityIterations, positionIterations);
@@ -300,6 +302,7 @@ namespace Hazel {
 		if (!m_IsPaused || m_StepFrames > 0)
 		{
 			if (m_IsPaused) --m_StepFrames;
+			SynchronizePhysics2D();
 			// Physics
 			{
 				const int32_t velocityIterations = 6;
@@ -442,7 +445,12 @@ namespace Hazel {
 	{
 		if (m_PhysicsWorld) return;
 		m_PhysicsWorld = CreateScope<b2World>(b2Vec2{ 0.0f, -9.8f });
+		SynchronizePhysics2D();
+	}
 
+	void Scene::SynchronizePhysics2D()
+	{
+		if (!m_PhysicsWorld) return;
 		auto view = m_Registry.view<Rigidbody2DComponent>();
 		for (auto e : view)
 		{
@@ -450,16 +458,18 @@ namespace Hazel {
 			auto& transform = entity.GetComponent<TransformComponent>();
 			auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
 
-			b2BodyDef bodyDef;
-			bodyDef.type = Utils::Rigidbody2DTypeToBox2DBody(rb2d.Type);
-			bodyDef.position.Set(transform.Translation.x, transform.Translation.y);
-			bodyDef.angle = transform.Rotation.z;
+			if (!rb2d.RuntimeBody) {
+				b2BodyDef bodyDef;
+				bodyDef.type = Utils::Rigidbody2DTypeToBox2DBody(rb2d.Type);
+				bodyDef.position.Set(transform.Translation.x, transform.Translation.y);
+				bodyDef.angle = transform.Rotation.z;
+				auto* body = m_PhysicsWorld->CreateBody(&bodyDef);
+				body->SetFixedRotation(rb2d.FixedRotation);
+				rb2d.RuntimeBody = body;
+			}
+			auto* body = static_cast<b2Body*>(rb2d.RuntimeBody);
 
-			b2Body* body = m_PhysicsWorld->CreateBody(&bodyDef);
-			body->SetFixedRotation(rb2d.FixedRotation);
-			rb2d.RuntimeBody = body;
-
-			if (entity.HasComponent<BoxCollider2DComponent>())
+			if (entity.HasComponent<BoxCollider2DComponent>() && !entity.GetComponent<BoxCollider2DComponent>().RuntimeFixture)
 			{
 				auto& bc2d = entity.GetComponent<BoxCollider2DComponent>();
 
@@ -475,7 +485,7 @@ namespace Hazel {
 				bc2d.RuntimeFixture = body->CreateFixture(&fixtureDef);
 			}
 
-			if (entity.HasComponent<CircleCollider2DComponent>())
+			if (entity.HasComponent<CircleCollider2DComponent>() && !entity.GetComponent<CircleCollider2DComponent>().RuntimeFixture)
 			{
 				auto& cc2d = entity.GetComponent<CircleCollider2DComponent>();
 
@@ -593,16 +603,19 @@ namespace Hazel {
 	template<>
 	void Scene::OnComponentAdded<Rigidbody2DComponent>(Entity entity, Rigidbody2DComponent& component)
 	{
+		component.RuntimeBody = nullptr;
 	}
 
 	template<>
 	void Scene::OnComponentAdded<BoxCollider2DComponent>(Entity entity, BoxCollider2DComponent& component)
 	{
+		component.RuntimeFixture = nullptr;
 	}
 
 	template<>
 	void Scene::OnComponentAdded<CircleCollider2DComponent>(Entity entity, CircleCollider2DComponent& component)
 	{
+		component.RuntimeFixture = nullptr;
 	}
 
 	template<>

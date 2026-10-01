@@ -12,6 +12,7 @@
 #include <atomic>
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <condition_variable>
 #include <filesystem>
 #include <fstream>
@@ -74,6 +75,53 @@ struct NativeProbe : ScriptableEntity {
     void OnUpdate(Timestep) override { ++Updated; }
     void OnDestroy() override { ++Destroyed; }
 };
+struct SceneContacts : b2ContactListener {
+    unsigned Began=0;
+    void BeginContact(b2Contact*) override { ++Began; }
+};
+static void ScenePhysicsChecks() {
+    for(int restart=0;restart<2;++restart) {
+        SceneContacts contacts; auto scene=CreateRef<Scene>();
+        auto floor=scene->CreateEntityWithUUID(400,"Floor"); floor.GetComponent<TransformComponent>().Translation={0,-0.5f,0};
+        floor.GetComponent<TransformComponent>().Scale={20,1,1}; floor.AddComponent<Rigidbody2DComponent>(); floor.AddComponent<BoxCollider2DComponent>();
+        auto box=scene->CreateEntityWithUUID(401,"Box"); box.GetComponent<TransformComponent>().Translation={-2,3,0};
+        auto& rigid=box.AddComponent<Rigidbody2DComponent>(); rigid.Type=Rigidbody2DComponent::BodyType::Dynamic; rigid.FixedRotation=true;
+        auto& collider=box.AddComponent<BoxCollider2DComponent>(); collider.Density=2; collider.Friction=0.7f; collider.Restitution=0.1f; collider.RestitutionThreshold=0.5f;
+        auto circle=scene->CreateEntityWithUUID(402,"Circle"); circle.GetComponent<TransformComponent>().Translation={2,6,0};
+        circle.AddComponent<Rigidbody2DComponent>().Type=Rigidbody2DComponent::BodyType::Dynamic; circle.AddComponent<CircleCollider2DComponent>().Restitution=0.4f;
+        auto moving=scene->CreateEntityWithUUID(403,"Kinematic"); moving.GetComponent<TransformComponent>().Translation={20,2,0};
+        moving.AddComponent<Rigidbody2DComponent>().Type=Rigidbody2DComponent::BodyType::Kinematic;
+        scene->OnRuntimeStart(); auto* body=static_cast<b2Body*>(box.GetComponent<Rigidbody2DComponent>().RuntimeBody);
+        auto* world=body->GetWorld(); world->SetContactListener(&contacts);
+        static_cast<b2Body*>(moving.GetComponent<Rigidbody2DComponent>().RuntimeBody)->SetLinearVelocity({1,0});
+        for(int frame=0;frame<360;++frame) scene->OnUpdateRuntime(1.0f/60);
+        const auto& boxTransform=box.GetComponent<TransformComponent>(); const auto& circleTransform=circle.GetComponent<TransformComponent>();
+        Check(contacts.Began>=2 && std::abs(boxTransform.Translation.y-0.5f)<0.06f && std::abs(circleTransform.Translation.y-0.5f)<0.08f,"Scene physics contacts/gravity did not update transforms");
+        Check(body->IsFixedRotation() && boxTransform.Rotation.z==0 && std::abs(body->GetMass()-2)<0.001f,"Scene fixed rotation/density changed");
+        auto* fixture=static_cast<b2Fixture*>(box.GetComponent<BoxCollider2DComponent>().RuntimeFixture);
+        Check(fixture->GetFriction()==0.7f && fixture->GetRestitution()==0.1f && fixture->GetRestitutionThreshold()==0.5f,"Scene material properties changed");
+        Check(std::abs(moving.GetComponent<TransformComponent>().Translation.x-26)<0.01f && moving.GetComponent<TransformComponent>().Translation.y==2,"Scene kinematic transform update failed");
+        scene->SetPaused(true); const auto previous=moving.GetComponent<TransformComponent>().Translation;
+        scene->OnUpdateRuntime(1.0f/60); Check(moving.GetComponent<TransformComponent>().Translation==previous,"Paused scene advanced physics");
+        scene->Step(); scene->OnUpdateRuntime(1.0f/60); Check(moving.GetComponent<TransformComponent>().Translation.x>previous.x,"Stepped scene did not advance physics");
+        auto copy=Scene::Copy(scene); Check(!copy->GetEntityByUUID(401).GetComponent<Rigidbody2DComponent>().RuntimeBody && !copy->GetEntityByUUID(401).GetComponent<BoxCollider2DComponent>().RuntimeFixture,"Scene copy retained physics observations");
+        scene->OnRuntimeStop(); Check(!box.GetComponent<Rigidbody2DComponent>().RuntimeBody && !box.GetComponent<BoxCollider2DComponent>().RuntimeFixture && !circle.GetComponent<CircleCollider2DComponent>().RuntimeFixture,"Scene stop left body/fixture observations");
+        scene->SetPaused(false); scene->OnRuntimeStart(); body=static_cast<b2Body*>(box.GetComponent<Rigidbody2DComponent>().RuntimeBody); world=body->GetWorld();
+        Check(world->GetBodyCount()==4,"Scene restart duplicated/lost bodies");
+        auto duplicate=scene->DuplicateEntity(box);
+        scene->OnUpdateRuntime(1.0f/60);
+        Check(duplicate.GetComponent<Rigidbody2DComponent>().RuntimeBody && duplicate.GetComponent<Rigidbody2DComponent>().RuntimeBody!=body && world->GetBodyCount()==5,"Runtime duplicate did not create an independent physics body");
+        scene->DestroyEntity(duplicate); Check(world->GetBodyCount()==4,"Destroyed runtime entity retained physics body");
+        box.RemoveComponent<BoxCollider2DComponent>(); Check(!body->GetFixtureList(),"Removed runtime collider retained physics fixture");
+        box.AddComponent<BoxCollider2DComponent>(); scene->OnUpdateRuntime(1.0f/60);
+        Check(body->GetFixtureList() && box.GetComponent<BoxCollider2DComponent>().RuntimeFixture,"Added runtime collider was not initialized");
+        moving.RemoveComponent<Rigidbody2DComponent>(); Check(world->GetBodyCount()==3,"Removed runtime rigid body retained native body");
+        moving.AddComponent<Rigidbody2DComponent>().Type=Rigidbody2DComponent::BodyType::Kinematic; scene->OnUpdateRuntime(1.0f/60);
+        Check(moving.GetComponent<Rigidbody2DComponent>().RuntimeBody && world->GetBodyCount()==4,"Re-added runtime body was not initialized");
+        scene->OnRuntimeStop();
+    }
+    std::cout<<"PASS: scene physics contacts/materials/types/transform updates, pause/step/restart, copy, live duplication and component/entity lifetimes\n";
+}
 static void SerializerChecks(const std::filesystem::path& directory) {
     auto source=CreateRef<Scene>(); auto entity=source->CreateEntityWithUUID(200,u8"sérialisation-é");
     auto& transform=entity.GetComponent<TransformComponent>(); transform.Translation={1,2,3}; transform.Rotation={0.1f,0.2f,0.3f}; transform.Scale={2,3,4};
@@ -200,7 +248,7 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
 }
 int main(int argc,char** argv) {
     try {
-        Log::Init(); Fixture fixture; WatcherChecks(fixture.Path); auto scene=CreateRef<Scene>();
+        Log::Init(); Fixture fixture; WatcherChecks(fixture.Path); ScenePhysicsChecks(); auto scene=CreateRef<Scene>();
         auto stale=scene->CreateEntityWithUUID(42,u8"entité-é");
         Check(stale.GetUUID()==UUID(42) && stale.GetName()==u8"entité-é","Entity ID/tag initialization failed");
         scene->DestroyEntity(stale); Check(!stale,"Destroyed entity still reports valid");
