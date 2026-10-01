@@ -1253,3 +1253,24 @@ Use Mono's documented default stdout sink, retaining loglevel3, soft breakpoints
 and the debugger agent. Keep strict fixture removal and diagnostics; no vendor
 patch or suppressed failure. Linux recompilation/runtime and Windows rerun are
 pending for this correction; existing source/build gates remain recorded above.
+
+Stage9a dependency checkpoint: Linux Debug's six Premake libraries compiled and
+installed from unchanged clean source pins. Full engine Debug compile/link passed.
+MigrationShaderToolsSmoke passed GLSL and HLSL optimization, semantic Vulkan/OpenGL
+SPIR-V validation, UBO/sampler reflection/names/bindings, GLSL410 generation and
+invalid-source diagnostics. No CMake execution. SDK VS generation confirms six
+projects, Windows-only glslang OS source, MDd/MD and UTF-8; generation is not an
+MSVC build. Replace the CMake hook with a root-owned forced cstdint header and
+actual pinned generators/source manifest. Eighteen grammar/generated headers
+match prior validated output; build-version timestamp is now deterministic from
+the shaderc pin's SOURCE_DATE_EPOCH rather than configure time. Incremental
+generation only publishes changed content. CI cache keys include every generator/
+workspace/source-manifest input and force a new Premake cache.
+
+This is a buildable Debug dependency checkpoint, not final acceptance: local
+Release SDK/build/runtime and CI both configurations remain pending. Capability/
+settings/cache hardening edits remain in the working tree and are excluded from
+this dependency-only commit. Editor correction7096803 Actions36935755402 passed
+both OS/config builds/CPU suites and all17 Windows SOFTWARE graphics/editor/close
+checks per configuration, including strict cleanup. Windows hardware and macOS
+remain untested. Continue sequentially through the pending stage9 gates.

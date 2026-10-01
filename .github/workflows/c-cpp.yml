@@ -27,7 +27,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
-            cmake \
             mono-devel \
             uuid-dev \
             libgtk-3-dev \
@@ -59,7 +58,7 @@ jobs:
         id: shader-cache
         with:
           path: build/dependencies/install
-          key: shader-tools-ubuntu24-gcc13-${{ hashFiles('scripts/dependencies/shader-tools.json', 'scripts/dependencies/build-shader-tools.py', 'scripts/dependencies/shaderc-compat.cmake') }}
+          key: shader-tools-premake-ubuntu24-gcc13-${{ hashFiles('scripts/dependencies/shader-tools.json', 'scripts/dependencies/build-shader-tools.py', 'scripts/dependencies/shader-workspace.lua', 'scripts/dependencies/shader-sources.json', 'scripts/dependencies/generate-shader-inputs.py', 'scripts/dependencies/shader-tools-compat.h') }}
 
       - name: Build pinned shader libraries (Debug and Release, two jobs)
         if: steps.shader-cache.outputs.cache-hit != 'true'
@@ -160,7 +159,7 @@ jobs:
         id: shader-cache
         with:
           path: build/dependencies/install
-          key: shader-tools-windows2022-msvc143-${{ hashFiles('scripts/dependencies/shader-tools.json', 'scripts/dependencies/build-shader-tools.py', 'scripts/dependencies/shaderc-compat.cmake') }}
+          key: shader-tools-premake-windows2022-msvc143-${{ hashFiles('scripts/dependencies/shader-tools.json', 'scripts/dependencies/build-shader-tools.py', 'scripts/dependencies/shader-workspace.lua', 'scripts/dependencies/shader-sources.json', 'scripts/dependencies/generate-shader-inputs.py', 'scripts/dependencies/shader-tools-compat.h') }}
 
       - name: Build pinned shader libraries (Debug and Release, two jobs)
         if: steps.shader-cache.outputs.cache-hit != 'true'

@@ -2,6 +2,7 @@
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
 #include <spirv_cross/spirv_glsl.hpp>
+#include <spirv-tools/libspirv.hpp>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -48,6 +49,7 @@ void main() { color=texture(image,uv); }
         for (auto kind : {shaderc_glsl_vertex_shader, shaderc_glsl_fragment_shader}) {
             auto spirv = Compile(compiler, kind, kind == shaderc_glsl_vertex_shader ? vertex : fragment, true);
             Check(!spirv.empty() && spirv.front()==0x07230203u, "Invalid Vulkan SPIR-V magic");
+            Check(spvtools::SpirvTools(SPV_ENV_VULKAN_1_2).Validate(spirv), "Optimized Vulkan module failed validation");
             spirv_cross::CompilerGLSL cross(spirv);
             auto resources = cross.get_shader_resources();
             if (kind == shaderc_glsl_vertex_shader) {
@@ -79,11 +81,21 @@ void main() { color=texture(image,uv); }
             cross.set_common_options(options);
             auto opengl=Compile(compiler,kind,cross.compile(),false);
             Check(!opengl.empty() && opengl.front()==0x07230203u, "OpenGL SPIR-V generation failed");
+            Check(spvtools::SpirvTools(SPV_ENV_OPENGL_4_5).Validate(opengl), "OpenGL module failed validation");
         }
+        shaderc::CompileOptions hlslOptions;
+        hlslOptions.SetSourceLanguage(shaderc_source_language_hlsl);
+        hlslOptions.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
+        hlslOptions.SetOptimizationLevel(shaderc_optimization_level_performance);
+        auto hlsl = compiler.CompileGlslToSpv("float4 main(float4 position : POSITION) : SV_Position { return position; }",
+            shaderc_vertex_shader, "migration-hlsl", hlslOptions);
+        Check(hlsl.GetCompilationStatus() == shaderc_compilation_status_success, hlsl.GetErrorMessage().c_str());
+        Check(spvtools::SpirvTools(SPV_ENV_VULKAN_1_2).Validate(hlsl.cbegin(), hlsl.cend() - hlsl.cbegin()),
+            "HLSL compiler/optimizer module failed validation");
         auto failure=compiler.CompileGlslToSpv("#version 450\ninvalid",shaderc_glsl_vertex_shader,"invalid-shader");
         Check(failure.GetCompilationStatus()!=shaderc_compilation_status_success && !failure.GetErrorMessage().empty(),
               "Invalid shader lacked failure diagnostics");
-        std::cout << "PASS: pinned shaderc/Cross compile Vulkan and OpenGL SPIR-V, reflect UBO/sampler bindings, generate GLSL 410 without 420pack, and report invalid input\n";
+        std::cout << "PASS: pinned shaderc/Cross compile GLSL/HLSL, optimize and validate Vulkan/OpenGL SPIR-V, reflect UBO/sampler bindings, generate GLSL 410 without 420pack, and report invalid input\n";
         return 0;
     } catch (const std::exception& error) {
         std::cerr << "FAIL: " << error.what() << '\n';
