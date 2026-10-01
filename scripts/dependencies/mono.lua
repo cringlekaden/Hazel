@@ -11,6 +11,31 @@ if not windows and not os.isfile(includes .. "/mono/jit/jit.h") then
     error("Mono development headers missing: install mono-devel/mono or provide --mono-root=SDK_PREFIX")
 end
 include (root .. "/Hazel-ScriptCore")
+project "SandboxScripts"
+    location (root .. "/build/SandboxScripts")
+    kind "SharedLib"
+    language "C#"
+    dotnetframework "4.7.2"
+    targetname "Sandbox"
+    targetdir (root .. "/bin/" .. outputdir .. "/SandboxScripts")
+    objdir (root .. "/bin-int/" .. outputdir .. "/SandboxScripts")
+    files { root .. "/Hazelnut/SandboxProject/Assets/Scripts/Source/**.cs" }
+    links { "Hazel-ScriptCore", "System", "System.Core" }
+    postbuildcommands { '{MKDIR} "' .. root .. '/Hazelnut/SandboxProject/Assets/Scripts/Binaries"',
+        '{COPYFILE} "%{cfg.buildtarget.abspath}" "' .. root .. '/Hazelnut/SandboxProject/Assets/Scripts/Binaries/Sandbox.dll"' }
+    filter "system:linux"
+        buildoptions { "-sdk:4.7.2" }
+    filter "configurations:Debug"
+        optimize "Off"
+        symbols "Default"
+    filter "configurations:Release"
+        optimize "On"
+        symbols "Default"
+    filter "configurations:Dist"
+        optimize "Full"
+        symbols "Off"
+    filter {}
+
 local consumers = { "Hazel", "Sandbox" }
 if _OPTIONS["migration-tests"] then
     for _, test in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke" } do
@@ -43,7 +68,7 @@ if _OPTIONS["migration-tests"] then
         dotnetframework "4.7.2"
         targetdir (root .. "/bin/" .. outputdir .. "/%{prj.name}")
         objdir (root .. "/bin-int/" .. outputdir .. "/%{prj.name}")
-        files { root .. "/tests/migration/ManagedFixture.cs" }
+        files { root .. "/tests/migration/ManagedFixture.cs", root .. "/Hazelnut/SandboxProject/Assets/Scripts/Source/**.cs" }
         links { "Hazel-ScriptCore", "System", "System.Core" }
         filter "system:linux"
             buildoptions { "-sdk:4.7.2" }

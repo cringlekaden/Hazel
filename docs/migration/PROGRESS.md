@@ -5,28 +5,25 @@ Baseline: `b030be7`. Fixed target: `1feb70572fa87fa1c4ba784a2cfeada5b4a500db`.
 
 ## Resume here
 
-Resumed 2026-10-01 on `migration/upstream-1feb705` at `f37b3e6`, preserving the
-five uncommitted stage6 files. No build, test or debugger process survived the
-session restart; no work was interrupted or restarted in parallel. Stage6 full
-Debug build and all ten sequential desktop checks passed before the restart.
-Release full build and all ten desktop checks also passed (0); stage6 Windows
-compilation remains pending until this checkpoint runs in branch CI. The live-duplicate physics crash was reproduced and fixed by
-reusing actual upstream body/fixture setup in private SynchronizePhysics2D.
+Stage7 complete locally: full Debug/Release builds and all sixteen sequential
+desktop checks per configuration passed. Actual upstream Player/Camera and every
+published managed component call passed in real Application contexts. TypeDef
+token discovery fixes a reproduced Mono abort from compiler-generated nested
+types. Example scenes/textures/project/scripts and a portable root/standalone
+Premake C# build are imported with provenance. Stage7 checkpoint/CI is next;
+continue stage8 editor, then stage9 and all final acceptance work.
 
-Stage5 [Actions36924603403](https://github.com/cringlekaden/Hazel/actions/runs/36924603403)
-passed Linux/Windows Debug/Release compilation and CPU suites. Stage4f
-[Actions36921981641](https://github.com/cringlekaden/Hazel/actions/runs/36921981641)
-passed both OS/config builds and full CPU scene/engine/watcher runtime. Windows
+Stage6 `c86d1dd` [Actions36927686042](https://github.com/cringlekaden/Hazel/actions/runs/36927686042)
+passed Linux/Windows Debug/Release compilation and CPU runtime suites. Windows
 GUI/editor/GPU/input and queued automatic Application reload remain untested.
-Continue stage6, stage7 scripting/projects, stage8 editor and stage9 hardening in
-order; no optional continuation questions. Do not merge into master.
+No local build, runtime or debugger process remains. Do not merge into master.
 
 Local dependency prefix: `--mono-root=build/dependencies/mono/linux/usr`.
 Gmake flags: `--migration-tests --shader-tools`; builds use
 `make config=debug|release -j2 --jobserver-style=pipe` with CSC set to the relocated
 Mono executable, `--config` build/dependencies/mono/linux/etc/mono/config and
 build/dependencies/mono/linux/usr/lib/mono/4.5/mcs.exe. Desktop runtime:
-`python3 scripts/migration/desktop-checks.py --config Debug|Release --stage stage6`.
+`python3 scripts/migration/desktop-checks.py --config Debug|Release --stage stage7`.
 Routine logs go to ignored build/migration/evidence. Read PLAN.md, PRESERVATION.md
 and COMPARISON.md and check status/submodules before edits. Actual pinned upstream
 source is /tmp/hazel-upstream-1feb705.
@@ -1120,3 +1117,49 @@ ignored build/migration/evidence/stage6-*.log. No process survives the gate.
 Checkpoint subject: `Verify scene physics and live body ownership`. Windows
 build/CPU runtime is pending branch CI; Windows graphics runtime is untested.
 Continue stage7 dedicated managed component/input/example/project gates.
+
+## Stage 7 in progress: managed API and actual example project
+
+Stage6 checkpoint c86d1dd is committed/pushed; its CI is pending. Import actual
+pinned SandboxProject scene/texture/project/example sources (stage7-imports.json).
+Root Premake builds the real Player/Camera scripts and deploys Sandbox.dll into
+ignored project Binaries. The test fixture also compiles those unchanged consumers.
+SceneGPUSmoke now exercises all managed Text properties, Transform, body type,
+both impulse overloads, velocity, entity lookup/cast, Input call and runtime
+restart alongside the existing field/serialization/project/reload/watcher gates.
+Input key-state retrieval is tested; no synthetic physical key press is claimed.
+Debug/Release builds and desktop suites are pending. No vendor/OS/backend changes.
+
+Stage7 first Debug GPU probe aborted in Mono class-init.c (`klass` null).
+Backtrace identifies ScriptEngine::LoadAssemblyClasses namespace/name lookup on
+compiler-generated nested types introduced by the component fixture's array.
+Resolve TypeDef rows by actual Mono metadata token and reject missing types
+explicitly before subclass inspection. This preserves assembly discovery rather
+than removing the triggering script constructs. Rerun pending; ignored evidence
+stage7-debug-native-SceneGPUSmoke.log. Host Mesa now reports 26.2.4-arch3.1/native
+Intel 4.2; this session has changed no system packages or driver configuration.
+
+Stage7 corrected full Debug build passed (0), then all sixteen sequential
+native 4.2/forced 4.1/software 4.6 desktop checks passed (0). Actual Player/Camera
+and all managed-component tests pass without deleting the nested-type trigger.
+Release build is running next; VS2022 generation passed (generation only).
+Current evidence is ignored stage7-*.log. No macOS or Windows graphics runtime
+validation is inferred. Public upstream refresh still resolves master to the fixed
+checkpoint; available asset-manager/projects/scripting refs contain only the
+RenderCaps TODO, with no equivalent capability/settings implementation.
+
+Stage6 checkpoint `c86d1dde9a89a52627d50b75c478efa00efe75d9`:
+[Actions36927686042](https://github.com/cringlekaden/Hazel/actions/runs/36927686042)
+completed successfully for Linux/Windows Debug/Release compilation and CPU
+scene/engine/physics/script/watcher suites. Windows graphics remains untested.
+Stage7 full Release build passed (0); its sixteen-check runtime suite is running.
+
+Stage7 full Debug/Release builds and all sixteen desktop checks/configuration
+passed (0); preserved managed/scenes/projects/physics/rendering/text/ownership
+regressions, actual examples and new component/internal-call coverage. Source
+record: evidence/stage7-imports.json; standalone example Premake replaces target
+vendor-Premake Windows paths with system Premake, using the same actual managed
+sources/API and net472 references. Root generation/deployment and VS generation
+passed; standalone workspace build will also be checked during final clean build.
+Checkpoint subject: `Verify managed components and import upstream example project`.
+Windows stage7 compilation/CPU runtime awaits branch CI; GPU remains untested.

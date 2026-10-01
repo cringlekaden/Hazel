@@ -28,3 +28,6 @@ compile_commands.json
 
 # VS Code local config
 .vscode/
+# Example managed project outputs
+Hazelnut/SandboxProject/Assets/Scripts/Binaries/
+Hazelnut/SandboxProject/Assets/Scripts/Intermediates/

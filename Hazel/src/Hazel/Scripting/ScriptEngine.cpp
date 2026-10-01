@@ -7,6 +7,7 @@
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/object.h"
 #include "mono/metadata/attrdefs.h"
+#include "mono/metadata/tokentype.h"
 #include "mono/metadata/row-indexes.h"
 #include "mono/metadata/mono-debug.h"
 #include "mono/metadata/threads.h"
@@ -479,7 +480,10 @@ namespace Hazel {
 			else
 				fullName = className;
 
-			MonoClass* monoClass = mono_class_from_name(s_Data->AppAssemblyImage, nameSpace, className);
+			// TypeDef rows include nested/compiler-generated classes which cannot
+            // be resolved by namespace/name alone. Resolve the actual metadata token.
+            MonoClass* monoClass = mono_class_get(s_Data->AppAssemblyImage, MONO_TOKEN_TYPE_DEF | (i + 1));
+            if (!monoClass) throw std::runtime_error("Unable to resolve managed TypeDef: " + fullName);
 
 			if (monoClass == entityClass)
 				continue;

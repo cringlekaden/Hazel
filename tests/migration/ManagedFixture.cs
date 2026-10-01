@@ -49,4 +49,28 @@ namespace Migration {
             if (!HasBody) Translation = Translation + new Hazel.Vector3(Speed * timestep, 0, 0);
         }
     }
+    // Local regression fixture for the actual public component/internal-call API.
+    public class ComponentProbe : Hazel.Entity {
+        public bool Passed;
+        void OnCreate() {
+            var transform = GetComponent<Hazel.TransformComponent>();
+            transform.Translation = new Hazel.Vector3(3, 4, 0);
+            if (transform.Translation.X != 3 || transform.Translation.Y != 4) throw new Exception("Transform calls");
+            var text = GetComponent<Hazel.TextComponent>();
+            text.Text = "Hazel é λ";
+            text.Color = new Hazel.Vector4(0.1f, 0.2f, 0.3f, 0.4f);
+            text.Kerning = 0.25f; text.LineSpacing = 0.5f;
+            if (text.Text != "Hazel é λ" || text.Color.W != 0.4f || text.Kerning != 0.25f || text.LineSpacing != 0.5f) throw new Exception("Text calls");
+            var body = GetComponent<Hazel.Rigidbody2DComponent>();
+            foreach (var type in new[] { Hazel.Rigidbody2DComponent.BodyType.Static, Hazel.Rigidbody2DComponent.BodyType.Kinematic, Hazel.Rigidbody2DComponent.BodyType.Dynamic }) {
+                body.Type = type; if (body.Type != type) throw new Exception("Body type calls");
+            }
+            body.ApplyLinearImpulse(new Hazel.Vector2(1, 0), new Hazel.Vector2(0, 0), true);
+            body.ApplyLinearImpulse(new Hazel.Vector2(1, 0), true);
+            if (body.LinearVelocity.X <= 0) throw new Exception("Velocity/impulse calls");
+            Hazel.Input.IsKeyDown(Hazel.KeyCode.Space);
+            if (FindEntityByName("Player") == null || FindEntityByName("Missing") != null) throw new Exception("Entity calls");
+            Passed = true;
+        }
+    }
 }
