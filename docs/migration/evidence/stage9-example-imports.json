@@ -14,5 +14,10 @@
     "path": "Sandbox/assets/shaders/Texture.glsl",
     "destination": "Sandbox/assets/shaders/ExampleTexture.glsl",
     "upstream_blob": "9dcb985a82d811e924de84f5d4fe7d65b73b1158"
+  },
+  {
+    "commit": "1feb70572fa87fa1c4ba784a2cfeada5b4a500db",
+    "path": "LICENSE",
+    "upstream_blob": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
   }
 ]

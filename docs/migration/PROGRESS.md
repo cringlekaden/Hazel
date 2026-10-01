@@ -78,3 +78,10 @@ Makefile/.make/.csproj outputs; add scoped ignore rules. Update the fresh checko
 to this source-only correction while SDK compilation continues; shader dependency
 inputs remain identical. After SDK finishes, run fresh root builds/runtimes and
 standalone managed compilation.
+
+Final license cleanup moves the exact upstream Apache2 text from the redundant
+migration copy to repository LICENSE, recording its original blob. Header EOF
+whitespace is trimmed; source semantics unchanged. Fresh SDK Debug compilation
+has finished and archive installation/Release follow in the same serial helper.
+Both9ed63ed and01c1a3e Windows CI are in graphics/editor runtime; results remain
+pending. No additional local build/test is running alongside the SDK helper.

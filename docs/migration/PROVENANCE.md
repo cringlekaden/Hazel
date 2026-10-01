@@ -1,6 +1,6 @@
 # Source and dependency provenance
 
-Baseline: `b030be7` (initial clean master, four clean submodules). Fixed source: [TheCherno/Hazel 1feb70572fa87fa1c4ba784a2cfeada5b4a500db](https://github.com/TheCherno/Hazel/tree/1feb70572fa87fa1c4ba784a2cfeada5b4a500db), “Fix for cloning issues with msdf-atlas-gen (#617)”, 2023-10-27. Imported actual Git source; upstream licensing is retained in UPSTREAM-LICENSE. Source target remains pinned throughout.
+Baseline: `b030be7` (initial clean master, four clean submodules). Fixed source: [TheCherno/Hazel 1feb70572fa87fa1c4ba784a2cfeada5b4a500db](https://github.com/TheCherno/Hazel/tree/1feb70572fa87fa1c4ba784a2cfeada5b4a500db), “Fix for cloning issues with msdf-atlas-gen (#617)”, 2023-10-27. Imported actual Git source; upstream licensing is retained byte-for-byte in the repository LICENSE. Source target remains pinned throughout.
 
 Baseline tracked-entry comparison remains in `evidence/source-comparison.tsv` and `comparison-summary.json`: local90/upstream829 entries;748 upstream-only,9 local-only,77 changed,4 identical. These are baseline snapshots, not a final diff. Reproduce using `scripts/migration/compare-upstream.py UPSTREAM_CHECKOUT`. Per-stage `evidence/*-imports.json` records exact upstream file/blob IDs; `stage4b-font-pins.json` records nested font pins. Routine logs/CI metadata are kept outside tracked source.
 
@@ -64,3 +64,8 @@ Sandbox --example-layer makes it runnable for regression checks. The target pin
 is unchanged. Other absent target entries are replaced Windows/Vulkan/bundled
 Premake build tooling, intentional OS/backend TU placement, or repository-specific
 branding/contribution templates, not engine/editor/managed functionality.
+
+The actual upstream Apache2 license is now at standard repository LICENSE;
+the redundant migration-directory copy is removed. Dependency/font licenses
+remain in their source/install locations. Scoped ignore rules keep standalone
+Premake-generated Makefile/.make/.csproj files outside tracked source.
