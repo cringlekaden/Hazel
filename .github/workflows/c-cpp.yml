@@ -14,7 +14,7 @@ jobs:
   linux-build:
     name: Linux Debug and Release
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 90
 
     steps:
       - name: Check out Hazel and its pinned submodules
@@ -27,6 +27,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
+            cmake \
             uuid-dev \
             libgtk-3-dev \
             libx11-dev \
@@ -52,14 +53,30 @@ jobs:
             PREMAKE_OPTS=--curl-src=none
           echo "$RUNNER_TEMP/premake-core/bin/release" >> "$GITHUB_PATH"
 
+      - name: Restore pinned shader libraries
+        uses: actions/cache@v4
+        id: shader-cache
+        with:
+          path: build/dependencies/install
+          key: shader-tools-ubuntu24-gcc13-${{ hashFiles('scripts/dependencies/shader-tools.json', 'scripts/dependencies/build-shader-tools.py', 'scripts/dependencies/shaderc-compat.cmake') }}
+
+      - name: Build pinned shader libraries (Debug and Release, two jobs)
+        if: steps.shader-cache.outputs.cache-hit != 'true'
+        run: python3 scripts/dependencies/build-shader-tools.py --jobs 2
+
       - name: Generate GNU Make projects
-        run: premake5 --migration-tests gmake
+        run: premake5 --migration-tests --shader-tools gmake
 
       - name: Build Debug
         run: make config=debug -j2
 
       - name: Build Release
         run: make config=release -j2
+
+      - name: Verify shader toolchain at runtime
+        run: |
+          bin/Debug-linux-x86_64/MigrationShaderToolsSmoke/MigrationShaderToolsSmoke
+          bin/Release-linux-x86_64/MigrationShaderToolsSmoke/MigrationShaderToolsSmoke
 
       - name: Verify build outputs
         run: |
@@ -75,7 +92,7 @@ jobs:
   windows-build:
     name: Windows Debug and Release
     runs-on: windows-2022
-    timeout-minutes: 45
+    timeout-minutes: 90
 
     steps:
       - name: Check out Hazel and its pinned submodules
@@ -100,14 +117,33 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
+      - name: Restore pinned shader libraries
+        uses: actions/cache@v4
+        id: shader-cache
+        with:
+          path: build/dependencies/install
+          key: shader-tools-windows2022-msvc143-${{ hashFiles('scripts/dependencies/shader-tools.json', 'scripts/dependencies/build-shader-tools.py', 'scripts/dependencies/shaderc-compat.cmake') }}
+
+      - name: Build pinned shader libraries (Debug and Release, two jobs)
+        if: steps.shader-cache.outputs.cache-hit != 'true'
+        run: python scripts/dependencies/build-shader-tools.py --jobs 2
+
       - name: Generate Visual Studio projects
-        run: premake5 --migration-tests vs2022
+        run: premake5 --migration-tests --shader-tools vs2022
 
       - name: Build Debug
         run: msbuild Hazel.sln /m:2 /p:Configuration=Debug /p:Platform=x64 /verbosity:minimal
 
       - name: Build Release
         run: msbuild Hazel.sln /m:2 /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+
+      - name: Verify shader toolchain at runtime
+        shell: pwsh
+        run: |
+          & bin/Debug-windows-x86_64/MigrationShaderToolsSmoke/MigrationShaderToolsSmoke.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & bin/Release-windows-x86_64/MigrationShaderToolsSmoke/MigrationShaderToolsSmoke.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Verify build outputs
         shell: pwsh

@@ -1,0 +1,5 @@
+==== Building MigrationShaderToolsSmoke (debug) ====
+Creating ../../bin-int/Debug-linux-x86_64/MigrationShaderToolsSmoke
+Creating ../../bin/Debug-linux-x86_64/MigrationShaderToolsSmoke
+ShaderToolsSmoke.cpp
+Linking MigrationShaderToolsSmoke

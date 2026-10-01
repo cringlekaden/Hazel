@@ -1,6 +1,6 @@
 # Migration progress
 
-Last updated: 2026-09-30. Branch: `migration/upstream-1feb705`.
+Last updated: 2026-10-01. Branch: `migration/upstream-1feb705`.
 Baseline: `b030be7`. Fixed target: `1feb70572fa87fa1c4ba784a2cfeada5b4a500db`.
 
 ## Resume here
@@ -45,11 +45,13 @@ with at most two jobs.
 Preparation checkpoint: `a20b1ba` — baseline evidence, comparison, preservation
 inventory and plan, committed before any engine implementation changes.
 
-Stage 1 implemented and Linux Debug/Release GPU checks passed; final Debug
-rebuild after whitespace cleanup passed. Stages 2–9 pending. Windows MSVC
-builds and runtime have not been run. Remote Actions coverage is retained and
-extended to migration branches and compilation of the verification executable;
-no remote workflow was triggered and no results are assumed.
+Stage 1 checkpoint `81b3861` and stage 2 checkpoint `92eb60a` have passed
+Linux and Windows Debug/Release compilation in Actions. Stage 2 also passed
+local Debug/Release core, renderer and graceful Sandbox shutdown runtime checks
+on Intel HD 4000/OpenGL 4.2. Windows engine runtime is untested. Stage 3 is in
+progress (dependency toolchain and pending backend integration); stages 4–9
+remain pending. The sections below retain initial-session evidence, followed by
+resumed-session results that supersede the initial unrun CI status.
 
 ## Stage 1 source provenance
 
@@ -118,13 +120,15 @@ validation and graceful Sandbox shutdown. The GPU probe does exercise resource
 destruction while its context is alive and reports no OpenGL error, but it is not
 an Application/LayerStack lifecycle test. No stage 2–9 functionality is claimed.
 
-Next implementation: stage 2 core/platform architecture after reviewing the
+Initial-session next implementation (completed in the resumed session below):
+stage 2 core/platform architecture after reviewing the
 remaining Windows gate. Keep the Scope-owned LayerStack when adapting upstream
 Application; coordinate Base/Core/assert/event/input renames, avoid duplicate
 OnAttach, investigate destruction order and the duplicate Windows glfwInit,
 and implement platform utilities separately. Do not copy target raw layer owners
 or Win32-only implementations onto Linux. Obtain Windows build evidence when a
-Windows host is available; do not push merely to trigger CI.
+Windows host is available. This initial-session no-push restriction was
+superseded by the resumed user instruction authorizing migration-branch CI pushes.
 
 Stage 1 checkpoint subject: `Import upstream renderer foundations for OpenGL 4.2`.
 Resolve its hash with `git log -1 --format='%h %s' -- tests/migration`. The
@@ -238,3 +242,95 @@ push and Actions result; VS generation is not a substitute.
 Checkpoint subject: `Import upstream core and platform architecture with safe shutdown`.
 Source provenance: evidence/stage2-imports.json. Continue with stage 3 after the
 Windows compilation result; preserve all earlier ownership and platform decisions.
+
+
+Stage 2 checkpoint: `92eb60a000008df81a93a033c327e075e4fb34ca`, pushed only to
+`migration/upstream-1feb705`. [Actions run 36807370723](https://github.com/cringlekaden/Hazel/actions/runs/36807370723)
+completed successfully: Linux and Windows Debug/Release compile/link and expected
+output checks passed. evidence/stage2-actions.json records the exact head and job
+results. These jobs compiled the smoke executables but did not run them;
+**Windows runtime remains untested**. Stage 2 compilation gate is satisfied.
+
+## Stage 3 dependency preparation
+
+Started after the stage 2 CI pass. No existing vendor pin changes. Evaluate
+shaderc v2023.6 (`39aa522785f130130927cd4766a37e8813af6d66`) with its exact DEPS
+revisions and SPIRV-Cross Vulkan SDK 1.3.268.0
+(`2de1265fca722929785d9acdec4ab728c47a0254`), contemporary with the pinned Hazel
+checkpoint. Build static shader tools from clean source outside vendor in ignored
+build/dependencies; use the same source pins on Linux and Windows, dynamic CRT
+with configuration-matched Debug/Release libraries, and at most two build jobs.
+The installed Linux shaderc 2026.3.1 is deliberately not mixed with an older Cross
+build. Test compilation/reflection/GLSL generation before integrating the pipeline.
+
+CMake was absent locally. Downloaded the official 3.31.6 Linux x86_64 archive to
+/tmp and verified SHA-256 against the official release manifest:
+`5a1133ff103c71eb5120e2cc3de922733e7d8a26a98ae716397e8676adb367bf`.
+Temporary tool path: /tmp/cmake-3.31.6-linux-x86_64/bin/cmake. No system install.
+
+Concrete future-portability obstacles identified for stage 3: target DSA texture
+and framebuffer operations, glClearTexImage, glSpecializeShader and GLSL 450,
+plus 420 explicit resource bindings and depth texture storage if supporting 4.1.
+Use bind-based equivalents, manually bind reflected resources, and generate GLSL
+410 where viable. Context hints/assertions still require 4.2 at this point; no 4.1
+or macOS support is claimed. Backend tests must prove functionality before lowering
+the requirement. Keep the native 4.2 regression tests intact.
+
+
+Stage 3 dependency Debug attempt failed in glslang SpvBuilder.h: GCC 16 no longer
+provides uint32_t through unrelated standard headers. Root-owned
+scripts/dependencies/shaderc-compat.cmake supplies cstdint only to glslang's SPIRV
+target under GCC/Clang, deferred until that target exists. No pinned vendor edits,
+optimizer disablement or feature reduction. Requires CMake 3.19+ for DEFER.
+Failure output: evidence/stage3-tools-debug.log. Retry uses the same build tree.
+The shallow SPIRV-Tools version generator also logs a git describe failure and
+contains a broken rev-parse fallback; it continues with a date. SOURCE_DATE_EPOCH
+now fixes that date to the shaderc commit timestamp, while the installation
+manifest carries all exact source hashes. This diagnostic is not a compile failure.
+
+
+Stage 3 Debug pinned tool build and independent toolchain runtime test passed (0):
+evidence/stage3-tools-debug-fixed.log, stage3-tools-smoke-build-debug.log and
+stage3-tools-smoke-debug.log. All five source trees were checked clean by the
+builder. Release tool build is in progress. The build only selects required
+library targets; shader compilation/optimization/reflection features are retained.
+Vendor example/test executables are not part of the engine dependency build.
+
+Engine stage 3 adaptations are being prepared alongside this tool-only work and
+are not yet verified: texture specifications/formats/mips and UTF-8 memory loading;
+framebuffer integer picking/full clears/depth-only/MSAA resolving; target shaderc
+and Cross pipeline with source-dependent cache keys, always-regenerated GLSL 410,
+manual reflected UBO/sampler binding, checked failure cleanup, and a gated native
+OpenGL 4.6 SPIR-V program path. Existing GLSL 330/420 direct compilation remains
+for shaders using default uniforms (including the original Sandbox and stage 1
+regression test). No engine 4.1 requirement change yet. Target source blob records
+are in evidence/stage3-imports.json; these pending engine files must not be included
+in the earlier tool-only checkpoint until engine builds and GPU checks pass.
+
+
+## Stage 3a dependency checkpoint
+
+The dependency-only checkpoint deliberately excludes the pending engine backend
+files and RendererFeaturesSmoke. Stage 2 engine source remains the buildable
+engine in this checkpoint. All tool builds and runtime checks ran sequentially,
+with at most two compiler jobs.
+
+| Check | Actual result | Evidence |
+| --- | --- | --- |
+| Debug shaderc/Cross libraries | Pass (0), after the investigated GCC header correction | stage3-tools-debug-fixed.log |
+| Debug tool test compile/link and runtime | Pass (0), Vulkan/OpenGL SPIR-V, reflection, GLSL 410 without 420pack, invalid-input diagnostics | stage3-tools-smoke-build-debug.log, stage3-tools-smoke-debug.log |
+| Release shaderc/Cross libraries | Pass (0) | stage3-tools-release.log |
+| Release tool test compile/link and runtime | Pass (0), same coverage | stage3-tools-smoke-build-release.log, stage3-tools-smoke-release.log |
+| Dependency source cleanliness and exact revisions | Pass, checked by builder after each configuration | stage3-tools-manifest-debug.json, stage3-tools-manifest-release.json |
+| VS2022 generation and tool test CRT/UTF-8 inspection | Pass, generation/static checks only | stage3-tools-windows-generation.log, stage3-tools-windows-settings.txt |
+
+The retained Linux/Windows workflow now builds both library configurations before
+Premake, with two jobs, and runs the CPU shader-tool test on both hosts. Installed
+libraries are cached by OS/toolchain plus the pins/script/compatibility-hook hash.
+A 90-minute job limit accommodates first-time source builds; parallelism remains
+limited to two. Windows shader-tool compilation/runtime is pending CI. Windows
+engine/GPU runtime is untested. No engine OpenGL 4.1 runtime is claimed yet.
+
+Checkpoint subject: `Pin and verify portable shader compilation dependencies`.
+Continue directly with engine stage 3 integration, local Debug/Release builds and
+real 4.2/4.1 GPU checks; investigate CI/tool failures before advancing to stage 4.

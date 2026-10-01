@@ -1,0 +1,5 @@
+==== Building MigrationShaderToolsSmoke (release) ====
+Creating ../../bin-int/Release-linux-x86_64/MigrationShaderToolsSmoke
+Creating ../../bin/Release-linux-x86_64/MigrationShaderToolsSmoke
+ShaderToolsSmoke.cpp
+Linking MigrationShaderToolsSmoke

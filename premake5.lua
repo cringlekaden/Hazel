@@ -31,6 +31,12 @@ newoption
 }
 
 
+newoption
+{
+    trigger = "shader-tools",
+    description = "Build the pinned shader toolchain verification target"
+}
+
 workspace "Hazel"
     defines { "GLM_ENABLE_EXPERIMENTAL" }
     architecture "x64"
@@ -564,4 +570,8 @@ project "Sandbox"
 if _OPTIONS["migration-tests"] then
     MigrationLinuxLinks = gtkLinks
     include "tests/migration"
+end
+
+if _OPTIONS["shader-tools"] then
+    include "scripts/dependencies"
 end

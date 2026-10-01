@@ -110,3 +110,21 @@ Stage 2 adds the upstream application specification, main-thread queue, typed
 input/events, filesystem/buffers/UUID/timer and editor camera/math. Native Linux
 file dialogs require GTK3 development libraries; Windows uses native wide dialogs.
 Layers detach and release their resources before renderer and window shutdown.
+
+
+The migration's shader toolchain is built from exact source revisions on both
+Linux and Windows, rather than requiring a Windows Vulkan SDK. Install CMake
+(3.19 or newer), Python 3 and Git, then run:
+
+```sh
+python3 scripts/dependencies/build-shader-tools.py --jobs 2
+premake5 --migration-tests --shader-tools gmake
+make config=debug -j2
+```
+
+On Windows use `python` and the `vs2022` Premake action, then MSBuild with `/m:2`.
+The setup builds Debug and Release sequentially under ignored `build/dependencies`;
+source pins are in `scripts/dependencies/shader-tools.json`, and each installed
+configuration has a provenance manifest. Dependencies use the dynamic MSVC CRT.
+`MigrationShaderToolsSmoke` verifies compilation/reflection and GLSL 410 generation;
+it does not establish an engine OpenGL 4.1 or macOS runtime port.
