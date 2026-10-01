@@ -13,6 +13,10 @@
 #include <iostream>
 #include <random>
 #include <stdexcept>
+#ifdef HZ_PLATFORM_WINDOWS
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 namespace Hazel {
 static void Check(bool condition, const char* message) { if (!condition) throw std::runtime_error(message); }
 class EditorWorkflowSmoke : public Layer {
@@ -134,7 +138,26 @@ int main(int argc, char** argv) {
             application.Run();
         }
         Check(done && !ScriptEngine::IsInitialized() && !Application::TryGet(), "Editor workflow/shutdown failed");
-        std::filesystem::current_path(previous); std::filesystem::remove_all(directory);
+        std::filesystem::current_path(previous);
+#ifdef HZ_PLATFORM_WINDOWS
+        // Diagnose the reproduced Windows-only cleanup lock separately from the
+        // actual editor/shutdown assertions; keep deletion strict for this probe.
+        std::error_code cleanupError; std::filesystem::remove_all(directory, cleanupError);
+        if (cleanupError) {
+            wchar_t nativeDirectory[32768]{};
+            GetCurrentDirectoryW(32768, nativeDirectory);
+            std::cerr << "Cleanup diagnostic: error=" << cleanupError.value()
+                << "; cwd=" << std::filesystem::current_path().generic_u8string()
+                << "; native-cwd=" << std::filesystem::path(nativeDirectory).generic_u8string() << '\n';
+            std::error_code scanError;
+            for (auto it = std::filesystem::recursive_directory_iterator(directory, scanError);
+                 !scanError && it != std::filesystem::recursive_directory_iterator(); it.increment(scanError))
+                std::cerr << "Remaining fixture: " << it->path().generic_u8string() << '\n';
+            throw std::filesystem::filesystem_error("Editor fixture cleanup", directory, cleanupError);
+        }
+#else
+        std::filesystem::remove_all(directory);
+#endif
         std::cout << "PASS: actual docked editor/panels, Unicode content paths, save/reopen/project, duplicate, gizmo shortcuts/drawing, play/pause/step/simulate/stop and shutdown\n";
         return 0;
     } catch (const std::exception& error) {

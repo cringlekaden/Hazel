@@ -1232,3 +1232,12 @@ preflight checks only. It exercises rendering, actual editor workflow, queued
 reload and both applications' native graceful close, including Unicode CLI project
 arguments. Raw evidence becomes CI artifacts/ignored output. Physical mouse drag
 and native file-dialog interaction still require separate execution.
+
+Stage8 Actions36932885871 Windows Debug/Release compilation passed, then the
+new software46 runtime passed renderer/core/features/full 2D/font/full scene GPU
+(including automatic reload), and the editor's workflow/shutdown assertions passed.
+EditorSmoke then failed strict temporary-directory deletion with sharing violation
+32. Overall Windows graphics gate is not yet passed. Add Windows-only cleanup
+path/native-cwd/remaining-file diagnostics and rerun, preserving every functional
+check. The process had exited; no surviving CI runtime is assumed. Raw failed job
+log is ignored stage8-ci-windows.log. Linux run is finishing Release/CPU gates.
