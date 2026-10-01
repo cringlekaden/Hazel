@@ -577,3 +577,5 @@ include "scripts/dependencies/scene-foundation.lua"
 include "scripts/dependencies/fonts.lua"
 
 include "scripts/dependencies/physics.lua"
+
+include "scripts/dependencies/mono.lua"

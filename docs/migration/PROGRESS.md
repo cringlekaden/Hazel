@@ -795,3 +795,68 @@ is pending the next branch push, and no Windows GPU runtime is claimed.
 Checkpoint subject: `Import pinned Box2D and portable upstream projects`.
 Continue with real Mono dependencies/integration and full scenes; stages 4–9 and
 final acceptance requirements remain incomplete.
+
+Stage 4d checkpoint `d69369f1575031a6b83237a8e4084efdec33018c`
+[Actions run 36902508074](https://github.com/cringlekaden/Hazel/actions/runs/36902508074)
+passed both OS Debug/Release builds and CPU shader, foundation and new project/
+physics runtime suites. Windows project/Box2D CPU prerequisite runtime is verified;
+Windows Scene/app/GPU runtime is not. No scene-level physics claim from this test.
+
+## Stage 4e in progress: actual managed API and Mono SDK
+
+Actual target Hazel-ScriptCore source/project, Windows Mono SDK and managed runtime
+files are copied from the pinned checkout; blobs in stage4e-imports.json. Keep the
+target managed API/names and .NET 4.7.2 project. Root-owned output changes isolate
+Debug/Release assemblies. Windows native archives preserve MSVCRTD/MSVCRT matches.
+Linux uses native Mono development SDK headers/shared SGen runtime, with optional
+--mono-root for a local SDK prefix; no OS condition is added to managed APIs.
+
+Local package 6.12.0.206-1 was downloaded into ignored build/dependencies/mono and
+verified against SHA-256 `5c30dcc286b1f65073cf267a4befa5ef4ae282351c4337beada740a15ae1e528`
+from /var/lib/pacman/sync/extra.db (official Arch package through CachyOS mirror).
+It is extracted locally, without a system installation. Runtime/compiler report
+6.12.0; initial runtime/compiler invocations work. The package carries its licenses.
+A clean Linux environment can instead install its native mono development package.
+
+Premake generation initially resolved relative --mono-root against the included
+script directory, then exposed the unavailable rpathdirs API. Resolve against the
+repository root and use current Premake runpathdirs; generation now passes. An old
+generated Makefile ran after the failed generator but did not include Mono targets;
+that build is not Mono verification. The narrow existing flags shim is unchanged.
+The actual new managed/native build and domain/reflection/GC tests are pending.
+
+First actual managed build failed with mcs CS2011 despite its response file
+existing. A direct reproduction showed that the extracted runtime lacked its
+installed /etc/mono/config DLL mappings. Passing the extracted --config path to
+the compiler fixes the same command (0); no generated-response-file patch is
+needed. The native embedding test parses the build-selected native Mono config
+before JIT startup. Premake selects its existing Mono compiler set by default on
+Linux; Windows keeps the target Visual Studio managed flow. Normal installed SDKs
+supply their own config/compiler launcher; the relocated local SDK uses explicit
+CSC arguments with its config. Debug managed/native rebuild is pending.
+
+Managed compilation's next concrete failure was missing System.Linq under
+Premake /noconfig. Add explicit System/System.Core assembly references and the
+Mono -sdk:4.7.2 profile instead of removing the upstream using/API. Actual Debug
+managed/native build now passes (0). Sequential MonoSmoke and graceful Sandbox
+both pass (0). MonoSmoke uses actual compiled Hazel-ScriptCore, a derived fixture,
+native FileSystem assembly bytes at a Unicode path, entity inheritance, float/
+UTF-16 char/uint64 reflection, actual Hazel.Vector3/method execution, GC handles,
+managed exception reporting and two created/unloaded script domains. This verifies
+the dependency/managed API, not the pending ScriptEngine/Glue/Scene integration.
+Exact SDK/package/CRT decisions are in scripts/dependencies/mono.json. No macOS
+runtime/support is implemented or inferred. Release and Windows checks are pending.
+
+Stage 4e Release managed/native build passed (0), followed by MonoSmoke and
+graceful Sandbox (both 0), after Debug completed. Logs remain ignored
+build/migration/evidence/stage4e-*.log. Both native builds use at most two jobs.
+VS2022 generation/inspection passed managed .NET 4.7.2 projects, native MonoSmoke
+UTF-8/dynamic CRT, and matching Debug/Release static SDK paths. CI now installs the
+native Linux Mono development package and runs real managed/native embedding on
+both OSes/configurations. Windows compilation/Mono runtime remains pending that
+push; Windows GUI/GPU runtime is untested. Actual upstream SDK/runtime bytes and
+license are retained, not rebuilt or patched; adapted managed project settings
+and complete source provenance remain reviewable. Checkpoint subject:
+`Build and verify upstream managed API with native Mono SDKs`.
+Continue with the actual full Scene/ScriptEngine/Glue sources and lifecycle/field/
+serialization/physics/render gates after investigating any CI failure.
