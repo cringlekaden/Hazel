@@ -102,16 +102,23 @@ namespace Hazel {
 
 	struct NativeScriptComponent
 	{
-		ScriptableEntity* Instance = nullptr;
+		Scope<ScriptableEntity> Instance;
 
-		ScriptableEntity*(*InstantiateScript)() = nullptr;
+		Scope<ScriptableEntity>(*InstantiateScript)() = nullptr;
 		void (*DestroyScript)(NativeScriptComponent*) = nullptr;
+
+		NativeScriptComponent();
+		~NativeScriptComponent();
+		NativeScriptComponent(const NativeScriptComponent&);
+		NativeScriptComponent& operator=(const NativeScriptComponent&);
+		NativeScriptComponent(NativeScriptComponent&&) noexcept;
+		NativeScriptComponent& operator=(NativeScriptComponent&&) noexcept;
 
 		template<typename T>
 		void Bind()
 		{
-			InstantiateScript = []() { return static_cast<ScriptableEntity*>(new T()); };
-			DestroyScript = [](NativeScriptComponent* nsc) { delete nsc->Instance; nsc->Instance = nullptr; };
+			InstantiateScript = []() -> Scope<ScriptableEntity> { return CreateScope<T>(); };
+			DestroyScript = [](NativeScriptComponent* nsc) { nsc->Instance.reset(); };
 		}
 	};
 

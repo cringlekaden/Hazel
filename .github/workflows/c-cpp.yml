@@ -117,6 +117,15 @@ jobs:
           test -x bin/Release-linux-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke
           test -x bin/Debug-linux-x86_64/MigrationMonoSmoke/MigrationMonoSmoke
           test -x bin/Release-linux-x86_64/MigrationMonoSmoke/MigrationMonoSmoke
+          test -x bin/Debug-linux-x86_64/MigrationSceneSmoke/MigrationSceneSmoke
+          test -x bin/Release-linux-x86_64/MigrationSceneSmoke/MigrationSceneSmoke
+          test -x bin/Debug-linux-x86_64/MigrationSceneGPUSmoke/MigrationSceneGPUSmoke
+          test -x bin/Release-linux-x86_64/MigrationSceneGPUSmoke/MigrationSceneGPUSmoke
+
+      - name: Verify complete CPU scene, scripts, reload and watcher lifetimes
+        run: |
+          bin/Debug-linux-x86_64/MigrationSceneSmoke/MigrationSceneSmoke bin/Debug-linux-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Debug-linux-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
+          bin/Release-linux-x86_64/MigrationSceneSmoke/MigrationSceneSmoke bin/Release-linux-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Release-linux-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
 
   windows-build:
     name: Windows Debug and Release
@@ -197,7 +206,11 @@ jobs:
             'bin/Debug-windows-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke.exe',
             'bin/Release-windows-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke.exe',
             'bin/Debug-windows-x86_64/MigrationMonoSmoke/MigrationMonoSmoke.exe',
-            'bin/Release-windows-x86_64/MigrationMonoSmoke/MigrationMonoSmoke.exe'
+            'bin/Release-windows-x86_64/MigrationMonoSmoke/MigrationMonoSmoke.exe',
+            'bin/Debug-windows-x86_64/MigrationSceneSmoke/MigrationSceneSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationSceneSmoke/MigrationSceneSmoke.exe',
+            'bin/Debug-windows-x86_64/MigrationSceneGPUSmoke/MigrationSceneGPUSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationSceneGPUSmoke/MigrationSceneGPUSmoke.exe'
           )
           foreach ($file in $files) {
             if (-not (Test-Path $file -PathType Leaf)) {
@@ -227,4 +240,12 @@ jobs:
           & bin/Debug-windows-x86_64/MigrationMonoSmoke/MigrationMonoSmoke.exe bin/Debug-windows-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Debug-windows-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & bin/Release-windows-x86_64/MigrationMonoSmoke/MigrationMonoSmoke.exe bin/Release-windows-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Release-windows-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify complete CPU scene, scripts, reload and watcher lifetimes
+        shell: pwsh
+        run: |
+          & bin/Debug-windows-x86_64/MigrationSceneSmoke/MigrationSceneSmoke.exe bin/Debug-windows-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Debug-windows-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & bin/Release-windows-x86_64/MigrationSceneSmoke/MigrationSceneSmoke.exe bin/Release-windows-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Release-windows-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

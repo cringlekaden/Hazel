@@ -19,8 +19,12 @@ project "Box2D"
     filter {}
 project "Hazel"
     externalincludedirs { root .. "/Hazel/vendor/Box2D/include" }
+project "Sandbox"
+    links { "Box2D" }
 if _OPTIONS["migration-tests"] then
-    project "MigrationProjectPhysicsSmoke"
-        externalincludedirs { root .. "/Hazel/vendor/Box2D/include" }
-        links { "Box2D" }
+    for _, test in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke" } do
+        project ("Migration" .. test)
+            externalincludedirs { root .. "/Hazel/vendor/Box2D/include" }
+            links { "Box2D" }
+    end
 end

@@ -5,6 +5,26 @@ Baseline: `b030be7`. Fixed target: `1feb70572fa87fa1c4ba784a2cfeada5b4a500db`.
 
 ## Resume here
 
+Stage 4f (complete Scene/Entity/Serializer/ScriptEngine/Glue) has passed final
+Linux Debug/Release builds and 16 sequential desktop checks per configuration.
+VS2022 generation/source/CRT/UTF-8/link/managed build-dependency inspection passed;
+this is not an MSVC build. Checkpoint subject: `Integrate and verify upstream
+scenes and script lifetimes`; local commit and migration-branch CI are next.
+CPU tests include initialization failure recovery and standalone native scenes.
+Previous checkpoint `f9f55c6` (stage4e), Actions36905876374 passed both OS/config
+builds and Mono runtime. Stage4f Windows compilation/full engine/watcher runtime
+await CI; Windows GUI/editor/GPU runtime remains untested. Continue stages5–9
+without an optional continuation question; investigate any CI failure first.
+
+Local dependency prefix: `--mono-root=build/dependencies/mono/linux/usr`.
+Gmake flags: `--migration-tests --shader-tools`; builds use
+`make config=debug|release -j2 --jobserver-style=pipe` and the relocated SDK CSC
+override (mono --config build/dependencies/mono/linux/etc/mono/config
+build/dependencies/mono/linux/usr/lib/mono/4.5/mcs.exe). Desktop runtime:
+`python3 scripts/migration/desktop-checks.py --config Debug|Release --stage stage4f`.
+Routine new logs are ignored build/migration/evidence; actual source blob records
+remain docs/migration/evidence/stage4f-imports.json. Stages5–9 remain ahead.
+
 Final acceptance requirements added during stage 4c are recorded in PLAN.md.
 Continue the current stage. Final completion additionally requires concise
 progress/preservation/provenance/limitations records, ignored routine logs,
@@ -860,3 +880,165 @@ and complete source provenance remain reviewable. Checkpoint subject:
 `Build and verify upstream managed API with native Mono SDKs`.
 Continue with the actual full Scene/ScriptEngine/Glue sources and lifecycle/field/
 serialization/physics/render gates after investigating any CI failure.
+
+Stage 4e checkpoint `f9f55c6e46c85ebcf378cc1066633b3a7a2fba1a` is pushed;
+[Actions run 36905876374](https://github.com/cringlekaden/Hazel/actions/runs/36905876374)
+is pending. Prepare the next source integration while that runs, but investigate
+any preceding CI failure before committing a later checkpoint.
+
+## Stage 4f in progress: complete scenes and scripting
+
+Actual target Scene/Entity/ScriptableEntity/SceneSerializer, ScriptEngine/Glue and
+Physics2D source are imported; existing adapted SceneCamera and Components are
+preserved. Exact target blobs: stage4f-imports.json. An initial compile probe is
+running before compatibility/lifetime adaptations. No full scene/runtime parity
+is claimed yet.
+
+Concrete source concerns to investigate in this stage: copied components retain
+live native-script/body/fixture pointers; runtime stop does not destroy native
+scripts or clear body observations; DestroyEntity does not remove its live physics
+body/script instance; pause step counters decrement below zero. Managed objects
+lack GC handles, script field buffers use unaligned casts/static shared storage,
+System.Char serialization uses 8-bit char despite Mono's UTF-16 field, and component
+registration depends on MSVC RTTI spelling. Filewatch's Windows close-event handle
+leak and filesystem/queued reload lifetimes also need investigation. Target
+runtime serializer methods are explicitly unimplemented upstream; preserve that
+limitation rather than fabricating a format. All published editor serializer
+fields, renderer calls, scripts and physics features must remain available.
+
+The full import compile probe exposed GCC's rejection of a reference to a YAML
+operator[] temporary, packaged Mono's public-header boundary (tabledefs.h is
+internal), and function-pointer registration's implicit conversion to const void*.
+Use YAML::Node values, public attrdefs/row-indexes, and explicit Mono API casts.
+Modern fmt also requires explicit UTF-8 path/UUID/GLM string conversions. All
+internal-call functions and scene fields remain present. Windows stage 4e CI has
+passed both config builds and actual Mono embedding runtime; Linux is pending.
+
+Initial SceneSmoke compiled, then failed (1): a destroyed Entity's boolean still
+reported valid. Check the registry's generation validity. The expanded Debug
+probe now passes (0): UUID/UTF-8 tag setup, stale handle validity, live scene copy/
+duplicate sanitation and simulation stop/restart. Physics world ownership uses
+Scope/CreateScope; copied body/fixture/native-script observations reset, fixture
+creation records its observation, and stopping clears observers before destroying
+the owned world. These fixes retain all component configuration and target physics
+settings. Full native-script/managed/serializer/render/lifecycle tests are pending.
+
+Stage 4e [Actions run 36905876374](https://github.com/cringlekaden/Hazel/actions/runs/36905876374)
+now passed both Linux and Windows Debug/Release compilation and real native Mono
+embedding tests, plus existing CPU shader/foundation/project/physics suites.
+Windows Mono dependency/managed API runtime is verified; full ScriptEngine/Glue,
+Application, input/dialog, renderer/font/editor GPU runtime is not inferred.
+
+Additional source inspection: original filewatch public master
+`a59891baf375b73ff28144973a6fafd3fe40aa21` still closes only the directory handle,
+leaving both stop and overlapped event handles open. Do not upgrade that pin or
+import its unrelated macOS implementation to claim a fix. Keep the clean target
+header and MIT notice. A local FileWatcher factory/OS adapter now uses actual
+pinned filewatch on Linux and its ReadDirectoryChangesW/overlapped algorithm in
+Platform/Windows, with Scope/RAII ownership of both events, directory and joined
+worker, native UTF-16 filenames and worker error handling. Common watcher API
+contains only filesystem paths/callbacks/five target event meanings. This is a
+local adaptation, not upstream Hazel RenderCaps or macOS support. Actual watcher
+notification/handle-count regression checks remain pending.
+
+Managed adaptation in progress: Scope-owned engine data, pinned GC handles with
+explicit invalidation, aligned local field reads/memcpy (no aliasing/static shared
+buffer), public access-mask reflection, accurate signed/unsigned byte mapping,
+explicit qualified names of all three actual managed component classes, and
+native config/assembly paths from the validated SDK. Reload snapshots/validates
+images before destroying the previous domain, invalidates external instance/class
+observations, retains field values and rebuilds runtime instances; joins watcher
+producers and advances an epoch so queued work cannot consume old metadata.
+These changes compile in the current Debug probe; runtime/Release are pending.
+Entity reference setters follow the [official Mono embedding sample](https://github.com/mono/mono/blob/main/samples/embed/test-invoke.c):
+reference objects pass directly; stored scene fields retain UUIDs. Native runtime
+verification is still required before claiming this conversion works.
+
+Stage 4f expanded Debug SceneSmoke now passed (0), after the actual native/managed
+Debug rebuild passed (0). Ignored evidence: build/migration/evidence/
+stage4f-scene-debug-first.log and stage4f-scene-test-build.log. It verifies UTF-8
+file notifications and stable Linux descriptor counts across 13 joined watcher
+lifetimes; actual ScriptEngine class/access/signed-byte reflection, UTF-16 char,
+uint64/vector layouts, GC ownership, managed component queries/transform/physics
+impulse calls, UUID-backed/null/unscripted entity reference conversions, native
+Scope script removal/stop/restart, pause/step, external instance invalidation,
+corrupt assembly rejection retaining a working domain and valid reload retaining
+live fields. This supersedes the preceding pending entity-reference runtime note.
+No Windows watcher/full ScriptEngine runtime or scene YAML/GPU result is inferred.
+
+Serializer adaptation is now in progress: native UTF-8 streams, 16-bit Char data
+(legacy non-digit ASCII char scalars accepted), retained stored field metadata for
+missing classes/fields, checked writes, and staged scene/field parsing before
+committing. Source-copy/duplicate retains all target component specifications;
+duplicate UUIDs receive independent saved script fields. Runtime serializer
+methods remain explicitly unimplemented upstream and now throw in Release too.
+CPU YAML round-trip/failure tests and the full scene GPU gate are pending.
+
+Two additional concrete Debug regressions were reproduced and fixed before
+advancing. The CPU YAML round trip failed (1) because the pinned yaml-cpp emitter
+turns uint8_t into a character although its reader expects an integer; emit both
+byte kinds explicitly as numbers, retaining their published field types. Atomic
+DLL replacement then failed (1) because pinned Linux filewatch subscribes only to
+IN_MODIFY/CREATE/DELETE. The project-owned Platform/Linux adapter now follows its
+actual inotify directory/filename algorithm with rename/close-write/overflow
+events, Scope/RAII descriptors, poll/eventfd stop and joined callbacks. Both OS
+adapters retain the full original MIT notice; the vendor header stays clean.
+Debug SceneSmoke now passes (0), including atomic replacement, stable descriptor
+count, all supported script-field YAML bytes, renderer/camera/physics component
+settings, missing-class/removed-field preservation, UTF-8 paths, failed writes
+and malformed/missing input retaining the previous scene/field data. Evidence is
+ignored stage4f-atomic-serializer-debug.log; no Windows result is inferred.
+
+Application lifetime integration and full scene GPU tests are now in progress.
+Scene-owning layers stop while Mono is alive; engine shutdown joins the watcher,
+invalidates metadata/GC handles, cleans the VM and cancels its final queued work
+before renderer/window destruction. Native consumers explicitly link matching
+Mono/Box2D libraries. CI adds both-config CPU SceneSmoke (including real watcher/
+full engine reload), but Windows results await the checkpoint push.
+
+Full Debug rebuild passed (0). The fixed desktop runner's stage4f completed all
+16 checks sequentially (0): native Intel HD 4000 OpenGL 4.2 scene/Renderer2D/
+framebuffer/font/core/foundation/Mono/CPU scene/graceful Sandbox; forced Mesa 4.1
+scene/Renderer2D/framebuffer/Sandbox; separate llvmpipe OpenGL 4.6 scene/Renderer2D/
+framebuffer. SceneGPUSmoke verifies actual target editor/runtime/simulation scene
+rendering with color/entity readback, UTF-8 texture/text YAML, minimized-camera
+projection, real atomic watcher -> Application queue reload preserving live
+fields, and scene-layer -> Mono -> renderer/window teardown. Logs are ignored
+build/migration/evidence/stage4f-debug-*.log. Release is now building, at -j2.
+Neither overrides/software results nor VS generation are Windows/macOS hardware
+validation. Windows full Scene/ScriptEngine/watcher runtime remains pending CI;
+Windows app/editor/GPU runtime remains untested.
+
+Investigated the Debug-only `debugger-agent: Unable to listen on <fd>` diagnostic
+at cleanup. [Mono 6.12.0.206 debugger-agent.c](https://github.com/mono/mono/blob/mono-6.12.0.206/mono/mini/debugger-agent.c)
+socket_transport_accept prints it when accept returns -1; cleanup's
+stop_debugger_thread -> socket_transport_close1 closes/shuts down the listening
+socket specifically to wake that thread, then joins it. Timing and all process
+exit codes (0) are consistent with this dependency cleanup diagnostic. Keep
+the actual upstream Debug debugger options and SDK sources unchanged. No debugger
+client attachment/session is tested or inferred from the scripting tests.
+
+The added Debug initialization regressions pass (0): native-only scenes run/stop
+without a Mono project; managed play before initialization is rejected before
+marking the scene running; missing/invalid initial assemblies raise errors;
+replacing an invalid initial app assembly recovers through a new script domain
+under the existing root VM. A local Initialized state prevents partially loaded
+images from appearing ready. Failed project reload validation restores prior
+assembly paths; domain metadata clears before unloading. Final Debug relink
+passed (0); its desktop suite is rerunning, then the updated Release build/runtime
+gate and VS generation remain. These are local error/lifetime adaptations around
+actual upstream initialization/consumer flow, not a new script API or VM backend.
+
+Stage 4f final Linux Debug/Release builds passed (0), and both final desktop suites
+passed all 16 checks (0); commands/profiles are in the resume block. The public
+Hazel.h now exposes the actual target Scene/Entity/ScriptableEntity/Base/Assert/
+MouseCodes consumer includes while retaining earlier public headers. Normalize
+trailing whitespace only in project-owned imported engine sources; vendor source
+bytes/pins remain clean. VS2022 inspection passes native Windows watcher source
+with Linux exclusions, MDd/MD/MD CRT and UTF-8 in engine/apps/scene tests, Box2D/
+Mono links and both managed solution build dependencies. Initial inspection
+assumptions about native-to-managed ProjectReference were corrected: Premake
+places dependson edges in solution ProjectDependencies, as verified. No MSVC or
+Windows runtime result is inferred from generation. No routine raw logs are
+newly tracked. Stage4's scene/serialization/render/lifetime Linux gate is met;
+the dedicated stages5–7 and Windows CI gates remain ahead.

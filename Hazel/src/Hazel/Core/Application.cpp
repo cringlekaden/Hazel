@@ -5,7 +5,7 @@
 #include "Hazel/Core/Log.h"
 
 #include "Hazel/Renderer/Renderer.h"
-// Script lifecycle is integrated in stage 7.
+#include "Hazel/Scripting/ScriptEngine.h"
 
 #include "Hazel/Core/Input.h"
 #include "Hazel/Utils/PlatformUtils.h"
@@ -64,6 +64,14 @@ namespace Hazel {
         cancelled.clear();
 		m_LayerStack.Clear();
         m_ImGuiLayer = nullptr;
+		// Scene-owning layers stop their runtimes while Mono is still alive.
+		// Shutdown joins the filewatch producer before canceling its final work.
+		ScriptEngine::Shutdown();
+		{
+			std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
+			cancelled.swap(m_MainThreadQueue);
+		}
+		cancelled.clear();
 		Renderer::Shutdown();
         m_Window.reset();
         s_Instance = nullptr;

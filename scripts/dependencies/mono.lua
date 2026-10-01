@@ -11,9 +11,11 @@ if not windows and not os.isfile(includes .. "/mono/jit/jit.h") then
     error("Mono development headers missing: install mono-devel/mono or provide --mono-root=SDK_PREFIX")
 end
 include (root .. "/Hazel-ScriptCore")
-local consumers = { "Hazel" }
+local consumers = { "Hazel", "Sandbox" }
 if _OPTIONS["migration-tests"] then
-    table.insert(consumers, "MigrationMonoSmoke")
+    for _, test in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke" } do
+        table.insert(consumers, "Migration" .. test)
+    end
 end
 for _, name in ipairs(consumers) do
     project (name)
@@ -57,5 +59,9 @@ if _OPTIONS["migration-tests"] then
             symbols "Off"
         filter {}
     project "MigrationMonoSmoke"
+        dependson { "Hazel-ScriptCore", "MigrationManagedFixture" }
+    project "MigrationSceneSmoke"
+        dependson { "Hazel-ScriptCore", "MigrationManagedFixture" }
+    project "MigrationSceneGPUSmoke"
         dependson { "Hazel-ScriptCore", "MigrationManagedFixture" }
 end

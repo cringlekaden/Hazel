@@ -12,7 +12,7 @@ import tempfile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', choices=('Debug', 'Release'), required=True)
-    parser.add_argument('--stage', choices=('stage3', 'stage4a', 'stage4b', 'stage4c', 'stage4d', 'stage4e'), default='stage3')
+    parser.add_argument('--stage', choices=('stage3', 'stage4a', 'stage4b', 'stage4c', 'stage4d', 'stage4e', 'stage4f'), default='stage3')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     binaries = root / 'bin' / f'{args.config}-linux-x86_64'
@@ -34,7 +34,13 @@ def main():
         elif args.stage == 'stage4b':
             profiles = profiles[:2]
         for profile, overrides in profiles:
-            if args.stage == 'stage4a':
+            if args.stage == 'stage4f':
+                checks = ['SceneGPUSmoke', 'Renderer2DSmoke', 'RendererFeaturesSmoke']
+                if profile == 'native':
+                    checks += ['SceneSmoke', 'FontSmoke', 'SceneFoundationSmoke', 'CoreSmoke', 'MonoSmoke', 'Sandbox']
+                elif profile == 'gl41':
+                    checks += ['Sandbox']
+            elif args.stage == 'stage4a':
                 checks = ['SceneFoundationSmoke', 'CoreSmoke', 'Sandbox']
             elif args.stage == 'stage4e':
                 checks = ['MonoSmoke', 'Sandbox']
@@ -60,7 +66,7 @@ def main():
                 target = name if name == 'Sandbox' else 'Migration' + name
                 executable = binaries / target / target
                 command = [str(executable)]
-                if name == 'MonoSmoke':
+                if name in ('MonoSmoke', 'SceneSmoke', 'SceneGPUSmoke'):
                     command += [str(binaries / 'Hazel-ScriptCore/Hazel-ScriptCore.dll'),
                                 str(binaries / 'MigrationManagedFixture/MigrationManagedFixture.dll')]
                 if name == 'Sandbox':

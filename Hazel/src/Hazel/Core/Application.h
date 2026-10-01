@@ -59,6 +59,7 @@ namespace Hazel {
 		ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
 
 		static Application& Get() { return *s_Instance; }
+		static Application* TryGet() { return s_Instance; }
 
 		const ApplicationSpecification& GetSpecification() const { return m_Specification; }
 

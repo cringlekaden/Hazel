@@ -1,6 +1,8 @@
 #pragma once
 
 // For use by Hazel applications
+#include "Hazel/Core/Base.h"
+#include "Hazel/Core/Assert.h"
 #include "Hazel/Core/Log.h"
 #include "Hazel/Debug/Instrumentor.h"
 
@@ -12,6 +14,7 @@
 #include "Hazel/Core/Input.h"
 #include "Hazel/Core/KeyCodes.h"
 #include "Hazel/Core/MouseButtonCodes.h"
+#include "Hazel/Core/MouseCodes.h"
 
 #include "Hazel/Renderer/Renderer.h"
 #include "Hazel/Renderer/Renderer2D.h"
@@ -22,6 +25,9 @@
 #include "Hazel/Scene/SceneCamera.h"
 #include "Hazel/Renderer/Font.h"
 #include "Hazel/Scene/Components.h"
+#include "Hazel/Scene/Scene.h"
+#include "Hazel/Scene/Entity.h"
+#include "Hazel/Scene/ScriptableEntity.h"
 #include "Hazel/Renderer/EditorCamera.h"
 #include "Hazel/Renderer/UniformBuffer.h"
 #include "Hazel/Renderer/Shader.h"
