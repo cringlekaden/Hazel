@@ -1,0 +1,10 @@
+Context: 4.2 (Core Profile) Mesa 26.2.3-arch3.1; GLSL 4.20
+[09:13:26] HAZEL: OpenGLShader::Reflect - fragment pipeline-é.glsl: 0 uniform buffers, 1 sampled images
+[09:13:26] HAZEL: Shader compilation failed (pipeline-é.glsl): pipeline-é.glsl:6: error: 'gl_VertexID' : undeclared identifier (Did you mean gl_VertexIndex?)
+pipeline-é.glsl:6: error: '[]' : scalar integer expression required
+pipeline-é.glsl:7: error: '[]' : scalar integer expression required
+
+FAIL: pipeline-é.glsl:6: error: 'gl_VertexID' : undeclared identifier (Did you mean gl_VertexIndex?)
+pipeline-é.glsl:6: error: '[]' : scalar integer expression required
+pipeline-é.glsl:7: error: '[]' : scalar integer expression required
+

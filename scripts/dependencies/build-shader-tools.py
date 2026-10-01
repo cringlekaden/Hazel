@@ -78,7 +78,10 @@ def build(configuration, options, sources, system):
         libraries = ['shaderc_combined'] if name == 'shaderc' else ['spirv-cross-glsl', 'spirv-cross-core']
         for library in libraries:
             filename = f'{library}.lib' if system == 'windows' else f'lib{library}.a'
-            matches = list(directory.rglob(filename))
+            artifact = filename
+            if system == 'windows' and configuration == 'Debug' and name == 'spirv-cross':
+                artifact = f'{library}d.lib'  # Cross's native MSVC Debug postfix.
+            matches = list(directory.rglob(artifact))
             if len(matches) != 1:
                 raise RuntimeError(f'Expected one {filename}, found {matches}')
             shutil.copy2(matches[0], libdir / filename)

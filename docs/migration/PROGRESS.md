@@ -334,3 +334,27 @@ engine/GPU runtime is untested. No engine OpenGL 4.1 runtime is claimed yet.
 Checkpoint subject: `Pin and verify portable shader compilation dependencies`.
 Continue directly with engine stage 3 integration, local Debug/Release builds and
 real 4.2/4.1 GPU checks; investigate CI/tool failures before advancing to stage 4.
+
+
+Stage 3a checkpoint: `b0bc147`, pushed to the migration branch for tool/engine
+compilation CI and the CPU tool runtime test. Engine backend integration is now
+included in the local build generator, with tool headers on Hazel and matching
+static libraries linked by clients. RendererFeaturesSmoke owns an isolated
+unique temporary fixture directory, so its cache-damage tests cannot overwrite
+existing project assets/caches. Run native 4.2 first, then the Mesa 4.1 override.
+
+
+Stage 3a Actions run 36865262516 Windows job failed after successful native shader
+library compilation: the installer expected spirv-cross-glsl.lib but upstream
+Cross emits spirv-cross-glsld.lib (and cored.lib) for MSVC Debug. Normalize the
+copied install name within the configuration-specific directory; retain /MDd and
+unmodified vendor source. Failure log: stage3-tools-windows-failure.log. No Windows
+tool runtime or Hazel compilation ran in that failed job. Linux job still running.
+
+Initial engine Debug build passed (stage3-debug.log). The first GPU feature test
+failed in its fixture, not an unsupported GL call: its GLSL 450 shader used
+OpenGL gl_VertexID, which Vulkan-targeted shaderc expects as gl_VertexIndex.
+Replaced the fixture with actual target-style vertex attributes and engine VAO/
+vertex buffers. Legacy GLSL 330/420 direct compilation retains gl_VertexID support.
+Failure evidence: stage3-features-debug.log. Added depth-occlusion readback coverage
+for both single-sample and multisample attachments before the next run.
