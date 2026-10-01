@@ -546,3 +546,24 @@ Stage 4a is buildable and locally verified; **stage 4 as a whole is incomplete**
 Continue directly with the actual target font dependency/API prerequisite, then
 renderer, physics, managed scripting/project dependencies and full scene integration.
 No feature stubs or reduced serialization format were introduced.
+
+
+Stage 4a checkpoint: `738fb321735460057c85a44eadc66bdb973c85d1`, pushed only
+migration branch. Actions run 36886198003 completed: Linux Debug/Release build
+and CPU shader/foundation runtime passed; Windows Debug failed before linking,
+so Windows Release and CPU runtime were not run. Raw metadata: stage4a-actions.json;
+full compiler/job output: stage4a-windows-failure.log.
+
+Failure investigation: MSVC C1083 could not resolve the generated relative
+forced-include path `../../scripts/dependencies/yaml-compat.h`. The file is tracked
+and present; /FI include searching differs from GNU Make. Keep the standard
+header fix and source pin. For Visual Studio only, emit an explicit /FI path
+rooted at MSBuild's $(SolutionDir), removing the relative forceincludes entry.
+Linux retains its verified GNU Make flag. Generated VS XML confirms absolute
+macro-rooted /FI, /utf-8, /MDd and /MD in all configs; evidence:
+stage4a-vs2022-forced-include-fix.log. No Windows compile pass is claimed yet.
+
+Font prerequisite imports/local Debug build were prepared while CI was pending;
+that independent uncommitted work is retained while this stage 4a failure is
+resolved. Do not advance that checkpoint before the CI fix is tested. Checkpoint
+subject: `Resolve YAML compatibility include from Windows solution root`.

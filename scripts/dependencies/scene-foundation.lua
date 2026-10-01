@@ -17,6 +17,11 @@ project "yaml-cpp"
     filter "system:windows"
         systemversion "latest"
         buildoptions { "/utf-8" }
+    filter { "system:windows", "action:vs*" }
+        -- MSVC resolves relative /FI paths against the source's include search,
+        -- unlike GNU Make. Use the solution's absolute root for this header.
+        removeforceincludes { root .. "/scripts/dependencies/yaml-compat.h" }
+        buildoptions { '/FI"$(SolutionDir)scripts/dependencies/yaml-compat.h"' }
     filter "system:linux"
         toolset "gcc"
         pic "On"
