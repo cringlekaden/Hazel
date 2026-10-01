@@ -21,8 +21,9 @@ project "SandboxScripts"
     objdir (root .. "/bin-int/" .. outputdir .. "/SandboxScripts")
     files { root .. "/Hazelnut/SandboxProject/Assets/Scripts/Source/**.cs" }
     links { "Hazel-ScriptCore", "System", "System.Core" }
+    local scriptOutput = os.target() == "windows" and _ACTION:match("^vs") and "$(TargetPath)" or "%{cfg.buildtarget.abspath}"
     postbuildcommands { '{MKDIR} "' .. root .. '/Hazelnut/SandboxProject/Assets/Scripts/Binaries"',
-        '{COPYFILE} "%{cfg.buildtarget.abspath}" "' .. root .. '/Hazelnut/SandboxProject/Assets/Scripts/Binaries/Sandbox.dll"' }
+        '{COPYFILE} "' .. scriptOutput .. '" "' .. root .. '/Hazelnut/SandboxProject/Assets/Scripts/Binaries/Sandbox.dll"' }
     filter "system:linux"
         buildoptions { "-sdk:4.7.2" }
     filter "configurations:Debug"

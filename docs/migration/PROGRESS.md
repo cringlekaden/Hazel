@@ -1163,3 +1163,12 @@ sources/API and net472 references. Root generation/deployment and VS generation
 passed; standalone workspace build will also be checked during final clean build.
 Checkpoint subject: `Verify managed components and import upstream example project`.
 Windows stage7 compilation/CPU runtime awaits branch CI; GPU remains untested.
+
+Stage7 Windows deployment investigation: Actions36928990041's Windows Debug
+compilation produced the native and managed binaries, then SandboxScripts failed
+MSB3073 because its C# post-build event resolved a relative copy source from the
+output directory. Use MSBuild $(TargetPath) for that source on VS; retain the
+working GNU Make path for Linux. VS generation confirms the expanded post-build
+command. Linux Debug/Release/runtime source is unchanged by this build-script fix.
+A separate stage7 CI correction checkpoint preserves all in-progress stage8 edits;
+Windows Release and CPU suites must be rerun before claiming stage7 CI passed.
