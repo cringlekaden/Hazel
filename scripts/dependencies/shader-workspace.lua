@@ -51,13 +51,17 @@ for _, name in ipairs { "shaderc", "glslang", "SPIRV-Tools", "SPIRV-Tools-opt", 
             filter {}
         elseif name == "SPIRV-Tools" or name == "SPIRV-Tools-opt" then
             includedirs { tools, tools .. "/include", headers, generated .. "/spirv-tools" }
-            defines { "SPIRV_COLOR_TERMINAL", "SPIRV_TIMER_ENABLED", "SPIRV_CHECK_CONTEXT" }
+            defines { "SPIRV_COLOR_TERMINAL" }
             exceptionhandling "Off"
             if name == "SPIRV-Tools" then rtti "Off" end
             filter "system:linux"
-                defines { "SPIRV_LINUX" }
+                -- Pinned upstream enables resource timers only on platforms
+                -- providing getrusage/sys/resource.h, including Linux.
+                defines { "SPIRV_LINUX", "SPIRV_TIMER_ENABLED" }
             filter "system:windows"
                 defines { "SPIRV_WINDOWS" }
+            filter "configurations:Debug"
+                defines { "SPIRV_CHECK_CONTEXT" }
             filter {}
         else
             includedirs { source .. "/spirv-cross" }
@@ -75,5 +79,6 @@ for _, name in ipairs { "shaderc", "glslang", "SPIRV-Tools", "SPIRV-Tools-opt", 
         filter "configurations:Release"
             runtime "Release"
             optimize "Speed"
+            defines { "NDEBUG" }
         filter {}
 end

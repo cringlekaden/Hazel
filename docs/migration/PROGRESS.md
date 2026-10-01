@@ -1274,3 +1274,13 @@ this dependency-only commit. Editor correction7096803 Actions36935755402 passed
 both OS/config builds/CPU suites and all17 Windows SOFTWARE graphics/editor/close
 checks per configuration, including strict cleanup. Windows hardware and macOS
 remain untested. Continue sequentially through the pending stage9 gates.
+
+Stage9a Windows SDK investigation: Actions36937778274 failed Debug SPIRV-Tools
+compilation on sys/resource.h. The workspace had enabled its resource timer
+unconditionally. Pinned Tools CMakeLists.txt lines48–86 enable it on Linux and
+leave it disabled on Windows. Match that actual dependency platform choice, keep
+all compiler/validator/optimizer sources and features, and make SPIRV_CHECK_CONTEXT
+Debug-only/NDEBUG Release as in the pinned build. SDK VS regeneration confirms
+no Windows timer macro, retained MDd/MD/UTF-8 and correct configuration macros.
+Linux Debug's semantic timer/context choices are unchanged. Windows rerun and
+local Release remain pending; do not claim Premake-only acceptance passed yet.
