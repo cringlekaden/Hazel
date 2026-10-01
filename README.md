@@ -83,4 +83,25 @@ Build Release with `msbuild Hazel.sln /m:2 /p:Configuration=Release /p:Platform=
 | `Sandbox/src/` | Example application and rendering code |
 | `Hazel/vendor/` | Pinned GLFW, spdlog, ImGui, and GLM submodules; checked-in GLAD |
 
-The current Sandbox shaders use GLSL 3.30. Running Sandbox requires a working OpenGL 3.3-capable graphics driver and a desktop session; CI only compiles and links the projects.
+The current Sandbox shaders use GLSL 3.30. Running Sandbox requires an OpenGL 4.2
+core-capable graphics driver and a desktop session; CI only compiles and links
+the projects.
+
+## Upstream migration
+
+The staged migration targets TheCherno/Hazel commit
+`1feb70572fa87fa1c4ba784a2cfeada5b4a500db`. See the
+[progress and resume instructions](docs/migration/PROGRESS.md),
+[source comparison](docs/migration/COMPARISON.md),
+[preservation inventory](docs/migration/PRESERVATION.md), and
+[staged plan](docs/migration/PLAN.md).
+
+The renderer foundation stage adds upstream camera/uniform-buffer APIs and
+integer/matrix vertex attributes adapted for OpenGL 4.2. The complete editor,
+scene, physics, text and scripting migration remains
+pending in the documented stages.
+
+To build the focused GPU verification executable, generate with
+`premake5 --migration-tests gmake` (or `vs2022` on Windows), then use the normal
+Debug/Release build commands above. Execution requires a working desktop and
+OpenGL 4.2; CI compiles the executable on both platforms and checks its presence.

@@ -16,6 +16,12 @@ local workspaceRoot = path.getabsolute(".")
 local imguiDir = workspaceRoot .. "/Hazel/vendor/imgui"
 local glfwDir = workspaceRoot .. "/Hazel/vendor/GLFW"
 
+newoption
+{
+    trigger = "migration-tests",
+    description = "Build focused migration verification executables"
+}
+
 
 workspace "Hazel"
     architecture "x64"
@@ -536,3 +542,8 @@ project "Sandbox"
 
 
     filter {}
+
+-- Opt-in GPU verification; requires a real desktop context when executed.
+if _OPTIONS["migration-tests"] then
+    include "tests/migration"
+end

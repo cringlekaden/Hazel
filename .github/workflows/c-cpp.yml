@@ -2,7 +2,7 @@ name: C/C++ CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, 'migration/**']
   pull_request:
     branches: [master]
   workflow_dispatch:
@@ -52,7 +52,7 @@ jobs:
           echo "$RUNNER_TEMP/premake-core/bin/release" >> "$GITHUB_PATH"
 
       - name: Generate GNU Make projects
-        run: premake5 gmake
+        run: premake5 --migration-tests gmake
 
       - name: Build Debug
         run: make config=debug -j2
@@ -66,6 +66,8 @@ jobs:
           test -x bin/Debug-linux-x86_64/Sandbox/Sandbox
           test -f bin/Release-linux-x86_64/Hazel/libHazel.a
           test -x bin/Release-linux-x86_64/Sandbox/Sandbox
+          test -x bin/Debug-linux-x86_64/MigrationRendererSmoke/MigrationRendererSmoke
+          test -x bin/Release-linux-x86_64/MigrationRendererSmoke/MigrationRendererSmoke
 
   windows-build:
     name: Windows Debug and Release
@@ -96,7 +98,7 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Generate Visual Studio projects
-        run: premake5 vs2022
+        run: premake5 --migration-tests vs2022
 
       - name: Build Debug
         run: msbuild Hazel.sln /m:2 /p:Configuration=Debug /p:Platform=x64 /verbosity:minimal
@@ -111,7 +113,9 @@ jobs:
             'bin/Debug-windows-x86_64/Hazel/Hazel.lib',
             'bin/Debug-windows-x86_64/Sandbox/Sandbox.exe',
             'bin/Release-windows-x86_64/Hazel/Hazel.lib',
-            'bin/Release-windows-x86_64/Sandbox/Sandbox.exe'
+            'bin/Release-windows-x86_64/Sandbox/Sandbox.exe',
+            'bin/Debug-windows-x86_64/MigrationRendererSmoke/MigrationRendererSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationRendererSmoke/MigrationRendererSmoke.exe'
           )
           foreach ($file in $files) {
             if (-not (Test-Path $file -PathType Leaf)) {

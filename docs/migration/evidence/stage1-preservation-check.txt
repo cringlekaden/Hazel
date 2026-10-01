@@ -1,0 +1,7 @@
+PASS: core/ownership, Linux/Windows, ImGui, events, vendor files and gitlinks unchanged from b030be7
+PASS: clean submodule Hazel/vendor/GLFW
+PASS: clean submodule Hazel/vendor/glm
+PASS: clean submodule Hazel/vendor/imgui
+PASS: clean submodule Hazel/vendor/spdlog
+PASS: Camera.h byte-identical to actual target source
+PASS: Linux generated engine Makefile selects Linux and excludes Windows .cpp

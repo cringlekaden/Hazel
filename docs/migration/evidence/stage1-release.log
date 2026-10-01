@@ -1,0 +1,28 @@
+==== Building GLFW (release) ====
+==== Building Glad (release) ====
+==== Building ImGui (release) ====
+==== Building Hazel (release) ====
+Application.cpp
+Buffer.cpp
+OpenGLBuffer.cpp
+OpenGLRendererAPI.cpp
+OpenGLUniformBuffer.cpp
+OpenGLVertexArray.cpp
+RenderCommand.cpp
+Renderer.cpp
+Renderer2D.cpp
+RendererAPI.cpp
+Shader.cpp
+Texture.cpp
+UniformBuffer.cpp
+VertexArray.cpp
+Linking Hazel
+==== Building Sandbox (release) ====
+==== Building MigrationRendererSmoke (release) ====
+Creating ../../bin-int/Release-linux-x86_64/MigrationRendererSmoke
+Creating ../../bin/Release-linux-x86_64/MigrationRendererSmoke
+RendererSmoke.cpp
+Sandbox2D.cpp
+SandboxApp.cpp
+Linking MigrationRendererSmoke
+Linking Sandbox

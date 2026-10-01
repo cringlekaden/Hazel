@@ -1,0 +1,21 @@
+Hazel/Hazel.vcxproj '$(Configuration)|$(Platform)'=='Debug|x64' MultiThreadedDebugDLL
+Hazel/Hazel.vcxproj '$(Configuration)|$(Platform)'=='Release|x64' MultiThreadedDLL
+Hazel/Hazel.vcxproj '$(Configuration)|$(Platform)'=='Dist|x64' MultiThreadedDLL
+PASS: Windows sources selected, Linux .cpp excluded, OpenGL retained
+Sandbox/Sandbox.vcxproj '$(Configuration)|$(Platform)'=='Debug|x64' MultiThreadedDebugDLL
+Sandbox/Sandbox.vcxproj '$(Configuration)|$(Platform)'=='Release|x64' MultiThreadedDLL
+Sandbox/Sandbox.vcxproj '$(Configuration)|$(Platform)'=='Dist|x64' MultiThreadedDLL
+build/MigrationRendererSmoke/MigrationRendererSmoke.vcxproj '$(Configuration)|$(Platform)'=='Debug|x64' MultiThreadedDebugDLL
+build/MigrationRendererSmoke/MigrationRendererSmoke.vcxproj '$(Configuration)|$(Platform)'=='Release|x64' MultiThreadedDLL
+build/MigrationRendererSmoke/MigrationRendererSmoke.vcxproj '$(Configuration)|$(Platform)'=='Dist|x64' MultiThreadedDLL
+build/ImGui/ImGui.vcxproj '$(Configuration)|$(Platform)'=='Debug|x64' MultiThreadedDebugDLL
+build/ImGui/ImGui.vcxproj '$(Configuration)|$(Platform)'=='Release|x64' MultiThreadedDLL
+build/ImGui/ImGui.vcxproj '$(Configuration)|$(Platform)'=='Dist|x64' MultiThreadedDLL
+Hazel/vendor/Glad/Glad.vcxproj '$(Configuration)|$(Platform)'=='Debug|x64' MultiThreadedDebugDLL
+Hazel/vendor/Glad/Glad.vcxproj '$(Configuration)|$(Platform)'=='Release|x64' MultiThreadedDLL
+Hazel/vendor/Glad/Glad.vcxproj '$(Configuration)|$(Platform)'=='Dist|x64' MultiThreadedDLL
+Hazel/vendor/GLFW/GLFW.vcxproj '$(Configuration)|$(Platform)'=='Debug|x64' MultiThreadedDebugDLL
+Hazel/vendor/GLFW/GLFW.vcxproj '$(Configuration)|$(Platform)'=='Release|x64' MultiThreadedDLL
+Hazel/vendor/GLFW/GLFW.vcxproj '$(Configuration)|$(Platform)'=='Dist|x64' MultiThreadedDLL
+PASS: all six native projects use Debug DLL CRT and Release/Dist DLL CRT; public spdlog consumers use /utf-8
+Generation and XML inspection only; MSVC and Windows runtime were not executed.
