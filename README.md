@@ -54,6 +54,8 @@ Launch from each application's source directory so its assets resolve:
 
 Windows follows the same working-directory rule, using `bin/Debug-windows-x86_64/.../*.exe`. Root builds compile Hazel-ScriptCore and SandboxScripts and deploy their assemblies to the editor/example project. Hazelnut supports a project path as its first argument; without it, the native project-open dialog is used.
 
+`Sandbox --example-layer` runs the restored upstream generic-renderer example.
+
 The OpenGL backend requires 4.1 core and preserves the tested native HD4000 4.2 features. Actual upstream GLSL450 shaders keep shaderc optimization, SPIR-V reflection and caching. Loaded core4.6 functions select native specialization; other contexts use generated GLSL410 with explicit reflected bindings. Original GLSL330/420 shaders retain direct compilation. Device limits determine batching/MSAA, including the HD4000 integer-multisample limit; single-sample entity picking and color/depth MSAA remain supported. Mesa overrides and software drivers belong exclusively to regression tests. This repository does not implement macOS or Metal support.
 
 `ApplicationSpecification::Rendering` supplies local renderer settings. TextureSlots includes white and clamps to device/upstream capacity; PreferShaderBinaries can select GLSL loading; EnableDebugOutput applies when supported. Configure before application creation; Renderer::GetCapabilities()/GetSettings() report detected/effective values. These types extend the public upstream RenderCaps TODO locally.

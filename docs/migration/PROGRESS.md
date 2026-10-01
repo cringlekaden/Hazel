@@ -15,7 +15,7 @@ header payload corruption recovered with correct color/entity output. Shader
 version comments retain the legacy path. Native integer-blend probe was resolved
 by backend indexed-state handling; final no-clear recovery yields64,64,192/73/0.
 Reduced-slot batch test now respects white reservation and still verifies final
-picking. No local build/test/debugger is running.
+picking. The earlier Debug suite finished with no surviving process; current clean-checkout processes are recorded below.
 
 This is a buildable Debug hardening/cleanup checkpoint, not final acceptance.
 Next create a fresh verification checkout of this migration checkpoint, build
@@ -24,7 +24,10 @@ then run both30-check suites and standalone example build. Keep original ignored
 artifacts/Mono SDK, do not delete vendor Makefiles or touch unrelated work.
 Local Release SDK has not yet replaced the earlier CMake-built installation.
 
-CI `36939167744` for80f0fce built fresh Debug/Release Premake SDKs on both OSes; root Release compilation is running. CPU/software runtime results remain pending. Prior60f1733 Windows failed sys/resource.h because the workspace enabled Unix resource timers on Windows; fixed by matching actual pinned Tools platform rules. Debug-only SPIRV_CHECK_CONTEXT and Release NDEBUG also now match the source build configuration. No compiler/optimizer/reflection/cache feature was removed. Earlier60f1733 Linux passed both Debug/Release Premake SDK/root builds and CPU suites; its Windows failure remains recorded rather than treating overall CI as a pass.
+Premake correction80f0fce / [Actions36939167744](https://github.com/cringlekaden/Hazel/actions/runs/36939167744) passed Linux/Windows Debug/Release SDK/root compilation, optimized GLSL/HLSL tool validation/reflection, all CPU scene/project/physics/Mono/reload/watcher suites and all17 Windows SOFTWARE graphics/editor/graceful-close checks/config. This verifies the Premake integration on both OSes; final cleaned/hardened9ed63ed CI is [Actions36941013405](https://github.com/cringlekaden/Hazel/actions/runs/36941013405), currently building. Prior60f1733 Linux passed but Windows timer failure was investigated/fixed, not treated as overall success.
+
+Fresh local checkout at build/migration/clean-checkout is exactly9ed63ed, initially clean with no generated/install/build artifacts. Source submodule initialization is running (session30105); it is independent Git I/O, not a compiler job. Its SDK helper is compiling Debug then Release with two jobs (session10921); only one local build runs. CMake is absent from PATH. All logs stay in original ignored build/migration/evidence/final-clean-*.log. Do not start another compiler/runtime until the SDK helper finishes. Then generate/build this fresh root with external preserved Mono SDK and run30 desktop checks/configuration sequentially, followed by standalone example build.
+
 
 Working-tree cleanup archives129 routine logs/settings/CI metadata under ignored `build/migration/archived-records` and removes them from tracking. Source/blob import records, baseline comparison, dependency pins, licenses and regression scripts remain. Consolidating into this progress record, PRESERVATION.md, PROVENANCE.md and KNOWN-LIMITATIONS.md; PLAN/COMPARISON content is incorporated before their removal. Raw new evidence stays under ignored `build/migration/evidence` or CI artifacts.
 
@@ -64,3 +67,14 @@ python3 scripts/migration/desktop-checks.py --config Debug --stage final
 ```
 
 Routine logs go to ignored build/migration/evidence. Dependency manifests/licenses live in ignored install prefixes; all source revisions are checked before/after building. Preserved vendor Makefiles are never recursively removed. CI builds with native Mono on Linux/exact upstream SDK on Windows. Windows software runtime uses checksum-pinned process-local Mesa DLLs and two llvmpipe threads; neither a system driver installation nor hardware claim.
+
+Final parity audit: restore actual dormant target ExampleLayer, with its missing
+basic-texture asset recovered from actual public history7d120fb4 under a separate
+asset name. Provenance is recorded; --example-layer selects it without replacing
+Sandbox2D. Add owned graceful-close checks to both OS runners (final Linux33 and
+Windows19 checks/config). Compilation/runtime for this addition is pending.
+Standalone example Premake generation passed but exposed unignored generated
+Makefile/.make/.csproj outputs; add scoped ignore rules. Update the fresh checkout
+to this source-only correction while SDK compilation continues; shader dependency
+inputs remain identical. After SDK finishes, run fresh root builds/runtimes and
+standalone managed compilation.

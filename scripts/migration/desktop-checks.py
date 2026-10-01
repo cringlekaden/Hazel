@@ -35,7 +35,7 @@ def main():
             profiles = profiles[:2]
         for profile, overrides in profiles:
             if args.stage == 'final':
-                checks = ['RendererFeaturesSmoke', 'Renderer2DSmoke', 'FontSmoke', 'SceneGPUSmoke', 'EditorSmoke', 'CoreSmoke', 'Sandbox', 'Hazelnut']
+                checks = ['RendererFeaturesSmoke', 'Renderer2DSmoke', 'FontSmoke', 'SceneGPUSmoke', 'EditorSmoke', 'CoreSmoke', 'Sandbox', 'SandboxExample', 'Hazelnut']
                 if profile == 'native':
                     checks += ['RendererSmoke', 'ShaderToolsSmoke', 'SceneFoundationSmoke', 'ProjectPhysicsSmoke', 'MonoSmoke', 'SceneSmoke']
             elif args.stage == 'stage8':
@@ -74,7 +74,7 @@ def main():
                 if profile == 'native':
                     checks += ['RendererSmoke', 'ShaderToolsSmoke']
             for name in checks:
-                target = name if name in ('Sandbox', 'Hazelnut') else 'Migration' + name
+                target = 'Sandbox' if name=='SandboxExample' else name if name in ('Sandbox', 'Hazelnut') else 'Migration' + name
                 executable = binaries / target / target
                 command = [str(executable)]
                 if name in ('MonoSmoke', 'SceneSmoke', 'SceneGPUSmoke'):
@@ -83,10 +83,11 @@ def main():
                 if name == 'EditorSmoke':
                     command += [str(binaries / 'Hazel-ScriptCore/Hazel-ScriptCore.dll'),
                                 str(binaries / 'SandboxScripts/Sandbox.dll'), str(root / 'Hazelnut')]
-                if name in ('Sandbox', 'Hazelnut'):
+                if name in ('Sandbox', 'SandboxExample', 'Hazelnut'):
                     command = [sys.executable, str(root / 'scripts/migration/sandbox-smoke.py'),
-                               str(executable), '--assets', str(root / name), '--require-order']
+                               str(executable), '--assets', str(root / ('Sandbox' if name=='SandboxExample' else name)), '--require-order']
                     if name == 'Hazelnut': command += ['--editor']
+                    if name == 'SandboxExample': command += ['--example-layer']
                 log = evidence / f'{args.stage}-{args.config.lower()}-{profile}-{name}.log'
                 environment = os.environ.copy()
                 # A native profile must not inherit another test's overrides.

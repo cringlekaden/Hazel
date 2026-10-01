@@ -80,11 +80,11 @@ def main():
         project = editor / 'SandboxProject/project-é-🚀.hproj'
         shutil.copyfile(editor / 'SandboxProject/Sandbox.hproj', project)
         for profile in ('software46', 'software41'):
-            checks = ['CoreSmoke', 'RendererFeaturesSmoke', 'Renderer2DSmoke', 'FontSmoke', 'SceneGPUSmoke', 'EditorSmoke', 'Sandbox', 'Hazelnut']
+            checks = ['CoreSmoke', 'RendererFeaturesSmoke', 'Renderer2DSmoke', 'FontSmoke', 'SceneGPUSmoke', 'EditorSmoke', 'Sandbox', 'SandboxExample', 'Hazelnut']
             if profile == 'software46':
                 checks.insert(0, 'RendererSmoke')
             for name in checks:
-                target = name if name in ('Sandbox', 'Hazelnut') else 'Migration' + name
+                target = 'Sandbox' if name=='SandboxExample' else name if name in ('Sandbox', 'Hazelnut') else 'Migration' + name
                 executable = executable_dir / (target + '.exe')
                 shutil.copyfile(binaries / target / (target + '.exe'), executable)
                 command = [str(executable)]
@@ -92,6 +92,8 @@ def main():
                     command += [str(binaries / 'Hazel-ScriptCore/Hazel-ScriptCore.dll'), str(binaries / 'MigrationManagedFixture/MigrationManagedFixture.dll')]
                 elif name == 'EditorSmoke':
                     command += [str(binaries / 'Hazel-ScriptCore/Hazel-ScriptCore.dll'), str(binaries / 'SandboxScripts/Sandbox.dll'), str(root / 'Hazelnut')]
+                elif name == 'SandboxExample':
+                    command += ['--example-layer']
                 elif name == 'Hazelnut':
                     command += [str(project)]
                 environment = os.environ.copy()
@@ -105,7 +107,7 @@ def main():
                 with log.open('w') as output:
                     process = subprocess.Popen(command, cwd=editor if name == 'Hazelnut' else working / 'Sandbox', env=environment, stdout=output, stderr=subprocess.STDOUT)
                     try:
-                        code = close_window(process, 'Hazelnut' if name == 'Hazelnut' else 'Hazel Engine') if name in ('Sandbox', 'Hazelnut') else process.wait(timeout=180)
+                        code = close_window(process, 'Hazelnut' if name == 'Hazelnut' else 'Hazel Engine') if name in ('Sandbox', 'SandboxExample', 'Hazelnut') else process.wait(timeout=180)
                     finally:
                         if process.poll() is None:
                             process.kill(); process.wait()

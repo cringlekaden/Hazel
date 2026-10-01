@@ -53,3 +53,14 @@ for integer attachments while bound and restores caller state on unbind/release/
 resize. Color blending is preserved. This addresses a current Linux portability
 obstacle, rather than adding speculative Mac code; the regression tests uncleared
 overwritten color/entity pixels and restored state. Final Debug no-clear color/entity readback and blend-state restoration passed on native4.2, forced4.1 and software4.6; Release/clean-checkout proof remains pending.
+
+Final source audit also found dormant target Sandbox/src/ExampleLayer.h/.cpp,
+now imported directly (stage9-example-imports.json). Its required Texture.glsl
+is missing at the target checkpoint; use the matching actual basic-texture shader
+from public Hazel commit7d120fb4250ecdebdcdc93137bbec7413a9bb7e2 as
+Sandbox/assets/shaders/ExampleTexture.glsl, leaving retained batch assets intact.
+Official ImGui include and scoped application selection adapt the example;
+Sandbox --example-layer makes it runnable for regression checks. The target pin
+is unchanged. Other absent target entries are replaced Windows/Vulkan/bundled
+Premake build tooling, intentional OS/backend TU placement, or repository-specific
+branding/contribution templates, not engine/editor/managed functionality.

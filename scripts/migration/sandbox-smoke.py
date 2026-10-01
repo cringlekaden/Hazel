@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--assets', type=Path, default=Path('Sandbox'))
     parser.add_argument('--require-order', action='store_true')
     parser.add_argument('--editor', action='store_true', help='Exercise Hazelnut with an isolated Unicode project argument')
+    parser.add_argument('--example-layer', action='store_true')
     args=parser.parse_args()
     x=C.CDLL('libX11.so.6')
     for name, restype, argtypes in [
@@ -67,6 +68,7 @@ def main():
         shutil.copytree(args.assets/'assets',run/'assets')
         command=[str(args.executable.resolve())]
         title='Hazelnut' if args.editor else 'Hazel Engine'
+        if args.example_layer: command += ['--example-layer']
         if args.editor:
             shutil.copytree(args.assets/'Resources',run/'Resources')
             shutil.copytree(args.assets/'SandboxProject',run/'SandboxProject')
@@ -100,7 +102,7 @@ def main():
                 print('Shutdown trace functions:',json.dumps(names))
                 if args.require_order:
                     renderer=next(i for i,n in enumerate(names) if 'Renderer2D::Shutdown' in n)
-                    layer=next(i for i,n in enumerate(names) if ('EditorLayer::OnDetach' if args.editor else 'Sandbox2D::OnDetach') in n)
+                    layer=next(i for i,n in enumerate(names) if ('EditorLayer::OnDetach' if args.editor else ('ExampleLayer::OnDetach' if args.example_layer else 'Sandbox2D::OnDetach')) in n)
                     imgui=next(i for i,n in enumerate(names) if 'ImGuiLayer::OnDetach' in n)
                     window=next(i for i,n in enumerate(names) if 'LinuxWindow::Shutdown' in n)
                     if not layer < imgui < renderer < window:
