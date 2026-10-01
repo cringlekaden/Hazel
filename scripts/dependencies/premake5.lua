@@ -54,6 +54,7 @@ if _OPTIONS["migration-tests"] then
     table.insert(consumers, "MigrationRendererSmoke")
     table.insert(consumers, "MigrationCoreSmoke")
     table.insert(consumers, "MigrationRendererFeaturesSmoke")
+    table.insert(consumers, "MigrationSceneFoundationSmoke")
 end
 for _, consumer in ipairs(consumers) do
     project (consumer)

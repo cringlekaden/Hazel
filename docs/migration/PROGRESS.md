@@ -50,8 +50,8 @@ Linux and Windows Debug/Release compilation in Actions. Stage 2 also passed
 local Debug/Release core, renderer and graceful Sandbox shutdown runtime checks
 on Intel HD 4000/OpenGL 4.2. Windows engine runtime is untested. Stage 3 backend integration is locally
 verified in Debug/Release on native 4.2, forced 4.1 and software 4.6; integrated
-Windows compilation CI is pending the checkpoint push. Stage 4 prerequisites
-are inventoried; stages 4–9 remain incomplete. The sections below retain initial-session evidence, followed by
+Linux/Windows Debug/Release compilation and optimized CPU shader tests passed CI.
+Stage 4 foundation is in progress; stages 4–9 remain incomplete. The sections below retain initial-session evidence, followed by
 resumed-session results that supersede the initial unrun CI status.
 
 ## Stage 1 source provenance
@@ -480,3 +480,69 @@ Push only this migration branch for integrated Windows compilation/CPU test CI.
 No Windows engine, GPU, dialog or macOS runtime has been executed or claimed.
 Continue directly with stage 4 prerequisites; record CI result before declaring
 cross-platform stage 3 compilation verified.
+
+
+Stage 3 checkpoint: `25362a8aab4ac395b49b4d694f165088a89b1361`.
+[Actions run 36881572888](https://github.com/cringlekaden/Hazel/actions/runs/36881572888)
+completed successfully for both Linux and Windows Debug/Release, including all
+integrated backend/test compilation and optimized-resource-name CPU shader-tool
+runtime checks. Raw job/step evidence: stage3-actions.json. Windows CPU tool
+runtime is verified; Windows engine/window/input/dialog/GPU runtime is untested.
+Stage 3 compile gates are complete. No merge into master.
+
+### Stage 4a camera/ECS/YAML foundation
+
+Started from a clean tree after stage 3 commit/push. Exact target SceneCamera,
+EnTT amalgamation/license and filewatch header were copied; blob provenance is
+stage4a-imports.json. YAML is a new clean submodule at exact target gitlink
+`25be1f208665b9732ba40aa7b05ec2da97104192` (0.6.3); actual vendor Premake inspected.
+A root-owned project sets absolute output paths, C++17, dynamic MSVC CRT and
+Debug/Release/Dist consistently, leaving vendor scripts/source unchanged.
+
+Target SceneCamera initializes aspect ratio to zero then recalculates, producing
+a non-finite default projection. Initialize to 1, preserve perspective/
+orthographic behavior and ignore minimized (zero-size) viewport updates, retaining
+the last valid projection. The CPU foundation test checks these, target EnTT
+views/entity generations/lifetimes and YAML UUID/UTF-8/component/camera values.
+This is dependency/component-shape round-trip coverage, not yet a SceneSerializer
+or full Scene runtime test. Those gates remain stage 4 completion work.
+
+First Debug build failed (2): target YAML emitterutils.cpp lacks the integer
+header and GCC 16 no longer supplies uint16_t/uint32_t transitively. Evidence:
+stage4a-debug.log. Root-owned scripts/dependencies/yaml-compat.h supplies cstdint
+and its two global names through portable Premake forceincludes, scoped to the
+YAML dependency project, preserving the pin and clean source. A file-specific
+forceincludes attempt was ignored by this gmake generator (actual emitted
+FORCE_INCLUDE was empty; stage4a-debug-fixed.log repeated the failure), so the
+project-scoped standard header is used on both OSes. Emitted flags were checked
+before the final Debug retry. Final Debug and Release builds passed (0), followed
+sequentially by the foundation CPU test, core lifecycle and graceful Sandbox
+checks in each config (all 0). Evidence: stage4a-debug-final.log, stage4a-release.log,
+`stage4a-{debug,release}-native-*.log`. Commands: Premake with --migration-tests
+--shader-tools gmake; make --jobserver-style=pipe config={debug,release} -j2;
+python3 scripts/migration/desktop-checks.py --config {Debug,Release} --stage stage4a.
+
+Concrete future-port obstacle: the target filewatch header's `__unix__` path
+includes Linux sys/inotify.h; it provides Win32 and Linux implementations, not a
+macOS watcher. Keep its exact source now; a future port needs a native watcher
+adapter (kqueue/FSEvents) in OS-specific code, without changing scene/script APIs
+or serialized paths. No speculative macOS implementation is added.
+
+
+Stage 4a Windows generation/XML inspection passed for eleven native targets:
+correct dynamic CRT per config, UTF-8 for applicable projects, YAML forced header,
+OS source separation and SceneCamera inclusion. Evidence: stage4a-vs2022.log and
+stage4a-vs2022-inspection.txt. CI now compiles these on both OSes and executes the
+CPU camera/ECS/YAML test in both configs; Windows CI result pending next push.
+Windows engine/GPU runtime remains untested.
+
+Verified copied vendor blobs are byte-identical to the target and licenses remain
+included. YAML source is clean at the exact target pin; original four pins are
+unchanged. FileWatch.h retains upstream trailing whitespace under its narrowly
+scoped .gitattributes entry; adapted engine/scripts/docs retain whitespace checks.
+
+Checkpoint subject: `Import and verify upstream scene foundation dependencies`.
+Stage 4a is buildable and locally verified; **stage 4 as a whole is incomplete**.
+Continue directly with the actual target font dependency/API prerequisite, then
+renderer, physics, managed scripting/project dependencies and full scene integration.
+No feature stubs or reduced serialization format were introduced.

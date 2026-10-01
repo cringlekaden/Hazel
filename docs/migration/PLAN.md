@@ -28,6 +28,14 @@ For example, isolate shader tools before framebuffer integration and font tools
 before replacing Renderer2D. Any reorder must be recorded in PROGRESS.md; do not
 disable upstream features to make an integration compile.
 
+Stage 4's actual source dependency graph requires subdivisions: 4a supplies the
+camera/ECS/YAML foundation and filewatch inventory; subsequent prerequisites
+introduce the full font/Renderer2D, physics and managed-script/project APIs before
+the complete Scene/Entity/SceneSerializer integration. Keep separate checkpoints
+and record provenance/results for each. Stages 5–7 still require their dedicated
+feature and runtime gates after those prerequisites are available. Stage 4 remains
+incomplete until the full scene round-trip/copy/render/runtime gate passes.
+
 ## Per-stage procedure
 
 1. Inspect status/submodule status and PROGRESS.md; preserve newly arrived user changes.

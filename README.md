@@ -145,3 +145,9 @@ MSAA but reports zero integer multisample texture support; integer picking uses
 single-sample attachments there, and unsupported combined requests report that
 limit. Integer MSAA is retained for capable devices and tested separately in
 software. These capability decisions stay inside the OpenGL backend.
+
+Stage 4's initial foundation imports the exact target EnTT and filewatch headers
+and pins YAML to its target commit. SceneCamera keeps a finite default projection
+and retains it for minimized viewports. `MigrationSceneFoundationSmoke` checks
+CPU camera/ECS/YAML behavior; the complete Scene and SceneSerializer integration
+remains in progress.

@@ -1,0 +1,22 @@
+[
+  {
+    "path": "Hazel/vendor/entt/LICENSE.txt",
+    "target_blob": "1c5f4808941a92081f03d55ca0eb4eca4a01dffb"
+  },
+  {
+    "path": "Hazel/vendor/entt/include/entt.hpp",
+    "target_blob": "2ecceb93cfb8411079aac09abdc552561ab716fb"
+  },
+  {
+    "path": "Hazel/vendor/filewatch/FileWatch.h",
+    "target_blob": "0a7b55ff7ba34f17e125c802fafb714be7684a21"
+  },
+  {
+    "path": "Hazel/src/Hazel/Scene/SceneCamera.h",
+    "target_blob": "1af97df0e055cbe6050f3c481f3c457e0650616f"
+  },
+  {
+    "path": "Hazel/src/Hazel/Scene/SceneCamera.cpp",
+    "target_blob": "e7ecda51f2646e537d919cfa9ad5c42ed38acbaa"
+  }
+]

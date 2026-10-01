@@ -1,0 +1,44 @@
+==== Building GLFW (debug) ====
+==== Building Glad (debug) ====
+==== Building ImGui (debug) ====
+==== Building Hazel (debug) ====
+==== Building yaml-cpp (debug) ====
+emitterutils.cpp
+==== Building MigrationShaderToolsSmoke (debug) ====
+graphbuilder.cpp
+graphbuilderadapter.cpp
+memory.cpp
+node.cpp
+node_data.cpp
+nodebuilder.cpp
+nodeevents.cpp
+null.cpp
+ostream_wrapper.cpp
+parse.cpp
+parser.cpp
+regex_yaml.cpp
+scanner.cpp
+scanscalar.cpp
+scantag.cpp
+scantoken.cpp
+simplekey.cpp
+singledocparser.cpp
+stream.cpp
+tag.cpp
+Linking yaml-cpp
+==== Building MigrationRendererSmoke (debug) ====
+==== Building Sandbox (debug) ====
+Sandbox2D.cpp
+Linking MigrationRendererSmoke
+==== Building MigrationCoreSmoke (debug) ====
+CoreSmoke.cpp
+SandboxApp.cpp
+Linking MigrationCoreSmoke
+Linking Sandbox
+==== Building MigrationRendererFeaturesSmoke (debug) ====
+Linking MigrationRendererFeaturesSmoke
+==== Building MigrationSceneFoundationSmoke (debug) ====
+Creating ../../bin-int/Debug-linux-x86_64/MigrationSceneFoundationSmoke
+Creating ../../bin/Debug-linux-x86_64/MigrationSceneFoundationSmoke
+SceneFoundationSmoke.cpp
+Linking MigrationSceneFoundationSmoke

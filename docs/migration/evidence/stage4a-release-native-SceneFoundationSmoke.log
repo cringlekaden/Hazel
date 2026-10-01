@@ -1,0 +1,1 @@
+PASS: finite default/perspective/orthographic/minimized cameras, exact target ECS views/generations/lifetimes and YAML UUID/UTF-8/component/camera round trips

@@ -19,6 +19,7 @@
 #include "Hazel/Renderer/Buffer.h"
 #include "Hazel/Renderer/Camera.h"
 #include "Hazel/Renderer/Framebuffer.h"
+#include "Hazel/Scene/SceneCamera.h"
 #include "Hazel/Renderer/EditorCamera.h"
 #include "Hazel/Renderer/UniformBuffer.h"
 #include "Hazel/Renderer/Shader.h"

@@ -78,6 +78,11 @@ jobs:
           bin/Debug-linux-x86_64/MigrationShaderToolsSmoke/MigrationShaderToolsSmoke
           bin/Release-linux-x86_64/MigrationShaderToolsSmoke/MigrationShaderToolsSmoke
 
+      - name: Verify CPU camera/ECS/YAML foundation
+        run: |
+          bin/Debug-linux-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke
+          bin/Release-linux-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke
+
       - name: Verify build outputs
         run: |
           test -f bin/Debug-linux-x86_64/Hazel/libHazel.a
@@ -90,6 +95,8 @@ jobs:
           test -x bin/Release-linux-x86_64/MigrationCoreSmoke/MigrationCoreSmoke
           test -x bin/Debug-linux-x86_64/MigrationRendererFeaturesSmoke/MigrationRendererFeaturesSmoke
           test -x bin/Release-linux-x86_64/MigrationRendererFeaturesSmoke/MigrationRendererFeaturesSmoke
+          test -x bin/Debug-linux-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke
+          test -x bin/Release-linux-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke
 
   windows-build:
     name: Windows Debug and Release
@@ -160,10 +167,20 @@ jobs:
             'bin/Debug-windows-x86_64/MigrationCoreSmoke/MigrationCoreSmoke.exe',
             'bin/Release-windows-x86_64/MigrationCoreSmoke/MigrationCoreSmoke.exe',
             'bin/Debug-windows-x86_64/MigrationRendererFeaturesSmoke/MigrationRendererFeaturesSmoke.exe',
-            'bin/Release-windows-x86_64/MigrationRendererFeaturesSmoke/MigrationRendererFeaturesSmoke.exe'
+            'bin/Release-windows-x86_64/MigrationRendererFeaturesSmoke/MigrationRendererFeaturesSmoke.exe',
+            'bin/Debug-windows-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke.exe'
           )
           foreach ($file in $files) {
             if (-not (Test-Path $file -PathType Leaf)) {
               throw "Expected build output is missing: $file"
             }
           }
+
+      - name: Verify CPU camera/ECS/YAML foundation
+        shell: pwsh
+        run: |
+          & bin/Debug-windows-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & bin/Release-windows-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

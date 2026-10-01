@@ -12,7 +12,7 @@ import tempfile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', choices=('Debug', 'Release'), required=True)
-    parser.add_argument('--stage', choices=('stage3',), default='stage3')
+    parser.add_argument('--stage', choices=('stage3', 'stage4a'), default='stage3')
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     binaries = root / 'bin' / f'{args.config}-linux-x86_64'
@@ -28,12 +28,17 @@ def main():
             ('gl41', {'MESA_GL_VERSION_OVERRIDE': '4.1', 'MESA_GLSL_VERSION_OVERRIDE': '410'}),
             ('software', {'LIBGL_ALWAYS_SOFTWARE': '1', 'LP_NUM_THREADS': '2'}),
         )
+        if args.stage == 'stage4a':
+            profiles = profiles[:1]
         for profile, overrides in profiles:
-            checks = ['RendererFeaturesSmoke']
-            if profile != 'software':
-                checks += ['CoreSmoke', 'Sandbox']
-            if profile == 'native':
-                checks += ['RendererSmoke', 'ShaderToolsSmoke']
+            if args.stage == 'stage4a':
+                checks = ['SceneFoundationSmoke', 'CoreSmoke', 'Sandbox']
+            else:
+                checks = ['RendererFeaturesSmoke']
+                if profile != 'software':
+                    checks += ['CoreSmoke', 'Sandbox']
+                if profile == 'native':
+                    checks += ['RendererSmoke', 'ShaderToolsSmoke']
             for name in checks:
                 target = name if name == 'Sandbox' else 'Migration' + name
                 executable = binaries / target / target

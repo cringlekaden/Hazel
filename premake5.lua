@@ -573,3 +573,4 @@ if _OPTIONS["migration-tests"] then
 end
 
 include "scripts/dependencies"
+include "scripts/dependencies/scene-foundation.lua"

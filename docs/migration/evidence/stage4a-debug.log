@@ -1,0 +1,54 @@
+==== Building GLFW (debug) ====
+==== Building Glad (debug) ====
+==== Building ImGui (debug) ====
+==== Building Hazel (debug) ====
+==== Building yaml-cpp (debug) ====
+Creating ../../bin-int/Debug-linux-x86_64/yaml-cpp
+Creating ../../bin/Debug-linux-x86_64/yaml-cpp
+binary.cpp
+SceneCamera.cpp
+convert.cpp
+depthguard.cpp
+directives.cpp
+emit.cpp
+emitfromevents.cpp
+emitter.cpp
+emitterstate.cpp
+emitterutils.cpp
+../../Hazel/vendor/yaml-cpp/src/emitterutils.cpp:221:11: error: ‘uint16_t’ was not declared in this scope
+  221 | std::pair<uint16_t, uint16_t> EncodeUTF16SurrogatePair(int codePoint) {
+      |           ^~~~~~~~
+../../Hazel/vendor/yaml-cpp/src/emitterutils.cpp:13:1: note: ‘uint16_t’ is defined in header ‘<cstdint>’; this is probably fixable by adding ‘#include <cstdint>’
+   12 | #include "yaml-cpp/null.h"
+  +++ |+#include <cstdint>
+   13 | #include "yaml-cpp/ostream_wrapper.h"
+../../Hazel/vendor/yaml-cpp/src/emitterutils.cpp:221:21: error: ‘uint16_t’ was not declared in this scope
+  221 | std::pair<uint16_t, uint16_t> EncodeUTF16SurrogatePair(int codePoint) {
+      |                     ^~~~~~~~
+../../Hazel/vendor/yaml-cpp/src/emitterutils.cpp:221:21: note: ‘uint16_t’ is defined in header ‘<cstdint>’; this is probably fixable by adding ‘#include <cstdint>’
+../../Hazel/vendor/yaml-cpp/src/emitterutils.cpp:221:29: error: template argument 1 is invalid
+  221 | std::pair<uint16_t, uint16_t> EncodeUTF16SurrogatePair(int codePoint) {
+      |                             ^
+../../Hazel/vendor/yaml-cpp/src/emitterutils.cpp:221:29: error: template argument 2 is invalid
+../../Hazel/vendor/yaml-cpp/src/emitterutils.cpp: In function ‘int YAML::Utils::{anonymous}::EncodeUTF16SurrogatePair(int)’:
+../../Hazel/vendor/yaml-cpp/src/emitterutils.cpp:222:9: error: ‘uint32_t’ does not name a type
+  222 |   const uint32_t leadOffset = 0xD800 - (0x10000 >> 10);
+      |         ^~~~~~~~
+../../Hazel/vendor/yaml-cpp/src/emitterutils.cpp:222:9: note: ‘uint32_t’ is defined in header ‘<cstdint>’; this is probably fixable by adding ‘#include <cstdint>’
+../../Hazel/vendor/yaml-cpp/src/emitterutils.cpp:225:5: error: ‘leadOffset’ was not declared in this scope
+  225 |     leadOffset | (codePoint >> 10),
+      |     ^~~~~~~~~~
+../../Hazel/vendor/yaml-cpp/src/emitterutils.cpp:227:3: error: cannot convert ‘<brace-enclosed initializer list>’ to ‘int’ in return
+  227 |   };
+      |   ^
+../../Hazel/vendor/yaml-cpp/src/emitterutils.cpp: In function ‘void YAML::Utils::{anonymous}::WriteDoubleQuoteEscapeSequence(YAML::ostream_wrapper&, int, YAML::StringEscaping::value)’:
+../../Hazel/vendor/yaml-cpp/src/emitterutils.cpp:246:55: error: request for member ‘first’ in ‘surrogatePair’, which is of non-class type ‘int’
+  246 |     WriteDoubleQuoteEscapeSequence(out, surrogatePair.first, stringEscapingStyle);
+      |                                                       ^~~~~
+../../Hazel/vendor/yaml-cpp/src/emitterutils.cpp:247:55: error: request for member ‘second’ in ‘surrogatePair’, which is of non-class type ‘int’
+  247 |     WriteDoubleQuoteEscapeSequence(out, surrogatePair.second, stringEscapingStyle);
+      |                                                       ^~~~~~
+Linking Hazel
+make[1]: *** [Makefile:239: ../../bin-int/Debug-linux-x86_64/yaml-cpp/emitterutils.o] Error 1
+make: *** [Makefile:125: yaml-cpp] Error 2
+make: *** Waiting for unfinished jobs....
