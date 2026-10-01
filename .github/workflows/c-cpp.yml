@@ -73,6 +73,15 @@ jobs:
       - name: Build Release
         run: make config=release -j2
 
+      - name: Verify standalone managed example projects
+        working-directory: Hazelnut/SandboxProject/Assets/Scripts
+        run: |
+          premake5 gmake
+          make config=debug -j2
+          make config=release -j2
+          test -f Binaries/Hazel-ScriptCore.dll
+          test -f Binaries/Sandbox.dll
+
       - name: Verify shader toolchain at runtime
         run: |
           bin/Debug-linux-x86_64/MigrationShaderToolsSmoke/MigrationShaderToolsSmoke
@@ -173,6 +182,20 @@ jobs:
 
       - name: Build Release
         run: msbuild Hazel.sln /m:2 /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+
+      - name: Verify standalone managed example projects
+        working-directory: Hazelnut/SandboxProject/Assets/Scripts
+        shell: pwsh
+        run: |
+          premake5 vs2022
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          msbuild Sandbox.sln /m:2 /p:Configuration=Debug /p:Platform=x64 /verbosity:minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          msbuild Sandbox.sln /m:2 /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($file in @('Binaries/Hazel-ScriptCore.dll', 'Binaries/Sandbox.dll')) {
+            if (-not (Test-Path $file -PathType Leaf)) { throw "Missing managed example output: $file" }
+          }
 
       - name: Verify shader toolchain at runtime
         shell: pwsh

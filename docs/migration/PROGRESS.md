@@ -1,35 +1,40 @@
 # Migration progress and resume record
 
-Updated2026-10-01. Branch `migration/upstream-1feb705`; baseline/default branch `b030be7`. Fixed upstream `1feb70572fa87fa1c4ba784a2cfeada5b4a500db`. Branch pushes for CI are authorized; never merge into master. Preserve unrelated work, inspect actual status/processes before resuming, and build/test sequentially with at most two jobs. No unrelated work or system changes were introduced.
+Updated 2026-10-01. Branch `migration/upstream-1feb705`; baseline/default branch `b030be7`. Fixed upstream `1feb70572fa87fa1c4ba784a2cfeada5b4a500db`. Branch pushes for CI are authorized; never merge into master. Preserve unrelated work, inspect actual status/processes before resuming, and build/test sequentially with at most two jobs. No unrelated work or system changes were introduced.
 
 ## Resume here
 
-Stages2–8 implemented and verified; stage9/final acceptance is active. Current commits: `7096803` fixes diagnosed Mono logfile lock; `60f1733` adds complete Premake shader workspace/generators; `80f0fce` matches pinned SPIRV-Tools timer/configuration macros. Local Linux Debug Premake SDK, full engine build and toolchain test passed. Release SDK remains the earlier CMake-built installation until explicitly replaced and verified. New capability/settings/cache hardening and documentation cleanup are migration-owned working-tree edits, not yet a successful checkpoint.
+Stages2–8 and stage9 implementation/cleanup are committed. Current source checkpoint
+is967f85c (license at repository root), after9ed63ed (capabilities/settings/cache/
+integer-blend hardening and concise records) and01c1a3e (actual upstream generic
+example and source provenance). No unrelated changes were found or discarded.
+Final clean-checkout verification is active; do not declare acceptance yet.
 
-Stage9b full Linux Debug compile/link and all30 sequential desktop checks passed
-(0): native Intel4.2, forced Mesa4.1 and software4.6. Default and forced GLSL paths,
-1000-slot clamping/two-slot batching, primitive/text/texture/scene/physics/managed/
-project/queued reload/editor tests and both apps' graceful native close passed.
-Warm cache reused files without rewriting; changed-source, truncated and valid-
-header payload corruption recovered with correct color/entity output. Shader
-version comments retain the legacy path. Native integer-blend probe was resolved
-by backend indexed-state handling; final no-clear recovery yields64,64,192/73/0.
-Reduced-slot batch test now respects white reservation and still verifies final
-picking. The earlier Debug suite finished with no surviving process; current clean-checkout processes are recorded below.
+| Gate | Actual evidence/status |
+| --- | --- |
+| Premake shader SDK |80f0fce / [Actions36939167744](https://github.com/cringlekaden/Hazel/actions/runs/36939167744) passed both OS Debug/Release SDK/root compilation and CPU/tool/Windows software runtime. Complete optimizer, HLSL, reflection, generated inputs and MDd/MD retained.60f1733 Windows timer failure was diagnosed/fixed, not counted as success |
+| Hardened renderer/cleanup |9ed63ed / [Actions36941013405](https://github.com/cringlekaden/Hazel/actions/runs/36941013405) passed both OS Debug/Release compilation, CPU suites and17 Windows SOFTWARE graphics/editor/close checks per configuration. Local Linux Debug full build and30 desktop checks passed on native Intel4.2, forced Mesa4.1 and software4.6 |
+| Restored actual generic example |01c1a3e / [Actions36942248796](https://github.com/cringlekaden/Hazel/actions/runs/36942248796) passed both OS builds/CPU suites and19 Windows SOFTWARE checks/config, including example graceful close. Native final suites now33 checks/config |
+| License cleanup checkpoint |967f85c / [Actions36943018984](https://github.com/cringlekaden/Hazel/actions/runs/36943018984) currently running. Windows Debug passed; Release building. This changes no engine semantics |
+| Fresh local build |build/migration/clean-checkout began from9ed63ed with no generated/installed/build artifacts; now fast-forwarded on its migration branch to967f85c, dependency inputs unchanged. All submodules are initialized and clean. CMake is absent from PATH. SDK Debug compiled/installed; Release SDK is compiling with two jobs in helper session10921. Only this local compiler process is running |
+| Remaining local gates |After SDK finishes: fresh root Debug build/33 desktop checks, then Release build/33 checks, then standalone managed Debug/Release compilation, sequentially. Original ignored Mono SDK/artifacts preserved; old original Release SDK is not used as fresh verification evidence |
 
-This is a buildable Debug hardening/cleanup checkpoint, not final acceptance.
-Next create a fresh verification checkout of this migration checkpoint, build
-its pinned SDK Debug/Release and root engine Debug/Release with Premake only,
-then run both30-check suites and standalone example build. Keep original ignored
-artifacts/Mono SDK, do not delete vendor Makefiles or touch unrelated work.
-Local Release SDK has not yet replaced the earlier CMake-built installation.
+Full hardening checks verify default/forced GLSL paths, driver/1000-slot clamping,
+two-slot batching, all primitives/text/texture/scene/physics/managed/project/queued
+reload/editor functions and graceful shutdown. Warm caches are reused without
+rewrite; changed-source, truncated and valid-header corrupted payloads recover
+correct color/entity output. Comments retain the legacy shader path. Diagnosed
+native integer blending now uses backend indexed state; no-clear recovery yields
+64,64,192/73/0 and restores caller state. These checks must also pass the fresh
+Release build before final acceptance.
 
-Premake correction80f0fce / [Actions36939167744](https://github.com/cringlekaden/Hazel/actions/runs/36939167744) passed Linux/Windows Debug/Release SDK/root compilation, optimized GLSL/HLSL tool validation/reflection, all CPU scene/project/physics/Mono/reload/watcher suites and all17 Windows SOFTWARE graphics/editor/graceful-close checks/config. This verifies the Premake integration on both OSes; final cleaned/hardened9ed63ed CI is [Actions36941013405](https://github.com/cringlekaden/Hazel/actions/runs/36941013405), currently building. Prior60f1733 Linux passed but Windows timer failure was investigated/fixed, not treated as overall success.
-
-Fresh local checkout at build/migration/clean-checkout is exactly9ed63ed, initially clean with no generated/install/build artifacts. Source submodule initialization is running (session30105); it is independent Git I/O, not a compiler job. Its SDK helper is compiling Debug then Release with two jobs (session10921); only one local build runs. CMake is absent from PATH. All logs stay in original ignored build/migration/evidence/final-clean-*.log. Do not start another compiler/runtime until the SDK helper finishes. Then generate/build this fresh root with external preserved Mono SDK and run30 desktop checks/configuration sequentially, followed by standalone example build.
-
-
-Working-tree cleanup archives129 routine logs/settings/CI metadata under ignored `build/migration/archived-records` and removes them from tracking. Source/blob import records, baseline comparison, dependency pins, licenses and regression scripts remain. Consolidating into this progress record, PRESERVATION.md, PROVENANCE.md and KNOWN-LIMITATIONS.md; PLAN/COMPARISON content is incorporated before their removal. Raw new evidence stays under ignored `build/migration/evidence` or CI artifacts.
+Cleanup removed129 routine raw logs/CI metadata from tracking (retained under
+ignored build/migration/archived-records and Git history). Four concise records
+replace PLAN/COMPARISON; actual source/blob imports, baseline comparison, pins,
+licenses and useful regression scripts remain. Logs go to ignored evidence or
+CI artifacts. Vendor Makefiles and unrelated configuration are preserved.
+Standalone project generation passed; separate CI compilation gates are being
+added for both OS/configurations. No local runtime/debugger is currently running.
 
 ## Completed stages and checkpoints
 
@@ -44,14 +49,24 @@ Working-tree cleanup archives129 routine logs/settings/CI metadata under ignored
 |6 Physics |c86d1dd |All body types, box/circle contacts/materials/gravity/transforms, pause/step/copy/restart/live duplicate/remove/add. Reproduced duplicate null-body crash before scoped synchronization fix. Debug/Release builds/ten desktop checks/config; [Actions36927686042](https://github.com/cringlekaden/Hazel/actions/runs/36927686042) both OS builds/CPU |
 |7 Managed/projects |f3eff4a,aaf145a |Actual Player/Camera and project assets, component/internal-call/Unicode-text checks; nested metadata crash fixed using actual Mono tokens. Debug/Release sixteen desktop checks/config. MSBuild deployment uses TargetPath. [Actions36930517894](https://github.com/cringlekaden/Hazel/actions/runs/36930517894) both OS builds/CPU |
 |8 Actual editor |cf30569,1505642,7096803 |Debug/Release twelve local desktop checks/config, actual editor/panels/docking/gizmos/workflows/scenes/scripts/payloads. Strict Windows cleanup failure diagnosed as Mono's retained debugger logfile, fixed using supported stdout while preserving debugger. [Actions36935755402](https://github.com/cringlekaden/Hazel/actions/runs/36935755402) both OS Debug/Release compilation and CPU suites, all17 Windows SOFTWARE WGL/editor/graceful-close checks/config across llvmpipe4.6/forced4.1. Windows hardware/macOS remain unrun |
-|9 Premake/hardening/final parity |60f1733,80f0fce; in progress |Linux Debug SDK/full engine/tool test passed. VS SDK generation confirms six projects, Windows source, MDd/MD/UTF-8 (generation is not compilation). Pending results above |
+|9 Premake/hardening/final parity |60f1733,80f0fce,9ed63ed,01c1a3e,967f85c; final verification active |Premake SDK/root both OS Debug/Release and Windows software suites passed CI. Local hardened Debug passed; fresh local Debug/Release and standalone project gates pending above |
 
-## Remaining acceptance gates
+## Final acceptance requirements
 
-1. Complete Premake-only SDK integration on both OS/configurations, preserving full shaderc/glslang/HLSL/Tools optimizer-validator/Cross reflection and generated inputs; exact clean pins and matching Windows CRT. Until Release/local and new CI pass, this requirement is unmet.
-2. Finish capability/settings and shader-path/cache hardening. Source inspection found only public upstream RenderCaps TODO; the new records are documented local extensions following Hazel specifications/initialization/consumers. Native HD4000 features and GL4.1 fallback remain, with OS code separate from graphics code and no additional backend.
-3. Finish concise documentation/cleanup, audit complete source/feature parity, retain useful tests/licenses/pins/scripts, stop tracking raw routine logs. Record portability obstacles and unrun interactions separately.
-4. After cleanup, repeat clean Linux and Windows Debug/Release builds and relevant CPU/GPU/editor/close suites, including default/forced GLSL settings, texture batching and damaged-cache recovery. Validate standalone example Premake. Publish final parity/limitations and final local commit; no merge.
+1. Concise progress/preservation/provenance/known-limitations records; raw routine
+   logs ignored/artifacts, useful tests/pins/licenses/build scripts retained.
+2. Clean checkout builds through Premake without CMake, retaining shaderc/SPIRV-
+   Cross compilation/optimization/reflection/cache/generated inputs and matching
+   Windows CRT. Both OS Debug/Release SDK CI passed; fresh local both configs pending.
+3. Consolidated capabilities/settings and selected shader paths; preserve native
+   HD4000 features, test-only overrides/software, audit damaged-cache recovery.
+   Actual upstream inspection found only RenderCaps TODO; records are local extensions.
+4. Future Mac/Metal architecture through separate OS/graphics adapters and portable
+   scene/project APIs, without implementing or claiming another backend/OS.
+5. After cleanup, clean Linux/Windows Debug/Release builds, relevant CPU/graphics/
+   editor/close and standalone project checks, final parity/limitations report and
+   local checkpoint. No merge into default/master. Windows runtime evidence must
+   identify software rendering; hardware/macOS/manual interactions remain unrun.
 
 ## Reproduce locally
 
@@ -67,21 +82,3 @@ python3 scripts/migration/desktop-checks.py --config Debug --stage final
 ```
 
 Routine logs go to ignored build/migration/evidence. Dependency manifests/licenses live in ignored install prefixes; all source revisions are checked before/after building. Preserved vendor Makefiles are never recursively removed. CI builds with native Mono on Linux/exact upstream SDK on Windows. Windows software runtime uses checksum-pinned process-local Mesa DLLs and two llvmpipe threads; neither a system driver installation nor hardware claim.
-
-Final parity audit: restore actual dormant target ExampleLayer, with its missing
-basic-texture asset recovered from actual public history7d120fb4 under a separate
-asset name. Provenance is recorded; --example-layer selects it without replacing
-Sandbox2D. Add owned graceful-close checks to both OS runners (final Linux33 and
-Windows19 checks/config). Compilation/runtime for this addition is pending.
-Standalone example Premake generation passed but exposed unignored generated
-Makefile/.make/.csproj outputs; add scoped ignore rules. Update the fresh checkout
-to this source-only correction while SDK compilation continues; shader dependency
-inputs remain identical. After SDK finishes, run fresh root builds/runtimes and
-standalone managed compilation.
-
-Final license cleanup moves the exact upstream Apache2 text from the redundant
-migration copy to repository LICENSE, recording its original blob. Header EOF
-whitespace is trimmed; source semantics unchanged. Fresh SDK Debug compilation
-has finished and archive installation/Release follow in the same serial helper.
-Both9ed63ed and01c1a3e Windows CI are in graphics/editor runtime; results remain
-pending. No additional local build/test is running alongside the SDK helper.
