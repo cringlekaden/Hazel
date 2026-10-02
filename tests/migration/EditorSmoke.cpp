@@ -149,6 +149,9 @@ public:
                 std::filesystem::copy(m_Directory/"SandboxProject",relocated,std::filesystem::copy_options::recursive);
                 const auto original=m_Directory/"SandboxProject";
                 const auto parked=m_Directory/"Parked original";
+                // Windows cannot rename the watched project's ancestor directory while its watcher is active.
+                // Switch to the copy (joining the old watcher), then make the original unavailable and reopen.
+                Check(e.OpenProject(relocated/"Sandbox.hproj"),"Copied project initial open failed");
                 std::filesystem::rename(original,parked); // Prevent silently resolving against the original project.
                 Check(e.OpenProject(relocated/"Sandbox.hproj"),"Relocated project open failed");
                 auto texture=e.m_EditorScene->GetEntityByUUID(901).GetComponent<SpriteRendererComponent>().Texture;
