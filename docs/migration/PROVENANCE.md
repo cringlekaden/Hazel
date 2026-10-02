@@ -17,7 +17,14 @@ Baseline tracked-entry comparison remains in `evidence/source-comparison.tsv` an
 | Actual Player/Camera scripts and SandboxProject assets | stage7-imports | Portable Premake/deployment, component API regression probe, token-based nested metadata discovery |
 | Actual Hazelnut editor/panels/fonts/icons/layout, ImGuizmo, ImGui theme/helper/UI | stage8-imports | Official ImGui API/backends, Scope layers/font, UTF-8 payload/CLI, safe scene/project workflows, all three body types, teardown |
 
-Final source-path audit accounts for target engine/editor/managed sources. `Hazel/Core/Window.cpp` is intentionally replaced by separate OS window factories; `ImGuiBuild.cpp` is replaced by official backend translation units. Preserve local Core/MouseButtonCodes compatibility includes and separate OS inputs. Engine features are not removed for compatibility.
+Final source-path audit at e3cf646 compares888 local /829 target entries:
+669 identical,138 changed,81 local-only and22 upstream-only. Changed entries
+include the deliberate portability/ownership/dependency integrations; local-only
+entries include OS adapters, build integration, regression checks and these records.
+Every target engine/editor/managed source is present or explicitly replaced. `Hazel/Core/Window.cpp` is intentionally replaced by separate OS window factories; `ImGuiBuild.cpp` is replaced by official backend translation units. Preserve local Core/MouseButtonCodes compatibility includes and separate OS inputs. Engine features are not removed for compatibility. Remaining target-only entries
+are Windows/Vulkan setup and old/bundled Premake scripts, repository style/
+contribution templates and a branding image. Actual dormant ExampleLayer and its
+missing historical shader dependency are included as recorded below.
 
 ## Deliberate dependency choices
 

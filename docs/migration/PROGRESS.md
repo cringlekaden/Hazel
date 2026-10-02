@@ -15,7 +15,7 @@ Final clean-checkout verification is active; do not declare acceptance yet.
 | Premake shader SDK |80f0fce / [Actions36939167744](https://github.com/cringlekaden/Hazel/actions/runs/36939167744) passed both OS Debug/Release SDK/root compilation and CPU/tool/Windows software runtime. Complete optimizer, HLSL, reflection, generated inputs and MDd/MD retained.60f1733 Windows timer failure was diagnosed/fixed, not counted as success |
 | Hardened renderer/cleanup |9ed63ed / [Actions36941013405](https://github.com/cringlekaden/Hazel/actions/runs/36941013405) passed both OS Debug/Release compilation, CPU suites and17 Windows SOFTWARE graphics/editor/close checks per configuration. Local Linux Debug full build and30 desktop checks passed on native Intel4.2, forced Mesa4.1 and software4.6 |
 | Restored actual generic example |01c1a3e / [Actions36942248796](https://github.com/cringlekaden/Hazel/actions/runs/36942248796) passed both OS builds/CPU suites and19 Windows SOFTWARE checks/config, including example graceful close. Native final suites now33 checks/config |
-| License cleanup checkpoint |967f85c / [Actions36943018984](https://github.com/cringlekaden/Hazel/actions/runs/36943018984) currently running. Windows Debug passed; Release building. This changes no engine semantics |
+| License cleanup checkpoint |967f85c / [Actions36943018984](https://github.com/cringlekaden/Hazel/actions/runs/36943018984) passed both OS Debug/Release builds/CPU suites and19 Windows SOFTWARE checks/config. This changes no engine semantics |
 | Fresh local build |build/migration/clean-checkout began from9ed63ed with no generated/installed/build artifacts; now fast-forwarded on its migration branch to967f85c, dependency inputs unchanged. All submodules are initialized and clean. CMake is absent from PATH. SDK Debug compiled/installed; Release SDK is compiling with two jobs in helper session10921. Only this local compiler process is running |
 | Remaining local gates |After SDK finishes: fresh root Debug build/33 desktop checks, then Release build/33 checks, then standalone managed Debug/Release compilation, sequentially. Original ignored Mono SDK/artifacts preserved; old original Release SDK is not used as fresh verification evidence |
 
@@ -33,8 +33,10 @@ ignored build/migration/archived-records and Git history). Four concise records
 replace PLAN/COMPARISON; actual source/blob imports, baseline comparison, pins,
 licenses and useful regression scripts remain. Logs go to ignored evidence or
 CI artifacts. Vendor Makefiles and unrelated configuration are preserved.
-Standalone project generation passed; separate CI compilation gates are being
-added for both OS/configurations. No local runtime/debugger is currently running.
+Standalone project generation passed; e3cf646 adds separate CI compilation gates
+for both OS/configurations ([Actions36943618062](https://github.com/cringlekaden/Hazel/actions/runs/36943618062), running). No local runtime/debugger is currently running. Final CI will select the manual
+rebuild_shader_tools input to rebuild both configurations from pinned source on
+both OSes even if a shader library cache exists.
 
 ## Completed stages and checkpoints
 

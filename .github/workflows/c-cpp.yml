@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [master]
   workflow_dispatch:
+    inputs:
+      rebuild_shader_tools:
+        description: Build pinned shader dependencies from source even on a cache hit
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -61,7 +66,7 @@ jobs:
           key: shader-tools-premake-ubuntu24-gcc13-${{ hashFiles('scripts/dependencies/shader-tools.json', 'scripts/dependencies/build-shader-tools.py', 'scripts/dependencies/shader-workspace.lua', 'scripts/dependencies/shader-sources.json', 'scripts/dependencies/generate-shader-inputs.py', 'scripts/dependencies/shader-tools-compat.h') }}
 
       - name: Build pinned shader libraries (Debug and Release, two jobs)
-        if: steps.shader-cache.outputs.cache-hit != 'true'
+        if: steps.shader-cache.outputs.cache-hit != 'true' || inputs.rebuild_shader_tools
         run: python3 scripts/dependencies/build-shader-tools.py --jobs 2
 
       - name: Generate GNU Make projects
@@ -171,7 +176,7 @@ jobs:
           key: shader-tools-premake-windows2022-msvc143-${{ hashFiles('scripts/dependencies/shader-tools.json', 'scripts/dependencies/build-shader-tools.py', 'scripts/dependencies/shader-workspace.lua', 'scripts/dependencies/shader-sources.json', 'scripts/dependencies/generate-shader-inputs.py', 'scripts/dependencies/shader-tools-compat.h') }}
 
       - name: Build pinned shader libraries (Debug and Release, two jobs)
-        if: steps.shader-cache.outputs.cache-hit != 'true'
+        if: steps.shader-cache.outputs.cache-hit != 'true' || inputs.rebuild_shader_tools
         run: python scripts/dependencies/build-shader-tools.py --jobs 2
 
       - name: Generate Visual Studio projects
