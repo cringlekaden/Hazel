@@ -1,5 +1,20 @@
 # Migration progress and final parity
 
+## Current working baseline (2026-10-02)
+
+The user explicitly authorized merging the completed migration into master.
+Merge `257bd58fcb3ed23e4638967160d5b6eaceffe09b` preserves both parents and
+has the same tracked tree as migration checkpoint `bc1f8b1`. Master/origin master
+had not advanced from `b030be7`; no conflict resolution or vendor changes were
+needed. The latest migration CI [Actions36949022572](https://github.com/cringlekaden/Hazel/actions/runs/36949022572)
+passed Linux/Windows Debug/Release, CPU checks and Windows software editor checks.
+The historical migration-only restrictions below no longer govern this merge.
+New authoring repairs belong on `fix/authoring-reliability`, for review before any
+further merge. Preserve the ignored local VS Code workflow and unrelated layouts.
+
+The remaining sections record original migration results at their original
+checkpoints; they are historical evidence, not current branch restrictions.
+
 Updated 2026-10-01 (local date). Branch `migration/upstream-1feb705`; default/master
 remains `b030be7353fd730da78e4bcee6273e0421506fb3`. Fixed upstream target:
 `1feb70572fa87fa1c4ba784a2cfeada5b4a500db`. Only the migration branch was pushed

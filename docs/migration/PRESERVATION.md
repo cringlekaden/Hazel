@@ -1,5 +1,11 @@
 # Preservation decisions
 
+Current authorization (2026-10-02): the completed migration is merged into master
+at `257bd58fcb3ed23e4638967160d5b6eaceffe09b`. The user's explicit instruction
+supersedes the historical migration-only branch restriction below. Keep the
+migration branch as history; authoring repairs are reviewed separately. All
+ownership/platform/dependency preservation requirements remain in effect.
+
 Initial tree: clean master `b030be7`, clean original submodules, existing ignored build outputs/configuration retained. Migration stays on `migration/upstream-1feb705`; only that branch is pushed for CI. No default-branch merge or unrelated system change. All later working-tree edits were inspected and preserved across checkpoints/pause/resume. Build/test invocations are sequential, with at most two compiler jobs and two atlas/software-renderer workers.
 
 | Invariant | Preserved implementation and evidence |

@@ -4,7 +4,7 @@ Linux/Windows adaptation of [TheCherno/Hazel](https://github.com/TheCherno/Hazel
 
 ## Dependencies
 
-Clone with `git clone --recurse-submodules https://github.com/cringlekaden/Hazel.git` and check out the migration branch. Existing clones use `git submodule update --init --recursive`.
+Clone master with `git clone --recurse-submodules https://github.com/cringlekaden/Hazel.git`. The completed migration remains available on `migration/upstream-1feb705` as history. Existing clones use `git submodule update --init --recursive`.
 
 Builds use Python 3, Git, and current development Premake 5. CI pins Premake to `71f2d33946947e9cf704f00c24200381e360f593`; released beta8 lacks required APIs. **No CMake is required.** Shader dependencies compile through a project-owned Premake workspace with exact pins in [shader-tools.json](scripts/dependencies/shader-tools.json). Generated inputs, dependency checkouts, installed libraries and logs stay under ignored `build/`. Vendor sources remain clean.
 
