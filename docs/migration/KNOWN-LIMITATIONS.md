@@ -1,12 +1,12 @@
 # Known limitations and portability boundaries
 
-Migration final acceptance is still pending; see PROGRESS.md. The records below distinguish retained upstream boundaries from verified hardware constraints and unrun checks.
+Migration final acceptance passed; see PROGRESS.md for code checkpoint/CI/local evidence. These records distinguish retained upstream boundaries from verified hardware constraints and unrun checks.
 
 | Boundary | Status and likely adaptation |
 | --- | --- |
 | Native Intel HD4000/OpenGL4.2 | Tested accelerated Mesa26.2.4-arch3.1 on CachyOS. Fragment texture limit16, color/depth samples8, integer texture samples0. Batch default16 preserves texture rendering; single-sample picking and tested4-sample color/depth MSAA remain available. Unsupported integer MSAA requests fail explicitly; capable-device integer MSAA remains implemented/tested in software |
 | OpenGL4.1 | Backend/shaders verified under process-local Mesa4.1/GLSL410 override, including full scenes/editor. This is not a native Apple driver or macOS port validation. No production Mesa override/software selection |
-| Windows graphics | Actual CI WGL/llvmpipe4.6 and forced4.1 runtime verified at7096803, including editor/queued reload/graceful close; hardware Windows graphics remains unrun. New final Premake/capability changes require subsequent CI validation |
+| Windows graphics | Actual CI WGL/llvmpipe4.6 and forced4.1 runtime verified at eebab04, including capability/settings/cache recovery, editor/queued reload and both Sandbox examples/graceful close (19 checks/config). Hardware Windows graphics remains unrun. Final forced SDK rebuild CI 36944228477 passed both configurations and all 38 software runtime cases |
 | macOS/Metal | Neither implemented nor claimed. OS adapters can be added separately from graphics backend factories. Common scene/project data, UTF-8 paths and renderer specification APIs are preserved. A Mac4.1 path needs actual context/driver validation; a Metal backend needs equivalent shader translation/resource bindings and ImGui renderer integration |
 | Wide lines | Current GL smooth-line range is detected; supported requested widths are retained. A future backend restricted to width1 may require equivalent geometric line rendering, without changing scene APIs. No speculative implementation |
 | ImGui/texture handles | Official current integration targets GLFW/OpenGL. Future Metal UI integration needs its renderer adapter and a native texture-handle bridge; do not add OS-specific assumptions to scenes |
@@ -17,4 +17,4 @@ Migration final acceptance is still pending; see PROGRESS.md. The records below 
 | User interaction | Automated actual editor commands verify docking/viewport, save/reopen/project, Unicode texture content payload, selection/duplicate, gizmo modes/drawing, play/pause/step/simulate/reload and shutdown. Physical mouse drag, sustained interactive visual inspection and native file-dialog interaction on both OSes remain unrun; event/input retrieval and command flow are tested |
 | Platform scope | Current Premake/native build integration supports Linux/Windows x86_64; no additional OS/architecture support is claimed |
 
-Final hardening must verify the new cache container's warm reuse, changed-source invalidation, truncated/valid-header corruption recovery and selected native/GLSL paths, then repeat clean builds/runtime after repository cleanup. Pending results are not passes.
+Final Debug/Release hardening passed after cleanup: warm reuse, changed-source invalidation, truncated/valid-header corruption recovery, selected native/GLSL paths and indexed integer-blend state restoration. Clean Premake SDK/root/standalone builds passed on both OSes. No final acceptance requirement remains unmet; the hardware/manual/future-platform boundaries above remain explicit.

@@ -59,7 +59,7 @@ blending yielded73. OpenGLFramebuffer now explicitly disables indexed blending
 for integer attachments while bound and restores caller state on unbind/release/
 resize. Color blending is preserved. This addresses a current Linux portability
 obstacle, rather than adding speculative Mac code; the regression tests uncleared
-overwritten color/entity pixels and restored state. Final Debug no-clear color/entity readback and blend-state restoration passed on native4.2, forced4.1 and software4.6; Release/clean-checkout proof remains pending.
+overwritten color/entity pixels and restored state. Final clean Debug/Release no-clear color/entity readback and blend-state restoration passed on native4.2, forced4.1 and software4.6; Windows software4.6/forced4.1 also passed. Full evidence is in PROGRESS.md.
 
 Final source audit also found dormant target Sandbox/src/ExampleLayer.h/.cpp,
 now imported directly (stage9-example-imports.json). Its required Texture.glsl
