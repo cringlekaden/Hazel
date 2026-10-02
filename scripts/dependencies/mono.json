@@ -1,0 +1,20 @@
+{
+  "upstream_commit": "1feb70572fa87fa1c4ba784a2cfeada5b4a500db",
+  "windows": {
+    "sdk": "Hazel/vendor/mono",
+    "assemblies": "Hazelnut/mono/lib",
+    "version": "6.12.0",
+    "debug_crt": "MSVCRTD",
+    "release_crt": "MSVCRT",
+    "provenance": "docs/migration/evidence/stage4e-imports.json",
+    "license": "Hazel/vendor/mono/LICENSE"
+  },
+  "linux_local": {
+    "package": "mono-6.12.0.206-1-x86_64.pkg.tar.zst",
+    "url": "https://archlinux.cachyos.org/repo/extra/os/x86_64/mono-6.12.0.206-1-x86_64.pkg.tar.zst",
+    "sha256": "5c30dcc286b1f65073cf267a4befa5ef4ae282351c4337beada740a15ae1e528",
+    "verification": "official Arch sync metadata extra.db, package version 6.12.0.206-1",
+    "prefix": "build/dependencies/mono/linux/usr",
+    "distribution": "ignored local SDK; native installed Mono development package also supported"
+  }
+}

@@ -12,6 +12,9 @@ namespace Hazel
     public:
         LayerStack();
         ~LayerStack();
+        void Clear();
+        auto rbegin() { return m_Layers.rbegin(); }
+        auto rend() { return m_Layers.rend(); }
 
         void PushLayer(Scope<Layer> layer);
         void PushOverlay(Scope<Layer> overlay);

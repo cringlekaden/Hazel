@@ -1,0 +1,23 @@
+# Preservation decisions
+
+Initial tree: clean master `b030be7`, clean original submodules, existing ignored build outputs/configuration retained. Migration stays on `migration/upstream-1feb705`; only that branch is pushed for CI. No default-branch merge or unrelated system change. All later working-tree edits were inspected and preserved across checkpoints/pause/resume. Build/test invocations are sequential, with at most two compiler jobs and two atlas/software-renderer workers.
+
+| Invariant | Preserved implementation and evidence |
+| --- | --- |
+| OS/API separation | Separate Platform/Linux and Platform/Windows window/input/time/dialog/watch implementations; Windows UTF-16 command-line conversion stays in Windows. GraphicsContext/OpenGL resources, limits, version/function requirements and shader loading stay in Platform/OpenGL |
+| Portable common data | Common APIs use UTF-8/native filesystem conversion at boundaries; assets, YAML scene/project files, managed fields and renderer-facing specifications contain no Linux/Windows-only choices. No speculative macOS/Metal code |
+| Ref/Scope/CreateRef/CreateScope | Retained forwarding factories and shared/unique owners throughout applications, layers, renderer factories, font/scene/script data and physics. Observers have explicit lifetimes |
+| LayerStack | Scope-owned vector, initialized insertion boundary, layer/overlay partition checks, exactly-once attach/detach/destruction, reset on Clear; regression lifetime tests retained |
+| Application shutdown | Cancel queue captures, detach/release scene/layers while Mono/GL live, join script watcher and cancel late work, release renderer/fonts, then native window; singleton reset. Duplicate Windows glfwInit removed |
+| Official ImGui/docking | Retained ocornut docking pin and official GLFW/OpenGL3 plus stdlib TUs; no duplicate backend build, callback chaining/context backup/restore, actual upstream fonts/theme/ImGuizmo BeginFrame and docked editor panels |
+| Modern spdlog/fmt/events | Retained modern pin, explicit portable logging/GLM/path conversions; EventType portable macros, virtual destructor, handled-OR dispatcher; UTF-8 native source settings |
+| Premake compatibility | Narrow shim only maps absent legacy flags NoRuntimeChecks/NoIncrementalLink to runtimechecks/incrementallink Off and rejects unexpected flags. Native Linux gmake/Windows VS filters retained |
+| Windows CRT/dependencies | MDd Debug, MD Release/Dist on all native projects/dependencies; exact target Mono matching archives, native deployment, UTF-8 settings. Source manifests/generators and compatibility overrides are project-owned |
+| Vendor cleanliness/pins | Original GLFW/GLM/ImGui/spdlog pins retained deliberately; exact target scene/YAML/Box2D/font/ImGuizmo/Mono source imported. No vendor patch for compiler/OS issues; no recursive deletion of vendor Makefiles |
+| Shader features | Actual shaderc optimization, SPIRV-Cross reflection/conversion, cached Vulkan/OpenGL modules, native specialization when supported, generated GLSL410 with reflected UBO/sampler bindings; legacy330/420 APIs retained and failures throw/clean up in Release |
+| Native HD4000 functionality | Bind-based buffer/VAO/texture/FBO calls retain integer/matrix attributes, all texture formats/mips, alignment/PBO/row-state restoration, picking/full clear/resize/depth/MSAA resolve and complete quad/circle/line/text renderer. Capability selection does not reduce hardware functionality for a future Mac |
+| Batching/ownership | Actual primitive capacities retained, one driver/settings-constrained texture limit shared by shader and Renderer2D, white-slot reservation, texture/font/capacity flushes, scoped CPU vertex arrays and renderer/font release before context |
+| Scenes/physics/scripts | Actual upstream component/scene/copy/runtime/simulation/serialization APIs; live physics synchronization and observer reset; native/managed ownership, typed-field persistence, invalid-input transactionality, token discovery, reload/queue/watcher lifetime regressions |
+| CI/evidence | Both OS Debug/Release compilation and CPU suites retained, Windows software WGL/editor/graceful close added. Native Intel/Mesa overrides/software/macOS evidence distinguished. Raw logs live in ignored build output or CI artifacts; source/blob/pin/license records remain tracked |
+
+Final verification/selected paths and resume information are in PROGRESS.md; upstream attribution and local extensions in PROVENANCE.md; tested limitations and future portability obstacles in KNOWN-LIMITATIONS.md. These decisions are requirements for subsequent changes, not optional stage preferences.

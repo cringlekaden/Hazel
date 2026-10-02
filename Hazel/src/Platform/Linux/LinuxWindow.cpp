@@ -5,7 +5,7 @@
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Events/MouseEvent.h"
 #include "Hazel/Events/KeyEvent.h"
-#include "Platform/OpenGL/OpenGLContext.h"
+#include "Hazel/Renderer/GraphicsContext.h"
 
 #include <cstdlib>
 
@@ -45,6 +45,7 @@ namespace Hazel {
         if (s_GLFWWindowCount == 0)
         {
             HZ_CORE_INFO("Initializing GLFW");
+            glfwSetErrorCallback(GLFWErrorCallback);
             int success = 0;
             {
                 HZ_PROFILE_SCOPE("glfwInit");
@@ -58,9 +59,7 @@ namespace Hazel {
             }
             glfwSetErrorCallback(GLFWErrorCallback);
         }
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        GraphicsContext::ConfigureWindowHints();
         {
             HZ_PROFILE_SCOPE("glfwCreateWindow");
             m_Window = glfwCreateWindow(
@@ -70,14 +69,14 @@ namespace Hazel {
                 nullptr,
                 nullptr);
         }
-        HZ_CORE_ASSERT(m_Window, "Failed to create an OpenGL 4.2 core window...");
+        HZ_CORE_ASSERT(m_Window, "Failed to create a graphics window...");
         if (!m_Window)
         {
-            HZ_CORE_ERROR("Failed to create an OpenGL 4.2 core window...");
+            HZ_CORE_ERROR("Failed to create a graphics window...");
             std::abort();
         }
         ++s_GLFWWindowCount;
-        m_Context = CreateScope<OpenGLContext>(m_Window);
+        m_Context = GraphicsContext::Create(m_Window);
         m_Context->Init();
         glfwSetWindowUserPointer(m_Window, &m_Data);
         SetVSync(true);
@@ -102,19 +101,19 @@ namespace Hazel {
             {
                 case GLFW_PRESS:
                 {
-                    KeyPressedEvent event(key, 0);
+                    KeyPressedEvent event(static_cast<KeyCode>(key), false);
                     data.EventCallback(event);
                     break;
                 }
                 case GLFW_RELEASE:
                 {
-                    KeyReleasedEvent event(key);
+                    KeyReleasedEvent event(static_cast<KeyCode>(key));
                     data.EventCallback(event);
                     break;
                 }
                 case GLFW_REPEAT:
                 {
-                    KeyPressedEvent event(key, 1);
+                    KeyPressedEvent event(static_cast<KeyCode>(key), true);
                     data.EventCallback(event);
                     break;
                 }

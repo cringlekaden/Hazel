@@ -1,0 +1,22 @@
+[
+  {
+    "path": "Hazel/src/Hazel/Project/ProjectSerializer.h",
+    "upstream_path": "Hazel/src/Hazel/Project/ProjectSerializer.h",
+    "target_blob": "07a3879159a22717692b6974437e5d3a5053d5b7"
+  },
+  {
+    "path": "Hazel/src/Hazel/Project/ProjectSerializer.cpp",
+    "upstream_path": "Hazel/src/Hazel/Project/ProjectSerializer.cpp",
+    "target_blob": "b4ca2aadd1d4b4a6227db3cb588e2553a97ea71b"
+  },
+  {
+    "path": "Hazel/src/Hazel/Project/Project.h",
+    "upstream_path": "Hazel/src/Hazel/Project/Project.h",
+    "target_blob": "95ca7f3c413ea5cf8d3b69385970d9f38abb1c62"
+  },
+  {
+    "path": "Hazel/src/Hazel/Project/Project.cpp",
+    "upstream_path": "Hazel/src/Hazel/Project/Project.cpp",
+    "target_blob": "dd2921b9a7a97a89c145af3d9e724b314458fabb"
+  }
+]

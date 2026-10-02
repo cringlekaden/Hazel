@@ -1,6 +1,8 @@
 # Build output
 bin/
 bin-int/
+__pycache__/
+/docs/migration/evidence/*.log
 
 # Profiling traces written using Sandbox as the working directory
 /Sandbox/HazelProfile-*.json
@@ -28,3 +30,15 @@ compile_commands.json
 
 # VS Code local config
 .vscode/
+# Example managed project outputs
+Hazelnut/SandboxProject/Assets/Scripts/Binaries/
+Hazelnut/SandboxProject/Assets/Scripts/Intermediates/
+/Hazelnut/SandboxProject/Assets/Scripts/Makefile
+/Hazelnut/SandboxProject/Assets/Scripts/*.make
+/Hazelnut/SandboxProject/Assets/Scripts/*.csproj
+/Hazelnut/SandboxProject/Assets/Scripts/*.csproj.user
+
+/Hazelnut/Resources/Scripts/*.dll
+/Hazelnut/Resources/Scripts/*.pdb
+/Hazelnut/HazelProfile-*.json
+/Hazelnut/assets/cache/

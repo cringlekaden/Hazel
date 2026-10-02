@@ -1,67 +1,73 @@
+// Adapted target pipeline: SPIR-V reflection/cache plus portable GLSL program loading.
 #pragma once
 
 #include "Hazel/Renderer/Shader.h"
-
 #include <glm/glm.hpp>
-
 #include <cstdint>
 #include <string>
+#include <vector>
 #include <unordered_map>
+
+// TODO: REMOVE!
+typedef unsigned int GLenum;
 
 namespace Hazel {
 
-    class OpenGLShader : public Shader
-    {
-    public:
-        explicit OpenGLShader(const std::string& filepath);
+	class OpenGLShader : public Shader
+	{
+	public:
+        enum class ProgramLoadingPath { LegacyGLSL, GeneratedGLSL, SPIRV };
+        ProgramLoadingPath GetProgramLoadingPath() const { return m_LoadingPath; }
+		OpenGLShader(const std::string& filepath);
+		OpenGLShader(const std::string& name, const std::string& vertexSrc, const std::string& fragmentSrc);
+		virtual ~OpenGLShader();
 
-        OpenGLShader(const std::string& name, const std::string& vertexSource, const std::string& fragmentSource);
+		virtual void Bind() const override;
+		virtual void Unbind() const override;
 
-        ~OpenGLShader() override;
+		virtual void SetInt(const std::string& name, int value) override;
+		virtual void SetIntArray(const std::string& name, const int* values, uint32_t count) override;
+		virtual void SetFloat(const std::string& name, float value) override;
+		virtual void SetFloat2(const std::string& name, const glm::vec2& value) override;
+		virtual void SetFloat3(const std::string& name, const glm::vec3& value) override;
+		virtual void SetFloat4(const std::string& name, const glm::vec4& value) override;
+		virtual void SetMat4(const std::string& name, const glm::mat4& value) override;
 
-        void Bind() const override;
-        void Unbind() const override;
+		virtual const std::string& GetName() const override { return m_Name; }
 
-        void SetInt(const std::string& name, int value) override;
-        void SetIntArray(const std::string& name, const int* values, std::uint32_t count) override;
-        void SetFloat(const std::string& name, float value) override;
-        void SetFloat3(const std::string& name, const glm::vec3& value) override;
-        void SetFloat4(const std::string& name, const glm::vec4& value) override;
-        void SetMat4(const std::string& name, const glm::mat4& value) override;
+		void UploadUniformInt(const std::string& name, int value);
+		void UploadUniformIntArray(const std::string& name, const int* values, uint32_t count);
 
-        const std::string& GetName() const override
-        {
-            return m_Name;
-        }
+		void UploadUniformFloat(const std::string& name, float value);
+		void UploadUniformFloat2(const std::string& name, const glm::vec2& value);
+		void UploadUniformFloat3(const std::string& name, const glm::vec3& value);
+		void UploadUniformFloat4(const std::string& name, const glm::vec4& value);
 
-        void UploadUniformInt(
-            const std::string& name, int value);
-        void UploadUniformIntArray(
-            const std::string& name, const int* values, std::uint32_t count);
-        void UploadUniformFloat(
-            const std::string& name, float value);
-        void UploadUniformFloat2(
-            const std::string& name,
-            const glm::vec2& value);
-        void UploadUniformFloat3(
-            const std::string& name,
-            const glm::vec3& value);
-        void UploadUniformFloat4(
-            const std::string& name,
-            const glm::vec4& value);
-        void UploadUniformMat3(
-            const std::string& name,
-            const glm::mat3& matrix);
-        void UploadUniformMat4(
-            const std::string& name,
-            const glm::mat4& matrix);
-    private:
-        static std::string ReadFile(const std::string& filepath);
-        static std::unordered_map<std::uint32_t, std::string>PreProcess(const std::string& source);
+		void UploadUniformMat3(const std::string& name, const glm::mat3& matrix);
+		void UploadUniformMat4(const std::string& name, const glm::mat4& matrix);
+	private:
+		std::string ReadFile(const std::string& filepath);
+		std::unordered_map<GLenum, std::string> PreProcess(const std::string& source);
 
-        void Compile(const std::unordered_map<std::uint32_t, std::string>& shaderSources);
+		void CompileOrGetVulkanBinaries(const std::unordered_map<GLenum, std::string>& shaderSources);
+		void CompileOrGetOpenGLBinaries();
+		void CreateProgram();
+		void Reflect(GLenum stage, const std::vector<uint32_t>& shaderData);
+        void CompileLegacy(const std::unordered_map<GLenum, std::string>& sources);
+        void CompilePipeline(const std::unordered_map<GLenum, std::string>& sources);
+        void ApplyResourceBindings();
+        std::unordered_map<GLenum, std::string> m_CacheKeys;
+        std::unordered_map<std::string, uint32_t> m_UniformBufferBindings, m_SamplerBindings, m_SamplerCounts;
+	private:
+		uint32_t m_RendererID = 0;
+        ProgramLoadingPath m_LoadingPath = ProgramLoadingPath::LegacyGLSL;
+		std::string m_FilePath;
+		std::string m_Name;
 
-        std::uint32_t m_RendererID = 0;
-        std::string m_Name;
-    };
+		std::unordered_map<GLenum, std::vector<uint32_t>> m_VulkanSPIRV;
+		std::unordered_map<GLenum, std::vector<uint32_t>> m_OpenGLSPIRV;
+
+		std::unordered_map<GLenum, std::string> m_OpenGLSourceCode;
+	};
+
 }

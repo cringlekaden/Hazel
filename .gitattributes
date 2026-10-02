@@ -1,0 +1,10 @@
+# Retain this copied target vendor blob byte-for-byte, including its whitespace.
+Hazel/vendor/filewatch/FileWatch.h -whitespace
+# The exact target EnTT amalgamation ends with a blank line.
+Hazel/vendor/entt/include/entt.hpp whitespace=-blank-at-eof
+
+# Copied target Mono SDK files remain byte-identical, including vendor whitespace.
+Hazel/vendor/mono/** -whitespace
+Hazelnut/mono/** -whitespace
+# This unmodified vendor README uses a seven-equals Markdown heading.
+Hazel/vendor/mono/README.md conflict-marker-size=32

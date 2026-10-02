@@ -1,0 +1,18 @@
+[
+  {
+    "path": "Hazel/vendor/msdf-atlas-gen",
+    "commit": "b50e101d24b1f6009841ce3a386e1bc9365dc66a"
+  },
+  {
+    "path": "Hazel/vendor/msdf-atlas-gen/msdfgen",
+    "commit": "b9061f976e79fcc0b20ac6fcd5abaa8fafaf6f91"
+  },
+  {
+    "path": "Hazel/vendor/msdf-atlas-gen/msdfgen/freetype",
+    "commit": "2d57b0592805c76d676b51fbf9553de71c5a5c78"
+  },
+  {
+    "path": "Hazel/vendor/msdf-atlas-gen/msdfgen/freetype/subprojects/dlg",
+    "commit": "d142e646e263c89f93663e027c2f0d03739ab42d"
+  }
+]

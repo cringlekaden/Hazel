@@ -1,6 +1,8 @@
 #pragma once
 
-#include "hzpch.h"
+#include <string>
+#include <sstream>
+#include <ostream>
 #include <Hazel/Core/Core.h>
 
 namespace Hazel {

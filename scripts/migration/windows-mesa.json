@@ -1,0 +1,8 @@
+{
+  "purpose": "Windows CI software rendering only; never install as a system driver",
+  "source": "https://github.com/pal1000/mesa-dist-win/releases/tag/26.2.3",
+  "url": "https://github.com/pal1000/mesa-dist-win/releases/download/26.2.3/mesa3d-26.2.3-release-msvc.7z",
+  "sha256": "3f3613adb43cfd0f2e665ce2400b130c275f0b3317cb3a05566320a3a67589ed",
+  "renderer": "llvmpipe",
+  "threads": 2
+}

@@ -1,0 +1,99 @@
+{
+  "baseline": "b030be7",
+  "target": "1feb70572fa87fa1c4ba784a2cfeada5b4a500db",
+  "local_entries": 90,
+  "upstream_entries": 829,
+  "counts": {
+    "upstream-only": 748,
+    "local-only": 9,
+    "changed": 77,
+    "identical": 4
+  },
+  "engine_counts": {
+    "changed": 59,
+    "upstream-only": 51,
+    "local-only": 7
+  },
+  "gitlinks": [
+    [
+      "Hazel/vendor/Box2D",
+      "upstream-only",
+      "",
+      "",
+      "",
+      "160000",
+      "commit",
+      "80e17bef53f217fa8b1696718a047e29e9f25def"
+    ],
+    [
+      "Hazel/vendor/GLFW",
+      "changed",
+      "160000",
+      "commit",
+      "026a148d7dd78d597de380c4e77ca0869f0ceaab",
+      "160000",
+      "commit",
+      "9bed794ab7c1b961aaca259403695bbd3870d3b3"
+    ],
+    [
+      "Hazel/vendor/ImGuizmo",
+      "upstream-only",
+      "",
+      "",
+      "",
+      "160000",
+      "commit",
+      "218d60bde7d22061ac525d0d71e05360b4dcf978"
+    ],
+    [
+      "Hazel/vendor/glm",
+      "changed",
+      "160000",
+      "commit",
+      "8d1fd52e5ab5590e2c81768ace50c72bae28f2ed",
+      "160000",
+      "commit",
+      "7590260cf81f3e49f492e992f60dd88cd3265d14"
+    ],
+    [
+      "Hazel/vendor/imgui",
+      "changed",
+      "160000",
+      "commit",
+      "e25e4526cd41cd6536194de098540d54244f54e9",
+      "160000",
+      "commit",
+      "3cf61f67de73153e29e0c26f23d80edbaf120a3d"
+    ],
+    [
+      "Hazel/vendor/msdf-atlas-gen",
+      "upstream-only",
+      "",
+      "",
+      "",
+      "160000",
+      "commit",
+      "b50e101d24b1f6009841ce3a386e1bc9365dc66a"
+    ],
+    [
+      "Hazel/vendor/spdlog",
+      "changed",
+      "160000",
+      "commit",
+      "57cb5fb7a8ff30079751728234623230535a5c92",
+      "160000",
+      "commit",
+      "1aace95c8d14944358c0374bbda3ce44d759bef7"
+    ],
+    [
+      "Hazel/vendor/yaml-cpp",
+      "upstream-only",
+      "",
+      "",
+      "",
+      "160000",
+      "commit",
+      "25be1f208665b9732ba40aa7b05ec2da97104192"
+    ]
+  ]
+}

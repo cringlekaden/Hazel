@@ -1,44 +1,94 @@
+// Adapted upstream Application: Scope ownership and detach before renderer/context teardown.
 #pragma once
 
-#include "Hazel/Core/Core.h"
-#include "Hazel/Core/Timestep.h"
+#include "Hazel/Core/Base.h"
+#include <functional>
+#include <mutex>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
 #include "Hazel/Core/Window.h"
+#include "Hazel/Renderer/RendererCapabilities.h"
 #include "Hazel/Core/LayerStack.h"
 #include "Hazel/Events/Event.h"
 #include "Hazel/Events/ApplicationEvent.h"
+
+#include "Hazel/Core/Timestep.h"
+
 #include "Hazel/ImGui/ImGuiLayer.h"
 
-#include <memory>
 
-namespace Hazel
-{
-    class Application
-    {
-    public:
-        Application();
-        virtual ~Application();
 
+namespace Hazel {
+
+	struct ApplicationCommandLineArgs
+	{
+		int Count = 0;
+		char** Args = nullptr;
+
+		const char* operator[](int index) const
+		{
+			if (index < 0 || index >= Count) throw std::out_of_range("Application argument index");
+			return Args[index];
+		}
+	};
+
+	struct ApplicationSpecification
+	{
+		std::string Name = "Hazel Application";
+		std::string WorkingDirectory;
+		ApplicationCommandLineArgs CommandLineArgs;
+        RendererSettings Rendering;
+	};
+
+	class Application
+	{
+	public:
+		Application(const ApplicationSpecification& specification = {});
         void Run();
-        void OnEvent(Event& e);
-        void PushLayer(Scope<Layer> layer);
-        void PushOverlay(Scope<Layer> overlay);
+		virtual ~Application();
 
-        Window& GetWindow() { return *m_Window; }
-        static Application& Get() { return *s_Instance; }
-    private:
-        static Application* s_Instance;
+		void OnEvent(Event& e);
 
-        Scope<Window> m_Window;
-        LayerStack m_LayerStack;
-        ImGuiLayer* m_ImGuiLayer = nullptr;
-        bool m_Running = true;
-        bool m_Minimized = false;
-        float m_LastFrameTime = 0.0f;
+		void PushLayer(Scope<Layer> layer);
+		void PushOverlay(Scope<Layer> layer);
 
-        bool OnWindowClose(WindowCloseEvent& e);
-        bool OnWindowResize(WindowResizeEvent& e);
-    };
+		Window& GetWindow() { return *m_Window; }
 
-    // To be defined in Client App
-    Scope<Application> CreateApplication();
+		void Close();
+
+		ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
+
+		static Application& Get() { return *s_Instance; }
+		static Application* TryGet() { return s_Instance; }
+
+		const ApplicationSpecification& GetSpecification() const { return m_Specification; }
+
+		void SubmitToMainThread(const std::function<void()>& function);
+	private:
+		bool OnWindowClose(WindowCloseEvent& e);
+		bool OnWindowResize(WindowResizeEvent& e);
+
+		void ExecuteMainThreadQueue();
+		void ShutdownResources();
+	private:
+		ApplicationSpecification m_Specification;
+		Scope<Window> m_Window;
+		ImGuiLayer* m_ImGuiLayer = nullptr;
+		bool m_Running = true;
+		bool m_Minimized = false;
+		LayerStack m_LayerStack;
+		float m_LastFrameTime = 0.0f;
+
+		std::vector<std::function<void()>> m_MainThreadQueue;
+		std::mutex m_MainThreadQueueMutex;
+	private:
+		static Application* s_Instance;
+
+	};
+
+	// To be defined in CLIENT
+	Scope<Application> CreateApplication(ApplicationCommandLineArgs args);
+
 }

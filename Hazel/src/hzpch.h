@@ -1,3 +1,7 @@
+#pragma once
+#include <filesystem>
+#include <fstream>
+#include <mutex>
 #include <iostream>
 #include <memory>
 #include <utility>
@@ -11,7 +15,11 @@
 #include <unordered_set>
 
 #ifdef HZ_PLATFORM_WINDOWS
+    #ifndef NOMINMAX
+    #define NOMINMAX
+    #endif
     #include <Windows.h>
 #endif
 
+#include "Hazel/Core/Base.h"
 #include "Hazel/Debug/Instrumentor.h"

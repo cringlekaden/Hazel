@@ -2,10 +2,15 @@ name: C/C++ CI
 
 on:
   push:
-    branches: [master]
+    branches: [master, 'migration/**']
   pull_request:
     branches: [master]
   workflow_dispatch:
+    inputs:
+      rebuild_shader_tools:
+        description: Build pinned shader dependencies from source even on a cache hit
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -14,7 +19,7 @@ jobs:
   linux-build:
     name: Linux Debug and Release
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 90
 
     steps:
       - name: Check out Hazel and its pinned submodules
@@ -27,7 +32,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
+            mono-devel \
             uuid-dev \
+            libgtk-3-dev \
             libx11-dev \
             libxext-dev \
             libxrandr-dev \
@@ -51,8 +58,19 @@ jobs:
             PREMAKE_OPTS=--curl-src=none
           echo "$RUNNER_TEMP/premake-core/bin/release" >> "$GITHUB_PATH"
 
+      - name: Restore pinned shader libraries
+        uses: actions/cache@v4
+        id: shader-cache
+        with:
+          path: build/dependencies/install
+          key: shader-tools-premake-ubuntu24-gcc13-${{ hashFiles('scripts/dependencies/shader-tools.json', 'scripts/dependencies/build-shader-tools.py', 'scripts/dependencies/shader-workspace.lua', 'scripts/dependencies/shader-sources.json', 'scripts/dependencies/generate-shader-inputs.py', 'scripts/dependencies/shader-tools-compat.h') }}
+
+      - name: Build pinned shader libraries (Debug and Release, two jobs)
+        if: steps.shader-cache.outputs.cache-hit != 'true' || inputs.rebuild_shader_tools
+        run: python3 scripts/dependencies/build-shader-tools.py --jobs 2
+
       - name: Generate GNU Make projects
-        run: premake5 gmake
+        run: premake5 --migration-tests --shader-tools gmake
 
       - name: Build Debug
         run: make config=debug -j2
@@ -60,17 +78,72 @@ jobs:
       - name: Build Release
         run: make config=release -j2
 
+      - name: Verify standalone managed example projects
+        working-directory: Hazelnut/SandboxProject/Assets/Scripts
+        run: |
+          premake5 gmake
+          make config=debug -j2
+          make config=release -j2
+          test -f Binaries/Hazel-ScriptCore.dll
+          test -f Binaries/Sandbox.dll
+
+      - name: Verify shader toolchain at runtime
+        run: |
+          bin/Debug-linux-x86_64/MigrationShaderToolsSmoke/MigrationShaderToolsSmoke
+          bin/Release-linux-x86_64/MigrationShaderToolsSmoke/MigrationShaderToolsSmoke
+
+      - name: Verify CPU camera/ECS/YAML foundation
+        run: |
+          bin/Debug-linux-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke
+          bin/Release-linux-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke
+
+      - name: Verify project and physics prerequisites
+        run: |
+          bin/Debug-linux-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke
+          bin/Release-linux-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke
+
+      - name: Verify managed API and native Mono embedding
+        run: |
+          mono --version
+          bin/Debug-linux-x86_64/MigrationMonoSmoke/MigrationMonoSmoke bin/Debug-linux-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Debug-linux-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
+          bin/Release-linux-x86_64/MigrationMonoSmoke/MigrationMonoSmoke bin/Release-linux-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Release-linux-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
+
       - name: Verify build outputs
         run: |
           test -f bin/Debug-linux-x86_64/Hazel/libHazel.a
           test -x bin/Debug-linux-x86_64/Sandbox/Sandbox
           test -f bin/Release-linux-x86_64/Hazel/libHazel.a
           test -x bin/Release-linux-x86_64/Sandbox/Sandbox
+          test -x bin/Debug-linux-x86_64/MigrationRendererSmoke/MigrationRendererSmoke
+          test -x bin/Release-linux-x86_64/MigrationRendererSmoke/MigrationRendererSmoke
+          test -x bin/Debug-linux-x86_64/MigrationCoreSmoke/MigrationCoreSmoke
+          test -x bin/Release-linux-x86_64/MigrationCoreSmoke/MigrationCoreSmoke
+          test -x bin/Debug-linux-x86_64/MigrationRendererFeaturesSmoke/MigrationRendererFeaturesSmoke
+          test -x bin/Release-linux-x86_64/MigrationRendererFeaturesSmoke/MigrationRendererFeaturesSmoke
+          test -x bin/Debug-linux-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke
+          test -x bin/Release-linux-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke
+          test -x bin/Debug-linux-x86_64/MigrationFontSmoke/MigrationFontSmoke
+          test -x bin/Release-linux-x86_64/MigrationFontSmoke/MigrationFontSmoke
+          test -x bin/Debug-linux-x86_64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke
+          test -x bin/Release-linux-x86_64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke
+          test -x bin/Debug-linux-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke
+          test -x bin/Release-linux-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke
+          test -x bin/Debug-linux-x86_64/MigrationMonoSmoke/MigrationMonoSmoke
+          test -x bin/Release-linux-x86_64/MigrationMonoSmoke/MigrationMonoSmoke
+          test -x bin/Debug-linux-x86_64/MigrationSceneSmoke/MigrationSceneSmoke
+          test -x bin/Release-linux-x86_64/MigrationSceneSmoke/MigrationSceneSmoke
+          test -x bin/Debug-linux-x86_64/MigrationSceneGPUSmoke/MigrationSceneGPUSmoke
+          test -x bin/Release-linux-x86_64/MigrationSceneGPUSmoke/MigrationSceneGPUSmoke
+
+      - name: Verify complete CPU scene, scripts, reload and watcher lifetimes
+        run: |
+          bin/Debug-linux-x86_64/MigrationSceneSmoke/MigrationSceneSmoke bin/Debug-linux-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Debug-linux-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
+          bin/Release-linux-x86_64/MigrationSceneSmoke/MigrationSceneSmoke bin/Release-linux-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Release-linux-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
 
   windows-build:
     name: Windows Debug and Release
     runs-on: windows-2022
-    timeout-minutes: 45
+    timeout-minutes: 90
 
     steps:
       - name: Check out Hazel and its pinned submodules
@@ -95,14 +168,47 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
+      - name: Restore pinned shader libraries
+        uses: actions/cache@v4
+        id: shader-cache
+        with:
+          path: build/dependencies/install
+          key: shader-tools-premake-windows2022-msvc143-${{ hashFiles('scripts/dependencies/shader-tools.json', 'scripts/dependencies/build-shader-tools.py', 'scripts/dependencies/shader-workspace.lua', 'scripts/dependencies/shader-sources.json', 'scripts/dependencies/generate-shader-inputs.py', 'scripts/dependencies/shader-tools-compat.h') }}
+
+      - name: Build pinned shader libraries (Debug and Release, two jobs)
+        if: steps.shader-cache.outputs.cache-hit != 'true' || inputs.rebuild_shader_tools
+        run: python scripts/dependencies/build-shader-tools.py --jobs 2
+
       - name: Generate Visual Studio projects
-        run: premake5 vs2022
+        run: premake5 --migration-tests --shader-tools vs2022
 
       - name: Build Debug
         run: msbuild Hazel.sln /m:2 /p:Configuration=Debug /p:Platform=x64 /verbosity:minimal
 
       - name: Build Release
         run: msbuild Hazel.sln /m:2 /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+
+      - name: Verify standalone managed example projects
+        working-directory: Hazelnut/SandboxProject/Assets/Scripts
+        shell: pwsh
+        run: |
+          premake5 vs2022
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          msbuild Sandbox.sln /m:2 /p:Configuration=Debug /p:Platform=x64 /verbosity:minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          msbuild Sandbox.sln /m:2 /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($file in @('Binaries/Hazel-ScriptCore.dll', 'Binaries/Sandbox.dll')) {
+            if (-not (Test-Path $file -PathType Leaf)) { throw "Missing managed example output: $file" }
+          }
+
+      - name: Verify shader toolchain at runtime
+        shell: pwsh
+        run: |
+          & bin/Debug-windows-x86_64/MigrationShaderToolsSmoke/MigrationShaderToolsSmoke.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & bin/Release-windows-x86_64/MigrationShaderToolsSmoke/MigrationShaderToolsSmoke.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Verify build outputs
         shell: pwsh
@@ -111,10 +217,81 @@ jobs:
             'bin/Debug-windows-x86_64/Hazel/Hazel.lib',
             'bin/Debug-windows-x86_64/Sandbox/Sandbox.exe',
             'bin/Release-windows-x86_64/Hazel/Hazel.lib',
-            'bin/Release-windows-x86_64/Sandbox/Sandbox.exe'
+            'bin/Release-windows-x86_64/Sandbox/Sandbox.exe',
+            'bin/Debug-windows-x86_64/MigrationRendererSmoke/MigrationRendererSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationRendererSmoke/MigrationRendererSmoke.exe',
+            'bin/Debug-windows-x86_64/MigrationCoreSmoke/MigrationCoreSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationCoreSmoke/MigrationCoreSmoke.exe',
+            'bin/Debug-windows-x86_64/MigrationRendererFeaturesSmoke/MigrationRendererFeaturesSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationRendererFeaturesSmoke/MigrationRendererFeaturesSmoke.exe',
+            'bin/Debug-windows-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke.exe',
+            'bin/Debug-windows-x86_64/MigrationFontSmoke/MigrationFontSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationFontSmoke/MigrationFontSmoke.exe',
+            'bin/Debug-windows-x86_64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke.exe',
+            'bin/Debug-windows-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke.exe',
+            'bin/Debug-windows-x86_64/MigrationMonoSmoke/MigrationMonoSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationMonoSmoke/MigrationMonoSmoke.exe',
+            'bin/Debug-windows-x86_64/MigrationSceneSmoke/MigrationSceneSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationSceneSmoke/MigrationSceneSmoke.exe',
+            'bin/Debug-windows-x86_64/MigrationSceneGPUSmoke/MigrationSceneGPUSmoke.exe',
+            'bin/Release-windows-x86_64/MigrationSceneGPUSmoke/MigrationSceneGPUSmoke.exe'
           )
           foreach ($file in $files) {
             if (-not (Test-Path $file -PathType Leaf)) {
               throw "Expected build output is missing: $file"
             }
           }
+
+      - name: Verify CPU camera/ECS/YAML foundation
+        shell: pwsh
+        run: |
+          & bin/Debug-windows-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & bin/Release-windows-x86_64/MigrationSceneFoundationSmoke/MigrationSceneFoundationSmoke.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify project and physics prerequisites
+        shell: pwsh
+        run: |
+          & bin/Debug-windows-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & bin/Release-windows-x86_64/MigrationProjectPhysicsSmoke/MigrationProjectPhysicsSmoke.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify managed API and native Mono embedding
+        shell: pwsh
+        run: |
+          & bin/Debug-windows-x86_64/MigrationMonoSmoke/MigrationMonoSmoke.exe bin/Debug-windows-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Debug-windows-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & bin/Release-windows-x86_64/MigrationMonoSmoke/MigrationMonoSmoke.exe bin/Release-windows-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Release-windows-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify Windows software OpenGL and editor runtime
+        shell: pwsh
+        run: |
+          python scripts/migration/windows-desktop-checks.py --config Debug
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/migration/windows-desktop-checks.py --config Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Preserve Windows runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-runtime-evidence
+          path: |
+            build/migration/evidence/windows-*.log
+            build/migration/windows-mesa/readme*
+            build/migration/windows-mesa/license*
+          if-no-files-found: ignore
+
+      - name: Verify complete CPU scene, scripts, reload and watcher lifetimes
+        shell: pwsh
+        run: |
+          & bin/Debug-windows-x86_64/MigrationSceneSmoke/MigrationSceneSmoke.exe bin/Debug-windows-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Debug-windows-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & bin/Release-windows-x86_64/MigrationSceneSmoke/MigrationSceneSmoke.exe bin/Release-windows-x86_64/Hazel-ScriptCore/Hazel-ScriptCore.dll bin/Release-windows-x86_64/MigrationManagedFixture/MigrationManagedFixture.dll
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

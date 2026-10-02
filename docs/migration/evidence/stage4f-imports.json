@@ -1,0 +1,68 @@
+[
+  {
+    "path": "Hazel/src/Hazel/Scene/ScriptableEntity.h",
+    "upstream_path": "Hazel/src/Hazel/Scene/ScriptableEntity.h",
+    "target_blob": "12c3a1a6d6507dc93adcb0ec056ba4cee18ce047"
+  },
+  {
+    "path": "Hazel/src/Hazel/Scene/SceneSerializer.h",
+    "upstream_path": "Hazel/src/Hazel/Scene/SceneSerializer.h",
+    "target_blob": "1a0a1a5beee1a221f49b3d372e08907cd2fe94de"
+  },
+  {
+    "path": "Hazel/src/Hazel/Scene/SceneSerializer.cpp",
+    "upstream_path": "Hazel/src/Hazel/Scene/SceneSerializer.cpp",
+    "target_blob": "37ff5838c7185aba8e9bb1ba07777aba70042cc3"
+  },
+  {
+    "path": "Hazel/src/Hazel/Scene/Scene.h",
+    "upstream_path": "Hazel/src/Hazel/Scene/Scene.h",
+    "target_blob": "777dea24657ba47ceeb8392fb8e869c6ebbf3125"
+  },
+  {
+    "path": "Hazel/src/Hazel/Scene/Scene.cpp",
+    "upstream_path": "Hazel/src/Hazel/Scene/Scene.cpp",
+    "target_blob": "22781c6f1167948c1270867e48ac9fe2fa8d1b58"
+  },
+  {
+    "path": "Hazel/src/Hazel/Scene/Entity.h",
+    "upstream_path": "Hazel/src/Hazel/Scene/Entity.h",
+    "target_blob": "03132e2a8c465f03d1068b900e4ef28333c33947"
+  },
+  {
+    "path": "Hazel/src/Hazel/Scene/Entity.cpp",
+    "upstream_path": "Hazel/src/Hazel/Scene/Entity.cpp",
+    "target_blob": "bbdf2282f2501fc9e0178bb1849a381c17b65b09"
+  },
+  {
+    "path": "Hazel/src/Hazel/Scripting/ScriptGlue.h",
+    "upstream_path": "Hazel/src/Hazel/Scripting/ScriptGlue.h",
+    "target_blob": "e3f298e94fbba338952b5cae0775c708d1139254"
+  },
+  {
+    "path": "Hazel/src/Hazel/Scripting/ScriptGlue.cpp",
+    "upstream_path": "Hazel/src/Hazel/Scripting/ScriptGlue.cpp",
+    "target_blob": "9d3dc31cf072a3705776f9580c33b5488338c9ea"
+  },
+  {
+    "path": "Hazel/src/Hazel/Scripting/ScriptEngine.h",
+    "upstream_path": "Hazel/src/Hazel/Scripting/ScriptEngine.h",
+    "target_blob": "ede29327cf701bce0191d9a677df8ba25adc61ff"
+  },
+  {
+    "path": "Hazel/src/Hazel/Scripting/ScriptEngine.cpp",
+    "upstream_path": "Hazel/src/Hazel/Scripting/ScriptEngine.cpp",
+    "target_blob": "08543138af8524ccd9eaed744aed80106d01064c"
+  },
+  {
+    "path": "Hazel/src/Hazel/Physics/Physics2D.h",
+    "upstream_path": "Hazel/src/Hazel/Physics/Physics2D.h",
+    "target_blob": "bd952748509b14885f603349114f0aa38bc2784c"
+  },
+  {
+    "path": "Hazel/src/Hazel.h",
+    "upstream_path": "Hazel/src/Hazel.h",
+    "target_blob": "7714b8af31018a1874f52c6d26604a8b64b379f5",
+    "adaptation": "Expose actual target scene/native-script/Base/Assert/MouseCodes consumer includes; retain prior public renderer/ownership/legacy mouse/debug includes"
+  }
+]

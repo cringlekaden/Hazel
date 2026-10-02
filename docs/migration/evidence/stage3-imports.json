@@ -1,0 +1,52 @@
+[
+  {
+    "path": "Hazel/src/Hazel/Renderer/Framebuffer.h",
+    "target_blob": "66e4b431b347de8b811fa27b3ea6cc7c835abba5"
+  },
+  {
+    "path": "Hazel/src/Hazel/Renderer/Framebuffer.cpp",
+    "target_blob": "e5952ec15ff8cf413df66ac2a2aa16d970c477f6"
+  },
+  {
+    "path": "Hazel/src/Platform/OpenGL/OpenGLFramebuffer.h",
+    "target_blob": "de06895a32990e168042e4341a7baf30cb6b6385"
+  },
+  {
+    "path": "Hazel/src/Platform/OpenGL/OpenGLFramebuffer.cpp",
+    "target_blob": "1638b1b8152faf65951d1ebf083ad8ca9f06c795"
+  },
+  {
+    "path": "Hazel/src/Hazel/Renderer/Texture.h",
+    "target_blob": "fe416cc039eb4af644cf4adf2918f1b884e4dc32"
+  },
+  {
+    "path": "Hazel/src/Hazel/Renderer/Texture.cpp",
+    "target_blob": "03647f22102f219edcf62b5e183c3fafb4cf752b"
+  },
+  {
+    "path": "Hazel/src/Platform/OpenGL/OpenGLTexture.h",
+    "target_blob": "85bd4907f59bb7975d8231c468d509144978bd7c"
+  },
+  {
+    "path": "Hazel/src/Platform/OpenGL/OpenGLTexture.cpp",
+    "target_blob": "11d7744136c3fd432a7819dba072665476b1c1c5"
+  },
+  {
+    "path": "Hazel/src/Platform/OpenGL/OpenGLShader.h",
+    "target_blob": "3bd0a9dca21e24c3584ee16a6f403183dafb083c"
+  },
+  {
+    "path": "Hazel/src/Platform/OpenGL/OpenGLShader.cpp",
+    "target_blob": "7257afc8200e13f9b78c54956f05b79199703cca"
+  },
+  {
+    "path": "Hazel/src/Hazel/Renderer/Shader.h",
+    "target_blob": "5e93947e2b200f1ad14e427461cbad23de3cdbde",
+    "adaptation": "Retain existing const array arguments and library validation; add target SetFloat2 API."
+  },
+  {
+    "path": "Hazel/src/Platform/OpenGL/OpenGLRendererAPI.cpp",
+    "target_blob": "341e46534881fa6407f28306d474d741130e7702",
+    "adaptation": "Import target debug callback/installation only, gated on core 4.3 and loaded entry points; retain existing renderer operations until stage 5."
+  }
+]

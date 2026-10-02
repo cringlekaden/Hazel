@@ -16,8 +16,29 @@ local workspaceRoot = path.getabsolute(".")
 local imguiDir = workspaceRoot .. "/Hazel/vendor/imgui"
 local glfwDir = workspaceRoot .. "/Hazel/vendor/GLFW"
 
+-- Native Linux dialogs are implemented only in Platform/Linux.
+local gtkIncludes = {}
+local gtkLinks = {}
+if os.target() == "linux" then
+    for item in os.outputof("pkg-config --cflags-only-I gtk+-3.0"):gmatch("%-I([^%s]+)") do table.insert(gtkIncludes, item) end
+    for item in os.outputof("pkg-config --libs-only-l gtk+-3.0"):gmatch("%-l([^%s]+)") do table.insert(gtkLinks, item) end
+end
+
+newoption
+{
+    trigger = "migration-tests",
+    description = "Build focused migration verification executables"
+}
+
+
+newoption
+{
+    trigger = "shader-tools",
+    description = "Build the pinned shader toolchain verification target"
+}
 
 workspace "Hazel"
+    defines { "GLM_ENABLE_EXPERIMENTAL" }
     architecture "x64"
     startproject "Sandbox"
 
@@ -111,6 +132,8 @@ project "ImGui"
         imguiDir .. "/imgui_tables.cpp",
         imguiDir .. "/imgui_widgets.cpp",
         imguiDir .. "/imgui_demo.cpp",
+        imguiDir .. "/misc/cpp/imgui_stdlib.cpp",
+        imguiDir .. "/misc/cpp/imgui_stdlib.h",
 
         imguiDir .. "/backends/imgui_impl_glfw.h",
         imguiDir .. "/backends/imgui_impl_glfw.cpp",
@@ -240,6 +263,9 @@ project "Hazel"
     -- stb_image is third-party code. Keep Hazel's warnings enabled.
     filter "files:Hazel/vendor/stb_image/**.cpp"
         warnings "Off"
+        -- GCC 16 Debug mishandles SSE immediate intrinsics imported through PCH.
+        -- Compile the clean vendor wrapper normally; retain SIMD and engine PCH.
+        enablepch "Off"
     filter {}
 
 
@@ -316,6 +342,8 @@ project "Hazel"
 
     filter "system:linux"
 
+        externalincludedirs (gtkIncludes)
+        links (gtkLinks)
         toolset "gcc"
 
         defines
@@ -435,6 +463,7 @@ project "Sandbox"
     filter "system:windows"
 
         systemversion "latest"
+        links { "Comdlg32" }
 
         --
         -- Sandbox must use the same CRT as Hazel and GLFW.
@@ -479,6 +508,8 @@ project "Sandbox"
 
     filter "system:linux"
 
+        externalincludedirs (gtkIncludes)
+        links (gtkLinks)
         toolset "gcc"
 
         defines
@@ -536,3 +567,23 @@ project "Sandbox"
 
 
     filter {}
+
+HazelGTKIncludes = gtkIncludes
+MigrationLinuxLinks = gtkLinks
+include "Hazelnut"
+
+-- Opt-in GPU verification; requires a real desktop context when executed.
+if _OPTIONS["migration-tests"] then
+    MigrationLinuxLinks = gtkLinks
+    include "tests/migration"
+end
+
+include "scripts/dependencies"
+include "scripts/dependencies/scene-foundation.lua"
+include "scripts/dependencies/fonts.lua"
+
+include "scripts/dependencies/physics.lua"
+
+include "scripts/dependencies/mono.lua"
+
+include "scripts/dependencies/editor.lua"
