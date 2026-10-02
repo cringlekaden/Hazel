@@ -142,8 +142,25 @@ static void SerializerChecks(const std::filesystem::path& directory) {
     fields["PreviouslyPublic"].Field={ScriptFieldType::Double,"PreviouslyPublic",nullptr}; fields["PreviouslyPublic"].SetValue<double>(6.25);
     auto missing=source->CreateEntityWithUUID(201,"Missing class"); missing.AddComponent<ScriptComponent>().ClassName="Unavailable.Script";
     auto& orphan=ScriptEngine::GetScriptFieldMap(missing)["Value"]; orphan.Field={ScriptFieldType::ULong,"Value",nullptr}; orphan.SetValue<uint64_t>(1234567890123ULL);
-    auto duplicate=source->DuplicateEntity(entity); Check(ScriptEngine::GetScriptFieldMap(duplicate)["Character"].GetValue<uint16_t>()==0x03a9,"Entity duplication lost stored script fields"); source->DestroyEntity(duplicate);
+    auto duplicate=source->DuplicateEntity(entity); Check(ScriptEngine::GetScriptFieldMap(duplicate)["Character"].GetValue<uint16_t>()==0x03a9,"Entity duplication lost stored script fields");
+    const auto duplicateID=duplicate.GetUUID();
+    ScriptEngine::GetScriptFieldMap(duplicate)["Speed"].SetValue<float>(99);
+    Check(fields.at("Speed").GetValue<float>()==4.5f,"Duplicate authored fields alias original");
+    source->DestroyEntity(duplicate);
+    auto replacement=source->CreateEntityWithUUID(duplicateID,"Replacement");
+    Check(ScriptEngine::GetScriptFieldMap(replacement).empty(),"Destroyed entity fields inherited by reused UUID");
+    source->DestroyEntity(replacement);
     const auto expectedFields=fields;
+    auto independent=CreateRef<Scene>(); auto sameID=independent->CreateEntityWithUUID(200,"Independent");
+    ScriptEngine::GetScriptFieldMap(sameID)["Speed"].SetValue<float>(99.0f);
+    Check(ScriptEngine::GetScriptFieldMap(entity).at("Speed").GetValue<float>()==4.5f,
+          "Two scenes with the same UUID share authored fields");
+    auto playCopy=Scene::Copy(source);
+    ScriptEngine::GetScriptFieldMap(playCopy->GetEntityByUUID(200))["Speed"].SetValue<float>(77);
+    Check(fields.at("Speed").GetValue<float>()==4.5f,"Scene copy authored fields alias source");
+    playCopy.reset(); independent.reset();
+    auto fresh=CreateRef<Scene>();
+    Check(ScriptEngine::GetScriptFieldMap(fresh->CreateEntityWithUUID(200,"Fresh")).empty(),"Destroyed scene fields inherited by new scene");
     const auto file=directory/std::filesystem::u8path("scène-é.hazel"); SceneSerializer(source).Serialize(file.generic_u8string());
     auto restored=CreateRef<Scene>(); Check(SceneSerializer(restored).Deserialize(file.generic_u8string()),"Complete CPU scene round trip failed");
     auto loaded=restored->GetEntityByUUID(200); Check(loaded && loaded.GetName()==u8"sérialisation-é","UUID/UTF-8 tag serialization failed");
@@ -231,6 +248,7 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
     // Another live body is needed to safely inspect the world's body count after deletion.
     Check(count==1,"Unexpected scene physics body count");
     instance->SetFieldValue<double>("Precise",7.125); instance->SetFieldValue<uint16_t>("Character",0x03a9);
+    const auto authoredBefore=ScriptEngine::GetScriptFieldMap(script);
     std::ofstream(target,std::ios::binary|std::ios::trunc)<<"broken assembly";
     bool refused=false; try { ScriptEngine::ReloadAssembly(); } catch (const std::exception&) { refused=true; }
     Check(refused && instance->GetManagedObject() && ScriptEngine::GetEntityScriptInstance(100)==instance,"Invalid assembly reload destroyed working domain");
@@ -238,9 +256,17 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
     ScriptEngine::ReloadAssembly(); auto reloaded=ScriptEngine::GetEntityScriptInstance(100);
     Check(reloaded && reloaded!=instance && !instance->GetManagedObject() && !type->GetMethod("OnCreate",0),"Reload left stale external Mono observations");
     Check(reloaded->GetFieldValue<double>("Precise")==7.125 && reloaded->GetFieldValue<uint16_t>("Character")==0x03a9 && reloaded->GetFieldValue<int>("Updates")==3,"Reload lost live field values");
+    for (auto [name,value]:authoredBefore) {
+        auto actual=ScriptEngine::GetScriptFieldMap(script).at(name);
+        Check(actual.GetValue<std::array<uint8_t,16>>()==value.GetValue<std::array<uint8_t,16>>(),"Reload changed authored defaults");
+    }
     scene->OnRuntimeStop(); Check(!reloaded->GetManagedObject() && !ScriptEngine::GetSceneContext(),"Runtime stop retained domain instances/context");
     Check(NativeProbe::Destroyed==1 && NativeProbe::Deleted==1,"Runtime stop destroyed a never-instantiated native script");
-    scene->SetPaused(false); scene->OnRuntimeStart(); scene->OnUpdateRuntime(0.25f); scene->OnRuntimeStop();
+    scene->SetPaused(false); scene->OnRuntimeStart();
+    Check(ScriptEngine::GetEntityScriptInstance(100)->GetFieldValue<int>("Updates")==0 &&
+          ScriptEngine::GetEntityScriptInstance(100)->GetFieldValue<uint16_t>("Character")==0x03bb,
+          "Restart retained live reload snapshot instead of authored defaults");
+    scene->OnUpdateRuntime(0.25f); scene->OnRuntimeStop();
     Check(NativeProbe::Destroyed==2 && NativeProbe::Deleted==2,"Restarted native script was not released exactly once");
     scene.reset();
     ScriptEngine::Shutdown(); Check(!ScriptEngine::GetSceneContext(),"ScriptEngine shutdown left scene context");

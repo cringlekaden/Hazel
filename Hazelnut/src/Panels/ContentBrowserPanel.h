@@ -10,6 +10,7 @@ namespace Hazel {
 	{
 	public:
 		ContentBrowserPanel();
+		explicit ContentBrowserPanel(const std::filesystem::path& assetRoot);
 
 		void OnImGuiRender();
 	private:

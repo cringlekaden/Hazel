@@ -105,6 +105,7 @@ namespace Hazel {
 
 		// Copy components (except IDComponent and TagComponent)
 		CopyComponent(AllComponents{}, dstSceneRegistry, srcSceneRegistry, enttMap);
+		newScene->m_ScriptFields = other->m_ScriptFields;
 
 		return newScene;
 	}
@@ -136,6 +137,7 @@ namespace Hazel {
 		DestroyPhysicsBody(entity);
 		if (ScriptEngine::GetSceneContext() == this) ScriptEngine::OnDestroyEntity(entity.GetUUID());
 		m_EntityMap.erase(entity.GetUUID());
+		m_ScriptFields.erase(entity.GetUUID());
 		m_Registry.destroy(entity);
 	}
 
@@ -378,7 +380,7 @@ namespace Hazel {
 		std::string name = entity.GetName();
 		Entity newEntity = CreateEntity(name);
 		CopyComponentIfExists(AllComponents{}, newEntity, entity);
-		if (entity.HasComponent<ScriptComponent>() && ScriptEngine::IsInitialized())
+		if (entity.HasComponent<ScriptComponent>())
 			ScriptEngine::GetScriptFieldMap(newEntity) = ScriptEngine::GetScriptFieldMap(entity);
 		return newEntity;
 	}

@@ -286,6 +286,13 @@ namespace Hazel {
 		RegisterComponent<TextComponent>("Hazel.TextComponent");
 	}
 
+	void ScriptGlue::ValidateComponents(MonoImage* image)
+	{
+		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent" })
+			if (!mono_reflection_type_from_name(const_cast<char*>(name), image))
+				throw std::runtime_error(std::string("Missing managed component: ") + name);
+	}
+
 	void ScriptGlue::RegisterFunctions()
 	{
 		HZ_ADD_INTERNAL_CALL(NativeLog);

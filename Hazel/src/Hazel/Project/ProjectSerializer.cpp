@@ -1,6 +1,7 @@
 // Actual upstream project serializer; native UTF-8 I/O and transactional errors.
 #include "hzpch.h"
 #include "ProjectSerializer.h"
+#include "Hazel/Core/FileSystem.h"
 
 #include <fstream>
 #include <stdexcept>
@@ -33,11 +34,10 @@ namespace Hazel {
 			out << YAML::EndMap; // Root
 		}
 
-		std::ofstream fout(filepath);
-		if (!fout || !out.good()) return false;
-		fout << out.c_str();
-		fout.flush();
-		return fout.good();
+		if (!out.good()) return false;
+		try { FileSystem::WriteFileAtomically(filepath, [&](std::ostream& stream) { stream << out.c_str(); }); }
+		catch (const std::runtime_error& error) { HZ_CORE_ERROR("Project save '{}': {}", filepath.generic_u8string(), error.what()); return false; }
+		return true;
 	}
 
 	bool ProjectSerializer::Deserialize(const std::filesystem::path& filepath)
@@ -48,14 +48,15 @@ namespace Hazel {
 			std::ifstream input(filepath);
 			if (!input) return false;
 			auto data = YAML::Load(input);
+			if (input.bad()) { HZ_CORE_ERROR("Cannot read project '{}'", filepath.generic_u8string()); return false; }
 			auto projectNode = data["Project"];
 			if (!projectNode) return false;
 			// Commit only a complete parse; preserve the active config on failure.
 			ProjectConfig config;
 			config.Name = projectNode["Name"].as<std::string>();
-			config.StartScene = std::filesystem::u8path(projectNode["StartScene"].as<std::string>());
-			config.AssetDirectory = std::filesystem::u8path(projectNode["AssetDirectory"].as<std::string>());
-			config.ScriptModulePath = std::filesystem::u8path(projectNode["ScriptModulePath"].as<std::string>());
+			config.StartScene = Project::NormalizeAssetPath(std::filesystem::u8path(projectNode["StartScene"].as<std::string>()));
+			config.AssetDirectory = Project::NormalizeAssetPath(std::filesystem::u8path(projectNode["AssetDirectory"].as<std::string>()));
+			config.ScriptModulePath = Project::NormalizeAssetPath(std::filesystem::u8path(projectNode["ScriptModulePath"].as<std::string>()));
 			m_Project->GetConfig() = std::move(config);
 			return true;
 		}

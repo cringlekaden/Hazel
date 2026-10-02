@@ -5,6 +5,7 @@
 #include "Components.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include "Hazel/Core/UUID.h"
+#include "Hazel/Core/FileSystem.h"
 
 #include "Hazel/Project/Project.h"
 
@@ -168,11 +169,14 @@ namespace Hazel {
 	}
 
 	SceneSerializer::SceneSerializer(const Ref<Scene>& scene)
-		: m_Scene(scene)
+		: SceneSerializer(scene, Project::GetActive() ? Project::GetAssetDirectory() : std::filesystem::path{})
 	{
 	}
 
-	static void SerializeEntity(YAML::Emitter& out, Entity entity)
+	SceneSerializer::SceneSerializer(const Ref<Scene>& scene, const std::filesystem::path& assetRoot)
+		: m_Scene(scene), m_AssetRoot(assetRoot) {}
+
+	static void SerializeEntity(YAML::Emitter& out, Entity entity, const std::filesystem::path& assetRoot)
 	{
 		HZ_CORE_ASSERT(entity.HasComponent<IDComponent>());
 
@@ -295,7 +299,7 @@ namespace Hazel {
 			auto& spriteRendererComponent = entity.GetComponent<SpriteRendererComponent>();
 			out << YAML::Key << "Color" << YAML::Value << spriteRendererComponent.Color;
 			if (spriteRendererComponent.Texture)
-				out << YAML::Key << "TexturePath" << YAML::Value << spriteRendererComponent.Texture->GetPath();
+				out << YAML::Key << "TexturePath" << YAML::Value << Project::MakeAssetReference(assetRoot, std::filesystem::u8path(spriteRendererComponent.Texture->GetPath())).generic_u8string();
 
 			out << YAML::Key << "TilingFactor" << YAML::Value << spriteRendererComponent.TilingFactor;
 
@@ -391,17 +395,13 @@ namespace Hazel {
 			if (!entity)
 				return;
 
-			SerializeEntity(out, entity);
+			SerializeEntity(out, entity, m_AssetRoot);
 		});
 		out << YAML::EndSeq;
 		out << YAML::EndMap;
 
 		if (!out.good()) throw std::runtime_error(out.GetLastError());
-		std::ofstream fout(std::filesystem::u8path(filepath), std::ios::binary | std::ios::trunc);
-		if (!fout) throw std::runtime_error("Cannot open scene for writing: " + filepath);
-		fout << out.c_str();
-		fout.close();
-		if (!fout) throw std::runtime_error("Cannot write scene: " + filepath);
+		FileSystem::WriteFileAtomically(std::filesystem::u8path(filepath), [&](std::ostream& stream) { stream << out.c_str(); });
 	}
 
 	void SceneSerializer::SerializeRuntime(const std::string& filepath)
@@ -487,7 +487,7 @@ namespace Hazel {
 					auto scriptFields = scriptComponent["ScriptFields"];
 					if (scriptFields)
 					{
-						Ref<ScriptClass> entityClass = ScriptEngine::GetEntityClass(sc.ClassName);
+						// Stored fields are independent of the currently loaded project/domain.
 						{
 							auto& entityFields = stagedScriptFields[deserializedEntity.GetUUID()];
 
@@ -500,12 +500,7 @@ namespace Hazel {
 								ScriptFieldInstance& fieldInstance = entityFields[name];
 
 								fieldInstance.Field = { type, name, nullptr };
-								if (entityClass) {
-									const auto& fields = entityClass->GetFields();
-									auto known = fields.find(name);
-									if (known != fields.end() && known->second.Type == type) fieldInstance.Field = known->second;
-									else HZ_CORE_WARN("Stored script field {} does not match current class {}; retaining metadata", name, sc.ClassName);
-								}
+
 
 								switch (type)
 								{
@@ -548,7 +543,7 @@ namespace Hazel {
 					if (spriteRendererComponent["TexturePath"])
 					{
 						std::string texturePath = spriteRendererComponent["TexturePath"].as<std::string>();
-						auto path = Project::GetAssetFileSystemPath(std::filesystem::u8path(texturePath));
+						auto path = Project::ResolveAssetPath(m_AssetRoot, std::filesystem::u8path(texturePath));
 						src.Texture = Texture2D::Create(path.generic_u8string());
 					}
 
@@ -610,7 +605,6 @@ namespace Hazel {
 			}
 		}
 
-		if (!stagedScriptFields.empty() && !ScriptEngine::IsInitialized()) throw std::runtime_error("Scene script fields require the project script engine");
 		// Commit only after parsing every component and loading every referenced asset.
 		// Existing scene/field data remains untouched on malformed input or asset failure.
 		std::vector<Entity> oldEntities;
@@ -618,10 +612,14 @@ namespace Hazel {
 		for (auto entity : oldEntities) m_Scene->DestroyEntity(entity);
 		m_Scene->m_Registry = std::move(staged->m_Registry);
 		m_Scene->m_EntityMap = std::move(staged->m_EntityMap);
-		for (auto& [id, fields] : stagedScriptFields) ScriptEngine::GetScriptFieldMap(m_Scene->GetEntityByUUID(id)) = std::move(fields);
+		m_Scene->m_ScriptFields = std::move(stagedScriptFields);
 		return true;
 		}
-		catch (const std::exception& error) {
+		catch (const std::runtime_error& error) {
+			HZ_CORE_ERROR("Failed to load .hazel file '{}': {}", filepath, error.what());
+			return false;
+		}
+		catch (const std::invalid_argument& error) {
 			HZ_CORE_ERROR("Failed to load .hazel file '{}': {}", filepath, error.what());
 			return false;
 		}

@@ -58,6 +58,8 @@ namespace Hazel {
 		}
 
 		operator bool() const { return m_Scene && m_Scene->m_Registry.valid(m_EntityHandle); }
+		// Pointer comparison only: safe even when an observation's former scene has died.
+		bool BelongsTo(const Scene* scene) const { return m_Scene == scene; }
 		operator entt::entity() const { return m_EntityHandle; }
 		operator uint32_t() const { return (uint32_t)m_EntityHandle; }
 
@@ -77,6 +79,7 @@ namespace Hazel {
 		entt::entity m_EntityHandle{ entt::null };
 		Scene* m_Scene = nullptr;
 		friend class Scene;
+		friend class ScriptEngine;
 	};
 
 	template<typename T> void Scene::OnComponentRemoving(Entity entity)

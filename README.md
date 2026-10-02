@@ -2,6 +2,9 @@
 
 Linux/Windows adaptation of [TheCherno/Hazel](https://github.com/TheCherno/Hazel/tree/1feb70572fa87fa1c4ba784a2cfeada5b4a500db), pinned to `1feb70572fa87fa1c4ba784a2cfeada5b4a500db`. Includes Sandbox, Hazelnut, scenes/YAML, managed scripting/assembly reload, Box2D, and complete 2D/MSDF rendering. Migration status and verification are in [PROGRESS.md](docs/migration/PROGRESS.md).
 
+Texture references, authored script fields, editor failure recovery and save semantics
+are described in [authoring reliability contracts](docs/authoring-reliability.md).
+
 ## Dependencies
 
 Clone master with `git clone --recurse-submodules https://github.com/cringlekaden/Hazel.git`. The completed migration remains available on `migration/upstream-1feb705` as history. Existing clones use `git submodule update --init --recursive`.

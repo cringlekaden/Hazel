@@ -69,7 +69,8 @@ OpenGLTexture2D::OpenGLTexture2D(const TextureSpecification& specification)
     AllocateStorage(nullptr);
 }
 
-OpenGLTexture2D::OpenGLTexture2D(const std::string& path) : m_Path(path)
+OpenGLTexture2D::OpenGLTexture2D(const std::string& path)
+    : m_Path(std::filesystem::absolute(std::filesystem::u8path(path)).lexically_normal().generic_u8string())
 {
     HZ_PROFILE_FUNCTION();
     auto encoded=FileSystem::ReadFileBinary(std::filesystem::u8path(path));

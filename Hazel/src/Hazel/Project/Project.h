@@ -38,8 +38,13 @@ namespace Hazel {
 		static std::filesystem::path GetAssetFileSystemPath(const std::filesystem::path& path)
 		{
 			if (!s_ActiveProject) throw std::logic_error("No active Hazel project");
-			return GetAssetDirectory() / path;
+			return ResolveAssetPath(GetAssetDirectory(), path);
 		}
+
+		static std::filesystem::path NormalizeAssetPath(const std::filesystem::path& path);
+		static std::filesystem::path ResolveAssetPath(const std::filesystem::path& assetRoot, const std::filesystem::path& reference);
+		static std::filesystem::path MakeAssetReference(const std::filesystem::path& assetRoot, const std::filesystem::path& loadedPath);
+		std::filesystem::path GetAssetRoot() const { return m_ProjectDirectory / m_Config.AssetDirectory; }
 
 		ProjectConfig& GetConfig() { return m_Config; }
 
@@ -47,6 +52,8 @@ namespace Hazel {
 
 		static Ref<Project> New();
 		static Ref<Project> Load(const std::filesystem::path& path);
+		static Ref<Project> LoadCandidate(const std::filesystem::path& path);
+		static void SetActive(const Ref<Project>& project) { s_ActiveProject = project; }
 		static bool SaveActive(const std::filesystem::path& path);
 	private:
 		ProjectConfig m_Config;

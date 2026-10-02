@@ -16,8 +16,11 @@ namespace Hazel {
 
 		void OnImGuiRender();
 
-		Entity GetSelectedEntity() const { return m_SelectionContext; }
-		void SetSelectedEntity(Entity entity);
+		Entity GetSelectedEntity() const {
+			return m_Context && m_SelectionContext.BelongsTo(m_Context.get()) && m_SelectionContext ? m_SelectionContext : Entity{};
+		}
+		bool SetSelectedEntity(Entity entity);
+		static bool AssignSpriteTexture(SpriteRendererComponent& component, const std::filesystem::path& path);
 	private:
 		template<typename T>
 		void DisplayAddComponentEntry(const std::string& entryName);
