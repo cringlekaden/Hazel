@@ -49,7 +49,8 @@ def cli(executable,working,env):
     relative=working/'relative-invalid.hproj';relative.write_text('invalid descriptor',encoding='utf-8')
     try:
         text=invoke(['--project',relative.name],False,'Cannot parse/open')
-        if str(relative) not in text:raise RuntimeError('Relative CLI project did not resolve against invocation directory')
+        if relative.as_posix() not in text.replace('\\','/'):
+            raise RuntimeError('Relative CLI project did not resolve against invocation directory')
     finally:relative.unlink()
     nested=root/'nested candidates';nested.mkdir()
     try:
