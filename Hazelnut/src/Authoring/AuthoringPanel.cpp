@@ -803,8 +803,8 @@ void AuthoringPanel::Prefabs()
 			auto folder = FileDialogs::SelectFolder();
 			if (!folder.empty())
 			{
-				auto relative = Project::MakeAssetReference(Project::GetAssetDirectory(), Path(folder));
-				m_PrefabName = (relative / Path(m_PrefabName).filename()).generic_u8string();
+				m_PrefabName = Project::MakeAssetReference(
+					Project::GetAssetDirectory(), Path(folder) / Path(m_PrefabName).filename()).generic_u8string();
 			}
 		}
 		auto source = m_Editor.m_EditorScene->GetIdentity() == m_PrefabSourceScene
