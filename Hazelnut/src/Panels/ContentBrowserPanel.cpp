@@ -1,3 +1,4 @@
+#include "Hazel/Core/Resources.h"
 #include "hzpch.h"
 #include "ContentBrowserPanel.h"
 
@@ -13,8 +14,8 @@ namespace Hazel {
 	ContentBrowserPanel::ContentBrowserPanel(const std::filesystem::path& assetRoot)
 		: m_BaseDirectory(assetRoot), m_CurrentDirectory(m_BaseDirectory)
 	{
-		m_DirectoryIcon = Texture2D::Create("Resources/Icons/ContentBrowser/DirectoryIcon.png");
-		m_FileIcon = Texture2D::Create("Resources/Icons/ContentBrowser/FileIcon.png");
+		m_DirectoryIcon = Texture2D::Create(Resources::Resolve("Icons/ContentBrowser/DirectoryIcon.png").generic_u8string());
+		m_FileIcon = Texture2D::Create(Resources::Resolve("Icons/ContentBrowser/FileIcon.png").generic_u8string());
 	}
 
 	void ContentBrowserPanel::OnImGuiRender()

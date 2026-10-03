@@ -9,7 +9,7 @@
 -- Projects:
 --   GLFW, Glad, ImGui - static dependencies
 --   Hazel             - static engine library
---   Sandbox           - executable using Hazel
+--   Nutella           - standalone project runtime
 --
 
 local workspaceRoot = path.getabsolute(".")
@@ -40,7 +40,7 @@ newoption
 workspace "Hazel"
     defines { "GLM_ENABLE_EXPERIMENTAL" }
     architecture "x64"
-    startproject "Sandbox"
+    startproject "Hazelnut"
 
     configurations
     {
@@ -62,7 +62,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 --
 -- Absolute output locations.
 --
--- These prevent generated project files inside Hazel/ and Sandbox/
+-- These prevent generated project files inside Hazel/ and Nutella/
 -- from incorrectly rebasing paths through ../ or ../../.
 --
 local binRoot    = workspaceRoot .. "/bin/" .. outputdir
@@ -185,7 +185,7 @@ project "ImGui"
 
 
 --
--- Ensure GLFW uses the same Windows CRT as Hazel and Sandbox.
+-- Ensure GLFW uses the same Windows CRT as Hazel and Nutella.
 --
 -- staticruntime "Off":
 --     Debug   -> /MDd
@@ -406,12 +406,12 @@ project "Hazel"
 
 
 -- ================================================================
--- Sandbox
+-- Nutella
 -- ================================================================
 
-project "Sandbox"
+project "Nutella"
 
-    location "Sandbox"
+    location "Nutella"
 
     kind "ConsoleApp"
     language "C++"
@@ -420,13 +420,13 @@ project "Sandbox"
 
     targetdir (binRoot .. "/%{prj.name}")
     objdir    (binIntRoot .. "/%{prj.name}")
-    debugdir  (workspaceRoot .. "/Sandbox")
+    debugdir  (workspaceRoot)
 
 
     files
     {
-        "Sandbox/src/**.h",
-        "Sandbox/src/**.cpp"
+        "Nutella/src/**.h",
+        "Nutella/src/**.cpp"
     }
 
 
@@ -463,10 +463,9 @@ project "Sandbox"
     filter "system:windows"
 
         systemversion "latest"
-        links { "Comdlg32" }
 
         --
-        -- Sandbox must use the same CRT as Hazel and GLFW.
+        -- Nutella must use the same CRT as Hazel and GLFW.
         --
         staticruntime "Off"
 
@@ -508,8 +507,6 @@ project "Sandbox"
 
     filter "system:linux"
 
-        externalincludedirs (gtkIncludes)
-        links (gtkLinks)
         toolset "gcc"
 
         defines

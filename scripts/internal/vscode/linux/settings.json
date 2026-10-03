@@ -1,0 +1,8 @@
+{
+    "makefile.configureOnOpen": false,
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}",
+        "--query-driver=/usr/bin/g++,/usr/bin/gcc,/usr/bin/c++,/usr/bin/cc"
+    ],
+    "debug.onTaskErrors": "abort"
+}

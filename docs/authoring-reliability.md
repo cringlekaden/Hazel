@@ -1,9 +1,8 @@
 # Authoring reliability contracts
 
-These repairs build on master baseline `00aca3c` (migration merge `257bd58`),
-on `fix/authoring-reliability`. They are a review checkpoint, not another master
-merge. Dependency pins, Sandbox examples and local VS Code configuration stay
-unchanged. Original migration verification records remain historical evidence.
+The completed repairs from `fix/authoring-reliability` were merged into master at
+`b0fb5fc`. These contracts remain obligations of the Nutella milestone. Historical
+migration verification records retain their original context.
 
 ## Texture references
 
@@ -62,7 +61,7 @@ detected; saving is still a single editor command.
 
 The existing SceneSmoke, ProjectPhysicsSmoke and actual EditorLayer EditorSmoke
 contain the regressions. EditorSmoke starts with the F5 project argument
-`SandboxProject/Sandbox.hproj` in an isolated copy of Hazelnut, calls the same
+`tests/fixtures/AuthoringProject/Authoring.hproj` in an isolated test environment, calls the same
 assignment helper as drag/drop, saves/reopens, and opens a relocated project with
 the original project unavailable. It checks external paths, legacy separators,
 selection immediately after transitions, authored/live reload separation and
@@ -77,5 +76,6 @@ relocate it; change a live script value, reload and Stop/restart; select immedia
 after New/Open/Play/Simulate/Stop; try a missing/corrupt project, scene and assembly;
 and try saving to an inaccessible destination. Prior valid work must remain usable.
 
-Standalone runtime/project deployment, custom font persistence, live component
-synchronization, macOS/ARM64, Metal and larger feature systems remain deferred.
+Runtime/project deployment is covered by the [Nutella milestone](nutella-runtime.md).
+Custom font persistence, live component synchronization, macOS/ARM64, Metal and
+larger feature systems remain deferred.

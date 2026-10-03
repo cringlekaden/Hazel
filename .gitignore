@@ -4,13 +4,10 @@ bin-int/
 __pycache__/
 /docs/migration/evidence/*.log
 
-# Profiling traces written using Sandbox as the working directory
-/Sandbox/HazelProfile-*.json
-
 # Premake generated GNU Make files
 /Makefile
 /Hazel/Makefile
-/Sandbox/Makefile
+/Nutella/Makefile
 /Hazel/vendor/Glad/Makefile
 /build/
 
@@ -30,15 +27,17 @@ compile_commands.json
 
 # VS Code local config
 .vscode/
-# Example managed project outputs
-Hazelnut/SandboxProject/Assets/Scripts/Binaries/
-Hazelnut/SandboxProject/Assets/Scripts/Intermediates/
-/Hazelnut/SandboxProject/Assets/Scripts/Makefile
-/Hazelnut/SandboxProject/Assets/Scripts/*.make
-/Hazelnut/SandboxProject/Assets/Scripts/*.csproj
-/Hazelnut/SandboxProject/Assets/Scripts/*.csproj.user
-
+# Project-managed generated files
+/examples/*/Assets/Scripts/Binaries/
+/examples/*/Assets/Scripts/Intermediates/
+/examples/*/Assets/Scripts/Makefile
+/examples/*/Assets/Scripts/*.make
+/examples/*/Assets/Scripts/*.csproj
+/examples/*/Assets/Scripts/*.csproj.user
 /Hazelnut/Resources/Scripts/*.dll
 /Hazelnut/Resources/Scripts/*.pdb
+/dist/
+
+# Retained local diagnostic output from earlier development
 /Hazelnut/HazelProfile-*.json
 /Hazelnut/assets/cache/

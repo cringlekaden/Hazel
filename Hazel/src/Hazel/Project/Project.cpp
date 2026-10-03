@@ -2,6 +2,8 @@
 #include "Project.h"
 
 #include "ProjectSerializer.h"
+#include "Hazel/Scene/Scene.h"
+#include "Hazel/Scene/SceneSerializer.h"
 
 namespace Hazel {
 
@@ -16,11 +18,9 @@ namespace Hazel {
 	{
 		// Absolute external references keep their meaning; relative references are asset-root relative.
 		const auto normalized = NormalizeAssetPath(reference);
-#ifdef HZ_PLATFORM_LINUX
 		const auto text = normalized.generic_u8string();
-		if (text.size() >= 3 && text[1] == ':' && text[2] == '/')
+		if (text.size() >= 3 && text[1] == ':' && text[2] == '/' && !normalized.is_absolute())
 			throw std::runtime_error("Windows absolute texture/asset reference needs an explicit local replacement: " + text);
-#endif
 		return (root / normalized).lexically_normal();
 	}
 
@@ -33,6 +33,26 @@ namespace Hazel {
 		// External textures remain absolute, including former cwd-relative external paths.
 		return loaded;
 	}
+
+    Ref<Scene> Project::LoadScene(const std::filesystem::path& reference) const {
+        const auto root = GetAssetRoot();
+        if (!std::filesystem::is_directory(root)) throw std::runtime_error("Missing project asset root: " + root.generic_u8string());
+        const auto path = ResolveAssetPath(root, reference);
+        if (path.extension() != ".hazel") throw std::runtime_error("Scene must be a .hazel file: " + path.generic_u8string());
+        auto scene = CreateRef<Scene>();
+        if (!SceneSerializer(scene, root).Deserialize(path.generic_u8string()))
+            throw std::runtime_error("Cannot load scene/assets: " + path.generic_u8string());
+        return scene;
+    }
+
+    std::vector<std::filesystem::path> Project::Discover(const std::filesystem::path& directory) {
+        std::vector<std::filesystem::path> paths;
+        if (!std::filesystem::is_directory(directory)) return paths;
+        for (const auto& item : std::filesystem::directory_iterator(directory))
+            if (item.is_regular_file() && item.path().extension() == ".hproj") paths.push_back(item.path());
+        std::sort(paths.begin(), paths.end());
+        return paths;
+    }
 
 	Ref<Project> Project::New()
 	{
@@ -54,7 +74,7 @@ namespace Hazel {
 		ProjectSerializer serializer(project);
 		if (serializer.Deserialize(path))
 		{
-			project->m_ProjectDirectory = path.parent_path();
+			project->m_ProjectDirectory = std::filesystem::absolute(path).parent_path();
 			return project;
 		}
 
@@ -67,7 +87,7 @@ namespace Hazel {
 		ProjectSerializer serializer(s_ActiveProject);
 		if (serializer.Serialize(path))
 		{
-			s_ActiveProject->m_ProjectDirectory = path.parent_path();
+			s_ActiveProject->m_ProjectDirectory = std::filesystem::absolute(path).parent_path();
 			return true;
 		}
 

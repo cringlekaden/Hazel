@@ -16,6 +16,7 @@
 #include <unordered_set>
 #include <stdexcept>
 #include <iostream>
+#include <optional>
 
 static void Check(bool value, const char* message) { if (!value) throw std::runtime_error(message); }
 struct Counts { int attached=0, detached=0, destroyed=0; };
@@ -30,6 +31,29 @@ private: Counts& m_Counts;
 static void CheckCore()
 {
     using namespace Hazel;
+    ApplicationResourceSpecification partialResources;
+    partialResources.UserData = std::filesystem::temp_directory_path()/"hazel explicit data";
+#ifdef HZ_PLATFORM_LINUX
+    // A host's explicit writable root must not require an unused user-data lookup.
+    std::vector<std::pair<std::string,std::optional<std::string>>> environment;
+    for (const char* name : {"HOME", "XDG_DATA_HOME", "HAZEL_DATA"}) {
+        const char* value = std::getenv(name);
+        environment.emplace_back(name, value ? std::optional<std::string>(value) : std::nullopt);
+        unsetenv(name);
+    }
+    auto restoreEnvironment = [&] {
+        for (const auto& [name,value] : environment)
+            if (value) setenv(name.c_str(),value->c_str(),1); else unsetenv(name.c_str());
+    };
+    try {
+#endif
+        const auto resolved = Resources::Defaults("CoreSmoke",partialResources);
+        Check(resolved.UserData==partialResources.UserData && !resolved.Root.empty() && !resolved.MonoRoot.empty(),
+              "Partial resource specification lost explicit data or required an unused default");
+#ifdef HZ_PLATFORM_LINUX
+    } catch (...) { restoreEnvironment(); throw; }
+    restoreEnvironment();
+#endif
     HZ_CORE_ASSERT(true);
     HZ_CORE_ASSERT(true, "variadic {} {}", 1, 2);
     Counts first, second, overlay;
@@ -84,7 +108,7 @@ public:
     void OnAttach() override { ++m_Counts.attached; }
     void OnDetach() override {
         Check(glfwGetCurrentContext()!=nullptr,"Context gone before layer detach");
-        Check(ImGui::GetCurrentContext()!=nullptr,"ImGui gone before user layer detach");
+        Check((ImGui::GetCurrentContext()!=nullptr)==Hazel::Application::Get().GetSpecification().EnableImGui,"Optional ImGui lifetime differs from specification");
         Hazel::Renderer2D::ResetStats(); // proves renderer still exists during OnDetach.
         ++m_Counts.detached;
     }
@@ -105,10 +129,17 @@ int main(int argc,char** argv)
             Counts counts; int callbacks=0;
             Hazel::ApplicationSpecification specification;
             specification.Name="Migration core lifecycle";
+            specification.EnableImGui=repeat==0;
             specification.CommandLineArgs={argc,argv};
-            specification.WorkingDirectory=std::filesystem::current_path().u8string();
+
             auto application=Hazel::CreateScope<Hazel::Application>(specification);
+            int width=0,height=0;
+            glfwGetWindowSize(static_cast<GLFWwindow*>(application->GetWindow().GetNativeWindow()),&width,&height);
+            Check(application->GetWindow().GetWidth()==static_cast<unsigned int>(width) &&
+                  application->GetWindow().GetHeight()==static_cast<unsigned int>(height),
+                  "Initial window dimensions differ from the native client area");
             Check(application->GetSpecification().CommandLineArgs[0]==argv[0],"Application args/specification");
+            Check((application->GetImGuiLayer()!=nullptr)==specification.EnableImGui,"Optional ImGui access differs from specification");
             application->PushLayer(Hazel::CreateScope<LifecycleLayer>(counts));
             std::thread producer([&]{application->SubmitToMainThread([&]{
                 ++callbacks;

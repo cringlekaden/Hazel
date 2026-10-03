@@ -109,12 +109,12 @@ int main(int argc,char** argv) {
         Log::Init(); Check(argc==3,"Usage: SceneGPUSmoke Core.dll Fixture.dll");
         const auto core=std::filesystem::absolute(std::filesystem::u8path(argv[1]));
         const auto app=std::filesystem::absolute(std::filesystem::u8path(argv[2])); Fixture fixture;
-        std::filesystem::create_directories(fixture.Directory/"Resources/Scripts");
-        std::filesystem::copy_file(core,fixture.Directory/"Resources/Scripts/Hazel-ScriptCore.dll");
+        std::filesystem::create_directories(fixture.Directory/"assets/Scripts");
+        std::filesystem::copy_file(core,fixture.Directory/"assets/Scripts/Hazel-ScriptCore.dll");
         const auto target=fixture.Directory/std::filesystem::u8path("Fixture-é.dll"); std::filesystem::copy_file(app,target);
         bool detached=false; Ref<ScriptClass> externalClass;
         {
-            ApplicationSpecification spec; spec.Name="Migration Scene"; spec.WorkingDirectory=fixture.Directory.generic_u8string();
+            ApplicationSpecification spec; spec.Name="Migration Scene"; spec.Resources.Root=fixture.Directory/"assets"; std::filesystem::current_path(fixture.Directory);
             Application application(spec); glfwHideWindow(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()));
             std::cout<<"Renderer: "<<glGetString(GL_RENDERER)<<"; Version: "<<glGetString(GL_VERSION)<<'\n';
             auto project=Project::New(); project->GetConfig().AssetDirectory="assets";
@@ -139,15 +139,15 @@ int main(int argc,char** argv) {
             Check(framebuffer->ReadPixel(1,192,128)==static_cast<int>(static_cast<uint32_t>(runtime->GetEntityByUUID(12))),"Runtime primary-camera circle picking failed");
             runtime->OnRuntimeStop(); runtime->OnSimulationStart(); Begin(framebuffer); runtime->OnUpdateSimulation(1.0f/60,editor); CheckScenePixels(runtime); runtime->OnSimulationStop();
             framebuffer->Unbind(); framebuffer.reset(); source.reset(); loaded.reset(); runtime.reset(); glEnable(GL_DEPTH_TEST);
-            // Exercise the actual pinned Player/Camera consumers and every published
+            // Exercise the intentional Player/Camera fixtures and every published
             // managed component call in a real Application/input/physics context.
             auto scripts=CreateRef<Scene>();
             auto player=scripts->CreateEntityWithUUID(501,"Player");
             player.AddComponent<Rigidbody2DComponent>().Type=Rigidbody2DComponent::BodyType::Dynamic;
             player.AddComponent<BoxCollider2DComponent>();
-            player.AddComponent<ScriptComponent>().ClassName="Sandbox.Player";
+            player.AddComponent<ScriptComponent>().ClassName="Regression.Player";
             auto cameraEntity=scripts->CreateEntityWithUUID(500,"Camera");
-            cameraEntity.AddComponent<ScriptComponent>().ClassName="Sandbox.Camera";
+            cameraEntity.AddComponent<ScriptComponent>().ClassName="Regression.Camera";
             auto probe=scripts->CreateEntityWithUUID(502,"Component probe");
             probe.AddComponent<Rigidbody2DComponent>().Type=Rigidbody2DComponent::BodyType::Dynamic;
             probe.AddComponent<BoxCollider2DComponent>(); probe.AddComponent<TextComponent>();
@@ -155,8 +155,8 @@ int main(int argc,char** argv) {
             scripts->OnRuntimeStart();
             Check(ScriptEngine::GetEntityScriptInstance(502)->GetFieldValue<bool>("Passed"),"Managed component internal calls failed");
             scripts->OnUpdateRuntime(0.125f);
-            Check(ScriptEngine::GetEntityScriptInstance(501)->GetFieldValue<float>("Time")==0.125f,"Actual upstream Player.OnUpdate failed");
-            Check(cameraEntity.GetComponent<TransformComponent>().Translation.z==5.0f,"Actual upstream Camera/entity script cast failed");
+            Check(ScriptEngine::GetEntityScriptInstance(501)->GetFieldValue<float>("Time")==0.125f,"Regression Player.OnUpdate failed");
+            Check(cameraEntity.GetComponent<TransformComponent>().Translation.z==5.0f,"Regression Camera/entity script cast failed");
             Check(probe.GetComponent<TextComponent>().TextString==u8"Hazel é λ", "Managed UTF-8 text setter failed");
             scripts->OnRuntimeStop(); scripts->OnRuntimeStart();
             Check(ScriptEngine::GetEntityScriptInstance(502)->GetFieldValue<bool>("Passed"),"Managed component restart failed");

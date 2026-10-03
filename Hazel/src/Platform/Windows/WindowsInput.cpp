@@ -30,6 +30,12 @@ namespace Hazel {
 		return { (float)xpos, (float)ypos };
 	}
 
+    glm::vec2 Input::GetMouseScreenPosition() {
+        auto* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+        int x = 0, y = 0; glfwGetWindowPos(window, &x, &y);
+        return GetMousePosition() + glm::vec2(x, y);
+    }
+
 	float Input::GetMouseX()
 	{
 		return GetMousePosition().x;

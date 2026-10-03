@@ -1,0 +1,65 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Hazel: Build Debug",
+            "type": "process",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/scripts/hazel.py",
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ],
+            "runOptions": {
+                "instanceLimit": 1
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Hazel: Build Release",
+            "type": "process",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/scripts/hazel.py",
+                "build",
+                "--config",
+                "Release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ],
+            "runOptions": {
+                "instanceLimit": 1
+            }
+        },
+        {
+            "label": "Hazel: Test Debug",
+            "type": "process",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/scripts/hazel.py",
+                "test"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ],
+            "runOptions": {
+                "instanceLimit": 1
+            }
+        }
+    ]
+}

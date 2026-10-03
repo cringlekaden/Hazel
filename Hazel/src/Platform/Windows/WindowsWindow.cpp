@@ -75,6 +75,10 @@ namespace Hazel {
             HZ_CORE_ERROR("Failed to create a graphics window...");
             std::abort();
         }
+        int width = 0, height = 0;
+        glfwGetWindowSize(m_Window, &width, &height);
+        m_Data.Width = static_cast<unsigned int>(width);
+        m_Data.Height = static_cast<unsigned int>(height);
         ++s_GLFWWindowCount;
         m_Context = GraphicsContext::Create(m_Window);
         m_Context->Init();

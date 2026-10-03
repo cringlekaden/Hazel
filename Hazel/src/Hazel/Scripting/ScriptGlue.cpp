@@ -1,6 +1,7 @@
 #include "hzpch.h"
 #include "ScriptGlue.h"
 #include "ScriptEngine.h"
+#include "Hazel/Scene/RuntimeSession.h"
 
 #include "Hazel/Core/UUID.h"
 #include "Hazel/Core/KeyCodes.h"
@@ -263,10 +264,26 @@ namespace Hazel {
 		tc.LineSpacing = lineSpacing;
 	}
 
-	static bool Input_IsKeyDown(KeyCode keycode)
-	{
-		return Input::IsKeyPressed(keycode);
-	}
+    static void Scene_LoadScene(MonoString* path) {
+        auto* session = ScriptEngine::GetRuntimeSession();
+        try {
+            if (!session || !session->RequestSceneLoad(std::filesystem::u8path(Utils::MonoStringToString(path))))
+                HZ_CORE_ERROR("Scene.LoadScene request rejected (no running project session or conflicting/invalid request)");
+        } catch (const std::exception& error) { HZ_CORE_ERROR("Scene.LoadScene request: {}", error.what()); }
+    }
+    static bool Input_IsKeyDown(KeyCode keycode) {
+        auto* session = ScriptEngine::GetRuntimeSession();
+        return (!session || session->IsInputEnabled()) && Input::IsKeyPressed(keycode);
+    }
+    static bool Input_IsMouseButtonDown(MouseCode button) {
+        auto* session = ScriptEngine::GetRuntimeSession();
+        return session && session->IsInputEnabled() && Input::IsMouseButtonPressed(button);
+    }
+    static bool Input_GetMouseWorldPosition(glm::vec2* position) {
+        auto* session = ScriptEngine::GetRuntimeSession();
+        *position = {};
+        return session && session->GetMouseWorldPosition(*position);
+    }
 
 	template<typename Component>
 	static void RegisterComponent(const char* managedTypename)
@@ -323,6 +340,9 @@ namespace Hazel {
 		HZ_ADD_INTERNAL_CALL(TextComponent_SetLineSpacing);
 
 		HZ_ADD_INTERNAL_CALL(Input_IsKeyDown);
+        HZ_ADD_INTERNAL_CALL(Input_IsMouseButtonDown);
+        HZ_ADD_INTERNAL_CALL(Input_GetMouseWorldPosition);
+        HZ_ADD_INTERNAL_CALL(Scene_LoadScene);
 	}
 
 }

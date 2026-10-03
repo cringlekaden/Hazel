@@ -11,49 +11,41 @@ if not windows and not os.isfile(includes .. "/mono/jit/jit.h") then
     error("Mono development headers missing: install mono-devel/mono or provide --mono-root=SDK_PREFIX")
 end
 include (root .. "/Hazel-ScriptCore")
-project "SandboxScripts"
-    location (root .. "/build/SandboxScripts")
-    kind "SharedLib"
+project "PackageAudit"
+    location (root .. "/build/PackageAudit")
+    kind "ConsoleApp"
     language "C#"
     dotnetframework "4.7.2"
-    targetname "Sandbox"
-    targetdir (root .. "/bin/" .. outputdir .. "/SandboxScripts")
-    objdir (root .. "/bin-int/" .. outputdir .. "/SandboxScripts")
-    files { root .. "/Hazelnut/SandboxProject/Assets/Scripts/Source/**.cs" }
-    links { "Hazel-ScriptCore", "System", "System.Core" }
-    local scriptOutput = os.target() == "windows" and _ACTION:match("^vs") and "$(TargetPath)" or "%{cfg.buildtarget.abspath}"
-    postbuildcommands { '{MKDIR} "' .. root .. '/Hazelnut/SandboxProject/Assets/Scripts/Binaries"',
-        '{COPYFILE} "' .. scriptOutput .. '" "' .. root .. '/Hazelnut/SandboxProject/Assets/Scripts/Binaries/Sandbox.dll"' }
+    targetdir (root .. "/bin/" .. outputdir .. "/PackageAudit")
+    objdir (root .. "/bin-int/" .. outputdir .. "/PackageAudit")
+    files { root .. "/scripts/internal/managed/PackageAudit.cs" }
+    links { "System", "System.Core" }
     filter "system:linux"
         buildoptions { "-sdk:4.7.2" }
-    filter "configurations:Debug"
-        optimize "Off"
-        symbols "Default"
-    filter "configurations:Release"
-        optimize "On"
-        symbols "Default"
-    filter "configurations:Dist"
-        optimize "Full"
-        symbols "Off"
     filter {}
+project "Nutella"
+    dependson { "Hazel-ScriptCore" }
 
-local consumers = { "Hazel", "Sandbox", "Hazelnut" }
+local consumers = { "Hazel", "Nutella", "Hazelnut" }
 if _OPTIONS["migration-tests"] then
-    for _, test in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke" } do
+    for _, test in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke", "RuntimeSessionSmoke" } do
         table.insert(consumers, "Migration" .. test)
     end
 end
 for _, name in ipairs(consumers) do
     project (name)
         externalincludedirs { includes }
-        defines { 'HZ_MONO_ASSEMBLIES_PATH="' .. assemblies .. '"', 'HZ_MONO_CONFIG_PATH="' .. config .. '"' }
+        if name == "MigrationMonoSmoke" then
+            defines { 'HZ_MONO_ASSEMBLIES_PATH="' .. assemblies .. '"', 'HZ_MONO_CONFIG_PATH="' .. config .. '"' }
+        end
         if name ~= "Hazel" then
             filter "system:linux"
                 libdirs { prefix .. "/lib" }
                 links { "monosgen-2.0", "pthread", "dl", "m" }
-                runpathdirs { prefix .. "/lib" }
+                runpathdirs { "$$ORIGIN/lib" }
+                linkoptions { "-Wl,--disable-new-dtags" }
             filter "system:windows"
-                links { "libmono-static-sgen", "Ws2_32", "Winmm", "Version", "Bcrypt", "Psapi" }
+                links { "libmono-static-sgen", "Ws2_32", "Winmm", "Version", "Bcrypt", "Psapi", "Shell32", "Ole32", "Uuid" }
             filter { "system:windows", "configurations:Debug" }
                 libdirs { root .. "/Hazel/vendor/mono/lib/Debug" }
             filter { "system:windows", "configurations:Release or Dist" }
@@ -69,7 +61,7 @@ if _OPTIONS["migration-tests"] then
         dotnetframework "4.7.2"
         targetdir (root .. "/bin/" .. outputdir .. "/%{prj.name}")
         objdir (root .. "/bin-int/" .. outputdir .. "/%{prj.name}")
-        files { root .. "/tests/migration/ManagedFixture.cs", root .. "/Hazelnut/SandboxProject/Assets/Scripts/Source/**.cs" }
+        files { root .. "/tests/migration/ManagedFixture.cs", root .. "/tests/fixtures/AuthoringProject/Assets/Scripts/Source/**.cs" }
         links { "Hazel-ScriptCore", "System", "System.Core" }
         filter "system:linux"
             buildoptions { "-sdk:4.7.2" }
@@ -87,6 +79,8 @@ if _OPTIONS["migration-tests"] then
     project "MigrationMonoSmoke"
         dependson { "Hazel-ScriptCore", "MigrationManagedFixture" }
     project "MigrationSceneSmoke"
+        dependson { "Hazel-ScriptCore", "MigrationManagedFixture" }
+    project "MigrationRuntimeSessionSmoke"
         dependson { "Hazel-ScriptCore", "MigrationManagedFixture" }
     project "MigrationSceneGPUSmoke"
         dependson { "Hazel-ScriptCore", "MigrationManagedFixture" }

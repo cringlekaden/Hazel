@@ -7,7 +7,6 @@
 #include <gtk/gtk.h>
 
 namespace Hazel {
-float Time::GetTime() { return static_cast<float>(glfwGetTime()); }
 
 static std::string FileDialog(const char* filter, GtkFileChooserAction action)
 {

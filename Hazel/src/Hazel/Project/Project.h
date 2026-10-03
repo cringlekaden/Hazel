@@ -4,10 +4,12 @@
 #include <string>
 #include <filesystem>
 #include <stdexcept>
+#include <vector>
 
 #include "Hazel/Core/Base.h"
 
 namespace Hazel {
+    class Scene;
 
 	struct ProjectConfig
 	{
@@ -46,10 +48,14 @@ namespace Hazel {
 		static std::filesystem::path MakeAssetReference(const std::filesystem::path& assetRoot, const std::filesystem::path& loadedPath);
 		std::filesystem::path GetAssetRoot() const { return m_ProjectDirectory / m_Config.AssetDirectory; }
 
-		ProjectConfig& GetConfig() { return m_Config; }
+		Ref<Scene> LoadScene(const std::filesystem::path& assetReference) const;
+
+        ProjectConfig& GetConfig() { return m_Config; }
 
 		static Ref<Project> GetActive() { return s_ActiveProject; }
 
+        // Sorted root-level descriptors only; hosts decide how to select/open them.
+        static std::vector<std::filesystem::path> Discover(const std::filesystem::path& directory);
 		static Ref<Project> New();
 		static Ref<Project> Load(const std::filesystem::path& path);
 		static Ref<Project> LoadCandidate(const std::filesystem::path& path);

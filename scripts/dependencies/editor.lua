@@ -23,21 +23,11 @@ project "ImGuizmo"
         runtime "Release"
         optimize "On"
     filter {}
-project "Hazel"
-    externalincludedirs { root .. "/Hazel/vendor/ImGuizmo" }
-project "Sandbox"
-    links { "ImGuizmo" }
-    filter "system:windows"
-        links { "Shell32" }
-    filter {}
 if _OPTIONS["migration-tests"] then
-    for _, name in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke" } do
-        project ("Migration" .. name)
-            links { "ImGuizmo" }
-    end
     project "MigrationEditorSmoke"
+        links { "ImGuizmo" }
         includedirs { root .. "/Hazelnut/src" }
         externalincludedirs { root .. "/Hazel/vendor/ImGuizmo" }
         files { root .. "/Hazelnut/src/EditorLayer.cpp", root .. "/Hazelnut/src/Panels/**.cpp" }
-        dependson { "Hazel-ScriptCore", "SandboxScripts" }
+        dependson { "Hazel-ScriptCore", "MigrationManagedFixture" }
 end

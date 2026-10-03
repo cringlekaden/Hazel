@@ -1,0 +1,72 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Hazelnut \u2014 Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/Debug-linux-x86_64/Hazelnut/Hazelnut",
+            "args": [
+                "${workspaceFolder}/examples/SceneTransitions/SceneTransitions.hproj"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "preLaunchTask": "Hazel: Build Debug",
+            "setupCommands": [
+                {
+                    "description": "Enable GDB pretty printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Pass Mono 6.12 thread suspend/restart/abort notifications to the runtime",
+                    "text": "-interpreter-exec console \"handle SIG35 SIG36 SIG37 nostop noprint pass\"",
+                    "ignoreFailures": false
+                }
+            ],
+            "logging": {
+                "programOutput": true,
+                "moduleLoad": false,
+                "engineLogging": false
+            }
+        },
+        {
+            "name": "Nutella \u2014 Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/Debug-linux-x86_64/Nutella/Nutella",
+            "args": [
+                "--project",
+                "${workspaceFolder}/examples/SceneTransitions/SceneTransitions.hproj"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "preLaunchTask": "Hazel: Build Debug",
+            "setupCommands": [
+                {
+                    "description": "Enable GDB pretty printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": false
+                },
+                {
+                    "description": "Pass Mono 6.12 thread suspend/restart/abort notifications to the runtime",
+                    "text": "-interpreter-exec console \"handle SIG35 SIG36 SIG37 nostop noprint pass\"",
+                    "ignoreFailures": false
+                }
+            ],
+            "logging": {
+                "programOutput": true,
+                "moduleLoad": false,
+                "engineLogging": false
+            }
+        }
+    ]
+}

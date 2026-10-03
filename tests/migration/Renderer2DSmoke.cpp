@@ -151,7 +151,7 @@ void main(){color=vec4(1,0,1,1);entity=84;})";
 int main() {
     try {
         Log::Init(); Fixture fixture; const auto cwd=std::filesystem::current_path();
-        ApplicationSpecification invalid; invalid.Name="Migration Missing Shader"; invalid.WorkingDirectory=fixture.Directory.u8string();
+        ApplicationSpecification invalid; invalid.Name="Migration Missing Shader"; invalid.Resources.Root=fixture.Directory/"missing-resources";
         bool rejected=false; try { Application failed(invalid); } catch(const std::exception&) { rejected=true; }
         Check(rejected && std::filesystem::current_path()==cwd,"Failed renderer startup did not recover working directory");
         for (bool reduced : {false, true}) {

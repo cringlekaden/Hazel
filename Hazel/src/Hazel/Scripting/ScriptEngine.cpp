@@ -1,4 +1,6 @@
 #include "hzpch.h"
+#include "Hazel/Scene/RuntimeSession.h"
+#include "Hazel/Core/Resources.h"
 #include "ScriptEngine.h"
 
 #include "ScriptGlue.h"
@@ -26,6 +28,16 @@
 #include "Hazel/Project/Project.h"
 
 namespace Hazel {
+    static RuntimeSession* s_RuntimeSession = nullptr;
+    static const std::thread::id s_RuntimeThread = std::this_thread::get_id();
+    RuntimeSession* ScriptEngine::GetRuntimeSession() {
+        // Reject managed worker requests before observing the borrowed owner.
+        return std::this_thread::get_id() == s_RuntimeThread ? s_RuntimeSession : nullptr;
+    }
+    void ScriptEngine::SetRuntimeSession(RuntimeSession* session) {
+        if (std::this_thread::get_id() != s_RuntimeThread) throw std::logic_error("Runtime session binding requires the main thread");
+        s_RuntimeSession = session;
+    }
 
 	static std::unordered_map<std::string, ScriptFieldType> s_ScriptFieldTypeMap =
 	{
@@ -203,11 +215,12 @@ namespace Hazel {
 			s_Data->Generation = ++s_Generation;
 		}
 		if (!s_Data->RootDomain) { InitMono(); ScriptGlue::RegisterFunctions(); }
-		ReplaceAssembly("Resources/Scripts/Hazel-ScriptCore.dll", appPath, false, beforeReplacement);
+		ReplaceAssembly(Resources::Resolve("Scripts/Hazel-ScriptCore.dll"), appPath, false, beforeReplacement);
 	}
 
 	void ScriptEngine::Shutdown()
 	{
+        if (auto* session = GetRuntimeSession()) session->Stop();
 		if (!s_Data) return;
 		s_Data->ShuttingDown = true;
 		s_Data->AppAssemblyFileWatcher.reset();
@@ -219,8 +232,15 @@ namespace Hazel {
 
 	void ScriptEngine::InitMono()
 	{
-		mono_set_assemblies_path(HZ_MONO_ASSEMBLIES_PATH);
-		mono_config_parse(HZ_MONO_CONFIG_PATH[0] ? HZ_MONO_CONFIG_PATH : nullptr);
+		const auto root = Resources::Get().MonoRoot;
+        const auto assemblies = (root / "lib").generic_u8string();
+        const auto config = (root / "etc/mono/config").generic_u8string();
+        if (!std::filesystem::is_regular_file(root / "lib/mono/4.5/mscorlib.dll") ||
+            !std::filesystem::is_regular_file(root / "etc/mono/config"))
+            throw std::runtime_error("Incomplete Mono runtime at " + root.generic_u8string());
+        mono_set_dirs(assemblies.c_str(), (root / "etc").generic_u8string().c_str());
+        mono_set_assemblies_path(assemblies.c_str());
+        mono_config_parse(config.c_str());
 
 		if (s_Data->EnableDebugging)
 		{
@@ -523,7 +543,7 @@ namespace Hazel {
 			// to iterate over all of the elements. When no more values are available, the return value is NULL.
 
 			int fieldCount = mono_class_num_fields(monoClass);
-			HZ_CORE_WARN("{} has {} fields:", className, fieldCount);
+			HZ_CORE_TRACE("{} has {} fields:", className, fieldCount);
 			void* iterator = nullptr;
 			while (MonoClassField* field = mono_class_get_fields(monoClass, &iterator))
 			{
@@ -533,7 +553,7 @@ namespace Hazel {
 				{
 					MonoType* type = mono_field_get_type(field);
 					ScriptFieldType fieldType = Utils::MonoTypeToScriptFieldType(type);
-					HZ_CORE_WARN("  {} ({})", fieldName, Utils::ScriptFieldTypeToString(fieldType));
+					HZ_CORE_TRACE("  {} ({})", fieldName, Utils::ScriptFieldTypeToString(fieldType));
 
 					scriptClass->m_Fields[fieldName] = { fieldType, fieldName, field };
 				}
@@ -541,9 +561,6 @@ namespace Hazel {
 
 		}
 
-		auto& entityClasses = data.EntityClasses;
-
-		//mono_field_get_value()
 
 	}
 
