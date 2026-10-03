@@ -1,0 +1,5 @@
+Project:
+  Name: Skybound
+  StartScene: Scenes/MainMenu.hazel
+  AssetDirectory: Assets
+  ScriptModulePath: Scripts/Binaries/Skybound.dll

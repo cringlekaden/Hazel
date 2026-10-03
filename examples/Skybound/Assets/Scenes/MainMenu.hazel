@@ -1,0 +1,458 @@
+Scene: MainMenu
+Entities:
+- Entity: 1
+  TagComponent:
+    Tag: Camera
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  ScriptComponent:
+    ClassName: Skybound.FitCamera
+    ScriptFields:
+    - Name: MinimumHeight
+      Type: Float
+      Data: 12
+    - Name: MinimumWidth
+      Type: Float
+      Data: 16
+  CameraComponent:
+    Camera:
+      ProjectionType: 1
+      PerspectiveFOV: 0.785398
+      PerspectiveNear: 0.01
+      PerspectiveFar: 1000
+      OrthographicSize: 12
+      OrthographicNear: -10
+      OrthographicFar: 10
+    Primary: true
+    FixedAspectRatio: false
+- Entity: 2
+  TagComponent:
+    Tag: Dusk
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - -3
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 80
+    - 60
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Sky.png
+- Entity: 3
+  TagComponent:
+    Tag: Cloud0
+  TransformComponent:
+    Translation:
+    - -7
+    - 2.6
+    - -2
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 4
+    - 2
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Cloud.png
+  ScriptComponent:
+    ClassName: Skybound.CloudDrift
+    ScriptFields:
+    - Name: Speed
+      Type: Float
+      Data: 0.12
+- Entity: 4
+  TagComponent:
+    Tag: Cloud1
+  TransformComponent:
+    Translation:
+    - 2
+    - 3.5
+    - -2
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 4
+    - 2
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Cloud.png
+  ScriptComponent:
+    ClassName: Skybound.CloudDrift
+    ScriptFields:
+    - Name: Speed
+      Type: Float
+      Data: 0.16999999999999998
+- Entity: 5
+  TagComponent:
+    Tag: Cloud2
+  TransformComponent:
+    Translation:
+    - 9
+    - 0.8
+    - -2
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 4
+    - 2
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Cloud.png
+  ScriptComponent:
+    ClassName: Skybound.CloudDrift
+    ScriptFields:
+    - Name: Speed
+      Type: Float
+      Data: 0.22
+- Entity: 6
+  TagComponent:
+    Tag: Mountain horizon
+  TransformComponent:
+    Translation:
+    - 0
+    - -3
+    - -1.8
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 35
+    - 8
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Mountains.png
+- Entity: 7
+  TagComponent:
+    Tag: Ground
+  TransformComponent:
+    Translation:
+    - 0
+    - -4.6
+    - 0.15
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 60
+    - 1.2
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Ground.png
+- Entity: 8
+  TagComponent:
+    Tag: Below ground
+  TransformComponent:
+    Translation:
+    - 0
+    - -20
+    - -1.7
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 60
+    - 30
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.282
+    - 0.337
+    - 0.478
+    - 1
+    TilingFactor: 1
+- Entity: 9
+  TagComponent:
+    Tag: Title ribbon
+  TransformComponent:
+    Translation:
+    - 0
+    - 3.35
+    - -0.1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 12
+    - 2.8
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.17
+    - 0.21
+    - 0.36
+    - 0.96
+    TilingFactor: 1
+- Entity: 10
+  TagComponent:
+    Tag: Subtitle ribbon
+  TransformComponent:
+    Translation:
+    - 0
+    - -0.15
+    - -0.1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 8
+    - 0.8
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.17
+    - 0.21
+    - 0.36
+    - 0.96
+    TilingFactor: 1
+- Entity: 11
+  TagComponent:
+    Tag: Eyebrow
+  TransformComponent:
+    Translation:
+    - -2.106021505376344
+    - 4.1
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.42
+    - 0.42
+    - 1
+  TextComponent:
+    TextString: A LITTLE WIND. A LONG WAY.
+    Color: &id001
+    - 0.99
+    - 0.95
+    - 0.82
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 12
+  TagComponent:
+    Tag: Title
+  TransformComponent:
+    Translation:
+    - -2.3608602150537634
+    - 2.65
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1.2
+    - 1.2
+    - 1
+  TextComponent:
+    TextString: SKYBOUND
+    Color: *id001
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 13
+  TagComponent:
+    Tag: Wind sprite
+  TransformComponent:
+    Translation:
+    - 0
+    - 1.1
+    - 0.2
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1.8
+    - 1.8
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Wisp.png
+- Entity: 14
+  TagComponent:
+    Tag: Subtitle
+  TransformComponent:
+    Translation:
+    - -2.278942652329749
+    - -0.25
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.5
+    - 0.5
+    - 1
+  TextComponent:
+    TextString: Thread the lantern towers.
+    Color: *id001
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 15
+  TagComponent:
+    Tag: Play
+  TransformComponent:
+    Translation:
+    - 0
+    - -1.6
+    - 0.7
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 4
+    - 1.2
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Button.png
+  ScriptComponent:
+    ClassName: Skybound.SceneButton
+    ScriptFields:
+    - Name: Destination
+      Type: Int
+      Data: 0
+    - Name: HalfSize
+      Type: Vector2
+      Data:
+      - 2
+      - 0.6
+- Entity: 16
+  TagComponent:
+    Tag: PlayLabel
+  TransformComponent:
+    Translation:
+    - -1.2008333333333334
+    - -1.77
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.55
+    - 0.55
+    - 1
+  TextComponent:
+    TextString: TAKE FLIGHT
+    Color: *id001
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 17
+  TagComponent:
+    Tag: Controls
+  TransformComponent:
+    Translation:
+    - -1.7790286738351255
+    - -3.2
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.43
+    - 0.43
+    - 1
+  TextComponent:
+    TextString: Space or left click to flap
+    Color: *id001
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 18
+  TagComponent:
+    Tag: Footnote
+  TransformComponent:
+    Translation:
+    - -1.6859605734767027
+    - -5.1
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.38
+    - 0.38
+    - 1
+  TextComponent:
+    TextString: An original Hazel example
+    Color: *id001
+    Kerning: 0
+    LineSpacing: 0
