@@ -3,6 +3,7 @@
 import argparse
 import contextlib
 import hashlib
+import importlib
 import json
 import os
 from pathlib import Path
@@ -291,9 +292,14 @@ def yaml_tools():
     if subprocess.run([sys.executable, '-m', 'pip', '--version'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
         raise RuntimeError('Package tooling needs Python pip or PyYAML '+PINS['pyyaml']+'. Install python3-pip (Ubuntu) / python-pip (Arch) explicitly, then rerun setup.')
     run([sys.executable, '-m', 'pip', 'install', '--disable-pip-version-check', '--target', target, '--upgrade', 'PyYAML==' + PINS['pyyaml']])
-    # Subsequent commands load the project-owned version in a fresh interpreter.
+    # The directory may have been missing when Python first inspected sys.path.
+    # Invalidate that negative lookup before loading the newly installed package.
     for name in list(sys.modules):
         if name == 'yaml' or name.startswith('yaml.'): del sys.modules[name]
+    importlib.invalidate_caches()
+    import yaml
+    if yaml.__version__ != PINS['pyyaml']:
+        raise RuntimeError('Project-owned PyYAML installation did not provide the pinned version')
 
 
 def main():
