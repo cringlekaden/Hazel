@@ -613,6 +613,9 @@ void AuthoringPanel::Scripts()
 		ImGui::TextWrapped("Creates Assets/Scripts/Source/<class>.cs with startup/update/cleanup and a "
 						   "prefab Instantiate/Destroy sample. Write gameplay C# in your external editor, "
 						   "then Build Scripts and select the compiled class in Properties.");
+		ImGui::TextWrapped("Instantiate returns a valid entity with physics ready. Its script starts at "
+						   "the next safe boundary; use As<T>() after startup. Destroy invalidates the "
+						   "handle immediately and runs cleanup outside callbacks.");
 		bool valid = ScriptSource::ValidIdentifier(m_ScriptName) &&
 					 ScriptSource::ValidNamespace(m_Namespace) &&
 					 !std::filesystem::exists(Project::GetAssetDirectory() / "Scripts/Source" /

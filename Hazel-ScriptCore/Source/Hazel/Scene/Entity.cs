@@ -16,7 +16,7 @@ namespace Hazel
         private readonly ulong SceneIdentity;
         public bool IsValid { get { return InternalCalls.Entity_IsValid(ID, SceneIdentity); } }
         internal ulong CheckedID { get { if (!IsValid) throw new InvalidOperationException("Entity is destroyed or its scene has retired"); return ID; } }
-        // A detached scene-owned entity is returned immediately. As<T>() becomes available after startup at the next safe boundary.
+        // A detached scene-owned entity and its physics are usable immediately. As<T>() becomes available after startup at the next safe boundary.
         // Position-only placement preserves the asset's authored rotation and scale.
         public static Entity Instantiate(Prefab prefab, Vector3 position) {
             if (prefab == null || !prefab.IsAssigned) throw new ArgumentException("Select a prefab asset in the Inspector");

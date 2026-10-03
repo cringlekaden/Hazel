@@ -143,7 +143,12 @@ public:
             }
             Check(e.m_ActiveScene == e.m_EditorScene && !e.m_ActiveScene->IsRunning(), "Editor stop did not restore editor scene");
             e.m_HoveredEntity=e.m_EditorScene->GetEntityByUUID(901);
-            e.OnSceneSimulate();
+            {
+                const auto saved=e.m_Authoring->m_SavedScene;
+                e.m_EditorScene->GetEntityByUUID(901).GetComponent<TagComponent>().Tag="Unsaved simulation edit";
+                e.OnSceneSimulate();
+                Check(e.m_Authoring->m_SavedScene==saved && saved!=SceneSerializer(e.m_EditorScene).SerializeText(),"Simulation incorrectly marked unsaved authoring as saved");
+            }
             Check(!e.m_HoveredEntity,"Simulate retained editor hover"); break;
         case 9:
             Check(e.m_ActiveScene != e.m_EditorScene && e.m_ActiveScene->GetEntityByUUID(901).GetComponent<Rigidbody2DComponent>().RuntimeBody, "Editor simulation failed");
@@ -221,7 +226,7 @@ private:
         fields["Target"].SetValue<uint64_t>(123);rejected=false;
         try{Prefab::Save(root,"Prefabs/external.hprefab",scene,source);}catch(const std::exception&){rejected=true;}
         Check(rejected && !std::filesystem::exists(root/"Prefabs/external.hprefab"),"Prefab silently bound external entity");
-        auto childScene=CreateRef<Scene>();auto child=childScene->CreateEntity("Dynamic child");child.AddComponent<ScriptComponent>().ClassName="Migration.LifecycleChild";child.AddComponent<Rigidbody2DComponent>().GravityScale=0;child.AddComponent<BoxCollider2DComponent>();
+        auto childScene=CreateRef<Scene>();auto child=childScene->CreateEntity("Dynamic child");child.AddComponent<ScriptComponent>().ClassName="Migration.LifecycleChild";auto& childBody=child.AddComponent<Rigidbody2DComponent>();childBody.GravityScale=0;childBody.Type=Rigidbody2DComponent::BodyType::Dynamic;child.AddComponent<BoxCollider2DComponent>();
         Prefab::Save(root,"Prefabs/child.hprefab",childScene,child);
         auto runtimeScene=CreateRef<Scene>();auto spawner=runtimeScene->CreateEntity("Spawner");spawner.AddComponent<ScriptComponent>().ClassName="Migration.LifecycleSpawner";
         auto& childField=ScriptEngine::GetScriptFieldMap(spawner)["Child"];childField.Field={ScriptFieldType::Prefab,"Child",nullptr};childField.AssetReference="Prefabs/child.hprefab";
@@ -231,7 +236,7 @@ private:
         childField.AssetReference="Prefabs/child.hprefab";
         RuntimeSession runtime;runtime.Start(Project::GetActive(),runtimeScene);runtime.Update(.01f);
         auto current=runtime.GetScene();auto dynamic=current->FindEntityByName("Dynamic child");Check(bool(dynamic),"Managed instantiation failed");
-        auto dynamicID=dynamic.GetUUID();auto instance=ScriptEngine::GetEntityScriptInstance(dynamicID);Check(instance&&instance->GetFieldValue<int>("Creates")==1&&instance->GetFieldValue<int>("Updates")==0&&instance->GetFieldValue<float>("InitialX")==7&&instance->GetFieldValue<bool>("BodyReady"),"Dynamic startup/transform/physics/first update contract failed");
+        auto dynamicID=dynamic.GetUUID();auto instance=ScriptEngine::GetEntityScriptInstance(dynamicID);Check(instance&&instance->GetFieldValue<int>("Creates")==1&&instance->GetFieldValue<int>("Updates")==0&&instance->GetFieldValue<float>("InitialX")==7&&instance->GetFieldValue<float>("InitialVelocityX")==1&&instance->GetFieldValue<bool>("BodyReady"),"Dynamic startup/transform/immediate physics/first update contract failed");
         runtime.Update(.01f);auto parent=ScriptEngine::GetEntityScriptInstance(spawner.GetUUID());
         Check(parent->GetFieldValue<bool>("InvalidatedImmediately")&&!current->GetEntityByUUID(dynamicID)&&!instance->GetManagedObject(),"Repeated managed destruction did not invalidate/cleanup");
         runtime.Update(.01f);Check(!current->GetEntityByUUID(spawner.GetUUID())&&!parent->GetManagedObject(),"Self destruction retained managed handle");runtime.Stop();

@@ -174,7 +174,8 @@ namespace Hazel {
             instance.GetComponent<TransformComponent>()=transform;
             for(auto& [name,field]:fields) if(field.Field.Type==ScriptFieldType::Entity && field.GetValue<uint64_t>()) field.SetValue<uint64_t>(instance.GetUUID());
             ScriptEngine::GetScriptFieldMap(instance)=std::move(fields);
-                        return instance;
+            if(m_IsRunning) SynchronizePhysics2D(); // Initial transform/fields are complete; body is usable by the caller.
+            return instance;
         } catch(...) { DestroyEntityNow(instance); throw; }
     }
     void Scene::DestroyEntityNow(Entity entity)

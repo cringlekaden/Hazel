@@ -8,6 +8,7 @@ namespace Hazel
 class EditorLayer;
 class AuthoringPanel
 {
+    friend class EditorWorkflowSmoke;
   public:
 	explicit AuthoringPanel(EditorLayer &editor);
 	void Menus();

@@ -700,7 +700,6 @@ namespace Hazel {
 		ClearSceneObservers();
 		m_ActiveScene = scene; m_SceneState = SceneState::Simulate;
 		m_SceneHierarchyPanel.SetContext(scene); m_ActionError.clear();
-            if(m_Authoring)m_Authoring->MarkSceneSaved();
 	}
 
 	void EditorLayer::OnSceneStop()

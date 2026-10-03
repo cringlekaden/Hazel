@@ -149,6 +149,11 @@ namespace Hazel {
                 body->SetTransform(b2Vec2(translation->x, translation->y), transform.Rotation.z);
 	}
 
+    static b2Body* CheckedBody(Entity entity) {
+        auto* body=static_cast<b2Body*>(entity.GetComponent<Rigidbody2DComponent>().RuntimeBody);
+        if(!body) mono_raise_exception(mono_get_exception_invalid_operation("Rigidbody physics is unavailable; operate on a started runtime entity"));
+        return body;
+    }
 	static void Rigidbody2DComponent_ApplyLinearImpulse(UUID entityID, glm::vec2* impulse, glm::vec2* point, bool wake)
 	{
 		Scene* scene = ScriptEngine::GetSceneContext();
@@ -156,8 +161,7 @@ namespace Hazel {
 		Entity entity = scene->GetEntityByUUID(entityID);
 		HZ_CORE_ASSERT(entity);
 
-		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
-		b2Body* body = (b2Body*)rb2d.RuntimeBody;
+		b2Body* body = CheckedBody(entity);
 		body->ApplyLinearImpulse(b2Vec2(impulse->x, impulse->y), b2Vec2(point->x, point->y), wake);
 	}
 
@@ -168,8 +172,7 @@ namespace Hazel {
 		Entity entity = scene->GetEntityByUUID(entityID);
 		HZ_CORE_ASSERT(entity);
 
-		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
-		b2Body* body = (b2Body*)rb2d.RuntimeBody;
+		b2Body* body = CheckedBody(entity);
 		body->ApplyLinearImpulseToCenter(b2Vec2(impulse->x, impulse->y), wake);
 	}
 
@@ -180,8 +183,7 @@ namespace Hazel {
 		Entity entity = scene->GetEntityByUUID(entityID);
 		HZ_CORE_ASSERT(entity);
 
-		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
-		b2Body* body = (b2Body*)rb2d.RuntimeBody;
+		b2Body* body = CheckedBody(entity);
 		const b2Vec2& linearVelocity = body->GetLinearVelocity();
 		*outLinearVelocity = glm::vec2(linearVelocity.x, linearVelocity.y);
 	}
@@ -192,8 +194,7 @@ namespace Hazel {
         }
         auto entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
         HZ_CORE_ASSERT(entity);
-        auto* body = static_cast<b2Body*>(entity.GetComponent<Rigidbody2DComponent>().RuntimeBody);
-        HZ_CORE_ASSERT(body);
+        auto* body = CheckedBody(entity);
         body->SetLinearVelocity(b2Vec2(velocity->x, velocity->y));
     }
     static float CameraComponent_GetOrthographicSize(UUID entityID) {
@@ -220,8 +221,7 @@ namespace Hazel {
 		Entity entity = scene->GetEntityByUUID(entityID);
 		HZ_CORE_ASSERT(entity);
 
-		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
-		b2Body* body = (b2Body*)rb2d.RuntimeBody;
+		b2Body* body = CheckedBody(entity);
 		return Utils::Rigidbody2DTypeFromBox2DBody(body->GetType());
 	}
 
@@ -233,7 +233,10 @@ namespace Hazel {
 		HZ_CORE_ASSERT(entity);
 
 		auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
-		b2Body* body = (b2Body*)rb2d.RuntimeBody;
+		b2Body* body = CheckedBody(entity);
+        if(bodyType!=Rigidbody2DComponent::BodyType::Static && bodyType!=Rigidbody2DComponent::BodyType::Dynamic && bodyType!=Rigidbody2DComponent::BodyType::Kinematic)
+            mono_raise_exception(mono_get_exception_argument("bodyType","Select a valid Rigidbody2D BodyType"));
+        rb2d.Type=bodyType;
 		body->SetType(Utils::Rigidbody2DTypeToBox2DBody(bodyType));
 	}
 

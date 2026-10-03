@@ -106,9 +106,9 @@ namespace Migration {
 namespace Migration {
     public class LifecycleChild : Hazel.Entity {
         public int Creates, Updates;
-        public float InitialX;
+        public float InitialX, InitialVelocityX;
         public bool BodyReady;
-        void OnCreate() { Creates++;InitialX=Translation.X;BodyReady=GetComponent<Hazel.Rigidbody2DComponent>()!=null; }
+        void OnCreate() { Creates++;InitialX=Translation.X;var body=GetComponent<Hazel.Rigidbody2DComponent>();InitialVelocityX=body.LinearVelocity.X;BodyReady=true; }
         void OnUpdate(float dt) { Updates++; }
         void OnDestroy() { System.Console.WriteLine("LIFECYCLE: child destroyed"); }
     }
@@ -119,7 +119,10 @@ namespace Migration {
         private Hazel.Entity spawned;
         void OnUpdate(float dt) {
             Updates++;
-            if(Updates==1) spawned=Hazel.Entity.Instantiate(Child,new Hazel.Vector3(7,3,0));
+            if(Updates==1) {
+                spawned=Hazel.Entity.Instantiate(Child,new Hazel.Vector3(7,3,0));
+                spawned.GetComponent<Hazel.Rigidbody2DComponent>().LinearVelocity=new Hazel.Vector2(1,0);
+            }
             if(Updates==2) { spawned.Destroy();spawned.Destroy();InvalidatedImmediately=!spawned.IsValid; }
             if(Updates==3) { Destroy();Destroy(); }
         }

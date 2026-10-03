@@ -153,12 +153,17 @@ def exercise(desktop,executable,project,app,game,working,env,logs,shots,packaged
             if packaged and hz.SYSTEM=='linux' and str(hz.ROOT) in (Path('/proc')/str(process.pid)/'maps').read_text():raise RuntimeError('Game package loaded checkout libraries')
             game_window=GameWindow(desktop,window,app=='Hazelnut')
             if app=='Hazelnut':
-                def toolbar_ready():
+                last_click=0
+                def enter_play():
+                    nonlocal last_click
                     width,height,pixels=desktop.capture(window)
                     color=pixels[(39*width+657)*3:(39*width+657)*3+3]
-                    return len(color)==3 and min(color)>220
-                wait_for(process,toolbar_ready,'Editor Play toolbar was not rendered',20)
-                desktop.click(window,657,40)
+                    stop=pixels[(32*width+660)*3:(32*width+660)*3+3]
+                    if len(stop)==3 and min(stop)>220:return True
+                    if len(color)==3 and min(color)>220 and time.monotonic()-last_click>2:
+                        last_click=time.monotonic();desktop.click(window,657,40)
+                    return False
+                wait_for(process,enter_play,'Editor Play did not reach its rendered Stop state',20)
             def menu_ready():return wait_for(process,lambda:game_window.control_ready(-1.35 if game=='MeadowRun' else -1.6,game),'Title controls were not displayed',15)
             def level_ready():
                 game_window.expected=(-6,-3)
@@ -229,8 +234,8 @@ def exercise(desktop,executable,project,app,game,working,env,logs,shots,packaged
 def game_tests(configuration,profile,packages,output):
     logs=hz.ROOT/'build/testing/games'/f'{configuration}-{profile}'
     logs.mkdir(parents=True,exist_ok=True);shots=logs/'screenshots';shots.mkdir(exist_ok=True)
+    hz.yaml_tools() # Route analysis also needs YAML for extracted projects, before SDK directories are parked.
     if not packages:
-        hz.yaml_tools()
         for game in GAMES:hz.script_build(hz.ROOT/'examples'/game/(game+'.hproj'),configuration)
     model_tests(configuration)
     driver=software_driver() if hz.SYSTEM=='windows' and profile!='native' else None
