@@ -766,7 +766,7 @@ void AuthoringPanel::CreatePrefab(Entity entity)
 	m_PrefabName = "Prefabs/" + entity.GetName() + ".hprefab";
 	m_CreatePrefab = true;
 }
-void AuthoringPanel::InstantiatePrefab(const std::filesystem::path &path)
+void AuthoringPanel::InstantiatePrefab(const std::filesystem::path &path, bool useInspectorTransform)
 {
 	if (m_Editor.m_SceneState != EditorLayer::SceneState::Edit)
 	{
@@ -776,8 +776,9 @@ void AuthoringPanel::InstantiatePrefab(const std::filesystem::path &path)
 	try
 	{
 		auto relative = Project::MakeAssetReference(Project::GetAssetDirectory(), path);
-		auto entity = Prefab::Instantiate(Project::GetAssetDirectory(), relative, *m_Editor.m_EditorScene,
-										  m_InitialTransform);
+		auto entity = useInspectorTransform
+			? Prefab::Instantiate(Project::GetAssetDirectory(), relative, *m_Editor.m_EditorScene, m_InitialTransform)
+			: Prefab::Instantiate(Project::GetAssetDirectory(), relative, *m_Editor.m_EditorScene);
 		m_Editor.m_SceneHierarchyPanel.SetSelectedEntity(entity);
 	}
 	catch (const std::exception &error)
@@ -881,13 +882,14 @@ void AuthoringPanel::Prefabs()
 	}
 	m_PrefabInspector.DrawAssetProperties(Prefab::GetEntity(m_PrefabScene));
 	ImGui::Separator();
+	ImGui::TextWrapped("Viewport drops use the asset's authored transform. Set placement below for Instantiate and Select.");
 	ImGui::TextUnformatted("Initial instance transform");
 	ImGui::DragFloat3("Position", glm::value_ptr(m_InitialTransform.Translation), .1f);
 	ImGui::DragFloat3("Rotation (radians)", glm::value_ptr(m_InitialTransform.Rotation), .05f);
 	ImGui::DragFloat3("Scale", glm::value_ptr(m_InitialTransform.Scale), .1f, .001f, 1000);
 	ImGui::BeginDisabled(dirty || m_Editor.m_SceneState != EditorLayer::SceneState::Edit);
 	if (ImGui::Button("Instantiate and Select"))
-		InstantiatePrefab(Project::GetAssetDirectory() / Path(m_PrefabReference));
+		InstantiatePrefab(Project::GetAssetDirectory() / Path(m_PrefabReference), true);
 	ImGui::EndDisabled();
 	if (dirty)
 		ImGui::TextWrapped("Save the prefab before instantiating its edits.");

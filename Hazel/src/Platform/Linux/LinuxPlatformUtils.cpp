@@ -14,9 +14,12 @@ static std::string FileDialog(const char* filter, GtkFileChooserAction action)
         HZ_CORE_ERROR("Unable to initialize native Linux file chooser");
         return {};
     }
+    const char* title = action == GTK_FILE_CHOOSER_ACTION_OPEN ? "Open file" :
+        action == GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER ? "Select folder" : "Save file";
+    const char* accept = action == GTK_FILE_CHOOSER_ACTION_OPEN ? "Open" :
+        action == GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER ? "Select folder" : "Save";
     GtkWidget* dialog = gtk_file_chooser_dialog_new(
-        action == GTK_FILE_CHOOSER_ACTION_OPEN ? "Open file" : "Select location", nullptr, action,
-        "Cancel", GTK_RESPONSE_CANCEL, action == GTK_FILE_CHOOSER_ACTION_OPEN ? "Open" : "Save", GTK_RESPONSE_ACCEPT, nullptr);
+        title, nullptr, action, "Cancel", GTK_RESPONSE_CANCEL, accept, GTK_RESPONSE_ACCEPT, nullptr);
     auto* chooser = GTK_FILE_CHOOSER(dialog);
     gtk_file_chooser_set_do_overwrite_confirmation(chooser, TRUE);
     // Public filter convention: description\0pattern;pattern\0...\0, also used by Win32.

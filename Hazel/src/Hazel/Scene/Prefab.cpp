@@ -122,6 +122,13 @@ void Prefab::Save(const std::filesystem::path &root, const std::filesystem::path
 	FileSystem::WriteFileAtomically(path, [&](std::ostream &out) { out << text; });
 }
 Entity Prefab::Instantiate(const std::filesystem::path &root, const std::filesystem::path &reference,
+						   Scene &target)
+{
+	auto staged = Load(root, reference);
+	auto source = GetEntity(staged);
+	return target.InstantiateEntity(source, source.GetComponent<TransformComponent>());
+}
+Entity Prefab::Instantiate(const std::filesystem::path &root, const std::filesystem::path &reference,
 						   Scene &target, const TransformComponent &transform, bool replaceRotationAndScale)
 {
 	auto staged = Load(root, reference); // Complete validation/resource loading before destination mutation.

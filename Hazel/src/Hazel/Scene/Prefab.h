@@ -12,6 +12,8 @@ class Prefab
 	static void Save(const std::filesystem::path &assetRoot, const std::filesystem::path &reference,
 					 const Ref<Scene> &scene, Entity entity);
 	static Entity Instantiate(const std::filesystem::path &assetRoot, const std::filesystem::path &reference,
+							  Scene &target);
+	static Entity Instantiate(const std::filesystem::path &assetRoot, const std::filesystem::path &reference,
 							  Scene &target, const TransformComponent &transform,
 							  bool replaceRotationAndScale = true);
 	static std::filesystem::path Resolve(const std::filesystem::path &root,

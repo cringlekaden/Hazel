@@ -201,6 +201,7 @@ public:
 private:
     void AuthoringChecks() {
         auto root=Project::GetAssetDirectory(); auto scene=CreateRef<Scene>();auto source=scene->CreateEntity("Prefab authored");
+        source.GetComponent<TransformComponent>().Translation={6,4,.2f};
         source.GetComponent<TransformComponent>().Scale={.4f,.5f,1.0f};
         source.AddComponent<ScriptComponent>().ClassName="Migration.SceneProbe";
         source.AddComponent<Rigidbody2DComponent>().Type=Rigidbody2DComponent::BodyType::Dynamic;
@@ -219,6 +220,10 @@ private:
         Check(!first.GetComponent<Rigidbody2DComponent>().RuntimeBody && !first.GetComponent<BoxCollider2DComponent>().RuntimeFixture,"Prefab borrowed physics");
         auto preservedScale=Prefab::Instantiate(root,std::filesystem::u8path(u8"Prefabs/é independent.hprefab"),*target,initial,false);
         Check(preservedScale.GetComponent<TransformComponent>().Scale==source.GetComponent<TransformComponent>().Scale,"Position-only prefab placement lost authored scale");
+        m_Editor.m_Authoring->m_InitialTransform=initial;
+        m_Editor.m_Authoring->InstantiatePrefab(root/std::filesystem::u8path(u8"Prefabs/é independent.hprefab"));
+        auto dropped=m_Editor.m_SceneHierarchyPanel.GetSelectedEntity();
+        Check(dropped && dropped.GetComponent<TransformComponent>().Translation==source.GetComponent<TransformComponent>().Translation && dropped.GetComponent<TransformComponent>().Scale==source.GetComponent<TransformComponent>().Scale,"Viewport prefab drop reused another asset's inspector placement");
         const auto before=target->GetAllEntitiesWith<IDComponent>().size();
         FileSystem::WriteFileAtomically(root/"Prefabs/broken.hprefab",[](auto& out){out<<"PrefabVersion: 99\nEntities: []\n";});
         bool rejected=false;try{Prefab::Instantiate(root,"Prefabs/broken.hprefab",*target,initial);}catch(const std::exception&){rejected=true;}
@@ -252,6 +257,10 @@ private:
         Check(ScriptSource::Find(root,"Game.Play.AuthoringProbe")==created,"Script source resolution ignored its namespace");
         rejected=false;try{ScriptSource::Create(root,"AuthoringProbe","Game.Play");}catch(const std::exception&){rejected=true;}Check(rejected,"Script creation overwrote source");
         auto invalid=Toolchain::DiscoverPython(m_Directory/"missing-python");Check(!invalid && invalid.Source.find("Configured")!=std::string::npos,"Invalid configured Python silently fell back");
+        std::filesystem::create_directories(m_Directory/"scripts");
+        FileSystem::WriteFileAtomically(m_Directory/"scripts/hazel.py",[](auto& out){out<<"# cwd is not a configured SDK\n";});
+        auto missingTools=ProjectTools::Execute({m_Directory/"missing-python",{},{},{"authoring-preflight"},"Missing tools"});
+        Check(!missingTools.Success && missingTools.Output.find("SDK also unavailable")!=std::string::npos,"Missing Python concealed missing SDK or inferred SDK from cwd");
         const auto executable=FileSystem::GetExecutablePath();
         for(const auto& name:{"unsupported-python","malformed-python","failed-python","hang-python"}) {
             auto probe=m_Directory/(std::string(name)+executable.extension().u8string());

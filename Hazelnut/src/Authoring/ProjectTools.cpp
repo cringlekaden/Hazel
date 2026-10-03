@@ -54,7 +54,7 @@ ToolReport ProjectTools::Execute(const ToolRequest &request,
 		if (!report.Python)
 		{
 			report.Output += report.Python.Error;
-			if (!std::filesystem::is_regular_file(request.SDK / "scripts/hazel.py"))
+			if (!request.SDK.is_absolute() || !std::filesystem::is_regular_file(request.SDK / "scripts/hazel.py"))
 				report.Output +=
 					"\nSDK also unavailable. Configure its location separately in Editor Preferences.";
 			return report;

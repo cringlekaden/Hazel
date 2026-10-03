@@ -25,7 +25,7 @@ class AuthoringPanel
 	void RememberProject();
 	void SelectAsset(const std::filesystem::path &path);
 	void CreatePrefab(Entity entity);
-	void InstantiatePrefab(const std::filesystem::path &path);
+	void InstantiatePrefab(const std::filesystem::path &path, bool useInspectorTransform = false);
 	void OpenScript(const std::filesystem::path &path);
 	void Guard(std::function<void()> operation, bool includeScene = true);
 	void MarkSceneSaved();
