@@ -13,6 +13,8 @@ class DisplayMode(C.Structure):
               ('position',C.c_int32*2),('orientation',C.c_uint32),('fixedOutput',C.c_uint32),
               ('color',C.c_int16),('duplex',C.c_int16),('yResolution',C.c_int16),('ttOption',C.c_int16),('collate',C.c_int16),('form',C.c_wchar*32),('logPixels',C.c_uint16),
               ('bits',C.c_uint32),('width',C.c_uint32),('height',C.c_uint32),('flags',C.c_uint32),('frequency',C.c_uint32),('icmMethod',C.c_uint32),('icmIntent',C.c_uint32),('media',C.c_uint32),('dither',C.c_uint32),('reserved1',C.c_uint32),('reserved2',C.c_uint32),('panningWidth',C.c_uint32),('panningHeight',C.c_uint32)]
+class XError(C.Structure):
+    _fields_=[('type',C.c_int),('display',C.c_void_p),('resource',C.c_ulong),('serial',C.c_ulong),('code',C.c_ubyte),('request',C.c_ubyte),('minor',C.c_ubyte)]
 class Data(C.Union):
     _fields_=[('b',C.c_char*20),('s',C.c_short*10),('l',C.c_long*5)]
 class Message(C.Structure):
@@ -44,6 +46,19 @@ class Desktop:
         self.display=self.x.XOpenDisplay(None)
         if not self.display:raise RuntimeError('X11 display required for desktop acceptance')
         self.root=self.x.XDefaultRootWindow(self.display)
+        self.xerror=None
+        self.error_callback=C.CFUNCTYPE(C.c_int,C.c_void_p,C.POINTER(XError))
+        @self.error_callback
+        def handler(display,event):
+            error=event.contents
+            # Another process can destroy a window between tree enumeration and
+            # property queries. These observations have no retained lifetime.
+            if error.code not in (3,9):self.xerror=(error.code,error.request,error.minor)
+            return 0
+        self.error_handler=handler
+        self.x.XSetErrorHandler.argtypes=[C.c_void_p];self.x.XSetErrorHandler.restype=C.c_void_p
+        self.previous_error_handler=self.x.XSetErrorHandler(C.cast(handler,C.c_void_p))
+        self.x.XSync.argtypes=[C.c_void_p,C.c_int];self.x.XSync.restype=C.c_int
     def atom(self,name):return self.x.XInternAtom(self.display,name.encode(),0)
     def prepare_display(self):
         if C.sizeof(DisplayMode)!=220:raise RuntimeError('Unexpected DEVMODEW ABI')
@@ -93,7 +108,9 @@ class Desktop:
                     if found:return found
             finally:
                 if children:self.x.XFree(children)
-        return inspect(self.root)
+        found=inspect(self.root);self.x.XSync(self.display,0)
+        if self.xerror:raise RuntimeError('X11 desktop query failed: '+str(self.xerror))
+        return found
     def geometry(self,window):
         if os.name=='nt':
             rect=Rect();point=Point();self.user.GetClientRect(window,C.byref(rect));self.user.ClientToScreen(window,C.byref(point));return point.x,point.y,rect.right,rect.bottom
@@ -139,7 +156,8 @@ class Desktop:
         else:
             event=Event();message=event.message;message.type=33;message.send=1;message.display=self.display;message.window=window;message.message=self.atom('WM_PROTOCOLS');message.format=32;message.data.l[0]=self.atom('WM_DELETE_WINDOW');self.x.XSendEvent(self.display,window,0,0,C.byref(event));self.x.XFlush(self.display)
     def shutdown(self):
-        if os.name!='nt':self.x.XCloseDisplay(self.display)
+        if os.name!='nt':
+            self.x.XCloseDisplay(self.display);self.x.XSetErrorHandler(self.previous_error_handler)
         elif self.originalMode is not None:
             result=self.user.ChangeDisplaySettingsW(C.byref(self.originalMode),0)
             if result:raise RuntimeError('Cannot restore original test desktop mode: '+str(result))

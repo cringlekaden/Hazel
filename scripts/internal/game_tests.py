@@ -44,7 +44,7 @@ class GameWindow:
     def world_click(self,x,y):
         left,top,width,height=self.area();size=max(12,16*height/width)
         self.desktop.click(self.window,left+width/2+x*height/size,top+height/2-y*height/size)
-    def explorer(self):
+    def explorer(self,strict=True):
         width,height,pixels=self.desktop.capture(self.window)
         left,top,vw,vh=self.area();hits=[];size=max(12,16*vh/vw)
         ex,ey=self.expected;cx=left+vw/2+ex*vh/size;cy=top+vh/2-ey*vh/size;radius=.8*vh/size
@@ -53,10 +53,20 @@ class GameWindow:
                 offset=(y*width+x)*3;r,g,b=pixels[offset:offset+3]
                 # Linear sampling changes small sprites' edge colors in the editor.
                 if b>=81 and abs(r-224)+abs(g-152)+abs(b-91)<=24:hits.append((x,y))
-        if len(hits)<3:raise RuntimeError('Rendered explorer coat not found near '+str(self.expected))
+        if len(hits)<3:
+            if not strict:return None
+            raise RuntimeError('Rendered explorer coat not found near '+str(self.expected))
         x=sum(p[0] for p in hits)/len(hits);y=sum(p[1] for p in hits)/len(hits)
         self.expected=((x-left-vw/2)*size/vh,-(y-top-vh/2)*size/vh)
         return self.expected
+    def wisp_ready(self):
+        width,height,pixels=self.desktop.capture(self.window);left,top,vw,vh=self.area();size=max(12,16*vh/vw)
+        cx=left+vw/2-3*vh/size;cy=top+vh/2;radius=.6*vh/size
+        for y in range(max(top,int(cy-radius)),min(top+vh,int(cy+radius)+1)):
+            for x in range(max(left,int(cx-radius)),min(left+vw,int(cx+radius)+1)):
+                offset=(y*width+x)*3;r,g,b=pixels[offset:offset+3]
+                if abs(r-141)<20 and abs(g-216)<20 and abs(b-208)<20:return True
+        return False
     def move(self,x,y,until=lambda:False):
         # Feedback from the actual framebuffer, no production testing hooks.
         self.desktop.activate(self.window)
@@ -92,6 +102,7 @@ def exercise(desktop,executable,project,app,game,working,env,logs,shots,packaged
             desktop.capture(window,shots/f'{game}-{app}-title.png')
             scene='Meadow' if game=='MeadowRun' else 'Flight';transition='Runtime scene: Scenes/'+scene+'.hazel'
             game_window.world_click(0,-1.35 if game=='MeadowRun' else -1.6);expect(transition)
+            wait_for(process,lambda:game_window.explorer(False) if game=='MeadowRun' else game_window.wisp_ready(),'Game transition did not reach the displayed framebuffer',15)
             desktop.capture(window,shots/f'{game}-{app}-play.png')
             if game=='MeadowRun':
                 # Real controls finish the authored level, then restart and return.
@@ -115,6 +126,7 @@ def exercise(desktop,executable,project,app,game,working,env,logs,shots,packaged
                     desktop.set_key(window,32,True);time.sleep(.05);desktop.set_key(window,32,False)
                 expect('Skybound: score 1')
                 desktop.capture(window,shots/f'{game}-{app}-flying.png')
+                if app=='Nutella':desktop.resize(window,900,640)
                 expect('Skybound: game over')
                 desktop.capture(window,shots/f'{game}-{app}-over.png')
                 game_window.world_click(0,-1);expect(transition,2)
