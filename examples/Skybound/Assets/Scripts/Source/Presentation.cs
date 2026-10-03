@@ -6,15 +6,19 @@ namespace Skybound {
         public float MinimumWidth = 16;
         private CameraComponent camera;
         void OnCreate() { camera=GetComponent<CameraComponent>();Fit(); }
-        void Fit() {
+        public static float Floor(CameraComponent view) { return -view.OrthographicSize/2+.9f; }
+        public static float Ceiling(CameraComponent view) { return view.OrthographicSize/2-1.8f; }
+        public void Fit() {
             camera.OrthographicSize=Math.Max(Math.Max(1,MinimumHeight),Math.Max(1,MinimumWidth)/camera.AspectRatio);
-            // Fixed playable floor at -4; trim pipes at that boundary and fill down to the actual viewport bottom.
-            var ground=FindEntityByName("Ground");var fill=FindEntityByName("GroundFill");
-            if(ground!=null && fill!=null) {
+            // Ground's bottom edge is the camera bottom; gameplay uses its top as the collision floor.
+            var ground=FindEntityByName("Ground");
+            if(ground!=null) {
                 float width=camera.OrthographicSize*camera.AspectRatio+2;
-                ground.Scale=new Vector3(width,.9f,1);ground.Translation=new Vector3(0,-4.45f,.2f);
-                float bottom=-camera.OrthographicSize/2-1;float height=Math.Max(.1f,-4.9f-bottom);
-                fill.Scale=new Vector3(width,height,1);fill.Translation=new Vector3(0,-4.9f-height/2,.15f);
+                ground.Scale=new Vector3(width,.9f,1);ground.Translation=new Vector3(0,Floor(camera)-.45f,.2f);
+            }
+            foreach(var name in new[]{"HUD ribbon","Score","HUD controls"}) {
+                var item=FindEntityByName(name);
+                if(item!=null) { var p=item.Translation;p.Y=camera.OrthographicSize/2-(name=="Score"?1.2f:name=="HUD controls"?1.15f:1);item.Translation=p; }
             }
         }
         void OnUpdate(float dt) { Fit(); }

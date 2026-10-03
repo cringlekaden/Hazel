@@ -58,11 +58,17 @@ class GameWindow:
         width,height,pixels=self.desktop.capture(self.window)
         left,top,vw,vh=self.area();hits=[];size=max(12,16*vh/vw)
         ex,ey=self.expected;cx=left+vw/2+ex*vh/size;cy=top+vh/2-ey*vh/size;radius=.8*vh/size
-        for y in range(max(top,int(cy-radius)),min(top+vh,int(cy+radius)+1)):
-            for x in range(max(left,int(cx-radius)),min(left+vw,int(cx+radius)+1)):
-                offset=(y*width+x)*3;r,g,b=pixels[offset:offset+3]
-                # Linear sampling changes small sprites' edge colors in the editor.
-                if b>=81 and abs(r-224)+abs(g-152)+abs(b-91)<=24:hits.append((x,y))
+        def scan(x0,y0,x1,y1):
+            for y in range(y0,y1):
+                for x in range(x0,x1):
+                    offset=(y*width+x)*3;r,g,b=pixels[offset:offset+3]
+                    # The coat's interior color distinguishes it from orange seeds.
+                    if abs(r-224)+abs(g-152)+abs(b-91)<=12:hits.append((x,y))
+        scan(max(left,int(cx-radius)),max(top,int(cy-radius)),min(left+vw,int(cx+radius)+1),min(top+vh,int(cy+radius)+1))
+        if len(hits)<3:
+            # Slow software rendering can retain input beyond a predicted frame.
+            # Recover from actual pixels instead of assuming a fixed input latency.
+            hits.clear();scan(left,top,left+vw,top+vh)
         if len(hits)<3:
             if not strict:return None
             raise RuntimeError('Rendered explorer coat not found near '+str(self.expected))

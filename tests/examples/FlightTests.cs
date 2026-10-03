@@ -38,6 +38,11 @@ class FlightTests {
             }
             Check(longRun.Score>500&&longRun.Score<650,"Missing or duplicate obstacle scoring: "+longRun.Score);
             var restart=new Flight();Check(restart.Score==0&&restart.Phase==Flight.State.Ready,"New run inherited stale state");
+            var portrait=new Flight(positions:new float[]{100,106,112,118});portrait.SetBounds(-12.4f,11.5f);portrait.Advance(.1f,true);
+            for(int i=0;i<200;i++)portrait.Advance(1f/120,false);
+            Check(portrait.Phase==Flight.State.Flying&&portrait.Y<-4,"Portrait flight still collides with the old authored floor");
+            for(int i=0;i<250;i++)portrait.Advance(1f/120,false);
+            Check(portrait.Phase==Flight.State.Dead&&portrait.Y-Flight.BirdRadius<portrait.Floor,"Viewport floor did not match collision bounds");
             Console.WriteLine("PASS: ready/input/death isolation, fixed-step rate equivalence, fair gaps, 20-minute bounded pool and once-only scoring ("+longRun.Score+")");return 0;
         }catch(Exception error){Console.Error.WriteLine(error);return 1;}
     }

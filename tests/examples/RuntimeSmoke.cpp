@@ -120,12 +120,16 @@ int main(int argc,char** argv) {
             }
             if(!meadow) for(auto dimensions:std::vector<glm::uvec2>{{1280,720},{960,720},{600,1000},{640,480}}) {
                 framebuffer->Unbind();framebuffer->Resize(dimensions.x,dimensions.y);framebuffer->Bind();session.Resize(dimensions.x,dimensions.y);tick(session);
-                auto runtime=session.GetScene();auto ground=runtime->FindEntityByName("GroundFill").GetComponent<TransformComponent>();
+                auto runtime=session.GetScene();auto ground=runtime->FindEntityByName("Ground").GetComponent<TransformComponent>();
                 auto camera=runtime->GetPrimaryCameraEntity().GetComponent<CameraComponent>().Camera;
-                Check(ground.Translation.y-ground.Scale.y/2 < -camera.GetOrthographicSize()/2 && std::abs(ground.Translation.y+ground.Scale.y/2+4.9f)<.001f,"Ground filler does not reach viewport bottom");
-                for(auto id:runtime->GetAllEntitiesWith<TagComponent,TransformComponent>()) {Entity entity{id,runtime.get()};if(entity.GetName()=="Lower0") {
-                    auto transform=entity.GetComponent<TransformComponent>();Check(std::abs(transform.Translation.y-transform.Scale.y/2+4)<.001f,"Pipe extends below collision floor");
-                }}
+                float floor=ground.Translation.y+ground.Scale.y/2;
+                Check(std::abs(ground.Translation.y-ground.Scale.y/2+camera.GetOrthographicSize()/2)<.001f,"Ground banner is not flush with viewport bottom");
+                for(auto id:runtime->GetAllEntitiesWith<TagComponent,TransformComponent>()) {Entity entity{id,runtime.get()};
+                    auto transform=entity.GetComponent<TransformComponent>();
+                    if(entity.GetName()=="Lower0") Check(std::abs(transform.Translation.y-transform.Scale.y/2-floor)<.001f,"Pipe extends below collision floor");
+                    if(entity.GetName()=="Upper0") Check(std::abs(transform.Translation.y+transform.Scale.y/2-camera.GetOrthographicSize()/2)<.001f,"Upper pipe misses viewport top");
+                }
+                Check(std::abs(runtime->FindEntityByName("Score").GetComponent<TransformComponent>().Translation.y-(camera.GetOrthographicSize()/2-1.2f))<.001f,"HUD does not follow viewport top");
                 Capture(std::filesystem::u8path(argv[3])/("Skybound-"+std::to_string(dimensions.x)+"x"+std::to_string(dimensions.y)+".ppm"),dimensions.x,dimensions.y);
             }
             framebuffer->Unbind();framebuffer->Resize(960,720);framebuffer->Bind();

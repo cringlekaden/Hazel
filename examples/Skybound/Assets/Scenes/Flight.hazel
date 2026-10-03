@@ -505,26 +505,3 @@ Entities:
     Color: *id001
     Kerning: 0
     LineSpacing: 0
-- Entity: 800
-  TagComponent:
-    Tag: GroundFill
-  TransformComponent:
-    Translation:
-    - 0
-    - -6
-    - -0.05
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 70
-    - 3
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.18
-    - 0.28
-    - 0.25
-    - 1
-    TilingFactor: 1

@@ -17,6 +17,8 @@ namespace Skybound {
         public float Velocity { get; private set; }
         public int Score { get; private set; }
         public float GapHalf { get; private set; }
+        public float Floor { get; private set; }=-4;
+        public float Ceiling { get; private set; }=4.2f;
         private readonly float speed, gravity, flap;
         private readonly Random random=new Random(1337);
         private double accumulated;
@@ -34,6 +36,11 @@ namespace Skybound {
             lastGap=Gates[3].Gap;
         }
         static float Clamp(float x,float low,float high) { return float.IsNaN(x)||float.IsInfinity(x)?low:Math.Max(low,Math.Min(high,x)); }
+        public void SetBounds(float floor,float ceiling) {
+            if(float.IsNaN(floor)||float.IsInfinity(floor)||float.IsNaN(ceiling)||float.IsInfinity(ceiling)||floor>=ceiling)
+                throw new ArgumentException("Flight bounds must be finite, with floor below ceiling");
+            Floor=floor;Ceiling=ceiling;
+        }
         public void Advance(float seconds,bool flapPressed) {
             if(Phase==State.Dead)return;
             if(flapPressed) { Phase=State.Flying;Velocity=flap; }
@@ -44,7 +51,7 @@ namespace Skybound {
                 accumulated-=Step;
                 float dt=(float)Step;
                 Velocity=Math.Max(-8,Velocity-gravity*dt);Y+=Velocity*dt;
-                if(Y-BirdRadius<-4||Y+BirdRadius>4.2f) { Phase=State.Dead;break; }
+                if(Y-BirdRadius<Floor||Y+BirdRadius>Ceiling) { Phase=State.Dead;break; }
                 foreach(var gate in Gates) {
                     gate.X-=speed*dt;
                     if(Math.Abs(gate.X-BirdX)<GateHalfWidth+BirdRadius &&

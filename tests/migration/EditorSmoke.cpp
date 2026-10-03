@@ -176,7 +176,7 @@ public:
             break;
         case 10:
             Check(glGetError() == GL_NO_ERROR, "Editor/gizmo/panels OpenGL error");
-            e.m_Authoring->SelectAsset(Project::GetAssetDirectory()/std::filesystem::u8path("Prefabs/é independent.hprefab"));
+            e.m_Authoring->SelectAsset(Project::GetAssetDirectory()/std::filesystem::u8path(u8"Prefabs/é independent.hprefab"));
             break;
         case 11: {
             auto* inspector=ImGui::FindWindowByName("Prefab Inspector");
@@ -203,16 +203,16 @@ private:
         auto& fields=ScriptEngine::GetScriptFieldMap(source);
         fields["Speed"].Field={ScriptFieldType::Float,"Speed",nullptr};fields["Speed"].SetValue<float>(6);
         fields["Target"].Field={ScriptFieldType::Entity,"Target",nullptr};fields["Target"].SetValue<uint64_t>(source.GetUUID());
-        Prefab::Save(root,"Prefabs/é independent.hprefab",scene,source);
+        Prefab::Save(root,std::filesystem::u8path(u8"Prefabs/é independent.hprefab"),scene,source);
         auto target=CreateRef<Scene>();TransformComponent initial;initial.Translation={2,3,0};initial.Scale={2,2,1};
-        auto first=Prefab::Instantiate(root,"Prefabs/é independent.hprefab",*target,initial);
-        auto second=Prefab::Instantiate(root,"Prefabs/é independent.hprefab",*target,initial);
+        auto first=Prefab::Instantiate(root,std::filesystem::u8path(u8"Prefabs/é independent.hprefab"),*target,initial);
+        auto second=Prefab::Instantiate(root,std::filesystem::u8path(u8"Prefabs/é independent.hprefab"),*target,initial);
         Check(first.GetUUID()!=second.GetUUID() && first.GetUUID()!=source.GetUUID(),"Prefab reused identity");
         auto& a=ScriptEngine::GetScriptFieldMap(first);auto& b=ScriptEngine::GetScriptFieldMap(second);
         Check(a.at("Target").GetValue<uint64_t>()==first.GetUUID() && b.at("Target").GetValue<uint64_t>()==second.GetUUID(),"Prefab self reference not remapped");
         a.at("Speed").SetValue<float>(9);Check(b.at("Speed").GetValue<float>()==6,"Prefab fields shared ownership");
         Check(!first.GetComponent<Rigidbody2DComponent>().RuntimeBody && !first.GetComponent<BoxCollider2DComponent>().RuntimeFixture,"Prefab borrowed physics");
-        auto preservedScale=Prefab::Instantiate(root,"Prefabs/é independent.hprefab",*target,initial,false);
+        auto preservedScale=Prefab::Instantiate(root,std::filesystem::u8path(u8"Prefabs/é independent.hprefab"),*target,initial,false);
         Check(preservedScale.GetComponent<TransformComponent>().Scale==source.GetComponent<TransformComponent>().Scale,"Position-only prefab placement lost authored scale");
         const auto before=target->GetAllEntitiesWith<IDComponent>().size();
         FileSystem::WriteFileAtomically(root/"Prefabs/broken.hprefab",[](auto& out){out<<"PrefabVersion: 99\nEntities: []\n";});

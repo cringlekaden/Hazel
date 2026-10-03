@@ -46,7 +46,7 @@ A prefab cannot serialize native factories, body/fixture pointers, Mono handles 
 
 ## Example design
 
-Skybound retains its parallax cloud scripts and fixed-step fair scoring/restart model. Gameplay gate slots describe bounded simulation state; each new spawn generation destroys the former pipe pair and instantiates new UUIDs from UpperPipe/LowerPipe assets. Lower geometry terminates exactly at the -4 collision floor. Camera-derived floor fill extends continuously from the ground artwork to below the visible window bottom at any aspect ratio; no pipe geometry continues beneath it.
+Skybound retains its parallax cloud scripts and fixed-step fair scoring/restart model. Gameplay gate slots describe bounded simulation state; each new spawn generation destroys the former pipe pair and instantiates new UUIDs from UpperPipe/LowerPipe assets. Ground artwork is flush with the camera's visible bottom, its top defines the collision floor, lower pipes end at that floor and upper pipes end at the visible top. The HUD follows the camera top. Resizing applies before simulation, independently of script iteration order; no filler masks continuing pipe geometry.
 
 MeadowRun now proceeds Camp Meadow → Orchard Paths → Lantern Grove → Trail Restored. Each stage has five lantern seeds, a pond checkpoint preserving collected progress, a north-east exit, current-level restart, and title-menu navigation. Orchard rows and open grove/rock islands change traversal and objective spacing. Seeds use a typed prefab field and are destroyed on pickup. Pond and Tree assets support reuse through detached editor instantiation. No new artwork or license dependencies are introduced.
 
