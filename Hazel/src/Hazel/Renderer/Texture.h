@@ -36,6 +36,7 @@ namespace Hazel {
 		virtual uint32_t GetHeight() const = 0;
 		virtual uint32_t GetRendererID() const = 0;
 
+		// File textures report their resolved UTF-8 load location; serializers derive asset-root references.
 		virtual const std::string& GetPath() const = 0;
 
 		virtual void SetData(const void* data, uint32_t size) = 0;

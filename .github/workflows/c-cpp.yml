@@ -2,7 +2,7 @@ name: C/C++ CI
 
 on:
   push:
-    branches: [master, 'migration/**']
+    branches: [master, 'migration/**', 'fix/authoring-reliability']
   pull_request:
     branches: [master]
   workflow_dispatch:

@@ -53,10 +53,7 @@ namespace Hazel {
 			// TODO(Yan): prompt the user to select a directory
 			// NewProject();
 
-			// If no project is opened, close Hazelnut
-			// NOTE: this is while we don't have a new project path
-			if (!OpenProject())
-				Application::Get().Close();
+			OpenProject(); // Failure/cancellation leaves an empty, usable editor.
 
 		}
 
@@ -68,7 +65,7 @@ namespace Hazel {
 	{
 		HZ_PROFILE_FUNCTION();
         if (m_SceneState != SceneState::Edit) OnSceneStop();
-        m_SceneHierarchyPanel.SetContext(nullptr);
+        ClearSceneObservers();
         m_ActiveScene.reset(); m_EditorScene.reset(); m_Font.reset();
 	}
 
@@ -225,7 +222,7 @@ namespace Hazel {
 			if (ImGui::BeginMenu("Script"))
 			{
 				if (ImGui::MenuItem("Reload assembly", "Ctrl+R"))
-					ScriptEngine::ReloadAssembly();
+					ReloadScripts();
 
 				ImGui::EndMenu();
 			}
@@ -237,6 +234,7 @@ namespace Hazel {
 		if (m_ContentBrowserPanel) m_ContentBrowserPanel->OnImGuiRender();
 
 		ImGui::Begin("Stats");
+		if (!m_ActionError.empty()) ImGui::TextWrapped("%s", m_ActionError.c_str());
 
 #if 0
 		std::string name = "None";
@@ -515,7 +513,7 @@ namespace Hazel {
 			{
 				if (control)
 				{
-					ScriptEngine::ReloadAssembly();
+					ReloadScripts();
 				}
 				else
 				{
@@ -621,140 +619,153 @@ namespace Hazel {
 		Project::New();
 	}
 
-	void EditorLayer::OpenProject(const std::filesystem::path& path)
+	bool EditorLayer::ActionFailed(const std::string& message)
 	{
-		if (m_SceneState != SceneState::Edit) OnSceneStop();
-		if (Project::Load(path))
-		{
-			m_ProjectPath = path;
-			ScriptEngine::Init();
+		m_ActionError = message;
+		HZ_ERROR("{}", message);
+		return false;
+	}
 
-			auto startScenePath = Project::GetAssetFileSystemPath(Project::GetActive()->GetConfig().StartScene);
-			OpenScene(startScenePath);
-			m_ContentBrowserPanel = CreateScope<ContentBrowserPanel>();
+	void EditorLayer::ClearSceneObservers()
+	{
+		m_HoveredEntity = {}; m_SquareEntity = {}; m_CameraEntity = {}; m_SecondCamera = {};
+		m_SceneHierarchyPanel.SetContext(nullptr);
+	}
 
+	bool EditorLayer::OpenProject(const std::filesystem::path& path)
+	{
+		try {
+			auto project = Project::LoadCandidate(path);
+			if (!project) return ActionFailed("Cannot parse/open project: " + path.generic_u8string());
+			const auto assets = project->GetAssetRoot();
+			if (!std::filesystem::is_directory(assets)) return ActionFailed("Project asset directory is missing: " + assets.generic_u8string());
+			const auto startScene = Project::ResolveAssetPath(assets, project->GetConfig().StartScene);
+			if (startScene.extension() != ".hazel") return ActionFailed("Project start scene must be a .hazel file: " + startScene.generic_u8string());
+			auto scene = CreateRef<Scene>();
+			scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+			if (!SceneSerializer(scene, assets).Deserialize(startScene.generic_u8string()))
+				return ActionFailed("Cannot load project start scene/assets: " + startScene.generic_u8string());
+			auto browser = CreateScope<ContentBrowserPanel>(assets);
+			// Init stages a complete domain/watcher; failure retains the current scripts.
+			ScriptEngine::Init(Project::ResolveAssetPath(assets, project->GetConfig().ScriptModulePath), [this]() {
+				if (m_SceneState != SceneState::Edit) OnSceneStop();
+			});
+			ClearSceneObservers();
+			Project::SetActive(project);
+			m_ProjectPath = path; m_EditorScenePath = startScene;
+			m_EditorScene = scene; m_ActiveScene = scene;
+			m_ContentBrowserPanel = std::move(browser);
+			m_SceneHierarchyPanel.SetContext(scene);
+			m_ActionError.clear();
+			return true;
+		} catch (const std::runtime_error& error) {
+			return ActionFailed("Open project '" + path.generic_u8string() + "': " + error.what());
 		}
 	}
 
 	bool EditorLayer::OpenProject()
 	{
-		std::string filepath = FileDialogs::OpenFile("Hazel Project (*.hproj)\0*.hproj\0");
-		if (filepath.empty())
-			return false;
-
-		OpenProject(std::filesystem::u8path(filepath));
-		return true;
+		const auto path = FileDialogs::OpenFile("Hazel Project (*.hproj)\0*.hproj\0");
+		return !path.empty() && OpenProject(std::filesystem::u8path(path));
 	}
 
-	void EditorLayer::SaveProject()
+	bool EditorLayer::SaveProject()
 	{
-		if (!m_ProjectPath.empty() && !Project::SaveActive(m_ProjectPath))
-            HZ_ERROR("Could not save project {}", m_ProjectPath.generic_u8string());
+		if (m_ProjectPath.empty()) return ActionFailed("Open a project before saving it");
+		if (!Project::SaveActive(m_ProjectPath)) return ActionFailed("Cannot save project: " + m_ProjectPath.generic_u8string());
+		m_ActionError.clear(); return true;
 	}
 
 	void EditorLayer::NewScene()
 	{
 		if (m_SceneState != SceneState::Edit) OnSceneStop();
-        m_EditorScene = CreateRef<Scene>();
-        m_ActiveScene = m_EditorScene;
+		ClearSceneObservers();
+		m_EditorScene = CreateRef<Scene>(); m_ActiveScene = m_EditorScene;
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-
-		m_EditorScenePath = std::filesystem::path();
+		m_EditorScenePath.clear(); m_ActionError.clear();
 	}
 
-	void EditorLayer::OpenScene()
+	bool EditorLayer::OpenScene()
 	{
-		std::string filepath = FileDialogs::OpenFile("Hazel Scene (*.hazel)\0*.hazel\0");
-		if (!filepath.empty())
-			OpenScene(std::filesystem::u8path(filepath));
+		const auto path = FileDialogs::OpenFile("Hazel Scene (*.hazel)\0*.hazel\0");
+		return !path.empty() && OpenScene(std::filesystem::u8path(path));
 	}
 
-	void EditorLayer::OpenScene(const std::filesystem::path& path)
+	bool EditorLayer::OpenScene(const std::filesystem::path& path)
 	{
-		if (m_SceneState != SceneState::Edit)
-			OnSceneStop();
-
-		if (path.extension().u8string() != ".hazel")
-		{
-			HZ_WARN("Could not load {0} - not a scene file", path.filename().u8string());
-			return;
-		}
-
-		Ref<Scene> newScene = CreateRef<Scene>();
-		SceneSerializer serializer(newScene);
-		if (serializer.Deserialize(path.generic_u8string()))
-		{
-			m_EditorScene = newScene;
-			m_SceneHierarchyPanel.SetContext(m_EditorScene);
-
-			m_ActiveScene = m_EditorScene;
-			m_EditorScenePath = path;
+		try {
+			if (path.extension() != ".hazel") return ActionFailed("Scene must be a .hazel file: " + path.generic_u8string());
+			auto scene = CreateRef<Scene>();
+			scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+			if (!SceneSerializer(scene).Deserialize(path.generic_u8string())) return ActionFailed("Cannot load scene/assets: " + path.generic_u8string());
+			if (m_SceneState != SceneState::Edit) OnSceneStop();
+			ClearSceneObservers();
+			m_EditorScene = scene; m_ActiveScene = scene; m_EditorScenePath = path;
+			m_SceneHierarchyPanel.SetContext(scene); m_ActionError.clear();
+			return true;
+		} catch (const std::runtime_error& error) {
+			return ActionFailed("Open scene '" + path.generic_u8string() + "': " + error.what());
 		}
 	}
 
-	void EditorLayer::SaveScene()
+	bool EditorLayer::SaveScene()
 	{
-		if (!m_EditorScenePath.empty())
-			SerializeScene(m_EditorScene, m_EditorScenePath);
-		else
-			SaveSceneAs();
+		return m_EditorScenePath.empty() ? SaveSceneAs() : SerializeScene(m_EditorScene, m_EditorScenePath);
 	}
 
-	void EditorLayer::SaveSceneAs()
+	bool EditorLayer::SaveSceneAs()
 	{
-		std::string filepath = FileDialogs::SaveFile("Hazel Scene (*.hazel)\0*.hazel\0");
-		if (!filepath.empty())
-		{
-			SerializeScene(m_EditorScene, std::filesystem::u8path(filepath));
-			m_EditorScenePath = std::filesystem::u8path(filepath);
-		}
+		const auto path = FileDialogs::SaveFile("Hazel Scene (*.hazel)\0*.hazel\0");
+		if (path.empty()) return false;
+		if (!SerializeScene(m_EditorScene, std::filesystem::u8path(path))) return false;
+		m_EditorScenePath = std::filesystem::u8path(path); return true;
 	}
 
-	void EditorLayer::SerializeScene(Ref<Scene> scene, const std::filesystem::path& path)
+	bool EditorLayer::SerializeScene(Ref<Scene> scene, const std::filesystem::path& path)
 	{
-		SceneSerializer serializer(scene);
-		serializer.Serialize(path.generic_u8string());
+		try { SceneSerializer(scene).Serialize(path.generic_u8string()); m_ActionError.clear(); return true; }
+		catch (const std::runtime_error& error) { return ActionFailed("Save scene '" + path.generic_u8string() + "': " + error.what()); }
+	}
+
+	bool EditorLayer::ReloadScripts()
+	{
+		try { ScriptEngine::ReloadAssembly(); m_ActionError.clear(); return true; }
+		catch (const std::runtime_error& error) { return ActionFailed(std::string("Reload scripts: ") + error.what()); }
 	}
 
 	void EditorLayer::OnScenePlay()
 	{
-		if (m_SceneState == SceneState::Simulate)
-			OnSceneStop();
-
-		m_SceneState = SceneState::Play;
-
-		m_ActiveScene = Scene::Copy(m_EditorScene);
-		m_ActiveScene->OnRuntimeStart();
-
-		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+		if (m_SceneState == SceneState::Play) return;
+		if (!ScriptEngine::IsInitialized() && !m_EditorScene->GetAllEntitiesWith<ScriptComponent>().empty()) {
+			ActionFailed("Open a valid script assembly before playing a scripted scene"); return;
+		}
+		try {
+			auto scene = Scene::Copy(m_EditorScene);
+			scene->OnRuntimeStart();
+			if (m_SceneState != SceneState::Edit) OnSceneStop();
+			ClearSceneObservers();
+			m_ActiveScene = scene; m_SceneState = SceneState::Play;
+			m_SceneHierarchyPanel.SetContext(scene); m_ActionError.clear();
+		} catch (const std::runtime_error& error) { ActionFailed(std::string("Play scene: ") + error.what()); }
 	}
 
 	void EditorLayer::OnSceneSimulate()
 	{
-		if (m_SceneState == SceneState::Play)
-			OnSceneStop();
-
-		m_SceneState = SceneState::Simulate;
-
-		m_ActiveScene = Scene::Copy(m_EditorScene);
-		m_ActiveScene->OnSimulationStart();
-
-		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+		auto scene = Scene::Copy(m_EditorScene);
+		scene->OnSimulationStart();
+		if (m_SceneState != SceneState::Edit) OnSceneStop();
+		ClearSceneObservers();
+		m_ActiveScene = scene; m_SceneState = SceneState::Simulate;
+		m_SceneHierarchyPanel.SetContext(scene); m_ActionError.clear();
 	}
 
 	void EditorLayer::OnSceneStop()
 	{
 		HZ_CORE_ASSERT(m_SceneState == SceneState::Play || m_SceneState == SceneState::Simulate);
-
-		if (m_SceneState == SceneState::Play)
-			m_ActiveScene->OnRuntimeStop();
-		else if (m_SceneState == SceneState::Simulate)
-			m_ActiveScene->OnSimulationStop();
-
-		m_SceneState = SceneState::Edit;
-
-		m_ActiveScene = m_EditorScene;
-
+		ClearSceneObservers();
+		if (m_SceneState == SceneState::Play) m_ActiveScene->OnRuntimeStop();
+		else if (m_SceneState == SceneState::Simulate) m_ActiveScene->OnSimulationStop();
+		m_SceneState = SceneState::Edit; m_ActiveScene = m_EditorScene;
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 	}
 

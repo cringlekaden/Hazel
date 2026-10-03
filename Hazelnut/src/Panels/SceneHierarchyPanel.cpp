@@ -29,8 +29,8 @@ namespace Hazel {
 
 	void SceneHierarchyPanel::SetContext(const Ref<Scene>& context)
 	{
-		m_Context = context;
 		m_SelectionContext = {};
+		m_Context = context;
 	}
 
 	void SceneHierarchyPanel::OnImGuiRender()
@@ -61,7 +61,7 @@ namespace Hazel {
 		ImGui::End();
 
 		ImGui::Begin("Properties");
-		if (m_SelectionContext)
+		if (GetSelectedEntity())
 		{
 			DrawComponents(m_SelectionContext);
 		}
@@ -69,9 +69,24 @@ namespace Hazel {
 		ImGui::End();
 	}
 
-	void SceneHierarchyPanel::SetSelectedEntity(Entity entity)
+	bool SceneHierarchyPanel::SetSelectedEntity(Entity entity)
 	{
+		if (!entity.BelongsTo(m_Context.get())) { m_SelectionContext = {}; return false; }
+		if (!m_Context || !entity) { m_SelectionContext = {}; return false; }
 		m_SelectionContext = entity;
+		return true;
+	}
+
+	bool SceneHierarchyPanel::AssignSpriteTexture(SpriteRendererComponent& component, const std::filesystem::path& path)
+	{
+		try {
+			auto texture = Texture2D::Create(path.generic_u8string());
+			component.Texture = std::move(texture);
+			return true;
+		} catch (const std::runtime_error& error) {
+			HZ_ERROR("Texture assignment '{}': {}", path.generic_u8string(), error.what());
+			return false;
+		}
 	}
 
 	void SceneHierarchyPanel::DrawEntityNode(Entity entity)
@@ -371,7 +386,7 @@ namespace Hazel {
 					for (const auto& [name, field] : fields)
 					{
 						// Field has been set in editor
-						if (entityFields.find(name) != entityFields.end())
+						if (entityFields.find(name) != entityFields.end() && entityFields.at(name).Field.Type == field.Type)
 						{
 							ScriptFieldInstance& scriptField = entityFields.at(name);
 
@@ -385,6 +400,8 @@ namespace Hazel {
 						}
 						else
 						{
+							if (entityFields.find(name) != entityFields.end())
+								ImGui::TextDisabled("%s: saved type differs; retained until edited", name.c_str());
 							// Display control to set it maybe
 							if (field.Type == ScriptFieldType::Float)
 							{
@@ -392,7 +409,7 @@ namespace Hazel {
 								if (ImGui::DragFloat(name.c_str(), &data))
 								{
 									ScriptFieldInstance& fieldInstance = entityFields[name];
-									fieldInstance.Field = field;
+									fieldInstance.Field = { field.Type, field.Name, nullptr };
 									fieldInstance.SetValue(data);
 								}
 							}
@@ -412,11 +429,7 @@ namespace Hazel {
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 				{
 					const auto texturePath = ContentBrowserPath(payload->Data, payload->DataSize);
-					Ref<Texture2D> texture = Texture2D::Create(texturePath.generic_u8string());
-					if (texture->IsLoaded())
-						component.Texture = texture;
-					else
-						HZ_WARN("Could not load texture {0}", texturePath.filename().u8string());
+					AssignSpriteTexture(component, texturePath);
 				}
 				ImGui::EndDragDropTarget();
 			}

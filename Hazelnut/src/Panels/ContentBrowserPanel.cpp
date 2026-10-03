@@ -8,7 +8,10 @@
 namespace Hazel {
 
 	ContentBrowserPanel::ContentBrowserPanel()
-		: m_BaseDirectory(Project::GetAssetDirectory()), m_CurrentDirectory(m_BaseDirectory)
+		: ContentBrowserPanel(Project::GetAssetDirectory()) {}
+
+	ContentBrowserPanel::ContentBrowserPanel(const std::filesystem::path& assetRoot)
+		: m_BaseDirectory(assetRoot), m_CurrentDirectory(m_BaseDirectory)
 	{
 		m_DirectoryIcon = Texture2D::Create("Resources/Icons/ContentBrowser/DirectoryIcon.png");
 		m_FileIcon = Texture2D::Create("Resources/Icons/ContentBrowser/FileIcon.png");
@@ -37,13 +40,18 @@ namespace Hazel {
 
 		ImGui::Columns(columnCount, 0, false);
 
-		for (auto& directoryEntry : std::filesystem::directory_iterator(m_CurrentDirectory))
+		std::error_code error;
+		for (auto it = std::filesystem::directory_iterator(m_CurrentDirectory, error);
+		     !error && it != std::filesystem::directory_iterator(); it.increment(error))
 		{
+			const auto& directoryEntry = *it;
 			const auto& path = directoryEntry.path();
 			std::string filenameString = path.filename().u8string();
+			const bool isDirectory = directoryEntry.is_directory(error);
+			if (error) break;
 
 			ImGui::PushID(filenameString.c_str());
-			Ref<Texture2D> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
+			Ref<Texture2D> icon = isDirectory ? m_DirectoryIcon : m_FileIcon;
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 			ImGui::ImageButton("##file", (ImTextureID)(uintptr_t)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
 
@@ -58,7 +66,7 @@ namespace Hazel {
 			ImGui::PopStyleColor();
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 			{
-				if (directoryEntry.is_directory())
+				if (isDirectory)
 					m_CurrentDirectory /= path.filename();
 
 			}
@@ -68,6 +76,7 @@ namespace Hazel {
 
 			ImGui::PopID();
 		}
+		if (error) ImGui::TextWrapped("Cannot read asset directory: %s", error.message().c_str());
 
 		ImGui::Columns(1);
 

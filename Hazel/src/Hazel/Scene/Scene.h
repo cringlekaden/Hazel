@@ -3,6 +3,7 @@
 #include "Hazel/Core/Timestep.h"
 #include "Hazel/Core/UUID.h"
 #include "Hazel/Renderer/EditorCamera.h"
+#include "Hazel/Scripting/ScriptField.h"
 
 #include "entt.hpp"
 
@@ -77,8 +78,10 @@ namespace Hazel {
 		Scope<b2World> m_PhysicsWorld;
 
 		std::unordered_map<UUID, entt::entity> m_EntityMap;
+		std::unordered_map<UUID, ScriptFieldMap> m_ScriptFields;
 
 		friend class Entity;
+		friend class ScriptEngine;
 		friend class SceneSerializer;
 		friend class SceneHierarchyPanel;
 	};

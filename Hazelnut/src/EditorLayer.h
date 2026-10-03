@@ -30,16 +30,19 @@ namespace Hazel {
 
 		void NewProject();
 		bool OpenProject();
-		void OpenProject(const std::filesystem::path& path);
-		void SaveProject();
+		bool OpenProject(const std::filesystem::path& path);
+		bool SaveProject();
 
 		void NewScene();
-		void OpenScene();
-		void OpenScene(const std::filesystem::path& path);
-		void SaveScene();
-		void SaveSceneAs();
+		bool OpenScene();
+		bool OpenScene(const std::filesystem::path& path);
+		bool SaveScene();
+		bool SaveSceneAs();
 
-		void SerializeScene(Ref<Scene> scene, const std::filesystem::path& path);
+		bool SerializeScene(Ref<Scene> scene, const std::filesystem::path& path);
+		bool ReloadScripts();
+		bool ActionFailed(const std::string& message);
+		void ClearSceneObservers();
 
 		void OnScenePlay();
 		void OnSceneSimulate();
@@ -61,7 +64,8 @@ namespace Hazel {
 		Ref<Scene> m_ActiveScene;
 		Ref<Scene> m_EditorScene;
 		std::filesystem::path m_EditorScenePath;
-        std::filesystem::path m_ProjectPath;
+		std::filesystem::path m_ProjectPath;
+		std::string m_ActionError;
         Ref<Font> m_Font;
 		Entity m_SquareEntity;
 		Entity m_CameraEntity;

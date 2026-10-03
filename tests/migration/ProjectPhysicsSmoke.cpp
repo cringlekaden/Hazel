@@ -1,5 +1,6 @@
 // Actual target project serialization and pinned Box2D CPU prerequisites.
 #include "Hazel/Core/Log.h"
+#include "Hazel/Core/FileSystem.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Project/ProjectSerializer.h"
 #include <box2d/box2d.h>
@@ -9,14 +10,77 @@
 #include <iostream>
 #include <random>
 #include <stdexcept>
+#ifdef HZ_PLATFORM_WINDOWS
+#define NOMINMAX
+#include <Windows.h>
+#else
+#include <sys/resource.h>
+#include <csignal>
+#endif
 using namespace Hazel;
 static void Check(bool value,const char* message) { if (!value) throw std::runtime_error(message); }
+static std::string Read(const std::filesystem::path& path) {
+    std::ifstream input(path,std::ios::binary); return {std::istreambuf_iterator<char>(input),{}};
+}
 struct Fixture {
     std::filesystem::path Path=std::filesystem::temp_directory_path()/
         std::filesystem::u8path("hazel-project-é-"+std::to_string(std::random_device{}()));
     Fixture() { Check(std::filesystem::create_directory(Path),"Project fixture isolation failed"); }
     ~Fixture() { std::error_code error; std::filesystem::remove_all(Path,error); }
 };
+static void SafeSaves() {
+    Fixture fixture;
+    const auto file=fixture.Path/std::filesystem::u8path(u8"save é 🚀.hazel");
+    std::ofstream(file)<<"previous scene bytes";
+    const auto foreign=fixture.Path/"unrelated.hazel-tmp-reserved";
+    std::ofstream(foreign)<<"another attempt";
+    auto noOwnedTemps=[&]() {
+        for(const auto& entry:std::filesystem::directory_iterator(fixture.Path))
+            Check(entry.path()==foreign || entry.path().filename().generic_u8string().find(".hazel-tmp-")==std::string::npos,
+                  "Failed save leaked its sibling temporary");
+        Check(Read(foreign)=="another attempt","Save removed another attempt's temporary");
+    };
+    for(bool failStream:{false,true}) {
+        bool rejected=false;
+        try { FileSystem::WriteFileAtomically(file,[&](std::ostream& output) {
+            output<<"partial replacement";
+            if(failStream) output.setstate(std::ios::badbit);
+            else throw std::runtime_error("Deterministic writer failure");
+        }); } catch(const std::runtime_error&) { rejected=true; }
+        Check(rejected && Read(file)=="previous scene bytes","Failed write damaged previous destination");
+        noOwnedTemps();
+    }
+    FileSystem::WriteFileAtomically(file,[](std::ostream& output) { output<<"complete replacement"; });
+    Check(Read(file)=="complete replacement","Atomic replacement did not replace destination");
+#ifdef HZ_PLATFORM_WINDOWS
+    auto locked=CreateFileW(file.c_str(),GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
+    Check(locked!=INVALID_HANDLE_VALUE,"Cannot create deterministic replacement lock");
+    bool lockRejected=false;
+    try { FileSystem::WriteFileAtomically(file,[](std::ostream& output) { output<<"cannot replace locked file"; }); }
+    catch(const std::runtime_error&) { lockRejected=true; }
+    CloseHandle(locked);
+    Check(lockRejected && Read(file)=="complete replacement","Locked replacement damaged previous file");
+#else
+    rlimit previous{}, limited{}; Check(getrlimit(RLIMIT_FSIZE,&previous)==0,"Cannot read process file-size limit");
+    limited=previous; limited.rlim_cur=128;
+    const auto previousSignal=std::signal(SIGXFSZ,SIG_IGN);
+    Check(setrlimit(RLIMIT_FSIZE,&limited)==0,"Cannot set process-only deterministic write limit");
+    bool writeRejected=false;
+    try { FileSystem::WriteFileAtomically(file,[](std::ostream& output) { output<<std::string(4096,'x'); }); }
+    catch(const std::runtime_error&) { writeRejected=true; }
+    const int restored=setrlimit(RLIMIT_FSIZE,&previous); std::signal(SIGXFSZ,previousSignal);
+    Check(restored==0 && writeRejected && Read(file)=="complete replacement","Kernel write failure damaged previous file");
+#endif
+    noOwnedTemps();
+    const auto blocked=fixture.Path/"blocked.hazel";
+    std::filesystem::create_directory(blocked); std::ofstream(blocked/"previous")<<"retained";
+    bool rejected=false;
+    try { FileSystem::WriteFileAtomically(blocked,[](std::ostream& output) { output<<"complete"; }); }
+    catch(const std::runtime_error&) { rejected=true; }
+    Check(rejected && Read(blocked/"previous")=="retained","Failed replacement damaged previous destination");
+    noOwnedTemps();
+    std::cout<<"PASS: sibling exclusive saves, successful replacement, partial/failed writes, replacement failure and owned-only cleanup\n";
+}
 static void Projects() {
     Fixture fixture; const auto file=fixture.Path/std::filesystem::u8path(u8"Projet-é-\U0001f680.hproj");
     Check(!Project::SaveActive(file),"Save without active project accepted");
@@ -79,7 +143,7 @@ static void Physics() {
     }
 }
 int main() {
-    try { Log::Init(); Projects(); Physics();
+    try { Log::Init(); SafeSaves(); Projects(); Physics();
         std::cout<<"PASS: native UTF-8 project/config round trips, asset resolution, transactional parse/save failures; exact target Box2D gravity, box/circle contacts, body types/materials/destruction and repeated worlds\n"; return 0;
     } catch(const std::exception& e) { std::cerr<<"FAIL: "<<e.what()<<'\n'; return 1; }
 }

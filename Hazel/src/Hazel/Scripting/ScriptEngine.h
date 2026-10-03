@@ -1,9 +1,11 @@
 #pragma once
 
 #include "Hazel/Scene/Scene.h"
+#include "Hazel/Scripting/ScriptField.h"
 #include "Hazel/Scene/Entity.h"
 
 #include <filesystem>
+#include <functional>
 #include <string>
 #include <map>
 #include <cstring>
@@ -21,59 +23,8 @@ extern "C" {
 }
 
 namespace Hazel {
+	struct ScriptEngineData;
 
-	enum class ScriptFieldType
-	{
-		None = 0,
-		Float, Double,
-		Bool, Char, Byte, Short, Int, Long,
-		UByte, UShort, UInt, ULong,
-		Vector2, Vector3, Vector4,
-		Entity
-	};
-
-	struct ScriptField
-	{
-		ScriptFieldType Type = ScriptFieldType::None;
-		std::string Name;
-
-		MonoClassField* ClassField = nullptr;
-	};
-
-	// ScriptField + data storage
-	struct ScriptFieldInstance
-	{
-		ScriptField Field;
-
-		ScriptFieldInstance()
-		{
-			memset(m_Buffer, 0, sizeof(m_Buffer));
-		}
-
-		template<typename T>
-		T GetValue()
-		{
-			static_assert(sizeof(T) <= 16, "Type too large!");
-			T value{};
-			std::memcpy(&value, m_Buffer, sizeof(T));
-			return value;
-		}
-
-		template<typename T>
-		void SetValue(T value)
-		{
-			static_assert(sizeof(T) <= 16, "Type too large!");
-			std::memset(m_Buffer, 0, sizeof(m_Buffer));
-			std::memcpy(m_Buffer, &value, sizeof(T));
-		}
-	private:
-		uint8_t m_Buffer[16];
-
-		friend class ScriptEngine;
-		friend class ScriptInstance;
-	};
-
-	using ScriptFieldMap = std::unordered_map<std::string, ScriptFieldInstance>;
 
 	class ScriptClass
 	{
@@ -152,7 +103,7 @@ namespace Hazel {
 	class ScriptEngine
 	{
 	public:
-		static void Init();
+		static void Init(const std::filesystem::path& applicationAssembly = {}, const std::function<void()>& beforeReplacement = {});
 		static void Shutdown();
 		static bool IsInitialized();
 
@@ -187,7 +138,9 @@ namespace Hazel {
 		static void ShutdownMono();
 
 		static MonoObject* InstantiateClass(MonoClass* monoClass);
-		static void LoadAssemblyClasses();
+		static void LoadAssemblyClasses(ScriptEngineData& data);
+		static Scope<ScriptEngineData> PrepareDomain(const std::filesystem::path& core, const std::filesystem::path& app);
+		static void ReplaceAssembly(const std::filesystem::path& core, const std::filesystem::path& app, bool preserveRuntime, const std::function<void()>& beforeReplacement = {});
 
 		friend class ScriptClass;
 		friend class ScriptGlue;
