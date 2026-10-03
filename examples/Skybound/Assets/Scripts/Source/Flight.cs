@@ -20,9 +20,17 @@ namespace Skybound {
         private readonly Random random=new Random(1337);
         private double accumulated;
         private float lastGap=.25f;
-        public Flight(float speed=2.8f,float gravity=9.6f,float flap=5,float gapHalf=1.7f) {
+        public Flight(float speed=2.8f,float gravity=9.6f,float flap=5,float gapHalf=1.7f,float[] positions=null,float[] gaps=null) {
             this.speed=Clamp(speed,1,5);this.gravity=Clamp(gravity,4,20);this.flap=Clamp(flap,2,9);GapHalf=Clamp(gapHalf,1.4f,2.4f);
-            for(int i=0;i<Gates.Length;i++) Gates[i]=new Gate{X=4+i*Spacing,Gap=i==0?0:.25f};
+            if((positions!=null&&positions.Length!=4)||(gaps!=null&&gaps.Length!=4))throw new ArgumentException("Flight requires four authored obstacle pairs");
+            for(int i=0;i<Gates.Length;i++) {
+                float minimum=i==0?4:Gates[i-1].X+Spacing;
+                float x=positions==null?minimum:Clamp(positions[i],minimum,1000);
+                float gap=gaps==null?(i==0?0:.25f):Clamp(gaps[i],-1,1);
+                if(i>0)gap=Clamp(gap,Gates[i-1].Gap-.8f,Gates[i-1].Gap+.8f);
+                Gates[i]=new Gate{X=x,Gap=gap};
+            }
+            lastGap=Gates[3].Gap;
         }
         static float Clamp(float x,float low,float high) { return float.IsNaN(x)||float.IsInfinity(x)?low:Math.Max(low,Math.Min(high,x)); }
         public void Advance(float seconds,bool flapPressed) {

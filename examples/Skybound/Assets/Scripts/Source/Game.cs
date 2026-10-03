@@ -7,7 +7,7 @@ namespace Skybound {
         public float FlapSpeed=5;
         public float GapHalf=1.7f;
         private Flight flight;
-        private Entity bird,ready;
+        private Entity bird,ready,restartButton,menuButton;
         private readonly Entity[] upper=new Entity[4],lower=new Entity[4];
         private Entity[] overlay;
         private TextComponent score,result;
@@ -15,11 +15,18 @@ namespace Skybound {
         private bool shown;
         private int previousScore;
         void OnCreate() {
-            flight=new Flight(ScrollSpeed,Gravity,FlapSpeed,GapHalf);
+
             bird=FindEntityByName("Wisp");ready=FindEntityByName("Ready");
             score=FindEntityByName("Score").GetComponent<TextComponent>();
             result=FindEntityByName("Result").GetComponent<TextComponent>();
-            for(int i=0;i<4;i++) { upper[i]=FindEntityByName("Upper"+i);lower[i]=FindEntityByName("Lower"+i); }
+            var positions=new float[4];var gaps=new float[4];
+            for(int i=0;i<4;i++) {
+                upper[i]=FindEntityByName("Upper"+i);lower[i]=FindEntityByName("Lower"+i);
+                positions[i]=upper[i].Translation.X;
+                gaps[i]=(upper[i].Translation.Y+lower[i].Translation.Y)*.5f;
+            }
+            flight=new Flight(ScrollSpeed,Gravity,FlapSpeed,GapHalf,positions,gaps);
+            restartButton=FindEntityByName("Restart");menuButton=FindEntityByName("Menu");
             string[] names={"GameOverPanel","Result","ResultHint","Restart","RestartLabel","Menu","MenuLabel"};
             // Panel and captions are editor-authored. Move the entire overlay at death.
             overlay=new Entity[names.Length];
@@ -28,8 +35,8 @@ namespace Skybound {
             restartHeld=Input.IsKeyDown(KeyCode.R);escapeHeld=Input.IsKeyDown(KeyCode.Escape);
             Sync();
         }
-        private bool Hit(float x,float y) {
-            Vector2 p;return Input.GetMouseWorldPosition(out p)&&Math.Abs(p.X-x)<2&&Math.Abs(p.Y-y)<.6f;
+        private bool Hit(Entity button) {
+            var center=button.Translation;Vector2 p;return Input.GetMouseWorldPosition(out p)&&Math.Abs(p.X-center.X)<2&&Math.Abs(p.Y-center.Y)<.6f;
         }
         void Sync() {
             bird.Translation=new Vector3(Flight.BirdX,flight.Y,.3f);
@@ -44,8 +51,8 @@ namespace Skybound {
             if(escape&&!escapeHeld) Scene.LoadScene("Scenes/MainMenu.hazel");
             if(flight.Phase==Flight.State.Dead) {
                 // Restart only on a new event after death. A fatal flap never restarts.
-                if((restart&&!restartHeld)||(space&&!spaceHeld)||(click&&Hit(0,-1))) Scene.LoadScene("Scenes/Flight.hazel");
-                else if(click&&Hit(0,-2.5f)) Scene.LoadScene("Scenes/MainMenu.hazel");
+                if((restart&&!restartHeld)||(space&&!spaceHeld)||(click&&Hit(restartButton))) Scene.LoadScene("Scenes/Flight.hazel");
+                else if(click&&Hit(menuButton)) Scene.LoadScene("Scenes/MainMenu.hazel");
             } else {
                 var before=flight.Phase;
                 Vector2 mouseWorld;

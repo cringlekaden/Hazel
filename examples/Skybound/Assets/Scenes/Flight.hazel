@@ -504,8 +504,8 @@ Entities:
     - 0
     - 0
     Scale:
-    - 0.55
-    - 0.55
+    - 0.65
+    - 0.65
     - 1
   TextComponent:
     TextString: SCORE  0
@@ -529,8 +529,8 @@ Entities:
     - 0
     - 0
     Scale:
-    - 0.35
-    - 0.35
+    - 0.5
+    - 0.5
     - 1
   TextComponent:
     TextString: Space / click flap   |   Esc menu
@@ -542,7 +542,7 @@ Entities:
     Tag: Ready
   TransformComponent:
     Translation:
-    - -3.387673835125448
+    - -4.493853046594983
     - -1.8
     - 1
     Rotation:
@@ -550,8 +550,8 @@ Entities:
     - 0
     - 0
     Scale:
-    - 0.49
-    - 0.49
+    - 0.65
+    - 0.65
     - 1
   TextComponent:
     TextString: READY?  Space or click to catch the wind.

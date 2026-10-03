@@ -21,7 +21,7 @@ editable through the hierarchy/inspector; supported public script fields expose
 tuning. Stop preserves authored content. Scenes use existing `.hazel` serialization
 and `Hazel.Scene.LoadScene`, without a separate game/runtime format.
 
-Authored content: MainMenu and Flight scenes; camera, clouds, mountains, ground, wind sprite, four obstacle pairs, HUD, ready prompt and off-screen game-over controls. Game scripts reuse these entities; entity counts remain fixed. Flight uses 120 Hz steps, a deterministic course, constrained gaps and once-only scoring. Long stalls above 250 ms count as a pause.
+Authored content: MainMenu and Flight scenes; camera, clouds, mountains, ground, wind sprite, four obstacle pairs, HUD, ready prompt and off-screen game-over controls. Initial obstacle X positions and gap centres come from the scene, constrained to fair spacing/ranges. Columns remain 1.1 x 9 units and the wisp 0.85 x 0.85; collision dimensions are defined alongside Flight. Game scripts reuse these entities; entity counts remain fixed. Flight uses 120 Hz steps, a deterministic course, constrained gaps and once-only scoring. Long stalls above 250 ms count as a pause.
 
 Camera policy: fit the entire 16 x 12 world area, revealing additional background
 at other aspect ratios. Gameplay bounds/speed remain fixed. Mouse hit testing uses

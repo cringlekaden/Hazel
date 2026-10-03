@@ -9,6 +9,8 @@ class FlightTests {
     }
     static int Main() {
         try {
+            var authored=new Flight(positions:new float[]{6,12,18,24},gaps:new float[]{.2f,.4f,-.2f,0});
+            Check(authored.Gates[0].X==6&&authored.Gates[1].X==12&&authored.Gates[0].Gap==.2f,"Authored initial obstacle layout was ignored");
             var ready=new Flight();
             ready.Advance(100,false);
             Check(ready.Phase==Flight.State.Ready&&ready.Y==0&&ready.Gates[0].X==4,"Ready state moved or spawned an immediate obstacle");

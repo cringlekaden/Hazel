@@ -1,6 +1,6 @@
 # MeadowRun
 
-An original, independently authored Hazel example. WASD / arrow keys: move. Collect five lantern seeds, avoid the pond, then reach the north-east trail. R restarts; Escape returns to the title. The pond returns you to camp without losing seeds.
+An original, independently authored Hazel example. WASD / arrow keys: move. Collect five lantern seeds, avoid the pond, then reach the north-east trail. R restarts the meadow; Escape returns from the meadow to the title. Completion has clickable Explore Again / Title Menu controls, and Enter restarts. The pond returns you to camp without losing seeds.
 
 ## Edit, build, play and package
 

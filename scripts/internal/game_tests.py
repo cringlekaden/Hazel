@@ -44,6 +44,16 @@ class GameWindow:
     def world_click(self,x,y):
         left,top,width,height=self.area();size=max(12,16*height/width)
         self.desktop.click(self.window,left+width/2+x*height/size,top+height/2-y*height/size)
+    def control_ready(self,y,game):
+        # The transition log precedes presentation. Observe a button's flat interior
+        # before sending another click; managed callbacks must have a displayed frame.
+        width,height,pixels=self.desktop.capture(self.window)
+        left,top,vw,vh=self.area();size=max(12,16*vh/vw)
+        x=int(left+vw/2+1.6*vh/size);y=int(top+vh/2-y*vh/size)
+        actual=pixels[(y*width+x)*3:(y*width+x)*3+3]
+        target=(65,105,86) if game=='MeadowRun' else (175,113,143)
+        return len(actual)==3 and sum(abs(a-b) for a,b in zip(actual,target))<=15
+
     def explorer(self,strict=True):
         width,height,pixels=self.desktop.capture(self.window)
         left,top,vw,vh=self.area();hits=[];size=max(12,16*vh/vw)
@@ -98,11 +108,16 @@ def exercise(desktop,executable,project,app,game,working,env,logs,shots,packaged
             desktop.resize(window,1280,720);expect(app+' ready:');time.sleep(.6)
             if packaged and hz.SYSTEM=='linux' and str(hz.ROOT) in (Path('/proc')/str(process.pid)/'maps').read_text():raise RuntimeError('Game package loaded checkout libraries')
             game_window=GameWindow(desktop,window,app=='Hazelnut')
-            if app=='Hazelnut':desktop.click(window,657,40);time.sleep(.5)
+            if app=='Hazelnut':desktop.click(window,657,40)
+            def menu_ready():return wait_for(process,lambda:game_window.control_ready(-1.35 if game=='MeadowRun' else -1.6,game),'Title controls were not displayed',15)
+            def level_ready():
+                game_window.expected=(-6,-3)
+                return wait_for(process,lambda:game_window.explorer(False) if game=='MeadowRun' else game_window.wisp_ready(),'Game transition did not reach the displayed framebuffer',15)
+            menu_ready()
             desktop.capture(window,shots/f'{game}-{app}-title.png')
             scene='Meadow' if game=='MeadowRun' else 'Flight';transition='Runtime scene: Scenes/'+scene+'.hazel'
             game_window.world_click(0,-1.35 if game=='MeadowRun' else -1.6);expect(transition)
-            wait_for(process,lambda:game_window.explorer(False) if game=='MeadowRun' else game_window.wisp_ready(),'Game transition did not reach the displayed framebuffer',15)
+            level_ready()
             desktop.capture(window,shots/f'{game}-{app}-play.png')
             if game=='MeadowRun':
                 # Real controls finish the authored level, then restart and return.
@@ -110,13 +125,14 @@ def exercise(desktop,executable,project,app,game,working,env,logs,shots,packaged
                     game_window.move(*point,until=lambda:'Runtime scene: Scenes/Complete.hazel' in content())
                 expect('Runtime scene: Scenes/Complete.hazel')
                 if 'MeadowRun: seed 5' not in content():raise RuntimeError('Completion skipped collectibles')
+                wait_for(process,lambda:game_window.control_ready(-1.4,game),'Completion controls were not displayed',15)
                 desktop.capture(window,shots/f'{game}-{app}-complete.png')
-                game_window.world_click(0,-1.4);expect(transition,2)
+                game_window.world_click(0,-1.4);expect(transition,2);level_ready()
                 if app=='Nutella':desktop.resize(window,900,640)
                 escape=0x1b if hz.SYSTEM=='windows' else 0xff1b
-                desktop.key(window,escape,.06);expect('Runtime scene: Scenes/MainMenu.hazel')
-                game_window.world_click(0,-1.35);expect(transition,3)
-                desktop.key(window,ord('R'),.06);expect(transition,4)
+                desktop.key(window,escape,.06);expect('Runtime scene: Scenes/MainMenu.hazel');menu_ready()
+                game_window.world_click(0,-1.35);expect(transition,3);level_ready()
+                desktop.key(window,ord('R'),.06);expect(transition,4);level_ready()
                 desktop.key(window,escape,.06);expect('Runtime scene: Scenes/MainMenu.hazel',2)
             else:
                 # First approachable gate can be passed with regular flaps.
@@ -128,18 +144,25 @@ def exercise(desktop,executable,project,app,game,working,env,logs,shots,packaged
                 desktop.capture(window,shots/f'{game}-{app}-flying.png')
                 if app=='Nutella':desktop.resize(window,900,640)
                 expect('Skybound: game over')
+                wait_for(process,lambda:game_window.control_ready(-1,game),'Game-over controls were not displayed',15)
                 desktop.capture(window,shots/f'{game}-{app}-over.png')
-                game_window.world_click(0,-1);expect(transition,2)
+                game_window.world_click(0,-1);expect(transition,2);level_ready()
                 if app=='Nutella':desktop.resize(window,900,640)
                 # A held input causes one flap and one death, never automatic restart.
                 desktop.key(window,32,2.5);expect('Skybound: game over',2)
                 if content().count(transition)!=2:raise RuntimeError('Held flap restarted the game')
-                desktop.key(window,ord('R'),.06);expect(transition,3)
+                desktop.key(window,ord('R'),.06);expect(transition,3);level_ready()
                 desktop.key(window,32,.05);expect('Skybound: game over',3)
+                wait_for(process,lambda:game_window.control_ready(-1,game),'Game-over controls were not displayed',15)
                 game_window.world_click(0,-2.5);expect('Runtime scene: Scenes/MainMenu.hazel')
             if app=='Hazelnut':desktop.click(window,657,40);time.sleep(.3);desktop.capture(window,shots/f'{game}-{app}-stopped.png')
             desktop.close(window)
             if process.wait(timeout=30)!=0:raise RuntimeError('Game application shutdown failed')
+        except Exception:
+            if process.poll() is None:
+                try:desktop.capture(window,shots/f'{game}-{app}-failure.png')
+                except Exception:pass # Preserve the original failure if the window retired.
+            raise
         finally:
             if process.poll() is None:process.kill();process.wait()
     text=content()
