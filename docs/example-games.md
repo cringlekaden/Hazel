@@ -60,4 +60,25 @@ framebuffer. The actor-control test follows the rendered coat in a bounded searc
 area, allowing texture sampling differences at smaller editor viewport sizes.
 Software drivers are copied only into private test directories. Complete named
 archives use the canonical --name option; README/license files travel with projects.
-Release, extracted packages and full game CI are the remaining verification gate.
+Final source Release desktop acceptance and both named native Linux extracted
+packages pass at `7e8d844`. Checkout resources and the Mono SDK are hidden during
+package execution; archive/file checksums and clean commit metadata are audited.
+Saved imgui.ini and local VS Code settings match their preserved backups. Vendor
+submodules remain pristine. [Final CI 37118805605](https://github.com/cringlekaden/Hazel/actions/runs/37118805605)
+passes on both platforms: Debug/Release regressions and game authoring/play,
+normal application archives, and extracted games with software and OpenGL 4.1
+profiles. Named archives are published separately from testing evidence. Downloaded
+Windows/Linux game and application archives pass SHA-256,
+all-file manifests, clean commit metadata and absence-of-test-driver audits.
+Downloaded Ubuntu CI game archives additionally pass native Intel HD4000 gameplay
+and source/SDK-free relocation on Grandpa. Windows packaged captures are also
+visually inspected. Windows graphics checks use
+isolated software graphics, not physical GPU hardware. Physical human playtesting
+and additional Windows hardware/high-DPI combinations remain manual checks.
+
+The last authoring pass enlarges essential HUD labels for the editor viewport and
+reads Skybound initial obstacle positions/gaps and button positions from authored
+entities. Windows desktop evidence identified a test synchronization race: a
+transition log precedes a displayed frame. Tests now observe the actual rendered
+controls before subsequent clicks and retain failure captures. Production scene
+transition/lifecycle behavior is unchanged.

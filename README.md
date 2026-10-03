@@ -4,12 +4,12 @@ A Linux/Windows extension of [TheCherno/Hazel at the pinned import](https://gith
 
 ## Binaries
 
-Verified Release downloads for checkpoint **`5d972f3`**:
+Verified Release downloads for implementation checkpoint **`7e8d844`**:
 
-- [Windows x64 — Hazelnut and Nutella](https://github.com/cringlekaden/Hazel/actions/runs/37100603151/artifacts/11266510658)
-- [Linux x86_64 — Hazelnut and Nutella](https://github.com/cringlekaden/Hazel/actions/runs/37100603151/artifacts/11266136681)
+- [Windows x64 — Hazelnut and Nutella](https://github.com/cringlekaden/Hazel/actions/runs/37118805605/artifacts/11273050613)
+- [Linux x86_64 — Hazelnut and Nutella](https://github.com/cringlekaden/Hazel/actions/runs/37118805605/artifacts/11271819482)
 
-Both artifacts contain separate application archives and SHA-256 checksums. [Verification run](https://github.com/cringlekaden/Hazel/actions/runs/37100603151) passed Windows/Ubuntu Debug and Release regressions and actual extracted-package tests with source resources and SDK unavailable. Testing evidence is a separate artifact. Review downloads require a GitHub login; no release has been published. [Later feature branch builds](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Afeature%2Fnutella-runtime) are available through successful CI runs.
+Both artifacts contain separate application archives and SHA-256 checksums. [Verification run](https://github.com/cringlekaden/Hazel/actions/runs/37118805605) passed Windows/Ubuntu Debug and Release regressions and actual extracted-package tests with source resources and SDK unavailable. Testing evidence is a separate artifact. Review downloads require a GitHub login; no release has been published. [Later feature branch builds](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Afeature%2Fexample-games) are available through successful CI runs.
 
 Extract an application archive, then launch `Nutella.exe` / `Nutella` or `Hazelnut.exe` / `Hazelnut`. Nutella discovers the included root project and starts MainMenu. Hazelnut opens its bundled Example. Click **Play** inside the game (first start editor Play with the toolbar triangle); Level1 uses A/D and Space, with a clickable Menu control and Escape fallback. Working directory, spaces and Unicode in the extraction path are supported.
 
@@ -20,7 +20,7 @@ Packages need no checkout, build tools, shader SDK or script compiler. Requireme
 ```sh
 git clone --recurse-submodules https://github.com/cringlekaden/Hazel.git
 cd Hazel
-git switch feature/nutella-runtime
+git switch feature/example-games
 scripts/setup.sh                         # Linux
 ```
 
@@ -82,7 +82,9 @@ Managed `Hazel.Scene.LoadScene("Scenes/Level1.hazel")` **requests** a scene tran
 **[Skybound](examples/Skybound/README.md)** follows an original wind sprite through lantern towers. Space/left click flap; fresh Space/R or Try Again restarts after death; Escape/Title Menu returns. A ready state prevents the title click from starting flight accidentally. Four obstacle pairs are reused; scoring and movement use fixed simulation steps.
 
 ![MeadowRun during play](docs/images/meadowrun-play.png)
-![Skybound game over](docs/images/skybound-over.png)
+![Skybound during play](docs/images/skybound-play.png)
+
+Captured title and end states: [MeadowRun title](docs/images/meadowrun-title.png), [completion](docs/images/meadowrun-complete.png), [Skybound title](docs/images/skybound-title.png), [game over](docs/images/skybound-over.png).
 
 These are real engine captures, not mockups. Each project owns its scenes, textures and assembly. Stable layouts are authored in `.hazel` files; inspector-visible script fields tune movement and rules. Both use the shared RuntimeSession and managed scene-loading API. Their cameras fit a fixed 16 x 12 area, keeping gameplay visible across aspect ratios. Original art and redistribution terms are recorded per project; regeneration is optional and needs Pillow only on the author's machine.
 
@@ -99,7 +101,17 @@ python3 scripts/hazel.py test-games                  # requires build --tests
 python3 scripts/hazel.py test-games --config Release --packages
 ```
 
-Extract a game archive and run its Nutella executable without arguments. Complete named Windows/Linux game artifacts are published separately by [example-games CI](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Afeature%2Fexample-games), after extracted acceptance. The normal Hazelnut/Nutella artifacts remain available. `SceneTransitions` remains the focused lifecycle/CLI example used by existing regressions. See [design and measured verification](docs/example-games.md).
+Verified game downloads from the same CI run (GitHub login required):
+
+| Game | Windows x64 | Linux x86_64 |
+| --- | --- | --- |
+| MeadowRun | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37118805605/artifacts/11272612590) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37118805605/artifacts/11271819917) |
+| Skybound | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37118805605/artifacts/11273116420) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37118805605/artifacts/11272468937) |
+
+Each artifact contains a complete game archive and checksum. Extract the artifact,
+then its game archive, and run Nutella without arguments. Windows/Linux Debug and
+Release editor/player gameplay checks and extracted software/OpenGL 4.1 checks
+passed. No release has been published. The normal Hazelnut/Nutella artifacts remain available. `SceneTransitions` remains the focused lifecycle/CLI example used by existing regressions. See [design and measured verification](docs/example-games.md).
 
 ## Development and layout
 
