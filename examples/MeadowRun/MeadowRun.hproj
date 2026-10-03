@@ -1,0 +1,5 @@
+Project:
+  Name: MeadowRun
+  StartScene: Scenes/MainMenu.hazel
+  AssetDirectory: Assets
+  ScriptModulePath: Scripts/Binaries/MeadowRun.dll
