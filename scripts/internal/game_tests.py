@@ -20,9 +20,10 @@ def model_tests(configuration):
     directory=hz.ROOT/'tests/examples';destination=hz.ROOT/'build/testing/managed'/f'{configuration}-{hz.SYSTEM}'
     env=os.environ.copy();env['HAZEL_GAME_TEST_OUTPUT']=destination.as_posix()
     hz.run([hz.premake(),'vs2022' if hz.SYSTEM=='windows' else 'gmake'],cwd=directory,env=env)
-    if hz.SYSTEM=='windows':command=[hz.vs_toolchain()[1],directory/'ExampleGameTests.sln','/m:2',f'/p:Configuration={configuration}','/p:Platform=x64']
+    projects=destination/'Projects'
+    if hz.SYSTEM=='windows':command=[hz.vs_toolchain()[1],projects/'ExampleGameTests.sln','/m:2',f'/p:Configuration={configuration}','/p:Platform=x64']
     else:command=['make',f'config={configuration.lower()}','-j2','CSC='+shlex.join(map(str,hz.mono_command(hz.mono_prefix())))]
-    hz.run(command,cwd=directory,env=env)
+    hz.run(command,cwd=projects,env=env)
     command=[destination/'ExampleGameTests.exe']
     if hz.SYSTEM=='linux':command=hz.mono_command(hz.mono_prefix())[:-1]+command
     hz.run(command)
