@@ -7,6 +7,12 @@ class Rect(C.Structure):
     _fields_=[('left',C.c_long),('top',C.c_long),('right',C.c_long),('bottom',C.c_long)]
 class Point(C.Structure):
     _fields_=[('x',C.c_long),('y',C.c_long)]
+class DisplayMode(C.Structure):
+    # Win32 DEVMODEW's display union; fixed-width scalar fields preserve its ABI.
+    _fields_=[('device',C.c_wchar*32),('spec',C.c_uint16),('driver',C.c_uint16),('size',C.c_uint16),('extra',C.c_uint16),('fields',C.c_uint32),
+              ('position',C.c_int32*2),('orientation',C.c_uint32),('fixedOutput',C.c_uint32),
+              ('color',C.c_int16),('duplex',C.c_int16),('yResolution',C.c_int16),('ttOption',C.c_int16),('collate',C.c_int16),('form',C.c_wchar*32),('logPixels',C.c_uint16),
+              ('bits',C.c_uint32),('width',C.c_uint32),('height',C.c_uint32),('flags',C.c_uint32),('frequency',C.c_uint32),('icmMethod',C.c_uint32),('icmIntent',C.c_uint32),('media',C.c_uint32),('dither',C.c_uint32),('reserved1',C.c_uint32),('reserved2',C.c_uint32),('panningWidth',C.c_uint32),('panningHeight',C.c_uint32)]
 class Data(C.Union):
     _fields_=[('b',C.c_char*20),('s',C.c_short*10),('l',C.c_long*5)]
 class Message(C.Structure):
@@ -24,6 +30,10 @@ class Desktop:
             self.user.GetCursorPos.argtypes=[C.POINTER(Point)];self.user.GetCursorPos.restype=C.c_bool
             self.user.SetProcessDpiAwarenessContext.argtypes=[C.c_void_p];self.user.SetProcessDpiAwarenessContext.restype=C.c_bool
             self.user.SetProcessDpiAwarenessContext(C.c_void_p(-4))
+            self.user.EnumDisplaySettingsW.argtypes=[C.c_wchar_p,C.c_uint32,C.POINTER(DisplayMode)];self.user.EnumDisplaySettingsW.restype=C.c_bool
+            self.user.ChangeDisplaySettingsW.argtypes=[C.POINTER(DisplayMode),C.c_uint32];self.user.ChangeDisplaySettingsW.restype=C.c_int32
+            self.originalMode=None
+            self.prepare_display()
             return
         self.x=C.CDLL('libX11.so.6');self.xt=C.CDLL('libXtst.so.6')
         signatures=[('XOpenDisplay',C.c_void_p,[C.c_char_p]),('XDefaultRootWindow',C.c_ulong,[C.c_void_p]),('XQueryTree',C.c_int,[C.c_void_p,C.c_ulong,C.POINTER(C.c_ulong),C.POINTER(C.c_ulong),C.POINTER(C.POINTER(C.c_ulong)),C.POINTER(C.c_uint)]),('XFetchName',C.c_int,[C.c_void_p,C.c_ulong,C.POINTER(C.c_void_p)]),('XInternAtom',C.c_ulong,[C.c_void_p,C.c_char_p,C.c_int]),('XGetWindowProperty',C.c_int,[C.c_void_p,C.c_ulong,C.c_ulong,C.c_long,C.c_long,C.c_int,C.c_ulong,C.POINTER(C.c_ulong),C.POINTER(C.c_int),C.POINTER(C.c_ulong),C.POINTER(C.c_ulong),C.POINTER(C.c_void_p)]),('XFree',C.c_int,[C.c_void_p]),('XFlush',C.c_int,[C.c_void_p]),('XSetInputFocus',C.c_int,[C.c_void_p,C.c_ulong,C.c_int,C.c_ulong]),('XRaiseWindow',C.c_int,[C.c_void_p,C.c_ulong]),('XTranslateCoordinates',C.c_int,[C.c_void_p,C.c_ulong,C.c_ulong,C.c_int,C.c_int,C.POINTER(C.c_int),C.POINTER(C.c_int),C.POINTER(C.c_ulong)]),('XGetGeometry',C.c_int,[C.c_void_p,C.c_ulong,C.POINTER(C.c_ulong),C.POINTER(C.c_int),C.POINTER(C.c_int),C.POINTER(C.c_uint),C.POINTER(C.c_uint),C.POINTER(C.c_uint),C.POINTER(C.c_uint)]),('XResizeWindow',C.c_int,[C.c_void_p,C.c_ulong,C.c_uint,C.c_uint]),('XSendEvent',C.c_int,[C.c_void_p,C.c_ulong,C.c_int,C.c_long,C.POINTER(Event)]),('XKeysymToKeycode',C.c_ubyte,[C.c_void_p,C.c_ulong]),('XCloseDisplay',C.c_int,[C.c_void_p])]
@@ -35,6 +45,24 @@ class Desktop:
         if not self.display:raise RuntimeError('X11 display required for desktop acceptance')
         self.root=self.x.XDefaultRootWindow(self.display)
     def atom(self,name):return self.x.XInternAtom(self.display,name.encode(),0)
+    def prepare_display(self):
+        if C.sizeof(DisplayMode)!=220:raise RuntimeError('Unexpected DEVMODEW ABI')
+        current=DisplayMode();current.size=C.sizeof(current)
+        if not self.user.EnumDisplaySettingsW(None,0xffffffff,C.byref(current)):raise C.WinError(C.get_last_error())
+        if current.width>=1400 and current.height>=900:return
+        candidates=[];index=0
+        while True:
+            mode=DisplayMode();mode.size=C.sizeof(mode)
+            if not self.user.EnumDisplaySettingsW(None,index,C.byref(mode)):break
+            if mode.width>=1400 and mode.height>=900 and mode.bits==current.bits:candidates.append(mode)
+            index+=1
+        if not candidates:raise RuntimeError('Windows desktop acceptance requires a supported display mode of at least 1400x900')
+        selected=min(candidates,key=lambda mode:(mode.width*mode.height,-mode.frequency))
+        result=self.user.ChangeDisplaySettingsW(C.byref(selected),0) # Dynamic only; never update the registry.
+        if result:raise RuntimeError('Cannot establish isolated test desktop mode: '+str(result))
+        self.originalMode=current
+        print('Temporary acceptance desktop: '+str(selected.width)+'x'+str(selected.height),flush=True)
+        time.sleep(.5)
     def find(self,pid,title):
         if os.name=='nt':
             found=[]
@@ -109,3 +137,7 @@ class Desktop:
             event=Event();message=event.message;message.type=33;message.send=1;message.display=self.display;message.window=window;message.message=self.atom('WM_PROTOCOLS');message.format=32;message.data.l[0]=self.atom('WM_DELETE_WINDOW');self.x.XSendEvent(self.display,window,0,0,C.byref(event));self.x.XFlush(self.display)
     def shutdown(self):
         if os.name!='nt':self.x.XCloseDisplay(self.display)
+        elif self.originalMode is not None:
+            result=self.user.ChangeDisplaySettingsW(C.byref(self.originalMode),0)
+            if result:raise RuntimeError('Cannot restore original test desktop mode: '+str(result))
+            self.originalMode=None
