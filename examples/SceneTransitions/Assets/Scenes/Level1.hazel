@@ -1,0 +1,220 @@
+Scene: Level1
+Entities:
+- Entity: 10
+  TagComponent:
+    Tag: Camera
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  CameraComponent:
+    Camera:
+      ProjectionType: 1
+      PerspectiveFOV: 0.785398
+      PerspectiveNear: 0.01
+      PerspectiveFar: 1000
+      OrthographicSize: 10
+      OrthographicNear: -10
+      OrthographicFar: 10
+    Primary: true
+    FixedAspectRatio: false
+- Entity: 11
+  TagComponent:
+    Tag: Player
+  TransformComponent:
+    Translation:
+    - 0
+    - 0.5
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.85
+    - 0.85
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.3
+    - 0.7
+    - 0.95
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Tile.png
+  Rigidbody2DComponent:
+    BodyType: Dynamic
+    FixedRotation: true
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0.6
+    Restitution: 0
+    RestitutionThreshold: 0.5
+  ScriptComponent:
+    ClassName: SceneTransitions.Player
+- Entity: 12
+  TagComponent:
+    Tag: Floor
+  TransformComponent:
+    Translation:
+    - 0
+    - -3
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 9
+    - 0.6
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.8
+    - 0.55
+    - 0.3
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Tile.png
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0.6
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 13
+  TagComponent:
+    Tag: Crate
+  TransformComponent:
+    Translation:
+    - 2
+    - -1.8
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.8
+    - 0.6
+    - 0.3
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Tile.png
+  Rigidbody2DComponent:
+    BodyType: Dynamic
+    FixedRotation: true
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0.6
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 14
+  TagComponent:
+    Tag: Menu
+  TransformComponent:
+    Translation:
+    - -1.75
+    - 3.5
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 2.5
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.35
+    - 0.2
+    - 0.1
+    - 1
+    TilingFactor: 1
+  ScriptComponent:
+    ClassName: SceneTransitions.MenuButton
+- Entity: 15
+  TagComponent:
+    Tag: Menu label
+  TransformComponent:
+    Translation:
+    - -2.8
+    - 3.25
+    - 0.1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.45
+    - 0.45
+    - 1
+  TextComponent:
+    TextString: MENU
+    Color:
+    - 0.96
+    - 0.9
+    - 0.78
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 16
+  TagComponent:
+    Tag: Controls
+  TransformComponent:
+    Translation:
+    - -3.7
+    - 2.2
+    - 0.1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.35
+    - 0.35
+    - 1
+  TextComponent:
+    TextString: A/D move   Space jump   Esc menu
+    Color:
+    - 0.96
+    - 0.9
+    - 0.78
+    - 1
+    Kerning: 0
+    LineSpacing: 0

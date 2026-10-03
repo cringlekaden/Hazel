@@ -1,0 +1,5 @@
+Project:
+  Name: Authoring
+  StartScene: Scenes/Example.hazel
+  AssetDirectory: Assets
+  ScriptModulePath: Scripts/Binaries/Regression.dll

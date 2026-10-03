@@ -6,6 +6,10 @@
 #include <system_error>
 
 namespace Hazel {
+std::filesystem::path FileSystem::GetEnvironmentPath(const char* name) {
+    const char* value = std::getenv(name);
+    return value && *value ? std::filesystem::u8path(value) : std::filesystem::path{};
+}
 std::filesystem::path FileSystem::GetExecutablePath() {
     return std::filesystem::read_symlink("/proc/self/exe");
 }

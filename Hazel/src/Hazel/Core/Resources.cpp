@@ -6,8 +6,8 @@
 namespace Hazel {
     static ApplicationResourceSpecification s_Resources;
     static std::filesystem::path ConfiguredPath(const char* variable, const std::filesystem::path& standard) {
-        const auto* value = std::getenv(variable);
-        return value && *value ? std::filesystem::absolute(std::filesystem::u8path(value)) : standard;
+        const auto value = FileSystem::GetEnvironmentPath(variable);
+        return !value.empty() ? std::filesystem::absolute(value) : standard;
     }
     ApplicationResourceSpecification Resources::Defaults(const std::string& application) {
         const auto executable = FileSystem::GetExecutablePath().parent_path();

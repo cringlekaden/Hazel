@@ -24,6 +24,7 @@ extern "C" {
 
 namespace Hazel {
 	struct ScriptEngineData;
+    class RuntimeSession;
 
 
 	class ScriptClass
@@ -121,6 +122,9 @@ namespace Hazel {
 		static void OnUpdateEntity(Entity entity, Timestep ts);
 
 		static Scene* GetSceneContext();
+        // Borrowed until session Stop; never retained by managed code.
+        static RuntimeSession* GetRuntimeSession();
+
 		static Ref<ScriptInstance> GetEntityScriptInstance(UUID entityID);
 
 		static Ref<ScriptClass> GetEntityClass(const std::string& name);
@@ -133,7 +137,9 @@ namespace Hazel {
 
 		static MonoString* CreateString(const char* string);
 	private:
-		static void ReleaseDomainMetadata();
+		static void SetRuntimeSession(RuntimeSession* session);
+        friend class RuntimeSession;
+        static void ReleaseDomainMetadata();
 		static void InitMono();
 		static void ShutdownMono();
 

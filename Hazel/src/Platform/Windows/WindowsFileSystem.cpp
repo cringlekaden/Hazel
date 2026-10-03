@@ -8,6 +8,17 @@
 #include <shlobj.h>
 
 namespace Hazel {
+std::filesystem::path FileSystem::GetEnvironmentPath(const char* name) {
+    // Configuration variable names are ASCII; their values remain native UTF-16.
+    const std::wstring wideName(name, name + std::strlen(name));
+    const DWORD required = GetEnvironmentVariableW(wideName.c_str(), nullptr, 0);
+    if (!required) return {};
+    std::wstring value(required, L'\0');
+    const DWORD size = GetEnvironmentVariableW(wideName.c_str(), value.data(), required);
+    if (!size || size >= required) throw std::runtime_error("Environment changed while reading path configuration");
+    value.resize(size);
+    return std::filesystem::path(value);
+}
 std::filesystem::path FileSystem::GetExecutablePath() {
     std::vector<wchar_t> buffer(32768);
     DWORD count = GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));

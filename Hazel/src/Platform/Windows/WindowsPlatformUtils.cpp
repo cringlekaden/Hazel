@@ -9,7 +9,6 @@
 #include <GLFW/glfw3native.h>
 
 namespace Hazel {
-float Time::GetTime() { return static_cast<float>(glfwGetTime()); }
 static std::wstring ToWide(const char* text, int length)
 {
     int count = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, length, nullptr, 0);

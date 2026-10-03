@@ -211,7 +211,7 @@ void OpenGLShader::CompilePipeline(const std::unordered_map<GLenum,std::string>&
     CompileOrGetOpenGLBinaries();
     try { CreateProgram(); }
     catch (...) { if (m_RendererID) glDeleteProgram(m_RendererID); m_RendererID=0; throw; }
-    HZ_CORE_WARN("Shader creation took {} ms",timer.ElapsedMillis());
+    HZ_CORE_TRACE("Shader creation took {} ms",timer.ElapsedMillis());
 }
 void OpenGLShader::CompileOrGetVulkanBinaries(const std::unordered_map<GLenum,std::string>& sources)
 {

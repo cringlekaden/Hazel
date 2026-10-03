@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "Hazel/Scene/RuntimeSession.h"
 #include "Hazel/Core/Resources.h"
 #include "ScriptEngine.h"
 
@@ -27,6 +28,16 @@
 #include "Hazel/Project/Project.h"
 
 namespace Hazel {
+    static RuntimeSession* s_RuntimeSession = nullptr;
+    static const std::thread::id s_RuntimeThread = std::this_thread::get_id();
+    RuntimeSession* ScriptEngine::GetRuntimeSession() {
+        // Reject managed worker requests before observing the borrowed owner.
+        return std::this_thread::get_id() == s_RuntimeThread ? s_RuntimeSession : nullptr;
+    }
+    void ScriptEngine::SetRuntimeSession(RuntimeSession* session) {
+        if (std::this_thread::get_id() != s_RuntimeThread) throw std::logic_error("Runtime session binding requires the main thread");
+        s_RuntimeSession = session;
+    }
 
 	static std::unordered_map<std::string, ScriptFieldType> s_ScriptFieldTypeMap =
 	{
@@ -209,6 +220,7 @@ namespace Hazel {
 
 	void ScriptEngine::Shutdown()
 	{
+        if (auto* session = GetRuntimeSession()) session->Stop();
 		if (!s_Data) return;
 		s_Data->ShuttingDown = true;
 		s_Data->AppAssemblyFileWatcher.reset();

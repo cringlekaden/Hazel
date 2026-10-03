@@ -74,3 +74,18 @@ namespace Migration {
         }
     }
 }
+
+namespace Migration {
+    public class TransitionOnCreate : Hazel.Entity {
+        public int Creates;
+        void OnCreate() { Creates++; Hazel.Scene.LoadScene("Scenes/Target.hazel"); }
+    }
+    public class TransitionOnUpdate : Hazel.Entity {
+        public int Updates;
+        void OnUpdate(float timestep) {
+            Updates++;
+            Hazel.Scene.LoadScene("Scenes/Target.hazel");
+            Hazel.Scene.LoadScene("Scenes/Conflicting.hazel");
+        }
+    }
+}

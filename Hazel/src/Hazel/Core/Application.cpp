@@ -125,6 +125,8 @@ namespace Hazel {
 	{
 		HZ_PROFILE_FUNCTION();
 
+		m_LastFrameTime = Time::GetTime();
+
 		while (m_Running)
 		{
 			HZ_PROFILE_SCOPE("RunLoop");

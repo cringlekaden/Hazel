@@ -111,7 +111,9 @@ def build(configuration, options, sources, system):
         for license_file in source.glob('LICENSE*'):
             if license_file.is_file():
                 shutil.copyfile(license_file, licenses / license_file.name)
-    manifest = dict(configuration=configuration, system=system, build_system='Premake',
+    sys.path.insert(0, str(ROOT / 'scripts'))
+    from hazel import dependency_digest
+    manifest = dict(build_inputs_sha256=dependency_digest(), configuration=configuration, system=system, build_system='Premake',
                     pins_sha256=hashlib.sha256(PINS_FILE.read_bytes()).hexdigest(), pins=PINS,
                     premake=output(options.premake, f'--file={ROOT / "scripts/dependencies/shader-workspace.lua"}', '--version').splitlines()[0],
                     source_manifest_sha256=hashlib.sha256((ROOT / 'scripts/dependencies/shader-sources.json').read_bytes()).hexdigest(),

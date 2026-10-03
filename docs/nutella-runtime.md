@@ -73,3 +73,16 @@ roots. SceneSmoke passed managed/physics/authored/reload/watcher regressions.
 EditorSmoke passed actual docked editor authoring/Play/Stop/failure/relocation
 regressions. Its initial settings fixture was corrected to use the configured
 resource root. ELF inspection confirms `$ORIGIN/lib` RPATH, without SDK paths.
+
+Runtime checkpoint: Nutella replaces the demonstrations, using a single
+RuntimeSession shared with editor Play. Linux Debug canonical build and all 13
+retained/extended regression executables passed on native HD4000. Runtime checks
+cover OnCreate/OnUpdate deferral, first-wins conflicts, cancellation, 12 repeated
+transitions with cleared physics/managed handles, invalid/missing scenes and
+invalid physics preserving the old session, viewport mapping/resizing, and domain
+reuse. EditorSmoke retains authored/live reload/Stop isolation and failure checks.
+Real native mouse clicks exercised MainMenu -> Level1 -> MainMenu in both apps;
+rendered screenshots were inspected. This is automated desktop input, not a
+claim of human manual testing. Local VS Code settings were preserved/backed up;
+launch/tasks now use the canonical tool and example instead of removed demos.
+Packaging/CI verification is the next checkpoint, not yet a completed result.

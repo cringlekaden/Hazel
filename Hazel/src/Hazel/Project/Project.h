@@ -8,6 +8,7 @@
 #include "Hazel/Core/Base.h"
 
 namespace Hazel {
+    class Scene;
 
 	struct ProjectConfig
 	{
@@ -46,7 +47,9 @@ namespace Hazel {
 		static std::filesystem::path MakeAssetReference(const std::filesystem::path& assetRoot, const std::filesystem::path& loadedPath);
 		std::filesystem::path GetAssetRoot() const { return m_ProjectDirectory / m_Config.AssetDirectory; }
 
-		ProjectConfig& GetConfig() { return m_Config; }
+		Ref<Scene> LoadScene(const std::filesystem::path& assetReference) const;
+
+        ProjectConfig& GetConfig() { return m_Config; }
 
 		static Ref<Project> GetActive() { return s_ActiveProject; }
 

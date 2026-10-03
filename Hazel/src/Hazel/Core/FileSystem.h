@@ -13,6 +13,7 @@ namespace Hazel {
 	{
 	public:
 		static std::filesystem::path GetExecutablePath();
+        static std::filesystem::path GetEnvironmentPath(const char* name);
         static std::filesystem::path GetUserDataDirectory();
 		static Buffer ReadFileBinary(const std::filesystem::path& filepath);
 		// Checked sibling-temporary write followed by replacement; no power-loss durability claim.

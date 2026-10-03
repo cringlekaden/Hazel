@@ -1,3 +1,6 @@
+#ifdef HZ_PLATFORM_WINDOWS
+#include "Platform/Windows/WindowsCommandLine.h"
+#endif
 // Real pinned EditorLayer/panels in Application; files and layout are isolated.
 #include "EditorLayer.h"
 #include "ContentBrowserPayload.h"
@@ -43,13 +46,13 @@ public:
             Check(!e.m_SceneHierarchyPanel.SetSelectedEntity(stale),"Selection dereferenced a destroyed foreign scene");
             auto camera = e.m_EditorScene->CreateEntityWithUUID(900, "Camera");
             camera.AddComponent<CameraComponent>().Camera.SetOrthographic(4, -1, 1);
-            camera.AddComponent<ScriptComponent>().ClassName = "Sandbox.Camera";
+            camera.AddComponent<ScriptComponent>().ClassName = "Regression.Camera";
             auto player = e.m_EditorScene->CreateEntityWithUUID(901, u8"Player %n é");
             player.AddComponent<SpriteRendererComponent>();
             player.AddComponent<Rigidbody2DComponent>().Type = Rigidbody2DComponent::BodyType::Dynamic;
             player.AddComponent<BoxCollider2DComponent>();
-            player.AddComponent<ScriptComponent>().ClassName = "Sandbox.Player";
-            auto texture = m_Directory / "SandboxProject/Assets/Textures" / std::filesystem::u8path(u8"texture é 🚀.png");
+            player.AddComponent<ScriptComponent>().ClassName = "Regression.Player";
+            auto texture = m_Directory / "AuthoringProject/Assets/Textures" / std::filesystem::u8path(u8"texture é 🚀.png");
             std::filesystem::copy_file(m_Directory / "assets/textures/Checkerboard.png", texture);
             const auto payload = texture.lexically_relative(m_Directory).generic_u8string();
             const auto decoded = ContentBrowserPath(payload.c_str(), static_cast<int>(payload.size() + 1));
@@ -69,13 +72,13 @@ public:
             e.m_HoveredEntity=duplicate;
             Check(!e.m_HoveredEntity,"Destroyed hovered entity remained valid");
             e.m_SceneHierarchyPanel.SetSelectedEntity(player);
-            e.m_EditorScenePath = m_Directory / "SandboxProject/Assets/Scenes" / std::filesystem::u8path(u8"workflow-é-🚀.hazel");
+            e.m_EditorScenePath = m_Directory / "AuthoringProject/Assets/Scenes" / std::filesystem::u8path(u8"workflow-é-🚀.hazel");
             Check(e.SaveScene(),"Editor scene save reported failure");
             Project::GetActive()->GetConfig().StartScene=e.m_EditorScenePath.lexically_relative(std::filesystem::absolute(Project::GetAssetDirectory()));
             Check(e.SaveProject(),"Editor project save reported failure");
             const auto saved=Read(e.m_EditorScenePath);
             Check(saved.find(std::string(u8"Textures/texture é 🚀.png"))!=std::string::npos &&
-                  saved.find("SandboxProject/Assets/Textures")==std::string::npos,"Project texture was not asset-root relative");
+                  saved.find("AuthoringProject/Assets/Textures")==std::string::npos,"Project texture was not asset-root relative");
             Check(saved.find((m_Directory/"assets/textures/Checkerboard.png").generic_u8string())!=std::string::npos,
                   "External absolute reference was discarded");
             break;
@@ -90,7 +93,7 @@ public:
             e.m_ShowPhysicsColliders = true;
             // Original upstream Windows separators remain readable on Linux too.
             e.m_HoveredEntity=player;
-            Check(e.OpenScene(m_Directory/"SandboxProject/Assets/Scenes/Example.hazel"),"Legacy Windows-separated texture reference failed");
+            Check(e.OpenScene(m_Directory/"AuthoringProject/Assets/Scenes/Example.hazel"),"Legacy Windows-separated texture reference failed");
             Check(!e.m_HoveredEntity && !e.m_SceneHierarchyPanel.SetSelectedEntity(player),"OpenScene retained retired observations");
             Check(e.OpenScene(file),"Authored scene reopen failed");
             FailureChecks();
@@ -146,14 +149,14 @@ public:
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project reopen failed");
             {
                 const auto relocated=m_Directory/std::filesystem::u8path(u8"Relocated Project é 🚀");
-                std::filesystem::copy(m_Directory/"SandboxProject",relocated,std::filesystem::copy_options::recursive);
-                const auto original=m_Directory/"SandboxProject";
+                std::filesystem::copy(m_Directory/"AuthoringProject",relocated,std::filesystem::copy_options::recursive);
+                const auto original=m_Directory/"AuthoringProject";
                 const auto parked=m_Directory/"Parked original";
                 // Windows cannot rename the watched project's ancestor directory while its watcher is active.
                 // Switch to the copy (joining the old watcher), then make the original unavailable and reopen.
-                Check(e.OpenProject(relocated/"Sandbox.hproj"),"Copied project initial open failed");
+                Check(e.OpenProject(relocated/"Authoring.hproj"),"Copied project initial open failed");
                 std::filesystem::rename(original,parked); // Prevent silently resolving against the original project.
-                Check(e.OpenProject(relocated/"Sandbox.hproj"),"Relocated project open failed");
+                Check(e.OpenProject(relocated/"Authoring.hproj"),"Relocated project open failed");
                 auto texture=e.m_EditorScene->GetEntityByUUID(901).GetComponent<SpriteRendererComponent>().Texture;
                 Check(texture && texture->IsLoaded() && std::filesystem::u8path(texture->GetPath())==
                       relocated/"Assets/Textures"/std::filesystem::u8path(u8"texture é 🚀.png"),"Relocation used original asset root");
@@ -244,24 +247,29 @@ private:
 };
 }
 int main(int argc, char** argv) {
+#ifdef HZ_PLATFORM_WINDOWS
+    auto encoded = Hazel::WindowsCommandLineUTF8();
+    std::vector<char*> pointers;
+    for (auto& argument : encoded) pointers.push_back(argument.data());
+    argc = static_cast<int>(pointers.size()); pointers.push_back(nullptr); argv = pointers.data();
+#endif
     using namespace Hazel;
     const auto previous = std::filesystem::current_path();
     const auto directory = std::filesystem::temp_directory_path() / std::filesystem::u8path("hazel-editor-é-" + std::to_string(std::random_device{}()));
     try {
-        Log::Init(); Check(argc == 4, "Usage: EditorSmoke Core.dll Sandbox.dll Hazelnut-source-dir");
+        Log::Init(); Check(argc == 4, "Usage: EditorSmoke Core.dll Regression.dll test-environment-dir");
         auto core = std::filesystem::absolute(std::filesystem::u8path(argv[1]));
         auto scripts = std::filesystem::absolute(std::filesystem::u8path(argv[2]));
         auto source = std::filesystem::absolute(std::filesystem::u8path(argv[3]));
         std::filesystem::create_directory(directory);
         std::filesystem::create_directories(directory / "assets/Icons");
-        for (const char* name : { "assets", "Resources/Icons", "SandboxProject" })
-            std::filesystem::copy(source / name, directory / (std::string(name)=="Resources/Icons" ? "assets/Icons" : name), std::filesystem::copy_options::recursive);
-        std::filesystem::copy_file(source / "imgui.ini", directory / "assets/imgui.ini");
+        for (const char* name : { "assets", "AuthoringProject" })
+            std::filesystem::copy(source / name, directory / name, std::filesystem::copy_options::recursive);
         std::filesystem::create_directories(directory / "assets/Scripts");
-        std::filesystem::create_directories(directory / "SandboxProject/Assets/Scripts/Binaries");
+        std::filesystem::create_directories(directory / "AuthoringProject/Assets/Scripts/Binaries");
         std::filesystem::copy_file(core, directory / "assets/Scripts/Hazel-ScriptCore.dll");
-        std::filesystem::copy_file(scripts, directory / "SandboxProject/Assets/Scripts/Binaries/Sandbox.dll", std::filesystem::copy_options::overwrite_existing);
-        auto project = directory / "SandboxProject/Sandbox.hproj";
+        std::filesystem::copy_file(scripts, directory / "AuthoringProject/Assets/Scripts/Binaries/Regression.dll", std::filesystem::copy_options::overwrite_existing);
+        auto project = directory / "AuthoringProject/Authoring.hproj";
         auto projectArgument = project.lexically_relative(directory).generic_u8string();
         char executable[] = "EditorSmoke"; char* arguments[] = { executable, projectArgument.data() };
         bool done = false;

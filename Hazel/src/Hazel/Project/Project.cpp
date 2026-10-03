@@ -2,6 +2,8 @@
 #include "Project.h"
 
 #include "ProjectSerializer.h"
+#include "Hazel/Scene/Scene.h"
+#include "Hazel/Scene/SceneSerializer.h"
 
 namespace Hazel {
 
@@ -34,6 +36,17 @@ namespace Hazel {
 		return loaded;
 	}
 
+    Ref<Scene> Project::LoadScene(const std::filesystem::path& reference) const {
+        const auto root = GetAssetRoot();
+        if (!std::filesystem::is_directory(root)) throw std::runtime_error("Missing project asset root: " + root.generic_u8string());
+        const auto path = ResolveAssetPath(root, reference);
+        if (path.extension() != ".hazel") throw std::runtime_error("Scene must be a .hazel file: " + path.generic_u8string());
+        auto scene = CreateRef<Scene>();
+        if (!SceneSerializer(scene, root).Deserialize(path.generic_u8string()))
+            throw std::runtime_error("Cannot load scene/assets: " + path.generic_u8string());
+        return scene;
+    }
+
 	Ref<Project> Project::New()
 	{
 		s_ActiveProject = CreateRef<Project>();
@@ -54,7 +67,7 @@ namespace Hazel {
 		ProjectSerializer serializer(project);
 		if (serializer.Deserialize(path))
 		{
-			project->m_ProjectDirectory = path.parent_path();
+			project->m_ProjectDirectory = std::filesystem::absolute(path).parent_path();
 			return project;
 		}
 
@@ -67,7 +80,7 @@ namespace Hazel {
 		ProjectSerializer serializer(s_ActiveProject);
 		if (serializer.Serialize(path))
 		{
-			s_ActiveProject->m_ProjectDirectory = path.parent_path();
+			s_ActiveProject->m_ProjectDirectory = std::filesystem::absolute(path).parent_path();
 			return true;
 		}
 

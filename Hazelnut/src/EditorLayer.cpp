@@ -1,6 +1,7 @@
 #include "ContentBrowserPayload.h"
 #include "EditorLayer.h"
 #include "Hazel/Core/Resources.h"
+#include "Hazel/Core/FileSystem.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Utils/PlatformUtils.h"
 #include "Hazel/Math/Math.h"
@@ -18,7 +19,7 @@ namespace Hazel {
 
 
 	EditorLayer::EditorLayer()
-		: Layer("EditorLayer"), m_CameraController(1280.0f / 720.0f), m_SquareColor({ 0.2f, 0.3f, 0.8f, 1.0f })
+		: Layer("EditorLayer"), m_CameraController(1280.0f / 720.0f)
 	{
 		m_Font = Font::GetDefault();
 	}
@@ -27,7 +28,7 @@ namespace Hazel {
 	{
 		HZ_PROFILE_FUNCTION();
 
-		m_CheckerboardTexture = Texture2D::Create("assets/textures/Checkerboard.png");
+
 		m_IconPlay = Texture2D::Create(Resources::Resolve("Icons/PlayButton.png").generic_u8string());
 		m_IconPause = Texture2D::Create(Resources::Resolve("Icons/PauseButton.png").generic_u8string());
 		m_IconSimulate = Texture2D::Create(Resources::Resolve("Icons/SimulateButton.png").generic_u8string());
@@ -54,7 +55,9 @@ namespace Hazel {
 			// TODO(Yan): prompt the user to select a directory
 			// NewProject();
 
-			OpenProject(); // Failure/cancellation leaves an empty, usable editor.
+			const auto bundled = FileSystem::GetExecutablePath().parent_path() / "Example/SceneTransitions.hproj";
+            if (std::filesystem::is_regular_file(bundled)) OpenProject(bundled);
+            else OpenProject(); // Failure/cancellation leaves an empty, usable editor.
 
 		}
 
@@ -116,7 +119,15 @@ namespace Hazel {
 			}
 			case SceneState::Play:
 			{
-				m_ActiveScene->OnUpdateRuntime(ts);
+                m_RuntimeSession.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+                m_RuntimeSession.SetInput(Input::GetMouseScreenPosition() - m_ViewportBounds[0], m_ViewportHovered && m_ViewportFocused);
+                m_RuntimeSession.Update(ts);
+                if (m_ActiveScene != m_RuntimeSession.GetScene()) {
+                    ClearSceneObservers();
+                    m_ActiveScene = m_RuntimeSession.GetScene();
+                    m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+                }
+                if (!m_RuntimeSession.GetError().empty()) m_ActionError = m_RuntimeSession.GetError();
 				break;
 			}
 		}
@@ -641,12 +652,9 @@ namespace Hazel {
 			if (!project) return ActionFailed("Cannot parse/open project: " + path.generic_u8string());
 			const auto assets = project->GetAssetRoot();
 			if (!std::filesystem::is_directory(assets)) return ActionFailed("Project asset directory is missing: " + assets.generic_u8string());
-			const auto startScene = Project::ResolveAssetPath(assets, project->GetConfig().StartScene);
-			if (startScene.extension() != ".hazel") return ActionFailed("Project start scene must be a .hazel file: " + startScene.generic_u8string());
-			auto scene = CreateRef<Scene>();
-			scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-			if (!SceneSerializer(scene, assets).Deserialize(startScene.generic_u8string()))
-				return ActionFailed("Cannot load project start scene/assets: " + startScene.generic_u8string());
+            const auto startScene = Project::ResolveAssetPath(assets, project->GetConfig().StartScene);
+            auto scene = project->LoadScene(project->GetConfig().StartScene);
+            scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 			auto browser = CreateScope<ContentBrowserPanel>(assets);
 			// Init stages a complete domain/watcher; failure retains the current scripts.
 			ScriptEngine::Init(Project::ResolveAssetPath(assets, project->GetConfig().ScriptModulePath), [this]() {
@@ -659,6 +667,7 @@ namespace Hazel {
 			m_ContentBrowserPanel = std::move(browser);
 			m_SceneHierarchyPanel.SetContext(scene);
 			m_ActionError.clear();
+            HZ_CORE_INFO("Hazelnut ready: {}", project->GetConfig().Name);
 			return true;
 		} catch (const std::runtime_error& error) {
 			return ActionFailed("Open project '" + path.generic_u8string() + "': " + error.what());
@@ -742,12 +751,12 @@ namespace Hazel {
 			ActionFailed("Open a valid script assembly before playing a scripted scene"); return;
 		}
 		try {
-			auto scene = Scene::Copy(m_EditorScene);
-			scene->OnRuntimeStart();
-			if (m_SceneState != SceneState::Edit) OnSceneStop();
-			ClearSceneObservers();
-			m_ActiveScene = scene; m_SceneState = SceneState::Play;
-			m_SceneHierarchyPanel.SetContext(scene); m_ActionError.clear();
+            if (m_SceneState != SceneState::Edit) OnSceneStop();
+            m_RuntimeSession.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+            m_RuntimeSession.Start(Project::GetActive(), m_EditorScene);
+            ClearSceneObservers();
+            m_ActiveScene = m_RuntimeSession.GetScene(); m_SceneState = SceneState::Play;
+            m_SceneHierarchyPanel.SetContext(m_ActiveScene); m_ActionError.clear();
 		} catch (const std::runtime_error& error) { ActionFailed(std::string("Play scene: ") + error.what()); }
 	}
 
@@ -765,7 +774,7 @@ namespace Hazel {
 	{
 		HZ_CORE_ASSERT(m_SceneState == SceneState::Play || m_SceneState == SceneState::Simulate);
 		ClearSceneObservers();
-		if (m_SceneState == SceneState::Play) m_ActiveScene->OnRuntimeStop();
+		if (m_SceneState == SceneState::Play) m_RuntimeSession.Stop();
 		else if (m_SceneState == SceneState::Simulate) m_ActiveScene->OnSimulationStop();
 		m_SceneState = SceneState::Edit; m_ActiveScene = m_EditorScene;
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);

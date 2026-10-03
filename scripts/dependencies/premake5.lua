@@ -49,7 +49,7 @@ project "Hazel"
         externalincludedirs { repoRoot .. "/build/dependencies/install/Release-%{cfg.system}-%{cfg.architecture}/include" }
     filter {}
 
-local consumers = { "Sandbox", "Hazelnut" }
+local consumers = { "Nutella", "Hazelnut" }
 if _OPTIONS["migration-tests"] then
     table.insert(consumers, "MigrationRendererSmoke")
     table.insert(consumers, "MigrationCoreSmoke")
@@ -62,6 +62,7 @@ if _OPTIONS["migration-tests"] then
     table.insert(consumers, "MigrationSceneSmoke")
     table.insert(consumers, "MigrationSceneGPUSmoke")
     table.insert(consumers, "MigrationEditorSmoke")
+    table.insert(consumers, "MigrationRuntimeSessionSmoke")
 end
 for _, consumer in ipairs(consumers) do
     project (consumer)

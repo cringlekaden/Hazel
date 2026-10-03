@@ -1,0 +1,5 @@
+Project:
+  Name: SceneTransitions
+  StartScene: Scenes/MainMenu.hazel
+  AssetDirectory: Assets
+  ScriptModulePath: Scripts/Binaries/SceneTransitions.dll

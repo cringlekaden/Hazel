@@ -8,14 +8,12 @@ project "Hazelnut"
     staticruntime "Off"
     targetdir (root .. "/bin/" .. outputdir .. "/%{prj.name}")
     objdir (root .. "/bin-int/" .. outputdir .. "/%{prj.name}")
-    debugdir (root .. "/Hazelnut")
+    debugdir (root)
     files { "src/**.h", "src/**.cpp" }
     includedirs { root .. "/Hazel/src", root .. "/Hazelnut/src" }
     externalincludedirs { root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/imgui", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/ImGuizmo" }
     links { "Hazel", "ImGui", "GLFW", "Glad", "ImGuizmo" }
-    dependson { "Hazel-ScriptCore", "SandboxScripts" }
-    postbuildcommands { '{MKDIR} "' .. root .. '/Hazelnut/Resources/Scripts"',
-        '{COPYFILE} "' .. root .. '/bin/' .. outputdir .. '/Hazel-ScriptCore/Hazel-ScriptCore.dll" "' .. root .. '/Hazelnut/Resources/Scripts/Hazel-ScriptCore.dll"' }
+    dependson { "Hazel-ScriptCore", "ExampleScripts" }
     filter "system:linux"
         defines { "HZ_PLATFORM_LINUX" }
         externalincludedirs (HazelGTKIncludes)
