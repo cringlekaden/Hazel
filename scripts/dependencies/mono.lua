@@ -63,7 +63,7 @@ for _, name in ipairs(consumers) do
                 runpathdirs { "$$ORIGIN/lib" }
                 linkoptions { "-Wl,--disable-new-dtags" }
             filter "system:windows"
-                links { "libmono-static-sgen", "Ws2_32", "Winmm", "Version", "Bcrypt", "Psapi", "Shell32", "Ole32" }
+                links { "libmono-static-sgen", "Ws2_32", "Winmm", "Version", "Bcrypt", "Psapi", "Shell32", "Ole32", "Uuid" }
             filter { "system:windows", "configurations:Debug" }
                 libdirs { root .. "/Hazel/vendor/mono/lib/Debug" }
             filter { "system:windows", "configurations:Release or Dist" }

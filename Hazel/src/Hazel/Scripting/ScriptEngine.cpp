@@ -543,7 +543,7 @@ namespace Hazel {
 			// to iterate over all of the elements. When no more values are available, the return value is NULL.
 
 			int fieldCount = mono_class_num_fields(monoClass);
-			HZ_CORE_WARN("{} has {} fields:", className, fieldCount);
+			HZ_CORE_TRACE("{} has {} fields:", className, fieldCount);
 			void* iterator = nullptr;
 			while (MonoClassField* field = mono_class_get_fields(monoClass, &iterator))
 			{
@@ -553,7 +553,7 @@ namespace Hazel {
 				{
 					MonoType* type = mono_field_get_type(field);
 					ScriptFieldType fieldType = Utils::MonoTypeToScriptFieldType(type);
-					HZ_CORE_WARN("  {} ({})", fieldName, Utils::ScriptFieldTypeToString(fieldType));
+					HZ_CORE_TRACE("  {} ({})", fieldName, Utils::ScriptFieldTypeToString(fieldType));
 
 					scriptClass->m_Fields[fieldName] = { fieldType, fieldName, field };
 				}
@@ -561,9 +561,6 @@ namespace Hazel {
 
 		}
 
-		auto& entityClasses = data.EntityClasses;
-
-		//mono_field_get_value()
 
 	}
 
