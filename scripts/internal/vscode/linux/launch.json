@@ -32,10 +32,6 @@
                 "programOutput": true,
                 "moduleLoad": false,
                 "engineLogging": false
-            },
-            "windows": {
-                "type": "cppvsdbg",
-                "program": "${workspaceFolder}/bin/Debug-windows-x86_64/Hazelnut/Hazelnut.exe"
             }
         },
         {
@@ -70,10 +66,6 @@
                 "programOutput": true,
                 "moduleLoad": false,
                 "engineLogging": false
-            },
-            "windows": {
-                "type": "cppvsdbg",
-                "program": "${workspaceFolder}/bin/Debug-windows-x86_64/Nutella/Nutella.exe"
             }
         }
     ]

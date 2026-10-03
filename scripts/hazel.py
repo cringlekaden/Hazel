@@ -71,7 +71,10 @@ def premake():
         run(['git', '-C', owned, 'checkout', '--detach', PINS['premake']])
     if not executable.is_file():
         if SYSTEM == 'windows':
-            run(['cmd', '/c', 'Bootstrap.bat', 'vs2022', 'PREMAKE_OPTS=--curl-src=none'], cwd=owned)
+            install, _ = vs_toolchain()
+            bootstrap = ROOT / 'build/tools/bootstrap-windows.cmd'
+            bootstrap.write_text('@echo off\ncall "' + str(install / 'VC/Auxiliary/Build/vcvars64.bat') + '"\nif errorlevel 1 exit /b 1\nnmake -f Bootstrap.mak windows MSDEV=vs2022 PREMAKE_OPTS=--curl-src=none\nexit /b %errorlevel%\n', encoding='utf-8')
+            run(['cmd', '/d', '/c', bootstrap], cwd=owned)
         else:
             bootstrap = ROOT / 'build/tools/PremakeBootstrap.mak'
             bootstrap.write_text((owned/'Bootstrap.mak').read_text().replace('-j`getconf _NPROCESSORS_ONLN`', '-j2'))
@@ -279,7 +282,7 @@ def main():
             if args.action == 'setup':
                 diagnose(); run(['git', 'submodule', 'update', '--init', '--recursive']); yaml_tools()
             build(args.config, getattr(args, 'tests', False), args.action == 'database')
-            if args.action == 'setup': print('Ready. python scripts/hazel.py run Hazelnut --project examples/SceneTransitions/SceneTransitions.hproj\nF5: copy scripts/internal/vscode templates into .vscode. Use hazel.py --help for all workflows.')
+            if args.action == 'setup': print('Ready. python scripts/hazel.py run Hazelnut --project examples/SceneTransitions/SceneTransitions.hproj\nF5: copy scripts/internal/vscode/' + SYSTEM + '/ templates into .vscode. Use hazel.py --help for all workflows.')
         elif args.action == 'run':
             stage(args.config)
             exe = binaries(args.config) / args.app / (args.app + ('.exe' if SYSTEM == 'windows' else ''))

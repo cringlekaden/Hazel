@@ -7,7 +7,6 @@ import re
 import shutil
 import subprocess
 import tempfile
-import zipfile
 
 import hazel as hz
 
@@ -63,7 +62,8 @@ def validate_project(descriptor, config, assets):
     auditor = hz.binaries('Release') / 'PackageAudit/PackageAudit.exe'
     command = [auditor, core, module, assets]
     if hz.SYSTEM == 'linux': command = [hz.mono_prefix()/'bin/mono', *command]
-    result = hz.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    result = subprocess.run(list(map(str,command)), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if result.returncode: raise RuntimeError(result.stderr.strip() or 'Managed dependency audit failed')
     known = {line.removeprefix('SCRIPT ') for line in result.stdout.splitlines() if line.startswith('SCRIPT ')}
     for scene in scenes:
         content = yaml.safe_load(scene.read_text(encoding='utf-8'))

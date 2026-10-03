@@ -32,10 +32,12 @@ def cli(executable,working,env):
         if 'Creating window' in text:raise RuntimeError('CLI validation initialized graphics')
         return text
     invoke(['--help'],True,'StartScene');invoke(['--list-projects'],True,'.hproj')
-    for args in (['--unknown'],['--project'],['--project','--help'],['--help','--list-projects'],['--project','missing.hproj']):invoke(args,False)
+    for args in (['--unknown'],['--project'],['--project','--help'],['--help','--list-projects'],['--project','missing.hproj'],['--help','--help'],['--list-projects','--list-projects'],['--project','one.hproj','--project','two.hproj'],['unexpected.hproj']):invoke(args,False)
     root=executable.parent;original=next(root.glob('*.hproj'));saved=original.with_suffix('.saved')
     original.rename(saved)
-    try:invoke([],False,'No root-level .hproj')
+    try:
+        invoke([],False,'No root-level .hproj')
+        if invoke(['--list-projects'],True).strip():raise RuntimeError('Empty discovery returned a candidate')
     finally:saved.rename(original)
     other=root/'AAA-é.hproj';shutil.copyfile(original,other)
     try:
@@ -44,7 +46,16 @@ def cli(executable,working,env):
         invoke([],False,'Multiple projects')
     finally:other.unlink()
     # Explicit relative paths resolve in the invocation directory, before graphics.
-    invoke(['--project','relative-invalid.hproj'],False,'Cannot parse/open') if (working/'relative-invalid.hproj').is_file() else None
+    relative=working/'relative-invalid.hproj';relative.write_text('invalid descriptor',encoding='utf-8')
+    try:
+        text=invoke(['--project',relative.name],False,'Cannot parse/open')
+        if str(relative) not in text:raise RuntimeError('Relative CLI project did not resolve against invocation directory')
+    finally:relative.unlink()
+    nested=root/'nested candidates';nested.mkdir()
+    try:
+        shutil.copyfile(original,nested/'Nested.hproj')
+        if invoke(['--list-projects'],True).splitlines()!=[original.name]:raise RuntimeError('Discovery searched below package root')
+    finally:shutil.rmtree(nested)
 
 
 @contextlib.contextmanager
