@@ -153,14 +153,20 @@ def exercise(desktop,executable,project,app,game,working,env,logs,shots,packaged
             if packaged and hz.SYSTEM=='linux' and str(hz.ROOT) in (Path('/proc')/str(process.pid)/'maps').read_text():raise RuntimeError('Game package loaded checkout libraries')
             game_window=GameWindow(desktop,window,app=='Hazelnut')
             if app=='Hazelnut':
-                last_click=0
+                last_click=0;stop_frames=0
                 def enter_play():
-                    nonlocal last_click
+                    nonlocal last_click,stop_frames
                     width,height,pixels=desktop.capture(window)
-                    color=pixels[(39*width+657)*3:(39*width+657)*3+3]
-                    stop=pixels[(32*width+660)*3:(32*width+660)*3+3]
-                    if len(stop)==3 and min(stop)>220:return True
-                    if len(color)==3 and min(color)>220 and time.monotonic()-last_click>2:
+                    def white(x,y):
+                        color=pixels[(y*width+x)*3:(y*width+x)*3+3]
+                        return len(color)==3 and min(color)>220
+                    # Reject an unpainted white client area; distinguish the square
+                    # from the triangle across its interior, over two presented frames.
+                    painted=not white(638,39)
+                    stop=painted and all(white(x,y) for x in (650,656,662) for y in (33,39,45))
+                    stop_frames=stop_frames+1 if stop else 0
+                    if stop_frames>=2:return True
+                    if painted and not stop and white(657,39) and time.monotonic()-last_click>2:
                         last_click=time.monotonic();desktop.click(window,657,40)
                     return False
                 wait_for(process,enter_play,'Editor Play did not reach its rendered Stop state',20)

@@ -13,6 +13,7 @@ std::filesystem::path EditorPreferences::Location()
 }
 EditorPreferences EditorPreferences::Load(std::string &diagnostic)
 {
+	diagnostic.clear();
 	EditorPreferences defaults;
 	try
 	{

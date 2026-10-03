@@ -60,6 +60,7 @@ static bool Contained(const std::filesystem::path &root, const std::filesystem::
 AuthoringPanel::AuthoringPanel(EditorLayer &editor) : m_Editor(editor)
 {
 	m_Preferences = EditorPreferences::Load(m_Output);
+	m_PreferenceRecovery = m_Output;
 	m_Draft = m_Preferences;
 	ImGui::GetIO().FontGlobalScale = m_Preferences.UIScale;
 	m_Editor.m_ShowPhysicsColliders = m_Preferences.ShowColliders;
@@ -104,6 +105,8 @@ void AuthoringPanel::Guard(std::function<void()> action, bool includeScene)
 void AuthoringPanel::RememberProject()
 {
 	m_Preferences.Remember(m_Editor.m_ProjectPath);
+	if (!m_PreferenceRecovery.empty())
+		return; // Keep malformed/future preferences until an explicit Apply and Save.
 	try
 	{
 		m_Preferences.Save();
@@ -302,7 +305,8 @@ void AuthoringPanel::FileMenu()
 				m_Preferences.RecentProjects.end());
 			try
 			{
-				m_Preferences.Save();
+				if (m_PreferenceRecovery.empty())
+					m_Preferences.Save();
 			}
 			catch (const std::exception &error)
 			{
@@ -394,6 +398,12 @@ void AuthoringPanel::Preferences()
 		ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize({580, 500}, ImGuiCond_FirstUseEver);
 	ImGui::Begin("Editor Preferences", &m_ShowPreferences);
+	if (!m_PreferenceRecovery.empty())
+	{
+		ImGui::TextWrapped("%s", m_PreferenceRecovery.c_str());
+		ImGui::TextWrapped("Recent projects stay in memory until recovery. Apply and Save explicitly replaces the preserved file with these preferences.");
+		ImGui::Separator();
+	}
 	ImGui::TextWrapped("User scope. Saved in %s. Project descriptors stay portable; existing dock layouts "
 					   "remain in imgui.ini.",
 					   EditorPreferences::Location().generic_u8string().c_str());
@@ -436,6 +446,7 @@ void AuthoringPanel::Preferences()
 		{
 			m_Draft.RecentProjects = m_Preferences.RecentProjects;
 			m_Draft.Save();
+			m_PreferenceRecovery.clear();
 			m_Preferences = m_Draft;
 			ImGui::GetIO().FontGlobalScale = m_Preferences.UIScale;
 			m_Editor.m_ShowPhysicsColliders = m_Preferences.ShowColliders;

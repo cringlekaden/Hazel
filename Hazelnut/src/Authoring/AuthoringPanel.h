@@ -50,7 +50,7 @@ class AuthoringPanel
 	std::function<void()> m_Completion, m_Pending;
 	bool m_PendingIncludesScene = true;
 	bool m_ExitAfterJob = false;
-	std::string m_Output, m_SavedScene, m_SavedPrefab, m_PrefabReference, m_ProjectName, m_ScriptProject;
+	std::string m_Output, m_PreferenceRecovery, m_SavedScene, m_SavedPrefab, m_PrefabReference, m_ProjectName, m_ScriptProject;
 	std::string m_Name = "My Game", m_Identifier = "MyGame", m_Destination, m_Startup, m_AssetDirectory,
 				m_Module;
 	std::string m_ScriptName = "NewScript", m_Namespace = "Game", m_PrefabName = "Prefabs/NewPrefab.hprefab",

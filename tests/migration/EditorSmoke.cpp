@@ -251,7 +251,9 @@ private:
         std::string diagnostic;auto loaded=EditorPreferences::Load(diagnostic);
         Check(diagnostic.empty() && loaded.SDK==settings.SDK && loaded.Python==settings.Python && loaded.UIScale==1.25f && loaded.RecentProjects==settings.RecentProjects,"Preferences persistence failed");
         auto location=EditorPreferences::Location();FileSystem::WriteFileAtomically(location,[](auto& out){out<<"Version: 99\n";});
-        loaded=EditorPreferences::Load(diagnostic);Check(!diagnostic.empty() && loaded.SDK.empty() && loaded.UIScale==1 && Read(location)=="Version: 99\n","Malformed preferences not recovered/preserved");settings.Save();
+        loaded=EditorPreferences::Load(diagnostic);Check(!diagnostic.empty() && loaded.SDK.empty() && loaded.UIScale==1 && Read(location)=="Version: 99\n","Malformed preferences not recovered/preserved");
+        { AuthoringPanel recovery(m_Editor); recovery.RememberProject();Check(Read(location)=="Version: 99\n" && !recovery.m_PreferenceRecovery.empty(),"Automatic recent-project persistence overwrote recovered preferences"); }
+        settings.Save();
         Check(ScriptSource::ValidIdentifier("Player_2")&&!ScriptSource::ValidIdentifier("class")&&!ScriptSource::ValidIdentifier("a/b")&&ScriptSource::ValidNamespace("Game.Play")&&!ScriptSource::ValidNamespace("Game..Play"),"Script identifier validation failed");
         auto created=ScriptSource::Create(root,"AuthoringProbe","Game.Play");Check(Read(created).find("Entity.Instantiate")!=std::string::npos,"Missing generated lifecycle sample");
         Check(ScriptSource::Find(root,"Game.Play.AuthoringProbe")==created,"Script source resolution ignored its namespace");
