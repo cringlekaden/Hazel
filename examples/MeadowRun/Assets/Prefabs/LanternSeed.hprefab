@@ -1,0 +1,27 @@
+PrefabVersion: 1
+Scene: LanternSeed
+Entities:
+- Entity: 24
+  TagComponent:
+    Tag: Seed0
+  TransformComponent:
+    Translation:
+    - -5
+    - 2
+    - 0.3
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.7
+    - 0.7
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Seed.png

@@ -20,6 +20,7 @@
 #include "box2d/b2_circle_shape.h"
 #include <type_traits>
 #include <stdexcept>
+#include <cmath>
 
 namespace Hazel {
 
@@ -30,7 +31,10 @@ namespace Hazel {
 	Scene::~Scene()
 	{
 		if (m_IsRunning) OnRuntimeStop();
-		for (auto e : m_Registry.view<NativeScriptComponent>()) DestroyNativeScript(Entity{e, this});
+		std::vector<Entity> natives; for(auto e:m_Registry.view<NativeScriptComponent>())natives.emplace_back(e,this);
+        for(auto entity:natives)if(entity)DestroyNativeScript(entity);
+        CancelPendingLifecycle(); // Cleanup callbacks may retire gameplay-owned instances.
+        m_IsRunning = false;
 		OnPhysics2DStop();
 	}
 
@@ -117,7 +121,8 @@ namespace Hazel {
 
 	Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
 	{
-		if (m_EntityMap.find(uuid) != m_EntityMap.end()) throw std::invalid_argument("Duplicate entity UUID");
+		if(m_Stopping)throw std::runtime_error("Scene is stopping; creation is unavailable during cleanup");
+        if (m_EntityMap.find(uuid) != m_EntityMap.end()) throw std::invalid_argument("Duplicate entity UUID");
 		Entity entity = { m_Registry.create(), this };
 		entity.AddComponent<IDComponent>(uuid);
 		entity.AddComponent<TransformComponent>();
@@ -125,20 +130,64 @@ namespace Hazel {
 		tag.Tag = name.empty() ? "Entity" : name;
 
 		m_EntityMap[uuid] = entity;
+        if(m_IsRunning)m_PendingStart.push_back(uuid);
 
 		return entity;
 	}
 
-	void Scene::DestroyEntity(Entity entity)
-	{
+	bool Scene::IsEntityValid(UUID id) const {
+        return m_EntityMap.count(id) && !m_PendingDestroy.count(id) && !m_Destroying.count(id);
+    }
+    void Scene::DestroyEntity(Entity entity) {
+        if (!entity.BelongsTo(this)) throw std::invalid_argument("Entity belongs to another scene");
+        if (!entity) return;
+        if (m_IsRunning) { if(!m_Destroying.count(entity.GetUUID())) m_PendingDestroy.insert(entity.GetUUID()); return; }
+        DestroyEntityNow(entity);
+    }
+    void Scene::CancelPendingLifecycle() {
+        auto pending=std::move(m_PendingStart);m_PendingStart.clear();
+        for(auto id:pending){auto entity=GetEntityByUUID(id);if(entity)DestroyEntityNow(entity);}
+        auto retired=std::move(m_PendingDestroy);m_PendingDestroy.clear();
+        for(auto id:retired){auto entity=GetEntityByUUID(id);if(entity)DestroyEntityNow(entity);}
+    }
+    void Scene::FlushLifecycle() {
+        auto retired=std::move(m_PendingDestroy); m_PendingDestroy.clear();
+        for(auto id:retired) { auto entity=GetEntityByUUID(id); if(entity) DestroyEntityNow(entity); }
+        auto starts=std::move(m_PendingStart); m_PendingStart.clear();
+        SynchronizePhysics2D();
+        for(auto id:starts) { auto entity=GetEntityByUUID(id);
+            if(entity && IsEntityValid(id) && entity.HasComponent<ScriptComponent>()) ScriptEngine::OnCreateEntity(entity);
+        }
+    }
+    Entity Scene::InstantiateEntity(Entity source, const TransformComponent& transform) {
+        if(m_Stopping) throw std::runtime_error("Cannot instantiate while the scene is stopping");
+        if(!source) throw std::invalid_argument("Prefab source entity is invalid");
+        for(int i=0;i<3;i++) if(!std::isfinite(transform.Translation[i]) || !std::isfinite(transform.Rotation[i]) || !std::isfinite(transform.Scale[i]) || transform.Scale[i]<=0)
+            throw std::invalid_argument("Initial transform must be finite with positive scale");
+        auto fields=ScriptEngine::GetScriptFieldMap(source);
+        for(auto& [name,field]:fields) if(field.Field.Type==ScriptFieldType::Entity) {
+            auto id=field.GetValue<uint64_t>(); if(id && id!=source.GetUUID()) throw std::runtime_error("Prefab contains an external entity reference: "+name);
+        }
+        auto instance=CreateEntity(source.GetName());
+        try {
+            CopyComponentIfExists(AllComponents{},instance,source);
+            instance.GetComponent<TransformComponent>()=transform;
+            for(auto& [name,field]:fields) if(field.Field.Type==ScriptFieldType::Entity && field.GetValue<uint64_t>()) field.SetValue<uint64_t>(instance.GetUUID());
+            ScriptEngine::GetScriptFieldMap(instance)=std::move(fields);
+                        return instance;
+        } catch(...) { DestroyEntityNow(instance); throw; }
+    }
+    void Scene::DestroyEntityNow(Entity entity)
+    {
 		if (entity.m_Scene != this) throw std::invalid_argument("Entity belongs to another scene");
 		if (!entity) return;
-		DestroyNativeScript(entity);
-		DestroyPhysicsBody(entity);
+        auto id=entity.GetUUID(); if(m_Destroying.count(id))return; m_Destroying.insert(id);
 		if (ScriptEngine::GetSceneContext() == this) ScriptEngine::OnDestroyEntity(entity.GetUUID());
+        DestroyNativeScript(entity);
+        DestroyPhysicsBody(entity);
 		m_EntityMap.erase(entity.GetUUID());
 		m_ScriptFields.erase(entity.GetUUID());
-		m_Registry.destroy(entity);
+		m_Registry.destroy(entity);m_Destroying.erase(id);
 	}
 
 	void Scene::OnRuntimeStart()
@@ -146,31 +195,29 @@ namespace Hazel {
 		if (m_IsRunning) return;
 		if (m_Registry.view<ScriptComponent>().size() && !ScriptEngine::IsInitialized())
 			throw std::logic_error("Managed scene scripts require an initialized project script engine");
-		m_IsRunning = true;
+		m_IsRunning = true; m_Stopping = false;
 
 		OnPhysics2DStart();
 
 		// Scripting
 		{
 			ScriptEngine::OnRuntimeStart(this);
-			// Instantiate all script entities
-
-			auto view = m_Registry.view<ScriptComponent>();
-			for (auto e : view)
-			{
-				Entity entity = { e, this };
-				ScriptEngine::OnCreateEntity(entity);
-			}
+            for(auto e:m_Registry.view<ScriptComponent>()) m_PendingStart.push_back(m_Registry.get<IDComponent>(e).ID);
+            FlushLifecycle();
 		}
 	}
 
 	void Scene::OnRuntimeStop()
 	{
-		m_IsRunning = false;
+		m_Stopping = true; CancelPendingLifecycle();
+        if (ScriptEngine::GetSceneContext() == this) ScriptEngine::OnRuntimeStop();
 
-		for (auto e : m_Registry.view<NativeScriptComponent>()) DestroyNativeScript(Entity{e, this});
+		std::vector<Entity> natives; for(auto e:m_Registry.view<NativeScriptComponent>())natives.emplace_back(e,this);
+        for(auto entity:natives)if(entity)DestroyNativeScript(entity);
+        CancelPendingLifecycle(); // Cleanup callbacks may retire gameplay-owned instances.
+        m_IsRunning = false;
 		OnPhysics2DStop();
-		if (ScriptEngine::GetSceneContext() == this) ScriptEngine::OnRuntimeStop();
+        m_Stopping=false;
 	}
 
 	void Scene::OnSimulationStart()
@@ -185,6 +232,7 @@ namespace Hazel {
 
 	void Scene::OnUpdateRuntime(Timestep ts)
 	{
+        FlushLifecycle(); // Administrative work commits even while simulation is paused.
 		if (!m_IsPaused || m_StepFrames > 0)
 		{
 			if (m_IsPaused) --m_StepFrames;
@@ -192,26 +240,24 @@ namespace Hazel {
 			// Update scripts
 			{
 				// C# Entity OnUpdate
-				auto view = m_Registry.view<ScriptComponent>();
-				for (auto e : view)
-				{
-					Entity entity = { e, this };
-					ScriptEngine::OnUpdateEntity(entity, ts);
-				}
+                std::vector<UUID> updates;
+                for(auto e:m_Registry.view<ScriptComponent>()) updates.push_back(m_Registry.get<IDComponent>(e).ID);
+                for(auto id:updates) if(IsEntityValid(id) && ScriptEngine::GetEntityScriptInstance(id))
+                    ScriptEngine::OnUpdateEntity(GetEntityByUUID(id),ts);
 
-				m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
-					{
-						// TODO: Move to Scene::OnScenePlay
-						if (!nsc.Instance)
-						{
-							if (!nsc.InstantiateScript) throw std::logic_error("Native script is not bound");
-							nsc.Instance = nsc.InstantiateScript();
-							nsc.Instance->m_Entity = Entity{ entity, this };
-							nsc.Instance->OnCreate();
-						}
-
-						nsc.Instance->OnUpdate(ts);
-					});
+                std::vector<UUID> natives;
+                for(auto e:m_Registry.view<NativeScriptComponent>()) natives.push_back(m_Registry.get<IDComponent>(e).ID);
+                for(auto id:natives) {
+                    if(!IsEntityValid(id)) continue;
+                    auto entity=GetEntityByUUID(id); auto& nsc=entity.GetComponent<NativeScriptComponent>();
+                    if(!nsc.Instance) {
+                        if(!nsc.InstantiateScript) throw std::logic_error("Native script is not bound");
+                        nsc.Instance=nsc.InstantiateScript(); nsc.Instance->m_Entity=entity; nsc.Instance->OnCreate();
+                    }
+                    if(IsEntityValid(id)) nsc.Instance->OnUpdate(ts);
+                }
+                // Creation receives physics/OnCreate here, then its first update next frame.
+                FlushLifecycle();
 			}
 
 			// Physics

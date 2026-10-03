@@ -3,6 +3,12 @@
 #endif
 // Real pinned EditorLayer/panels in Application; files and layout are isolated.
 #include "EditorLayer.h"
+#include "Hazel/Core/FileSystem.h"
+#include "Authoring/EditorPreferences.h"
+#include "Hazel/Utils/Toolchain.h"
+#include "Hazel/Utils/Process.h"
+#include "Hazel/Scene/Prefab.h"
+#include "Hazel/Project/ScriptSource.h"
 #include "ContentBrowserPayload.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
@@ -16,6 +22,8 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
+#include <thread>
 #include <random>
 #include <stdexcept>
 #ifdef HZ_PLATFORM_WINDOWS
@@ -36,6 +44,7 @@ public:
         switch (++m_Frame) {
         case 3: {
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project/assembly startup failed");
+            AuthoringChecks();
             auto* viewport = ImGui::FindWindowByName("Viewport");
             Check(viewport && viewport->DockId && e.m_ViewportSize.x > 0 && e.m_ViewportSize.y > 0, "Docked editor viewport missing");
             auto oldScene=e.m_ActiveScene;
@@ -170,6 +179,89 @@ public:
         }
     }
 private:
+    void AuthoringChecks() {
+        auto root=Project::GetAssetDirectory(); auto scene=CreateRef<Scene>();auto source=scene->CreateEntity("Prefab authored");
+        source.GetComponent<TransformComponent>().Scale={.4f,.5f,1.0f};
+        source.AddComponent<ScriptComponent>().ClassName="Migration.SceneProbe";
+        source.AddComponent<Rigidbody2DComponent>().Type=Rigidbody2DComponent::BodyType::Dynamic;
+        source.AddComponent<BoxCollider2DComponent>();
+        auto& fields=ScriptEngine::GetScriptFieldMap(source);
+        fields["Speed"].Field={ScriptFieldType::Float,"Speed",nullptr};fields["Speed"].SetValue<float>(6);
+        fields["Target"].Field={ScriptFieldType::Entity,"Target",nullptr};fields["Target"].SetValue<uint64_t>(source.GetUUID());
+        Prefab::Save(root,"Prefabs/é independent.hprefab",scene,source);
+        auto target=CreateRef<Scene>();TransformComponent initial;initial.Translation={2,3,0};initial.Scale={2,2,1};
+        auto first=Prefab::Instantiate(root,"Prefabs/é independent.hprefab",*target,initial);
+        auto second=Prefab::Instantiate(root,"Prefabs/é independent.hprefab",*target,initial);
+        Check(first.GetUUID()!=second.GetUUID() && first.GetUUID()!=source.GetUUID(),"Prefab reused identity");
+        auto& a=ScriptEngine::GetScriptFieldMap(first);auto& b=ScriptEngine::GetScriptFieldMap(second);
+        Check(a.at("Target").GetValue<uint64_t>()==first.GetUUID() && b.at("Target").GetValue<uint64_t>()==second.GetUUID(),"Prefab self reference not remapped");
+        a.at("Speed").SetValue<float>(9);Check(b.at("Speed").GetValue<float>()==6,"Prefab fields shared ownership");
+        Check(!first.GetComponent<Rigidbody2DComponent>().RuntimeBody && !first.GetComponent<BoxCollider2DComponent>().RuntimeFixture,"Prefab borrowed physics");
+        auto preservedScale=Prefab::Instantiate(root,"Prefabs/é independent.hprefab",*target,initial,false);
+        Check(preservedScale.GetComponent<TransformComponent>().Scale==source.GetComponent<TransformComponent>().Scale,"Position-only prefab placement lost authored scale");
+        const auto before=target->GetAllEntitiesWith<IDComponent>().size();
+        FileSystem::WriteFileAtomically(root/"Prefabs/broken.hprefab",[](auto& out){out<<"PrefabVersion: 99\nEntities: []\n";});
+        bool rejected=false;try{Prefab::Instantiate(root,"Prefabs/broken.hprefab",*target,initial);}catch(const std::exception&){rejected=true;}
+        Check(rejected && target->GetAllEntitiesWith<IDComponent>().size()==before,"Malformed prefab mutated target scene");
+        fields["Target"].SetValue<uint64_t>(123);rejected=false;
+        try{Prefab::Save(root,"Prefabs/external.hprefab",scene,source);}catch(const std::exception&){rejected=true;}
+        Check(rejected && !std::filesystem::exists(root/"Prefabs/external.hprefab"),"Prefab silently bound external entity");
+        auto childScene=CreateRef<Scene>();auto child=childScene->CreateEntity("Dynamic child");child.AddComponent<ScriptComponent>().ClassName="Migration.LifecycleChild";child.AddComponent<Rigidbody2DComponent>().GravityScale=0;child.AddComponent<BoxCollider2DComponent>();
+        Prefab::Save(root,"Prefabs/child.hprefab",childScene,child);
+        auto runtimeScene=CreateRef<Scene>();auto spawner=runtimeScene->CreateEntity("Spawner");spawner.AddComponent<ScriptComponent>().ClassName="Migration.LifecycleSpawner";
+        auto& childField=ScriptEngine::GetScriptFieldMap(spawner)["Child"];childField.Field={ScriptFieldType::Prefab,"Child",nullptr};childField.AssetReference="Prefabs/child.hprefab";
+        RuntimeSession runtime;runtime.Start(Project::GetActive(),runtimeScene);runtime.Update(.01f);
+        auto current=runtime.GetScene();auto dynamic=current->FindEntityByName("Dynamic child");Check(bool(dynamic),"Managed instantiation failed");
+        auto dynamicID=dynamic.GetUUID();auto instance=ScriptEngine::GetEntityScriptInstance(dynamicID);Check(instance&&instance->GetFieldValue<int>("Creates")==1&&instance->GetFieldValue<int>("Updates")==0&&instance->GetFieldValue<float>("InitialX")==7&&instance->GetFieldValue<bool>("BodyReady"),"Dynamic startup/transform/physics/first update contract failed");
+        runtime.Update(.01f);auto parent=ScriptEngine::GetEntityScriptInstance(spawner.GetUUID());
+        Check(parent->GetFieldValue<bool>("InvalidatedImmediately")&&!current->GetEntityByUUID(dynamicID)&&!instance->GetManagedObject(),"Repeated managed destruction did not invalidate/cleanup");
+        runtime.Update(.01f);Check(!current->GetEntityByUUID(spawner.GetUUID())&&!parent->GetManagedObject(),"Self destruction retained managed handle");runtime.Stop();
+        runtime.Start(Project::GetActive(),runtimeScene);auto pending=Prefab::Instantiate(root,"Prefabs/child.hprefab",*runtime.GetScene(),initial);auto pendingID=pending.GetUUID();auto retained=runtime.GetScene();runtime.Stop();
+        Check(!retained->GetEntityByUUID(pendingID)&&!retained->IsRunning(),"Stop did not cancel pending instantiation");
+        EditorPreferences settings;settings.SDK=m_Directory.generic_u8string();settings.Python=(m_Directory/"Python é/python").generic_u8string();settings.UIScale=1.25f;settings.Remember(m_Editor.m_ProjectPath);settings.Save();
+        std::string diagnostic;auto loaded=EditorPreferences::Load(diagnostic);
+        Check(diagnostic.empty() && loaded.SDK==settings.SDK && loaded.Python==settings.Python && loaded.UIScale==1.25f && loaded.RecentProjects==settings.RecentProjects,"Preferences persistence failed");
+        auto location=EditorPreferences::Location();FileSystem::WriteFileAtomically(location,[](auto& out){out<<"Version: 99\n";});
+        loaded=EditorPreferences::Load(diagnostic);Check(!diagnostic.empty() && loaded.SDK.empty() && loaded.UIScale==1 && Read(location)=="Version: 99\n","Malformed preferences not recovered/preserved");settings.Save();
+        Check(ScriptSource::ValidIdentifier("Player_2")&&!ScriptSource::ValidIdentifier("class")&&!ScriptSource::ValidIdentifier("a/b")&&ScriptSource::ValidNamespace("Game.Play")&&!ScriptSource::ValidNamespace("Game..Play"),"Script identifier validation failed");
+        auto created=ScriptSource::Create(root,"AuthoringProbe","Game.Play");Check(Read(created).find("Entity.Instantiate")!=std::string::npos,"Missing generated lifecycle sample");
+        rejected=false;try{ScriptSource::Create(root,"AuthoringProbe","Game.Play");}catch(const std::exception&){rejected=true;}Check(rejected,"Script creation overwrote source");
+        auto invalid=Toolchain::DiscoverPython(m_Directory/"missing-python");Check(!invalid && invalid.Source.find("Configured")!=std::string::npos,"Invalid configured Python silently fell back");
+        const auto executable=FileSystem::GetExecutablePath();
+        for(const auto& name:{"unsupported-python","malformed-python","failed-python","hang-python"}) {
+            auto probe=m_Directory/(std::string(name)+executable.extension().u8string());
+            std::error_code linkError;
+            std::filesystem::create_hard_link(executable,probe,linkError);
+            if(linkError) std::filesystem::copy_file(executable,probe);
+            auto selection=Toolchain::ProbePython(probe,"Controlled probe fixture");
+            Check(!selection&&!selection.Error.empty(),"Broken/unsupported/timed out Python probe accepted");
+            std::filesystem::remove(probe);
+        }
+        Check(!Toolchain::SelectPythonCandidates({}),"Missing Python was accepted");
+        auto validProbe=m_Directory/(std::string("valid-python")+executable.extension().u8string());
+        auto olderProbe=m_Directory/(std::string("older-python")+executable.extension().u8string());
+        std::filesystem::copy_file(executable,validProbe);std::filesystem::copy_file(executable,olderProbe);
+        auto ordered=Toolchain::SelectPythonCandidates({olderProbe,validProbe});
+        Check(bool(ordered)&&ordered.Version=="3.9.1"&&ordered.Executable==olderProbe,"Python installation ordering was nondeterministic");
+        ordered=Toolchain::SelectPythonCandidates({m_Directory/"missing",validProbe,olderProbe});
+        Check(bool(ordered)&&ordered.Version=="3.14.1"&&ordered.Executable==validProbe,"Compatible Python candidate selection failed");
+        std::filesystem::remove(validProbe);std::filesystem::remove(olderProbe);
+        auto python=Toolchain::DiscoverPython();Check(bool(python)&&python.Executable.is_absolute()&&!python.Version.empty(),"Installed Python discovery failed");
+        Check(bool(Toolchain::DiscoverPython(python.Executable)),"Explicit valid Python failed");
+#ifndef HZ_PLATFORM_WINDOWS
+        auto savedPath=std::getenv("PATH")?std::getenv("PATH"):std::string{};setenv("PATH","/nonexistent-hazel-test",1);
+        auto without=Toolchain::DiscoverPython();setenv("PATH",savedPath.c_str(),1);
+        Check(bool(without)&&without.Executable==python.Executable,"Python discovery depends on PATH or is nondeterministic");
+        auto alias=m_Directory/std::filesystem::u8path("Python space é");std::filesystem::create_directories(alias);std::filesystem::create_symlink(python.Executable,alias/"interpreter");
+        Check(bool(Toolchain::DiscoverPython(alias/"interpreter")),"Unicode/spaces interpreter probe failed");
+        std::filesystem::remove(alias/"interpreter");Check(!Toolchain::DiscoverPython(alias/"interpreter"),"Removed interpreter cache remained valid");
+        auto timed=Process::Run("/bin/sleep",{"2"},{},std::chrono::milliseconds(50));Check(timed.TimedOut,"Process timeout did not reap child");
+#else
+        std::filesystem::create_directory(m_Directory/"WindowsApps");std::filesystem::copy_file(executable,m_Directory/"WindowsApps/python.exe");
+        auto storeAlias=Toolchain::ProbePython(m_Directory/"WindowsApps/python.exe","alias");Check(!storeAlias&&storeAlias.Error.find("aliases")!=std::string::npos,"Windows execution alias accepted");
+#endif
+        std::cout<<"PASS: prefab identity/independence/self/external references/malformed assets, script creation, preferences recovery/scopes, absolute Python discovery\n";
+    }
     void FailureChecks() {
         auto& e=m_Editor;
         const auto project=Project::GetActive(); const auto scene=e.m_ActiveScene; const auto authored=e.m_EditorScene;
@@ -254,6 +346,16 @@ int main(int argc, char** argv) {
     argc = static_cast<int>(pointers.size()); pointers.push_back(nullptr); argv = pointers.data();
 #endif
     using namespace Hazel;
+    if(argc>1 && std::string(argv[1])=="-I") {
+        auto name=std::filesystem::u8path(argv[0]).filename().u8string();
+        if(name.find("valid")!=std::string::npos || name.find("older")!=std::string::npos) {
+            std::cout<<"{\"version\":[3,"<<(name.find("older")!=std::string::npos?9:14)<<",1],\"ok\":true,\"executable\":"<<std::quoted(FileSystem::GetExecutablePath().generic_u8string())<<"}\n";return 0;
+        }
+        if(name.find("unsupported")!=std::string::npos){std::cout<<"{\"version\":[3,8,0],\"ok\":true,\"executable\":\"/missing\"}\n";return 0;}
+        if(name.find("malformed")!=std::string::npos){std::cout<<"malformed probe output\n";return 0;}
+        if(name.find("hang")!=std::string::npos)std::this_thread::sleep_for(std::chrono::seconds(10));
+        return 7;
+    }
     const auto previous = std::filesystem::current_path();
     const auto directory = std::filesystem::temp_directory_path() / std::filesystem::u8path("hazel-editor-é-" + std::to_string(std::random_device{}()));
     try {

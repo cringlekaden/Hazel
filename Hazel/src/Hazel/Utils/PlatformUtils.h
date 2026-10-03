@@ -11,6 +11,8 @@ namespace Hazel {
 		// These return empty strings if cancelled
 		static std::string OpenFile(const char* filter);
 		static std::string SaveFile(const char* filter);
+        static std::string SelectFolder();
+        static bool OpenPath(const std::string& path);
 	};
 
 	class Time

@@ -21,7 +21,7 @@ editable through the hierarchy/inspector; supported public script fields expose
 tuning. Stop preserves authored content. Scenes use existing `.hazel` serialization
 and `Hazel.Scene.LoadScene`, without a separate game/runtime format.
 
-Authored content: MainMenu and Flight scenes; camera, clouds, mountains, ground, wind sprite, four obstacle pairs, HUD, ready prompt and off-screen game-over controls. Initial obstacle X positions and gap centres come from the scene, constrained to fair spacing/ranges. Columns remain 1.1 x 9 units and the wisp 0.85 x 0.85; collision dimensions are defined alongside Flight. Game scripts reuse these entities; entity counts remain fixed. Flight uses 120 Hz steps, a deterministic course, constrained gaps and once-only scoring. Long stalls above 250 ms count as a pause.
+Authored content: MainMenu and Flight scenes; camera, clouds, mountains, ground, wind sprite, UpperPipe/LowerPipe prefabs, HUD, ready prompt and off-screen game-over controls. Four course slots preserve fair spacing and scoring; each spawn generation instantiates a new prefab pair and destroys the retired entities. The lower geometry ends at the collision floor (-4), and camera-derived ground fill reaches the window bottom at wide, square and portrait sizes. The wisp remains 0.85 x 0.85. Flight uses 120 Hz steps, a deterministic course, constrained gaps and once-only scoring. Long stalls above 250 ms count as a pause.
 
 Camera policy: fit the entire 16 x 12 world area, revealing additional background
 at other aspect ratios. Gameplay bounds/speed remain fixed. Mouse hit testing uses
@@ -37,3 +37,5 @@ Extract the Nutella archive and run `Nutella` / `Nutella.exe` with no arguments,
 from any directory. No checkout/compiler/SDK is needed for precompiled scripts.
 Packages require OpenGL 4.1; Windows 10 x64+ or official Ubuntu 24.04/glibc 2.39+
 Linux with X11/GLX. Compiling changed scripts separately requires the Hazel SDK.
+
+Author in Hazelnut: select a pipe prefab in Content Browser, edit/save in Prefab Inspector, and use Instantiate and Select for detached scene content. Select Game rules > Script to choose its typed pipe assets and tune gameplay fields. Project > Build Scripts and Export Game share the canonical SDK tooling; configure SDK/Python in Edit > Editor Preferences.

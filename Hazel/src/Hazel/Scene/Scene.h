@@ -6,6 +6,9 @@
 #include "Hazel/Scripting/ScriptField.h"
 
 #include "entt.hpp"
+#include <unordered_set>
+#include <vector>
+#include "Components.h"
 
 class b2World;
 
@@ -24,6 +27,9 @@ namespace Hazel {
 		Entity CreateEntity(const std::string& name = std::string());
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
 		void DestroyEntity(Entity entity);
+        Entity InstantiateEntity(Entity source, const TransformComponent& transform);
+        bool IsEntityValid(UUID id) const;
+        void CancelPendingLifecycle();
 
 		void OnRuntimeStart();
 		void OnRuntimeStop();
@@ -43,6 +49,9 @@ namespace Hazel {
 
 		Entity GetPrimaryCameraEntity();
 
+		uint64_t GetIdentity() const { return m_Identity; }
+        bool IsStopping() const { return m_Stopping; }
+
 		bool IsRunning() const { return m_IsRunning; }
 		bool IsPaused() const { return m_IsPaused; }
 
@@ -60,6 +69,8 @@ namespace Hazel {
 		void OnComponentAdded(Entity entity, T& component);
 		template<typename T> void OnComponentRemoving(Entity entity);
 		void DestroyNativeScript(Entity entity);
+        void DestroyEntityNow(Entity entity);
+        void FlushLifecycle();
 		void DestroyPhysicsBody(Entity entity);
 		void DestroyPhysicsFixture(Entity entity, bool circle);
 
@@ -70,8 +81,12 @@ namespace Hazel {
 		void RenderScene(EditorCamera& camera);
 	private:
 		entt::registry m_Registry;
+        UUID m_Identity;
 		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 		bool m_IsRunning = false;
+        bool m_Stopping = false;
+        std::vector<UUID> m_PendingStart;
+        std::unordered_set<UUID> m_PendingDestroy, m_Destroying;
 		bool m_IsPaused = false;
 		int m_StepFrames = 0;
 

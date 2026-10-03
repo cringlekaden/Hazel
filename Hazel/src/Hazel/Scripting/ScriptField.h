@@ -12,7 +12,7 @@ namespace Hazel {
 		Bool, Char, Byte, Short, Int, Long,
 		UByte, UShort, UInt, ULong,
 		Vector2, Vector3, Vector4,
-		Entity
+		Entity, Prefab
 	};
 
 	struct ScriptField
@@ -27,18 +27,19 @@ namespace Hazel {
 	struct ScriptFieldInstance
 	{
 		ScriptField Field;
+        std::string AssetReference;
 
 		ScriptFieldInstance()
 		{
 			memset(m_Buffer, 0, sizeof(m_Buffer));
 		}
-		ScriptFieldInstance(const ScriptFieldInstance& other) : Field(other.Field) {
+		ScriptFieldInstance(const ScriptFieldInstance& other) : Field(other.Field), AssetReference(other.AssetReference) {
 			Field.ClassField = nullptr; // Stored values never own domain metadata.
 			std::memcpy(m_Buffer, other.m_Buffer, sizeof(m_Buffer));
 		}
 		ScriptFieldInstance& operator=(const ScriptFieldInstance& other) {
 			if (this == &other) return *this;
-			Field = other.Field; Field.ClassField = nullptr;
+			AssetReference=other.AssetReference; Field = other.Field; Field.ClassField = nullptr;
 			std::memcpy(m_Buffer, other.m_Buffer, sizeof(m_Buffer));
 			return *this;
 		}

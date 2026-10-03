@@ -112,7 +112,7 @@ static void ScenePhysicsChecks() {
         auto duplicate=scene->DuplicateEntity(box);
         scene->OnUpdateRuntime(1.0f/60);
         Check(duplicate.GetComponent<Rigidbody2DComponent>().RuntimeBody && duplicate.GetComponent<Rigidbody2DComponent>().RuntimeBody!=body && world->GetBodyCount()==5,"Runtime duplicate did not create an independent physics body");
-        scene->DestroyEntity(duplicate); Check(world->GetBodyCount()==4,"Destroyed runtime entity retained physics body");
+        scene->DestroyEntity(duplicate);Check(!scene->IsEntityValid(duplicate.GetUUID()),"Deferred destruction stayed valid");scene->OnUpdateRuntime(0); Check(world->GetBodyCount()==4,"Destroyed runtime entity retained physics body");
         box.RemoveComponent<BoxCollider2DComponent>(); Check(!body->GetFixtureList(),"Removed runtime collider retained physics fixture");
         box.AddComponent<BoxCollider2DComponent>(); scene->OnUpdateRuntime(1.0f/60);
         Check(body->GetFixtureList() && box.GetComponent<BoxCollider2DComponent>().RuntimeFixture,"Added runtime collider was not initialized");
@@ -245,7 +245,7 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
     auto* physics=static_cast<b2Body*>(body.GetComponent<Rigidbody2DComponent>().RuntimeBody);
     const int count=physics->GetWorld()->GetBodyCount(); body.RemoveComponent<CircleCollider2DComponent>();
     Check(physics->GetFixtureList() && !physics->GetFixtureList()->GetNext(),"Collider removal retained live fixture");
-    auto bodyInstance=ScriptEngine::GetEntityScriptInstance(101); scene->DestroyEntity(body);
+    auto bodyInstance=ScriptEngine::GetEntityScriptInstance(101); scene->DestroyEntity(body);scene->OnUpdateRuntime(0);
     Check(!bodyInstance->GetManagedObject() && !ScriptEngine::GetEntityScriptInstance(101),"Destroyed managed entity retained instance");
     // Another live body is needed to safely inspect the world's body count after deletion.
     Check(count==1,"Unexpected scene physics body count");

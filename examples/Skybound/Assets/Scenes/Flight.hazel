@@ -180,15 +180,15 @@ Entities:
   TransformComponent:
     Translation:
     - 0
-    - -4.6
-    - 0.15
+    - -4.45
+    - 0.2
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 60
-    - 1.2
+    - 70
+    - 0.9
     - 1
   SpriteRendererComponent:
     Color:
@@ -198,29 +198,6 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Ground.png
-- Entity: 8
-  TagComponent:
-    Tag: Below ground
-  TransformComponent:
-    Translation:
-    - 0
-    - -20
-    - -1.7
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 60
-    - 30
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.282
-    - 0.337
-    - 0.478
-    - 1
-    TilingFactor: 1
 - Entity: 9
   TagComponent:
     Tag: Wisp
@@ -245,198 +222,6 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Wisp.png
-- Entity: 10
-  TagComponent:
-    Tag: Upper0
-  TransformComponent:
-    Translation:
-    - 4.0
-    - 6.2
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1.1
-    - 9
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 1
-    - 1
-    - 1
-    - 1
-    TilingFactor: 1
-    TexturePath: Textures/Column.png
-- Entity: 11
-  TagComponent:
-    Tag: Lower0
-  TransformComponent:
-    Translation:
-    - 4.0
-    - -6.2
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 3.14159265
-    Scale:
-    - 1.1
-    - 9
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 1
-    - 1
-    - 1
-    - 1
-    TilingFactor: 1
-    TexturePath: Textures/Column.png
-- Entity: 12
-  TagComponent:
-    Tag: Upper1
-  TransformComponent:
-    Translation:
-    - 9.5
-    - 6.45
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1.1
-    - 9
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 1
-    - 1
-    - 1
-    - 1
-    TilingFactor: 1
-    TexturePath: Textures/Column.png
-- Entity: 13
-  TagComponent:
-    Tag: Lower1
-  TransformComponent:
-    Translation:
-    - 9.5
-    - -5.95
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 3.14159265
-    Scale:
-    - 1.1
-    - 9
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 1
-    - 1
-    - 1
-    - 1
-    TilingFactor: 1
-    TexturePath: Textures/Column.png
-- Entity: 14
-  TagComponent:
-    Tag: Upper2
-  TransformComponent:
-    Translation:
-    - 15.0
-    - 6.45
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1.1
-    - 9
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 1
-    - 1
-    - 1
-    - 1
-    TilingFactor: 1
-    TexturePath: Textures/Column.png
-- Entity: 15
-  TagComponent:
-    Tag: Lower2
-  TransformComponent:
-    Translation:
-    - 15.0
-    - -5.95
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 3.14159265
-    Scale:
-    - 1.1
-    - 9
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 1
-    - 1
-    - 1
-    - 1
-    TilingFactor: 1
-    TexturePath: Textures/Column.png
-- Entity: 16
-  TagComponent:
-    Tag: Upper3
-  TransformComponent:
-    Translation:
-    - 20.5
-    - 6.45
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1.1
-    - 9
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 1
-    - 1
-    - 1
-    - 1
-    TilingFactor: 1
-    TexturePath: Textures/Column.png
-- Entity: 17
-  TagComponent:
-    Tag: Lower3
-  TransformComponent:
-    Translation:
-    - 20.5
-    - -5.95
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 3.14159265
-    Scale:
-    - 1.1
-    - 9
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 1
-    - 1
-    - 1
-    - 1
-    TilingFactor: 1
-    TexturePath: Textures/Column.png
 - Entity: 18
   TagComponent:
     Tag: Game rules
@@ -468,6 +253,12 @@ Entities:
     - Name: GapHalf
       Type: Float
       Data: 1.7
+    - Name: UpperPipe
+      Type: Prefab
+      Data: Prefabs/UpperPipe.hprefab
+    - Name: LowerPipe
+      Type: Prefab
+      Data: Prefabs/LowerPipe.hprefab
 - Entity: 19
   TagComponent:
     Tag: HUD ribbon
@@ -714,3 +505,26 @@ Entities:
     Color: *id001
     Kerning: 0
     LineSpacing: 0
+- Entity: 800
+  TagComponent:
+    Tag: GroundFill
+  TransformComponent:
+    Translation:
+    - 0
+    - -6
+    - -0.05
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 70
+    - 3
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.18
+    - 0.28
+    - 0.25
+    - 1
+    TilingFactor: 1

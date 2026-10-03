@@ -161,6 +161,7 @@ namespace Hazel {
 
 	bool Application::OnWindowClose(WindowCloseEvent&)
 	{
+        if(m_CloseRequest) {m_CloseRequest();return true;}
 		m_Running = false;
 		return true;
 	}

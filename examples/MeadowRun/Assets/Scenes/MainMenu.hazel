@@ -290,7 +290,7 @@ Entities:
     - 0.45
     - 1
   TextComponent:
-    TextString: Five lantern seeds. One trail home.
+    TextString: Three gardens. One trail home.
     Color: &id002
     - 0.13
     - 0.25

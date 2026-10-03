@@ -54,8 +54,9 @@ namespace Hazel {
 			ImGui::PushID(filenameString.c_str());
 			Ref<Texture2D> icon = isDirectory ? m_DirectoryIcon : m_FileIcon;
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-			ImGui::ImageButton("##file", (ImTextureID)(uintptr_t)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
+			bool selected=ImGui::ImageButton("##file", (ImTextureID)(uintptr_t)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
 
+            if(selected && !isDirectory && SelectAsset) SelectAsset(path);
 			if (ImGui::BeginDragDropSource())
 			{
 				std::filesystem::path relativePath(path);
@@ -71,7 +72,8 @@ namespace Hazel {
 					m_CurrentDirectory /= path.filename();
 
 			}
-			ImGui::TextWrapped("%s", filenameString.c_str());
+			if(path.extension()==".hprefab") ImGui::TextColored({.4f,.8f,1,1},"Prefab");
+            ImGui::TextWrapped("%s", filenameString.c_str());
 
 			ImGui::NextColumn();
 

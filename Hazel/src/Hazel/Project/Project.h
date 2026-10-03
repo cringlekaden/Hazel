@@ -14,6 +14,7 @@ namespace Hazel {
 	struct ProjectConfig
 	{
 		std::string Name = "Untitled";
+        std::string ScriptProject;
 
 		std::filesystem::path StartScene;
 

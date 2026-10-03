@@ -1,0 +1,27 @@
+PrefabVersion: 1
+Scene: Pond
+Entities:
+- Entity: 21
+  TagComponent:
+    Tag: Pond
+  TransformComponent:
+    Translation:
+    - 0
+    - -1.8
+    - -0.1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 2.65
+    - 2.65
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Pond.png

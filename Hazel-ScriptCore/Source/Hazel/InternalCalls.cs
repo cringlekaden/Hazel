@@ -6,6 +6,10 @@ namespace Hazel
 	public static class InternalCalls
 	{
 		#region Entity
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static ulong Entity_GetSceneIdentity();
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool Entity_IsValid(ulong id, ulong scene);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void Entity_Destroy(ulong id, ulong scene);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static ulong Entity_Instantiate(string path, ref Vector3 position, ref Vector3 rotation, ref Vector3 scale, bool replaceRotationAndScale);
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		internal extern static bool Entity_HasComponent(ulong entityID, Type componentType);
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -15,6 +19,8 @@ namespace Hazel
 		#endregion
 
 		#region TransformComponent
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void TransformComponent_GetScale(ulong id, out Vector3 scale);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void TransformComponent_SetScale(ulong id, ref Vector3 scale);
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		internal extern static void TransformComponent_GetTranslation(ulong entityID, out Vector3 translation);
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]

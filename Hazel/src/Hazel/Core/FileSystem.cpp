@@ -54,6 +54,13 @@ namespace Hazel {
 		}
 	}
 
+    void FileSystem::WriteNewFile(const std::filesystem::path& path,const std::string& contents) {
+        auto* file=OpenExclusiveOutput(path);
+        if(!file) throw std::runtime_error("File already exists: "+path.generic_u8string());
+        bool written=std::fwrite(contents.data(),1,contents.size(),file)==contents.size();
+        if(std::fclose(file)!=0) written=false;
+        if(!written) { std::filesystem::remove(path); throw std::runtime_error("Cannot create file: "+path.generic_u8string()); }
+    }
 	Buffer FileSystem::ReadFileBinary(const std::filesystem::path& filepath)
 	{
 		std::ifstream stream(filepath, std::ios::binary | std::ios::ate);

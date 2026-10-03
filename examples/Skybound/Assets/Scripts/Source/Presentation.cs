@@ -6,7 +6,17 @@ namespace Skybound {
         public float MinimumWidth = 16;
         private CameraComponent camera;
         void OnCreate() { camera=GetComponent<CameraComponent>();Fit(); }
-        void Fit() { camera.OrthographicSize=Math.Max(Math.Max(1,MinimumHeight),Math.Max(1,MinimumWidth)/camera.AspectRatio); }
+        void Fit() {
+            camera.OrthographicSize=Math.Max(Math.Max(1,MinimumHeight),Math.Max(1,MinimumWidth)/camera.AspectRatio);
+            // Fixed playable floor at -4; trim pipes at that boundary and fill down to the actual viewport bottom.
+            var ground=FindEntityByName("Ground");var fill=FindEntityByName("GroundFill");
+            if(ground!=null && fill!=null) {
+                float width=camera.OrthographicSize*camera.AspectRatio+2;
+                ground.Scale=new Vector3(width,.9f,1);ground.Translation=new Vector3(0,-4.45f,.2f);
+                float bottom=-camera.OrthographicSize/2-1;float height=Math.Max(.1f,-4.9f-bottom);
+                fill.Scale=new Vector3(width,height,1);fill.Translation=new Vector3(0,-4.9f-height/2,.15f);
+            }
+        }
         void OnUpdate(float dt) { Fit(); }
     }
     public class SceneButton : Entity {

@@ -103,3 +103,26 @@ namespace Migration {
         }
     }
 }
+namespace Migration {
+    public class LifecycleChild : Hazel.Entity {
+        public int Creates, Updates;
+        public float InitialX;
+        public bool BodyReady;
+        void OnCreate() { Creates++;InitialX=Translation.X;BodyReady=GetComponent<Hazel.Rigidbody2DComponent>()!=null; }
+        void OnUpdate(float dt) { Updates++; }
+        void OnDestroy() { System.Console.WriteLine("LIFECYCLE: child destroyed"); }
+    }
+    public class LifecycleSpawner : Hazel.Entity {
+        public Hazel.Prefab Child;
+        public int Updates;
+        public bool InvalidatedImmediately;
+        private Hazel.Entity spawned;
+        void OnUpdate(float dt) {
+            Updates++;
+            if(Updates==1) spawned=Hazel.Entity.Instantiate(Child,new Hazel.Vector3(7,3,0));
+            if(Updates==2) { spawned.Destroy();spawned.Destroy();InvalidatedImmediately=!spawned.IsValid; }
+            if(Updates==3) { Destroy();Destroy(); }
+        }
+        void OnDestroy() { System.Console.WriteLine("LIFECYCLE: spawner destroyed"); }
+    }
+}

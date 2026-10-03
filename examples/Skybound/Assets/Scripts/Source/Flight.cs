@@ -1,12 +1,13 @@
 using System;
 namespace Skybound {
-    // Gameplay model: a fixed pool and fixed timestep, independent of rendering.
+    // Fixed-step gameplay model; gates carry spawn generations, independently of scene entities.
     public sealed class Flight {
         public enum State { Ready, Flying, Dead }
         public sealed class Gate {
             public float X { get; internal set; }
             public float Gap { get; internal set; }
             internal bool Scored;
+            public int Generation { get; internal set; }
         }
         public const float BirdX=-3, BirdRadius=0.24f, GateHalfWidth=0.55f, Spacing=5.5f;
         public const double Step=1.0/120;
@@ -55,7 +56,7 @@ namespace Skybound {
                     foreach(var other in Gates)furthest=Math.Max(furthest,other.X);
                     gate.X=furthest+Spacing;
                     float next=(float)(random.NextDouble()*2-1);
-                    gate.Gap=Clamp(next,lastGap-.8f,lastGap+.8f);lastGap=gate.Gap;gate.Scored=false;
+                    gate.Gap=Clamp(next,lastGap-.8f,lastGap+.8f);lastGap=gate.Gap;gate.Scored=false;gate.Generation++;
                 }
             }
         }

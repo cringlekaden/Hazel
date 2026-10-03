@@ -95,6 +95,44 @@ class GameWindow:
         raise RuntimeError('Explorer could not reach authored waypoint '+str((x,y)))
 
 
+def meadow_route(project,scene_name,goals):
+    # Navigation follows authored colliders; gameplay still uses real desktop keys.
+    import yaml
+    from collections import deque
+    content=yaml.safe_load((project.parent/'Assets/Scenes'/(scene_name+'.hazel')).read_text(encoding='utf-8'))
+    entities={e['TagComponent']['Tag']:e for e in content['Entities']}
+    obstacles=[]
+    for entity in content['Entities']:
+        if entity['TagComponent']['Tag']=='Explorer' or 'BoxCollider2DComponent' not in entity:continue
+        transform=entity['TransformComponent'];box=entity['BoxCollider2DComponent'];x,y=transform['Translation'][:2]
+        obstacles.append((x,y,box['Size'][0]*transform['Scale'][0]+.38,box['Size'][1]*transform['Scale'][1]+.38))
+    pond=entities['Pond']['TransformComponent']['Translation']
+    def free(cell):
+        x,y=cell[0]/2,cell[1]/2
+        return -7<=x<=7 and -3.5<=y<=3.5 and (x-pond[0])**2+(y-pond[1])**2>1.4**2 and not any(abs(x-ox)<sx and abs(y-oy)<sy for ox,oy,sx,sy in obstacles)
+    start=(-12,-6);route=[]
+    for tag in goals:
+        target=entities[tag]['TransformComponent']['Translation'];end=(round(target[0]*2),round(target[1]*2))
+        candidates=[(x,y) for x in range(-14,15) for y in range(-7,8) if free((x,y)) and (x/2-target[0])**2+(y/2-target[1])**2<.5**2]
+        if not candidates:raise RuntimeError('No reachable authored objective '+scene_name+'/'+tag)
+        end=min(candidates,key=lambda c:(c[0]/2-target[0])**2+(c[1]/2-target[1])**2)
+        queue=deque([start]);parents={start:None}
+        while queue and end not in parents:
+            current=queue.popleft()
+            for delta in ((1,0),(-1,0),(0,1),(0,-1)):
+                cell=(current[0]+delta[0],current[1]+delta[1])
+                if cell not in parents and free(cell):parents[cell]=current;queue.append(cell)
+        if end not in parents:raise RuntimeError('Objective blocked by authored layout '+scene_name+'/'+tag)
+        path=[];cell=end
+        while cell is not None:path.append(cell);cell=parents[cell]
+        path.reverse()
+        compact=[]
+        for i,cell in enumerate(path):
+            if i==0:continue
+            if i==len(path)-1 or (cell[0]-path[i-1][0],cell[1]-path[i-1][1])!=(path[i+1][0]-cell[0],path[i+1][1]-cell[1]):compact.append((cell[0]/2,cell[1]/2))
+        route.extend(compact);start=end
+    return route
+
 def exercise(desktop,executable,project,app,game,working,env,logs,shots,packaged=False):
     log=logs/f'{game}-{app}.log';before={p:hashlib.sha256(p.read_bytes()).hexdigest() for p in project.parent.glob('Assets/Scenes/*.hazel')}
     command=[str(executable)]
@@ -120,9 +158,14 @@ def exercise(desktop,executable,project,app,game,working,env,logs,shots,packaged
             level_ready()
             desktop.capture(window,shots/f'{game}-{app}-play.png')
             if game=='MeadowRun':
-                # Real controls finish the authored level, then restart and return.
-                for point in [(-5,-3),(-5,2),(0,2),(5,2),(4,2),(4,-2),(4,-3.2),(-4,-3.2),(-4,-2),(-5,-2),(-5,2),(6,2),(6,2.8)]:
-                    game_window.move(*point,until=lambda:'Runtime scene: Scenes/Complete.hazel' in content())
+                # Complete all three authored levels with actual key input and framebuffer feedback.
+                for level,next_scene in [('Meadow','Orchard'),('Orchard','LanternGrove'),('LanternGrove','Complete')]:
+                    goal='Runtime scene: Scenes/'+next_scene+'.hazel'
+                    for point in meadow_route(project,level,['Seed'+str(i) for i in range(5)]+['Exit']):
+                        game_window.move(*point,until=lambda goal=goal:goal in content())
+                    expect(goal)
+                    if next_scene!='Complete':
+                        level_ready();desktop.capture(window,shots/f'{game}-{app}-{next_scene}.png')
                 expect('Runtime scene: Scenes/Complete.hazel')
                 if 'MeadowRun: seed 5' not in content():raise RuntimeError('Completion skipped collectibles')
                 wait_for(process,lambda:game_window.control_ready(-1.4,game),'Completion controls were not displayed',15)
@@ -191,7 +234,7 @@ def game_tests(configuration,profile,packages,output):
         with (logs/'RuntimeSmoke.log').open('w',encoding='utf-8') as stream:
             result=subprocess.run([str(native),*[str(hz.ROOT/'examples'/game/(game+'.hproj')) for game in GAMES],str(shots)],cwd=working,env=env,stdout=stream,stderr=subprocess.STDOUT,timeout=120)
         if result.returncode:raise RuntimeError('Game runtime regression:\n'+(logs/'RuntimeSmoke.log').read_text(errors='replace'))
-        ppm_to_png(shots/'MeadowRun-complete.ppm')
+        for capture in shots.glob('*.ppm'):ppm_to_png(capture)
         roots=[]
         if packages:
             suffix='.zip' if hz.SYSTEM=='windows' else '.tar.gz'

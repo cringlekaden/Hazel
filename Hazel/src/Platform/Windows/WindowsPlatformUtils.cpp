@@ -3,6 +3,8 @@
 #include "Hazel/Utils/PlatformUtils.h"
 #include "Hazel/Core/Application.h"
 #include <commdlg.h>
+#include <shlobj.h>
+#include <shobjidl.h>
 #include <cstring>
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -51,6 +53,34 @@ static std::string FileDialog(const char* filter, bool save)
     WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, filename.c_str(), -1, result.data(), count, nullptr, nullptr);
     result.pop_back();
     return result;
+}
+std::string FileDialogs::SelectFolder() {
+    auto initialized = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    if (FAILED(initialized) && initialized != RPC_E_CHANGED_MODE) return {};
+    IFileOpenDialog* dialog = nullptr;
+    std::string result;
+    if (SUCCEEDED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&dialog)))) {
+        DWORD options = 0; dialog->GetOptions(&options);
+        dialog->SetOptions(options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST);
+        dialog->SetTitle(L"Select folder");
+        auto owner = glfwGetWin32Window(static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow()));
+        if (SUCCEEDED(dialog->Show(owner))) {
+            IShellItem* item = nullptr;
+            if (SUCCEEDED(dialog->GetResult(&item))) {
+                PWSTR path = nullptr;
+                if (SUCCEEDED(item->GetDisplayName(SIGDN_FILESYSPATH, &path))) {
+                    result = std::filesystem::path(path).u8string(); CoTaskMemFree(path);
+                }
+                item->Release();
+            }
+        }
+        dialog->Release();
+    }
+    if (SUCCEEDED(initialized)) CoUninitialize();
+    return result;
+}
+bool FileDialogs::OpenPath(const std::string& path) {
+    return reinterpret_cast<INT_PTR>(ShellExecuteW(nullptr,L"open",std::filesystem::u8path(path).c_str(),nullptr,nullptr,SW_SHOWNORMAL))>32;
 }
 std::string FileDialogs::OpenFile(const char* filter) { return FileDialog(filter, false); }
 std::string FileDialogs::SaveFile(const char* filter) { return FileDialog(filter, true); }

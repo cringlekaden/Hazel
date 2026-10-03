@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Scene.h"
+#include "Entity.h"
 
 namespace Hazel {
 
@@ -11,6 +12,8 @@ namespace Hazel {
 		SceneSerializer(const Ref<Scene>& scene, const std::filesystem::path& assetRoot);
 
 		void Serialize(const std::string& filepath);
+        std::string SerializeText(Entity only = {});
+        bool DeserializeText(const std::string& text);
 
 		bool Deserialize(const std::string& filepath);
 	private:

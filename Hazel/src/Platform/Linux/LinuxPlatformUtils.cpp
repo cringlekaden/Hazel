@@ -15,7 +15,7 @@ static std::string FileDialog(const char* filter, GtkFileChooserAction action)
         return {};
     }
     GtkWidget* dialog = gtk_file_chooser_dialog_new(
-        action == GTK_FILE_CHOOSER_ACTION_OPEN ? "Open file" : "Save file", nullptr, action,
+        action == GTK_FILE_CHOOSER_ACTION_OPEN ? "Open file" : "Select location", nullptr, action,
         "Cancel", GTK_RESPONSE_CANCEL, action == GTK_FILE_CHOOSER_ACTION_OPEN ? "Open" : "Save", GTK_RESPONSE_ACCEPT, nullptr);
     auto* chooser = GTK_FILE_CHOOSER(dialog);
     gtk_file_chooser_set_do_overwrite_confirmation(chooser, TRUE);
@@ -50,6 +50,13 @@ static std::string FileDialog(const char* filter, GtkFileChooserAction action)
     gtk_widget_destroy(dialog);
     while (gtk_events_pending()) gtk_main_iteration();
     return result;
+}
+std::string FileDialogs::SelectFolder() { return FileDialog(nullptr, GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER); }
+bool FileDialogs::OpenPath(const std::string& path) {
+    auto* file=g_file_new_for_path(path.c_str()); auto* uri=g_file_get_uri(file); GError* error=nullptr;
+    bool success=g_app_info_launch_default_for_uri(uri,nullptr,&error);
+    if(error) { HZ_CORE_ERROR("Open path: {}",error->message); g_error_free(error); }
+    g_free(uri); g_object_unref(file); return success;
 }
 std::string FileDialogs::OpenFile(const char* filter) { return FileDialog(filter, GTK_FILE_CHOOSER_ACTION_OPEN); }
 std::string FileDialogs::SaveFile(const char* filter) { return FileDialog(filter, GTK_FILE_CHOOSER_ACTION_SAVE); }

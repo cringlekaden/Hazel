@@ -1,4 +1,5 @@
 #include "ContentBrowserPayload.h"
+#include "Authoring/AuthoringPanel.h"
 #include "EditorLayer.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Core/FileSystem.h"
@@ -24,6 +25,8 @@ namespace Hazel {
 		m_Font = Font::GetDefault();
 	}
 
+	EditorLayer::~EditorLayer() = default;
+
 	void EditorLayer::OnAttach()
 	{
 		HZ_PROFILE_FUNCTION();
@@ -43,6 +46,9 @@ namespace Hazel {
 
 		m_EditorScene = CreateRef<Scene>();
 		m_ActiveScene = m_EditorScene;
+        m_Authoring=CreateScope<AuthoringPanel>(*this);
+        m_Authoring->MarkSceneSaved();
+        Application::Get().SetCloseRequest([this]{m_Authoring->Guard([]{Application::Get().Close();});});
 
 		auto commandLineArgs = Application::Get().GetSpecification().CommandLineArgs;
 		if (commandLineArgs.Count > 1)
@@ -54,7 +60,7 @@ namespace Hazel {
 		{
 			const auto bundled = Project::Discover(FileSystem::GetExecutablePath().parent_path() / "Example");
             if (bundled.size() == 1) OpenProject(bundled.front());
-            else OpenProject(); // Failure/cancellation leaves an empty, usable editor.
+            // No automatic native dialog: File/New Project remains available.
 
 		}
 
@@ -65,6 +71,8 @@ namespace Hazel {
 	void EditorLayer::OnDetach()
 	{
 		HZ_PROFILE_FUNCTION();
+        Application::Get().SetCloseRequest({});
+        m_Authoring.reset();
         if (m_SceneState != SceneState::Edit) OnSceneStop();
         ClearSceneObservers();
         m_ActiveScene.reset(); m_EditorScene.reset(); m_Font.reset();
@@ -73,6 +81,7 @@ namespace Hazel {
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
 		HZ_PROFILE_FUNCTION();
+        if(m_Authoring) m_Authoring->Tick();
 
         if (m_SceneState != SceneState::Play)
             m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
@@ -150,6 +159,7 @@ namespace Hazel {
 
 	void EditorLayer::OnImGuiRender()
 	{
+        if (m_Authoring) m_Authoring->Shortcuts();
 		HZ_PROFILE_FUNCTION();
         ImGuizmo::BeginFrame();
 
@@ -207,37 +217,12 @@ namespace Hazel {
 		{
 			if (ImGui::BeginMenu("File"))
 			{
-				if (ImGui::MenuItem("Save Project")) SaveProject();
-
-				if (ImGui::MenuItem("Open Project...", "Ctrl+O"))
-					OpenProject();
-
-				ImGui::Separator();
-
-				if (ImGui::MenuItem("New Scene", "Ctrl+N"))
-					NewScene();
-
-				if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
-					SaveScene();
-
-				if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shift+S"))
-					SaveSceneAs();
-
-				ImGui::Separator();
-
-				if (ImGui::MenuItem("Exit"))
-					Application::Get().Close();
+                if(m_Authoring) m_Authoring->FileMenu();
 
 				ImGui::EndMenu();
 			}
 
-			if (ImGui::BeginMenu("Script"))
-			{
-				if (ImGui::MenuItem("Reload assembly", "Ctrl+R"))
-					ReloadScripts();
-
-				ImGui::EndMenu();
-			}
+            if(m_Authoring) m_Authoring->Menus();
 
 			ImGui::EndMenuBar();
 		}
@@ -264,13 +249,6 @@ namespace Hazel {
 
 		ImGui::End();
 
-		ImGui::Begin("Settings");
-		ImGui::Checkbox("Show physics colliders", &m_ShowPhysicsColliders);
-
-		ImGui::Image((ImTextureID)(uintptr_t)m_Font->GetAtlasTexture()->GetRendererID(), { 512,512 }, {0, 1}, {1, 0});
-
-
-		ImGui::End();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
 		ImGui::Begin("Viewport");
@@ -295,7 +273,9 @@ namespace Hazel {
 		{
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 			{
-				OpenScene(ContentBrowserPath(payload->Data, payload->DataSize));
+				auto path=ContentBrowserPath(payload->Data,payload->DataSize);
+                if(path.extension()==".hprefab") m_Authoring->InstantiatePrefab(path);
+                else m_Authoring->Guard([this,path]{OpenScene(path);});
 			}
 			ImGui::EndDragDropTarget();
 		}
@@ -354,6 +334,7 @@ namespace Hazel {
 		ImGui::End();
 		ImGui::PopStyleVar();
 
+        if(m_Authoring) m_Authoring->Render();
 		UI_Toolbar();
 
 		ImGui::End();
@@ -461,46 +442,10 @@ namespace Hazel {
 			return false;
 
 		bool control = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
-		bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+		if (control) return false; // Global commands are processed once through ImGui, regardless of panel focus.
 
 		switch (e.GetKeyCode())
 		{
-			case Key::N:
-			{
-				if (control)
-					NewScene();
-
-				break;
-			}
-			case Key::O:
-			{
-				if (control)
-					OpenProject();
-
-				break;
-			}
-			case Key::S:
-			{
-				if (control)
-				{
-					if (shift)
-						SaveSceneAs();
-					else
-						SaveScene();
-				}
-
-				break;
-			}
-
-			// Scene Commands
-			case Key::D:
-			{
-				if (control)
-					OnDuplicateEntity();
-
-				break;
-			}
-
 			// Gizmos
 			case Key::Q:
 			{
@@ -522,15 +467,7 @@ namespace Hazel {
 			}
 			case Key::R:
 			{
-				if (control)
-				{
-					ReloadScripts();
-				}
-				else
-				{
-					if (!ImGuizmo::IsUsing())
-						m_GizmoType = ImGuizmo::OPERATION::SCALE;
-				}
+				if (!ImGuizmo::IsUsing()) m_GizmoType = ImGuizmo::OPERATION::SCALE;
 				break;
 			}
 			case Key::Delete:
@@ -627,6 +564,7 @@ namespace Hazel {
 	bool EditorLayer::ActionFailed(const std::string& message)
 	{
 		m_ActionError = message;
+        if (m_Authoring) m_Authoring->ShowOutput();
 		HZ_ERROR("{}", message);
 		return false;
 	}
@@ -657,6 +595,7 @@ namespace Hazel {
 			m_ProjectPath = path; m_EditorScenePath = startScene;
 			m_EditorScene = scene; m_ActiveScene = scene;
 			m_ContentBrowserPanel = std::move(browser);
+            if(m_Authoring)m_Authoring->BindProject();
 			m_SceneHierarchyPanel.SetContext(scene);
 			m_ActionError.clear();
             HZ_CORE_INFO("Hazelnut ready: {}", project->GetConfig().Name);
@@ -705,6 +644,7 @@ namespace Hazel {
 			ClearSceneObservers();
 			m_EditorScene = scene; m_ActiveScene = scene; m_EditorScenePath = path;
 			m_SceneHierarchyPanel.SetContext(scene); m_ActionError.clear();
+            if(m_Authoring)m_Authoring->MarkSceneSaved();
 			return true;
 		} catch (const std::runtime_error& error) {
 			return ActionFailed("Open scene '" + path.generic_u8string() + "': " + error.what());
@@ -726,7 +666,7 @@ namespace Hazel {
 
 	bool EditorLayer::SerializeScene(Ref<Scene> scene, const std::filesystem::path& path)
 	{
-		try { SceneSerializer(scene).Serialize(path.generic_u8string()); m_ActionError.clear(); return true; }
+		try { SceneSerializer(scene).Serialize(path.generic_u8string()); if(m_Authoring)m_Authoring->MarkSceneSaved(); m_ActionError.clear(); return true; }
 		catch (const std::runtime_error& error) { return ActionFailed("Save scene '" + path.generic_u8string() + "': " + error.what()); }
 	}
 
@@ -760,6 +700,7 @@ namespace Hazel {
 		ClearSceneObservers();
 		m_ActiveScene = scene; m_SceneState = SceneState::Simulate;
 		m_SceneHierarchyPanel.SetContext(scene); m_ActionError.clear();
+            if(m_Authoring)m_Authoring->MarkSceneSaved();
 	}
 
 	void EditorLayer::OnSceneStop()

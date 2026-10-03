@@ -10,6 +10,9 @@
 
 #include "Hazel/Scene/Scene.h"
 #include "Hazel/Scene/Entity.h"
+#include "Hazel/Scene/Prefab.h"
+#include "Hazel/Project/Project.h"
+#include "mono/metadata/exception.h"
 
 #include "Hazel/Physics/Physics2D.h"
 
@@ -56,11 +59,42 @@ namespace Hazel {
 		return glm::dot(*parameter, *parameter);
 	}
 
+    static uint64_t Entity_GetSceneIdentity() {
+        auto* scene=ScriptEngine::GetSceneContext(); return scene ? scene->GetIdentity():0;
+    }
+    static bool Entity_IsValid(uint64_t id,uint64_t identity) {
+        auto* scene=ScriptEngine::GetSceneContext(); return scene && scene->GetIdentity()==identity && scene->IsEntityValid(id);
+    }
+    static void Entity_Destroy(uint64_t id,uint64_t identity) {
+        auto* scene=ScriptEngine::GetSceneContext();
+        if(scene && scene->GetIdentity()==identity && scene->IsEntityValid(id)) scene->DestroyEntity(scene->GetEntityByUUID(id));
+    }
+    static uint64_t Entity_Instantiate(MonoString* path,glm::vec3* position,glm::vec3* rotation,glm::vec3* scale,bool replaceRotationAndScale) {
+        try {
+            auto* scene=ScriptEngine::GetSceneContext();
+            if(!scene || !Project::GetActive()) throw std::runtime_error("Instantiation needs an active main-thread runtime project");
+            TransformComponent transform; transform.Translation=*position; transform.Rotation=*rotation; transform.Scale=*scale;
+            auto result=Prefab::Instantiate(Project::GetAssetDirectory(),std::filesystem::u8path(Utils::MonoStringToString(path)),*scene,transform,replaceRotationAndScale);
+            return result.GetUUID();
+        } catch(const std::exception& error) {
+            HZ_CORE_ERROR("Instantiate prefab: {}",error.what());
+            mono_raise_exception(mono_get_exception_invalid_operation(error.what())); return 0;
+        }
+    }
 	static MonoObject* GetScriptInstance(UUID entityID)
 	{
 		return ScriptEngine::GetManagedInstance(entityID);
 	}
 
+    static void TransformComponent_GetScale(uint64_t id,glm::vec3* scale) {
+        auto* scene=ScriptEngine::GetSceneContext();*scale=scene->GetEntityByUUID(id).GetComponent<TransformComponent>().Scale;
+    }
+    static void TransformComponent_SetScale(uint64_t id,glm::vec3* scale) {
+        auto entity=ScriptEngine::GetSceneContext()->GetEntityByUUID(id);
+        if(entity.HasComponent<Rigidbody2DComponent>()) {mono_raise_exception(mono_get_exception_invalid_operation("Set physics scale in the prefab's initial transform before startup"));return;}
+        for(int i=0;i<3;++i)if(!std::isfinite((*scale)[i])||(*scale)[i]<=0) {mono_raise_exception(mono_get_exception_argument("scale","Scale must be finite and positive"));return;}
+        entity.GetComponent<TransformComponent>().Scale=*scale;
+    }
 	static bool Entity_HasComponent(UUID entityID, MonoReflectionType* componentType)
 	{
 		Scene* scene = ScriptEngine::GetSceneContext();
@@ -355,9 +389,15 @@ namespace Hazel {
 		HZ_ADD_INTERNAL_CALL(GetScriptInstance);
 
 		HZ_ADD_INTERNAL_CALL(Entity_HasComponent);
+        HZ_ADD_INTERNAL_CALL(Entity_GetSceneIdentity);
+        HZ_ADD_INTERNAL_CALL(Entity_IsValid);
+        HZ_ADD_INTERNAL_CALL(Entity_Destroy);
+        HZ_ADD_INTERNAL_CALL(Entity_Instantiate);
 		HZ_ADD_INTERNAL_CALL(Entity_FindEntityByName);
 
 		HZ_ADD_INTERNAL_CALL(TransformComponent_GetTranslation);
+        HZ_ADD_INTERNAL_CALL(TransformComponent_GetScale);
+        HZ_ADD_INTERNAL_CALL(TransformComponent_SetScale);
 		HZ_ADD_INTERNAL_CALL(TransformComponent_SetTranslation);
 
 		HZ_ADD_INTERNAL_CALL(Rigidbody2DComponent_ApplyLinearImpulse);

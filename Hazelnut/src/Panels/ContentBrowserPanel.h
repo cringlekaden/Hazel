@@ -3,6 +3,7 @@
 #include "Hazel/Renderer/Texture.h"
 
 #include <filesystem>
+#include <functional>
 
 namespace Hazel {
 
@@ -13,6 +14,7 @@ namespace Hazel {
 		explicit ContentBrowserPanel(const std::filesystem::path& assetRoot);
 
 		void OnImGuiRender();
+        std::function<void(const std::filesystem::path&)> SelectAsset;
 	private:
 		std::filesystem::path m_BaseDirectory;
 		std::filesystem::path m_CurrentDirectory;

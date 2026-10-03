@@ -14,7 +14,7 @@ namespace Hazel {
     void RuntimeSession::CheckThread() const {
         if (std::this_thread::get_id() != m_Thread) throw std::logic_error("RuntimeSession requires its main thread");
     }
-    void RuntimeSession::Validate(const Ref<Scene>& scene) const {
+    void RuntimeSession::Validate(const Ref<Scene>& scene) {
         if (!scene) throw std::runtime_error("No scene to run");
         // Validate Box2D preconditions while the old scene is still usable.
         for (auto handle : scene->GetAllEntitiesWith<TransformComponent, Rigidbody2DComponent>()) {
@@ -49,7 +49,7 @@ namespace Hazel {
         }
         for (auto handle : scene->GetAllEntitiesWith<ScriptComponent>()) {
             const auto& script = Entity(handle, scene.get()).GetComponent<ScriptComponent>();
-            if (!ScriptEngine::EntityClassExists(script.ClassName))
+            if (!script.ClassName.empty() && !ScriptEngine::EntityClassExists(script.ClassName))
                 throw std::runtime_error("Runtime script class is unavailable: " + script.ClassName);
         }
     }

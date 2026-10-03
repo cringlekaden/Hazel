@@ -281,6 +281,7 @@ namespace Hazel {
 						WRITE_SCRIPT_FIELD(Vector3, glm::vec3 );
 						WRITE_SCRIPT_FIELD(Vector4, glm::vec4 );
 						WRITE_SCRIPT_FIELD(Entity,  UUID      );
+                        case ScriptFieldType::Prefab: out << scriptField.AssetReference; break;
 						case ScriptFieldType::None: break;
 					}
 					out << YAML::EndMap; // ScriptFields
@@ -382,7 +383,7 @@ namespace Hazel {
 		out << YAML::EndMap; // Entity
 	}
 
-	void SceneSerializer::Serialize(const std::string& filepath)
+	std::string SceneSerializer::SerializeText(Entity only)
 	{
 		YAML::Emitter out;
 		out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);
@@ -396,16 +397,29 @@ namespace Hazel {
 			if (!entity)
 				return;
 
-			SerializeEntity(out, entity, m_AssetRoot);
+			if (!only || only == entity) SerializeEntity(out, entity, m_AssetRoot);
 		});
 		out << YAML::EndSeq;
 		out << YAML::EndMap;
 
 		if (!out.good()) throw std::runtime_error(out.GetLastError());
-		FileSystem::WriteFileAtomically(std::filesystem::u8path(filepath), [&](std::ostream& stream) { stream << out.c_str(); });
+		return out.c_str();
+    }
+
+    void SceneSerializer::Serialize(const std::string& filepath) {
+        auto text=SerializeText();
+        FileSystem::WriteFileAtomically(std::filesystem::u8path(filepath), [&](std::ostream& stream) { stream << text; });
 	}
 
-	bool SceneSerializer::Deserialize(const std::string& filepath)
+	bool SceneSerializer::Deserialize(const std::string& filepath) {
+        std::ifstream input(std::filesystem::u8path(filepath),std::ios::binary);
+        if(!input) return false;
+        std::string text{std::istreambuf_iterator<char>(input),{}};
+        if(input.bad()) return false;
+        return DeserializeText(text);
+    }
+
+    bool SceneSerializer::DeserializeText(const std::string& text)
 	{
 		if (m_Scene->m_IsRunning || m_Scene->m_PhysicsWorld) {
 			HZ_CORE_ERROR("Stop scene runtime/simulation before deserializing"); return false;
@@ -413,10 +427,7 @@ namespace Hazel {
 		YAML::Node data;
 		try
 		{
-			std::ifstream input(std::filesystem::u8path(filepath), std::ios::binary);
-			if (!input) throw std::runtime_error("Cannot open scene");
-			data = YAML::Load(input);
-			if (input.bad()) throw std::runtime_error("Cannot read scene");
+            data = YAML::Load(text);
 			auto staged = CreateRef<Scene>();
 			staged->m_ViewportWidth = m_Scene->m_ViewportWidth;
 			staged->m_ViewportHeight = m_Scene->m_ViewportHeight;
@@ -523,6 +534,7 @@ namespace Hazel {
 									READ_SCRIPT_FIELD(Vector3, glm::vec3);
 									READ_SCRIPT_FIELD(Vector4, glm::vec4);
 									READ_SCRIPT_FIELD(Entity, UUID);
+                                    case ScriptFieldType::Prefab: fieldInstance.AssetReference=scriptField["Data"].as<std::string>(); break;
 									case ScriptFieldType::None: throw std::runtime_error("Unsupported stored script field type");
 								}
 							}
@@ -613,11 +625,11 @@ namespace Hazel {
 		return true;
 		}
 		catch (const std::runtime_error& error) {
-			HZ_CORE_ERROR("Failed to load .hazel file '{}': {}", filepath, error.what());
+			HZ_CORE_ERROR("Failed to load .hazel file '{}': {}", "scene document", error.what());
 			return false;
 		}
 		catch (const std::invalid_argument& error) {
-			HZ_CORE_ERROR("Failed to load .hazel file '{}': {}", filepath, error.what());
+			HZ_CORE_ERROR("Failed to load .hazel file '{}': {}", "scene document", error.what());
 			return false;
 		}
 	}

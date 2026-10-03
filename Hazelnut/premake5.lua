@@ -22,7 +22,7 @@ project "Hazelnut"
     filter "system:windows"
         defines { "HZ_PLATFORM_WINDOWS" }
         systemversion "latest"
-        links { "opengl32", "Comdlg32", "Shell32" }
+        links { "opengl32", "Comdlg32", "Shell32", "Ole32", "Advapi32", "Shell32" }
     filter { "system:windows", "action:vs*" }
         buildoptions { "/utf-8" }
     filter "configurations:Debug"

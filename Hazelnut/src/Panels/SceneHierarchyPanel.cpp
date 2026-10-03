@@ -4,6 +4,8 @@
 
 #include "Hazel/Scripting/ScriptEngine.h"
 #include "Hazel/UI/UI.h"
+#include "Hazel/Project/Project.h"
+#include "Hazel/Scene/Prefab.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -12,6 +14,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <cstring>
+#include <algorithm>
 
 /* The Microsoft C++ compiler is non-compliant with the C++ standard and needs
  * the following definition to disable a security warning on std::strncpy().
@@ -39,11 +42,9 @@ namespace Hazel {
 
 		if (m_Context)
 		{
-			m_Context->m_Registry.each([&](auto entityID)
-				{
-					Entity entity{ entityID , m_Context.get() };
-					DrawEntityNode(entity);
-				});
+			std::vector<Entity> observed;
+            m_Context->m_Registry.each([&](auto id){observed.emplace_back(id,m_Context.get());});
+            for(auto entity:observed) if(entity) DrawEntityNode(entity);
 
 			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
 				m_SelectionContext = {};
@@ -63,6 +64,7 @@ namespace Hazel {
 		ImGui::Begin("Properties");
 		if (GetSelectedEntity())
 		{
+            if(CreatePrefab && !m_Context->IsRunning() && ImGui::Button("Create Prefab...")) CreatePrefab(m_SelectionContext);
 			DrawComponents(m_SelectionContext);
 		}
 
@@ -104,7 +106,8 @@ namespace Hazel {
 		bool entityDeleted = false;
 		if (ImGui::BeginPopupContextItem())
 		{
-			if (ImGui::MenuItem("Delete Entity"))
+			if(CreatePrefab && !m_Context->IsRunning() && ImGui::MenuItem("Create Prefab...")) CreatePrefab(entity);
+            if (ImGui::MenuItem("Delete Entity"))
 				entityDeleted = true;
 
 			ImGui::EndPopup();
@@ -339,85 +342,76 @@ namespace Hazel {
 			}
 		});
 
-		DrawComponent<ScriptComponent>("Script", entity, [entity, scene = m_Context](auto& component) mutable
-		{
-			bool scriptClassExists = ScriptEngine::EntityClassExists(component.ClassName);
-
-			static char buffer[64];
-			std::snprintf(buffer, sizeof(buffer), "%s", component.ClassName.c_str());
-
-			UI::ScopedStyleColor textColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f), !scriptClassExists);
-
-			if (ImGui::InputText("Class", buffer, sizeof(buffer)))
-			{
-				component.ClassName = buffer;
-				return;
-			}
-
-			// Fields
-			bool sceneRunning = scene->IsRunning();
-			if (sceneRunning)
-			{
-				Ref<ScriptInstance> scriptInstance = ScriptEngine::GetEntityScriptInstance(entity.GetUUID());
-				if (scriptInstance)
-				{
-					const auto& fields = scriptInstance->GetScriptClass()->GetFields();
-					for (const auto& [name, field] : fields)
-					{
-						if (field.Type == ScriptFieldType::Float)
-						{
-							float data = scriptInstance->GetFieldValue<float>(name);
-							if (ImGui::DragFloat(name.c_str(), &data))
-							{
-								scriptInstance->SetFieldValue(name, data);
-							}
-						}
-					}
-				}
-			}
-			else
-			{
-				if (scriptClassExists)
-				{
-					Ref<ScriptClass> entityClass = ScriptEngine::GetEntityClass(component.ClassName);
-					const auto& fields = entityClass->GetFields();
-
-					auto& entityFields = ScriptEngine::GetScriptFieldMap(entity);
-					for (const auto& [name, field] : fields)
-					{
-						// Field has been set in editor
-						if (entityFields.find(name) != entityFields.end() && entityFields.at(name).Field.Type == field.Type)
-						{
-							ScriptFieldInstance& scriptField = entityFields.at(name);
-
-							// Display control to set it maybe
-							if (field.Type == ScriptFieldType::Float)
-							{
-								float data = scriptField.GetValue<float>();
-								if (ImGui::DragFloat(name.c_str(), &data))
-									scriptField.SetValue(data);
-							}
-						}
-						else
-						{
-							if (entityFields.find(name) != entityFields.end())
-								ImGui::TextDisabled("%s: saved type differs; retained until edited", name.c_str());
-							// Display control to set it maybe
-							if (field.Type == ScriptFieldType::Float)
-							{
-								float data = 0.0f;
-								if (ImGui::DragFloat(name.c_str(), &data))
-								{
-									ScriptFieldInstance& fieldInstance = entityFields[name];
-									fieldInstance.Field = { field.Type, field.Name, nullptr };
-									fieldInstance.SetValue(data);
-								}
-							}
-						}
-					}
-				}
-			}
-		});
+        DrawComponent<ScriptComponent>("Script", entity, [this,entity](auto& component) mutable {
+            if(m_Context && m_Context->IsRunning()) { ImGui::TextWrapped("Runtime script values are temporary. Stop Play to edit authored fields."); return; }
+            auto classes=ScriptEngine::GetEntityClasses(); std::vector<std::string> names;
+            for(auto& [name,type]:classes) names.push_back(name); std::sort(names.begin(),names.end());
+            if(ImGui::BeginCombo("Class",component.ClassName.empty()?"Select compiled class":component.ClassName.c_str())) {
+                if(ImGui::Selectable("None",component.ClassName.empty())) { component.ClassName.clear(); ScriptEngine::GetScriptFieldMap(entity).clear(); }
+                for(auto& name:names) if(ImGui::Selectable(name.c_str(),name==component.ClassName)) {
+                    if(component.ClassName!=name) ScriptEngine::GetScriptFieldMap(entity).clear(); component.ClassName=name;
+                }
+                ImGui::EndCombo();
+            }
+            if(EditScript && !component.ClassName.empty() && ImGui::Button("Open Script")) EditScript(component.ClassName);
+            ImGui::TextWrapped("Create scripts in Project > Create Script, then Build Scripts. Fields below are authored overrides; unset fields use C# defaults.");
+            auto type=ScriptEngine::GetEntityClass(component.ClassName);
+            if(!type) { if(!component.ClassName.empty()) ImGui::TextWrapped("Class unavailable. Build Scripts or select an existing compiled class."); return; }
+            auto& values=ScriptEngine::GetScriptFieldMap(entity);
+            for(auto& [name,field]:type->GetFields()) {
+                if(field.Type==ScriptFieldType::None) continue;
+                ImGui::PushID(name.c_str()); auto found=values.find(name);
+                bool authored=found!=values.end() && found->second.Field.Type==field.Type;
+                ScriptFieldInstance value; if(authored) value=found->second; value.Field={field.Type,name,nullptr};
+                bool changed=false;
+                switch(field.Type) {
+                    case ScriptFieldType::Float: { auto x=value.GetValue<float>(); changed=ImGui::DragFloat(name.c_str(),&x,.05f); value.SetValue(x); break; }
+                    case ScriptFieldType::Double: { auto x=value.GetValue<double>(); changed=ImGui::InputDouble(name.c_str(),&x); value.SetValue(x); break; }
+                    case ScriptFieldType::Bool: { auto x=value.GetValue<bool>(); changed=ImGui::Checkbox(name.c_str(),&x); value.SetValue(x); break; }
+                    case ScriptFieldType::Vector2: { auto x=value.GetValue<glm::vec2>(); changed=ImGui::DragFloat2(name.c_str(),glm::value_ptr(x),.05f); value.SetValue(x); break; }
+                    case ScriptFieldType::Vector3: { auto x=value.GetValue<glm::vec3>(); changed=ImGui::DragFloat3(name.c_str(),glm::value_ptr(x),.05f); value.SetValue(x); break; }
+                    case ScriptFieldType::Vector4: { auto x=value.GetValue<glm::vec4>(); changed=ImGui::DragFloat4(name.c_str(),glm::value_ptr(x),.05f); value.SetValue(x); break; }
+                    case ScriptFieldType::Entity: {
+                        auto id=value.GetValue<uint64_t>(); auto ref=m_Context?m_Context->GetEntityByUUID(id):Entity{};
+                        if(ImGui::BeginCombo(name.c_str(),ref?ref.GetName().c_str():"None")) {
+                            if(ImGui::Selectable("None",!id)) {value.SetValue<uint64_t>(0);changed=true;}
+                            if(m_Context) for(auto e:m_Context->GetAllEntitiesWith<IDComponent>()) { Entity choice{e,m_Context.get()};
+                                if(ImGui::Selectable(choice.GetName().c_str(),choice.GetUUID()==id)) {value.SetValue<uint64_t>(choice.GetUUID());changed=true;}
+                            } ImGui::EndCombo();
+                        } break;
+                    }
+                    case ScriptFieldType::Prefab: {
+                        if(ImGui::BeginCombo(name.c_str(),value.AssetReference.empty()?"None":value.AssetReference.c_str())) {
+                            if(ImGui::Selectable("None",value.AssetReference.empty())) {value.AssetReference.clear();changed=true;}
+                            std::error_code error; auto root=Project::GetAssetDirectory(); std::vector<std::string> assets;
+                            for(auto it=std::filesystem::recursive_directory_iterator(root,error); !error && it!=std::filesystem::recursive_directory_iterator(); it.increment(error))
+                                if(it->is_regular_file(error) && it->path().extension()==".hprefab") assets.push_back(it->path().lexically_relative(root).generic_u8string());
+                            std::sort(assets.begin(),assets.end());
+                            for(auto& path:assets) if(ImGui::Selectable(path.c_str(),path==value.AssetReference)) {
+                                try { Prefab::Load(root,std::filesystem::u8path(path)); value.AssetReference=path; changed=true; }
+                                catch(const std::exception& error) { if(ReportError) ReportError(error.what()); else HZ_ERROR("Select prefab: {}",error.what()); }
+                            } ImGui::EndCombo();
+                        } break;
+                    }
+#define HZ_FIELD_NUMBER(Type,Cpp,Gui) case ScriptFieldType::Type: {auto x=value.GetValue<Cpp>();changed=ImGui::InputScalar(name.c_str(),Gui,&x);value.SetValue(x);break;}
+                    HZ_FIELD_NUMBER(Char,uint16_t,ImGuiDataType_U16)
+                    HZ_FIELD_NUMBER(Byte,int8_t,ImGuiDataType_S8)
+                    HZ_FIELD_NUMBER(Short,int16_t,ImGuiDataType_S16)
+                    HZ_FIELD_NUMBER(Int,int32_t,ImGuiDataType_S32)
+                    HZ_FIELD_NUMBER(Long,int64_t,ImGuiDataType_S64)
+                    HZ_FIELD_NUMBER(UByte,uint8_t,ImGuiDataType_U8)
+                    HZ_FIELD_NUMBER(UShort,uint16_t,ImGuiDataType_U16)
+                    HZ_FIELD_NUMBER(UInt,uint32_t,ImGuiDataType_U32)
+                    HZ_FIELD_NUMBER(ULong,uint64_t,ImGuiDataType_U64)
+#undef HZ_FIELD_NUMBER
+                    case ScriptFieldType::None: break;
+                }
+                if(changed) values[name]=value;
+                if(authored) { ImGui::SameLine(); if(ImGui::SmallButton("Use C# default")) values.erase(name); }
+                else ImGui::TextDisabled("Using C# default until edited");
+                ImGui::PopID();
+            }
+        });
 
 		DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component)
 		{

@@ -5,6 +5,9 @@
 #include <box2d/box2d.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <mono/metadata/object.h>
+#include <mono/metadata/class.h>
+#include <set>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -58,15 +61,21 @@ int main(int argc,char** argv) {
                 const float speed=ScriptEngine::GetScriptFieldMap(authored)["Speed"].GetValue<float>();
                 for(int repeat=0;repeat<4;repeat++) {
                     if(repeat)session.Start(project,scene);
-                    auto runtime=session.GetScene();auto player=runtime->FindEntityByName("Explorer");
-                    auto instance=ScriptEngine::GetEntityScriptInstance(player.GetUUID());instance->SetFieldValue<float>("Speed",7);
-                    for(int i=0;i<5;i++) { Teleport(player,runtime->FindEntityByName("Seed"+std::to_string(i)).GetComponent<TransformComponent>().Translation);tick(session); }
-                    Check(runtime->FindEntityByName("Progress").GetComponent<TextComponent>().TextString=="Lantern seeds  5 / 5","Collectible progress or once-only pickup failed");
-                    Teleport(player,{0,-1.8f,.3f});tick(session);
-                    Check(std::abs(player.GetComponent<TransformComponent>().Translation.x+6)<.01f&&
-                          runtime->FindEntityByName("Progress").GetComponent<TextComponent>().TextString=="Lantern seeds  5 / 5","Checkpoint lost progress or failed physics teleport");
-                    Teleport(player,{6,2.8f,.3f});tick(session);tick(session);
-                    Check(session.GetScene()->FindEntityByName("Title").GetComponent<TextComponent>().TextString=="TRAIL RESTORED","Completion transition failed");
+                    Ref<Scene> runtime; Entity player;Ref<ScriptInstance> instance;
+                    const char* levelNames[]={"Meadow","Orchard","LanternGrove"};
+                    for(int level=0;level<3;level++) {
+                        runtime=session.GetScene();player=runtime->FindEntityByName("Explorer");
+                        instance=ScriptEngine::GetEntityScriptInstance(player.GetUUID());instance->SetFieldValue<float>("Speed",7);
+                        tick(session);
+                        if(repeat==0)Capture(std::filesystem::u8path(argv[3])/(std::string("MeadowRun-")+levelNames[level]+".ppm"),960,720);
+                        for(int i=0;i<5;i++) {Teleport(player,runtime->FindEntityByName("Seed"+std::to_string(i)).GetComponent<TransformComponent>().Translation);tick(session);}
+                        Check(runtime->FindEntityByName("Progress").GetComponent<TextComponent>().TextString=="Lantern seeds  5 / 5","Collectible progress or once-only pickup failed");
+                        Teleport(player,runtime->FindEntityByName("Pond").GetComponent<TransformComponent>().Translation);tick(session);
+                        Check(std::abs(player.GetComponent<TransformComponent>().Translation.x+6)<.01f && runtime->FindEntityByName("Progress").GetComponent<TextComponent>().TextString=="Lantern seeds  5 / 5","Checkpoint lost progress or failed physics teleport");
+                        Teleport(player,runtime->FindEntityByName("Exit").GetComponent<TransformComponent>().Translation);tick(session);tick(session);
+                        if(level<2) Check(session.GetScene()->FindEntityByName("Explorer") ,"Next meadow level missing");
+                    }
+                    Check(session.GetScene()->FindEntityByName("Title").GetComponent<TextComponent>().TextString=="TRAIL RESTORED","Final completion transition failed");
                     if(repeat==0)Capture(std::filesystem::u8path(argv[3])/"MeadowRun-complete.ppm",960,720);
                     Check(!runtime->IsRunning()&&!player.GetComponent<Rigidbody2DComponent>().RuntimeBody&&!instance->GetManagedObject(),"Retired game retained physics or managed observations");
                     Check(ScriptEngine::GetScriptFieldMap(authored)["Speed"].GetValue<float>()==speed&&
@@ -77,17 +86,56 @@ int main(int argc,char** argv) {
                 }
             }else {
                 for(int i=0;i<1000;i++)tick(session,1.0f/120);
-                Check(session.GetScene()->GetAllEntitiesWith<IDComponent>().size()==count&&
+                Check(session.GetScene()->GetAllEntitiesWith<IDComponent>().size()==count+8&&
                       session.GetScene()->FindEntityByName("Score").GetComponent<TextComponent>().TextString=="SCORE  0",
                       "Ready run advanced scoring or grew authored pool");
             }
+            if(!meadow) {
+                auto runtime=session.GetScene();
+                auto controller=runtime->FindEntityByName("Game rules");
+                Check(bool(controller),"Missing flight controller");
+                auto game=ScriptEngine::GetEntityScriptInstance(controller.GetUUID());
+                std::set<uint64_t> oldPipes;
+                for(auto e:runtime->GetAllEntitiesWith<TagComponent,IDComponent>()) {
+                    Entity entity{e,runtime.get()};if(entity.GetName()=="Lower0"||entity.GetName()=="Upper0")oldPipes.insert(entity.GetUUID());
+                }
+                for(int cycle=0;cycle<100;cycle++) {
+                    // Advance the real game's spawn-generation trigger through reflection, without
+                    // production test hooks or depending on a desktop's key timing. Sync uses the
+                    // same managed Instantiate/Destroy callbacks as gameplay.
+                    auto object=game->GetManagedObject();MonoObject* model=nullptr;
+                    mono_field_get_value(object,mono_class_get_field_from_name(mono_object_get_class(object),"flight"),&model);
+                    MonoArray* gates=nullptr;mono_field_get_value(model,mono_class_get_field_from_name(mono_object_get_class(model),"Gates"),&gates);
+                    auto gate=mono_array_get(gates,MonoObject*,cycle%4);
+                    auto field=mono_class_get_field_from_name(mono_object_get_class(gate),"<Generation>k__BackingField");
+                    int generation=0;mono_field_get_value(gate,field,&generation);generation++;mono_field_set_value(gate,field,&generation);
+                    MonoObject* exception=nullptr;
+                    mono_runtime_invoke(mono_class_get_method_from_name(mono_object_get_class(object),"Sync",0),object,nullptr,&exception);
+                    Check(!exception,"Managed spawn-cycle callback failed");tick(session);
+                    Check(runtime->GetAllEntitiesWith<IDComponent>().size()==count+8,"Repeated pipe spawn grew entities/resources");
+                }
+                for(auto id:oldPipes)Check(!runtime->GetEntityByUUID(id),"Obsolete pipe identity was recycled");
+                ScriptEngine::ReloadAssembly();tick(session);
+                Check(runtime->GetAllEntitiesWith<IDComponent>().size()==count+8,"Assembly reload retained gameplay-owned prefab instances");
+            }
+            if(!meadow) for(auto dimensions:std::vector<glm::uvec2>{{1280,720},{960,720},{600,1000},{640,480}}) {
+                framebuffer->Unbind();framebuffer->Resize(dimensions.x,dimensions.y);framebuffer->Bind();session.Resize(dimensions.x,dimensions.y);tick(session);
+                auto runtime=session.GetScene();auto ground=runtime->FindEntityByName("GroundFill").GetComponent<TransformComponent>();
+                auto camera=runtime->GetPrimaryCameraEntity().GetComponent<CameraComponent>().Camera;
+                Check(ground.Translation.y-ground.Scale.y/2 < -camera.GetOrthographicSize()/2 && std::abs(ground.Translation.y+ground.Scale.y/2+4.9f)<.001f,"Ground filler does not reach viewport bottom");
+                for(auto id:runtime->GetAllEntitiesWith<TagComponent,TransformComponent>()) {Entity entity{id,runtime.get()};if(entity.GetName()=="Lower0") {
+                    auto transform=entity.GetComponent<TransformComponent>();Check(std::abs(transform.Translation.y-transform.Scale.y/2+4)<.001f,"Pipe extends below collision floor");
+                }}
+                Capture(std::filesystem::u8path(argv[3])/("Skybound-"+std::to_string(dimensions.x)+"x"+std::to_string(dimensions.y)+".ppm"),dimensions.x,dimensions.y);
+            }
+            framebuffer->Unbind();framebuffer->Resize(960,720);framebuffer->Bind();
             session.Resize(600,1000);tick(session);
             const auto& camera=session.GetScene()->GetPrimaryCameraEntity().GetComponent<CameraComponent>().Camera;
             Check(camera.GetOrthographicSize()>=12&&camera.GetOrthographicSize()*camera.GetAspectRatio()>=15.99f,"Resize cropped the authored game area");
             session.Stop();Check(!scene->IsRunning(),"Authored scene entered runtime");
         }
         ScriptEngine::Shutdown();framebuffer->Unbind();std::filesystem::remove_all(temporary);
-        std::cout<<"PASS: real project scripts, collection/completion/checkpoint, repeated lifecycle, authored field isolation, camera fit, fixed entity counts and cross-project class isolation\n";
+        std::cout<<"PASS: real project scripts, collection/completion/checkpoint, repeated lifecycle, authored field isolation, camera fit, bounded prefab spawn/destruction/reload and cross-project class isolation\n";
     }catch(const std::exception& error) {
         std::cerr<<"FAIL: "<<error.what()<<'\n';std::error_code ignored;std::filesystem::remove_all(temporary,ignored);return 1;
     }
