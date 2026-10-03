@@ -48,7 +48,7 @@ namespace Hazel {
 		m_ActiveScene = m_EditorScene;
         m_Authoring=CreateScope<AuthoringPanel>(*this);
         m_Authoring->MarkSceneSaved();
-        Application::Get().SetCloseRequest([this]{m_Authoring->Guard([]{Application::Get().Close();});});
+        Application::Get().SetCloseRequest([this]{m_Authoring->RequestClose();});
 
 		auto commandLineArgs = Application::Get().GetSpecification().CommandLineArgs;
 		if (commandLineArgs.Count > 1)

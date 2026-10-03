@@ -131,10 +131,11 @@ void AuthoringPanel::BindProject()
 			m_Editor.ActionFailed(error.what());
 		}
 	};
+	m_PrefabInspector.SetContext(nullptr);
 	m_PrefabScene.reset();
 	m_ShowPrefab = false;
 	m_CreatePrefab = false;
-	m_PrefabSource = {};
+	m_PrefabSourceID = m_PrefabSourceScene = 0;
 	MarkSceneSaved();
 	RememberProject();
 }
@@ -187,6 +188,11 @@ void AuthoringPanel::Tick()
 			m_Output += "\n" + std::string(error.what());
 		}
 	}
+	if (m_ExitAfterJob)
+	{
+		m_ExitAfterJob = false;
+		RequestClose();
+	}
 }
 bool AuthoringPanel::Ready(bool exporting) const
 {
@@ -227,6 +233,18 @@ void AuthoringPanel::ToolStatus(bool exporting)
 	if (ImGui::Button("Check readiness"))
 		Preflight(exporting);
 	ImGui::EndDisabled();
+}
+void AuthoringPanel::RequestClose()
+{
+	if (m_Pending)
+		return;
+	if (m_Tools.Busy())
+	{
+		m_ExitAfterJob = true;
+		m_ShowOutput = true;
+		return;
+	}
+	Guard([] { Application::Get().Close(); });
 }
 void AuthoringPanel::Shortcuts()
 {
@@ -311,7 +329,7 @@ void AuthoringPanel::FileMenu()
 		m_Editor.SaveSceneAs();
 	ImGui::Separator();
 	if (ImGui::MenuItem("Exit"))
-		Guard([] { Application::Get().Close(); });
+		RequestClose();
 }
 void AuthoringPanel::Menus()
 {
@@ -482,9 +500,8 @@ void AuthoringPanel::ProjectSettings()
 				m_Module = it->path().lexically_relative(root).generic_u8string();
 		ImGui::EndCombo();
 	}
-	bool valid = !m_ProjectName.empty() && ScriptSource::ValidIdentifier(m_ScriptProject) &&
-				 Portable(m_AssetDirectory) && Portable(m_Startup) && Portable(m_Module) &&
-				 Contained(m_Editor.m_ProjectPath.parent_path(), root) &&
+	bool valid = !m_ProjectName.empty() && Portable(m_AssetDirectory) && Portable(m_Startup) &&
+				 Portable(m_Module) && Contained(m_Editor.m_ProjectPath.parent_path(), root) &&
 				 Contained(root, root / Path(m_Startup)) && Contained(root, root / Path(m_Module)) &&
 				 std::filesystem::is_regular_file(root / Path(m_Startup)) &&
 				 std::filesystem::is_regular_file(root / Path(m_Module));
@@ -741,7 +758,8 @@ void AuthoringPanel::CreatePrefab(Entity entity)
 {
 	if (m_Editor.m_SceneState != EditorLayer::SceneState::Edit)
 		return;
-	m_PrefabSource = entity;
+	m_PrefabSourceID = entity.GetUUID();
+	m_PrefabSourceScene = m_Editor.m_EditorScene->GetIdentity();
 	m_PrefabName = "Prefabs/" + entity.GetName() + ".hprefab";
 	m_CreatePrefab = true;
 }
@@ -786,12 +804,14 @@ void AuthoringPanel::Prefabs()
 				m_PrefabName = (relative / Path(m_PrefabName).filename()).generic_u8string();
 			}
 		}
+		auto source = m_Editor.m_EditorScene->GetIdentity() == m_PrefabSourceScene
+						  ? m_Editor.m_EditorScene->GetEntityByUUID(m_PrefabSourceID)
+						  : Entity{};
 		bool valid = false;
 		try
 		{
 			auto path = Prefab::Resolve(Project::GetAssetDirectory(), Path(m_PrefabName));
-			valid = m_PrefabSource.BelongsTo(m_Editor.m_EditorScene.get()) && m_PrefabSource &&
-					!std::filesystem::exists(path);
+			valid = source && !std::filesystem::exists(path);
 		}
 		catch (const std::exception &error)
 		{
@@ -805,7 +825,7 @@ void AuthoringPanel::Prefabs()
 			try
 			{
 				Prefab::Save(Project::GetAssetDirectory(), Path(m_PrefabName), m_Editor.m_EditorScene,
-							 m_PrefabSource);
+							 source);
 				m_CreatePrefab = false;
 				m_Output = "Prefab created: " + m_PrefabName;
 				m_ShowOutput = true;
@@ -847,9 +867,15 @@ void AuthoringPanel::Prefabs()
 		Guard(
 			[this] {
 				m_ShowPrefab = false;
+				m_PrefabInspector.SetContext(nullptr);
 				m_PrefabScene.reset();
 			},
 			false);
+	if (!m_PrefabScene)
+	{
+		ImGui::End();
+		return;
+	}
 	m_PrefabInspector.DrawAssetProperties(Prefab::GetEntity(m_PrefabScene));
 	ImGui::Separator();
 	ImGui::TextUnformatted("Initial instance transform");
@@ -927,6 +953,14 @@ void AuthoringPanel::Render()
 			ImGui::SetNextWindowDockID(stats->DockId, ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowSize({600, 260}, ImGuiCond_FirstUseEver);
 		ImGui::Begin("Output", &m_ShowOutput);
+		if (m_ExitAfterJob)
+		{
+			ImGui::TextWrapped("Exit requested. The editor will close after this job completes.");
+			if (ImGui::Button("Cancel Exit Request"))
+				m_ExitAfterJob = false;
+		}
+		if (ImGui::Button("Copy Output"))
+			ImGui::SetClipboardText((m_Editor.m_ActionError + "\n" + m_Output).c_str());
 		if (m_Tools.Busy())
 			ImGui::TextUnformatted("Tool job running. Other tool jobs/project replacement are disabled.");
 		if (!m_Editor.m_ActionError.empty())

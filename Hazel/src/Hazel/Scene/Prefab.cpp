@@ -61,7 +61,12 @@ static void ValidateDocument(const YAML::Node &data, const std::filesystem::path
 			{
 				auto reference = field["Data"].as<std::string>();
 				if (!reference.empty())
-					Prefab::Resolve(root, std::filesystem::u8path(reference));
+				{
+					auto target = Prefab::Resolve(root, std::filesystem::u8path(reference));
+					if (!std::filesystem::is_regular_file(target))
+						throw std::runtime_error("Missing prefab reference in field '" +
+												 field["Name"].as<std::string>() + "': " + reference);
+				}
 			}
 		}
 	auto texture = entity["SpriteRendererComponent"]["TexturePath"];
@@ -76,6 +81,8 @@ static void ValidateDocument(const YAML::Node &data, const std::filesystem::path
 }
 Entity Prefab::GetEntity(const Ref<Scene> &scene)
 {
+	if (!scene)
+		throw std::runtime_error("Prefab editing scene is unavailable");
 	auto view = scene->GetAllEntitiesWith<IDComponent>();
 	if (view.size() != 1)
 		throw std::runtime_error("Prefab editing scene must contain one entity");

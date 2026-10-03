@@ -61,7 +61,17 @@ std::filesystem::path ScriptSource::Find(const std::filesystem::path &root, cons
 	auto name = fullClass.substr(last == std::string::npos ? 0 : last + 1);
 	if (!ValidIdentifier(name))
 		throw std::runtime_error("Class name is unavailable");
-	std::vector<std::filesystem::path> paths;
+	auto space = last == std::string::npos ? std::string{} : fullClass.substr(0, last);
+	if (!space.empty() && !ValidNamespace(space))
+		throw std::runtime_error("Namespace is unavailable");
+	std::string namespacePattern;
+	for (auto c : space)
+	{
+		if (c == '.')
+			namespacePattern += "\\";
+		namespacePattern += c;
+	}
+	std::vector<std::filesystem::path> paths, matches;
 	std::error_code error;
 	for (auto it = std::filesystem::recursive_directory_iterator(root / "Scripts/Source", error);
 		 !error && it != std::filesystem::recursive_directory_iterator(); it.increment(error))
@@ -72,9 +82,16 @@ std::filesystem::path ScriptSource::Find(const std::filesystem::path &root, cons
 	{
 		std::ifstream input(path);
 		std::string text{std::istreambuf_iterator<char>(input), {}};
-		if (std::regex_search(text, std::regex("\\bclass\\s+" + name + "\\b")))
-			return path;
+		if (std::regex_search(text, std::regex("\\bclass\\s+" + name + "\\b")) &&
+			(space.empty() ||
+			 std::regex_search(text, std::regex("\\bnamespace\\s+" + namespacePattern + "\\s*[;{]"))))
+			matches.push_back(path);
 	}
+	if (matches.size() == 1)
+		return matches.front();
+	if (matches.size() > 1)
+		throw std::runtime_error(
+			"Multiple source files match this class. Open the desired .cs asset in Content Browser.");
 	throw std::runtime_error("No source file found. Select a .cs asset in Content Browser, or create one in "
 							 "Project > Create Script.");
 }

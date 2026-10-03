@@ -349,7 +349,8 @@ namespace Hazel {
             if(ImGui::BeginCombo("Class",component.ClassName.empty()?"Select compiled class":component.ClassName.c_str())) {
                 if(ImGui::Selectable("None",component.ClassName.empty())) { component.ClassName.clear(); ScriptEngine::GetScriptFieldMap(entity).clear(); }
                 for(auto& name:names) if(ImGui::Selectable(name.c_str(),name==component.ClassName)) {
-                    if(component.ClassName!=name) ScriptEngine::GetScriptFieldMap(entity).clear(); component.ClassName=name;
+                    if(component.ClassName!=name) ScriptEngine::GetScriptFieldMap(entity).clear();
+                    component.ClassName=name;
                 }
                 ImGui::EndCombo();
             }
@@ -376,7 +377,10 @@ namespace Hazel {
                         if(ImGui::BeginCombo(name.c_str(),ref?ref.GetName().c_str():"None")) {
                             if(ImGui::Selectable("None",!id)) {value.SetValue<uint64_t>(0);changed=true;}
                             if(m_Context) for(auto e:m_Context->GetAllEntitiesWith<IDComponent>()) { Entity choice{e,m_Context.get()};
+                                ImGui::PushID(static_cast<int>((entt::entity)choice));
                                 if(ImGui::Selectable(choice.GetName().c_str(),choice.GetUUID()==id)) {value.SetValue<uint64_t>(choice.GetUUID());changed=true;}
+                                if(ImGui::IsItemHovered()) {auto p=choice.GetComponent<TransformComponent>().Translation;ImGui::SetTooltip("Position: %.2f, %.2f, %.2f",p.x,p.y,p.z);}
+                                ImGui::PopID();
                             } ImGui::EndCombo();
                         } break;
                     }

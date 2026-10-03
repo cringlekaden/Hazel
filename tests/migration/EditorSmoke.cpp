@@ -5,6 +5,7 @@
 #include "EditorLayer.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Authoring/EditorPreferences.h"
+#include "Authoring/AuthoringPanel.h"
 #include "Hazel/Utils/Toolchain.h"
 #include "Hazel/Utils/Process.h"
 #include "Hazel/Scene/Prefab.h"
@@ -175,7 +176,21 @@ public:
             break;
         case 10:
             Check(glGetError() == GL_NO_ERROR, "Editor/gizmo/panels OpenGL error");
-            m_Done = true; Application::Get().Close(); break;
+            e.m_Authoring->SelectAsset(Project::GetAssetDirectory()/std::filesystem::u8path("Prefabs/é independent.hprefab"));
+            break;
+        case 11: {
+            auto* inspector=ImGui::FindWindowByName("Prefab Inspector");
+            Check(inspector && inspector->Active,"Prefab asset did not open its ImGui inspector");
+            auto& io=ImGui::GetIO();
+            io.AddMousePosEvent(inspector->Pos.x+117,inspector->Pos.y+107);
+            io.AddMouseButtonEvent(0,true);
+            break;
+        }
+        case 12:
+            ImGui::GetIO().AddMouseButtonEvent(0,false);break;
+        case 14:
+            Check(!ImGui::FindWindowByName("Prefab Inspector")->Active,"Clean prefab Close did not release its inspector safely");
+            m_Done = true; Application::Get().Close();break;
         }
     }
 private:
@@ -210,6 +225,10 @@ private:
         Prefab::Save(root,"Prefabs/child.hprefab",childScene,child);
         auto runtimeScene=CreateRef<Scene>();auto spawner=runtimeScene->CreateEntity("Spawner");spawner.AddComponent<ScriptComponent>().ClassName="Migration.LifecycleSpawner";
         auto& childField=ScriptEngine::GetScriptFieldMap(spawner)["Child"];childField.Field={ScriptFieldType::Prefab,"Child",nullptr};childField.AssetReference="Prefabs/child.hprefab";
+        childField.AssetReference="Prefabs/missing.hprefab";rejected=false;
+        try{Prefab::Save(root,"Prefabs/missing-reference.hprefab",runtimeScene,spawner);}catch(const std::exception&){rejected=true;}
+        Check(rejected&&!std::filesystem::exists(root/"Prefabs/missing-reference.hprefab"),"Missing typed prefab reference was accepted");
+        childField.AssetReference="Prefabs/child.hprefab";
         RuntimeSession runtime;runtime.Start(Project::GetActive(),runtimeScene);runtime.Update(.01f);
         auto current=runtime.GetScene();auto dynamic=current->FindEntityByName("Dynamic child");Check(bool(dynamic),"Managed instantiation failed");
         auto dynamicID=dynamic.GetUUID();auto instance=ScriptEngine::GetEntityScriptInstance(dynamicID);Check(instance&&instance->GetFieldValue<int>("Creates")==1&&instance->GetFieldValue<int>("Updates")==0&&instance->GetFieldValue<float>("InitialX")==7&&instance->GetFieldValue<bool>("BodyReady"),"Dynamic startup/transform/physics/first update contract failed");
@@ -225,6 +244,7 @@ private:
         loaded=EditorPreferences::Load(diagnostic);Check(!diagnostic.empty() && loaded.SDK.empty() && loaded.UIScale==1 && Read(location)=="Version: 99\n","Malformed preferences not recovered/preserved");settings.Save();
         Check(ScriptSource::ValidIdentifier("Player_2")&&!ScriptSource::ValidIdentifier("class")&&!ScriptSource::ValidIdentifier("a/b")&&ScriptSource::ValidNamespace("Game.Play")&&!ScriptSource::ValidNamespace("Game..Play"),"Script identifier validation failed");
         auto created=ScriptSource::Create(root,"AuthoringProbe","Game.Play");Check(Read(created).find("Entity.Instantiate")!=std::string::npos,"Missing generated lifecycle sample");
+        Check(ScriptSource::Find(root,"Game.Play.AuthoringProbe")==created,"Script source resolution ignored its namespace");
         rejected=false;try{ScriptSource::Create(root,"AuthoringProbe","Game.Play");}catch(const std::exception&){rejected=true;}Check(rejected,"Script creation overwrote source");
         auto invalid=Toolchain::DiscoverPython(m_Directory/"missing-python");Check(!invalid && invalid.Source.find("Configured")!=std::string::npos,"Invalid configured Python silently fell back");
         const auto executable=FileSystem::GetExecutablePath();
