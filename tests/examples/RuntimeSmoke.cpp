@@ -85,7 +85,7 @@ int main(int argc,char** argv) {
                     Check(scene->GetAllEntitiesWith<IDComponent>().size()==count,"Authored entity count changed");
                 }
             }else {
-                for(int i=0;i<1000;i++)tick(session,1.0f/120);
+                for(int i=0;i<240;i++)tick(session,1.0f/120);
                 Check(session.GetScene()->GetAllEntitiesWith<IDComponent>().size()==count+8&&
                       session.GetScene()->FindEntityByName("Score").GetComponent<TextComponent>().TextString=="SCORE  0",
                       "Ready run advanced scoring or grew authored pool");

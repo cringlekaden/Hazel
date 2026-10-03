@@ -152,7 +152,13 @@ def exercise(desktop,executable,project,app,game,working,env,logs,shots,packaged
             desktop.resize(window,1280,720);expect(app+' ready:');time.sleep(.6)
             if packaged and hz.SYSTEM=='linux' and str(hz.ROOT) in (Path('/proc')/str(process.pid)/'maps').read_text():raise RuntimeError('Game package loaded checkout libraries')
             game_window=GameWindow(desktop,window,app=='Hazelnut')
-            if app=='Hazelnut':desktop.click(window,657,40)
+            if app=='Hazelnut':
+                def toolbar_ready():
+                    width,height,pixels=desktop.capture(window)
+                    color=pixels[(39*width+657)*3:(39*width+657)*3+3]
+                    return len(color)==3 and min(color)>220
+                wait_for(process,toolbar_ready,'Editor Play toolbar was not rendered',20)
+                desktop.click(window,657,40)
             def menu_ready():return wait_for(process,lambda:game_window.control_ready(-1.35 if game=='MeadowRun' else -1.6,game),'Title controls were not displayed',15)
             def level_ready():
                 game_window.expected=(-6,-3)
