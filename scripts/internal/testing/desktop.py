@@ -21,6 +21,9 @@ class Desktop:
             self.callback=C.WINFUNCTYPE(C.c_bool,C.c_void_p,C.c_ssize_t)
             signatures=[('EnumWindows',C.c_bool,[self.callback,C.c_ssize_t]),('GetWindowThreadProcessId',C.c_ulong,[C.c_void_p,C.POINTER(C.c_ulong)]),('GetWindowTextW',C.c_int,[C.c_void_p,C.c_wchar_p,C.c_int]),('GetClientRect',C.c_bool,[C.c_void_p,C.POINTER(Rect)]),('ClientToScreen',C.c_bool,[C.c_void_p,C.POINTER(Point)]),('PostMessageW',C.c_bool,[C.c_void_p,C.c_uint,C.c_size_t,C.c_ssize_t]),('SetWindowPos',C.c_bool,[C.c_void_p,C.c_void_p,C.c_int,C.c_int,C.c_int,C.c_int,C.c_uint]),('GetWindowRect',C.c_bool,[C.c_void_p,C.POINTER(Rect)]),('SetForegroundWindow',C.c_bool,[C.c_void_p]),('SetCursorPos',C.c_bool,[C.c_int,C.c_int]),('MapVirtualKeyW',C.c_uint,[C.c_uint,C.c_uint])]
             for name,result,args in signatures:fn=getattr(self.user,name);fn.restype=result;fn.argtypes=args
+            self.user.GetCursorPos.argtypes=[C.POINTER(Point)];self.user.GetCursorPos.restype=C.c_bool
+            self.user.SetProcessDpiAwarenessContext.argtypes=[C.c_void_p];self.user.SetProcessDpiAwarenessContext.restype=C.c_bool
+            self.user.SetProcessDpiAwarenessContext(C.c_void_p(-4))
             return
         self.x=C.CDLL('libX11.so.6');self.xt=C.CDLL('libXtst.so.6')
         signatures=[('XOpenDisplay',C.c_void_p,[C.c_char_p]),('XDefaultRootWindow',C.c_ulong,[C.c_void_p]),('XQueryTree',C.c_int,[C.c_void_p,C.c_ulong,C.POINTER(C.c_ulong),C.POINTER(C.c_ulong),C.POINTER(C.POINTER(C.c_ulong)),C.POINTER(C.c_uint)]),('XFetchName',C.c_int,[C.c_void_p,C.c_ulong,C.POINTER(C.c_void_p)]),('XInternAtom',C.c_ulong,[C.c_void_p,C.c_char_p,C.c_int]),('XGetWindowProperty',C.c_int,[C.c_void_p,C.c_ulong,C.c_ulong,C.c_long,C.c_long,C.c_int,C.c_ulong,C.POINTER(C.c_ulong),C.POINTER(C.c_int),C.POINTER(C.c_ulong),C.POINTER(C.c_ulong),C.POINTER(C.c_void_p)]),('XFree',C.c_int,[C.c_void_p]),('XFlush',C.c_int,[C.c_void_p]),('XSetInputFocus',C.c_int,[C.c_void_p,C.c_ulong,C.c_int,C.c_ulong]),('XRaiseWindow',C.c_int,[C.c_void_p,C.c_ulong]),('XTranslateCoordinates',C.c_int,[C.c_void_p,C.c_ulong,C.c_ulong,C.c_int,C.c_int,C.POINTER(C.c_int),C.POINTER(C.c_int),C.POINTER(C.c_ulong)]),('XGetGeometry',C.c_int,[C.c_void_p,C.c_ulong,C.POINTER(C.c_ulong),C.POINTER(C.c_int),C.POINTER(C.c_int),C.POINTER(C.c_uint),C.POINTER(C.c_uint),C.POINTER(C.c_uint),C.POINTER(C.c_uint)]),('XResizeWindow',C.c_int,[C.c_void_p,C.c_ulong,C.c_uint,C.c_uint]),('XSendEvent',C.c_int,[C.c_void_p,C.c_ulong,C.c_int,C.c_long,C.POINTER(Event)]),('XKeysymToKeycode',C.c_ubyte,[C.c_void_p,C.c_ulong]),('XCloseDisplay',C.c_int,[C.c_void_p])]
@@ -76,7 +79,13 @@ class Desktop:
     def click(self,window,x,y):
         self.activate(window);left,top,_,_=self.geometry(window)
         if os.name=='nt':
-            self.user.SetCursorPos(left+int(x),top+int(y));self.user.PostMessageW(window,0x200,0,(int(y)<<16)|int(x));time.sleep(.1)
+            expected=(left+int(x),top+int(y))
+            if not self.user.SetCursorPos(*expected):raise C.WinError(C.get_last_error())
+            actual=Point()
+            if not self.user.GetCursorPos(C.byref(actual)):raise C.WinError(C.get_last_error())
+            print('Owned-window click: client='+str((int(x),int(y)))+', origin='+str((left,top))+', expected screen='+str(expected)+', actual='+str((actual.x,actual.y)),flush=True)
+            if (actual.x,actual.y)!=expected:raise RuntimeError('Test cursor is clipped outside the owned-window control')
+            self.user.PostMessageW(window,0x200,0,(int(y)<<16)|int(x));time.sleep(.1)
             self.user.PostMessageW(window,0x201,1,(int(y)<<16)|int(x));time.sleep(.25);self.user.PostMessageW(window,0x202,0,(int(y)<<16)|int(x))
         else:
             self.xt.XTestFakeMotionEvent(self.display,-1,left+int(x),top+int(y),0);self.x.XFlush(self.display);time.sleep(.1)
