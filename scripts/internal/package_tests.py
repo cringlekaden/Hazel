@@ -76,6 +76,26 @@ def unavailable_sources():
         for root,hidden in reversed(moved):hidden.rename(root)
 
 
+def extract_verified(archive,working):
+    checksum=archive.with_name(archive.name+'.sha256').read_text().split()[0]
+    if hashlib.sha256(archive.read_bytes()).hexdigest()!=checksum:raise RuntimeError('Archive checksum mismatch')
+    shutil.unpack_archive(archive,working)
+    suffix='.zip' if archive.name.endswith('.zip') else '.tar.gz'
+    path=working/archive.name.removesuffix(suffix)
+    for line in (path/'SHA256SUMS').read_text().splitlines():
+        digest,relative=line.split('  ',1)
+        if hashlib.sha256((path/relative).read_bytes()).hexdigest()!=digest:raise RuntimeError('Extracted file checksum mismatch: '+relative)
+    if any(p.is_symlink() for p in path.rglob('*')):raise RuntimeError('Archive contains runtime symlinks')
+    return path
+
+
+def graphics_environment(profile):
+    env=os.environ.copy()
+    for key in ('HAZEL_RESOURCES','HAZEL_MONO','MONO_PATH','MONO_CFG_DIR','LD_LIBRARY_PATH','LD_PRELOAD','MESA_GL_VERSION_OVERRIDE','MESA_GLSL_VERSION_OVERRIDE','LIBGL_ALWAYS_SOFTWARE','GALLIUM_DRIVER','LP_NUM_THREADS'):env.pop(key,None)
+    if profile in ('software','gl41'):env.update(LIBGL_ALWAYS_SOFTWARE='1',GALLIUM_DRIVER='llvmpipe',LP_NUM_THREADS='2')
+    if profile=='gl41':env.update(MESA_GL_VERSION_OVERRIDE='4.1',MESA_GLSL_VERSION_OVERRIDE='410')
+    return env
+
 def package_tests(output,profile='native'):
     suffix='.zip' if hz.SYSTEM=='windows' else '.tar.gz'
     archives=[output/f'{name}-{hz.SYSTEM}-x86_64-Release{suffix}' for name in ('Nutella','Hazelnut')]
@@ -85,22 +105,11 @@ def package_tests(output,profile='native'):
         working=Path(temp);unrelated=working/'unrelated cwd';unrelated.mkdir()
         packages=[]
         for archive in archives:
-            checksum=archive.with_name(archive.name+'.sha256').read_text().split()[0]
-            if hashlib.sha256(archive.read_bytes()).hexdigest()!=checksum:raise RuntimeError('Archive checksum mismatch')
-            shutil.unpack_archive(archive,working)
-            path=working/archive.name.removesuffix(suffix)
-            for line in (path/'SHA256SUMS').read_text().splitlines():
-                digest,relative=line.split('  ',1)
-                if hashlib.sha256((path/relative).read_bytes()).hexdigest()!=digest:raise RuntimeError('Extracted file checksum mismatch: '+relative)
-            if any(p.is_symlink() for p in path.rglob('*')):raise RuntimeError('Archive contains runtime symlinks')
+            path=extract_verified(archive,working)
             if driver:
                 for dll in driver.glob('*.dll'):hz.copy_changed(dll,path/dll.name)
             packages.append(path)
-        env=os.environ.copy()
-        for key in ('HAZEL_RESOURCES','HAZEL_MONO','MONO_PATH','MONO_CFG_DIR','LD_LIBRARY_PATH','LD_PRELOAD','MESA_GL_VERSION_OVERRIDE','MESA_GLSL_VERSION_OVERRIDE','LIBGL_ALWAYS_SOFTWARE','GALLIUM_DRIVER','LP_NUM_THREADS'):env.pop(key,None)
-        if profile in ('software','gl41'):
-            env.update(LIBGL_ALWAYS_SOFTWARE='1',GALLIUM_DRIVER='llvmpipe',LP_NUM_THREADS='2')
-        if profile=='gl41':env.update(MESA_GL_VERSION_OVERRIDE='4.1',MESA_GLSL_VERSION_OVERRIDE='410')
+        env=graphics_environment(profile)
         desktop=Desktop()
         try:
             with unavailable_sources():

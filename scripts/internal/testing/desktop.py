@@ -119,13 +119,16 @@ class Desktop:
             self.xt.XTestFakeMotionEvent(self.display,-1,left+int(x),top+int(y),0);self.x.XFlush(self.display);time.sleep(.1)
             self.xt.XTestFakeButtonEvent(self.display,1,1,0);self.x.XFlush(self.display);time.sleep(.25);self.xt.XTestFakeButtonEvent(self.display,1,0,0);self.x.XFlush(self.display)
         time.sleep(.3)
-    def key(self,window,code,seconds=.25):
-        self.activate(window)
+    def set_key(self,window,code,down):
         if os.name=='nt':
-            scan=self.user.MapVirtualKeyW(code,0);self.user.PostMessageW(window,0x100,code,(scan<<16)|1);time.sleep(seconds);self.user.PostMessageW(window,0x101,code,(scan<<16)|(1<<30)|(1<<31)|1)
+            scan=self.user.MapVirtualKeyW(code,0)
+            self.user.PostMessageW(window,0x100 if down else 0x101,code,(scan<<16)|1|(0 if down else (1<<30)|(1<<31)))
         else:
-            key=self.x.XKeysymToKeycode(self.display,code);self.xt.XTestFakeKeyEvent(self.display,key,1,0);self.x.XFlush(self.display);time.sleep(seconds);self.xt.XTestFakeKeyEvent(self.display,key,0,0);self.x.XFlush(self.display)
-        time.sleep(.25)
+            key=self.x.XKeysymToKeycode(self.display,code)
+            self.xt.XTestFakeKeyEvent(self.display,key,1 if down else 0,0);self.x.XFlush(self.display)
+    def key(self,window,code,seconds=.25):
+        self.activate(window);self.set_key(window,code,True);time.sleep(seconds)
+        self.set_key(window,code,False);time.sleep(.25)
     def resize(self,window,width,height):
         if os.name=='nt':
             rect=Rect();self.user.GetWindowRect(window,C.byref(rect));_,_,w,h=self.geometry(window);self.user.SetWindowPos(window,None,0,0,width+rect.right-rect.left-w,height+rect.bottom-rect.top-h,6)
@@ -141,3 +144,48 @@ class Desktop:
             result=self.user.ChangeDisplaySettingsW(C.byref(self.originalMode),0)
             if result:raise RuntimeError('Cannot restore original test desktop mode: '+str(result))
             self.originalMode=None
+    def capture(self,window,path=None):
+        """Capture the real client framebuffer to PNG, using only OS APIs/stdlib."""
+        import struct,zlib
+        _,_,width,height=self.geometry(window)
+        if os.name=='nt':
+            class Header(C.Structure):
+                _fields_=[('size',C.c_uint32),('width',C.c_int32),('height',C.c_int32),('planes',C.c_uint16),('bits',C.c_uint16),('compression',C.c_uint32),('imageSize',C.c_uint32),('x',C.c_int32),('y',C.c_int32),('used',C.c_uint32),('important',C.c_uint32)]
+            gdi=C.WinDLL('gdi32',use_last_error=True)
+            for name,result,args in [('CreateCompatibleDC',C.c_void_p,[C.c_void_p]),('CreateCompatibleBitmap',C.c_void_p,[C.c_void_p,C.c_int,C.c_int]),('SelectObject',C.c_void_p,[C.c_void_p,C.c_void_p]),('BitBlt',C.c_bool,[C.c_void_p,C.c_int,C.c_int,C.c_int,C.c_int,C.c_void_p,C.c_int,C.c_int,C.c_uint]),('GetDIBits',C.c_int,[C.c_void_p,C.c_void_p,C.c_uint,C.c_uint,C.c_void_p,C.c_void_p,C.c_uint]),('DeleteObject',C.c_bool,[C.c_void_p]),('DeleteDC',C.c_bool,[C.c_void_p])]:
+                fn=getattr(gdi,name);fn.restype=result;fn.argtypes=args
+            self.user.GetDC.argtypes=[C.c_void_p];self.user.GetDC.restype=C.c_void_p
+            self.user.ReleaseDC.argtypes=[C.c_void_p,C.c_void_p];self.user.ReleaseDC.restype=C.c_int
+            dc=self.user.GetDC(window);memory=gdi.CreateCompatibleDC(dc);bitmap=gdi.CreateCompatibleBitmap(dc,width,height)
+            if not dc or not memory or not bitmap:raise RuntimeError('Cannot allocate screenshot')
+            previous=gdi.SelectObject(memory,bitmap)
+            try:
+                if not gdi.BitBlt(memory,0,0,width,height,dc,0,0,0x00CC0020):raise C.WinError(C.get_last_error())
+                gdi.SelectObject(memory,previous)
+                header=Header();header.size=C.sizeof(header);header.width=width;header.height=-height;header.planes=1;header.bits=32
+                buffer=C.create_string_buffer(width*height*4)
+                if gdi.GetDIBits(dc,bitmap,0,height,buffer,C.byref(header),0)!=height:raise RuntimeError('Incomplete screenshot')
+                data=buffer.raw
+            finally:
+                gdi.DeleteObject(bitmap);gdi.DeleteDC(memory);self.user.ReleaseDC(window,dc)
+        else:
+            class Image(C.Structure):
+                _fields_=[('width',C.c_int),('height',C.c_int),('offset',C.c_int),('format',C.c_int),('data',C.c_void_p),('order',C.c_int),('unit',C.c_int),('bitOrder',C.c_int),('pad',C.c_int),('depth',C.c_int),('stride',C.c_int),('bits',C.c_int),('red',C.c_ulong),('green',C.c_ulong),('blue',C.c_ulong)]
+            self.x.XGetImage.argtypes=[C.c_void_p,C.c_ulong,C.c_int,C.c_int,C.c_uint,C.c_uint,C.c_ulong,C.c_int];self.x.XGetImage.restype=C.POINTER(Image)
+            self.x.XDestroyImage.argtypes=[C.POINTER(Image)];self.x.XDestroyImage.restype=C.c_int
+            image=self.x.XGetImage(self.display,window,0,0,width,height,C.c_ulong(-1),2)
+            if not image:raise RuntimeError('Cannot capture owned X11 window')
+            try:
+                meta=image.contents
+                if meta.bits!=32 or meta.order!=0 or (meta.red,meta.green,meta.blue)!=(0xff0000,0xff00,0xff):raise RuntimeError('Unsupported screenshot pixel format')
+                raw=C.string_at(meta.data,meta.stride*height)
+                data=b''.join(raw[y*meta.stride:y*meta.stride+width*4] for y in range(height))
+            finally:self.x.XDestroyImage(image)
+        rows=[]
+        for y in range(height):
+            row=data[y*width*4:(y+1)*width*4];rgb=bytearray(width*3)
+            rgb[0::3]=row[2::4];rgb[1::3]=row[1::4];rgb[2::3]=row[0::4];rows.append(b'\0'+rgb)
+        def chunk(kind,body):return struct.pack('>I',len(body))+kind+body+struct.pack('>I',zlib.crc32(kind+body))
+        if path is None:return width,height,b''.join(row[1:] for row in rows)
+        path.parent.mkdir(parents=True,exist_ok=True)
+        path.write_bytes(b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',width,height,8,2,0,0,0))+chunk(b'IDAT',zlib.compress(b''.join(rows),6))+chunk(b'IEND',b''))

@@ -75,6 +75,32 @@ Zero/multiple candidates and invalid arguments fail usefully with nonzero status
 
 Managed `Hazel.Scene.LoadScene("Scenes/Level1.hazel")` **requests** a scene transition from a main-thread callback. It returns void and does not report successful loading. The first accepted request wins; duplicates coalesce. At the beginning of the next runtime Update, outside callbacks/registry iteration, the target is staged/validated, then old scripts/physics stop and new state starts. Failure is logged and keeps the current scene usable. Stop cancels pending work. Ordinary transitions reuse the project script environment. Hazelnut retains authored scene/fields independently throughout Play.
 
+## Playable examples
+
+**[MeadowRun](examples/MeadowRun/README.md)** is a small garden expedition: collect five lantern seeds, recover safely from the pond, and reopen the trail. WASD/arrow keys move; R restarts; Escape returns to the menu.
+
+**[Skybound](examples/Skybound/README.md)** follows an original wind sprite through lantern towers. Space/left click flap; fresh Space/R or Try Again restarts after death; Escape/Title Menu returns. A ready state prevents the title click from starting flight accidentally. Four obstacle pairs are reused; scoring and movement use fixed simulation steps.
+
+![MeadowRun during play](docs/images/meadowrun-play.png)
+![Skybound game over](docs/images/skybound-over.png)
+
+These are real engine captures, not mockups. Each project owns its scenes, textures and assembly. Stable layouts are authored in `.hazel` files; inspector-visible script fields tune movement and rules. Both use the shared RuntimeSession and managed scene-loading API. Their cameras fit a fixed 16 x 12 area, keeping gameplay visible across aspect ratios. Original art and redistribution terms are recorded per project; regeneration is optional and needs Pillow only on the author's machine.
+
+After engine setup, substitute `MeadowRun` or `Skybound` for `<Game>` (Windows: use `python`):
+
+```sh
+python3 scripts/hazel.py script-build examples/<Game>/<Game>.hproj
+python3 scripts/hazel.py run Hazelnut --project examples/<Game>/<Game>.hproj
+python3 scripts/hazel.py run Nutella --project examples/<Game>/<Game>.hproj
+python3 scripts/hazel.py build --config Release
+python3 scripts/hazel.py script-build examples/<Game>/<Game>.hproj --config Release
+python3 scripts/hazel.py package --app Nutella --project examples/<Game>/<Game>.hproj --name <Game> --output dist/games
+python3 scripts/hazel.py test-games                  # requires build --tests
+python3 scripts/hazel.py test-games --config Release --packages
+```
+
+Extract a game archive and run its Nutella executable without arguments. Complete named Windows/Linux game artifacts are published separately by [example-games CI](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Afeature%2Fexample-games), after extracted acceptance. The normal Hazelnut/Nutella artifacts remain available. `SceneTransitions` remains the focused lifecycle/CLI example used by existing regressions. See [design and measured verification](docs/example-games.md).
+
 ## Development and layout
 
 Copy the portable `scripts/internal/vscode/linux/*.json` or `windows/*.json` templates into ignored `.vscode/` after preserving existing settings. F5 defaults to Hazelnut; Nutella has its own configuration. Debug launch builds incrementally. Bear refresh is an explicit task, requiring Bear; Linux debugger requires GDB. Linux desktop tests require a display (`xvfb-run` is useful in CI), `libXtst` for automated clicks, and optionally Mesa software graphics. Windows tests acquire a checksum-pinned isolated software driver only under ignored testing output.
@@ -84,9 +110,11 @@ Hazel/                 engine: src/, Resources/, pristine vendor/
 Hazel-ScriptCore/       managed public API
 Hazelnut/              editor: src/, Resources/Icons + initial layout
 Nutella/               standalone project player
-examples/SceneTransitions/  .hproj, Assets/Scenes, Textures, Scripts
+examples/{MeadowRun,Skybound,SceneTransitions}/  independent projects
+examples/art/          optional original art regeneration source
 tests/fixtures/        intentional authoring/texture fixtures
 tests/migration/       retained and extended regression executables
+tests/examples/        game lifecycle/rendering and flight invariants
 scripts/               setup.sh, setup.ps1, hazel.py
   internal/            packaging, tests, tool pins, portable VS Code templates
   dependencies/        Premake integration, generators, pins, compatibility shims

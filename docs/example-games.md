@@ -42,4 +42,22 @@ automated desktop input is distinct from physical human playtesting.
 
 ## Verification
 
-Results and final checkpoint links will be recorded here after implementation.
+API checkpoint `f63c96a` passed all 13 native Linux Debug regressions and
+[Windows/Linux CI 37114234601](https://github.com/cringlekaden/Hazel/actions/runs/37114234601).
+MeadowRun is `d2309bb`; Skybound is `7c21c45`. Native HD4000 desktop tests finish
+MeadowRun with real WASD input and exercise completion/restart/menu in player and
+editor Play. Skybound's actual controls score, die, restart and return in both.
+The runtime regression uses ScriptEngine::Init's existing project transaction,
+keeping Mono's root alive while replacing project domains; it verifies class
+isolation across MeadowRun -> Skybound -> MeadowRun. Tests preserve authored
+fields/scenes, repeat completion/checkpoint transitions, and resize to portrait.
+Flight invariants pass 20 simulated minutes with four original gate objects and
+610 once-only points, plus 30/120 fps equivalence and ready/death input isolation.
+
+Initial rendered inspection corrected star scale, title contrast, column caps,
+ground tiling and text centering. Captures use actual OS windows or the engine's
+framebuffer. The actor-control test follows the rendered coat in a bounded search
+area, allowing texture sampling differences at smaller editor viewport sizes.
+Software drivers are copied only into private test directories. Complete named
+archives use the canonical --name option; README/license files travel with projects.
+Release, extracted packages and full game CI are the remaining verification gate.

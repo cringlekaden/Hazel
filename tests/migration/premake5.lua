@@ -1,6 +1,6 @@
 local repoRoot = _MAIN_SCRIPT_DIR
 
-for _, test in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke", "RuntimeSessionSmoke" } do
+for _, test in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke", "RuntimeSessionSmoke", "ExampleGamesSmoke" } do
 project ("Migration" .. test)
     location (repoRoot .. "/build/Migration" .. test)
     kind "ConsoleApp"
@@ -10,7 +10,7 @@ project ("Migration" .. test)
     staticruntime "Off"
     targetdir (repoRoot .. "/bin/" .. outputdir .. "/%{prj.name}")
     objdir (repoRoot .. "/bin-int/" .. outputdir .. "/%{prj.name}")
-    files { repoRoot .. "/tests/migration/" .. test .. ".cpp" }
+    files { test == "ExampleGamesSmoke" and (repoRoot .. "/tests/examples/RuntimeSmoke.cpp") or (repoRoot .. "/tests/migration/" .. test .. ".cpp") }
     includedirs { repoRoot .. "/Hazel/src" }
     externalincludedirs
     {

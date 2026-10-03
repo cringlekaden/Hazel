@@ -219,7 +219,7 @@ def project_files(assets):
 def copy_project(descriptor, assets, destination):
     hz.copy_changed(descriptor, destination/descriptor.name)
     for notice in descriptor.parent.iterdir():
-        if notice.is_file() and notice.name.lower().startswith(('license', 'copying', 'copyright', 'notice')):
+        if notice.is_file() and (notice.name.lower().startswith(('license', 'copying', 'copyright', 'notice')) or notice.name=='README.md'):
             hz.copy_changed(notice, destination/notice.name)
     relative_root = assets.relative_to(descriptor.parent)
     for source in project_files(assets):
@@ -227,7 +227,9 @@ def copy_project(descriptor, assets, destination):
         hz.copy_changed(source, destination/relative_root/relative)
 
 
-def package(app, project, output):
+def package(app, project, output, archive_name=None):
+    if archive_name and (app=='all' or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*',archive_name)):
+        raise RuntimeError('--name requires one application and a portable archive name')
     descriptor, config, assets = load_project(project)
     validate_project(descriptor, config, assets)
     output = output.resolve(); output.mkdir(parents=True, exist_ok=True)
@@ -235,7 +237,7 @@ def package(app, project, output):
     commit = hz.output(['git', '-C', hz.ROOT, 'rev-parse', 'HEAD'])
     names = ('Hazelnut', 'Nutella') if app == 'all' else (app,)
     for name in names:
-        tag = f'{name}-{hz.SYSTEM}-x86_64-Release'
+        tag = f'{archive_name or name}-{hz.SYSTEM}-x86_64-Release'
         with tempfile.TemporaryDirectory(prefix='.package-', dir=output) as temporary:
             path = Path(temporary)/tag; path.mkdir()
             suffix = '.exe' if hz.SYSTEM == 'windows' else ''
