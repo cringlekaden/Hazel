@@ -89,3 +89,17 @@ namespace Migration {
         }
     }
 }
+
+namespace Migration {
+    public class MotionCameraProbe : Hazel.Entity {
+        public bool Passed;
+        void OnCreate() {
+            var body = GetComponent<Hazel.Rigidbody2DComponent>();
+            body.LinearVelocity = new Hazel.Vector2(2, 0);
+            Translation = new Hazel.Vector3(3, 4, 0);
+            var camera = FindEntityByName("Camera").GetComponent<Hazel.CameraComponent>();
+            camera.OrthographicSize = 12;
+            Passed = body.LinearVelocity.X == 2 && camera.OrthographicSize == 12 && camera.AspectRatio == 2;
+        }
+    }
+}

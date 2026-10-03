@@ -1,0 +1,45 @@
+# Example games milestone
+
+Nutella implementation `5d972f3` passed Windows/Linux CI 37100603151; its
+documentation tip `dbd840e` was merged without force into master at `7a0eec2`.
+Work continues on feature/example-games, without automatic merge. The saved
+stash, editor layout and ignored VS Code settings remain preserved.
+
+Audit: RuntimeSession owns Play/player lifecycle and deferred transitions; scenes
+copy authored fields; projects own asset roots and script environments; Scene
+creates physics before managed OnCreate. Existing component bindings expose text,
+translation, impulse and input. Stable content can be authored directly in .hazel.
+No entity spawning/destruction API is needed: Skybound reuses a fixed authored
+obstacle pool; MeadowRun retains five collectibles. No new runtime path is needed.
+
+Required engine corrections: expose writable runtime body velocity for responsive
+top-down control, author/serialize body gravity scale (default 1 for existing scenes),
+and synchronize scripted translation with a live physics body for checkpoint
+teleports. Expose orthographic camera size and read-only viewport aspect to fit a
+fixed game area on resize. Bindings follow existing component/internal-call names;
+editor controls expose gravity. No game-specific engine code or UI framework.
+
+MeadowRun: a compact original pixel-art garden expedition, five lantern seeds,
+solid trees/rocks, a pond checkpoint and a gated trail exit. Separate title, meadow
+and completion scenes. Skybound: original wind-sprite flight, ready/flying/dead
+states, fixed-step motion/collision, four recycled obstacle pairs, once-only score,
+edge-triggered Space/click and restart/menu. Scene structure is authored; scripts
+handle motion/rules/buttons. Useful numeric tuning is serialized.
+
+Camera policy: fit a 16 x 12 world area; extra aspect space reveals decorative
+background, never changes gameplay bounds or speed. Mouse mapping uses the same
+camera and RuntimeSession viewport coordinates in both applications. Original
+small RGBA pixel assets are checked in; one optional Pillow generator retains
+source/provenance. No runtime art dependency or audio subsystem.
+
+Canonical SDK commands build scripts, run/edit projects and package complete
+Nutella games. Existing SceneTransitions distribution/regressions remain intact.
+CI preserves normal application artifacts and separately publishes named game
+archives after actual extracted acceptance. Tests cover physics/camera bindings,
+fixed-step gameplay invariants, transitions, editor Stop isolation, project switch,
+real mouse input, resize and source/SDK-free relocation. Screenshots are inspected;
+automated desktop input is distinct from physical human playtesting.
+
+## Verification
+
+Results and final checkpoint links will be recorded here after implementation.

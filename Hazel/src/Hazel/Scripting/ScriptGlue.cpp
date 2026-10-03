@@ -1,5 +1,6 @@
 #include "hzpch.h"
 #include "ScriptGlue.h"
+#include <cmath>
 #include "ScriptEngine.h"
 #include "Hazel/Scene/RuntimeSession.h"
 
@@ -104,7 +105,14 @@ namespace Hazel {
 		Entity entity = scene->GetEntityByUUID(entityID);
 		HZ_CORE_ASSERT(entity);
 
-		entity.GetComponent<TransformComponent>().Translation = *translation;
+		if (!std::isfinite(translation->x) || !std::isfinite(translation->y) || !std::isfinite(translation->z)) {
+            HZ_CORE_ERROR("Translation must be finite"); return;
+        }
+        auto& transform = entity.GetComponent<TransformComponent>();
+        transform.Translation = *translation;
+        if (entity.HasComponent<Rigidbody2DComponent>())
+            if (auto* body = static_cast<b2Body*>(entity.GetComponent<Rigidbody2DComponent>().RuntimeBody))
+                body->SetTransform(b2Vec2(translation->x, translation->y), transform.Rotation.z);
 	}
 
 	static void Rigidbody2DComponent_ApplyLinearImpulse(UUID entityID, glm::vec2* impulse, glm::vec2* point, bool wake)
@@ -143,6 +151,33 @@ namespace Hazel {
 		const b2Vec2& linearVelocity = body->GetLinearVelocity();
 		*outLinearVelocity = glm::vec2(linearVelocity.x, linearVelocity.y);
 	}
+
+    static void Rigidbody2DComponent_SetLinearVelocity(UUID entityID, glm::vec2* velocity) {
+        if (!std::isfinite(velocity->x) || !std::isfinite(velocity->y)) {
+            HZ_CORE_ERROR("Linear velocity must be finite"); return;
+        }
+        auto entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        HZ_CORE_ASSERT(entity);
+        auto* body = static_cast<b2Body*>(entity.GetComponent<Rigidbody2DComponent>().RuntimeBody);
+        HZ_CORE_ASSERT(body);
+        body->SetLinearVelocity(b2Vec2(velocity->x, velocity->y));
+    }
+    static float CameraComponent_GetOrthographicSize(UUID entityID) {
+        auto entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        HZ_CORE_ASSERT(entity);
+        return entity.GetComponent<CameraComponent>().Camera.GetOrthographicSize();
+    }
+    static void CameraComponent_SetOrthographicSize(UUID entityID, float size) {
+        if (!std::isfinite(size) || size <= 0) { HZ_CORE_ERROR("Orthographic size must be positive and finite"); return; }
+        auto entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        HZ_CORE_ASSERT(entity);
+        entity.GetComponent<CameraComponent>().Camera.SetOrthographicSize(size);
+    }
+    static float CameraComponent_GetAspectRatio(UUID entityID) {
+        auto entity = ScriptEngine::GetSceneContext()->GetEntityByUUID(entityID);
+        HZ_CORE_ASSERT(entity);
+        return entity.GetComponent<CameraComponent>().Camera.GetAspectRatio();
+    }
 
 	static Rigidbody2DComponent::BodyType Rigidbody2DComponent_GetType(UUID entityID)
 	{
@@ -296,16 +331,17 @@ namespace Hazel {
 	void ScriptGlue::RegisterComponents()
 	{
 		s_EntityHasComponentFuncs.clear();
-		// Actual Hazel-ScriptCore exposes these three component classes. Explicit
-		// qualified names preserve its API without depending on compiler RTTI spelling.
+		// Explicit public component names.
+		// Preserve the API without depending on compiler RTTI spelling.
 		RegisterComponent<TransformComponent>("Hazel.TransformComponent");
 		RegisterComponent<Rigidbody2DComponent>("Hazel.Rigidbody2DComponent");
 		RegisterComponent<TextComponent>("Hazel.TextComponent");
+        RegisterComponent<CameraComponent>("Hazel.CameraComponent");
 	}
 
 	void ScriptGlue::ValidateComponents(MonoImage* image)
 	{
-		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent" })
+		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent" })
 			if (!mono_reflection_type_from_name(const_cast<char*>(name), image))
 				throw std::runtime_error(std::string("Missing managed component: ") + name);
 	}
@@ -327,6 +363,10 @@ namespace Hazel {
 		HZ_ADD_INTERNAL_CALL(Rigidbody2DComponent_ApplyLinearImpulse);
 		HZ_ADD_INTERNAL_CALL(Rigidbody2DComponent_ApplyLinearImpulseToCenter);
 		HZ_ADD_INTERNAL_CALL(Rigidbody2DComponent_GetLinearVelocity);
+        HZ_ADD_INTERNAL_CALL(Rigidbody2DComponent_SetLinearVelocity);
+        HZ_ADD_INTERNAL_CALL(CameraComponent_GetOrthographicSize);
+        HZ_ADD_INTERNAL_CALL(CameraComponent_SetOrthographicSize);
+        HZ_ADD_INTERNAL_CALL(CameraComponent_GetAspectRatio);
 		HZ_ADD_INTERNAL_CALL(Rigidbody2DComponent_GetType);
 		HZ_ADD_INTERNAL_CALL(Rigidbody2DComponent_SetType);
 

@@ -38,6 +38,7 @@ namespace Hazel
 				InternalCalls.Rigidbody2DComponent_GetLinearVelocity(Entity.ID, out Vector2 velocity);
 				return velocity;
 			}
+            set => InternalCalls.Rigidbody2DComponent_SetLinearVelocity(Entity.ID, ref value);
 		}
 
 		public BodyType Type
@@ -57,6 +58,17 @@ namespace Hazel
 		}
 
 	}
+
+    // The viewport supplies AspectRatio; scripts may fit an authored play area.
+    public class CameraComponent : Component
+    {
+        public float OrthographicSize
+        {
+            get => InternalCalls.CameraComponent_GetOrthographicSize(Entity.ID);
+            set => InternalCalls.CameraComponent_SetOrthographicSize(Entity.ID, value);
+        }
+        public float AspectRatio => InternalCalls.CameraComponent_GetAspectRatio(Entity.ID);
+    }
 
 	public class TextComponent : Component
 	{

@@ -467,6 +467,7 @@ namespace Hazel {
 			}
 
 			ImGui::Checkbox("Fixed Rotation", &component.FixedRotation);
+			ImGui::DragFloat("Gravity Scale", &component.GravityScale, 0.05f, -10.0f, 10.0f);
 		});
 
 		DrawComponent<BoxCollider2DComponent>("Box Collider 2D", entity, [](auto& component)

@@ -465,6 +465,7 @@ namespace Hazel {
 				bodyDef.type = Utils::Rigidbody2DTypeToBox2DBody(rb2d.Type);
 				bodyDef.position.Set(transform.Translation.x, transform.Translation.y);
 				bodyDef.angle = transform.Rotation.z;
+				bodyDef.gravityScale = rb2d.GravityScale;
 				auto* body = m_PhysicsWorld->CreateBody(&bodyDef);
 				body->SetFixedRotation(rb2d.FixedRotation);
 				rb2d.RuntimeBody = body;

@@ -22,6 +22,8 @@ namespace Hazel {
             const auto type = entity.GetComponent<Rigidbody2DComponent>().Type;
             if (type != Rigidbody2DComponent::BodyType::Static && type != Rigidbody2DComponent::BodyType::Dynamic && type != Rigidbody2DComponent::BodyType::Kinematic)
                 throw std::runtime_error("Invalid physics body type: " + entity.GetName());
+            if (!std::isfinite(entity.GetComponent<Rigidbody2DComponent>().GravityScale))
+                throw std::runtime_error("Non-finite gravity scale: " + entity.GetName());
             const auto& transform = entity.GetComponent<TransformComponent>();
             for (int axis = 0; axis < 3; ++axis)
                 if (!std::isfinite(transform.Translation[axis]) || !std::isfinite(transform.Rotation[axis]) || !std::isfinite(transform.Scale[axis]))

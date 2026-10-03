@@ -21,6 +21,15 @@ namespace Hazel
 		internal extern static void TransformComponent_SetTranslation(ulong entityID, ref Vector3 translation);
 		#endregion
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal extern static void Rigidbody2DComponent_SetLinearVelocity(ulong entityID, ref Vector2 velocity);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal extern static float CameraComponent_GetOrthographicSize(ulong entityID);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal extern static void CameraComponent_SetOrthographicSize(ulong entityID, float size);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal extern static float CameraComponent_GetAspectRatio(ulong entityID);
+
 		#region Rigidbody2DComponent
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		internal extern static void Rigidbody2DComponent_ApplyLinearImpulse(ulong entityID, ref Vector2 impulse, ref Vector2 point, bool wake);
@@ -53,7 +62,8 @@ namespace Hazel
 		internal extern static void TextComponent_SetLineSpacing(ulong entityID, float lineSpacing);
 		#endregion
 
-		#region Rigidbody2DComponent
+
+		#region Input
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		internal extern static bool Input_IsKeyDown(KeyCode keycode);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
