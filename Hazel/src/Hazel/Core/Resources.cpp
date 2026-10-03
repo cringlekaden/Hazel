@@ -9,13 +9,19 @@ namespace Hazel {
         const auto value = FileSystem::GetEnvironmentPath(variable);
         return !value.empty() ? std::filesystem::absolute(value) : standard;
     }
-    ApplicationResourceSpecification Resources::Defaults(const std::string& application) {
-        const auto executable = FileSystem::GetExecutablePath().parent_path();
-        auto data = FileSystem::GetEnvironmentPath("HAZEL_DATA");
-        if (data.empty()) data = FileSystem::GetUserDataDirectory() / "Hazel" / application;
-        return { ConfiguredPath("HAZEL_RESOURCES", executable / "Resources"),
-                 ConfiguredPath("HAZEL_MONO", executable / "mono"),
-                 std::filesystem::absolute(data) };
+    ApplicationResourceSpecification Resources::Defaults(const std::string& application,
+        ApplicationResourceSpecification specification) {
+        if (specification.Root.empty() || specification.MonoRoot.empty()) {
+            const auto executable = FileSystem::GetExecutablePath().parent_path();
+            if (specification.Root.empty()) specification.Root = ConfiguredPath("HAZEL_RESOURCES", executable / "Resources");
+            if (specification.MonoRoot.empty()) specification.MonoRoot = ConfiguredPath("HAZEL_MONO", executable / "mono");
+        }
+        if (specification.UserData.empty()) {
+            auto data = FileSystem::GetEnvironmentPath("HAZEL_DATA");
+            if (data.empty()) data = FileSystem::GetUserDataDirectory() / "Hazel" / application;
+            specification.UserData = std::filesystem::absolute(data);
+        }
+        return specification;
     }
     void Resources::Configure(const ApplicationResourceSpecification& specification) {
         if (specification.Root.empty() || specification.MonoRoot.empty() || specification.UserData.empty())

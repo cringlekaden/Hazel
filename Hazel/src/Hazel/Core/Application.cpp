@@ -24,12 +24,7 @@ namespace Hazel {
 
 		s_Instance = this;
 		try {
-            if (m_Specification.Resources.Root.empty() || m_Specification.Resources.MonoRoot.empty() || m_Specification.Resources.UserData.empty()) {
-            auto defaults = Resources::Defaults(m_Specification.Name);
-            if (m_Specification.Resources.Root.empty()) m_Specification.Resources.Root = defaults.Root;
-            if (m_Specification.Resources.MonoRoot.empty()) m_Specification.Resources.MonoRoot = defaults.MonoRoot;
-            if (m_Specification.Resources.UserData.empty()) m_Specification.Resources.UserData = defaults.UserData;
-            }
+            m_Specification.Resources = Resources::Defaults(m_Specification.Name, m_Specification.Resources);
             Resources::Configure(m_Specification.Resources);
 
 			m_Window = Window::Create(WindowProps(m_Specification.Name));

@@ -18,11 +18,9 @@ namespace Hazel {
 	{
 		// Absolute external references keep their meaning; relative references are asset-root relative.
 		const auto normalized = NormalizeAssetPath(reference);
-#ifdef HZ_PLATFORM_LINUX
 		const auto text = normalized.generic_u8string();
-		if (text.size() >= 3 && text[1] == ':' && text[2] == '/')
+		if (text.size() >= 3 && text[1] == ':' && text[2] == '/' && !normalized.is_absolute())
 			throw std::runtime_error("Windows absolute texture/asset reference needs an explicit local replacement: " + text);
-#endif
 		return (root / normalized).lexically_normal();
 	}
 

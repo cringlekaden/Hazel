@@ -14,7 +14,9 @@ namespace Hazel {
     // configure explicitly without creating an Application.
     class Resources {
     public:
-        static ApplicationResourceSpecification Defaults(const std::string& application);
+        // Explicit fields win; resolve defaults only for roots the host omitted.
+        static ApplicationResourceSpecification Defaults(const std::string& application,
+            ApplicationResourceSpecification specification = {});
         static void Configure(const ApplicationResourceSpecification& specification);
         static const ApplicationResourceSpecification& Get();
         static std::filesystem::path Resolve(const std::filesystem::path& relative);

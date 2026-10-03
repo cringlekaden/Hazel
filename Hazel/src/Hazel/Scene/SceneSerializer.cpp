@@ -404,11 +404,6 @@ namespace Hazel {
 		FileSystem::WriteFileAtomically(std::filesystem::u8path(filepath), [&](std::ostream& stream) { stream << out.c_str(); });
 	}
 
-	void SceneSerializer::SerializeRuntime(const std::string& filepath)
-	{
-		throw std::logic_error("Runtime scene serialization is not implemented in the pinned upstream checkpoint");
-	}
-
 	bool SceneSerializer::Deserialize(const std::string& filepath)
 	{
 		if (m_Scene->m_IsRunning || m_Scene->m_PhysicsWorld) {
@@ -623,11 +618,6 @@ namespace Hazel {
 			HZ_CORE_ERROR("Failed to load .hazel file '{}': {}", filepath, error.what());
 			return false;
 		}
-	}
-
-	bool SceneSerializer::DeserializeRuntime(const std::string& filepath)
-	{
-		throw std::logic_error("Runtime scene deserialization is not implemented in the pinned upstream checkpoint");
 	}
 
 }

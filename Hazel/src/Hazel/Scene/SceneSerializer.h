@@ -11,10 +11,8 @@ namespace Hazel {
 		SceneSerializer(const Ref<Scene>& scene, const std::filesystem::path& assetRoot);
 
 		void Serialize(const std::string& filepath);
-		void SerializeRuntime(const std::string& filepath);
 
 		bool Deserialize(const std::string& filepath);
-		bool DeserializeRuntime(const std::string& filepath);
 	private:
 		Ref<Scene> m_Scene;
 		std::filesystem::path m_AssetRoot;

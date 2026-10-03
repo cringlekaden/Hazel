@@ -38,15 +38,16 @@ class PackageAudit {
         Console.WriteLine("Validated managed assembly: " + name);
     }
     static int Main(string[] args) {
+        Console.OutputEncoding = new System.Text.UTF8Encoding(false);
         try {
-            if (args.Length != 4) throw new ArgumentException("PackageAudit Core.dll Project.dll AssetRoot MonoAssembliesRoot");
+            if (args.Length != 4) throw new ArgumentException("PackageAudit Core.dll Project.dll AssemblyInventory.txt MonoAssembliesRoot");
             foreach (string path in Directory.GetFiles(args[3], "*.dll", SearchOption.AllDirectories)) {
                 if (path.Replace('\\', '/').Split('/').Any(part => part.EndsWith("-api", StringComparison.Ordinal))) continue;
                 RuntimeIdentities.Add(AssemblyName.GetAssemblyName(path).FullName);
             }
             string core = Path.GetFullPath(args[0]);
             Files.Add(AssemblyName.GetAssemblyName(core).Name, core);
-            foreach (string path in Directory.GetFiles(args[2], "*.dll", SearchOption.AllDirectories)) {
+            foreach (string path in File.ReadAllLines(args[2])) {
                 string name = AssemblyName.GetAssemblyName(path).Name;
                 string previous;
                 if (Files.TryGetValue(name, out previous) && !File.ReadAllBytes(previous).SequenceEqual(File.ReadAllBytes(path)))

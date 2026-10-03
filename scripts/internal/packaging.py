@@ -44,7 +44,12 @@ def resolve_owned(root, reference, exists=True):
 
 def validate_project(descriptor, config, assets):
     import yaml
-    scenes = list(assets.rglob('*.hazel'))
+    files = list(project_files(assets))
+    included = {file.resolve() for file in files}
+    for key in ('StartScene','ScriptModulePath'):
+        if resolve_owned(assets,config[key]) not in included:
+            raise RuntimeError(key+' selects excluded compiler output. Move/stage this dependency into project assets before packaging.')
+    scenes = [file for file in files if file.suffix=='.hazel']
     if not scenes: raise RuntimeError('No .hazel scenes in selected asset root')
     for file in assets.rglob('*'):
         if file.is_symlink() and not file.resolve().is_relative_to(assets): raise RuntimeError('External asset symlink: ' + str(file))
@@ -57,17 +62,24 @@ def validate_project(descriptor, config, assets):
             if ident in ids: raise RuntimeError('Duplicate entity UUID in ' + str(scene))
             ids.add(ident)
             texture = entity.get('SpriteRendererComponent', {}).get('TexturePath')
-            if texture: resolve_owned(assets, texture)
+            if texture and resolve_owned(assets,texture) not in included:
+                raise RuntimeError('Texture selects excluded compiler output: '+texture+' in '+str(scene))
     core = hz.binaries('Release') / 'Hazel-ScriptCore/Hazel-ScriptCore.dll'
     module = resolve_owned(assets, config['ScriptModulePath'])
+    assembly_files = [file for file in files if file.suffix.lower()=='.dll']
     auditor = hz.binaries('Release') / 'PackageAudit/PackageAudit.exe'
     runtime = hz.ROOT/'Hazelnut/mono/lib/mono' if hz.SYSTEM=='windows' else hz.mono_prefix()/'lib/mono'
-    command = [auditor, core, module, assets, runtime]
-    if hz.SYSTEM == 'linux':
-        prefix = hz.mono_prefix()
-        configuration = (prefix/'../etc/mono/config').resolve() if prefix!=Path('/usr') else Path('/etc/mono/config')
-        command = [prefix/'bin/mono', '--config', configuration, *command]
-    result = subprocess.run(list(map(str,command)), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    # Audit exactly the assemblies being shipped, not SDK/intermediate outputs
+    # under an author's asset directory. Copying uses the same file inventory.
+    with tempfile.TemporaryDirectory(prefix='hazel-assembly-audit-') as temporary:
+        inventory = Path(temporary)/'assemblies.txt'
+        inventory.write_text(''.join(str(file)+'\n' for file in assembly_files),encoding='utf-8')
+        command = [auditor, core, module, inventory, runtime]
+        if hz.SYSTEM == 'linux':
+            prefix = hz.mono_prefix()
+            configuration = (prefix/'../etc/mono/config').resolve() if prefix!=Path('/usr') else Path('/etc/mono/config')
+            command = [prefix/'bin/mono', '--config', configuration, *command]
+        result = subprocess.run(list(map(str,command)), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
     if result.returncode: raise RuntimeError(result.stderr.strip() or 'Managed dependency audit failed')
     known = {line.removeprefix('SCRIPT ') for line in result.stdout.splitlines() if line.startswith('SCRIPT ')}
     for scene in scenes:
@@ -195,17 +207,23 @@ def licenses(package):
     hz.copy_changed(hz.ROOT/'Hazel/Resources/fonts/opensans/LICENSE.txt', package/'licenses/OpenSans/LICENSE.txt')
 
 
+def project_files(assets):
+    for source in sorted(assets.rglob('*')):
+        if not source.is_file(): continue
+        relative = source.relative_to(assets)
+        if any(part in ('Intermediates', 'bin', 'bin-int') for part in relative.parts): continue
+        if source.suffix in ('.pdb', '.mdb', '.sln', '.csproj', '.make', '.user') or source.name == 'Makefile': continue
+        yield source
+
+
 def copy_project(descriptor, assets, destination):
     hz.copy_changed(descriptor, destination/descriptor.name)
     for notice in descriptor.parent.iterdir():
         if notice.is_file() and notice.name.lower().startswith(('license', 'copying', 'copyright', 'notice')):
             hz.copy_changed(notice, destination/notice.name)
     relative_root = assets.relative_to(descriptor.parent)
-    for source in assets.rglob('*'):
-        if not source.is_file(): continue
+    for source in project_files(assets):
         relative = source.relative_to(assets)
-        if any(part in ('Intermediates', 'bin', 'bin-int') for part in relative.parts): continue
-        if source.suffix in ('.pdb', '.mdb', '.sln', '.csproj', '.make', '.user') or source.name == 'Makefile': continue
         hz.copy_changed(source, destination/relative_root/relative)
 
 

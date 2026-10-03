@@ -200,6 +200,15 @@ def binaries(configuration):
     return ROOT / 'bin' / f'{configuration}-{SYSTEM}-x86_64'
 
 
+def development_link(target, source):
+    if target.is_symlink():
+        if target.resolve() == source.resolve(): return
+        target.unlink()
+    elif target.exists():
+        raise RuntimeError('Preserve or move unexpected development runtime directory/file before staging: ' + str(target))
+    target.symlink_to(source, target_is_directory=source.is_dir())
+
+
 def stage(configuration, prefix=None):
     prefix = prefix or mono_prefix()
     base = binaries(configuration)
@@ -217,11 +226,11 @@ def stage(configuration, prefix=None):
         else:
             mono = app / 'mono'; mono.mkdir(exist_ok=True)
             for target, source in ((mono / 'lib', prefix / 'lib'), (mono / 'etc', (prefix / '../etc').resolve() if prefix != Path('/usr') else Path('/etc'))):
-                if not target.exists(): target.symlink_to(source, target_is_directory=True)
+                development_link(target,source)
             lib = app / 'lib'; lib.mkdir(exist_ok=True)
             for source in (prefix / 'lib').glob('libmono*.so*'):
                 target = lib / source.name
-                if not target.exists(): target.symlink_to(source.resolve())
+                development_link(target,source.resolve())
 
 
 def script_build(project, configuration):
@@ -238,14 +247,27 @@ def script_build(project, configuration):
     compiled.mkdir(parents=True, exist_ok=True)
     env['HAZEL_SCRIPT_OUTPUT'] = compiled.as_posix()
     if not Path(env['HAZEL_SCRIPTCORE']).is_file(): raise RuntimeError('Build Hazel first to supply Hazel-ScriptCore')
+    inputs = {'core': hashlib.sha256(Path(env['HAZEL_SCRIPTCORE']).read_bytes()).hexdigest(),
+              'project': hashlib.sha256((scripts/'premake5.lua').read_bytes()).hexdigest()}
+    stamp = compiled/'.hazel-script-build.json'
+    try: rebuild = json.loads(stamp.read_text()) != inputs
+    except (OSError, ValueError): rebuild = True
     run([generator, 'vs2022' if SYSTEM == 'windows' else 'gmake'], cwd=scripts, env=env)
     if SYSTEM == 'windows':
-        run([vs_toolchain()[1], scripts / (config['Name'] + '.sln'), '/m:2', f'/p:Configuration={configuration}', '/p:Platform=x64'], env=env)
+        command = [vs_toolchain()[1], scripts / (config['Name'] + '.sln'), '/m:2', f'/p:Configuration={configuration}', '/p:Platform=x64']
+        if rebuild: command += ['/t:Rebuild']
     else:
-        run(['make', f'config={configuration.lower()}', '-j2', 'CSC=' + shlex.join(map(str, mono_command(prefix)))], cwd=scripts, env=env)
+        command = ['make', f'config={configuration.lower()}', '-j2', 'CSC=' + shlex.join(map(str, mono_command(prefix)))]
+        # Premake's C# Makefile does not make an external HintPath DLL a target
+        # prerequisite. API/build-definition changes must invalidate this output.
+        if rebuild: command += ['--always-make']
+    run(command, cwd=scripts, env=env)
     module = assets / config['ScriptModulePath'].replace('\\', '/')
     if not (compiled/module.name).is_file():
         raise RuntimeError('Project Premake must honor HAZEL_SCRIPT_OUTPUT and produce ' + module.name + '; see the example')
+    stamp.write_text(json.dumps(inputs, sort_keys=True)+'\n')
+    for symbols in (module.with_suffix('.pdb'), module.with_name(module.name+'.mdb')):
+        if symbols.is_file() and not (compiled/symbols.name).is_file(): symbols.unlink()
     # Stage symbols/dependencies first, then atomically replace the module. The
     # live editor's watcher cannot observe a partly copied assembly.
     files = sorted(compiled.iterdir(), key=lambda path: path.name==module.name)
@@ -254,11 +276,14 @@ def script_build(project, configuration):
         if source.suffix not in ('.dll','.pdb','.mdb','.config'): continue
         destination=module.parent/source.name;destination.parent.mkdir(parents=True,exist_ok=True)
         data=source.read_bytes()
-        if destination.is_file() and destination.read_bytes()==data: continue
+        if destination.is_file() and destination.read_bytes()==data:
+            if destination.stat().st_mode != source.stat().st_mode: shutil.copymode(source,destination)
+            continue
         temporary=None
         try:
             with tempfile.NamedTemporaryFile(prefix=destination.name+'.',dir=destination.parent,delete=False) as handle:
                 temporary=Path(handle.name);handle.write(data)
+            shutil.copymode(source,temporary)
             os.replace(temporary,destination)
         finally:
             if temporary and temporary.exists(): temporary.unlink()

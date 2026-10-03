@@ -8,7 +8,8 @@ without force into master at `b0fb5fc`. Feature work stays on
 sources remain pristine. No overlapping builds; compiler parallelism is two.
 The named migration-layout stash and local development backup were inspected;
 the stash contains only Hazelnut/imgui.ini and differs from the older backup.
-It remains preserved, and only its layout will be restored into writable settings.
+It remains preserved; its exact layout is restored as Hazelnut's initial resource
+template, without replacing existing writable user settings.
 
 Actual boundaries inspected: Scope-owned Application/window/layers and failure
 cleanup, Scene physics/script shutdown, per-scene authored fields, transactional
@@ -92,8 +93,22 @@ executables passed, including live reload with a pending session transition.
 Ubuntu 24.04 CI's Debug/Release suites and extracted archives passed at ff79427
 and 8269b45. Windows builds both configurations at 8269b45; the standalone script
 reference failure was traced to Premake's forward-slash HintPath detection and
-corrected. Example builds now use its single project Premake definition from
+corrected. Example builds now use their single project Premake definition from
 setup/build/script-build. Managed packaging checks the shipped runtime's assembly
 identities rather than accepting arbitrary host GAC entries. Native closure is
 validated, with Arch SPDX and Ubuntu copyright notices. Windows bootstrap uses
 MSBuild, without requiring the IDE. Archive completion is verified below.
+
+Final review: Linux Debug's 13 regressions pass after removing unused alternate
+serializer stubs, making project path checks platform-independent, and resolving
+only omitted resource defaults. A partial explicit data root works without HOME.
+Unchanged setup retained 13 native/managed/deployed timestamps in 5.38 seconds;
+Bear captured 250 compiler commands across engine/editor/player. Independent
+Unicode project builds verify configuration separation, Core-content invalidation,
+unchanged outputs and symbol/permission handling. Development staging updates
+explicit SDK links while preserving unexpected files. CI 37094603584 passes Linux
+Debug/Release and both extracted-archive graphics profiles; Windows Debug/Release
+and script-build pass. Its package failure exposed duplicate intermediate DLLs:
+packaging now audits/copies one inventory, rejects excluded required dependencies,
+and still rejects conflicting shipped assemblies. Windows archive verification
+remains pending until the corrected CI run completes.

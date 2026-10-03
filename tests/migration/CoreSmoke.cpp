@@ -16,6 +16,7 @@
 #include <unordered_set>
 #include <stdexcept>
 #include <iostream>
+#include <optional>
 
 static void Check(bool value, const char* message) { if (!value) throw std::runtime_error(message); }
 struct Counts { int attached=0, detached=0, destroyed=0; };
@@ -30,6 +31,29 @@ private: Counts& m_Counts;
 static void CheckCore()
 {
     using namespace Hazel;
+    ApplicationResourceSpecification partialResources;
+    partialResources.UserData = std::filesystem::temp_directory_path()/"hazel explicit data";
+#ifdef HZ_PLATFORM_LINUX
+    // A host's explicit writable root must not require an unused user-data lookup.
+    std::vector<std::pair<std::string,std::optional<std::string>>> environment;
+    for (const char* name : {"HOME", "XDG_DATA_HOME", "HAZEL_DATA"}) {
+        const char* value = std::getenv(name);
+        environment.emplace_back(name, value ? std::optional<std::string>(value) : std::nullopt);
+        unsetenv(name);
+    }
+    auto restoreEnvironment = [&] {
+        for (const auto& [name,value] : environment)
+            if (value) setenv(name.c_str(),value->c_str(),1); else unsetenv(name.c_str());
+    };
+    try {
+#endif
+        const auto resolved = Resources::Defaults("CoreSmoke",partialResources);
+        Check(resolved.UserData==partialResources.UserData && !resolved.Root.empty() && !resolved.MonoRoot.empty(),
+              "Partial resource specification lost explicit data or required an unused default");
+#ifdef HZ_PLATFORM_LINUX
+    } catch (...) { restoreEnvironment(); throw; }
+    restoreEnvironment();
+#endif
     HZ_CORE_ASSERT(true);
     HZ_CORE_ASSERT(true, "variadic {} {}", 1, 2);
     Counts first, second, overlay;

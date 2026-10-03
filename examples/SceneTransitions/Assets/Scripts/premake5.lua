@@ -11,7 +11,7 @@ project "SceneTransitions"
     language "C#"
     dotnetframework "4.7.2"
     targetdir (assert(os.getenv("HAZEL_SCRIPT_OUTPUT"), "Use the Hazel SDK script-build command"))
-    objdir "Intermediates/%{cfg.buildcfg}"
+    objdir (os.getenv("HAZEL_SCRIPT_OUTPUT") .. "/Intermediates")
     files { "Source/**.cs" }
     links { core, "System", "System.Core" }
     copylocal "Off" -- The application supplies ScriptCore; do not duplicate it in project assets.
