@@ -109,12 +109,12 @@ int main(int argc,char** argv) {
         Log::Init(); Check(argc==3,"Usage: SceneGPUSmoke Core.dll Fixture.dll");
         const auto core=std::filesystem::absolute(std::filesystem::u8path(argv[1]));
         const auto app=std::filesystem::absolute(std::filesystem::u8path(argv[2])); Fixture fixture;
-        std::filesystem::create_directories(fixture.Directory/"Resources/Scripts");
-        std::filesystem::copy_file(core,fixture.Directory/"Resources/Scripts/Hazel-ScriptCore.dll");
+        std::filesystem::create_directories(fixture.Directory/"assets/Scripts");
+        std::filesystem::copy_file(core,fixture.Directory/"assets/Scripts/Hazel-ScriptCore.dll");
         const auto target=fixture.Directory/std::filesystem::u8path("Fixture-é.dll"); std::filesystem::copy_file(app,target);
         bool detached=false; Ref<ScriptClass> externalClass;
         {
-            ApplicationSpecification spec; spec.Name="Migration Scene"; spec.WorkingDirectory=fixture.Directory.generic_u8string();
+            ApplicationSpecification spec; spec.Name="Migration Scene"; spec.Resources.Root=fixture.Directory/"assets"; std::filesystem::current_path(fixture.Directory);
             Application application(spec); glfwHideWindow(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()));
             std::cout<<"Renderer: "<<glGetString(GL_RENDERER)<<"; Version: "<<glGetString(GL_VERSION)<<'\n';
             auto project=Project::New(); project->GetConfig().AssetDirectory="assets";

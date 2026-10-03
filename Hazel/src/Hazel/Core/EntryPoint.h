@@ -20,15 +20,14 @@ int main(int argc, char** argv)
     argv = argumentPointers.data();
 #endif
     Hazel::Log::Init();
-    HZ_CORE_WARN("Initialized Log...");
-    HZ_PROFILE_BEGIN_SESSION("Startup", "HazelProfile-Startup.json");
-    auto app = Hazel::CreateApplication({argc, argv});
-    HZ_PROFILE_END_SESSION();
-    HZ_PROFILE_BEGIN_SESSION("Runtime", "HazelProfile-Runtime.json");
-    app->Run();
-    HZ_PROFILE_END_SESSION();
-    HZ_PROFILE_BEGIN_SESSION("Shutdown", "HazelProfile-Shutdown.json");
-    app.reset();
-    HZ_PROFILE_END_SESSION();
+    try {
+        auto app = Hazel::CreateApplication({argc, argv});
+        if (app) app->Run();
+        return 0;
+    } catch (const std::exception& error) {
+        HZ_CORE_ERROR("{}", error.what());
+        return 1;
+    }
+
 }
 #endif

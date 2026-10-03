@@ -1,5 +1,6 @@
 #include "ContentBrowserPayload.h"
 #include "EditorLayer.h"
+#include "Hazel/Core/Resources.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Utils/PlatformUtils.h"
 #include "Hazel/Math/Math.h"
@@ -27,11 +28,11 @@ namespace Hazel {
 		HZ_PROFILE_FUNCTION();
 
 		m_CheckerboardTexture = Texture2D::Create("assets/textures/Checkerboard.png");
-		m_IconPlay = Texture2D::Create("Resources/Icons/PlayButton.png");
-		m_IconPause = Texture2D::Create("Resources/Icons/PauseButton.png");
-		m_IconSimulate = Texture2D::Create("Resources/Icons/SimulateButton.png");
-		m_IconStep = Texture2D::Create("Resources/Icons/StepButton.png");
-		m_IconStop = Texture2D::Create("Resources/Icons/StopButton.png");
+		m_IconPlay = Texture2D::Create(Resources::Resolve("Icons/PlayButton.png").generic_u8string());
+		m_IconPause = Texture2D::Create(Resources::Resolve("Icons/PauseButton.png").generic_u8string());
+		m_IconSimulate = Texture2D::Create(Resources::Resolve("Icons/SimulateButton.png").generic_u8string());
+		m_IconStep = Texture2D::Create(Resources::Resolve("Icons/StepButton.png").generic_u8string());
+		m_IconStop = Texture2D::Create(Resources::Resolve("Icons/StopButton.png").generic_u8string());
 
 		FramebufferSpecification fbSpec;
 		fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
@@ -140,6 +141,7 @@ namespace Hazel {
 	void EditorLayer::OnImGuiRender()
 	{
 		HZ_PROFILE_FUNCTION();
+        ImGuizmo::BeginFrame();
 
 		// Note: Switch this to true to enable dockspace
 		static bool dockspaceOpen = true;

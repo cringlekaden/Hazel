@@ -21,5 +21,7 @@ namespace Hazel {
         void BlockEvents(bool block) { m_BlockEvents = block; }
     private:
         bool m_BlockEvents = true;
+        std::string m_IniPath;
+        bool m_GLFWInitialized = false, m_OpenGLInitialized = false;
     };
 }

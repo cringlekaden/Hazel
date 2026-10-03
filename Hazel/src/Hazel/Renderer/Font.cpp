@@ -1,5 +1,6 @@
 #include "hzpch.h"
 #include "Font.h"
+#include "Hazel/Core/Resources.h"
 #include "Hazel/Core/FileSystem.h"
 #include <limits>
 #include <stdexcept>
@@ -166,7 +167,7 @@ namespace Hazel {
 	Ref<Font> Font::GetDefault()
 	{
 		if (!s_DefaultFont)
-			s_DefaultFont = CreateRef<Font>("assets/fonts/opensans/OpenSans-Regular.ttf");
+			s_DefaultFont = CreateRef<Font>(Resources::Resolve("fonts/opensans/OpenSans-Regular.ttf"));
 
 		return s_DefaultFont;
 	}

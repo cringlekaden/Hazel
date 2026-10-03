@@ -217,7 +217,7 @@ private:
         Check(!e.OpenProject(badProject),"Corrupt assembly project reported success"); preserved();
         Check(!e.ReloadScripts(),"Corrupt reload reported success"); preserved();
         std::filesystem::copy_file(backup,assembly,std::filesystem::copy_options::overwrite_existing);
-        const auto core=m_Directory/"Resources/Scripts/Hazel-ScriptCore.dll";
+        const auto core=m_Directory/"assets/Scripts/Hazel-ScriptCore.dll";
         const auto coreBackup=m_Directory/"valid-core.dll";
         std::filesystem::copy_file(core,coreBackup,std::filesystem::copy_options::overwrite_existing);
         std::filesystem::remove(core);
@@ -253,13 +253,13 @@ int main(int argc, char** argv) {
         auto scripts = std::filesystem::absolute(std::filesystem::u8path(argv[2]));
         auto source = std::filesystem::absolute(std::filesystem::u8path(argv[3]));
         std::filesystem::create_directory(directory);
-        std::filesystem::create_directories(directory / "Resources");
+        std::filesystem::create_directories(directory / "assets/Icons");
         for (const char* name : { "assets", "Resources/Icons", "SandboxProject" })
-            std::filesystem::copy(source / name, directory / name, std::filesystem::copy_options::recursive);
-        std::filesystem::copy_file(source / "imgui.ini", directory / "imgui.ini");
-        std::filesystem::create_directories(directory / "Resources/Scripts");
+            std::filesystem::copy(source / name, directory / (std::string(name)=="Resources/Icons" ? "assets/Icons" : name), std::filesystem::copy_options::recursive);
+        std::filesystem::copy_file(source / "imgui.ini", directory / "assets/imgui.ini");
+        std::filesystem::create_directories(directory / "assets/Scripts");
         std::filesystem::create_directories(directory / "SandboxProject/Assets/Scripts/Binaries");
-        std::filesystem::copy_file(core, directory / "Resources/Scripts/Hazel-ScriptCore.dll");
+        std::filesystem::copy_file(core, directory / "assets/Scripts/Hazel-ScriptCore.dll");
         std::filesystem::copy_file(scripts, directory / "SandboxProject/Assets/Scripts/Binaries/Sandbox.dll", std::filesystem::copy_options::overwrite_existing);
         auto project = directory / "SandboxProject/Sandbox.hproj";
         auto projectArgument = project.lexically_relative(directory).generic_u8string();
@@ -267,7 +267,7 @@ int main(int argc, char** argv) {
         bool done = false;
         {
             ApplicationSpecification spec; spec.Name = "Migration Editor";
-            spec.WorkingDirectory = directory.generic_u8string(); spec.CommandLineArgs = { 2, arguments };
+            spec.Resources.Root = directory / "assets"; std::filesystem::current_path(directory); spec.CommandLineArgs = { 2, arguments };
             Application application(spec);
             glfwHideWindow(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()));
             std::cout << "Renderer: " << glGetString(GL_RENDERER) << "; Version: " << glGetString(GL_VERSION) << '\n';

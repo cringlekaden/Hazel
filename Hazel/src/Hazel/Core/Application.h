@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "Hazel/Core/Window.h"
+#include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/RendererCapabilities.h"
 #include "Hazel/Core/LayerStack.h"
 #include "Hazel/Events/Event.h"
@@ -37,7 +38,8 @@ namespace Hazel {
 	struct ApplicationSpecification
 	{
 		std::string Name = "Hazel Application";
-		std::string WorkingDirectory;
+		bool EnableImGui = true;
+        ApplicationResourceSpecification Resources;
 		ApplicationCommandLineArgs CommandLineArgs;
         RendererSettings Rendering;
 	};
@@ -58,7 +60,8 @@ namespace Hazel {
 
 		void Close();
 
-		ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
+		// Borrowed until Application shutdown; null when EnableImGui is false.
+        ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
 
 		static Application& Get() { return *s_Instance; }
 		static Application* TryGet() { return s_Instance; }

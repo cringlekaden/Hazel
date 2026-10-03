@@ -84,7 +84,7 @@ public:
     void OnAttach() override { ++m_Counts.attached; }
     void OnDetach() override {
         Check(glfwGetCurrentContext()!=nullptr,"Context gone before layer detach");
-        Check(ImGui::GetCurrentContext()!=nullptr,"ImGui gone before user layer detach");
+        Check((ImGui::GetCurrentContext()!=nullptr)==Hazel::Application::Get().GetSpecification().EnableImGui,"Optional ImGui lifetime differs from specification");
         Hazel::Renderer2D::ResetStats(); // proves renderer still exists during OnDetach.
         ++m_Counts.detached;
     }
@@ -105,10 +105,12 @@ int main(int argc,char** argv)
             Counts counts; int callbacks=0;
             Hazel::ApplicationSpecification specification;
             specification.Name="Migration core lifecycle";
+            specification.EnableImGui=repeat==0;
             specification.CommandLineArgs={argc,argv};
-            specification.WorkingDirectory=std::filesystem::current_path().u8string();
+
             auto application=Hazel::CreateScope<Hazel::Application>(specification);
             Check(application->GetSpecification().CommandLineArgs[0]==argv[0],"Application args/specification");
+            Check((application->GetImGuiLayer()!=nullptr)==specification.EnableImGui,"Optional ImGui access differs from specification");
             application->PushLayer(Hazel::CreateScope<LifecycleLayer>(counts));
             std::thread producer([&]{application->SubmitToMainThread([&]{
                 ++callbacks;

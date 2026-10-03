@@ -21,28 +21,30 @@ namespace Hazel {
 		HZ_PROFILE_FUNCTION();
 
 		if (s_Instance) throw std::logic_error("Application already exists");
-		const auto previousDirectory = std::filesystem::current_path();
+
 		s_Instance = this;
 		try {
-			// Set working directory here
-			if (!m_Specification.WorkingDirectory.empty())
-				std::filesystem::current_path(std::filesystem::u8path(m_Specification.WorkingDirectory));
+			auto defaults = Resources::Defaults(m_Specification.Name);
+            if (m_Specification.Resources.Root.empty()) m_Specification.Resources.Root = defaults.Root;
+            if (m_Specification.Resources.MonoRoot.empty()) m_Specification.Resources.MonoRoot = defaults.MonoRoot;
+            if (m_Specification.Resources.UserData.empty()) m_Specification.Resources.UserData = defaults.UserData;
+            Resources::Configure(m_Specification.Resources);
 
 			m_Window = Window::Create(WindowProps(m_Specification.Name));
 			m_Window->SetEventCallback(HZ_BIND_EVENT_FN(Application::OnEvent));
 
 			Renderer::Init(m_Specification.Rendering);
 
-			auto overlay = CreateScope<ImGuiLayer>();
-			m_ImGuiLayer = overlay.get();
-			PushOverlay(std::move(overlay));
+			if (m_Specification.EnableImGui) {
+                auto overlay = CreateScope<ImGuiLayer>();
+                m_ImGuiLayer = overlay.get();
+                PushOverlay(std::move(overlay));
+            }
 		} catch (...) {
 			// Renderer initialization can throw (for example, a missing shader).
 			// A failed constructor must release GPU owners before its native window,
 			// cancel queued captures, and permit a later valid Application.
 			ShutdownResources();
-			std::error_code ignored;
-			std::filesystem::current_path(previousDirectory, ignored);
 			throw;
 		}
 	}
@@ -142,7 +144,8 @@ namespace Hazel {
 						layer->OnUpdate(timestep);
 				}
 
-				m_ImGuiLayer->Begin();
+				if (m_ImGuiLayer) {
+                m_ImGuiLayer->Begin();
 				{
 					HZ_PROFILE_SCOPE("LayerStack OnImGuiRender");
 
@@ -150,6 +153,7 @@ namespace Hazel {
 						layer->OnImGuiRender();
 				}
 				m_ImGuiLayer->End();
+                }
 			}
 
 			m_Window->OnUpdate();

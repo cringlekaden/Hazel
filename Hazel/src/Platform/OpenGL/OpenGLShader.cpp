@@ -1,5 +1,6 @@
 // Adapted actual target shader pipeline: source pins, robust caches and GLSL 410 fallback.
 #include "hzpch.h"
+#include "Hazel/Core/Resources.h"
 #include "Platform/OpenGL/OpenGLShader.h"
 #include "Platform/OpenGL/OpenGLCapabilities.h"
 #include "Hazel/Core/Timer.h"
@@ -73,7 +74,7 @@ shaderc_shader_kind GLShaderStageToShaderC(GLenum stage)
     throw std::invalid_argument("Unsupported shader stage");
 }
 const char* GLShaderStageToString(GLenum stage) { return stage==GL_VERTEX_SHADER ? "vertex" : "fragment"; }
-std::filesystem::path GetCacheDirectory() { return "assets/cache/shader/opengl"; }
+std::filesystem::path GetCacheDirectory() { return Resources::CacheDirectory(); }
 std::string CacheKey(GLenum stage,const std::string& source)
 {
     // Stable across processes and OSes; filenames alone cannot identify cached source.

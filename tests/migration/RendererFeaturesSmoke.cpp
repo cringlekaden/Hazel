@@ -1,3 +1,4 @@
+#include "Hazel/Core/Resources.h"
 // Real-context verification of target shader/texture/framebuffer features on 4.1/4.2.
 #include "Hazel/Core/Log.h"
 #include "Hazel/Renderer/Framebuffer.h"
@@ -21,16 +22,19 @@
 #include <vector>
 
 struct FixtureDirectory {
+    Hazel::ApplicationResourceSpecification PreviousResources=Hazel::Resources::Get();
     std::filesystem::path Previous=std::filesystem::current_path(),Path;
     FixtureDirectory() {
         std::random_device random;
         Path=std::filesystem::temp_directory_path()/("hazel-renderer-features-"+std::to_string(random())+"-"+std::to_string(random()));
         if (!std::filesystem::create_directory(Path)) throw std::runtime_error("Could not create isolated test directory");
         std::filesystem::current_path(Path);
+        auto resources=PreviousResources; resources.UserData=Path; Hazel::Resources::Configure(resources);
     }
     ~FixtureDirectory() {
         std::error_code error;
         std::filesystem::current_path(Previous,error);
+        Hazel::Resources::Configure(PreviousResources);
         std::filesystem::remove_all(Path,error); // Only this test's uniquely created directory.
     }
 };
@@ -55,7 +59,7 @@ static std::array<unsigned char,4> ReadColor(const Hazel::Ref<Hazel::Framebuffer
     return result;
 }
 static std::size_t CountCache() {
-    std::size_t count=0; for (const auto& entry:std::filesystem::directory_iterator("assets/cache/shader/opengl"))
+    std::size_t count=0; for (const auto& entry:std::filesystem::directory_iterator(Hazel::Resources::CacheDirectory()))
         if (entry.is_regular_file()) ++count;
     return count;
 }
@@ -143,11 +147,11 @@ static void CheckFramebuffersAndShaders()
     using namespace Hazel;
     const auto source=std::filesystem::u8path(u8"pipeline-\u00e9.glsl"); WriteShader(source,1.0f);
     std::size_t initial=0;
-    if (std::filesystem::exists("assets/cache/shader/opengl")) initial=CountCache();
+    if (std::filesystem::exists(Hazel::Resources::CacheDirectory())) initial=CountCache();
     auto shader=Shader::Create(source.u8string()); const auto cold=CountCache();
     Check(cold>=4 && cold>=initial,"SPIR-V cache files absent");
     std::vector<std::pair<std::filesystem::path,std::filesystem::file_time_type>> cacheTimes;
-    for (const auto& entry:std::filesystem::directory_iterator("assets/cache/shader/opengl"))
+    for (const auto& entry:std::filesystem::directory_iterator(Hazel::Resources::CacheDirectory()))
         cacheTimes.emplace_back(entry.path(),std::filesystem::last_write_time(entry.path()));
     shader.reset(); shader=Shader::Create(source.u8string());
     Check(CountCache()==cold,"Warm cache created duplicate files");
@@ -222,7 +226,7 @@ static void CheckFramebuffersAndShaders()
     WriteShader(source,0.5f); auto changed=Shader::Create(source.u8string());
     Check(CountCache()>cold,"Modified source reused stale filename-only cache");
     // Reject and regenerate a structurally damaged cache without disabling caching.
-    for (const auto& entry:std::filesystem::directory_iterator("assets/cache/shader/opengl")) {
+    for (const auto& entry:std::filesystem::directory_iterator(Hazel::Resources::CacheDirectory())) {
         std::ofstream damaged(entry.path(),std::ios::binary|std::ios::trunc); damaged<<"broken";
     }
     shader.reset(); shader=Shader::Create(source.u8string());
@@ -232,7 +236,7 @@ static void CheckFramebuffersAndShaders()
     auto half=ReadColor(framebuffer); Check(std::abs(static_cast<int>(half[0])-64)<=1,"Content change/corrupt cache recovery rendered stale shader"); framebuffer->Unbind();
     // Preserve the container and SPIR-V headers and byte count, corrupt only
     // instruction payload. A magic/length-only reader would accept this cache.
-    for (const auto& entry:std::filesystem::directory_iterator("assets/cache/shader/opengl")) {
+    for (const auto& entry:std::filesystem::directory_iterator(Hazel::Resources::CacheDirectory())) {
         std::fstream damaged(entry.path(),std::ios::binary|std::ios::in|std::ios::out);
         damaged.seekg(0,std::ios::end);
         if (damaged.tellg()>56) {
@@ -261,7 +265,7 @@ static void CheckFramebuffersAndShaders()
 }
 int main()
 {
-    Hazel::Log::Init();
+    Hazel::Log::Init(); Hazel::Resources::Configure(Hazel::Resources::Defaults("RendererFeaturesSmoke"));
     glfwSetErrorCallback([](int code,const char* message){std::cerr<<"GLFW "<<code<<": "<<message<<'\n';});
     if (!glfwInit()) { std::cerr<<"FAIL: GLFW initialization\n"; return 1; }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,4); glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,1);

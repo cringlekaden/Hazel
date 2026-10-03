@@ -7,8 +7,10 @@
 #include "Hazel/Core/Log.h"
 
 #include <imgui.h>
+#include <climits>
 #include <imgui_internal.h>
-#include <ImGuizmo.h>
+#include "Hazel/Core/Resources.h"
+#include "Hazel/Core/FileSystem.h"
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
@@ -35,8 +37,21 @@ namespace Hazel {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
         const float fontSize = 18.0f;
-        io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", fontSize);
-        io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", fontSize);
+        m_IniPath = (Resources::Get().UserData / "imgui.ini").generic_u8string();
+        io.IniFilename = nullptr; // Native filesystem I/O preserves Unicode paths on Windows.
+        auto loadFont = [&](const char* name) {
+            ScopedBuffer bytes(FileSystem::ReadFileBinary(Resources::Resolve(name)));
+            if (!bytes || bytes.Size() > INT_MAX) throw std::runtime_error("Missing ImGui font");
+            void* memory = IM_ALLOC(static_cast<size_t>(bytes.Size()));
+            std::memcpy(memory, bytes.Data(), static_cast<size_t>(bytes.Size()));
+            return io.Fonts->AddFontFromMemoryTTF(memory, static_cast<int>(bytes.Size()), fontSize);
+        };
+        loadFont("fonts/opensans/OpenSans-Bold.ttf");
+        io.FontDefault = loadFont("fonts/opensans/OpenSans-Regular.ttf");
+        const auto settings = std::filesystem::u8path(m_IniPath);
+        const auto initial = std::filesystem::is_regular_file(settings) ? settings : Resources::Resolve("imgui.ini");
+        ScopedBuffer ini(FileSystem::ReadFileBinary(initial));
+        if (ini) ImGui::LoadIniSettingsFromMemory(reinterpret_cast<const char*>(ini.Data()), static_cast<size_t>(ini.Size()));
         ImGui::StyleColorsDark();
         SetDarkThemeColors();
         ImGuiStyle& style = ImGui::GetStyle();
@@ -47,18 +62,27 @@ namespace Hazel {
         }
         Application& app = Application::Get();
         GLFWwindow* window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
-        bool glfwStatus = ImGui_ImplGlfw_InitForOpenGL(window, true);
-        HZ_CORE_ASSERT(glfwStatus, "Failed to initialize ImGui GLFW backend...");
-        bool openglStatus = ImGui_ImplOpenGL3_Init("#version 130");
-        HZ_CORE_ASSERT(openglStatus, "Failed to initialize ImGui OpenGL3 backend...");
+        m_GLFWInitialized = ImGui_ImplGlfw_InitForOpenGL(window, true);
+        if (!m_GLFWInitialized) throw std::runtime_error("Failed to initialize ImGui GLFW backend");
+        m_OpenGLInitialized = ImGui_ImplOpenGL3_Init("#version 130");
+        if (!m_OpenGLInitialized) throw std::runtime_error("Failed to initialize ImGui OpenGL backend");
     }
 
     void ImGuiLayer::OnDetach()
     {
         HZ_PROFILE_FUNCTION();
-        ImGui_ImplOpenGL3_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        ImGui::DestroyContext();
+        if (ImGui::GetCurrentContext()) {
+            if (m_OpenGLInitialized && m_GLFWInitialized) {
+                size_t size = 0;
+                const auto* ini = ImGui::SaveIniSettingsToMemory(&size);
+                try { FileSystem::WriteFileAtomically(std::filesystem::u8path(m_IniPath), [&](std::ostream& out) { out.write(ini, size); }); }
+                catch (const std::runtime_error& error) { HZ_CORE_ERROR("Save editor settings: {}", error.what()); }
+            }
+            if (m_OpenGLInitialized) ImGui_ImplOpenGL3_Shutdown();
+            if (m_GLFWInitialized) ImGui_ImplGlfw_Shutdown();
+            ImGui::DestroyContext();
+        }
+        m_OpenGLInitialized = m_GLFWInitialized = false;
     }
 
     void ImGuiLayer::Begin()
@@ -67,7 +91,6 @@ namespace Hazel {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGuizmo::BeginFrame();
     }
 
     void ImGuiLayer::End()

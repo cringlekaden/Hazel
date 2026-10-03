@@ -5,8 +5,23 @@
 #include <sys/stat.h>
 #include <cerrno>
 #include <system_error>
+#include <shlobj.h>
 
 namespace Hazel {
+std::filesystem::path FileSystem::GetExecutablePath() {
+    std::vector<wchar_t> buffer(32768);
+    DWORD count = GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
+    if (!count || count >= buffer.size()) throw std::runtime_error("Cannot locate executable");
+    return std::filesystem::path(std::wstring(buffer.data(), count));
+}
+std::filesystem::path FileSystem::GetUserDataDirectory() {
+    PWSTR path = nullptr;
+    if (FAILED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &path)))
+        throw std::runtime_error("Cannot locate LocalAppData");
+    std::filesystem::path result(path);
+    CoTaskMemFree(path);
+    return result;
+}
 std::FILE* FileSystem::OpenExclusiveOutput(const std::filesystem::path& path) {
     const int descriptor = _wopen(path.c_str(), _O_WRONLY | _O_CREAT | _O_EXCL | _O_BINARY | _O_NOINHERIT, _S_IREAD | _S_IWRITE);
     if (descriptor < 0) {

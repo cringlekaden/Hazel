@@ -25,11 +25,6 @@ project "ImGuizmo"
     filter {}
 project "Hazel"
     externalincludedirs { root .. "/Hazel/vendor/ImGuizmo" }
-project "Sandbox"
-    links { "ImGuizmo" }
-    filter "system:windows"
-        links { "Shell32" }
-    filter {}
 if _OPTIONS["migration-tests"] then
     for _, name in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke" } do
         project ("Migration" .. name)

@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "Hazel/Core/Resources.h"
 #include "ScriptEngine.h"
 
 #include "ScriptGlue.h"
@@ -203,7 +204,7 @@ namespace Hazel {
 			s_Data->Generation = ++s_Generation;
 		}
 		if (!s_Data->RootDomain) { InitMono(); ScriptGlue::RegisterFunctions(); }
-		ReplaceAssembly("Resources/Scripts/Hazel-ScriptCore.dll", appPath, false, beforeReplacement);
+		ReplaceAssembly(Resources::Resolve("Scripts/Hazel-ScriptCore.dll"), appPath, false, beforeReplacement);
 	}
 
 	void ScriptEngine::Shutdown()
@@ -219,8 +220,15 @@ namespace Hazel {
 
 	void ScriptEngine::InitMono()
 	{
-		mono_set_assemblies_path(HZ_MONO_ASSEMBLIES_PATH);
-		mono_config_parse(HZ_MONO_CONFIG_PATH[0] ? HZ_MONO_CONFIG_PATH : nullptr);
+		const auto root = Resources::Get().MonoRoot;
+        const auto assemblies = (root / "lib").generic_u8string();
+        const auto config = (root / "etc/mono/config").generic_u8string();
+        if (!std::filesystem::is_regular_file(root / "lib/mono/4.5/mscorlib.dll") ||
+            !std::filesystem::is_regular_file(root / "etc/mono/config"))
+            throw std::runtime_error("Incomplete Mono runtime at " + root.generic_u8string());
+        mono_set_dirs(assemblies.c_str(), (root / "etc").generic_u8string().c_str());
+        mono_set_assemblies_path(assemblies.c_str());
+        mono_config_parse(config.c_str());
 
 		if (s_Data->EnableDebugging)
 		{

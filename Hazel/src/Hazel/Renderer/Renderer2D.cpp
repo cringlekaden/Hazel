@@ -1,5 +1,6 @@
 // Actual upstream Renderer2D adapted for owned state, complete capacity guards and backend limits.
 #include "hzpch.h"
+#include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/Renderer2D.h"
 
 #include "Hazel/Renderer/VertexArray.h"
@@ -211,10 +212,10 @@ namespace Hazel {
 		uint32_t whiteTextureData = 0xffffffff;
 		s_Data->WhiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
 
-		s_Data->QuadShader = Shader::Create("assets/shaders/Renderer2D_Quad.glsl");
-		s_Data->CircleShader = Shader::Create("assets/shaders/Renderer2D_Circle.glsl");
-		s_Data->LineShader = Shader::Create("assets/shaders/Renderer2D_Line.glsl");
-		s_Data->TextShader = Shader::Create("assets/shaders/Renderer2D_Text.glsl");
+		s_Data->QuadShader = Shader::Create(Resources::Resolve("shaders/Renderer2D_Quad.glsl").generic_u8string());
+		s_Data->CircleShader = Shader::Create(Resources::Resolve("shaders/Renderer2D_Circle.glsl").generic_u8string());
+		s_Data->LineShader = Shader::Create(Resources::Resolve("shaders/Renderer2D_Line.glsl").generic_u8string());
+		s_Data->TextShader = Shader::Create(Resources::Resolve("shaders/Renderer2D_Text.glsl").generic_u8string());
 
 		// Set first texture slot to 0
 		s_Data->TextureSlots[0] = s_Data->WhiteTexture;

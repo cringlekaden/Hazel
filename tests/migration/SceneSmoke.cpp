@@ -1,3 +1,4 @@
+#include "Hazel/Core/Resources.h"
 // Scene/entity ownership regressions; CPU-only until explicit renderer gates.
 #include "Hazel/Core/Log.h"
 #include "Hazel/Scene/Scene.h"
@@ -196,6 +197,7 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
     std::filesystem::copy_file(core,fixture.Path/"Resources/Scripts/Hazel-ScriptCore.dll");
     std::filesystem::copy_file(app,target);
     std::filesystem::current_path(fixture.Path);
+    auto resources = Resources::Defaults("SceneSmoke"); resources.Root=fixture.Path/"Resources"; Resources::Configure(resources);
     auto project=Project::New(); project->GetConfig().AssetDirectory=".";
     project->GetConfig().ScriptModulePath=target.filename();
     Check(Project::SaveActive(fixture.Path/"Scene.hproj"),"Managed scene project setup failed");

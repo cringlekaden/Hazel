@@ -1,3 +1,4 @@
+#include "Hazel/Core/Resources.h"
 #include "Hazel/Core/Log.h"
 #include "Hazel/Renderer/Buffer.h"
 #include "Hazel/Renderer/Camera.h"
@@ -179,7 +180,7 @@ void main() { o_Color = v_Color; o_EntityID = v_EntityID; }
 
 int main()
 {
-    Hazel::Log::Init();
+    Hazel::Log::Init(); Hazel::Resources::Configure(Hazel::Resources::Defaults("RendererSmoke"));
     glfwSetErrorCallback([](int code, const char* message) { std::cerr << "GLFW " << code << ": " << message << '\n'; });
     if (!glfwInit())
         return 1;

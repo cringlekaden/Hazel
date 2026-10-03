@@ -65,3 +65,11 @@ than disappearing with Sandbox. Historical migration provenance stays historical
 
 Implementation and measured results are recorded here as checkpoints complete.
 No Windows/hardware/interactive or relocation claims are made without evidence.
+
+Prerequisite checkpoint: Linux Debug root build passed (two jobs). CoreSmoke
+checks both ImGui-enabled and disabled lifetimes. RendererFeaturesSmoke passed
+native HD4000 cache identity/warm/corruption tests with explicit isolated cache
+roots. SceneSmoke passed managed/physics/authored/reload/watcher regressions.
+EditorSmoke passed actual docked editor authoring/Play/Stop/failure/relocation
+regressions. Its initial settings fixture was corrected to use the configured
+resource root. ELF inspection confirms `$ORIGIN/lib` RPATH, without SDK paths.
