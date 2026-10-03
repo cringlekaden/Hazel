@@ -3,7 +3,6 @@
 #include <Hazel/Core/FileSystem.h>
 #include <Hazel/Scene/RuntimeSession.h>
 #include <Hazel/Scripting/ScriptEngine.h>
-#include <algorithm>
 #include <iostream>
 
 namespace Hazel {
@@ -38,14 +37,6 @@ namespace Hazel {
             PushLayer(CreateScope<RuntimeLayer>(project));
         }
     };
-    static std::vector<std::filesystem::path> DiscoverProjects() {
-        std::vector<std::filesystem::path> paths;
-        const auto directory = FileSystem::GetExecutablePath().parent_path();
-        for (const auto& item : std::filesystem::directory_iterator(directory))
-            if (item.is_regular_file() && item.path().extension() == ".hproj") paths.push_back(item.path());
-        std::sort(paths.begin(), paths.end());
-        return paths;
-    }
     Scope<Application> CreateApplication(ApplicationCommandLineArgs args) {
         bool help = false, list = false;
         std::filesystem::path selected;
@@ -72,7 +63,7 @@ namespace Hazel {
             return nullptr;
         }
         if (list || selected.empty()) {
-            auto paths = DiscoverProjects();
+            auto paths = Project::Discover(FileSystem::GetExecutablePath().parent_path());
             if (list || paths.size() > 1)
                 for (const auto& path : paths) std::cout << path.filename().generic_u8string() << '\n';
             if (list) return nullptr;
@@ -83,6 +74,12 @@ namespace Hazel {
         if (selected.extension() != ".hproj") throw std::runtime_error("--project requires a .hproj file");
         auto project = Project::LoadCandidate(selected);
         if (!project) throw std::runtime_error("Cannot parse/open project: " + selected.generic_u8string());
+        const auto& config = project->GetConfig();
+        if (config.Name.empty() || config.StartScene.empty() || config.ScriptModulePath.empty() ||
+            config.StartScene.extension() != ".hazel" || config.ScriptModulePath.extension() != ".dll")
+            throw std::runtime_error("Project requires Name, a .hazel StartScene, and a .dll ScriptModulePath");
+        if (!std::filesystem::is_directory(project->GetAssetRoot()))
+            throw std::runtime_error("Missing project asset root: " + project->GetAssetRoot().generic_u8string());
         for (const auto& reference : { project->GetConfig().StartScene, project->GetConfig().ScriptModulePath }) {
             const auto path = Project::ResolveAssetPath(project->GetAssetRoot(), reference);
             if (!std::filesystem::is_regular_file(path)) throw std::runtime_error("Missing project dependency: " + path.generic_u8string());

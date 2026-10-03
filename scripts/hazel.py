@@ -73,7 +73,7 @@ def premake():
         if SYSTEM == 'windows':
             install, _ = vs_toolchain()
             bootstrap = ROOT / 'build/tools/bootstrap-windows.cmd'
-            bootstrap.write_text('@echo off\ncall "' + str(install / 'VC/Auxiliary/Build/vcvars64.bat') + '"\nif errorlevel 1 exit /b 1\nnmake -f Bootstrap.mak windows MSDEV=vs2022 PREMAKE_OPTS=--curl-src=none\nexit /b %errorlevel%\n', encoding='utf-8')
+            bootstrap.write_text('@echo off\ncall "' + str(install / 'VC/Auxiliary/Build/vcvars64.bat') + '"\nif errorlevel 1 exit /b 1\nnmake -f Bootstrap.mak windows-msbuild PLATFORM=x64 MSDEV=vs2022 PREMAKE_OPTS=--curl-src=none\nexit /b %errorlevel%\n', encoding='utf-8')
             run(['cmd', '/d', '/c', bootstrap], cwd=owned)
         else:
             bootstrap = ROOT / 'build/tools/PremakeBootstrap.mak'
@@ -169,6 +169,13 @@ def build(configuration, tests=False, database=False):
         if not shutil.which('bear'): raise RuntimeError('Install Bear to refresh clangd compiler commands')
         command = ['bear', '--output', ROOT / 'compile_commands.json', '--', *command, '--always-make']
     run(command)
+    if database:
+        commands = json.loads((ROOT / 'compile_commands.json').read_text())
+        recorded = {(Path(item['directory']) / item['file']).resolve() for item in commands}
+        for source_root in ('Hazel/src', 'Hazelnut/src', 'Nutella/src'):
+            if not any(path.is_relative_to(ROOT / source_root) for path in recorded):
+                raise RuntimeError('Bear did not capture compiler commands for ' + source_root)
+        print('Refreshed clangd database: ' + str(len(commands)) + ' compiler commands.', flush=True)
     stage(configuration, prefix)
 
 
@@ -277,19 +284,20 @@ def main():
     p = sub.add_parser('test-packages'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
     p = sub.add_parser('package'); p.add_argument('--app', choices=('Hazelnut', 'Nutella', 'all'), default='all'); p.add_argument('--project', type=Path, default=ROOT/'examples/SceneTransitions/SceneTransitions.hproj'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--external-assets', choices=('reject',), default='reject', help='External references must be moved into the project and saved before packaging')
     args = parser.parse_args()
+    if args.action == 'run':
+        with build_lock(): stage(args.config)
+        exe = binaries(args.config) / args.app / (args.app + ('.exe' if SYSTEM == 'windows' else ''))
+        command = [exe]
+        if args.project: command += (['--project'] if args.app == 'Nutella' else []) + [args.project.resolve()]
+        elif args.app == 'Nutella': command += ['--project', ROOT/'examples/SceneTransitions/SceneTransitions.hproj']
+        run(command, cwd=Path.cwd())
+        return
     with build_lock():
         if args.action in ('setup', 'build', 'database'):
             if args.action == 'setup':
                 diagnose(); run(['git', 'submodule', 'update', '--init', '--recursive']); yaml_tools()
             build(args.config, getattr(args, 'tests', False), args.action == 'database')
             if args.action == 'setup': print('Ready. python scripts/hazel.py run Hazelnut --project examples/SceneTransitions/SceneTransitions.hproj\nF5: copy scripts/internal/vscode/' + SYSTEM + '/ templates into .vscode. Use hazel.py --help for all workflows.')
-        elif args.action == 'run':
-            stage(args.config)
-            exe = binaries(args.config) / args.app / (args.app + ('.exe' if SYSTEM == 'windows' else ''))
-            command = [exe]
-            if args.project: command += (['--project'] if args.app == 'Nutella' else []) + [args.project.resolve()]
-            elif args.app == 'Nutella': command += ['--project', ROOT/'examples/SceneTransitions/SceneTransitions.hproj']
-            run(command, cwd=Path.cwd())
         elif args.action == 'script-build':
             yaml_tools(); script_build(args.project, args.config)
         elif args.action == 'package':

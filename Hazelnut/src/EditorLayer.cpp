@@ -52,11 +52,8 @@ namespace Hazel {
 		}
 		else
 		{
-			// TODO(Yan): prompt the user to select a directory
-			// NewProject();
-
-			const auto bundled = FileSystem::GetExecutablePath().parent_path() / "Example/SceneTransitions.hproj";
-            if (std::filesystem::is_regular_file(bundled)) OpenProject(bundled);
+			const auto bundled = Project::Discover(FileSystem::GetExecutablePath().parent_path() / "Example");
+            if (bundled.size() == 1) OpenProject(bundled.front());
             else OpenProject(); // Failure/cancellation leaves an empty, usable editor.
 
 		}
@@ -627,11 +624,6 @@ namespace Hazel {
 		Renderer2D::EndScene();
 	}
 
-	void EditorLayer::NewProject()
-	{
-		Project::New();
-	}
-
 	bool EditorLayer::ActionFailed(const std::string& message)
 	{
 		m_ActionError = message;
@@ -641,7 +633,7 @@ namespace Hazel {
 
 	void EditorLayer::ClearSceneObservers()
 	{
-		m_HoveredEntity = {}; m_SquareEntity = {}; m_CameraEntity = {}; m_SecondCamera = {};
+		m_HoveredEntity = {};
 		m_SceneHierarchyPanel.SetContext(nullptr);
 	}
 

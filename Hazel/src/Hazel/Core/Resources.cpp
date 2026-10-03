@@ -11,9 +11,11 @@ namespace Hazel {
     }
     ApplicationResourceSpecification Resources::Defaults(const std::string& application) {
         const auto executable = FileSystem::GetExecutablePath().parent_path();
+        auto data = FileSystem::GetEnvironmentPath("HAZEL_DATA");
+        if (data.empty()) data = FileSystem::GetUserDataDirectory() / "Hazel" / application;
         return { ConfiguredPath("HAZEL_RESOURCES", executable / "Resources"),
                  ConfiguredPath("HAZEL_MONO", executable / "mono"),
-                 ConfiguredPath("HAZEL_DATA", FileSystem::GetUserDataDirectory() / "Hazel" / application) };
+                 std::filesystem::absolute(data) };
     }
     void Resources::Configure(const ApplicationResourceSpecification& specification) {
         if (specification.Root.empty() || specification.MonoRoot.empty() || specification.UserData.empty())

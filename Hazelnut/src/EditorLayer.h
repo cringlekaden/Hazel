@@ -29,7 +29,6 @@ namespace Hazel {
 
 		void OnOverlayRender();
 
-		void NewProject();
 		bool OpenProject();
 		bool OpenProject(const std::filesystem::path& path);
 		bool SaveProject();
@@ -66,9 +65,6 @@ namespace Hazel {
 		std::filesystem::path m_ProjectPath;
 		std::string m_ActionError;
         Ref<Font> m_Font;
-		Entity m_SquareEntity;
-		Entity m_CameraEntity;
-		Entity m_SecondCamera;
 
 		Entity m_HoveredEntity;
 

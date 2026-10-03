@@ -4,6 +4,7 @@
 #include <string>
 #include <filesystem>
 #include <stdexcept>
+#include <vector>
 
 #include "Hazel/Core/Base.h"
 
@@ -53,6 +54,8 @@ namespace Hazel {
 
 		static Ref<Project> GetActive() { return s_ActiveProject; }
 
+        // Sorted root-level descriptors only; hosts decide how to select/open them.
+        static std::vector<std::filesystem::path> Discover(const std::filesystem::path& directory);
 		static Ref<Project> New();
 		static Ref<Project> Load(const std::filesystem::path& path);
 		static Ref<Project> LoadCandidate(const std::filesystem::path& path);

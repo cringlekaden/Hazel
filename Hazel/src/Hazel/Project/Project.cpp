@@ -47,6 +47,15 @@ namespace Hazel {
         return scene;
     }
 
+    std::vector<std::filesystem::path> Project::Discover(const std::filesystem::path& directory) {
+        std::vector<std::filesystem::path> paths;
+        if (!std::filesystem::is_directory(directory)) return paths;
+        for (const auto& item : std::filesystem::directory_iterator(directory))
+            if (item.is_regular_file() && item.path().extension() == ".hproj") paths.push_back(item.path());
+        std::sort(paths.begin(), paths.end());
+        return paths;
+    }
+
 	Ref<Project> Project::New()
 	{
 		s_ActiveProject = CreateRef<Project>();

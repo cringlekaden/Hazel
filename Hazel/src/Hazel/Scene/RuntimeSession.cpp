@@ -140,14 +140,14 @@ namespace Hazel {
         const auto transform = camera.GetComponent<TransformComponent>().GetTransform();
         const auto viewProjection = camera.GetComponent<CameraComponent>().Camera.GetProjection() * glm::inverse(transform);
         const auto inverse = glm::inverse(viewProjection);
-        glm::vec4 near = inverse * glm::vec4(2*m_Mouse.x/m_Width-1, 1-2*m_Mouse.y/m_Height, -1, 1);
-        glm::vec4 far = inverse * glm::vec4(2*m_Mouse.x/m_Width-1, 1-2*m_Mouse.y/m_Height, 1, 1);
-        if (std::abs(near.w)<1e-7f || std::abs(far.w)<1e-7f) return false;
-        near /= near.w; far /= far.w;
-        const auto ray = far-near;
+        glm::vec4 rayNear = inverse * glm::vec4(2*m_Mouse.x/m_Width-1, 1-2*m_Mouse.y/m_Height, -1, 1);
+        glm::vec4 rayFar = inverse * glm::vec4(2*m_Mouse.x/m_Width-1, 1-2*m_Mouse.y/m_Height, 1, 1);
+        if (std::abs(rayNear.w)<1e-7f || std::abs(rayFar.w)<1e-7f) return false;
+        rayNear /= rayNear.w; rayFar /= rayFar.w;
+        const auto ray = rayFar-rayNear;
         if (std::abs(ray.z)<1e-7f) return false;
-        const float distance = -near.z/ray.z; // Example interaction is on world z=0.
-        position = glm::vec2(near+distance*ray);
+        const float distance = -rayNear.z/ray.z; // Example interaction is on world z=0.
+        position = glm::vec2(rayNear+distance*ray);
         return std::isfinite(position.x) && std::isfinite(position.y) && distance >= 0 && distance <= 1;
     }
 }

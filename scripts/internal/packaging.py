@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import platform
 from pathlib import Path
 import re
 import shutil
@@ -174,11 +175,13 @@ def licenses(package):
         path = hz.ROOT/'build/dependencies/install'/f'{config}-{hz.SYSTEM}-x86_64/licenses'
         hz.copy_tree(path, package/'licenses/shader-tools')
     hz.copy_changed(hz.ROOT/'Hazel/Resources/fonts/opensans/LICENSE.txt', package/'licenses/OpenSans/LICENSE.txt')
-    hz.copy_changed(hz.ROOT/'examples/SceneTransitions/LICENSE.txt', package/'licenses/Example/LICENSE.txt')
 
 
 def copy_project(descriptor, assets, destination):
     hz.copy_changed(descriptor, destination/descriptor.name)
+    for notice in descriptor.parent.iterdir():
+        if notice.is_file() and notice.name.lower().startswith(('license', 'copying', 'copyright', 'notice')):
+            hz.copy_changed(notice, destination/notice.name)
     relative_root = assets.relative_to(descriptor.parent)
     for source in assets.rglob('*'):
         if not source.is_file(): continue
@@ -219,7 +222,7 @@ def package(app, project, output):
             copy_project(descriptor, assets, path if name == 'Nutella' else path/'Example')
             licenses(path)
             closure = native_closure(executable, path)
-            metadata = {'commit': commit, 'configuration': 'Release', 'platform': hz.SYSTEM, 'architecture': 'x86_64', 'project': descriptor.name, 'native_dependencies': closure}
+            metadata = {'commit': commit, 'configuration': 'Release', 'platform': hz.SYSTEM, 'architecture': 'x86_64', 'project': descriptor.name, 'native_dependencies': closure, 'source_dirty': bool(hz.output(['git', '-C', hz.ROOT, 'status', '--porcelain'])), 'libc': list(platform.libc_ver()) if hz.SYSTEM=='linux' else None, 'shader_tools': json.loads((hz.ROOT/'build/dependencies/install'/f'Release-{hz.SYSTEM}-x86_64/shader-tools.json').read_text())}
             (path/'build.json').write_text(json.dumps(metadata, indent=2)+'\n')
             (path/'LAUNCH.txt').write_text(f'{name} Release x86_64\n'+
                 ('Run Nutella (Nutella.exe on Windows) from any working directory. It discovers the root .hproj. --help and --list-projects need no graphics/Mono initialization.\n' if name=='Nutella' else 'Run Hazelnut (Hazelnut.exe on Windows). The bundled Example opens automatically; File > Open Project selects other projects.\n')+
