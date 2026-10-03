@@ -4,7 +4,12 @@ A Linux/Windows extension of [TheCherno/Hazel at the pinned import](https://gith
 
 ## Binaries
 
-Feature branch CI builds complete **Windows x64** and **Linux x86_64 Release** archives: [Nutella milestone CI runs](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Afeature%2Fnutella-runtime). Select a successful run and download its `Hazel-Windows-x64-Release-<commit>` or `Hazel-Linux-x86_64-Release-<commit>` artifact. Application archives and SHA-256 checksums are separate from testing evidence. Review artifacts require a GitHub login; no release has been published.
+Verified Release downloads for checkpoint **`5d972f3`**:
+
+- [Windows x64 — Hazelnut and Nutella](https://github.com/cringlekaden/Hazel/actions/runs/37100603151/artifacts/11266510658)
+- [Linux x86_64 — Hazelnut and Nutella](https://github.com/cringlekaden/Hazel/actions/runs/37100603151/artifacts/11266136681)
+
+Both artifacts contain separate application archives and SHA-256 checksums. [Verification run](https://github.com/cringlekaden/Hazel/actions/runs/37100603151) passed Windows/Ubuntu Debug and Release regressions and actual extracted-package tests with source resources and SDK unavailable. Testing evidence is a separate artifact. Review downloads require a GitHub login; no release has been published. [Later feature branch builds](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Afeature%2Fnutella-runtime) are available through successful CI runs.
 
 Extract an application archive, then launch `Nutella.exe` / `Nutella` or `Hazelnut.exe` / `Hazelnut`. Nutella discovers the included root project and starts MainMenu. Hazelnut opens its bundled Example. Click **Play** inside the game (first start editor Play with the toolbar triangle); Level1 uses A/D and Space, with a clickable Menu control and Escape fallback. Working directory, spaces and Unicode in the extraction path are supported.
 

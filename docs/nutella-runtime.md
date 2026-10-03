@@ -64,51 +64,65 @@ than disappearing with Sandbox. Historical migration provenance stays historical
 
 ## Checkpoints and verification
 
-Implementation and measured results are recorded here as checkpoints complete.
-No Windows/hardware/interactive or relocation claims are made without evidence.
+| Checkpoint | Result |
+| --- | --- |
+| `b0fb5fc` | Completed authoring fixes merged into master; baseline CI passed. |
+| `8b7dac0` | Explicit resources, optional ImGui, platform discovery and cleanup prerequisites. |
+| `dbfbb1e` | Shared RuntimeSession, managed transitions, Nutella, example and retained regressions. |
+| `d9f04ae` | Relocatable package closure and canonical project script builds. |
+| `59c8fe5` | One shipped asset inventory, resource defaults and final ownership/tooling review. |
+| `e575f4f` | Window dimensions reflect the actual native client area, including constrained desktops. |
+| `b18057c` | Windows extracted archives passed both software and OpenGL 4.1 acceptance profiles. |
+| `5d972f3` | Rooted/drive-relative references rejected consistently on Windows and Linux. |
 
-Prerequisite checkpoint: Linux Debug root build passed (two jobs). CoreSmoke
-checks both ImGui-enabled and disabled lifetimes. RendererFeaturesSmoke passed
-native HD4000 cache identity/warm/corruption tests with explicit isolated cache
-roots. SceneSmoke passed managed/physics/authored/reload/watcher regressions.
-EditorSmoke passed actual docked editor authoring/Play/Stop/failure/relocation
-regressions. Its initial settings fixture was corrected to use the configured
-resource root. ELF inspection confirms `$ORIGIN/lib` RPATH, without SDK paths.
+Final implementation CI: [37100603151](https://github.com/cringlekaden/Hazel/actions/runs/37100603151),
+commit `5d972f323eb35904b27a994a5fc5292e01a5c7d1`, fully passed on Windows 2022
+and Ubuntu 24.04: Debug/Release builds and all 13 regressions per configuration,
+script-build, complete dependency-closure packaging, and extracted-archive tests
+under isolated software graphics and the OpenGL 4.1 path. Direct verified downloads
+are in README. Downloaded archives are independently checked against archive and
+all-file checksums, clean commit metadata, and absence of compiler intermediates
+or test drivers. The final documentation-only checkpoint skips redundant CI;
+its implementation is identical to this verified commit.
 
-Runtime checkpoint: Nutella replaces the demonstrations, using a single
-RuntimeSession shared with editor Play. Linux Debug canonical build and all 13
-retained/extended regression executables passed on native HD4000. Runtime checks
-cover OnCreate/OnUpdate deferral, first-wins conflicts, cancellation, 12 repeated
-transitions with cleared physics/managed handles, invalid/missing scenes and
-invalid physics preserving the old session, viewport mapping/resizing, and domain
-reuse. EditorSmoke retains authored/live reload/Stop isolation and failure checks.
-Real native mouse clicks exercised MainMenu -> Level1 -> MainMenu in both apps;
-rendered screenshots were inspected. This is automated desktop input, not a
-claim of human manual testing. Local VS Code settings were preserved/backed up;
-launch/tasks now use the canonical tool and example instead of removed demos.
-Packaging/CI verification is the next checkpoint, not yet a completed result.
+Local native HD4000 verification covers all 13 Debug and Release regression
+executables: constructor cleanup and layer ownership, authored/Play/Stop field
+isolation, assembly reload, physics, rendering/font/shader cache identity and
+corruption recovery, and runtime transitions. RuntimeSession checks OnCreate and
+OnUpdate deferral, first-wins conflicts, cancelled requests, 12 repeated scene
+changes with cleared physics bodies/managed handles, failed target validation
+preserving the current session, viewport mapping/resizing, domain reuse and live
+reload with a pending transition. No expected result was weakened for this work.
 
-Distribution/tooling checkpoint: native Linux Release build and all 13 regression
-executables passed, including live reload with a pending session transition.
-Ubuntu 24.04 CI's Debug/Release suites and extracted archives passed at ff79427
-and 8269b45. Windows builds both configurations at 8269b45; the standalone script
-reference failure was traced to Premake's forward-slash HintPath detection and
-corrected. Example builds now use their single project Premake definition from
-setup/build/script-build. Managed packaging checks the shipped runtime's assembly
-identities rather than accepting arbitrary host GAC entries. Native closure is
-validated, with Arch SPDX and Ubuntu copyright notices. Windows bootstrap uses
-MSBuild, without requiring the IDE. Archive completion is verified below.
+Extracted-archive acceptance uses an unrelated working directory and paths with
+spaces/Unicode, verifies checksums, hides source resources and Mono SDK roots,
+and clicks MainMenu -> Level1 -> MainMenu twice in both applications. It resizes
+Nutella, stops editor Play and closes both applications cleanly. Linux additionally
+rejects loaded libraries from the checkout. Windows CI uses a private pinned
+software driver and temporarily selects/restores a supported virtual desktop
+mode; neither driver nor testing display configuration enters production archives.
+The Windows acceptance investigation also corrected the engine's initial native
+window-size reporting rather than compensating for incorrect viewport dimensions.
 
-Final review: Linux Debug's 13 regressions pass after removing unused alternate
-serializer stubs, making project path checks platform-independent, and resolving
-only omitted resource defaults. A partial explicit data root works without HOME.
-Unchanged setup retained 13 native/managed/deployed timestamps in 5.38 seconds;
-Bear captured 250 compiler commands across engine/editor/player. Independent
-Unicode project builds verify configuration separation, Core-content invalidation,
-unchanged outputs and symbol/permission handling. Development staging updates
-explicit SDK links while preserving unexpected files. CI 37094603584 passes Linux
-Debug/Release and both extracted-archive graphics profiles; Windows Debug/Release
-and script-build pass. Its package failure exposed duplicate intermediate DLLs:
-packaging now audits/copies one inventory, rejects excluded required dependencies,
-and still rejects conflicting shipped assemblies. Windows archive verification
-remains pending until the corrected CI run completes.
+Setup was exercised from fresh CI checkouts on Windows 2022 and Ubuntu 24.04.
+Grandpa reuses its isolated Mono SDK and unchanged pinned dependencies. Unchanged
+local setup preserved 13 native/managed/deployed timestamps (4.27 seconds for the
+default workflow; 5.38 seconds with tests). Bear refreshed 250 engine/editor/player
+compiler commands. Independent Unicode project builds verified configuration
+separation, ScriptCore-content invalidation, unchanged outputs, symbol cleanup
+and deployed permissions. Development staging preserves matching SDK links and
+unexpected files. Managed package validation excludes compiler intermediates but
+still rejects conflicting shipped assemblies and unresolved runtime references.
+
+The named user-layout stash remains intact, its exact bytes are the editor's
+initial resource template, and local VS Code settings match the saved backup.
+F5 defaults to Hazelnut; Nutella has a separate configuration. All recursive vendor
+working trees remain pristine. Generated output and routine logs are ignored.
+
+Automated mouse input and inspected screenshots are evidence of desktop behavior,
+not human manual testing. Remaining manual checks are Windows physical graphics
+hardware, high-DPI/detached editor viewports, native file-dialog interaction and
+human use of the game controls/F5. Linux distributions from official CI require
+Ubuntu 24.04 / glibc 2.39 or newer, X11/GLX and OpenGL 4.1; Windows packages require
+Windows 10 x64 or newer and OpenGL 4.1. Running precompiled scripts requires no
+compiler; compiling new scripts requires the separately documented source SDK.
