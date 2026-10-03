@@ -21,10 +21,10 @@ editable through the hierarchy/inspector; supported public script fields expose
 tuning. Stop preserves authored content. Scenes use existing `.hazel` serialization
 and `Hazel.Scene.LoadScene`, without a separate game/runtime format.
 
-Authored content: MainMenu and Flight scenes; camera, clouds, mountains, ground, wind sprite, UpperPipe/LowerPipe prefabs, HUD, ready prompt and off-screen game-over controls. Four course slots preserve fair spacing and scoring; each spawn generation instantiates a new prefab pair and destroys the retired entities. The lower geometry ends at the collision floor (-4), and camera-derived ground fill reaches the window bottom at wide, square and portrait sizes. The wisp remains 0.85 x 0.85. Flight uses 120 Hz steps, a deterministic course, constrained gaps and once-only scoring. Long stalls above 250 ms count as a pause.
+Authored content: MainMenu and Flight scenes; camera, clouds, mountains, ground, wind sprite, UpperPipe/LowerPipe prefabs, HUD, ready prompt and off-screen game-over controls. Four course slots preserve fair spacing and scoring; each spawn generation instantiates a new prefab pair and destroys the retired entities. The ground banner stays flush with the window bottom; its top defines the collision floor. Lower pipes end there, upper pipes reach the camera top, and the HUD follows the top edge at wide, square and portrait sizes. The wisp remains 0.85 x 0.85. Flight uses 120 Hz steps, a deterministic course, constrained gaps and once-only scoring. Long stalls above 250 ms count as a pause.
 
 Camera policy: fit the entire 16 x 12 world area, revealing additional background
-at other aspect ratios. Gameplay bounds/speed remain fixed. Mouse hit testing uses
+at other aspect ratios. Skybound derives vertical collision bounds from the fitted camera; speed and fair gap spacing remain fixed. Mouse hit testing uses
 the current camera and active runtime viewport, including Hazelnut offsets. A very
 small window remains functional but reduces text size; 900 x 640 or larger is recommended.
 

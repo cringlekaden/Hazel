@@ -1,5 +1,7 @@
 # Example games milestone
 
+Historical example-game milestone record. Current prefab, lifecycle, level and editor workflows are recorded in [editor-authoring.md](editor-authoring.md).
+
 Nutella implementation `5d972f3` passed Windows/Linux CI 37100603151; its
 documentation tip `dbd840e` was merged without force into master at `7a0eec2`.
 Work continues on feature/example-games, without automatic merge. The saved
