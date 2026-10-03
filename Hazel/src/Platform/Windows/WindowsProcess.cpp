@@ -1,5 +1,5 @@
-#include "Hazel/Utils/Process.h"
 #include "hzpch.h"
+#include "Hazel/Utils/Process.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 namespace Hazel

@@ -1,6 +1,6 @@
+#include "hzpch.h"
 #include "Toolchain.h"
 #include "Process.h"
-#include "hzpch.h"
 #include <yaml-cpp/yaml.h>
 namespace Hazel
 {

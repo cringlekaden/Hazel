@@ -1,6 +1,6 @@
+#include "hzpch.h"
 #include "ScriptSource.h"
 #include "Hazel/Core/FileSystem.h"
-#include "hzpch.h"
 #include <regex>
 #include <set>
 namespace Hazel

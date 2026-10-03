@@ -1,6 +1,6 @@
+#include "hzpch.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Utils/Toolchain.h"
-#include "hzpch.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 namespace Hazel

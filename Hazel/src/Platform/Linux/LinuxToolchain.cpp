@@ -1,6 +1,6 @@
+#include "hzpch.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Utils/Toolchain.h"
-#include "hzpch.h"
 namespace Hazel
 {
 std::vector<std::filesystem::path> Toolchain::PlatformPythonCandidates()

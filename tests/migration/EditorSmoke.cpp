@@ -238,8 +238,9 @@ private:
             std::filesystem::remove(probe);
         }
         Check(!Toolchain::SelectPythonCandidates({}),"Missing Python was accepted");
-        auto validProbe=m_Directory/(std::string("valid-python")+executable.extension().u8string());
-        auto olderProbe=m_Directory/(std::string("older-python")+executable.extension().u8string());
+        auto probeFolder=m_Directory/std::filesystem::u8path("Python space é");std::filesystem::create_directory(probeFolder);
+        auto validProbe=probeFolder/(std::string("valid-python")+executable.extension().u8string());
+        auto olderProbe=probeFolder/(std::string("older-python")+executable.extension().u8string());
         std::filesystem::copy_file(executable,validProbe);std::filesystem::copy_file(executable,olderProbe);
         auto ordered=Toolchain::SelectPythonCandidates({olderProbe,validProbe});
         Check(bool(ordered)&&ordered.Version=="3.9.1"&&ordered.Executable==olderProbe,"Python installation ordering was nondeterministic");
@@ -247,6 +248,7 @@ private:
         Check(bool(ordered)&&ordered.Version=="3.14.1"&&ordered.Executable==validProbe,"Compatible Python candidate selection failed");
         std::filesystem::remove(validProbe);std::filesystem::remove(olderProbe);
         auto python=Toolchain::DiscoverPython();Check(bool(python)&&python.Executable.is_absolute()&&!python.Version.empty(),"Installed Python discovery failed");
+        std::cout<<"AUTHORING PYTHON: "<<python.Executable.generic_u8string()<<"; "<<python.Source<<"; "<<python.Version<<"\n";
         Check(bool(Toolchain::DiscoverPython(python.Executable)),"Explicit valid Python failed");
 #ifndef HZ_PLATFORM_WINDOWS
         auto savedPath=std::getenv("PATH")?std::getenv("PATH"):std::string{};setenv("PATH","/nonexistent-hazel-test",1);
@@ -257,6 +259,9 @@ private:
         std::filesystem::remove(alias/"interpreter");Check(!Toolchain::DiscoverPython(alias/"interpreter"),"Removed interpreter cache remained valid");
         auto timed=Process::Run("/bin/sleep",{"2"},{},std::chrono::milliseconds(50));Check(timed.TimedOut,"Process timeout did not reap child");
 #else
+        auto savedPath=FileSystem::GetEnvironmentPath("PATH").wstring();_wputenv_s(L"PATH",L"C:/nonexistent-hazel-test");
+        auto without=Toolchain::DiscoverPython();_wputenv_s(L"PATH",savedPath.c_str());
+        Check(bool(without)&&without.Executable==python.Executable,"Windows Python discovery depends on PATH or is nondeterministic");
         std::filesystem::create_directory(m_Directory/"WindowsApps");std::filesystem::copy_file(executable,m_Directory/"WindowsApps/python.exe");
         auto storeAlias=Toolchain::ProbePython(m_Directory/"WindowsApps/python.exe","alias");Check(!storeAlias&&storeAlias.Error.find("aliases")!=std::string::npos,"Windows execution alias accepted");
 #endif

@@ -1,9 +1,9 @@
+#include "hzpch.h"
 #include "Prefab.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Project/Project.h"
 #include "RuntimeSession.h"
 #include "SceneSerializer.h"
-#include "hzpch.h"
 #include <set>
 #include <yaml-cpp/yaml.h>
 namespace Hazel

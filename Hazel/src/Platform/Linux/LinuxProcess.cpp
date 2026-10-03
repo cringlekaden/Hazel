@@ -1,5 +1,5 @@
-#include "Hazel/Utils/Process.h"
 #include "hzpch.h"
+#include "Hazel/Utils/Process.h"
 #include <cerrno>
 #include <fcntl.h>
 #include <signal.h>
