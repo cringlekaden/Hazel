@@ -113,6 +113,12 @@ def package_tests(output,profile='native'):
                         process=subprocess.Popen([str(executable)],cwd=unrelated,env=env,stdout=stream,stderr=subprocess.STDOUT)
                         try:
                             window=wait_for(process,lambda:desktop.find(process.pid,name),name+' did not create a native window')
+                            # Windows may clamp CreateWindow's initial request to
+                            # its CI desktop. Explicit sizing exercises the resize
+                            # event and gives the bundled dock layout its authored size.
+                            desktop.resize(window,1280,720)
+                            if desktop.geometry(window)[2:]!=(1280,720):
+                                raise RuntimeError('Test desktop cannot establish the bundled 1280x720 editor layout')
                             wait_for(process,lambda:name+' ready:' in log.read_text(errors='replace'),name+' did not finish packaged startup')
                             time.sleep(2);desktop.activate(window)
                             if hz.SYSTEM=='linux':

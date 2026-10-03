@@ -133,6 +133,11 @@ int main(int argc,char** argv)
             specification.CommandLineArgs={argc,argv};
 
             auto application=Hazel::CreateScope<Hazel::Application>(specification);
+            int width=0,height=0;
+            glfwGetWindowSize(static_cast<GLFWwindow*>(application->GetWindow().GetNativeWindow()),&width,&height);
+            Check(application->GetWindow().GetWidth()==static_cast<unsigned int>(width) &&
+                  application->GetWindow().GetHeight()==static_cast<unsigned int>(height),
+                  "Initial window dimensions differ from the native client area");
             Check(application->GetSpecification().CommandLineArgs[0]==argv[0],"Application args/specification");
             Check((application->GetImGuiLayer()!=nullptr)==specification.EnableImGui,"Optional ImGui access differs from specification");
             application->PushLayer(Hazel::CreateScope<LifecycleLayer>(counts));
