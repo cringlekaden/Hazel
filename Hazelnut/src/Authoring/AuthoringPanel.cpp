@@ -963,10 +963,25 @@ void AuthoringPanel::Render()
 			ImGui::SetClipboardText((m_Editor.m_ActionError + "\n" + m_Output).c_str());
 		if (m_Tools.Busy())
 			ImGui::TextUnformatted("Tool job running. Other tool jobs/project replacement are disabled.");
+		else if (!m_Tools.Request().Label.empty())
+		{
+			ImGui::TextWrapped("%s: %s", m_Tools.Request().Label.c_str(),
+							   m_Report.Success ? "Completed successfully" : "Failed; resolve the diagnostic and retry");
+			const auto &arguments = m_Tools.Request().Arguments;
+			if (m_Report.Success && !arguments.empty() && arguments[0] == "editor-export")
+			{
+				ImGui::TextWrapped("Artifacts: %s", arguments.back().c_str());
+				if (ImGui::Button("Open Output Folder") && !FileDialogs::OpenPath(arguments.back()))
+					m_Editor.ActionFailed("Cannot open the output folder. Copy its artifact path from Output.");
+			}
+		}
 		if (!m_Editor.m_ActionError.empty())
 			ImGui::TextWrapped("%s", m_Editor.m_ActionError.c_str());
 		ImGui::BeginChild("Tool output", {0, 0}, false, ImGuiWindowFlags_HorizontalScrollbar);
+		bool follow = ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1;
 		ImGui::TextUnformatted(m_Output.c_str());
+		if (follow)
+			ImGui::SetScrollHereY(1);
 		ImGui::EndChild();
 		ImGui::End();
 	}

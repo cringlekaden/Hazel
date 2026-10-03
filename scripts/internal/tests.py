@@ -10,6 +10,48 @@ import urllib.request
 import hazel as hz
 
 
+def authoring_checks(working):
+    """Exercise the same transactional project service invoked by editor jobs."""
+    import yaml
+    from internal.authoring import create_project, publish_new_directory
+    from internal.child_tools import prepare
+    destination=working/'New project space é'
+    saved_path=os.environ.get('PATH','')
+    try:
+        os.environ['PATH']=''
+        prepare(['git','cmd'] if hz.SYSTEM=='windows' else ['git','make'])
+        create_project('A portable garden é','GardenProbe',destination)
+    finally:os.environ['PATH']=saved_path
+    descriptor=destination/'GardenProbe.hproj'
+    config=yaml.safe_load(descriptor.read_text(encoding='utf-8'))['Project']
+    scene=yaml.safe_load((destination/'Assets/Scenes/Start.hazel').read_text(encoding='utf-8'))
+    assert config['StartScene']=='Scenes/Start.hazel' and config['ScriptModulePath']=='Scripts/Binaries/GardenProbe.dll'
+    assert (destination/'Assets'/config['ScriptModulePath']).is_file()
+    assert any(e.get('CameraComponent',{}).get('Primary') for e in scene['Entities'])
+    original=descriptor.read_bytes()
+    try:create_project('Overwrite','GardenProbe',destination)
+    except RuntimeError:pass
+    else:raise RuntimeError('New Project overwrote an existing destination')
+    assert descriptor.read_bytes()==original
+    failed=working/'Failed project'
+    compiler=hz.script_build
+    def fail(*args):raise RuntimeError('Controlled initial assembly failure')
+    try:
+        hz.script_build=fail
+        try:create_project('Compiler failure','FailureProbe',failed)
+        except RuntimeError:pass
+        else:raise RuntimeError('Failed initial build published a project')
+    finally:hz.script_build=compiler
+    assert not failed.exists()
+    source=working/'Publication source';source.mkdir();(source/'sentinel').write_text('intact')
+    occupied=working/'Existing empty destination';occupied.mkdir()
+    try:publish_new_directory(source,occupied)
+    except OSError:pass
+    else:raise RuntimeError('New Project publication replaced an existing directory')
+    assert source.is_dir() and occupied.is_dir()
+    print('PASS: New Project build without PATH, portable starter, existing destination and build/publication failure preservation',flush=True)
+
+
 def software_driver():
     pin = json.loads((hz.ROOT/'scripts/internal/testing/windows-mesa.json').read_text())
     archive = hz.ROOT/'build/testing/windows-mesa.7z'; archive.parent.mkdir(parents=True,exist_ok=True)
@@ -27,6 +69,7 @@ def test(configuration, profile='native'):
     logs=hz.ROOT/'build/testing/logs';logs.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='hazel tests space-é-') as temporary:
         working=Path(temporary)
+        hz.yaml_tools();authoring_checks(working)
         hz.copy_tree(hz.ROOT/'Hazel/Resources',working/'assets')
         hz.copy_tree(hz.ROOT/'Hazelnut/Resources/Icons',working/'assets/Icons')
         hz.copy_changed(hz.ROOT/'Hazelnut/Resources/imgui.ini',working/'assets/imgui.ini')
