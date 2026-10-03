@@ -34,7 +34,7 @@ def load_project(path):
 def resolve_owned(root, reference, exists=True):
     reference = reference.replace('\\', '/')
     path = Path(reference)
-    if path.is_absolute() or re.match(r'^[A-Za-z]:/', reference):
+    if path.anchor or re.match(r'^[A-Za-z]:', reference):
         raise RuntimeError('External asset reference is not portable: ' + reference + '. Move it inside the project and save its relative reference.')
     resolved = (root / path).resolve(strict=exists)
     if not resolved.is_relative_to(root.resolve()):

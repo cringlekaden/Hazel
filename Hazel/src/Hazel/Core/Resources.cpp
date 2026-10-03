@@ -35,7 +35,7 @@ namespace Hazel {
         return s_Resources;
     }
     std::filesystem::path Resources::Resolve(const std::filesystem::path& relative) {
-        if (relative.is_absolute()) throw std::invalid_argument("Engine resource references must be relative");
+        if (relative.has_root_path()) throw std::invalid_argument("Engine resource references must be relative");
         const auto normalized = relative.lexically_normal();
         if (normalized.empty() || *normalized.begin() == "..") throw std::invalid_argument("Engine resource reference escapes its root");
         return Get().Root / normalized;

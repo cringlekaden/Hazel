@@ -82,7 +82,7 @@ namespace Hazel {
         if (!m_Scene || m_Stopping || !m_Project) return false;
         const auto normalized = Project::NormalizeAssetPath(reference).lexically_normal();
         const auto text = normalized.generic_u8string();
-        if (normalized.empty() || normalized.is_absolute() || *normalized.begin() == ".." ||
+        if (normalized.empty() || normalized.has_root_path() || *normalized.begin() == ".." ||
             (text.size() > 1 && text[1] == ':') || normalized.extension() != ".hazel") {
             HZ_CORE_ERROR("Scene.LoadScene requires an asset-relative .hazel path: {}", text); return false;
         }
