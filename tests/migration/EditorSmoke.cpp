@@ -27,6 +27,10 @@
 #include <thread>
 #include <random>
 #include <stdexcept>
+#ifdef HZ_PLATFORM_LINUX
+#include <fcntl.h>
+#include <unistd.h>
+#endif
 #ifdef HZ_PLATFORM_WINDOWS
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -294,6 +298,18 @@ private:
         Check(bool(Toolchain::DiscoverPython(alias/"interpreter")),"Unicode/spaces interpreter probe failed");
         std::filesystem::remove(alias/"interpreter");Check(!Toolchain::DiscoverPython(alias/"interpreter"),"Removed interpreter cache remained valid");
         auto timed=Process::Run("/bin/sleep",{"2"},{},std::chrono::milliseconds(50));Check(timed.TimedOut,"Process timeout did not reap child");
+#ifdef HZ_PLATFORM_LINUX
+        auto descriptor=::open((m_Directory/"AuthoringProject/Authoring.hproj").c_str(),O_RDONLY);
+        Check(descriptor>=0,"Cannot open descriptor fixture");
+        auto inherited=fcntl(descriptor,F_DUPFD,100);::close(descriptor);
+        Check(inherited>=100,"Cannot create inheritable descriptor fixture");
+        auto closed=Process::Run(executable,{"--probe-closed-descriptor",std::to_string(inherited)},{},std::chrono::seconds(5));
+        auto resultPath=m_Directory/"launch-descriptors.txt";
+        bool launched=Process::Launch(executable,{"--probe-closed-descriptor",std::to_string(inherited),resultPath.generic_u8string()});
+        for(int wait=0;launched && Read(resultPath)!="closed" && wait<200;wait++)std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        ::close(inherited);
+        Check(closed.ExitCode==0 && launched && Read(resultPath)=="closed","Tool/external-editor child inherited engine descriptors");
+#endif
 #else
         auto savedPath=FileSystem::GetEnvironmentPath("PATH").wstring();_wputenv_s(L"PATH",L"C:/nonexistent-hazel-test");
         auto without=Toolchain::DiscoverPython();_wputenv_s(L"PATH",savedPath.c_str());
@@ -387,6 +403,13 @@ int main(int argc, char** argv) {
     argc = static_cast<int>(pointers.size()); pointers.push_back(nullptr); argv = pointers.data();
 #endif
     using namespace Hazel;
+#ifdef HZ_PLATFORM_LINUX
+    if(argc>=3 && std::string(argv[1])=="--probe-closed-descriptor") {
+        bool closed=fcntl(std::stoi(argv[2]),F_GETFD)==-1 && errno==EBADF;
+        if(argc==4)std::ofstream(std::filesystem::u8path(argv[3]))<<(closed?"closed":"inherited");
+        return closed?0:1;
+    }
+#endif
     if(argc>1 && std::string(argv[1])=="-I") {
         auto name=std::filesystem::u8path(argv[0]).filename().u8string();
         if(name.find("valid")!=std::string::npos || name.find("older")!=std::string::npos) {

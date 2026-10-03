@@ -20,7 +20,14 @@ bool Process::Launch(const std::filesystem::path &exe, const std::vector<std::st
 		argv.push_back(arg.data());
 	argv.push_back(nullptr);
 	pid_t pid;
-	auto error = posix_spawn(&pid, exe.c_str(), nullptr, nullptr, argv.data(), environ);
+	posix_spawn_file_actions_t actions;
+	if (posix_spawn_file_actions_init(&actions))
+		return false;
+	// External editors must not keep the engine's sockets, watchers or files alive.
+	auto error = posix_spawn_file_actions_addclosefrom_np(&actions, 3);
+	if (!error)
+		error = posix_spawn(&pid, exe.c_str(), &actions, nullptr, argv.data(), environ);
+	posix_spawn_file_actions_destroy(&actions);
 	if (error)
 		return false;
 	std::thread([pid] {
@@ -51,6 +58,7 @@ ProcessResult Process::Run(const std::filesystem::path &exe, const std::vector<s
 	posix_spawn_file_actions_adddup2(&actions, pipefd[1], STDOUT_FILENO);
 	posix_spawn_file_actions_adddup2(&actions, pipefd[1], STDERR_FILENO);
 	posix_spawn_file_actions_addclose(&actions, pipefd[0]);
+	auto setupError = posix_spawn_file_actions_addclosefrom_np(&actions, 3);
 	if (!directory.empty())
 		posix_spawn_file_actions_addchdir_np(&actions, directory.c_str());
 	posix_spawnattr_t attr;
@@ -58,7 +66,7 @@ ProcessResult Process::Run(const std::filesystem::path &exe, const std::vector<s
 	posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETPGROUP);
 	posix_spawnattr_setpgroup(&attr, 0);
 	pid_t pid;
-	int error = posix_spawn(&pid, exe.c_str(), &actions, &attr, argv.data(), environ);
+	int error = setupError ? setupError : posix_spawn(&pid, exe.c_str(), &actions, &attr, argv.data(), environ);
 	posix_spawn_file_actions_destroy(&actions);
 	posix_spawnattr_destroy(&attr);
 	close(pipefd[1]);
