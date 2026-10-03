@@ -10,12 +10,15 @@
 
 namespace Hazel {
 
+	class AuthoringPanel;
+
 	class EditorLayer : public Layer
 	{
         friend class EditorWorkflowSmoke;
+        friend class AuthoringPanel;
 	public:
 		EditorLayer();
-		virtual ~EditorLayer() = default;
+		virtual ~EditorLayer();
 
 		virtual void OnAttach() override;
 		virtual void OnDetach() override;
@@ -90,6 +93,7 @@ namespace Hazel {
 		// Panels
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		Scope<ContentBrowserPanel> m_ContentBrowserPanel;
+        Scope<AuthoringPanel> m_Authoring;
 
 		// Editor resources
 		Ref<Texture2D> m_IconPlay, m_IconPause, m_IconStep, m_IconSimulate, m_IconStop;

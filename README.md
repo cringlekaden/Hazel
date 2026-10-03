@@ -4,12 +4,12 @@ A Linux/Windows extension of [TheCherno/Hazel at the pinned import](https://gith
 
 ## Binaries
 
-Verified Release downloads for implementation checkpoint **`7e8d844`**:
+Verified Release downloads for implementation checkpoint **`8f07a1e`**:
 
-- [Windows x64 — Hazelnut and Nutella](https://github.com/cringlekaden/Hazel/actions/runs/37118805605/artifacts/11273050613)
-- [Linux x86_64 — Hazelnut and Nutella](https://github.com/cringlekaden/Hazel/actions/runs/37118805605/artifacts/11271819482)
+- [Windows x64 — Hazelnut and Nutella](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11284056413)
+- [Linux x86_64 — Hazelnut and Nutella](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11284226693)
 
-Both artifacts contain separate application archives and SHA-256 checksums. [Verification run](https://github.com/cringlekaden/Hazel/actions/runs/37118805605) passed Windows/Ubuntu Debug and Release regressions and actual extracted-package tests with source resources and SDK unavailable. Testing evidence is a separate artifact. Review downloads require a GitHub login; no release has been published. [Later feature branch builds](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Afeature%2Fexample-games) are available through successful CI runs.
+Both artifacts contain separate application archives and SHA-256 checksums. [Verification run](https://github.com/cringlekaden/Hazel/actions/runs/37150634381) passed Windows/Ubuntu Debug and Release regressions and actual extracted-package tests with source resources and SDK unavailable. Testing evidence is separate: [Windows](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11284537247), [Linux](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11284765129). Review downloads require a GitHub login; no release has been published. [Later feature branch builds](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Afeature%2Feditor-authoring) are available through successful CI runs.
 
 Extract an application archive, then launch `Nutella.exe` / `Nutella` or `Hazelnut.exe` / `Hazelnut`. Nutella discovers the included root project and starts MainMenu. Hazelnut opens its bundled Example. Click **Play** inside the game (first start editor Play with the toolbar triangle); Level1 uses A/D and Space, with a clickable Menu control and Escape fallback. Working directory, spaces and Unicode in the extraction path are supported.
 
@@ -20,7 +20,7 @@ Packages need no checkout, build tools, shader SDK or script compiler. Requireme
 ```sh
 git clone --recurse-submodules https://github.com/cringlekaden/Hazel.git
 cd Hazel
-git switch feature/example-games
+git switch feature/editor-authoring
 scripts/setup.sh                         # Linux
 ```
 
@@ -60,7 +60,7 @@ python3 scripts/hazel.py test-packages                   # extracted example arc
 python3 scripts/hazel.py database                       # explicit Bear/clangd refresh
 ```
 
-Project packaging validates scenes, textures, compiled script classes/assembly references, and native dependency closure. External asset paths/symlinks are rejected with instructions to relocate them into the project and save relative references. Project P/Invoke requires explicit native redistribution support; packaging rejects it rather than silently depending on the source machine. Precompiled scripts run without a compiler. Authoring new scripts needs this source SDK setup and an `Assets/Scripts/premake5.lua` like the example, honoring `HAZEL_SCRIPTCORE` and `HAZEL_SCRIPT_OUTPUT`; `script-build` compiles against the matching Hazel-ScriptCore, keeps configuration outputs in the SDK cache, and atomically deploys the configured module and its dependencies.
+Project packaging validates scenes, textures, compiled script classes/assembly references, and native dependency closure. External asset paths/symlinks are rejected with instructions to relocate them into the project and save relative references. Project P/Invoke requires explicit native redistribution support; packaging rejects it rather than silently depending on the source machine. Precompiled scripts run without a compiler. Use **File > New Project**, **Project > Create Script / Build Scripts / Export Game**, and **Edit > Editor Preferences** for ordinary authoring. Configure a Hazel source SDK and Python there; precompiled Play needs neither. New projects generate the canonical Premake configuration, honoring `HAZEL_SCRIPTCORE` and `HAZEL_SCRIPT_OUTPUT`; `script-build` compiles against the matching Hazel-ScriptCore, keeps configuration outputs in the SDK cache, and atomically deploys the configured module and its dependencies.
 
 Nutella's public launch contract:
 
@@ -77,16 +77,16 @@ Managed `Hazel.Scene.LoadScene("Scenes/Level1.hazel")` **requests** a scene tran
 
 ## Playable examples
 
-**[MeadowRun](examples/MeadowRun/README.md)** is a small garden expedition: collect five lantern seeds, recover safely from the pond, and reopen the trail. WASD/arrow keys move; R restarts; Escape returns to the menu.
+**[MeadowRun](examples/MeadowRun/README.md)** is a small garden expedition: restore three gardens (Meadow, Orchard Paths and Lantern Grove), collect five lantern seeds per stage, and recover safely from each pond. WASD/arrow keys move; R restarts; Escape returns to the menu.
 
-**[Skybound](examples/Skybound/README.md)** follows an original wind sprite through lantern towers. Space/left click flap; fresh Space/R or Try Again restarts after death; Escape/Title Menu returns. A ready state prevents the title click from starting flight accidentally. Four obstacle pairs are reused; scoring and movement use fixed simulation steps.
+**[Skybound](examples/Skybound/README.md)** follows an original wind sprite through lantern towers. Space/left click flap; fresh Space/R or Try Again restarts after death; Escape/Title Menu returns. A ready state prevents the title click from starting flight accidentally. Four active obstacle pairs are spawned from prefabs with fresh identities and destroyed as they leave the course; scoring and movement use fixed simulation steps.
 
 ![MeadowRun during play](docs/images/meadowrun-play.png)
 ![Skybound during play](docs/images/skybound-play.png)
 
-Captured title and end states: [MeadowRun title](docs/images/meadowrun-title.png), [completion](docs/images/meadowrun-complete.png), [Skybound title](docs/images/skybound-title.png), [game over](docs/images/skybound-over.png).
+Original milestone captures (current level/resize captures are in the testing evidence linked above): [MeadowRun title](docs/images/meadowrun-title.png), [completion](docs/images/meadowrun-complete.png), [Skybound title](docs/images/skybound-title.png), [game over](docs/images/skybound-over.png).
 
-These are real engine captures, not mockups. Each project owns its scenes, textures and assembly. Stable layouts are authored in `.hazel` files; inspector-visible script fields tune movement and rules. Both use the shared RuntimeSession and managed scene-loading API. Their cameras fit a fixed 16 x 12 area, keeping gameplay visible across aspect ratios. Original art and redistribution terms are recorded per project; regeneration is optional and needs Pillow only on the author's machine.
+These are real engine captures, not mockups. Each project owns its scenes, textures and assembly. Stable layouts are authored in `.hazel` files; inspector-visible script fields tune movement and rules. Both use the shared RuntimeSession and managed scene-loading API. Their cameras fit a minimum 16 x 12 area. Skybound anchors its ground/HUD and vertical collision bounds to the resulting view. Original art and redistribution terms are recorded per project; regeneration is optional and needs Pillow only on the author's machine.
 
 After engine setup, substitute `MeadowRun` or `Skybound` for `<Game>` (Windows: use `python`):
 
@@ -105,8 +105,8 @@ Verified game downloads from the same CI run (GitHub login required):
 
 | Game | Windows x64 | Linux x86_64 |
 | --- | --- | --- |
-| MeadowRun | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37118805605/artifacts/11272612590) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37118805605/artifacts/11271819917) |
-| Skybound | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37118805605/artifacts/11273116420) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37118805605/artifacts/11272468937) |
+| MeadowRun | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11283929239) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11284069136) |
+| Skybound | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11283809724) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11283849672) |
 
 Each artifact contains a complete game archive and checksum. Extract the artifact,
 then its game archive, and run Nutella without arguments. Windows/Linux Debug and
@@ -136,3 +136,5 @@ dist/ (ignored)       complete Release archives + checksums
 ```
 
 OS implementations remain in `Hazel/src/Platform/{Linux,Windows}` and graphics in `Platform/OpenGL`. macOS/Metal are not implemented. Renderer capability/settings and shader-cache contracts are preserved. See the [milestone design and measured verification](docs/nutella-runtime.md), [authoring contracts](docs/authoring-reliability.md), and [historical migration evidence](docs/migration/PROGRESS.md).
+
+The [editor authoring implementation record](docs/editor-authoring.md) maps every new feature to its ImGui workflow, documents prefab/lifecycle/settings contracts, and records verification and deferred scope.

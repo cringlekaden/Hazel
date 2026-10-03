@@ -59,6 +59,7 @@ namespace Hazel {
 		Window& GetWindow() { return *m_Window; }
 
 		void Close();
+        void SetCloseRequest(std::function<void()> callback) { m_CloseRequest=std::move(callback); }
 
 		// Borrowed until Application shutdown; null when EnableImGui is false.
         ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
@@ -80,6 +81,7 @@ namespace Hazel {
 		Scope<Window> m_Window;
 		ImGuiLayer* m_ImGuiLayer = nullptr;
 		bool m_Running = true;
+        std::function<void()> m_CloseRequest;
 		bool m_Minimized = false;
 		LayerStack m_LayerStack;
 		float m_LastFrameTime = 0.0f;

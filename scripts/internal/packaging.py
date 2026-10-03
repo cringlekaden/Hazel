@@ -49,18 +49,27 @@ def validate_project(descriptor, config, assets):
     for key in ('StartScene','ScriptModulePath'):
         if resolve_owned(assets,config[key]) not in included:
             raise RuntimeError(key+' selects excluded compiler output. Move/stage this dependency into project assets before packaging.')
-    scenes = [file for file in files if file.suffix=='.hazel']
+    scenes = [file for file in files if file.suffix in ('.hazel','.hprefab')]
     if not scenes: raise RuntimeError('No .hazel scenes in selected asset root')
     for file in assets.rglob('*'):
         if file.is_symlink() and not file.resolve().is_relative_to(assets): raise RuntimeError('External asset symlink: ' + str(file))
     for scene in scenes:
         content = yaml.safe_load(scene.read_text(encoding='utf-8'))
         if not isinstance(content, dict) or 'Scene' not in content: raise RuntimeError('Invalid scene: ' + str(scene))
+        if scene.suffix=='.hprefab' and (content.get('PrefabVersion')!=1 or len(content.get('Entities',[]))!=1):
+            raise RuntimeError('Unsupported prefab version/entity count: '+str(scene))
         ids = set()
         for entity in content.get('Entities', []) or []:
             ident = entity['Entity']
             if ident in ids: raise RuntimeError('Duplicate entity UUID in ' + str(scene))
             ids.add(ident)
+            for field in entity.get('ScriptComponent',{}).get('ScriptFields',[]) or []:
+                if field.get('Type')=='Prefab' and field.get('Data'):
+                    reference=field['Data']
+                    if Path(reference).suffix!='.hprefab' or resolve_owned(assets,reference) not in included:
+                        raise RuntimeError('Missing/excluded prefab reference '+str(reference)+' in '+str(scene))
+                if scene.suffix=='.hprefab' and field.get('Type')=='Entity' and field.get('Data') not in (0,ident):
+                    raise RuntimeError('Unsafe external entity reference in prefab '+str(scene))
             texture = entity.get('SpriteRendererComponent', {}).get('TexturePath')
             if texture and resolve_owned(assets,texture) not in included:
                 raise RuntimeError('Texture selects excluded compiler output: '+texture+' in '+str(scene))

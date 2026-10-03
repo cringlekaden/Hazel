@@ -13,8 +13,10 @@ namespace MeadowRun {
             body.LinearVelocity=length>0 ? direction*(Math.Max(0,Speed)/length) : Vector2.Zero;
         }
     }
-    // Progress belongs to this scene instance. Collectibles remain authored entities.
+    // Progress and prefab instances belong to this runtime scene; marker transforms remain authored.
     public class Meadow : Entity {
+        public Prefab SeedAsset;
+        public int Level=1;
         public float PickupRadius = 0.65f;
         public float PondRadius = 1.05f;
         private Entity player, pond, exit;
@@ -28,10 +30,12 @@ namespace MeadowRun {
             player=FindEntityByName("Explorer");pond=FindEntityByName("Pond");exit=FindEntityByName("Exit");
             progress=FindEntityByName("Progress").GetComponent<TextComponent>();
             hint=FindEntityByName("Hint").GetComponent<TextComponent>();
-            for(int i=0;i<5;i++) seeds[i]=FindEntityByName("Seed"+i);
+            for(int i=0;i<5;i++) seeds[i]=Entity.Instantiate(SeedAsset,FindEntityByName("Seed"+i).Translation);
+            hint.Text=Level==1?"CAMP MEADOW / Find five seeds, then the north-east trail.":Level==2?"ORCHARD PATHS / Follow the rows and restore five lanterns.":"LANTERN GROVE / Search the rock islands. This is the final trail.";
             restartHeld=Input.IsKeyDown(KeyCode.R);escapeHeld=Input.IsKeyDown(KeyCode.Escape);
             progress.Text="Lantern seeds  0 / 5";
         }
+        void OnDestroy() { foreach(var seed in seeds) if(seed!=null) seed.Destroy(); }
         static bool Near(Entity a,Entity b,float radius) {
             var p=a.Translation;var q=b.Translation;
             return (p.X-q.X)*(p.X-q.X)+(p.Y-q.Y)*(p.Y-q.Y)<radius*radius;
@@ -39,11 +43,11 @@ namespace MeadowRun {
         void OnUpdate(float dt) {
             bool restart=Input.IsKeyDown(KeyCode.R),escape=Input.IsKeyDown(KeyCode.Escape);
             if(escape&&!escapeHeld) Scene.LoadScene("Scenes/MainMenu.hazel");
-            else if(restart&&!restartHeld) Scene.LoadScene("Scenes/Meadow.hazel");
+            else if(restart&&!restartHeld) Scene.LoadScene(Level==1?"Scenes/Meadow.hazel":Level==2?"Scenes/Orchard.hazel":"Scenes/LanternGrove.hazel");
             restartHeld=restart;escapeHeld=escape;
             for(int i=0;i<5;i++) if(!collected[i]&&Near(player,seeds[i],Math.Max(0.1f,PickupRadius))) {
                 collected[i]=true;count++;
-                seeds[i].Translation=new Vector3(500+i,0,0);
+                seeds[i].Destroy();
                 progress.Text="Lantern seeds  "+count+" / 5";
                 Console.WriteLine("MeadowRun: seed "+count);
                 if(count==5) {
@@ -61,7 +65,7 @@ namespace MeadowRun {
                 messageTime-=dt;
                 if(messageTime<=0) hint.Text=count==5?"All five found! Follow the north-east trail.":"Find five lantern seeds. Stay out of the pond.";
             }
-            if(count==5&&Near(player,exit,0.8f)) Scene.LoadScene("Scenes/Complete.hazel");
+            if(count==5&&Near(player,exit,0.8f)) Scene.LoadScene(Level==1?"Scenes/Orchard.hazel":Level==2?"Scenes/LanternGrove.hazel":"Scenes/Complete.hazel");
         }
     }
 }

@@ -3,6 +3,7 @@
 #include "Hazel/Core/Base.h"
 #include "Hazel/Scene/Scene.h"
 #include "Hazel/Scene/Entity.h"
+#include <functional>
 
 namespace Hazel {
 
@@ -15,6 +16,10 @@ namespace Hazel {
 		void SetContext(const Ref<Scene>& scene);
 
 		void OnImGuiRender();
+        std::function<void(Entity)> CreatePrefab;
+        std::function<void(const std::string&)> ReportError;
+        std::function<void(const std::string&)> EditScript;
+        void DrawAssetProperties(Entity entity) { DrawComponents(entity); }
 
 		Entity GetSelectedEntity() const {
 			return m_Context && m_SelectionContext.BelongsTo(m_Context.get()) && m_SelectionContext ? m_SelectionContext : Entity{};

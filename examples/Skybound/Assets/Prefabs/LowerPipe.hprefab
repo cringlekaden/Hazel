@@ -1,0 +1,27 @@
+PrefabVersion: 1
+Scene: LowerPipe
+Entities:
+- Entity: 11
+  TagComponent:
+    Tag: Lower0
+  TransformComponent:
+    Translation:
+    - 4.0
+    - -6.2
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 3.14159265
+    Scale:
+    - 1.1
+    - 9
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Column.png

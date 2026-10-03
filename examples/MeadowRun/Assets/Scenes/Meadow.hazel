@@ -759,14 +759,6 @@ Entities:
     - 0.7
     - 0.7
     - 1
-  SpriteRendererComponent:
-    Color:
-    - 1
-    - 1
-    - 1
-    - 1
-    TilingFactor: 1
-    TexturePath: Textures/Seed.png
 - Entity: 25
   TagComponent:
     Tag: Seed1
@@ -783,14 +775,6 @@ Entities:
     - 0.7
     - 0.7
     - 1
-  SpriteRendererComponent:
-    Color:
-    - 1
-    - 1
-    - 1
-    - 1
-    TilingFactor: 1
-    TexturePath: Textures/Seed.png
 - Entity: 26
   TagComponent:
     Tag: Seed2
@@ -807,14 +791,6 @@ Entities:
     - 0.7
     - 0.7
     - 1
-  SpriteRendererComponent:
-    Color:
-    - 1
-    - 1
-    - 1
-    - 1
-    TilingFactor: 1
-    TexturePath: Textures/Seed.png
 - Entity: 27
   TagComponent:
     Tag: Seed3
@@ -831,14 +807,6 @@ Entities:
     - 0.7
     - 0.7
     - 1
-  SpriteRendererComponent:
-    Color:
-    - 1
-    - 1
-    - 1
-    - 1
-    TilingFactor: 1
-    TexturePath: Textures/Seed.png
 - Entity: 28
   TagComponent:
     Tag: Seed4
@@ -855,14 +823,6 @@ Entities:
     - 0.7
     - 0.7
     - 1
-  SpriteRendererComponent:
-    Color:
-    - 1
-    - 1
-    - 1
-    - 1
-    TilingFactor: 1
-    TexturePath: Textures/Seed.png
 - Entity: 29
   TagComponent:
     Tag: Explorer
@@ -933,6 +893,12 @@ Entities:
     - Name: PondRadius
       Type: Float
       Data: 1.05
+    - Name: SeedAsset
+      Type: Prefab
+      Data: Prefabs/LanternSeed.hprefab
+    - Name: Level
+      Type: Int
+      Data: 1
 - Entity: 31
   TagComponent:
     Tag: HUD ribbon

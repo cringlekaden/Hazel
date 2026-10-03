@@ -56,6 +56,7 @@ namespace Hazel {
 		~ScriptInstance();
 
 		void InvokeOnCreate();
+        void InvokeOnDestroy();
 		void InvokeOnUpdate(float ts);
 
 		Ref<ScriptClass> GetScriptClass() { return m_ScriptClass; }
@@ -95,6 +96,8 @@ namespace Hazel {
 		MonoMethod* m_Constructor = nullptr;
 		MonoMethod* m_OnCreateMethod = nullptr;
 		MonoMethod* m_OnUpdateMethod = nullptr;
+        MonoMethod* m_OnDestroyMethod = nullptr;
+        bool m_Created = false;
 
 
 		friend class ScriptEngine;
@@ -175,6 +178,7 @@ namespace Hazel {
 				case ScriptFieldType::Vector3: return "Vector3";
 				case ScriptFieldType::Vector4: return "Vector4";
 				case ScriptFieldType::Entity:  return "Entity";
+                case ScriptFieldType::Prefab: return "Prefab";
 			}
 			HZ_CORE_ASSERT(false, "Unknown ScriptFieldType");
 			return "None";
@@ -199,6 +203,7 @@ namespace Hazel {
 			if (fieldType == "Vector3") return ScriptFieldType::Vector3;
 			if (fieldType == "Vector4") return ScriptFieldType::Vector4;
 			if (fieldType == "Entity")  return ScriptFieldType::Entity;
+            if (fieldType == "Prefab") return ScriptFieldType::Prefab;
 
 			throw std::invalid_argument("Unknown stored ScriptFieldType: " + std::string(fieldType));
 		}

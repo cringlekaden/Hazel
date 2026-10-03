@@ -17,12 +17,12 @@ namespace Hazel
 		{
 			get
 			{
-				InternalCalls.TransformComponent_GetTranslation(Entity.ID, out Vector3 translation);
+				InternalCalls.TransformComponent_GetTranslation(Entity.CheckedID, out Vector3 translation);
 				return translation;
 			}
 			set
 			{
-				InternalCalls.TransformComponent_SetTranslation(Entity.ID, ref value);
+				InternalCalls.TransformComponent_SetTranslation(Entity.CheckedID, ref value);
 			}
 		}
 	}
@@ -35,26 +35,26 @@ namespace Hazel
 		{
 			get
 			{
-				InternalCalls.Rigidbody2DComponent_GetLinearVelocity(Entity.ID, out Vector2 velocity);
+				InternalCalls.Rigidbody2DComponent_GetLinearVelocity(Entity.CheckedID, out Vector2 velocity);
 				return velocity;
 			}
-            set => InternalCalls.Rigidbody2DComponent_SetLinearVelocity(Entity.ID, ref value);
+            set => InternalCalls.Rigidbody2DComponent_SetLinearVelocity(Entity.CheckedID, ref value);
 		}
 
 		public BodyType Type
 		{
-			get => InternalCalls.Rigidbody2DComponent_GetType(Entity.ID);
-			set => InternalCalls.Rigidbody2DComponent_SetType(Entity.ID, value);
+			get => InternalCalls.Rigidbody2DComponent_GetType(Entity.CheckedID);
+			set => InternalCalls.Rigidbody2DComponent_SetType(Entity.CheckedID, value);
 		}
 
 		public void ApplyLinearImpulse(Vector2 impulse, Vector2 worldPosition, bool wake)
 		{
-			InternalCalls.Rigidbody2DComponent_ApplyLinearImpulse(Entity.ID, ref impulse, ref worldPosition, wake);
+			InternalCalls.Rigidbody2DComponent_ApplyLinearImpulse(Entity.CheckedID, ref impulse, ref worldPosition, wake);
 		}
 
 		public void ApplyLinearImpulse(Vector2 impulse, bool wake)
 		{
-			InternalCalls.Rigidbody2DComponent_ApplyLinearImpulseToCenter(Entity.ID, ref impulse, wake);
+			InternalCalls.Rigidbody2DComponent_ApplyLinearImpulseToCenter(Entity.CheckedID, ref impulse, wake);
 		}
 
 	}
@@ -64,10 +64,10 @@ namespace Hazel
     {
         public float OrthographicSize
         {
-            get => InternalCalls.CameraComponent_GetOrthographicSize(Entity.ID);
-            set => InternalCalls.CameraComponent_SetOrthographicSize(Entity.ID, value);
+            get => InternalCalls.CameraComponent_GetOrthographicSize(Entity.CheckedID);
+            set => InternalCalls.CameraComponent_SetOrthographicSize(Entity.CheckedID, value);
         }
-        public float AspectRatio => InternalCalls.CameraComponent_GetAspectRatio(Entity.ID);
+        public float AspectRatio => InternalCalls.CameraComponent_GetAspectRatio(Entity.CheckedID);
     }
 
 	public class TextComponent : Component
@@ -75,34 +75,34 @@ namespace Hazel
 
 		public string Text
 		{
-			get => InternalCalls.TextComponent_GetText(Entity.ID);
-			set => InternalCalls.TextComponent_SetText(Entity.ID, value);
+			get => InternalCalls.TextComponent_GetText(Entity.CheckedID);
+			set => InternalCalls.TextComponent_SetText(Entity.CheckedID, value);
 		}
 
 		public Vector4 Color
 		{
 			get
 			{
-				InternalCalls.TextComponent_GetColor(Entity.ID, out Vector4 color);
+				InternalCalls.TextComponent_GetColor(Entity.CheckedID, out Vector4 color);
 				return color;
 			}
 
 			set
 			{
-				InternalCalls.TextComponent_SetColor(Entity.ID, ref value);
+				InternalCalls.TextComponent_SetColor(Entity.CheckedID, ref value);
 			}
 		}
 
 		public float Kerning
 		{
-			get => InternalCalls.TextComponent_GetKerning(Entity.ID);
-			set => InternalCalls.TextComponent_SetKerning(Entity.ID, value);
+			get => InternalCalls.TextComponent_GetKerning(Entity.CheckedID);
+			set => InternalCalls.TextComponent_SetKerning(Entity.CheckedID, value);
 		}
 
 		public float LineSpacing
 		{
-			get => InternalCalls.TextComponent_GetLineSpacing(Entity.ID);
-			set => InternalCalls.TextComponent_SetLineSpacing(Entity.ID, value);
+			get => InternalCalls.TextComponent_GetLineSpacing(Entity.CheckedID);
+			set => InternalCalls.TextComponent_SetLineSpacing(Entity.CheckedID, value);
 		}
 
 	}

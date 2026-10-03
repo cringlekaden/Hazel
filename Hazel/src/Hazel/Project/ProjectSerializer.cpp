@@ -25,7 +25,9 @@ namespace Hazel {
 			out << YAML::Key << "Project" << YAML::Value;
 			{
 				out << YAML::BeginMap;// Project
-				out << YAML::Key << "Name" << YAML::Value << config.Name;
+				out << YAML::Key << "Version" << YAML::Value << 1;
+                out << YAML::Key << "ScriptProject" << YAML::Value << config.ScriptProject;
+                out << YAML::Key << "Name" << YAML::Value << config.Name;
 				out << YAML::Key << "StartScene" << YAML::Value << config.StartScene.generic_u8string();
 				out << YAML::Key << "AssetDirectory" << YAML::Value << config.AssetDirectory.generic_u8string();
 				out << YAML::Key << "ScriptModulePath" << YAML::Value << config.ScriptModulePath.generic_u8string();
@@ -51,9 +53,11 @@ namespace Hazel {
 			if (input.bad()) { HZ_CORE_ERROR("Cannot read project '{}'", filepath.generic_u8string()); return false; }
 			auto projectNode = data["Project"];
 			if (!projectNode) return false;
-			// Commit only a complete parse; preserve the active config on failure.
+			if(projectNode["Version"] && projectNode["Version"].as<int>()!=1) return false;
+            // Commit only a complete parse; preserve the active config on failure.
 			ProjectConfig config;
 			config.Name = projectNode["Name"].as<std::string>();
+            config.ScriptProject = projectNode["ScriptProject"] ? projectNode["ScriptProject"].as<std::string>() : config.Name;
 			config.StartScene = Project::NormalizeAssetPath(std::filesystem::u8path(projectNode["StartScene"].as<std::string>()));
 			config.AssetDirectory = Project::NormalizeAssetPath(std::filesystem::u8path(projectNode["AssetDirectory"].as<std::string>()));
 			config.ScriptModulePath = Project::NormalizeAssetPath(std::filesystem::u8path(projectNode["ScriptModulePath"].as<std::string>()));

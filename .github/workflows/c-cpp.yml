@@ -1,7 +1,7 @@
 name: C/C++ CI
 on:
   push:
-    branches: [master, 'migration/**', 'fix/authoring-reliability', 'feature/nutella-runtime', 'feature/example-games']
+    branches: [master, 'migration/**', 'fix/authoring-reliability', 'feature/nutella-runtime', 'feature/example-games', 'feature/editor-authoring']
   pull_request:
     branches: [master]
   workflow_dispatch:

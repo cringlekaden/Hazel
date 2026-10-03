@@ -1,0 +1,42 @@
+PrefabVersion: 1
+Scene: Tree
+Entities:
+- Entity: 7
+  TagComponent:
+    Tag: Tree0
+  TransformComponent:
+    Translation:
+    - -7
+    - 2.5
+    - 0.15
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1.5
+    - 2.25
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Tree.png
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.27
+    - 0.27
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5

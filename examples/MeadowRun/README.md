@@ -21,7 +21,7 @@ editable through the hierarchy/inspector; supported public script fields expose
 tuning. Stop preserves authored content. Scenes use existing `.hazel` serialization
 and `Hazel.Scene.LoadScene`, without a separate game/runtime format.
 
-Authored content: MainMenu, Meadow and Complete scenes; Explorer body and speed, collision boundaries, trees/rocks, pond, seeds, exit and HUD. The Meadow script owns only the current run’s progress.
+Authored content: MainMenu, Meadow, Orchard, LanternGrove and Complete scenes; Explorer body and speed, collision boundaries, trees/rocks, pond, seeds, exit and HUD. Each stage has five lantern seeds, distinct scenery/collision layouts, a pond checkpoint, and progression through its north-east exit. R restarts the current stage; final completion offers a fresh expedition. Seeds instantiate from LanternSeed and are destroyed on pickup.
 
 Camera policy: fit the entire 16 x 12 world area, revealing additional background
 at other aspect ratios. Gameplay bounds/speed remain fixed. Mouse hit testing uses
@@ -37,3 +37,5 @@ Extract the Nutella archive and run `Nutella` / `Nutella.exe` with no arguments,
 from any directory. No checkout/compiler/SDK is needed for precompiled scripts.
 Packages require OpenGL 4.1; Windows 10 x64+ or official Ubuntu 24.04/glibc 2.39+
 Linux with X11/GLX. Compiling changed scripts separately requires the Hazel SDK.
+
+Author in Hazelnut: open any level through File > Open Scene; select its controller > Script to choose LanternSeed and level progression. Inspect LanternSeed, Pond or Tree in Content Browser, edit/save in Prefab Inspector, then Instantiate and Select with an initial transform. Project > Build Scripts and Export Game share canonical SDK tooling; configure SDK/Python in Edit > Editor Preferences.
