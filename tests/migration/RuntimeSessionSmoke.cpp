@@ -87,6 +87,17 @@ int main(int argc, char** argv) {
         auto updating=session.GetScene(); session.Update(0.016f);
         Check(session.GetScene()==updating && ScriptEngine::GetEntityScriptInstance(2)->GetFieldValue<int>("Updates")==1,"Update request destroyed executing scene");
         session.Update(0.016f); Check(session.GetScene()->FindEntityByName("Target"),"First conflicting request did not win");
+        auto reloading = session.GetScene();
+        auto oldReloadInstance = ScriptEngine::GetEntityScriptInstance(2);
+        oldReloadInstance->SetFieldValue<float>("Speed", 19.0f);
+        session.RequestSceneLoad("Scenes/Target.hazel");
+        ScriptEngine::ReloadAssembly();
+        Check(session.GetScene()==reloading && ScriptEngine::GetRuntimeSession()==&session &&
+              ScriptEngine::GetEntityScriptInstance(2)->GetFieldValue<float>("Speed")==19.0f && !oldReloadInstance->GetManagedObject(),
+              "Assembly reload lost session binding/live fields or retained old handles");
+        session.Update(0.016f);
+        Check(session.GetScene()!=reloading && ScriptEngine::GetEntityScriptInstance(2)->GetFieldValue<float>("Speed")==2.5f,
+              "Pending transition was lost on reload or inherited retired live fields");
         for (int repeat=0;repeat<12;++repeat) {
             retired=session.GetScene(); instance=ScriptEngine::GetEntityScriptInstance(2);
             session.RequestSceneLoad("Scenes/Target.hazel"); session.Update(0.016f);

@@ -17,16 +17,26 @@ jobs:
         with:
           submodules: recursive
       - name: Cache pinned project-owned dependencies
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
+        id: shader-cache
         with:
           path: |
             build/dependencies/install
             build/tools/premake-core
-          key: nutella-windows2022-${{ hashFiles('scripts/dependencies/**', 'scripts/internal/toolchain.json') }}
+          restore-keys: nutella-windows2022-
+          key: nutella-windows2022-${{ hashFiles('scripts/dependencies/build-shader-tools.py', 'scripts/dependencies/shader-workspace.lua', 'scripts/dependencies/generate-shader-inputs.py', 'scripts/dependencies/shader-sources.json', 'scripts/dependencies/shader-tools.json', 'scripts/dependencies/shader-tools-compat.h', 'scripts/internal/toolchain.json') }}
       - name: Setup and build Debug (two jobs)
         run: ./scripts/setup.ps1 --tests
       - name: Build Release (two jobs, after Debug)
         run: python scripts/hazel.py build --config Release --tests
+      - name: Cache completed pinned SDKs independently of application tests
+        if: always() && steps.shader-cache.outputs.cache-hit != 'true' && hashFiles('build/dependencies/install/Debug-windows-x86_64/shader-tools.json') != '' && hashFiles('build/dependencies/install/Release-windows-x86_64/shader-tools.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            build/dependencies/install
+            build/tools/premake-core
+          key: ${{ steps.shader-cache.outputs.cache-primary-key }}
       - name: Build authored example scripts through the public command
         run: python scripts/hazel.py script-build examples/SceneTransitions/SceneTransitions.hproj --config Release
       - name: Construct complete Release distributions
@@ -71,16 +81,26 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential git python3 python3-pip pkg-config mono-devel uuid-dev libgtk-3-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libegl1-mesa-dev libxtst6 xvfb xauth
       - name: Cache pinned project-owned dependencies
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
+        id: shader-cache
         with:
           path: |
             build/dependencies/install
             build/tools/premake-core
-          key: nutella-ubuntu24-gcc13-${{ hashFiles('scripts/dependencies/**', 'scripts/internal/toolchain.json') }}
+          restore-keys: nutella-ubuntu24-gcc13-
+          key: nutella-ubuntu24-gcc13-${{ hashFiles('scripts/dependencies/build-shader-tools.py', 'scripts/dependencies/shader-workspace.lua', 'scripts/dependencies/generate-shader-inputs.py', 'scripts/dependencies/shader-sources.json', 'scripts/dependencies/shader-tools.json', 'scripts/dependencies/shader-tools-compat.h', 'scripts/internal/toolchain.json') }}
       - name: Setup and build Debug (two jobs)
         run: scripts/setup.sh --tests
       - name: Build Release (two jobs, after Debug)
         run: python3 scripts/hazel.py build --config Release --tests
+      - name: Cache completed pinned SDKs independently of application tests
+        if: always() && steps.shader-cache.outputs.cache-hit != 'true' && hashFiles('build/dependencies/install/Debug-linux-x86_64/shader-tools.json') != '' && hashFiles('build/dependencies/install/Release-linux-x86_64/shader-tools.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            build/dependencies/install
+            build/tools/premake-core
+          key: ${{ steps.shader-cache.outputs.cache-primary-key }}
       - name: Build authored example scripts through the public command
         run: python3 scripts/hazel.py script-build examples/SceneTransitions/SceneTransitions.hproj --config Release
       - name: Linux Debug regressions

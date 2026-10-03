@@ -61,8 +61,12 @@ def validate_project(descriptor, config, assets):
     core = hz.binaries('Release') / 'Hazel-ScriptCore/Hazel-ScriptCore.dll'
     module = resolve_owned(assets, config['ScriptModulePath'])
     auditor = hz.binaries('Release') / 'PackageAudit/PackageAudit.exe'
-    command = [auditor, core, module, assets]
-    if hz.SYSTEM == 'linux': command = [hz.mono_prefix()/'bin/mono', *command]
+    runtime = hz.ROOT/'Hazelnut/mono/lib/mono' if hz.SYSTEM=='windows' else hz.mono_prefix()/'lib/mono'
+    command = [auditor, core, module, assets, runtime]
+    if hz.SYSTEM == 'linux':
+        prefix = hz.mono_prefix()
+        configuration = (prefix/'../etc/mono/config').resolve() if prefix!=Path('/usr') else Path('/etc/mono/config')
+        command = [prefix/'bin/mono', '--config', configuration, *command]
     result = subprocess.run(list(map(str,command)), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if result.returncode: raise RuntimeError(result.stderr.strip() or 'Managed dependency audit failed')
     known = {line.removeprefix('SCRIPT ') for line in result.stdout.splitlines() if line.startswith('SCRIPT ')}
@@ -77,7 +81,7 @@ def validate_project(descriptor, config, assets):
 # The dynamic loader, libc and the graphics-driver dispatch remain OS supplied.
 # Everything else in the linked dependency closure is copied and accounted for.
 LINUX_SYSTEM = {'libc.so.6', 'libm.so.6', 'libdl.so.2', 'libpthread.so.0', 'librt.so.1',
-                'ld-linux-x86-64.so.2', 'libGL.so.1', 'libGLX.so.0', 'libGLdispatch.so.0'}
+                'ld-linux-x86-64.so.2', 'libresolv.so.2', 'libutil.so.1', 'libanl.so.1', 'libGL.so.1', 'libGLX.so.0', 'libGLdispatch.so.0'}
 WINDOWS_SYSTEM = {name.lower() + '.dll' for name in ('KERNEL32', 'USER32', 'GDI32', 'ADVAPI32', 'WINMM', 'WS2_32', 'BCRYPT', 'CRYPT32', 'OLE32', 'OLEAUT32', 'SHELL32', 'PSAPI', 'VERSION', 'COMBASE', 'SHLWAPI', 'COMDLG32', 'RPCRT4', 'UCRTBASE', 'NTDLL', 'SECUR32', 'IMM32', 'SETUPAPI', 'MSWSOCK', 'IPHLPAPI', 'WINHTTP', 'NORMALIZ', 'OPENGL32', 'DWMAPI', 'USERENV')}
 
 
@@ -89,7 +93,7 @@ def linux_dependencies(binary):
     result = {}
     for line in text.splitlines():
         match = re.match(r'\s*(\S+) => (/.+?) \(', line)
-        if match: result[match[1]] = Path(match[2])
+        if match: result[Path(match[1]).name] = Path(match[2])
     return result
 
 
@@ -110,17 +114,25 @@ def linux_license(source, destination):
     elif shutil.which('pacman'):
         package = hz.output(['pacman', '-Qqo', source.resolve()])
         notices = Path('/usr/share/licenses') / package
-        if notices.is_dir(): hz.copy_tree(notices, destination / package)
-        else:
-            # Arch may use a common SPDX license instead of package-owned text.
-            info = hz.output(['pacman', '-Qi', package])
-            license_line = next((line for line in info.splitlines() if line.startswith('Licenses')), '')
-            names = license_line.split(':', 1)[-1].split()
-            common = Path('/usr/share/licenses/common')
-            copied = False
-            for name in names:
-                if (common / name).is_dir(): hz.copy_tree(common/name, destination/package/name); copied = True
-            if not copied: raise RuntimeError('Cannot identify license text for bundled ' + package + ' (' + license_line + ')')
+        info = hz.output(['pacman', '-Qi', package])
+        target = destination / package
+        target.mkdir(parents=True, exist_ok=True)
+        (target/'package.txt').write_text(info+'\n', encoding='utf-8')
+        copied = notices.is_dir()
+        if copied: hz.copy_tree(notices, target)
+        license_line = next((line for line in info.splitlines() if line.startswith('Licenses')), '')
+        names = license_line.split(':', 1)[-1].split()
+        # Current Arch uses SPDX text files; older installations used common/
+        # directories. Preserve package-specific notices as well when available.
+        legacy = {'GPL':'GPL-2.0-or-later', 'LGPL':'LGPL-2.1-or-later'}
+        for name in names:
+            name = name.strip('()')
+            if name in ('AND','OR','WITH'): continue
+            spdx = Path('/usr/share/licenses/spdx') / (legacy.get(name,name)+'.txt')
+            common = Path('/usr/share/licenses/common') / name
+            if spdx.is_file(): hz.copy_changed(spdx,target/spdx.name); copied = True
+            elif common.is_dir(): hz.copy_tree(common,target/name); copied = True
+        if not copied: raise RuntimeError('Cannot identify license text for bundled ' + package + ' (' + license_line + ')')
     else: raise RuntimeError('Native redistribution license audit requires dpkg-query or pacman')
 
 
@@ -133,8 +145,14 @@ def native_closure(executable, package):
         for source in [*(prefix / 'lib').glob('libmono*.so*'), *(prefix / 'lib').glob('libMonoPosixHelper.so*')]:
             if source.is_file():
                 hz.copy_changed(source.resolve(), private/source.name); roots.append(source.resolve())
-        for root in roots:
+        sources = {}
+        for root in set(roots):
             for soname, source in linux_dependencies(root).items():
+                resolved = source.resolve()
+                if soname in sources:
+                    if sources[soname] != resolved: raise RuntimeError("Conflicting native dependency " + soname)
+                    continue
+                sources[soname] = resolved
                 if soname in LINUX_SYSTEM:
                     records[soname] = {'provided_by': 'operating system / graphics driver'}; continue
                 destination = package / 'lib' / soname
@@ -219,6 +237,9 @@ def package(app, project, output):
                     hz.copy_changed(source, path/'mono/lib/mono'/source.relative_to(assemblies))
             mono_config = hz.ROOT/'scripts/internal/mono-windows.config' if hz.SYSTEM == 'windows' else (prefix/'../etc/mono/config').resolve() if prefix != Path('/usr') else Path('/etc/mono/config')
             hz.copy_changed(mono_config, path/'mono/etc/mono/config')
+            if hz.SYSTEM=='linux':
+                for source in mono_config.parent.rglob('*.config'):
+                    hz.copy_changed(source, path/'mono/etc/mono'/source.relative_to(mono_config.parent))
             copy_project(descriptor, assets, path if name == 'Nutella' else path/'Example')
             licenses(path)
             closure = native_closure(executable, path)

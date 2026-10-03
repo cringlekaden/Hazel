@@ -74,7 +74,8 @@ namespace Hazel {
 	{
 		HZ_PROFILE_FUNCTION();
 
-		m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+        if (m_SceneState != SceneState::Play)
+            m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 
 		// Resize
 		if (FramebufferSpecification spec = m_Framebuffer->GetSpecification();
@@ -123,6 +124,7 @@ namespace Hazel {
                     ClearSceneObservers();
                     m_ActiveScene = m_RuntimeSession.GetScene();
                     m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+                    m_ActionError.clear();
                 }
                 if (!m_RuntimeSession.GetError().empty()) m_ActionError = m_RuntimeSession.GetError();
 				break;

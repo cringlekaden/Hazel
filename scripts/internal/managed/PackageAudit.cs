@@ -7,6 +7,7 @@ using System.Linq;
 
 class PackageAudit {
     static readonly Dictionary<string, string> Files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    static readonly HashSet<string> RuntimeIdentities = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     static readonly HashSet<string> Visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     static void Audit(string path) {
         Assembly assembly = Assembly.ReflectionOnlyLoadFrom(path);
@@ -19,11 +20,12 @@ class PackageAudit {
                     throw new InvalidOperationException("Managed dependency identity mismatch: " + dependency.FullName + " at " + target);
                 Audit(target);
             } else {
-                // Standard runtime references resolve through the selected SDK
-                // runtime profile. These same assemblies are shipped in mono/lib.
-                Assembly system = Assembly.ReflectionOnlyLoad(dependency.FullName);
-                if (!system.Location.StartsWith(Path.GetDirectoryName(typeof(object).Assembly.Location), StringComparison.OrdinalIgnoreCase) && !system.GlobalAssemblyCache)
-                    throw new InvalidOperationException("Unowned managed dependency: " + dependency.FullName);
+                // Never accept an arbitrary build-machine GAC assembly. Every
+                // framework reference must exist in the runtime being packaged.
+                if (!RuntimeIdentities.Contains(dependency.FullName))
+                    throw new InvalidOperationException("Dependency is absent from project assets and packaged Mono: " + dependency.FullName);
+                Assembly.ReflectionOnlyLoad(dependency.FullName);
+
             }
         }
         foreach (Type type in assembly.GetTypes()) {
@@ -37,7 +39,11 @@ class PackageAudit {
     }
     static int Main(string[] args) {
         try {
-            if (args.Length != 3) throw new ArgumentException("PackageAudit Core.dll Project.dll AssetRoot");
+            if (args.Length != 4) throw new ArgumentException("PackageAudit Core.dll Project.dll AssetRoot MonoAssembliesRoot");
+            foreach (string path in Directory.GetFiles(args[3], "*.dll", SearchOption.AllDirectories)) {
+                if (path.Replace('\\', '/').Split('/').Any(part => part.EndsWith("-api", StringComparison.Ordinal))) continue;
+                RuntimeIdentities.Add(AssemblyName.GetAssemblyName(path).FullName);
+            }
             string core = Path.GetFullPath(args[0]);
             Files.Add(AssemblyName.GetAssemblyName(core).Name, core);
             foreach (string path in Directory.GetFiles(args[2], "*.dll", SearchOption.AllDirectories)) {

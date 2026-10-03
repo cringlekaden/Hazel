@@ -79,7 +79,7 @@ def package_tests(output,profile='native'):
     suffix='.zip' if hz.SYSTEM=='windows' else '.tar.gz'
     archives=[output/f'{name}-{hz.SYSTEM}-x86_64-Release{suffix}' for name in ('Nutella','Hazelnut')]
     logs=hz.ROOT/'build/testing/packages';logs.mkdir(parents=True,exist_ok=True)
-    driver=software_driver() if hz.SYSTEM=='windows' else None
+    driver=software_driver() if hz.SYSTEM=='windows' and profile!='native' else None
     with tempfile.TemporaryDirectory(prefix='Hazel extraction space-é-🚀 ') as temp:
         working=Path(temp);unrelated=working/'unrelated cwd';unrelated.mkdir()
         packages=[]

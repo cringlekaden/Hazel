@@ -86,3 +86,14 @@ rendered screenshots were inspected. This is automated desktop input, not a
 claim of human manual testing. Local VS Code settings were preserved/backed up;
 launch/tasks now use the canonical tool and example instead of removed demos.
 Packaging/CI verification is the next checkpoint, not yet a completed result.
+
+Distribution/tooling checkpoint: native Linux Release build and all 13 regression
+executables passed, including live reload with a pending session transition.
+Ubuntu 24.04 CI's Debug/Release suites and extracted archives passed at ff79427
+and 8269b45. Windows builds both configurations at 8269b45; the standalone script
+reference failure was traced to Premake's forward-slash HintPath detection and
+corrected. Example builds now use its single project Premake definition from
+setup/build/script-build. Managed packaging checks the shipped runtime's assembly
+identities rather than accepting arbitrary host GAC entries. Native closure is
+validated, with Arch SPDX and Ubuntu copyright notices. Windows bootstrap uses
+MSBuild, without requiring the IDE. Archive completion is verified below.

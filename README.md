@@ -51,11 +51,11 @@ python3 scripts/hazel.py package --project examples/SceneTransitions/SceneTransi
 python3 scripts/hazel.py package --app Nutella --project /path/to/Game.hproj
 python3 scripts/hazel.py build --tests
 python3 scripts/hazel.py test --config Debug
-python3 scripts/hazel.py test-packages                   # after Release package
+python3 scripts/hazel.py test-packages                   # extracted example archive acceptance
 python3 scripts/hazel.py database                       # explicit Bear/clangd refresh
 ```
 
-Project packaging validates scenes, textures, compiled script classes/assembly references, and native dependency closure. External asset paths/symlinks are rejected with instructions to relocate them into the project and save relative references. Project P/Invoke requires explicit native redistribution support; packaging rejects it rather than silently depending on the source machine. Precompiled scripts run without a compiler. Authoring new scripts needs this source SDK setup and an `Assets/Scripts/premake5.lua` like the example; `script-build` compiles against the matching Hazel-ScriptCore.
+Project packaging validates scenes, textures, compiled script classes/assembly references, and native dependency closure. External asset paths/symlinks are rejected with instructions to relocate them into the project and save relative references. Project P/Invoke requires explicit native redistribution support; packaging rejects it rather than silently depending on the source machine. Precompiled scripts run without a compiler. Authoring new scripts needs this source SDK setup and an `Assets/Scripts/premake5.lua` like the example, honoring `HAZEL_SCRIPTCORE` and `HAZEL_SCRIPT_OUTPUT`; `script-build` compiles against the matching Hazel-ScriptCore, keeps configuration outputs in the SDK cache, and atomically deploys the configured module and its dependencies.
 
 Nutella's public launch contract:
 

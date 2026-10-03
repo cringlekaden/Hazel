@@ -19,7 +19,7 @@ class Desktop:
         if os.name=='nt':
             self.user=C.WinDLL('user32',use_last_error=True)
             self.callback=C.WINFUNCTYPE(C.c_bool,C.c_void_p,C.c_ssize_t)
-            signatures=[('EnumWindows',C.c_bool,[self.callback,C.c_ssize_t]),('GetWindowThreadProcessId',C.c_ulong,[C.c_void_p,C.POINTER(C.c_ulong)]),('GetWindowTextW',C.c_int,[C.c_void_p,C.c_wchar_p,C.c_int]),('GetClientRect',C.c_bool,[C.c_void_p,C.POINTER(Rect)]),('ClientToScreen',C.c_bool,[C.c_void_p,C.POINTER(Point)]),('PostMessageW',C.c_bool,[C.c_void_p,C.c_uint,C.c_size_t,C.c_ssize_t]),('SetWindowPos',C.c_bool,[C.c_void_p,C.c_void_p,C.c_int,C.c_int,C.c_int,C.c_int,C.c_uint]),('GetWindowRect',C.c_bool,[C.c_void_p,C.POINTER(Rect)]),('SetForegroundWindow',C.c_bool,[C.c_void_p]),('SetCursorPos',C.c_bool,[C.c_int,C.c_int])]
+            signatures=[('EnumWindows',C.c_bool,[self.callback,C.c_ssize_t]),('GetWindowThreadProcessId',C.c_ulong,[C.c_void_p,C.POINTER(C.c_ulong)]),('GetWindowTextW',C.c_int,[C.c_void_p,C.c_wchar_p,C.c_int]),('GetClientRect',C.c_bool,[C.c_void_p,C.POINTER(Rect)]),('ClientToScreen',C.c_bool,[C.c_void_p,C.POINTER(Point)]),('PostMessageW',C.c_bool,[C.c_void_p,C.c_uint,C.c_size_t,C.c_ssize_t]),('SetWindowPos',C.c_bool,[C.c_void_p,C.c_void_p,C.c_int,C.c_int,C.c_int,C.c_int,C.c_uint]),('GetWindowRect',C.c_bool,[C.c_void_p,C.POINTER(Rect)]),('SetForegroundWindow',C.c_bool,[C.c_void_p]),('SetCursorPos',C.c_bool,[C.c_int,C.c_int]),('MapVirtualKeyW',C.c_uint,[C.c_uint,C.c_uint])]
             for name,result,args in signatures:fn=getattr(self.user,name);fn.restype=result;fn.argtypes=args
             return
         self.x=C.CDLL('libX11.so.6');self.xt=C.CDLL('libXtst.so.6')
@@ -84,7 +84,8 @@ class Desktop:
         time.sleep(.3)
     def key(self,window,code,seconds=.25):
         self.activate(window)
-        if os.name=='nt':self.user.PostMessageW(window,0x100,code,0);time.sleep(seconds);self.user.PostMessageW(window,0x101,code,0)
+        if os.name=='nt':
+            scan=self.user.MapVirtualKeyW(code,0);self.user.PostMessageW(window,0x100,code,(scan<<16)|1);time.sleep(seconds);self.user.PostMessageW(window,0x101,code,(scan<<16)|(1<<30)|(1<<31)|1)
         else:
             key=self.x.XKeysymToKeycode(self.display,code);self.xt.XTestFakeKeyEvent(self.display,key,1,0);self.x.XFlush(self.display);time.sleep(seconds);self.xt.XTestFakeKeyEvent(self.display,key,0,0);self.x.XFlush(self.display)
         time.sleep(.25)

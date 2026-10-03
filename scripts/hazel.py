@@ -10,6 +10,7 @@ import platform
 import shlex
 import shutil
 import subprocess
+import tempfile
 import sys
 import urllib.request
 
@@ -91,12 +92,13 @@ def mono_prefix():
     else:
         local = ROOT / 'build/dependencies/mono/linux/usr'
         prefix = local if local.is_dir() else Path('/usr')
-    required = ['include/mono-2.0/mono/jit/jit.h', 'lib/libmonosgen-2.0.so',
+    required = ['bin/mono', 'include/mono-2.0/mono/jit/jit.h', 'lib/libmonosgen-2.0.so',
                 'lib/mono/4.5/mscorlib.dll', 'lib/mono/4.5/mcs.exe', 'lib/mono/4.7.2-api/mscorlib.dll']
     if all((prefix / name).is_file() for name in required):
         return prefix
     if prefix != Path('/usr') or explicit:
-        raise RuntimeError('Incomplete Mono SDK: ' + str(prefix))
+        missing = [name for name in required if not (prefix / name).is_file()]
+        raise RuntimeError('Incomplete Mono SDK ' + str(prefix) + ': missing ' + ', '.join(missing) + '. Select a complete SDK with HAZEL_MONO_SDK.')
     # Arch/CachyOS may no longer offer Mono. Bootstrap the recorded, checksum
     # pinned SDK in this checkout only; never alter /usr or use administrator access.
     if not shutil.which('bsdtar'):
@@ -138,7 +140,8 @@ def dependencies(configuration, generator):
         ready = (manifest['pins'] == pins and manifest['configuration'] == configuration and
                  manifest['system'] == SYSTEM and manifest['source_status'] == 'clean' and
                  manifest['build_system'] == 'Premake' and manifest.get('build_inputs_sha256') == dependency_digest() and
-                 all((sdk / 'lib' / name).is_file() for name in libraries))
+                 all((sdk / 'lib' / name).is_file() and (sdk / 'lib' / name).stat().st_size > 0 for name in libraries) and
+                 all((sdk / 'include' / name).is_file() for name in ('shaderc/shaderc.hpp', 'spirv_cross/spirv_glsl.hpp', 'spirv-tools/libspirv.h')))
     except (OSError, KeyError, ValueError):
         ready = False
     if not ready:
@@ -150,6 +153,7 @@ def dependencies(configuration, generator):
 
 
 def build(configuration, tests=False, database=False):
+    yaml_tools()
     generator = premake()
     prefix = mono_prefix()
     dependencies(configuration, generator)
@@ -176,6 +180,7 @@ def build(configuration, tests=False, database=False):
             if not any(path.is_relative_to(ROOT / source_root) for path in recorded):
                 raise RuntimeError('Bear did not capture compiler commands for ' + source_root)
         print('Refreshed clangd database: ' + str(len(commands)) + ' compiler commands.', flush=True)
+    script_build(ROOT/'examples/SceneTransitions/SceneTransitions.hproj', configuration)
     stage(configuration, prefix)
 
 
@@ -216,7 +221,6 @@ def stage(configuration, prefix=None):
             for source in (prefix / 'lib').glob('libmono*.so*'):
                 target = lib / source.name
                 if not target.exists(): target.symlink_to(source.resolve())
-    copy_changed(base / 'ExampleScripts/SceneTransitions.dll', ROOT / 'examples/SceneTransitions/Assets/Scripts/Binaries/SceneTransitions.dll')
 
 
 def script_build(project, configuration):
@@ -227,7 +231,11 @@ def script_build(project, configuration):
         raise RuntimeError('Project needs Assets/Scripts/premake5.lua; see the bundled example')
     generator = premake(); prefix = mono_prefix()
     env = os.environ.copy()
-    env['HAZEL_SCRIPTCORE'] = str(binaries(configuration) / 'Hazel-ScriptCore/Hazel-ScriptCore.dll')
+    env['HAZEL_SCRIPTCORE'] = (binaries(configuration) / 'Hazel-ScriptCore/Hazel-ScriptCore.dll').as_posix()
+    identity = hashlib.sha256(str(descriptor).encode('utf-8')).hexdigest()[:16]
+    compiled = ROOT/'build/projects'/identity/f'{configuration}-{SYSTEM}-x86_64'
+    compiled.mkdir(parents=True, exist_ok=True)
+    env['HAZEL_SCRIPT_OUTPUT'] = compiled.as_posix()
     if not Path(env['HAZEL_SCRIPTCORE']).is_file(): raise RuntimeError('Build Hazel first to supply Hazel-ScriptCore')
     run([generator, 'vs2022' if SYSTEM == 'windows' else 'gmake'], cwd=scripts, env=env)
     if SYSTEM == 'windows':
@@ -235,7 +243,24 @@ def script_build(project, configuration):
     else:
         run(['make', f'config={configuration.lower()}', '-j2', 'CSC=' + shlex.join(map(str, mono_command(prefix)))], cwd=scripts, env=env)
     module = assets / config['ScriptModulePath'].replace('\\', '/')
-    if not module.is_file(): raise RuntimeError('Script build did not produce descriptor ScriptModulePath: ' + str(module))
+    if not (compiled/module.name).is_file():
+        raise RuntimeError('Project Premake must honor HAZEL_SCRIPT_OUTPUT and produce ' + module.name + '; see the example')
+    # Stage symbols/dependencies first, then atomically replace the module. The
+    # live editor's watcher cannot observe a partly copied assembly.
+    files = sorted(compiled.iterdir(), key=lambda path: path.name==module.name)
+    for source in files:
+        if not source.is_file() or source.name=='Hazel-ScriptCore.dll': continue
+        if source.suffix not in ('.dll','.pdb','.mdb','.config'): continue
+        destination=module.parent/source.name;destination.parent.mkdir(parents=True,exist_ok=True)
+        data=source.read_bytes()
+        if destination.is_file() and destination.read_bytes()==data: continue
+        temporary=None
+        try:
+            with tempfile.NamedTemporaryFile(prefix=destination.name+'.',dir=destination.parent,delete=False) as handle:
+                temporary=Path(handle.name);handle.write(data)
+            os.replace(temporary,destination)
+        finally:
+            if temporary and temporary.exists(): temporary.unlink()
 
 
 @contextlib.contextmanager

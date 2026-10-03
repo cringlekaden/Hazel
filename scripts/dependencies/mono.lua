@@ -11,24 +11,6 @@ if not windows and not os.isfile(includes .. "/mono/jit/jit.h") then
     error("Mono development headers missing: install mono-devel/mono or provide --mono-root=SDK_PREFIX")
 end
 include (root .. "/Hazel-ScriptCore")
-project "ExampleScripts"
-    location (root .. "/build/ExampleScripts")
-    kind "SharedLib"
-    language "C#"
-    dotnetframework "4.7.2"
-    targetname "SceneTransitions"
-    targetdir (root .. "/bin/" .. outputdir .. "/ExampleScripts")
-    objdir (root .. "/bin-int/" .. outputdir .. "/ExampleScripts")
-    files { root .. "/examples/SceneTransitions/Assets/Scripts/Source/**.cs" }
-    links { "Hazel-ScriptCore", "System", "System.Core" }
-    filter "system:linux"
-        buildoptions { "-sdk:4.7.2" }
-    filter "configurations:Debug"
-        symbols "Default"
-    filter "configurations:Release or Dist"
-        optimize "On"
-        symbols "Off"
-    filter {}
 project "PackageAudit"
     location (root .. "/build/PackageAudit")
     kind "ConsoleApp"
@@ -42,7 +24,7 @@ project "PackageAudit"
         buildoptions { "-sdk:4.7.2" }
     filter {}
 project "Nutella"
-    dependson { "Hazel-ScriptCore", "ExampleScripts" }
+    dependson { "Hazel-ScriptCore" }
 
 local consumers = { "Hazel", "Nutella", "Hazelnut" }
 if _OPTIONS["migration-tests"] then

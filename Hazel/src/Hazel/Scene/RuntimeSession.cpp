@@ -19,6 +19,9 @@ namespace Hazel {
         // Validate Box2D preconditions while the old scene is still usable.
         for (auto handle : scene->GetAllEntitiesWith<TransformComponent, Rigidbody2DComponent>()) {
             Entity entity(handle, scene.get());
+            const auto type = entity.GetComponent<Rigidbody2DComponent>().Type;
+            if (type != Rigidbody2DComponent::BodyType::Static && type != Rigidbody2DComponent::BodyType::Dynamic && type != Rigidbody2DComponent::BodyType::Kinematic)
+                throw std::runtime_error("Invalid physics body type: " + entity.GetName());
             const auto& transform = entity.GetComponent<TransformComponent>();
             for (int axis = 0; axis < 3; ++axis)
                 if (!std::isfinite(transform.Translation[axis]) || !std::isfinite(transform.Rotation[axis]) || !std::isfinite(transform.Scale[axis]))
