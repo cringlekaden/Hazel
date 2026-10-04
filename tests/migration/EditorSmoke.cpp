@@ -100,7 +100,7 @@ public:
         case 4: {
             auto file = e.m_EditorScenePath; e.NewScene(); Check(e.OpenScene(file),"OpenScene reported failure");
             auto player = e.m_EditorScene->GetEntityByUUID(901);
-            Check(player && player.GetComponent<SpriteRendererComponent>().Texture->IsLoaded(), "Editor save/reopen/texture failed");
+            Check(player && player.GetComponent<SpriteRendererComponent>().Resolved.Data->Texture->IsLoaded(), "Editor save/reopen/texture failed");
             e.m_SceneHierarchyPanel.SetSelectedEntity(player);
             KeyPressedEvent event(Key::W); e.OnKeyPressed(event);
             Check(e.m_GizmoType == ImGuizmo::TRANSLATE, "Translate shortcut failed");
@@ -176,10 +176,10 @@ public:
                 Check(e.OpenProject(relocated/"Authoring.hproj"),"Copied project initial open failed");
                 std::filesystem::rename(original,parked); // Prevent silently resolving against the original project.
                 Check(e.OpenProject(relocated/"Authoring.hproj"),"Relocated project open failed");
-                auto texture=e.m_EditorScene->GetEntityByUUID(901).GetComponent<SpriteRendererComponent>().Texture;
+                auto texture=e.m_EditorScene->GetEntityByUUID(901).GetComponent<SpriteRendererComponent>().Resolved.Data->Texture;
                 Check(texture && texture->IsLoaded() && std::filesystem::u8path(texture->GetPath())==
                       relocated/"Assets/Textures"/std::filesystem::u8path(u8"texture é 🚀.png"),"Relocation used original asset root");
-                Check(e.m_EditorScene->GetEntityByUUID(902).GetComponent<SpriteRendererComponent>().Texture->IsLoaded(),"Relocation discarded external reference");
+                Check(e.m_EditorScene->GetEntityByUUID(902).GetComponent<SpriteRendererComponent>().Resolved.Data->Texture->IsLoaded(),"Relocation discarded external reference");
                 std::filesystem::rename(parked,original);
             }
             break;

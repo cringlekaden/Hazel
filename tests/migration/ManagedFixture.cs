@@ -129,3 +129,20 @@ namespace Migration {
         void OnDestroy() { System.Console.WriteLine("LIFECYCLE: spawner destroyed"); }
     }
 }
+namespace Migration {
+    public class SpriteProbe : Hazel.Entity {
+        public Hazel.Sprite Icon;
+        public Hazel.SpriteAnimation Clip;
+        public bool Passed, Finished;
+        void OnCreate() {
+            GetComponent<Hazel.SpriteRendererComponent>().SetSprite(Icon);
+            var animation=GetComponent<Hazel.SpriteAnimationComponent>();
+            animation.Play(Clip);animation.Pause();
+            if(animation.IsPlaying)throw new System.Exception("Pause did not stop playback");
+            animation.Resume();if(!animation.IsPlaying)throw new System.Exception("Resume did not start playback");
+            animation.Stop();if(animation.IsPlaying || animation.IsFinished)throw new System.Exception("Stop did not reset playback");
+            animation.Play(Clip);Passed=true;
+        }
+        void OnUpdate(float timestep) {Finished=GetComponent<Hazel.SpriteAnimationComponent>().IsFinished;}
+    }
+}

@@ -45,6 +45,7 @@ def resolve_owned(root, reference, exists=True):
 def validate_project(descriptor, config, assets):
     import yaml
     files = list(project_files(assets))
+    validate_sprites(assets, files)
     included = {file.resolve() for file in files}
     for key in ('StartScene','ScriptModulePath'):
         if resolve_owned(assets,config[key]) not in included:
@@ -97,6 +98,29 @@ def validate_project(descriptor, config, assets):
             name = entity.get('ScriptComponent', {}).get('ClassName')
             if name and name not in known: raise RuntimeError('Unavailable compiled script class ' + name + ' in ' + str(scene))
     print(result.stdout, end='')
+
+
+def validate_sprites(assets, files):
+    # Metadata is parsed and decoded by the same native services as authoring/runtime.
+    auditor = hz.binaries('Release') / 'SpriteAssetAudit' / ('SpriteAssetAudit.exe' if hz.SYSTEM=='windows' else 'SpriteAssetAudit')
+    if not auditor.is_file():
+        raise RuntimeError('Missing native SpriteAssetAudit; build the Release SDK before exporting')
+    included = {file.resolve() for file in files}
+    relative = [file.relative_to(assets).as_posix() for file in files]
+    if any('\n' in name or '\r' in name for name in relative):
+        raise RuntimeError('Portable asset paths cannot contain line breaks')
+    with tempfile.TemporaryDirectory(prefix='hazel-sprite-audit-') as temporary:
+        inventory = Path(temporary) / 'assets.txt'
+        inventory.write_text(''.join(name+'\n' for name in relative), encoding='utf-8')
+        env = os.environ.copy()
+        if hz.SYSTEM=='linux': env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
+        result = subprocess.run([str(auditor),str(assets),str(inventory)],capture_output=True,text=True,encoding='utf-8',env=env)
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or 'Native sprite dependency audit failed')
+    for line in result.stdout.splitlines():
+        if line.startswith('DEPENDENCY ') and resolve_owned(assets,line[len('DEPENDENCY '):]) not in included:
+            raise RuntimeError('Sprite dependency selects excluded compiler output: '+line[len('DEPENDENCY '):])
+    print(result.stdout,end='')
 
 
 # The dynamic loader, libc and the graphics-driver dispatch remain OS supplied.
@@ -234,6 +258,8 @@ def copy_project(descriptor, assets, destination):
     for source in project_files(assets):
         relative = source.relative_to(assets)
         hz.copy_changed(source, destination/relative_root/relative)
+    relocated = destination/relative_root
+    validate_sprites(relocated,list(project_files(relocated)))
 
 
 def package(app, project, output, archive_name=None):

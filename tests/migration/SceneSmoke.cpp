@@ -127,7 +127,7 @@ static void SerializerChecks(const std::filesystem::path& directory) {
     auto source=CreateRef<Scene>(); auto entity=source->CreateEntityWithUUID(200,u8"sérialisation-é");
     auto& transform=entity.GetComponent<TransformComponent>(); transform.Translation={1,2,3}; transform.Rotation={0.1f,0.2f,0.3f}; transform.Scale={2,3,4};
     auto& camera=entity.AddComponent<CameraComponent>(); camera.Primary=false; camera.FixedAspectRatio=true; camera.Camera.SetOrthographic(7,-2,5);
-    auto& sprite=entity.AddComponent<SpriteRendererComponent>(); sprite.Color={0.1f,0.2f,0.3f,0.4f}; sprite.TilingFactor=3.5f;
+    auto& sprite=entity.AddComponent<SpriteRendererComponent>(); sprite.Color={0.1f,0.2f,0.3f,0.4f};
     auto& circle=entity.AddComponent<CircleRendererComponent>(); circle.Thickness=0.25f; circle.Fade=0.02f; circle.Color={1,0,0,1};
     auto& rigid=entity.AddComponent<Rigidbody2DComponent>(); rigid.Type=Rigidbody2DComponent::BodyType::Kinematic; rigid.FixedRotation=true;
     auto& box=entity.AddComponent<BoxCollider2DComponent>(); box.Offset={0.1f,0.2f}; box.Size={0.3f,0.4f}; box.Density=2; box.Friction=0.7f; box.Restitution=0.8f; box.RestitutionThreshold=1.25f;
@@ -168,7 +168,7 @@ static void SerializerChecks(const std::filesystem::path& directory) {
     const auto& expectedTransform=entity.GetComponent<TransformComponent>();
     const auto& tc=loaded.GetComponent<TransformComponent>(); Check(tc.Translation==expectedTransform.Translation && tc.Rotation==expectedTransform.Rotation && tc.Scale==expectedTransform.Scale,"Transform serialization failed");
     const auto& cc=loaded.GetComponent<CameraComponent>(); Check(!cc.Primary && cc.FixedAspectRatio && cc.Camera.GetOrthographicSize()==7 && cc.Camera.GetOrthographicNearClip()==-2 && cc.Camera.GetOrthographicFarClip()==5,"Camera serialization failed");
-    Check(loaded.GetComponent<SpriteRendererComponent>().Color==entity.GetComponent<SpriteRendererComponent>().Color && loaded.GetComponent<SpriteRendererComponent>().TilingFactor==3.5f,"Sprite serialization failed");
+    Check(loaded.GetComponent<SpriteRendererComponent>().Color==entity.GetComponent<SpriteRendererComponent>().Color,"Sprite serialization failed");
     Check(loaded.GetComponent<CircleRendererComponent>().Thickness==entity.GetComponent<CircleRendererComponent>().Thickness && loaded.GetComponent<CircleRendererComponent>().Fade==entity.GetComponent<CircleRendererComponent>().Fade,"Circle serialization failed");
     Check(loaded.GetComponent<Rigidbody2DComponent>().Type==entity.GetComponent<Rigidbody2DComponent>().Type && loaded.GetComponent<Rigidbody2DComponent>().FixedRotation && !loaded.GetComponent<Rigidbody2DComponent>().RuntimeBody,"Rigid body serialization failed");
     const auto& bc=loaded.GetComponent<BoxCollider2DComponent>(); const auto& dc=loaded.GetComponent<CircleCollider2DComponent>();

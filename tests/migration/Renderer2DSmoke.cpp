@@ -57,18 +57,18 @@ static void Primitives() {
     Check(ID()==-1 && Pixels(81)>120,"Position rectangle footprint mismatch");
 }
 static void Textures() {
-    TextureSpecification specification; specification.Width=2; specification.Height=2; specification.GenerateMips=false;
+    TextureSpecification specification; specification.Width=2; specification.Height=2; specification.GenerateMips=false; specification.MinFilter=TextureFilter::Linear;
     auto texture=Texture2D::Create(specification);
     const std::array<unsigned char,16> texels{255,0,0,255, 0,255,0,255, 0,0,255,255, 255,255,255,255};
     texture->SetData(texels.data(),texels.size());
-    SpriteRendererComponent sprite; sprite.Texture=texture; sprite.TilingFactor=2; sprite.Color={.5f,1,1,1};
+    SpriteRendererComponent sprite; sprite.SetTexture(texture,2); sprite.Color={.5f,1,1,1};
     Begin(); Renderer2D::DrawSprite(Transform(),sprite,43); End();
     Check(ID(40,40)==43 && Color(40,40)[0]>=126 && Color(40,40)[0]<=129 &&
           Color(56,40)[1]>250 && Color(72,40)[0]>=126,"Sprite texture/tiling/tint mismatch");
-    sprite.Texture.reset(); sprite.Color={0,1,0,1};
+    sprite.SetTexture(nullptr); sprite.Color={0,1,0,1};
     Begin(); Renderer2D::DrawSprite(Transform(),sprite,44); End();
     Check(ID()==44 && Color()[1]>250,"Untextured sprite mismatch");
-    TextureSpecification single; single.GenerateMips=false; auto white=Texture2D::Create(single);
+    TextureSpecification single; single.GenerateMips=false; single.MinFilter=TextureFilter::Linear; auto white=Texture2D::Create(single);
     const unsigned whitePixel=0xffffffff; white->SetData(&whitePixel,sizeof(whitePixel));
     for(int variant=0;variant<4;++variant) {
         Begin();
@@ -85,7 +85,7 @@ static void Textures() {
     std::vector<Ref<Texture2D>> textures;
     Begin();
     for (unsigned i=0;i<limit+1;++i) {
-        TextureSpecification one; one.GenerateMips=false;
+        TextureSpecification one; one.GenerateMips=false; one.MinFilter=TextureFilter::Linear;
         auto current=Texture2D::Create(one); const unsigned data=0xff00ff00;
         current->SetData(&data,sizeof(data)); textures.push_back(current);
         Renderer2D::DrawQuad(Transform(),current,1,glm::vec4(1),100+i);

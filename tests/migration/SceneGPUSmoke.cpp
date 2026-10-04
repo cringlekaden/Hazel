@@ -51,12 +51,12 @@ static Ref<Scene> MakeScene(const std::filesystem::path& directory) {
     auto scene=CreateRef<Scene>(); scene->OnViewportResize(256,256);
     auto camera=scene->CreateEntityWithUUID(10,"Camera"); camera.AddComponent<CameraComponent>().Camera.SetOrthographic(4,-1,1);
     auto sprite=scene->CreateEntityWithUUID(11,u8"carré-é"); sprite.GetComponent<TransformComponent>().Translation={-1,0,0};
-    auto& src=sprite.AddComponent<SpriteRendererComponent>(); src.Color={1,0,0,1}; src.TilingFactor=2;
+    auto& src=sprite.AddComponent<SpriteRendererComponent>(); src.Color={1,0,0,1};
     const auto texture=directory/"assets/textures"/std::filesystem::u8path("damier-é.png");
     std::filesystem::copy_file(directory/"assets/textures/Checkerboard.png",texture);
     const auto previous=std::filesystem::current_path();
     std::filesystem::current_path(directory/"assets");
-    try { src.Texture=Texture2D::Create(std::filesystem::relative(texture,directory/"assets").generic_u8string()); }
+    try { src.SetTexture(Texture2D::Create(std::filesystem::relative(texture,directory/"assets").generic_u8string()),2); }
     catch(...) { std::filesystem::current_path(previous); throw; }
     std::filesystem::current_path(previous);
     auto disk=scene->CreateEntityWithUUID(12,"Circle"); disk.GetComponent<TransformComponent>().Translation={1,0,0};
@@ -128,7 +128,7 @@ int main(int argc,char** argv) {
             const auto file=fixture.Directory/std::filesystem::u8path("scène-é.hazel"); SceneSerializer(source).Serialize(file.generic_u8string());
             auto loaded=CreateRef<Scene>(); loaded->OnViewportResize(256,256);
             Check(SceneSerializer(loaded).Deserialize(file.generic_u8string()),"GPU scene/texture/text YAML round trip failed");
-            Check(loaded->GetEntityByUUID(11).GetComponent<SpriteRendererComponent>().Texture->IsLoaded(),"Serialized UTF-8 texture not loaded");
+            Check(loaded->GetEntityByUUID(11).GetComponent<SpriteRendererComponent>().Resolved.Data->Texture->IsLoaded(),"Serialized UTF-8 texture not loaded");
             const auto& text=loaded->GetEntityByUUID(13).GetComponent<TextComponent>();
             Check(text.TextString==u8"Hazel é" && text.Kerning==0.1f && text.LineSpacing==0.2f && text.Color==glm::vec4(0,1,0,1),"Text component serialization failed");
             EditorCamera editor(45,1,0.1f,100); editor.SetViewportSize(256,256);

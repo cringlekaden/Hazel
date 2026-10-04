@@ -36,9 +36,9 @@ project "yaml-cpp"
         optimize "On"
     filter {}
 
-local consumers = { "Hazel", "Nutella", "Hazelnut" }
+local consumers = { "Hazel", "Nutella", "Hazelnut", "SpriteAssetAudit" }
 if _OPTIONS["migration-tests"] then
-    for _, name in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke", "RuntimeSessionSmoke", "ExampleGamesSmoke" } do
+    for _, name in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke", "RuntimeSessionSmoke", "ExampleGamesSmoke", "SpriteSmoke" } do
         table.insert(consumers, "Migration" .. name)
     end
 end

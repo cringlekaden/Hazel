@@ -26,9 +26,9 @@ project "PackageAudit"
 project "Nutella"
     dependson { "Hazel-ScriptCore" }
 
-local consumers = { "Hazel", "Nutella", "Hazelnut" }
+local consumers = { "Hazel", "Nutella", "Hazelnut", "SpriteAssetAudit" }
 if _OPTIONS["migration-tests"] then
-    for _, test in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke", "RuntimeSessionSmoke", "ExampleGamesSmoke" } do
+    for _, test in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke", "RuntimeSessionSmoke", "ExampleGamesSmoke", "SpriteSmoke" } do
         table.insert(consumers, "Migration" .. test)
     end
 end
@@ -85,5 +85,7 @@ if _OPTIONS["migration-tests"] then
     project "MigrationExampleGamesSmoke"
         dependson { "Hazel-ScriptCore" }
     project "MigrationSceneGPUSmoke"
+        dependson { "Hazel-ScriptCore", "MigrationManagedFixture" }
+    project "MigrationSpriteSmoke"
         dependson { "Hazel-ScriptCore", "MigrationManagedFixture" }
 end

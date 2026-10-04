@@ -88,14 +88,14 @@ def test(configuration, profile='native'):
         if hz.SYSTEM=='windows' and profile in ('software','gl41'):
             for dll in software_driver().glob('*.dll'): hz.copy_changed(dll,private/dll.name)
             env.update(GALLIUM_DRIVER='llvmpipe',LP_NUM_THREADS='2',MESA_SHADER_CACHE_DIR=str(working/'mesa-cache'))
-        names=('ShaderToolsSmoke','SceneFoundationSmoke','ProjectPhysicsSmoke','MonoSmoke','SceneSmoke','CoreSmoke','RendererSmoke','RendererFeaturesSmoke','Renderer2DSmoke','FontSmoke','SceneGPUSmoke','RuntimeSessionSmoke','EditorSmoke')
+        names=('ShaderToolsSmoke','SpriteSmoke','SceneFoundationSmoke','ProjectPhysicsSmoke','MonoSmoke','SceneSmoke','CoreSmoke','RendererSmoke','RendererFeaturesSmoke','Renderer2DSmoke','FontSmoke','SceneGPUSmoke','RuntimeSessionSmoke','EditorSmoke')
         for name in names:
             target='Migration'+name;suffix='.exe' if hz.SYSTEM=='windows' else ''
             executable=base/target/(target+suffix)
             if not executable.is_file():raise RuntimeError('Missing '+target+'; run build --tests first')
             if hz.SYSTEM=='windows': hz.copy_changed(executable,private/executable.name);executable=private/executable.name
             command=[executable]
-            if name in ('MonoSmoke','SceneSmoke','SceneGPUSmoke','RuntimeSessionSmoke'):command += [base/'Hazel-ScriptCore/Hazel-ScriptCore.dll',base/'MigrationManagedFixture/MigrationManagedFixture.dll']
+            if name in ('SpriteSmoke','MonoSmoke','SceneSmoke','SceneGPUSmoke','RuntimeSessionSmoke'):command += [base/'Hazel-ScriptCore/Hazel-ScriptCore.dll',base/'MigrationManagedFixture/MigrationManagedFixture.dll']
             if name=='EditorSmoke':command += [base/'Hazel-ScriptCore/Hazel-ScriptCore.dll',base/'MigrationManagedFixture/MigrationManagedFixture.dll',working]
             env['HAZEL_DATA']=str(working/'data'/name)
             log=logs/f'{hz.SYSTEM}-{configuration}-{profile}-{name}.log'
