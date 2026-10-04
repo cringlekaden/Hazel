@@ -1,0 +1,39 @@
+SpriteSheet:
+  Version: 1
+  Texture: Textures/Lanterns.tga
+  TextureSize: [192, 128]
+  Sampling:
+    MinFilter: Nearest
+    MagFilter: Nearest
+    WrapS: ClampToEdge
+    WrapT: ClampToEdge
+    GenerateMips: false
+    Format: RGBA8
+  Regions:
+    - ID: "0000000000000101"
+      Name: Explorer
+      Rect: [0, 0, 64, 64]
+      Pivot: [0.5, 0.5]
+    - ID: "0000000000000102"
+      Name: Seed dim
+      Rect: [8, 72, 48, 48]
+      Pivot: [0.5, 0.5]
+    - ID: "0000000000000103"
+      Name: Seed
+      Rect: [72, 72, 48, 48]
+      Pivot: [0.5, 0.5]
+    - ID: "0000000000000104"
+      Name: Seed bright
+      Rect: [136, 72, 48, 48]
+      Pivot: [0.5, 0.5]
+  RetiredRegionIDs: []
+  Clips:
+    - ID: "0000000000000201"
+      Name: Lantern pulse
+      Loop: true
+      Frames:
+        - {RegionID: "0000000000000102", Duration: 0.18}
+        - {RegionID: "0000000000000103", Duration: 0.18}
+        - {RegionID: "0000000000000104", Duration: 0.18}
+        - {RegionID: "0000000000000103", Duration: 0.18}
+  RetiredClipIDs: []

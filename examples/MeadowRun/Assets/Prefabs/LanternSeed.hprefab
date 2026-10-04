@@ -10,5 +10,11 @@ Entities:
       Scale: [0.699999988, 0.699999988, 1]
     SpriteRendererComponent:
       Color: [1, 1, 1, 1]
-      TexturePath: Textures/Seed.png
-      TilingFactor: 1
+      Source:
+        Type: Region
+        Sheet: Textures/Lanterns.hsprites
+        RegionID: "0000000000000103"
+    SpriteAnimationComponent:
+      DefaultClip: {Sheet: Textures/Lanterns.hsprites, ClipID: "0000000000000201"}
+      Autoplay: true
+      Speed: 1

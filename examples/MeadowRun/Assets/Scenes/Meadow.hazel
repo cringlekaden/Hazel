@@ -845,8 +845,10 @@ Entities:
     - 1
     - 1
     - 1
-    TilingFactor: 1
-    TexturePath: Textures/Explorer.png
+    Source:
+      Type: Region
+      Sheet: Textures/Lanterns.hsprites
+      RegionID: "0000000000000101"
   ScriptComponent:
     ClassName: MeadowRun.Explorer
     ScriptFields:

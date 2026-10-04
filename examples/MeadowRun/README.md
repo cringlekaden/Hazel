@@ -39,3 +39,12 @@ Packages require OpenGL 4.1; Windows 10 x64+ or official Ubuntu 24.04/glibc 2.39
 Linux with X11/GLX. Compiling changed scripts separately requires the Hazel SDK.
 
 Author in Hazelnut: open any level through File > Open Scene; select its controller > Script to choose LanternSeed and level progression. Inspect LanternSeed, Pond or Tree in Content Browser, edit/save in Prefab Inspector, then Instantiate and Select with an initial transform. Project > Build Scripts and Export Game share canonical SDK tooling; configure SDK/Python in Edit > Editor Preferences.
+
+Sprite authoring sample: open `Textures/Lanterns.hsprites` in Content Browser.
+Its Regions tab contains Explorer (used as a static region in Meadow), plus three
+seed brightness variants. Its Animation tab exposes Lantern pulse: ordered frames,
+individual durations and Loop. LanternSeed.hprefab uses that clip with autoplay,
+so collected seeds pulse in every level. Existing movement, triggers and picking
+remain unchanged. Drag regions/clips onto the corresponding entity or prefab
+Inspector fields, save the sheet, then Play. These references and the original
+atlas are included in Nutella exports with this project's license.
