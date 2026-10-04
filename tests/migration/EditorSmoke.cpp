@@ -177,8 +177,10 @@ public:
                 std::filesystem::rename(original,parked); // Prevent silently resolving against the original project.
                 Check(e.OpenProject(relocated/"Authoring.hproj"),"Relocated project open failed");
                 auto texture=e.m_EditorScene->GetEntityByUUID(901).GetComponent<SpriteRendererComponent>().Resolved.Data->Texture;
-                Check(texture && texture->IsLoaded() && std::filesystem::u8path(texture->GetPath())==
-                      relocated/"Assets/Textures"/std::filesystem::u8path(u8"texture é 🚀.png"),"Relocation used original asset root");
+                // The asset cache canonicalizes resource paths. Windows temporary
+                // directories may arrive as 8.3 aliases; compare file identity.
+                const auto expected=relocated/"Assets/Textures"/std::filesystem::u8path(u8"texture é 🚀.png");
+                Check(texture && texture->IsLoaded() && std::filesystem::equivalent(std::filesystem::u8path(texture->GetPath()),expected),"Relocation used original asset root");
                 Check(e.m_EditorScene->GetEntityByUUID(902).GetComponent<SpriteRendererComponent>().Resolved.Data->Texture->IsLoaded(),"Relocation discarded external reference");
                 std::filesystem::rename(parked,original);
             }

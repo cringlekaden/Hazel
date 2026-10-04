@@ -53,6 +53,10 @@ static void Runtime(const std::filesystem::path& root,const std::filesystem::pat
     auto assets=CreateRef<ProjectAssets>(root);auto sheet=assets->Sheet("sheet.hsprites");const auto region=sheet->Regions[0].ID;const auto clip=sheet->Clips[0].ID;
     auto resolved=assets->Resolve(SpriteReference{"sheet.hsprites",region});Check(assets->Resolve(SpriteReference{"sheet.hsprites",region})==resolved,"Region cache not reused");
     auto whole=assets->Texture("sheet.tga",TextureSpecification::FileDefaults());Check(whole!=resolved->Texture && whole->GetSpecification().GenerateMips,"Sampling identities collided");
+    auto legacyScene=CreateRef<Scene>();
+    YAML::Emitter legacyText;legacyText<<YAML::BeginMap<<YAML::Key<<"Scene"<<YAML::Value<<"Standalone legacy"<<YAML::Key<<"Entities"<<YAML::Value<<YAML::BeginSeq<<YAML::BeginMap<<YAML::Key<<"Entity"<<YAML::Value<<uint64_t(1)<<YAML::Key<<"SpriteRendererComponent"<<YAML::Value<<YAML::BeginMap<<YAML::Key<<"Color"<<YAML::Value<<YAML::Flow<<YAML::BeginSeq<<1<<1<<1<<1<<YAML::EndSeq<<YAML::Key<<"TexturePath"<<YAML::Value<<(root/"sheet.tga").generic_u8string()<<YAML::Key<<"TilingFactor"<<YAML::Value<<2<<YAML::EndMap<<YAML::EndMap<<YAML::EndSeq<<YAML::EndMap;
+    Check(SceneSerializer(legacyScene).DeserializeText(legacyText.c_str()),"Standalone whole-texture scene compatibility");
+    Check(legacyScene->GetEntityByUUID(1).GetComponent<SpriteRendererComponent>().Resolved.Data->TilingFactor==2,"Standalone whole-texture tiling lost");
     FramebufferSpecification targetSpec;targetSpec.Width=targetSpec.Height=64;targetSpec.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER};
     auto target=Framebuffer::Create(targetSpec);target->Bind();glDisable(GL_DEPTH_TEST);target->ClearAttachment(1,-1);
     Renderer2D::BeginScene(Camera(glm::mat4(1)),glm::mat4(1));Renderer2D::DrawSprite(glm::mat4(1),*resolved,glm::vec4(1),37);Renderer2D::EndScene();

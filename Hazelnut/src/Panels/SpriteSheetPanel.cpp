@@ -13,13 +13,21 @@ ImVec2 V(glm::vec2 p) {return {p.x,p.y};}
 glm::vec2 P(ImVec2 p) {return {p.x,p.y};}
 bool UInt(const char* label,uint32_t& v) {return ImGui::InputScalar(label,ImGuiDataType_U32,&v);}
 }
-void SpriteSheetPanel::Bind(const Ref<ProjectAssets>& assets) {m_Assets=assets;m_Document.reset();m_Texture.reset();m_Open=false;m_Selected=m_SelectedClip=0;m_Error.clear();}
+void SpriteSheetPanel::Bind(const Ref<ProjectAssets>& assets) {
+    m_Assets=assets;
+    m_Document.reset();m_Texture.reset();
+    m_Open=m_Focused=m_Create=m_Import=m_Recovery=false;
+    m_Selected=m_SelectedClip=m_DeleteID=0;
+    m_GridPreview.clear();m_DeleteUses.clear();m_Playback.Reset();
+    m_Gesture=0;m_PreviewStale=true;m_Error.clear();
+    m_RecoveryPath.clear();
+}
 void SpriteSheetPanel::Fail(const std::exception& e) {m_Error=e.what();if(ReportError) ReportError(m_Error);}
 void SpriteSheetPanel::Open(const std::filesystem::path& path) {
     auto doc=CreateScope<SpriteSheetDocument>(m_Assets);
     try{doc->Open(Project::MakeAssetReference(m_Assets->Root(),path));}
     catch(const std::exception& e){m_RecoveryPath=path;m_Recovery=true;Fail(e);return;}
-    m_Document=std::move(doc);m_Selected=m_SelectedClip=0;m_GridPreview.clear();m_Playback.Reset();m_PreviewStale=true;m_Open=true;m_Error.clear();m_Pan={12,12};
+    m_Document=std::move(doc);m_Selected=m_SelectedClip=0;m_GridPreview.clear();m_Playback.Reset();m_Gesture=0;m_PreviewStale=true;m_Open=true;m_Recovery=false;m_Error.clear();m_Pan={12,12};
 }
 void SpriteSheetPanel::BeginCreate(const std::filesystem::path& path) {
     m_CreateTexture=Project::MakeAssetReference(m_Assets->Root(),path).generic_u8string();
@@ -214,7 +222,14 @@ void SpriteSheetPanel::Render(bool editable) {
     if(m_Create)ImGui::OpenPopup("Create sprite sheet");
     if(ImGui::BeginPopupModal("Create sprite sheet",nullptr,ImGuiWindowFlags_AlwaysAutoResize)){
         ImGui::BeginDisabled(!editable);ImGui::InputText("Source (Assets-relative)",&m_CreateTexture);ImGui::InputText("Sheet (Assets-relative .hsprites)",&m_CreateDestination);
-        if(ImGui::Button("Create"))try{auto document=CreateScope<SpriteSheetDocument>(m_Assets);document->Create(std::filesystem::u8path(m_CreateTexture),std::filesystem::u8path(m_CreateDestination));m_Document=std::move(document);m_Open=true;m_PreviewStale=true;m_Selected=m_SelectedClip=0;m_Error.clear();m_Create=false;ImGui::CloseCurrentPopup();}catch(const std::exception& e){Fail(e);}
+        if(ImGui::Button("Create"))try{
+            auto document=CreateScope<SpriteSheetDocument>(m_Assets);
+            document->Create(std::filesystem::u8path(m_CreateTexture),std::filesystem::u8path(m_CreateDestination));
+            m_Document=std::move(document);m_Open=true;m_PreviewStale=true;
+            m_Selected=m_SelectedClip=0;m_GridPreview.clear();m_Playback.Reset();
+            m_Gesture=0;m_Pan={12,12};m_Recovery=false;m_Error.clear();m_Create=false;
+            ImGui::CloseCurrentPopup();
+        }catch(const std::exception& e){Fail(e);}
         ImGui::EndDisabled();ImGui::SameLine();if(ImGui::Button("Cancel")){m_Create=false;ImGui::CloseCurrentPopup();}if(!m_Error.empty())ImGui::TextWrapped("%s",m_Error.c_str());ImGui::EndPopup();
     }
     if(!m_Open || !m_Document)return;

@@ -177,9 +177,12 @@ namespace Hazel {
 	SceneSerializer::SceneSerializer(const Ref<Scene>& scene, const std::filesystem::path& assetRoot, bool repair, const Ref<ProjectAssets>& assets)
 		: m_Scene(scene), m_AssetRoot(assetRoot), m_Repair(repair) {
         if(assets) scene->SetAssets(assets);
-        else if(!assetRoot.empty() && !scene->GetAssets()) {
+        else if(!scene->GetAssets()) {
+            // Standalone legacy scenes used cwd-relative/absolute TexturePath values
+            // before project assets existed. Keep that loading convention intact.
+            const auto root=assetRoot.empty()?std::filesystem::current_path():assetRoot;
             auto active=Project::GetActive();
-            scene->SetAssets(active && std::filesystem::weakly_canonical(active->GetAssetRoot())==std::filesystem::weakly_canonical(assetRoot)?active->GetAssets():CreateRef<ProjectAssets>(assetRoot));
+            scene->SetAssets(active && std::filesystem::weakly_canonical(active->GetAssetRoot())==std::filesystem::weakly_canonical(root)?active->GetAssets():CreateRef<ProjectAssets>(root));
         }
     }
 
