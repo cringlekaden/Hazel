@@ -36,7 +36,7 @@ bool SpriteSheetPanel::Save() {
 bool SpriteSheetPanel::Discard() {if(m_Document && Dirty()) {try {m_Document->Discard();m_PreviewStale=true;m_Playback.Reset();m_Selected=m_SelectedClip=0;m_Error.clear();}catch(const std::exception& e){Fail(e);return false;}}return true;}
 void SpriteSheetPanel::Tick(double timestep) {
     if(!m_Document || !m_SelectedClip || !m_Playback.Playing) return;
-    try {m_Playback.Advance(m_Document->Draft().Clip(m_SelectedClip),timestep);}catch(const std::exception& e){m_Playback.Playing=false;Fail(e);}
+    try {m_Playback.Advance(m_Document->PreviewClip(m_SelectedClip),timestep);}catch(const std::exception& e){m_Playback.Playing=false;Fail(e);}
 }
 void SpriteSheetPanel::PreviewTexture() {
     if(!m_PreviewStale || !m_Document) return;
@@ -134,7 +134,7 @@ void SpriteSheetPanel::Clips(bool editable) {
     if(changed){m_Document->Changed();m_Playback.Reset();}ImGui::EndDisabled();
     if(AssignClip && ImGui::Button("Assign animation to selected entity"))AssignClip({m_Document->Reference(),clip.ID});
     try {
-        const double total=SpritePlayback::Duration(clip);
+        const double total=SpritePlayback::Duration(m_Document->PreviewClip(clip.ID));
         if(ImGui::Button("Play preview")){if(m_Playback.Finished)m_Playback.Reset();m_Playback.Playing=true;}ImGui::SameLine();if(ImGui::Button("Pause preview"))m_Playback.Playing=false;ImGui::SameLine();if(ImGui::Button("Stop preview"))m_Playback.Reset();
         float time=static_cast<float>(m_Playback.Time);if(ImGui::SliderFloat("Scrub (seconds)",&time,0,static_cast<float>(total),"%.3f")){m_Playback.Playing=false;m_Playback.Finished=false;m_Playback.Scrub(clip,time);}
         ImGui::Text("Frame %zu / %zu | %.3f / %.3f s%s",m_Playback.Frame+1,clip.Frames.size(),m_Playback.Time,total,m_Playback.Finished?" | Finished":"");

@@ -13,6 +13,7 @@ public:
     void DeleteRegion(SpriteID id);
     void DeleteClip(SpriteID id);
     std::vector<std::string> References(SpriteID id,bool clip=false) const;
+    const SpriteClip& PreviewClip(SpriteID id) const;
     SpriteSheetDefinition& Draft() {return m_Draft;}
     const SpriteSheetDefinition& Draft() const {return m_Draft;}
     void Changed() {m_Dirty=true;}

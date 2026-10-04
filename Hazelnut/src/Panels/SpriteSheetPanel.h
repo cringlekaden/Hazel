@@ -13,7 +13,7 @@ public:
     bool Dirty() const {return m_Document && m_Document->Dirty();}
     bool Save();
     bool Discard();
-    bool Focused() const {return m_Focused;}
+    bool Focused() const {return m_Open && m_Focused;}
     std::function<void(SpriteReference)> AssignSprite;
     std::function<void(AnimationReference)> AssignClip;
     std::function<void(const std::string&)> ReportError;

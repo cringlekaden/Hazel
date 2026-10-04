@@ -53,6 +53,7 @@ namespace Hazel {
 
 		Ref<Scene> LoadScene(const std::filesystem::path& assetReference) const;
 		Ref<ProjectAssets> GetAssets() const;
+        void ReleaseAssets() {m_Assets.reset();}
 
         ProjectConfig& GetConfig() { return m_Config; }
 

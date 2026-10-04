@@ -92,7 +92,10 @@ std::array<glm::vec2,4> SpriteUV(const PixelRect& r,uint32_t w,uint32_t h) {
     float x0=(r.X+.5f)/w,x1=(r.X+r.Width-.5f)/w,y0=1-(r.Y+r.Height-.5f)/h,y1=1-(r.Y+.5f)/h;
     return {{{x0,y0},{x1,y0},{x1,y1},{x0,y1}}};
 }
-std::array<glm::vec2,4> SpriteCorners(glm::vec2 p) { return {{{-p.x,p.y-1},{1-p.x,p.y-1},{1-p.x,p.y},{-p.x,p.y}}}; }
+std::array<glm::vec2,4> SpriteCorners(glm::vec2 p) {
+    if(!std::isfinite(p.x) || !std::isfinite(p.y) || p.x<0 || p.x>1 || p.y<0 || p.y>1)throw std::runtime_error("Pivot must be finite in [0,1]");
+    return {{{-p.x,p.y-1},{1-p.x,p.y-1},{1-p.x,p.y},{-p.x,p.y}}};
+}
 std::vector<SpriteRegion> GenerateGridPreview(const SpriteSheetDefinition& sheet,const GridSliceOptions& g) {
     if(!g.CellWidth || !g.CellHeight || uint64_t(g.Left)+g.Right>=sheet.Sampling.Width || uint64_t(g.Top)+g.Bottom>=sheet.Sampling.Height) throw std::runtime_error("Invalid grid cells/margins");
     Label(g.Prefix);

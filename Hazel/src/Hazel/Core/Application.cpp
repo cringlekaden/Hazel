@@ -5,6 +5,7 @@
 #include "Hazel/Core/Log.h"
 
 #include "Hazel/Renderer/Renderer.h"
+#include "Hazel/Project/Project.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 
 #include "Hazel/Core/Input.h"
@@ -71,6 +72,9 @@ namespace Hazel {
 			cancelled.swap(m_MainThreadQueue);
 		}
 		cancelled.clear();
+        // Project caches now own textures: release them before the graphics context.
+        if(auto project=Project::GetActive())project->ReleaseAssets();
+        Project::SetActive(nullptr);
 		Renderer::Shutdown();
         m_Window.reset();
         s_Instance = nullptr;

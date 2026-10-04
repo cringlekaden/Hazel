@@ -66,6 +66,7 @@ void SpriteSourceEditor(SpriteRendererComponent& component) {
         else component.Source=SpriteReference{};
     }
     if(auto* texture=std::get_if<TextureSpriteSource>(&component.Source)) {
+        auto& feedback=States[ImGui::GetID("texture feedback")];
         ImGui::TextWrapped("%s",texture->Texture.empty()?"Drop a texture here":texture->Texture.generic_u8string().c_str());
         ImGui::Button("Assign texture");
         if(ImGui::BeginDragDropTarget()) {
@@ -74,11 +75,13 @@ void SpriteSourceEditor(SpriteRendererComponent& component) {
                     auto ref=Project::MakeAssetReference(Project::GetAssetDirectory(),ContentBrowserPath(payload->Data,payload->DataSize));
                     Project::GetActive()->GetAssets()->Texture(ref,TextureSpecification::FileDefaults(),false);
                     texture->Texture=ref;texture->Resource.reset();
-                }catch(const std::exception& e){HZ_ERROR("Texture assignment: {}",e.what());}
+                    feedback.Error.clear();
+                }catch(const std::exception& e){feedback.Error=e.what();}
             }
             ImGui::EndDragDropTarget();
         }
         ImGui::DragFloat("Tiling Factor",&texture->TilingFactor,.1f,0,100);
+        if(!feedback.Error.empty())ImGui::TextColored({1,.4f,.3f,1},"%s",feedback.Error.c_str());
     } else if(auto* region=std::get_if<SpriteReference>(&component.Source)) {
         SpritePicker("Sprite",*region);ImGui::TextDisabled("Atlas regions use tiling 1");
     }

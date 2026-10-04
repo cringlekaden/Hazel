@@ -33,6 +33,11 @@ void SpriteSheetDocument::DeleteClip(SpriteID id) {
     m_Draft.Clip(id);m_Draft.RetiredClipIDs.push_back(id);
     m_Draft.Clips.erase(std::remove_if(m_Draft.Clips.begin(),m_Draft.Clips.end(),[id](auto& c){return c.ID==id;}),m_Draft.Clips.end());Changed();
 }
+const SpriteClip& SpriteSheetDocument::PreviewClip(SpriteID id) const {
+    const auto& clip=m_Draft.Clip(id);SpritePlayback::Duration(clip);
+    for(auto frame:clip.Frames){const auto& region=m_Draft.Region(frame.Region);SpriteUV(region.Rect,m_Draft.Sampling.Width,m_Draft.Sampling.Height);SpriteCorners(region.Pivot);}
+    return clip;
+}
 std::vector<std::string> SpriteSheetDocument::References(SpriteID id,bool clip) const {
     std::vector<std::filesystem::path> files;
     for(auto& entry:std::filesystem::recursive_directory_iterator(m_Assets->Root())) {

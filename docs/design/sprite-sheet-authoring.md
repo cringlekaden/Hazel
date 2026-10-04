@@ -146,6 +146,8 @@ Whole textures retain tiling. Regions always submit tiling 1; repeating atlas UV
 
 Project owns a lazily created `ProjectAssets`; scenes/prefab staging share it where they use the same root. Cache keys are canonical paths/specifications and stable sheet+ID references. Immutable sheet/clip/draw objects and GPU resources are Ref-owned. Copies may share those immutable resources, never playback state. Scene copy/duplicate/instantiate reset resolution/transient animation state and copy authored defaults/typed fields.
 
+Application shutdown releases the active project's cache after scene-owning layers and scripting stop, before renderer/context destruction, then clears the active project. Native callers must likewise release independently retained draw/resource owners before destroying their graphics context.
+
 Preparation occurs on source changes or cache epoch changes. Draw submission and animation frames do not parse metadata/decode/upload images. Cached failures remain diagnosable until explicit invalidation. Save/Reload clears derived resolutions and texture resources, publishes the sheet revision/error and increments the epoch. Existing Ref owners stay valid while new resolution is prepared. Refresh before Play/Simulate reloads cached sheets and clears texture/derived caches; unrelated cached broken assets do not prevent valid scenes from running, but referenced broken content fails strict runtime validation.
 
 Authoring edits are disabled during Play/Simulate. External disk edits are applied by explicit Reload or the next Play freshness boundary, not automatic per-frame polling. A native invalidation during a session safely re-resolves by epoch, retains the current typed reference and clamps playback time to the new clip duration; an invalid reference renders a magenta diagnostic placeholder. No stale pointer or silent substitute is used.
@@ -184,6 +186,7 @@ One open sheet document is supported. Opening another uses the existing save gua
 | --- | --- |
 | 1: `Hazel/src/Hazel/Renderer/Texture.{h,cpp}`, `Platform/OpenGL/OpenGLTexture.{h,cpp}`, `Renderer/Font.cpp` | Common texture configuration/decoding/upload; explicit nonmipmapped font sampling. Framebuffers untouched. |
 | 1: `Core/FileSystem.{h,cpp}`, `Platform/{Linux,Windows}/*FileSystem.cpp`, `Project/Project.{h,cpp}` | Exclusive creation, reusable owned paths and project-scoped typed services. |
+| Foundation lifetime: `Core/Application.cpp` | Retire project GPU caches before context shutdown. |
 | 2: `Assets/SpriteSheet.{h,cpp}`, `ProjectAssets.{h,cpp}`, `SpriteSheetDocument.{h,cpp}` | Portable schema/identity/conversion, caching/native audit/import and reusable documents. |
 | 2/4: `Scene/Components.h`, `Scene.{h,cpp}`, `SceneSerializer.{h,cpp}`, `Prefab.{h,cpp}`, `RuntimeSession.cpp`, `Renderer/Renderer2D.{h,cpp}` | Canonical sources, pivot/UV rendering, static/animation resolution, lifecycle/copy, strict/repair staging and shared serialization. |
 | 3/4: `Hazelnut/src/Panels/SpriteSheetPanel.{h,cpp}`, `SpriteWidgets.{h,cpp}`, `ContentBrowserPanel.{h,cpp}`, `SceneHierarchyPanel.cpp`, `Authoring/AuthoringPanel.{h,cpp}`, `EditorLayer.{h,cpp}` | Full native authoring UI, assignment, preview, save guards/recovery and correct outline. |
