@@ -8,9 +8,9 @@ namespace Hazel
 class Prefab
 {
   public:
-	static Ref<Scene> Load(const std::filesystem::path &assetRoot, const std::filesystem::path &reference);
+	static Ref<Scene> Load(const std::filesystem::path &assetRoot, const std::filesystem::path &reference, bool repair = false);
 	static void Save(const std::filesystem::path &assetRoot, const std::filesystem::path &reference,
-					 const Ref<Scene> &scene, Entity entity);
+					 const Ref<Scene> &scene, Entity entity, bool allowBroken = false);
 	static Entity Instantiate(const std::filesystem::path &assetRoot, const std::filesystem::path &reference,
 							  Scene &target);
 	static Entity Instantiate(const std::filesystem::path &assetRoot, const std::filesystem::path &reference,

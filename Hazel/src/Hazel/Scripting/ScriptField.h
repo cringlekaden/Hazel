@@ -12,7 +12,7 @@ namespace Hazel {
 		Bool, Char, Byte, Short, Int, Long,
 		UByte, UShort, UInt, ULong,
 		Vector2, Vector3, Vector4,
-		Entity, Prefab
+		Entity, Prefab, Sprite, SpriteAnimation
 	};
 
 	struct ScriptField
@@ -28,18 +28,21 @@ namespace Hazel {
 	{
 		ScriptField Field;
         std::string AssetReference;
+        uint64_t AssetID = 0;
+        void* Storage() {return Field.Type==ScriptFieldType::Prefab?static_cast<void*>(&AssetReference):Field.Type==ScriptFieldType::Sprite || Field.Type==ScriptFieldType::SpriteAnimation?static_cast<void*>(this):m_Buffer;}
+        const void* Storage() const {return Field.Type==ScriptFieldType::Prefab?static_cast<const void*>(&AssetReference):Field.Type==ScriptFieldType::Sprite || Field.Type==ScriptFieldType::SpriteAnimation?static_cast<const void*>(this):m_Buffer;}
 
 		ScriptFieldInstance()
 		{
 			memset(m_Buffer, 0, sizeof(m_Buffer));
 		}
-		ScriptFieldInstance(const ScriptFieldInstance& other) : Field(other.Field), AssetReference(other.AssetReference) {
+		ScriptFieldInstance(const ScriptFieldInstance& other) : Field(other.Field), AssetReference(other.AssetReference), AssetID(other.AssetID) {
 			Field.ClassField = nullptr; // Stored values never own domain metadata.
 			std::memcpy(m_Buffer, other.m_Buffer, sizeof(m_Buffer));
 		}
 		ScriptFieldInstance& operator=(const ScriptFieldInstance& other) {
 			if (this == &other) return *this;
-			AssetReference=other.AssetReference; Field = other.Field; Field.ClassField = nullptr;
+			AssetReference=other.AssetReference;AssetID=other.AssetID; Field = other.Field; Field.ClassField = nullptr;
 			std::memcpy(m_Buffer, other.m_Buffer, sizeof(m_Buffer));
 			return *this;
 		}

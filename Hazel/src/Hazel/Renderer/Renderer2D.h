@@ -46,6 +46,7 @@ namespace Hazel {
 		static void DrawRect(const glm::mat4& transform, const glm::vec4& color, int entityID = -1);
 
 		static void DrawSprite(const glm::mat4& transform, SpriteRendererComponent& src, int entityID);
+        static void DrawSprite(const glm::mat4& transform, const ResolvedSprite& sprite, const glm::vec4& color, int entityID = -1);
 
 		struct TextParams
 		{

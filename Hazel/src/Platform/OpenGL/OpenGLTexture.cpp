@@ -2,8 +2,6 @@
 #include "hzpch.h"
 #include "Platform/OpenGL/OpenGLTexture.h"
 #include "Platform/OpenGL/OpenGLCapabilities.h"
-#include "Hazel/Core/FileSystem.h"
-#include <stb_image.h>
 #include <limits>
 #include <stdexcept>
 

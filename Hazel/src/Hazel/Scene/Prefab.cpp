@@ -12,14 +12,9 @@ std::filesystem::path Prefab::Resolve(const std::filesystem::path &root,
 									  const std::filesystem::path &reference)
 {
 	auto relative = Project::NormalizeAssetPath(reference);
-	if (relative.empty() || relative.is_absolute() || relative.extension() != ".hprefab")
+	if (relative.extension() != ".hprefab")
 		throw std::runtime_error("Select a project-relative .hprefab asset");
-	auto path = std::filesystem::weakly_canonical(root / relative);
-	auto base = std::filesystem::canonical(root);
-	auto contained = path.lexically_relative(base);
-	if (contained.empty() || *contained.begin() == "..")
-		throw std::runtime_error("Prefab must remain inside project Assets (including symlink targets)");
-	return path;
+	return Project::ResolveOwnedAsset(root,relative);
 }
 static void ValidateDocument(const YAML::Node &data, const std::filesystem::path &root)
 {
@@ -37,6 +32,7 @@ static void ValidateDocument(const YAML::Node &data, const std::filesystem::path
 										   "ScriptComponent",
 										   "CameraComponent",
 										   "SpriteRendererComponent",
+                                           "SpriteAnimationComponent",
 										   "CircleRendererComponent",
 										   "Rigidbody2DComponent",
 										   "BoxCollider2DComponent",
@@ -69,14 +65,11 @@ static void ValidateDocument(const YAML::Node &data, const std::filesystem::path
 				}
 			}
 		}
-	auto texture = entity["SpriteRendererComponent"]["TexturePath"];
-	if (texture)
+	if(auto sprite=entity["SpriteRendererComponent"])
 	{
-		auto reference = Project::NormalizeAssetPath(std::filesystem::u8path(texture.as<std::string>()));
-		auto absolute = std::filesystem::weakly_canonical(root / reference);
-		auto relative = absolute.lexically_relative(std::filesystem::canonical(root));
-		if (reference.is_absolute() || relative.empty() || *relative.begin() == "..")
-			throw std::runtime_error("Move prefab textures inside project Assets and reassign them");
+        auto source=ReadSpriteSource(sprite);
+        if(auto texture=std::get_if<TextureSpriteSource>(&source))Project::ResolveOwnedAsset(root,texture->Texture);
+        if(auto region=std::get_if<SpriteReference>(&source))Project::ResolveOwnedAsset(root,region->Sheet);
 	}
 }
 Entity Prefab::GetEntity(const Ref<Scene> &scene)
@@ -88,7 +81,7 @@ Entity Prefab::GetEntity(const Ref<Scene> &scene)
 		throw std::runtime_error("Prefab editing scene must contain one entity");
 	return {*view.begin(), scene.get()};
 }
-Ref<Scene> Prefab::Load(const std::filesystem::path &root, const std::filesystem::path &reference)
+Ref<Scene> Prefab::Load(const std::filesystem::path &root, const std::filesystem::path &reference,bool repair)
 {
 	auto path = Resolve(root, reference);
 	std::ifstream file(path, std::ios::binary);
@@ -99,13 +92,13 @@ Ref<Scene> Prefab::Load(const std::filesystem::path &root, const std::filesystem
 		throw std::runtime_error("Cannot read prefab");
 	ValidateDocument(YAML::Load(text), root);
 	auto scene = CreateRef<Scene>();
-	if (!SceneSerializer(scene, root).DeserializeText(text))
+	if (!SceneSerializer(scene, root,repair).DeserializeText(text))
 		throw std::runtime_error("Malformed prefab or missing resource: " + reference.generic_u8string());
-	RuntimeSession::Validate(scene);
+	if(!repair)RuntimeSession::Validate(scene);
 	return scene;
 }
 void Prefab::Save(const std::filesystem::path &root, const std::filesystem::path &reference,
-				  const Ref<Scene> &scene, Entity entity)
+				  const Ref<Scene> &scene, Entity entity,bool allowBroken)
 {
 	if (!entity || !entity.BelongsTo(scene.get()) || scene->IsRunning())
 		throw std::runtime_error("Select an authored entity before creating a prefab");
@@ -115,9 +108,9 @@ void Prefab::Save(const std::filesystem::path &root, const std::filesystem::path
 	auto text = std::string("PrefabVersion: 1\n") + SceneSerializer(scene, root).SerializeText(entity);
 	ValidateDocument(YAML::Load(text), root);
 	auto staged = CreateRef<Scene>();
-	if (!SceneSerializer(staged, root).DeserializeText(text))
+	if (!SceneSerializer(staged, root,allowBroken).DeserializeText(text))
 		throw std::runtime_error("Prefab contains malformed authored data or missing resources");
-	RuntimeSession::Validate(staged);
+	if(!allowBroken)RuntimeSession::Validate(staged);
 	std::filesystem::create_directories(path.parent_path());
 	FileSystem::WriteFileAtomically(path, [&](std::ostream &out) { out << text; });
 }

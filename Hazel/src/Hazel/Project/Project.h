@@ -10,6 +10,7 @@
 
 namespace Hazel {
     class Scene;
+    class ProjectAssets;
 
 	struct ProjectConfig
 	{
@@ -45,11 +46,13 @@ namespace Hazel {
 		}
 
 		static std::filesystem::path NormalizeAssetPath(const std::filesystem::path& path);
+		static std::filesystem::path ResolveOwnedAsset(const std::filesystem::path& root, const std::filesystem::path& reference);
 		static std::filesystem::path ResolveAssetPath(const std::filesystem::path& assetRoot, const std::filesystem::path& reference);
 		static std::filesystem::path MakeAssetReference(const std::filesystem::path& assetRoot, const std::filesystem::path& loadedPath);
 		std::filesystem::path GetAssetRoot() const { return m_ProjectDirectory / m_Config.AssetDirectory; }
 
 		Ref<Scene> LoadScene(const std::filesystem::path& assetReference) const;
+		Ref<ProjectAssets> GetAssets() const;
 
         ProjectConfig& GetConfig() { return m_Config; }
 
@@ -65,6 +68,7 @@ namespace Hazel {
 	private:
 		ProjectConfig m_Config;
 		std::filesystem::path m_ProjectDirectory;
+		mutable Ref<ProjectAssets> m_Assets;
 
 		inline static Ref<Project> s_ActiveProject;
 	};

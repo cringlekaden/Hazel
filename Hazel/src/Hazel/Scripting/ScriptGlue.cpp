@@ -89,6 +89,37 @@ namespace Hazel {
     static void TransformComponent_GetScale(uint64_t id,glm::vec3* scale) {
         auto* scene=ScriptEngine::GetSceneContext();*scale=scene->GetEntityByUUID(id).GetComponent<TransformComponent>().Scale;
     }
+    template<typename T> static Entity CheckedSpriteEntity(uint64_t id) {
+        auto* scene=ScriptEngine::GetSceneContext();auto entity=scene?scene->GetEntityByUUID(id):Entity{};
+        if(!entity || !entity.HasComponent<T>()) {mono_raise_exception(mono_get_exception_invalid_operation("Sprite operation requires a live entity with the requested component"));return {};}
+        return entity;
+    }
+    static void SpriteRendererComponent_SetSprite(uint64_t id,MonoString* sheet,uint64_t region) {
+        auto entity=CheckedSpriteEntity<SpriteRendererComponent>(id);if(!entity)return;
+        std::string error;
+        try {SpriteReference reference{std::filesystem::u8path(Utils::MonoStringToString(sheet)),region};
+            auto* scene=ScriptEngine::GetSceneContext();if(!scene->GetAssets())throw std::runtime_error("Project assets unavailable");
+            scene->GetAssets()->Resolve(reference);entity.GetComponent<SpriteRendererComponent>().Source=reference;
+        }catch(const std::exception& e){error=e.what();}
+        if(!error.empty())mono_raise_exception(mono_get_exception_invalid_operation(error.c_str()));
+    }
+    static void SpriteAnimationComponent_Play(uint64_t id,MonoString* sheet,uint64_t clip) {
+        auto entity=CheckedSpriteEntity<SpriteAnimationComponent>(id);if(!entity)return;
+        AnimationReference reference{std::filesystem::u8path(Utils::MonoStringToString(sheet)),clip};
+        if(!ScriptEngine::GetSceneContext()->PlayAnimation(entity,reference))mono_raise_exception(mono_get_exception_invalid_operation("Cannot play clip; see native asset diagnostic"));
+    }
+    static void SpriteAnimationComponent_Control(uint64_t id,int action) {
+        auto entity=CheckedSpriteEntity<SpriteAnimationComponent>(id);if(!entity)return;
+        auto& a=entity.GetComponent<SpriteAnimationComponent>();
+        if(action==0)a.Playback.Playing=false;
+        else if(action==2)a.Playback.Reset();
+        else if(action==1 && a.Resolved){if(a.Playback.Finished)a.Playback.Reset();a.Playback.Playing=true;}
+        else mono_raise_exception(mono_get_exception_invalid_operation("Cannot resume an unassigned or broken animation"));
+    }
+    static bool SpriteAnimationComponent_State(uint64_t id,bool finished) {
+        auto entity=CheckedSpriteEntity<SpriteAnimationComponent>(id);if(!entity)return false;
+        auto& a=entity.GetComponent<SpriteAnimationComponent>();return finished?a.Playback.Finished:a.Playback.Playing;
+    }
     static void TransformComponent_SetScale(uint64_t id,glm::vec3* scale) {
         auto entity=ScriptEngine::GetSceneContext()->GetEntityByUUID(id);
         if(entity.HasComponent<Rigidbody2DComponent>()) {mono_raise_exception(mono_get_exception_invalid_operation("Set physics scale in the prefab's initial transform before startup"));return;}
@@ -374,17 +405,23 @@ namespace Hazel {
 		RegisterComponent<Rigidbody2DComponent>("Hazel.Rigidbody2DComponent");
 		RegisterComponent<TextComponent>("Hazel.TextComponent");
         RegisterComponent<CameraComponent>("Hazel.CameraComponent");
+        RegisterComponent<SpriteRendererComponent>("Hazel.SpriteRendererComponent");
+        RegisterComponent<SpriteAnimationComponent>("Hazel.SpriteAnimationComponent");
 	}
 
 	void ScriptGlue::ValidateComponents(MonoImage* image)
 	{
-		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent" })
+		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent", "Hazel.SpriteRendererComponent", "Hazel.SpriteAnimationComponent" })
 			if (!mono_reflection_type_from_name(const_cast<char*>(name), image))
 				throw std::runtime_error(std::string("Missing managed component: ") + name);
 	}
 
 	void ScriptGlue::RegisterFunctions()
 	{
+        HZ_ADD_INTERNAL_CALL(SpriteRendererComponent_SetSprite);
+        HZ_ADD_INTERNAL_CALL(SpriteAnimationComponent_Play);
+        HZ_ADD_INTERNAL_CALL(SpriteAnimationComponent_Control);
+        HZ_ADD_INTERNAL_CALL(SpriteAnimationComponent_State);
 		HZ_ADD_INTERNAL_CALL(NativeLog);
 		HZ_ADD_INTERNAL_CALL(NativeLog_Vector);
 		HZ_ADD_INTERNAL_CALL(NativeLog_VectorDot);

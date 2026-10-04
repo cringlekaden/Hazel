@@ -179,6 +179,8 @@ namespace Hazel {
 				case ScriptFieldType::Vector4: return "Vector4";
 				case ScriptFieldType::Entity:  return "Entity";
                 case ScriptFieldType::Prefab: return "Prefab";
+                case ScriptFieldType::Sprite: return "Sprite";
+                case ScriptFieldType::SpriteAnimation: return "SpriteAnimation";
 			}
 			HZ_CORE_ASSERT(false, "Unknown ScriptFieldType");
 			return "None";
@@ -204,6 +206,8 @@ namespace Hazel {
 			if (fieldType == "Vector4") return ScriptFieldType::Vector4;
 			if (fieldType == "Entity")  return ScriptFieldType::Entity;
             if (fieldType == "Prefab") return ScriptFieldType::Prefab;
+            if (fieldType == "Sprite") return ScriptFieldType::Sprite;
+            if (fieldType == "SpriteAnimation") return ScriptFieldType::SpriteAnimation;
 
 			throw std::invalid_argument("Unknown stored ScriptFieldType: " + std::string(fieldType));
 		}

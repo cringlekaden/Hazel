@@ -48,6 +48,12 @@ namespace Hazel {
 		Entity GetEntityByUUID(UUID uuid);
 
 		Entity GetPrimaryCameraEntity();
+		void SetAssets(const Ref<ProjectAssets>& assets) {m_Assets=assets;}
+		const Ref<ProjectAssets>& GetAssets() const {return m_Assets;}
+		void PrepareSprites(bool strict = false);
+		void ValidateSprites();
+		bool PlayAnimation(Entity entity,const AnimationReference& reference);
+		const ResolvedSprite* RenderedSprite(Entity entity) const;
 
 		uint64_t GetIdentity() const { return m_Identity; }
         bool IsStopping() const { return m_Stopping; }
@@ -79,8 +85,10 @@ namespace Hazel {
 		void SynchronizePhysics2D();
 
 		void RenderScene(EditorCamera& camera);
+		void AdvanceAnimations(double timestep);
 	private:
 		entt::registry m_Registry;
+		Ref<ProjectAssets> m_Assets;
         UUID m_Identity;
 		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 		bool m_IsRunning = false;

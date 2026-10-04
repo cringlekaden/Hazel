@@ -60,6 +60,8 @@ namespace Hazel {
 
 		{ "Hazel.Entity", ScriptFieldType::Entity },
         { "Hazel.Prefab", ScriptFieldType::Prefab },
+        { "Hazel.Sprite", ScriptFieldType::Sprite },
+        { "Hazel.SpriteAnimation", ScriptFieldType::SpriteAnimation },
 	};
 
 	namespace Utils {
@@ -368,7 +370,7 @@ namespace Hazel {
 					if (field.Type == ScriptFieldType::None) continue;
 					auto& saved = candidate->ReloadFields[id][name];
 					saved.Field = { field.Type, name, nullptr };
-					instance->GetFieldValueInternal(name, field.Type==ScriptFieldType::Prefab ? static_cast<void*>(&saved.AssetReference) : saved.m_Buffer);
+					instance->GetFieldValueInternal(name, saved.Storage());
 				}
 		}
 		// Project replacement stops the old scene only after validation, while its domain is still alive.
@@ -425,7 +427,7 @@ namespace Hazel {
 			for (const auto& [name, fieldInstance] : fieldMap)
 				if (auto known = instance->GetScriptClass()->GetFields().find(name);
 					known != instance->GetScriptClass()->GetFields().end() && known->second.Type == fieldInstance.Field.Type)
-					instance->SetFieldValueInternal(name, fieldInstance.Field.Type==ScriptFieldType::Prefab ? static_cast<const void*>(&fieldInstance.AssetReference) : fieldInstance.m_Buffer);
+					instance->SetFieldValueInternal(name, fieldInstance.Storage());
 
 			instance->InvokeOnCreate();
 		}
@@ -702,7 +704,16 @@ namespace Hazel {
 			return false;
 
 		const ScriptField& field = it->second;
-		if(field.Type==ScriptFieldType::Prefab) {
+        if(field.Type==ScriptFieldType::Sprite || field.Type==ScriptFieldType::SpriteAnimation) {
+            auto& saved=*static_cast<ScriptFieldInstance*>(buffer);saved.AssetReference.clear();saved.AssetID=0;
+            MonoObject* reference=nullptr;mono_field_get_value(GetManagedObject(),field.ClassField,&reference);
+            if(reference) {
+                auto* type=mono_class_from_name(s_Data->CoreAssemblyImage,"Hazel",field.Type==ScriptFieldType::Sprite?"Sprite":"SpriteAnimation");MonoString* path=nullptr;
+                mono_field_get_value(reference,mono_class_get_field_from_name(type,"Sheet"),&path);
+                mono_field_get_value(reference,mono_class_get_field_from_name(type,"ID"),&saved.AssetID);
+                if(path){char* utf8=mono_string_to_utf8(path);saved.AssetReference=utf8;mono_free(utf8);}
+            }
+        } else if(field.Type==ScriptFieldType::Prefab) {
             MonoObject* reference=nullptr; mono_field_get_value(GetManagedObject(),field.ClassField,&reference);
             auto& path=*static_cast<std::string*>(buffer); path.clear();
             if(reference) {
@@ -732,7 +743,15 @@ namespace Hazel {
 			return false;
 
 		const ScriptField& field = it->second;
-		if(field.Type==ScriptFieldType::Prefab) {
+        if(field.Type==ScriptFieldType::Sprite || field.Type==ScriptFieldType::SpriteAnimation) {
+            const auto& saved=*static_cast<const ScriptFieldInstance*>(value);
+            auto* type=mono_class_from_name(s_Data->CoreAssemblyImage,"Hazel",field.Type==ScriptFieldType::Sprite?"Sprite":"SpriteAnimation");
+            auto* reference=mono_object_new(s_Data->AppDomain,type);auto* text=ScriptEngine::CreateString(saved.AssetReference.c_str());uint64_t id=saved.AssetID;
+            void* parameters[]{text,&id};MonoObject* exception=nullptr;
+            mono_runtime_invoke(mono_class_get_method_from_name(type,".ctor",2),reference,parameters,&exception);
+            if(exception)return false;
+            mono_field_set_value(GetManagedObject(),field.ClassField,reference);
+        } else if(field.Type==ScriptFieldType::Prefab) {
             const auto& path=*static_cast<const std::string*>(value);
             auto* type=mono_class_from_name(s_Data->CoreAssemblyImage,"Hazel","Prefab");
             auto* reference=mono_object_new(s_Data->AppDomain,type); auto* text=ScriptEngine::CreateString(path.c_str());

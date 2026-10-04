@@ -9,7 +9,7 @@ namespace Hazel {
 	{
 	public:
 		SceneSerializer(const Ref<Scene>& scene);
-		SceneSerializer(const Ref<Scene>& scene, const std::filesystem::path& assetRoot);
+		SceneSerializer(const Ref<Scene>& scene, const std::filesystem::path& assetRoot, bool repair = false, const Ref<ProjectAssets>& assets = {});
 
 		void Serialize(const std::string& filepath);
         std::string SerializeText(Entity only = {});
@@ -19,6 +19,7 @@ namespace Hazel {
 	private:
 		Ref<Scene> m_Scene;
 		std::filesystem::path m_AssetRoot;
+		bool m_Repair = false;
 	};
 
 }

@@ -6,6 +6,7 @@
 #include "ScriptableEntity.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include "Hazel/Renderer/Renderer2D.h"
+#include "Hazel/Project/Project.h"
 #include "Hazel/Physics/Physics2D.h"
 
 #include <glm/glm.hpp>
@@ -45,6 +46,8 @@ namespace Hazel {
 		if constexpr (std::is_same_v<T, Rigidbody2DComponent>) copy.RuntimeBody = nullptr;
 		if constexpr (std::is_same_v<T, BoxCollider2DComponent> || std::is_same_v<T, CircleCollider2DComponent>) copy.RuntimeFixture = nullptr;
 		if constexpr (std::is_same_v<T, NativeScriptComponent>) copy.Instance.reset();
+        if constexpr (std::is_same_v<T, SpriteRendererComponent>) {copy.Resolved={};copy.PreparedEpoch=0;copy.PreparedSource=std::monostate{};}
+        if constexpr (std::is_same_v<T, SpriteAnimationComponent>) copy.ResetRuntime();
 		return copy;
 	}
 
@@ -89,6 +92,7 @@ namespace Hazel {
 	Ref<Scene> Scene::Copy(Ref<Scene> other)
 	{
 		Ref<Scene> newScene = CreateRef<Scene>();
+        newScene->m_Assets=other->m_Assets;
 
 		newScene->m_ViewportWidth = other->m_ViewportWidth;
 		newScene->m_ViewportHeight = other->m_ViewportHeight;
@@ -197,6 +201,8 @@ namespace Hazel {
 		if (m_Registry.view<ScriptComponent>().size() && !ScriptEngine::IsInitialized())
 			throw std::logic_error("Managed scene scripts require an initialized project script engine");
 		m_IsRunning = true; m_Stopping = false;
+        for(auto e:m_Registry.view<SpriteAnimationComponent>())m_Registry.get<SpriteAnimationComponent>(e).ResetRuntime();
+        PrepareSprites(true);
 
 		OnPhysics2DStart();
 
@@ -224,11 +230,14 @@ namespace Hazel {
 	void Scene::OnSimulationStart()
 	{
 		OnPhysics2DStart();
+        for(auto e:m_Registry.view<SpriteAnimationComponent>()) m_Registry.get<SpriteAnimationComponent>(e).ResetRuntime();
+        PrepareSprites(true);
 	}
 
 	void Scene::OnSimulationStop()
 	{
 		OnPhysics2DStop();
+        for(auto e:m_Registry.view<SpriteAnimationComponent>()) m_Registry.get<SpriteAnimationComponent>(e).ResetRuntime();
 	}
 
 	void Scene::OnUpdateRuntime(Timestep ts)
@@ -261,6 +270,7 @@ namespace Hazel {
                 FlushLifecycle();
 			}
 
+            AdvanceAnimations(ts);
 			// Physics
 			{
 				SynchronizePhysics2D(); // Native callbacks may add entities/components too.
@@ -286,6 +296,7 @@ namespace Hazel {
 			}
 		}
 
+        PrepareSprites();
 		// Render 2D
 		Camera* mainCamera = nullptr;
 		glm::mat4 cameraTransform;
@@ -315,7 +326,9 @@ namespace Hazel {
 				{
 					auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 
-					Renderer2D::DrawSprite(transform.GetTransform(), sprite, (int)entity);
+                    auto* draw=RenderedSprite(Entity(entity,this));
+                    if(draw) Renderer2D::DrawSprite(transform.GetTransform(),*draw,sprite.Color,(int)entity);
+                    else Renderer2D::DrawQuad(transform.GetTransform(),glm::vec4(1,0,1,1),(int)entity);
 				}
 			}
 
@@ -351,6 +364,7 @@ namespace Hazel {
 		if (!m_IsPaused || m_StepFrames > 0)
 		{
 			if (m_IsPaused) --m_StepFrames;
+            AdvanceAnimations(ts);
 			SynchronizePhysics2D();
 			// Physics
 			{
@@ -564,6 +578,7 @@ namespace Hazel {
 
 	void Scene::RenderScene(EditorCamera& camera)
 	{
+        PrepareSprites();
 		Renderer2D::BeginScene(camera);
 
 		// Draw sprites
@@ -573,7 +588,9 @@ namespace Hazel {
 			{
 				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 
-				Renderer2D::DrawSprite(transform.GetTransform(), sprite, (int)entity);
+                auto* draw=RenderedSprite(Entity(entity,this));
+                if(draw) Renderer2D::DrawSprite(transform.GetTransform(),*draw,sprite.Color,(int)entity);
+                else Renderer2D::DrawQuad(transform.GetTransform(),glm::vec4(1,0,1,1),(int)entity);
 			}
 		}
 
@@ -602,7 +619,86 @@ namespace Hazel {
 		Renderer2D::EndScene();
 	}
 
-  template<typename T>
+    void Scene::PrepareSprites(bool strict)
+    {
+        const uint64_t epoch=m_Assets?m_Assets->Epoch():1;
+        for(auto e:m_Registry.view<SpriteRendererComponent>()) {
+            auto& s=m_Registry.get<SpriteRendererComponent>(e);
+            if(s.PreparedEpoch!=epoch || !(s.PreparedSource==s.Source)) {
+                s.PreparedEpoch=epoch;s.PreparedSource=s.Source;s.Resolved={};
+                try {
+                    if(m_Assets) s.Resolved.Data=m_Assets->Resolve(s.Source);
+                    else if(std::holds_alternative<std::monostate>(s.Source)) s.Resolved.Data=CreateRef<ResolvedSprite>();
+                    else if(auto t=std::get_if<TextureSpriteSource>(&s.Source);t && t->Resource) {
+                        auto draw=CreateRef<ResolvedSprite>();draw->Texture=t->Resource;draw->TilingFactor=t->TilingFactor;s.Resolved.Data=draw;
+                    } else throw std::runtime_error("Sprite needs a project asset root");
+                } catch(const std::exception& error) {s.Resolved.Error=error.what();HZ_CORE_ERROR("Sprite '{}': {}",m_Registry.get<TagComponent>(e).Tag,s.Resolved.Error);}
+            }
+            if(strict && !s.Resolved.Error.empty()) throw std::runtime_error(s.Resolved.Error);
+        }
+        for(auto e:m_Registry.view<SpriteAnimationComponent>()) {
+            auto& a=m_Registry.get<SpriteAnimationComponent>(e);
+            const bool runtime=m_IsRunning || static_cast<bool>(m_PhysicsWorld);
+            if(!a.Initialized || (!runtime && !(a.Current==a.DefaultClip))) {
+                a.ResetRuntime();a.Current=a.DefaultClip;a.Initialized=true;a.Playback.Reset(runtime && a.Autoplay && a.DefaultClip.Clip!=0);
+            }
+            if(a.PreparedEpoch!=epoch) {
+                a.PreparedEpoch=epoch;a.Resolved.reset();a.Error.clear();
+                try {
+                    if(!Entity(e,this).HasComponent<SpriteRendererComponent>()) throw std::runtime_error("Animation requires Sprite Renderer");
+                    if(!std::isfinite(a.Speed) || a.Speed<0) throw std::runtime_error("Animation speed must be finite and nonnegative");
+                    if(a.Current.Clip) {
+                        if(!m_Assets) throw std::runtime_error("Animation needs a project asset root");
+                        a.Resolved=m_Assets->Clip(a.Current);a.Playback.Scrub(a.Resolved->Definition(),a.Playback.Time);
+                    }
+                } catch(const std::exception& error) {a.Error=error.what();HZ_CORE_ERROR("Animation '{}': {}",m_Registry.get<TagComponent>(e).Tag,a.Error);}
+            }
+            if(!std::isfinite(a.Speed) || a.Speed<0)a.Error="Animation speed must be finite and nonnegative";
+            if(strict && !a.Error.empty()) throw std::runtime_error(a.Error);
+        }
+    }
+    void Scene::ValidateSprites() {
+        PrepareSprites(true);
+        for(auto& entityFields:m_ScriptFields)for(auto& entry:entityFields.second){const auto& field=entry.second;
+            if(!field.AssetID)continue;
+            if(field.Field.Type==ScriptFieldType::Sprite){if(!m_Assets)throw std::runtime_error("Sprite field needs project assets");m_Assets->Resolve(SpriteReference{std::filesystem::u8path(field.AssetReference),field.AssetID});}
+            if(field.Field.Type==ScriptFieldType::SpriteAnimation){if(!m_Assets)throw std::runtime_error("Animation field needs project assets");m_Assets->Clip({std::filesystem::u8path(field.AssetReference),field.AssetID});}
+        }
+    }
+    bool Scene::PlayAnimation(Entity entity,const AnimationReference& reference)
+    {
+        try {
+            if(!entity || !entity.BelongsTo(this) || !entity.HasComponent<SpriteAnimationComponent>()) throw std::runtime_error("Animation component is missing");
+            if(!entity.HasComponent<SpriteRendererComponent>() || !m_Assets || !reference.Clip) throw std::runtime_error("Animation requires a valid clip and Sprite Renderer");
+            auto resolved=m_Assets->Clip(reference);
+            auto& a=entity.GetComponent<SpriteAnimationComponent>();
+            a.Current=reference;a.Resolved=resolved;a.PreparedEpoch=m_Assets->Epoch();a.Initialized=true;a.Error.clear();a.Playback.Reset(true);return true;
+        } catch(const std::exception& error) {HZ_CORE_ERROR("Play animation: {}",error.what());return false;}
+    }
+    void Scene::AdvanceAnimations(double timestep)
+    {
+        PrepareSprites();
+        for(auto e:m_Registry.view<SpriteAnimationComponent>()) {
+            auto& a=m_Registry.get<SpriteAnimationComponent>(e);
+            if(a.Resolved) {
+                try {a.Playback.Advance(a.Resolved->Definition(),timestep,a.Speed);}
+                catch(const std::exception& error) {a.Error=error.what();a.Playback.Playing=false;}
+            }
+        }
+    }
+    const ResolvedSprite* Scene::RenderedSprite(Entity entity) const
+    {
+        if(!entity || !entity.HasComponent<SpriteRendererComponent>()) return nullptr;
+        if(entity.HasComponent<SpriteAnimationComponent>()) {
+            auto& a=entity.GetComponent<SpriteAnimationComponent>();
+            if(!a.Error.empty()) return nullptr;
+            if(a.Resolved && a.Playback.Frame<a.Resolved->Frames.size()) return a.Resolved->Frames[a.Playback.Frame].get();
+        }
+        return entity.GetComponent<SpriteRendererComponent>().Resolved.Data.get();
+    }
+
+    template<typename T>
+
 	void Scene::OnComponentAdded(Entity entity, T& component)
 	{
 		static_assert(sizeof(T) == 0);
@@ -634,6 +730,8 @@ namespace Hazel {
 	void Scene::OnComponentAdded<SpriteRendererComponent>(Entity entity, SpriteRendererComponent& component)
 	{
 	}
+
+    template<> void Scene::OnComponentAdded<SpriteAnimationComponent>(Entity entity, SpriteAnimationComponent& component) {component.ResetRuntime();}
 
 	template<>
 	void Scene::OnComponentAdded<CircleRendererComponent>(Entity entity, CircleRendererComponent& component)

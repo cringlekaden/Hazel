@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include <cmath>
 #include "SceneSerializer.h"
 
 #include "Entity.h"
@@ -173,8 +174,14 @@ namespace Hazel {
 	{
 	}
 
-	SceneSerializer::SceneSerializer(const Ref<Scene>& scene, const std::filesystem::path& assetRoot)
-		: m_Scene(scene), m_AssetRoot(assetRoot) {}
+	SceneSerializer::SceneSerializer(const Ref<Scene>& scene, const std::filesystem::path& assetRoot, bool repair, const Ref<ProjectAssets>& assets)
+		: m_Scene(scene), m_AssetRoot(assetRoot), m_Repair(repair) {
+        if(assets) scene->SetAssets(assets);
+        else if(!assetRoot.empty() && !scene->GetAssets()) {
+            auto active=Project::GetActive();
+            scene->SetAssets(active && std::filesystem::weakly_canonical(active->GetAssetRoot())==std::filesystem::weakly_canonical(assetRoot)?active->GetAssets():CreateRef<ProjectAssets>(assetRoot));
+        }
+    }
 
 	static void SerializeEntity(YAML::Emitter& out, Entity entity, const std::filesystem::path& assetRoot)
 	{
@@ -282,6 +289,8 @@ namespace Hazel {
 						WRITE_SCRIPT_FIELD(Vector4, glm::vec4 );
 						WRITE_SCRIPT_FIELD(Entity,  UUID      );
                         case ScriptFieldType::Prefab: out << scriptField.AssetReference; break;
+                        case ScriptFieldType::Sprite: if(scriptField.AssetID)WriteSpriteReference(out,{std::filesystem::u8path(scriptField.AssetReference),scriptField.AssetID});else out<<YAML::Null;break;
+                        case ScriptFieldType::SpriteAnimation: if(scriptField.AssetID)WriteAnimationReference(out,{std::filesystem::u8path(scriptField.AssetReference),scriptField.AssetID});else out<<YAML::Null;break;
 						case ScriptFieldType::None: break;
 					}
 					out << YAML::EndMap; // ScriptFields
@@ -299,14 +308,19 @@ namespace Hazel {
 
 			auto& spriteRendererComponent = entity.GetComponent<SpriteRendererComponent>();
 			out << YAML::Key << "Color" << YAML::Value << spriteRendererComponent.Color;
-			if (spriteRendererComponent.Texture)
-				out << YAML::Key << "TexturePath" << YAML::Value << Project::MakeAssetReference(assetRoot, std::filesystem::u8path(spriteRendererComponent.Texture->GetPath())).generic_u8string();
-
-			out << YAML::Key << "TilingFactor" << YAML::Value << spriteRendererComponent.TilingFactor;
+			auto source=spriteRendererComponent.Source;
+            if(auto t=std::get_if<TextureSpriteSource>(&source);t && !t->Texture.empty())
+                t->Texture=Project::MakeAssetReference(assetRoot,Project::ResolveAssetPath(assetRoot,t->Texture));
+            WriteSpriteSource(out,source);
 
 			out << YAML::EndMap; // SpriteRendererComponent
 		}
 
+        if(entity.HasComponent<SpriteAnimationComponent>()) {
+            const auto& a=entity.GetComponent<SpriteAnimationComponent>();
+            out<<YAML::Key<<"SpriteAnimationComponent"<<YAML::Value;
+            WriteSpriteAnimationSettings(out,a);
+        }
 		if (entity.HasComponent<CircleRendererComponent>())
 		{
 			out << YAML::Key << "CircleRendererComponent";
@@ -429,6 +443,7 @@ namespace Hazel {
 		{
             data = YAML::Load(text);
 			auto staged = CreateRef<Scene>();
+            staged->SetAssets(m_Scene->GetAssets());
 			staged->m_ViewportWidth = m_Scene->m_ViewportWidth;
 			staged->m_ViewportHeight = m_Scene->m_ViewportHeight;
 			std::unordered_map<UUID, ScriptFieldMap> stagedScriptFields;
@@ -535,6 +550,8 @@ namespace Hazel {
 									READ_SCRIPT_FIELD(Vector4, glm::vec4);
 									READ_SCRIPT_FIELD(Entity, UUID);
                                     case ScriptFieldType::Prefab: fieldInstance.AssetReference=scriptField["Data"].as<std::string>(); break;
+                                    case ScriptFieldType::Sprite: {auto r=ReadSpriteReference(scriptField["Data"]);fieldInstance.AssetReference=r.Sheet.generic_u8string();fieldInstance.AssetID=r.Region;break;}
+                                    case ScriptFieldType::SpriteAnimation: {auto r=ReadAnimationReference(scriptField["Data"]);fieldInstance.AssetReference=r.Sheet.generic_u8string();fieldInstance.AssetID=r.Clip;break;}
 									case ScriptFieldType::None: throw std::runtime_error("Unsupported stored script field type");
 								}
 							}
@@ -548,16 +565,14 @@ namespace Hazel {
 				{
 					auto& src = deserializedEntity.AddComponent<SpriteRendererComponent>();
 					src.Color = spriteRendererComponent["Color"].as<glm::vec4>();
-					if (spriteRendererComponent["TexturePath"])
-					{
-						std::string texturePath = spriteRendererComponent["TexturePath"].as<std::string>();
-						auto path = Project::ResolveAssetPath(m_AssetRoot, std::filesystem::u8path(texturePath));
-						src.Texture = Texture2D::Create(path.generic_u8string());
-					}
-
-					if (spriteRendererComponent["TilingFactor"])
-						src.TilingFactor = spriteRendererComponent["TilingFactor"].as<float>();
+					src.Source=ReadSpriteSource(spriteRendererComponent);
 				}
+
+                if(auto node=entity["SpriteAnimationComponent"]) {
+                    auto& a=deserializedEntity.AddComponent<SpriteAnimationComponent>();
+                    static_cast<SpriteAnimationSettings&>(a)=ReadSpriteAnimationSettings(node);
+                    if(!deserializedEntity.HasComponent<SpriteRendererComponent>()) throw std::runtime_error("Sprite animation requires SpriteRendererComponent");
+                }
 
 				auto circleRendererComponent = entity["CircleRendererComponent"];
 				if (circleRendererComponent)
@@ -614,6 +629,7 @@ namespace Hazel {
 			}
 		}
 
+        staged->PrepareSprites(!m_Repair);
 		// Commit only after parsing every component and loading every referenced asset.
 		// Existing scene/field data remains untouched on malformed input or asset failure.
 		std::vector<Entity> oldEntities;

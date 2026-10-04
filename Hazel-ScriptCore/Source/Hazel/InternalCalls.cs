@@ -5,6 +5,10 @@ namespace Hazel
 {
 	public static class InternalCalls
 	{
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void SpriteRendererComponent_SetSprite(ulong id,string sheet,ulong region);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void SpriteAnimationComponent_Play(ulong id,string sheet,ulong clip);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void SpriteAnimationComponent_Control(ulong id,int action);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool SpriteAnimationComponent_State(ulong id,bool finished);
 		#region Entity
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static ulong Entity_GetSceneIdentity();
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool Entity_IsValid(ulong id, ulong scene);

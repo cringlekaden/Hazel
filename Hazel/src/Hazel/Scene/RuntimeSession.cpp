@@ -16,6 +16,7 @@ namespace Hazel {
     }
     void RuntimeSession::Validate(const Ref<Scene>& scene) {
         if (!scene) throw std::runtime_error("No scene to run");
+        scene->ValidateSprites();
         // Validate Box2D preconditions while the old scene is still usable.
         for (auto handle : scene->GetAllEntitiesWith<TransformComponent, Rigidbody2DComponent>()) {
             Entity entity(handle, scene.get());

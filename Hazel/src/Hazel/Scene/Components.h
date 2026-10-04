@@ -7,6 +7,7 @@
 #include "Hazel/Core/UUID.h"
 #include "Hazel/Renderer/Texture.h"
 #include "Hazel/Renderer/Font.h"
+#include "Hazel/Assets/ProjectAssets.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -60,13 +61,30 @@ namespace Hazel {
 	struct SpriteRendererComponent
 	{
 		glm::vec4 Color{ 1.0f, 1.0f, 1.0f, 1.0f };
-		Ref<Texture2D> Texture;
-		float TilingFactor = 1.0f;
+		SpriteSource Source;
+		SpriteResolution Resolved;
+		SpriteSource PreparedSource;
+		uint64_t PreparedEpoch = 0;
+		// Explicit bridge for procedural C++ drawing and legacy callers. File identity is captured once.
+		void SetTexture(const Ref<Texture2D>& texture, float tiling = 1) {
+			Source = texture ? SpriteSource(TextureSpriteSource{std::filesystem::u8path(texture->GetPath()),tiling,texture}) : SpriteSource(std::monostate{});
+			auto draw=CreateRef<ResolvedSprite>();draw->Texture=texture;draw->TilingFactor=tiling;Resolved={draw,{}};PreparedSource=Source;PreparedEpoch=0;
+		}
 
 		SpriteRendererComponent() = default;
 		SpriteRendererComponent(const SpriteRendererComponent&) = default;
 		SpriteRendererComponent(const glm::vec4& color)
 			: Color(color) {}
+	};
+	struct SpriteAnimationComponent : SpriteAnimationSettings {
+		// Independent per-entity transient state; copies reset this in Scene::CopyForScene.
+		AnimationReference Current;
+		SpritePlayback Playback;
+		Ref<const ResolvedClip> Resolved;
+		bool Initialized = false;
+		uint64_t PreparedEpoch = 0;
+		std::string Error;
+		void ResetRuntime() { Current={};Playback.Reset();Resolved.reset();Initialized=false;PreparedEpoch=0;Error.clear(); }
 	};
 
 	struct CircleRendererComponent
@@ -189,7 +207,7 @@ namespace Hazel {
 	};
 
 	using AllComponents =
-		ComponentGroup<TransformComponent, SpriteRendererComponent,
+		ComponentGroup<TransformComponent, SpriteRendererComponent, SpriteAnimationComponent,
 			CircleRendererComponent, CameraComponent, ScriptComponent,
 			NativeScriptComponent, Rigidbody2DComponent, BoxCollider2DComponent,
 			CircleCollider2DComponent, TextComponent>;

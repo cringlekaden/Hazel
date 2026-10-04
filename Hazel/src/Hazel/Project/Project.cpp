@@ -4,8 +4,27 @@
 #include "ProjectSerializer.h"
 #include "Hazel/Scene/Scene.h"
 #include "Hazel/Scene/SceneSerializer.h"
+#include "Hazel/Assets/ProjectAssets.h"
 
 namespace Hazel {
+    Ref<ProjectAssets> Project::GetAssets() const {
+        auto root=std::filesystem::weakly_canonical(GetAssetRoot());
+        if(!m_Assets || m_Assets->Root()!=root) m_Assets=CreateRef<ProjectAssets>(root);
+        return m_Assets;
+    }
+	std::filesystem::path Project::ResolveOwnedAsset(const std::filesystem::path& root, const std::filesystem::path& reference)
+	{
+		auto path = NormalizeAssetPath(reference);
+		const auto text = path.generic_u8string();
+		if (path.empty() || path.has_root_path() || text.find(':') != std::string::npos || text.find('\0') != std::string::npos)
+			throw std::runtime_error("Use a project asset-relative path: " + text);
+		for (const auto& part : path) if (part == "..") throw std::runtime_error("Asset path cannot contain parent traversal: " + text);
+		auto base = std::filesystem::weakly_canonical(root);
+		auto resolved = std::filesystem::weakly_canonical(base / path);
+		auto relative = resolved.lexically_relative(base);
+		if (relative.empty() || relative == "." || *relative.begin() == "..") throw std::runtime_error("Asset/symlink escapes project Assets: " + text);
+		return resolved;
+	}
 
 	std::filesystem::path Project::NormalizeAssetPath(const std::filesystem::path& path)
 	{
@@ -40,7 +59,7 @@ namespace Hazel {
         const auto path = ResolveAssetPath(root, reference);
         if (path.extension() != ".hazel") throw std::runtime_error("Scene must be a .hazel file: " + path.generic_u8string());
         auto scene = CreateRef<Scene>();
-        if (!SceneSerializer(scene, root).Deserialize(path.generic_u8string()))
+        if (!SceneSerializer(scene, root, false, GetAssets()).Deserialize(path.generic_u8string()))
             throw std::runtime_error("Cannot load scene/assets: " + path.generic_u8string());
         return scene;
     }
