@@ -44,7 +44,7 @@ Sprite authoring sample: open `Textures/Lanterns.hsprites` in Content Browser.
 Its Regions tab contains Explorer (used as a static region in Meadow), plus three
 seed brightness variants. Its Animation tab exposes Lantern pulse: ordered frames,
 individual durations and Loop. LanternSeed.hprefab uses that clip with autoplay,
-so collected seeds pulse in every level. Existing movement, triggers and picking
-remain unchanged. Drag regions/clips onto the corresponding entity or prefab
-Inspector fields, save the sheet, then Play. These references and the original
+so lantern seeds pulse in every level. Existing movement, triggers and picking
+remain unchanged. Save the sheet, drag regions/clips onto the corresponding entity
+or prefab Inspector fields, save the scene/prefab, then Play. These references and the original
 atlas are included in Nutella exports with this project's license.

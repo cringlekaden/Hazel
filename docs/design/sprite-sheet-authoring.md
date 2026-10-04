@@ -86,6 +86,8 @@ Cache identity includes canonical source path plus dimensions, format, min/mag, 
 
 `.hsprites` YAML v1 lives anywhere inside project Assets, commonly beside its texture. Paths are Assets-relative, normalized UTF-8, and checked through `Project::ResolveOwnedAsset`, including existing symlinks. Parent traversal, rooted paths, drive paths and invalid references are rejected. Scene whole-texture compatibility still accepts legacy external paths; export requires owned paths.
 
+Reference creation uses the same canonical-root convention as ownership and caches, including Windows 8.3 aliases. Owned references remain portable through alias/symlink spellings; external whole-texture references retain their authored absolute spelling.
+
 ```yaml
 SpriteSheet:
   Version: 1
@@ -150,6 +152,8 @@ Application shutdown releases the active project's cache after scene-owning laye
 
 Preparation occurs on source changes or cache epoch changes. Draw submission and animation frames do not parse metadata/decode/upload images. Cached failures remain diagnosable until explicit invalidation. Save/Reload clears derived resolutions and texture resources, publishes the sheet revision/error and increments the epoch. Existing Ref owners stay valid while new resolution is prepared. Refresh before Play/Simulate reloads cached sheets and clears texture/derived caches; unrelated cached broken assets do not prevent valid scenes from running, but referenced broken content fails strict runtime validation.
 
+The authoring canvas follows the same cache epoch, so explicit asset reload also replaces its preview resource even when the source path and sampling settings are unchanged.
+
 Authoring edits are disabled during Play/Simulate. External disk edits are applied by explicit Reload or the next Play freshness boundary, not automatic per-frame polling. A native invalidation during a session safely re-resolves by epoch, retains the current typed reference and clamps playback time to the new clip duration; an invalid reference renders a magenta diagnostic placeholder. No stale pointer or silent substitute is used.
 
 Runtime order: deferred lifecycle start/managed/native scripts → animation timestep → physics → sprite preparation/render. Script Play/SetSprite is visible that frame; a script's finished query sees completion from the preceding animation update. Scene pause holds animation; Step advances one supplied engine timestep exactly when physics advances. Simulate advances the same timing without scripts. New Play/restart uses frame zero, autoplay and authored speed. Speed is finite/nonnegative; zero holds, negative/reverse playback is unsupported.
@@ -201,7 +205,13 @@ Templates require no new pipeline or compulsory sprite assets: existing camera/t
 
 New focused SpriteSmoke covers defaults/invalid sampling, common decoder origin, UVs/zero/bounds, pivot corners and rendered picking/placement, grid identity, rename/delete/retired IDs, malformed data/atomic safe saves, legacy sources, cached distinct sampling, mips/SetData, scene/prefab compatibility, independent timing/copies, pause/step, large timesteps, managed typed references/controls/update order, invalidation, strict/repair failure isolation, dependency closure and relocation. Existing renderer/editor/scene/runtime tests verify retained workflows; no new whole-game driver or pixel-click acceptance program is introduced.
 
-Verification evidence is recorded after execution. Linux/Windows Debug/Release builds and short native/software/4.1 smoke checks are appropriate. Human acceptance remains necessary:
+Executed locally on 2026-10-04:
+
+- Linux Debug builds and all 14 sequential regressions passed. The extended editor regression also passed native panel opening/assignment and preview GPU-resource invalidation without new mouse automation.
+- Linux Release Hazelnut, Nutella, SpriteAssetAudit and the focused sprite regression built successfully, using at most two jobs and existing pinned SDK outputs. SpriteSmoke passed on native Intel HD4000 OpenGL 4.2 and the forced OpenGL 4.1 path; final path-alias/external-reference regressions passed in Debug and Release.
+- Canonical MeadowRun export passed native dependency closure before and after copying. Its extracted Release runtime started the sprite-bearing Meadow scene and shut down gracefully from an unrelated working directory, using packaged resource/Mono roots and a relocation directory containing spaces/Unicode. Representative screenshots show the static Explorer and changing seed brightness.
+
+Both Linux and Windows jobs passed in [CI for source commit 7e233d5](https://github.com/cringlekaden/Hazel/actions/runs/37176972335): Debug/Release builds and regressions, retained example workflows, extracted applications/games with source resources and SDK unavailable, and packaged OpenGL 4.1 checks. Clean Release artifacts and testing evidence are attached to that run. Local archives use the host's glibc baseline and correctly report a dirty source tree because unrelated Skybound edits were preserved; prefer CI archives for distribution. Human acceptance remains necessary:
 
 - Import a grid sheet, preview/apply twice, confirm IDs/names/pivots survive, then save and assign by button/drag.
 - Draw/move/resize irregular regions and correct numeric bounds at multiple zoom levels; verify pan/zoom/tool discovery and small-screen/DPI docking.
