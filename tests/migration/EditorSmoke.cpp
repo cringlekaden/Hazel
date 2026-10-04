@@ -199,8 +199,30 @@ public:
         }
         case 12:
             ImGui::GetIO().AddMouseButtonEvent(0,false);break;
-        case 14:
+        case 14: {
             Check(!ImGui::FindWindowByName("Prefab Inspector")->Active,"Clean prefab Close did not release its inspector safely");
+            const auto root=Project::GetAssetDirectory();
+            SpriteSheetDocument document(Project::GetActive()->GetAssets());
+            document.Create(std::filesystem::u8path(u8"Textures/texture é 🚀.png"),"Textures/inspector.hsprites");
+            auto& sheet=document.Draft();
+            sheet.Regions.push_back({sheet.NewID(),"Preview",{0,0,sheet.Sampling.Width,sheet.Sampling.Height},{.5f,1}});
+            sheet.Clips.push_back({sheet.NewID(true),"Hold",true,{{sheet.Regions[0].ID,.2}}});
+            document.Changed();document.Save();
+            e.m_Authoring->SelectAsset(root/"Textures/inspector.hsprites");
+            break;
+        }
+        case 15: {
+            auto* panel=ImGui::FindWindowByName("Sprite Sheet: inspector.hsprites###Sprite Sheet");
+            Check(panel && panel->Active,"Sprite asset did not open its dockable authoring panel");
+            auto sheet=Project::GetActive()->GetAssets()->Sheet("Textures/inspector.hsprites");
+            e.m_SceneHierarchyPanel.SetSelectedEntity(e.m_EditorScene->GetEntityByUUID(901));
+            e.m_Authoring->m_Sprites.AssignSprite({"Textures/inspector.hsprites",sheet->Regions[0].ID});
+            e.m_Authoring->m_Sprites.AssignClip({"Textures/inspector.hsprites",sheet->Clips[0].ID});
+            break;
+        }
+        case 16:
+            Check(e.m_EditorScene->GetEntityByUUID(901).HasComponent<SpriteAnimationComponent>() && e.m_EditorScene->RenderedSprite(e.m_EditorScene->GetEntityByUUID(901)),"Sheet assignment did not resolve scene animation");
+            Check(glGetError()==GL_NO_ERROR,"Sprite authoring panel OpenGL error");
             m_Done = true; Application::Get().Close();break;
         }
     }
