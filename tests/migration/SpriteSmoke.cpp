@@ -44,6 +44,8 @@ static void Logical(const std::filesystem::path& root) {
     Reject([&]{document.Open("bad.hsprites");});Check(document.Reference()=="sheet.hsprites"&&document.Dirty(),"Malformed open replaced recoverable document");document.Discard();
     services->ImportTexture(root/"sheet.tga","Imported/sheet.tga");Reject([&]{services->ImportTexture(root/"sheet.tga","Imported/sheet.tga");});Check(Read(root/"Imported/sheet.tga")==Read(root/"sheet.tga"),"Native import changed original bytes");
     Reject([&]{Project::ResolveOwnedAsset(root,"../escape.hsprites");});Reject([&]{Project::ResolveOwnedAsset(root,"C:\\external.png");});
+    const auto external=root.parent_path()/"external-image.tga";
+    Check(Project::MakeAssetReference(root,external)==external,"External authored path spelling changed");
 #ifdef HZ_PLATFORM_LINUX
     std::filesystem::create_directory_symlink(root,root/"root-alias");
     Check(Project::MakeAssetReference(root/"root-alias",root/"sheet.tga")=="sheet.tga","Canonical root alias broke portable references");

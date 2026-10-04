@@ -48,12 +48,13 @@ namespace Hazel {
 		// Resource caches and ownership checks use canonical roots. Match that
 		// convention here too (Windows 8.3 aliases and existing symlinks included),
 		// while weak canonicalization also supports not-yet-created destinations.
-		const auto loaded = std::filesystem::weakly_canonical(std::filesystem::absolute(loadedPath));
+		const auto original = std::filesystem::absolute(loadedPath).lexically_normal();
+		const auto loaded = std::filesystem::weakly_canonical(original);
 		const auto base = std::filesystem::weakly_canonical(std::filesystem::absolute(root));
 		const auto relative = loaded.lexically_relative(base);
 		if (!relative.empty() && relative != "." && *relative.begin() != "..") return relative;
 		// External textures remain absolute, including former cwd-relative external paths.
-		return loaded;
+		return original;
 	}
 
     Ref<Scene> Project::LoadScene(const std::filesystem::path& reference) const {
