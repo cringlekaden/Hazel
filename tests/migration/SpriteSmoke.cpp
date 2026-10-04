@@ -33,7 +33,7 @@ static void Logical(const std::filesystem::path& root) {
     SpritePlayback p;p.Reset(true);p.Advance(s.Clips[0],.15);Check(p.Frame==1,"Multiple frame durations");p.Advance(s.Clips[0],.2);Check(p.Frame==0 && std::abs(p.Time-.05)<1e-9,"Loop remainder");
     p.Playing=false;auto held=p.Time;p.Advance(s.Clips[0],10);Check(p.Time==held,"Paused playback advanced");p.Playing=true;p.Advance(s.Clips[0],10,0);Check(p.Time==held,"Zero speed advanced");
     p.Advance(s.Clips[0],std::numeric_limits<double>::max(),std::numeric_limits<double>::max());Check(std::isfinite(p.Time) && p.Time<.3,"Large timestep overflow");
-    s.Clips[0].Loop=false;p.Reset(true);p.Advance(s.Clips[0],999);Check(p.Finished&&!p.Playing&&p.Frame==1,"Play-once completion");Reject([&]{p.Advance(s.Clips[0],1,-1);});s.Clips[0].Loop=true;
+    s.Clips[0].Loop=false;p.Reset(true);p.Advance(s.Clips[0],0,std::numeric_limits<double>::max());Check(p.Time==0&&!p.Finished,"Zero timestep completed a fast clip");p.Advance(s.Clips[0],999);Check(p.Finished&&!p.Playing&&p.Frame==1,"Play-once completion");Reject([&]{p.Advance(s.Clips[0],1,-1);});s.Clips[0].Loop=true;
     SaveSpriteSheet(root,"sheet.hsprites",s,WriteMode::CreateNew);auto text=Read(root/"sheet.hsprites");Reject([&]{SaveSpriteSheet(root,"sheet.hsprites",s,WriteMode::CreateNew);});Check(Read(root/"sheet.hsprites")==text,"Exclusive save clobbered file");
     auto invalid=s;invalid.Regions[0].Rect.Width=0;Reject([&]{SaveSpriteSheet(root,"sheet.hsprites",invalid);});Check(Read(root/"sheet.hsprites")==text,"Invalid save damaged original");
     FileSystem::WriteFileAtomically(root/"bad.hsprites",[](std::ostream& out){out<<"SpriteSheet: {Version: 999}";});Reject([&]{ReadSpriteSheet(root/"bad.hsprites");});

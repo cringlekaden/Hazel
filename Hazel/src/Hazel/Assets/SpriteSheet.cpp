@@ -127,7 +127,7 @@ void SpritePlayback::Scrub(const SpriteClip& clip,double time) {
 }
 void SpritePlayback::Advance(const SpriteClip& clip,double dt,double speed) {
     if(!std::isfinite(dt) || dt<0 || !std::isfinite(speed) || speed<0) throw std::runtime_error("Animation timestep/speed must be finite and nonnegative");
-    if(!Playing || speed==0) return;
+    if(!Playing || speed==0 || dt==0) return;
     const auto total=Duration(clip);
     // Reduce before multiplying; bounded work even for huge dt/speed or tiny frame durations.
     double advance;
