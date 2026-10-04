@@ -149,7 +149,10 @@ void SpriteSheetPanel::Clips(bool editable) {
     try {
         const double total=SpritePlayback::Duration(m_Document->PreviewClip(clip.ID));
         if(ImGui::Button("Play preview")){if(m_Playback.Finished)m_Playback.Reset();m_Playback.Playing=true;}ImGui::SameLine();if(ImGui::Button("Pause preview"))m_Playback.Playing=false;ImGui::SameLine();if(ImGui::Button("Stop preview"))m_Playback.Reset();
-        float time=static_cast<float>(m_Playback.Time);if(ImGui::SliderFloat("Scrub (seconds)",&time,0,static_cast<float>(total),"%.3f")){m_Playback.Playing=false;m_Playback.Finished=false;m_Playback.Scrub(clip,time);}
+        // A normalized slider stays usable for every finite authored duration,
+        // including values outside float's seconds range.
+        float progress=static_cast<float>(m_Playback.Time/total*100);
+        if(ImGui::SliderFloat("Scrub",&progress,0,100,"%.1f%%")){m_Playback.Playing=false;m_Playback.Finished=false;m_Playback.Scrub(clip,(double(progress)/100)*total);}
         ImGui::Text("Frame %zu / %zu | %.3f / %.3f s%s",m_Playback.Frame+1,clip.Frames.size(),m_Playback.Time,total,m_Playback.Finished?" | Finished":"");
         const auto& r=s.Region(clip.Frames.at(m_Playback.Frame).Region);auto uv=SpriteUV(r.Rect,s.Sampling.Width,s.Sampling.Height);
         if(m_Texture)ImGui::Image((ImTextureID)(uintptr_t)m_Texture->GetRendererID(),{128,128},V(uv[3]),V(uv[1]));
@@ -169,15 +172,17 @@ void SpriteSheetPanel::Canvas(bool editable) {
     if(hovered && ImGui::IsMouseDragging(ImGuiMouseButton_Middle))m_Pan+=P(io.MouseDelta);
     const auto top=origin+m_Pan;auto* draw=ImGui::GetWindowDrawList();draw->AddRectFilled(V(origin),V(origin+P(size)),IM_COL32(38,38,44,255));
     draw->AddImage((ImTextureID)(uintptr_t)m_Texture->GetRendererID(),V(top),V(top+glm::vec2(sheet.Sampling.Width,sheet.Sampling.Height)*m_Zoom),{0,1},{1,0});
-    auto pixel=(mouse-top)/m_Zoom;pixel.x=std::clamp(std::floor(pixel.x),0.f,float(sheet.Sampling.Width-1));pixel.y=std::clamp(std::floor(pixel.y),0.f,float(sheet.Sampling.Height-1));
+    auto pixel=(mouse-top)/m_Zoom;
+    const bool insideImage=pixel.x>=0 && pixel.y>=0 && pixel.x<sheet.Sampling.Width && pixel.y<sheet.Sampling.Height;
+    pixel.x=std::clamp(std::floor(pixel.x),0.f,float(sheet.Sampling.Width-1));pixel.y=std::clamp(std::floor(pixel.y),0.f,float(sheet.Sampling.Height-1));
     if(editable && hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
         m_DragStart=pixel;m_Gesture=0;
-        if(m_Tool==Tool::Create && !m_PivotTool){m_Gesture=1;m_Original={uint32_t(pixel.x),uint32_t(pixel.y),1,1};}
+        if(m_Tool==Tool::Create && !m_PivotTool){if(insideImage){m_Gesture=1;m_Original={uint32_t(pixel.x),uint32_t(pixel.y),1,1};}}
         else {
             for(auto it=sheet.Regions.rbegin();it!=sheet.Regions.rend();++it){auto& r=*it;
                 auto corner=top+glm::vec2(r.Rect.X+r.Rect.Width,r.Rect.Y+r.Rect.Height)*m_Zoom;
                 if(r.ID==m_Selected && glm::length(mouse-corner)<=9){m_Gesture=3;m_Original=r.Rect;break;}
-                if(pixel.x>=r.Rect.X && pixel.y>=r.Rect.Y && pixel.x< uint64_t(r.Rect.X)+r.Rect.Width && pixel.y<uint64_t(r.Rect.Y)+r.Rect.Height){m_Selected=r.ID;m_Original=r.Rect;m_Gesture=m_PivotTool?4:2;break;}
+                if(insideImage && pixel.x>=r.Rect.X && pixel.y>=r.Rect.Y && pixel.x< uint64_t(r.Rect.X)+r.Rect.Width && pixel.y<uint64_t(r.Rect.Y)+r.Rect.Height){m_Selected=r.ID;m_Original=r.Rect;m_Gesture=m_PivotTool?4:2;break;}
             }
         }
     }
