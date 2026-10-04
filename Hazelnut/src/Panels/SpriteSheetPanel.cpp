@@ -47,8 +47,8 @@ void SpriteSheetPanel::Tick(double timestep) {
     try {m_Playback.Advance(m_Document->PreviewClip(m_SelectedClip),timestep);}catch(const std::exception& e){m_Playback.Playing=false;Fail(e);}
 }
 void SpriteSheetPanel::PreviewTexture() {
-    if(!m_PreviewStale || !m_Document) return;
-    m_PreviewStale=false;m_Texture.reset();
+    if(!m_Document || (!m_PreviewStale && m_PreviewEpoch==m_Assets->Epoch())) return;
+    m_PreviewStale=false;m_PreviewEpoch=m_Assets->Epoch();m_Texture.reset();
     try {
         auto& s=m_Document->Draft();s.Sampling.Validate(true);
         m_Texture=m_Assets->Texture(s.Texture,s.Sampling);m_Error.clear();

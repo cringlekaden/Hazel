@@ -27,8 +27,7 @@ private:
     Scope<SpriteSheetDocument> m_Document;
     Ref<ProjectAssets> m_Assets;
     Ref<Texture2D> m_Texture;
-    TextureSpecification m_PreviewSpec;
-    std::filesystem::path m_PreviewPath;
+    uint64_t m_PreviewEpoch=0;
     std::string m_Error,m_CreateTexture,m_CreateDestination;
     std::string m_ImportSource,m_ImportDestination;
     std::filesystem::path m_RecoveryPath;

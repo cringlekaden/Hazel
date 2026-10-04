@@ -223,7 +223,21 @@ public:
         case 16:
             Check(e.m_EditorScene->GetEntityByUUID(901).HasComponent<SpriteAnimationComponent>() && e.m_EditorScene->RenderedSprite(e.m_EditorScene->GetEntityByUUID(901)),"Sheet assignment did not resolve scene animation");
             Check(glGetError()==GL_NO_ERROR,"Sprite authoring panel OpenGL error");
+            Project::GetActive()->GetAssets()->Reload("Textures/inspector.hsprites");
+            break;
+        case 17: {
+            // The visible authoring canvas must follow the same explicit cache
+            // invalidation as scene resolution, even when sampling is unchanged.
+            auto* sprite=e.m_EditorScene->RenderedSprite(e.m_EditorScene->GetEntityByUUID(901));
+            Check(sprite && sprite->Texture,"Reloaded editor sprite missing");
+            const auto texture=(ImTextureID)(uintptr_t)sprite->Texture->GetRendererID();
+            bool visible=false;auto* draw=ImGui::GetDrawData();
+            for(int list=0;draw && list<draw->CmdListsCount;++list)
+                for(const auto& command:draw->CmdLists[list]->CmdBuffer)
+                    if(command.TextureId==texture)visible=true;
+            Check(visible,"Sprite preview retained a stale texture after asset reload");
             m_Done = true; Application::Get().Close();break;
+        }
         }
     }
 private:
