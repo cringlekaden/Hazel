@@ -66,6 +66,13 @@ namespace Hazel {
 			}
 
 			ImGui::PopStyleColor();
+            if(!isDirectory && ImGui::BeginPopupContextItem()) {
+                const auto extension=path.extension().u8string();
+                const bool image=extension==".png" || extension==".jpg" || extension==".jpeg" || extension==".bmp" || extension==".tga";
+                if(image && CreateSpriteSheet && ImGui::MenuItem("Create Sprite Sheet...")) CreateSpriteSheet(path);
+                if(SelectAsset && ImGui::MenuItem("Open / Inspect"))SelectAsset(path);
+                ImGui::EndPopup();
+            }
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 			{
 				if (isDirectory)
@@ -73,6 +80,7 @@ namespace Hazel {
 
 			}
 			if(path.extension()==".hprefab") ImGui::TextColored({.4f,.8f,1,1},"Prefab");
+            if(path.extension()==".hsprites") ImGui::TextColored({.5f,1,.6f,1},"Sprite Sheet");
             ImGui::TextWrapped("%s", filenameString.c_str());
 
 			ImGui::NextColumn();
@@ -82,6 +90,10 @@ namespace Hazel {
 		if (error) ImGui::TextWrapped("Cannot read asset directory: %s", error.message().c_str());
 
 		ImGui::Columns(1);
+        if(ImGui::BeginPopupContextWindow("Asset actions",ImGuiPopupFlags_MouseButtonRight|ImGuiPopupFlags_NoOpenOverItems)) {
+            if(ImportTexture && ImGui::MenuItem("Import Texture..."))ImportTexture();
+            ImGui::EndPopup();
+        }
 
 		ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
 		ImGui::SliderFloat("Padding", &padding, 0, 32);

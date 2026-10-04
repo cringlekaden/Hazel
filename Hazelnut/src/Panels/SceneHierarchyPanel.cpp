@@ -6,6 +6,7 @@
 #include "Hazel/UI/UI.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Scene/Prefab.h"
+#include "SpriteWidgets.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -83,7 +84,7 @@ namespace Hazel {
 	{
 		try {
 			auto texture = Texture2D::Create(path.generic_u8string());
-			component.Texture = std::move(texture);
+			component.SetTexture(std::move(texture));
 			return true;
 		} catch (const std::runtime_error& error) {
 			HZ_ERROR("Texture assignment '{}': {}", path.generic_u8string(), error.what());
@@ -263,6 +264,7 @@ namespace Hazel {
 			DisplayAddComponentEntry<CameraComponent>("Camera");
 			DisplayAddComponentEntry<ScriptComponent>("Script");
 			DisplayAddComponentEntry<SpriteRendererComponent>("Sprite Renderer");
+            if(entity.HasComponent<SpriteRendererComponent>())DisplayAddComponentEntry<SpriteAnimationComponent>("Sprite Animation");
 			DisplayAddComponentEntry<CircleRendererComponent>("Circle Renderer");
 			DisplayAddComponentEntry<Rigidbody2DComponent>("Rigidbody 2D");
 			DisplayAddComponentEntry<BoxCollider2DComponent>("Box Collider 2D");
@@ -397,6 +399,8 @@ namespace Hazel {
                             } ImGui::EndCombo();
                         } break;
                     }
+                    case ScriptFieldType::Sprite: {SpriteReference r{std::filesystem::u8path(value.AssetReference),value.AssetID};changed=SpritePicker(name.c_str(),r);value.AssetReference=r.Sheet.generic_u8string();value.AssetID=r.Region;break;}
+                    case ScriptFieldType::SpriteAnimation: {AnimationReference r{std::filesystem::u8path(value.AssetReference),value.AssetID};changed=ClipPicker(name.c_str(),r);value.AssetReference=r.Sheet.generic_u8string();value.AssetID=r.Clip;break;}
 #define HZ_FIELD_NUMBER(Type,Cpp,Gui) case ScriptFieldType::Type: {auto x=value.GetValue<Cpp>();changed=ImGui::InputScalar(name.c_str(),Gui,&x);value.SetValue(x);break;}
                     HZ_FIELD_NUMBER(Char,uint16_t,ImGuiDataType_U16)
                     HZ_FIELD_NUMBER(Byte,int8_t,ImGuiDataType_S8)
@@ -421,19 +425,14 @@ namespace Hazel {
 		{
 			ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
 
-			ImGui::Button("Texture", ImVec2(100.0f, 0.0f));
-			if (ImGui::BeginDragDropTarget())
-			{
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
-				{
-					const auto texturePath = ContentBrowserPath(payload->Data, payload->DataSize);
-					AssignSpriteTexture(component, texturePath);
-				}
-				ImGui::EndDragDropTarget();
-			}
-
-			ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.0f, 100.0f);
+            SpriteSourceEditor(component);
 		});
+        DrawComponent<SpriteAnimationComponent>("Sprite Animation",entity,[](auto& component){
+            if(ClipPicker("Default animation",component.DefaultClip))component.ResetRuntime();
+            ImGui::Checkbox("Autoplay",&component.Autoplay);if(ImGui::InputDouble("Playback speed",&component.Speed,.1,1))component.PreparedEpoch=0;
+            ImGui::TextWrapped("Animation supplies the rendered sprite while assigned. Clearing/removing it restores the static sprite source. Speed zero holds the frame.");
+            if(!component.Error.empty())ImGui::TextColored({1,.4f,.3f,1},"%s",component.Error.c_str());
+        });
 
 		DrawComponent<CircleRendererComponent>("Circle Renderer", entity, [](auto& component)
 		{

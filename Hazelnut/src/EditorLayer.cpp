@@ -81,7 +81,7 @@ namespace Hazel {
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
 		HZ_PROFILE_FUNCTION();
-        if(m_Authoring) m_Authoring->Tick();
+        if(m_Authoring) m_Authoring->Tick(ts);
 
         if (m_SceneState != SceneState::Play)
             m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
@@ -275,7 +275,8 @@ namespace Hazel {
 			{
 				auto path=ContentBrowserPath(payload->Data,payload->DataSize);
                 if(path.extension()==".hprefab") m_Authoring->InstantiatePrefab(path);
-                else m_Authoring->Guard([this,path]{OpenScene(path);});
+                else if(path.extension()==".hsprites")m_Authoring->SelectAsset(path);
+                else if(path.extension()==".hazel")m_Authoring->Guard([this,path]{OpenScene(path);});
 			}
 			ImGui::EndDragDropTarget();
 		}
@@ -555,7 +556,9 @@ namespace Hazel {
 		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity())
 		{
 			const TransformComponent& transform = selectedEntity.GetComponent<TransformComponent>();
-			Renderer2D::DrawRect(transform.GetTransform(), glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
+            if(auto* sprite=m_ActiveScene->RenderedSprite(selectedEntity)) {
+                for(size_t i=0;i<4;++i)Renderer2D::DrawLine(glm::vec3(transform.GetTransform()*glm::vec4(sprite->Corners[i],0,1)),glm::vec3(transform.GetTransform()*glm::vec4(sprite->Corners[(i+1)%4],0,1)),glm::vec4(1,.5f,0,1));
+            } else Renderer2D::DrawRect(transform.GetTransform(), glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
 		}
 
 		Renderer2D::EndScene();
@@ -575,7 +578,7 @@ namespace Hazel {
 		m_SceneHierarchyPanel.SetContext(nullptr);
 	}
 
-	bool EditorLayer::OpenProject(const std::filesystem::path& path)
+	bool EditorLayer::OpenProject(const std::filesystem::path& path,bool repair)
 	{
 		try {
 			auto project = Project::LoadCandidate(path);
@@ -583,7 +586,8 @@ namespace Hazel {
 			const auto assets = project->GetAssetRoot();
 			if (!std::filesystem::is_directory(assets)) return ActionFailed("Project asset directory is missing: " + assets.generic_u8string());
             const auto startScene = Project::ResolveAssetPath(assets, project->GetConfig().StartScene);
-            auto scene = project->LoadScene(project->GetConfig().StartScene);
+            auto scene = CreateRef<Scene>();
+            if(!SceneSerializer(scene,assets,repair,project->GetAssets()).Deserialize(startScene.generic_u8string()))return ActionFailed("Cannot load startup scene; use File > Open Project for Repair for broken sprite resources");
             scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
 			auto browser = CreateScope<ContentBrowserPanel>(assets);
 			// Init stages a complete domain/watcher; failure retains the current scripts.
@@ -623,6 +627,7 @@ namespace Hazel {
 		if (m_SceneState != SceneState::Edit) OnSceneStop();
 		ClearSceneObservers();
 		m_EditorScene = CreateRef<Scene>(); m_ActiveScene = m_EditorScene;
+        if(Project::GetActive())m_EditorScene->SetAssets(Project::GetActive()->GetAssets());
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 		m_EditorScenePath.clear(); m_ActionError.clear();
 	}
@@ -633,13 +638,13 @@ namespace Hazel {
 		return !path.empty() && OpenScene(std::filesystem::u8path(path));
 	}
 
-	bool EditorLayer::OpenScene(const std::filesystem::path& path)
+	bool EditorLayer::OpenScene(const std::filesystem::path& path,bool repair)
 	{
 		try {
 			if (path.extension() != ".hazel") return ActionFailed("Scene must be a .hazel file: " + path.generic_u8string());
 			auto scene = CreateRef<Scene>();
 			scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-			if (!SceneSerializer(scene).Deserialize(path.generic_u8string())) return ActionFailed("Cannot load scene/assets: " + path.generic_u8string());
+			if (!SceneSerializer(scene,Project::GetActive()?Project::GetAssetDirectory():std::filesystem::path{},repair).Deserialize(path.generic_u8string())) return ActionFailed("Cannot load scene/assets; use Open Scene for Repair for broken sprite resources: " + path.generic_u8string());
 			if (m_SceneState != SceneState::Edit) OnSceneStop();
 			ClearSceneObservers();
 			m_EditorScene = scene; m_ActiveScene = scene; m_EditorScenePath = path;
@@ -678,11 +683,13 @@ namespace Hazel {
 
 	void EditorLayer::OnScenePlay()
 	{
+        if(m_Authoring && m_Authoring->SpriteDirty()){m_Authoring->GuardPlay([this]{OnScenePlay();});return;}
 		if (m_SceneState == SceneState::Play) return;
 		if (!ScriptEngine::IsInitialized() && !m_EditorScene->GetAllEntitiesWith<ScriptComponent>().empty()) {
 			ActionFailed("Open a valid script assembly before playing a scripted scene"); return;
 		}
 		try {
+            if(Project::GetActive())Project::GetActive()->GetAssets()->Refresh();
             if (m_SceneState != SceneState::Edit) OnSceneStop();
             m_RuntimeSession.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
             m_RuntimeSession.Start(Project::GetActive(), m_EditorScene);
@@ -694,12 +701,16 @@ namespace Hazel {
 
 	void EditorLayer::OnSceneSimulate()
 	{
+        if(m_Authoring && m_Authoring->SpriteDirty()){m_Authoring->GuardPlay([this]{OnSceneSimulate();});return;}
+        try {
+		if(Project::GetActive())Project::GetActive()->GetAssets()->Refresh();
 		auto scene = Scene::Copy(m_EditorScene);
 		scene->OnSimulationStart();
 		if (m_SceneState != SceneState::Edit) OnSceneStop();
 		ClearSceneObservers();
 		m_ActiveScene = scene; m_SceneState = SceneState::Simulate;
 		m_SceneHierarchyPanel.SetContext(scene); m_ActionError.clear();
+        }catch(const std::exception& error){ActionFailed(std::string("Simulate scene: ")+error.what());}
 	}
 
 	void EditorLayer::OnSceneStop()

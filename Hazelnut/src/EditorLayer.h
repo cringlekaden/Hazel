@@ -33,12 +33,12 @@ namespace Hazel {
 		void OnOverlayRender();
 
 		bool OpenProject();
-		bool OpenProject(const std::filesystem::path& path);
+		bool OpenProject(const std::filesystem::path& path,bool repair = false);
 		bool SaveProject();
 
 		void NewScene();
 		bool OpenScene();
-		bool OpenScene(const std::filesystem::path& path);
+		bool OpenScene(const std::filesystem::path& path,bool repair = false);
 		bool SaveScene();
 		bool SaveSceneAs();
 

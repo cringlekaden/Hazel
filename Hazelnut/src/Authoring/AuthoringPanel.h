@@ -2,6 +2,7 @@
 #include "EditorPreferences.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "ProjectTools.h"
+#include "Panels/SpriteSheetPanel.h"
 #include <functional>
 namespace Hazel
 {
@@ -16,7 +17,7 @@ class AuthoringPanel
 	void RequestClose();
 	void FileMenu();
 	void Render();
-	void Tick();
+	void Tick(double timestep = 0);
 	void ShowOutput()
 	{
 		m_ShowOutput = true;
@@ -29,6 +30,8 @@ class AuthoringPanel
 	void OpenScript(const std::filesystem::path &path);
 	void Guard(std::function<void()> operation, bool includeScene = true);
 	void MarkSceneSaved();
+    bool SpriteDirty() const {return m_Sprites.Dirty();}
+    void GuardPlay(std::function<void()> action) {Guard(std::move(action),false);}
 
   private:
 	void Preferences();
@@ -58,6 +61,7 @@ class AuthoringPanel
 	Ref<Scene> m_PrefabScene;
 	uint64_t m_PrefabSourceID = 0, m_PrefabSourceScene = 0;
 	SceneHierarchyPanel m_PrefabInspector;
+    SpriteSheetPanel m_Sprites;
 	TransformComponent m_InitialTransform;
 	bool m_ShowPreferences = false, m_ShowProject = false, m_ShowNew = false, m_ShowScripts = false,
 		 m_ShowBuild = false, m_ShowExport = false, m_ShowPrefab = false, m_CreatePrefab = false,

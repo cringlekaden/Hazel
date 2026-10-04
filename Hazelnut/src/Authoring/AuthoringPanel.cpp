@@ -89,6 +89,7 @@ void AuthoringPanel::Guard(std::function<void()> action, bool includeScene)
 		bool dirty = includeScene && SceneText() != m_SavedScene;
 		if (m_PrefabScene)
 			dirty |= SceneSerializer(m_PrefabScene).SerializeText() != m_SavedPrefab;
+        dirty |= m_Sprites.Dirty();
 		if (dirty)
 		{
 			m_PendingIncludesScene = includeScene;
@@ -120,6 +121,27 @@ void AuthoringPanel::BindProject()
 {
 	if (m_Editor.m_ContentBrowserPanel)
 		m_Editor.m_ContentBrowserPanel->SelectAsset = [this](auto &path) { SelectAsset(path); };
+    if(Project::GetActive()) m_Sprites.Bind(Project::GetActive()->GetAssets());
+    m_Sprites.ReportError=[this](const std::string& error){m_Editor.ActionFailed(error);};
+    if(m_Editor.m_ContentBrowserPanel) m_Editor.m_ContentBrowserPanel->CreateSpriteSheet=[this](const auto& path){Guard([this,path]{if(m_Editor.m_SceneState!=EditorLayer::SceneState::Edit)throw std::runtime_error("Stop Play / Simulate before creating assets");m_Sprites.BeginCreate(path);},false);};
+    if(m_Editor.m_ContentBrowserPanel) m_Editor.m_ContentBrowserPanel->ImportTexture=[this]{Guard([this]{if(m_Editor.m_SceneState!=EditorLayer::SceneState::Edit)throw std::runtime_error("Stop Play / Simulate before importing textures");m_Sprites.BeginImport();},false);};
+    m_Sprites.AssignSprite=[this](SpriteReference reference){
+        try {if(m_Editor.m_SceneState!=EditorLayer::SceneState::Edit) throw std::runtime_error("Stop Play before assigning authored sprites");
+            auto entity=m_Editor.m_SceneHierarchyPanel.GetSelectedEntity();if(!entity)throw std::runtime_error("Select an entity in Scene Hierarchy first");
+            Project::GetActive()->GetAssets()->Resolve(reference);
+            if(!entity.HasComponent<SpriteRendererComponent>())entity.AddComponent<SpriteRendererComponent>();
+            entity.GetComponent<SpriteRendererComponent>().Source=reference;
+        }catch(const std::exception& e){m_Editor.ActionFailed(e.what());}
+    };
+    m_Sprites.AssignClip=[this](AnimationReference reference){
+        try {if(m_Editor.m_SceneState!=EditorLayer::SceneState::Edit) throw std::runtime_error("Stop Play before assigning animations");
+            auto entity=m_Editor.m_SceneHierarchyPanel.GetSelectedEntity();if(!entity)throw std::runtime_error("Select an entity in Scene Hierarchy first");
+            Project::GetActive()->GetAssets()->Clip(reference);
+            if(!entity.HasComponent<SpriteRendererComponent>())entity.AddComponent<SpriteRendererComponent>();
+            if(!entity.HasComponent<SpriteAnimationComponent>())entity.AddComponent<SpriteAnimationComponent>();
+            entity.GetComponent<SpriteAnimationComponent>().DefaultClip=reference;entity.GetComponent<SpriteAnimationComponent>().ResetRuntime();
+        }catch(const std::exception& e){m_Editor.ActionFailed(e.what());}
+    };
 	m_Editor.m_SceneHierarchyPanel.ReportError = [this](const std::string &error) {
 		m_Editor.ActionFailed(error);
 	};
@@ -168,8 +190,9 @@ void AuthoringPanel::Start(std::string label, std::vector<std::string> args, std
 					   "waits for completion.";
 	m_ShowOutput = true;
 }
-void AuthoringPanel::Tick()
+void AuthoringPanel::Tick(double timestep)
 {
+    m_Sprites.Tick(timestep);
 	std::string progress;
 	if (m_Tools.ReadProgress(progress))
 		m_Output = m_Tools.Request().Label + " in progress.\n" + progress;
@@ -263,6 +286,7 @@ void AuthoringPanel::Shortcuts()
 		});
 	if (ImGui::IsKeyPressed(ImGuiKey_S, false))
 	{
+		if(m_Sprites.Focused()) {m_Sprites.Save();return;}
 		if (io.KeyShift)
 			m_Editor.SaveSceneAs();
 		else
@@ -282,6 +306,8 @@ void AuthoringPanel::FileMenu()
 	}
 	if (ImGui::MenuItem("Open Project...", "Ctrl+O"))
 		Guard([this] { m_Editor.OpenProject(); });
+    if(ImGui::MenuItem("Open Project for Repair..."))Guard([this]{auto path=FileDialogs::OpenFile("Hazel Project\0*.hproj\0");if(!path.empty())m_Editor.OpenProject(Path(path),true);});
+    if(ImGui::MenuItem("Open Scene for Repair..."))Guard([this]{auto path=FileDialogs::OpenFile("Hazel Scene\0*.hazel\0");if(!path.empty())m_Editor.OpenScene(Path(path),true);});
 	if (ImGui::BeginMenu("Recent Projects"))
 	{
 		std::string remove;
@@ -736,6 +762,9 @@ void AuthoringPanel::OpenScript(const std::filesystem::path &path)
 }
 void AuthoringPanel::SelectAsset(const std::filesystem::path &path)
 {
+    if(path.extension()==".hsprites") {Guard([this,path]{
+        try{m_Sprites.Open(path);}catch(const std::exception& e){m_Editor.ActionFailed(std::string("Cannot open sprite sheet; original file preserved. Repair it in a text editor: ")+e.what());}
+    },false);return;}
 	if (path.extension() == ".cs")
 	{
 		OpenScript(path);
@@ -748,7 +777,7 @@ void AuthoringPanel::SelectAsset(const std::filesystem::path &path)
 			try
 			{
 				auto relative = Project::MakeAssetReference(Project::GetAssetDirectory(), path);
-				auto scene = Prefab::Load(Project::GetAssetDirectory(), relative);
+				auto scene = Prefab::Load(Project::GetAssetDirectory(), relative,true);
 				m_InitialTransform = Prefab::GetEntity(scene).GetComponent<TransformComponent>();
 				m_InitialTransform.Translation.x = m_InitialTransform.Translation.y = 0.0f;
 				m_PrefabScene = scene;
@@ -868,7 +897,7 @@ void AuthoringPanel::Prefabs()
 		try
 		{
 			Prefab::Save(Project::GetAssetDirectory(), Path(m_PrefabReference), m_PrefabScene,
-						 Prefab::GetEntity(m_PrefabScene));
+						 Prefab::GetEntity(m_PrefabScene),true);
 			m_SavedPrefab = SceneSerializer(m_PrefabScene).SerializeText();
 			m_Output = "Prefab saved.";
 			m_ShowOutput = true;
@@ -914,6 +943,7 @@ void AuthoringPanel::Render()
 	Scripts();
 	Export();
 	Prefabs();
+    m_Sprites.Render(m_Editor.m_SceneState==EditorLayer::SceneState::Edit);
 	if (m_Pending)
 	{
 		ImGui::OpenPopup("Unsaved changes");
@@ -923,15 +953,16 @@ void AuthoringPanel::Render()
 	ImGui::SetNextWindowPos(mainViewport->GetCenter(), ImGuiCond_Appearing, {0.5f, 0.5f});
 	if (ImGui::BeginPopupModal("Unsaved changes", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		ImGui::TextWrapped("Save authored scene and prefab changes before continuing?");
+		ImGui::TextWrapped("Save authored scene, prefab and sprite-sheet changes before continuing?");
 		if (ImGui::Button("Save and Continue"))
 		{
 			bool saved = !m_PendingIncludesScene || m_Editor.SaveScene();
+            if(saved && m_Sprites.Dirty()) saved=m_Sprites.Save();
 			if (saved && m_PrefabScene)
 				try
 				{
 					Prefab::Save(Project::GetAssetDirectory(), Path(m_PrefabReference), m_PrefabScene,
-								 Prefab::GetEntity(m_PrefabScene));
+								 Prefab::GetEntity(m_PrefabScene),true);
 					m_SavedPrefab = SceneSerializer(m_PrefabScene).SerializeText();
 				}
 				catch (const std::exception &error)
@@ -948,7 +979,7 @@ void AuthoringPanel::Render()
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Discard and Continue"))
+		if (ImGui::Button("Discard and Continue") && m_Sprites.Discard())
 		{
 			auto next = std::move(m_Pending);
 			m_Pending = {};

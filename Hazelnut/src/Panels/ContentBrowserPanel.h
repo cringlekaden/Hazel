@@ -15,6 +15,8 @@ namespace Hazel {
 
 		void OnImGuiRender();
         std::function<void(const std::filesystem::path&)> SelectAsset;
+        std::function<void(const std::filesystem::path&)> CreateSpriteSheet;
+        std::function<void()> ImportTexture;
 	private:
 		std::filesystem::path m_BaseDirectory;
 		std::filesystem::path m_CurrentDirectory;
