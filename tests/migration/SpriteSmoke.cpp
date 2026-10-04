@@ -44,6 +44,11 @@ static void Logical(const std::filesystem::path& root) {
     Reject([&]{document.Open("bad.hsprites");});Check(document.Reference()=="sheet.hsprites"&&document.Dirty(),"Malformed open replaced recoverable document");document.Discard();
     services->ImportTexture(root/"sheet.tga","Imported/sheet.tga");Reject([&]{services->ImportTexture(root/"sheet.tga","Imported/sheet.tga");});Check(Read(root/"Imported/sheet.tga")==Read(root/"sheet.tga"),"Native import changed original bytes");
     Reject([&]{Project::ResolveOwnedAsset(root,"../escape.hsprites");});Reject([&]{Project::ResolveOwnedAsset(root,"C:\\external.png");});
+#ifdef HZ_PLATFORM_LINUX
+    std::filesystem::create_directory_symlink(root,root/"root-alias");
+    Check(Project::MakeAssetReference(root/"root-alias",root/"sheet.tga")=="sheet.tga","Canonical root alias broke portable references");
+    std::filesystem::remove(root/"root-alias");
+#endif
     auto legacy=ReadSpriteSource(YAML::Load("TexturePath: sheet.tga\nTilingFactor: 2"));Check(std::get<TextureSpriteSource>(legacy).TilingFactor==2,"Legacy texture compatibility");
     Reject([]{ReadSpriteSource(YAML::Load("TexturePath: sheet.tga\nSource: {Type: None}"));});
     auto deps=AuditSpriteAssets(root,{"sheet.hsprites"});Check(deps.size()==2,"Unloaded export closure incomplete");
