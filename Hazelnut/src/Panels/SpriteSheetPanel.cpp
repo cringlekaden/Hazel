@@ -99,7 +99,10 @@ void SpriteSheetPanel::Regions(bool editable) {
     if(changed)m_Document->Changed();
     if(ImGui::Button("Delete region...")){m_DeleteID=r.ID;m_DeleteClip=false;try{m_DeleteUses=m_Document->References(r.ID);}catch(const std::exception& e){m_DeleteUses={"Reference scan failed: "+std::string(e.what())};}ImGui::OpenPopup("Delete authored item");}
     ImGui::EndDisabled();
+    if(m_Document->Dirty())ImGui::TextDisabled("Save sheet before assignment");
+    ImGui::BeginDisabled(m_Document->Dirty());
     if(AssignSprite && ImGui::Button("Assign to selected entity"))AssignSprite({m_Document->Reference(),r.ID});
+    ImGui::EndDisabled();
     if(m_Texture && r.Rect.Width && r.Rect.Height && uint64_t(r.Rect.X)+r.Rect.Width<=s.Sampling.Width && uint64_t(r.Rect.Y)+r.Rect.Height<=s.Sampling.Height) {
         const auto uv=SpriteUV(r.Rect,s.Sampling.Width,s.Sampling.Height);
         auto anchor=P(ImGui::GetCursorScreenPos())+glm::vec2(84,84);auto top=anchor-r.Pivot*100.f;
@@ -132,7 +135,9 @@ void SpriteSheetPanel::Clips(bool editable) {
     if(up>=0){std::swap(clip.Frames[up],clip.Frames[up-1]);changed=true;}if(down>=0){std::swap(clip.Frames[down],clip.Frames[down+1]);changed=true;}
     if(ImGui::Button("Delete clip...")){m_DeleteID=clip.ID;m_DeleteClip=true;try{m_DeleteUses=m_Document->References(clip.ID,true);}catch(const std::exception& e){m_DeleteUses={"Reference scan failed: "+std::string(e.what())};}ImGui::OpenPopup("Delete authored item");}
     if(changed){m_Document->Changed();m_Playback.Reset();}ImGui::EndDisabled();
+    ImGui::BeginDisabled(m_Document->Dirty());
     if(AssignClip && ImGui::Button("Assign animation to selected entity"))AssignClip({m_Document->Reference(),clip.ID});
+    ImGui::EndDisabled();if(m_Document->Dirty())ImGui::TextDisabled("Save sheet before assignment");
     try {
         const double total=SpritePlayback::Duration(m_Document->PreviewClip(clip.ID));
         if(ImGui::Button("Play preview")){if(m_Playback.Finished)m_Playback.Reset();m_Playback.Playing=true;}ImGui::SameLine();if(ImGui::Button("Pause preview"))m_Playback.Playing=false;ImGui::SameLine();if(ImGui::Button("Stop preview"))m_Playback.Reset();
@@ -221,7 +226,7 @@ void SpriteSheetPanel::Render(bool editable) {
     ImGui::BeginDisabled(!editable);if(ImGui::Button("Save sheet"))Save();ImGui::SameLine();if(ImGui::Button("Reload from disk")){if(!Dirty()){try{m_Document->Discard();m_Assets->Reload(m_Document->Reference());m_PreviewStale=true;m_Playback.Reset();}catch(const std::exception& e){Fail(e);}}else m_Error="Save or discard changes before reloading";}
     ImGui::SameLine();if(Dirty() && ImGui::Button("Discard sheet changes..."))ImGui::OpenPopup("Discard sprite edits");
     if(ImGui::BeginPopupModal("Discard sprite edits",nullptr,ImGuiWindowFlags_AlwaysAutoResize)){ImGui::TextUnformatted("Reload the saved sheet and discard this draft?");if(ImGui::Button("Discard")){Discard();ImGui::CloseCurrentPopup();}ImGui::SameLine();if(ImGui::Button("Keep editing"))ImGui::CloseCurrentPopup();ImGui::EndPopup();}
-    ImGui::EndDisabled();if(!editable)ImGui::TextDisabled("Asset editing is disabled during Play / Simulate; preview stays independent.");
+    ImGui::EndDisabled();if(!editable)ImGui::TextDisabled("Asset editing is disabled during Play / Simulate or a tool job; preview stays independent.");
     if(!m_Error.empty())ImGui::TextColored({1,.4f,.3f,1},"%s",m_Error.c_str());
     PreviewTexture();
     const float left=std::clamp(ImGui::GetContentRegionAvail().x*.38f,240.f,380.f);

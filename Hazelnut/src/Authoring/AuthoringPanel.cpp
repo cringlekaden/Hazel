@@ -943,7 +943,7 @@ void AuthoringPanel::Render()
 	Scripts();
 	Export();
 	Prefabs();
-    m_Sprites.Render(m_Editor.m_SceneState==EditorLayer::SceneState::Edit);
+    m_Sprites.Render(m_Editor.m_SceneState==EditorLayer::SceneState::Edit && !m_Tools.Busy());
 	if (m_Pending)
 	{
 		ImGui::OpenPopup("Unsaved changes");
