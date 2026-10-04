@@ -26,7 +26,7 @@ namespace Hazel {
 		};
 	}
 
-	void FileSystem::WriteFileAtomically(const std::filesystem::path& path, const std::function<void(std::ostream&)>& writer)
+	void FileSystem::WriteFileAtomically(const std::filesystem::path& path, const std::function<void(std::ostream&)>& writer, WriteMode mode)
 	{
 		std::filesystem::path temporary;
 		std::FILE* file = nullptr;
@@ -45,7 +45,7 @@ namespace Hazel {
 			const int closed = std::fclose(file);
 			file = nullptr;
 			if (closed != 0) throw std::runtime_error("Cannot close save temporary for " + path.generic_u8string());
-			ReplaceFile(temporary, path);
+			ReplaceFile(temporary, path, mode);
 		} catch (...) {
 			if (file) std::fclose(file);
 			std::error_code ignored;

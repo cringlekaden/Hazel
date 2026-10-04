@@ -47,8 +47,8 @@ std::FILE* FileSystem::OpenExclusiveOutput(const std::filesystem::path& path) {
     }
     return file;
 }
-void FileSystem::ReplaceFile(const std::filesystem::path& source, const std::filesystem::path& destination) {
-    if (!MoveFileExW(source.c_str(), destination.c_str(), MOVEFILE_REPLACE_EXISTING))
+void FileSystem::ReplaceFile(const std::filesystem::path& source, const std::filesystem::path& destination, WriteMode mode) {
+    if (!MoveFileExW(source.c_str(), destination.c_str(), mode == WriteMode::Replace ? MOVEFILE_REPLACE_EXISTING : 0))
         throw std::system_error(GetLastError(), std::system_category(), "Replace saved file " + destination.generic_u8string());
 }
 }

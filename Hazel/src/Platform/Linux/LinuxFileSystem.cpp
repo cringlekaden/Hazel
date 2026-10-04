@@ -37,7 +37,11 @@ std::FILE* FileSystem::OpenExclusiveOutput(const std::filesystem::path& path) {
     }
     return file;
 }
-void FileSystem::ReplaceFile(const std::filesystem::path& source, const std::filesystem::path& destination) {
-    std::filesystem::rename(source, destination);
+void FileSystem::ReplaceFile(const std::filesystem::path& source, const std::filesystem::path& destination, WriteMode mode) {
+    if (mode == WriteMode::Replace) { std::filesystem::rename(source, destination); return; }
+    // Atomic exclusive publication of a complete sibling file; link never replaces a destination.
+    if (link(source.c_str(), destination.c_str()) != 0)
+        throw std::system_error(errno, std::generic_category(), "Publish new file " + destination.generic_u8string());
+    std::error_code ignored; std::filesystem::remove(source, ignored);
 }
 }
