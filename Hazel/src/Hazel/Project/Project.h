@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Hazel/Core/Base.h"
+#include "Hazel/Core/DocumentLoadReport.h"
 
 namespace Hazel {
     class Scene;
@@ -63,7 +64,7 @@ namespace Hazel {
         static std::vector<std::filesystem::path> Discover(const std::filesystem::path& directory);
 		static Ref<Project> New();
 		static Ref<Project> Load(const std::filesystem::path& path);
-		static Ref<Project> LoadCandidate(const std::filesystem::path& path);
+		static Ref<Project> LoadCandidate(const std::filesystem::path& path, DocumentLoadReport* report = nullptr);
 		static void SetActive(const Ref<Project>& project) { s_ActiveProject = project; }
 		static bool SaveActive(const std::filesystem::path& path);
 	private:

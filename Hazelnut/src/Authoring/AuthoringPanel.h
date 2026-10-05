@@ -6,6 +6,8 @@
 #include "Panels/SpriteSheetPanel.h"
 #include "ProjectTools.h"
 #include "Panels/ConsolePanel.h"
+#include "Hazel/Core/FileDocument.h"
+#include "Hazel/Core/DocumentLoadReport.h"
 #include <functional>
 #include <unordered_map>
 namespace Hazel
@@ -43,11 +45,14 @@ class AuthoringPanel
     ActionAvailability Availability(EditorAction action) const;
     bool Require(EditorAction action);
     void MarkSceneSaved();
+    void ReportOpen(const std::filesystem::path& path,const DocumentLoadReport& report);
     bool SpriteDirty() const { return m_Sprites.Dirty(); }
     void GuardPlay(bool simulate);
 
   private:
     void Preferences();
+    void RecoveryControls();
+    void SaveConflictControls();
     void ProjectSettings();
     void NewProject();
     void Scripts();
@@ -95,6 +100,10 @@ class AuthoringPanel
     std::string m_ScriptName = "NewScript", m_Namespace = "Game",
                 m_PrefabName = "Prefabs/NewPrefab.hprefab", m_ExportPath, m_PackageName = "Game";
     Ref<Scene> m_PrefabScene;
+    FileDocument m_PrefabFile;
+    bool m_ShowSaveConflict=false;
+    EditorDocument m_ConflictDocument=EditorDocument::Scene;
+    uint64_t m_ConflictIdentity=0;
     uint64_t m_PrefabSourceID = 0, m_PrefabSourceScene = 0;
     SceneHierarchyPanel m_PrefabInspector;
     SpriteSheetPanel m_Sprites;

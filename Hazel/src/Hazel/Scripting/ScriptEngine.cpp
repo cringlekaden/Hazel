@@ -146,13 +146,14 @@ namespace Hazel {
 		~ScriptEngineData() {
 			ShuttingDown = true;
 			AppAssemblyFileWatcher.reset();
-			if (AppDomain) {
+			if (AppDomain && RootAlive->load()) {
 				auto* previous = mono_domain_get();
 				mono_domain_set(RootDomain, false);
 				mono_domain_unload(AppDomain);
 				if (previous != AppDomain) mono_domain_set(previous, true);
 			}
 		}
+		std::shared_ptr<std::atomic_bool> RootAlive = std::make_shared<std::atomic_bool>(true);
 		MonoDomain* RootDomain = nullptr;
 		MonoDomain* AppDomain = nullptr;
 
@@ -206,7 +207,9 @@ namespace Hazel {
 		else s_Data->AssemblyReloadPending = false; // Hosts without an application explicitly call ReloadAssembly.
 	}
 
-	void ScriptEngine::Init(const std::filesystem::path& applicationAssembly, const std::function<void()>& beforeReplacement)
+    ScriptAssemblyCandidate::ScriptAssemblyCandidate()=default;
+    ScriptAssemblyCandidate::~ScriptAssemblyCandidate()=default;
+    Scope<ScriptAssemblyCandidate> ScriptEngine::StageAssembly(const std::filesystem::path& applicationAssembly)
 	{
 		auto appPath = applicationAssembly;
 		if (appPath.empty()) {
@@ -218,8 +221,27 @@ namespace Hazel {
 			s_Data->Generation = ++s_Generation;
 		}
 		if (!s_Data->RootDomain) { InitMono(); ScriptGlue::RegisterFunctions(); }
-		ReplaceAssembly(Resources::Resolve("Scripts/Hazel-ScriptCore.dll"), appPath, false, beforeReplacement);
+        Scope<ScriptAssemblyCandidate> candidate(new ScriptAssemblyCandidate());
+        candidate->m_Data=PrepareDomain(Resources::Resolve("Scripts/Hazel-ScriptCore.dll"),appPath);
+        candidate->m_Generation=s_Data->Generation;
+        return candidate;
 	}
+    void ScriptEngine::CommitAssembly(Scope<ScriptAssemblyCandidate> candidate,const std::function<void()>& beforeReplacement)
+    {
+        if(!candidate || !candidate->m_Data || !s_Data || candidate->m_Generation!=s_Data->Generation)
+            throw std::runtime_error("Script environment changed after assembly staging; retry");
+        if(beforeReplacement)beforeReplacement();
+        s_Data->ShuttingDown=true;s_Data->AppAssemblyFileWatcher.reset();
+        ReleaseDomainMetadata();
+        mono_domain_set(s_Data->RootDomain,false);
+        if(s_Data->AppDomain)mono_domain_unload(s_Data->AppDomain);
+        s_Data->AppDomain=nullptr;s_Data=std::move(candidate->m_Data);
+        mono_domain_set(s_Data->AppDomain,true);ScriptGlue::RegisterComponents();s_Data->ShuttingDown=false;
+    }
+    void ScriptEngine::Init(const std::filesystem::path& applicationAssembly,const std::function<void()>& beforeReplacement)
+    {
+        CommitAssembly(StageAssembly(applicationAssembly),beforeReplacement);
+    }
 
 	void ScriptEngine::Shutdown()
 	{
@@ -232,6 +254,23 @@ namespace Hazel {
 		s_Data.reset();
 	}
 	bool ScriptEngine::IsInitialized() { return s_Data && s_Data->Initialized; }
+    void ScriptEngine::ClearApplicationAssembly()
+    {
+        if (!s_Data) return;
+        if (s_Data->SceneContext) throw std::logic_error("Stop scripts before retiring the project domain");
+        s_Data->ShuttingDown=true;
+        s_Data->AppAssemblyFileWatcher.reset();
+        ReleaseDomainMetadata();
+        if (s_Data->RootDomain) mono_domain_set(s_Data->RootDomain, false);
+        if (s_Data->AppDomain) mono_domain_unload(s_Data->AppDomain);
+        s_Data->AppDomain=nullptr;
+        s_Data->AppAssembly=nullptr;s_Data->AppAssemblyImage=nullptr;
+        s_Data->CoreAssembly=nullptr;s_Data->CoreAssemblyImage=nullptr;
+        s_Data->ReloadFields.clear();
+        s_Data->AppAssemblyFilepath.clear();s_Data->CoreAssemblyFilepath.clear();
+        s_Data->ShuttingDown=false;
+        ++s_Generation;s_Data->Generation=s_Generation;
+    }
 
 	void ScriptEngine::InitMono()
 	{
@@ -279,6 +318,7 @@ namespace Hazel {
 		if (s_Data->AppDomain) mono_domain_unload(s_Data->AppDomain);
 		s_Data->AppDomain = nullptr;
 
+		s_Data->RootAlive->store(false); // Outstanding staging tickets must never touch the retired Mono root.
 		mono_jit_cleanup(s_Data->RootDomain);
 		s_Data->RootDomain = nullptr;
 	}
@@ -319,6 +359,7 @@ namespace Hazel {
 		if (!core || !app) throw std::runtime_error("Missing or empty script assembly: " + corePath.generic_u8string() + " / " + appPath.generic_u8string());
 		auto candidate = CreateScope<ScriptEngineData>();
 		candidate->RootDomain = s_Data->RootDomain;
+		candidate->RootAlive = s_Data->RootAlive;
 		candidate->EnableDebugging = s_Data->EnableDebugging;
 		candidate->CoreAssemblyFilepath = corePath;
 		candidate->AppAssemblyFilepath = appPath;

@@ -2,6 +2,16 @@
 #include "Hazel/Scene/SceneCamera.h"
 #include "Hazel/Core/Log.h"
 #include "Hazel/Core/UUID.h"
+#include "Hazel/Core/FileDocument.h"
+#include "Hazel/Core/FileSystem.h"
+#include "Hazel/Core/DocumentSchema.h"
+#include "Hazel/Scene/SceneSerializer.h"
+#include "Hazel/Scene/Entity.h"
+#include "Hazel/Scene/Prefab.h"
+#include "Hazel/Project/ProjectSerializer.h"
+#include "Hazel/Assets/ProjectAssets.h"
+#include "Hazel/Assets/SpriteSheetDocument.h"
+#include <fstream>
 #include <entt.hpp>
 #include <yaml-cpp/yaml.h>
 #include <cmath>
@@ -14,16 +24,102 @@ static void Check(bool condition, const char* message)
 {
     if (!condition) throw std::runtime_error(message);
 }
+#include "EditorDocumentChecks.h"
 static void Finite(const glm::mat4& projection)
 {
     for (int column=0; column<4; ++column)
         for (int row=0; row<4; ++row)
             Check(std::isfinite(projection[column][row]), "Camera projection is non-finite");
 }
+static void RecoveryContracts()
+{
+    using namespace Hazel;
+    const auto root=std::filesystem::temp_directory_path()/std::filesystem::u8path("hazel recovery space-é-"+std::to_string(uint64_t(UUID())));
+    std::filesystem::create_directories(root);
+    const auto file=root/std::filesystem::u8path(u8"source é.hazel");
+    const std::string original=u8"Scene: Missing é\nEntities:\n  - Entity: 72\n    TagComponent: {Tag: Unresolved}\n    SpriteRendererComponent:\n      Color: [1, 1, 1, 1]\n      TexturePath: Textures/missing é.png\n      TilingFactor: 1\n";
+    FileSystem::WriteNewFile(file,original);
+    FileDocument owner;owner.Open(file);
+    auto scene=CreateRef<Scene>();
+    SceneSerializer loader(scene,root,true,CreateRef<ProjectAssets>(root));
+    Check(loader.DeserializeText(owner.Original()),"Missing texture was not editable");
+    Check(loader.Report().Migration && loader.Report().State==DocumentLoadState::EditableWithProblems,
+          "Missing resource/default changes were not identified");
+    auto report=loader.Report();report.Saved();
+    Check(!report.Migration && report.State==DocumentLoadState::EditableWithProblems && report.Problems.size()==1,
+          "Saving migration incorrectly resolved a missing resource or retained obsolete encoding warnings");
+    const auto saved=loader.SerializeText();
+    Check(saved.find(u8"Textures/missing é.png")!=std::string::npos && saved.find("SceneVersion: 1")!=std::string::npos,
+          "Unresolved texture reference or scene version lost");
+    owner.PreserveOriginal();owner.Save(saved,root/"recovery");
+    Check(FileDocument::Read(owner.Backup())==original,"First recovery Save lost original bytes");
+    Check(loader.DeserializeText(saved),"Unresolved saved scene failed reopen");
+    const auto draft=loader.SerializeText();
+    for(const auto& text:{std::string("SceneVersion: 99\nScene: Future\nEntities: []\n"),
+                        std::string("Scene: Unknown\nAlien: 4\nEntities: []\n"),
+                        std::string("Scene: Duplicate\nScene: Second\n"),
+                        std::string("Scene: X\nEntities: [{Entity: 72, TransformComponent: {Translation: [0, 0, 0], Rotation: [0, 0, 0], Scale: [1, 1, 1], Alien: true}}]\n")}) {
+        Check(!loader.DeserializeText(text) && loader.SerializeText()==draft,"Rejected schema changed valid scene");
+    }
+    FileSystem::WriteFileAtomically(file,[](auto& out){out<<"External content";});
+    bool conflict=false;try{owner.Save(saved,root/"recovery");}catch(const std::exception&){conflict=true;}
+    Check(conflict && FileDocument::Read(file)=="External content" && loader.SerializeText()==draft,
+          "Save conflict overwrote disk or draft");
+    std::filesystem::remove(file);conflict=false;
+    try{owner.Save(saved,root/"recovery");}catch(const std::exception&){conflict=true;}
+    Check(conflict && !std::filesystem::exists(file),"Missing accepted file was silently recreated");
+    auto config=CreateRef<Project>();config->GetConfig().Name="Retained";
+    const auto descriptor=root/"future.hproj";
+    FileSystem::WriteNewFile(descriptor,"Project: {Version: 99}\n");
+    ProjectSerializer projectLoader(config);
+    Check(!projectLoader.Deserialize(descriptor) && config->GetConfig().Name=="Retained" &&
+          projectLoader.Report().Error.find("Unsupported Project Version")!=std::string::npos,
+          "Future project changed accepted configuration or lacked version diagnostic");
+    // An exclusive prefab write must preserve an existing destination.
+    auto entity=scene->GetEntityByUUID(72);
+    Prefab::Save(root,"retained.hprefab",scene,entity,true,WriteMode::CreateNew);
+    const auto prefab=FileDocument::Read(root/"retained.hprefab");
+    const auto beforePrefab=loader.SerializeText();
+    Check(!loader.DeserializeText(prefab) && loader.SerializeText()==beforePrefab,"Scene reader silently stripped prefab metadata");
+    auto prefabCandidate=CreateRef<Scene>();
+    Check(SceneSerializer(prefabCandidate,root,true).DeserializeText(prefab,true),"Explicit prefab reader rejected known prefab content");
+    bool exclusive=false;try{Prefab::Save(root,"retained.hprefab",scene,entity,true,WriteMode::CreateNew);}catch(const std::exception&){exclusive=true;}
+    Check(exclusive && FileDocument::Read(root/"retained.hprefab")==prefab,"Prefab creation replaced another file");
+    unsigned char image[18+16]{};image[2]=2;image[12]=image[14]=2;image[16]=32;image[17]=0x20;
+    {std::ofstream out(root/"texture.tga",std::ios::binary);out.write(reinterpret_cast<const char*>(image),sizeof(image));}
+    const std::string sheetText="SpriteSheet: {Version: 1, Texture: texture.tga, TextureSize: [2, 2], Filter: Nearest, Regions: [{ID: '0000000000000001', Name: First, Rect: [0, 0, 2, 2]}]}\n";
+    FileSystem::WriteNewFile(root/"legacy.hsprites",sheetText);
+    auto retainedAssets=CreateRef<ProjectAssets>(root);
+    try{retainedAssets->Sheet("repaired.hsprites");}catch(const std::exception&){}
+    FileSystem::WriteNewFile(root/"repaired.hsprites",sheetText);
+    auto candidateAssets=CreateRef<ProjectAssets>(root);
+    Check(candidateAssets->Sheet("repaired.hsprites")->Region(1).Name=="First","Fresh Open candidate reused a stale missing-sheet failure");
+    bool oldFailure=false;try{retainedAssets->Sheet("repaired.hsprites");}catch(const std::exception&){oldFailure=true;}
+    Check(oldFailure,"Candidate validation altered the retained asset cache");
+    retainedAssets->Refresh();
+    Check(retainedAssets->Sheet("repaired.hsprites")->Region(1).Name=="First","Accepted refresh did not resolve an externally repaired sheet");
+    SpriteSheetDocument sheet(CreateRef<ProjectAssets>(root));sheet.Open("legacy.hsprites");
+    Check(sheet.File().NeedsBackup(),"Known sheet defaults/Filter migration was hidden");
+    sheet.Draft().Regions.front().Name="Edited";sheet.Changed();
+    bool failedSave=false;try{sheet.Save(root/"texture.tga");}catch(const std::exception&){failedSave=true;}
+    Check(failedSave && sheet.Dirty() && FileDocument::Read(root/"legacy.hsprites")==sheetText,"Failed original backup overwrote sheet or lost draft");
+    sheet.Save(root/"recovery");
+    Check(!sheet.Dirty() && FileDocument::Read(sheet.File().Backup())==sheetText,"Sheet migration lost original or dirty semantics");
+    for(unsigned i=0;i<22;++i) {
+        const auto item=root/("bounded-"+std::to_string(i));FileSystem::WriteNewFile(item,"Original");
+        FileDocument original;original.Open(item,true);original.Save("Saved",root/"recovery");
+    }
+    unsigned retained=0;for(const auto& item:std::filesystem::directory_iterator(root/"recovery"))if(item.path().extension()==".original")++retained;
+    Check(retained==20,"Original recovery history was not bounded");
+    std::filesystem::remove_all(root);
+    std::cout<<"PASS: CPU production recovery load/round-trip, unknown/future/duplicate schema rejection, original backups, missing/external save conflicts and exclusive prefab publication\n";
+}
 int main()
 {
     try {
         Hazel::Log::Init();
+        Hazel::EditorDocumentChecks();
+        RecoveryContracts();
         Hazel::SceneCamera camera;
         Finite(camera.GetProjection());
         camera.SetViewportSize(1600,900);

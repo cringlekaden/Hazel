@@ -7,6 +7,8 @@
 
 #include "Hazel/Renderer/EditorCamera.h"
 #include "Hazel/Scene/RuntimeSession.h"
+#include "Hazel/Core/FileDocument.h"
+#include "Hazel/Core/DocumentLoadReport.h"
 
 namespace Hazel {
 
@@ -35,12 +37,18 @@ namespace Hazel {
 		void OnOverlayRender();
 
 		bool OpenProject();
-		bool OpenProject(const std::filesystem::path& path,bool repair = false);
+        struct ProjectOpenOptions {
+            bool WithoutScene=false,SaveDescriptor=false;
+            std::filesystem::path Assets,Scene;
+            std::optional<ProjectConfig> Config;
+        };
+		bool OpenProject(const std::filesystem::path& path);
+        bool OpenProject(const std::filesystem::path& path,const ProjectOpenOptions& options);
 		bool SaveProject();
 
 		void NewScene();
 		bool OpenScene();
-		bool OpenScene(const std::filesystem::path& path,bool repair = false);
+		bool OpenScene(const std::filesystem::path& path);
 		bool SaveScene();
 		bool SaveSceneAs();
 
@@ -72,6 +80,10 @@ namespace Hazel {
 		std::filesystem::path m_EditorScenePath;
 		std::filesystem::path m_ProjectPath;
 		std::string m_ActionError;
+        FileDocument m_SceneFile,m_ProjectFile;
+        DocumentLoadReport m_SceneLoad,m_ProjectLoad,m_OpenLoad;
+        std::filesystem::path m_OpenPath;
+        bool m_OpenIsProject=false;
         Ref<Font> m_Font;
 
 		Entity m_HoveredEntity;

@@ -1,24 +1,28 @@
 #include "hzpch.h"
 #include "SpriteSheetDocument.h"
 #include "Hazel/Project/Project.h"
-#include <fstream>
+#include "Hazel/Core/FileDocument.h"
 namespace Hazel {
-namespace {std::string Text(const std::filesystem::path& path){std::ifstream in(path,std::ios::binary);if(!in)throw std::runtime_error("Sheet missing/unreadable: "+path.generic_u8string());std::string text{std::istreambuf_iterator<char>(in),{}};if(in.bad())throw std::runtime_error("Cannot read complete sheet");return text;}}
 void SpriteSheetDocument::Open(const std::filesystem::path& reference) {
-    auto text=Text(Project::ResolveOwnedAsset(m_Assets->Root(),reference));auto candidate=ReadSpriteSheetText(text);
-    m_Draft=std::move(candidate);m_Reference=reference;m_SavedText=std::move(text);m_Dirty=false;
+    FileDocument file;file.Open(Project::ResolveOwnedAsset(m_Assets->Root(),reference));
+    bool defaults=false;auto candidate=ReadSpriteSheetText(file.Original(),&defaults);file.Check();
+    if(defaults)file.PreserveOriginal();
+    m_Draft=std::move(candidate);m_Reference=reference;m_File=std::move(file);m_Dirty=false;
 }
 void SpriteSheetDocument::Create(const std::filesystem::path& texture,const std::filesystem::path& destination) {
     SpriteSheetDefinition candidate;candidate.Texture=texture;
     auto image=Texture2D::ReadImage(Project::ResolveOwnedAsset(m_Assets->Root(),texture),candidate.Sampling.Format);
     candidate.Sampling.Width=image.Width;candidate.Sampling.Height=image.Height;
     SaveSpriteSheet(m_Assets->Root(),destination,candidate,WriteMode::CreateNew);
-    m_Draft=std::move(candidate);m_Reference=destination;m_SavedText=WriteSpriteSheetText(m_Draft);m_Dirty=false;m_Assets->Reload(destination);
+    FileDocument file;file.Open(Project::ResolveOwnedAsset(m_Assets->Root(),destination));
+    if(file.Original()!=WriteSpriteSheetText(candidate))throw std::runtime_error("Created sheet changed externally; previous draft retained. Open the created file explicitly.");
+    m_Draft=std::move(candidate);m_Reference=destination;m_File=std::move(file);m_Dirty=false;m_Assets->Reload(destination);
 }
-void SpriteSheetDocument::Save() {
-    if(Text(Project::ResolveOwnedAsset(m_Assets->Root(),m_Reference))!=m_SavedText)throw std::runtime_error("Sheet changed on disk. Copy your draft details, then discard/reopen to reconcile; original file and draft preserved.");
-    SaveSpriteSheet(m_Assets->Root(),m_Reference,m_Draft);
-    m_SavedText=WriteSpriteSheetText(m_Draft);m_Dirty=false;m_Assets->Reload(m_Reference);
+void SpriteSheetDocument::Save(const std::filesystem::path& recoveryRoot) {
+    m_File.Check();
+    const auto text=ValidateSpriteSheetSave(m_Assets->Root(),m_Reference,m_Draft);
+    m_File.Save(text,recoveryRoot);
+    m_Dirty=false;m_Assets->Reload(m_Reference);
 }
 void SpriteSheetDocument::Discard() {Open(m_Reference);}
 void SpriteSheetDocument::SelectTexture(const std::filesystem::path& texture) {

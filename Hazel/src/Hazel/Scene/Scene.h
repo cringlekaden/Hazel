@@ -56,6 +56,8 @@ namespace Hazel {
 		const ResolvedSprite* RenderedSprite(Entity entity) const;
 
 		uint64_t GetIdentity() const { return m_Identity; }
+        const std::string& GetName() const { return m_Name; }
+        void SetName(std::string name) { m_Name=std::move(name); }
         bool IsStopping() const { return m_Stopping; }
 
 		bool IsRunning() const { return m_IsRunning; }
@@ -91,6 +93,7 @@ namespace Hazel {
 		Ref<ProjectAssets> m_Assets;
         UUID m_Identity;
 		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
+        std::string m_Name = "Untitled";
 		bool m_IsRunning = false;
         bool m_Stopping = false;
         std::vector<UUID> m_PendingStart;

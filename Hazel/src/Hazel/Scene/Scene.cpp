@@ -95,6 +95,7 @@ namespace Hazel {
         newScene->m_Assets=other->m_Assets;
 
 		newScene->m_ViewportWidth = other->m_ViewportWidth;
+        newScene->m_Name = other->m_Name;
 		newScene->m_ViewportHeight = other->m_ViewportHeight;
 
 		auto& srcSceneRegistry = other->m_Registry;
@@ -198,8 +199,10 @@ namespace Hazel {
 	void Scene::OnRuntimeStart()
 	{
 		if (m_IsRunning) return;
-		if (m_Registry.view<ScriptComponent>().size() && !ScriptEngine::IsInitialized())
-			throw std::logic_error("Managed scene scripts require an initialized project script engine");
+		if (!ScriptEngine::IsInitialized())
+            for (auto handle : m_Registry.view<ScriptComponent>())
+                if (!m_Registry.get<ScriptComponent>(handle).ClassName.empty())
+                    throw std::logic_error("Managed scene scripts require an initialized project script engine");
 		m_IsRunning = true; m_Stopping = false;
         for(auto e:m_Registry.view<SpriteAnimationComponent>())m_Registry.get<SpriteAnimationComponent>(e).ResetRuntime();
         PrepareSprites(true);

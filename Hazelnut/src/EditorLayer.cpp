@@ -4,6 +4,7 @@
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Scene/SceneSerializer.h"
+#include "Hazel/Project/ProjectSerializer.h"
 #include "Hazel/Utils/PlatformUtils.h"
 #include "Hazel/Math/Math.h"
 #include "Hazel/Scripting/ScriptEngine.h"
@@ -446,37 +447,98 @@ namespace Hazel {
 		m_SceneHierarchyPanel.SetContext(nullptr);
 	}
 
-	bool EditorLayer::OpenProject(const std::filesystem::path& path,bool repair)
-	{
+    bool EditorLayer::OpenProject(const std::filesystem::path& path)
+    {
+        return OpenProject(path, ProjectOpenOptions{});
+    }
+    bool EditorLayer::OpenProject(const std::filesystem::path& path,const ProjectOpenOptions& options)
+    {
         if(m_Authoring && !m_Authoring->Require(EditorAction::ReplaceProject))return false;
-		try {
-			auto project = Project::LoadCandidate(path);
-			if (!project) return ActionFailed("Cannot parse/open project: " + path.generic_u8string());
-			const auto assets = project->GetAssetRoot();
-			if (!std::filesystem::is_directory(assets)) return ActionFailed("Project asset directory is missing: " + assets.generic_u8string());
-            const auto startScene = Project::ResolveAssetPath(assets, project->GetConfig().StartScene);
-            auto scene = CreateRef<Scene>();
-            if(!SceneSerializer(scene,assets,repair,project->GetAssets()).Deserialize(startScene.generic_u8string()))return ActionFailed("Cannot load startup scene; use File > Open Project for Repair for broken sprite resources");
-            scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-			auto browser = CreateScope<ContentBrowserPanel>(assets);
-			// Init stages a complete domain/watcher; failure retains the current scripts.
-			ScriptEngine::Init(Project::ResolveAssetPath(assets, project->GetConfig().ScriptModulePath), [this]() {
-				if (m_SceneState != SceneState::Edit) OnSceneStop();
-			});
-			ClearSceneObservers();
-			Project::SetActive(project);
-			m_ProjectPath = path; m_EditorScenePath = startScene;
-			m_EditorScene = scene; m_ActiveScene = scene;
-			m_ContentBrowserPanel = std::move(browser);
-            if(m_Authoring)m_Authoring->BindProject();
-			m_SceneHierarchyPanel.SetContext(scene);
-			m_ActionError.clear();
-            HZ_CORE_INFO("Hazelnut ready: {}", project->GetConfig().Name);
-			return true;
-		} catch (const std::runtime_error& error) {
-			return ActionFailed("Open project '" + path.generic_u8string() + "': " + error.what());
-		}
-	}
+        m_OpenPath=std::filesystem::absolute(path).lexically_normal();m_OpenIsProject=true;m_OpenLoad={};
+        try {
+            if(path.extension()!=".hproj")throw std::runtime_error("Select a .hproj descriptor");
+            FileDocument projectFile;projectFile.Open(path);
+            auto project=Project::LoadCandidate(path,&m_OpenLoad);
+            if(!project)throw std::runtime_error(m_OpenLoad.Error.empty()?"Cannot parse/open project":m_OpenLoad.Error);
+            auto& config=project->GetConfig();
+            if(options.Config){config=*options.Config;m_OpenLoad.Migration=true;}
+            if(!options.Assets.empty()) {
+                const auto relative=std::filesystem::weakly_canonical(options.Assets).lexically_relative(std::filesystem::weakly_canonical(path.parent_path()));
+                if(relative!=".")Project::ResolveOwnedAsset(path.parent_path(),relative);
+                config.AssetDirectory=relative;m_OpenLoad.Migration=true;
+            }
+            const auto assets=project->GetAssetRoot();
+            if(!options.Scene.empty()) {
+                config.StartScene=Project::MakeAssetReference(assets,options.Scene);
+                Project::ResolveOwnedAsset(assets,config.StartScene);
+                m_OpenLoad.Migration=true;
+            }
+            auto scene=CreateRef<Scene>();
+            FileDocument sceneFile;
+            DocumentLoadReport sceneReport;
+            std::filesystem::path startScene;
+            const bool assetRootExists=std::filesystem::is_directory(assets);
+            if(!options.WithoutScene) {
+                startScene=Project::ResolveAssetPath(assets,config.StartScene);
+                if(!assetRootExists || !std::filesystem::is_regular_file(startScene)) {
+                    m_OpenLoad.State=DocumentLoadState::NeedsDecision;
+                    m_OpenLoad.Error=!assetRootExists?"Assets directory is missing: "+assets.generic_u8string():"Startup scene is missing: "+startScene.generic_u8string();
+                    if(m_Authoring)m_Authoring->ReportOpen(path,m_OpenLoad);
+                    return ActionFailed(m_OpenLoad.Error+". Open Console to Locate or explicitly open the workspace without a scene.");
+                }
+                sceneFile.Open(startScene);
+                SceneSerializer loader(scene,assets,true,project->GetAssets());
+                if(!loader.DeserializeText(sceneFile.Original()))throw std::runtime_error(loader.Report().Error);
+                sceneReport=loader.Report();
+                if(sceneReport.Migration || !sceneReport.Problems.empty())sceneFile.PreserveOriginal();
+            } else {
+                scene->SetAssets(project->GetAssets());sceneReport.State=DocumentLoadState::Ready;
+                m_OpenLoad.Problems.push_back({0,"Startup scene","Opened workspace without a scene; descriptor references retained",path});
+            }
+            scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x),static_cast<uint32_t>(m_ViewportSize.y));
+            auto browser=assetRootExists?CreateScope<ContentBrowserPanel>(assets):nullptr;
+            projectFile.Check();if(!sceneFile.Path().empty())sceneFile.Check();
+            const auto assembly=Project::ResolveAssetPath(assets,config.ScriptModulePath);
+            Scope<ScriptAssemblyCandidate> scriptCandidate;
+            if(!config.ScriptModulePath.empty() && std::filesystem::is_regular_file(assembly)) {
+                // Present invalid assemblies still reject staging; failed replacement retains the old domain.
+                scriptCandidate=ScriptEngine::StageAssembly(assembly);
+            } else {
+                m_OpenLoad.Problems.push_back({0,"Scripts","Scripts not built/available. Content editing and script-free Play remain available; Build Scripts when ready.",assembly});
+            }
+            if(options.SaveDescriptor) {
+                // A valid project/scene/browser/domain candidate now exists; guard the accepted descriptor.
+                if(m_ProjectFile.Path()!=projectFile.Path())throw std::runtime_error("Settings project identity changed");
+                m_ProjectFile.Check();
+                projectFile=m_ProjectFile;
+                projectFile.PreserveOriginal();
+                projectFile.Save(ProjectSerializer(project).SerializeText(),Resources::Get().UserData/"recovery");
+                m_OpenLoad.Saved();
+            }
+            if(scriptCandidate)ScriptEngine::CommitAssembly(std::move(scriptCandidate),[this]{if(m_SceneState!=SceneState::Edit)OnSceneStop();});
+            else {if(m_SceneState!=SceneState::Edit)OnSceneStop();ScriptEngine::ClearApplicationAssembly();}
+            for(auto handle:scene->GetAllEntitiesWith<ScriptComponent>()) {
+                Entity entity(handle,scene.get());const auto& name=entity.GetComponent<ScriptComponent>().ClassName;
+                if(!name.empty() && !ScriptEngine::EntityClassExists(name))
+                    m_OpenLoad.Problems.push_back({entity.GetUUID(),"Script class","Unavailable class: "+name,assembly});
+            }
+            m_OpenLoad.Problems.insert(m_OpenLoad.Problems.end(),sceneReport.Problems.begin(),sceneReport.Problems.end());
+            m_OpenLoad.State=m_OpenLoad.Problems.empty()?DocumentLoadState::Ready:DocumentLoadState::EditableWithProblems;
+            if(m_OpenLoad.Migration || !m_OpenLoad.Problems.empty())projectFile.PreserveOriginal();
+            ClearSceneObservers();Project::SetActive(project);
+            m_ProjectPath=std::filesystem::absolute(path).lexically_normal();m_EditorScenePath=startScene;
+            m_ProjectFile=std::move(projectFile);m_SceneFile=std::move(sceneFile);
+            m_ProjectLoad=m_OpenLoad;m_SceneLoad=std::move(sceneReport);
+            m_EditorScene=scene;m_ActiveScene=scene;m_ContentBrowserPanel=std::move(browser);
+            if(m_Authoring){m_Authoring->BindProject();m_Authoring->ReportOpen(path,m_OpenLoad);}
+            m_SceneHierarchyPanel.SetContext(scene);m_ActionError.clear();
+            HZ_CORE_INFO("Hazelnut ready: {}",config.Name);return true;
+        } catch(const std::exception& error) {
+            m_OpenLoad.State=DocumentLoadState::Rejected;m_OpenLoad.Error=error.what();
+            if(m_Authoring)m_Authoring->ReportOpen(path,m_OpenLoad);
+            return ActionFailed("Open project '"+path.generic_u8string()+"': "+error.what());
+        }
+    }
 
 	bool EditorLayer::OpenProject()
 	{
@@ -488,7 +550,12 @@ namespace Hazel {
 	{
         if(m_Authoring && !m_Authoring->Require(EditorAction::EditAsset))return false;
 		if (m_ProjectPath.empty()) return ActionFailed("Open a project before saving it");
-		if (!Project::SaveActive(m_ProjectPath)) return ActionFailed("Cannot save project: " + m_ProjectPath.generic_u8string());
+		try {
+            if(m_ProjectFile.Path()!=std::filesystem::absolute(m_ProjectPath).lexically_normal())throw std::runtime_error("Project document identity changed; reopen before saving");
+            m_ProjectFile.Save(ProjectSerializer(Project::GetActive()).SerializeText(),Resources::Get().UserData/"recovery");
+            m_ProjectLoad.Saved();
+            if(!m_ProjectFile.Backup().empty())HZ_INFO("Original project preserved at {}",m_ProjectFile.Backup().generic_u8string());
+        }catch(const std::exception& error){return ActionFailed(error.what());}
 		m_ActionError.clear(); return true;
 	}
 
@@ -500,7 +567,8 @@ namespace Hazel {
 		m_EditorScene = CreateRef<Scene>(); m_ActiveScene = m_EditorScene;
         if(Project::GetActive())m_EditorScene->SetAssets(Project::GetActive()->GetAssets());
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-		m_EditorScenePath.clear(); m_ActionError.clear();
+		m_EditorScenePath.clear(); m_SceneFile={};m_SceneLoad={};m_ActionError.clear();
+        if(m_Authoring)m_Authoring->MarkSceneSaved();
 	}
 
 	bool EditorLayer::OpenScene()
@@ -509,24 +577,45 @@ namespace Hazel {
 		return !path.empty() && OpenScene(std::filesystem::u8path(path));
 	}
 
-	bool EditorLayer::OpenScene(const std::filesystem::path& path,bool repair)
-	{
+    bool EditorLayer::OpenScene(const std::filesystem::path& path)
+    {
         if(m_Authoring && !m_Authoring->Require(EditorAction::ReplaceScene))return false;
-		try {
-			if (path.extension() != ".hazel") return ActionFailed("Scene must be a .hazel file: " + path.generic_u8string());
-			auto scene = CreateRef<Scene>();
-			scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-			if (!SceneSerializer(scene,Project::GetActive()?Project::GetAssetDirectory():std::filesystem::path{},repair).Deserialize(path.generic_u8string())) return ActionFailed("Cannot load scene/assets; use Open Scene for Repair for broken sprite resources: " + path.generic_u8string());
-			if (m_SceneState != SceneState::Edit) OnSceneStop();
-			ClearSceneObservers();
-			m_EditorScene = scene; m_ActiveScene = scene; m_EditorScenePath = path;
-			m_SceneHierarchyPanel.SetContext(scene); m_ActionError.clear();
-            if(m_Authoring)m_Authoring->MarkSceneSaved();
-			return true;
-		} catch (const std::runtime_error& error) {
-			return ActionFailed("Open scene '" + path.generic_u8string() + "': " + error.what());
-		}
-	}
+        m_OpenPath=std::filesystem::absolute(path).lexically_normal();m_OpenIsProject=false;m_OpenLoad={};
+        try {
+            if(path.extension()!=".hazel")throw std::runtime_error("Select a .hazel scene");
+            FileDocument file;file.Open(path);
+            auto scene=CreateRef<Scene>();
+            scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x),static_cast<uint32_t>(m_ViewportSize.y));
+            const auto assetRoot=Project::GetActive()?Project::GetAssetDirectory():std::filesystem::current_path();
+            // A candidate must not reuse stale failures or alter the retained session's cache.
+            auto candidateAssets=CreateRef<ProjectAssets>(assetRoot);
+            SceneSerializer loader(scene,assetRoot,true,candidateAssets);
+            if(!loader.DeserializeText(file.Original()))throw std::runtime_error(loader.Report().Error);
+            m_OpenLoad=loader.Report();
+            for(auto handle:scene->GetAllEntitiesWith<ScriptComponent>()) {
+                Entity entity(handle,scene.get());const auto& name=entity.GetComponent<ScriptComponent>().ClassName;
+                if(!name.empty() && !ScriptEngine::EntityClassExists(name))
+                    m_OpenLoad.Problems.push_back({entity.GetUUID(),"Script class","Unavailable class: "+name,{}});
+            }
+            if(!m_OpenLoad.Problems.empty())m_OpenLoad.State=DocumentLoadState::EditableWithProblems;
+            if(m_OpenLoad.Migration || !m_OpenLoad.Problems.empty())file.PreserveOriginal();
+            file.Check();
+            if(m_SceneState!=SceneState::Edit)OnSceneStop();
+            if(Project::GetActive()) {
+                // Keep shared save/assignment invalidation after successful staged Open.
+                auto assets=Project::GetActive()->GetAssets();assets->Refresh();scene->SetAssets(assets);
+            }
+            ClearSceneObservers();m_EditorScene=scene;m_ActiveScene=scene;m_EditorScenePath=std::filesystem::absolute(path).lexically_normal();
+            m_SceneFile=std::move(file);m_SceneLoad=m_OpenLoad;
+            m_SceneHierarchyPanel.SetContext(scene);m_ActionError.clear();
+            if(m_Authoring){m_Authoring->MarkSceneSaved();m_Authoring->ReportOpen(path,m_OpenLoad);}
+            return true;
+        }catch(const std::exception& error){
+            m_OpenLoad.State=DocumentLoadState::Rejected;m_OpenLoad.Error=error.what();
+            if(m_Authoring)m_Authoring->ReportOpen(path,m_OpenLoad);
+            return ActionFailed("Open scene '"+path.generic_u8string()+"': "+error.what());
+        }
+    }
 
 	bool EditorLayer::SaveScene()
 	{
@@ -547,14 +636,34 @@ namespace Hazel {
 	bool EditorLayer::SerializeScene(Ref<Scene> scene, const std::filesystem::path& path)
 	{
         if(m_Authoring && !m_Authoring->Require(EditorAction::SaveScene))return false;
-		try { SceneSerializer(scene).Serialize(path.generic_u8string()); if(m_Authoring)m_Authoring->MarkSceneSaved(); m_ActionError.clear(); return true; }
+		try {
+            auto text=SceneSerializer(scene).SerializeText();
+            const auto target=std::filesystem::absolute(path).lexically_normal();
+            if(m_SceneFile.Path()==target) {
+                m_SceneFile.Save(text,Resources::Get().UserData/"recovery");
+                if(!m_SceneFile.Backup().empty())HZ_INFO("Original scene preserved at {}",m_SceneFile.Backup().generic_u8string());
+            } else {
+                // Save As's native dialog confirms existing destinations. Capture/check their accepted bytes.
+                FileDocument copy;
+                if(std::filesystem::exists(target)){copy.Open(target);copy.PreserveOriginal();copy.Save(text,Resources::Get().UserData/"recovery");}
+                else FileSystem::WriteFileAtomically(target,[&](auto& out){out<<text;},WriteMode::CreateNew);
+                if(scene==m_EditorScene){copy.Open(target);m_SceneFile=std::move(copy);}
+            }
+            if(scene==m_EditorScene) {
+                m_SceneLoad.Saved();
+                if(!m_OpenIsProject && m_OpenPath==m_SceneFile.Path() &&
+                   (m_OpenLoad.State==DocumentLoadState::Ready || m_OpenLoad.State==DocumentLoadState::EditableWithProblems))m_OpenLoad=m_SceneLoad;
+            }
+            if(m_Authoring)m_Authoring->MarkSceneSaved();
+            m_ActionError.clear();return true;
+        }
 		catch (const std::runtime_error& error) { return ActionFailed("Save scene '" + path.generic_u8string() + "': " + error.what()); }
 	}
 
 	bool EditorLayer::ReloadScripts()
 	{
         if(m_Authoring && !m_Authoring->Require(EditorAction::ReloadScripts))return false;
-		try { ScriptEngine::ReloadAssembly(); m_ActionError.clear(); return true; }
+		try { m_ProjectFile.Check(); ScriptEngine::ReloadAssembly(); m_ActionError.clear(); return true; }
 		catch (const std::runtime_error& error) { return ActionFailed(std::string("Reload scripts: ") + error.what()); }
 	}
 
@@ -563,9 +672,6 @@ namespace Hazel {
         if(m_Authoring && !m_Authoring->Require(EditorAction::Play))return false;
         if(m_Authoring && !useSavedAssets){m_Authoring->GuardPlay(false);return m_SceneState==SceneState::Play;}
 		if (m_SceneState == SceneState::Play) return true;
-		if (!ScriptEngine::IsInitialized() && !m_EditorScene->GetAllEntitiesWith<ScriptComponent>().empty()) {
-			return ActionFailed("Open a valid script assembly before playing a scripted scene");
-		}
 		try {
             if(Project::GetActive())Project::GetActive()->GetAssets()->Refresh();
             if (m_SceneState != SceneState::Edit) OnSceneStop();

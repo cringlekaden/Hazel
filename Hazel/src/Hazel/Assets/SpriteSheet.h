@@ -58,8 +58,9 @@ std::array<glm::vec2,4> SpriteUV(const PixelRect&,uint32_t width,uint32_t height
 std::array<glm::vec2,4> SpriteCorners(glm::vec2 pivot);
 // Native authoring/runtime persistence. No GPU, ImGui, Mono or Python.
 SpriteSheetDefinition ReadSpriteSheet(const std::filesystem::path& file);
-SpriteSheetDefinition ReadSpriteSheetText(const std::string& text);
+SpriteSheetDefinition ReadSpriteSheetText(const std::string& text, bool* usesDefaults = nullptr);
 std::string WriteSpriteSheetText(const SpriteSheetDefinition&);
+std::string ValidateSpriteSheetSave(const std::filesystem::path& root,const std::filesystem::path& reference,const SpriteSheetDefinition&);
 void SaveSpriteSheet(const std::filesystem::path& root,const std::filesystem::path& reference,const SpriteSheetDefinition&,WriteMode mode=WriteMode::Replace);
 SpriteSource ReadSpriteSource(const YAML::Node& component);
 void WriteSpriteSource(YAML::Emitter& out,const SpriteSource& source);

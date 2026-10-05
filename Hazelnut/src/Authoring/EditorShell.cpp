@@ -126,9 +126,10 @@ void AuthoringPanel::Status()
     const std::string operation = m_Editor.m_Console->Status();
     const std::string identity = project + " | Scene: " + scene + " | Active: " + ActiveName() + " | " +
                                  mode + " | " + std::to_string(dirty) + " unsaved" +
+                                 (m_Editor.m_SceneFile.NeedsBackup() || m_Editor.m_ProjectFile.NeedsBackup() || m_Editor.m_SceneLoad.State==DocumentLoadState::EditableWithProblems || m_Editor.m_ProjectLoad.State==DocumentLoadState::EditableWithProblems?" | Recovery/migration — Console":"") +
                                  (operation.empty() ? "" : " | " + operation);
     ImGui::AlignTextToFramePadding();
-    if (!operation.empty() || m_Editor.m_Console->Errors() || m_Editor.m_Console->HasFailure())
+    if (!operation.empty() || m_Editor.m_Console->Errors() || m_Editor.m_Console->HasFailure() || m_Editor.m_SceneFile.NeedsBackup() || m_Editor.m_ProjectFile.NeedsBackup() || m_Editor.m_SceneLoad.State==DocumentLoadState::EditableWithProblems || m_Editor.m_ProjectLoad.State==DocumentLoadState::EditableWithProblems)
     {
         const auto count=m_Editor.m_Console->Errors();
         const bool failure=m_Editor.m_Console->HasFailure();

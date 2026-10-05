@@ -24,6 +24,16 @@ extern "C" {
 
 namespace Hazel {
 	struct ScriptEngineData;
+    class ScriptAssemblyCandidate
+    {
+    public:
+        ~ScriptAssemblyCandidate();
+    private:
+        ScriptAssemblyCandidate();
+        Scope<ScriptEngineData> m_Data;
+        uint64_t m_Generation=0;
+        friend class ScriptEngine;
+    };
     class RuntimeSession;
 
 
@@ -108,7 +118,11 @@ namespace Hazel {
 	{
 	public:
 		static void Init(const std::filesystem::path& applicationAssembly = {}, const std::function<void()>& beforeReplacement = {});
+        static Scope<ScriptAssemblyCandidate> StageAssembly(const std::filesystem::path& applicationAssembly);
+        static void CommitAssembly(Scope<ScriptAssemblyCandidate> candidate,const std::function<void()>& beforeReplacement = {});
 		static void Shutdown();
+        // Retire project metadata/watcher while keeping Mono's root reusable.
+        static void ClearApplicationAssembly();
 		static bool IsInitialized();
 
 		static bool LoadAssembly(const std::filesystem::path& filepath);

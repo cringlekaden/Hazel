@@ -410,5 +410,16 @@ native project generation or a new packaging/ABI contract. See
 Track redundant tooltip cleanup as a later presentation task: behavior, units,
 shortcuts, consequences and disabled reasons are useful; repeating readable labels
 or values is generally unnecessary. Full paths/values are useful when clipped.
-The current correction applies this to touched controls only. B–H and the other
-explicit deferrals remain separate stages awaiting acceptance/authorization.
+The current correction applies this to touched controls only. B is delivered;
+Stage C local work is recorded in the implementation record. D–H and broader
+tooltip cleanup remain separate stages.
+
+
+## Stage C implementation follow-up
+
+Stage C is verified locally with Linux Debug/Release builds, focused CPU checks
+and software-rendered editor regressions. Physical acceptance and CI are separate. Normal Open now uses staged known-schema recovery, retained unresolved
+references, original backups and disk-conflict handling. Read the current contracts and check
+status in [the implementation record](editor-usability-a1-a2.md#stage-c-normal-open-and-preservation).
+A1/A2/B remain intact. After reboot the user authorized D/E to proceed following
+C verification; F/G/H and broad tooltip cleanup remain deferred. The original findings above describe the audited baseline, not later code.

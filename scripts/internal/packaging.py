@@ -45,7 +45,7 @@ def resolve_owned(root, reference, exists=True):
 def validate_project(descriptor, config, assets):
     import yaml
     files = list(project_files(assets))
-    validate_sprites(assets, files)
+    validate_sprites(assets, files, descriptor)
     included = {file.resolve() for file in files}
     for key in ('StartScene','ScriptModulePath'):
         if resolve_owned(assets,config[key]) not in included:
@@ -100,7 +100,7 @@ def validate_project(descriptor, config, assets):
     print(result.stdout, end='')
 
 
-def validate_sprites(assets, files):
+def validate_sprites(assets, files, descriptor=None):
     # Metadata is parsed and decoded by the same native services as authoring/runtime.
     auditor = hz.binaries('Release') / 'SpriteAssetAudit' / ('SpriteAssetAudit.exe' if hz.SYSTEM=='windows' else 'SpriteAssetAudit')
     if not auditor.is_file():
@@ -114,7 +114,9 @@ def validate_sprites(assets, files):
         inventory.write_text(''.join(name+'\n' for name in relative), encoding='utf-8')
         env = os.environ.copy()
         if hz.SYSTEM=='linux': env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
-        result = subprocess.run([str(auditor),str(assets),str(inventory)],capture_output=True,text=True,encoding='utf-8',env=env)
+        command=[str(auditor),str(assets),str(inventory)]
+        if descriptor is not None: command += ['--project',str(descriptor)]
+        result = subprocess.run(command,capture_output=True,text=True,encoding='utf-8',env=env)
     if result.returncode:
         raise RuntimeError(result.stderr.strip() or 'Native sprite dependency audit failed')
     for line in result.stdout.splitlines():

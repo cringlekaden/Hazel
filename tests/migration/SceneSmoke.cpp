@@ -211,6 +211,19 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
     Check(refusedInit && !ScriptEngine::IsInitialized(),"Invalid initial assembly silently initialized scripting");
     std::filesystem::copy_file(app,target,std::filesystem::copy_options::overwrite_existing);
     ScriptEngine::Init();
+    auto staged=ScriptEngine::StageAssembly(target);
+    staged.reset();
+    Check(ScriptEngine::EntityClassExists("Migration.SceneProbe"),"Cancelled assembly staging retired the current domain");
+    staged=ScriptEngine::StageAssembly(target);
+    ScriptEngine::ClearApplicationAssembly();
+    auto unassigned=CreateRef<Scene>();
+    unassigned->CreateEntity("Unassigned script").AddComponent<ScriptComponent>();
+    unassigned->OnRuntimeStart();
+    Check(unassigned->IsRunning(),"Unassigned script component unnecessarily required a managed domain");
+    unassigned->OnRuntimeStop();unassigned.reset();
+    bool staleTicket=false;try{ScriptEngine::CommitAssembly(std::move(staged));}catch(const std::exception&){staleTicket=true;}
+    Check(staleTicket && !ScriptEngine::EntityClassExists("Migration.SceneProbe"),"Stale assembly ticket published after project retirement");
+    ScriptEngine::Init(target);
     SerializerChecks(fixture.Path);
     auto type=ScriptEngine::GetEntityClass("Migration.SceneProbe"); Check(bool(type),"Full ScriptEngine failed to discover fixture class");
     const auto& fields=type->GetFields();
@@ -271,7 +284,9 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
     scene->OnUpdateRuntime(0.25f); scene->OnRuntimeStop();
     Check(NativeProbe::Destroyed==2 && NativeProbe::Deleted==2,"Restarted native script was not released exactly once");
     scene.reset();
-    ScriptEngine::Shutdown(); Check(!ScriptEngine::GetSceneContext(),"ScriptEngine shutdown left scene context");
+    auto outstanding=ScriptEngine::StageAssembly(target);
+    ScriptEngine::Shutdown();outstanding.reset(); // A cancelled ticket may outlive Mono root shutdown.
+    Check(!ScriptEngine::GetSceneContext(),"ScriptEngine shutdown left scene context");
     std::cout<<"PASS: full managed reflection/GC/internal calls, native script ownership, scene pause/step/restart, invalid/valid reload and field preservation\n";
 }
 int main(int argc,char** argv) {

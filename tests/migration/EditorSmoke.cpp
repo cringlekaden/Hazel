@@ -56,6 +56,7 @@ public:
         case 3: {
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project/assembly startup failed");
             EditorDocumentChecks();
+            RecoveryChecks();
             AuthoringChecks();
             SDKChecks();
             EditorConsoleChecks(m_Directory);
@@ -431,6 +432,28 @@ private:
         Check(a.SaveActive()&&!panel.Dirty()&&draft.Regions.front().Name=="Retained dirty region","Active sheet Save did not retain accepted draft");
         a.SelectAsset(Project::GetAssetDirectory()/std::filesystem::u8path(u8"Prefabs/é independent.hprefab"));
         auto prefab=Prefab::GetEntity(a.m_PrefabScene);prefab.GetComponent<TagComponent>().Tag="Saved active prefab";
+        const auto sheetBefore=panel.m_Document->Draft();
+        const auto sceneName=scene->GetEntityByUUID(901).GetName();
+        prefab.GetComponent<TagComponent>().Tag="Unsaved prefab preservation sentinel";
+        scene->GetEntityByUUID(901).GetComponent<TagComponent>().Tag="Unsaved scene preservation sentinel";
+        panel.m_Document->Draft().Regions.front().Name="Unsaved sheet preservation sentinel";panel.m_Document->Changed();
+        const auto sceneDraft=a.SceneText();const auto prefabDraft=SceneSerializer(a.m_PrefabScene).SerializeAuthoredSnapshot();
+        const auto sheetDraft=panel.CopyDraftText();const auto prefabOwner=a.m_PrefabScene;const auto sheetOwner=panel.m_Document.get();
+        const auto invalidProject=m_Directory/"all-drafts-future.hproj";
+        FileSystem::WriteFileAtomically(invalidProject,[](auto& out){out<<"Project: {Version: 99}\n";});
+        a.Guard(OperationIntent::OpenProject,[&]{return e.OpenProject(invalidProject);});
+        Check(a.m_Documents.Pending() && a.m_Documents.Affected().size()==3,"Project replacement did not guard all three dirty documents");
+        a.m_ResolvingDocumentAction=true;
+        Check(!a.m_Documents.Resolve(GuardChoice::Discard,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Unsupported project unexpectedly opened");
+        a.m_ResolvingDocumentAction=false;
+        Check(e.m_EditorScene==scene && a.m_PrefabScene==prefabOwner && panel.m_Document.get()==sheetOwner &&
+              a.SceneText()==sceneDraft && SceneSerializer(a.m_PrefabScene).SerializeAuthoredSnapshot()==prefabDraft && panel.CopyDraftText()==sheetDraft && panel.Dirty(),
+              "Failed project Open lost a scene/prefab/sheet draft");
+        a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),{});
+        Check(a.SceneText()==sceneDraft && panel.CopyDraftText()==sheetDraft,"Cancelled failed project Open lost drafts");
+        scene->GetEntityByUUID(901).GetComponent<TagComponent>().Tag=sceneName;
+        prefab.GetComponent<TagComponent>().Tag="Saved active prefab";
+        panel.m_Document->Draft()=sheetBefore;panel.m_Document->Changed();Check(panel.Save(),"Fixture sheet restoration failed");
         const auto savedScene=Read(e.m_EditorScenePath);
         a.m_ActiveDocument=EditorDocument::Prefab;
         Check(a.SaveActive()&&Read(e.m_EditorScenePath)==savedScene&&Prefab::GetEntity(Prefab::Load(Project::GetAssetDirectory(),std::filesystem::u8path(a.m_PrefabReference))).GetName()=="Saved active prefab","Active prefab Save wrote scene or omitted prefab");
@@ -731,6 +754,103 @@ private:
 #endif
         std::cout<<"PASS: prefab identity/independence/self/external references/malformed assets, script creation, preferences recovery/scopes, absolute Python discovery\n";
     }
+    void RecoveryChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;
+        const auto project=e.m_ProjectPath;
+        auto previous=e.m_EditorScene;
+        auto entity=previous->CreateEntity("Unsaved recovery sentinel");
+        e.m_SceneHierarchyPanel.SetSelectedEntity(entity);
+        const auto draft=a.SceneText();const auto selection=entity.GetUUID();
+        const auto future=m_Directory/"future-scene.hazel";
+        const std::string unknown="SceneVersion: 99\nScene: Future\nEntities: []\n";
+        FileSystem::WriteFileAtomically(future,[&](auto& out){out<<unknown;});
+        a.Guard(OperationIntent::OpenScene,[&]{return e.OpenScene(future);});
+        Check(a.m_Documents.Pending(),"Unknown scene replacement skipped dirty guard");
+        a.m_ResolvingDocumentAction=true;
+        Check(!a.m_Documents.Resolve(GuardChoice::Discard,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Unknown scene replaced the session");
+        a.m_ResolvingDocumentAction=false;
+        Check(e.m_EditorScene==previous && a.SceneText()==draft && Read(future)==unknown && e.m_SceneHierarchyPanel.GetSelectedEntity().GetUUID()==selection,"Rejected schema lost draft/source/selection");
+        a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),{});
+        const auto missing=m_Directory/"recoverable-scene.hazel";
+        const std::string source=u8"Scene: Recovery é\nEntities:\n  - Entity: 42\n    TagComponent: {Tag: Unresolved}\n    SpriteRendererComponent:\n      Color: [1, 1, 1, 1]\n      TexturePath: Textures/no file é.png\n      TilingFactor: 1\n";
+        FileSystem::WriteFileAtomically(missing,[&](auto& out){out<<source;});
+        a.Guard(OperationIntent::OpenScene,[&]{return e.OpenScene(missing);});
+        Check(a.m_Documents.Pending(),"Recovery Open skipped dirty guard");
+        a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),{});
+        Check(e.m_EditorScene==previous && a.SceneText()==draft,"Cancelled recovery Open changed draft");
+        a.Guard(OperationIntent::OpenScene,[&]{return e.OpenScene(missing);});
+        a.m_ResolvingDocumentAction=true;
+        Check(a.m_Documents.Resolve(GuardChoice::Discard,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Normal guarded Open rejected missing texture");
+        a.m_ResolvingDocumentAction=false;
+        auto recovery=e.m_EditorScene;auto unresolved=recovery->GetEntityByUUID(42);
+        Check(e.m_SceneLoad.State==DocumentLoadState::EditableWithProblems && e.m_SceneLoad.Migration && a.SceneText()==a.m_SavedScene,"Recovery state was not explicit or missing asset marked dirty");
+        unresolved.GetComponent<TagComponent>().Tag="Edited unresolved";
+        Check(e.SaveScene(),"Recovery scene save failed");
+        Check(!e.m_SceneLoad.Migration && e.m_SceneLoad.State==DocumentLoadState::EditableWithProblems,"Saving migration hid unresolved resources or retained obsolete encoding status");
+        Check(Read(e.m_SceneFile.Backup())==source && Read(missing).find(u8"Textures/no file é.png")!=std::string::npos && Read(missing).find(u8"Recovery é")!=std::string::npos,"Recovery save lost original bytes/reference/scene name");
+        const auto external=Read(missing)+"\n# external edit\n";
+        FileSystem::WriteFileAtomically(missing,[&](auto& out){out<<external;});
+        unresolved.GetComponent<TagComponent>().Tag="Draft survives conflict";
+        const auto conflictDraft=a.SceneText();
+        Check(!e.SaveScene() && Read(missing)==external && e.m_EditorScene==recovery && a.SceneText()==conflictDraft,"Conflicting recovery save overwrote disk/draft");
+        Check(!e.OnScenePlay(true) && e.m_EditorScene==recovery,"Unresolved resource entered runtime");
+        Check(e.OpenProject(project),"Original project did not reopen after recovery");
+        const auto root=Project::GetAssetDirectory();
+        const std::filesystem::path repairedSheet="recovery-cache.hsprites";
+        unsigned char pixels[18+16]{};pixels[2]=2;pixels[12]=pixels[14]=2;pixels[16]=32;pixels[17]=0x20;
+        {std::ofstream image(root/"recovery-cache.tga",std::ios::binary);image.write(reinterpret_cast<const char*>(pixels),sizeof(pixels));}
+        auto missingSheetScene=CreateRef<Scene>();
+        missingSheetScene->CreateEntity("Repaired sheet").AddComponent<SpriteRendererComponent>().Source=SpriteReference{repairedSheet,1};
+        const auto sheetScene=root/"recovery-cache.hazel";
+        const auto sceneText=SceneSerializer(missingSheetScene).SerializeText();
+        FileSystem::WriteNewFile(sheetScene,sceneText);
+        a.Guard(OperationIntent::OpenScene,[&]{return e.OpenScene(sheetScene);});
+        Check(e.m_SceneLoad.State==DocumentLoadState::EditableWithProblems,"Missing sheet was not recognized");
+        try{Project::GetActive()->GetAssets()->Sheet(repairedSheet);}catch(const std::exception&){} // Cached failure in retained workspace.
+        SpriteSheetDefinition repaired;repaired.Texture="recovery-cache.tga";repaired.Sampling.Width=repaired.Sampling.Height=2;
+        repaired.Regions.push_back({1,"Repaired",{0,0,2,2},{.5f,.5f}});
+        SaveSpriteSheet(root,repairedSheet,repaired,WriteMode::CreateNew);
+        a.Guard(OperationIntent::OpenScene,[&]{return e.OpenScene(sheetScene);});
+        Check(e.m_SceneLoad.State==DocumentLoadState::Ready && Project::GetActive()->GetAssets()->Sheet(repairedSheet)->Region(1).Name=="Repaired",
+              "Scene recovery Retry reused a stale missing-sheet cache or abandoned shared asset ownership");
+        Check(e.OpenProject(project),"Project restore after sheet recovery failed");
+        auto candidate=CreateRef<Project>();candidate->GetConfig()=Project::GetActive()->GetConfig();
+        candidate->GetConfig().ScriptModulePath="Scripts/not compiled.dll";
+        auto scriptedCandidate=CreateRef<Scene>();
+        scriptedCandidate->CreateEntity("Assigned script").AddComponent<ScriptComponent>().ClassName="Migration.SceneProbe";
+        const auto scriptedFile=root/"content-only-scripted.hazel";
+        const auto scriptedText=SceneSerializer(scriptedCandidate).SerializeText();
+        FileSystem::WriteNewFile(scriptedFile,scriptedText);
+        candidate->GetConfig().StartScene="content-only-scripted.hazel";
+        const auto noScripts=project.parent_path()/"content-only.hproj";
+        Check(ProjectSerializer(candidate).Serialize(noScripts),"Content-only fixture creation failed");
+        Check(e.OpenProject(noScripts) && !ScriptEngine::IsInitialized() && !ScriptEngine::EntityClassExists("Migration.SceneProbe"),"Uncompiled Open borrowed the previous project's script classes");
+        Check(!e.OnScenePlay(true),"Scripted Play accepted unavailable assembly");
+        Check(e.OnSceneSimulate(true),"Uncompiled content could not simulate");e.OnSceneStop();
+        std::vector<std::pair<Entity,std::string>> bindings;
+        for(auto handle:e.m_EditorScene->GetAllEntitiesWith<ScriptComponent>()) {
+            Entity item(handle,e.m_EditorScene.get());bindings.emplace_back(item,item.GetComponent<ScriptComponent>().ClassName);
+            item.GetComponent<ScriptComponent>().ClassName.clear();
+        }
+        Check(e.OnScenePlay(true),"Unassigned script components unnecessarily required a project domain");e.OnSceneStop();
+        for(auto& [item,name]:bindings)item.GetComponent<ScriptComponent>().ClassName=name;
+        Check(e.OpenProject(project) && ScriptEngine::IsInitialized(),"Mono root could not accept later valid assembly");
+        candidate->GetConfig()=Project::GetActive()->GetConfig();candidate->GetConfig().StartScene="Scenes/not found.hazel";
+        const auto noScene=project.parent_path()/"workspace-only.hproj";
+        Check(ProjectSerializer(candidate).Serialize(noScene),"Workspace fixture creation failed");
+        previous=e.m_EditorScene;
+        Check(!e.OpenProject(noScene) && e.m_OpenLoad.State==DocumentLoadState::NeedsDecision && e.m_EditorScene==previous,"Missing startup guessed a replacement");
+        EditorLayer::ProjectOpenOptions options;options.WithoutScene=true;
+        Check(e.OpenProject(noScene,options) && e.m_EditorScenePath.empty() && Project::GetActive()->GetConfig().StartScene=="Scenes/not found.hazel","Explicit empty workspace rewrote startup reference");
+        Check(e.OpenProject(project),"Original project restore failed");
+        for(const auto& invalid:{std::string("Scene: Duplicate\nEntities: []\nScene: Again\n"),std::string("Scene: Unknown\nEntities: []\nFuture: 1\n"),std::string("Scene: Unknown component\nEntities: [{Entity: 1, FutureComponent: {Data: 1}}]\n")}) {
+            FileSystem::WriteFileAtomically(future,[&](auto& out){out<<invalid;});
+            previous=e.m_EditorScene;
+            Check(!e.OpenScene(future) && e.m_EditorScene==previous && Read(future)==invalid,"Unknown/duplicate schema was rewritten or interpreted");
+        }
+        e.m_ActionError.clear();a.m_ShowSaveConflict=false;
+        std::cout<<"PASS: guarded automatic recovery/cancel/unknown schema, exact unresolved references and original backup, external save conflict, optional assembly/domain isolation, explicit empty workspace\n";
+    }
     void FailureChecks() {
         auto& e=m_Editor;
         const auto project=Project::GetActive(); const auto scene=e.m_ActiveScene; const auto authored=e.m_EditorScene;
@@ -759,7 +879,7 @@ private:
         }
         const auto missingTexture=projectPath.parent_path()/"missing-texture.hazel";
         std::ofstream(missingTexture)<<"Scene: Missing texture\nEntities:\n  - Entity: 901\n    SpriteRendererComponent:\n      Color: [1, 1, 1, 1]\n      TexturePath: Textures/missing.png\n      TilingFactor: 1\n";
-        Check(!e.OpenScene(missingTexture),"Missing texture scene reported success"); preserved();
+        // Automatic editable recovery is exercised through the guarded Open path in RecoveryChecks.
         auto candidate=CreateRef<Project>(); candidate->GetConfig()=project->GetConfig();
         for(bool corrupt:{false,true}) {
             candidate->GetConfig().StartScene=corrupt ? std::filesystem::absolute(badScene) : std::filesystem::path("Scenes/missing.hazel");
@@ -771,7 +891,7 @@ private:
         Check(!e.OpenProject(badProject),"Missing assets reported success"); preserved();
         candidate->GetConfig()=project->GetConfig(); candidate->GetConfig().ScriptModulePath="Scripts/missing.dll";
         Check(ProjectSerializer(candidate).Serialize(badProject),"Missing assembly setup failed");
-        Check(!e.OpenProject(badProject),"Missing assembly reported success"); preserved();
+        // Missing assemblies now permit content editing; RecoveryChecks verifies domain retirement and later reload.
         candidate->GetConfig()=project->GetConfig();
         Check(ProjectSerializer(candidate).Serialize(badProject),"Corrupt assembly setup failed");
         const auto assembly=Project::GetAssetFileSystemPath(project->GetConfig().ScriptModulePath);

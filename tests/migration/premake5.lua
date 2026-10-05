@@ -12,6 +12,10 @@ project ("Migration" .. test)
     objdir (repoRoot .. "/bin-int/" .. outputdir .. "/%{prj.name}")
     files { test == "ExampleGamesSmoke" and (repoRoot .. "/tests/examples/RuntimeSmoke.cpp") or (repoRoot .. "/tests/migration/" .. test .. ".cpp") }
     includedirs { repoRoot .. "/Hazel/src" }
+    if test == "SceneFoundationSmoke" then
+        files { repoRoot .. "/Hazelnut/src/Authoring/EditorDocuments.cpp" }
+        includedirs { repoRoot .. "/Hazelnut/src" }
+    end
     externalincludedirs
     {
         repoRoot .. "/Hazel/vendor/spdlog/include",

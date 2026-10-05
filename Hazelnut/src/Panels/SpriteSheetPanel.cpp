@@ -1,4 +1,5 @@
 #include "SpriteSheetPanel.h"
+#include "Hazel/Core/Resources.h"
 #include "ContentBrowserPayload.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Utils/PlatformUtils.h"
@@ -172,7 +173,7 @@ bool SpriteSheetPanel::Save()
     }
     try
     {
-        m_Document->Save();
+        m_Document->Save(Resources::Get().UserData/"recovery");
         m_Error.clear();
         if (AssetsChanged)
             AssetsChanged();
@@ -1104,6 +1105,10 @@ void SpriteSheetPanel::Render(bool editable)
     m_Focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
     ImGui::TextWrapped("%s%s", m_Document->Reference().generic_u8string().c_str(),
                        Dirty() ? " | Unsaved" : " | Saved");
+    if(m_Document->File().NeedsBackup())
+        ImGui::TextWrapped("Known sheet defaults/legacy Filter encoding: Save writes the explicit sampling, list, pivot and loop values shown here, preserving the original first.");
+    if(!m_Document->File().Backup().empty())
+        ImGui::TextWrapped("Original: %s",m_Document->File().Backup().generic_u8string().c_str());
     if (ImGui::Button("Close Document") && RequestClose)
         RequestClose();
     if (!m_Document)

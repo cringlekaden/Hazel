@@ -56,6 +56,7 @@ static bool Contained(const std::filesystem::path &root, const std::filesystem::
 }
 AuthoringPanel::AuthoringPanel(EditorLayer &editor) : m_Editor(editor), m_Console(editor.m_Console)
 {
+    m_Console.DocumentProblems=[this]{RecoveryControls();};
     m_Preferences = EditorPreferences::Load(m_PreferenceRecovery);
     m_Tools.SetConsole(editor.m_Console);
     m_Console.CaptureLevel=m_Preferences.ConsoleCapture;
@@ -225,6 +226,8 @@ void AuthoringPanel::BindProject()
             m_Editor.ActionFailed(error.what());
         }
     };
+    m_ShowSaveConflict=false;
+    m_PrefabFile={};
     m_PrefabInspector.SetContext(nullptr);
     m_PrefabScene.reset();
     m_ShowPrefab = false;
@@ -282,6 +285,10 @@ void AuthoringPanel::Start(std::string label, std::vector<std::string> args,
         return;
     if (!args.empty() && args[0] == "new-project" && !Require(EditorAction::CreateProject))
         return;
+    if(!args.empty() && (args[0]=="script-build" || args[0]=="editor-export" || args[0]=="authoring-preflight")) {
+        try { m_Editor.m_ProjectFile.Check(); }
+        catch(const std::exception& error){m_Editor.ActionFailed(error.what());return;}
+    }
     RefreshSDK();
     if (!args.empty() && !m_SDK)
     {
@@ -318,9 +325,12 @@ void AuthoringPanel::PollTools()
     {
         try
         {
-            if (m_Report.Request.Completion == ToolCompletion::ReloadScripts)
-                ScriptEngine::Init(Project::GetAssetFileSystemPath(
-                    Project::GetActive()->GetConfig().ScriptModulePath));
+            if(!m_Report.Request.Arguments.empty() && (m_Report.Request.Arguments[0]=="script-build" || m_Report.Request.Arguments[0]=="editor-export"))
+                m_Editor.m_ProjectFile.Check();
+            if (m_Report.Request.Completion == ToolCompletion::ReloadScripts) {
+                if(!Require(EditorAction::ReloadScripts))throw std::runtime_error("Assembly follow-up is unavailable; previous domain retained");
+                ScriptEngine::Init(Project::GetAssetFileSystemPath(Project::GetActive()->GetConfig().ScriptModulePath));
+            }
             else if (m_Report.Request.Completion == ToolCompletion::OpenCreatedProject)
             {
                 m_ShowNew = false;
@@ -471,22 +481,6 @@ void AuthoringPanel::FileMenu()
     if (ImGui::MenuItem("Open Project...", "Ctrl+O", false,
                         bool(Availability(EditorAction::ReplaceProject))))
         Guard(OperationIntent::OpenProject, [this] { return m_Editor.OpenProject(); });
-    if (ImGui::MenuItem("Open Project for Repair...", nullptr, false,
-                        bool(Availability(EditorAction::ReplaceProject))))
-        Guard(OperationIntent::OpenProject,
-              [this]
-              {
-                  auto path = FileDialogs::OpenFile("Hazel Project\0*.hproj\0");
-                  return !path.empty() && m_Editor.OpenProject(Path(path), true);
-              });
-    if (ImGui::MenuItem("Open Scene for Repair...", nullptr, false,
-                        bool(Availability(EditorAction::ReplaceScene))))
-        Guard(OperationIntent::OpenScene,
-              [this]
-              {
-                  auto path = FileDialogs::OpenFile("Hazel Scene\0*.hazel\0");
-                  return !path.empty() && m_Editor.OpenScene(Path(path), true);
-              });
     if (ImGui::BeginMenu("Recent Projects"))
     {
         if (ImGui::IsWindowAppearing())
@@ -871,8 +865,8 @@ void AuthoringPanel::ProjectSettings()
     bool valid = !m_ProjectName.empty() && Portable(m_AssetDirectory) && Portable(m_Startup) &&
                  Portable(m_Module);
     if (!valid)
-        ImGui::TextWrapped("Choose existing project-relative assets, startup scene "
-                           "and compiled assembly, "
+        ImGui::TextWrapped("Choose project-relative assets, startup scene "
+                           "and intended script assembly, "
                            "and a valid script build identifier.");
     ImGui::BeginDisabled(!valid || !Availability(EditorAction::EditAsset));
     if (ImGui::Button("Save Project Settings"))
@@ -894,22 +888,9 @@ void AuthoringPanel::ProjectSettings()
                           !Contained(root, root / config.ScriptModulePath))
                           throw std::runtime_error(
                               "Project paths must remain within the project asset root");
-                      auto previous = Project::GetActive();
-                      auto candidate = Project::LoadCandidate(m_Editor.m_ProjectPath);
-                      candidate->GetConfig() = config;
-                      candidate->LoadScene(config.StartScene);
-                      if (!ProjectSerializer(candidate).Serialize(m_Editor.m_ProjectPath))
-                          throw std::runtime_error("Cannot save project settings");
-                      if (!m_Editor.OpenProject(m_Editor.m_ProjectPath))
-                      {
-                          if (!ProjectSerializer(previous).Serialize(m_Editor.m_ProjectPath))
-                              throw std::runtime_error(
-                                  "Open failed and descriptor rollback failed; restore "
-                                  "the previous descriptor from version control");
-                          throw std::runtime_error(
-                              "Settings could not be applied; previous descriptor and "
-                              "editor session were restored");
-                      }
+                      EditorLayer::ProjectOpenOptions options;
+                      options.Config=config;options.SaveDescriptor=true;
+                      if(!m_Editor.OpenProject(m_Editor.m_ProjectPath,options))return false;
                       Notify("Project settings saved and applied.");
                       return true;
                   }
@@ -920,6 +901,22 @@ void AuthoringPanel::ProjectSettings()
               });
     }
     ImGui::EndDisabled();
+    if(m_Editor.m_ActionError.find("changed on disk")!=std::string::npos) {
+        ImGui::TextWrapped("Descriptor changed externally. Keep both versions: save this form to a new descriptor, or cancel the pending operation and reopen normally.");
+        ImGui::BeginDisabled(!valid || !Availability(EditorAction::SaveAsset));
+        if(ImGui::Button("Save descriptor draft copy")) {
+            const auto path=FileDialogs::SaveFile("Hazel project\0*.hproj\0");
+            if(!path.empty() && Require(EditorAction::SaveAsset))try {
+                auto candidate=CreateRef<Project>();auto& config=candidate->GetConfig();
+                config=Project::GetActive()->GetConfig();config.Name=m_ProjectName;config.ScriptProject=m_ScriptProject;
+                config.StartScene=Path(m_Startup);config.AssetDirectory=Path(m_AssetDirectory);config.ScriptModulePath=Path(m_Module);
+                const auto text=ProjectSerializer(candidate).SerializeText();
+                FileSystem::WriteFileAtomically(Path(path),[&](auto& out){out<<text;},WriteMode::CreateNew);
+                Notify("Saved descriptor copy: "+path+". Session/form/original retained; relative paths are interpreted beside the copied descriptor.");
+            }catch(const std::exception& error){m_Editor.ActionFailed(error.what());}
+        }
+        ImGui::EndDisabled();
+    }
     ImGui::PopID();
     ImGui::End();
 }
@@ -1143,11 +1140,14 @@ void AuthoringPanel::SelectAsset(const std::filesystem::path &path)
               try
               {
                   auto relative = Project::MakeAssetReference(Project::GetAssetDirectory(), path);
+                  FileDocument file;file.Open(path,true);
                   auto scene = Prefab::Load(Project::GetAssetDirectory(), relative, true);
+                  file.Check();
                   auto saved = SceneSerializer(scene).SerializeAuthoredSnapshot();
                   auto transform = Prefab::GetEntity(scene).GetComponent<TransformComponent>();
                   transform.Translation.x = transform.Translation.y = 0;
                   m_PrefabScene = scene;
+                  m_PrefabFile=std::move(file);
                   m_PrefabReference = relative.generic_u8string();
                   m_InitialTransform = transform;
                   m_SavedPrefab = std::move(saved);
@@ -1242,7 +1242,7 @@ void AuthoringPanel::Prefabs()
                     throw std::runtime_error(
                         "Prefab destination already exists; choose a new asset path");
                 Prefab::Save(Project::GetAssetDirectory(), Path(m_PrefabName), m_Editor.m_EditorScene,
-                             source);
+                             source,false,WriteMode::CreateNew);
                 m_CreatePrefab = false;
                 if (m_Editor.m_ContentBrowserPanel)
                     m_Editor.m_ContentBrowserPanel->Refresh();
@@ -1268,6 +1268,7 @@ void AuthoringPanel::Prefabs()
         m_ActiveDocument = EditorDocument::Prefab;
     bool dirty = SceneSerializer(m_PrefabScene).SerializeAuthoredSnapshot() != m_SavedPrefab;
     ImGui::TextWrapped("%s%s", m_PrefabReference.c_str(), dirty ? " * Unsaved" : "");
+    if(m_PrefabFile.NeedsBackup())ImGui::TextWrapped("First Save preserves the opened original before writing supported content/defaults. Unresolved references remain authored values.");
     ImGui::TextWrapped("Detached instances. Saving affects future instances "
                        "only; no overrides or automatic propagation.");
     const auto saveAvailable = Availability(EditorAction::SaveAsset);
@@ -1314,6 +1315,7 @@ void AuthoringPanel::Prefabs()
 }
 void AuthoringPanel::Render()
 {
+    SaveConflictControls();
     Preferences();
     ProjectSettings();
     NewProject();

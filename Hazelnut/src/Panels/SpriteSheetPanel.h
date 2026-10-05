@@ -40,6 +40,8 @@ class SpriteSheetPanel
     {
         return m_Document ? m_Document->Reference().generic_u8string() : "No sheet";
     }
+    const FileDocument* File() const {return m_Document?&m_Document->File():nullptr;}
+    std::string CopyDraftText() const { if(!m_Document)throw std::runtime_error("No sheet document");return WriteSpriteSheetText(m_Document->Draft()); }
     bool Visible() const
     {
         return m_Open;

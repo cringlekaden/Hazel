@@ -1,4 +1,6 @@
 #include "Hazel/Assets/ProjectAssets.h"
+#include "Hazel/Project/Project.h"
+#include "Hazel/Core/Log.h"
 #include <iostream>
 #include <fstream>
 #ifdef HZ_PLATFORM_WINDOWS
@@ -12,7 +14,15 @@ int main(int argc,char** argv) {
 #else
         for(int i=0;i<argc;++i)arguments.emplace_back(argv[i]);
 #endif
-        if(arguments.size()!=3)throw std::runtime_error("Usage: SpriteAssetAudit Assets-root inventory.txt");
+        if(arguments.size()!=3 && arguments.size()!=5)throw std::runtime_error("Usage: SpriteAssetAudit Assets-root inventory.txt [--project descriptor.hproj]");
+        if(arguments.size()==5) {
+            if(arguments[3]!="--project")throw std::runtime_error("Expected --project descriptor.hproj");
+            Hazel::Log::Init();Hazel::DocumentLoadReport report;
+            auto project=Hazel::Project::LoadCandidate(std::filesystem::u8path(arguments[4]),&report);
+            if(!project)throw std::runtime_error(report.Error);
+            if(std::filesystem::weakly_canonical(project->GetAssetRoot())!=std::filesystem::weakly_canonical(std::filesystem::u8path(arguments[1])))
+                throw std::runtime_error("Project asset root changed during export validation");
+        }
         const auto root=std::filesystem::u8path(arguments[1]);
         std::ifstream input(std::filesystem::u8path(arguments[2]),std::ios::binary);if(!input)throw std::runtime_error("Cannot read asset inventory");
         std::vector<std::filesystem::path> files;std::string line;

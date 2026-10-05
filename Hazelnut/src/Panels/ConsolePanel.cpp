@@ -215,6 +215,7 @@ void ConsolePanel::Render()
         if (ImGui::Button("Keep editor open"))
             CancelExit = true;
     }
+    if(DocumentProblems) DocumentProblems();
     const auto &operations = m_OperationCache;
     if (!operations.empty())
     {

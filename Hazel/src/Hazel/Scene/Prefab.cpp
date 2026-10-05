@@ -1,9 +1,11 @@
 #include "hzpch.h"
 #include "Prefab.h"
 #include "Hazel/Core/FileSystem.h"
+#include "Hazel/Core/FileDocument.h"
 #include "Hazel/Project/Project.h"
 #include "RuntimeSession.h"
 #include "SceneSerializer.h"
+#include "Hazel/Scripting/ScriptEngine.h"
 #include <set>
 #include <yaml-cpp/yaml.h>
 namespace Hazel
@@ -59,9 +61,7 @@ static void ValidateDocument(const YAML::Node &data, const std::filesystem::path
 				if (!reference.empty())
 				{
 					auto target = Prefab::Resolve(root, std::filesystem::u8path(reference));
-					if (!std::filesystem::is_regular_file(target))
-						throw std::runtime_error("Missing prefab reference in field '" +
-												 field["Name"].as<std::string>() + "': " + reference);
+                (void)target; // Existence is readiness, not authored schema validity.
 				}
 			}
 		}
@@ -84,35 +84,45 @@ Entity Prefab::GetEntity(const Ref<Scene> &scene)
 Ref<Scene> Prefab::Load(const std::filesystem::path &root, const std::filesystem::path &reference,bool repair)
 {
 	auto path = Resolve(root, reference);
-	std::ifstream file(path, std::ios::binary);
-	if (!file)
-		throw std::runtime_error("Missing prefab: " + reference.generic_u8string());
-	std::string text{std::istreambuf_iterator<char>(file), {}};
-	if (file.bad())
-		throw std::runtime_error("Cannot read prefab");
+	const auto text=FileDocument::Read(path);
 	ValidateDocument(YAML::Load(text), root);
 	auto scene = CreateRef<Scene>();
-	if (!SceneSerializer(scene, root,repair).DeserializeText(text))
+	if (!SceneSerializer(scene, root,repair).DeserializeText(text,true))
 		throw std::runtime_error("Malformed prefab or missing resource: " + reference.generic_u8string());
-	if(!repair)RuntimeSession::Validate(scene);
+    if(!repair) {
+        RuntimeSession::Validate(scene);
+        for(auto& [name,field] : ScriptEngine::GetScriptFieldMap(GetEntity(scene)))
+            if(field.Field.Type==ScriptFieldType::Prefab && !field.AssetReference.empty() &&
+               !std::filesystem::is_regular_file(Resolve(root,std::filesystem::u8path(field.AssetReference))))
+                throw std::runtime_error("Missing prefab reference: "+field.AssetReference);
+    }
 	return scene;
 }
-void Prefab::Save(const std::filesystem::path &root, const std::filesystem::path &reference,
-				  const Ref<Scene> &scene, Entity entity,bool allowBroken)
+std::string Prefab::Serialize(const std::filesystem::path &root, const Ref<Scene> &scene, Entity entity,bool allowBroken)
 {
 	if (!entity || !entity.BelongsTo(scene.get()) || scene->IsRunning())
 		throw std::runtime_error("Select an authored entity before creating a prefab");
 	if (entity.HasComponent<NativeScriptComponent>())
 		throw std::runtime_error("Native script factories cannot be serialized into prefabs");
-	auto path = Resolve(root, reference);
 	auto text = std::string("PrefabVersion: 1\n") + SceneSerializer(scene, root).SerializeText(entity);
 	ValidateDocument(YAML::Load(text), root);
 	auto staged = CreateRef<Scene>();
-	if (!SceneSerializer(staged, root,allowBroken).DeserializeText(text))
+	if (!SceneSerializer(staged, root,allowBroken).DeserializeText(text,true))
 		throw std::runtime_error("Prefab contains malformed authored data or missing resources");
 	if(!allowBroken)RuntimeSession::Validate(staged);
+    if(!allowBroken) for(auto& [name,field] : ScriptEngine::GetScriptFieldMap(entity))
+        if(field.Field.Type==ScriptFieldType::Prefab && !field.AssetReference.empty() &&
+           !std::filesystem::is_regular_file(Resolve(root,std::filesystem::u8path(field.AssetReference))))
+            throw std::runtime_error("Missing prefab reference: "+field.AssetReference);
+    return text;
+}
+void Prefab::Save(const std::filesystem::path &root, const std::filesystem::path &reference,
+                  const Ref<Scene> &scene, Entity entity,bool allowBroken,WriteMode mode)
+{
+    const auto path=Resolve(root, reference);
+    const auto text=Serialize(root,scene,entity,allowBroken);
 	std::filesystem::create_directories(path.parent_path());
-	FileSystem::WriteFileAtomically(path, [&](std::ostream &out) { out << text; });
+	FileSystem::WriteFileAtomically(path, [&](std::ostream &out) { out << text; },mode);
 }
 Entity Prefab::Instantiate(const std::filesystem::path &root, const std::filesystem::path &reference,
 						   Scene &target)

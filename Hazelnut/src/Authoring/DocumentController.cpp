@@ -2,6 +2,7 @@
 #include "EditorLayer.h"
 #include "Hazel/Scene/Prefab.h"
 #include "Hazel/Scene/SceneSerializer.h"
+#include "Hazel/Core/Resources.h"
 #include <algorithm>
 namespace Hazel
 {
@@ -54,8 +55,8 @@ DocumentSaveResult AuthoringPanel::SaveDocument(const DocumentInfo &document)
         case EditorDocument::Prefab:
             if (!Require(EditorAction::SaveAsset))
                 return {document, SaveOutcome::Unavailable, m_Editor.m_ActionError};
-            Prefab::Save(Project::GetAssetDirectory(), Path(m_PrefabReference), m_PrefabScene,
-                         Prefab::GetEntity(m_PrefabScene), true);
+            m_PrefabFile.Save(Prefab::Serialize(Project::GetAssetDirectory(), m_PrefabScene,
+                         Prefab::GetEntity(m_PrefabScene), true),Resources::Get().UserData/"recovery");
             m_SavedPrefab = SceneSerializer(m_PrefabScene).SerializeAuthoredSnapshot();
             saved = true;
             break;
@@ -68,12 +69,16 @@ DocumentSaveResult AuthoringPanel::SaveDocument(const DocumentInfo &document)
         }
         if (document.Kind == EditorDocument::Scene && m_Editor.m_ActionError.empty())
             return {document, SaveOutcome::Cancelled, "Save As was cancelled; draft retained"};
+        if(m_Editor.m_ActionError.find("changed on disk")!=std::string::npos)
+        {m_ShowSaveConflict=true;m_ConflictDocument=document.Kind;m_ConflictIdentity=document.Identity;}
         return {document, SaveOutcome::Failed,
                 m_Editor.m_ActionError.empty() ? "Save failed; draft retained" : m_Editor.m_ActionError};
     }
     catch (const std::exception &error)
     {
         m_Editor.ActionFailed(error.what());
+        if(std::string(error.what()).find("changed on disk")!=std::string::npos)
+        {m_ShowSaveConflict=true;m_ConflictDocument=document.Kind;m_ConflictIdentity=document.Identity;}
         return {document, SaveOutcome::Failed, error.what()};
     }
 }

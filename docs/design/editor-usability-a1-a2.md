@@ -1,11 +1,11 @@
-# Editor usability implementation: A1 / A2 and Stage B
+# Editor usability implementation: A1 / A2, B and C
 
 Baseline: `5de70c93a89e1c8df3fd37553569d9499f793c7a` on
 `feature/sprite-sheet-authoring`, including the complete audit and descended from
 `9a48282f59b4cbc188615ec66763c448b70a2e83`. Implementation branch:
 `feature/editor-usability`. This record supplements
 [the audit](editor-usability-audit.md). A1/A2 and their corrections are complete;
-Stage B is implemented below. C–H remain separate proposals.
+Stage B is implemented below. Stage C local work is recorded below; D–H remain separate stages.
 
 ## Workflows
 
@@ -303,13 +303,104 @@ files and validated compiler file/line navigation remain later Console refinemen
 All messages/result details can be copied, and artifact folders can be opened now.
 Broad redundant-tooltip cleanup remains explicitly pending as recorded above.
 
+## Stage C: normal Open and preservation
+
+Baseline: `bde96f27494fa0c5732c6bc72d6107e4a99e856a` on
+`feature/editor-usability`. This checkpoint keeps the existing Console, guards,
+SDK discovery, runtime icons, colored property controls and recovery retry path.
+C was paused for a reboot; delivery resumed before D/E on 2026-10-05.
+
+Normal Open Project/Scene now stages the accepted bytes, strict known schema,
+scene/resources, browser and optional managed domain before replacing the session.
+Scene candidates use a temporary asset cache; only accepted Open refreshes the shared
+cache, so repaired sheets retry successfully without failed Open changing current caches.
+The separate “for Repair” menus are removed. Structured results distinguish Ready,
+Editable With Problems, Needs Decision and Rejected. Missing textures/sheets/IDs
+retain authored references; malformed/duplicate/unknown/future data is rejected.
+Missing startup scene/assets offers explicit Locate or Workspace Without Scene
+in Console. No arbitrary replacement is chosen or descriptor rewritten by Open.
+Present invalid assemblies reject Open; missing assemblies permit editing and
+retire the previous project's classes while keeping Mono's root reusable. Scripted
+Play still requires valid classes; non-scripted Play and validated Simulate remain
+available. Build/reload uses the existing staged replacement path. Unassigned Script components
+are script-free for startup; assigned classes still require a valid domain. Tool requests
+and completion follow-up reject an externally changed accepted project descriptor.
+
+Console owns actionable Open findings: original file, diagnostic copy, guarded
+Retry, affected-entity selection and resource/recovery folders. Findings describe
+Open, rather than claiming continuous validation while the user types. Pending
+operations and apply-time policies still govern replacement. Failed/cancelled
+Open retains the scene, prefab, sheet, selections and dirty drafts.
+
+FileDocument retains bounded accepted bytes and detects external replacement,
+deletion and unreadable-source conflicts before scene/prefab/project/sheet saves.
+Conflict choices retain both versions: exclusive Save Copy, guarded Reopen, Cancel.
+Project Settings offers a descriptor-form copy without changing the active session;
+place it beside the original to keep relative assets meaningful. Scene Save As keeps
+its supported native overwrite contract; conflict Save Copy never overwrites.
+No YAML merge or silent overwrite of an observed conflicting version is attempted.
+
+Known legacy/default changes are reported before Save. Scene writes SceneVersion 1
+and preserves its actual name; missing texture paths never become permanent
+placeholder data. Legacy sheet Filter/sampling/list/pivot/loop defaults are visibly
+identified. Before a recovery/migrated overwrite, exact original bytes go to
+`UserData/recovery`, with source path, byte count, UTC epoch time and an FNV-1a-64
+fingerprint. Retention is 20 originals / 128 MiB; source reads are capped at 64 MiB.
+Backup failure prevents the source write. Atomic sibling replacement is preserved;
+this is neither a multi-file transaction nor a guarantee against an external writer
+racing the final check/publication. Periodic unsaved-draft recovery remains deferred.
+
+Unresolved known scene/prefab references can be saved and reopened. Runtime keeps
+its existing required-resource validation; packaging validates the dependency closure
+strictly. Sheet saves retain existing
+texture/dimension validation, so a missing texture needs explicit correction before
+saving its metadata. Native packaging validation now gates descriptors using the
+same ProjectSerializer and rejects future/unknown fields. Normal scene loading rejects
+prefab metadata it cannot write back; the explicit prefab reader retains that contract. Exclusive prefab creation
+closes the destination race without changing detached prefab semantics.
+
+Local verification (2026-10-05): canonical Premake `build --config Debug --tests`
+and `build --config Release --tests` passed with `make -j2`. In both configurations,
+SceneFoundationSmoke (including production EditorDocuments guards/recovery/cache
+ownership), ProjectPhysicsSmoke, MonoSmoke, SceneSmoke (staged domain cancellation,
+stale tickets, shutdown and unassigned-script startup) and ShaderToolsSmoke passed.
+Native SpriteAssetAudit fixtures accepted supported data and rejected future project,
+unknown project and future scene data without changing sources. Existing authoring/tool-boundary
+regressions passed, including script builds without PATH and failed
+publication preservation. Python compilation and whitespace checks passed.
+
+After reboot, unrestricted local verification reached rendering: the canonical Debug
+software suite passed its first 13 executables; EditorSmoke exposed a fixture with
+no assigned scripts in its missing-assembly case. That fixture now includes an
+assigned class. Rebuilt Debug and Release editor regressions passed, including
+production Open/cache recovery, retry, all three dirty documents, Save-and-Assign
+and runtime toolbar/lifecycle coverage. Release used software OpenGL 4.1. These
+are software-rendered checks, not physical desktop/DPI/GPU acceptance. Git/network
+access is restored; CI is not awaited, per the user's updated instruction.
+
+Hands-on C acceptance (Linux and Windows):
+
+1. Keep scene, prefab and sheet drafts dirty. Cancel normal Open, then try malformed
+   or future files with Discard on Success; verify every old draft/selection remains.
+2. Open a copy with a missing texture or broken sheet reference. Edit, Save and reopen;
+   inspect the retained path/ID and original recovery copy. Play/export must fail
+   actionably until references are explicitly fixed.
+3. Change the source externally while a draft is open. Save must retain both versions;
+   exercise Save Copy, cancelled Reopen and successful guarded Reopen.
+4. Open a project with its managed DLL absent. Content editing/scene Save and
+   script-free Play/Simulate remain possible; unavailable scripted Play reports why.
+   Restore/build the DLL and reload; failures retain the previous valid domain.
+5. Open a project with missing startup scene/assets. Use Locate or explicitly choose
+   Workspace Without Scene; the descriptor changes only on an explicit settings Save.
+6. Retest the completed dirty-sheet recovery Retry Open and Save Sheet and Assign
+   paths. Check Console diagnostics and the small-window conflict dialog.
+
 ## Deferred findings
 
-Unified recovery/schema preservation, workspace restoration,
-native project generation, renderer policies and entity/prefab hierarchy remain
-outside A1/A2. Existing prefab save conflict detection/exclusive creation limitations
-belong to the recovery/asset-service stage; this milestone preserves those contracts
-and rejects existing creation destinations at the action boundary. Save All is a
+Workspace restoration, native project generation, renderer policies and
+entity/prefab hierarchy remain later stages. Stage C adds recovery/schema gates
+and prefab conflict/exclusive creation checks; the earlier A1/A2 scope remains as
+recorded above. Save All is a
 series of existing atomic file writes, not a multi-file transaction. Preferences
 and project forms retain explicit Apply/Save rather than becoming document types.
 Existing Python project creation still requires its current tool readiness.

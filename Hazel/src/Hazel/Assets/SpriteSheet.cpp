@@ -1,5 +1,7 @@
 #include "hzpch.h"
 #include "SpriteSheet.h"
+#include "Hazel/Core/DocumentSchema.h"
+#include "Hazel/Core/FileDocument.h"
 #include <yaml-cpp/yaml.h>
 #include "Hazel/Core/UUID.h"
 #include "Hazel/Project/Project.h"
@@ -217,13 +219,12 @@ void WriteSpriteSource(YAML::Emitter& out,const SpriteSource& source) {
     out<<YAML::EndMap;
 }
 SpriteSheetDefinition ReadSpriteSheet(const std::filesystem::path& file) {
-    std::ifstream input(file,std::ios::binary);if(!input)throw std::runtime_error("Cannot open sheet: "+file.generic_u8string());
-    std::string text{std::istreambuf_iterator<char>(input),{}};if(input.bad())throw std::runtime_error("Cannot read sheet: "+file.generic_u8string());
+    const auto text=FileDocument::Read(file);
     try{return ReadSpriteSheetText(text);}catch(const std::exception& e){throw std::runtime_error(file.generic_u8string()+": "+e.what());}
 }
-SpriteSheetDefinition ReadSpriteSheetText(const std::string& text) {
+SpriteSheetDefinition ReadSpriteSheetText(const std::string& text, bool* usesDefaults) {
     try {
-        auto root=YAML::Load(text); Keys(root,{"SpriteSheet"}); auto n=root["SpriteSheet"];
+        auto root=YAML::Load(text); DocumentSchema::Structure(root); Keys(root,{"SpriteSheet"}); auto n=root["SpriteSheet"];
         Keys(n,{"Version","Texture","TextureSize","Sampling","Filter","Regions","RetiredRegionIDs","Clips","RetiredClipIDs"});
         if(n["Version"].as<int>()!=1) throw std::runtime_error("Unsupported SpriteSheet Version (expected 1)");
         SpriteSheetDefinition result; result.Texture=Project::NormalizeAssetPath(std::filesystem::u8path(n["Texture"].as<std::string>()));
@@ -272,7 +273,17 @@ SpriteSheetDefinition ReadSpriteSheetText(const std::string& text) {
         if(n["RetiredClipIDs"] && !n["RetiredClipIDs"].IsSequence())throw std::runtime_error("RetiredClipIDs must be a sequence");
         for(auto r:n["RetiredRegionIDs"]) result.RetiredRegionIDs.push_back(ParseSpriteID(r.as<std::string>()));
         for(auto c:n["RetiredClipIDs"]) result.RetiredClipIDs.push_back(ParseSpriteID(c.as<std::string>()));
-        result.Validate(); return result;
+        result.Validate();
+        if(usesDefaults) {
+            bool defaults=bool(n["Filter"]) || !n["Sampling"];
+            for(const char* key:{"MinFilter","MagFilter","WrapS","WrapT","GenerateMips","Format"})
+                defaults=defaults || !n["Sampling"] || !n["Sampling"][key];
+            for(const char* key:{"Regions","Clips","RetiredRegionIDs","RetiredClipIDs"})defaults=defaults || !n[key];
+            for(auto region:n["Regions"])defaults=defaults || !region["Pivot"];
+            for(auto clip:n["Clips"])defaults=defaults || !clip["Loop"] || !clip["Frames"];
+            *usesDefaults=defaults;
+        }
+        return result;
     } catch(const std::exception& e) {throw std::runtime_error(std::string("Sprite-sheet metadata: ")+e.what());}
 }
 std::string WriteSpriteSheetText(const SpriteSheetDefinition& s) {
@@ -298,12 +309,17 @@ std::string WriteSpriteSheetText(const SpriteSheetDefinition& s) {
     out<<YAML::EndSeq<<YAML::EndMap<<YAML::EndMap;
     if(!out.good()) throw std::runtime_error(out.GetLastError()); return out.c_str();
 }
-void SaveSpriteSheet(const std::filesystem::path& root,const std::filesystem::path& reference,const SpriteSheetDefinition& s,WriteMode mode) {
+std::string ValidateSpriteSheetSave(const std::filesystem::path& root,const std::filesystem::path& reference,const SpriteSheetDefinition& s) {
     s.Validate(); auto file=Project::ResolveOwnedAsset(root,reference);
     if(file.extension()!=".hsprites") throw std::runtime_error("Sheet must end in .hsprites");
     auto image=Texture2D::ReadImage(Project::ResolveOwnedAsset(root,s.Texture),s.Sampling.Format);
     if(image.Width!=s.Sampling.Width || image.Height!=s.Sampling.Height) throw std::runtime_error("Texture dimensions differ from saved sheet; explicitly accept/revalidate dimensions");
-    auto text=WriteSpriteSheetText(s); std::filesystem::create_directories(file.parent_path());
+    return WriteSpriteSheetText(s);
+}
+void SaveSpriteSheet(const std::filesystem::path& root,const std::filesystem::path& reference,const SpriteSheetDefinition& s,WriteMode mode) {
+    const auto text=ValidateSpriteSheetSave(root,reference,s);
+    const auto file=Project::ResolveOwnedAsset(root,reference);
+    std::filesystem::create_directories(file.parent_path());
     FileSystem::WriteFileAtomically(file,[&](auto& out){out<<text;},mode);
 }
 }

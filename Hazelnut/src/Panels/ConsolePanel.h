@@ -1,10 +1,12 @@
 #pragma once
 #include "Authoring/ConsoleModel.h"
+#include <functional>
 namespace Hazel
 {
 class ConsolePanel
 {
   public:
+    std::function<void()> DocumentProblems; // Main-thread presentation owned by the controller.
     explicit ConsolePanel(std::shared_ptr<ConsoleModel> model) : m_Model(std::move(model))
     {
     }

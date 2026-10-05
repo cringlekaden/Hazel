@@ -38,6 +38,7 @@ namespace Hazel {
 		// Absolute external references keep their meaning; relative references are asset-root relative.
 		const auto normalized = NormalizeAssetPath(reference);
 		const auto text = normalized.generic_u8string();
+        if(text.find('\0')!=std::string::npos)throw std::runtime_error("Asset path contains a null character");
 		if (text.size() >= 3 && text[1] == ':' && text[2] == '/' && !normalized.is_absolute())
 			throw std::runtime_error("Windows absolute texture/asset reference needs an explicit local replacement: " + text);
 		return (root / normalized).lexically_normal();
@@ -90,12 +91,14 @@ namespace Hazel {
 		return candidate;
 	}
 
-	Ref<Project> Project::LoadCandidate(const std::filesystem::path& path)
+	Ref<Project> Project::LoadCandidate(const std::filesystem::path& path, DocumentLoadReport* report)
 	{
 		Ref<Project> project = CreateRef<Project>();
 
 		ProjectSerializer serializer(project);
-		if (serializer.Deserialize(path))
+        const bool loaded=serializer.Deserialize(path);
+        if(report)*report=serializer.Report();
+		if (loaded)
 		{
 			project->m_ProjectDirectory = std::filesystem::absolute(path).parent_path();
 			return project;

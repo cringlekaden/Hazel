@@ -1,5 +1,7 @@
 #include "hzpch.h"
 #include "ProjectAssets.h"
+#include "Hazel/Core/DocumentSchema.h"
+#include "Hazel/Core/FileDocument.h"
 #include "Hazel/Project/Project.h"
 #include <yaml-cpp/yaml.h>
 #include <set>
@@ -78,7 +80,8 @@ std::vector<SpriteAssetUse> FindSpriteAssetUses(const std::filesystem::path& roo
     std::vector<SpriteAssetUse> result;
     for(auto file:files) {
         if(file.extension()!=".hazel" && file.extension()!=".hprefab") continue;
-        auto path=Project::ResolveOwnedAsset(root,file);auto doc=YAML::LoadFile(path.u8string());
+        auto path=Project::ResolveOwnedAsset(root,file);auto doc=YAML::Load(FileDocument::Read(path));
+        DocumentSchema::Scene(doc,file.extension()==".hprefab");
         if(!doc.IsMap() || !doc["Scene"] || (doc["Entities"] && !doc["Entities"].IsSequence())) throw std::runtime_error("Malformed scene/prefab: "+file.generic_u8string());
         for(auto entity:doc["Entities"]) {
             const auto location=file.generic_u8string()+" entity "+entity["Entity"].as<std::string>();
