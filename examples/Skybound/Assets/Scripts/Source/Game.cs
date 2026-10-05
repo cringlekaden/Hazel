@@ -46,7 +46,7 @@ namespace Skybound {
             float lowHeight=Math.Max(.1f,bottom-FitCamera.Floor(camera));
             float highHeight=Math.Max(.1f,camera.OrthographicSize/2-gate.Gap-flight.GapHalf);
             upper[i]=Entity.Instantiate(UpperPipe,new Vector3(gate.X,gate.Gap+flight.GapHalf+highHeight/2,0),Vector3.Zero,new Vector3(1.1f,highHeight,1));
-            lower[i]=Entity.Instantiate(LowerPipe,new Vector3(gate.X,bottom-lowHeight/2,0),Vector3.Zero,new Vector3(1.1f,lowHeight,1));
+            lower[i]=Entity.Instantiate(LowerPipe,new Vector3(gate.X,bottom-lowHeight/2,0),new Vector3(0,0,3.14159f),new Vector3(1.1f,lowHeight,1));
             generations[i]=gate.Generation;
         }
         private bool Hit(Entity button) {
