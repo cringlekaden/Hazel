@@ -12,6 +12,8 @@ class SpriteSheetPanel
   public:
     void Bind(const Ref<ProjectAssets> &assets);
     bool Open(const std::filesystem::path &path);
+    // Request guarded replacement without clearing the current draft or recovery information.
+    void RequestRetryOpen();
     void BeginCreate(const std::filesystem::path &texture);
     void BeginImport();
     void Render(bool editable);
@@ -67,6 +69,7 @@ class SpriteSheetPanel
     void PreviewTexture();
     void Fail(const std::exception &);
     bool CanEdit() const;
+    ActionAvailability RetryOpenAvailability() const;
     bool Assign(bool clip, SpriteID id);
     Scope<SpriteSheetDocument> m_Document;
     Ref<ProjectAssets> m_Assets;
@@ -75,6 +78,7 @@ class SpriteSheetPanel
     std::string m_Error, m_CreateTexture, m_CreateDestination;
     std::string m_ImportSource, m_ImportDestination;
     std::filesystem::path m_RecoveryPath;
+    std::string m_RecoveryError;
     bool m_Recovery = false;
     bool m_Import = false;
     bool m_ImportCreateSheet = true, m_Imported = false;

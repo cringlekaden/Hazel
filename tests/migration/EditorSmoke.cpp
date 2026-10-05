@@ -368,7 +368,92 @@ private:
         const auto saved=a.m_SavedScene;
         auto& box=entity.GetComponent<BoxCollider2DComponent>();const auto size=box.Size;box.Size.x=0;
         Check(!e.OnSceneSimulate(true)&&e.m_ActiveScene==scene&&e.m_SceneState==EditorLayer::SceneState::Edit&&a.m_SavedScene==saved,"Invalid Simulate started physics or lost editor draft");box.Size=size;
+        RecoveryRetryChecks();
         std::cout<<"PASS: production Save-and-Assign failure/success, stale target rejection, failed Open draft preservation, busy callback/save guards, active sheet/prefab/scene Save and Simulate preflight\n";
+    }
+    void RecoveryRetryChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=a.m_Sprites;
+        const auto scene=e.m_EditorScene;const auto sceneText=SceneSerializer(scene).SerializeText();
+        const auto entitySelection=e.m_SceneHierarchyPanel.GetSelectedEntity().GetUUID();
+        const auto pathA=Project::GetAssetDirectory()/panel.m_Document->Reference();
+        const auto pathB=Project::GetAssetDirectory()/"Textures/retry-recovery.hsprites";
+        const auto savedA=Read(pathA);
+        panel.m_Document->Draft().Regions.front().Name="Unsaved recovery draft A";
+        panel.m_Document->Changed();
+        panel.m_Selected=panel.m_Document->Draft().Regions.front().ID;
+        panel.m_SelectedClip=panel.m_Document->Draft().Clips.front().ID;
+        const auto documentA=panel.m_Document.get();const auto identityA=panel.Identity();
+        const auto selected=panel.m_Selected,selectedClip=panel.m_SelectedClip;
+        const auto draftA=WriteSpriteSheetText(panel.m_Document->Draft());
+        auto write=[&](const auto& path,const auto& text){FileSystem::WriteFileAtomically(path,[&](auto& out){out<<text;});};
+        auto malformed=[&]{write(pathB,"SpriteSheetVersion: 99\n");};
+        auto retained=[&]{
+            Check(panel.m_Document.get()==documentA&&panel.Identity()==identityA&&panel.Dirty()&&
+                  WriteSpriteSheetText(panel.m_Document->Draft())==draftA&&panel.m_Selected==selected&&panel.m_SelectedClip==selectedClip,
+                  "Recovery retry lost sheet A, draft or selection");
+            Check(e.m_EditorScene==scene&&SceneSerializer(scene).SerializeText()==sceneText&&
+                  e.m_SceneHierarchyPanel.GetSelectedEntity().GetUUID()==entitySelection,
+                  "Recovery retry changed scene/session selection");
+            Check(panel.m_Recovery&&panel.m_RecoveryPath==pathB&&!panel.m_RecoveryError.empty(),
+                  "Recovery retry lost usable recovery information");
+        };
+        auto resolve=[&](GuardChoice choice){
+            a.m_ResolvingDocumentAction=true;
+            const bool result=a.m_Documents.Resolve(choice,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);});
+            a.m_ResolvingDocumentAction=false;return result;
+        };
+        auto guarded=[&]{
+            Check(a.m_Documents.Pending()&&a.m_Documents.Intent()==OperationIntent::OpenSheet&&
+                  a.m_Documents.Affected().size()==1&&a.m_Documents.Affected().front().Identity==identityA,
+                  "Production recovery retry skipped the sheet document guard");
+        };
+        malformed();a.SelectAsset(pathB);guarded();
+        Check(!resolve(GuardChoice::Discard),"Malformed recovery fixture unexpectedly opened");retained();
+        resolve(GuardChoice::Cancel);write(pathB,savedA);
+        panel.RequestRetryOpen();guarded();
+        Check(!panel.RetryOpenAvailability()&&std::string(panel.RetryOpenAvailability().Reason)=="Resolve the pending document operation first",
+              "Recovery retry did not explain pending-operation availability");
+        resolve(GuardChoice::Cancel);retained();
+
+        panel.RequestRetryOpen();guarded();
+        const auto recoveryError=panel.m_RecoveryError;
+        write(pathA,savedA+"\n# External edit: deterministic save conflict\n");
+        const auto externalA=Read(pathA);
+        Check(!resolve(GuardChoice::SaveAndContinue)&&a.m_Documents.Pending()&&
+              a.m_Documents.Results().size()==1&&a.m_Documents.Results().front().Outcome==SaveOutcome::Failed,
+              "Failed sheet save allowed recovery replacement");
+        retained();Check(panel.m_RecoveryError==recoveryError&&!panel.m_Error.empty()&&Read(pathA)==externalA,
+                         "Failed save lost open diagnostic or changed conflicting file");
+        write(pathA,savedA);resolve(GuardChoice::Cancel);
+
+        bool unrelatedExecuted=false;
+        a.Guard(OperationIntent::SaveAll,[&]{unrelatedExecuted=true;return true;});
+        panel.RequestRetryOpen();retained();
+        Check(a.m_Documents.Pending()&&a.m_Documents.Intent()==OperationIntent::SaveAll&&!unrelatedExecuted,
+              "Recovery retry bypassed or replaced an existing operation");
+        resolve(GuardChoice::Cancel);
+        const auto availability=panel.Availability;
+        panel.Availability=[](EditorAction){return ActionAvailability{"Open a project first"};};
+        panel.RequestRetryOpen();
+        Check(!a.m_Documents.Pending()&&!panel.RetryOpenAvailability(),"Recovery retry ignored current action availability");
+        retained();panel.Availability=availability;
+
+        panel.RequestRetryOpen();guarded();malformed();
+        Check(!resolve(GuardChoice::Discard),"Failed retry discarded before successful replacement");retained();
+        resolve(GuardChoice::Cancel);write(pathB,savedA);
+        panel.RequestRetryOpen();guarded();
+        // A deferred retry must use the originally requested B, even if recovery state changes.
+        panel.m_RecoveryPath=Project::GetAssetDirectory()/"Textures/subsequently-changed.hsprites";
+        Check(resolve(GuardChoice::Discard)&&!a.m_Documents.Pending()&&panel.Identity()!=identityA&&
+              panel.m_Document->Reference()=="Textures/retry-recovery.hsprites"&&!panel.Dirty()&&
+              !panel.m_Recovery&&panel.m_RecoveryPath.empty()&&panel.m_RecoveryError.empty()&&panel.m_Error.empty(),
+              "Successful guarded retry used a changed path or failed to clear recovery/update identity");
+        Check(Read(pathA)==savedA&&SceneSerializer(scene).SerializeText()==sceneText,
+              "Discard-on-success wrote sheet A or changed the scene");
+        // Restore the normal smoke's clean sheet for its existing render/assignment assertions.
+        a.SelectAsset(pathA);
+        Check(panel.m_Document->Reference()=="Textures/inspector.hsprites"&&!panel.Dirty(),"Recovery regression did not restore clean smoke sheet");
+        std::cout<<"PASS: production recovery retry guard, cancel, save failure, failed discard, pending/availability rejection, captured path and successful replacement\n";
     }
     void AuthoringChecks() {
         auto root=Project::GetAssetDirectory(); auto scene=CreateRef<Scene>();auto source=scene->CreateEntity("Prefab authored");

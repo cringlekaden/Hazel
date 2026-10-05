@@ -70,6 +70,7 @@ void SpriteSheetPanel::Bind(const Ref<ProjectAssets> &assets)
     m_PreviewStale = true;
     m_Error.clear();
     m_RecoveryPath.clear();
+    m_RecoveryError.clear();
     m_FrameKeys.clear();
     m_AddFrameRegion = 0;
     m_RegionSearch.clear();
@@ -94,6 +95,7 @@ bool SpriteSheetPanel::Open(const std::filesystem::path &path)
         m_RecoveryPath = path;
         m_Recovery = true;
         Fail(e);
+        m_RecoveryError = m_Error;
         return false;
     }
     m_Document = std::move(doc);
@@ -104,12 +106,32 @@ bool SpriteSheetPanel::Open(const std::filesystem::path &path)
     m_PreviewStale = true;
     m_Open = true;
     m_Recovery = false;
+    m_RecoveryPath.clear();
+    m_RecoveryError.clear();
     m_Error.clear();
     m_Pan = {12, 12};
     m_FrameKeys.clear();
     m_AddFrameRegion = 0;
     ++m_Identity;
     return true;
+}
+ActionAvailability SpriteSheetPanel::RetryOpenAvailability() const
+{
+    if (GuardPending && GuardPending())
+        return {"Resolve the pending document operation first"};
+    if (!m_Recovery || m_RecoveryPath.empty())
+        return {"No failed sheet open to retry"};
+    if (!ReplaceDocument)
+        return {"Sheet replacement is unavailable"};
+    return Availability ? Availability(EditorAction::OpenAsset) : ActionAvailability{};
+}
+void SpriteSheetPanel::RequestRetryOpen()
+{
+    if (!RetryOpenAvailability())
+        return;
+    // ReplaceDocument uses the controller's OpenSheet guard and apply-time policy.
+    // Keep recovery visible on cancel/save failure, and freeze the requested path.
+    ReplaceDocument([this, path = m_RecoveryPath] { return Open(path); });
 }
 void SpriteSheetPanel::BeginCreate(const std::filesystem::path &path)
 {
@@ -887,7 +909,7 @@ void SpriteSheetPanel::Render(bool editable)
     {
         ImGui::Begin("Sprite Sheet Recovery", &m_Recovery);
         ImGui::TextWrapped("Original metadata preserved: %s", m_RecoveryPath.generic_u8string().c_str());
-        ImGui::TextWrapped("%s", m_Error.c_str());
+        ImGui::TextWrapped("%s", m_RecoveryError.c_str());
         ImGui::TextWrapped(
             "Repair malformed or future-version metadata in a text editor. The current sheet "
             "and scene stay intact; no blank replacement is created.");
@@ -899,12 +921,13 @@ void SpriteSheetPanel::Render(bool editable)
         if (ImGui::Button("Copy path"))
             ImGui::SetClipboardText(m_RecoveryPath.u8string().c_str());
         ImGui::SameLine();
+        const auto retry = RetryOpenAvailability();
+        ImGui::BeginDisabled(!retry);
         if (ImGui::Button("Retry open"))
-        {
-            auto path = m_RecoveryPath;
-            m_Recovery = false;
-            Open(path);
-        }
+            RequestRetryOpen();
+        ImGui::EndDisabled();
+        if (retry.Reason)
+            ImGui::TextWrapped("%s", retry.Reason);
         ImGui::End();
     }
     if (m_Import)
