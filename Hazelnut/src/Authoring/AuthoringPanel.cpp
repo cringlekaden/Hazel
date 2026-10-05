@@ -358,12 +358,23 @@ void AuthoringPanel::RequestClose()
               return true;
           });
 }
+// Query after every panel has drawn: an appearing window can change focus after
+// the viewport's earlier render-time observation. Match ImGui RootAndChildWindows.
+static bool FocusedPanel(const char *name)
+{
+    auto *context = ImGui::GetCurrentContext();
+    auto *window = ImGui::FindWindowByName(name);
+    return context && context->NavWindow && window &&
+           ImGui::IsWindowChildOf(context->NavWindow, window->RootWindow, true, false);
+}
 void AuthoringPanel::Shortcuts()
 {
     const auto &io = ImGui::GetIO();
     if (io.WantTextInput || ImGui::IsAnyItemActive() || m_Documents.Pending() ||
         ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId))
         return;
+    const bool viewportFocused = FocusedPanel("Viewport");
+    const bool sceneFocused = FocusedPanel("Scene Hierarchy") || FocusedPanel("Properties");
     if (io.KeyCtrl)
     {
         if (ImGui::IsKeyPressed(ImGuiKey_O, false))
@@ -383,14 +394,13 @@ void AuthoringPanel::Shortcuts()
             else
                 SaveActive(io.KeyShift);
         }
-        if (ImGui::IsKeyPressed(ImGuiKey_D, false) &&
-            (m_Editor.m_ViewportFocused || m_Editor.m_SceneHierarchyPanel.Focused()))
+        if (ImGui::IsKeyPressed(ImGuiKey_D, false) && (viewportFocused || sceneFocused))
             m_Editor.OnDuplicateEntity();
         if (ImGui::IsKeyPressed(ImGuiKey_R, false))
             m_Editor.ReloadScripts();
         return;
     }
-    if (m_Editor.m_ViewportFocused && Availability(EditorAction::EditScene) && !ImGuizmo::IsUsing())
+    if (viewportFocused && Availability(EditorAction::EditScene) && !ImGuizmo::IsUsing())
     {
         if (ImGui::IsKeyPressed(ImGuiKey_Q, false))
             m_Editor.m_GizmoType = -1;
@@ -401,8 +411,7 @@ void AuthoringPanel::Shortcuts()
         if (ImGui::IsKeyPressed(ImGuiKey_R, false))
             m_Editor.m_GizmoType = ImGuizmo::SCALE;
     }
-    if ((m_Editor.m_ViewportFocused || m_Editor.m_SceneHierarchyPanel.Focused()) &&
-        ImGui::IsKeyPressed(ImGuiKey_Delete, false))
+    if ((viewportFocused || sceneFocused) && ImGui::IsKeyPressed(ImGuiKey_Delete, false))
         m_Editor.m_SceneHierarchyPanel.DeleteSelected();
 }
 void AuthoringPanel::FileMenu()
@@ -1251,7 +1260,7 @@ void AuthoringPanel::Render()
         if (auto *stats = ImGui::FindWindowByName("Stats"); stats && stats->DockId)
             ImGui::SetNextWindowDockID(stats->DockId, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize({600, 260}, ImGuiCond_FirstUseEver);
-        ImGui::Begin("Output", &m_ShowOutput);
+        ImGui::Begin("Output", &m_ShowOutput, ImGuiWindowFlags_NoFocusOnAppearing);
         if (m_ExitAfterJob)
         {
             ImGui::TextWrapped("Exit requested. The editor will close after this job completes.");

@@ -17,6 +17,7 @@
 #include "Hazel/Project/ProjectSerializer.h"
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <backends/imgui_impl_opengl3.h>
 #include <ImGuizmo.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -126,19 +127,33 @@ public:
         case 5: {
             KeyPressedEvent event(Key::E); e.OnKeyPressed(event);
             Check(e.m_GizmoType == ImGuizmo::TRANSLATE, "Native key event bypassed focused commands");
+            ImGui::SetWindowFocus("Viewport");
             ImGui::GetIO().AddKeyEvent(ImGuiKey_W,false);
             ImGui::GetIO().AddKeyEvent(ImGuiKey_E,true);
             break;
         }
         case 6: {
             KeyPressedEvent event(Key::R); e.OnKeyPressed(event);
-            Check(e.m_GizmoType == ImGuizmo::ROTATE, "Native key event bypassed input capture");
+            if(e.m_GizmoType!=ImGuizmo::ROTATE)
+                std::cerr<<"Shortcut evidence: gizmo="<<e.m_GizmoType<<" viewport="<<e.m_ViewportFocused
+                         <<" text="<<ImGui::GetIO().WantTextInput<<" active="<<ImGui::IsAnyItemActive()
+                         <<" E="<<ImGui::IsKeyPressed(ImGuiKey_E,false)<<" ctrl="<<ImGui::GetIO().KeyCtrl
+                         <<" popup="<<ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId)
+                         <<" gizmoUsing="<<ImGuizmo::IsUsing()<<"\n";
+            Check(e.m_GizmoType == ImGuizmo::ROTATE, "Focused ImGui E did not select rotation");
             auto& io=ImGui::GetIO();
             e.m_GizmoType=ImGuizmo::SCALE;
             const bool textInput=io.WantTextInput;io.WantTextInput=true;
             e.m_Authoring->Shortcuts();
             Check(e.m_GizmoType==ImGuizmo::SCALE,"Text input allowed an editor shortcut");
             io.WantTextInput=textInput;
+            ImGui::SetWindowFocus("Output");e.m_ViewportFocused=true;
+            e.m_Authoring->Shortcuts();
+            Check(e.m_GizmoType==ImGuizmo::SCALE,"Stale viewport observation bypassed current panel focus");
+            ImGui::SetWindowFocus("Viewport");e.m_ViewportFocused=false;
+            e.m_Authoring->Shortcuts();
+            Check(e.m_GizmoType==ImGuizmo::ROTATE,"Current viewport focus was ignored");
+            e.m_GizmoType=ImGuizmo::SCALE;e.m_ViewportFocused=true;
             io.ConfigInputTrickleEventQueue=m_Trickle;
             io.AddKeyEvent(ImGuiKey_E,false);
             auto authored=e.m_EditorScene->GetEntityByUUID(901); e.m_HoveredEntity=authored;
@@ -259,10 +274,26 @@ public:
                 auto* window=static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
                 int width=0,height=0;glfwGetFramebufferSize(window,&width,&height);
                 std::vector<unsigned char> pixels(static_cast<size_t>(width)*height*3);
-                GLint buffer=0,alignment=0;glGetIntegerv(GL_READ_BUFFER,&buffer);glGetIntegerv(GL_PACK_ALIGNMENT,&alignment);
-                glReadBuffer(GL_FRONT);glPixelStorei(GL_PACK_ALIGNMENT,1);
+                // Hidden native front buffers are not reliable screenshot targets.
+                // Replay the already-produced draw data into an owned capture framebuffer.
+                GLint buffer=0,alignment=0,readFramebuffer=0,drawFramebuffer=0,viewport[4]{};
+                GLfloat clear[4]{};
+                glGetIntegerv(GL_READ_BUFFER,&buffer);glGetIntegerv(GL_PACK_ALIGNMENT,&alignment);
+                glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&readFramebuffer);
+                glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&drawFramebuffer);
+                glGetIntegerv(GL_VIEWPORT,viewport);glGetFloatv(GL_COLOR_CLEAR_VALUE,clear);
+                FramebufferSpecification specification;specification.Width=width;specification.Height=height;
+                specification.Attachments={FramebufferTextureFormat::RGBA8};
+                auto target=Framebuffer::Create(specification);target->Bind();
+                glClearColor(.08f,.08f,.08f,1);glClear(GL_COLOR_BUFFER_BIT);
+                ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+                glReadBuffer(GL_COLOR_ATTACHMENT0);glPixelStorei(GL_PACK_ALIGNMENT,1);
                 glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,pixels.data());
+                glBindFramebuffer(GL_READ_FRAMEBUFFER,readFramebuffer);
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER,drawFramebuffer);
                 glReadBuffer(buffer);glPixelStorei(GL_PACK_ALIGNMENT,alignment);
+                glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
+                glClearColor(clear[0],clear[1],clear[2],clear[3]);
                 std::ofstream image(std::filesystem::u8path(capture),std::ios::binary);
                 image<<"P6\n"<<width<<" "<<height<<"\n255\n";
                 for(int y=height-1;y>=0;--y)image.write(reinterpret_cast<const char*>(pixels.data()+static_cast<size_t>(y)*width*3),width*3);

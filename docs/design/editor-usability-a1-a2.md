@@ -81,7 +81,8 @@ explicit refresh/open, rather than every draw. No asset database was introduced.
 
 Native decorations and OS behavior remain. A narrow Window title API publishes
 project/scene identity on Linux/Windows. Existing docking IDs and layout files are
-retained; no new default arrangement overwrites user layouts. Secondary toolbar
+retained; no new default arrangement overwrites user layouts. Automatic diagnostics do not steal keyboard focus; shortcut ownership is queried
+after all panels draw. Secondary toolbar
 actions overflow under More and remain in menus. Colors and spacing are restrained;
 renderer facts are read-only and disclosed under an expandable section.
 
