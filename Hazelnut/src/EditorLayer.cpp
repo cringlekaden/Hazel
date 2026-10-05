@@ -19,9 +19,11 @@
 namespace Hazel {
 
 
-	EditorLayer::EditorLayer()
+	EditorLayer::EditorLayer(std::shared_ptr<ConsoleModel> console)
 		: Layer("EditorLayer"), m_CameraController(1280.0f / 720.0f)
 	{
+        if(!console){m_ConsoleSession=std::make_unique<ConsoleSession>();console=m_ConsoleSession->Model;}
+        m_Console=std::move(console);
 		m_Font = Font::GetDefault();
 	}
 
@@ -49,6 +51,7 @@ namespace Hazel {
         m_Authoring=CreateScope<AuthoringPanel>(*this);
         m_Authoring->MarkSceneSaved();
         Application::Get().SetCloseRequest([this]{m_Authoring->RequestClose();});
+        Application::Get().SetBackgroundTick([this]{if(m_Authoring)m_Authoring->PollTools();});
 
 		auto commandLineArgs = Application::Get().GetSpecification().CommandLineArgs;
 		if (commandLineArgs.Count > 1)
@@ -72,6 +75,7 @@ namespace Hazel {
 	{
 		HZ_PROFILE_FUNCTION();
         Application::Get().SetCloseRequest({});
+        Application::Get().SetBackgroundTick({});
         m_Authoring.reset();
         if (m_SceneState != SceneState::Edit) OnSceneStop();
         ClearSceneObservers();
@@ -432,8 +436,7 @@ namespace Hazel {
 	bool EditorLayer::ActionFailed(const std::string& message)
 	{
 		m_ActionError = message;
-        if (m_Authoring) m_Authoring->ShowOutput();
-		HZ_ERROR("{}", message);
+        Log::GetClientLogger()->log(spdlog::source_loc{"Authoring",0,""},spdlog::level::err,"{}",message);
 		return false;
 	}
 

@@ -63,8 +63,7 @@ DocumentSaveResult AuthoringPanel::SaveDocument(const DocumentInfo &document)
         if (saved)
         {
             m_Editor.m_ActionError.clear();
-            m_Output = "Saved " + document.Name;
-            m_ShowOutput = true;
+            Notify("Saved " + document.Name);
             return {document, SaveOutcome::Saved, "Saved"};
         }
         if (document.Kind == EditorDocument::Scene && m_Editor.m_ActionError.empty())
@@ -130,8 +129,7 @@ void AuthoringPanel::SaveAll()
     Guard(OperationIntent::SaveAll,
           [this]
           {
-              m_Output = "Save All completed; all listed eligible dirty documents saved.";
-              m_ShowOutput = true;
+              Notify("Save All completed; all listed eligible dirty documents saved.");
               return true;
           });
 }

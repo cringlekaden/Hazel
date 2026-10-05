@@ -54,10 +54,13 @@ static bool Contained(const std::filesystem::path &root, const std::filesystem::
     auto relative = absolute.lexically_relative(base);
     return !relative.empty() && *relative.begin() != "..";
 }
-AuthoringPanel::AuthoringPanel(EditorLayer &editor) : m_Editor(editor)
+AuthoringPanel::AuthoringPanel(EditorLayer &editor) : m_Editor(editor), m_Console(editor.m_Console)
 {
-    m_Preferences = EditorPreferences::Load(m_Output);
-    m_PreferenceRecovery = m_Output;
+    m_Preferences = EditorPreferences::Load(m_PreferenceRecovery);
+    m_Tools.SetConsole(editor.m_Console);
+    m_Console.CaptureLevel=m_Preferences.ConsoleCapture;
+    editor.m_Console->CaptureLevel=m_Preferences.ConsoleCapture;
+    Log::SetObserverLevel(editor.m_Console.get(),static_cast<spdlog::level::level_enum>(m_Preferences.ConsoleCapture));
     m_Draft = m_Preferences;
     RefreshSDK();
     RefreshSDK(true);
@@ -70,8 +73,8 @@ AuthoringPanel::AuthoringPanel(EditorLayer &editor) : m_Editor(editor)
     style.FrameRounding = 2;
     style.GrabRounding = 2;
     style.Colors[ImGuiCol_HeaderActive] = {.20f, .30f, .38f, 1};
-    if (!m_Output.empty())
-        m_ShowOutput = true;
+    if (!m_PreferenceRecovery.empty())
+        Notify(m_PreferenceRecovery,spdlog::level::warn);
 }
 ActionAvailability AuthoringPanel::Availability(EditorAction action) const
 {
@@ -107,6 +110,7 @@ void AuthoringPanel::RememberProject()
 }
 void AuthoringPanel::BindProject()
 {
+    ++m_ProjectGeneration;
     auto availability = [this](EditorAction action) { return Availability(action); };
     m_Editor.m_SceneHierarchyPanel.Availability = availability;
     m_PrefabInspector.Availability = availability;
@@ -266,8 +270,12 @@ void AuthoringPanel::Preflight(bool exporting)
         Start("Toolchain readiness",
               {"authoring-preflight", "--operation", exporting ? "export" : "scripts"});
 }
+void AuthoringPanel::Notify(const std::string &message, spdlog::level::level_enum level)
+{
+    Log::GetClientLogger()->log(spdlog::source_loc{"Authoring", 0, ""}, level, "{}", message);
+}
 void AuthoringPanel::Start(std::string label, std::vector<std::string> args,
-                           std::function<void()> completion)
+                           ToolCompletion completion, std::filesystem::path target)
 {
     if (!args.empty() && (args[0] == "script-build" || args[0] == "editor-export") &&
         !Require(EditorAction::StartTool))
@@ -278,45 +286,57 @@ void AuthoringPanel::Start(std::string label, std::vector<std::string> args,
     if (!args.empty() && !m_SDK)
     {
         m_Editor.ActionFailed(m_SDK.Diagnostic + " Edit > Editor Preferences > Hazel source SDK. " +
-                             HazelSDK::SetupInstructions());
+                              HazelSDK::SetupInstructions());
         return;
     }
-    ToolRequest request{Path(m_Preferences.Python), m_SDK.Root.is_absolute() ? m_SDK.Root : std::filesystem::path{}, m_Editor.m_ProjectPath,
-                        std::move(args), label};
+    ToolRequest request{Path(m_Preferences.Python),
+                        m_SDK.Root.is_absolute() ? m_SDK.Root : std::filesystem::path{},
+                        m_Editor.m_ProjectPath, std::move(args), std::move(label)};
+    request.Generation = m_ProjectGeneration;
+    request.Completion = completion;
+    request.Target = std::move(target);
+    if (!request.Arguments.empty() && request.Arguments[0] == "script-build" &&
+        Project::GetActive())
+        request.Artifact = std::filesystem::absolute(
+            Project::GetAssetFileSystemPath(Project::GetActive()->GetConfig().ScriptModulePath));
+    else if (completion == ToolCompletion::OpenCreatedProject)
+        request.Artifact = request.Target;
     if (!m_Tools.Start(std::move(request)))
-    {
         m_Editor.ActionFailed("A tool operation is already running");
-        return;
-    }
-    m_Completion = std::move(completion);
-    m_Output = label + " in progress. Output streams below.\nCancellation is "
-                       "unavailable; closing the editor "
-                       "waits for completion.";
-    m_ShowOutput = true;
 }
 void AuthoringPanel::Tick(double timestep)
 {
     m_Sprites.Tick(timestep);
-    std::string progress;
-    if (m_Tools.ReadProgress(progress))
-        m_Output = m_Tools.Request().Label + " in progress.\n" + progress;
-    if (!m_Tools.Poll(m_Report))
+}
+void AuthoringPanel::PollTools()
+{
+    m_Editor.m_Console->Pump();
+    const ToolOwner owner{m_ProjectGeneration, m_Editor.m_ProjectPath};
+    if (!m_Tools.Poll(m_Report, &owner))
         return;
-    m_Output =
-        m_Report.Output + "\n" +
-        (m_Report.Success ? "Completed successfully." : "Failed. Resolve the diagnostic and retry.");
-    auto completion = std::move(m_Completion);
-    m_Completion = {};
-    if (m_Report.Success && completion)
+    if (m_Report.Success)
     {
         try
         {
-            completion();
+            if (m_Report.Request.Completion == ToolCompletion::ReloadScripts)
+                ScriptEngine::Init(Project::GetAssetFileSystemPath(
+                    Project::GetActive()->GetConfig().ScriptModulePath));
+            else if (m_Report.Request.Completion == ToolCompletion::OpenCreatedProject)
+            {
+                m_ShowNew = false;
+                if (!m_Editor.OpenProject(m_Report.Request.Target))
+                    throw std::runtime_error("Project created, but opening failed: " +
+                                             m_Editor.m_ActionError);
+            }
         }
         catch (const std::exception &error)
         {
+            m_Report.Success = false;
+            m_Report.Outcome = ToolOutcome::Failed;
+            m_Report.Output += "\nEditor follow-up failed: " + std::string(error.what());
+            m_Editor.m_Console->Finish(m_Report.Operation, m_Report.Outcome, m_Report.ExitCode,
+                                       m_Report.Output);
             m_Editor.ActionFailed(error.what());
-            m_Output += "\n" + std::string(error.what());
         }
     }
     if (m_ExitAfterJob)
@@ -354,7 +374,7 @@ void AuthoringPanel::ToolStatus(bool exporting)
     ImGui::TextWrapped("Script authoring also needs the SDK's built ScriptCore "
                        "and Mono/.NET targeting pack. "
                        "Export builds Release with the host C++ compiler. "
-                       "Failures appear in Output.");
+                       "Failures appear in Console.");
     if (ImGui::Button("Configure Python / SDK"))
     {
         m_Draft = m_Preferences;
@@ -374,7 +394,7 @@ void AuthoringPanel::RequestClose()
     if (m_Tools.Busy())
     {
         m_ExitAfterJob = true;
-        m_ShowOutput = true;
+        m_Console.Show();
         return;
     }
     Guard(OperationIntent::CloseEditor,
@@ -624,14 +644,14 @@ void AuthoringPanel::Menus()
         }
         ImGui::EndMenu();
     }
-    if (ImGui::BeginMenu("Window"))
+    if (ImGui::BeginMenu("View"))
     {
         if (ImGui::MenuItem("Sprite Sheet", nullptr, m_Sprites.Visible(), m_Sprites.HasDocument()))
             m_Sprites.Show();
         if (ImGui::MenuItem("Prefab Inspector", nullptr, m_ShowPrefab, bool(m_PrefabScene)))
             m_ShowPrefab = !m_ShowPrefab;
-        if (ImGui::MenuItem("Output", nullptr, m_ShowOutput))
-            m_ShowOutput = !m_ShowOutput;
+        if (ImGui::MenuItem("Console", nullptr, m_Console.Visible))
+            {if(m_Console.Visible)m_Console.Visible=false;else m_Console.Show();}
         ImGui::EndMenu();
     }
 }
@@ -665,16 +685,18 @@ void AuthoringPanel::Preferences()
         m_Draft.Python.clear();
         RefreshSDK(true);
         ToolRequest r{{}, m_DraftSDK.Root.is_absolute() ? m_DraftSDK.Root : std::filesystem::path{}, {}, {}, "Detect Python"};
+        r.Generation=m_ProjectGeneration;r.Project=m_Editor.m_ProjectPath;
         m_Tools.Start(std::move(r));
-        m_ShowOutput = true;
+        m_Console.Show();
     }
     ImGui::SameLine();
     if (ImGui::Button("Validate"))
     {
         RefreshSDK(true);
         ToolRequest r{Path(m_Draft.Python), m_DraftSDK.Root.is_absolute() ? m_DraftSDK.Root : std::filesystem::path{}, {}, {}, "Validate Python"};
+        r.Generation=m_ProjectGeneration;r.Project=m_Editor.m_ProjectPath;
         m_Tools.Start(std::move(r));
-        m_ShowOutput = true;
+        m_Console.Show();
     }
     ImGui::EndDisabled();
     ImGui::TextWrapped("Selected: %s\n%s %s\n%s", m_Report.Python.Executable.generic_u8string().c_str(),
@@ -733,8 +755,8 @@ void AuthoringPanel::Preferences()
             RefreshSDK();
             ImGui::GetIO().FontGlobalScale = m_Preferences.UIScale;
             m_Editor.m_ShowPhysicsColliders = m_Preferences.ShowColliders;
-            m_Output = "Preferences saved.";
-            m_ShowOutput = true;
+            Notify("Preferences saved.");
+            m_Console.CaptureLevel=m_Preferences.ConsoleCapture;
             ValidatePython();
         }
         catch (const std::exception &error)
@@ -888,8 +910,7 @@ void AuthoringPanel::ProjectSettings()
                               "Settings could not be applied; previous descriptor and "
                               "editor session were restored");
                       }
-                      m_Output = "Project settings saved and applied.";
-                      m_ShowOutput = true;
+                      Notify("Project settings saved and applied.");
                       return true;
                   }
                   catch (const std::exception &error)
@@ -933,7 +954,7 @@ void AuthoringPanel::NewProject()
     ToolStatus();
     if (!Ready())
         ImGui::TextWrapped("Run Check readiness after configuring tools. "
-                           "Compiler/preflight diagnostics appear in Output.");
+                           "Compiler/preflight diagnostics appear in Console.");
     bool valid = !m_Name.empty() && m_Name.size() <= 120 &&
                  ScriptSource::ValidIdentifier(m_Identifier) && Path(m_Destination).is_absolute();
     if (!valid)
@@ -950,11 +971,7 @@ void AuthoringPanel::NewProject()
                   Start("Create project",
                         {"new-project", "--name", m_Name, "--identifier", m_Identifier, "--destination",
                          m_Destination},
-                        [this, target]
-                        {
-                            m_ShowNew = false;
-                            m_Editor.OpenProject(target);
-                        });
+                        ToolCompletion::OpenCreatedProject,target);
                   return m_Tools.Busy();
               });
     }
@@ -992,9 +1009,7 @@ void AuthoringPanel::Scripts()
             {
                 auto path =
                     ScriptSource::Create(Project::GetAssetDirectory(), m_ScriptName, m_Namespace);
-                m_Output = "Created " + path.generic_u8string() +
-                           ". Build Scripts, then assign its class in Properties.";
-                m_ShowOutput = true;
+                Notify("Created " + path.generic_u8string() + ". Build Scripts, then assign its class in Properties.");
                 OpenScript(path);
                 m_ShowScripts = false;
                 if (m_Editor.m_ContentBrowserPanel)
@@ -1024,14 +1039,7 @@ void AuthoringPanel::Scripts()
         {
             auto project = m_Editor.m_ProjectPath;
             Start("Build Scripts", {"script-build", project.generic_u8string(), "--config", "Debug"},
-                  [this, project]
-                  {
-                      if (project == m_Editor.m_ProjectPath)
-                      {
-                          ScriptEngine::Init(Project::GetAssetFileSystemPath(
-                              Project::GetActive()->GetConfig().ScriptModulePath));
-                      }
-                  });
+                  ToolCompletion::ReloadScripts);
         }
         ImGui::EndDisabled();
         ImGui::End();
@@ -1238,8 +1246,7 @@ void AuthoringPanel::Prefabs()
                 m_CreatePrefab = false;
                 if (m_Editor.m_ContentBrowserPanel)
                     m_Editor.m_ContentBrowserPanel->Refresh();
-                m_Output = "Prefab created: " + m_PrefabName;
-                m_ShowOutput = true;
+                Notify("Prefab created: " + m_PrefabName);
                 SelectAsset(Project::GetAssetDirectory() / Path(m_PrefabName));
             }
             catch (const std::exception &error)
@@ -1317,46 +1324,43 @@ void AuthoringPanel::Render()
     if (m_Sprites.Focused())
         m_ActiveDocument = EditorDocument::Sheet;
     DocumentGuard();
-    if (m_ShowOutput)
+    m_Console.ExitRequested = m_ExitAfterJob;
+    m_Console.CapturePreferenceAvailable = m_PreferenceRecovery.empty();
+    m_Console.Render();
+    if (m_Editor.m_Console->CaptureLevel != m_Console.CaptureLevel)
     {
-        if (auto *stats = ImGui::FindWindowByName("Stats"); stats && stats->DockId)
-            ImGui::SetNextWindowDockID(stats->DockId, ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize({600, 260}, ImGuiCond_FirstUseEver);
-        ImGui::Begin("Output", &m_ShowOutput, ImGuiWindowFlags_NoFocusOnAppearing);
-        if (m_ExitAfterJob)
+        m_Editor.m_Console->CaptureLevel = m_Console.CaptureLevel;
+        m_Draft.ConsoleCapture = m_Console.CaptureLevel;
+        Log::SetObserverLevel(m_Editor.m_Console.get(),
+                              static_cast<spdlog::level::level_enum>(m_Console.CaptureLevel));
+    }
+    if (m_Console.CancelExit)
+    {
+        m_ExitAfterJob = false;
+        m_Console.CancelExit = false;
+    }
+    if (m_Console.SaveCapture)
+    {
+        m_Console.SaveCapture = false;
+        if (!m_PreferenceRecovery.empty())
         {
-            ImGui::TextWrapped("Exit requested. The editor will close after this job completes.");
-            if (ImGui::Button("Cancel Exit Request"))
-                m_ExitAfterJob = false;
+            m_Editor.ActionFailed("Resolve recovered preferences in Edit > Preferences before "
+                                  "saving Console capture.");
+            return;
         }
-        if (ImGui::Button("Copy Output"))
-            ImGui::SetClipboardText((m_Editor.m_ActionError + "\n" + m_Output).c_str());
-        if (m_Tools.Busy())
-            ImGui::TextUnformatted("Tool job running. Other tool jobs/project "
-                                   "replacement are disabled.");
-        else if (!m_Tools.Request().Label.empty())
+        try
         {
-            ImGui::TextWrapped("%s: %s", m_Tools.Request().Label.c_str(),
-                               m_Report.Success ? "Completed successfully"
-                                                : "Failed; resolve the diagnostic and retry");
-            const auto &arguments = m_Tools.Request().Arguments;
-            if (m_Report.Success && !arguments.empty() && arguments[0] == "editor-export")
-            {
-                ImGui::TextWrapped("Artifacts: %s", arguments.back().c_str());
-                if (ImGui::Button("Open Output Folder") && !FileDialogs::OpenPath(arguments.back()))
-                    m_Editor.ActionFailed("Cannot open the output folder. Copy its "
-                                          "artifact path from Output.");
-            }
+            auto preferences = m_Preferences;
+            preferences.ConsoleCapture = m_Console.CaptureLevel;
+            preferences.Save();
+            m_Preferences = preferences;
+            m_Draft.ConsoleCapture = preferences.ConsoleCapture;
+            Notify("Console capture preference saved.");
         }
-        if (!m_Editor.m_ActionError.empty())
-            ImGui::TextWrapped("%s", m_Editor.m_ActionError.c_str());
-        ImGui::BeginChild("Tool output", {0, 0}, false, ImGuiWindowFlags_HorizontalScrollbar);
-        bool follow = ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1;
-        ImGui::TextUnformatted(m_Output.c_str());
-        if (follow)
-            ImGui::SetScrollHereY(1);
-        ImGui::EndChild();
-        ImGui::End();
+        catch (const std::exception &error)
+        {
+            m_Editor.ActionFailed(error.what());
+        }
     }
 }
 } // namespace Hazel

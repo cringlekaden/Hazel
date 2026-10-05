@@ -36,6 +36,8 @@ EditorPreferences EditorPreferences::Load(std::string &diagnostic)
 			throw std::runtime_error("UI scale must be 0.8 to 2");
 		if (data["ShowColliders"])
 			parsed.ShowColliders = data["ShowColliders"].as<bool>();
+		if (data["ConsoleCapture"]) parsed.ConsoleCapture=data["ConsoleCapture"].as<int>();
+        if(parsed.ConsoleCapture<0||parsed.ConsoleCapture>5)throw std::runtime_error("Console capture must be Trace through Critical");
 		if (data["RecentProjects"])
 			parsed.RecentProjects = data["RecentProjects"].as<std::vector<std::string>>();
 		if (parsed.RecentProjects.size() > 12)
@@ -55,7 +57,7 @@ void EditorPreferences::Save() const
 	out << YAML::BeginMap << YAML::Key << "Version" << YAML::Value << 1 << YAML::Key << "Python"
 		<< YAML::Value << Python << YAML::Key << "SDK" << YAML::Value << SDK << YAML::Key << "ScriptEditor"
 		<< YAML::Value << ScriptEditor << YAML::Key << "UIScale" << YAML::Value << UIScale << YAML::Key
-		<< "ShowColliders" << YAML::Value << ShowColliders << YAML::Key << "RecentProjects" << YAML::Value
+		<< "ShowColliders" << YAML::Value << ShowColliders << YAML::Key << "ConsoleCapture" << YAML::Value << ConsoleCapture << YAML::Key << "RecentProjects" << YAML::Value
 		<< YAML::BeginSeq;
 	for (auto &path : RecentProjects)
 		out << path;

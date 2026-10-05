@@ -242,6 +242,18 @@ Architecture:
 
 Current compiler/export jobs deliberately lack cancellation and can run for up to 60 minutes. Retain explicit **Exit when job finishes / Keep editor open** handling and an indeterminate status; do not introduce unsafe force-stop UI. Bound output drain work per iteration so deadlines/exit checks execute even during a log flood. File navigation is offered only for validated compiler locations inside appropriate source roots: Open File/Open Folder/Copy Location works with current facilities; configured editor line arguments are a later opt-in protocol, not shell concatenation or a universal promise.
 
+**Stage B delivery:** see the [implementation record](editor-usability-a1-a2.md#stage-b-console-and-tool-operation-reporting).
+The Console collector, core/app/managed bridge/tool streams, scoped observers,
+bounded operation history and process ownership are implemented. The existing
+Output dock settings migrate only when Console has no saved settings; failures
+use the status link without stealing focus. Native stdout remains functional
+without Hazelnut. Clear preserves operation results and the pinned latest failure.
+Actual child-command stages replace guessed percentages. Internal teardown is
+cancellable; normal compiler/export close waits. Managed Console.Out/Error,
+optional rotating files and validated compiler file/line navigation remain
+separate refinements. C–H below are still pending; broad redundant-tooltip cleanup
+remains a later presentation pass, not a Stage B rewrite.
+
 ## 11. Preferences/workspace persistence
 
 Use the existing `Resources::Get().UserData` root, honoring HAZEL_DATA. Normal roots: Linux `$XDG_DATA_HOME/Hazel/Hazelnut` or `~/.local/share/Hazel/Hazelnut`; Windows `%LOCALAPPDATA%/Hazel/Hazelnut`. Do not relocate existing preferences/layout merely to create a new taxonomy.

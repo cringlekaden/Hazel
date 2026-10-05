@@ -123,19 +123,21 @@ void AuthoringPanel::Status()
     const char *mode = m_Editor.m_SceneState == EditorLayer::SceneState::Edit   ? "Edit"
                        : m_Editor.m_SceneState == EditorLayer::SceneState::Play ? "Play"
                                                                                 : "Simulate";
-    const std::string operation =
-        m_Tools.Busy() ? m_Tools.Request().Label + " in progress"
-        : m_Tools.Request().Label.empty()
-            ? ""
-            : m_Tools.Request().Label + (m_Report.Success ? " completed" : " failed");
+    const std::string operation = m_Editor.m_Console->Status();
     const std::string identity = project + " | Scene: " + scene + " | Active: " + ActiveName() + " | " +
                                  mode + " | " + std::to_string(dirty) + " unsaved" +
                                  (operation.empty() ? "" : " | " + operation);
     ImGui::AlignTextToFramePadding();
-    if (!operation.empty() || !m_Editor.m_ActionError.empty())
+    if (!operation.empty() || m_Editor.m_Console->Errors() || m_Editor.m_Console->HasFailure())
     {
-        if (ImGui::SmallButton("View Output"))
-            m_ShowOutput = true;
+        const auto count=m_Editor.m_Console->Errors();
+        const bool failure=m_Editor.m_Console->HasFailure();
+        const auto button=count?"Console ("+std::to_string(count)+" errors)":failure?std::string("Console — failed job"):std::string("Console");
+        if(count||failure)ImGui::PushStyleColor(ImGuiCol_Text,{1,.55f,.4f,1});
+        if (ImGui::SmallButton(button.c_str()))
+            m_Console.Show();
+        if(count||failure)ImGui::PopStyleColor();
+        PropertyUI::Help("Open Console without interrupting the active document. Error count includes captured errors since Clear, even if filtered or dropped; a failed operation stays pinned until dismissed.");
         ImGui::SameLine();
     }
     ImGui::TextUnformatted(identity.c_str());

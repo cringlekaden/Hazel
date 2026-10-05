@@ -44,6 +44,7 @@ static std::string Read(const std::filesystem::path& file) {
 }
 }
 #include "EditorDocumentChecks.h"
+#include "EditorConsoleChecks.h"
 namespace Hazel {
 class EditorWorkflowSmoke : public Layer {
 public:
@@ -57,6 +58,12 @@ public:
             EditorDocumentChecks();
             AuthoringChecks();
             SDKChecks();
+            EditorConsoleChecks(m_Directory);
+            Check(!ImGui::FindWindowByName("Console"),"Console opened unexpectedly and stole an error field's focus");
+            auto* legacy=ImGui::FindWindowSettingsByID(ImHashStr("Output"));
+            if(!legacy)legacy=ImGui::CreateNewWindowSettings("Output");
+            legacy->DockId=ImGui::FindWindowByName("Stats")->DockId;legacy->DockOrder=2;
+            e.m_Authoring->ShowConsole();
             auto* viewport = ImGui::FindWindowByName("Viewport");
             Check(viewport && viewport->DockId && e.m_ViewportSize.x > 0 && e.m_ViewportSize.y > 0, "Docked editor viewport missing");
             auto oldScene=e.m_ActiveScene;
@@ -102,9 +109,19 @@ public:
                   saved.find("AuthoringProject/Assets/Textures")==std::string::npos,"Project texture was not asset-root relative");
             Check(saved.find((m_Directory/"assets/textures/Checkerboard.png").generic_u8string())!=std::string::npos,
                   "External absolute reference was discarded");
+            const auto python=Toolchain::DiscoverPython();
+            auto& a=*e.m_Authoring;ToolRequest probe{python.Executable,{},e.m_ProjectPath,{},"Minimized completion"};
+            probe.Generation=a.m_ProjectGeneration;
+            Check(a.m_Tools.Start(std::move(probe)),"Minimized completion fixture did not start");
+            m_MinimizedStart=std::chrono::steady_clock::now();
+            WindowResizeEvent minimized(0,0);Application::Get().OnEvent(minimized);
+            Application::Get().SubmitToMainThread([this]{CheckMinimizedCompletion();});
             break;
         }
         case 4: {
+            auto* console=ImGui::FindWindowByName("Console");
+            Check(console&&console->Active&&console->DockId==ImGui::FindWindowByName("Stats")->DockId,
+                  "Console lost legacy Output docking settings");
             auto file = e.m_EditorScenePath; e.NewScene(); Check(e.OpenScene(file),"OpenScene reported failure");
             auto player = e.m_EditorScene->GetEntityByUUID(901);
             Check(player && player.GetComponent<SpriteRendererComponent>().Resolved.Data->Texture->IsLoaded(), "Editor save/reopen/texture failed");
@@ -117,7 +134,9 @@ public:
             Check(e.OpenScene(m_Directory/"AuthoringProject/Assets/Scenes/Example.hazel"),"Legacy Windows-separated texture reference failed");
             Check(!e.m_HoveredEntity && !e.m_SceneHierarchyPanel.SetSelectedEntity(player),"OpenScene retained retired observations");
             Check(e.OpenScene(file),"Authored scene reopen failed");
+            const auto focused=ImGui::GetCurrentContext()->NavWindow;
             FailureChecks();
+            Check(ImGui::GetCurrentContext()->NavWindow==focused,"Authoring failure stole keyboard focus");
             ImGui::SetWindowFocus("Viewport");
             // Deliver the fixture's paired release/press in one frame. Production
             // keeps ImGui's normal event trickling; there is no timing/click driver.
@@ -149,7 +168,7 @@ public:
             e.m_Authoring->Shortcuts();
             Check(e.m_GizmoType==ImGuizmo::SCALE,"Text input allowed an editor shortcut");
             io.WantTextInput=textInput;
-            ImGui::SetWindowFocus("Output");e.m_ViewportFocused=true;
+            ImGui::SetWindowFocus("Console");e.m_ViewportFocused=true;
             e.m_Authoring->Shortcuts();
             Check(e.m_GizmoType==ImGuizmo::SCALE,"Stale viewport observation bypassed current panel focus");
             ImGui::SetWindowFocus("Viewport");e.m_ViewportFocused=false;
@@ -255,7 +274,15 @@ public:
                 // inside the deliberately smaller framebuffer, without changing layouts.
                 const auto origin=ImGui::GetMainViewport()->Pos;
                 ImGui::SetWindowPos(panel,{origin.x+10,origin.y+70});
-                ImGui::SetWindowSize(panel,{900,550});
+                ImGui::SetWindowSize(panel,{std::getenv("HAZEL_CONSOLE_CAPTURE")?680.f:900.f,550});
+                if(std::getenv("HAZEL_CONSOLE_CAPTURE")) {
+                    // Optional production Console capture in isolated fixture layouts.
+                    ImGui::DockBuilderDockWindow("Console",0);
+                    auto* console=ImGui::FindWindowByName("Console");
+                    ImGui::SetWindowPos(console,{origin.x+710,origin.y+50});
+                    ImGui::SetWindowSize(console,{300,560});
+                    ImGui::GetIO().FontGlobalScale=1.25f;
+                }
             }
             auto sheet=Project::GetActive()->GetAssets()->Sheet("Textures/inspector.hsprites");
             e.m_SceneHierarchyPanel.SetSelectedEntity(e.m_EditorScene->GetEntityByUUID(901));
@@ -317,8 +344,22 @@ public:
         }
     }
 private:
+    void CheckMinimizedCompletion() {
+        Check(m_Frame==3,"Editor rendering/scene updates continued while minimized");
+        auto& a=*m_Editor.m_Authoring;
+        if(a.m_Tools.Busy()) {
+            Check(std::chrono::steady_clock::now()-m_MinimizedStart<std::chrono::seconds(5),
+                  "Minimized window prevented tool completion polling");
+            Application::Get().SubmitToMainThread([this]{CheckMinimizedCompletion();});return;
+        }
+        Check(a.m_Report.Success&&a.m_Report.Request.Label=="Minimized completion",
+              "Minimized completion did not apply its main-thread report");
+        WindowResizeEvent restored(Application::Get().GetWindow().GetWidth(),Application::Get().GetWindow().GetHeight());
+        Application::Get().OnEvent(restored);
+        std::cout<<"PASS: main-thread Console/tool polling continues while minimized without advancing scene/render frames\n";
+    }
     void OnImGuiRender() override {
-        if(m_Frame!=13&&!(m_Frame==16&&std::getenv("HAZEL_EDITOR_CAPTURE")))return;
+        if(m_Frame!=13&&!(m_Frame==16&&std::getenv("HAZEL_EDITOR_CAPTURE")&&!std::getenv("HAZEL_CONSOLE_CAPTURE")))return;
         ImGui::SetNextWindowSize({420,180});
         ImGui::Begin("Property layout contract",nullptr,ImGuiWindowFlags_NoSavedSettings |
                      ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoFocusOnAppearing);
@@ -765,6 +806,7 @@ private:
     bool& m_Done;
     int m_Frame = 0;
     bool m_Trickle = true;
+    std::chrono::steady_clock::time_point m_MinimizedStart;
 };
 }
 int main(int argc, char** argv) {
@@ -782,6 +824,9 @@ int main(int argc, char** argv) {
         return closed?0:1;
     }
 #endif
+    if(argc>1 && std::string(argv[1])=="--console-stream-probe") {
+        std::cout<<"stdout é\n"<<std::flush;std::cerr<<"stderr warning\n"<<std::flush;return 0;
+    }
     if(argc>1 && std::string(argv[1])=="-I") {
         auto name=std::filesystem::u8path(argv[0]).filename().u8string();
         if(name.find("valid")!=std::string::npos || name.find("older")!=std::string::npos) {
@@ -811,6 +856,7 @@ int main(int argc, char** argv) {
         auto projectArgument = project.lexically_relative(directory).generic_u8string();
         char executable[] = "EditorSmoke"; char* arguments[] = { executable, projectArgument.data() };
         bool done = false;
+        ConsoleSession console;
         {
             ApplicationSpecification spec; spec.Name = "Migration Editor";
             spec.Resources.Root = directory / "assets"; std::filesystem::current_path(directory); spec.CommandLineArgs = { 2, arguments };
@@ -819,11 +865,13 @@ int main(int argc, char** argv) {
                 glfwSetWindowSize(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()),1024,640);
             glfwHideWindow(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()));
             std::cout << "Renderer: " << glGetString(GL_RENDERER) << "; Version: " << glGetString(GL_VERSION) << '\n';
-            auto editor = CreateScope<EditorLayer>(); auto* observer = editor.get();
+            auto editor = CreateScope<EditorLayer>(console.Model); auto* observer = editor.get();
             application.PushLayer(std::move(editor));
             application.PushLayer(CreateScope<EditorWorkflowSmoke>(*observer, directory, done));
             application.Run();
         }
+        console.Model->Pump();
+        Check(!console.Model->Entries().empty(),"Application logging was disconnected during its lifetime");
         Check(done && !ScriptEngine::IsInitialized() && !Application::TryGet(), "Editor workflow/shutdown failed");
         std::filesystem::current_path(previous);
 #ifdef HZ_PLATFORM_WINDOWS

@@ -5,6 +5,7 @@
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/SpriteSheetPanel.h"
 #include "ProjectTools.h"
+#include "Panels/ConsolePanel.h"
 #include <functional>
 #include <unordered_map>
 namespace Hazel
@@ -22,7 +23,8 @@ class AuthoringPanel
     void FileMenu();
     void Render();
     void Tick(double timestep = 0);
-    void ShowOutput() { m_ShowOutput = true; }
+    void PollTools(); // Main thread, including minimized frames.
+    void ShowConsole() { m_Console.Show(); }
     void BindProject();
     void RememberProject();
     void SelectAsset(const std::filesystem::path &path);
@@ -57,7 +59,8 @@ class AuthoringPanel
     void RefreshSDK(bool draft = false);
     void UseAutomaticSDK();
     void Preflight(bool exporting = false);
-    void Start(std::string label, std::vector<std::string> args, std::function<void()> completion = {});
+    void Start(std::string label, std::vector<std::string> args, ToolCompletion completion = ToolCompletion::None, std::filesystem::path target = {});
+    void Notify(const std::string& message,spdlog::level::level_enum level = spdlog::level::info);
     bool Ready(bool exporting = false) const;
     std::string SceneText() const;
     std::vector<DocumentInfo> Documents() const;
@@ -73,7 +76,8 @@ class AuthoringPanel
     std::string m_CheckedDraftSDK;
     ProjectTools m_Tools;
     ToolReport m_Report;
-    std::function<void()> m_Completion;
+    ConsolePanel m_Console;
+    uint64_t m_ProjectGeneration=0;
     EditorDocuments m_Documents;
     EditorDocument m_ActiveDocument = EditorDocument::Scene;
     bool m_PrefabFocused = false;
@@ -84,7 +88,7 @@ class AuthoringPanel
     bool m_ProjectChoicesLoaded = false;
     std::unordered_map<std::string, bool> m_RecentAvailable;
     bool m_ExitAfterJob = false;
-    std::string m_Output, m_PreferenceRecovery, m_SavedScene, m_SavedPrefab, m_PrefabReference,
+    std::string m_PreferenceRecovery, m_SavedScene, m_SavedPrefab, m_PrefabReference,
         m_ProjectName, m_ScriptProject;
     std::string m_Name = "My Game", m_Identifier = "MyGame", m_Destination, m_Startup, m_AssetDirectory,
                 m_Module;
@@ -96,7 +100,6 @@ class AuthoringPanel
     SpriteSheetPanel m_Sprites;
     TransformComponent m_InitialTransform;
     bool m_ShowPreferences = false, m_ShowProject = false, m_ShowNew = false, m_ShowScripts = false,
-         m_ShowBuild = false, m_ShowExport = false, m_ShowPrefab = false, m_CreatePrefab = false,
-         m_ShowOutput = false;
+         m_ShowBuild = false, m_ShowExport = false, m_ShowPrefab = false, m_CreatePrefab = false;
 };
 } // namespace Hazel

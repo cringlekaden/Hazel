@@ -11,13 +11,15 @@
 namespace Hazel {
 
 	class AuthoringPanel;
+    class ConsoleModel;
+    class ConsoleSession;
 
 	class EditorLayer : public Layer
 	{
         friend class EditorWorkflowSmoke;
         friend class AuthoringPanel;
 	public:
-		EditorLayer();
+		explicit EditorLayer(std::shared_ptr<ConsoleModel> console = {});
 		virtual ~EditorLayer();
 
 		virtual void OnAttach() override;
@@ -53,6 +55,9 @@ namespace Hazel {
 		void OnScenePause();
 
 		void OnDuplicateEntity();
+
+        std::unique_ptr<ConsoleSession> m_ConsoleSession;
+        std::shared_ptr<ConsoleModel> m_Console;
 
 		// UI Panels
 		void UI_Toolbar();

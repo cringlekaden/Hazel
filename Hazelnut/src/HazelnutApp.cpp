@@ -2,16 +2,17 @@
 #include <Hazel/Core/EntryPoint.h>
 
 #include "EditorLayer.h"
+#include "Authoring/ConsoleModel.h"
 
 namespace Hazel {
 
-	class Hazelnut : public Application
+	class Hazelnut : private ConsoleSession, public Application
 	{
 	public:
 		Hazelnut(const ApplicationSpecification& spec)
 			: Application(spec)
 		{
-			PushLayer(CreateScope<EditorLayer>());
+			PushLayer(CreateScope<EditorLayer>(Model));
 		}
 	};
 

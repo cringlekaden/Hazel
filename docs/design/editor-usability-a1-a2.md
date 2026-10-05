@@ -1,10 +1,11 @@
-# Editor usability A1 / A2 implementation
+# Editor usability implementation: A1 / A2 and Stage B
 
 Baseline: `5de70c93a89e1c8df3fd37553569d9499f793c7a` on
 `feature/sprite-sheet-authoring`, including the complete audit and descended from
 `9a48282f59b4cbc188615ec66763c448b70a2e83`. Implementation branch:
 `feature/editor-usability`. This record supplements
-[the audit](editor-usability-audit.md); later stages remain proposals.
+[the audit](editor-usability-audit.md). A1/A2 and their corrections are complete;
+Stage B is implemented below. C–H remain separate proposals.
 
 ## Workflows
 
@@ -214,9 +215,97 @@ presentation is clipped; do not repeat already readable text. Touched runtime/re
 controls follow this policy, and status identity now gets a tooltip only when clipped.
 No project-wide tooltip rewrite is included here.
 
+## Stage B: Console and tool-operation reporting
+
+Baseline `871028315416385975459bbefdc05b607707447c` on the existing
+`feature/editor-usability` branch includes the completed recovery retry fix,
+SDK discovery, compact runtime toolbar, colored vectors and the newer Skybound
+pipe correction. The unrelated local MeadowRun Lanterns sheet is preserved.
+No dependency, layout template, example, SDK generation or schema changes are
+part of Stage B.
+
+- **View > Console** replaces Output. Only the old panel's window settings are
+  migrated in memory if Console has no existing settings; dock geometry/order
+  and all other layout entries remain intact. Initial placement uses the former
+  Output/Stats dock. Errors never open/focus the Console automatically; the
+  document/status row has a visible error/result link. Explicit View/status clicks
+  reveal the Console tab; background failures do not request focus. Runtime icons
+  are unchanged.
+- **Messages:** Core, App, Managed, Authoring, tool stdout/stderr and tool status;
+  severity/source filters, substring search, Reset filters, visible/hidden/drop
+  counts, Ctrl-select/keyboard selection, context Copy message, Ctrl+C,
+  Copy > selected/visible, Clear, Auto-scroll and Latest. Summary rows
+  are clipped; selected details wrap full multiline text/paths. A narrow panel
+  uses a compact source/severity/message row. Settings explains native capture
+  versus display filtering; capture defaults to Info and saves only on request.
+- **Operations:** immutable ID/project-generation/request snapshot, actual
+  Python selection, SDK/command, real CLI child-command stages, elapsed/start/end
+  times, outcome/exit code and accepted artifact location. Operation details offers
+  message filtering, Copy result and Open output folder through the existing
+  native abstraction. A build records its module; export records its destination.
+  The latest failed/cancelled/timed-out result remains pinned until Dismiss failure,
+  even after clearing messages, history eviction or later successes.
+- **Limits:** 1 MiB/1,024 incoming records; 8 MiB/10,000 retained records;
+  64 KiB UTF-8-safe individual records and partial lines; 20 operation records
+  plus one pinned failure. Pump moves at most 256 records/256 KiB per frame.
+  Oldest messages drop with explicit counters. Clear atomically removes accepted
+  queued and retained messages and resets counters; new messages may arrive
+  afterward. It does not cancel work, reset sequence IDs or erase operation results.
+  Process final reports retain at most 2 MiB; result details preserve the final
+  64 KiB so compiler failures at the end remain useful.
+- **Lifetimes:** Hazel owns a permanent distribution sink, preserves stdout and
+  any separately attached sinks, and offers scoped weak observers. Hazelnut's
+  data-only session precedes Application construction and outlives its teardown.
+  Observers detach after tool/watcher/script/renderer shutdown; Reset waits for
+  in-flight bounded ingestion. No worker/sink calls ImGui or owns editor/scene
+  pointers. Sink recursion is suppressed and collector locks never call logging.
+- **Tools:** one worker, separate fair stdout/stderr reads, bounded drain passes,
+  original interpreter/SDK/preflight contracts and argv execution. The canonical
+  Python invocation explicitly enables UTF-8 text output on both platforms. Poll validates
+  project path and generation before typed main-thread reload/open actions. A narrow
+  Application main-thread callback keeps polling while minimized, without advancing
+  scene/runtime/render updates; editor detach and Application teardown clear it. Stale
+  completion is labeled Previous project. Normal close waits and offers Keep editor
+  open. Internal forced teardown cancels, terminates the owned Linux process group /
+  Windows job and joins; it never applies an editor action. Windows children inherit
+  only their three standard handles. Python discovery's existing probe is bounded
+  by five seconds; normal jobs retain the sixty-minute deadline. No unsafe
+  interactive compiler/export cancellation button is introduced.
+
+Focused checks exercise the actual relay, mixed sources/order, filtering/copy,
+UTF-8 truncation, bounded inbox/Pump/retention/Clear, pinned completion across
+truncation/history eviction, observer recursion/concurrent teardown, stdout/stderr,
+continuous-output deadlines, consumer exceptions, failed/cancelled workers,
+project/generation rejection and descendant cleanup on cancellation/shutdown.
+Existing failed Open, Save-and-Assign, document-operation and runtime guard checks
+remain intact. The real editor smoke checks Output-to-Console dock migration and completion
+while minimized without advancing scene/render frames.
+Local validation: Premake Linux Debug and Release builds with two compiler jobs;
+all 14 canonical regressions in Debug/software and Release/gl41 passed. An isolated
+software-rendered editor capture was inspected at 1024×640 with a 300-pixel Console
+at 125% scale; controls wrap and messages use compact summaries with full details
+on selection. This is not physical mouse/monitor or Windows DPI acceptance.
+The existing Linux/Windows CI workflow is required for the pushed revision.
+
+Hands-on Linux/Windows acceptance: open Console from View; filter/search and copy
+multiline diagnostics; scroll upward during a build and use Latest; make a script
+compile fail while Console is hidden and verify the status link does not steal a
+text field's focus; inspect the failure, Clear messages and build successfully,
+then confirm the old failure remains until dismissed. Export and open its output
+folder; request close during a job and choose Keep editor open. Check a narrow
+Console and scaled Windows UI. These are acceptance tasks, not claims of physical
+mouse/DPI verification.
+
+**Stage B limits:** existing NativeLog calls and managed exception logs are tagged;
+arbitrary C# Console.Out/Error remains stdout and is not advertised as captured.
+A public managed logging facade/domain-scoped redirection, optional rotating native
+files and validated compiler file/line navigation remain later Console refinements.
+All messages/result details can be copied, and artifact folders can be opened now.
+Broad redundant-tooltip cleanup remains explicitly pending as recorded above.
+
 ## Deferred findings
 
-Console ingestion, unified recovery/schema preservation, workspace restoration,
+Unified recovery/schema preservation, workspace restoration,
 native project generation, renderer policies and entity/prefab hierarchy remain
 outside A1/A2. Existing prefab save conflict detection/exclusive creation limitations
 belong to the recovery/asset-service stage; this milestone preserves those contracts

@@ -9,6 +9,7 @@ struct EditorPreferences
 	std::string Python, SDK, ScriptEditor;
 	float UIScale = 1.0f;
 	bool ShowColliders = false;
+    int ConsoleCapture = 2;
 	std::vector<std::string> RecentProjects;
 	static std::filesystem::path Location();
 	static EditorPreferences Load(std::string &diagnostic);
