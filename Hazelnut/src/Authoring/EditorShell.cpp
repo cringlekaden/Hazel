@@ -43,7 +43,7 @@ void AuthoringPanel::Toolbar()
                        ImGui::GetContentRegionAvail().x;
     button(named ? saveName.c_str() : "Save",
            m_ActiveDocument == EditorDocument::Scene ? EditorAction::SaveScene : EditorAction::SaveAsset,
-           ("Ctrl+S — " + ActiveName()).c_str(), [this] { SaveActive(); });
+           ("Ctrl+S: " + ActiveName()).c_str(), [this] { SaveActive(); });
     if (fits("Play"))
         ImGui::SameLine();
     if (m_Editor.m_SceneState == EditorLayer::SceneState::Edit)
@@ -61,7 +61,7 @@ void AuthoringPanel::Toolbar()
             secondary("Step", EditorAction::RuntimeControl, "Advance one update while paused",
                       [this] { m_Editor.m_ActiveScene->Step(); });
     }
-    secondary("Save All...", EditorAction::Browse, "Ctrl+Alt+S — review dirty documents",
+    secondary("Save All...", EditorAction::Browse, "Ctrl+Alt+S: review dirty documents",
               [this] { SaveAll(); });
     secondary("Add Entity", EditorAction::EditScene, "Create and select an empty entity",
               [this] { m_Editor.m_SceneHierarchyPanel.AddEntity(); });

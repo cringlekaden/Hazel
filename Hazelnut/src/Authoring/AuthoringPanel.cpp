@@ -625,7 +625,7 @@ void AuthoringPanel::Preferences()
                            "replaces the preserved file with these preferences.");
         ImGui::Separator();
     }
-    ImGui::TextDisabled("User preferences — Apply and Save persists this draft");
+    ImGui::TextDisabled("User preferences: Apply and Save persists this draft");
     if (ImGui::CollapsingHeader("Storage"))
         PropertyUI::ReadOnly("location", "Settings file",
                              EditorPreferences::Location().generic_u8string().c_str());

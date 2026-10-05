@@ -95,7 +95,10 @@ assignment saves, stale targets, rejected Open, active saves, tool-busy mutation
 rejection and invalid physics simulation before Box2D initialization. Pure document
 checks cover scopes, save failure/exception/cancel, partial success/retry, explicit
 Use Saved retention, true close/discard and action availability. The existing short
-render/startup/shutdown test exercises focused ImGui shortcut delivery. Optional
+render/startup/shutdown test exercises focused ImGui shortcut delivery and fresh-row
+control width. The legacy standalone renderer fixture now requests the engine
+minimum (4.1), uses GLSL 410 with equivalent explicit UBO binding, and retains all
+render/readback assertions. Optional
 `HAZEL_EDITOR_CAPTURE` writes a screenshot from that smoke without image assertions.
 The milestone workflow does not invoke automated game playthroughs or pixel-click
 scripts. It retains existing service assertions.
@@ -121,6 +124,15 @@ mouse/keyboard usability, Windows DPI or native dialogs:
   verify reasons and unchanged inputs. Browse/preview and completion remain discoverable.
 - Resize narrow panels and test Windows DPI / native snapping; restart to verify
   the existing layout has survived. No new layout persistence behavior is claimed.
+
+![Selected-region authoring in the isolated smoke](images/editor-usability-a1-a2.png)
+
+This capture replays the existing ImGui draw data into a test-owned framebuffer;
+its controlled failed operation is intentional. It excludes OS decorations and
+is not evidence of physical input or Windows DPI acceptance. No matched baseline
+capture was made. Assignment now precedes detailed properties; region identity is
+an expandable section. The UI font retains its existing glyph coverage (the
+fixture filename's emoji uses a fallback glyph); UTF-8 file identity is preserved.
 
 ## Deferred findings
 

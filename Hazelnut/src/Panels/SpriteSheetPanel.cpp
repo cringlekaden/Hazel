@@ -14,14 +14,8 @@ namespace Hazel
 {
 namespace
 {
-ImVec2 V(glm::vec2 p)
-{
-    return {p.x, p.y};
-}
-glm::vec2 P(ImVec2 p)
-{
-    return {p.x, p.y};
-}
+ImVec2 V(glm::vec2 p) { return {p.x, p.y}; }
+glm::vec2 P(ImVec2 p) { return {p.x, p.y}; }
 bool UInt(const char *label, uint32_t &v)
 {
     return PropertyUI::Scalar(label, label, ImGuiDataType_U32, &v);
@@ -136,7 +130,8 @@ void SpriteSheetPanel::BeginImport()
         return;
     m_ImportSource = source;
     m_ImportDestination =
-        (std::filesystem::path("Textures") / std::filesystem::u8path(source).filename()).generic_u8string();
+        (std::filesystem::path("Textures") / std::filesystem::u8path(source).filename())
+            .generic_u8string();
     m_Import = true;
     m_Imported = false;
     m_Error.clear();
@@ -291,7 +286,9 @@ void SpriteSheetPanel::Sampling()
     wrap("wrap-y", "Wrap Y", s.Sampling.WrapT);
     if (PropertyUI::Checkbox("mips", "Mipmaps", s.Sampling.GenerateMips))
         changed = committed = true;
-    int format = s.Sampling.Format == ImageFormat::R8 ? 0 : s.Sampling.Format == ImageFormat::RGB8 ? 1 : 2;
+    int format = s.Sampling.Format == ImageFormat::R8     ? 0
+                 : s.Sampling.Format == ImageFormat::RGB8 ? 1
+                                                          : 2;
     if (PropertyUI::Combo("format", "Byte format", format, "R8 (red data)\0RGB8\0RGBA8\0"))
     {
         s.Sampling.Format = format == 0   ? ImageFormat::R8
@@ -300,9 +297,9 @@ void SpriteSheetPanel::Sampling()
         changed = committed = true;
     }
     if (ImGui::CollapsingHeader("Sampling help"))
-        ImGui::TextWrapped(
-            "Regions never repeat. Linear filtering needs padding; mipmaps can blend neighbors. Nearest / no "
-            "mipmaps is the pixel-art default. R8 samples red; no sRGB conversion.");
+        ImGui::TextWrapped("Regions never repeat. Linear filtering needs padding; mipmaps can blend "
+                           "neighbors. Nearest / no "
+                           "mipmaps is the pixel-art default. R8 samples red; no sRGB conversion.");
     if (changed)
         m_Document->Changed();
     if (committed)
@@ -338,10 +335,10 @@ void SpriteSheetPanel::Regions(bool editable)
             {
                 Fail(e);
             }
-        ImGui::TextWrapped(
-            "%zu proposed cells. Incomplete edge cells are omitted. Apply appends new rectangles and skips "
-            "exact existing rectangles; identities and edits are preserved.",
-            m_GridPreview.size());
+        ImGui::TextWrapped("%zu proposed cells. Incomplete edge cells are omitted. Apply appends new "
+                           "rectangles and skips "
+                           "exact existing rectangles; identities and edits are preserved.",
+                           m_GridPreview.size());
         ImGui::BeginDisabled(!editable || m_GridPreview.empty());
         if (ImGui::Button("Apply grid") && CanEdit())
         {
@@ -372,12 +369,23 @@ void SpriteSheetPanel::Regions(bool editable)
         ImGui::PopID();
     }
     ImGui::EndChild();
-    auto it = std::find_if(s.Regions.begin(), s.Regions.end(), [&](auto &r) { return r.ID == m_Selected; });
+    auto it =
+        std::find_if(s.Regions.begin(), s.Regions.end(), [&](auto &r) { return r.ID == m_Selected; });
     if (it == s.Regions.end())
         return;
     auto &r = *it;
-    ImGui::TextDisabled("ID %s", SpriteIDText(r.ID).c_str());
     ImGui::PushID(SpriteIDText(r.ID).c_str());
+    const auto targetName = TargetName ? TargetName() : std::string{};
+    const auto assignment =
+        Dirty() ? "Save Sheet and Assign Region to " + targetName : "Assign Region to " + targetName;
+    ImGui::BeginDisabled(!editable || targetName.empty());
+    if (ImGui::Button(assignment.c_str()))
+        Assign(false, r.ID);
+    ImGui::EndDisabled();
+    if (targetName.empty())
+        ImGui::TextWrapped("Select an entity in Scene Hierarchy to assign this region.");
+    if (ImGui::CollapsingHeader("Region identity"))
+        PropertyUI::ReadOnly("id", "ID", SpriteIDText(r.ID).c_str());
     ImGui::BeginDisabled(!editable);
     bool changed = PropertyUI::Text("name", "Region name", r.Name);
     changed |= UInt("X", r.Rect.X);
@@ -385,7 +393,7 @@ void SpriteSheetPanel::Regions(bool editable)
     changed |= UInt("Width", r.Rect.Width);
     changed |= UInt("Height", r.Rect.Height);
     float pivot[2]{r.Pivot.x, r.Pivot.y};
-    if (PropertyUI::SliderVector2("pivot", "Pivot (0–1)", pivot, 0, 1,
+    if (PropertyUI::SliderVector2("pivot", "Pivot (0-1)", pivot, 0, 1,
                                   {"Top-left normalized. Center = 0.5, 0.5; feet = 0.5, 1."}))
     {
         r.Pivot = {pivot[0], pivot[1]};
@@ -419,31 +427,24 @@ void SpriteSheetPanel::Regions(bool editable)
         m_DeleteRequested = true;
     }
     ImGui::EndDisabled();
-    const auto targetName = TargetName ? TargetName() : std::string{};
-    const auto assignment =
-        Dirty() ? "Save Sheet and Assign Region to " + targetName : "Assign Region to " + targetName;
-    ImGui::BeginDisabled(!editable || targetName.empty());
-    if (ImGui::Button(assignment.c_str()))
-        Assign(false, r.ID);
-    ImGui::EndDisabled();
-    if (targetName.empty())
-        ImGui::TextWrapped("Select an entity in Scene Hierarchy to assign this region.");
-    if (m_Texture && r.Rect.Width && r.Rect.Height && uint64_t(r.Rect.X) + r.Rect.Width <= s.Sampling.Width &&
+    if (m_Texture && r.Rect.Width && r.Rect.Height &&
+        uint64_t(r.Rect.X) + r.Rect.Width <= s.Sampling.Width &&
         uint64_t(r.Rect.Y) + r.Rect.Height <= s.Sampling.Height)
     {
         const auto uv = SpriteUV(r.Rect, s.Sampling.Width, s.Sampling.Height);
         auto anchor = P(ImGui::GetCursorScreenPos()) + glm::vec2(84, 84);
         auto top = anchor - r.Pivot * 100.f;
         auto *draw = ImGui::GetWindowDrawList();
-        draw->AddImage((ImTextureID)(uintptr_t)m_Texture->GetRendererID(), V(top), V(top + glm::vec2(100)),
-                       V(uv[3]), V(uv[1]));
-        draw->AddLine(V(anchor - glm::vec2(7, 0)), V(anchor + glm::vec2(7, 0)), IM_COL32(255, 190, 0, 255),
-                      2);
-        draw->AddLine(V(anchor - glm::vec2(0, 7)), V(anchor + glm::vec2(0, 7)), IM_COL32(255, 190, 0, 255),
-                      2);
+        draw->AddImage((ImTextureID)(uintptr_t)m_Texture->GetRendererID(), V(top),
+                       V(top + glm::vec2(100)), V(uv[3]), V(uv[1]));
+        draw->AddLine(V(anchor - glm::vec2(7, 0)), V(anchor + glm::vec2(7, 0)),
+                      IM_COL32(255, 190, 0, 255), 2);
+        draw->AddLine(V(anchor - glm::vec2(0, 7)), V(anchor + glm::vec2(0, 7)),
+                      IM_COL32(255, 190, 0, 255), 2);
         ImGui::Dummy({180, 170});
-        ImGui::TextWrapped("Cross = entity origin, unit world quad. Entity scale sets world size. Colliders "
-                           "keep their authored offsets.");
+        ImGui::TextWrapped(
+            "Cross = entity origin, unit world quad. Entity scale sets world size. Colliders "
+            "keep their authored offsets.");
     }
     ImGui::PopID();
 }
@@ -486,7 +487,8 @@ void SpriteSheetPanel::Clips(bool editable)
         ImGui::PopID();
     }
     ImGui::EndChild();
-    auto it = std::find_if(s.Clips.begin(), s.Clips.end(), [&](auto &c) { return c.ID == m_SelectedClip; });
+    auto it =
+        std::find_if(s.Clips.begin(), s.Clips.end(), [&](auto &c) { return c.ID == m_SelectedClip; });
     if (it == s.Clips.end())
     {
         ImGui::TextWrapped("Select or create a clip, then choose regions here to add frames.");
@@ -494,10 +496,20 @@ void SpriteSheetPanel::Clips(bool editable)
     }
     auto &clip = *it;
     ImGui::PushID(SpriteIDText(clip.ID).c_str());
+    const auto targetName = TargetName ? TargetName() : std::string{};
+    const auto assignment =
+        Dirty() ? "Save Sheet and Assign Clip to " + targetName : "Assign Clip to " + targetName;
+    ImGui::BeginDisabled(!editable || targetName.empty());
+    if (ImGui::Button(assignment.c_str()))
+        Assign(true, clip.ID);
+    ImGui::EndDisabled();
+    if (targetName.empty())
+        ImGui::TextWrapped("Select an entity in Scene Hierarchy to assign this clip.");
     ImGui::BeginDisabled(!editable);
     bool changed = PropertyUI::Text("name", "Clip name", clip.Name);
     changed |= PropertyUI::Checkbox("loop", "Loop", clip.Loop);
-    if (std::none_of(s.Regions.begin(), s.Regions.end(), [&](auto &r) { return r.ID == m_AddFrameRegion; }))
+    if (std::none_of(s.Regions.begin(), s.Regions.end(),
+                     [&](auto &r) { return r.ID == m_AddFrameRegion; }))
         m_AddFrameRegion = s.Regions.empty() ? 0 : s.Regions.front().ID;
     {
         PropertyUI::Row row("add-region", "Add frame");
@@ -636,15 +648,6 @@ void SpriteSheetPanel::Clips(bool editable)
         m_Playback.Reset();
     }
     ImGui::EndDisabled();
-    const auto targetName = TargetName ? TargetName() : std::string{};
-    const auto assignment =
-        Dirty() ? "Save Sheet and Assign Clip to " + targetName : "Assign Clip to " + targetName;
-    ImGui::BeginDisabled(!editable || targetName.empty());
-    if (ImGui::Button(assignment.c_str()))
-        Assign(true, clip.ID);
-    ImGui::EndDisabled();
-    if (targetName.empty())
-        ImGui::TextWrapped("Select an entity in Scene Hierarchy to assign this clip.");
     ImGui::Separator();
     ImGui::TextUnformatted("Asset preview (independent of gameplay)");
     try
@@ -675,7 +678,8 @@ void SpriteSheetPanel::Clips(bool editable)
         const auto &r = s.Region(clip.Frames.at(m_Playback.Frame).Region);
         auto uv = SpriteUV(r.Rect, s.Sampling.Width, s.Sampling.Height);
         if (m_Texture)
-            ImGui::Image((ImTextureID)(uintptr_t)m_Texture->GetRendererID(), {128, 128}, V(uv[3]), V(uv[1]));
+            ImGui::Image((ImTextureID)(uintptr_t)m_Texture->GetRendererID(), {128, 128}, V(uv[3]),
+                         V(uv[1]));
     }
     catch (const std::exception &e)
     {
@@ -694,24 +698,21 @@ void SpriteSheetPanel::Canvas(bool editable)
         return;
     }
     auto &sheet = m_Document->Draft();
-    ImGui::TextWrapped(
-        "Wheel: zoom | middle drag: pan | left: select/move | bottom-right square: resize. Create tool: drag "
-        "rectangle. Pivot tool: click/drag pivot. Pixel snapping is always on.");
+    ImGui::TextDisabled("Scroll to zoom; middle-drag to pan");
+    PropertyUI::Help("Left: select/move. Bottom-right square: resize. Create rectangle: drag. "
+                     "Pivot tool: click/drag pivot. Pixel snapping is always on.");
     int tool = m_Tool == Tool::Create ? 1 : 0;
-    if (ImGui::RadioButton("Select / move", tool == 0))
-        m_Tool = Tool::Select;
-    ImGui::SameLine();
-    if (ImGui::RadioButton("Create rectangle", tool == 1))
-        m_Tool = Tool::Create;
-    ImGui::SameLine();
+    if (PropertyUI::Combo("canvas-tool", "Canvas tool", tool, "Select / move\0Create rectangle\0"))
+        m_Tool = tool ? Tool::Create : Tool::Select;
     PropertyUI::Checkbox("pivot-tool", "Pivot tool", m_PivotTool);
     PropertyUI::SliderFloat("zoom", "Zoom", m_Zoom, .125f, 32.f, "%.2fx", nullptr, {},
                             ImGuiSliderFlags_Logarithmic);
     if (ImGui::Button("Fit"))
     {
         auto a = ImGui::GetContentRegionAvail();
-        m_Zoom = std::clamp(std::min((a.x - 24) / sheet.Sampling.Width, (a.y - 55) / sheet.Sampling.Height),
-                            .125f, 32.f);
+        m_Zoom =
+            std::clamp(std::min((a.x - 24) / sheet.Sampling.Width, (a.y - 55) / sheet.Sampling.Height),
+                       .125f, 32.f);
         m_Pan = {12, 12};
     }
     ImGui::BeginChild("Pixel canvas", {0, 0}, true,
@@ -737,10 +738,11 @@ void SpriteSheetPanel::Canvas(bool editable)
     auto *draw = ImGui::GetWindowDrawList();
     draw->AddRectFilled(V(origin), V(origin + P(size)), IM_COL32(38, 38, 44, 255));
     draw->AddImage((ImTextureID)(uintptr_t)m_Texture->GetRendererID(), V(top),
-                   V(top + glm::vec2(sheet.Sampling.Width, sheet.Sampling.Height) * m_Zoom), {0, 1}, {1, 0});
+                   V(top + glm::vec2(sheet.Sampling.Width, sheet.Sampling.Height) * m_Zoom), {0, 1},
+                   {1, 0});
     auto pixel = (mouse - top) / m_Zoom;
-    const bool insideImage =
-        pixel.x >= 0 && pixel.y >= 0 && pixel.x < sheet.Sampling.Width && pixel.y < sheet.Sampling.Height;
+    const bool insideImage = pixel.x >= 0 && pixel.y >= 0 && pixel.x < sheet.Sampling.Width &&
+                             pixel.y < sheet.Sampling.Height;
     pixel.x = std::clamp(std::floor(pixel.x), 0.f, float(sheet.Sampling.Width - 1));
     pixel.y = std::clamp(std::floor(pixel.y), 0.f, float(sheet.Sampling.Height - 1));
     if (editable && hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
@@ -760,7 +762,8 @@ void SpriteSheetPanel::Canvas(bool editable)
             for (auto it = sheet.Regions.rbegin(); it != sheet.Regions.rend(); ++it)
             {
                 auto &r = *it;
-                auto corner = top + glm::vec2(r.Rect.X + r.Rect.Width, r.Rect.Y + r.Rect.Height) * m_Zoom;
+                auto corner =
+                    top + glm::vec2(r.Rect.X + r.Rect.Width, r.Rect.Y + r.Rect.Height) * m_Zoom;
                 if (r.ID == m_Selected && glm::length(mouse - corner) <= 9)
                 {
                     m_Gesture = 3;
@@ -779,8 +782,8 @@ void SpriteSheetPanel::Canvas(bool editable)
             }
         }
     }
-    auto selected =
-        std::find_if(sheet.Regions.begin(), sheet.Regions.end(), [&](auto &r) { return r.ID == m_Selected; });
+    auto selected = std::find_if(sheet.Regions.begin(), sheet.Regions.end(),
+                                 [&](auto &r) { return r.ID == m_Selected; });
     if (editable && m_Gesture && ImGui::IsMouseDown(ImGuiMouseButton_Left))
     {
         if (m_Gesture == 1)
@@ -791,8 +794,8 @@ void SpriteSheetPanel::Canvas(bool editable)
             m_Original.Height = uint32_t(std::abs(pixel.y - m_DragStart.y)) + 1;
         }
         else if (selected != sheet.Regions.end() && selected->Rect.Width <= sheet.Sampling.Width &&
-                 selected->Rect.Height <= sheet.Sampling.Height && selected->Rect.X < sheet.Sampling.Width &&
-                 selected->Rect.Y < sheet.Sampling.Height)
+                 selected->Rect.Height <= sheet.Sampling.Height &&
+                 selected->Rect.X < sheet.Sampling.Width && selected->Rect.Y < sheet.Sampling.Height)
         {
             auto &r = *selected;
             const auto oldRect = r.Rect;
@@ -806,10 +809,10 @@ void SpriteSheetPanel::Canvas(bool editable)
             }
             else if (m_Gesture == 3)
             {
-                r.Rect.Width = uint32_t(
-                    std::clamp(pixel.x - float(r.Rect.X) + 1, 1.f, float(sheet.Sampling.Width - r.Rect.X)));
-                r.Rect.Height = uint32_t(
-                    std::clamp(pixel.y - float(r.Rect.Y) + 1, 1.f, float(sheet.Sampling.Height - r.Rect.Y)));
+                r.Rect.Width = uint32_t(std::clamp(pixel.x - float(r.Rect.X) + 1, 1.f,
+                                                   float(sheet.Sampling.Width - r.Rect.X)));
+                r.Rect.Height = uint32_t(std::clamp(pixel.y - float(r.Rect.Y) + 1, 1.f,
+                                                    float(sheet.Sampling.Height - r.Rect.Y)));
             }
             else
                 r.Pivot = glm::clamp((pixel - glm::vec2(r.Rect.X, r.Rect.Y)) /
@@ -836,8 +839,8 @@ void SpriteSheetPanel::Canvas(bool editable)
     auto rectangle = [&](const PixelRect &r, ImU32 color, float thickness)
     {
         draw->AddRect(V(top + glm::vec2(r.X, r.Y) * m_Zoom),
-                      V(top + glm::vec2(uint64_t(r.X) + r.Width, uint64_t(r.Y) + r.Height) * m_Zoom), color,
-                      0, 0, thickness);
+                      V(top + glm::vec2(uint64_t(r.X) + r.Width, uint64_t(r.Y) + r.Height) * m_Zoom),
+                      color, 0, 0, thickness);
     };
     for (auto &r : sheet.Regions)
     {
@@ -858,9 +861,9 @@ void SpriteSheetPanel::Canvas(bool editable)
             auto corner = top + glm::vec2(r.Rect.X + r.Rect.Width, r.Rect.Y + r.Rect.Height) * m_Zoom;
             draw->AddRectFilled(V(corner - glm::vec2(4)), V(corner + glm::vec2(4)),
                                 IM_COL32(255, 205, 40, 255));
-            auto pivot =
-                top +
-                (glm::vec2(r.Rect.X, r.Rect.Y) + r.Pivot * glm::vec2(r.Rect.Width, r.Rect.Height)) * m_Zoom;
+            auto pivot = top + (glm::vec2(r.Rect.X, r.Rect.Y) +
+                                r.Pivot * glm::vec2(r.Rect.Width, r.Rect.Height)) *
+                                   m_Zoom;
             draw->AddCircle(V(pivot), 6, IM_COL32(255, 110, 80, 255), 0, 2);
         }
     }
@@ -885,8 +888,9 @@ void SpriteSheetPanel::Render(bool editable)
         ImGui::Begin("Sprite Sheet Recovery", &m_Recovery);
         ImGui::TextWrapped("Original metadata preserved: %s", m_RecoveryPath.generic_u8string().c_str());
         ImGui::TextWrapped("%s", m_Error.c_str());
-        ImGui::TextWrapped("Repair malformed or future-version metadata in a text editor. The current sheet "
-                           "and scene stay intact; no blank replacement is created.");
+        ImGui::TextWrapped(
+            "Repair malformed or future-version metadata in a text editor. The current sheet "
+            "and scene stay intact; no blank replacement is created.");
         if (ImGui::Button("Open file"))
             FileDialogs::OpenPath(m_RecoveryPath.u8string());
         ImGui::SameLine();
@@ -918,9 +922,10 @@ void SpriteSheetPanel::Render(bool editable)
             PropertyUI::Text("sheet", "Sheet path", m_CreateDestination,
                              {"Assets-relative .hsprites destination"});
         if (m_Imported)
-            ImGui::TextWrapped("Texture already imported to %s. Retrying creates only the sheet; the texture "
-                               "stays even if you cancel.",
-                               m_ImportDestination.c_str());
+            ImGui::TextWrapped(
+                "Texture already imported to %s. Retrying creates only the sheet; the texture "
+                "stays even if you cancel.",
+                m_ImportDestination.c_str());
         if (ImGui::Button(m_Imported ? "Retry Create Sheet / Finish" : "Import and Open") && CanEdit())
         {
             if (!m_Imported)
@@ -972,10 +977,11 @@ void SpriteSheetPanel::Render(bool editable)
                         }
                         catch (const std::exception &e)
                         {
-                            m_Error = "Texture imported successfully to " + texture +
-                                      ". Sheet creation failed: " + e.what() +
-                                      ". Cancel the operation to correct the sheet path and retry, or finish "
-                                      "with the imported texture.";
+                            m_Error =
+                                "Texture imported successfully to " + texture +
+                                ". Sheet creation failed: " + e.what() +
+                                ". Cancel the operation to correct the sheet path and retry, or finish "
+                                "with the imported texture.";
                             if (ReportError)
                                 ReportError(m_Error);
                             return false;
@@ -1022,7 +1028,8 @@ void SpriteSheetPanel::Render(bool editable)
                 try
                 {
                     auto document = CreateScope<SpriteSheetDocument>(m_Assets);
-                    document->Create(std::filesystem::u8path(texture), std::filesystem::u8path(destination));
+                    document->Create(std::filesystem::u8path(texture),
+                                     std::filesystem::u8path(destination));
                     m_Document = std::move(document);
                     m_Open = true;
                     m_PreviewStale = true;
@@ -1072,7 +1079,7 @@ void SpriteSheetPanel::Render(bool editable)
     ImGui::PushID(std::to_string(m_Identity).c_str());
     m_Focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
     ImGui::TextWrapped("%s%s", m_Document->Reference().generic_u8string().c_str(),
-                       Dirty() ? " — Unsaved" : " — Saved");
+                       Dirty() ? " | Unsaved" : " | Saved");
     if (ImGui::Button("Close Document") && RequestClose)
         RequestClose();
     if (!m_Document)
@@ -1104,9 +1111,12 @@ void SpriteSheetPanel::Render(bool editable)
         else
             m_Error = "Save or discard changes before reloading";
     }
-    ImGui::SameLine();
-    if (Dirty() && ImGui::Button("Discard sheet changes..."))
-        ImGui::OpenPopup("Discard sprite edits");
+    if (Dirty())
+    {
+        PropertyUI::WrapButton("Discard sheet changes...");
+        if (ImGui::Button("Discard sheet changes..."))
+            ImGui::OpenPopup("Discard sprite edits");
+    }
     if (ImGui::BeginPopupModal("Discard sprite edits", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::TextUnformatted("Reload the saved sheet and discard this draft?");
@@ -1119,15 +1129,16 @@ void SpriteSheetPanel::Render(bool editable)
     }
     ImGui::EndDisabled();
     if (!editable)
-        ImGui::TextDisabled(
-            "Asset editing is disabled during Play / Simulate or a tool job; preview stays independent.");
+        ImGui::TextDisabled("Asset editing is disabled during Play / Simulate or a tool job; preview "
+                            "stays independent.");
     if (!m_Error.empty())
         ImGui::TextColored({1, .4f, .3f, 1}, "%s", m_Error.c_str());
     PreviewTexture();
     const bool narrow = ImGui::GetContentRegionAvail().x < ImGui::GetFontSize() * 40;
     const float left =
         narrow ? 0 : std::min(ImGui::GetContentRegionAvail().x * .48f, ImGui::GetFontSize() * 30);
-    ImGui::BeginChild("Sheet controls", {left, narrow ? ImGui::GetContentRegionAvail().y * .65f : 0}, true);
+    ImGui::BeginChild("Sheet controls", {left, narrow ? ImGui::GetContentRegionAvail().y * .55f : 0},
+                      true);
     if (ImGui::BeginTabBar("Authoring"))
     {
         if (ImGui::BeginTabItem("Regions"))
@@ -1156,8 +1167,9 @@ void SpriteSheetPanel::Render(bool editable)
     }
     if (ImGui::BeginPopupModal("Delete authored item", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::TextWrapped("Deleting preserves authored references and reserves this ID forever. Existing "
-                           "uses will report missing content until explicitly reassigned.");
+        ImGui::TextWrapped(
+            "Deleting preserves authored references and reserves this ID forever. Existing "
+            "uses will report missing content until explicitly reassigned.");
         for (auto &use : m_DeleteUses)
             ImGui::BulletText("%s", use.c_str());
         if (m_DeleteUses.empty())

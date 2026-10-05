@@ -3,6 +3,7 @@
 #endif
 // Real pinned EditorLayer/panels in Application; files and layout are isolated.
 #include "EditorLayer.h"
+#include "UI/PropertyUI.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Authoring/EditorPreferences.h"
 #include "Authoring/AuthoringPanel.h"
@@ -256,6 +257,8 @@ public:
         case 16:
             Check(e.m_EditorScene->GetEntityByUUID(901).HasComponent<SpriteAnimationComponent>() && e.m_EditorScene->RenderedSprite(e.m_EditorScene->GetEntityByUUID(901)),"Sheet assignment did not resolve scene animation");
             Check(glGetError()==GL_NO_ERROR,"Sprite authoring panel OpenGL error");
+            e.m_Authoring->m_Sprites.m_Selected=e.m_Authoring->m_Sprites.m_Document->Draft().Regions.front().ID;
+            e.m_Authoring->m_Sprites.m_SelectedClip=e.m_Authoring->m_Sprites.m_Document->Draft().Clips.front().ID;
             Project::GetActive()->GetAssets()->Reload("Textures/inspector.hsprites");
             break;
         case 17: {
@@ -304,6 +307,18 @@ public:
         }
     }
 private:
+    void OnImGuiRender() override {
+        if(m_Frame!=13)return;
+        ImGui::SetNextWindowSize({420,180});
+        ImGui::Begin("Property layout contract",nullptr,ImGuiWindowFlags_NoSavedSettings |
+                     ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoFocusOnAppearing);
+        {
+            PropertyUI::Row row("first-appearance","Left label");
+            Check(ImGui::GetContentRegionAvail().x>100,"Fresh property control column collapsed");
+            float value=0;ImGui::InputFloat("##value",&value);
+        }
+        ImGui::End();
+    }
     void UsabilityChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=a.m_Sprites;
         const auto target=a.AssignmentTarget();const auto scene=e.m_EditorScene;

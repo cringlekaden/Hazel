@@ -116,13 +116,13 @@ static void RunRendererChecks()
     Check(glGetError() == GL_NO_ERROR, "Buffer/attribute setup raised an OpenGL error");
 
     auto shader = Shader::Create("MigrationRendererSmoke", R"(
-#version 420 core
+#version 410 core
 layout(location=0) in vec3 a_Position;
 layout(location=1) in int a_EntityID;
 layout(location=2) in mat4 a_Transform;
 layout(location=6) in int a_Enabled;
 layout(location=7) in mat3 a_Basis;
-layout(std140, binding=3) uniform Camera { mat4 u_ViewProjection; vec4 u_Color; };
+layout(std140) uniform Camera { mat4 u_ViewProjection; vec4 u_Color; };
 flat out int v_EntityID;
 out vec4 v_Color;
 void main() {
@@ -130,7 +130,7 @@ void main() {
     v_EntityID = a_EntityID;
     v_Color = u_Color * float(a_Enabled);
 })", R"(
-#version 420 core
+#version 410 core
 flat in int v_EntityID;
 in vec4 v_Color;
 layout(location=0) out vec4 o_Color;
@@ -157,6 +157,15 @@ void main() { o_Color = v_Color; o_EntityID = v_EntityID; }
     Check(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE, "Test framebuffer incomplete");
     glViewport(0, 0, 16, 16);
     shader->Bind();
+    // GLSL 410 uses the equivalent API binding instead of the GLSL 420 qualifier.
+    GLint program = 0;
+    glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+    const GLuint cameraBlock = glGetUniformBlockIndex(static_cast<GLuint>(program), "Camera");
+    Check(cameraBlock != GL_INVALID_INDEX, "Camera UBO block missing");
+    glUniformBlockBinding(static_cast<GLuint>(program), cameraBlock, 3);
+    GLint cameraBinding = 0;
+    glGetActiveUniformBlockiv(static_cast<GLuint>(program), cameraBlock, GL_UNIFORM_BLOCK_BINDING, &cameraBinding);
+    Check(cameraBinding == 3, "Camera UBO shader binding differs");
     vao->Bind();
     glDrawArraysInstanced(GL_TRIANGLES, 0, 3, 1);
     std::array<std::uint8_t, 4> pixel{};
@@ -185,7 +194,9 @@ int main()
     if (!glfwInit())
         return 1;
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    // Match the engine minimum. UBOs, instancing and integer picking below
+    // are supported in 4.1; all rendering/readback assertions remain unchanged.
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     GLFWwindow* window = glfwCreateWindow(16, 16, "Migration verification", nullptr, nullptr);

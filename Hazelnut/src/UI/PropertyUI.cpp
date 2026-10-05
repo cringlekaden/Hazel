@@ -42,7 +42,8 @@ Row::Row(const char *key, const char *label, Options options) : m_Options(option
         const float labelWidth = std::min(std::clamp(width * .35f, font * 8.f, font * 14.f),
                                           std::max(font * 3.f, width * .45f));
         ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed, labelWidth);
-        ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+        // Explicit weight avoids content-derived 0/0 sizing on a newly appearing row.
+        ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 1.f);
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
         ImGui::AlignTextToFramePadding();
