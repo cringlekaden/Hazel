@@ -55,6 +55,7 @@ namespace Hazel {
 
 	void Application::ShutdownResources()
 	{
+        m_BackgroundTick={};m_CloseRequest={};
         // Cancel pending captures while their renderer/context resources remain valid.
         std::vector<std::function<void()>> cancelled;
         {
@@ -137,6 +138,8 @@ namespace Hazel {
 			m_LastFrameTime = time;
 
 			ExecuteMainThreadQueue();
+            if(m_BackgroundTick)m_BackgroundTick();
+            if(!m_Running)break;
 
 			if (!m_Minimized)
 			{

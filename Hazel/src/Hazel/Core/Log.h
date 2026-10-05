@@ -4,13 +4,45 @@
 #include "Hazel/Core/PlatformDetection.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/fmt/ostr.h"
+#include <chrono>
+#include <string>
 
 namespace Hazel {
+
+    struct LogRecord {
+        spdlog::level::level_enum Level;
+        std::chrono::system_clock::time_point Time;
+        std::string Logger, Origin, Message;
+        bool Truncated = false;
+    };
+    // Receivers only ingest data. Never call ImGui, log recursively or perform I/O here.
+    class LogReceiver {
+    public:
+        virtual ~LogReceiver() = default;
+        virtual void Receive(const LogRecord& record) = 0;
+    };
+    struct LogDistribution;
+    struct LogObserver;
+    class LogSubscription {
+    public:
+        LogSubscription() = default;
+        LogSubscription(LogSubscription&& other) noexcept;
+        LogSubscription& operator=(LogSubscription&& other) noexcept;
+        ~LogSubscription();
+        void Reset(); // Waits for bounded in-flight delivery; no callback after Reset returns.
+    private:
+        friend class Log;
+        std::shared_ptr<LogDistribution> m_State;
+        std::shared_ptr<LogObserver> m_Observer;
+    };
 
     class Log
     {
     public:
         static void Init();
+        static LogSubscription Observe(const std::shared_ptr<LogReceiver>& receiver,
+                                       spdlog::level::level_enum level = spdlog::level::info);
+        static void SetObserverLevel(const LogReceiver* receiver, spdlog::level::level_enum level);
 
         inline static Ref<spdlog::logger>& GetCoreLogger() { return s_CoreLogger; }
         inline static Ref<spdlog::logger>& GetClientLogger() { return s_ClientLogger; }

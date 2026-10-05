@@ -44,18 +44,18 @@ namespace Hazel {
 	static void NativeLog(MonoString* string, int parameter)
 	{
 		std::string str = Utils::MonoStringToString(string);
-		std::cout << str << ", " << parameter << std::endl;
+		Log::GetClientLogger()->log(spdlog::source_loc{"Managed",0,""},spdlog::level::info,"{}, {}",str,parameter);
 	}
 
 	static void NativeLog_Vector(glm::vec3* parameter, glm::vec3* outResult)
 	{
-		HZ_CORE_WARN("Value: {0}", glm::to_string(*parameter));
+		Log::GetCoreLogger()->log(spdlog::source_loc{"Managed",0,""},spdlog::level::warn,"Value: {}",glm::to_string(*parameter));
 		*outResult = glm::normalize(*parameter);
 	}
 
 	static float NativeLog_VectorDot(glm::vec3* parameter)
 	{
-		HZ_CORE_WARN("Value: {0}", glm::to_string(*parameter));
+		Log::GetCoreLogger()->log(spdlog::source_loc{"Managed",0,""},spdlog::level::warn,"Value: {}",glm::to_string(*parameter));
 		return glm::dot(*parameter, *parameter);
 	}
 

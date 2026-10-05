@@ -625,7 +625,7 @@ namespace Hazel {
 			for (auto* base = type; base && !message; base = mono_class_get_parent(base))
 				if (auto* field = mono_class_get_field_from_name(base, "_message")) mono_field_get_value(exception, field, &message);
 			char* text = message ? mono_string_to_utf8(message) : nullptr;
-			HZ_CORE_ERROR("Managed exception {}.{}: {}", mono_class_get_namespace(type), mono_class_get_name(type), text ? text : "(no message)");
+			Log::GetCoreLogger()->log(spdlog::source_loc{"Managed",0,""},spdlog::level::err,"Managed exception {}.{}: {}", mono_class_get_namespace(type), mono_class_get_name(type), text ? text : "(no message)");
 			mono_free(text);
 		}
 		return result;

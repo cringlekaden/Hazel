@@ -59,6 +59,9 @@ namespace Hazel {
 		Window& GetWindow() { return *m_Window; }
 
 		void Close();
+        // Main-thread service polling continues while the window is minimized.
+        // Owner clears the callback before detaching; Application clears it before teardown.
+        void SetBackgroundTick(std::function<void()> callback) { m_BackgroundTick=std::move(callback); }
         void SetCloseRequest(std::function<void()> callback) { m_CloseRequest=std::move(callback); }
 
 		// Borrowed until Application shutdown; null when EnableImGui is false.
@@ -81,7 +84,7 @@ namespace Hazel {
 		Scope<Window> m_Window;
 		ImGuiLayer* m_ImGuiLayer = nullptr;
 		bool m_Running = true;
-        std::function<void()> m_CloseRequest;
+        std::function<void()> m_CloseRequest, m_BackgroundTick;
 		bool m_Minimized = false;
 		LayerStack m_LayerStack;
 		float m_LastFrameTime = 0.0f;
