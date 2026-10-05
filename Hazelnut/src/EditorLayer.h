@@ -47,8 +47,8 @@ namespace Hazel {
 		bool ActionFailed(const std::string& message);
 		void ClearSceneObservers();
 
-		void OnScenePlay();
-		void OnSceneSimulate();
+        bool OnScenePlay(bool useSavedAssets = false);
+        bool OnSceneSimulate(bool useSavedAssets = false);
 		void OnSceneStop();
 		void OnScenePause();
 
@@ -83,6 +83,7 @@ namespace Hazel {
 		int m_GizmoType = -1;
 
 		bool m_ShowPhysicsColliders = false;
+        uint64_t m_EditorSelection = 0;
 
 		enum class SceneState
 		{

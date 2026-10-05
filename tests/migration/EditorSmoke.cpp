@@ -40,6 +40,9 @@ static void Check(bool condition, const char* message) { if (!condition) throw s
 static std::string Read(const std::filesystem::path& file) {
     std::ifstream input(file,std::ios::binary); return {std::istreambuf_iterator<char>(input),{}};
 }
+}
+#include "EditorDocumentChecks.h"
+namespace Hazel {
 class EditorWorkflowSmoke : public Layer {
 public:
     EditorWorkflowSmoke(EditorLayer& editor, std::filesystem::path directory, bool& done)
@@ -49,6 +52,7 @@ public:
         switch (++m_Frame) {
         case 3: {
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project/assembly startup failed");
+            EditorDocumentChecks();
             AuthoringChecks();
             auto* viewport = ImGui::FindWindowByName("Viewport");
             Check(viewport && viewport->DockId && e.m_ViewportSize.x > 0 && e.m_ViewportSize.y > 0, "Docked editor viewport missing");
@@ -103,7 +107,7 @@ public:
             Check(player && player.GetComponent<SpriteRendererComponent>().Resolved.Data->Texture->IsLoaded(), "Editor save/reopen/texture failed");
             e.m_SceneHierarchyPanel.SetSelectedEntity(player);
             KeyPressedEvent event(Key::W); e.OnKeyPressed(event);
-            Check(e.m_GizmoType == ImGuizmo::TRANSLATE, "Translate shortcut failed");
+            Check(e.m_GizmoType == -1, "Unfocused native key event bypassed ImGui shortcut ownership");
             e.m_ShowPhysicsColliders = true;
             // Original upstream Windows separators remain readable on Linux too.
             e.m_HoveredEntity=player;
@@ -111,16 +115,22 @@ public:
             Check(!e.m_HoveredEntity && !e.m_SceneHierarchyPanel.SetSelectedEntity(player),"OpenScene retained retired observations");
             Check(e.OpenScene(file),"Authored scene reopen failed");
             FailureChecks();
+            ImGui::SetWindowFocus("Viewport");
+            ImGui::GetIO().AddKeyEvent(ImGuiKey_W,true);
             break;
         }
         case 5: {
             KeyPressedEvent event(Key::E); e.OnKeyPressed(event);
-            Check(e.m_GizmoType == ImGuizmo::ROTATE, "Rotate shortcut failed");
+            Check(e.m_GizmoType == ImGuizmo::TRANSLATE, "Native key event bypassed focused commands");
+            ImGui::GetIO().AddKeyEvent(ImGuiKey_W,false);
+            ImGui::GetIO().AddKeyEvent(ImGuiKey_E,true);
             break;
         }
         case 6: {
             KeyPressedEvent event(Key::R); e.OnKeyPressed(event);
-            Check(e.m_GizmoType == ImGuizmo::SCALE, "Scale shortcut failed");
+            Check(e.m_GizmoType == ImGuizmo::ROTATE, "Native key event bypassed input capture");
+            ImGui::GetIO().AddKeyEvent(ImGuiKey_E,false);
+            e.m_GizmoType=ImGuizmo::SCALE;
             auto authored=e.m_EditorScene->GetEntityByUUID(901); e.m_HoveredEntity=authored;
             e.OnScenePlay(); Check(e.m_ActiveScene != e.m_EditorScene && e.m_ActiveScene->IsRunning(), "Editor play failed");
             Check(!e.m_HoveredEntity && !e.m_SceneHierarchyPanel.SetSelectedEntity(authored),"Play retained editor observations");
@@ -192,13 +202,10 @@ public:
         case 11: {
             auto* inspector=ImGui::FindWindowByName("Prefab Inspector");
             Check(inspector && inspector->Active,"Prefab asset did not open its ImGui inspector");
-            auto& io=ImGui::GetIO();
-            io.AddMousePosEvent(inspector->Pos.x+117,inspector->Pos.y+107);
-            io.AddMouseButtonEvent(0,true);
+            e.m_Authoring->Guard(OperationIntent::ClosePrefab,[&e]{e.m_Authoring->ClosePrefab();return true;});
+            Check(!e.m_Authoring->m_PrefabScene,"Clean prefab Close retained document");
             break;
         }
-        case 12:
-            ImGui::GetIO().AddMouseButtonEvent(0,false);break;
         case 14: {
             Check(!ImGui::FindWindowByName("Prefab Inspector")->Active,"Clean prefab Close did not release its inspector safely");
             const auto root=Project::GetAssetDirectory();
@@ -216,8 +223,9 @@ public:
             Check(panel && panel->Active,"Sprite asset did not open its dockable authoring panel");
             auto sheet=Project::GetActive()->GetAssets()->Sheet("Textures/inspector.hsprites");
             e.m_SceneHierarchyPanel.SetSelectedEntity(e.m_EditorScene->GetEntityByUUID(901));
-            e.m_Authoring->m_Sprites.AssignSprite({"Textures/inspector.hsprites",sheet->Regions[0].ID});
-            e.m_Authoring->m_Sprites.AssignClip({"Textures/inspector.hsprites",sheet->Clips[0].ID});
+            UsabilityChecks();
+            e.m_Authoring->m_Sprites.AssignSprite({"Textures/inspector.hsprites",sheet->Regions[0].ID},e.m_Authoring->AssignmentTarget());
+            e.m_Authoring->m_Sprites.AssignClip({"Textures/inspector.hsprites",sheet->Clips[0].ID},e.m_Authoring->AssignmentTarget());
             break;
         }
         case 16:
@@ -236,11 +244,76 @@ public:
                 for(const auto& command:draw->CmdLists[list]->CmdBuffer)
                     if(command.TextureId==texture)visible=true;
             Check(visible,"Sprite preview retained a stale texture after asset reload");
+            // Optional evidence from this bounded render smoke; no clicks or image assertions.
+            if (const auto* capture=std::getenv("HAZEL_EDITOR_CAPTURE")) {
+                auto* window=static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+                int width=0,height=0;glfwGetFramebufferSize(window,&width,&height);
+                std::vector<unsigned char> pixels(static_cast<size_t>(width)*height*3);
+                GLint buffer=0,alignment=0;glGetIntegerv(GL_READ_BUFFER,&buffer);glGetIntegerv(GL_PACK_ALIGNMENT,&alignment);
+                glReadBuffer(GL_FRONT);glPixelStorei(GL_PACK_ALIGNMENT,1);
+                glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,pixels.data());
+                glReadBuffer(buffer);glPixelStorei(GL_PACK_ALIGNMENT,alignment);
+                std::ofstream image(std::filesystem::u8path(capture),std::ios::binary);
+                image<<"P6\n"<<width<<" "<<height<<"\n255\n";
+                for(int y=height-1;y>=0;--y)image.write(reinterpret_cast<const char*>(pixels.data()+static_cast<size_t>(y)*width*3),width*3);
+                Check(bool(image),"Editor screenshot write failed");
+            }
             m_Done = true; Application::Get().Close();break;
         }
         }
     }
 private:
+    void UsabilityChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=a.m_Sprites;
+        const auto target=a.AssignmentTarget();const auto scene=e.m_EditorScene;
+        const auto before=SceneSerializer(scene).SerializeText();
+        const auto sheetPath=Project::GetAssetDirectory()/"Textures/inspector.hsprites";
+        const auto bytes=Read(sheetPath);auto& draft=panel.m_Document->Draft();
+        const auto region=draft.Regions.front().ID;const auto width=draft.Regions.front().Rect.Width;
+        draft.Regions.front().Rect.Width=0;panel.m_Document->Changed();
+        Check(!panel.Assign(false,region)&&panel.Dirty()&&Read(sheetPath)==bytes&&SceneSerializer(scene).SerializeText()==before,"Failed Save Sheet and Assign mutated scene/draft/file");
+        draft.Regions.front().Rect.Width=width;draft.Regions.front().Name="Accepted saved region";
+        Check(panel.Assign(false,region)&&!panel.Dirty()&&std::get<SpriteReference>(scene->GetEntityByUUID(901).GetComponent<SpriteRendererComponent>().Source).Region==region,"Save Sheet and Assign did not save before applying identity");
+        const auto after=SceneSerializer(scene).SerializeText();
+        panel.AssignSprite({"Textures/inspector.hsprites",region},{target.Scene+1,target.Entity});
+        panel.AssignSprite({"Textures/inspector.hsprites",region},{target.Scene,0});
+        Check(SceneSerializer(scene).SerializeText()==after,"Stale/invalid assignment target mutated scene");
+        draft.Regions.front().Name="Retained dirty region";panel.m_Document->Changed();
+        const auto oldDoc=panel.m_Document.get();
+        FileSystem::WriteFileAtomically(Project::GetAssetDirectory()/"Textures/future.hsprites",[](auto& out){out<<"SpriteSheetVersion: 99\n";});
+        a.Guard(OperationIntent::OpenSheet,[&]{return panel.Open(Project::GetAssetDirectory()/"Textures/future.hsprites");});
+        Check(a.m_Documents.Pending(),"Dirty sheet replacement skipped guard");
+        a.m_ResolvingDocumentAction=true;
+        Check(!a.m_Documents.Resolve(GuardChoice::Discard,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Invalid sheet Open succeeded");
+        a.m_ResolvingDocumentAction=false;
+        Check(panel.m_Document.get()==oldDoc&&panel.Dirty()&&draft.Regions.front().Name=="Retained dirty region"&&e.m_EditorScene==scene,"Failed Open discarded previous sheet/session draft");
+        a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);});panel.m_Recovery=false;
+        auto jobs=a.m_Tools.Start({m_Directory/"missing-python",{},e.m_ProjectPath,{},"Availability fixture"});
+        Check(jobs&&a.m_Tools.Busy(),"Tool availability fixture did not start");
+        const auto count=scene->GetAllEntitiesWith<IDComponent>().size();
+        a.InstantiatePrefab(Project::GetAssetDirectory()/std::filesystem::u8path(u8"Prefabs/é independent.hprefab"));
+        panel.AssignClip({"Textures/inspector.hsprites",draft.Clips.front().ID},target);
+        a.CreatePrefab(scene->GetEntityByUUID(901));
+        Check(scene->GetAllEntitiesWith<IDComponent>().size()==count&&!scene->GetEntityByUUID(901).HasComponent<SpriteAnimationComponent>()&&!a.m_CreatePrefab,"Tool job allowed callback/drag/drop mutation");
+        Check(!e.SaveScene()&&!panel.Save()&&panel.Dirty(),"Tool job allowed protected input saves");
+        ToolReport report;bool joined=false;
+        for(int attempt=0;attempt<200;++attempt){if(a.m_Tools.Poll(report)){joined=true;break;}std::this_thread::sleep_for(std::chrono::milliseconds(10));}
+        Check(joined&&!a.m_Tools.Busy(),"Tool availability fixture failed to join");
+        a.m_ActiveDocument=EditorDocument::Sheet;
+        Check(a.SaveActive()&&!panel.Dirty()&&draft.Regions.front().Name=="Retained dirty region","Active sheet Save did not retain accepted draft");
+        a.SelectAsset(Project::GetAssetDirectory()/std::filesystem::u8path(u8"Prefabs/é independent.hprefab"));
+        auto prefab=Prefab::GetEntity(a.m_PrefabScene);prefab.GetComponent<TagComponent>().Tag="Saved active prefab";
+        const auto savedScene=Read(e.m_EditorScenePath);
+        a.m_ActiveDocument=EditorDocument::Prefab;
+        Check(a.SaveActive()&&Read(e.m_EditorScenePath)==savedScene&&Prefab::GetEntity(Prefab::Load(Project::GetAssetDirectory(),std::filesystem::u8path(a.m_PrefabReference))).GetName()=="Saved active prefab","Active prefab Save wrote scene or omitted prefab");
+        a.ClosePrefab();
+        auto entity=scene->GetEntityByUUID(901);entity.GetComponent<TagComponent>().Tag="Saved active scene";a.m_ActiveDocument=EditorDocument::Scene;
+        Check(a.SaveActive()&&a.SceneText()==a.m_SavedScene,"Active scene Save failed");
+        const auto saved=a.m_SavedScene;
+        auto& box=entity.GetComponent<BoxCollider2DComponent>();const auto size=box.Size;box.Size.x=0;
+        Check(!e.OnSceneSimulate(true)&&e.m_ActiveScene==scene&&e.m_SceneState==EditorLayer::SceneState::Edit&&a.m_SavedScene==saved,"Invalid Simulate started physics or lost editor draft");box.Size=size;
+        std::cout<<"PASS: production Save-and-Assign failure/success, stale target rejection, failed Open draft preservation, busy callback/save guards, active sheet/prefab/scene Save and Simulate preflight\n";
+    }
     void AuthoringChecks() {
         auto root=Project::GetAssetDirectory(); auto scene=CreateRef<Scene>();auto source=scene->CreateEntity("Prefab authored");
         source.GetComponent<TransformComponent>().Translation={6,4,.2f};

@@ -14,7 +14,7 @@ namespace Hazel {
     void RuntimeSession::CheckThread() const {
         if (std::this_thread::get_id() != m_Thread) throw std::logic_error("RuntimeSession requires its main thread");
     }
-    void RuntimeSession::Validate(const Ref<Scene>& scene) {
+    void RuntimeSession::Validate(const Ref<Scene>& scene, bool validateScripts) {
         if (!scene) throw std::runtime_error("No scene to run");
         scene->ValidateSprites();
         // Validate Box2D preconditions while the old scene is still usable.
@@ -48,7 +48,7 @@ namespace Hazel {
                     throw std::runtime_error("Invalid circle collider radius/offset: " + entity.GetName());
             }
         }
-        for (auto handle : scene->GetAllEntitiesWith<ScriptComponent>()) {
+        if (validateScripts) for (auto handle : scene->GetAllEntitiesWith<ScriptComponent>()) {
             const auto& script = Entity(handle, scene.get()).GetComponent<ScriptComponent>();
             if (!script.ClassName.empty() && !ScriptEngine::EntityClassExists(script.ClassName))
                 throw std::runtime_error("Runtime script class is unavailable: " + script.ClassName);

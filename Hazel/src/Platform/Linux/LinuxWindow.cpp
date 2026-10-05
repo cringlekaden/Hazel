@@ -181,6 +181,11 @@ namespace Hazel {
         m_Context->SwapBuffers();
     }
 
+    void LinuxWindow::SetTitle(const std::string& title) {
+        if(m_Data.Title==title)return;
+        m_Data.Title=title;glfwSetWindowTitle(m_Window,title.c_str());
+    }
+
     void LinuxWindow::SetVSync(bool enabled)
     {
         HZ_PROFILE_FUNCTION();

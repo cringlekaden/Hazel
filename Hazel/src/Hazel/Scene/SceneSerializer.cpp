@@ -186,7 +186,7 @@ namespace Hazel {
         }
     }
 
-	static void SerializeEntity(YAML::Emitter& out, Entity entity, const std::filesystem::path& assetRoot)
+	static void SerializeEntity(YAML::Emitter& out, Entity entity, const std::filesystem::path& assetRoot, bool portablePaths)
 	{
 		HZ_CORE_ASSERT(entity.HasComponent<IDComponent>());
 
@@ -312,7 +312,7 @@ namespace Hazel {
 			auto& spriteRendererComponent = entity.GetComponent<SpriteRendererComponent>();
 			out << YAML::Key << "Color" << YAML::Value << spriteRendererComponent.Color;
 			auto source=spriteRendererComponent.Source;
-            if(auto t=std::get_if<TextureSpriteSource>(&source);t && !t->Texture.empty())
+            if(auto t=std::get_if<TextureSpriteSource>(&source);portablePaths && t && !t->Texture.empty())
                 t->Texture=Project::MakeAssetReference(assetRoot,Project::ResolveAssetPath(assetRoot,t->Texture));
             WriteSpriteSource(out,source);
 
@@ -400,7 +400,9 @@ namespace Hazel {
 		out << YAML::EndMap; // Entity
 	}
 
-	std::string SceneSerializer::SerializeText(Entity only)
+    std::string SceneSerializer::SerializeText(Entity only) { return SerializeTextImpl(only, true); }
+    std::string SceneSerializer::SerializeAuthoredSnapshot(Entity only) { return SerializeTextImpl(only, false); }
+	std::string SceneSerializer::SerializeTextImpl(Entity only, bool portablePaths)
 	{
 		YAML::Emitter out;
 		out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);
@@ -414,7 +416,7 @@ namespace Hazel {
 			if (!entity)
 				return;
 
-			if (!only || only == entity) SerializeEntity(out, entity, m_AssetRoot);
+			if (!only || only == entity) SerializeEntity(out, entity, m_AssetRoot, portablePaths);
 		});
 		out << YAML::EndSeq;
 		out << YAML::EndMap;

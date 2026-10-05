@@ -20,7 +20,7 @@ namespace Hazel {
         ~RuntimeSession();
         RuntimeSession(const RuntimeSession&) = delete;
         RuntimeSession& operator=(const RuntimeSession&) = delete;
-        static void Validate(const Ref<Scene>& scene);
+        static void Validate(const Ref<Scene>& scene, bool validateScripts = true);
         void Start(const Ref<Project>& project, const Ref<Scene>& authoredScene);
         void Stop();
         void Update(Timestep timestep);
