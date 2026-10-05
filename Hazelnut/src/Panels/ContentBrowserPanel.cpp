@@ -252,6 +252,7 @@ void ContentBrowserPanel::OnImGuiRender()
     if (visible.empty())
         ImGui::TextWrapped("No matching assets. Reset filters or import a texture above.");
     if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::GetIO().WantTextInput &&
+        !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId) &&
         ImGui::IsKeyPressed(ImGuiKey_Enter, false))
         openPath = m_Selected;
     const auto blank = ImGui::GetContentRegionAvail();

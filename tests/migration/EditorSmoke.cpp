@@ -116,6 +116,10 @@ public:
             Check(e.OpenScene(file),"Authored scene reopen failed");
             FailureChecks();
             ImGui::SetWindowFocus("Viewport");
+            // Deliver the fixture's paired release/press in one frame. Production
+            // keeps ImGui's normal event trickling; there is no timing/click driver.
+            m_Trickle=ImGui::GetIO().ConfigInputTrickleEventQueue;
+            ImGui::GetIO().ConfigInputTrickleEventQueue=false;
             ImGui::GetIO().AddKeyEvent(ImGuiKey_W,true);
             break;
         }
@@ -129,8 +133,14 @@ public:
         case 6: {
             KeyPressedEvent event(Key::R); e.OnKeyPressed(event);
             Check(e.m_GizmoType == ImGuizmo::ROTATE, "Native key event bypassed input capture");
-            ImGui::GetIO().AddKeyEvent(ImGuiKey_E,false);
+            auto& io=ImGui::GetIO();
             e.m_GizmoType=ImGuizmo::SCALE;
+            const bool textInput=io.WantTextInput;io.WantTextInput=true;
+            e.m_Authoring->Shortcuts();
+            Check(e.m_GizmoType==ImGuizmo::SCALE,"Text input allowed an editor shortcut");
+            io.WantTextInput=textInput;
+            io.ConfigInputTrickleEventQueue=m_Trickle;
+            io.AddKeyEvent(ImGuiKey_E,false);
             auto authored=e.m_EditorScene->GetEntityByUUID(901); e.m_HoveredEntity=authored;
             e.OnScenePlay(); Check(e.m_ActiveScene != e.m_EditorScene && e.m_ActiveScene->IsRunning(), "Editor play failed");
             Check(!e.m_HoveredEntity && !e.m_SceneHierarchyPanel.SetSelectedEntity(authored),"Play retained editor observations");
@@ -504,6 +514,7 @@ private:
     std::filesystem::path m_Directory;
     bool& m_Done;
     int m_Frame = 0;
+    bool m_Trickle = true;
 };
 }
 int main(int argc, char** argv) {
