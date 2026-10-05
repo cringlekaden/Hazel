@@ -7,129 +7,97 @@
 
 namespace Hazel
 {
+ActionAvailability AuthoringPanel::RuntimeAvailability(RuntimeAction action) const
+{
+    if (action == RuntimeAction::Play) return Availability(EditorAction::Play);
+    if (action == RuntimeAction::Simulate) return Availability(EditorAction::Simulate);
+    const auto available = Availability(EditorAction::RuntimeControl);
+    if (!available) return available;
+    if (!m_Editor.m_ActiveScene) return {"No runtime scene"};
+    if (action == RuntimeAction::Step && !m_Editor.m_ActiveScene->IsPaused())
+        return {"Pause first to advance one update"};
+    return {};
+}
+bool AuthoringPanel::InvokeRuntime(RuntimeAction action)
+{
+    const auto available = RuntimeAvailability(action);
+    if (!available) return m_Editor.ActionFailed(available.Reason);
+    switch (action)
+    {
+    case RuntimeAction::Play: return m_Editor.OnScenePlay();
+    case RuntimeAction::Simulate: return m_Editor.OnSceneSimulate();
+    case RuntimeAction::Stop:
+        m_Editor.OnSceneStop();
+        return m_Editor.m_SceneState == EditorLayer::SceneState::Edit;
+    case RuntimeAction::TogglePause:
+        m_Editor.m_ActiveScene->SetPaused(!m_Editor.m_ActiveScene->IsPaused());
+        return true;
+    case RuntimeAction::Step:
+        m_Editor.m_ActiveScene->Step();
+        return true;
+    }
+    return false;
+}
 void AuthoringPanel::Toolbar()
 {
-    auto button = [&](const char *label, EditorAction action, const char *hint,
-                      const std::function<void()> &invoke)
+    const bool editing = m_Editor.m_SceneState == EditorLayer::SceneState::Edit;
+    const bool paused = !editing && m_Editor.m_ActiveScene && m_Editor.m_ActiveScene->IsPaused();
+    const char *mode = editing ? "Edit"
+                       : m_Editor.m_SceneState == EditorLayer::SceneState::Play
+                             ? (paused ? "Play (paused)" : "Play")
+                             : (paused ? "Simulate (paused)" : "Simulate");
+    const float size = std::clamp(ImGui::GetContentRegionAvail().y - 4.f,
+                                  ImGui::GetFontSize() * .85f, ImGui::GetFontSize() * 1.25f);
+    const float spacing = ImGui::GetStyle().ItemSpacing.x;
+    const int count = editing ? 2 : (paused ? 3 : 2);
+    const float controls = count * (size + 4) + (count - 1) * spacing;
+    const float availableWidth = ImGui::GetContentRegionAvail().x;
+    const bool showMode = availableWidth >= controls + spacing + ImGui::CalcTextSize(mode).x;
+    const float group = controls + (showMode ? spacing + ImGui::CalcTextSize(mode).x : 0);
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.f, (availableWidth - group) * .5f));
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {2, 2});
+    ImGui::PushStyleColor(ImGuiCol_Button, {0, 0, 0, 0});
+    const auto image = [&](const char *id, const Ref<Texture2D> &icon, RuntimeAction action, const char *help)
     {
-        const auto available = Availability(action);
+        const auto available = RuntimeAvailability(action);
         ImGui::BeginDisabled(!available);
-        const bool clicked = ImGui::Button(label);
+        const bool clicked = ImGui::ImageButton(id, (ImTextureID)(uintptr_t)icon->GetRendererID(),
+                                                {size, size});
         ImGui::EndDisabled();
-        PropertyUI::Help(available.Reason ? available.Reason : hint);
-        if (clicked && Require(action))
-            invoke();
+        PropertyUI::Help(available.Reason ? available.Reason : help);
+        if (clicked) InvokeRuntime(action); // Revalidate, then use the shared guarded production action.
     };
-    const float right = ImGui::GetCursorScreenPos().x + ImGui::GetContentRegionAvail().x;
-    const auto width = [](const char *text)
-    { return ImGui::CalcTextSize(text).x + ImGui::GetStyle().FramePadding.x * 2; };
-    const float overflow = width("More...") + ImGui::GetStyle().ItemSpacing.x;
-    const auto fits = [&](const char *text)
+    if (editing)
     {
-        return ImGui::GetItemRectMax().x + ImGui::GetStyle().ItemSpacing.x + width(text) + overflow <=
-               right;
-    };
-    const auto secondary = [&](const char *label, EditorAction action, const char *hint,
-                               const std::function<void()> &invoke)
+        image("play", m_Editor.m_IconPlay, RuntimeAction::Play,
+              "Run the current scene draft; referenced assets use saved files. Unsaved assets prompt first.");
+        ImGui::SameLine();
+        image("simulate", m_Editor.m_IconSimulate, RuntimeAction::Simulate,
+              "Preview physics without scripts; uses the scene draft and saved assets. Unsaved assets prompt first.");
+    }
+    else
     {
-        if (fits(label))
+        image("stop", m_Editor.m_IconStop, RuntimeAction::Stop,
+              "Stop runtime and return to the retained authored scene and selection.");
+        ImGui::SameLine();
+        image("pause-resume", paused ? m_Editor.m_IconPlay : m_Editor.m_IconPause,
+              RuntimeAction::TogglePause, paused ? "Resume runtime updates." : "Pause runtime updates; enables single-step.");
+        if (paused)
         {
             ImGui::SameLine();
-            button(label, action, hint, invoke);
+            image("step", m_Editor.m_IconStep, RuntimeAction::Step, "Advance one update while remaining paused.");
         }
-    };
-    const auto saveName = "Save " + ActiveName();
-    const bool named = width(saveName.c_str()) + width("Play") + overflow + ImGui::GetFontSize() * 2 <
-                       ImGui::GetContentRegionAvail().x;
-    button(named ? saveName.c_str() : "Save",
-           m_ActiveDocument == EditorDocument::Scene ? EditorAction::SaveScene : EditorAction::SaveAsset,
-           ("Ctrl+S: " + ActiveName()).c_str(), [this] { SaveActive(); });
-    if (fits("Play"))
-        ImGui::SameLine();
-    if (m_Editor.m_SceneState == EditorLayer::SceneState::Edit)
-        button("Play", EditorAction::Play, "Runs current scene draft; referenced assets use saved files",
-               [this] { m_Editor.OnScenePlay(); });
-    else
-        button("Stop", EditorAction::RuntimeControl, "Return to authored editor scene",
-               [this] { m_Editor.OnSceneStop(); });
-    if (m_Editor.m_SceneState != EditorLayer::SceneState::Edit)
-    {
-        secondary(m_Editor.m_ActiveScene->IsPaused() ? "Resume" : "Pause", EditorAction::RuntimeControl,
-                  "Pause / resume",
-                  [this] { m_Editor.m_ActiveScene->SetPaused(!m_Editor.m_ActiveScene->IsPaused()); });
-        if (m_Editor.m_ActiveScene->IsPaused())
-            secondary("Step", EditorAction::RuntimeControl, "Advance one update while paused",
-                      [this] { m_Editor.m_ActiveScene->Step(); });
     }
-    secondary("Save All...", EditorAction::Browse, "Ctrl+Alt+S: review dirty documents",
-              [this] { SaveAll(); });
-    secondary("Add Entity", EditorAction::EditScene, "Create and select an empty entity",
-              [this] { m_Editor.m_SceneHierarchyPanel.AddEntity(); });
-    secondary("Simulate", EditorAction::Simulate,
-              "Preview physics using current scene draft and saved assets",
-              [this] { m_Editor.OnSceneSimulate(); });
-    secondary("Build Scripts...", EditorAction::StartTool,
-              "Check tools, then build the project's Debug scripts",
-              [this]
-              {
-                  m_ShowBuild = true;
-                  Preflight();
-              });
-    secondary("Export...", EditorAction::StartTool, "Export saved files with explicit draft handling",
-              [this]
-              {
-                  m_ShowExport = true;
-                  Preflight(true);
-              });
-    if (ImGui::GetItemRectMax().x + ImGui::GetStyle().ItemSpacing.x + width("More...") <= right)
-        ImGui::SameLine();
-    if (ImGui::Button("More..."))
-        ImGui::OpenPopup("Toolbar actions");
-    if (ImGui::BeginPopup("Toolbar actions"))
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar();
+    if (showMode)
     {
-        button("Save All...", EditorAction::Browse, "Review the eligible dirty documents",
-               [this]
-               {
-                   SaveAll();
-                   ImGui::CloseCurrentPopup();
-               });
-        button("Add Entity", EditorAction::EditScene, "Create and select an entity",
-               [this]
-               {
-                   m_Editor.m_SceneHierarchyPanel.AddEntity();
-                   ImGui::CloseCurrentPopup();
-               });
-        button("Simulate", EditorAction::Simulate, "Preview physics",
-               [this]
-               {
-                   m_Editor.OnSceneSimulate();
-                   ImGui::CloseCurrentPopup();
-               });
-        button("Build Scripts...", EditorAction::StartTool, "Check build prerequisites",
-               [this]
-               {
-                   m_ShowBuild = true;
-                   Preflight();
-                   ImGui::CloseCurrentPopup();
-               });
-        button("Export...", EditorAction::StartTool, "Check export prerequisites",
-               [this]
-               {
-                   m_ShowExport = true;
-                   Preflight(true);
-                   ImGui::CloseCurrentPopup();
-               });
-        if (m_Editor.m_SceneState != EditorLayer::SceneState::Edit)
-        {
-            button(m_Editor.m_ActiveScene->IsPaused() ? "Resume" : "Pause", EditorAction::RuntimeControl,
-                   "Pause / resume",
-                   [this] { m_Editor.m_ActiveScene->SetPaused(!m_Editor.m_ActiveScene->IsPaused()); });
-            if (m_Editor.m_ActiveScene->IsPaused())
-                button("Step", EditorAction::RuntimeControl, "Advance one update",
-                       [this] { m_Editor.m_ActiveScene->Step(); });
-        }
-        ImGui::EndPopup();
+        ImGui::SameLine();
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextColored(editing ? ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled)
+                                  : ImVec4(.5f, .8f, .6f, 1), "%s", mode);
     }
+    // Status/document UI retains identity, dirty state and tool progress outside this toolbar.
 }
 void AuthoringPanel::Status()
 {
@@ -171,7 +139,8 @@ void AuthoringPanel::Status()
         ImGui::SameLine();
     }
     ImGui::TextUnformatted(identity.c_str());
-    PropertyUI::Help(identity.c_str());
+    if (ImGui::GetItemRectMax().x > ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x)
+        PropertyUI::Help(identity.c_str());
     ImGui::EndChild();
 }
 } // namespace Hazel

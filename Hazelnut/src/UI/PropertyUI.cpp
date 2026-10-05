@@ -1,5 +1,6 @@
 #include "PropertyUI.h"
 #include <algorithm>
+#include <cstdio>
 #include <misc/cpp/imgui_stdlib.h>
 
 namespace Hazel::PropertyUI
@@ -171,24 +172,42 @@ EditResult Vector(const char *key, const char *label, float *value, int axes, fl
     Row row(key, label, options);
     EditResult result;
     const float width = ImGui::GetContentRegionAvail().x, button = ImGui::GetFrameHeight();
-    const bool stacked = width < axes * ImGui::GetFontSize() * 5.f;
+    const float spacing = ImGui::GetStyle().ItemSpacing.x;
+    const float minimumNumber = std::max(ImGui::GetFontSize() * 3.5f,
+                                        ImGui::CalcTextSize("-000.00").x + ImGui::GetStyle().FramePadding.x * 2);
+    const int perLine = std::clamp(int((width + spacing) / (button + minimumNumber + spacing)), 1, axes);
+    const float group = (width - spacing * (perLine - 1)) / perLine;
+    const char *names[] = {"X", "Y", "Z", "W"};
+    const ImVec4 colors[] = {{.8f, .1f, .15f, 1}, {.2f, .7f, .2f, 1},
+                            {.1f, .25f, .8f, 1}, {.55f, .3f, .7f, 1}};
     for (int axis = 0; axis < axes; ++axis)
     {
         ImGui::PushID(axis);
-        if (axis && !stacked)
-            ImGui::SameLine();
-        const char *names[] = {"X", "Y", "Z", "W"};
+        if (axis % perLine)
+            ImGui::SameLine(0, spacing);
+        const auto color = colors[axis];
+        ImGui::PushStyleColor(ImGuiCol_Button, color);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {color.x + .1f, color.y + .1f, color.z + .1f, 1});
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, {color.x * .8f, color.y * .8f, color.z * .8f, 1});
+        auto *bold = ImGui::GetIO().Fonts->Fonts[0];
+        ImGui::PushFont(bold);
         ImGui::BeginDisabled(!defaults);
-        if (ImGui::Button(names[axis], {button, 0}))
+        if (ImGui::Button(names[axis], {button, button}))
         {
-            value[axis] = defaults[axis];
-            result = {true, true, true};
+            const auto reset = ResetAxis(value, axes, axis, defaults);
+            result.Changed |= reset.Changed;
+            result.Committed |= reset.Committed;
+            result.ResetRequested |= reset.ResetRequested;
         }
-        Help(defaults ? "Reset this axis" : "Axis; no reset default supplied");
+        char hint[128];
+        if (defaults) std::snprintf(hint, sizeof(hint), "Reset %s to the owner default: %.3f", names[axis], defaults[axis]);
+        else std::snprintf(hint, sizeof(hint), "%s axis; no reset default supplied", names[axis]);
+        Help(options.DisabledReason ? options.DisabledReason : hint);
         ImGui::EndDisabled();
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(std::max(1.f, (stacked ? width : width / axes) - button -
-                                                  ImGui::GetStyle().ItemSpacing.x * (stacked ? 1 : 2)));
+        ImGui::PopFont();
+        ImGui::PopStyleColor(3);
+        ImGui::SameLine(0, 0); // Recognizable axis button attached immediately to its numeric field.
+        ImGui::SetNextItemWidth(std::max(1.f, group - button));
         auto edit =
             row.Result(ImGui::DragFloat("##value", value + axis, speed, minimum, maximum, format));
         result.Changed |= edit.Changed;
@@ -196,6 +215,13 @@ EditResult Vector(const char *key, const char *label, float *value, int axes, fl
         ImGui::PopID();
     }
     return result;
+}
+EditResult ResetAxis(float *value, int axes, int axis, const float *defaults)
+{
+    if (!value || !defaults || axes < 1 || axes > 4 || axis < 0 || axis >= axes) return {};
+    const bool changed = value[axis] != defaults[axis];
+    value[axis] = defaults[axis];
+    return {changed, true, true};
 }
 EditResult SliderVector2(const char *key, const char *label, float *value, float minimum, float maximum,
                          Options options)

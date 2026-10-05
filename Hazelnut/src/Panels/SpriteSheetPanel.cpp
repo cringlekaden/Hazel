@@ -415,8 +415,9 @@ void SpriteSheetPanel::Regions(bool editable)
     changed |= UInt("Width", r.Rect.Width);
     changed |= UInt("Height", r.Rect.Height);
     float pivot[2]{r.Pivot.x, r.Pivot.y};
-    if (PropertyUI::SliderVector2("pivot", "Pivot (0-1)", pivot, 0, 1,
-                                  {"Top-left normalized. Center = 0.5, 0.5; feet = 0.5, 1."}))
+    const float center[2]{.5f, .5f};
+    if (PropertyUI::Vector("pivot", "Pivot (0-1)", pivot, 2, .01f, center, "%.2f",
+                          {"Top-left normalized. Center = 0.5, 0.5; feet = 0.5, 1."}, 0, 1))
     {
         r.Pivot = {pivot[0], pivot[1]};
         changed = true;

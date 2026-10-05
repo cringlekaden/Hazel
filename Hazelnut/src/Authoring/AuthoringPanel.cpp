@@ -59,6 +59,8 @@ AuthoringPanel::AuthoringPanel(EditorLayer &editor) : m_Editor(editor)
     m_Preferences = EditorPreferences::Load(m_Output);
     m_PreferenceRecovery = m_Output;
     m_Draft = m_Preferences;
+    RefreshSDK();
+    RefreshSDK(true);
     ImGui::GetIO().FontGlobalScale = m_Preferences.UIScale;
     m_Editor.m_ShowPhysicsColliders = m_Preferences.ShowColliders;
     auto &style = ImGui::GetStyle();
@@ -243,6 +245,21 @@ void AuthoringPanel::ValidatePython()
         return;
     Start("Validate Python", {});
 }
+void AuthoringPanel::RefreshSDK(bool draft)
+{
+    if (draft)
+    {
+        m_DraftSDK = HazelSDK::Discover(Path(m_Draft.SDK));
+        m_CheckedDraftSDK = m_Draft.SDK;
+    }
+    else
+        m_SDK = HazelSDK::Discover(Path(m_Preferences.SDK));
+}
+void AuthoringPanel::UseAutomaticSDK()
+{
+    m_Draft.SDK.clear();
+    RefreshSDK(true); // Draft only; Apply and Save is the explicit persistence boundary.
+}
 void AuthoringPanel::Preflight(bool exporting)
 {
     if (!m_Tools.Busy())
@@ -257,7 +274,14 @@ void AuthoringPanel::Start(std::string label, std::vector<std::string> args,
         return;
     if (!args.empty() && args[0] == "new-project" && !Require(EditorAction::CreateProject))
         return;
-    ToolRequest request{Path(m_Preferences.Python), Path(m_Preferences.SDK), m_Editor.m_ProjectPath,
+    RefreshSDK();
+    if (!args.empty() && !m_SDK)
+    {
+        m_Editor.ActionFailed(m_SDK.Diagnostic + " Edit > Editor Preferences > Hazel source SDK. " +
+                             HazelSDK::SetupInstructions());
+        return;
+    }
+    ToolRequest request{Path(m_Preferences.Python), m_SDK.Root.is_absolute() ? m_SDK.Root : std::filesystem::path{}, m_Editor.m_ProjectPath,
                         std::move(args), label};
     if (!m_Tools.Start(std::move(request)))
     {
@@ -307,8 +331,7 @@ bool AuthoringPanel::Ready(bool exporting) const
            m_Tools.Request().Arguments[0] == "authoring-preflight" &&
            (!exporting || m_Tools.Request().Arguments.back() == "export") &&
            m_Tools.Request().Python == Path(m_Preferences.Python) &&
-           m_Tools.Request().SDK == Path(m_Preferences.SDK) && m_Report.Python &&
-           Path(m_Preferences.SDK).is_absolute();
+           m_Tools.Request().SDK == m_SDK.Root && m_Report.Python && bool(m_SDK);
 }
 void AuthoringPanel::ToolStatus(bool exporting)
 {
@@ -322,10 +345,12 @@ void AuthoringPanel::ToolStatus(bool exporting)
                                      ? "Python 3.9+ is required for tooling. Editing and "
                                        "precompiled Play remain available."
                                      : m_Report.Python.Error.c_str());
-    bool sdk = Path(m_Preferences.SDK).is_absolute();
-    ImGui::TextWrapped("SDK: %s", sdk ? m_Preferences.SDK.c_str()
-                                      : "Missing. Configure a Hazel source SDK; "
-                                        "this is separate from Python.");
+    PropertyUI::ReadOnly("sdk-state", "Source SDK", m_SDK.Status());
+    PropertyUI::ReadOnly("sdk-effective", "Effective location", m_SDK.Root.empty() ? "None" : m_SDK.Root.generic_u8string().c_str());
+    PropertyUI::ReadOnly("sdk-source", "Discovery source", m_SDK.Source.c_str());
+    ImGui::TextWrapped("%s", m_SDK.Diagnostic.c_str());
+    if (!m_SDK)
+        ImGui::TextWrapped("%s", HazelSDK::SetupInstructions());
     ImGui::TextWrapped("Script authoring also needs the SDK's built ScriptCore "
                        "and Mono/.NET targeting pack. "
                        "Export builds Release with the host C++ compiler. "
@@ -333,6 +358,7 @@ void AuthoringPanel::ToolStatus(bool exporting)
     if (ImGui::Button("Configure Python / SDK"))
     {
         m_Draft = m_Preferences;
+        RefreshSDK(true);
         m_ShowPreferences = true;
     }
     ImGui::SameLine();
@@ -573,16 +599,16 @@ void AuthoringPanel::Menus()
             m_Editor.m_SceneHierarchyPanel.DeleteSelected();
         ImGui::Separator();
         if (ImGui::MenuItem("Play", nullptr, false, bool(Availability(EditorAction::Play))))
-            m_Editor.OnScenePlay();
+            InvokeRuntime(RuntimeAction::Play);
         if (ImGui::MenuItem("Simulate", nullptr, false, bool(Availability(EditorAction::Simulate))))
-            m_Editor.OnSceneSimulate();
+            InvokeRuntime(RuntimeAction::Simulate);
         const auto runtime = Availability(EditorAction::RuntimeControl);
         if (ImGui::MenuItem("Stop", nullptr, false, bool(runtime)))
-            m_Editor.OnSceneStop();
+            InvokeRuntime(RuntimeAction::Stop);
         if (ImGui::MenuItem("Pause / Resume", nullptr, false, bool(runtime)))
-            m_Editor.m_ActiveScene->SetPaused(!m_Editor.m_ActiveScene->IsPaused());
+            InvokeRuntime(RuntimeAction::TogglePause);
         if (ImGui::MenuItem("Step", nullptr, false, bool(runtime) && m_Editor.m_ActiveScene->IsPaused()))
-            m_Editor.m_ActiveScene->Step();
+            InvokeRuntime(RuntimeAction::Step);
         if (auto reason = Availability(EditorAction::EditScene).Reason)
             ImGui::TextWrapped("%s", reason);
         ImGui::EndMenu();
@@ -592,6 +618,7 @@ void AuthoringPanel::Menus()
         if (ImGui::MenuItem("Editor Preferences..."))
         {
             m_Draft = m_Preferences;
+            RefreshSDK(true);
             m_ShowPreferences = true;
             ValidatePython();
         }
@@ -636,14 +663,16 @@ void AuthoringPanel::Preferences()
     if (ImGui::Button("Auto-detect"))
     {
         m_Draft.Python.clear();
-        ToolRequest r{{}, Path(m_Draft.SDK), {}, {}, "Detect Python"};
+        RefreshSDK(true);
+        ToolRequest r{{}, m_DraftSDK.Root.is_absolute() ? m_DraftSDK.Root : std::filesystem::path{}, {}, {}, "Detect Python"};
         m_Tools.Start(std::move(r));
         m_ShowOutput = true;
     }
     ImGui::SameLine();
     if (ImGui::Button("Validate"))
     {
-        ToolRequest r{Path(m_Draft.Python), Path(m_Draft.SDK), {}, {}, "Validate Python"};
+        RefreshSDK(true);
+        ToolRequest r{Path(m_Draft.Python), m_DraftSDK.Root.is_absolute() ? m_DraftSDK.Root : std::filesystem::path{}, {}, {}, "Validate Python"};
         m_Tools.Start(std::move(r));
         m_ShowOutput = true;
     }
@@ -651,7 +680,38 @@ void AuthoringPanel::Preferences()
     ImGui::TextWrapped("Selected: %s\n%s %s\n%s", m_Report.Python.Executable.generic_u8string().c_str(),
                        m_Report.Python.Source.c_str(), m_Report.Python.Version.c_str(),
                        m_Report.Python.Error.c_str());
-    PathInput("Hazel SDK folder", m_Draft.SDK, true);
+    ImGui::Separator();
+    ImGui::TextUnformatted("Hazel source SDK");
+    ImGui::TextWrapped("A prepared source checkout supplies Hazel's project templates, build tools "
+                       "and ScriptCore for New Project, Build Scripts and Export. Editing, saving "
+                       "and running a prepared project do not require a source SDK.");
+    {
+        PropertyUI::Row row("sdk-override", "SDK override",
+                            {"Blank uses automatic discovery. An invalid explicit choice is retained until corrected or reset."});
+        ImGui::SetNextItemWidth(std::max(1.f, ImGui::GetContentRegionAvail().x - ImGui::GetFontSize() * 5));
+        const auto edit = row.Result(ImGui::InputText("##path", &m_Draft.SDK));
+        const auto beforeBrowse = m_Draft.SDK;
+        Browse(m_Draft.SDK, true);
+        if (edit.Committed || beforeBrowse != m_Draft.SDK)
+            RefreshSDK(true);
+    }
+    if (ImGui::Button("Validate / Refresh SDK"))
+        RefreshSDK(true);
+    PropertyUI::WrapButton("Use Automatic");
+    if (ImGui::Button("Use Automatic"))
+        UseAutomaticSDK();
+    PropertyUI::Help("Clears only this draft override; Apply and Save persists automatic selection.");
+    if (m_CheckedDraftSDK != m_Draft.SDK)
+        ImGui::TextWrapped("SDK text draft changed; finish editing or Validate to check it.");
+    else
+    {
+        PropertyUI::ReadOnly("sdk-ready", "SDK status", m_DraftSDK.Status());
+        PropertyUI::ReadOnly("sdk-root", "Effective location", m_DraftSDK.Root.empty() ? "None" : m_DraftSDK.Root.generic_u8string().c_str());
+        PropertyUI::ReadOnly("sdk-origin", "Discovery source", m_DraftSDK.Source.c_str());
+        ImGui::TextWrapped("%s", m_DraftSDK.Diagnostic.c_str());
+        if (!m_DraftSDK || ImGui::CollapsingHeader("SDK setup instructions"))
+            ImGui::TextWrapped("%s", HazelSDK::SetupInstructions());
+    }
     PathInput("Script editor executable", m_Draft.ScriptEditor, false);
     PropertyUI::Help("Blank uses the OS default for .cs files; a configured "
                      "editor receives one source-file argument.");
@@ -670,6 +730,7 @@ void AuthoringPanel::Preferences()
             m_Draft.Save();
             m_PreferenceRecovery.clear();
             m_Preferences = m_Draft;
+            RefreshSDK();
             ImGui::GetIO().FontGlobalScale = m_Preferences.UIScale;
             m_Editor.m_ShowPhysicsColliders = m_Preferences.ShowColliders;
             m_Output = "Preferences saved.";
@@ -687,6 +748,7 @@ void AuthoringPanel::Preferences()
         auto recent = m_Draft.RecentProjects;
         m_Draft = {};
         m_Draft.RecentProjects = recent;
+        RefreshSDK(true);
     }
     auto &caps = Renderer::GetCapabilities();
     ImGui::Separator();

@@ -1,4 +1,5 @@
 #include "ProjectTools.h"
+#include "HazelSDK.h"
 #include "Hazel/Utils/Process.h"
 namespace Hazel
 {
@@ -48,15 +49,17 @@ ToolReport ProjectTools::Execute(const ToolRequest &request,
 	ToolReport report;
 	try
 	{
-		report.Python = Toolchain::DiscoverPython(request.Python, request.SDK);
+		const auto sdk = HazelSDK::Validate(request.SDK);
+		report.Python = Toolchain::DiscoverPython(request.Python,
+			request.SDK.is_absolute() ? request.SDK : std::filesystem::path{});
 		report.Output = "Python: " + report.Python.Executable.generic_u8string() + " (" +
 						report.Python.Source + ", " + report.Python.Version + ")\n";
 		if (!report.Python)
 		{
 			report.Output += report.Python.Error;
-			if (!request.SDK.is_absolute() || !std::filesystem::is_regular_file(request.SDK / "scripts/hazel.py"))
-				report.Output +=
-					"\nSDK also unavailable. Configure its location separately in Editor Preferences.";
+			if (!sdk)
+				report.Output += "\nSDK also unavailable: " + sdk.Diagnostic +
+					" Configure its location separately in Editor Preferences.";
 			return report;
 		}
 		if (request.Arguments.empty())
@@ -64,10 +67,10 @@ ToolReport ProjectTools::Execute(const ToolRequest &request,
 			report.Success = true;
 			return report;
 		}
-		if (!request.SDK.is_absolute() || !std::filesystem::is_regular_file(request.SDK / "scripts/hazel.py"))
+		if (!sdk)
 		{
-			report.Output += "SDK unavailable. Select a configured Hazel source SDK in Edit > Editor "
-							 "Preferences. Python and SDK are separate requirements.";
+			report.Output += std::string("SDK ") + sdk.Status() + ": " + sdk.Diagnostic + "\n" +
+				HazelSDK::SetupInstructions();
 			return report;
 		}
 		std::vector<std::string> args = {"-u", (request.SDK / "scripts/hazel.py").generic_u8string()};

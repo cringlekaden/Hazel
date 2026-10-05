@@ -341,9 +341,11 @@ namespace Hazel {
 	}
 
     void EditorLayer::UI_Toolbar() {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {4, 2});
         ImGui::Begin("##toolbar",nullptr,ImGuiWindowFlags_NoDecoration|ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
         if(m_Authoring)m_Authoring->Toolbar();
         ImGui::End();
+        ImGui::PopStyleVar();
     }
 
 	void EditorLayer::OnEvent(Event& e)

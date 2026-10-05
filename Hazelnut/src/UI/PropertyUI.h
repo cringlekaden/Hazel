@@ -59,6 +59,8 @@ EditResult Double(const char *key, const char *label, double &value, double step
 EditResult Vector(const char *key, const char *label, float *value, int axes, float speed = .1f,
                   const float *defaults = nullptr, const char *format = "%.2f", Options options = {},
                   float minimum = 0, float maximum = 0);
+// Also used by axis buttons: reset is an intentional commit, even if already at default.
+EditResult ResetAxis(float *value, int axes, int axis, const float *defaults);
 EditResult SliderVector2(const char *key, const char *label, float *value, float minimum, float maximum,
                          Options options = {});
 EditResult Color(const char *key, const char *label, float *value, Options options = {});

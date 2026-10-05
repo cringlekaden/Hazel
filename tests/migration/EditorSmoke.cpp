@@ -56,6 +56,7 @@ public:
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project/assembly startup failed");
             EditorDocumentChecks();
             AuthoringChecks();
+            SDKChecks();
             auto* viewport = ImGui::FindWindowByName("Viewport");
             Check(viewport && viewport->DockId && e.m_ViewportSize.x > 0 && e.m_ViewportSize.y > 0, "Docked editor viewport missing");
             auto oldScene=e.m_ActiveScene;
@@ -158,14 +159,15 @@ public:
             io.ConfigInputTrickleEventQueue=m_Trickle;
             io.AddKeyEvent(ImGuiKey_E,false);
             auto authored=e.m_EditorScene->GetEntityByUUID(901); e.m_HoveredEntity=authored;
-            e.OnScenePlay(); Check(e.m_ActiveScene != e.m_EditorScene && e.m_ActiveScene->IsRunning(), "Editor play failed");
+            Check(e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::Play),"Runtime toolbar Play failed"); Check(e.m_ActiveScene != e.m_EditorScene && e.m_ActiveScene->IsRunning(), "Editor play failed");
             Check(!e.m_HoveredEntity && !e.m_SceneHierarchyPanel.SetSelectedEntity(authored),"Play retained editor observations");
-            e.OnScenePause();
+            Check(!e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::Step),"Unpaused toolbar Step was allowed");
+            Check(e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::TogglePause),"Runtime toolbar Pause failed");
             break;
         }
         case 7:
             Check(ScriptEngine::GetEntityScriptInstance(901)->GetFieldValue<float>("Time") == 0, "Paused editor advanced scripts");
-            e.m_ActiveScene->Step(); break;
+            Check(e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::Step),"Runtime toolbar Step failed"); break;
         case 8:
             Check(ScriptEngine::GetEntityScriptInstance(901)->GetFieldValue<float>("Time") > 0, "Editor single-step failed");
             {
@@ -186,13 +188,13 @@ public:
             {
                 const auto saved=e.m_Authoring->m_SavedScene;
                 e.m_EditorScene->GetEntityByUUID(901).GetComponent<TagComponent>().Tag="Unsaved simulation edit";
-                e.OnSceneSimulate();
+                Check(e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::Simulate),"Runtime toolbar Simulate failed");
                 Check(e.m_Authoring->m_SavedScene==saved && saved!=SceneSerializer(e.m_EditorScene).SerializeText(),"Simulation incorrectly marked unsaved authoring as saved");
             }
             Check(!e.m_HoveredEntity,"Simulate retained editor hover"); break;
         case 9:
             Check(e.m_ActiveScene != e.m_EditorScene && e.m_ActiveScene->GetEntityByUUID(901).GetComponent<Rigidbody2DComponent>().RuntimeBody, "Editor simulation failed");
-            e.OnSceneStop(); e.OnScenePlay(); e.OnSceneStop();
+            Check(e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::Stop),"Runtime toolbar Stop failed"); e.OnScenePlay(); e.OnSceneStop();
             e.OnScenePlay();
             {
                 auto retired=e.m_ActiveScene; auto instance=ScriptEngine::GetEntityScriptInstance(901);
@@ -247,6 +249,14 @@ public:
         case 15: {
             auto* panel=ImGui::FindWindowByName("Sprite Sheet: inspector.hsprites###Sprite Sheet");
             Check(panel && panel->Active,"Sprite asset did not open its dockable authoring panel");
+            if(std::getenv("HAZEL_EDITOR_CAPTURE")) {
+                // Capture fixtures use viewport-relative coordinates: a hidden native
+                // window can still have a nonzero desktop position. Keep its canvas
+                // inside the deliberately smaller framebuffer, without changing layouts.
+                const auto origin=ImGui::GetMainViewport()->Pos;
+                ImGui::SetWindowPos(panel,{origin.x+10,origin.y+70});
+                ImGui::SetWindowSize(panel,{900,550});
+            }
             auto sheet=Project::GetActive()->GetAssets()->Sheet("Textures/inspector.hsprites");
             e.m_SceneHierarchyPanel.SetSelectedEntity(e.m_EditorScene->GetEntityByUUID(901));
             UsabilityChecks();
@@ -271,7 +281,6 @@ public:
             for(int list=0;draw && list<draw->CmdListsCount;++list)
                 for(const auto& command:draw->CmdLists[list]->CmdBuffer)
                     if(command.TextureId==texture)visible=true;
-            Check(visible,"Sprite preview retained a stale texture after asset reload");
             // Optional evidence from this bounded render smoke; no clicks or image assertions.
             if (const auto* capture=std::getenv("HAZEL_EDITOR_CAPTURE")) {
                 auto* window=static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
@@ -302,13 +311,14 @@ public:
                 for(int y=height-1;y>=0;--y)image.write(reinterpret_cast<const char*>(pixels.data()+static_cast<size_t>(y)*width*3),width*3);
                 Check(bool(image),"Editor screenshot write failed");
             }
+            Check(visible,"Sprite preview retained a stale texture after asset reload");
             m_Done = true; Application::Get().Close();break;
         }
         }
     }
 private:
     void OnImGuiRender() override {
-        if(m_Frame!=13)return;
+        if(m_Frame!=13&&!(m_Frame==16&&std::getenv("HAZEL_EDITOR_CAPTURE")))return;
         ImGui::SetNextWindowSize({420,180});
         ImGui::Begin("Property layout contract",nullptr,ImGuiWindowFlags_NoSavedSettings |
                      ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoFocusOnAppearing);
@@ -318,6 +328,27 @@ private:
             float value=0;ImGui::InputFloat("##value",&value);
         }
         ImGui::End();
+        const auto oldScale=ImGui::GetIO().FontGlobalScale;
+        for(int narrow=0;narrow<2;++narrow) {
+            ImGui::GetIO().FontGlobalScale=narrow?1.25f:1.f;
+            ImGui::SetNextWindowSize(narrow?ImVec2(300,300):ImVec2(660,230));
+            if(m_Frame==16) {
+                const auto origin=ImGui::GetMainViewport()->Pos;
+                ImGui::SetNextWindowPos(narrow?ImVec2(origin.x+715,origin.y+310):ImVec2(origin.x+25,origin.y+350));
+            }
+            ImGui::Begin(narrow?"Scaled narrow vectors":"Horizontal vectors",nullptr,
+                         ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoFocusOnAppearing);
+            float values[4]{12.5f,-3.f,90.f,1.f}, defaults[4]{0,0,0,1};
+            const auto before=ImGui::GetCursorScreenPos().y;
+            PropertyUI::Vector("vector","Owner defaults",values,4,.1f,defaults);
+            const auto height=ImGui::GetCursorScreenPos().y-before;
+            Check(height>ImGui::GetFrameHeight()*(narrow?2.f:.8f),"Scaled narrow vector fallback did not preserve readable rows");
+            Check(ImGui::GetCurrentWindow()->DC.CursorMaxPos.x<=ImGui::GetWindowPos().x+ImGui::GetWindowSize().x+1,
+                  "Vector controls overflowed the narrow property window");
+            PropertyUI::Vector("unknown","C# defaults",values,4,.1f);
+            ImGui::End();
+        }
+        ImGui::GetIO().FontGlobalScale=oldScale;
     }
     void UsabilityChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=a.m_Sprites;
@@ -369,7 +400,95 @@ private:
         auto& box=entity.GetComponent<BoxCollider2DComponent>();const auto size=box.Size;box.Size.x=0;
         Check(!e.OnSceneSimulate(true)&&e.m_ActiveScene==scene&&e.m_SceneState==EditorLayer::SceneState::Edit&&a.m_SavedScene==saved,"Invalid Simulate started physics or lost editor draft");box.Size=size;
         RecoveryRetryChecks();
+        RuntimeGuardChecks();
         std::cout<<"PASS: production Save-and-Assign failure/success, stale target rejection, failed Open draft preservation, busy callback/save guards, active sheet/prefab/scene Save and Simulate preflight\n";
+    }
+    void RuntimeGuardChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=a.m_Sprites;
+        const auto draft=panel.m_Document->Draft();const auto scene=e.m_EditorScene;
+        const auto authored=SceneSerializer(scene).SerializeText();
+        panel.m_Document->Draft().Regions.front().Name="Unsaved runtime toolbar asset";panel.m_Document->Changed();
+        for(auto action:{AuthoringPanel::RuntimeAction::Play,AuthoringPanel::RuntimeAction::Simulate}) {
+            Check(!a.InvokeRuntime(action)&&a.m_Documents.Pending()&&e.m_SceneState==EditorLayer::SceneState::Edit,
+                  "Runtime toolbar bypassed the dirty asset guard");
+            Check(!a.RuntimeAvailability(action),"Pending runtime operation stayed available");
+            a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);});
+            Check(e.m_EditorScene==scene&&panel.Dirty()&&panel.m_Document->Draft().Regions.front().Name=="Unsaved runtime toolbar asset",
+                  "Cancelling toolbar runtime changed authored documents");
+        }
+        a.InvokeRuntime(AuthoringPanel::RuntimeAction::Play);a.m_ResolvingDocumentAction=true;
+        Check(a.m_Documents.Resolve(GuardChoice::UseSaved,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),
+              "Guarded toolbar Play could not use saved assets");a.m_ResolvingDocumentAction=false;
+        Check(e.m_SceneState==EditorLayer::SceneState::Play&&panel.Dirty(),"Toolbar Play discarded asset draft");
+        Check(a.InvokeRuntime(AuthoringPanel::RuntimeAction::TogglePause)&&e.m_ActiveScene->IsPaused(),"Toolbar Pause failed");
+        Check(a.InvokeRuntime(AuthoringPanel::RuntimeAction::TogglePause)&&!e.m_ActiveScene->IsPaused(),"Toolbar Resume failed");
+        Check(a.InvokeRuntime(AuthoringPanel::RuntimeAction::Stop)&&e.m_EditorScene==scene&&SceneSerializer(scene).SerializeText()==authored,
+              "Toolbar Stop changed the retained scene");
+        panel.m_Document->Draft()=draft;
+        Check(panel.Save(),"Runtime toolbar fixture could not restore saved sheet");
+        std::cout<<"PASS: runtime toolbar actions share lifecycle, step availability and dirty-document guard/cancel/Use Saved semantics\n";
+    }
+    void SDKChecks() {
+        const auto folder=m_Directory/std::filesystem::u8path(u8"SDK space é");
+#ifdef HZ_PLATFORM_WINDOWS
+        const std::string platform="windows";const char* premake="build/tools/premake-core/bin/release/premake5.exe";
+#else
+        const std::string platform="linux";const char* premake="build/tools/premake-core/bin/release/premake5";
+#endif
+        auto write=[](const auto& path,const std::string& text){std::filesystem::create_directories(path.parent_path());FileSystem::WriteFileAtomically(path,[&](auto& out){out<<text;});};
+        for(const char* file:{"premake5.lua","scripts/hazel.py","scripts/internal/authoring.py","scripts/internal/packaging.py",
+                              "scripts/internal/child_tools.py","scripts/internal/templates/project.lua",premake})write(folder/file,"fixture");
+        const auto pins=folder/"scripts/internal/toolchain.json";
+        const auto contract=std::string("{\"premake\":\"")+HAZEL_TOOLCHAIN_PREMAKE+"\",\"pyyaml\":\""+HAZEL_TOOLCHAIN_PYYAML+"\"}";
+        write(pins,contract);
+        const auto core=folder/"bin"/("Debug-"+platform+"-x86_64")/"Hazel-ScriptCore/Hazel-ScriptCore.dll";
+        Check(HazelSDK::Validate(folder).State==SDKState::Missing,"Unprepared SDK was reported ready");write(core,"fixture");
+        const auto exe=folder/"bin"/("Debug-"+platform+"-x86_64")/"Hazelnut/Hazelnut";
+        write(exe,"fixture");
+        const auto other=m_Directory/"Working directory unrelated to SDK";std::filesystem::create_directory(other);
+        const auto original=std::filesystem::current_path();std::filesystem::current_path(other);
+        SDKSelection discovered;
+        try { discovered=HazelSDK::Discover({},exe); } catch(...) {std::filesystem::current_path(original);throw;}
+        std::filesystem::current_path(original);
+        Check(discovered&&discovered.Root==std::filesystem::weakly_canonical(folder)&&discovered.Source=="Development executable layout",
+              "Deterministic development SDK discovery depended on cwd or lost Unicode");
+        const auto outside=m_Directory/std::filesystem::u8path(u8"Packaged app space é/Hazelnut");write(outside,"fixture");
+        Check(HazelSDK::Discover(folder,outside)&&HazelSDK::Discover(folder,outside).Source=="Explicit override","Explicit SDK override did not win");
+        auto missing=HazelSDK::Discover(folder/"moved",exe);
+        Check(missing.State==SDKState::Missing&&missing.Source=="Explicit override","Stale explicit SDK silently fell back");
+        Check(HazelSDK::Discover("relative",exe).State==SDKState::Incompatible,"Relative SDK used cwd");
+        write(pins,"{\"premake\":\"incompatible\",\"pyyaml\":\"0\"}");
+        Check(HazelSDK::Discover(folder,exe).State==SDKState::Incompatible,"Incompatible SDK toolchain pins accepted");write(pins,contract);
+        const auto metadata=outside.parent_path()/"build.json";
+        write(metadata,"{\"platform\":\""+platform+"\",\"architecture\":\"x86_64\"}");
+        Check(HazelSDK::Discover({},outside).State==SDKState::NotConfigured,"Runtime package pretended to contain SDK");
+        write(metadata,"{\"hazel_sdk\":\"../SDK space é\"}");
+        Check(HazelSDK::Discover({},outside)&&HazelSDK::Discover({},outside).Root==std::filesystem::weakly_canonical(folder),
+              "Package metadata locator was not resolved relative to the application");
+        write(metadata,"{\"hazel_sdk\":\"../Missing SDK\"}");
+        Check(HazelSDK::Discover({},outside).State==SDKState::Missing,"Stale metadata locator silently fell back");
+        write(metadata,"{ malformed");
+        Check(HazelSDK::Discover({},outside).State==SDKState::Incompatible,"Malformed package SDK metadata accepted");
+        std::filesystem::remove(metadata);
+        Check(HazelSDK::Discover({},outside).State==SDKState::NotConfigured,"Automatic discovery searched unrelated ancestors");
+        auto& a=*m_Editor.m_Authoring;const auto preferences=a.m_Preferences, draft=a.m_Draft;
+        const auto saved=Read(EditorPreferences::Location());
+        a.m_Draft.SDK=(folder/"moved").generic_u8string();a.RefreshSDK(true);a.UseAutomaticSDK();
+        Check(a.m_Draft.SDK.empty()&&a.m_Preferences.SDK==preferences.SDK&&Read(EditorPreferences::Location())==saved,
+              "Use Automatic corrupted persisted or accepted SDK override");
+        a.m_Draft.SDK="";a.m_Draft.Save();std::string diagnostic;
+        Check(EditorPreferences::Load(diagnostic).SDK.empty()&&diagnostic.empty(),"Automatic SDK preference did not round-trip");
+        FileSystem::WriteFileAtomically(EditorPreferences::Location(),[&](auto& out){out<<saved;});a.m_Draft=draft;a.RefreshSDK(true);
+        float values[4]{3,4,5,6}, defaults[4]{1,2,3,4};
+        auto reset=PropertyUI::ResetAxis(values,4,2,defaults);
+        Check(reset.Changed&&reset.Committed&&reset.ResetRequested&&values[2]==3&&values[0]==3&&values[3]==6,"Axis reset lost supplied default or edited another axis");
+        reset=PropertyUI::ResetAxis(values,4,2,defaults);
+        Check(!reset.Changed&&reset.Committed&&reset.ResetRequested,"Intentional reset at default lost commit semantics");
+        reset=PropertyUI::ResetAxis(values,4,3,defaults);
+        Check(reset.Changed&&reset.Committed&&reset.ResetRequested&&values[3]==4,"W axis reset ignored its supplied default");
+        reset=PropertyUI::ResetAxis(values,4,0,nullptr);
+        Check(!reset.Changed&&!reset.Committed&&!reset.ResetRequested&&values[0]==3,"Unknown C# default was invented");
+        std::cout<<"PASS: native SDK explicit/automatic/cwd/Unicode/package/stale/pins diagnostics, automatic preference scope, owner-defined axis reset semantics\n";
     }
     void RecoveryRetryChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=a.m_Sprites;
@@ -696,6 +815,8 @@ int main(int argc, char** argv) {
             ApplicationSpecification spec; spec.Name = "Migration Editor";
             spec.Resources.Root = directory / "assets"; std::filesystem::current_path(directory); spec.CommandLineArgs = { 2, arguments };
             Application application(spec);
+            if(std::getenv("HAZEL_EDITOR_CAPTURE"))
+                glfwSetWindowSize(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()),1024,640);
             glfwHideWindow(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()));
             std::cout << "Renderer: " << glGetString(GL_RENDERER) << "; Version: " << glGetString(GL_VERSION) << '\n';
             auto editor = CreateScope<EditorLayer>(); auto* observer = editor.get();

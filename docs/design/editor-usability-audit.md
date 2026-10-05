@@ -385,3 +385,18 @@ Decisions needed before the relevant implementation, with recommended defaults:
 - **Renderer:** native editor VSync preference first; portable runtime requests later. Decide whether advanced batch/shader policies need user controls at all after capability/readiness presentation is usable.
 
 The current ownership, stable sprite/clip IDs, authored/transient separation, common texture pipeline, safe sheet documents, runtime copies, staged loads and transactional packaging are sound foundations. The most valuable fixes are consistent left-label property rows, visible asset actions/search, explicit selection/assignment, predictable document saves and one diagnostic workflow. The visual direction is a coordinated dark docked workspace with native OS framing. Implement A first, then independently stage Console/recovery/persistence/native tooling; hierarchy belongs in its own milestone.
+
+## Implementation follow-up (A1/A2 correction)
+
+Linux/Windows user feedback revised the first milestone's presentation: retain a
+minimal runtime-icon toolbar; authoring commands belong in existing menus/panels.
+Restore Hazel's colored axis reset design inside shared left-label property rows.
+Native bounded source-SDK discovery/configuration is a focused correction, not
+native project generation or a new packaging/ABI contract. See
+[the implementation record](editor-usability-a1-a2.md#focused-correction-after-linuxwindows-feedback).
+
+Track redundant tooltip cleanup as a later presentation task: behavior, units,
+shortcuts, consequences and disabled reasons are useful; repeating readable labels
+or values is generally unnecessary. Full paths/values are useful when clipped.
+The current correction applies this to touched controls only. B–H and the other
+explicit deferrals remain separate stages awaiting acceptance/authorization.

@@ -1,6 +1,7 @@
 #pragma once
 #include "EditorDocuments.h"
 #include "EditorPreferences.h"
+#include "HazelSDK.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/SpriteSheetPanel.h"
 #include "ProjectTools.h"
@@ -34,6 +35,9 @@ class AuthoringPanel
     void ObserveSceneFocus();
     void Toolbar();
     void Status();
+    enum class RuntimeAction { Play, Simulate, Stop, TogglePause, Step };
+    ActionAvailability RuntimeAvailability(RuntimeAction action) const;
+    bool InvokeRuntime(RuntimeAction action);
     ActionAvailability Availability(EditorAction action) const;
     bool Require(EditorAction action);
     void MarkSceneSaved();
@@ -50,6 +54,8 @@ class AuthoringPanel
     void ToolStatus(bool exporting = false);
     void RefreshProjectChoices();
     void ValidatePython();
+    void RefreshSDK(bool draft = false);
+    void UseAutomaticSDK();
     void Preflight(bool exporting = false);
     void Start(std::string label, std::vector<std::string> args, std::function<void()> completion = {});
     bool Ready(bool exporting = false) const;
@@ -63,6 +69,8 @@ class AuthoringPanel
     Entity ResolveTarget(SceneTarget target);
     EditorLayer &m_Editor;
     EditorPreferences m_Preferences, m_Draft;
+    SDKSelection m_SDK, m_DraftSDK;
+    std::string m_CheckedDraftSDK;
     ProjectTools m_Tools;
     ToolReport m_Report;
     std::function<void()> m_Completion;

@@ -82,8 +82,8 @@ explicit refresh/open, rather than every draw. No asset database was introduced.
 Native decorations and OS behavior remain. A narrow Window title API publishes
 project/scene identity on Linux/Windows. Existing docking IDs and layout files are
 retained; no new default arrangement overwrites user layouts. Automatic diagnostics do not steal keyboard focus; shortcut ownership is queried
-after all panels draw. Secondary toolbar
-actions overflow under More and remain in menus. Colors and spacing are restrained;
+after all panels draw. The viewport toolbar contains only runtime icons; File, Scene
+and Project menus retain saving, entity creation, script builds and export. Colors and spacing are restrained;
 renderer facts are read-only and disclosed under an expandable section.
 
 ## Verification and human acceptance
@@ -133,6 +133,86 @@ is not evidence of physical input or Windows DPI acceptance. No matched baseline
 capture was made. Assignment now precedes detailed properties; region identity is
 an expandable section. The UI font retains its existing glyph coverage (the
 fixture filename's emoji uses a fallback glyph); UTF-8 file identity is preserved.
+
+## Focused correction after Linux/Windows feedback
+
+This correction starts from `9868b17` on `feature/editor-usability`, including
+the completed guarded recovery-retry fix and its regression coverage.
+
+The runtime toolbar restores Hazel's existing Play/Simulate/Stop/Pause/Step icons,
+with Play as Resume while paused. It retains `##toolbar` and the current docks;
+authoring actions remain in File/Scene/Project menus, without a More dropdown.
+Icon and menu commands share `InvokeRuntime`, existing availability checks,
+dirty-asset guards and runtime lifecycle. Active document/dirty/tool status remains
+in the status row and native title.
+
+Shared vector rows restore attached red X, green Y, blue Z reset buttons, with
+purple W for generic four-component vectors. Rows use all axes horizontally when
+there is room, then fewer axes per line to preserve readable numeric fields.
+Narrow scaled controls remain left-labeled. Defaults come from owners; reset commits
+intentionally, `Changed` reflects a value change, and no supplied default means
+reset unavailable. Engine rotations remain radians; inspector values are degrees.
+Sprite pivots use the same vector helper with their known center default.
+
+**Hazel source SDK** means a prepared checkout containing `premake5.lua`,
+`scripts/hazel.py`, the canonical internal authoring/packaging/child-tools/template
+files and `scripts/internal/toolchain.json`, pinned Premake under
+`build/tools/premake-core/bin/release`, and host Debug `Hazel-ScriptCore.dll` under
+`bin/Debug-<platform>-x86_64/Hazel-ScriptCore`. It is used by current New Project,
+Build Scripts and Export; native Create Script, content editing/saving and a
+prepared project's Play do not need it. Open still has its existing asset/assembly
+requirements; this correction does not implement uncompiled-project loading.
+
+Native `HazelSDK` discovery has a fixed order:
+
+1. Explicit absolute override; invalid/moved/incompatible overrides report an error
+   and remain persisted until deliberately corrected or reset.
+2. Optional `hazel_sdk` string in `build.json` beside the executable. Absolute paths
+   stay absolute; relative locators resolve against that metadata directory. A
+   malformed/stale locator reports a problem. Current runtime packages **omit** it
+   and contain no SDK; metadata without a locator stops development-layout inference.
+3. The exact development `bin/{Debug,Release,Dist}-<host>-x86_64/{Hazelnut,MigrationEditorSmoke}`
+   executable layout. No cwd dependency, ancestor search or drive scan.
+
+`SDKSelection` keeps Not configured/Missing/Incompatible/Ready, effective root,
+source and diagnostic outside preferences. Premake supplies expected tool pins
+from the existing canonical manifest; validation checks required files and matching
+Premake/PyYAML pins. This is SDK-file readiness, not comprehensive managed ABI or
+host compiler validation: existing loaders and canonical preflight retain those
+checks. A new comprehensive compatibility stamp remains stage E. Workers revalidate
+SDK inputs before commands. SDK discovery starts no Python process; legitimate
+Python discovery/preflight/build/export keep their existing contracts.
+
+Preferences explain the SDK, show effective root/source/status and offer Browse,
+Validate / Refresh SDK, and Use Automatic. Reset changes only the draft; Apply and
+Save explicitly persists a blank override, never an automatic machine path. Invalid
+text stays editable; checks run on commit/browse/refresh/apply/action, not each frame.
+If discovery fails, select a compatible source checkout (not the executable or
+Resources folder): clone with `--recurse-submodules --branch feature/editor-usability`
+(the current compatible authoring branch; master lacks these tools), install README prerequisites,
+then run `scripts/setup.sh` or `scripts/setup.ps1`. Check Readiness verifies Python,
+Mono/.NET targeting packs and, for export, native compiler prerequisites.
+
+The editor regression covers native discovery with spaces/Unicode/unrelated cwd,
+prepared/unprepared and incompatible files, explicit precedence, package locators,
+no-SDK packages, reset/persistence scope and owner-defined axis resets. Runtime
+commands retain lifecycle/paused-Step and dirty-document Cancel/Use Saved assertions.
+The recovery retry regressions remain intact. A bounded ImGui contract draws wide
+and 300-pixel, 125% vector forms; capture is inspection evidence, not physical
+mouse, Windows DPI or hardware acceptance.
+
+Local validation passed: Premake Debug/Release builds with two jobs; all fourteen
+sequential regressions in Debug/software and Release/OpenGL 4.1; native HD4000
+editor startup/render/shutdown, including the 1024×640 capture. Capture fixtures
+use viewport-relative positions inside isolated resources/data; existing layout
+and preview-cache assertions remain intact. Physical input/DPI acceptance is pending.
+
+**Pending tooltip cleanup:** audit redundant label/value tooltips across panels in
+a later presentation pass. Keep explanations of behavior, units, shortcuts,
+consequences and disabled reasons. Show the full value/path only when its visible
+presentation is clipped; do not repeat already readable text. Touched runtime/reset
+controls follow this policy, and status identity now gets a tooltip only when clipped.
+No project-wide tooltip rewrite is included here.
 
 ## Deferred findings
 

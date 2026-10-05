@@ -1,5 +1,11 @@
 -- Keep the exact target ImGuizmo pin and source clean; official ImGui remains.
 local root = _MAIN_SCRIPT_DIR
+-- Keep native SDK compatibility checks tied to the canonical pinned toolchain inputs.
+local pins = json.decode(io.readfile(root .. "/scripts/internal/toolchain.json"))
+local contract = { 'HAZEL_TOOLCHAIN_PREMAKE="' .. pins.premake .. '"',
+                   'HAZEL_TOOLCHAIN_PYYAML="' .. pins.pyyaml .. '"' }
+project "Hazelnut"
+    defines (contract)
 project "ImGuizmo"
     location (root .. "/build/ImGuizmo")
     kind "StaticLib"
@@ -25,6 +31,7 @@ project "ImGuizmo"
     filter {}
 if _OPTIONS["migration-tests"] then
     project "MigrationEditorSmoke"
+        defines (contract)
         links { "ImGuizmo" }
         includedirs { root .. "/Hazelnut/src" }
         externalincludedirs { root .. "/Hazel/vendor/ImGuizmo" }
