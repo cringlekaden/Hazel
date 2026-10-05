@@ -28,6 +28,6 @@ if _OPTIONS["migration-tests"] then
         links { "ImGuizmo" }
         includedirs { root .. "/Hazelnut/src" }
         externalincludedirs { root .. "/Hazel/vendor/ImGuizmo" }
-        files { root .. "/Hazelnut/src/EditorLayer.cpp", root .. "/Hazelnut/src/Panels/**.cpp", root .. "/Hazelnut/src/Authoring/**.cpp" }
+        files { root .. "/Hazelnut/src/EditorLayer.cpp", root .. "/Hazelnut/src/Panels/**.cpp", root .. "/Hazelnut/src/Authoring/**.cpp", root .. "/Hazelnut/src/UI/**.cpp" }
         dependson { "Hazel-ScriptCore", "MigrationManagedFixture" }
 end
