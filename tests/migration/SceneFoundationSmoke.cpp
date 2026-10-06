@@ -26,6 +26,7 @@ static void Check(bool condition, const char* message)
 }
 #include "EditorDocumentChecks.h"
 #include "EditorStateChecks.h"
+#include "ProjectCreationChecks.h"
 static void Finite(const glm::mat4& projection)
 {
     for (int column=0; column<4; ++column)
@@ -121,6 +122,7 @@ int main()
         Hazel::Log::Init();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();
+        Hazel::ProjectCreationChecks();
         RecoveryContracts();
         Hazel::SceneCamera camera;
         Finite(camera.GetProjection());

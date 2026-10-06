@@ -21,6 +21,8 @@ project "Hazel"
     externalincludedirs { root .. "/Hazel/vendor/Box2D/include" }
 project "Nutella"
     links { "Box2D" }
+project "HazelProject"
+    links { "Box2D" }
 project "SpriteAssetAudit"
     links { "Box2D" }
 project "Hazelnut"

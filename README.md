@@ -60,7 +60,7 @@ python3 scripts/hazel.py test-packages                   # extracted example arc
 python3 scripts/hazel.py database                       # explicit Bear/clangd refresh
 ```
 
-Project packaging validates scenes, textures, compiled script classes/assembly references, and native dependency closure. External asset paths/symlinks are rejected with instructions to relocate them into the project and save relative references. Project P/Invoke requires explicit native redistribution support; packaging rejects it rather than silently depending on the source machine. Precompiled scripts run without a compiler. Use **File > New Project**, **Project > Create Script / Build Scripts / Export Game**, and **Edit > Editor Preferences** for ordinary authoring. Configure a Hazel source SDK and Python there; precompiled Play needs neither. New projects generate the canonical Premake configuration, honoring `HAZEL_SCRIPTCORE` and `HAZEL_SCRIPT_OUTPUT`; `script-build` compiles against the matching Hazel-ScriptCore, keeps configuration outputs in the SDK cache, and atomically deploys the configured module and its dependencies.
+Project packaging validates scenes, textures, compiled script classes/assembly references, and native dependency closure. External asset paths/symlinks are rejected with instructions to relocate them into the project and save relative references. Project P/Invoke requires explicit native redistribution support; packaging rejects it rather than silently depending on the source machine. Precompiled scripts run without a compiler. Use **File > New Project**, **Project > Create Script / Build Scripts / Export Game**, and **Edit > Editor Preferences** for ordinary authoring. Configure a Hazel source SDK and Python there for script builds and exports. Native New Project, ordinary content editing/saving, and prepared Play need neither. New projects open with an intended script-module path and remain editable before compilation. New projects generate the canonical Premake configuration, honoring `HAZEL_SCRIPTCORE` and `HAZEL_SCRIPT_OUTPUT`; `script-build` compiles against the matching Hazel-ScriptCore, keeps configuration outputs in the SDK cache, and atomically deploys the configured module and its dependencies.
 
 Nutella's public launch contract:
 
@@ -138,3 +138,19 @@ dist/ (ignored)       complete Release archives + checksums
 OS implementations remain in `Hazel/src/Platform/{Linux,Windows}` and graphics in `Platform/OpenGL`. macOS/Metal are not implemented. Renderer capability/settings and shader-cache contracts are preserved. See the [milestone design and measured verification](docs/nutella-runtime.md), [authoring contracts](docs/authoring-reliability.md), and [historical migration evidence](docs/migration/PROGRESS.md).
 
 The [editor authoring implementation record](docs/editor-authoring.md) maps every new feature to its ImGui workflow, documents prefab/lifecycle/settings contracts, and records verification and deferred scope.
+
+Native project creation also has a CLI frontend:
+
+```sh
+python3 scripts/hazel.py new-project --name "My Game" --identifier MyGame --destination /absolute/new-folder
+```
+
+The wrapper delegates to the SDK's `HazelProject` executable and canonical bundled
+resource templates; it does not generate a second project format. Add
+`--build-scripts` to compile afterward. A compilation failure retains the valid,
+editable project. In Hazelnut use Project > Authoring readiness / Build Scripts,
+then assign compiled classes in Properties. Script-free scenes can Play before
+that build. Export always uses saved descriptor/startup/assets, rebuilds the
+selected project's Release scripts and runtime/validator targets, and validates
+the existing package closure. User layout/session/workspaces stay under the editor
+data directory; launch supports `--project`, `--scene`, and `--no-restore`.

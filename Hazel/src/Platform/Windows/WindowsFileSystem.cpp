@@ -8,6 +8,10 @@
 #include <shlobj.h>
 
 namespace Hazel {
+void FileSystem::PublishDirectoryNew(const std::filesystem::path& source,const std::filesystem::path& destination) {
+    if(!MoveFileExW(source.c_str(),destination.c_str(),0))
+        throw std::system_error(GetLastError(),std::system_category(),"Publish new project directory (no replacement)");
+}
 std::filesystem::path FileSystem::GetEnvironmentPath(const char* name) {
     // Configuration variable names are ASCII; their values remain native UTF-16.
     const std::wstring wideName(name, name + std::strlen(name));

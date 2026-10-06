@@ -1,5 +1,5 @@
-#include "WindowPlacement.h"
 #include "hzpch.h"
+#include "WindowPlacement.h"
 #include <algorithm>
 #include <cmath>
 namespace Hazel {

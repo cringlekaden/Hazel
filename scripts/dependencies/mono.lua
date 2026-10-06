@@ -26,7 +26,7 @@ project "PackageAudit"
 project "Nutella"
     dependson { "Hazel-ScriptCore" }
 
-local consumers = { "Hazel", "Nutella", "Hazelnut", "SpriteAssetAudit" }
+local consumers = { "Hazel", "Nutella", "Hazelnut", "SpriteAssetAudit", "HazelProject" }
 if _OPTIONS["migration-tests"] then
     for _, test in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke", "RuntimeSessionSmoke", "ExampleGamesSmoke", "SpriteSmoke" } do
         table.insert(consumers, "Migration" .. test)

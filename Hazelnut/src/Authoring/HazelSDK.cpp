@@ -47,9 +47,9 @@ const char *HazelSDK::SetupInstructions()
            "not bin/Hazelnut or the application Resources folder. Clone cringlekaden/Hazel with "
            "--recurse-submodules --branch feature/editor-usability for this editor, install the "
            "README prerequisites, then run scripts/setup.sh "
-           "(Linux) or scripts/setup.ps1 (Windows) to prepare Debug ScriptCore and pinned Premake. "
+           "(Linux) or scripts/setup.ps1 (Windows) to prepare Debug ScriptCore, native HazelProject, PackageAudit and pinned Premake. "
            "Check Readiness verifies Python and host compilers; export also needs the native "
-           "build prerequisites. Runtime application packages do not include this source SDK.";
+           "build prerequisites. Native New Project uses bundled application templates and needs no SDK. Runtime application packages do not include this source SDK.";
 }
 SDKSelection HazelSDK::Validate(const std::filesystem::path &root, const std::string &source)
 {
@@ -77,13 +77,17 @@ SDKSelection HazelSDK::Validate(const std::filesystem::path &root, const std::st
         // These are the current canonical CLI/preflight/template inputs, not a new SDK schema.
         for (const char *file : {"premake5.lua", "scripts/hazel.py", "scripts/internal/toolchain.json",
                                  "scripts/internal/authoring.py", "scripts/internal/packaging.py",
-                                 "scripts/internal/child_tools.py", "scripts/internal/templates/project.lua"})
+                                 "scripts/internal/child_tools.py", "Hazel/Resources/Templates/project.lua", "Hazel/Resources/Templates/Entity.cs", "Hazel/Resources/Templates/contract.json"})
             if (!File(result.Root / file))
             {
                 result.Diagnostic = "SDK is incomplete; missing " + (result.Root / file).generic_u8string();
                 return result;
             }
         result.State = SDKState::Incompatible;
+        const auto authoring=Metadata(result.Root/"Hazel/Resources/Templates/contract.json");
+        for(const char* field:{"Version","Generator","ScriptCore","Template"})if(authoring[field].as<int>()!=1) {
+            result.Diagnostic="SDK authoring/ScriptCore contract differs; select matching SDK tools";return result;
+        }
         const auto pins = Metadata(result.Root / "scripts/internal/toolchain.json");
         if (pins["premake"].as<std::string>() != HAZEL_TOOLCHAIN_PREMAKE ||
             pins["pyyaml"].as<std::string>() != HAZEL_TOOLCHAIN_PYYAML)
@@ -94,7 +98,14 @@ SDKSelection HazelSDK::Validate(const std::filesystem::path &root, const std::st
         result.State = SDKState::Missing;
         const auto core = result.Root / "bin" / (std::string("Debug-") + Platform + "-x86_64") /
                           "Hazel-ScriptCore/Hazel-ScriptCore.dll";
-        for (const auto &file : {result.Root / Premake, core})
+        const auto generator=result.Root/"bin"/(std::string("Debug-")+Platform+"-x86_64")/"HazelProject"/
+#ifdef HZ_PLATFORM_WINDOWS
+            "HazelProject.exe";
+#else
+            "HazelProject";
+#endif
+        const auto audit=result.Root/"bin"/(std::string("Debug-")+Platform+"-x86_64")/"PackageAudit/PackageAudit.exe";
+        for (const auto &file : {result.Root / Premake, core,generator,audit})
             if (!File(file))
             {
                 result.Diagnostic = "SDK needs setup; missing " + file.generic_u8string();

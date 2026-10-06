@@ -11,6 +11,7 @@
 #include "Hazel/Utils/Process.h"
 #include "Hazel/Scene/Prefab.h"
 #include "Hazel/Project/ScriptSource.h"
+#include "Hazel/Project/ProjectCreation.h"
 #include "ContentBrowserPayload.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
@@ -57,6 +58,7 @@ public:
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project/assembly startup failed");
             EditorDocumentChecks();
             WorkspaceChecks();
+            NativeCreationChecks();
             RecoveryChecks();
             AuthoringChecks();
             SDKChecks();
@@ -502,10 +504,17 @@ private:
 #endif
         auto write=[](const auto& path,const std::string& text){std::filesystem::create_directories(path.parent_path());FileSystem::WriteFileAtomically(path,[&](auto& out){out<<text;});};
         for(const char* file:{"premake5.lua","scripts/hazel.py","scripts/internal/authoring.py","scripts/internal/packaging.py",
-                              "scripts/internal/child_tools.py","scripts/internal/templates/project.lua",premake})write(folder/file,"fixture");
+                              "scripts/internal/child_tools.py","Hazel/Resources/Templates/project.lua", "Hazel/Resources/Templates/Entity.cs",premake})write(folder/file,"fixture");
         const auto pins=folder/"scripts/internal/toolchain.json";
         const auto contract=std::string("{\"premake\":\"")+HAZEL_TOOLCHAIN_PREMAKE+"\",\"pyyaml\":\""+HAZEL_TOOLCHAIN_PYYAML+"\"}";
         write(pins,contract);
+        write(folder/"Hazel/Resources/Templates/contract.json","{\"Version\":1,\"Generator\":1,\"ScriptCore\":1,\"Template\":1}");
+        write(folder/"bin"/("Debug-"+platform+"-x86_64")/"PackageAudit/PackageAudit.exe","fixture");
+#ifdef HZ_PLATFORM_WINDOWS
+        write(folder/"bin"/("Debug-"+platform+"-x86_64")/"HazelProject/HazelProject.exe","fixture");
+#else
+        write(folder/"bin"/("Debug-"+platform+"-x86_64")/"HazelProject/HazelProject","fixture");
+#endif
         const auto core=folder/"bin"/("Debug-"+platform+"-x86_64")/"Hazel-ScriptCore/Hazel-ScriptCore.dll";
         Check(HazelSDK::Validate(folder).State==SDKState::Missing,"Unprepared SDK was reported ready");write(core,"fixture");
         const auto exe=folder/"bin"/("Debug-"+platform+"-x86_64")/"Hazelnut/Hazelnut";
@@ -755,6 +764,30 @@ private:
         auto storeAlias=Toolchain::ProbePython(m_Directory/"WindowsApps/python.exe","alias");Check(!storeAlias&&storeAlias.Error.find("aliases")!=std::string::npos,"Windows execution alias accepted");
 #endif
         std::cout<<"PASS: prefab identity/independence/self/external references/malformed assets, script creation, preferences recovery/scopes, absolute Python discovery\n";
+    }
+    void NativeCreationChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;const auto previousProject=e.m_ProjectPath;
+        const auto destination=m_Directory/std::filesystem::u8path("native project é space");
+        const auto preferences=a.m_Preferences;
+        a.m_Preferences.Python=(m_Directory/"no-python").generic_u8string();a.m_Preferences.SDK=(m_Directory/"no-sdk").generic_u8string();a.RefreshSDK();
+        Check(!a.m_SDK,"Missing SDK fixture reported ready");
+        Check(a.CreateProject("Content first é","ContentFirst",destination),"Production native creation required Python/SDK or failed Open");
+        Check(Project::GetActive()->GetConfig().ScriptModulePath=="Scripts/Binaries/ContentFirst.dll"&&!ScriptEngine::IsInitialized(),"Fresh project borrowed classes or pretended scripts compiled");
+        auto entity=e.m_EditorScene->CreateEntity("Content authoring without tools");entity.AddComponent<SpriteRendererComponent>();
+        Check(e.SaveScene()&&e.OnScenePlay(true),"Fresh content could not save/Play without tools");e.OnSceneStop();
+        const auto retained=e.m_EditorScene;const auto file=e.m_EditorScenePath;
+        Check(!a.CreateProject("Existing","ContentFirst",destination)&&e.m_EditorScene==retained&&e.m_EditorScenePath==file,"Failed generation replaced valid session");
+        const auto assembly=Project::GetAssetFileSystemPath(Project::GetActive()->GetConfig().ScriptModulePath);
+        std::filesystem::copy_file(m_Directory/"AuthoringProject/Assets/Scripts/Binaries/Regression.dll",assembly);
+        Check(e.ReloadScripts()&&ScriptEngine::IsInitialized(),"Later valid assembly could not publish into fresh project");
+        entity=e.m_EditorScene->FindEntityByName("Content authoring without tools");entity.AddComponent<ScriptComponent>().ClassName="Migration.SceneProbe";
+        Check(e.OnScenePlay(true),"Prepared project unnecessarily required source SDK for scripted Play");e.OnSceneStop();
+        const auto acceptedClass=ScriptEngine::GetEntityClass("Migration.SceneProbe");const auto good=Read(assembly);
+        FileSystem::WriteFileAtomically(assembly,[](auto& out){out<<"invalid assembly";});
+        Check(!e.ReloadScripts()&&ScriptEngine::GetEntityClass("Migration.SceneProbe")==acceptedClass,"Failed staged reload retired valid assembly/session");
+        FileSystem::WriteFileAtomically(assembly,[&](auto& out){out<<good;});
+        a.m_Preferences=preferences;a.RefreshSDK();Check(e.OpenProject(previousProject),"Native creation fixture restore failed");e.m_ActionError.clear();
+        std::cout<<"PASS: production native create/Open without Python/SDK, content save/script-free Play, failed creation retention, later staged reload and prepared scripted Play/failed reload preservation\n";
     }
     void WorkspaceChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;

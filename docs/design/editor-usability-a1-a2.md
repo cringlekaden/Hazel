@@ -1,11 +1,11 @@
-# Editor usability implementation: A1 / A2, B and C
+# Editor usability implementation: A1 / A2 and B–E
 
 Baseline: `5de70c93a89e1c8df3fd37553569d9499f793c7a` on
 `feature/sprite-sheet-authoring`, including the complete audit and descended from
 `9a48282f59b4cbc188615ec66763c448b70a2e83`. Implementation branch:
 `feature/editor-usability`. This record supplements
 [the audit](editor-usability-audit.md). A1/A2 and their corrections are complete;
-Stage B is implemented below. Stage C local work is recorded below; D–H remain separate stages.
+Stages B–E and their verification are recorded below. F–H and broader tooltip cleanup remain separate stages.
 
 ## Workflows
 
@@ -454,15 +454,80 @@ Physical monitor removal, Windows DPI and desktop acceptance remain unverified;
 Windows CI is not awaited per instruction. User files/stash/vendor preservation
 still matches the snapshot.
 
+## Stage E: native creation and authoring readiness
+
+E follows D (`9e4f585`). `ProjectCreation` is the canonical native generation
+service, shared by Create and Open and the `HazelProject` CLI. Display name,
+identifier, destination and template version are validated before exclusively
+reserving a sibling staging directory. Descriptor/native scene metadata, source,
+directories and build templates are checked before Linux renameat2 NOREPLACE /
+Windows non-replacing directory publication. Failure cleans only the owned staging
+folder. No compiler, interpreter, active-project mutation, Mono initialization or
+GPU/font creation occurs in the generation service. Opening is a separate guarded
+stage; generated files remain discoverable if subsequent Open fails.
+
+One versioned resource template set owns Premake and Entity source. Create Script
+and starter Example use the same native source service. Python `new-project`
+delegates to the native frontend; it has no template or identifier fallback.
+Compilation is optional (`--build-scripts`) and happens after publication, so a
+failed compiler preserves a content-first project. Runtime packages contain the
+editor's templates, not a full source SDK; the native editor can create without
+Python or a source SDK. The CLI wrapper needs the prepared SDK's native executable.
+
+Project > Authoring readiness distinguishes native editing/saving, script tools,
+scripted versus script-free Play, and standalone export prerequisites. Missing
+assembly keeps its intended module path; old classes are retired. Valid later
+reload uses staged publication; failed compilation/reload retains the previous
+valid domain and authored fields. Inspectors retain unavailable names/overrides
+rather than inventing defaults. Scene/resource validation remains an apply-time
+requirement; readiness does not promise arbitrary content is valid.
+
+Authoring/template/native-generator/ScriptCore contract version 1 is separate from
+engine commit identity. New descriptors carry AuthoringVersion 1; existing
+unstamped projects are not rewritten. Future authoring versions reject Open. SDK
+file discovery validates the resource stamp/native tools; Python preflight/build
+probes native generator and managed ScriptCore marker; native domain staging and
+packaging verify the same marker. Mismatch messages request matching SDK/rebuild.
+Dependency pins are unchanged.
+
+Export retains the canonical Python packager and deterministic tool discovery.
+Its Premake request selects Nutella, ScriptCore, PackageAudit, SpriteAssetAudit and
+HazelProject/dependencies, followed by the chosen project's Release scripts;
+full developer builds remain available. No unrelated example build is requested
+by export. Native descriptor schema validation precedes compiler/package parsing.
+The descriptor startup scene and saved asset closure are explicit; dirty guards
+can Save and Continue or retain drafts while exporting saved content.
+
+Verification: Linux Debug/Release Premake builds with two jobs pass, as do the
+14-executable software regression suites in both configurations. Final focused
+Debug CPU/editor checks include incompatible templates, future authoring versions,
+exclusive publication, native creation without Python/SDK, script-free Play,
+later staged assembly publication and failed-reload retention. Release software
+OpenGL 4.1 editor checks retain C/D, retry, Save-and-Assign, toolbar and Console
+coverage. Native creation/CLI tests cover spaces/Unicode, no PATH/tool requirement,
+later build and failed optional-build content retention.
+
+A fresh native project's saved Release export passed the canonical packager's
+managed/asset/native closure validation. Its log requests runtime/validator targets
+and only the chosen project's scripts. Archive and extracted-file checksums,
+no-symlink packaging and relocated headless Nutella CLI/invalid-input checks pass
+from spaces/Unicode paths without SDK/resource overrides. No game playthrough or
+physical GPU/DPI acceptance was performed. Windows CI is not awaited per instruction.
+Final cross-platform review corrected PCH include ordering in the new native
+creation/window/lease files; actual Windows execution remains a CI/human check.
+Build/export prerequisites are explicitly checked at the operation; the existing
+preflight snapshot may require checking again after another tool result.
+
+
 ## Deferred findings
 
-Native project generation, renderer policies and
+Renderer policies and
 entity/prefab hierarchy remain later stages. Stage C adds recovery/schema gates
 and prefab conflict/exclusive creation checks; the earlier A1/A2 scope remains as
 recorded above. Save All is a
 series of existing atomic file writes, not a multi-file transaction. Preferences
 and project forms retain explicit Apply/Save rather than becoming document types.
-Existing Python project creation still requires its current tool readiness.
+Native project creation is independent of script tools; builds and exports retain their SDK/tool contracts.
 
 Unrelated Skybound files, stashes, ignored VS Code configuration, user/resource
 layouts and all recursively pinned vendor repositories must match their recorded

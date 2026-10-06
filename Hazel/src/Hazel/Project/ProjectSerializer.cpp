@@ -29,6 +29,7 @@ namespace Hazel {
 				out << YAML::BeginMap;// Project
 				out << YAML::Key << "Version" << YAML::Value << 1;
                 out << YAML::Key << "ScriptProject" << YAML::Value << config.ScriptProject;
+                if(config.AuthoringVersion)out<<YAML::Key<<"AuthoringVersion"<<YAML::Value<<config.AuthoringVersion;
                 out << YAML::Key << "Name" << YAML::Value << config.Name;
 				out << YAML::Key << "StartScene" << YAML::Value << config.StartScene.generic_u8string();
 				out << YAML::Key << "AssetDirectory" << YAML::Value << config.AssetDirectory.generic_u8string();
@@ -64,6 +65,7 @@ namespace Hazel {
             // Commit only a complete parse; preserve the active config on failure.
 			ProjectConfig config;
 			config.Name = projectNode["Name"].as<std::string>();
+            if(projectNode["AuthoringVersion"])config.AuthoringVersion=projectNode["AuthoringVersion"].as<int>();
             config.ScriptProject = projectNode["ScriptProject"] ? projectNode["ScriptProject"].as<std::string>() : config.Name;
 			config.StartScene = Project::NormalizeAssetPath(std::filesystem::u8path(projectNode["StartScene"].as<std::string>()));
 			config.AssetDirectory = Project::NormalizeAssetPath(std::filesystem::u8path(projectNode["AssetDirectory"].as<std::string>()));

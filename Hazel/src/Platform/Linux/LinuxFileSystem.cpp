@@ -4,8 +4,14 @@
 #include <unistd.h>
 #include <cerrno>
 #include <system_error>
+#include <sys/syscall.h>
+#include <linux/fs.h>
 
 namespace Hazel {
+void FileSystem::PublishDirectoryNew(const std::filesystem::path& source,const std::filesystem::path& destination) {
+    if(syscall(SYS_renameat2,AT_FDCWD,source.c_str(),AT_FDCWD,destination.c_str(),RENAME_NOREPLACE)!=0)
+        throw std::system_error(errno,std::generic_category(),"Publish new project directory (no replacement)");
+}
 std::filesystem::path FileSystem::GetEnvironmentPath(const char* name) {
     const char* value = std::getenv(name);
     return value && *value ? std::filesystem::u8path(value) : std::filesystem::path{};

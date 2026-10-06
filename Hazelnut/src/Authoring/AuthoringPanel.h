@@ -63,6 +63,8 @@ class AuthoringPanel
     void ProjectSettings();
     void NewProject();
     void Scripts();
+    void Readiness();
+    bool CreateProject(const std::string& name,const std::string& identifier,const std::filesystem::path& destination);
     void Export();
     void Prefabs();
     void ToolStatus(bool exporting = false);
@@ -87,6 +89,7 @@ class AuthoringPanel
     std::unique_ptr<EditorState> m_State;
     ProjectWorkspace m_Workspace;
     std::filesystem::path m_WorkspaceProject;
+    std::filesystem::path m_CreatedProject;
     std::string m_MissingProject, m_MissingScene, m_PreviousWorkspace;
     std::string m_PendingState, m_WrittenState, m_PersistenceError;
     double m_StateClock=0, m_StateChanged=0, m_StatePolled=0;

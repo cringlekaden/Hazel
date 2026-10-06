@@ -374,6 +374,8 @@ namespace Hazel {
 			candidate->AppAssembly = Utils::LoadMonoAssembly(appPath, candidate->EnableDebugging, &app);
 			if (!candidate->CoreAssembly || !candidate->AppAssembly) throw std::runtime_error("Invalid script assembly: " + corePath.generic_u8string() + " / " + appPath.generic_u8string());
 			candidate->CoreAssemblyImage = mono_assembly_get_image(candidate->CoreAssembly);
+            if(!mono_class_from_name(candidate->CoreAssemblyImage,"Hazel","APIContractV1"))
+                throw std::runtime_error("Incompatible ScriptCore API contract. Use matching editor/SDK and rebuild scripts; previous domain retained.");
 			candidate->AppAssemblyImage = mono_assembly_get_image(candidate->AppAssembly);
 			LoadAssemblyClasses(*candidate);
 			ScriptGlue::ValidateComponents(candidate->CoreAssemblyImage);

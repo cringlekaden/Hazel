@@ -17,6 +17,7 @@ namespace Hazel {
 	{
 		std::string Name = "Untitled";
         std::string ScriptProject;
+        int AuthoringVersion=0; // Existing projects remain unstamped; no template rewrite.
 
 		std::filesystem::path StartScene;
 

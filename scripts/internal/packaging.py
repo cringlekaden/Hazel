@@ -16,6 +16,11 @@ def load_project(path):
     import yaml
     descriptor = path.resolve(strict=True)
     if descriptor.suffix != '.hproj': raise RuntimeError('Select a .hproj descriptor')
+    from internal.authoring import native_generator
+    native_env=os.environ.copy()
+    if hz.SYSTEM=='linux':native_env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
+    native=subprocess.run([str(native_generator()),'validate',str(descriptor)],cwd=hz.ROOT,env=native_env,capture_output=True,text=True,encoding='utf-8',timeout=15)
+    if native.returncode:raise RuntimeError(native.stderr.strip() or 'Native project schema validation failed')
     try:
         data = yaml.safe_load(descriptor.read_text(encoding='utf-8'))
     except yaml.YAMLError as error: raise RuntimeError('Cannot parse project ' + str(descriptor) + ': ' + str(error)) from error

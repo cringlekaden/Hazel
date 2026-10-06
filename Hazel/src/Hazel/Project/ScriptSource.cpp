@@ -1,6 +1,8 @@
 #include "hzpch.h"
 #include "ScriptSource.h"
 #include "Hazel/Core/FileSystem.h"
+#include "Hazel/Core/Resources.h"
+#include "Hazel/Core/FileDocument.h"
 #include <regex>
 #include <set>
 namespace Hazel
@@ -32,7 +34,7 @@ bool ScriptSource::ValidNamespace(const std::string &value)
 	return true;
 }
 std::filesystem::path ScriptSource::Create(const std::filesystem::path &root, const std::string &name,
-										   const std::string &space)
+										   const std::string &space,const std::filesystem::path& templates)
 {
 	if (!ValidIdentifier(name) || !ValidNamespace(space))
 		throw std::invalid_argument("Use valid C# class and namespace identifiers (avoid keywords)");
@@ -43,15 +45,10 @@ std::filesystem::path ScriptSource::Create(const std::filesystem::path &root, co
 		std::filesystem::weakly_canonical(path).lexically_relative(std::filesystem::canonical(root));
 	if (canonical.empty() || *canonical.begin() == "..")
 		throw std::runtime_error("Script source folder must remain inside project Assets");
-	const std::string text =
-		"using Hazel;\n\nnamespace " + space + " {\n    public class " + name +
-		" : Entity {\n        public Prefab SpawnAsset;\n        private Entity spawned;\n        void "
-		"OnCreate() { }\n        void OnUpdate(float dt) {\n            // Select SpawnAsset in the "
-		"Inspector after Build Scripts.\n            if (Input.IsKeyDown(KeyCode.Space) && spawned == null "
-		"&& SpawnAsset != null && SpawnAsset.IsAssigned)\n                spawned = "
-		"Entity.Instantiate(SpawnAsset, Translation);\n            if (Input.IsKeyDown(KeyCode.R) && spawned "
-		"!= null) { spawned.Destroy(); spawned = null; }\n        }\n        void OnDestroy() { /* Cleanup "
-		"runs once, outside update iteration. */ if (spawned != null) spawned.Destroy(); }\n    }\n}\n";
+    auto text=FileDocument::Read((templates.empty()?Resources::Resolve("Templates"):templates)/"Entity.cs");
+    for(const auto& replacement:std::vector<std::pair<std::string,std::string>>{{"@NAMESPACE@",space},{"@CLASS@",name}})
+        for(size_t at=0;(at=text.find(replacement.first,at))!=std::string::npos;at+=replacement.second.size())
+            text.replace(at,replacement.first.size(),replacement.second);
 	FileSystem::WriteNewFile(path, text);
 	return path;
 }

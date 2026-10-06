@@ -2,6 +2,9 @@
 #include "EditorLayer.h"
 #include "Hazel/Project/ProjectSerializer.h"
 #include "Hazel/Project/ScriptSource.h"
+#include "Hazel/Project/ProjectCreation.h"
+#include "AuthoringReadiness.h"
+#include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/Renderer.h"
 #include "Hazel/Scene/Prefab.h"
 #include "Hazel/Scene/SceneSerializer.h"
@@ -504,7 +507,6 @@ void AuthoringPanel::FileMenu()
                         bool(Availability(EditorAction::CreateProject))))
     {
         m_ShowNew = true;
-        Preflight();
     }
     if (ImGui::MenuItem("Open Project...", "Ctrl+O", false,
                         bool(Availability(EditorAction::ReplaceProject))))
@@ -594,6 +596,7 @@ void AuthoringPanel::Menus()
 {
     if (ImGui::BeginMenu("Project"))
     {
+        if(ImGui::BeginMenu("Authoring readiness")){Readiness();ImGui::EndMenu();}
         bool project = bool(Project::GetActive());
         if (ImGui::MenuItem("Project Settings...", nullptr, false, project))
         {
@@ -755,7 +758,7 @@ void AuthoringPanel::Preferences()
     ImGui::Separator();
     ImGui::TextUnformatted("Hazel source SDK");
     ImGui::TextWrapped("A prepared source checkout supplies Hazel's project templates, build tools "
-                       "and ScriptCore for New Project, Build Scripts and Export. Editing, saving "
+                       "and ScriptCore for Build Scripts and Export. Native New Project uses the editor's bundled templates. Editing, saving "
                        "and running a prepared project do not require a source SDK.");
     {
         PropertyUI::Row row("sdk-override", "SDK override",
@@ -1012,34 +1015,31 @@ void AuthoringPanel::NewProject()
     ImGui::PopID();
     ImGui::TextWrapped("Creates %s.hproj, Assets/Scenes/Start.hazel (primary "
                        "camera), Scripts/Source/Example.cs, canonical "
-                       "Premake build, Textures and Prefabs. Builds the initial "
-                       "assembly before opening.",
+                       "Premake build, Textures and Prefabs. Opens for editing "
+                       "without compiling scripts or locating Python/SDK tools.",
                        m_Identifier.c_str());
-    ToolStatus();
-    if (!Ready())
-        ImGui::TextWrapped("Run Check readiness after configuring tools. "
-                           "Compiler/preflight diagnostics appear in Console.");
-    bool valid = !m_Name.empty() && m_Name.size() <= 120 &&
+    ImGui::TextWrapped("Editing is ready immediately. Build Scripts later when you need managed behavior; script-free Play is available.");
+    bool valid = !m_Name.empty() && m_Name.size() <= 480 &&
                  ScriptSource::ValidIdentifier(m_Identifier) && Path(m_Destination).is_absolute();
     if (!valid)
         ImGui::TextWrapped("Enter a valid name/identifier and a new folder beneath "
                            "an existing parent. "
                            "Existing destinations are never overwritten.");
-    ImGui::BeginDisabled(!valid || !Ready() || !Availability(EditorAction::CreateProject));
+    const auto canCreate = Availability(EditorAction::CreateProject);
+    ImGui::BeginDisabled(!valid || !canCreate);
     if (ImGui::Button("Create and Open"))
     {
-        auto target = Path(m_Destination) / (m_Identifier + ".hproj");
-        Guard(OperationIntent::OpenProject,
-              [this, target]
-              {
-                  Start("Create project",
-                        {"new-project", "--name", m_Name, "--identifier", m_Identifier, "--destination",
-                         m_Destination},
-                        ToolCompletion::OpenCreatedProject,target);
-                  return m_Tools.Busy();
-              });
+        const auto name=m_Name, identifier=m_Identifier;const auto destination=Path(m_Destination);
+        Guard(OperationIntent::OpenProject,[this,name,identifier,destination]{return CreateProject(name,identifier,destination);});
     }
     ImGui::EndDisabled();
+    PropertyUI::Help(canCreate.Reason);
+    if(!m_CreatedProject.empty()) {
+        ImGui::TextWrapped("Created files retained: %s",m_CreatedProject.generic_u8string().c_str());
+        const auto can=Availability(EditorAction::ReplaceProject);ImGui::BeginDisabled(!can);
+        if(ImGui::Button("Open created project")){const auto path=m_CreatedProject;Guard(OperationIntent::OpenProject,[this,path]{if(!m_Editor.OpenProject(path))return false;m_ShowNew=false;m_CreatedProject.clear();return true;});}
+        ImGui::EndDisabled();PropertyUI::Help(can.Reason);
+    }
     ImGui::End();
 }
 void AuthoringPanel::Scripts()
@@ -1093,6 +1093,7 @@ void AuthoringPanel::Scripts()
             ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize({570, 360}, ImGuiCond_FirstUseEver);
         ImGui::Begin("Build Scripts", &m_ShowBuild);
+        Readiness();
         ToolStatus();
         ImGui::TextWrapped("Builds the active project's Debug assembly through the "
                            "configured SDK. Stop Play first. "
@@ -1131,6 +1132,8 @@ void AuthoringPanel::Export()
                        "canonical SDK service and two compiler jobs.");
     PathInput("Output folder", m_ExportPath, true);
     PropertyUI::Text("Package name", "Package name", m_PackageName);
+    Readiness();
+    ImGui::TextWrapped("Export uses the saved descriptor startup scene and saved referenced assets. Unsaved drafts are retained unless you explicitly Save and Continue.");
     ToolStatus(true);
     bool name = !m_PackageName.empty() &&
                 std::all_of(m_PackageName.begin(), m_PackageName.end(),

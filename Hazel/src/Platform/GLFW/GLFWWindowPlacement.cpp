@@ -1,5 +1,5 @@
-#include "Hazel/Core/Window.h"
 #include "hzpch.h"
+#include "Hazel/Core/Window.h"
 #include <GLFW/glfw3.h>
 namespace Hazel {
     std::vector<DisplayArea> Window::GetDisplayAreas() const {

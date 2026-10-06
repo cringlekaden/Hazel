@@ -390,9 +390,9 @@ Explicitly defer animation graphs/state machines/blending/event tracks; linked p
 
 Decisions needed before the relevant implementation, with recommended defaults:
 
-- **First milestone:** approve A1/A2 scope and native caption, or explicitly prioritize a different stage. No dependency updates are proposed.
+- **First milestone:** A1/A2 and their corrections are delivered; native decorations remain. No dependency updates are proposed.
 - **Selection/navigation:** retain scene target while editing assets, name it on assignment, and keep one sheet/prefab draft initially. Use the freely dockable proposed default only for first use/reset.
-- **Generation:** Create content first, optional separate initial build; permit uncompiled content editing. Confirm this change from the current build-before-publication contract before E.
+- **Generation:** E implements the authorized content-first creation and separate optional build contract; hands-on acceptance remains.
 - **Hierarchy:** subtree destruction default, Preserve World reparent, root-only physics owners initially, detached prefab v2, and explicit managed world/local compatibility policy. Confirm bounds before G; linked prefabs remain deferred.
 - **Renderer:** native editor VSync preference first; portable runtime requests later. Decide whether advanced batch/shader policies need user controls at all after capability/readiness presentation is usable.
 
@@ -411,7 +411,7 @@ Track redundant tooltip cleanup as a later presentation task: behavior, units,
 shortcuts, consequences and disabled reasons are useful; repeating readable labels
 or values is generally unnecessary. Full paths/values are useful when clipped.
 The current correction applies this to touched controls only. B is delivered;
-Stage C local work is recorded in the implementation record. D–H and broader
+C–E delivery is recorded below and in the implementation record. F–H and broader
 tooltip cleanup remain separate stages.
 
 
@@ -429,5 +429,19 @@ C verification; F/G/H and broad tooltip cleanup remain deferred. The original fi
 D now implements machine-local preferences/session/workspaces, native window/DPI
 bounds, explicit launch precedence, lease/conflict protection and read-only device
 information. Existing ImGui docking remains authoritative. See the implementation
-record for scopes, write triggers and actual verification. E is next; F/G/H and
+record for scopes, write triggers and actual verification. F/G/H and
 broader tooltip cleanup remain separate.
+
+## Stage E implementation follow-up
+
+E implements one native content-first generation service and template contract,
+shared by Hazelnut and the CLI. Creation does not launch Python or compile;
+script tooling and export remain explicit operations with their existing Python,
+SDK and packaging contracts. Readiness distinguishes editing, script tools,
+script-free/assigned-script Play and saved-content export. Export selects required
+runtime/validator targets and the chosen project's scripts, rather than unrelated
+examples. See the implementation record for verification and remaining limits.
+The next architectural stages are F (portable renderer requests), then G (bounded
+hierarchy/detached prefabs); H remains an optional native-caption alternative.
+Broader redundant-tooltip cleanup is still pending. Stop after E for physical
+Linux/Windows acceptance before any of those stages.

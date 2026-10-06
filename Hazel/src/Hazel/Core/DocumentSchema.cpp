@@ -65,7 +65,9 @@ bool Project(const YAML::Node& root)
     Structure(root);
     Keys(root, {"Project"}, "root");
     auto project = root["Project"];
-    Keys(project, {"Version", "Name", "ScriptProject", "StartScene", "AssetDirectory", "ScriptModulePath"}, "Project");
+    Keys(project, {"Version", "Name", "ScriptProject", "StartScene", "AssetDirectory", "ScriptModulePath", "AuthoringVersion"}, "Project");
+    if(project["AuthoringVersion"] && project["AuthoringVersion"].as<int>()!=1)
+        throw std::runtime_error("Unsupported project authoring/template contract; use a compatible editor");
     if (project["Version"] && project["Version"].as<int>() != 1)
         throw std::runtime_error("Unsupported Project Version (expected 1 or known legacy without Version)");
     for(const char* key:{"Name","StartScene","AssetDirectory","ScriptModulePath"}) {

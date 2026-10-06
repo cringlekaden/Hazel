@@ -157,7 +157,7 @@ def dependencies(configuration, generator):
         print(f'Using current {configuration} shader dependencies.', flush=True)
 
 
-def build(configuration, tests=False, database=False):
+def build(configuration, tests=False, database=False, targets=None):
     yaml_tools()
     generator = premake()
     prefix = mono_prefix()
@@ -165,6 +165,7 @@ def build(configuration, tests=False, database=False):
     args = [generator]
     if SYSTEM == 'linux': args += [f'--mono-root={prefix}']
     if tests: args += ['--migration-tests', '--shader-tools']
+    elif targets: args += ['--shader-tools']
     args += ['vs2022' if SYSTEM == 'windows' else 'gmake']
     run(args)
     if SYSTEM == 'windows':
@@ -173,6 +174,9 @@ def build(configuration, tests=False, database=False):
         command = ['make', f'config={configuration.lower()}', '-j2', 'CSC=' + shlex.join(map(str, mono_command(prefix)))]
         numbers = tuple(map(int, output(['make', '--version']).splitlines()[0].split()[-1].split('.')[:2]))
         if numbers >= (4, 4): command += ['--jobserver-style=pipe']
+    if targets:
+        if SYSTEM=='windows':command += ['/t:'+ ';'.join(targets)]
+        else:command += list(targets)
     if database:
         if SYSTEM == 'windows': raise RuntimeError('Bear refresh is supported on Linux')
         if not shutil.which('bear'): raise RuntimeError('Install Bear to refresh clangd compiler commands')
@@ -185,7 +189,7 @@ def build(configuration, tests=False, database=False):
             if not any(path.is_relative_to(ROOT / source_root) for path in recorded):
                 raise RuntimeError('Bear did not capture compiler commands for ' + source_root)
         print('Refreshed clangd database: ' + str(len(commands)) + ' compiler commands.', flush=True)
-    script_build(ROOT/'examples/SceneTransitions/SceneTransitions.hproj', configuration)
+    if not targets: script_build(ROOT/'examples/SceneTransitions/SceneTransitions.hproj', configuration)
     stage(configuration, prefix)
 
 
@@ -216,7 +220,8 @@ def development_link(target, source):
 def stage(configuration, prefix=None):
     prefix = prefix or mono_prefix()
     base = binaries(configuration)
-    for name in ('Hazelnut', 'Nutella'):
+    for name in ('Hazelnut', 'Nutella', 'HazelProject'):
+        if not (base/name).is_dir():continue
         app = base / name
         copy_tree(ROOT / 'Hazel/Resources', app / 'Resources')
         if name == 'Hazelnut':
@@ -243,6 +248,8 @@ def script_build(project, configuration):
     scripts = assets / 'Scripts'
     if not (scripts / 'premake5.lua').is_file():
         raise RuntimeError('Project needs Assets/Scripts/premake5.lua; see the bundled example')
+    from internal.authoring import native_contract
+    native_contract(configuration)
     generator = premake(); prefix = mono_prefix()
     env = os.environ.copy()
     env['HAZEL_SCRIPTCORE'] = (binaries(configuration) / 'Hazel-ScriptCore/Hazel-ScriptCore.dll').as_posix()
@@ -344,11 +351,11 @@ def main():
     p = sub.add_parser('test-packages'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
     p = sub.add_parser('test-games'); p.add_argument('--config', choices=('Debug','Release'), default='Debug'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native'); p.add_argument('--packages', action='store_true'); p.add_argument('--output', type=Path, default=ROOT/'dist/games')
     p = sub.add_parser('authoring-preflight'); p.add_argument('--operation', choices=('scripts','export'), default='scripts')
-    p = sub.add_parser('new-project'); p.add_argument('--name', required=True); p.add_argument('--identifier', required=True); p.add_argument('--destination', type=Path, required=True)
+    p = sub.add_parser('new-project'); p.add_argument('--name', required=True); p.add_argument('--identifier', required=True); p.add_argument('--destination', type=Path, required=True); p.add_argument('--build-scripts', action='store_true', help='Compile after native creation; build failure retains editable project')
     p = sub.add_parser('editor-export'); p.add_argument('project', type=Path); p.add_argument('--name', required=True); p.add_argument('--output', type=Path, required=True)
     p = sub.add_parser('package'); p.add_argument('--app', choices=('Hazelnut', 'Nutella', 'all'), default='all'); p.add_argument('--name', help='Archive/directory name for a single application package'); p.add_argument('--project', type=Path, default=ROOT/'examples/SceneTransitions/SceneTransitions.hproj'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--external-assets', choices=('reject',), default='reject', help='External references must be moved into the project and saved before packaging')
     args = parser.parse_args()
-    if args.action in ('new-project','editor-export','script-build','authoring-preflight'):
+    if args.action in ('editor-export','script-build','authoring-preflight') or (args.action=='new-project' and args.build_scripts):
         from internal.child_tools import prepare
         exporting = args.action == 'editor-export' or (args.action == 'authoring-preflight' and args.operation == 'export')
         prepare(['git','cmd'] if SYSTEM=='windows' else (['git','make','g++','ar','pkg-config','tar','ldd'] if exporting else ['git','make']))
@@ -372,13 +379,12 @@ def main():
             build(args.config, getattr(args, 'tests', False), args.action == 'database')
             if args.action == 'setup': print('Ready. python scripts/hazel.py run Hazelnut --project examples/SceneTransitions/SceneTransitions.hproj\nF5: copy scripts/internal/vscode/' + SYSTEM + '/ templates into .vscode. Use hazel.py --help for all workflows.')
         elif args.action == 'new-project':
-            yaml_tools()
             from internal.authoring import create_project
-            create_project(args.name, args.identifier, args.destination)
+            create_project(args.name, args.identifier, args.destination,args.build_scripts)
         elif args.action == 'editor-export':
             yaml_tools()
             from internal.packaging import package
-            build('Release'); script_build(args.project, 'Release')
+            build('Release',targets=('Nutella','Hazel-ScriptCore','PackageAudit','SpriteAssetAudit','HazelProject')); script_build(args.project, 'Release')
             package('Nutella', args.project, args.output, args.name)
         elif args.action == 'script-build':
             yaml_tools(); script_build(args.project, args.config)

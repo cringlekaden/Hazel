@@ -657,7 +657,15 @@ namespace Hazel {
 	bool EditorLayer::ReloadScripts()
 	{
         if(m_Authoring && !m_Authoring->Require(EditorAction::ReloadScripts))return false;
-		try { m_ProjectFile.Check(); ScriptEngine::ReloadAssembly(); m_ActionError.clear(); return true; }
+		try {
+            m_ProjectFile.Check();
+            if(ScriptEngine::IsInitialized())ScriptEngine::ReloadAssembly();
+            else {
+                if(!Project::GetActive())throw std::runtime_error("Open a project before initializing scripts");
+                ScriptEngine::Init(Project::GetAssetFileSystemPath(Project::GetActive()->GetConfig().ScriptModulePath));
+            }
+            m_ActionError.clear();return true;
+        }
 		catch (const std::runtime_error& error) { return ActionFailed(std::string("Reload scripts: ") + error.what()); }
 	}
 

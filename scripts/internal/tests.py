@@ -13,7 +13,7 @@ import hazel as hz
 def authoring_checks(working):
     """Exercise the same transactional project service invoked by editor jobs."""
     import yaml
-    from internal.authoring import create_project, publish_new_directory
+    from internal.authoring import create_project
     from internal.child_tools import prepare
     destination=working/'New project space é'
     saved_path=os.environ.get('PATH','')
@@ -21,6 +21,8 @@ def authoring_checks(working):
         os.environ['PATH']=''
         prepare(['git','cmd'] if hz.SYSTEM=='windows' else ['git','make'])
         create_project('A portable garden é','GardenProbe',destination)
+        assert not (destination/'Assets/Scripts/Binaries/GardenProbe.dll').exists()
+        hz.script_build(destination/'GardenProbe.hproj','Debug')
     finally:os.environ['PATH']=saved_path
     descriptor=destination/'GardenProbe.hproj'
     config=yaml.safe_load(descriptor.read_text(encoding='utf-8'))['Project']
@@ -38,18 +40,12 @@ def authoring_checks(working):
     def fail(*args):raise RuntimeError('Controlled initial assembly failure')
     try:
         hz.script_build=fail
-        try:create_project('Compiler failure','FailureProbe',failed)
+        try:create_project('Compiler failure','FailureProbe',failed,build=True)
         except RuntimeError:pass
-        else:raise RuntimeError('Failed initial build published a project')
+        else:raise RuntimeError('Controlled script build failure was not reported')
     finally:hz.script_build=compiler
-    assert not failed.exists()
-    source=working/'Publication source';source.mkdir();(source/'sentinel').write_text('intact')
-    occupied=working/'Existing empty destination';occupied.mkdir()
-    try:publish_new_directory(source,occupied)
-    except OSError:pass
-    else:raise RuntimeError('New Project publication replaced an existing directory')
-    assert source.is_dir() and occupied.is_dir()
-    print('PASS: New Project build without PATH, portable starter, existing destination and build/publication failure preservation',flush=True)
+    assert (failed/'FailureProbe.hproj').is_file() and not (failed/'Assets/Scripts/Binaries/FailureProbe.dll').exists()
+    print('PASS: canonical native creation without PATH, uncompiled editing contract, later build, existing destination and failed-build content retention',flush=True)
 
 
 def software_driver():
