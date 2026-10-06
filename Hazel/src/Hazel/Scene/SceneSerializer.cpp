@@ -446,7 +446,7 @@ namespace Hazel {
         catch(const std::exception& error){m_Report.Error=error.what();return false;}
     }
 
-    bool SceneSerializer::DeserializeText(const std::string& text, bool prefabDocument)
+    bool SceneSerializer::DeserializeText(const std::string& text, bool prefabDocument, ResourceLoading resources)
 	{
         m_Report = {};
 		if (m_Scene->m_IsRunning || m_Scene->m_PhysicsWorld) {
@@ -656,7 +656,7 @@ namespace Hazel {
 				auto textComponent = entity["TextComponent"];
 				if (textComponent)
 				{
-					auto& tc = deserializedEntity.AddComponent<TextComponent>();
+					auto& tc = deserializedEntity.AddComponent<TextComponent>(TextComponent{"",resources==ResourceLoading::Resolve?Font::GetDefault():Ref<Font>{}});
 					tc.TextString = textComponent["TextString"].as<std::string>();
 					// tc.FontAsset // TODO
 					tc.Color = textComponent["Color"].as<glm::vec4>();
@@ -667,8 +667,12 @@ namespace Hazel {
 		}
 
         staged->RebuildChildren();staged->ValidateHierarchy();
-        staged->PrepareSprites(!m_Repair);
-        for(const auto& [id,fields]:stagedScriptFields)
+        if(prefabDocument && data["PrefabVersion"].as<int>()==2) {
+            const auto roots=staged->GetChildren();
+            if(roots.size()!=1 || uint64_t(roots.front())!=data["PrefabRoot"].as<uint64_t>() || staged->GetSubtree(staged->GetEntityByUUID(roots.front())).size()!=staged->m_EntityMap.size())throw std::runtime_error("PrefabRoot must identify one complete connected subtree");
+        }
+        if(resources==ResourceLoading::Resolve)staged->PrepareSprites(!m_Repair);
+        if(resources==ResourceLoading::Resolve)for(const auto& [id,fields]:stagedScriptFields)
             for(const auto& [name,field]:fields) {
                 std::filesystem::path resource;
                 if(field.Field.Type==ScriptFieldType::Prefab && !field.AssetReference.empty())

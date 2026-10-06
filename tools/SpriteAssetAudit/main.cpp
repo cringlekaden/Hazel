@@ -8,6 +8,7 @@
 #endif
 int main(int argc,char** argv) {
     try {
+        Hazel::Log::Init();
         std::vector<std::string> arguments;
 #ifdef HZ_PLATFORM_WINDOWS
         arguments=Hazel::WindowsCommandLineUTF8();
@@ -17,7 +18,7 @@ int main(int argc,char** argv) {
         if(arguments.size()!=3 && arguments.size()!=5)throw std::runtime_error("Usage: SpriteAssetAudit Assets-root inventory.txt [--project descriptor.hproj]");
         if(arguments.size()==5) {
             if(arguments[3]!="--project")throw std::runtime_error("Expected --project descriptor.hproj");
-            Hazel::Log::Init();Hazel::DocumentLoadReport report;
+            Hazel::DocumentLoadReport report;
             auto project=Hazel::Project::LoadCandidate(std::filesystem::u8path(arguments[4]),&report);
             if(!project)throw std::runtime_error(report.Error);
             if(std::filesystem::weakly_canonical(project->GetAssetRoot())!=std::filesystem::weakly_canonical(std::filesystem::u8path(arguments[1])))

@@ -146,3 +146,26 @@ namespace Migration {
         void OnUpdate(float timestep) {Finished=GetComponent<Hazel.SpriteAnimationComponent>().IsFinished;}
     }
 }
+
+namespace Migration {
+    public class HierarchyProbe : Hazel.Entity {
+        public Hazel.Entity ExpectedParent;
+        public Hazel.Vector3 WorldBefore, LocalBefore, MovedWorld;
+        public bool ParentMatched, MatrixMatched, QueuedGraphRetained, Detached;
+        public int RequestStatus = -1, Updates;
+        private Hazel.ParentingRequest request;
+        void OnCreate() {
+            WorldBefore = Translation; LocalBefore = LocalTranslation;
+            ParentMatched = Parent != null && ExpectedParent != null && Parent.ID == ExpectedParent.ID;
+            MatrixMatched = WorldMatrix.Position.X == Translation.X && WorldMatrix.Position.Y == Translation.Y;
+        }
+        void OnUpdate(float dt) {
+            if (Updates++ == 0) {
+                Translation = new Hazel.Vector3(WorldBefore.X + 1, WorldBefore.Y, WorldBefore.Z);
+                MovedWorld = Translation;
+                request = Detach(Hazel.ParentingMode.KeepWorld);
+                QueuedGraphRetained = Parent != null && request.Status == Hazel.ParentingStatus.Pending;
+            } else { Detached = Parent == null; RequestStatus = (int)request.Status; }
+        }
+    }
+}

@@ -529,7 +529,9 @@ namespace Hazel {
 	void ScriptEngine::OnRuntimeStop()
 	{
 		if (!s_Data) return;
-		std::vector<UUID> ids; for(auto& [id,instance]:s_Data->EntityInstances) ids.push_back(id);
+		std::vector<UUID> ids;
+        if(s_Data->SceneContext)ids=s_Data->SceneContext->OrderedForCleanup();
+        else for(auto& [id,instance]:s_Data->EntityInstances)ids.push_back(id);
         for(auto id:ids) OnDestroyEntity(id);
         s_Data->SceneContext = nullptr;
 		s_Data->EntityInstances.clear();

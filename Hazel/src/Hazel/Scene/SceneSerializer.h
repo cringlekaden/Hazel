@@ -6,6 +6,7 @@
 
 namespace Hazel {
 
+	enum class ResourceLoading { Resolve, MetadataOnly };
 	class SceneSerializer
 	{
 	public:
@@ -17,7 +18,7 @@ namespace Hazel {
         // For editor dirty comparisons: authored spelling, no path canonicalization
         // or filesystem probes. File serialization keeps its existing portable contract.
         std::string SerializeAuthoredSnapshot(Entity only = {});
-        bool DeserializeText(const std::string& text, bool prefabDocument = false);
+        bool DeserializeText(const std::string& text, bool prefabDocument = false, ResourceLoading resources = ResourceLoading::Resolve);
 
 		bool Deserialize(const std::string& filepath);
         const DocumentLoadReport& Report() const { return m_Report; }

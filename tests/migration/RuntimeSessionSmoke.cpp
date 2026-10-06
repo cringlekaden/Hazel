@@ -3,6 +3,7 @@
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include <GLFW/glfw3.h>
+#include <yaml-cpp/yaml.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -75,8 +76,10 @@ int main(int argc, char** argv) {
         session.RequestSceneLoad("Scenes/Bad.hazel"); session.Update(0.016f);
         Check(session.GetScene()==current,"Corrupt scene replaced current scene");
         auto badPhysics=Make("Invalid shape");
-        badPhysics->GetEntityByUUID(2).GetComponent<BoxCollider2DComponent>().Size={-1,1};
-        SceneSerializer(badPhysics,project->GetAssetRoot()).Serialize((directory/"Assets/Scenes/InvalidPhysics.hazel").generic_u8string());
+        auto corrupt=YAML::Load(SceneSerializer(badPhysics,project->GetAssetRoot()).SerializeText());
+        for(auto node:corrupt["Entities"])if(node["Entity"].as<uint64_t>()==2)node["BoxCollider2DComponent"]["Size"]=std::vector<float>{-1,1};
+        YAML::Emitter invalid;invalid<<corrupt;
+        std::ofstream(directory/"Assets/Scenes/InvalidPhysics.hazel")<<invalid.c_str();
         session.RequestSceneLoad("Scenes/InvalidPhysics.hazel");session.Update(0.016f);
         Check(session.GetScene()==current && current->IsRunning(),"Invalid physics replaced/aborted current session");
         Check(!session.RequestSceneLoad("../outside.hazel") && !session.RequestSceneLoad("/tmp/outside.hazel"),"Transition accepted non-project path");

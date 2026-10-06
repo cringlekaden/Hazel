@@ -13,6 +13,7 @@
 #include "Hazel/Scene/Prefab.h"
 #include "Hazel/Project/Project.h"
 #include "mono/metadata/exception.h"
+#include "mono/metadata/appdomain.h"
 
 #include "Hazel/Physics/Physics2D.h"
 
@@ -86,9 +87,6 @@ namespace Hazel {
 		return ScriptEngine::GetManagedInstance(entityID);
 	}
 
-    static void TransformComponent_GetScale(uint64_t id,glm::vec3* scale) {
-        auto* scene=ScriptEngine::GetSceneContext();*scale=scene->GetEntityByUUID(id).GetComponent<TransformComponent>().Scale;
-    }
     template<typename T> static Entity CheckedSpriteEntity(uint64_t id) {
         auto* scene=ScriptEngine::GetSceneContext();auto entity=scene?scene->GetEntityByUUID(id):Entity{};
         if(!entity || !entity.HasComponent<T>()) {mono_raise_exception(mono_get_exception_invalid_operation("Sprite operation requires a live entity with the requested component"));return {};}
@@ -120,12 +118,7 @@ namespace Hazel {
         auto entity=CheckedSpriteEntity<SpriteAnimationComponent>(id);if(!entity)return false;
         auto& a=entity.GetComponent<SpriteAnimationComponent>();return finished?a.Playback.Finished:a.Playback.Playing;
     }
-    static void TransformComponent_SetScale(uint64_t id,glm::vec3* scale) {
-        auto entity=ScriptEngine::GetSceneContext()->GetEntityByUUID(id);
-        if(entity.HasComponent<Rigidbody2DComponent>()) {mono_raise_exception(mono_get_exception_invalid_operation("Set physics scale in the prefab's initial transform before startup"));return;}
-        for(int i=0;i<3;++i)if(!std::isfinite((*scale)[i])||(*scale)[i]<=0) {mono_raise_exception(mono_get_exception_argument("scale","Scale must be finite and positive"));return;}
-        entity.GetComponent<TransformComponent>().Scale=*scale;
-    }
+
 	static bool Entity_HasComponent(UUID entityID, MonoReflectionType* componentType)
 	{
 		Scene* scene = ScriptEngine::GetSceneContext();
@@ -151,33 +144,6 @@ namespace Hazel {
 			return 0;
 
 		return entity.GetUUID();
-	}
-
-	static void TransformComponent_GetTranslation(UUID entityID, glm::vec3* outTranslation)
-	{
-		Scene* scene = ScriptEngine::GetSceneContext();
-		HZ_CORE_ASSERT(scene);
-		Entity entity = scene->GetEntityByUUID(entityID);
-		HZ_CORE_ASSERT(entity);
-
-		*outTranslation = entity.GetComponent<TransformComponent>().Translation;
-	}
-
-	static void TransformComponent_SetTranslation(UUID entityID, glm::vec3* translation)
-	{
-		Scene* scene = ScriptEngine::GetSceneContext();
-		HZ_CORE_ASSERT(scene);
-		Entity entity = scene->GetEntityByUUID(entityID);
-		HZ_CORE_ASSERT(entity);
-
-		if (!std::isfinite(translation->x) || !std::isfinite(translation->y) || !std::isfinite(translation->z)) {
-            HZ_CORE_ERROR("Translation must be finite"); return;
-        }
-        auto& transform = entity.GetComponent<TransformComponent>();
-        transform.Translation = *translation;
-        if (entity.HasComponent<Rigidbody2DComponent>())
-            if (auto* body = static_cast<b2Body*>(entity.GetComponent<Rigidbody2DComponent>().RuntimeBody))
-                body->SetTransform(b2Vec2(translation->x, translation->y), transform.Rotation.z);
 	}
 
     static b2Body* CheckedBody(Entity entity) {
@@ -418,6 +384,7 @@ namespace Hazel {
 
 	void ScriptGlue::RegisterFunctions()
 	{
+        RegisterHierarchyFunctions();
         HZ_ADD_INTERNAL_CALL(SpriteRendererComponent_SetSprite);
         HZ_ADD_INTERNAL_CALL(SpriteAnimationComponent_Play);
         HZ_ADD_INTERNAL_CALL(SpriteAnimationComponent_Control);
@@ -428,17 +395,12 @@ namespace Hazel {
 
 		HZ_ADD_INTERNAL_CALL(GetScriptInstance);
 
-		HZ_ADD_INTERNAL_CALL(Entity_HasComponent);
+        HZ_ADD_INTERNAL_CALL(Entity_HasComponent);
         HZ_ADD_INTERNAL_CALL(Entity_GetSceneIdentity);
         HZ_ADD_INTERNAL_CALL(Entity_IsValid);
         HZ_ADD_INTERNAL_CALL(Entity_Destroy);
         HZ_ADD_INTERNAL_CALL(Entity_Instantiate);
-		HZ_ADD_INTERNAL_CALL(Entity_FindEntityByName);
-
-		HZ_ADD_INTERNAL_CALL(TransformComponent_GetTranslation);
-        HZ_ADD_INTERNAL_CALL(TransformComponent_GetScale);
-        HZ_ADD_INTERNAL_CALL(TransformComponent_SetScale);
-		HZ_ADD_INTERNAL_CALL(TransformComponent_SetTranslation);
+        HZ_ADD_INTERNAL_CALL(Entity_FindEntityByName);
 
 		HZ_ADD_INTERNAL_CALL(Rigidbody2DComponent_ApplyLinearImpulse);
 		HZ_ADD_INTERNAL_CALL(Rigidbody2DComponent_ApplyLinearImpulseToCenter);

@@ -124,7 +124,7 @@ int main()
         Hazel::Log::Init();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();
-        Hazel::ProjectCreationChecks();Hazel::RendererPolicyChecks(); Hazel::HierarchyChecks();
+        Hazel::ProjectCreationChecks();Hazel::RendererPolicyChecks(); Hazel::HierarchyChecks(); Hazel::SubtreePrefabChecks();
         RecoveryContracts();
         Hazel::SceneCamera camera;
         Finite(camera.GetProjection());

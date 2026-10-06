@@ -123,9 +123,32 @@ static void ScenePhysicsChecks() {
     }
     std::cout<<"PASS: scene physics contacts/materials/types/transform updates, pause/step/restart, copy, live duplication and component/entity lifetimes\n";
 }
+static void ManagedHierarchyChecks() {
+    auto scene=CreateRef<Scene>();auto parent=scene->CreateEntityWithUUID(700,"Managed parent");
+    parent.GetComponent<TransformComponent>().Translation={3,2,0};auto child=scene->CreateEntityWithUUID(701,"Managed child");
+    child.GetComponent<TransformComponent>().Translation={1,0,0};child.AddComponent<ScriptComponent>().ClassName="Migration.HierarchyProbe";
+    scene->Reparent(child,parent,TransformPolicy::KeepLocal);
+    auto& field=ScriptEngine::GetScriptFieldMap(child)["ExpectedParent"];field.Field={ScriptFieldType::Entity,"ExpectedParent",nullptr};field.SetValue<uint64_t>(700);
+    scene->OnRuntimeStart();auto instance=ScriptEngine::GetEntityScriptInstance(701);
+    Check(instance && instance->GetFieldValue<bool>("ParentMatched") && instance->GetFieldValue<bool>("MatrixMatched") &&
+          instance->GetFieldValue<glm::vec3>("WorldBefore")==glm::vec3(4,2,0) && instance->GetFieldValue<glm::vec3>("LocalBefore")==glm::vec3(1,0,0),"Managed hierarchy/local/world wrappers or matrix layout failed");
+    scene->OnUpdateRuntime(0);
+    Check(instance->GetFieldValue<bool>("QueuedGraphRetained") && scene->GetRelationship(child).Parent==UUID(0) && instance->GetFieldValue<glm::vec3>("MovedWorld")==glm::vec3(5,2,0),"Queued parenting getter or world-compatible Translation failed");
+    scene->OnUpdateRuntime(0);
+    Check(instance->GetFieldValue<bool>("Detached") && instance->GetFieldValue<int>("RequestStatus")==int(ParentingState::Applied) && glm::vec3(scene->GetWorldTransform(child)[3])==glm::vec3(5,2,0),"Managed parenting completion did not preserve world");
+    auto target=scene->CreateEntity("Soon destroyed");auto request=scene->Reparent(child,target,TransformPolicy::KeepLocal);scene->DestroyEntity(target);
+    scene->OnUpdateRuntime(0);
+    Check(scene->GetParentingResult(request).State==ParentingState::Rejected && !uint64_t(scene->GetRelationship(child).Parent),"Destroyed queued target silently unparented/reparented entity");
+    scene->SetPaused(true);auto pending=scene->Reparent(child,parent,TransformPolicy::KeepWorld);scene->OnUpdateRuntime(0);
+    Check(scene->GetParentingResult(pending).State==ParentingState::Applied && scene->GetRelationship(child).Parent==UUID(700),"Paused runtime failed to commit administrative parenting");
+    scene->DestroyEntity(parent);Check(!scene->IsEntityValid(700) && !scene->IsEntityValid(701),"Destroy subtree did not invalidate all managed identities immediately");
+    scene->OnUpdateRuntime(0);Check(!instance->GetManagedObject() && !scene->GetEntityByUUID(701),"Deferred subtree cleanup retained script instance/entity");
+    scene->OnRuntimeStop();
+    std::cout<<"PASS: actual managed local/world/matrix ABI, queued parent getters/completion, destroyed-target rejection, paused boundary and immediate subtree invalidation/cleanup\n";
+}
 static void SerializerChecks(const std::filesystem::path& directory) {
     auto source=CreateRef<Scene>(); auto entity=source->CreateEntityWithUUID(200,u8"sérialisation-é");
-    auto& transform=entity.GetComponent<TransformComponent>(); transform.Translation={1,2,3}; transform.Rotation={0.1f,0.2f,0.3f}; transform.Scale={2,3,4};
+    auto& transform=entity.GetComponent<TransformComponent>(); transform.Translation={1,2,3}; transform.Rotation={0,0,0.3f}; transform.Scale={2,2,4};
     auto& camera=entity.AddComponent<CameraComponent>(); camera.Primary=false; camera.FixedAspectRatio=true; camera.Camera.SetOrthographic(7,-2,5);
     auto& sprite=entity.AddComponent<SpriteRendererComponent>(); sprite.Color={0.1f,0.2f,0.3f,0.4f};
     auto& circle=entity.AddComponent<CircleRendererComponent>(); circle.Thickness=0.25f; circle.Fade=0.02f; circle.Color={1,0,0,1};
@@ -224,6 +247,7 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
     bool staleTicket=false;try{ScriptEngine::CommitAssembly(std::move(staged));}catch(const std::exception&){staleTicket=true;}
     Check(staleTicket && !ScriptEngine::EntityClassExists("Migration.SceneProbe"),"Stale assembly ticket published after project retirement");
     ScriptEngine::Init(target);
+    ManagedHierarchyChecks();
     SerializerChecks(fixture.Path);
     auto type=ScriptEngine::GetEntityClass("Migration.SceneProbe"); Check(bool(type),"Full ScriptEngine failed to discover fixture class");
     const auto& fields=type->GetFields();

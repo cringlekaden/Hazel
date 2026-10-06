@@ -62,19 +62,20 @@ def validate_project(descriptor, config, assets):
     for scene in scenes:
         content = yaml.safe_load(scene.read_text(encoding='utf-8'))
         if not isinstance(content, dict) or 'Scene' not in content: raise RuntimeError('Invalid scene: ' + str(scene))
-        if scene.suffix=='.hprefab' and (content.get('PrefabVersion')!=1 or len(content.get('Entities',[]))!=1):
+        if scene.suffix=='.hprefab' and (content.get('PrefabVersion') not in (1,2) or (content.get('PrefabVersion')==1 and len(content.get('Entities',[]))!=1)):
             raise RuntimeError('Unsupported prefab version/entity count: '+str(scene))
-        ids = set()
+        ids = {entity['Entity'] for entity in content.get('Entities', []) or []}
+        seen = set()
         for entity in content.get('Entities', []) or []:
             ident = entity['Entity']
-            if ident in ids: raise RuntimeError('Duplicate entity UUID in ' + str(scene))
-            ids.add(ident)
+            if ident in seen: raise RuntimeError('Duplicate entity UUID in ' + str(scene))
+            seen.add(ident)
             for field in entity.get('ScriptComponent',{}).get('ScriptFields',[]) or []:
                 if field.get('Type')=='Prefab' and field.get('Data'):
                     reference=field['Data']
                     if Path(reference).suffix!='.hprefab' or resolve_owned(assets,reference) not in included:
                         raise RuntimeError('Missing/excluded prefab reference '+str(reference)+' in '+str(scene))
-                if scene.suffix=='.hprefab' and field.get('Type')=='Entity' and field.get('Data') not in (0,ident):
+                if scene.suffix=='.hprefab' and field.get('Type')=='Entity' and field.get('Data') not in ids | {0}:
                     raise RuntimeError('Unsafe external entity reference in prefab '+str(scene))
             texture = entity.get('SpriteRendererComponent', {}).get('TexturePath')
             if texture and resolve_owned(assets,texture) not in included:

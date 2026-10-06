@@ -1,6 +1,7 @@
-#include "Entity.h"
-#include "Scene.h"
 #include "hzpch.h"
+#include "Entity.h"
+#include <box2d/b2_body.h>
+#include "Scene.h"
 #include <algorithm>
 #include <cmath>
 #include <glm/gtx/quaternion.hpp>
@@ -26,7 +27,12 @@ void Compact(std::unordered_map<UUID, Relationship> &graph, UUID parent) {
         graph.at(ids[i]).Order = uint32_t(i);
 }
 } // namespace
+void Scene::CheckThread() const {
+    if (std::this_thread::get_id() != m_Thread)
+        throw std::logic_error("Scene hierarchy requires its owning thread");
+}
 void Scene::CheckEntity(Entity e) const {
+    CheckThread();
     if (!e.BelongsTo(this) || !e || !IsEntityValid(e.GetUUID()))
         throw std::invalid_argument("Hierarchy operation requires a live entity in this scene");
 }
@@ -35,6 +41,7 @@ Relationship Scene::GetRelationship(Entity e) const {
     return m_Relationships.at(e.GetUUID());
 }
 std::vector<UUID> Scene::GetChildren(UUID parent) const {
+    CheckThread();
     std::vector<UUID> result;
     auto it = m_Children.find(parent);
     if (it != m_Children.end())
@@ -135,7 +142,14 @@ void Scene::ValidateGraph(const Relationships &graph, const Transforms &transfor
                                      m_Registry.has<CircleCollider2DComponent>(handle)))
             throw std::runtime_error(
                 "Rigidbody/collider owners must be roots; visual children may follow a root body");
-        World(id, graph, transforms);
+        const auto override = transforms.find(id);
+        ValidatePhysics(Entity(handle, const_cast<Scene *>(this)),
+                        override != transforms.end() ? override->second
+                                                     : m_Registry.get<TransformComponent>(handle));
+        const auto world = World(id, graph, transforms);
+        if (m_Registry.has<CameraComponent>(handle) &&
+            m_Registry.get<CameraComponent>(handle).Primary)
+            Finite(glm::inverse(world));
     }
     for (const auto &[parent, values] : orders) {
         uint32_t next = 0;
@@ -144,7 +158,10 @@ void Scene::ValidateGraph(const Relationships &graph, const Transforms &transfor
                 throw std::runtime_error("Hierarchy sibling order must be contiguous from zero");
     }
 }
-void Scene::ValidateHierarchy() const { ValidateGraph(m_Relationships, {}); }
+void Scene::ValidateHierarchy() const {
+    CheckThread();
+    ValidateGraph(m_Relationships, {});
+}
 void Scene::RebuildChildren() {
     m_Children.clear();
     for (const auto &[id, rel] : m_Relationships)
@@ -155,16 +172,72 @@ void Scene::RebuildChildren() {
         });
 }
 void Scene::ValidateComponentPlacement(Entity e, bool physics) const {
+    CheckThread();
     if (physics && m_Relationships.count(e.GetUUID()) &&
         uint64_t(m_Relationships.at(e.GetUUID()).Parent))
         throw std::runtime_error("Unparent this entity before adding a Rigidbody/collider; only "
                                  "root physics owners are supported");
 }
+void Scene::ValidatePhysics(Entity e, const TransformComponent &tc, const Rigidbody2DComponent *rb,
+                            const BoxCollider2DComponent *box,
+                            const CircleCollider2DComponent *circle) const {
+    if (!rb && e.HasComponent<Rigidbody2DComponent>())
+        rb = &e.GetComponent<Rigidbody2DComponent>();
+    if (!box && e.HasComponent<BoxCollider2DComponent>())
+        box = &e.GetComponent<BoxCollider2DComponent>();
+    if (!circle && e.HasComponent<CircleCollider2DComponent>())
+        circle = &e.GetComponent<CircleCollider2DComponent>();
+    if (!rb && !box && !circle)
+        return;
+    Finite(tc.GetTransform());
+    if (std::abs(tc.Rotation.x) > 1e-5f || std::abs(tc.Rotation.y) > 1e-5f || tc.Scale.x <= 0 ||
+        tc.Scale.y <= 0)
+        throw std::runtime_error("Physics needs planar Z rotation and positive XY scale: " +
+                                 e.GetName());
+    if (rb && (rb->Type != Rigidbody2DComponent::BodyType::Static &&
+               rb->Type != Rigidbody2DComponent::BodyType::Dynamic &&
+               rb->Type != Rigidbody2DComponent::BodyType::Kinematic))
+        throw std::runtime_error("Invalid physics body type: " + e.GetName());
+    if (rb && !std::isfinite(rb->GravityScale))
+        throw std::runtime_error("Non-finite gravity scale: " + e.GetName());
+    auto material = [&](float density, float friction, float restitution, float threshold) {
+        if (!std::isfinite(density) || !std::isfinite(friction) || !std::isfinite(restitution) ||
+            !std::isfinite(threshold) || density < 0 || friction < 0 || restitution < 0 ||
+            threshold < 0)
+            throw std::runtime_error("Invalid physics material: " + e.GetName());
+    };
+    if (box) {
+        material(box->Density, box->Friction, box->Restitution, box->RestitutionThreshold);
+        if (!std::isfinite(box->Offset.x) || !std::isfinite(box->Offset.y) ||
+            !std::isfinite(box->Size.x * tc.Scale.x) || !std::isfinite(box->Size.y * tc.Scale.y) ||
+            box->Size.x * tc.Scale.x <= 0 || box->Size.y * tc.Scale.y <= 0)
+            throw std::runtime_error("Invalid box collider dimensions/offset: " + e.GetName());
+    }
+    if (circle) {
+        material(circle->Density, circle->Friction, circle->Restitution,
+                 circle->RestitutionThreshold);
+        if (std::abs(tc.Scale.x - tc.Scale.y) > 1e-5f * std::max(tc.Scale.x, tc.Scale.y))
+            throw std::runtime_error(
+                "Circle physics requires uniform XY scale; ellipses are unsupported: " +
+                e.GetName());
+        if (!std::isfinite(circle->Offset.x) || !std::isfinite(circle->Offset.y) ||
+            !std::isfinite(circle->Radius * tc.Scale.x) || circle->Radius * tc.Scale.x <= 0)
+            throw std::runtime_error("Invalid circle collider dimensions/offset: " + e.GetName());
+    }
+}
 void Scene::SetLocalTransform(Entity e, const TransformComponent &value) {
     CheckEntity(e);
     Transforms change{{e.GetUUID(), value}};
     ValidateGraph(m_Relationships, change);
+    const auto &accepted = e.GetComponent<TransformComponent>();
+    if (e.HasComponent<Rigidbody2DComponent>() &&
+        e.GetComponent<Rigidbody2DComponent>().RuntimeBody && value.Scale != accepted.Scale)
+        throw std::runtime_error("Runtime physics scale is fixed at body creation; set initial "
+                                 "placement before startup");
     e.GetComponent<TransformComponent>() = value;
+    if (e.HasComponent<Rigidbody2DComponent>())
+        if (auto *body = static_cast<b2Body *>(e.GetComponent<Rigidbody2DComponent>().RuntimeBody))
+            body->SetTransform({value.Translation.x, value.Translation.y}, value.Rotation.z);
 }
 void Scene::SetWorldTransform(Entity e, const glm::mat4 &value) {
     CheckEntity(e);
@@ -247,6 +320,7 @@ uint64_t Scene::Reparent(Entity child, Entity parent, TransformPolicy mode) {
     return request;
 }
 ParentingResult Scene::GetParentingResult(uint64_t request) const {
+    CheckThread();
     auto it = m_ParentingResults.find(request);
     return it == m_ParentingResults.end() ? ParentingResult{} : it->second;
 }
@@ -263,6 +337,24 @@ void Scene::FlushParenting() {
         }
     while (m_ParentingResults.size() > 128)
         m_ParentingResults.erase(m_ParentingResults.begin());
+}
+std::vector<UUID> Scene::OrderedForCleanup() const {
+    std::vector<UUID> result, pending;
+    auto roots = m_Children.find(UUID(0));
+    if (roots != m_Children.end())
+        pending.assign(roots->second.rbegin(), roots->second.rend());
+    while (!pending.empty()) {
+        auto id = pending.back();
+        pending.pop_back();
+        result.push_back(id);
+        auto children = m_Children.find(id);
+        if (children != m_Children.end())
+            pending.insert(pending.end(), children->second.rbegin(), children->second.rend());
+        if (result.size() > MaxEntities)
+            throw std::runtime_error("Invalid cleanup hierarchy bounds");
+    }
+    std::reverse(result.begin(), result.end());
+    return result;
 }
 void Scene::RemoveRelationship(UUID id) {
     const auto it = m_Relationships.find(id);

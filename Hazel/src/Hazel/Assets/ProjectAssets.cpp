@@ -1,5 +1,7 @@
 #include "hzpch.h"
 #include "ProjectAssets.h"
+#include "Hazel/Scene/SceneSerializer.h"
+#include "Hazel/Scene/Prefab.h"
 #include "Hazel/Core/DocumentSchema.h"
 #include "Hazel/Core/FileDocument.h"
 #include "Hazel/Project/Project.h"
@@ -81,7 +83,11 @@ std::vector<SpriteAssetUse> FindSpriteAssetUses(const std::filesystem::path& roo
     for(auto file:files) {
         if(file.extension()!=".hazel" && file.extension()!=".hprefab") continue;
         auto path=Project::ResolveOwnedAsset(root,file);auto doc=YAML::Load(FileDocument::Read(path));
-        DocumentSchema::Scene(doc,file.extension()==".hprefab");
+        if(file.extension()==".hprefab")Prefab::Load(root,file,true,ResourceLoading::MetadataOnly);
+        else {
+            auto scene=CreateRef<Scene>();SceneSerializer loader(scene,root,true);
+            if(!loader.DeserializeText(FileDocument::Read(path),false,ResourceLoading::MetadataOnly))throw std::runtime_error(file.generic_u8string()+": "+loader.Report().Error);
+        }
         if(!doc.IsMap() || !doc["Scene"] || (doc["Entities"] && !doc["Entities"].IsSequence())) throw std::runtime_error("Malformed scene/prefab: "+file.generic_u8string());
         for(auto entity:doc["Entities"]) {
             const auto location=file.generic_u8string()+" entity "+entity["Entity"].as<std::string>();

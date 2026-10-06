@@ -301,8 +301,11 @@ namespace Hazel {
 			glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
 
 			// Entity transform
-			auto& tc = selectedEntity.GetComponent<TransformComponent>();
-			glm::mat4 transform = tc.GetTransform();
+			glm::mat4 transform = m_ActiveScene->GetWorldTransform(selectedEntity);
+            bool representable=true;
+            try {Scene::ExactTRS(transform);}catch(const std::exception& e){representable=false;m_GizmoError=e.what();}
+            if(representable) {
+            if(!ImGuizmo::IsUsing())m_GizmoError.clear();
 
 			// Snapping
 			bool snap = Input::IsKeyPressed(Key::LeftControl);
@@ -317,16 +320,14 @@ namespace Hazel {
 				(ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::LOCAL, glm::value_ptr(transform),
 				nullptr, snap ? snapValues : nullptr);
 
-			if (ImGuizmo::IsUsing())
-			{
-				glm::vec3 translation, rotation, scale;
-				if(m_Authoring->Availability(EditorAction::EditScene) && Math::DecomposeTransform(transform, translation, rotation, scale)) {
-				glm::vec3 deltaRotation = rotation - tc.Rotation;
-				tc.Translation = translation;
-				tc.Rotation += deltaRotation;
-				tc.Scale = scale;
+            if(ImGuizmo::IsUsing() && m_Authoring->Availability(EditorAction::EditScene)) {
+                try {m_ActiveScene->SetWorldTransform(selectedEntity,transform);m_GizmoError.clear();}
+                catch(const std::exception& error) {
+                    if(m_GizmoError!=error.what())ActionFailed(error.what());m_GizmoError=error.what();
                 }
-			}
+            }
+            }
+            if(!m_GizmoError.empty())ImGui::TextWrapped("Gizmo: %s. Edit local properties instead.",m_GizmoError.c_str());
 		}
 
 
@@ -370,7 +371,7 @@ namespace Hazel {
 			if (!camera)
 				return;
 
-			Renderer2D::BeginScene(camera.GetComponent<CameraComponent>().Camera, camera.GetComponent<TransformComponent>().GetTransform());
+			Renderer2D::BeginScene(camera.GetComponent<CameraComponent>().Camera, m_ActiveScene->GetWorldTransform(camera));
 		}
 		else
 		{
@@ -404,11 +405,11 @@ namespace Hazel {
 				{
 					auto [tc, cc2d] = view.get<TransformComponent, CircleCollider2DComponent>(entity);
 
-					glm::vec3 translation = tc.Translation + glm::vec3(cc2d.Offset, 0.001f);
-					glm::vec3 scale = tc.Scale * glm::vec3(cc2d.Radius * 2.0f);
-
-					glm::mat4 transform = glm::translate(glm::mat4(1.0f), translation)
-						* glm::scale(glm::mat4(1.0f), scale);
+					glm::vec3 scale(tc.Scale.x*cc2d.Radius*2,tc.Scale.x*cc2d.Radius*2,1);
+                    glm::mat4 transform=glm::translate(glm::mat4(1),tc.Translation)
+                        * glm::rotate(glm::mat4(1),tc.Rotation.z,glm::vec3(0,0,1))
+                        * glm::translate(glm::mat4(1),glm::vec3(cc2d.Offset,.001f))
+                        * glm::scale(glm::mat4(1),scale);
 
 					Renderer2D::DrawCircle(transform, glm::vec4(0, 1, 0, 1), 0.01f);
 				}
@@ -418,10 +419,10 @@ namespace Hazel {
 		// Draw selected entity outline
 		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity())
 		{
-			const TransformComponent& transform = selectedEntity.GetComponent<TransformComponent>();
+			const auto transform = m_ActiveScene->GetWorldTransform(selectedEntity);
             if(auto* sprite=m_ActiveScene->RenderedSprite(selectedEntity)) {
-                for(size_t i=0;i<4;++i)Renderer2D::DrawLine(glm::vec3(transform.GetTransform()*glm::vec4(sprite->Corners[i],0,1)),glm::vec3(transform.GetTransform()*glm::vec4(sprite->Corners[(i+1)%4],0,1)),glm::vec4(1,.5f,0,1));
-            } else Renderer2D::DrawRect(transform.GetTransform(), glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
+                for(size_t i=0;i<4;++i)Renderer2D::DrawLine(glm::vec3(transform*glm::vec4(sprite->Corners[i],0,1)),glm::vec3(transform*glm::vec4(sprite->Corners[(i+1)%4],0,1)),glm::vec4(1,.5f,0,1));
+            } else Renderer2D::DrawRect(transform, glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
 		}
 
 		Renderer2D::EndScene();
@@ -437,6 +438,7 @@ namespace Hazel {
 	void EditorLayer::ClearSceneObservers()
 	{
 		m_HoveredEntity = {};
+        m_GizmoError.clear();
 		m_SceneHierarchyPanel.SetContext(nullptr);
 	}
 

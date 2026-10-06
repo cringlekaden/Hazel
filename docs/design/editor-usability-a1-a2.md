@@ -654,6 +654,56 @@ legacy/future retention, independent scene copying, deletion policies and root
 physics placement. Existing document/settings/recovery/native-generation checks
 pass. No Actions query or physical UI acceptance is claimed.
 
+Integration checkpoint: rendering, text/circles/sprites, cameras, mouse-world input,
+selection outlines and world-space gizmos consume composed matrices. Gizmos refuse
+world shear/reflections/singular poses before ImGuizmo can approximate them;
+local properties remain available. Collider overlays match root fixture offsets
+(unscaled, rotated by the body) and circle radius from uniform XY scale. All
+rigidbody/collider owners remain roots; positive XY dimensions, planar X/Y angles
+and uniform circle XY scale are validated by the shared scene service at component
+addition/replacement, transform edits, deserialization, runtime and export. Runtime
+fixture scale is immutable; position-only managed edits retain exact authored
+rotation/scale instead of round-tripping them through decomposition.
+
+Existing managed Translation/Scale remain world-compatible (roots retain exact
+local values; nested Scale requires representable world TRS). Explicit local
+translation/rotation/scale, exact WorldMatrix, Parent, snapshot Children and queued
+SetParent/Detach with Pending/Applied/Rejected/Expired results are additive to ABI
+contract v1. Parenting commits at lifecycle boundaries even while paused; getters
+read the committed graph. Subtree destruction invalidates every member immediately;
+cleanup and Stop visit children before parents, with existing snapshot callbacks.
+Scene hierarchy operations require the owning thread.
+
+Subtree duplicates allocate all IDs, remap internal entity fields and relationships,
+retain explicit same-scene external fields and insert beside the original.
+Detached prefab v2 has PrefabRoot and one connected subtree; creation rejects
+external entity fields/native factories and never guesses a same-UUID target.
+Instance IDs/fields are fully staged before insertion; rollback retires only new
+owners. Repeated instances are independent. Position-only placement retains root
+rotation/scale; initial placement retains the existing finite/positive-scale
+contract. v1 single-entity assets remain readable; explicit Save writes v2 and
+preserves original bytes. Child selected for creation preserves world placement
+only when exact detached root TRS is representable. Asset paths remain owned by
+the destination project; no nested automatic instantiation or live links exist.
+
+Export uses the same scene deserializer with a CPU-only metadata resource option
+(including null default font ownership), then the existing canonical asset decoder
+and inventory closure. It does not create a second graph/physics reader or require
+GL to validate content. Packaging's entity-reference inventory accepts internal
+subtree IDs rather than just self; native validation gates the connected graph.
+Native project generation remains CPU-only with the v2 root DTO.
+
+Integration verification: targeted Premake Debug build passes with two jobs;
+SceneFoundationSmoke/SceneSmoke pass actual remapping and managed ABI/lifecycle
+checks. SceneGPUSmoke passes nested sprite/camera pixel picking and root-body
+visual descendants on accelerated HD4000 OpenGL 4.2 and software OpenGL 4.1,
+alongside existing rendering/reload/shutdown assertions. Native RuntimeSessionSmoke
+passes retained-session/transition coverage. Native CPU closure checks accept v2
+internal refs/child textures and reject external/self-cycle data without rewriting.
+The serialization fixture now uses valid planar/uniform-circle physics; corrupt
+transition data is written explicitly because serialization correctly rejects it.
+No assertions were weakened and no Actions query or physical UI acceptance ran.
+
 ## Deferred findings
 
 Entity/prefab hierarchy and optional custom caption remain later stages. Stage C adds recovery/schema gates

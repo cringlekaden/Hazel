@@ -7,6 +7,7 @@
 #include "Hazel/Project/Project.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <box2d/b2_body.h>
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -68,6 +69,24 @@ static Ref<Scene> MakeScene(const std::filesystem::path& directory) {
     auto& tc=text.AddComponent<TextComponent>(); tc.TextString=u8"Hazel é"; tc.Kerning=0.1f; tc.LineSpacing=0.2f; tc.Color={0,1,0,1};
     return scene;
 }
+static void HierarchyPixels(const Ref<Framebuffer>& framebuffer) {
+    auto scene=CreateRef<Scene>();scene->OnViewportResize(256,256);
+    auto rig=scene->CreateEntityWithUUID(800,"Camera rig");rig.GetComponent<TransformComponent>().Translation={1,0,0};
+    auto camera=scene->CreateEntityWithUUID(801,"Nested camera");camera.AddComponent<CameraComponent>().Camera.SetOrthographic(4,-1,1);
+    scene->Reparent(camera,rig,TransformPolicy::KeepLocal);
+    auto parent=scene->CreateEntityWithUUID(802,"Visual parent");parent.GetComponent<TransformComponent>().Translation={1.5f,0,0};
+    auto child=scene->CreateEntityWithUUID(803,"Nested sprite");child.AddComponent<SpriteRendererComponent>().Color={1,0,0,1};child.GetComponent<TransformComponent>().Translation={.5f,0,0};
+    scene->Reparent(child,parent,TransformPolicy::KeepLocal);scene->OnRuntimeStart();Begin(framebuffer);scene->OnUpdateRuntime(0);
+    Check(framebuffer->ReadPixel(1,192,128)==int(uint32_t(child)) && framebuffer->ReadPixel(1,128,128)==-1,"Nested sprite/camera world rendering or picking used local transforms");
+    scene->OnRuntimeStop();
+    auto body=scene->CreateEntityWithUUID(804,"Moving root body");body.AddComponent<Rigidbody2DComponent>().Type=Rigidbody2DComponent::BodyType::Dynamic;body.GetComponent<Rigidbody2DComponent>().GravityScale=0;
+    auto follow=scene->CreateEntityWithUUID(805,"Visual follower");follow.AddComponent<SpriteRendererComponent>();follow.GetComponent<TransformComponent>().Translation={0,.75f,0};
+    scene->Reparent(follow,body,TransformPolicy::KeepLocal);scene->OnRuntimeStart();
+    static_cast<b2Body*>(body.GetComponent<Rigidbody2DComponent>().RuntimeBody)->SetLinearVelocity({2,0});
+    Begin(framebuffer);scene->OnUpdateRuntime(.25f);
+    Check(std::abs(glm::vec3(scene->GetWorldTransform(follow)[3]).x-.5f)<1e-4f && framebuffer->ReadPixel(1,96,176)==int(uint32_t(follow)),"Root Box2D motion did not propagate to visual descendant rendering");
+    scene->OnRuntimeStop();std::cout<<"PASS: actual nested sprite/camera world position and picking, root physics motion/visual-child propagation\n";
+}
 class ReloadLayer : public Layer {
 public:
     ReloadLayer(const std::filesystem::path& app,const std::filesystem::path& target,bool& detached,Ref<ScriptClass>& external)
@@ -124,6 +143,7 @@ int main(int argc,char** argv) {
             FramebufferSpecification fs; fs.Width=256; fs.Height=256;
             fs.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
             auto framebuffer=Framebuffer::Create(fs);
+            HierarchyPixels(framebuffer);
             auto source=MakeScene(fixture.Directory);
             const auto file=fixture.Directory/std::filesystem::u8path("scène-é.hazel"); SceneSerializer(source).Serialize(file.generic_u8string());
             auto loaded=CreateRef<Scene>(); loaded->OnViewportResize(256,256);

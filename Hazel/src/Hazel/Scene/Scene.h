@@ -10,6 +10,7 @@
 #include <vector>
 #include <deque>
 #include <map>
+#include <thread>
 #include "Components.h"
 
 class b2World;
@@ -48,8 +49,14 @@ namespace Hazel {
         uint64_t Reparent(Entity entity, Entity parent, TransformPolicy mode = TransformPolicy::KeepWorld);
         ParentingResult GetParentingResult(uint64_t request) const;
         void ValidateHierarchy() const;
+        void CheckThread() const;
         void ValidateComponentPlacement(Entity entity, bool physics) const;
         Entity InstantiateEntity(Entity source, const TransformComponent& transform);
+        static Ref<Scene> ExtractSubtree(Entity root);
+        void ValidatePhysics(Entity entity, const TransformComponent& transform,
+                             const Rigidbody2DComponent* body = nullptr,
+                             const BoxCollider2DComponent* box = nullptr,
+                             const CircleCollider2DComponent* circle = nullptr) const;
         bool IsEntityValid(UUID id) const;
         void CancelPendingLifecycle();
 
@@ -114,7 +121,10 @@ namespace Hazel {
                            Relationships& relations, Transforms& transforms) const;
         void FlushParenting();
         void RemoveRelationship(UUID id);
+        std::vector<UUID> OrderedForCleanup() const;
         void CheckEntity(Entity entity) const;
+        Entity CloneSubtree(Entity source, const TransformComponent* placement,
+                            bool preserveIDs, bool retainExternal, bool sibling);
 		void OnPhysics2DStart();
 		void OnPhysics2DStop();
 		void SynchronizePhysics2D();
@@ -122,6 +132,7 @@ namespace Hazel {
 		void RenderScene(EditorCamera& camera);
 		void AdvanceAnimations(double timestep);
 	private:
+        std::thread::id m_Thread=std::this_thread::get_id();
         Relationships m_Relationships;
         std::unordered_map<UUID, std::vector<UUID>> m_Children;
         struct ParentingCommand { uint64_t Request; UUID Child, Parent; TransformPolicy Mode; };

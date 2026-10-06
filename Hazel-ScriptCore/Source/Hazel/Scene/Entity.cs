@@ -29,8 +29,24 @@ namespace Hazel
         }
         // Invalid immediately, OnDestroy/physics cleanup at a safe callback boundary. Repeated Destroy is harmless.
         public void Destroy() { InternalCalls.Entity_Destroy(ID, SceneIdentity); }
+        public Entity Parent { get { ulong id=InternalCalls.Hierarchy_GetParent(CheckedID); return id==0?null:new Entity(id); } }
+        public Entity[] Children { get { var ids=InternalCalls.Hierarchy_GetChildren(CheckedID); var result=new Entity[ids.Length]; for(int i=0;i<ids.Length;++i)result[i]=new Entity(ids[i]);return result; } }
+        // Queued during runtime. Check Status/Reason after a lifecycle boundary; rejected requests do not change the graph.
+        public ParentingRequest SetParent(Entity parent, ParentingMode mode = ParentingMode.KeepWorld) {
+            ulong parentID=0;
+            if(parent!=null) { if(parent.SceneIdentity!=SceneIdentity)throw new InvalidOperationException("Cannot parent across scenes");parentID=parent.CheckedID; }
+            return new ParentingRequest(SceneIdentity,InternalCalls.Hierarchy_SetParent(CheckedID,parentID,(int)mode));
+        }
+        public ParentingRequest Detach(ParentingMode mode = ParentingMode.KeepWorld) => SetParent(null,mode);
+        public Vector3 LocalTranslation { get { InternalCalls.Transform_GetLocal(CheckedID,0,out Vector3 result);return result; } set { InternalCalls.Transform_SetLocal(CheckedID,0,ref value); } }
+        // Radians, like authored engine rotation.
+        public Vector3 LocalRotation { get { InternalCalls.Transform_GetLocal(CheckedID,1,out Vector3 result);return result; } set { InternalCalls.Transform_SetLocal(CheckedID,1,ref value); } }
+        public Vector3 LocalScale { get { InternalCalls.Transform_GetLocal(CheckedID,2,out Vector3 result);return result; } set { InternalCalls.Transform_SetLocal(CheckedID,2,ref value); } }
+        public Matrix4 WorldMatrix { get { InternalCalls.Transform_GetWorldMatrix(CheckedID,out Matrix4 result);return result; } }
 
-		public Vector3 Scale {
+
+		// Legacy wrappers remain world-space; Scale rejects sheared/nonrepresentable world TRS.
+        public Vector3 Scale {
             get { InternalCalls.TransformComponent_GetScale(CheckedID, out Vector3 result); return result; }
             set { InternalCalls.TransformComponent_SetScale(CheckedID, ref value); }
         }

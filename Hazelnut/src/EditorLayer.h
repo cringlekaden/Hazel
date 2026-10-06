@@ -98,6 +98,7 @@ namespace Hazel {
 
 
 		int m_GizmoType = -1;
+        std::string m_GizmoError;
 
 		bool m_ShowPhysicsColliders = false;
         bool m_ShowStats = true;

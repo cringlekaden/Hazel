@@ -1,5 +1,6 @@
 #include "hzpch.h"
 #include "Scene.h"
+#include "RuntimeSession.h"
 #include "Entity.h"
 
 #include "Components.h"
@@ -32,7 +33,7 @@ namespace Hazel {
 	Scene::~Scene()
 	{
 		if (m_IsRunning) OnRuntimeStop();
-		std::vector<Entity> natives; for(auto e:m_Registry.view<NativeScriptComponent>())natives.emplace_back(e,this);
+		std::vector<Entity> natives; for(auto id:OrderedForCleanup()){auto it=m_EntityMap.find(id);if(it!=m_EntityMap.end() && m_Registry.has<NativeScriptComponent>(it->second))natives.emplace_back(it->second,this);}
         for(auto entity:natives)if(entity)DestroyNativeScript(entity);
         CancelPendingLifecycle(); // Cleanup callbacks may retire gameplay-owned instances.
         m_IsRunning = false;
@@ -128,6 +129,7 @@ namespace Hazel {
 
 	Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
 	{
+        CheckThread();
 		if(m_Stopping)throw std::runtime_error("Scene is stopping; creation is unavailable during cleanup");
         if(!uint64_t(uuid) || m_EntityMap.size()>=MaxEntities)throw std::invalid_argument("Null entity UUID or scene entity limit (10000)");
         if (m_EntityMap.find(uuid) != m_EntityMap.end()) throw std::invalid_argument("Duplicate entity UUID");
@@ -148,6 +150,7 @@ namespace Hazel {
         return m_EntityMap.count(id) && !m_PendingDestroy.count(id) && !m_Destroying.count(id);
     }
     void Scene::DestroyEntity(Entity entity,DestroyPolicy policy,TransformPolicy mode) {
+        CheckThread();
         if(!entity.BelongsTo(this))throw std::invalid_argument("Entity belongs to another scene");
         if(!entity || !IsEntityValid(entity.GetUUID()))return;
         if(policy==DestroyPolicy::KeepChildren) {
@@ -196,24 +199,82 @@ namespace Hazel {
             if(entity && IsEntityValid(id) && entity.HasComponent<ScriptComponent>())ScriptEngine::OnCreateEntity(entity);
         }
     }
-    Entity Scene::InstantiateEntity(Entity source, const TransformComponent& transform) {
-        if(m_Stopping) throw std::runtime_error("Cannot instantiate while the scene is stopping");
-        if(!source) throw std::invalid_argument("Prefab source entity is invalid");
-        for(int i=0;i<3;i++) if(!std::isfinite(transform.Translation[i]) || !std::isfinite(transform.Rotation[i]) || !std::isfinite(transform.Scale[i]) || transform.Scale[i]<=0)
-            throw std::invalid_argument("Initial transform must be finite with positive scale");
-        auto fields=ScriptEngine::GetScriptFieldMap(source);
-        for(auto& [name,field]:fields) if(field.Field.Type==ScriptFieldType::Entity) {
-            auto id=field.GetValue<uint64_t>(); if(id && id!=source.GetUUID()) throw std::runtime_error("Prefab contains an external entity reference: "+name);
+    Entity Scene::CloneSubtree(Entity source,const TransformComponent* placement,bool preserveIDs,bool retainExternal,bool sibling) {
+        if(m_Stopping || !source)throw std::runtime_error("Subtree source unavailable or scene stopping");
+        auto* from=source.m_Scene;
+        if(retainExternal && from!=this)throw std::runtime_error("External scene references can only remain in same-scene duplicates");
+        from->ValidateHierarchy();ValidateHierarchy();
+        const auto sourceIDs=from->GetSubtree(source);
+        if(m_EntityMap.size()+sourceIDs.size()>MaxEntities)throw std::runtime_error("Subtree would exceed scene's 10000-entity limit");
+        std::unordered_map<UUID,UUID> remap;
+        std::unordered_set<UUID> allocated;
+        for(auto id:sourceIDs) {
+            UUID next=id;
+            if(!preserveIDs)do{next=UUID();}while(!uint64_t(next) || m_EntityMap.count(next) || from->m_EntityMap.count(next) || allocated.count(next));
+            if(m_EntityMap.count(next))throw std::runtime_error("Subtree identity already exists in destination");
+            remap.emplace(id,next);allocated.insert(next);
         }
-        auto instance=CreateEntity(source.GetName());
+        auto staged=CreateRef<Scene>();staged->SetAssets(m_Assets?m_Assets:from->m_Assets);
+        for(auto id:sourceIDs)staged->CreateEntityWithUUID(remap.at(id),from->GetEntityByUUID(id).GetName());
+        for(auto id:sourceIDs) {
+            auto original=from->GetEntityByUUID(id);auto target=staged->GetEntityByUUID(remap.at(id));
+            CopyComponentIfExists(AllComponents{},target,original);
+            auto stored=from->m_ScriptFields.find(id);
+            auto fields=stored==from->m_ScriptFields.end()?ScriptFieldMap{}:stored->second;
+            for(auto& [name,field]:fields)if(field.Field.Type==ScriptFieldType::Entity) {
+                auto reference=UUID(field.GetValue<uint64_t>());
+                if(remap.count(reference))field.SetValue<uint64_t>(remap.at(reference));
+                else if(uint64_t(reference) && !retainExternal)throw std::runtime_error("External entity reference in field '"+name+"' on '"+original.GetName()+"'. Clear it or include that entity in the subtree");
+            }
+            staged->m_ScriptFields[target.GetUUID()]=std::move(fields);
+        }
+        // Copy relationships only after every component and identity is staged.
+        for(auto id:sourceIDs) {
+            const auto relation=from->m_Relationships.at(id);
+            staged->m_Relationships[remap.at(id)]=id==source.GetUUID()?Relationship{}:Relationship{remap.at(relation.Parent),relation.Order};
+        }
+        const auto root=remap.at(source.GetUUID());
+        if(placement)staged->GetEntityByUUID(root).GetComponent<TransformComponent>()=*placement;
+        staged->RebuildChildren();staged->ValidateHierarchy();
+        if(m_IsRunning)RuntimeSession::Validate(staged);
+        const auto accepted=m_Relationships;
+        std::vector<UUID> inserted;
         try {
-            CopyComponentIfExists(AllComponents{},instance,source);
-            instance.GetComponent<TransformComponent>()=transform;
-            for(auto& [name,field]:fields) if(field.Field.Type==ScriptFieldType::Entity && field.GetValue<uint64_t>()) field.SetValue<uint64_t>(instance.GetUUID());
-            ScriptEngine::GetScriptFieldMap(instance)=std::move(fields);
-            if(m_IsRunning) SynchronizePhysics2D(); // Initial transform/fields are complete; body is usable by the caller.
-            return instance;
-        } catch(...) { DestroyEntityNow(instance); throw; }
+            for(auto id:sourceIDs) {
+                const auto next=remap.at(id);auto original=staged->GetEntityByUUID(next);
+                auto entity=CreateEntityWithUUID(next,original.GetName());inserted.push_back(next);
+                CopyComponentIfExists(AllComponents{},entity,original);
+                m_ScriptFields[next]=staged->m_ScriptFields.at(next);
+            }
+            for(auto id:sourceIDs)m_Relationships[remap.at(id)]=staged->m_Relationships.at(remap.at(id));
+            if(sibling) {
+                auto relation=from->m_Relationships.at(source.GetUUID());
+                for(auto& [id,edge]:m_Relationships)if(id!=root && edge.Parent==relation.Parent && edge.Order>relation.Order)++edge.Order;
+                m_Relationships[root]={relation.Parent,relation.Order+1};
+            } else {
+                uint32_t count=0;for(const auto& [id,edge]:accepted)if(!uint64_t(edge.Parent))++count;
+                m_Relationships[root]={UUID(0),count};
+            }
+            RebuildChildren();ValidateHierarchy();
+            if(m_IsRunning)SynchronizePhysics2D();
+            return GetEntityByUUID(root);
+        }catch(...) {
+            for(auto it=inserted.rbegin();it!=inserted.rend();++it){auto found=m_EntityMap.find(*it);if(found!=m_EntityMap.end())DestroyEntityNow({found->second,this});}
+            m_Relationships=accepted;RebuildChildren();
+            m_PendingStart.erase(std::remove_if(m_PendingStart.begin(),m_PendingStart.end(),[&](UUID id){return allocated.count(id);}),m_PendingStart.end());
+            throw;
+        }
+    }
+    Entity Scene::InstantiateEntity(Entity source,const TransformComponent& transform) {
+        for(int i=0;i<3;++i)if(!std::isfinite(transform.Translation[i]) || !std::isfinite(transform.Rotation[i]) || !std::isfinite(transform.Scale[i]) || transform.Scale[i]<=0)throw std::runtime_error("Initial prefab transform must be finite with positive scale");
+        return CloneSubtree(source,&transform,false,false,false);
+    }
+    Ref<Scene> Scene::ExtractSubtree(Entity root) {
+        if(!root)throw std::runtime_error("Select a live subtree root");
+        auto scene=CreateRef<Scene>();scene->SetAssets(root.m_Scene->GetAssets());scene->SetName(root.GetName());
+        auto placement=root.GetComponent<TransformComponent>();
+        if(uint64_t(root.m_Scene->GetRelationship(root).Parent))placement=ExactTRS(root.m_Scene->GetWorldTransform(root));
+        scene->CloneSubtree(root,&placement,true,false,false);return scene;
     }
     void Scene::DestroyEntityNow(Entity entity)
     {
@@ -245,7 +306,7 @@ namespace Hazel {
 		// Scripting
 		{
 			ScriptEngine::OnRuntimeStart(this);
-            for(auto e:m_Registry.view<ScriptComponent>()) m_PendingStart.push_back(m_Registry.get<IDComponent>(e).ID);
+            for(auto root:GetChildren())for(auto id:GetSubtree(GetEntityByUUID(root)))if(GetEntityByUUID(id).HasComponent<ScriptComponent>())m_PendingStart.push_back(id);
             FlushLifecycle();
 		}
 	}
@@ -255,7 +316,7 @@ namespace Hazel {
 		m_Stopping = true; CancelPendingLifecycle();
         if (ScriptEngine::GetSceneContext() == this) ScriptEngine::OnRuntimeStop();
 
-		std::vector<Entity> natives; for(auto e:m_Registry.view<NativeScriptComponent>())natives.emplace_back(e,this);
+		std::vector<Entity> natives; for(auto id:OrderedForCleanup()){auto it=m_EntityMap.find(id);if(it!=m_EntityMap.end() && m_Registry.has<NativeScriptComponent>(it->second))natives.emplace_back(it->second,this);}
         for(auto entity:natives)if(entity)DestroyNativeScript(entity);
         CancelPendingLifecycle(); // Cleanup callbacks may retire gameplay-owned instances.
         m_IsRunning = false;
@@ -287,12 +348,12 @@ namespace Hazel {
 			{
 				// C# Entity OnUpdate
                 std::vector<UUID> updates;
-                for(auto e:m_Registry.view<ScriptComponent>()) updates.push_back(m_Registry.get<IDComponent>(e).ID);
+                for(auto root:GetChildren())for(auto id:GetSubtree(GetEntityByUUID(root)))if(GetEntityByUUID(id).HasComponent<ScriptComponent>())updates.push_back(id);
                 for(auto id:updates) if(IsEntityValid(id) && ScriptEngine::GetEntityScriptInstance(id))
                     ScriptEngine::OnUpdateEntity(GetEntityByUUID(id),ts);
 
                 std::vector<UUID> natives;
-                for(auto e:m_Registry.view<NativeScriptComponent>()) natives.push_back(m_Registry.get<IDComponent>(e).ID);
+                for(auto root:GetChildren())for(auto id:GetSubtree(GetEntityByUUID(root)))if(GetEntityByUUID(id).HasComponent<NativeScriptComponent>())natives.push_back(id);
                 for(auto id:natives) {
                     if(!IsEntityValid(id)) continue;
                     auto entity=GetEntityByUUID(id); auto& nsc=entity.GetComponent<NativeScriptComponent>();
@@ -319,6 +380,7 @@ namespace Hazel {
 				for (auto e : view)
 				{
 					Entity entity = { e, this };
+                    if(!IsEntityValid(entity.GetUUID()))continue;
 					auto& transform = entity.GetComponent<TransformComponent>();
 					auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
 
@@ -341,11 +403,12 @@ namespace Hazel {
 			for (auto entity : view)
 			{
 				auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
+                if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID))continue;
 
-				if (camera.Primary)
+				if (camera.Primary && IsEntityValid(m_Registry.get<IDComponent>(entity).ID))
 				{
 					mainCamera = &camera.Camera;
-					cameraTransform = transform.GetTransform();
+					cameraTransform = GetWorldTransform({entity,this});
 					break;
 				}
 			}
@@ -361,10 +424,11 @@ namespace Hazel {
 				for (auto entity : group)
 				{
 					auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
+                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID))continue;
 
                     auto* draw=RenderedSprite(Entity(entity,this));
-                    if(draw) Renderer2D::DrawSprite(transform.GetTransform(),*draw,sprite.Color,(int)entity);
-                    else Renderer2D::DrawQuad(transform.GetTransform(),glm::vec4(1,0,1,1),(int)entity);
+                    if(draw) Renderer2D::DrawSprite(GetWorldTransform({entity,this}),*draw,sprite.Color,(int)entity);
+                    else Renderer2D::DrawQuad(GetWorldTransform({entity,this}),glm::vec4(1,0,1,1),(int)entity);
 				}
 			}
 
@@ -374,8 +438,9 @@ namespace Hazel {
 				for (auto entity : view)
 				{
 					auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
+                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID))continue;
 
-					Renderer2D::DrawCircle(transform.GetTransform(), circle.Color, circle.Thickness, circle.Fade, (int)entity);
+					Renderer2D::DrawCircle(GetWorldTransform({entity,this}), circle.Color, circle.Thickness, circle.Fade, (int)entity);
 				}
 			}
 
@@ -385,8 +450,9 @@ namespace Hazel {
 				for (auto entity : view)
 				{
 					auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
+                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID))continue;
 
-					Renderer2D::DrawString(text.TextString, transform.GetTransform(), text, (int)entity);
+					Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
 				}
 			}
 
@@ -413,6 +479,7 @@ namespace Hazel {
 				for (auto e : view)
 				{
 					Entity entity = { e, this };
+                    if(!IsEntityValid(entity.GetUUID()))continue;
 					auto& transform = entity.GetComponent<TransformComponent>();
 					auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
 
@@ -459,7 +526,7 @@ namespace Hazel {
 		for (auto entity : view)
 		{
 			const auto& camera = view.get<CameraComponent>(entity);
-			if (camera.Primary)
+			if (camera.Primary && IsEntityValid(m_Registry.get<IDComponent>(entity).ID))
 				return Entity{entity, this};
 		}
 		return {};
@@ -471,16 +538,9 @@ namespace Hazel {
 		m_StepFrames = frames;
 	}
 
-	Entity Scene::DuplicateEntity(Entity entity)
-	{
-		// Copy name because we're going to modify component data structure
-		std::string name = entity.GetName();
-		Entity newEntity = CreateEntity(name);
-		CopyComponentIfExists(AllComponents{}, newEntity, entity);
-		if (entity.HasComponent<ScriptComponent>())
-			ScriptEngine::GetScriptFieldMap(newEntity) = ScriptEngine::GetScriptFieldMap(entity);
-		return newEntity;
-	}
+    Entity Scene::DuplicateEntity(Entity entity) {
+        CheckEntity(entity);return CloneSubtree(entity,nullptr,false,true,true);
+    }
 
 	Entity Scene::FindEntityByName(std::string_view name)
 	{
@@ -488,7 +548,7 @@ namespace Hazel {
 		for (auto entity : view)
 		{
 			const TagComponent& tc = view.get<TagComponent>(entity);
-			if (tc.Tag == name)
+			if (tc.Tag == name && IsEntityValid(m_Registry.get<IDComponent>(entity).ID))
 				return Entity{ entity, this };
 		}
 		return {};
@@ -542,6 +602,7 @@ namespace Hazel {
 
 	void Scene::OnPhysics2DStart()
 	{
+        ValidateHierarchy();
 		if (m_PhysicsWorld) return;
 		m_PhysicsWorld = CreateScope<b2World>(b2Vec2{ 0.0f, -9.8f });
 		SynchronizePhysics2D();
@@ -550,10 +611,12 @@ namespace Hazel {
 	void Scene::SynchronizePhysics2D()
 	{
 		if (!m_PhysicsWorld) return;
+        ValidateHierarchy();
 		auto view = m_Registry.view<Rigidbody2DComponent>();
 		for (auto e : view)
 		{
 			Entity entity = { e, this };
+            if(!IsEntityValid(entity.GetUUID()))continue;
 			auto& transform = entity.GetComponent<TransformComponent>();
 			auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
 
@@ -623,10 +686,11 @@ namespace Hazel {
 			for (auto entity : group)
 			{
 				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
+                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID))continue;
 
                 auto* draw=RenderedSprite(Entity(entity,this));
-                if(draw) Renderer2D::DrawSprite(transform.GetTransform(),*draw,sprite.Color,(int)entity);
-                else Renderer2D::DrawQuad(transform.GetTransform(),glm::vec4(1,0,1,1),(int)entity);
+                if(draw) Renderer2D::DrawSprite(GetWorldTransform({entity,this}),*draw,sprite.Color,(int)entity);
+                else Renderer2D::DrawQuad(GetWorldTransform({entity,this}),glm::vec4(1,0,1,1),(int)entity);
 			}
 		}
 
@@ -636,8 +700,9 @@ namespace Hazel {
 			for (auto entity : view)
 			{
 				auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
+                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID))continue;
 
-				Renderer2D::DrawCircle(transform.GetTransform(), circle.Color, circle.Thickness, circle.Fade, (int)entity);
+				Renderer2D::DrawCircle(GetWorldTransform({entity,this}), circle.Color, circle.Thickness, circle.Fade, (int)entity);
 			}
 		}
 
@@ -647,8 +712,9 @@ namespace Hazel {
 			for (auto entity : view)
 			{
 				auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
+                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID))continue;
 
-				Renderer2D::DrawString(text.TextString, transform.GetTransform(), text, (int)entity);
+				Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
 			}
 		}
 
