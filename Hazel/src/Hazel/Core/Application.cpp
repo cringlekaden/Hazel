@@ -30,6 +30,8 @@ namespace Hazel {
 
 			m_Window = Window::Create(WindowProps(m_Specification.Name));
 			m_Window->SetEventCallback(HZ_BIND_EVENT_FN(Application::OnEvent));
+            m_Window->SetVSync(m_Specification.WindowVSync);
+            HZ_CORE_INFO("Main-window requested swap interval: {} (submitted; driver/compositor timing unmeasured)",m_Specification.WindowVSync?1:0);
 
 			Renderer::Init(m_Specification.Rendering);
 

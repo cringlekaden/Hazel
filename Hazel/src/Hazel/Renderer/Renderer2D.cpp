@@ -703,6 +703,7 @@ namespace Hazel {
 		s_Data->Stats = {};
 	}
 
+	Shader::ProgramLoadingPath Renderer2D::GetQuadShaderLoadingPath() { if(!s_Data || !s_Data->QuadShader)throw std::logic_error("Renderer2D shaders are not initialized"); return s_Data->QuadShader->GetProgramLoadingPath(); }
 	Renderer2D::Statistics Renderer2D::GetStats()
 	{
 		return s_Data->Stats;

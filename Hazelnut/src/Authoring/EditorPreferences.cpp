@@ -25,7 +25,7 @@ namespace Hazel {
             DocumentSchema::Keys(data,
                                  {"Version", "Python", "SDK", "ScriptEditor", "UIScale",
                                   "ShowColliders", "ConsoleCapture", "RecentProjects",
-                                  "RestoreSession", "VSync"},
+                                  "RestoreSession", "VSync", "DebugOutput"},
                                  "Preferences");
             if (data["Version"].as<int>() != 1)
                 throw std::runtime_error("Unsupported preferences version");
@@ -46,6 +46,7 @@ namespace Hazel {
                 parsed.ShowColliders = data["ShowColliders"].as<bool>();
             if (data["RestoreSession"])
                 parsed.RestoreSession = data["RestoreSession"].as<bool>();
+            if (data["DebugOutput"])parsed.DebugOutput=RendererPolicy::ParseDebug(data["DebugOutput"].as<std::string>());
             if (data["VSync"])
                 parsed.VSync = data["VSync"].as<bool>();
             if (data["ConsoleCapture"])
@@ -68,6 +69,7 @@ namespace Hazel {
         if (!std::isfinite(UIScale) || UIScale < .8f || UIScale > 2 || ConsoleCapture < 0 ||
             ConsoleCapture > 5 || RecentProjects.size() > 12)
             throw std::runtime_error("Invalid preference values");
+        RendererPolicy::DebugName(DebugOutput); // Validate before creating/writing anything.
         for (const auto *value : {&Python, &SDK, &ScriptEditor})
             if (value->size() > 32768 || value->find('\0') != std::string::npos)
                 throw std::runtime_error("Invalid tool path in preferences");
@@ -81,7 +83,8 @@ namespace Hazel {
         for (auto &path : RecentProjects)
             out << path;
         out << YAML::EndSeq << YAML::Key << "RestoreSession" << YAML::Value << RestoreSession
-            << YAML::Key << "VSync" << YAML::Value << VSync << YAML::EndMap;
+            << YAML::Key << "VSync" << YAML::Value << VSync
+            << YAML::Key << "DebugOutput" << YAML::Value << RendererPolicy::DebugName(DebugOutput) << YAML::EndMap;
         if (!out.good())
             throw std::runtime_error(out.GetLastError());
         std::filesystem::create_directories(Location().parent_path());

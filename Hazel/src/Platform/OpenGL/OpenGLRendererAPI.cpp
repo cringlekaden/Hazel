@@ -25,6 +25,7 @@ namespace Hazel {
     {
         HZ_PROFILE_FUNCTION();
         OpenGLCapabilities::Configure(requested);
+        HZ_CORE_INFO("Renderer requests/effective:\n{}", RendererPolicy::Describe(OpenGLCapabilities::GetResolution()));
         const auto& caps = OpenGLCapabilities::Get();
         const auto& settings = OpenGLCapabilities::GetSettings();
         HZ_CORE_INFO("Renderer paths: bind-based OpenGL 4.1 resources; {}; {} texture slots (device {}); debug output {}",
@@ -82,6 +83,7 @@ namespace Hazel {
     }
     void OpenGLRendererAPI::Shutdown() { OpenGLCapabilities::Reset(); }
     const RendererCapabilities& OpenGLRendererAPI::GetCapabilities() const { return OpenGLCapabilities::Get(); }
+    const RendererResolution& OpenGLRendererAPI::GetResolution() const { return OpenGLCapabilities::GetResolution(); }
     const RendererSettings& OpenGLRendererAPI::GetSettings() const { return OpenGLCapabilities::GetSettings(); }
     std::uint32_t OpenGLRendererAPI::GetMaxTextureSlots() const
     {

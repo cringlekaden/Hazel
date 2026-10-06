@@ -1,4 +1,5 @@
 #pragma once
+#include "Hazel/Renderer/Shader.h"
 
 #include "Hazel/Renderer/OrthographicCamera.h"
 
@@ -71,6 +72,7 @@ namespace Hazel {
 		};
 		static void ResetStats();
 		static Statistics GetStats();
+        static Shader::ProgramLoadingPath GetQuadShaderLoadingPath();
 
 	private:
 		static void StartBatch();

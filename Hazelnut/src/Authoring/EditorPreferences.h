@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include "Hazel/Renderer/RendererPolicy.h"
 namespace Hazel
 {
 struct EditorPreferences
@@ -10,6 +11,7 @@ struct EditorPreferences
 	float UIScale = 1.0f;
 	bool ShowColliders = false, RestoreSession = true, VSync = true;
     int ConsoleCapture = 2;
+    DebugOutputRequest DebugOutput = DebugOutputRequest::Automatic;
 	std::vector<std::string> RecentProjects;
 	static std::filesystem::path Location();
 	static EditorPreferences Load(std::string &diagnostic);

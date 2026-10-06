@@ -1,5 +1,6 @@
 #include "hzpch.h"
 #include "DocumentSchema.h"
+#include "Hazel/Project/RendererRequestsSerializer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include <set>
 #include <cmath>
@@ -65,7 +66,8 @@ bool Project(const YAML::Node& root)
     Structure(root);
     Keys(root, {"Project"}, "root");
     auto project = root["Project"];
-    Keys(project, {"Version", "Name", "ScriptProject", "StartScene", "AssetDirectory", "ScriptModulePath", "AuthoringVersion"}, "Project");
+    Keys(project, {"Version", "Name", "ScriptProject", "StartScene", "AssetDirectory", "ScriptModulePath", "AuthoringVersion", "Rendering"}, "Project");
+    if(project["Rendering"])RendererRequestsSerializer::Read(project["Rendering"]);
     if(project["AuthoringVersion"] && project["AuthoringVersion"].as<int>()!=1)
         throw std::runtime_error("Unsupported project authoring/template contract; use a compatible editor");
     if (project["Version"] && project["Version"].as<int>() != 1)
@@ -75,7 +77,9 @@ bool Project(const YAML::Node& root)
         const auto value=project[key].as<std::string>();
         if(value.empty() || value.find('\0')!=std::string::npos)throw std::runtime_error(std::string("Empty/invalid required Project.")+key);
     }
-    return !project["Version"] || !project["ScriptProject"];
+    const auto rendering=project["Rendering"];
+    return !project["Version"] || !project["ScriptProject"] ||
+           (rendering && (!rendering["VSync"] || !rendering["TextureSlots"] || !rendering["ShaderLoading"]));
 }
 bool Scene(const YAML::Node& root, bool prefabDocument)
 {

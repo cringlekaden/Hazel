@@ -1,5 +1,6 @@
 // Actual upstream project serializer; native UTF-8 I/O and transactional errors.
 #include "hzpch.h"
+#include "RendererRequestsSerializer.h"
 #include "ProjectSerializer.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Core/DocumentSchema.h"
@@ -28,6 +29,7 @@ namespace Hazel {
 			{
 				out << YAML::BeginMap;// Project
 				out << YAML::Key << "Version" << YAML::Value << 1;
+                if(config.Rendering)RendererRequestsSerializer::Write(out,*config.Rendering);
                 out << YAML::Key << "ScriptProject" << YAML::Value << config.ScriptProject;
                 if(config.AuthoringVersion)out<<YAML::Key<<"AuthoringVersion"<<YAML::Value<<config.AuthoringVersion;
                 out << YAML::Key << "Name" << YAML::Value << config.Name;
@@ -62,8 +64,11 @@ namespace Hazel {
             if (!projectNode["ScriptProject"]) m_Report.Problems.push_back({0,"Script project","Known legacy default: project Name; Save writes ScriptProject explicitly",{},true});
 			if (!projectNode) return false;
 			if(projectNode["Version"] && projectNode["Version"].as<int>()!=1) return false;
+            if(projectNode["Rendering"] && (!projectNode["Rendering"]["VSync"] || !projectNode["Rendering"]["TextureSlots"] || !projectNode["Rendering"]["ShaderLoading"]))
+                m_Report.Problems.push_back({0,"Runtime rendering","Known Rendering Version 1 defaults: VSync On, batch 32, automatic shaders. Save writes omitted defaults explicitly; original bytes are preserved first",{},true});
             // Commit only a complete parse; preserve the active config on failure.
 			ProjectConfig config;
+            if(projectNode["Rendering"])config.Rendering=RendererRequestsSerializer::Read(projectNode["Rendering"]);
 			config.Name = projectNode["Name"].as<std::string>();
             if(projectNode["AuthoringVersion"])config.AuthoringVersion=projectNode["AuthoringVersion"].as<int>();
             config.ScriptProject = projectNode["ScriptProject"] ? projectNode["ScriptProject"].as<std::string>() : config.Name;

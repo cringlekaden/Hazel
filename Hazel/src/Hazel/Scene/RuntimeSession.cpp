@@ -3,6 +3,8 @@
 #include "Scene.h"
 #include "Entity.h"
 #include "Hazel/Project/Project.h"
+#include "Hazel/Core/Application.h"
+#include "Hazel/Renderer/Renderer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include <glm/gtc/matrix_inverse.hpp>
 #include <cmath>
@@ -57,6 +59,13 @@ namespace Hazel {
     void RuntimeSession::Start(const Ref<Project>& project, const Ref<Scene>& authoredScene) {
         CheckThread();
         if (m_Updating || m_Stopping) throw std::logic_error("Cannot start a session inside its update/stop");
+        if(project) {
+            RendererPolicy::Validate(project->GetRendererRequests());
+            if(Application::TryGet()) {
+                const auto reason=RendererPolicy::RestartReason(project->GetRendererRequests(),Renderer::GetResolution(),Renderer::GetCapabilities());
+                if(!reason.empty())throw std::runtime_error(reason);
+            }
+        }
         Validate(authoredScene);
         auto scene = Scene::Copy(authoredScene);
         if (auto* current = ScriptEngine::GetRuntimeSession(); current && current != this)

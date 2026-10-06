@@ -13,7 +13,7 @@ project ("Migration" .. test)
     files { test == "ExampleGamesSmoke" and (repoRoot .. "/tests/examples/RuntimeSmoke.cpp") or (repoRoot .. "/tests/migration/" .. test .. ".cpp") }
     includedirs { repoRoot .. "/Hazel/src" }
     if test == "SceneFoundationSmoke" then
-        files { repoRoot .. "/Hazelnut/src/Authoring/EditorDocuments.cpp",repoRoot .. "/Hazelnut/src/Authoring/EditorState.cpp",repoRoot .. "/Hazelnut/src/Authoring/EditorPreferences.cpp" }
+        files { repoRoot .. "/Hazelnut/src/Authoring/EditorDocuments.cpp",repoRoot .. "/Hazelnut/src/Authoring/EditorState.cpp",repoRoot .. "/Hazelnut/src/Authoring/EditorPreferences.cpp", repoRoot .. "/Hazelnut/src/Authoring/RendererLaunch.cpp" }
         includedirs { repoRoot .. "/Hazelnut/src" }
     end
     externalincludedirs

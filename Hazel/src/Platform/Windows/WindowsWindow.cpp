@@ -189,12 +189,15 @@ namespace Hazel {
     void WindowsWindow::SetVSync(bool enabled)
     {
         HZ_PROFILE_FUNCTION();
-        if (enabled)
-            glfwSwapInterval(1);
-        else
-            glfwSwapInterval(0);
-
-        m_Data.VSync = enabled;
+        auto* previous = glfwGetCurrentContext();
+        if (previous != m_Window) glfwMakeContextCurrent(m_Window);
+        if (glfwGetCurrentContext() != m_Window) {
+            if (previous != m_Window) glfwMakeContextCurrent(previous);
+            throw std::runtime_error("Cannot apply swap interval: owning window context unavailable");
+        }
+        glfwSwapInterval(enabled ? 1 : 0);
+        m_Data.VSync = enabled; // Submitted interval; compositor/driver timing is not measured.
+        if (previous != m_Window) glfwMakeContextCurrent(previous);
     }
 
     bool WindowsWindow::IsVSync() const

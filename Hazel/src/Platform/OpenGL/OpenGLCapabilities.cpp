@@ -7,7 +7,7 @@
 namespace Hazel::OpenGLCapabilities {
 namespace {
     RendererCapabilities s_Capabilities;
-    RendererSettings s_Settings;
+    RendererResolution s_Resolution;
     int s_Major = 0, s_Minor = 0;
     bool s_Initialized = false;
     uint32_t Limit(GLenum name) {
@@ -20,7 +20,7 @@ namespace {
     }
 }
 void Reset() {
-    s_Capabilities = {}; s_Settings = {};
+    s_Capabilities = {}; s_Resolution = {};
     s_Major = s_Minor = 0; s_Initialized = false;
 }
 void Initialize() {
@@ -47,18 +47,16 @@ void Initialize() {
     // the complete shaderc/Cross pipeline and GLSL 410 program loading.
     caps.ShaderBinaries = GLAD_GL_VERSION_4_6 && glShaderBinary && glSpecializeShader;
     caps.DebugOutput = GLAD_GL_VERSION_4_3 && glDebugMessageCallback && glDebugMessageControl;
-    s_Settings.TextureSlots = std::min(32u, caps.MaxTextureSlots);
-    s_Settings.EnableDebugOutput = s_Settings.EnableDebugOutput && caps.DebugOutput;
+    s_Resolution = RendererPolicy::Resolve(RendererSettings{}, caps);
     s_Initialized = true;
 }
 const RendererCapabilities& Get() { if (!s_Initialized) Initialize(); return s_Capabilities; }
-const RendererSettings& GetSettings() { Get(); return s_Settings; }
+const RendererResolution& GetResolution() { Get(); return s_Resolution; }
+const RendererSettings& GetSettings() { return GetResolution().Effective; }
 void Configure(const RendererSettings& requested) {
     const auto& caps = Get();
-    if (requested.TextureSlots < 2) throw std::invalid_argument("Renderer texture slots must include white and a textured slot");
-    s_Settings = requested;
-    s_Settings.TextureSlots = std::min({requested.TextureSlots, 32u, caps.MaxTextureSlots});
-    s_Settings.EnableDebugOutput = requested.EnableDebugOutput && caps.DebugOutput;
+    auto candidate = RendererPolicy::Resolve(requested, caps);
+    s_Resolution = std::move(candidate);
 }
 bool UseShaderBinaries() { return Get().ShaderBinaries && GetSettings().PreferShaderBinaries; }
 }

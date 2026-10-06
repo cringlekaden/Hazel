@@ -5,6 +5,8 @@
 #include <filesystem>
 #include <stdexcept>
 #include <vector>
+#include <optional>
+#include "Hazel/Renderer/RendererPolicy.h"
 
 #include "Hazel/Core/Base.h"
 #include "Hazel/Core/DocumentLoadReport.h"
@@ -17,6 +19,7 @@ namespace Hazel {
 	{
 		std::string Name = "Untitled";
         std::string ScriptProject;
+        std::optional<RuntimeRendererRequests> Rendering;
         int AuthoringVersion=0; // Existing projects remain unstamped; no template rewrite.
 
 		std::filesystem::path StartScene;
@@ -58,6 +61,7 @@ namespace Hazel {
         void ReleaseAssets() {m_Assets.reset();}
 
         ProjectConfig& GetConfig() { return m_Config; }
+        RuntimeRendererRequests GetRendererRequests() const { return m_Config.Rendering.value_or(RuntimeRendererRequests{}); }
 
 		static Ref<Project> GetActive() { return s_ActiveProject; }
 

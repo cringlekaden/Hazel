@@ -60,6 +60,13 @@ int main(int argc, char** argv) {
         Check(ScriptEngine::GetEntityClass("Migration.TransitionOnCreate")==scriptClass,"Ordinary scene transition replaced script domain");
         Check(session.GetIdentity()==identity && ScriptEngine::GetSceneContext()==session.GetScene().get(),"Session identity/script scene context mismatch");
         auto current=session.GetScene(); auto currentInstance=ScriptEngine::GetEntityScriptInstance(2);
+        const auto policy=project->GetConfig().Rendering;
+        RuntimeRendererRequests incompatible;incompatible.TextureSlots=2;project->GetConfig().Rendering=incompatible;
+        bool rejectedPolicy=false;try{session.Start(project,source);}catch(const std::exception&){rejectedPolicy=true;}
+        Check(rejectedPolicy && session.GetScene()==current && current->IsRunning() &&
+              ScriptEngine::GetEntityScriptInstance(2)==currentInstance && session.GetIdentity()==identity,
+              "Unapplied project policy replaced a valid runtime session");
+        project->GetConfig().Rendering=policy;
         void* body=current->GetEntityByUUID(2).GetComponent<Rigidbody2DComponent>().RuntimeBody;
         Check(session.RequestSceneLoad("Scenes/missing.hazel"),"Missing scene request was not deferred");
         session.Update(0.016f);

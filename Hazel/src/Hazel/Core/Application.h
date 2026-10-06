@@ -39,6 +39,7 @@ namespace Hazel {
 	{
 		std::string Name = "Hazel Application";
 		bool EnableImGui = true;
+        bool WindowVSync = true; // Submitted interval, not measured display timing.
         ApplicationResourceSpecification Resources;
 		ApplicationCommandLineArgs CommandLineArgs;
         RendererSettings Rendering;
