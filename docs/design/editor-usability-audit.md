@@ -423,3 +423,11 @@ references, original backups and disk-conflict handling. Read the current contra
 status in [the implementation record](editor-usability-a1-a2.md#stage-c-normal-open-and-preservation).
 A1/A2/B remain intact. After reboot the user authorized D/E to proceed following
 C verification; F/G/H and broad tooltip cleanup remain deferred. The original findings above describe the audited baseline, not later code.
+
+## Stage D implementation follow-up
+
+D now implements machine-local preferences/session/workspaces, native window/DPI
+bounds, explicit launch precedence, lease/conflict protection and read-only device
+information. Existing ImGui docking remains authoritative. See the implementation
+record for scopes, write triggers and actual verification. E is next; F/G/H and
+broader tooltip cleanup remain separate.

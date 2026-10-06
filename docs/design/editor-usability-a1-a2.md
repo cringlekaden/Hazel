@@ -395,9 +395,68 @@ Hands-on C acceptance (Linux and Windows):
 6. Retest the completed dirty-sheet recovery Retry Open and Save Sheet and Assign
    paths. Check Console diagnostics and the small-window conflict dialog.
 
+## Stage D: editor state and device information
+
+D follows C (`21bd078`) on the same feature branch. Settings retain the existing
+user-data location and `imgui.ini`; native decorations and renderer initialization
+remain unchanged.
+
+| Owner / location | Values | Write trigger |
+| --- | --- | --- |
+| Editor preferences / `preferences.yaml` | Explicit tools, UI scale, collider overlay, capture admission, recents, reopen toggle, editor-window VSync | Apply and Save; discrete capture/recent changes. Native lock plus accepted-byte conflict check. |
+| Machine session / `session.yaml` | Normal window rectangle and DPI hint, maximized flag, last successful project, hierarchy/properties/browser/stats/Console visibility, Console filter/search/follow | Changed state polled at 0.5 s, written after 1 s settled; successful transitions and guarded close flush. |
+| Project workspace / `workspaces/<canonical-path-FNV64>.yaml` | Last accepted scene, camera orbit, valid selected UUID and component sections, browser folder/search/type/tile size, sheet/region/clip and prefab presentation, export folder/name | Same settled-state / project switch / close triggers; relative references where possible. |
+| Dock layout / existing `imgui.ini` | ImGui dock IDs, ordering, detached panels | Existing detach save. Only unreachable detached hosts are repositioned; no default dock rebuild. |
+| Secondary instance / `instances/<token>` (layout uses the same token) | Session/workspace/layout snapshots | Shared session/layout lease held by the primary; secondary instances do not overwrite it. Snapshots can be inspected in the editor data folder. |
+| Portable project / content | Existing descriptor and authored data | Document/project Save only; no machine geometry, paths or preferences added. |
+
+Only windowed normal geometry and maximized state restore; minimized/fullscreen,
+Play, simulation, animation time, live fields, physics, jobs and operation filters
+never restore. Window bounds fit a current monitor work area, account for native
+frame borders, constrain small/offscreen rectangles, and keep normal geometry apart
+from maximized geometry. UI scale follows the editor preference and current display
+scale. Physical multi-monitor/DPI acceptance remains a human check.
+
+Startup supports legacy project argument, `--project`, `--scene`, `--no-restore`.
+Explicit bad input reports failure and cannot fall back to remembered/bundled
+content. After a successful startup project stage, a remembered scene is tried;
+failure retains the validated startup scene and offers Locate/Forget. Manual
+project opening keeps the descriptor startup contract; the remembered scene has
+an explicit normal guarded Open route. Missing project offers File > Locate /
+Recent / New. After Locate, previous workspace association is explicit, never
+inferred from display names. IDs, folders and document selections are validated;
+asset-document restore defers while another operation is pending and never replaces
+an independently opened draft.
+
+Settings have version/unknown-field/range gates, 128 KiB workspace/session limits,
+atomic writes and accepted-byte conflict checks. Malformed/future files remain
+untouched until explicit reset with original backup. Oversized originals require
+moving them aside explicitly. Reload session baseline and Reload saved preferences
+resolve external editing conflicts without touching authored drafts. Preferences
+use a short native lock; session/layout ownership uses a process lease, released
+on teardown/crash and excluded from child processes. Secondary snapshots are
+separate recovery data; automatic selection/retention of old instance snapshots
+is not a replacement session restoration mechanism.
+
+Preferences use General/Tools/Graphics categories with category/settings-name
+search, Apply and Save, Revert and Reset. Graphics shows the existing API/device/
+version/capability record only; sample limits do not enable multisampling. Editor
+VSync changes only the current editor window and is not a portable renderer policy.
+Broader tooltip cleanup, renderer policy controls and hierarchy remain separate.
+
+Verification: Linux Debug/Release Premake builds and five CPU suites pass. The
+production startup regression checks remembered scene/camera/selection, bad explicit
+input retaining content, missing-scene fallback, no-restore and workspace reset.
+Release software OpenGL 4.1 editor regression passes, including prior C/retry/
+Save-and-Assign and compact toolbar coverage. Logical regressions exercise primary/
+secondary snapshots, locks, future originals and concurrent preference conflicts.
+Physical monitor removal, Windows DPI and desktop acceptance remain unverified;
+Windows CI is not awaited per instruction. User files/stash/vendor preservation
+still matches the snapshot.
+
 ## Deferred findings
 
-Workspace restoration, native project generation, renderer policies and
+Native project generation, renderer policies and
 entity/prefab hierarchy remain later stages. Stage C adds recovery/schema gates
 and prefab conflict/exclusive creation checks; the earlier A1/A2 scope remains as
 recorded above. Save All is a

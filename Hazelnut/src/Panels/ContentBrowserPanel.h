@@ -17,6 +17,15 @@ class ContentBrowserPanel
     explicit ContentBrowserPanel(const std::filesystem::path &assetRoot);
 
     void OnImGuiRender();
+    bool Visible=true;
+    std::filesystem::path Folder() const {return m_CurrentDirectory.lexically_relative(m_BaseDirectory);}
+    const std::string& Search() const {return m_Search;}
+    int TypeFilter() const {return m_Type;}
+    float Thumbnail() const {return m_ThumbnailSize;}
+    bool Restore(const std::filesystem::path& folder,const std::string& search,int type,float thumbnail) {
+        if(!Navigate(m_BaseDirectory/folder))return false;
+        m_Search=search;m_Type=type;m_ThumbnailSize=thumbnail;return true;
+    }
     void Refresh();
     void Reveal(const std::filesystem::path &path);
     std::function<ActionAvailability(EditorAction)> Availability;

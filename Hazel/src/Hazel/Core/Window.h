@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <string>
+#include "WindowPlacement.h"
 
 namespace Hazel {
 
@@ -37,7 +38,13 @@ namespace Hazel {
         virtual bool IsVSync() const = 0;
         
         virtual void* GetNativeWindow() const = 0;
+        WindowPlacement GetPlacement();
+        void RestorePlacement(const WindowPlacement& value);
+        std::vector<DisplayArea> GetDisplayAreas() const;
+        float GetContentScale() const;
 
         static Scope<Window> Create(const WindowProps& props = WindowProps());
+    private:
+        WindowPlacement m_NormalPlacement;
     };
 }

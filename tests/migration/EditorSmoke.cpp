@@ -56,6 +56,7 @@ public:
         case 3: {
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project/assembly startup failed");
             EditorDocumentChecks();
+            WorkspaceChecks();
             RecoveryChecks();
             AuthoringChecks();
             SDKChecks();
@@ -540,7 +541,7 @@ private:
         a.m_Draft.SDK=(folder/"moved").generic_u8string();a.RefreshSDK(true);a.UseAutomaticSDK();
         Check(a.m_Draft.SDK.empty()&&a.m_Preferences.SDK==preferences.SDK&&Read(EditorPreferences::Location())==saved,
               "Use Automatic corrupted persisted or accepted SDK override");
-        a.m_Draft.SDK="";a.m_Draft.Save();std::string diagnostic;
+        std::string diagnostic;a.m_Draft=EditorPreferences::Load(diagnostic);a.m_Draft.SDK="";a.m_Draft.Save();
         Check(EditorPreferences::Load(diagnostic).SDK.empty()&&diagnostic.empty(),"Automatic SDK preference did not round-trip");
         FileSystem::WriteFileAtomically(EditorPreferences::Location(),[&](auto& out){out<<saved;});a.m_Draft=draft;a.RefreshSDK(true);
         float values[4]{3,4,5,6}, defaults[4]{1,2,3,4};
@@ -686,13 +687,14 @@ private:
         runtime.Update(.01f);Check(!current->GetEntityByUUID(spawner.GetUUID())&&!parent->GetManagedObject(),"Self destruction retained managed handle");runtime.Stop();
         runtime.Start(Project::GetActive(),runtimeScene);auto pending=Prefab::Instantiate(root,"Prefabs/child.hprefab",*runtime.GetScene(),initial);auto pendingID=pending.GetUUID();auto retained=runtime.GetScene();runtime.Stop();
         Check(!retained->GetEntityByUUID(pendingID)&&!retained->IsRunning(),"Stop did not cancel pending instantiation");
-        EditorPreferences settings;settings.SDK=m_Directory.generic_u8string();settings.Python=(m_Directory/"Python é/python").generic_u8string();settings.UIScale=1.25f;settings.Remember(m_Editor.m_ProjectPath);settings.Save();
-        std::string diagnostic;auto loaded=EditorPreferences::Load(diagnostic);
+        std::string diagnostic;auto settings=EditorPreferences::Load(diagnostic);settings.SDK=m_Directory.generic_u8string();settings.Python=(m_Directory/"Python é/python").generic_u8string();settings.UIScale=1.25f;settings.Remember(m_Editor.m_ProjectPath);settings.Save();
+        auto loaded=EditorPreferences::Load(diagnostic);
         Check(diagnostic.empty() && loaded.SDK==settings.SDK && loaded.Python==settings.Python && loaded.UIScale==1.25f && loaded.RecentProjects==settings.RecentProjects,"Preferences persistence failed");
         auto location=EditorPreferences::Location();FileSystem::WriteFileAtomically(location,[](auto& out){out<<"Version: 99\n";});
         loaded=EditorPreferences::Load(diagnostic);Check(!diagnostic.empty() && loaded.SDK.empty() && loaded.UIScale==1 && Read(location)=="Version: 99\n","Malformed preferences not recovered/preserved");
         { AuthoringPanel recovery(m_Editor); recovery.RememberProject();Check(Read(location)=="Version: 99\n" && !recovery.m_PreferenceRecovery.empty(),"Automatic recent-project persistence overwrote recovered preferences"); }
-        settings.Save();
+        loaded.SDK=settings.SDK;loaded.Python=settings.Python;loaded.UIScale=settings.UIScale;loaded.RecentProjects=settings.RecentProjects;
+        loaded.Save(true);settings=loaded;
         Check(ScriptSource::ValidIdentifier("Player_2")&&!ScriptSource::ValidIdentifier("class")&&!ScriptSource::ValidIdentifier("a/b")&&ScriptSource::ValidNamespace("Game.Play")&&!ScriptSource::ValidNamespace("Game..Play"),"Script identifier validation failed");
         auto created=ScriptSource::Create(root,"AuthoringProbe","Game.Play");Check(Read(created).find("Entity.Instantiate")!=std::string::npos,"Missing generated lifecycle sample");
         Check(ScriptSource::Find(root,"Game.Play.AuthoringProbe")==created,"Script source resolution ignored its namespace");
@@ -753,6 +755,35 @@ private:
         auto storeAlias=Toolchain::ProbePython(m_Directory/"WindowsApps/python.exe","alias");Check(!storeAlias&&storeAlias.Error.find("aliases")!=std::string::npos,"Windows execution alias accepted");
 #endif
         std::cout<<"PASS: prefab identity/independence/self/external references/malformed assets, script creation, preferences recovery/scopes, absolute Python discovery\n";
+    }
+    void WorkspaceChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;
+        const auto project=e.m_ProjectPath;
+        auto remembered=Scene::Copy(e.m_EditorScene);remembered->SetName("Remembered workspace scene");
+        remembered->CreateEntityWithUUID(112233,"Remembered selection");
+        const auto path=Project::GetAssetDirectory()/"Scenes/workspace-restart.hazel";
+        const auto text=SceneSerializer(remembered).SerializeText();FileSystem::WriteNewFile(path,text);
+        a.m_Workspace.Scene="Scenes/workspace-restart.hazel";a.m_Workspace.Entity=112233;
+        a.m_Workspace.Focus={2,1,0};a.m_Workspace.Distance=13;a.m_Workspace.Sections["Transform"]=false;
+        a.m_State->SaveWorkspace(project,a.m_Workspace);a.m_State->Session.LastProject=project.generic_u8string();a.m_State->SaveSession();
+        a.Startup({"EditorSmoke"});
+        Check(e.m_EditorScenePath==path && e.m_EditorScene->GetName()=="Remembered workspace scene" &&
+              e.m_SceneHierarchyPanel.GetSelectedEntity().GetUUID()==112233 && e.m_EditorCamera.GetDistance()==13,
+              "Production startup did not restore accepted scene/camera/selection");
+        const auto retained=e.m_EditorScene;const auto draft=a.SceneText();
+        a.Startup({"EditorSmoke","--project",(m_Directory/"missing-explicit.hproj").generic_u8string()});
+        Check(e.m_EditorScene==retained && a.SceneText()==draft,"Bad explicit launch fell back/replaced valid session");
+        a.m_Workspace.Scene="Scenes/missing-remembered.hazel";a.m_State->SaveWorkspace(project,a.m_Workspace);
+        a.Startup({"EditorSmoke"});
+        Check(e.m_EditorScenePath==Project::GetAssetFileSystemPath(Project::GetActive()->GetConfig().StartScene) && !a.m_MissingScene.empty(),
+              "Missing remembered scene did not retain validated startup/Locate route");
+        const auto fallback=e.m_EditorScene;
+        a.Startup({"EditorSmoke","--no-restore"});
+        Check(e.m_EditorScene==fallback,"No-restore replaced an existing valid document");
+        a.m_Workspace={};a.m_MissingScene.clear();a.m_State->SaveWorkspace(project,a.m_Workspace,true);
+        Check(e.OpenProject(project),"Workspace fixture could not restore original project");
+        e.m_ActionError.clear();
+        std::cout<<"PASS: production startup restores workspace, explicit failure retains session, missing remembered scene falls back safely, no-restore and reset preserve content\n";
     }
     void RecoveryChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;

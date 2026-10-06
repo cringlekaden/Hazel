@@ -11,6 +11,11 @@ class ConsolePanel
     {
     }
     void Render();
+    ConsoleFilter Filter() const {return m_Filter;}
+    bool Follow() const {return m_Follow;}
+    void Restore(unsigned severities,unsigned sources,const std::string& search,bool follow) {
+        m_Filter.Severities=severities;m_Filter.Sources=sources;m_Filter.Search=search;m_Filter.Operation=0;m_Follow=follow;m_Revision=UINT64_MAX;
+    }
     void Show()
     {
         Visible = true;

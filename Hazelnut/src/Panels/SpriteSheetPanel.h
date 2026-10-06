@@ -52,6 +52,15 @@ class SpriteSheetPanel
             m_Open = true;
     }
     void Close();
+    SpriteID SelectedRegion() const {return m_Selected;}
+    SpriteID SelectedClip() const {return m_SelectedClip;}
+    void RestoreSelection(SpriteID region,SpriteID clip,bool visible) {
+        if(!m_Document)return;
+        m_Selected=0;m_SelectedClip=0;
+        for(const auto& r:m_Document->Draft().Regions)if(r.ID==region)m_Selected=region;
+        for(const auto& c:m_Document->Draft().Clips)if(c.ID==clip)m_SelectedClip=clip;
+        m_Open=visible;m_Playback.Reset();
+    }
     std::function<ActionAvailability(EditorAction)> Availability;
     std::function<SceneTarget()> CaptureTarget;
     std::function<std::string()> TargetName;

@@ -49,26 +49,17 @@ namespace Hazel {
 
 		m_EditorScene = CreateRef<Scene>();
 		m_ActiveScene = m_EditorScene;
+        m_EditorCamera = EditorCamera(30.0f,1.778f,.1f,1000.f);
         m_Authoring=CreateScope<AuthoringPanel>(*this);
         m_Authoring->MarkSceneSaved();
         Application::Get().SetCloseRequest([this]{m_Authoring->RequestClose();});
         Application::Get().SetBackgroundTick([this]{if(m_Authoring)m_Authoring->PollTools();});
 
-		auto commandLineArgs = Application::Get().GetSpecification().CommandLineArgs;
-		if (commandLineArgs.Count > 1)
-		{
-			auto projectFilePath = commandLineArgs[1];
-			OpenProject(std::filesystem::u8path(projectFilePath));
-		}
-		else
-		{
-			const auto bundled = Project::Discover(FileSystem::GetExecutablePath().parent_path() / "Example");
-            if (bundled.size() == 1) OpenProject(bundled.front());
-            // No automatic native dialog: File/New Project remains available.
+        std::vector<std::string> arguments;
+        const auto args=Application::Get().GetSpecification().CommandLineArgs;
+        for(int i=0;i<args.Count;++i)arguments.emplace_back(args[i]);
+        m_Authoring->Startup(arguments);
 
-		}
-
-		m_EditorCamera = EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f);
 		Renderer2D::SetLineWidth(4.0f);
 	}
 
@@ -77,6 +68,7 @@ namespace Hazel {
 		HZ_PROFILE_FUNCTION();
         Application::Get().SetCloseRequest({});
         Application::Get().SetBackgroundTick({});
+        if(m_Authoring)m_Authoring->FlushWorkspace();
         m_Authoring.reset();
         if (m_SceneState != SceneState::Edit) OnSceneStop();
         ClearSceneObservers();
@@ -234,7 +226,8 @@ namespace Hazel {
 		m_SceneHierarchyPanel.OnImGuiRender();
 		if (m_ContentBrowserPanel) m_ContentBrowserPanel->OnImGuiRender();
 
-		ImGui::Begin("Stats");
+        if(m_ShowStats) {
+		ImGui::Begin("Stats",&m_ShowStats);
 
 
 #if 0
@@ -252,7 +245,7 @@ namespace Hazel {
 		ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
 
 		ImGui::End();
-
+        }
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
 		ImGui::Begin("Viewport");
@@ -454,6 +447,7 @@ namespace Hazel {
     bool EditorLayer::OpenProject(const std::filesystem::path& path,const ProjectOpenOptions& options)
     {
         if(m_Authoring && !m_Authoring->Require(EditorAction::ReplaceProject))return false;
+        if(m_Authoring)m_Authoring->FlushWorkspace();
         m_OpenPath=std::filesystem::absolute(path).lexically_normal();m_OpenIsProject=true;m_OpenLoad={};
         try {
             if(path.extension()!=".hproj")throw std::runtime_error("Select a .hproj descriptor");
@@ -608,7 +602,7 @@ namespace Hazel {
             ClearSceneObservers();m_EditorScene=scene;m_ActiveScene=scene;m_EditorScenePath=std::filesystem::absolute(path).lexically_normal();
             m_SceneFile=std::move(file);m_SceneLoad=m_OpenLoad;
             m_SceneHierarchyPanel.SetContext(scene);m_ActionError.clear();
-            if(m_Authoring){m_Authoring->MarkSceneSaved();m_Authoring->ReportOpen(path,m_OpenLoad);}
+            if(m_Authoring){m_Authoring->MarkSceneSaved();m_Authoring->SceneOpened();m_Authoring->ReportOpen(path,m_OpenLoad);}
             return true;
         }catch(const std::exception& error){
             m_OpenLoad.State=DocumentLoadState::Rejected;m_OpenLoad.Error=error.what();
@@ -630,7 +624,7 @@ namespace Hazel {
         const auto path = FileDialogs::SaveFile("Hazel Scene (*.hazel)\0*.hazel\0");
 		if (path.empty()) return false;
 		if (!SerializeScene(m_EditorScene, std::filesystem::u8path(path))) return false;
-		m_EditorScenePath = std::filesystem::u8path(path); return true;
+		m_EditorScenePath = std::filesystem::u8path(path); if(m_Authoring)m_Authoring->SceneOpened(); return true;
 	}
 
 	bool EditorLayer::SerializeScene(Ref<Scene> scene, const std::filesystem::path& path)

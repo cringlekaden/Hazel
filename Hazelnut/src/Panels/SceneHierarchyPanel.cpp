@@ -78,7 +78,10 @@ void SceneHierarchyPanel::DrawAssetProperties(Entity entity)
 }
 void SceneHierarchyPanel::OnImGuiRender()
 {
-    ImGui::Begin("Scene Hierarchy");
+    m_Focused=false;
+    const auto availability = Availability ? Availability(EditOperation) : ActionAvailability{};
+    if(HierarchyVisible) {
+    ImGui::Begin("Scene Hierarchy",&HierarchyVisible);
     m_Focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
     ImGui::SetNextItemWidth(-ImGui::GetFrameHeightWithSpacing());
     ImGui::InputTextWithHint("##search", "Find entity...", &m_Search);
@@ -86,7 +89,6 @@ void SceneHierarchyPanel::OnImGuiRender()
     if (ImGui::Button("X##clear-search"))
         m_Search.clear();
     PropertyUI::Help("Clear entity search");
-    const auto availability = Availability ? Availability(EditOperation) : ActionAvailability{};
     ImGui::BeginDisabled(!CanEdit());
     if (ImGui::Button("Add Entity"))
         AddEntity();
@@ -139,7 +141,9 @@ void SceneHierarchyPanel::OnImGuiRender()
     }
     ImGui::EndChild();
     ImGui::End();
-    ImGui::Begin("Properties");
+    }
+    if(!PropertiesVisible)return;
+    ImGui::Begin("Properties",&PropertiesVisible);
     m_Focused |= ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
     if (auto entity = GetSelectedEntity())
     {
@@ -213,7 +217,7 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity)
 }
 
 template <typename T, typename UIFunction>
-static void DrawComponent(const std::string &name, Entity entity, UIFunction uiFunction)
+static void DrawComponent(const std::string &name, Entity entity, std::map<std::string,bool>& sections,std::set<std::string>& restore,UIFunction uiFunction)
 {
     const ImGuiTreeNodeFlags treeNodeFlags =
         ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth |
@@ -227,7 +231,9 @@ static void DrawComponent(const std::string &name, Entity entity, UIFunction uiF
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{4, 4});
         float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
         ImGui::Separator();
+        if(restore.erase(name))ImGui::SetNextItemOpen(sections[name],ImGuiCond_Always);
         bool open = ImGui::TreeNodeEx("##component", treeNodeFlags, "%s", name.c_str());
+        sections[name]=open;
         ImGui::PopStyleVar();
         ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
         if (ImGui::Button("+", ImVec2{lineHeight, lineHeight}))
@@ -259,6 +265,7 @@ static void DrawComponent(const std::string &name, Entity entity, UIFunction uiF
 
 void SceneHierarchyPanel::DrawComponents(Entity entity)
 {
+    if(m_SectionEntity!=uint64_t(entity.GetUUID())){m_Sections.clear();m_RestoreSections.clear();m_SectionEntity=entity.GetUUID();}
     if (!entity)
         return;
     ImGui::PushID(std::to_string(m_Context->GetIdentity()).c_str());
@@ -291,7 +298,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     }
 
     DrawComponent<TransformComponent>(
-        "Transform", entity,
+        "Transform", entity, m_Sections,m_RestoreSections,
         [](auto &component)
         {
             const TransformComponent defaults;
@@ -306,7 +313,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         });
 
     DrawComponent<CameraComponent>(
-        "Camera", entity,
+        "Camera", entity, m_Sections,m_RestoreSections,
         [](auto &component)
         {
             auto &camera = component.Camera;
@@ -371,7 +378,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         });
 
     DrawComponent<ScriptComponent>(
-        "Script", entity,
+        "Script", entity, m_Sections,m_RestoreSections,
         [this, entity](auto &component) mutable
         {
             if (m_Context && m_Context->IsRunning())
@@ -636,7 +643,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         });
 
     DrawComponent<SpriteRendererComponent>(
-        "Sprite Renderer", entity,
+        "Sprite Renderer", entity, m_Sections,m_RestoreSections,
         [this](auto &component)
         {
             PropertyUI::Color("Color", "Color", glm::value_ptr(component.Color));
@@ -645,7 +652,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                                [this] { return CanEdit(); });
         });
     DrawComponent<SpriteAnimationComponent>(
-        "Sprite Animation", entity,
+        "Sprite Animation", entity, m_Sections,m_RestoreSections,
         [this](auto &component)
         {
             if (ClipPicker("Clip", component.DefaultClip, m_Pickers[ImGui::GetID("animation-picker")],
@@ -662,7 +669,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         });
 
     DrawComponent<CircleRendererComponent>(
-        "Circle Renderer", entity,
+        "Circle Renderer", entity, m_Sections,m_RestoreSections,
         [](auto &component)
         {
             PropertyUI::Color("Color", "Color", glm::value_ptr(component.Color));
@@ -671,7 +678,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         });
 
     DrawComponent<Rigidbody2DComponent>(
-        "Rigidbody 2D", entity,
+        "Rigidbody 2D", entity, m_Sections,m_RestoreSections,
         [](auto &component)
         {
             const Rigidbody2DComponent defaults;
@@ -704,7 +711,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         });
 
     DrawComponent<BoxCollider2DComponent>(
-        "Box Collider 2D", entity,
+        "Box Collider 2D", entity, m_Sections,m_RestoreSections,
         [](auto &component)
         {
             const BoxCollider2DComponent defaults;
@@ -724,7 +731,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         });
 
     DrawComponent<CircleCollider2DComponent>(
-        "Circle Collider 2D", entity,
+        "Circle Collider 2D", entity, m_Sections,m_RestoreSections,
         [](auto &component)
         {
             const CircleCollider2DComponent defaults;
@@ -744,7 +751,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         });
 
     DrawComponent<TextComponent>(
-        "Text Renderer", entity,
+        "Text Renderer", entity, m_Sections,m_RestoreSections,
         [](auto &component)
         {
             PropertyUI::Multiline("text", "Text", component.TextString);

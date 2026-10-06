@@ -100,6 +100,7 @@ namespace Hazel {
 		int m_GizmoType = -1;
 
 		bool m_ShowPhysicsColliders = false;
+        bool m_ShowStats = true;
         uint64_t m_EditorSelection = 0;
 
 		enum class SceneState

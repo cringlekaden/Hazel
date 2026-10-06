@@ -11,6 +11,7 @@
 #include "UI/PropertyUI.h"
 #include <ImGuizmo.h>
 #include <algorithm>
+#include <cmath>
 #include <cctype>
 #include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
@@ -63,9 +64,19 @@ AuthoringPanel::AuthoringPanel(EditorLayer &editor) : m_Editor(editor), m_Consol
     editor.m_Console->CaptureLevel=m_Preferences.ConsoleCapture;
     Log::SetObserverLevel(editor.m_Console.get(),static_cast<spdlog::level::level_enum>(m_Preferences.ConsoleCapture));
     m_Draft = m_Preferences;
+    auto* gui=Application::Get().GetImGuiLayer();
+    m_State=std::make_unique<EditorState>(gui->OwnsWorkspace(),gui->InstanceToken());
+    const auto& session=m_State->Session;
+    m_Console.Visible=(session.Panels&16)!=0;
+    m_Console.Restore(session.Severities,session.Sources,session.ConsoleSearch,session.Follow);
+    m_Editor.m_SceneHierarchyPanel.HierarchyVisible=(session.Panels&1)!=0;
+    m_Editor.m_SceneHierarchyPanel.PropertiesVisible=(session.Panels&2)!=0;
+    m_Editor.m_ShowStats=(session.Panels&8)!=0;
+    Application::Get().GetWindow().SetVSync(m_Preferences.VSync);
+    if(!m_State->Diagnostic.empty())Notify(m_State->Diagnostic,spdlog::level::warn);
     RefreshSDK();
     RefreshSDK(true);
-    ImGui::GetIO().FontGlobalScale = m_Preferences.UIScale;
+    ImGui::GetIO().FontGlobalScale = m_Preferences.UIScale*std::clamp(Application::Get().GetWindow().GetContentScale(),.75f,2.f);
     m_Editor.m_ShowPhysicsColliders = m_Preferences.ShowColliders;
     auto &style = ImGui::GetStyle();
     style.FramePadding = {6, 4};
@@ -245,6 +256,14 @@ void AuthoringPanel::BindProject()
     }
     MarkSceneSaved();
     RememberProject();
+    if(!m_MissingProject.empty()){m_PreviousWorkspace=m_MissingProject;m_MissingProject.clear();}
+    m_WorkspaceProject=m_Editor.m_ProjectPath;
+    m_Workspace=m_State->LoadWorkspace(m_WorkspaceProject);
+    if(m_Workspace.Scene.empty() && !m_Editor.m_EditorScenePath.empty())SceneOpened();
+    if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->Visible=(m_State->Session.Panels&4)!=0;
+    RestoreWorkspace(false);
+    m_State->Session.LastProject=m_WorkspaceProject.generic_u8string();
+    try{m_State->SaveSession();}catch(const std::exception& error){m_PersistenceError=error.what();Notify(m_PersistenceError,spdlog::level::warn);}
 }
 void AuthoringPanel::ValidatePython()
 {
@@ -313,7 +332,16 @@ void AuthoringPanel::Start(std::string label, std::vector<std::string> args,
 }
 void AuthoringPanel::Tick(double timestep)
 {
+    if(m_RestoreAssetsPending && !m_Documents.Pending() && !m_Tools.Busy())RestoreWorkspace(false);
     m_Sprites.Tick(timestep);
+    m_StateClock+=std::isfinite(timestep)?std::clamp(timestep,0.,1.):0.;
+    if(m_StateClock-m_StatePolled<.5)return;
+    m_StatePolled=m_StateClock;
+    CaptureWorkspace();
+    const auto snapshot=EditorState::Encode(m_State->Session)+EditorState::Encode(m_Workspace);
+    if(snapshot!=m_PendingState){m_PendingState=snapshot;m_StateChanged=m_StateClock;}
+    else if(snapshot!=m_WrittenState && m_StateClock-m_StateChanged>=1){FlushWorkspace();m_WrittenState=snapshot;}
+    ImGui::GetIO().FontGlobalScale=m_Preferences.UIScale*std::clamp(Application::Get().GetWindow().GetContentScale(),.75f,2.f);
 }
 void AuthoringPanel::PollTools()
 {
@@ -481,6 +509,11 @@ void AuthoringPanel::FileMenu()
     if (ImGui::MenuItem("Open Project...", "Ctrl+O", false,
                         bool(Availability(EditorAction::ReplaceProject))))
         Guard(OperationIntent::OpenProject, [this] { return m_Editor.OpenProject(); });
+    if(!m_MissingProject.empty() && ImGui::MenuItem("Locate remembered project...",nullptr,false,bool(Availability(EditorAction::ReplaceProject)))) {
+        const auto chosen=FileDialogs::OpenFile("Hazel project\0*.hproj\0");
+        if(!chosen.empty()){const auto previous=m_MissingProject;const auto path=std::filesystem::u8path(chosen);
+            Guard(OperationIntent::OpenProject,[this,previous,path]{if(!m_Editor.OpenProject(path))return false;m_PreviousWorkspace=previous;m_MissingProject.clear();return true;});}
+    }
     if (ImGui::BeginMenu("Recent Projects"))
     {
         if (ImGui::IsWindowAppearing())
@@ -640,6 +673,10 @@ void AuthoringPanel::Menus()
     }
     if (ImGui::BeginMenu("View"))
     {
+        ImGui::MenuItem("Scene Hierarchy",nullptr,&m_Editor.m_SceneHierarchyPanel.HierarchyVisible);
+        ImGui::MenuItem("Properties",nullptr,&m_Editor.m_SceneHierarchyPanel.PropertiesVisible);
+        if(m_Editor.m_ContentBrowserPanel)ImGui::MenuItem("Content Browser",nullptr,&m_Editor.m_ContentBrowserPanel->Visible);
+        ImGui::MenuItem("Statistics",nullptr,&m_Editor.m_ShowStats);
         if (ImGui::MenuItem("Sprite Sheet", nullptr, m_Sprites.Visible(), m_Sprites.HasDocument()))
             m_Sprites.Show();
         if (ImGui::MenuItem("Prefab Inspector", nullptr, m_ShowPrefab, bool(m_PrefabScene)))
@@ -670,6 +707,25 @@ void AuthoringPanel::Preferences()
     if (ImGui::CollapsingHeader("Storage"))
         PropertyUI::ReadOnly("location", "Settings file",
                              EditorPreferences::Location().generic_u8string().c_str());
+    PropertyUI::Text("preference-search","Find settings",m_PreferenceSearch);
+    if(!m_PreferenceSearch.empty() && ImGui::SmallButton("Clear search"))m_PreferenceSearch.clear();
+    for(int category=0;category<3;++category){const char* names[]={"General","Tools","Graphics"};if(category)PropertyUI::WrapButton(names[category]);if(ImGui::Button(names[category]))m_PreferenceCategory=category;}
+    auto matches=[&](const char* names,int category){if(m_PreferenceSearch.empty())return m_PreferenceCategory==category;std::string query=m_PreferenceSearch;std::transform(query.begin(),query.end(),query.begin(),[](unsigned char c){return char(std::tolower(c));});return std::string(names).find(query)!=std::string::npos;};
+    const bool general=matches("general startup workspace project scene layout ui scale vsync colliders",0);
+    const bool tools=matches("tools python sdk script editor executable compiler",1);
+    const bool graphics=matches("graphics renderer api version vendor device driver texture samples debug shader capabilities",2);
+    if(!general&&!tools&&!graphics)ImGui::TextWrapped("No matching settings. Clear search to choose a category.");
+    if(general) {
+    PropertyUI::SliderFloat("ui-scale", "UI scale", m_Draft.UIScale, .8f, 2, "%.2f");
+    PropertyUI::Checkbox("colliders", "Collider overlay", m_Draft.ShowColliders);
+    if(ImGui::CollapsingHeader("Workspace / startup",ImGuiTreeNodeFlags_DefaultOpen)) {
+        PropertyUI::Checkbox("restore-session","Reopen last project / scene",m_Draft.RestoreSession);
+        PropertyUI::Checkbox("editor-vsync","Editor VSync",m_Draft.VSync);
+        PropertyUI::Help("Applies to this editor window only; no game/project renderer policy is changed.");
+        WorkspaceControls();
+    }
+    }
+    if(tools) {
     PathInput("Python executable", m_Draft.Python, false);
     PropertyUI::Help("Blank selects deterministic discovery. An explicit invalid "
                      "path is an error.");
@@ -731,8 +787,27 @@ void AuthoringPanel::Preferences()
     PathInput("Script editor executable", m_Draft.ScriptEditor, false);
     PropertyUI::Help("Blank uses the OS default for .cs files; a configured "
                      "editor receives one source-file argument.");
-    PropertyUI::SliderFloat("ui-scale", "UI scale", m_Draft.UIScale, .8f, 2, "%.2f");
-    PropertyUI::Checkbox("colliders", "Collider overlay", m_Draft.ShowColliders);
+    }
+    if(graphics) {
+    auto &caps = Renderer::GetCapabilities();
+    if (ImGui::CollapsingHeader("Detected renderer (read-only)",ImGuiTreeNodeFlags_DefaultOpen)) {
+        PropertyUI::ReadOnly("api","Graphics API",Renderer::GetAPI()==RendererAPI::API::OpenGL?"OpenGL":"Unavailable");
+        PropertyUI::ReadOnly("driver","API version / driver",caps.Driver.c_str());
+        PropertyUI::ReadOnly("vendor", "Vendor", caps.Vendor.c_str());
+        PropertyUI::ReadOnly("device", "Device", caps.Device.c_str());
+        PropertyUI::ReadOnly("slots", "Texture slots", std::to_string(caps.MaxTextureSlots).c_str());
+        PropertyUI::ReadOnly("texture-size", "Maximum texture size",
+                             std::to_string(caps.MaxTextureSize).c_str());
+        PropertyUI::ReadOnly("bindings","Texture bindings",std::to_string(caps.MaxTextureBindings).c_str());
+        PropertyUI::ReadOnly("color-attachments","Color attachments",std::to_string(caps.MaxColorAttachments).c_str());
+        PropertyUI::ReadOnly("draw-buffers","Draw buffers",std::to_string(caps.MaxDrawBuffers).c_str());
+        PropertyUI::ReadOnly("samples","Device sample limit",std::to_string(caps.MaxSamples).c_str());
+        PropertyUI::ReadOnly("shader-binaries","Shader binaries",caps.ShaderBinaries?"Supported":"Unavailable");
+        PropertyUI::ReadOnly("debug-output","Debug output",caps.DebugOutput?"Supported":"Unavailable");
+        PropertyUI::ReadOnly("line-range","Line width range",(std::to_string(caps.MinLineWidth)+" to "+std::to_string(caps.MaxLineWidth)).c_str());
+        ImGui::TextWrapped("Device facts do not enable MSAA or change project settings. This editor's target remains single-sampled.");
+    }
+    }
     bool paths = (m_Draft.Python.empty() || Path(m_Draft.Python).is_absolute()) &&
                  (m_Draft.SDK.empty() || Path(m_Draft.SDK).is_absolute()) &&
                  (m_Draft.ScriptEditor.empty() || Path(m_Draft.ScriptEditor).is_absolute());
@@ -743,12 +818,13 @@ void AuthoringPanel::Preferences()
         try
         {
             m_Draft.RecentProjects = m_Preferences.RecentProjects;
-            m_Draft.Save();
+            m_Draft.Save(true);
             m_PreferenceRecovery.clear();
             m_Preferences = m_Draft;
             RefreshSDK();
-            ImGui::GetIO().FontGlobalScale = m_Preferences.UIScale;
+            ImGui::GetIO().FontGlobalScale = m_Preferences.UIScale*std::clamp(Application::Get().GetWindow().GetContentScale(),.75f,2.f);
             m_Editor.m_ShowPhysicsColliders = m_Preferences.ShowColliders;
+            Application::Get().GetWindow().SetVSync(m_Preferences.VSync);
             Notify("Preferences saved.");
             m_Console.CaptureLevel=m_Preferences.ConsoleCapture;
             ValidatePython();
@@ -759,23 +835,14 @@ void AuthoringPanel::Preferences()
         }
     ImGui::EndDisabled();
     ImGui::SameLine();
+    if(ImGui::Button("Revert draft")){m_Draft=m_Preferences;RefreshSDK(true);}
+    PropertyUI::WrapButton("Reset to defaults");
     if (ImGui::Button("Reset to defaults"))
     {
         auto recent = m_Draft.RecentProjects;
-        m_Draft = {};
+        m_Draft.ResetValues();
         m_Draft.RecentProjects = recent;
         RefreshSDK(true);
-    }
-    auto &caps = Renderer::GetCapabilities();
-    ImGui::Separator();
-    if (ImGui::CollapsingHeader("Detected renderer (read-only)"))
-    {
-        PropertyUI::ReadOnly("vendor", "Vendor", caps.Vendor.c_str());
-        PropertyUI::ReadOnly("device", "Device", caps.Device.c_str());
-        PropertyUI::ReadOnly("slots", "Texture slots", std::to_string(caps.MaxTextureSlots).c_str());
-        PropertyUI::ReadOnly("texture-size", "Maximum texture size",
-                             std::to_string(caps.MaxTextureSize).c_str());
-        ImGui::TextWrapped("Detected facts are not saved as project settings.");
     }
     ImGui::End();
 }

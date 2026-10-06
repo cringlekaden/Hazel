@@ -25,6 +25,7 @@ static void Check(bool condition, const char* message)
     if (!condition) throw std::runtime_error(message);
 }
 #include "EditorDocumentChecks.h"
+#include "EditorStateChecks.h"
 static void Finite(const glm::mat4& projection)
 {
     for (int column=0; column<4; ++column)
@@ -119,6 +120,7 @@ int main()
     try {
         Hazel::Log::Init();
         Hazel::EditorDocumentChecks();
+        Hazel::EditorStateChecks();
         RecoveryContracts();
         Hazel::SceneCamera camera;
         Finite(camera.GetProjection());

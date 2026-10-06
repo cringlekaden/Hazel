@@ -125,7 +125,8 @@ void ContentBrowserPanel::Refresh()
 }
 void ContentBrowserPanel::OnImGuiRender()
 {
-    ImGui::Begin("Content Browser");
+    if(!Visible)return;
+    ImGui::Begin("Content Browser",&Visible);
     const auto canImport = Availability ? Availability(EditorAction::EditAsset) : ActionAvailability{};
     ImGui::BeginDisabled(!canImport);
     if (ImGui::Button("Import Texture...") && Allowed(EditorAction::EditAsset) && ImportTexture)

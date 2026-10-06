@@ -7,6 +7,8 @@
 #include "SpriteWidgets.h"
 #include <functional>
 #include <unordered_map>
+#include <map>
+#include <set>
 
 namespace Hazel
 {
@@ -20,6 +22,9 @@ class SceneHierarchyPanel
     void SetContext(const Ref<Scene> &scene);
 
     void OnImGuiRender();
+    bool HierarchyVisible=true, PropertiesVisible=true;
+    std::map<std::string,bool> Sections() const {auto e=GetSelectedEntity();return e && uint64_t(e.GetUUID())==m_SectionEntity?m_Sections:std::map<std::string,bool>{};}
+    void RestoreSections(const std::map<std::string,bool>& values){auto e=GetSelectedEntity();if(!e)return;m_SectionEntity=e.GetUUID();m_Sections=values;m_RestoreSections.clear();for(const auto& item:values)m_RestoreSections.insert(item.first);}
     std::function<void(Entity)> CreatePrefab;
     std::function<void(const std::string &)> ReportError;
     std::function<void(const std::string &)> EditScript;
@@ -57,6 +62,9 @@ class SceneHierarchyPanel
     std::vector<std::string> m_PrefabChoices;
     bool m_PrefabChoicesReady = false;
     bool m_Focused = false;
+    uint64_t m_SectionEntity=0;
+    std::map<std::string,bool> m_Sections;
+    std::set<std::string> m_RestoreSections;
     std::unordered_map<uint32_t, SpritePickerState> m_Pickers;
 };
 

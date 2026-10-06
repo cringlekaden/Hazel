@@ -8,6 +8,7 @@
 #include "Panels/ConsolePanel.h"
 #include "Hazel/Core/FileDocument.h"
 #include "Hazel/Core/DocumentLoadReport.h"
+#include "EditorState.h"
 #include <functional>
 #include <unordered_map>
 namespace Hazel
@@ -48,11 +49,17 @@ class AuthoringPanel
     void ReportOpen(const std::filesystem::path& path,const DocumentLoadReport& report);
     bool SpriteDirty() const { return m_Sprites.Dirty(); }
     void GuardPlay(bool simulate);
+    void Startup(const std::vector<std::string>& arguments);
+    void FlushWorkspace();
+    void RestoreWorkspace(bool scene);
+    void SceneOpened();
 
   private:
     void Preferences();
     void RecoveryControls();
     void SaveConflictControls();
+    void WorkspaceControls();
+    void CaptureWorkspace();
     void ProjectSettings();
     void NewProject();
     void Scripts();
@@ -77,6 +84,15 @@ class AuthoringPanel
     Entity ResolveTarget(SceneTarget target);
     EditorLayer &m_Editor;
     EditorPreferences m_Preferences, m_Draft;
+    std::unique_ptr<EditorState> m_State;
+    ProjectWorkspace m_Workspace;
+    std::filesystem::path m_WorkspaceProject;
+    std::string m_MissingProject, m_MissingScene, m_PreviousWorkspace;
+    std::string m_PendingState, m_WrittenState, m_PersistenceError;
+    double m_StateClock=0, m_StateChanged=0, m_StatePolled=0;
+    bool m_StartupRestore=true, m_RestoreAssetsPending=false;
+    int m_PreferenceCategory=0;
+    std::string m_PreferenceSearch;
     SDKSelection m_SDK, m_DraftSDK;
     std::string m_CheckedDraftSDK;
     ProjectTools m_Tools;

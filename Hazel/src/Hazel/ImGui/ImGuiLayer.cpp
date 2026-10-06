@@ -11,6 +11,8 @@
 #include <imgui_internal.h>
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Core/FileSystem.h"
+#include "Hazel/Core/FileDocument.h"
+#include "Hazel/Core/UUID.h"
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
@@ -38,6 +40,9 @@ namespace Hazel {
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
         const float fontSize = 18.0f;
         m_IniPath = (Resources::Get().UserData / "imgui.ini").generic_u8string();
+        m_InstanceToken=std::to_string(static_cast<uint64_t>(UUID()));
+        try {m_SettingsLease=FileLease::Try(Resources::Get().UserData/"editor-session.lock");}
+        catch(const std::exception& error){HZ_CORE_WARN("Editor state ownership: {}. Using an instance snapshot",error.what());}
         io.IniFilename = nullptr; // Native filesystem I/O preserves Unicode paths on Windows.
         auto loadFont = [&](const char* name) {
             ScopedBuffer bytes(FileSystem::ReadFileBinary(Resources::Resolve(name)));
@@ -52,6 +57,19 @@ namespace Hazel {
         const auto initial = std::filesystem::is_regular_file(settings) ? settings : Resources::Resolve("imgui.ini");
         ScopedBuffer ini(FileSystem::ReadFileBinary(initial));
         if (ini) ImGui::LoadIniSettingsFromMemory(reinterpret_cast<const char*>(ini.Data()), static_cast<size_t>(ini.Size()));
+        m_IniExisted=std::filesystem::is_regular_file(settings);
+        if(m_IniExisted)m_IniOriginal=FileDocument::Read(settings);
+        // Only unreachable detached hosts move. Dock IDs, order and main-window
+        // settings remain ImGui-owned; monitor recovery never rebuilds the dock tree.
+        const auto displays=Application::Get().GetWindow().GetDisplayAreas();
+        auto& context=*ImGui::GetCurrentContext();
+        for(auto* entry=context.SettingsWindows.begin();entry;entry=context.SettingsWindows.next_chunk(entry)) {
+            if(entry->DockId || !entry->ViewportId || entry->ViewportId==ImGui::GetMainViewport()->ID)continue;
+            WindowPlacement p;p.X=entry->ViewportPos.x+entry->Pos.x;p.Y=entry->ViewportPos.y+entry->Pos.y;p.Width=entry->Size.x;p.Height=entry->Size.y;
+            bool reachable=false;
+            for(const auto& d:displays)if(p.X+48>d.X && p.Y+32>d.Y && p.X<d.X+d.Width-48 && p.Y<d.Y+d.Height-32)reachable=true;
+            if(!reachable){p=FitWindow(p,displays);entry->ViewportPos=ImVec2ih(p.X-entry->Pos.x,p.Y-entry->Pos.y);entry->Size=ImVec2ih(p.Width,p.Height);}
+        }
         ImGui::StyleColorsDark();
         SetDarkThemeColors();
         ImGuiStyle& style = ImGui::GetStyle();
@@ -75,7 +93,17 @@ namespace Hazel {
             if (m_OpenGLInitialized && m_GLFWInitialized) {
                 size_t size = 0;
                 const auto* ini = ImGui::SaveIniSettingsToMemory(&size);
-                try { FileSystem::WriteFileAtomically(std::filesystem::u8path(m_IniPath), [&](std::ostream& out) { out.write(ini, size); }); }
+                try {
+                    auto path=std::filesystem::u8path(m_IniPath);
+                    bool unchanged=std::filesystem::exists(path)==m_IniExisted;
+                    if(unchanged && m_IniExisted)unchanged=FileDocument::Read(path)==m_IniOriginal;
+                    if(!m_SettingsLease || !unchanged) {
+                        path=Resources::Get().UserData/"instances"/(m_InstanceToken+".imgui.ini");
+                        std::filesystem::create_directories(path.parent_path());
+                        if(!unchanged)HZ_CORE_WARN("Layout changed externally; original retained, saving instance snapshot");
+                    }
+                    FileSystem::WriteFileAtomically(path, [&](std::ostream& out) { out.write(ini, size); });
+                }
                 catch (const std::runtime_error& error) { HZ_CORE_ERROR("Save editor settings: {}", error.what()); }
             }
             if (m_OpenGLInitialized) ImGui_ImplOpenGL3_Shutdown();

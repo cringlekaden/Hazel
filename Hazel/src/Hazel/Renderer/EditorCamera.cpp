@@ -1,5 +1,6 @@
 // Adapted from TheCherno/Hazel 1feb705 for local ownership and native Linux/Windows portability.
 #include "hzpch.h"
+#include <cmath>
 #include "EditorCamera.h"
 
 #include "Hazel/Core/Input.h"
@@ -14,6 +15,12 @@
 #include <glm/gtx/quaternion.hpp>
 
 namespace Hazel {
+
+    void EditorCamera::RestoreOrbit(const glm::vec3& focus,float pitch,float yaw,float distance) {
+        if(!std::isfinite(pitch)||!std::isfinite(yaw)||!std::isfinite(distance)||distance<.1f||distance>100000)return;
+        for(int axis=0;axis<3;++axis)if(!std::isfinite(focus[axis]))return;
+        m_FocalPoint=focus;m_Pitch=pitch;m_Yaw=yaw;m_Distance=distance;UpdateView();
+    }
 
 	EditorCamera::EditorCamera(float fov, float aspectRatio, float nearClip, float farClip)
 		: m_FOV(fov), m_AspectRatio(aspectRatio), m_NearClip(nearClip), m_FarClip(farClip)
