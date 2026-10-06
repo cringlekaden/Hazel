@@ -6,6 +6,7 @@
 #include "UI/PropertyUI.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Authoring/EditorPreferences.h"
+#include "Authoring/RendererLaunch.h"
 #include "Authoring/AuthoringPanel.h"
 #include "Hazel/Utils/Toolchain.h"
 #include "Hazel/Utils/Process.h"
@@ -855,6 +856,21 @@ private:
         Check(e.m_EditorScenePath==path && e.m_EditorScene->GetName()=="Remembered workspace scene" &&
               e.m_SceneHierarchyPanel.GetSelectedEntity().GetUUID()==112233 && e.m_EditorCamera.GetDistance()==13,
               "Production startup did not restore accepted scene/camera/selection");
+        // F5 without a project must restore the last successful selection, not the launch example.
+        const auto selected=project.parent_path()/std::filesystem::u8path("selected project é.hproj");
+        FileSystem::WriteNewFile(selected,ProjectSerializer(Project::GetActive()).SerializeText());
+        Check(e.OpenProject(selected) && e.SaveProject(),"Selected project open/save failed");
+        a.FlushWorkspace(); // Same persistence used by orderly editor shutdown.
+        auto* gui=Application::Get().GetImGuiLayer();
+        a.m_State=std::make_unique<EditorState>(gui->OwnsWorkspace(),gui->InstanceToken());
+        const auto prelaunch=EditorRendererLaunch::Read({"EditorSmoke"});
+        a.Startup({"EditorSmoke"});
+        Check(prelaunch.Project==selected && e.m_ProjectPath==selected &&
+              a.m_State->Session.LastProject==selected.generic_u8string(),
+              "Fresh prelaunch/startup did not restore the project selected and saved after launch");
+        a.Startup({"EditorSmoke","--project",project.generic_u8string()});
+        Check(e.m_ProjectPath==project && e.m_EditorScenePath==path,
+              "Intentional explicit project lost precedence over the remembered selection");
         const auto retained=e.m_EditorScene;const auto draft=a.SceneText();
         a.Startup({"EditorSmoke","--project",(m_Directory/"missing-explicit.hproj").generic_u8string()});
         Check(e.m_EditorScene==retained && a.SceneText()==draft,"Bad explicit launch fell back/replaced valid session");

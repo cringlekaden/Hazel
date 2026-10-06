@@ -49,7 +49,7 @@ Use `python3` on Linux or `python` on Windows, from any directory, with the scri
 ```sh
 python3 scripts/hazel.py build                          # incremental Debug
 python3 scripts/hazel.py build --config Release
-python3 scripts/hazel.py run Hazelnut --project examples/SceneTransitions/SceneTransitions.hproj
+python3 scripts/hazel.py run Hazelnut                    # restore last project
 python3 scripts/hazel.py run Nutella                     # development example
 python3 scripts/hazel.py script-build examples/SceneTransitions/SceneTransitions.hproj --config Release
 python3 scripts/hazel.py package --project examples/SceneTransitions/SceneTransitions.hproj
@@ -115,7 +115,7 @@ passed. No release has been published. The normal Hazelnut/Nutella artifacts rem
 
 ## Development and layout
 
-Copy the portable `scripts/internal/vscode/linux/*.json` or `windows/*.json` templates into ignored `.vscode/` after preserving existing settings. F5 defaults to Hazelnut; Nutella has its own configuration. Debug launch builds incrementally. Bear refresh is an explicit task, requiring Bear; Linux debugger requires GDB. Linux desktop tests require a display (`xvfb-run` is useful in CI), `libXtst` for automated clicks, and optionally Mesa software graphics. Windows tests acquire a checksum-pinned isolated software driver only under ignored testing output.
+Copy the portable `scripts/internal/vscode/linux/*.json` or `windows/*.json` templates into ignored `.vscode/` after preserving existing settings. F5 defaults to Hazelnut with no project argument, so it reopens the last successful project. An explicit `--project` or positional project path intentionally overrides restoration on every launch; remove the Hazelnut `args` project path from older local templates to restore the last project. Nutella has its own explicit development-example configuration. Debug launch builds incrementally. Bear refresh is an explicit task, requiring Bear; Linux debugger requires GDB. Linux desktop tests require a display (`xvfb-run` is useful in CI), `libXtst` for automated clicks, and optionally Mesa software graphics. Windows tests acquire a checksum-pinned isolated software driver only under ignored testing output.
 
 ```text
 Hazel/                 engine: src/, Resources/, pristine vendor/

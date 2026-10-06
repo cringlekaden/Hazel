@@ -605,6 +605,26 @@ keyboard/mouse/DPI interaction and perceived frame pacing remain acceptance chec
 The unrelated Lanterns draft, recorded layouts/preferences/VS Code files, stashes
 and recursive vendor pins/clean worktrees were checked unchanged.
 
+### F acceptance correction: normal F5 startup
+
+Hands-on acceptance found F5 reopening SceneTransitions after saving Skybound.
+The saved session correctly remembered Skybound; both development launch templates
+supplied SceneTransitions as an explicit project argument, which correctly won over
+restoration. Normal Linux/Windows Hazelnut F5 now passes no project argument;
+Nutella keeps its explicit runtime example. Setup/README show normal restored launch
+and explain intentional explicit overrides. The affected local Hazelnut args were
+removed without changing other debugger settings or replacing the ignored config.
+A production-path regression opens/saves a different project, flushes shutdown state,
+reads fresh session/prelaunch state and verifies restoration; intentional explicit
+launch still wins. Template checks run in the existing regression runner. Linux
+Debug/Release Premake builds pass with two compiler jobs; native HD4000 Debug and
+software OpenGL 4.1 Release EditorSmoke pass, including the new restoration case
+and existing guards/recovery/Console/renderer checks. Python compilation and both
+platform template checks pass. Physical F5/debugger interaction and Windows
+execution remain acceptance checks. Older Windows local configs need only their
+Hazelnut args set to []; ignored configs are not replaced by a pull. No Actions
+query or further stage is part of this correction.
+
 ## Deferred findings
 
 Entity/prefab hierarchy and optional custom caption remain later stages. Stage C adds recovery/schema gates

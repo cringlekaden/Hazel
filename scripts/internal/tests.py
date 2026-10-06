@@ -10,6 +10,20 @@ import urllib.request
 import hazel as hz
 
 
+def launcher_checks():
+    """Normal F5 permits session restore; intentional runtime arguments stay explicit."""
+    for platform in ('linux', 'windows'):
+        data = json.loads((hz.ROOT/'scripts/internal/vscode'/platform/'launch.json').read_text(encoding='utf-8'))
+        configs = data['configurations']
+        editor = next(c for c in configs if c['name'].startswith('Hazelnut'))
+        runtime = next(c for c in configs if c['name'].startswith('Nutella'))
+        if editor['args']:
+            raise RuntimeError(platform + ' default Hazelnut F5 overrides the remembered project')
+        if runtime['args'] != ['--project', '${workspaceFolder}/examples/SceneTransitions/SceneTransitions.hproj']:
+            raise RuntimeError(platform + ' Nutella development example launch changed')
+    print('PASS: Linux/Windows F5 leaves editor project selection to session restore; runtime example remains explicit', flush=True)
+
+
 def authoring_checks(working):
     """Exercise the same transactional project service invoked by editor jobs."""
     import yaml
@@ -61,6 +75,7 @@ def software_driver():
 
 
 def test(configuration, profile='native'):
+    launcher_checks()
     base=hz.binaries(configuration)
     logs=hz.ROOT/'build/testing/logs';logs.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='hazel tests space-é-') as temporary:

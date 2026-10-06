@@ -377,7 +377,7 @@ def main():
             if args.action == 'setup':
                 diagnose(); run(['git', 'submodule', 'update', '--init', '--recursive']); yaml_tools()
             build(args.config, getattr(args, 'tests', False), args.action == 'database')
-            if args.action == 'setup': print('Ready. python scripts/hazel.py run Hazelnut --project examples/SceneTransitions/SceneTransitions.hproj\nF5: copy scripts/internal/vscode/' + SYSTEM + '/ templates into .vscode. Use hazel.py --help for all workflows.')
+            if args.action == 'setup': print('Ready. python scripts/hazel.py run Hazelnut\nHazelnut restores the last project; --project explicitly selects one.\nF5: copy scripts/internal/vscode/' + SYSTEM + '/ templates into .vscode. Use hazel.py --help for all workflows.')
         elif args.action == 'new-project':
             from internal.authoring import create_project
             create_project(args.name, args.identifier, args.destination,args.build_scripts)
