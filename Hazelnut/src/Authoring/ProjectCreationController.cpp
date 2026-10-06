@@ -52,6 +52,8 @@ namespace Hazel {
                 }
             }
         auto r = AuthoringReadiness::Evaluate(input);
+        const auto rendering=RenderingRestartReason();
+        if(!rendering.empty()){r.Playing=false;r.PlayReason=rendering;}
         PropertyUI::ReadOnly("editing-ready", "Editing / saving", r.EditReason.c_str());
         PropertyUI::ReadOnly("scripts-ready", "Build managed scripts", r.ScriptReason.c_str());
         PropertyUI::ReadOnly("reload-ready", "Reload managed scripts",

@@ -154,3 +154,13 @@ that build. Export always uses saved descriptor/startup/assets, rebuilds the
 selected project's Release scripts and runtime/validator targets, and validates
 the existing package closure. User layout/session/workspaces stay under the editor
 data directory; launch supports `--project`, `--scene`, and `--no-restore`.
+
+Project Settings > Runtime rendering saves portable VSync, Automatic/GLSL shader
+loading and advanced texture-batch requests. Save rendering requests preserves
+open content drafts. Batch/shader policy initializes at launch: when a saved
+project differs from the current effective policy, save wanted documents, close
+normally and restart Hazelnut with that project. Play/Simulate cannot silently use
+a different GPU policy. Nutella reads the same requests before initialization.
+Editor Preferences > Graphics owns editor VSync and optional driver-message
+capture; device/effective information is read-only. Swap interval submission does
+not measure compositor timing. See the [Stage F contracts and local verification](docs/design/editor-usability-a1-a2.md#stage-f-renderer-requests).

@@ -680,6 +680,8 @@ namespace Hazel {
             m_RuntimeSession.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
             m_EditorSelection=uint64_t(m_SceneHierarchyPanel.GetSelectedEntity()?m_SceneHierarchyPanel.GetSelectedEntity().GetUUID():UUID(0));
             m_RuntimeSession.Start(Project::GetActive(), m_EditorScene);
+            try { if(m_Authoring)m_Authoring->ApplyRuntimeVSync(); }
+            catch(...) {m_RuntimeSession.Stop();throw;}
             ClearSceneObservers();
             m_ActiveScene = m_RuntimeSession.GetScene(); m_SceneState = SceneState::Play;
             m_SceneHierarchyPanel.SetContext(m_ActiveScene); m_ActionError.clear();return true;
@@ -694,9 +696,15 @@ namespace Hazel {
 		if(Project::GetActive())Project::GetActive()->GetAssets()->Refresh();
 		auto scene = Scene::Copy(m_EditorScene);
         RuntimeSession::Validate(scene, false);
+        if(Project::GetActive()) {
+            const auto reason=RendererPolicy::RestartReason(Project::GetActive()->GetRendererRequests(),Renderer::GetResolution(),Renderer::GetCapabilities());
+            if(!reason.empty())throw std::runtime_error(reason);
+        }
         m_EditorSelection=uint64_t(m_SceneHierarchyPanel.GetSelectedEntity()?m_SceneHierarchyPanel.GetSelectedEntity().GetUUID():UUID(0));
 		scene->OnSimulationStart();
 		if (m_SceneState != SceneState::Edit) OnSceneStop();
+        try { if(m_Authoring)m_Authoring->ApplyRuntimeVSync(); }
+        catch(...) {scene->OnSimulationStop();throw;}
 		ClearSceneObservers();
 		m_ActiveScene = scene; m_SceneState = SceneState::Simulate;
 		m_SceneHierarchyPanel.SetContext(scene); m_ActionError.clear();return true;
@@ -712,6 +720,7 @@ namespace Hazel {
 		if (m_SceneState == SceneState::Play) m_RuntimeSession.Stop();
 		else if (m_SceneState == SceneState::Simulate) m_ActiveScene->OnSimulationStop();
 		m_SceneState = SceneState::Edit; m_ActiveScene = m_EditorScene;
+        if(m_Authoring)m_Authoring->RestoreEditorVSync();
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         if(m_EditorSelection)m_SceneHierarchyPanel.SetSelectedEntity(m_EditorScene->GetEntityByUUID(m_EditorSelection));
 	}

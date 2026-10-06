@@ -53,6 +53,9 @@ class AuthoringPanel
     void FlushWorkspace();
     void RestoreWorkspace(bool scene);
     void SceneOpened();
+    const std::string& RenderingRestartReason() const;
+    void ApplyRuntimeVSync();
+    void RestoreEditorVSync();
 
   private:
     void Preferences();
@@ -61,6 +64,10 @@ class AuthoringPanel
     void WorkspaceControls();
     void CaptureWorkspace();
     void ProjectSettings();
+    void ProjectRendering();
+    void EditorRendering();
+    void CopyDeviceReport();
+    bool SaveRenderingRequests(const RuntimeRendererRequests& requests);
     void NewProject();
     void Scripts();
     void Readiness();
@@ -90,6 +97,9 @@ class AuthoringPanel
     ProjectWorkspace m_Workspace;
     std::filesystem::path m_WorkspaceProject;
     std::filesystem::path m_CreatedProject;
+    RuntimeRendererRequests m_RenderingDraft;
+    bool m_RenderingAuthored=false;
+    mutable std::string m_RenderingRestart;
     std::string m_MissingProject, m_MissingScene, m_PreviousWorkspace;
     std::string m_PendingState, m_WrittenState, m_PersistenceError;
     double m_StateClock=0, m_StateChanged=0, m_StatePolled=0;

@@ -93,10 +93,15 @@ AuthoringPanel::AuthoringPanel(EditorLayer &editor) : m_Editor(editor), m_Consol
 }
 ActionAvailability AuthoringPanel::Availability(EditorAction action) const
 {
-    return EditorActionAvailability({static_cast<EditorMode>(m_Editor.m_SceneState), m_Tools.Busy(),
+    const auto available=EditorActionAvailability({static_cast<EditorMode>(m_Editor.m_SceneState), m_Tools.Busy(),
                                      bool(Project::GetActive()), bool(m_Editor.m_EditorScene),
                                      m_Documents.Pending() && !m_ResolvingDocumentAction},
                                     action);
+    if(available && (action==EditorAction::Play || action==EditorAction::Simulate)) {
+        const auto& reason=RenderingRestartReason();
+        if(!reason.empty())return {reason.c_str()};
+    }
+    return available;
 }
 bool AuthoringPanel::Require(EditorAction action)
 {
@@ -126,6 +131,9 @@ void AuthoringPanel::RememberProject()
 void AuthoringPanel::BindProject()
 {
     ++m_ProjectGeneration;
+    m_RenderingDraft=Project::GetActive()?Project::GetActive()->GetRendererRequests():RuntimeRendererRequests{};
+    m_RenderingAuthored=Project::GetActive()&&Project::GetActive()->GetConfig().Rendering.has_value();
+    if(!RenderingRestartReason().empty())Notify(RenderingRestartReason(),spdlog::level::info);
     auto availability = [this](EditorAction action) { return Availability(action); };
     m_Editor.m_SceneHierarchyPanel.Availability = availability;
     m_PrefabInspector.Availability = availability;
@@ -670,7 +678,6 @@ void AuthoringPanel::Menus()
             m_Draft = m_Preferences;
             RefreshSDK(true);
             m_ShowPreferences = true;
-            ValidatePython();
         }
         ImGui::EndMenu();
     }
@@ -714,17 +721,16 @@ void AuthoringPanel::Preferences()
     if(!m_PreferenceSearch.empty() && ImGui::SmallButton("Clear search"))m_PreferenceSearch.clear();
     for(int category=0;category<3;++category){const char* names[]={"General","Tools","Graphics"};if(category)PropertyUI::WrapButton(names[category]);if(ImGui::Button(names[category]))m_PreferenceCategory=category;}
     auto matches=[&](const char* names,int category){if(m_PreferenceSearch.empty())return m_PreferenceCategory==category;std::string query=m_PreferenceSearch;std::transform(query.begin(),query.end(),query.begin(),[](unsigned char c){return char(std::tolower(c));});return std::string(names).find(query)!=std::string::npos;};
-    const bool general=matches("general startup workspace project scene layout ui scale vsync colliders",0);
+    const bool general=matches("general startup workspace project scene layout ui scale colliders",0);
     const bool tools=matches("tools python sdk script editor executable compiler",1);
-    const bool graphics=matches("graphics renderer api version vendor device driver texture samples debug shader capabilities",2);
+    const bool graphics=matches("graphics renderer api version vendor device driver texture samples debug shader capabilities vsync swap interval diagnostics",2);
     if(!general&&!tools&&!graphics)ImGui::TextWrapped("No matching settings. Clear search to choose a category.");
     if(general) {
     PropertyUI::SliderFloat("ui-scale", "UI scale", m_Draft.UIScale, .8f, 2, "%.2f");
     PropertyUI::Checkbox("colliders", "Collider overlay", m_Draft.ShowColliders);
     if(ImGui::CollapsingHeader("Workspace / startup",ImGuiTreeNodeFlags_DefaultOpen)) {
         PropertyUI::Checkbox("restore-session","Reopen last project / scene",m_Draft.RestoreSession);
-        PropertyUI::Checkbox("editor-vsync","Editor VSync",m_Draft.VSync);
-        PropertyUI::Help("Applies to this editor window only; no game/project renderer policy is changed.");
+
         WorkspaceControls();
     }
     }
@@ -792,6 +798,7 @@ void AuthoringPanel::Preferences()
                      "editor receives one source-file argument.");
     }
     if(graphics) {
+    EditorRendering();
     auto &caps = Renderer::GetCapabilities();
     if (ImGui::CollapsingHeader("Detected renderer (read-only)",ImGuiTreeNodeFlags_DefaultOpen)) {
         PropertyUI::ReadOnly("api","Graphics API",Renderer::GetAPI()==RendererAPI::API::OpenGL?"OpenGL":"Unavailable");
@@ -808,6 +815,7 @@ void AuthoringPanel::Preferences()
         PropertyUI::ReadOnly("shader-binaries","Shader binaries",caps.ShaderBinaries?"Supported":"Unavailable");
         PropertyUI::ReadOnly("debug-output","Debug output",caps.DebugOutput?"Supported":"Unavailable");
         PropertyUI::ReadOnly("line-range","Line width range",(std::to_string(caps.MinLineWidth)+" to "+std::to_string(caps.MaxLineWidth)).c_str());
+        if(ImGui::Button("Copy device report"))CopyDeviceReport();
         ImGui::TextWrapped("Device facts do not enable MSAA or change project settings. This editor's target remains single-sampled.");
     }
     }
@@ -820,6 +828,7 @@ void AuthoringPanel::Preferences()
     if (ImGui::Button("Apply and Save"))
         try
         {
+            const bool toolsChanged=m_Draft.Python!=m_Preferences.Python || m_Draft.SDK!=m_Preferences.SDK;
             m_Draft.RecentProjects = m_Preferences.RecentProjects;
             m_Draft.Save(true);
             m_PreferenceRecovery.clear();
@@ -827,10 +836,11 @@ void AuthoringPanel::Preferences()
             RefreshSDK();
             ImGui::GetIO().FontGlobalScale = m_Preferences.UIScale*std::clamp(Application::Get().GetWindow().GetContentScale(),.75f,2.f);
             m_Editor.m_ShowPhysicsColliders = m_Preferences.ShowColliders;
-            Application::Get().GetWindow().SetVSync(m_Preferences.VSync);
+            if(m_Editor.m_SceneState==EditorLayer::SceneState::Edit)RestoreEditorVSync();
+            else ApplyRuntimeVSync();
             Notify("Preferences saved.");
             m_Console.CaptureLevel=m_Preferences.ConsoleCapture;
-            ValidatePython();
+            if(toolsChanged)ValidatePython();
         }
         catch (const std::exception &error)
         {
@@ -932,7 +942,9 @@ void AuthoringPanel::ProjectSettings()
             ImGui::EndCombo();
         }
     }
-    bool valid = !m_ProjectName.empty() && Portable(m_AssetDirectory) && Portable(m_Startup) &&
+    ProjectRendering();
+    bool renderingValid=true;try{RendererPolicy::Validate(m_RenderingDraft);}catch(const std::exception&){renderingValid=false;}
+    bool valid = renderingValid && !m_ProjectName.empty() && Portable(m_AssetDirectory) && Portable(m_Startup) &&
                  Portable(m_Module);
     if (!valid)
         ImGui::TextWrapped("Choose project-relative assets, startup scene "
@@ -942,6 +954,7 @@ void AuthoringPanel::ProjectSettings()
     if (ImGui::Button("Save Project Settings"))
     {
         auto config = Project::GetActive()->GetConfig();
+        if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;
         config.Name = m_ProjectName;
         config.ScriptProject = m_ScriptProject;
         config.StartScene = Path(m_Startup);
@@ -961,7 +974,8 @@ void AuthoringPanel::ProjectSettings()
                       EditorLayer::ProjectOpenOptions options;
                       options.Config=config;options.SaveDescriptor=true;
                       if(!m_Editor.OpenProject(m_Editor.m_ProjectPath,options))return false;
-                      Notify("Project settings saved and applied.");
+                      const auto reason=RenderingRestartReason();
+                      Notify(reason.empty()?"Project settings saved; staged content opened and current GPU policy matches.":"Project settings saved; staged content opened. "+reason);
                       return true;
                   }
                   catch (const std::exception &error)
@@ -978,7 +992,7 @@ void AuthoringPanel::ProjectSettings()
             const auto path=FileDialogs::SaveFile("Hazel project\0*.hproj\0");
             if(!path.empty() && Require(EditorAction::SaveAsset))try {
                 auto candidate=CreateRef<Project>();auto& config=candidate->GetConfig();
-                config=Project::GetActive()->GetConfig();config.Name=m_ProjectName;config.ScriptProject=m_ScriptProject;
+                config=Project::GetActive()->GetConfig();if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;config.Name=m_ProjectName;config.ScriptProject=m_ScriptProject;
                 config.StartScene=Path(m_Startup);config.AssetDirectory=Path(m_AssetDirectory);config.ScriptModulePath=Path(m_Module);
                 const auto text=ProjectSerializer(candidate).SerializeText();
                 FileSystem::WriteFileAtomically(Path(path),[&](auto& out){out<<text;},WriteMode::CreateNew);

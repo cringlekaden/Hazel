@@ -141,6 +141,10 @@ void AuthoringPanel::Status()
         PropertyUI::Help("Open Console without interrupting the active document. Error count includes captured errors since Clear, even if filtered or dropped; a failed operation stays pinned until dismissed.");
         ImGui::SameLine();
     }
+    if(!RenderingRestartReason().empty()) {
+        if(ImGui::SmallButton("Renderer restart pending"))m_ShowProject=true;
+        PropertyUI::Help(RenderingRestartReason().c_str());ImGui::SameLine();
+    }
     ImGui::TextUnformatted(identity.c_str());
     if (ImGui::GetItemRectMax().x > ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x)
         PropertyUI::Help(identity.c_str());

@@ -1,11 +1,11 @@
-# Editor usability implementation: A1 / A2 and B–E
+# Editor usability implementation: A1 / A2 and B–F
 
 Baseline: `5de70c93a89e1c8df3fd37553569d9499f793c7a` on
 `feature/sprite-sheet-authoring`, including the complete audit and descended from
 `9a48282f59b4cbc188615ec66763c448b70a2e83`. Implementation branch:
 `feature/editor-usability`. This record supplements
 [the audit](editor-usability-audit.md). A1/A2 and their corrections are complete;
-Stages B–E and their verification are recorded below. F–H and broader tooltip cleanup remain separate stages.
+Stages B–F and their verification are recorded below. G/H and broader tooltip cleanup remain separate stages.
 
 ## Workflows
 
@@ -519,10 +519,95 @@ Build/export prerequisites are explicitly checked at the operation; the existing
 preflight snapshot may require checking again after another tool result.
 
 
+## Stage F: renderer requests
+
+Baseline `a0a4228` on `feature/editor-usability`; the unrelated Lanterns sheet,
+A–E, native decorations, docking, dependencies and examples remain intact. Only
+OpenGL is selectable by engine code; the UI offers no backend, MSAA/HDR, MaxQuads
+or unimplemented quality choices.
+
+`RendererPolicy` is the shared CPU validator/resolver over the existing backend
+capability record. Resolution retains requested settings separately from effective
+settings and reasons. `GetSettings()` now returns effective shader/debug/batch
+policy; `GetResolution()` retains the request. Renderer2D exposes its actual quad
+program-loading path, rather than inferring every shader's implementation from a
+checkbox. Existing legacy/direct GLSL shaders remain unchanged.
+
+| Request / access | Scope and persisted values | Application / effective result |
+| --- | --- | --- |
+| Runtime VSync, Project Settings > Runtime rendering | Portable optional `Project.Rendering` v1; On/Off, default On | Nutella submits 1/0 before renderer initialization. Hazelnut Play/Simulate submits the saved project interval; Stop restores editor preference. Driver/compositor timing is unmeasured. |
+| Shader loading, same section | Portable Automatic / GLSLCompatibility; default Automatic | Initialization only. Auto uses core 4.6 plus loaded binary/specialization functions, otherwise shaderc/Cross to GLSL 410. Compatibility always uses GLSL. |
+| Texture batch slots, Advanced batching | Portable 2–32 including white; default 32 | Initialization only, effective min(request,32,device texture units). Smaller batches can increase draw calls; no quality change. |
+| Editor VSync, Preferences > Graphics | Existing machine-local On/Off preference | Main-window live in Edit; project interval wins during runtime. Detached ImGui windows retain their existing swap behavior, not a claimed global policy. |
+| GL debug output, Advanced editor diagnostics | Machine-local Automatic / Off / On; Auto means Debug On, Release/Dist Off | Initialization only; effective request AND existing core-debug capability/entry points. Unsupported requests stay authored with reason. Console capture threshold is separate. |
+
+Hazelnut reads native preferences and the Stage D launch/session selector before
+Application creation. Explicit invalid arguments do not load remembered policy.
+Missing/malformed/future settings remain preserved; ordinary Open retains its
+existing diagnostics. Nutella obtains requests from its staged descriptor before
+constructing Application. Both hosts use the same validator/resolver. Console
+capture starts before CPU prelaunch and outlives Application teardown.
+
+Project switching never recreates the renderer. Current and desired effective
+GPU policies are compared; different shader/batch results show a restart reason
+and disable Play/Simulate through shared availability and engine apply-time
+validation. Equivalent effective policies need no restart. Save wanted documents,
+close through the existing guard, and relaunch that saved project. Runtime start
+rejects incompatible policy before retiring a valid session. Resize/Stop leave GPU
+policy unchanged. Diagnostic preference changes show current capture and pending
+restart; no live shader/callback/resource replacement is attempted.
+
+The versioned `Rendering` block rejects unknown fields/versions and invalid values.
+Omitted blocks preserve legacy defaults without being automatically added on an
+unrelated save. Known omitted fields inside v1 are visible default migrations,
+with original preservation before overwrite. No device facts/effective results are
+serialized. Packaging copies the descriptor unchanged and uses native schema
+validation; an older source SDK that rejects Rendering needs updating/rebuilding,
+not a Python fallback or silent field removal.
+
+**Save rendering requests** atomically updates only the accepted descriptor/config,
+retaining scene/prefab/sheet drafts and other Project Settings drafts. Conflict,
+pending document operation, runtime or tool-job rejection leaves them unchanged.
+General Project Settings keeps its existing guarded stage-and-reopen contract.
+Property rows show requested drafts, availability, current program/batch/interval
+and limitation/restart reasons. Device details remain in Stage D's Graphics group;
+Copy Device Report copies that record and policy to clipboard/Console. Preferences
+inspection/graphics saves do not launch Python; explicit tool checks remain native
+UI actions over the established tooling.
+
+Verification: Linux Debug/Release Premake builds (two compiler jobs) and both
+canonical 14-executable software-rendered suites pass, retaining A–E coverage.
+Focused cases cover capability fallback, invalid requests, project isolation and
+unknown/future byte preservation, read-only prelaunch precedence, failed save and
+runtime replacement, retained three-document drafts, and submitted VSync intervals.
+Renderer checks retain color/picking readbacks and draw-count assertions with both
+32-request/device-clamped and two-slot batches. Native accelerated Intel HD4000
+OpenGL 4.2 renderer/editor checks pass; software OpenGL 4.1 editor/renderer checks
+pass. Forced llvmpipe 4.6 additionally verifies actual SPIR-V versus generated GLSL
+programs and debug-message capture enabled versus disabled.
+
+The canonical export path packaged a saved project with VSync Off, two texture
+slots and GLSL compatibility. Its extracted descriptor retains those requests;
+relocated package validation and an actual packaged Nutella startup/render/OS-close
+on HD4000 pass with interval 0 and effective batch 2 in the log. GLX observation
+also reports intervals 1/0 on the native renderer check; neither observation
+measures compositor timing. An isolated 1280×720 software capture drew the real
+settings at 410/300 px widths and 1.25 UI scale; controls remain readable, with
+wrapping explanations and scrolling. Screenshots and logs stay outside the repo.
+An extra capture run concurrent with linking hit the existing synthetic-minimize
+fixture's timing (a frame resumed while its probe job was still busy; Open was
+correctly rejected). The idle repeat passes unchanged,
+including minimized polling. No assertion was weakened; this is a remaining
+fixture limitation, not hardware-minimize acceptance.
+
+No GitHub Actions were queried or awaited. Windows build/execution, physical
+keyboard/mouse/DPI interaction and perceived frame pacing remain acceptance checks.
+The unrelated Lanterns draft, recorded layouts/preferences/VS Code files, stashes
+and recursive vendor pins/clean worktrees were checked unchanged.
+
 ## Deferred findings
 
-Renderer policies and
-entity/prefab hierarchy remain later stages. Stage C adds recovery/schema gates
+Entity/prefab hierarchy and optional custom caption remain later stages. Stage C adds recovery/schema gates
 and prefab conflict/exclusive creation checks; the earlier A1/A2 scope remains as
 recorded above. Save All is a
 series of existing atomic file writes, not a multi-file transaction. Preferences

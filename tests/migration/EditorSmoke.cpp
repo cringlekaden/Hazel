@@ -60,6 +60,7 @@ public:
             WorkspaceChecks();
             NativeCreationChecks();
             RecoveryChecks();
+            RenderingChecks();
             AuthoringChecks();
             SDKChecks();
             EditorConsoleChecks(m_Directory);
@@ -364,6 +365,23 @@ private:
     }
     void OnImGuiRender() override {
         if(m_Frame!=13&&!(m_Frame==16&&std::getenv("HAZEL_EDITOR_CAPTURE")&&!std::getenv("HAZEL_CONSOLE_CAPTURE")))return;
+        if(std::getenv("HAZEL_RENDERING_CAPTURE")) {
+            // Earlier failure assertions are complete; isolate presentation evidence from their modal.
+            m_Editor.m_ActionError.clear();ImGui::ClosePopupsOverWindow(nullptr,false);
+            const auto scale=ImGui::GetIO().FontGlobalScale;ImGui::GetIO().FontGlobalScale=1.25f;
+            const auto origin=ImGui::GetMainViewport()->Pos;
+            ImGui::SetNextWindowPos({origin.x+5,origin.y+50});ImGui::SetNextWindowSize({410,580});
+            ImGui::Begin("Rendering layout contract",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoFocusOnAppearing);
+            ImGui::GetStateStorage()->SetInt(ImGui::GetID("Runtime rendering"),1);
+            ImGui::PushID("runtime-rendering");ImGui::GetStateStorage()->SetInt(ImGui::GetID("Advanced batching"),1);ImGui::PopID();
+            m_Editor.m_Authoring->ProjectRendering();ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());ImGui::End();
+            ImGui::SetNextWindowPos({origin.x+420,origin.y+50});ImGui::SetNextWindowSize({300,580});
+            ImGui::Begin("Narrow graphics layout",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoFocusOnAppearing);
+            ImGui::GetStateStorage()->SetInt(ImGui::GetID("Advanced editor diagnostics"),1);
+            m_Editor.m_Authoring->EditorRendering();ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());ImGui::End();
+            ImGui::GetIO().FontGlobalScale=scale;
+            return;
+        }
         ImGui::SetNextWindowSize({420,180});
         ImGui::Begin("Property layout contract",nullptr,ImGuiWindowFlags_NoSavedSettings |
                      ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoFocusOnAppearing);
@@ -442,10 +460,16 @@ private:
         panel.m_Document->Draft().Regions.front().Name="Unsaved sheet preservation sentinel";panel.m_Document->Changed();
         const auto sceneDraft=a.SceneText();const auto prefabDraft=SceneSerializer(a.m_PrefabScene).SerializeAuthoredSnapshot();
         const auto sheetDraft=panel.CopyDraftText();const auto prefabOwner=a.m_PrefabScene;const auto sheetOwner=panel.m_Document.get();
+        const auto portable=Project::GetActive()->GetRendererRequests();
+        Check(a.SaveRenderingRequests(portable) && e.m_EditorScene==scene && a.m_PrefabScene==prefabOwner && panel.m_Document.get()==sheetOwner &&
+              a.SceneText()==sceneDraft && SceneSerializer(a.m_PrefabScene).SerializeAuthoredSnapshot()==prefabDraft && panel.CopyDraftText()==sheetDraft && panel.Dirty(),
+              "Renderer-only save lost any of the three document drafts");
         const auto invalidProject=m_Directory/"all-drafts-future.hproj";
         FileSystem::WriteFileAtomically(invalidProject,[](auto& out){out<<"Project: {Version: 99}\n";});
         a.Guard(OperationIntent::OpenProject,[&]{return e.OpenProject(invalidProject);});
         Check(a.m_Documents.Pending() && a.m_Documents.Affected().size()==3,"Project replacement did not guard all three dirty documents");
+        const auto pendingBytes=Read(e.m_ProjectPath);
+        Check(!a.SaveRenderingRequests(portable) && Read(e.m_ProjectPath)==pendingBytes,"Renderer save bypassed pending document operation");
         a.m_ResolvingDocumentAction=true;
         Check(!a.m_Documents.Resolve(GuardChoice::Discard,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Unsupported project unexpectedly opened");
         a.m_ResolvingDocumentAction=false;
@@ -764,6 +788,34 @@ private:
         auto storeAlias=Toolchain::ProbePython(m_Directory/"WindowsApps/python.exe","alias");Check(!storeAlias&&storeAlias.Error.find("aliases")!=std::string::npos,"Windows execution alias accepted");
 #endif
         std::cout<<"PASS: prefab identity/independence/self/external references/malformed assets, script creation, preferences recovery/scopes, absolute Python discovery\n";
+    }
+    void RenderingChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;auto& window=Application::Get().GetWindow();
+        const auto project=Project::GetActive();const auto previous=project->GetRendererRequests();
+        const auto scene=e.m_EditorScene;const auto path=e.m_EditorScenePath;
+        const auto text=a.SceneText();const auto savedSnapshot=a.m_SavedScene;
+        const auto name=project->GetConfig().Name;const auto form=a.m_ProjectName;
+        a.m_ProjectName="Unaccepted general settings draft";
+        RuntimeRendererRequests request=previous;request.TextureSlots=2;request.VSync=false;
+        Check(a.SaveRenderingRequests(request) && project->GetConfig().Name==name && a.m_ProjectName=="Unaccepted general settings draft" &&
+              e.m_EditorScene==scene && e.m_EditorScenePath==path && a.SceneText()==text && a.m_SavedScene==savedSnapshot,
+              "Renderer-only save replaced content or unrelated configuration/form draft");
+        Check(!a.Availability(EditorAction::Play) && !a.Availability(EditorAction::Simulate) && !e.OnScenePlay(true) && !e.OnSceneSimulate(true) &&
+              e.m_EditorScene==scene && a.SceneText()==text && e.m_SceneState==EditorLayer::SceneState::Edit,
+              "UI/apply-time policy accepted unapplied GPU requests or changed content");
+        const auto accepted=Read(e.m_ProjectPath);FileSystem::WriteFileAtomically(e.m_ProjectPath,[](auto& out){out<<"External descriptor edit";});
+        Check(!a.SaveRenderingRequests(previous) && project->GetRendererRequests().TextureSlots==2 &&
+              Read(e.m_ProjectPath)=="External descriptor edit" && e.m_EditorScene==scene && a.SceneText()==text,
+              "Conflicting renderer save changed accepted config, source or scene");
+        FileSystem::WriteFileAtomically(e.m_ProjectPath,[&](auto& out){out<<accepted;});
+        auto runtime=previous;runtime.VSync=false;
+        Check(a.SaveRenderingRequests(runtime) && a.Availability(EditorAction::Play),"Supported current GPU policy remained pending");
+        Check(e.OnScenePlay(true) && !window.IsVSync(),"Play did not use portable runtime interval");
+        e.OnSceneStop();Check(window.IsVSync()==a.m_Preferences.VSync && e.m_EditorScene==scene && a.SceneText()==text,"Stop did not restore editor interval/authored content");
+        Check(e.OnSceneSimulate(true) && !window.IsVSync(),"Simulate did not use runtime interval");e.OnSceneStop();
+        Check(window.IsVSync()==a.m_Preferences.VSync,"Simulation Stop lost editor interval");
+        Check(a.SaveRenderingRequests(previous),"Renderer fixture restoration failed");a.m_ProjectName=form;
+        std::cout<<"PASS: production renderer-only save, unchanged content/general draft, conflict retention, shared pending/apply-time rejection, Play/Simulate interval and Stop restoration\n";
     }
     void NativeCreationChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;const auto previousProject=e.m_ProjectPath;

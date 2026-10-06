@@ -411,7 +411,7 @@ Track redundant tooltip cleanup as a later presentation task: behavior, units,
 shortcuts, consequences and disabled reasons are useful; repeating readable labels
 or values is generally unnecessary. Full paths/values are useful when clipped.
 The current correction applies this to touched controls only. B is delivered;
-C–E delivery is recorded below and in the implementation record. F–H and broader
+C–F delivery is recorded below and in the implementation record. G/H and broader
 tooltip cleanup remain separate stages.
 
 
@@ -441,7 +441,22 @@ SDK and packaging contracts. Readiness distinguishes editing, script tools,
 script-free/assigned-script Play and saved-content export. Export selects required
 runtime/validator targets and the chosen project's scripts, rather than unrelated
 examples. See the implementation record for verification and remaining limits.
-The next architectural stages are F (portable renderer requests), then G (bounded
+At completion of E, the next architectural stages were F (portable renderer requests), then G (bounded
 hierarchy/detached prefabs); H remains an optional native-caption alternative.
 Broader redundant-tooltip cleanup is still pending. Stop after E for physical
 Linux/Windows acceptance before any of those stages.
+
+## Stage F implementation follow-up
+
+F adds portable versioned runtime VSync/shader-loading/batch requests, native
+prelaunch plumbing and shared capability resolution. Editor-only VSync and driver
+capture stay in preferences. Requests/effective policy/reasons are distinct;
+current 2D program loading is observed directly. Project switches retain the
+renderer and require restart only when effective GPU policy differs; Play/Simulate
+cannot silently run another policy. Renderer-only descriptor saves retain authored
+drafts. See the implementation record for scopes, source-data protections and
+actual local verification. OpenGL 4.1 and native HD4000 4.2 remain supported.
+G (relationships/transforms, consumers, hierarchy UI, detached prefab remapping)
+is next. H is optional and requires native OS behavior acceptance; native
+framing remains. Broad tooltip cleanup is still pending. No Actions review/polling
+is part of this stage; stop for physical acceptance after F.
