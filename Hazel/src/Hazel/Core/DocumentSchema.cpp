@@ -85,25 +85,31 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
 {
     Structure(root);
     if(prefabDocument) {
-        Keys(root, {"Scene", "SceneVersion", "PrefabVersion", "Entities"}, "root");
+        Keys(root, {"Scene", "SceneVersion", "PrefabVersion", "PrefabRoot", "Entities"}, "root");
         if(!root["PrefabVersion"])throw std::runtime_error("Missing required PrefabVersion");
     } else Keys(root, {"Scene", "SceneVersion", "Entities"}, "Scene (open prefabs through Content Browser)");
-    if (root["SceneVersion"] && root["SceneVersion"].as<int>() != 1)
-        throw std::runtime_error("Unsupported SceneVersion (expected 1 or known unversioned scene)");
-    if (root["PrefabVersion"] && root["PrefabVersion"].as<int>() != 1)
-        throw std::runtime_error("Unsupported PrefabVersion (expected 1)");
+    if (root["SceneVersion"] && (root["SceneVersion"].as<int>() != 1 && root["SceneVersion"].as<int>() != 2))
+        throw std::runtime_error("Unsupported SceneVersion (expected 1, 2 or known unversioned scene)");
+    if (root["PrefabVersion"] && (root["PrefabVersion"].as<int>() != 1 && root["PrefabVersion"].as<int>() != 2))
+        throw std::runtime_error("Unsupported PrefabVersion (expected 1 or 2)");
     root["Scene"].as<std::string>();
     auto entities = root["Entities"];
     if (entities && !entities.IsSequence()) throw std::runtime_error("Entities must be a sequence");
-    if (root["PrefabVersion"] && (!entities || entities.size()!=1))
+    if (root["PrefabVersion"] && root["PrefabVersion"].as<int>()==1 && (!entities || entities.size()!=1))
         throw std::runtime_error("PrefabVersion 1 requires exactly one entity");
-    bool legacy = !root["SceneVersion"] || !entities;
+    const bool hierarchy=root["SceneVersion"] && root["SceneVersion"].as<int>()==2;
+    if(root["PrefabVersion"] && root["PrefabVersion"].as<int>()==2 && (!hierarchy || !root["PrefabRoot"] || !entities || entities.size()==0))throw std::runtime_error("PrefabVersion 2 requires SceneVersion 2, PrefabRoot and entities");
+    bool legacy = !hierarchy || !entities;
     std::set<uint64_t> ids;
     for (auto entity : entities)
     {
         Keys(entity, {"Entity", "TagComponent", "TransformComponent", "CameraComponent", "ScriptComponent",
                       "SpriteRendererComponent", "SpriteAnimationComponent", "CircleRendererComponent",
-                      "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent"}, "Entity");
+                      "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent", "Relationship"}, "Entity");
+        if(hierarchy) {
+            auto rel=entity["Relationship"];
+            Keys(rel,{"Parent","Order"},"Relationship");rel["Parent"].as<uint64_t>();rel["Order"].as<uint32_t>();
+        } else if(entity["Relationship"])throw std::runtime_error("Relationships require SceneVersion 2");
         const auto id = entity["Entity"].as<uint64_t>();
         if (!id || !ids.insert(id).second) throw std::runtime_error("Duplicate or null entity UUID");
         if (auto n = entity["TagComponent"]) { Keys(n, {"Tag"}, "TagComponent"); n["Tag"].as<std::string>(); }

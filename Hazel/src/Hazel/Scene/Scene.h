@@ -8,6 +8,8 @@
 #include "entt.hpp"
 #include <unordered_set>
 #include <vector>
+#include <deque>
+#include <map>
 #include "Components.h"
 
 class b2World;
@@ -15,6 +17,11 @@ class b2World;
 namespace Hazel {
 
 	class Entity;
+    enum class TransformPolicy { KeepWorld, KeepLocal };
+    enum class DestroyPolicy { Subtree, KeepChildren };
+    struct Relationship { UUID Parent{0}; uint32_t Order = 0; };
+    enum class ParentingState { Pending, Applied, Rejected, Expired };
+    struct ParentingResult { ParentingState State = ParentingState::Expired; std::string Reason; };
 
 	class Scene
 	{
@@ -26,7 +33,22 @@ namespace Hazel {
 
 		Entity CreateEntity(const std::string& name = std::string());
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
-		void DestroyEntity(Entity entity);
+		void DestroyEntity(Entity entity, DestroyPolicy policy = DestroyPolicy::Subtree,
+                           TransformPolicy transform = TransformPolicy::KeepWorld);
+        static constexpr size_t MaxEntities = 10000, MaxDepth = 256;
+        Relationship GetRelationship(Entity entity) const;
+        std::vector<UUID> GetChildren(UUID parent = UUID(0)) const;
+        std::vector<UUID> GetSubtree(Entity entity) const;
+        glm::mat4 GetWorldTransform(Entity entity) const;
+        void SetLocalTransform(Entity entity, const TransformComponent& value);
+        void SetWorldTransform(Entity entity, const glm::mat4& value);
+        static TransformComponent ExactTRS(const glm::mat4& value);
+        // Edit commands apply immediately. Runtime requests return a bounded result ID;
+        // getters retain committed relationships until the next lifecycle boundary.
+        uint64_t Reparent(Entity entity, Entity parent, TransformPolicy mode = TransformPolicy::KeepWorld);
+        ParentingResult GetParentingResult(uint64_t request) const;
+        void ValidateHierarchy() const;
+        void ValidateComponentPlacement(Entity entity, bool physics) const;
         Entity InstantiateEntity(Entity source, const TransformComponent& transform);
         bool IsEntityValid(UUID id) const;
         void CancelPendingLifecycle();
@@ -82,6 +104,17 @@ namespace Hazel {
 		void DestroyPhysicsBody(Entity entity);
 		void DestroyPhysicsFixture(Entity entity, bool circle);
 
+        using Relationships = std::unordered_map<UUID, Relationship>;
+        using Transforms = std::unordered_map<UUID, TransformComponent>;
+        glm::mat4 World(UUID id, const Relationships& relations, const Transforms& overrides) const;
+        void ValidateGraph(const Relationships& relations, const Transforms& overrides) const;
+        void RebuildChildren();
+        void ApplyReparent(UUID child, UUID parent, TransformPolicy mode);
+        void CheckReparent(UUID child, UUID parent, TransformPolicy mode,
+                           Relationships& relations, Transforms& transforms) const;
+        void FlushParenting();
+        void RemoveRelationship(UUID id);
+        void CheckEntity(Entity entity) const;
 		void OnPhysics2DStart();
 		void OnPhysics2DStop();
 		void SynchronizePhysics2D();
@@ -89,6 +122,13 @@ namespace Hazel {
 		void RenderScene(EditorCamera& camera);
 		void AdvanceAnimations(double timestep);
 	private:
+        Relationships m_Relationships;
+        std::unordered_map<UUID, std::vector<UUID>> m_Children;
+        struct ParentingCommand { uint64_t Request; UUID Child, Parent; TransformPolicy Mode; };
+        std::deque<ParentingCommand> m_Parenting;
+        std::map<uint64_t, ParentingResult> m_ParentingResults;
+        uint64_t m_NextParenting = 0;
+        std::vector<UUID> m_DestroyOrder;
 		entt::registry m_Registry;
 		Ref<ProjectAssets> m_Assets;
         UUID m_Identity;

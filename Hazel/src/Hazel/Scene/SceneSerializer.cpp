@@ -189,12 +189,15 @@ namespace Hazel {
         }
     }
 
-	static void SerializeEntity(YAML::Emitter& out, Entity entity, const std::filesystem::path& assetRoot, bool portablePaths)
+	static void SerializeEntity(YAML::Emitter& out, Entity entity, const std::filesystem::path& assetRoot, bool portablePaths, Relationship relationship)
 	{
 		HZ_CORE_ASSERT(entity.HasComponent<IDComponent>());
 
 		out << YAML::BeginMap; // Entity
 		out << YAML::Key << "Entity" << YAML::Value << entity.GetUUID();
+        out << YAML::Key << "Relationship" << YAML::Value << YAML::BeginMap
+            << YAML::Key << "Parent" << YAML::Value << uint64_t(relationship.Parent)
+            << YAML::Key << "Order" << YAML::Value << relationship.Order << YAML::EndMap;
 
 		if (entity.HasComponent<TagComponent>())
 		{
@@ -407,21 +410,24 @@ namespace Hazel {
     std::string SceneSerializer::SerializeAuthoredSnapshot(Entity only) { return SerializeTextImpl(only, false); }
 	std::string SceneSerializer::SerializeTextImpl(Entity only, bool portablePaths)
 	{
+		m_Scene->ValidateHierarchy();
 		YAML::Emitter out;
 		out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);
 		out.SetDoublePrecision(std::numeric_limits<double>::max_digits10);
 		out << YAML::BeginMap;
-        out << YAML::Key << "SceneVersion" << YAML::Value << 1;
+        out << YAML::Key << "SceneVersion" << YAML::Value << 2;
 		out << YAML::Key << "Scene" << YAML::Value << m_Scene->GetName();
 		out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
-		m_Scene->m_Registry.each([&](auto entityID)
-		{
-			Entity entity = { entityID, m_Scene.get() };
-			if (!entity)
-				return;
-
-			if (!only || only == entity) SerializeEntity(out, entity, m_AssetRoot, portablePaths);
-		});
+        std::vector<UUID> ordered;
+        if(only)ordered={only.GetUUID()};
+        else for(auto root:m_Scene->GetChildren()) {
+            auto subtree=m_Scene->GetSubtree(m_Scene->GetEntityByUUID(root));
+            ordered.insert(ordered.end(),subtree.begin(),subtree.end());
+        }
+        for(auto id:ordered) {
+            auto entity=m_Scene->GetEntityByUUID(id);
+            if(entity)SerializeEntity(out,entity,m_AssetRoot,portablePaths,only?Relationship{}:m_Scene->GetRelationship(entity));
+        }
 		out << YAML::EndSeq;
 		out << YAML::EndMap;
 
@@ -451,7 +457,7 @@ namespace Hazel {
 		{
             data = YAML::Load(text);
             m_Report.Migration = DocumentSchema::Scene(data,prefabDocument);
-            if (!data["SceneVersion"]) m_Report.Problems.push_back({0,"Encoding","Save adds SceneVersion: 1; original bytes are preserved first",{},true});
+            if (!data["SceneVersion"] || data["SceneVersion"].as<int>()==1) m_Report.Problems.push_back({0,"Encoding","Save upgrades flat data to SceneVersion: 2 with explicit root relationships; original bytes are preserved first",{},true});
             if (!data["Entities"]) m_Report.Problems.push_back({0,"Entities","Known legacy missing entity list becomes an empty list on Save",{},true});
             for (auto node : data["Entities"]) {
                 const auto id=node["Entity"].as<uint64_t>();
@@ -499,6 +505,7 @@ namespace Hazel {
 
 				Entity deserializedEntity = staged->CreateEntityWithUUID(uuid, name);
                 if(tagComponent) { deserializedEntity.GetComponent<TagComponent>().Tag=name; }
+                if(auto relationship=entity["Relationship"])staged->m_Relationships[uuid]={UUID(relationship["Parent"].as<uint64_t>()),relationship["Order"].as<uint32_t>()};
 
 				auto transformComponent = entity["TransformComponent"];
 				if (transformComponent)
@@ -659,6 +666,7 @@ namespace Hazel {
 			}
 		}
 
+        staged->RebuildChildren();staged->ValidateHierarchy();
         staged->PrepareSprites(!m_Repair);
         for(const auto& [id,fields]:stagedScriptFields)
             for(const auto& [name,field]:fields) {
@@ -701,6 +709,8 @@ namespace Hazel {
 		for (auto entity : oldEntities) m_Scene->DestroyEntity(entity);
 		m_Scene->m_Registry = std::move(staged->m_Registry);
 		m_Scene->m_EntityMap = std::move(staged->m_EntityMap);
+        m_Scene->m_Relationships=std::move(staged->m_Relationships);
+        m_Scene->RebuildChildren();
 		m_Scene->m_ScriptFields = std::move(stagedScriptFields);
         m_Scene->SetName(sceneName);
         m_Report.State = m_Report.Problems.empty() ? DocumentLoadState::Ready : DocumentLoadState::EditableWithProblems;

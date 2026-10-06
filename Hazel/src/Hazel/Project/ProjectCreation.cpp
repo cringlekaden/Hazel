@@ -76,6 +76,8 @@ namespace Hazel {
         // dependency.
         YAML::Node welcome;
         welcome["Entity"] = uint64_t(2);
+        welcome["Relationship"]["Parent"] = uint64_t(0);
+        welcome["Relationship"]["Order"] = 1;
         welcome["TagComponent"]["Tag"] = "Welcome";
         auto transform = welcome["TransformComponent"];
         transform["Translation"] = std::vector<float>{-3, 0, 0};

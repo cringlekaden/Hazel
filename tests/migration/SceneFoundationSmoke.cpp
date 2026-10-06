@@ -28,6 +28,7 @@ static void Check(bool condition, const char* message)
 #include "EditorStateChecks.h"
 #include "ProjectCreationChecks.h"
 #include "RendererPolicyChecks.h"
+#include "HierarchyChecks.h"
 static void Finite(const glm::mat4& projection)
 {
     for (int column=0; column<4; ++column)
@@ -52,7 +53,7 @@ static void RecoveryContracts()
     Check(!report.Migration && report.State==DocumentLoadState::EditableWithProblems && report.Problems.size()==1,
           "Saving migration incorrectly resolved a missing resource or retained obsolete encoding warnings");
     const auto saved=loader.SerializeText();
-    Check(saved.find(u8"Textures/missing é.png")!=std::string::npos && saved.find("SceneVersion: 1")!=std::string::npos,
+    Check(saved.find(u8"Textures/missing é.png")!=std::string::npos && saved.find("SceneVersion: 2")!=std::string::npos,
           "Unresolved texture reference or scene version lost");
     owner.PreserveOriginal();owner.Save(saved,root/"recovery");
     Check(FileDocument::Read(owner.Backup())==original,"First recovery Save lost original bytes");
@@ -123,7 +124,7 @@ int main()
         Hazel::Log::Init();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();
-        Hazel::ProjectCreationChecks();Hazel::RendererPolicyChecks();
+        Hazel::ProjectCreationChecks();Hazel::RendererPolicyChecks(); Hazel::HierarchyChecks();
         RecoveryContracts();
         Hazel::SceneCamera camera;
         Finite(camera.GetProjection());

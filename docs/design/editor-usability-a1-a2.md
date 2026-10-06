@@ -625,6 +625,35 @@ execution remain acceptance checks. Older Windows local configs need only their
 Hazelnut args set to []; ignored configs are not replaced by a pull. No Actions
 query or further stage is part of this correction.
 
+## Stage G: hierarchy and detached prefabs (in progress)
+
+Baseline `5bf8028`, with user-generated editor state and the unrelated Lanterns
+sheet retained. First checkpoint introduces scene-owned parent UUID/sibling-order
+records, derived ordered children, bounds (10,000 entities / depth 256), local TRS
+and exact on-demand world composition. No relationship pointers or separately
+persisted child list exist. Keep World defaults to validated inverse-parent TRS;
+relative reconstruction tolerance is 2e-4, with singular axes below 1e-6 and
+reflections/shear rejected rather than approximated. Keep Local is explicit.
+Visual world matrices can contain shear. Candidate validation precedes publication;
+root-only physics placement is enforced, including component addition.
+
+SceneVersion 2 writes explicit parent/order; v1/unversioned files load as roots
+and report a known migration before explicit Save with the existing original
+backup contract. Unknown/future/malformed graph data rejects staged Open. Native
+project creation's CPU-only Welcome DTO now records its root relationship.
+Subtree deletion is child-first; Delete Parent/Keep Children detaches atomically
+with the chosen transform policy and is Edit-only. Runtime parenting is bounded
+(256 queued, 128 completed results), validated at request and lifecycle commit;
+getters retain committed relationships until then. Consumers, subtree remapping
+and the tree/prefab authoring UI follow in subsequent checkpoints.
+
+Checkpoint verification: Premake Linux Debug build with two jobs and production
+SceneFoundationSmoke passes, including model transforms, ordered traversal,
+cycle/cross-scene/singular/shear rejection without mutation, graph save/reopen,
+legacy/future retention, independent scene copying, deletion policies and root
+physics placement. Existing document/settings/recovery/native-generation checks
+pass. No Actions query or physical UI acceptance is claimed.
+
 ## Deferred findings
 
 Entity/prefab hierarchy and optional custom caption remain later stages. Stage C adds recovery/schema gates

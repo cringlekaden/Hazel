@@ -30,7 +30,7 @@ static void ValidateDocument(const YAML::Node &data, const std::filesystem::path
 		throw std::runtime_error("Prefab UUID zero is reserved for null references");
 	const std::set<std::string> allowed = {"Entity",
 										   "TagComponent",
-										   "TransformComponent",
+										   "TransformComponent", "Relationship",
 										   "ScriptComponent",
 										   "CameraComponent",
 										   "SpriteRendererComponent",

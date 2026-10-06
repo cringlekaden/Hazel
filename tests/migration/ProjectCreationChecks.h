@@ -40,7 +40,7 @@ namespace Hazel {
               "identity");
         auto scene =
             YAML::Load(FileDocument::Read(request.Destination / "Assets/Scenes/Start.hazel"));
-        Check(scene["SceneVersion"].as<int>() == 1 && scene["Entities"].size() == 2 &&
+        Check(scene["SceneVersion"].as<int>() == 2 && scene["Entities"].size() == 2 &&
                   scene["Entities"][0]["CameraComponent"]["Primary"].as<bool>(),
               "Native starter scene lacked primary camera/content");
         Check(FileDocument::Read(request.Destination / "Assets/Scripts/premake5.lua")

@@ -115,6 +115,8 @@ namespace Hazel {
 		// Copy components (except IDComponent and TagComponent)
 		CopyComponent(AllComponents{}, dstSceneRegistry, srcSceneRegistry, enttMap);
 		newScene->m_ScriptFields = other->m_ScriptFields;
+        newScene->m_Relationships=other->m_Relationships;
+        newScene->RebuildChildren();newScene->ValidateHierarchy();
 
 		return newScene;
 	}
@@ -127,6 +129,7 @@ namespace Hazel {
 	Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
 	{
 		if(m_Stopping)throw std::runtime_error("Scene is stopping; creation is unavailable during cleanup");
+        if(!uint64_t(uuid) || m_EntityMap.size()>=MaxEntities)throw std::invalid_argument("Null entity UUID or scene entity limit (10000)");
         if (m_EntityMap.find(uuid) != m_EntityMap.end()) throw std::invalid_argument("Duplicate entity UUID");
 		Entity entity = { m_Registry.create(), this };
 		entity.AddComponent<IDComponent>(uuid);
@@ -135,6 +138,7 @@ namespace Hazel {
 		tag.Tag = name.empty() ? "Entity" : name;
 
 		m_EntityMap[uuid] = entity;
+        auto& roots=m_Children[UUID(0)];m_Relationships[uuid]={UUID(0),uint32_t(roots.size())};roots.push_back(uuid);
         if(m_IsRunning)m_PendingStart.push_back(uuid);
 
 		return entity;
@@ -143,25 +147,53 @@ namespace Hazel {
 	bool Scene::IsEntityValid(UUID id) const {
         return m_EntityMap.count(id) && !m_PendingDestroy.count(id) && !m_Destroying.count(id);
     }
-    void Scene::DestroyEntity(Entity entity) {
-        if (!entity.BelongsTo(this)) throw std::invalid_argument("Entity belongs to another scene");
-        if (!entity) return;
-        if (m_IsRunning) { if(!m_Destroying.count(entity.GetUUID())) m_PendingDestroy.insert(entity.GetUUID()); return; }
-        DestroyEntityNow(entity);
+    void Scene::DestroyEntity(Entity entity,DestroyPolicy policy,TransformPolicy mode) {
+        if(!entity.BelongsTo(this))throw std::invalid_argument("Entity belongs to another scene");
+        if(!entity || !IsEntityValid(entity.GetUUID()))return;
+        if(policy==DestroyPolicy::KeepChildren) {
+            if(m_IsRunning || m_PhysicsWorld)throw std::runtime_error("Delete Parent/Keep Children is an authored operation; Stop first");
+            auto graph=m_Relationships;Transforms changes;
+            auto children=GetChildren(entity.GetUUID());
+            uint32_t order=uint32_t(GetChildren().size());
+            for(auto id:children) {
+                if(mode==TransformPolicy::KeepWorld)changes[id]=ExactTRS(GetWorldTransform(GetEntityByUUID(id)));
+                else if(mode!=TransformPolicy::KeepLocal)throw std::runtime_error("Unknown detach transform policy");
+                graph.at(id)={UUID(0),order++};
+            }
+            // Validation includes the still-present parent until after detaching every child.
+            graph[entity.GetUUID()]={m_Relationships.at(entity.GetUUID()).Parent,m_Relationships.at(entity.GetUUID()).Order};
+            ValidateGraph(graph,changes);
+            m_Relationships=std::move(graph);
+            for(const auto& item:changes)m_Registry.get<TransformComponent>(m_EntityMap.at(item.first))=item.second;
+            RebuildChildren();DestroyEntityNow(entity);return;
+        }
+        if(policy!=DestroyPolicy::Subtree)throw std::runtime_error("Unknown destruction policy");
+        auto ids=GetSubtree(entity);std::reverse(ids.begin(),ids.end());
+        if(m_IsRunning) {
+            for(auto id:ids)if(m_PendingDestroy.insert(id).second)m_DestroyOrder.push_back(id);
+            return;
+        }
+        for(auto id:ids) {
+            auto it=m_EntityMap.find(id);if(it!=m_EntityMap.end())DestroyEntityNow({it->second,this});
+        }
     }
     void Scene::CancelPendingLifecycle() {
+        m_Parenting.clear();
+        for(auto& item:m_ParentingResults)if(item.second.State==ParentingState::Pending)item.second={ParentingState::Rejected,"Scene stopped before parenting committed"};
         auto pending=std::move(m_PendingStart);m_PendingStart.clear();
-        for(auto id:pending){auto entity=GetEntityByUUID(id);if(entity)DestroyEntityNow(entity);}
-        auto retired=std::move(m_PendingDestroy);m_PendingDestroy.clear();
-        for(auto id:retired){auto entity=GetEntityByUUID(id);if(entity)DestroyEntityNow(entity);}
+        for(auto it=pending.rbegin();it!=pending.rend();++it){auto found=m_EntityMap.find(*it);if(found!=m_EntityMap.end())DestroyEntityNow({found->second,this});}
+        auto retired=std::move(m_DestroyOrder);m_DestroyOrder.clear();
+        for(auto id:retired) {auto it=m_EntityMap.find(id);if(it!=m_EntityMap.end())DestroyEntityNow({it->second,this});}
+        m_PendingDestroy.clear();
     }
     void Scene::FlushLifecycle() {
-        auto retired=std::move(m_PendingDestroy); m_PendingDestroy.clear();
-        for(auto id:retired) { auto entity=GetEntityByUUID(id); if(entity) DestroyEntityNow(entity); }
-        auto starts=std::move(m_PendingStart); m_PendingStart.clear();
+        auto retired=std::move(m_DestroyOrder);m_DestroyOrder.clear();
+        for(auto id:retired) {auto it=m_EntityMap.find(id);if(it!=m_EntityMap.end())DestroyEntityNow({it->second,this});m_PendingDestroy.erase(id);}
+        FlushParenting();
+        auto starts=std::move(m_PendingStart);m_PendingStart.clear();
         SynchronizePhysics2D();
-        for(auto id:starts) { auto entity=GetEntityByUUID(id);
-            if(entity && IsEntityValid(id) && entity.HasComponent<ScriptComponent>()) ScriptEngine::OnCreateEntity(entity);
+        for(auto id:starts) {auto entity=GetEntityByUUID(id);
+            if(entity && IsEntityValid(id) && entity.HasComponent<ScriptComponent>())ScriptEngine::OnCreateEntity(entity);
         }
     }
     Entity Scene::InstantiateEntity(Entity source, const TransformComponent& transform) {
@@ -191,7 +223,8 @@ namespace Hazel {
 		if (ScriptEngine::GetSceneContext() == this) ScriptEngine::OnDestroyEntity(entity.GetUUID());
         DestroyNativeScript(entity);
         DestroyPhysicsBody(entity);
-		m_EntityMap.erase(entity.GetUUID());
+		RemoveRelationship(id);
+        m_EntityMap.erase(entity.GetUUID());
 		m_ScriptFields.erase(entity.GetUUID());
 		m_Registry.destroy(entity);m_Destroying.erase(id);
 	}
@@ -464,7 +497,7 @@ namespace Hazel {
 	Entity Scene::GetEntityByUUID(UUID uuid)
 	{
 		// TODO(Yan): Maybe should be assert
-		if (m_EntityMap.find(uuid) != m_EntityMap.end())
+		if (IsEntityValid(uuid))
 			return { m_EntityMap.at(uuid), this };
 
 		return {};
