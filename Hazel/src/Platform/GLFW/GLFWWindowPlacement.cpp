@@ -37,12 +37,15 @@ namespace Hazel {
         glfwGetWindowContentScale(static_cast<GLFWwindow *>(GetNativeWindow()), &x, &y);
         return x;
     }
+    void Window::ReadNormalPlacement(WindowPlacement& value) const {
+        auto w=static_cast<GLFWwindow*>(GetNativeWindow());
+        glfwGetWindowPos(w,&value.X,&value.Y);glfwGetWindowSize(w,&value.Width,&value.Height);
+    }
     WindowPlacement Window::GetPlacement() {
         auto w = static_cast<GLFWwindow *>(GetNativeWindow());
         const bool maximized = glfwGetWindowAttrib(w, GLFW_MAXIMIZED) != 0;
         if (!maximized && !glfwGetWindowAttrib(w, GLFW_ICONIFIED)) {
-            glfwGetWindowPos(w, &m_NormalPlacement.X, &m_NormalPlacement.Y);
-            glfwGetWindowSize(w, &m_NormalPlacement.Width, &m_NormalPlacement.Height);
+            ReadNormalPlacement(m_NormalPlacement);
             m_NormalPlacement.Scale = GetContentScale();
         }
         auto result = m_NormalPlacement;

@@ -25,6 +25,10 @@
 #include <ImGuizmo.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#ifdef HZ_PLATFORM_WINDOWS
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#endif
 #include <filesystem>
 #include <yaml-cpp/yaml.h>
 #include <fstream>
@@ -61,6 +65,7 @@ public:
         case 3: {
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project/assembly startup failed");
             EditorDocumentChecks();
+            CaptionChecks();
             WorkspaceChecks();
             NativeCreationChecks();
             RecoveryChecks();
@@ -900,6 +905,43 @@ private:
         Check(a.SceneText()==before && a.m_SavedScene==saved,"Hierarchy cleanup altered unrelated content/saved state");
         panel.SetSelectedEntity(scene->GetEntityByUUID(oldID));e.m_ActionError.clear();
         std::cout<<"PASS: actual hierarchy controller create/reparent/identity/cycle/selection, subtree duplicate/count-confirmed delete, connected prefab edits, nested Play/Stop isolation/selection and pending-document mutation guards\n";
+    }
+    void CaptionChecks() {
+        auto& window=Application::Get().GetWindow();const auto requested=window.GetCaptionState().Requested;const auto placement=window.GetPlacement();
+        window.SetCustomCaption(true);
+        Check(window.GetCaptionState().Requested && !window.GetCaptionState().Reason.empty(),"Caption request lost effective explanation");
+#ifdef HZ_PLATFORM_WINDOWS
+        if(window.GetCaptionState().Custom) {
+            auto* handle=glfwGetWin32Window(static_cast<GLFWwindow*>(window.GetNativeWindow()));
+            auto normalized=window.GetPlacement();
+            Check(normalized.X==placement.X && normalized.Y==placement.Y && normalized.Width==placement.Width && normalized.Height==placement.Height,"Caption mode changed persisted native-equivalent geometry");
+            window.RestorePlacement(normalized);const auto restored=window.GetPlacement();
+            window.RestorePlacement(restored);const auto again=window.GetPlacement();
+            Check(again.X==restored.X && again.Y==restored.Y && again.Width==restored.Width && again.Height==restored.Height,"Custom caption restore accumulated geometry drift");
+            RECT client{};GetClientRect(handle,&client);
+            CaptionLayout layout{{30,20,200,30},{240,20,30,30},{280,20,30,30},{320,20,30,30}};
+            window.SetCaptionLayout(layout);
+            auto hit=[&](LONG x,LONG y) {POINT point{x,y};ClientToScreen(handle,&point);return SendMessageW(handle,WM_NCHITTEST,0,MAKELPARAM(point.x,point.y));};
+            Check(hit(80,35)==HTCAPTION && hit(285,35)==HTMAXBUTTON && hit(245,35)==HTCLIENT && hit(325,35)==HTCLIENT,"Native caption hit regions confused menus/controls/drag");
+            Check(hit(client.right/2,0)==HTTOP && hit(0,client.bottom/2)==HTLEFT,"Native custom frame lost resize boundaries");
+            SendMessageW(handle,WM_NCLBUTTONDOWN,HTMAXBUTTON,0);
+            SendMessageW(handle,WM_KEYDOWN,VK_ESCAPE,0);
+            Check(GetCapture()!=handle && !window.GetPlacement().Maximized,"Escape failed to cancel native maximize capture");
+            window.UseNativeCaption("Regression fallback");
+            Check(!window.GetCaptionState().Custom && window.GetCaptionState().Requested && hit(80,35)!=HTCAPTION && window.GetCaptionLayout().Hit(80,35)==CaptionHit::Client,"Native fallback lost request, procedure or layout reset");
+        }
+#else
+        Check(!window.GetCaptionState().Custom,"Linux discarded native WM decoration fallback");
+#endif
+        window.SetCustomCaption(requested);
+#ifndef HZ_PLATFORM_WINDOWS
+        (void)placement;
+#endif
+        std::cout<<"PASS: production caption request/fallback";
+#ifdef HZ_PLATFORM_WINDOWS
+        std::cout<<", Windows native hit/resize/capture checks when composition is available";
+#endif
+        std::cout<<"; dirty close/cancel exercised with hierarchy checks\n";
     }
     void RenderingChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& window=Application::Get().GetWindow();

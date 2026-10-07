@@ -30,6 +30,8 @@ namespace Hazel {
         void UseNativeCaption(const std::string& reason) override;
         bool IsVSync() const override;
 
+    protected:
+        void ReadNormalPlacement(WindowPlacement& value) const override;
     private:
         virtual void Init(const WindowProps& props);
         virtual void Shutdown();

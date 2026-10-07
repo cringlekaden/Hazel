@@ -203,7 +203,7 @@ namespace Hazel {
 
 		if (ImGui::BeginMenuBar())
 		{
-            if(!io.WantTextInput && ImGui::IsKeyPressed(ImGuiKey_F10))ImGui::SetKeyboardFocusHere();
+            if(!io.WantTextInput && !io.KeyShift && !io.KeyCtrl && !io.KeyAlt && ImGui::IsKeyPressed(ImGuiKey_F10))ImGui::SetKeyboardFocusHere();
 			if (ImGui::BeginMenu("File"))
 			{
                 if(m_Authoring) { m_Authoring->FileMenu(); }

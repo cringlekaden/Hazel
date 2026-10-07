@@ -787,10 +787,10 @@ or Shift+F10/Menu opens compact parenting alternatives for keyboard accessibilit
 Duplicate/delete/search and prefab containment remain guarded. Explicit Keep Local
 remains an engine API, with no persistent editor toggle or Shift-drop override.
 
-Current environment: checkout .git is read-only and GitHub DNS/API access fails.
+Before the Codex restart, checkout .git was read-only and GitHub DNS/API access failed.
 Checkpoint commits are retained in /tmp/hazel-final/review.git against 52eb346;
 source changes remain in the original checkout. Master must not be merged until
-feature CI can run and pass. The native :0 display is inaccessible and Xvfb is not
+feature CI can run and pass. The native :0 display was inaccessible and Xvfb was not
 installed; visual and physical drag/drop verification remains pending rather than
 being inferred from CPU tests.
 
@@ -839,3 +839,21 @@ at pause, and new caption tests, Release, desktop capture, Windows/feature/maste
 CI and tooltip cleanup remain outstanding. Master is unchanged. A restart-safe
 bundle is stored in ignored build/review for importing the local checkpoints once
 normal Git access returns; unrelated example edits are excluded.
+
+H resumed verification: Git/GitHub and the native display are available after the
+Codex restart; both retained checkpoints were imported without changing unrelated
+files. Linux Premake Debug builds and all 14 native regressions pass on HD4000
+OpenGL 4.2. Caption CPU and production hierarchy-drop checks pass. The isolated
+300/330-pixel, 1.25-scale hierarchy/Properties capture was inspected: root target,
+Add Entity, tree indentation/selection and vertical colored vector fallback are
+visible. This is render/layout inspection, not physical mouse acceptance. Compact
+ColorEdit numeric fields remain a pre-existing narrow-panel limitation, outside
+this correction. Caption separators use ASCII where the current font atlas lacks
+that punctuation glyph. Windows CI/OS acceptance remains pending at this checkpoint.
+
+Caption placement is persisted using native-equivalent client geometry on Windows,
+so repeated custom/native transitions and restores do not grow or shift the window.
+The native regression compares pre/post geometry and repeated restore results,
+checks drag/maximize/client/resize hit regions and Escape capture cancellation when
+composition is available, and asserts request-preserving native fallback. Plain
+F10 enters the menu; Shift+F10 remains the hierarchy context-menu shortcut.

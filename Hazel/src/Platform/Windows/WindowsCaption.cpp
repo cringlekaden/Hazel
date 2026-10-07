@@ -1,6 +1,7 @@
+#include "hzpch.h"
+
 #include "WindowsCaption.h"
 #include "Hazel/Core/Window.h"
-#include "hzpch.h"
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
@@ -26,7 +27,7 @@ int Border(HWND hwnd, int metric) {
 using CompositionFunction = HRESULT(WINAPI *)(BOOL *);
 using FrameFunction = HRESULT(WINAPI *)(HWND, const MARGINS *);
 struct DesktopFrame {
-    HMODULE Library = LoadLibraryW(L"dwmapi.dll");
+    HMODULE Library = LoadLibraryExW(L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
     CompositionFunction Composition =
         Library ? reinterpret_cast<CompositionFunction>(
                       GetProcAddress(Library, "DwmIsCompositionEnabled"))

@@ -8,6 +8,8 @@
 #include "Hazel/Events/KeyEvent.h"
 #include "Hazel/Renderer/GraphicsContext.h"
 
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
 #include <cstdlib>
 
 namespace Hazel {
@@ -188,6 +190,17 @@ namespace Hazel {
         m_Context->SwapBuffers();
     }
 
+    void WindowsWindow::ReadNormalPlacement(WindowPlacement& value) const {
+        Window::ReadNormalPlacement(value);
+        if(!m_CaptionState.Custom)return;
+        // GLFW setters/frame queries use the unchanged native window style. Save
+        // equivalent geometry, not our larger client area, to avoid drift on restore.
+        RECT outer{};
+        if(!GetWindowRect(glfwGetWin32Window(m_Window),&outer))return;
+        int left=0,top=0,right=0,bottom=0;glfwGetWindowFrameSize(m_Window,&left,&top,&right,&bottom);
+        value.X=outer.left+left;value.Y=outer.top+top;
+        value.Width=outer.right-outer.left-left-right;value.Height=outer.bottom-outer.top-top-bottom;
+    }
     void WindowsWindow::SetCustomCaption(bool requested) {
         m_CaptionState.Requested=requested;
         if(!requested) {m_Caption.reset();m_CaptionState={false,false,"Native decorations"};m_CaptionLayout={};return;}

@@ -117,7 +117,7 @@ void AuthoringPanel::Caption() {
     CaptionLayout layout;
     const auto project =
         Project::GetActive() ? Project::GetActive()->GetConfig().Name : std::string("No project");
-    const std::string identity = project + " — " + ActiveName();
+    const std::string identity = project + " | " + ActiveName();
     // Clip identity on small windows; the full value remains in status/native
     // title.
     const float width = std::max(0.f, remaining - controls);
@@ -181,7 +181,7 @@ void AuthoringPanel::Caption() {
             "Minimize; editor documents remain open");
         control(
             "##maximize", layout.Maximize, CaptionHit::Maximize, [&] { window.ToggleMaximize(); },
-            "Maximize or restore; hover offers Windows Snap layouts (Win+Z)");
+            "Maximize or restore; Windows 11 offers Snap layouts on hover or Win+Z");
         control(
             "##close", layout.Close, CaptionHit::Close, [&] { window.RequestClose(); },
             "Close through document/job decisions (Alt+F4)");

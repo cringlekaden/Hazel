@@ -56,6 +56,8 @@ namespace Hazel {
         virtual void RequestClose()=0;
         static Scope<Window> Create(const WindowProps& props = WindowProps());
     protected:
+        // Native-equivalent client geometry keeps persisted placement stable across caption modes.
+        virtual void ReadNormalPlacement(WindowPlacement& value) const;
         CaptionState m_CaptionState;
         CaptionLayout m_CaptionLayout;
     private:
