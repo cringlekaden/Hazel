@@ -476,3 +476,16 @@ Optional H (native-caption alternative with OS behavior acceptance) and broader
 redundant-tooltip cleanup follow G's hands-on acceptance. Linked overrides,
 variants, propagation and animation graphs remain deferred. No Actions polling
 or physical Windows/UI acceptance is claimed for G.
+
+## Final hierarchy/H follow-up
+
+The final correction removes persistent parent/world-local controls from Properties.
+One Add Entity, a persistent Scene Root target and explicit inside-row drop cues
+make arranging the tree the primary workflow. Drops always preserve world pose;
+nonrepresentable/invalid moves reject without mutation. Compact context actions
+retain keyboard accessibility. The Stage G engine contracts are unchanged.
+
+Optional H now has an opt-in Windows per-HWND caption implementation with native
+fallback; Linux retains native WM decorations and detached windows stay native.
+The default remains native pending platform acceptance. The complete behavior,
+limitations and verification are recorded in [the implementation record](editor-usability-a1-a2.md).

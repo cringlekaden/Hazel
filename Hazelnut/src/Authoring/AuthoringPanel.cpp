@@ -733,7 +733,7 @@ void AuthoringPanel::Preferences()
     if(!m_PreferenceSearch.empty() && ImGui::SmallButton("Clear search"))m_PreferenceSearch.clear();
     for(int category=0;category<3;++category){const char* names[]={"General","Tools","Graphics"};if(category)PropertyUI::WrapButton(names[category]);if(ImGui::Button(names[category]))m_PreferenceCategory=category;}
     auto matches=[&](const char* names,int category){if(m_PreferenceSearch.empty())return m_PreferenceCategory==category;std::string query=m_PreferenceSearch;std::transform(query.begin(),query.end(),query.begin(),[](unsigned char c){return char(std::tolower(c));});return std::string(names).find(query)!=std::string::npos;};
-    const bool general=matches("general startup workspace project scene layout ui scale colliders",0);
+    const bool general=matches("general startup workspace project scene layout ui scale colliders caption native window",0);
     const bool tools=matches("tools python sdk script editor executable compiler",1);
     const bool graphics=matches("graphics renderer api version vendor device driver texture samples debug shader capabilities vsync swap interval diagnostics",2);
     if(!general&&!tools&&!graphics)ImGui::TextWrapped("No matching settings. Clear search to choose a category.");
@@ -809,6 +809,13 @@ void AuthoringPanel::Preferences()
     PropertyUI::Help("Blank uses the OS default for .cs files; a configured "
                      "editor receives one source-file argument.");
     }
+    if(general) {
+        PropertyUI::Checkbox("custom-caption","Custom editor caption",m_Draft.CustomCaption);
+        PropertyUI::Help("Opt-in Windows frame integration. Unsupported platforms keep native decorations; detached windows always retain their own native frame.");
+        const auto& caption=Application::Get().GetWindow().GetCaptionState();
+        PropertyUI::ReadOnly("caption-effective","Effective caption",caption.Custom?"Custom":"Native");
+        ImGui::TextWrapped("%s",caption.Reason.c_str());
+    }
     if(graphics) {
     EditorRendering();
     auto &caps = Renderer::GetCapabilities();
@@ -845,6 +852,7 @@ void AuthoringPanel::Preferences()
             m_Draft.Save(true);
             m_PreferenceRecovery.clear();
             m_Preferences = m_Draft;
+            Application::Get().GetWindow().SetCustomCaption(m_Preferences.CustomCaption);
             RefreshSDK();
             ImGui::GetIO().FontGlobalScale = m_Preferences.UIScale*std::clamp(Application::Get().GetWindow().GetContentScale(),.75f,2.f);
             m_Editor.m_ShowPhysicsColliders = m_Preferences.ShowColliders;

@@ -24,6 +24,7 @@ namespace Hazel {
         inline void* GetNativeWindow() const override { return m_Window; };
         void SetVSync(bool enabled) override;
         void SetTitle(const std::string& title) override;
+        void RequestClose() override;
         bool IsVSync() const override;
 
     private:

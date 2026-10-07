@@ -6,6 +6,7 @@
 #include "UI/PropertyUI.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Authoring/EditorPreferences.h"
+#include "Hazel/Core/WindowCaption.h"
 #include "Authoring/RendererLaunch.h"
 #include "Authoring/AuthoringPanel.h"
 #include "Hazel/Utils/Toolchain.h"
@@ -46,6 +47,7 @@ static std::string Read(const std::filesystem::path& file) {
     std::ifstream input(file,std::ios::binary); return {std::istreambuf_iterator<char>(input),{}};
 }
 }
+#include "EditorStateChecks.h"
 #include "EditorDocumentChecks.h"
 #include "EditorConsoleChecks.h"
 namespace Hazel {
@@ -888,6 +890,11 @@ private:
         a.Guard(OperationIntent::OpenScene,[]{return false;});
         Check(a.m_Documents.Pending() && !panel.ReparentEntity(scene->GetIdentity(),child.GetUUID(),0,TransformPolicy::KeepWorld),"Pending document operation allowed hierarchy mutation");
         a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),[&](const auto& document){return a.SaveDocument(document);});
+        const auto closeDraft=a.SceneText();const auto closeSelection=panel.GetSelectedEntity();
+        Application::Get().GetWindow().RequestClose();
+        Check(a.m_Documents.Pending() && a.m_Documents.Intent()==OperationIntent::CloseEditor,"Caption close bypassed document guard");
+        a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),{});
+        Check(a.SceneText()==closeDraft && panel.GetSelectedEntity()==closeSelection,"Cancelled caption close changed draft or selection");
         Check(panel.ConfirmDelete(scene->GetIdentity(),duplicate.GetUUID(),3,DestroyPolicy::Subtree,TransformPolicy::KeepWorld),"Confirmed subtree deletion failed");
         Check(panel.ConfirmDelete(scene->GetIdentity(),root.GetUUID(),3,DestroyPolicy::Subtree,TransformPolicy::KeepWorld),"Original subtree cleanup failed");
         Check(a.SceneText()==before && a.m_SavedScene==saved,"Hierarchy cleanup altered unrelated content/saved state");
@@ -1168,6 +1175,18 @@ private:
     std::chrono::steady_clock::time_point m_MinimizedStart;
 };
 }
+static int CaptionCPU() {
+    using namespace Hazel;
+    Log::Init();
+    CaptionLayout layout{{-30,0,300,30},{180,0,30,30},{210,0,30,30},{240,0,30,30}};
+    Check(layout.Hit(0,15)==CaptionHit::Drag && layout.Hit(185,15)==CaptionHit::Minimize && layout.Hit(215,15)==CaptionHit::Maximize && layout.Hit(245,15)==CaptionHit::Close, "Caption controls lost priority over drag area");
+    Check(layout.Hit(270,15)==CaptionHit::Client && layout.Hit(-31,15)==CaptionHit::Client && layout.Hit(0,30)==CaptionHit::Client, "Caption hit regions captured client edges");
+    CaptionLayout scaled{{0,0,400,60},{400,0,60,60},{460,0,60,60},{520,0,60,60}};
+    Check(scaled.Hit(490,30)==CaptionHit::Maximize && scaled.Hit(580,30)==CaptionHit::Client && scaled.Hit(NAN,0)==CaptionHit::Client, "Scaled/nonfinite caption coordinates were misclassified");
+    Check(CaptionLayout{}.Hit(0,0)==CaptionHit::Client && !CaptionRect{0,0,-1,2}.Contains(0,0), "Empty/invalid layout stole input");
+    EditorStateChecks();
+    std::cout<<"PASS: caption control/drag/client hit boundaries, scaled/negative coordinates and scoped preference persistence/reset/conflicts (CPU)\n";return 0;
+}
 static int HierarchyCPU() {
     using namespace Hazel;
     Log::Init();auto scene=CreateRef<Scene>();SceneHierarchyPanel panel(scene);
@@ -1194,6 +1213,7 @@ static int HierarchyCPU() {
     std::cout<<"PASS: production panel root/row drops, selection/dirty state, cycle/cross-scene/physics/shear/availability rejection and save/reopen (CPU)\n";return 0;
 }
 int main(int argc, char** argv) {
+    if(argc==2 && std::string(argv[1])=="--caption-cpu")try{return CaptionCPU();}catch(const std::exception& e){std::cerr<<"FAIL: "<<e.what()<<'\n';return 1;}
     if(argc==2 && std::string(argv[1])=="--hierarchy-cpu")try{return HierarchyCPU();}catch(const std::exception& e){std::cerr<<"FAIL: "<<e.what()<<'\n';return 1;}
 
 #ifdef HZ_PLATFORM_WINDOWS

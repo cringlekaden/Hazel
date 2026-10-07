@@ -113,9 +113,11 @@ namespace Hazel {
         std::string diagnostic;
         prefs = EditorPreferences::Load(diagnostic);
         prefs.SDK = (root / "SDK é").generic_u8string();
+        prefs.CustomCaption=true;
         prefs.Save();
         auto first = EditorPreferences::Load(diagnostic),
              second = EditorPreferences::Load(diagnostic);
+        Check(first.CustomCaption && diagnostic.empty(), "Caption preference did not round trip");
         first.UIScale = 1.25f;
         first.Save();
         refused = false;
@@ -127,7 +129,7 @@ namespace Hazel {
         Check(refused, "Preferences overwrote a concurrent instance");
         first.ResetValues();
         first.Save();
-        Check(EditorPreferences::Load(diagnostic).SDK.empty(),
+        Check(EditorPreferences::Load(diagnostic).SDK.empty() && !EditorPreferences::Load(diagnostic).CustomCaption,
               "Reset defaults corrupted preference ownership");
         FileSystem::WriteFileAtomically(EditorPreferences::Location(),
                                         [](auto &out) { out << "Version: 99\nFuture: keep\n"; });

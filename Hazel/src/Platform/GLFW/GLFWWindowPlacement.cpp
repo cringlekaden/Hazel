@@ -2,6 +2,17 @@
 #include "Hazel/Core/Window.h"
 #include <GLFW/glfw3.h>
 namespace Hazel {
+    void Window::SetCustomCaption(bool requested) {
+        m_CaptionState={requested,false,requested?"Native WM decorations retained: this platform has no complete custom-caption bridge":"Native decorations"};
+        m_CaptionLayout={};
+    }
+    void Window::Minimize() {glfwIconifyWindow(static_cast<GLFWwindow*>(GetNativeWindow()));}
+    void Window::ToggleMaximize() {
+        auto w=static_cast<GLFWwindow*>(GetNativeWindow());GetPlacement();
+        if(glfwGetWindowAttrib(w,GLFW_MAXIMIZED))glfwRestoreWindow(w);else glfwMaximizeWindow(w);
+    }
+    bool Window::IsFocused() const {return glfwGetWindowAttrib(static_cast<GLFWwindow*>(GetNativeWindow()),GLFW_FOCUSED)!=0;}
+
     std::vector<DisplayArea> Window::GetDisplayAreas() const {
         std::vector<DisplayArea> areas;
         int count = 0;
@@ -59,3 +70,11 @@ namespace Hazel {
             glfwMaximizeWindow(w);
     }
 } // namespace Hazel
+
+namespace Hazel {
+CaptionHit Window::GetCaptionPointerHit() const {
+    double x=0,y=0;glfwGetCursorPos(static_cast<GLFWwindow*>(GetNativeWindow()),&x,&y);
+    return m_CaptionLayout.Hit(float(x),float(y));
+}
+void Window::UseNativeCaption(const std::string& reason) {m_CaptionState.Custom=false;m_CaptionState.Reason=reason;m_CaptionLayout={};}
+}

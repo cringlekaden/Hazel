@@ -41,6 +41,7 @@ class AuthoringPanel
     void ObserveSceneFocus();
     void Toolbar();
     void Status();
+    void Caption();
     enum class RuntimeAction { Play, Simulate, Stop, TogglePause, Step };
     ActionAvailability RuntimeAvailability(RuntimeAction action) const;
     bool InvokeRuntime(RuntimeAction action);

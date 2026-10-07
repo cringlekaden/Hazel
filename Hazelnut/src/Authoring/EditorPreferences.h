@@ -9,7 +9,7 @@ struct EditorPreferences
 {
 	std::string Python, SDK, ScriptEditor;
 	float UIScale = 1.0f;
-	bool ShowColliders = false, RestoreSession = true, VSync = true;
+	bool ShowColliders = false, RestoreSession = true, VSync = true, CustomCaption = false;
     int ConsoleCapture = 2;
     DebugOutputRequest DebugOutput = DebugOutputRequest::Automatic;
 	std::vector<std::string> RecentProjects;

@@ -181,6 +181,9 @@ namespace Hazel {
         m_Context->SwapBuffers();
     }
 
+    void LinuxWindow::RequestClose() {
+        WindowCloseEvent event;if(m_Data.EventCallback)m_Data.EventCallback(event);
+    }
     void LinuxWindow::SetTitle(const std::string& title) {
         if(m_Data.Title==title)return;
         m_Data.Title=title;glfwSetWindowTitle(m_Window,title.c_str());

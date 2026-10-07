@@ -99,6 +99,95 @@ void AuthoringPanel::Toolbar()
     }
     // Status/document UI retains identity, dirty state and tool progress outside this toolbar.
 }
+void AuthoringPanel::Caption() {
+    auto &window = Application::Get().GetWindow();
+    if (window.GetCaptionState().Requested != m_Preferences.CustomCaption)
+        window.SetCustomCaption(m_Preferences.CustomCaption);
+    const bool custom = window.GetCaptionState().Custom;
+    const auto *viewport = ImGui::GetMainViewport();
+    const float remaining = ImGui::GetContentRegionAvail().x;
+    const float button = ImGui::GetFrameHeight() * 1.5f;
+    const float controls = custom ? button * 3 + ImGui::GetStyle().ItemSpacing.x * 3 : 0;
+    if (custom && remaining < controls + ImGui::GetFontSize() * 5) {
+        window.UseNativeCaption("Native fallback: menus and caption controls need "
+                                "more width; enable again in Preferences to retry");
+        return;
+    }
+    const auto start = ImGui::GetCursorScreenPos();
+    CaptionLayout layout;
+    const auto project =
+        Project::GetActive() ? Project::GetActive()->GetConfig().Name : std::string("No project");
+    const std::string identity = project + " — " + ActiveName();
+    // Clip identity on small windows; the full value remains in status/native
+    // title.
+    const float width = std::max(0.f, remaining - controls);
+    if (width > ImGui::GetFontSize() * 3) {
+        const auto end = ImVec2(start.x + width, start.y + ImGui::GetFrameHeight());
+        ImGui::GetWindowDrawList()->PushClipRect(start, end, true);
+        ImGui::GetWindowDrawList()->AddText(
+            {start.x + ImGui::GetStyle().FramePadding.x,
+             start.y + ImGui::GetStyle().FramePadding.y},
+            ImGui::GetColorU32(window.IsFocused() ? ImGuiCol_Text : ImGuiCol_TextDisabled),
+            identity.c_str());
+        ImGui::GetWindowDrawList()->PopClipRect();
+        ImGui::Dummy({width, ImGui::GetFrameHeight()});
+        if (ImGui::CalcTextSize(identity.c_str()).x > width)
+            PropertyUI::Help(identity.c_str());
+        layout.Drag = {start.x - viewport->Pos.x, start.y - viewport->Pos.y, width,
+                       ImGui::GetFrameHeight()};
+    }
+    if (custom) {
+        const float right = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
+        ImGui::SetCursorScreenPos({right - controls, start.y});
+        bool first = true;
+        auto control = [&](const char *id, CaptionRect &rect, CaptionHit hit, auto action,
+                           const char *help) {
+            if (!first)
+                ImGui::SameLine();
+            first = false;
+            const auto position = ImGui::GetCursorScreenPos();
+            const bool hover = window.GetCaptionPointerHit() == hit;
+            if (hover)
+                ImGui::PushStyleColor(ImGuiCol_Button,
+                                      ImGui::GetStyleColorVec4(ImGuiCol_ButtonHovered));
+            if (ImGui::Button(id, {button, ImGui::GetFrameHeight()}))
+                action();
+            if (hover)
+                ImGui::PopStyleColor();
+            rect = {position.x - viewport->Pos.x, position.y - viewport->Pos.y, button,
+                    ImGui::GetFrameHeight()};
+            auto *draw = ImGui::GetWindowDrawList();
+            const auto color = ImGui::GetColorU32(ImGuiCol_Text);
+            const float size = ImGui::GetFontSize() * .6f;
+            const ImVec2 p{position.x + (button - size) * .5f,
+                           position.y + (ImGui::GetFrameHeight() - size) * .5f};
+            if (hit == CaptionHit::Minimize)
+                draw->AddLine({p.x, p.y + size * .75f}, {p.x + size, p.y + size * .75f}, color);
+            else if (hit == CaptionHit::Close) {
+                draw->AddLine(p, {p.x + size, p.y + size}, color);
+                draw->AddLine({p.x + size, p.y}, {p.x, p.y + size}, color);
+            } else if (window.GetPlacement().Maximized) {
+                draw->AddRect({p.x + size * .25f, p.y}, {p.x + size, p.y + size * .75f}, color);
+                draw->AddRect({p.x, p.y + size * .25f}, {p.x + size * .75f, p.y + size}, color);
+            } else
+                draw->AddRect(p, {p.x + size, p.y + size}, color);
+            if (hover && hit == CaptionHit::Maximize)
+                ImGui::SetTooltip("%s", help);
+            else
+                PropertyUI::Help(help);
+        };
+        control(
+            "##minimize", layout.Minimize, CaptionHit::Minimize, [&] { window.Minimize(); },
+            "Minimize; editor documents remain open");
+        control(
+            "##maximize", layout.Maximize, CaptionHit::Maximize, [&] { window.ToggleMaximize(); },
+            "Maximize or restore; hover offers Windows Snap layouts (Win+Z)");
+        control(
+            "##close", layout.Close, CaptionHit::Close, [&] { window.RequestClose(); },
+            "Close through document/job decisions (Alt+F4)");
+    }
+    window.SetCaptionLayout(custom ? layout : CaptionLayout{});
+}
 void AuthoringPanel::Status()
 {
     const auto docs = Documents();

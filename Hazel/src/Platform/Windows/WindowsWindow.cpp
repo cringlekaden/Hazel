@@ -1,6 +1,7 @@
 #include "hzpch.h"
 
 #include "Platform/Windows/WindowsWindow.h"
+#include "Platform/Windows/WindowsCaption.h"
 #include "Hazel/Core/Log.h"
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Events/MouseEvent.h"
@@ -60,6 +61,7 @@ namespace Hazel {
             glfwSetErrorCallback(GLFWErrorCallback);
         }
         GraphicsContext::ConfigureWindowHints();
+        glfwWindowHint(GLFW_WIN32_KEYBOARD_MENU,GLFW_TRUE);
         {
             HZ_PROFILE_SCOPE("glfwCreateWindow");
             m_Window = glfwCreateWindow(
@@ -166,6 +168,7 @@ namespace Hazel {
     {
         HZ_PROFILE_FUNCTION();
         m_Context.reset();
+        m_Caption.reset();
         glfwDestroyWindow(m_Window);
         if (--s_GLFWWindowCount == 0)
         {
@@ -178,9 +181,26 @@ namespace Hazel {
     {
         HZ_PROFILE_FUNCTION();
         glfwPollEvents();
+        if(m_Caption && (m_Caption->NeedsNativeFallback() || m_Data.Width<640)) {
+            m_Caption.reset();m_CaptionLayout={};m_CaptionState.Custom=false;
+            m_CaptionState.Reason="Native fallback: desktop composition or usable caption width unavailable; enable again in Preferences to retry";
+        }
         m_Context->SwapBuffers();
     }
 
+    void WindowsWindow::SetCustomCaption(bool requested) {
+        m_CaptionState.Requested=requested;
+        if(!requested) {m_Caption.reset();m_CaptionState={false,false,"Native decorations"};m_CaptionLayout={};return;}
+        if(m_Caption){m_CaptionState.Custom=true;return;}
+        if(m_Data.Width<640) {m_CaptionState.Custom=false;m_CaptionState.Reason="Native fallback: the window is too narrow for caption controls";return;}
+        std::string reason;
+        m_Caption=WindowsCaption::Create(*this,reason);
+        m_CaptionState.Custom=bool(m_Caption);m_CaptionState.Reason=reason;
+    }
+    void WindowsWindow::UseNativeCaption(const std::string& reason) {m_Caption.reset();Window::UseNativeCaption(reason);}
+    void WindowsWindow::RequestClose() {
+        WindowCloseEvent event;if(m_Data.EventCallback)m_Data.EventCallback(event);
+    }
     void WindowsWindow::SetTitle(const std::string& title) {
         if(m_Data.Title==title)return;
         m_Data.Title=title;glfwSetWindowTitle(m_Window,title.c_str());

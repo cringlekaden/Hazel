@@ -25,7 +25,7 @@ namespace Hazel {
             DocumentSchema::Keys(data,
                                  {"Version", "Python", "SDK", "ScriptEditor", "UIScale",
                                   "ShowColliders", "ConsoleCapture", "RecentProjects",
-                                  "RestoreSession", "VSync", "DebugOutput"},
+                                  "RestoreSession", "VSync", "DebugOutput", "CustomCaption"},
                                  "Preferences");
             if (data["Version"].as<int>() != 1)
                 throw std::runtime_error("Unsupported preferences version");
@@ -47,6 +47,7 @@ namespace Hazel {
             if (data["RestoreSession"])
                 parsed.RestoreSession = data["RestoreSession"].as<bool>();
             if (data["DebugOutput"])parsed.DebugOutput=RendererPolicy::ParseDebug(data["DebugOutput"].as<std::string>());
+            if (data["CustomCaption"])parsed.CustomCaption=data["CustomCaption"].as<bool>();
             if (data["VSync"])
                 parsed.VSync = data["VSync"].as<bool>();
             if (data["ConsoleCapture"])
@@ -84,6 +85,7 @@ namespace Hazel {
             out << path;
         out << YAML::EndSeq << YAML::Key << "RestoreSession" << YAML::Value << RestoreSession
             << YAML::Key << "VSync" << YAML::Value << VSync
+            << YAML::Key << "CustomCaption" << YAML::Value << CustomCaption
             << YAML::Key << "DebugOutput" << YAML::Value << RendererPolicy::DebugName(DebugOutput) << YAML::EndMap;
         if (!out.good())
             throw std::runtime_error(out.GetLastError());

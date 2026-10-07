@@ -793,3 +793,49 @@ source changes remain in the original checkout. Master must not be merged until
 feature CI can run and pass. The native :0 display is inaccessible and Xvfb is not
 installed; visual and physical drag/drop verification remains pending rather than
 being inferred from CPU tests.
+
+## Optional H: caption implementation
+
+Native decorations remain the default. Preferences > General > Custom editor
+caption persists an editor-only request; effective mode/reason are observations.
+Windows 10+ with desktop composition can opt in to a per-HWND DWM bridge. The
+engine Window API owns move/resize/maximize/minimize/focus/close integration;
+Hazelnut supplies only client-coordinate drag/control rectangles and presentation.
+Signed screen coordinates are converted by Win32, resize metrics use the window's
+DPI, maximized bounds use the monitor work area, and stale rectangles clear on
+size/DPI events. The drag area delegates to native HTCAPTION behavior (including
+double-click and drag-to-restore); HTMAXBUTTON exposes Windows Snap hover while
+click/capture cancellation uses the actual custom rectangle. Alt+Space and caption
+right-click use the native system menu; GLFW keyboard-menu support is enabled.
+F10 focuses the ImGui menu entry when text input is not active. OS close and the
+caption Close both dispatch the existing document/job decision. The compact
+runtime toolbar is unchanged.
+
+The pinned GLFW titlebar implementation consults a global hint: changing it would
+risk detached windows. This bridge modifies only Hazelnut's primary HWND and
+restores its previous procedure/frame before destruction or native fallback.
+Detached windows keep GLFW's native decorations. Linux retains native WM chrome:
+the pinned X11 titlebar facility does not supply complete OS integration. Future
+macOS remains native until a dedicated Cocoa integration exists. Unsupported DPI/
+composition, lost composition, or insufficient width retain/restore native chrome
+without overwriting the request. Apply in Preferences retries the request. Project,
+active-document/dirty identity and operation status remain in the header/status/
+native title in either mode. Clipped identity gets a full-value tooltip. Custom
+ImGui controls do not claim native accessibility; native mode stays available.
+
+Verification is bounded: CPU tests exercise control-versus-drag priority, empty/
+invalid regions, scaled/negative coordinates, preference round-trip/reset, future
+file preservation and concurrent preference conflicts. The existing actual editor
+regression also calls Window::RequestClose on a dirty hierarchy and cancels through
+EditorDocuments, asserting draft/selection preservation. That graphics regression
+and Windows OS behavior require an accessible display/Windows runner; this session
+cannot access :0 and has no Xvfb or Windows toolchain. No Snap, mouse, DPI or physical
+GPU acceptance is claimed. Required feature CI remains a merge gate.
+
+Session paused at the user's request before H verification completed. The hierarchy
+correction has a verified CPU/Debug checkpoint; caption changes are a separate WIP
+checkpoint, not a completed H acceptance. The full Debug build was still running
+at pause, and new caption tests, Release, desktop capture, Windows/feature/master
+CI and tooltip cleanup remain outstanding. Master is unchanged. A restart-safe
+bundle is stored in ignored build/review for importing the local checkpoints once
+normal Git access returns; unrelated example edits are excluded.
