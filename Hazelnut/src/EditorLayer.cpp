@@ -288,14 +288,6 @@ namespace Hazel {
 
 			ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y, m_ViewportBounds[1].x - m_ViewportBounds[0].x, m_ViewportBounds[1].y - m_ViewportBounds[0].y);
 
-			// Camera
-
-			// Runtime camera from entity
-			// auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
-			// const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
-			// const glm::mat4& cameraProjection = camera.GetProjection();
-			// glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
-
 			// Editor camera
 			const glm::mat4& cameraProjection = m_EditorCamera.GetProjection();
 			glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
@@ -323,7 +315,8 @@ namespace Hazel {
             if(ImGuizmo::IsUsing() && m_Authoring->Availability(EditorAction::EditScene)) {
                 try {m_ActiveScene->SetWorldTransform(selectedEntity,transform);m_GizmoError.clear();}
                 catch(const std::exception& error) {
-                    if(m_GizmoError!=error.what())ActionFailed(error.what());m_GizmoError=error.what();
+                    if(m_GizmoError!=error.what())ActionFailed(error.what());
+                    m_GizmoError=error.what();
                 }
             }
             }
@@ -741,12 +734,7 @@ namespace Hazel {
 		if (m_SceneState != SceneState::Edit)
 			return;
 
-		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-		if (selectedEntity)
-		{
-			Entity newEntity = m_EditorScene->DuplicateEntity(selectedEntity);
-			m_SceneHierarchyPanel.SetSelectedEntity(newEntity);
-		}
+        m_SceneHierarchyPanel.DuplicateSelected();
 	}
 
 }

@@ -460,3 +460,19 @@ G (relationships/transforms, consumers, hierarchy UI, detached prefab remapping)
 is next. H is optional and requires native OS behavior acceptance; native
 framing remains. Broad tooltip cleanup is still pending. No Actions review/polling
 is part of this stage; stop for physical acceptance after F.
+
+
+## Stage G implementation follow-up
+
+G implements scene-owned UUID relationships/ordered children, local TRS and exact
+world composition; all rendering/camera/gizmo/script consumers, bounded runtime
+parenting, root-only 2D physics validation, scene v2, detached connected prefab v2
+and complete reference/asset closure use the same service contracts. The tree and
+prefab inspector expose Keep World by default, explicit Keep Local, counted delete
+and independent subtree duplication/instantiation. Legacy flat/single-entity assets
+remain readable; explicit Save preserves original data. See the existing
+implementation record for exact limits, reference policy and local verification.
+Optional H (native-caption alternative with OS behavior acceptance) and broader
+redundant-tooltip cleanup follow G's hands-on acceptance. Linked overrides,
+variants, propagation and animation graphs remain deferred. No Actions polling
+or physical Windows/UI acceptance is claimed for G.

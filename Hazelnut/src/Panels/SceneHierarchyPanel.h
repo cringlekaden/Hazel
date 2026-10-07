@@ -23,6 +23,16 @@ class SceneHierarchyPanel
 
     void OnImGuiRender();
     bool HierarchyVisible=true, PropertiesVisible=true;
+    bool PrefabDocument=false;
+    void DrawHierarchy(); // Embedded by the prefab document; stable scene/UUID IDs.
+    bool AddChild(Entity parent, const std::string& name="Child Entity");
+    bool ReparentEntity(uint64_t scene, uint64_t child, uint64_t parent, TransformPolicy mode);
+    bool DuplicateSelected();
+    bool ClearStoredEntityReference(Entity entity, const std::string& field);
+    void RequestDelete();
+    bool ConfirmDelete(uint64_t scene, uint64_t entity, size_t expectedCount,
+                       DestroyPolicy policy, TransformPolicy mode);
+    void RevealSelected();
     std::map<std::string,bool> Sections() const {auto e=GetSelectedEntity();return e && uint64_t(e.GetUUID())==m_SectionEntity?m_Sections:std::map<std::string,bool>{};}
     void RestoreSections(const std::map<std::string,bool>& values){auto e=GetSelectedEntity();if(!e)return;m_SectionEntity=e.GetUUID();m_Sections=values;m_RestoreSections.clear();for(const auto& item:values)m_RestoreSections.insert(item.first);}
     std::function<void(Entity)> CreatePrefab;
@@ -37,13 +47,11 @@ class SceneHierarchyPanel
         return m_Focused;
     }
     bool AddEntity(const std::string &name = "Empty Entity");
-    bool DeleteSelected();
+    bool DeleteSelected(DestroyPolicy policy=DestroyPolicy::Subtree, TransformPolicy mode=TransformPolicy::KeepWorld);
 
-    Entity GetSelectedEntity() const
-    {
-        return m_Context && m_SelectionContext.BelongsTo(m_Context.get()) && m_SelectionContext
-                   ? m_SelectionContext
-                   : Entity{};
+    Entity GetSelectedEntity() const {
+        auto e=m_SelectionContext;
+        return m_Context && e.BelongsTo(m_Context.get()) && e && m_Context->IsEntityValid(e.GetUUID())?e:Entity{};
     }
     bool SetSelectedEntity(Entity entity);
     static bool AssignSpriteTexture(SpriteRendererComponent &component, const std::filesystem::path &path);
@@ -53,6 +61,16 @@ class SceneHierarchyPanel
 
     void DrawEntityNode(Entity entity);
     void DrawComponents(Entity entity);
+    void ParentProperties(Entity entity);
+    std::string ReparentPreview(uint64_t scene,uint64_t child,uint64_t parent,TransformPolicy mode) const;
+    void DrawDeleteDialog();
+    bool HierarchyFailed(const std::string& reason);
+    std::set<uint64_t> m_Matches, m_Reveal;
+    std::string m_HierarchyError;
+    int m_ParentMode=0, m_DeleteMode=0;
+    bool m_DeleteWanted=false;
+    uint64_t m_DeleteScene=0, m_DeleteEntity=0;
+    size_t m_DeleteCount=0;
     bool CanEdit(bool report = false) const;
 
   private:

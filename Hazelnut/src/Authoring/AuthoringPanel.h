@@ -14,6 +14,7 @@
 namespace Hazel
 {
 class EditorLayer;
+class Framebuffer;
 class AuthoringPanel
 {
     friend class EditorWorkflowSmoke;
@@ -74,6 +75,7 @@ class AuthoringPanel
     bool CreateProject(const std::string& name,const std::string& identifier,const std::filesystem::path& destination);
     void Export();
     void Prefabs();
+    void PrefabPreview();
     void ToolStatus(bool exporting = false);
     void RefreshProjectChoices();
     void ValidatePython();
@@ -129,6 +131,9 @@ class AuthoringPanel
     std::string m_ScriptName = "NewScript", m_Namespace = "Game",
                 m_PrefabName = "Prefabs/NewPrefab.hprefab", m_ExportPath, m_PackageName = "Game";
     Ref<Scene> m_PrefabScene;
+    Ref<Framebuffer> m_PrefabPreview;
+    EditorCamera m_PrefabCamera{45,1,.1f,10000};
+    bool m_PrefabFit=true;
     FileDocument m_PrefabFile;
     bool m_ShowSaveConflict=false;
     EditorDocument m_ConflictDocument=EditorDocument::Scene;

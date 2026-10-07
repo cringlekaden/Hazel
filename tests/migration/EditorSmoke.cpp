@@ -25,6 +25,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <filesystem>
+#include <yaml-cpp/yaml.h>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
@@ -62,6 +63,7 @@ public:
             NativeCreationChecks();
             RecoveryChecks();
             RenderingChecks();
+            HierarchyAuthoringChecks();
             AuthoringChecks();
             SDKChecks();
             EditorConsoleChecks(m_Directory);
@@ -356,6 +358,10 @@ private:
         if(a.m_Tools.Busy()) {
             Check(std::chrono::steady_clock::now()-m_MinimizedStart<std::chrono::seconds(5),
                   "Minimized window prevented tool completion polling");
+            // A delayed real configure event may restore the hidden capture window.
+            // Reassert this fixture's minimized state before Application considers
+            // rendering/updating; keep the no-advance and completion assertions.
+            WindowResizeEvent minimized(0,0);Application::Get().OnEvent(minimized);
             Application::Get().SubmitToMainThread([this]{CheckMinimizedCompletion();});return;
         }
         Check(a.m_Report.Success&&a.m_Report.Request.Label=="Minimized completion",
@@ -366,6 +372,35 @@ private:
     }
     void OnImGuiRender() override {
         if(m_Frame!=13&&!(m_Frame==16&&std::getenv("HAZEL_EDITOR_CAPTURE")&&!std::getenv("HAZEL_CONSOLE_CAPTURE")))return;
+        if(std::getenv("HAZEL_HIERARCHY_CAPTURE")) {
+            m_Editor.m_ActionError.clear();ImGui::ClosePopupsOverWindow(nullptr,false);
+            if(!m_HierarchyCapture) {
+                m_HierarchyCapture=CreateRef<Scene>();auto root=m_HierarchyCapture->CreateEntity("Lantern rig");root.GetComponent<TransformComponent>().Translation={3,2,0};
+                auto child=m_HierarchyCapture->CreateEntity("Lantern");child.GetComponent<TransformComponent>().Translation={1,0,0};child.AddComponent<SpriteRendererComponent>();
+                auto leaf=m_HierarchyCapture->CreateEntity("Glow");m_HierarchyCapture->Reparent(child,root,TransformPolicy::KeepLocal);m_HierarchyCapture->Reparent(leaf,child,TransformPolicy::KeepLocal);
+                m_HierarchyCapturePanel.SetContext(m_HierarchyCapture);m_HierarchyCapturePanel.SetSelectedEntity(child);
+            }
+            const auto scale=ImGui::GetIO().FontGlobalScale;ImGui::GetIO().FontGlobalScale=1.25f;const auto origin=ImGui::GetMainViewport()->Pos;
+            ImGui::SetNextWindowPos({origin.x+5,origin.y+50});ImGui::SetNextWindowSize({300,580});
+            ImGui::Begin("Hierarchy layout contract",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoFocusOnAppearing);
+            m_HierarchyCapturePanel.DrawHierarchy();ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());ImGui::End();
+            ImGui::SetNextWindowPos({origin.x+310,origin.y+50});ImGui::SetNextWindowSize({330,580});
+            ImGui::Begin("Local property layout",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoFocusOnAppearing);
+            m_HierarchyCapturePanel.DrawAssetProperties(m_HierarchyCapturePanel.GetSelectedEntity());ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());ImGui::End();
+            ImGui::SetNextWindowPos({origin.x+645,origin.y+50});ImGui::SetNextWindowSize({400,300});
+            ImGui::Begin("Detached preview layout",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoFocusOnAppearing);
+            auto& a=*m_Editor.m_Authoring;const auto priorScene=a.m_PrefabScene;const auto priorFramebuffer=a.m_PrefabPreview;const auto priorCamera=a.m_PrefabCamera;const auto priorFit=a.m_PrefabFit;
+            a.m_PrefabScene=m_HierarchyCapture;a.m_PrefabFit=true;a.m_PrefabPreview=m_HierarchyPreviewCapture;
+            ImGui::GetStateStorage()->SetInt(ImGui::GetID("Subtree preview"),1);a.PrefabPreview();
+            Check(a.m_PrefabPreview && glIsTexture(a.m_PrefabPreview->GetColorAttachmentRendererID()) && glGetError()==GL_NO_ERROR,"Actual detached subtree preview failed");
+            auto selected=m_HierarchyCapturePanel.GetSelectedEntity();auto projected=a.m_PrefabCamera.GetViewProjection()*m_HierarchyCapture->GetWorldTransform(selected)*glm::vec4(0,0,0,1);projected/=projected.w;
+            const auto spec=a.m_PrefabPreview->GetSpecification();a.m_PrefabPreview->Bind();
+            Check(a.m_PrefabPreview->ReadPixel(1,int((projected.x+1)*.5f*spec.Width),int((projected.y+1)*.5f*spec.Height))==int(uint32_t(selected)),"Detached preview did not pick nested visual at world position");a.m_PrefabPreview->Unbind();
+            m_HierarchyPreviewCapture=a.m_PrefabPreview; // Retain texture until ImGui consumes this frame.
+            a.m_PrefabScene=priorScene;a.m_PrefabPreview=priorFramebuffer;a.m_PrefabCamera=priorCamera;a.m_PrefabFit=priorFit;
+            ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());ImGui::End();
+            ImGui::GetIO().FontGlobalScale=scale;return;
+        }
         if(std::getenv("HAZEL_RENDERING_CAPTURE")) {
             // Earlier failure assertions are complete; isolate presentation evidence from their modal.
             m_Editor.m_ActionError.clear();ImGui::ClosePopupsOverWindow(nullptr,false);
@@ -790,6 +825,59 @@ private:
 #endif
         std::cout<<"PASS: prefab identity/independence/self/external references/malformed assets, script creation, preferences recovery/scopes, absolute Python discovery\n";
     }
+    void HierarchyAuthoringChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=e.m_SceneHierarchyPanel;
+        const auto scene=e.m_EditorScene;const auto before=a.SceneText();const auto saved=a.m_SavedScene;
+        const auto oldSelection=panel.GetSelectedEntity();const uint64_t oldID=oldSelection?uint64_t(Entity(oldSelection).GetUUID()):0;
+        Check(panel.AddEntity("Hierarchy root"),"Controller Create Root failed");auto root=panel.GetSelectedEntity();
+        auto transform=root.GetComponent<TransformComponent>();transform.Translation={3,2,0};scene->SetLocalTransform(root,transform);
+        Check(panel.AddChild(root,"Hierarchy child"),"Controller Create Child failed");auto child=panel.GetSelectedEntity();
+        transform=child.GetComponent<TransformComponent>();transform.Translation={1,0,0};scene->SetLocalTransform(child,transform);
+        Check(panel.AddChild(child,"Hierarchy leaf"),"Controller nested child failed");auto leaf=panel.GetSelectedEntity();leaf.AddComponent<SpriteRendererComponent>();
+        const auto snapshot=a.SceneText();
+        Check(!panel.ReparentEntity(scene->GetIdentity(),root.GetUUID(),leaf.GetUUID(),TransformPolicy::KeepLocal) && a.SceneText()==snapshot,"Tree reparent cycle changed draft");
+        Check(!panel.ReparentEntity(scene->GetIdentity()+1,child.GetUUID(),0,TransformPolicy::KeepWorld) && a.SceneText()==snapshot,"Tree stale/cross-scene payload mutated draft");
+        panel.SetSelectedEntity(child);const auto world=scene->GetWorldTransform(child);
+        Check(panel.ReparentEntity(scene->GetIdentity(),child.GetUUID(),0,TransformPolicy::KeepWorld) && scene->GetWorldTransform(child)==world && panel.GetSelectedEntity()==child,"Tree unparent moved entity/lost selection");
+        Check(panel.ReparentEntity(scene->GetIdentity(),child.GetUUID(),root.GetUUID(),TransformPolicy::KeepWorld),"Tree reparent failed");
+        panel.SetSelectedEntity(child);
+        a.InvokeRuntime(AuthoringPanel::RuntimeAction::Play);
+        if(a.m_Documents.Pending())
+            Check(a.m_Documents.Resolve(GuardChoice::UseSaved,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Nested Play asset guard failed");
+        Check(e.m_SceneState==EditorLayer::SceneState::Play && e.m_ActiveScene!=scene,"Nested authored scene did not enter independent Play copy");
+        auto runtimeChild=e.m_ActiveScene->GetEntityByUUID(child.GetUUID());
+        Check(e.m_ActiveScene->GetRelationship(runtimeChild).Parent==root.GetUUID() && e.m_ActiveScene->GetWorldTransform(runtimeChild)==world,"Play copy lost nested relationship/world pose");
+        auto live=runtimeChild.GetComponent<TransformComponent>();live.Translation.x=9;e.m_ActiveScene->SetLocalTransform(runtimeChild,live);
+        panel.SetSelectedEntity(runtimeChild);
+        Check(a.InvokeRuntime(AuthoringPanel::RuntimeAction::Stop) && panel.GetSelectedEntity()==child && scene->GetWorldTransform(child)==world,"Stop lost nested authored selection/pose or retained live edits");
+        panel.SetSelectedEntity(root);Check(panel.DuplicateSelected(),"Controller Duplicate Subtree failed");auto duplicate=panel.GetSelectedEntity();
+        Check(scene->GetSubtree(duplicate).size()==3,"Tree duplication lost children");
+        const auto roots=scene->GetAllEntitiesWith<IDComponent>().size();
+        Check(!panel.ConfirmDelete(scene->GetIdentity(),duplicate.GetUUID(),1,DestroyPolicy::Subtree,TransformPolicy::KeepWorld) && scene->GetAllEntitiesWith<IDComponent>().size()==roots && panel.GetSelectedEntity()==duplicate,"Changed delete count lost content or selection");
+        root.AddComponent<ScriptComponent>().ClassName="Unavailable.HierarchyAuthor";
+        auto& external=ScriptEngine::GetScriptFieldMap(root)["External"];
+        external.Field={ScriptFieldType::Entity,"External",nullptr};external.SetValue<uint64_t>(duplicate.GetUUID());
+        Check(panel.ClearStoredEntityReference(root,"External") && external.GetValue<uint64_t>()==0 && root.GetComponent<ScriptComponent>().ClassName=="Unavailable.HierarchyAuthor","Uncompiled stored reference Clear failed or changed class");
+        root.RemoveComponent<ScriptComponent>();ScriptEngine::GetScriptFieldMap(root).clear();
+        const auto reference=std::filesystem::path("Prefabs/hierarchy-authoring.hprefab");
+        Prefab::Save(Project::GetAssetDirectory(),reference,scene,root,true,WriteMode::CreateNew);
+        auto asset=Prefab::Load(Project::GetAssetDirectory(),reference,true);SceneHierarchyPanel inspector(asset);
+        inspector.PrefabDocument=true;inspector.EditOperation=EditorAction::EditAsset;inspector.Availability=[&](EditorAction op){return a.Availability(op);};
+        auto assetRoot=Prefab::GetEntity(asset);inspector.SetSelectedEntity(assetRoot);
+        Check(!inspector.DuplicateSelected() && !inspector.DeleteSelected(),"Prefab tree allowed a second root or destroyed asset root");
+        auto assetChild=asset->GetEntityByUUID(asset->GetChildren(assetRoot.GetUUID()).front());inspector.SetSelectedEntity(assetChild);
+        Check(inspector.AddChild(assetChild,"New asset child") && inspector.DuplicateSelected(),"Prefab child authoring failed");
+        const auto updated=Prefab::Serialize(Project::GetAssetDirectory(),asset,assetRoot,true);
+        Check(YAML::Load(updated)["Entities"].size()==5,"Prefab hierarchy edit/save lost subtree");
+        a.Guard(OperationIntent::OpenScene,[]{return false;});
+        Check(a.m_Documents.Pending() && !panel.ReparentEntity(scene->GetIdentity(),child.GetUUID(),0,TransformPolicy::KeepWorld),"Pending document operation allowed hierarchy mutation");
+        a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),[&](const auto& document){return a.SaveDocument(document);});
+        Check(panel.ConfirmDelete(scene->GetIdentity(),duplicate.GetUUID(),3,DestroyPolicy::Subtree,TransformPolicy::KeepWorld),"Confirmed subtree deletion failed");
+        Check(panel.ConfirmDelete(scene->GetIdentity(),root.GetUUID(),3,DestroyPolicy::Subtree,TransformPolicy::KeepWorld),"Original subtree cleanup failed");
+        Check(a.SceneText()==before && a.m_SavedScene==saved,"Hierarchy cleanup altered unrelated content/saved state");
+        panel.SetSelectedEntity(scene->GetEntityByUUID(oldID));e.m_ActionError.clear();
+        std::cout<<"PASS: actual hierarchy controller create/reparent/identity/cycle/selection, subtree duplicate/count-confirmed delete, connected prefab edits, nested Play/Stop isolation/selection and pending-document mutation guards\n";
+    }
     void RenderingChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& window=Application::Get().GetWindow();
         const auto project=Project::GetActive();const auto previous=project->GetRendererRequests();
@@ -1054,6 +1142,9 @@ private:
         Check(Read(scenePath)==priorScene && Read(projectPath)==priorProject,"Failed save changed prior scene/project bytes");
     }
     EditorLayer& m_Editor;
+    Ref<Scene> m_HierarchyCapture;
+    Ref<Framebuffer> m_HierarchyPreviewCapture;
+    SceneHierarchyPanel m_HierarchyCapturePanel;
     std::filesystem::path m_Directory;
     bool& m_Done;
     int m_Frame = 0;

@@ -470,6 +470,7 @@ void AuthoringPanel::Shortcuts()
         return;
     const bool viewportFocused = FocusedPanel("Viewport");
     const bool sceneFocused = FocusedPanel("Scene Hierarchy") || FocusedPanel("Properties");
+    const bool prefabFocused=FocusedPanel("Prefab Inspector") && bool(m_PrefabScene);
     if (io.KeyCtrl)
     {
         if (ImGui::IsKeyPressed(ImGuiKey_O, false))
@@ -489,8 +490,10 @@ void AuthoringPanel::Shortcuts()
             else
                 SaveActive(io.KeyShift);
         }
-        if (ImGui::IsKeyPressed(ImGuiKey_D, false) && (viewportFocused || sceneFocused))
-            m_Editor.OnDuplicateEntity();
+        if(ImGui::IsKeyPressed(ImGuiKey_D,false)) {
+            if(prefabFocused)m_PrefabInspector.DuplicateSelected();
+            else if(viewportFocused || sceneFocused)m_Editor.OnDuplicateEntity();
+        }
         if (ImGui::IsKeyPressed(ImGuiKey_R, false))
             m_Editor.ReloadScripts();
         return;
@@ -506,8 +509,17 @@ void AuthoringPanel::Shortcuts()
         if (ImGui::IsKeyPressed(ImGuiKey_R, false))
             m_Editor.m_GizmoType = ImGuizmo::SCALE;
     }
+    if(prefabFocused && ImGui::IsKeyPressed(ImGuiKey_Delete,false))m_PrefabInspector.RequestDelete();
+    if((viewportFocused || sceneFocused) && ImGui::IsKeyPressed(ImGuiKey_F,false)) {
+        auto selected=m_Editor.m_SceneHierarchyPanel.GetSelectedEntity();
+        if(selected) {
+            m_Editor.m_SceneHierarchyPanel.RevealSelected();
+            const auto& camera=m_Editor.m_EditorCamera;
+            m_Editor.m_EditorCamera.RestoreOrbit(glm::vec3(m_Editor.m_ActiveScene->GetWorldTransform(selected)[3]),camera.GetPitch(),camera.GetYaw(),camera.GetDistance());
+        }
+    }
     if ((viewportFocused || sceneFocused) && ImGui::IsKeyPressed(ImGuiKey_Delete, false))
-        m_Editor.m_SceneHierarchyPanel.DeleteSelected();
+        m_Editor.m_SceneHierarchyPanel.RequestDelete();
 }
 void AuthoringPanel::FileMenu()
 {
@@ -645,16 +657,18 @@ void AuthoringPanel::Menus()
     }
     if (ImGui::BeginMenu("Scene"))
     {
-        if (ImGui::MenuItem("Add Entity", nullptr, false, bool(Availability(EditorAction::EditScene))))
+        if (ImGui::MenuItem("Create Root Entity", nullptr, false, bool(Availability(EditorAction::EditScene))))
             m_Editor.m_SceneHierarchyPanel.AddEntity();
-        if (ImGui::MenuItem("Duplicate Selected", "Ctrl+D", false,
+        auto selected=m_Editor.m_SceneHierarchyPanel.GetSelectedEntity();
+        if(ImGui::MenuItem("Create Child of Selected",nullptr,false,bool(Availability(EditorAction::EditScene)) && bool(selected)))m_Editor.m_SceneHierarchyPanel.AddChild(selected);
+        if (ImGui::MenuItem("Duplicate Selected Subtree", "Ctrl+D", false,
                             bool(Availability(EditorAction::EditScene)) &&
                                 bool(m_Editor.m_SceneHierarchyPanel.GetSelectedEntity())))
             m_Editor.OnDuplicateEntity();
-        if (ImGui::MenuItem("Delete Selected", "Delete", false,
+        if (ImGui::MenuItem("Delete Selected Subtree...", "Delete", false,
                             bool(Availability(EditorAction::EditScene)) &&
                                 bool(m_Editor.m_SceneHierarchyPanel.GetSelectedEntity())))
-            m_Editor.m_SceneHierarchyPanel.DeleteSelected();
+            m_Editor.m_SceneHierarchyPanel.RequestDelete();
         ImGui::Separator();
         if (ImGui::MenuItem("Play", nullptr, false, bool(Availability(EditorAction::Play))))
             InvokeRuntime(RuntimeAction::Play);
@@ -1236,6 +1250,9 @@ void AuthoringPanel::SelectAsset(const std::filesystem::path &path)
                   m_InitialTransform = transform;
                   m_SavedPrefab = std::move(saved);
                   m_PrefabInspector.SetContext(scene);
+                  m_PrefabInspector.PrefabDocument=true;
+                  m_PrefabFit=true;
+                  m_PrefabInspector.SetSelectedEntity(Prefab::GetEntity(scene));
                   m_PrefabInspector.EditScript = m_Editor.m_SceneHierarchyPanel.EditScript;
                   m_PrefabInspector.ReportError = [this](const auto &error)
                   { m_Editor.ActionFailed(error); };
@@ -1286,7 +1303,7 @@ void AuthoringPanel::Prefabs()
             ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize({560, 340}, ImGuiCond_FirstUseEver);
         ImGui::Begin("Create Prefab", &m_CreatePrefab);
-        ImGui::TextWrapped("Single detached entity; self references remap. "
+        ImGui::TextWrapped("Detached subtree; internal entity references remap. "
                            "External entity references and native scripts "
                            "are rejected. Future instances inherit edits; existing "
                            "instances remain independent.");
@@ -1375,7 +1392,13 @@ void AuthoringPanel::Prefabs()
         ImGui::End();
         return;
     }
-    m_PrefabInspector.DrawAssetProperties(Prefab::GetEntity(m_PrefabScene));
+    if(ImGui::CollapsingHeader("Prefab hierarchy",ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::BeginChild("Prefab hierarchy view",{0,ImGui::GetFontSize()*12},true);
+        m_PrefabInspector.DrawHierarchy();ImGui::EndChild();
+    }
+    PrefabPreview();
+    if(auto selected=m_PrefabInspector.GetSelectedEntity())m_PrefabInspector.DrawAssetProperties(selected);
+    else ImGui::TextWrapped("Select an entity in this asset's hierarchy to edit its local properties.");
     ImGui::Separator();
     ImGui::TextWrapped("Viewport drops use the asset's authored transform. Set "
                        "placement below for Instantiate and Select.");

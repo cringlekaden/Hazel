@@ -1,15 +1,15 @@
-# Editor usability implementation: A1 / A2 and B–F
+# Editor usability implementation: A1 / A2 and B–G
 
 Baseline: `5de70c93a89e1c8df3fd37553569d9499f793c7a` on
 `feature/sprite-sheet-authoring`, including the complete audit and descended from
 `9a48282f59b4cbc188615ec66763c448b70a2e83`. Implementation branch:
 `feature/editor-usability`. This record supplements
 [the audit](editor-usability-audit.md). A1/A2 and their corrections are complete;
-Stages B–F and their verification are recorded below. G/H and broader tooltip cleanup remain separate stages.
+Stages B–G and their verification are recorded below. Optional H and broader tooltip cleanup remain separate stages.
 
 ## Workflows
 
-- **Properties:** select an entity in the flat Scene Hierarchy. Labels sit left of
+- **Properties:** select an entity in Scene Hierarchy. Labels sit left of
   controls, vector axis buttons reset owner-supplied defaults, and Tab / keyboard
   editing use ImGui navigation. Angles display degrees but remain radians in
   components. Script fields without overrides explicitly show an unknown C#
@@ -625,7 +625,7 @@ execution remain acceptance checks. Older Windows local configs need only their
 Hazelnut args set to []; ignored configs are not replaced by a pull. No Actions
 query or further stage is part of this correction.
 
-## Stage G: hierarchy and detached prefabs (in progress)
+## Stage G: hierarchy and detached prefabs
 
 Baseline `5bf8028`, with user-generated editor state and the unrelated Lanterns
 sheet retained. First checkpoint introduces scene-owned parent UUID/sibling-order
@@ -704,15 +704,70 @@ The serialization fixture now uses valid planar/uniform-circle physics; corrupt
 transition data is written explicitly because serialization correctly rejects it.
 No assertions were weakened and no Actions query or physical UI acceptance ran.
 
+
+Editor checkpoint: Scene Hierarchy is an expandable UUID-scoped tree with
+ancestor-aware name/component/class search, arrows only for parents, reliable
+row/blank selection and F to reveal/frame the selected world position. Create
+Root/Child, context-menu Duplicate Subtree and counted Delete confirmation share
+apply-time availability checks. Drag/drop and Properties Parent default to Keep
+World; Shift-drop or the explicit Keep Local choice intentionally keeps local
+values. Stale/cross-scene targets, cycles, physics and nonrepresentable transforms
+produce an inline reason and Console diagnostic without changing selection/data.
+Delete Parent/Keep Children is explicitly available only for authored scenes.
+
+Properties display local transforms using the existing colored vector controls;
+rotations still display degrees/store radians. World position and an expandable
+read-only matrix aid diagnosis. Existing world gizmos/picking and scene/UUID
+selection are retained across Play/Stop. Prefab Inspector embeds the same tree
+and local Properties with a static subtree preview; it neither runs scripts nor
+physics. Its sole root cannot be detached/deleted/duplicated into disconnected
+roots; child subtrees can be edited. Creation/saving/assignment, snapshots, conflict
+checks and document guards continue through the established controller/services.
+Window/docking IDs, native decorations and compact runtime toolbar are unchanged. Deletion never guesses replacement references. A detached prefab Save
+rejects stored entity references outside its remaining subtree and identifies the
+field; clear/reassign explicitly before saving, retaining the draft and prior file
+on failure. Unavailable script classes expose their stored entity references with
+Clear (an explicit unassigned override); constructor defaults and other stored
+fields are not evaluated or changed.
+
+Hands-on acceptance: create a root and nested sprite child; compare local/world
+positions; drag with/without Shift, try a cycle and a sheared Keep World move;
+add physics to a child (rejected) then to a root with visual children; duplicate,
+confirm/cancel subtree deletion; create/save a subtree prefab, edit a child and
+instantiate twice; reopen the scene and exercise Play/Stop selection. Check small
+panels and Windows DPI. These remain physical user acceptance, not automated
+mouse-driving results.
+
+
+Final G verification: Linux Premake Debug/Release builds pass with two compiler
+jobs. All 14 sequential regressions pass in Debug native and Release GL4.1
+profiles. Focused native Debug and software GL4.1 Release editor checks pass after
+stabilizing the existing synthetic-minimization fixture against delayed real
+configure events; no-update, timeout, completion and availability assertions stay
+intact. Native HD4000 reports OpenGL 4.2; software scene/editor GL4.1 checks pass
+world rendering/picking and preview lifetime assertions. The optional 1280×720
+capture was inspected at 1.25 scale with 300/330-pixel tree/Properties panels.
+
+Canonical export from a fresh native-generated temporary project builds its
+scripts and validates the complete v2 subtree/internal-reference/child-texture
+closure. Archive hashes and exact scene/prefab/texture/descriptor bytes pass;
+relocated headless validation and bounded native Nutella startup/render/OS-close/
+shutdown pass without SDK/resource overrides. The omitted default rendering
+block resolves normally (HD4000: requested 32 texture slots, effective 16).
+User session/workspace updates made while running Hazelnut were retained; unrelated
+Lanterns edits, layouts, ignored VS Code files, stashes and pristine vendor pins
+remain untouched. No Actions query, Windows build or physical mouse/DPI acceptance
+was performed. Optional H and broad tooltip cleanup await G hands-on acceptance.
+
 ## Deferred findings
 
-Entity/prefab hierarchy and optional custom caption remain later stages. Stage C adds recovery/schema gates
+Optional custom caption and broader tooltip cleanup remain later stages. Stage C adds recovery/schema gates
 and prefab conflict/exclusive creation checks; the earlier A1/A2 scope remains as
 recorded above. Save All is a
 series of existing atomic file writes, not a multi-file transaction. Preferences
 and project forms retain explicit Apply/Save rather than becoming document types.
 Native project creation is independent of script tools; builds and exports retain their SDK/tool contracts.
 
-Unrelated Skybound files, stashes, ignored VS Code configuration, user/resource
-layouts and all recursively pinned vendor repositories must match their recorded
-pre-task state. No merge into master or force push is part of this milestone.
+Unrelated example edits, stashes, ignored VS Code configuration, user/resource
+layouts and all recursively pinned vendor repositories are preserved; editor state
+written by the user while running Hazelnut is retained. No merge into master or force push is part of this milestone.

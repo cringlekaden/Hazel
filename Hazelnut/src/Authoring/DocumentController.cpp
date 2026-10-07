@@ -196,6 +196,8 @@ void AuthoringPanel::ClosePrefab()
     m_PrefabFocused = false;
     m_PrefabInspector.SetContext(nullptr);
     m_PrefabScene.reset();
+    // Keep the panel-owned framebuffer: a guarded close can follow Image emission
+    // in this frame. ImGui consumes that texture after all panels have drawn.
     if (m_ActiveDocument == EditorDocument::Prefab)
         m_ActiveDocument = EditorDocument::Scene;
 }

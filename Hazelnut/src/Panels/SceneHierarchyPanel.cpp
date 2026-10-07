@@ -35,6 +35,7 @@ SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene> &context) { SetContext
 void SceneHierarchyPanel::SetContext(const Ref<Scene> &context)
 {
     m_SelectionContext = {};
+    m_HierarchyError.clear();m_Matches.clear();m_Reveal.clear();m_DeleteWanted=false;m_DeleteScene=m_DeleteEntity=0;m_ParentMode=0;
     m_Pickers.clear();
     m_PrefabChoices.clear();
     m_PrefabChoicesReady = false;
@@ -55,17 +56,13 @@ bool SceneHierarchyPanel::AddEntity(const std::string &name)
 {
     if (!m_Context || !CanEdit(true))
         return false;
-    return SetSelectedEntity(m_Context->CreateEntity(name));
+    if(PrefabDocument)return HierarchyFailed("A prefab keeps one root; create a child instead");
+    try {m_HierarchyError.clear();return SetSelectedEntity(m_Context->CreateEntity(name));}
+    catch(const std::exception& error){return HierarchyFailed(error.what());}
 }
-bool SceneHierarchyPanel::DeleteSelected()
-{
-    auto entity = GetSelectedEntity();
-    if (!entity || !CanEdit(true))
-        return false;
-    m_SelectionContext = {};
-    m_Pickers.clear();
-    m_Context->DestroyEntity(entity);
-    return true;
+bool SceneHierarchyPanel::DeleteSelected(DestroyPolicy policy,TransformPolicy mode) {
+    auto entity=GetSelectedEntity();if(!entity)return false;
+    return ConfirmDelete(m_Context->GetIdentity(),entity.GetUUID(),m_Context->GetSubtree(entity).size(),policy,mode);
 }
 void SceneHierarchyPanel::DrawAssetProperties(Entity entity)
 {
@@ -83,63 +80,7 @@ void SceneHierarchyPanel::OnImGuiRender()
     if(HierarchyVisible) {
     ImGui::Begin("Scene Hierarchy",&HierarchyVisible);
     m_Focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
-    ImGui::SetNextItemWidth(-ImGui::GetFrameHeightWithSpacing());
-    ImGui::InputTextWithHint("##search", "Find entity...", &m_Search);
-    ImGui::SameLine();
-    if (ImGui::Button("X##clear-search"))
-        m_Search.clear();
-    PropertyUI::Help("Clear entity search");
-    ImGui::BeginDisabled(!CanEdit());
-    if (ImGui::Button("Add Entity"))
-        AddEntity();
-    ImGui::EndDisabled();
-    PropertyUI::Help(availability.Reason);
-    ImGui::BeginChild("Entity list", {0, 0}, false);
-    if (m_Context)
-    {
-        std::vector<Entity> observed;
-        m_Context->m_Registry.each([&](auto id) { observed.emplace_back(id, m_Context.get()); });
-        std::sort(observed.begin(), observed.end(),
-                  [](Entity a, Entity b)
-                  {
-                      return a.GetName() == b.GetName() ? uint64_t(a.GetUUID()) < uint64_t(b.GetUUID())
-                                                        : a.GetName() < b.GetName();
-                  });
-        size_t count = 0;
-        for (auto entity : observed)
-            if (entity)
-            {
-                auto name = entity.GetName(), query = m_Search;
-                auto lower = [](std::string &text)
-                {
-                    std::transform(text.begin(), text.end(), text.begin(),
-                                   [](unsigned char c) { return char(std::tolower(c)); });
-                };
-                lower(name);
-                lower(query);
-                if (!query.empty() && name.find(query) == std::string::npos)
-                    continue;
-                DrawEntityNode(entity);
-                ++count;
-            }
-        if (!count)
-            ImGui::TextDisabled(m_Search.empty() ? "No entities. Add one above."
-                                                 : "No matching entities. Clear search to see all.");
-        // A dedicated item covers only remaining content space. Row clicks,
-        // scrollbars, headers, menus and text entry cannot clear selection.
-        const auto space = ImGui::GetContentRegionAvail();
-        if (space.y > 0 && ImGui::InvisibleButton("##blank", {std::max(space.x, 1.f), space.y}))
-            SetSelectedEntity({});
-        if (ImGui::BeginPopupContextItem("Blank entity actions"))
-        {
-            ImGui::BeginDisabled(!CanEdit());
-            if (ImGui::MenuItem("Create Empty Entity"))
-                AddEntity();
-            ImGui::EndDisabled();
-            ImGui::EndPopup();
-        }
-    }
-    ImGui::EndChild();
+    DrawHierarchy();
     ImGui::End();
     }
     if(!PropertiesVisible)return;
@@ -168,14 +109,14 @@ bool SceneHierarchyPanel::SetSelectedEntity(Entity entity)
         m_SelectionContext = {};
         return false;
     }
-    if (!m_Context || !entity)
+    if (!m_Context || !entity || !m_Context->IsEntityValid(entity.GetUUID()))
     {
         m_SelectionContext = {};
         return false;
     }
-    if (m_SelectionContext != entity)
-        m_Pickers.clear();
+    if (m_SelectionContext != entity) {m_Pickers.clear();m_HierarchyError.clear();}
     m_SelectionContext = entity;
+    RevealSelected();
     return true;
 }
 
@@ -195,29 +136,11 @@ bool SceneHierarchyPanel::AssignSpriteTexture(SpriteRendererComponent &component
     }
 }
 
-void SceneHierarchyPanel::DrawEntityNode(Entity entity)
-{
-    ImGui::PushID(std::to_string(m_Context->GetIdentity()).c_str());
-    ImGui::PushID(std::to_string(uint64_t(entity.GetUUID())).c_str());
-    if (ImGui::Selectable((entity.GetName() + "###entity").c_str(), m_SelectionContext == entity))
-        SetSelectedEntity(entity);
-    if (ImGui::BeginPopupContextItem())
-    {
-        SetSelectedEntity(entity);
-        ImGui::BeginDisabled(!CanEdit());
-        if (CreatePrefab && ImGui::MenuItem("Create Prefab..."))
-            CreatePrefab(entity);
-        if (ImGui::MenuItem("Delete Entity"))
-            DeleteSelected();
-        ImGui::EndDisabled();
-        ImGui::EndPopup();
-    }
-    ImGui::PopID();
-    ImGui::PopID();
-}
-
+static bool SamePhysics(const Rigidbody2DComponent& a,const Rigidbody2DComponent& b){return a.Type==b.Type && a.FixedRotation==b.FixedRotation && a.GravityScale==b.GravityScale;}
+static bool SamePhysics(const BoxCollider2DComponent& a,const BoxCollider2DComponent& b){return a.Offset==b.Offset && a.Size==b.Size && a.Density==b.Density && a.Friction==b.Friction && a.Restitution==b.Restitution && a.RestitutionThreshold==b.RestitutionThreshold;}
+static bool SamePhysics(const CircleCollider2DComponent& a,const CircleCollider2DComponent& b){return a.Offset==b.Offset && a.Radius==b.Radius && a.Density==b.Density && a.Friction==b.Friction && a.Restitution==b.Restitution && a.RestitutionThreshold==b.RestitutionThreshold;}
 template <typename T, typename UIFunction>
-static void DrawComponent(const std::string &name, Entity entity, std::map<std::string,bool>& sections,std::set<std::string>& restore,UIFunction uiFunction)
+static void DrawComponent(const std::string &name, Entity entity, std::map<std::string,bool>& sections,std::set<std::string>& restore,UIFunction uiFunction, const std::function<void(const std::string&)>& report = {})
 {
     const ImGuiTreeNodeFlags treeNodeFlags =
         ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth |
@@ -232,7 +155,7 @@ static void DrawComponent(const std::string &name, Entity entity, std::map<std::
         float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
         ImGui::Separator();
         if(restore.erase(name))ImGui::SetNextItemOpen(sections[name],ImGuiCond_Always);
-        bool open = ImGui::TreeNodeEx("##component", treeNodeFlags, "%s", name.c_str());
+        bool open = ImGui::TreeNodeEx("##component", treeNodeFlags, "%s", std::is_same_v<T,TransformComponent>?"Transform (local)":name.c_str());
         sections[name]=open;
         ImGui::PopStyleVar();
         ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
@@ -253,7 +176,10 @@ static void DrawComponent(const std::string &name, Entity entity, std::map<std::
 
         if (open)
         {
-            uiFunction(component);
+            if constexpr(std::is_same_v<T,Rigidbody2DComponent> || std::is_same_v<T,BoxCollider2DComponent> || std::is_same_v<T,CircleCollider2DComponent>) {
+                auto proposed=component;uiFunction(proposed);
+                if(!SamePhysics(component,proposed))try{entity.AddOrReplaceComponent<T>(proposed);}catch(const std::exception& error){if(report)report(error.what());}
+            } else uiFunction(component);
             ImGui::TreePop();
         }
 
@@ -265,9 +191,8 @@ static void DrawComponent(const std::string &name, Entity entity, std::map<std::
 
 void SceneHierarchyPanel::DrawComponents(Entity entity)
 {
+    if (!entity || !m_Context || !entity.BelongsTo(m_Context.get()) || !m_Context->IsEntityValid(entity.GetUUID()))return;
     if(m_SectionEntity!=uint64_t(entity.GetUUID())){m_Sections.clear();m_RestoreSections.clear();m_SectionEntity=entity.GetUUID();}
-    if (!entity)
-        return;
     ImGui::PushID(std::to_string(m_Context->GetIdentity()).c_str());
     ImGui::PushID(std::to_string(uint64_t(entity.GetUUID())).c_str());
     const bool editable = CanEdit();
@@ -278,6 +203,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     if (entity.HasComponent<TagComponent>())
         PropertyUI::Text("tag", "Name", entity.GetComponent<TagComponent>().Tag);
 
+    ParentProperties(entity);
     if (ImGui::Button("Add Component"))
         ImGui::OpenPopup("AddComponent");
 
@@ -298,18 +224,13 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     }
 
     DrawComponent<TransformComponent>(
-        "Transform", entity, m_Sections,m_RestoreSections,
-        [](auto &component)
-        {
-            const TransformComponent defaults;
-            PropertyUI::Vector("translation", "Position", glm::value_ptr(component.Translation), 3, .1f,
-                               glm::value_ptr(defaults.Translation));
-            glm::vec3 rotation = glm::degrees(component.Rotation);
-            if (PropertyUI::Vector("rotation", "Rotation (deg)", glm::value_ptr(rotation), 3, .5f,
-                                   glm::value_ptr(defaults.Rotation)))
-                component.Rotation = glm::radians(rotation);
-            PropertyUI::Vector("scale", "Scale", glm::value_ptr(component.Scale), 3, .1f,
-                               glm::value_ptr(defaults.Scale));
+        "Transform",entity,m_Sections,m_RestoreSections,[this,entity](auto& component)mutable {
+            const TransformComponent defaults;auto proposed=component;bool changed=false;
+            changed|=bool(PropertyUI::Vector("translation","Local position",glm::value_ptr(proposed.Translation),3,.1f,glm::value_ptr(defaults.Translation)));
+            auto rotation=glm::degrees(proposed.Rotation);
+            if(PropertyUI::Vector("rotation","Local rotation (deg)",glm::value_ptr(rotation),3,.5f,glm::value_ptr(defaults.Rotation))){proposed.Rotation=glm::radians(rotation);changed=true;}
+            changed|=bool(PropertyUI::Vector("scale","Local scale",glm::value_ptr(proposed.Scale),3,.1f,glm::value_ptr(defaults.Scale)));
+            if(changed && CanEdit(true))try{m_Context->SetLocalTransform(entity,proposed);m_HierarchyError.clear();}catch(const std::exception& e){HierarchyFailed(e.what());}
         });
 
     DrawComponent<CameraComponent>(
@@ -425,6 +346,22 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                 if (!component.ClassName.empty())
                     ImGui::TextWrapped(
                         "Class unavailable. Build Scripts or select an existing compiled class.");
+                auto &stored = ScriptEngine::GetScriptFieldMap(entity);
+                for (auto &[name, value] : stored) {
+                    if (value.Field.Type != ScriptFieldType::Entity) continue;
+                    ImGui::PushID(name.c_str());
+                    const auto id = value.GetValue<uint64_t>();
+                    auto target = m_Context->GetEntityByUUID(id);
+                    const auto text = !id ? std::string("Explicitly unassigned override")
+                        : (target ? target.GetName() : std::string("Unresolved entity")) + " · " + std::to_string(id);
+                    PropertyUI::ReadOnly("stored-entity", name.c_str(), text.c_str());
+                    ImGui::BeginDisabled(!id);
+                    if (ImGui::SmallButton("Clear stored reference"))
+                        ClearStoredEntityReference(entity, name);
+                    ImGui::EndDisabled();
+                    PropertyUI::Help("Writes an explicit unassigned entity override. Other stored fields are retained; the C# constructor default is not evaluated.");
+                    ImGui::PopID();
+                }
                 return;
             }
             auto &values = ScriptEngine::GetScriptFieldMap(entity);
@@ -708,7 +645,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                                  &defaults.FixedRotation);
             PropertyUI::DragFloat("Gravity Scale", "Gravity Scale", component.GravityScale, 0.05f,
                                   -10.0f, 10.0f, "%.2f", &defaults.GravityScale);
-        });
+        },[this](const std::string& error){HierarchyFailed(error);});
 
     DrawComponent<BoxCollider2DComponent>(
         "Box Collider 2D", entity, m_Sections,m_RestoreSections,
@@ -728,7 +665,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             PropertyUI::DragFloat("Restitution Threshold", "Restitution Threshold",
                                   component.RestitutionThreshold, .01f, 0, 0, "%.3f",
                                   &defaults.RestitutionThreshold);
-        });
+        },[this](const std::string& error){HierarchyFailed(error);});
 
     DrawComponent<CircleCollider2DComponent>(
         "Circle Collider 2D", entity, m_Sections,m_RestoreSections,
@@ -748,7 +685,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             PropertyUI::DragFloat("Restitution Threshold", "Restitution Threshold",
                                   component.RestitutionThreshold, .01f, 0, 0, "%.3f",
                                   &defaults.RestitutionThreshold);
-        });
+        },[this](const std::string& error){HierarchyFailed(error);});
 
     DrawComponent<TextComponent>(
         "Text Renderer", entity, m_Sections,m_RestoreSections,
@@ -769,11 +706,14 @@ template <typename T> void SceneHierarchyPanel::DisplayAddComponentEntry(const s
 {
     if (!m_SelectionContext.HasComponent<T>())
     {
-        if (ImGui::MenuItem(entryName.c_str()) && CanEdit(true))
+        bool allowed=true;
+        if constexpr(std::is_same_v<T,Rigidbody2DComponent> || std::is_same_v<T,BoxCollider2DComponent> || std::is_same_v<T,CircleCollider2DComponent>)allowed=!uint64_t(m_Context->GetRelationship(m_SelectionContext).Parent);
+        if (ImGui::MenuItem(entryName.c_str(),nullptr,false,allowed) && CanEdit(true))
         {
-            m_SelectionContext.AddComponent<T>();
-            ImGui::CloseCurrentPopup();
+            try{m_SelectionContext.AddComponent<T>();m_HierarchyError.clear();ImGui::CloseCurrentPopup();}
+            catch(const std::exception& e){HierarchyFailed(e.what());}
         }
+        if(!allowed)PropertyUI::Help("Unparent first: rigidbody and collider owners must be roots");
     }
 }
 

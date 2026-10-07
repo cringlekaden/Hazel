@@ -164,3 +164,21 @@ a different GPU policy. Nutella reads the same requests before initialization.
 Editor Preferences > Graphics owns editor VSync and optional driver-message
 capture; device/effective information is read-only. Swap interval submission does
 not measure compositor timing. See the [Stage F contracts and local verification](docs/design/editor-usability-a1-a2.md#stage-f-renderer-requests).
+
+
+Scene Hierarchy now supports ordered parent/child trees. Transform properties are
+local; rendering, cameras and gizmos use composed world matrices. Drag onto an
+entity or the root row to Keep World; Shift-drop explicitly Keeps Local. A move
+that needs shear, a singular inverse or reflected decomposition is rejected;
+use local controls or deliberately choose Keep Local. Rigidbody/collider owners
+must remain roots (planar Z rotation, positive XY scale; circles need uniform XY
+scale); visual children can follow a root body. Context menus create children,
+duplicate subtrees and confirm counted deletion.
+
+Create Prefab from Subtree produces one detached connected asset. Internal entity
+fields remap independently in each instance; external entity fields must be
+cleared or brought into the subtree. Prefab Inspector edits its children and
+shows a static preview. Legacy flat scenes/single-entity prefabs remain readable;
+explicit Save writes scene/prefab v2 and preserves the original under recovery
+rules. There are no linked overrides, variants or propagation. See the
+[Stage G contracts and verification](docs/design/editor-usability-a1-a2.md#stage-g-hierarchy-and-detached-prefabs).

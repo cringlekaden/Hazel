@@ -104,6 +104,21 @@ static void HierarchyChecks() {
     }
     Check(reject && SceneSerializer(scene).SerializeAuthoredSnapshot() == keep,
           "Singular Keep World operation mutated draft");
+    auto reflected = scene->CreateEntity("Reflected");
+    reflected.GetComponent<TransformComponent>().Scale.x = -1;
+    scene->Reparent(reflected, parent, TransformPolicy::KeepLocal);
+    const auto reflectedDraft = SceneSerializer(scene).SerializeAuthoredSnapshot();
+    reject = false;
+    try {
+        scene->Reparent(reflected, {}, TransformPolicy::KeepWorld);
+    } catch (const std::exception &) {
+        reject = true;
+    }
+    Check(reject && SceneSerializer(scene).SerializeAuthoredSnapshot() == reflectedDraft,
+          "Reflected Keep World detach approximated/mutated data");
+    scene->Reparent(reflected, {}, TransformPolicy::KeepLocal);
+    Check(reflected.GetComponent<TransformComponent>().Scale.x == -1,
+          "Explicit Keep Local discarded authored reflection");
     auto skew = CreateRef<Scene>();
     auto stretch = skew->CreateEntity("Stretch");
     auto rotated = skew->CreateEntity("Rotated");
