@@ -133,7 +133,7 @@ void ConsolePanel::Render()
         m_Filter = {};
         reset = true;
     }
-    PropertyUI::Help("Resets severity, source, search and operation filters so every retained record is eligible.");
+    PropertyUI::Help("Includes severity, source, text and operation filters. Retained messages are not deleted.");
     RefreshRows(reset);
     if (ImGui::Button("Copy"))
         ImGui::OpenPopup("Copy output");

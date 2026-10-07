@@ -473,7 +473,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                                 if (ImGui::IsItemHovered())
                                 {
                                     auto p = choice.GetComponent<TransformComponent>().Translation;
-                                    ImGui::SetTooltip("Position: %.2f, %.2f, %.2f", p.x, p.y, p.z);
+                                    ImGui::SetTooltip("Local position (scene units): %.2f, %.2f, %.2f", p.x, p.y, p.z);
                                 }
                                 ImGui::PopID();
                             }

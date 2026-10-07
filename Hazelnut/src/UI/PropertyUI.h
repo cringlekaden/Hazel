@@ -34,6 +34,7 @@ class Row
     Options m_Options;
     bool m_Table = false;
 };
+// Delayed hover help: behavior, shortcuts, units or disabled reasons; not label repetition.
 void Help(const char *text);
 void Validation(const char *text);
 void WrapButton(const char *label); // SameLine only when the next button fits.

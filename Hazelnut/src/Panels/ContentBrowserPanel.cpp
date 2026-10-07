@@ -133,7 +133,7 @@ void ContentBrowserPanel::OnImGuiRender()
         ImportTexture();
     ImGui::EndDisabled();
     PropertyUI::Help(canImport.Reason ? canImport.Reason
-                                      : "Import a project texture; optionally create its sprite sheet");
+                                      : "Copies into Assets; optional sheet creation is a separate step");
     PropertyUI::WrapButton("Refresh");
     if (ImGui::Button("Refresh"))
         Refresh();

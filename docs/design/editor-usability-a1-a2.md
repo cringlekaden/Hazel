@@ -857,3 +857,15 @@ The native regression compares pre/post geometry and repeated restore results,
 checks drag/maximize/client/resize hit regions and Escape capture cancellation when
 composition is available, and asserts request-preserving native fallback. Plain
 F10 enters the menu; Shift+F10 remains the hierarchy context-menu shortcut.
+
+## Tooltip editorial pass
+
+Reviewed menus, hierarchy/components, browser, sprite tools, Console, settings and
+export controls. Shared rows suppress help identical to their visible label;
+wrapped read-only information suppresses help that only repeats the full value.
+Normal shared help waits for ImGui's standard hover delay to reduce incidental
+noise. Import/filter explanations emphasize consequences rather than repeating
+action names. Entity-reference position help identifies local scene units.
+Icon meanings (search clear, frame reorder, axis reset), constraints, shortcuts,
+clipped header/status paths and disabled reasons remain. Active tree-drop cues
+remain immediate. No engine, ownership, schema or save behavior changes.

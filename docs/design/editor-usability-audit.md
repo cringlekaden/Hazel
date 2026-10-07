@@ -489,3 +489,8 @@ Optional H now has an opt-in Windows per-HWND caption implementation with native
 fallback; Linux retains native WM decorations and detached windows stay native.
 The default remains native pending platform acceptance. The complete behavior,
 limitations and verification are recorded in [the implementation record](editor-usability-a1-a2.md).
+
+The final tooltip pass reviews the common authoring panels, suppresses label/value
+repetition in shared rows and uses ImGui's normal hover delay for explanatory help.
+Icon meanings, units, consequences, disabled reasons and clipped full values stay;
+active drop feedback is immediate. Broader panel redesign remains outside this pass.

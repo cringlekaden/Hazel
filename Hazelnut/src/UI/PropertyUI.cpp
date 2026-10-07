@@ -1,13 +1,14 @@
 #include "PropertyUI.h"
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
 #include <misc/cpp/imgui_stdlib.h>
 
 namespace Hazel::PropertyUI
 {
 void Help(const char *text)
 {
-    if (text && *text && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+    if (text && *text && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled | ImGuiHoveredFlags_DelayNormal))
     {
         ImGui::BeginTooltip();
         ImGui::PushTextWrapPos(ImGui::GetFontSize() * 28);
@@ -34,6 +35,9 @@ void WrapButton(const char *label)
 }
 Row::Row(const char *key, const char *label, Options options) : m_Options(options)
 {
+    // Hover help adds meaning; visible labels already identify the property.
+    if (m_Options.Help && label && std::strcmp(m_Options.Help, label) == 0)
+        m_Options.Help = nullptr;
     ImGui::PushID(key);
     const float width = ImGui::GetContentRegionAvail().x, font = ImGui::GetFontSize();
     m_Table = ImGui::BeginTable("##property", 2,
@@ -49,7 +53,7 @@ Row::Row(const char *key, const char *label, Options options) : m_Options(option
         ImGui::TableSetColumnIndex(0);
         ImGui::AlignTextToFramePadding();
         ImGui::TextWrapped("%s", label);
-        Help(options.Help);
+        Help(m_Options.Help);
         ImGui::TableSetColumnIndex(1);
     }
     ImGui::BeginDisabled(options.DisabledReason && *options.DisabledReason);
@@ -238,7 +242,10 @@ void ReadOnly(const char *key, const char *label, const char *value, Options opt
 {
     Row row(key, label, options);
     ImGui::TextWrapped("%s", value);
-    Help(options.Help);
+    // Wrapped information already exposes the full value. Keep behavioral help.
+    if (options.Help && (!value || std::strcmp(options.Help, value) != 0) &&
+        (!label || std::strcmp(options.Help, label) != 0))
+        Help(options.Help);
 }
 ReferenceAction Reference(const char *key, const char *label, const char *value, bool assigned,
                           Options options)
