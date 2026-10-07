@@ -65,7 +65,7 @@ void ProjectAssets::Reload(const std::filesystem::path& reference) {
     } catch(const std::exception& e) {m_Sheets[key].Error=e.what();throw;}
 }
 void ProjectAssets::Refresh() {
-    std::vector<std::filesystem::path> paths;for(auto& p:m_Sheets) paths.push_back(std::filesystem::path(p.first).lexically_relative(m_Root));
+    std::vector<std::filesystem::path> paths;for(auto& p:m_Sheets) paths.push_back(std::filesystem::u8path(p.first).lexically_relative(m_Root));
     for(auto& p:paths) {
         try{Reload(p);}catch(const std::exception& e){HZ_CORE_WARN("Sprite asset refresh: {}",e.what());}
     }
@@ -125,7 +125,7 @@ std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path
     }
     // Whole texture sources are also validated by the same canonical parser/decoder.
     for(auto file:files) if(file.extension()==".hazel" || file.extension()==".hprefab") {
-        auto doc=YAML::LoadFile(Project::ResolveOwnedAsset(root,file).u8string());
+        auto doc=YAML::Load(FileDocument::Read(Project::ResolveOwnedAsset(root,file)));
         for(auto e:doc["Entities"]) if(auto n=e["SpriteRendererComponent"]) {
             auto source=ReadSpriteSource(n); if(auto t=std::get_if<TextureSpriteSource>(&source)) {
                 auto path=Project::ResolveOwnedAsset(root,t->Texture);Texture2D::ReadImage(path);dependencies.insert(path.lexically_relative(std::filesystem::weakly_canonical(root)));

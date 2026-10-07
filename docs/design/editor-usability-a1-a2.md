@@ -869,3 +869,31 @@ action names. Entity-reference position help identifies local scene units.
 Icon meanings (search clear, frame reorder, axis reset), constraints, shortcuts,
 clipped header/status paths and disabled reasons remain. Active tree-drop cues
 remain immediate. No engine, ownership, schema or save behavior changes.
+
+## Final integration gates and branch disposition
+
+The full C/C++ workflow now runs on feature/editor-usability as well as master,
+including Debug/Release engine/editor/runtime and extracted-package/game gates.
+The editor workflow adds its Linux/Windows software/GL4.1 coverage. Master remains
+unchanged until both feature-head workflows pass; integration gets master CI.
+
+Deferred Windows CI revealed a real UTF-8 cache refresh defect: keys were encoded
+as UTF-8 then reconstructed with the locale path constructor. Refresh now uses
+u8path. Whole-texture closure parsing uses FileDocument's native path read before
+YAML parsing, rather than narrow LoadFile. Existing externally-repaired-sheet
+assertions remain; a Unicode-root whole-texture closure assertion adds coverage.
+
+Branch inventory (fetched after restart):
+
+| Branch | Disposition |
+| --- | --- |
+| feature/editor-usability | Intended combined source for final merge; includes master and current game/authoring/sprite/A–H work. |
+| feature/editor-authoring (86c36c1) | Incorporated ancestor; retain historical checkpoint. |
+| feature/sprite-sheet-authoring (5de70c9) | Incorporated ancestor including audit; retain. |
+| feature/example-games (local 45cac43 / remote f08c93e) | Local historical checkpoint behind remote. Remote-only commit is the authoring PR merge; its tree exactly equals 86c36c1, with no unique changes to merge. Retain both refs. |
+| feature/nutella-runtime (dbd840e) | Already merged into master; retain historical branch. |
+| fix/authoring-reliability (11259a2) | Already merged into master; retain. |
+| migration/upstream-1feb705 (bc1f8b1) | Already merged into master; retain. |
+| master (7a0eec2 before integration) | Merge the verified combined feature once, rather than stale checkpoint snapshots. |
+
+No branches, stashes, vendor pins, layouts or unrelated example edits are deleted.

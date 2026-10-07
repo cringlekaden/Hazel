@@ -12,6 +12,7 @@
 #include "Hazel/Assets/ProjectAssets.h"
 #include "Hazel/Assets/SpriteSheetDocument.h"
 #include <fstream>
+#include <algorithm>
 #include <entt.hpp>
 #include <yaml-cpp/yaml.h>
 #include <cmath>
@@ -91,6 +92,11 @@ static void RecoveryContracts()
     Check(exclusive && FileDocument::Read(root/"retained.hprefab")==prefab,"Prefab creation replaced another file");
     unsigned char image[18+16]{};image[2]=2;image[12]=image[14]=2;image[16]=32;image[17]=0x20;
     {std::ofstream out(root/"texture.tga",std::ios::binary);out.write(reinterpret_cast<const char*>(image),sizeof(image));}
+    // Audit a real whole-texture source through the same UTF-8 file service used
+    // by scene Open; narrow YAML::LoadFile paths fail on Windows in this root.
+    FileSystem::WriteNewFile(root/"textured.hazel", "Scene: Closure\nEntities:\n  - Entity: 91\n    TagComponent: {Tag: Textured}\n    SpriteRendererComponent: {Color: [1, 1, 1, 1], TexturePath: texture.tga, TilingFactor: 1}\n");
+    const auto closure=AuditSpriteAssets(root,{"textured.hazel"});
+    Check(std::find(closure.begin(),closure.end(),std::filesystem::path("texture.tga"))!=closure.end(),"Unicode scene closure omitted whole-texture dependency");
     const std::string sheetText="SpriteSheet: {Version: 1, Texture: texture.tga, TextureSize: [2, 2], Filter: Nearest, Regions: [{ID: '0000000000000001', Name: First, Rect: [0, 0, 2, 2]}]}\n";
     FileSystem::WriteNewFile(root/"legacy.hsprites",sheetText);
     auto retainedAssets=CreateRef<ProjectAssets>(root);
