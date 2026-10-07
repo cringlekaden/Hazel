@@ -657,10 +657,8 @@ void AuthoringPanel::Menus()
     }
     if (ImGui::BeginMenu("Scene"))
     {
-        if (ImGui::MenuItem("Create Root Entity", nullptr, false, bool(Availability(EditorAction::EditScene))))
+        if (ImGui::MenuItem("Add Entity", nullptr, false, bool(Availability(EditorAction::EditScene))))
             m_Editor.m_SceneHierarchyPanel.AddEntity();
-        auto selected=m_Editor.m_SceneHierarchyPanel.GetSelectedEntity();
-        if(ImGui::MenuItem("Create Child of Selected",nullptr,false,bool(Availability(EditorAction::EditScene)) && bool(selected)))m_Editor.m_SceneHierarchyPanel.AddChild(selected);
         if (ImGui::MenuItem("Duplicate Selected Subtree", "Ctrl+D", false,
                             bool(Availability(EditorAction::EditScene)) &&
                                 bool(m_Editor.m_SceneHierarchyPanel.GetSelectedEntity())))

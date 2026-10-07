@@ -35,7 +35,7 @@ SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene> &context) { SetContext
 void SceneHierarchyPanel::SetContext(const Ref<Scene> &context)
 {
     m_SelectionContext = {};
-    m_HierarchyError.clear();m_Matches.clear();m_Reveal.clear();m_DeleteWanted=false;m_DeleteScene=m_DeleteEntity=0;m_ParentMode=0;
+    m_HierarchyError.clear();m_Matches.clear();m_Reveal.clear();m_DeleteWanted=false;m_DeleteScene=m_DeleteEntity=0;m_DragHover=0;m_DragHoverSince=0;
     m_Pickers.clear();
     m_PrefabChoices.clear();
     m_PrefabChoicesReady = false;
@@ -56,7 +56,7 @@ bool SceneHierarchyPanel::AddEntity(const std::string &name)
 {
     if (!m_Context || !CanEdit(true))
         return false;
-    if(PrefabDocument)return HierarchyFailed("A prefab keeps one root; create a child instead");
+    if(PrefabDocument) { auto roots=m_Context->GetChildren();return !roots.empty() && AddChild(m_Context->GetEntityByUUID(roots.front()),name); }
     try {m_HierarchyError.clear();return SetSelectedEntity(m_Context->CreateEntity(name));}
     catch(const std::exception& error){return HierarchyFailed(error.what());}
 }
@@ -155,7 +155,7 @@ static void DrawComponent(const std::string &name, Entity entity, std::map<std::
         float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
         ImGui::Separator();
         if(restore.erase(name))ImGui::SetNextItemOpen(sections[name],ImGuiCond_Always);
-        bool open = ImGui::TreeNodeEx("##component", treeNodeFlags, "%s", std::is_same_v<T,TransformComponent>?"Transform (local)":name.c_str());
+        bool open = ImGui::TreeNodeEx("##component", treeNodeFlags, "%s", name.c_str());
         sections[name]=open;
         ImGui::PopStyleVar();
         ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
@@ -203,7 +203,6 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     if (entity.HasComponent<TagComponent>())
         PropertyUI::Text("tag", "Name", entity.GetComponent<TagComponent>().Tag);
 
-    ParentProperties(entity);
     if (ImGui::Button("Add Component"))
         ImGui::OpenPopup("AddComponent");
 
@@ -226,10 +225,10 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     DrawComponent<TransformComponent>(
         "Transform",entity,m_Sections,m_RestoreSections,[this,entity](auto& component)mutable {
             const TransformComponent defaults;auto proposed=component;bool changed=false;
-            changed|=bool(PropertyUI::Vector("translation","Local position",glm::value_ptr(proposed.Translation),3,.1f,glm::value_ptr(defaults.Translation)));
+            changed|=bool(PropertyUI::Vector("translation","Position",glm::value_ptr(proposed.Translation),3,.1f,glm::value_ptr(defaults.Translation)));
             auto rotation=glm::degrees(proposed.Rotation);
-            if(PropertyUI::Vector("rotation","Local rotation (deg)",glm::value_ptr(rotation),3,.5f,glm::value_ptr(defaults.Rotation))){proposed.Rotation=glm::radians(rotation);changed=true;}
-            changed|=bool(PropertyUI::Vector("scale","Local scale",glm::value_ptr(proposed.Scale),3,.1f,glm::value_ptr(defaults.Scale)));
+            if(PropertyUI::Vector("rotation","Rotation (deg)",glm::value_ptr(rotation),3,.5f,glm::value_ptr(defaults.Rotation))){proposed.Rotation=glm::radians(rotation);changed=true;}
+            changed|=bool(PropertyUI::Vector("scale","Scale",glm::value_ptr(proposed.Scale),3,.1f,glm::value_ptr(defaults.Scale)));
             if(changed && CanEdit(true))try{m_Context->SetLocalTransform(entity,proposed);m_HierarchyError.clear();}catch(const std::exception& e){HierarchyFailed(e.what());}
         });
 

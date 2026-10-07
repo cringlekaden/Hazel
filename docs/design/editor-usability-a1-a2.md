@@ -771,3 +771,25 @@ Native project creation is independent of script tools; builds and exports retai
 Unrelated example edits, stashes, ignored VS Code configuration, user/resource
 layouts and all recursively pinned vendor repositories are preserved; editor state
 written by the user while running Hazelnut is retained. No merge into master or force push is part of this milestone.
+
+
+## Final milestone: hierarchy correction
+
+The Stage G engine/serialization/physics contracts are retained. Its initial UI is
+superseded: one Add Entity creates scene roots (inside the sole prefab root when
+editing a detached asset). Scene Root/Prefab Root stays above the scrolling tree;
+row drops always mean inside that entity, never between siblings. Reparent and
+root drops always Keep World; failure never switches to Keep Local. Source rows
+are muted, proposed parents outlined, and the cue names the outcome. Edge scrolling
+and delayed target expansion support longer trees. Properties retains components;
+parent selectors, world/local toggles and matrix machinery are removed. Right-click
+or Shift+F10/Menu opens compact parenting alternatives for keyboard accessibility.
+Duplicate/delete/search and prefab containment remain guarded. Explicit Keep Local
+remains an engine API, with no persistent editor toggle or Shift-drop override.
+
+Current environment: checkout .git is read-only and GitHub DNS/API access fails.
+Checkpoint commits are retained in /tmp/hazel-final/review.git against 52eb346;
+source changes remain in the original checkout. Master must not be merged until
+feature CI can run and pass. The native :0 display is inaccessible and Xvfb is not
+installed; visual and physical drag/drop verification remains pending rather than
+being inferred from CPU tests.

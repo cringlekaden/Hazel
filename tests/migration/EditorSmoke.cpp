@@ -850,6 +850,22 @@ private:
         auto live=runtimeChild.GetComponent<TransformComponent>();live.Translation.x=9;e.m_ActiveScene->SetLocalTransform(runtimeChild,live);
         panel.SetSelectedEntity(runtimeChild);
         Check(a.InvokeRuntime(AuthoringPanel::RuntimeAction::Stop) && panel.GetSelectedEntity()==child && scene->GetWorldTransform(child)==world,"Stop lost nested authored selection/pose or retained live edits");
+        panel.SetSelectedEntity(child);
+        const auto dropBefore=a.SceneText();
+        Check(panel.DropEntity(scene->GetIdentity(),child.GetUUID(),0) && panel.GetSelectedEntity()==child && scene->GetWorldTransform(child)==world,"Production Scene Root drop lost world pose/selection");
+        Check(a.SceneText()!=dropBefore && a.m_SavedScene==saved,"Successful root drop did not change the draft independently of saved state");
+        Check(panel.DropEntity(scene->GetIdentity(),child.GetUUID(),root.GetUUID()) && a.SceneText()==dropBefore,"Production row drop changed world pose or order");
+        Check(!panel.DropEntity(scene->GetIdentity(),root.GetUUID(),leaf.GetUUID()) && a.SceneText()==dropBefore,"Production cycle drop mutated draft");
+        auto physics=scene->CreateEntity("Drop physics");physics.AddComponent<Rigidbody2DComponent>();
+        const auto physical=a.SceneText();
+        Check(!panel.DropEntity(scene->GetIdentity(),physics.GetUUID(),root.GetUUID()) && a.SceneText()==physical && panel.GetSelectedEntity()==child,"Physics drop changed scene or selection");scene->DestroyEntity(physics);
+        auto stretched=scene->CreateEntity("Stretch");auto skewed=scene->CreateEntity("Skewed");
+        stretched.GetComponent<TransformComponent>().Scale={2,1,1};skewed.GetComponent<TransformComponent>().Rotation.z=.6f;
+        scene->Reparent(skewed,stretched,TransformPolicy::KeepLocal);const auto skewDraft=a.SceneText();
+        Check(!panel.DropEntity(scene->GetIdentity(),skewed.GetUUID(),0) && a.SceneText()==skewDraft && panel.GetSelectedEntity()==child,"Failed keep-world root drop changed draft or selection");scene->DestroyEntity(stretched);
+        const auto dropFile=m_Directory/"hierarchy-drop.hazel";SceneSerializer(scene).Serialize(dropFile.u8string());
+        auto reopened=CreateRef<Scene>();reopened->SetAssets(scene->GetAssets());
+        Check(SceneSerializer(reopened).Deserialize(dropFile.u8string()) && reopened->GetRelationship(reopened->GetEntityByUUID(child.GetUUID())).Parent==root.GetUUID() && reopened->GetWorldTransform(reopened->GetEntityByUUID(child.GetUUID()))==world,"Production drop save/reopen lost hierarchy or world pose");
         panel.SetSelectedEntity(root);Check(panel.DuplicateSelected(),"Controller Duplicate Subtree failed");auto duplicate=panel.GetSelectedEntity();
         Check(scene->GetSubtree(duplicate).size()==3,"Tree duplication lost children");
         const auto roots=scene->GetAllEntitiesWith<IDComponent>().size();
@@ -1152,7 +1168,34 @@ private:
     std::chrono::steady_clock::time_point m_MinimizedStart;
 };
 }
+static int HierarchyCPU() {
+    using namespace Hazel;
+    Log::Init();auto scene=CreateRef<Scene>();SceneHierarchyPanel panel(scene);
+    Check(panel.AddEntity("Rig"),"Add Entity failed");auto root=panel.GetSelectedEntity();
+    root.GetComponent<TransformComponent>().Translation={3,2,0};
+    Check(panel.AddEntity("Lantern"),"Add Entity did not create root");auto child=panel.GetSelectedEntity();
+    child.GetComponent<TransformComponent>().Translation={4,2,0};const auto world=scene->GetWorldTransform(child);
+    const auto saved=SceneSerializer(scene).SerializeAuthoredSnapshot();
+    Check(panel.DropEntity(scene->GetIdentity(),child.GetUUID(),root.GetUUID()) && scene->GetWorldTransform(child)==world && panel.GetSelectedEntity()==child,"Row drop lost pose/selection");
+    const auto parented=SceneSerializer(scene).SerializeAuthoredSnapshot();Check(parented!=saved,"Drop did not dirty content");
+    Check(!panel.DropEntity(scene->GetIdentity(),root.GetUUID(),child.GetUUID()) && SceneSerializer(scene).SerializeAuthoredSnapshot()==parented,"Cycle drop mutated content");
+    Check(!panel.DropEntity(scene->GetIdentity()+1,child.GetUUID(),0),"Cross-scene drop accepted");
+    auto body=scene->CreateEntity("Body");body.AddComponent<Rigidbody2DComponent>();
+    const auto physics=SceneSerializer(scene).SerializeAuthoredSnapshot();
+    Check(!panel.DropEntity(scene->GetIdentity(),body.GetUUID(),root.GetUUID()) && SceneSerializer(scene).SerializeAuthoredSnapshot()==physics,"Physics drop mutated content");
+    Check(panel.DropEntity(scene->GetIdentity(),child.GetUUID(),0) && scene->GetWorldTransform(child)==world && panel.GetSelectedEntity()==child,"Scene Root drop failed");
+    auto stretch=scene->CreateEntity("Stretch");auto skew=scene->CreateEntity("Skew");
+    stretch.GetComponent<TransformComponent>().Scale={2,1,1};skew.GetComponent<TransformComponent>().Rotation.z=.6f;scene->Reparent(skew,stretch,TransformPolicy::KeepLocal);
+    const auto retained=SceneSerializer(scene).SerializeAuthoredSnapshot();
+    Check(!panel.DropEntity(scene->GetIdentity(),skew.GetUUID(),0) && SceneSerializer(scene).SerializeAuthoredSnapshot()==retained && panel.GetSelectedEntity()==child,"Failed keep-world drop changed content/selection");
+    auto reopened=CreateRef<Scene>();Check(SceneSerializer(reopened).DeserializeText(SceneSerializer(scene).SerializeText()) && reopened->GetWorldTransform(reopened->GetEntityByUUID(child.GetUUID()))==world,"Drop save/reopen changed pose");
+    panel.Availability=[](EditorAction){return ActionAvailability{"Pending operation"};};
+    Check(!panel.DropEntity(scene->GetIdentity(),child.GetUUID(),root.GetUUID()) && SceneSerializer(scene).SerializeAuthoredSnapshot()==retained,"Availability bypass");
+    std::cout<<"PASS: production panel root/row drops, selection/dirty state, cycle/cross-scene/physics/shear/availability rejection and save/reopen (CPU)\n";return 0;
+}
 int main(int argc, char** argv) {
+    if(argc==2 && std::string(argv[1])=="--hierarchy-cpu")try{return HierarchyCPU();}catch(const std::exception& e){std::cerr<<"FAIL: "<<e.what()<<'\n';return 1;}
+
 #ifdef HZ_PLATFORM_WINDOWS
     auto encoded = Hazel::WindowsCommandLineUTF8();
     std::vector<char*> pointers;

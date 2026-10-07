@@ -153,7 +153,6 @@ void SceneHierarchyPanel::RequestDelete() {
     m_DeleteScene = m_Context->GetIdentity();
     m_DeleteEntity = e.GetUUID();
     m_DeleteCount = m_Context->GetSubtree(e).size();
-    m_DeleteMode = 0;
     m_DeleteWanted = true;
     HierarchyVisible = true;
 }
@@ -205,12 +204,11 @@ void SceneHierarchyPanel::DrawDeleteDialog() {
         if (!PrefabDocument && m_DeleteCount > 1) {
             ImGui::Separator();
             ImGui::TextWrapped("Alternatively, delete only the parent and move immediate children "
-                               "to roots. Keep World may fail for shear/singular transforms.");
-            PropertyUI::Combo("delete-policy", "Child transforms", m_DeleteMode,
-                              "Keep World\0Keep Local (moves children)\0");
+                               "to roots. Placement is preserved; a move requiring shear/singular "
+                               "transforms is rejected.");
             if (ImGui::Button("Delete Parent / Keep Children"))
                 if (ConfirmDelete(m_DeleteScene, m_DeleteEntity, m_DeleteCount,
-                                  DestroyPolicy::KeepChildren, TransformPolicy(m_DeleteMode)))
+                                  DestroyPolicy::KeepChildren, TransformPolicy::KeepWorld))
                     ImGui::CloseCurrentPopup();
         }
         ImGui::EndDisabled();
@@ -236,26 +234,22 @@ void SceneHierarchyPanel::DrawHierarchy() {
     PropertyUI::Help("Reset the entity filter; matching ancestors remain visible while searching");
     const auto can = Availability ? Availability(EditOperation) : ActionAvailability{};
     ImGui::BeginDisabled(!CanEdit());
-    if (PrefabDocument) {
-        if (ImGui::Button("Create Child")) {
-            auto e = GetSelectedEntity();
-            if (!e)
-                e = m_Context->GetEntityByUUID(m_Context->GetChildren().front());
-            AddChild(e);
-        }
-    } else {
-        if (ImGui::Button("Create Root"))
-            AddEntity();
-        PropertyUI::WrapButton("Create Child");
-        ImGui::BeginDisabled(!GetSelectedEntity());
-        if (ImGui::Button("Create Child"))
-            AddChild(GetSelectedEntity());
-        ImGui::EndDisabled();
-    }
+    if (ImGui::Button("Add Entity"))
+        AddEntity();
     ImGui::EndDisabled();
     PropertyUI::Help(can.Reason);
-    PropertyUI::Help("Children begin at the parent origin with local identity; root entities use "
-                     "world coordinates");
+    const auto *dragging = ImGui::GetDragDropPayload();
+    if (dragging && dragging->IsDataType("HAZEL_HIERARCHY_ENTITY") &&
+        ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+        ImGui::ClearDragDrop();
+        m_DragHover = 0;
+    }
+    // Outside the scrolling list: always reachable, even when a filter hides roots.
+    const auto roots = m_Context->GetChildren();
+    const auto root = PrefabDocument && !roots.empty() ? uint64_t(roots.front()) : 0;
+    ImGui::Selectable(PrefabDocument ? "Prefab Root##rootdrop" : "Scene Root##rootdrop", false, 0,
+                      {0, ImGui::GetFrameHeightWithSpacing()});
+    DropTarget(root, PrefabDocument ? "Prefab Root" : "Scene Root");
     if (!m_HierarchyError.empty())
         PropertyUI::Validation(m_HierarchyError.c_str());
     m_Matches.clear();
@@ -278,57 +272,17 @@ void SceneHierarchyPanel::DrawHierarchy() {
         if (query.empty() || m_Matches.count(root))
             DrawEntityNode(m_Context->GetEntityByUUID(root));
     if (m_Context->GetChildren().empty())
-        ImGui::TextWrapped("No entities. Create a root above.");
+        ImGui::TextWrapped("No entities. Add an entity above.");
     else if (!query.empty() && m_Matches.empty())
         ImGui::TextWrapped("No matching entities. Clear search to see all.");
-    if (!PrefabDocument) {
-        ImGui::BeginDisabled(!CanEdit());
-        const bool moveRoot = ImGui::Selectable("Root / Drop to Unparent##rootdrop", false, 0,
-                                                {0, ImGui::GetFrameHeightWithSpacing()});
-        ImGui::EndDisabled();
-        if (moveRoot)
-            if (auto e = GetSelectedEntity())
-                ReparentEntity(m_Context->GetIdentity(), e.GetUUID(), 0,
-                               ImGui::GetIO().KeyShift ? TransformPolicy::KeepLocal
-                                                       : TransformPolicy::KeepWorld);
-        PropertyUI::Help("Click to detach selection or drop here. Keep World is default; Shift "
-                         "explicitly keeps local values and may move the entity");
-        if (ImGui::BeginDragDropTarget()) {
-            if (auto *payload = ImGui::AcceptDragDropPayload(
-                    "HAZEL_HIERARCHY_ENTITY", ImGuiDragDropFlags_AcceptBeforeDelivery))
-                if (payload->DataSize == sizeof(EntityDrop)) {
-                    auto drop = *static_cast<const EntityDrop *>(payload->Data);
-                    const auto mode = ImGui::GetIO().KeyShift ? TransformPolicy::KeepLocal
-                                                              : TransformPolicy::KeepWorld;
-                    const auto reason = ReparentPreview(drop.Scene, drop.Entity, 0, mode);
-                    ImGui::BeginTooltip();
-                    if (!reason.empty())
-                        PropertyUI::Validation(reason.c_str());
-                    else
-                        ImGui::TextUnformatted(mode == TransformPolicy::KeepWorld
-                                                   ? "Move to Root · Keep World"
-                                                   : "Move to Root · Keep Local");
-                    ImGui::EndTooltip();
-                    if (payload->IsDelivery())
-                        ReparentEntity(drop.Scene, drop.Entity, 0,
-                                       ImGui::GetIO().KeyShift ? TransformPolicy::KeepLocal
-                                                               : TransformPolicy::KeepWorld);
-                }
-            ImGui::EndDragDropTarget();
-        }
-    }
     auto blank = ImGui::GetContentRegionAvail();
     if (blank.y > 0) {
         if (ImGui::InvisibleButton("##blank", {std::max(1.f, blank.x), blank.y}))
             SetSelectedEntity({});
         if (ImGui::BeginPopupContextItem("Blank entity actions")) {
             ImGui::BeginDisabled(!CanEdit());
-            if (ImGui::MenuItem(PrefabDocument ? "Create Child of Root" : "Create Root")) {
-                if (PrefabDocument)
-                    AddChild(m_Context->GetEntityByUUID(m_Context->GetChildren().front()));
-                else
-                    AddEntity();
-            }
+            if (ImGui::MenuItem("Add Entity"))
+                AddEntity();
             ImGui::EndDisabled();
             ImGui::EndPopup();
         }
@@ -339,6 +293,21 @@ void SceneHierarchyPanel::DrawHierarchy() {
         m_Search.clear();
         RevealSelected();
     }
+    const auto *payload = ImGui::GetDragDropPayload();
+    if (payload && payload->IsDataType("HAZEL_HIERARCHY_ENTITY") &&
+        ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem)) {
+        const auto *window = ImGui::GetCurrentWindow();
+        const float zone = ImGui::GetFontSize() * 2;
+        const float y = ImGui::GetIO().MousePos.y;
+        const float speed = y < window->InnerRect.Min.y + zone   ? -1.f
+                            : y > window->InnerRect.Max.y - zone ? 1.f
+                                                                 : 0.f;
+        if (speed)
+            ImGui::SetScrollY(ImGui::GetScrollY() +
+                              speed * ImGui::GetFontSize() * 16 * ImGui::GetIO().DeltaTime);
+    }
+    if (!payload || !payload->IsDataType("HAZEL_HIERARCHY_ENTITY"))
+        m_DragHover = 0;
     ImGui::EndChild();
     DrawDeleteDialog();
     ImGui::PopID();
@@ -356,28 +325,32 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
         flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
     if (!m_Search.empty() || m_Reveal.count(entity.GetUUID()))
         ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+    const auto *drag = ImGui::GetDragDropPayload();
+    const bool source =
+        drag && drag->IsDataType("HAZEL_HIERARCHY_ENTITY") &&
+        drag->DataSize == sizeof(EntityDrop) &&
+        static_cast<const EntityDrop *>(drag->Data)->Scene == m_Context->GetIdentity() &&
+        static_cast<const EntityDrop *>(drag->Data)->Entity == uint64_t(entity.GetUUID());
+    if (source)
+        ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
     const bool open = ImGui::TreeNodeEx("##entity", flags, "%s", entity.GetName().c_str());
+    if (source)
+        ImGui::PopStyleColor();
     if ((ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) ||
         (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Enter)))
         SetSelectedEntity(entity);
-    if (ImGui::BeginPopupContextItem()) {
+    if (ImGui::IsItemFocused() && (ImGui::IsKeyPressed(ImGuiKey_Menu) ||
+                                   (ImGui::GetIO().KeyShift && ImGui::IsKeyPressed(ImGuiKey_F10))))
+        ImGui::OpenPopup("Entity actions");
+    if (ImGui::BeginPopupContextItem("Entity actions")) {
         SetSelectedEntity(entity);
         const auto can = Availability ? Availability(EditOperation) : ActionAvailability{};
         ImGui::BeginDisabled(!CanEdit());
-        if (ImGui::MenuItem("Create Child"))
-            AddChild(entity);
         if (ImGui::MenuItem("Duplicate Subtree"))
             DuplicateSelected();
         if (CreatePrefab && ImGui::MenuItem("Create Prefab from Subtree..."))
             CreatePrefab(entity);
-        if (!PrefabDocument && uint64_t(m_Context->GetRelationship(entity).Parent)) {
-            if (ImGui::MenuItem("Move to Root · Keep World"))
-                ReparentEntity(m_Context->GetIdentity(), entity.GetUUID(), 0,
-                               TransformPolicy::KeepWorld);
-            if (ImGui::MenuItem("Move to Root · Keep Local"))
-                ReparentEntity(m_Context->GetIdentity(), entity.GetUUID(), 0,
-                               TransformPolicy::KeepLocal);
-        }
+        ParentMenu(entity);
         if (ImGui::MenuItem("Delete Subtree..."))
             RequestDelete();
         ImGui::EndDisabled();
@@ -391,30 +364,10 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
                     m_Context->GetSubtree(entity).size());
         ImGui::EndDragDropSource();
     }
-    if (ImGui::BeginDragDropTarget()) {
-        if (auto *payload = ImGui::AcceptDragDropPayload("HAZEL_HIERARCHY_ENTITY",
-                                                         ImGuiDragDropFlags_AcceptBeforeDelivery))
-            if (payload->DataSize == sizeof(EntityDrop)) {
-                auto drop = *static_cast<const EntityDrop *>(payload->Data);
-                const auto mode = ImGui::GetIO().KeyShift ? TransformPolicy::KeepLocal
-                                                          : TransformPolicy::KeepWorld;
-                const auto reason =
-                    ReparentPreview(drop.Scene, drop.Entity, entity.GetUUID(), mode);
-                ImGui::BeginTooltip();
-                if (!reason.empty())
-                    PropertyUI::Validation(reason.c_str());
-                else
-                    ImGui::Text("Parent under %s · %s", entity.GetName().c_str(),
-                                mode == TransformPolicy::KeepWorld ? "Keep World" : "Keep Local");
-                ImGui::EndTooltip();
-                if (payload->IsDelivery())
-                    ReparentEntity(drop.Scene, drop.Entity, entity.GetUUID(), mode);
-            }
-        ImGui::EndDragDropTarget();
-    }
     if (m_Reveal.count(entity.GetUUID()) && GetSelectedEntity() == entity)
         ImGui::SetScrollHereY(.5f);
     m_Reveal.erase(entity.GetUUID());
+    DropTarget(entity.GetUUID(), entity.GetName());
     if (open && !children.empty()) {
         for (auto id : children)
             if (m_Search.empty() || m_Matches.count(id))
@@ -423,65 +376,71 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
     }
     ImGui::PopID();
 }
-void SceneHierarchyPanel::ParentProperties(Entity e) {
-    if (ImGui::CollapsingHeader("Hierarchy", ImGuiTreeNodeFlags_DefaultOpen)) {
-        const auto edge = m_Context->GetRelationship(e);
-        auto parent = m_Context->GetEntityByUUID(edge.Parent);
-        const bool rootAsset = PrefabDocument && !uint64_t(edge.Parent);
-        PropertyUI::Combo("parent-policy", "Reparent mode", m_ParentMode,
-                          "Keep World\0Keep Local (moves entity)\0",
-                          {"Keep World preserves placement or rejects nonrepresentable TRS. Keep "
-                           "Local intentionally keeps authored values."});
-        {
-            PropertyUI::Row row("parent", "Parent");
-            ImGui::BeginDisabled(rootAsset);
-            if (ImGui::BeginCombo("##value", parent ? parent.GetName().c_str() : "Root")) {
-                if (!PrefabDocument && ImGui::Selectable("Root", !parent))
-                    ReparentEntity(m_Context->GetIdentity(), e.GetUUID(), 0,
-                                   TransformPolicy(m_ParentMode));
-                for (auto handle : m_Context->GetAllEntitiesWith<IDComponent>()) {
-                    Entity target(handle, m_Context.get());
-                    if (target == e || !m_Context->IsEntityValid(target.GetUUID()))
-                        continue;
-                    ImGui::PushID(std::to_string(uint64_t(target.GetUUID())).c_str());
-                    if (ImGui::Selectable(target.GetName().c_str(), target == parent))
-                        ReparentEntity(m_Context->GetIdentity(), e.GetUUID(), target.GetUUID(),
-                                       TransformPolicy(m_ParentMode));
-                    ImGui::PopID();
-                }
-                ImGui::EndCombo();
+
+std::string SceneHierarchyPanel::DropReason(uint64_t scene, uint64_t child, uint64_t parent) const {
+    return ReparentPreview(scene, child, parent, TransformPolicy::KeepWorld);
+}
+bool SceneHierarchyPanel::DropEntity(uint64_t scene, uint64_t child, uint64_t parent) {
+    const auto reason = DropReason(scene, child, parent);
+    if (!reason.empty())
+        return HierarchyFailed(reason);
+    return ReparentEntity(scene, child, parent, TransformPolicy::KeepWorld);
+}
+void SceneHierarchyPanel::DropTarget(uint64_t parent, const std::string &name) {
+    if (!ImGui::BeginDragDropTarget())
+        return;
+    if (const auto *payload = ImGui::AcceptDragDropPayload(
+            "HAZEL_HIERARCHY_ENTITY",
+            ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect)) {
+        if (payload->DataSize == sizeof(EntityDrop)) {
+            const auto drop = *static_cast<const EntityDrop *>(payload->Data);
+            const auto reason = DropReason(drop.Scene, drop.Entity, parent);
+            const auto min = ImGui::GetItemRectMin(), max = ImGui::GetItemRectMax();
+            auto *draw = ImGui::GetWindowDrawList();
+            const auto color =
+                ImGui::GetColorU32(reason.empty() ? ImGuiCol_HeaderActive : ImGuiCol_TextDisabled);
+            draw->AddRect(min, max, color, 2, 0, 2);
+            ImGui::BeginTooltip();
+            if (reason.empty()) {
+                ImGui::Text("%s%s", parent ? "Parent under " : "Move to ", name.c_str());
+                ImGui::TextDisabled("Inside this row; placement is preserved");
+            } else {
+                ImGui::TextUnformatted("Cannot move here");
+                PropertyUI::Validation(reason.c_str());
             }
-            ImGui::EndDisabled();
-            PropertyUI::Help(rootAsset
-                                 ? "The prefab root defines this asset; parent only its children"
-                                 : nullptr);
+            ImGui::EndTooltip();
+            const auto key = parent ? parent : UINT64_MAX;
+            if (m_DragHover != key) {
+                m_DragHover = key;
+                m_DragHoverSince = ImGui::GetTime();
+            }
+            if (parent && reason.empty() && ImGui::GetTime() - m_DragHoverSince > .65)
+                m_Reveal.insert(parent);
+            if (payload->IsDelivery() && !ImGui::IsKeyPressed(ImGuiKey_Escape))
+                DropEntity(drop.Scene, drop.Entity, parent);
         }
-        PropertyUI::ReadOnly("children-count", "Children",
-                             std::to_string(m_Context->GetChildren(e.GetUUID()).size()).c_str());
-        const auto world = m_Context->GetWorldTransform(e);
-        const auto position = glm::vec3(world[3]);
-        std::ostringstream text;
-        text << position.x << ", " << position.y << ", " << position.z;
-        PropertyUI::ReadOnly("world-position", "World position", text.str().c_str());
-        try {
-            Scene::ExactTRS(world);
-        } catch (const std::exception &error) {
-            ImGui::TextWrapped("World matrix: %s. Rendering stays exact; use local controls.",
-                               error.what());
+    }
+    ImGui::EndDragDropTarget();
+}
+void SceneHierarchyPanel::ParentMenu(Entity entity) {
+    if (!PrefabDocument && uint64_t(m_Context->GetRelationship(entity).Parent))
+        if (ImGui::MenuItem("Move to Scene Root"))
+            DropEntity(m_Context->GetIdentity(), entity.GetUUID(), 0);
+    if (ImGui::BeginMenu("Parent under...")) {
+        for (auto handle : m_Context->GetAllEntitiesWith<IDComponent>()) {
+            Entity target(handle, m_Context.get());
+            if (target == entity)
+                continue;
+            ImGui::PushID(std::to_string(uint64_t(target.GetUUID())).c_str());
+            if (ImGui::MenuItem(target.GetName().c_str()))
+                DropEntity(m_Context->GetIdentity(), entity.GetUUID(), target.GetUUID());
+            if (ImGui::IsItemHovered())
+                PropertyUI::Help(
+                    DropReason(m_Context->GetIdentity(), entity.GetUUID(), target.GetUUID())
+                        .c_str());
+            ImGui::PopID();
         }
-        if (ImGui::TreeNode("World matrix (read-only)")) {
-            for (int r = 0; r < 4; ++r)
-                ImGui::Text("%.4g  %.4g  %.4g  %.4g", world[0][r], world[1][r], world[2][r],
-                            world[3][r]);
-            ImGui::TreePop();
-        }
-        if (e.HasComponent<Rigidbody2DComponent>() || e.HasComponent<BoxCollider2DComponent>() ||
-            e.HasComponent<CircleCollider2DComponent>())
-            ImGui::TextWrapped(
-                "Physics owner: root only, Z rotation and positive XY scale. Circle colliders "
-                "require uniform XY scale; visual children follow this body.");
-        if (!m_HierarchyError.empty())
-            PropertyUI::Validation(m_HierarchyError.c_str());
+        ImGui::EndMenu();
     }
 }
 } // namespace Hazel

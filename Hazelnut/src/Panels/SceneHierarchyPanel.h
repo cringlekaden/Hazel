@@ -28,6 +28,8 @@ class SceneHierarchyPanel
     bool AddChild(Entity parent, const std::string& name="Child Entity");
     bool ReparentEntity(uint64_t scene, uint64_t child, uint64_t parent, TransformPolicy mode);
     bool DuplicateSelected();
+    bool DropEntity(uint64_t scene, uint64_t entity, uint64_t parent);
+    std::string DropReason(uint64_t scene, uint64_t entity, uint64_t parent) const;
     bool ClearStoredEntityReference(Entity entity, const std::string& field);
     void RequestDelete();
     bool ConfirmDelete(uint64_t scene, uint64_t entity, size_t expectedCount,
@@ -61,13 +63,15 @@ class SceneHierarchyPanel
 
     void DrawEntityNode(Entity entity);
     void DrawComponents(Entity entity);
-    void ParentProperties(Entity entity);
+    void DropTarget(uint64_t parent, const std::string& name);
+    void ParentMenu(Entity entity);
     std::string ReparentPreview(uint64_t scene,uint64_t child,uint64_t parent,TransformPolicy mode) const;
     void DrawDeleteDialog();
     bool HierarchyFailed(const std::string& reason);
     std::set<uint64_t> m_Matches, m_Reveal;
     std::string m_HierarchyError;
-    int m_ParentMode=0, m_DeleteMode=0;
+    uint64_t m_DragHover=0;
+    double m_DragHoverSince=0;
     bool m_DeleteWanted=false;
     uint64_t m_DeleteScene=0, m_DeleteEntity=0;
     size_t m_DeleteCount=0;
