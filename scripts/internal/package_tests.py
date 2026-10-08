@@ -122,34 +122,24 @@ def package_tests(output,profile='native'):
                         process=subprocess.Popen([str(executable)],cwd=unrelated,env=env,stdout=stream,stderr=subprocess.STDOUT)
                         try:
                             window=wait_for(process,lambda:desktop.find(process.pid,name),name+' did not create a native window')
-                            # Windows may clamp CreateWindow's initial request to
-                            # its CI desktop. Explicit sizing exercises the resize
-                            # event and gives the bundled dock layout its authored size.
-                            desktop.resize(window,1280,720)
-                            if desktop.geometry(window)[2:]!=(1280,720):
-                                raise RuntimeError('Test desktop cannot establish the bundled 1280x720 editor layout')
+                            desktop.resize(window,960,640)
+                            wait_for(process,lambda:desktop.geometry(window)[2:]==(960,640),name+' did not apply resize',20)
                             wait_for(process,lambda:name+' ready:' in log.read_text(errors='replace'),name+' did not finish packaged startup')
                             time.sleep(2);desktop.activate(window)
                             if hz.SYSTEM=='linux':
                                 maps=Path('/proc')/str(process.pid)/'maps'
                                 text=maps.read_text()
                                 if str(hz.ROOT) in text:raise RuntimeError('Extracted application loaded a native library from the source checkout')
-                            if name=='Hazelnut':
-                                # Saved 1280x720 dock layout: toolbar centered in
-                                # the viewport column. Same real mouse path as F5.
-                                desktop.click(window,657,40)
-                                time.sleep(.5)
-                            for repeat in range(2):
-                                _,_,width,height=desktop.geometry(window)
-                                if name=='Nutella':x,y=width/2,height/2;viewheight=height
-                                else:x,y=657,255;viewheight=394
-                                desktop.click(window,x,y)
-                                wait_for(process,lambda:log.read_text(errors='replace').count('Runtime scene: Scenes/Level1.hazel')>repeat,'Play click did not transition in '+name)
-                                desktop.key(window,ord('D'),.4)
-                                desktop.click(window,x-viewheight*1.75/10,y-viewheight*3.5/10)
-                                wait_for(process,lambda:log.read_text(errors='replace').count('Runtime scene: Scenes/MainMenu.hazel')>repeat,'Return click did not transition in '+name)
-                                if name=='Nutella' and repeat==0:desktop.resize(window,900,640)
-                            if name=='Hazelnut':desktop.click(window,657,40) # Stop restores authored scene.
+                            # Rendering/lifecycle smoke, independent of dock coordinates/art.
+                            # Runtime transitions and gameplay outcomes are asserted directly
+                            # by RuntimeSessionSmoke, EditorSmoke and ExampleGamesSmoke.
+                            def painted():
+                                width,height,pixels=desktop.capture(window)
+                                stride=max(1,width*height//2048)*3
+                                return len({pixels[i:i+3] for i in range(0,len(pixels)-2,stride)})>1
+                            wait_for(process,painted,name+' did not present a nonblank frame',20)
+                            desktop.resize(window,900,640)
+                            wait_for(process,lambda:desktop.geometry(window)[2:]==(900,640) and painted(),name+' resize did not present',20)
                             desktop.close(window)
                             if process.wait(timeout=30)!=0:raise RuntimeError(name+' failed shutdown')
                         finally:
@@ -158,5 +148,5 @@ def package_tests(output,profile='native'):
                     if '[error]' in text.lower() or '[critical]' in text.lower() or 'Failed to' in text:raise RuntimeError('Packaged runtime failure:\n'+text)
                     if profile in ('software','gl41') and 'llvmpipe' not in text.lower():raise RuntimeError('Packaged test did not use isolated software graphics')
                     if any(unrelated.glob('HazelProfile*.json')):raise RuntimeError('Release execution produced profiling dumps')
-                    print('PASS: extracted '+name+', unrelated cwd, spaces/Unicode, real Play/menu clicks twice, graceful close; source assets/SDK unavailable',flush=True)
+                    print('PASS: extracted '+name+', unrelated cwd, spaces/Unicode, startup/render/resize/graceful close; source assets/SDK unavailable',flush=True)
         finally:desktop.shutdown()

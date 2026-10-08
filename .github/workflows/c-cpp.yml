@@ -148,15 +148,15 @@ jobs:
             done
           done
       - name: Linux Debug regressions
-        run: xvfb-run -a -s '-screen 0 1600x1000x24' python3 scripts/hazel.py test --config Debug --profile software
+        run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test --config Debug --profile software
       - name: Linux Release regressions
-        run: xvfb-run -a -s '-screen 0 1600x1000x24' python3 scripts/hazel.py test --config Release --profile software
+        run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test --config Release --profile software
       - name: Construct complete Release distributions
         run: python3 scripts/hazel.py package
       - name: Test extracted archives with source resources and SDK unavailable
-        run: xvfb-run -a -s '-screen 0 1600x1000x24' python3 scripts/hazel.py test-packages --profile software
+        run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test-packages --profile software
       - name: Verify packaged OpenGL 4.1 path
-        run: xvfb-run -a -s '-screen 0 1600x1000x24' python3 scripts/hazel.py test-packages --profile gl41
+        run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test-packages --profile gl41
       - name: Upload verified Linux application archives
         uses: actions/upload-artifact@v4
         with:
@@ -167,8 +167,8 @@ jobs:
           if-no-files-found: error
       - name: Linux authored game workflows and gameplay invariants
         run: |
-          xvfb-run -a -s '-screen 0 1600x1000x24' python3 scripts/hazel.py test-games --config Debug --profile software
-          xvfb-run -a -s '-screen 0 1600x1000x24' python3 scripts/hazel.py test-games --config Release --profile software
+          xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test-games --config Debug --profile software
+          xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test-games --config Release --profile software
       - name: Construct complete Linux game archives
         run: |
           for game in MeadowRun Skybound; do
@@ -176,8 +176,8 @@ jobs:
           done
       - name: Linux extracted game acceptance
         run: |
-          xvfb-run -a -s '-screen 0 1600x1000x24' python3 scripts/hazel.py test-games --config Release --packages --profile software
-          xvfb-run -a -s '-screen 0 1600x1000x24' python3 scripts/hazel.py test-games --config Release --packages --profile gl41
+          xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test-games --config Release --packages --profile software
+          xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test-games --config Release --packages --profile gl41
       - uses: actions/upload-artifact@v4
         with:
           name: MeadowRun-Linux-x86_64-Release-${{ github.sha }}

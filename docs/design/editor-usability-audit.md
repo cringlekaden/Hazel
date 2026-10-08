@@ -494,3 +494,10 @@ The final tooltip pass reviews the common authoring panels, suppresses label/val
 repetition in shared rows and uses ImGui's normal hover delay for explanatory help.
 Icon meanings, units, consequences, disabled reasons and clipped full values stay;
 active drop feedback is immediate. Broader panel redesign remains outside this pass.
+
+Final integration applies §15: fixed-coordinate package Play/menu checks and the
+color/route-driven game player are retired from blocking CI. Strict managed models
+and native game/runtime/editor assertions remain; extracted games run those native
+assertions with shipped resources and unavailable source SDK. Short real startup,
+render, resize and shutdown plus archive/closure/relocation checks remain. Human
+acceptance covers actual clicking, controls and game completion.

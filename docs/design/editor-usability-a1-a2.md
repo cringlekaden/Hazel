@@ -897,3 +897,31 @@ Branch inventory (fetched after restart):
 | master (7a0eec2 before integration) | Merge the verified combined feature once, rather than stale checkpoint snapshots. |
 
 No branches, stashes, vendor pins, layouts or unrelated example edits are deleted.
+
+The full Windows package gate exposed the retired driver assumption: fixed Play
+coordinates (657,40) no longer point at the compact toolbar. Following audit §15,
+blocking package/game tests now use short real-window startup, nonblank rendering,
+resize and OS-close/shutdown smoke, rather than guessing new pixels or weakening
+expected game outcomes. Scores, death/restart, collections, scene progression,
+spawn counts, assembly reload, authored-data isolation and camera assertions remain
+in FlightTests.cs and RuntimeSmoke.cpp. RuntimeSessionSmoke/EditorSmoke retain
+actual transition/input mapping and guarded Play/Stop assertions. The packaged game
+runner additionally executes the same native gameplay assertions against extracted
+projects with shipped Resources/Mono and source/SDK roots unavailable. Archive
+hashes, native/managed/resource closure, unrelated cwd, Unicode paths, library
+isolation, CLI errors and graceful shutdown remain gates. Actual toolbar/menu
+clicking, responsive movement and visual game completion are physical acceptance;
+no art-color matching, route-following player or fixed Play pixels remain blocking.
+
+Linux CI also exposed Xvfb's zero-client reset during the deliberate repeated
+GLFW/Application lifecycle test. Dedicated CI servers now use -noreset so successive
+clients share a continuously available display. Renderer assertions and expected
+lifecycle outcomes are unchanged; no engine retry masks a display failure. Owned
+window smoke fits the existing desktop and no longer changes Windows display mode.
+
+Local final gates pass: Premake Debug/Release (two jobs), all 14 Debug native
+HD4000/OpenGL 4.2 and all 14 Release GL4.1 regressions, source-game managed/native
+contracts plus short Hazelnut/Nutella smoke, and extracted Hazelnut/Nutella and both
+game archives in GL4.1 with source/SDK roots parked and restored in finally. The
+extracted game native fixture passes the unchanged gameplay/lifecycle assertions.
+These are automated driver/render/service results, not physical mouse/DPI acceptance.

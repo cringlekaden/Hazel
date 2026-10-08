@@ -48,9 +48,9 @@ jobs:
           build/tools/premake-core
         key: ${{ steps.shader-cache.outputs.cache-primary-key }}
     - name: Debug bounded ownership, authoring and startup regressions (software)
-      run: xvfb-run -a -s '-screen 0 1600x1000x24' python3 scripts/hazel.py test --config Debug --profile software
+      run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test --config Debug --profile software
     - name: Release bounded ownership, authoring and startup regressions (gl41)
-      run: xvfb-run -a -s '-screen 0 1600x1000x24' python3 scripts/hazel.py test --config Release --profile gl41
+      run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test --config Release --profile gl41
     - name: Preserve regression evidence
       if: always()
       uses: actions/upload-artifact@v4
