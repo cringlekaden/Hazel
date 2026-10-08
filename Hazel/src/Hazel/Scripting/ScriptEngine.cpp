@@ -59,6 +59,9 @@ namespace Hazel {
 		{ "Hazel.Vector4", ScriptFieldType::Vector4 },
 
 		{ "Hazel.Entity", ScriptFieldType::Entity },
+        { "Hazel.Prefab", ScriptFieldType::Prefab },
+        { "Hazel.Sprite", ScriptFieldType::Sprite },
+        { "Hazel.SpriteAnimation", ScriptFieldType::SpriteAnimation },
 	};
 
 	namespace Utils {
@@ -143,13 +146,14 @@ namespace Hazel {
 		~ScriptEngineData() {
 			ShuttingDown = true;
 			AppAssemblyFileWatcher.reset();
-			if (AppDomain) {
+			if (AppDomain && RootAlive->load()) {
 				auto* previous = mono_domain_get();
 				mono_domain_set(RootDomain, false);
 				mono_domain_unload(AppDomain);
 				if (previous != AppDomain) mono_domain_set(previous, true);
 			}
 		}
+		std::shared_ptr<std::atomic_bool> RootAlive = std::make_shared<std::atomic_bool>(true);
 		MonoDomain* RootDomain = nullptr;
 		MonoDomain* AppDomain = nullptr;
 
@@ -203,7 +207,9 @@ namespace Hazel {
 		else s_Data->AssemblyReloadPending = false; // Hosts without an application explicitly call ReloadAssembly.
 	}
 
-	void ScriptEngine::Init(const std::filesystem::path& applicationAssembly, const std::function<void()>& beforeReplacement)
+    ScriptAssemblyCandidate::ScriptAssemblyCandidate()=default;
+    ScriptAssemblyCandidate::~ScriptAssemblyCandidate()=default;
+    Scope<ScriptAssemblyCandidate> ScriptEngine::StageAssembly(const std::filesystem::path& applicationAssembly)
 	{
 		auto appPath = applicationAssembly;
 		if (appPath.empty()) {
@@ -215,8 +221,27 @@ namespace Hazel {
 			s_Data->Generation = ++s_Generation;
 		}
 		if (!s_Data->RootDomain) { InitMono(); ScriptGlue::RegisterFunctions(); }
-		ReplaceAssembly(Resources::Resolve("Scripts/Hazel-ScriptCore.dll"), appPath, false, beforeReplacement);
+        Scope<ScriptAssemblyCandidate> candidate(new ScriptAssemblyCandidate());
+        candidate->m_Data=PrepareDomain(Resources::Resolve("Scripts/Hazel-ScriptCore.dll"),appPath);
+        candidate->m_Generation=s_Data->Generation;
+        return candidate;
 	}
+    void ScriptEngine::CommitAssembly(Scope<ScriptAssemblyCandidate> candidate,const std::function<void()>& beforeReplacement)
+    {
+        if(!candidate || !candidate->m_Data || !s_Data || candidate->m_Generation!=s_Data->Generation)
+            throw std::runtime_error("Script environment changed after assembly staging; retry");
+        if(beforeReplacement)beforeReplacement();
+        s_Data->ShuttingDown=true;s_Data->AppAssemblyFileWatcher.reset();
+        ReleaseDomainMetadata();
+        mono_domain_set(s_Data->RootDomain,false);
+        if(s_Data->AppDomain)mono_domain_unload(s_Data->AppDomain);
+        s_Data->AppDomain=nullptr;s_Data=std::move(candidate->m_Data);
+        mono_domain_set(s_Data->AppDomain,true);ScriptGlue::RegisterComponents();s_Data->ShuttingDown=false;
+    }
+    void ScriptEngine::Init(const std::filesystem::path& applicationAssembly,const std::function<void()>& beforeReplacement)
+    {
+        CommitAssembly(StageAssembly(applicationAssembly),beforeReplacement);
+    }
 
 	void ScriptEngine::Shutdown()
 	{
@@ -229,6 +254,23 @@ namespace Hazel {
 		s_Data.reset();
 	}
 	bool ScriptEngine::IsInitialized() { return s_Data && s_Data->Initialized; }
+    void ScriptEngine::ClearApplicationAssembly()
+    {
+        if (!s_Data) return;
+        if (s_Data->SceneContext) throw std::logic_error("Stop scripts before retiring the project domain");
+        s_Data->ShuttingDown=true;
+        s_Data->AppAssemblyFileWatcher.reset();
+        ReleaseDomainMetadata();
+        if (s_Data->RootDomain) mono_domain_set(s_Data->RootDomain, false);
+        if (s_Data->AppDomain) mono_domain_unload(s_Data->AppDomain);
+        s_Data->AppDomain=nullptr;
+        s_Data->AppAssembly=nullptr;s_Data->AppAssemblyImage=nullptr;
+        s_Data->CoreAssembly=nullptr;s_Data->CoreAssemblyImage=nullptr;
+        s_Data->ReloadFields.clear();
+        s_Data->AppAssemblyFilepath.clear();s_Data->CoreAssemblyFilepath.clear();
+        s_Data->ShuttingDown=false;
+        ++s_Generation;s_Data->Generation=s_Generation;
+    }
 
 	void ScriptEngine::InitMono()
 	{
@@ -276,6 +318,7 @@ namespace Hazel {
 		if (s_Data->AppDomain) mono_domain_unload(s_Data->AppDomain);
 		s_Data->AppDomain = nullptr;
 
+		s_Data->RootAlive->store(false); // Outstanding staging tickets must never touch the retired Mono root.
 		mono_jit_cleanup(s_Data->RootDomain);
 		s_Data->RootDomain = nullptr;
 	}
@@ -316,6 +359,7 @@ namespace Hazel {
 		if (!core || !app) throw std::runtime_error("Missing or empty script assembly: " + corePath.generic_u8string() + " / " + appPath.generic_u8string());
 		auto candidate = CreateScope<ScriptEngineData>();
 		candidate->RootDomain = s_Data->RootDomain;
+		candidate->RootAlive = s_Data->RootAlive;
 		candidate->EnableDebugging = s_Data->EnableDebugging;
 		candidate->CoreAssemblyFilepath = corePath;
 		candidate->AppAssemblyFilepath = appPath;
@@ -330,6 +374,8 @@ namespace Hazel {
 			candidate->AppAssembly = Utils::LoadMonoAssembly(appPath, candidate->EnableDebugging, &app);
 			if (!candidate->CoreAssembly || !candidate->AppAssembly) throw std::runtime_error("Invalid script assembly: " + corePath.generic_u8string() + " / " + appPath.generic_u8string());
 			candidate->CoreAssemblyImage = mono_assembly_get_image(candidate->CoreAssembly);
+            if(!mono_class_from_name(candidate->CoreAssemblyImage,"Hazel","APIContractV1"))
+                throw std::runtime_error("Incompatible ScriptCore API contract. Use matching editor/SDK and rebuild scripts; previous domain retained.");
 			candidate->AppAssemblyImage = mono_assembly_get_image(candidate->AppAssembly);
 			LoadAssemblyClasses(*candidate);
 			ScriptGlue::ValidateComponents(candidate->CoreAssemblyImage);
@@ -367,14 +413,15 @@ namespace Hazel {
 					if (field.Type == ScriptFieldType::None) continue;
 					auto& saved = candidate->ReloadFields[id][name];
 					saved.Field = { field.Type, name, nullptr };
-					instance->GetFieldValueInternal(name, saved.m_Buffer);
+					instance->GetFieldValueInternal(name, saved.Storage());
 				}
 		}
 		// Project replacement stops the old scene only after validation, while its domain is still alive.
 		if (beforeReplacement) beforeReplacement();
 		s_Data->ShuttingDown = true;
 		s_Data->AppAssemblyFileWatcher.reset(); // Join before changing the global owner/metadata.
-		ReleaseDomainMetadata();
+		if(scene) { scene->m_Stopping=true; scene->CancelPendingLifecycle(); OnRuntimeStop(); scene->CancelPendingLifecycle(); candidate->SceneContext=scene; }
+        ReleaseDomainMetadata();
 		mono_domain_set(s_Data->RootDomain, false);
 		if (s_Data->AppDomain) mono_domain_unload(s_Data->AppDomain);
 		s_Data->AppDomain = nullptr;
@@ -382,8 +429,11 @@ namespace Hazel {
 		mono_domain_set(s_Data->AppDomain, true);
 		ScriptGlue::RegisterComponents(); // These types were validated in PrepareDomain.
 		s_Data->ShuttingDown = false;
-		if (scene)
-			for (auto e : scene->GetAllEntitiesWith<ScriptComponent>()) OnCreateEntity(Entity{e, scene});
+		if (scene) {
+            scene->m_Stopping=false;
+            std::vector<UUID> ids; for(auto e:scene->GetAllEntitiesWith<ScriptComponent>()) ids.push_back(Entity{e,scene}.GetUUID());
+            for(auto id:ids) if(scene->IsEntityValid(id)) OnCreateEntity(scene->GetEntityByUUID(id));
+        }
 	}
 
 	void ScriptEngine::ReloadAssembly()
@@ -408,6 +458,7 @@ namespace Hazel {
 		if (ScriptEngine::EntityClassExists(sc.ClassName))
 		{
 			UUID entityID = entity.GetUUID();
+            if(s_Data->EntityInstances.count(entityID)) return;
 
 			Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(s_Data->EntityClasses[sc.ClassName], entity);
 			s_Data->EntityInstances[entityID] = instance;
@@ -419,7 +470,7 @@ namespace Hazel {
 			for (const auto& [name, fieldInstance] : fieldMap)
 				if (auto known = instance->GetScriptClass()->GetFields().find(name);
 					known != instance->GetScriptClass()->GetFields().end() && known->second.Type == fieldInstance.Field.Type)
-					instance->SetFieldValueInternal(name, fieldInstance.m_Buffer);
+					instance->SetFieldValueInternal(name, fieldInstance.Storage());
 
 			instance->InvokeOnCreate();
 		}
@@ -431,8 +482,8 @@ namespace Hazel {
 		s_Data->ReloadFields.erase(entityID);
 		auto instance = s_Data->EntityInstances.find(entityID);
 		if (instance != s_Data->EntityInstances.end()) {
-			instance->second->Invalidate();
-			s_Data->EntityInstances.erase(instance);
+			auto owned=instance->second; s_Data->EntityInstances.erase(instance);
+            owned->InvokeOnDestroy(); owned->Invalidate();
 		}
 	}
 
@@ -452,7 +503,7 @@ namespace Hazel {
 
 	Scene* ScriptEngine::GetSceneContext()
 	{
-		return s_Data ? s_Data->SceneContext : nullptr;
+		return std::this_thread::get_id()==s_RuntimeThread && s_Data ? s_Data->SceneContext : nullptr;
 	}
 
 	Ref<ScriptInstance> ScriptEngine::GetEntityScriptInstance(UUID entityID)
@@ -478,9 +529,11 @@ namespace Hazel {
 	void ScriptEngine::OnRuntimeStop()
 	{
 		if (!s_Data) return;
-		s_Data->SceneContext = nullptr;
-
-		for (auto& [id, instance] : s_Data->EntityInstances) instance->Invalidate();
+		std::vector<UUID> ids;
+        if(s_Data->SceneContext)ids=s_Data->SceneContext->OrderedForCleanup();
+        else for(auto& [id,instance]:s_Data->EntityInstances)ids.push_back(id);
+        for(auto id:ids) OnDestroyEntity(id);
+        s_Data->SceneContext = nullptr;
 		s_Data->EntityInstances.clear();
 		s_Data->ReloadFields.clear();
 	}
@@ -617,7 +670,7 @@ namespace Hazel {
 			for (auto* base = type; base && !message; base = mono_class_get_parent(base))
 				if (auto* field = mono_class_get_field_from_name(base, "_message")) mono_field_get_value(exception, field, &message);
 			char* text = message ? mono_string_to_utf8(message) : nullptr;
-			HZ_CORE_ERROR("Managed exception {}.{}: {}", mono_class_get_namespace(type), mono_class_get_name(type), text ? text : "(no message)");
+			Log::GetCoreLogger()->log(spdlog::source_loc{"Managed",0,""},spdlog::level::err,"Managed exception {}.{}: {}", mono_class_get_namespace(type), mono_class_get_name(type), text ? text : "(no message)");
 			mono_free(text);
 		}
 		return result;
@@ -631,6 +684,7 @@ namespace Hazel {
 		m_Constructor = s_Data->EntityClass.GetMethod(".ctor", 1);
 		m_OnCreateMethod = scriptClass->GetMethod("OnCreate", 0);
 		m_OnUpdateMethod = scriptClass->GetMethod("OnUpdate", 1);
+        m_OnDestroyMethod = scriptClass->GetMethod("OnDestroy", 0);
 
 		// Call Entity constructor
 		{
@@ -646,7 +700,7 @@ namespace Hazel {
 		if (m_GCHandle) mono_gchandle_free(m_GCHandle);
 		m_GCHandle = 0;
 		m_ScriptClass.reset();
-		m_Constructor = m_OnCreateMethod = m_OnUpdateMethod = nullptr;
+		m_Constructor = m_OnCreateMethod = m_OnUpdateMethod = m_OnDestroyMethod = nullptr;
 	}
 	MonoObject* ScriptInstance::GetManagedObject() { return m_GCHandle ? mono_gchandle_get_target(m_GCHandle) : nullptr; }
 
@@ -667,9 +721,15 @@ namespace Hazel {
 
 	void ScriptInstance::InvokeOnCreate()
 	{
+        m_Created=true;
 		if (m_OnCreateMethod)
 			m_ScriptClass->InvokeMethod(GetManagedObject(), m_OnCreateMethod);
 	}
+
+    void ScriptInstance::InvokeOnDestroy() {
+        if(!m_Created) return; m_Created=false;
+        if(m_OnDestroyMethod && GetManagedObject()) m_ScriptClass->InvokeMethod(GetManagedObject(),m_OnDestroyMethod);
+    }
 
 	void ScriptInstance::InvokeOnUpdate(float ts)
 	{
@@ -689,8 +749,25 @@ namespace Hazel {
 			return false;
 
 		const ScriptField& field = it->second;
-		if (field.Type == ScriptFieldType::Entity) {
-			MonoObject* reference = nullptr;
+        if(field.Type==ScriptFieldType::Sprite || field.Type==ScriptFieldType::SpriteAnimation) {
+            auto& saved=*static_cast<ScriptFieldInstance*>(buffer);saved.AssetReference.clear();saved.AssetID=0;
+            MonoObject* reference=nullptr;mono_field_get_value(GetManagedObject(),field.ClassField,&reference);
+            if(reference) {
+                auto* type=mono_class_from_name(s_Data->CoreAssemblyImage,"Hazel",field.Type==ScriptFieldType::Sprite?"Sprite":"SpriteAnimation");MonoString* path=nullptr;
+                mono_field_get_value(reference,mono_class_get_field_from_name(type,"Sheet"),&path);
+                mono_field_get_value(reference,mono_class_get_field_from_name(type,"ID"),&saved.AssetID);
+                if(path){char* utf8=mono_string_to_utf8(path);saved.AssetReference=utf8;mono_free(utf8);}
+            }
+        } else if(field.Type==ScriptFieldType::Prefab) {
+            MonoObject* reference=nullptr; mono_field_get_value(GetManagedObject(),field.ClassField,&reference);
+            auto& path=*static_cast<std::string*>(buffer); path.clear();
+            if(reference) {
+                auto* type=mono_class_from_name(s_Data->CoreAssemblyImage,"Hazel","Prefab"); MonoString* text=nullptr;
+                mono_field_get_value(reference,mono_class_get_field_from_name(type,"Path"),&text);
+                if(text) { auto* utf8=mono_string_to_utf8(text); path=utf8; mono_free(utf8); }
+            }
+        } else if (field.Type == ScriptFieldType::Entity) {
+            MonoObject* reference = nullptr;
 			mono_field_get_value(GetManagedObject(), field.ClassField, &reference);
 			uint64_t id = 0;
 			if (reference) {
@@ -711,8 +788,24 @@ namespace Hazel {
 			return false;
 
 		const ScriptField& field = it->second;
-		if (field.Type == ScriptFieldType::Entity) {
-			uint64_t id = 0; std::memcpy(&id, value, sizeof(id));
+        if(field.Type==ScriptFieldType::Sprite || field.Type==ScriptFieldType::SpriteAnimation) {
+            const auto& saved=*static_cast<const ScriptFieldInstance*>(value);
+            auto* type=mono_class_from_name(s_Data->CoreAssemblyImage,"Hazel",field.Type==ScriptFieldType::Sprite?"Sprite":"SpriteAnimation");
+            auto* reference=mono_object_new(s_Data->AppDomain,type);auto* text=ScriptEngine::CreateString(saved.AssetReference.c_str());uint64_t id=saved.AssetID;
+            void* parameters[]{text,&id};MonoObject* exception=nullptr;
+            mono_runtime_invoke(mono_class_get_method_from_name(type,".ctor",2),reference,parameters,&exception);
+            if(exception)return false;
+            mono_field_set_value(GetManagedObject(),field.ClassField,reference);
+        } else if(field.Type==ScriptFieldType::Prefab) {
+            const auto& path=*static_cast<const std::string*>(value);
+            auto* type=mono_class_from_name(s_Data->CoreAssemblyImage,"Hazel","Prefab");
+            auto* reference=mono_object_new(s_Data->AppDomain,type); auto* text=ScriptEngine::CreateString(path.c_str());
+            void* parameters[]{text}; MonoObject* exception=nullptr;
+            mono_runtime_invoke(mono_class_get_method_from_name(type,".ctor",1),reference,parameters,&exception);
+            if(exception) return false;
+            mono_field_set_value(GetManagedObject(),field.ClassField,reference);
+        } else if (field.Type == ScriptFieldType::Entity) {
+            uint64_t id = 0; std::memcpy(&id, value, sizeof(id));
 			MonoObject* reference = nullptr;
 			if (id) {
 				if (auto instance = ScriptEngine::GetEntityScriptInstance(id)) reference = instance->GetManagedObject();

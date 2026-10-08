@@ -7,6 +7,7 @@
 #include <memory>
 
 namespace Hazel {
+    class WindowsCaption;
 
     class WindowsWindow : public Window
     {
@@ -23,12 +24,19 @@ namespace Hazel {
         inline void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; }
         inline void* GetNativeWindow() const override { return m_Window; };
         void SetVSync(bool enabled) override;
+        void SetTitle(const std::string& title) override;
+        void RequestClose() override;
+        void SetCustomCaption(bool requested) override;
+        void UseNativeCaption(const std::string& reason) override;
         bool IsVSync() const override;
 
+    protected:
+        void ReadNormalPlacement(WindowPlacement& value) const override;
     private:
         virtual void Init(const WindowProps& props);
         virtual void Shutdown();
     private:
+        Scope<WindowsCaption> m_Caption;
         GLFWwindow* m_Window;
         Scope<GraphicsContext> m_Context;
 

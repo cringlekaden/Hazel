@@ -21,10 +21,14 @@ project "Hazel"
     externalincludedirs { root .. "/Hazel/vendor/Box2D/include" }
 project "Nutella"
     links { "Box2D" }
+project "HazelProject"
+    links { "Box2D" }
+project "SpriteAssetAudit"
+    links { "Box2D" }
 project "Hazelnut"
     links { "Box2D" }
 if _OPTIONS["migration-tests"] then
-    for _, test in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke", "RuntimeSessionSmoke" } do
+    for _, test in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke", "RuntimeSessionSmoke", "ExampleGamesSmoke", "SpriteSmoke" } do
         project ("Migration" .. test)
             externalincludedirs { root .. "/Hazel/vendor/Box2D/include" }
             links { "Box2D" }

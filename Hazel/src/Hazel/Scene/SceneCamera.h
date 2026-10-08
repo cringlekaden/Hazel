@@ -27,6 +27,7 @@ namespace Hazel {
 		float GetPerspectiveFarClip() const { return m_PerspectiveFar; }
 		void SetPerspectiveFarClip(float farClip) { m_PerspectiveFar = farClip; RecalculateProjection(); }
 
+		float GetAspectRatio() const { return m_AspectRatio; }
 		float GetOrthographicSize() const { return m_OrthographicSize; }
 		void SetOrthographicSize(float size) { m_OrthographicSize = size; RecalculateProjection(); }
 		float GetOrthographicNearClip() const { return m_OrthographicNear; }

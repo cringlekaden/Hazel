@@ -76,6 +76,26 @@ def unavailable_sources():
         for root,hidden in reversed(moved):hidden.rename(root)
 
 
+def extract_verified(archive,working):
+    checksum=archive.with_name(archive.name+'.sha256').read_text().split()[0]
+    if hashlib.sha256(archive.read_bytes()).hexdigest()!=checksum:raise RuntimeError('Archive checksum mismatch')
+    shutil.unpack_archive(archive,working)
+    suffix='.zip' if archive.name.endswith('.zip') else '.tar.gz'
+    path=working/archive.name.removesuffix(suffix)
+    for line in (path/'SHA256SUMS').read_text().splitlines():
+        digest,relative=line.split('  ',1)
+        if hashlib.sha256((path/relative).read_bytes()).hexdigest()!=digest:raise RuntimeError('Extracted file checksum mismatch: '+relative)
+    if any(p.is_symlink() for p in path.rglob('*')):raise RuntimeError('Archive contains runtime symlinks')
+    return path
+
+
+def graphics_environment(profile):
+    env=os.environ.copy()
+    for key in ('HAZEL_RESOURCES','HAZEL_MONO','MONO_PATH','MONO_CFG_DIR','LD_LIBRARY_PATH','LD_PRELOAD','MESA_GL_VERSION_OVERRIDE','MESA_GLSL_VERSION_OVERRIDE','LIBGL_ALWAYS_SOFTWARE','GALLIUM_DRIVER','LP_NUM_THREADS'):env.pop(key,None)
+    if profile in ('software','gl41'):env.update(LIBGL_ALWAYS_SOFTWARE='1',GALLIUM_DRIVER='llvmpipe',LP_NUM_THREADS='2')
+    if profile=='gl41':env.update(MESA_GL_VERSION_OVERRIDE='4.1',MESA_GLSL_VERSION_OVERRIDE='410')
+    return env
+
 def package_tests(output,profile='native'):
     suffix='.zip' if hz.SYSTEM=='windows' else '.tar.gz'
     archives=[output/f'{name}-{hz.SYSTEM}-x86_64-Release{suffix}' for name in ('Nutella','Hazelnut')]
@@ -85,22 +105,11 @@ def package_tests(output,profile='native'):
         working=Path(temp);unrelated=working/'unrelated cwd';unrelated.mkdir()
         packages=[]
         for archive in archives:
-            checksum=archive.with_name(archive.name+'.sha256').read_text().split()[0]
-            if hashlib.sha256(archive.read_bytes()).hexdigest()!=checksum:raise RuntimeError('Archive checksum mismatch')
-            shutil.unpack_archive(archive,working)
-            path=working/archive.name.removesuffix(suffix)
-            for line in (path/'SHA256SUMS').read_text().splitlines():
-                digest,relative=line.split('  ',1)
-                if hashlib.sha256((path/relative).read_bytes()).hexdigest()!=digest:raise RuntimeError('Extracted file checksum mismatch: '+relative)
-            if any(p.is_symlink() for p in path.rglob('*')):raise RuntimeError('Archive contains runtime symlinks')
+            path=extract_verified(archive,working)
             if driver:
                 for dll in driver.glob('*.dll'):hz.copy_changed(dll,path/dll.name)
             packages.append(path)
-        env=os.environ.copy()
-        for key in ('HAZEL_RESOURCES','HAZEL_MONO','MONO_PATH','MONO_CFG_DIR','LD_LIBRARY_PATH','LD_PRELOAD','MESA_GL_VERSION_OVERRIDE','MESA_GLSL_VERSION_OVERRIDE','LIBGL_ALWAYS_SOFTWARE','GALLIUM_DRIVER','LP_NUM_THREADS'):env.pop(key,None)
-        if profile in ('software','gl41'):
-            env.update(LIBGL_ALWAYS_SOFTWARE='1',GALLIUM_DRIVER='llvmpipe',LP_NUM_THREADS='2')
-        if profile=='gl41':env.update(MESA_GL_VERSION_OVERRIDE='4.1',MESA_GLSL_VERSION_OVERRIDE='410')
+        env=graphics_environment(profile)
         desktop=Desktop()
         try:
             with unavailable_sources():
@@ -113,34 +122,24 @@ def package_tests(output,profile='native'):
                         process=subprocess.Popen([str(executable)],cwd=unrelated,env=env,stdout=stream,stderr=subprocess.STDOUT)
                         try:
                             window=wait_for(process,lambda:desktop.find(process.pid,name),name+' did not create a native window')
-                            # Windows may clamp CreateWindow's initial request to
-                            # its CI desktop. Explicit sizing exercises the resize
-                            # event and gives the bundled dock layout its authored size.
-                            desktop.resize(window,1280,720)
-                            if desktop.geometry(window)[2:]!=(1280,720):
-                                raise RuntimeError('Test desktop cannot establish the bundled 1280x720 editor layout')
+                            desktop.resize(window,960,640)
+                            wait_for(process,lambda:desktop.geometry(window)[2:]==(960,640),name+' did not apply resize',20)
                             wait_for(process,lambda:name+' ready:' in log.read_text(errors='replace'),name+' did not finish packaged startup')
                             time.sleep(2);desktop.activate(window)
                             if hz.SYSTEM=='linux':
                                 maps=Path('/proc')/str(process.pid)/'maps'
                                 text=maps.read_text()
                                 if str(hz.ROOT) in text:raise RuntimeError('Extracted application loaded a native library from the source checkout')
-                            if name=='Hazelnut':
-                                # Saved 1280x720 dock layout: toolbar centered in
-                                # the viewport column. Same real mouse path as F5.
-                                desktop.click(window,657,40)
-                                time.sleep(.5)
-                            for repeat in range(2):
-                                _,_,width,height=desktop.geometry(window)
-                                if name=='Nutella':x,y=width/2,height/2;viewheight=height
-                                else:x,y=657,255;viewheight=394
-                                desktop.click(window,x,y)
-                                wait_for(process,lambda:log.read_text(errors='replace').count('Runtime scene: Scenes/Level1.hazel')>repeat,'Play click did not transition in '+name)
-                                desktop.key(window,ord('D'),.4)
-                                desktop.click(window,x-viewheight*1.75/10,y-viewheight*3.5/10)
-                                wait_for(process,lambda:log.read_text(errors='replace').count('Runtime scene: Scenes/MainMenu.hazel')>repeat,'Return click did not transition in '+name)
-                                if name=='Nutella' and repeat==0:desktop.resize(window,900,640)
-                            if name=='Hazelnut':desktop.click(window,657,40) # Stop restores authored scene.
+                            # Rendering/lifecycle smoke, independent of dock coordinates/art.
+                            # Runtime transitions and gameplay outcomes are asserted directly
+                            # by RuntimeSessionSmoke, EditorSmoke and ExampleGamesSmoke.
+                            def painted():
+                                width,height,pixels=desktop.capture(window)
+                                stride=max(1,width*height//2048)*3
+                                return len({pixels[i:i+3] for i in range(0,len(pixels)-2,stride)})>1
+                            wait_for(process,painted,name+' did not present a nonblank frame',20)
+                            desktop.resize(window,900,640)
+                            wait_for(process,lambda:desktop.geometry(window)[2:]==(900,640) and painted(),name+' resize did not present',20)
                             desktop.close(window)
                             if process.wait(timeout=30)!=0:raise RuntimeError(name+' failed shutdown')
                         finally:
@@ -149,5 +148,5 @@ def package_tests(output,profile='native'):
                     if '[error]' in text.lower() or '[critical]' in text.lower() or 'Failed to' in text:raise RuntimeError('Packaged runtime failure:\n'+text)
                     if profile in ('software','gl41') and 'llvmpipe' not in text.lower():raise RuntimeError('Packaged test did not use isolated software graphics')
                     if any(unrelated.glob('HazelProfile*.json')):raise RuntimeError('Release execution produced profiling dumps')
-                    print('PASS: extracted '+name+', unrelated cwd, spaces/Unicode, real Play/menu clicks twice, graceful close; source assets/SDK unavailable',flush=True)
+                    print('PASS: extracted '+name+', unrelated cwd, spaces/Unicode, startup/render/resize/graceful close; source assets/SDK unavailable',flush=True)
         finally:desktop.shutdown()

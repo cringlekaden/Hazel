@@ -161,7 +161,7 @@ static void CheckFramebuffersAndShaders()
     Check(std::dynamic_pointer_cast<OpenGLShader>(shader)->GetProgramLoadingPath()==expectedPath,"Selected shader loading path differs from capabilities/settings");
     auto camera=UniformBuffer::Create(64,3);
     const std::array<float,16> identity={1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1}; camera->SetData(identity.data(),64);
-    TextureSpecification textureSpecification; textureSpecification.GenerateMips=false;
+    TextureSpecification textureSpecification; textureSpecification.GenerateMips=false; textureSpecification.MinFilter=TextureFilter::Linear;
     auto texture=Texture2D::Create(textureSpecification); const std::array<unsigned char,4> color={128,64,192,255}; texture->SetData(color.data(),4);
     auto vao=VertexArray::Create();
     const std::array<float,6> triangle={-1,-1,3,-1,-1,3};

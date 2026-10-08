@@ -40,12 +40,19 @@ class PackageAudit {
     static int Main(string[] args) {
         Console.OutputEncoding = new System.Text.UTF8Encoding(false);
         try {
+            if (args.Length == 2 && args[0] == "--core-contract") {
+                if (Assembly.ReflectionOnlyLoadFrom(Path.GetFullPath(args[1])).GetType("Hazel.APIContractV1", false) == null)
+                    throw new InvalidOperationException("Incompatible ScriptCore API contract; rebuild matching SDK tools");
+                Console.WriteLine("HAZEL_SCRIPTCORE_CONTRACT=1"); return 0;
+            }
             if (args.Length != 4) throw new ArgumentException("PackageAudit Core.dll Project.dll AssemblyInventory.txt MonoAssembliesRoot");
             foreach (string path in Directory.GetFiles(args[3], "*.dll", SearchOption.AllDirectories)) {
                 if (path.Replace('\\', '/').Split('/').Any(part => part.EndsWith("-api", StringComparison.Ordinal))) continue;
                 RuntimeIdentities.Add(AssemblyName.GetAssemblyName(path).FullName);
             }
             string core = Path.GetFullPath(args[0]);
+            if (Assembly.ReflectionOnlyLoadFrom(core).GetType("Hazel.APIContractV1", false) == null)
+                throw new InvalidOperationException("Incompatible ScriptCore API contract; rebuild matching SDK/script tools");
             Files.Add(AssemblyName.GetAssemblyName(core).Name, core);
             foreach (string path in File.ReadAllLines(args[2])) {
                 string name = AssemblyName.GetAssemblyName(path).Name;

@@ -20,6 +20,7 @@ namespace Hazel {
         ~RuntimeSession();
         RuntimeSession(const RuntimeSession&) = delete;
         RuntimeSession& operator=(const RuntimeSession&) = delete;
+        static void Validate(const Ref<Scene>& scene, bool validateScripts = true);
         void Start(const Ref<Project>& project, const Ref<Scene>& authoredScene);
         void Stop();
         void Update(Timestep timestep);
@@ -35,7 +36,6 @@ namespace Hazel {
         bool GetMouseWorldPosition(glm::vec2& position) const;
     private:
         void CheckThread() const;
-        void Validate(const Ref<Scene>& scene) const;
         void CommitPendingTransition();
         Ref<Project> m_Project;
         Ref<Scene> m_Scene;

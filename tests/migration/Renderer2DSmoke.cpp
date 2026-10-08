@@ -4,6 +4,10 @@
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
+#include <atomic>
+#ifdef HZ_PLATFORM_LINUX
+#include <X11/Xlib.h>
+#endif
 #include <array>
 #include <filesystem>
 #include <iostream>
@@ -57,18 +61,18 @@ static void Primitives() {
     Check(ID()==-1 && Pixels(81)>120,"Position rectangle footprint mismatch");
 }
 static void Textures() {
-    TextureSpecification specification; specification.Width=2; specification.Height=2; specification.GenerateMips=false;
+    TextureSpecification specification; specification.Width=2; specification.Height=2; specification.GenerateMips=false; specification.MinFilter=TextureFilter::Linear;
     auto texture=Texture2D::Create(specification);
     const std::array<unsigned char,16> texels{255,0,0,255, 0,255,0,255, 0,0,255,255, 255,255,255,255};
     texture->SetData(texels.data(),texels.size());
-    SpriteRendererComponent sprite; sprite.Texture=texture; sprite.TilingFactor=2; sprite.Color={.5f,1,1,1};
+    SpriteRendererComponent sprite; sprite.SetTexture(texture,2); sprite.Color={.5f,1,1,1};
     Begin(); Renderer2D::DrawSprite(Transform(),sprite,43); End();
     Check(ID(40,40)==43 && Color(40,40)[0]>=126 && Color(40,40)[0]<=129 &&
           Color(56,40)[1]>250 && Color(72,40)[0]>=126,"Sprite texture/tiling/tint mismatch");
-    sprite.Texture.reset(); sprite.Color={0,1,0,1};
+    sprite.SetTexture(nullptr); sprite.Color={0,1,0,1};
     Begin(); Renderer2D::DrawSprite(Transform(),sprite,44); End();
     Check(ID()==44 && Color()[1]>250,"Untextured sprite mismatch");
-    TextureSpecification single; single.GenerateMips=false; auto white=Texture2D::Create(single);
+    TextureSpecification single; single.GenerateMips=false; single.MinFilter=TextureFilter::Linear; auto white=Texture2D::Create(single);
     const unsigned whitePixel=0xffffffff; white->SetData(&whitePixel,sizeof(whitePixel));
     for(int variant=0;variant<4;++variant) {
         Begin();
@@ -85,7 +89,7 @@ static void Textures() {
     std::vector<Ref<Texture2D>> textures;
     Begin();
     for (unsigned i=0;i<limit+1;++i) {
-        TextureSpecification one; one.GenerateMips=false;
+        TextureSpecification one; one.GenerateMips=false; one.MinFilter=TextureFilter::Linear;
         auto current=Texture2D::Create(one); const unsigned data=0xff00ff00;
         current->SetData(&data,sizeof(data)); textures.push_back(current);
         Renderer2D::DrawQuad(Transform(),current,1,glm::vec4(1),100+i);
@@ -99,12 +103,12 @@ static void Textures() {
     std::cout<<"Selected fragment texture batch capacity: "<<limit<<'\n';
 }
 static void Text() {
-    auto font=Font::GetDefault(); Renderer2D::TextParams parameters;
+    auto font=Hazel::Font::GetDefault(); Renderer2D::TextParams parameters;
     Begin(); Renderer2D::DrawString(u8"é",font,Transform(-.3f,-.3f,1),parameters,90); End();
     Check(Renderer2D::GetStats().QuadCount==1 && Pixels(90)>100,"UTF-8 glyph rendering/picking mismatch");
     Begin(); Renderer2D::DrawString("A \tA\nA\r",font,Transform(-.5f,.1f,.7f),{glm::vec4(1),.01f,.02f},91); End();
     Check(Renderer2D::GetStats().QuadCount==3 && Pixels(91)>50,"Text whitespace/spacing rendering mismatch");
-    auto bold=CreateRef<Font>("assets/fonts/opensans/OpenSans-Bold.ttf");
+    auto bold=CreateRef<Hazel::Font>("assets/fonts/opensans/OpenSans-Bold.ttf");
     Begin(); Renderer2D::DrawString("A",font,Transform(-.8f,-.3f,.8f),parameters,92);
     Renderer2D::DrawString("A",bold,Transform(.1f,-.3f,.8f),parameters,93); End();
     Check(Renderer2D::GetStats().DrawCalls==2 && Pixels(92)>50 && Pixels(93)>50,"Font atlas switch lost pending text");
@@ -126,7 +130,7 @@ static void Overflow() {
             if(kind==0) Renderer2D::DrawQuad(transform,{1,0,0,1},110);
             if(kind==1) Renderer2D::DrawCircle(transform,{0,1,0,1},1,.005f,111);
             if(kind==2) Renderer2D::DrawLine({final?-.5f:10,0,0},{final?.5f:11,0,0},{0,0,1,1},112);
-            if(kind==3) Renderer2D::DrawString("A",Font::GetDefault(),transform,{},113);
+            if(kind==3) Renderer2D::DrawString("A",Hazel::Font::GetDefault(),transform,{},113);
         }
         End(); Check(Renderer2D::GetStats().DrawCalls==2 && Pixels(110+kind)>50,"Primitive capacity overflow lost final output");
         if(kind!=2) Check(Renderer2D::GetStats().QuadCount==capacity+1,"Overflow statistics lost geometry");
@@ -148,6 +152,55 @@ void main(){color=vec4(1,0,1,1);entity=84;})";
     Renderer::BeginScene(camera); Renderer::Submit(shader,vao,Transform(.5f,0,.5f)); Renderer::EndScene();
     Check(ID(96,64)==84 && ID()==-1 && Color(96,64)[2]>250,"Generic shader submit transform mismatch");
 }
+struct DriverMessages : LogReceiver {
+    std::atomic<int> Count{0};
+    void Receive(const LogRecord& record) override {
+        if(record.Message.find("stage-f-driver-probe")!=std::string::npos)++Count;
+    }
+};
+static void RenderingControls(Application& application, const RuntimeRendererRequests& requests) {
+    const auto& caps=Renderer::GetCapabilities();const auto& resolved=Renderer::GetResolution();
+    Check(application.GetWindow().IsVSync()==requests.VSync,"Prelaunch runtime interval request not submitted");
+    auto* primary=static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow());
+    glfwWindowHint(GLFW_VISIBLE,GLFW_FALSE);
+    auto* other=glfwCreateWindow(16,16,"Interval ownership",nullptr,primary);
+    Check(other!=nullptr,"Cannot create bounded shared-context fixture");
+    glfwMakeContextCurrent(other);
+    application.GetWindow().SetVSync(!requests.VSync);
+    Check(glfwGetCurrentContext()==other,"Window interval changed caller's current context");
+    application.GetWindow().SetVSync(requests.VSync);
+    glfwMakeContextCurrent(primary);glfwDestroyWindow(other);
+#ifdef HZ_PLATFORM_LINUX
+    // Observation only: compositor overrides do not turn a submitted interval into measured timing.
+    using DisplayProc=Display*(*)();using DrawableProc=unsigned long(*)();
+    using ExtensionsProc=const char*(*)(Display*,int);using QueryProc=void(*)(Display*,unsigned long,int,unsigned*);
+    const auto display=reinterpret_cast<DisplayProc>(glfwGetProcAddress("glXGetCurrentDisplay"));
+    const auto drawable=reinterpret_cast<DrawableProc>(glfwGetProcAddress("glXGetCurrentDrawable"));
+    const auto extensions=reinterpret_cast<ExtensionsProc>(glfwGetProcAddress("glXQueryExtensionsString"));
+    const auto query=reinterpret_cast<QueryProc>(glfwGetProcAddress("glXQueryDrawable"));
+    if(display && drawable && extensions && query) {
+        const auto* list=extensions(display(),DefaultScreen(display()));
+        if(list && std::string(list).find("GLX_EXT_swap_control")!=std::string::npos) {
+            unsigned interval=0;query(display(),drawable(),0x20F1,&interval);
+            std::cout<<"Submitted interval "<<requests.VSync<<", GLX driver-reported interval "<<interval<<"; frame timing unmeasured\n";
+        }
+    }
+#endif
+    const auto loaded=Renderer2D::GetQuadShaderLoadingPath();
+    Check(loaded==(resolved.Effective.PreferShaderBinaries?Shader::ProgramLoadingPath::SPIRV:Shader::ProgramLoadingPath::GeneratedGLSL),
+          "Renderer resolution differs from observable compiled 2D program");
+    auto receiver=std::make_shared<DriverMessages>();auto subscription=Log::Observe(receiver);
+    if(caps.DebugOutput) {
+        Check(bool(glIsEnabled(GL_DEBUG_OUTPUT))==resolved.Effective.EnableDebugOutput,"Resolved debug policy not consumed by backend");
+        glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION,GL_DEBUG_TYPE_ERROR,901,GL_DEBUG_SEVERITY_MEDIUM,-1,"stage-f-driver-probe");
+        Check(receiver->Count==int(resolved.Effective.EnableDebugOutput),"Driver callback capture differs from effective request");
+    } else Check(!resolved.Effective.EnableDebugOutput && (!resolved.Requested.EnableDebugOutput || !resolved.DebugReason.empty()),"Unavailable driver debug path was advertised enabled");
+    auto invalid=resolved.Requested;invalid.TextureSlots=1;bool rejected=false;
+    try{RenderCommand::Init(invalid);}catch(const std::exception&){rejected=true;}
+    Check(rejected && Renderer::GetSettings().TextureSlots==resolved.Effective.TextureSlots &&
+          Renderer::GetResolution().Requested.TextureSlots==requests.TextureSlots && Renderer2D::GetQuadShaderLoadingPath()==loaded,
+          "Failed policy validation changed live renderer/program state");
+}
 int main() {
     try {
         Log::Init(); Fixture fixture; const auto cwd=std::filesystem::current_path();
@@ -156,7 +209,10 @@ int main() {
         Check(rejected && std::filesystem::current_path()==cwd,"Failed renderer startup did not recover working directory");
         for (bool reduced : {false, true}) {
             ApplicationSpecification specification; specification.Name="Migration Renderer2D";
-            if (reduced) { specification.Rendering.TextureSlots=2; specification.Rendering.PreferShaderBinaries=false; }
+            RuntimeRendererRequests requests;
+            if(reduced){requests.TextureSlots=2;requests.ShaderLoading=ShaderLoadingRequest::GLSLCompatibility;requests.VSync=false;}
+            specification.Rendering=RendererPolicy::Settings(requests,reduced?DebugOutputRequest::Disabled:DebugOutputRequest::Enabled);
+            specification.WindowVSync=requests.VSync;
             Application application(specification);
             struct TargetCleanup { ~TargetCleanup() { target.reset(); } } targetCleanup;
             glfwHideWindow(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()));
@@ -165,6 +221,7 @@ int main() {
             framebuffer.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
             target=Framebuffer::Create(framebuffer);
             Check(Renderer::GetSettings().TextureSlots==(reduced ? 2u : std::min(32u,Renderer::GetCapabilities().MaxTextureSlots)),"Application renderer settings mismatch");
+            RenderingControls(application,requests);
             Primitives(); Textures(); Text(); Overflow(); GenericSubmit();
             Check(glGetError()==GL_NO_ERROR,"Final renderer GL error");
             target->Unbind(); target.reset(); glEnable(GL_DEPTH_TEST);

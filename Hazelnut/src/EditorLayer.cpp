@@ -1,8 +1,10 @@
 #include "ContentBrowserPayload.h"
+#include "Authoring/AuthoringPanel.h"
 #include "EditorLayer.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Scene/SceneSerializer.h"
+#include "Hazel/Project/ProjectSerializer.h"
 #include "Hazel/Utils/PlatformUtils.h"
 #include "Hazel/Math/Math.h"
 #include "Hazel/Scripting/ScriptEngine.h"
@@ -18,11 +20,15 @@
 namespace Hazel {
 
 
-	EditorLayer::EditorLayer()
+	EditorLayer::EditorLayer(std::shared_ptr<ConsoleModel> console)
 		: Layer("EditorLayer"), m_CameraController(1280.0f / 720.0f)
 	{
+        if(!console){m_ConsoleSession=std::make_unique<ConsoleSession>();console=m_ConsoleSession->Model;}
+        m_Console=std::move(console);
 		m_Font = Font::GetDefault();
 	}
+
+	EditorLayer::~EditorLayer() = default;
 
 	void EditorLayer::OnAttach()
 	{
@@ -43,28 +49,27 @@ namespace Hazel {
 
 		m_EditorScene = CreateRef<Scene>();
 		m_ActiveScene = m_EditorScene;
+        m_EditorCamera = EditorCamera(30.0f,1.778f,.1f,1000.f);
+        m_Authoring=CreateScope<AuthoringPanel>(*this);
+        m_Authoring->MarkSceneSaved();
+        Application::Get().SetCloseRequest([this]{m_Authoring->RequestClose();});
+        Application::Get().SetBackgroundTick([this]{if(m_Authoring)m_Authoring->PollTools();});
 
-		auto commandLineArgs = Application::Get().GetSpecification().CommandLineArgs;
-		if (commandLineArgs.Count > 1)
-		{
-			auto projectFilePath = commandLineArgs[1];
-			OpenProject(std::filesystem::u8path(projectFilePath));
-		}
-		else
-		{
-			const auto bundled = Project::Discover(FileSystem::GetExecutablePath().parent_path() / "Example");
-            if (bundled.size() == 1) OpenProject(bundled.front());
-            else OpenProject(); // Failure/cancellation leaves an empty, usable editor.
+        std::vector<std::string> arguments;
+        const auto args=Application::Get().GetSpecification().CommandLineArgs;
+        for(int i=0;i<args.Count;++i)arguments.emplace_back(args[i]);
+        m_Authoring->Startup(arguments);
 
-		}
-
-		m_EditorCamera = EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f);
 		Renderer2D::SetLineWidth(4.0f);
 	}
 
 	void EditorLayer::OnDetach()
 	{
 		HZ_PROFILE_FUNCTION();
+        Application::Get().SetCloseRequest({});
+        Application::Get().SetBackgroundTick({});
+        if(m_Authoring)m_Authoring->FlushWorkspace();
+        m_Authoring.reset();
         if (m_SceneState != SceneState::Edit) OnSceneStop();
         ClearSceneObservers();
         m_ActiveScene.reset(); m_EditorScene.reset(); m_Font.reset();
@@ -73,6 +78,7 @@ namespace Hazel {
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
 		HZ_PROFILE_FUNCTION();
+        if(m_Authoring) m_Authoring->Tick(ts);
 
         if (m_SceneState != SceneState::Play)
             m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
@@ -100,17 +106,17 @@ namespace Hazel {
 		{
 			case SceneState::Edit:
 			{
-				if (m_ViewportFocused)
+				if (m_ViewportFocused && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))
 					m_CameraController.OnUpdate(ts);
 
-				m_EditorCamera.OnUpdate(ts);
+				if(m_ViewportFocused && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_EditorCamera.OnUpdate(ts);
 
 				m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
 				break;
 			}
 			case SceneState::Simulate:
 			{
-				m_EditorCamera.OnUpdate(ts);
+				if(m_ViewportFocused && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_EditorCamera.OnUpdate(ts);
 
 				m_ActiveScene->OnUpdateSimulation(ts, m_EditorCamera);
 				break;
@@ -118,7 +124,7 @@ namespace Hazel {
 			case SceneState::Play:
 			{
                 m_RuntimeSession.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-                m_RuntimeSession.SetInput(Input::GetMouseScreenPosition() - m_ViewportBounds[0], m_ViewportHovered && m_ViewportFocused);
+                m_RuntimeSession.SetInput(Input::GetMouseScreenPosition() - m_ViewportBounds[0], m_ViewportHovered && m_ViewportFocused && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId));
                 m_RuntimeSession.Update(ts);
                 if (m_ActiveScene != m_RuntimeSession.GetScene()) {
                     ClearSceneObservers();
@@ -150,6 +156,7 @@ namespace Hazel {
 
 	void EditorLayer::OnImGuiRender()
 	{
+
 		HZ_PROFILE_FUNCTION();
         ImGuizmo::BeginFrame();
 
@@ -192,61 +199,38 @@ namespace Hazel {
 
 		// DockSpace
 		ImGuiIO& io = ImGui::GetIO();
-		ImGuiStyle& style = ImGui::GetStyle();
-		float minWinSizeX = style.WindowMinSize.x;
-		style.WindowMinSize.x = 370.0f;
+
+
+		if (ImGui::BeginMenuBar())
+		{
+            if(!io.WantTextInput && !io.KeyShift && !io.KeyCtrl && !io.KeyAlt && ImGui::IsKeyPressed(ImGuiKey_F10))ImGui::SetKeyboardFocusHere();
+			if (ImGui::BeginMenu("File"))
+			{
+                if(m_Authoring) { m_Authoring->FileMenu(); }
+
+				ImGui::EndMenu();
+			}
+
+            if(m_Authoring) m_Authoring->Menus();
+
+            if(m_Authoring)m_Authoring->Caption();
+			ImGui::EndMenuBar();
+		}
+
+        if(m_Authoring)m_Authoring->Status();
 		if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
 		{
 			ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
 			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 		}
 
-		style.WindowMinSize.x = minWinSizeX;
-
-		if (ImGui::BeginMenuBar())
-		{
-			if (ImGui::BeginMenu("File"))
-			{
-				if (ImGui::MenuItem("Save Project")) SaveProject();
-
-				if (ImGui::MenuItem("Open Project...", "Ctrl+O"))
-					OpenProject();
-
-				ImGui::Separator();
-
-				if (ImGui::MenuItem("New Scene", "Ctrl+N"))
-					NewScene();
-
-				if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
-					SaveScene();
-
-				if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shift+S"))
-					SaveSceneAs();
-
-				ImGui::Separator();
-
-				if (ImGui::MenuItem("Exit"))
-					Application::Get().Close();
-
-				ImGui::EndMenu();
-			}
-
-			if (ImGui::BeginMenu("Script"))
-			{
-				if (ImGui::MenuItem("Reload assembly", "Ctrl+R"))
-					ReloadScripts();
-
-				ImGui::EndMenu();
-			}
-
-			ImGui::EndMenuBar();
-		}
 
 		m_SceneHierarchyPanel.OnImGuiRender();
 		if (m_ContentBrowserPanel) m_ContentBrowserPanel->OnImGuiRender();
 
-		ImGui::Begin("Stats");
-		if (!m_ActionError.empty()) ImGui::TextWrapped("%s", m_ActionError.c_str());
+        if(m_ShowStats) {
+		ImGui::Begin("Stats",&m_ShowStats);
+
 
 #if 0
 		std::string name = "None";
@@ -263,14 +247,7 @@ namespace Hazel {
 		ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
 
 		ImGui::End();
-
-		ImGui::Begin("Settings");
-		ImGui::Checkbox("Show physics colliders", &m_ShowPhysicsColliders);
-
-		ImGui::Image((ImTextureID)(uintptr_t)m_Font->GetAtlasTexture()->GetRendererID(), { 512,512 }, {0, 1}, {1, 0});
-
-
-		ImGui::End();
+        }
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
 		ImGui::Begin("Viewport");
@@ -283,47 +260,46 @@ namespace Hazel {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		m_ViewportHovered = ImGui::IsWindowHovered();
 
-		Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportHovered);
+		Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused || !m_ViewportHovered || io.WantTextInput || ImGui::IsAnyItemActive());
 
 		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 		m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 
 		uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+        if(ImGui::IsItemClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && !io.KeyAlt)m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
 
 		if (ImGui::BeginDragDropTarget())
 		{
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 			{
-				OpenScene(ContentBrowserPath(payload->Data, payload->DataSize));
+				auto path=ContentBrowserPath(payload->Data,payload->DataSize);
+                if(path.extension()==".hprefab") m_Authoring->InstantiatePrefab(path);
+                else if(path.extension()==".hsprites")m_Authoring->SelectAsset(path);
+                else if(path.extension()==".hazel")m_Authoring->Guard(OperationIntent::OpenScene,[this,path]{return OpenScene(path);});
 			}
 			ImGui::EndDragDropTarget();
 		}
 
 		// Gizmos
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-		if (selectedEntity && m_GizmoType != -1)
+		if (selectedEntity && m_GizmoType != -1 && m_Authoring->Availability(EditorAction::EditScene))
 		{
 			ImGuizmo::SetOrthographic(false);
 			ImGuizmo::SetDrawlist();
 
 			ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y, m_ViewportBounds[1].x - m_ViewportBounds[0].x, m_ViewportBounds[1].y - m_ViewportBounds[0].y);
 
-			// Camera
-
-			// Runtime camera from entity
-			// auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
-			// const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
-			// const glm::mat4& cameraProjection = camera.GetProjection();
-			// glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
-
 			// Editor camera
 			const glm::mat4& cameraProjection = m_EditorCamera.GetProjection();
 			glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
 
 			// Entity transform
-			auto& tc = selectedEntity.GetComponent<TransformComponent>();
-			glm::mat4 transform = tc.GetTransform();
+			glm::mat4 transform = m_ActiveScene->GetWorldTransform(selectedEntity);
+            bool representable=true;
+            try {Scene::ExactTRS(transform);}catch(const std::exception& e){representable=false;m_GizmoError=e.what();}
+            if(representable) {
+            if(!ImGuizmo::IsUsing())m_GizmoError.clear();
 
 			// Snapping
 			bool snap = Input::IsKeyPressed(Key::LeftControl);
@@ -338,113 +314,38 @@ namespace Hazel {
 				(ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::LOCAL, glm::value_ptr(transform),
 				nullptr, snap ? snapValues : nullptr);
 
-			if (ImGuizmo::IsUsing())
-			{
-				glm::vec3 translation, rotation, scale;
-				Math::DecomposeTransform(transform, translation, rotation, scale);
-
-				glm::vec3 deltaRotation = rotation - tc.Rotation;
-				tc.Translation = translation;
-				tc.Rotation += deltaRotation;
-				tc.Scale = scale;
-			}
+            if(ImGuizmo::IsUsing() && m_Authoring->Availability(EditorAction::EditScene)) {
+                try {m_ActiveScene->SetWorldTransform(selectedEntity,transform);m_GizmoError.clear();}
+                catch(const std::exception& error) {
+                    if(m_GizmoError!=error.what())ActionFailed(error.what());
+                    m_GizmoError=error.what();
+                }
+            }
+            }
+            if(!m_GizmoError.empty())ImGui::TextWrapped("Gizmo: %s. Edit local properties instead.",m_GizmoError.c_str());
 		}
 
 
 		ImGui::End();
 		ImGui::PopStyleVar();
 
+        if(m_Authoring){m_Authoring->ObserveSceneFocus();m_Authoring->Render();m_Authoring->Shortcuts();}
 		UI_Toolbar();
-
 		ImGui::End();
 	}
 
-	void EditorLayer::UI_Toolbar()
-	{
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-		auto& colors = ImGui::GetStyle().Colors;
-		const auto& buttonHovered = colors[ImGuiCol_ButtonHovered];
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(buttonHovered.x, buttonHovered.y, buttonHovered.z, 0.5f));
-		const auto& buttonActive = colors[ImGuiCol_ButtonActive];
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
-
-		ImGui::Begin("##toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-
-		bool toolbarEnabled = (bool)m_ActiveScene;
-
-		ImVec4 tintColor = ImVec4(1, 1, 1, 1);
-		if (!toolbarEnabled)
-			tintColor.w = 0.5f;
-
-		float size = ImGui::GetWindowHeight() - 4.0f;
-		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
-
-		bool hasPlayButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play;
-		bool hasSimulateButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate;
-		bool hasPauseButton = m_SceneState != SceneState::Edit;
-
-		if (hasPlayButton)
-		{
-			Ref<Texture2D> icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate) ? m_IconPlay : m_IconStop;
-			if (ImGui::ImageButton((ImTextureID)(uint64_t)icon->GetRendererID(), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), 0, ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
-			{
-				if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate)
-					OnScenePlay();
-				else if (m_SceneState == SceneState::Play)
-					OnSceneStop();
-			}
-		}
-
-		if (hasSimulateButton)
-		{
-			if (hasPlayButton)
-				ImGui::SameLine();
-
-			Ref<Texture2D> icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play) ? m_IconSimulate : m_IconStop;
-			if (ImGui::ImageButton((ImTextureID)(uint64_t)icon->GetRendererID(), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), 0, ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
-			{
-				if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play)
-					OnSceneSimulate();
-				else if (m_SceneState == SceneState::Simulate)
-					OnSceneStop();
-			}
-		}
-		if (hasPauseButton)
-		{
-			bool isPaused = m_ActiveScene->IsPaused();
-			ImGui::SameLine();
-			{
-				Ref<Texture2D> icon = m_IconPause;
-				if (ImGui::ImageButton((ImTextureID)(uint64_t)icon->GetRendererID(), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), 0, ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
-				{
-					m_ActiveScene->SetPaused(!isPaused);
-				}
-			}
-
-			// Step button
-			if (isPaused)
-			{
-				ImGui::SameLine();
-				{
-					Ref<Texture2D> icon = m_IconStep;
-					if (ImGui::ImageButton((ImTextureID)(uint64_t)icon->GetRendererID(), ImVec2(size, size), ImVec2(0, 0), ImVec2(1, 1), 0, ImVec4(0.0f, 0.0f, 0.0f, 0.0f), tintColor) && toolbarEnabled)
-					{
-						m_ActiveScene->Step();
-					}
-				}
-			}
-		}
-		ImGui::PopStyleVar(2);
-		ImGui::PopStyleColor(3);
-		ImGui::End();
-	}
+    void EditorLayer::UI_Toolbar() {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {4, 2});
+        ImGui::Begin("##toolbar",nullptr,ImGuiWindowFlags_NoDecoration|ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
+        if(m_Authoring)m_Authoring->Toolbar();
+        ImGui::End();
+        ImGui::PopStyleVar();
+    }
 
 	void EditorLayer::OnEvent(Event& e)
 	{
-		m_CameraController.OnEvent(e);
-		if (m_SceneState == SceneState::Edit)
+		if(m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_CameraController.OnEvent(e);
+		if (m_SceneState == SceneState::Edit && m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))
 		{
 			m_EditorCamera.OnEvent(e);
 		}
@@ -454,112 +355,8 @@ namespace Hazel {
 		dispatcher.Dispatch<MouseButtonPressedEvent>(HZ_BIND_EVENT_FN(EditorLayer::OnMouseButtonPressed));
 	}
 
-	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
-	{
-		// Shortcuts
-		if (e.IsRepeat())
-			return false;
-
-		bool control = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
-		bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
-
-		switch (e.GetKeyCode())
-		{
-			case Key::N:
-			{
-				if (control)
-					NewScene();
-
-				break;
-			}
-			case Key::O:
-			{
-				if (control)
-					OpenProject();
-
-				break;
-			}
-			case Key::S:
-			{
-				if (control)
-				{
-					if (shift)
-						SaveSceneAs();
-					else
-						SaveScene();
-				}
-
-				break;
-			}
-
-			// Scene Commands
-			case Key::D:
-			{
-				if (control)
-					OnDuplicateEntity();
-
-				break;
-			}
-
-			// Gizmos
-			case Key::Q:
-			{
-				if (!ImGuizmo::IsUsing())
-					m_GizmoType = -1;
-				break;
-			}
-			case Key::W:
-			{
-				if (!ImGuizmo::IsUsing())
-					m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
-				break;
-			}
-			case Key::E:
-			{
-				if (!ImGuizmo::IsUsing())
-					m_GizmoType = ImGuizmo::OPERATION::ROTATE;
-				break;
-			}
-			case Key::R:
-			{
-				if (control)
-				{
-					ReloadScripts();
-				}
-				else
-				{
-					if (!ImGuizmo::IsUsing())
-						m_GizmoType = ImGuizmo::OPERATION::SCALE;
-				}
-				break;
-			}
-			case Key::Delete:
-			{
-				if (Application::Get().GetImGuiLayer()->GetActiveWidgetID() == 0)
-				{
-					Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-					if (selectedEntity)
-					{
-						m_SceneHierarchyPanel.SetSelectedEntity({});
-						m_ActiveScene->DestroyEntity(selectedEntity);
-					}
-				}
-				break;
-			}
-		}
-
-		return false;
-	}
-
-	bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent& e)
-	{
-		if (e.GetMouseButton() == Mouse::ButtonLeft)
-		{
-			if (m_ViewportHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(Key::LeftAlt))
-				m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
-		}
-		return false;
-	}
+    bool EditorLayer::OnKeyPressed(KeyPressedEvent&) {return false;} // Focused commands are sampled once through ImGui.
+    bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent&) {return false;} // Image item click below owns picking.
 
 	void EditorLayer::OnOverlayRender()
 	{
@@ -569,7 +366,7 @@ namespace Hazel {
 			if (!camera)
 				return;
 
-			Renderer2D::BeginScene(camera.GetComponent<CameraComponent>().Camera, camera.GetComponent<TransformComponent>().GetTransform());
+			Renderer2D::BeginScene(camera.GetComponent<CameraComponent>().Camera, m_ActiveScene->GetWorldTransform(camera));
 		}
 		else
 		{
@@ -603,11 +400,11 @@ namespace Hazel {
 				{
 					auto [tc, cc2d] = view.get<TransformComponent, CircleCollider2DComponent>(entity);
 
-					glm::vec3 translation = tc.Translation + glm::vec3(cc2d.Offset, 0.001f);
-					glm::vec3 scale = tc.Scale * glm::vec3(cc2d.Radius * 2.0f);
-
-					glm::mat4 transform = glm::translate(glm::mat4(1.0f), translation)
-						* glm::scale(glm::mat4(1.0f), scale);
+					glm::vec3 scale(tc.Scale.x*cc2d.Radius*2,tc.Scale.x*cc2d.Radius*2,1);
+                    glm::mat4 transform=glm::translate(glm::mat4(1),tc.Translation)
+                        * glm::rotate(glm::mat4(1),tc.Rotation.z,glm::vec3(0,0,1))
+                        * glm::translate(glm::mat4(1),glm::vec3(cc2d.Offset,.001f))
+                        * glm::scale(glm::mat4(1),scale);
 
 					Renderer2D::DrawCircle(transform, glm::vec4(0, 1, 0, 1), 0.01f);
 				}
@@ -617,8 +414,10 @@ namespace Hazel {
 		// Draw selected entity outline
 		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity())
 		{
-			const TransformComponent& transform = selectedEntity.GetComponent<TransformComponent>();
-			Renderer2D::DrawRect(transform.GetTransform(), glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
+			const auto transform = m_ActiveScene->GetWorldTransform(selectedEntity);
+            if(auto* sprite=m_ActiveScene->RenderedSprite(selectedEntity)) {
+                for(size_t i=0;i<4;++i)Renderer2D::DrawLine(glm::vec3(transform*glm::vec4(sprite->Corners[i],0,1)),glm::vec3(transform*glm::vec4(sprite->Corners[(i+1)%4],0,1)),glm::vec4(1,.5f,0,1));
+            } else Renderer2D::DrawRect(transform, glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
 		}
 
 		Renderer2D::EndScene();
@@ -627,44 +426,110 @@ namespace Hazel {
 	bool EditorLayer::ActionFailed(const std::string& message)
 	{
 		m_ActionError = message;
-		HZ_ERROR("{}", message);
+        Log::GetClientLogger()->log(spdlog::source_loc{"Authoring",0,""},spdlog::level::err,"{}",message);
 		return false;
 	}
 
 	void EditorLayer::ClearSceneObservers()
 	{
 		m_HoveredEntity = {};
+        m_GizmoError.clear();
 		m_SceneHierarchyPanel.SetContext(nullptr);
 	}
 
-	bool EditorLayer::OpenProject(const std::filesystem::path& path)
-	{
-		try {
-			auto project = Project::LoadCandidate(path);
-			if (!project) return ActionFailed("Cannot parse/open project: " + path.generic_u8string());
-			const auto assets = project->GetAssetRoot();
-			if (!std::filesystem::is_directory(assets)) return ActionFailed("Project asset directory is missing: " + assets.generic_u8string());
-            const auto startScene = Project::ResolveAssetPath(assets, project->GetConfig().StartScene);
-            auto scene = project->LoadScene(project->GetConfig().StartScene);
-            scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-			auto browser = CreateScope<ContentBrowserPanel>(assets);
-			// Init stages a complete domain/watcher; failure retains the current scripts.
-			ScriptEngine::Init(Project::ResolveAssetPath(assets, project->GetConfig().ScriptModulePath), [this]() {
-				if (m_SceneState != SceneState::Edit) OnSceneStop();
-			});
-			ClearSceneObservers();
-			Project::SetActive(project);
-			m_ProjectPath = path; m_EditorScenePath = startScene;
-			m_EditorScene = scene; m_ActiveScene = scene;
-			m_ContentBrowserPanel = std::move(browser);
-			m_SceneHierarchyPanel.SetContext(scene);
-			m_ActionError.clear();
-            HZ_CORE_INFO("Hazelnut ready: {}", project->GetConfig().Name);
-			return true;
-		} catch (const std::runtime_error& error) {
-			return ActionFailed("Open project '" + path.generic_u8string() + "': " + error.what());
-		}
-	}
+    bool EditorLayer::OpenProject(const std::filesystem::path& path)
+    {
+        return OpenProject(path, ProjectOpenOptions{});
+    }
+    bool EditorLayer::OpenProject(const std::filesystem::path& path,const ProjectOpenOptions& options)
+    {
+        if(m_Authoring && !m_Authoring->Require(EditorAction::ReplaceProject))return false;
+        if(m_Authoring)m_Authoring->FlushWorkspace();
+        m_OpenPath=std::filesystem::absolute(path).lexically_normal();m_OpenIsProject=true;m_OpenLoad={};
+        try {
+            if(path.extension()!=".hproj")throw std::runtime_error("Select a .hproj descriptor");
+            FileDocument projectFile;projectFile.Open(path);
+            auto project=Project::LoadCandidate(path,&m_OpenLoad);
+            if(!project)throw std::runtime_error(m_OpenLoad.Error.empty()?"Cannot parse/open project":m_OpenLoad.Error);
+            auto& config=project->GetConfig();
+            if(options.Config){config=*options.Config;m_OpenLoad.Migration=true;}
+            if(!options.Assets.empty()) {
+                const auto relative=std::filesystem::weakly_canonical(options.Assets).lexically_relative(std::filesystem::weakly_canonical(path.parent_path()));
+                if(relative!=".")Project::ResolveOwnedAsset(path.parent_path(),relative);
+                config.AssetDirectory=relative;m_OpenLoad.Migration=true;
+            }
+            const auto assets=project->GetAssetRoot();
+            if(!options.Scene.empty()) {
+                config.StartScene=Project::MakeAssetReference(assets,options.Scene);
+                Project::ResolveOwnedAsset(assets,config.StartScene);
+                m_OpenLoad.Migration=true;
+            }
+            auto scene=CreateRef<Scene>();
+            FileDocument sceneFile;
+            DocumentLoadReport sceneReport;
+            std::filesystem::path startScene;
+            const bool assetRootExists=std::filesystem::is_directory(assets);
+            if(!options.WithoutScene) {
+                startScene=Project::ResolveAssetPath(assets,config.StartScene);
+                if(!assetRootExists || !std::filesystem::is_regular_file(startScene)) {
+                    m_OpenLoad.State=DocumentLoadState::NeedsDecision;
+                    m_OpenLoad.Error=!assetRootExists?"Assets directory is missing: "+assets.generic_u8string():"Startup scene is missing: "+startScene.generic_u8string();
+                    if(m_Authoring)m_Authoring->ReportOpen(path,m_OpenLoad);
+                    return ActionFailed(m_OpenLoad.Error+". Open Console to Locate or explicitly open the workspace without a scene.");
+                }
+                sceneFile.Open(startScene);
+                SceneSerializer loader(scene,assets,true,project->GetAssets());
+                if(!loader.DeserializeText(sceneFile.Original()))throw std::runtime_error(loader.Report().Error);
+                sceneReport=loader.Report();
+                if(sceneReport.Migration || !sceneReport.Problems.empty())sceneFile.PreserveOriginal();
+            } else {
+                scene->SetAssets(project->GetAssets());sceneReport.State=DocumentLoadState::Ready;
+                m_OpenLoad.Problems.push_back({0,"Startup scene","Opened workspace without a scene; descriptor references retained",path});
+            }
+            scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x),static_cast<uint32_t>(m_ViewportSize.y));
+            auto browser=assetRootExists?CreateScope<ContentBrowserPanel>(assets):nullptr;
+            projectFile.Check();if(!sceneFile.Path().empty())sceneFile.Check();
+            const auto assembly=Project::ResolveAssetPath(assets,config.ScriptModulePath);
+            Scope<ScriptAssemblyCandidate> scriptCandidate;
+            if(!config.ScriptModulePath.empty() && std::filesystem::is_regular_file(assembly)) {
+                // Present invalid assemblies still reject staging; failed replacement retains the old domain.
+                scriptCandidate=ScriptEngine::StageAssembly(assembly);
+            } else {
+                m_OpenLoad.Problems.push_back({0,"Scripts","Scripts not built/available. Content editing and script-free Play remain available; Build Scripts when ready.",assembly});
+            }
+            if(options.SaveDescriptor) {
+                // A valid project/scene/browser/domain candidate now exists; guard the accepted descriptor.
+                if(m_ProjectFile.Path()!=projectFile.Path())throw std::runtime_error("Settings project identity changed");
+                m_ProjectFile.Check();
+                projectFile=m_ProjectFile;
+                projectFile.PreserveOriginal();
+                projectFile.Save(ProjectSerializer(project).SerializeText(),Resources::Get().UserData/"recovery");
+                m_OpenLoad.Saved();
+            }
+            if(scriptCandidate)ScriptEngine::CommitAssembly(std::move(scriptCandidate),[this]{if(m_SceneState!=SceneState::Edit)OnSceneStop();});
+            else {if(m_SceneState!=SceneState::Edit)OnSceneStop();ScriptEngine::ClearApplicationAssembly();}
+            for(auto handle:scene->GetAllEntitiesWith<ScriptComponent>()) {
+                Entity entity(handle,scene.get());const auto& name=entity.GetComponent<ScriptComponent>().ClassName;
+                if(!name.empty() && !ScriptEngine::EntityClassExists(name))
+                    m_OpenLoad.Problems.push_back({entity.GetUUID(),"Script class","Unavailable class: "+name,assembly});
+            }
+            m_OpenLoad.Problems.insert(m_OpenLoad.Problems.end(),sceneReport.Problems.begin(),sceneReport.Problems.end());
+            m_OpenLoad.State=m_OpenLoad.Problems.empty()?DocumentLoadState::Ready:DocumentLoadState::EditableWithProblems;
+            if(m_OpenLoad.Migration || !m_OpenLoad.Problems.empty())projectFile.PreserveOriginal();
+            ClearSceneObservers();Project::SetActive(project);
+            m_ProjectPath=std::filesystem::absolute(path).lexically_normal();m_EditorScenePath=startScene;
+            m_ProjectFile=std::move(projectFile);m_SceneFile=std::move(sceneFile);
+            m_ProjectLoad=m_OpenLoad;m_SceneLoad=std::move(sceneReport);
+            m_EditorScene=scene;m_ActiveScene=scene;m_ContentBrowserPanel=std::move(browser);
+            if(m_Authoring){m_Authoring->BindProject();m_Authoring->ReportOpen(path,m_OpenLoad);}
+            m_SceneHierarchyPanel.SetContext(scene);m_ActionError.clear();
+            HZ_CORE_INFO("Hazelnut ready: {}",config.Name);return true;
+        } catch(const std::exception& error) {
+            m_OpenLoad.State=DocumentLoadState::Rejected;m_OpenLoad.Error=error.what();
+            if(m_Authoring)m_Authoring->ReportOpen(path,m_OpenLoad);
+            return ActionFailed("Open project '"+path.generic_u8string()+"': "+error.what());
+        }
+    }
 
 	bool EditorLayer::OpenProject()
 	{
@@ -674,18 +539,27 @@ namespace Hazel {
 
 	bool EditorLayer::SaveProject()
 	{
+        if(m_Authoring && !m_Authoring->Require(EditorAction::EditAsset))return false;
 		if (m_ProjectPath.empty()) return ActionFailed("Open a project before saving it");
-		if (!Project::SaveActive(m_ProjectPath)) return ActionFailed("Cannot save project: " + m_ProjectPath.generic_u8string());
+		try {
+            if(m_ProjectFile.Path()!=std::filesystem::absolute(m_ProjectPath).lexically_normal())throw std::runtime_error("Project document identity changed; reopen before saving");
+            m_ProjectFile.Save(ProjectSerializer(Project::GetActive()).SerializeText(),Resources::Get().UserData/"recovery");
+            m_ProjectLoad.Saved();
+            if(!m_ProjectFile.Backup().empty())HZ_INFO("Original project preserved at {}",m_ProjectFile.Backup().generic_u8string());
+        }catch(const std::exception& error){return ActionFailed(error.what());}
 		m_ActionError.clear(); return true;
 	}
 
 	void EditorLayer::NewScene()
 	{
+        if(m_Authoring && !m_Authoring->Require(EditorAction::ReplaceScene))return;
 		if (m_SceneState != SceneState::Edit) OnSceneStop();
 		ClearSceneObservers();
 		m_EditorScene = CreateRef<Scene>(); m_ActiveScene = m_EditorScene;
+        if(Project::GetActive())m_EditorScene->SetAssets(Project::GetActive()->GetAssets());
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-		m_EditorScenePath.clear(); m_ActionError.clear();
+		m_EditorScenePath.clear(); m_SceneFile={};m_SceneLoad={};m_ActionError.clear();
+        if(m_Authoring)m_Authoring->MarkSceneSaved();
 	}
 
 	bool EditorLayer::OpenScene()
@@ -694,82 +568,158 @@ namespace Hazel {
 		return !path.empty() && OpenScene(std::filesystem::u8path(path));
 	}
 
-	bool EditorLayer::OpenScene(const std::filesystem::path& path)
-	{
-		try {
-			if (path.extension() != ".hazel") return ActionFailed("Scene must be a .hazel file: " + path.generic_u8string());
-			auto scene = CreateRef<Scene>();
-			scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-			if (!SceneSerializer(scene).Deserialize(path.generic_u8string())) return ActionFailed("Cannot load scene/assets: " + path.generic_u8string());
-			if (m_SceneState != SceneState::Edit) OnSceneStop();
-			ClearSceneObservers();
-			m_EditorScene = scene; m_ActiveScene = scene; m_EditorScenePath = path;
-			m_SceneHierarchyPanel.SetContext(scene); m_ActionError.clear();
-			return true;
-		} catch (const std::runtime_error& error) {
-			return ActionFailed("Open scene '" + path.generic_u8string() + "': " + error.what());
-		}
-	}
+    bool EditorLayer::OpenScene(const std::filesystem::path& path)
+    {
+        if(m_Authoring && !m_Authoring->Require(EditorAction::ReplaceScene))return false;
+        m_OpenPath=std::filesystem::absolute(path).lexically_normal();m_OpenIsProject=false;m_OpenLoad={};
+        try {
+            if(path.extension()!=".hazel")throw std::runtime_error("Select a .hazel scene");
+            FileDocument file;file.Open(path);
+            auto scene=CreateRef<Scene>();
+            scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x),static_cast<uint32_t>(m_ViewportSize.y));
+            const auto assetRoot=Project::GetActive()?Project::GetAssetDirectory():std::filesystem::current_path();
+            // A candidate must not reuse stale failures or alter the retained session's cache.
+            auto candidateAssets=CreateRef<ProjectAssets>(assetRoot);
+            SceneSerializer loader(scene,assetRoot,true,candidateAssets);
+            if(!loader.DeserializeText(file.Original()))throw std::runtime_error(loader.Report().Error);
+            m_OpenLoad=loader.Report();
+            for(auto handle:scene->GetAllEntitiesWith<ScriptComponent>()) {
+                Entity entity(handle,scene.get());const auto& name=entity.GetComponent<ScriptComponent>().ClassName;
+                if(!name.empty() && !ScriptEngine::EntityClassExists(name))
+                    m_OpenLoad.Problems.push_back({entity.GetUUID(),"Script class","Unavailable class: "+name,{}});
+            }
+            if(!m_OpenLoad.Problems.empty())m_OpenLoad.State=DocumentLoadState::EditableWithProblems;
+            if(m_OpenLoad.Migration || !m_OpenLoad.Problems.empty())file.PreserveOriginal();
+            file.Check();
+            if(m_SceneState!=SceneState::Edit)OnSceneStop();
+            if(Project::GetActive()) {
+                // Keep shared save/assignment invalidation after successful staged Open.
+                auto assets=Project::GetActive()->GetAssets();assets->Refresh();scene->SetAssets(assets);
+            }
+            ClearSceneObservers();m_EditorScene=scene;m_ActiveScene=scene;m_EditorScenePath=std::filesystem::absolute(path).lexically_normal();
+            m_SceneFile=std::move(file);m_SceneLoad=m_OpenLoad;
+            m_SceneHierarchyPanel.SetContext(scene);m_ActionError.clear();
+            if(m_Authoring){m_Authoring->MarkSceneSaved();m_Authoring->SceneOpened();m_Authoring->ReportOpen(path,m_OpenLoad);}
+            return true;
+        }catch(const std::exception& error){
+            m_OpenLoad.State=DocumentLoadState::Rejected;m_OpenLoad.Error=error.what();
+            if(m_Authoring)m_Authoring->ReportOpen(path,m_OpenLoad);
+            return ActionFailed("Open scene '"+path.generic_u8string()+"': "+error.what());
+        }
+    }
 
 	bool EditorLayer::SaveScene()
 	{
+        if(m_Authoring && !m_Authoring->Require(EditorAction::SaveScene))return false;
 		return m_EditorScenePath.empty() ? SaveSceneAs() : SerializeScene(m_EditorScene, m_EditorScenePath);
 	}
 
 	bool EditorLayer::SaveSceneAs()
 	{
-		const auto path = FileDialogs::SaveFile("Hazel Scene (*.hazel)\0*.hazel\0");
+        if(m_Authoring && !m_Authoring->Require(EditorAction::SaveScene))return false;
+		m_ActionError.clear();
+        const auto path = FileDialogs::SaveFile("Hazel Scene (*.hazel)\0*.hazel\0");
 		if (path.empty()) return false;
 		if (!SerializeScene(m_EditorScene, std::filesystem::u8path(path))) return false;
-		m_EditorScenePath = std::filesystem::u8path(path); return true;
+		m_EditorScenePath = std::filesystem::u8path(path); if(m_Authoring)m_Authoring->SceneOpened(); return true;
 	}
 
 	bool EditorLayer::SerializeScene(Ref<Scene> scene, const std::filesystem::path& path)
 	{
-		try { SceneSerializer(scene).Serialize(path.generic_u8string()); m_ActionError.clear(); return true; }
+        if(m_Authoring && !m_Authoring->Require(EditorAction::SaveScene))return false;
+		try {
+            auto text=SceneSerializer(scene).SerializeText();
+            const auto target=std::filesystem::absolute(path).lexically_normal();
+            if(m_SceneFile.Path()==target) {
+                m_SceneFile.Save(text,Resources::Get().UserData/"recovery");
+                if(!m_SceneFile.Backup().empty())HZ_INFO("Original scene preserved at {}",m_SceneFile.Backup().generic_u8string());
+            } else {
+                // Save As's native dialog confirms existing destinations. Capture/check their accepted bytes.
+                FileDocument copy;
+                if(std::filesystem::exists(target)){copy.Open(target);copy.PreserveOriginal();copy.Save(text,Resources::Get().UserData/"recovery");}
+                else FileSystem::WriteFileAtomically(target,[&](auto& out){out<<text;},WriteMode::CreateNew);
+                if(scene==m_EditorScene){copy.Open(target);m_SceneFile=std::move(copy);}
+            }
+            if(scene==m_EditorScene) {
+                m_SceneLoad.Saved();
+                if(!m_OpenIsProject && m_OpenPath==m_SceneFile.Path() &&
+                   (m_OpenLoad.State==DocumentLoadState::Ready || m_OpenLoad.State==DocumentLoadState::EditableWithProblems))m_OpenLoad=m_SceneLoad;
+            }
+            if(m_Authoring)m_Authoring->MarkSceneSaved();
+            m_ActionError.clear();return true;
+        }
 		catch (const std::runtime_error& error) { return ActionFailed("Save scene '" + path.generic_u8string() + "': " + error.what()); }
 	}
 
 	bool EditorLayer::ReloadScripts()
 	{
-		try { ScriptEngine::ReloadAssembly(); m_ActionError.clear(); return true; }
+        if(m_Authoring && !m_Authoring->Require(EditorAction::ReloadScripts))return false;
+		try {
+            m_ProjectFile.Check();
+            if(ScriptEngine::IsInitialized())ScriptEngine::ReloadAssembly();
+            else {
+                if(!Project::GetActive())throw std::runtime_error("Open a project before initializing scripts");
+                ScriptEngine::Init(Project::GetAssetFileSystemPath(Project::GetActive()->GetConfig().ScriptModulePath));
+            }
+            m_ActionError.clear();return true;
+        }
 		catch (const std::runtime_error& error) { return ActionFailed(std::string("Reload scripts: ") + error.what()); }
 	}
 
-	void EditorLayer::OnScenePlay()
+	bool EditorLayer::OnScenePlay(bool useSavedAssets)
 	{
-		if (m_SceneState == SceneState::Play) return;
-		if (!ScriptEngine::IsInitialized() && !m_EditorScene->GetAllEntitiesWith<ScriptComponent>().empty()) {
-			ActionFailed("Open a valid script assembly before playing a scripted scene"); return;
-		}
+        if(m_Authoring && !m_Authoring->Require(EditorAction::Play))return false;
+        if(m_Authoring && !useSavedAssets){m_Authoring->GuardPlay(false);return m_SceneState==SceneState::Play;}
+		if (m_SceneState == SceneState::Play) return true;
 		try {
+            if(Project::GetActive())Project::GetActive()->GetAssets()->Refresh();
             if (m_SceneState != SceneState::Edit) OnSceneStop();
             m_RuntimeSession.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+            m_EditorSelection=uint64_t(m_SceneHierarchyPanel.GetSelectedEntity()?m_SceneHierarchyPanel.GetSelectedEntity().GetUUID():UUID(0));
             m_RuntimeSession.Start(Project::GetActive(), m_EditorScene);
+            try { if(m_Authoring)m_Authoring->ApplyRuntimeVSync(); }
+            catch(...) {m_RuntimeSession.Stop();throw;}
             ClearSceneObservers();
             m_ActiveScene = m_RuntimeSession.GetScene(); m_SceneState = SceneState::Play;
-            m_SceneHierarchyPanel.SetContext(m_ActiveScene); m_ActionError.clear();
-		} catch (const std::runtime_error& error) { ActionFailed(std::string("Play scene: ") + error.what()); }
+            m_SceneHierarchyPanel.SetContext(m_ActiveScene); m_ActionError.clear();return true;
+		} catch (const std::runtime_error& error) { return ActionFailed(std::string("Play scene: ") + error.what()); }
 	}
 
-	void EditorLayer::OnSceneSimulate()
+	bool EditorLayer::OnSceneSimulate(bool useSavedAssets)
 	{
+        if(m_Authoring && !m_Authoring->Require(EditorAction::Simulate))return false;
+        if(m_Authoring && !useSavedAssets){m_Authoring->GuardPlay(true);return m_SceneState==SceneState::Simulate;}
+        try {
+		if(Project::GetActive())Project::GetActive()->GetAssets()->Refresh();
 		auto scene = Scene::Copy(m_EditorScene);
+        RuntimeSession::Validate(scene, false);
+        if(Project::GetActive()) {
+            const auto reason=RendererPolicy::RestartReason(Project::GetActive()->GetRendererRequests(),Renderer::GetResolution(),Renderer::GetCapabilities());
+            if(!reason.empty())throw std::runtime_error(reason);
+        }
+        m_EditorSelection=uint64_t(m_SceneHierarchyPanel.GetSelectedEntity()?m_SceneHierarchyPanel.GetSelectedEntity().GetUUID():UUID(0));
 		scene->OnSimulationStart();
 		if (m_SceneState != SceneState::Edit) OnSceneStop();
+        try { if(m_Authoring)m_Authoring->ApplyRuntimeVSync(); }
+        catch(...) {scene->OnSimulationStop();throw;}
 		ClearSceneObservers();
 		m_ActiveScene = scene; m_SceneState = SceneState::Simulate;
-		m_SceneHierarchyPanel.SetContext(scene); m_ActionError.clear();
+		m_SceneHierarchyPanel.SetContext(scene); m_ActionError.clear();return true;
+        }catch(const std::exception& error){return ActionFailed(std::string("Simulate scene: ")+error.what());}
 	}
 
 	void EditorLayer::OnSceneStop()
 	{
+        if(m_SceneState==SceneState::Edit)return;
+        if(m_Authoring && !m_Authoring->Require(EditorAction::RuntimeControl))return;
 		HZ_CORE_ASSERT(m_SceneState == SceneState::Play || m_SceneState == SceneState::Simulate);
 		ClearSceneObservers();
 		if (m_SceneState == SceneState::Play) m_RuntimeSession.Stop();
 		else if (m_SceneState == SceneState::Simulate) m_ActiveScene->OnSimulationStop();
 		m_SceneState = SceneState::Edit; m_ActiveScene = m_EditorScene;
+        if(m_Authoring)m_Authoring->RestoreEditorVSync();
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        if(m_EditorSelection)m_SceneHierarchyPanel.SetSelectedEntity(m_EditorScene->GetEntityByUUID(m_EditorSelection));
 	}
 
 	void EditorLayer::OnScenePause()
@@ -782,15 +732,11 @@ namespace Hazel {
 
 	void EditorLayer::OnDuplicateEntity()
 	{
+        if(m_Authoring && !m_Authoring->Require(EditorAction::EditScene))return;
 		if (m_SceneState != SceneState::Edit)
 			return;
 
-		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-		if (selectedEntity)
-		{
-			Entity newEntity = m_EditorScene->DuplicateEntity(selectedEntity);
-			m_SceneHierarchyPanel.SetSelectedEntity(newEntity);
-		}
+        m_SceneHierarchyPanel.DuplicateSelected();
 	}
 
 }

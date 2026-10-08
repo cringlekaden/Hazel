@@ -89,3 +89,83 @@ namespace Migration {
         }
     }
 }
+
+namespace Migration {
+    public class MotionCameraProbe : Hazel.Entity {
+        public bool Passed;
+        void OnCreate() {
+            var body = GetComponent<Hazel.Rigidbody2DComponent>();
+            body.LinearVelocity = new Hazel.Vector2(2, 0);
+            Translation = new Hazel.Vector3(3, 4, 0);
+            var camera = FindEntityByName("Camera").GetComponent<Hazel.CameraComponent>();
+            camera.OrthographicSize = 12;
+            Passed = body.LinearVelocity.X == 2 && camera.OrthographicSize == 12 && camera.AspectRatio == 2;
+        }
+    }
+}
+namespace Migration {
+    public class LifecycleChild : Hazel.Entity {
+        public int Creates, Updates;
+        public float InitialX, InitialVelocityX;
+        public bool BodyReady;
+        void OnCreate() { Creates++;InitialX=Translation.X;var body=GetComponent<Hazel.Rigidbody2DComponent>();InitialVelocityX=body.LinearVelocity.X;BodyReady=true; }
+        void OnUpdate(float dt) { Updates++; }
+        void OnDestroy() { System.Console.WriteLine("LIFECYCLE: child destroyed"); }
+    }
+    public class LifecycleSpawner : Hazel.Entity {
+        public Hazel.Prefab Child;
+        public int Updates;
+        public bool InvalidatedImmediately;
+        private Hazel.Entity spawned;
+        void OnUpdate(float dt) {
+            Updates++;
+            if(Updates==1) {
+                spawned=Hazel.Entity.Instantiate(Child,new Hazel.Vector3(7,3,0));
+                spawned.GetComponent<Hazel.Rigidbody2DComponent>().LinearVelocity=new Hazel.Vector2(1,0);
+            }
+            if(Updates==2) { spawned.Destroy();spawned.Destroy();InvalidatedImmediately=!spawned.IsValid; }
+            if(Updates==3) { Destroy();Destroy(); }
+        }
+        void OnDestroy() { System.Console.WriteLine("LIFECYCLE: spawner destroyed"); }
+    }
+}
+namespace Migration {
+    public class SpriteProbe : Hazel.Entity {
+        public Hazel.Sprite Icon;
+        public Hazel.SpriteAnimation Clip;
+        public bool Passed, Finished;
+        void OnCreate() {
+            GetComponent<Hazel.SpriteRendererComponent>().SetSprite(Icon);
+            var animation=GetComponent<Hazel.SpriteAnimationComponent>();
+            animation.Play(Clip);animation.Pause();
+            if(animation.IsPlaying)throw new System.Exception("Pause did not stop playback");
+            animation.Resume();if(!animation.IsPlaying)throw new System.Exception("Resume did not start playback");
+            animation.Stop();if(animation.IsPlaying || animation.IsFinished)throw new System.Exception("Stop did not reset playback");
+            animation.Play(Clip);Passed=true;
+        }
+        void OnUpdate(float timestep) {Finished=GetComponent<Hazel.SpriteAnimationComponent>().IsFinished;}
+    }
+}
+
+namespace Migration {
+    public class HierarchyProbe : Hazel.Entity {
+        public Hazel.Entity ExpectedParent;
+        public Hazel.Vector3 WorldBefore, LocalBefore, MovedWorld;
+        public bool ParentMatched, MatrixMatched, QueuedGraphRetained, Detached;
+        public int RequestStatus = -1, Updates;
+        private Hazel.ParentingRequest request;
+        void OnCreate() {
+            WorldBefore = Translation; LocalBefore = LocalTranslation;
+            ParentMatched = Parent != null && ExpectedParent != null && Parent.ID == ExpectedParent.ID;
+            MatrixMatched = WorldMatrix.Position.X == Translation.X && WorldMatrix.Position.Y == Translation.Y;
+        }
+        void OnUpdate(float dt) {
+            if (Updates++ == 0) {
+                Translation = new Hazel.Vector3(WorldBefore.X + 1, WorldBefore.Y, WorldBefore.Z);
+                MovedWorld = Translation;
+                request = Detach(Hazel.ParentingMode.KeepWorld);
+                QueuedGraphRetained = Parent != null && request.Status == Hazel.ParentingStatus.Pending;
+            } else { Detached = Parent == null; RequestStatus = (int)request.Status; }
+        }
+    }
+}

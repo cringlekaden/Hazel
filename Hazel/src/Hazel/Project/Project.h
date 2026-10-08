@@ -5,15 +5,22 @@
 #include <filesystem>
 #include <stdexcept>
 #include <vector>
+#include <optional>
+#include "Hazel/Renderer/RendererPolicy.h"
 
 #include "Hazel/Core/Base.h"
+#include "Hazel/Core/DocumentLoadReport.h"
 
 namespace Hazel {
     class Scene;
+    class ProjectAssets;
 
 	struct ProjectConfig
 	{
 		std::string Name = "Untitled";
+        std::string ScriptProject;
+        std::optional<RuntimeRendererRequests> Rendering;
+        int AuthoringVersion=0; // Existing projects remain unstamped; no template rewrite.
 
 		std::filesystem::path StartScene;
 
@@ -44,13 +51,17 @@ namespace Hazel {
 		}
 
 		static std::filesystem::path NormalizeAssetPath(const std::filesystem::path& path);
+		static std::filesystem::path ResolveOwnedAsset(const std::filesystem::path& root, const std::filesystem::path& reference);
 		static std::filesystem::path ResolveAssetPath(const std::filesystem::path& assetRoot, const std::filesystem::path& reference);
 		static std::filesystem::path MakeAssetReference(const std::filesystem::path& assetRoot, const std::filesystem::path& loadedPath);
 		std::filesystem::path GetAssetRoot() const { return m_ProjectDirectory / m_Config.AssetDirectory; }
 
 		Ref<Scene> LoadScene(const std::filesystem::path& assetReference) const;
+		Ref<ProjectAssets> GetAssets() const;
+        void ReleaseAssets() {m_Assets.reset();}
 
         ProjectConfig& GetConfig() { return m_Config; }
+        RuntimeRendererRequests GetRendererRequests() const { return m_Config.Rendering.value_or(RuntimeRendererRequests{}); }
 
 		static Ref<Project> GetActive() { return s_ActiveProject; }
 
@@ -58,12 +69,13 @@ namespace Hazel {
         static std::vector<std::filesystem::path> Discover(const std::filesystem::path& directory);
 		static Ref<Project> New();
 		static Ref<Project> Load(const std::filesystem::path& path);
-		static Ref<Project> LoadCandidate(const std::filesystem::path& path);
+		static Ref<Project> LoadCandidate(const std::filesystem::path& path, DocumentLoadReport* report = nullptr);
 		static void SetActive(const Ref<Project>& project) { s_ActiveProject = project; }
 		static bool SaveActive(const std::filesystem::path& path);
 	private:
 		ProjectConfig m_Config;
 		std::filesystem::path m_ProjectDirectory;
+		mutable Ref<ProjectAssets> m_Assets;
 
 		inline static Ref<Project> s_ActiveProject;
 	};

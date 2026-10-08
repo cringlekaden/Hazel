@@ -406,16 +406,22 @@ namespace Hazel {
 
 	void Renderer2D::DrawQuad(const glm::mat4& transform, const Ref<Texture2D>& texture, float tilingFactor, const glm::vec4& tintColor, int entityID)
 	{
+        ResolvedSprite sprite; sprite.Texture=texture; sprite.TilingFactor=tilingFactor;
+        DrawSprite(transform,sprite,tintColor,entityID);
+    }
+
+    void Renderer2D::DrawSprite(const glm::mat4& transform, const ResolvedSprite& sprite, const glm::vec4& tintColor, int entityID)
+	{
 		HZ_PROFILE_FUNCTION();
+        const auto& texture=sprite.Texture;
 
 		constexpr size_t quadVertexCount = 4;
-		constexpr glm::vec2 textureCoords[] = { { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } };
 
 		if (s_Data->QuadIndexCount >= Renderer2DData::MaxIndices)
 			NextBatch();
 
 		float textureIndex = 0.0f;
-		for (uint32_t i = 1; i < s_Data->TextureSlotIndex; i++)
+		for (uint32_t i = 1; texture && i < s_Data->TextureSlotIndex; i++)
 		{
 			if (*s_Data->TextureSlots[i] == *texture)
 			{
@@ -424,7 +430,7 @@ namespace Hazel {
 			}
 		}
 
-		if (textureIndex == 0.0f)
+		if (texture && textureIndex == 0.0f)
 		{
 			if (s_Data->TextureSlotIndex >= s_Data->TextureSlotLimit)
 				NextBatch();
@@ -436,11 +442,11 @@ namespace Hazel {
 
 		for (size_t i = 0; i < quadVertexCount; i++)
 		{
-			s_Data->QuadVertexBufferPtr->Position = transform * s_Data->QuadVertexPositions[i];
+			s_Data->QuadVertexBufferPtr->Position = transform * glm::vec4(sprite.Corners[i],0,1);
 			s_Data->QuadVertexBufferPtr->Color = tintColor;
-			s_Data->QuadVertexBufferPtr->TexCoord = textureCoords[i];
+			s_Data->QuadVertexBufferPtr->TexCoord = sprite.UV[i];
 			s_Data->QuadVertexBufferPtr->TexIndex = textureIndex;
-			s_Data->QuadVertexBufferPtr->TilingFactor = tilingFactor;
+			s_Data->QuadVertexBufferPtr->TilingFactor = sprite.TilingFactor;
 			s_Data->QuadVertexBufferPtr->EntityID = entityID;
 			s_Data->QuadVertexBufferPtr++;
 		}
@@ -549,8 +555,8 @@ namespace Hazel {
 
 	void Renderer2D::DrawSprite(const glm::mat4& transform, SpriteRendererComponent& src, int entityID)
 	{
-		if (src.Texture)
-			DrawQuad(transform, src.Texture, src.TilingFactor, src.Color, entityID);
+		if (src.Resolved.Data)
+			DrawSprite(transform, *src.Resolved.Data, src.Color, entityID);
 		else
 			DrawQuad(transform, src.Color, entityID);
 	}
@@ -697,6 +703,7 @@ namespace Hazel {
 		s_Data->Stats = {};
 	}
 
+	Shader::ProgramLoadingPath Renderer2D::GetQuadShaderLoadingPath() { if(!s_Data || !s_Data->QuadShader)throw std::logic_error("Renderer2D shaders are not initialized"); return s_Data->QuadShader->GetProgramLoadingPath(); }
 	Renderer2D::Statistics Renderer2D::GetStats()
 	{
 		return s_Data->Stats;

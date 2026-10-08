@@ -5,6 +5,8 @@
 
 #include <string>
 #include <cstdint>
+#include <vector>
+#include <filesystem>
 
 namespace Hazel {
 
@@ -17,12 +19,31 @@ namespace Hazel {
 		RGBA32F
 	};
 
+	enum class TextureFilter { Nearest, Linear, NearestMipmapNearest, LinearMipmapNearest, NearestMipmapLinear, LinearMipmapLinear };
+	enum class TextureWrap { Repeat, ClampToEdge, MirroredRepeat };
+	const char* TextureFilterName(TextureFilter value);
+	const char* TextureWrapName(TextureWrap value);
+	TextureFilter ParseTextureFilter(const std::string& value);
+	TextureWrap ParseTextureWrap(const std::string& value);
+
 	struct TextureSpecification
 	{
 		uint32_t Width = 1;
 		uint32_t Height = 1;
 		ImageFormat Format = ImageFormat::RGBA8;
 		bool GenerateMips = true;
+		TextureFilter MinFilter = TextureFilter::LinearMipmapLinear;
+		TextureFilter MagFilter = TextureFilter::Nearest;
+		TextureWrap WrapS = TextureWrap::Repeat, WrapT = TextureWrap::Repeat;
+		void Validate(bool file = false) const;
+		static TextureSpecification FileDefaults(); // zero dimensions/None format infer decoded values
+	};
+
+	// Shared file decode: top-left rows, linear UNORM bytes. No sRGB conversion.
+	struct TextureImage {
+		uint32_t Width = 0, Height = 0;
+		ImageFormat Format = ImageFormat::None;
+		std::vector<uint8_t> Pixels;
 	};
 
 	class Texture
@@ -54,6 +75,8 @@ namespace Hazel {
 		static Ref<Texture2D> Create(const TextureSpecification& specification);
         static Ref<Texture2D> Create(uint32_t width, uint32_t height);
 		static Ref<Texture2D> Create(const std::string& path);
+		static Ref<Texture2D> Create(const std::string& path, const TextureSpecification& specification);
+		static TextureImage ReadImage(const std::filesystem::path& path, ImageFormat format = ImageFormat::None);
 	};
 
 }

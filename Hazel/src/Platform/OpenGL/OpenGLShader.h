@@ -16,8 +16,8 @@ namespace Hazel {
 	class OpenGLShader : public Shader
 	{
 	public:
-        enum class ProgramLoadingPath { LegacyGLSL, GeneratedGLSL, SPIRV };
-        ProgramLoadingPath GetProgramLoadingPath() const { return m_LoadingPath; }
+        using ProgramLoadingPath = Shader::ProgramLoadingPath;
+        ProgramLoadingPath GetProgramLoadingPath() const override { return m_LoadingPath; }
 		OpenGLShader(const std::string& filepath);
 		OpenGLShader(const std::string& name, const std::string& vertexSrc, const std::string& fragmentSrc);
 		virtual ~OpenGLShader();

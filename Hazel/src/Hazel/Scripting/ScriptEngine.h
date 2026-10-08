@@ -24,6 +24,16 @@ extern "C" {
 
 namespace Hazel {
 	struct ScriptEngineData;
+    class ScriptAssemblyCandidate
+    {
+    public:
+        ~ScriptAssemblyCandidate();
+    private:
+        ScriptAssemblyCandidate();
+        Scope<ScriptEngineData> m_Data;
+        uint64_t m_Generation=0;
+        friend class ScriptEngine;
+    };
     class RuntimeSession;
 
 
@@ -56,6 +66,7 @@ namespace Hazel {
 		~ScriptInstance();
 
 		void InvokeOnCreate();
+        void InvokeOnDestroy();
 		void InvokeOnUpdate(float ts);
 
 		Ref<ScriptClass> GetScriptClass() { return m_ScriptClass; }
@@ -95,6 +106,8 @@ namespace Hazel {
 		MonoMethod* m_Constructor = nullptr;
 		MonoMethod* m_OnCreateMethod = nullptr;
 		MonoMethod* m_OnUpdateMethod = nullptr;
+        MonoMethod* m_OnDestroyMethod = nullptr;
+        bool m_Created = false;
 
 
 		friend class ScriptEngine;
@@ -105,7 +118,11 @@ namespace Hazel {
 	{
 	public:
 		static void Init(const std::filesystem::path& applicationAssembly = {}, const std::function<void()>& beforeReplacement = {});
+        static Scope<ScriptAssemblyCandidate> StageAssembly(const std::filesystem::path& applicationAssembly);
+        static void CommitAssembly(Scope<ScriptAssemblyCandidate> candidate,const std::function<void()>& beforeReplacement = {});
 		static void Shutdown();
+        // Retire project metadata/watcher while keeping Mono's root reusable.
+        static void ClearApplicationAssembly();
 		static bool IsInitialized();
 
 		static bool LoadAssembly(const std::filesystem::path& filepath);
@@ -175,6 +192,9 @@ namespace Hazel {
 				case ScriptFieldType::Vector3: return "Vector3";
 				case ScriptFieldType::Vector4: return "Vector4";
 				case ScriptFieldType::Entity:  return "Entity";
+                case ScriptFieldType::Prefab: return "Prefab";
+                case ScriptFieldType::Sprite: return "Sprite";
+                case ScriptFieldType::SpriteAnimation: return "SpriteAnimation";
 			}
 			HZ_CORE_ASSERT(false, "Unknown ScriptFieldType");
 			return "None";
@@ -199,6 +219,9 @@ namespace Hazel {
 			if (fieldType == "Vector3") return ScriptFieldType::Vector3;
 			if (fieldType == "Vector4") return ScriptFieldType::Vector4;
 			if (fieldType == "Entity")  return ScriptFieldType::Entity;
+            if (fieldType == "Prefab") return ScriptFieldType::Prefab;
+            if (fieldType == "Sprite") return ScriptFieldType::Sprite;
+            if (fieldType == "SpriteAnimation") return ScriptFieldType::SpriteAnimation;
 
 			throw std::invalid_argument("Unknown stored ScriptFieldType: " + std::string(fieldType));
 		}

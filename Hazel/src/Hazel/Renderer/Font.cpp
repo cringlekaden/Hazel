@@ -46,7 +46,7 @@ namespace Hazel {
 		spec.Width = bitmap.width;
 		spec.Height = bitmap.height;
 		spec.Format = ImageFormat::RGB8;
-		spec.GenerateMips = false;
+		spec.GenerateMips = false; spec.MinFilter = TextureFilter::Linear;
 
 		Ref<Texture2D> texture = Texture2D::Create(spec);
 		texture->SetData(bitmap.pixels, bitmap.width * bitmap.height * 3);

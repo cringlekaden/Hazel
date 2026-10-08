@@ -9,6 +9,7 @@ namespace Hazel {
 		static void RegisterComponents();
 		static void ValidateComponents(MonoImage* image);
 		static void RegisterFunctions();
+        static void RegisterHierarchyFunctions();
 	};
 
 }

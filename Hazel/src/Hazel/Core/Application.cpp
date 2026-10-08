@@ -5,6 +5,7 @@
 #include "Hazel/Core/Log.h"
 
 #include "Hazel/Renderer/Renderer.h"
+#include "Hazel/Project/Project.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 
 #include "Hazel/Core/Input.h"
@@ -29,6 +30,8 @@ namespace Hazel {
 
 			m_Window = Window::Create(WindowProps(m_Specification.Name));
 			m_Window->SetEventCallback(HZ_BIND_EVENT_FN(Application::OnEvent));
+            m_Window->SetVSync(m_Specification.WindowVSync);
+            HZ_CORE_INFO("Main-window requested swap interval: {} (submitted; driver/compositor timing unmeasured)",m_Specification.WindowVSync?1:0);
 
 			Renderer::Init(m_Specification.Rendering);
 
@@ -54,6 +57,7 @@ namespace Hazel {
 
 	void Application::ShutdownResources()
 	{
+        m_BackgroundTick={};m_CloseRequest={};
         // Cancel pending captures while their renderer/context resources remain valid.
         std::vector<std::function<void()>> cancelled;
         {
@@ -71,6 +75,9 @@ namespace Hazel {
 			cancelled.swap(m_MainThreadQueue);
 		}
 		cancelled.clear();
+        // Project caches now own textures: release them before the graphics context.
+        if(auto project=Project::GetActive())project->ReleaseAssets();
+        Project::SetActive(nullptr);
 		Renderer::Shutdown();
         m_Window.reset();
         s_Instance = nullptr;
@@ -133,6 +140,8 @@ namespace Hazel {
 			m_LastFrameTime = time;
 
 			ExecuteMainThreadQueue();
+            if(m_BackgroundTick)m_BackgroundTick();
+            if(!m_Running)break;
 
 			if (!m_Minimized)
 			{
@@ -161,6 +170,7 @@ namespace Hazel {
 
 	bool Application::OnWindowClose(WindowCloseEvent&)
 	{
+        if(m_CloseRequest) {m_CloseRequest();return true;}
 		m_Running = false;
 		return true;
 	}

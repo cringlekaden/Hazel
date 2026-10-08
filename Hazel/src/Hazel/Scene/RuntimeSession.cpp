@@ -3,6 +3,8 @@
 #include "Scene.h"
 #include "Entity.h"
 #include "Hazel/Project/Project.h"
+#include "Hazel/Core/Application.h"
+#include "Hazel/Renderer/Renderer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include <glm/gtc/matrix_inverse.hpp>
 #include <cmath>
@@ -14,46 +16,26 @@ namespace Hazel {
     void RuntimeSession::CheckThread() const {
         if (std::this_thread::get_id() != m_Thread) throw std::logic_error("RuntimeSession requires its main thread");
     }
-    void RuntimeSession::Validate(const Ref<Scene>& scene) const {
+    void RuntimeSession::Validate(const Ref<Scene>& scene, bool validateScripts) {
         if (!scene) throw std::runtime_error("No scene to run");
-        // Validate Box2D preconditions while the old scene is still usable.
-        for (auto handle : scene->GetAllEntitiesWith<TransformComponent, Rigidbody2DComponent>()) {
-            Entity entity(handle, scene.get());
-            const auto type = entity.GetComponent<Rigidbody2DComponent>().Type;
-            if (type != Rigidbody2DComponent::BodyType::Static && type != Rigidbody2DComponent::BodyType::Dynamic && type != Rigidbody2DComponent::BodyType::Kinematic)
-                throw std::runtime_error("Invalid physics body type: " + entity.GetName());
-            const auto& transform = entity.GetComponent<TransformComponent>();
-            for (int axis = 0; axis < 3; ++axis)
-                if (!std::isfinite(transform.Translation[axis]) || !std::isfinite(transform.Rotation[axis]) || !std::isfinite(transform.Scale[axis]))
-                    throw std::runtime_error("Non-finite physics transform: " + entity.GetName());
-            auto material = [&](float density, float friction, float restitution, float threshold) {
-                if (!std::isfinite(density) || !std::isfinite(friction) || !std::isfinite(restitution) || !std::isfinite(threshold) ||
-                    density < 0 || friction < 0 || restitution < 0 || threshold < 0)
-                    throw std::runtime_error("Invalid physics material: " + entity.GetName());
-            };
-            if (entity.HasComponent<BoxCollider2DComponent>()) {
-                const auto& box = entity.GetComponent<BoxCollider2DComponent>();
-                material(box.Density, box.Friction, box.Restitution, box.RestitutionThreshold);
-                if (!std::isfinite(box.Size.x) || !std::isfinite(box.Size.y) || !std::isfinite(box.Offset.x) || !std::isfinite(box.Offset.y) ||
-                    !std::isfinite(box.Size.x*transform.Scale.x) || !std::isfinite(box.Size.y*transform.Scale.y) || box.Size.x*transform.Scale.x <= 0 || box.Size.y*transform.Scale.y <= 0)
-                    throw std::runtime_error("Invalid box collider size/offset: " + entity.GetName());
-            }
-            if (entity.HasComponent<CircleCollider2DComponent>()) {
-                const auto& circle = entity.GetComponent<CircleCollider2DComponent>();
-                material(circle.Density, circle.Friction, circle.Restitution, circle.RestitutionThreshold);
-                if (!std::isfinite(circle.Radius) || !std::isfinite(circle.Offset.x) || !std::isfinite(circle.Offset.y) || !std::isfinite(circle.Radius*transform.Scale.x) || circle.Radius*transform.Scale.x <= 0)
-                    throw std::runtime_error("Invalid circle collider radius/offset: " + entity.GetName());
-            }
-        }
-        for (auto handle : scene->GetAllEntitiesWith<ScriptComponent>()) {
+        scene->ValidateSprites();
+        scene->ValidateHierarchy(); // Shared roots, planar dimensions, graph/world and physics validation.
+        if (validateScripts) for (auto handle : scene->GetAllEntitiesWith<ScriptComponent>()) {
             const auto& script = Entity(handle, scene.get()).GetComponent<ScriptComponent>();
-            if (!ScriptEngine::EntityClassExists(script.ClassName))
+            if (!script.ClassName.empty() && !ScriptEngine::EntityClassExists(script.ClassName))
                 throw std::runtime_error("Runtime script class is unavailable: " + script.ClassName);
         }
     }
     void RuntimeSession::Start(const Ref<Project>& project, const Ref<Scene>& authoredScene) {
         CheckThread();
         if (m_Updating || m_Stopping) throw std::logic_error("Cannot start a session inside its update/stop");
+        if(project) {
+            RendererPolicy::Validate(project->GetRendererRequests());
+            if(Application::TryGet()) {
+                const auto reason=RendererPolicy::RestartReason(project->GetRendererRequests(),Renderer::GetResolution(),Renderer::GetCapabilities());
+                if(!reason.empty())throw std::runtime_error(reason);
+            }
+        }
         Validate(authoredScene);
         auto scene = Scene::Copy(authoredScene);
         if (auto* current = ScriptEngine::GetRuntimeSession(); current && current != this)
@@ -140,7 +122,7 @@ namespace Hazel {
         if (!m_Scene || !m_InputEnabled || !m_Width || !m_Height || m_Mouse.x < 0 || m_Mouse.y < 0 || m_Mouse.x >= m_Width || m_Mouse.y >= m_Height) return false;
         auto camera = m_Scene->GetPrimaryCameraEntity();
         if (!camera) return false;
-        const auto transform = camera.GetComponent<TransformComponent>().GetTransform();
+        const auto transform = m_Scene->GetWorldTransform(camera);
         const auto viewProjection = camera.GetComponent<CameraComponent>().Camera.GetProjection() * glm::inverse(transform);
         const auto inverse = glm::inverse(viewProjection);
         glm::vec4 rayNear = inverse * glm::vec4(2*m_Mouse.x/m_Width-1, 1-2*m_Mouse.y/m_Height, -1, 1);

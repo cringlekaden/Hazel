@@ -3,6 +3,17 @@
 #endif
 // Real pinned EditorLayer/panels in Application; files and layout are isolated.
 #include "EditorLayer.h"
+#include "UI/PropertyUI.h"
+#include "Hazel/Core/FileSystem.h"
+#include "Authoring/EditorPreferences.h"
+#include "Hazel/Core/WindowCaption.h"
+#include "Authoring/RendererLaunch.h"
+#include "Authoring/AuthoringPanel.h"
+#include "Hazel/Utils/Toolchain.h"
+#include "Hazel/Utils/Process.h"
+#include "Hazel/Scene/Prefab.h"
+#include "Hazel/Project/ScriptSource.h"
+#include "Hazel/Project/ProjectCreation.h"
 #include "ContentBrowserPayload.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
@@ -10,14 +21,26 @@
 #include "Hazel/Project/ProjectSerializer.h"
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <backends/imgui_impl_opengl3.h>
 #include <ImGuizmo.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#ifdef HZ_PLATFORM_WINDOWS
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#endif
 #include <filesystem>
+#include <yaml-cpp/yaml.h>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
+#include <thread>
 #include <random>
 #include <stdexcept>
+#ifdef HZ_PLATFORM_LINUX
+#include <fcntl.h>
+#include <unistd.h>
+#endif
 #ifdef HZ_PLATFORM_WINDOWS
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -27,6 +50,11 @@ static void Check(bool condition, const char* message) { if (!condition) throw s
 static std::string Read(const std::filesystem::path& file) {
     std::ifstream input(file,std::ios::binary); return {std::istreambuf_iterator<char>(input),{}};
 }
+}
+#include "EditorStateChecks.h"
+#include "EditorDocumentChecks.h"
+#include "EditorConsoleChecks.h"
+namespace Hazel {
 class EditorWorkflowSmoke : public Layer {
 public:
     EditorWorkflowSmoke(EditorLayer& editor, std::filesystem::path directory, bool& done)
@@ -36,6 +64,21 @@ public:
         switch (++m_Frame) {
         case 3: {
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project/assembly startup failed");
+            EditorDocumentChecks();
+            CaptionChecks();
+            WorkspaceChecks();
+            NativeCreationChecks();
+            RecoveryChecks();
+            RenderingChecks();
+            HierarchyAuthoringChecks();
+            AuthoringChecks();
+            SDKChecks();
+            EditorConsoleChecks(m_Directory);
+            Check(!ImGui::FindWindowByName("Console"),"Console opened unexpectedly and stole an error field's focus");
+            auto* legacy=ImGui::FindWindowSettingsByID(ImHashStr("Output"));
+            if(!legacy)legacy=ImGui::CreateNewWindowSettings("Output");
+            legacy->DockId=ImGui::FindWindowByName("Stats")->DockId;legacy->DockOrder=2;
+            e.m_Authoring->ShowConsole();
             auto* viewport = ImGui::FindWindowByName("Viewport");
             Check(viewport && viewport->DockId && e.m_ViewportSize.x > 0 && e.m_ViewportSize.y > 0, "Docked editor viewport missing");
             auto oldScene=e.m_ActiveScene;
@@ -81,41 +124,84 @@ public:
                   saved.find("AuthoringProject/Assets/Textures")==std::string::npos,"Project texture was not asset-root relative");
             Check(saved.find((m_Directory/"assets/textures/Checkerboard.png").generic_u8string())!=std::string::npos,
                   "External absolute reference was discarded");
+            const auto python=Toolchain::DiscoverPython();
+            auto& a=*e.m_Authoring;ToolRequest probe{python.Executable,{},e.m_ProjectPath,{},"Minimized completion"};
+            probe.Generation=a.m_ProjectGeneration;
+            Check(a.m_Tools.Start(std::move(probe)),"Minimized completion fixture did not start");
+            m_MinimizedStart=std::chrono::steady_clock::now();
+            WindowResizeEvent minimized(0,0);Application::Get().OnEvent(minimized);
+            Application::Get().SubmitToMainThread([this]{CheckMinimizedCompletion();});
             break;
         }
         case 4: {
+            auto* console=ImGui::FindWindowByName("Console");
+            Check(console&&console->Active&&console->DockId==ImGui::FindWindowByName("Stats")->DockId,
+                  "Console lost legacy Output docking settings");
             auto file = e.m_EditorScenePath; e.NewScene(); Check(e.OpenScene(file),"OpenScene reported failure");
             auto player = e.m_EditorScene->GetEntityByUUID(901);
-            Check(player && player.GetComponent<SpriteRendererComponent>().Texture->IsLoaded(), "Editor save/reopen/texture failed");
+            Check(player && player.GetComponent<SpriteRendererComponent>().Resolved.Data->Texture->IsLoaded(), "Editor save/reopen/texture failed");
             e.m_SceneHierarchyPanel.SetSelectedEntity(player);
             KeyPressedEvent event(Key::W); e.OnKeyPressed(event);
-            Check(e.m_GizmoType == ImGuizmo::TRANSLATE, "Translate shortcut failed");
+            Check(e.m_GizmoType == -1, "Unfocused native key event bypassed ImGui shortcut ownership");
             e.m_ShowPhysicsColliders = true;
             // Original upstream Windows separators remain readable on Linux too.
             e.m_HoveredEntity=player;
             Check(e.OpenScene(m_Directory/"AuthoringProject/Assets/Scenes/Example.hazel"),"Legacy Windows-separated texture reference failed");
             Check(!e.m_HoveredEntity && !e.m_SceneHierarchyPanel.SetSelectedEntity(player),"OpenScene retained retired observations");
             Check(e.OpenScene(file),"Authored scene reopen failed");
+            const auto focused=ImGui::GetCurrentContext()->NavWindow;
             FailureChecks();
+            Check(ImGui::GetCurrentContext()->NavWindow==focused,"Authoring failure stole keyboard focus");
+            ImGui::SetWindowFocus("Viewport");
+            // Deliver the fixture's paired release/press in one frame. Production
+            // keeps ImGui's normal event trickling; there is no timing/click driver.
+            m_Trickle=ImGui::GetIO().ConfigInputTrickleEventQueue;
+            ImGui::GetIO().ConfigInputTrickleEventQueue=false;
+            ImGui::GetIO().AddKeyEvent(ImGuiKey_W,true);
             break;
         }
         case 5: {
             KeyPressedEvent event(Key::E); e.OnKeyPressed(event);
-            Check(e.m_GizmoType == ImGuizmo::ROTATE, "Rotate shortcut failed");
+            Check(e.m_GizmoType == ImGuizmo::TRANSLATE, "Native key event bypassed focused commands");
+            ImGui::SetWindowFocus("Viewport");
+            ImGui::GetIO().AddKeyEvent(ImGuiKey_W,false);
+            ImGui::GetIO().AddKeyEvent(ImGuiKey_E,true);
             break;
         }
         case 6: {
             KeyPressedEvent event(Key::R); e.OnKeyPressed(event);
-            Check(e.m_GizmoType == ImGuizmo::SCALE, "Scale shortcut failed");
+            if(e.m_GizmoType!=ImGuizmo::ROTATE)
+                std::cerr<<"Shortcut evidence: gizmo="<<e.m_GizmoType<<" viewport="<<e.m_ViewportFocused
+                         <<" text="<<ImGui::GetIO().WantTextInput<<" active="<<ImGui::IsAnyItemActive()
+                         <<" E="<<ImGui::IsKeyPressed(ImGuiKey_E,false)<<" ctrl="<<ImGui::GetIO().KeyCtrl
+                         <<" popup="<<ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId)
+                         <<" gizmoUsing="<<ImGuizmo::IsUsing()<<"\n";
+            Check(e.m_GizmoType == ImGuizmo::ROTATE, "Focused ImGui E did not select rotation");
+            auto& io=ImGui::GetIO();
+            e.m_GizmoType=ImGuizmo::SCALE;
+            const bool textInput=io.WantTextInput;io.WantTextInput=true;
+            e.m_Authoring->Shortcuts();
+            Check(e.m_GizmoType==ImGuizmo::SCALE,"Text input allowed an editor shortcut");
+            io.WantTextInput=textInput;
+            ImGui::SetWindowFocus("Console");e.m_ViewportFocused=true;
+            e.m_Authoring->Shortcuts();
+            Check(e.m_GizmoType==ImGuizmo::SCALE,"Stale viewport observation bypassed current panel focus");
+            ImGui::SetWindowFocus("Viewport");e.m_ViewportFocused=false;
+            e.m_Authoring->Shortcuts();
+            Check(e.m_GizmoType==ImGuizmo::ROTATE,"Current viewport focus was ignored");
+            e.m_GizmoType=ImGuizmo::SCALE;e.m_ViewportFocused=true;
+            io.ConfigInputTrickleEventQueue=m_Trickle;
+            io.AddKeyEvent(ImGuiKey_E,false);
             auto authored=e.m_EditorScene->GetEntityByUUID(901); e.m_HoveredEntity=authored;
-            e.OnScenePlay(); Check(e.m_ActiveScene != e.m_EditorScene && e.m_ActiveScene->IsRunning(), "Editor play failed");
+            Check(e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::Play),"Runtime toolbar Play failed"); Check(e.m_ActiveScene != e.m_EditorScene && e.m_ActiveScene->IsRunning(), "Editor play failed");
             Check(!e.m_HoveredEntity && !e.m_SceneHierarchyPanel.SetSelectedEntity(authored),"Play retained editor observations");
-            e.OnScenePause();
+            Check(!e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::Step),"Unpaused toolbar Step was allowed");
+            Check(e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::TogglePause),"Runtime toolbar Pause failed");
             break;
         }
         case 7:
             Check(ScriptEngine::GetEntityScriptInstance(901)->GetFieldValue<float>("Time") == 0, "Paused editor advanced scripts");
-            e.m_ActiveScene->Step(); break;
+            Check(e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::Step),"Runtime toolbar Step failed"); break;
         case 8:
             Check(ScriptEngine::GetEntityScriptInstance(901)->GetFieldValue<float>("Time") > 0, "Editor single-step failed");
             {
@@ -133,11 +219,16 @@ public:
             }
             Check(e.m_ActiveScene == e.m_EditorScene && !e.m_ActiveScene->IsRunning(), "Editor stop did not restore editor scene");
             e.m_HoveredEntity=e.m_EditorScene->GetEntityByUUID(901);
-            e.OnSceneSimulate();
+            {
+                const auto saved=e.m_Authoring->m_SavedScene;
+                e.m_EditorScene->GetEntityByUUID(901).GetComponent<TagComponent>().Tag="Unsaved simulation edit";
+                Check(e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::Simulate),"Runtime toolbar Simulate failed");
+                Check(e.m_Authoring->m_SavedScene==saved && saved!=SceneSerializer(e.m_EditorScene).SerializeText(),"Simulation incorrectly marked unsaved authoring as saved");
+            }
             Check(!e.m_HoveredEntity,"Simulate retained editor hover"); break;
         case 9:
             Check(e.m_ActiveScene != e.m_EditorScene && e.m_ActiveScene->GetEntityByUUID(901).GetComponent<Rigidbody2DComponent>().RuntimeBody, "Editor simulation failed");
-            e.OnSceneStop(); e.OnScenePlay(); e.OnSceneStop();
+            Check(e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::Stop),"Runtime toolbar Stop failed"); e.OnScenePlay(); e.OnSceneStop();
             e.OnScenePlay();
             {
                 auto retired=e.m_ActiveScene; auto instance=ScriptEngine::GetEntityScriptInstance(901);
@@ -157,19 +248,894 @@ public:
                 Check(e.OpenProject(relocated/"Authoring.hproj"),"Copied project initial open failed");
                 std::filesystem::rename(original,parked); // Prevent silently resolving against the original project.
                 Check(e.OpenProject(relocated/"Authoring.hproj"),"Relocated project open failed");
-                auto texture=e.m_EditorScene->GetEntityByUUID(901).GetComponent<SpriteRendererComponent>().Texture;
-                Check(texture && texture->IsLoaded() && std::filesystem::u8path(texture->GetPath())==
-                      relocated/"Assets/Textures"/std::filesystem::u8path(u8"texture é 🚀.png"),"Relocation used original asset root");
-                Check(e.m_EditorScene->GetEntityByUUID(902).GetComponent<SpriteRendererComponent>().Texture->IsLoaded(),"Relocation discarded external reference");
+                auto texture=e.m_EditorScene->GetEntityByUUID(901).GetComponent<SpriteRendererComponent>().Resolved.Data->Texture;
+                // The asset cache canonicalizes resource paths. Windows temporary
+                // directories may arrive as 8.3 aliases; compare file identity.
+                const auto expected=relocated/"Assets/Textures"/std::filesystem::u8path(u8"texture é 🚀.png");
+                Check(texture && texture->IsLoaded() && std::filesystem::equivalent(std::filesystem::u8path(texture->GetPath()),expected),"Relocation used original asset root");
+                Check(e.m_EditorScene->GetEntityByUUID(902).GetComponent<SpriteRendererComponent>().Resolved.Data->Texture->IsLoaded(),"Relocation discarded external reference");
                 std::filesystem::rename(parked,original);
             }
             break;
         case 10:
             Check(glGetError() == GL_NO_ERROR, "Editor/gizmo/panels OpenGL error");
-            m_Done = true; Application::Get().Close(); break;
+            e.m_Authoring->SelectAsset(Project::GetAssetDirectory()/std::filesystem::u8path(u8"Prefabs/é independent.hprefab"));
+            break;
+        case 11: {
+            auto* inspector=ImGui::FindWindowByName("Prefab Inspector");
+            Check(inspector && inspector->Active,"Prefab asset did not open its ImGui inspector");
+            e.m_Authoring->Guard(OperationIntent::ClosePrefab,[&e]{e.m_Authoring->ClosePrefab();return true;});
+            Check(!e.m_Authoring->m_PrefabScene,"Clean prefab Close retained document");
+            break;
+        }
+        case 14: {
+            Check(!ImGui::FindWindowByName("Prefab Inspector")->Active,"Clean prefab Close did not release its inspector safely");
+            const auto root=Project::GetAssetDirectory();
+            SpriteSheetDocument document(Project::GetActive()->GetAssets());
+            document.Create(std::filesystem::u8path(u8"Textures/texture é 🚀.png"),"Textures/inspector.hsprites");
+            auto& sheet=document.Draft();
+            sheet.Regions.push_back({sheet.NewID(),"Preview",{0,0,sheet.Sampling.Width,sheet.Sampling.Height},{.5f,1}});
+            sheet.Clips.push_back({sheet.NewID(true),"Hold",true,{{sheet.Regions[0].ID,.2}}});
+            document.Changed();document.Save();
+            e.m_Authoring->SelectAsset(root/"Textures/inspector.hsprites");
+            break;
+        }
+        case 15: {
+            auto* panel=ImGui::FindWindowByName("Sprite Sheet: inspector.hsprites###Sprite Sheet");
+            Check(panel && panel->Active,"Sprite asset did not open its dockable authoring panel");
+            if(std::getenv("HAZEL_EDITOR_CAPTURE")) {
+                // Capture fixtures use viewport-relative coordinates: a hidden native
+                // window can still have a nonzero desktop position. Keep its canvas
+                // inside the deliberately smaller framebuffer, without changing layouts.
+                const auto origin=ImGui::GetMainViewport()->Pos;
+                ImGui::SetWindowPos(panel,{origin.x+10,origin.y+70});
+                ImGui::SetWindowSize(panel,{std::getenv("HAZEL_CONSOLE_CAPTURE")?680.f:900.f,550});
+                if(std::getenv("HAZEL_CONSOLE_CAPTURE")) {
+                    // Optional production Console capture in isolated fixture layouts.
+                    ImGui::DockBuilderDockWindow("Console",0);
+                    auto* console=ImGui::FindWindowByName("Console");
+                    ImGui::SetWindowPos(console,{origin.x+710,origin.y+50});
+                    ImGui::SetWindowSize(console,{300,560});
+                    ImGui::GetIO().FontGlobalScale=1.25f;
+                }
+            }
+            auto sheet=Project::GetActive()->GetAssets()->Sheet("Textures/inspector.hsprites");
+            e.m_SceneHierarchyPanel.SetSelectedEntity(e.m_EditorScene->GetEntityByUUID(901));
+            UsabilityChecks();
+            e.m_Authoring->m_Sprites.AssignSprite({"Textures/inspector.hsprites",sheet->Regions[0].ID},e.m_Authoring->AssignmentTarget());
+            e.m_Authoring->m_Sprites.AssignClip({"Textures/inspector.hsprites",sheet->Clips[0].ID},e.m_Authoring->AssignmentTarget());
+            break;
+        }
+        case 16:
+            Check(e.m_EditorScene->GetEntityByUUID(901).HasComponent<SpriteAnimationComponent>() && e.m_EditorScene->RenderedSprite(e.m_EditorScene->GetEntityByUUID(901)),"Sheet assignment did not resolve scene animation");
+            Check(glGetError()==GL_NO_ERROR,"Sprite authoring panel OpenGL error");
+            e.m_Authoring->m_Sprites.m_Selected=e.m_Authoring->m_Sprites.m_Document->Draft().Regions.front().ID;
+            e.m_Authoring->m_Sprites.m_SelectedClip=e.m_Authoring->m_Sprites.m_Document->Draft().Clips.front().ID;
+            Project::GetActive()->GetAssets()->Reload("Textures/inspector.hsprites");
+            break;
+        case 17: {
+            // The visible authoring canvas must follow the same explicit cache
+            // invalidation as scene resolution, even when sampling is unchanged.
+            auto* sprite=e.m_EditorScene->RenderedSprite(e.m_EditorScene->GetEntityByUUID(901));
+            Check(sprite && sprite->Texture,"Reloaded editor sprite missing");
+            const auto texture=(ImTextureID)(uintptr_t)sprite->Texture->GetRendererID();
+            bool visible=false;auto* draw=ImGui::GetDrawData();
+            for(int list=0;draw && list<draw->CmdListsCount;++list)
+                for(const auto& command:draw->CmdLists[list]->CmdBuffer)
+                    if(command.TextureId==texture)visible=true;
+            // Optional evidence from this bounded render smoke; no clicks or image assertions.
+            if (const auto* capture=std::getenv("HAZEL_EDITOR_CAPTURE")) {
+                auto* window=static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+                int width=0,height=0;glfwGetFramebufferSize(window,&width,&height);
+                std::vector<unsigned char> pixels(static_cast<size_t>(width)*height*3);
+                // Hidden native front buffers are not reliable screenshot targets.
+                // Replay the already-produced draw data into an owned capture framebuffer.
+                GLint buffer=0,alignment=0,readFramebuffer=0,drawFramebuffer=0,viewport[4]{};
+                GLfloat clear[4]{};
+                glGetIntegerv(GL_READ_BUFFER,&buffer);glGetIntegerv(GL_PACK_ALIGNMENT,&alignment);
+                glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&readFramebuffer);
+                glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&drawFramebuffer);
+                glGetIntegerv(GL_VIEWPORT,viewport);glGetFloatv(GL_COLOR_CLEAR_VALUE,clear);
+                FramebufferSpecification specification;specification.Width=width;specification.Height=height;
+                specification.Attachments={FramebufferTextureFormat::RGBA8};
+                auto target=Framebuffer::Create(specification);target->Bind();
+                glClearColor(.08f,.08f,.08f,1);glClear(GL_COLOR_BUFFER_BIT);
+                ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+                glReadBuffer(GL_COLOR_ATTACHMENT0);glPixelStorei(GL_PACK_ALIGNMENT,1);
+                glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,pixels.data());
+                glBindFramebuffer(GL_READ_FRAMEBUFFER,readFramebuffer);
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER,drawFramebuffer);
+                glReadBuffer(buffer);glPixelStorei(GL_PACK_ALIGNMENT,alignment);
+                glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
+                glClearColor(clear[0],clear[1],clear[2],clear[3]);
+                std::ofstream image(std::filesystem::u8path(capture),std::ios::binary);
+                image<<"P6\n"<<width<<" "<<height<<"\n255\n";
+                for(int y=height-1;y>=0;--y)image.write(reinterpret_cast<const char*>(pixels.data()+static_cast<size_t>(y)*width*3),width*3);
+                Check(bool(image),"Editor screenshot write failed");
+            }
+            Check(visible,"Sprite preview retained a stale texture after asset reload");
+            m_Done = true; Application::Get().Close();break;
+        }
         }
     }
 private:
+    void CheckMinimizedCompletion() {
+        Check(m_Frame==3,"Editor rendering/scene updates continued while minimized");
+        auto& a=*m_Editor.m_Authoring;
+        if(a.m_Tools.Busy()) {
+            Check(std::chrono::steady_clock::now()-m_MinimizedStart<std::chrono::seconds(5),
+                  "Minimized window prevented tool completion polling");
+            // A delayed real configure event may restore the hidden capture window.
+            // Reassert this fixture's minimized state before Application considers
+            // rendering/updating; keep the no-advance and completion assertions.
+            WindowResizeEvent minimized(0,0);Application::Get().OnEvent(minimized);
+            Application::Get().SubmitToMainThread([this]{CheckMinimizedCompletion();});return;
+        }
+        Check(a.m_Report.Success&&a.m_Report.Request.Label=="Minimized completion",
+              "Minimized completion did not apply its main-thread report");
+        WindowResizeEvent restored(Application::Get().GetWindow().GetWidth(),Application::Get().GetWindow().GetHeight());
+        Application::Get().OnEvent(restored);
+        std::cout<<"PASS: main-thread Console/tool polling continues while minimized without advancing scene/render frames\n";
+    }
+    void OnImGuiRender() override {
+        if(m_Frame!=13&&!(m_Frame==16&&std::getenv("HAZEL_EDITOR_CAPTURE")&&!std::getenv("HAZEL_CONSOLE_CAPTURE")))return;
+        if(std::getenv("HAZEL_HIERARCHY_CAPTURE")) {
+            m_Editor.m_ActionError.clear();ImGui::ClosePopupsOverWindow(nullptr,false);
+            if(!m_HierarchyCapture) {
+                m_HierarchyCapture=CreateRef<Scene>();auto root=m_HierarchyCapture->CreateEntity("Lantern rig");root.GetComponent<TransformComponent>().Translation={3,2,0};
+                auto child=m_HierarchyCapture->CreateEntity("Lantern");child.GetComponent<TransformComponent>().Translation={1,0,0};child.AddComponent<SpriteRendererComponent>();
+                auto leaf=m_HierarchyCapture->CreateEntity("Glow");m_HierarchyCapture->Reparent(child,root,TransformPolicy::KeepLocal);m_HierarchyCapture->Reparent(leaf,child,TransformPolicy::KeepLocal);
+                m_HierarchyCapturePanel.SetContext(m_HierarchyCapture);m_HierarchyCapturePanel.SetSelectedEntity(child);
+            }
+            const auto scale=ImGui::GetIO().FontGlobalScale;ImGui::GetIO().FontGlobalScale=1.25f;const auto origin=ImGui::GetMainViewport()->Pos;
+            ImGui::SetNextWindowPos({origin.x+5,origin.y+50});ImGui::SetNextWindowSize({300,580});
+            ImGui::Begin("Hierarchy layout contract",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoFocusOnAppearing);
+            m_HierarchyCapturePanel.DrawHierarchy();ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());ImGui::End();
+            ImGui::SetNextWindowPos({origin.x+310,origin.y+50});ImGui::SetNextWindowSize({330,580});
+            ImGui::Begin("Local property layout",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoFocusOnAppearing);
+            m_HierarchyCapturePanel.DrawAssetProperties(m_HierarchyCapturePanel.GetSelectedEntity());ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());ImGui::End();
+            ImGui::SetNextWindowPos({origin.x+645,origin.y+50});ImGui::SetNextWindowSize({400,300});
+            ImGui::Begin("Detached preview layout",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoFocusOnAppearing);
+            auto& a=*m_Editor.m_Authoring;const auto priorScene=a.m_PrefabScene;const auto priorFramebuffer=a.m_PrefabPreview;const auto priorCamera=a.m_PrefabCamera;const auto priorFit=a.m_PrefabFit;
+            a.m_PrefabScene=m_HierarchyCapture;a.m_PrefabFit=true;a.m_PrefabPreview=m_HierarchyPreviewCapture;
+            ImGui::GetStateStorage()->SetInt(ImGui::GetID("Subtree preview"),1);a.PrefabPreview();
+            Check(a.m_PrefabPreview && glIsTexture(a.m_PrefabPreview->GetColorAttachmentRendererID()) && glGetError()==GL_NO_ERROR,"Actual detached subtree preview failed");
+            auto selected=m_HierarchyCapturePanel.GetSelectedEntity();auto projected=a.m_PrefabCamera.GetViewProjection()*m_HierarchyCapture->GetWorldTransform(selected)*glm::vec4(0,0,0,1);projected/=projected.w;
+            const auto spec=a.m_PrefabPreview->GetSpecification();a.m_PrefabPreview->Bind();
+            Check(a.m_PrefabPreview->ReadPixel(1,int((projected.x+1)*.5f*spec.Width),int((projected.y+1)*.5f*spec.Height))==int(uint32_t(selected)),"Detached preview did not pick nested visual at world position");a.m_PrefabPreview->Unbind();
+            m_HierarchyPreviewCapture=a.m_PrefabPreview; // Retain texture until ImGui consumes this frame.
+            a.m_PrefabScene=priorScene;a.m_PrefabPreview=priorFramebuffer;a.m_PrefabCamera=priorCamera;a.m_PrefabFit=priorFit;
+            ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());ImGui::End();
+            ImGui::GetIO().FontGlobalScale=scale;return;
+        }
+        if(std::getenv("HAZEL_RENDERING_CAPTURE")) {
+            // Earlier failure assertions are complete; isolate presentation evidence from their modal.
+            m_Editor.m_ActionError.clear();ImGui::ClosePopupsOverWindow(nullptr,false);
+            const auto scale=ImGui::GetIO().FontGlobalScale;ImGui::GetIO().FontGlobalScale=1.25f;
+            const auto origin=ImGui::GetMainViewport()->Pos;
+            ImGui::SetNextWindowPos({origin.x+5,origin.y+50});ImGui::SetNextWindowSize({410,580});
+            ImGui::Begin("Rendering layout contract",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoFocusOnAppearing);
+            ImGui::GetStateStorage()->SetInt(ImGui::GetID("Runtime rendering"),1);
+            ImGui::PushID("runtime-rendering");ImGui::GetStateStorage()->SetInt(ImGui::GetID("Advanced batching"),1);ImGui::PopID();
+            m_Editor.m_Authoring->ProjectRendering();ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());ImGui::End();
+            ImGui::SetNextWindowPos({origin.x+420,origin.y+50});ImGui::SetNextWindowSize({300,580});
+            ImGui::Begin("Narrow graphics layout",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoFocusOnAppearing);
+            ImGui::GetStateStorage()->SetInt(ImGui::GetID("Advanced editor diagnostics"),1);
+            m_Editor.m_Authoring->EditorRendering();ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());ImGui::End();
+            ImGui::GetIO().FontGlobalScale=scale;
+            return;
+        }
+        ImGui::SetNextWindowSize({420,180});
+        ImGui::Begin("Property layout contract",nullptr,ImGuiWindowFlags_NoSavedSettings |
+                     ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoFocusOnAppearing);
+        {
+            PropertyUI::Row row("first-appearance","Left label");
+            Check(ImGui::GetContentRegionAvail().x>100,"Fresh property control column collapsed");
+            float value=0;ImGui::InputFloat("##value",&value);
+        }
+        ImGui::End();
+        const auto oldScale=ImGui::GetIO().FontGlobalScale;
+        for(int narrow=0;narrow<2;++narrow) {
+            ImGui::GetIO().FontGlobalScale=narrow?1.25f:1.f;
+            ImGui::SetNextWindowSize(narrow?ImVec2(300,300):ImVec2(660,230));
+            if(m_Frame==16) {
+                const auto origin=ImGui::GetMainViewport()->Pos;
+                ImGui::SetNextWindowPos(narrow?ImVec2(origin.x+715,origin.y+310):ImVec2(origin.x+25,origin.y+350));
+            }
+            ImGui::Begin(narrow?"Scaled narrow vectors":"Horizontal vectors",nullptr,
+                         ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoFocusOnAppearing);
+            float values[4]{12.5f,-3.f,90.f,1.f}, defaults[4]{0,0,0,1};
+            const auto before=ImGui::GetCursorScreenPos().y;
+            PropertyUI::Vector("vector","Owner defaults",values,4,.1f,defaults);
+            const auto height=ImGui::GetCursorScreenPos().y-before;
+            Check(height>ImGui::GetFrameHeight()*(narrow?2.f:.8f),"Scaled narrow vector fallback did not preserve readable rows");
+            Check(ImGui::GetCurrentWindow()->DC.CursorMaxPos.x<=ImGui::GetWindowPos().x+ImGui::GetWindowSize().x+1,
+                  "Vector controls overflowed the narrow property window");
+            PropertyUI::Vector("unknown","C# defaults",values,4,.1f);
+            ImGui::End();
+        }
+        ImGui::GetIO().FontGlobalScale=oldScale;
+    }
+    void UsabilityChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=a.m_Sprites;
+        const auto target=a.AssignmentTarget();const auto scene=e.m_EditorScene;
+        const auto before=SceneSerializer(scene).SerializeText();
+        const auto sheetPath=Project::GetAssetDirectory()/"Textures/inspector.hsprites";
+        const auto bytes=Read(sheetPath);auto& draft=panel.m_Document->Draft();
+        const auto region=draft.Regions.front().ID;const auto width=draft.Regions.front().Rect.Width;
+        draft.Regions.front().Rect.Width=0;panel.m_Document->Changed();
+        Check(!panel.Assign(false,region)&&panel.Dirty()&&Read(sheetPath)==bytes&&SceneSerializer(scene).SerializeText()==before,"Failed Save Sheet and Assign mutated scene/draft/file");
+        draft.Regions.front().Rect.Width=width;draft.Regions.front().Name="Accepted saved region";
+        Check(panel.Assign(false,region)&&!panel.Dirty()&&std::get<SpriteReference>(scene->GetEntityByUUID(901).GetComponent<SpriteRendererComponent>().Source).Region==region,"Save Sheet and Assign did not save before applying identity");
+        const auto after=SceneSerializer(scene).SerializeText();
+        panel.AssignSprite({"Textures/inspector.hsprites",region},{target.Scene+1,target.Entity});
+        panel.AssignSprite({"Textures/inspector.hsprites",region},{target.Scene,0});
+        Check(SceneSerializer(scene).SerializeText()==after,"Stale/invalid assignment target mutated scene");
+        draft.Regions.front().Name="Retained dirty region";panel.m_Document->Changed();
+        const auto oldDoc=panel.m_Document.get();
+        FileSystem::WriteFileAtomically(Project::GetAssetDirectory()/"Textures/future.hsprites",[](auto& out){out<<"SpriteSheetVersion: 99\n";});
+        a.Guard(OperationIntent::OpenSheet,[&]{return panel.Open(Project::GetAssetDirectory()/"Textures/future.hsprites");});
+        Check(a.m_Documents.Pending(),"Dirty sheet replacement skipped guard");
+        a.m_ResolvingDocumentAction=true;
+        Check(!a.m_Documents.Resolve(GuardChoice::Discard,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Invalid sheet Open succeeded");
+        a.m_ResolvingDocumentAction=false;
+        Check(panel.m_Document.get()==oldDoc&&panel.Dirty()&&draft.Regions.front().Name=="Retained dirty region"&&e.m_EditorScene==scene,"Failed Open discarded previous sheet/session draft");
+        a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);});panel.m_Recovery=false;
+        auto jobs=a.m_Tools.Start({m_Directory/"missing-python",{},e.m_ProjectPath,{},"Availability fixture"});
+        Check(jobs&&a.m_Tools.Busy(),"Tool availability fixture did not start");
+        const auto count=scene->GetAllEntitiesWith<IDComponent>().size();
+        a.InstantiatePrefab(Project::GetAssetDirectory()/std::filesystem::u8path(u8"Prefabs/é independent.hprefab"));
+        panel.AssignClip({"Textures/inspector.hsprites",draft.Clips.front().ID},target);
+        a.CreatePrefab(scene->GetEntityByUUID(901));
+        Check(scene->GetAllEntitiesWith<IDComponent>().size()==count&&!scene->GetEntityByUUID(901).HasComponent<SpriteAnimationComponent>()&&!a.m_CreatePrefab,"Tool job allowed callback/drag/drop mutation");
+        Check(!e.SaveScene()&&!panel.Save()&&panel.Dirty(),"Tool job allowed protected input saves");
+        ToolReport report;bool joined=false;
+        for(int attempt=0;attempt<200;++attempt){if(a.m_Tools.Poll(report)){joined=true;break;}std::this_thread::sleep_for(std::chrono::milliseconds(10));}
+        Check(joined&&!a.m_Tools.Busy(),"Tool availability fixture failed to join");
+        a.m_ActiveDocument=EditorDocument::Sheet;
+        Check(a.SaveActive()&&!panel.Dirty()&&draft.Regions.front().Name=="Retained dirty region","Active sheet Save did not retain accepted draft");
+        a.SelectAsset(Project::GetAssetDirectory()/std::filesystem::u8path(u8"Prefabs/é independent.hprefab"));
+        auto prefab=Prefab::GetEntity(a.m_PrefabScene);prefab.GetComponent<TagComponent>().Tag="Saved active prefab";
+        const auto sheetBefore=panel.m_Document->Draft();
+        const auto sceneName=scene->GetEntityByUUID(901).GetName();
+        prefab.GetComponent<TagComponent>().Tag="Unsaved prefab preservation sentinel";
+        scene->GetEntityByUUID(901).GetComponent<TagComponent>().Tag="Unsaved scene preservation sentinel";
+        panel.m_Document->Draft().Regions.front().Name="Unsaved sheet preservation sentinel";panel.m_Document->Changed();
+        const auto sceneDraft=a.SceneText();const auto prefabDraft=SceneSerializer(a.m_PrefabScene).SerializeAuthoredSnapshot();
+        const auto sheetDraft=panel.CopyDraftText();const auto prefabOwner=a.m_PrefabScene;const auto sheetOwner=panel.m_Document.get();
+        const auto portable=Project::GetActive()->GetRendererRequests();
+        Check(a.SaveRenderingRequests(portable) && e.m_EditorScene==scene && a.m_PrefabScene==prefabOwner && panel.m_Document.get()==sheetOwner &&
+              a.SceneText()==sceneDraft && SceneSerializer(a.m_PrefabScene).SerializeAuthoredSnapshot()==prefabDraft && panel.CopyDraftText()==sheetDraft && panel.Dirty(),
+              "Renderer-only save lost any of the three document drafts");
+        const auto invalidProject=m_Directory/"all-drafts-future.hproj";
+        FileSystem::WriteFileAtomically(invalidProject,[](auto& out){out<<"Project: {Version: 99}\n";});
+        a.Guard(OperationIntent::OpenProject,[&]{return e.OpenProject(invalidProject);});
+        Check(a.m_Documents.Pending() && a.m_Documents.Affected().size()==3,"Project replacement did not guard all three dirty documents");
+        const auto pendingBytes=Read(e.m_ProjectPath);
+        Check(!a.SaveRenderingRequests(portable) && Read(e.m_ProjectPath)==pendingBytes,"Renderer save bypassed pending document operation");
+        a.m_ResolvingDocumentAction=true;
+        Check(!a.m_Documents.Resolve(GuardChoice::Discard,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Unsupported project unexpectedly opened");
+        a.m_ResolvingDocumentAction=false;
+        Check(e.m_EditorScene==scene && a.m_PrefabScene==prefabOwner && panel.m_Document.get()==sheetOwner &&
+              a.SceneText()==sceneDraft && SceneSerializer(a.m_PrefabScene).SerializeAuthoredSnapshot()==prefabDraft && panel.CopyDraftText()==sheetDraft && panel.Dirty(),
+              "Failed project Open lost a scene/prefab/sheet draft");
+        a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),{});
+        Check(a.SceneText()==sceneDraft && panel.CopyDraftText()==sheetDraft,"Cancelled failed project Open lost drafts");
+        scene->GetEntityByUUID(901).GetComponent<TagComponent>().Tag=sceneName;
+        prefab.GetComponent<TagComponent>().Tag="Saved active prefab";
+        panel.m_Document->Draft()=sheetBefore;panel.m_Document->Changed();Check(panel.Save(),"Fixture sheet restoration failed");
+        const auto savedScene=Read(e.m_EditorScenePath);
+        a.m_ActiveDocument=EditorDocument::Prefab;
+        Check(a.SaveActive()&&Read(e.m_EditorScenePath)==savedScene&&Prefab::GetEntity(Prefab::Load(Project::GetAssetDirectory(),std::filesystem::u8path(a.m_PrefabReference))).GetName()=="Saved active prefab","Active prefab Save wrote scene or omitted prefab");
+        a.ClosePrefab();
+        auto entity=scene->GetEntityByUUID(901);entity.GetComponent<TagComponent>().Tag="Saved active scene";a.m_ActiveDocument=EditorDocument::Scene;
+        Check(a.SaveActive()&&a.SceneText()==a.m_SavedScene,"Active scene Save failed");
+        const auto saved=a.m_SavedScene;
+        auto& box=entity.GetComponent<BoxCollider2DComponent>();const auto size=box.Size;box.Size.x=0;
+        Check(!e.OnSceneSimulate(true)&&e.m_ActiveScene==scene&&e.m_SceneState==EditorLayer::SceneState::Edit&&a.m_SavedScene==saved,"Invalid Simulate started physics or lost editor draft");box.Size=size;
+        RecoveryRetryChecks();
+        RuntimeGuardChecks();
+        std::cout<<"PASS: production Save-and-Assign failure/success, stale target rejection, failed Open draft preservation, busy callback/save guards, active sheet/prefab/scene Save and Simulate preflight\n";
+    }
+    void RuntimeGuardChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=a.m_Sprites;
+        const auto draft=panel.m_Document->Draft();const auto scene=e.m_EditorScene;
+        const auto authored=SceneSerializer(scene).SerializeText();
+        panel.m_Document->Draft().Regions.front().Name="Unsaved runtime toolbar asset";panel.m_Document->Changed();
+        for(auto action:{AuthoringPanel::RuntimeAction::Play,AuthoringPanel::RuntimeAction::Simulate}) {
+            Check(!a.InvokeRuntime(action)&&a.m_Documents.Pending()&&e.m_SceneState==EditorLayer::SceneState::Edit,
+                  "Runtime toolbar bypassed the dirty asset guard");
+            Check(!a.RuntimeAvailability(action),"Pending runtime operation stayed available");
+            a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);});
+            Check(e.m_EditorScene==scene&&panel.Dirty()&&panel.m_Document->Draft().Regions.front().Name=="Unsaved runtime toolbar asset",
+                  "Cancelling toolbar runtime changed authored documents");
+        }
+        a.InvokeRuntime(AuthoringPanel::RuntimeAction::Play);a.m_ResolvingDocumentAction=true;
+        Check(a.m_Documents.Resolve(GuardChoice::UseSaved,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),
+              "Guarded toolbar Play could not use saved assets");a.m_ResolvingDocumentAction=false;
+        Check(e.m_SceneState==EditorLayer::SceneState::Play&&panel.Dirty(),"Toolbar Play discarded asset draft");
+        Check(a.InvokeRuntime(AuthoringPanel::RuntimeAction::TogglePause)&&e.m_ActiveScene->IsPaused(),"Toolbar Pause failed");
+        Check(a.InvokeRuntime(AuthoringPanel::RuntimeAction::TogglePause)&&!e.m_ActiveScene->IsPaused(),"Toolbar Resume failed");
+        Check(a.InvokeRuntime(AuthoringPanel::RuntimeAction::Stop)&&e.m_EditorScene==scene&&SceneSerializer(scene).SerializeText()==authored,
+              "Toolbar Stop changed the retained scene");
+        panel.m_Document->Draft()=draft;
+        Check(panel.Save(),"Runtime toolbar fixture could not restore saved sheet");
+        std::cout<<"PASS: runtime toolbar actions share lifecycle, step availability and dirty-document guard/cancel/Use Saved semantics\n";
+    }
+    void SDKChecks() {
+        const auto folder=m_Directory/std::filesystem::u8path(u8"SDK space é");
+#ifdef HZ_PLATFORM_WINDOWS
+        const std::string platform="windows";const char* premake="build/tools/premake-core/bin/release/premake5.exe";
+#else
+        const std::string platform="linux";const char* premake="build/tools/premake-core/bin/release/premake5";
+#endif
+        auto write=[](const auto& path,const std::string& text){std::filesystem::create_directories(path.parent_path());FileSystem::WriteFileAtomically(path,[&](auto& out){out<<text;});};
+        for(const char* file:{"premake5.lua","scripts/hazel.py","scripts/internal/authoring.py","scripts/internal/packaging.py",
+                              "scripts/internal/child_tools.py","Hazel/Resources/Templates/project.lua", "Hazel/Resources/Templates/Entity.cs",premake})write(folder/file,"fixture");
+        const auto pins=folder/"scripts/internal/toolchain.json";
+        const auto contract=std::string("{\"premake\":\"")+HAZEL_TOOLCHAIN_PREMAKE+"\",\"pyyaml\":\""+HAZEL_TOOLCHAIN_PYYAML+"\"}";
+        write(pins,contract);
+        write(folder/"Hazel/Resources/Templates/contract.json","{\"Version\":1,\"Generator\":1,\"ScriptCore\":1,\"Template\":1}");
+        write(folder/"bin"/("Debug-"+platform+"-x86_64")/"PackageAudit/PackageAudit.exe","fixture");
+#ifdef HZ_PLATFORM_WINDOWS
+        write(folder/"bin"/("Debug-"+platform+"-x86_64")/"HazelProject/HazelProject.exe","fixture");
+#else
+        write(folder/"bin"/("Debug-"+platform+"-x86_64")/"HazelProject/HazelProject","fixture");
+#endif
+        const auto core=folder/"bin"/("Debug-"+platform+"-x86_64")/"Hazel-ScriptCore/Hazel-ScriptCore.dll";
+        Check(HazelSDK::Validate(folder).State==SDKState::Missing,"Unprepared SDK was reported ready");write(core,"fixture");
+        const auto exe=folder/"bin"/("Debug-"+platform+"-x86_64")/"Hazelnut/Hazelnut";
+        write(exe,"fixture");
+        const auto other=m_Directory/"Working directory unrelated to SDK";std::filesystem::create_directory(other);
+        const auto original=std::filesystem::current_path();std::filesystem::current_path(other);
+        SDKSelection discovered;
+        try { discovered=HazelSDK::Discover({},exe); } catch(...) {std::filesystem::current_path(original);throw;}
+        std::filesystem::current_path(original);
+        Check(discovered&&discovered.Root==std::filesystem::weakly_canonical(folder)&&discovered.Source=="Development executable layout",
+              "Deterministic development SDK discovery depended on cwd or lost Unicode");
+        const auto outside=m_Directory/std::filesystem::u8path(u8"Packaged app space é/Hazelnut");write(outside,"fixture");
+        Check(HazelSDK::Discover(folder,outside)&&HazelSDK::Discover(folder,outside).Source=="Explicit override","Explicit SDK override did not win");
+        auto missing=HazelSDK::Discover(folder/"moved",exe);
+        Check(missing.State==SDKState::Missing&&missing.Source=="Explicit override","Stale explicit SDK silently fell back");
+        Check(HazelSDK::Discover("relative",exe).State==SDKState::Incompatible,"Relative SDK used cwd");
+        write(pins,"{\"premake\":\"incompatible\",\"pyyaml\":\"0\"}");
+        Check(HazelSDK::Discover(folder,exe).State==SDKState::Incompatible,"Incompatible SDK toolchain pins accepted");write(pins,contract);
+        const auto metadata=outside.parent_path()/"build.json";
+        write(metadata,"{\"platform\":\""+platform+"\",\"architecture\":\"x86_64\"}");
+        Check(HazelSDK::Discover({},outside).State==SDKState::NotConfigured,"Runtime package pretended to contain SDK");
+        write(metadata,"{\"hazel_sdk\":\"../SDK space é\"}");
+        Check(HazelSDK::Discover({},outside)&&HazelSDK::Discover({},outside).Root==std::filesystem::weakly_canonical(folder),
+              "Package metadata locator was not resolved relative to the application");
+        write(metadata,"{\"hazel_sdk\":\"../Missing SDK\"}");
+        Check(HazelSDK::Discover({},outside).State==SDKState::Missing,"Stale metadata locator silently fell back");
+        write(metadata,"{ malformed");
+        Check(HazelSDK::Discover({},outside).State==SDKState::Incompatible,"Malformed package SDK metadata accepted");
+        std::filesystem::remove(metadata);
+        Check(HazelSDK::Discover({},outside).State==SDKState::NotConfigured,"Automatic discovery searched unrelated ancestors");
+        auto& a=*m_Editor.m_Authoring;const auto preferences=a.m_Preferences, draft=a.m_Draft;
+        const auto saved=Read(EditorPreferences::Location());
+        a.m_Draft.SDK=(folder/"moved").generic_u8string();a.RefreshSDK(true);a.UseAutomaticSDK();
+        Check(a.m_Draft.SDK.empty()&&a.m_Preferences.SDK==preferences.SDK&&Read(EditorPreferences::Location())==saved,
+              "Use Automatic corrupted persisted or accepted SDK override");
+        std::string diagnostic;a.m_Draft=EditorPreferences::Load(diagnostic);a.m_Draft.SDK="";a.m_Draft.Save();
+        Check(EditorPreferences::Load(diagnostic).SDK.empty()&&diagnostic.empty(),"Automatic SDK preference did not round-trip");
+        FileSystem::WriteFileAtomically(EditorPreferences::Location(),[&](auto& out){out<<saved;});a.m_Draft=draft;a.RefreshSDK(true);
+        float values[4]{3,4,5,6}, defaults[4]{1,2,3,4};
+        auto reset=PropertyUI::ResetAxis(values,4,2,defaults);
+        Check(reset.Changed&&reset.Committed&&reset.ResetRequested&&values[2]==3&&values[0]==3&&values[3]==6,"Axis reset lost supplied default or edited another axis");
+        reset=PropertyUI::ResetAxis(values,4,2,defaults);
+        Check(!reset.Changed&&reset.Committed&&reset.ResetRequested,"Intentional reset at default lost commit semantics");
+        reset=PropertyUI::ResetAxis(values,4,3,defaults);
+        Check(reset.Changed&&reset.Committed&&reset.ResetRequested&&values[3]==4,"W axis reset ignored its supplied default");
+        reset=PropertyUI::ResetAxis(values,4,0,nullptr);
+        Check(!reset.Changed&&!reset.Committed&&!reset.ResetRequested&&values[0]==3,"Unknown C# default was invented");
+        std::cout<<"PASS: native SDK explicit/automatic/cwd/Unicode/package/stale/pins diagnostics, automatic preference scope, owner-defined axis reset semantics\n";
+    }
+    void RecoveryRetryChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=a.m_Sprites;
+        const auto scene=e.m_EditorScene;const auto sceneText=SceneSerializer(scene).SerializeText();
+        const auto entitySelection=e.m_SceneHierarchyPanel.GetSelectedEntity().GetUUID();
+        const auto pathA=Project::GetAssetDirectory()/panel.m_Document->Reference();
+        const auto pathB=Project::GetAssetDirectory()/"Textures/retry-recovery.hsprites";
+        const auto savedA=Read(pathA);
+        panel.m_Document->Draft().Regions.front().Name="Unsaved recovery draft A";
+        panel.m_Document->Changed();
+        panel.m_Selected=panel.m_Document->Draft().Regions.front().ID;
+        panel.m_SelectedClip=panel.m_Document->Draft().Clips.front().ID;
+        const auto documentA=panel.m_Document.get();const auto identityA=panel.Identity();
+        const auto selected=panel.m_Selected,selectedClip=panel.m_SelectedClip;
+        const auto draftA=WriteSpriteSheetText(panel.m_Document->Draft());
+        auto write=[&](const auto& path,const auto& text){FileSystem::WriteFileAtomically(path,[&](auto& out){out<<text;});};
+        auto malformed=[&]{write(pathB,"SpriteSheetVersion: 99\n");};
+        auto retained=[&]{
+            Check(panel.m_Document.get()==documentA&&panel.Identity()==identityA&&panel.Dirty()&&
+                  WriteSpriteSheetText(panel.m_Document->Draft())==draftA&&panel.m_Selected==selected&&panel.m_SelectedClip==selectedClip,
+                  "Recovery retry lost sheet A, draft or selection");
+            Check(e.m_EditorScene==scene&&SceneSerializer(scene).SerializeText()==sceneText&&
+                  e.m_SceneHierarchyPanel.GetSelectedEntity().GetUUID()==entitySelection,
+                  "Recovery retry changed scene/session selection");
+            Check(panel.m_Recovery&&panel.m_RecoveryPath==pathB&&!panel.m_RecoveryError.empty(),
+                  "Recovery retry lost usable recovery information");
+        };
+        auto resolve=[&](GuardChoice choice){
+            a.m_ResolvingDocumentAction=true;
+            const bool result=a.m_Documents.Resolve(choice,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);});
+            a.m_ResolvingDocumentAction=false;return result;
+        };
+        auto guarded=[&]{
+            Check(a.m_Documents.Pending()&&a.m_Documents.Intent()==OperationIntent::OpenSheet&&
+                  a.m_Documents.Affected().size()==1&&a.m_Documents.Affected().front().Identity==identityA,
+                  "Production recovery retry skipped the sheet document guard");
+        };
+        malformed();a.SelectAsset(pathB);guarded();
+        Check(!resolve(GuardChoice::Discard),"Malformed recovery fixture unexpectedly opened");retained();
+        resolve(GuardChoice::Cancel);write(pathB,savedA);
+        panel.RequestRetryOpen();guarded();
+        Check(!panel.RetryOpenAvailability()&&std::string(panel.RetryOpenAvailability().Reason)=="Resolve the pending document operation first",
+              "Recovery retry did not explain pending-operation availability");
+        resolve(GuardChoice::Cancel);retained();
+
+        panel.RequestRetryOpen();guarded();
+        const auto recoveryError=panel.m_RecoveryError;
+        write(pathA,savedA+"\n# External edit: deterministic save conflict\n");
+        const auto externalA=Read(pathA);
+        Check(!resolve(GuardChoice::SaveAndContinue)&&a.m_Documents.Pending()&&
+              a.m_Documents.Results().size()==1&&a.m_Documents.Results().front().Outcome==SaveOutcome::Failed,
+              "Failed sheet save allowed recovery replacement");
+        retained();Check(panel.m_RecoveryError==recoveryError&&!panel.m_Error.empty()&&Read(pathA)==externalA,
+                         "Failed save lost open diagnostic or changed conflicting file");
+        write(pathA,savedA);resolve(GuardChoice::Cancel);
+
+        bool unrelatedExecuted=false;
+        a.Guard(OperationIntent::SaveAll,[&]{unrelatedExecuted=true;return true;});
+        panel.RequestRetryOpen();retained();
+        Check(a.m_Documents.Pending()&&a.m_Documents.Intent()==OperationIntent::SaveAll&&!unrelatedExecuted,
+              "Recovery retry bypassed or replaced an existing operation");
+        resolve(GuardChoice::Cancel);
+        const auto availability=panel.Availability;
+        panel.Availability=[](EditorAction){return ActionAvailability{"Open a project first"};};
+        panel.RequestRetryOpen();
+        Check(!a.m_Documents.Pending()&&!panel.RetryOpenAvailability(),"Recovery retry ignored current action availability");
+        retained();panel.Availability=availability;
+
+        panel.RequestRetryOpen();guarded();malformed();
+        Check(!resolve(GuardChoice::Discard),"Failed retry discarded before successful replacement");retained();
+        resolve(GuardChoice::Cancel);write(pathB,savedA);
+        panel.RequestRetryOpen();guarded();
+        // A deferred retry must use the originally requested B, even if recovery state changes.
+        panel.m_RecoveryPath=Project::GetAssetDirectory()/"Textures/subsequently-changed.hsprites";
+        Check(resolve(GuardChoice::Discard)&&!a.m_Documents.Pending()&&panel.Identity()!=identityA&&
+              panel.m_Document->Reference()=="Textures/retry-recovery.hsprites"&&!panel.Dirty()&&
+              !panel.m_Recovery&&panel.m_RecoveryPath.empty()&&panel.m_RecoveryError.empty()&&panel.m_Error.empty(),
+              "Successful guarded retry used a changed path or failed to clear recovery/update identity");
+        Check(Read(pathA)==savedA&&SceneSerializer(scene).SerializeText()==sceneText,
+              "Discard-on-success wrote sheet A or changed the scene");
+        // Restore the normal smoke's clean sheet for its existing render/assignment assertions.
+        a.SelectAsset(pathA);
+        Check(panel.m_Document->Reference()=="Textures/inspector.hsprites"&&!panel.Dirty(),"Recovery regression did not restore clean smoke sheet");
+        std::cout<<"PASS: production recovery retry guard, cancel, save failure, failed discard, pending/availability rejection, captured path and successful replacement\n";
+    }
+    void AuthoringChecks() {
+        auto root=Project::GetAssetDirectory(); auto scene=CreateRef<Scene>();auto source=scene->CreateEntity("Prefab authored");
+        source.GetComponent<TransformComponent>().Translation={6,4,.2f};
+        source.GetComponent<TransformComponent>().Scale={.4f,.5f,1.0f};
+        source.AddComponent<ScriptComponent>().ClassName="Migration.SceneProbe";
+        source.AddComponent<Rigidbody2DComponent>().Type=Rigidbody2DComponent::BodyType::Dynamic;
+        source.AddComponent<BoxCollider2DComponent>();
+        auto& fields=ScriptEngine::GetScriptFieldMap(source);
+        fields["Speed"].Field={ScriptFieldType::Float,"Speed",nullptr};fields["Speed"].SetValue<float>(6);
+        fields["Target"].Field={ScriptFieldType::Entity,"Target",nullptr};fields["Target"].SetValue<uint64_t>(source.GetUUID());
+        Prefab::Save(root,std::filesystem::u8path(u8"Prefabs/é independent.hprefab"),scene,source);
+        auto target=CreateRef<Scene>();TransformComponent initial;initial.Translation={2,3,0};initial.Scale={2,2,1};
+        auto first=Prefab::Instantiate(root,std::filesystem::u8path(u8"Prefabs/é independent.hprefab"),*target,initial);
+        auto second=Prefab::Instantiate(root,std::filesystem::u8path(u8"Prefabs/é independent.hprefab"),*target,initial);
+        Check(first.GetUUID()!=second.GetUUID() && first.GetUUID()!=source.GetUUID(),"Prefab reused identity");
+        auto& a=ScriptEngine::GetScriptFieldMap(first);auto& b=ScriptEngine::GetScriptFieldMap(second);
+        Check(a.at("Target").GetValue<uint64_t>()==first.GetUUID() && b.at("Target").GetValue<uint64_t>()==second.GetUUID(),"Prefab self reference not remapped");
+        a.at("Speed").SetValue<float>(9);Check(b.at("Speed").GetValue<float>()==6,"Prefab fields shared ownership");
+        Check(!first.GetComponent<Rigidbody2DComponent>().RuntimeBody && !first.GetComponent<BoxCollider2DComponent>().RuntimeFixture,"Prefab borrowed physics");
+        auto preservedScale=Prefab::Instantiate(root,std::filesystem::u8path(u8"Prefabs/é independent.hprefab"),*target,initial,false);
+        Check(preservedScale.GetComponent<TransformComponent>().Scale==source.GetComponent<TransformComponent>().Scale,"Position-only prefab placement lost authored scale");
+        m_Editor.m_Authoring->m_InitialTransform=initial;
+        m_Editor.m_Authoring->InstantiatePrefab(root/std::filesystem::u8path(u8"Prefabs/é independent.hprefab"));
+        auto dropped=m_Editor.m_SceneHierarchyPanel.GetSelectedEntity();
+        Check(dropped && dropped.GetComponent<TransformComponent>().Translation==source.GetComponent<TransformComponent>().Translation && dropped.GetComponent<TransformComponent>().Scale==source.GetComponent<TransformComponent>().Scale,"Viewport prefab drop reused another asset's inspector placement");
+        const auto before=target->GetAllEntitiesWith<IDComponent>().size();
+        FileSystem::WriteFileAtomically(root/"Prefabs/broken.hprefab",[](auto& out){out<<"PrefabVersion: 99\nEntities: []\n";});
+        bool rejected=false;try{Prefab::Instantiate(root,"Prefabs/broken.hprefab",*target,initial);}catch(const std::exception&){rejected=true;}
+        Check(rejected && target->GetAllEntitiesWith<IDComponent>().size()==before,"Malformed prefab mutated target scene");
+        fields["Target"].SetValue<uint64_t>(123);rejected=false;
+        try{Prefab::Save(root,"Prefabs/external.hprefab",scene,source);}catch(const std::exception&){rejected=true;}
+        Check(rejected && !std::filesystem::exists(root/"Prefabs/external.hprefab"),"Prefab silently bound external entity");
+        auto childScene=CreateRef<Scene>();auto child=childScene->CreateEntity("Dynamic child");child.AddComponent<ScriptComponent>().ClassName="Migration.LifecycleChild";auto& childBody=child.AddComponent<Rigidbody2DComponent>();childBody.GravityScale=0;childBody.Type=Rigidbody2DComponent::BodyType::Dynamic;child.AddComponent<BoxCollider2DComponent>();
+        Prefab::Save(root,"Prefabs/child.hprefab",childScene,child);
+        auto runtimeScene=CreateRef<Scene>();auto spawner=runtimeScene->CreateEntity("Spawner");spawner.AddComponent<ScriptComponent>().ClassName="Migration.LifecycleSpawner";
+        auto& childField=ScriptEngine::GetScriptFieldMap(spawner)["Child"];childField.Field={ScriptFieldType::Prefab,"Child",nullptr};childField.AssetReference="Prefabs/child.hprefab";
+        childField.AssetReference="Prefabs/missing.hprefab";rejected=false;
+        try{Prefab::Save(root,"Prefabs/missing-reference.hprefab",runtimeScene,spawner);}catch(const std::exception&){rejected=true;}
+        Check(rejected&&!std::filesystem::exists(root/"Prefabs/missing-reference.hprefab"),"Missing typed prefab reference was accepted");
+        childField.AssetReference="Prefabs/child.hprefab";
+        RuntimeSession runtime;runtime.Start(Project::GetActive(),runtimeScene);runtime.Update(.01f);
+        auto current=runtime.GetScene();auto dynamic=current->FindEntityByName("Dynamic child");Check(bool(dynamic),"Managed instantiation failed");
+        auto dynamicID=dynamic.GetUUID();auto instance=ScriptEngine::GetEntityScriptInstance(dynamicID);Check(instance&&instance->GetFieldValue<int>("Creates")==1&&instance->GetFieldValue<int>("Updates")==0&&instance->GetFieldValue<float>("InitialX")==7&&instance->GetFieldValue<float>("InitialVelocityX")==1&&instance->GetFieldValue<bool>("BodyReady"),"Dynamic startup/transform/immediate physics/first update contract failed");
+        runtime.Update(.01f);auto parent=ScriptEngine::GetEntityScriptInstance(spawner.GetUUID());
+        Check(parent->GetFieldValue<bool>("InvalidatedImmediately")&&!current->GetEntityByUUID(dynamicID)&&!instance->GetManagedObject(),"Repeated managed destruction did not invalidate/cleanup");
+        runtime.Update(.01f);Check(!current->GetEntityByUUID(spawner.GetUUID())&&!parent->GetManagedObject(),"Self destruction retained managed handle");runtime.Stop();
+        runtime.Start(Project::GetActive(),runtimeScene);auto pending=Prefab::Instantiate(root,"Prefabs/child.hprefab",*runtime.GetScene(),initial);auto pendingID=pending.GetUUID();auto retained=runtime.GetScene();runtime.Stop();
+        Check(!retained->GetEntityByUUID(pendingID)&&!retained->IsRunning(),"Stop did not cancel pending instantiation");
+        std::string diagnostic;auto settings=EditorPreferences::Load(diagnostic);settings.SDK=m_Directory.generic_u8string();settings.Python=(m_Directory/"Python é/python").generic_u8string();settings.UIScale=1.25f;settings.Remember(m_Editor.m_ProjectPath);settings.Save();
+        auto loaded=EditorPreferences::Load(diagnostic);
+        Check(diagnostic.empty() && loaded.SDK==settings.SDK && loaded.Python==settings.Python && loaded.UIScale==1.25f && loaded.RecentProjects==settings.RecentProjects,"Preferences persistence failed");
+        auto location=EditorPreferences::Location();FileSystem::WriteFileAtomically(location,[](auto& out){out<<"Version: 99\n";});
+        loaded=EditorPreferences::Load(diagnostic);Check(!diagnostic.empty() && loaded.SDK.empty() && loaded.UIScale==1 && Read(location)=="Version: 99\n","Malformed preferences not recovered/preserved");
+        { AuthoringPanel recovery(m_Editor); recovery.RememberProject();Check(Read(location)=="Version: 99\n" && !recovery.m_PreferenceRecovery.empty(),"Automatic recent-project persistence overwrote recovered preferences"); }
+        loaded.SDK=settings.SDK;loaded.Python=settings.Python;loaded.UIScale=settings.UIScale;loaded.RecentProjects=settings.RecentProjects;
+        loaded.Save(true);settings=loaded;
+        Check(ScriptSource::ValidIdentifier("Player_2")&&!ScriptSource::ValidIdentifier("class")&&!ScriptSource::ValidIdentifier("a/b")&&ScriptSource::ValidNamespace("Game.Play")&&!ScriptSource::ValidNamespace("Game..Play"),"Script identifier validation failed");
+        auto created=ScriptSource::Create(root,"AuthoringProbe","Game.Play");Check(Read(created).find("Entity.Instantiate")!=std::string::npos,"Missing generated lifecycle sample");
+        Check(ScriptSource::Find(root,"Game.Play.AuthoringProbe")==created,"Script source resolution ignored its namespace");
+        rejected=false;try{ScriptSource::Create(root,"AuthoringProbe","Game.Play");}catch(const std::exception&){rejected=true;}Check(rejected,"Script creation overwrote source");
+        auto invalid=Toolchain::DiscoverPython(m_Directory/"missing-python");Check(!invalid && invalid.Source.find("Configured")!=std::string::npos,"Invalid configured Python silently fell back");
+        std::filesystem::create_directories(m_Directory/"scripts");
+        FileSystem::WriteFileAtomically(m_Directory/"scripts/hazel.py",[](auto& out){out<<"# cwd is not a configured SDK\n";});
+        auto missingTools=ProjectTools::Execute({m_Directory/"missing-python",{},{},{"authoring-preflight"},"Missing tools"});
+        Check(!missingTools.Success && missingTools.Output.find("SDK also unavailable")!=std::string::npos,"Missing Python concealed missing SDK or inferred SDK from cwd");
+        const auto executable=FileSystem::GetExecutablePath();
+        for(const auto& name:{"unsupported-python","malformed-python","failed-python","hang-python"}) {
+            auto probe=m_Directory/(std::string(name)+executable.extension().u8string());
+            std::error_code linkError;
+            std::filesystem::create_hard_link(executable,probe,linkError);
+            if(linkError) std::filesystem::copy_file(executable,probe);
+            auto selection=Toolchain::ProbePython(probe,"Controlled probe fixture");
+            Check(!selection&&!selection.Error.empty(),"Broken/unsupported/timed out Python probe accepted");
+            std::filesystem::remove(probe);
+        }
+        Check(!Toolchain::SelectPythonCandidates({}),"Missing Python was accepted");
+        auto probeFolder=m_Directory/std::filesystem::u8path("Python space é");std::filesystem::create_directory(probeFolder);
+        auto validProbe=probeFolder/(std::string("valid-python")+executable.extension().u8string());
+        auto olderProbe=probeFolder/(std::string("older-python")+executable.extension().u8string());
+        std::filesystem::copy_file(executable,validProbe);std::filesystem::copy_file(executable,olderProbe);
+        auto ordered=Toolchain::SelectPythonCandidates({olderProbe,validProbe});
+        Check(bool(ordered)&&ordered.Version=="3.9.1"&&ordered.Executable==olderProbe,"Python installation ordering was nondeterministic");
+        ordered=Toolchain::SelectPythonCandidates({m_Directory/"missing",validProbe,olderProbe});
+        Check(bool(ordered)&&ordered.Version=="3.14.1"&&ordered.Executable==validProbe,"Compatible Python candidate selection failed");
+        std::filesystem::remove(validProbe);std::filesystem::remove(olderProbe);
+        auto python=Toolchain::DiscoverPython();Check(bool(python)&&python.Executable.is_absolute()&&!python.Version.empty(),"Installed Python discovery failed");
+        std::cout<<"AUTHORING PYTHON: "<<python.Executable.generic_u8string()<<"; "<<python.Source<<"; "<<python.Version<<"\n";
+        Check(bool(Toolchain::DiscoverPython(python.Executable)),"Explicit valid Python failed");
+#ifndef HZ_PLATFORM_WINDOWS
+        auto savedPath=std::getenv("PATH")?std::getenv("PATH"):std::string{};setenv("PATH","/nonexistent-hazel-test",1);
+        auto without=Toolchain::DiscoverPython();setenv("PATH",savedPath.c_str(),1);
+        Check(bool(without)&&without.Executable==python.Executable,"Python discovery depends on PATH or is nondeterministic");
+        auto alias=m_Directory/std::filesystem::u8path("Python space é");std::filesystem::create_directories(alias);std::filesystem::create_symlink(python.Executable,alias/"interpreter");
+        Check(bool(Toolchain::DiscoverPython(alias/"interpreter")),"Unicode/spaces interpreter probe failed");
+        std::filesystem::remove(alias/"interpreter");Check(!Toolchain::DiscoverPython(alias/"interpreter"),"Removed interpreter cache remained valid");
+        auto timed=Process::Run("/bin/sleep",{"2"},{},std::chrono::milliseconds(50));Check(timed.TimedOut,"Process timeout did not reap child");
+#ifdef HZ_PLATFORM_LINUX
+        auto descriptor=::open((m_Directory/"AuthoringProject/Authoring.hproj").c_str(),O_RDONLY);
+        Check(descriptor>=0,"Cannot open descriptor fixture");
+        auto inherited=fcntl(descriptor,F_DUPFD,100);::close(descriptor);
+        Check(inherited>=100,"Cannot create inheritable descriptor fixture");
+        auto closed=Process::Run(executable,{"--probe-closed-descriptor",std::to_string(inherited)},{},std::chrono::seconds(5));
+        auto resultPath=m_Directory/"launch-descriptors.txt";
+        bool launched=Process::Launch(executable,{"--probe-closed-descriptor",std::to_string(inherited),resultPath.generic_u8string()});
+        for(int wait=0;launched && Read(resultPath)!="closed" && wait<200;wait++)std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        ::close(inherited);
+        Check(closed.ExitCode==0 && launched && Read(resultPath)=="closed","Tool/external-editor child inherited engine descriptors");
+#endif
+#else
+        auto savedPath=FileSystem::GetEnvironmentPath("PATH").wstring();_wputenv_s(L"PATH",L"C:/nonexistent-hazel-test");
+        auto without=Toolchain::DiscoverPython();_wputenv_s(L"PATH",savedPath.c_str());
+        Check(bool(without)&&without.Executable==python.Executable,"Windows Python discovery depends on PATH or is nondeterministic");
+        std::filesystem::create_directory(m_Directory/"WindowsApps");std::filesystem::copy_file(executable,m_Directory/"WindowsApps/python.exe");
+        auto storeAlias=Toolchain::ProbePython(m_Directory/"WindowsApps/python.exe","alias");Check(!storeAlias&&storeAlias.Error.find("aliases")!=std::string::npos,"Windows execution alias accepted");
+#endif
+        std::cout<<"PASS: prefab identity/independence/self/external references/malformed assets, script creation, preferences recovery/scopes, absolute Python discovery\n";
+    }
+    void HierarchyAuthoringChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=e.m_SceneHierarchyPanel;
+        const auto scene=e.m_EditorScene;const auto before=a.SceneText();const auto saved=a.m_SavedScene;
+        const auto oldSelection=panel.GetSelectedEntity();const uint64_t oldID=oldSelection?uint64_t(Entity(oldSelection).GetUUID()):0;
+        Check(panel.AddEntity("Hierarchy root"),"Controller Create Root failed");auto root=panel.GetSelectedEntity();
+        auto transform=root.GetComponent<TransformComponent>();transform.Translation={3,2,0};scene->SetLocalTransform(root,transform);
+        Check(panel.AddChild(root,"Hierarchy child"),"Controller Create Child failed");auto child=panel.GetSelectedEntity();
+        transform=child.GetComponent<TransformComponent>();transform.Translation={1,0,0};scene->SetLocalTransform(child,transform);
+        Check(panel.AddChild(child,"Hierarchy leaf"),"Controller nested child failed");auto leaf=panel.GetSelectedEntity();leaf.AddComponent<SpriteRendererComponent>();
+        const auto snapshot=a.SceneText();
+        Check(!panel.ReparentEntity(scene->GetIdentity(),root.GetUUID(),leaf.GetUUID(),TransformPolicy::KeepLocal) && a.SceneText()==snapshot,"Tree reparent cycle changed draft");
+        Check(!panel.ReparentEntity(scene->GetIdentity()+1,child.GetUUID(),0,TransformPolicy::KeepWorld) && a.SceneText()==snapshot,"Tree stale/cross-scene payload mutated draft");
+        panel.SetSelectedEntity(child);const auto world=scene->GetWorldTransform(child);
+        Check(panel.ReparentEntity(scene->GetIdentity(),child.GetUUID(),0,TransformPolicy::KeepWorld) && scene->GetWorldTransform(child)==world && panel.GetSelectedEntity()==child,"Tree unparent moved entity/lost selection");
+        Check(panel.ReparentEntity(scene->GetIdentity(),child.GetUUID(),root.GetUUID(),TransformPolicy::KeepWorld),"Tree reparent failed");
+        panel.SetSelectedEntity(child);
+        a.InvokeRuntime(AuthoringPanel::RuntimeAction::Play);
+        if(a.m_Documents.Pending())
+            Check(a.m_Documents.Resolve(GuardChoice::UseSaved,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Nested Play asset guard failed");
+        Check(e.m_SceneState==EditorLayer::SceneState::Play && e.m_ActiveScene!=scene,"Nested authored scene did not enter independent Play copy");
+        auto runtimeChild=e.m_ActiveScene->GetEntityByUUID(child.GetUUID());
+        Check(e.m_ActiveScene->GetRelationship(runtimeChild).Parent==root.GetUUID() && e.m_ActiveScene->GetWorldTransform(runtimeChild)==world,"Play copy lost nested relationship/world pose");
+        auto live=runtimeChild.GetComponent<TransformComponent>();live.Translation.x=9;e.m_ActiveScene->SetLocalTransform(runtimeChild,live);
+        panel.SetSelectedEntity(runtimeChild);
+        Check(a.InvokeRuntime(AuthoringPanel::RuntimeAction::Stop) && panel.GetSelectedEntity()==child && scene->GetWorldTransform(child)==world,"Stop lost nested authored selection/pose or retained live edits");
+        panel.SetSelectedEntity(child);
+        const auto dropBefore=a.SceneText();
+        Check(panel.DropEntity(scene->GetIdentity(),child.GetUUID(),0) && panel.GetSelectedEntity()==child && scene->GetWorldTransform(child)==world,"Production Scene Root drop lost world pose/selection");
+        Check(a.SceneText()!=dropBefore && a.m_SavedScene==saved,"Successful root drop did not change the draft independently of saved state");
+        Check(panel.DropEntity(scene->GetIdentity(),child.GetUUID(),root.GetUUID()) && a.SceneText()==dropBefore,"Production row drop changed world pose or order");
+        Check(!panel.DropEntity(scene->GetIdentity(),root.GetUUID(),leaf.GetUUID()) && a.SceneText()==dropBefore,"Production cycle drop mutated draft");
+        auto physics=scene->CreateEntity("Drop physics");physics.AddComponent<Rigidbody2DComponent>();
+        const auto physical=a.SceneText();
+        Check(!panel.DropEntity(scene->GetIdentity(),physics.GetUUID(),root.GetUUID()) && a.SceneText()==physical && panel.GetSelectedEntity()==child,"Physics drop changed scene or selection");scene->DestroyEntity(physics);
+        auto stretched=scene->CreateEntity("Stretch");auto skewed=scene->CreateEntity("Skewed");
+        stretched.GetComponent<TransformComponent>().Scale={2,1,1};skewed.GetComponent<TransformComponent>().Rotation.z=.6f;
+        scene->Reparent(skewed,stretched,TransformPolicy::KeepLocal);const auto skewDraft=a.SceneText();
+        Check(!panel.DropEntity(scene->GetIdentity(),skewed.GetUUID(),0) && a.SceneText()==skewDraft && panel.GetSelectedEntity()==child,"Failed keep-world root drop changed draft or selection");scene->DestroyEntity(stretched);
+        const auto dropFile=m_Directory/"hierarchy-drop.hazel";SceneSerializer(scene).Serialize(dropFile.u8string());
+        auto reopened=CreateRef<Scene>();reopened->SetAssets(scene->GetAssets());
+        Check(SceneSerializer(reopened).Deserialize(dropFile.u8string()) && reopened->GetRelationship(reopened->GetEntityByUUID(child.GetUUID())).Parent==root.GetUUID() && reopened->GetWorldTransform(reopened->GetEntityByUUID(child.GetUUID()))==world,"Production drop save/reopen lost hierarchy or world pose");
+        panel.SetSelectedEntity(root);Check(panel.DuplicateSelected(),"Controller Duplicate Subtree failed");auto duplicate=panel.GetSelectedEntity();
+        Check(scene->GetSubtree(duplicate).size()==3,"Tree duplication lost children");
+        const auto roots=scene->GetAllEntitiesWith<IDComponent>().size();
+        Check(!panel.ConfirmDelete(scene->GetIdentity(),duplicate.GetUUID(),1,DestroyPolicy::Subtree,TransformPolicy::KeepWorld) && scene->GetAllEntitiesWith<IDComponent>().size()==roots && panel.GetSelectedEntity()==duplicate,"Changed delete count lost content or selection");
+        root.AddComponent<ScriptComponent>().ClassName="Unavailable.HierarchyAuthor";
+        auto& external=ScriptEngine::GetScriptFieldMap(root)["External"];
+        external.Field={ScriptFieldType::Entity,"External",nullptr};external.SetValue<uint64_t>(duplicate.GetUUID());
+        Check(panel.ClearStoredEntityReference(root,"External") && external.GetValue<uint64_t>()==0 && root.GetComponent<ScriptComponent>().ClassName=="Unavailable.HierarchyAuthor","Uncompiled stored reference Clear failed or changed class");
+        root.RemoveComponent<ScriptComponent>();ScriptEngine::GetScriptFieldMap(root).clear();
+        const auto reference=std::filesystem::path("Prefabs/hierarchy-authoring.hprefab");
+        Prefab::Save(Project::GetAssetDirectory(),reference,scene,root,true,WriteMode::CreateNew);
+        auto asset=Prefab::Load(Project::GetAssetDirectory(),reference,true);SceneHierarchyPanel inspector(asset);
+        inspector.PrefabDocument=true;inspector.EditOperation=EditorAction::EditAsset;inspector.Availability=[&](EditorAction op){return a.Availability(op);};
+        auto assetRoot=Prefab::GetEntity(asset);inspector.SetSelectedEntity(assetRoot);
+        Check(!inspector.DuplicateSelected() && !inspector.DeleteSelected(),"Prefab tree allowed a second root or destroyed asset root");
+        auto assetChild=asset->GetEntityByUUID(asset->GetChildren(assetRoot.GetUUID()).front());inspector.SetSelectedEntity(assetChild);
+        Check(inspector.AddChild(assetChild,"New asset child") && inspector.DuplicateSelected(),"Prefab child authoring failed");
+        const auto updated=Prefab::Serialize(Project::GetAssetDirectory(),asset,assetRoot,true);
+        Check(YAML::Load(updated)["Entities"].size()==5,"Prefab hierarchy edit/save lost subtree");
+        a.Guard(OperationIntent::OpenScene,[]{return false;});
+        Check(a.m_Documents.Pending() && !panel.ReparentEntity(scene->GetIdentity(),child.GetUUID(),0,TransformPolicy::KeepWorld),"Pending document operation allowed hierarchy mutation");
+        a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),[&](const auto& document){return a.SaveDocument(document);});
+        const auto closeDraft=a.SceneText();const auto closeSelection=panel.GetSelectedEntity();
+        Application::Get().GetWindow().RequestClose();
+        Check(a.m_Documents.Pending() && a.m_Documents.Intent()==OperationIntent::CloseEditor,"Caption close bypassed document guard");
+        a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),{});
+        Check(a.SceneText()==closeDraft && panel.GetSelectedEntity()==closeSelection,"Cancelled caption close changed draft or selection");
+        Check(panel.ConfirmDelete(scene->GetIdentity(),duplicate.GetUUID(),3,DestroyPolicy::Subtree,TransformPolicy::KeepWorld),"Confirmed subtree deletion failed");
+        Check(panel.ConfirmDelete(scene->GetIdentity(),root.GetUUID(),3,DestroyPolicy::Subtree,TransformPolicy::KeepWorld),"Original subtree cleanup failed");
+        Check(a.SceneText()==before && a.m_SavedScene==saved,"Hierarchy cleanup altered unrelated content/saved state");
+        panel.SetSelectedEntity(scene->GetEntityByUUID(oldID));e.m_ActionError.clear();
+        std::cout<<"PASS: actual hierarchy controller create/reparent/identity/cycle/selection, subtree duplicate/count-confirmed delete, connected prefab edits, nested Play/Stop isolation/selection and pending-document mutation guards\n";
+    }
+    void CaptionChecks() {
+        auto& window=Application::Get().GetWindow();const auto requested=window.GetCaptionState().Requested;const auto placement=window.GetPlacement();
+        window.SetCustomCaption(true);
+        Check(window.GetCaptionState().Requested && !window.GetCaptionState().Reason.empty(),"Caption request lost effective explanation");
+#ifdef HZ_PLATFORM_WINDOWS
+        if(window.GetCaptionState().Custom) {
+            auto* handle=glfwGetWin32Window(static_cast<GLFWwindow*>(window.GetNativeWindow()));
+            auto normalized=window.GetPlacement();
+            Check(normalized.X==placement.X && normalized.Y==placement.Y && normalized.Width==placement.Width && normalized.Height==placement.Height,"Caption mode changed persisted native-equivalent geometry");
+            window.RestorePlacement(normalized);const auto restored=window.GetPlacement();
+            window.RestorePlacement(restored);const auto again=window.GetPlacement();
+            Check(again.X==restored.X && again.Y==restored.Y && again.Width==restored.Width && again.Height==restored.Height,"Custom caption restore accumulated geometry drift");
+            RECT client{};GetClientRect(handle,&client);
+            CaptionLayout layout{{30,20,200,30},{240,20,30,30},{280,20,30,30},{320,20,30,30}};
+            window.SetCaptionLayout(layout);
+            auto hit=[&](LONG x,LONG y) {POINT point{x,y};ClientToScreen(handle,&point);return SendMessageW(handle,WM_NCHITTEST,0,MAKELPARAM(point.x,point.y));};
+            Check(hit(80,35)==HTCAPTION && hit(285,35)==HTMAXBUTTON && hit(245,35)==HTCLIENT && hit(325,35)==HTCLIENT,"Native caption hit regions confused menus/controls/drag");
+            Check(hit(client.right/2,0)==HTTOP && hit(0,client.bottom/2)==HTLEFT,"Native custom frame lost resize boundaries");
+            SendMessageW(handle,WM_NCLBUTTONDOWN,HTMAXBUTTON,0);
+            SendMessageW(handle,WM_KEYDOWN,VK_ESCAPE,0);
+            Check(GetCapture()!=handle && !window.GetPlacement().Maximized,"Escape failed to cancel native maximize capture");
+            window.UseNativeCaption("Regression fallback");
+            Check(!window.GetCaptionState().Custom && window.GetCaptionState().Requested && hit(80,35)!=HTCAPTION && window.GetCaptionLayout().Hit(80,35)==CaptionHit::Client,"Native fallback lost request, procedure or layout reset");
+        }
+#else
+        Check(!window.GetCaptionState().Custom,"Linux discarded native WM decoration fallback");
+#endif
+        window.SetCustomCaption(requested);
+#ifndef HZ_PLATFORM_WINDOWS
+        (void)placement;
+#endif
+        std::cout<<"PASS: production caption request/fallback";
+#ifdef HZ_PLATFORM_WINDOWS
+        std::cout<<", Windows native hit/resize/capture checks when composition is available";
+#endif
+        std::cout<<"; dirty close/cancel exercised with hierarchy checks\n";
+    }
+    void RenderingChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;auto& window=Application::Get().GetWindow();
+        const auto project=Project::GetActive();const auto previous=project->GetRendererRequests();
+        const auto scene=e.m_EditorScene;const auto path=e.m_EditorScenePath;
+        const auto text=a.SceneText();const auto savedSnapshot=a.m_SavedScene;
+        const auto name=project->GetConfig().Name;const auto form=a.m_ProjectName;
+        a.m_ProjectName="Unaccepted general settings draft";
+        RuntimeRendererRequests request=previous;request.TextureSlots=2;request.VSync=false;
+        Check(a.SaveRenderingRequests(request) && project->GetConfig().Name==name && a.m_ProjectName=="Unaccepted general settings draft" &&
+              e.m_EditorScene==scene && e.m_EditorScenePath==path && a.SceneText()==text && a.m_SavedScene==savedSnapshot,
+              "Renderer-only save replaced content or unrelated configuration/form draft");
+        Check(!a.Availability(EditorAction::Play) && !a.Availability(EditorAction::Simulate) && !e.OnScenePlay(true) && !e.OnSceneSimulate(true) &&
+              e.m_EditorScene==scene && a.SceneText()==text && e.m_SceneState==EditorLayer::SceneState::Edit,
+              "UI/apply-time policy accepted unapplied GPU requests or changed content");
+        const auto accepted=Read(e.m_ProjectPath);FileSystem::WriteFileAtomically(e.m_ProjectPath,[](auto& out){out<<"External descriptor edit";});
+        Check(!a.SaveRenderingRequests(previous) && project->GetRendererRequests().TextureSlots==2 &&
+              Read(e.m_ProjectPath)=="External descriptor edit" && e.m_EditorScene==scene && a.SceneText()==text,
+              "Conflicting renderer save changed accepted config, source or scene");
+        FileSystem::WriteFileAtomically(e.m_ProjectPath,[&](auto& out){out<<accepted;});
+        auto runtime=previous;runtime.VSync=false;
+        Check(a.SaveRenderingRequests(runtime) && a.Availability(EditorAction::Play),"Supported current GPU policy remained pending");
+        Check(e.OnScenePlay(true) && !window.IsVSync(),"Play did not use portable runtime interval");
+        e.OnSceneStop();Check(window.IsVSync()==a.m_Preferences.VSync && e.m_EditorScene==scene && a.SceneText()==text,"Stop did not restore editor interval/authored content");
+        Check(e.OnSceneSimulate(true) && !window.IsVSync(),"Simulate did not use runtime interval");e.OnSceneStop();
+        Check(window.IsVSync()==a.m_Preferences.VSync,"Simulation Stop lost editor interval");
+        Check(a.SaveRenderingRequests(previous),"Renderer fixture restoration failed");a.m_ProjectName=form;
+        std::cout<<"PASS: production renderer-only save, unchanged content/general draft, conflict retention, shared pending/apply-time rejection, Play/Simulate interval and Stop restoration\n";
+    }
+    void NativeCreationChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;const auto previousProject=e.m_ProjectPath;
+        const auto destination=m_Directory/std::filesystem::u8path("native project é space");
+        const auto preferences=a.m_Preferences;
+        a.m_Preferences.Python=(m_Directory/"no-python").generic_u8string();a.m_Preferences.SDK=(m_Directory/"no-sdk").generic_u8string();a.RefreshSDK();
+        Check(!a.m_SDK,"Missing SDK fixture reported ready");
+        Check(a.CreateProject("Content first é","ContentFirst",destination),"Production native creation required Python/SDK or failed Open");
+        Check(Project::GetActive()->GetConfig().ScriptModulePath=="Scripts/Binaries/ContentFirst.dll"&&!ScriptEngine::IsInitialized(),"Fresh project borrowed classes or pretended scripts compiled");
+        auto entity=e.m_EditorScene->CreateEntity("Content authoring without tools");entity.AddComponent<SpriteRendererComponent>();
+        Check(e.SaveScene()&&e.OnScenePlay(true),"Fresh content could not save/Play without tools");e.OnSceneStop();
+        const auto retained=e.m_EditorScene;const auto file=e.m_EditorScenePath;
+        Check(!a.CreateProject("Existing","ContentFirst",destination)&&e.m_EditorScene==retained&&e.m_EditorScenePath==file,"Failed generation replaced valid session");
+        const auto assembly=Project::GetAssetFileSystemPath(Project::GetActive()->GetConfig().ScriptModulePath);
+        std::filesystem::copy_file(m_Directory/"AuthoringProject/Assets/Scripts/Binaries/Regression.dll",assembly);
+        Check(e.ReloadScripts()&&ScriptEngine::IsInitialized(),"Later valid assembly could not publish into fresh project");
+        entity=e.m_EditorScene->FindEntityByName("Content authoring without tools");entity.AddComponent<ScriptComponent>().ClassName="Migration.SceneProbe";
+        Check(e.OnScenePlay(true),"Prepared project unnecessarily required source SDK for scripted Play");e.OnSceneStop();
+        const auto acceptedClass=ScriptEngine::GetEntityClass("Migration.SceneProbe");const auto good=Read(assembly);
+        FileSystem::WriteFileAtomically(assembly,[](auto& out){out<<"invalid assembly";});
+        Check(!e.ReloadScripts()&&ScriptEngine::GetEntityClass("Migration.SceneProbe")==acceptedClass,"Failed staged reload retired valid assembly/session");
+        FileSystem::WriteFileAtomically(assembly,[&](auto& out){out<<good;});
+        a.m_Preferences=preferences;a.RefreshSDK();Check(e.OpenProject(previousProject),"Native creation fixture restore failed");e.m_ActionError.clear();
+        std::cout<<"PASS: production native create/Open without Python/SDK, content save/script-free Play, failed creation retention, later staged reload and prepared scripted Play/failed reload preservation\n";
+    }
+    void WorkspaceChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;
+        const auto project=e.m_ProjectPath;
+        auto remembered=Scene::Copy(e.m_EditorScene);remembered->SetName("Remembered workspace scene");
+        remembered->CreateEntityWithUUID(112233,"Remembered selection");
+        const auto path=Project::GetAssetDirectory()/"Scenes/workspace-restart.hazel";
+        const auto text=SceneSerializer(remembered).SerializeText();FileSystem::WriteNewFile(path,text);
+        a.m_Workspace.Scene="Scenes/workspace-restart.hazel";a.m_Workspace.Entity=112233;
+        a.m_Workspace.Focus={2,1,0};a.m_Workspace.Distance=13;a.m_Workspace.Sections["Transform"]=false;
+        a.m_State->SaveWorkspace(project,a.m_Workspace);a.m_State->Session.LastProject=project.generic_u8string();a.m_State->SaveSession();
+        a.Startup({"EditorSmoke"});
+        Check(e.m_EditorScenePath==path && e.m_EditorScene->GetName()=="Remembered workspace scene" &&
+              e.m_SceneHierarchyPanel.GetSelectedEntity().GetUUID()==112233 && e.m_EditorCamera.GetDistance()==13,
+              "Production startup did not restore accepted scene/camera/selection");
+        // F5 without a project must restore the last successful selection, not the launch example.
+        const auto selected=project.parent_path()/std::filesystem::u8path("selected project é.hproj");
+        FileSystem::WriteNewFile(selected,ProjectSerializer(Project::GetActive()).SerializeText());
+        Check(e.OpenProject(selected) && e.SaveProject(),"Selected project open/save failed");
+        a.FlushWorkspace(); // Same persistence used by orderly editor shutdown.
+        auto* gui=Application::Get().GetImGuiLayer();
+        a.m_State=std::make_unique<EditorState>(gui->OwnsWorkspace(),gui->InstanceToken());
+        const auto prelaunch=EditorRendererLaunch::Read({"EditorSmoke"});
+        a.Startup({"EditorSmoke"});
+        Check(prelaunch.Project==selected && e.m_ProjectPath==selected &&
+              a.m_State->Session.LastProject==selected.generic_u8string(),
+              "Fresh prelaunch/startup did not restore the project selected and saved after launch");
+        a.Startup({"EditorSmoke","--project",project.generic_u8string()});
+        Check(e.m_ProjectPath==project && e.m_EditorScenePath==path,
+              "Intentional explicit project lost precedence over the remembered selection");
+        const auto retained=e.m_EditorScene;const auto draft=a.SceneText();
+        a.Startup({"EditorSmoke","--project",(m_Directory/"missing-explicit.hproj").generic_u8string()});
+        Check(e.m_EditorScene==retained && a.SceneText()==draft,"Bad explicit launch fell back/replaced valid session");
+        a.m_Workspace.Scene="Scenes/missing-remembered.hazel";a.m_State->SaveWorkspace(project,a.m_Workspace);
+        a.Startup({"EditorSmoke"});
+        Check(e.m_EditorScenePath==Project::GetAssetFileSystemPath(Project::GetActive()->GetConfig().StartScene) && !a.m_MissingScene.empty(),
+              "Missing remembered scene did not retain validated startup/Locate route");
+        const auto fallback=e.m_EditorScene;
+        a.Startup({"EditorSmoke","--no-restore"});
+        Check(e.m_EditorScene==fallback,"No-restore replaced an existing valid document");
+        a.m_Workspace={};a.m_MissingScene.clear();a.m_State->SaveWorkspace(project,a.m_Workspace,true);
+        Check(e.OpenProject(project),"Workspace fixture could not restore original project");
+        e.m_ActionError.clear();
+        std::cout<<"PASS: production startup restores workspace, explicit failure retains session, missing remembered scene falls back safely, no-restore and reset preserve content\n";
+    }
+    void RecoveryChecks() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;
+        const auto project=e.m_ProjectPath;
+        auto previous=e.m_EditorScene;
+        auto entity=previous->CreateEntity("Unsaved recovery sentinel");
+        e.m_SceneHierarchyPanel.SetSelectedEntity(entity);
+        const auto draft=a.SceneText();const auto selection=entity.GetUUID();
+        const auto future=m_Directory/"future-scene.hazel";
+        const std::string unknown="SceneVersion: 99\nScene: Future\nEntities: []\n";
+        FileSystem::WriteFileAtomically(future,[&](auto& out){out<<unknown;});
+        a.Guard(OperationIntent::OpenScene,[&]{return e.OpenScene(future);});
+        Check(a.m_Documents.Pending(),"Unknown scene replacement skipped dirty guard");
+        a.m_ResolvingDocumentAction=true;
+        Check(!a.m_Documents.Resolve(GuardChoice::Discard,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Unknown scene replaced the session");
+        a.m_ResolvingDocumentAction=false;
+        Check(e.m_EditorScene==previous && a.SceneText()==draft && Read(future)==unknown && e.m_SceneHierarchyPanel.GetSelectedEntity().GetUUID()==selection,"Rejected schema lost draft/source/selection");
+        a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),{});
+        const auto missing=m_Directory/"recoverable-scene.hazel";
+        const std::string source=u8"Scene: Recovery é\nEntities:\n  - Entity: 42\n    TagComponent: {Tag: Unresolved}\n    SpriteRendererComponent:\n      Color: [1, 1, 1, 1]\n      TexturePath: Textures/no file é.png\n      TilingFactor: 1\n";
+        FileSystem::WriteFileAtomically(missing,[&](auto& out){out<<source;});
+        a.Guard(OperationIntent::OpenScene,[&]{return e.OpenScene(missing);});
+        Check(a.m_Documents.Pending(),"Recovery Open skipped dirty guard");
+        a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),{});
+        Check(e.m_EditorScene==previous && a.SceneText()==draft,"Cancelled recovery Open changed draft");
+        a.Guard(OperationIntent::OpenScene,[&]{return e.OpenScene(missing);});
+        a.m_ResolvingDocumentAction=true;
+        Check(a.m_Documents.Resolve(GuardChoice::Discard,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Normal guarded Open rejected missing texture");
+        a.m_ResolvingDocumentAction=false;
+        auto recovery=e.m_EditorScene;auto unresolved=recovery->GetEntityByUUID(42);
+        Check(e.m_SceneLoad.State==DocumentLoadState::EditableWithProblems && e.m_SceneLoad.Migration && a.SceneText()==a.m_SavedScene,"Recovery state was not explicit or missing asset marked dirty");
+        unresolved.GetComponent<TagComponent>().Tag="Edited unresolved";
+        Check(e.SaveScene(),"Recovery scene save failed");
+        Check(!e.m_SceneLoad.Migration && e.m_SceneLoad.State==DocumentLoadState::EditableWithProblems,"Saving migration hid unresolved resources or retained obsolete encoding status");
+        Check(Read(e.m_SceneFile.Backup())==source && Read(missing).find(u8"Textures/no file é.png")!=std::string::npos && Read(missing).find(u8"Recovery é")!=std::string::npos,"Recovery save lost original bytes/reference/scene name");
+        const auto external=Read(missing)+"\n# external edit\n";
+        FileSystem::WriteFileAtomically(missing,[&](auto& out){out<<external;});
+        unresolved.GetComponent<TagComponent>().Tag="Draft survives conflict";
+        const auto conflictDraft=a.SceneText();
+        Check(!e.SaveScene() && Read(missing)==external && e.m_EditorScene==recovery && a.SceneText()==conflictDraft,"Conflicting recovery save overwrote disk/draft");
+        Check(!e.OnScenePlay(true) && e.m_EditorScene==recovery,"Unresolved resource entered runtime");
+        Check(e.OpenProject(project),"Original project did not reopen after recovery");
+        const auto root=Project::GetAssetDirectory();
+        const std::filesystem::path repairedSheet="recovery-cache.hsprites";
+        unsigned char pixels[18+16]{};pixels[2]=2;pixels[12]=pixels[14]=2;pixels[16]=32;pixels[17]=0x20;
+        {std::ofstream image(root/"recovery-cache.tga",std::ios::binary);image.write(reinterpret_cast<const char*>(pixels),sizeof(pixels));}
+        auto missingSheetScene=CreateRef<Scene>();
+        missingSheetScene->CreateEntity("Repaired sheet").AddComponent<SpriteRendererComponent>().Source=SpriteReference{repairedSheet,1};
+        const auto sheetScene=root/"recovery-cache.hazel";
+        const auto sceneText=SceneSerializer(missingSheetScene).SerializeText();
+        FileSystem::WriteNewFile(sheetScene,sceneText);
+        a.Guard(OperationIntent::OpenScene,[&]{return e.OpenScene(sheetScene);});
+        Check(e.m_SceneLoad.State==DocumentLoadState::EditableWithProblems,"Missing sheet was not recognized");
+        try{Project::GetActive()->GetAssets()->Sheet(repairedSheet);}catch(const std::exception&){} // Cached failure in retained workspace.
+        SpriteSheetDefinition repaired;repaired.Texture="recovery-cache.tga";repaired.Sampling.Width=repaired.Sampling.Height=2;
+        repaired.Regions.push_back({1,"Repaired",{0,0,2,2},{.5f,.5f}});
+        SaveSpriteSheet(root,repairedSheet,repaired,WriteMode::CreateNew);
+        a.Guard(OperationIntent::OpenScene,[&]{return e.OpenScene(sheetScene);});
+        Check(e.m_SceneLoad.State==DocumentLoadState::Ready && Project::GetActive()->GetAssets()->Sheet(repairedSheet)->Region(1).Name=="Repaired",
+              "Scene recovery Retry reused a stale missing-sheet cache or abandoned shared asset ownership");
+        Check(e.OpenProject(project),"Project restore after sheet recovery failed");
+        auto candidate=CreateRef<Project>();candidate->GetConfig()=Project::GetActive()->GetConfig();
+        candidate->GetConfig().ScriptModulePath="Scripts/not compiled.dll";
+        auto scriptedCandidate=CreateRef<Scene>();
+        scriptedCandidate->CreateEntity("Assigned script").AddComponent<ScriptComponent>().ClassName="Migration.SceneProbe";
+        const auto scriptedFile=root/"content-only-scripted.hazel";
+        const auto scriptedText=SceneSerializer(scriptedCandidate).SerializeText();
+        FileSystem::WriteNewFile(scriptedFile,scriptedText);
+        candidate->GetConfig().StartScene="content-only-scripted.hazel";
+        const auto noScripts=project.parent_path()/"content-only.hproj";
+        Check(ProjectSerializer(candidate).Serialize(noScripts),"Content-only fixture creation failed");
+        Check(e.OpenProject(noScripts) && !ScriptEngine::IsInitialized() && !ScriptEngine::EntityClassExists("Migration.SceneProbe"),"Uncompiled Open borrowed the previous project's script classes");
+        Check(!e.OnScenePlay(true),"Scripted Play accepted unavailable assembly");
+        Check(e.OnSceneSimulate(true),"Uncompiled content could not simulate");e.OnSceneStop();
+        std::vector<std::pair<Entity,std::string>> bindings;
+        for(auto handle:e.m_EditorScene->GetAllEntitiesWith<ScriptComponent>()) {
+            Entity item(handle,e.m_EditorScene.get());bindings.emplace_back(item,item.GetComponent<ScriptComponent>().ClassName);
+            item.GetComponent<ScriptComponent>().ClassName.clear();
+        }
+        Check(e.OnScenePlay(true),"Unassigned script components unnecessarily required a project domain");e.OnSceneStop();
+        for(auto& [item,name]:bindings)item.GetComponent<ScriptComponent>().ClassName=name;
+        Check(e.OpenProject(project) && ScriptEngine::IsInitialized(),"Mono root could not accept later valid assembly");
+        candidate->GetConfig()=Project::GetActive()->GetConfig();candidate->GetConfig().StartScene="Scenes/not found.hazel";
+        const auto noScene=project.parent_path()/"workspace-only.hproj";
+        Check(ProjectSerializer(candidate).Serialize(noScene),"Workspace fixture creation failed");
+        previous=e.m_EditorScene;
+        Check(!e.OpenProject(noScene) && e.m_OpenLoad.State==DocumentLoadState::NeedsDecision && e.m_EditorScene==previous,"Missing startup guessed a replacement");
+        EditorLayer::ProjectOpenOptions options;options.WithoutScene=true;
+        Check(e.OpenProject(noScene,options) && e.m_EditorScenePath.empty() && Project::GetActive()->GetConfig().StartScene=="Scenes/not found.hazel","Explicit empty workspace rewrote startup reference");
+        Check(e.OpenProject(project),"Original project restore failed");
+        for(const auto& invalid:{std::string("Scene: Duplicate\nEntities: []\nScene: Again\n"),std::string("Scene: Unknown\nEntities: []\nFuture: 1\n"),std::string("Scene: Unknown component\nEntities: [{Entity: 1, FutureComponent: {Data: 1}}]\n")}) {
+            FileSystem::WriteFileAtomically(future,[&](auto& out){out<<invalid;});
+            previous=e.m_EditorScene;
+            Check(!e.OpenScene(future) && e.m_EditorScene==previous && Read(future)==invalid,"Unknown/duplicate schema was rewritten or interpreted");
+        }
+        e.m_ActionError.clear();a.m_ShowSaveConflict=false;
+        std::cout<<"PASS: guarded automatic recovery/cancel/unknown schema, exact unresolved references and original backup, external save conflict, optional assembly/domain isolation, explicit empty workspace\n";
+    }
     void FailureChecks() {
         auto& e=m_Editor;
         const auto project=Project::GetActive(); const auto scene=e.m_ActiveScene; const auto authored=e.m_EditorScene;
@@ -198,7 +1164,7 @@ private:
         }
         const auto missingTexture=projectPath.parent_path()/"missing-texture.hazel";
         std::ofstream(missingTexture)<<"Scene: Missing texture\nEntities:\n  - Entity: 901\n    SpriteRendererComponent:\n      Color: [1, 1, 1, 1]\n      TexturePath: Textures/missing.png\n      TilingFactor: 1\n";
-        Check(!e.OpenScene(missingTexture),"Missing texture scene reported success"); preserved();
+        // Automatic editable recovery is exercised through the guarded Open path in RecoveryChecks.
         auto candidate=CreateRef<Project>(); candidate->GetConfig()=project->GetConfig();
         for(bool corrupt:{false,true}) {
             candidate->GetConfig().StartScene=corrupt ? std::filesystem::absolute(badScene) : std::filesystem::path("Scenes/missing.hazel");
@@ -210,7 +1176,7 @@ private:
         Check(!e.OpenProject(badProject),"Missing assets reported success"); preserved();
         candidate->GetConfig()=project->GetConfig(); candidate->GetConfig().ScriptModulePath="Scripts/missing.dll";
         Check(ProjectSerializer(candidate).Serialize(badProject),"Missing assembly setup failed");
-        Check(!e.OpenProject(badProject),"Missing assembly reported success"); preserved();
+        // Missing assemblies now permit content editing; RecoveryChecks verifies domain retirement and later reload.
         candidate->GetConfig()=project->GetConfig();
         Check(ProjectSerializer(candidate).Serialize(badProject),"Corrupt assembly setup failed");
         const auto assembly=Project::GetAssetFileSystemPath(project->GetConfig().ScriptModulePath);
@@ -241,12 +1207,57 @@ private:
         Check(Read(scenePath)==priorScene && Read(projectPath)==priorProject,"Failed save changed prior scene/project bytes");
     }
     EditorLayer& m_Editor;
+    Ref<Scene> m_HierarchyCapture;
+    Ref<Framebuffer> m_HierarchyPreviewCapture;
+    SceneHierarchyPanel m_HierarchyCapturePanel;
     std::filesystem::path m_Directory;
     bool& m_Done;
     int m_Frame = 0;
+    bool m_Trickle = true;
+    std::chrono::steady_clock::time_point m_MinimizedStart;
 };
 }
+static int CaptionCPU() {
+    using namespace Hazel;
+    Log::Init();
+    CaptionLayout layout{{-30,0,300,30},{180,0,30,30},{210,0,30,30},{240,0,30,30}};
+    Check(layout.Hit(0,15)==CaptionHit::Drag && layout.Hit(185,15)==CaptionHit::Minimize && layout.Hit(215,15)==CaptionHit::Maximize && layout.Hit(245,15)==CaptionHit::Close, "Caption controls lost priority over drag area");
+    Check(layout.Hit(270,15)==CaptionHit::Client && layout.Hit(-31,15)==CaptionHit::Client && layout.Hit(0,30)==CaptionHit::Client, "Caption hit regions captured client edges");
+    CaptionLayout scaled{{0,0,400,60},{400,0,60,60},{460,0,60,60},{520,0,60,60}};
+    Check(scaled.Hit(490,30)==CaptionHit::Maximize && scaled.Hit(580,30)==CaptionHit::Client && scaled.Hit(NAN,0)==CaptionHit::Client, "Scaled/nonfinite caption coordinates were misclassified");
+    Check(CaptionLayout{}.Hit(0,0)==CaptionHit::Client && !CaptionRect{0,0,-1,2}.Contains(0,0), "Empty/invalid layout stole input");
+    EditorStateChecks();
+    std::cout<<"PASS: caption control/drag/client hit boundaries, scaled/negative coordinates and scoped preference persistence/reset/conflicts (CPU)\n";return 0;
+}
+static int HierarchyCPU() {
+    using namespace Hazel;
+    Log::Init();auto scene=CreateRef<Scene>();SceneHierarchyPanel panel(scene);
+    Check(panel.AddEntity("Rig"),"Add Entity failed");auto root=panel.GetSelectedEntity();
+    root.GetComponent<TransformComponent>().Translation={3,2,0};
+    Check(panel.AddEntity("Lantern"),"Add Entity did not create root");auto child=panel.GetSelectedEntity();
+    child.GetComponent<TransformComponent>().Translation={4,2,0};const auto world=scene->GetWorldTransform(child);
+    const auto saved=SceneSerializer(scene).SerializeAuthoredSnapshot();
+    Check(panel.DropEntity(scene->GetIdentity(),child.GetUUID(),root.GetUUID()) && scene->GetWorldTransform(child)==world && panel.GetSelectedEntity()==child,"Row drop lost pose/selection");
+    const auto parented=SceneSerializer(scene).SerializeAuthoredSnapshot();Check(parented!=saved,"Drop did not dirty content");
+    Check(!panel.DropEntity(scene->GetIdentity(),root.GetUUID(),child.GetUUID()) && SceneSerializer(scene).SerializeAuthoredSnapshot()==parented,"Cycle drop mutated content");
+    Check(!panel.DropEntity(scene->GetIdentity()+1,child.GetUUID(),0),"Cross-scene drop accepted");
+    auto body=scene->CreateEntity("Body");body.AddComponent<Rigidbody2DComponent>();
+    const auto physics=SceneSerializer(scene).SerializeAuthoredSnapshot();
+    Check(!panel.DropEntity(scene->GetIdentity(),body.GetUUID(),root.GetUUID()) && SceneSerializer(scene).SerializeAuthoredSnapshot()==physics,"Physics drop mutated content");
+    Check(panel.DropEntity(scene->GetIdentity(),child.GetUUID(),0) && scene->GetWorldTransform(child)==world && panel.GetSelectedEntity()==child,"Scene Root drop failed");
+    auto stretch=scene->CreateEntity("Stretch");auto skew=scene->CreateEntity("Skew");
+    stretch.GetComponent<TransformComponent>().Scale={2,1,1};skew.GetComponent<TransformComponent>().Rotation.z=.6f;scene->Reparent(skew,stretch,TransformPolicy::KeepLocal);
+    const auto retained=SceneSerializer(scene).SerializeAuthoredSnapshot();
+    Check(!panel.DropEntity(scene->GetIdentity(),skew.GetUUID(),0) && SceneSerializer(scene).SerializeAuthoredSnapshot()==retained && panel.GetSelectedEntity()==child,"Failed keep-world drop changed content/selection");
+    auto reopened=CreateRef<Scene>();Check(SceneSerializer(reopened).DeserializeText(SceneSerializer(scene).SerializeText()) && reopened->GetWorldTransform(reopened->GetEntityByUUID(child.GetUUID()))==world,"Drop save/reopen changed pose");
+    panel.Availability=[](EditorAction){return ActionAvailability{"Pending operation"};};
+    Check(!panel.DropEntity(scene->GetIdentity(),child.GetUUID(),root.GetUUID()) && SceneSerializer(scene).SerializeAuthoredSnapshot()==retained,"Availability bypass");
+    std::cout<<"PASS: production panel root/row drops, selection/dirty state, cycle/cross-scene/physics/shear/availability rejection and save/reopen (CPU)\n";return 0;
+}
 int main(int argc, char** argv) {
+    if(argc==2 && std::string(argv[1])=="--caption-cpu")try{return CaptionCPU();}catch(const std::exception& e){std::cerr<<"FAIL: "<<e.what()<<'\n';return 1;}
+    if(argc==2 && std::string(argv[1])=="--hierarchy-cpu")try{return HierarchyCPU();}catch(const std::exception& e){std::cerr<<"FAIL: "<<e.what()<<'\n';return 1;}
+
 #ifdef HZ_PLATFORM_WINDOWS
     auto encoded = Hazel::WindowsCommandLineUTF8();
     std::vector<char*> pointers;
@@ -254,6 +1265,26 @@ int main(int argc, char** argv) {
     argc = static_cast<int>(pointers.size()); pointers.push_back(nullptr); argv = pointers.data();
 #endif
     using namespace Hazel;
+#ifdef HZ_PLATFORM_LINUX
+    if(argc>=3 && std::string(argv[1])=="--probe-closed-descriptor") {
+        bool closed=fcntl(std::stoi(argv[2]),F_GETFD)==-1 && errno==EBADF;
+        if(argc==4)std::ofstream(std::filesystem::u8path(argv[3]))<<(closed?"closed":"inherited");
+        return closed?0:1;
+    }
+#endif
+    if(argc>1 && std::string(argv[1])=="--console-stream-probe") {
+        std::cout<<"stdout é\n"<<std::flush;std::cerr<<"stderr warning\n"<<std::flush;return 0;
+    }
+    if(argc>1 && std::string(argv[1])=="-I") {
+        auto name=std::filesystem::u8path(argv[0]).filename().u8string();
+        if(name.find("valid")!=std::string::npos || name.find("older")!=std::string::npos) {
+            std::cout<<"{\"version\":[3,"<<(name.find("older")!=std::string::npos?9:14)<<",1],\"ok\":true,\"executable\":"<<std::quoted(FileSystem::GetExecutablePath().generic_u8string())<<"}\n";return 0;
+        }
+        if(name.find("unsupported")!=std::string::npos){std::cout<<"{\"version\":[3,8,0],\"ok\":true,\"executable\":\"/missing\"}\n";return 0;}
+        if(name.find("malformed")!=std::string::npos){std::cout<<"malformed probe output\n";return 0;}
+        if(name.find("hang")!=std::string::npos)std::this_thread::sleep_for(std::chrono::seconds(10));
+        return 7;
+    }
     const auto previous = std::filesystem::current_path();
     const auto directory = std::filesystem::temp_directory_path() / std::filesystem::u8path("hazel-editor-é-" + std::to_string(std::random_device{}()));
     try {
@@ -273,17 +1304,22 @@ int main(int argc, char** argv) {
         auto projectArgument = project.lexically_relative(directory).generic_u8string();
         char executable[] = "EditorSmoke"; char* arguments[] = { executable, projectArgument.data() };
         bool done = false;
+        ConsoleSession console;
         {
             ApplicationSpecification spec; spec.Name = "Migration Editor";
             spec.Resources.Root = directory / "assets"; std::filesystem::current_path(directory); spec.CommandLineArgs = { 2, arguments };
             Application application(spec);
+            if(std::getenv("HAZEL_EDITOR_CAPTURE"))
+                glfwSetWindowSize(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()),1024,640);
             glfwHideWindow(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()));
             std::cout << "Renderer: " << glGetString(GL_RENDERER) << "; Version: " << glGetString(GL_VERSION) << '\n';
-            auto editor = CreateScope<EditorLayer>(); auto* observer = editor.get();
+            auto editor = CreateScope<EditorLayer>(console.Model); auto* observer = editor.get();
             application.PushLayer(std::move(editor));
             application.PushLayer(CreateScope<EditorWorkflowSmoke>(*observer, directory, done));
             application.Run();
         }
+        console.Model->Pump();
+        Check(!console.Model->Entries().empty(),"Application logging was disconnected during its lifetime");
         Check(done && !ScriptEngine::IsInitialized() && !Application::TryGet(), "Editor workflow/shutdown failed");
         std::filesystem::current_path(previous);
 #ifdef HZ_PLATFORM_WINDOWS

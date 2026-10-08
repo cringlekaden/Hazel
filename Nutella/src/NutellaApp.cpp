@@ -85,6 +85,8 @@ namespace Hazel {
             if (!std::filesystem::is_regular_file(path)) throw std::runtime_error("Missing project dependency: " + path.generic_u8string());
         }
         ApplicationSpecification spec; spec.Name = "Nutella"; spec.CommandLineArgs = args; spec.EnableImGui = false;
+        spec.Rendering = RendererPolicy::Settings(project->GetRendererRequests());
+        spec.WindowVSync = project->GetRendererRequests().VSync;
         return CreateScope<Nutella>(spec, project);
     }
 }

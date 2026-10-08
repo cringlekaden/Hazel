@@ -21,7 +21,10 @@ namespace Hazel {
 		T& AddComponent(Args&&... args)
 		{
 			if (!*this || HasComponent<T>()) throw std::logic_error("Invalid entity or duplicate component");
-			T& component = m_Scene->m_Registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
+			m_Scene->ValidateComponentPlacement(*this, std::is_same_v<T, Rigidbody2DComponent> ||
+                std::is_same_v<T, BoxCollider2DComponent> || std::is_same_v<T, CircleCollider2DComponent>);
+            ValidatePhysicsCandidate<T>(args...);
+            T& component = m_Scene->m_Registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
 			m_Scene->OnComponentAdded<T>(*this, component);
 			return component;
 		}
@@ -30,7 +33,10 @@ namespace Hazel {
 		T& AddOrReplaceComponent(Args&&... args)
 		{
 			if (!*this) throw std::logic_error("Invalid entity");
-			if (HasComponent<T>()) m_Scene->OnComponentRemoving<T>(*this);
+			m_Scene->ValidateComponentPlacement(*this, std::is_same_v<T, Rigidbody2DComponent> ||
+                std::is_same_v<T, BoxCollider2DComponent> || std::is_same_v<T, CircleCollider2DComponent>);
+            ValidatePhysicsCandidate<T>(args...);
+            if (HasComponent<T>()) m_Scene->OnComponentRemoving<T>(*this);
 			T& component = m_Scene->m_Registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
 			m_Scene->OnComponentAdded<T>(*this, component);
 			return component;
@@ -75,7 +81,16 @@ namespace Hazel {
 		{
 			return !(*this == other);
 		}
-	private:
+    private:
+        template<typename T,typename... Args> void ValidatePhysicsCandidate(Args&&... args) {
+            if constexpr(std::is_same_v<T,Rigidbody2DComponent> || std::is_same_v<T,BoxCollider2DComponent> || std::is_same_v<T,CircleCollider2DComponent>) {
+                const T candidate(std::forward<Args>(args)...);
+                const auto& transform=GetComponent<TransformComponent>();
+                if constexpr(std::is_same_v<T,Rigidbody2DComponent>)m_Scene->ValidatePhysics(*this,transform,&candidate);
+                if constexpr(std::is_same_v<T,BoxCollider2DComponent>)m_Scene->ValidatePhysics(*this,transform,nullptr,&candidate);
+                if constexpr(std::is_same_v<T,CircleCollider2DComponent>)m_Scene->ValidatePhysics(*this,transform,nullptr,nullptr,&candidate);
+            }
+        }
 		entt::entity m_EntityHandle{ entt::null };
 		Scene* m_Scene = nullptr;
 		friend class Scene;

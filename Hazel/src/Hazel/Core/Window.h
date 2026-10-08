@@ -5,6 +5,8 @@
 
 #include <functional>
 #include <string>
+#include "WindowPlacement.h"
+#include "WindowCaption.h"
 
 namespace Hazel {
 
@@ -33,10 +35,32 @@ namespace Hazel {
         // Window attributes
         virtual void SetEventCallback(const EventCallbackFn& callback) = 0;
         virtual void SetVSync(bool enabled) = 0;
+        virtual void SetTitle(const std::string& title) = 0;
         virtual bool IsVSync() const = 0;
         
         virtual void* GetNativeWindow() const = 0;
+        WindowPlacement GetPlacement();
+        void RestorePlacement(const WindowPlacement& value);
+        std::vector<DisplayArea> GetDisplayAreas() const;
+        float GetContentScale() const;
 
+        virtual void SetCustomCaption(bool requested);
+        virtual void UseNativeCaption(const std::string& reason);
+        const CaptionState& GetCaptionState() const {return m_CaptionState;}
+        void SetCaptionLayout(const CaptionLayout& layout) {m_CaptionLayout=layout;}
+        const CaptionLayout& GetCaptionLayout() const {return m_CaptionLayout;}
+        void Minimize();
+        void ToggleMaximize();
+        bool IsFocused() const;
+        CaptionHit GetCaptionPointerHit() const;
+        virtual void RequestClose()=0;
         static Scope<Window> Create(const WindowProps& props = WindowProps());
+    protected:
+        // Native-equivalent client geometry keeps persisted placement stable across caption modes.
+        virtual void ReadNormalPlacement(WindowPlacement& value) const;
+        CaptionState m_CaptionState;
+        CaptionLayout m_CaptionLayout;
+    private:
+        WindowPlacement m_NormalPlacement;
     };
 }

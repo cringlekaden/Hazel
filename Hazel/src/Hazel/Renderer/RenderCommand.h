@@ -14,6 +14,7 @@ namespace Hazel {
 
         static void Shutdown() { s_RendererAPI->Shutdown(); }
         static const RendererCapabilities& GetCapabilities() { return s_RendererAPI->GetCapabilities(); }
+        static const RendererResolution& GetResolution() { return s_RendererAPI->GetResolution(); }
         static const RendererSettings& GetSettings() { return s_RendererAPI->GetSettings(); }
 
         static void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)

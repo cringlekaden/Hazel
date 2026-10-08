@@ -2,13 +2,30 @@
 #include "hzpch.h"
 #include "Platform/OpenGL/OpenGLTexture.h"
 #include "Platform/OpenGL/OpenGLCapabilities.h"
-#include "Hazel/Core/FileSystem.h"
-#include <stb_image.h>
 #include <limits>
 #include <stdexcept>
 
 namespace Hazel {
 namespace Utils {
+static GLenum Filter(TextureFilter value) {
+    switch(value) {
+        case TextureFilter::Nearest: return GL_NEAREST;
+        case TextureFilter::Linear: return GL_LINEAR;
+        case TextureFilter::NearestMipmapNearest: return GL_NEAREST_MIPMAP_NEAREST;
+        case TextureFilter::LinearMipmapNearest: return GL_LINEAR_MIPMAP_NEAREST;
+        case TextureFilter::NearestMipmapLinear: return GL_NEAREST_MIPMAP_LINEAR;
+        case TextureFilter::LinearMipmapLinear: return GL_LINEAR_MIPMAP_LINEAR;
+    }
+    throw std::invalid_argument("Invalid texture filter");
+}
+static GLenum Wrap(TextureWrap value) {
+    switch(value) {
+        case TextureWrap::Repeat: return GL_REPEAT;
+        case TextureWrap::ClampToEdge: return GL_CLAMP_TO_EDGE;
+        case TextureWrap::MirroredRepeat: return GL_MIRRORED_REPEAT;
+    }
+    throw std::invalid_argument("Invalid texture wrap");
+}
 static GLenum HazelImageFormatToGLDataFormat(ImageFormat format)
 {
     switch (format) {
@@ -60,6 +77,7 @@ OpenGLTexture2D::OpenGLTexture2D(const TextureSpecification& specification)
     : m_Specification(specification), m_Width(specification.Width), m_Height(specification.Height)
 {
     HZ_PROFILE_FUNCTION();
+    m_Specification.Validate();
     m_InternalFormat=Utils::HazelImageFormatToGLInternalFormat(specification.Format);
     m_DataFormat=Utils::HazelImageFormatToGLDataFormat(specification.Format);
     m_DataType=specification.Format==ImageFormat::RGBA32F ? GL_FLOAT : GL_UNSIGNED_BYTE;
@@ -69,39 +87,23 @@ OpenGLTexture2D::OpenGLTexture2D(const TextureSpecification& specification)
     AllocateStorage(nullptr);
 }
 
-OpenGLTexture2D::OpenGLTexture2D(const std::string& path)
-    : m_Path(std::filesystem::absolute(std::filesystem::u8path(path)).lexically_normal().generic_u8string())
+OpenGLTexture2D::OpenGLTexture2D(const std::string& path, const TextureSpecification& specification)
+    : m_Specification(specification), m_Path(std::filesystem::absolute(std::filesystem::u8path(path)).lexically_normal().generic_u8string())
 {
     HZ_PROFILE_FUNCTION();
-    auto encoded=FileSystem::ReadFileBinary(std::filesystem::u8path(path));
-    if (!encoded || encoded.Size>static_cast<uint64_t>(std::numeric_limits<int>::max()))
-        throw std::runtime_error("Failed to read texture: "+path);
-    int width=0,height=0,channels=0;
-    stbi_set_flip_vertically_on_load(1);
-    stbi_uc* pixels=nullptr;
-    {
-        HZ_PROFILE_SCOPE("stbi_load_from_memory");
-        pixels=stbi_load_from_memory(encoded.Data,static_cast<int>(encoded.Size),&width,&height,&channels,0);
-    }
-    if (!pixels) {
-        HZ_CORE_ERROR("Failed to load texture '{}': {}",path,stbi_failure_reason());
-        throw std::runtime_error("Failed to load texture: "+path);
-    }
-    try {
-        if ((channels!=1 && channels!=3 && channels!=4) || width<=0 || height<=0)
-            throw std::runtime_error("Unsupported texture format: "+path);
-        m_Specification.Width=m_Width=static_cast<uint32_t>(width);
-        m_Specification.Height=m_Height=static_cast<uint32_t>(height);
-        m_Specification.Format=channels==1 ? ImageFormat::R8 : channels==3 ? ImageFormat::RGB8 : ImageFormat::RGBA8;
-        m_InternalFormat=Utils::HazelImageFormatToGLInternalFormat(m_Specification.Format);
-        m_DataFormat=Utils::HazelImageFormatToGLDataFormat(m_Specification.Format);
-        m_BytesPerPixel=static_cast<uint32_t>(channels);
-        AllocateStorage(pixels);
-    } catch (...) {
-        stbi_image_free(pixels);
-        throw;
-    }
-    stbi_image_free(pixels);
+    specification.Validate(true);
+    auto image=Texture2D::ReadImage(std::filesystem::u8path(path),specification.Format);
+    if((specification.Width && specification.Width!=image.Width) || (specification.Height && specification.Height!=image.Height))
+        throw std::runtime_error("Texture dimensions changed: "+path);
+    m_Specification.Width=m_Width=image.Width; m_Specification.Height=m_Height=image.Height;
+    m_Specification.Format=image.Format;
+    m_InternalFormat=Utils::HazelImageFormatToGLInternalFormat(image.Format);
+    m_DataFormat=Utils::HazelImageFormatToGLDataFormat(image.Format);
+    m_BytesPerPixel=image.Format==ImageFormat::R8?1:image.Format==ImageFormat::RGB8?3:4;
+    const size_t stride=static_cast<size_t>(m_Width)*m_BytesPerPixel;
+    for(uint32_t y=0;y<m_Height/2;++y)
+        std::swap_ranges(image.Pixels.begin()+y*stride,image.Pixels.begin()+(y+1)*stride,image.Pixels.begin()+(m_Height-1-y)*stride);
+    AllocateStorage(image.Pixels.data());
 }
 
 void OpenGLTexture2D::AllocateStorage(const void* data)
@@ -113,10 +115,10 @@ void OpenGLTexture2D::AllocateStorage(const void* data)
     if (!m_RendererID) throw std::runtime_error("Failed to create OpenGL texture");
     try {
         Utils::TextureUploadState state(m_RendererID);
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,m_Specification.GenerateMips ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,Utils::Filter(m_Specification.MinFilter));
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,Utils::Filter(m_Specification.MagFilter));
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,Utils::Wrap(m_Specification.WrapS));
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,Utils::Wrap(m_Specification.WrapT));
         glTexImage2D(GL_TEXTURE_2D,0,m_InternalFormat,static_cast<GLsizei>(m_Width),static_cast<GLsizei>(m_Height),
                      0,m_DataFormat,m_DataType,data);
         GLint width=0;

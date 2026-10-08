@@ -3,6 +3,7 @@
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include <GLFW/glfw3.h>
+#include <yaml-cpp/yaml.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -60,6 +61,13 @@ int main(int argc, char** argv) {
         Check(ScriptEngine::GetEntityClass("Migration.TransitionOnCreate")==scriptClass,"Ordinary scene transition replaced script domain");
         Check(session.GetIdentity()==identity && ScriptEngine::GetSceneContext()==session.GetScene().get(),"Session identity/script scene context mismatch");
         auto current=session.GetScene(); auto currentInstance=ScriptEngine::GetEntityScriptInstance(2);
+        const auto policy=project->GetConfig().Rendering;
+        RuntimeRendererRequests incompatible;incompatible.TextureSlots=2;project->GetConfig().Rendering=incompatible;
+        bool rejectedPolicy=false;try{session.Start(project,source);}catch(const std::exception&){rejectedPolicy=true;}
+        Check(rejectedPolicy && session.GetScene()==current && current->IsRunning() &&
+              ScriptEngine::GetEntityScriptInstance(2)==currentInstance && session.GetIdentity()==identity,
+              "Unapplied project policy replaced a valid runtime session");
+        project->GetConfig().Rendering=policy;
         void* body=current->GetEntityByUUID(2).GetComponent<Rigidbody2DComponent>().RuntimeBody;
         Check(session.RequestSceneLoad("Scenes/missing.hazel"),"Missing scene request was not deferred");
         session.Update(0.016f);
@@ -68,8 +76,10 @@ int main(int argc, char** argv) {
         session.RequestSceneLoad("Scenes/Bad.hazel"); session.Update(0.016f);
         Check(session.GetScene()==current,"Corrupt scene replaced current scene");
         auto badPhysics=Make("Invalid shape");
-        badPhysics->GetEntityByUUID(2).GetComponent<BoxCollider2DComponent>().Size={-1,1};
-        SceneSerializer(badPhysics,project->GetAssetRoot()).Serialize((directory/"Assets/Scenes/InvalidPhysics.hazel").generic_u8string());
+        auto corrupt=YAML::Load(SceneSerializer(badPhysics,project->GetAssetRoot()).SerializeText());
+        for(auto node:corrupt["Entities"])if(node["Entity"].as<uint64_t>()==2)node["BoxCollider2DComponent"]["Size"]=std::vector<float>{-1,1};
+        YAML::Emitter invalid;invalid<<corrupt;
+        std::ofstream(directory/"Assets/Scenes/InvalidPhysics.hazel")<<invalid.c_str();
         session.RequestSceneLoad("Scenes/InvalidPhysics.hazel");session.Update(0.016f);
         Check(session.GetScene()==current && current->IsRunning(),"Invalid physics replaced/aborted current session");
         Check(!session.RequestSceneLoad("../outside.hazel") && !session.RequestSceneLoad("/tmp/outside.hazel"),"Transition accepted non-project path");
@@ -109,6 +119,23 @@ int main(int argc, char** argv) {
         Check(DestroyRequest::Rejected,"Shutdown callback scheduled retired work");
         session.Start(project,source); session.Stop(); session.Start(project,target); session.Update(0.016f);
         Check(session.GetScene()->FindEntityByName("Target"),"Retired OnCreate request survived restart");
+        session.Stop();
+        auto motion=Make("Motion", "Migration.MotionCameraProbe");
+        motion->GetEntityByUUID(2).GetComponent<Rigidbody2DComponent>().GravityScale=0;
+        SceneSerializer(motion,project->GetAssetRoot()).Serialize((directory/"Assets/Scenes/Motion.hazel").generic_u8string());
+        motion=project->LoadScene("Scenes/Motion.hazel");
+        Check(motion->GetEntityByUUID(2).GetComponent<Rigidbody2DComponent>().GravityScale==0,"Authored gravity did not serialize");
+        session.Resize(800,400);session.Start(project,motion);
+        Check(ScriptEngine::GetEntityScriptInstance(2)->GetFieldValue<bool>("Passed"),"Managed motion/camera API failed");
+        session.Update(0.016f);
+        const auto position=session.GetScene()->GetEntityByUUID(2).GetComponent<TransformComponent>().Translation;
+        Check(std::abs(position.x-3.032f)<0.001f && std::abs(position.y-4)<0.001f,"Physics ignored teleport, velocity or zero gravity");
+        session.Resize(400,800);
+        Check(session.GetScene()->GetPrimaryCameraEntity().GetComponent<CameraComponent>().Camera.GetAspectRatio()==0.5f,"Camera aspect did not follow viewport resize");
+        session.Stop();
+        Check(motion->GetEntityByUUID(2).GetComponent<TransformComponent>().Translation.x==0 &&
+              motion->GetPrimaryCameraEntity().GetComponent<CameraComponent>().Camera.GetOrthographicSize()==10,
+              "Runtime motion/camera edits leaked into authored scene");
         ScriptEngine::Shutdown(); Check(!session.GetScene() && !ScriptEngine::GetRuntimeSession(),"Domain shutdown retained runtime session");
         std::cout<<"PASS: shared runtime OnCreate/OnUpdate transitions, failure recovery, first request wins, cancellation, authored copy, retained domain, retired observations/physics, repeated transitions and viewport input\n";
     } catch (const std::exception& error) { std::cerr<<"FAIL: "<<error.what()<<'\n'; std::error_code ignored; std::filesystem::remove_all(directory,ignored);return 1; }

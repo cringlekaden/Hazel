@@ -1,7 +1,7 @@
 name: C/C++ CI
 on:
   push:
-    branches: [master, 'migration/**', 'fix/authoring-reliability', 'feature/nutella-runtime']
+    branches: [master, 'migration/**', 'fix/authoring-reliability', 'feature/nutella-runtime', 'feature/example-games', 'feature/editor-authoring', 'feature/sprite-sheet-authoring', 'feature/editor-usability']
   pull_request:
     branches: [master]
   workflow_dispatch:
@@ -53,10 +53,46 @@ jobs:
             dist/*.zip
             dist/*.sha256
           if-no-files-found: error
+      - name: Build both authored games in Debug and Release
+        run: |
+          foreach ($configuration in @('Debug', 'Release')) {
+            foreach ($game in @('MeadowRun', 'Skybound')) {
+              python scripts/hazel.py script-build "examples/$game/$game.hproj" --config $configuration
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            }
+          }
       - name: Windows Debug ownership, authoring, rendering and runtime regressions
         run: python scripts/hazel.py test --config Debug --profile software
       - name: Windows Release regressions
         run: python scripts/hazel.py test --config Release --profile software
+      - name: Windows authored game workflows and gameplay invariants
+        run: |
+          python scripts/hazel.py test-games --config Debug --profile software
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/hazel.py test-games --config Release --profile software
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Construct complete Windows game archives
+        run: |
+          foreach ($game in @('MeadowRun', 'Skybound')) {
+            python scripts/hazel.py package --app Nutella --project "examples/$game/$game.hproj" --name $game --output dist/games
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: Windows extracted game acceptance
+        run: |
+          python scripts/hazel.py test-games --config Release --packages --profile software
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/hazel.py test-games --config Release --packages --profile gl41
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MeadowRun-Windows-x64-Release-${{ github.sha }}
+          path: dist/games/MeadowRun-windows-x86_64-Release.zip*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Skybound-Windows-x64-Release-${{ github.sha }}
+          path: dist/games/Skybound-windows-x86_64-Release.zip*
+          if-no-files-found: error
       - name: Preserve separate testing evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -65,6 +101,7 @@ jobs:
           path: |
             build/testing/logs/
             build/testing/packages/
+            build/testing/games/
             build/testing/windows-mesa/readme*
             build/testing/windows-mesa/license*
           if-no-files-found: ignore
@@ -103,16 +140,23 @@ jobs:
           key: ${{ steps.shader-cache.outputs.cache-primary-key }}
       - name: Build authored example scripts through the public command
         run: python3 scripts/hazel.py script-build examples/SceneTransitions/SceneTransitions.hproj --config Release
+      - name: Build both authored games in Debug and Release
+        run: |
+          for configuration in Debug Release; do
+            for game in MeadowRun Skybound; do
+              python3 scripts/hazel.py script-build "examples/$game/$game.hproj" --config "$configuration"
+            done
+          done
       - name: Linux Debug regressions
-        run: xvfb-run -a -s '-screen 0 1600x1000x24' python3 scripts/hazel.py test --config Debug --profile software
+        run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test --config Debug --profile software
       - name: Linux Release regressions
-        run: xvfb-run -a -s '-screen 0 1600x1000x24' python3 scripts/hazel.py test --config Release --profile software
+        run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test --config Release --profile software
       - name: Construct complete Release distributions
         run: python3 scripts/hazel.py package
       - name: Test extracted archives with source resources and SDK unavailable
-        run: xvfb-run -a -s '-screen 0 1600x1000x24' python3 scripts/hazel.py test-packages --profile software
+        run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test-packages --profile software
       - name: Verify packaged OpenGL 4.1 path
-        run: xvfb-run -a -s '-screen 0 1600x1000x24' python3 scripts/hazel.py test-packages --profile gl41
+        run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test-packages --profile gl41
       - name: Upload verified Linux application archives
         uses: actions/upload-artifact@v4
         with:
@@ -120,6 +164,29 @@ jobs:
           path: |
             dist/*.tar.gz
             dist/*.sha256
+          if-no-files-found: error
+      - name: Linux authored game workflows and gameplay invariants
+        run: |
+          xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test-games --config Debug --profile software
+          xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test-games --config Release --profile software
+      - name: Construct complete Linux game archives
+        run: |
+          for game in MeadowRun Skybound; do
+            python3 scripts/hazel.py package --app Nutella --project "examples/$game/$game.hproj" --name "$game" --output dist/games
+          done
+      - name: Linux extracted game acceptance
+        run: |
+          xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test-games --config Release --packages --profile software
+          xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test-games --config Release --packages --profile gl41
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MeadowRun-Linux-x86_64-Release-${{ github.sha }}
+          path: dist/games/MeadowRun-linux-x86_64-Release.tar.gz*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Skybound-Linux-x86_64-Release-${{ github.sha }}
+          path: dist/games/Skybound-linux-x86_64-Release.tar.gz*
           if-no-files-found: error
       - name: Preserve separate testing evidence
         if: always()
@@ -129,4 +196,5 @@ jobs:
           path: |
             build/testing/logs/
             build/testing/packages/
+            build/testing/games/
           if-no-files-found: ignore

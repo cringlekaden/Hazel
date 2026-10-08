@@ -16,6 +16,11 @@ def load_project(path):
     import yaml
     descriptor = path.resolve(strict=True)
     if descriptor.suffix != '.hproj': raise RuntimeError('Select a .hproj descriptor')
+    from internal.authoring import native_generator
+    native_env=os.environ.copy()
+    if hz.SYSTEM=='linux':native_env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
+    native=subprocess.run([str(native_generator()),'validate',str(descriptor)],cwd=hz.ROOT,env=native_env,capture_output=True,text=True,encoding='utf-8',timeout=15)
+    if native.returncode:raise RuntimeError(native.stderr.strip() or 'Native project schema validation failed')
     try:
         data = yaml.safe_load(descriptor.read_text(encoding='utf-8'))
     except yaml.YAMLError as error: raise RuntimeError('Cannot parse project ' + str(descriptor) + ': ' + str(error)) from error
@@ -45,22 +50,33 @@ def resolve_owned(root, reference, exists=True):
 def validate_project(descriptor, config, assets):
     import yaml
     files = list(project_files(assets))
+    validate_sprites(assets, files, descriptor)
     included = {file.resolve() for file in files}
     for key in ('StartScene','ScriptModulePath'):
         if resolve_owned(assets,config[key]) not in included:
             raise RuntimeError(key+' selects excluded compiler output. Move/stage this dependency into project assets before packaging.')
-    scenes = [file for file in files if file.suffix=='.hazel']
+    scenes = [file for file in files if file.suffix in ('.hazel','.hprefab')]
     if not scenes: raise RuntimeError('No .hazel scenes in selected asset root')
     for file in assets.rglob('*'):
         if file.is_symlink() and not file.resolve().is_relative_to(assets): raise RuntimeError('External asset symlink: ' + str(file))
     for scene in scenes:
         content = yaml.safe_load(scene.read_text(encoding='utf-8'))
         if not isinstance(content, dict) or 'Scene' not in content: raise RuntimeError('Invalid scene: ' + str(scene))
-        ids = set()
+        if scene.suffix=='.hprefab' and (content.get('PrefabVersion') not in (1,2) or (content.get('PrefabVersion')==1 and len(content.get('Entities',[]))!=1)):
+            raise RuntimeError('Unsupported prefab version/entity count: '+str(scene))
+        ids = {entity['Entity'] for entity in content.get('Entities', []) or []}
+        seen = set()
         for entity in content.get('Entities', []) or []:
             ident = entity['Entity']
-            if ident in ids: raise RuntimeError('Duplicate entity UUID in ' + str(scene))
-            ids.add(ident)
+            if ident in seen: raise RuntimeError('Duplicate entity UUID in ' + str(scene))
+            seen.add(ident)
+            for field in entity.get('ScriptComponent',{}).get('ScriptFields',[]) or []:
+                if field.get('Type')=='Prefab' and field.get('Data'):
+                    reference=field['Data']
+                    if Path(reference).suffix!='.hprefab' or resolve_owned(assets,reference) not in included:
+                        raise RuntimeError('Missing/excluded prefab reference '+str(reference)+' in '+str(scene))
+                if scene.suffix=='.hprefab' and field.get('Type')=='Entity' and field.get('Data') not in ids | {0}:
+                    raise RuntimeError('Unsafe external entity reference in prefab '+str(scene))
             texture = entity.get('SpriteRendererComponent', {}).get('TexturePath')
             if texture and resolve_owned(assets,texture) not in included:
                 raise RuntimeError('Texture selects excluded compiler output: '+texture+' in '+str(scene))
@@ -88,6 +104,31 @@ def validate_project(descriptor, config, assets):
             name = entity.get('ScriptComponent', {}).get('ClassName')
             if name and name not in known: raise RuntimeError('Unavailable compiled script class ' + name + ' in ' + str(scene))
     print(result.stdout, end='')
+
+
+def validate_sprites(assets, files, descriptor=None):
+    # Metadata is parsed and decoded by the same native services as authoring/runtime.
+    auditor = hz.binaries('Release') / 'SpriteAssetAudit' / ('SpriteAssetAudit.exe' if hz.SYSTEM=='windows' else 'SpriteAssetAudit')
+    if not auditor.is_file():
+        raise RuntimeError('Missing native SpriteAssetAudit; build the Release SDK before exporting')
+    included = {file.resolve() for file in files}
+    relative = [file.relative_to(assets).as_posix() for file in files]
+    if any('\n' in name or '\r' in name for name in relative):
+        raise RuntimeError('Portable asset paths cannot contain line breaks')
+    with tempfile.TemporaryDirectory(prefix='hazel-sprite-audit-') as temporary:
+        inventory = Path(temporary) / 'assets.txt'
+        inventory.write_text(''.join(name+'\n' for name in relative), encoding='utf-8')
+        env = os.environ.copy()
+        if hz.SYSTEM=='linux': env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
+        command=[str(auditor),str(assets),str(inventory)]
+        if descriptor is not None: command += ['--project',str(descriptor)]
+        result = subprocess.run(command,capture_output=True,text=True,encoding='utf-8',env=env)
+    if result.returncode:
+        raise RuntimeError(result.stderr.strip() or 'Native sprite dependency audit failed')
+    for line in result.stdout.splitlines():
+        if line.startswith('DEPENDENCY ') and resolve_owned(assets,line[len('DEPENDENCY '):]) not in included:
+            raise RuntimeError('Sprite dependency selects excluded compiler output: '+line[len('DEPENDENCY '):])
+    print(result.stdout,end='')
 
 
 # The dynamic loader, libc and the graphics-driver dispatch remain OS supplied.
@@ -219,15 +260,19 @@ def project_files(assets):
 def copy_project(descriptor, assets, destination):
     hz.copy_changed(descriptor, destination/descriptor.name)
     for notice in descriptor.parent.iterdir():
-        if notice.is_file() and notice.name.lower().startswith(('license', 'copying', 'copyright', 'notice')):
+        if notice.is_file() and (notice.name.lower().startswith(('license', 'copying', 'copyright', 'notice')) or notice.name=='README.md'):
             hz.copy_changed(notice, destination/notice.name)
     relative_root = assets.relative_to(descriptor.parent)
     for source in project_files(assets):
         relative = source.relative_to(assets)
         hz.copy_changed(source, destination/relative_root/relative)
+    relocated = destination/relative_root
+    validate_sprites(relocated,list(project_files(relocated)))
 
 
-def package(app, project, output):
+def package(app, project, output, archive_name=None):
+    if archive_name and (app=='all' or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*',archive_name)):
+        raise RuntimeError('--name requires one application and a portable archive name')
     descriptor, config, assets = load_project(project)
     validate_project(descriptor, config, assets)
     output = output.resolve(); output.mkdir(parents=True, exist_ok=True)
@@ -235,7 +280,7 @@ def package(app, project, output):
     commit = hz.output(['git', '-C', hz.ROOT, 'rev-parse', 'HEAD'])
     names = ('Hazelnut', 'Nutella') if app == 'all' else (app,)
     for name in names:
-        tag = f'{name}-{hz.SYSTEM}-x86_64-Release'
+        tag = f'{archive_name or name}-{hz.SYSTEM}-x86_64-Release'
         with tempfile.TemporaryDirectory(prefix='.package-', dir=output) as temporary:
             path = Path(temporary)/tag; path.mkdir()
             suffix = '.exe' if hz.SYSTEM == 'windows' else ''

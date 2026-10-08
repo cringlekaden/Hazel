@@ -8,6 +8,7 @@
 #include <ostream>
 
 namespace Hazel {
+	enum class WriteMode { Replace, CreateNew };
 
 	class FileSystem
 	{
@@ -15,12 +16,14 @@ namespace Hazel {
 		static std::filesystem::path GetExecutablePath();
         static std::filesystem::path GetEnvironmentPath(const char* name);
         static std::filesystem::path GetUserDataDirectory();
-		static Buffer ReadFileBinary(const std::filesystem::path& filepath);
+		static void WriteNewFile(const std::filesystem::path& path, const std::string& contents);
+        static Buffer ReadFileBinary(const std::filesystem::path& filepath);
+        static void PublishDirectoryNew(const std::filesystem::path& source,const std::filesystem::path& destination);
 		// Checked sibling-temporary write followed by replacement; no power-loss durability claim.
-		static void WriteFileAtomically(const std::filesystem::path& filepath, const std::function<void(std::ostream&)>& writer);
+		static void WriteFileAtomically(const std::filesystem::path& filepath, const std::function<void(std::ostream&)>& writer, WriteMode mode = WriteMode::Replace);
 	private:
 		static std::FILE* OpenExclusiveOutput(const std::filesystem::path& path);
-		static void ReplaceFile(const std::filesystem::path& source, const std::filesystem::path& destination);
+		static void ReplaceFile(const std::filesystem::path& source, const std::filesystem::path& destination, WriteMode mode);
 	};
 
 }

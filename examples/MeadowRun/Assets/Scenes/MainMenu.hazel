@@ -1,0 +1,398 @@
+Scene: MainMenu
+Entities:
+- Entity: 1
+  TagComponent:
+    Tag: Camera
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  ScriptComponent:
+    ClassName: MeadowRun.FitCamera
+    ScriptFields:
+    - Name: MinimumHeight
+      Type: Float
+      Data: 12
+    - Name: MinimumWidth
+      Type: Float
+      Data: 16
+  CameraComponent:
+    Camera:
+      ProjectionType: 1
+      PerspectiveFOV: 0.785398
+      PerspectiveNear: 0.01
+      PerspectiveFar: 1000
+      OrthographicSize: 12
+      OrthographicNear: -10
+      OrthographicFar: 10
+    Primary: true
+    FixedAspectRatio: false
+- Entity: 2
+  TagComponent:
+    Tag: Grass
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - -2
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 70
+    - 60
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 24
+    TexturePath: Textures/Grass.png
+- Entity: 3
+  TagComponent:
+    Tag: Garden path
+  TransformComponent:
+    Translation:
+    - 0
+    - -2
+    - -1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 3
+    - 20
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Path.png
+- Entity: 4
+  TagComponent:
+    Tag: Garden tree
+  TransformComponent:
+    Translation:
+    - -5
+    - 0.5
+    - -0.2
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 2
+    - 3
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Tree.png
+- Entity: 5
+  TagComponent:
+    Tag: Garden tree
+  TransformComponent:
+    Translation:
+    - 5
+    - 0.5
+    - -0.2
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 2
+    - 3
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Tree.png
+- Entity: 6
+  TagComponent:
+    Tag: Garden tree
+  TransformComponent:
+    Translation:
+    - -5
+    - -2.5
+    - -0.2
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 2
+    - 3
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Tree.png
+- Entity: 7
+  TagComponent:
+    Tag: Garden tree
+  TransformComponent:
+    Translation:
+    - 5
+    - -2.5
+    - -0.2
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 2
+    - 3
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Tree.png
+- Entity: 8
+  TagComponent:
+    Tag: Title ribbon
+  TransformComponent:
+    Translation:
+    - 0
+    - 3.6
+    - -0.1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 12
+    - 2.45
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.14
+    - 0.28
+    - 0.24
+    - 1
+    TilingFactor: 1
+- Entity: 9
+  TagComponent:
+    Tag: Hero
+  TransformComponent:
+    Translation:
+    - 0
+    - 1.25
+    - 0.2
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1.7
+    - 1.7
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Explorer.png
+- Entity: 10
+  TagComponent:
+    Tag: Eyebrow
+  TransformComponent:
+    Translation:
+    - -2.087168458781362
+    - 4.2
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.4
+    - 0.4
+    - 1
+  TextComponent:
+    TextString: A SMALL GARDEN EXPEDITION
+    Color: &id001
+    - 0.99
+    - 0.95
+    - 0.82
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 11
+  TagComponent:
+    Tag: Title
+  TransformComponent:
+    Translation:
+    - -2.779767025089606
+    - 2.7
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1.1
+    - 1.1
+    - 1
+  TextComponent:
+    TextString: MEADOW RUN
+    Color: *id001
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 12
+  TagComponent:
+    Tag: Subtitle
+  TransformComponent:
+    Translation:
+    - -2.6749193548387096
+    - -0.1
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.45
+    - 0.45
+    - 1
+  TextComponent:
+    TextString: Three gardens. One trail home.
+    Color: &id002
+    - 0.13
+    - 0.25
+    - 0.23
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 13
+  TagComponent:
+    Tag: Play
+  TransformComponent:
+    Translation:
+    - 0
+    - -1.35
+    - 0.7
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 4
+    - 1.2
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Button.png
+  ScriptComponent:
+    ClassName: MeadowRun.SceneButton
+    ScriptFields:
+    - Name: Destination
+      Type: Int
+      Data: 0
+    - Name: HalfSize
+      Type: Vector2
+      Data:
+      - 2
+      - 0.6
+- Entity: 14
+  TagComponent:
+    Tag: PlayLabel
+  TransformComponent:
+    Translation:
+    - -0.8493458781362009
+    - -1.52
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.55
+    - 0.55
+    - 1
+  TextComponent:
+    TextString: EXPLORE
+    Color: *id001
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 15
+  TagComponent:
+    Tag: Controls
+  TransformComponent:
+    Translation:
+    - -2.9557311827956987
+    - -3.4
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.42
+    - 0.42
+    - 1
+  TextComponent:
+    TextString: WASD / arrows to move  |  Enter to begin
+    Color: *id002
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 16
+  TagComponent:
+    Tag: Footnote
+  TransformComponent:
+    Translation:
+    - -1.6859605734767027
+    - -4.7
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.38
+    - 0.38
+    - 1
+  TextComponent:
+    TextString: An original Hazel example
+    Color: *id002
+    Kerning: 0
+    LineSpacing: 0

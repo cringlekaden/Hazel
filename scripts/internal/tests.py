@@ -10,6 +10,58 @@ import urllib.request
 import hazel as hz
 
 
+def launcher_checks():
+    """Normal F5 permits session restore; intentional runtime arguments stay explicit."""
+    for platform in ('linux', 'windows'):
+        data = json.loads((hz.ROOT/'scripts/internal/vscode'/platform/'launch.json').read_text(encoding='utf-8'))
+        configs = data['configurations']
+        editor = next(c for c in configs if c['name'].startswith('Hazelnut'))
+        runtime = next(c for c in configs if c['name'].startswith('Nutella'))
+        if editor['args']:
+            raise RuntimeError(platform + ' default Hazelnut F5 overrides the remembered project')
+        if runtime['args'] != ['--project', '${workspaceFolder}/examples/SceneTransitions/SceneTransitions.hproj']:
+            raise RuntimeError(platform + ' Nutella development example launch changed')
+    print('PASS: Linux/Windows F5 leaves editor project selection to session restore; runtime example remains explicit', flush=True)
+
+
+def authoring_checks(working):
+    """Exercise the same transactional project service invoked by editor jobs."""
+    import yaml
+    from internal.authoring import create_project
+    from internal.child_tools import prepare
+    destination=working/'New project space é'
+    saved_path=os.environ.get('PATH','')
+    try:
+        os.environ['PATH']=''
+        prepare(['git','cmd'] if hz.SYSTEM=='windows' else ['git','make'])
+        create_project('A portable garden é','GardenProbe',destination)
+        assert not (destination/'Assets/Scripts/Binaries/GardenProbe.dll').exists()
+        hz.script_build(destination/'GardenProbe.hproj','Debug')
+    finally:os.environ['PATH']=saved_path
+    descriptor=destination/'GardenProbe.hproj'
+    config=yaml.safe_load(descriptor.read_text(encoding='utf-8'))['Project']
+    scene=yaml.safe_load((destination/'Assets/Scenes/Start.hazel').read_text(encoding='utf-8'))
+    assert config['StartScene']=='Scenes/Start.hazel' and config['ScriptModulePath']=='Scripts/Binaries/GardenProbe.dll'
+    assert (destination/'Assets'/config['ScriptModulePath']).is_file()
+    assert any(e.get('CameraComponent',{}).get('Primary') for e in scene['Entities'])
+    original=descriptor.read_bytes()
+    try:create_project('Overwrite','GardenProbe',destination)
+    except RuntimeError:pass
+    else:raise RuntimeError('New Project overwrote an existing destination')
+    assert descriptor.read_bytes()==original
+    failed=working/'Failed project'
+    compiler=hz.script_build
+    def fail(*args):raise RuntimeError('Controlled initial assembly failure')
+    try:
+        hz.script_build=fail
+        try:create_project('Compiler failure','FailureProbe',failed,build=True)
+        except RuntimeError:pass
+        else:raise RuntimeError('Controlled script build failure was not reported')
+    finally:hz.script_build=compiler
+    assert (failed/'FailureProbe.hproj').is_file() and not (failed/'Assets/Scripts/Binaries/FailureProbe.dll').exists()
+    print('PASS: canonical native creation without PATH, uncompiled editing contract, later build, existing destination and failed-build content retention',flush=True)
+
+
 def software_driver():
     pin = json.loads((hz.ROOT/'scripts/internal/testing/windows-mesa.json').read_text())
     archive = hz.ROOT/'build/testing/windows-mesa.7z'; archive.parent.mkdir(parents=True,exist_ok=True)
@@ -23,10 +75,12 @@ def software_driver():
 
 
 def test(configuration, profile='native'):
+    launcher_checks()
     base=hz.binaries(configuration)
     logs=hz.ROOT/'build/testing/logs';logs.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='hazel tests space-é-') as temporary:
         working=Path(temporary)
+        hz.yaml_tools();authoring_checks(working)
         hz.copy_tree(hz.ROOT/'Hazel/Resources',working/'assets')
         hz.copy_tree(hz.ROOT/'Hazelnut/Resources/Icons',working/'assets/Icons')
         hz.copy_changed(hz.ROOT/'Hazelnut/Resources/imgui.ini',working/'assets/imgui.ini')
@@ -45,14 +99,14 @@ def test(configuration, profile='native'):
         if hz.SYSTEM=='windows' and profile in ('software','gl41'):
             for dll in software_driver().glob('*.dll'): hz.copy_changed(dll,private/dll.name)
             env.update(GALLIUM_DRIVER='llvmpipe',LP_NUM_THREADS='2',MESA_SHADER_CACHE_DIR=str(working/'mesa-cache'))
-        names=('ShaderToolsSmoke','SceneFoundationSmoke','ProjectPhysicsSmoke','MonoSmoke','SceneSmoke','CoreSmoke','RendererSmoke','RendererFeaturesSmoke','Renderer2DSmoke','FontSmoke','SceneGPUSmoke','RuntimeSessionSmoke','EditorSmoke')
+        names=('ShaderToolsSmoke','SpriteSmoke','SceneFoundationSmoke','ProjectPhysicsSmoke','MonoSmoke','SceneSmoke','CoreSmoke','RendererSmoke','RendererFeaturesSmoke','Renderer2DSmoke','FontSmoke','SceneGPUSmoke','RuntimeSessionSmoke','EditorSmoke')
         for name in names:
             target='Migration'+name;suffix='.exe' if hz.SYSTEM=='windows' else ''
             executable=base/target/(target+suffix)
             if not executable.is_file():raise RuntimeError('Missing '+target+'; run build --tests first')
             if hz.SYSTEM=='windows': hz.copy_changed(executable,private/executable.name);executable=private/executable.name
             command=[executable]
-            if name in ('MonoSmoke','SceneSmoke','SceneGPUSmoke','RuntimeSessionSmoke'):command += [base/'Hazel-ScriptCore/Hazel-ScriptCore.dll',base/'MigrationManagedFixture/MigrationManagedFixture.dll']
+            if name in ('SpriteSmoke','MonoSmoke','SceneSmoke','SceneGPUSmoke','RuntimeSessionSmoke'):command += [base/'Hazel-ScriptCore/Hazel-ScriptCore.dll',base/'MigrationManagedFixture/MigrationManagedFixture.dll']
             if name=='EditorSmoke':command += [base/'Hazel-ScriptCore/Hazel-ScriptCore.dll',base/'MigrationManagedFixture/MigrationManagedFixture.dll',working]
             env['HAZEL_DATA']=str(working/'data'/name)
             log=logs/f'{hz.SYSTEM}-{configuration}-{profile}-{name}.log'

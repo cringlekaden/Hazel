@@ -13,6 +13,8 @@ namespace Hazel {
     {
     public:
         virtual ~Shader() = default;
+        enum class ProgramLoadingPath { LegacyGLSL, GeneratedGLSL, SPIRV };
+        virtual ProgramLoadingPath GetProgramLoadingPath() const = 0;
 
         virtual void Bind() const = 0;
         virtual void Unbind() const = 0;

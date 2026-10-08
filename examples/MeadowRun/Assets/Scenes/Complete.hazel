@@ -1,0 +1,248 @@
+Scene: Complete
+Entities:
+- Entity: 1
+  TagComponent:
+    Tag: Camera
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  ScriptComponent:
+    ClassName: MeadowRun.FitCamera
+    ScriptFields:
+    - Name: MinimumHeight
+      Type: Float
+      Data: 12
+    - Name: MinimumWidth
+      Type: Float
+      Data: 16
+  CameraComponent:
+    Camera:
+      ProjectionType: 1
+      PerspectiveFOV: 0.785398
+      PerspectiveNear: 0.01
+      PerspectiveFar: 1000
+      OrthographicSize: 12
+      OrthographicNear: -10
+      OrthographicFar: 10
+    Primary: true
+    FixedAspectRatio: false
+- Entity: 2
+  TagComponent:
+    Tag: Grass
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - -2
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 70
+    - 60
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 24
+    TexturePath: Textures/Grass.png
+- Entity: 3
+  TagComponent:
+    Tag: Exit illustration
+  TransformComponent:
+    Translation:
+    - 0
+    - 1.4
+    - 0.2
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 2.2
+    - 2.2
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Exit.png
+- Entity: 4
+  TagComponent:
+    Tag: Title
+  TransformComponent:
+    Translation:
+    - -2.870250896057348
+    - 3.5
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  TextComponent:
+    TextString: TRAIL RESTORED
+    Color: &id001
+    - 0.13
+    - 0.25
+    - 0.23
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 5
+  TagComponent:
+    Tag: Message
+  TransformComponent:
+    Translation:
+    - -2.877867383512545
+    - -0.1
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.5
+    - 0.5
+    - 1
+  TextComponent:
+    TextString: Your lanterns light the way home.
+    Color: *id001
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 6
+  TagComponent:
+    Tag: Restart
+  TransformComponent:
+    Translation:
+    - 0
+    - -1.4
+    - 0.7
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 4
+    - 1.2
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Button.png
+  ScriptComponent:
+    ClassName: MeadowRun.SceneButton
+    ScriptFields:
+    - Name: Destination
+      Type: Int
+      Data: 0
+    - Name: HalfSize
+      Type: Vector2
+      Data:
+      - 2
+      - 0.6
+- Entity: 7
+  TagComponent:
+    Tag: RestartLabel
+  TransformComponent:
+    Translation:
+    - -1.5126971326164875
+    - -1.5699999999999998
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.55
+    - 0.55
+    - 1
+  TextComponent:
+    TextString: EXPLORE AGAIN
+    Color: &id002
+    - 0.99
+    - 0.95
+    - 0.82
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 8
+  TagComponent:
+    Tag: Menu
+  TransformComponent:
+    Translation:
+    - 0
+    - -3
+    - 0.7
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 4
+    - 1.2
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Button.png
+  ScriptComponent:
+    ClassName: MeadowRun.SceneButton
+    ScriptFields:
+    - Name: Destination
+      Type: Int
+      Data: 1
+    - Name: HalfSize
+      Type: Vector2
+      Data:
+      - 2
+      - 0.6
+- Entity: 9
+  TagComponent:
+    Tag: MenuLabel
+  TransformComponent:
+    Translation:
+    - -1.142777777777778
+    - -3.17
+    - 1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.55
+    - 0.55
+    - 1
+  TextComponent:
+    TextString: TITLE MENU
+    Color: *id002
+    Kerning: 0
+    LineSpacing: 0

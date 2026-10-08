@@ -568,6 +568,8 @@ project "Nutella"
 HazelGTKIncludes = gtkIncludes
 MigrationLinuxLinks = gtkLinks
 include "Hazelnut"
+include "tools/SpriteAssetAudit"
+include "tools/HazelProject"
 
 -- Opt-in GPU verification; requires a real desktop context when executed.
 if _OPTIONS["migration-tests"] then

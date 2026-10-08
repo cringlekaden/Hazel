@@ -26,7 +26,7 @@ namespace Hazel {
 		};
 	}
 
-	void FileSystem::WriteFileAtomically(const std::filesystem::path& path, const std::function<void(std::ostream&)>& writer)
+	void FileSystem::WriteFileAtomically(const std::filesystem::path& path, const std::function<void(std::ostream&)>& writer, WriteMode mode)
 	{
 		std::filesystem::path temporary;
 		std::FILE* file = nullptr;
@@ -45,7 +45,7 @@ namespace Hazel {
 			const int closed = std::fclose(file);
 			file = nullptr;
 			if (closed != 0) throw std::runtime_error("Cannot close save temporary for " + path.generic_u8string());
-			ReplaceFile(temporary, path);
+			ReplaceFile(temporary, path, mode);
 		} catch (...) {
 			if (file) std::fclose(file);
 			std::error_code ignored;
@@ -54,6 +54,13 @@ namespace Hazel {
 		}
 	}
 
+    void FileSystem::WriteNewFile(const std::filesystem::path& path,const std::string& contents) {
+        auto* file=OpenExclusiveOutput(path);
+        if(!file) throw std::runtime_error("File already exists: "+path.generic_u8string());
+        bool written=std::fwrite(contents.data(),1,contents.size(),file)==contents.size();
+        if(std::fclose(file)!=0) written=false;
+        if(!written) { std::filesystem::remove(path); throw std::runtime_error("Cannot create file: "+path.generic_u8string()); }
+    }
 	Buffer FileSystem::ReadFileBinary(const std::filesystem::path& filepath)
 	{
 		std::ifstream stream(filepath, std::ios::binary | std::ios::ate);

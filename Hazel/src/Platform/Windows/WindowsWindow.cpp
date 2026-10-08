@@ -1,12 +1,15 @@
 #include "hzpch.h"
 
 #include "Platform/Windows/WindowsWindow.h"
+#include "Platform/Windows/WindowsCaption.h"
 #include "Hazel/Core/Log.h"
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Events/MouseEvent.h"
 #include "Hazel/Events/KeyEvent.h"
 #include "Hazel/Renderer/GraphicsContext.h"
 
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
 #include <cstdlib>
 
 namespace Hazel {
@@ -60,6 +63,7 @@ namespace Hazel {
             glfwSetErrorCallback(GLFWErrorCallback);
         }
         GraphicsContext::ConfigureWindowHints();
+        glfwWindowHint(GLFW_WIN32_KEYBOARD_MENU,GLFW_TRUE);
         {
             HZ_PROFILE_SCOPE("glfwCreateWindow");
             m_Window = glfwCreateWindow(
@@ -166,6 +170,7 @@ namespace Hazel {
     {
         HZ_PROFILE_FUNCTION();
         m_Context.reset();
+        m_Caption.reset();
         glfwDestroyWindow(m_Window);
         if (--s_GLFWWindowCount == 0)
         {
@@ -178,18 +183,54 @@ namespace Hazel {
     {
         HZ_PROFILE_FUNCTION();
         glfwPollEvents();
+        if(m_Caption && (m_Caption->NeedsNativeFallback() || m_Data.Width<640)) {
+            m_Caption.reset();m_CaptionLayout={};m_CaptionState.Custom=false;
+            m_CaptionState.Reason="Native fallback: desktop composition or usable caption width unavailable; enable again in Preferences to retry";
+        }
         m_Context->SwapBuffers();
+    }
+
+    void WindowsWindow::ReadNormalPlacement(WindowPlacement& value) const {
+        Window::ReadNormalPlacement(value);
+        if(!m_CaptionState.Custom)return;
+        // GLFW setters/frame queries use the unchanged native window style. Save
+        // equivalent geometry, not our larger client area, to avoid drift on restore.
+        RECT outer{};
+        if(!GetWindowRect(glfwGetWin32Window(m_Window),&outer))return;
+        int left=0,top=0,right=0,bottom=0;glfwGetWindowFrameSize(m_Window,&left,&top,&right,&bottom);
+        value.X=outer.left+left;value.Y=outer.top+top;
+        value.Width=outer.right-outer.left-left-right;value.Height=outer.bottom-outer.top-top-bottom;
+    }
+    void WindowsWindow::SetCustomCaption(bool requested) {
+        m_CaptionState.Requested=requested;
+        if(!requested) {m_Caption.reset();m_CaptionState={false,false,"Native decorations"};m_CaptionLayout={};return;}
+        if(m_Caption){m_CaptionState.Custom=true;return;}
+        if(m_Data.Width<640) {m_CaptionState.Custom=false;m_CaptionState.Reason="Native fallback: the window is too narrow for caption controls";return;}
+        std::string reason;
+        m_Caption=WindowsCaption::Create(*this,reason);
+        m_CaptionState.Custom=bool(m_Caption);m_CaptionState.Reason=reason;
+    }
+    void WindowsWindow::UseNativeCaption(const std::string& reason) {m_Caption.reset();Window::UseNativeCaption(reason);}
+    void WindowsWindow::RequestClose() {
+        WindowCloseEvent event;if(m_Data.EventCallback)m_Data.EventCallback(event);
+    }
+    void WindowsWindow::SetTitle(const std::string& title) {
+        if(m_Data.Title==title)return;
+        m_Data.Title=title;glfwSetWindowTitle(m_Window,title.c_str());
     }
 
     void WindowsWindow::SetVSync(bool enabled)
     {
         HZ_PROFILE_FUNCTION();
-        if (enabled)
-            glfwSwapInterval(1);
-        else
-            glfwSwapInterval(0);
-
-        m_Data.VSync = enabled;
+        auto* previous = glfwGetCurrentContext();
+        if (previous != m_Window) glfwMakeContextCurrent(m_Window);
+        if (glfwGetCurrentContext() != m_Window) {
+            if (previous != m_Window) glfwMakeContextCurrent(previous);
+            throw std::runtime_error("Cannot apply swap interval: owning window context unavailable");
+        }
+        glfwSwapInterval(enabled ? 1 : 0);
+        m_Data.VSync = enabled; // Submitted interval; compositor/driver timing is not measured.
+        if (previous != m_Window) glfwMakeContextCurrent(previous);
     }
 
     bool WindowsWindow::IsVSync() const
