@@ -1,4 +1,7 @@
 #include "Hazel.h"
+#ifdef HZ_PLATFORM_WINDOWS
+#include "Platform/Windows/WindowsCommandLine.h"
+#endif
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Scene/RuntimeSession.h"
 #include "Hazel/Scripting/ScriptEngine.h"
@@ -33,6 +36,12 @@ static void Capture(const std::filesystem::path& path,unsigned width,unsigned he
     glPixelStorei(GL_PACK_ALIGNMENT,4);
 }
 int main(int argc,char** argv) {
+#ifdef HZ_PLATFORM_WINDOWS
+    // Match production launchers: CRT narrow argv cannot represent Unicode paths.
+    auto encoded=WindowsCommandLineUTF8();std::vector<char*> arguments;
+    for(auto& argument:encoded)arguments.push_back(argument.data());
+    argc=static_cast<int>(arguments.size());arguments.push_back(nullptr);argv=arguments.data();
+#endif
     const auto temporary=std::filesystem::temp_directory_path()/std::filesystem::u8path("hazel games space-é-"+std::to_string(std::random_device{}()));
     try {
         Check(argc==4,"Usage: ExampleGamesSmoke MeadowRun.hproj Skybound.hproj captures");Log::Init();

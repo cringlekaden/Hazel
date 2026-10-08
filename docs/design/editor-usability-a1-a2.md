@@ -925,3 +925,9 @@ contracts plus short Hazelnut/Nutella smoke, and extracted Hazelnut/Nutella and 
 game archives in GL4.1 with source/SDK roots parked and restored in finally. The
 extracted game native fixture passes the unchanged gameplay/lifecycle assertions.
 These are automated driver/render/service results, not physical mouse/DPI acceptance.
+
+The stronger extracted native game fixture found a fixture-only Windows argument
+bug: it treated CRT ANSI argv as UTF-8, unlike production launchers. It now uses
+WindowsCommandLineUTF8, retaining the spaces/é/emoji relocation case and all native
+assertions. Linux's complete workflow and both editor workflows passed before this
+fixture correction; the new head must pass the affected Windows package gate too.
