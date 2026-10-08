@@ -510,3 +510,9 @@ inventory. Authorized master integration preserves historical branches and user
 workspace files. Remaining acceptance is physical hierarchy/caption/DPI and game
 interaction on Grandpa and Windows; linked prefab overrides, variants, propagation,
 animation graphs and a macOS caption backend remain deferred.
+
+
+Final verification: [master integration `a31187d` passed Linux and Windows CI](https://github.com/cringlekaden/Hazel/actions/runs/37756280905),
+including Debug/Release, software/GL4.1 and extracted application/game gates.
+The final README links those builds; its documentation-only follow-ups skip CI.
+Physical desktop acceptance remains the user's next step.

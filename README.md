@@ -4,13 +4,13 @@ A Linux/Windows extension of [TheCherno/Hazel](https://github.com/TheCherno/Haze
 
 ## Downloads
 
-Verified builds from [`b32aca7`](https://github.com/cringlekaden/Hazel/actions/runs/37708845811) (GitHub login required):
+Verified master builds from [`a31187d`](https://github.com/cringlekaden/Hazel/actions/runs/37756280905) (GitHub login required):
 
 | Application | Windows x64 | Linux x86_64 |
 | --- | --- | --- |
-| Hazelnut + Nutella | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37708845811/artifacts/11521068222) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37708845811/artifacts/11521347419) |
-| MeadowRun | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37708845811/artifacts/11520959537) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37708845811/artifacts/11521582072) |
-| Skybound | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37708845811/artifacts/11521084245) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37708845811/artifacts/11521352650) |
+| Hazelnut + Nutella | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37756280905/artifacts/11541340516) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37756280905/artifacts/11541596001) |
+| MeadowRun | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37756280905/artifacts/11541416345) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37756280905/artifacts/11541730832) |
+| Skybound | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37756280905/artifacts/11541147123) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37756280905/artifacts/11541532045) |
 
 Extract the download, then the application archive inside it, and launch `Hazelnut` or `Nutella` (`.exe` on Windows). Checksums and launch instructions are included. Artifacts expire; [successful master builds](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Amaster) provide newer downloads. No formal release is published.
 

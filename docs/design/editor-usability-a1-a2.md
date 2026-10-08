@@ -938,8 +938,8 @@ Final feature gates passed on `b32aca7` on both Linux and Windows:
 and [editor usability Debug/Release and software/GL4.1 CI](https://github.com/cringlekaden/Hazel/actions/runs/37708845822).
 The authorized integration merges that verified combined feature into master in a
 separate worktree, preserving the user's active feature checkout, Lanterns draft,
-Sandbox files, stash, layouts and vendor pins. The merge changes only this final
-record relative to the tested source; master CI is checked after publication.
+Sandbox files, stash, layouts and vendor pins. The merge changes only the final documentation
+records relative to the tested source; master CI is checked after publication.
 No physical Windows GPU, Snap, mixed-DPI or human drag/drop acceptance is claimed.
 
 
@@ -948,3 +948,11 @@ setup, editor workflows and detailed contracts. Old authoring-branch instruction
 expired checkpoint links and Shift-drop UI guidance are replaced by the completed
 master workflow. This is a documentation-only follow-up; no CI gates or assertions
 are removed. Master integration CI continues independently.
+
+
+Master integration `a31187d` passed the complete
+[Linux/Windows Debug/Release, software/GL4.1, runtime and extracted application/game gates](https://github.com/cringlekaden/Hazel/actions/runs/37756280905).
+README downloads now point to that verified master build. Subsequent changes are
+documentation only and use `[skip ci]` as requested; there are no source, workflow,
+vendor or test changes after the verified merge. The preserved feature branch is
+fast-forwarded to the same final documentation head, without rewriting history.
