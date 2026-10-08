@@ -1,11 +1,11 @@
-# Editor usability implementation: A1 / A2 and B–G
+# Editor usability implementation: A–H
 
 Baseline: `5de70c93a89e1c8df3fd37553569d9499f793c7a` on
 `feature/sprite-sheet-authoring`, including the complete audit and descended from
 `9a48282f59b4cbc188615ec66763c448b70a2e83`. Implementation branch:
 `feature/editor-usability`. This record supplements
 [the audit](editor-usability-audit.md). A1/A2 and their corrections are complete;
-Stages B–G and their verification are recorded below. Optional H and broader tooltip cleanup remain separate stages.
+Stages B–H, the final hierarchy correction and tooltip cleanup are recorded below. Earlier checkpoint notes describe their original scope; final follow-ups supersede them.
 
 ## Workflows
 
@@ -189,8 +189,8 @@ Validate / Refresh SDK, and Use Automatic. Reset changes only the draft; Apply a
 Save explicitly persists a blank override, never an automatic machine path. Invalid
 text stays editable; checks run on commit/browse/refresh/apply/action, not each frame.
 If discovery fails, select a compatible source checkout (not the executable or
-Resources folder): clone with `--recurse-submodules --branch feature/editor-usability`
-(the current compatible authoring branch; master lacks these tools), install README prerequisites,
+Resources folder): clone the current compatible `master` with `--recurse-submodules`
+(or the matching feature checkpoint), install README prerequisites,
 then run `scripts/setup.sh` or `scripts/setup.ps1`. Check Readiness verifies Python,
 Mono/.NET targeting packs and, for export, native compiler prerequisites.
 
@@ -941,3 +941,10 @@ separate worktree, preserving the user's active feature checkout, Lanterns draft
 Sandbox files, stash, layouts and vendor pins. The merge changes only this final
 record relative to the tested source; master CI is checked after publication.
 No physical Windows GPU, Snap, mixed-DPI or human drag/drop acceptance is claimed.
+
+
+The final README is a compact entry point for current verified downloads, source
+setup, editor workflows and detailed contracts. Old authoring-branch instructions,
+expired checkpoint links and Shift-drop UI guidance are replaced by the completed
+master workflow. This is a documentation-only follow-up; no CI gates or assertions
+are removed. Master integration CI continues independently.

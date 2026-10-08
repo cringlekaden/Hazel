@@ -1,184 +1,73 @@
 # Hazel
 
-A Linux/Windows extension of [TheCherno/Hazel at the pinned import](https://github.com/TheCherno/Hazel/tree/1feb70572fa87fa1c4ba784a2cfeada5b4a500db). **Hazelnut** is the editor; **Nutella** runs projects independently. Engine code, managed scripting, Box2D, YAML scenes, and 2D/MSDF rendering share the existing Hazel architecture. These runtime/session and deployment changes are local development, not claims about upstream's future design.
+A Linux/Windows extension of [TheCherno/Hazel](https://github.com/TheCherno/Hazel/tree/1feb70572fa87fa1c4ba784a2cfeada5b4a500db). **Hazelnut** edits projects; **Nutella** runs standalone games. This fork adds cross-platform tooling, managed scripting, sprite animation, detached prefabs and editor usability improvements.
 
-## Binaries
+## Downloads
 
-Verified Release downloads for implementation checkpoint **`8f07a1e`**:
+Verified builds from [`b32aca7`](https://github.com/cringlekaden/Hazel/actions/runs/37708845811) (GitHub login required):
 
-- [Windows x64 — Hazelnut and Nutella](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11284056413)
-- [Linux x86_64 — Hazelnut and Nutella](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11284226693)
+| Application | Windows x64 | Linux x86_64 |
+| --- | --- | --- |
+| Hazelnut + Nutella | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37708845811/artifacts/11521068222) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37708845811/artifacts/11521347419) |
+| MeadowRun | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37708845811/artifacts/11520959537) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37708845811/artifacts/11521582072) |
+| Skybound | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37708845811/artifacts/11521084245) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37708845811/artifacts/11521352650) |
 
-Both artifacts contain separate application archives and SHA-256 checksums. [Verification run](https://github.com/cringlekaden/Hazel/actions/runs/37150634381) passed Windows/Ubuntu Debug and Release regressions and actual extracted-package tests with source resources and SDK unavailable. Testing evidence is separate: [Windows](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11284537247), [Linux](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11284765129). Review downloads require a GitHub login; no release has been published. [Later feature branch builds](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Afeature%2Feditor-authoring) are available through successful CI runs.
+Extract the download, then the application archive inside it, and launch `Hazelnut` or `Nutella` (`.exe` on Windows). Checksums and launch instructions are included. Artifacts expire; [successful master builds](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Amaster) provide newer downloads. No formal release is published.
 
-Extract an application archive, then launch `Nutella.exe` / `Nutella` or `Hazelnut.exe` / `Hazelnut`. Nutella discovers the included root project and starts MainMenu. Hazelnut opens its bundled Example. Click **Play** inside the game (first start editor Play with the toolbar triangle); Level1 uses A/D and Space, with a clickable Menu control and Escape fallback. Working directory, spaces and Unicode in the extraction path are supported.
+Requires **OpenGL 4.1 core**, Windows 10 x64 or newer, or an X11/GLX Linux desktop. Official Linux builds target Ubuntu 24.04 / glibc 2.39 or newer. Prepared games need no SDK, Python or compiler; runtime dependencies are bundled.
 
-Packages need no checkout, build tools, shader SDK or script compiler. Requirements: OpenGL **4.1 core** or newer, Windows **10 x64** or newer; official Linux CI builds target **Ubuntu 24.04 / glibc 2.39** or newer with an X11/GLX display and system OpenGL driver. Local CachyOS packages carry their build host's glibc baseline. Native dependencies, Mono, Release CRT (Windows), engine resources and precompiled scripts are included. Software graphics used by CI stays outside production archives. See each archive's `LAUNCH.txt`, `build.json`, `SHA256SUMS` and licenses.
-
-## Setup
+## Build from source
 
 ```sh
 git clone --recurse-submodules https://github.com/cringlekaden/Hazel.git
 cd Hazel
-git switch feature/editor-authoring
-scripts/setup.sh                         # Linux
+scripts/setup.sh                  # Linux
 ```
 
-```powershell
-./scripts/setup.ps1                     # Windows
-```
+On Windows, run `./scripts/setup.ps1` instead. Setup diagnoses missing prerequisites, prepares pinned tools through **Premake**, and builds Debug with two compiler jobs. Repeated builds are incremental; setup does not install system packages.
 
-Setup diagnoses prerequisites, initializes exact submodule pins, bootstraps project-owned pinned Premake, prepares shader dependencies through Premake, generates projects, and builds/stages Debug with **two jobs**. Repeating setup/build is incremental; commands serialize through a build lock. No system packages are installed by setup. Python dependencies/tools and generated output live in ignored `build/`; distributions live in ignored `dist/`. CMake is not required. The required Premake compatibility shim and dependency provenance remain under `scripts/dependencies`.
-
-Install prerequisites explicitly if missing (these commands require administrator privileges; setup never elevates):
+Prerequisites: Python 3.9+, Git and a C++ toolchain. Linux needs GTK3, UUID and X11/OpenGL development libraries; setup reports missing packages. Windows needs Visual Studio 2022 C++ Build Tools, Windows SDK and the .NET Framework 4.7.2 targeting pack. The IDE is optional.
 
 ```sh
-# CachyOS / Arch (Mono is bootstrapped as an isolated, checksum-pinned SDK
-# when unavailable; HAZEL_MONO_SDK can reuse an existing SDK)
-sudo pacman -S --needed base-devel git python python-pip libarchive util-linux-libs pkgconf gtk3 libx11 libxext libxrandr libxinerama libxcursor libxi libglvnd
-# Ubuntu 24.04
-sudo apt-get install build-essential git python3 python3-pip pkg-config mono-devel uuid-dev libgtk-3-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libegl1-mesa-dev
-```
-
-Windows: Python 3, Git, Visual Studio **2022 Build Tools** with C++ x64/x86 tools, Windows SDK, MSBuild, and **.NET Framework 4.7.2 targeting pack**. The IDE is optional; tooling uses `vswhere` and MSBuild discovery. The pinned Windows Mono SDK is already in the repository. All native targets retain MDd for Debug and MD for Release, and UTF-8 source configuration.
-
-## Commands
-
-Use `python3` on Linux or `python` on Windows, from any directory, with the script's full path when outside the checkout. Each subcommand supports `--help`.
-
-```sh
-python3 scripts/hazel.py build                          # incremental Debug
+python3 scripts/hazel.py run Hazelnut
 python3 scripts/hazel.py build --config Release
-python3 scripts/hazel.py run Hazelnut                    # restore last project
-python3 scripts/hazel.py run Nutella                     # development example
-python3 scripts/hazel.py script-build examples/SceneTransitions/SceneTransitions.hproj --config Release
-python3 scripts/hazel.py package --project examples/SceneTransitions/SceneTransitions.hproj
-python3 scripts/hazel.py package --app Nutella --project /path/to/Game.hproj
 python3 scripts/hazel.py build --tests
 python3 scripts/hazel.py test --config Debug
-python3 scripts/hazel.py test-packages                   # extracted example archive acceptance
-python3 scripts/hazel.py database                       # explicit Bear/clangd refresh
 ```
 
-Project packaging validates scenes, textures, compiled script classes/assembly references, and native dependency closure. External asset paths/symlinks are rejected with instructions to relocate them into the project and save relative references. Project P/Invoke requires explicit native redistribution support; packaging rejects it rather than silently depending on the source machine. Precompiled scripts run without a compiler. Use **File > New Project**, **Project > Create Script / Build Scripts / Export Game**, and **Edit > Editor Preferences** for ordinary authoring. Configure a Hazel source SDK and Python there for script builds and exports. Native New Project, ordinary content editing/saving, and prepared Play need neither. New projects open with an intended script-module path and remain editable before compilation. New projects generate the canonical Premake configuration, honoring `HAZEL_SCRIPTCORE` and `HAZEL_SCRIPT_OUTPUT`; `script-build` compiles against the matching Hazel-ScriptCore, keeps configuration outputs in the SDK cache, and atomically deploys the configured module and its dependencies.
+Use `python` on Windows. All commands support `--help`. Generated tools/builds live in ignored `build/`; packages go to `dist/`. Vendor pins remain unchanged. Premake is the only build system.
 
-Nutella's public launch contract:
+## Use the editor
 
-```text
-Nutella                             Run the only root .hproj beside the executable
-Nutella --project <project.hproj>    Select explicitly; relative paths use invocation cwd
-Nutella --list-projects              Sorted root candidates; no graphics or Mono
-Nutella --help                       Usage; no graphics or Mono
-```
+- **File > New Project / Open** creates or opens content. Normal Open reports recoverable missing resources while preserving references; invalid or unsupported input keeps the previous session.
+- **Content Browser** imports textures, searches assets and opens sprite sheets. Slice regions, author clips, then assign them to the named entity.
+- **Scene Hierarchy > Add Entity** creates a root. Drag onto an entity to parent it, or onto **Scene Root** to detach it. Both preserve world pose; invalid or nonrepresentable moves are rejected. Properties edit local transforms. Rigidbody/collider owners must remain roots.
+- **Ctrl+S / File > Save** saves the active scene, prefab or sheet; **Save All** covers eligible dirty documents. Operation guards distinguish saving, using saved assets, cancellation and actual discard.
+- The compact viewport toolbar controls **Play / Simulate / Stop / Pause / Step**. **View > Console** combines logs, tool progress and results.
+- **Project** contains script build/export and settings. Runtime rendering requests travel with the project; device/effective values are read-only. **Editor Preferences** owns user settings and the optional Windows custom caption; Linux retains native decorations.
 
-Zero/multiple candidates and invalid arguments fail usefully with nonzero status. A `.hproj` specifies StartScene and assets; loose assets do not identify a game. Engine resources default to executable-adjacent `Resources`, Mono to `mono`, writable data to platform user data (`~/.local/share/Hazel/<app>` / `%LOCALAPPDATA%/Hazel/<app>`). `HAZEL_RESOURCES`, `HAZEL_MONO`, `HAZEL_DATA` are explicit root overrides, without cwd search heuristics. Shader caches keep content identity and corruption recovery.
+Hazelnut restores the last successful project. Explicit `--project` / `--scene` arguments override restoration; `--no-restore` disables it. VS Code templates live under `scripts/internal/vscode/`: older F5 configurations with an explicit project will always open that project. Local `.vscode/` and docking layouts are user-owned.
 
-Managed `Hazel.Scene.LoadScene("Scenes/Level1.hazel")` **requests** a scene transition from a main-thread callback. It returns void and does not report successful loading. The first accepted request wins; duplicates coalesce. At the beginning of the next runtime Update, outside callbacks/registry iteration, the target is staged/validated, then old scripts/physics stop and new state starts. Failure is logged and keeps the current scene usable. Stop cancels pending work. Ordinary transitions reuse the project script environment. Hazelnut retains authored scene/fields independently throughout Play.
+A **Hazel source SDK** is a compatible checkout prepared by setup, including the native/managed tools—not the application's executable or Resources directory. Python and SDK discovery are automatic; Preferences can override or reset them. If discovery fails, select the prepared checkout root. Distributed applications do not include this source SDK. Native creation, editing, saving and script-free or already prepared Play remain available without it; script builds and exports need the relevant toolchain.
 
-## Playable examples
+## Games and export
 
-**[MeadowRun](examples/MeadowRun/README.md)** is a small garden expedition: restore three gardens (Meadow, Orchard Paths and Lantern Grove), collect five lantern seeds per stage, and recover safely from each pond. WASD/arrow keys move; R restarts; Escape returns to the menu.
-
-**[Skybound](examples/Skybound/README.md)** follows an original wind sprite through lantern towers. Space/left click flap; fresh Space/R or Try Again restarts after death; Escape/Title Menu returns. A ready state prevents the title click from starting flight accidentally. Four active obstacle pairs are spawned from prefabs with fresh identities and destroyed as they leave the course; scoring and movement use fixed simulation steps.
-
-![MeadowRun during play](docs/images/meadowrun-play.png)
-![Skybound during play](docs/images/skybound-play.png)
-
-Original milestone captures (current level/resize captures are in the testing evidence linked above): [MeadowRun title](docs/images/meadowrun-title.png), [completion](docs/images/meadowrun-complete.png), [Skybound title](docs/images/skybound-title.png), [game over](docs/images/skybound-over.png).
-
-These are real engine captures, not mockups. Each project owns its scenes, textures and assembly. Stable layouts are authored in `.hazel` files; inspector-visible script fields tune movement and rules. Both use the shared RuntimeSession and managed scene-loading API. Their cameras fit a minimum 16 x 12 area. Skybound anchors its ground/HUD and vertical collision bounds to the resulting view. Original art and redistribution terms are recorded per project; regeneration is optional and needs Pillow only on the author's machine.
-
-After engine setup, substitute `MeadowRun` or `Skybound` for `<Game>` (Windows: use `python`):
+[MeadowRun](examples/MeadowRun/README.md) is a garden expedition; [Skybound](examples/Skybound/README.md) is a scrolling flight game. Their READMEs describe controls and assets. `SceneTransitions` is the focused runtime/CLI example.
 
 ```sh
-python3 scripts/hazel.py script-build examples/<Game>/<Game>.hproj
-python3 scripts/hazel.py run Hazelnut --project examples/<Game>/<Game>.hproj
-python3 scripts/hazel.py run Nutella --project examples/<Game>/<Game>.hproj
-python3 scripts/hazel.py build --config Release
-python3 scripts/hazel.py script-build examples/<Game>/<Game>.hproj --config Release
-python3 scripts/hazel.py package --app Nutella --project examples/<Game>/<Game>.hproj --name <Game> --output dist/games
-python3 scripts/hazel.py test-games                  # requires build --tests
-python3 scripts/hazel.py test-games --config Release --packages
+python3 scripts/hazel.py script-build examples/Skybound/Skybound.hproj --config Release
+python3 scripts/hazel.py run Nutella --project examples/Skybound/Skybound.hproj
+python3 scripts/hazel.py package --app Nutella --project examples/Skybound/Skybound.hproj
 ```
 
-Verified game downloads from the same CI run (GitHub login required):
+Export uses saved content, builds the selected project's Release scripts, and validates asset/runtime closure. Extracted Nutella discovers its single root `.hproj`; `--project <file>` selects one explicitly. Detached prefabs instantiate independent subtrees with remapped internal references; linked overrides and variants are deferred.
 
-| Game | Windows x64 | Linux x86_64 |
-| --- | --- | --- |
-| MeadowRun | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11283929239) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11284069136) |
-| Skybound | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11283809724) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37150634381/artifacts/11283849672) |
+## Documentation
 
-Each artifact contains a complete game archive and checksum. Extract the artifact,
-then its game archive, and run Nutella without arguments. Windows/Linux Debug and
-Release editor/player gameplay checks and extracted software/OpenGL 4.1 checks
-passed. No release has been published. The normal Hazelnut/Nutella artifacts remain available. `SceneTransitions` remains the focused lifecycle/CLI example used by existing regressions. See [design and measured verification](docs/example-games.md).
+- [Editor usability design and remaining scope](docs/design/editor-usability-audit.md)
+- [A–H implementation, contracts, verification and acceptance](docs/design/editor-usability-a1-a2.md)
+- [Sprite-sheet authoring](docs/design/sprite-sheet-authoring.md)
+- [Earlier authoring contracts](docs/editor-authoring.md) and [data/lifecycle safeguards](docs/authoring-reliability.md)
+- [Standalone runtime and packaging](docs/nutella-runtime.md), [example games](docs/example-games.md), and [upstream provenance](docs/migration/PROVENANCE.md)
 
-## Development and layout
-
-Copy the portable `scripts/internal/vscode/linux/*.json` or `windows/*.json` templates into ignored `.vscode/` after preserving existing settings. F5 defaults to Hazelnut with no project argument, so it reopens the last successful project. An explicit `--project` or positional project path intentionally overrides restoration on every launch; remove the Hazelnut `args` project path from older local templates to restore the last project. Nutella has its own explicit development-example configuration. Debug launch builds incrementally. Bear refresh is an explicit task, requiring Bear; Linux debugger requires GDB. Linux desktop tests require a display (`xvfb-run` is useful in CI), `libXtst` for automated clicks, and optionally Mesa software graphics. Windows tests acquire a checksum-pinned isolated software driver only under ignored testing output.
-
-```text
-Hazel/                 engine: src/, Resources/, pristine vendor/
-Hazel-ScriptCore/       managed public API
-Hazelnut/              editor: src/, Resources/Icons + initial layout
-Nutella/               standalone project player
-examples/{MeadowRun,Skybound,SceneTransitions}/  independent projects
-examples/art/          optional original art regeneration source
-tests/fixtures/        intentional authoring/texture fixtures
-tests/migration/       retained and extended regression executables
-tests/examples/        game lifecycle/rendering and flight invariants
-scripts/               setup.sh, setup.ps1, hazel.py
-  internal/            packaging, tests, tool pins, portable VS Code templates
-  dependencies/        Premake integration, generators, pins, compatibility shims
-  migration/           historical upstream comparison tool
-docs/                 design, contracts, import provenance
-dist/ (ignored)       complete Release archives + checksums
-```
-
-OS implementations remain in `Hazel/src/Platform/{Linux,Windows}` and graphics in `Platform/OpenGL`. macOS/Metal are not implemented. Renderer capability/settings and shader-cache contracts are preserved. See the [milestone design and measured verification](docs/nutella-runtime.md), [authoring contracts](docs/authoring-reliability.md), and [historical migration evidence](docs/migration/PROGRESS.md).
-
-The [editor authoring implementation record](docs/editor-authoring.md) maps every new feature to its ImGui workflow, documents prefab/lifecycle/settings contracts, and records verification and deferred scope.
-
-Native project creation also has a CLI frontend:
-
-```sh
-python3 scripts/hazel.py new-project --name "My Game" --identifier MyGame --destination /absolute/new-folder
-```
-
-The wrapper delegates to the SDK's `HazelProject` executable and canonical bundled
-resource templates; it does not generate a second project format. Add
-`--build-scripts` to compile afterward. A compilation failure retains the valid,
-editable project. In Hazelnut use Project > Authoring readiness / Build Scripts,
-then assign compiled classes in Properties. Script-free scenes can Play before
-that build. Export always uses saved descriptor/startup/assets, rebuilds the
-selected project's Release scripts and runtime/validator targets, and validates
-the existing package closure. User layout/session/workspaces stay under the editor
-data directory; launch supports `--project`, `--scene`, and `--no-restore`.
-
-Project Settings > Runtime rendering saves portable VSync, Automatic/GLSL shader
-loading and advanced texture-batch requests. Save rendering requests preserves
-open content drafts. Batch/shader policy initializes at launch: when a saved
-project differs from the current effective policy, save wanted documents, close
-normally and restart Hazelnut with that project. Play/Simulate cannot silently use
-a different GPU policy. Nutella reads the same requests before initialization.
-Editor Preferences > Graphics owns editor VSync and optional driver-message
-capture; device/effective information is read-only. Swap interval submission does
-not measure compositor timing. See the [Stage F contracts and local verification](docs/design/editor-usability-a1-a2.md#stage-f-renderer-requests).
-
-
-Scene Hierarchy now supports ordered parent/child trees. Transform properties are
-local; rendering, cameras and gizmos use composed world matrices. Drag onto an
-entity or the root row to Keep World; Shift-drop explicitly Keeps Local. A move
-that needs shear, a singular inverse or reflected decomposition is rejected;
-use local controls or deliberately choose Keep Local. Rigidbody/collider owners
-must remain roots (planar Z rotation, positive XY scale; circles need uniform XY
-scale); visual children can follow a root body. Context menus create children,
-duplicate subtrees and confirm counted deletion.
-
-Create Prefab from Subtree produces one detached connected asset. Internal entity
-fields remap independently in each instance; external entity fields must be
-cleared or brought into the subtree. Prefab Inspector edits its children and
-shows a static preview. Legacy flat scenes/single-entity prefabs remain readable;
-explicit Save writes scene/prefab v2 and preserves the original under recovery
-rules. There are no linked overrides, variants or propagation. See the
-[Stage G contracts and verification](docs/design/editor-usability-a1-a2.md#stage-g-hierarchy-and-detached-prefabs).
+Linux/Windows CI checks Debug/Release, service/lifecycle regressions, software graphics and relocated packages. Automated checks do not replace physical mouse, DPI or GPU acceptance. macOS and additional graphics backends are not implemented.
