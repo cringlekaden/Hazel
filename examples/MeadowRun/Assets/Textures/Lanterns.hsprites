@@ -32,8 +32,12 @@ SpriteSheet:
       Name: Lantern pulse
       Loop: true
       Frames:
-        - {RegionID: "0000000000000102", Duration: 0.18}
-        - {RegionID: "0000000000000103", Duration: 0.18}
-        - {RegionID: "0000000000000104", Duration: 0.18}
-        - {RegionID: "0000000000000103", Duration: 0.18}
+        - RegionID: "0000000000000102"
+          Duration: 0.17999999999999999
+        - RegionID: "0000000000000103"
+          Duration: 0.17999999999999999
+        - RegionID: "0000000000000104"
+          Duration: 0.17999999999999999
+        - RegionID: "0000000000000103"
+          Duration: 0.17999999999999999
   RetiredClipIDs: []

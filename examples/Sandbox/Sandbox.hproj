@@ -1,0 +1,8 @@
+Project:
+  Version: 1
+  ScriptProject: Sandbox
+  AuthoringVersion: 1
+  Name: Sandbox
+  StartScene: Scenes/Start.hazel
+  AssetDirectory: Assets
+  ScriptModulePath: Scripts/Binaries/Sandbox.dll
