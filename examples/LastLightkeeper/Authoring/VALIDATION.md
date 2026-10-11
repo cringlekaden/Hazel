@@ -89,3 +89,19 @@ final encounter and full rescue ending are not yet authored or claimed complete.
 The new SeaCaves scene opened in 1.192 seconds of project work with 37 loading
 frames. Its real editor hierarchy search, direct-scene practice Play and Stop
 worked in an isolated copy (Captures/Editor-caves-play.png).
+
+The fixed live relaunch resumed the sleeve milestone at the safe workshop point
+with an unobstructed viewport; 1024x600 capture: Captures/Continue-small.png.
+Latest local Debug, Release/gl41 and relocated/gl41 Continue-fix suites passed.
+The final Linux archive checksum was verified from dist/lightkeeper-next.
+
+## Final cross-platform checkpoint
+
+[CI run 38162258763](https://github.com/cringlekaden/Hazel/actions/runs/38162258763),
+commit `0a92da9`, passed both complete Linux and Windows workflows: Debug/Release,
+authoring/runtime regressions, source games, exported games, software rendering
+and OpenGL 4.1 extracted-package checks. The preceding content checkpoint
+`49bfd7b` also passed both full workflows (run 38161324185).
+The final Windows LastLightkeeper artifact is downloaded under
+`dist/lightkeeper-next/windows-ci`; local Linux package and checksum are in
+`dist/lightkeeper-next`. Windows capture/CI is not physical GPU/audio playtesting.
