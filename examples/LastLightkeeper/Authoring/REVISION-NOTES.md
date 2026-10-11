@@ -93,7 +93,7 @@ with Next and ends with Close or Continue where a transition follows. New Game
 confirmation is cancellable without a timer. Failed writes retain the previous
 menu journey and cannot generate a successful checkpoint message.
 
-Native tree crown/trunk pairs replace stretched crowns. Joined gravel follows the
+Trees use the existing native 16x32 pine region at its original aspect ratio. Joined gravel follows the
 actual route footprint. Quiet slate and directional masonry describe the cistern's
 working paths and pool; the cave seep no longer uses door/tank tiles as edging.
 Rubble is concentrated at falls, with salvage at storage areas. No atlas pixels,
@@ -106,3 +106,11 @@ separate from explicit control instructions. Mara's reunion is shorter and her
 key's consequence is stated directly. Notes, objectives, prompts, errors and
 endpoint text follow the same terminology. Adjustment, warning, repair and
 recovery cues use the existing licensed sounds at distinct authored gains.
+
+The pine correction uses the existing `pine_tall` region (ID
+`be7a5bc884ec131c`, Rect 64,0,16,32) once per tree at 1x2 world units.
+That region already includes its trunk: the attempted 4/16 composition duplicated
+it. All duplicate bases are removed, sibling orders reindexed, and the source
+check verifies crop, pivot, counts, aspect ratio and native sampling. Colliders,
+texture pixels and existing sheet IDs are unchanged. Dialogue controls now have
+a fixed authored footer. Chapter exits require a successful progress write.

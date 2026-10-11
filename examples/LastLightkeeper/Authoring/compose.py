@@ -10,11 +10,13 @@ from PIL import Image, ImageDraw
 ROOT=Path(__file__).resolve().parents[1]
 ASSETS=ROOT/'Assets'
 TABLE={}
+REGIONS={}
 for pack in ('tiny-town','tiny-dungeon','tiny-factory','tiny-battle','panel','coast-quarters','ground-quarters'):
     path=ASSETS/'Art'/(pack+'.hsprites')
     if not path.exists():raise SystemExit('First use the native sheet import commands in README: '+str(path))
     regions=yaml.safe_load(path.read_text())['SpriteSheet']['Regions']
     TABLE[pack]={i:r['ID'] for i,r in enumerate(regions)}
+    REGIONS[pack]=regions
 
 CLIPS={pack:yaml.safe_load((ASSETS/'Art'/(pack+'.hsprites')).read_text())['SpriteSheet']['Clips'][0]['ID'] for pack in ['lantern-pulse','tiny-dungeon']}
 
@@ -83,13 +85,16 @@ def game_hud(s,cid):
     s.text('TideLabel','',2,-8.2,.28,AMBER,cid)
     s.panel('DialoguePanel',0,-3,27,6.8,cid,z=6.5)
     s.text('Dialogue','',-12.5,-.5,.46,WHITE,cid,z=8.5)
+    s.text('DialogueFooter','',-12.5,-5.7,.36,AMBER,cid,z=8.5)
     for name,file,gain in [('SoundTurn','click_003.wav',.22),('SoundRestore','confirmation_002.wav',.38),('SoundHazard','error_002.wav',.30),('SoundWarning','open_001.wav',.32)]:
         e=s.entity(name);e['AudioSourceComponent']={'Clip':'Audio/'+file,'Gain':gain,'Loop':False,'PlayOnStart':False}
 
 def pine(s,name,x,y,color=GRASS,parent=0):
-    # Native matching crown and trunk, one tile each. Never stretch a crown.
-    s.sprite(name,'tiny-town',4,x,y+.65,.7,color=color,parent=parent)
-    s.sprite(name+' trunk','tiny-town',16,x,y-.35,.7,color=color,parent=parent)
+    # Existing editor-authored region already contains the entire 16x32 tree.
+    tile=next(i for i,r in enumerate(REGIONS['tiny-town']) if r['Name']=='pine_tall')
+    region=REGIONS['tiny-town'][tile]
+    assert region['Rect']==[64,0,16,32] and region['Pivot']==[.5,.5]
+    s.sprite(name,'tiny-town',tile,x,y+.65,.7,1,2,color,parent)
 
 # Terrain is assembled once into the authored scene, using a designed coastline.
 def land(x,y):
@@ -208,8 +213,8 @@ def island():
     for iy,row in enumerate([[96,97,97,97,98],[108,109,125,109,110],[108,124,126,123,110],[120,121,122,121,122]]):
         for ix,tile in enumerate(row):s.sprite('Lighthouse stone %d,%d'%(ix,iy),'tiny-town',tile,14+ix,15-iy,.3,color=STORM,solid=ix in (0,4))
     s.sprite('Lantern mechanism','tiny-factory',86,16,14,.55,1.5,1.5,AMBER)
-    halo=s.image('BeaconHalo','ui_0046.png',16,14,.6,.001,.001,[1,.76,.35,.7])
-    halo['SpriteAnimationComponent']={'DefaultClip':{'Sheet':'Art/lantern-pulse.hsprites','ClipID':CLIPS['lantern-pulse']},'Autoplay':True,'Speed':1}
+    halo=s.sprite('BeaconHalo','tiny-dungeon',125,16,14.6,.6,.001,.001,AMBER)
+    halo['SpriteAnimationComponent']={'DefaultClip':{'Sheet':'Art/tiny-dungeon.hsprites','ClipID':CLIPS['tiny-dungeon']},'Autoplay':True,'Speed':1}
     s.sprite('Tower','tiny-dungeon',36,16,11,.3,1.4,1.4,STORM)
     s.text('Tower plaque','LOWER LANTERN',13,9,.27,WHITE,z=.6)
     # Bounds limit wandering, while authored ocean/cliff contours remain readable.
@@ -238,8 +243,8 @@ def menu(name='MainMenu',ending=False):
         for ix,t in enumerate(row):s.sprite('Tower vignette %d,%d'%(ix,iy),'tiny-town',t,9+ix*1.3,4-iy*1.3,-.4,1.3,1.3,STORM)
     for x,y in [(8,-2),(14,-1),(15,-3),(8,-4),(12,-5)]:pine(s,'Pine vignette %d,%d'%(x,y),x,y,[.35,.48,.43,1])
     s.sprite('Keeper vignette','tiny-dungeon',85,10,-2,-.1,1.2,1.2)
-    halo=s.image('Lantern halo','ui_0046.png',10.5,2.6,.2,1.1,1.1,[1,.75,.4,.9])
-    halo['SpriteAnimationComponent']={'DefaultClip':{'Sheet':'Art/lantern-pulse.hsprites','ClipID':CLIPS['lantern-pulse']},'Autoplay':True,'Speed':1}
+    halo=s.sprite('Lantern halo','tiny-dungeon',125,10.5,2.6,.2,1.1,1.1,AMBER)
+    halo['SpriteAnimationComponent']={'DefaultClip':{'Sheet':'Art/tiny-dungeon.hsprites','ClipID':CLIPS['tiny-dungeon']},'Autoplay':True,'Speed':1}
     for x in range(13,20):s.sprite('Light across sea '+str(x),'tiny-battle',42,x,2.6,-.2,1,.4,WHITE)
     s.text('Chapter','THE BREAKWATER · THE CLIFF CISTERN',-13,7,.31,AMBER,cid)
     heading=s.text('Heading','THE LAST\nLIGHTKEEPER',-13,5.1,1.15,WHITE,cid)

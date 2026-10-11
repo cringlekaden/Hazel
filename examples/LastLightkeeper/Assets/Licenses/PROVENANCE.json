@@ -11,7 +11,7 @@
     "archive_url": "https://kenney.nl/media/pages/assets/tiny-town/a415fbeb49-1735736916/kenney_tiny-town.zip",
     "adaptations": [
       "Native ground-quarters.hsprites grid crops: 8x8 from unchanged 192x176 packed sheet, for inset gravel adjacency.",
-      "Existing native crown/trunk pairs (4/16), slate surface (109), directional stone kerbs and inspection windows reused for the whole-game polish. No atlas pixels changed."
+      "Existing pine_tall region (64,0,16,32), displayed as one sprite at 1x2 world units; slate surface (109), directional stone kerbs and inspection windows reused for the whole-game polish. No atlas pixels changed."
     ]
   },
   {

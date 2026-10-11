@@ -34730,10 +34730,10 @@ Entities:
     - 0
     Scale:
     - 1
-    - 1
+    - 2
     - 1
   SpriteRendererComponent:
-    Color: &id004
+    Color:
     - 0.35
     - 0.48
     - 0.43
@@ -34747,7 +34747,7 @@ Entities:
     Tag: Pine vignette 14,-1
   Relationship:
     Parent: 0
-    Order: 72
+    Order: 71
   TransformComponent:
     Translation:
     - 14
@@ -34759,10 +34759,10 @@ Entities:
     - 0
     Scale:
     - 1
-    - 1
+    - 2
     - 1
   SpriteRendererComponent:
-    Color: &id005
+    Color:
     - 0.35
     - 0.48
     - 0.43
@@ -34776,7 +34776,7 @@ Entities:
     Tag: Pine vignette 15,-3
   Relationship:
     Parent: 0
-    Order: 74
+    Order: 72
   TransformComponent:
     Translation:
     - 15
@@ -34788,10 +34788,10 @@ Entities:
     - 0
     Scale:
     - 1
-    - 1
+    - 2
     - 1
   SpriteRendererComponent:
-    Color: &id006
+    Color:
     - 0.35
     - 0.48
     - 0.43
@@ -34805,7 +34805,7 @@ Entities:
     Tag: Pine vignette 8,-4
   Relationship:
     Parent: 0
-    Order: 76
+    Order: 73
   TransformComponent:
     Translation:
     - 8
@@ -34817,10 +34817,10 @@ Entities:
     - 0
     Scale:
     - 1
-    - 1
+    - 2
     - 1
   SpriteRendererComponent:
-    Color: &id007
+    Color:
     - 0.35
     - 0.48
     - 0.43
@@ -34834,7 +34834,7 @@ Entities:
     Tag: Pine vignette 12,-5
   Relationship:
     Parent: 0
-    Order: 78
+    Order: 74
   TransformComponent:
     Translation:
     - 12
@@ -34846,10 +34846,10 @@ Entities:
     - 0
     Scale:
     - 1
-    - 1
+    - 2
     - 1
   SpriteRendererComponent:
-    Color: &id008
+    Color:
     - 0.35
     - 0.48
     - 0.43
@@ -34863,7 +34863,7 @@ Entities:
     Tag: Keeper vignette
   Relationship:
     Parent: 0
-    Order: 80
+    Order: 75
   TransformComponent:
     Translation:
     - 10
@@ -34892,7 +34892,7 @@ Entities:
     Tag: Lantern halo
   Relationship:
     Parent: 0
-    Order: 81
+    Order: 76
   TransformComponent:
     Translation:
     - 10.5
@@ -34903,23 +34903,23 @@ Entities:
     - 0
     - 0
     Scale:
-    - 1.7
-    - 1.7
+    - 1.1
+    - 1.1
     - 1
   SpriteRendererComponent:
     Color:
     - 1
-    - 0.75
-    - 0.4
-    - 0.9
+    - 0.82
+    - 0.5
+    - 1
     Source:
-      Type: Texture
-      Texture: Art/ui_0046.png
-      TilingFactor: 1
+      Type: Region
+      Sheet: Art/tiny-dungeon.hsprites
+      RegionID: 9be63b823ff259ef
   SpriteAnimationComponent:
     DefaultClip:
-      Sheet: Art/lantern-pulse.hsprites
-      ClipID: 9046c1eeb50e614a
+      Sheet: Art/tiny-dungeon.hsprites
+      ClipID: 8eef78e797d6690a
     Autoplay: true
     Speed: 1
 - Entity: 1377
@@ -34927,7 +34927,7 @@ Entities:
     Tag: Light across sea 13
   Relationship:
     Parent: 0
-    Order: 82
+    Order: 77
   TransformComponent:
     Translation:
     - 13
@@ -34952,7 +34952,7 @@ Entities:
     Tag: Light across sea 14
   Relationship:
     Parent: 0
-    Order: 83
+    Order: 78
   TransformComponent:
     Translation:
     - 14
@@ -34977,7 +34977,7 @@ Entities:
     Tag: Light across sea 15
   Relationship:
     Parent: 0
-    Order: 84
+    Order: 79
   TransformComponent:
     Translation:
     - 15
@@ -35002,7 +35002,7 @@ Entities:
     Tag: Light across sea 16
   Relationship:
     Parent: 0
-    Order: 85
+    Order: 80
   TransformComponent:
     Translation:
     - 16
@@ -35027,7 +35027,7 @@ Entities:
     Tag: Light across sea 17
   Relationship:
     Parent: 0
-    Order: 86
+    Order: 81
   TransformComponent:
     Translation:
     - 17
@@ -35052,7 +35052,7 @@ Entities:
     Tag: Light across sea 18
   Relationship:
     Parent: 0
-    Order: 87
+    Order: 82
   TransformComponent:
     Translation:
     - 18
@@ -35077,7 +35077,7 @@ Entities:
     Tag: Light across sea 19
   Relationship:
     Parent: 0
-    Order: 88
+    Order: 83
   TransformComponent:
     Translation:
     - 19
@@ -36154,7 +36154,7 @@ Entities:
     Tag: Title / Journey menu
   Relationship:
     Parent: 0
-    Order: 89
+    Order: 84
   TransformComponent:
     Translation:
     - 0
@@ -36195,128 +36195,3 @@ Entities:
     - Name: Ending
       Type: Bool
       Data: true
-- Entity: 1423
-  TagComponent:
-    Tag: Pine vignette 8,-2 trunk
-  Relationship:
-    Parent: 0
-    Order: 71
-  TransformComponent:
-    Translation:
-    - 8
-    - -2.35
-    - 0.7
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id004
-    Source:
-      Type: Region
-      Sheet: Art/tiny-town.hsprites
-      RegionID: 5c9e3a83bd7ee88a
-- Entity: 1424
-  TagComponent:
-    Tag: Pine vignette 14,-1 trunk
-  Relationship:
-    Parent: 0
-    Order: 73
-  TransformComponent:
-    Translation:
-    - 14
-    - -1.35
-    - 0.7
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id005
-    Source:
-      Type: Region
-      Sheet: Art/tiny-town.hsprites
-      RegionID: 5c9e3a83bd7ee88a
-- Entity: 1425
-  TagComponent:
-    Tag: Pine vignette 15,-3 trunk
-  Relationship:
-    Parent: 0
-    Order: 75
-  TransformComponent:
-    Translation:
-    - 15
-    - -3.35
-    - 0.7
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id006
-    Source:
-      Type: Region
-      Sheet: Art/tiny-town.hsprites
-      RegionID: 5c9e3a83bd7ee88a
-- Entity: 1426
-  TagComponent:
-    Tag: Pine vignette 8,-4 trunk
-  Relationship:
-    Parent: 0
-    Order: 77
-  TransformComponent:
-    Translation:
-    - 8
-    - -4.35
-    - 0.7
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id007
-    Source:
-      Type: Region
-      Sheet: Art/tiny-town.hsprites
-      RegionID: 5c9e3a83bd7ee88a
-- Entity: 1427
-  TagComponent:
-    Tag: Pine vignette 12,-5 trunk
-  Relationship:
-    Parent: 0
-    Order: 79
-  TransformComponent:
-    Translation:
-    - 12
-    - -5.35
-    - 0.7
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id008
-    Source:
-      Type: Region
-      Sheet: Art/tiny-town.hsprites
-      RegionID: 5c9e3a83bd7ee88a

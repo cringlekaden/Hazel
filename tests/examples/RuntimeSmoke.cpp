@@ -11,6 +11,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/class.h>
 #include <set>
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -169,7 +170,7 @@ int main(int argc,char** argv) {
             auto runtime=session.GetScene();auto player=runtime->FindEntityByName("Iona");
             Check(bool(player) && session.GetError().empty(),"Authored island failed to start");
             Check(session.Storage().Read("journey").find("LK2|543|")==0 && !runtime->FindEntityByName("ServiceDoor"),"Service receiver/latching door or LK1 migration failed");
-            Check(runtime->GetAllEntitiesWith<IDComponent>().size()>3500 && runtime->GetAllEntitiesWith<IDComponent>().size()<3700,"Island or bounded beam pool incomplete");
+            Check(runtime->GetAllEntitiesWith<IDComponent>().size()<=project->LoadScene("Scenes/Breakwater.hazel")->GetAllEntitiesWith<IDComponent>().size()+15,"Island exceeded its authored content plus bounded beam pool");
             auto controller=ScriptEngine::GetEntityScriptInstance(runtime->FindEntityByName("Breakwater / Journey controller").GetUUID());
             auto invoke=[&](const char* method,void** values,int count) {
                 auto object=controller->GetManagedObject();MonoObject* exception=nullptr;
@@ -178,7 +179,24 @@ int main(int argc,char** argv) {
                 if(exception)mono_print_unhandled_exception(exception);
                 Check(!exception,"Lightkeeper managed integration callback failed");
             };
+            auto shot=[&](const char* name,float x,float y){
+                auto camera=runtime->FindEntityByName("Camera");camera.GetComponent<TransformComponent>().Translation={x,y,0};
+                // Capture actual runtime states after resize; gameplay is paused only for inspection.
+                for(auto dimensions:std::vector<glm::uvec2>{{1024,600},{1280,720},{960,720}}){
+                    framebuffer->Unbind();framebuffer->Resize(dimensions.x,dimensions.y);framebuffer->Bind();session.Resize(dimensions.x,dimensions.y);
+                    camera.GetComponent<CameraComponent>().Camera.SetOrthographicSize(std::max(18.0f,29.0f/(float(dimensions.x)/dimensions.y)));
+                    runtime->SetPaused(true);tick(session,0);
+                    Capture(std::filesystem::u8path(argv[3])/(std::string(name)+"-"+std::to_string(dimensions.x)+".ppm"),dimensions.x,dimensions.y);
+                    runtime->SetPaused(false);
+                }
+                framebuffer->Unbind();framebuffer->Resize(960,720);framebuffer->Bind();session.Resize(960,720);
+            };
             auto interactMirror=[&](int mirror){void* args[]={&mirror};invoke("Interact",args,1);};
+            for(const auto* name:{"Checkpoint0","Wrench","Checkpoint2"}){
+                auto destination=runtime->FindEntityByName(name).GetComponent<TransformComponent>().Translation;
+                Teleport(player,destination);for(int i=0;i<30;i++)tick(session);
+                shot(name==std::string("Checkpoint0")?"LastLightkeeper-harbor":name==std::string("Wrench")?"LastLightkeeper-grove":"LastLightkeeper-works",std::clamp(destination.x,-12.0f,12.0f),std::clamp(destination.y+1,-8.0f,10.0f));
+            }
             interactMirror(8);interactMirror(9);tick(session);
             Check(session.Storage().Read("journey").find("LK2|575|")==0,"Court did not power its stair receiver");
             Teleport(player,{4,12,.55f});for(int i=0;i<30;i++)tick(session);
@@ -193,17 +211,31 @@ int main(int argc,char** argv) {
             auto chapter=[&]{runtime=session.GetScene();player=runtime->FindEntityByName("Iona");controller=ScriptEngine::GetEntityScriptInstance(runtime->FindEntityByName(runtime->GetName()=="SeaCaves"?"Sea caves controller":"Cliff cistern controller").GetUUID());Check(bool(controller),"Chapter controller missing");};
             auto at=[&](const char* name){auto marker=runtime->FindEntityByName(name);Check(bool(marker),"Authored interaction marker missing");auto t=marker.GetComponent<TransformComponent>().Translation;t.z=.55f;Teleport(player,t);};
             bool focus=true;void* focused[]={&focus};
-            auto shot=[&](const char* name,float x,float y){auto camera=runtime->FindEntityByName("Camera");camera.GetComponent<TransformComponent>().Translation={x,y,0};runtime->SetPaused(true);tick(session,0);Capture(std::filesystem::u8path(argv[3])/(std::string(name)+".ppm"),960,720);runtime->SetPaused(false);};
+
             chapter();at("LanternSleeve");invoke("Interact",nullptr,0);invoke("CloseDialogue",nullptr,0);
             Check(session.Storage().Read("journey").find("LK2|1663|")==0,"Focus upgrade wasn't saved");
             Check(session.RequestSceneLoad("Scenes/CliffCistern.hazel"),"Mid-cistern Continue rejected");tick(session);tick(session);chapter();
             Check(runtime->FindEntityByName("DialoguePanel").GetComponent<TransformComponent>().Scale.x<.01f,"Resumed cistern retained empty dialogue overlay");
+            at("RestMarker");{
+                auto object=controller->GetManagedObject();auto klass=mono_object_get_class(object);bool blocked=true;
+                mono_field_set_value(object,mono_class_get_field_from_name(klass,"saveBlocked"),&blocked);
+                invoke("Interact",nullptr,0);tick(session);
+                Check(runtime->FindEntityByName("Context").GetComponent<TextComponent>().TextString.find("Progress saved at")==std::string::npos,"Blocked checkpoint save falsely reported success");
+                blocked=false;mono_field_set_value(object,mono_class_get_field_from_name(klass,"saveBlocked"),&blocked);
+            }
             at("FocusPad0");invoke("Focus",focused,1);Check(bool(runtime->FindEntityByName("DrainGate")),"Beam passed closed shutter");shot("LastLightkeeper-cistern-blocked",-4,1);
             at("Handle0");invoke("Interact",nullptr,0);at("FocusPad0");invoke("Focus",focused,1);
             Check(!runtime->FindEntityByName("DrainGate"),"Drain latch did not release upper walk");
             at("Handle0");invoke("Interact",nullptr,0);at("FocusPad1");invoke("Focus",focused,1);
             Check(!runtime->FindEntityByName("CaveEntranceGate") && session.Storage().Read("journey").find("LK2|7807|")==0,"Raised mirror route/bridge release failed");shot("LastLightkeeper-cistern-solved",5,4);
-            at("CaveExit");invoke("Interact",nullptr,0);tick(session);tick(session);Check(session.GetScene()->GetName()=="SeaCaves","Cave transition failed");chapter();invoke("CloseDialogue",nullptr,0);
+            at("CaveExit");{
+                auto object=controller->GetManagedObject();auto klass=mono_object_get_class(object);bool blocked=true;
+                mono_field_set_value(object,mono_class_get_field_from_name(klass,"saveBlocked"),&blocked);
+                invoke("Interact",nullptr,0);tick(session);
+                Check(session.GetScene()->GetName()=="CliffCistern","Failed persistence crossed a chapter boundary and lost session progress");
+                blocked=false;mono_field_set_value(object,mono_class_get_field_from_name(klass,"saveBlocked"),&blocked);
+            }
+            invoke("Interact",nullptr,0);tick(session);tick(session);Check(session.GetScene()->GetName()=="SeaCaves","Cave transition failed");chapter();invoke("CloseDialogue",nullptr,0);
             at("FocusPad2");invoke("Focus",focused,1);Check(bool(runtime->FindEntityByName("GalleryGate")),"Gallery ignored its shutter");
             at("Handle1");invoke("Interact",nullptr,0);invoke("Interact",nullptr,0);at("FocusPad2");invoke("Focus",focused,1);
             Check(!runtime->FindEntityByName("GalleryGate"),"Gallery focus receiver did not latch");shot("LastLightkeeper-caves-gallery",-7,3);
@@ -213,7 +245,7 @@ int main(int argc,char** argv) {
             float zero=0;auto object=controller->GetManagedObject();auto klass=mono_object_get_class(object);
             mono_field_set_value(object,mono_class_get_field_from_name(klass,"grace"),&zero);
             at("FocusPad3");float advance=2;void* elapsed[]={&advance};invoke("Wisp",elapsed,1);
-            Check(runtime->FindEntityByName("RushMark").GetComponent<TransformComponent>().Scale.x>1,"Dive telegraph absent");shot("LastLightkeeper-caves-telegraph",0,1);
+            Check(runtime->FindEntityByName("RushMark").GetComponent<TransformComponent>().Scale.x>1,"Rush telegraph absent");shot("LastLightkeeper-caves-telegraph",0,1);
             at("Checkpoint2");advance=1;invoke("Wisp",elapsed,1);invoke("Wisp",elapsed,1);
             Check(glm::length(player.GetComponent<TransformComponent>().Translation-runtime->FindEntityByName("Checkpoint2").GetComponent<TransformComponent>().Translation)<.01f,"Dodging the fixed rush mark failed");
             int awake=0;mono_field_set_value(object,mono_class_get_field_from_name(klass,"wispState"),&awake);Teleport(player,{-2,0,.55f});runtime->FindEntityByName("StormWisp").GetComponent<TransformComponent>().Translation={0,0,.7f};invoke("Focus",focused,1);
@@ -229,6 +261,10 @@ int main(int argc,char** argv) {
             // Completed Continue, corrupt/future retention and a fresh New Game.
             auto completed=session.Storage().Read("journey");Check(session.RequestSceneLoad("Scenes/MainMenu.hazel"),"Return to menu rejected");tick(session);tick(session);
             controller=ScriptEngine::GetEntityScriptInstance(session.GetScene()->FindEntityByName("Title / Journey menu").GetUUID());
+            invoke("NewGame",nullptr,0);tick(session);
+            Check(session.GetScene()->GetName()=="MainMenu" && session.Storage().Read("journey")==completed,"New Game confirmation replaced progress before confirmation");
+            invoke("CancelNewGame",nullptr,0);tick(session);
+            Check(session.Storage().Read("journey")==completed,"Cancelling New Game changed progress");
             invoke("Start",nullptr,0);tick(session);tick(session);Check(session.GetScene()->GetName()=="CliffDawn","Completed Continue lost its chapter");
             for(const auto* bad:{"LK9|future","broken"}){session.Storage().Write("journey",bad);session.RequestSceneLoad("Scenes/MainMenu.hazel");tick(session);tick(session);controller=ScriptEngine::GetEntityScriptInstance(session.GetScene()->FindEntityByName("Title / Journey menu").GetUUID());invoke("Start",nullptr,0);tick(session);Check(session.GetScene()->GetName()=="MainMenu" && session.Storage().Read("journey")==bad,"Unreadable save was overwritten or continued");}
             session.Stop();session.Start(project,menu);tick(session);Check(session.Storage().Read("journey").empty(),"Editor Stop retained progress");

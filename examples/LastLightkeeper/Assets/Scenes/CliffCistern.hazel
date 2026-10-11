@@ -50486,7 +50486,7 @@ Entities:
     - 0
     Scale:
     - 1
-    - 1
+    - 2
     - 1
   SpriteRendererComponent:
     Color: *id001
@@ -50499,7 +50499,7 @@ Entities:
     Tag: Cliff pine (-15, 7)
   Relationship:
     Parent: 0
-    Order: 271
+    Order: 270
   TransformComponent:
     Translation:
     - -15
@@ -50511,7 +50511,7 @@ Entities:
     - 0
     Scale:
     - 1
-    - 1
+    - 2
     - 1
   SpriteRendererComponent:
     Color: *id001
@@ -50524,7 +50524,7 @@ Entities:
     Tag: Cliff pine (-13, 7)
   Relationship:
     Parent: 0
-    Order: 273
+    Order: 271
   TransformComponent:
     Translation:
     - -13
@@ -50536,7 +50536,7 @@ Entities:
     - 0
     Scale:
     - 1
-    - 1
+    - 2
     - 1
   SpriteRendererComponent:
     Color: *id001
@@ -50549,7 +50549,7 @@ Entities:
     Tag: Cliff debris (13, -5)
   Relationship:
     Parent: 0
-    Order: 275
+    Order: 272
   TransformComponent:
     Translation:
     - 13
@@ -50574,7 +50574,7 @@ Entities:
     Tag: Cliff debris (-17, 4)
   Relationship:
     Parent: 0
-    Order: 277
+    Order: 274
   TransformComponent:
     Translation:
     - -17
@@ -50599,7 +50599,7 @@ Entities:
     Tag: RestMarker
   Relationship:
     Parent: 0
-    Order: 278
+    Order: 275
   TransformComponent:
     Translation:
     - -18
@@ -50624,7 +50624,7 @@ Entities:
     Tag: Checkpoint0
   Relationship:
     Parent: 0
-    Order: 279
+    Order: 276
   TransformComponent:
     Translation:
     - -17
@@ -50643,7 +50643,7 @@ Entities:
     Tag: Iona
   Relationship:
     Parent: 0
-    Order: 280
+    Order: 277
   TransformComponent:
     Translation:
     - -17
@@ -50733,7 +50733,7 @@ Entities:
     Tag: Camera
   Relationship:
     Parent: 0
-    Order: 281
+    Order: 278
   TransformComponent:
     Translation:
     - -12
@@ -51790,7 +51790,7 @@ Entities:
     Tag: SoundTurn
   Relationship:
     Parent: 0
-    Order: 282
+    Order: 279
   TransformComponent:
     Translation:
     - 0
@@ -51814,7 +51814,7 @@ Entities:
     Tag: SoundRestore
   Relationship:
     Parent: 0
-    Order: 283
+    Order: 280
   TransformComponent:
     Translation:
     - 0
@@ -51838,7 +51838,7 @@ Entities:
     Tag: SoundHazard
   Relationship:
     Parent: 0
-    Order: 284
+    Order: 281
   TransformComponent:
     Translation:
     - 0
@@ -51862,7 +51862,7 @@ Entities:
     Tag: Cliff cistern controller
   Relationship:
     Parent: 0
-    Order: 286
+    Order: 283
   TransformComponent:
     Translation:
     - 0
@@ -65430,87 +65430,12 @@ Entities:
       Type: Region
       Sheet: Art/ground-quarters.hsprites
       RegionID: cf12c7e14ad50124
-- Entity: 2863
-  TagComponent:
-    Tag: Cliff pine (-17, 6) trunk
-  Relationship:
-    Parent: 0
-    Order: 270
-  TransformComponent:
-    Translation:
-    - -17
-    - 5.65
-    - 0.7
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-town.hsprites
-      RegionID: 5c9e3a83bd7ee88a
-- Entity: 2864
-  TagComponent:
-    Tag: Cliff pine (-15, 7) trunk
-  Relationship:
-    Parent: 0
-    Order: 272
-  TransformComponent:
-    Translation:
-    - -15
-    - 6.65
-    - 0.7
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-town.hsprites
-      RegionID: 5c9e3a83bd7ee88a
-- Entity: 2865
-  TagComponent:
-    Tag: Cliff pine (-13, 7) trunk
-  Relationship:
-    Parent: 0
-    Order: 274
-  TransformComponent:
-    Translation:
-    - -13
-    - 6.65
-    - 0.7
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-town.hsprites
-      RegionID: 5c9e3a83bd7ee88a
 - Entity: 2866
   TagComponent:
     Tag: Cliff debris (14, -5)
   Relationship:
     Parent: 0
-    Order: 276
+    Order: 273
   TransformComponent:
     Translation:
     - 14
@@ -65535,7 +65460,7 @@ Entities:
     Tag: SoundWarning
   Relationship:
     Parent: 0
-    Order: 285
+    Order: 282
   TransformComponent:
     Translation:
     - 0
@@ -65554,3 +65479,31 @@ Entities:
     Gain: 0.32
     Loop: false
     PlayOnStart: false
+- Entity: 2868
+  TagComponent:
+    Tag: DialogueFooter
+  Relationship:
+    Parent: 2281
+    Order: 10
+  TransformComponent:
+    Translation:
+    - -12.5
+    - -5.7
+    - 8.5
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.63
+    - 0.63
+    - 1
+  TextComponent:
+    TextString: ''
+    Color:
+    - 1
+    - 0.82
+    - 0.5
+    - 1
+    Kerning: 0
+    LineSpacing: 0.15

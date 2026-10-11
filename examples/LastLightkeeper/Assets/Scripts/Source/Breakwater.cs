@@ -21,14 +21,14 @@ namespace LastLightkeeper {
         private int shownPhase=-1;
         private float clock,grace,noticeTime,bob;
         private Entity coat;
-        private TextComponent objective,context,place,inventory,tideLabel,dialogue,saveLabel;
+        private TextComponent objective,context,place,inventory,tideLabel,dialogue,saveLabel,footer;
         private string notice="";
         private bool saveFailed;
         private readonly HashSet<Cell> stone=new HashSet<Cell>();
         void OnCreate(){
             keys=new Controls();body=Player.GetComponent<Rigidbody2DComponent>();
             objective=Objective.GetComponent<TextComponent>();context=Context.GetComponent<TextComponent>();place=Place.GetComponent<TextComponent>();
-            inventory=Inventory.GetComponent<TextComponent>();tideLabel=TideLabel.GetComponent<TextComponent>();dialogue=Dialogue.GetComponent<TextComponent>();saveLabel=SaveLabel.GetComponent<TextComponent>();
+            inventory=Inventory.GetComponent<TextComponent>();tideLabel=TideLabel.GetComponent<TextComponent>();dialogue=Dialogue.GetComponent<TextComponent>();saveLabel=SaveLabel.GetComponent<TextComponent>();footer=FindEntityByName("DialogueFooter").GetComponent<TextComponent>();
             try{journey=Journey.Decode(SaveData.Read("journey"));}catch(Exception ex){journey=new Journey();saveBlocked=true;Notice("Save kept. Return to the title to choose a new game.",12);Console.WriteLine("Lightkeeper save: "+ex.Message);}
             mirrors=new[]{MirrorOne,MirrorTwo,MirrorThree};
             interactables=new[]{HarborMirror,FindEntityByName("Orrin"),Wrench,FindEntityByName("MaraNote"),Pump,Lens,Socket,MirrorOne,MirrorTwo,MirrorThree,Tower,FindEntityByName("Archive"),FindEntityByName("Cache")};
@@ -68,14 +68,14 @@ namespace LastLightkeeper {
             if(journey.Has(Restoration.Relay))Receiver.GetComponent<SpriteRendererComponent>().SetSprite(Region("tiny-factory",99));
             if(journey.Has(Restoration.Harbor))FindEntityByName("HarborReceiver").GetComponent<SpriteRendererComponent>().SetSprite(Region("tiny-factory",99));
             if(journey.Has(Restoration.Cache))Hide(interactables[12]);
-            if(journey.Has(Restoration.Beacon)){FindEntityByName("BeaconHalo").Scale=new Vector3(2.4f,2.4f,1);FindEntityByName("Lantern mechanism").GetComponent<SpriteRendererComponent>().SetSprite(Region("tiny-factory",87));}
+            if(journey.Has(Restoration.Beacon)){FindEntityByName("BeaconHalo").Scale=new Vector3(1,1,1);FindEntityByName("Lantern mechanism").GetComponent<SpriteRendererComponent>().SetSprite(Region("tiny-factory",87));}
             objective.Text=Story.Objective(journey);
             inventory.Text=(journey.Has(Restoration.Wrench)?"WRENCH  ":"")+(journey.Has(Restoration.Lens)?"LENS  ":"")+(journey.Has(Restoration.Cache)?"SEA GLASS":"");
         }
         // Stable IDs are loaded from the shipped sheet identity table, not regenerated.
         static Sprite Region(string pack,int tile)=>Art.Region(pack,tile);
         void Talk(string[] text,Action done=null){pages=text;page=0;afterDialogue=done;context.Text="";journal=false;SetDialogue();}
-        void SetDialogue(){dialogue.Text=pages==null?"":pages[page]+"\n\nEnter   "+(page+1==pages.Length?(afterDialogue!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);DialoguePanel.Scale=pages==null?new Vector3(.001f,.001f,1):new Vector3(27,6.8f,1);}
+        void SetDialogue(){dialogue.Text=pages==null?"":pages[page];footer.Text=pages==null?"":"Enter   "+(page+1==pages.Length?(afterDialogue!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);DialoguePanel.Scale=pages==null?new Vector3(.001f,.001f,1):new Vector3(27,6.8f,1);}
         void CloseDialogue(){pages=null;SetDialogue();var callback=afterDialogue;afterDialogue=null;callback?.Invoke();}
         void Checkpoint(bool announce){
             var marker=FindEntityByName("Checkpoint"+journey.Checkpoint);Player.Translation=marker.Translation;body.LinearVelocity=Vector2.Zero;grace=.65f;
@@ -115,7 +115,7 @@ namespace LastLightkeeper {
                     journey.Mirrors^=1<<(i-7);Sound(SoundTurn);ApplyJourney();Persist();break;
                 case 10:
                     if(!journey.Has(Restoration.Relay)){Notice("The lantern needs power from the mirror court.",5);break;}
-                    Restore(Restoration.Beacon);Talk(Story.Ending,()=>Scene.LoadScene("Scenes/CliffCistern.hazel"));break;
+                    Restore(Restoration.Beacon);Talk(Story.Ending,()=>{if(Persist())Scene.LoadScene("Scenes/CliffCistern.hazel");});break;
                 case 11:Restore(Restoration.Archive);Talk(new[]{"FATHER'S REPAIR BOOK\nPump rail replaced. Kept the bent bolts for spares.\nMara, in the margin: Replace those cliff steps next.","IONA\nHe crossed out the rail. Not the steps.\nI wish he'd listened to her."});break;
                 case 12:if(Restore(Restoration.Cache)){Hide(interactables[12]);Notice("A green bottle shard, worn smooth.",4);}break;
             }
@@ -139,8 +139,8 @@ namespace LastLightkeeper {
         void OnUpdate(float dt){
             keys.Poll();dt=Math.Min(.1f,Math.Max(0,dt));
             if(!ready){ready=true;Light();}
-            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED\n\nEnter   Resume     M   Title":"";DialoguePanel.Scale=paused?new Vector3(27,6.8f,1):new Vector3(.001f,.001f,1);}}
-            if(paused){body.LinearVelocity=Vector2.Zero;if(keys.Advance){paused=false;dialogue.Text="";Hide(DialoguePanel);}if(keys.Menu)Scene.LoadScene("Scenes/MainMenu.hazel");return;}
+            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED":"";footer.Text=paused?"Enter   Resume     M   Title":"";DialoguePanel.Scale=paused?new Vector3(27,6.8f,1):new Vector3(.001f,.001f,1);}}
+            if(paused){body.LinearVelocity=Vector2.Zero;if(keys.Advance){paused=false;dialogue.Text="";footer.Text="";Hide(DialoguePanel);}if(keys.Menu)Scene.LoadScene("Scenes/MainMenu.hazel");return;}
             if(keys.Journal && (pages==null || journal)){if(pages!=null && journal)CloseDialogue();else{Talk(Story.Journal(journey));journal=true;}}
             if(pages!=null){body.LinearVelocity=Vector2.Zero;if(keys.Advance || keys.Interact){if(++page>=pages.Length)CloseDialogue();else SetDialogue();}return;}
             clock+=dt;grace=Math.Max(0,grace-dt);noticeTime=Math.Max(0,noticeTime-dt);

@@ -9,7 +9,7 @@ namespace LastLightkeeper {
         public Prefab BeamAsset,EndAsset;
         public float Speed=3.25f;
         Journey journey;Controls keys;Rigidbody2DComponent body;LightRig rig;
-        TextComponent objective,context,dialogue,saveLabel;
+        TextComponent objective,context,dialogue,saveLabel,footer;
         string[] pages;int page;Action after;
         bool paused,saveBlocked,journal;float noticeTime,grace,bob;
         string notice="";bool saveFailed;Cell facing=new Cell(1,0);
@@ -19,7 +19,7 @@ namespace LastLightkeeper {
         readonly Vector3[] escapeRoute={new Vector3(11,-4,.6f),new Vector3(11,-3,.6f),new Vector3(9,-3,.6f),new Vector3(8,-6,.6f),new Vector3(-8,-6,.6f),new Vector3(-16,-6,.6f)};Vector3 wispHome,attack;int wispState;float wispTime;
         void OnCreate(){
             keys=new Controls();body=Player.GetComponent<Rigidbody2DComponent>();
-            objective=Objective.GetComponent<TextComponent>();context=Context.GetComponent<TextComponent>();dialogue=Dialogue.GetComponent<TextComponent>();saveLabel=SaveLabel.GetComponent<TextComponent>();
+            objective=Objective.GetComponent<TextComponent>();context=Context.GetComponent<TextComponent>();dialogue=Dialogue.GetComponent<TextComponent>();saveLabel=SaveLabel.GetComponent<TextComponent>();footer=FindEntityByName("DialogueFooter").GetComponent<TextComponent>();
             try{journey=Journey.Decode(SaveData.Read("journey"));}catch(Exception ex){journey=new Journey();saveBlocked=true;Notice("Save kept. Return to the title to choose a new game.",20);Console.WriteLine(ex.Message);}
             // Editor-only direct chapter practice; durable saves are never modified.
             if(!SaveData.IsPersistent && !journey.Has(Restoration.Beacon)){
@@ -46,7 +46,7 @@ namespace LastLightkeeper {
         bool Persist(){if(saveBlocked)return false;try{SaveData.Write("journey",journey.Encode());saveFailed=false;saveLabel.Text=SaveData.IsPersistent?"Progress saved":"Editor practice";return true;}catch(Exception ex){saveLabel.Text="Not saved - retry before quitting";Notice("Couldn't save. Retry at the checkpoint before quitting.",10);saveFailed=true;Console.WriteLine(ex.Message);return false;}}
         bool Restore(Restoration r){if(!journey.Restore(r))return false;Apply();Sound(SoundRestore);Persist();return true;}
         void Talk(string[] text,Action done=null){pages=text;page=0;after=done;journal=false;context.Text="";ShowDialogue();body.LinearVelocity=Vector2.Zero;}
-        void ShowDialogue(){dialogue.Text=pages==null?"":pages[page]+"\n\nEnter   "+(page+1==pages.Length?(after!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);DialoguePanel.Scale=pages==null?new Vector3(.001f,.001f,1):new Vector3(27,6.8f,1);}
+        void ShowDialogue(){dialogue.Text=pages==null?"":pages[page];footer.Text=pages==null?"":"Enter   "+(page+1==pages.Length?(after!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);DialoguePanel.Scale=pages==null?new Vector3(.001f,.001f,1):new Vector3(27,6.8f,1);}
         void CloseDialogue(){pages=null;ShowDialogue();var callback=after;after=null;callback?.Invoke();}
         void Remove(string name){var e=FindEntityByName(name);if(e!=null && e.IsValid)e.Destroy();}
         void Apply(){
@@ -131,16 +131,16 @@ namespace LastLightkeeper {
                 if(Near("SurveyLedger"))return "E   Read the survey ledger";
             }
             if(Near("RestMarker"))return "E   Save at the dry ledge";
-            return journey.Has(Restoration.Focus)?"Hold Space to focus; E works nearby machinery":"E   Use nearby equipment    Q   Notes";
+            return "E   Nearby equipment    Q   Notes    Esc   Pause";
         }
         void Interact(){
             if(!Caves && Near("LanternSleeve") && !journey.Has(Restoration.Focus)){
                 if(Restore(Restoration.Focus))Talk(new[]{"LANTERN\nHold Space to focus. Aim by moving first.\nThe marked tiles line up with the receivers."});return;
             }
             for(int slot=Caves?1:0;slot<(Caves?3:1);slot++)if(Near("Handle"+slot)){journey.MoveShutter(slot);Apply();Persist();Sound(SoundTurn);int gap=LanternRules.Gap(Caves,slot,journey.Shutter(slot));Notice("Opening at the "+(gap==(slot==1?6:3)?"upper":gap==(slot==1?3:0)?"middle":"lower")+" notch.",2);return;}
-            if(!Caves && Near("CaveExit")){if(journey.Has(Restoration.Cistern)){journey.CaveCheckpoint=Math.Max(1,journey.CaveCheckpoint);Persist();Scene.LoadScene("Scenes/SeaCaves.hazel");}return;}
+            if(!Caves && Near("CaveExit")){if(journey.Has(Restoration.Cistern)){journey.CaveCheckpoint=Math.Max(1,journey.CaveCheckpoint);if(Persist())Scene.LoadScene("Scenes/SeaCaves.hazel");}return;}
             if(Caves && Near("DryExit")){if(journey.Has(Restoration.Mara)){
-                Restore(Restoration.Watch);Talk(new[]{"MARA\nOrrin's boat. They've made it off the ledge.\nBut look at the observatory. Someone's waving.","IONA\nBoat first. Then I'll take your ledger up.\nFather still owes you a new set of steps."},()=>Scene.LoadScene("Scenes/CliffDawn.hazel"));}return;}
+                Restore(Restoration.Watch);Talk(new[]{"MARA\nOrrin's boat. They've made it off the ledge.\nBut look at the observatory. Someone's waving.","IONA\nBoat first. Then I'll take your ledger up.\nFather still owes you a new set of steps."},()=>{if(Persist())Scene.LoadScene("Scenes/CliffDawn.hazel");});}return;}
             if(Caves && Near("Mara",2.1f)){
                 if(journey.Has(Restoration.Rescue) && Restore(Restoration.Mara))Talk(new[]{"MARA\nIona! Lower that lamp, will you?\nI tried the steps. My ankle won't take them.","IONA\nOrrin's coming round in the boat.\nWe'll take the dry passage. Have you got the key?","MARA\nFront pocket. It releases the lower shutters.\nTake the ledger too. Two people stayed up at the\nobservatory when the roof went. They need help."});
                 else Talk(journey.Has(Restoration.Mara)?new[]{"MARA\nThe dry passage goes west under the gallery.\nI'll follow the rail. You check the landing."}:new[]{"MARA, THROUGH THE DOOR\nThe door's jammed. Try the receiver by the window.\nAnd hurry. I'm sitting in the only dry patch."});return;
@@ -151,10 +151,10 @@ namespace LastLightkeeper {
         }
         void OnUpdate(float dt){
             keys.Poll();dt=Math.Min(.1f,Math.Max(0,dt));
-            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED\n\nEnter   Resume     M   Title":"";DialoguePanel.Scale=paused?new Vector3(27,6.8f,1):new Vector3(.001f,.001f,1);}}
+            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED":"";footer.Text=paused?"Enter   Resume     M   Title":"";DialoguePanel.Scale=paused?new Vector3(27,6.8f,1):new Vector3(.001f,.001f,1);}}
             if(paused){body.LinearVelocity=Vector2.Zero;if(keys.Menu)Scene.LoadScene("Scenes/MainMenu.hazel");if(keys.Advance){paused=false;ShowDialogue();}return;}
             if(keys.Journal && journal && pages!=null)CloseDialogue();
-            else if(keys.Journal && pages==null){Talk(new[]{"CLIFF NOTES\n"+Story.Objective(journey)+".\nHold Space to focus in the direction you last moved.\nThe shutter openings and beam ends have visible marks.",Caves?"SEA CAVES\nGallery receiver north-west; fixed mirrors to the east.\nWatch the rush mark. Move aside or focus on the wisp.\nA hit returns you to dry ground and keeps repairs.":"CISTERN\nMara's sleeve is on the western workshop bench.\nThe shutter leaves one opening. Match it to the beam.\nA receiver holds its latch after the light moves."});journal=true;}
+            else if(keys.Journal && pages==null){Talk(new[]{"CLIFF NOTES\n"+Story.Objective(journey)+".\nWASD or arrows: move. E: use nearby equipment.\nHold Space to focus. Aim by moving first.",Caves?"SEA CAVES\nGallery receiver on the northern wall.\nMove off the wisp's mark, or focus the lamp on it.\nThe dry western passage leads to the landing.":"CISTERN\nWorkshop west. Drain receiver beside the pool.\nInspection walk above it; stairs at the east end.\nBoth receiver latches hold after the lamp moves."});journal=true;}
             if(pages!=null){body.LinearVelocity=Vector2.Zero;if(keys.Advance || keys.Interact){if(++page>=pages.Length)CloseDialogue();else ShowDialogue();}return;}
             bob+=dt;noticeTime=Math.Max(0,noticeTime-dt);grace=Math.Max(0,grace-dt);
             float x=(Input.IsKeyDown(KeyCode.D)||Input.IsKeyDown(KeyCode.Right)?1:0)-(Input.IsKeyDown(KeyCode.A)||Input.IsKeyDown(KeyCode.Left)?1:0);

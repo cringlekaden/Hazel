@@ -105,7 +105,7 @@ def sea_caves():
                 north=walk(x,y-1);south=walk(x,y+1);east=walk(x-1,y);west=walk(x+1,y)
                 tile=4 if north and west else 5 if north and east else 16 if south and west else 17 if south and east else 2 if north else 26 if south else 13 if west else 15
                 s.sprite('Stone'+str(stone),'tiny-dungeon',tile,x,y,.2,color=CAVE,solid=True);stone+=1
-            else:s.sprite(('Gallery floor ' if on else 'Bedrock ')+str((x,y)),'tiny-town' if on and -4<=x<=3 and 2<=y<=7 else 'tiny-dungeon',109 if on and -4<=x<=3 and 2<=y<=7 else 31 if on and x>=13 and -5<=y<=-2 else 24 if on and (x,y) in {(-18,7),(-17,7),(-18,6),(-8,7),(-7,7),(6,4),(7,4),(17,4),(18,4),(18,3)} else 0,x,y,0,color=CAVE if on else [.27,.3,.38,1],parent=floor)
+            else:s.sprite(('Gallery floor ' if on else 'Bedrock ')+str((x,y)),'tiny-town' if on and ((-4<=x<=3 and 2<=y<=7) or (x>=13 and -5<=y<=-2)) else 'tiny-dungeon',109 if on and ((-4<=x<=3 and 2<=y<=7) or (x>=13 and -5<=y<=-2)) else 24 if on and (x,y) in {(-18,7),(-17,7),(-18,6),(-8,7),(-7,7),(6,4),(7,4),(17,4),(18,4),(18,3)} else 0,x,y,0,color=CAVE if on else [.27,.3,.38,1],parent=floor)
     for x in range(-16,-11):
         for y in range(0,3):s.sprite('Cave seep '+str((x,y)),'tiny-battle',37,x,y,-.5,color=CAVE,solid=True)
     for x in range(-17,-10):

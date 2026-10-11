@@ -10702,8 +10702,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 369
   TagComponent:
     Tag: Gallery floor (14, -5)
@@ -10727,8 +10727,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 370
   TagComponent:
     Tag: Gallery floor (15, -5)
@@ -10752,8 +10752,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 371
   TagComponent:
     Tag: Gallery floor (16, -5)
@@ -10777,8 +10777,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 372
   TagComponent:
     Tag: Gallery floor (17, -5)
@@ -10802,8 +10802,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 373
   TagComponent:
     Tag: Gallery floor (18, -5)
@@ -10827,8 +10827,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 374
   TagComponent:
     Tag: Stone43
@@ -11935,8 +11935,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 416
   TagComponent:
     Tag: Gallery floor (14, -4)
@@ -11960,8 +11960,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 417
   TagComponent:
     Tag: Gallery floor (15, -4)
@@ -11985,8 +11985,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 418
   TagComponent:
     Tag: Gallery floor (16, -4)
@@ -12010,8 +12010,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 419
   TagComponent:
     Tag: Gallery floor (17, -4)
@@ -12035,8 +12035,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 420
   TagComponent:
     Tag: Gallery floor (18, -4)
@@ -12060,8 +12060,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 421
   TagComponent:
     Tag: Stone45
@@ -13168,8 +13168,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 463
   TagComponent:
     Tag: Gallery floor (14, -3)
@@ -13193,8 +13193,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 464
   TagComponent:
     Tag: Gallery floor (15, -3)
@@ -13218,8 +13218,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 465
   TagComponent:
     Tag: Gallery floor (16, -3)
@@ -13243,8 +13243,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 466
   TagComponent:
     Tag: Gallery floor (17, -3)
@@ -13268,8 +13268,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 467
   TagComponent:
     Tag: Gallery floor (18, -3)
@@ -13293,8 +13293,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 468
   TagComponent:
     Tag: Stone47
@@ -14401,8 +14401,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 510
   TagComponent:
     Tag: Gallery floor (14, -2)
@@ -14426,8 +14426,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 511
   TagComponent:
     Tag: Gallery floor (15, -2)
@@ -14451,8 +14451,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 512
   TagComponent:
     Tag: Gallery floor (16, -2)
@@ -14476,8 +14476,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 513
   TagComponent:
     Tag: Gallery floor (17, -2)
@@ -14501,8 +14501,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 514
   TagComponent:
     Tag: Gallery floor (18, -2)
@@ -14526,8 +14526,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 7efa773a08754f3e
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 515
   TagComponent:
     Tag: Stone49
@@ -39455,3 +39455,31 @@ Entities:
     Gain: 0.32
     Loop: false
     PlayOnStart: false
+- Entity: 1380
+  TagComponent:
+    Tag: DialogueFooter
+  Relationship:
+    Parent: 1316
+    Order: 10
+  TransformComponent:
+    Translation:
+    - -12.5
+    - -5.7
+    - 8.5
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.63
+    - 0.63
+    - 1
+  TextComponent:
+    TextString: ''
+    Color:
+    - 1
+    - 0.82
+    - 0.5
+    - 1
+    Kerning: 0
+    LineSpacing: 0.15

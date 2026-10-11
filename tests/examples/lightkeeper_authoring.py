@@ -8,6 +8,23 @@ import yaml
 def check_project(project):
     assets=project.parent/'Assets'
     loader=getattr(yaml,'CSafeLoader',yaml.SafeLoader)
+    sheet=yaml.load((assets/'Art/tiny-town.hsprites').read_text(encoding='utf-8'),Loader=loader)['SpriteSheet']
+    pine=next(r for r in sheet['Regions'] if r['Name']=='pine_tall')
+    assert pine['ID']=='be7a5bc884ec131c' and pine['Rect']==[64,0,16,32] and pine['Pivot']==[.5,.5], 'Full native pine identity/crop changed'
+    assert sheet['Sampling']['MagFilter']=='Nearest' and not sheet['Sampling']['GenerateMips'], 'Pixel art sampling changed'
+    for name,count in {'MainMenu':5,'Dawn':5,'CliffDawn':5,'Breakwater':13,'CliffCistern':3}.items():
+        document=yaml.load((assets/'Scenes'/(name+'.hazel')).read_text(encoding='utf-8'),Loader=loader)
+        groups={}
+        for e in document['Entities']:groups.setdefault(e['Relationship']['Parent'],[]).append(e['Relationship']['Order'])
+        assert all(sorted(orders)==list(range(len(orders))) for orders in groups.values()), (name,'Noncontiguous authored hierarchy after tree edits')
+        trees=[e for e in document['Entities'] if 'pine' in e['TagComponent']['Tag'].lower()]
+        assert len(trees)==count,(name,'Duplicate or missing pine pieces')
+        for e in trees:
+            source=e['SpriteRendererComponent']['Source'];scale=e['TransformComponent']['Scale']
+            assert not e['TagComponent']['Tag'].endswith(' trunk'), 'Pine already includes its base'
+            assert source['Sheet']=='Art/tiny-town.hsprites' and source['RegionID']==pine['ID']
+            assert scale[:2]==[1,2] and scale[1]/scale[0]==pine['Rect'][3]/pine['Rect'][2], (name,'Pine aspect or native pixel scale changed')
+    print('PASS: complete native 16x32 pines, one sprite each, uniform pixel scale and no duplicated bases',flush=True)
     for scene in ('Breakwater','CliffCistern','SeaCaves'):
         document=yaml.load((assets/'Scenes'/(scene+'.hazel')).read_text(encoding='utf-8'),Loader=loader)
         entities=document['Entities'];by_name={e['TagComponent']['Tag']:e for e in entities}
