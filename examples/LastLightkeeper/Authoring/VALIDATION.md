@@ -1,87 +1,91 @@
-# Validation record
+# Revision validation
 
-Baseline master: `463cbdd`. Dedicated branch: `feature/last-lightkeeper`; no merge.
-All existing vendor submodule pins and the existing stash were retained. Builds
-used the public Premake workflow, two compiler jobs, and sequential regressions.
-Test/editor/player data used isolated profiles.
+Work continues from pushed `4e5f6f1` on `feature/last-lightkeeper`. Master remains
+`463cbdd`; vendors, settings and the existing stash are preserved. Prior chapter
+one history is retained in VALIDATION-CHAPTER-ONE.md. The player's approximately
+five-minute original playthrough is the timing evidence. Revised playtime remains
+unmeasured by a human; neither native tests nor keyboard inspection establish it.
 
-## Local Linux
+## Authoring diagnosis and measurements on Grandpa
 
-- Corrected Debug and Release native builds completed, and all 14 regressions
-  passed in each configuration. Logs: `/tmp/lightkeeper-profile-{debug,release}-build.log`
-  and `/tmp/lightkeeper-profile-{debug,release}-tests.log`.
-- Source game model/native tests passed in both configurations, preserving the
-  existing MeadowRun and Skybound checks. They cover ordered/idempotent repairs,
-  payload version/invalid data, all mirror states, obstruction/cycle bounds, tide
-  warning/safe alcove, actual bindings, bounded prefab pool, physics checkpoint,
-  authored field isolation, transitions, retired owners and editor Stop isolation.
-- Nutella and Hazelnut startup/render/resize/graceful close passed for all three
-  projects in Debug and Release. No authored scene or project file changed.
-- Relocated Release packages passed the same native gameplay checks and Nutella
-  lifecycle tests with source assets, SDK and compiler unavailable. Final profile
-  acceptance passed while hiding the bundled GAC to require normal BCL profile resolution.
-- Strict native export audits validated sprite/animation/WAV dependency closure
-  and managed assemblies. Actual archives contain all six Kenney licenses,
-  provenance, project notices, Mono/engine/font/native redistribution material
-  and miniaudio's original dual-license text (MIT selected).
+Intel i3-3227U, 1.9 GHz, two cores/four threads, 8 GB RAM, Intel HD4000,
+X11 1600x900, Mesa 26.2.4. The baseline reached ready in approximately 5.3 seconds
+then remained near 100% CPU: document/status checks serialized and validated the
+whole scene as YAML at least twice per frame. Ten YAML snapshots took 5.957 seconds;
+one hundred exact authored snapshots took 0.763 seconds. Exact field comparison
+replaces repeated emission, while save/load/Play retain complete validation.
 
-## Render and interaction review
+The original scene reopened in 2.087 seconds of project work with 60 progress
+frames. The revised 3,591-entity Breakwater opened in 3.103 seconds with 77 progress
+frames; full cold window-to-ready was 6.55 seconds. Parsing runs on one CPU worker
+while the owner thread presents frames. Schema/components/sprite preparation show
+real entity totals; parsing and other unknown-length phases show indeterminate
+activity, current operation and elapsed time. Registry/GPU/Mono stay on the owner
+thread. Loading presentation polls native events and defers editor mutation.
 
-Actual Intel HD4000 / Mesa 26.2.4 / OpenGL 4.2 display was available. Renderer used
-its existing OpenGL 4.1 resource/GLSL path. Captures in `Authoring/Captures` are
-actual Release frames: title, restored relay, tide recovery and chapter ending.
-Additional local evidence is under `build/lightkeeper/manual` and
-`build/testing/games/{Debug,Release}-native`.
+Isolated copies exercised real hierarchy expansion/selection, scene save/reopen,
+Tiny Town sheet region edit/save and Play/Stop. Editing responded after loading.
+The root browser also had a separate Assets/. comparison bug, fixed by canonical
+owned-folder navigation. Editor-loading, Editor-hierarchy and Editor-sheet are
+real captures; final-load logs are in build/lightkeeper-next/editor-final-check.
 
-An agent-controlled, keyboard-driven review traversed harbor → grove → pump →
-lens → relay → lighthouse → Dawn. This was interactive inspection, not a
-screen-coordinate gameplay bot or a claim of human pacing. A tide surge restored
-the safe checkpoint and retained the lens; closing/relaunching restored milestone
-progress. Final isolated payload was `LK1|127|3|2|1`. Both runs closed normally.
-Inspection corrected water/dock selection, body enum serialization, HUD/dialogue
-size, empty panel selection, complete 16×32 tree regions and beam composition.
+## Local acceptance
 
-## Cross-platform evidence
+- Canonical Debug and Release builds completed with two compiler jobs.
+- All 14 engine regressions passed in Debug native and Release OpenGL 4.1.
+- All three source games passed logical/native checks and both Nutella/Hazelnut
+  startup, render, resize and shutdown in Debug and Release. Scene/project bytes
+  were unchanged by application tests.
+- Actual chapter checks cover LK1 migration, service door, focus sleeve, shutter
+  occlusion, fixed routes, both transitions, wisp telegraph/dodge/repel/recovery,
+  Mara's key consequence, completed Continue, corrupt/future retention, fresh
+  New Game and editor Stop isolation. Authored collision checks verify reachable
+  landmarks, sealed gates, recovery positions and the opened dry return route.
+- Strict exports audit sprites, animation, audio, managed/native dependencies and
+  licenses. A matched set of the three games passes relocated OpenGL 4.1 checks
+  with source resources/SDK unavailable and the GAC hidden. Existing older example
+  archives were retained; matched packages are in dist/lightkeeper-next.
 
-Final runtime-fix CI: [run 38137170835](https://github.com/cringlekaden/Hazel/actions/runs/38137170835),
-commit `ca1ec7c`. Windows passed the complete Debug/Release, source game and
-relocated game workflow, including software OpenGL and the GL 4.1 profile. Linux
-CI also passed the complete workflow, including Debug/Release source games and
-relocated games under software OpenGL and the GL 4.1 profile. The entire run is green.
-An earlier full Linux run passed; Windows Debug/Release's 14 regressions and
-both general relocated package graphics profiles passed, then the new game
-crashed entering Breakwater. Windows-executable reproduction under an isolated
-Wine prefix and Mono assembly logs identified missing System.Core/System search:
-`mono_set_assemblies_path` incorrectly selected `lib`, while Windows has no GAC.
-The engine now searches the actual bundled `lib/mono/4.5` profile and rejects null
-entity allocations with a dependency diagnostic. The diagnostic Wine clone was
-only for cause isolation; no duplicated DLL workaround is shipped.
+Detailed local logs: /tmp/lightkeeper-next-final-{debug,release}-build.log,
+/tmp/lightkeeper-next-engine-debug.log, /tmp/lightkeeper-next-engine-release-gl41.log,
+/tmp/lightkeeper-next-final-{debug,release}-games.log. Final art/package logs use
+/tmp/lightkeeper-next-{art-regression,final-package,final-relocation}.log.
+Continue-fix rebuild/retest/package logs use /tmp/lightkeeper-next-continue-*.log.
+Native evidence/captures are in build/testing/games/{Debug-native,Release-gl41}.
 
-Verified local archives and checksums are in `dist/games`: Linux `.tar.gz`
-(runtime-fix/evidence commit `4aabeee`) and Windows `.zip` (CI commit `ca1ec7c`).
-The later commits change test evidence/references, not runtime game behavior.
-Both archive checksums were checked locally. Local Linux exports use the build
-host glibc baseline; the CI Linux archive targets Ubuntu 24.04 as described in
-LAUNCH.txt. The CI Windows archive is downloaded locally, not cross-compiled here. Source and relocated game logs are
-`/tmp/lightkeeper-profile-{debug,release}-games.log` and
-`/tmp/lightkeeper-profile-packaged-games.log`; detailed native evidence is under
-`build/testing/games`.
+## Render, input and save review
 
-Physical Windows GPU/audio quality remains unverified by CI/software rendering.
-Wine diagnostics are not Windows acceptance. Sound cues have matching visual
-feedback, including the supported silent fallback when no device is available.
+Real renderer captures cover title, court, blocked/solved cistern, cave telegraph,
+Mara dialogue and endpoint. Actual display inspection used 1280x720 and 1024x600;
+FBO inspection uses 960x720. It corrected unsupported punctuation, oversized frame
+borders, dialogue/HUD overlap, marker placement under Iona, and viewport-edge gaps.
+Native crops supply shore/gravel corner rules. Real Tiny sprites replace military
+boat, armor, UI-square mirrors, tombstone occluders and the empty causeway floor.
+The causeway uses joined stair/deck tiles; the storm wisp uses the actual ghost
+pose. Dark beam casing, arrows, obstruction cross and lens endpoint carry state
+without depending only on color. No new artwork was generated.
 
-## Scope and next milestone
+A subsequent relaunch exposed an empty dialogue overlay on mid-chapter Continue.
+Chapter initialization now applies the dialogue visibility state, and native
+regressions reload both partially completed cliff locations to verify the overlay
+is hidden and the latched repairs remain.
 
-The 30–45-minute game is not complete. The first connected location has a complete
-restoration arc and chapter endpoint. Its 8–12-minute pacing target still requires
-timed human playtesting. Character art uses static Kenney poses and movement bob;
-there is no directional walk cycle, enemy combat or ambient music in this chapter.
-The tide is its meaningful hazard. Later upgrades, enemies, final encounter and
-full rescue ending remain authored content milestones, not implemented claims.
+The live Nutella profile continued LK1|127|3|2|1 into the cistern, acquired the
+sleeve by keyboard, wrote LK2|1663|3|2|1|0|0 and quit normally. Existing native
+storage tests cover atomic replacement, ownership/isolation, malformed/future
+native envelopes and failure retention. Game tests cover both payload versions.
+All player/editor profiles here are isolated from the user's saves/settings.
 
-Next: human pacing/readability review of Breakwater, then the cliff cistern/sea
-caves, lantern upgrade, movable shutters, one distinct enemy and Mara's reunion.
-Commands and platform requirements are in the project README; engine/storage/
-audio contracts are in `docs/runtime-storage-audio.md` and the bounded audit in
-`docs/design/last-lightkeeper.md`.
+## Remaining acceptance
+
+Windows CI is checked at the final meaningful checkpoint; its run/result is
+recorded below when complete. Software CI does not establish physical Windows
+GPU/audio quality. Human Linux/Windows play must check pacing, puzzle discovery,
+small-display readability, wisp feel and Mara's return. Characters use static
+Kenney poses/bob; carried flame and beacon use genuine native clips. Ambient music
+and directional walking remain future art/audio work. Observatory and upper tower,
+final encounter and full rescue ending are not yet authored or claimed complete.
+
+The new SeaCaves scene opened in 1.192 seconds of project work with 37 loading
+frames. Its real editor hierarchy search, direct-scene practice Play and Stop
+worked in an isolated copy (Captures/Editor-caves-play.png).

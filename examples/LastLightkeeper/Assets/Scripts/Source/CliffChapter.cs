@@ -30,7 +30,7 @@ namespace LastLightkeeper {
             for(int i=0;;i++){var e=FindEntityByName("Stone"+i);if(e==null)break;walls.Add(CellAt(e));}
             for(int slot=Caves?1:0;slot<(Caves?3:1);slot++)for(int i=0;i<16;i++)slats[slot].Add(FindEntityByName("Shutter"+slot+"Slat"+i));
             if(Caves){wisp=FindEntityByName("StormWisp");mark=FindEntityByName("RushMark");wispHome=wisp.Translation;mara=FindEntityByName("Mara");Hide(mark);}
-            Apply();Recover(false);
+            Apply();Recover(false);ShowDialogue();
             saveLabel.Text=SaveData.IsPersistent?"Progress kept":"Editor practice : resets after Stop";
             if(Caves && !journey.Has(Restoration.CaveGate))Talk(new[]{"IONA\nThe relay's throwing white arcs across the floor.\nIt gathers before it rushes. I can break it up\nwith the focused lamp."});
             else if(!Caves && !journey.Has(Restoration.Focus))Talk(new[]{"IONA\nMara's left the workshop open. The brass lantern\nsleeve is still on the bench. She uses it to check\nreceivers without running the whole beacon."});

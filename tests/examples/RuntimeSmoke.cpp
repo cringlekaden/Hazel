@@ -196,6 +196,8 @@ int main(int argc,char** argv) {
             auto shot=[&](const char* name,float x,float y){auto camera=runtime->FindEntityByName("Camera");camera.GetComponent<TransformComponent>().Translation={x,y,0};runtime->SetPaused(true);tick(session,0);Capture(std::filesystem::u8path(argv[3])/(std::string(name)+".ppm"),960,720);runtime->SetPaused(false);};
             chapter();at("LanternSleeve");invoke("Interact",nullptr,0);invoke("CloseDialogue",nullptr,0);
             Check(session.Storage().Read("journey").find("LK2|1663|")==0,"Focus upgrade wasn't saved");
+            Check(session.RequestSceneLoad("Scenes/CliffCistern.hazel"),"Mid-cistern Continue rejected");tick(session);tick(session);chapter();
+            Check(runtime->FindEntityByName("DialoguePanel").GetComponent<TransformComponent>().Scale.x<.01f,"Resumed cistern retained empty dialogue overlay");
             at("FocusPad0");invoke("Focus",focused,1);Check(bool(runtime->FindEntityByName("DrainGate")),"Beam passed closed shutter");shot("LastLightkeeper-cistern-blocked",-4,1);
             at("Handle0");invoke("Interact",nullptr,0);at("FocusPad0");invoke("Focus",focused,1);
             Check(!runtime->FindEntityByName("DrainGate"),"Drain latch did not release upper walk");
@@ -205,6 +207,8 @@ int main(int argc,char** argv) {
             at("FocusPad2");invoke("Focus",focused,1);Check(bool(runtime->FindEntityByName("GalleryGate")),"Gallery ignored its shutter");
             at("Handle1");invoke("Interact",nullptr,0);invoke("Interact",nullptr,0);at("FocusPad2");invoke("Focus",focused,1);
             Check(!runtime->FindEntityByName("GalleryGate"),"Gallery focus receiver did not latch");shot("LastLightkeeper-caves-gallery",-7,3);
+            Check(session.RequestSceneLoad("Scenes/SeaCaves.hazel"),"Mid-cave Continue rejected");tick(session);tick(session);chapter();
+            Check(runtime->FindEntityByName("DialoguePanel").GetComponent<TransformComponent>().Scale.x<.01f && !runtime->FindEntityByName("GalleryGate"),"Resumed cave overlay or latched progress incorrect");
             // Meaningful antagonist contracts through real managed methods; no screen-click bot.
             float zero=0;auto object=controller->GetManagedObject();auto klass=mono_object_get_class(object);
             mono_field_set_value(object,mono_class_get_field_from_name(klass,"grace"),&zero);

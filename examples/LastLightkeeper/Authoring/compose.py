@@ -121,7 +121,7 @@ def island():
     for y in range(2,7):
         for x in range(-17,-13):s.sprite('Pump apron %d,%d'%(x,y),'tiny-factory',0,x,y,0,color=SAND,parent=paths)
     for y in range(6,10):
-        for x in range(-18,-13):s.sprite('Causeway %d,%d'%(x,y),'tiny-factory',3,x,y,0,color=STORM,parent=paths)
+        for x in range(-18,-13):s.sprite('Causeway %d,%d'%(x,y),'tiny-dungeon',36 if x==-18 else 38 if x==-14 else 37,x,y,0,color=STORM,parent=paths)
     for y in range(8,17):
         for x in range(-5,11):s.sprite('Court floor %d,%d'%(x,y),'tiny-dungeon',14,x,y,0,color=STORM,parent=paths)
     # Shallow channel and an authored drawbridge are the first meaningful route gate.
@@ -182,7 +182,7 @@ def island():
     for y in range(13,16):
         for x in (5,10):s.sprite('Mirror room side %d,%d'%(x,y),'tiny-dungeon',45 if x==5 and y==15 else 13 if x==5 else 15,x,y,.4,color=STORM,solid=True)
     s.sprite('ServiceDoor','tiny-dungeon',47,7,12,.5,color=STORM,solid=True)
-    for i,(x,y) in enumerate([(1,8),(4,8),(4,9),(4,10),(4,11)]):s.sprite('Occluder'+str(i),'tiny-dungeon',65,x,y,.5,color=STORM,solid=True)
+    for i,(x,y) in enumerate([(1,8),(4,8),(4,9),(4,10),(4,11)]):s.sprite('Occluder'+str(i),'tiny-dungeon',6,x,y,.5,color=STORM,solid=True)
     s.text('Court plaque','THE MIRROR COURT',-4.5,7.25,.28,AMBER,z=.5)
     # The lower lighthouse is built from existing tower stone and optical machinery.
     for iy,row in enumerate([[96,97,97,97,98],[108,109,125,109,110],[108,124,126,123,110],[120,121,122,121,122]]):
