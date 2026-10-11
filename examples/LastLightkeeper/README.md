@@ -128,6 +128,11 @@ sheets or their identities during normal scene editing.
 
 ## Verification and next chapter
 
+Actual Release framebuffer captures: [title](Authoring/Captures/Title.png),
+[restored relay](Authoring/Captures/Breakwater.png),
+[tide recovery](Authoring/Captures/Tide-recovery.png),
+[chapter ending](Authoring/Captures/Dawn.png).
+
 See the final validation record in Authoring/VALIDATION.md. Shared game tests
 cover restoration order/idempotence, progress schema, all eight mirror states,
 beam obstruction/cycles, tide warnings and the safe alcove. Native regressions

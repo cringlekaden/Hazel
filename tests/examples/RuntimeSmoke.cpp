@@ -17,6 +17,7 @@
 #include <iostream>
 #include <random>
 #include <stdexcept>
+#include "WindowsCrashTrace.h"
 using namespace Hazel;
 static void Check(bool value,const char* message) {
     if(!value) { std::cerr<<"FAIL: "<<message<<std::endl;throw std::runtime_error(message); }
@@ -150,6 +151,10 @@ int main(int argc,char** argv) {
             session.Stop();Check(!scene->IsRunning(),"Authored scene entered runtime");
         }
         if(argc==5) {
+#ifdef HZ_PLATFORM_WINDOWS
+            WindowsCrashTrace trace;
+            WindowsCrashTrace::Enabled=true;
+#endif
             std::cout<<"Lightkeeper: project/domain"<<std::endl;
             auto project=Project::Load(std::filesystem::u8path(argv[4]));Check(bool(project),"Cannot open Lightkeeper project");
             ScriptEngine::Init(Project::GetAssetFileSystemPath(project->GetConfig().ScriptModulePath));

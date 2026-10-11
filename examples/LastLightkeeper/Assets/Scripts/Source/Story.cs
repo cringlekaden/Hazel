@@ -35,6 +35,7 @@ namespace LastLightkeeper {
             "IONA\nBeyond the cliffs, another signal answers.\nMara. The upper tower can wait until morning."
         };
         public static string Objective(Journey j) {
+            if(j.Has(Restoration.Beacon))return "Lower lantern restored / Mara's signal beyond the cliffs";
             if(!j.Has(Restoration.Harbor))return "Wake the harbor receiver / turn the mirror";
             if(!j.Has(Restoration.Wrench))return "Find Mara's wrench / east in the salt grove";
             if(!j.Has(Restoration.Pump))return "Repair the sluice / north-west pump house";

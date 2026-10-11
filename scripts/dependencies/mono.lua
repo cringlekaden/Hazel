@@ -83,6 +83,9 @@ if _OPTIONS["migration-tests"] then
     project "MigrationRuntimeSessionSmoke"
         dependson { "Hazel-ScriptCore", "MigrationManagedFixture" }
     project "MigrationExampleGamesSmoke"
+        filter "system:windows"
+            links { "Dbghelp" }
+        filter {}
         dependson { "Hazel-ScriptCore" }
     project "MigrationSceneGPUSmoke"
         dependson { "Hazel-ScriptCore", "MigrationManagedFixture" }

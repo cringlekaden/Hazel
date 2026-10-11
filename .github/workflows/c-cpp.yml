@@ -109,6 +109,8 @@ jobs:
             build/testing/games/
             build/testing/windows-mesa/readme*
             build/testing/windows-mesa/license*
+            bin/Debug-windows-x86_64/MigrationExampleGamesSmoke/*.exe
+            bin/Debug-windows-x86_64/MigrationExampleGamesSmoke/*.pdb
           if-no-files-found: ignore
   linux-build:
     name: Linux Debug, Release and extracted binaries (Ubuntu 24.04)
