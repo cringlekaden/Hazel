@@ -26,6 +26,7 @@ namespace Hazel {
             ValidatePhysicsCandidate<T>(args...);
             T& component = m_Scene->m_Registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
 			m_Scene->OnComponentAdded<T>(*this, component);
+            m_Scene->m_HierarchyValidationDirty=true;
 			return component;
 		}
 
@@ -39,6 +40,7 @@ namespace Hazel {
             if (HasComponent<T>()) m_Scene->OnComponentRemoving<T>(*this);
 			T& component = m_Scene->m_Registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
 			m_Scene->OnComponentAdded<T>(*this, component);
+            m_Scene->m_HierarchyValidationDirty=true;
 			return component;
 		}
 
@@ -61,6 +63,7 @@ namespace Hazel {
 			if (!HasComponent<T>()) throw std::logic_error("Invalid entity or missing component");
 			m_Scene->OnComponentRemoving<T>(*this);
 			m_Scene->m_Registry.remove<T>(m_EntityHandle);
+            m_Scene->m_HierarchyValidationDirty=true;
 		}
 
 		operator bool() const { return m_Scene && m_Scene->m_Registry.valid(m_EntityHandle); }

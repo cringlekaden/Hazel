@@ -106,6 +106,7 @@ namespace Hazel {
 		}
 	private:
         Scope<AudioPlayback> m_Audio;
+        mutable bool m_HierarchyValidationDirty=true;
 		template<typename T>
 		void OnComponentAdded(Entity entity, T& component);
 		template<typename T> void OnComponentRemoving(Entity entity);

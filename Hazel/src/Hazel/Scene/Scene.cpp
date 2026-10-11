@@ -143,6 +143,7 @@ namespace Hazel {
 		tag.Tag = name.empty() ? "Entity" : name;
 
 		m_EntityMap[uuid] = entity;
+        m_HierarchyValidationDirty=true;
         auto& roots=m_Children[UUID(0)];m_Relationships[uuid]={UUID(0),uint32_t(roots.size())};roots.push_back(uuid);
         if(m_IsRunning)m_PendingStart.push_back(uuid);
 
@@ -632,7 +633,9 @@ namespace Hazel {
 	void Scene::SynchronizePhysics2D()
 	{
 		if (!m_PhysicsWorld) return;
-        ValidateHierarchy();
+        // Graph/component changes require full validation; steady-state bodies
+        // keep per-step physics checks without rescanning unrelated terrain.
+        if(m_HierarchyValidationDirty)ValidateHierarchy();
 		auto view = m_Registry.view<Rigidbody2DComponent>();
 		for (auto e : view)
 		{
@@ -640,6 +643,7 @@ namespace Hazel {
             if(!IsEntityValid(entity.GetUUID()))continue;
 			auto& transform = entity.GetComponent<TransformComponent>();
 			auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
+            ValidatePhysics(entity,transform);
 
 			if (!rb2d.RuntimeBody) {
 				b2BodyDef bodyDef;

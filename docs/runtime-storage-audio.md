@@ -94,3 +94,5 @@ new stable clip identity. It rejects an existing clip name. Further timing,
 slicing, renaming and reference edits use Hazelnut's Sprite Sheet panel. These
 commands perform native ownership/image/schema validation without a graphics
 context. They are authoring aids; packaged games do not execute them.
+
+Physics synchronization validates full hierarchy only after scene/component/topology mutation; live bodies retain per-step numeric/material validation. Primary camera inverse is checked when its world transform is read. This keeps dense authored terrain from multiplying graph work per frame without bypassing ownership or graph contracts.

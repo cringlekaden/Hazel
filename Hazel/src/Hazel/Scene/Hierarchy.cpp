@@ -92,7 +92,9 @@ glm::mat4 Scene::World(UUID id, const Relationships &graph, const Transforms &ov
 }
 glm::mat4 Scene::GetWorldTransform(Entity e) const {
     CheckEntity(e);
-    return World(e.GetUUID(), m_Relationships, {});
+    auto world=World(e.GetUUID(), m_Relationships, {});
+    if(e.HasComponent<CameraComponent>() && e.GetComponent<CameraComponent>().Primary)Finite(glm::inverse(world));
+    return world;
 }
 TransformComponent Scene::ExactTRS(const glm::mat4 &m) {
     Finite(m);
@@ -161,8 +163,10 @@ void Scene::ValidateGraph(const Relationships &graph, const Transforms &transfor
 void Scene::ValidateHierarchy() const {
     CheckThread();
     ValidateGraph(m_Relationships, {});
+    m_HierarchyValidationDirty=false;
 }
 void Scene::RebuildChildren() {
+    m_HierarchyValidationDirty=true;
     m_Children.clear();
     for (const auto &[id, rel] : m_Relationships)
         m_Children[rel.Parent].push_back(id);
