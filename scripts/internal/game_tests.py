@@ -16,6 +16,18 @@ from internal.tests import software_driver
 GAMES=('MeadowRun','Skybound','LastLightkeeper')
 NATIVE_GAMES=GAMES[:2] # Retain the existing two-game strict native regression contract.
 
+@contextlib.contextmanager
+def unavailable_gac(root):
+    """Exercise the shipped framework profile without Linux's bundled GAC fallback."""
+    gac=root/'mono/lib/mono/gac'
+    hidden=gac.with_name('gac-test-unavailable')
+    if not gac.exists():
+        yield
+        return
+    gac.rename(hidden)
+    try:yield
+    finally:hidden.rename(gac)
+
 def model_tests(configuration):
     directory=hz.ROOT/'tests/examples';destination=hz.ROOT/'build/testing/managed'/f'{configuration}-{hz.SYSTEM}'
     env=os.environ.copy();env['HAZEL_GAME_TEST_OUTPUT']=destination.as_posix()
@@ -117,7 +129,7 @@ def game_tests(configuration,profile,packages,output):
                         for dll in driver.glob('*.dll'):hz.copy_changed(dll,roots[0]/dll.name)
                     isolated=env.copy()
                     isolated.update(HAZEL_RESOURCES=str(roots[0]/'Resources'),HAZEL_MONO=str(roots[0]/'mono'),HAZEL_DATA=str(working/'packaged native data'))
-                    with (logs/'PackagedRuntimeSmoke.log').open('w',encoding='utf-8') as stream:
+                    with unavailable_gac(roots[0]), (logs/'PackagedRuntimeSmoke.log').open('w',encoding='utf-8') as stream:
                         result=subprocess.run([str(probe),*[str(next(root.glob('*.hproj'))) for root in roots[:2]],str(shots),str(next(roots[2].glob('*.hproj')))],cwd=working,env=isolated,stdout=stream,stderr=subprocess.STDOUT,timeout=120)
                     if result.returncode:raise RuntimeError('Extracted game runtime regression:\n'+(logs/'PackagedRuntimeSmoke.log').read_text(errors='replace'))
                     for capture in shots.glob('*.ppm'):ppm_to_png(capture)
