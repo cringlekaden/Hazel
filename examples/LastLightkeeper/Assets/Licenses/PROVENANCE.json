@@ -1,0 +1,50 @@
+[
+  {
+    "pack": "tiny-town",
+    "page": "https://kenney.nl/assets/tiny-town",
+    "archive_sha256": "9768692dccff1d706408a5aedd6ca4f6cd1409506cbc84cb2f862919764be977",
+    "license": "CC0-1.0",
+    "license_verified": "Included License.txt",
+    "imported": "Packed sheet"
+  },
+  {
+    "pack": "tiny-dungeon",
+    "page": "https://kenney.nl/assets/tiny-dungeon",
+    "archive_sha256": "c109438ab06f65fd80f9b2686a4cf9c7c11dc64444b47333ec71d602f8bb5fc7",
+    "license": "CC0-1.0",
+    "license_verified": "Included License.txt",
+    "imported": "Packed sheet"
+  },
+  {
+    "pack": "tiny-factory",
+    "page": "https://kenney.nl/assets/tiny-factory",
+    "archive_sha256": "eaec4169aa4bf3ea7cec4be2b06147b1a02e54bdbe61d49d4568df7e57b0db2a",
+    "license": "CC0-1.0",
+    "license_verified": "Included License.txt",
+    "imported": "Packed sheet"
+  },
+  {
+    "pack": "tiny-battle",
+    "page": "https://kenney.nl/assets/tiny-battle",
+    "archive_sha256": "7751ec7d9a07e57baa9fa1174d6f78fcd779a050377227afee77993c73cb5f9e",
+    "license": "CC0-1.0",
+    "license_verified": "Included License.txt",
+    "imported": "Packed sheet"
+  },
+  {
+    "pack": "ui-pack-pixel-adventure",
+    "page": "https://kenney.nl/assets/ui-pack-pixel-adventure",
+    "archive_sha256": "0b0ed4802ebcfff5e44e370f394baa1d751862a5a4a7612ac4ce84e85faa0627",
+    "license": "CC0-1.0",
+    "license_verified": "Included License.txt",
+    "imported": "Selected individual files"
+  },
+  {
+    "pack": "interface-sounds",
+    "page": "https://kenney.nl/assets/interface-sounds",
+    "archive_sha256": "f2193d072726d6758a5f7871b2dcc54dcce0d5c35c6f0a62f92549b327c81232",
+    "license": "CC0-1.0",
+    "license_verified": "Included License.txt",
+    "imported": "Selected individual files"
+  }
+]
