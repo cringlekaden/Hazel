@@ -281,7 +281,10 @@ namespace Hazel {
             !std::filesystem::is_regular_file(root / "etc/mono/config"))
             throw std::runtime_error("Incomplete Mono runtime at " + root.generic_u8string());
         mono_set_dirs(assemblies.c_str(), (root / "etc").generic_u8string().c_str());
-        mono_set_assemblies_path(assemblies.c_str());
+        // The bundled profile has no global assembly cache on Windows. Ordinary
+        // BCL dependencies (e.g. System.Core/HashSet) must resolve beside mscorlib.
+        // mono_set_dirs still receives the lib root for Mono's own runtime layout.
+        mono_set_assemblies_path((root / "lib/mono/4.5").generic_u8string().c_str());
         mono_config_parse(config.c_str());
 
 		if (s_Data->EnableDebugging)
@@ -636,7 +639,11 @@ namespace Hazel {
 
 	MonoObject* ScriptEngine::InstantiateClass(MonoClass* monoClass)
 	{
+		if (!monoClass) throw std::runtime_error("Managed entity class is unavailable");
 		MonoObject* instance = mono_object_new(s_Data->AppDomain, monoClass);
+		if (!instance) throw std::runtime_error(std::string("Cannot allocate managed entity '") +
+            mono_class_get_namespace(monoClass) + "." + mono_class_get_name(monoClass) +
+            "'. Check its managed dependencies and bundled runtime.");
 		mono_runtime_object_init(instance);
 		return instance;
 	}

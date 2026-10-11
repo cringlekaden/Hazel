@@ -100,3 +100,8 @@ Physics synchronization validates full hierarchy only after scene/component/topo
 `HazelProject set-region ROOT SHEET REGION_ID X Y WIDTH HEIGHT NAME` updates an
 existing region through native sheet validation/persistence, preserving its ID.
 For multi-tile sprites, match the authored entity aspect ratio to the region.
+
+Managed runtime dependency resolution uses the bundled `lib/mono/4.5` profile
+for ordinary framework assemblies, with `mono_set_dirs` retaining the lib root.
+This is required on Windows distributions without a GAC (notably System.Core
+for HashSet). Failed managed entity allocation reports a dependency error.
