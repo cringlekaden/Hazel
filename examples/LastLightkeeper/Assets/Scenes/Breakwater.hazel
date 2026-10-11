@@ -65004,7 +65004,7 @@ Entities:
   TransformComponent:
     Translation:
     - -1
-    - 5
+    - 5.65
     - 0.7
     Rotation:
     - 0
@@ -65012,7 +65012,7 @@ Entities:
     - 0
     Scale:
     - 1.5
-    - 1.5
+    - 3
     - 1
   SpriteRendererComponent:
     Color: *id002
@@ -65063,7 +65063,7 @@ Entities:
   TransformComponent:
     Translation:
     - 1
-    - 5
+    - 5.65
     - 0.7
     Rotation:
     - 0
@@ -65071,7 +65071,7 @@ Entities:
     - 0
     Scale:
     - 1.5
-    - 1.5
+    - 3
     - 1
   SpriteRendererComponent:
     Color: *id002
@@ -65181,7 +65181,7 @@ Entities:
   TransformComponent:
     Translation:
     - 5
-    - 6
+    - 6.65
     - 0.7
     Rotation:
     - 0
@@ -65189,7 +65189,7 @@ Entities:
     - 0
     Scale:
     - 1.5
-    - 1.5
+    - 3
     - 1
   SpriteRendererComponent:
     Color: *id002
@@ -65240,7 +65240,7 @@ Entities:
   TransformComponent:
     Translation:
     - 9
-    - 4
+    - 4.65
     - 0.7
     Rotation:
     - 0
@@ -65248,7 +65248,7 @@ Entities:
     - 0
     Scale:
     - 1.5
-    - 1.5
+    - 3
     - 1
   SpriteRendererComponent:
     Color: *id002
@@ -65358,7 +65358,7 @@ Entities:
   TransformComponent:
     Translation:
     - 15
-    - 3
+    - 3.65
     - 0.7
     Rotation:
     - 0
@@ -65366,7 +65366,7 @@ Entities:
     - 0
     Scale:
     - 1.5
-    - 1.5
+    - 3
     - 1
   SpriteRendererComponent:
     Color: *id002
@@ -65417,7 +65417,7 @@ Entities:
   TransformComponent:
     Translation:
     - 17
-    - 5
+    - 5.65
     - 0.7
     Rotation:
     - 0
@@ -65425,7 +65425,7 @@ Entities:
     - 0
     Scale:
     - 1.5
-    - 1.5
+    - 3
     - 1
   SpriteRendererComponent:
     Color: *id002
@@ -65535,7 +65535,7 @@ Entities:
   TransformComponent:
     Translation:
     - 19
-    - 7
+    - 7.65
     - 0.7
     Rotation:
     - 0
@@ -65543,7 +65543,7 @@ Entities:
     - 0
     Scale:
     - 1.5
-    - 1.5
+    - 3
     - 1
   SpriteRendererComponent:
     Color: *id002
@@ -65594,7 +65594,7 @@ Entities:
   TransformComponent:
     Translation:
     - -6
-    - 5
+    - 5.65
     - 0.7
     Rotation:
     - 0
@@ -65602,7 +65602,7 @@ Entities:
     - 0
     Scale:
     - 1.5
-    - 1.5
+    - 3
     - 1
   SpriteRendererComponent:
     Color: *id002

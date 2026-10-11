@@ -128,7 +128,7 @@ def island():
     grove=s.entity('SALT GROVE / Trees and wildflowers')['Entity']
     clusters=[(-3,3),(-1,5),(1,5),(3,4),(5,6),(9,4),(12,5),(15,3),(17,5),(19,3),(19,7),(-6,5),(-7,6)]
     for i,(x,y) in enumerate(clusters):
-        e=s.sprite('Grove pine '+str(i),'tiny-town',4 if i%3 else 5,x,y,.7,1.5,1.5,GRASS,parent=grove)
+        e=s.sprite('Grove pine '+str(i),'tiny-town',4 if i%3 else 5,x,y+(.65 if i%3 else 0),.7,1.5,3 if i%3 else 1.5,GRASS,parent=grove)
         # Separate root colliders: visual hierarchy never parents physics owners.
         col=s.entity('Tree trunk '+str(i),x,y-.35,sx=.75,sy=.9);s.solid(col,(.25,.35))
     for x,y in [(-2,2),(0,3),(2,2),(4,2),(10,2),(11,3),(13,2),(14,4),(16,2),(17,3)]:s.sprite('Salt flowers %d,%d'%(x,y),'tiny-town',2,x,y,-.4,color=GRASS,parent=grove)
@@ -205,7 +205,7 @@ def menu(name='MainMenu',ending=False):
             s.sprite('Headland %d,%d'%(x,y),'tiny-town',0 if y<2 else 126,x,y,-1.5,color=[.25,.34,.38,1])
     for iy,row in enumerate([[96,97,97,98],[108,125,109,110],[108,126,124,110],[120,121,121,122]]):
         for ix,t in enumerate(row):s.sprite('Tower vignette %d,%d'%(ix,iy),'tiny-town',t,9+ix*1.3,4-iy*1.3,-.4,1.3,1.3,STORM)
-    for x,y in [(8,-2),(14,-1),(15,-3),(8,-4),(12,-5)]:s.sprite('Pine vignette %d,%d'%(x,y),'tiny-town',4,x,y,-.3,1.5,1.5,[.35,.48,.43,1])
+    for x,y in [(8,-2),(14,-1),(15,-3),(8,-4),(12,-5)]:s.sprite('Pine vignette %d,%d'%(x,y),'tiny-town',4,x,y+.65,-.3,1.5,3,[.35,.48,.43,1])
     s.sprite('Keeper vignette','tiny-dungeon',87,10,-2,-.1,1.2,1.2)
     halo=s.image('Lantern halo','ui_0046.png',10.5,2.6,.2,1.7,1.7,[1,.75,.4,.9])
     halo['SpriteAnimationComponent']={'DefaultClip':{'Sheet':'Art/lantern-pulse.hsprites','ClipID':CLIPS['lantern-pulse']},'Autoplay':True,'Speed':1}
@@ -237,6 +237,7 @@ def reference(scene):
     # Actual imported pixels arranged exactly like the authored island, no invented sprites.
     out=Image.new('RGBA',(53*16,39*16),(20,26,35,255))
     sheets={pack:Image.open(ASSETS/'Art'/(pack+'.png')).convert('RGBA') for pack in TABLE if pack!='panel'}
+    regions_by_pack={pack:yaml.safe_load((ASSETS/'Art'/(pack+'.hsprites')).read_text())['SpriteSheet']['Regions'] for pack in sheets}
     for e in scene.entities:
         src=e.get('SpriteRendererComponent',{}).get('Source',{})
         if not src:continue
@@ -250,8 +251,9 @@ def reference(scene):
         if src['Type']=='Region':
             pack=Path(src['Sheet']).stem
             if pack=='panel':continue
-            i=list(TABLE[pack].values()).index(src['RegionID']);cols=sheets[pack].width//16
-            im=sheets[pack].crop((i%cols*16,i//cols*16,i%cols*16+16,i//cols*16+16))
+            regions=regions_by_pack[pack]
+            rect=next(r['Rect'] for r in regions if r['ID']==src['RegionID']);rx,ry,rw,rh=rect
+            im=sheets[pack].crop((rx,ry,rx+rw,ry+rh))
         else:im=Image.open(ASSETS/src['Texture']).convert('RGBA')
         if w>8 or h>8:continue
         im=im.resize((max(1,int(w*16)),max(1,int(h*16))),Image.Resampling.NEAREST)

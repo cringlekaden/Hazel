@@ -25,6 +25,17 @@ int main(int argc, char **argv) {
         }
         // Same grid/validation/persistence services as Hazelnut's Sprite Sheet panel.
         // Creates a new sheet only; established region identities are never regenerated.
+        if(args.size()==10 && args[1]=="set-region") {
+            Hazel::Log::Init();
+            const auto root=std::filesystem::u8path(args[2]),reference=std::filesystem::u8path(args[3]);
+            auto sheet=Hazel::ReadSpriteSheet(Hazel::Project::ResolveOwnedAsset(root,reference));
+            Hazel::SpriteRegion* region=nullptr;const auto id=Hazel::ParseSpriteID(args[4]);
+            for(auto& candidate:sheet.Regions)if(candidate.ID==id)region=&candidate;
+            if(!region)throw std::runtime_error("Unknown region identity");
+            region->Rect={static_cast<uint32_t>(std::stoul(args[5])),static_cast<uint32_t>(std::stoul(args[6])),static_cast<uint32_t>(std::stoul(args[7])),static_cast<uint32_t>(std::stoul(args[8]))};
+            region->Name=args[9];Hazel::SaveSpriteSheet(root,reference,sheet);
+            std::cout<<"Updated native editable region: "<<region->Name<<"\n";return 0;
+        }
         if(args.size()==7 && args[1]=="add-clip") {
             Hazel::Log::Init();
             const auto root=std::filesystem::u8path(args[2]),reference=std::filesystem::u8path(args[3]);

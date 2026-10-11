@@ -43,7 +43,7 @@ same pixel scale. OpenSans is Hazel's existing licensed font for readable prose.
 
 | Imported pack | Coverage / size |
 | --- | --- |
-| Tiny Town 1.1 | 16×16 grass, sand paths, trees, cottage, tower stone, tools; packed 192×176. |
+| Tiny Town 1.1 | 16×16 grass, sand paths; 16×32 tall pines; cottage, tower stone, tools; packed 192×176. |
 | Tiny Dungeon 1.0 | 16×16 player/NPC poses, stone, lens, torch, small enemy/effects; packed 192×176. |
 | Tiny Factory 1.0 | 16×16 pumps, pipes, switches, gears, warning markings; packed 192×176. |
 | Tiny Battle 1.0 | 16×16 rounded shoreline and water; packed 304×176. |

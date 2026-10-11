@@ -27,8 +27,8 @@ SpriteSheet:
       Rect: [48, 0, 16, 16]
       Pivot: [0.5, 0.5]
     - ID: "be7a5bc884ec131c"
-      Name: tile_004
-      Rect: [64, 0, 16, 16]
+      Name: pine_tall
+      Rect: [64, 0, 16, 32]
       Pivot: [0.5, 0.5]
     - ID: "f8631b136ee86789"
       Name: tile_005

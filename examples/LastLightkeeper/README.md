@@ -99,7 +99,7 @@ Assets/Licenses/PROVENANCE.json. No logo is used and no endorsement is implied.
 - [Interface Sounds 1.0](https://kenney.nl/assets/interface-sounds): selected cues, originals preserved plus PCM WAV conversions.
 
 The Tiny family uses matching 16×16 sprites and palette. Sheets use nearest
-minification/magnification, clamp and no mipmaps. One tile is one world unit.
+minification/magnification, clamp and no mipmaps. One tile is one world unit. Tall pines use a native 16×32 region and matching scene aspect ratio.
 Storm colors are renderer tints; warm restoration light remains readable against
 blue-gray stone and sea. Kenney character poses are static, with game movement
 bob; no directional walk animation is claimed. The lantern pulse is a real

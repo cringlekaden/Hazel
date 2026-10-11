@@ -38011,7 +38011,7 @@ Entities:
   TransformComponent:
     Translation:
     - 8
-    - -2
+    - -1.35
     - -0.3
     Rotation:
     - 0
@@ -38019,7 +38019,7 @@ Entities:
     - 0
     Scale:
     - 1.5
-    - 1.5
+    - 3
     - 1
   SpriteRendererComponent:
     Color:
@@ -38040,7 +38040,7 @@ Entities:
   TransformComponent:
     Translation:
     - 14
-    - -1
+    - -0.35
     - -0.3
     Rotation:
     - 0
@@ -38048,7 +38048,7 @@ Entities:
     - 0
     Scale:
     - 1.5
-    - 1.5
+    - 3
     - 1
   SpriteRendererComponent:
     Color:
@@ -38069,7 +38069,7 @@ Entities:
   TransformComponent:
     Translation:
     - 15
-    - -3
+    - -2.35
     - -0.3
     Rotation:
     - 0
@@ -38077,7 +38077,7 @@ Entities:
     - 0
     Scale:
     - 1.5
-    - 1.5
+    - 3
     - 1
   SpriteRendererComponent:
     Color:
@@ -38098,7 +38098,7 @@ Entities:
   TransformComponent:
     Translation:
     - 8
-    - -4
+    - -3.35
     - -0.3
     Rotation:
     - 0
@@ -38106,7 +38106,7 @@ Entities:
     - 0
     Scale:
     - 1.5
-    - 1.5
+    - 3
     - 1
   SpriteRendererComponent:
     Color:
@@ -38127,7 +38127,7 @@ Entities:
   TransformComponent:
     Translation:
     - 12
-    - -5
+    - -4.35
     - -0.3
     Rotation:
     - 0
@@ -38135,7 +38135,7 @@ Entities:
     - 0
     Scale:
     - 1.5
-    - 1.5
+    - 3
     - 1
   SpriteRendererComponent:
     Color:
