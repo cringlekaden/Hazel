@@ -149,7 +149,7 @@ static void StorageChecks() {
     auto file=root/"Keeper/slot-progress.save";
     FileSystem::WriteFileAtomically(file,[](auto& out){out<<"Version: 99\nOwner: Keeper\nSlot: progress\nPayload: newer\n";});
     rejected=false;try{reopened.Read("progress");}catch(const std::exception&){rejected=true;}Check(rejected,"Future save accepted");
-    std::ifstream in(file);std::string bytes((std::istreambuf_iterator<char>(in)),{});Check(bytes.find("99")!=std::string::npos,"Future file erased");
+    {std::ifstream in(file);std::string bytes((std::istreambuf_iterator<char>(in)),{});Check(bytes.find("99")!=std::string::npos,"Future file erased");}
     FileSystem::WriteFileAtomically(file,[](auto& out){out<<"[malformed";});
     rejected=false;try{reopened.Read("progress");}catch(const std::exception&){rejected=true;}Check(rejected,"Corrupt save accepted");
     std::cout<<"PASS: project save isolation, editor overlay, UTF-8 atomic replace, traversal/size/corrupt/future rejection\n";
