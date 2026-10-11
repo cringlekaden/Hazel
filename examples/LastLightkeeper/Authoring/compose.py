@@ -264,7 +264,9 @@ def reference(scene):
     for row,(pack,tiles) in enumerate(chosen.items()):
         d.text((20,row*110+12),pack,fill=(240,218,170))
         for col,n in enumerate(tiles):
-            sheet=sheets[pack];c=sheet.width//16;im=sheet.crop((n%c*16,n//c*16,n%c*16+16,n//c*16+16)).resize((48,48),Image.Resampling.NEAREST)
+            sheet=sheets[pack];rx,ry,rw,rh=regions_by_pack[pack][n]['Rect']
+            im=sheet.crop((rx,ry,rx+rw,ry+rh));im=im.resize((48,48*rh//rw),Image.Resampling.NEAREST)
+            if im.height>48:im=im.resize((48*rw//rh,48),Image.Resampling.NEAREST)
             contact.paste(im,(20+col*80,row*110+35),im);d.text((20+col*80,row*110+87),'tile_%04d'%n,fill='white')
     contact.save(ROOT/'Authoring/Asset-reference.png')
 
