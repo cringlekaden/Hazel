@@ -1,54 +1,54 @@
 namespace LastLightkeeper {
-    // Authored dialogue and journal are content, not a reusable dialogue engine.
+    // Character and puzzle writing stays in this game, beside its authored scenes.
     public static class Story {
         public static readonly string[] Arrival={
-            "IONA / The keeper\nThree nights without a light. The sea has started\nreturning things we buried long ago.",
-            "ORRIN / The ferryman\nI can bring help if you wake the lower signal.\nYour father's harbor mirror is still standing.",
-            "ORRIN\nTurn it toward the receiver by the bridge.\nThe beam will show you where it wants to go."
+            "ORRIN\nDon't step off the landing. The bridge motor's dead.\nThat mirror can feed it from the harbor lamp.",
+            "IONA\nFather's left the cover off again. Salt in every bolt.\nStay with the boat, Orrin. I'll get you a signal."
         };
         public static readonly string[] Ferryman={
-            "ORRIN\nI watched your father polish that mirror every morning.\nHe said a keeper never lets someone sail alone.",
-            "ORRIN\nThe pump house is inland, past the bridge. Mara's\nwrench washed into the grove east of here.",
-            "ORRIN\nBring the lens back from the tide works. I'll stay\nwith the boat until there's a light to follow."
+            "ORRIN\nTwo people were waving from the survey ledge.\nI can't take the boat through that reef blind.",
+            "ORRIN\nMara went up the cliff path before the steps fell.\nShe dropped her wrench in the grove. Big yellow one.\nYou'll need it for the pump."
         };
         public static readonly string[] Grove={
-            "MARA'S FIELD NOTE\nThe island's three relays share one heartbeat.\nIf the harbor still lives, the tower can live too.",
-            "MARA'S FIELD NOTE\nA mirror turns east into north, or east into south.\nRead the beam before you turn the next mirror.",
-            "IONA\nShe left the wrench where the wildflowers grow.\nEven in a storm, Mara thinks of small kindnesses."
+            "MARA'S NOTE\nLens safe on the pump platform. Drain's seized.\nWrench by the flowers; I couldn't carry both.\nGone to the cistern. Don't follow me over the steps.",
+            "IONA\nShe wrapped the handle in sailcloth.\nStill worried I'll skin my knuckles."
         };
         public static readonly string[] Pump={
-            "PUMP LOG / Mara\nThe sluice wheel has seized. Use my wrench to\nopen the lower drain; the lens is on the far platform.",
-            "PUMP LOG\nThe sea still surges across the causeway. Blue means\nclear. Amber warns. Red means find higher ground.",
-            "PUMP LOG\nUse the eastern alcove if you cannot reach the far\nplatform. A wave is faster than a keeper."
+            "MARA'S PUMP LOG\nDrain open. Waves still cross the causeway.\nWatch the spray: when the warning boards flash,\nget into the eastern recess or off the path."
         };
         public static readonly string[] Lens={
-            "IONA\nThe lens is intact. A little salt, a little stubbornness.\nI used to think that was all this island was made of.",
-            "IONA\nBut someone carried it here instead of saving\ntheir own things. Mara is still out there."
+            "IONA\nNo cracks. She used her coat to wrap it.\nMara, you'd better have found somewhere dry."
         };
         public static readonly string[] Relay={
-            "RELAY INSTRUCTIONS\nFit the lens in the western socket. Turn each mirror\nuntil the light reaches the eastern receiver.",
-            "RELAY INSTRUCTIONS\nStone blocks light. Mirrors bend it. An unlit\nreceiver means the route is still incomplete."
+            "MAINTENANCE PLATE\nLens in the western socket. Service receiver first;\nit releases the door to the last mirror.\nThen send the beam to the stair receiver.",
+            "IONA\nThe door latch holds once it's lit.\nI can turn the light away and keep going."
         };
         public static readonly string[] Ending={
-            "IONA\nThe old mechanism catches. For a moment the island\nholds its breath. Then the lower lantern wakes.",
-            "ORRIN / From the harbor\nI see it! Keep that light burning, Iona.\nI'm bringing someone home.",
-            "IONA\nBeyond the cliffs, another signal answers.\nMara. The upper tower can wait until morning."
+            "ORRIN, CALLING UP FROM THE LANDING\nThat's enough light! I'm taking the boat round.\nThere's a lamp moving under the cistern.",
+            "IONA\nThree short flashes. Mara's workshop signal.\nThe lower beacon can run without me now."
         };
         public static string Objective(Journey j) {
-            if(j.Has(Restoration.Beacon))return "Lower lantern restored / Mara's signal beyond the cliffs";
-            if(!j.Has(Restoration.Harbor))return "Wake the harbor receiver / turn the mirror";
-            if(!j.Has(Restoration.Wrench))return "Find Mara's wrench / east in the salt grove";
-            if(!j.Has(Restoration.Pump))return "Repair the sluice / north-west pump house";
-            if(!j.Has(Restoration.Lens))return "Recover the lens / cross the tide causeway";
-            if(!j.Has(Restoration.Mounted))return "Fit the lens / western relay socket";
-            if(!j.Has(Restoration.Relay))return "Route the light / three mirrors, one receiver";
-            return "Ignite the lower beacon / lighthouse stairs";
+            if(j.Has(Restoration.Watch))return "Chapter two complete : observatory next";
+            if(j.Has(Restoration.Mara))return "Take the dry western passage with Mara";
+            if(j.Has(Restoration.Rescue))return "Reach Mara behind the eastern shutter";
+            if(j.Has(Restoration.CaveGate))return "Use the fixed mirrors to light Mara's door receiver";
+            if(j.Has(Restoration.Cistern))return j.CaveCheckpoint>0?"Open the cave gallery with your focused lantern":"Take the eastern stairs into the sea caves";
+            if(j.Has(Restoration.Drain))return "Send light through the fixed mirrors to release the bridge";
+            if(j.Has(Restoration.Focus))return "Light the drain receiver to open the inspection walk";
+            if(j.Has(Restoration.Beacon))return "Find Mara's lantern sleeve in the cistern workshop";
+            if(!j.Has(Restoration.Harbor))return "Turn the harbor mirror to power the bridge";
+            if(!j.Has(Restoration.Wrench))return "Find Mara's wrench in the eastern grove";
+            if(!j.Has(Restoration.Pump))return "Free the drain at the north-west pump house";
+            if(!j.Has(Restoration.Lens))return "Cross the tide causeway for the lens";
+            if(!j.Has(Restoration.Mounted))return "Fit the lens in the court's western socket";
+            if(!j.Has(Restoration.CourtUnlocked))return "Light the service receiver to open the mirror room";
+            if(!j.Has(Restoration.Relay))return "Turn the route toward the stair receiver";
+            return "Start the lower beacon at the lighthouse stairs";
         }
         public static string[] Journal(Journey j)=>new[]{
-            "KEEPER'S JOURNAL / Restoration\n"+Objective(j)+".\nWASD / arrows move. E interacts. Q closes this book.",
-            "THE BREAKWATER / Island paths\nHarbor south-west. Salt grove east of the bridge.\nPump house north-west. Mirror court north-east.",
-            "MY FATHER'S RULE\nFollow the light. If it meets stone, change its path.\nIf it meets someone, let it guide them home.",
-            j.Has(Restoration.Archive)?"A LETTER NEVER SENT\nFather kept a place at the table for Mara.\nHe knew she would come back. Now I know it too.":"A BLANK PAGE\nThere is a keeper's archive hidden beside the grove.\nSome repairs begin with remembering."
+            "BREAKWATER NOTES\n"+Objective(j)+".\n\nMove with WASD or arrows. E works nearby machinery.\nEscape pauses. Q closes these notes.",
+            "ROUTES\nGrove east of the bridge. Pump house north-west.\nMirror court beyond the grove; lighthouse east of it.\nThe eastern pump recess stays above the waves.",
+            j.Has(Restoration.Archive)?"FATHER'S REPAIR BOOK\nHe replaced the pump rail twice and kept the bent\nbolts. Mara's handwriting: 'Replace the steps next.'\nHe hasn't crossed it out.":"MARA\nHer tools and notes are still here.\nOrrin saw her take the cliff path."
         };
     }
 }

@@ -540,5 +540,12 @@ SpriteSheet:
       Pivot: [0.5, 0.5]
   RetiredRegionIDs: []
   Clips:
-    []
+    - ID: "8eef78e797d6690a"
+      Name: Lantern-flame
+      Loop: true
+      Frames:
+        - RegionID: "9be63b823ff259ef"
+          Duration: 0.22
+        - RegionID: "571dd8143003ef66"
+          Duration: 0.22
   RetiredClipIDs: []

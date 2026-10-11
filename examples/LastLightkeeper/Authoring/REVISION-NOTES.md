@@ -58,3 +58,29 @@ assignment, guarded document replacement, hierarchy, save/reopen and runtime
 lifecycle. The real isolated Breakwater copy reopened in 2.087 seconds of project
 work with 60 loading frames (full window-to-ready about 3 seconds with cached
 font). Representative real editor captures are committed in `Captures/Editor-*`.
+
+Continuation boundary: Cliff Cistern and Sea Caves are complete connected authored
+locations. The sleeve focuses Iona's portable lantern, enabling distant receivers
+and repelling the storm wisp. Three notched shutter banks have physical slats and
+optically matching openings. Drain/bridge/gallery/refuge latches persist. Opening
+the refuge is separate from meeting Mara; her winch key opens a dry return route.
+Mara follows its authored safe waypoints. The final landing points toward the
+observatory and missing keeper; chapter three remains future content.
+
+LK2 adds shutter positions and a separate cave recovery marker. LK1 preserves
+all seven repairs, optional discoveries, mirror orientation and checkpoint; a
+completed old relay gets the already-earned service-door default. Completed old
+beacons Continue at the cliff workshop. Future/corrupt payloads remain intact.
+The native save envelope/namespace/path are unchanged. No audio/AI/dialogue/save
+engine rewrite was needed for this continuation.
+
+Art corrections use the existing six CC0 packs. Native 8-pixel grid imports crop
+Tiny Wisptle and Tiny Town into editable quarter regions; no new artwork was
+painted or generated. Correct Tiny Wisptle atlas size: 288 by 176 (18 columns),
+not the old design document's 304 by 176. Shore tiles are water-side boundaries,
+with cardinal and diagonal adjacency. Town gravel is inset and uses its matching
+corner regions. Military boat art is removed; Iona wears the ordinary worker
+sprite instead of armor. Tiny Dungeon mirror faces replace enlarged UI squares.
+Tiny Wisptle's dark-edged energy strip/arrows, white endpoint and obstruction
+cross distinguish route shapes independently of color. Warning boards move
+before a tide surge; cave rush marks and recoil remain usable without audio.

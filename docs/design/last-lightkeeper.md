@@ -34,10 +34,10 @@ must produce visible recovery feedback, never silently erase a player's file.
 ## Asset review and visual direction
 
 Reviewed Kenney's free catalog and Tiny Town, Tiny Dungeon, Tiny Factory, Tiny
-Battle, Roguelike/RPG and UI Pack - Pixel Adventure pages, then actual downloaded
+Wisptle, Roguelike/RPG and UI Pack - Pixel Adventure pages, then actual downloaded
 sheets. Choose the matching Tiny family, rather than mixing the older RPG palette.
 Use muted blue-gray stone and storm-tinted green/sand, with warm amber machinery
-and restored light. Tiny Battle contributes only shoreline/water, not military art.
+and restored light. Tiny Wisptle contributes shoreline/water and energy feedback; military props are excluded.
 UI uses the Small tiles / Thin outline subset of Pixel Adventure, matched to the
 same pixel scale. OpenSans is Hazel's existing licensed font for readable prose.
 
@@ -46,7 +46,7 @@ same pixel scale. OpenSans is Hazel's existing licensed font for readable prose.
 | Tiny Town 1.1 | 16×16 grass, sand paths; 16×32 tall pines; cottage, tower stone, tools; packed 192×176. |
 | Tiny Dungeon 1.0 | 16×16 player/NPC poses, stone, lens, torch, small enemy/effects; packed 192×176. |
 | Tiny Factory 1.0 | 16×16 pumps, pipes, switches, gears, warning markings; packed 192×176. |
-| Tiny Battle 1.0 | 16×16 rounded shoreline and water; packed 304×176. |
+| Tiny Wisptle 1.0 | 16×16 rounded shoreline and water; packed 288×176. |
 | UI Pack - Pixel Adventure (included license says 2.0) | Selected 16×16 thin-outline icons/panels; page update says 1.0, recorded discrepancy rather than overriding included license. |
 | Interface Sounds 1.0 | Selected original Ogg UI/repair/error cues; PCM conversion for bounded runtime decoder. |
 
@@ -55,9 +55,9 @@ archive SHA-256 are in Assets/Licenses/PROVENANCE.json. No logo imported. Credit
 name Kenney and explicitly do not imply endorsement. Nearest min/mag, no mipmaps,
 clamp for region sheets. One world unit is one 16px tile; actor at comparable scale.
 Import full packed sheets into native `.hsprites`; keep IDs stable and use
-Hazelnut's sheet editor for subsequent slicing/clip changes. Missing distinctive
-mirror face/lighthouse optics can be a small original compatible asset, documented
-separately; never replace the environment with generated placeholders.
+Hazelnut's sheet editor for subsequent slicing/clip changes. The revision uses existing Tiny Dungeon mirror art and native 8-pixel crops
+for shore/gravel adjacency. No new original artwork was necessary; the ordinary
+worker and wisp poses match the environment palette.
 A visual reference/contact sheet and island plan will accompany authored assets.
 
 ## Authored play and progression
@@ -67,31 +67,51 @@ mechanic Mara left the pump instructions. Restore the lower signal so rescuers c
 reach the island. Restoration visibly changes machines and light, and each step
 reveals a new route or understanding.
 
-Slice target **8–12 minutes**, subject to hands-on timing: menu/continue; Harbor
-Landing tutorial and keeper's journal; one mirror opens a route; Salt Grove's
-optional story/cache; Pump Works repair with recovered wrench; telegraphed tide
-lane with safe alcoves and recoverable checkpoint; lens recovery; three-mirror
-relay with visible traced beam, obstruction and receiver; lighthouse ignition,
-a short authored resolution and a view toward the next chapter. No repeated room
-chain, grind, arbitrary wait timer or full-game claim. Escape opens pause/menu;
-WASD/arrows move, E interacts/rotates/talks, Enter/Space advances dialogue, Q opens
-journal. Hazard resets position to the most recent safe checkpoint and retains
-restoration. Save on meaningful progression; visible save-failure feedback.
+The author completed the original lower-signal slice in **about five minutes**
+after learning its mechanics. This is the actual pacing evidence. The revised
+Breakwater and new cliff chapter are not yet human-timed. No automated traversal
+or mechanics test establishes playtime or artistic quality.
 
-Scene map: MainMenu → Breakwater (connected harbor/grove/pump/relay/tower districts)
-→ Dawn (slice ending/credits), with explicit return/continue routes. Entire island
-is ordinary editable scene content. Camera follows within bounds, HUD stays
-anchored; title/ending use composed coastal vignettes from the same sheets.
+Breakwater: harbor reflection/bridge; grove tools and notes; pump repair and tide
+crossing; lens; service receiver/latching door; third mirror room; stair receiver;
+lower beacon. Optional repair book and sea glass reward discovery. Iona notices
+repair evidence, Orrin needs a navigable reef to reach stranded people, and Mara
+records practical repairs while challenging unsafe keeper habits.
 
-Later milestones, total target **30–45 minutes**:
-1. Lower signal slice, test readability and measure actual pacing.
-2. Cliff cistern/sea caves: lantern upgrade, movable shutter puzzles, one distinct
-   enemy encounter, Mara's reunion; ~8–10 minutes.
-3. Abandoned observatory: paired beams and lens upgrade, character choice/payoff;
-   ~8–10 minutes.
-4. Lighthouse ascent: storm-heart final encounter combining established mechanics,
-   restoration panorama and rescue ending; ~6–10 minutes.
-Each location must change composition, puzzle grammar and story; no copied rooms.
+Cliff Cistern: workshop sleeve upgrades the portable lantern. Hold Space to focus
+along the last movement direction; movement slows while focused. Physical shutter
+slats leave one indexed opening. A drain receiver opens the raised inspection walk;
+the raised slot and fixed mirror route release the cliff bridge. Receivers latch,
+so route changes do not undo repairs. The cistern's larger pool and masonry walks
+contrast with Breakwater's grove and landing.
+
+Sea Caves: exposed rock and old relay masonry; upper gallery receiver through the
+first shutter; fixed mirror route through a second shutter into Mara's inspection
+window. The wisp fixes a rush target before lunging: move off the visible mark or
+focus toward it within range. A hit returns to a dry checkpoint and retains repairs.
+The eastern checkpoint activates when reached. Light opens Mara's door; meeting
+her grants the winch key, opens a dry lower passage and starts her authored return
+route. The landing resolves this rescue and reveals people still at the observatory.
+No arbitrary waiting, fetch repetition or extra-distance playtime claim.
+
+Scene map: MainMenu → Breakwater → CliffCistern → SeaCaves → CliffDawn → MainMenu.
+Continue uses completed milestones plus the cave entry/recovery marker. LK1 saves
+keep all existing data; their completed court gets a compatible service-door default.
+LK2 stores shutter settings and a separate cave marker under the same native save
+ownership/envelope. Corrupt/future records remain intact. Editor Play remains
+memory-only, including direct cliff-scene practice.
+
+All locations, physics boundaries, movable slats, optical windows, fixed mirrors,
+receivers, character poses, HUD, cue sources and transitions are ordinary authored
+assets. Physics owners remain roots. Only a bounded pool of native light prefabs
+is instantiated at runtime. Dialogue, optics, AI, interaction and progression stay
+in game C#; no additional gameplay engine system was needed.
+
+The eventual target remains **30–45 minutes**, pending complete authored content
+and human play. Completed content milestones: lower beacon and cliff rescue.
+Next: observatory, survey crew and lens upgrade; then upper-tower ascent, final
+storm encounter and satisfying rescue ending. Each must change puzzle grammar,
+composition and character stakes. Their durations are planning goals, not evidence.
 
 ## Checkpoints, risks and acceptance
 

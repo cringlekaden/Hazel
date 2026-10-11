@@ -3,15 +3,24 @@
 An original top-down adventure in development for Hazel. Keeper Iona returns to a
 storm-damaged island to restore its lower lighthouse signal and bring mechanic
 Mara home. This project begins the planned 30–45-minute game; it contains the
-first connected location, **The Breakwater**, rather than the full adventure.
+two complete chapters, **The Breakwater** and **The Cliff Cistern / Sea Caves**.
+The full observatory/tower adventure is still in development.
 
-The slice's 8–12-minute pacing target needs timed human playtesting. It includes
-an illustrated title/continue/new journey menu, harbor reflection tutorial and
-bridge, salt grove exploration, Orrin's conversations and Mara's notes, a wrench
-and sluice repair, a telegraphed tide crossing with a safe alcove, recovered lens,
-three-mirror relay puzzle with visible beam/stone occlusion, lighthouse ignition
-and a chapter endpoint. An optional archive and sea-glass cache reward exploring.
-There is no enemy combat in this chapter; the tide is its meaningful hazard.
+The author played the original Breakwater chapter in about **five minutes** once
+its mechanics were understood. That is the pacing evidence; the old 8–12-minute
+estimate is withdrawn. The revised and new chapters need timed human playtesting.
+Breakwater now has a latched service receiver that opens the third mirror room,
+repaired coast/gravel joins, proper Tiny mirror/worker sprites, outlined beams,
+and shorter character writing. Its tide hazard retains safe recovery.
+
+From the restored lower beacon, Iona reaches Mara's cliff workshop. A focus sleeve
+turns the lantern into a portable beam: hold Space in the direction last moved.
+The cistern's notched shutter and fixed mirrors release the upper inspection walk
+and cave bridge. The caves add two shutter banks, a rushing storm wisp with a visible
+fixed attack mark and focus counterplay, Mara's locked refuge, and her winch key's
+dry return route. Mara follows that route; the landing resolves her rescue and
+points toward the observatory. Opening her door and meeting her are separate
+milestones. All repairs, openings and safe recovery points survive Continue.
 
 ## Play and edit
 
@@ -23,7 +32,7 @@ python3 scripts/hazel.py run Nutella --config Debug --project examples/LastLight
 python3 scripts/hazel.py run Hazelnut --config Debug --project examples/LastLightkeeper/LastLightkeeper.hproj
 ```
 
-Use `python` on Windows. In Hazelnut, open Assets/Scenes/Breakwater.hazel and use
+Use `python` on Windows. In Hazelnut, open Assets/Scenes/Breakwater.hazel, CliffCistern.hazel or SeaCaves.hazel and use
 Play; all terrain, paths, buildings, occluders, interaction landmarks, HUD and
 camera are authored, ordinary scene entities. Controller fields reference their
 actual scene entities and can be selected/tuned in the Inspector. Rigidbody
@@ -37,7 +46,8 @@ clips and sampling; region IDs must remain stable.
 | WASD / arrow keys | Move; diagonals normalized |
 | E | Contextual interact, talk, turn mirror, repair or collect |
 | Enter / Space / E | Advance authored dialogue |
-| Q | Journal / close journal |
+| Q | Notes / close notes |
+| Hold Space outside dialogue | Focus the upgraded lantern; movement changes its aim |
 | Escape | Close dialogue or pause |
 | Enter while paused | Resume |
 | M while paused | Return to title and saved progress |
@@ -46,20 +56,23 @@ clips and sampling; region IDs must remain stable.
 | C / title Credits button | Credits and asset thanks |
 
 Stay clear of the tide causeway until the pump is repaired. Blue means clear;
-amber warns two seconds before the three-second surge. Higher ground at the
+moving warning boards and the countdown warn two seconds before the three-second surge. Higher ground at the
 causeway's eastern alcove is always safe. A surge returns Iona to the safe
 checkpoint and retains completed repairs. The journal records the current goal
 and directions. The beam itself explains reflection; turn one mirror at a time.
 
 ## Progress and audio
 
-Nutella saves milestone progress and mirror orientation under the stable project
+Nutella saves milestone progress, mirror orientation and shutter positions under the stable project
 namespace `cringlekaden.TheLastLightkeeper`. It restores safe checkpoints, rather
 than arbitrary positions that could trap the player. Editor Play starts a separate
 practice journey and clears it on Stop, without touching player data. Missing,
 corrupt and newer saves are distinguished; the original file is retained until
-an explicit confirmed new journey. Save failures are visible. Keep the active
-session open after a failure, and retry saving by interacting with the pump log.
+an explicit confirmed new journey. LK1 payloads migrate to LK2 without losing
+repairs, optional discoveries, mirror settings or Breakwater checkpoints. A
+completed LK1 beacon resumes at the cistern workshop; cave checkpoints remain
+separate. Save ownership, native envelope version and storage paths are unchanged. Save failures are visible. Keep the active
+session open after a failure, and retry saving by interacting with the pump log or dry-ledge marker.
 
 Linux: `${XDG_DATA_HOME:-~/.local/share}/Hazel/Games/cringlekaden.TheLastLightkeeper/slot-journey.save`.
 Windows: `%LOCALAPPDATA%/Hazel/Games/cringlekaden.TheLastLightkeeper/slot-journey.save`.
@@ -94,12 +107,13 @@ Assets/Licenses/PROVENANCE.json. No logo is used and no endorsement is implied.
 - [Tiny Town 1.1](https://kenney.nl/assets/tiny-town): island, cottage, tower, tools.
 - [Tiny Dungeon 1.0](https://kenney.nl/assets/tiny-dungeon): keeper/NPC poses, stone, lens and archive.
 - [Tiny Factory 1.0](https://kenney.nl/assets/tiny-factory): connected pumps, pipes, relay machinery.
-- [Tiny Battle 1.0](https://kenney.nl/assets/tiny-battle): water and shore subset only.
-- [UI Pack - Pixel Adventure](https://kenney.nl/assets/ui-pack-pixel-adventure): small thin-outline panels, mirrors, light and icons. Included license labels version 2.0; the source page's update listing says 1.0.
+- [Tiny Wisptle 1.0](https://kenney.nl/assets/tiny-wisptle): water, shore and energy-path/endpoint feedback; no military props.
+- [UI Pack - Pixel Adventure](https://kenney.nl/assets/ui-pack-pixel-adventure): small thin-outline HUD panels and lantern pulse. World mirrors use Tiny Dungeon art. Included license labels version 2.0; the source page's update listing says 1.0.
 - [Interface Sounds 1.0](https://kenney.nl/assets/interface-sounds): selected cues, originals preserved plus PCM WAV conversions.
 
 The Tiny family uses matching 16×16 sprites and palette. Sheets use nearest
-minification/magnification, clamp and no mipmaps. One tile is one world unit. Tall pines use a native 16×32 region and matching scene aspect ratio.
+minification/magnification, clamp and no mipmaps. One tile is one world unit. Shore/gravel use native 8×8 quadrant crops at half a world unit.
+Tall pines use a native 16×32 region and matching scene aspect ratio.
 Storm colors are renderer tints; warm restoration light remains readable against
 blue-gray stone and sea. Kenney character poses are static, with game movement
 bob; no directional walk animation is claimed. The lantern pulse is a real
@@ -109,7 +123,7 @@ procedurally drawn or replaced with checkerboard/primitive placeholders.
 [Authoring/Asset-reference.png](Authoring/Asset-reference.png) assembles selected
 actual assets; [Authoring/Island-reference.png](Authoring/Island-reference.png)
 shows their placement. These are source reference collages, not runtime captures.
-`Authoring/compose.py` records the initial authored composition and refuses to
+`Authoring/compose.py` and `Authoring/cliff_chapter.py` record the authored composition and refuses to
 replace existing scenes without `--overwrite`. It is never run by the game.
 Further scene changes belong in Hazelnut. There is no runtime tile-map generator.
 
@@ -126,23 +140,24 @@ at 4px for nine authored frame pieces. Two unmodified UI tiles are packed into
 lantern-pulse.png; native `add-clip` records their animation. Do not regenerate
 sheets or their identities during normal scene editing.
 
-## Verification and next chapter
+## Authoring responsiveness, verification and next chapter
 
-Actual Release framebuffer captures: [title](Authoring/Captures/Title.png),
-[restored relay](Authoring/Captures/Breakwater.png),
-[tide recovery](Authoring/Captures/Tide-recovery.png),
-[chapter ending](Authoring/Captures/Dawn.png).
+Hazelnut used to format/validate the full scene as YAML during status/dirty checks
+at least twice per frame. Exact authored-state comparisons replace that work;
+save/load/Play validation remains intact. Project and scene opening present actual
+loading frames, operation labels, entity totals where measurable and indeterminate
+feedback during YAML parsing. The browser also normalizes restored folder paths.
+See [revision findings](Authoring/REVISION-NOTES.md) and the validation record.
 
-See the final validation record in Authoring/VALIDATION.md. Shared game tests
-cover restoration order/idempotence, progress schema, all eight mirror states,
-beam obstruction/cycles, tide warnings and the safe alcove. Native regressions
-cover actual storage atomic replacement/corruption/isolation, hierarchy and
-lifecycle. Export audits decode referenced sprites/WAVs and validate closure.
-Application tests cover startup, rendered frames, resizing and shutdown, rather
-than a coordinate-guessing full-game bot.
+Focused tests cover LK1 migration/LK2 roundtrips, invalid/future retention, all
+mirror and shutter states, fixed routes, tide warning/recovery, native chapter
+transitions, wisp telegraph/dodge/repel, Mara's consequence, New Game/Continue and
+Stop isolation. Packages audit sprites, audio, assemblies and license closure;
+relocated startup runs without the source tree. Captures come from the actual
+renderer/editor, not a drawn mockup or full-game screen-coordinate bot.
 
-Next content milestone: the cliff cistern and sea caves, a lantern upgrade,
-movable shutters, one distinct enemy encounter, and Mara's reunion. Then the
-observatory, lighthouse ascent, storm-heart encounter and rescue ending. Full
-playtime, human pacing and physical Windows GPU/audio acceptance remain required
-before claiming the finished adventure.
+Next authored content: the observatory's jammed shutters and survey crew, a second
+lantern upgrade, and the route to the upper tower. Then the final storm encounter
+and rescue ending. Human pacing, control feel, repeated-play enjoyment and
+physical Windows GPU/audio acceptance remain required. No full-game playtime is
+claimed.

@@ -13,22 +13,22 @@ Entities:
     Translation:
     - 0
     - 0
-    - 0.12
+    - 0.25
     Rotation:
     - 0
     - 0
     - 0
     Scale:
     - 1
-    - 0.13
+    - 0.45
     - 1
   SpriteRendererComponent:
     Color:
+    - 0.91
+    - 0.94
+    - 0.91
     - 1
-    - 0.78
-    - 0.38
-    - 0.72
     Source:
-      Type: Texture
-      Texture: Art/ui_0007.png
-      TilingFactor: 1
+      Type: Region
+      Sheet: Art/tiny-battle.hsprites
+      RegionID: 727af68561ce3b51

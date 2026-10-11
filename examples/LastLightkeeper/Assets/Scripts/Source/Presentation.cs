@@ -39,25 +39,25 @@ namespace LastLightkeeper {
         void OnCreate(){
             keys=new Controls();held=Input.IsMouseButtonDown(MouseCode.Left);status=Status.GetComponent<TextComponent>();
             try {var raw=SaveData.Read("journey");journey=Journey.Decode(raw);canContinue=!String.IsNullOrEmpty(raw);}
-            catch(Exception ex){damaged=true;status.Text="Journey could not be read. Original kept.\n"+ex.Message;Console.WriteLine("Lightkeeper save: "+ex.Message);}
+            catch(Exception ex){journey=new Journey();damaged=true;status.Text="Journey could not be read. Original kept.\n"+ex.Message;Console.WriteLine("Lightkeeper save: "+ex.Message);}
             if(Ending){
-                Heading.GetComponent<TextComponent>().Text="A LIGHT TO\nCOME HOME TO";
-                Subtitle.GetComponent<TextComponent>().Text="The lower signal burns. Beyond the cliffs, Mara answers.\nThe island has a keeper again.";
-                status.Text="Chapter one / The Breakwater\nThe cliff cistern and upper tower await the next chapter.";
-            } else if(!damaged)status.Text=canContinue?"Your journey is waiting.\n"+Story.Objective(journey):"An island after the storm. A promise left burning.\nBegin at the harbor. Find the light that leads home.";
-            StartLabel.GetComponent<TextComponent>().Text=Ending?"ENTER / Return to the island":canContinue?"ENTER / Continue journey":"ENTER / Begin journey";
+                Heading.GetComponent<TextComponent>().Text=journey.Has(Restoration.Watch)?"THE DRY\nWAY HOME":"THE LOWER\nBEACON";
+                Subtitle.GetComponent<TextComponent>().Text=journey.Has(Restoration.Watch)?"Mara is safe. Orrin has reached the survey ledge.\nThe observatory still has people inside.":"Orrin can get through the reef.\nMara's lamp is moving beneath the cistern.";
+                status.Text=journey.Has(Restoration.Watch)?"Chapter two complete. Progress saved.\nThe observatory and upper tower are the next chapter.":"The cliff path is open.";
+            } else if(!damaged)status.Text=canContinue?Story.Objective(journey):"Three nights without a beacon.\nBegin at Orrin's landing.";
+            StartLabel.GetComponent<TextComponent>().Text=Ending && journey.Has(Restoration.Watch)?"Enter   Title":canContinue?"Enter   Continue":"Enter   Begin";
         }
         bool Click(Entity button,bool edge){Vector2 p;if(!edge || button==null || !Input.GetMouseWorldPosition(out p))return false;var t=button.Translation;return Math.Abs(p.X-t.X)<4.4 && Math.Abs(p.Y-t.Y)<.65;}
         void Start(){
-            if(damaged){status.Text="The saved journey is unreadable. It has been kept.\nPress N twice to intentionally start a new journey.";return;}
+            if(damaged){status.Text="The saved journey is unreadable. It has been kept.\nPress N twice to replace it with a new game.";return;}
             if(!canContinue){journey=new Journey();if(!Persist())return;}
-            Scene.LoadScene("Scenes/Breakwater.hazel");
+            Scene.LoadScene(Ending && journey.Has(Restoration.Watch)?"Scenes/MainMenu.hazel":journey.ResumeScene);
         }
         bool Persist(){try{SaveData.Write("journey",journey.Encode());canContinue=true;damaged=false;return true;}catch(Exception ex){status.Text="Cannot save: "+ex.Message;Console.WriteLine("Lightkeeper save: "+ex.Message);return false;}}
         void OnUpdate(float dt){
             keys.Poll();bool mouse=Input.IsMouseButtonDown(MouseCode.Left),edge=mouse&&!held;held=mouse;
-            if(confirmationTime>0){confirmationTime-=dt;if(confirmationTime<=0){confirm=false;status.Text="New journey cancelled. Your old journey is safe.";}}
-            if(keys.Credits || Click(CreditsButton,edge)){status.Text="Original game / The Last Lightkeeper\nArt and sound / Kenney (CC0)   Engine / Hazel\nNo affiliation or endorsement. Thank you for playing.";}
+            if(confirmationTime>0){confirmationTime-=dt;if(confirmationTime<=0){confirm=false;status.Text="New game cancelled. Save kept.";}}
+            if(keys.Credits || Click(CreditsButton,edge)){status.Text="The Last Lightkeeper\nArt and sound by Kenney : CC0. Engine: Hazel.\nThis independent game is not endorsed by Kenney.";}
             else if(keys.New || Click(NewButton,edge)){
                 if((canContinue || damaged) && !confirm){confirm=true;confirmationTime=6;status.Text="Start again? This replaces the saved journey.\nPress N again within six seconds to confirm.";}
                 else {journey=new Journey();if(Persist())Scene.LoadScene("Scenes/Breakwater.hazel");}

@@ -98,6 +98,11 @@ def game_tests(configuration,profile,packages,output):
     hz.yaml_tools() # Required by canonical project/build services.
     if not packages:
         for game in GAMES:hz.script_build(hz.ROOT/'examples'/game/(game+'.hproj'),configuration)
+    if not packages:
+        import importlib.util
+        spec=importlib.util.spec_from_file_location("lightkeeper_authoring",hz.ROOT/"tests/examples/lightkeeper_authoring.py")
+        audit=importlib.util.module_from_spec(spec);spec.loader.exec_module(audit)
+        audit.check_project(hz.ROOT/"examples/LastLightkeeper/LastLightkeeper.hproj")
     model_tests(configuration)
     driver=software_driver() if hz.SYSTEM=='windows' and profile!='native' else None
     with tempfile.TemporaryDirectory(prefix='Hazel games space-é-🚀 ') as temporary:
