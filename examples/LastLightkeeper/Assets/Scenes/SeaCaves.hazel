@@ -7612,7 +7612,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 250
   TagComponent:
     Tag: Gallery floor (-11, -7)
@@ -7887,7 +7887,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 261
   TagComponent:
     Tag: Gallery floor (0, -7)
@@ -8162,7 +8162,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 272
   TagComponent:
     Tag: Gallery floor (11, -7)
@@ -8770,7 +8770,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 294
   TagComponent:
     Tag: Gallery floor (-14, -6)
@@ -9045,7 +9045,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 305
   TagComponent:
     Tag: Gallery floor (-3, -6)
@@ -9320,7 +9320,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 316
   TagComponent:
     Tag: Gallery floor (8, -6)
@@ -9595,7 +9595,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 327
   TagComponent:
     Tag: Stone41
@@ -9928,7 +9928,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 338
   TagComponent:
     Tag: Gallery floor (-17, -5)
@@ -10203,7 +10203,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 349
   TagComponent:
     Tag: Gallery floor (-6, -5)
@@ -10478,7 +10478,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 360
   TagComponent:
     Tag: Gallery floor (5, -5)
@@ -11361,7 +11361,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 393
   TagComponent:
     Tag: Gallery floor (-9, -4)
@@ -11636,7 +11636,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 404
   TagComponent:
     Tag: Gallery floor (2, -4)
@@ -11911,7 +11911,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 415
   TagComponent:
     Tag: Gallery floor (13, -4)
@@ -12519,7 +12519,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 437
   TagComponent:
     Tag: Gallery floor (-12, -3)
@@ -12794,7 +12794,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 448
   TagComponent:
     Tag: Gallery floor (-1, -3)
@@ -13069,7 +13069,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 459
   TagComponent:
     Tag: Gallery floor (10, -3)
@@ -13677,7 +13677,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 481
   TagComponent:
     Tag: Gallery floor (-15, -2)
@@ -13952,7 +13952,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 492
   TagComponent:
     Tag: Gallery floor (-4, -2)
@@ -14227,7 +14227,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 503
   TagComponent:
     Tag: Gallery floor (7, -2)
@@ -14835,7 +14835,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 525
   TagComponent:
     Tag: Gallery floor (-18, -1)
@@ -15110,7 +15110,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 536
   TagComponent:
     Tag: Gallery floor (-7, -1)
@@ -15385,7 +15385,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 547
   TagComponent:
     Tag: Gallery floor (4, -1)
@@ -15660,7 +15660,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 558
   TagComponent:
     Tag: Gallery floor (15, -1)
@@ -16268,7 +16268,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 580
   TagComponent:
     Tag: Gallery floor (-10, 0)
@@ -16543,7 +16543,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 591
   TagComponent:
     Tag: Gallery floor (1, 0)
@@ -16818,7 +16818,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 602
   TagComponent:
     Tag: Gallery floor (12, 0)
@@ -17426,7 +17426,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 624
   TagComponent:
     Tag: Gallery floor (-13, 1)
@@ -17701,7 +17701,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 635
   TagComponent:
     Tag: Gallery floor (-2, 1)
@@ -17976,7 +17976,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 646
   TagComponent:
     Tag: Gallery floor (9, 1)
@@ -18584,7 +18584,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 668
   TagComponent:
     Tag: Gallery floor (-16, 2)
@@ -18859,7 +18859,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 679
   TagComponent:
     Tag: Gallery floor (-5, 2)
@@ -18908,8 +18908,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 681
   TagComponent:
     Tag: Gallery floor (-3, 2)
@@ -18933,8 +18933,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 682
   TagComponent:
     Tag: Gallery floor (-2, 2)
@@ -18958,8 +18958,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 683
   TagComponent:
     Tag: Gallery floor (-1, 2)
@@ -18983,8 +18983,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 684
   TagComponent:
     Tag: Gallery floor (0, 2)
@@ -19008,8 +19008,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 685
   TagComponent:
     Tag: Gallery floor (1, 2)
@@ -19033,8 +19033,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 686
   TagComponent:
     Tag: Gallery floor (2, 2)
@@ -19058,8 +19058,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 687
   TagComponent:
     Tag: Gallery floor (3, 2)
@@ -19083,8 +19083,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 688
   TagComponent:
     Tag: Gallery floor (4, 2)
@@ -19134,7 +19134,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 690
   TagComponent:
     Tag: Gallery floor (6, 2)
@@ -19409,7 +19409,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 701
   TagComponent:
     Tag: Gallery floor (17, 2)
@@ -20017,7 +20017,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 723
   TagComponent:
     Tag: Gallery floor (-8, 3)
@@ -20141,8 +20141,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 728
   TagComponent:
     Tag: Gallery floor (-3, 3)
@@ -20166,8 +20166,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 729
   TagComponent:
     Tag: Gallery floor (-2, 3)
@@ -20191,8 +20191,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 730
   TagComponent:
     Tag: Gallery floor (-1, 3)
@@ -20216,8 +20216,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 731
   TagComponent:
     Tag: Gallery floor (0, 3)
@@ -20241,8 +20241,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 732
   TagComponent:
     Tag: Gallery floor (1, 3)
@@ -20266,8 +20266,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 733
   TagComponent:
     Tag: Gallery floor (2, 3)
@@ -20291,8 +20291,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 734
   TagComponent:
     Tag: Gallery floor (3, 3)
@@ -20316,8 +20316,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 735
   TagComponent:
     Tag: Gallery floor (4, 3)
@@ -20567,7 +20567,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 745
   TagComponent:
     Tag: Gallery floor (14, 3)
@@ -20692,7 +20692,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: a8a72f9f2b92bdcc
+      RegionID: e732e42dea9c5817
 - Entity: 750
   TagComponent:
     Tag: Stone59
@@ -21175,7 +21175,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 767
   TagComponent:
     Tag: Gallery floor (-11, 4)
@@ -21374,8 +21374,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 775
   TagComponent:
     Tag: Gallery floor (-3, 4)
@@ -21399,8 +21399,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 776
   TagComponent:
     Tag: Gallery floor (-2, 4)
@@ -21424,8 +21424,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 777
   TagComponent:
     Tag: Gallery floor (-1, 4)
@@ -21449,8 +21449,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 778
   TagComponent:
     Tag: Gallery floor (0, 4)
@@ -21474,8 +21474,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 779
   TagComponent:
     Tag: Gallery floor (1, 4)
@@ -21499,8 +21499,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 780
   TagComponent:
     Tag: Gallery floor (2, 4)
@@ -21524,8 +21524,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 781
   TagComponent:
     Tag: Gallery floor (3, 4)
@@ -21549,8 +21549,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 782
   TagComponent:
     Tag: Gallery floor (4, 4)
@@ -21625,7 +21625,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: a8a72f9f2b92bdcc
+      RegionID: e732e42dea9c5817
 - Entity: 785
   TagComponent:
     Tag: Gallery floor (7, 4)
@@ -21650,7 +21650,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: a8a72f9f2b92bdcc
+      RegionID: e732e42dea9c5817
 - Entity: 786
   TagComponent:
     Tag: Gallery floor (8, 4)
@@ -21725,7 +21725,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 789
   TagComponent:
     Tag: Gallery floor (11, 4)
@@ -21900,7 +21900,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: a8a72f9f2b92bdcc
+      RegionID: e732e42dea9c5817
 - Entity: 796
   TagComponent:
     Tag: Gallery floor (18, 4)
@@ -21925,7 +21925,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: a8a72f9f2b92bdcc
+      RegionID: e732e42dea9c5817
 - Entity: 797
   TagComponent:
     Tag: Stone61
@@ -22333,7 +22333,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 811
   TagComponent:
     Tag: Gallery floor (-14, 5)
@@ -22607,8 +22607,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 822
   TagComponent:
     Tag: Gallery floor (-3, 5)
@@ -22632,8 +22632,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 823
   TagComponent:
     Tag: Gallery floor (-2, 5)
@@ -22657,8 +22657,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 824
   TagComponent:
     Tag: Gallery floor (-1, 5)
@@ -22682,8 +22682,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 825
   TagComponent:
     Tag: Gallery floor (0, 5)
@@ -22707,8 +22707,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 826
   TagComponent:
     Tag: Gallery floor (1, 5)
@@ -22732,8 +22732,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 827
   TagComponent:
     Tag: Gallery floor (2, 5)
@@ -22757,8 +22757,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 828
   TagComponent:
     Tag: Gallery floor (3, 5)
@@ -22782,8 +22782,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 829
   TagComponent:
     Tag: Gallery floor (4, 5)
@@ -22883,7 +22883,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 833
   TagComponent:
     Tag: Gallery floor (8, 5)
@@ -23158,7 +23158,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 844
   TagComponent:
     Tag: Stone63
@@ -23766,7 +23766,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 866
   TagComponent:
     Tag: Gallery floor (-6, 6)
@@ -23840,8 +23840,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 869
   TagComponent:
     Tag: Gallery floor (-3, 6)
@@ -23865,8 +23865,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 870
   TagComponent:
     Tag: Gallery floor (-2, 6)
@@ -23890,8 +23890,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 871
   TagComponent:
     Tag: Gallery floor (-1, 6)
@@ -23915,8 +23915,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 872
   TagComponent:
     Tag: Gallery floor (0, 6)
@@ -23940,8 +23940,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 873
   TagComponent:
     Tag: Gallery floor (1, 6)
@@ -23965,8 +23965,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 874
   TagComponent:
     Tag: Gallery floor (2, 6)
@@ -23990,8 +23990,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 875
   TagComponent:
     Tag: Gallery floor (3, 6)
@@ -24015,8 +24015,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 876
   TagComponent:
     Tag: Gallery floor (4, 6)
@@ -24041,7 +24041,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 877
   TagComponent:
     Tag: Gallery floor (5, 6)
@@ -24908,7 +24908,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: a8a72f9f2b92bdcc
+      RegionID: e732e42dea9c5817
 - Entity: 902
   TagComponent:
     Tag: Gallery floor (-17, 7)
@@ -24933,7 +24933,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: a8a72f9f2b92bdcc
+      RegionID: e732e42dea9c5817
 - Entity: 903
   TagComponent:
     Tag: Gallery floor (-16, 7)
@@ -25108,7 +25108,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 910
   TagComponent:
     Tag: Gallery floor (-9, 7)
@@ -25158,7 +25158,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: a8a72f9f2b92bdcc
+      RegionID: e732e42dea9c5817
 - Entity: 912
   TagComponent:
     Tag: Gallery floor (-7, 7)
@@ -25183,7 +25183,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: a8a72f9f2b92bdcc
+      RegionID: e732e42dea9c5817
 - Entity: 913
   TagComponent:
     Tag: Gallery floor (-6, 7)
@@ -25257,8 +25257,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 916
   TagComponent:
     Tag: Gallery floor (-3, 7)
@@ -25282,8 +25282,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 917
   TagComponent:
     Tag: Gallery floor (-2, 7)
@@ -25307,8 +25307,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 918
   TagComponent:
     Tag: Gallery floor (-1, 7)
@@ -25332,8 +25332,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 919
   TagComponent:
     Tag: Gallery floor (0, 7)
@@ -25357,8 +25357,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 920
   TagComponent:
     Tag: Gallery floor (1, 7)
@@ -25382,8 +25382,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 921
   TagComponent:
     Tag: Gallery floor (2, 7)
@@ -25407,8 +25407,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 922
   TagComponent:
     Tag: Gallery floor (3, 7)
@@ -25432,8 +25432,8 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 07affb5861d78575
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 400d8da214ad0de3
 - Entity: 923
   TagComponent:
     Tag: Gallery floor (4, 7)
@@ -26318,7 +26318,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 954
   TagComponent:
     Tag: Gallery floor (-12, 8)
@@ -26593,7 +26593,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
-      RegionID: e732e42dea9c5817
+      RegionID: a8a72f9f2b92bdcc
 - Entity: 965
   TagComponent:
     Tag: Gallery floor (-1, 8)
@@ -33069,17 +33069,17 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
-- Entity: 1179
+- Entity: 1180
   TagComponent:
-    Tag: Seep stone edge (-16, 0)
+    Tag: Cave seep (-16, 1)
   Relationship:
     Parent: 0
     Order: 110
   TransformComponent:
     Translation:
     - -16
-    - 0
-    - -0.45
+    - 1
+    - -0.5
     Rotation:
     - 0
     - 0
@@ -33092,82 +33092,32 @@ Entities:
     Color: *id001
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: a136cccf05f8b56c
-- Entity: 1180
+      Sheet: Art/tiny-battle.hsprites
+      RegionID: 9500372282c3c18c
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1182
   TagComponent:
-    Tag: Cave seep (-16, 1)
+    Tag: Cave seep (-16, 2)
   Relationship:
     Parent: 0
     Order: 111
   TransformComponent:
     Translation:
     - -16
-    - 1
-    - -0.5
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-battle.hsprites
-      RegionID: 9500372282c3c18c
-  Rigidbody2DComponent:
-    BodyType: Static
-    FixedRotation: true
-    GravityScale: 0
-  BoxCollider2DComponent:
-    Offset:
-    - 0
-    - 0
-    Size:
-    - 0.5
-    - 0.5
-    Density: 1
-    Friction: 0
-    Restitution: 0
-    RestitutionThreshold: 0.5
-- Entity: 1181
-  TagComponent:
-    Tag: Seep stone edge (-16, 1)
-  Relationship:
-    Parent: 0
-    Order: 112
-  TransformComponent:
-    Translation:
-    - -16
-    - 1
-    - -0.45
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 344e5e95ade0ccb1
-- Entity: 1182
-  TagComponent:
-    Tag: Cave seep (-16, 2)
-  Relationship:
-    Parent: 0
-    Order: 113
-  TransformComponent:
-    Translation:
-    - -16
     - 2
     - -0.5
     Rotation:
@@ -33199,37 +33149,12 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
-- Entity: 1183
-  TagComponent:
-    Tag: Seep stone edge (-16, 2)
-  Relationship:
-    Parent: 0
-    Order: 114
-  TransformComponent:
-    Translation:
-    - -16
-    - 2
-    - -0.45
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 4ab428a3f2547b63
 - Entity: 1184
   TagComponent:
     Tag: Cave seep (-15, 0)
   Relationship:
     Parent: 0
-    Order: 115
+    Order: 112
   TransformComponent:
     Translation:
     - -15
@@ -33264,37 +33189,12 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
-- Entity: 1185
-  TagComponent:
-    Tag: Seep stone edge (-15, 0)
-  Relationship:
-    Parent: 0
-    Order: 116
-  TransformComponent:
-    Translation:
-    - -15
-    - 0
-    - -0.45
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 513cb6c10bfb27c3
 - Entity: 1186
   TagComponent:
     Tag: Cave seep (-15, 1)
   Relationship:
     Parent: 0
-    Order: 117
+    Order: 113
   TransformComponent:
     Translation:
     - -15
@@ -33334,7 +33234,7 @@ Entities:
     Tag: Cave seep (-15, 2)
   Relationship:
     Parent: 0
-    Order: 118
+    Order: 114
   TransformComponent:
     Translation:
     - -15
@@ -33369,37 +33269,12 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
-- Entity: 1188
-  TagComponent:
-    Tag: Seep stone edge (-15, 2)
-  Relationship:
-    Parent: 0
-    Order: 119
-  TransformComponent:
-    Translation:
-    - -15
-    - 2
-    - -0.45
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 1b357f4355a3623f
 - Entity: 1189
   TagComponent:
     Tag: Cave seep (-14, 0)
   Relationship:
     Parent: 0
-    Order: 120
+    Order: 115
   TransformComponent:
     Translation:
     - -14
@@ -33434,37 +33309,12 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
-- Entity: 1190
-  TagComponent:
-    Tag: Seep stone edge (-14, 0)
-  Relationship:
-    Parent: 0
-    Order: 121
-  TransformComponent:
-    Translation:
-    - -14
-    - 0
-    - -0.45
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 513cb6c10bfb27c3
 - Entity: 1191
   TagComponent:
     Tag: Cave seep (-14, 1)
   Relationship:
     Parent: 0
-    Order: 122
+    Order: 116
   TransformComponent:
     Translation:
     - -14
@@ -33504,7 +33354,7 @@ Entities:
     Tag: Cave seep (-14, 2)
   Relationship:
     Parent: 0
-    Order: 123
+    Order: 117
   TransformComponent:
     Translation:
     - -14
@@ -33539,37 +33389,12 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
-- Entity: 1193
-  TagComponent:
-    Tag: Seep stone edge (-14, 2)
-  Relationship:
-    Parent: 0
-    Order: 124
-  TransformComponent:
-    Translation:
-    - -14
-    - 2
-    - -0.45
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 1b357f4355a3623f
 - Entity: 1194
   TagComponent:
     Tag: Cave seep (-13, 0)
   Relationship:
     Parent: 0
-    Order: 125
+    Order: 118
   TransformComponent:
     Translation:
     - -13
@@ -33604,37 +33429,12 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
-- Entity: 1195
-  TagComponent:
-    Tag: Seep stone edge (-13, 0)
-  Relationship:
-    Parent: 0
-    Order: 126
-  TransformComponent:
-    Translation:
-    - -13
-    - 0
-    - -0.45
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 513cb6c10bfb27c3
 - Entity: 1196
   TagComponent:
     Tag: Cave seep (-13, 1)
   Relationship:
     Parent: 0
-    Order: 127
+    Order: 119
   TransformComponent:
     Translation:
     - -13
@@ -33674,7 +33474,7 @@ Entities:
     Tag: Cave seep (-13, 2)
   Relationship:
     Parent: 0
-    Order: 128
+    Order: 120
   TransformComponent:
     Translation:
     - -13
@@ -33709,37 +33509,12 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
-- Entity: 1198
-  TagComponent:
-    Tag: Seep stone edge (-13, 2)
-  Relationship:
-    Parent: 0
-    Order: 129
-  TransformComponent:
-    Translation:
-    - -13
-    - 2
-    - -0.45
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 1b357f4355a3623f
 - Entity: 1199
   TagComponent:
     Tag: Cave seep (-12, 0)
   Relationship:
     Parent: 0
-    Order: 130
+    Order: 121
   TransformComponent:
     Translation:
     - -12
@@ -33774,37 +33549,12 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
-- Entity: 1200
-  TagComponent:
-    Tag: Seep stone edge (-12, 0)
-  Relationship:
-    Parent: 0
-    Order: 131
-  TransformComponent:
-    Translation:
-    - -12
-    - 0
-    - -0.45
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: ae4a940dafbed0a7
 - Entity: 1201
   TagComponent:
     Tag: Cave seep (-12, 1)
   Relationship:
     Parent: 0
-    Order: 132
+    Order: 122
   TransformComponent:
     Translation:
     - -12
@@ -33839,37 +33589,12 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
-- Entity: 1202
-  TagComponent:
-    Tag: Seep stone edge (-12, 1)
-  Relationship:
-    Parent: 0
-    Order: 133
-  TransformComponent:
-    Translation:
-    - -12
-    - 1
-    - -0.45
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 17e6769a6a6684dd
 - Entity: 1203
   TagComponent:
     Tag: Cave seep (-12, 2)
   Relationship:
     Parent: 0
-    Order: 134
+    Order: 123
   TransformComponent:
     Translation:
     - -12
@@ -33904,37 +33629,12 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
-- Entity: 1204
-  TagComponent:
-    Tag: Seep stone edge (-12, 2)
-  Relationship:
-    Parent: 0
-    Order: 135
-  TransformComponent:
-    Translation:
-    - -12
-    - 2
-    - -0.45
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 66caa5be4f0c1704
 - Entity: 1205
   TagComponent:
     Tag: Stone107
   Relationship:
     Parent: 0
-    Order: 136
+    Order: 144
   TransformComponent:
     Translation:
     - -3
@@ -33974,7 +33674,7 @@ Entities:
     Tag: Stone108
   Relationship:
     Parent: 0
-    Order: 137
+    Order: 145
   TransformComponent:
     Translation:
     - 2
@@ -34014,7 +33714,7 @@ Entities:
     Tag: Stone109
   Relationship:
     Parent: 0
-    Order: 138
+    Order: 146
   TransformComponent:
     Translation:
     - 3
@@ -34054,7 +33754,7 @@ Entities:
     Tag: Shutter 1 — metal carriage on three notches
   Relationship:
     Parent: 0
-    Order: 139
+    Order: 147
   TransformComponent:
     Translation:
     - 0
@@ -34073,7 +33773,7 @@ Entities:
     Tag: Shutter1Slat0
   Relationship:
     Parent: 0
-    Order: 140
+    Order: 148
   TransformComponent:
     Translation:
     - -6
@@ -34117,7 +33817,7 @@ Entities:
     Tag: Shutter1Slat1
   Relationship:
     Parent: 0
-    Order: 141
+    Order: 149
   TransformComponent:
     Translation:
     - -6
@@ -34157,7 +33857,7 @@ Entities:
     Tag: Shutter1Slat2
   Relationship:
     Parent: 0
-    Order: 142
+    Order: 150
   TransformComponent:
     Translation:
     - -6
@@ -34197,7 +33897,7 @@ Entities:
     Tag: Shutter1Slat3
   Relationship:
     Parent: 0
-    Order: 143
+    Order: 151
   TransformComponent:
     Translation:
     - -6
@@ -34237,7 +33937,7 @@ Entities:
     Tag: Shutter1Slat4
   Relationship:
     Parent: 0
-    Order: 144
+    Order: 152
   TransformComponent:
     Translation:
     - -6
@@ -34277,7 +33977,7 @@ Entities:
     Tag: Shutter1Slat5
   Relationship:
     Parent: 0
-    Order: 145
+    Order: 153
   TransformComponent:
     Translation:
     - -6
@@ -34317,7 +34017,7 @@ Entities:
     Tag: Shutter1Slat6
   Relationship:
     Parent: 0
-    Order: 146
+    Order: 154
   TransformComponent:
     Translation:
     - -6
@@ -34357,7 +34057,7 @@ Entities:
     Tag: Shutter1Slat7
   Relationship:
     Parent: 0
-    Order: 147
+    Order: 155
   TransformComponent:
     Translation:
     - -6
@@ -34397,7 +34097,7 @@ Entities:
     Tag: Shutter1Slat8
   Relationship:
     Parent: 0
-    Order: 148
+    Order: 156
   TransformComponent:
     Translation:
     - -6
@@ -34437,7 +34137,7 @@ Entities:
     Tag: Shutter1Slat9
   Relationship:
     Parent: 0
-    Order: 149
+    Order: 157
   TransformComponent:
     Translation:
     - -6
@@ -34477,7 +34177,7 @@ Entities:
     Tag: Shutter1Slat10
   Relationship:
     Parent: 0
-    Order: 150
+    Order: 158
   TransformComponent:
     Translation:
     - -6
@@ -34517,7 +34217,7 @@ Entities:
     Tag: Shutter1Slat11
   Relationship:
     Parent: 0
-    Order: 151
+    Order: 159
   TransformComponent:
     Translation:
     - -6
@@ -34557,7 +34257,7 @@ Entities:
     Tag: Shutter1Slat12
   Relationship:
     Parent: 0
-    Order: 152
+    Order: 160
   TransformComponent:
     Translation:
     - -6
@@ -34597,7 +34297,7 @@ Entities:
     Tag: Shutter1Slat13
   Relationship:
     Parent: 0
-    Order: 153
+    Order: 161
   TransformComponent:
     Translation:
     - -6
@@ -34637,7 +34337,7 @@ Entities:
     Tag: Shutter1Slat14
   Relationship:
     Parent: 0
-    Order: 154
+    Order: 162
   TransformComponent:
     Translation:
     - -6
@@ -34677,7 +34377,7 @@ Entities:
     Tag: Shutter1Slat15
   Relationship:
     Parent: 0
-    Order: 155
+    Order: 163
   TransformComponent:
     Translation:
     - -6
@@ -34717,7 +34417,7 @@ Entities:
     Tag: Handle1
   Relationship:
     Parent: 0
-    Order: 156
+    Order: 164
   TransformComponent:
     Translation:
     - -8
@@ -34746,7 +34446,7 @@ Entities:
     Tag: SlotArrow1
   Relationship:
     Parent: 0
-    Order: 157
+    Order: 165
   TransformComponent:
     Translation:
     - -6.75
@@ -34850,7 +34550,7 @@ Entities:
     Tag: Shutter 2 — metal carriage on three notches
   Relationship:
     Parent: 0
-    Order: 158
+    Order: 166
   TransformComponent:
     Translation:
     - 0
@@ -34869,7 +34569,7 @@ Entities:
     Tag: Shutter2Slat0
   Relationship:
     Parent: 0
-    Order: 159
+    Order: 167
   TransformComponent:
     Translation:
     - 10
@@ -34909,7 +34609,7 @@ Entities:
     Tag: Shutter2Slat1
   Relationship:
     Parent: 0
-    Order: 160
+    Order: 168
   TransformComponent:
     Translation:
     - 10
@@ -34949,7 +34649,7 @@ Entities:
     Tag: Shutter2Slat2
   Relationship:
     Parent: 0
-    Order: 161
+    Order: 169
   TransformComponent:
     Translation:
     - 10
@@ -34989,7 +34689,7 @@ Entities:
     Tag: Shutter2Slat3
   Relationship:
     Parent: 0
-    Order: 162
+    Order: 170
   TransformComponent:
     Translation:
     - 10
@@ -35029,7 +34729,7 @@ Entities:
     Tag: Shutter2Slat4
   Relationship:
     Parent: 0
-    Order: 163
+    Order: 171
   TransformComponent:
     Translation:
     - 10
@@ -35069,7 +34769,7 @@ Entities:
     Tag: Shutter2Slat5
   Relationship:
     Parent: 0
-    Order: 164
+    Order: 172
   TransformComponent:
     Translation:
     - 10
@@ -35109,7 +34809,7 @@ Entities:
     Tag: Shutter2Slat6
   Relationship:
     Parent: 0
-    Order: 165
+    Order: 173
   TransformComponent:
     Translation:
     - 10
@@ -35149,7 +34849,7 @@ Entities:
     Tag: Shutter2Slat7
   Relationship:
     Parent: 0
-    Order: 166
+    Order: 174
   TransformComponent:
     Translation:
     - 10
@@ -35189,7 +34889,7 @@ Entities:
     Tag: Shutter2Slat8
   Relationship:
     Parent: 0
-    Order: 167
+    Order: 175
   TransformComponent:
     Translation:
     - 10
@@ -35229,7 +34929,7 @@ Entities:
     Tag: Shutter2Slat9
   Relationship:
     Parent: 0
-    Order: 168
+    Order: 176
   TransformComponent:
     Translation:
     - 10
@@ -35269,7 +34969,7 @@ Entities:
     Tag: Shutter2Slat10
   Relationship:
     Parent: 0
-    Order: 169
+    Order: 177
   TransformComponent:
     Translation:
     - 10
@@ -35309,7 +35009,7 @@ Entities:
     Tag: Shutter2Slat11
   Relationship:
     Parent: 0
-    Order: 170
+    Order: 178
   TransformComponent:
     Translation:
     - 10
@@ -35349,7 +35049,7 @@ Entities:
     Tag: Shutter2Slat12
   Relationship:
     Parent: 0
-    Order: 171
+    Order: 179
   TransformComponent:
     Translation:
     - 10
@@ -35389,7 +35089,7 @@ Entities:
     Tag: Shutter2Slat13
   Relationship:
     Parent: 0
-    Order: 172
+    Order: 180
   TransformComponent:
     Translation:
     - 10
@@ -35429,7 +35129,7 @@ Entities:
     Tag: Shutter2Slat14
   Relationship:
     Parent: 0
-    Order: 173
+    Order: 181
   TransformComponent:
     Translation:
     - 10
@@ -35469,7 +35169,7 @@ Entities:
     Tag: Shutter2Slat15
   Relationship:
     Parent: 0
-    Order: 174
+    Order: 182
   TransformComponent:
     Translation:
     - 10
@@ -35509,7 +35209,7 @@ Entities:
     Tag: Handle2
   Relationship:
     Parent: 0
-    Order: 175
+    Order: 183
   TransformComponent:
     Translation:
     - 8
@@ -35534,7 +35234,7 @@ Entities:
     Tag: SlotArrow2
   Relationship:
     Parent: 0
-    Order: 176
+    Order: 184
   TransformComponent:
     Translation:
     - 9.25
@@ -35634,7 +35334,7 @@ Entities:
     Tag: FocusPad2
   Relationship:
     Parent: 0
-    Order: 177
+    Order: 185
   TransformComponent:
     Translation:
     - -12
@@ -35659,7 +35359,7 @@ Entities:
     Tag: FocusPad2 facing
   Relationship:
     Parent: 0
-    Order: 178
+    Order: 186
   TransformComponent:
     Translation:
     - -11.3
@@ -35684,7 +35384,7 @@ Entities:
     Tag: FocusPad3
   Relationship:
     Parent: 0
-    Order: 179
+    Order: 187
   TransformComponent:
     Translation:
     - 0
@@ -35709,7 +35409,7 @@ Entities:
     Tag: FocusPad3 facing
   Relationship:
     Parent: 0
-    Order: 180
+    Order: 188
   TransformComponent:
     Translation:
     - 0.7
@@ -35734,7 +35434,7 @@ Entities:
     Tag: GalleryReceiver
   Relationship:
     Parent: 0
-    Order: 181
+    Order: 189
   TransformComponent:
     Translation:
     - -1
@@ -35759,7 +35459,7 @@ Entities:
     Tag: Stone110
   Relationship:
     Parent: 0
-    Order: 182
+    Order: 190
   TransformComponent:
     Translation:
     - 5
@@ -35799,7 +35499,7 @@ Entities:
     Tag: Stone111
   Relationship:
     Parent: 0
-    Order: 183
+    Order: 191
   TransformComponent:
     Translation:
     - 5
@@ -35839,7 +35539,7 @@ Entities:
     Tag: Stone112
   Relationship:
     Parent: 0
-    Order: 184
+    Order: 192
   TransformComponent:
     Translation:
     - 5
@@ -35879,7 +35579,7 @@ Entities:
     Tag: Stone113
   Relationship:
     Parent: 0
-    Order: 185
+    Order: 193
   TransformComponent:
     Translation:
     - 5
@@ -35919,7 +35619,7 @@ Entities:
     Tag: Stone114
   Relationship:
     Parent: 0
-    Order: 186
+    Order: 194
   TransformComponent:
     Translation:
     - 5
@@ -35959,7 +35659,7 @@ Entities:
     Tag: Stone115
   Relationship:
     Parent: 0
-    Order: 187
+    Order: 195
   TransformComponent:
     Translation:
     - 5
@@ -35999,7 +35699,7 @@ Entities:
     Tag: Stone116
   Relationship:
     Parent: 0
-    Order: 188
+    Order: 196
   TransformComponent:
     Translation:
     - 5
@@ -36039,7 +35739,7 @@ Entities:
     Tag: Gallery inspection glass
   Relationship:
     Parent: 0
-    Order: 189
+    Order: 197
   TransformComponent:
     Translation:
     - 5
@@ -36057,8 +35757,8 @@ Entities:
     Color: *id003
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 71063619fc099029
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 9e8657f667b88133
   Rigidbody2DComponent:
     BodyType: Static
     FixedRotation: true
@@ -36079,7 +35779,7 @@ Entities:
     Tag: Stone117
   Relationship:
     Parent: 0
-    Order: 190
+    Order: 198
   TransformComponent:
     Translation:
     - 5
@@ -36119,7 +35819,7 @@ Entities:
     Tag: Stone118
   Relationship:
     Parent: 0
-    Order: 191
+    Order: 199
   TransformComponent:
     Translation:
     - 5
@@ -36159,7 +35859,7 @@ Entities:
     Tag: Stone119
   Relationship:
     Parent: 0
-    Order: 192
+    Order: 200
   TransformComponent:
     Translation:
     - -5
@@ -36199,7 +35899,7 @@ Entities:
     Tag: Stone120
   Relationship:
     Parent: 0
-    Order: 193
+    Order: 201
   TransformComponent:
     Translation:
     - -4
@@ -36239,7 +35939,7 @@ Entities:
     Tag: Stone121
   Relationship:
     Parent: 0
-    Order: 194
+    Order: 202
   TransformComponent:
     Translation:
     - -3
@@ -36279,7 +35979,7 @@ Entities:
     Tag: Stone122
   Relationship:
     Parent: 0
-    Order: 195
+    Order: 203
   TransformComponent:
     Translation:
     - -2
@@ -36319,7 +36019,7 @@ Entities:
     Tag: Stone123
   Relationship:
     Parent: 0
-    Order: 196
+    Order: 204
   TransformComponent:
     Translation:
     - -1
@@ -36359,7 +36059,7 @@ Entities:
     Tag: Stone124
   Relationship:
     Parent: 0
-    Order: 197
+    Order: 205
   TransformComponent:
     Translation:
     - 0
@@ -36399,7 +36099,7 @@ Entities:
     Tag: Stone125
   Relationship:
     Parent: 0
-    Order: 198
+    Order: 206
   TransformComponent:
     Translation:
     - 1
@@ -36439,7 +36139,7 @@ Entities:
     Tag: Stone126
   Relationship:
     Parent: 0
-    Order: 199
+    Order: 207
   TransformComponent:
     Translation:
     - 2
@@ -36479,7 +36179,7 @@ Entities:
     Tag: Stone127
   Relationship:
     Parent: 0
-    Order: 200
+    Order: 208
   TransformComponent:
     Translation:
     - 3
@@ -36519,7 +36219,7 @@ Entities:
     Tag: Stone128
   Relationship:
     Parent: 0
-    Order: 201
+    Order: 209
   TransformComponent:
     Translation:
     - 4
@@ -36559,7 +36259,7 @@ Entities:
     Tag: GalleryGate
   Relationship:
     Parent: 0
-    Order: 202
+    Order: 210
   TransformComponent:
     Translation:
     - 5
@@ -36599,7 +36299,7 @@ Entities:
     Tag: ReturnGate
   Relationship:
     Parent: 0
-    Order: 203
+    Order: 211
   TransformComponent:
     Translation:
     - -6
@@ -36639,7 +36339,7 @@ Entities:
     Tag: Fixed mirror (8, 3)
   Relationship:
     Parent: 0
-    Order: 204
+    Order: 212
   TransformComponent:
     Translation:
     - 8
@@ -36664,7 +36364,7 @@ Entities:
     Tag: Fixed mirror (8, -3)
   Relationship:
     Parent: 0
-    Order: 205
+    Order: 213
   TransformComponent:
     Translation:
     - 8
@@ -36689,7 +36389,7 @@ Entities:
     Tag: Stone129
   Relationship:
     Parent: 0
-    Order: 206
+    Order: 214
   TransformComponent:
     Translation:
     - 12
@@ -36729,7 +36429,7 @@ Entities:
     Tag: Stone130
   Relationship:
     Parent: 0
-    Order: 207
+    Order: 215
   TransformComponent:
     Translation:
     - 12
@@ -36769,7 +36469,7 @@ Entities:
     Tag: Stone131
   Relationship:
     Parent: 0
-    Order: 208
+    Order: 216
   TransformComponent:
     Translation:
     - 12
@@ -36809,7 +36509,7 @@ Entities:
     Tag: Inspection glass
   Relationship:
     Parent: 0
-    Order: 209
+    Order: 217
   TransformComponent:
     Translation:
     - 12
@@ -36827,8 +36527,8 @@ Entities:
     Color: *id003
     Source:
       Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 71063619fc099029
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 9e8657f667b88133
   Rigidbody2DComponent:
     BodyType: Static
     FixedRotation: true
@@ -36849,7 +36549,7 @@ Entities:
     Tag: Stone132
   Relationship:
     Parent: 0
-    Order: 210
+    Order: 218
   TransformComponent:
     Translation:
     - 12
@@ -36889,7 +36589,7 @@ Entities:
     Tag: Stone133
   Relationship:
     Parent: 0
-    Order: 211
+    Order: 219
   TransformComponent:
     Translation:
     - 12
@@ -36929,7 +36629,7 @@ Entities:
     Tag: Stone134
   Relationship:
     Parent: 0
-    Order: 212
+    Order: 220
   TransformComponent:
     Translation:
     - 12
@@ -36969,7 +36669,7 @@ Entities:
     Tag: Stone135
   Relationship:
     Parent: 0
-    Order: 213
+    Order: 221
   TransformComponent:
     Translation:
     - 12
@@ -37009,7 +36709,7 @@ Entities:
     Tag: Stone136
   Relationship:
     Parent: 0
-    Order: 214
+    Order: 222
   TransformComponent:
     Translation:
     - 12
@@ -37049,7 +36749,7 @@ Entities:
     Tag: Stone137
   Relationship:
     Parent: 0
-    Order: 215
+    Order: 223
   TransformComponent:
     Translation:
     - 12
@@ -37089,7 +36789,7 @@ Entities:
     Tag: Stone138
   Relationship:
     Parent: 0
-    Order: 216
+    Order: 224
   TransformComponent:
     Translation:
     - 12
@@ -37129,7 +36829,7 @@ Entities:
     Tag: Stone139
   Relationship:
     Parent: 0
-    Order: 217
+    Order: 225
   TransformComponent:
     Translation:
     - 12
@@ -37169,7 +36869,7 @@ Entities:
     Tag: MaraDoor
   Relationship:
     Parent: 0
-    Order: 218
+    Order: 226
   TransformComponent:
     Translation:
     - 12
@@ -37209,7 +36909,7 @@ Entities:
     Tag: RescueReceiver
   Relationship:
     Parent: 0
-    Order: 219
+    Order: 227
   TransformComponent:
     Translation:
     - 13
@@ -37234,7 +36934,7 @@ Entities:
     Tag: Mara
   Relationship:
     Parent: 0
-    Order: 220
+    Order: 228
   TransformComponent:
     Translation:
     - 14
@@ -37259,7 +36959,7 @@ Entities:
     Tag: SurveyLedger
   Relationship:
     Parent: 0
-    Order: 221
+    Order: 229
   TransformComponent:
     Translation:
     - 15
@@ -37284,7 +36984,7 @@ Entities:
     Tag: Cave salvage (16, -5)
   Relationship:
     Parent: 0
-    Order: 222
+    Order: 230
   TransformComponent:
     Translation:
     - 16
@@ -37309,7 +37009,7 @@ Entities:
     Tag: Cave salvage (17, -5)
   Relationship:
     Parent: 0
-    Order: 223
+    Order: 231
   TransformComponent:
     Translation:
     - 17
@@ -37334,7 +37034,7 @@ Entities:
     Tag: Cave salvage (15, -2)
   Relationship:
     Parent: 0
-    Order: 224
+    Order: 232
   TransformComponent:
     Translation:
     - 15
@@ -37354,37 +37054,12 @@ Entities:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
       RegionID: 942c25464bf2fe32
-- Entity: 1300
-  TagComponent:
-    Tag: Cave salvage (-16, -4)
-  Relationship:
-    Parent: 0
-    Order: 225
-  TransformComponent:
-    Translation:
-    - -16
-    - -4
-    - 0.2
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: 760a3e1881d87cb6
 - Entity: 1301
   TagComponent:
     Tag: Cave salvage (-17, 3)
   Relationship:
     Parent: 0
-    Order: 226
+    Order: 233
   TransformComponent:
     Translation:
     - -17
@@ -37404,37 +37079,12 @@ Entities:
       Type: Region
       Sheet: Art/tiny-dungeon.hsprites
       RegionID: 3d058500d491b35a
-- Entity: 1302
-  TagComponent:
-    Tag: Cave salvage (-12, -2)
-  Relationship:
-    Parent: 0
-    Order: 227
-  TransformComponent:
-    Translation:
-    - -12
-    - -2
-    - 0.2
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 1
-    - 1
-    - 1
-  SpriteRendererComponent:
-    Color: *id001
-    Source:
-      Type: Region
-      Sheet: Art/tiny-dungeon.hsprites
-      RegionID: dc19f26c10c2f699
 - Entity: 1303
   TagComponent:
     Tag: Cave salvage (8, -5)
   Relationship:
     Parent: 0
-    Order: 228
+    Order: 235
   TransformComponent:
     Translation:
     - 8
@@ -37459,7 +37109,7 @@ Entities:
     Tag: StormWisp
   Relationship:
     Parent: 0
-    Order: 229
+    Order: 236
   TransformComponent:
     Translation:
     - 0
@@ -37484,7 +37134,7 @@ Entities:
     Tag: RushMark
   Relationship:
     Parent: 0
-    Order: 230
+    Order: 237
   TransformComponent:
     Translation:
     - 0
@@ -37509,7 +37159,7 @@ Entities:
     Tag: DryExit
   Relationship:
     Parent: 0
-    Order: 231
+    Order: 238
   TransformComponent:
     Translation:
     - -17
@@ -37534,7 +37184,7 @@ Entities:
     Tag: RestMarker
   Relationship:
     Parent: 0
-    Order: 232
+    Order: 239
   TransformComponent:
     Translation:
     - -14
@@ -37559,7 +37209,7 @@ Entities:
     Tag: Gallery label
   Relationship:
     Parent: 0
-    Order: 233
+    Order: 240
   TransformComponent:
     Translation:
     - -3
@@ -37583,7 +37233,7 @@ Entities:
     Tag: Passage label
   Relationship:
     Parent: 0
-    Order: 234
+    Order: 241
   TransformComponent:
     Translation:
     - -3
@@ -37607,7 +37257,7 @@ Entities:
     Tag: Mara ledge label
   Relationship:
     Parent: 0
-    Order: 235
+    Order: 242
   TransformComponent:
     Translation:
     - 13
@@ -37631,7 +37281,7 @@ Entities:
     Tag: Checkpoint1
   Relationship:
     Parent: 0
-    Order: 236
+    Order: 243
   TransformComponent:
     Translation:
     - -12
@@ -37650,7 +37300,7 @@ Entities:
     Tag: Checkpoint2
   Relationship:
     Parent: 0
-    Order: 237
+    Order: 244
   TransformComponent:
     Translation:
     - 7
@@ -37669,7 +37319,7 @@ Entities:
     Tag: Iona
   Relationship:
     Parent: 0
-    Order: 238
+    Order: 245
   TransformComponent:
     Translation:
     - -17
@@ -37759,7 +37409,7 @@ Entities:
     Tag: Camera
   Relationship:
     Parent: 0
-    Order: 239
+    Order: 246
   TransformComponent:
     Translation:
     - -12
@@ -38099,7 +37749,7 @@ Entities:
     - 0.5775
     - 1
   TextComponent:
-    TextString: SEA CAVES
+    TextString: ''
     Color: *id004
     Kerning: 0
     LineSpacing: 0.15
@@ -38112,7 +37762,7 @@ Entities:
   TransformComponent:
     Translation:
     - -13
-    - 7.4
+    - 7.35
     - 8
     Rotation:
     - 0
@@ -38416,7 +38066,7 @@ Entities:
   TransformComponent:
     Translation:
     - -13
-    - -7
+    - -7.05
     - 8
     Rotation:
     - 0
@@ -38440,15 +38090,15 @@ Entities:
   TransformComponent:
     Translation:
     - -13
-    - -7.65
+    - -7.7
     - 8
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.56
-    - 0.56
+    - 0.525
+    - 0.525
     - 1
   TextComponent:
     TextString: ''
@@ -38471,8 +38121,8 @@ Entities:
     - 0
     - 0
     Scale:
-    - 0.525
-    - 0.525
+    - 0.49000000000000005
+    - 0.49000000000000005
     - 1
   TextComponent:
     TextString: ''
@@ -38491,7 +38141,7 @@ Entities:
     Order: 7
   TransformComponent:
     Translation:
-    - 1
+    - 2
     - -8.2
     - 8
     Rotation:
@@ -38499,8 +38149,8 @@ Entities:
     - 0
     - 0
     Scale:
-    - 0.4375
-    - 0.4375
+    - 0.49000000000000005
+    - 0.49000000000000005
     - 1
   TextComponent:
     TextString: ''
@@ -38816,7 +38466,7 @@ Entities:
     Tag: SoundTurn
   Relationship:
     Parent: 0
-    Order: 240
+    Order: 247
   TransformComponent:
     Translation:
     - 0
@@ -38832,7 +38482,7 @@ Entities:
     - 1
   AudioSourceComponent:
     Clip: Audio/click_003.wav
-    Gain: 0.3
+    Gain: 0.22
     Loop: false
     PlayOnStart: false
 - Entity: 1355
@@ -38840,7 +38490,7 @@ Entities:
     Tag: SoundRestore
   Relationship:
     Parent: 0
-    Order: 241
+    Order: 248
   TransformComponent:
     Translation:
     - 0
@@ -38856,7 +38506,7 @@ Entities:
     - 1
   AudioSourceComponent:
     Clip: Audio/confirmation_002.wav
-    Gain: 0.5
+    Gain: 0.38
     Loop: false
     PlayOnStart: false
 - Entity: 1356
@@ -38864,7 +38514,7 @@ Entities:
     Tag: SoundHazard
   Relationship:
     Parent: 0
-    Order: 242
+    Order: 249
   TransformComponent:
     Translation:
     - 0
@@ -38880,7 +38530,7 @@ Entities:
     - 1
   AudioSourceComponent:
     Clip: Audio/error_002.wav
-    Gain: 0.35
+    Gain: 0.3
     Loop: false
     PlayOnStart: false
 - Entity: 1357
@@ -38888,7 +38538,7 @@ Entities:
     Tag: Sea caves controller
   Relationship:
     Parent: 0
-    Order: 243
+    Order: 251
   TransformComponent:
     Translation:
     - 0
@@ -38941,6 +38591,9 @@ Entities:
     - Name: SoundHazard
       Type: Entity
       Data: 1356
+    - Name: SoundWarning
+      Type: Entity
+      Data: 1379
     - Name: Player
       Type: Entity
       Data: 1313
@@ -38953,3 +38606,852 @@ Entities:
     - Name: EndAsset
       Type: Prefab
       Data: Prefabs/BeamEnd.hprefab
+- Entity: 1358
+  TagComponent:
+    Tag: Seep stone edge (-17, -1)
+  Relationship:
+    Parent: 0
+    Order: 124
+  TransformComponent:
+    Translation:
+    - -17
+    - -1
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 56bc3358b1dde3c9
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1359
+  TagComponent:
+    Tag: Seep stone edge (-17, 3)
+  Relationship:
+    Parent: 0
+    Order: 125
+  TransformComponent:
+    Translation:
+    - -17
+    - 3
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: a4ceee51c930c3c6
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1360
+  TagComponent:
+    Tag: Seep stone edge (-16, -1)
+  Relationship:
+    Parent: 0
+    Order: 126
+  TransformComponent:
+    Translation:
+    - -16
+    - -1
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 332d633acdcb8d15
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1361
+  TagComponent:
+    Tag: Seep stone edge (-16, 3)
+  Relationship:
+    Parent: 0
+    Order: 127
+  TransformComponent:
+    Translation:
+    - -16
+    - 3
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 25ee8de55a40632e
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1362
+  TagComponent:
+    Tag: Seep stone edge (-15, -1)
+  Relationship:
+    Parent: 0
+    Order: 128
+  TransformComponent:
+    Translation:
+    - -15
+    - -1
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 332d633acdcb8d15
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1363
+  TagComponent:
+    Tag: Seep stone edge (-15, 3)
+  Relationship:
+    Parent: 0
+    Order: 129
+  TransformComponent:
+    Translation:
+    - -15
+    - 3
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 25ee8de55a40632e
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1364
+  TagComponent:
+    Tag: Seep stone edge (-14, -1)
+  Relationship:
+    Parent: 0
+    Order: 130
+  TransformComponent:
+    Translation:
+    - -14
+    - -1
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 332d633acdcb8d15
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1365
+  TagComponent:
+    Tag: Seep stone edge (-14, 3)
+  Relationship:
+    Parent: 0
+    Order: 131
+  TransformComponent:
+    Translation:
+    - -14
+    - 3
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 25ee8de55a40632e
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1366
+  TagComponent:
+    Tag: Seep stone edge (-13, -1)
+  Relationship:
+    Parent: 0
+    Order: 132
+  TransformComponent:
+    Translation:
+    - -13
+    - -1
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 332d633acdcb8d15
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1367
+  TagComponent:
+    Tag: Seep stone edge (-13, 3)
+  Relationship:
+    Parent: 0
+    Order: 133
+  TransformComponent:
+    Translation:
+    - -13
+    - 3
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 25ee8de55a40632e
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1368
+  TagComponent:
+    Tag: Seep stone edge (-12, -1)
+  Relationship:
+    Parent: 0
+    Order: 134
+  TransformComponent:
+    Translation:
+    - -12
+    - -1
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 332d633acdcb8d15
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1369
+  TagComponent:
+    Tag: Seep stone edge (-12, 3)
+  Relationship:
+    Parent: 0
+    Order: 135
+  TransformComponent:
+    Translation:
+    - -12
+    - 3
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 25ee8de55a40632e
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1370
+  TagComponent:
+    Tag: Seep stone edge (-11, -1)
+  Relationship:
+    Parent: 0
+    Order: 136
+  TransformComponent:
+    Translation:
+    - -11
+    - -1
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 3d663da255694a1f
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1371
+  TagComponent:
+    Tag: Seep stone edge (-11, 3)
+  Relationship:
+    Parent: 0
+    Order: 137
+  TransformComponent:
+    Translation:
+    - -11
+    - 3
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: 25eebdf78fba0664
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1372
+  TagComponent:
+    Tag: Seep stone edge (-17, 0)
+  Relationship:
+    Parent: 0
+    Order: 138
+  TransformComponent:
+    Translation:
+    - -17
+    - 0
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: a0895902572e2980
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1373
+  TagComponent:
+    Tag: Seep stone edge (-11, 0)
+  Relationship:
+    Parent: 0
+    Order: 139
+  TransformComponent:
+    Translation:
+    - -11
+    - 0
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: daa204d689b151e6
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1374
+  TagComponent:
+    Tag: Seep stone edge (-17, 1)
+  Relationship:
+    Parent: 0
+    Order: 140
+  TransformComponent:
+    Translation:
+    - -17
+    - 1
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: a0895902572e2980
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1375
+  TagComponent:
+    Tag: Seep stone edge (-11, 1)
+  Relationship:
+    Parent: 0
+    Order: 141
+  TransformComponent:
+    Translation:
+    - -11
+    - 1
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: daa204d689b151e6
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1376
+  TagComponent:
+    Tag: Seep stone edge (-17, 2)
+  Relationship:
+    Parent: 0
+    Order: 142
+  TransformComponent:
+    Translation:
+    - -17
+    - 2
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: a0895902572e2980
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1377
+  TagComponent:
+    Tag: Seep stone edge (-11, 2)
+  Relationship:
+    Parent: 0
+    Order: 143
+  TransformComponent:
+    Translation:
+    - -11
+    - 2
+    - -0.45
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-town.hsprites
+      RegionID: daa204d689b151e6
+  Rigidbody2DComponent:
+    BodyType: Static
+    FixedRotation: true
+    GravityScale: 0
+  BoxCollider2DComponent:
+    Offset:
+    - 0
+    - 0
+    Size:
+    - 0.5
+    - 0.5
+    Density: 1
+    Friction: 0
+    Restitution: 0
+    RestitutionThreshold: 0.5
+- Entity: 1378
+  TagComponent:
+    Tag: Cave salvage (-18, 3)
+  Relationship:
+    Parent: 0
+    Order: 234
+  TransformComponent:
+    Translation:
+    - -18
+    - 3
+    - 0.2
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color: *id001
+    Source:
+      Type: Region
+      Sheet: Art/tiny-dungeon.hsprites
+      RegionID: dc19f26c10c2f699
+- Entity: 1379
+  TagComponent:
+    Tag: SoundWarning
+  Relationship:
+    Parent: 0
+    Order: 250
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  AudioSourceComponent:
+    Clip: Audio/open_001.wav
+    Gain: 0.32
+    Loop: false
+    PlayOnStart: false

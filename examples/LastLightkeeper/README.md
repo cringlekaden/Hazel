@@ -161,3 +161,19 @@ lantern upgrade, and the route to the upper tower. Then the final storm encounte
 and rescue ending. Human pacing, control feel, repeated-play enjoyment and
 physical Windows GPU/audio acceptance remain required. No full-game playtime is
 claimed.
+
+## Whole-game presentation pass
+
+The existing routes, puzzle settings and LK1/LK2 save payloads are unchanged.
+All gameplay locations share left-aligned HUD baselines, consistent panel insets
+and a dedicated warning row. Menu button labels sit on the same vertical baseline.
+New Game confirmation waits for another N or click; Esc cancels, and selecting
+Credits or Continue cancels the pending replacement. Save failure remains visible
+until a successful retry; checkpoints only confirm an actual write.
+
+Joined gravel replaces the isolated road sprites. Court and cistern surfaces use
+quiet slate instead of wall brick; trees use native crown/trunk pairs. Cistern and
+cave water have directional stone kerbs. Cave rubble and salvage describe specific
+falls and storage areas. Existing Kenney atlas pixels, sheet IDs and licenses are
+preserved. The composition scripts retain these choices; the shipped scenes remain
+ordinary Hazelnut documents. No observatory content has been added.

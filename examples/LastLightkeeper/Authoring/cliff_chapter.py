@@ -3,7 +3,7 @@
 No runtime terrain generation. Use --overwrite only after reviewing scene edits.
 """
 import argparse
-from compose import Scene,terrain,STORM,WHITE,AMBER,CLIPS
+from compose import Scene,terrain,STORM,WHITE,AMBER,CLIPS,game_hud,pine,quarter
 
 COLD=[.57,.68,.77,1]
 CAVE=[.58,.62,.71,1]
@@ -14,20 +14,9 @@ def hud(s,caves):
     lamp=s.sprite('IonaLantern','tiny-dungeon',125,.28,-.18,.06,.5,.5,WHITE,parent=player['Entity'])
     lamp['SpriteAnimationComponent']={'DefaultClip':{'Sheet':'Art/tiny-dungeon.hsprites','ClipID':CLIPS['tiny-dungeon']},'Autoplay':True,'Speed':1}
     camera=s.camera(-12,-3,True,player);cid=camera['Entity']
-    s.panel('Top HUD',0,7.75,28,1.5,cid)
-    s.text('Place','SEA CAVES' if caves else 'CLIFF CISTERN',-13,8,.33,AMBER,cid)
-    s.text('Objective','',-13,7.4,.40,WHITE,cid)
-    s.panel('Bottom HUD',0,-7.45,28,2,cid)
-    s.text('Context','',-13,-7,.38,WHITE,cid)
-    s.text('Inventory','',-13,-7.65,.32,AMBER,cid)
-    s.text('SaveLabel','',-13,-8.2,.3,[.77,.84,.89,1],cid)
-    s.text('TideLabel','',1,-8.2,.25,AMBER,cid)
-    s.panel('DialoguePanel',0,-3,27,6.8,cid,z=6.5)
-    s.text('Dialogue','',-12.5,-.5,.46,WHITE,cid,z=8.5)
-    for name,file,gain in [('SoundTurn','click_003.wav',.3),('SoundRestore','confirmation_002.wav',.5),('SoundHazard','error_002.wav',.35)]:
-        e=s.entity(name);e['AudioSourceComponent']={'Clip':'Audio/'+file,'Gain':gain,'Loop':False,'PlayOnStart':False}
+    game_hud(s,cid)
     root=s.entity('Sea caves controller' if caves else 'Cliff cistern controller')
-    refs={name:s.by_name[name] for name in ['Iona','Camera','Objective','Context','Place','Inventory','TideLabel','Dialogue','DialoguePanel','SaveLabel','SoundTurn','SoundRestore','SoundHazard']}
+    refs={name:s.by_name[name] for name in ['Iona','Camera','Objective','Context','Place','Inventory','TideLabel','Dialogue','DialoguePanel','SaveLabel','SoundTurn','SoundRestore','SoundHazard','SoundWarning']}
     refs['Player']=refs.pop('Iona');refs.update(Caves=caves,BeamAsset='Prefabs/LightBeam.hprefab',EndAsset='Prefabs/BeamEnd.hprefab')
     s.script(root,'CliffChapter',refs)
     return player
@@ -50,22 +39,35 @@ def cistern():
     s=Scene('CliffCistern');background=s.image('Distant sea','water-tile.png',0,0,-3,64,64,COLD);background['SpriteRendererComponent']['Source']['TilingFactor']=64
     terrainRoot=s.entity('Cliff plateau — coast adjacency',z=-1)['Entity']
     walk=lambda x,y:-19<=x<=18 and -8<=y<=8 and not (x<-17 and y>5) and not (x>16 and y<-6)
-    terrain(s,terrainRoot,(-23,23,-12,12),walk,tint=COLD)
+    terrain(s,terrainRoot,(-23,23,-12,12),walk,lambda x,y:-18<=x<=-12 and -6<=y<=-3,tint=COLD)
     floor=s.entity('Cistern pavement — stone and inspection walks',z=-.7)['Entity']
-    for y in range(-7,9):
+    def paved(x,y):
+        return (-11<=x<=1 and -1<=y<=1 or -9<=x<=-7 and 0<=y<=4
+            or -11<=x<=-1 and 3<=y<=4 or 1<=x<=12 and -8<=y<=1
+            or 1<=x<=9 and 2<=y<=4 or 7<=x<=9 and 3<=y<=7
+            or 10<=x<=12 and 5<=y<=7 or 13<=x<=18 and 5<=y<=7)
+    for y in range(-8,9):
         for x in range(-11,19):
-            if walk(x,y):s.sprite('Pavement '+str((x,y)),'tiny-dungeon',14,x,y,0,color=COLD,parent=floor)
+            if not (walk(x,y) and paved(x,y)):continue
+            if all(paved(x+a,y+b) for a,b in [(1,0),(-1,0),(0,1),(0,-1)]):
+                s.sprite('Pavement '+str((x,y)),'tiny-town',109,x,y,0,color=COLD,parent=floor)
+            else:
+                for dx,dy in [(-1,1),(1,1),(-1,-1),(1,-1)]:
+                    horizontal=not paved(x+dx,y);vertical=not paved(x,y+dy)
+                    tile=((96 if dx<0 else 98) if dy>0 else (120 if dx<0 else 122)) if horizontal and vertical else (108 if dx<0 else 110) if horizontal else (97 if dy>0 else 121) if vertical else 109
+                    region=quarter('ground-quarters',tile,0 if dx<0 else 1,0 if dy>0 else 1)
+                    s.sprite('Pavement edge %d,%d quadrant %d,%d'%(x,y,dx,dy),'ground-quarters',region,x+dx*.25,y+dy*.25,0,.5,.5,COLD,floor)
     # Pool and kerb are composed from actual water/stone tiles, with aligned collisions.
     for y in range(-6,0):
         for x in range(3,11):s.sprite('Cistern water '+str((x,y)),'tiny-battle',37,x,y,-.5,color=COLD,solid=True)
-        for x in (2,11):s.sprite('Pool kerb '+str((x,y)),'tiny-town',102,x,y,-.4,color=COLD,solid=True)
+        for x in (2,11):s.sprite('Pool kerb '+str((x,y)),'tiny-town',108 if x==2 else 110,x,y,-.4,color=COLD,solid=True)
     for x in range(2,12):
-        for y in (0,-7):s.sprite('Pool kerb '+str((x,y)),'tiny-town',99 if x==2 else 101 if x==11 else 100,x,y,-.4,color=COLD,solid=True)
+        for y in (0,-7):s.sprite('Pool kerb '+str((x,y)),'tiny-town',(96 if x==2 else 98 if x==11 else 97) if y==0 else (120 if x==2 else 122 if x==11 else 121),x,y,-.4,color=COLD,solid=True)
     stone=0
     # Workshop composition: open roofless bench space, wood shelves, tool racks.
     for x in range(-18,-11):s.sprite('Stone'+str(stone),'tiny-town',96 if x==-18 else 98 if x==-12 else 97,x,-2,.2,color=COLD,solid=True);stone+=1
     for x,y,t in [(-17,-5,63),(-16,-5,73),(-15,-3,74),(-13,-3,75)]:s.sprite('Workshop furnishing '+str((x,y)),'tiny-dungeon',t,x,y,.3,color=WHITE)
-    s.sprite('LanternSleeve','tiny-factory',95,-14,-4,.5,color=AMBER)
+    s.sprite('LanternSleeve','tiny-factory',115,-14,-4,.5,color=AMBER)
     s.sprite('WorkshopNote','tiny-town',83,-17,-3,.4,color=WHITE)
     s.text('Workshop sign','MARA\'S WORKSHOP',-18,-6.4,.22,WHITE,z=.5)
     shutter(s,0,0,-3)
@@ -86,8 +88,8 @@ def cistern():
     for y in (5,7):s.sprite('Stair west jamb '+str(y),'tiny-dungeon',13,13,y,.4,color=COLD,solid=True)
     s.sprite('CaveEntranceGate','tiny-dungeon',47,13,6,.4,color=COLD,solid=True)
     s.sprite('CaveExit','tiny-dungeon',39,16,6,.2,color=WHITE)
-    for x,y in [(-17,6),(-15,7),(-13,7),(-18,-7)]:s.sprite('Cliff pine '+str((x,y)),'tiny-town',4,x,y,.1,1,2,COLD)
-    for x,y in [(10,-6),(13,-5),(16,-6),(-17,4)]:s.sprite('Cliff debris '+str((x,y)),'tiny-town',105,x,y,.1,color=COLD)
+    for x,y in [(-17,6),(-15,7),(-13,7)]:pine(s,'Cliff pine '+str((x,y)),x,y,COLD)
+    for x,y in [(13,-5),(14,-5),(-17,4)]:s.sprite('Cliff debris '+str((x,y)),'tiny-town',105,x,y,.1,color=COLD)
     s.sprite('RestMarker','tiny-town',83,-18,-4,.3,color=WHITE)
     s.entity('Checkpoint0',-17,-4,.55)
     hud(s,False);return s
@@ -103,13 +105,16 @@ def sea_caves():
                 north=walk(x,y-1);south=walk(x,y+1);east=walk(x-1,y);west=walk(x+1,y)
                 tile=4 if north and west else 5 if north and east else 16 if south and west else 17 if south and east else 2 if north else 26 if south else 13 if west else 15
                 s.sprite('Stone'+str(stone),'tiny-dungeon',tile,x,y,.2,color=CAVE,solid=True);stone+=1
-            else:s.sprite(('Gallery floor ' if on else 'Bedrock ')+str((x,y)),'tiny-dungeon',14 if on and -4<=x<=3 and 2<=y<=7 else 31 if on and x>=13 and -5<=y<=-2 else 24 if on and (x+3*y)%11==0 else 0,x,y,0,color=CAVE if on else [.27,.3,.38,1],parent=floor)
+            else:s.sprite(('Gallery floor ' if on else 'Bedrock ')+str((x,y)),'tiny-town' if on and -4<=x<=3 and 2<=y<=7 else 'tiny-dungeon',109 if on and -4<=x<=3 and 2<=y<=7 else 31 if on and x>=13 and -5<=y<=-2 else 24 if on and (x,y) in {(-18,7),(-17,7),(-18,6),(-8,7),(-7,7),(6,4),(7,4),(17,4),(18,4),(18,3)} else 0,x,y,0,color=CAVE if on else [.27,.3,.38,1],parent=floor)
     for x in range(-16,-11):
-        for y in range(0,3):
-            s.sprite('Cave seep '+str((x,y)),'tiny-battle',37,x,y,-.5,color=CAVE,solid=True)
-            tile=(9 if x==-16 else 11 if x==-12 else 10) if y==2 else (33 if x==-16 else 35 if x==-12 else 34) if y==0 else 21 if x==-16 else 23 if x==-12 else None
-            if tile is not None:s.sprite('Seep stone edge '+str((x,y)),'tiny-dungeon',tile,x,y,-.45,color=CAVE)
-    # Old retaining columns give the bat gallery cover and a readable movement route.
+        for y in range(0,3):s.sprite('Cave seep '+str((x,y)),'tiny-battle',37,x,y,-.5,color=CAVE,solid=True)
+    for x in range(-17,-10):
+        for y in (-1,3):
+            tile=(96 if x==-17 else 98 if x==-11 else 97) if y==3 else (120 if x==-17 else 122 if x==-11 else 121)
+            s.sprite('Seep stone edge '+str((x,y)),'tiny-town',tile,x,y,-.45,color=CAVE,solid=True)
+    for y in range(0,3):
+        for x in (-17,-11):s.sprite('Seep stone edge '+str((x,y)),'tiny-town',108 if x==-17 else 110,x,y,-.45,color=CAVE,solid=True)
+    # Old retaining columns give the relay gallery cover and a readable movement route.
     for x,y in [(-3,0),(2,5),(3,-2)]:s.sprite('Stone'+str(stone),'tiny-dungeon',6,x,y,.3,color=CAVE,solid=True);stone+=1
     shutter(s,1,-6,0);shutter(s,2,10,0)
     pad(s,'FocusPad2',-12,6);pad(s,'FocusPad3',0,3)
@@ -117,7 +122,7 @@ def sea_caves():
     # Gate seals the east passage; north/south gallery shoulders are solid cliff.
     for y in range(-5,6):
         if y==0:continue
-        if y==3:s.sprite('Gallery inspection glass','tiny-dungeon',45,5,y,.4,color=WHITE,solid=True)
+        if y==3:s.sprite('Gallery inspection glass','tiny-town',125,5,y,.4,color=WHITE,solid=True)
         else:s.sprite('Stone'+str(stone),'tiny-dungeon',13,5,y,.3,color=CAVE,solid=True);stone+=1
     for x in range(-5,5):s.sprite('Stone'+str(stone),'tiny-dungeon',26,x,-5,.3,color=CAVE,solid=True);stone+=1
     s.sprite('GalleryGate','tiny-dungeon',47,5,0,.4,color=CAVE,solid=True)
@@ -127,13 +132,13 @@ def sea_caves():
     # Mara's alcove has a transparent optical window and a separate locked door.
     for y in range(-7,6):
         if y==-4:continue
-        if y==-3:s.sprite('Inspection glass','tiny-dungeon',45,12,y,.4,color=WHITE,solid=True)
+        if y==-3:s.sprite('Inspection glass','tiny-town',125,12,y,.4,color=WHITE,solid=True)
         else:s.sprite('Stone'+str(stone),'tiny-dungeon',13,12,y,.3,color=CAVE,solid=True);stone+=1
     s.sprite('MaraDoor','tiny-dungeon',47,12,-4,.4,color=CAVE,solid=True)
     s.sprite('RescueReceiver','tiny-factory',98,13,-3,.4,color=AMBER)
     s.sprite('Mara','tiny-dungeon',98,14,-4,.6,color=WHITE)
     s.sprite('SurveyLedger','tiny-dungeon',63,15,-5,.3,color=WHITE)
-    for x,y,t in [(16,-5,73),(17,-5,75),(15,-2,113),(-16,-4,74),(-17,3,63),(-12,-2,73),(8,-5,75)]:s.sprite('Cave salvage '+str((x,y)),'tiny-dungeon',t,x,y,.2,color=CAVE)
+    for x,y,t in [(16,-5,73),(17,-5,75),(15,-2,113),(-17,3,63),(-18,3,73),(8,-5,75)]:s.sprite('Cave salvage '+str((x,y)),'tiny-dungeon',t,x,y,.2,color=CAVE)
     s.sprite('StormWisp','tiny-dungeon',121,0,0,.7,color=WHITE)
     s.sprite('RushMark','tiny-battle',61,0,0,.1,1.6,1.6,WHITE)
     s.sprite('DryExit','tiny-dungeon',39,-17,-6,.2,color=WHITE)

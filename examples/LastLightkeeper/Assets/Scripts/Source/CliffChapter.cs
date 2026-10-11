@@ -5,14 +5,14 @@ namespace LastLightkeeper {
     public class CliffChapter : Entity {
         public bool Caves=false;
         public Entity Player,Camera,Objective,Context,Place,Inventory,TideLabel,Dialogue,DialoguePanel,SaveLabel;
-        public Entity SoundTurn,SoundRestore,SoundHazard;
+        public Entity SoundTurn,SoundRestore,SoundHazard,SoundWarning;
         public Prefab BeamAsset,EndAsset;
         public float Speed=3.25f;
         Journey journey;Controls keys;Rigidbody2DComponent body;LightRig rig;
         TextComponent objective,context,dialogue,saveLabel;
         string[] pages;int page;Action after;
         bool paused,saveBlocked,journal;float noticeTime,grace,bob;
-        string notice="";Cell facing=new Cell(1,0);
+        string notice="";bool saveFailed;Cell facing=new Cell(1,0);
         readonly HashSet<Cell> walls=new HashSet<Cell>();
         readonly List<Entity>[] slats={new List<Entity>(),new List<Entity>(),new List<Entity>()};
         Entity wisp,mark,mara;int maraStep;
@@ -30,10 +30,10 @@ namespace LastLightkeeper {
             for(int i=0;;i++){var e=FindEntityByName("Stone"+i);if(e==null)break;walls.Add(CellAt(e));}
             for(int slot=Caves?1:0;slot<(Caves?3:1);slot++)for(int i=0;i<16;i++)slats[slot].Add(FindEntityByName("Shutter"+slot+"Slat"+i));
             if(Caves){wisp=FindEntityByName("StormWisp");mark=FindEntityByName("RushMark");wispHome=wisp.Translation;mara=FindEntityByName("Mara");Hide(mark);}
-            Apply();Recover(false);ShowDialogue();
-            saveLabel.Text=SaveData.IsPersistent?"Progress kept":"Editor practice : resets after Stop";
-            if(Caves && !journey.Has(Restoration.CaveGate))Talk(new[]{"IONA\nThe relay's throwing white arcs across the floor.\nIt gathers before it rushes. I can break it up\nwith the focused lamp."});
-            else if(!Caves && !journey.Has(Restoration.Focus))Talk(new[]{"IONA\nMara's left the workshop open. The brass lantern\nsleeve is still on the bench. She uses it to check\nreceivers without running the whole beacon."});
+            Apply();Recover(false);Place.GetComponent<TextComponent>().Text=Caves?(journey.CaveCheckpoint>1?"MARA'S DRY LEDGE":"SEA CAVES - WEST LANDING"):"CLIFF CISTERN - WORKSHOP";ShowDialogue();
+            saveLabel.Text=SaveData.IsPersistent?"Autosave on":"Editor practice - resets after Stop";
+            if(Caves && !journey.Has(Restoration.CaveGate))Talk(new[]{"IONA\nSomething's caught in the relay. It keeps gathering\nin the same spot. Let's keep the lamp on it."});
+            else if(!Caves && !journey.Has(Restoration.Focus))Talk(new[]{"IONA\nHer bench is dry. The lantern sleeve's still here.\nGood. I can test the receivers without the beacon."});
         }
         void OnDestroy(){rig?.Destroy();}
         static Vector3 Delta(Vector3 a,Vector3 b)=>new Vector3(a.X-b.X,a.Y-b.Y,a.Z-b.Z);
@@ -41,12 +41,12 @@ namespace LastLightkeeper {
         static void Hide(Entity e){if(e!=null && e.IsValid)e.Scale=new Vector3(.001f,.001f,1);}
         static float Distance(Entity a,Entity b){var p=a.Translation;var q=b.Translation;return (p.X-q.X)*(p.X-q.X)+(p.Y-q.Y)*(p.Y-q.Y);}
         bool Near(string name,float radius=1.65f){var e=FindEntityByName(name);return e!=null && e.IsValid && Distance(Player,e)<radius*radius;}
-        void Notice(string text,float seconds=4){notice=text;noticeTime=seconds;}
+        void Notice(string text,float seconds=4){if(saveFailed)return;notice=text;noticeTime=seconds;}
         void Sound(Entity e){try{e?.GetComponent<AudioSourceComponent>().Play();}catch(Exception ex){Console.WriteLine("Lightkeeper audio: "+ex.Message);}}
-        void Persist(){if(saveBlocked)return;try{SaveData.Write("journey",journey.Encode());saveLabel.Text=SaveData.IsPersistent?"Progress saved":"Editor practice";}catch(Exception ex){saveLabel.Text="Save failed : progress held in this session";Notice("Couldn't save. Retry at the checkpoint before quitting.",10);Console.WriteLine(ex.Message);}}
+        bool Persist(){if(saveBlocked)return false;try{SaveData.Write("journey",journey.Encode());saveFailed=false;saveLabel.Text=SaveData.IsPersistent?"Progress saved":"Editor practice";return true;}catch(Exception ex){saveLabel.Text="Not saved - retry before quitting";Notice("Couldn't save. Retry at the checkpoint before quitting.",10);saveFailed=true;Console.WriteLine(ex.Message);return false;}}
         bool Restore(Restoration r){if(!journey.Restore(r))return false;Apply();Sound(SoundRestore);Persist();return true;}
         void Talk(string[] text,Action done=null){pages=text;page=0;after=done;journal=false;context.Text="";ShowDialogue();body.LinearVelocity=Vector2.Zero;}
-        void ShowDialogue(){dialogue.Text=pages==null?"":pages[page]+"\n\nEnter   "+(pages.Length==1?"Close":"Continue    "+(page+1)+" of "+pages.Length);DialoguePanel.Scale=pages==null?new Vector3(.001f,.001f,1):new Vector3(27,6.8f,1);}
+        void ShowDialogue(){dialogue.Text=pages==null?"":pages[page]+"\n\nEnter   "+(page+1==pages.Length?(after!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);DialoguePanel.Scale=pages==null?new Vector3(.001f,.001f,1):new Vector3(27,6.8f,1);}
         void CloseDialogue(){pages=null;ShowDialogue();var callback=after;after=null;callback?.Invoke();}
         void Remove(string name){var e=FindEntityByName(name);if(e!=null && e.IsValid)e.Destroy();}
         void Apply(){
@@ -65,12 +65,12 @@ namespace LastLightkeeper {
                 if(journey.Has(Restoration.Rescue)){Remove("MaraDoor");FindEntityByName("RescueReceiver").GetComponent<SpriteRendererComponent>().SetSprite(Art.Region("tiny-factory",99));}
             }
             objective.Text=!Caves && journey.Has(Restoration.Cistern)?"Take the eastern stairs into the sea caves":Story.Objective(journey);
-            Inventory.GetComponent<TextComponent>().Text=journey.Has(Restoration.Focus)?"FOCUS LANTERN    Hold Space; aim with movement":"WRENCH    LANTERN";
+            Inventory.GetComponent<TextComponent>().Text=journey.Has(Restoration.Focus)?"LANTERN    Space: focus    Aim with movement":"WRENCH    LANTERN";
         }
         void Recover(bool hit){
             int cp=Caves?(journey.CaveCheckpoint>1?2:1):0;
             Player.Translation=FindEntityByName("Checkpoint"+cp).Translation;body.LinearVelocity=Vector2.Zero;grace=1.5f;
-            if(Caves){wisp.Translation=wispHome;wispState=0;wispTime=1.5f;Hide(mark);}
+            if(Caves){wisp.Translation=wispHome;wisp.Scale=new Vector3(1,1,1);wispState=0;wispTime=1.5f;Hide(mark);}
             if(hit){Sound(SoundHazard);Notice("Back at the dry ledge. Shutters and repairs kept.");}
         }
         HashSet<Cell> Blocks(){
@@ -99,59 +99,59 @@ namespace LastLightkeeper {
                 }
                 if(Caves && wispState!=3){var delta=Delta(wisp.Translation,Player.Translation);if(LanternRules.InFocus(delta.X,delta.Y,facing)){
                     var test=Optics.Trace(emitter,facing,CellAt(wisp),new Dictionary<Cell,bool>(),Blocks(),-20,20,-10,10);
-                    if(test.Reached){wispState=3;wispTime=2;Hide(mark);Notice("It recoils from the focused light.",2);}
+                    if(test.Reached){wispState=3;wispTime=2;Hide(mark);Notice("The wisp scatters. Keep moving.",2);}
                 }}
             }
             rig.Finish();
         }
         void Wisp(float dt){
             var p=Player.Translation;wispTime-=dt;
-            if(wispState==0 && wispTime<=0 && p.X>-5 && p.X<5 && p.Y>-4 && p.Y<7 && grace<=0){wispState=1;wispTime=.8f;attack=p;mark.Translation=new Vector3(p.X,p.Y,.1f);mark.Scale=new Vector3(1.6f,1.6f,1);Sound(SoundTurn);}
+            if(wispState==0 && wispTime<=0 && p.X>-5 && p.X<5 && p.Y>-4 && p.Y<7 && grace<=0){wispState=1;wispTime=.8f;attack=p;mark.Translation=new Vector3(p.X,p.Y,.1f);mark.Scale=new Vector3(1.6f,1.6f,1);Sound(SoundWarning);}
             if(wispState==1){wisp.Scale=new Vector3(1.3f,1.3f,1);if(wispTime<=0){wispState=2;wispTime=.3f;}}
             else if(wispState==2){float f=Math.Min(1,dt/Math.Max(.01f,wispTime+dt));wisp.Translation+=(Delta(attack,wisp.Translation))*f;if(grace<=0 && Distance(Player,wisp)<.65f){Recover(true);return;}if(wispTime<=0){wispState=3;wispTime=1.5f;Hide(mark);}}
             else if(wispState==3){wisp.Scale=new Vector3(.85f,.85f,1);wisp.Translation+=(Delta(wispHome,wisp.Translation))*Math.Min(1,dt*3);if(wispTime<=0){wispState=0;wispTime=1;}}
             else{wisp.Scale=new Vector3(1,1,1);wisp.LocalTranslation=new Vector3(wispHome.X,wispHome.Y+.12f*(float)Math.Sin(bob*3),wispHome.Z);}
-            TideLabel.GetComponent<TextComponent>().Text=wispState==1?"RUSH: MOVE OFF THE MARK":wispState==3?"WISP DISPERSED":"";
+            TideLabel.GetComponent<TextComponent>().Text=wispState==1?"RUSH - STEP ASIDE":wispState==3?"WISP SCATTERED":"";
         }
         string Prompt(){
             if(!Caves){
                 if(Near("LanternSleeve") && !journey.Has(Restoration.Focus))return "E   Fit the lantern's focus sleeve";
                 if(Near("Handle0"))return "E   Slide cistern shutter";
-                if(Near("FocusPad0"))return "Hold Space; follow the beam to the drain receiver";
-                if(Near("FocusPad1"))return "Hold Space; follow the fixed mirrors to the bridge";
+                if(Near("FocusPad0"))return journey.Has(Restoration.Drain)?"Drain latch holds. The raised walk is open":"Face right. Hold Space to light the drain receiver";
+                if(Near("FocusPad1"))return journey.Has(Restoration.Cistern)?"Bridge released. Take the eastern stairs":"Face right. Hold Space into the mirror route";
                 if(Near("CaveExit"))return journey.Has(Restoration.Cistern)?"E   Descend into the sea caves":"Bridge locked. Light the upper receiver.";
                 if(Near("WorkshopNote"))return "E   Read Mara's bench note";
             }else{
                 if(Near("Handle1"))return "E   Slide gallery shutter";
-                if(Near("Handle2"))return "E   Slide rescue shutter";
-                if(Near("FocusPad2"))return "Face right; hold Space toward the gallery receiver";
-                if(Near("FocusPad3"))return "Face right; hold Space into the fixed mirror route";
+                if(Near("Handle2"))return "E   Slide eastern shutter";
+                if(Near("FocusPad2"))return journey.Has(Restoration.CaveGate)?"Gallery door open":"Face right; hold Space toward the gallery receiver";
+                if(Near("FocusPad3"))return journey.Has(Restoration.Rescue)?"Mara's door is open":"Face right; hold Space into the fixed mirror route";
                 if(Near("Mara",2.1f))return "E   Talk to Mara";
                 if(Near("DryExit"))return journey.Has(Restoration.Mara)?"E   Take the dry passage with Mara":"Find Mara before leaving";
                 if(Near("SurveyLedger"))return "E   Read the survey ledger";
             }
-            if(Near("RestMarker"))return "E   Check the dry ledge and save";
+            if(Near("RestMarker"))return "E   Save at the dry ledge";
             return journey.Has(Restoration.Focus)?"Hold Space to focus; E works nearby machinery":"E   Use nearby equipment    Q   Notes";
         }
         void Interact(){
             if(!Caves && Near("LanternSleeve") && !journey.Has(Restoration.Focus)){
-                if(Restore(Restoration.Focus))Talk(new[]{"IONA\nThe sleeve narrows the flame into a beam.\nHold Space and face the receiver. The marked\nfloor tiles show the old inspection positions."});return;
+                if(Restore(Restoration.Focus))Talk(new[]{"LANTERN\nHold Space to focus. Aim by moving first.\nThe marked tiles line up with the receivers."});return;
             }
             for(int slot=Caves?1:0;slot<(Caves?3:1);slot++)if(Near("Handle"+slot)){journey.MoveShutter(slot);Apply();Persist();Sound(SoundTurn);int gap=LanternRules.Gap(Caves,slot,journey.Shutter(slot));Notice("Opening at the "+(gap==(slot==1?6:3)?"upper":gap==(slot==1?3:0)?"middle":"lower")+" notch.",2);return;}
             if(!Caves && Near("CaveExit")){if(journey.Has(Restoration.Cistern)){journey.CaveCheckpoint=Math.Max(1,journey.CaveCheckpoint);Persist();Scene.LoadScene("Scenes/SeaCaves.hazel");}return;}
             if(Caves && Near("DryExit")){if(journey.Has(Restoration.Mara)){
-                Restore(Restoration.Watch);Talk(new[]{"MARA\nThat's Orrin's boat. He's got the survey crew\noff the ledge. Look : someone is still waving\nfrom the observatory window.","IONA\nWe'll get you aboard first. Then I'll take the\nledger up. You can argue with Father about\nthose steps when I find him."},()=>Scene.LoadScene("Scenes/CliffDawn.hazel"));}return;}
+                Restore(Restoration.Watch);Talk(new[]{"MARA\nOrrin's boat. They've made it off the ledge.\nBut look at the observatory. Someone's waving.","IONA\nBoat first. Then I'll take your ledger up.\nFather still owes you a new set of steps."},()=>Scene.LoadScene("Scenes/CliffDawn.hazel"));}return;}
             if(Caves && Near("Mara",2.1f)){
-                if(journey.Has(Restoration.Rescue) && Restore(Restoration.Mara))Talk(new[]{"MARA\nGet that lamp out of my eyes. Yes, I'm pleased\nto see you. No, I'm not climbing those steps\non this ankle.","IONA\nOrrin's taking the boat round. We'll use the dry\npassage, not the steps. Give me the winch key.","MARA\nFront pocket. And take the survey ledger.\nThe observatory crew didn't come down with me.\nTheir shutters were jammed when the roof went."});
-                else Talk(journey.Has(Restoration.Mara)?new[]{"MARA\nThe dry passage goes west under the gallery.\nI'll follow the rail. You check the landing."}:new[]{"MARA, THROUGH THE DOOR\nThe lock's on the inside. Light the receiver\nthrough the inspection window. I'm sitting on\nthe survey ledger, in case you need an incentive."});return;
+                if(journey.Has(Restoration.Rescue) && Restore(Restoration.Mara))Talk(new[]{"MARA\nIona! Lower that lamp, will you?\nI tried the steps. My ankle won't take them.","IONA\nOrrin's coming round in the boat.\nWe'll take the dry passage. Have you got the key?","MARA\nFront pocket. It releases the lower shutters.\nTake the ledger too. Two people stayed up at the\nobservatory when the roof went. They need help."});
+                else Talk(journey.Has(Restoration.Mara)?new[]{"MARA\nThe dry passage goes west under the gallery.\nI'll follow the rail. You check the landing."}:new[]{"MARA, THROUGH THE DOOR\nThe door's jammed. Try the receiver by the window.\nAnd hurry. I'm sitting in the only dry patch."});return;
             }
-            if(Near("RestMarker")){Persist();Notice("Dry ledge checked. Progress kept.");return;}
-            if(!Caves && Near("WorkshopNote"))Talk(new[]{"MARA'S BENCH NOTE\nShutter handle moves the opening one notch.\nDrain receiver at floor level; bridge receiver\nabove it. Both latches hold without the lamp."});
-            if(Caves && Near("SurveyLedger"))Talk(new[]{"SURVEY LEDGER\nCrew sent to the landing. Two people still at\nthe observatory. Outer shutter twisted.\nMara: took the winch key; will come back for them."});
+            if(Near("RestMarker")){if(Persist())Notice("Progress saved at the dry ledge.");return;}
+            if(!Caves && Near("WorkshopNote"))Talk(new[]{"MARA'S BENCH NOTE\nHandle moves the opening one notch.\nFloor receiver: drain. Upper receiver: bridge.\nBoth latches hold after the lamp moves."});
+            if(Caves && Near("SurveyLedger"))Talk(new[]{"SURVEY LEDGER\nCrew waiting on the survey ledge.\nTwo still at the observatory. Outer shutter twisted.\nMara: winch key with me. Going down for help."});
         }
         void OnUpdate(float dt){
             keys.Poll();dt=Math.Min(.1f,Math.Max(0,dt));
-            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;dialogue.Text=paused?"PAUSED\n\nEnter   Resume     M   Title":"";DialoguePanel.Scale=paused?new Vector3(27,6.8f,1):new Vector3(.001f,.001f,1);}}
+            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED\n\nEnter   Resume     M   Title":"";DialoguePanel.Scale=paused?new Vector3(27,6.8f,1):new Vector3(.001f,.001f,1);}}
             if(paused){body.LinearVelocity=Vector2.Zero;if(keys.Menu)Scene.LoadScene("Scenes/MainMenu.hazel");if(keys.Advance){paused=false;ShowDialogue();}return;}
             if(keys.Journal && journal && pages!=null)CloseDialogue();
             else if(keys.Journal && pages==null){Talk(new[]{"CLIFF NOTES\n"+Story.Objective(journey)+".\nHold Space to focus in the direction you last moved.\nThe shutter openings and beam ends have visible marks.",Caves?"SEA CAVES\nGallery receiver north-west; fixed mirrors to the east.\nWatch the rush mark. Move aside or focus on the wisp.\nA hit returns you to dry ground and keeps repairs.":"CISTERN\nMara's sleeve is on the western workshop bench.\nThe shutter leaves one opening. Match it to the beam.\nA receiver holds its latch after the light moves."});journal=true;}
@@ -164,10 +164,10 @@ namespace LastLightkeeper {
             var motion=new Vector2(x,y);float length=motion.Length();body.LinearVelocity=length>0?motion*(Speed*(focus?.5f:1)/length):Vector2.Zero;
             var coat=FindEntityByName("IonaCoat");coat.LocalTranslation=new Vector3(0,length>0?.025f*(float)Math.Sin(bob*12):0,.02f);
             var p=Player.Translation;if(p.X<-20 || p.X>20 || p.Y<-10 || p.Y>10){Recover(true);return;}
-            if(Caves && p.X>5 && journey.Has(Restoration.CaveGate) && journey.CaveCheckpoint<2){journey.CaveCheckpoint=2;Persist();Notice("Eastern dry ledge checked. Recovery point moved.");}
+            if(Caves && p.X>5 && journey.Has(Restoration.CaveGate) && journey.CaveCheckpoint<2){journey.CaveCheckpoint=2;if(Persist())Notice("Eastern ledge reached. Checkpoint saved.");}
             if(keys.Interact)Interact();Focus(focus);if(Caves && pages==null){Wisp(dt);if(journey.Has(Restoration.Mara) && maraStep<escapeRoute.Length){var target=escapeRoute[maraStep];var delta=Delta(target,mara.Translation);float distance=(float)Math.Sqrt(delta.X*delta.X+delta.Y*delta.Y);if(distance<.1f)maraStep++;else mara.Translation+=delta*(Math.Min(distance,dt*2.8f)/distance);}}
-            Place.GetComponent<TextComponent>().Text=Caves?(p.X>6?"MARA'S DRY LEDGE":p.X>-6?"SEA CAVES : RELAY GALLERY":"SEA CAVES : WEST LANDING"):p.X<0?"CLIFF CISTERN : WORKSHOP":"CLIFF CISTERN : INSPECTION WALK";
-            context.Text=noticeTime>0?notice:Prompt();
+            Place.GetComponent<TextComponent>().Text=Caves?(p.X>6?"MARA'S DRY LEDGE":p.X>-6?"SEA CAVES - RELAY GALLERY":"SEA CAVES - WEST LANDING"):p.X<0?"CLIFF CISTERN - WORKSHOP":"CLIFF CISTERN - INSPECTION WALK";
+            context.Text=saveFailed || noticeTime>0?notice:Prompt();
         }
     }
 }

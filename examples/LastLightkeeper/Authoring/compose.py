@@ -71,6 +71,26 @@ class Scene:
         if path.exists() and not overwrite:raise SystemExit('Refusing to replace edited scene; use --overwrite: '+str(path))
         path.write_text(yaml.safe_dump({'Scene':self.name,'SceneVersion':2,'Entities':self.entities},sort_keys=False,allow_unicode=True))
 
+def game_hud(s,cid):
+    # 1 world-unit inset; two baselines below the prompt; warning has its own row.
+    s.panel('Top HUD',0,7.75,28,1.5,cid)
+    s.text('Place','',-13,8,.33,AMBER,cid)
+    s.text('Objective','',-13,7.35,.40,WHITE,cid)
+    s.panel('Bottom HUD',0,-7.45,28,2,cid)
+    s.text('Context','',-13,-7.05,.38,WHITE,cid)
+    s.text('Inventory','',-13,-7.7,.30,AMBER,cid)
+    s.text('SaveLabel','',-13,-8.2,.28,[.77,.84,.89,1],cid)
+    s.text('TideLabel','',2,-8.2,.28,AMBER,cid)
+    s.panel('DialoguePanel',0,-3,27,6.8,cid,z=6.5)
+    s.text('Dialogue','',-12.5,-.5,.46,WHITE,cid,z=8.5)
+    for name,file,gain in [('SoundTurn','click_003.wav',.22),('SoundRestore','confirmation_002.wav',.38),('SoundHazard','error_002.wav',.30),('SoundWarning','open_001.wav',.32)]:
+        e=s.entity(name);e['AudioSourceComponent']={'Clip':'Audio/'+file,'Gain':gain,'Loop':False,'PlayOnStart':False}
+
+def pine(s,name,x,y,color=GRASS,parent=0):
+    # Native matching crown and trunk, one tile each. Never stretch a crown.
+    s.sprite(name,'tiny-town',4,x,y+.65,.7,color=color,parent=parent)
+    s.sprite(name+' trunk','tiny-town',16,x,y-.35,.7,color=color,parent=parent)
+
 # Terrain is assembled once into the authored scene, using a designed coastline.
 def land(x,y):
     if -22<=x<=-3 and -15<=y<=-7:
@@ -112,18 +132,18 @@ def terrain(s,parent,bounds,walkable,gravel=lambda x,y:False,tint=STORM):
 def island():
     s=Scene('Breakwater');background=s.image('Distant sea','water-tile.png',0,0,-3,64,64,STORM);background['SpriteRendererComponent']['Source']['TilingFactor']=64
     ground=s.entity('ISLAND / Authored coast and paths',z=-1)['Entity']
-    terrain(s,ground,(-26,26,-19,19),land,lambda x,y: y<-8 and -20<x<-5 or -17<x<-13 and 2<y<6)
-    paths=s.entity('PATHS / Harbor to grove and machinery',z=-.72)['Entity']
-    for x in range(-18,-9):s.sprite('Harbor path '+str(x),'tiny-town',37,x,-12,0,color=SAND,parent=paths)
-    for y in range(-12,5):s.sprite('Inland path '+str(y),'tiny-town',43,-10,y,0,color=STORM,parent=paths)
-    for x in range(-10,18):s.sprite('Grove route '+str(x),'tiny-town',43,x,1,0,color=STORM,parent=paths)
-    for y in range(2,10):s.sprite('Court route '+str(y),'tiny-town',43,7,y,0,color=STORM,parent=paths)
+    def path(x,y):
+        return (y<-8 and -20<x<-5 or -17<x<-13 and 2<y<6
+            or -11<=x<=-9 and -12<=y<=4 or -10<=x<=18 and 0<=y<=2
+            or 6<=x<=8 and 2<=y<=10)
+    terrain(s,ground,(-26,26,-19,19),land,path)
+    paths=s.entity('PATHS / Joined gravel and working surfaces',z=-.72)['Entity']
     for y in range(2,7):
         for x in range(-17,-13):s.sprite('Pump apron %d,%d'%(x,y),'tiny-factory',0,x,y,0,color=SAND,parent=paths)
     for y in range(6,10):
         for x in range(-18,-13):s.sprite('Causeway %d,%d'%(x,y),'tiny-dungeon',36 if x==-18 else 38 if x==-14 else 37,x,y,0,color=STORM,parent=paths)
     for y in range(8,17):
-        for x in range(-5,11):s.sprite('Court floor %d,%d'%(x,y),'tiny-dungeon',14,x,y,0,color=STORM,parent=paths)
+        for x in range(-5,11):s.sprite('Court floor %d,%d'%(x,y),'tiny-town',109,x,y,0,color=STORM,parent=paths)
     # Shallow channel and an authored drawbridge are the first meaningful route gate.
     for y in (-6,-5,-4):
         for x in (-11,-10,-9):s.sprite('Bridge plank %d,%d'%(x,y),'tiny-dungeon',36 if x==-11 else 38 if x==-9 else 37,x,y,-.45,color=STORM)
@@ -131,7 +151,7 @@ def island():
     # Harbor cottage: tile-composed slate roof and stone walls.
     for iy,row in enumerate([[48,49,50],[60,61,62],[76,77,79],[88,78,89]]):
         for ix,tile in enumerate(row):s.sprite('Harbor cottage %d,%d'%(ix,iy),'tiny-town',tile,-8+ix,-9-iy,.15,color=STORM,solid=iy>=2)
-    for x,y,tile in [(-21,-8,105),(-20,-8,106),(-21,-12,107),(-18,-14,107),(-6,-9,103),(-5,-9,115),(-7,-14,117)]:s.sprite('Harbor salvage %d,%d'%(x,y),'tiny-town',tile,x,y,.4,color=SAND)
+    for x,y,tile in [(-21,-8,105),(-20,-8,106),(-21,-12,107),(-20,-12,107),(-6,-9,103),(-5,-9,115)]:s.sprite('Harbor salvage %d,%d'%(x,y),'tiny-town',tile,x,y,.4,color=SAND)
     s.sprite('Landing rope','tiny-town',106,-21,-16,.3,color=STORM)
     for x,y in [(-23,-14),(-23,-15),(-23,-16),(-22,-16)]:s.sprite('Dock %d,%d'%(x,y),'tiny-factory',71,x,y,-.5,color=STORM)
     s.sprite('HarborMirror','tiny-dungeon',61,-15,-11,.35,color=WHITE)
@@ -143,10 +163,10 @@ def island():
     grove=s.entity('SALT GROVE / Trees and wildflowers')['Entity']
     clusters=[(-3,3),(-1,5),(1,5),(3,4),(5,6),(9,4),(12,5),(15,3),(17,5),(19,3),(19,7),(-6,5),(-7,6)]
     for i,(x,y) in enumerate(clusters):
-        e=s.sprite('Grove pine '+str(i),'tiny-town',4 if i%3 else 5,x,y+(.65 if i%3 else 0),.7,1,2 if i%3 else 1,GRASS,parent=grove)
+        pine(s,'Grove pine '+str(i),x,y,GRASS,grove)
         # Separate root colliders: visual hierarchy never parents physics owners.
         col=s.entity('Tree trunk '+str(i),x,y-.35,sx=.75,sy=.9);s.solid(col,(.25,.35))
-    for x,y in [(-2,2),(0,3),(2,2),(4,2),(10,2),(11,3),(13,2),(14,4),(16,2),(17,3)]:s.sprite('Salt flowers %d,%d'%(x,y),'tiny-town',2,x,y,-.4,color=GRASS,parent=grove)
+    for x,y in [(-2,3),(-1,3),(0,3),(13,3),(14,3),(15,3)]:s.sprite('Salt flowers %d,%d'%(x,y),'tiny-town',2,x,y,-.4,color=GRASS,parent=grove)
     s.sprite('Wrench','tiny-factory',127,14,2,.5,1.05,1.05,AMBER)
     s.sprite('MaraNote','tiny-town',83,11,2,.4,color=SAND)
     s.sprite('Archive','tiny-dungeon',63,3,5,.5,color=AMBER)
@@ -201,20 +221,9 @@ def island():
     lamp['SpriteAnimationComponent']={'DefaultClip':{'Sheet':'Art/tiny-dungeon.hsprites','ClipID':CLIPS['tiny-dungeon']},'Autoplay':True,'Speed':1}
     for i,(x,y) in enumerate([(-18,-12),(-10,-2),(-15,5)]):s.entity('Checkpoint'+str(i),x,y,.55)
     camera=s.camera(-12,-8,True,player);cid=camera['Entity']
-    s.panel('Top HUD',0,7.75,28,1.5,cid)
-    place=s.text('Place','THE BREAKWATER',-13,8,.33,AMBER,cid)
-    objective=s.text('Objective','Wake the harbor receiver',-13,7.4,.41,WHITE,cid)
-    s.panel('Bottom HUD',0,-7.45,28,2,cid)
-    context=s.text('Context','E   Use nearby machinery',-13,-7,.39,WHITE,cid)
-    inventory=s.text('Inventory','',-13,-7.65,.32,AMBER,cid)
-    save=s.text('SaveLabel','',-13,-8.2,.3,[.67,.76,.79,1],cid)
-    tide=s.text('TideLabel','',2,-7.65,.29,AMBER,cid)
-    panel=s.panel('DialoguePanel',0,-3,27,6.8,cid,z=6.5)
-    dialogue=s.text('Dialogue','',-12.5,-.5,.46,WHITE,cid,z=8.5)
-    for name,file,gain in [('SoundTurn','click_003.wav',.3),('SoundRestore','confirmation_002.wav',.5),('SoundHazard','error_002.wav',.35)]:
-        e=s.entity(name);e['AudioSourceComponent']={'Clip':'Audio/'+file,'Gain':gain,'Loop':False,'PlayOnStart':False}
+    game_hud(s,cid)
     director=s.entity('Breakwater / Journey controller')
-    refs={name:s.by_name[name] for name in ['HarborMirror','HarborGate','ServiceDoor','ServiceReceiver','Pump','Lens','Socket','Receiver','Tower','Wrench','MirrorOne','MirrorTwo','MirrorThree','Objective','Context','Place','Inventory','TideLabel','Dialogue','DialoguePanel','SaveLabel','SoundTurn','SoundRestore','SoundHazard']}
+    refs={name:s.by_name[name] for name in ['HarborMirror','HarborGate','ServiceDoor','ServiceReceiver','Pump','Lens','Socket','Receiver','Tower','Wrench','MirrorOne','MirrorTwo','MirrorThree','Objective','Context','Place','Inventory','TideLabel','Dialogue','DialoguePanel','SaveLabel','SoundTurn','SoundRestore','SoundHazard','SoundWarning']}
     refs.update(Player=player,Camera=camera,BeamAsset='Prefabs/LightBeam.hprefab',EndAsset='Prefabs/BeamEnd.hprefab',Speed=3.25,InteractionRadius=1.55)
     s.script(director,'Breakwater',refs)
     return s
@@ -225,21 +234,21 @@ def menu(name='MainMenu',ending=False):
     headland=lambda x,y: 6<=x<=17 and -8<=y<=6 and not ((x<8 and y>4) or (x>15 and y<-5))
     coast=s.entity('Menu headland',z=-1.5)['Entity']
     terrain(s,coast,(-22,22,-12,12),headland,tint=[.3,.4,.45,1])
-    for iy,row in enumerate([[96,97,97,98],[108,125,109,110],[108,126,124,110],[120,121,121,122]]):
+    for iy,row in enumerate([[96,97,97,98],[108,109,125,110],[108,124,126,110],[120,121,121,122]]):
         for ix,t in enumerate(row):s.sprite('Tower vignette %d,%d'%(ix,iy),'tiny-town',t,9+ix*1.3,4-iy*1.3,-.4,1.3,1.3,STORM)
-    for x,y in [(8,-2),(14,-1),(15,-3),(8,-4),(12,-5)]:s.sprite('Pine vignette %d,%d'%(x,y),'tiny-town',4,x,y+.65,-.3,1.5,3,[.35,.48,.43,1])
+    for x,y in [(8,-2),(14,-1),(15,-3),(8,-4),(12,-5)]:pine(s,'Pine vignette %d,%d'%(x,y),x,y,[.35,.48,.43,1])
     s.sprite('Keeper vignette','tiny-dungeon',85,10,-2,-.1,1.2,1.2)
-    halo=s.image('Lantern halo','ui_0046.png',10.5,2.6,.2,1.7,1.7,[1,.75,.4,.9])
+    halo=s.image('Lantern halo','ui_0046.png',10.5,2.6,.2,1.1,1.1,[1,.75,.4,.9])
     halo['SpriteAnimationComponent']={'DefaultClip':{'Sheet':'Art/lantern-pulse.hsprites','ClipID':CLIPS['lantern-pulse']},'Autoplay':True,'Speed':1}
     for x in range(13,20):s.sprite('Light across sea '+str(x),'tiny-battle',42,x,2.6,-.2,1,.4,WHITE)
     s.text('Chapter','THE BREAKWATER · THE CLIFF CISTERN',-13,7,.31,AMBER,cid)
     heading=s.text('Heading','THE LAST\nLIGHTKEEPER',-13,5.1,1.15,WHITE,cid)
-    subtitle=s.text('Subtitle','The reef is dark. There are people on the far ledge.',-13,1.8,.38,[.75,.83,.85,1],cid)
-    status=s.text('Status','',-13,.45,.4,[.72,.8,.84,1],cid)
-    button=s.panel('StartButton',-8.5,-2.5,9,1.3,cid);label=s.text('StartLabel','Enter   Begin',-12.5,-2.3,.40,WHITE,cid)
-    new=s.panel('NewButton',-8.5,-4.3,9,1.3,cid);s.text('NewLabel','N   New game',-12.5,-4.1,.40,WHITE,cid)
-    credits=s.panel('CreditsButton',-8.5,-6.1,9,1.3,cid);s.text('CreditsLabel','C   Credits',-12.5,-5.9,.40,WHITE,cid)
-    s.text('Controls','WASD or arrows: move    E: use    Q: notes',-13,-8,.35,[.67,.75,.79,1],cid)
+    subtitle=s.text('Subtitle','The reef is dark.\nOrrin is waiting at the landing.',-13,1.8,.38,[.75,.83,.85,1],cid)
+    status=s.text('Status','',-13,.2,.36,[.72,.8,.84,1],cid)
+    button=s.panel('StartButton',-8.5,-2.5,9,1.3,cid);label=s.text('StartLabel','Enter   Begin',-12,-2.68,.40,WHITE,cid)
+    new=s.panel('NewButton',-8.5,-4.3,9,1.3,cid);s.text('NewLabel','N   New game',-12,-4.48,.40,WHITE,cid)
+    credits=s.panel('CreditsButton',-8.5,-6.1,9,1.3,cid);s.text('CreditsLabel','C   Credits',-12,-6.28,.40,WHITE,cid)
+    s.text('Controls','WASD or arrows: move    E: use    Esc: pause',-13,-8,.35,[.67,.75,.79,1],cid)
     s.script(s.entity('Title / Journey menu'),'Menu',dict(Heading=heading,Subtitle=subtitle,Status=status,StartButton=button,StartLabel=label,NewButton=new,CreditsButton=credits,Ending=ending))
     return s
 

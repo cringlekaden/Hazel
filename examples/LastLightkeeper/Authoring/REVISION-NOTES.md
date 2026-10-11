@@ -84,3 +84,25 @@ sprite instead of armor. Tiny Dungeon mirror faces replace enlarged UI squares.
 Tiny Wisptle's dark-edged energy strip/arrows, white endpoint and obstruction
 cross distinguish route shapes independently of color. Warning boards move
 before a tide surge; cave rush marks and recoil remain usable without audio.
+
+## Whole-game polish (from e92f1c5)
+
+Scope stays within the two existing chapters. Menu labels use a shared baseline;
+HUD insets, hierarchy and warning rows match across locations. Dialogue advances
+with Next and ends with Close or Continue where a transition follows. New Game
+confirmation is cancellable without a timer. Failed writes retain the previous
+menu journey and cannot generate a successful checkpoint message.
+
+Native tree crown/trunk pairs replace stretched crowns. Joined gravel follows the
+actual route footprint. Quiet slate and directional masonry describe the cistern's
+working paths and pool; the cave seep no longer uses door/tank tiles as edging.
+Rubble is concentrated at falls, with salvage at storage areas. No atlas pixels,
+existing sheet IDs or save payload fields change. Authored scene identities are
+retained where an existing object keeps its tag. Composition helpers reproduce
+the layout; scenes remain normal Hazelnut documents.
+
+Orrin identifies his sister on the survey ledge. Iona's repair observations stay
+separate from explicit control instructions. Mara's reunion is shorter and her
+key's consequence is stated directly. Notes, objectives, prompts, errors and
+endpoint text follow the same terminology. Adjustment, warning, repair and
+recovery cues use the existing licensed sounds at distinct authored gains.

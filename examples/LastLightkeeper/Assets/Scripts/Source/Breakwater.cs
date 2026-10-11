@@ -6,7 +6,7 @@ namespace LastLightkeeper {
         public Entity Player,Camera,HarborMirror,HarborGate,Pump,Lens,Socket,Receiver,Tower,Wrench;
         public Entity MirrorOne,MirrorTwo,MirrorThree,ServiceDoor,ServiceReceiver;
         public Entity Objective,Context,Place,Inventory,TideLabel,Dialogue,DialoguePanel,SaveLabel;
-        public Entity SoundTurn,SoundRestore,SoundHazard;
+        public Entity SoundTurn,SoundRestore,SoundHazard,SoundWarning;
         public Prefab BeamAsset,EndAsset;
         public float Speed=3.25f,InteractionRadius=1.5f;
         private Journey journey;
@@ -23,6 +23,7 @@ namespace LastLightkeeper {
         private Entity coat;
         private TextComponent objective,context,place,inventory,tideLabel,dialogue,saveLabel;
         private string notice="";
+        private bool saveFailed;
         private readonly HashSet<Cell> stone=new HashSet<Cell>();
         void OnCreate(){
             keys=new Controls();body=Player.GetComponent<Rigidbody2DComponent>();
@@ -32,12 +33,12 @@ namespace LastLightkeeper {
             mirrors=new[]{MirrorOne,MirrorTwo,MirrorThree};
             interactables=new[]{HarborMirror,FindEntityByName("Orrin"),Wrench,FindEntityByName("MaraNote"),Pump,Lens,Socket,MirrorOne,MirrorTwo,MirrorThree,Tower,FindEntityByName("Archive"),FindEntityByName("Cache")};
             coat=FindEntityByName("IonaCoat");
-            saveLabel.Text=SaveData.IsPersistent?"Journey resumed":"Editor practice : progress resets after Stop";
+            saveLabel.Text=SaveData.IsPersistent?"Autosave on":"Editor practice - resets after Stop";
             for(int i=0;i<5;i++){var e=FindEntityByName("Occluder"+i);if(e!=null)stone.Add(CellAt(e));}
             warningBoards=new Entity[10];for(int i=0;i<10;i++)warningBoards[i]=FindEntityByName("Tide warning "+(-18+i%5)+","+(i<5?6:11));
             surges=new Entity[20];for(int i=0;i<20;i++)surges[i]=FindEntityByName("Surge"+i);
             rig=new LightRig(BeamAsset,EndAsset);
-            ApplyJourney();Checkpoint(false);SetDialogue();
+            ApplyJourney();Checkpoint(false);place.Text=journey.Checkpoint==0?"HARBOR LANDING":journey.Checkpoint==2?"TIDE WORKS":"SALT GROVE";SetDialogue();
             if(journey.Restored==Restoration.None)Talk(Story.Arrival);
             else Notice("Resumed: "+Story.Objective(journey),4);
         }
@@ -45,12 +46,12 @@ namespace LastLightkeeper {
         static Cell CellAt(Entity e){var p=e.Translation;return new Cell((int)Math.Round(p.X),(int)Math.Round(p.Y));}
         static float Distance(Entity a,Entity b){var p=a.Translation;var q=b.Translation;return (p.X-q.X)*(p.X-q.X)+(p.Y-q.Y)*(p.Y-q.Y);}
         static void Hide(Entity e){if(e!=null && e.IsValid)e.Scale=new Vector3(.001f,.001f,1);}
-        void Notice(string text,float duration=3){notice=text;noticeTime=duration;}
+        void Notice(string text,float duration=3){if(saveFailed)return;notice=text;noticeTime=duration;}
         void Sound(Entity e){try{if(e!=null)e.GetComponent<AudioSourceComponent>().Play();}catch(Exception ex){Console.WriteLine("Lightkeeper audio: "+ex.Message);}}
-        void Persist(){
-            if(saveBlocked)return;
-            try{SaveData.Write("journey",journey.Encode());saveLabel.Text=SaveData.IsPersistent?"Journey saved":"Editor practice";}
-            catch(Exception ex){saveLabel.Text="Save failed : progress held in this session";Notice("Cannot save. Keep this session open; retry at a checkpoint.",8);Console.WriteLine("Lightkeeper save: "+ex.Message);}
+        bool Persist(){
+            if(saveBlocked)return false;
+            try{SaveData.Write("journey",journey.Encode());saveFailed=false;saveLabel.Text=SaveData.IsPersistent?"Progress saved":"Editor practice";return true;}
+            catch(Exception ex){saveLabel.Text="Not saved - retry before quitting";Notice("Cannot save. Keep this session open; retry at the pump.",8);saveFailed=true;Console.WriteLine("Lightkeeper save: "+ex.Message);return false;}
         }
         bool Restore(Restoration step){if(!journey.Restore(step))return false;Sound(SoundRestore);ApplyJourney();Persist();return true;}
         void ApplyJourney(){
@@ -74,7 +75,7 @@ namespace LastLightkeeper {
         // Stable IDs are loaded from the shipped sheet identity table, not regenerated.
         static Sprite Region(string pack,int tile)=>Art.Region(pack,tile);
         void Talk(string[] text,Action done=null){pages=text;page=0;afterDialogue=done;context.Text="";journal=false;SetDialogue();}
-        void SetDialogue(){dialogue.Text=pages==null?"":pages[page]+"\n\nEnter   "+(pages.Length==1?"Close":"Continue    "+(page+1)+" of "+pages.Length);DialoguePanel.Scale=pages==null?new Vector3(.001f,.001f,1):new Vector3(27,6.8f,1);}
+        void SetDialogue(){dialogue.Text=pages==null?"":pages[page]+"\n\nEnter   "+(page+1==pages.Length?(afterDialogue!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);DialoguePanel.Scale=pages==null?new Vector3(.001f,.001f,1):new Vector3(27,6.8f,1);}
         void CloseDialogue(){pages=null;SetDialogue();var callback=afterDialogue;afterDialogue=null;callback?.Invoke();}
         void Checkpoint(bool announce){
             var marker=FindEntityByName("Checkpoint"+journey.Checkpoint);Player.Translation=marker.Translation;body.LinearVelocity=Vector2.Zero;grace=.65f;
@@ -85,30 +86,30 @@ namespace LastLightkeeper {
                 case 1:return "E   Talk to Orrin";case 2:return journey.Has(Restoration.Wrench)?"":"E   Recover Mara's wrench";
                 case 3:return "E   Read Mara's field note";case 4:return journey.Has(Restoration.Pump)?"E   Read the tide log":"E   Repair the sluice";
                 case 5:return journey.Has(Restoration.Lens)?"":"E   Recover the lighthouse lens";
-                case 6:return journey.Has(Restoration.Mounted)?"E   Read relay instructions":"E   Fit the lens";
+                case 6:return journey.Has(Restoration.Mounted)?"E   Read the maintenance plate":"E   Fit the lens";
                 case 7:case 8:case 9:return "E   Turn mirror "+(i-6);
-                case 10:return "E   Climb to the lower lantern";case 11:return "E   Read the keeper's archive";case 12:return journey.Has(Restoration.Cache)?"":"E   Take a piece of sea glass";default:return "";}
+                case 10:return "E   Climb to the lower lantern";case 11:return "E   Read Father's repair book";case 12:return journey.Has(Restoration.Cache)?"":"E   Take a piece of sea glass";default:return "";}
         }
         void Interact(int i){
             switch(i){
                 case 0:
-                    if(journey.Has(Restoration.Harbor)){Notice("The harbor light is steady.");break;}
+                    if(journey.Has(Restoration.Harbor)){Notice("The bridge is down. Orrin has a clear landing.");break;}
                     journey.HarborSlash=!journey.HarborSlash;Sound(SoundTurn);ApplyJourney();
-                    if(journey.HarborSlash){Restore(Restoration.Harbor);journey.Checkpoint=1;Persist();Notice("Bridge motor running. Orrin can see the landing.",5);}
+                    if(journey.HarborSlash){Restore(Restoration.Harbor);journey.Checkpoint=1;Persist();Notice("Bridge lowered. The grove is across the channel.",5);}
                     else Persist();break;
                 case 1:Talk(Story.Ferryman);break;
-                case 2:if(!journey.Has(Restoration.Harbor)){Notice("Open the harbor bridge first.");break;}if(Restore(Restoration.Wrench))Talk(Story.Grove);break;
+                case 2:if(!journey.Has(Restoration.Harbor)){Notice("Open the harbor bridge first.");break;}if(Restore(Restoration.Wrench))Talk(new[]{"IONA\nSailcloth round the handle. That's Mara's wrench.\nThis should shift the pump wheel."});break;
                 case 3:Talk(Story.Grove);break;
                 case 4:
                     if(journey.Has(Restoration.Pump)){Talk(Story.Pump);Persist();break;}
                     if(!journey.Has(Restoration.Wrench)){Notice("The wheel is seized. Mara's wrench is in the eastern grove.",5);break;}
                     Restore(Restoration.Pump);journey.Checkpoint=2;Persist();Talk(Story.Pump);break;
                 case 5:
-                    if(!journey.Has(Restoration.Pump)){Notice("The drain must be repaired before the lens can be freed.",5);break;}
+                    if(!journey.Has(Restoration.Pump)){Notice("Drain the platform first. The pump wheel is seized.",5);break;}
                     if(Restore(Restoration.Lens))Talk(Story.Lens);break;
                 case 6:
                     if(!journey.Has(Restoration.Lens)){Talk(Story.Relay);break;}
-                    if(Restore(Restoration.Mounted))Notice("Court powered. Follow the outlined beam.",5);else Talk(Story.Relay);break;
+                    if(Restore(Restoration.Mounted))Notice("Lens seated. The court has light.",5);else Talk(Story.Relay);break;
                 case 7:case 8:case 9:
                     if(!journey.Has(Restoration.Mounted)){Notice("Recover the lens and fit it in the western socket.",5);break;}
                     journey.Mirrors^=1<<(i-7);Sound(SoundTurn);ApplyJourney();Persist();break;
@@ -138,7 +139,7 @@ namespace LastLightkeeper {
         void OnUpdate(float dt){
             keys.Poll();dt=Math.Min(.1f,Math.Max(0,dt));
             if(!ready){ready=true;Light();}
-            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;dialogue.Text=paused?"PAUSED\n\nEnter   Resume     M   Title":"";DialoguePanel.Scale=paused?new Vector3(27,6.8f,1):new Vector3(.001f,.001f,1);}}
+            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED\n\nEnter   Resume     M   Title":"";DialoguePanel.Scale=paused?new Vector3(27,6.8f,1):new Vector3(.001f,.001f,1);}}
             if(paused){body.LinearVelocity=Vector2.Zero;if(keys.Advance){paused=false;dialogue.Text="";Hide(DialoguePanel);}if(keys.Menu)Scene.LoadScene("Scenes/MainMenu.hazel");return;}
             if(keys.Journal && (pages==null || journal)){if(pages!=null && journal)CloseDialogue();else{Talk(Story.Journal(journey));journal=true;}}
             if(pages!=null){body.LinearVelocity=Vector2.Zero;if(keys.Advance || keys.Interact){if(++page>=pages.Length)CloseDialogue();else SetDialogue();}return;}
@@ -154,13 +155,13 @@ namespace LastLightkeeper {
             bool atWorks=p.X<-8 && p.Y>1;
             tideLabel.Text=atWorks?"TIDE   "+(phase==TidePhase.Clear?"CLEAR":phase==TidePhase.Warning?"SURGE SOON":"SURGE   HIGH GROUND")+"  "+Math.Ceiling(Tide.Remaining(clock)):"";
             tideLabel.Color=phase==TidePhase.Clear?new Vector4(.55f,.86f,.92f,1):phase==TidePhase.Warning?new Vector4(1,.78f,.4f,1):new Vector4(1,.4f,.35f,1);
-            if(shownPhase!=(int)phase){shownPhase=(int)phase;foreach(var wave in surges)if(wave!=null)wave.Scale=phase==TidePhase.Surge?new Vector3(1,1,1):new Vector3(.001f,.001f,1);}
+            if(shownPhase!=(int)phase){if(atWorks && phase==TidePhase.Warning)Sound(SoundWarning);shownPhase=(int)phase;foreach(var wave in surges)if(wave!=null)wave.Scale=phase==TidePhase.Surge?new Vector3(1,1,1):new Vector3(.001f,.001f,1);}
             foreach(var board in warningBoards)if(board!=null)board.Scale=phase==TidePhase.Warning?new Vector3(1,.75f+.25f*(float)Math.Sin(clock*10),1):new Vector3(1,1,1);
             if(grace<=0 && Tide.Exposed(p.X,p.Y) && (phase==TidePhase.Surge || !journey.Has(Restoration.Pump))){Checkpoint(true);return;}
             place.Text=p.Y<-6?"HARBOR LANDING":p.X<-8?"TIDE WORKS":p.X>10 && p.Y>8?"LOWER LIGHTHOUSE":p.Y>7?"MIRROR COURT":"SALT GROVE";
             nearest=-1;float best=InteractionRadius*InteractionRadius;
             for(int i=0;i<interactables.Length;i++){var e=interactables[i];if(e==null || !e.IsValid || Prompt(i)=="")continue;var distance=Distance(Player,e);if(distance<best){best=distance;nearest=i;}}
-            context.Text=noticeTime>0?notice:nearest<0?"E   Interact nearby     Q   Journal     Esc   Pause":Prompt(nearest);
+            context.Text=saveFailed || noticeTime>0?notice:nearest<0?"E   Interact nearby     Q   Journal     Esc   Pause":Prompt(nearest);
             if(keys.Interact && nearest>=0)Interact(nearest);
             Light();
         }
