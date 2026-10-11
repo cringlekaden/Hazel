@@ -42,6 +42,30 @@ namespace Hazel {
 
 #define HZ_ADD_INTERNAL_CALL(Name) mono_add_internal_call("Hazel.InternalCalls::" #Name, reinterpret_cast<const void*>(Name))
 
+    static RuntimeStorage& CheckedStorage() {
+        auto* session=ScriptEngine::GetRuntimeSession();
+        if(!session)throw std::runtime_error("SaveData requires an active runtime session");
+        return session->Storage();
+    }
+    static bool SaveData_IsPersistent() {
+        MonoException* failure=nullptr;bool result=false;
+        try {if(ScriptEngine::GetRuntimeSession())result=CheckedStorage().IsPersistent();}
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if(failure)mono_raise_exception(failure);return result;
+    }
+    static MonoString* SaveData_Read(MonoString* slot) {
+        MonoException* failure=nullptr;MonoString* result=nullptr;
+        try {auto payload=CheckedStorage().Read(Utils::MonoStringToString(slot));result=mono_string_new(mono_domain_get(),payload.c_str());}
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if(failure)mono_raise_exception(failure);return result;
+    }
+    static void SaveData_Write(MonoString* slot,MonoString* payload) {
+        MonoException* failure=nullptr;
+        try {CheckedStorage().Write(Utils::MonoStringToString(slot),Utils::MonoStringToString(payload));}
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if(failure)mono_raise_exception(failure);
+    }
+
 	static void NativeLog(MonoString* string, int parameter)
 	{
 		std::string str = Utils::MonoStringToString(string);
@@ -113,6 +137,15 @@ namespace Hazel {
         else if(action==2)a.Playback.Reset();
         else if(action==1 && a.Resolved){if(a.Playback.Finished)a.Playback.Reset();a.Playback.Playing=true;}
         else mono_raise_exception(mono_get_exception_invalid_operation("Cannot resume an unassigned or broken animation"));
+    }
+    static bool AudioSourceComponent_Play(uint64_t id) {
+        MonoException* failure=nullptr;bool result=false;
+        try {auto entity=CheckedSpriteEntity<AudioSourceComponent>(id);if(entity)result=ScriptEngine::GetSceneContext()->PlayAudio(entity);}
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if(failure)mono_raise_exception(failure);return result;
+    }
+    static void AudioSourceComponent_Stop(uint64_t id) {
+        auto entity=CheckedSpriteEntity<AudioSourceComponent>(id);if(entity)ScriptEngine::GetSceneContext()->StopAudio(entity);
     }
     static bool SpriteAnimationComponent_State(uint64_t id,bool finished) {
         auto entity=CheckedSpriteEntity<SpriteAnimationComponent>(id);if(!entity)return false;
@@ -373,11 +406,12 @@ namespace Hazel {
         RegisterComponent<CameraComponent>("Hazel.CameraComponent");
         RegisterComponent<SpriteRendererComponent>("Hazel.SpriteRendererComponent");
         RegisterComponent<SpriteAnimationComponent>("Hazel.SpriteAnimationComponent");
+        RegisterComponent<AudioSourceComponent>("Hazel.AudioSourceComponent");
 	}
 
 	void ScriptGlue::ValidateComponents(MonoImage* image)
 	{
-		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent", "Hazel.SpriteRendererComponent", "Hazel.SpriteAnimationComponent" })
+		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent", "Hazel.SpriteRendererComponent", "Hazel.SpriteAnimationComponent", "Hazel.AudioSourceComponent" })
 			if (!mono_reflection_type_from_name(const_cast<char*>(name), image))
 				throw std::runtime_error(std::string("Missing managed component: ") + name);
 	}
@@ -386,10 +420,15 @@ namespace Hazel {
 	{
         RegisterHierarchyFunctions();
         HZ_ADD_INTERNAL_CALL(SpriteRendererComponent_SetSprite);
+        HZ_ADD_INTERNAL_CALL(AudioSourceComponent_Play);
+        HZ_ADD_INTERNAL_CALL(AudioSourceComponent_Stop);
         HZ_ADD_INTERNAL_CALL(SpriteAnimationComponent_Play);
         HZ_ADD_INTERNAL_CALL(SpriteAnimationComponent_Control);
         HZ_ADD_INTERNAL_CALL(SpriteAnimationComponent_State);
-		HZ_ADD_INTERNAL_CALL(NativeLog);
+		HZ_ADD_INTERNAL_CALL(SaveData_IsPersistent);
+        HZ_ADD_INTERNAL_CALL(SaveData_Read);
+        HZ_ADD_INTERNAL_CALL(SaveData_Write);
+        HZ_ADD_INTERNAL_CALL(NativeLog);
 		HZ_ADD_INTERNAL_CALL(NativeLog_Vector);
 		HZ_ADD_INTERNAL_CALL(NativeLog_VectorDot);
 

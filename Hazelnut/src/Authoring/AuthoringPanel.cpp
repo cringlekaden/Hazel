@@ -261,6 +261,7 @@ void AuthoringPanel::BindProject()
         const auto &config = Project::GetActive()->GetConfig();
         m_ProjectName = config.Name;
         m_ScriptProject = config.ScriptProject;
+        m_SaveNamespace = config.SaveNamespace;
         m_Startup = config.StartScene.generic_u8string();
         m_AssetDirectory = config.AssetDirectory.generic_u8string();
         m_Module = config.ScriptModulePath.generic_u8string();
@@ -623,6 +624,7 @@ void AuthoringPanel::Menus()
             auto &config = Project::GetActive()->GetConfig();
             m_ProjectName = config.Name;
             m_ScriptProject = config.ScriptProject;
+        m_SaveNamespace = config.SaveNamespace;
             m_Startup = config.StartScene.generic_u8string();
             m_AssetDirectory = config.AssetDirectory.generic_u8string();
             m_Module = config.ScriptModulePath.generic_u8string();
@@ -926,6 +928,8 @@ void AuthoringPanel::ProjectSettings()
     PropertyUI::ReadOnly("script-build", "Script identifier", m_ScriptProject.c_str());
     PropertyUI::Help("Set at creation to match the Premake workspace and "
                      "assembly. Renaming requires SDK changes.");
+    PropertyUI::Text("Save namespace", "Save namespace", m_SaveNamespace);
+    PropertyUI::Help("Stable game identity for durable player saves; blank disables SaveData. Editor Play uses isolated memory. Renaming starts a separate save history.");
     PropertyUI::Text("Assets folder", "Assets folder", m_AssetDirectory);
     auto root = m_Editor.m_ProjectPath.parent_path() / Path(m_AssetDirectory);
     if (!m_ProjectChoicesLoaded || m_ProjectChoiceRoot != root)
@@ -964,7 +968,7 @@ void AuthoringPanel::ProjectSettings()
     }
     ProjectRendering();
     bool renderingValid=true;try{RendererPolicy::Validate(m_RenderingDraft);}catch(const std::exception&){renderingValid=false;}
-    bool valid = renderingValid && !m_ProjectName.empty() && Portable(m_AssetDirectory) && Portable(m_Startup) &&
+    bool valid = renderingValid && (m_SaveNamespace.empty() || RuntimeStorage::ValidName(m_SaveNamespace)) && !m_ProjectName.empty() && Portable(m_AssetDirectory) && Portable(m_Startup) &&
                  Portable(m_Module);
     if (!valid)
         ImGui::TextWrapped("Choose project-relative assets, startup scene "
@@ -977,6 +981,7 @@ void AuthoringPanel::ProjectSettings()
         if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;
         config.Name = m_ProjectName;
         config.ScriptProject = m_ScriptProject;
+        config.SaveNamespace = m_SaveNamespace;
         config.StartScene = Path(m_Startup);
         config.AssetDirectory = Path(m_AssetDirectory);
         config.ScriptModulePath = Path(m_Module);
@@ -1012,7 +1017,7 @@ void AuthoringPanel::ProjectSettings()
             const auto path=FileDialogs::SaveFile("Hazel project\0*.hproj\0");
             if(!path.empty() && Require(EditorAction::SaveAsset))try {
                 auto candidate=CreateRef<Project>();auto& config=candidate->GetConfig();
-                config=Project::GetActive()->GetConfig();if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;config.Name=m_ProjectName;config.ScriptProject=m_ScriptProject;
+                config=Project::GetActive()->GetConfig();if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;config.Name=m_ProjectName;config.ScriptProject=m_ScriptProject;config.SaveNamespace=m_SaveNamespace;
                 config.StartScene=Path(m_Startup);config.AssetDirectory=Path(m_AssetDirectory);config.ScriptModulePath=Path(m_Module);
                 const auto text=ProjectSerializer(candidate).SerializeText();
                 FileSystem::WriteFileAtomically(Path(path),[&](auto& out){out<<text;},WriteMode::CreateNew);

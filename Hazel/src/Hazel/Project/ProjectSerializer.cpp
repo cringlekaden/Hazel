@@ -31,6 +31,7 @@ namespace Hazel {
 				out << YAML::Key << "Version" << YAML::Value << 1;
                 if(config.Rendering)RendererRequestsSerializer::Write(out,*config.Rendering);
                 out << YAML::Key << "ScriptProject" << YAML::Value << config.ScriptProject;
+                if(!config.SaveNamespace.empty())out<<YAML::Key<<"SaveNamespace"<<YAML::Value<<config.SaveNamespace;
                 if(config.AuthoringVersion)out<<YAML::Key<<"AuthoringVersion"<<YAML::Value<<config.AuthoringVersion;
                 out << YAML::Key << "Name" << YAML::Value << config.Name;
 				out << YAML::Key << "StartScene" << YAML::Value << config.StartScene.generic_u8string();
@@ -70,6 +71,7 @@ namespace Hazel {
 			ProjectConfig config;
             if(projectNode["Rendering"])config.Rendering=RendererRequestsSerializer::Read(projectNode["Rendering"]);
 			config.Name = projectNode["Name"].as<std::string>();
+            if(projectNode["SaveNamespace"])config.SaveNamespace=projectNode["SaveNamespace"].as<std::string>();
             if(projectNode["AuthoringVersion"])config.AuthoringVersion=projectNode["AuthoringVersion"].as<int>();
             config.ScriptProject = projectNode["ScriptProject"] ? projectNode["ScriptProject"].as<std::string>() : config.Name;
 			config.StartScene = Project::NormalizeAssetPath(std::filesystem::u8path(projectNode["StartScene"].as<std::string>()));

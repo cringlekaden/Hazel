@@ -126,7 +126,7 @@ class AuthoringPanel
     std::unordered_map<std::string, bool> m_RecentAvailable;
     bool m_ExitAfterJob = false;
     std::string m_PreferenceRecovery, m_SavedScene, m_SavedPrefab, m_PrefabReference,
-        m_ProjectName, m_ScriptProject;
+        m_ProjectName, m_ScriptProject, m_SaveNamespace;
     std::string m_Name = "My Game", m_Identifier = "MyGame", m_Destination, m_Startup, m_AssetDirectory,
                 m_Module;
     std::string m_ScriptName = "NewScript", m_Namespace = "Game",

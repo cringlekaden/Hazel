@@ -87,6 +87,12 @@ namespace Hazel {
 		void ResetRuntime() { Current={};Playback.Reset();Resolved.reset();Initialized=false;PreparedEpoch=0;Error.clear(); }
 	};
 
+    struct AudioSourceComponent {
+        std::filesystem::path Clip;
+        float Gain=0.5f;
+        bool Loop=false, PlayOnStart=false;
+    };
+
 	struct CircleRendererComponent
 	{
 		glm::vec4 Color{ 1.0f, 1.0f, 1.0f, 1.0f };
@@ -207,7 +213,7 @@ namespace Hazel {
 	};
 
 	using AllComponents =
-		ComponentGroup<TransformComponent, SpriteRendererComponent, SpriteAnimationComponent,
+		ComponentGroup<TransformComponent, SpriteRendererComponent, SpriteAnimationComponent, AudioSourceComponent,
 			CircleRendererComponent, CameraComponent, ScriptComponent,
 			NativeScriptComponent, Rigidbody2DComponent, BoxCollider2DComponent,
 			CircleCollider2DComponent, TextComponent>;

@@ -93,6 +93,14 @@ static void HierarchyChecks() {
               glm::vec3(legacy->GetWorldTransform(legacy->GetEntityByUUID(7))[3]) ==
                   glm::vec3(2, 3, 0),
           "Legacy flat scene did not remain a root at original world position");
+    auto scaled = scene->CreateEntity("Scaled parent");
+    auto descendant = scene->CreateEntity("Descendant camera");
+    descendant.AddComponent<CameraComponent>();
+    scene->Reparent(descendant,scaled,TransformPolicy::KeepLocal);
+    auto original=scaled.GetComponent<TransformComponent>();
+    auto proposed=original;proposed.Scale.x=0;
+    bool cameraRejected=false;try{scene->SetLocalTransform(scaled,proposed);}catch(const std::exception&){cameraRejected=true;}
+    Check(cameraRejected && scaled.GetComponent<TransformComponent>().Scale==original.Scale,"Subtree validation lost descendant camera invertibility/rollback");
     auto singular = scene->CreateEntity("Singular");
     singular.GetComponent<TransformComponent>().Scale.x = 0;
     const auto keep = SceneSerializer(scene).SerializeAuthoredSnapshot();

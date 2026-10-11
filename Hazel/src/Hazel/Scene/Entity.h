@@ -99,7 +99,8 @@ namespace Hazel {
 
 	template<typename T> void Scene::OnComponentRemoving(Entity entity)
 	{
-		if constexpr (std::is_same_v<T, NativeScriptComponent>) DestroyNativeScript(entity);
+		if constexpr (std::is_same_v<T, AudioSourceComponent>) StopAudio(entity);
+        if constexpr (std::is_same_v<T, NativeScriptComponent>) DestroyNativeScript(entity);
 		if constexpr (std::is_same_v<T, Rigidbody2DComponent>) DestroyPhysicsBody(entity);
 		if constexpr (std::is_same_v<T, BoxCollider2DComponent>) DestroyPhysicsFixture(entity, false);
 		if constexpr (std::is_same_v<T, CircleCollider2DComponent>) DestroyPhysicsFixture(entity, true);

@@ -15,6 +15,7 @@ namespace Hazel {
             Project::SetActive(m_Project);
             auto& window = Application::Get().GetWindow();
             m_Session.Resize(window.GetWidth(), window.GetHeight());
+            m_Session.SetPersistentStorage(true);
             m_Session.Start(m_Project, scene);
             HZ_CORE_INFO("Nutella ready: {}", m_Project->GetConfig().Name);
         }

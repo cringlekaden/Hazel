@@ -4,6 +4,7 @@
 #include "Entity.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Core/Application.h"
+#include "Hazel/Core/FileSystem.h"
 #include "Hazel/Renderer/Renderer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include <glm/gtc/matrix_inverse.hpp>
@@ -42,6 +43,9 @@ namespace Hazel {
             throw std::logic_error("Only one runtime session may use the script environment");
         Stop();
         m_Project = project; m_Scene = std::move(scene);
+        auto root=FileSystem::GetEnvironmentPath("HAZEL_SAVE_ROOT");
+        if(root.empty())root=FileSystem::GetUserDataDirectory()/"Hazel/Games";
+        m_Storage.Configure(root,project?project->GetConfig().SaveNamespace:"",m_PersistentStorage);
         m_Identity = ++s_NextSession; m_Error.clear();
         m_Scene->OnViewportResize(m_Width, m_Height);
         ScriptEngine::SetRuntimeSession(this);
@@ -57,6 +61,7 @@ namespace Hazel {
         // Unbind before native OnDestroy, so retired callbacks cannot queue work.
         if (ScriptEngine::GetRuntimeSession() == this) ScriptEngine::SetRuntimeSession(nullptr);
         if (m_Scene) m_Scene->OnRuntimeStop();
+        m_Storage.Clear();
         m_Scene.reset(); m_Project.reset(); m_Stopping = false;
     }
     bool RuntimeSession::RequestSceneLoad(const std::filesystem::path& reference) {

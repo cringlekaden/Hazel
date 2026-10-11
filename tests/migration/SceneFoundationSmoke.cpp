@@ -1,5 +1,8 @@
 // CPU checks for exact target ECS/YAML dependencies and portable camera state.
 #include "Hazel/Scene/SceneCamera.h"
+#include "Hazel/Project/RuntimeStorage.h"
+#include "Hazel/Core/FileSystem.h"
+#include <fstream>
 #include "Hazel/Core/Log.h"
 #include "Hazel/Core/UUID.h"
 #include "Hazel/Core/FileDocument.h"
@@ -124,9 +127,38 @@ static void RecoveryContracts()
     std::filesystem::remove_all(root);
     std::cout<<"PASS: CPU production recovery load/round-trip, unknown/future/duplicate schema rejection, original backups, missing/external save conflicts and exclusive prefab publication\n";
 }
+static void StorageChecks() {
+    using namespace Hazel;
+    auto root=std::filesystem::temp_directory_path()/("hazel-save-"+std::to_string(uint64_t(UUID())));
+    struct Cleanup{std::filesystem::path P;~Cleanup(){std::error_code ec;std::filesystem::remove_all(P,ec);}} cleanup{root};
+    RuntimeStorage player;player.Configure(root,"Keeper",true);
+    Check(player.Read("progress").empty(),"Missing save isn't empty");
+    player.Write("progress","v1:harbor é");player.Write("progress","v1:relay é");
+    RuntimeStorage reopened;reopened.Configure(root,"Keeper",true);
+    Check(reopened.Read("progress")=="v1:relay é","Atomic replace/UTF-8 reopen failed");
+    RuntimeStorage editor;editor.Configure(root,"Keeper",false);
+    Check(editor.Read("progress").empty(),"Editor loaded player save");editor.Write("progress","editor-only");
+    Check(editor.Read("progress")=="editor-only" && reopened.Read("progress")=="v1:relay é","Editor changed player save");
+    editor.Clear();editor.Configure(root,"Keeper",false);Check(editor.Read("progress").empty(),"Stop retained editor progress");
+    RuntimeStorage other;other.Configure(root,"Other",true);Check(other.Read("progress").empty(),"Projects share progress");
+    for(auto slot:{"../progress","/absolute","C:drive","..","CON/path","NUL","com1","trail."}) {
+        bool rejected=false;try{reopened.Write(slot,"data");}catch(const std::exception&){rejected=true;}Check(rejected,"Unsafe slot accepted");
+    }
+    bool rejected=false;try{reopened.Write("progress",std::string(RuntimeStorage::MaximumPayload+1,'x'));}catch(const std::exception&){rejected=true;}
+    Check(rejected && reopened.Read("progress")=="v1:relay é","Oversize write damaged progress");
+    auto file=root/"Keeper/slot-progress.save";
+    FileSystem::WriteFileAtomically(file,[](auto& out){out<<"Version: 99\nOwner: Keeper\nSlot: progress\nPayload: newer\n";});
+    rejected=false;try{reopened.Read("progress");}catch(const std::exception&){rejected=true;}Check(rejected,"Future save accepted");
+    std::ifstream in(file);std::string bytes((std::istreambuf_iterator<char>(in)),{});Check(bytes.find("99")!=std::string::npos,"Future file erased");
+    FileSystem::WriteFileAtomically(file,[](auto& out){out<<"[malformed";});
+    rejected=false;try{reopened.Read("progress");}catch(const std::exception&){rejected=true;}Check(rejected,"Corrupt save accepted");
+    std::cout<<"PASS: project save isolation, editor overlay, UTF-8 atomic replace, traversal/size/corrupt/future rejection\n";
+}
+
 int main()
 {
     try {
+        StorageChecks();
         Hazel::Log::Init();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();

@@ -16,6 +16,7 @@
 class b2World;
 
 namespace Hazel {
+    class AudioPlayback;
 
 	class Entity;
     enum class TransformPolicy { KeepWorld, KeepLocal };
@@ -60,7 +61,9 @@ namespace Hazel {
         bool IsEntityValid(UUID id) const;
         void CancelPendingLifecycle();
 
-		void OnRuntimeStart();
+		bool PlayAudio(Entity entity);
+        void StopAudio(Entity entity);
+        void OnRuntimeStart();
 		void OnRuntimeStop();
 
 		void OnSimulationStart();
@@ -102,6 +105,7 @@ namespace Hazel {
 			return m_Registry.view<Components...>();
 		}
 	private:
+        Scope<AudioPlayback> m_Audio;
 		template<typename T>
 		void OnComponentAdded(Entity entity, T& component);
 		template<typename T> void OnComponentRemoving(Entity entity);

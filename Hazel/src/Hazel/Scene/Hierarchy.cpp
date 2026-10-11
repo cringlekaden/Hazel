@@ -228,7 +228,16 @@ void Scene::ValidatePhysics(Entity e, const TransformComponent &tc, const Rigidb
 void Scene::SetLocalTransform(Entity e, const TransformComponent &value) {
     CheckEntity(e);
     Transforms change{{e.GetUUID(), value}};
-    ValidateGraph(m_Relationships, change);
+    // Topology is unchanged. Only this subtree's world matrices can change;
+    // graph edits/load/copy retain full ValidateGraph. Avoid rescanning every
+    // terrain tile for camera/actor/animation movement.
+    for(auto id:GetSubtree(e)) {
+        auto entity=GetEntityByUUID(id);
+        const auto& local=id==e.GetUUID()?value:entity.GetComponent<TransformComponent>();
+        ValidatePhysics(entity,local);
+        auto world=World(id,m_Relationships,change);
+        if(entity.HasComponent<CameraComponent>() && entity.GetComponent<CameraComponent>().Primary)Finite(glm::inverse(world));
+    }
     const auto &accepted = e.GetComponent<TransformComponent>();
     if (e.HasComponent<Rigidbody2DComponent>() &&
         e.GetComponent<Rigidbody2DComponent>().RuntimeBody && value.Scale != accepted.Scale)

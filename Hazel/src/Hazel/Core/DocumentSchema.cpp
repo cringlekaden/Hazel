@@ -2,6 +2,8 @@
 #include "DocumentSchema.h"
 #include "Hazel/Project/RendererRequestsSerializer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
+#include "Hazel/Project/RuntimeStorage.h"
+#include "Hazel/Project/Project.h"
 #include <set>
 #include <cmath>
 
@@ -66,7 +68,8 @@ bool Project(const YAML::Node& root)
     Structure(root);
     Keys(root, {"Project"}, "root");
     auto project = root["Project"];
-    Keys(project, {"Version", "Name", "ScriptProject", "StartScene", "AssetDirectory", "ScriptModulePath", "AuthoringVersion", "Rendering"}, "Project");
+    Keys(project, {"Version", "Name", "ScriptProject", "StartScene", "AssetDirectory", "ScriptModulePath", "AuthoringVersion", "Rendering", "SaveNamespace"}, "Project");
+    if(project["SaveNamespace"] && !project["SaveNamespace"].as<std::string>().empty() && !RuntimeStorage::ValidName(project["SaveNamespace"].as<std::string>()))throw std::runtime_error("Invalid project SaveNamespace");
     if(project["Rendering"])RendererRequestsSerializer::Read(project["Rendering"]);
     if(project["AuthoringVersion"] && project["AuthoringVersion"].as<int>()!=1)
         throw std::runtime_error("Unsupported project authoring/template contract; use a compatible editor");
@@ -105,7 +108,7 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
     {
         Keys(entity, {"Entity", "TagComponent", "TransformComponent", "CameraComponent", "ScriptComponent",
                       "SpriteRendererComponent", "SpriteAnimationComponent", "CircleRendererComponent",
-                      "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent", "Relationship"}, "Entity");
+                      "AudioSourceComponent", "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent", "Relationship"}, "Entity");
         if(hierarchy) {
             auto rel=entity["Relationship"];
             Keys(rel,{"Parent","Order"},"Relationship");rel["Parent"].as<uint64_t>();rel["Order"].as<uint32_t>();
@@ -156,6 +159,15 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
         if(auto n=entity["SpriteAnimationComponent"])
             if(!n["DefaultClip"] || !n["Autoplay"] || !n["Speed"])legacy=true;
         // Sprite Source / animation / typed references have their own strict readers.
+        if(auto n=entity["AudioSourceComponent"]) {
+            Keys(n,{"Clip","Gain","Loop","PlayOnStart"},"AudioSourceComponent");
+            const auto path=n["Clip"].as<std::string>();
+            if(!path.empty()) {auto ref=Hazel::Project::NormalizeAssetPath(std::filesystem::u8path(path));
+                if(ref.has_root_path() || ref.extension()!=".wav" || path.find(':')!=std::string::npos)throw std::runtime_error("Audio clip must be project-relative WAV");
+                for(auto part:ref)if(part=="..")throw std::runtime_error("Audio clip escapes asset root");}
+            const auto gain=n["Gain"].as<float>();if(!std::isfinite(gain) || gain<0 || gain>1)throw std::runtime_error("Audio gain must be between 0 and 1");
+            n["Loop"].as<bool>();n["PlayOnStart"].as<bool>();
+        }
         if (auto n = entity["CircleRendererComponent"])
         {
             Keys(n, {"Color", "Thickness", "Fade"}, "CircleRendererComponent");

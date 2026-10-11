@@ -70,6 +70,12 @@ namespace Hazel
         public float AspectRatio => InternalCalls.CameraComponent_GetAspectRatio(Entity.CheckedID);
     }
 
+	public class AudioSourceComponent : Component
+    {
+        public bool Play() => InternalCalls.AudioSourceComponent_Play(Entity.CheckedID);
+        public void Stop() => InternalCalls.AudioSourceComponent_Stop(Entity.CheckedID);
+    }
+
 	public class TextComponent : Component
 	{
 

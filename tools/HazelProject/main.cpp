@@ -3,8 +3,10 @@
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Project/ProjectCreation.h"
+#include "Hazel/Assets/SpriteSheet.h"
 #include <iostream>
 #include <map>
+#include <sstream>
 #ifdef HZ_PLATFORM_WINDOWS
 #include "Platform/Windows/WindowsCommandLine.h"
 #endif
@@ -20,6 +22,33 @@ int main(int argc, char **argv) {
         if (args.size() == 2 && args[1] == "--contract") {
             std::cout << "HAZEL_AUTHORING_CONTRACT=1\n";
             return 0;
+        }
+        // Same grid/validation/persistence services as Hazelnut's Sprite Sheet panel.
+        // Creates a new sheet only; established region identities are never regenerated.
+        if(args.size()==7 && args[1]=="add-clip") {
+            Hazel::Log::Init();
+            const auto root=std::filesystem::u8path(args[2]),reference=std::filesystem::u8path(args[3]);
+            auto sheet=Hazel::ReadSpriteSheet(Hazel::Project::ResolveOwnedAsset(root,reference));
+            for(const auto& c:sheet.Clips)if(c.Name==args[4])throw std::runtime_error("Clip already exists; edit it in Hazelnut");
+            Hazel::SpriteClip clip;clip.ID=sheet.NewID(true);clip.Name=args[4];
+            const double duration=std::stod(args[5]);
+            std::stringstream frames(args[6]);std::string index;
+            while(std::getline(frames,index,','))clip.Frames.push_back({sheet.Regions.at(std::stoul(index)).ID,duration});
+            sheet.Clips.push_back(clip);Hazel::SaveSpriteSheet(root,reference,sheet);
+            std::cout<<"Added native editable clip: "<<clip.Name<<" ("<<clip.Frames.size()<<" frames)\n";return 0;
+        }
+        if(args.size()==6 && args[1]=="slice-sheet") {
+            Hazel::Log::Init();
+            const auto root=std::filesystem::u8path(args[2]);
+            const auto reference=std::filesystem::u8path(args[3]);
+            Hazel::SpriteSheetDefinition sheet;sheet.Texture=std::filesystem::u8path(args[4]);
+            const auto image=Hazel::Texture2D::ReadImage(Hazel::Project::ResolveOwnedAsset(root,sheet.Texture),Hazel::ImageFormat::RGBA8);
+            sheet.Sampling.Width=image.Width;sheet.Sampling.Height=image.Height;
+            Hazel::GridSliceOptions grid;grid.CellWidth=grid.CellHeight=static_cast<uint32_t>(std::stoul(args[5]));
+            grid.Prefix="tile";
+            Hazel::AddGridRegions(sheet,Hazel::GenerateGridPreview(sheet,grid));
+            Hazel::SaveSpriteSheet(root,reference,sheet,Hazel::WriteMode::CreateNew);
+            std::cout<<"Created native editable sheet: "<<reference.generic_u8string()<<" ("<<sheet.Regions.size()<<" regions)\n";return 0;
         }
         if (args.size() == 3 && args[1] == "validate") {
             Hazel::Log::Init();

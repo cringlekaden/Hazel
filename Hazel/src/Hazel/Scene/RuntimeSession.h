@@ -1,6 +1,7 @@
 #pragma once
 #include "Hazel/Core/Base.h"
 #include "Hazel/Core/Timestep.h"
+#include "Hazel/Project/RuntimeStorage.h"
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -23,6 +24,9 @@ namespace Hazel {
         static void Validate(const Ref<Scene>& scene, bool validateScripts = true);
         void Start(const Ref<Project>& project, const Ref<Scene>& authoredScene);
         void Stop();
+        // Hosts opt in before Start. Editor default remains isolated memory-only.
+        void SetPersistentStorage(bool enabled) { CheckThread(); if(m_Scene)throw std::logic_error("Configure storage before Start");m_PersistentStorage=enabled; }
+        RuntimeStorage& Storage() { CheckThread();if(!m_Scene)throw std::logic_error("Storage needs an active session");return m_Storage; }
         void Update(Timestep timestep);
         bool RequestSceneLoad(const std::filesystem::path& assetReference);
         const Ref<Scene>& GetScene() const { return m_Scene; }
@@ -46,5 +50,7 @@ namespace Hazel {
         glm::vec2 m_Mouse = {};
         bool m_InputEnabled = false, m_Stopping = false, m_Updating = false;
         std::string m_Error;
+        RuntimeStorage m_Storage;
+        bool m_PersistentStorage=false;
     };
 }

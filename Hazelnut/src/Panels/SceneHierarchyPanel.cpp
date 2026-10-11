@@ -218,6 +218,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         DisplayAddComponentEntry<BoxCollider2DComponent>("Box Collider 2D");
         DisplayAddComponentEntry<CircleCollider2DComponent>("Circle Collider 2D");
         DisplayAddComponentEntry<TextComponent>("Text Component");
+        DisplayAddComponentEntry<AudioSourceComponent>("Audio Source");
 
         ImGui::EndPopup();
     }
@@ -613,6 +614,13 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             PropertyUI::DragFloat("Fade", "Fade", component.Fade, 0.00025f, 0.0f, 1.0f);
         });
 
+    DrawComponent<AudioSourceComponent>("Audio Source", entity, m_Sections,m_RestoreSections,[](auto& source) {
+        std::string clip=source.Clip.generic_u8string();
+        if(PropertyUI::Text("Clip", "Project-relative WAV",clip))source.Clip=std::filesystem::u8path(clip);
+        PropertyUI::Help("Select a WAV inside Assets. Gain is 0–1. Voices belong to this scene; Stop/scene transitions release them.");
+        ImGui::SliderFloat("Gain",&source.Gain,0,1);
+        ImGui::Checkbox("Loop",&source.Loop);ImGui::Checkbox("Play on start",&source.PlayOnStart);
+    });
     DrawComponent<Rigidbody2DComponent>(
         "Rigidbody 2D", entity, m_Sections,m_RestoreSections,
         [](auto &component)

@@ -22,6 +22,11 @@ namespace Hazel
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool Entity_IsValid(ulong id, ulong scene);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void Entity_Destroy(ulong id, ulong scene);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static ulong Entity_Instantiate(string path, ref Vector3 position, ref Vector3 rotation, ref Vector3 scale, bool replaceRotationAndScale);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal static extern bool SaveData_IsPersistent();
+        [MethodImpl(MethodImplOptions.InternalCall)] internal static extern bool AudioSourceComponent_Play(ulong entity);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal static extern void AudioSourceComponent_Stop(ulong entity);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal static extern string SaveData_Read(string slot);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal static extern void SaveData_Write(string slot, string payload);
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		internal extern static bool Entity_HasComponent(ulong entityID, Type componentType);
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]

@@ -330,6 +330,14 @@ namespace Hazel {
             out<<YAML::Key<<"SpriteAnimationComponent"<<YAML::Value;
             WriteSpriteAnimationSettings(out,a);
         }
+        if(entity.HasComponent<AudioSourceComponent>()) {
+            const auto& a=entity.GetComponent<AudioSourceComponent>();
+            out<<YAML::Key<<"AudioSourceComponent"<<YAML::Value<<YAML::BeginMap
+                <<YAML::Key<<"Clip"<<YAML::Value<<a.Clip.generic_u8string()
+                <<YAML::Key<<"Gain"<<YAML::Value<<a.Gain<<YAML::Key<<"Loop"<<YAML::Value<<a.Loop
+                <<YAML::Key<<"PlayOnStart"<<YAML::Value<<a.PlayOnStart<<YAML::EndMap;
+        }
+
 		if (entity.HasComponent<CircleRendererComponent>())
 		{
 			out << YAML::Key << "CircleRendererComponent";
@@ -609,6 +617,16 @@ namespace Hazel {
                     auto& a=deserializedEntity.AddComponent<SpriteAnimationComponent>();
                     static_cast<SpriteAnimationSettings&>(a)=ReadSpriteAnimationSettings(node);
                     if(!deserializedEntity.HasComponent<SpriteRendererComponent>()) throw std::runtime_error("Sprite animation requires SpriteRendererComponent");
+                }
+
+                if(auto node=entity["AudioSourceComponent"]) {
+                    auto& a=deserializedEntity.AddComponent<AudioSourceComponent>();
+                    a.Clip=Project::NormalizeAssetPath(std::filesystem::u8path(node["Clip"].as<std::string>()));
+                    a.Gain=node["Gain"].as<float>();a.Loop=node["Loop"].as<bool>();a.PlayOnStart=node["PlayOnStart"].as<bool>();
+                    if(!a.Clip.empty() && !std::filesystem::is_regular_file(Project::ResolveOwnedAsset(m_AssetRoot,a.Clip))) {
+                        if(!m_Repair)throw std::runtime_error("Missing audio clip: "+a.Clip.generic_u8string());
+                        m_Report.Problems.push_back({uuid,"Audio","Missing audio clip",m_AssetRoot/a.Clip});
+                    }
                 }
 
 				auto circleRendererComponent = entity["CircleRendererComponent"];

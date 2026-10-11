@@ -19,6 +19,7 @@ namespace Hazel {
 	{
 		std::string Name = "Untitled";
         std::string ScriptProject;
+        std::string SaveNamespace; // Optional stable game-owned identity, independent of project location/name.
         std::optional<RuntimeRendererRequests> Rendering;
         int AuthoringVersion=0; // Existing projects remain unstamped; no template rewrite.
 

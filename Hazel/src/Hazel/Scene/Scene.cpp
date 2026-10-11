@@ -1,4 +1,6 @@
 #include "hzpch.h"
+#include "Hazel/Audio/AudioPlayback.h"
+#include "Hazel/Project/Project.h"
 #include "Scene.h"
 #include "RuntimeSession.h"
 #include "Entity.h"
@@ -36,6 +38,7 @@ namespace Hazel {
 		std::vector<Entity> natives; for(auto id:OrderedForCleanup()){auto it=m_EntityMap.find(id);if(it!=m_EntityMap.end() && m_Registry.has<NativeScriptComponent>(it->second))natives.emplace_back(it->second,this);}
         for(auto entity:natives)if(entity)DestroyNativeScript(entity);
         CancelPendingLifecycle(); // Cleanup callbacks may retire gameplay-owned instances.
+        m_Audio.reset();
         m_IsRunning = false;
 		OnPhysics2DStop();
 	}
@@ -196,7 +199,10 @@ namespace Hazel {
         auto starts=std::move(m_PendingStart);m_PendingStart.clear();
         SynchronizePhysics2D();
         for(auto id:starts) {auto entity=GetEntityByUUID(id);
-            if(entity && IsEntityValid(id) && entity.HasComponent<ScriptComponent>())ScriptEngine::OnCreateEntity(entity);
+            if(entity && IsEntityValid(id)) {
+                if(entity.HasComponent<AudioSourceComponent>() && entity.GetComponent<AudioSourceComponent>().PlayOnStart)PlayAudio(entity);
+                if(entity.HasComponent<ScriptComponent>())ScriptEngine::OnCreateEntity(entity);
+            }
         }
     }
     Entity Scene::CloneSubtree(Entity source,const TransformComponent* placement,bool preserveIDs,bool retainExternal,bool sibling) {
@@ -282,6 +288,7 @@ namespace Hazel {
 		if (!entity) return;
         auto id=entity.GetUUID(); if(m_Destroying.count(id))return; m_Destroying.insert(id);
 		if (ScriptEngine::GetSceneContext() == this) ScriptEngine::OnDestroyEntity(entity.GetUUID());
+        StopAudio(entity);
         DestroyNativeScript(entity);
         DestroyPhysicsBody(entity);
 		RemoveRelationship(id);
@@ -289,6 +296,17 @@ namespace Hazel {
 		m_ScriptFields.erase(entity.GetUUID());
 		m_Registry.destroy(entity);m_Destroying.erase(id);
 	}
+
+    bool Scene::PlayAudio(Entity entity) {
+        if(!m_IsRunning || !entity || !entity.BelongsTo(this) || !entity.HasComponent<AudioSourceComponent>())throw std::logic_error("Audio requires a live runtime source");
+        const auto& source=entity.GetComponent<AudioSourceComponent>();
+        if(source.Clip.empty())return false;
+        if(!m_Assets)throw std::runtime_error("Audio requires project assets");
+        auto file=Project::ResolveOwnedAsset(m_Assets->Root(),source.Clip);
+        if(!m_Audio)m_Audio=CreateScope<AudioPlayback>();
+        return m_Audio->Play(entity.GetUUID(),file,source.Gain,source.Loop);
+    }
+    void Scene::StopAudio(Entity entity) {if(m_Audio && entity && entity.BelongsTo(this))m_Audio->Stop(entity.GetUUID());}
 
 	void Scene::OnRuntimeStart()
 	{
@@ -303,10 +321,12 @@ namespace Hazel {
 
 		OnPhysics2DStart();
 
+
+
 		// Scripting
 		{
 			ScriptEngine::OnRuntimeStart(this);
-            for(auto root:GetChildren())for(auto id:GetSubtree(GetEntityByUUID(root)))if(GetEntityByUUID(id).HasComponent<ScriptComponent>())m_PendingStart.push_back(id);
+            for(auto root:GetChildren())for(auto id:GetSubtree(GetEntityByUUID(root)))m_PendingStart.push_back(id);
             FlushLifecycle();
 		}
 	}
@@ -319,6 +339,7 @@ namespace Hazel {
 		std::vector<Entity> natives; for(auto id:OrderedForCleanup()){auto it=m_EntityMap.find(id);if(it!=m_EntityMap.end() && m_Registry.has<NativeScriptComponent>(it->second))natives.emplace_back(it->second,this);}
         for(auto entity:natives)if(entity)DestroyNativeScript(entity);
         CancelPendingLifecycle(); // Cleanup callbacks may retire gameplay-owned instances.
+        m_Audio.reset();
         m_IsRunning = false;
 		OnPhysics2DStop();
         m_Stopping=false;
@@ -827,6 +848,8 @@ namespace Hazel {
 	void Scene::OnComponentAdded<ScriptComponent>(Entity entity, ScriptComponent& component)
 	{
 	}
+
+    template<> void Scene::OnComponentAdded<AudioSourceComponent>(Entity, AudioSourceComponent&) {}
 
 	template<>
 	void Scene::OnComponentAdded<SpriteRendererComponent>(Entity entity, SpriteRendererComponent& component)

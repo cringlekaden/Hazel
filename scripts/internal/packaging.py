@@ -77,6 +77,10 @@ def validate_project(descriptor, config, assets):
                         raise RuntimeError('Missing/excluded prefab reference '+str(reference)+' in '+str(scene))
                 if scene.suffix=='.hprefab' and field.get('Type')=='Entity' and field.get('Data') not in ids | {0}:
                     raise RuntimeError('Unsafe external entity reference in prefab '+str(scene))
+            clip = entity.get('AudioSourceComponent', {}).get('Clip')
+            if clip:
+                if Path(clip).suffix!='.wav' or resolve_owned(assets,clip) not in included:
+                    raise RuntimeError('Missing/excluded WAV audio clip '+str(clip)+' in '+str(scene))
             texture = entity.get('SpriteRendererComponent', {}).get('TexturePath')
             if texture and resolve_owned(assets,texture) not in included:
                 raise RuntimeError('Texture selects excluded compiler output: '+texture+' in '+str(scene))

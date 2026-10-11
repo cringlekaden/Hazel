@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "Hazel/Audio/AudioPlayback.h"
 #include "ProjectAssets.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Scene/Prefab.h"
@@ -126,6 +127,14 @@ std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path
     // Whole texture sources are also validated by the same canonical parser/decoder.
     for(auto file:files) if(file.extension()==".hazel" || file.extension()==".hprefab") {
         auto doc=YAML::Load(FileDocument::Read(Project::ResolveOwnedAsset(root,file)));
+        DocumentSchema::Scene(doc,file.extension()==".hprefab");
+        for(auto e:doc["Entities"]) if(auto n=e["AudioSourceComponent"]) {
+            auto clip=std::filesystem::u8path(n["Clip"].as<std::string>());
+            if(!clip.empty()) {
+                auto path=Project::ResolveOwnedAsset(root,clip);AudioPlayback::ValidateClip(path);
+                dependencies.insert(path.lexically_relative(std::filesystem::weakly_canonical(root)));
+            }
+        }
         for(auto e:doc["Entities"]) if(auto n=e["SpriteRendererComponent"]) {
             auto source=ReadSpriteSource(n); if(auto t=std::get_if<TextureSpriteSource>(&source)) {
                 auto path=Project::ResolveOwnedAsset(root,t->Texture);Texture2D::ReadImage(path);dependencies.insert(path.lexically_relative(std::filesystem::weakly_canonical(root)));
