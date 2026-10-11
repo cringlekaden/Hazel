@@ -18,7 +18,9 @@
 #include <random>
 #include <stdexcept>
 using namespace Hazel;
-static void Check(bool value,const char* message) { if(!value)throw std::runtime_error(message); }
+static void Check(bool value,const char* message) {
+    if(!value) { std::cerr<<"FAIL: "<<message<<std::endl;throw std::runtime_error(message); }
+}
 static void Teleport(Entity entity,glm::vec3 position) {
     entity.GetComponent<TransformComponent>().Translation=position;
     auto* body=static_cast<b2Body*>(entity.GetComponent<Rigidbody2DComponent>().RuntimeBody);
@@ -148,18 +150,22 @@ int main(int argc,char** argv) {
             session.Stop();Check(!scene->IsRunning(),"Authored scene entered runtime");
         }
         if(argc==5) {
+            std::cout<<"Lightkeeper: project/domain"<<std::endl;
             auto project=Project::Load(std::filesystem::u8path(argv[4]));Check(bool(project),"Cannot open Lightkeeper project");
             ScriptEngine::Init(Project::GetAssetFileSystemPath(project->GetConfig().ScriptModulePath));
             Check(ScriptEngine::EntityClassExists("LastLightkeeper.Breakwater") && !ScriptEngine::EntityClassExists("Skybound.Game"),"Lightkeeper project domain isolation failed");
             RuntimeSession session;session.Resize(960,720);
-            auto menu=project->LoadScene(project->GetConfig().StartScene);session.Start(project,menu);tick(session);
+            auto menu=project->LoadScene(project->GetConfig().StartScene);
+            std::cout<<"Lightkeeper: title start"<<std::endl;session.Start(project,menu);tick(session);
             Check(!session.Storage().IsPersistent(),"Editor-style session enabled player persistence");
             Check(session.GetScene()->FindEntityByName("StartLabel").GetComponent<TextComponent>().TextString=="ENTER / Begin journey","New journey menu did not initialize");
             session.Storage().Write("journey","LK1|31|3|2|1"); // Native API → real managed payload reader, a bounded puzzle checkpoint.
+            std::cout<<"Lightkeeper: island transition"<<std::endl;
             Check(session.RequestSceneLoad("Scenes/Breakwater.hazel"),"Island transition request rejected");tick(session);
             auto runtime=session.GetScene();auto player=runtime->FindEntityByName("Iona");
             Check(bool(player) && session.GetError().empty(),"Authored island failed to start");
             Check(session.Storage().Read("journey").find("LK1|63|")==0,"Real authored court did not power its receiver/save exactly once");
+            std::cout<<"Lightkeeper: court/checkpoint/ending"<<std::endl;
             Check(runtime->GetAllEntitiesWith<IDComponent>().size()>2700 && runtime->GetAllEntitiesWith<IDComponent>().size()<2900,"Island or bounded beam pool incomplete");
             Teleport(player,{4,12,.55f});for(int i=0;i<30;i++)tick(session);
             Capture(std::filesystem::u8path(argv[3])/"LastLightkeeper-court.ppm",960,720);

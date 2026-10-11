@@ -100,7 +100,7 @@ def game_tests(configuration,profile,packages,output):
             if hz.SYSTEM=='linux':env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
             with (logs/'RuntimeSmoke.log').open('w',encoding='utf-8') as stream:
                 result=subprocess.run([str(native),*[str(hz.ROOT/'examples'/game/(game+'.hproj')) for game in NATIVE_GAMES],str(shots),str(hz.ROOT/'examples/LastLightkeeper/LastLightkeeper.hproj')],cwd=working,env=env,stdout=stream,stderr=subprocess.STDOUT,timeout=120)
-            if result.returncode:raise RuntimeError('Game runtime regression:\n'+(logs/'RuntimeSmoke.log').read_text(errors='replace'))
+            if result.returncode:raise RuntimeError(f'Game runtime regression (exit {result.returncode}):\n'+(logs/'RuntimeSmoke.log').read_text(errors='replace'))
             for capture in shots.glob('*.ppm'):ppm_to_png(capture)
         roots=[]
         if packages:
