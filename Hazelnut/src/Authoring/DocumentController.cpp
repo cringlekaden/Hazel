@@ -1,5 +1,7 @@
 #include "AuthoringPanel.h"
 #include "EditorLayer.h"
+#include "LoadingUI.h"
+#include "Hazel/Core/Application.h"
 #include "Hazel/Scene/Prefab.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Core/Resources.h"
@@ -22,7 +24,7 @@ std::vector<DocumentInfo> AuthoringPanel::Documents() const
     const auto canSaveAsset = Availability(EditorAction::SaveAsset);
     if (m_PrefabScene)
         docs.push_back({EditorDocument::Prefab, m_PrefabScene->GetIdentity(), m_PrefabReference,
-                        SceneSerializer(m_PrefabScene).SerializeAuthoredSnapshot() != m_SavedPrefab,
+                        SceneSerializer(m_PrefabScene).CaptureAuthoredState() != m_SavedPrefab,
                         canSaveAsset ? "" : canSaveAsset.Reason});
     if (m_Sprites.HasDocument())
         docs.push_back({EditorDocument::Sheet, m_Sprites.Identity(), m_Sprites.Name(), m_Sprites.Dirty(),
@@ -57,7 +59,7 @@ DocumentSaveResult AuthoringPanel::SaveDocument(const DocumentInfo &document)
                 return {document, SaveOutcome::Unavailable, m_Editor.m_ActionError};
             m_PrefabFile.Save(Prefab::Serialize(Project::GetAssetDirectory(), m_PrefabScene,
                          Prefab::GetEntity(m_PrefabScene), true),Resources::Get().UserData/"recovery");
-            m_SavedPrefab = SceneSerializer(m_PrefabScene).SerializeAuthoredSnapshot();
+            m_SavedPrefab = SceneSerializer(m_PrefabScene).CaptureAuthoredState();
             saved = true;
             break;
         }
@@ -117,7 +119,14 @@ void AuthoringPanel::Guard(OperationIntent intent, std::function<bool()> action)
     try
     {
         m_Documents.Request(intent, Documents(), [this, needed, action = std::move(action)]
-                            { return Require(needed) && action(); });
+                            {
+                                if(!Require(needed))return false;
+                                if(Application::Get().IsRenderingUI() && m_Editor.m_Loading &&
+                                   (needed==EditorAction::ReplaceProject || needed==EditorAction::ReplaceScene)) {
+                                    m_Editor.m_Loading->AfterUI(action);return true;
+                                }
+                                return action();
+                            });
     }
     catch (const std::exception &error)
     {

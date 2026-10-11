@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "Hazel/Core/OperationProgress.h"
 #include <cmath>
 #include "SceneSerializer.h"
 
@@ -463,7 +464,7 @@ namespace Hazel {
 		YAML::Node data;
 		try
 		{
-            data = YAML::Load(text);
+            data = OperationProgress::CPU("Parse scene YAML",[&text]{return YAML::Load(text);});
             m_Report.Migration = DocumentSchema::Scene(data,prefabDocument);
             if (!data["SceneVersion"] || data["SceneVersion"].as<int>()==1) m_Report.Problems.push_back({0,"Encoding","Save upgrades flat data to SceneVersion: 2 with explicit root relationships; original bytes are preserved first",{},true});
             if (!data["Entities"]) m_Report.Problems.push_back({0,"Entities","Known legacy missing entity list becomes an empty list on Save",{},true});
@@ -495,13 +496,17 @@ namespace Hazel {
 			return false;
 
 		std::string sceneName = data["Scene"].as<std::string>();
+        OperationProgress::Report("Create entities and resolve sprite previews",0,data["Entities"].size());
 		HZ_CORE_TRACE("Deserializing scene '{0}'", sceneName);
 
 		auto entities = data["Entities"];
 		if (entities)
 		{
+            size_t created=0;
 			for (auto entity : entities)
 			{
+                if(created%64==0)OperationProgress::Report("Create entities and authored components",created,entities.size());
+                ++created;
 				uint64_t uuid = entity["Entity"].as<uint64_t>();
 
 				std::string name;
@@ -684,12 +689,12 @@ namespace Hazel {
 			}
 		}
 
-        staged->RebuildChildren();staged->ValidateHierarchy();
+        OperationProgress::Report("Validate hierarchy and physics");staged->RebuildChildren();staged->ValidateHierarchy();
         if(prefabDocument && data["PrefabVersion"].as<int>()==2) {
             const auto roots=staged->GetChildren();
             if(roots.size()!=1 || uint64_t(roots.front())!=data["PrefabRoot"].as<uint64_t>() || staged->GetSubtree(staged->GetEntityByUUID(roots.front())).size()!=staged->m_EntityMap.size())throw std::runtime_error("PrefabRoot must identify one complete connected subtree");
         }
-        if(resources==ResourceLoading::Resolve)staged->PrepareSprites(!m_Repair);
+        OperationProgress::Report("Resolve sprite previews");if(resources==ResourceLoading::Resolve)staged->PrepareSprites(!m_Repair);
         if(resources==ResourceLoading::Resolve)for(const auto& [id,fields]:stagedScriptFields)
             for(const auto& [name,field]:fields) {
                 std::filesystem::path resource;

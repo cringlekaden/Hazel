@@ -48,7 +48,7 @@ namespace Hazel {
 		}
 
 		template<typename T>
-		T GetValue()
+		T GetValue() const
 		{
 			static_assert(sizeof(T) <= 16, "Type too large!");
 			T value{};

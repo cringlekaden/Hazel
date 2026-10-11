@@ -1,5 +1,6 @@
 #include "hzpch.h"
 #include "DocumentSchema.h"
+#include "Hazel/Core/OperationProgress.h"
 #include "Hazel/Project/RendererRequestsSerializer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include "Hazel/Project/RuntimeStorage.h"
@@ -86,6 +87,7 @@ bool Project(const YAML::Node& root)
 }
 bool Scene(const YAML::Node& root, bool prefabDocument)
 {
+    OperationProgress::Report("Validate document structure");
     Structure(root);
     if(prefabDocument) {
         Keys(root, {"Scene", "SceneVersion", "PrefabVersion", "PrefabRoot", "Entities"}, "root");
@@ -104,8 +106,11 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
     if(root["PrefabVersion"] && root["PrefabVersion"].as<int>()==2 && (!hierarchy || !root["PrefabRoot"] || !entities || entities.size()==0))throw std::runtime_error("PrefabVersion 2 requires SceneVersion 2, PrefabRoot and entities");
     bool legacy = !hierarchy || !entities;
     std::set<uint64_t> ids;
+    size_t checked=0;
     for (auto entity : entities)
     {
+        if(checked%64==0)OperationProgress::Report("Validate entity schema",checked,entities.size());
+        ++checked;
         Keys(entity, {"Entity", "TagComponent", "TransformComponent", "CameraComponent", "ScriptComponent",
                       "SpriteRendererComponent", "SpriteAnimationComponent", "CircleRendererComponent",
                       "AudioSourceComponent", "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent", "Relationship"}, "Entity");

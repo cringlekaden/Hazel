@@ -102,6 +102,13 @@ namespace Hazel {
 		m_Running = false;
 	}
 
+    void Application::PresentProgress(const std::function<void()>& draw) {
+        if(m_RenderingUI)throw std::logic_error("Loading presentation requires a completed UI frame");
+        if(m_ImGuiLayer && !m_Minimized){m_ImGuiLayer->Begin();draw();m_ImGuiLayer->End();}
+        m_Window->OnUpdate();
+        m_LastFrameTime=Time::GetTime(); // Loading time is not a gameplay timestep.
+    }
+
 	void Application::SubmitToMainThread(const std::function<void()>& function)
 	{
 		std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
@@ -153,6 +160,7 @@ namespace Hazel {
 				}
 
 				if (m_ImGuiLayer) {
+                m_RenderingUI=true;
                 m_ImGuiLayer->Begin();
 				{
 					HZ_PROFILE_SCOPE("LayerStack OnImGuiRender");
@@ -161,6 +169,7 @@ namespace Hazel {
 						layer->OnImGuiRender();
 				}
 				m_ImGuiLayer->End();
+                m_RenderingUI=false;
                 }
 			}
 

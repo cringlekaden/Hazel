@@ -223,7 +223,7 @@ public:
                 const auto saved=e.m_Authoring->m_SavedScene;
                 e.m_EditorScene->GetEntityByUUID(901).GetComponent<TagComponent>().Tag="Unsaved simulation edit";
                 Check(e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::Simulate),"Runtime toolbar Simulate failed");
-                Check(e.m_Authoring->m_SavedScene==saved && saved!=SceneSerializer(e.m_EditorScene).SerializeText(),"Simulation incorrectly marked unsaved authoring as saved");
+                Check(e.m_Authoring->m_SavedScene==saved && saved!=SceneSerializer(e.m_EditorScene).CaptureAuthoredState(),"Simulation incorrectly marked unsaved authoring as saved");
             }
             Check(!e.m_HoveredEntity,"Simulate retained editor hover"); break;
         case 9:

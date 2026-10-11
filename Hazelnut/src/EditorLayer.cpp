@@ -1,5 +1,7 @@
 #include "ContentBrowserPayload.h"
 #include "Authoring/AuthoringPanel.h"
+#include "Authoring/LoadingUI.h"
+#include "Hazel/Core/OperationProgress.h"
 #include "EditorLayer.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Core/FileSystem.h"
@@ -51,8 +53,9 @@ namespace Hazel {
 		m_ActiveScene = m_EditorScene;
         m_EditorCamera = EditorCamera(30.0f,1.778f,.1f,1000.f);
         m_Authoring=CreateScope<AuthoringPanel>(*this);
+        m_Loading=CreateScope<LoadingUI>();
         m_Authoring->MarkSceneSaved();
-        Application::Get().SetCloseRequest([this]{m_Authoring->RequestClose();});
+        Application::Get().SetCloseRequest([this]{if(m_Loading && m_Loading->Busy())m_CloseAfterLoading=true;else m_Authoring->RequestClose();});
         Application::Get().SetBackgroundTick([this]{if(m_Authoring)m_Authoring->PollTools();});
 
         std::vector<std::string> arguments;
@@ -79,6 +82,7 @@ namespace Hazel {
 	{
 		HZ_PROFILE_FUNCTION();
         if(m_Authoring) m_Authoring->Tick(ts);
+        if(m_CloseAfterLoading && !m_Loading->Busy()){m_CloseAfterLoading=false;m_Authoring->RequestClose();}
 
         if (m_SceneState != SceneState::Play)
             m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
@@ -344,6 +348,7 @@ namespace Hazel {
 
 	void EditorLayer::OnEvent(Event& e)
 	{
+        if(m_Loading && m_Loading->Busy())return;
 		if(m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_CameraController.OnEvent(e);
 		if (m_SceneState == SceneState::Edit && m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))
 		{
@@ -443,12 +448,14 @@ namespace Hazel {
     }
     bool EditorLayer::OpenProject(const std::filesystem::path& path,const ProjectOpenOptions& options)
     {
+        if(m_Loading && !m_Loading->Running() && !Application::Get().IsRenderingUI())
+            return m_Loading->Run("Open project: "+path.filename().generic_u8string(),[&]{return OpenProject(path,options);});
         if(m_Authoring && !m_Authoring->Require(EditorAction::ReplaceProject))return false;
         if(m_Authoring)m_Authoring->FlushWorkspace();
         m_OpenPath=std::filesystem::absolute(path).lexically_normal();m_OpenIsProject=true;m_OpenLoad={};
         try {
             if(path.extension()!=".hproj")throw std::runtime_error("Select a .hproj descriptor");
-            FileDocument projectFile;projectFile.Open(path);
+            OperationProgress::Report("Read project descriptor");FileDocument projectFile;projectFile.Open(path);
             auto project=Project::LoadCandidate(path,&m_OpenLoad);
             if(!project)throw std::runtime_error(m_OpenLoad.Error.empty()?"Cannot parse/open project":m_OpenLoad.Error);
             auto& config=project->GetConfig();
@@ -477,7 +484,7 @@ namespace Hazel {
                     if(m_Authoring)m_Authoring->ReportOpen(path,m_OpenLoad);
                     return ActionFailed(m_OpenLoad.Error+". Open Console to Locate or explicitly open the workspace without a scene.");
                 }
-                sceneFile.Open(startScene);
+                OperationProgress::Report("Read scene: "+startScene.filename().generic_u8string());sceneFile.Open(startScene);
                 SceneSerializer loader(scene,assets,true,project->GetAssets());
                 if(!loader.DeserializeText(sceneFile.Original()))throw std::runtime_error(loader.Report().Error);
                 sceneReport=loader.Report();
@@ -487,13 +494,13 @@ namespace Hazel {
                 m_OpenLoad.Problems.push_back({0,"Startup scene","Opened workspace without a scene; descriptor references retained",path});
             }
             scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x),static_cast<uint32_t>(m_ViewportSize.y));
-            auto browser=assetRootExists?CreateScope<ContentBrowserPanel>(assets):nullptr;
+            OperationProgress::Report("Index asset folders");auto browser=assetRootExists?CreateScope<ContentBrowserPanel>(assets):nullptr;
             projectFile.Check();if(!sceneFile.Path().empty())sceneFile.Check();
             const auto assembly=Project::ResolveAssetPath(assets,config.ScriptModulePath);
             Scope<ScriptAssemblyCandidate> scriptCandidate;
             if(!config.ScriptModulePath.empty() && std::filesystem::is_regular_file(assembly)) {
                 // Present invalid assemblies still reject staging; failed replacement retains the old domain.
-                scriptCandidate=ScriptEngine::StageAssembly(assembly);
+                OperationProgress::Report("Load managed scripts and dependencies");scriptCandidate=ScriptEngine::StageAssembly(assembly);
             } else {
                 m_OpenLoad.Problems.push_back({0,"Scripts","Scripts not built/available. Content editing and script-free Play remain available; Build Scripts when ready.",assembly});
             }
@@ -506,6 +513,7 @@ namespace Hazel {
                 projectFile.Save(ProjectSerializer(project).SerializeText(),Resources::Get().UserData/"recovery");
                 m_OpenLoad.Saved();
             }
+            OperationProgress::Report("Commit checked workspace");
             if(scriptCandidate)ScriptEngine::CommitAssembly(std::move(scriptCandidate),[this]{if(m_SceneState!=SceneState::Edit)OnSceneStop();});
             else {if(m_SceneState!=SceneState::Edit)OnSceneStop();ScriptEngine::ClearApplicationAssembly();}
             for(auto handle:scene->GetAllEntitiesWith<ScriptComponent>()) {
@@ -570,11 +578,13 @@ namespace Hazel {
 
     bool EditorLayer::OpenScene(const std::filesystem::path& path)
     {
+        if(m_Loading && !m_Loading->Running() && !Application::Get().IsRenderingUI())
+            return m_Loading->Run("Open scene: "+path.filename().generic_u8string(),[&]{return OpenScene(path);});
         if(m_Authoring && !m_Authoring->Require(EditorAction::ReplaceScene))return false;
         m_OpenPath=std::filesystem::absolute(path).lexically_normal();m_OpenIsProject=false;m_OpenLoad={};
         try {
             if(path.extension()!=".hazel")throw std::runtime_error("Select a .hazel scene");
-            FileDocument file;file.Open(path);
+            OperationProgress::Report("Read scene document");FileDocument file;file.Open(path);
             auto scene=CreateRef<Scene>();
             scene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x),static_cast<uint32_t>(m_ViewportSize.y));
             const auto assetRoot=Project::GetActive()?Project::GetAssetDirectory():std::filesystem::current_path();
@@ -590,7 +600,7 @@ namespace Hazel {
             }
             if(!m_OpenLoad.Problems.empty())m_OpenLoad.State=DocumentLoadState::EditableWithProblems;
             if(m_OpenLoad.Migration || !m_OpenLoad.Problems.empty())file.PreserveOriginal();
-            file.Check();
+            OperationProgress::Report("Check document identity and refresh assets");file.Check();
             if(m_SceneState!=SceneState::Edit)OnSceneStop();
             if(Project::GetActive()) {
                 // Keep shared save/assignment invalidation after successful staged Open.

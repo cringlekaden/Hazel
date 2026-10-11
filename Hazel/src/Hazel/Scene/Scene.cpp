@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "Hazel/Core/OperationProgress.h"
 #include "Hazel/Audio/AudioPlayback.h"
 #include "Hazel/Project/Project.h"
 #include "Scene.h"
@@ -748,8 +749,11 @@ namespace Hazel {
 
     void Scene::PrepareSprites(bool strict)
     {
+        size_t previewed=0;const auto previewCount=m_Registry.view<SpriteRendererComponent>().size();
         const uint64_t epoch=m_Assets?m_Assets->Epoch():1;
         for(auto e:m_Registry.view<SpriteRendererComponent>()) {
+            if(previewed%128==0)OperationProgress::Report("Resolve sprite previews",previewed,previewCount);
+            ++previewed;
             auto& s=m_Registry.get<SpriteRendererComponent>(e);
             if(s.PreparedEpoch!=epoch || !(s.PreparedSource==s.Source)) {
                 s.PreparedEpoch=epoch;s.PreparedSource=s.Source;s.Resolved={};

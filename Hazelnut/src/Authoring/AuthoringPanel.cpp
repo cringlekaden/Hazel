@@ -1,4 +1,5 @@
 #include "AuthoringPanel.h"
+#include "LoadingUI.h"
 #include "EditorLayer.h"
 #include "Hazel/Project/ProjectSerializer.h"
 #include "Hazel/Project/ScriptSource.h"
@@ -93,6 +94,8 @@ AuthoringPanel::AuthoringPanel(EditorLayer &editor) : m_Editor(editor), m_Consol
 }
 ActionAvailability AuthoringPanel::Availability(EditorAction action) const
 {
+    if(m_Editor.m_Loading && m_Editor.m_Loading->Busy() && !m_Editor.m_Loading->Running() && action!=EditorAction::Browse)
+        return {"A workspace operation is queued"};
     const auto available=EditorActionAvailability({static_cast<EditorMode>(m_Editor.m_SceneState), m_Tools.Busy(),
                                      bool(Project::GetActive()), bool(m_Editor.m_EditorScene),
                                      m_Documents.Pending() && !m_ResolvingDocumentAction},
@@ -111,7 +114,7 @@ bool AuthoringPanel::Require(EditorAction action)
 void AuthoringPanel::MarkSceneSaved() { m_SavedScene = SceneText(); }
 std::string AuthoringPanel::SceneText() const
 {
-    return SceneSerializer(m_Editor.m_EditorScene).SerializeAuthoredSnapshot();
+    return SceneSerializer(m_Editor.m_EditorScene).CaptureAuthoredState();
 }
 void AuthoringPanel::RememberProject()
 {
@@ -1252,7 +1255,7 @@ void AuthoringPanel::SelectAsset(const std::filesystem::path &path)
                   FileDocument file;file.Open(path,true);
                   auto scene = Prefab::Load(Project::GetAssetDirectory(), relative, true);
                   file.Check();
-                  auto saved = SceneSerializer(scene).SerializeAuthoredSnapshot();
+                  auto saved = SceneSerializer(scene).CaptureAuthoredState();
                   auto transform = Prefab::GetEntity(scene).GetComponent<TransformComponent>();
                   transform.Translation.x = transform.Translation.y = 0;
                   m_PrefabScene = scene;
@@ -1378,7 +1381,7 @@ void AuthoringPanel::Prefabs()
     m_PrefabFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
     if (m_PrefabFocused)
         m_ActiveDocument = EditorDocument::Prefab;
-    bool dirty = SceneSerializer(m_PrefabScene).SerializeAuthoredSnapshot() != m_SavedPrefab;
+    bool dirty = SceneSerializer(m_PrefabScene).CaptureAuthoredState() != m_SavedPrefab;
     ImGui::TextWrapped("%s%s", m_PrefabReference.c_str(), dirty ? " * Unsaved" : "");
     if(m_PrefabFile.NeedsBackup())ImGui::TextWrapped("First Save preserves the opened original before writing supported content/defaults. Unresolved references remain authored values.");
     ImGui::TextWrapped("Detached instances. Saving affects future instances "

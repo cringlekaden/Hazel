@@ -1,9 +1,12 @@
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Core/Log.h"
 #include "Hazel/Core/Resources.h"
+#include "Hazel/Core/FileDocument.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Project/ProjectCreation.h"
 #include "Hazel/Assets/SpriteSheet.h"
+#include "Hazel/Scene/SceneSerializer.h"
+#include <chrono>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -21,6 +24,16 @@ int main(int argc, char **argv) {
 #endif
         if (args.size() == 2 && args[1] == "--contract") {
             std::cout << "HAZEL_AUTHORING_CONTRACT=1\n";
+            return 0;
+        }
+        if(args.size()==4 && args[1]=="measure-scene") {
+            Hazel::Log::Init();const auto project=Hazel::Project::LoadCandidate(std::filesystem::u8path(args[2]));
+            if(!project)throw std::runtime_error("Cannot read project");
+            auto scene=Hazel::CreateRef<Hazel::Scene>();Hazel::SceneSerializer serializer(scene,project->GetAssetRoot(),true);
+            auto measured=[&](const char* operation,auto work){auto start=std::chrono::steady_clock::now();work();std::cout<<operation<<": "<<std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count()<<" s\n";};
+            measured("Parse/schema/components/hierarchy",[&]{if(!serializer.DeserializeText(Hazel::FileDocument::Read(Hazel::Project::ResolveOwnedAsset(project->GetAssetRoot(),std::filesystem::u8path(args[3]))),false,Hazel::ResourceLoading::MetadataOnly))throw std::runtime_error(serializer.Report().Error);});
+            measured("10 YAML dirty snapshots",[&]{for(int i=0;i<10;i++)serializer.SerializeAuthoredSnapshot();});
+            measured("100 exact authored comparisons",[&]{for(int i=0;i<100;i++)serializer.CaptureAuthoredState();});
             return 0;
         }
         // Same grid/validation/persistence services as Hazelnut's Sprite Sheet panel.

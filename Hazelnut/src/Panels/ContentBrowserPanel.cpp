@@ -36,7 +36,7 @@ const char *Type(const std::filesystem::path &path)
 } // namespace
 ContentBrowserPanel::ContentBrowserPanel() : ContentBrowserPanel(Project::GetAssetDirectory()) {}
 ContentBrowserPanel::ContentBrowserPanel(const std::filesystem::path &assetRoot)
-    : m_BaseDirectory(assetRoot), m_CurrentDirectory(assetRoot)
+    : m_BaseDirectory(std::filesystem::weakly_canonical(assetRoot)), m_CurrentDirectory(m_BaseDirectory)
 {
     m_DirectoryIcon =
         Texture2D::Create(Resources::Resolve("Icons/ContentBrowser/DirectoryIcon.png").generic_u8string());
@@ -58,7 +58,7 @@ bool ContentBrowserPanel::Navigate(const std::filesystem::path &path)
         if (relative.empty() || relative.is_absolute() || *relative.begin() == ".." ||
             !std::filesystem::is_directory(candidate))
             throw std::runtime_error("Folder must remain inside this project's Assets");
-        m_CurrentDirectory = path;
+        m_CurrentDirectory = candidate;
         m_Selected.clear();
         m_Search.clear();
         m_Error.clear();

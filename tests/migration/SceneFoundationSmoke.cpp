@@ -28,6 +28,34 @@ static void Check(bool condition, const char* message)
 {
     if (!condition) throw std::runtime_error(message);
 }
+static void AuthoredComparisonContracts() {
+    using namespace Hazel;
+    auto scene=CreateRef<Scene>();auto e=scene->CreateEntity("Authored comparison");
+    e.AddComponent<SpriteRendererComponent>();e.AddComponent<SpriteAnimationComponent>();
+    e.AddComponent<AudioSourceComponent>();e.AddComponent<CameraComponent>();e.AddComponent<ScriptComponent>();
+    e.AddComponent<Rigidbody2DComponent>();e.AddComponent<BoxCollider2DComponent>();e.AddComponent<CircleCollider2DComponent>();
+    e.AddComponent<TextComponent>(TextComponent{"",nullptr});e.AddComponent<CircleRendererComponent>();
+    SceneSerializer serializer(scene);const auto baseline=serializer.CaptureAuthoredState();
+    auto changed=[&](auto& field,auto value){const auto old=field;field=value;Check(serializer.CaptureAuthoredState()!=baseline,"Persisted edit did not dirty exact authored state");field=old;Check(serializer.CaptureAuthoredState()==baseline,"Revert did not restore exact authored state");};
+    changed(e.GetComponent<TagComponent>().Tag,std::string("Changed"));
+    changed(e.GetComponent<TransformComponent>().Translation,glm::vec3(1,2,0));
+    changed(e.GetComponent<SpriteRendererComponent>().Color,glm::vec4(.4f));
+    changed(e.GetComponent<SpriteAnimationComponent>().Speed,2.0);
+    changed(e.GetComponent<AudioSourceComponent>().Gain,.8f);
+    changed(e.GetComponent<CameraComponent>().Primary,false);
+    changed(e.GetComponent<ScriptComponent>().ClassName,std::string("Missing.ButEditable"));
+    changed(e.GetComponent<Rigidbody2DComponent>().GravityScale,0.f);
+    changed(e.GetComponent<BoxCollider2DComponent>().Restitution,.3f);
+    changed(e.GetComponent<CircleCollider2DComponent>().Radius,.7f);
+    changed(e.GetComponent<TextComponent>().TextString,std::string("Different prose"));
+    changed(e.GetComponent<CircleRendererComponent>().Thickness,.5f);
+    auto& animation=e.GetComponent<SpriteAnimationComponent>();animation.Error="Preview failure";animation.Initialized=true;
+    Check(serializer.CaptureAuthoredState()==baseline,"Transient preview state dirtied authored content");
+    e.GetComponent<TransformComponent>().Scale.x=0;
+    Check(serializer.CaptureAuthoredState()!=baseline,"Invalid draft was hidden from dirty comparison");
+    bool rejected=false;try{serializer.SerializeText();}catch(const std::exception&){rejected=true;}
+    Check(rejected,"Fast dirty comparison bypassed save validation");
+}
 #include "EditorDocumentChecks.h"
 #include "EditorStateChecks.h"
 #include "ProjectCreationChecks.h"
@@ -160,6 +188,7 @@ int main()
     try {
         StorageChecks();
         Hazel::Log::Init();
+        AuthoredComparisonContracts();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();
         Hazel::ProjectCreationChecks();Hazel::RendererPolicyChecks(); Hazel::HierarchyChecks(); Hazel::SubtreePrefabChecks();
