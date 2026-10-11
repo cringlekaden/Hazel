@@ -11,7 +11,7 @@ project "ExampleGameTests"
     dotnetframework "4.7.2"
     targetdir (assert(os.getenv("HAZEL_GAME_TEST_OUTPUT")))
     objdir (os.getenv("HAZEL_GAME_TEST_OUTPUT") .. "/Intermediates")
-    files { path.getabsolute("FlightTests.cs"), path.getabsolute("../../examples/Skybound/Assets/Scripts/Source/Flight.cs") }
+    files { path.getabsolute("LightkeeperTests.cs"), path.getabsolute("../../examples/LastLightkeeper/Assets/Scripts/Source/Rules.cs"), path.getabsolute("FlightTests.cs"), path.getabsolute("../../examples/Skybound/Assets/Scripts/Source/Flight.cs") }
     links { "System" }
     filter "system:linux"
         buildoptions { "-sdk:4.7.2" }

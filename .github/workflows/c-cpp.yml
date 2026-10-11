@@ -1,7 +1,7 @@
 name: C/C++ CI
 on:
   push:
-    branches: [master, 'migration/**', 'fix/authoring-reliability', 'feature/nutella-runtime', 'feature/example-games', 'feature/editor-authoring', 'feature/sprite-sheet-authoring', 'feature/editor-usability']
+    branches: [master, 'migration/**', 'fix/authoring-reliability', 'feature/nutella-runtime', 'feature/example-games', 'feature/editor-authoring', 'feature/sprite-sheet-authoring', 'feature/editor-usability', 'feature/last-lightkeeper']
   pull_request:
     branches: [master]
   workflow_dispatch:
@@ -56,7 +56,7 @@ jobs:
       - name: Build both authored games in Debug and Release
         run: |
           foreach ($configuration in @('Debug', 'Release')) {
-            foreach ($game in @('MeadowRun', 'Skybound')) {
+            foreach ($game in @('MeadowRun', 'Skybound', 'LastLightkeeper')) {
               python scripts/hazel.py script-build "examples/$game/$game.hproj" --config $configuration
               if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             }
@@ -73,7 +73,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Construct complete Windows game archives
         run: |
-          foreach ($game in @('MeadowRun', 'Skybound')) {
+          foreach ($game in @('MeadowRun', 'Skybound', 'LastLightkeeper')) {
             python scripts/hazel.py package --app Nutella --project "examples/$game/$game.hproj" --name $game --output dist/games
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
@@ -92,6 +92,11 @@ jobs:
         with:
           name: Skybound-Windows-x64-Release-${{ github.sha }}
           path: dist/games/Skybound-windows-x86_64-Release.zip*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LastLightkeeper-Windows-x86_64-Release-${{ github.sha }}
+          path: dist/games/LastLightkeeper-windows-x86_64-Release.zip*
           if-no-files-found: error
       - name: Preserve separate testing evidence
         if: always()
@@ -143,7 +148,7 @@ jobs:
       - name: Build both authored games in Debug and Release
         run: |
           for configuration in Debug Release; do
-            for game in MeadowRun Skybound; do
+            for game in MeadowRun Skybound LastLightkeeper; do
               python3 scripts/hazel.py script-build "examples/$game/$game.hproj" --config "$configuration"
             done
           done
@@ -171,7 +176,7 @@ jobs:
           xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test-games --config Release --profile software
       - name: Construct complete Linux game archives
         run: |
-          for game in MeadowRun Skybound; do
+          for game in MeadowRun Skybound LastLightkeeper; do
             python3 scripts/hazel.py package --app Nutella --project "examples/$game/$game.hproj" --name "$game" --output dist/games
           done
       - name: Linux extracted game acceptance
@@ -187,6 +192,11 @@ jobs:
         with:
           name: Skybound-Linux-x86_64-Release-${{ github.sha }}
           path: dist/games/Skybound-linux-x86_64-Release.tar.gz*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LastLightkeeper-Linux-x86_64-Release-${{ github.sha }}
+          path: dist/games/LastLightkeeper-linux-x86_64-Release.tar.gz*
           if-no-files-found: error
       - name: Preserve separate testing evidence
         if: always()

@@ -1,0 +1,544 @@
+SpriteSheet:
+  Version: 1
+  Texture: Art/tiny-dungeon.png
+  TextureSize: [192, 176]
+  Sampling:
+    MinFilter: Nearest
+    MagFilter: Nearest
+    WrapS: ClampToEdge
+    WrapT: ClampToEdge
+    GenerateMips: false
+    Format: RGBA8
+  Regions:
+    - ID: "a8a72f9f2b92bdcc"
+      Name: tile_000
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "3d2eca439f993496"
+      Name: tile_001
+      Rect: [16, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "57dba161531a5ee2"
+      Name: tile_002
+      Rect: [32, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "bc258d2572b92136"
+      Name: tile_003
+      Rect: [48, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "1ba0a0732b736334"
+      Name: tile_004
+      Rect: [64, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "5fbc4695b3689d12"
+      Name: tile_005
+      Rect: [80, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "10c83acf89e9923d"
+      Name: tile_006
+      Rect: [96, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "1d20159f07dbfc70"
+      Name: tile_007
+      Rect: [112, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "26e47038b41c69ed"
+      Name: tile_008
+      Rect: [128, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "4ab428a3f2547b63"
+      Name: tile_009
+      Rect: [144, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "1b357f4355a3623f"
+      Name: tile_010
+      Rect: [160, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "66caa5be4f0c1704"
+      Name: tile_011
+      Rect: [176, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "94a2d1bb6ee87783"
+      Name: tile_012
+      Rect: [0, 16, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "1ac87504a83b19a6"
+      Name: tile_013
+      Rect: [16, 16, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "07affb5861d78575"
+      Name: tile_014
+      Rect: [32, 16, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "58bd38118eff2b96"
+      Name: tile_015
+      Rect: [48, 16, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "a9561911865e0864"
+      Name: tile_016
+      Rect: [64, 16, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "8a47931544616f8e"
+      Name: tile_017
+      Rect: [80, 16, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "a63d21c2e3dd6ceb"
+      Name: tile_018
+      Rect: [96, 16, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "12b42edae99f0c83"
+      Name: tile_019
+      Rect: [112, 16, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "ef6c7e723fd55bae"
+      Name: tile_020
+      Rect: [128, 16, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "344e5e95ade0ccb1"
+      Name: tile_021
+      Rect: [144, 16, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "1d6893cb3b0ea476"
+      Name: tile_022
+      Rect: [160, 16, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "17e6769a6a6684dd"
+      Name: tile_023
+      Rect: [176, 16, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "e732e42dea9c5817"
+      Name: tile_024
+      Rect: [0, 32, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "6a0f6d7b6c9ada31"
+      Name: tile_025
+      Rect: [16, 32, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "e1843a5a08ad4454"
+      Name: tile_026
+      Rect: [32, 32, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "96366f464a600d9c"
+      Name: tile_027
+      Rect: [48, 32, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "344443ffcf23f44f"
+      Name: tile_028
+      Rect: [64, 32, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "9ccd81aebf3ab03c"
+      Name: tile_029
+      Rect: [80, 32, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "bb0b3949c239d807"
+      Name: tile_030
+      Rect: [96, 32, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "7efa773a08754f3e"
+      Name: tile_031
+      Rect: [112, 32, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "debe02a74e948278"
+      Name: tile_032
+      Rect: [128, 32, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "a136cccf05f8b56c"
+      Name: tile_033
+      Rect: [144, 32, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "513cb6c10bfb27c3"
+      Name: tile_034
+      Rect: [160, 32, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "ae4a940dafbed0a7"
+      Name: tile_035
+      Rect: [176, 32, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "724ba023908d709d"
+      Name: tile_036
+      Rect: [0, 48, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "6240fc0d748bf25a"
+      Name: tile_037
+      Rect: [16, 48, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "960fa8b85494bf71"
+      Name: tile_038
+      Rect: [32, 48, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "12a3f46fda184ffa"
+      Name: tile_039
+      Rect: [48, 48, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "29ef002c9f6665ab"
+      Name: tile_040
+      Rect: [64, 48, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "b680f05d92cfb546"
+      Name: tile_041
+      Rect: [80, 48, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "f0f88bc1769bde39"
+      Name: tile_042
+      Rect: [96, 48, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "0e867314bfc76ffd"
+      Name: tile_043
+      Rect: [112, 48, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "348eef4017667d0c"
+      Name: tile_044
+      Rect: [128, 48, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "71063619fc099029"
+      Name: tile_045
+      Rect: [144, 48, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "405734f1171c9cfd"
+      Name: tile_046
+      Rect: [160, 48, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "529261753fe52935"
+      Name: tile_047
+      Rect: [176, 48, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "ac22c87a2e5520fb"
+      Name: tile_048
+      Rect: [0, 64, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "77e99828f0667719"
+      Name: tile_049
+      Rect: [16, 64, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "2fd6e8464007721f"
+      Name: tile_050
+      Rect: [32, 64, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "bbb9e3b38e846d4f"
+      Name: tile_051
+      Rect: [48, 64, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "16d3b7b4864b76de"
+      Name: tile_052
+      Rect: [64, 64, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "ec2716329b2e4a3f"
+      Name: tile_053
+      Rect: [80, 64, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "016ac5be12424568"
+      Name: tile_054
+      Rect: [96, 64, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "e2fe52c0bfd64126"
+      Name: tile_055
+      Rect: [112, 64, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "52bdc359cade0040"
+      Name: tile_056
+      Rect: [128, 64, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "a17684c90f55ba83"
+      Name: tile_057
+      Rect: [144, 64, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "e9c025464355dc6e"
+      Name: tile_058
+      Rect: [160, 64, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "33da5de5b06ce12c"
+      Name: tile_059
+      Rect: [176, 64, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "8d103ec0d7a687f4"
+      Name: tile_060
+      Rect: [0, 80, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "cb2aa9a5a109c923"
+      Name: tile_061
+      Rect: [16, 80, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "fbf6c774c9b1678f"
+      Name: tile_062
+      Rect: [32, 80, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "3d058500d491b35a"
+      Name: tile_063
+      Rect: [48, 80, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "97c839ff742f9e2b"
+      Name: tile_064
+      Rect: [64, 80, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "e5dec5aa4c7f9883"
+      Name: tile_065
+      Rect: [80, 80, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "c1b44aa44238c470"
+      Name: tile_066
+      Rect: [96, 80, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "37ca2fc733311a6a"
+      Name: tile_067
+      Rect: [112, 80, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "a00adc36d213db74"
+      Name: tile_068
+      Rect: [128, 80, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "ab986e56ce288d16"
+      Name: tile_069
+      Rect: [144, 80, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "639177262f545112"
+      Name: tile_070
+      Rect: [160, 80, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "be89b80e9156b702"
+      Name: tile_071
+      Rect: [176, 80, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "e9e8cc4edb1765d7"
+      Name: tile_072
+      Rect: [0, 96, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "dc19f26c10c2f699"
+      Name: tile_073
+      Rect: [16, 96, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "760a3e1881d87cb6"
+      Name: tile_074
+      Rect: [32, 96, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "bc79f1deab429646"
+      Name: tile_075
+      Rect: [48, 96, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "7c1f0b07d40aeb41"
+      Name: tile_076
+      Rect: [64, 96, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "fa6020fa74504a59"
+      Name: tile_077
+      Rect: [80, 96, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "6e6b8869923fca6e"
+      Name: tile_078
+      Rect: [96, 96, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "3c734589dccbe144"
+      Name: tile_079
+      Rect: [112, 96, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "4c23bcf53422a0ff"
+      Name: tile_080
+      Rect: [128, 96, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "e2bc1c996010c4e4"
+      Name: tile_081
+      Rect: [144, 96, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "9eb77f44a0518bae"
+      Name: tile_082
+      Rect: [160, 96, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "9aac85aefd4de33b"
+      Name: tile_083
+      Rect: [176, 96, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "57b1857432f1b3e5"
+      Name: tile_084
+      Rect: [0, 112, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "fc9e0d06e21883b0"
+      Name: tile_085
+      Rect: [16, 112, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "2dcbc263812b06b2"
+      Name: tile_086
+      Rect: [32, 112, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "16ef92aa20c3c8ba"
+      Name: tile_087
+      Rect: [48, 112, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "2de151b5ba0697f1"
+      Name: tile_088
+      Rect: [64, 112, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "a2a5eb47df7ef7cd"
+      Name: tile_089
+      Rect: [80, 112, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "c52d51a2a4d8b16d"
+      Name: tile_090
+      Rect: [96, 112, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "b77504c6bd8941cf"
+      Name: tile_091
+      Rect: [112, 112, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "8522e40af597b2b9"
+      Name: tile_092
+      Rect: [128, 112, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "35231dab12037422"
+      Name: tile_093
+      Rect: [144, 112, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "ff608d86939a3193"
+      Name: tile_094
+      Rect: [160, 112, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "b07fd788ce78f641"
+      Name: tile_095
+      Rect: [176, 112, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "72c8917235bb140c"
+      Name: tile_096
+      Rect: [0, 128, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "c623dc90417a2d34"
+      Name: tile_097
+      Rect: [16, 128, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "0779152aa2b1673b"
+      Name: tile_098
+      Rect: [32, 128, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "8449af29ba52fb2e"
+      Name: tile_099
+      Rect: [48, 128, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "6c1e1591d9473d47"
+      Name: tile_100
+      Rect: [64, 128, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "9ecfed0bcefceb49"
+      Name: tile_101
+      Rect: [80, 128, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "2957cd21a878efb4"
+      Name: tile_102
+      Rect: [96, 128, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "c914e964d42d46dc"
+      Name: tile_103
+      Rect: [112, 128, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "7f2c5c6fd9ec6341"
+      Name: tile_104
+      Rect: [128, 128, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "a431c29907735956"
+      Name: tile_105
+      Rect: [144, 128, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "7a9f70f2f7bb7bc8"
+      Name: tile_106
+      Rect: [160, 128, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "4188f33063842cec"
+      Name: tile_107
+      Rect: [176, 128, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "60ffc1c74db11350"
+      Name: tile_108
+      Rect: [0, 144, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "7da7b5609ce5b652"
+      Name: tile_109
+      Rect: [16, 144, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "20738f4aa8555a1f"
+      Name: tile_110
+      Rect: [32, 144, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "c855bfd910a6d4d5"
+      Name: tile_111
+      Rect: [48, 144, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "cf966a42ef2b2335"
+      Name: tile_112
+      Rect: [64, 144, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "942c25464bf2fe32"
+      Name: tile_113
+      Rect: [80, 144, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "092f29f2b5482bbc"
+      Name: tile_114
+      Rect: [96, 144, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "097bd4b6e3b88dba"
+      Name: tile_115
+      Rect: [112, 144, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "a96f49a5c5b0fbfc"
+      Name: tile_116
+      Rect: [128, 144, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "29e1ce37db2f6062"
+      Name: tile_117
+      Rect: [144, 144, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "8018d09573a6233c"
+      Name: tile_118
+      Rect: [160, 144, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "6dd0d7040e4ee0a3"
+      Name: tile_119
+      Rect: [176, 144, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "54cb05cb6313b471"
+      Name: tile_120
+      Rect: [0, 160, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "40bfeb9c687c25c8"
+      Name: tile_121
+      Rect: [16, 160, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "f6c2120ccd0472eb"
+      Name: tile_122
+      Rect: [32, 160, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "c364d33860b9d191"
+      Name: tile_123
+      Rect: [48, 160, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "5938a3144b91d1da"
+      Name: tile_124
+      Rect: [64, 160, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "9be63b823ff259ef"
+      Name: tile_125
+      Rect: [80, 160, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "571dd8143003ef66"
+      Name: tile_126
+      Rect: [96, 160, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "2e8ac94ff38c7247"
+      Name: tile_127
+      Rect: [112, 160, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "1c6d6c49cfd267bf"
+      Name: tile_128
+      Rect: [128, 160, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "0b77f46f43fcee82"
+      Name: tile_129
+      Rect: [144, 160, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "9e58d0360f42ff86"
+      Name: tile_130
+      Rect: [160, 160, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "fbe3b0b6d29f4a45"
+      Name: tile_131
+      Rect: [176, 160, 16, 16]
+      Pivot: [0.5, 0.5]
+  RetiredRegionIDs: []
+  Clips:
+    []
+  RetiredClipIDs: []

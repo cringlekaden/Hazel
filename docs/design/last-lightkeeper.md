@@ -15,7 +15,7 @@ native/service/desktop regressions and Linux/Windows CI.
 | Prefabs | Detached subtree instantiation, UUID/reference remapping, destruction at safe boundaries (`Prefab`, `Entity.Instantiate`). Reusable scene decorations and light-beam segment prefab. |
 | Scene changes | `Scene.LoadScene` queues one asset-relative transition; RuntimeSession validates before retiring old scene. Menu → island → endpoint. |
 | Hierarchy | Root rigidbodies; visual/HUD children use local transforms. Camera children form screen UI. Keep-world reparent rejects shear. |
-| Animation | `.hsprites` regions/clips, nearest sampling, SpriteAnimationComponent. Kenney Tiny characters are static poses, not walking sheets: no invented animation coverage. Actual machinery/light clips and movement bob are suitable for the slice. Directional walking art remains a specific later art task. |
+| Animation | `.hsprites` regions/clips, nearest sampling, SpriteAnimationComponent. Kenney Tiny characters are static poses, not walking sheets: no invented animation coverage. Actual light clips and movement bob are suitable for the slice. Directional walking art remains a specific later art task. |
 | Movement / collision | Box2D root dynamic body, zero gravity, writable velocity, fixed rotation; static authored colliders. Hazard proximity is ordinary game logic, since managed collision callbacks/raycast are absent. |
 | Mirror puzzle | Discrete authored grid and reflect/occlusion solver in game C#. Renderer2D can draw textured beams; no lighting engine or general puzzle framework needed. |
 | HUD / dialogue | TextComponent plus asset panels/icons as camera children. No stock ImGui in player. C# interaction proximity, edge input, queued authored dialogue; no general dialogue engine needed. |

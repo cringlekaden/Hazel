@@ -1,0 +1,177 @@
+SpriteSheet:
+  Version: 1
+  Texture: Art/ui_0013.png
+  TextureSize:
+  - 16
+  - 16
+  Sampling:
+    MinFilter: Nearest
+    MagFilter: Nearest
+    WrapS: ClampToEdge
+    WrapT: ClampToEdge
+    GenerateMips: false
+    Format: RGBA8
+  Regions:
+  - ID: 292cc48f85e52399
+    Name: tile_000
+    Rect:
+    - 0
+    - 0
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: edfe83d0bf89de79
+    Name: tile_001
+    Rect:
+    - 4
+    - 0
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: c4b4de08ddd6e407
+    Name: tile_002
+    Rect:
+    - 8
+    - 0
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: 2bfe3c95325bfecc
+    Name: tile_003
+    Rect:
+    - 12
+    - 0
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: 8ddc3e274acafb68
+    Name: tile_004
+    Rect:
+    - 0
+    - 4
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: f17ef17e8452e3e6
+    Name: tile_005
+    Rect:
+    - 4
+    - 4
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: 95e62c79bc0e5c22
+    Name: tile_006
+    Rect:
+    - 8
+    - 4
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: 3f2b80e60d76a55e
+    Name: tile_007
+    Rect:
+    - 12
+    - 4
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: 3095f16ca9413625
+    Name: tile_008
+    Rect:
+    - 0
+    - 8
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: 1e64951875183e57
+    Name: tile_009
+    Rect:
+    - 4
+    - 8
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: b2bada13298ef6f4
+    Name: tile_010
+    Rect:
+    - 8
+    - 8
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: f25ce9293c1a63e8
+    Name: tile_011
+    Rect:
+    - 12
+    - 8
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: 571873486399f1cc
+    Name: tile_012
+    Rect:
+    - 0
+    - 12
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: 9fc973aa5162f333
+    Name: tile_013
+    Rect:
+    - 4
+    - 12
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: 97d8b50f59732128
+    Name: tile_014
+    Rect:
+    - 8
+    - 12
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  - ID: b13dcbe1f66e7bdf
+    Name: tile_015
+    Rect:
+    - 12
+    - 12
+    - 4
+    - 4
+    Pivot:
+    - 0.5
+    - 0.5
+  RetiredRegionIDs: []
+  Clips: []
+  RetiredClipIDs: []

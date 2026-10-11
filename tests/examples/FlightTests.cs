@@ -43,6 +43,7 @@ class FlightTests {
             Check(portrait.Phase==Flight.State.Flying&&portrait.Y<-4,"Portrait flight still collides with the old authored floor");
             for(int i=0;i<250;i++)portrait.Advance(1f/120,false);
             Check(portrait.Phase==Flight.State.Dead&&portrait.Y-Flight.BirdRadius<portrait.Floor,"Viewport floor did not match collision bounds");
+            LightkeeperTests.Run();
             Console.WriteLine("PASS: ready/input/death isolation, fixed-step rate equivalence, fair gaps, 20-minute bounded pool and once-only scoring ("+longRun.Score+")");return 0;
         }catch(Exception error){Console.Error.WriteLine(error);return 1;}
     }

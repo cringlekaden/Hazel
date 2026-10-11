@@ -5,7 +5,10 @@
     "archive_sha256": "9768692dccff1d706408a5aedd6ca4f6cd1409506cbc84cb2f862919764be977",
     "license": "CC0-1.0",
     "license_verified": "Included License.txt",
-    "imported": "Packed sheet"
+    "imported": "Packed sheet",
+    "name": "Tiny Town",
+    "version": "1.1",
+    "archive_url": "https://kenney.nl/media/pages/assets/tiny-town/a415fbeb49-1735736916/kenney_tiny-town.zip"
   },
   {
     "pack": "tiny-dungeon",
@@ -13,7 +16,10 @@
     "archive_sha256": "c109438ab06f65fd80f9b2686a4cf9c7c11dc64444b47333ec71d602f8bb5fc7",
     "license": "CC0-1.0",
     "license_verified": "Included License.txt",
-    "imported": "Packed sheet"
+    "imported": "Packed sheet",
+    "name": "Tiny Dungeon",
+    "version": "1.0",
+    "archive_url": "https://kenney.nl/media/pages/assets/tiny-dungeon/f8422efb44-1674742415/kenney_tiny-dungeon.zip"
   },
   {
     "pack": "tiny-factory",
@@ -21,7 +27,10 @@
     "archive_sha256": "eaec4169aa4bf3ea7cec4be2b06147b1a02e54bdbe61d49d4568df7e57b0db2a",
     "license": "CC0-1.0",
     "license_verified": "Included License.txt",
-    "imported": "Packed sheet"
+    "imported": "Packed sheet",
+    "name": "Tiny Factory",
+    "version": "1.0",
+    "archive_url": "https://kenney.nl/media/pages/assets/tiny-factory/1652277319-1788860879/kenney_tiny-factory.zip"
   },
   {
     "pack": "tiny-battle",
@@ -29,7 +38,10 @@
     "archive_sha256": "7751ec7d9a07e57baa9fa1174d6f78fcd779a050377227afee77993c73cb5f9e",
     "license": "CC0-1.0",
     "license_verified": "Included License.txt",
-    "imported": "Packed sheet"
+    "imported": "Packed sheet",
+    "name": "Tiny Battle",
+    "version": "1.0",
+    "archive_url": "https://kenney.nl/media/pages/assets/tiny-battle/c1c25ac1f3-1691487575/kenney_tiny-battle.zip"
   },
   {
     "pack": "ui-pack-pixel-adventure",
@@ -37,7 +49,11 @@
     "archive_sha256": "0b0ed4802ebcfff5e44e370f394baa1d751862a5a4a7612ac4ce84e85faa0627",
     "license": "CC0-1.0",
     "license_verified": "Included License.txt",
-    "imported": "Selected individual files"
+    "imported": "Selected individual files",
+    "adaptation": "Small tiles / Thin outline selected. ui_0014 and ui_0016 packed unchanged side-by-side into lantern-pulse.png for a native two-frame clip.",
+    "name": "UI Pack - Pixel Adventure",
+    "version": "2.0 (included license)",
+    "archive_url": "https://kenney.nl/media/pages/assets/ui-pack-pixel-adventure/405ba5278a-1729196257/kenney_ui-pack-pixel-adventure.zip"
   },
   {
     "pack": "interface-sounds",
@@ -45,6 +61,10 @@
     "archive_sha256": "f2193d072726d6758a5f7871b2dcc54dcce0d5c35c6f0a62f92549b327c81232",
     "license": "CC0-1.0",
     "license_verified": "Included License.txt",
-    "imported": "Selected individual files"
+    "imported": "Selected individual files",
+    "adaptation": "Selected original Ogg retained; FFmpeg PCM s16le mono 22050Hz WAV conversion, no synthesis.",
+    "name": "Interface Sounds",
+    "version": "1.0",
+    "archive_url": "https://kenney.nl/media/pages/assets/interface-sounds/fa43c1dd4d-1677589452/kenney_interface-sounds.zip"
   }
 ]

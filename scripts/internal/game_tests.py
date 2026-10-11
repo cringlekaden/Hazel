@@ -13,7 +13,8 @@ from internal.package_tests import wait_for,unavailable_sources,extract_verified
 from internal.testing.desktop import Desktop
 from internal.tests import software_driver
 
-GAMES=('MeadowRun','Skybound')
+GAMES=('MeadowRun','Skybound','LastLightkeeper')
+NATIVE_GAMES=GAMES[:2] # Retain the existing two-game strict native regression contract.
 
 def model_tests(configuration):
     directory=hz.ROOT/'tests/examples';destination=hz.ROOT/'build/testing/managed'/f'{configuration}-{hz.SYSTEM}'
@@ -98,7 +99,7 @@ def game_tests(configuration,profile,packages,output):
             env.update(HAZEL_RESOURCES=str(hz.binaries(configuration)/'Nutella/Resources'),HAZEL_MONO=str(hz.binaries(configuration)/'Nutella/mono'),HAZEL_DATA=str(working/'native data'))
             if hz.SYSTEM=='linux':env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
             with (logs/'RuntimeSmoke.log').open('w',encoding='utf-8') as stream:
-                result=subprocess.run([str(native),*[str(hz.ROOT/'examples'/game/(game+'.hproj')) for game in GAMES],str(shots)],cwd=working,env=env,stdout=stream,stderr=subprocess.STDOUT,timeout=120)
+                result=subprocess.run([str(native),*[str(hz.ROOT/'examples'/game/(game+'.hproj')) for game in NATIVE_GAMES],str(shots),str(hz.ROOT/'examples/LastLightkeeper/LastLightkeeper.hproj')],cwd=working,env=env,stdout=stream,stderr=subprocess.STDOUT,timeout=120)
             if result.returncode:raise RuntimeError('Game runtime regression:\n'+(logs/'RuntimeSmoke.log').read_text(errors='replace'))
             for capture in shots.glob('*.ppm'):ppm_to_png(capture)
         roots=[]
@@ -117,7 +118,7 @@ def game_tests(configuration,profile,packages,output):
                     isolated=env.copy()
                     isolated.update(HAZEL_RESOURCES=str(roots[0]/'Resources'),HAZEL_MONO=str(roots[0]/'mono'),HAZEL_DATA=str(working/'packaged native data'))
                     with (logs/'PackagedRuntimeSmoke.log').open('w',encoding='utf-8') as stream:
-                        result=subprocess.run([str(probe),*[str(next(root.glob('*.hproj'))) for root in roots],str(shots)],cwd=working,env=isolated,stdout=stream,stderr=subprocess.STDOUT,timeout=120)
+                        result=subprocess.run([str(probe),*[str(next(root.glob('*.hproj'))) for root in roots[:2]],str(shots),str(next(roots[2].glob('*.hproj')))],cwd=working,env=isolated,stdout=stream,stderr=subprocess.STDOUT,timeout=120)
                     if result.returncode:raise RuntimeError('Extracted game runtime regression:\n'+(logs/'PackagedRuntimeSmoke.log').read_text(errors='replace'))
                     for capture in shots.glob('*.ppm'):ppm_to_png(capture)
                 for index,game in enumerate(GAMES):
@@ -130,6 +131,7 @@ def game_tests(configuration,profile,packages,output):
                             for dll in driver.glob('*.dll'):hz.copy_changed(dll,directory/dll.name)
                         project=next(directory.glob('*.hproj')) if packages else hz.ROOT/'examples'/game/(game+'.hproj')
                         env['HAZEL_DATA']=str(working/'data'/game/app)
+                        env['HAZEL_SAVE_ROOT']=str(working/'player saves'/game/app)
                         if packages:cli(executable,working,env)
                         exercise(desktop,executable,project,app,game,working,env,logs,shots,packages)
         finally:desktop.shutdown()

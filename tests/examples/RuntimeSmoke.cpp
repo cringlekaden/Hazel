@@ -44,7 +44,7 @@ int main(int argc,char** argv) {
 #endif
     const auto temporary=std::filesystem::temp_directory_path()/std::filesystem::u8path("hazel games space-é-"+std::to_string(std::random_device{}()));
     try {
-        Check(argc==4,"Usage: ExampleGamesSmoke MeadowRun.hproj Skybound.hproj captures");Log::Init();
+        Check(argc==4 || argc==5,"Usage: ExampleGamesSmoke MeadowRun.hproj Skybound.hproj captures [LastLightkeeper.hproj]");Log::Init();
         ApplicationSpecification spec;spec.Name="Example regression";spec.EnableImGui=false;Application app(spec);
         glfwHideWindow(static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow()));
         FramebufferSpecification frame;frame.Width=960;frame.Height=720;
@@ -146,6 +146,45 @@ int main(int argc,char** argv) {
             const auto& camera=session.GetScene()->GetPrimaryCameraEntity().GetComponent<CameraComponent>().Camera;
             Check(camera.GetOrthographicSize()>=12&&camera.GetOrthographicSize()*camera.GetAspectRatio()>=15.99f,"Resize cropped the authored game area");
             session.Stop();Check(!scene->IsRunning(),"Authored scene entered runtime");
+        }
+        if(argc==5) {
+            auto project=Project::Load(std::filesystem::u8path(argv[4]));Check(bool(project),"Cannot open Lightkeeper project");
+            ScriptEngine::Init(Project::GetAssetFileSystemPath(project->GetConfig().ScriptModulePath));
+            Check(ScriptEngine::EntityClassExists("LastLightkeeper.Breakwater") && !ScriptEngine::EntityClassExists("Skybound.Game"),"Lightkeeper project domain isolation failed");
+            RuntimeSession session;session.Resize(960,720);
+            auto menu=project->LoadScene(project->GetConfig().StartScene);session.Start(project,menu);tick(session);
+            Check(!session.Storage().IsPersistent(),"Editor-style session enabled player persistence");
+            Check(session.GetScene()->FindEntityByName("StartLabel").GetComponent<TextComponent>().TextString=="ENTER / Begin journey","New journey menu did not initialize");
+            session.Storage().Write("journey","LK1|31|3|2|1"); // Native API → real managed payload reader, a bounded puzzle checkpoint.
+            Check(session.RequestSceneLoad("Scenes/Breakwater.hazel"),"Island transition request rejected");tick(session);
+            auto runtime=session.GetScene();auto player=runtime->FindEntityByName("Iona");
+            Check(bool(player) && session.GetError().empty(),"Authored island failed to start");
+            Check(session.Storage().Read("journey").find("LK1|63|")==0,"Real authored court did not power its receiver/save exactly once");
+            Check(runtime->GetAllEntitiesWith<IDComponent>().size()>2700 && runtime->GetAllEntitiesWith<IDComponent>().size()<2900,"Island or bounded beam pool incomplete");
+            Teleport(player,{4,12,.55f});for(int i=0;i<30;i++)tick(session);
+            Capture(std::filesystem::u8path(argv[3])/"LastLightkeeper-court.ppm",960,720);
+            auto controller=ScriptEngine::GetEntityScriptInstance(runtime->FindEntityByName("Breakwater / Journey controller").GetUUID());
+            auto invoke=[&](const char* method,void** values,int count) {
+                auto object=controller->GetManagedObject();MonoObject* exception=nullptr;
+                auto target=mono_class_get_method_from_name(mono_object_get_class(object),method,count);
+                Check(bool(target),"Missing Lightkeeper lifecycle/interaction method");mono_runtime_invoke(target,object,values,&exception);
+                Check(!exception,"Lightkeeper managed integration callback failed");
+            };
+            bool announce=false;void* checkpointArgs[]={&announce};invoke("Checkpoint",checkpointArgs,1);
+            auto checkpoint=runtime->FindEntityByName("Checkpoint2").GetComponent<TransformComponent>().Translation;
+            Check(glm::length(player.GetComponent<TransformComponent>().Translation-checkpoint)<.01f,"Game checkpoint did not restore authored safe position/physics");
+            Check(session.Storage().Read("journey").find("LK1|63|")==0,"Checkpoint lost restoration");
+            int lighthouse=10;void* interactionArgs[]={&lighthouse};invoke("Interact",interactionArgs,1);
+            Check(session.Storage().Read("journey").find("LK1|127|")==0,"Beacon milestone wasn't committed");
+            invoke("CloseDialogue",nullptr,0);tick(session);tick(session);
+            Check(session.GetScene()->FindEntityByName("Heading").GetComponent<TextComponent>().TextString=="A LIGHT TO\nCOME HOME TO","Chapter endpoint transition failed");
+            Check(!runtime->IsRunning() && !player.GetComponent<Rigidbody2DComponent>().RuntimeBody && !controller->GetManagedObject(),"Island transition retained retired owners");
+            Capture(std::filesystem::u8path(argv[3])/"LastLightkeeper-dawn.ppm",960,720);
+            session.Stop();session.Start(project,menu);tick(session);
+            Check(session.Storage().Read("journey").empty(),"Editor Stop retained test journey");
+            Check(menu->FindEntityByName("StartLabel").GetComponent<TextComponent>().TextString=="ENTER / Begin journey","Runtime changed authored menu");
+            session.Stop();
+            std::cout<<"PASS: Lightkeeper native/managed save binding, authored court/occlusion, bounded prefab effects, physics checkpoint, endpoint retirement and editor Stop isolation\n";
         }
         ScriptEngine::Shutdown();framebuffer->Unbind();std::filesystem::remove_all(temporary);
         std::cout<<"PASS: real project scripts, collection/completion/checkpoint, repeated lifecycle, authored field isolation, camera fit, bounded prefab spawn/destruction/reload and cross-project class isolation\n";
