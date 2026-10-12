@@ -114,3 +114,8 @@ adds only tower checkpoint/contact data. Human playtime remains unmeasured.
 No UI engine implementation is implied by this content checkpoint. The existing
 menu/presentation layer remains until stages 3 and 4 deliver the architecture
 and migration above.
+
+The first milestone-3 implementation is the standalone logical layout/input
+model in `Hazel/UI/RuntimeUIModel.h`, with focused native regressions. It has no
+rendering, managed bindings or scene/editor UI authoring yet. Its contracts and
+remaining integration are recorded in [the model checkpoint](runtime-ui-model-checkpoint.md).

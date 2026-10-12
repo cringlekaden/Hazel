@@ -38,3 +38,27 @@ claimed by automated mechanics and collision tests.
 Validation results are recorded after the checkpoint's final local/package/CI
 checks. Runtime UI implementation and Hazelnut authoring/migration remain separate
 integration milestones.
+
+## Verified game checkpoint: e579469
+
+On Grandpa, Debug/native and Release/GL4.1 game suites passed the complete native
+New Game-to-ending route, old saves, partial contacts, recovery, transitions,
+failure-safe exits, completed Continue and unreadable-save retention. Both
+build configurations and all 14 existing engine regressions passed. All three
+example packages passed extracted gameplay/startup with source SDK and GAC
+unavailable. Lightkeeper's native sprite/animation/audio closure and included
+license materials passed export checks. The Linux archive is under
+`dist/lightkeeper-finished/LastLightkeeper-linux-x86_64-Release.tar.gz`.
+
+Linux and Windows CI both passed for the gameplay commit:
+https://github.com/cringlekaden/Hazel/actions/runs/38236272078
+
+Actual Nutella input exercised the old-LK3 departure, gust recovery, contacts,
+partial-contact quit/relaunch, focused counterplay, main light, reunion, boat,
+ending, credits and completed Continue at 1024x600/1280x720. Internal captures
+are under `build/lightkeeper-completion/live/tower-manual`. An isolated Hazelnut
+copy opened UpperTower in 0.974 seconds with 33 visible progress frames and
+completed two Play/Stop cycles. Its captures are under the `tower-editor-final`
+profile. Source settings, authored scenes and real player saves were not used
+as test scratch data. Human pacing and physical Windows/Linux acceptance remain
+required; the runtime UI model is a separate incomplete integration milestone.
