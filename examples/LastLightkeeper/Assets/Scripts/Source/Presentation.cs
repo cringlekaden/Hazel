@@ -41,17 +41,19 @@ namespace LastLightkeeper {
             try {var raw=SaveData.Read("journey");journey=Journey.Decode(raw);canContinue=!String.IsNullOrEmpty(raw);}
             catch(Exception ex){journey=new Journey();damaged=true;status.Text="Your save could not be read. It has been kept.\nN: start over    C: credits";Console.WriteLine("Lightkeeper save: "+ex.Message);}
             if(Ending){
-                Heading.GetComponent<TextComponent>().Text=journey.Has(Restoration.Watch)?"THE DRY\nWAY HOME":"THE LOWER\nBEACON";
-                Subtitle.GetComponent<TextComponent>().Text=journey.Has(Restoration.Watch)?"Mara is safe. Orrin has reached the survey ledge.\nTwo people remain at the observatory.":"Orrin can get through the reef.\nMara's lamp is moving beneath the cistern.";
-                status.Text=journey.Has(Restoration.Watch)?"Progress saved.\nThe observatory journey is still to come.":"The cliff path is open.";
+                Heading.GetComponent<TextComponent>().Text=journey.Has(Restoration.Observatory)?"THE SURVEY\nCREW":journey.Has(Restoration.Watch)?"THE DRY\nWAY HOME":"THE LOWER\nBEACON";
+                Subtitle.GetComponent<TextComponent>().Text=journey.Has(Restoration.Observatory)?"Cal can reach the landing.\nNessa is holding the tower winch brake.":journey.Has(Restoration.Watch)?"Mara is safe. Orrin has reached the survey ledge.\nTwo people remain at the observatory.":"Orrin can get through the reef.\nMara's lamp is moving beneath the cistern.";
+                status.Text=journey.Has(Restoration.Observatory)?"Progress saved.\nThe upper-tower chapter is not available yet.":journey.Has(Restoration.Watch)?"Mara's ledger is dry.\nTake it up the north path.":"The cliff path is open.";
             } else if(!damaged)status.Text=canContinue?Story.Objective(journey):"Three nights without a beacon.";
-            StartLabel.GetComponent<TextComponent>().Text=damaged?"Enter   Save unavailable":Ending && journey.Has(Restoration.Watch)?"Enter   Title":canContinue?"Enter   Continue":"Enter   Begin";
+            StartLabel.GetComponent<TextComponent>().Text=damaged?"Enter   Save unavailable":Ending && journey.Has(Restoration.Observatory)?"Enter   Title":Ending && journey.Has(Restoration.Watch)?"Enter   Observatory":canContinue?"Enter   Continue":"Enter   Begin";
         }
         bool Click(Entity button,bool edge){Vector2 p;if(!edge || button==null || !Input.GetMouseWorldPosition(out p))return false;var t=button.Translation;return Math.Abs(p.X-t.X)<4.4 && Math.Abs(p.Y-t.Y)<.65;}
         void Start(){
             if(damaged){status.Text="Your save cannot be opened. It has been kept.\nPress N twice to start over.";return;}
             if(!canContinue && !Persist(new Journey()))return;
-            Scene.LoadScene(Ending && journey.Has(Restoration.Watch)?"Scenes/MainMenu.hazel":journey.ResumeScene);
+            // Keep the current session alive if departure cannot be saved.
+            if(Ending && !Persist(journey))return;
+            Scene.LoadScene(Ending && journey.Has(Restoration.Observatory)?"Scenes/MainMenu.hazel":Ending && journey.Has(Restoration.Watch)?"Scenes/Observatory.hazel":journey.ResumeScene);
         }
         bool Persist(Journey candidate){try{SaveData.Write("journey",candidate.Encode());journey=candidate;canContinue=true;damaged=false;return true;}catch(Exception ex){status.Text="Could not save. Check available disk space\nand write access, then try again.";Console.WriteLine("Lightkeeper save: "+ex.Message);return false;}}
         void NewGame(){

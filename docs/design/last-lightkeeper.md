@@ -34,10 +34,10 @@ must produce visible recovery feedback, never silently erase a player's file.
 ## Asset review and visual direction
 
 Reviewed Kenney's free catalog and Tiny Town, Tiny Dungeon, Tiny Factory, Tiny
-Wisptle, Roguelike/RPG and UI Pack - Pixel Adventure pages, then actual downloaded
+Battle, Roguelike/RPG and UI Pack - Pixel Adventure pages, then actual downloaded
 sheets. Choose the matching Tiny family, rather than mixing the older RPG palette.
 Use muted blue-gray stone and storm-tinted green/sand, with warm amber machinery
-and restored light. Tiny Wisptle contributes shoreline/water and energy feedback; military props are excluded.
+and restored light. Tiny Battle contributes shoreline/water and energy feedback; military props are excluded.
 UI uses the Small tiles / Thin outline subset of Pixel Adventure, matched to the
 same pixel scale. OpenSans is Hazel's existing licensed font for readable prose.
 
@@ -46,7 +46,7 @@ same pixel scale. OpenSans is Hazel's existing licensed font for readable prose.
 | Tiny Town 1.1 | 16×16 grass, sand paths; 16×32 tall pines; cottage, tower stone, tools; packed 192×176. |
 | Tiny Dungeon 1.0 | 16×16 player/NPC poses, stone, lens, torch, small enemy/effects; packed 192×176. |
 | Tiny Factory 1.0 | 16×16 pumps, pipes, switches, gears, warning markings; packed 192×176. |
-| Tiny Wisptle 1.0 | 16×16 rounded shoreline and water; packed 288×176. |
+| Tiny Battle 1.0 | 16×16 rounded shoreline and water; packed 288×176. |
 | UI Pack - Pixel Adventure (included license says 2.0) | Selected 16×16 thin-outline icons/panels; page update says 1.0, recorded discrepancy rather than overriding included license. |
 | Interface Sounds 1.0 | Selected original Ogg UI/repair/error cues; PCM conversion for bounded runtime decoder. |
 
@@ -94,7 +94,10 @@ her grants the winch key, opens a dry lower passage and starts her authored retu
 route. The landing resolves this rescue and reveals people still at the observatory.
 No arbitrary waiting, fetch repetition or extra-distance playtime claim.
 
-Scene map: MainMenu → Breakwater → CliffCistern → SeaCaves → CliffDawn → MainMenu.
+Scene map: MainMenu → Breakwater → CliffCistern → SeaCaves → CliffDawn →
+Observatory → ObservatoryDawn → MainMenu. Cliff Dawn remains the departure
+screen for old completed cave saves. The observatory's extended payload is LK3;
+it retains LK1/LK2 data and adds carriage position and a separate terrace marker.
 Continue uses completed milestones plus the cave entry/recovery marker. LK1 saves
 keep all existing data; their completed court gets a compatible service-door default.
 LK2 stores shutter settings and a separate cave marker under the same native save
@@ -109,7 +112,8 @@ in game C#; no additional gameplay engine system was needed.
 
 The eventual target remains **30–45 minutes**, pending complete authored content
 and human play. Completed content milestones: lower beacon and cliff rescue.
-Next: observatory, survey crew and lens upgrade; then upper-tower ascent, final
+The observatory now adds opposed long-focus sightlines, a winched survey
+carriage, Nessa and Cal's reunion and the powered tower route. Next: upper-tower ascent, final
 storm encounter and satisfying rescue ending. Each must change puzzle grammar,
 composition and character stakes. Their durations are planning goals, not evidence.
 

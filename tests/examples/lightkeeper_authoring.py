@@ -25,7 +25,7 @@ def check_project(project):
             assert source['Sheet']=='Art/tiny-town.hsprites' and source['RegionID']==pine['ID']
             assert scale[:2]==[1,2] and scale[1]/scale[0]==pine['Rect'][3]/pine['Rect'][2], (name,'Pine aspect or native pixel scale changed')
     print('PASS: complete native 16x32 pines, one sprite each, uniform pixel scale and no duplicated bases',flush=True)
-    for scene in ('Breakwater','CliffCistern','SeaCaves'):
+    for scene in ('Breakwater','CliffCistern','SeaCaves','Observatory'):
         document=yaml.load((assets/'Scenes'/(scene+'.hazel')).read_text(encoding='utf-8'),Loader=loader)
         entities=document['Entities'];by_name={e['TagComponent']['Tag']:e for e in entities}
         walk=set()
@@ -33,7 +33,8 @@ def check_project(project):
             if name.startswith(('Bank (','Gravel ','Gallery floor (')):
                 values=re.findall(r'-?\d+',name)
                 walk.add(tuple(map(int,values[:2])))
-        player=by_name['Iona'];scale=player['TransformComponent']['Scale'];size=player['BoxCollider2DComponent']['Size']
+        player=by_name['Iona'];scale=player['TransformComponent']['Scale']
+        size=player['BoxCollider2DComponent']['Size'] if 'BoxCollider2DComponent' in player else [player['CircleCollider2DComponent']['Radius']]*2
         radius=(scale[0]*size[0],scale[1]*size[1])
 
         def position(name):return tuple(by_name[name]['TransformComponent']['Translation'][:2])
@@ -72,7 +73,7 @@ def check_project(project):
             assert not near(initial,'FocusPad1'),'Raised walk bypasses drain latch'
             raised=reachable(start,('DrainGate',),{0:3});assert near(raised,'FocusPad1') and not near(raised,'CaveExit'),'Bridge gate bypass'
             assert near(reachable(start,('DrainGate','CaveEntranceGate'),{0:3}),'CaveExit'),'Cave stairs inaccessible after release'
-        else:
+        elif scene=='SeaCaves':
             start=position('Checkpoint1');initial=reachable(start)
             for item in ('Handle1','FocusPad2'):assert near(initial,item),(scene,'unreachable gallery equipment',item)
             assert not near(initial,'Checkpoint2'),'Gallery gate bypasses its receiver'
@@ -82,4 +83,27 @@ def check_project(project):
             assert near(reachable(start,('GalleryGate','MaraDoor'),{1:6,2:-3}),'Mara',2.1),'Released refuge unreachable'
             home=reachable(position('Mara'),('GalleryGate','MaraDoor','ReturnGate'),{1:6,2:-3},True)
             assert near(home,'DryExit'),'Winch key did not create a dry return route'
+        else:
+            start=position('Checkpoint0');initial=reachable(start)
+            for item in ('Collimator','SurveyNote','WestPost'):assert near(initial,item),(scene,'unreachable west equipment',item)
+            assert not near(initial,'EastPost') and not near(initial,'Nessa',2),'Survey span or north room can be bypassed'
+            east=reachable(start,('SpanGate',))
+            for item in ('EastPost','CarriageHandle','Checkpoint1'):assert near(east,item),(scene,'unreachable east terrace',item)
+            assert not near(east,'Nessa',2),'North door can be bypassed'
+            room=reachable(start,('SpanGate','CrewGate'))
+            for item in ('Nessa','Cal','NorthPost','Checkpoint2'):assert near(room,item,2),(scene,'unreachable survey room',item)
+            assert not near(room,'TowerExit'),'Unpowered tower stair can be bypassed'
+            assert near(reachable(start,('SpanGate','CrewGate','TowerGate')),'TowerExit'),'Powered tower stair inaccessible'
+            # The opposed latch cannot be lit at close range from the west terrace:
+            # the cabinet's back and floor edges enforce the authored sightline.
+            optical={tuple(round(v) for v in e['TransformComponent']['Translation'][:2]) for name,e in by_name.items() if name.startswith('OpticalStone')}
+            def ray_clear(a,b):
+                x,y=a;tx,ty=b
+                if x!=tx and y!=ty:return False
+                dx=(tx>x)-(tx<x);dy=(ty>y)-(ty<y)
+                while (x,y)!=(tx,ty):
+                    x+=dx;y+=dy
+                    if (x,y) in optical:return False
+                return True
+            assert not any(ray_clear(cell,position('DomeReceiver')) for cell in initial),'West terrace can bypass the opposed sightline'
         print('PASS: '+scene+' authored collider/gate/recovery/landmark connectivity (no playtime assertion)',flush=True)

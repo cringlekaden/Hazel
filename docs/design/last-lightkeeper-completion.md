@@ -56,6 +56,9 @@ and explicitly report the remaining stages.
   inset, sort order and enabled state. Screen-space orthographic pass follows
   world rendering, independent of gameplay cameras. Identical scene traversal
   feeds editor preview and Nutella; no ImGui dependency or backend-specific state.
+  The pass also works in a UI-only scene without a primary world camera. Preserve
+  painter order across sprite/text batches by flushing at ordered type boundaries;
+  restore render state after the overlay instead of depending on world depth.
 - `UIRectComponent`: normalized anchor min/max, offsets, pivot, minimum size,
   visibility and padding. Hierarchy owns grouping; children inherit clipping
   and enabled state. Layout groups support horizontal/vertical flow, gap and
@@ -77,6 +80,8 @@ and explicitly report the remaining stages.
   activate on edges. Suppress the second route when mouse and keyboard coincide.
   Focus/capture/action queues belong to the active scene/session identity and
   clear on transition/Stop/input disable or button retirement.
+  Reuse Scene::GetIdentity and managed Entity.CheckedID ownership checks: a
+  RuntimeSession identity alone does not change on every scene transition.
 - Managed APIs expose text, visibility, enabled state and `TryConsumeAction`
   (entity ID plus action string), checked against the current scene. No
   serialized delegates, retained callback closures or native calls into retired

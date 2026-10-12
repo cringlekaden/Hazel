@@ -21,6 +21,25 @@ internal static class LightkeeperTests {
         Check(!completed.Restore(Restoration.Mara) && !completed.Restore(Restoration.Cistern),"Cliff prerequisite bypass");
         foreach(var stage in new[]{Restoration.Focus,Restoration.Drain,Restoration.Cistern,Restoration.CaveGate,Restoration.Rescue,Restoration.Mara,Restoration.Watch}){Check(completed.Restore(stage),"Cliff milestone failed");Check(!completed.Restore(stage),"Cliff reward repeated");Check(Journey.Decode(completed.Encode()).Encode()==completed.Encode(),"Cliff stage save mismatch");}
         completed.CaveCheckpoint=2;Check(Journey.Decode(completed.Encode()).CaveCheckpoint==2,"Cave checkpoint lost");
+        var oldCliff=Journey.Decode("LK2|131071|7|2|1|26|2");
+        Check(oldCliff.ResumeScene=="Scenes/CliffDawn.hazel" && oldCliff.Carriage==2 && oldCliff.ObservatoryCheckpoint==0 && oldCliff.Encode()=="LK2|131071|7|2|1|26|2","LK2 migration changed prior repairs or settings");
+        Check(!oldCliff.Restore(Restoration.Crew),"Survey crew prerequisite bypass");
+        foreach(var step in new[]{Restoration.Collimator,Restoration.Span,Restoration.Dome,Restoration.Crew,Restoration.Winch,Restoration.Observatory}){
+            Check(oldCliff.Restore(step),"Observatory restoration failed");Check(!oldCliff.Restore(step),"Survey reward repeated");
+            var migrated=Journey.Decode(oldCliff.Encode());Check(migrated.Encode()==oldCliff.Encode() && migrated.Has(Restoration.Archive|Restoration.Cache) && migrated.Shutters==26,"LK3 lost old optional discoveries or cliff settings");
+            if(step==Restoration.Winch)Check(migrated.ResumeScene=="Scenes/Observatory.hazel","Resume skipped crew departure before chapter completion");
+        }
+        oldCliff.ObservatoryCheckpoint=2;oldCliff.Carriage=1;Check(Journey.Decode(oldCliff.Encode()).Encode()==oldCliff.Encode(),"Survey recovery or carriage setting lost");
+        Check(oldCliff.ResumeScene=="Scenes/ObservatoryDawn.hazel","Survey completion resumes at wrong endpoint");
+        foreach(var bad in new[]{"LK3|0|0|0|0|0|0|1|2","LK3|0|0|0|0|0|0|0|0","LK3|8388608|0|0|0|0|0|0|2","LK3|131071|0|0|0|0|0|0|3","LK4|131071|0|0|0|0|0|0|2"}){
+            bool rejected=false;try{Journey.Decode(bad);}catch(InvalidOperationException){rejected=true;}Check(rejected,"Damaged/future survey data accepted");
+        }
+        for(int cradle=0;cradle<3;cradle++){
+            var block=new HashSet<Cell>{new Cell(10,SurveyRules.CarriageRow(cradle))};var straight=new Dictionary<Cell,bool>();
+            Check(!Optics.Trace(new Cell(-19,0),new Cell(1,0),new Cell(13,0),straight,block,-24,24,-12,12,24).Reached,"Old sleeve reached distant survey latch");
+            Check(Optics.Trace(new Cell(-19,0),new Cell(1,0),new Cell(13,0),straight,block,-24,24,-12,12,40).Reached==(cradle!=1),"Long-focus span/carriage obstruction inconsistent");
+            Check(Optics.Trace(new Cell(19,2),new Cell(-1,0),new Cell(-13,2),straight,block,-24,24,-12,12,40).Reached==(cradle!=2),"Opposed sightline/carriage obstruction inconsistent");
+        }
         for(int slot=0;slot<3;slot++){var shutters=new Journey();for(int n=0;n<3;n++)shutters.MoveShutter(slot);Check(shutters.Shutters==0,"Shutter cycle corrupted another bank");}
         foreach(var bad in new[]{"LK3|0|0|0|0|0|0","LK2|131072|0|0|0|0|0","LK2|0|0|0|0|27|0","LK2|0|0|0|0|0|2","LK2|16384|0|0|0|0|0"}){bool rejected=false;try{Journey.Decode(bad);}catch(InvalidOperationException){rejected=true;}Check(rejected,"Future/corrupt cliff save accepted");}
         for(int notch=0;notch<3;notch++){

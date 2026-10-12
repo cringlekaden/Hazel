@@ -26,7 +26,13 @@ namespace LastLightkeeper {
             "IONA\nThree short flashes. That's Mara.\nThe beacon's steady. I can leave it running."
         };
         public static string Objective(Journey j) {
-            if(j.Has(Restoration.Watch))return "Mara is safe. The observatory is still cut off.";
+            if(j.Has(Restoration.Observatory))return "The survey crew is safe. The upper tower route is ready.";
+            if(j.Has(Restoration.Winch))return "Meet the crew at the western tower stairs";
+            if(j.Has(Restoration.Crew))return "Light the tower winch from the northern survey post";
+            if(j.Has(Restoration.Dome))return "Find Nessa and Cal in the northern instrument room";
+            if(j.Has(Restoration.Span))return "Clear the carriage; light the west latch from the east terrace";
+            if(j.Has(Restoration.Collimator))return "Light the span latch across the collapsed survey hall";
+            if(j.Has(Restoration.Watch))return "Take Mara's ledger up to the observatory";
             if(j.Has(Restoration.Mara))return "Take the dry western passage with Mara";
             if(j.Has(Restoration.Rescue))return "Go through the eastern shutter to reach Mara";
             if(j.Has(Restoration.CaveGate))return "Light Mara's door receiver through the fixed mirrors";

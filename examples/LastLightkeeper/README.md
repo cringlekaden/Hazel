@@ -3,8 +3,8 @@
 An original top-down adventure in development for Hazel. Keeper Iona returns to a
 storm-damaged island to restore its lower lighthouse signal and bring mechanic
 Mara home. This project begins the planned 30–45-minute game; it contains the
-two complete chapters, **The Breakwater** and **The Cliff Cistern / Sea Caves**.
-The full observatory/tower adventure is still in development.
+three playable chapters: **The Breakwater**, **The Cliff Cistern / Sea Caves**,
+and **The Observatory**. The upper tower and full ending remain in development.
 
 The author played the original Breakwater chapter in about **five minutes** once
 its mechanics were understood. That is the pacing evidence; the old 8–12-minute
@@ -22,6 +22,18 @@ dry return route. Mara follows that route; the landing resolves her rescue and
 points toward the observatory. Opening her door and meeting her are separate
 milestones. All repairs, openings and safe recovery points survive Continue.
 
+From Cliff Dawn, Enter takes Mara's ledger up to the observatory. The survey
+hall's floor has fallen through. Fit the long-focus lens at the west repair
+bench, light the span drive across the gap, then use the east carriage winch to
+clear the return sightline. The opposed latch opens the north instrument room.
+Nessa and Cal have the tower calibration; talk to them, power the winch and meet
+them at the west stair. The chapter ends there at a saved content checkpoint.
+No upper-tower gameplay or final ending is claimed at this checkpoint.
+The survey hall uses authored continuous solid rectangles and Iona's existing
+engine circle collider for a rounded footprint. This avoids catching on joined
+wall corners. Visual tiles remain selectable; gates and carriage keep separate
+physics ownership. The earlier chapters' collision authoring is preserved.
+
 ## Play and edit
 
 From a prepared checkout, with the native applications built:
@@ -33,7 +45,7 @@ python3 scripts/hazel.py run Hazelnut --config Debug --project examples/LastLigh
 ```
 
 Use `python` on Windows. In Hazelnut, open Assets/Scenes/Breakwater.hazel, CliffCistern.hazel or SeaCaves.hazel and use
-Play; all terrain, paths, buildings, occluders, interaction landmarks, HUD and
+Play (Observatory.hazel is also available); all terrain, paths, buildings, occluders, interaction landmarks, HUD and
 camera are authored, ordinary scene entities. Controller fields reference their
 actual scene entities and can be selected/tuned in the Inspector. Rigidbody
 owners remain roots; terrain/decorative districts and HUD use hierarchy. Only
@@ -71,7 +83,12 @@ corrupt and newer saves are distinguished; the original file is retained until
 an explicit confirmed new journey. LK1 payloads migrate to LK2 without losing
 repairs, optional discoveries, mirror settings or Breakwater checkpoints. A
 completed LK1 beacon resumes at the cistern workshop; cave checkpoints remain
-separate. Save ownership, native envelope version and storage paths are unchanged. Save failures are visible. Keep the active
+separate. LK2 keeps its original repairs, optional discoveries and settings;
+observatory progress writes LK3 with carriage position and a separate safe
+terrace marker. Prior chapters still write LK2 until extended data is needed.
+Completed cave saves retain their Cliff Dawn departure screen; Enter proceeds
+to the observatory. Partial observatory saves resume there; completed ones
+resume at Observatory Dawn. Save ownership, native envelope version and storage paths are unchanged. Save failures are visible. Keep the active
 session open after a failure, and retry saving by interacting with the pump log or dry-ledge marker.
 
 Linux: `${XDG_DATA_HOME:-~/.local/share}/Hazel/Games/cringlekaden.TheLastLightkeeper/slot-journey.save`.
@@ -123,7 +140,7 @@ procedurally drawn or replaced with checkerboard/primitive placeholders.
 [Authoring/Asset-reference.png](Authoring/Asset-reference.png) assembles selected
 actual assets; [Authoring/Island-reference.png](Authoring/Island-reference.png)
 shows their placement. These are source reference collages, not runtime captures.
-`Authoring/compose.py` and `Authoring/cliff_chapter.py` record the authored composition and refuses to
+`Authoring/compose.py`, `Authoring/cliff_chapter.py` and `Authoring/observatory.py` record the authored composition and refuse to
 replace existing scenes without `--overwrite`. It is never run by the game.
 Further scene changes belong in Hazelnut. There is no runtime tile-map generator.
 
@@ -156,9 +173,10 @@ Stop isolation. Packages audit sprites, audio, assemblies and license closure;
 relocated startup runs without the source tree. Captures come from the actual
 renderer/editor, not a drawn mockup or full-game screen-coordinate bot.
 
-Next authored content: the observatory's jammed shutters and survey crew, a second
-lantern upgrade, and the route to the upper tower. Then the final storm encounter
-and rescue ending. Human pacing, control feel, repeated-play enjoyment and
+Next authored content: the upper tower, final storm encounter and rescue ending.
+The reusable runtime UI and Hazelnut workflow are designed in
+[the staged completion plan](../../docs/design/last-lightkeeper-completion.md)
+and remain a later integration milestone. Human pacing, control feel, repeated-play enjoyment and
 physical Windows GPU/audio acceptance remain required. No full-game playtime is
 claimed.
 
@@ -178,4 +196,5 @@ quiet slate instead of wall brick; trees use the complete native 16x32 pine regi
 cave water have directional stone kerbs. Cave rubble and salvage describe specific
 falls and storage areas. Existing Kenney atlas pixels, sheet IDs and licenses are
 preserved. The composition scripts retain these choices; the shipped scenes remain
-ordinary Hazelnut documents. No observatory content has been added.
+ordinary Hazelnut documents. The observatory adds separate authored scenes without
+regenerating these polished chapters or their trees.

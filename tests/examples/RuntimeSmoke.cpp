@@ -208,7 +208,7 @@ int main(int argc,char** argv) {
             invoke("CloseDialogue",nullptr,0);tick(session);tick(session);
             Check(session.GetScene()->GetName()=="CliffCistern","Beacon did not transition to cistern");
             Check(!runtime->IsRunning() && !player.GetComponent<Rigidbody2DComponent>().RuntimeBody && !controller->GetManagedObject(),"Island retained retired owners");
-            auto chapter=[&]{runtime=session.GetScene();player=runtime->FindEntityByName("Iona");controller=ScriptEngine::GetEntityScriptInstance(runtime->FindEntityByName(runtime->GetName()=="SeaCaves"?"Sea caves controller":"Cliff cistern controller").GetUUID());Check(bool(controller),"Chapter controller missing");};
+            auto chapter=[&]{runtime=session.GetScene();player=runtime->FindEntityByName("Iona");controller=ScriptEngine::GetEntityScriptInstance(runtime->FindEntityByName(runtime->GetName()=="Observatory"?"Observatory controller":runtime->GetName()=="SeaCaves"?"Sea caves controller":"Cliff cistern controller").GetUUID());Check(bool(controller),"Chapter controller missing");};
             auto at=[&](const char* name){auto marker=runtime->FindEntityByName(name);Check(bool(marker),"Authored interaction marker missing");auto t=marker.GetComponent<TransformComponent>().Translation;t.z=.55f;Teleport(player,t);};
             bool focus=true;void* focused[]={&focus};
 
@@ -266,11 +266,54 @@ int main(int argc,char** argv) {
             invoke("CancelNewGame",nullptr,0);tick(session);
             Check(session.Storage().Read("journey")==completed,"Cancelling New Game changed progress");
             invoke("Start",nullptr,0);tick(session);tick(session);Check(session.GetScene()->GetName()=="CliffDawn","Completed Continue lost its chapter");
+            controller=ScriptEngine::GetEntityScriptInstance(session.GetScene()->FindEntityByName("Title / Journey menu").GetUUID());
+            invoke("Start",nullptr,0);tick(session);tick(session);Check(session.GetScene()->GetName()=="Observatory","Completed LK2 save could not depart for the observatory");chapter();invoke("CloseDialogue",nullptr,0);
+            at("WestPost");invoke("Focus",focused,1);Check(bool(runtime->FindEntityByName("SpanGate")),"Short sleeve bypassed long-focus upgrade");shot("LastLightkeeper-survey-short",-12,0);
+            at("Collimator");invoke("Interact",nullptr,0);invoke("CloseDialogue",nullptr,0);
+            Check(session.Storage().Read("journey").find("LK3|261759|")==0,"Survey lens migration failed");
+            at("WestPost");invoke("Focus",focused,1);Check(!runtime->FindEntityByName("SpanGate") && bool(runtime->FindEntityByName("CrewGate")),"Long sightline failed or opened unrelated latch");shot("LastLightkeeper-survey-span",-7,0);
+            Check(session.RequestSceneLoad("Scenes/Observatory.hazel"),"Mid-survey Continue rejected");tick(session);tick(session);chapter();
+            Check(!runtime->FindEntityByName("SpanGate") && runtime->FindEntityByName("DialoguePanel").GetComponent<TransformComponent>().Scale.x<.01f,"Resumed survey lost latch or retained blank dialogue");
+            at("EastPost");tick(session,0);
+            object=controller->GetManagedObject();klass=mono_object_get_class(object);
+            // Facing is a game-owned value type; set through its real managed field.
+            int westFacing[2]={-1,0};mono_field_set_value(object,mono_class_get_field_from_name(klass,"facing"),westFacing);
+            invoke("Focus",focused,1);Check(bool(runtime->FindEntityByName("CrewGate")),"Beam passed through survey carriage");shot("LastLightkeeper-survey-carriage",12,2);
+            at("CarriageHandle");invoke("Interact",nullptr,0);at("EastPost");invoke("Focus",focused,1);
+            Check(!runtime->FindEntityByName("CrewGate") && bool(runtime->FindEntityByName("TowerGate")),"Opposed latch did not release north room");
+            // Exercise the real fixtures, not only a grid approximation. The
+            // north cabinet leaves a walking passage below its sealed receiver.
+            for(float passageY:{5.0f,4.762f}){
+                Teleport(player,{17,passageY,.55f});
+                auto* walking=static_cast<b2Body*>(player.GetComponent<Rigidbody2DComponent>().RuntimeBody);
+                walking->SetLinearVelocity({-3.25f,0});
+                for(int step=0;step<180;++step)walking->GetWorld()->Step(1.0f/60,6,2);
+                Check(walking->GetPosition().x<10,"Actual cabinet fixtures snag the lower passage, including wall contact");
+                walking->SetLinearVelocity({0,0});
+            }
+            at("Nessa");invoke("Interact",nullptr,0);shot("LastLightkeeper-survey-crew",8,6);invoke("CloseDialogue",nullptr,0);
+            Check(bool(runtime->FindEntityByName("TowerGate")),"Crew reunion bypassed winch power");
+            at("NorthPost");int eastFacing[2]={1,0};mono_field_set_value(object,mono_class_get_field_from_name(klass,"facing"),eastFacing);invoke("Focus",focused,1);
+            Check(!runtime->FindEntityByName("TowerGate"),"Survey calibration did not power tower route");shot("LastLightkeeper-survey-winch",-10,7);
+            Check(session.Storage().Read("journey").find("LK3|4193919|")==0,"Winch power was not saved independently of the farewell");
+            bool surveyHit=true;void* surveyRecovery[]={&surveyHit};invoke("Recover",surveyRecovery,1);
+            Check(glm::length(player.GetComponent<TransformComponent>().Translation-runtime->FindEntityByName("Checkpoint1").GetComponent<TransformComponent>().Translation)<.01f && !runtime->FindEntityByName("CrewGate"),"Survey recovery lost checkpoint or repairs");
+            at("TowerExit");invoke("Interact",nullptr,0);{
+                bool blocked=true;mono_field_set_value(object,mono_class_get_field_from_name(klass,"saveBlocked"),&blocked);invoke("CloseDialogue",nullptr,0);tick(session);
+                Check(session.GetScene()->GetName()=="Observatory","Failed survey save crossed chapter boundary");
+                blocked=false;mono_field_set_value(object,mono_class_get_field_from_name(klass,"saveBlocked"),&blocked);
+            }
+            at("RestMarker1");invoke("Interact",nullptr,0);Check(session.Storage().Read("journey").find("LK3|4193919|")==0,"Failed departure leaked completion into a later checkpoint write");
+            at("TowerExit");invoke("Interact",nullptr,0);invoke("CloseDialogue",nullptr,0);tick(session);tick(session);
+            Check(session.GetScene()->GetName()=="ObservatoryDawn","Survey chapter endpoint failed");
+            auto surveyCompleted=session.Storage().Read("journey");Check(surveyCompleted.find("LK3|8388223|")==0,"Survey completion not saved");
+            session.RequestSceneLoad("Scenes/MainMenu.hazel");tick(session);tick(session);controller=ScriptEngine::GetEntityScriptInstance(session.GetScene()->FindEntityByName("Title / Journey menu").GetUUID());invoke("Start",nullptr,0);tick(session);tick(session);
+            Check(session.GetScene()->GetName()=="ObservatoryDawn" && session.Storage().Read("journey")==surveyCompleted,"Survey Continue changed old progress or lost endpoint");
             for(const auto* bad:{"LK9|future","broken"}){session.Storage().Write("journey",bad);session.RequestSceneLoad("Scenes/MainMenu.hazel");tick(session);tick(session);controller=ScriptEngine::GetEntityScriptInstance(session.GetScene()->FindEntityByName("Title / Journey menu").GetUUID());invoke("Start",nullptr,0);tick(session);Check(session.GetScene()->GetName()=="MainMenu" && session.Storage().Read("journey")==bad,"Unreadable save was overwritten or continued");}
             session.Stop();session.Start(project,menu);tick(session);Check(session.Storage().Read("journey").empty(),"Editor Stop retained progress");
             controller=ScriptEngine::GetEntityScriptInstance(session.GetScene()->FindEntityByName("Title / Journey menu").GetUUID());invoke("Start",nullptr,0);tick(session);tick(session);Check(session.GetScene()->GetName()=="Breakwater","Fresh New Game failed");session.Stop();
             Check(menu->FindEntityByName("StartLabel").GetComponent<TextComponent>().TextString=="Enter   Begin","Runtime changed authored menu");
-            std::cout<<"PASS: Lightkeeper LK1 migration, service latch, focus upgrade/shutter occlusion/two chapter transitions, wisp telegraph/dodge/repel/recovery, Mara consequence, completed Continue, corrupt/future retention, New Game and Stop isolation\n";
+            std::cout<<"PASS: Lightkeeper LK1/LK2 migration, service latch, focus/shutters, cliff transitions, wisp counterplay, Mara, observatory long/opposed sightlines/carriage/crew/winch/recovery/failure-safe exit, completed Continue, corrupt/future retention, New Game and Stop isolation\n";
         }
         ScriptEngine::Shutdown();framebuffer->Unbind();std::filesystem::remove_all(temporary);
         std::cout<<"PASS: real project scripts, collection/completion/checkpoint, repeated lifecycle, authored field isolation, camera fit, bounded prefab spawn/destruction/reload and cross-project class isolation\n";
