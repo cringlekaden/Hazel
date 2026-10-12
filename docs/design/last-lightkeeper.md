@@ -95,14 +95,17 @@ route. The landing resolves this rescue and reveals people still at the observat
 No arbitrary waiting, fetch repetition or extra-distance playtime claim.
 
 Scene map: MainMenu → Breakwater → CliffCistern → SeaCaves → CliffDawn →
-Observatory → ObservatoryDawn → MainMenu. Cliff Dawn remains the departure
+Observatory → ObservatoryDawn → UpperTower → HarborHome → Ending/Credits →
+MainMenu. Completed Continue revisits HarborHome. Cliff Dawn remains the departure
 screen for old completed cave saves. The observatory's extended payload is LK3;
 it retains LK1/LK2 data and adds carriage position and a separate terrace marker.
 Continue uses completed milestones plus the cave entry/recovery marker. LK1 saves
 keep all existing data; their completed court gets a compatible service-door default.
 LK2 stores shutter settings and a separate cave marker under the same native save
 ownership/envelope. Corrupt/future records remain intact. Editor Play remains
-memory-only, including direct cliff-scene practice.
+memory-only, including direct chapter-scene practice. LK4 retains LK3 and adds
+the tower checkpoint and three-contact bitmask; completed contacts, drive power,
+starting the main light and boat departure are separate, failure-safe milestones.
 
 All locations, physics boundaries, movable slats, optical windows, fixed mirrors,
 receivers, character poses, HUD, cue sources and transitions are ordinary authored
@@ -111,11 +114,15 @@ is instantiated at runtime. Dialogue, optics, AI, interaction and progression st
 in game C#; no additional gameplay engine system was needed.
 
 The eventual target remains **30–45 minutes**, pending complete authored content
-and human play. Completed content milestones: lower beacon and cliff rescue.
-The observatory now adds opposed long-focus sightlines, a winched survey
-carriage, Nessa and Cal's reunion and the powered tower route. Next: upper-tower ascent, final
-storm encounter and satisfying rescue ending. Each must change puzzle grammar,
-composition and character stakes. Their durations are planning goals, not evidence.
+and timed human play. The gameplay route now includes lower beacon, cliff rescue,
+observatory and upper tower. The observatory adds opposed long-focus sightlines,
+a winched survey carriage and Nessa/Cal's calibration. The tower combines the
+fixed entrance mirror, exposed approach, three independent sighting contacts,
+stone cover and the learned telegraphed wisp. Repairs persist through recovery.
+Starting the main light returns to the landing; short character conversations
+and a boat departure resolve the rescue, followed by ending and credits.
+Next: reusable runtime UI, Hazelnut authoring and presentation migration.
+No completed-game duration is claimed before hands-on timing.
 
 ## Checkpoints, risks and acceptance
 

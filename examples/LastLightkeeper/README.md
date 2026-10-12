@@ -3,8 +3,10 @@
 An original top-down adventure in development for Hazel. Keeper Iona returns to a
 storm-damaged island to restore its lower lighthouse signal and bring mechanic
 Mara home. This project begins the planned 30–45-minute game; it contains the
-three playable chapters: **The Breakwater**, **The Cliff Cistern / Sea Caves**,
-and **The Observatory**. The upper tower and full ending remain in development.
+four playable chapters: **The Breakwater**, **The Cliff Cistern / Sea Caves**,
+**The Observatory**, and **The Upper Tower**, followed by the morning landing,
+ending and credits. Runtime UI authoring and presentation migration remain separate
+milestones; the current game still uses its existing presentation layer.
 
 The author played the original Breakwater chapter in about **five minutes** once
 its mechanics were understood. That is the pacing evidence; the old 8–12-minute
@@ -27,8 +29,14 @@ hall's floor has fallen through. Fit the long-focus lens at the west repair
 bench, light the span drive across the gap, then use the east carriage winch to
 clear the return sightline. The opposed latch opens the north instrument room.
 Nessa and Cal have the tower calibration; talk to them, power the winch and meet
-them at the west stair. The chapter ends there at a saved content checkpoint.
-No upper-tower gameplay or final ending is claimed at this checkpoint.
+them at the west stair. Observatory Dawn is a saved departure checkpoint; Enter
+continues to the upper tower. Light the entrance latch through its fixed mirror,
+cross the exposed walk, then power three glass contacts in any order. Stone cover,
+a locked rush mark and focused light provide counterplay against the tower wisp.
+All three contacts steady the drive and open the main lantern bay. Starting the
+light returns Iona to the morning landing. Talk to the rescued crew, Mara and
+Orrin, then use the southern mooring to take the boat. Ending and credits return
+to title; completed Continue revisits the landing.
 The survey hall uses authored continuous solid rectangles and Iona's existing
 engine circle collider for a rounded footprint. This avoids catching on joined
 wall corners. Visual tiles remain selectable; gates and carriage keep separate
@@ -45,7 +53,7 @@ python3 scripts/hazel.py run Hazelnut --config Debug --project examples/LastLigh
 ```
 
 Use `python` on Windows. In Hazelnut, open Assets/Scenes/Breakwater.hazel, CliffCistern.hazel or SeaCaves.hazel and use
-Play (Observatory.hazel is also available); all terrain, paths, buildings, occluders, interaction landmarks, HUD and
+Play (Observatory.hazel, UpperTower.hazel and HarborHome.hazel are also available); all terrain, paths, buildings, occluders, interaction landmarks, HUD and
 camera are authored, ordinary scene entities. Controller fields reference their
 actual scene entities and can be selected/tuned in the Inspector. Rigidbody
 owners remain roots; terrain/decorative districts and HUD use hierarchy. Only
@@ -88,7 +96,12 @@ observatory progress writes LK3 with carriage position and a separate safe
 terrace marker. Prior chapters still write LK2 until extended data is needed.
 Completed cave saves retain their Cliff Dawn departure screen; Enter proceeds
 to the observatory. Partial observatory saves resume there; completed ones
-resume at Observatory Dawn. Save ownership, native envelope version and storage paths are unchanged. Save failures are visible. Keep the active
+resume at Observatory Dawn. LK3 defaults tower progress to zero without changing
+its settings. LK4 adds a tower checkpoint and a three-contact bitmask. Entry,
+drive, main-light and boat departure are distinct milestones. A failed departure
+write rolls back its completion flag and keeps the active scene available.
+Partial tower saves resume there; main-light saves resume at the landing.
+Completed Continue also revisits the landing. Save ownership, native envelope version and storage paths are unchanged. Save failures are visible. Keep the active
 session open after a failure, and retry saving by interacting with the pump log or dry-ledge marker.
 
 Linux: `${XDG_DATA_HOME:-~/.local/share}/Hazel/Games/cringlekaden.TheLastLightkeeper/slot-journey.save`.
@@ -166,14 +179,16 @@ loading frames, operation labels, entity totals where measurable and indetermina
 feedback during YAML parsing. The browser also normalizes restored folder paths.
 See [revision findings](Authoring/REVISION-NOTES.md) and the validation record.
 
-Focused tests cover LK1 migration/LK2 roundtrips, invalid/future retention, all
+Focused tests cover LK1/LK2/LK3 migration and LK4 roundtrips, invalid/future retention, all
 mirror and shutter states, fixed routes, tide warning/recovery, native chapter
 transitions, wisp telegraph/dodge/repel, Mara's consequence, New Game/Continue and
 Stop isolation. Packages audit sprites, audio, assemblies and license closure;
 relocated startup runs without the source tree. Captures come from the actual
 renderer/editor, not a drawn mockup or full-game screen-coordinate bot.
 
-Next authored content: the upper tower, final storm encounter and rescue ending.
+The upper tower, final storm encounter, morning landing, ending and credits are now authored.
+Completed observatory saves depart from Observatory Dawn with Enter. Finished
+Continue revisits the landing; the mooring can replay the ending.
 The reusable runtime UI and Hazelnut workflow are designed in
 [the staged completion plan](../../docs/design/last-lightkeeper-completion.md)
 and remain a later integration milestone. Human pacing, control feel, repeated-play enjoyment and

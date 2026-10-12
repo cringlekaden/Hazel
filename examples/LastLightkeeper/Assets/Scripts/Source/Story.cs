@@ -26,6 +26,10 @@ namespace LastLightkeeper {
             "IONA\nThree short flashes. That's Mara.\nThe beacon's steady. I can leave it running."
         };
         public static string Objective(Journey j) {
+            if(j.Has(Restoration.Home))return "The main light is steady. Revisit the landing or take the boat.";
+            if(j.Has(Restoration.TowerBeacon))return "Meet everyone at the landing; take the morning boat when ready";
+            if(j.Has(Restoration.TowerDrive))return "Start the main light in the northern lantern bay";
+            if(j.Has(Restoration.TowerEntry))return "Latch the north, east and south drive contacts - any order";
             if(j.Has(Restoration.Observatory))return "The survey crew is safe. The upper tower route is ready.";
             if(j.Has(Restoration.Winch))return "Meet the crew at the western tower stairs";
             if(j.Has(Restoration.Crew))return "Light the tower winch from the northern survey post";

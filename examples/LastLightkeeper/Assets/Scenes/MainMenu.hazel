@@ -35117,7 +35117,7 @@ Entities:
     - 0.5425
     - 1
   TextComponent:
-    TextString: BREAKWATER · CISTERN · OBSERVATORY
+    TextString: BREAKWATER · CISTERN · OBSERVATORY · TOWER
     Color:
     - 1
     - 0.82

@@ -97,3 +97,20 @@ UI acceptance: scene/prefab save-load preserves settings; no editor-only package
 dependency; readable at 1024x600, 1280x720 and 4:3; reliable mouse release,
 keyboard focus/disabled state and no stale/duplicate actions; repeated Play/Stop,
 resizing and scene transition tests. Both Debug/Release and GL 4.1 stay supported.
+
+## Upper tower content boundary
+
+Authored UpperTower → HarborHome → Ending/Credits completes the gameplay route.
+The exposed west approach leads through a fixed-mirror latch into a three-contact
+lantern drive. Independent north/east/south sightlines, cover and the learned
+telegraphed wisp encourage choosing firing positions and retreat routes. All
+repairs survive recovery; main-light activation is separate from drive power.
+At the landing, Nessa and Orrin settle the compass/boat thread, Cal establishes
+the mooring signal, and Iona commits to Mara's dated steps/handrail repair.
+The southern mooring finishes the journey. Completed Continue revisits this
+landing and can replay the farewell. LK4 retains all LK1/LK2/LK3 settings and
+adds only tower checkpoint/contact data. Human playtime remains unmeasured.
+
+No UI engine implementation is implied by this content checkpoint. The existing
+menu/presentation layer remains until stages 3 and 4 deliver the architecture
+and migration above.

@@ -25,7 +25,7 @@ def check_project(project):
             assert source['Sheet']=='Art/tiny-town.hsprites' and source['RegionID']==pine['ID']
             assert scale[:2]==[1,2] and scale[1]/scale[0]==pine['Rect'][3]/pine['Rect'][2], (name,'Pine aspect or native pixel scale changed')
     print('PASS: complete native 16x32 pines, one sprite each, uniform pixel scale and no duplicated bases',flush=True)
-    for scene in ('Breakwater','CliffCistern','SeaCaves','Observatory'):
+    for scene in ('Breakwater','CliffCistern','SeaCaves','Observatory','UpperTower','HarborHome'):
         document=yaml.load((assets/'Scenes'/(scene+'.hazel')).read_text(encoding='utf-8'),Loader=loader)
         entities=document['Entities'];by_name={e['TagComponent']['Tag']:e for e in entities}
         walk=set()
@@ -83,7 +83,7 @@ def check_project(project):
             assert near(reachable(start,('GalleryGate','MaraDoor'),{1:6,2:-3}),'Mara',2.1),'Released refuge unreachable'
             home=reachable(position('Mara'),('GalleryGate','MaraDoor','ReturnGate'),{1:6,2:-3},True)
             assert near(home,'DryExit'),'Winch key did not create a dry return route'
-        else:
+        elif scene=='Observatory':
             start=position('Checkpoint0');initial=reachable(start)
             for item in ('Collimator','SurveyNote','WestPost'):assert near(initial,item),(scene,'unreachable west equipment',item)
             assert not near(initial,'EastPost') and not near(initial,'Nessa',2),'Survey span or north room can be bypassed'
@@ -106,4 +106,28 @@ def check_project(project):
                     if (x,y) in optical:return False
                 return True
             assert not any(ray_clear(cell,position('DomeReceiver')) for cell in initial),'West terrace can bypass the opposed sightline'
+        elif scene=='UpperTower':
+            start=position('Checkpoint0');initial=reachable(start)
+            for item in ('EntryPad','TowerNote','RestMarker0'):assert near(initial,item),(scene,'unreachable approach',item)
+            assert not near(initial,'Aim0'),'Main drive accessible through closed entrance'
+            arena=reachable(start,('EntryGate',))
+            for item in ('Aim0','Aim1','Aim2','Checkpoint1','Checkpoint2'):assert near(arena,item),(scene,'unreachable contact or recovery point',item)
+            assert not near(arena,'MainLight'),'Closed lantern bay can be entered'
+            assert near(reachable(start,('EntryGate','MainGate')),'MainLight'),'Powered main lantern inaccessible'
+            optical={tuple(round(v) for v in e['TransformComponent']['Translation'][:2]) for name,e in by_name.items() if name.startswith('OpticalStone')}
+            def trace(start,direction,target):
+                x,y=start;dx,dy=direction
+                for _ in range(40):
+                    x+=dx;y+=dy
+                    if (x,y) in optical:return False
+                    if (x,y)==target:return True
+                    if (x,y)==(-16,2):dx,dy=dy,dx
+                return False
+            assert trace(position('EntryPad'),(0,1),position('EntryReceiver')),'Authored fixed-mirror entrance line blocked'
+            for i,direction in enumerate(((0,1),(1,0),(0,-1))):
+                assert trace(position('Aim'+str(i)),direction,position('Contact'+str(i))),(scene,'Contact sightline blocked',i)
+                assert not trace(position('Aim'+str(i)),(-direction[0],-direction[1]),position('Contact'+str(i))),(scene,'Reversed contact aim unexpectedly works',i)
+        else:
+            landing=reachable(position('Checkpoint0'))
+            for item in ('Orrin','Nessa','Mara','Cal','RepairBook','BoatExit'):assert near(landing,item,2),(scene,'unreachable epilogue',item)
         print('PASS: '+scene+' authored collider/gate/recovery/landmark connectivity (no playtime assertion)',flush=True)

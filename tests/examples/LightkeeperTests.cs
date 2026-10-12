@@ -34,6 +34,23 @@ internal static class LightkeeperTests {
         foreach(var bad in new[]{"LK3|0|0|0|0|0|0|1|2","LK3|0|0|0|0|0|0|0|0","LK3|8388608|0|0|0|0|0|0|2","LK3|131071|0|0|0|0|0|0|3","LK4|131071|0|0|0|0|0|0|2"}){
             bool rejected=false;try{Journey.Decode(bad);}catch(InvalidOperationException){rejected=true;}Check(rejected,"Damaged/future survey data accepted");
         }
+        Check(oldCliff.TowerCheckpoint==0 && oldCliff.Contacts==0,"LK3 invented tower progress");
+        Check(!oldCliff.Restore(Restoration.TowerDrive),"Tower drive skipped contact decisions");
+        Check(oldCliff.Restore(Restoration.TowerEntry),"Tower entry prerequisite failed");
+        for(int mask=1;mask<7;mask++){
+            oldCliff.Contacts=mask;oldCliff.TowerCheckpoint=2;
+            Check(!oldCliff.Restore(Restoration.TowerDrive),"Partial contacts powered main drive");
+            var migrated=Journey.Decode(oldCliff.Encode());
+            Check(migrated.Encode()==oldCliff.Encode() && migrated.Carriage==1 && migrated.Has(Restoration.Archive|Restoration.Cache),"LK4 lost earlier progress or partial contacts");
+            Check(migrated.ResumeScene=="Scenes/UpperTower.hazel","Partial tower Continue skipped encounter");
+        }
+        oldCliff.Contacts=7;Check(oldCliff.Restore(Restoration.TowerDrive),"All contacts did not power drive");
+        Check(Journey.Decode(oldCliff.Encode()).ResumeScene=="Scenes/UpperTower.hazel","Drive completion skipped starting main lantern");
+        Check(oldCliff.Restore(Restoration.TowerBeacon) && Journey.Decode(oldCliff.Encode()).ResumeScene=="Scenes/HarborHome.hazel","Main light did not resume at landing");
+        Check(oldCliff.Restore(Restoration.Home) && !oldCliff.Restore(Restoration.Home) && Journey.Decode(oldCliff.Encode()).ResumeScene=="Scenes/HarborHome.hazel","Finished Continue or reward idempotence broken");
+        foreach(var bad in new[]{"LK5|future","LK4|8388223|3|2|1|26|2|2|1|1|0","LK4|16776831|3|2|1|26|2|2|1|2|0","LK4|16776831|3|2|1|26|2|2|1|1|7","LK4|33554047|3|2|1|26|2|2|1|1|6"}){
+            bool rejected=false;try{Journey.Decode(bad);}catch(InvalidOperationException){rejected=true;}Check(rejected,"Invalid tower payload accepted");
+        }
         for(int cradle=0;cradle<3;cradle++){
             var block=new HashSet<Cell>{new Cell(10,SurveyRules.CarriageRow(cradle))};var straight=new Dictionary<Cell,bool>();
             Check(!Optics.Trace(new Cell(-19,0),new Cell(1,0),new Cell(13,0),straight,block,-24,24,-12,12,24).Reached,"Old sleeve reached distant survey latch");

@@ -121,7 +121,7 @@ def observatory():
     masonry_collisions(s)
     return s
 
-def masonry_collisions(s):
+def masonry_collisions(s, additional_gates=()):
     # Box2D can catch a sliding actor on internal corners between touching tile
     # bodies. Fixed grid masonry/furniture therefore owns continuous authored
     # rectangles. Every visual tile remains independent and editor-selectable;
@@ -129,7 +129,7 @@ def masonry_collisions(s):
     occupied=set();obsolete=set()
     for e in s.entities:
         name=e['TagComponent']['Tag'];t=e['TransformComponent'];c=e.get('BoxCollider2DComponent')
-        if not c or name in ('SurveyCarriage','CrewGate','TowerGate','SpanGate'):continue
+        if not c or name in ('SurveyCarriage','CrewGate','TowerGate','SpanGate')+additional_gates:continue
         if e['Rigidbody2DComponent']['BodyType']!='Static' or t['Scale']!=[1,1,1] or c['Size']!=[.5,.5] or c['Offset']!=[0,0]:continue
         x,y=t['Translation'][:2]
         if int(x)!=x or int(y)!=y:continue

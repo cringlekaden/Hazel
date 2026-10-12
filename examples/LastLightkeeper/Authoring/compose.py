@@ -119,7 +119,7 @@ def edge_quarter(present,x,y,dx,dy,water=True):
     else:tile=37 if water else 25
     return quarter('coast-quarters' if water else 'ground-quarters',tile,0 if dx<0 else 1,0 if dy>0 else 1)
 
-def terrain(s,parent,bounds,walkable,gravel=lambda x,y:False,tint=STORM):
+def terrain(s,parent,bounds,walkable,gravel=lambda x,y:False,tint=STORM,collide=True):
     xmin,xmax,ymin,ymax=bounds
     sand=lambda x,y:walkable(x,y) and gravel(x,y) and all(walkable(x+a,y+b) for a,b in [(1,0),(-1,0),(0,1),(0,-1)])
     for y in range(ymin,ymax+1):
@@ -132,7 +132,7 @@ def terrain(s,parent,bounds,walkable,gravel=lambda x,y:False,tint=STORM):
                 for dx,dy in [(-1,1),(1,1),(-1,-1),(1,-1)]:
                     s.sprite('Gravel %d,%d quadrant %d,%d'%(x,y,dx,dy),'ground-quarters',edge_quarter(sand,x,y,dx,dy,False),x+dx*.25,y+dy*.25,0,.5,.5,tint,parent)
             else:s.sprite(('Sea ' if water else 'Bank ')+str((x,y)),'tiny-battle',37 if water else 0,x,y,0,color=tint,parent=parent)
-            if water and any(walkable(x+a,y+b) for a,b in [(1,0),(-1,0),(0,1),(0,-1)]):s.solid(s.entity('Coast collision '+str((x,y)),x,y))
+            if collide and water and any(walkable(x+a,y+b) for a,b in [(1,0),(-1,0),(0,1),(0,-1)]):s.solid(s.entity('Coast collision '+str((x,y)),x,y))
 
 def island():
     s=Scene('Breakwater');background=s.image('Distant sea','water-tile.png',0,0,-3,64,64,STORM);background['SpriteRendererComponent']['Source']['TilingFactor']=64

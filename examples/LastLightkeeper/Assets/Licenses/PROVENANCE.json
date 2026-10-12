@@ -12,7 +12,8 @@
     "adaptations": [
       "Native ground-quarters.hsprites grid crops: 8x8 from unchanged 192x176 packed sheet, for inset gravel adjacency.",
       "Existing pine_tall region (64,0,16,32), displayed as one sprite at 1x2 world units; slate surface (109), directional stone kerbs and inspection windows reused for the whole-game polish. No atlas pixels changed.",
-      "Observatory: existing slate floor and directional edges compose the survey terraces; no imported pixels or sheet identities changed."
+      "Observatory: existing slate floor and directional edges compose the survey terraces; no imported pixels or sheet identities changed.",
+      "Upper tower and morning landing: existing slate, quarter kerbs, complete 16x32 pines, mooring rope and repair ledger. No atlas pixels changed."
     ]
   },
   {
@@ -30,7 +31,8 @@
       "Native Lantern-flame clip uses unchanged torch regions 125/126; carried torch is a visual child of Iona. Lens diamond marks solved beam endpoints.",
       "Unmodified Tiles/tile_0000.png copied as Art/bedrock-tile.png for the repeating cave backdrop.",
       "Cave rubble is clustered at authored rock falls rather than distributed by a modulo pattern.",
-      "Observatory: unmodified character poses 99 (Nessa) and 86 (Cal), receiver glass/masonry, lens diamond and instrument desks; existing torch clip reused."
+      "Observatory: unmodified character poses 99 (Nessa) and 86 (Cal), receiver glass/masonry, lens diamond and instrument desks; existing torch clip reused.",
+      "Upper tower and morning landing: existing masonry/windows, fixed mirror, original storm-wisp pose, keeper/crew/ferryman poses, desks and torch clip. No new artwork."
     ]
   },
   {
@@ -44,7 +46,8 @@
     "version": "1.0",
     "archive_url": "https://kenney.nl/media/pages/assets/tiny-factory/1652277319-1788860879/kenney_tiny-factory.zip",
     "adaptations": [
-      "Observatory: unmodified carriage, rail, handle, drive receiver and winch sprites describe working survey equipment."
+      "Observatory: unmodified carriage, rail, handle, drive receiver and winch sprites describe working survey equipment.",
+      "Upper tower: original drive/contact sprites, iron columns, safety boards and shelter rail. Individual contact sprites mark retained repairs."
     ]
   },
   {
@@ -59,7 +62,8 @@
     "archive_url": "https://kenney.nl/media/pages/assets/tiny-battle/c1c25ac1f3-1691487575/kenney_tiny-battle.zip",
     "adaptations": [
       "Native coast-quarters.hsprites grid crops: 8x8 from unchanged 288x176 packed sheet; coherent adjacency. Original energy strip/arrows/endpoint/cross used for light feedback. Military boat removed.",
-      "Unmodified Tiles/tile_0037.png copied as Art/water-tile.png for an authored repeating ocean backdrop; avoids viewport-edge black gaps without adding room content."
+      "Unmodified Tiles/tile_0037.png copied as Art/water-tile.png for an authored repeating ocean backdrop; avoids viewport-edge black gaps without adding room content.",
+      "Upper tower: original sighting posts/arrows, rush cross and directional gust arrows; light prefab pool unchanged."
     ]
   },
   {
