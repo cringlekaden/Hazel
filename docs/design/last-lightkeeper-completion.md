@@ -1,5 +1,10 @@
 # Completion checkpoints and runtime UI design
 
+Historical content plan and initial UI inspection. The content checkpoints below
+are complete. Runtime UI is now integrated and the example migration is complete;
+see [the implementation checkpoint](runtime-ui-integration.md) and
+[the authoring guide](../runtime-game-ui.md) for the implemented workflow and APIs.
+
 Inspected baseline: `feature/last-lightkeeper`, clean `13cbbdd`; master,
 stash, settings and vendor pins are outside this work. Existing two chapters
 retain their completed composition and writing. Durations remain human-untimed.
@@ -111,11 +116,11 @@ The southern mooring finishes the journey. Completed Continue revisits this
 landing and can replay the farewell. LK4 retains all LK1/LK2/LK3 settings and
 adds only tower checkpoint/contact data. Human playtime remains unmeasured.
 
-No UI engine implementation is implied by this content checkpoint. The existing
+At the original content checkpoint, no UI engine implementation was implied. The existing
 menu/presentation layer remains until stages 3 and 4 deliver the architecture
 and migration above.
 
-The first milestone-3 implementation is the standalone logical layout/input
+The first milestone-3 implementation was the standalone logical layout/input
 model in `Hazel/UI/RuntimeUIModel.h`, with focused native regressions. It has no
-rendering, managed bindings or scene/editor UI authoring yet. Its contracts and
+rendering, managed bindings or scene/editor UI authoring at that checkpoint. Its contracts and
 remaining integration are recorded in [the model checkpoint](runtime-ui-model-checkpoint.md).
