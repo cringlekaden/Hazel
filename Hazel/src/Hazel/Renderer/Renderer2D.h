@@ -55,6 +55,9 @@ namespace Hazel {
 			float Kerning = 0.0f;
 			float LineSpacing = 0.0f;
 		};
+        struct TextLine { std::string Text; float Width=0; };
+        static float MeasureText(const std::string& text, const Ref<Font>& font, float kerning=0);
+        static void LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines);
 		static void DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const TextParams& textParams, int entityID = -1);
 		static void DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID = -1);
 

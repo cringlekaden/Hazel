@@ -51,6 +51,7 @@ project "Hazel"
 
 local consumers = { "Nutella", "Hazelnut", "SpriteAssetAudit", "HazelProject" }
 if _OPTIONS["migration-tests"] then
+    table.insert(consumers, "MigrationGameUIIntegrationSmoke")
     table.insert(consumers, "MigrationRendererSmoke")
     table.insert(consumers, "MigrationCoreSmoke")
     table.insert(consumers, "MigrationRendererFeaturesSmoke")

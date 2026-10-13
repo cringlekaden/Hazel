@@ -5,6 +5,12 @@ namespace Hazel
 {
 	public static class InternalCalls
 	{
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_IsPointerCaptured();
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_IsKeyDown(KeyCode key);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_Consume(ulong scene,ulong id,out ulong entity,out string action);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_GetValue(ulong id,int property);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_SetValue(ulong id,int property,bool value);
+
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void SpriteRendererComponent_SetSprite(ulong id,string sheet,ulong region);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void SpriteAnimationComponent_Play(ulong id,string sheet,ulong clip);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void SpriteAnimationComponent_Control(ulong id,int action);

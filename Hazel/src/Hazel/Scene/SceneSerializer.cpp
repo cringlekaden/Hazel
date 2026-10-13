@@ -5,6 +5,7 @@
 
 #include "Entity.h"
 #include "Components.h"
+#include "Hazel/UI/RuntimeUIConfig.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include "Hazel/Core/UUID.h"
 #include "Hazel/Core/FileSystem.h"
@@ -412,6 +413,7 @@ namespace Hazel {
 			out << YAML::EndMap; // TextComponent
 		}
 
+        WriteUIComponents(out,entity);
 		out << YAML::EndMap; // Entity
 	}
 
@@ -420,6 +422,7 @@ namespace Hazel {
 	std::string SceneSerializer::SerializeTextImpl(Entity only, bool portablePaths)
 	{
 		m_Scene->ValidateHierarchy();
+        m_Scene->ValidateUI(false);
 		YAML::Emitter out;
 		out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);
 		out.SetDoublePrecision(std::numeric_limits<double>::max_digits10);
@@ -520,6 +523,7 @@ namespace Hazel {
                 if(tagComponent) { deserializedEntity.GetComponent<TagComponent>().Tag=name; }
                 if(auto relationship=entity["Relationship"])staged->m_Relationships[uuid]={UUID(relationship["Parent"].as<uint64_t>()),relationship["Order"].as<uint32_t>()};
 
+				ReadUIComponents(entity,deserializedEntity);
 				auto transformComponent = entity["TransformComponent"];
 				if (transformComponent)
 				{
@@ -689,7 +693,7 @@ namespace Hazel {
 			}
 		}
 
-        OperationProgress::Report("Validate hierarchy and physics");staged->RebuildChildren();staged->ValidateHierarchy();
+        OperationProgress::Report("Validate hierarchy and physics");staged->RebuildChildren();staged->ValidateHierarchy();staged->ValidateUI(resources==ResourceLoading::Resolve);
         if(prefabDocument && data["PrefabVersion"].as<int>()==2) {
             const auto roots=staged->GetChildren();
             if(roots.size()!=1 || uint64_t(roots.front())!=data["PrefabRoot"].as<uint64_t>() || staged->GetSubtree(staged->GetEntityByUUID(roots.front())).size()!=staged->m_EntityMap.size())throw std::runtime_error("PrefabRoot must identify one complete connected subtree");
@@ -734,6 +738,7 @@ namespace Hazel {
 		std::vector<Entity> oldEntities;
 		m_Scene->m_Registry.each([&](auto id) { oldEntities.emplace_back(id, m_Scene.get()); });
 		for (auto entity : oldEntities) m_Scene->DestroyEntity(entity);
+        m_Scene->ResetUI();
 		m_Scene->m_Registry = std::move(staged->m_Registry);
 		m_Scene->m_EntityMap = std::move(staged->m_EntityMap);
         m_Scene->m_Relationships=std::move(staged->m_Relationships);

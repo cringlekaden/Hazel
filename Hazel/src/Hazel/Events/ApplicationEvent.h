@@ -22,6 +22,8 @@ namespace Hazel {
         unsigned int m_Width, m_Height;
     };
 
+    class WindowLostFocusEvent : public Event {public: EVENT_CLASS_TYPE(WindowLostFocus) EVENT_CLASS_CATEGORY(EventCategoryApplication)};
+
     class WindowCloseEvent : public Event
     {
     public:

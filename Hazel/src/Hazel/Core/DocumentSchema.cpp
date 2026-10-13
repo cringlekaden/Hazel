@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "Hazel/UI/RuntimeUIConfig.h"
 #include "DocumentSchema.h"
 #include "Hazel/Core/OperationProgress.h"
 #include "Hazel/Project/RendererRequestsSerializer.h"
@@ -113,11 +114,12 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
         ++checked;
         Keys(entity, {"Entity", "TagComponent", "TransformComponent", "CameraComponent", "ScriptComponent",
                       "SpriteRendererComponent", "SpriteAnimationComponent", "CircleRendererComponent",
-                      "AudioSourceComponent", "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent", "Relationship"}, "Entity");
+                      "AudioSourceComponent", "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent", "Relationship", "UICanvasComponent", "UIRectComponent", "UILayoutComponent", "UITextStyleComponent", "UINineSliceComponent", "UIButtonComponent"}, "Entity");
         if(hierarchy) {
             auto rel=entity["Relationship"];
             Keys(rel,{"Parent","Order"},"Relationship");rel["Parent"].as<uint64_t>();rel["Order"].as<uint32_t>();
         } else if(entity["Relationship"])throw std::runtime_error("Relationships require SceneVersion 2");
+        Hazel::ValidateUIConfiguration(entity);
         const auto id = entity["Entity"].as<uint64_t>();
         if (!id || !ids.insert(id).second) throw std::runtime_error("Duplicate or null entity UUID");
         if (auto n = entity["TagComponent"]) { Keys(n, {"Tag"}, "TagComponent"); n["Tag"].as<std::string>(); }

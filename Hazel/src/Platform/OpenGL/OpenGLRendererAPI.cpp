@@ -7,6 +7,16 @@
 #include <algorithm>
 
 namespace Hazel {
+    RasterState OpenGLRendererAPI::GetRasterState() const {
+        RasterState state;state.DepthTest=glIsEnabled(GL_DEPTH_TEST);state.ClipEnabled=glIsEnabled(GL_SCISSOR_TEST);
+        glGetIntegerv(GL_SCISSOR_BOX,&state.ClipRect.x);glGetIntegerv(GL_VIEWPORT,&state.Viewport.x);return state;
+    }
+    void OpenGLRendererAPI::SetRasterState(const RasterState& state) {
+        if(state.DepthTest)glEnable(GL_DEPTH_TEST);else glDisable(GL_DEPTH_TEST);
+        if(state.ClipEnabled)glEnable(GL_SCISSOR_TEST);else glDisable(GL_SCISSOR_TEST);
+        glScissor(state.ClipRect.x,state.ClipRect.y,state.ClipRect.z,state.ClipRect.w);
+    }
+
 
     // Adapted target diagnostics; debug output became core in 4.3.
     static void APIENTRY OpenGLMessageCallback(GLenum, GLenum, GLuint, GLenum severity,

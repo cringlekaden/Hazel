@@ -218,7 +218,7 @@ namespace Hazel::GameUI
             if (!std::any_of(m_Order.begin(), m_Order.end(),
                              [&](size_t i) { return buttons[i].ID == m_Capture; }))
                 m_Capture = 0;
-            if (armed && !m_Order.empty() &&
+            if (armed && f.KeyboardEnabled && !m_Order.empty() &&
                 ((f.NextDown && !m_Next) || (f.PreviousDown && !m_Previous)))
             {
                 focused = std::find_if(m_Order.begin(), m_Order.end(),
@@ -242,16 +242,18 @@ namespace Hazel::GameUI
                 if (m_Capture)
                     m_Focus = m_Capture;
             }
-            if (m_KeyCapture != m_Focus || !f.AcceptDown)
+            if (m_KeyCapture != m_Focus || !f.AcceptDown || !f.KeyboardEnabled)
                 m_KeyCapture = 0;
-            if (armed && (f.AcceptPressed || (f.AcceptDown && !m_Accept)))
+            if (armed && f.KeyboardEnabled && (f.AcceptPressed || (f.AcceptDown && !m_Accept)))
                 m_KeyCapture = m_Focus;
             uint64_t activate = 0;
-            if (armed && (f.PointerReleased || (!f.LeftDown && m_Left)) && m_Capture == m_Hover)
+            uint64_t releaseTarget=m_Hover;
+            if(f.PointerReleased&&f.HasReleasePosition){releaseTarget=0;for(const auto& b:buttons)if(Usable(b)&&b.Bounds.Intersect(b.Clip).Contains(f.ReleasePosition))releaseTarget=b.ID;}
+            if (armed && (f.PointerReleased || (!f.LeftDown && m_Left)) && m_Capture == releaseTarget)
                 activate = m_Capture;
             if (!f.LeftDown)
                 m_Capture = 0;
-            if (!activate && !m_Capture && armed &&
+            if (!activate && !m_Capture && armed && f.KeyboardEnabled &&
                 (f.AcceptPressed || (f.AcceptDown && !m_Accept)))
                 activate = m_Focus;
             if (activate && m_Actions.size() < MaxActions)

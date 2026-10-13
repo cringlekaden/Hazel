@@ -272,11 +272,7 @@ namespace Hazel {
 
 	static MonoString* TextComponent_GetText(UUID entityID)
 	{
-		Scene* scene = ScriptEngine::GetSceneContext();
-		HZ_CORE_ASSERT(scene);
-		Entity entity = scene->GetEntityByUUID(entityID);
-		HZ_CORE_ASSERT(entity);
-		HZ_CORE_ASSERT(entity.HasComponent<TextComponent>());
+        Entity entity=CheckedSpriteEntity<TextComponent>(entityID);
 
 		auto& tc = entity.GetComponent<TextComponent>();
 		return ScriptEngine::CreateString(tc.TextString.c_str());
@@ -284,23 +280,17 @@ namespace Hazel {
 
 	static void TextComponent_SetText(UUID entityID, MonoString* textString)
 	{
-		Scene* scene = ScriptEngine::GetSceneContext();
-		HZ_CORE_ASSERT(scene);
-		Entity entity = scene->GetEntityByUUID(entityID);
-		HZ_CORE_ASSERT(entity);
-		HZ_CORE_ASSERT(entity.HasComponent<TextComponent>());
+        Entity entity=CheckedSpriteEntity<TextComponent>(entityID);
 
 		auto& tc = entity.GetComponent<TextComponent>();
-		tc.TextString = Utils::MonoStringToString(textString);
+        auto text=Utils::MonoStringToString(textString);
+        if(entity.HasComponent<UIRectComponent>()&&text.size()>65536)mono_raise_exception(mono_get_exception_argument("text","UI text exceeds 64 KiB"));
+        tc.TextString=std::move(text);
 	}
 
 	static void TextComponent_GetColor(UUID entityID, glm::vec4* color)
 	{
-		Scene* scene = ScriptEngine::GetSceneContext();
-		HZ_CORE_ASSERT(scene);
-		Entity entity = scene->GetEntityByUUID(entityID);
-		HZ_CORE_ASSERT(entity);
-		HZ_CORE_ASSERT(entity.HasComponent<TextComponent>());
+        Entity entity=CheckedSpriteEntity<TextComponent>(entityID);
 
 		auto& tc = entity.GetComponent<TextComponent>();
 		*color = tc.Color;
@@ -308,23 +298,16 @@ namespace Hazel {
 
 	static void TextComponent_SetColor(UUID entityID, glm::vec4* color)
 	{
-		Scene* scene = ScriptEngine::GetSceneContext();
-		HZ_CORE_ASSERT(scene);
-		Entity entity = scene->GetEntityByUUID(entityID);
-		HZ_CORE_ASSERT(entity);
-		HZ_CORE_ASSERT(entity.HasComponent<TextComponent>());
+        Entity entity=CheckedSpriteEntity<TextComponent>(entityID);
 
 		auto& tc = entity.GetComponent<TextComponent>();
+        for(int i=0;i<4;i++)if(!std::isfinite((*color)[i]))mono_raise_exception(mono_get_exception_argument("color","Text color must be finite"));
 		tc.Color = *color;
 	}
 
 	static float TextComponent_GetKerning(UUID entityID)
 	{
-		Scene* scene = ScriptEngine::GetSceneContext();
-		HZ_CORE_ASSERT(scene);
-		Entity entity = scene->GetEntityByUUID(entityID);
-		HZ_CORE_ASSERT(entity);
-		HZ_CORE_ASSERT(entity.HasComponent<TextComponent>());
+        Entity entity=CheckedSpriteEntity<TextComponent>(entityID);
 
 		auto& tc = entity.GetComponent<TextComponent>();
 		return tc.Kerning;
@@ -332,23 +315,16 @@ namespace Hazel {
 
 	static void TextComponent_SetKerning(UUID entityID, float kerning)
 	{
-		Scene* scene = ScriptEngine::GetSceneContext();
-		HZ_CORE_ASSERT(scene);
-		Entity entity = scene->GetEntityByUUID(entityID);
-		HZ_CORE_ASSERT(entity);
-		HZ_CORE_ASSERT(entity.HasComponent<TextComponent>());
+        Entity entity=CheckedSpriteEntity<TextComponent>(entityID);
 
 		auto& tc = entity.GetComponent<TextComponent>();
+        if(!std::isfinite(kerning))mono_raise_exception(mono_get_exception_argument("kerning","Text spacing must be finite"));
 		tc.Kerning = kerning;
 	}
 
 	static float TextComponent_GetLineSpacing(UUID entityID)
 	{
-		Scene* scene = ScriptEngine::GetSceneContext();
-		HZ_CORE_ASSERT(scene);
-		Entity entity = scene->GetEntityByUUID(entityID);
-		HZ_CORE_ASSERT(entity);
-		HZ_CORE_ASSERT(entity.HasComponent<TextComponent>());
+        Entity entity=CheckedSpriteEntity<TextComponent>(entityID);
 
 		auto& tc = entity.GetComponent<TextComponent>();
 		return tc.LineSpacing;
@@ -356,13 +332,10 @@ namespace Hazel {
 
 	static void TextComponent_SetLineSpacing(UUID entityID, float lineSpacing)
 	{
-		Scene* scene = ScriptEngine::GetSceneContext();
-		HZ_CORE_ASSERT(scene);
-		Entity entity = scene->GetEntityByUUID(entityID);
-		HZ_CORE_ASSERT(entity);
-		HZ_CORE_ASSERT(entity.HasComponent<TextComponent>());
+        Entity entity=CheckedSpriteEntity<TextComponent>(entityID);
 
 		auto& tc = entity.GetComponent<TextComponent>();
+        if(!std::isfinite(lineSpacing))mono_raise_exception(mono_get_exception_argument("lineSpacing","Text spacing must be finite"));
 		tc.LineSpacing = lineSpacing;
 	}
 
@@ -373,13 +346,47 @@ namespace Hazel {
                 HZ_CORE_ERROR("Scene.LoadScene request rejected (no running project session or conflicting/invalid request)");
         } catch (const std::exception& error) { HZ_CORE_ERROR("Scene.LoadScene request: {}", error.what()); }
     }
+    static bool UI_IsPointerCaptured(){auto* scene=ScriptEngine::GetSceneContext();return scene&&scene->IsUICapturingPointer();}
+    static bool UI_IsKeyDown(KeyCode key) {
+        auto* session=ScriptEngine::GetRuntimeSession();return session&&session->IsInputEnabled()&&Input::IsKeyPressed(key);
+    }
+    static bool UI_Consume(uint64_t identity,uint64_t id,uint64_t* entity,MonoString** name) {
+        *entity=0;*name=nullptr;MonoException* failure=nullptr;bool result=false;
+        try{auto* scene=ScriptEngine::GetSceneContext();if(scene){scene->CheckThread();if(scene->GetIdentity()==identity){GameUI::Action action;if(scene->ConsumeUIAction(id,action)){*entity=action.Entity;*name=ScriptEngine::CreateString(action.Name.c_str());result=true;}}}}
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if(failure)mono_raise_exception(failure);return result;
+    }
+    static bool* UI_Value(uint64_t id,int property) {
+        auto* scene=ScriptEngine::GetSceneContext();auto e=scene?scene->GetEntityByUUID(id):Entity{};
+        if(!e||!scene->IsEntityValid(id))return nullptr;
+        if(property==3&&e.HasComponent<UIButtonComponent>())return &e.GetComponent<UIButtonComponent>().Interactable;
+        if(e.HasComponent<UICanvasComponent>()) {
+            auto& c=e.GetComponent<UICanvasComponent>();if(property==0)return &c.Visible;if(property==1)return &c.Enabled;if(property==2)return &c.Modal;
+        }
+        if(e.HasComponent<UIRectComponent>()) {
+            auto& c=e.GetComponent<UIRectComponent>();if(property==0)return &c.Visible;if(property==1)return &c.Enabled;
+        }
+        return nullptr;
+    }
+    static bool UI_GetValue(uint64_t id,int property) {
+        MonoException* failure=nullptr;bool result=false;
+        try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::runtime_error("UI requires a runtime scene");scene->CheckThread();auto* value=UI_Value(id,property);if(!value)throw std::runtime_error("UI property needs a live UI component");result=*value;}
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if(failure)mono_raise_exception(failure);return result;
+    }
+    static void UI_SetValue(uint64_t id,int property,bool value) {
+        MonoException* failure=nullptr;
+        try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::runtime_error("UI requires a runtime scene");scene->CheckThread();auto* target=UI_Value(id,property);if(!target)throw std::runtime_error("UI property needs a live UI component");if(*target!=value){*target=value;for(auto child:scene->GetSubtree(scene->GetEntityByUUID(id)))scene->RetireUI(child);scene->RefreshUI();}}
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if(failure)mono_raise_exception(failure);
+    }
     static bool Input_IsKeyDown(KeyCode keycode) {
         auto* session = ScriptEngine::GetRuntimeSession();
-        return (!session || session->IsInputEnabled()) && Input::IsKeyPressed(keycode);
+        return (!session || session->IsGameplayInputEnabled()) && Input::IsKeyPressed(keycode);
     }
     static bool Input_IsMouseButtonDown(MouseCode button) {
         auto* session = ScriptEngine::GetRuntimeSession();
-        return session && session->IsInputEnabled() && Input::IsMouseButtonPressed(button);
+        return session && session->IsGameplayMouseEnabled() && Input::IsMouseButtonPressed(button);
     }
     static bool Input_GetMouseWorldPosition(glm::vec2* position) {
         auto* session = ScriptEngine::GetRuntimeSession();
@@ -419,6 +426,11 @@ namespace Hazel {
 	void ScriptGlue::RegisterFunctions()
 	{
         RegisterHierarchyFunctions();
+        HZ_ADD_INTERNAL_CALL(UI_IsKeyDown);
+        HZ_ADD_INTERNAL_CALL(UI_IsPointerCaptured);
+        HZ_ADD_INTERNAL_CALL(UI_Consume);
+        HZ_ADD_INTERNAL_CALL(UI_GetValue);
+        HZ_ADD_INTERNAL_CALL(UI_SetValue);
         HZ_ADD_INTERNAL_CALL(SpriteRendererComponent_SetSprite);
         HZ_ADD_INTERNAL_CALL(AudioSourceComponent_Play);
         HZ_ADD_INTERNAL_CALL(AudioSourceComponent_Stop);

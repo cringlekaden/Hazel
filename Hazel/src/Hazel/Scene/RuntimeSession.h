@@ -1,5 +1,7 @@
 #pragma once
 #include "Hazel/Core/Base.h"
+#include "Hazel/UI/RuntimeUIModel.h"
+#include "Hazel/Events/Event.h"
 #include "Hazel/Core/Timestep.h"
 #include "Hazel/Project/RuntimeStorage.h"
 #include <filesystem>
@@ -36,7 +38,12 @@ namespace Hazel {
         // Host supplies viewport-local coordinates, top-left origin. Inactive
         // viewports suppress input; the engine has no editor/ImGui dependency.
         void SetInput(glm::vec2 mousePosition, bool enabled);
+        void SetGameplayInputEnabled(bool enabled) {CheckThread();m_GameplayEnabled=enabled;}
         bool IsInputEnabled() const { return m_InputEnabled; }
+        bool IsGameplayInputEnabled() const;
+        bool IsGameplayMouseEnabled() const;
+        void SubmitUIEvent(Event& event,glm::vec2 viewportMouse,bool enabled);
+
         bool GetMouseWorldPosition(glm::vec2& position) const;
     private:
         void CheckThread() const;
@@ -48,6 +55,9 @@ namespace Hazel {
         uint64_t m_Identity = 0;
         uint32_t m_Width = 0, m_Height = 0;
         glm::vec2 m_Mouse = {};
+        GameUI::InputFrame m_UIEdges;
+        uint64_t m_UIEdgeScene=0;
+        bool m_GameplayEnabled=false;
         bool m_InputEnabled = false, m_Stopping = false, m_Updating = false;
         std::string m_Error;
         RuntimeStorage m_Storage;

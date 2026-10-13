@@ -28,7 +28,7 @@ project "Nutella"
 
 local consumers = { "Hazel", "Nutella", "Hazelnut", "SpriteAssetAudit", "HazelProject" }
 if _OPTIONS["migration-tests"] then
-    for _, test in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke", "RuntimeSessionSmoke", "ExampleGamesSmoke", "SpriteSmoke" } do
+    for _, test in ipairs { "GameUIIntegrationSmoke", "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke", "RuntimeSessionSmoke", "ExampleGamesSmoke", "SpriteSmoke" } do
         table.insert(consumers, "Migration" .. test)
     end
 end

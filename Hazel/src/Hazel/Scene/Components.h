@@ -4,6 +4,7 @@
 #include <string>
 
 #include "SceneCamera.h"
+#include "Hazel/UI/RuntimeUIModel.h"
 #include "Hazel/Core/UUID.h"
 #include "Hazel/Renderer/Texture.h"
 #include "Hazel/Renderer/Font.h"
@@ -207,6 +208,35 @@ namespace Hazel {
 		float LineSpacing = 0.0f;
 	};
 
+
+    // Authored logical pixels, top-left origin. Runtime resources/state live in Scene.
+    struct UICanvasComponent : GameUI::CanvasLayout {
+        int SortOrder=0;
+        bool Visible=true, Enabled=true, Modal=false;
+    };
+    struct UIRectComponent : GameUI::RectLayout {
+        bool Visible=true, Enabled=true, ClipChildren=true;
+        float Flex=0;
+    };
+    struct UILayoutComponent : GameUI::FlowLayout {};
+    struct UITextStyleComponent {
+        std::filesystem::path FontPath; // empty selects the packaged default font
+        float Size=24;
+        GameUI::Align Horizontal=GameUI::Align::Start, Vertical=GameUI::Align::Start;
+        bool Wrap=true;
+    };
+    struct UINineSliceComponent {
+        glm::vec4 Borders{4}; // source pixels: left, top, right, bottom
+        float BorderScale=1;
+    };
+    struct UIButtonComponent {
+        std::string Action="activate";
+        int TabOrder=0;
+        bool Interactable=true;
+        std::array<glm::vec4,5> Colors{{glm::vec4(1),glm::vec4(1.15f,1.15f,1.15f,1),glm::vec4(.75f,.75f,.75f,1),glm::vec4(.5f),glm::vec4(1.2f,1.15f,.8f,1)}};
+        std::array<SpriteSource,5> Images;
+    };
+
 	template<typename... Component>
 	struct ComponentGroup
 	{
@@ -216,6 +246,6 @@ namespace Hazel {
 		ComponentGroup<TransformComponent, SpriteRendererComponent, SpriteAnimationComponent, AudioSourceComponent,
 			CircleRendererComponent, CameraComponent, ScriptComponent,
 			NativeScriptComponent, Rigidbody2DComponent, BoxCollider2DComponent,
-			CircleCollider2DComponent, TextComponent>;
+			CircleCollider2DComponent, TextComponent, UICanvasComponent, UIRectComponent, UILayoutComponent, UITextStyleComponent, UINineSliceComponent, UIButtonComponent>;
 
 }

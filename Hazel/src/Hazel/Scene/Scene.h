@@ -17,6 +17,7 @@ class b2World;
 
 namespace Hazel {
     class AudioPlayback;
+    class RuntimeUI;
 
 	class Entity;
     enum class TransformPolicy { KeepWorld, KeepLocal };
@@ -40,6 +41,19 @@ namespace Hazel {
         static constexpr size_t MaxEntities = 10000, MaxDepth = 256;
         Relationship GetRelationship(Entity entity) const;
         std::vector<UUID> GetChildren(UUID parent = UUID(0)) const;
+        const std::vector<UUID>& GetChildrenView(UUID parent) const;
+        void UpdateUIInput(const GameUI::InputFrame& frame);
+        bool ConsumeUIAction(uint64_t entity,GameUI::Action& action);
+        bool IsGameplayInputBlocked() const;
+        bool IsGameplayPointerBlocked() const;
+        bool IsUICapturingPointer() const;
+        bool GetUIBounds(uint64_t entity,GameUI::Rect& pixels) const;
+        void ResetUI();
+        void RetireUI(uint64_t entity);
+        void RefreshUI();
+        void ValidateUI(bool resources=true);
+        const std::string& GetUIError() const {return m_UIError;}
+
         std::vector<UUID> GetSubtree(Entity entity) const;
         glm::mat4 GetWorldTransform(Entity entity) const;
         void SetLocalTransform(Entity entity, const TransformComponent& value);
@@ -106,6 +120,9 @@ namespace Hazel {
 		}
 	private:
         Scope<AudioPlayback> m_Audio;
+        Scope<RuntimeUI> m_UI;
+        std::string m_UIError;
+        void RenderUI();
         mutable bool m_HierarchyValidationDirty=true;
 		template<typename T>
 		void OnComponentAdded(Entity entity, T& component);

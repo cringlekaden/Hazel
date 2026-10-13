@@ -423,7 +423,7 @@ namespace Hazel {
 		if (beforeReplacement) beforeReplacement();
 		s_Data->ShuttingDown = true;
 		s_Data->AppAssemblyFileWatcher.reset(); // Join before changing the global owner/metadata.
-		if(scene) { scene->m_Stopping=true; scene->CancelPendingLifecycle(); OnRuntimeStop(); scene->CancelPendingLifecycle(); candidate->SceneContext=scene; }
+		if(scene) { scene->ResetUI(); scene->m_Stopping=true; scene->CancelPendingLifecycle(); OnRuntimeStop(); scene->CancelPendingLifecycle(); candidate->SceneContext=scene; }
         ReleaseDomainMetadata();
 		mono_domain_set(s_Data->RootDomain, false);
 		if (s_Data->AppDomain) mono_domain_unload(s_Data->AppDomain);

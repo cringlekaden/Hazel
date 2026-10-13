@@ -1,5 +1,7 @@
 # Runtime UI model checkpoint
 
+Historical checkpoint at `0213e48`. The scene/renderer/asset/managed integration now builds on this model; see [the integration plan](runtime-ui-integration.md). Its native Debug rendering/integration regression passed on Grandpa. Editor and complete example/package verification remain in progress. The original checkpoint description below records what existed at that commit.
+
 This is a **partial milestone 3**, not a rendered or editor-authored UI system.
 The complete Lightkeeper gameplay checkpoint remains playable. No game menus
 have been migrated, no UI scene components have been registered, and no new

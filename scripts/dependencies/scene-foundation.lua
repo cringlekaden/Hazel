@@ -38,7 +38,7 @@ project "yaml-cpp"
 
 local consumers = { "Hazel", "Nutella", "Hazelnut", "SpriteAssetAudit", "HazelProject" }
 if _OPTIONS["migration-tests"] then
-    for _, name in ipairs { "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke", "RuntimeSessionSmoke", "ExampleGamesSmoke", "SpriteSmoke" } do
+    for _, name in ipairs { "GameUIIntegrationSmoke", "RendererSmoke", "CoreSmoke", "RendererFeaturesSmoke", "SceneFoundationSmoke", "FontSmoke", "Renderer2DSmoke", "ProjectPhysicsSmoke", "MonoSmoke", "SceneSmoke", "SceneGPUSmoke", "EditorSmoke", "RuntimeSessionSmoke", "ExampleGamesSmoke", "SpriteSmoke" } do
         table.insert(consumers, "Migration" .. name)
     end
 end

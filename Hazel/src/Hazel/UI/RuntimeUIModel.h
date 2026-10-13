@@ -77,12 +77,14 @@ namespace Hazel::GameUI
     struct InputFrame
     {
         glm::vec2 Mouse{};
+        bool KeyboardEnabled = true, FocusNavigation = false;
         bool Enabled = false, LeftDown = false, AcceptDown = false, NextDown = false,
              PreviousDown = false;
         // Optional non-repeat host edges preserve a quick click between updates.
         // Coordinates and edges must belong to this scene and viewport.
-        bool PointerPressed = false, PointerReleased = false, AcceptPressed = false;
-        glm::vec2 PressPosition{};
+        bool PointerPressed = false, PointerReleased = false, AcceptPressed = false, CancelDown = false;
+        glm::vec2 PressPosition{}, ReleasePosition{};
+        bool HasReleasePosition=false;
     };
     struct Action
     {
@@ -106,6 +108,7 @@ namespace Hazel::GameUI
         bool Consume(uint64_t scene, Action &action);
         bool SetFocus(uint64_t scene, uint64_t id, const std::vector<Button> &buttons);
         ButtonState State(const Button &button) const;
+        uint64_t Captured() const { return m_Capture; }
         uint64_t Focused() const
         {
             return m_Focus;

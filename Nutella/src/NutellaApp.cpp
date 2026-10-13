@@ -19,11 +19,13 @@ namespace Hazel {
             m_Session.Start(m_Project, scene);
             HZ_CORE_INFO("Nutella ready: {}", m_Project->GetConfig().Name);
         }
+        void OnEvent(Event& e) override {m_Session.SubmitUIEvent(e,Input::GetMousePosition(),Application::Get().GetWindow().IsFocused());}
         void OnDetach() override { m_Session.Stop(); Project::SetActive(nullptr); }
         void OnUpdate(Timestep timestep) override {
             auto& window = Application::Get().GetWindow();
             m_Session.Resize(window.GetWidth(), window.GetHeight());
-            m_Session.SetInput(Input::GetMousePosition(), true);
+            m_Session.SetInput(Input::GetMousePosition(), window.IsFocused());
+            const auto framebuffer=window.GetFramebufferSize();RenderCommand::SetViewport(0,0,framebuffer.first,framebuffer.second);
             RenderCommand::SetClearColor({0.08f, 0.09f, 0.12f, 1.0f});
             RenderCommand::Clear();
             m_Session.Update(timestep);

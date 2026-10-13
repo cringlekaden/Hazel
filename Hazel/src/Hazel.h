@@ -37,3 +37,6 @@
 #include "Hazel/Renderer/OrthographicCameraController.h"
 
 #include "Hazel/Project/Project.h"
+
+// Runtime game UI configuration/model (independent of editor ImGui).
+#include "Hazel/UI/RuntimeUIModel.h"

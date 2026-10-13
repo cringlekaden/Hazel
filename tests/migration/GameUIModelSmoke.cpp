@@ -215,6 +215,18 @@ int main()
         router.Reset();
         Check(router.Focused() == 0 && !router.Consume(42, action),
               "Stop retained UI observations");
+        {
+            InputRouter route;std::vector<Button> controls{{1,{{0,0},{100,40}},{{0,0},{100,40}},"menu"}};InputFrame input;input.Enabled=true;input.KeyboardEnabled=false;
+            route.Update(100,controls,input);input.AcceptDown=true;route.Update(100,controls,input);Action action;
+            Check(!route.Consume(100,action),"Gameplay Space activated nonmodal UI");
+            input.KeyboardEnabled=true;route.Update(100,controls,input);Check(!route.Consume(100,action),"Held gameplay key activated newly modal UI");
+            input.AcceptDown=false;route.Update(100,controls,input);input.AcceptDown=true;route.Update(100,controls,input);Check(route.Consume(100,action),"UI keyboard ownership did not activate");
+        }
+        {
+            InputRouter route;std::vector<Button> controls{{1,{{0,0},{100,40}},{{0,0},{100,40}},"play"}};InputFrame input;input.Enabled=true;input.Mouse={10,10};route.Update(111,controls,input);
+            input.PointerPressed=true;input.PointerReleased=true;input.PressPosition={10,10};input.HasReleasePosition=true;input.ReleasePosition={120,10};route.Update(111,controls,input);Action action;Check(!route.Consume(111,action),"Release outside became a click after pointer moved inside");
+            input.PointerPressed=input.PointerReleased=false;route.Update(111,controls,input);input.PointerPressed=input.PointerReleased=true;input.ReleasePosition={10,10};input.Mouse={120,10};route.Update(111,controls,input);Check(route.Consume(111,action),"Valid release inside was lost after pointer moved outside");
+        }
         std::cout << "PASS: backend-independent canvas/anchors/flow/clips, capture/release, "
                      "focus/disabled, once-only actions, viewport gating and scene retirement\n";
     }
