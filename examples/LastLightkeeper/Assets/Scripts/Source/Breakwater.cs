@@ -75,7 +75,7 @@ namespace LastLightkeeper {
         // Stable IDs are loaded from the shipped sheet identity table, not regenerated.
         static Sprite Region(string pack,int tile)=>Art.Region(pack,tile);
         void Talk(string[] text,Action done=null){pages=text;page=0;afterDialogue=done;context.Text="";journal=false;SetDialogue();}
-        void SetDialogue(){dialogue.Text=pages==null?"":pages[page];footer.Text=pages==null?"":"Enter   "+(page+1==pages.Length?(afterDialogue!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);DialoguePanel.Scale=pages==null?new Vector3(.001f,.001f,1):new Vector3(27,6.8f,1);}
+        void SetDialogue(){dialogue.Text=pages==null?"":pages[page];footer.Text=pages==null?"":"Enter   "+(page+1==pages.Length?(afterDialogue!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);Presentation.Dialogue(DialoguePanel,pages!=null,false);}
         void CloseDialogue(){pages=null;SetDialogue();var callback=afterDialogue;afterDialogue=null;callback?.Invoke();}
         void Checkpoint(bool announce){
             var marker=FindEntityByName("Checkpoint"+journey.Checkpoint);Player.Translation=marker.Translation;body.LinearVelocity=Vector2.Zero;grace=.65f;
@@ -139,8 +139,8 @@ namespace LastLightkeeper {
         void OnUpdate(float dt){
             keys.Poll();dt=Math.Min(.1f,Math.Max(0,dt));
             if(!ready){ready=true;Light();}
-            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED":"";footer.Text=paused?"Enter   Resume     M   Title":"";DialoguePanel.Scale=paused?new Vector3(27,6.8f,1):new Vector3(.001f,.001f,1);}}
-            if(paused){body.LinearVelocity=Vector2.Zero;if(keys.Advance){paused=false;dialogue.Text="";footer.Text="";Hide(DialoguePanel);}if(keys.Menu)Scene.LoadScene("Scenes/MainMenu.hazel");return;}
+            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED":"";footer.Text=paused?"Enter   Resume":"";Presentation.Dialogue(DialoguePanel,paused,paused);}}
+            if(paused){body.LinearVelocity=Vector2.Zero;if(keys.Advance){paused=false;dialogue.Text="";footer.Text="";Presentation.HideUI(DialoguePanel);}if(keys.Menu)Scene.LoadScene("Scenes/MainMenu.hazel");return;}
             if(keys.Journal && (pages==null || journal)){if(pages!=null && journal)CloseDialogue();else{Talk(Story.Journal(journey));journal=true;}}
             if(pages!=null){body.LinearVelocity=Vector2.Zero;if(keys.Advance || keys.Interact){if(++page>=pages.Length)CloseDialogue();else SetDialogue();}return;}
             clock+=dt;grace=Math.Max(0,grace-dt);noticeTime=Math.Max(0,noticeTime-dt);

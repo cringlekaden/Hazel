@@ -142,7 +142,9 @@ int main(int argc,char** argv) {
                     if(entity.GetName()=="Lower0") Check(std::abs(transform.Translation.y-transform.Scale.y/2-floor)<.001f,"Pipe extends below collision floor");
                     if(entity.GetName()=="Upper0") Check(std::abs(transform.Translation.y+transform.Scale.y/2-camera.GetOrthographicSize()/2)<.001f,"Upper pipe misses viewport top");
                 }
-                Check(std::abs(runtime->FindEntityByName("Score").GetComponent<TransformComponent>().Translation.y-(camera.GetOrthographicSize()/2-1.2f))<.001f,"HUD does not follow viewport top");
+                GameUI::Rect scoreBounds;auto score=runtime->FindEntityByName("Score");
+                const float uiScale=std::min(float(dimensions.x)/1280,float(dimensions.y)/720);
+                Check(score.HasComponent<UIRectComponent>()&&runtime->GetUIBounds(score.GetUUID(),scoreBounds)&&std::abs(scoreBounds.Position.y-31*uiScale)<.01f&&scoreBounds.Size.y>0,"Screen-space score does not retain its top inset after resize");
                 Capture(std::filesystem::u8path(argv[3])/("Skybound-"+std::to_string(dimensions.x)+"x"+std::to_string(dimensions.y)+".ppm"),dimensions.x,dimensions.y);
             }
             framebuffer->Unbind();framebuffer->Resize(960,720);framebuffer->Bind();
@@ -215,7 +217,7 @@ int main(int argc,char** argv) {
             chapter();at("LanternSleeve");invoke("Interact",nullptr,0);invoke("CloseDialogue",nullptr,0);
             Check(session.Storage().Read("journey").find("LK2|1663|")==0,"Focus upgrade wasn't saved");
             Check(session.RequestSceneLoad("Scenes/CliffCistern.hazel"),"Mid-cistern Continue rejected");tick(session);tick(session);chapter();
-            Check(runtime->FindEntityByName("DialoguePanel").GetComponent<TransformComponent>().Scale.x<.01f,"Resumed cistern retained empty dialogue overlay");
+            Check(runtime->FindEntityByName("DialoguePanel").GetComponent<UICanvasComponent>().Visible==false,"Resumed cistern retained empty dialogue overlay");
             at("RestMarker");{
                 auto object=controller->GetManagedObject();auto klass=mono_object_get_class(object);bool blocked=true;
                 mono_field_set_value(object,mono_class_get_field_from_name(klass,"saveBlocked"),&blocked);
@@ -240,7 +242,7 @@ int main(int argc,char** argv) {
             at("Handle1");invoke("Interact",nullptr,0);invoke("Interact",nullptr,0);at("FocusPad2");invoke("Focus",focused,1);
             Check(!runtime->FindEntityByName("GalleryGate"),"Gallery focus receiver did not latch");shot("LastLightkeeper-caves-gallery",-7,3);
             Check(session.RequestSceneLoad("Scenes/SeaCaves.hazel"),"Mid-cave Continue rejected");tick(session);tick(session);chapter();
-            Check(runtime->FindEntityByName("DialoguePanel").GetComponent<TransformComponent>().Scale.x<.01f && !runtime->FindEntityByName("GalleryGate"),"Resumed cave overlay or latched progress incorrect");
+            Check(runtime->FindEntityByName("DialoguePanel").GetComponent<UICanvasComponent>().Visible==false && !runtime->FindEntityByName("GalleryGate"),"Resumed cave overlay or latched progress incorrect");
             // Meaningful antagonist contracts through real managed methods; no screen-click bot.
             float zero=0;auto object=controller->GetManagedObject();auto klass=mono_object_get_class(object);
             mono_field_set_value(object,mono_class_get_field_from_name(klass,"grace"),&zero);
@@ -273,7 +275,7 @@ int main(int argc,char** argv) {
             Check(session.Storage().Read("journey").find("LK3|261759|")==0,"Survey lens migration failed");
             at("WestPost");invoke("Focus",focused,1);Check(!runtime->FindEntityByName("SpanGate") && bool(runtime->FindEntityByName("CrewGate")),"Long sightline failed or opened unrelated latch");shot("LastLightkeeper-survey-span",-7,0);
             Check(session.RequestSceneLoad("Scenes/Observatory.hazel"),"Mid-survey Continue rejected");tick(session);tick(session);chapter();
-            Check(!runtime->FindEntityByName("SpanGate") && runtime->FindEntityByName("DialoguePanel").GetComponent<TransformComponent>().Scale.x<.01f,"Resumed survey lost latch or retained blank dialogue");
+            Check(!runtime->FindEntityByName("SpanGate") && runtime->FindEntityByName("DialoguePanel").GetComponent<UICanvasComponent>().Visible==false,"Resumed survey lost latch or retained blank dialogue");
             at("EastPost");tick(session,0);
             object=controller->GetManagedObject();klass=mono_object_get_class(object);
             // Facing is a game-owned value type; set through its real managed field.
@@ -320,7 +322,7 @@ int main(int argc,char** argv) {
             Check(session.Storage().Read("journey").substr(session.Storage().Read("journey").size()-2)=="|2" && bool(runtime->FindEntityByName("MainGate")),"One contact prematurely released lantern bay");shot("LastLightkeeper-tower-contact",6,5);
             Check(session.RequestSceneLoad("Scenes/UpperTower.hazel"),"Partial tower Continue rejected");tick(session);tick(session);chapter();
             object=controller->GetManagedObject();klass=mono_object_get_class(object);
-            Check(runtime->FindEntityByName("DialoguePanel").GetComponent<TransformComponent>().Scale.x<.01f && !runtime->FindEntityByName("EntryGate"),"Tower Continue lost latch or retained overlay");
+            Check(runtime->FindEntityByName("DialoguePanel").GetComponent<UICanvasComponent>().Visible==false && !runtime->FindEntityByName("EntryGate"),"Tower Continue lost latch or retained overlay");
             mono_field_set_value(object,mono_class_get_field_from_name(klass,"grace"),&zero);int awakeTower=0;float towerWait=0;
             mono_field_set_value(object,mono_class_get_field_from_name(klass,"wispState"),&awakeTower);mono_field_set_value(object,mono_class_get_field_from_name(klass,"wispTime"),&towerWait);
             at("Aim1");advance=.1f;invoke("Wisp",elapsed,1);Check(runtime->FindEntityByName("RushMark").GetComponent<TransformComponent>().Scale.x>1,"Final encounter has no telegraph");shot("LastLightkeeper-tower-telegraph",6,5);

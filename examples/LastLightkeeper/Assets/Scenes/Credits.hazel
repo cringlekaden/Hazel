@@ -35101,44 +35101,83 @@ Entities:
   TagComponent:
     Tag: Chapter
   Relationship:
-    Parent: 1
+    Parent: 1423
     Order: 0
   TransformComponent:
     Translation:
-    - -13
-    - 7
-    - 8
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.5425
-    - 0.5425
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: THE LAST LIGHTKEEPER
     Color: *id004
     Kerning: 0
     LineSpacing: 0.15
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 0
+    - 0
+    Offset:
+    - 32
+    - 24
+    SizeDelta:
+    - 700
+    - 32
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 22
+    Horizontal: 0
+    Vertical: 0
+    Wrap: true
 - Entity: 1385
   TagComponent:
     Tag: Heading
   Relationship:
-    Parent: 1
+    Parent: 1423
     Order: 1
   TransformComponent:
     Translation:
-    - -13
-    - 5.1
-    - 8
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 2.0124999999999997
-    - 2.0124999999999997
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: 'THE LAST
@@ -35147,24 +35186,63 @@ Entities:
     Color: *id003
     Kerning: 0
     LineSpacing: 0.15
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 0
+    - 0
+    Offset:
+    - 32
+    - 82
+    SizeDelta:
+    - 670
+    - 180
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 76
+    Horizontal: 0
+    Vertical: 0
+    Wrap: true
 - Entity: 1386
   TagComponent:
     Tag: Subtitle
   Relationship:
-    Parent: 1
+    Parent: 1423
     Order: 2
   TransformComponent:
     Translation:
-    - -13
-    - 1.8
-    - 8
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.665
-    - 0.665
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: 'The reef is dark.
@@ -35177,24 +35255,63 @@ Entities:
     - 1
     Kerning: 0
     LineSpacing: 0.15
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 0
+    - 0
+    Offset:
+    - 32
+    - 276
+    SizeDelta:
+    - 650
+    - 80
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 26
+    Horizontal: 0
+    Vertical: 0
+    Wrap: true
 - Entity: 1387
   TagComponent:
     Tag: Status
   Relationship:
-    Parent: 1
+    Parent: 1423
     Order: 3
   TransformComponent:
     Translation:
-    - -13
-    - 0.2
-    - 8
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.63
-    - 0.63
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: ''
@@ -35205,729 +35322,481 @@ Entities:
     - 1
     Kerning: 0
     LineSpacing: 0.15
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 0
+    - 0
+    Offset:
+    - 32
+    - 369
+    SizeDelta:
+    - 660
+    - 80
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 24
+    Horizontal: 0
+    Vertical: 0
+    Wrap: true
 - Entity: 1388
   TagComponent:
     Tag: StartButton
   Relationship:
-    Parent: 1
-    Order: 4
+    Parent: 1424
+    Order: 0
   TransformComponent:
     Translation:
-    - -8.5
-    - -2.5
-    - 6
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 9
-    - 1.3
     - 1
-- Entity: 1389
+    - 1
+    - 1
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 0
+    - 0
+    Offset:
+    - 0
+    - 0
+    SizeDelta:
+    - 420
+    - 54
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  SpriteRendererComponent:
+    Color: &id005
+    - 0.53
+    - 0.62
+    - 0.7
+    - 0.96
+    Source: &id006
+      Type: Region
+      Sheet: Art/panel.hsprites
+      RegionID: d1500e0000000001
+  UINineSliceComponent:
+    Borders:
+    - 4
+    - 4
+    - 4
+    - 4
+    BorderScale: 3
+  UIButtonComponent:
+    Action: start
+    TabOrder: 0
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.15
+      - 1.15
+      - 1.15
+      - 1
+    - - 0.7
+      - 0.8
+      - 0.9
+      - 1
+    - - 0.45
+      - 0.45
+      - 0.45
+      - 0.65
+    - - 1.2
+      - 1.15
+      - 0.75
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+- Entity: 1398
   TagComponent:
-    Tag: StartButton / frame 0
+    Tag: StartLabel
   Relationship:
     Parent: 1388
     Order: 0
   TransformComponent:
     Translation:
-    - -0.4861111111111111
-    - 0.40384615384615385
+    - 0
+    - 0
     - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.027777777777777776
-    - 0.1923076923076923
     - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 292cc48f85e52399
-- Entity: 1390
-  TagComponent:
-    Tag: StartButton / frame 1
-  Relationship:
-    Parent: 1388
-    Order: 1
-  TransformComponent:
-    Translation:
-    - 0
-    - 0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.9444444444444444
-    - 0.1923076923076923
     - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: edfe83d0bf89de79
-- Entity: 1391
-  TagComponent:
-    Tag: StartButton / frame 2
-  Relationship:
-    Parent: 1388
-    Order: 2
-  TransformComponent:
-    Translation:
-    - 0.4861111111111111
-    - 0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.1923076923076923
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 2bfe3c95325bfecc
-- Entity: 1392
-  TagComponent:
-    Tag: StartButton / frame 3
-  Relationship:
-    Parent: 1388
-    Order: 3
-  TransformComponent:
-    Translation:
-    - -0.4861111111111111
-    - 0
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.6153846153846154
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 8ddc3e274acafb68
-- Entity: 1393
-  TagComponent:
-    Tag: StartButton / frame 4
-  Relationship:
-    Parent: 1388
-    Order: 4
-  TransformComponent:
-    Translation:
-    - 0
-    - 0
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.9444444444444444
-    - 0.6153846153846154
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: f17ef17e8452e3e6
-- Entity: 1394
-  TagComponent:
-    Tag: StartButton / frame 5
-  Relationship:
-    Parent: 1388
-    Order: 5
-  TransformComponent:
-    Translation:
-    - 0.4861111111111111
-    - 0
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.6153846153846154
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 3f2b80e60d76a55e
-- Entity: 1395
-  TagComponent:
-    Tag: StartButton / frame 6
-  Relationship:
-    Parent: 1388
-    Order: 6
-  TransformComponent:
-    Translation:
-    - -0.4861111111111111
-    - -0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.1923076923076923
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 571873486399f1cc
-- Entity: 1396
-  TagComponent:
-    Tag: StartButton / frame 7
-  Relationship:
-    Parent: 1388
-    Order: 7
-  TransformComponent:
-    Translation:
-    - 0
-    - -0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.9444444444444444
-    - 0.1923076923076923
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 9fc973aa5162f333
-- Entity: 1397
-  TagComponent:
-    Tag: StartButton / frame 8
-  Relationship:
-    Parent: 1388
-    Order: 8
-  TransformComponent:
-    Translation:
-    - 0.4861111111111111
-    - -0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.1923076923076923
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: b13dcbe1f66e7bdf
-- Entity: 1398
-  TagComponent:
-    Tag: StartLabel
-  Relationship:
-    Parent: 1
-    Order: 5
-  TransformComponent:
-    Translation:
-    - -12
-    - -2.68
-    - 8
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.7000000000000001
-    - 0.7000000000000001
     - 1
   TextComponent:
     TextString: Enter   Begin
     Color: *id003
     Kerning: 0
     LineSpacing: 0.15
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 18
+    - 0
+    SizeDelta:
+    - -36
+    - 54
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 27
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
 - Entity: 1399
   TagComponent:
     Tag: NewButton
   Relationship:
-    Parent: 1
-    Order: 6
+    Parent: 1424
+    Order: 1
   TransformComponent:
     Translation:
-    - -8.5
-    - -4.3
-    - 6
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 9
-    - 1.3
     - 1
-- Entity: 1400
+    - 1
+    - 1
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 0
+    - 0
+    Offset:
+    - 0
+    - 0
+    SizeDelta:
+    - 420
+    - 54
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  SpriteRendererComponent:
+    Color: *id005
+    Source: *id006
+  UINineSliceComponent:
+    Borders:
+    - 4
+    - 4
+    - 4
+    - 4
+    BorderScale: 3
+  UIButtonComponent:
+    Action: new
+    TabOrder: 1
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.15
+      - 1.15
+      - 1.15
+      - 1
+    - - 0.7
+      - 0.8
+      - 0.9
+      - 1
+    - - 0.45
+      - 0.45
+      - 0.45
+      - 0.65
+    - - 1.2
+      - 1.15
+      - 0.75
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+- Entity: 1409
   TagComponent:
-    Tag: NewButton / frame 0
+    Tag: NewLabel
   Relationship:
     Parent: 1399
     Order: 0
   TransformComponent:
     Translation:
-    - -0.4861111111111111
-    - 0.40384615384615385
+    - 0
+    - 0
     - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.027777777777777776
-    - 0.1923076923076923
     - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 292cc48f85e52399
-- Entity: 1401
-  TagComponent:
-    Tag: NewButton / frame 1
-  Relationship:
-    Parent: 1399
-    Order: 1
-  TransformComponent:
-    Translation:
-    - 0
-    - 0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.9444444444444444
-    - 0.1923076923076923
     - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: edfe83d0bf89de79
-- Entity: 1402
-  TagComponent:
-    Tag: NewButton / frame 2
-  Relationship:
-    Parent: 1399
-    Order: 2
-  TransformComponent:
-    Translation:
-    - 0.4861111111111111
-    - 0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.1923076923076923
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 2bfe3c95325bfecc
-- Entity: 1403
-  TagComponent:
-    Tag: NewButton / frame 3
-  Relationship:
-    Parent: 1399
-    Order: 3
-  TransformComponent:
-    Translation:
-    - -0.4861111111111111
-    - 0
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.6153846153846154
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 8ddc3e274acafb68
-- Entity: 1404
-  TagComponent:
-    Tag: NewButton / frame 4
-  Relationship:
-    Parent: 1399
-    Order: 4
-  TransformComponent:
-    Translation:
-    - 0
-    - 0
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.9444444444444444
-    - 0.6153846153846154
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: f17ef17e8452e3e6
-- Entity: 1405
-  TagComponent:
-    Tag: NewButton / frame 5
-  Relationship:
-    Parent: 1399
-    Order: 5
-  TransformComponent:
-    Translation:
-    - 0.4861111111111111
-    - 0
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.6153846153846154
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 3f2b80e60d76a55e
-- Entity: 1406
-  TagComponent:
-    Tag: NewButton / frame 6
-  Relationship:
-    Parent: 1399
-    Order: 6
-  TransformComponent:
-    Translation:
-    - -0.4861111111111111
-    - -0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.1923076923076923
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 571873486399f1cc
-- Entity: 1407
-  TagComponent:
-    Tag: NewButton / frame 7
-  Relationship:
-    Parent: 1399
-    Order: 7
-  TransformComponent:
-    Translation:
-    - 0
-    - -0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.9444444444444444
-    - 0.1923076923076923
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 9fc973aa5162f333
-- Entity: 1408
-  TagComponent:
-    Tag: NewButton / frame 8
-  Relationship:
-    Parent: 1399
-    Order: 8
-  TransformComponent:
-    Translation:
-    - 0.4861111111111111
-    - -0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.1923076923076923
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: b13dcbe1f66e7bdf
-- Entity: 1409
-  TagComponent:
-    Tag: NewLabel
-  Relationship:
-    Parent: 1
-    Order: 7
-  TransformComponent:
-    Translation:
-    - -12
-    - -4.48
-    - 8
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.7000000000000001
-    - 0.7000000000000001
     - 1
   TextComponent:
     TextString: N   New game
     Color: *id003
     Kerning: 0
     LineSpacing: 0.15
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 18
+    - 0
+    SizeDelta:
+    - -36
+    - 54
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 27
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
 - Entity: 1410
   TagComponent:
     Tag: CreditsButton
   Relationship:
-    Parent: 1
-    Order: 8
+    Parent: 1424
+    Order: 2
   TransformComponent:
     Translation:
-    - -8.5
-    - -6.1
-    - 6
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 9
-    - 1.3
     - 1
-- Entity: 1411
+    - 1
+    - 1
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 0
+    - 0
+    Offset:
+    - 0
+    - 0
+    SizeDelta:
+    - 420
+    - 54
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  SpriteRendererComponent:
+    Color: *id005
+    Source: *id006
+  UINineSliceComponent:
+    Borders:
+    - 4
+    - 4
+    - 4
+    - 4
+    BorderScale: 3
+  UIButtonComponent:
+    Action: credits
+    TabOrder: 2
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.15
+      - 1.15
+      - 1.15
+      - 1
+    - - 0.7
+      - 0.8
+      - 0.9
+      - 1
+    - - 0.45
+      - 0.45
+      - 0.45
+      - 0.65
+    - - 1.2
+      - 1.15
+      - 0.75
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+- Entity: 1420
   TagComponent:
-    Tag: CreditsButton / frame 0
+    Tag: CreditsLabel
   Relationship:
     Parent: 1410
     Order: 0
   TransformComponent:
     Translation:
-    - -0.4861111111111111
-    - 0.40384615384615385
     - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.1923076923076923
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 292cc48f85e52399
-- Entity: 1412
-  TagComponent:
-    Tag: CreditsButton / frame 1
-  Relationship:
-    Parent: 1410
-    Order: 1
-  TransformComponent:
-    Translation:
-    - 0
-    - 0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.9444444444444444
-    - 0.1923076923076923
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: edfe83d0bf89de79
-- Entity: 1413
-  TagComponent:
-    Tag: CreditsButton / frame 2
-  Relationship:
-    Parent: 1410
-    Order: 2
-  TransformComponent:
-    Translation:
-    - 0.4861111111111111
-    - 0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.1923076923076923
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 2bfe3c95325bfecc
-- Entity: 1414
-  TagComponent:
-    Tag: CreditsButton / frame 3
-  Relationship:
-    Parent: 1410
-    Order: 3
-  TransformComponent:
-    Translation:
-    - -0.4861111111111111
     - 0
     - 0
     Rotation:
@@ -35935,24 +35804,58 @@ Entities:
     - 0
     - 0
     Scale:
-    - 0.027777777777777776
-    - 0.6153846153846154
     - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 8ddc3e274acafb68
-- Entity: 1415
+    - 1
+    - 1
+  TextComponent:
+    TextString: C   Credits
+    Color: *id003
+    Kerning: 0
+    LineSpacing: 0.15
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 18
+    - 0
+    SizeDelta:
+    - -36
+    - 54
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 27
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+- Entity: 1421
   TagComponent:
-    Tag: CreditsButton / frame 4
+    Tag: Controls
   Relationship:
-    Parent: 1410
+    Parent: 1423
     Order: 4
   TransformComponent:
     Translation:
@@ -35964,177 +35867,8 @@ Entities:
     - 0
     - 0
     Scale:
-    - 0.9444444444444444
-    - 0.6153846153846154
     - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: f17ef17e8452e3e6
-- Entity: 1416
-  TagComponent:
-    Tag: CreditsButton / frame 5
-  Relationship:
-    Parent: 1410
-    Order: 5
-  TransformComponent:
-    Translation:
-    - 0.4861111111111111
-    - 0
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.6153846153846154
     - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 3f2b80e60d76a55e
-- Entity: 1417
-  TagComponent:
-    Tag: CreditsButton / frame 6
-  Relationship:
-    Parent: 1410
-    Order: 6
-  TransformComponent:
-    Translation:
-    - -0.4861111111111111
-    - -0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.1923076923076923
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 571873486399f1cc
-- Entity: 1418
-  TagComponent:
-    Tag: CreditsButton / frame 7
-  Relationship:
-    Parent: 1410
-    Order: 7
-  TransformComponent:
-    Translation:
-    - 0
-    - -0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.9444444444444444
-    - 0.1923076923076923
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: 9fc973aa5162f333
-- Entity: 1419
-  TagComponent:
-    Tag: CreditsButton / frame 8
-  Relationship:
-    Parent: 1410
-    Order: 8
-  TransformComponent:
-    Translation:
-    - 0.4861111111111111
-    - -0.40384615384615385
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.027777777777777776
-    - 0.1923076923076923
-    - 1
-  SpriteRendererComponent:
-    Color:
-    - 0.53
-    - 0.62
-    - 0.7
-    - 0.96
-    Source:
-      Type: Region
-      Sheet: Art/panel.hsprites
-      RegionID: b13dcbe1f66e7bdf
-- Entity: 1420
-  TagComponent:
-    Tag: CreditsLabel
-  Relationship:
-    Parent: 1
-    Order: 9
-  TransformComponent:
-    Translation:
-    - -12
-    - -6.28
-    - 8
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.7000000000000001
-    - 0.7000000000000001
-    - 1
-  TextComponent:
-    TextString: C   Credits
-    Color: *id003
-    Kerning: 0
-    LineSpacing: 0.15
-- Entity: 1421
-  TagComponent:
-    Tag: Controls
-  Relationship:
-    Parent: 1
-    Order: 10
-  TransformComponent:
-    Translation:
-    - -13
-    - -8
-    - 8
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
-    - 0.6124999999999999
-    - 0.6124999999999999
     - 1
   TextComponent:
     TextString: 'WASD or arrows: move    E: use    Esc: pause'
@@ -36145,6 +35879,45 @@ Entities:
     - 1
     Kerning: 0
     LineSpacing: 0.15
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 1
+    AnchorMax:
+    - 1
+    - 1
+    Offset:
+    - 32
+    - -10
+    SizeDelta:
+    - -64
+    - 28
+    Pivot:
+    - 0
+    - 1
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 22
+    Horizontal: 0
+    Vertical: 0
+    Wrap: true
 - Entity: 1422
   TagComponent:
     Tag: Title / Journey menu
@@ -36191,3 +35964,92 @@ Entities:
     - Name: CreditsPage
       Type: Bool
       Data: true
+- Entity: 1423
+  TagComponent:
+    Tag: Journey menu
+  Relationship:
+    Parent: 0
+    Order: 85
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UICanvasComponent:
+    ReferenceSize:
+    - 1280
+    - 720
+    SafeInsets:
+    - 16
+    - 16
+    - 16
+    - 16
+    SortOrder: 0
+    Visible: true
+    Enabled: true
+    Modal: true
+- Entity: 1424
+  TagComponent:
+    Tag: Menu actions
+  Relationship:
+    Parent: 1423
+    Order: 5
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 0
+    - 0
+    Offset:
+    - 32
+    - 464
+    SizeDelta:
+    - 420
+    - 186
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UILayoutComponent:
+    Direction: 1
+    Main: 0
+    Cross: 3
+    Gap: 12

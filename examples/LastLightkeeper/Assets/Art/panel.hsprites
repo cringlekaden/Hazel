@@ -172,6 +172,16 @@ SpriteSheet:
     Pivot:
     - 0.5
     - 0.5
+  - ID: d1500e0000000001
+    Name: Full framed panel
+    Rect:
+    - 0
+    - 0
+    - 16
+    - 16
+    Pivot:
+    - 0.5
+    - 0.5
   RetiredRegionIDs: []
   Clips: []
   RetiredClipIDs: []

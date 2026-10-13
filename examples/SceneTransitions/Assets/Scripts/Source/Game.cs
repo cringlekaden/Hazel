@@ -2,19 +2,8 @@ using Hazel;
 
 namespace SceneTransitions
 {
-    // A single rectangular world-space control, not an editor UI or UI framework.
-    public class PlayButton : Entity
-    {
-        private bool previous;
-        void OnUpdate(float timestep)
-        {
-            bool down = Input.IsMouseButtonDown(MouseCode.Left);
-            Vector2 mouse;
-            if ((down && !previous && Input.GetMouseWorldPosition(out mouse) &&
-                 System.Math.Abs(mouse.X) < 2 && System.Math.Abs(mouse.Y) < 0.65f) || Input.IsKeyDown(KeyCode.Enter))
-                Scene.LoadScene("Scenes/Level1.hazel");
-            previous = down;
-        }
+    public class PlayButton : Entity {
+        void OnUpdate(float dt) { string action;if(GetComponent<UIButtonComponent>().TryConsumeAction(out action))Scene.LoadScene("Scenes/Level1.hazel"); }
     }
     public class Player : Entity
     {
@@ -33,18 +22,7 @@ namespace SceneTransitions
             if (Input.IsKeyDown(KeyCode.Escape)) Scene.LoadScene("Scenes/MainMenu.hazel");
         }
     }
-    public class MenuButton : Entity
-    {
-        // A held mouse from the retired scene cannot activate this new control.
-        private bool previous;
-        void OnCreate() { previous = Input.IsMouseButtonDown(MouseCode.Left); }
-        void OnUpdate(float timestep)
-        {
-            bool down = Input.IsMouseButtonDown(MouseCode.Left);
-            Vector2 mouse;
-            if (down && !previous && Input.GetMouseWorldPosition(out mouse) && mouse.X > -3 && mouse.X < -0.5f && mouse.Y > 3 && mouse.Y < 4)
-                Scene.LoadScene("Scenes/MainMenu.hazel");
-            previous = down;
-        }
+    public class MenuButton : Entity {
+        void OnUpdate(float dt) { string action;if(GetComponent<UIButtonComponent>().TryConsumeAction(out action))Scene.LoadScene("Scenes/MainMenu.hazel"); }
     }
 }

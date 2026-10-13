@@ -36,6 +36,9 @@ Entities:
       OrthographicFar: 10
     Primary: true
     FixedAspectRatio: false
+  Relationship:
+    Parent: 0
+    Order: 0
 - Entity: 2
   TagComponent:
     Tag: Grass
@@ -60,6 +63,9 @@ Entities:
     - 1
     TilingFactor: 24
     TexturePath: Textures/Grass.png
+  Relationship:
+    Parent: 0
+    Order: 1
 - Entity: 3
   TagComponent:
     Tag: Garden path
@@ -84,6 +90,9 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Path.png
+  Relationship:
+    Parent: 0
+    Order: 2
 - Entity: 4
   TagComponent:
     Tag: Garden tree
@@ -108,6 +117,9 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Tree.png
+  Relationship:
+    Parent: 0
+    Order: 3
 - Entity: 5
   TagComponent:
     Tag: Garden tree
@@ -132,6 +144,9 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Tree.png
+  Relationship:
+    Parent: 0
+    Order: 4
 - Entity: 6
   TagComponent:
     Tag: Garden tree
@@ -156,6 +171,9 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Tree.png
+  Relationship:
+    Parent: 0
+    Order: 5
 - Entity: 7
   TagComponent:
     Tag: Garden tree
@@ -180,6 +198,9 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Tree.png
+  Relationship:
+    Parent: 0
+    Order: 6
 - Entity: 8
   TagComponent:
     Tag: Title ribbon
@@ -203,6 +224,9 @@ Entities:
     - 0.24
     - 1
     TilingFactor: 1
+  Relationship:
+    Parent: 0
+    Order: 7
 - Entity: 9
   TagComponent:
     Tag: Hero
@@ -227,21 +251,24 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Explorer.png
+  Relationship:
+    Parent: 0
+    Order: 8
 - Entity: 10
   TagComponent:
     Tag: Eyebrow
   TransformComponent:
     Translation:
-    - -2.087168458781362
-    - 4.2
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.4
-    - 0.4
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: A SMALL GARDEN EXPEDITION
@@ -252,42 +279,126 @@ Entities:
     - 1
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 17
+    Order: 0
+  UIRectComponent:
+    AnchorMin:
+    - 0.5
+    - 0
+    AnchorMax:
+    - 0.5
+    - 0
+    Offset:
+    - -450
+    - 80
+    SizeDelta:
+    - 900
+    - 30
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 24
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
 - Entity: 11
   TagComponent:
     Tag: Title
   TransformComponent:
     Translation:
-    - -2.779767025089606
-    - 2.7
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 1.1
-    - 1.1
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: MEADOW RUN
     Color: *id001
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 17
+    Order: 1
+  UIRectComponent:
+    AnchorMin:
+    - 0.5
+    - 0
+    AnchorMax:
+    - 0.5
+    - 0
+    Offset:
+    - -500
+    - 144
+    SizeDelta:
+    - 1000
+    - 90
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 68
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
 - Entity: 12
   TagComponent:
     Tag: Subtitle
   TransformComponent:
     Translation:
-    - -2.6749193548387096
-    - -0.1
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.45
-    - 0.45
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: Three gardens. One trail home.
@@ -298,21 +409,63 @@ Entities:
     - 1
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 17
+    Order: 2
+  UIRectComponent:
+    AnchorMin:
+    - 0.5
+    - 0
+    AnchorMax:
+    - 0.5
+    - 0
+    Offset:
+    - -450
+    - 282
+    SizeDelta:
+    - 900
+    - 48
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 28
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
 - Entity: 13
   TagComponent:
     Tag: Play
   TransformComponent:
     Translation:
     - 0
-    - -1.35
-    - 0.7
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 4
-    - 1.2
+    - 1
+    - 1
     - 1
   SpriteRendererComponent:
     Color:
@@ -320,79 +473,307 @@ Entities:
     - 1
     - 1
     - 1
-    TilingFactor: 1
-    TexturePath: Textures/Button.png
+    Source:
+      Type: Texture
+      Texture: Textures/Button.png
+      TilingFactor: 1
   ScriptComponent:
     ClassName: MeadowRun.SceneButton
     ScriptFields:
     - Name: Destination
       Type: Int
       Data: 0
-    - Name: HalfSize
-      Type: Vector2
-      Data:
-      - 2
-      - 0.6
+  Relationship:
+    Parent: 17
+    Order: 3
+  UIRectComponent:
+    AnchorMin:
+    - 0.5
+    - 0
+    AnchorMax:
+    - 0.5
+    - 0
+    Offset:
+    - -190
+    - 390
+    SizeDelta:
+    - 380
+    - 64
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UIButtonComponent:
+    Action: play
+    TabOrder: 0
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.15
+      - 1.15
+      - 1.15
+      - 1
+    - - 0.7
+      - 0.8
+      - 0.9
+      - 1
+    - - 0.45
+      - 0.45
+      - 0.45
+      - 0.65
+    - - 1.2
+      - 1.15
+      - 0.75
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
 - Entity: 14
   TagComponent:
     Tag: PlayLabel
   TransformComponent:
     Translation:
-    - -0.8493458781362009
-    - -1.52
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.55
-    - 0.55
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: EXPLORE
     Color: *id001
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 13
+    Order: 0
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 0
+    - 0
+    SizeDelta:
+    - 0
+    - 64
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 28
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
 - Entity: 15
   TagComponent:
     Tag: Controls
   TransformComponent:
     Translation:
-    - -2.9557311827956987
-    - -3.4
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.42
-    - 0.42
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: WASD / arrows to move  |  Enter to begin
     Color: *id002
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 17
+    Order: 4
+  UIRectComponent:
+    AnchorMin:
+    - 0.5
+    - 0
+    AnchorMax:
+    - 0.5
+    - 0
+    Offset:
+    - -500
+    - 566
+    SizeDelta:
+    - 1000
+    - 38
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 24
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
 - Entity: 16
   TagComponent:
     Tag: Footnote
   TransformComponent:
     Translation:
-    - -1.6859605734767027
-    - -4.7
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.38
-    - 0.38
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: An original Hazel example
     Color: *id002
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 17
+    Order: 5
+  UIRectComponent:
+    AnchorMin:
+    - 0.5
+    - 0
+    AnchorMax:
+    - 0.5
+    - 0
+    Offset:
+    - -450
+    - 644
+    SizeDelta:
+    - 900
+    - 26
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 20
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
+- Entity: 17
+  TagComponent:
+    Tag: UI Canvas
+  Relationship:
+    Parent: 0
+    Order: 9
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UICanvasComponent:
+    ReferenceSize:
+    - 1280
+    - 720
+    SafeInsets:
+    - 16
+    - 16
+    - 16
+    - 16
+    SortOrder: 0
+    Visible: true
+    Enabled: true
+    Modal: true
+SceneVersion: 2

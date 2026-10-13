@@ -27,6 +27,9 @@ Entities:
       OrthographicFar: 10
     Primary: true
     FixedAspectRatio: false
+  Relationship:
+    Parent: 0
+    Order: 0
 - Entity: 11
   TagComponent:
     Tag: Player
@@ -67,6 +70,9 @@ Entities:
     RestitutionThreshold: 0.5
   ScriptComponent:
     ClassName: SceneTransitions.Player
+  Relationship:
+    Parent: 0
+    Order: 1
 - Entity: 12
   TagComponent:
     Tag: Floor
@@ -105,6 +111,9 @@ Entities:
     Friction: 0.6
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 2
 - Entity: 13
   TagComponent:
     Tag: Crate
@@ -143,20 +152,23 @@ Entities:
     Friction: 0.6
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 3
 - Entity: 14
   TagComponent:
     Tag: Menu
   TransformComponent:
     Translation:
-    - -1.75
-    - 3.5
+    - 0
+    - 0
     - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 2.5
+    - 1
     - 1
     - 1
   SpriteRendererComponent:
@@ -168,21 +180,93 @@ Entities:
     TilingFactor: 1
   ScriptComponent:
     ClassName: SceneTransitions.MenuButton
+  Relationship:
+    Parent: 17
+    Order: 0
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 0
+    - 0
+    Offset:
+    - 16
+    - 10
+    SizeDelta:
+    - 220
+    - 54
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UIButtonComponent:
+    Action: menu
+    TabOrder: 0
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.15
+      - 1.15
+      - 1.15
+      - 1
+    - - 0.7
+      - 0.8
+      - 0.9
+      - 1
+    - - 0.45
+      - 0.45
+      - 0.45
+      - 0.65
+    - - 1.2
+      - 1.15
+      - 0.75
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
 - Entity: 15
   TagComponent:
     Tag: Menu label
   TransformComponent:
     Translation:
-    - -2.8
-    - 3.25
-    - 0.1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.45
-    - 0.45
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: MENU
@@ -193,21 +277,63 @@ Entities:
     - 1
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 14
+    Order: 0
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 0
+    - 0
+    SizeDelta:
+    - 0
+    - 54
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 26
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
 - Entity: 16
   TagComponent:
     Tag: Controls
   TransformComponent:
     Translation:
-    - -3.7
-    - 2.2
-    - 0.1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.35
-    - 0.35
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: A/D move   Space jump   Esc menu
@@ -218,3 +344,78 @@ Entities:
     - 1
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 17
+    Order: 1
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 16
+    - 80
+    SizeDelta:
+    - -32
+    - 34
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 24
+    Horizontal: 0
+    Vertical: 0
+    Wrap: true
+- Entity: 17
+  TagComponent:
+    Tag: UI Canvas
+  Relationship:
+    Parent: 0
+    Order: 4
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UICanvasComponent:
+    ReferenceSize:
+    - 1280
+    - 720
+    SafeInsets:
+    - 16
+    - 16
+    - 16
+    - 16
+    SortOrder: 0
+    Visible: true
+    Enabled: true
+    Modal: false
+SceneVersion: 2

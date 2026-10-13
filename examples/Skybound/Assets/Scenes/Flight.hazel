@@ -36,6 +36,9 @@ Entities:
       OrthographicFar: 10
     Primary: true
     FixedAspectRatio: false
+  Relationship:
+    Parent: 0
+    Order: 0
 - Entity: 2
   TagComponent:
     Tag: Dusk
@@ -60,6 +63,9 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Sky.png
+  Relationship:
+    Parent: 0
+    Order: 1
 - Entity: 3
   TagComponent:
     Tag: Cloud0
@@ -90,6 +96,9 @@ Entities:
     - Name: Speed
       Type: Float
       Data: 0.12
+  Relationship:
+    Parent: 0
+    Order: 2
 - Entity: 4
   TagComponent:
     Tag: Cloud1
@@ -120,6 +129,9 @@ Entities:
     - Name: Speed
       Type: Float
       Data: 0.16999999999999998
+  Relationship:
+    Parent: 0
+    Order: 3
 - Entity: 5
   TagComponent:
     Tag: Cloud2
@@ -150,6 +162,9 @@ Entities:
     - Name: Speed
       Type: Float
       Data: 0.22
+  Relationship:
+    Parent: 0
+    Order: 4
 - Entity: 6
   TagComponent:
     Tag: Mountain horizon
@@ -174,6 +189,9 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Mountains.png
+  Relationship:
+    Parent: 0
+    Order: 5
 - Entity: 7
   TagComponent:
     Tag: Ground
@@ -198,6 +216,9 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Ground.png
+  Relationship:
+    Parent: 0
+    Order: 6
 - Entity: 9
   TagComponent:
     Tag: Wisp
@@ -222,6 +243,9 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Wisp.png
+  Relationship:
+    Parent: 0
+    Order: 7
 - Entity: 18
   TagComponent:
     Tag: Game rules
@@ -259,21 +283,24 @@ Entities:
     - Name: LowerPipe
       Type: Prefab
       Data: Prefabs/LowerPipe.hprefab
+  Relationship:
+    Parent: 0
+    Order: 8
 - Entity: 19
   TagComponent:
     Tag: HUD ribbon
   TransformComponent:
     Translation:
     - 0
-    - 5
-    - 0.5
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 17
-    - 1.3
+    - 1
+    - 1
     - 1
   SpriteRendererComponent:
     Color:
@@ -282,21 +309,57 @@ Entities:
     - 0.37
     - 1
     TilingFactor: 1
+  Relationship:
+    Parent: 30
+    Order: 0
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 0
+    - 0
+    SizeDelta:
+    - 0
+    - 66
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
 - Entity: 20
   TagComponent:
     Tag: Score
   TransformComponent:
     Translation:
-    - -7
-    - 4.8
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.65
-    - 0.65
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: SCORE  0
@@ -307,63 +370,189 @@ Entities:
     - 1
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 30
+    Order: 1
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 0
+    - 0
+    Offset:
+    - 20
+    - 15
+    SizeDelta:
+    - 250
+    - 38
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 30
+    Horizontal: 0
+    Vertical: 0
+    Wrap: true
 - Entity: 21
   TagComponent:
     Tag: HUD controls
   TransformComponent:
     Translation:
-    - -0.7
-    - 4.85
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.5
-    - 0.5
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: Space / click flap   |   Esc menu
     Color: *id001
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 30
+    Order: 2
+  UIRectComponent:
+    AnchorMin:
+    - 1
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - -20
+    - 15
+    SizeDelta:
+    - 700
+    - 36
+    Pivot:
+    - 1
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 24
+    Horizontal: 0
+    Vertical: 0
+    Wrap: true
 - Entity: 22
   TagComponent:
     Tag: Ready
   TransformComponent:
     Translation:
-    - -4.493853046594983
-    - -1.8
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.65
-    - 0.65
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: READY?  Space or click to catch the wind.
     Color: *id001
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 30
+    Order: 3
+  UIRectComponent:
+    AnchorMin:
+    - 0.5
+    - 0
+    AnchorMax:
+    - 0.5
+    - 0
+    Offset:
+    - -550
+    - 430
+    SizeDelta:
+    - 1100
+    - 52
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 30
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
 - Entity: 23
   TagComponent:
     Tag: GameOverPanel
   TransformComponent:
     Translation:
     - 0
-    - 40
-    - 0.6
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 8
-    - 6
+    - 1
+    - 1
     - 1
   SpriteRendererComponent:
     Color:
@@ -371,65 +560,194 @@ Entities:
     - 1
     - 1
     - 1
-    TilingFactor: 1
-    TexturePath: Textures/Panel.png
+    Source:
+      Type: Texture
+      Texture: Textures/Panel.png
+      TilingFactor: 1
+  Relationship:
+    Parent: 31
+    Order: 0
+  UIRectComponent:
+    AnchorMin:
+    - 0.5
+    - 0.5
+    AnchorMax:
+    - 0.5
+    - 0.5
+    Offset:
+    - -270
+    - -200
+    SizeDelta:
+    - 540
+    - 380
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UINineSliceComponent:
+    Borders:
+    - 8
+    - 8
+    - 8
+    - 8
+    BorderScale: 1
 - Entity: 24
   TagComponent:
     Tag: Result
   TransformComponent:
     Translation:
-    - -2.089405017921147
-    - 41.65
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.64
-    - 0.64
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: FLIGHT ENDED  /  0
     Color: *id001
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 23
+    Order: 0
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 20
+    - 34
+    SizeDelta:
+    - -40
+    - 50
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 34
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
 - Entity: 25
   TagComponent:
     Tag: ResultHint
   TransformComponent:
     Translation:
-    - -1.4166935483870968
-    - 40.6
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.45
-    - 0.45
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: One more breeze?
     Color: *id001
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 23
+    Order: 1
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 20
+    - 100
+    SizeDelta:
+    - -40
+    - 40
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 26
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
 - Entity: 26
   TagComponent:
     Tag: Restart
   TransformComponent:
     Translation:
     - 0
-    - 39
-    - 0.8
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 4
-    - 1.2
+    - 1
+    - 1
     - 1
   SpriteRendererComponent:
     Color:
@@ -437,44 +755,160 @@ Entities:
     - 1
     - 1
     - 1
-    TilingFactor: 1
-    TexturePath: Textures/Button.png
+    Source:
+      Type: Texture
+      Texture: Textures/Button.png
+      TilingFactor: 1
+  Relationship:
+    Parent: 23
+    Order: 2
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 0
+    - 0
+    Offset:
+    - 40
+    - 168
+    SizeDelta:
+    - 460
+    - 66
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UIButtonComponent:
+    Action: restart
+    TabOrder: 0
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.15
+      - 1.15
+      - 1.15
+      - 1
+    - - 0.7
+      - 0.8
+      - 0.9
+      - 1
+    - - 0.45
+      - 0.45
+      - 0.45
+      - 0.65
+    - - 1.2
+      - 1.15
+      - 0.75
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
 - Entity: 27
   TagComponent:
     Tag: RestartLabel
   TransformComponent:
     Translation:
-    - -1.0128673835125448
-    - 38.83
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.55
-    - 0.55
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: TRY AGAIN
     Color: *id001
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 26
+    Order: 0
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 0
+    - 0
+    SizeDelta:
+    - 0
+    - 66
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 28
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
 - Entity: 28
   TagComponent:
     Tag: Menu
   TransformComponent:
     Translation:
     - 0
-    - 37.5
-    - 0.8
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 4
-    - 1.2
+    - 1
+    - 1
     - 1
   SpriteRendererComponent:
     Color:
@@ -482,26 +916,207 @@ Entities:
     - 1
     - 1
     - 1
-    TilingFactor: 1
-    TexturePath: Textures/Button.png
+    Source:
+      Type: Texture
+      Texture: Textures/Button.png
+      TilingFactor: 1
+  Relationship:
+    Parent: 23
+    Order: 3
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 0
+    - 0
+    Offset:
+    - 40
+    - 256
+    SizeDelta:
+    - 460
+    - 66
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UIButtonComponent:
+    Action: menu
+    TabOrder: 1
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.15
+      - 1.15
+      - 1.15
+      - 1
+    - - 0.7
+      - 0.8
+      - 0.9
+      - 1
+    - - 0.45
+      - 0.45
+      - 0.45
+      - 0.65
+    - - 1.2
+      - 1.15
+      - 0.75
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
 - Entity: 29
   TagComponent:
     Tag: MenuLabel
   TransformComponent:
     Translation:
-    - -1.142777777777778
-    - 37.33
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.55
-    - 0.55
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: TITLE MENU
     Color: *id001
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 28
+    Order: 0
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 0
+    - 0
+    SizeDelta:
+    - 0
+    - 66
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 28
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
+- Entity: 30
+  TagComponent:
+    Tag: UI Canvas
+  Relationship:
+    Parent: 0
+    Order: 9
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UICanvasComponent:
+    ReferenceSize:
+    - 1280
+    - 720
+    SafeInsets:
+    - 16
+    - 16
+    - 16
+    - 16
+    SortOrder: 0
+    Visible: true
+    Enabled: true
+    Modal: false
+- Entity: 31
+  TagComponent:
+    Tag: Flight result
+  Relationship:
+    Parent: 0
+    Order: 10
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UICanvasComponent:
+    ReferenceSize:
+    - 1280
+    - 720
+    SafeInsets:
+    - 16
+    - 16
+    - 16
+    - 16
+    SortOrder: 100
+    Visible: false
+    Enabled: true
+    Modal: true
+SceneVersion: 2

@@ -46,7 +46,7 @@ namespace LastLightkeeper {
         bool Persist(){if(saveBlocked)return false;try{SaveData.Write("journey",journey.Encode());saveFailed=false;saveLabel.Text=SaveData.IsPersistent?"Progress saved":"Editor practice";return true;}catch(Exception ex){saveLabel.Text="Not saved - retry before quitting";Notice("Couldn't save. Retry at the checkpoint before quitting.",10);saveFailed=true;Console.WriteLine(ex.Message);return false;}}
         bool Restore(Restoration r){if(!journey.Restore(r))return false;Apply();Sound(SoundRestore);Persist();return true;}
         void Talk(string[] text,Action done=null){pages=text;page=0;after=done;journal=false;context.Text="";ShowDialogue();body.LinearVelocity=Vector2.Zero;}
-        void ShowDialogue(){dialogue.Text=pages==null?"":pages[page];footer.Text=pages==null?"":"Enter   "+(page+1==pages.Length?(after!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);DialoguePanel.Scale=pages==null?new Vector3(.001f,.001f,1):new Vector3(27,6.8f,1);}
+        void ShowDialogue(){dialogue.Text=pages==null?"":pages[page];footer.Text=pages==null?"":"Enter   "+(page+1==pages.Length?(after!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);Presentation.Dialogue(DialoguePanel,pages!=null,false);}
         void CloseDialogue(){pages=null;ShowDialogue();var callback=after;after=null;callback?.Invoke();}
         void Remove(string name){var e=FindEntityByName(name);if(e!=null && e.IsValid)e.Destroy();}
         void Apply(){
@@ -151,7 +151,7 @@ namespace LastLightkeeper {
         }
         void OnUpdate(float dt){
             keys.Poll();dt=Math.Min(.1f,Math.Max(0,dt));
-            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED":"";footer.Text=paused?"Enter   Resume     M   Title":"";DialoguePanel.Scale=paused?new Vector3(27,6.8f,1):new Vector3(.001f,.001f,1);}}
+            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED":"";footer.Text=paused?"Enter   Resume":"";Presentation.Dialogue(DialoguePanel,paused,paused);}}
             if(paused){body.LinearVelocity=Vector2.Zero;if(keys.Menu)Scene.LoadScene("Scenes/MainMenu.hazel");if(keys.Advance){paused=false;ShowDialogue();}return;}
             if(keys.Journal && journal && pages!=null)CloseDialogue();
             else if(keys.Journal && pages==null){Talk(new[]{"CLIFF NOTES\n"+Story.Objective(journey)+".\nWASD or arrows: move. E: use nearby equipment.\nHold Space to focus. Aim by moving first.",Caves?"SEA CAVES\nGallery receiver on the northern wall.\nMove off the wisp's mark, or focus the lamp on it.\nThe dry western passage leads to the landing.":"CISTERN\nWorkshop west. Drain receiver beside the pool.\nInspection walk above it; stairs at the east end.\nBoth receiver latches hold after the lamp moves."});journal=true;}

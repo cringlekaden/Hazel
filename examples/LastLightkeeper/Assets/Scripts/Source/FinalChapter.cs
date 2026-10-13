@@ -64,7 +64,7 @@ namespace LastLightkeeper {
             if(hit){Sound(SoundHazard);Notice("Back at the repair post. Contacts and repairs kept.");}
         }
         void Talk(string[] text,Action done=null){pages=text;page=0;after=done;journal=false;context.Text="";body.LinearVelocity=Vector2.Zero;ShowDialogue();}
-        void ShowDialogue(){dialogue.Text=pages==null?"":pages[page];footer.Text=pages==null?"":"Enter   "+(page+1==pages.Length?(after!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);DialoguePanel.Scale=pages==null?new Vector3(.001f,.001f,1):new Vector3(27,6.8f,1);}
+        void ShowDialogue(){dialogue.Text=pages==null?"":pages[page];footer.Text=pages==null?"":"Enter   "+(page+1==pages.Length?(after!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);Presentation.Dialogue(DialoguePanel,pages!=null,false);}
         void CloseDialogue(){pages=null;ShowDialogue();var callback=after;after=null;callback?.Invoke();}
         void Depart(Restoration step,string scene){var before=journey.Restored;if(!journey.Has(step) && !journey.Restore(step))return;Apply();if(Persist())Scene.LoadScene(scene);else{journey.Restored=before;Apply();}}
         bool Sight(Cell from,Cell to){
@@ -125,7 +125,7 @@ namespace LastLightkeeper {
         }
         void OnUpdate(float dt){
             keys.Poll();dt=Math.Min(.1f,Math.Max(0,dt));
-            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED":"";footer.Text=paused?"Enter   Resume     M   Title":"";DialoguePanel.Scale=paused?new Vector3(27,6.8f,1):new Vector3(.001f,.001f,1);}}
+            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED":"";footer.Text=paused?"Enter   Resume":"";Presentation.Dialogue(DialoguePanel,paused,paused);}}
             if(paused){body.LinearVelocity=Vector2.Zero;if(keys.Menu && (saveBlocked || Persist()))Scene.LoadScene("Scenes/MainMenu.hazel");if(keys.Advance){paused=false;ShowDialogue();}return;}
             if(keys.Journal && journal && pages!=null)CloseDialogue();
             else if(keys.Journal && pages==null){Talk(new[]{(Home?"THE LANDING":"UPPER TOWER")+"\n"+Story.Objective(journey)+".\nWASD or arrows: move. E: use. Esc: pause.",Home?"THE MORNING BOAT\nOrrin and Nessa at the pier. Mara beside her bench.\nCal at the lamp table. The boat leaves from\nthe southern mooring when you're ready.":"MAIN DRIVE\nThree glass contacts, three sighting posts.\nLatches hold; choose their order. Stone columns\nblock light and the wisp's view. Space: focus."});journal=true;}
