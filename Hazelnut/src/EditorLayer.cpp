@@ -1,4 +1,5 @@
 #include "ContentBrowserPayload.h"
+#include "UI/PropertyUI.h"
 #include "Authoring/AuthoringPanel.h"
 #include "Authoring/LoadingUI.h"
 #include "Hazel/Core/OperationProgress.h"
@@ -128,7 +129,9 @@ namespace Hazel {
 			case SceneState::Play:
 			{
                 m_RuntimeSession.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-                m_RuntimeSession.SetInput(Input::GetMouseScreenPosition() - m_ViewportBounds[0], m_ViewportHovered && m_ViewportFocused && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId));
+                const bool uiInput=m_ViewportFocused && Application::Get().GetWindow().IsFocused() && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId);
+                m_RuntimeSession.SetInput(ViewportMouse(),uiInput);
+                m_RuntimeSession.SetGameplayInputEnabled(uiInput&&m_ViewportHovered);
                 m_RuntimeSession.Update(ts);
                 if (m_ActiveScene != m_RuntimeSession.GetScene()) {
                     ClearSceneObservers();
@@ -141,11 +144,9 @@ namespace Hazel {
 			}
 		}
 
-		auto[mx, my] = ImGui::GetMousePos();
-		mx -= m_ViewportBounds[0].x;
-		my -= m_ViewportBounds[0].y;
-		glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
-		my = viewportSize.y - my;
+        auto pointer=ViewportMouse();float mx=pointer.x,my=pointer.y;
+        glm::vec2 viewportSize{m_Framebuffer->GetSpecification().Width,m_Framebuffer->GetSpecification().Height};
+        my=viewportSize.y-1-my;
         m_HoveredEntity = {};
         if (mx >= 0 && my >= 0 && mx < viewportSize.x && my < viewportSize.y)
         {
@@ -266,12 +267,35 @@ namespace Hazel {
 
 		Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused || !m_ViewportHovered || io.WantTextInput || ImGui::IsAnyItemActive());
 
-		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-		m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+        ImGui::SetNextItemWidth(180);
+        ImGui::Combo("##UI preview aspect",&m_UIPreview,"Window\0Small 1024 x 600\0Widescreen 16:9\0Classic 4:3\0");
+        PropertyUI::Help("Preview and Play use the same screen-space layout. Letterboxing is outside the runtime viewport.");
+        ImVec2 viewportPanelSize=ImGui::GetContentRegionAvail();
+        glm::vec2 available{viewportPanelSize.x,viewportPanelSize.y};
+        m_ViewportSize=available;
+        const float aspects[]={0,1024.f/600.f,16.f/9.f,4.f/3.f};
+        if(m_UIPreview&&available.x>0&&available.y>0){float aspect=aspects[m_UIPreview];if(available.x/available.y>aspect)m_ViewportSize.x=available.y*aspect;else m_ViewportSize.y=available.x/aspect;}
+        auto imageOrigin=ImGui::GetCursorScreenPos();imageOrigin.x+=(available.x-m_ViewportSize.x)*.5f;imageOrigin.y+=(available.y-m_ViewportSize.y)*.5f;ImGui::SetCursorScreenPos(imageOrigin);
+        m_ViewportBounds[0]={imageOrigin.x,imageOrigin.y};m_ViewportBounds[1]=m_ViewportBounds[0]+m_ViewportSize;
 
 		uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+        m_ViewportHovered=ImGui::IsItemHovered();
+        if(ImGui::IsMouseReleased(0))m_UIDragging=false;
         if(ImGui::IsItemClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && !io.KeyAlt)m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
+        auto uiSelected=m_SceneHierarchyPanel.GetSelectedEntity();GameUI::Rect uiBounds;
+        if(uiSelected&&uiSelected.HasComponent<UIRectComponent>()&&m_ActiveScene->GetUIBounds(uiSelected.GetUUID(),uiBounds)) {
+            auto p=uiBounds.Position+m_ViewportBounds[0],q=p+uiBounds.Size;
+            auto draw=ImGui::GetWindowDrawList();draw->AddRect({p.x,p.y},{q.x,q.y},IM_COL32(255,190,70,255));draw->AddRectFilled({q.x-8,q.y-8},{q.x,q.y},IM_COL32(255,190,70,255));
+            if(m_SceneState==SceneState::Edit&&m_Authoring->Availability(EditorAction::EditScene)) {
+                if(ImGui::IsMouseClicked(0)){m_UIDragging=ImGui::IsItemHovered();m_UIResizing=io.MousePos.x>=q.x-12&&io.MousePos.x<=q.x+4&&io.MousePos.y>=q.y-12&&io.MousePos.y<=q.y+4;}
+                if(m_UIDragging&&ImGui::IsMouseDragging(0)&&!io.KeyAlt) {
+                    auto owner=uiSelected;while(owner&&!owner.HasComponent<UICanvasComponent>())owner=m_ActiveScene->GetEntityByUUID(m_ActiveScene->GetRelationship(owner).Parent);
+                    float scale=owner?GameUI::FitCanvas(m_ViewportSize,owner.GetComponent<UICanvasComponent>()).Scale:1;
+                    if(scale>0){auto& rect=uiSelected.GetComponent<UIRectComponent>();auto delta=glm::vec2(io.MouseDelta.x,io.MouseDelta.y)/scale;if(m_UIResizing)rect.SizeDelta=glm::max(rect.MinimumSize,rect.SizeDelta+delta);else rect.Offset+=delta;}
+                }
+            }
+        }
 
 		if (ImGui::BeginDragDropTarget())
 		{
@@ -287,7 +311,7 @@ namespace Hazel {
 
 		// Gizmos
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-		if (selectedEntity && m_GizmoType != -1 && m_Authoring->Availability(EditorAction::EditScene))
+		if (selectedEntity && !selectedEntity.HasComponent<UIRectComponent>() && m_GizmoType != -1 && m_Authoring->Availability(EditorAction::EditScene))
 		{
 			ImGuizmo::SetOrthographic(false);
 			ImGuizmo::SetDrawlist();
@@ -346,9 +370,16 @@ namespace Hazel {
         ImGui::PopStyleVar();
     }
 
+    glm::vec2 EditorLayer::ViewportMouse() const {
+        auto position=Input::GetMouseScreenPosition()-m_ViewportBounds[0];
+        if(m_ViewportSize.x<=0||m_ViewportSize.y<=0||!m_Framebuffer)return {-1,-1};
+        const auto& specification=m_Framebuffer->GetSpecification();
+        return position*glm::vec2(specification.Width,specification.Height)/m_ViewportSize;
+    }
 	void EditorLayer::OnEvent(Event& e)
 	{
         if(m_Loading && m_Loading->Busy())return;
+        if(m_SceneState==SceneState::Play)m_RuntimeSession.SubmitUIEvent(e,ViewportMouse(),m_ViewportFocused && !ImGui::GetIO().WantTextInput && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId));
 		if(m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_CameraController.OnEvent(e);
 		if (m_SceneState == SceneState::Edit && m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))
 		{
@@ -417,7 +448,7 @@ namespace Hazel {
 		}
 
 		// Draw selected entity outline
-		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity())
+		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity(); selectedEntity && !selectedEntity.HasComponent<UIRectComponent>())
 		{
 			const auto transform = m_ActiveScene->GetWorldTransform(selectedEntity);
             if(auto* sprite=m_ActiveScene->RenderedSprite(selectedEntity)) {

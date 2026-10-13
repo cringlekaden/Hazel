@@ -49,6 +49,8 @@ class SceneHierarchyPanel
         return m_Focused;
     }
     bool AddEntity(const std::string &name = "Empty Entity");
+    bool AddUI(int kind);
+    void UIAddMenu();
     bool DeleteSelected(DestroyPolicy policy=DestroyPolicy::Subtree, TransformPolicy mode=TransformPolicy::KeepWorld);
 
     Entity GetSelectedEntity() const {
@@ -88,6 +90,10 @@ class SceneHierarchyPanel
     std::map<std::string,bool> m_Sections;
     std::set<std::string> m_RestoreSections;
     std::unordered_map<uint32_t, SpritePickerState> m_Pickers;
+    std::array<SpritePickerState,5> m_UIStatePickers;
+    std::string m_UIFontDraft;
+    std::filesystem::path m_UIFontBound;
+    bool m_UIFontInitialized=false;
 };
 
 } // namespace Hazel

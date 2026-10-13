@@ -16,6 +16,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <cctype>
 #include <cstring>
 #include <type_traits>
@@ -36,7 +37,7 @@ void SceneHierarchyPanel::SetContext(const Ref<Scene> &context)
 {
     m_SelectionContext = {};
     m_HierarchyError.clear();m_Matches.clear();m_Reveal.clear();m_DeleteWanted=false;m_DeleteScene=m_DeleteEntity=0;m_DragHover=0;m_DragHoverSince=0;
-    m_Pickers.clear();
+    m_Pickers.clear();m_UIStatePickers={};m_UIFontInitialized=false;
     m_PrefabChoices.clear();
     m_PrefabChoicesReady = false;
     m_Context = context;
@@ -60,6 +61,34 @@ bool SceneHierarchyPanel::AddEntity(const std::string &name)
     try {m_HierarchyError.clear();return SetSelectedEntity(m_Context->CreateEntity(name));}
     catch(const std::exception& error){return HierarchyFailed(error.what());}
 }
+bool SceneHierarchyPanel::AddUI(int kind) {
+    if(!m_Context||!CanEdit(true))return false;
+    try {
+        Entity parent=GetSelectedEntity();
+        if(PrefabDocument&&!parent){auto roots=m_Context->GetChildren();if(!roots.empty())parent=m_Context->GetEntityByUUID(roots.front());}
+        if(kind!=0&&(!parent||(!parent.HasComponent<UIRectComponent>()&&!parent.HasComponent<UICanvasComponent>()))) {
+            auto canvas=m_Context->CreateEntity("UI Canvas");canvas.AddComponent<UICanvasComponent>();if(parent)m_Context->Reparent(canvas,parent,TransformPolicy::KeepLocal);parent=canvas;
+        }
+        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Flow"};
+        auto e=m_Context->CreateEntity(names[kind]);if(parent)m_Context->Reparent(e,parent,TransformPolicy::KeepLocal);
+        if(kind==0)e.AddComponent<UICanvasComponent>();
+        else {
+            auto& rect=e.AddComponent<UIRectComponent>();rect.Offset={24,24};
+            if(kind==1){rect.SizeDelta={360,240};e.AddComponent<SpriteRendererComponent>(glm::vec4(.08f,.12f,.18f,.95f));}
+            if(kind==2||kind==3){auto& text=e.AddComponent<TextComponent>();text.TextString=kind==3?"Button":"Text";auto& style=e.AddComponent<UITextStyleComponent>();if(kind==3){style.Horizontal=GameUI::Align::Center;style.Vertical=GameUI::Align::Center;rect.Padding=glm::vec4(8);}}
+            if(kind==3){e.AddComponent<SpriteRendererComponent>(glm::vec4(.15f,.25f,.35f,1));e.AddComponent<UIButtonComponent>();}
+            if(kind==4){rect.SizeDelta={360,240};e.AddComponent<UILayoutComponent>();}
+        }
+        return SetSelectedEntity(e);
+    }catch(const std::exception& error){return HierarchyFailed(error.what());}
+}
+void SceneHierarchyPanel::UIAddMenu(){
+    if(ImGui::BeginMenu("Runtime UI")) {
+        const char* names[]={"Canvas","Panel","Text","Button","Flow group"};
+        for(int i=0;i<5;i++)if(ImGui::MenuItem(names[i]))AddUI(i);
+        ImGui::EndMenu();
+    }
+}
 bool SceneHierarchyPanel::DeleteSelected(DestroyPolicy policy,TransformPolicy mode) {
     auto entity=GetSelectedEntity();if(!entity)return false;
     return ConfirmDelete(m_Context->GetIdentity(),entity.GetUUID(),m_Context->GetSubtree(entity).size(),policy,mode);
@@ -68,7 +97,7 @@ void SceneHierarchyPanel::DrawAssetProperties(Entity entity)
 {
     if (entity != m_SelectionContext)
     {
-        m_Pickers.clear();
+        m_Pickers.clear();m_UIStatePickers={};m_UIFontInitialized=false;
         m_SelectionContext = entity;
     }
     DrawComponents(entity);
@@ -114,7 +143,7 @@ bool SceneHierarchyPanel::SetSelectedEntity(Entity entity)
         m_SelectionContext = {};
         return false;
     }
-    if (m_SelectionContext != entity) {m_Pickers.clear();m_HierarchyError.clear();}
+    if (m_SelectionContext != entity) {m_Pickers.clear();m_UIStatePickers={};m_UIFontInitialized=false;m_HierarchyError.clear();}
     m_SelectionContext = entity;
     RevealSelected();
     return true;
@@ -176,7 +205,8 @@ static void DrawComponent(const std::string &name, Entity entity, std::map<std::
 
         if (open)
         {
-            if constexpr(std::is_same_v<T,Rigidbody2DComponent> || std::is_same_v<T,BoxCollider2DComponent> || std::is_same_v<T,CircleCollider2DComponent>) {
+            if constexpr(std::is_same_v<T,UIRectComponent>) {auto proposed=component;uiFunction(proposed);try{GameUI::Validate(proposed);if(!std::isfinite(proposed.Flex)||proposed.Flex<0)throw std::runtime_error("Flow flex must be finite and nonnegative");component=proposed;}catch(const std::exception& e){if(report)report(e.what());}}
+            else if constexpr(std::is_same_v<T,Rigidbody2DComponent> || std::is_same_v<T,BoxCollider2DComponent> || std::is_same_v<T,CircleCollider2DComponent>) {
                 auto proposed=component;uiFunction(proposed);
                 if(!SamePhysics(component,proposed))try{entity.AddOrReplaceComponent<T>(proposed);}catch(const std::exception& error){if(report)report(error.what());}
             } else uiFunction(component);
@@ -219,6 +249,14 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         DisplayAddComponentEntry<CircleCollider2DComponent>("Circle Collider 2D");
         DisplayAddComponentEntry<TextComponent>("Text Component");
         DisplayAddComponentEntry<AudioSourceComponent>("Audio Source");
+        DisplayAddComponentEntry<UICanvasComponent>("UI Canvas");
+        DisplayAddComponentEntry<UIRectComponent>("UI Rect");
+        if(entity.HasComponent<UIRectComponent>()){
+            DisplayAddComponentEntry<UILayoutComponent>("UI Flow");
+            DisplayAddComponentEntry<UIButtonComponent>("UI Button");
+            if(entity.HasComponent<TextComponent>())DisplayAddComponentEntry<UITextStyleComponent>("UI Text Style");
+            if(entity.HasComponent<SpriteRendererComponent>())DisplayAddComponentEntry<UINineSliceComponent>("UI Nine Slice");
+        }
 
         ImGui::EndPopup();
     }
@@ -233,6 +271,68 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             if(changed && CanEdit(true))try{m_Context->SetLocalTransform(entity,proposed);m_HierarchyError.clear();}catch(const std::exception& e){HierarchyFailed(e.what());}
         });
 
+    DrawComponent<UICanvasComponent>("UI Canvas",entity,m_Sections,m_RestoreSections,[](auto& c){
+        PropertyUI::Vector("reference","Reference pixels",glm::value_ptr(c.ReferenceSize),2,1,nullptr,"%.0f",{},1,8192);
+        PropertyUI::Vector("insets","Safe L/T/R/B (px)",glm::value_ptr(c.SafeInsets),4,1,nullptr,"%.0f",{},0,4096);
+        PropertyUI::DragInt("order","Sort order",c.SortOrder);
+        PropertyUI::Checkbox("visible","Visible",c.Visible);PropertyUI::Checkbox("enabled","Enabled",c.Enabled);PropertyUI::Checkbox("modal","Block gameplay",c.Modal);
+        PropertyUI::Help("Uniform reference scale; extra aspect space extends the logical canvas. Higher sort order draws and receives input last. A modal canvas blocks gameplay and controls in other canvases.");
+    });
+    DrawComponent<UIRectComponent>("UI Rect",entity,m_Sections,m_RestoreSections,[](auto& c){
+        int preset=0;
+        if(PropertyUI::Combo("preset","Anchor preset",preset,"Custom\0Top left\0Top center\0Top right\0Center\0Bottom left\0Bottom center\0Bottom right\0Stretch\0")) {
+            const glm::vec2 values[]={{0,0},{0,0},{.5f,0},{1,0},{.5f,.5f},{0,1},{.5f,1},{1,1},{0,0}};
+            if(preset){c.AnchorMin=values[preset];c.AnchorMax=preset==8?glm::vec2(1):c.AnchorMin;c.Pivot=preset==8?glm::vec2(0):c.AnchorMin;c.Offset={};if(preset==8)c.SizeDelta={};}
+        }
+        PropertyUI::Vector("amin","Anchor min",glm::value_ptr(c.AnchorMin),2,.01f,nullptr,"%.2f",{},0,1);
+        PropertyUI::Vector("amax","Anchor max",glm::value_ptr(c.AnchorMax),2,.01f,nullptr,"%.2f",{},0,1);
+        PropertyUI::Vector("offset","Position (px)",glm::value_ptr(c.Offset),2,1);
+        PropertyUI::Vector("size","Size delta (px)",glm::value_ptr(c.SizeDelta),2,1);
+        PropertyUI::Vector("pivot","Pivot",glm::value_ptr(c.Pivot),2,.01f,nullptr,"%.2f",{},0,1);
+        PropertyUI::Vector("minimum","Minimum (px)",glm::value_ptr(c.MinimumSize),2,1,nullptr,"%.0f",{},0,4096);
+        PropertyUI::Vector("margin","Margin L/T/R/B",glm::value_ptr(c.Margin),4,1,nullptr,"%.0f",{},0,4096);
+        PropertyUI::Vector("padding","Padding L/T/R/B",glm::value_ptr(c.Padding),4,1,nullptr,"%.0f",{},0,4096);
+        PropertyUI::DragFloat("flex","Flow flex",c.Flex,.1f,0,100);
+        PropertyUI::Checkbox("visible","Visible",c.Visible);PropertyUI::Checkbox("enabled","Enabled",c.Enabled);PropertyUI::Checkbox("clip","Clip children",c.ClipChildren);
+        PropertyUI::Help("Logical pixels, top-left origin. Drag a selected element in the viewport to move it; drag its lower-right handle to resize. Flow groups own child positions. Anchor min must not exceed max.");
+    },[this](const std::string& error){m_HierarchyError=error;});
+    DrawComponent<UILayoutComponent>("UI Flow",entity,m_Sections,m_RestoreSections,[](auto& c){
+        int axis=int(c.Direction),main=int(c.Main),cross=int(c.Cross);
+        if(PropertyUI::Combo("axis","Direction",axis,"Horizontal\0Vertical\0"))c.Direction=GameUI::Axis(axis);
+        if(PropertyUI::Combo("main","Main alignment",main,"Start\0Center\0End\0"))c.Main=GameUI::Align(main);
+        if(PropertyUI::Combo("cross","Cross alignment",cross,"Start\0Center\0End\0Stretch\0"))c.Cross=GameUI::Align(cross);
+        PropertyUI::DragFloat("gap","Gap (px)",c.Gap,1,0,4096);
+    });
+    DrawComponent<UITextStyleComponent>("UI Text Style",entity,m_Sections,m_RestoreSections,[this](auto& c){
+        if(!m_UIFontInitialized||m_UIFontBound!=c.FontPath){m_UIFontDraft=c.FontPath.generic_u8string();m_UIFontBound=c.FontPath;m_UIFontInitialized=true;}
+        auto assign=[&](std::filesystem::path path){try{if(!path.empty()){if(path.extension()!=".ttf"&&path.extension()!=".otf")throw std::runtime_error("Select a project TTF/OTF");auto root=m_Context->GetAssets();if(!root)throw std::runtime_error("Open a project before assigning a font");Font::ValidateFile(Project::ResolveOwnedAsset(root->Root(),path));}c.FontPath=path;m_UIFontBound=path;m_UIFontDraft=path.generic_u8string();m_HierarchyError.clear();}catch(const std::exception& error){m_HierarchyError=error.what();}};
+        auto edit=PropertyUI::Text("font","Font asset",m_UIFontDraft);
+        if(edit.Committed)assign(std::filesystem::u8path(m_UIFontDraft));
+        if(ImGui::BeginDragDropTarget()){if(auto payload=ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))assign(ContentBrowserPath(payload->Data,payload->DataSize));ImGui::EndDragDropTarget();}
+        PropertyUI::Help("Empty uses the shipped default. Drag a TTF/OTF from Assets. Use separate styled text children for mixed emphasis; no markup is parsed.");
+        PropertyUI::DragFloat("size","Size (px)",c.Size,1,1,512);
+        int horizontal=int(c.Horizontal),vertical=int(c.Vertical);
+        if(PropertyUI::Combo("horizontal","Horizontal",horizontal,"Left\0Center\0Right\0"))c.Horizontal=GameUI::Align(horizontal);
+        if(PropertyUI::Combo("vertical","Vertical",vertical,"Top\0Center\0Bottom\0"))c.Vertical=GameUI::Align(vertical);
+        PropertyUI::Checkbox("wrap","Wrap",c.Wrap);
+    });
+    DrawComponent<UINineSliceComponent>("UI Nine Slice",entity,m_Sections,m_RestoreSections,[](auto& c){
+        PropertyUI::Vector("border","Source L/T/R/B (px)",glm::value_ptr(c.Borders),4,1,nullptr,"%.0f",{},0,4096);
+        PropertyUI::DragFloat("border-scale","Border scale",c.BorderScale,.1f,.01f,64);
+        PropertyUI::Help("Borders must fit the source sprite region. Pixel borders retain their size; the middle stretches. Small targets clamp borders proportionally.");
+    });
+    DrawComponent<UIButtonComponent>("UI Button",entity,m_Sections,m_RestoreSections,[this](auto& c){
+        PropertyUI::Text("action","Action identity",c.Action);PropertyUI::DragInt("tab","Tab order",c.TabOrder);PropertyUI::Checkbox("interactive","Interactable",c.Interactable);
+        const char* states[]={"Normal","Hovered","Pressed","Disabled","Focused"};
+        for(int i=0;i<5;i++){ImGui::PushID(i);PropertyUI::Color("tint",states[i],glm::value_ptr(c.Colors[i]));if(ImGui::TreeNode("State image (optional)")){SpriteRendererComponent temp;temp.Source=c.Images[i];temp.Color=c.Colors[i];SpriteSourceEditor(temp,m_UIStatePickers[i],OpenAsset,[this]{return CanEdit(true);});c.Images[i]=temp.Source;c.Colors[i]=temp.Color;ImGui::TreePop();}ImGui::PopID();}
+        PropertyUI::Help("C#: UIButtonComponent.TryConsumeAction or GameUI.TryConsumeAction. Pointer activation occurs on release; Tab/arrows change focus; Enter/Space activate once.");
+    });
+
+    if(entity.HasComponent<UICanvasComponent>()||entity.HasComponent<UIRectComponent>()) {
+        if(ImGui::Button("Validate UI"))try{m_Context->ValidateUI(false);m_HierarchyError.clear();}catch(const std::exception& error){HierarchyFailed(error.what());}
+        if(!m_HierarchyError.empty())PropertyUI::Validation(m_HierarchyError.c_str());
+        if(!m_Context->GetUIError().empty())PropertyUI::Validation(m_Context->GetUIError().c_str());
+    }
     DrawComponent<CameraComponent>(
         "Camera", entity, m_Sections,m_RestoreSections,
         [](auto &component)

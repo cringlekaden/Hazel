@@ -36,6 +36,7 @@ namespace Hazel {
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 
 		void OnOverlayRender();
+        glm::vec2 ViewportMouse() const;
 
 		bool OpenProject();
         struct ProjectOpenOptions {
@@ -99,6 +100,8 @@ namespace Hazel {
 
 
 		int m_GizmoType = -1;
+        bool m_UIResizing=false,m_UIDragging=false;
+        int m_UIPreview=0;
         std::string m_GizmoError;
 
 		bool m_ShowPhysicsColliders = false;
