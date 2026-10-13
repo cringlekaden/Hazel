@@ -37,6 +37,7 @@ namespace Hazel {
 
 		void OnOverlayRender();
         glm::vec2 ViewportMouse() const;
+        bool RuntimeUIWidgetBlocksInput() const;
 
 		bool OpenProject();
         struct ProjectOpenOptions {

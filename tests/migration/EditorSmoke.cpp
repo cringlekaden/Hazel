@@ -837,6 +837,14 @@ private:
         const auto scene=e.m_EditorScene;const auto before=a.SceneText();const auto saved=a.m_SavedScene;
         const auto oldSelection=panel.GetSelectedEntity();const uint64_t oldID=oldSelection?uint64_t(Entity(oldSelection).GetUUID()):0;
         // Exercise the actual native presets and shared preview, without YAML authoring.
+        auto* viewport=ImGui::FindWindowByName("Viewport");Check(viewport,"UI input check lacks actual viewport");
+        auto* previousFocus=ImGui::GetCurrentContext()->NavWindow;const bool wasHovered=e.m_ViewportHovered;
+        ImGui::StartMouseMovingWindow(viewport);e.m_ViewportHovered=true;
+        Check(!e.RuntimeUIWidgetBlocksInput(),"ImGui viewport MoveId canceled runtime mouse gesture");
+        e.m_ViewportHovered=false;Check(e.RuntimeUIWidgetBlocksInput(),"Viewport title/background drag bypassed input guard");
+        e.m_ViewportHovered=true;ImGui::SetActiveID(viewport->GetID("Other widget"),viewport);
+        Check(e.RuntimeUIWidgetBlocksInput(),"Active editor widget leaked runtime input");
+        ImGui::ClearActiveID();ImGui::GetCurrentContext()->MovingWindow=nullptr;ImGui::FocusWindow(previousFocus);e.m_ViewportHovered=wasHovered;
         panel.SetSelectedEntity({});Check(panel.AddUI(0),"Canvas preset failed");auto canvas=panel.GetSelectedEntity();
         Check(canvas.HasComponent<UICanvasComponent>(),"Canvas preset lacks component");
         Check(panel.AddUI(1),"Panel preset failed");auto uiPanel=panel.GetSelectedEntity();

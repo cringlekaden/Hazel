@@ -14,6 +14,7 @@
 #include "Hazel/Renderer/Font.h"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -129,7 +130,7 @@ namespace Hazel {
 			case SceneState::Play:
 			{
                 m_RuntimeSession.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-                const bool uiInput=m_ViewportFocused && Application::Get().GetWindow().IsFocused() && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId);
+                const bool uiInput=m_ViewportFocused && Application::Get().GetWindow().IsFocused() && !RuntimeUIWidgetBlocksInput();
                 m_RuntimeSession.SetInput(ViewportMouse(),uiInput);
                 m_RuntimeSession.SetGameplayInputEnabled(uiInput&&m_ViewportHovered);
                 m_RuntimeSession.Update(ts);
@@ -265,7 +266,9 @@ namespace Hazel {
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		m_ViewportHovered = ImGui::IsWindowHovered();
 
-		Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused || !m_ViewportHovered || io.WantTextInput || ImGui::IsAnyItemActive());
+		const bool runtimePointer=m_SceneState==SceneState::Play&&m_ActiveScene->IsUICapturingPointer();
+        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused || (!m_ViewportHovered&&!runtimePointer) ||
+            (m_SceneState==SceneState::Play?RuntimeUIWidgetBlocksInput():io.WantTextInput||ImGui::IsAnyItemActive()));
 
         ImGui::SetNextItemWidth(180);
         ImGui::Combo("##UI preview aspect",&m_UIPreview,"Window\0Small 1024 x 600\0Widescreen 16:9\0Classic 4:3\0");
@@ -282,8 +285,13 @@ namespace Hazel {
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
         m_ViewportHovered=ImGui::IsItemHovered();
         if(ImGui::IsMouseReleased(0))m_UIDragging=false;
-        if(ImGui::IsItemClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && !io.KeyAlt)m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
+        if(m_SceneState!=SceneState::Play&&ImGui::IsItemClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && !io.KeyAlt)m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
         auto uiSelected=m_SceneHierarchyPanel.GetSelectedEntity();GameUI::Rect uiBounds;
+        if(uiSelected&&uiSelected.HasComponent<UICanvasComponent>()&&m_ActiveScene->GetUIError().empty()) {
+            const auto fit=GameUI::FitCanvas(m_ViewportSize,uiSelected.GetComponent<UICanvasComponent>());
+            auto p=fit.Content.Position*fit.Scale+m_ViewportBounds[0],q=p+fit.Content.Size*fit.Scale;
+            ImGui::GetWindowDrawList()->AddRect({p.x,p.y},{q.x,q.y},IM_COL32(255,190,70,255));
+        }
         if(uiSelected&&uiSelected.HasComponent<UIRectComponent>()&&m_ActiveScene->GetUIBounds(uiSelected.GetUUID(),uiBounds)) {
             auto p=uiBounds.Position+m_ViewportBounds[0],q=p+uiBounds.Size;
             auto draw=ImGui::GetWindowDrawList();draw->AddRect({p.x,p.y},{q.x,q.y},IM_COL32(255,190,70,255));draw->AddRectFilled({q.x-8,q.y-8},{q.x,q.y},IM_COL32(255,190,70,255));
@@ -311,7 +319,7 @@ namespace Hazel {
 
 		// Gizmos
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-		if (selectedEntity && !selectedEntity.HasComponent<UIRectComponent>() && m_GizmoType != -1 && m_Authoring->Availability(EditorAction::EditScene))
+		if (selectedEntity && !selectedEntity.HasComponent<UIRectComponent>() && !selectedEntity.HasComponent<UICanvasComponent>() && m_GizmoType != -1 && m_Authoring->Availability(EditorAction::EditScene))
 		{
 			ImGuizmo::SetOrthographic(false);
 			ImGuizmo::SetDrawlist();
@@ -376,10 +384,22 @@ namespace Hazel {
         const auto& specification=m_Framebuffer->GetSpecification();
         return position*glm::vec2(specification.Width,specification.Height)/m_ViewportSize;
     }
+    bool EditorLayer::RuntimeUIWidgetBlocksInput() const {
+        const auto& context=*ImGui::GetCurrentContext();
+        const auto* viewport=ImGui::FindWindowByName("Viewport");
+        // An Image has no active widget. ImGui nevertheless activates the
+        // window's MoveId on a background press, even for a docked viewport.
+        // Admit only that gesture; actual widgets, text fields and popups keep
+        // ownership. Existing runtime capture continues outside the image.
+        const bool viewportGesture=viewport&&context.ActiveId==viewport->MoveId&&
+            (m_ViewportHovered||(m_ActiveScene&&m_ActiveScene->IsUICapturingPointer()));
+        return context.IO.WantTextInput||ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId)||
+            (ImGui::IsAnyItemActive()&&!viewportGesture);
+    }
 	void EditorLayer::OnEvent(Event& e)
 	{
         if(m_Loading && m_Loading->Busy())return;
-        if(m_SceneState==SceneState::Play)m_RuntimeSession.SubmitUIEvent(e,ViewportMouse(),m_ViewportFocused && !ImGui::GetIO().WantTextInput && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId));
+        if(m_SceneState==SceneState::Play)m_RuntimeSession.SubmitUIEvent(e,ViewportMouse(),m_ViewportFocused && !RuntimeUIWidgetBlocksInput());
 		if(m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_CameraController.OnEvent(e);
 		if (m_SceneState == SceneState::Edit && m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))
 		{
@@ -448,7 +468,7 @@ namespace Hazel {
 		}
 
 		// Draw selected entity outline
-		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity(); selectedEntity && !selectedEntity.HasComponent<UIRectComponent>())
+		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity(); selectedEntity && !selectedEntity.HasComponent<UIRectComponent>() && !selectedEntity.HasComponent<UICanvasComponent>())
 		{
 			const auto transform = m_ActiveScene->GetWorldTransform(selectedEntity);
             if(auto* sprite=m_ActiveScene->RenderedSprite(selectedEntity)) {
