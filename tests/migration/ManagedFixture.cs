@@ -179,7 +179,13 @@ namespace Migration {
                !HasComponent<Hazel.UINineSliceComponent>() || !HasComponent<Hazel.UIButtonComponent>())
                 throw new System.Exception("Runtime UI component reflection binding missing");
             var canvas=GetComponent<Hazel.UICanvasComponent>();canvas.Visible=false;canvas.Visible=true;canvas.Enabled=false;canvas.Enabled=true;canvas.Modal=true;
-            var rect=GetComponent<Hazel.UIRectComponent>();rect.Visible=false;rect.Visible=true;rect.Enabled=false;rect.Enabled=true;
+            var rect=GetComponent<Hazel.UIRectComponent>();rect.Visible=false;
+            if(rect.Visible||!canvas.Visible)throw new System.Exception("Rect visibility aliases Canvas");
+            rect.Visible=true;rect.Enabled=false;
+            if(rect.Enabled||!canvas.Enabled)throw new System.Exception("Rect enabled state aliases Canvas");
+            rect.Enabled=true;canvas.Visible=false;
+            if(canvas.Visible||!rect.Visible)throw new System.Exception("Canvas visibility aliases Rect");
+            canvas.Visible=true;
             var button=GetComponent<Hazel.UIButtonComponent>();button.Interactable=false;button.Interactable=true;
             string action;Hazel.Entity entity;
             if(button.TryConsumeAction(out action)||Hazel.GameUI.TryConsumeAction(out entity,out action))throw new System.Exception("Fresh scene retained UI actions");

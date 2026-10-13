@@ -355,6 +355,9 @@ namespace Hazel {
         auto* scene=ScriptEngine::GetSceneContext();auto e=scene?scene->GetEntityByUUID(id):Entity{};
         if(!e||!scene->IsEntityValid(id))return nullptr;
         if(property==3&&e.HasComponent<UIButtonComponent>())return &e.GetComponent<UIButtonComponent>().Interactable;
+        if((property==4||property==5)&&e.HasComponent<UIRectComponent>()) {
+            auto& r=e.GetComponent<UIRectComponent>();return property==4?&r.Visible:&r.Enabled;
+        }
         if(e.HasComponent<UICanvasComponent>()) {
             auto& c=e.GetComponent<UICanvasComponent>();if(property==0)return &c.Visible;if(property==1)return &c.Enabled;if(property==2)return &c.Modal;
         }
