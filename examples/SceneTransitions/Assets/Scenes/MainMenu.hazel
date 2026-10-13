@@ -182,14 +182,14 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.38
-    - 0.22
-    - 0.1
+    - 1
+    - 1
+    - 1
     - 1
     Source:
-      Type: Texture
-      Texture: Textures/Tile.png
-      TilingFactor: 1
+      Type: Region
+      Sheet: Textures/MenuFrame.hsprites
+      RegionID: d1500e0000000001
   ScriptComponent:
     ClassName: SceneTransitions.PlayButton
   Relationship:
@@ -264,6 +264,13 @@ Entities:
         Type: None
     - Source:
         Type: None
+  UINineSliceComponent:
+    Borders:
+    - 4
+    - 4
+    - 4
+    - 4
+    BorderScale: 3
 - Entity: 5
   TagComponent:
     Tag: Play label
@@ -348,7 +355,9 @@ Entities:
     - 1
     - 1
   TextComponent:
-    TextString: Click Play or press Enter
+    TextString: 'Click Play or press Enter
+
+      UI frame: Kenney (CC0)'
     Color:
     - 0.96
     - 0.9

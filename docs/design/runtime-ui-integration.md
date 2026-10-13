@@ -42,6 +42,16 @@ source trees unavailable. Cold Debug/Release C# builds were verified separately
 after fixing the pinned Premake response-file directory race in SDK tooling.
 Migration checkpoint `1fcc2f4` passed both Linux and Windows CI.
 
+Live authoring checks also caught and fixed ImGui's viewport background MoveId
+canceling runtime pointer gestures. Editor input now admits that specific gesture
+and existing pointer capture while retaining real-widget/text/popup guards; Play
+clicks no longer select scene entities. Canvas selection outlines its screen-space
+safe area instead of a world transform. Focused Debug/Release editor regressions
+passed after these fixes. A final visual check moved the remaining MeadowRun/Skybound
+ribbons into canvases and replaced SceneTransitions' floor-tile button with the
+existing Kenney Pixel Adventure frame, retaining its included CC0 license and
+source provenance in that example's export.
+
 Visual inspection and live input checks supplement the behavioral regressions;
 they do not establish human aesthetic acceptance or playtime. Remaining scope is
 documented in the guide: rectangular clipping, bounded flows and styled sibling

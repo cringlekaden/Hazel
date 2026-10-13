@@ -269,8 +269,41 @@ Entities:
     - 0.96
     TilingFactor: 1
   Relationship:
-    Parent: 0
-    Order: 8
+    Parent: 19
+    Order: 0
+  UIRectComponent:
+    AnchorMin:
+    - 0.5
+    - 0
+    AnchorMax:
+    - 0.5
+    - 0
+    Offset:
+    - -480
+    - 58
+    SizeDelta:
+    - 960
+    - 170
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
 - Entity: 10
   TagComponent:
     Tag: Subtitle ribbon
@@ -295,8 +328,41 @@ Entities:
     - 0.96
     TilingFactor: 1
   Relationship:
-    Parent: 0
-    Order: 9
+    Parent: 19
+    Order: 1
+  UIRectComponent:
+    AnchorMin:
+    - 0.5
+    - 0
+    AnchorMax:
+    - 0.5
+    - 0
+    Offset:
+    - -360
+    - 324
+    SizeDelta:
+    - 720
+    - 48
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
 - Entity: 11
   TagComponent:
     Tag: Eyebrow
@@ -324,7 +390,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 19
-    Order: 0
+    Order: 2
   UIRectComponent:
     AnchorMin:
     - 0.5
@@ -387,7 +453,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 19
-    Order: 1
+    Order: 3
   UIRectComponent:
     AnchorMin:
     - 0.5
@@ -452,8 +518,41 @@ Entities:
     TilingFactor: 1
     TexturePath: Textures/Wisp.png
   Relationship:
-    Parent: 0
-    Order: 10
+    Parent: 19
+    Order: 8
+  UIRectComponent:
+    AnchorMin:
+    - 0.5
+    - 0
+    AnchorMax:
+    - 0.5
+    - 0
+    Offset:
+    - -44
+    - 232
+    SizeDelta:
+    - 88
+    - 88
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
 - Entity: 14
   TagComponent:
     Tag: Subtitle
@@ -477,7 +576,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 19
-    Order: 2
+    Order: 4
   UIRectComponent:
     AnchorMin:
     - 0.5
@@ -487,7 +586,7 @@ Entities:
     - 0
     Offset:
     - -450
-    - 282
+    - 324
     SizeDelta:
     - 900
     - 48
@@ -551,7 +650,7 @@ Entities:
       Data: 0
   Relationship:
     Parent: 19
-    Order: 3
+    Order: 5
   UIRectComponent:
     AnchorMin:
     - 0.5
@@ -561,7 +660,7 @@ Entities:
     - 0
     Offset:
     - -190
-    - 390
+    - 396
     SizeDelta:
     - 380
     - 64
@@ -707,7 +806,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 19
-    Order: 4
+    Order: 6
   UIRectComponent:
     AnchorMin:
     - 0.5
@@ -770,7 +869,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 19
-    Order: 5
+    Order: 7
   UIRectComponent:
     AnchorMin:
     - 0.5
@@ -815,7 +914,7 @@ Entities:
     Tag: UI Canvas
   Relationship:
     Parent: 0
-    Order: 11
+    Order: 8
   TransformComponent:
     Translation:
     - 0

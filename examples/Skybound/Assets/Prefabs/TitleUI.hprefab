@@ -3,6 +3,124 @@ PrefabRoot: 19
 SceneVersion: 2
 Scene: Title UI
 Entities:
+- Entity: 9
+  TagComponent:
+    Tag: Title ribbon
+  TransformComponent:
+    Translation:
+    - 0
+    - 3.35
+    - -0.1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 12
+    - 2.8
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.17
+    - 0.21
+    - 0.36
+    - 0.96
+    TilingFactor: 1
+  Relationship:
+    Parent: 19
+    Order: 0
+  UIRectComponent:
+    AnchorMin:
+    - 0.5
+    - 0
+    AnchorMax:
+    - 0.5
+    - 0
+    Offset:
+    - -480
+    - 58
+    SizeDelta:
+    - 960
+    - 170
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+- Entity: 10
+  TagComponent:
+    Tag: Subtitle ribbon
+  TransformComponent:
+    Translation:
+    - 0
+    - -0.15
+    - -0.1
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 8
+    - 0.8
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.17
+    - 0.21
+    - 0.36
+    - 0.96
+    TilingFactor: 1
+  Relationship:
+    Parent: 19
+    Order: 1
+  UIRectComponent:
+    AnchorMin:
+    - 0.5
+    - 0
+    AnchorMax:
+    - 0.5
+    - 0
+    Offset:
+    - -360
+    - 324
+    SizeDelta:
+    - 720
+    - 48
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
 - Entity: 11
   TagComponent:
     Tag: Eyebrow
@@ -30,7 +148,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 19
-    Order: 0
+    Order: 2
   UIRectComponent:
     AnchorMin:
     - 0.5
@@ -93,7 +211,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 19
-    Order: 1
+    Order: 3
   UIRectComponent:
     AnchorMin:
     - 0.5
@@ -133,6 +251,66 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+- Entity: 13
+  TagComponent:
+    Tag: Wind sprite
+  TransformComponent:
+    Translation:
+    - 0
+    - 1.1
+    - 0.2
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1.8
+    - 1.8
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    TilingFactor: 1
+    TexturePath: Textures/Wisp.png
+  Relationship:
+    Parent: 19
+    Order: 8
+  UIRectComponent:
+    AnchorMin:
+    - 0.5
+    - 0
+    AnchorMax:
+    - 0.5
+    - 0
+    Offset:
+    - -44
+    - 232
+    SizeDelta:
+    - 88
+    - 88
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
 - Entity: 14
   TagComponent:
     Tag: Subtitle
@@ -156,7 +334,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 19
-    Order: 2
+    Order: 4
   UIRectComponent:
     AnchorMin:
     - 0.5
@@ -166,7 +344,7 @@ Entities:
     - 0
     Offset:
     - -450
-    - 282
+    - 324
     SizeDelta:
     - 900
     - 48
@@ -230,7 +408,7 @@ Entities:
       Data: 0
   Relationship:
     Parent: 19
-    Order: 3
+    Order: 5
   UIRectComponent:
     AnchorMin:
     - 0.5
@@ -240,7 +418,7 @@ Entities:
     - 0
     Offset:
     - -190
-    - 390
+    - 396
     SizeDelta:
     - 380
     - 64
@@ -386,7 +564,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 19
-    Order: 4
+    Order: 6
   UIRectComponent:
     AnchorMin:
     - 0.5
@@ -449,7 +627,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 19
-    Order: 5
+    Order: 7
   UIRectComponent:
     AnchorMin:
     - 0.5

@@ -173,11 +173,14 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.35
-    - 0.2
-    - 0.1
     - 1
-    TilingFactor: 1
+    - 1
+    - 1
+    - 1
+    Source:
+      Type: Region
+      Sheet: Textures/MenuFrame.hsprites
+      RegionID: d1500e0000000001
   ScriptComponent:
     ClassName: SceneTransitions.MenuButton
   Relationship:
@@ -252,6 +255,13 @@ Entities:
         Type: None
     - Source:
         Type: None
+  UINineSliceComponent:
+    Borders:
+    - 4
+    - 4
+    - 4
+    - 4
+    BorderScale: 3
 - Entity: 15
   TagComponent:
     Tag: Menu label

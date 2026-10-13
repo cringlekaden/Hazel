@@ -1015,8 +1015,41 @@ Entities:
     - 1
     TilingFactor: 1
   Relationship:
-    Parent: 0
-    Order: 30
+    Parent: 35
+    Order: 0
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 0
+    - 0
+    SizeDelta:
+    - 0
+    - 106
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
 - Entity: 32
   TagComponent:
     Tag: Progress
@@ -1040,7 +1073,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 35
-    Order: 0
+    Order: 1
   UIRectComponent:
     AnchorMin:
     - 0
@@ -1103,7 +1136,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 35
-    Order: 1
+    Order: 2
   UIRectComponent:
     AnchorMin:
     - 0
@@ -1170,7 +1203,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 35
-    Order: 2
+    Order: 3
   UIRectComponent:
     AnchorMin:
     - 0
@@ -1215,7 +1248,7 @@ Entities:
     Tag: UI Canvas
   Relationship:
     Parent: 0
-    Order: 31
+    Order: 30
   TransformComponent:
     Translation:
     - 0

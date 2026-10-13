@@ -27,7 +27,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 5079297565700148466
-    Order: 0
+    Order: 1
   UIRectComponent:
     AnchorMin:
     - 0
@@ -94,7 +94,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 5079297565700148466
-    Order: 1
+    Order: 2
   UIRectComponent:
     AnchorMin:
     - 0
@@ -161,7 +161,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 5079297565700148466
-    Order: 2
+    Order: 3
   UIRectComponent:
     AnchorMin:
     - 0
@@ -225,8 +225,41 @@ Entities:
     - 1
     TilingFactor: 1
   Relationship:
-    Parent: 0
+    Parent: 5079297565700148466
     Order: 0
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 0
+    - 0
+    SizeDelta:
+    - 0
+    - 106
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
 - Entity: 30
   TagComponent:
     Tag: Meadow rules
@@ -260,7 +293,7 @@ Entities:
       Data: 0.649999976
   Relationship:
     Parent: 0
-    Order: 1
+    Order: 0
 - Entity: 29
   TagComponent:
     Tag: Explorer
@@ -308,7 +341,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 2
+    Order: 1
 - Entity: 28
   TagComponent:
     Tag: Seed4
@@ -327,7 +360,7 @@ Entities:
     - 1
   Relationship:
     Parent: 0
-    Order: 3
+    Order: 2
 - Entity: 27
   TagComponent:
     Tag: Seed3
@@ -346,7 +379,7 @@ Entities:
     - 1
   Relationship:
     Parent: 0
-    Order: 4
+    Order: 3
 - Entity: 26
   TagComponent:
     Tag: Seed2
@@ -365,7 +398,7 @@ Entities:
     - 1
   Relationship:
     Parent: 0
-    Order: 5
+    Order: 4
 - Entity: 25
   TagComponent:
     Tag: Seed1
@@ -384,7 +417,7 @@ Entities:
     - 1
   Relationship:
     Parent: 0
-    Order: 6
+    Order: 5
 - Entity: 24
   TagComponent:
     Tag: Seed0
@@ -403,7 +436,7 @@ Entities:
     - 1
   Relationship:
     Parent: 0
-    Order: 7
+    Order: 6
 - Entity: 23
   TagComponent:
     Tag: ExitLabel
@@ -431,7 +464,7 @@ Entities:
     LineSpacing: 0
   Relationship:
     Parent: 0
-    Order: 8
+    Order: 7
 - Entity: 22
   TagComponent:
     Tag: Exit
@@ -458,7 +491,7 @@ Entities:
     TilingFactor: 1
   Relationship:
     Parent: 0
-    Order: 9
+    Order: 8
 - Entity: 21
   TagComponent:
     Tag: Pond
@@ -485,7 +518,7 @@ Entities:
     TilingFactor: 1
   Relationship:
     Parent: 0
-    Order: 10
+    Order: 9
 - Entity: 20
   TagComponent:
     Tag: South boundary
@@ -519,7 +552,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 11
+    Order: 10
 - Entity: 19
   TagComponent:
     Tag: North boundary
@@ -553,7 +586,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 12
+    Order: 11
 - Entity: 18
   TagComponent:
     Tag: East boundary
@@ -587,7 +620,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 13
+    Order: 12
 - Entity: 17
   TagComponent:
     Tag: West boundary
@@ -621,7 +654,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 14
+    Order: 13
 - Entity: 16
   TagComponent:
     Tag: Rock2
@@ -663,7 +696,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 15
+    Order: 14
 - Entity: 15
   TagComponent:
     Tag: Rock1
@@ -705,7 +738,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 16
+    Order: 15
 - Entity: 14
   TagComponent:
     Tag: Rock0
@@ -747,7 +780,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 17
+    Order: 16
 - Entity: 13
   TagComponent:
     Tag: Tree6
@@ -789,7 +822,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 18
+    Order: 17
 - Entity: 12
   TagComponent:
     Tag: Tree5
@@ -831,7 +864,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 19
+    Order: 18
 - Entity: 11
   TagComponent:
     Tag: Tree4
@@ -873,7 +906,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 20
+    Order: 19
 - Entity: 10
   TagComponent:
     Tag: Tree3
@@ -915,7 +948,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 21
+    Order: 20
 - Entity: 9
   TagComponent:
     Tag: Tree2
@@ -957,7 +990,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 22
+    Order: 21
 - Entity: 8
   TagComponent:
     Tag: Tree1
@@ -999,7 +1032,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 23
+    Order: 22
 - Entity: 5079297565700148465
   TagComponent:
     Tag: Tree0
@@ -1041,7 +1074,7 @@ Entities:
     RestitutionThreshold: 0.5
   Relationship:
     Parent: 0
-    Order: 24
+    Order: 23
 - Entity: 6
   TagComponent:
     Tag: South path
@@ -1068,7 +1101,7 @@ Entities:
     TilingFactor: 3
   Relationship:
     Parent: 0
-    Order: 25
+    Order: 24
 - Entity: 5
   TagComponent:
     Tag: North path
@@ -1095,7 +1128,7 @@ Entities:
     TilingFactor: 3
   Relationship:
     Parent: 0
-    Order: 26
+    Order: 25
 - Entity: 4
   TagComponent:
     Tag: East path
@@ -1122,7 +1155,7 @@ Entities:
     TilingFactor: 3
   Relationship:
     Parent: 0
-    Order: 27
+    Order: 26
 - Entity: 3
   TagComponent:
     Tag: West path
@@ -1149,7 +1182,7 @@ Entities:
     TilingFactor: 3
   Relationship:
     Parent: 0
-    Order: 28
+    Order: 27
 - Entity: 2
   TagComponent:
     Tag: Grass
@@ -1176,7 +1209,7 @@ Entities:
     TilingFactor: 24
   Relationship:
     Parent: 0
-    Order: 29
+    Order: 28
 - Entity: 1
   TagComponent:
     Tag: Camera
@@ -1215,13 +1248,13 @@ Entities:
       Data: 12
   Relationship:
     Parent: 0
-    Order: 30
+    Order: 29
 - Entity: 5079297565700148466
   TagComponent:
     Tag: UI Canvas
   Relationship:
     Parent: 0
-    Order: 31
+    Order: 30
   TransformComponent:
     Translation:
     - 0
