@@ -152,17 +152,12 @@ namespace Hazel {
         auto& a=entity.GetComponent<SpriteAnimationComponent>();return finished?a.Playback.Finished:a.Playback.Playing;
     }
 
-	static bool Entity_HasComponent(UUID entityID, MonoReflectionType* componentType)
-	{
-		Scene* scene = ScriptEngine::GetSceneContext();
-		HZ_CORE_ASSERT(scene);
-		Entity entity = scene->GetEntityByUUID(entityID);
-		HZ_CORE_ASSERT(entity);
-
-		MonoType* managedType = mono_reflection_type_get_type(componentType);
-		HZ_CORE_ASSERT(s_EntityHasComponentFuncs.find(managedType) != s_EntityHasComponentFuncs.end());
-		return s_EntityHasComponentFuncs.at(managedType)(entity);
-	}
+    static bool Entity_HasComponent(UUID entityID,MonoReflectionType* componentType) {
+        MonoException* failure=nullptr;bool result=false;
+        try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::runtime_error("Component lookup needs a runtime scene");scene->CheckThread();auto entity=scene->GetEntityByUUID(entityID);if(!entity||!scene->IsEntityValid(entityID)||!componentType)throw std::runtime_error("Component lookup needs a live entity and type");auto* type=mono_reflection_type_get_type(componentType);auto found=s_EntityHasComponentFuncs.find(type);if(found==s_EntityHasComponentFuncs.end())throw std::runtime_error("Component type has no native binding");result=found->second(entity);}
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if(failure)mono_raise_exception(failure);return result;
+    }
 
 	static uint64_t Entity_FindEntityByName(MonoString* name)
 	{
@@ -414,11 +409,18 @@ namespace Hazel {
         RegisterComponent<SpriteRendererComponent>("Hazel.SpriteRendererComponent");
         RegisterComponent<SpriteAnimationComponent>("Hazel.SpriteAnimationComponent");
         RegisterComponent<AudioSourceComponent>("Hazel.AudioSourceComponent");
+        RegisterComponent<UICanvasComponent>("Hazel.UICanvasComponent");
+        RegisterComponent<UIRectComponent>("Hazel.UIRectComponent");
+        RegisterComponent<UILayoutComponent>("Hazel.UILayoutComponent");
+        RegisterComponent<UITextStyleComponent>("Hazel.UITextStyleComponent");
+        RegisterComponent<UINineSliceComponent>("Hazel.UINineSliceComponent");
+        RegisterComponent<UIButtonComponent>("Hazel.UIButtonComponent");
+
 	}
 
 	void ScriptGlue::ValidateComponents(MonoImage* image)
 	{
-		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent", "Hazel.SpriteRendererComponent", "Hazel.SpriteAnimationComponent", "Hazel.AudioSourceComponent" })
+		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent", "Hazel.SpriteRendererComponent", "Hazel.SpriteAnimationComponent", "Hazel.AudioSourceComponent", "Hazel.UICanvasComponent", "Hazel.UIRectComponent", "Hazel.UILayoutComponent", "Hazel.UITextStyleComponent", "Hazel.UINineSliceComponent", "Hazel.UIButtonComponent" })
 			if (!mono_reflection_type_from_name(const_cast<char*>(name), image))
 				throw std::runtime_error(std::string("Missing managed component: ") + name);
 	}
