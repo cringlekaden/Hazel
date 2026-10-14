@@ -380,7 +380,7 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
         auto ratio = surface.Framebuffer / surface.Viewport;
         n.FramebufferBounds = Scaled(n.PixelBounds, ratio);
         n.FramebufferClip = FramebufferCoverage(n.PixelBounds, ratio, surface.Framebuffer);
-        n.PixelClip = Scaled(n.FramebufferClip, 1.f / ratio);
+        n.PixelClip = {n.FramebufferClip.Position / ratio, n.FramebufferClip.Size / ratio};
         n.LayoutResolved = true;
         if (c.Modal && n.Enabled)
             m_Build.Modal = n.ID;
@@ -415,8 +415,11 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
                 : n.FocusEligible ? HitPolicy::Control
                                   : HitPolicy::Block;
         n.ButtonIndex = m_Build.Buttons.size();
-        m_Build.Buttons.push_back(
-            {n.ID, n.PixelBounds, n.PixelClip, b.Action, b.TabOrder, true, n.FocusEligible, n.Hit});
+        // Route in framebuffer space against the exact integer coverage used by
+        // scissoring. Converting that region back to viewport pixels for hit
+        // tests can exclude a covered edge through reciprocal rounding.
+        m_Build.Buttons.push_back({n.ID, n.FramebufferBounds, n.FramebufferClip, b.Action,
+                                  b.TabOrder, true, n.FocusEligible, n.Hit});
     }
 }
 void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enabled, uint64_t canvas,
@@ -445,7 +448,7 @@ void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enable
     n.FramebufferBounds = Scaled(n.PixelBounds, ratio);
     n.FramebufferClip =
         FramebufferCoverage(Scaled(n.Clip, glm::vec2(scale)), ratio, m_Build.Surface.Framebuffer);
-    n.PixelClip = Scaled(n.FramebufferClip, 1.f / ratio);
+    n.PixelClip = {n.FramebufferClip.Position / ratio, n.FramebufferClip.Size / ratio};
     auto content = n.Bounds.Inset(r.Padding),
          childClip = r.ClipChildren ? clip.Intersect(n.Bounds) : clip;
     auto inside = parent.Intersect(n.Bounds);
@@ -522,13 +525,21 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
     const auto start = std::chrono::steady_clock::now();
     m_PointerOver = false;
     auto input = pixels;
+    const auto &surface = m_Resolved.Surface;
+    const bool usableSurface = surface.Viewport.x > 0 && surface.Viewport.y > 0 &&
+                               surface.Framebuffer.x > 0 && surface.Framebuffer.y > 0;
+    input.Enabled &= usableSurface;
+    auto ratio = usableSurface ? surface.Framebuffer / surface.Viewport : glm::vec2(1);
+    input.Mouse *= ratio;
+    input.PressPosition *= ratio;
+    input.ReleasePosition *= ratio;
     m_InputEnabled = input.Enabled;
     uint64_t entryFocus = 0;
     int entryOrder =
         input.PreviousDown ? std::numeric_limits<int>::min() : std::numeric_limits<int>::max();
     for (auto &b : m_Resolved.Buttons)
     {
-        if (b.Hit != HitPolicy::PassThrough && b.Bounds.Intersect(b.Clip).Contains(pixels.Mouse))
+        if (b.Hit != HitPolicy::PassThrough && b.Bounds.Intersect(b.Clip).Contains(input.Mouse))
             m_PointerOver = true;
         if (!b.Interactable)
             continue;
@@ -702,6 +713,9 @@ void RuntimeUI::Draw()
                 int index = n.ButtonIndex >= m_Resolved.Buttons.size()
                                 ? 0
                                 : int(m_Input.State(m_Resolved.Buttons[n.ButtonIndex]));
+                if (m_Resolved.PreviewOrphans && !n.Canvas)
+                    index = n.Enabled && b.Interactable ? int(ButtonState::Normal)
+                                                       : int(ButtonState::Disabled);
                 if (index == int(ButtonState::Focused) && !m_Resolved.Modal && !m_KeyboardOwns)
                     index = 0;
                 tint = b.Colors[index];

@@ -75,6 +75,7 @@ void Scene::CancelUIInput() { CheckThread();m_UI->CancelInput(); }
 void Scene::SetUIFramebufferSize(glm::vec2 size)
 {
     CheckThread();m_UIFramebufferSize=size;m_UIFramebufferExplicit=true;
+    if(!size.x||!size.y)m_UI->CancelInput();
 }
 const GameUI::ResolvedSnapshot& Scene::GetUISnapshot() const { CheckThread();return m_UI->Snapshot(); }
 GameUI::RuntimeUIDiagnostics Scene::GetUIDiagnostics() const { CheckThread();return m_UI->Diagnostics(); }

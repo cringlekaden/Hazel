@@ -61,6 +61,8 @@ static void HardeningSceneChecks()
     Action action;
     {UIFixture f;f.Queue();f.World->UpdateUIInput({});Check(!f.World->ConsumeUIAction(0,action),"D1: outer activation survived inactive viewport");
      InputFrame restored;restored.Enabled=true;f.World->UpdateUIInput(restored);Check(!f.World->ConsumeUIAction(0,action),"D1: restore delivered stale activation");}
+    {UIFixture f;f.Queue();f.World->SetUIFramebufferSize({0,0});f.World->SetUIFramebufferSize({320,240});
+     Check(!f.World->ConsumeUIAction(0,action)&&!f.World->GetUIDiagnostics().Focus,"Native zero/restore surface setter retained UI activation/focus");}
     {UIFixture f;f.Queue();f.Group.RemoveComponent<UIRectComponent>();Check(!f.World->ConsumeUIAction(0,action),"D4: parent rect removal retained child activation");
      f.World->RefreshUI();auto n=f.World->GetUISnapshot().Find(f.Control.GetUUID());Check(n&&!n->LayoutResolved&&!n->FocusEligible&&f.World->GetUIDiagnostics().Capture==0,"Interrupted chain retained interaction");}
     {UIFixture f;f.Queue();auto id=f.World->GetUISnapshot().Generation;f.Group.GetComponent<UIRectComponent>().Visible=false;
@@ -326,6 +328,13 @@ int main(int argc,char** argv)
         ui.UpdateInput(scaledInput);Check(!ui.Consume(0,action),"Uncovered fractional edge accepted a hit");
         scaledInput.Mouse=scaledInput.PressPosition=scaledInput.ReleasePosition={20.8f,64};
         ui.UpdateInput(scaledInput);Check(ui.Consume(button.GetUUID(),action),"Framebuffer-covered edge did not hit in viewport units");
+        auto detached=Scene::ExtractSubtree(button);detached->OnViewportResize(320,240);detached->PrepareSprites(true);
+        RuntimeUI preview(*detached);preview.ResolveSurface({{320,240},{400,300}},true);
+        RenderCommand::Clear();preview.Draw();GLint oldRead=0;glGetIntegerv(GL_READ_BUFFER,&oldRead);glReadBuffer(GL_COLOR_ATTACHMENT0);
+        uint8_t previewColor[4]{};glReadPixels(5,300-12,1,1,GL_RGBA,GL_UNSIGNED_BYTE,previewColor);glReadBuffer(oldRead);
+        Check(previewColor[0]>240&&previewColor[1]==0,"Detached authoring preview acquired disabled appearance from hit ineligibility");
+        InputFrame previewInput;previewInput.Enabled=true;preview.UpdateInput(previewInput);previewInput.AcceptDown=true;preview.UpdateInput(previewInput);
+        Check(!preview.Consume(0,action)&&!preview.Diagnostics().Focus,"Detached authoring preview gained runtime eligibility");
         scaledTarget->Unbind();scaledTarget.reset();
         target->Unbind();
         target.reset();
