@@ -318,7 +318,7 @@ int main(int argc,char** argv)
         // Actual GPU coverage at 125% framebuffer scaling shares the input clip.
         FramebufferSpecification scaledSpec=f;scaledSpec.Width=400;scaledSpec.Height=300;
         auto scaledTarget=Framebuffer::Create(scaledSpec);scaledTarget->Bind();RenderCommand::Clear();scaledTarget->ClearAttachment(1,-1);
-        modalCanvas.Visible=false;r.Offset={20.1f,30.1f};
+        modalCanvas.Visible=false;panel.GetComponent<UIRectComponent>().Offset={20.1f,30.1f};
         ui.ResolveSurface({{320,240},{400,300}});ui.Draw();
         Check(scaledTarget->ReadPixel(1,26,300-80)==int(uint32_t(button))&&scaledTarget->ReadPixel(1,25,300-80)==-1&&scaledTarget->ReadPixel(1,100,300-80)!=int(uint32_t(button)),"125% fractional framebuffer scissor/picking disagrees with clip");
         InputFrame scaledInput;scaledInput.Enabled=true;scaledInput.Mouse={20.4f,64};ui.UpdateInput(scaledInput);
