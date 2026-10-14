@@ -78,8 +78,19 @@ bool UIRectEditSession::Update(glm::vec2 delta)
         static_cast<GameUI::RectLayout &>(next) =
             GameUI::EditRect(m_ParentContent, m_Initial, delta, m_Edges);
         e.GetComponent<UIRectComponent>() = next;
+        try
+        {
+            m_Scene->RefreshUI();
+        }
+        catch (...)
+        {
+            // A valid edited rect can still overflow a descendant's layout.
+            // Publish no authored change unless the whole resolution succeeds.
+            e.GetComponent<UIRectComponent>() = m_Last;
+            try { m_Scene->RefreshUI(); } catch (...) {} // Keep authored rollback even on OOM.
+            throw;
+        }
         m_Last = next;
-        m_Scene->RefreshUI();
         m_Error.clear();
         return true;
     }

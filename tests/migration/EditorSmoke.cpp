@@ -31,6 +31,7 @@
 #include <GLFW/glfw3native.h>
 #endif
 #include <filesystem>
+#include <limits>
 #include <yaml-cpp/yaml.h>
 #include <fstream>
 #include <iostream>
@@ -890,6 +891,16 @@ private:
         e.m_ViewportHovered=eventHovered;
         editRect.SizeDelta={100,40};uiPanel.AddComponent<UILayoutComponent>();scene->RefreshUI();
         Check(scene->GetUISnapshot().Find(uiButton.GetUUID())->FlowOwned&&!gesture.Begin(scene,uiButton.GetUUID(),0)&&!gesture.Begin(scene,uiButton.GetUUID(),4),"Flow-owned viewport edits wrote ignored geometry");uiPanel.RemoveComponent<UILayoutComponent>();
+        // Reject failures after the edited rect itself validates, including descendant overflow.
+        auto ordinaryButton=uiButton.GetComponent<UIRectComponent>();auto ordinaryText=uiText.GetComponent<UIRectComponent>();
+        uiButton.GetComponent<UIRectComponent>()=UIRectComponent{};
+        scene->Reparent(uiText,uiButton,TransformPolicy::KeepLocal);
+        auto& overflowRect=uiText.GetComponent<UIRectComponent>();overflowRect.AnchorMin=overflowRect.AnchorMax={1,0};
+        overflowRect.Offset={(std::numeric_limits<float>::max)()*.75f,0};overflowRect.SizeDelta={1,1};scene->RefreshUI();
+        auto beforeOverflow=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
+        Check(gesture.Begin(scene,uiButton.GetUUID(),4)&&!gesture.Update({(std::numeric_limits<float>::max)()*.5f,0}),"Descendant overflow did not reject viewport edit");
+        Check(scene->GetUISnapshot().Valid&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==beforeOverflow,"Post-write resolution failure did not restore last valid authored state");gesture.Finish(true);
+        uiButton.GetComponent<UIRectComponent>()=ordinaryButton;uiText.GetComponent<UIRectComponent>()=ordinaryText;scene->Reparent(uiText,uiPanel,TransformPolicy::KeepLocal);
         panel.SetSelectedEntity(uiButton);scene->RefreshUI();
         const auto uiSnapshot=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();auto uiCopy=Scene::Copy(scene);Check(SceneSerializer(uiCopy,Project::GetAssetDirectory()).CaptureAuthoredState()==uiSnapshot,"Editor UI copy changed authored fields");
         const auto uiPrefab=std::filesystem::path("Prefabs/EditorUI.hprefab");Prefab::Save(Project::GetAssetDirectory(),uiPrefab,scene,canvas);auto reopenedUI=Prefab::Load(Project::GetAssetDirectory(),uiPrefab);Check(Prefab::GetEntity(reopenedUI).HasComponent<UICanvasComponent>(),"Editor UI prefab reopen lost canvas");
