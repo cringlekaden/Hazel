@@ -19,12 +19,12 @@ std::vector<DocumentInfo> AuthoringPanel::Documents() const
                         m_Editor.m_EditorScenePath.empty()
                             ? "Untitled scene"
                             : m_Editor.m_EditorScenePath.filename().u8string(),
-                        SceneText() != m_SavedScene, canSave ? "" : canSave.Reason});
+                        m_SceneHistory.Dirty(SceneText()), canSave ? "" : canSave.Reason});
     }
     const auto canSaveAsset = Availability(EditorAction::SaveAsset);
     if (m_PrefabScene)
         docs.push_back({EditorDocument::Prefab, m_PrefabScene->GetIdentity(), m_PrefabReference,
-                        SceneSerializer(m_PrefabScene).CaptureAuthoredState() != m_SavedPrefab,
+                        m_PrefabHistory.Dirty(SceneSerializer(m_PrefabScene).CaptureAuthoredState()),
                         canSaveAsset ? "" : canSaveAsset.Reason});
     if (m_Sprites.HasDocument())
         docs.push_back({EditorDocument::Sheet, m_Sprites.Identity(), m_Sprites.Name(), m_Sprites.Dirty(),
@@ -43,6 +43,7 @@ DocumentSaveResult AuthoringPanel::SaveDocument(const DocumentInfo &document)
         return {document, SaveOutcome::Unavailable, found->SaveUnavailable};
     try
     {
+        PrepareSave();
         bool saved = false;
         switch (document.Kind)
         {
@@ -59,7 +60,7 @@ DocumentSaveResult AuthoringPanel::SaveDocument(const DocumentInfo &document)
                 return {document, SaveOutcome::Unavailable, m_Editor.m_ActionError};
             m_PrefabFile.Save(Prefab::Serialize(Project::GetAssetDirectory(), m_PrefabScene,
                          Prefab::GetEntity(m_PrefabScene), true),Resources::Get().UserData/"recovery");
-            m_SavedPrefab = SceneSerializer(m_PrefabScene).CaptureAuthoredState();
+            m_PrefabHistory.MarkSaved(SceneSerializer(m_PrefabScene).CaptureAuthoredState());
             saved = true;
             break;
         }
@@ -118,6 +119,7 @@ void AuthoringPanel::Guard(OperationIntent intent, std::function<bool()> action)
         return;
     try
     {
+        CancelEdits();
         m_Documents.Request(intent, Documents(), [this, needed, action = std::move(action)]
                             {
                                 if(!Require(needed))return false;
@@ -172,8 +174,10 @@ bool AuthoringPanel::SaveActive(bool saveAs)
 }
 void AuthoringPanel::ObserveSceneFocus()
 {
-    if (m_Editor.m_ViewportFocused || m_Editor.m_SceneHierarchyPanel.Focused())
+    if (m_Editor.m_ViewportFocused || m_Editor.m_SceneHierarchyPanel.Focused()) {
+        if(m_ActiveDocument!=EditorDocument::Scene)m_PrefabInspector.FinishUIEdit();
         m_ActiveDocument = EditorDocument::Scene;
+    }
 }
 SceneTarget AuthoringPanel::AssignmentTarget() const
 {
@@ -205,6 +209,7 @@ void AuthoringPanel::ClosePrefab()
     m_PrefabFocused = false;
     m_PrefabInspector.SetContext(nullptr);
     m_PrefabScene.reset();
+    m_PrefabHistory.Bind(0);
     // Keep the panel-owned framebuffer: a guarded close can follow Image emission
     // in this frame. ImGui consumes that texture after all panels have drawn.
     if (m_ActiveDocument == EditorDocument::Prefab)

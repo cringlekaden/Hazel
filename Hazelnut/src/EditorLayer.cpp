@@ -74,7 +74,11 @@ namespace Hazel {
 		HZ_PROFILE_FUNCTION();
         Application::Get().SetCloseRequest({});
         Application::Get().SetBackgroundTick({});
-        if(m_Authoring)m_Authoring->FlushWorkspace();
+        if(m_Authoring) {
+            m_Authoring->CancelEdits();
+            m_Authoring->FlushWorkspace();
+        }
+        m_SceneHierarchyPanel.BindHistory(nullptr);
         m_Authoring.reset();
         if (m_SceneState != SceneState::Edit) OnSceneStop();
         ClearSceneObservers();
@@ -388,7 +392,7 @@ namespace Hazel {
         if(e.GetEventType()==EventType::WindowLostFocus ||
            (e.GetEventType()==EventType::WindowResize &&
             (!static_cast<WindowResizeEvent&>(e).GetWidth() || !static_cast<WindowResizeEvent&>(e).GetHeight())))
-            m_UIEdit.Finish(true);
+            {if(m_Authoring)m_Authoring->CancelEdits();else m_UIEdit.Finish(true);}
         if(m_Loading && m_Loading->Busy())return;
         if(m_SceneState==SceneState::Play)m_RuntimeSession.SubmitUIEvent(e,ViewportMouse(),m_ViewportFocused && !RuntimeUIWidgetBlocksInput());
 		if(m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_CameraController.OnEvent(e);
@@ -479,6 +483,7 @@ namespace Hazel {
 
 	void EditorLayer::ClearSceneObservers()
 	{
+        if(m_Authoring)m_Authoring->CancelEdits();
         m_UIEdit.Finish(true);
 		m_HoveredEntity = {};
         m_GizmoError.clear();
@@ -681,6 +686,7 @@ namespace Hazel {
 	{
         if(m_Authoring && !m_Authoring->Require(EditorAction::SaveScene))return false;
 		try {
+            if(m_Authoring)m_Authoring->PrepareSave();
             auto text=SceneSerializer(scene).SerializeText();
             const auto target=std::filesystem::absolute(path).lexically_normal();
             if(m_SceneFile.Path()==target) {
@@ -698,7 +704,7 @@ namespace Hazel {
                 if(!m_OpenIsProject && m_OpenPath==m_SceneFile.Path() &&
                    (m_OpenLoad.State==DocumentLoadState::Ready || m_OpenLoad.State==DocumentLoadState::EditableWithProblems))m_OpenLoad=m_SceneLoad;
             }
-            if(m_Authoring)m_Authoring->MarkSceneSaved();
+            if(scene==m_EditorScene && m_Authoring)m_Authoring->MarkSceneSaved();
             m_ActionError.clear();return true;
         }
 		catch (const std::runtime_error& error) { return ActionFailed("Save scene '" + path.generic_u8string() + "': " + error.what()); }
@@ -724,6 +730,7 @@ namespace Hazel {
         if(m_Authoring && !m_Authoring->Require(EditorAction::Play))return false;
         if(m_Authoring && !useSavedAssets){m_Authoring->GuardPlay(false);return m_SceneState==SceneState::Play;}
 		if (m_SceneState == SceneState::Play) return true;
+        if(m_Authoring)m_Authoring->CancelEdits();
 		try {
             if(Project::GetActive())Project::GetActive()->GetAssets()->Refresh();
             if (m_SceneState != SceneState::Edit) OnSceneStop();
@@ -740,6 +747,7 @@ namespace Hazel {
 
 	bool EditorLayer::OnSceneSimulate(bool useSavedAssets)
 	{
+        if(m_Authoring)m_Authoring->CancelEdits();
         if(m_Authoring && !m_Authoring->Require(EditorAction::Simulate))return false;
         if(m_Authoring && !useSavedAssets){m_Authoring->GuardPlay(true);return m_SceneState==SceneState::Simulate;}
         try {

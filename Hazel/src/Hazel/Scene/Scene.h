@@ -12,6 +12,7 @@
 #include <deque>
 #include <map>
 #include <thread>
+#include <typeindex>
 #include "Components.h"
 
 class b2World;
@@ -108,11 +109,17 @@ namespace Hazel {
 		const ResolvedSprite* RenderedSprite(Entity entity) const;
 
 		uint64_t GetIdentity() const { return m_Identity; }
+        // Transient identity guard for authoring commands. A replaced component,
+        // reparent or recreated UUID must not accept commands for its old lifetime.
+        uint64_t GetAuthoringStructureVersion(UUID id) const;
+        uint64_t GetAuthoringLifetime(UUID id) const;
+        uint64_t GetAuthoringComponentVersion(UUID id, std::type_index type) const;
         const std::string& GetName() const { return m_Name; }
         void SetName(std::string name) { m_Name=std::move(name); }
         bool IsStopping() const { return m_Stopping; }
 
 		bool IsRunning() const { return m_IsRunning; }
+        bool IsSimulating() const { return !m_IsRunning && bool(m_PhysicsWorld); }
 		bool IsPaused() const { return m_IsPaused; }
 
 		void SetPaused(bool paused) { m_IsPaused = paused; }
@@ -125,6 +132,12 @@ namespace Hazel {
 			return m_Registry.view<Components...>();
 		}
 	private:
+        void ChangedAuthoringStructure(UUID id);
+        void ChangedAuthoringStructure(UUID id, std::type_index type);
+        std::unordered_map<UUID, uint64_t> m_AuthoringLifetimes;
+        std::unordered_map<UUID, std::unordered_map<std::type_index,uint64_t>> m_AuthoringComponentVersions;
+        std::unordered_map<UUID, uint64_t> m_AuthoringStructureVersions;
+        uint64_t m_NextAuthoringStructureVersion = 0;
         Scope<AudioPlayback> m_Audio;
         Scope<RuntimeUI> m_UI;
         glm::vec2 m_UIFramebufferSize{};

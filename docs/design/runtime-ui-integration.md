@@ -176,12 +176,57 @@ Remaining focused manual acceptance (use a disposable project copy):
 - On Windows hardware, exercise mixed-DPI monitors and detached editor viewports;
   the isolated fractional framebuffer tests do not qualify those OS workflows.
 
-Next bounded P2 slice: shared **scene/prefab document undo/redo** for UI rect
-Inspector commits and complete viewport gestures. Use document/entity identities
-and authored before/after values; one successful gesture is one command, cancel
-is none. Cover save-point dirty state, undo/redo across scene/prefab documents,
-closed/retired targets and bounded eviction (audit default: 100 operations/
-64 MiB). Extend hierarchy/create/delete/duplicate coverage in a following slice.
-Keep legacy layout as the only layout mode in this first undo slice; introduce
-Fixed/Fill/Content with explicit schema migration in a separately bounded P2
-stage, after command ownership and reversibility are established.
+## P2: shared scene/prefab UI edit history
+
+Built on `6d744604bda9046650c04a55615cd5cfd43366ed` on the same feature branch.
+`DocumentHistory` is owned independently by the existing scene and prefab drafts.
+Typed `DocumentCommand` entries accept context from the owner; `UIEditCommand`
+stores authored before/after fields, document/entity IDs and transient lifetime
+stamps. Neither entries nor save points store GPU/font/cache/managed objects or
+registry handles. Generic history supports later scene/prefab command types.
+
+Inspector property helpers expose scoped interaction boundaries, with drafts
+validated before publication. Continuous changes coalesce into one entry;
+text/numeric commits, anchor presets and image/font assignments use the same
+transaction path. Complete viewport gestures reuse D6 inversion, include
+release-frame motion and commit once. Cancel/no-op produces no entry and retains
+the redo branch. Selection, focus/minimize, target retirement, document transitions
+and Play cancel unfinished edits before replacement/runtime copying. Cancellation
+restores matching fields on unchanged-lifetime components; explicit native
+replacement/overrides take precedence. Undo/Redo rejects conflicts atomically.
+
+Save accepts its point only after successful I/O. Dirty checks retain the existing
+exact binary authored-state comparison, including out-of-history mutations; no
+per-frame YAML/document serialization was added. Evicting a command/save cursor
+never discards the accepted content baseline. Limits: 100 retained operations/
+64 MiB conservatively accounted command payload; one in-flight command separately
+capped at 64 MiB, with growth rejected before mutation. Accepted document bytes
+and temporary validation buffers are separate existing/editor storage. New edits
+discard redo; oldest-entry eviction and rejected operations have concise feedback.
+
+**Edit → Undo/Redo** shows command names; Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y respect
+text fields, popups, active gestures and authoring availability. Scene/prefab
+switching keeps independent history; Open/New/Close/recovery replacement resets
+its document. Stop preserves authored history and valid selection. Native field
+conflicts require reverting the external edit or clearing obsolete document
+history. Vectors/colors are atomic fields for conflict checks; first-touch baselines
+preserve native values introduced before a field joins the transaction. Unassigned
+image modes remain editable; changing a fileless generated GPU source is rejected
+before publication because history cannot retain that resource. Structural/world/script editing and sprite-sheet history remain outside
+this slice; those operations still mark the document dirty.
+
+Verification is recorded after the final local/platform checkpoint. The existing
+large-UI submission bottleneck and unmet performance budgets above are unchanged;
+no batching, typography dependency, new control or layout semantics were added.
+
+Next bounded P2 layout slice: introduce versioned **per-axis Fixed/Fill/Content**
+plus min/max and a deterministic measure/arrange pass for free anchored and stack
+layouts. Keep legacy mode as the default for existing serialized scenes/prefabs;
+no implicit conversion or save. Define definite-width text-height measurement,
+explicit dependency/cycle rejection and bounded reflow before adding grid/wrapped
+containers. Add native Inspector controls and an explicit undoable conversion
+preview for one disposable menu/HUD. Acceptance: legacy roundtrip/example geometry
+unchanged; hidden/disabled/zero/padding/nested surfaces; native text/font mutation
+invalidation, longer labels, min/max/overflow/cycle diagnostics, resize inversion
+and conversion Undo/Redo/save/reopen. Grid/wrap and hierarchy-history commands are
+following bounded slices, not prerequisites hidden inside this first layout pass.

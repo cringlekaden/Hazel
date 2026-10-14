@@ -299,6 +299,7 @@ void Scene::ApplyReparent(UUID child, UUID parent, TransformPolicy mode) {
     Transforms transforms;
     CheckReparent(child, parent, mode, graph, transforms);
     RetireUISubtree(child); // Only after validation: rejected reparent keeps the gesture intact.
+    ChangedAuthoringStructure(child);
     m_Relationships = std::move(graph);
     for (const auto &item : transforms)
         m_Registry.get<TransformComponent>(m_EntityMap.at(item.first)) = item.second;

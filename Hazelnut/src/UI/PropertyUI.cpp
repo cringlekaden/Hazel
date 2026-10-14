@@ -3,9 +3,13 @@
 #include <cstdio>
 #include <cstring>
 #include <misc/cpp/imgui_stdlib.h>
+#include <imgui_internal.h>
 
 namespace Hazel::PropertyUI
 {
+namespace { thread_local EditActivity *s_Activity = nullptr; }
+ActivityScope::ActivityScope(EditActivity &activity):m_Previous(s_Activity){s_Activity=&activity;}
+ActivityScope::~ActivityScope(){s_Activity=m_Previous;}
 void Help(const char *text)
 {
     if (text && *text && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled | ImGuiHoveredFlags_DelayNormal))
@@ -33,7 +37,7 @@ void WrapButton(const char *label)
         right)
         ImGui::SameLine();
 }
-Row::Row(const char *key, const char *label, Options options) : m_Options(options)
+Row::Row(const char *key, const char *label, Options options) : m_Options(options), m_Label(label)
 {
     // Hover help adds meaning; visible labels already identify the property.
     if (m_Options.Help && label && std::strcmp(m_Options.Help, label) == 0)
@@ -76,6 +80,12 @@ Row::~Row()
 EditResult Row::Result(bool changed, bool immediate) const
 {
     const bool committed = ImGui::IsItemDeactivatedAfterEdit() || (changed && immediate);
+    if(s_Activity && (changed || ImGui::IsItemDeactivated())) {
+        if(changed){s_Activity->Item=ImGui::GetActiveID()?ImGui::GetActiveID():ImGui::GetItemID();s_Activity->Label=m_Label?m_Label:"";s_Activity->Changed=true;}
+        else if(!s_Activity->Changed)s_Activity->Item=ImGui::GetItemID();
+        s_Activity->Committed |= committed;
+        s_Activity->Deactivated |= ImGui::IsItemDeactivated();
+    }
     Help(m_Options.DisabledReason ? m_Options.DisabledReason : m_Options.Help);
     return {changed, committed, false};
 }
@@ -90,6 +100,7 @@ bool Row::Reset(bool available) const
         return false;
     ImGui::SameLine();
     const bool clicked = ImGui::Button("R##reset", {ImGui::GetFrameHeight(), 0});
+    if(clicked && s_Activity){s_Activity->Item=ImGui::GetItemID();s_Activity->Label=m_Label?m_Label:"";s_Activity->Changed=s_Activity->Committed=true;}
     Help("Reset to the owner-provided default");
     return clicked;
 }
@@ -198,6 +209,7 @@ EditResult Vector(const char *key, const char *label, float *value, int axes, fl
         ImGui::BeginDisabled(!defaults);
         if (ImGui::Button(names[axis], {button, button}))
         {
+            if(s_Activity){s_Activity->Item=ImGui::GetItemID();s_Activity->Label=label;s_Activity->Changed=s_Activity->Committed=true;}
             const auto reset = ResetAxis(value, axes, axis, defaults);
             result.Changed |= reset.Changed;
             result.Committed |= reset.Committed;

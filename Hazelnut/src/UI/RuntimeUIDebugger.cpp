@@ -42,7 +42,7 @@ void EditorLayer::UI_RectEditing()
     bool canEdit =
         m_SceneState == SceneState::Edit && m_Authoring->Availability(EditorAction::EditScene);
     if (m_UIEdit.Active() && (!canEdit || !selected || selected.GetUUID() != m_UIEdit.EntityID() ||
-                              !Application::Get().GetWindow().IsFocused() ||
+                              io.AppFocusLost ||
                               ImGui::IsKeyPressed(ImGuiKey_Escape, false)))
         m_UIEdit.Finish(true);
     const auto &snapshot = m_ActiveScene->GetUISnapshot();
@@ -106,16 +106,24 @@ void EditorLayer::UI_RectEditing()
                              n->PixelBounds.Size * displayScale};
         edges = Edges(mouse, display);
         if (edges || display.Contains(mouse))
-            if (m_UIEdit.Begin(m_ActiveScene, n->ID, edges))
+        {
+            const auto target = n->ID;
+            m_SceneHierarchyPanel.FinishUIEdit();
+            if (m_UIEdit.Begin(m_ActiveScene, target, edges, m_Authoring?&m_Authoring->SceneHistory():nullptr))
             {
                 m_UIGestureStart = mouse;
                 ImGui::SetActiveID(gestureID, ImGui::GetCurrentWindow());
             }
+        }
     }
     if (m_UIEdit.Active() && ImGui::IsMouseDragging(0) && !io.KeyAlt)
         m_UIEdit.Update((mouse - m_UIGestureStart) / displayScale / m_UIEdit.Scale());
     if (m_UIEdit.Active() && ImGui::IsMouseReleased(0))
+    {
+        // Motion and release can arrive together after the last rendered frame.
+        m_UIEdit.Update((mouse - m_UIGestureStart) / displayScale / m_UIEdit.Scale());
         m_UIEdit.Finish(false);
+    }
     if (!m_UIEdit.Active() && ImGui::GetActiveID() == gestureID)
         ImGui::ClearActiveID();
     if (!m_UIEdit.Error().empty())

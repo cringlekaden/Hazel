@@ -48,6 +48,10 @@ class AuthoringPanel
     ActionAvailability Availability(EditorAction action) const;
     bool Require(EditorAction action);
     void MarkSceneSaved();
+    DocumentHistory &SceneHistory() { return m_SceneHistory; }
+    void CancelEdits();
+    void PrepareSave();
+    bool UndoRedo(bool redo);
     void ReportOpen(const std::filesystem::path& path,const DocumentLoadReport& report);
     bool SpriteDirty() const { return m_Sprites.Dirty(); }
     void GuardPlay(bool simulate);
@@ -93,6 +97,10 @@ class AuthoringPanel
     void DocumentGuard();
     std::string ActiveName() const;
     SceneTarget AssignmentTarget() const;
+    DocumentHistory *ActiveHistory();
+    Ref<Scene> ActiveHistoryScene() const;
+    void HistoryMenu();
+    void HistoryFeedback(DocumentHistory &history);
     Entity ResolveTarget(SceneTarget target);
     EditorLayer &m_Editor;
     EditorPreferences m_Preferences, m_Draft;
@@ -116,6 +124,7 @@ class AuthoringPanel
     ConsolePanel m_Console;
     uint64_t m_ProjectGeneration=0;
     EditorDocuments m_Documents;
+    DocumentHistory m_SceneHistory, m_PrefabHistory;
     EditorDocument m_ActiveDocument = EditorDocument::Scene;
     bool m_PrefabFocused = false;
     bool m_ResolvingDocumentAction = false;
@@ -125,7 +134,7 @@ class AuthoringPanel
     bool m_ProjectChoicesLoaded = false;
     std::unordered_map<std::string, bool> m_RecentAvailable;
     bool m_ExitAfterJob = false;
-    std::string m_PreferenceRecovery, m_SavedScene, m_SavedPrefab, m_PrefabReference,
+    std::string m_PreferenceRecovery, m_PrefabReference,
         m_ProjectName, m_ScriptProject, m_SaveNamespace;
     std::string m_Name = "My Game", m_Identifier = "MyGame", m_Destination, m_Startup, m_AssetDirectory,
                 m_Module;

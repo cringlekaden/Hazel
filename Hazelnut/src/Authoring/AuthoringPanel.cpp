@@ -111,7 +111,12 @@ bool AuthoringPanel::Require(EditorAction action)
     auto availability = Availability(action);
     return availability ? true : m_Editor.ActionFailed(availability.Reason);
 }
-void AuthoringPanel::MarkSceneSaved() { m_SavedScene = SceneText(); }
+void AuthoringPanel::MarkSceneSaved() {
+    if(!m_Editor.m_EditorScene)return;
+    m_SceneHistory.Bind(m_Editor.m_EditorScene->GetIdentity());
+    m_SceneHistory.MarkSaved(SceneText());
+    m_Editor.m_SceneHierarchyPanel.BindHistory(&m_SceneHistory);
+}
 std::string AuthoringPanel::SceneText() const
 {
     return SceneSerializer(m_Editor.m_EditorScene).CaptureAuthoredState();
@@ -255,6 +260,7 @@ void AuthoringPanel::BindProject()
     m_PrefabFile={};
     m_PrefabInspector.SetContext(nullptr);
     m_PrefabScene.reset();
+    m_PrefabHistory.Bind(0);
     m_ShowPrefab = false;
     m_CreatePrefab = false;
     m_PrefabSourceID = m_PrefabSourceScene = 0;
@@ -475,8 +481,10 @@ void AuthoringPanel::Shortcuts()
     const bool viewportFocused = FocusedPanel("Viewport");
     const bool sceneFocused = FocusedPanel("Scene Hierarchy") || FocusedPanel("Properties");
     const bool prefabFocused=FocusedPanel("Prefab Inspector") && bool(m_PrefabScene);
-    if (io.KeyCtrl)
+    if (io.KeyCtrl || io.KeySuper)
     {
+        if(ImGui::IsKeyPressed(ImGuiKey_Z,false)){if(viewportFocused||sceneFocused)m_ActiveDocument=EditorDocument::Scene;else if(prefabFocused)m_ActiveDocument=EditorDocument::Prefab;UndoRedo(io.KeyShift);return;}
+        if(ImGui::IsKeyPressed(ImGuiKey_Y,false)){if(viewportFocused||sceneFocused)m_ActiveDocument=EditorDocument::Scene;else if(prefabFocused)m_ActiveDocument=EditorDocument::Prefab;UndoRedo(true);return;}
         if (ImGui::IsKeyPressed(ImGuiKey_O, false))
             Guard(OperationIntent::OpenProject, [this] { return m_Editor.OpenProject(); });
         if (ImGui::IsKeyPressed(ImGuiKey_N, false))
@@ -690,6 +698,7 @@ void AuthoringPanel::Menus()
     }
     if (ImGui::BeginMenu("Edit"))
     {
+        HistoryMenu();
         if (ImGui::MenuItem("Editor Preferences..."))
         {
             m_Draft = m_Preferences;
@@ -1263,7 +1272,10 @@ void AuthoringPanel::SelectAsset(const std::filesystem::path &path)
                   m_PrefabFile=std::move(file);
                   m_PrefabReference = relative.generic_u8string();
                   m_InitialTransform = transform;
-                  m_SavedPrefab = std::move(saved);
+                  m_PrefabInspector.FinishUIEdit();
+                  m_PrefabHistory.Bind(scene->GetIdentity());
+                  m_PrefabHistory.MarkSaved(std::move(saved));
+                  m_PrefabInspector.BindHistory(&m_PrefabHistory);
                   m_PrefabInspector.SetContext(scene);
                   m_PrefabInspector.PrefabDocument=true;
                   m_PrefabFit=true;
@@ -1380,9 +1392,11 @@ void AuthoringPanel::Prefabs()
     ImGui::SetNextWindowSize({570, 590}, ImGuiCond_FirstUseEver);
     ImGui::Begin("Prefab Inspector");
     m_PrefabFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
-    if (m_PrefabFocused)
+    if (m_PrefabFocused) {
+        if(m_ActiveDocument!=EditorDocument::Prefab){m_Editor.m_UIEdit.Finish(true);m_Editor.m_SceneHierarchyPanel.FinishUIEdit();}
         m_ActiveDocument = EditorDocument::Prefab;
-    bool dirty = SceneSerializer(m_PrefabScene).CaptureAuthoredState() != m_SavedPrefab;
+    }
+    bool dirty = m_PrefabHistory.Dirty(SceneSerializer(m_PrefabScene).CaptureAuthoredState());
     ImGui::TextWrapped("%s%s", m_PrefabReference.c_str(), dirty ? " * Unsaved" : "");
     if(m_PrefabFile.NeedsBackup())ImGui::TextWrapped("First Save preserves the opened original before writing supported content/defaults. Unresolved references remain authored values.");
     ImGui::TextWrapped("Detached instances. Saving affects future instances "
@@ -1445,8 +1459,8 @@ void AuthoringPanel::Render()
     Export();
     Prefabs();
     m_Sprites.Render(bool(Availability(EditorAction::EditAsset)));
-    if (m_Sprites.Focused())
-        m_ActiveDocument = EditorDocument::Sheet;
+    if (m_Sprites.Focused()) {if(m_ActiveDocument!=EditorDocument::Sheet)CancelEdits();m_ActiveDocument=EditorDocument::Sheet;}
+    HistoryFeedback(m_SceneHistory);HistoryFeedback(m_PrefabHistory);
     DocumentGuard();
     m_Console.ExitRequested = m_ExitAfterJob;
     m_Console.CapturePreferenceAvailable = m_PreferenceRecovery.empty();

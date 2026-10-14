@@ -55,6 +55,7 @@ static std::string Read(const std::filesystem::path& file) {
 }
 #include "EditorStateChecks.h"
 #include "EditorDocumentChecks.h"
+#include "EditorHistoryChecks.h"
 #include "EditorConsoleChecks.h"
 namespace Hazel {
 class EditorWorkflowSmoke : public Layer {
@@ -67,6 +68,8 @@ public:
         case 3: {
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project/assembly startup failed");
             EditorDocumentChecks();
+            EditorHistoryChecks();
+            HistoryWorkflowChecks();
             CaptionChecks();
             WorkspaceChecks();
             NativeCreationChecks();
@@ -222,10 +225,10 @@ public:
             Check(e.m_ActiveScene == e.m_EditorScene && !e.m_ActiveScene->IsRunning(), "Editor stop did not restore editor scene");
             e.m_HoveredEntity=e.m_EditorScene->GetEntityByUUID(901);
             {
-                const auto saved=e.m_Authoring->m_SavedScene;
+                const auto saved=e.m_Authoring->m_SceneHistory.SavedAuthored();
                 e.m_EditorScene->GetEntityByUUID(901).GetComponent<TagComponent>().Tag="Unsaved simulation edit";
                 Check(e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::Simulate),"Runtime toolbar Simulate failed");
-                Check(e.m_Authoring->m_SavedScene==saved && saved!=SceneSerializer(e.m_EditorScene).CaptureAuthoredState(),"Simulation incorrectly marked unsaved authoring as saved");
+                Check(e.m_Authoring->m_SceneHistory.SavedAuthored()==saved && saved!=SceneSerializer(e.m_EditorScene).CaptureAuthoredState(),"Simulation incorrectly marked unsaved authoring as saved");
             }
             Check(!e.m_HoveredEntity,"Simulate retained editor hover"); break;
         case 9:
@@ -541,10 +544,10 @@ private:
         Check(a.SaveActive()&&Read(e.m_EditorScenePath)==savedScene&&Prefab::GetEntity(Prefab::Load(Project::GetAssetDirectory(),std::filesystem::u8path(a.m_PrefabReference))).GetName()=="Saved active prefab","Active prefab Save wrote scene or omitted prefab");
         a.ClosePrefab();
         auto entity=scene->GetEntityByUUID(901);entity.GetComponent<TagComponent>().Tag="Saved active scene";a.m_ActiveDocument=EditorDocument::Scene;
-        Check(a.SaveActive()&&a.SceneText()==a.m_SavedScene,"Active scene Save failed");
-        const auto saved=a.m_SavedScene;
+        Check(a.SaveActive()&&a.SceneText()==a.m_SceneHistory.SavedAuthored(),"Active scene Save failed");
+        const auto saved=a.m_SceneHistory.SavedAuthored();
         auto& box=entity.GetComponent<BoxCollider2DComponent>();const auto size=box.Size;box.Size.x=0;
-        Check(!e.OnSceneSimulate(true)&&e.m_ActiveScene==scene&&e.m_SceneState==EditorLayer::SceneState::Edit&&a.m_SavedScene==saved,"Invalid Simulate started physics or lost editor draft");box.Size=size;
+        Check(!e.OnSceneSimulate(true)&&e.m_ActiveScene==scene&&e.m_SceneState==EditorLayer::SceneState::Edit&&a.m_SceneHistory.SavedAuthored()==saved,"Invalid Simulate started physics or lost editor draft");box.Size=size;
         RecoveryRetryChecks();
         RuntimeGuardChecks();
         std::cout<<"PASS: production Save-and-Assign failure/success, stale target rejection, failed Open draft preservation, busy callback/save guards, active sheet/prefab/scene Save and Simulate preflight\n";
@@ -844,9 +847,10 @@ private:
 #endif
         std::cout<<"PASS: prefab identity/independence/self/external references/malformed assets, script creation, preferences recovery/scopes, absolute Python discovery\n";
     }
+    #include "EditorHistoryWorkflowChecks.h"
     void HierarchyAuthoringChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=e.m_SceneHierarchyPanel;
-        const auto scene=e.m_EditorScene;const auto before=a.SceneText();const auto saved=a.m_SavedScene;
+        const auto scene=e.m_EditorScene;const auto before=a.SceneText();const auto saved=a.m_SceneHistory.SavedAuthored();
         const auto oldSelection=panel.GetSelectedEntity();const uint64_t oldID=oldSelection?uint64_t(Entity(oldSelection).GetUUID()):0;
         // Exercise the actual native presets and shared preview, without YAML authoring.
         auto* viewport=ImGui::FindWindowByName("Viewport");Check(viewport,"UI input check lacks actual viewport");
@@ -929,7 +933,7 @@ private:
         panel.SetSelectedEntity(child);
         const auto dropBefore=a.SceneText();
         Check(panel.DropEntity(scene->GetIdentity(),child.GetUUID(),0) && panel.GetSelectedEntity()==child && scene->GetWorldTransform(child)==world,"Production Scene Root drop lost world pose/selection");
-        Check(a.SceneText()!=dropBefore && a.m_SavedScene==saved,"Successful root drop did not change the draft independently of saved state");
+        Check(a.SceneText()!=dropBefore && a.m_SceneHistory.SavedAuthored()==saved,"Successful root drop did not change the draft independently of saved state");
         Check(panel.DropEntity(scene->GetIdentity(),child.GetUUID(),root.GetUUID()) && a.SceneText()==dropBefore,"Production row drop changed world pose or order");
         Check(!panel.DropEntity(scene->GetIdentity(),root.GetUUID(),leaf.GetUUID()) && a.SceneText()==dropBefore,"Production cycle drop mutated draft");
         auto physics=scene->CreateEntity("Drop physics");physics.AddComponent<Rigidbody2DComponent>();
@@ -971,7 +975,7 @@ private:
         Check(a.SceneText()==closeDraft && panel.GetSelectedEntity()==closeSelection,"Cancelled caption close changed draft or selection");
         Check(panel.ConfirmDelete(scene->GetIdentity(),duplicate.GetUUID(),3,DestroyPolicy::Subtree,TransformPolicy::KeepWorld),"Confirmed subtree deletion failed");
         Check(panel.ConfirmDelete(scene->GetIdentity(),root.GetUUID(),3,DestroyPolicy::Subtree,TransformPolicy::KeepWorld),"Original subtree cleanup failed");
-        Check(a.SceneText()==before && a.m_SavedScene==saved,"Hierarchy cleanup altered unrelated content/saved state");
+        Check(a.SceneText()==before && a.m_SceneHistory.SavedAuthored()==saved,"Hierarchy cleanup altered unrelated content/saved state");
         panel.SetSelectedEntity(scene->GetEntityByUUID(oldID));e.m_ActionError.clear();
         std::cout<<"PASS: actual hierarchy controller create/reparent/identity/cycle/selection, subtree duplicate/count-confirmed delete, connected prefab edits, nested Play/Stop isolation/selection and pending-document mutation guards\n";
     }
@@ -1016,12 +1020,12 @@ private:
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& window=Application::Get().GetWindow();
         const auto project=Project::GetActive();const auto previous=project->GetRendererRequests();
         const auto scene=e.m_EditorScene;const auto path=e.m_EditorScenePath;
-        const auto text=a.SceneText();const auto savedSnapshot=a.m_SavedScene;
+        const auto text=a.SceneText();const auto savedSnapshot=a.m_SceneHistory.SavedAuthored();
         const auto name=project->GetConfig().Name;const auto form=a.m_ProjectName;
         a.m_ProjectName="Unaccepted general settings draft";
         RuntimeRendererRequests request=previous;request.TextureSlots=2;request.VSync=false;
         Check(a.SaveRenderingRequests(request) && project->GetConfig().Name==name && a.m_ProjectName=="Unaccepted general settings draft" &&
-              e.m_EditorScene==scene && e.m_EditorScenePath==path && a.SceneText()==text && a.m_SavedScene==savedSnapshot,
+              e.m_EditorScene==scene && e.m_EditorScenePath==path && a.SceneText()==text && a.m_SceneHistory.SavedAuthored()==savedSnapshot,
               "Renderer-only save replaced content or unrelated configuration/form draft");
         Check(!a.Availability(EditorAction::Play) && !a.Availability(EditorAction::Simulate) && !e.OnScenePlay(true) && !e.OnSceneSimulate(true) &&
               e.m_EditorScene==scene && a.SceneText()==text && e.m_SceneState==EditorLayer::SceneState::Edit,
@@ -1113,6 +1117,11 @@ private:
         const auto project=e.m_ProjectPath;
         auto previous=e.m_EditorScene;
         auto entity=previous->CreateEntity("Unsaved recovery sentinel");
+        entity.AddComponent<UIRectComponent>();
+        auto values=UIEditValues::Capture(entity),changed=values;changed.Rect->Offset.x=7;
+        UIInspectorEditing edit;PropertyUI::EditActivity immediate;immediate.Changed=immediate.Committed=true;
+        Check(edit.Edit(*previous,&a.m_SceneHistory,entity.GetUUID(),"Recovery sentinel",values,changed,immediate,0),"Recovery history setup failed");
+        const auto historyCount=a.m_SceneHistory.Operations();
         e.m_SceneHierarchyPanel.SetSelectedEntity(entity);
         const auto draft=a.SceneText();const auto selection=entity.GetUUID();
         const auto future=m_Directory/"future-scene.hazel";
@@ -1124,6 +1133,7 @@ private:
         Check(!a.m_Documents.Resolve(GuardChoice::Discard,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Unknown scene replaced the session");
         a.m_ResolvingDocumentAction=false;
         Check(e.m_EditorScene==previous && a.SceneText()==draft && Read(future)==unknown && e.m_SceneHierarchyPanel.GetSelectedEntity().GetUUID()==selection,"Rejected schema lost draft/source/selection");
+        Check(a.m_SceneHistory.Identity()==previous->GetIdentity()&&a.m_SceneHistory.Operations()==historyCount,"Failed recovery replacement lost history");
         a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),{});
         const auto missing=m_Directory/"recoverable-scene.hazel";
         const std::string source=u8"Scene: Recovery é\nEntities:\n  - Entity: 42\n    TagComponent: {Tag: Unresolved}\n    SpriteRendererComponent:\n      Color: [1, 1, 1, 1]\n      TexturePath: Textures/no file é.png\n      TilingFactor: 1\n";
@@ -1137,7 +1147,8 @@ private:
         Check(a.m_Documents.Resolve(GuardChoice::Discard,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Normal guarded Open rejected missing texture");
         a.m_ResolvingDocumentAction=false;
         auto recovery=e.m_EditorScene;auto unresolved=recovery->GetEntityByUUID(42);
-        Check(e.m_SceneLoad.State==DocumentLoadState::EditableWithProblems && e.m_SceneLoad.Migration && a.SceneText()==a.m_SavedScene,"Recovery state was not explicit or missing asset marked dirty");
+        Check(a.m_SceneHistory.Identity()==recovery->GetIdentity()&&a.m_SceneHistory.Identity()!=previous->GetIdentity()&&!a.m_SceneHistory.Operations()&&!a.m_SceneHistory.Active(),"Recovery replacement retained another document's history");
+        Check(e.m_SceneLoad.State==DocumentLoadState::EditableWithProblems && e.m_SceneLoad.Migration && a.SceneText()==a.m_SceneHistory.SavedAuthored(),"Recovery state was not explicit or missing asset marked dirty");
         unresolved.GetComponent<TagComponent>().Tag="Edited unresolved";
         Check(e.SaveScene(),"Recovery scene save failed");
         Check(!e.m_SceneLoad.Migration && e.m_SceneLoad.State==DocumentLoadState::EditableWithProblems,"Saving migration hid unresolved resources or retained obsolete encoding status");

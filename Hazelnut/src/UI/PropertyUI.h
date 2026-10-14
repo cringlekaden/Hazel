@@ -1,9 +1,26 @@
 #pragma once
 #include <imgui.h>
+#include <cstdint>
 #include <string>
 
 namespace Hazel::PropertyUI
 {
+// Optional scoped observation used by document owners, not a history system.
+// Values still belong to the caller; helpers report interaction boundaries only.
+struct EditActivity
+{
+    uint32_t Item = 0;
+    std::string Label;
+    bool Changed = false, Committed = false, Deactivated = false;
+};
+class ActivityScope
+{
+  public:
+    explicit ActivityScope(EditActivity &activity);
+    ~ActivityScope();
+  private:
+    EditActivity *m_Previous;
+};
 // Presentation only. Owners validate/commit values, supply defaults and perform I/O.
 struct EditResult
 {
@@ -33,6 +50,7 @@ class Row
   private:
     Options m_Options;
     bool m_Table = false;
+    const char *m_Label = nullptr;
 };
 // Delayed hover help: behavior, shortcuts, units or disabled reasons; not label repetition.
 void Help(const char *text);

@@ -6,6 +6,7 @@
 #include "Hazel/Scene/Prefab.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include "Hazel/UI/UI.h"
+#include "Hazel/Core/Application.h"
 #include "SpriteWidgets.h"
 #include "UI/PropertyUI.h"
 
@@ -35,6 +36,7 @@ SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene> &context) { SetContext
 
 void SceneHierarchyPanel::SetContext(const Ref<Scene> &context)
 {
+    FinishUIEdit();
     m_SelectionContext = {};
     m_HierarchyError.clear();m_Matches.clear();m_Reveal.clear();m_DeleteWanted=false;m_DeleteScene=m_DeleteEntity=0;m_DragHover=0;m_DragHoverSince=0;
     m_Pickers.clear();m_UIStatePickers={};m_UIFontInitialized=false;
@@ -97,6 +99,7 @@ void SceneHierarchyPanel::DrawAssetProperties(Entity entity)
 {
     if (entity != m_SelectionContext)
     {
+        FinishUIEdit();
         m_Pickers.clear();m_UIStatePickers={};m_UIFontInitialized=false;
         m_SelectionContext = entity;
     }
@@ -112,7 +115,7 @@ void SceneHierarchyPanel::OnImGuiRender()
     DrawHierarchy();
     ImGui::End();
     }
-    if(!PropertiesVisible)return;
+    if(!PropertiesVisible){FinishUIEdit();return;}
     ImGui::Begin("Properties",&PropertiesVisible);
     m_Focused |= ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
     if (auto entity = GetSelectedEntity())
@@ -125,14 +128,17 @@ void SceneHierarchyPanel::OnImGuiRender()
         PropertyUI::Help(availability.Reason);
         DrawComponents(entity);
     }
-    else
+    else {
+        FinishUIEdit();
         ImGui::TextWrapped("Select a scene entity here or in the viewport. Asset editing retains that "
                            "assignment target.");
+    }
     ImGui::End();
 }
 
 bool SceneHierarchyPanel::SetSelectedEntity(Entity entity)
 {
+    if(m_SelectionContext != entity)FinishUIEdit();
     if (!entity.BelongsTo(m_Context.get()))
     {
         m_SelectionContext = {};
@@ -169,7 +175,7 @@ static bool SamePhysics(const Rigidbody2DComponent& a,const Rigidbody2DComponent
 static bool SamePhysics(const BoxCollider2DComponent& a,const BoxCollider2DComponent& b){return a.Offset==b.Offset && a.Size==b.Size && a.Density==b.Density && a.Friction==b.Friction && a.Restitution==b.Restitution && a.RestitutionThreshold==b.RestitutionThreshold;}
 static bool SamePhysics(const CircleCollider2DComponent& a,const CircleCollider2DComponent& b){return a.Offset==b.Offset && a.Radius==b.Radius && a.Density==b.Density && a.Friction==b.Friction && a.Restitution==b.Restitution && a.RestitutionThreshold==b.RestitutionThreshold;}
 template <typename T, typename UIFunction>
-static void DrawComponent(const std::string &name, Entity entity, std::map<std::string,bool>& sections,std::set<std::string>& restore,UIFunction uiFunction, const std::function<void(const std::string&)>& report = {})
+static void DrawComponent(const std::string &name, Entity entity, std::map<std::string,bool>& sections,std::set<std::string>& restore,UIFunction uiFunction, const std::function<void(const std::string&)>& report = {}, const std::function<void()> &beforeRemove = {})
 {
     const ImGuiTreeNodeFlags treeNodeFlags =
         ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth |
@@ -205,8 +211,7 @@ static void DrawComponent(const std::string &name, Entity entity, std::map<std::
 
         if (open)
         {
-            if constexpr(std::is_same_v<T,UIRectComponent>) {auto proposed=component;try{uiFunction(proposed);GameUI::Validate(proposed);if(!std::isfinite(proposed.Flex)||proposed.Flex<0)throw std::runtime_error("Flow flex must be finite and nonnegative");component=proposed;}catch(const std::exception& e){if(report)report(e.what());}}
-            else if constexpr(std::is_same_v<T,Rigidbody2DComponent> || std::is_same_v<T,BoxCollider2DComponent> || std::is_same_v<T,CircleCollider2DComponent>) {
+            if constexpr(std::is_same_v<T,Rigidbody2DComponent> || std::is_same_v<T,BoxCollider2DComponent> || std::is_same_v<T,CircleCollider2DComponent>) {
                 auto proposed=component;uiFunction(proposed);
                 if(!SamePhysics(component,proposed))try{entity.AddOrReplaceComponent<T>(proposed);}catch(const std::exception& error){if(report)report(error.what());}
             } else uiFunction(component);
@@ -214,14 +219,44 @@ static void DrawComponent(const std::string &name, Entity entity, std::map<std::
         }
 
         if (removeComponent)
+        {
+            if(beforeRemove)beforeRemove();
             entity.RemoveComponent<T>();
+        }
         ImGui::PopID();
     }
 }
 
+void SceneHierarchyPanel::FinishUIEdit(bool cancel)
+{
+    if(m_Context)m_UIInspectorEdit.Finish(*m_Context,m_History,cancel);
+}
+template<class T,class F>
+void SceneHierarchyPanel::DrawUIComponent(const std::string &name,Entity entity,
+    std::map<std::string,bool> &sections,std::set<std::string> &restore,F ui,
+    std::function<void(const std::string&)> report)
+{
+    if(!entity.HasComponent<UIRectComponent>()&&!entity.HasComponent<UICanvasComponent>()){
+        DrawComponent<T>(name,entity,sections,restore,ui,report);return;
+    }
+    DrawComponent<T>(name,entity,sections,restore,[&](auto &component){
+        try {
+            auto before=UIEditValues::Capture(entity),proposed=before;
+            auto draft=component;
+            PropertyUI::EditActivity activity;
+            {PropertyUI::ActivityScope observation(activity);ui(draft);}
+            proposed.Set(draft);
+            const bool changed=!before.Same(proposed);
+            if(!m_UIInspectorEdit.Edit(*m_Context,m_History,entity.GetUUID(),name,before,
+                std::move(proposed),activity,ImGui::GetActiveID()))m_HierarchyError=m_UIInspectorEdit.Error();
+            else if(changed)m_HierarchyError.clear();
+        }catch(const std::exception &error){m_HierarchyError=error.what();if(report)report(error.what());}
+    },report,[this]{FinishUIEdit();});
+}
 void SceneHierarchyPanel::DrawComponents(Entity entity)
 {
     if (!entity || !m_Context || !entity.BelongsTo(m_Context.get()) || !m_Context->IsEntityValid(entity.GetUUID()))return;
+    m_UIInspectorEdit.Poll(*m_Context,m_History,entity.GetUUID(),CanEdit(),!ImGui::GetIO().AppFocusLost,ImGui::IsKeyPressed(ImGuiKey_Escape,false),ImGui::GetActiveID());
     if(m_SectionEntity!=uint64_t(entity.GetUUID())){m_Sections.clear();m_RestoreSections.clear();m_SectionEntity=entity.GetUUID();}
     ImGui::PushID(std::to_string(m_Context->GetIdentity()).c_str());
     ImGui::PushID(std::to_string(uint64_t(entity.GetUUID())).c_str());
@@ -271,14 +306,14 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             if(changed && CanEdit(true))try{m_Context->SetLocalTransform(entity,proposed);m_HierarchyError.clear();}catch(const std::exception& e){HierarchyFailed(e.what());}
         });
 
-    DrawComponent<UICanvasComponent>("UI Canvas",entity,m_Sections,m_RestoreSections,[](auto& c){
+    DrawUIComponent<UICanvasComponent>("UI Canvas",entity,m_Sections,m_RestoreSections,[](auto& c){
         PropertyUI::Vector("reference","Reference pixels",glm::value_ptr(c.ReferenceSize),2,1,nullptr,"%.0f",{},1,8192);
         PropertyUI::Vector("insets","Safe L/T/R/B (px)",glm::value_ptr(c.SafeInsets),4,1,nullptr,"%.0f",{},0,4096);
         PropertyUI::DragInt("order","Sort order",c.SortOrder);
         PropertyUI::Checkbox("visible","Visible",c.Visible);PropertyUI::Checkbox("enabled","Enabled",c.Enabled);PropertyUI::Checkbox("modal","Block gameplay",c.Modal);
         PropertyUI::Help("Uniform reference scale; extra aspect space extends the logical canvas. Higher sort order draws and receives input last. A modal canvas blocks gameplay and controls in other canvases.");
     });
-    DrawComponent<UIRectComponent>("UI Rect",entity,m_Sections,m_RestoreSections,[this,entity](auto& c)mutable{
+    DrawUIComponent<UIRectComponent>("UI Rect",entity,m_Sections,m_RestoreSections,[this,entity](auto& c)mutable{
         auto parent=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);
         bool flowOwned=parent&&parent.HasComponent<UIRectComponent>()&&parent.HasComponent<UILayoutComponent>();
         ImGui::BeginDisabled(flowOwned);
@@ -305,14 +340,14 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         if(flowOwned&&(c.SizeDelta.x<0||c.SizeDelta.y<0))throw std::invalid_argument("Flow preferred dimensions must be nonnegative");
         PropertyUI::Help("Logical pixels, top-left origin. Drag a selected element in the viewport to move it; drag an edge/corner handle to resize. Escape cancels the gesture. Flow groups own child positions. Anchor min must not exceed max.");
     },[this](const std::string& error){m_HierarchyError=error;});
-    DrawComponent<UILayoutComponent>("UI Flow",entity,m_Sections,m_RestoreSections,[](auto& c){
+    DrawUIComponent<UILayoutComponent>("UI Flow",entity,m_Sections,m_RestoreSections,[](auto& c){
         int axis=int(c.Direction),main=int(c.Main),cross=int(c.Cross);
         if(PropertyUI::Combo("axis","Direction",axis,"Horizontal\0Vertical\0"))c.Direction=GameUI::Axis(axis);
         if(PropertyUI::Combo("main","Main alignment",main,"Start\0Center\0End\0"))c.Main=GameUI::Align(main);
         if(PropertyUI::Combo("cross","Cross alignment",cross,"Start\0Center\0End\0Stretch\0"))c.Cross=GameUI::Align(cross);
         PropertyUI::DragFloat("gap","Gap (px)",c.Gap,1,0,4096);
     });
-    DrawComponent<UITextStyleComponent>("UI Text Style",entity,m_Sections,m_RestoreSections,[this](auto& c){
+    DrawUIComponent<UITextStyleComponent>("UI Text Style",entity,m_Sections,m_RestoreSections,[this](auto& c){
         if(!m_UIFontInitialized||m_UIFontBound!=c.FontPath){m_UIFontDraft=c.FontPath.generic_u8string();m_UIFontBound=c.FontPath;m_UIFontInitialized=true;}
         auto assign=[&](std::filesystem::path path){try{if(!path.empty()){if(path.extension()!=".ttf"&&path.extension()!=".otf")throw std::runtime_error("Select a project TTF/OTF");auto root=m_Context->GetAssets();if(!root)throw std::runtime_error("Open a project before assigning a font");Font::ValidateFile(Project::ResolveOwnedAsset(root->Root(),path));}c.FontPath=path;m_UIFontBound=path;m_UIFontDraft=path.generic_u8string();m_HierarchyError.clear();}catch(const std::exception& error){m_HierarchyError=error.what();}};
         auto edit=PropertyUI::Text("font","Font asset",m_UIFontDraft);
@@ -325,12 +360,12 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         if(PropertyUI::Combo("vertical","Vertical",vertical,"Top\0Center\0Bottom\0"))c.Vertical=GameUI::Align(vertical);
         PropertyUI::Checkbox("wrap","Wrap",c.Wrap);
     });
-    DrawComponent<UINineSliceComponent>("UI Nine Slice",entity,m_Sections,m_RestoreSections,[](auto& c){
+    DrawUIComponent<UINineSliceComponent>("UI Nine Slice",entity,m_Sections,m_RestoreSections,[](auto& c){
         PropertyUI::Vector("border","Source L/T/R/B (px)",glm::value_ptr(c.Borders),4,1,nullptr,"%.0f",{},0,4096);
         PropertyUI::DragFloat("border-scale","Border scale",c.BorderScale,.1f,.01f,64);
         PropertyUI::Help("Borders must fit the source sprite region. Pixel borders retain their size; the middle stretches. Small targets clamp borders proportionally.");
     });
-    DrawComponent<UIButtonComponent>("UI Button",entity,m_Sections,m_RestoreSections,[this](auto& c){
+    DrawUIComponent<UIButtonComponent>("UI Button",entity,m_Sections,m_RestoreSections,[this](auto& c){
         PropertyUI::Text("action","Action identity",c.Action);PropertyUI::DragInt("tab","Tab order",c.TabOrder);PropertyUI::Checkbox("interactive","Interactable",c.Interactable);
         const char* states[]={"Normal","Hovered","Pressed","Disabled","Focused"};
         for(int i=0;i<5;i++){ImGui::PushID(i);PropertyUI::Color("tint",states[i],glm::value_ptr(c.Colors[i]));if(ImGui::TreeNode("State image (optional)")){SpriteRendererComponent temp;temp.Source=c.Images[i];temp.Color=c.Colors[i];SpriteSourceEditor(temp,m_UIStatePickers[i],OpenAsset,[this]{return CanEdit(true);});c.Images[i]=temp.Source;c.Colors[i]=temp.Color;ImGui::TreePop();}ImGui::PopID();}
@@ -688,7 +723,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             }
         });
 
-    DrawComponent<SpriteRendererComponent>(
+    DrawUIComponent<SpriteRendererComponent>(
         "Sprite Renderer", entity, m_Sections,m_RestoreSections,
         [this](auto &component)
         {
@@ -803,7 +838,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                                   &defaults.RestitutionThreshold);
         },[this](const std::string& error){HierarchyFailed(error);});
 
-    DrawComponent<TextComponent>(
+    DrawUIComponent<TextComponent>(
         "Text Renderer", entity, m_Sections,m_RestoreSections,
         [](auto &component)
         {
@@ -813,6 +848,8 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             PropertyUI::DragFloat("Line Spacing", "Line Spacing", component.LineSpacing, 0.025f);
         });
 
+    m_UIInspectorEdit.Poll(*m_Context,m_History,entity.GetUUID(),CanEdit(),!ImGui::GetIO().AppFocusLost,ImGui::IsKeyPressed(ImGuiKey_Escape,false),ImGui::GetActiveID());
+    if(!m_UIInspectorEdit.Error().empty())PropertyUI::Validation(m_UIInspectorEdit.Error().c_str());
     ImGui::EndDisabled();
     ImGui::PopID();
     ImGui::PopID();
@@ -826,7 +863,7 @@ template <typename T> void SceneHierarchyPanel::DisplayAddComponentEntry(const s
         if constexpr(std::is_same_v<T,Rigidbody2DComponent> || std::is_same_v<T,BoxCollider2DComponent> || std::is_same_v<T,CircleCollider2DComponent>)allowed=!uint64_t(m_Context->GetRelationship(m_SelectionContext).Parent);
         if (ImGui::MenuItem(entryName.c_str(),nullptr,false,allowed) && CanEdit(true))
         {
-            try{m_SelectionContext.AddComponent<T>();m_HierarchyError.clear();ImGui::CloseCurrentPopup();}
+            try{FinishUIEdit();m_SelectionContext.AddComponent<T>();m_HierarchyError.clear();ImGui::CloseCurrentPopup();}
             catch(const std::exception& e){HierarchyFailed(e.what());}
         }
         if(!allowed)PropertyUI::Help("Unparent first: rigidbody and collider owners must be roots");

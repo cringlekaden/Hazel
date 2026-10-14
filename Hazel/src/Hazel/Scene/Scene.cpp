@@ -135,6 +135,35 @@ namespace Hazel {
 		return CreateEntityWithUUID(UUID(), name);
 	}
 
+    void Scene::ChangedAuthoringStructure(UUID id)
+    {
+        m_AuthoringStructureVersions[id] = ++m_NextAuthoringStructureVersion;
+        m_AuthoringLifetimes.try_emplace(id, m_NextAuthoringStructureVersion);
+    }
+    void Scene::ChangedAuthoringStructure(UUID id, std::type_index type)
+    {
+        ChangedAuthoringStructure(id);
+        m_AuthoringComponentVersions[id][type] = m_NextAuthoringStructureVersion;
+    }
+    uint64_t Scene::GetAuthoringLifetime(UUID id) const
+    {
+        CheckThread();auto it=m_AuthoringLifetimes.find(id);
+        return IsEntityValid(id)&&it!=m_AuthoringLifetimes.end()?it->second:0;
+    }
+    uint64_t Scene::GetAuthoringComponentVersion(UUID id,std::type_index type) const
+    {
+        CheckThread();auto entity=m_AuthoringComponentVersions.find(id);
+        if(!IsEntityValid(id)||entity==m_AuthoringComponentVersions.end())return 0;
+        auto component=entity->second.find(type);
+        return component==entity->second.end()?0:component->second;
+    }
+    uint64_t Scene::GetAuthoringStructureVersion(UUID id) const
+    {
+        CheckThread();
+        auto found = m_AuthoringStructureVersions.find(id);
+        return IsEntityValid(id) && found != m_AuthoringStructureVersions.end() ? found->second : 0;
+    }
+
 	Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
 	{
         CheckThread();
@@ -301,6 +330,9 @@ namespace Hazel {
         DestroyPhysicsBody(entity);
 		RemoveRelationship(id);
         m_EntityMap.erase(entity.GetUUID());
+        m_AuthoringStructureVersions.erase(id);
+        m_AuthoringLifetimes.erase(id);
+        m_AuthoringComponentVersions.erase(id);
 		m_ScriptFields.erase(entity.GetUUID());
 		m_Registry.destroy(entity);m_Destroying.erase(id);
 	}

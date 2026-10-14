@@ -5,6 +5,7 @@
 #include "Hazel/Scene/Entity.h"
 #include "Hazel/Scene/Scene.h"
 #include "SpriteWidgets.h"
+#include "Authoring/UIInspectorEditing.h"
 #include <functional>
 #include <unordered_map>
 #include <map>
@@ -58,6 +59,8 @@ class SceneHierarchyPanel
         return m_Context && e.BelongsTo(m_Context.get()) && e && m_Context->IsEntityValid(e.GetUUID())?e:Entity{};
     }
     bool SetSelectedEntity(Entity entity);
+    void BindHistory(DocumentHistory *history) { if(history!=m_History)FinishUIEdit();m_History = history; }
+    void FinishUIEdit(bool cancel = true);
     static bool AssignSpriteTexture(SpriteRendererComponent &component, const std::filesystem::path &path);
 
   private:
@@ -65,6 +68,9 @@ class SceneHierarchyPanel
 
     void DrawEntityNode(Entity entity);
     void DrawComponents(Entity entity);
+    template<class T,class F> void DrawUIComponent(const std::string &name, Entity entity,
+        std::map<std::string,bool> &sections, std::set<std::string> &restore, F ui,
+        std::function<void(const std::string&)> report = {});
     void DropTarget(uint64_t parent, const std::string& name);
     void ParentMenu(Entity entity);
     std::string ReparentPreview(uint64_t scene,uint64_t child,uint64_t parent,TransformPolicy mode) const;
@@ -81,6 +87,8 @@ class SceneHierarchyPanel
 
   private:
     Ref<Scene> m_Context;
+    DocumentHistory *m_History = nullptr; // document-owned; detached on document retirement
+    UIInspectorEditing m_UIInspectorEdit;
     Entity m_SelectionContext;
     std::string m_Search;
     std::vector<std::string> m_PrefabChoices;

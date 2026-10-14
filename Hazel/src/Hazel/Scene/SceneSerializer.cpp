@@ -741,6 +741,9 @@ namespace Hazel {
         m_Scene->ResetUI();
 		m_Scene->m_Registry = std::move(staged->m_Registry);
 		m_Scene->m_EntityMap = std::move(staged->m_EntityMap);
+        // A same-Scene document replacement must never reuse authoring lifetime
+        // tokens from either the old content or the staging Scene.
+        for(const auto &item:m_Scene->m_EntityMap)m_Scene->ChangedAuthoringStructure(item.first);
         m_Scene->m_Relationships=std::move(staged->m_Relationships);
         m_Scene->RebuildChildren();
 		m_Scene->m_ScriptFields = std::move(stagedScriptFields);

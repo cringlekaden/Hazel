@@ -1,4 +1,5 @@
 #include "UIRectEditing.h"
+#include "UIEditCommand.h"
 #include <cmath>
 namespace Hazel
 {
@@ -12,14 +13,14 @@ bool Same(const UIRectComponent &a, const UIRectComponent &b)
            a.Visible == b.Visible && a.Enabled == b.Enabled && a.ClipChildren == b.ClipChildren;
 }
 } // namespace
-bool UIRectEditSession::Begin(const Ref<Scene> &scene, uint64_t entity, unsigned edges)
+bool UIRectEditSession::Begin(const Ref<Scene> &scene, uint64_t entity, unsigned edges, DocumentHistory *history)
 {
     Finish(true);
     m_Error.clear();
     try
     {
-        if (!scene || scene->IsRunning())
-            throw std::invalid_argument("Stop Play before editing UI");
+        if (!scene || scene->IsRunning() || scene->IsSimulating())
+            throw std::invalid_argument("Stop Play / Simulate before editing UI");
         scene->RefreshUI();
         auto n = scene->GetUISnapshot().Find(entity);
         auto e = scene->GetEntityByUUID(entity);
@@ -39,6 +40,10 @@ bool UIRectEditSession::Begin(const Ref<Scene> &scene, uint64_t entity, unsigned
         m_Scale = n->Scale;
         m_ParentContent = n->ParentContent;
         m_Initial = m_Last = e.GetComponent<UIRectComponent>();
+        if(history && (!history->Begin(*scene,CreateScope<UIEditCommand>(*scene,entity,edges?"Resize UI rect":"Move UI rect",UIEditValues::Capture(e))))) {
+            m_Scene.reset();throw std::runtime_error(history->Diagnostic());
+        }
+        m_History=history;
         return true;
     }
     catch (const std::exception &error)
@@ -56,7 +61,20 @@ bool UIRectEditSession::Update(glm::vec2 delta)
         auto e = m_Scene->GetEntityByUUID(m_Entity);
         if (m_Scene->GetIdentity() != m_Identity || !m_Scene->IsEntityValid(m_Entity) ||
             !e.HasComponent<UIRectComponent>())
-            throw std::invalid_argument("UI gesture target retired");
+        {
+            m_Error = "UI gesture target retired; cancelled";
+            Finish(true);
+            return false;
+        }
+        if (m_History) try {
+            auto command = m_History->Transaction();
+            if (!command) throw std::runtime_error("Viewport document transaction was interrupted");
+            command->Check(*m_Scene);
+        } catch (const std::exception &error) {
+            m_Error = error.what();
+            Finish(true);
+            return false;
+        }
         // Never overwrite another authoring edit during the gesture.
         if (!Same(e.GetComponent<UIRectComponent>(), m_Last))
         {
@@ -77,6 +95,13 @@ bool UIRectEditSession::Update(glm::vec2 delta)
         auto next = m_Initial;
         static_cast<GameUI::RectLayout &>(next) =
             GameUI::EditRect(m_ParentContent, m_Initial, delta, m_Edges);
+        if(m_History) {
+            auto command=dynamic_cast<UIEditCommand*>(m_History->Transaction());
+            if(!command)throw std::runtime_error("Viewport document transaction was interrupted");
+            auto values=UIEditValues::Capture(e);values.Set(next);
+            if(!command->Preview(*m_Scene,std::move(values),m_Error))return false;
+            m_Last=next;m_Error.clear();return true;
+        }
         e.GetComponent<UIRectComponent>() = next;
         try
         {
@@ -102,7 +127,20 @@ bool UIRectEditSession::Update(glm::vec2 delta)
 }
 void UIRectEditSession::Finish(bool cancel)
 {
-    if (m_Scene && cancel && m_Scene->GetIdentity() == m_Identity &&
+    if(m_Scene && !cancel)try {
+        auto e=m_Scene->GetEntityByUUID(m_Entity);
+        if(!m_Scene->IsEntityValid(m_Entity)||!e.HasComponent<UIRectComponent>()||!Same(e.GetComponent<UIRectComponent>(),m_Last))
+            throw std::runtime_error("UI gesture target changed before release; cancelled");
+        m_Scene->RefreshUI();auto n=m_Scene->GetUISnapshot().Find(m_Entity);
+        if(!n||!n->LayoutResolved||n->FlowOwned||n->Parent!=m_Parent||n->Scale!=m_Scale||n->ParentContent.Position!=m_ParentContent.Position||n->ParentContent.Size!=m_ParentContent.Size)
+            throw std::runtime_error("UI parent/surface changed before release; cancelled");
+    }catch(const std::exception &error){m_Error=error.what();cancel=true;}
+    if(m_Scene && m_History) {
+        if(cancel)m_History->Cancel(*m_Scene);
+        else if(!m_History->Commit(*m_Scene))m_History->Cancel(*m_Scene);
+        if(!m_History->Diagnostic().empty())m_Error=m_History->Diagnostic();
+    }
+    if (m_Scene && !m_History && cancel && m_Scene->GetIdentity() == m_Identity &&
         m_Scene->IsEntityValid(m_Entity))
     {
         auto e = m_Scene->GetEntityByUUID(m_Entity);
@@ -115,7 +153,7 @@ void UIRectEditSession::Finish(bool cancel)
                 r.SizeDelta = m_Initial.SizeDelta;
         }
     }
-    m_Scene.reset();
+    m_Scene.reset();m_History=nullptr;
     m_Entity = m_Identity = m_Parent = 0;
 }
 } // namespace Hazel

@@ -1,5 +1,6 @@
 #pragma once
 #include "Hazel/Scene/Entity.h"
+#include "DocumentHistory.h"
 namespace Hazel
 {
 // One reversible viewport gesture. Invalid samples retain the last valid edit;
@@ -7,7 +8,7 @@ namespace Hazel
 class UIRectEditSession
 {
   public:
-    bool Begin(const Ref<Scene> &scene, uint64_t entity, unsigned edges);
+    bool Begin(const Ref<Scene> &scene, uint64_t entity, unsigned edges, DocumentHistory *history = nullptr);
     bool Update(glm::vec2 logicalDelta);
     void Finish(bool cancel);
     bool Active() const
@@ -29,6 +30,7 @@ class UIRectEditSession
 
   private:
     Ref<Scene> m_Scene;
+    DocumentHistory *m_History = nullptr; // borrowed owner, never stored in a command
     uint64_t m_Entity = 0, m_Identity = 0, m_Parent = 0;
     unsigned m_Edges = 0;
     float m_Scale = 1;

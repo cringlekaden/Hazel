@@ -106,6 +106,7 @@ bool SceneHierarchyPanel::ReparentEntity(uint64_t scene, uint64_t child, uint64_
         if (PrefabDocument && (!parent || !uint64_t(m_Context->GetRelationship(entity).Parent)))
             throw std::runtime_error("Prefab keeps its sole root. Move children under an entity in "
                                      "this asset; the root cannot be parented");
+        FinishUIEdit();
         m_Context->Reparent(entity, target, mode);
         m_HierarchyError.clear();
         RevealSelected();
@@ -172,6 +173,7 @@ bool SceneHierarchyPanel::ConfirmDelete(uint64_t scene, uint64_t id, size_t expe
                                policy == DestroyPolicy::KeepChildren))
             throw std::runtime_error(
                 "Prefab must remain a connected subtree; delete a child subtree instead");
+        FinishUIEdit();
         m_Context->DestroyEntity(e, policy, mode);
         if (!GetSelectedEntity()) {
             m_SelectionContext = {};
