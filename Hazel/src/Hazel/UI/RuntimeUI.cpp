@@ -101,6 +101,22 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
         auto relation = m_Scene.GetRelationship(e);
         state.Add(uint64_t(relation.Parent));
         state.Add(relation.Order);
+        // Interrupted chains still publish canvas/inherited-state diagnostics.
+        // Observe their ordinary ancestor links until another tracked UI node.
+        auto ancestor = m_Scene.GetEntityByUUID(relation.Parent);
+        size_t depth = 0;
+        while (ancestor && !ancestor.HasComponent<UIRectComponent>() &&
+               !ancestor.HasComponent<UICanvasComponent>())
+        {
+            if (depth++ >= Scene::MaxDepth)
+                throw std::runtime_error("UI interrupted ancestry exceeds depth 256");
+            state.Add(uint64_t(ancestor.GetUUID()));
+            auto link = m_Scene.GetRelationship(ancestor);
+            state.Add(uint64_t(link.Parent));
+            state.Add(link.Order);
+            ancestor = m_Scene.GetEntityByUUID(link.Parent);
+        }
+        state.Add(uint64_t(0));
         auto &r = e.GetComponent<UIRectComponent>();
         state.Add(r.AnchorMin);
         state.Add(r.AnchorMax);

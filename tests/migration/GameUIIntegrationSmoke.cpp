@@ -67,6 +67,10 @@ static void HardeningSceneChecks()
      Check(!f.World->ConsumeUIAction(0,action)&&f.World->GetUISnapshot().Generation>id,"Raw native hide escaped action validation");}
     {UIFixture f;f.Queue();auto holder=f.World->CreateEntity("Non-UI group");f.World->Reparent(f.Group,holder,TransformPolicy::KeepLocal);
      Check(!f.World->ConsumeUIAction(0,action),"D4: reparent retained child activation");f.World->RefreshUI();Check(!f.World->GetUISnapshot().Find(f.Control.GetUUID())->FocusEligible,"Reparented orphan remained eligible");}
+    {UIFixture f;auto holder=f.World->CreateEntity("Interrupted chain");f.World->Reparent(f.Group,holder,TransformPolicy::KeepLocal);f.World->Reparent(holder,f.Canvas,TransformPolicy::KeepLocal);f.World->RefreshUI();
+     auto generation=f.World->GetUISnapshot().Generation;auto other=f.World->CreateEntity("Hidden canvas");other.AddComponent<UICanvasComponent>().Visible=false;f.World->RefreshUI();generation=f.World->GetUISnapshot().Generation;
+     f.World->Reparent(holder,other,TransformPolicy::KeepLocal);f.World->RefreshUI();auto n=f.World->GetUISnapshot().Find(f.Control.GetUUID());
+     Check(f.World->GetUISnapshot().Generation>generation&&n->Canvas==uint64_t(other.GetUUID())&&!n->Visible&&!n->LayoutResolved,"Interrupted ancestor reparent left stale canvas/inherited state");}
     {UIFixture f;f.Queue();f.Group.AddOrReplaceComponent<UIRectComponent>();Check(!f.World->ConsumeUIAction(0,action),"Replacing layout ancestor retained work");}
     {UIFixture f;f.World->RefreshUI();auto generation=f.World->GetUISnapshot().Generation;auto bounds=f.World->GetUISnapshot().Find(f.Control.GetUUID())->PixelBounds;
      for(int i=0;i<5;++i){f.World->RefreshUI();}Check(f.World->GetUISnapshot().Generation==generation&&f.World->GetUIDiagnostics().Reuses>=5,"Unchanged geometry was rebuilt");
