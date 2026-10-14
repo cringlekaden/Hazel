@@ -43,7 +43,10 @@ bool Nonempty(Rect r)
 void RuntimeUI::CancelInput()
 {
     if (m_InputEnabled || m_Input.Captured() || m_Input.Focused() || !m_Actions.empty())
+    {
+        m_OuterDrops += m_Input.DroppedActions();
         m_Input.Reset();
+    }
     m_Actions.clear();
     m_InputEnabled = false;
     m_PointerOver = m_KeyboardOwns = false;
