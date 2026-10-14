@@ -7,124 +7,151 @@
 #include <deque>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 namespace Hazel::GameUI
 {
-    struct Rect
-    {
-        glm::vec2 Position{}, Size{}; // viewport logical pixels, top-left origin
-        bool Contains(glm::vec2 point) const;
-        Rect Inset(glm::vec4 borders) const; // left, top, right, bottom
-        Rect Intersect(const Rect &other) const;
-    };
-    struct CanvasLayout
-    {
-        glm::vec2 ReferenceSize{1280, 720};
-        glm::vec4 SafeInsets{16};
-    };
-    struct CanvasFit
-    {
-        float Scale = 0;
-        Rect Bounds{}, Content{};
-        glm::vec2 ToLogical(glm::vec2 pixel) const;
-    };
-    CanvasFit FitCanvas(glm::vec2 viewportPixels, const CanvasLayout &config);
-    struct RectLayout
-    {
-        glm::vec2 AnchorMin{}, AnchorMax{}, Offset{}, SizeDelta{240, 48}, Pivot{};
-        glm::vec2 MinimumSize{};
-        glm::vec4 Margin{}, Padding{};
-    };
-    void Validate(const RectLayout &config);
-    Rect ResolveRect(const Rect &parent, const RectLayout &config);
-    enum class Axis
-    {
-        Horizontal,
-        Vertical
-    };
-    enum class Align
-    {
-        Start,
-        Center,
-        End,
-        Stretch
-    };
-    struct FlowLayout
-    {
-        Axis Direction = Axis::Vertical;
-        Align Main = Align::Start, Cross = Align::Stretch;
-        float Gap = 12;
-    };
-    struct FlowItem
-    {
-        glm::vec2 PreferredSize{}, MinimumSize{};
-        glm::vec4 Margin{};
-        float Flex = 0;
-        bool Visible = true;
-    };
-    // Caller retains output capacity. Hidden children consume neither space nor gaps.
-    void ArrangeFlow(const Rect &content, const FlowLayout &config,
-                     const std::vector<FlowItem> &items, std::vector<Rect> &output);
+struct Rect
+{
+    glm::vec2 Position{}, Size{}; // viewport logical pixels, top-left origin
+    bool Contains(glm::vec2 point) const;
+    Rect Inset(glm::vec4 borders) const; // left, top, right, bottom
+    Rect Intersect(const Rect &other) const;
+};
+struct CanvasLayout
+{
+    glm::vec2 ReferenceSize{1280, 720};
+    glm::vec4 SafeInsets{16};
+};
+struct CanvasFit
+{
+    float Scale = 0;
+    Rect Bounds{}, Content{};
+    glm::vec2 ToLogical(glm::vec2 pixel) const;
+};
+CanvasFit FitCanvas(glm::vec2 viewportPixels, const CanvasLayout &config);
+struct RectLayout
+{
+    glm::vec2 AnchorMin{}, AnchorMax{}, Offset{}, SizeDelta{240, 48}, Pivot{};
+    glm::vec2 MinimumSize{};
+    glm::vec4 Margin{}, Padding{};
+};
+void Validate(const RectLayout &config);
+Rect ResolveRect(const Rect &parent, const RectLayout &config);
+// Invert legacy anchors/pivot/margins for a viewport gesture. No new layout
+// semantics: zero edges moves; bits 1/2/4/8 resize left/top/right/bottom.
+RectLayout EditRect(const Rect &parent, const RectLayout &initial, glm::vec2 delta, unsigned edges);
+Rect FramebufferCoverage(const Rect &pixels, glm::vec2 ratio, glm::vec2 framebuffer);
+enum class Axis
+{
+    Horizontal,
+    Vertical
+};
+enum class Align
+{
+    Start,
+    Center,
+    End,
+    Stretch
+};
+struct FlowLayout
+{
+    Axis Direction = Axis::Vertical;
+    Align Main = Align::Start, Cross = Align::Stretch;
+    float Gap = 12;
+};
+struct FlowItem
+{
+    glm::vec2 PreferredSize{}, MinimumSize{};
+    glm::vec4 Margin{};
+    float Flex = 0;
+    bool Visible = true;
+};
+// Caller retains output capacity. Hidden children consume neither space nor gaps.
+void ArrangeFlow(const Rect &content, const FlowLayout &config, const std::vector<FlowItem> &items,
+                 std::vector<Rect> &output);
 
-    struct Button
+enum class HitPolicy
+{
+    PassThrough,
+    Control,
+    Block
+};
+struct Button
+{
+    uint64_t ID = 0;
+    Rect Bounds{}, Clip{};
+    std::string Action;
+    int TabOrder = 0;
+    bool Visible = true, Interactable = true;
+    HitPolicy Hit = HitPolicy::Control;
+};
+struct InputFrame
+{
+    glm::vec2 Mouse{};
+    bool KeyboardEnabled = true, FocusNavigation = false;
+    bool Enabled = false, LeftDown = false, AcceptDown = false, NextDown = false,
+         PreviousDown = false;
+    // Optional non-repeat host edges preserve a quick click between updates.
+    // Coordinates and edges must belong to this scene and viewport.
+    bool PointerPressed = false, PointerReleased = false, AcceptPressed = false, CancelDown = false;
+    glm::vec2 PressPosition{}, ReleasePosition{};
+    bool HasReleasePosition = false;
+};
+struct Action
+{
+    uint64_t Entity = 0;
+    std::string Name;
+};
+enum class ButtonState
+{
+    Normal,
+    Hover,
+    Pressed,
+    Disabled,
+    Focused
+};
+class InputRouter
+{
+  public:
+    static constexpr size_t MaxButtons = 4096, MaxActions = 64;
+    // Scene::GetIdentity, not the session identity: transitions retire queues.
+    void Update(uint64_t scene, const std::vector<Button> &buttons, const InputFrame &frame,
+                uint64_t generation = 0);
+    // A nonzero generation belongs to an immutable published button list.
+    // Reconcile changes eligibility/retirement without sampling/replaying input.
+    void Reconcile(uint64_t scene, const std::vector<Button> &buttons, uint64_t generation = 0);
+    bool Consume(uint64_t scene, Action &action);
+    bool SetFocus(uint64_t scene, uint64_t id, const std::vector<Button> &buttons);
+    ButtonState State(const Button &button) const;
+    uint64_t Captured() const
     {
-        uint64_t ID = 0;
-        Rect Bounds{}, Clip{};
-        std::string Action;
-        int TabOrder = 0;
-        bool Visible = true, Interactable = true;
-    };
-    struct InputFrame
+        return m_Capture;
+    }
+    uint64_t Focused() const
     {
-        glm::vec2 Mouse{};
-        bool KeyboardEnabled = true, FocusNavigation = false;
-        bool Enabled = false, LeftDown = false, AcceptDown = false, NextDown = false,
-             PreviousDown = false;
-        // Optional non-repeat host edges preserve a quick click between updates.
-        // Coordinates and edges must belong to this scene and viewport.
-        bool PointerPressed = false, PointerReleased = false, AcceptPressed = false, CancelDown = false;
-        glm::vec2 PressPosition{}, ReleasePosition{};
-        bool HasReleasePosition=false;
-    };
-    struct Action
+        return m_Focus;
+    }
+    uint64_t Hovered() const
     {
-        uint64_t Entity = 0;
-        std::string Name;
-    };
-    enum class ButtonState
+        return m_Hover;
+    }
+    void Reset();
+    void Retire(uint64_t scene, uint64_t id);
+    uint64_t DroppedActions() const
     {
-        Normal,
-        Hover,
-        Pressed,
-        Disabled,
-        Focused
-    };
-    class InputRouter
-    {
-      public:
-        static constexpr size_t MaxButtons = 4096, MaxActions = 64;
-        // Scene::GetIdentity, not the session identity: transitions retire queues.
-        void Update(uint64_t scene, const std::vector<Button> &buttons, const InputFrame &frame);
-        bool Consume(uint64_t scene, Action &action);
-        bool SetFocus(uint64_t scene, uint64_t id, const std::vector<Button> &buttons);
-        ButtonState State(const Button &button) const;
-        uint64_t Captured() const { return m_Capture; }
-        uint64_t Focused() const
-        {
-            return m_Focus;
-        }
-        uint64_t Hovered() const
-        {
-            return m_Hover;
-        }
-        void Reset();
-        void Retire(uint64_t scene, uint64_t id);
+        return m_Dropped;
+    }
 
-      private:
-        uint64_t m_Scene = 0, m_Focus = 0, m_Hover = 0, m_Capture = 0, m_KeyCapture = 0;
-        bool m_Ready = false, m_Left = false, m_Accept = false, m_Next = false, m_Previous = false;
-        std::vector<size_t> m_Order;
-        std::vector<uint64_t> m_IDs;
-        std::deque<Action> m_Actions;
-    };
+  private:
+    uint64_t m_Scene = 0, m_Focus = 0, m_Hover = 0, m_Capture = 0, m_KeyCapture = 0;
+    bool m_Ready = false, m_Left = false, m_Accept = false, m_Next = false, m_Previous = false;
+    bool m_PointerGesture = false;
+    uint64_t m_Generation = 0, m_Dropped = 0;
+    std::vector<size_t> m_Order;
+    std::vector<uint64_t> m_IDs;
+    std::vector<size_t> m_Ranks;
+    std::unordered_map<uint64_t, size_t> m_Index;
+    std::deque<Action> m_Actions;
+};
 } // namespace Hazel::GameUI

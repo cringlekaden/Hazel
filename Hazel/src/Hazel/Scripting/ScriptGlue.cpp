@@ -1,6 +1,7 @@
 #include "hzpch.h"
 #include "ScriptGlue.h"
 #include <cmath>
+#include "Hazel/Utils/UTF8.h"
 #include "ScriptEngine.h"
 #include "Hazel/Scene/RuntimeSession.h"
 
@@ -273,15 +274,30 @@ namespace Hazel {
 		return ScriptEngine::CreateString(tc.TextString.c_str());
 	}
 
-	static void TextComponent_SetText(UUID entityID, MonoString* textString)
-	{
-        Entity entity=CheckedSpriteEntity<TextComponent>(entityID);
-
-		auto& tc = entity.GetComponent<TextComponent>();
-        auto text=Utils::MonoStringToString(textString);
-        if(entity.HasComponent<UIRectComponent>()&&text.size()>65536)mono_raise_exception(mono_get_exception_argument("text","UI text exceeds 64 KiB"));
-        tc.TextString=std::move(text);
-	}
+    static void TextComponent_SetText(UUID entityID, MonoString* textString)
+    {
+        MonoException* failure=nullptr;
+        try {
+            auto* scene=ScriptEngine::GetSceneContext();
+            if(!scene)throw std::invalid_argument("Text needs a runtime scene");scene->CheckThread();
+            auto entity=scene->GetEntityByUUID(entityID);
+            if(!entity||!scene->IsEntityValid(entityID)||!entity.HasComponent<TextComponent>())throw std::invalid_argument("Text needs a live Text component");
+            if(textString) {
+                auto chars=mono_string_chars(textString);auto length=mono_string_length(textString);
+                for(int i=0;i<length;++i) {
+                    auto c=chars[i];
+                    if(!c)throw std::invalid_argument("Text cannot contain embedded NUL");
+                    if(c>=0xd800&&c<=0xdbff) {
+                        if(++i>=length||chars[i]<0xdc00||chars[i]>0xdfff)throw std::invalid_argument("Text contains an unpaired UTF-16 surrogate");
+                    } else if(c>=0xdc00&&c<=0xdfff)throw std::invalid_argument("Text contains an unpaired UTF-16 surrogate");
+                }
+            }
+            auto text=Utils::MonoStringToString(textString);UTF8::Validate(text);
+            if(entity.HasComponent<UIRectComponent>()&&text.size()>65536)throw std::invalid_argument("UI text exceeds 64 KiB");
+            entity.GetComponent<TextComponent>().TextString=std::move(text);
+        }catch(const std::exception& e){failure=mono_get_exception_argument("text",e.what());}
+        if(failure)mono_raise_exception(failure);
+    }
 
 	static void TextComponent_GetColor(UUID entityID, glm::vec4* color)
 	{

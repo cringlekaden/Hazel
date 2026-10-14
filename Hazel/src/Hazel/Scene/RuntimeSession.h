@@ -35,6 +35,7 @@ namespace Hazel {
         uint64_t GetIdentity() const { return m_Identity; }
         const std::string& GetError() const { return m_Error; }
         void Resize(uint32_t width, uint32_t height);
+        void ResizeFramebuffer(uint32_t width, uint32_t height);
         // Host supplies viewport-local coordinates, top-left origin. Inactive
         // viewports suppress input; the engine has no editor/ImGui dependency.
         void SetInput(glm::vec2 mousePosition, bool enabled);
@@ -54,6 +55,8 @@ namespace Hazel {
         std::thread::id m_Thread;
         uint64_t m_Identity = 0;
         uint32_t m_Width = 0, m_Height = 0;
+        glm::vec2 m_FramebufferSize{};
+        bool m_FramebufferExplicit = false;
         glm::vec2 m_Mouse = {};
         GameUI::InputFrame m_UIEdges;
         uint64_t m_UIEdgeScene=0;

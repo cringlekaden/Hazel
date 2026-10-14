@@ -2,6 +2,7 @@
 #include "Hazel/Scene/Prefab.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/UI/RuntimeUI.h"
+#include "Hazel/Utils/UTF8.h"
 #include "Hazel/Core/Resources.h"
 #include <fstream>
 #include <GLFW/glfw3.h>
@@ -9,6 +10,25 @@
 #include <glad/glad.h>
 #include <iostream>
 #include <random>
+#include <atomic>
+#include <chrono>
+#include <cstdlib>
+#include <new>
+#include <sstream>
+#include <iomanip>
+// Profile scope counts ordinary C++ new calls, excluding GL/OS malloc and setup.
+static std::atomic<bool> s_CountAllocations{false};
+static std::atomic<uint64_t> s_Allocations{0};
+void* operator new(std::size_t bytes)
+{
+    if(auto p=std::malloc(bytes?bytes:1)) {if(s_CountAllocations.load(std::memory_order_relaxed))s_Allocations.fetch_add(1,std::memory_order_relaxed);return p;}
+    throw std::bad_alloc();
+}
+void* operator new[](std::size_t bytes) {return ::operator new(bytes);}
+void operator delete(void* p) noexcept {std::free(p);}
+void operator delete[](void* p) noexcept {std::free(p);}
+void operator delete(void* p,std::size_t) noexcept {std::free(p);}
+void operator delete[](void* p,std::size_t) noexcept {std::free(p);}
 using namespace Hazel;
 using namespace Hazel::GameUI;
 static void Check(bool value, const char *why)
@@ -16,7 +36,112 @@ static void Check(bool value, const char *why)
     if (!value)
         throw std::runtime_error(why);
 }
-int main()
+struct UIFixture
+{
+    Ref<Scene> World=CreateRef<Scene>();Entity Canvas,Group,Control;
+    UIFixture()
+    {
+        World->OnViewportResize(320,240);
+        Canvas=World->CreateEntity("Canvas");auto& c=Canvas.AddComponent<UICanvasComponent>();c.ReferenceSize={320,240};c.SafeInsets=glm::vec4(0);
+        Group=World->CreateEntity("Group");World->Reparent(Group,Canvas,TransformPolicy::KeepLocal);
+        auto& r=Group.AddComponent<UIRectComponent>();r.Offset={10,10};r.SizeDelta={150,80};
+        Control=World->CreateEntity("Button");World->Reparent(Control,Group,TransformPolicy::KeepLocal);
+        Control.AddComponent<UIRectComponent>().SizeDelta={80,40};Control.AddComponent<UIButtonComponent>().Action="activate";
+    }
+    void Queue()
+    {
+        World->RefreshUI();auto n=World->GetUISnapshot().Find(Control.GetUUID());Check(n&&n->FocusEligible,"Fixture control not eligible");
+        InputFrame input;input.Enabled=true;input.Mouse=n->PixelBounds.Position+n->PixelBounds.Size*.5f;
+        World->UpdateUIInput(input);input.PointerPressed=input.PointerReleased=true;input.PressPosition=input.ReleasePosition=input.Mouse;input.HasReleasePosition=true;
+        World->UpdateUIInput(input);
+    }
+};
+static void HardeningSceneChecks()
+{
+    Action action;
+    {UIFixture f;f.Queue();f.World->UpdateUIInput({});Check(!f.World->ConsumeUIAction(0,action),"D1: outer activation survived inactive viewport");
+     InputFrame restored;restored.Enabled=true;f.World->UpdateUIInput(restored);Check(!f.World->ConsumeUIAction(0,action),"D1: restore delivered stale activation");}
+    {UIFixture f;f.Queue();f.Group.RemoveComponent<UIRectComponent>();Check(!f.World->ConsumeUIAction(0,action),"D4: parent rect removal retained child activation");
+     f.World->RefreshUI();auto n=f.World->GetUISnapshot().Find(f.Control.GetUUID());Check(n&&!n->LayoutResolved&&!n->FocusEligible&&f.World->GetUIDiagnostics().Capture==0,"Interrupted chain retained interaction");}
+    {UIFixture f;f.Queue();auto id=f.World->GetUISnapshot().Generation;f.Group.GetComponent<UIRectComponent>().Visible=false;
+     Check(!f.World->ConsumeUIAction(0,action)&&f.World->GetUISnapshot().Generation>id,"Raw native hide escaped action validation");}
+    {UIFixture f;f.Queue();auto holder=f.World->CreateEntity("Non-UI group");f.World->Reparent(f.Group,holder,TransformPolicy::KeepLocal);
+     Check(!f.World->ConsumeUIAction(0,action),"D4: reparent retained child activation");f.World->RefreshUI();Check(!f.World->GetUISnapshot().Find(f.Control.GetUUID())->FocusEligible,"Reparented orphan remained eligible");}
+    {UIFixture f;f.Queue();f.Group.AddOrReplaceComponent<UIRectComponent>();Check(!f.World->ConsumeUIAction(0,action),"Replacing layout ancestor retained work");}
+    {UIFixture f;f.World->RefreshUI();auto generation=f.World->GetUISnapshot().Generation;auto bounds=f.World->GetUISnapshot().Find(f.Control.GetUUID())->PixelBounds;
+     for(int i=0;i<5;++i){f.World->RefreshUI();}Check(f.World->GetUISnapshot().Generation==generation&&f.World->GetUIDiagnostics().Reuses>=5,"Unchanged geometry was rebuilt");
+     f.Control.GetComponent<UIRectComponent>().Offset.x+=12;f.World->RefreshUI();Check(f.World->GetUISnapshot().Generation>generation&&f.World->GetUISnapshot().Find(f.Control.GetUUID())->PixelBounds.Position.x==bounds.Position.x+12,"Raw native offset escaped detection");
+     InputFrame input;input.Enabled=true;f.World->UpdateUIInput(input);auto inputGeneration=f.World->GetUIDiagnostics().InputGeneration;
+     f.Control.GetComponent<UIRectComponent>().Offset.y+=4;f.World->RefreshUI();Check(f.World->GetUISnapshot().Generation>inputGeneration&&f.World->GetUIDiagnostics().InputGeneration==inputGeneration,"Drawing a newer generation replayed input");}
+    {UIFixture f;f.Queue();Check(f.World->ConsumeUIAction(f.Control.GetUUID(),action)&&!f.World->ConsumeUIAction(0,action),"Two consumers duplicated activation");f.Queue();Check(f.World->ConsumeUIAction(0,action)&&!f.World->ConsumeUIAction(f.Control.GetUUID(),action),"Global/entity consumers duplicated activation");}
+    {UIFixture f;auto& r=f.Control.GetComponent<UIRectComponent>();r.Offset={300,300};f.World->RefreshUI();Check(!f.World->GetUISnapshot().Find(f.Control.GetUUID())->FocusEligible,"D2: fully clipped scene button eligible");
+     f.Canvas.GetComponent<UICanvasComponent>().Modal=true;InputFrame input;input.Enabled=true;f.World->UpdateUIInput(input);input.AcceptDown=true;f.World->UpdateUIInput(input);Check(!f.World->ConsumeUIAction(0,action)&&!f.World->GetUIDiagnostics().Focus,"D2: clipped scene button activated");}
+    {UIFixture f;auto& r=f.Control.GetComponent<UIRectComponent>();r.Offset={.1f,.1f};r.SizeDelta={.4f,.4f};f.Group.GetComponent<UIRectComponent>().Offset={0,0};
+     f.World->SetUIFramebufferSize({400,300});f.World->RefreshUI();auto n=f.World->GetUISnapshot().Find(f.Control.GetUUID());Check(!n->FocusEligible&&n->FramebufferClip.Size==glm::vec2(0),"Fractional empty framebuffer coverage remained eligible");
+     r.SizeDelta={2,2};f.World->RefreshUI();n=f.World->GetUISnapshot().Find(f.Control.GetUUID());Check(n->FocusEligible&&n->FramebufferClip.Position==glm::vec2(1)&&n->PixelClip.Position==glm::vec2(.8f),"Framebuffer/pixel clip conversion differs");
+     f.World->SetUIFramebufferSize({0,0});f.World->RefreshUI();Check(f.World->GetUISnapshot().PainterOrder.empty()&&!f.World->GetUISnapshot().Find(f.Control.GetUUID())->FocusEligible,"Zero framebuffer did not suspend UI");}
+    {UIFixture f;f.Canvas.GetComponent<UICanvasComponent>().Modal=true;f.World->RefreshUI();InputFrame input;input.Enabled=true;input.Mouse={25,25};f.World->UpdateUIInput(input);input.LeftDown=true;f.World->UpdateUIInput(input);
+     f.Group.GetComponent<UIRectComponent>().Enabled=false;f.World->RefreshUI();Check(!f.World->GetUIDiagnostics().Capture,"Raw ancestor disable retained capture");
+     input.LeftDown=false;input.AcceptDown=true;input.AcceptPressed=true;f.World->UpdateUIInput(input);Check(!f.World->ConsumeUIAction(0,action),"Retired pointer gesture became Accept");}
+    {UIFixture f;auto original=f.World->GetUISnapshot().Generation;f.World->RefreshUI();f.World->ResetUI();f.World->RefreshUI();Check(f.World->GetUISnapshot().Generation>original&&!f.World->ConsumeUIAction(0,action),"Reset reused retired generation/actions");}
+    {auto scene=CreateRef<Scene>();for(size_t i=0;i<InputRouter::MaxButtons+1;++i)scene->CreateEntity("Hidden").AddComponent<UIRectComponent>().Visible=false;
+     bool rejected=false;try{scene->RefreshUI();}catch(const std::runtime_error&){rejected=true;}Check(rejected,"Hidden declared nodes escaped 4096 limit");}
+    std::cout<<"PASS: scene D1/D2/D4/D5, generation reuse/raw writes, interrupted/reparented/replaced ancestors, fractional/zero surfaces and multiple consumers\n";
+}
+static void ProfileRuntimeUI()
+{
+    FramebufferSpecification spec;spec.Width=1280;spec.Height=720;
+    spec.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
+    auto framebuffer=Framebuffer::Create(spec);framebuffer->Bind();
+    using Clock=std::chrono::steady_clock;
+    auto milliseconds=[](Clock::time_point a,Clock::time_point b){return std::chrono::duration<double,std::milli>(b-a).count();};
+    auto stats=[](std::vector<double> values){std::sort(values.begin(),values.end());return std::pair<double,double>{values[values.size()/2],values[(values.size()*95)/100]};};
+    for(int count:{64,512,2048})
+    {
+        // One staged import avoids repeated O(N) hierarchy reparent transactions
+        // during fixture setup. It never writes a scene/project/save document.
+        std::ostringstream yaml;yaml<<"Scene: UI profile\nEntities:\n- Entity: 1\n  UICanvasComponent: { ReferenceSize: [1280, 720], SafeInsets: [0, 0, 0, 0] }\n  Relationship: { Parent: 0, Order: 0 }\n";
+        yaml<<"- Entity: 2\n  UIRectComponent: { Offset: [16, 16], SizeDelta: [1248, 688] }\n  Relationship: { Parent: 1, Order: 0 }\n";
+        for(int i=0;i<count-1;++i)
+        {
+            int columns=count==2048?32:4;
+            int x=(i%columns)*(count==2048?38:300),y=(i/columns)*(count==2048?10:36);
+            yaml<<"- Entity: "<<i+3<<"\n  Relationship: { Parent: 2, Order: "<<i<<" }\n  UIRectComponent: { Offset: ["<<x<<", "<<y<<"], SizeDelta: ["<<(count==2048?36:280)<<", "<<(count==2048?10:32)<<"] }\n";
+            if(i%2==0)yaml<<"  TextComponent: { TextString: 'Item "<<i<<"', Color: [1, 1, 1, 1], Kerning: 0, LineSpacing: 0 }\n  UITextStyleComponent: { Size: "<<(count==2048?8:18)<<", Wrap: false }\n";
+            else yaml<<"  SpriteRendererComponent: { Color: [0.12, 0.24, 0.32, 1] }\n";
+            bool control=count==64?i<8:i%4==0;
+            if(control)yaml<<"  UIButtonComponent: { Action: 'activate', TabOrder: "<<i<<" }\n";
+        }
+        auto scene=CreateRef<Scene>();SceneSerializer loader(scene);
+        Check(loader.DeserializeText(yaml.str()),"Profile staged fixture failed to import");
+        scene->OnViewportResize(1280,720);scene->PrepareSprites(true);
+        RuntimeUI ui(*scene);InputFrame frame;frame.Enabled=true;frame.Mouse={-1,-1};
+        for(int i=0;i<20;++i){ui.Resolve({1280,720});ui.UpdateInput(frame);ui.Draw();}
+        auto generation=ui.Snapshot().Generation;auto resolves=ui.Diagnostics().Resolves;
+        std::vector<double> detect(300),route(300),renderDetect(300),draw(300),gpu(20),changed(30);
+        uint64_t allocations=0;
+        for(int i=0;i<300;++i)
+        {
+            s_Allocations=0;s_CountAllocations=true;auto a=Clock::now();ui.Resolve({1280,720});auto b=Clock::now();ui.UpdateInput(frame);auto c=Clock::now();ui.Resolve({1280,720});auto beforeDraw=Clock::now();s_CountAllocations=false;allocations+=s_Allocations;
+            ui.Draw();auto d=Clock::now();detect[i]=milliseconds(a,b);route[i]=milliseconds(b,c);renderDetect[i]=milliseconds(c,beforeDraw);draw[i]=milliseconds(beforeDraw,d);
+        }
+        Check(ui.Snapshot().Generation==generation&&ui.Diagnostics().Resolves==resolves,"Idle profile rebuilt snapshot");
+        GLuint query=0;glGenQueries(1,&query);
+        for(int i=0;i<20;++i){glBeginQuery(GL_TIME_ELAPSED,query);ui.Draw();glEndQuery(GL_TIME_ELAPSED);GLuint64 nanos=0;glGetQueryObjectui64v(query,GL_QUERY_RESULT,&nanos);gpu[i]=double(nanos)/1e6;}
+        glDeleteQueries(1,&query);
+        auto moving=scene->GetEntityByUUID(3);
+        for(int i=0;i<30;++i){moving.GetComponent<UIRectComponent>().Offset.x=float(i%2);auto a=Clock::now();ui.Resolve({1280,720});ui.UpdateInput(frame);auto b=Clock::now();changed[i]=milliseconds(a,b);}
+        Renderer2D::ResetStats();ui.Draw();auto render=Renderer2D::GetStats();
+        auto a=stats(detect),b=stats(route),c=stats(draw),d=stats(changed),g=stats(gpu),r=stats(renderDetect);
+        std::cout<<std::fixed<<std::setprecision(4)<<"PROFILE nodes="<<count<<" controls="<<ui.Snapshot().Buttons.size()
+            <<" detect_ms="<<a.first<<"/"<<a.second<<" route_ms="<<b.first<<"/"<<b.second<<" render_detect_ms="<<r.first<<"/"<<r.second<<" submit_cpu_ms="<<c.first<<"/"<<c.second
+            <<" changed_layout+route_ms="<<d.first<<"/"<<d.second<<" gpu_ms="<<g.first<<"/"<<g.second
+            <<" idle_cpp_new="<<allocations<<" draws="<<render.DrawCalls<<" quads="<<render.QuadCount<<" idle_generations=1\n";
+    }
+    framebuffer->Unbind();Check(glGetError()==GL_NO_ERROR,"Profile OpenGL error");
+    std::cout<<"PASS: bounded UI profile; CPU median/p95, separate GL timer query, idle generation and C++ allocation count\n";
+}
+int main(int argc,char** argv)
 {
     try
     {
@@ -26,6 +151,8 @@ int main()
         spec.EnableImGui = false;
         Application app(spec);
         glfwHideWindow(static_cast<GLFWwindow *>(app.GetWindow().GetNativeWindow()));
+        if(argc==2&&std::string(argv[1])=="--profile"){ProfileRuntimeUI();return 0;}
+        HardeningSceneChecks();
         const auto root = std::filesystem::temp_directory_path() /
                           ("hazel-ui-" + std::to_string(std::random_device{}()));
         std::filesystem::create_directories(root);
@@ -165,7 +292,34 @@ int main()
         for (auto &line : lines)
             Check(std::abs(line.Width - Renderer2D::MeasureText(line.Text, font)) < .001f,
                   "Text measurement disagrees with layout");
+        // D3 exercises actual shared measurement/layout/draw behavior, not only decoding.
+        const auto bom=std::string("\xef\xbb\xbf")+"A";
+        Renderer2D::LayoutText(bom,font,10,true,0,lines);
+        Check(lines.size()==1&&lines[0].Text=="A"&&Renderer2D::MeasureText(bom,font)==Renderer2D::MeasureText("A",font),"BOM measurement/layout disagreement");
+        Renderer2D::LayoutText(std::string("A\n\xef\xbb\xbf")+"B",font,10,true,0,lines);
+        Check(lines.size()==2&&lines[1].Width==Renderer2D::MeasureText("B",font),"Nonleading BOM changed measurement after a line break");
+        Camera textCamera(glm::mat4(1));Renderer2D::ResetStats();Renderer2D::BeginScene(textCamera,glm::mat4(1));
+        Renderer2D::DrawString(bom,font,glm::mat4(1),{});Renderer2D::EndScene();Check(Renderer2D::GetStats().QuadCount==1,"Drawing BOM emitted a fallback glyph");
+        for(auto invalid:std::vector<std::string>{std::string("A\0B",3),"\xc0\xaf","\xed\xa0\x80","\xf4\x90\x80\x80","\xe2\x82"})
+        {
+            int rejected=0;try{Renderer2D::MeasureText(invalid,font);}catch(const std::invalid_argument&){++rejected;}
+            try{Renderer2D::LayoutText(invalid,font,10,true,0,lines);}catch(const std::invalid_argument&){++rejected;}
+            try{Renderer2D::DrawString(invalid,font,glm::mat4(1),{});}catch(const std::invalid_argument&){++rejected;}
+            Check(rejected==3,"D3: measurement/layout/drawing accepted malformed text inconsistently");
+        }
         Check(glGetError() == GL_NO_ERROR, "UI OpenGL error");
+        // Actual GPU coverage at 125% framebuffer scaling shares the input clip.
+        FramebufferSpecification scaledSpec=f;scaledSpec.Width=400;scaledSpec.Height=300;
+        auto scaledTarget=Framebuffer::Create(scaledSpec);scaledTarget->Bind();RenderCommand::Clear();scaledTarget->ClearAttachment(1,-1);
+        modalCanvas.Visible=false;r.Offset={20.1f,30.1f};
+        ui.ResolveSurface({{320,240},{400,300}});ui.Draw();
+        Check(scaledTarget->ReadPixel(1,26,300-80)==int(uint32_t(button))&&scaledTarget->ReadPixel(1,25,300-80)==-1&&scaledTarget->ReadPixel(1,100,300-80)!=int(uint32_t(button)),"125% fractional framebuffer scissor/picking disagrees with clip");
+        InputFrame scaledInput;scaledInput.Enabled=true;scaledInput.Mouse={20.4f,64};ui.UpdateInput(scaledInput);
+        scaledInput.PointerPressed=scaledInput.PointerReleased=true;scaledInput.PressPosition=scaledInput.ReleasePosition=scaledInput.Mouse;scaledInput.HasReleasePosition=true;
+        ui.UpdateInput(scaledInput);Check(!ui.Consume(0,action),"Uncovered fractional edge accepted a hit");
+        scaledInput.Mouse=scaledInput.PressPosition=scaledInput.ReleasePosition={20.8f,64};
+        ui.UpdateInput(scaledInput);Check(ui.Consume(button.GetUUID(),action),"Framebuffer-covered edge did not hit in viewport units");
+        scaledTarget->Unbind();scaledTarget.reset();
         target->Unbind();
         target.reset();
         std::cout << "PASS: camera-free UI render/hit/clip agreement, raster "

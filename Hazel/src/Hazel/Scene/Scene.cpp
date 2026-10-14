@@ -175,12 +175,13 @@ namespace Hazel {
             // Validation includes the still-present parent until after detaching every child.
             graph[entity.GetUUID()]={m_Relationships.at(entity.GetUUID()).Parent,m_Relationships.at(entity.GetUUID()).Order};
             ValidateGraph(graph,changes);
+            RetireUISubtree(entity.GetUUID());
             m_Relationships=std::move(graph);
             for(const auto& item:changes)m_Registry.get<TransformComponent>(m_EntityMap.at(item.first))=item.second;
             RebuildChildren();DestroyEntityNow(entity);return;
         }
         if(policy!=DestroyPolicy::Subtree)throw std::runtime_error("Unknown destruction policy");
-        auto ids=GetSubtree(entity);std::reverse(ids.begin(),ids.end());
+        auto ids=GetSubtree(entity);for(auto id:ids)RetireUI(id);std::reverse(ids.begin(),ids.end());
         if(m_IsRunning) {
             for(auto id:ids)if(m_PendingDestroy.insert(id).second)m_DestroyOrder.push_back(id);
             return;
@@ -539,6 +540,7 @@ namespace Hazel {
 
 		m_ViewportWidth = width;
 		m_ViewportHeight = height;
+        if(!width||!height)CancelUIInput();
 
 		// Resize our non-FixedAspectRatio cameras
 		auto view = m_Registry.view<CameraComponent>();

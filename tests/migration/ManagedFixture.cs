@@ -190,7 +190,14 @@ namespace Migration {
             string action;Hazel.Entity entity;
             if(button.TryConsumeAction(out action)||Hazel.GameUI.TryConsumeAction(out entity,out action))throw new System.Exception("Fresh scene retained UI actions");
             if(Hazel.GameUI.IsPointerCaptured)throw new System.Exception("Fresh scene retained pointer capture");
-            GetComponent<Hazel.TextComponent>().Text="Managed UI";
+            var text=GetComponent<Hazel.TextComponent>();text.Text="Managed UI";
+            foreach(var invalid in new[]{"A\0B","\ud800","\udfff"}) {
+                bool rejected=false;try{text.Text=invalid;}catch(System.ArgumentException){rejected=true;}
+                if(!rejected||text.Text!="Managed UI")throw new System.Exception("Managed text accepted invalid UTF-16/NUL or changed last valid text");
+            }
+            text.Text="\ufeffManaged UI";
+            if(text.Text[0]!='\ufeff')throw new System.Exception("Managed BOM text was not accepted/preserved");
+            text.Text="Managed UI";
             Passed=canvas.Visible&&canvas.Enabled&&canvas.Modal&&rect.Visible&&rect.Enabled&&button.Interactable;
         }
     }

@@ -4,6 +4,7 @@
 #include "Hazel/Core/UUID.h"
 #include "Hazel/Renderer/EditorCamera.h"
 #include "Hazel/Scripting/ScriptField.h"
+#include "Hazel/UI/RuntimeUISnapshot.h"
 
 #include "entt.hpp"
 #include <unordered_set>
@@ -50,6 +51,11 @@ namespace Hazel {
         bool GetUIBounds(uint64_t entity,GameUI::Rect& pixels) const;
         void ResetUI();
         void RetireUI(uint64_t entity);
+        void RetireUISubtree(uint64_t entity);
+        void CancelUIInput();
+        void SetUIFramebufferSize(glm::vec2 size);
+        const GameUI::ResolvedSnapshot& GetUISnapshot() const;
+        GameUI::RuntimeUIDiagnostics GetUIDiagnostics() const;
         void RefreshUI();
         void ValidateUI(bool resources=true);
         const std::string& GetUIError() const {return m_UIError;}
@@ -121,6 +127,8 @@ namespace Hazel {
 	private:
         Scope<AudioPlayback> m_Audio;
         Scope<RuntimeUI> m_UI;
+        glm::vec2 m_UIFramebufferSize{};
+        bool m_UIFramebufferExplicit = false;
         std::string m_UIError;
         void RenderUI();
         mutable bool m_HierarchyValidationDirty=true;

@@ -1,4 +1,5 @@
 #include "Hazel/UI/RuntimeUIModel.h"
+#include "Hazel/Utils/UTF8.h"
 #include <iostream>
 #include <limits>
 #include <stdexcept>
@@ -26,10 +27,89 @@ template <class F> void Reject(F f)
     }
     Check(bad, "Malformed UI configuration was accepted");
 }
+static void HardeningChecks()
+{
+    // Audit D2: nonempty bounds/clip separately, but no effective intersection.
+    std::vector<Button> clipped{{1,{{100,100},{50,30}},{{0,0},{50,30}},"offscreen"}};
+    InputRouter router;InputFrame input;input.Enabled=true;Action action;
+    router.Update(1,clipped,input);input.AcceptDown=true;router.Update(1,clipped,input);
+    Check(router.Focused()==0&&!router.Consume(1,action),"D2: completely clipped button focused/activated");
+    clipped[0].Bounds.Size={0,30};router.Update(1,clipped,input);
+    Check(!router.SetFocus(1,1,clipped),"Zero-size button accepted focus");
+    auto tiny=FramebufferCoverage({{.1f,.1f},{.4f,.4f}},{1.25f,1.25f},{100,100});
+    Check(tiny.Size==glm::vec2(0),"Fractional clip gained framebuffer coverage");
+    auto covered=FramebufferCoverage({{.1f,.1f},{2,2}},{1.25f,1.25f},{100,100});
+    Check(covered.Position==glm::vec2(1)&&covered.Size==glm::vec2(1),"Framebuffer clip did not snap inward");
+    // Audit D5: gesture owns the release frame even when capture is cancelled.
+    for(bool retire:{false,true})
+    {
+        InputRouter r;std::vector<Button> b{{1,{{0,0},{100,40}},{{0,0},{100,40}},"activate"}};
+        InputFrame f;f.Enabled=true;f.Mouse={10,10};r.Update(2,b,f);
+        f.LeftDown=true;r.Update(2,b,f);if(retire)r.Retire(2,1);
+        f.LeftDown=false;f.Mouse={120,10};f.AcceptDown=true;f.AcceptPressed=true;r.Update(2,b,f);
+        Check(!r.Consume(2,action),"D5: cancelled pointer release became keyboard activation");
+        f.AcceptDown=f.AcceptPressed=false;r.Update(2,b,f);f.AcceptDown=true;r.Update(2,b,f);
+        Check(r.Consume(2,action),"Independent Accept after cancellation was suppressed");
+    }
+    {
+        InputRouter r;std::vector<Button> b{{1,{{0,0},{100,40}},{{0,0},{100,40}},"lower"},
+            {2,{{0,0},{100,40}},{{0,0},{100,40}},"disabled",1,true,false}};
+        InputFrame f;f.Enabled=true;f.Mouse={10,10};r.Update(3,b,f);
+        f.PointerPressed=f.PointerReleased=true;f.PressPosition=f.Mouse;r.Update(3,b,f);
+        Check(!r.Consume(3,action),"Disabled control let a click activate a lower control");
+        b.back().Hit=HitPolicy::PassThrough;f.PointerPressed=f.PointerReleased=false;r.Update(3,b,f);
+        f.PointerPressed=f.PointerReleased=true;r.Update(3,b,f);
+        Check(r.Consume(3,action)&&action.Entity==1,"Explicit pass-through blocked lower control");
+    }
+    {
+        InputRouter r;std::vector<Button> b{{1,{{0,0},{100,40}},{{0,0},{100,40}},"activate"}};
+        InputFrame f;f.Enabled=true;r.Update(4,b,f,1);
+        for(size_t i=0;i<InputRouter::MaxActions+5;++i)
+        {f.AcceptDown=false;r.Update(4,b,f,1);f.AcceptDown=true;r.Update(4,b,f,1);}
+        Check(r.DroppedActions()==5,"Model queue overflow did not count drop-newest");
+        size_t delivered=0;while(r.Consume(4,action))++delivered;
+        Check(delivered==InputRouter::MaxActions,"Bounded queue changed retained activation count");
+    }
+    // Audit D3: exact scalar decoding, byte offsets and format policy.
+    std::vector<uint32_t> chars;std::vector<size_t> bytes;
+    Hazel::UTF8::Decode(std::string("\xef\xbb\xbf")+u8"Aé😀",chars,&bytes);
+    Check(chars==std::vector<uint32_t>{'A',0xe9,0x1f600}&&bytes==std::vector<size_t>{3,4,6,10},"Leading BOM/scalar offsets changed");
+    Hazel::UTF8::Decode("\xef\xbb\xbf",chars,&bytes);
+    Check(chars.empty()&&bytes==std::vector<size_t>{3},"BOM-only text did not become empty");
+    Hazel::UTF8::Decode(std::string("A\xef\xbb\xbf"),chars);
+    Check(chars.size()==2&&chars[1]==0xfeff,"Nonleading BOM scalar was not retained");
+    Hazel::UTF8::Decode("\xf4\x8f\xbf\xbf",chars);Check(chars[0]==0x10ffff,"Last Unicode scalar rejected");
+    for(auto invalid:std::vector<std::string>{std::string("A\0B",3),"\xc0\xaf","\xe0\x80\xaf","\xed\xa0\x80","\xf4\x90\x80\x80","\xf5\x80\x80\x80","\x80","\xc2","\xe2\x28\xa1","\xff"})
+        Reject([&]{Hazel::UTF8::Decode(invalid,chars);});
+    // D6: invert resolved edges; negative deltas and minimum-clamped authored sizes remain valid.
+    Rect parent{{20,30},{800,600}};
+    for(auto stretch:{false,true})for(auto pivot:std::vector<glm::vec2>{{0,0},{.5f,.5f},{1,1}})
+    {
+        RectLayout r;r.AnchorMin={.1f,.1f};r.AnchorMax=stretch?glm::vec2(.9f):r.AnchorMin;
+        r.SizeDelta=stretch?glm::vec2(-100,-80):glm::vec2(140,80);r.Pivot=pivot;
+        r.Margin={3,4,5,6};r.MinimumSize={20,20};auto start=ResolveRect(parent,r);
+        for(unsigned edges:{0u,1u,2u,4u,8u,3u,12u})
+        {
+            auto edited=EditRect(parent,r,{15,12},edges);auto actual=ResolveRect(parent,edited);
+            if(!edges){Check(glm::length(actual.Position-start.Position-glm::vec2(15,12))<.001f&&actual.Size==start.Size,"Move changed resolved size");Check(edited.SizeDelta==r.SizeDelta,"Move rewrote size delta");}
+            if(edges&1)Check(Same(actual.Position.x+actual.Size.x,start.Position.x+start.Size.x),"Left resize moved opposite edge");
+            if(edges&2)Check(Same(actual.Position.y+actual.Size.y,start.Position.y+start.Size.y),"Top resize moved opposite edge");
+            if(edges&4)Check(Same(actual.Position.x,start.Position.x),"Right resize moved opposite edge");
+            if(edges&8)Check(Same(actual.Position.y,start.Position.y),"Bottom resize moved opposite edge");
+            if(stretch)Check(edited.SizeDelta.x<0&&edited.SizeDelta.y<0,"Resize destroyed valid negative stretch delta");
+        }
+    }
+    RectLayout minimum;minimum.SizeDelta={-50,-50};minimum.MinimumSize={40,30};minimum.Pivot={1,1};
+    auto moved=EditRect(parent,minimum,{10,10},0);Check(moved.SizeDelta==minimum.SizeDelta,"Minimum-constrained move changed authored size");
+    auto clamped=EditRect(parent,minimum,{100,100},3);Check(ResolveRect(parent,clamped).Size==minimum.MinimumSize,"Resize escaped minimum");
+    Reject([&]{EditRect(parent,minimum,{NAN,0},4);});
+    std::cout<<"PASS: D2/D5, clipped/fractional hits, disabled blockers, queue limits, strict scalars and legacy resolved-edge edits\n";
+}
 int main()
 {
     try
     {
+        HardeningChecks();
         for (auto viewport : std::vector<glm::vec2>{{1024, 600}, {1280, 720}, {960, 720}})
         {
             auto fit = FitCanvas(viewport, {});
@@ -163,6 +243,7 @@ int main()
         Check(router.Focused() == 2, "Reverse tab order wrong");
         Check(!router.SetFocus(41, 3, buttons) && !router.SetFocus(40, 1, buttons),
               "Disabled or retired focus accepted");
+        Check(!router.SetFocus(41,2,{}),"Stale indexed focus accessed a replaced button list");
         input.PreviousDown = false;
         input.LeftDown = true;
         router.Update(41, buttons, input);

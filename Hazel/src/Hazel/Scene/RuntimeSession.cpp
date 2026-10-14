@@ -120,7 +120,7 @@ namespace Hazel {
         m_Updating = true;
         try {
             auto input=m_UIEdgeScene==m_Scene->GetIdentity()?m_UIEdges:GameUI::InputFrame{};
-            m_UIEdges={};m_UIEdgeScene=0;input.Mouse=m_Mouse;input.Enabled=m_InputEnabled&&m_Width&&m_Height;
+            m_UIEdges={};m_UIEdgeScene=0;input.Mouse=m_Mouse;input.Enabled=m_InputEnabled&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0));
             input.FocusNavigation=Input::IsKeyPressed(Key::Tab);
             input.CancelDown=Input::IsKeyPressed(Key::Escape);
             input.LeftDown=Input::IsMouseButtonPressed(Mouse::ButtonLeft);
@@ -128,6 +128,7 @@ namespace Hazel {
             const bool shift=Input::IsKeyPressed(Key::LeftShift)||Input::IsKeyPressed(Key::RightShift);
             input.NextDown=(Input::IsKeyPressed(Key::Tab)&&!shift)||Input::IsKeyPressed(Key::Down)||Input::IsKeyPressed(Key::Right);
             input.PreviousDown=(Input::IsKeyPressed(Key::Tab)&&shift)||Input::IsKeyPressed(Key::Up)||Input::IsKeyPressed(Key::Left);
+            if(m_FramebufferExplicit)m_Scene->SetUIFramebufferSize(m_FramebufferSize);
             m_Scene->UpdateUIInput(input);
             m_Scene->OnUpdateRuntime(timestep); m_Updating = false;
         }
@@ -135,12 +136,17 @@ namespace Hazel {
     }
     void RuntimeSession::Resize(uint32_t width, uint32_t height) {
         CheckThread(); m_Width = width; m_Height = height;
-        if (m_Scene) m_Scene->OnViewportResize(width, height);
+        if (m_Scene) {m_Scene->OnViewportResize(width, height);if(!width||!height)m_Scene->CancelUIInput();}
     }
-    bool RuntimeSession::IsGameplayInputEnabled() const {return m_InputEnabled&&m_GameplayEnabled&&(!m_Scene||!m_Scene->IsGameplayInputBlocked());}
-    bool RuntimeSession::IsGameplayMouseEnabled() const {return m_InputEnabled&&m_GameplayEnabled&&(!m_Scene||!m_Scene->IsGameplayPointerBlocked());}
+    void RuntimeSession::ResizeFramebuffer(uint32_t width,uint32_t height) {
+        CheckThread();m_FramebufferExplicit=true;m_FramebufferSize={width,height};
+        if(m_Scene)m_Scene->SetUIFramebufferSize(m_FramebufferSize);
+        if((!width||!height)&&m_Scene)m_Scene->CancelUIInput();
+    }
+    bool RuntimeSession::IsGameplayInputEnabled() const {return m_InputEnabled&&m_GameplayEnabled&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0))&&(!m_Scene||!m_Scene->IsGameplayInputBlocked());}
+    bool RuntimeSession::IsGameplayMouseEnabled() const {return m_InputEnabled&&m_GameplayEnabled&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0))&&(!m_Scene||!m_Scene->IsGameplayPointerBlocked());}
     void RuntimeSession::SubmitUIEvent(Event& event,glm::vec2 mouse,bool enabled) {
-        if(event.GetEventType()==EventType::WindowLostFocus || (event.GetEventType()==EventType::WindowResize&&(!static_cast<WindowResizeEvent&>(event).GetWidth()||!static_cast<WindowResizeEvent&>(event).GetHeight()))){m_UIEdges={};m_UIEdgeScene=0;if(m_Scene)m_Scene->ResetUI();return;}
+        if(event.GetEventType()==EventType::WindowLostFocus || (event.GetEventType()==EventType::WindowResize&&(!static_cast<WindowResizeEvent&>(event).GetWidth()||!static_cast<WindowResizeEvent&>(event).GetHeight()))){m_UIEdges={};m_UIEdgeScene=0;if(m_Scene)m_Scene->CancelUIInput();return;}
         if(!enabled||!m_Scene)return;
         if(m_UIEdgeScene!=m_Scene->GetIdentity()){m_UIEdges={};m_UIEdgeScene=m_Scene->GetIdentity();}
         if(event.GetEventType()==EventType::MouseButtonPressed&&static_cast<MouseButtonPressedEvent&>(event).GetMouseButton()==Mouse::ButtonLeft){m_UIEdges.PointerPressed=true;m_UIEdges.PressPosition=mouse;}
@@ -148,7 +154,7 @@ namespace Hazel {
         if(event.GetEventType()==EventType::KeyPressed){auto& e=static_cast<KeyPressedEvent&>(event);if(!e.IsRepeat()&&(e.GetKeyCode()==Key::Enter||e.GetKeyCode()==Key::Space))m_UIEdges.AcceptPressed=true;}
     }
     void RuntimeSession::SetInput(glm::vec2 position, bool enabled) {
-        CheckThread(); m_Mouse = position; m_InputEnabled = enabled;m_GameplayEnabled=enabled; if(!enabled){m_UIEdges={};m_UIEdgeScene=0;}
+        CheckThread(); m_Mouse = position; m_InputEnabled = enabled;m_GameplayEnabled=enabled; if(!enabled){m_UIEdges={};m_UIEdgeScene=0;if(m_Scene)m_Scene->CancelUIInput();}
     }
     bool RuntimeSession::GetMouseWorldPosition(glm::vec2& position) const {
         if (!m_Scene || !IsGameplayMouseEnabled() || !m_Width || !m_Height || m_Mouse.x < 0 || m_Mouse.y < 0 || m_Mouse.x >= m_Width || m_Mouse.y >= m_Height) return false;

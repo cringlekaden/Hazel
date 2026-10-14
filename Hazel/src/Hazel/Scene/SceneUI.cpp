@@ -4,6 +4,7 @@
 #include "Hazel/UI/RuntimeUI.h"
 #include "Hazel/UI/RuntimeUIConfig.h"
 #include "Scene.h"
+#include "Hazel/Utils/UTF8.h"
 namespace Hazel
 {
 const std::vector<UUID> &Scene::GetChildrenView(UUID parent) const
@@ -15,7 +16,8 @@ const std::vector<UUID> &Scene::GetChildrenView(UUID parent) const
 }
 void Scene::RefreshUI()
 {
-    m_UI->Resolve({m_ViewportWidth, m_ViewportHeight});
+    glm::vec2 viewport{m_ViewportWidth,m_ViewportHeight};
+    m_UI->ResolveSurface(GameUI::SurfaceMetrics{viewport,m_UIFramebufferExplicit?m_UIFramebufferSize:viewport}, !m_IsRunning);
 }
 void Scene::UpdateUIInput(const GameUI::InputFrame &frame)
 {
@@ -26,7 +28,7 @@ void Scene::RenderUI()
 {
     try
     {
-        m_UI->Resolve({m_ViewportWidth, m_ViewportHeight}, !m_IsRunning);
+        RefreshUI();
         m_UI->Draw();
         m_UIError.clear();
     }
@@ -63,8 +65,23 @@ void Scene::RetireUI(uint64_t id)
 {
     m_UI->Retire(id);
 }
+void Scene::RetireUISubtree(uint64_t id)
+{
+    auto e=GetEntityByUUID(id);
+    if(e && IsEntityValid(id))for(auto child:GetSubtree(e))m_UI->Retire(child);
+    else m_UI->Retire(id);
+}
+void Scene::CancelUIInput() { CheckThread();m_UI->CancelInput(); }
+void Scene::SetUIFramebufferSize(glm::vec2 size)
+{
+    CheckThread();m_UIFramebufferSize=size;m_UIFramebufferExplicit=true;
+}
+const GameUI::ResolvedSnapshot& Scene::GetUISnapshot() const { CheckThread();return m_UI->Snapshot(); }
+GameUI::RuntimeUIDiagnostics Scene::GetUIDiagnostics() const { CheckThread();return m_UI->Diagnostics(); }
 void Scene::ValidateUI(bool resources)
 {
+    if(m_Registry.view<UIRectComponent>().size()>GameUI::InputRouter::MaxButtons)
+        throw std::runtime_error("UI declared rect limit exceeded (4096, including hidden rects)");
     for (auto h : m_Registry.view<IDComponent>())
     {
         Entity e(h, this);
@@ -75,6 +92,12 @@ void Scene::ValidateUI(bool resources)
             !e.HasComponent<UIButtonComponent>() && !e.HasComponent<UINineSliceComponent>())
             continue;
         ValidateUIConfiguration(YAML::Load(UIAuthoredState(e)));
+        if(e.HasComponent<TextComponent>() && e.HasComponent<UIRectComponent>())
+        {
+            const auto& text=e.GetComponent<TextComponent>().TextString;
+            if(text.size()>65536)throw std::invalid_argument("UI text exceeds 64 KiB");
+            UTF8::Validate(text);
+        }
         if (e.HasComponent<UITextStyleComponent>())
         {
             if (!e.HasComponent<TextComponent>() || !e.HasComponent<UIRectComponent>())

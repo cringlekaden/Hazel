@@ -102,7 +102,10 @@ namespace Hazel {
 
 	template<typename T> void Scene::OnComponentRemoving(Entity entity)
 	{
-        RetireUI(entity.GetUUID());
+        if constexpr(std::is_same_v<T,UICanvasComponent> || std::is_same_v<T,UIRectComponent> ||
+                     std::is_same_v<T,UILayoutComponent> || std::is_same_v<T,UIButtonComponent>)
+            RetireUISubtree(entity.GetUUID());
+        else RetireUI(entity.GetUUID());
 		if constexpr (std::is_same_v<T, AudioSourceComponent>) StopAudio(entity);
         if constexpr (std::is_same_v<T, NativeScriptComponent>) DestroyNativeScript(entity);
 		if constexpr (std::is_same_v<T, Rigidbody2DComponent>) DestroyPhysicsBody(entity);

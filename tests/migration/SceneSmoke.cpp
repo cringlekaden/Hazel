@@ -265,6 +265,9 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
     body.AddComponent<Rigidbody2DComponent>().Type=Rigidbody2DComponent::BodyType::Dynamic;
     body.AddComponent<BoxCollider2DComponent>(); body.AddComponent<CircleCollider2DComponent>();
     auto native=scene->CreateEntityWithUUID(102,"Native"); native.AddComponent<NativeScriptComponent>().Bind<NativeProbe>();
+    auto uiCanvas=scene->CreateEntity("Reload canvas");uiCanvas.AddComponent<UICanvasComponent>().ReferenceSize={320,240};
+    auto uiControl=scene->CreateEntity("Reload control");scene->Reparent(uiControl,uiCanvas,TransformPolicy::KeepLocal);
+    uiControl.AddComponent<UIRectComponent>().SizeDelta={100,40};uiControl.AddComponent<UIButtonComponent>().Action="reload-check";
     auto& saved=ScriptEngine::GetScriptFieldMap(script)["Speed"]; saved.Field=fields.at("Speed"); saved.SetValue<float>(4.0f);
     scene->OnRuntimeStart(); auto instance=ScriptEngine::GetEntityScriptInstance(100);
     Check(instance && instance->GetFieldValue<float>("Speed")==4 && instance->GetFieldValue<int>("Creates")==1,"Runtime field override/OnCreate failed");
@@ -294,18 +297,23 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
     Check(count==1,"Unexpected scene physics body count");
     instance->SetFieldValue<double>("Precise",7.125); instance->SetFieldValue<uint16_t>("Character",0x03a9);
     const auto authoredBefore=ScriptEngine::GetScriptFieldMap(script);
+    auto queueUI=[&]{scene->OnViewportResize(320,240);GameUI::InputFrame f;f.Enabled=true;f.Mouse={25,25};scene->UpdateUIInput(f);f.PointerPressed=f.PointerReleased=true;f.PressPosition=f.Mouse;scene->UpdateUIInput(f);};
+    GameUI::Action uiAction;queueUI();Check(scene->ConsumeUIAction(uiControl.GetUUID(),uiAction),"Domain lifetime UI fixture did not activate");queueUI();
     std::ofstream(target,std::ios::binary|std::ios::trunc)<<"broken assembly";
     bool refused=false; try { ScriptEngine::ReloadAssembly(); } catch (const std::exception&) { refused=true; }
     Check(refused && instance->GetManagedObject() && ScriptEngine::GetEntityScriptInstance(100)==instance,"Invalid assembly reload destroyed working domain");
+    Check(scene->ConsumeUIAction(uiControl.GetUUID(),uiAction),"Rejected domain replacement cancelled valid UI state");queueUI();
     std::filesystem::copy_file(app,target,std::filesystem::copy_options::overwrite_existing);
     ScriptEngine::ReloadAssembly(); auto reloaded=ScriptEngine::GetEntityScriptInstance(100);
+    Check(!scene->ConsumeUIAction(0,uiAction)&&!scene->GetUIDiagnostics().Focus&&!scene->IsUICapturingPointer(),"Domain replacement retained queued UI/focus/capture");
     Check(reloaded && reloaded!=instance && !instance->GetManagedObject() && !type->GetMethod("OnCreate",0),"Reload left stale external Mono observations");
     Check(reloaded->GetFieldValue<double>("Precise")==7.125 && reloaded->GetFieldValue<uint16_t>("Character")==0x03a9 && reloaded->GetFieldValue<int>("Updates")==3,"Reload lost live field values");
     for (auto [name,value]:authoredBefore) {
         auto actual=ScriptEngine::GetScriptFieldMap(script).at(name);
         Check(actual.GetValue<std::array<uint8_t,16>>()==value.GetValue<std::array<uint8_t,16>>(),"Reload changed authored defaults");
     }
-    scene->OnRuntimeStop(); Check(!reloaded->GetManagedObject() && !ScriptEngine::GetSceneContext(),"Runtime stop retained domain instances/context");
+    queueUI();scene->OnRuntimeStop(); Check(!reloaded->GetManagedObject() && !ScriptEngine::GetSceneContext(),"Runtime stop retained domain instances/context");
+    Check(!scene->ConsumeUIAction(0,uiAction)&&!scene->GetUIDiagnostics().Focus,"Stop retained transferred UI activation/focus");scene->OnViewportResize(0,0);
     Check(NativeProbe::Destroyed==1 && NativeProbe::Deleted==1,"Runtime stop destroyed a never-instantiated native script");
     scene->SetPaused(false); scene->OnRuntimeStart();
     Check(ScriptEngine::GetEntityScriptInstance(100)->GetFieldValue<int>("Updates")==0 &&
