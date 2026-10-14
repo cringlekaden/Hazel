@@ -111,9 +111,12 @@ and Mono SDK unavailable. Both default Hazelnut/Nutella distributions passed
 extracted startup/render/resize/shutdown and applicable CLI checks. Private output
 directories preserved existing distributions. SceneTransitions' corrected notice,
 Kenney CC0 license, provenance manifest and exact MenuFrame SHA-256 were confirmed
-in its game archive and both default application archives. Linux/Windows CI runs
-at the final integration checkpoint; local HD4000 results do not qualify Windows
-hardware, mixed-DPI desktop workflows or macOS.
+in its game archive and both default application archives. The first Windows CI build
+found Windows SDK `near`/`far` macros colliding with resize-edge variable names.
+Renaming those locals preserves the algorithm; Debug/Release model regressions
+passed afterward. Linux/Windows CI runs at the corrected final integration
+checkpoint; local HD4000 results do not qualify Windows hardware, mixed-DPI
+desktop workflows or macOS.
 
 Release profiles ran on Grandpa on 2026-10-14 at source checkpoint
 `fda399b65d36e1ca439beb248e4ec28f02aafebd`: CachyOS kernel 7.2.7-1, GCC 16.2.1,

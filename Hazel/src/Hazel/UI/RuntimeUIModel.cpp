@@ -121,15 +121,15 @@ RectLayout EditRect(const Rect &parent, const RectLayout &initial, glm::vec2 del
     else
         for (int axis = 0; axis < 2; ++axis)
         {
-            const unsigned near = axis ? 2 : 1, far = axis ? 8 : 4;
-            if (edges & near)
+            const unsigned nearEdge = axis ? 2 : 1, farEdge = axis ? 8 : 4;
+            if (edges & nearEdge)
             {
                 float end = start.Position[axis] + start.Size[axis];
                 target.Size[axis] =
                     std::max(initial.MinimumSize[axis], start.Size[axis] - delta[axis]);
                 target.Position[axis] = end - target.Size[axis];
             }
-            else if (edges & far)
+            else if (edges & farEdge)
                 target.Size[axis] =
                     std::max(initial.MinimumSize[axis], start.Size[axis] + delta[axis]);
         }
