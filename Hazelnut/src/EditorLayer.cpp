@@ -6,6 +6,7 @@
 #include "EditorLayer.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Core/FileSystem.h"
+#include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Project/ProjectSerializer.h"
 #include "Hazel/Utils/PlatformUtils.h"
@@ -384,6 +385,10 @@ namespace Hazel {
     }
 	void EditorLayer::OnEvent(Event& e)
 	{
+        if(e.GetEventType()==EventType::WindowLostFocus ||
+           (e.GetEventType()==EventType::WindowResize &&
+            (!static_cast<WindowResizeEvent&>(e).GetWidth() || !static_cast<WindowResizeEvent&>(e).GetHeight())))
+            m_UIEdit.Finish(true);
         if(m_Loading && m_Loading->Busy())return;
         if(m_SceneState==SceneState::Play)m_RuntimeSession.SubmitUIEvent(e,ViewportMouse(),m_ViewportFocused && !RuntimeUIWidgetBlocksInput());
 		if(m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_CameraController.OnEvent(e);

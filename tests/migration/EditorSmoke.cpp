@@ -878,6 +878,14 @@ private:
         auto& parentRect=uiPanel.GetComponent<UIRectComponent>();auto parentBefore=parentRect;
         Check(gesture.Begin(scene,uiButton.GetUUID(),4),"Second resize could not begin");parentRect.SizeDelta.x+=10;
         Check(!gesture.Update({10,0})&&!gesture.Active()&&parentRect.SizeDelta.x==parentBefore.SizeDelta.x+10,"Parent change did not cancel transaction or was overwritten");parentRect=parentBefore;
+        const bool eventHovered=e.m_ViewportHovered;e.m_ViewportHovered=false;
+        Check(e.m_UIEdit.Begin(scene,uiButton.GetUUID(),4)&&e.m_UIEdit.Update({20,0}),"Editor event gesture did not begin");
+        WindowLostFocusEvent lostUIFocus;e.OnEvent(lostUIFocus);
+        Check(!e.m_UIEdit.Active()&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==editBefore,"Focus-loss event did not cancel authored geometry immediately");
+        Check(e.m_UIEdit.Begin(scene,uiButton.GetUUID(),4)&&e.m_UIEdit.Update({20,0}),"Minimization gesture did not begin");
+        WindowResizeEvent minimizedUI(0,0);e.OnEvent(minimizedUI);
+        Check(!e.m_UIEdit.Active()&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==editBefore,"Minimization event did not cancel authored geometry");
+        e.m_ViewportHovered=eventHovered;
         editRect.SizeDelta={100,40};uiPanel.AddComponent<UILayoutComponent>();scene->RefreshUI();
         Check(scene->GetUISnapshot().Find(uiButton.GetUUID())->FlowOwned&&!gesture.Begin(scene,uiButton.GetUUID(),0)&&!gesture.Begin(scene,uiButton.GetUUID(),4),"Flow-owned viewport edits wrote ignored geometry");uiPanel.RemoveComponent<UILayoutComponent>();
         panel.SetSelectedEntity(uiButton);scene->RefreshUI();
