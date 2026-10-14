@@ -74,6 +74,9 @@ static void HardeningSceneChecks()
      InputFrame input;input.Enabled=true;f.World->UpdateUIInput(input);auto inputGeneration=f.World->GetUIDiagnostics().InputGeneration;
      f.Control.GetComponent<UIRectComponent>().Offset.y+=4;f.World->RefreshUI();Check(f.World->GetUISnapshot().Generation>inputGeneration&&f.World->GetUIDiagnostics().InputGeneration==inputGeneration,"Drawing a newer generation replayed input");}
     {UIFixture f;f.Queue();Check(f.World->ConsumeUIAction(f.Control.GetUUID(),action)&&!f.World->ConsumeUIAction(0,action),"Two consumers duplicated activation");f.Queue();Check(f.World->ConsumeUIAction(0,action)&&!f.World->ConsumeUIAction(f.Control.GetUUID(),action),"Global/entity consumers duplicated activation");}
+    {UIFixture f;for(size_t i=0;i<InputRouter::MaxActions+5;++i)f.Queue();Check(f.World->GetUIDiagnostics().DroppedActions==5,"Outer queue did not report drop-newest overflow");
+     f.World->CancelUIInput();InputFrame restored;restored.Enabled=true;f.World->UpdateUIInput(restored);
+     Check(f.World->GetUIDiagnostics().DroppedActions==5&&!f.World->ConsumeUIAction(0,action),"Cancellation lost overflow diagnostics or retained work");}
     {UIFixture f;auto& r=f.Control.GetComponent<UIRectComponent>();r.Offset={300,300};f.World->RefreshUI();Check(!f.World->GetUISnapshot().Find(f.Control.GetUUID())->FocusEligible,"D2: fully clipped scene button eligible");
      f.Canvas.GetComponent<UICanvasComponent>().Modal=true;InputFrame input;input.Enabled=true;f.World->UpdateUIInput(input);input.AcceptDown=true;f.World->UpdateUIInput(input);Check(!f.World->ConsumeUIAction(0,action)&&!f.World->GetUIDiagnostics().Focus,"D2: clipped scene button activated");}
     {UIFixture f;auto& r=f.Control.GetComponent<UIRectComponent>();r.Offset={.1f,.1f};r.SizeDelta={.4f,.4f};f.Group.GetComponent<UIRectComponent>().Offset={0,0};
