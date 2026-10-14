@@ -99,8 +99,9 @@ int main(int argc, char** argv) {
         GameUI::Action uiAction;queue();Check(current->ConsumeUIAction(button.GetUUID(),uiAction),"Ownership fixture did not activate before cancellation");queue();session.SetInput({20,20},false);
         Check(!current->ConsumeUIAction(0,uiAction),"Host ownership loss retained transferred UI activation");
         queue();WindowLostFocusEvent lost;session.SubmitUIEvent(lost,{20,20},false);
-        Check(!current->ConsumeUIAction(0,uiAction)&&!current->IsUICapturingPointer(),"Window focus loss retained UI work/capture");
-        queue();session.ResizeFramebuffer(0,0);Check(!current->ConsumeUIAction(0,uiAction),"Framebuffer minimization retained UI work");session.ResizeFramebuffer(400,400);
+        Check(!current->ConsumeUIAction(0,uiAction)&&!current->IsUICapturingPointer()&&!session.IsInputEnabled()&&!session.GetMouseWorldPosition(mouse),"Window focus loss retained UI work/capture/input ownership");
+        queue();session.ResizeFramebuffer(0,0);session.SetInput({20,20},true);
+        Check(!current->ConsumeUIAction(0,uiAction)&&!session.IsInputEnabled()&&!session.IsGameplayInputEnabled(),"Framebuffer minimization retained UI work/input ownership");session.ResizeFramebuffer(400,400);
         queue();session.RequestSceneLoad("Scenes/Target.hazel");session.Update(0);
         Check(session.GetScene()!=current&&!current->ConsumeUIAction(0,uiAction)&&!current->GetUIDiagnostics().Focus&&!session.GetScene()->ConsumeUIAction(0,uiAction),"Scene transition delivered retired UI work/focus");
         session.RequestSceneLoad("Scenes/Target.hazel"); session.Stop();

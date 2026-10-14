@@ -136,17 +136,18 @@ namespace Hazel {
     }
     void RuntimeSession::Resize(uint32_t width, uint32_t height) {
         CheckThread(); m_Width = width; m_Height = height;
-        if (m_Scene) {m_Scene->OnViewportResize(width, height);if(!width||!height)m_Scene->CancelUIInput();}
+        if (m_Scene) m_Scene->OnViewportResize(width, height);
+        if(!width||!height)SetInput(m_Mouse,false);
     }
     void RuntimeSession::ResizeFramebuffer(uint32_t width,uint32_t height) {
         CheckThread();m_FramebufferExplicit=true;m_FramebufferSize={width,height};
         if(m_Scene)m_Scene->SetUIFramebufferSize(m_FramebufferSize);
-        if((!width||!height)&&m_Scene)m_Scene->CancelUIInput();
+        if(!width||!height)SetInput(m_Mouse,false);
     }
     bool RuntimeSession::IsGameplayInputEnabled() const {return m_InputEnabled&&m_GameplayEnabled&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0))&&(!m_Scene||!m_Scene->IsGameplayInputBlocked());}
     bool RuntimeSession::IsGameplayMouseEnabled() const {return m_InputEnabled&&m_GameplayEnabled&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0))&&(!m_Scene||!m_Scene->IsGameplayPointerBlocked());}
     void RuntimeSession::SubmitUIEvent(Event& event,glm::vec2 mouse,bool enabled) {
-        if(event.GetEventType()==EventType::WindowLostFocus || (event.GetEventType()==EventType::WindowResize&&(!static_cast<WindowResizeEvent&>(event).GetWidth()||!static_cast<WindowResizeEvent&>(event).GetHeight()))){m_UIEdges={};m_UIEdgeScene=0;if(m_Scene)m_Scene->CancelUIInput();return;}
+        if(event.GetEventType()==EventType::WindowLostFocus || (event.GetEventType()==EventType::WindowResize&&(!static_cast<WindowResizeEvent&>(event).GetWidth()||!static_cast<WindowResizeEvent&>(event).GetHeight()))){SetInput(mouse,false);return;}
         if(!enabled||!m_Scene)return;
         if(m_UIEdgeScene!=m_Scene->GetIdentity()){m_UIEdges={};m_UIEdgeScene=m_Scene->GetIdentity();}
         if(event.GetEventType()==EventType::MouseButtonPressed&&static_cast<MouseButtonPressedEvent&>(event).GetMouseButton()==Mouse::ButtonLeft){m_UIEdges.PointerPressed=true;m_UIEdges.PressPosition=mouse;}
@@ -154,7 +155,10 @@ namespace Hazel {
         if(event.GetEventType()==EventType::KeyPressed){auto& e=static_cast<KeyPressedEvent&>(event);if(!e.IsRepeat()&&(e.GetKeyCode()==Key::Enter||e.GetKeyCode()==Key::Space))m_UIEdges.AcceptPressed=true;}
     }
     void RuntimeSession::SetInput(glm::vec2 position, bool enabled) {
-        CheckThread(); m_Mouse = position; m_InputEnabled = enabled;m_GameplayEnabled=enabled; if(!enabled){m_UIEdges={};m_UIEdgeScene=0;if(m_Scene)m_Scene->CancelUIInput();}
+        CheckThread(); m_Mouse = position;
+        m_InputEnabled = enabled&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0));
+        m_GameplayEnabled=m_InputEnabled;
+        if(!m_InputEnabled){m_UIEdges={};m_UIEdgeScene=0;if(m_Scene)m_Scene->CancelUIInput();}
     }
     bool RuntimeSession::GetMouseWorldPosition(glm::vec2& position) const {
         if (!m_Scene || !IsGameplayMouseEnabled() || !m_Width || !m_Height || m_Mouse.x < 0 || m_Mouse.y < 0 || m_Mouse.x >= m_Width || m_Mouse.y >= m_Height) return false;
