@@ -1,7 +1,11 @@
 #include "hzpch.h"
+#include "Hazel/UI/RuntimeUIConfig.h"
 #include "DocumentSchema.h"
+#include "Hazel/Core/OperationProgress.h"
 #include "Hazel/Project/RendererRequestsSerializer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
+#include "Hazel/Project/RuntimeStorage.h"
+#include "Hazel/Project/Project.h"
 #include <set>
 #include <cmath>
 
@@ -66,7 +70,8 @@ bool Project(const YAML::Node& root)
     Structure(root);
     Keys(root, {"Project"}, "root");
     auto project = root["Project"];
-    Keys(project, {"Version", "Name", "ScriptProject", "StartScene", "AssetDirectory", "ScriptModulePath", "AuthoringVersion", "Rendering"}, "Project");
+    Keys(project, {"Version", "Name", "ScriptProject", "StartScene", "AssetDirectory", "ScriptModulePath", "AuthoringVersion", "Rendering", "SaveNamespace"}, "Project");
+    if(project["SaveNamespace"] && !project["SaveNamespace"].as<std::string>().empty() && !RuntimeStorage::ValidName(project["SaveNamespace"].as<std::string>()))throw std::runtime_error("Invalid project SaveNamespace");
     if(project["Rendering"])RendererRequestsSerializer::Read(project["Rendering"]);
     if(project["AuthoringVersion"] && project["AuthoringVersion"].as<int>()!=1)
         throw std::runtime_error("Unsupported project authoring/template contract; use a compatible editor");
@@ -83,6 +88,7 @@ bool Project(const YAML::Node& root)
 }
 bool Scene(const YAML::Node& root, bool prefabDocument)
 {
+    OperationProgress::Report("Validate document structure");
     Structure(root);
     if(prefabDocument) {
         Keys(root, {"Scene", "SceneVersion", "PrefabVersion", "PrefabRoot", "Entities"}, "root");
@@ -101,15 +107,19 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
     if(root["PrefabVersion"] && root["PrefabVersion"].as<int>()==2 && (!hierarchy || !root["PrefabRoot"] || !entities || entities.size()==0))throw std::runtime_error("PrefabVersion 2 requires SceneVersion 2, PrefabRoot and entities");
     bool legacy = !hierarchy || !entities;
     std::set<uint64_t> ids;
+    size_t checked=0;
     for (auto entity : entities)
     {
+        if(checked%64==0)OperationProgress::Report("Validate entity schema",checked,entities.size());
+        ++checked;
         Keys(entity, {"Entity", "TagComponent", "TransformComponent", "CameraComponent", "ScriptComponent",
                       "SpriteRendererComponent", "SpriteAnimationComponent", "CircleRendererComponent",
-                      "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent", "Relationship"}, "Entity");
+                      "AudioSourceComponent", "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent", "Relationship", "UICanvasComponent", "UIRectComponent", "UILayoutComponent", "UITextStyleComponent", "UINineSliceComponent", "UIButtonComponent"}, "Entity");
         if(hierarchy) {
             auto rel=entity["Relationship"];
             Keys(rel,{"Parent","Order"},"Relationship");rel["Parent"].as<uint64_t>();rel["Order"].as<uint32_t>();
         } else if(entity["Relationship"])throw std::runtime_error("Relationships require SceneVersion 2");
+        Hazel::ValidateUIConfiguration(entity);
         const auto id = entity["Entity"].as<uint64_t>();
         if (!id || !ids.insert(id).second) throw std::runtime_error("Duplicate or null entity UUID");
         if (auto n = entity["TagComponent"]) { Keys(n, {"Tag"}, "TagComponent"); n["Tag"].as<std::string>(); }
@@ -156,6 +166,15 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
         if(auto n=entity["SpriteAnimationComponent"])
             if(!n["DefaultClip"] || !n["Autoplay"] || !n["Speed"])legacy=true;
         // Sprite Source / animation / typed references have their own strict readers.
+        if(auto n=entity["AudioSourceComponent"]) {
+            Keys(n,{"Clip","Gain","Loop","PlayOnStart"},"AudioSourceComponent");
+            const auto path=n["Clip"].as<std::string>();
+            if(!path.empty()) {auto ref=Hazel::Project::NormalizeAssetPath(std::filesystem::u8path(path));
+                if(ref.has_root_path() || ref.extension()!=".wav" || path.find(':')!=std::string::npos)throw std::runtime_error("Audio clip must be project-relative WAV");
+                for(auto part:ref)if(part=="..")throw std::runtime_error("Audio clip escapes asset root");}
+            const auto gain=n["Gain"].as<float>();if(!std::isfinite(gain) || gain<0 || gain>1)throw std::runtime_error("Audio gain must be between 0 and 1");
+            n["Loop"].as<bool>();n["PlayOnStart"].as<bool>();
+        }
         if (auto n = entity["CircleRendererComponent"])
         {
             Keys(n, {"Color", "Thickness", "Fade"}, "CircleRendererComponent");

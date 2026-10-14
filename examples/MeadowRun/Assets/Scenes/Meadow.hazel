@@ -36,6 +36,9 @@ Entities:
       OrthographicFar: 10
     Primary: true
     FixedAspectRatio: false
+  Relationship:
+    Parent: 0
+    Order: 0
 - Entity: 2
   TagComponent:
     Tag: Grass
@@ -60,6 +63,9 @@ Entities:
     - 1
     TilingFactor: 24
     TexturePath: Textures/Grass.png
+  Relationship:
+    Parent: 0
+    Order: 1
 - Entity: 3
   TagComponent:
     Tag: West path
@@ -84,6 +90,9 @@ Entities:
     - 1
     TilingFactor: 3
     TexturePath: Textures/Path.png
+  Relationship:
+    Parent: 0
+    Order: 2
 - Entity: 4
   TagComponent:
     Tag: East path
@@ -108,6 +117,9 @@ Entities:
     - 1
     TilingFactor: 3
     TexturePath: Textures/Path.png
+  Relationship:
+    Parent: 0
+    Order: 3
 - Entity: 5
   TagComponent:
     Tag: North path
@@ -132,6 +144,9 @@ Entities:
     - 1
     TilingFactor: 3
     TexturePath: Textures/Path.png
+  Relationship:
+    Parent: 0
+    Order: 4
 - Entity: 6
   TagComponent:
     Tag: South path
@@ -156,6 +171,9 @@ Entities:
     - 1
     TilingFactor: 3
     TexturePath: Textures/Path.png
+  Relationship:
+    Parent: 0
+    Order: 5
 - Entity: 7
   TagComponent:
     Tag: Tree0
@@ -195,6 +213,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 6
 - Entity: 8
   TagComponent:
     Tag: Tree1
@@ -234,6 +255,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 7
 - Entity: 9
   TagComponent:
     Tag: Tree2
@@ -273,6 +297,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 8
 - Entity: 10
   TagComponent:
     Tag: Tree3
@@ -312,6 +339,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 9
 - Entity: 11
   TagComponent:
     Tag: Tree4
@@ -351,6 +381,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 10
 - Entity: 12
   TagComponent:
     Tag: Tree5
@@ -390,6 +423,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 11
 - Entity: 13
   TagComponent:
     Tag: Tree6
@@ -429,6 +465,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 12
 - Entity: 14
   TagComponent:
     Tag: Rock0
@@ -468,6 +507,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 13
 - Entity: 15
   TagComponent:
     Tag: Rock1
@@ -507,6 +549,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 14
 - Entity: 16
   TagComponent:
     Tag: Rock2
@@ -546,6 +591,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 15
 - Entity: 17
   TagComponent:
     Tag: West boundary
@@ -577,6 +625,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 16
 - Entity: 18
   TagComponent:
     Tag: East boundary
@@ -608,6 +659,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 17
 - Entity: 19
   TagComponent:
     Tag: North boundary
@@ -639,6 +693,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 18
 - Entity: 20
   TagComponent:
     Tag: South boundary
@@ -670,6 +727,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 19
 - Entity: 21
   TagComponent:
     Tag: Pond
@@ -694,6 +754,9 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Pond.png
+  Relationship:
+    Parent: 0
+    Order: 20
 - Entity: 22
   TagComponent:
     Tag: Exit
@@ -718,6 +781,9 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Exit.png
+  Relationship:
+    Parent: 0
+    Order: 21
 - Entity: 23
   TagComponent:
     Tag: ExitLabel
@@ -743,6 +809,9 @@ Entities:
     - 1
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 0
+    Order: 22
 - Entity: 24
   TagComponent:
     Tag: Seed0
@@ -759,6 +828,9 @@ Entities:
     - 0.7
     - 0.7
     - 1
+  Relationship:
+    Parent: 0
+    Order: 23
 - Entity: 25
   TagComponent:
     Tag: Seed1
@@ -775,6 +847,9 @@ Entities:
     - 0.7
     - 0.7
     - 1
+  Relationship:
+    Parent: 0
+    Order: 24
 - Entity: 26
   TagComponent:
     Tag: Seed2
@@ -791,6 +866,9 @@ Entities:
     - 0.7
     - 0.7
     - 1
+  Relationship:
+    Parent: 0
+    Order: 25
 - Entity: 27
   TagComponent:
     Tag: Seed3
@@ -807,6 +885,9 @@ Entities:
     - 0.7
     - 0.7
     - 1
+  Relationship:
+    Parent: 0
+    Order: 26
 - Entity: 28
   TagComponent:
     Tag: Seed4
@@ -823,6 +904,9 @@ Entities:
     - 0.7
     - 0.7
     - 1
+  Relationship:
+    Parent: 0
+    Order: 27
 - Entity: 29
   TagComponent:
     Tag: Explorer
@@ -848,7 +932,7 @@ Entities:
     Source:
       Type: Region
       Sheet: Textures/Lanterns.hsprites
-      RegionID: "0000000000000101"
+      RegionID: '0000000000000101'
   ScriptComponent:
     ClassName: MeadowRun.Explorer
     ScriptFields:
@@ -870,6 +954,9 @@ Entities:
     Friction: 0
     Restitution: 0
     RestitutionThreshold: 0.5
+  Relationship:
+    Parent: 0
+    Order: 28
 - Entity: 30
   TagComponent:
     Tag: Meadow rules
@@ -901,6 +988,9 @@ Entities:
     - Name: Level
       Type: Int
       Data: 1
+  Relationship:
+    Parent: 0
+    Order: 29
 - Entity: 31
   TagComponent:
     Tag: HUD ribbon
@@ -924,63 +1014,183 @@ Entities:
     - 0.24
     - 1
     TilingFactor: 1
+  Relationship:
+    Parent: 35
+    Order: 0
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 0
+    - 0
+    SizeDelta:
+    - 0
+    - 106
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
 - Entity: 32
   TagComponent:
     Tag: Progress
   TransformComponent:
     Translation:
-    - -7
-    - 5.1
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.65
-    - 0.65
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: Lantern seeds  0 / 5
     Color: *id001
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 35
+    Order: 1
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 18
+    - 10
+    SizeDelta:
+    - -36
+    - 38
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 30
+    Horizontal: 0
+    Vertical: 0
+    Wrap: true
 - Entity: 33
   TagComponent:
     Tag: Hint
   TransformComponent:
     Translation:
-    - -7
-    - 4.4
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.52
-    - 0.52
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: Find five lantern seeds. Stay out of the pond.
     Color: *id001
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 35
+    Order: 2
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 0
+    AnchorMax:
+    - 1
+    - 0
+    Offset:
+    - 18
+    - 54
+    SizeDelta:
+    - -36
+    - 38
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 26
+    Horizontal: 0
+    Vertical: 0
+    Wrap: true
 - Entity: 34
   TagComponent:
     Tag: Controls
   TransformComponent:
     Translation:
-    - -2.885663082437276
-    - -5.15
-    - 1
+    - 0
+    - 0
+    - 0
     Rotation:
     - 0
     - 0
     - 0
     Scale:
-    - 0.4
-    - 0.4
+    - 1
+    - 1
     - 1
   TextComponent:
     TextString: WASD / arrows   |   R restart   |   Esc menu
@@ -991,3 +1201,78 @@ Entities:
     - 1
     Kerning: 0
     LineSpacing: 0
+  Relationship:
+    Parent: 35
+    Order: 3
+  UIRectComponent:
+    AnchorMin:
+    - 0
+    - 1
+    AnchorMax:
+    - 1
+    - 1
+    Offset:
+    - 0
+    - 0
+    SizeDelta:
+    - 0
+    - 36
+    Pivot:
+    - 0
+    - 1
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 23
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
+- Entity: 35
+  TagComponent:
+    Tag: UI Canvas
+  Relationship:
+    Parent: 0
+    Order: 30
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UICanvasComponent:
+    ReferenceSize:
+    - 1280
+    - 720
+    SafeInsets:
+    - 16
+    - 16
+    - 16
+    - 16
+    SortOrder: 0
+    Visible: true
+    Enabled: true
+    Modal: false
+SceneVersion: 2

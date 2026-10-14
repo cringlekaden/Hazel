@@ -1,0 +1,31 @@
+SpriteSheet:
+  Version: 1
+  Texture: Art/lantern-pulse.png
+  TextureSize: [32, 16]
+  Sampling:
+    MinFilter: Nearest
+    MagFilter: Nearest
+    WrapS: ClampToEdge
+    WrapT: ClampToEdge
+    GenerateMips: false
+    Format: RGBA8
+  Regions:
+    - ID: "d073df841418c837"
+      Name: tile_000
+      Rect: [0, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+    - ID: "03d2d4539c3afed3"
+      Name: tile_001
+      Rect: [16, 0, 16, 16]
+      Pivot: [0.5, 0.5]
+  RetiredRegionIDs: []
+  Clips:
+    - ID: "9046c1eeb50e614a"
+      Name: Lantern breath
+      Loop: true
+      Frames:
+        - RegionID: "d073df841418c837"
+          Duration: 0.65000000000000002
+        - RegionID: "03d2d4539c3afed3"
+          Duration: 0.65000000000000002
+  RetiredClipIDs: []

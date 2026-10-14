@@ -17,6 +17,9 @@ namespace Hazel {
         static const RendererResolution& GetResolution() { return s_RendererAPI->GetResolution(); }
         static const RendererSettings& GetSettings() { return s_RendererAPI->GetSettings(); }
 
+        static RasterState GetRasterState() {return s_RendererAPI->GetRasterState();}
+        static void SetRasterState(const RasterState& state) {s_RendererAPI->SetRasterState(state);}
+
         static void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
         {
             s_RendererAPI->SetViewport(x, y, width, height);

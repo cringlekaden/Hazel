@@ -92,6 +92,7 @@ namespace Hazel {
             WindowResizeEvent event(width, height);
             data.EventCallback(event);
         });
+        glfwSetWindowFocusCallback(m_Window, [](GLFWwindow* window, int focused) {if(!focused){auto& data=*(WindowData*)glfwGetWindowUserPointer(window);WindowLostFocusEvent event;data.EventCallback(event);}});
         glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window)
         {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);

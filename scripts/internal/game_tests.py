@@ -13,7 +13,26 @@ from internal.package_tests import wait_for,unavailable_sources,extract_verified
 from internal.testing.desktop import Desktop
 from internal.tests import software_driver
 
-GAMES=('MeadowRun','Skybound')
+# Discover descriptors; preserve the strict three-game probe's argument contract.
+PROJECTS={p.stem:p for p in sorted((hz.ROOT/'examples').rglob('*.hproj'))}
+GAMES=tuple(g for g in ('MeadowRun','Skybound','LastLightkeeper') if g in PROJECTS)+tuple(g for g in PROJECTS if g not in ('MeadowRun','Skybound','LastLightkeeper'))
+NATIVE_GAMES=GAMES[:2] # Retain the existing two-game strict native regression contract.
+# Includes all authored Lightkeeper locations and three capture aspect ratios.
+# Grandpa's Debug suite takes several minutes; bound the expanded work rather
+# than dropping transitions, rendering or old-save assertions to meet the old cap.
+GAME_RUNTIME_TIMEOUT={'Debug':480,'Release':240}
+
+@contextlib.contextmanager
+def unavailable_gac(root):
+    """Exercise the shipped framework profile without Linux's bundled GAC fallback."""
+    gac=root/'mono/lib/mono/gac'
+    hidden=gac.with_name('gac-test-unavailable')
+    if not gac.exists():
+        yield
+        return
+    gac.rename(hidden)
+    try:yield
+    finally:hidden.rename(gac)
 
 def model_tests(configuration):
     directory=hz.ROOT/'tests/examples';destination=hz.ROOT/'build/testing/managed'/f'{configuration}-{hz.SYSTEM}'
@@ -84,7 +103,12 @@ def game_tests(configuration,profile,packages,output):
     logs.mkdir(parents=True,exist_ok=True);shots=logs/'screenshots';shots.mkdir(exist_ok=True)
     hz.yaml_tools() # Required by canonical project/build services.
     if not packages:
-        for game in GAMES:hz.script_build(hz.ROOT/'examples'/game/(game+'.hproj'),configuration)
+        for game in GAMES:hz.script_build(PROJECTS[game],configuration)
+    if not packages:
+        import importlib.util
+        spec=importlib.util.spec_from_file_location("lightkeeper_authoring",hz.ROOT/"tests/examples/lightkeeper_authoring.py")
+        audit=importlib.util.module_from_spec(spec);spec.loader.exec_module(audit)
+        audit.check_project(hz.ROOT/"examples/LastLightkeeper/LastLightkeeper.hproj")
     model_tests(configuration)
     driver=software_driver() if hz.SYSTEM=='windows' and profile!='native' else None
     with tempfile.TemporaryDirectory(prefix='Hazel games space-é-🚀 ') as temporary:
@@ -98,8 +122,8 @@ def game_tests(configuration,profile,packages,output):
             env.update(HAZEL_RESOURCES=str(hz.binaries(configuration)/'Nutella/Resources'),HAZEL_MONO=str(hz.binaries(configuration)/'Nutella/mono'),HAZEL_DATA=str(working/'native data'))
             if hz.SYSTEM=='linux':env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
             with (logs/'RuntimeSmoke.log').open('w',encoding='utf-8') as stream:
-                result=subprocess.run([str(native),*[str(hz.ROOT/'examples'/game/(game+'.hproj')) for game in GAMES],str(shots)],cwd=working,env=env,stdout=stream,stderr=subprocess.STDOUT,timeout=120)
-            if result.returncode:raise RuntimeError('Game runtime regression:\n'+(logs/'RuntimeSmoke.log').read_text(errors='replace'))
+                result=subprocess.run([str(native),*[str(PROJECTS[game]) for game in NATIVE_GAMES],str(shots),str(hz.ROOT/'examples/LastLightkeeper/LastLightkeeper.hproj')],cwd=working,env=env,stdout=stream,stderr=subprocess.STDOUT,timeout=GAME_RUNTIME_TIMEOUT[configuration])
+            if result.returncode:raise RuntimeError(f'Game runtime regression (exit {result.returncode}):\n'+(logs/'RuntimeSmoke.log').read_text(errors='replace'))
             for capture in shots.glob('*.ppm'):ppm_to_png(capture)
         roots=[]
         if packages:
@@ -116,8 +140,8 @@ def game_tests(configuration,profile,packages,output):
                         for dll in driver.glob('*.dll'):hz.copy_changed(dll,roots[0]/dll.name)
                     isolated=env.copy()
                     isolated.update(HAZEL_RESOURCES=str(roots[0]/'Resources'),HAZEL_MONO=str(roots[0]/'mono'),HAZEL_DATA=str(working/'packaged native data'))
-                    with (logs/'PackagedRuntimeSmoke.log').open('w',encoding='utf-8') as stream:
-                        result=subprocess.run([str(probe),*[str(next(root.glob('*.hproj'))) for root in roots],str(shots)],cwd=working,env=isolated,stdout=stream,stderr=subprocess.STDOUT,timeout=120)
+                    with unavailable_gac(roots[0]), (logs/'PackagedRuntimeSmoke.log').open('w',encoding='utf-8') as stream:
+                        result=subprocess.run([str(probe),*[str(next(root.glob('*.hproj'))) for root in roots[:2]],str(shots),str(next(roots[2].glob('*.hproj')))],cwd=working,env=isolated,stdout=stream,stderr=subprocess.STDOUT,timeout=GAME_RUNTIME_TIMEOUT[configuration])
                     if result.returncode:raise RuntimeError('Extracted game runtime regression:\n'+(logs/'PackagedRuntimeSmoke.log').read_text(errors='replace'))
                     for capture in shots.glob('*.ppm'):ppm_to_png(capture)
                 for index,game in enumerate(GAMES):
@@ -128,8 +152,9 @@ def game_tests(configuration,profile,packages,output):
                         executable=directory/(app+('.exe' if hz.SYSTEM=='windows' else ''))
                         if driver:
                             for dll in driver.glob('*.dll'):hz.copy_changed(dll,directory/dll.name)
-                        project=next(directory.glob('*.hproj')) if packages else hz.ROOT/'examples'/game/(game+'.hproj')
+                        project=next(directory.glob('*.hproj')) if packages else PROJECTS[game]
                         env['HAZEL_DATA']=str(working/'data'/game/app)
+                        env['HAZEL_SAVE_ROOT']=str(working/'player saves'/game/app)
                         if packages:cli(executable,working,env)
                         exercise(desktop,executable,project,app,game,working,env,logs,shots,packages)
         finally:desktop.shutdown()

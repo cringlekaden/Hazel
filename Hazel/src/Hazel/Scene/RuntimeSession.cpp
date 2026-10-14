@@ -4,6 +4,11 @@
 #include "Entity.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Core/Application.h"
+#include "Hazel/Core/Input.h"
+#include "Hazel/Events/KeyEvent.h"
+#include "Hazel/Events/ApplicationEvent.h"
+#include "Hazel/Events/MouseEvent.h"
+#include "Hazel/Core/FileSystem.h"
 #include "Hazel/Renderer/Renderer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include <glm/gtc/matrix_inverse.hpp>
@@ -19,6 +24,7 @@ namespace Hazel {
     void RuntimeSession::Validate(const Ref<Scene>& scene, bool validateScripts) {
         if (!scene) throw std::runtime_error("No scene to run");
         scene->ValidateSprites();
+        scene->ValidateUI();
         scene->ValidateHierarchy(); // Shared roots, planar dimensions, graph/world and physics validation.
         if (validateScripts) for (auto handle : scene->GetAllEntitiesWith<ScriptComponent>()) {
             const auto& script = Entity(handle, scene.get()).GetComponent<ScriptComponent>();
@@ -42,6 +48,9 @@ namespace Hazel {
             throw std::logic_error("Only one runtime session may use the script environment");
         Stop();
         m_Project = project; m_Scene = std::move(scene);
+        auto root=FileSystem::GetEnvironmentPath("HAZEL_SAVE_ROOT");
+        if(root.empty())root=FileSystem::GetUserDataDirectory()/"Hazel/Games";
+        m_Storage.Configure(root,project?project->GetConfig().SaveNamespace:"",m_PersistentStorage);
         m_Identity = ++s_NextSession; m_Error.clear();
         m_Scene->OnViewportResize(m_Width, m_Height);
         ScriptEngine::SetRuntimeSession(this);
@@ -57,6 +66,7 @@ namespace Hazel {
         // Unbind before native OnDestroy, so retired callbacks cannot queue work.
         if (ScriptEngine::GetRuntimeSession() == this) ScriptEngine::SetRuntimeSession(nullptr);
         if (m_Scene) m_Scene->OnRuntimeStop();
+        m_Storage.Clear();
         m_Scene.reset(); m_Project.reset(); m_Stopping = false;
     }
     bool RuntimeSession::RequestSceneLoad(const std::filesystem::path& reference) {
@@ -108,18 +118,40 @@ namespace Hazel {
         if (m_Updating) throw std::logic_error("Reentrant runtime update");
         CommitPendingTransition(); // One transition at most; target OnCreate waits one more frame.
         m_Updating = true;
-        try { m_Scene->OnUpdateRuntime(timestep); m_Updating = false; }
+        try {
+            auto input=m_UIEdgeScene==m_Scene->GetIdentity()?m_UIEdges:GameUI::InputFrame{};
+            m_UIEdges={};m_UIEdgeScene=0;input.Mouse=m_Mouse;input.Enabled=m_InputEnabled&&m_Width&&m_Height;
+            input.FocusNavigation=Input::IsKeyPressed(Key::Tab);
+            input.CancelDown=Input::IsKeyPressed(Key::Escape);
+            input.LeftDown=Input::IsMouseButtonPressed(Mouse::ButtonLeft);
+            input.AcceptDown=Input::IsKeyPressed(Key::Enter)||Input::IsKeyPressed(Key::Space);
+            const bool shift=Input::IsKeyPressed(Key::LeftShift)||Input::IsKeyPressed(Key::RightShift);
+            input.NextDown=(Input::IsKeyPressed(Key::Tab)&&!shift)||Input::IsKeyPressed(Key::Down)||Input::IsKeyPressed(Key::Right);
+            input.PreviousDown=(Input::IsKeyPressed(Key::Tab)&&shift)||Input::IsKeyPressed(Key::Up)||Input::IsKeyPressed(Key::Left);
+            m_Scene->UpdateUIInput(input);
+            m_Scene->OnUpdateRuntime(timestep); m_Updating = false;
+        }
         catch (...) { m_Updating = false; throw; }
     }
     void RuntimeSession::Resize(uint32_t width, uint32_t height) {
         CheckThread(); m_Width = width; m_Height = height;
         if (m_Scene) m_Scene->OnViewportResize(width, height);
     }
+    bool RuntimeSession::IsGameplayInputEnabled() const {return m_InputEnabled&&m_GameplayEnabled&&(!m_Scene||!m_Scene->IsGameplayInputBlocked());}
+    bool RuntimeSession::IsGameplayMouseEnabled() const {return m_InputEnabled&&m_GameplayEnabled&&(!m_Scene||!m_Scene->IsGameplayPointerBlocked());}
+    void RuntimeSession::SubmitUIEvent(Event& event,glm::vec2 mouse,bool enabled) {
+        if(event.GetEventType()==EventType::WindowLostFocus || (event.GetEventType()==EventType::WindowResize&&(!static_cast<WindowResizeEvent&>(event).GetWidth()||!static_cast<WindowResizeEvent&>(event).GetHeight()))){m_UIEdges={};m_UIEdgeScene=0;if(m_Scene)m_Scene->ResetUI();return;}
+        if(!enabled||!m_Scene)return;
+        if(m_UIEdgeScene!=m_Scene->GetIdentity()){m_UIEdges={};m_UIEdgeScene=m_Scene->GetIdentity();}
+        if(event.GetEventType()==EventType::MouseButtonPressed&&static_cast<MouseButtonPressedEvent&>(event).GetMouseButton()==Mouse::ButtonLeft){m_UIEdges.PointerPressed=true;m_UIEdges.PressPosition=mouse;}
+        if(event.GetEventType()==EventType::MouseButtonReleased&&static_cast<MouseButtonReleasedEvent&>(event).GetMouseButton()==Mouse::ButtonLeft){m_UIEdges.PointerReleased=true;m_UIEdges.ReleasePosition=mouse;m_UIEdges.HasReleasePosition=true;}
+        if(event.GetEventType()==EventType::KeyPressed){auto& e=static_cast<KeyPressedEvent&>(event);if(!e.IsRepeat()&&(e.GetKeyCode()==Key::Enter||e.GetKeyCode()==Key::Space))m_UIEdges.AcceptPressed=true;}
+    }
     void RuntimeSession::SetInput(glm::vec2 position, bool enabled) {
-        CheckThread(); m_Mouse = position; m_InputEnabled = enabled;
+        CheckThread(); m_Mouse = position; m_InputEnabled = enabled;m_GameplayEnabled=enabled; if(!enabled){m_UIEdges={};m_UIEdgeScene=0;}
     }
     bool RuntimeSession::GetMouseWorldPosition(glm::vec2& position) const {
-        if (!m_Scene || !m_InputEnabled || !m_Width || !m_Height || m_Mouse.x < 0 || m_Mouse.y < 0 || m_Mouse.x >= m_Width || m_Mouse.y >= m_Height) return false;
+        if (!m_Scene || !IsGameplayMouseEnabled() || !m_Width || !m_Height || m_Mouse.x < 0 || m_Mouse.y < 0 || m_Mouse.x >= m_Width || m_Mouse.y >= m_Height) return false;
         auto camera = m_Scene->GetPrimaryCameraEntity();
         if (!camera) return false;
         const auto transform = m_Scene->GetWorldTransform(camera);

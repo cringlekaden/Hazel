@@ -11,15 +11,11 @@ namespace MeadowRun {
     }
     public class SceneButton : Entity {
         public int Destination; // 0: meadow, 1: menu
-        public Vector2 HalfSize = new Vector2(2,0.6f);
-        private bool mouseHeld, enterHeld;
-        void OnCreate() { mouseHeld=Input.IsMouseButtonDown(MouseCode.Left);enterHeld=Input.IsKeyDown(KeyCode.Enter); }
+        private UIButtonComponent button;
+        void OnCreate() { button=GetComponent<UIButtonComponent>(); }
         void OnUpdate(float dt) {
-            bool mouse=Input.IsMouseButtonDown(MouseCode.Left),enter=Input.IsKeyDown(KeyCode.Enter);
-            Vector2 p;var center=Translation;
-            bool clicked=mouse&&!mouseHeld&&Input.GetMouseWorldPosition(out p)&&Math.Abs(p.X-center.X)<HalfSize.X&&Math.Abs(p.Y-center.Y)<HalfSize.Y;
-            if(clicked||(Destination==0&&enter&&!enterHeld)) Scene.LoadScene(Destination==1?"Scenes/MainMenu.hazel":"Scenes/Meadow.hazel");
-            mouseHeld=mouse;enterHeld=enter;
+            string action;
+            if(button.TryConsumeAction(out action)) Scene.LoadScene(Destination==1?"Scenes/MainMenu.hazel":"Scenes/Meadow.hazel");
         }
     }
 }

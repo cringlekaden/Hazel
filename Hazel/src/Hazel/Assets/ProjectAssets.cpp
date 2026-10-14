@@ -1,5 +1,7 @@
 #include "hzpch.h"
+#include "Hazel/Audio/AudioPlayback.h"
 #include "ProjectAssets.h"
+#include "Hazel/UI/RuntimeUIConfig.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Scene/Prefab.h"
 #include "Hazel/Core/DocumentSchema.h"
@@ -16,6 +18,12 @@ std::string TextureKey(const std::filesystem::path& path,const TextureSpecificat
     return path.generic_u8string()+"|"+std::to_string(s.Width)+"|"+std::to_string(s.Height)+"|"+std::to_string(static_cast<int>(s.Format))+"|"+TextureFilterName(s.MinFilter)+"|"+TextureFilterName(s.MagFilter)+"|"+TextureWrapName(s.WrapS)+"|"+TextureWrapName(s.WrapT)+(s.GenerateMips?"|mips":"|base");
 }
 std::string ReferenceKey(const std::filesystem::path& path,SpriteID id) {return Project::NormalizeAssetPath(path).lexically_normal().generic_u8string()+"|"+SpriteIDText(id);}
+}
+Ref<Font> ProjectAssets::FontAsset(const std::filesystem::path& reference) {
+    if(reference.empty())return Font::GetDefault();
+    auto path=Project::ResolveOwnedAsset(m_Root,reference);auto key=path.generic_u8string();auto it=m_Fonts.find(key);
+    if(it!=m_Fonts.end())return it->second;
+    auto font=CreateRef<Font>(path);m_Fonts.emplace(key,font);return font;
 }
 Ref<const SpriteSheetDefinition> ProjectAssets::Sheet(const std::filesystem::path& reference) {
     auto path=Project::ResolveOwnedAsset(m_Root,reference); if(path.extension()!=".hsprites") throw std::runtime_error("Expected .hsprites asset");
@@ -69,7 +77,7 @@ void ProjectAssets::Refresh() {
     for(auto& p:paths) {
         try{Reload(p);}catch(const std::exception& e){HZ_CORE_WARN("Sprite asset refresh: {}",e.what());}
     }
-    ++m_Epoch;m_Textures.clear();m_Sprites.clear();m_Clips.clear();
+    ++m_Epoch;m_Textures.clear();m_Sprites.clear();m_Clips.clear();m_Fonts.clear();
 }
 void ProjectAssets::ImportTexture(const std::filesystem::path& source,const std::filesystem::path& destination) {
     Texture2D::ReadImage(source); // Validate through the shared engine decoder before copying.
@@ -94,6 +102,7 @@ std::vector<SpriteAssetUse> FindSpriteAssetUses(const std::filesystem::path& roo
             if(auto s=entity["SpriteRendererComponent"]) {
                 auto source=ReadSpriteSource(s); if(auto r=std::get_if<SpriteReference>(&source)) result.push_back({file,location,*r,{}});
             }
+            if(auto b=entity["UIButtonComponent"]){auto c=ReadUIButtonComponent(b);for(auto& source:c.Images)if(auto r=std::get_if<SpriteReference>(&source))result.push_back({file,location+" UI state",*r,{}});}
             if(auto a=entity["SpriteAnimationComponent"]) {
                 if(!entity["SpriteRendererComponent"])throw std::runtime_error(location+": Animation requires Sprite Renderer");
                 result.push_back({file,location+" animation",{},ReadSpriteAnimationSettings(a).DefaultClip});
@@ -126,6 +135,29 @@ std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path
     // Whole texture sources are also validated by the same canonical parser/decoder.
     for(auto file:files) if(file.extension()==".hazel" || file.extension()==".hprefab") {
         auto doc=YAML::Load(FileDocument::Read(Project::ResolveOwnedAsset(root,file)));
+        DocumentSchema::Scene(doc,file.extension()==".hprefab");
+        for(auto e:doc["Entities"]) {
+            if(auto n=e["UINineSliceComponent"]) {
+                const auto borders=ReadUINineSliceComponent(n).Borders;
+                auto validate=[&](const SpriteSource& source){glm::vec2 size{};
+                    if(auto image=std::get_if<SpriteReference>(&source);image&&image->Region){const auto rect=get(image->Sheet).Region(image->Region).Rect;size={rect.Width,rect.Height};}
+                    if(auto image=std::get_if<TextureSpriteSource>(&source);image&&!image->Texture.empty()){auto pixels=Texture2D::ReadImage(Project::ResolveOwnedAsset(root,image->Texture));size={pixels.Width,pixels.Height};}
+                    if(size.x<=0||size.y<=0||borders.x+borders.z>size.x||borders.y+borders.w>size.y)throw std::runtime_error(file.generic_u8string()+": nine-slice borders exceed source image");
+                };
+                if(!e["SpriteRendererComponent"])throw std::runtime_error("Nine-slice requires an image");
+                validate(ReadSpriteSource(e["SpriteRendererComponent"]));
+                if(auto button=e["UIButtonComponent"])for(auto& source:ReadUIButtonComponent(button).Images)if(source.index()!=0)validate(source);
+            }
+            if(auto n=e["UITextStyleComponent"]){auto font=ReadUITextStyleComponent(n).FontPath;if(!font.empty()){auto path=Project::ResolveOwnedAsset(root,font);Font::ValidateFile(path);dependencies.insert(path.lexically_relative(std::filesystem::weakly_canonical(root)));}}
+            if(auto n=e["UIButtonComponent"]){for(auto& source:ReadUIButtonComponent(n).Images)if(auto t=std::get_if<TextureSpriteSource>(&source)){if(!t->Texture.empty()){auto path=Project::ResolveOwnedAsset(root,t->Texture);Texture2D::ReadImage(path);dependencies.insert(path.lexically_relative(std::filesystem::weakly_canonical(root)));}}}
+        }
+        for(auto e:doc["Entities"]) if(auto n=e["AudioSourceComponent"]) {
+            auto clip=std::filesystem::u8path(n["Clip"].as<std::string>());
+            if(!clip.empty()) {
+                auto path=Project::ResolveOwnedAsset(root,clip);AudioPlayback::ValidateClip(path);
+                dependencies.insert(path.lexically_relative(std::filesystem::weakly_canonical(root)));
+            }
+        }
         for(auto e:doc["Entities"]) if(auto n=e["SpriteRendererComponent"]) {
             auto source=ReadSpriteSource(n); if(auto t=std::get_if<TextureSpriteSource>(&source)) {
                 auto path=Project::ResolveOwnedAsset(root,t->Texture);Texture2D::ReadImage(path);dependencies.insert(path.lexically_relative(std::filesystem::weakly_canonical(root)));

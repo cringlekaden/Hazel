@@ -53,6 +53,17 @@ namespace Hazel {
 		return texture;
 	}
 
+    void Font::ValidateFile(const std::filesystem::path& path) {
+        ScopedBuffer bytes(FileSystem::ReadFileBinary(path));
+        if(!bytes || bytes.Size()>static_cast<uint64_t>(std::numeric_limits<int>::max()))throw std::runtime_error("Cannot read font: "+path.generic_u8string());
+        FontHandles handles;handles.Library=msdfgen::initializeFreetype();
+        if(!handles.Library)throw std::runtime_error("Cannot initialize FreeType");
+        handles.Face=msdfgen::loadFontData(handles.Library,bytes.Data(),int(bytes.Size()));
+        if(!handles.Face)throw std::runtime_error("Invalid font: "+path.generic_u8string());
+        std::vector<msdf_atlas::GlyphGeometry> glyphs;msdf_atlas::FontGeometry geometry(&glyphs);
+        msdf_atlas::Charset charset;charset.add('?');charset.add(' ');
+        if(geometry.loadCharset(handles.Face,1,charset)!=2)throw std::runtime_error("Font needs space and fallback glyphs");
+    }
 	Font::Font(const std::filesystem::path& filepath)
 		: m_Data(CreateScope<MSDFData>())
 	{

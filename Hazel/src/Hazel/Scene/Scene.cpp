@@ -1,4 +1,10 @@
 #include "hzpch.h"
+#include "Hazel/UI/RuntimeUI.h"
+#include "Hazel/UI/RuntimeUIConfig.h"
+#include "Hazel/Project/Project.h"
+#include "Hazel/Core/OperationProgress.h"
+#include "Hazel/Audio/AudioPlayback.h"
+#include "Hazel/Project/Project.h"
 #include "Scene.h"
 #include "RuntimeSession.h"
 #include "Entity.h"
@@ -28,6 +34,7 @@ namespace Hazel {
 
 	Scene::Scene()
 	{
+        m_UI=CreateScope<RuntimeUI>(*this);
 	}
 
 	Scene::~Scene()
@@ -36,6 +43,7 @@ namespace Hazel {
 		std::vector<Entity> natives; for(auto id:OrderedForCleanup()){auto it=m_EntityMap.find(id);if(it!=m_EntityMap.end() && m_Registry.has<NativeScriptComponent>(it->second))natives.emplace_back(it->second,this);}
         for(auto entity:natives)if(entity)DestroyNativeScript(entity);
         CancelPendingLifecycle(); // Cleanup callbacks may retire gameplay-owned instances.
+        m_Audio.reset();
         m_IsRunning = false;
 		OnPhysics2DStop();
 	}
@@ -140,6 +148,7 @@ namespace Hazel {
 		tag.Tag = name.empty() ? "Entity" : name;
 
 		m_EntityMap[uuid] = entity;
+        m_HierarchyValidationDirty=true;
         auto& roots=m_Children[UUID(0)];m_Relationships[uuid]={UUID(0),uint32_t(roots.size())};roots.push_back(uuid);
         if(m_IsRunning)m_PendingStart.push_back(uuid);
 
@@ -196,7 +205,10 @@ namespace Hazel {
         auto starts=std::move(m_PendingStart);m_PendingStart.clear();
         SynchronizePhysics2D();
         for(auto id:starts) {auto entity=GetEntityByUUID(id);
-            if(entity && IsEntityValid(id) && entity.HasComponent<ScriptComponent>())ScriptEngine::OnCreateEntity(entity);
+            if(entity && IsEntityValid(id)) {
+                if(entity.HasComponent<AudioSourceComponent>() && entity.GetComponent<AudioSourceComponent>().PlayOnStart)PlayAudio(entity);
+                if(entity.HasComponent<ScriptComponent>())ScriptEngine::OnCreateEntity(entity);
+            }
         }
     }
     Entity Scene::CloneSubtree(Entity source,const TransformComponent* placement,bool preserveIDs,bool retainExternal,bool sibling) {
@@ -280,8 +292,10 @@ namespace Hazel {
     {
 		if (entity.m_Scene != this) throw std::invalid_argument("Entity belongs to another scene");
 		if (!entity) return;
+        RetireUI(entity.GetUUID());
         auto id=entity.GetUUID(); if(m_Destroying.count(id))return; m_Destroying.insert(id);
 		if (ScriptEngine::GetSceneContext() == this) ScriptEngine::OnDestroyEntity(entity.GetUUID());
+        StopAudio(entity);
         DestroyNativeScript(entity);
         DestroyPhysicsBody(entity);
 		RemoveRelationship(id);
@@ -289,6 +303,17 @@ namespace Hazel {
 		m_ScriptFields.erase(entity.GetUUID());
 		m_Registry.destroy(entity);m_Destroying.erase(id);
 	}
+
+    bool Scene::PlayAudio(Entity entity) {
+        if(!m_IsRunning || !entity || !entity.BelongsTo(this) || !entity.HasComponent<AudioSourceComponent>())throw std::logic_error("Audio requires a live runtime source");
+        const auto& source=entity.GetComponent<AudioSourceComponent>();
+        if(source.Clip.empty())return false;
+        if(!m_Assets)throw std::runtime_error("Audio requires project assets");
+        auto file=Project::ResolveOwnedAsset(m_Assets->Root(),source.Clip);
+        if(!m_Audio)m_Audio=CreateScope<AudioPlayback>();
+        return m_Audio->Play(entity.GetUUID(),file,source.Gain,source.Loop);
+    }
+    void Scene::StopAudio(Entity entity) {if(m_Audio && entity && entity.BelongsTo(this))m_Audio->Stop(entity.GetUUID());}
 
 	void Scene::OnRuntimeStart()
 	{
@@ -303,22 +328,26 @@ namespace Hazel {
 
 		OnPhysics2DStart();
 
+
+
 		// Scripting
 		{
 			ScriptEngine::OnRuntimeStart(this);
-            for(auto root:GetChildren())for(auto id:GetSubtree(GetEntityByUUID(root)))if(GetEntityByUUID(id).HasComponent<ScriptComponent>())m_PendingStart.push_back(id);
+            for(auto root:GetChildren())for(auto id:GetSubtree(GetEntityByUUID(root)))m_PendingStart.push_back(id);
             FlushLifecycle();
 		}
 	}
 
 	void Scene::OnRuntimeStop()
 	{
+        ResetUI();
 		m_Stopping = true; CancelPendingLifecycle();
         if (ScriptEngine::GetSceneContext() == this) ScriptEngine::OnRuntimeStop();
 
 		std::vector<Entity> natives; for(auto id:OrderedForCleanup()){auto it=m_EntityMap.find(id);if(it!=m_EntityMap.end() && m_Registry.has<NativeScriptComponent>(it->second))natives.emplace_back(it->second,this);}
         for(auto entity:natives)if(entity)DestroyNativeScript(entity);
         CancelPendingLifecycle(); // Cleanup callbacks may retire gameplay-owned instances.
+        m_Audio.reset();
         m_IsRunning = false;
 		OnPhysics2DStop();
         m_Stopping=false;
@@ -403,7 +432,7 @@ namespace Hazel {
 			for (auto entity : view)
 			{
 				auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
-                if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID))continue;
+                if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
 
 				if (camera.Primary && IsEntityValid(m_Registry.get<IDComponent>(entity).ID))
 				{
@@ -424,7 +453,7 @@ namespace Hazel {
 				for (auto entity : group)
 				{
 					auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
-                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID))continue;
+                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
 
                     auto* draw=RenderedSprite(Entity(entity,this));
                     if(draw) Renderer2D::DrawSprite(GetWorldTransform({entity,this}),*draw,sprite.Color,(int)entity);
@@ -438,7 +467,7 @@ namespace Hazel {
 				for (auto entity : view)
 				{
 					auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
-                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID))continue;
+                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
 
 					Renderer2D::DrawCircle(GetWorldTransform({entity,this}), circle.Color, circle.Thickness, circle.Fade, (int)entity);
 				}
@@ -450,7 +479,7 @@ namespace Hazel {
 				for (auto entity : view)
 				{
 					auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
-                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID))continue;
+                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
 
 					Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
 				}
@@ -459,6 +488,7 @@ namespace Hazel {
 			Renderer2D::EndScene();
 		}
 
+        RenderUI();
 	}
 
 	void Scene::OnUpdateSimulation(Timestep ts, EditorCamera& camera)
@@ -611,7 +641,9 @@ namespace Hazel {
 	void Scene::SynchronizePhysics2D()
 	{
 		if (!m_PhysicsWorld) return;
-        ValidateHierarchy();
+        // Graph/component changes require full validation; steady-state bodies
+        // keep per-step physics checks without rescanning unrelated terrain.
+        if(m_HierarchyValidationDirty)ValidateHierarchy();
 		auto view = m_Registry.view<Rigidbody2DComponent>();
 		for (auto e : view)
 		{
@@ -619,6 +651,7 @@ namespace Hazel {
             if(!IsEntityValid(entity.GetUUID()))continue;
 			auto& transform = entity.GetComponent<TransformComponent>();
 			auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
+            ValidatePhysics(entity,transform);
 
 			if (!rb2d.RuntimeBody) {
 				b2BodyDef bodyDef;
@@ -686,7 +719,7 @@ namespace Hazel {
 			for (auto entity : group)
 			{
 				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
-                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID))continue;
+                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
 
                 auto* draw=RenderedSprite(Entity(entity,this));
                 if(draw) Renderer2D::DrawSprite(GetWorldTransform({entity,this}),*draw,sprite.Color,(int)entity);
@@ -700,7 +733,7 @@ namespace Hazel {
 			for (auto entity : view)
 			{
 				auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
-                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID))continue;
+                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
 
 				Renderer2D::DrawCircle(GetWorldTransform({entity,this}), circle.Color, circle.Thickness, circle.Fade, (int)entity);
 			}
@@ -712,19 +745,23 @@ namespace Hazel {
 			for (auto entity : view)
 			{
 				auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
-                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID))continue;
+                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
 
 				Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
 			}
 		}
 
 		Renderer2D::EndScene();
+        RenderUI();
 	}
 
     void Scene::PrepareSprites(bool strict)
     {
+        size_t previewed=0;const auto previewCount=m_Registry.view<SpriteRendererComponent>().size();
         const uint64_t epoch=m_Assets?m_Assets->Epoch():1;
         for(auto e:m_Registry.view<SpriteRendererComponent>()) {
+            if(previewed%128==0)OperationProgress::Report("Resolve sprite previews",previewed,previewCount);
+            ++previewed;
             auto& s=m_Registry.get<SpriteRendererComponent>(e);
             if(s.PreparedEpoch!=epoch || !(s.PreparedSource==s.Source)) {
                 s.PreparedEpoch=epoch;s.PreparedSource=s.Source;s.Resolved={};
@@ -799,6 +836,12 @@ namespace Hazel {
         return entity.GetComponent<SpriteRendererComponent>().Resolved.Data.get();
     }
 
+    template<> void Scene::OnComponentAdded<UICanvasComponent>(Entity,UICanvasComponent&) {}
+    template<> void Scene::OnComponentAdded<UIRectComponent>(Entity,UIRectComponent&) {}
+    template<> void Scene::OnComponentAdded<UILayoutComponent>(Entity,UILayoutComponent&) {}
+    template<> void Scene::OnComponentAdded<UITextStyleComponent>(Entity,UITextStyleComponent&) {}
+    template<> void Scene::OnComponentAdded<UINineSliceComponent>(Entity,UINineSliceComponent&) {}
+    template<> void Scene::OnComponentAdded<UIButtonComponent>(Entity,UIButtonComponent&) {}
     template<typename T>
 
 	void Scene::OnComponentAdded(Entity entity, T& component)
@@ -827,6 +870,8 @@ namespace Hazel {
 	void Scene::OnComponentAdded<ScriptComponent>(Entity entity, ScriptComponent& component)
 	{
 	}
+
+    template<> void Scene::OnComponentAdded<AudioSourceComponent>(Entity, AudioSourceComponent&) {}
 
 	template<>
 	void Scene::OnComponentAdded<SpriteRendererComponent>(Entity entity, SpriteRendererComponent& component)

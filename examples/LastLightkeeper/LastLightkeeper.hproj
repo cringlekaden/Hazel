@@ -1,0 +1,8 @@
+Project:
+  Version: 1
+  Name: The Last Lightkeeper
+  ScriptProject: LastLightkeeper
+  SaveNamespace: cringlekaden.TheLastLightkeeper
+  StartScene: Scenes/MainMenu.hazel
+  AssetDirectory: Assets
+  ScriptModulePath: Scripts/Binaries/LastLightkeeper.dll

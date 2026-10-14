@@ -150,11 +150,16 @@ void SpritePlayback::Advance(const SpriteClip& clip,double dt,double speed) {
         else Scrub(clip,Time+dt*speed);
     }
 }
-SpriteReference ReadSpriteReference(const YAML::Node& n) {
-    if(!n || n.IsNull()) return {};
-    Keys(n,{"Sheet","RegionID"}); auto path=Project::NormalizeAssetPath(std::filesystem::u8path(n["Sheet"].as<std::string>()));
+namespace {
+SpriteReference ReadRegionIdentity(const YAML::Node& n) {
+    auto path=Project::NormalizeAssetPath(std::filesystem::u8path(n["Sheet"].as<std::string>()));
     ReferencePath(path); if(path.extension()!=".hsprites") throw std::runtime_error("Sprite requires a .hsprites asset");
     return {path,ParseSpriteID(n["RegionID"].as<std::string>())};
+}
+}
+SpriteReference ReadSpriteReference(const YAML::Node& n) {
+    if(!n || n.IsNull()) return {};
+    Keys(n,{"Sheet","RegionID"});return ReadRegionIdentity(n);
 }
 AnimationReference ReadAnimationReference(const YAML::Node& n) {
     if(!n || n.IsNull()) return {};
@@ -190,7 +195,7 @@ SpriteSource ReadSpriteSource(const YAML::Node& component) {
         return std::monostate{};
     }
     if(component["TexturePath"] || component["TilingFactor"]) throw std::runtime_error("Ambiguous legacy/canonical sprite source");
-    auto s=component["Source"]; auto type=s["Type"].as<std::string>();
+    const auto s=component["Source"]; auto type=s["Type"].as<std::string>();
     if(type=="None") {Keys(s,{"Type"});return std::monostate{};}
     if(type=="Texture") {
         Keys(s,{"Type","Texture","TilingFactor"});
@@ -201,7 +206,9 @@ SpriteSource ReadSpriteSource(const YAML::Node& component) {
     }
     if(type=="Region") {
         Keys(s,{"Type","Sheet","RegionID"});
-        YAML::Node ref; ref["Sheet"]=s["Sheet"]; ref["RegionID"]=s["RegionID"]; return ReadSpriteReference(ref);
+        // Reading existing fields must not assign document nodes into a temporary YAML map.
+        // yaml-cpp merges the entire document arena for each assignment (quadratic for tiled scenes).
+        return ReadRegionIdentity(s);
     }
     throw std::runtime_error("Unknown sprite source type: "+type);
 }

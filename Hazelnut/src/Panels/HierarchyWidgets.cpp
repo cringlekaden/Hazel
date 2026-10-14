@@ -234,8 +234,8 @@ void SceneHierarchyPanel::DrawHierarchy() {
     PropertyUI::Help("Reset the entity filter; matching ancestors remain visible while searching");
     const auto can = Availability ? Availability(EditOperation) : ActionAvailability{};
     ImGui::BeginDisabled(!CanEdit());
-    if (ImGui::Button("Add Entity"))
-        AddEntity();
+    if (ImGui::Button("Add Entity"))ImGui::OpenPopup("Create entity");
+    if(ImGui::BeginPopup("Create entity")){if(ImGui::MenuItem("Empty entity"))AddEntity();UIAddMenu();ImGui::EndPopup();}
     ImGui::EndDisabled();
     PropertyUI::Help(can.Reason);
     const auto *dragging = ImGui::GetDragDropPayload();
@@ -283,6 +283,7 @@ void SceneHierarchyPanel::DrawHierarchy() {
             ImGui::BeginDisabled(!CanEdit());
             if (ImGui::MenuItem("Add Entity"))
                 AddEntity();
+            UIAddMenu();
             ImGui::EndDisabled();
             ImGui::EndPopup();
         }

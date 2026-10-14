@@ -223,7 +223,7 @@ public:
                 const auto saved=e.m_Authoring->m_SavedScene;
                 e.m_EditorScene->GetEntityByUUID(901).GetComponent<TagComponent>().Tag="Unsaved simulation edit";
                 Check(e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::Simulate),"Runtime toolbar Simulate failed");
-                Check(e.m_Authoring->m_SavedScene==saved && saved!=SceneSerializer(e.m_EditorScene).SerializeText(),"Simulation incorrectly marked unsaved authoring as saved");
+                Check(e.m_Authoring->m_SavedScene==saved && saved!=SceneSerializer(e.m_EditorScene).CaptureAuthoredState(),"Simulation incorrectly marked unsaved authoring as saved");
             }
             Check(!e.m_HoveredEntity,"Simulate retained editor hover"); break;
         case 9:
@@ -836,6 +836,25 @@ private:
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=e.m_SceneHierarchyPanel;
         const auto scene=e.m_EditorScene;const auto before=a.SceneText();const auto saved=a.m_SavedScene;
         const auto oldSelection=panel.GetSelectedEntity();const uint64_t oldID=oldSelection?uint64_t(Entity(oldSelection).GetUUID()):0;
+        // Exercise the actual native presets and shared preview, without YAML authoring.
+        auto* viewport=ImGui::FindWindowByName("Viewport");Check(viewport,"UI input check lacks actual viewport");
+        auto* previousFocus=ImGui::GetCurrentContext()->NavWindow;const bool wasHovered=e.m_ViewportHovered;
+        ImGui::StartMouseMovingWindow(viewport);e.m_ViewportHovered=true;
+        Check(!e.RuntimeUIWidgetBlocksInput(),"ImGui viewport MoveId canceled runtime mouse gesture");
+        e.m_ViewportHovered=false;Check(e.RuntimeUIWidgetBlocksInput(),"Viewport title/background drag bypassed input guard");
+        e.m_ViewportHovered=true;ImGui::SetActiveID(viewport->GetID("Other widget"),viewport);
+        Check(e.RuntimeUIWidgetBlocksInput(),"Active editor widget leaked runtime input");
+        ImGui::ClearActiveID();ImGui::GetCurrentContext()->MovingWindow=nullptr;ImGui::FocusWindow(previousFocus);e.m_ViewportHovered=wasHovered;
+        panel.SetSelectedEntity({});Check(panel.AddUI(0),"Canvas preset failed");auto canvas=panel.GetSelectedEntity();
+        Check(canvas.HasComponent<UICanvasComponent>(),"Canvas preset lacks component");
+        Check(panel.AddUI(1),"Panel preset failed");auto uiPanel=panel.GetSelectedEntity();
+        Check(uiPanel.HasComponent<UIRectComponent>()&&uiPanel.HasComponent<SpriteRendererComponent>()&&scene->GetRelationship(uiPanel).Parent==canvas.GetUUID(),"Panel preset hierarchy/appearance incorrect");
+        Check(panel.AddUI(2),"Text preset failed");auto uiText=panel.GetSelectedEntity();Check(uiText.HasComponent<UITextStyleComponent>()&&uiText.HasComponent<TextComponent>(),"Text preset lacks style/text");
+        panel.SetSelectedEntity(uiPanel);Check(panel.AddUI(3),"Button preset failed");auto uiButton=panel.GetSelectedEntity();Check(uiButton.HasComponent<UIButtonComponent>(),"Button preset lacks action component");
+        scene->OnViewportResize(640,480);scene->OnUpdateEditor(0,e.m_EditorCamera);GameUI::Rect resolved;Check(scene->GetUIBounds(uiButton.GetUUID(),resolved)&&resolved.Size.x>0,"Editor UI preset preview lacks bounds");GameUI::Action action;Check(!scene->ConsumeUIAction(0,action),"Edit preview activated a game button");
+        const auto uiSnapshot=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();auto uiCopy=Scene::Copy(scene);Check(SceneSerializer(uiCopy,Project::GetAssetDirectory()).CaptureAuthoredState()==uiSnapshot,"Editor UI copy changed authored fields");
+        const auto uiPrefab=std::filesystem::path("Prefabs/EditorUI.hprefab");Prefab::Save(Project::GetAssetDirectory(),uiPrefab,scene,canvas);auto reopenedUI=Prefab::Load(Project::GetAssetDirectory(),uiPrefab);Check(Prefab::GetEntity(reopenedUI).HasComponent<UICanvasComponent>(),"Editor UI prefab reopen lost canvas");
+        scene->DestroyEntity(canvas);scene->OnViewportResize(uint32_t(e.m_ViewportSize.x),uint32_t(e.m_ViewportSize.y));panel.SetSelectedEntity(scene->GetEntityByUUID(oldID));Check(a.SceneText()==before,"UI authoring checks modified existing scene");std::filesystem::remove(Project::GetAssetDirectory()/uiPrefab);
         Check(panel.AddEntity("Hierarchy root"),"Controller Create Root failed");auto root=panel.GetSelectedEntity();
         auto transform=root.GetComponent<TransformComponent>();transform.Translation={3,2,0};scene->SetLocalTransform(root,transform);
         Check(panel.AddChild(root,"Hierarchy child"),"Controller Create Child failed");auto child=panel.GetSelectedEntity();

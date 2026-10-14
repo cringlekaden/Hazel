@@ -1,4 +1,5 @@
 #include "AuthoringPanel.h"
+#include "LoadingUI.h"
 #include "EditorLayer.h"
 #include "Hazel/Project/ProjectSerializer.h"
 #include "Hazel/Project/ScriptSource.h"
@@ -93,6 +94,8 @@ AuthoringPanel::AuthoringPanel(EditorLayer &editor) : m_Editor(editor), m_Consol
 }
 ActionAvailability AuthoringPanel::Availability(EditorAction action) const
 {
+    if(m_Editor.m_Loading && m_Editor.m_Loading->Busy() && !m_Editor.m_Loading->Running() && action!=EditorAction::Browse)
+        return {"A workspace operation is queued"};
     const auto available=EditorActionAvailability({static_cast<EditorMode>(m_Editor.m_SceneState), m_Tools.Busy(),
                                      bool(Project::GetActive()), bool(m_Editor.m_EditorScene),
                                      m_Documents.Pending() && !m_ResolvingDocumentAction},
@@ -111,7 +114,7 @@ bool AuthoringPanel::Require(EditorAction action)
 void AuthoringPanel::MarkSceneSaved() { m_SavedScene = SceneText(); }
 std::string AuthoringPanel::SceneText() const
 {
-    return SceneSerializer(m_Editor.m_EditorScene).SerializeAuthoredSnapshot();
+    return SceneSerializer(m_Editor.m_EditorScene).CaptureAuthoredState();
 }
 void AuthoringPanel::RememberProject()
 {
@@ -261,6 +264,7 @@ void AuthoringPanel::BindProject()
         const auto &config = Project::GetActive()->GetConfig();
         m_ProjectName = config.Name;
         m_ScriptProject = config.ScriptProject;
+        m_SaveNamespace = config.SaveNamespace;
         m_Startup = config.StartScene.generic_u8string();
         m_AssetDirectory = config.AssetDirectory.generic_u8string();
         m_Module = config.ScriptModulePath.generic_u8string();
@@ -623,6 +627,7 @@ void AuthoringPanel::Menus()
             auto &config = Project::GetActive()->GetConfig();
             m_ProjectName = config.Name;
             m_ScriptProject = config.ScriptProject;
+        m_SaveNamespace = config.SaveNamespace;
             m_Startup = config.StartScene.generic_u8string();
             m_AssetDirectory = config.AssetDirectory.generic_u8string();
             m_Module = config.ScriptModulePath.generic_u8string();
@@ -926,6 +931,8 @@ void AuthoringPanel::ProjectSettings()
     PropertyUI::ReadOnly("script-build", "Script identifier", m_ScriptProject.c_str());
     PropertyUI::Help("Set at creation to match the Premake workspace and "
                      "assembly. Renaming requires SDK changes.");
+    PropertyUI::Text("Save namespace", "Save namespace", m_SaveNamespace);
+    PropertyUI::Help("Stable game identity for durable player saves; blank disables SaveData. Editor Play uses isolated memory. Renaming starts a separate save history.");
     PropertyUI::Text("Assets folder", "Assets folder", m_AssetDirectory);
     auto root = m_Editor.m_ProjectPath.parent_path() / Path(m_AssetDirectory);
     if (!m_ProjectChoicesLoaded || m_ProjectChoiceRoot != root)
@@ -964,7 +971,7 @@ void AuthoringPanel::ProjectSettings()
     }
     ProjectRendering();
     bool renderingValid=true;try{RendererPolicy::Validate(m_RenderingDraft);}catch(const std::exception&){renderingValid=false;}
-    bool valid = renderingValid && !m_ProjectName.empty() && Portable(m_AssetDirectory) && Portable(m_Startup) &&
+    bool valid = renderingValid && (m_SaveNamespace.empty() || RuntimeStorage::ValidName(m_SaveNamespace)) && !m_ProjectName.empty() && Portable(m_AssetDirectory) && Portable(m_Startup) &&
                  Portable(m_Module);
     if (!valid)
         ImGui::TextWrapped("Choose project-relative assets, startup scene "
@@ -977,6 +984,7 @@ void AuthoringPanel::ProjectSettings()
         if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;
         config.Name = m_ProjectName;
         config.ScriptProject = m_ScriptProject;
+        config.SaveNamespace = m_SaveNamespace;
         config.StartScene = Path(m_Startup);
         config.AssetDirectory = Path(m_AssetDirectory);
         config.ScriptModulePath = Path(m_Module);
@@ -1012,7 +1020,7 @@ void AuthoringPanel::ProjectSettings()
             const auto path=FileDialogs::SaveFile("Hazel project\0*.hproj\0");
             if(!path.empty() && Require(EditorAction::SaveAsset))try {
                 auto candidate=CreateRef<Project>();auto& config=candidate->GetConfig();
-                config=Project::GetActive()->GetConfig();if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;config.Name=m_ProjectName;config.ScriptProject=m_ScriptProject;
+                config=Project::GetActive()->GetConfig();if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;config.Name=m_ProjectName;config.ScriptProject=m_ScriptProject;config.SaveNamespace=m_SaveNamespace;
                 config.StartScene=Path(m_Startup);config.AssetDirectory=Path(m_AssetDirectory);config.ScriptModulePath=Path(m_Module);
                 const auto text=ProjectSerializer(candidate).SerializeText();
                 FileSystem::WriteFileAtomically(Path(path),[&](auto& out){out<<text;},WriteMode::CreateNew);
@@ -1247,7 +1255,7 @@ void AuthoringPanel::SelectAsset(const std::filesystem::path &path)
                   FileDocument file;file.Open(path,true);
                   auto scene = Prefab::Load(Project::GetAssetDirectory(), relative, true);
                   file.Check();
-                  auto saved = SceneSerializer(scene).SerializeAuthoredSnapshot();
+                  auto saved = SceneSerializer(scene).CaptureAuthoredState();
                   auto transform = Prefab::GetEntity(scene).GetComponent<TransformComponent>();
                   transform.Translation.x = transform.Translation.y = 0;
                   m_PrefabScene = scene;
@@ -1373,7 +1381,7 @@ void AuthoringPanel::Prefabs()
     m_PrefabFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
     if (m_PrefabFocused)
         m_ActiveDocument = EditorDocument::Prefab;
-    bool dirty = SceneSerializer(m_PrefabScene).SerializeAuthoredSnapshot() != m_SavedPrefab;
+    bool dirty = SceneSerializer(m_PrefabScene).CaptureAuthoredState() != m_SavedPrefab;
     ImGui::TextWrapped("%s%s", m_PrefabReference.c_str(), dirty ? " * Unsaved" : "");
     if(m_PrefabFile.NeedsBackup())ImGui::TextWrapped("First Save preserves the opened original before writing supported content/defaults. Unresolved references remain authored values.");
     ImGui::TextWrapped("Detached instances. Saving affects future instances "

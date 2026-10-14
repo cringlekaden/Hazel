@@ -13,6 +13,7 @@
 namespace Hazel {
 
 	class AuthoringPanel;
+    class LoadingUI;
     class ConsoleModel;
     class ConsoleSession;
 
@@ -35,6 +36,8 @@ namespace Hazel {
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 
 		void OnOverlayRender();
+        glm::vec2 ViewportMouse() const;
+        bool RuntimeUIWidgetBlocksInput() const;
 
 		bool OpenProject();
         struct ProjectOpenOptions {
@@ -98,6 +101,8 @@ namespace Hazel {
 
 
 		int m_GizmoType = -1;
+        bool m_UIResizing=false,m_UIDragging=false;
+        int m_UIPreview=0;
         std::string m_GizmoError;
 
 		bool m_ShowPhysicsColliders = false;
@@ -114,6 +119,8 @@ namespace Hazel {
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		Scope<ContentBrowserPanel> m_ContentBrowserPanel;
         Scope<AuthoringPanel> m_Authoring;
+        Scope<LoadingUI> m_Loading;
+        bool m_CloseAfterLoading=false;
 
 		// Editor resources
 		Ref<Texture2D> m_IconPlay, m_IconPause, m_IconStep, m_IconSimulate, m_IconStop;

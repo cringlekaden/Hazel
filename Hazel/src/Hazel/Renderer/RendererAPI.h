@@ -9,6 +9,8 @@
 
 namespace Hazel {
 
+    struct RasterState { bool DepthTest=true, ClipEnabled=false; glm::ivec4 ClipRect{}, Viewport{}; };
+
     class RendererAPI
     {
     public:
@@ -25,6 +27,8 @@ namespace Hazel {
         virtual const RendererCapabilities& GetCapabilities() const = 0;
         virtual const RendererSettings& GetSettings() const = 0;
         virtual const RendererResolution& GetResolution() const = 0;
+        virtual RasterState GetRasterState() const = 0;
+        virtual void SetRasterState(const RasterState& state) = 0;
         virtual void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) = 0;
         virtual void SetClearColor(const glm::vec4& color) = 0;
         virtual void Clear() = 0;

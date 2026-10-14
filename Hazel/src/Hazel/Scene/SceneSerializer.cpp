@@ -1,9 +1,11 @@
 #include "hzpch.h"
+#include "Hazel/Core/OperationProgress.h"
 #include <cmath>
 #include "SceneSerializer.h"
 
 #include "Entity.h"
 #include "Components.h"
+#include "Hazel/UI/RuntimeUIConfig.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include "Hazel/Core/UUID.h"
 #include "Hazel/Core/FileSystem.h"
@@ -330,6 +332,14 @@ namespace Hazel {
             out<<YAML::Key<<"SpriteAnimationComponent"<<YAML::Value;
             WriteSpriteAnimationSettings(out,a);
         }
+        if(entity.HasComponent<AudioSourceComponent>()) {
+            const auto& a=entity.GetComponent<AudioSourceComponent>();
+            out<<YAML::Key<<"AudioSourceComponent"<<YAML::Value<<YAML::BeginMap
+                <<YAML::Key<<"Clip"<<YAML::Value<<a.Clip.generic_u8string()
+                <<YAML::Key<<"Gain"<<YAML::Value<<a.Gain<<YAML::Key<<"Loop"<<YAML::Value<<a.Loop
+                <<YAML::Key<<"PlayOnStart"<<YAML::Value<<a.PlayOnStart<<YAML::EndMap;
+        }
+
 		if (entity.HasComponent<CircleRendererComponent>())
 		{
 			out << YAML::Key << "CircleRendererComponent";
@@ -403,6 +413,7 @@ namespace Hazel {
 			out << YAML::EndMap; // TextComponent
 		}
 
+        WriteUIComponents(out,entity);
 		out << YAML::EndMap; // Entity
 	}
 
@@ -411,6 +422,7 @@ namespace Hazel {
 	std::string SceneSerializer::SerializeTextImpl(Entity only, bool portablePaths)
 	{
 		m_Scene->ValidateHierarchy();
+        m_Scene->ValidateUI(false);
 		YAML::Emitter out;
 		out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);
 		out.SetDoublePrecision(std::numeric_limits<double>::max_digits10);
@@ -455,7 +467,7 @@ namespace Hazel {
 		YAML::Node data;
 		try
 		{
-            data = YAML::Load(text);
+            data = OperationProgress::CPU("Parse scene YAML",[&text]{return YAML::Load(text);});
             m_Report.Migration = DocumentSchema::Scene(data,prefabDocument);
             if (!data["SceneVersion"] || data["SceneVersion"].as<int>()==1) m_Report.Problems.push_back({0,"Encoding","Save upgrades flat data to SceneVersion: 2 with explicit root relationships; original bytes are preserved first",{},true});
             if (!data["Entities"]) m_Report.Problems.push_back({0,"Entities","Known legacy missing entity list becomes an empty list on Save",{},true});
@@ -487,13 +499,17 @@ namespace Hazel {
 			return false;
 
 		std::string sceneName = data["Scene"].as<std::string>();
+        OperationProgress::Report("Create entities and resolve sprite previews",0,data["Entities"].size());
 		HZ_CORE_TRACE("Deserializing scene '{0}'", sceneName);
 
 		auto entities = data["Entities"];
 		if (entities)
 		{
+            size_t created=0;
 			for (auto entity : entities)
 			{
+                if(created%64==0)OperationProgress::Report("Create entities and authored components",created,entities.size());
+                ++created;
 				uint64_t uuid = entity["Entity"].as<uint64_t>();
 
 				std::string name;
@@ -507,6 +523,7 @@ namespace Hazel {
                 if(tagComponent) { deserializedEntity.GetComponent<TagComponent>().Tag=name; }
                 if(auto relationship=entity["Relationship"])staged->m_Relationships[uuid]={UUID(relationship["Parent"].as<uint64_t>()),relationship["Order"].as<uint32_t>()};
 
+				ReadUIComponents(entity,deserializedEntity);
 				auto transformComponent = entity["TransformComponent"];
 				if (transformComponent)
 				{
@@ -611,6 +628,16 @@ namespace Hazel {
                     if(!deserializedEntity.HasComponent<SpriteRendererComponent>()) throw std::runtime_error("Sprite animation requires SpriteRendererComponent");
                 }
 
+                if(auto node=entity["AudioSourceComponent"]) {
+                    auto& a=deserializedEntity.AddComponent<AudioSourceComponent>();
+                    a.Clip=Project::NormalizeAssetPath(std::filesystem::u8path(node["Clip"].as<std::string>()));
+                    a.Gain=node["Gain"].as<float>();a.Loop=node["Loop"].as<bool>();a.PlayOnStart=node["PlayOnStart"].as<bool>();
+                    if(!a.Clip.empty() && !std::filesystem::is_regular_file(Project::ResolveOwnedAsset(m_AssetRoot,a.Clip))) {
+                        if(!m_Repair)throw std::runtime_error("Missing audio clip: "+a.Clip.generic_u8string());
+                        m_Report.Problems.push_back({uuid,"Audio","Missing audio clip",m_AssetRoot/a.Clip});
+                    }
+                }
+
 				auto circleRendererComponent = entity["CircleRendererComponent"];
 				if (circleRendererComponent)
 				{
@@ -666,12 +693,12 @@ namespace Hazel {
 			}
 		}
 
-        staged->RebuildChildren();staged->ValidateHierarchy();
+        OperationProgress::Report("Validate hierarchy and physics");staged->RebuildChildren();staged->ValidateHierarchy();staged->ValidateUI(resources==ResourceLoading::Resolve);
         if(prefabDocument && data["PrefabVersion"].as<int>()==2) {
             const auto roots=staged->GetChildren();
             if(roots.size()!=1 || uint64_t(roots.front())!=data["PrefabRoot"].as<uint64_t>() || staged->GetSubtree(staged->GetEntityByUUID(roots.front())).size()!=staged->m_EntityMap.size())throw std::runtime_error("PrefabRoot must identify one complete connected subtree");
         }
-        if(resources==ResourceLoading::Resolve)staged->PrepareSprites(!m_Repair);
+        OperationProgress::Report("Resolve sprite previews");if(resources==ResourceLoading::Resolve)staged->PrepareSprites(!m_Repair);
         if(resources==ResourceLoading::Resolve)for(const auto& [id,fields]:stagedScriptFields)
             for(const auto& [name,field]:fields) {
                 std::filesystem::path resource;
@@ -711,6 +738,7 @@ namespace Hazel {
 		std::vector<Entity> oldEntities;
 		m_Scene->m_Registry.each([&](auto id) { oldEntities.emplace_back(id, m_Scene.get()); });
 		for (auto entity : oldEntities) m_Scene->DestroyEntity(entity);
+        m_Scene->ResetUI();
 		m_Scene->m_Registry = std::move(staged->m_Registry);
 		m_Scene->m_EntityMap = std::move(staged->m_EntityMap);
         m_Scene->m_Relationships=std::move(staged->m_Relationships);

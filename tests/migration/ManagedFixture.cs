@@ -169,3 +169,29 @@ namespace Migration {
         }
     }
 }
+
+namespace Migration {
+    public class UIProbe : Hazel.Entity {
+        public bool Passed;
+        void OnCreate() {
+            if(!HasComponent<Hazel.UICanvasComponent>() || !HasComponent<Hazel.UIRectComponent>() ||
+               !HasComponent<Hazel.UILayoutComponent>() || !HasComponent<Hazel.UITextStyleComponent>() ||
+               !HasComponent<Hazel.UINineSliceComponent>() || !HasComponent<Hazel.UIButtonComponent>())
+                throw new System.Exception("Runtime UI component reflection binding missing");
+            var canvas=GetComponent<Hazel.UICanvasComponent>();canvas.Visible=false;canvas.Visible=true;canvas.Enabled=false;canvas.Enabled=true;canvas.Modal=true;
+            var rect=GetComponent<Hazel.UIRectComponent>();rect.Visible=false;
+            if(rect.Visible||!canvas.Visible)throw new System.Exception("Rect visibility aliases Canvas");
+            rect.Visible=true;rect.Enabled=false;
+            if(rect.Enabled||!canvas.Enabled)throw new System.Exception("Rect enabled state aliases Canvas");
+            rect.Enabled=true;canvas.Visible=false;
+            if(canvas.Visible||!rect.Visible)throw new System.Exception("Canvas visibility aliases Rect");
+            canvas.Visible=true;
+            var button=GetComponent<Hazel.UIButtonComponent>();button.Interactable=false;button.Interactable=true;
+            string action;Hazel.Entity entity;
+            if(button.TryConsumeAction(out action)||Hazel.GameUI.TryConsumeAction(out entity,out action))throw new System.Exception("Fresh scene retained UI actions");
+            if(Hazel.GameUI.IsPointerCaptured)throw new System.Exception("Fresh scene retained pointer capture");
+            GetComponent<Hazel.TextComponent>().Text="Managed UI";
+            Passed=canvas.Visible&&canvas.Enabled&&canvas.Modal&&rect.Visible&&rect.Enabled&&button.Interactable;
+        }
+    }
+}

@@ -11,6 +11,7 @@ namespace Hazel {
         auto w=static_cast<GLFWwindow*>(GetNativeWindow());GetPlacement();
         if(glfwGetWindowAttrib(w,GLFW_MAXIMIZED))glfwRestoreWindow(w);else glfwMaximizeWindow(w);
     }
+    std::pair<unsigned int,unsigned int> Window::GetFramebufferSize() const {int width=0,height=0;glfwGetFramebufferSize(static_cast<GLFWwindow*>(GetNativeWindow()),&width,&height);return {static_cast<unsigned int>(std::max(0,width)),static_cast<unsigned int>(std::max(0,height))};}
     bool Window::IsFocused() const {return glfwGetWindowAttrib(static_cast<GLFWwindow*>(GetNativeWindow()),GLFW_FOCUSED)!=0;}
 
     std::vector<DisplayArea> Window::GetDisplayAreas() const {

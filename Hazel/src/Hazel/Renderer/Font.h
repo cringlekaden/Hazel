@@ -19,6 +19,7 @@ namespace Hazel {
 		const MSDFData* GetMSDFData() const { return m_Data.get(); }
 		Ref<Texture2D> GetAtlasTexture() const { return m_AtlasTexture; }
 
+        static void ValidateFile(const std::filesystem::path& path);
 		static Ref<Font> GetDefault();
 		static void Shutdown();
 	private:

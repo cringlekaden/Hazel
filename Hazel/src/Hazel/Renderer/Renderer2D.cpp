@@ -561,6 +561,48 @@ namespace Hazel {
 			DrawQuad(transform, src.Color, entityID);
 	}
 
+
+    float Renderer2D::MeasureText(const std::string& text,const Ref<Font>& font,float kerning) {
+        if(!font)throw std::invalid_argument("Measurement needs a font");
+        const auto& g=font->GetMSDFData()->FontGeometry;const auto& metrics=g.getMetrics();
+        const double scale=1/(metrics.ascenderY-metrics.descenderY);
+        std::vector<msdf_atlas::unicode_t> chars;msdf_atlas::utf8Decode(chars,text.c_str());
+        double x=0,maximum=0;
+        for(size_t i=0;i<chars.size();i++) {
+            auto ch=chars[i];if(ch=='\r')continue;if(ch=='\n'){maximum=std::max(maximum,x);x=0;continue;}
+            if(ch=='\t'){x+=4*(scale*g.getGlyph(' ')->getAdvance()+kerning);continue;}
+            auto glyph=g.getGlyph(ch);if(!glyph)glyph=g.getGlyph('?');if(!glyph)continue;
+            double advance=glyph->getAdvance();if(i+1<chars.size())g.getAdvance(advance,ch,chars[i+1]);x+=scale*advance+kerning;
+        }
+        return float(std::max(maximum,x));
+    }
+    void Renderer2D::LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines) {
+        if(text.size()>65536)throw std::invalid_argument("UI text exceeds 64 KiB");
+        lines.clear();
+        const auto& geometry=font->GetMSDFData()->FontGeometry;const auto metrics=geometry.getMetrics();
+        const double scale=1/(metrics.ascenderY-metrics.descenderY);
+        std::vector<msdf_atlas::unicode_t> chars;msdf_atlas::utf8Decode(chars,text.c_str());
+        std::vector<size_t> bytes;bytes.reserve(chars.size()+1);
+        for(size_t i=0;i<text.size();){bytes.push_back(i);++i;while(i<text.size()&&(static_cast<unsigned char>(text[i])&0xc0)==0x80)++i;}bytes.push_back(text.size());
+        if(bytes.size()!=chars.size()+1)throw std::invalid_argument("UI text must be UTF-8");
+        auto base=[&](uint32_t ch){auto glyph=geometry.getGlyph(ch);if(!glyph)glyph=geometry.getGlyph('?');return glyph?glyph->getAdvance():0.;};
+        auto emit=[&](size_t begin,size_t end){auto line=text.substr(bytes[begin],bytes[end]-bytes[begin]);lines.push_back({line,MeasureText(line,font,kerning)});};
+        size_t start=0,lastSpace=std::string::npos;double advance=0,previous=0;uint32_t previousChar=0;
+        for(size_t i=0;i<chars.size();i++) {
+            const auto ch=chars[i];if(ch=='\r')continue;
+            if(ch=='\n'){emit(start,i);start=i+1;advance=0;lastSpace=std::string::npos;previousChar=0;continue;}
+            if(previousChar&&previousChar!='\t'){double paired=base(previousChar);geometry.getAdvance(paired,previousChar,ch);advance+=scale*paired+kerning-previous;}
+            double current=ch=='\t'?4*(scale*base(' ')+kerning):scale*base(ch)+kerning;
+            if(wrap&&width>0&&i>start&&advance+current>width) {
+                size_t end=lastSpace!=std::string::npos&&lastSpace>=start?lastSpace:i;
+                emit(start,end);start=end;
+                while(start<chars.size()&&(chars[start]==' '||chars[start]=='\t'))++start;
+                advance=0;previousChar=0;lastSpace=std::string::npos;i=start-1;continue;
+            }
+            advance+=current;previous=current;previousChar=ch;if(ch==' '||ch=='\t')lastSpace=i;
+        }
+        emit(start,chars.size());
+    }
 	void Renderer2D::DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const TextParams& textParams, int entityID)
 	{
 		if (string.empty()) return;

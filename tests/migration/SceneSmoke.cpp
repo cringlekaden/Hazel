@@ -247,6 +247,12 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
     bool staleTicket=false;try{ScriptEngine::CommitAssembly(std::move(staged));}catch(const std::exception&){staleTicket=true;}
     Check(staleTicket && !ScriptEngine::EntityClassExists("Migration.SceneProbe"),"Stale assembly ticket published after project retirement");
     ScriptEngine::Init(target);
+    {
+        auto ui=CreateRef<Scene>();auto entity=ui->CreateEntity("UI managed probe");
+        entity.AddComponent<UICanvasComponent>();entity.AddComponent<UIRectComponent>();entity.AddComponent<UILayoutComponent>();entity.AddComponent<UITextStyleComponent>();entity.AddComponent<UINineSliceComponent>();entity.AddComponent<UIButtonComponent>();entity.AddComponent<SpriteRendererComponent>();entity.AddComponent<TextComponent>(TextComponent{"",Ref<Font>{}});entity.AddComponent<ScriptComponent>().ClassName="Migration.UIProbe";
+        for(int cycle=0;cycle<2;cycle++){ui->OnRuntimeStart();auto probe=ScriptEngine::GetEntityScriptInstance(entity.GetUUID());Check(probe&&probe->GetFieldValue<bool>("Passed")&&entity.GetComponent<TextComponent>().TextString=="Managed UI","Managed UI component/state/action bindings failed");ui->OnRuntimeStop();Check(!probe->GetManagedObject(),"UI managed instance survived Stop");}
+        std::cout<<"PASS: all six managed UI components, text/state/action APIs and repeated Start/Stop isolation\n";
+    }
     ManagedHierarchyChecks();
     SerializerChecks(fixture.Path);
     auto type=ScriptEngine::GetEntityClass("Migration.SceneProbe"); Check(bool(type),"Full ScriptEngine failed to discover fixture class");

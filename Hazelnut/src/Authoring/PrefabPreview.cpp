@@ -52,6 +52,7 @@ void AuthoringPanel::PrefabPreview() {
             m_PrefabFit = false;
         }
         m_PrefabCamera.SetViewportSize(float(width), float(height));
+        m_PrefabScene->OnViewportResize(width,height);
         {
             // Always release the offscreen target if scene rendering rejects a draft.
             struct PreviewBinding {

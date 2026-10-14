@@ -88,8 +88,9 @@ class Desktop:
                 return True
             self.user.EnumWindows(inspect,0);return found[0] if found else None
         def inspect(window,depth=0):
-            name=C.c_void_p();self.x.XFetchName(self.display,window,C.byref(name))
-            try:matches=name and C.string_at(name).decode(errors='replace')==title
+            kind=C.c_ulong();fmt=C.c_int();count=C.c_ulong();remaining=C.c_ulong();name=C.c_void_p()
+            self.x.XGetWindowProperty(self.display,window,self.atom('_NET_WM_NAME'),0,1024,0,0,C.byref(kind),C.byref(fmt),C.byref(count),C.byref(remaining),C.byref(name))
+            try:matches=name and fmt.value==8 and C.string_at(name,count.value).decode(errors='replace')==title
             finally:
                 if name:self.x.XFree(name)
             if matches:

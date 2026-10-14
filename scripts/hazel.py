@@ -256,6 +256,11 @@ def script_build(project, configuration):
     identity = hashlib.sha256(str(descriptor).encode('utf-8')).hexdigest()[:16]
     compiled = ROOT/'build/projects'/identity/f'{configuration}-{SYSTEM}-x86_64'
     compiled.mkdir(parents=True, exist_ok=True)
+    # The bundled/native project contract uses this objdir. Premake's pinned
+    # gmake C# response-file rule lacks an order-only directory prerequisite;
+    # on a cold parallel build its recipe can run before mkdir. Prepare the
+    # SDK-owned directory without changing vendor pins or serializing make.
+    (compiled/'Intermediates'/configuration).mkdir(parents=True, exist_ok=True)
     env['HAZEL_SCRIPT_OUTPUT'] = compiled.as_posix()
     if not Path(env['HAZEL_SCRIPTCORE']).is_file(): raise RuntimeError('Build Hazel first to supply Hazel-ScriptCore')
     inputs = {'core': hashlib.sha256(Path(env['HAZEL_SCRIPTCORE']).read_bytes()).hexdigest(),

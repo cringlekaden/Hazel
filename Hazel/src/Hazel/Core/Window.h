@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <string>
+#include <utility>
 #include "WindowPlacement.h"
 #include "WindowCaption.h"
 
@@ -43,6 +44,7 @@ namespace Hazel {
         void RestorePlacement(const WindowPlacement& value);
         std::vector<DisplayArea> GetDisplayAreas() const;
         float GetContentScale() const;
+        std::pair<unsigned int,unsigned int> GetFramebufferSize() const;
 
         virtual void SetCustomCaption(bool requested);
         virtual void UseNativeCaption(const std::string& reason);

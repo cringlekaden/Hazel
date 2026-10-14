@@ -67,6 +67,10 @@ namespace Hazel {
 
 		// Borrowed until Application shutdown; null when EnableImGui is false.
         ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
+        bool IsRenderingUI() const {return m_RenderingUI;}
+        // Main thread, outside a normal ImGui frame; does not update layers or
+        // execute queued callbacks while a document transaction is staged.
+        void PresentProgress(const std::function<void()>& draw);
 
 		static Application& Get() { return *s_Instance; }
 		static Application* TryGet() { return s_Instance; }
@@ -87,6 +91,7 @@ namespace Hazel {
 		bool m_Running = true;
         std::function<void()> m_CloseRequest, m_BackgroundTick;
 		bool m_Minimized = false;
+        bool m_RenderingUI=false;
 		LayerStack m_LayerStack;
 		float m_LastFrameTime = 0.0f;
 

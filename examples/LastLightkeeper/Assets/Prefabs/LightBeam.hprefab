@@ -1,0 +1,34 @@
+Scene: LightBeam
+SceneVersion: 2
+PrefabVersion: 2
+PrefabRoot: 1
+Entities:
+- Entity: 1
+  TagComponent:
+    Tag: Light beam
+  Relationship:
+    Parent: 0
+    Order: 0
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0.25
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 0.45
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.91
+    - 0.94
+    - 0.91
+    - 1
+    Source:
+      Type: Region
+      Sheet: Art/tiny-battle.hsprites
+      RegionID: 727af68561ce3b51

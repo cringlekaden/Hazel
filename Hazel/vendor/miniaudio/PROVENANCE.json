@@ -1,0 +1,16 @@
+{
+  "project": "miniaudio",
+  "version": "0.11.22",
+  "commit": "350784a9467a79d0fa65802132668e5afbcf3777",
+  "license": "MIT or public domain",
+  "files": {
+    "miniaudio.h": {
+      "url": "https://raw.githubusercontent.com/mackron/miniaudio/350784a9467a79d0fa65802132668e5afbcf3777/miniaudio.h",
+      "sha256": "9019743287e443c55e5737a7297f38e5e358561701d6db2d905afb114390c410"
+    },
+    "LICENSE": {
+      "url": "https://raw.githubusercontent.com/mackron/miniaudio/350784a9467a79d0fa65802132668e5afbcf3777/LICENSE",
+      "sha256": "457f1b500e0adf6bc059edddfa78a2f62012e7c3bb43476c20e0bd23b25ba0eb"
+    }
+  }
+}

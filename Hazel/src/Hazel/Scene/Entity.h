@@ -26,6 +26,7 @@ namespace Hazel {
             ValidatePhysicsCandidate<T>(args...);
             T& component = m_Scene->m_Registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
 			m_Scene->OnComponentAdded<T>(*this, component);
+            m_Scene->m_HierarchyValidationDirty=true;
 			return component;
 		}
 
@@ -39,6 +40,7 @@ namespace Hazel {
             if (HasComponent<T>()) m_Scene->OnComponentRemoving<T>(*this);
 			T& component = m_Scene->m_Registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
 			m_Scene->OnComponentAdded<T>(*this, component);
+            m_Scene->m_HierarchyValidationDirty=true;
 			return component;
 		}
 
@@ -61,6 +63,7 @@ namespace Hazel {
 			if (!HasComponent<T>()) throw std::logic_error("Invalid entity or missing component");
 			m_Scene->OnComponentRemoving<T>(*this);
 			m_Scene->m_Registry.remove<T>(m_EntityHandle);
+            m_Scene->m_HierarchyValidationDirty=true;
 		}
 
 		operator bool() const { return m_Scene && m_Scene->m_Registry.valid(m_EntityHandle); }
@@ -99,7 +102,9 @@ namespace Hazel {
 
 	template<typename T> void Scene::OnComponentRemoving(Entity entity)
 	{
-		if constexpr (std::is_same_v<T, NativeScriptComponent>) DestroyNativeScript(entity);
+        RetireUI(entity.GetUUID());
+		if constexpr (std::is_same_v<T, AudioSourceComponent>) StopAudio(entity);
+        if constexpr (std::is_same_v<T, NativeScriptComponent>) DestroyNativeScript(entity);
 		if constexpr (std::is_same_v<T, Rigidbody2DComponent>) DestroyPhysicsBody(entity);
 		if constexpr (std::is_same_v<T, BoxCollider2DComponent>) DestroyPhysicsFixture(entity, false);
 		if constexpr (std::is_same_v<T, CircleCollider2DComponent>) DestroyPhysicsFixture(entity, true);

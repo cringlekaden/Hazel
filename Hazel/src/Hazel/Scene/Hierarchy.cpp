@@ -92,7 +92,9 @@ glm::mat4 Scene::World(UUID id, const Relationships &graph, const Transforms &ov
 }
 glm::mat4 Scene::GetWorldTransform(Entity e) const {
     CheckEntity(e);
-    return World(e.GetUUID(), m_Relationships, {});
+    auto world=World(e.GetUUID(), m_Relationships, {});
+    if(e.HasComponent<CameraComponent>() && e.GetComponent<CameraComponent>().Primary)Finite(glm::inverse(world));
+    return world;
 }
 TransformComponent Scene::ExactTRS(const glm::mat4 &m) {
     Finite(m);
@@ -161,8 +163,10 @@ void Scene::ValidateGraph(const Relationships &graph, const Transforms &transfor
 void Scene::ValidateHierarchy() const {
     CheckThread();
     ValidateGraph(m_Relationships, {});
+    m_HierarchyValidationDirty=false;
 }
 void Scene::RebuildChildren() {
+    m_HierarchyValidationDirty=true;
     m_Children.clear();
     for (const auto &[id, rel] : m_Relationships)
         m_Children[rel.Parent].push_back(id);
@@ -228,7 +232,16 @@ void Scene::ValidatePhysics(Entity e, const TransformComponent &tc, const Rigidb
 void Scene::SetLocalTransform(Entity e, const TransformComponent &value) {
     CheckEntity(e);
     Transforms change{{e.GetUUID(), value}};
-    ValidateGraph(m_Relationships, change);
+    // Topology is unchanged. Only this subtree's world matrices can change;
+    // graph edits/load/copy retain full ValidateGraph. Avoid rescanning every
+    // terrain tile for camera/actor/animation movement.
+    for(auto id:GetSubtree(e)) {
+        auto entity=GetEntityByUUID(id);
+        const auto& local=id==e.GetUUID()?value:entity.GetComponent<TransformComponent>();
+        ValidatePhysics(entity,local);
+        auto world=World(id,m_Relationships,change);
+        if(entity.HasComponent<CameraComponent>() && entity.GetComponent<CameraComponent>().Primary)Finite(glm::inverse(world));
+    }
     const auto &accepted = e.GetComponent<TransformComponent>();
     if (e.HasComponent<Rigidbody2DComponent>() &&
         e.GetComponent<Rigidbody2DComponent>().RuntimeBody && value.Scale != accepted.Scale)

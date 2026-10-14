@@ -52,7 +52,7 @@ A **Hazel source SDK** is a compatible checkout prepared by setup, including the
 
 ## Games and export
 
-[MeadowRun](examples/MeadowRun/README.md) is a garden expedition; [Skybound](examples/Skybound/README.md) is a scrolling flight game. Their READMEs describe controls and assets. `SceneTransitions` is the focused runtime/CLI example.
+[MeadowRun](examples/MeadowRun/README.md) is a garden expedition; [Skybound](examples/Skybound/README.md) is a scrolling flight game. [The Last Lightkeeper](examples/LastLightkeeper/README.md) begins an authored island restoration adventure. Their READMEs describe controls and assets. `SceneTransitions` is the focused runtime/CLI example.
 
 ```sh
 python3 scripts/hazel.py script-build examples/Skybound/Skybound.hproj --config Release
