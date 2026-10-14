@@ -1,7 +1,7 @@
 name: C/C++ CI
 on:
   push:
-    branches: [master, 'migration/**', 'fix/authoring-reliability', 'feature/nutella-runtime', 'feature/example-games', 'feature/editor-authoring', 'feature/sprite-sheet-authoring', 'feature/editor-usability', 'feature/last-lightkeeper']
+    branches: [master, 'migration/**', 'fix/authoring-reliability', 'feature/nutella-runtime', 'feature/example-games', 'feature/editor-authoring', 'feature/sprite-sheet-authoring', 'feature/editor-usability', 'feature/last-lightkeeper', 'feature/runtime-ui-hardening']
   pull_request:
     branches: [master]
   workflow_dispatch:
