@@ -102,6 +102,9 @@ namespace Hazel {
 		// Render
 		Renderer2D::ResetStats();
 		m_Framebuffer->Bind();
+        auto extent=m_Framebuffer->GetSpecification();
+        m_ActiveScene->SetUIFramebufferSize({extent.Width,extent.Height});
+        if(m_SceneState==SceneState::Play)m_RuntimeSession.ResizeFramebuffer(extent.Width,extent.Height);
 		RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
 		RenderCommand::Clear();
 
@@ -284,26 +287,8 @@ namespace Hazel {
 		uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
         m_ViewportHovered=ImGui::IsItemHovered();
-        if(ImGui::IsMouseReleased(0))m_UIDragging=false;
-        if(m_SceneState!=SceneState::Play&&ImGui::IsItemClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && !io.KeyAlt)m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
-        auto uiSelected=m_SceneHierarchyPanel.GetSelectedEntity();GameUI::Rect uiBounds;
-        if(uiSelected&&uiSelected.HasComponent<UICanvasComponent>()&&m_ActiveScene->GetUIError().empty()) {
-            const auto fit=GameUI::FitCanvas(m_ViewportSize,uiSelected.GetComponent<UICanvasComponent>());
-            auto p=fit.Content.Position*fit.Scale+m_ViewportBounds[0],q=p+fit.Content.Size*fit.Scale;
-            ImGui::GetWindowDrawList()->AddRect({p.x,p.y},{q.x,q.y},IM_COL32(255,190,70,255));
-        }
-        if(uiSelected&&uiSelected.HasComponent<UIRectComponent>()&&m_ActiveScene->GetUIBounds(uiSelected.GetUUID(),uiBounds)) {
-            auto p=uiBounds.Position+m_ViewportBounds[0],q=p+uiBounds.Size;
-            auto draw=ImGui::GetWindowDrawList();draw->AddRect({p.x,p.y},{q.x,q.y},IM_COL32(255,190,70,255));draw->AddRectFilled({q.x-8,q.y-8},{q.x,q.y},IM_COL32(255,190,70,255));
-            if(m_SceneState==SceneState::Edit&&m_Authoring->Availability(EditorAction::EditScene)) {
-                if(ImGui::IsMouseClicked(0)){m_UIDragging=ImGui::IsItemHovered();m_UIResizing=io.MousePos.x>=q.x-12&&io.MousePos.x<=q.x+4&&io.MousePos.y>=q.y-12&&io.MousePos.y<=q.y+4;}
-                if(m_UIDragging&&ImGui::IsMouseDragging(0)&&!io.KeyAlt) {
-                    auto owner=uiSelected;while(owner&&!owner.HasComponent<UICanvasComponent>())owner=m_ActiveScene->GetEntityByUUID(m_ActiveScene->GetRelationship(owner).Parent);
-                    float scale=owner?GameUI::FitCanvas(m_ViewportSize,owner.GetComponent<UICanvasComponent>()).Scale:1;
-                    if(scale>0){auto& rect=uiSelected.GetComponent<UIRectComponent>();auto delta=glm::vec2(io.MouseDelta.x,io.MouseDelta.y)/scale;if(m_UIResizing)rect.SizeDelta=glm::max(rect.MinimumSize,rect.SizeDelta+delta);else rect.Offset+=delta;}
-                }
-            }
-        }
+        UI_RectEditing();
+        UI_DebugOverlay();
 
 		if (ImGui::BeginDragDropTarget())
 		{
@@ -366,6 +351,7 @@ namespace Hazel {
 		ImGui::PopStyleVar();
 
         if(m_Authoring){m_Authoring->ObserveSceneFocus();m_Authoring->Render();m_Authoring->Shortcuts();}
+        UI_Debugger();
 		UI_Toolbar();
 		ImGui::End();
 	}
@@ -488,6 +474,7 @@ namespace Hazel {
 
 	void EditorLayer::ClearSceneObservers()
 	{
+        m_UIEdit.Finish(true);
 		m_HoveredEntity = {};
         m_GizmoError.clear();
 		m_SceneHierarchyPanel.SetContext(nullptr);

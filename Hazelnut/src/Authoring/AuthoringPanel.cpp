@@ -704,6 +704,7 @@ void AuthoringPanel::Menus()
         ImGui::MenuItem("Properties",nullptr,&m_Editor.m_SceneHierarchyPanel.PropertiesVisible);
         if(m_Editor.m_ContentBrowserPanel)ImGui::MenuItem("Content Browser",nullptr,&m_Editor.m_ContentBrowserPanel->Visible);
         ImGui::MenuItem("Statistics",nullptr,&m_Editor.m_ShowStats);
+        ImGui::MenuItem("Runtime UI Debugger",nullptr,&m_Editor.m_ShowUIDebugger);
         if (ImGui::MenuItem("Sprite Sheet", nullptr, m_Sprites.Visible(), m_Sprites.HasDocument()))
             m_Sprites.Show();
         if (ImGui::MenuItem("Prefab Inspector", nullptr, m_ShowPrefab, bool(m_PrefabScene)))

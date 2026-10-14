@@ -205,7 +205,7 @@ static void DrawComponent(const std::string &name, Entity entity, std::map<std::
 
         if (open)
         {
-            if constexpr(std::is_same_v<T,UIRectComponent>) {auto proposed=component;uiFunction(proposed);try{GameUI::Validate(proposed);if(!std::isfinite(proposed.Flex)||proposed.Flex<0)throw std::runtime_error("Flow flex must be finite and nonnegative");component=proposed;}catch(const std::exception& e){if(report)report(e.what());}}
+            if constexpr(std::is_same_v<T,UIRectComponent>) {auto proposed=component;try{uiFunction(proposed);GameUI::Validate(proposed);if(!std::isfinite(proposed.Flex)||proposed.Flex<0)throw std::runtime_error("Flow flex must be finite and nonnegative");component=proposed;}catch(const std::exception& e){if(report)report(e.what());}}
             else if constexpr(std::is_same_v<T,Rigidbody2DComponent> || std::is_same_v<T,BoxCollider2DComponent> || std::is_same_v<T,CircleCollider2DComponent>) {
                 auto proposed=component;uiFunction(proposed);
                 if(!SamePhysics(component,proposed))try{entity.AddOrReplaceComponent<T>(proposed);}catch(const std::exception& error){if(report)report(error.what());}
@@ -278,7 +278,10 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         PropertyUI::Checkbox("visible","Visible",c.Visible);PropertyUI::Checkbox("enabled","Enabled",c.Enabled);PropertyUI::Checkbox("modal","Block gameplay",c.Modal);
         PropertyUI::Help("Uniform reference scale; extra aspect space extends the logical canvas. Higher sort order draws and receives input last. A modal canvas blocks gameplay and controls in other canvases.");
     });
-    DrawComponent<UIRectComponent>("UI Rect",entity,m_Sections,m_RestoreSections,[](auto& c){
+    DrawComponent<UIRectComponent>("UI Rect",entity,m_Sections,m_RestoreSections,[this,entity](auto& c)mutable{
+        auto parent=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);
+        bool flowOwned=parent&&parent.HasComponent<UIRectComponent>()&&parent.HasComponent<UILayoutComponent>();
+        ImGui::BeginDisabled(flowOwned);
         int preset=0;
         if(PropertyUI::Combo("preset","Anchor preset",preset,"Custom\0Top left\0Top center\0Top right\0Center\0Bottom left\0Bottom center\0Bottom right\0Stretch\0")) {
             const glm::vec2 values[]={{0,0},{0,0},{.5f,0},{1,0},{.5f,.5f},{0,1},{.5f,1},{1,1},{0,0}};
@@ -287,14 +290,20 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         PropertyUI::Vector("amin","Anchor min",glm::value_ptr(c.AnchorMin),2,.01f,nullptr,"%.2f",{},0,1);
         PropertyUI::Vector("amax","Anchor max",glm::value_ptr(c.AnchorMax),2,.01f,nullptr,"%.2f",{},0,1);
         PropertyUI::Vector("offset","Position (px)",glm::value_ptr(c.Offset),2,1);
-        PropertyUI::Vector("size","Size delta (px)",glm::value_ptr(c.SizeDelta),2,1);
+        ImGui::EndDisabled();
+        if(flowOwned)PropertyUI::Help("Position is computed by the parent Flow. Edit preferred size/margins; viewport move/resize is unavailable.");
+        PropertyUI::Vector("size",flowOwned?"Preferred size (px)":"Size delta (px)",glm::value_ptr(c.SizeDelta),2,1,nullptr,"%.2f",{},flowOwned?0:-FLT_MAX,FLT_MAX);
+        ImGui::BeginDisabled(flowOwned);
         PropertyUI::Vector("pivot","Pivot",glm::value_ptr(c.Pivot),2,.01f,nullptr,"%.2f",{},0,1);
+        ImGui::EndDisabled();
+        if(flowOwned)if(auto n=m_Context->GetUISnapshot().Find(entity.GetUUID()))ImGui::TextDisabled("Computed position: %.1f, %.1f",n->Bounds.Position.x,n->Bounds.Position.y);
         PropertyUI::Vector("minimum","Minimum (px)",glm::value_ptr(c.MinimumSize),2,1,nullptr,"%.0f",{},0,4096);
         PropertyUI::Vector("margin","Margin L/T/R/B",glm::value_ptr(c.Margin),4,1,nullptr,"%.0f",{},0,4096);
         PropertyUI::Vector("padding","Padding L/T/R/B",glm::value_ptr(c.Padding),4,1,nullptr,"%.0f",{},0,4096);
         PropertyUI::DragFloat("flex","Flow flex",c.Flex,.1f,0,100);
         PropertyUI::Checkbox("visible","Visible",c.Visible);PropertyUI::Checkbox("enabled","Enabled",c.Enabled);PropertyUI::Checkbox("clip","Clip children",c.ClipChildren);
-        PropertyUI::Help("Logical pixels, top-left origin. Drag a selected element in the viewport to move it; drag its lower-right handle to resize. Flow groups own child positions. Anchor min must not exceed max.");
+        if(flowOwned&&(c.SizeDelta.x<0||c.SizeDelta.y<0))throw std::invalid_argument("Flow preferred dimensions must be nonnegative");
+        PropertyUI::Help("Logical pixels, top-left origin. Drag a selected element in the viewport to move it; drag an edge/corner handle to resize. Escape cancels the gesture. Flow groups own child positions. Anchor min must not exceed max.");
     },[this](const std::string& error){m_HierarchyError=error;});
     DrawComponent<UILayoutComponent>("UI Flow",entity,m_Sections,m_RestoreSections,[](auto& c){
         int axis=int(c.Direction),main=int(c.Main),cross=int(c.Cross);

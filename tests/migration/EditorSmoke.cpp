@@ -9,6 +9,7 @@
 #include "Hazel/Core/WindowCaption.h"
 #include "Authoring/RendererLaunch.h"
 #include "Authoring/AuthoringPanel.h"
+#include "Authoring/UIRectEditing.h"
 #include "Hazel/Utils/Toolchain.h"
 #include "Hazel/Utils/Process.h"
 #include "Hazel/Scene/Prefab.h"
@@ -378,6 +379,14 @@ private:
         std::cout<<"PASS: main-thread Console/tool polling continues while minimized without advancing scene/render frames\n";
     }
     void OnImGuiRender() override {
+        if(m_Frame==3) {
+            auto scene=m_Editor.m_ActiveScene;scene->RefreshUI();
+            auto before=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
+            auto generation=scene->GetUISnapshot().Generation;bool shown=m_Editor.m_ShowUIDebugger;
+            m_Editor.m_ShowUIDebugger=true;m_Editor.UI_Debugger();m_Editor.m_ShowUIDebugger=shown;
+            GameUI::Action action;
+            Check(scene->GetUISnapshot().Generation==generation&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==before&&!scene->ConsumeUIAction(0,action),"Debugger changed authoring/generation or dispatched actions");
+        }
         if(m_Frame!=13&&!(m_Frame==16&&std::getenv("HAZEL_EDITOR_CAPTURE")&&!std::getenv("HAZEL_CONSOLE_CAPTURE")))return;
         if(std::getenv("HAZEL_HIERARCHY_CAPTURE")) {
             m_Editor.m_ActionError.clear();ImGui::ClosePopupsOverWindow(nullptr,false);
@@ -852,6 +861,26 @@ private:
         Check(panel.AddUI(2),"Text preset failed");auto uiText=panel.GetSelectedEntity();Check(uiText.HasComponent<UITextStyleComponent>()&&uiText.HasComponent<TextComponent>(),"Text preset lacks style/text");
         panel.SetSelectedEntity(uiPanel);Check(panel.AddUI(3),"Button preset failed");auto uiButton=panel.GetSelectedEntity();Check(uiButton.HasComponent<UIButtonComponent>(),"Button preset lacks action component");
         scene->OnViewportResize(640,480);scene->OnUpdateEditor(0,e.m_EditorCamera);GameUI::Rect resolved;Check(scene->GetUIBounds(uiButton.GetUUID(),resolved)&&resolved.Size.x>0,"Editor UI preset preview lacks bounds");GameUI::Action action;Check(!scene->ConsumeUIAction(0,action),"Edit preview activated a game button");
+        // D6 uses the same reversible controller called by viewport handles.
+        auto& editRect=uiButton.GetComponent<UIRectComponent>();editRect.AnchorMin={0,0};editRect.AnchorMax={1,1};
+        editRect.SizeDelta={-100,-80};editRect.Pivot={.75f,.5f};editRect.MinimumSize={150,100};scene->RefreshUI();
+        auto editBefore=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
+        auto startBounds=scene->GetUISnapshot().Find(uiButton.GetUUID())->Bounds;
+        UIRectEditSession gesture;Check(gesture.Begin(scene,uiButton.GetUUID(),4),"Viewport resize controller did not begin");
+        Check(gesture.Update({20,0}),"Viewport right edge resize failed");auto endBounds=scene->GetUISnapshot().Find(uiButton.GetUUID())->Bounds;
+        Check(std::abs(endBounds.Position.x-startBounds.Position.x)<.001f&&std::abs(endBounds.Size.x-startBounds.Size.x-20)<.001f&&editRect.SizeDelta.x<0,"D6: stretched/pivot resize moved opposite edge or destroyed negative delta");
+        auto lastValid=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
+        Check(!gesture.Update({NAN,0})&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==lastValid,"Invalid viewport edit changed last valid authored state");
+        gesture.Finish(true);Check(SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==editBefore,"Escape/cancel did not restore rect");
+        Check(gesture.Begin(scene,uiButton.GetUUID(),0)&&gesture.Update({12,8}),"Viewport move failed");
+        auto movedBounds=scene->GetUISnapshot().Find(uiButton.GetUUID())->Bounds;
+        Check(glm::length(movedBounds.Position-startBounds.Position-glm::vec2(12,8))<.001f&&movedBounds.Size==startBounds.Size,"Viewport move changed resolved size");gesture.Finish(true);
+        auto& parentRect=uiPanel.GetComponent<UIRectComponent>();auto parentBefore=parentRect;
+        Check(gesture.Begin(scene,uiButton.GetUUID(),4),"Second resize could not begin");parentRect.SizeDelta.x+=10;
+        Check(!gesture.Update({10,0})&&!gesture.Active()&&parentRect.SizeDelta.x==parentBefore.SizeDelta.x+10,"Parent change did not cancel transaction or was overwritten");parentRect=parentBefore;
+        editRect.SizeDelta={100,40};uiPanel.AddComponent<UILayoutComponent>();scene->RefreshUI();
+        Check(scene->GetUISnapshot().Find(uiButton.GetUUID())->FlowOwned&&!gesture.Begin(scene,uiButton.GetUUID(),0)&&!gesture.Begin(scene,uiButton.GetUUID(),4),"Flow-owned viewport edits wrote ignored geometry");uiPanel.RemoveComponent<UILayoutComponent>();
+        panel.SetSelectedEntity(uiButton);scene->RefreshUI();
         const auto uiSnapshot=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();auto uiCopy=Scene::Copy(scene);Check(SceneSerializer(uiCopy,Project::GetAssetDirectory()).CaptureAuthoredState()==uiSnapshot,"Editor UI copy changed authored fields");
         const auto uiPrefab=std::filesystem::path("Prefabs/EditorUI.hprefab");Prefab::Save(Project::GetAssetDirectory(),uiPrefab,scene,canvas);auto reopenedUI=Prefab::Load(Project::GetAssetDirectory(),uiPrefab);Check(Prefab::GetEntity(reopenedUI).HasComponent<UICanvasComponent>(),"Editor UI prefab reopen lost canvas");
         scene->DestroyEntity(canvas);scene->OnViewportResize(uint32_t(e.m_ViewportSize.x),uint32_t(e.m_ViewportSize.y));panel.SetSelectedEntity(scene->GetEntityByUUID(oldID));Check(a.SceneText()==before,"UI authoring checks modified existing scene");std::filesystem::remove(Project::GetAssetDirectory()/uiPrefab);
