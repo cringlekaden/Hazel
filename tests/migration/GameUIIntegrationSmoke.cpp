@@ -109,7 +109,7 @@ static void ProfileRuntimeUI()
     {
         // One staged import avoids repeated O(N) hierarchy reparent transactions
         // during fixture setup. It never writes a scene/project/save document.
-        std::ostringstream yaml;yaml<<"Scene: UI profile\nEntities:\n- Entity: 1\n  UICanvasComponent: { ReferenceSize: [1280, 720], SafeInsets: [0, 0, 0, 0] }\n  Relationship: { Parent: 0, Order: 0 }\n";
+        std::ostringstream yaml;yaml<<"SceneVersion: 2\nScene: UI profile\nEntities:\n- Entity: 1\n  UICanvasComponent: { ReferenceSize: [1280, 720], SafeInsets: [0, 0, 0, 0] }\n  Relationship: { Parent: 0, Order: 0 }\n";
         yaml<<"- Entity: 2\n  UIRectComponent: { Offset: [16, 16], SizeDelta: [1248, 688] }\n  Relationship: { Parent: 1, Order: 0 }\n";
         for(int i=0;i<count-1;++i)
         {
