@@ -27,6 +27,14 @@ void HistoryWorkflowChecks()
     control.GetComponent<UIRectComponent>().Padding.y+=3;
     Check(h.Dirty(a.SceneText()),"Out-of-history authored mutation was hidden at save cursor");
     control.GetComponent<UIRectComponent>().Padding.y-=3;
+    SpriteSheetDefinition sheet;sheet.Texture="Textures/Checkerboard.png";sheet.Sampling.Width=sheet.Sampling.Height=32;sheet.Regions={{1,"History region",{0,0,4,4}}};
+    SaveSpriteSheet(Project::GetAssetDirectory(),"Textures/history-assignment.hsprites",sheet);
+    panel.SetSelectedEntity(control);const auto target=a.AssignmentTarget();
+    Check(a.m_Sprites.AssignSprite({"Textures/history-assignment.hsprites",1},target)&&h.UndoName()=="Assign UI sprite"&&!h.CanRedo(),"Sprite-sheet UI assignment bypassed document history or retained redo branch");
+    Check(a.UndoRedo(false)&&a.SceneText()==saved,"UI assignment Undo did not restore the accepted source");
+    auto retired=scene->CreateEntity("Retired assignment target");retired.AddComponent<UIRectComponent>();retired.AddComponent<SpriteRendererComponent>();panel.SetSelectedEntity(retired);
+    const auto stale=a.AssignmentTarget();scene->DestroyEntity(retired);auto replacement=scene->CreateEntityWithUUID(stale.Entity,"Reused assignment UUID");replacement.AddComponent<UIRectComponent>();replacement.AddComponent<SpriteRendererComponent>();
+    Check(!a.m_Sprites.AssignSprite({"Textures/history-assignment.hsprites",1},stale)&&replacement.GetComponent<SpriteRendererComponent>().Source.index()==0,"Reused UUID accepted a retired asset-assignment target");scene->DestroyEntity(replacement);
     const auto count=h.Operations();const auto identity=h.Identity();
     panel.SetSelectedEntity(control);
     for(int repeat=0;repeat<2;++repeat){

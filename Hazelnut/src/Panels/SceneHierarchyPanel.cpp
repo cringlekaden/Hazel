@@ -236,18 +236,25 @@ void SceneHierarchyPanel::DrawUIComponent(const std::string &name,Entity entity,
     std::map<std::string,bool> &sections,std::set<std::string> &restore,F ui,
     std::function<void(const std::string&)> report)
 {
+    if(!m_Context || !entity.BelongsTo(m_Context.get()) || !entity || !m_Context->IsEntityValid(entity.GetUUID()))return;
     if(!entity.HasComponent<UIRectComponent>()&&!entity.HasComponent<UICanvasComponent>()){
         DrawComponent<T>(name,entity,sections,restore,ui,report);return;
     }
     DrawComponent<T>(name,entity,sections,restore,[&](auto &component){
         try {
+            const auto document=m_Context;
+            const auto target=entity.GetUUID();
             auto before=UIEditValues::Capture(entity),proposed=before;
+            UIEditCommand guard(*document,target,name,before);
             auto draft=component;
             PropertyUI::EditActivity activity;
             {PropertyUI::ActivityScope observation(activity);ui(draft);}
+            if(m_Context!=document || GetSelectedEntity()!=entity)
+                throw std::runtime_error("UI document or selection changed while editing; retry in the current Inspector");
+            guard.Check(*document);
             proposed.Set(draft);
             const bool changed=!before.Same(proposed);
-            if(!m_UIInspectorEdit.Edit(*m_Context,m_History,entity.GetUUID(),name,before,
+            if(!m_UIInspectorEdit.Edit(*document,m_History,target,name,before,
                 std::move(proposed),activity,ImGui::GetActiveID()))m_HierarchyError=m_UIInspectorEdit.Error();
             else if(changed)m_HierarchyError.clear();
         }catch(const std::exception &error){m_HierarchyError=error.what();if(report)report(error.what());}
@@ -256,6 +263,7 @@ void SceneHierarchyPanel::DrawUIComponent(const std::string &name,Entity entity,
 void SceneHierarchyPanel::DrawComponents(Entity entity)
 {
     if (!entity || !m_Context || !entity.BelongsTo(m_Context.get()) || !m_Context->IsEntityValid(entity.GetUUID()))return;
+    const auto document=m_Context; // keep the observed scene alive through modal property callbacks
     m_UIInspectorEdit.Poll(*m_Context,m_History,entity.GetUUID(),CanEdit(),!ImGui::GetIO().AppFocusLost,ImGui::IsKeyPressed(ImGuiKey_Escape,false),ImGui::GetActiveID());
     if(m_SectionEntity!=uint64_t(entity.GetUUID())){m_Sections.clear();m_RestoreSections.clear();m_SectionEntity=entity.GetUUID();}
     ImGui::PushID(std::to_string(m_Context->GetIdentity()).c_str());

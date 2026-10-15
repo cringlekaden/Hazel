@@ -100,7 +100,7 @@ inline ActionAvailability EditorActionAvailability(EditorActionState state, Edit
 // An observation, not an owning Entity/Scene pointer; revalidate at application.
 struct SceneTarget
 {
-    uint64_t Scene = 0, Entity = 0;
+    uint64_t Scene = 0, Entity = 0, Lifetime = 0;
     bool Matches(uint64_t scene, uint64_t entity) const
     {
         return Scene && Entity && Scene == scene && Entity == entity;

@@ -185,10 +185,15 @@ stores authored before/after fields, document/entity IDs and transient lifetime
 stamps. Neither entries nor save points store GPU/font/cache/managed objects or
 registry handles. Generic history supports later scene/prefab command types.
 
+Inspector draws retain the observed scene transiently and recheck the document,
+selection and component lifetimes after property callbacks, before publication.
 Inspector property helpers expose scoped interaction boundaries, with drafts
 validated before publication. Continuous changes coalesce into one entry;
 text/numeric commits, anchor presets and image/font assignments use the same
-transaction path. Complete viewport gestures reuse D6 inversion, include
+transaction path. Sprite-sheet Save and Assign routes UI source changes through
+the same scene history, after successful sheet I/O; captured assignment targets
+include entity lifetime tokens. World-sprite/clip and structural edits keep their
+existing paths. Complete viewport gestures reuse D6 inversion, include
 release-frame motion and commit once. Cancel/no-op produces no entry and retains
 the redo branch. Selection, focus/minimize, target retirement, document transitions
 and Play cancel unfinished edits before replacement/runtime copying. Cancellation
@@ -212,12 +217,35 @@ conflicts require reverting the external edit or clearing obsolete document
 history. Vectors/colors are atomic fields for conflict checks; first-touch baselines
 preserve native values introduced before a field joins the transaction. Unassigned
 image modes remain editable; changing a fileless generated GPU source is rejected
-before publication because history cannot retain that resource. Structural/world/script editing and sprite-sheet history remain outside
-this slice; those operations still mark the document dirty.
+before publication because history cannot retain that resource. Structural/world/
+script editing and sprite-sheet history remain outside this slice; those
+operations still mark the document dirty.
 
-Verification is recorded after the final local/platform checkpoint. The existing
-large-UI submission bottleneck and unmet performance budgets above are unchanged;
-no batching, typography dependency, new control or layout semantics were added.
+Local qualification: Debug and Release builds with two jobs; all 16 Debug native
+regression executables; the final focused Debug editor regression, including
+shared history, real document ownership, successful/failed saves, recovery,
+sprite assignment, retirement and repeated Play/Simulate/Stop. Disposable native
+editor walkthroughs exercised numeric dragging, text-field local Undo, anchor
+presets, fixed/stretched/minimum-constrained/pivoted resizing, Escape cancellation,
+save/reopen, independent prefab edits and computed flow positions. These checks
+do not qualify mixed-monitor DPI or the complete detached-window workflow.
+The final integration checkpoint uses the existing Linux/Windows C/C++ CI,
+including Debug/Release regressions, authored games and extracted OpenGL 4.1
+packages; consult the run associated with the feature commit for platform results.
+
+Focused manual acceptance on each desktop platform:
+- In a disposable menu, drag one Inspector value, then one viewport edge;
+  each release adds one named entry. Undo/Redo restores edges and dirty state.
+- Escape a drag; switch selection/document or enter Play during another drag;
+  verify cancellation and no stale entry. Stop retains valid authored selection.
+- Assign an image/font, save, Undo/Redo and reopen. Repeat in a prefab; scene
+  history must remain independent. A failed save must retain the accepted point.
+- Edit text with Ctrl+Z while its field is active, then leave it and use document
+  Undo. Verify focus loss and detached/mixed-DPI windows on real platform hardware.
+
+The existing large-UI submission bottleneck and unmet performance budgets above
+are unchanged; no batching, typography dependency, control or layout semantics
+were added.
 
 Next bounded P2 layout slice: introduce versioned **per-axis Fixed/Fill/Content**
 plus min/max and a deterministic measure/arrange pass for free anchored and stack

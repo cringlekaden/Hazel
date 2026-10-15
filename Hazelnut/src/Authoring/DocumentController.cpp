@@ -184,7 +184,8 @@ SceneTarget AuthoringPanel::AssignmentTarget() const
     auto entity = m_Editor.m_SceneHierarchyPanel.GetSelectedEntity();
     if (!entity || !entity.BelongsTo(m_Editor.m_EditorScene.get()))
         return {};
-    return {m_Editor.m_EditorScene->GetIdentity(), entity.GetUUID()};
+    return {m_Editor.m_EditorScene->GetIdentity(), entity.GetUUID(),
+            m_Editor.m_EditorScene->GetAuthoringLifetime(entity.GetUUID())};
 }
 Entity AuthoringPanel::ResolveTarget(SceneTarget target)
 {
@@ -196,9 +197,10 @@ Entity AuthoringPanel::ResolveTarget(SceneTarget target)
         return {};
     }
     auto entity = m_Editor.m_EditorScene->GetEntityByUUID(target.Entity);
-    if (!entity)
+    if (!entity || !target.Lifetime ||
+        m_Editor.m_EditorScene->GetAuthoringLifetime(target.Entity) != target.Lifetime)
     {
-        m_Editor.ActionFailed("The assignment entity no longer exists; select an entity and retry");
+        m_Editor.ActionFailed("The assignment entity was retired or replaced; select the entity again and retry");
         return {};
     }
     return entity;

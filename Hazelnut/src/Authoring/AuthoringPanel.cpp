@@ -208,7 +208,18 @@ void AuthoringPanel::BindProject()
                 return false;
             if (!entity.HasComponent<SpriteRendererComponent>())
                 entity.AddComponent<SpriteRendererComponent>();
-            entity.GetComponent<SpriteRendererComponent>().Source = reference;
+            if (entity.HasComponent<UIRectComponent>() || entity.HasComponent<UICanvasComponent>())
+            {
+                CancelEdits();
+                auto before=UIEditValues::Capture(entity),next=before;
+                next.Image->Source=reference;
+                UIInspectorEditing edit;PropertyUI::EditActivity immediate;
+                immediate.Changed=immediate.Committed=true;
+                if(!edit.Edit(*m_Editor.m_EditorScene,&m_SceneHistory,entity.GetUUID(),
+                              "Assign UI sprite",before,std::move(next),immediate,0))
+                    return m_Editor.ActionFailed(edit.Error());
+            }
+            else entity.GetComponent<SpriteRendererComponent>().Source = reference;
             m_Editor.m_ActionError.clear();
             return true;
         }
