@@ -259,8 +259,10 @@ Minimums are never shrunk. Optional finite maximums must be at least minimums.
 Content width is natural width, capped by an explicit maximum, rather than
 implicitly squeezed by its parent. Fixed/Fill or a Content maximum supplies text
 wrap width before Content height is measured. Empty/zero-width text measures zero.
-Images measure source-region pixels as logical units; Content on both axes keeps
-native aspect. Other combinations can stretch; there is no implicit aspect lock.
+Images contribute source-region pixels as logical content units before padding
+and independent axis constraints. A standalone unconstrained Content image with
+zero padding uses native dimensions. The sprite/background fills the border box;
+padding, combined text, constraints or other modes can stretch it. No aspect lock.
 
 Free children use point anchors, Offset and the final-size Pivot. Fill owns its
 position on that axis: anchor/offset/pivot must be zero; margins supply insets.
@@ -276,7 +278,10 @@ Content measures free child extents from zero anchor/pivot (Offset can overflow
 negatively), or stack sums/maxima. Content/Fill and anchored Content dependency
 cycles fail with entity/axis paths, without iterative convergence. A new free
 subtree can live in a legacy free parent; new/legacy mixed stacks and legacy
-children of new groups require conversion. Nested canvases stay independent.
+children inside new groups are unsupported. Convert a uniform legacy subtree
+before attaching it there; an already invalid mixed tree must first be detached/
+repaired, since it has no supported baseline geometry to preview. Nested canvases
+stay independent.
 No derived layout values persist. Failed editor transactions restore authored
 values; no partial snapshot is published and input is cancelled on resolution
 failure. Runtime errors follow the existing host fail-stop path.
@@ -292,8 +297,9 @@ passes reuse node/child storage. Unchanged dependency bytes reuse the snapshot.
 Conversion uses native Inspector preview and a staged scene copy. Point-fixed,
 full Fill with nonnegative insets, and complete legacy stacks retain representable
 responsiveness. Partial spans/negative insets require explicit Fixed freezing;
-hidden/interrupted targets must be revealed/repaired, and mixed stacks converted
-together. Logical geometry and exact framebuffer coverage are compared before one
+hidden/interrupted targets must be revealed/repaired, and uniform legacy stacks
+converted together (already invalid mixed trees must be repaired first). Logical
+geometry and exact framebuffer coverage are compared before one
 shared history command commits. Cancel, failed validation and stale preview leave
 the document unchanged. No automatic conversion/save occurs. Fixed-axis gestures
 also reject parent reflow/alignment that would move the opposite edge; Inspector
@@ -306,6 +312,37 @@ The inherited shell's X11 session label/auth path were stale; the active Xwaylan
 auth path was used for tests. This is neither native Wayland support nor Xvfb/
 software rendering. Prior CI at `f8b05a8` passed Linux and Windows. Existing
 Sandbox Start.hazel user edits are outside this implementation.
+
+Verification at the implementation checkpoint:
+
+- GCC/Premake Debug and Release builds with two jobs; vendor pins unchanged.
+- All 16 Debug regression executables qualified: the canonical native run passed
+  its first 15, then the corrected full EditorSmoke passed. The complete canonical
+  Release `gl41` run passed all 16 on physical Intel hardware (GL/GLSL 4.1 forced).
+- Model tests cover capped weighted Fill (including extreme weight saturation),
+  minima/maxima, empty/hidden/zero/overflow, constrained content, dependency paths,
+  deterministic arrangement and owned-axis gesture rules. Scene tests cover real
+  font/text/image metrics, native writes/reflow, generation/cache reuse, fractional
+  drawing/picking/routing agreement and serialization/copy/prefab round trips.
+- The real ImGui editor harness creates a measured menu stack and corner HUD,
+  changes a longer label, resizes the viewport, edits constraints and complete
+  gestures, converts legacy fixtures, and verifies shared Undo/Redo, accepted/
+  failed saves, save/reopen, independent prefab histories and repeated Play/Stop.
+- The strict three-game logical/runtime regression passed, and all five source
+  games passed both player/editor lifecycle checks without authored file changes. These launchers'
+  `gl41` profile uses llvmpipe through Xwayland, unlike the hardware regression
+  profile above. All five freshly packaged games passed relocation/lifecycle
+  checks, and extracted Hazelnut/Nutella passed with source resources and the SDK
+  unavailable, unrelated working directories and Unicode paths. SceneTransitions
+  retains its packaged Kenney provenance and CC0 license.
+
+Desktop startup/capture on the physical GPU was inspected. KWin's EIS permission
+prompt blocked the earlier XTest helper's native pointer/key delivery after the
+Wayland switch. Native click-by-click Inspector/gesture acceptance remains a
+manual check; no unsuccessful injection was counted as a pass. No desktop packages
+or persistent settings were changed. No new CPU/GPU performance budgets are
+claimed: unchanged generation/text-measurement reuse is regression-tested, while
+the known per-element draw bottleneck and broader font-cache work remain open.
 
 Next bounded P2 slice: explicit fixed-track grids using the same sizing/dependency
 and document transaction contracts, with cell placement, native Inspector and
