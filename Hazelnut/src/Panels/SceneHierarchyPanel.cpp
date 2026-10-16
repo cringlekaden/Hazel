@@ -20,6 +20,7 @@
 #include <cmath>
 #include <cctype>
 #include <cstring>
+#include <cstdio>
 #include <type_traits>
 
 /* The Microsoft C++ compiler is non-compliant with the C++ standard and needs
@@ -37,6 +38,7 @@ SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene> &context) { SetContext
 void SceneHierarchyPanel::SetContext(const Ref<Scene> &context)
 {
     FinishUIEdit();
+    m_Conversion=UILayoutConversion{};m_ConversionWanted=false;m_ConversionRoot=m_ConversionDocument=0;
     m_SelectionContext = {};
     m_HierarchyError.clear();m_Matches.clear();m_Reveal.clear();m_DeleteWanted=false;m_DeleteScene=m_DeleteEntity=0;m_DragHover=0;m_DragHoverSince=0;
     m_Pickers.clear();m_UIStatePickers={};m_UIFontInitialized=false;
@@ -72,14 +74,24 @@ bool SceneHierarchyPanel::AddUI(int kind) {
             auto canvas=m_Context->CreateEntity("UI Canvas");canvas.AddComponent<UICanvasComponent>();if(parent)m_Context->Reparent(canvas,parent,TransformPolicy::KeepLocal);parent=canvas;
         }
         const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Flow"};
+        if(kind!=0 && parent && !parent.HasComponent<UICanvasComponent>() && parent.HasComponent<UIRectComponent>() && parent.HasComponent<UILayoutComponent>() && parent.GetComponent<UIRectComponent>().LayoutVersion==1)
+            throw std::invalid_argument("Convert the legacy Flow before adding measured children");
         auto e=m_Context->CreateEntity(names[kind]);if(parent)m_Context->Reparent(e,parent,TransformPolicy::KeepLocal);
         if(kind==0)e.AddComponent<UICanvasComponent>();
         else {
             auto& rect=e.AddComponent<UIRectComponent>();rect.Offset={24,24};
+            rect.LayoutVersion=2;
             if(kind==1){rect.SizeDelta={360,240};e.AddComponent<SpriteRendererComponent>(glm::vec4(.08f,.12f,.18f,.95f));}
             if(kind==2||kind==3){auto& text=e.AddComponent<TextComponent>();text.TextString=kind==3?"Button":"Text";auto& style=e.AddComponent<UITextStyleComponent>();if(kind==3){style.Horizontal=GameUI::Align::Center;style.Vertical=GameUI::Align::Center;rect.Padding=glm::vec4(8);}}
             if(kind==3){e.AddComponent<SpriteRendererComponent>(glm::vec4(.15f,.25f,.35f,1));e.AddComponent<UIButtonComponent>();}
-            if(kind==4){rect.SizeDelta={360,240};e.AddComponent<UILayoutComponent>();}
+            if(kind==4){rect.SizeDelta={360,240};auto &flow=e.AddComponent<UILayoutComponent>();flow.Cross=GameUI::Align::Start;rect.HeightMode=GameUI::SizeMode::Content;rect.Padding=glm::vec4(12);}
+            rect.FixedSize=rect.SizeDelta;
+            if(kind==2){rect.WidthMode=rect.HeightMode=GameUI::SizeMode::Content;}
+            if(kind==3){rect.HeightMode=GameUI::SizeMode::Content;rect.MinimumSize={48,40};}
+            if(parent && !parent.HasComponent<UICanvasComponent>() && parent.HasComponent<UIRectComponent>() && parent.HasComponent<UILayoutComponent>()){
+                rect.Offset={};
+                if(parent.GetComponent<UILayoutComponent>().Direction==GameUI::Axis::Vertical)rect.WidthMode=GameUI::SizeMode::Fill;
+            }
         }
         return SetSelectedEntity(e);
     }catch(const std::exception& error){return HierarchyFailed(error.what());}
@@ -138,7 +150,7 @@ void SceneHierarchyPanel::OnImGuiRender()
 
 bool SceneHierarchyPanel::SetSelectedEntity(Entity entity)
 {
-    if(m_SelectionContext != entity)FinishUIEdit();
+    if(m_SelectionContext != entity){FinishUIEdit();m_Conversion=UILayoutConversion{};m_ConversionWanted=false;}
     if (!entity.BelongsTo(m_Context.get()))
     {
         m_SelectionContext = {};
@@ -227,6 +239,32 @@ static void DrawComponent(const std::string &name, Entity entity, std::map<std::
     }
 }
 
+void SceneHierarchyPanel::DrawConversionDialog(Entity entity)
+{
+    if(!m_ConversionWanted)return;
+    if(!m_Context || m_Context->GetIdentity()!=m_ConversionDocument || entity.GetUUID()!=m_ConversionRoot || !CanEdit()){
+        m_ConversionWanted=false;return;
+    }
+    ImGui::SetNextWindowSize({580,420},ImGuiCond_FirstUseEver);
+    if(!ImGui::BeginPopupModal("Convert UI layout",nullptr,ImGuiWindowFlags_AlwaysAutoResize))return;
+    ImGui::TextWrapped("Preview: %zu legacy Rects. Candidate layout is validated in a disposable scene and compared with current bounds. Nothing is changed or saved until Apply.",m_Conversion.Count());
+    if(ImGui::Checkbox("Freeze ambiguous stretches as Fixed (loses responsive stretch)",&m_FreezeConversion))
+        m_Conversion.Preview(m_Context,m_ConversionRoot,m_FreezeConversion);
+    ImGui::BeginChild("conversion-results",{550,240},true);
+    for(auto &note:m_Conversion.Notes())ImGui::TextWrapped("%s",note.c_str());
+    if(!m_Conversion.Error().empty())PropertyUI::Validation(m_Conversion.Error().c_str());
+    ImGui::EndChild();
+    ImGui::BeginDisabled(!m_Conversion.Valid()||!m_History);
+    if(ImGui::Button("Apply as one edit")){
+        if(m_Conversion.Commit(*m_Context,*m_History)){m_ConversionWanted=false;ImGui::CloseCurrentPopup();}
+        else m_HierarchyError=m_Conversion.Error();
+    }
+    ImGui::EndDisabled();ImGui::SameLine();
+    if(ImGui::Button("Cancel")||ImGui::IsKeyPressed(ImGuiKey_Escape,false)){
+        m_ConversionWanted=false;m_Conversion=UILayoutConversion{};ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+}
 void SceneHierarchyPanel::FinishUIEdit(bool cancel)
 {
     if(m_Context)m_UIInspectorEdit.Finish(*m_Context,m_History,cancel);
@@ -323,7 +361,37 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     });
     DrawUIComponent<UIRectComponent>("UI Rect",entity,m_Sections,m_RestoreSections,[this,entity](auto& c)mutable{
         auto parent=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);
-        bool flowOwned=parent&&parent.HasComponent<UIRectComponent>()&&parent.HasComponent<UILayoutComponent>();
+        bool flowOwned=parent&&!parent.HasComponent<UICanvasComponent>()&&parent.HasComponent<UIRectComponent>()&&parent.HasComponent<UILayoutComponent>();
+        PropertyUI::ReadOnly("layout-model","Layout model",c.LayoutVersion==1?"Legacy anchored / flow":"Measured (version 2)");
+        if(c.LayoutVersion==2)
+        {
+            auto resolved=m_Context->GetUISnapshot().Find(entity.GetUUID());
+            for(int axis=0;axis<2;++axis){ImGui::PushID(axis);
+                auto &mode=axis?c.HeightMode:c.WidthMode;int value=int(mode);
+                if(PropertyUI::Combo("sizing",axis?"Height":"Width",value,"Fixed\0Fill\0Content\0",
+                    {"Fixed authors a border size. Fill owns parent space/position; free Fill clears this axis's anchor, offset and pivot. Content measures visuals/children."})){
+                    mode=GameUI::SizeMode(value);
+                    if(mode==GameUI::SizeMode::Fill && !flowOwned)c.AnchorMin[axis]=c.AnchorMax[axis]=c.Offset[axis]=c.Pivot[axis]=0;
+                    if(mode==GameUI::SizeMode::Fixed && resolved&&resolved->LayoutResolved)c.FixedSize[axis]=resolved->Bounds.Size[axis];
+                }
+                if(mode==GameUI::SizeMode::Fixed)PropertyUI::DragFloat("fixed","Fixed size (px)",c.FixedSize[axis],1,0,FLT_MAX,"%.1f");
+                else {char value[48];if(resolved&&resolved->LayoutResolved)std::snprintf(value,sizeof(value),"%.1f px",resolved->Bounds.Size[axis]);else std::snprintf(value,sizeof(value),"Unresolved");PropertyUI::ReadOnly("computed","Computed size",value);}
+                PropertyUI::DragFloat("min","Minimum (px)",c.MinimumSize[axis],1,0,FLT_MAX,"%.1f");
+                bool has=c.HasMaximum[axis];
+                if(PropertyUI::Checkbox("bounded","Maximum enabled",has)){c.HasMaximum[axis]=has;if(has)c.MaximumSize[axis]=std::max(c.MinimumSize[axis],resolved&&resolved->LayoutResolved?resolved->Bounds.Size[axis]:c.FixedSize[axis]);}
+                if(has)PropertyUI::DragFloat("max","Maximum (px)",c.MaximumSize[axis],1,0,FLT_MAX,"%.1f");
+                bool owned=flowOwned||mode==GameUI::SizeMode::Fill;
+                if(!owned){
+                if(PropertyUI::DragFloat("anchor","Anchor",c.AnchorMin[axis],.01f,0,1,"%.2f"))c.AnchorMax[axis]=c.AnchorMin[axis];
+                PropertyUI::DragFloat("offset","Offset (px)",c.Offset[axis],1,-FLT_MAX,FLT_MAX,"%.1f");
+                PropertyUI::DragFloat("pivot","Pivot",c.Pivot[axis],.01f,0,1,"%.2f");}
+                if(owned)PropertyUI::Help(flowOwned?"The parent stack owns position. Set child sizing/margins; positions are computed.":"Fill owns this axis's position and size. Margins set its insets; maximum can leave spare space.");
+                if(resolved&&resolved->LayoutResolved)ImGui::TextDisabled("Available %.1f | measured %.1f | arranged %.1f",resolved->Available[axis],resolved->Measured[axis],resolved->Bounds.Size[axis]);
+                ImGui::PopID();
+            }
+        }
+        else
+        {
         ImGui::BeginDisabled(flowOwned);
         int preset=0;
         if(PropertyUI::Combo("preset","Anchor preset",preset,"Custom\0Top left\0Top center\0Top right\0Center\0Bottom left\0Bottom center\0Bottom right\0Stretch\0")) {
@@ -341,18 +409,20 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         ImGui::EndDisabled();
         if(flowOwned)if(auto n=m_Context->GetUISnapshot().Find(entity.GetUUID()))ImGui::TextDisabled("Computed position: %.1f, %.1f",n->Bounds.Position.x,n->Bounds.Position.y);
         PropertyUI::Vector("minimum","Minimum (px)",glm::value_ptr(c.MinimumSize),2,1,nullptr,"%.0f",{},0,4096);
+        }
         PropertyUI::Vector("margin","Margin L/T/R/B",glm::value_ptr(c.Margin),4,1,nullptr,"%.0f",{},0,4096);
         PropertyUI::Vector("padding","Padding L/T/R/B",glm::value_ptr(c.Padding),4,1,nullptr,"%.0f",{},0,4096);
-        PropertyUI::DragFloat("flex","Flow flex",c.Flex,.1f,0,100);
+        PropertyUI::DragFloat("flex",c.LayoutVersion==2?"Fill weight (0 = 1)":"Flow flex",c.Flex,.1f,0,100);
         PropertyUI::Checkbox("visible","Visible",c.Visible);PropertyUI::Checkbox("enabled","Enabled",c.Enabled);PropertyUI::Checkbox("clip","Clip children",c.ClipChildren);
-        if(flowOwned&&(c.SizeDelta.x<0||c.SizeDelta.y<0))throw std::invalid_argument("Flow preferred dimensions must be nonnegative");
+        if(c.LayoutVersion==1&&flowOwned&&(c.SizeDelta.x<0||c.SizeDelta.y<0))throw std::invalid_argument("Flow preferred dimensions must be nonnegative");
         PropertyUI::Help("Logical pixels, top-left origin. Drag a selected element in the viewport to move it; drag an edge/corner handle to resize. Escape cancels the gesture. Flow groups own child positions. Anchor min must not exceed max.");
     },[this](const std::string& error){m_HierarchyError=error;});
-    DrawUIComponent<UILayoutComponent>("UI Flow",entity,m_Sections,m_RestoreSections,[](auto& c){
+    DrawUIComponent<UILayoutComponent>("UI Flow",entity,m_Sections,m_RestoreSections,[entity](auto& c)mutable{
         int axis=int(c.Direction),main=int(c.Main),cross=int(c.Cross);
         if(PropertyUI::Combo("axis","Direction",axis,"Horizontal\0Vertical\0"))c.Direction=GameUI::Axis(axis);
         if(PropertyUI::Combo("main","Main alignment",main,"Start\0Center\0End\0"))c.Main=GameUI::Align(main);
-        if(PropertyUI::Combo("cross","Cross alignment",cross,"Start\0Center\0End\0Stretch\0"))c.Cross=GameUI::Align(cross);
+        bool measured=entity.HasComponent<UIRectComponent>()&&entity.GetComponent<UIRectComponent>().LayoutVersion==2;
+        if(PropertyUI::Combo("cross","Cross alignment",cross,measured?"Start\0Center\0End\0Start (use child Fill)\0":"Start\0Center\0End\0Stretch\0"))c.Cross=GameUI::Align(cross);
         PropertyUI::DragFloat("gap","Gap (px)",c.Gap,1,0,4096);
     });
     DrawUIComponent<UITextStyleComponent>("UI Text Style",entity,m_Sections,m_RestoreSections,[this](auto& c){
@@ -381,6 +451,14 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     });
 
     if(entity.HasComponent<UICanvasComponent>()||entity.HasComponent<UIRectComponent>()) {
+        if(entity.HasComponent<UICanvasComponent>()||entity.GetComponent<UIRectComponent>().LayoutVersion==1){
+        ImGui::BeginDisabled(!CanEdit() || !m_History);
+        if(ImGui::Button("Preview legacy conversion...")){
+            FinishUIEdit();m_ConversionDocument=m_Context->GetIdentity();m_ConversionRoot=entity.GetUUID();
+            m_FreezeConversion=false;m_Conversion.Preview(m_Context,m_ConversionRoot,false);m_ConversionWanted=true;ImGui::OpenPopup("Convert UI layout");
+        }
+        ImGui::EndDisabled();DrawConversionDialog(entity);
+        }
         if(ImGui::Button("Validate UI"))try{m_Context->ValidateUI(false);m_HierarchyError.clear();}catch(const std::exception& error){HierarchyFailed(error.what());}
         if(!m_HierarchyError.empty())PropertyUI::Validation(m_HierarchyError.c_str());
         if(!m_Context->GetUIError().empty())PropertyUI::Validation(m_Context->GetUIError().c_str());

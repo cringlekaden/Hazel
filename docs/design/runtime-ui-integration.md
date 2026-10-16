@@ -247,14 +247,68 @@ The existing large-UI submission bottleneck and unmet performance budgets above
 are unchanged; no batching, typography dependency, control or layout semantics
 were added.
 
-Next bounded P2 layout slice: introduce versioned **per-axis Fixed/Fill/Content**
-plus min/max and a deterministic measure/arrange pass for free anchored and stack
-layouts. Keep legacy mode as the default for existing serialized scenes/prefabs;
-no implicit conversion or save. Define definite-width text-height measurement,
-explicit dependency/cycle rejection and bounded reflow before adding grid/wrapped
-containers. Add native Inspector controls and an explicit undoable conversion
-preview for one disposable menu/HUD. Acceptance: legacy roundtrip/example geometry
-unchanged; hidden/disabled/zero/padding/nested surfaces; native text/font mutation
-invalidation, longer labels, min/max/overflow/cycle diagnostics, resize inversion
-and conversion Undo/Redo/save/reopen. Grid/wrap and hierarchy-history commands are
-following bounded slices, not prerequisites hidden inside this first layout pass.
+The next layout slice from this checkpoint is recorded below.
+
+## P2 versioned sizing and measure/arrange
+
+Starting at `f8b05a85c21a20fc7d799f42b80998ec7da48fe2`. LayoutVersion 1
+(also missing fields) retains legacy anchors, SizeDelta, pivot and flow exactly.
+Version 2 sizes border boxes per axis: Fixed uses FixedSize; Fill uses definite
+parent content space after margins; Content measures visuals/children plus padding.
+Minimums are never shrunk. Optional finite maximums must be at least minimums.
+Content width is natural width, capped by an explicit maximum, rather than
+implicitly squeezed by its parent. Fixed/Fill or a Content maximum supplies text
+wrap width before Content height is measured. Empty/zero-width text measures zero.
+Images measure source-region pixels as logical units; Content on both axes keeps
+native aspect. Other combinations can stretch; there is no implicit aspect lock.
+
+Free children use point anchors, Offset and the final-size Pivot. Fill owns its
+position on that axis: anchor/offset/pivot must be zero; margins supply insets.
+Stacks own positions, ignoring anchor/offset/pivot and cross Stretch resizing:
+only Fill owns expansion. Fill main-axis children start at minimum and divide
+remaining space by positive Flex (zero means weight 1), redistributing at maximums.
+Fixed/Content children never shrink. Overflow retains sizes and reports warnings;
+Main/Cross alignment positions spare space. Hidden collapses space/gaps; disabled
+participates; clipping affects drawing/hits, not measurement. Padding clamps the
+available inner box at zero. A zero surface suspends geometry and input.
+
+Content measures free child extents from zero anchor/pivot (Offset can overflow
+negatively), or stack sums/maxima. Content/Fill and anchored Content dependency
+cycles fail with entity/axis paths, without iterative convergence. A new free
+subtree can live in a legacy free parent; new/legacy mixed stacks and legacy
+children of new groups require conversion. Nested canvases stay independent.
+No derived layout values persist. Failed editor transactions restore authored
+values; no partial snapshot is published and input is cancelled on resolution
+failure. Runtime errors follow the existing host fail-stop path.
+
+Typed sizing/editor edits and save/load validation also check the dependency graph
+with discarded zero visual metrics, including hidden nodes and zero surfaces; this
+probe never supplies published geometry or loads GPU assets. Runtime raw writes
+are observed at the existing boundaries; hidden/zero-surface geometry is deferred
+until resolved. Text caches retain natural/constrained line layouts, image metrics
+observe base-source identity/resource extent and asset epoch, and changed layout
+passes reuse node/child storage. Unchanged dependency bytes reuse the snapshot.
+
+Conversion uses native Inspector preview and a staged scene copy. Point-fixed,
+full Fill with nonnegative insets, and complete legacy stacks retain representable
+responsiveness. Partial spans/negative insets require explicit Fixed freezing;
+hidden/interrupted targets must be revealed/repaired, and mixed stacks converted
+together. Logical geometry and exact framebuffer coverage are compared before one
+shared history command commits. Cancel, failed validation and stale preview leave
+the document unchanged. No automatic conversion/save occurs. Fixed-axis gestures
+also reject parent reflow/alignment that would move the opposite edge; Inspector
+size edits remain available. New fields participate in command comparison **and
+publication**, exact authored state, serializer, copy/prefab and runtime APIs.
+
+Current backend observed 2026-10-15: Plasma Wayland compositor, GLFW X11/GLX through
+Xwayland `:0`, accelerated physical Intel HD4000 / Mesa 26.2.4 / core OpenGL 4.2.
+The inherited shell's X11 session label/auth path were stale; the active Xwayland
+auth path was used for tests. This is neither native Wayland support nor Xvfb/
+software rendering. Prior CI at `f8b05a8` passed Linux and Windows. Existing
+Sandbox Start.hazel user edits are outside this implementation.
+
+Next bounded P2 slice: explicit fixed-track grids using the same sizing/dependency
+and document transaction contracts, with cell placement, native Inspector and
+save/reopen tests. Auto tracks, wrapped containers, aspect modes, scrolling,
+structural/multi-selection history and the known per-element rendering bottleneck
+remain separate work. This slice does not make the full UI system production-ready.

@@ -19,6 +19,21 @@ void Scene::RefreshUI()
     glm::vec2 viewport{m_ViewportWidth,m_ViewportHeight};
     m_UI->ResolveSurface(GameUI::SurfaceMetrics{viewport,m_UIFramebufferExplicit?m_UIFramebufferSize:viewport}, !m_IsRunning);
 }
+void Scene::SetUISizing(uint64_t id, GameUI::Axis axis, GameUI::SizeMode mode,
+                        float fixedSize, float minimum, std::optional<float> maximum)
+{
+    CheckThread();auto e=GetEntityByUUID(id);
+    if(IsStopping() || !e || !IsEntityValid(id) || !e.HasComponent<UIRectComponent>())
+        throw std::invalid_argument("Sizing requires a live UI Rect");
+    auto &r=e.GetComponent<UIRectComponent>();
+    if(r.LayoutVersion!=2)throw std::invalid_argument("Convert legacy UI explicitly before using measured sizing");
+    if(axis!=GameUI::Axis::Horizontal && axis!=GameUI::Axis::Vertical)throw std::invalid_argument("Invalid UI sizing axis");
+    const int a=axis==GameUI::Axis::Horizontal?0:1;auto before=r,next=r;
+    (a?next.HeightMode:next.WidthMode)=mode;next.FixedSize[a]=fixedSize;
+    next.MinimumSize[a]=minimum;next.HasMaximum[a]=maximum.has_value();next.MaximumSize[a]=maximum.value_or(0);
+    GameUI::Validate(next);r=next;
+    try{ValidateUILayoutDependencies();RefreshUI();}catch(...){r=before;try{RefreshUI();}catch(...){}throw;}
+}
 void Scene::UpdateUIInput(const GameUI::InputFrame &frame)
 {
     RefreshUI();
@@ -81,6 +96,7 @@ const GameUI::ResolvedSnapshot& Scene::GetUISnapshot() const { CheckThread();ret
 GameUI::RuntimeUIDiagnostics Scene::GetUIDiagnostics() const { CheckThread();return m_UI->Diagnostics(); }
 void Scene::ValidateUI(bool resources)
 {
+    ValidateUILayoutDependencies();
     if(m_Registry.view<UIRectComponent>().size()>GameUI::InputRouter::MaxButtons)
         throw std::runtime_error("UI declared rect limit exceeded (4096, including hidden rects)");
     for (auto h : m_Registry.view<IDComponent>())
@@ -92,6 +108,8 @@ void Scene::ValidateUI(bool resources)
             !e.HasComponent<UILayoutComponent>() && !e.HasComponent<UITextStyleComponent>() &&
             !e.HasComponent<UIButtonComponent>() && !e.HasComponent<UINineSliceComponent>())
             continue;
+        if(e.HasComponent<UICanvasComponent>()&&e.HasComponent<UIRectComponent>()&&e.GetComponent<UIRectComponent>().LayoutVersion==2)
+            throw std::invalid_argument("Canvas owns its surface; measured sizing belongs on a child Rect");
         ValidateUIConfiguration(YAML::Load(UIAuthoredState(e)));
         if(e.HasComponent<TextComponent>() && e.HasComponent<UIRectComponent>())
         {
@@ -159,6 +177,39 @@ void Scene::ValidateUI(bool resources)
                             validate(source);
             }
         }
+    }
+}
+void Scene::ValidateUILayoutDependencies()
+{
+    CheckThread();
+    if(m_Registry.view<UIRectComponent>().size()>GameUI::InputRouter::MaxButtons)
+        throw std::invalid_argument("UI declared rect limit exceeded (4096, including hidden rects)");
+    // Geometry from this probe is deliberately discarded. Zero visual metrics
+    // and definite external space exercise only authored dependency structure;
+    // actual text/images are measured by RuntimeUI at the real surface boundary.
+    GameUI::MeasuredLayout validation;std::vector<GameUI::MeasureNode> nodes;
+    for(auto handle:GetAllEntitiesWith<UIRectComponent>())
+    {
+        Entity root(handle,this);if(!IsEntityValid(root.GetUUID())||root.HasComponent<UICanvasComponent>()||root.GetComponent<UIRectComponent>().LayoutVersion!=2)continue;
+        auto parent=GetEntityByUUID(GetRelationship(root).Parent);
+        if(parent && !parent.HasComponent<UICanvasComponent>() && parent.HasComponent<UIRectComponent>()){
+            if(parent.GetComponent<UIRectComponent>().LayoutVersion==2)continue;
+            if(parent.HasComponent<UILayoutComponent>())throw std::invalid_argument("Legacy Flow contains measured child '"+root.GetName()+"'; convert its containing subtree");
+        }
+        nodes.clear();
+        std::function<void(Entity,size_t,size_t)> collect=[&](Entity e,size_t parentIndex,size_t depth){
+            if(!e||!IsEntityValid(e.GetUUID())||e.HasComponent<UICanvasComponent>()||!e.HasComponent<UIRectComponent>())return;
+            if(depth>=MaxDepth||nodes.size()>=GameUI::InputRouter::MaxButtons)throw std::invalid_argument("Measured UI dependency limit exceeded");
+            if(e.GetComponent<UIRectComponent>().LayoutVersion!=2)throw std::invalid_argument("Measured group contains legacy child '"+e.GetName()+"'; convert the containing subtree");
+            size_t index=nodes.size();nodes.emplace_back();auto &n=nodes.back();n.ID=e.GetUUID();n.Name=e.GetName();n.Layout=e.GetComponent<UIRectComponent>();n.Parent=parentIndex;n.Stack=e.HasComponent<UILayoutComponent>();
+            if(n.Stack)n.Flow=e.GetComponent<UILayoutComponent>();
+            n.Weight=e.GetComponent<UIRectComponent>().Flex>0?e.GetComponent<UIRectComponent>().Flex:1;
+            if(parentIndex!=std::numeric_limits<size_t>::max())nodes[parentIndex].Children.push_back(index);
+            for(auto id:GetChildrenView(e.GetUUID()))collect(GetEntityByUUID(id),index,depth+1);
+        };
+        collect(root,std::numeric_limits<size_t>::max(),0);
+        try{validation.Resolve(nodes,{},[](size_t,float){return glm::vec2(0);});}
+        catch(const std::exception &error){throw std::invalid_argument("Scene '"+GetName()+"' #"+std::to_string(GetIdentity())+": "+error.what());}
     }
 }
 } // namespace Hazel

@@ -16,6 +16,11 @@ struct ResolvedElement
     uint64_t ID = 0, Parent = 0, Canvas = 0;
     Rect Bounds{}, ParentContent{}, Clip{}; // canvas logical units
     Rect PixelBounds{}, PixelClip{}, FramebufferBounds{}, FramebufferClip{};
+    glm::vec2 Available{}, Measured{};
+    unsigned LayoutVersion = 1;
+    SizeMode WidthMode = SizeMode::Fixed, HeightMode = SizeMode::Fixed;
+    bool MeasureResolved = false, Overflow = false;
+    size_t MeasureIndex = std::numeric_limits<size_t>::max();
     float Scale = 1;
     size_t Order = 0, ButtonIndex = std::numeric_limits<size_t>::max();
     bool IsCanvas = false, Visible = false, Enabled = false, LayoutResolved = false;
@@ -47,6 +52,8 @@ struct RuntimeUIDiagnostics
 {
     uint64_t SourceChecks = 0, Resolves = 0, Reuses = 0, InputGeneration = 0;
     uint64_t DroppedActions = 0;
+    uint64_t Measurements = 0, MeasurementReuses = 0, Arrangements = 0;
+    uint64_t ImageMeasurements = 0, ImageMeasurementReuses = 0;
     double LastResolveMilliseconds = 0, LastRoutingMilliseconds = 0;
     uint64_t Focus = 0, Capture = 0, Hover = 0, Modal = 0;
     bool InputEnabled = false, GameplayBlocked = false, PointerBlocked = false;

@@ -49,6 +49,7 @@
 #endif
 namespace Hazel {
 static void Check(bool condition, const char* message) { if (!condition) throw std::runtime_error(message); }
+static void Check(bool condition, const std::string& message) { if (!condition) throw std::runtime_error(message); }
 static std::string Read(const std::filesystem::path& file) {
     std::ifstream input(file,std::ios::binary); return {std::istreambuf_iterator<char>(input),{}};
 }
@@ -56,6 +57,7 @@ static std::string Read(const std::filesystem::path& file) {
 #include "EditorStateChecks.h"
 #include "EditorDocumentChecks.h"
 #include "EditorHistoryChecks.h"
+#include "EditorLayoutChecks.h"
 #include "EditorConsoleChecks.h"
 namespace Hazel {
 class EditorWorkflowSmoke : public Layer {
@@ -69,6 +71,7 @@ public:
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project/assembly startup failed");
             EditorDocumentChecks();
             EditorHistoryChecks();
+            EditorLayoutChecks();
             HistoryWorkflowChecks();
             CaptionChecks();
             WorkspaceChecks();
@@ -869,6 +872,10 @@ private:
         panel.SetSelectedEntity(uiPanel);Check(panel.AddUI(3),"Button preset failed");auto uiButton=panel.GetSelectedEntity();Check(uiButton.HasComponent<UIButtonComponent>(),"Button preset lacks action component");
         scene->OnViewportResize(640,480);scene->OnUpdateEditor(0,e.m_EditorCamera);GameUI::Rect resolved;Check(scene->GetUIBounds(uiButton.GetUUID(),resolved)&&resolved.Size.x>0,"Editor UI preset preview lacks bounds");GameUI::Action action;Check(!scene->ConsumeUIAction(0,action),"Edit preview activated a game button");
         // D6 uses the same reversible controller called by viewport handles.
+        // Preserve the established v1 stretch/minimum regression independently
+        // of the now-measured creation presets checked above.
+        Check(uiPanel.GetComponent<UIRectComponent>().LayoutVersion==2&&uiButton.GetComponent<UIRectComponent>().LayoutVersion==2,"New creation presets are not measured");
+        uiPanel.GetComponent<UIRectComponent>().LayoutVersion=1;uiText.GetComponent<UIRectComponent>().LayoutVersion=1;uiButton.GetComponent<UIRectComponent>().LayoutVersion=1;
         auto& editRect=uiButton.GetComponent<UIRectComponent>();editRect.AnchorMin={0,0};editRect.AnchorMax={1,1};
         editRect.SizeDelta={-100,-80};editRect.Pivot={.75f,.5f};editRect.MinimumSize={150,100};scene->RefreshUI();
         auto editBefore=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();

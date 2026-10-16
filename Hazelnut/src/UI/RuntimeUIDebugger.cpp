@@ -62,13 +62,15 @@ void EditorLayer::UI_RectEditing()
         GameUI::Rect display{m_ViewportBounds[0] + selectedBounds.Position * displayScale,
                              selectedBounds.Size * displayScale};
         edges = Edges(mouse, display);
-        selectedHandle = canEdit && !n->IsCanvas && !n->FlowOwned && edges &&
+        unsigned allowed=n->FlowOwned?0:15;
+        if(n->LayoutVersion==2){allowed=15;if(n->WidthMode!=GameUI::SizeMode::Fixed)allowed&=~5u;if(n->HeightMode!=GameUI::SizeMode::Fixed)allowed&=~10u;if(n->FlowOwned)allowed&=~3u;}
+        selectedHandle = canEdit && !n->IsCanvas && edges && !(edges&~allowed) &&
                          ImGui::IsWindowHovered() && !io.WantTextInput;
         auto draw = ImGui::GetWindowDrawList();
         auto end = display.Position + display.Size;
         draw->AddRect({display.Position.x, display.Position.y}, {end.x, end.y},
                       IM_COL32(255, 190, 70, 255));
-        if (canEdit && !n->IsCanvas && !n->FlowOwned)
+        if (canEdit && !n->IsCanvas && allowed)
         {
             const glm::vec2 handles[] = {display.Position,
                                          {end.x, display.Position.y},
@@ -78,9 +80,12 @@ void EditorLayer::UI_RectEditing()
                                          {end.x, (display.Position.y + end.y) * .5f},
                                          {(display.Position.x + end.x) * .5f, end.y},
                                          {display.Position.x, (display.Position.y + end.y) * .5f}};
-            for (auto point : handles)
+            const unsigned handleEdges[]={3,6,12,9,2,4,8,1};
+            for (size_t i=0;i<8;++i)if(!(handleEdges[i]&~allowed))
+            {auto point=handles[i];
                 draw->AddRectFilled({point.x - 3, point.y - 3}, {point.x + 3, point.y + 3},
                                     IM_COL32(255, 190, 70, 255));
+            }
         }
     }
     // Handles and an active gesture retain selection; normal clicks still use
@@ -188,6 +193,9 @@ void EditorLayer::UI_Debugger()
                 (unsigned long long)d.Reuses, (unsigned long long)d.SourceChecks);
     ImGui::Text("Last rebuild %.3f ms | routing %.3f ms (CPU)", d.LastResolveMilliseconds,
                 d.LastRoutingMilliseconds);
+    ImGui::Text("Text measure misses/hits %llu / %llu | arranged nodes %llu",
+                (unsigned long long)d.Measurements,(unsigned long long)d.MeasurementReuses,(unsigned long long)d.Arrangements);
+    ImGui::Text("Image metric misses/hits %llu / %llu",(unsigned long long)d.ImageMeasurements,(unsigned long long)d.ImageMeasurementReuses);
     ImGui::Text("Rects/hits %zu / %zu | dropped activations %llu", s.PainterOrder.size(),
                 s.Buttons.size(), (unsigned long long)d.DroppedActions);
     ImGui::Checkbox("Bounds overlay", &m_UIBoundsOverlay);
@@ -210,6 +218,10 @@ void EditorLayer::UI_Debugger()
                         r.Size.y);
         };
         rect("Logical bounds", n->Bounds);
+        auto mode=[](GameUI::SizeMode value){return value==GameUI::SizeMode::Fixed?"Fixed":value==GameUI::SizeMode::Fill?"Fill":"Content";};
+        ImGui::Text("Layout v%u: %s / %s | controlling parent %llu",n->LayoutVersion,mode(n->WidthMode),mode(n->HeightMode),(unsigned long long)n->Parent);
+        ImGui::Text("Available %.2f x %.2f | measured %.2f x %.2f",n->Available.x,n->Available.y,n->Measured.x,n->Measured.y);
+        ImGui::Text("Arranged %.2f x %.2f | overflow %s",n->Bounds.Size.x,n->Bounds.Size.y,n->Overflow?"yes":"no");
         rect("Logical clip", n->Clip);
         rect("Pixel bounds", n->PixelBounds);
         rect("Effective pixel clip", n->PixelClip);

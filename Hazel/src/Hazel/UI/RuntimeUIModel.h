@@ -30,8 +30,14 @@ struct CanvasFit
     glm::vec2 ToLogical(glm::vec2 pixel) const;
 };
 CanvasFit FitCanvas(glm::vec2 viewportPixels, const CanvasLayout &config);
+enum class SizeMode { Fixed, Fill, Content };
 struct RectLayout
 {
+    // Missing persisted fields always retain v1 anchors/stretch/pivot semantics.
+    unsigned LayoutVersion = 1;
+    SizeMode WidthMode = SizeMode::Fixed, HeightMode = SizeMode::Fixed;
+    glm::vec2 FixedSize{240, 48}, MaximumSize{};
+    glm::bvec2 HasMaximum{false, false};
     glm::vec2 AnchorMin{}, AnchorMax{}, Offset{}, SizeDelta{240, 48}, Pivot{};
     glm::vec2 MinimumSize{};
     glm::vec4 Margin{}, Padding{};
@@ -41,6 +47,8 @@ Rect ResolveRect(const Rect &parent, const RectLayout &config);
 // Invert legacy anchors/pivot/margins for a viewport gesture. No new layout
 // semantics: zero edges moves; bits 1/2/4/8 resize left/top/right/bottom.
 RectLayout EditRect(const Rect &parent, const RectLayout &initial, glm::vec2 delta, unsigned edges);
+RectLayout EditMeasuredRect(const Rect &parent, const Rect &start, const RectLayout &initial,
+                            glm::vec2 delta, unsigned edges);
 Rect FramebufferCoverage(const Rect &pixels, glm::vec2 ratio, glm::vec2 framebuffer);
 enum class Axis
 {

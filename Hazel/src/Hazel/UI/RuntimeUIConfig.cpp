@@ -124,8 +124,20 @@ static void Write(YAML::Emitter &out, const UICanvasComponent &v)
 UIRectComponent ReadUIRectComponent(const YAML::Node &n)
 {
     Keys(n, {"AnchorMin", "AnchorMax", "Offset", "SizeDelta", "Pivot", "MinimumSize", "Margin",
-             "Padding", "Visible", "Enabled", "ClipChildren", "Flex"});
+             "Padding", "Visible", "Enabled", "ClipChildren", "Flex", "LayoutVersion",
+             "WidthMode", "HeightMode", "FixedSize", "MaximumSize", "HasMaximum"});
     UIRectComponent v;
+    if(n["LayoutVersion"])v.LayoutVersion=n["LayoutVersion"].as<unsigned>();
+    if(v.LayoutVersion==1 && (n["WidthMode"]||n["HeightMode"]||n["FixedSize"]||n["MaximumSize"]||n["HasMaximum"]))
+        throw std::runtime_error("Measured sizing fields require LayoutVersion 2");
+    if(n["WidthMode"])v.WidthMode=GameUI::SizeMode(n["WidthMode"].as<int>());
+    if(n["HeightMode"])v.HeightMode=GameUI::SizeMode(n["HeightMode"].as<int>());
+    if(n["FixedSize"])v.FixedSize=Vector<2>(n["FixedSize"]);
+    if(n["MaximumSize"])v.MaximumSize=Vector<2>(n["MaximumSize"]);
+    if(auto maximum=n["HasMaximum"]){
+        if(!maximum.IsSequence()||maximum.size()!=2)throw std::runtime_error("HasMaximum requires two booleans");
+        v.HasMaximum={maximum[0].as<bool>(),maximum[1].as<bool>()};
+    }
     if (n["AnchorMin"])
         v.AnchorMin = Vector<2>(n["AnchorMin"]);
     if (n["AnchorMax"])
@@ -157,6 +169,14 @@ UIRectComponent ReadUIRectComponent(const YAML::Node &n)
 static void Write(YAML::Emitter &out, const UIRectComponent &v)
 {
     out << YAML::BeginMap;
+    if(v.LayoutVersion!=1){
+        out << YAML::Key << "LayoutVersion" << YAML::Value << v.LayoutVersion;
+        out << YAML::Key << "WidthMode" << YAML::Value << int(v.WidthMode);
+        out << YAML::Key << "HeightMode" << YAML::Value << int(v.HeightMode);
+        out << YAML::Key << "FixedSize" << YAML::Value;Write(out,v.FixedSize);
+        out << YAML::Key << "MaximumSize" << YAML::Value;Write(out,v.MaximumSize);
+        out << YAML::Key << "HasMaximum" << YAML::Value << YAML::Flow << YAML::BeginSeq << bool(v.HasMaximum.x) << bool(v.HasMaximum.y) << YAML::EndSeq;
+    }
     out << YAML::Key << "AnchorMin" << YAML::Value;
     Write(out, v.AnchorMin);
     out << YAML::Key << "AnchorMax" << YAML::Value;

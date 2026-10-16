@@ -198,6 +198,15 @@ namespace Migration {
             text.Text="\ufeffManaged UI";
             if(text.Text[0]!='\ufeff')throw new System.Exception("Managed BOM text was not accepted/preserved");
             text.Text="Managed UI";
+            if(rect.LayoutVersion!=1)throw new System.Exception("Legacy UI was silently converted");
+            bool legacyRejected=false;try{rect.Width=new Hazel.UISizing(Hazel.UISizeMode.Fixed,120);}catch(System.InvalidOperationException){legacyRejected=true;}
+            if(!legacyRejected)throw new System.Exception("Sizing API silently converted legacy UI");
+            var measured=FindEntityByName("Measured API target").GetComponent<Hazel.UIRectComponent>();
+            measured.Width=new Hazel.UISizing(Hazel.UISizeMode.Fixed,137,20,150);
+            var sizing=measured.Width;
+            if(measured.LayoutVersion!=2||sizing.Mode!=Hazel.UISizeMode.Fixed||sizing.FixedSize!=137||sizing.Minimum!=20||sizing.Maximum!=150)throw new System.Exception("Measured sizing API roundtrip failed");
+            bool invalidSizing=false;try{measured.Width=new Hazel.UISizing(Hazel.UISizeMode.Fixed,float.NaN,20,10);}catch(System.InvalidOperationException){invalidSizing=true;}
+            if(!invalidSizing||measured.Width.FixedSize!=137)throw new System.Exception("Invalid sizing mutation changed accepted runtime state");
             Passed=canvas.Visible&&canvas.Enabled&&canvas.Modal&&rect.Visible&&rect.Enabled&&button.Interactable;
         }
     }

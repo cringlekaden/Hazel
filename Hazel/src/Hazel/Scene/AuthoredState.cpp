@@ -193,6 +193,12 @@ std::string SceneSerializer::CaptureAuthoredState() const
             state.Value(c.Modal);
         });
         state.Component<UIRectComponent>(e, [&](auto &c) {
+            state.Value(c.LayoutVersion);
+            if(c.LayoutVersion==2){
+                state.Value(int(c.WidthMode));state.Value(int(c.HeightMode));
+                state.Value(c.FixedSize);state.Value(c.MaximumSize);
+                state.Value(bool(c.HasMaximum.x));state.Value(bool(c.HasMaximum.y));
+            }
             state.Value(c.AnchorMin);
             state.Value(c.AnchorMax);
             state.Value(c.Offset);

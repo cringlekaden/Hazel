@@ -34,7 +34,8 @@ class UIRectEditSession
     uint64_t m_Entity = 0, m_Identity = 0, m_Parent = 0;
     unsigned m_Edges = 0;
     float m_Scale = 1;
-    GameUI::Rect m_ParentContent;
+    GameUI::Rect m_ParentContent, m_ExpectedParentContent, m_InitialBounds;
+    bool m_FlowOwned = false;
     UIRectComponent m_Initial, m_Last;
     std::string m_Error;
 };

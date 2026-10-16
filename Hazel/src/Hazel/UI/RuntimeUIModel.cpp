@@ -76,6 +76,22 @@ CanvasFit FitCanvas(glm::vec2 pixels, const CanvasLayout &config)
 }
 void Validate(const RectLayout &c)
 {
+    if (c.LayoutVersion != 1 && c.LayoutVersion != 2)
+        throw std::invalid_argument("Unsupported UI layout version");
+    if (c.LayoutVersion == 2)
+    {
+        if (!Nonnegative(c.FixedSize) || !Nonnegative(c.MaximumSize) ||
+            c.WidthMode < SizeMode::Fixed || c.WidthMode > SizeMode::Content ||
+            c.HeightMode < SizeMode::Fixed || c.HeightMode > SizeMode::Content)
+            throw std::invalid_argument("Invalid measured UI sizing rule");
+        for (int axis = 0; axis < 2; ++axis)
+        {
+            if (c.AnchorMin[axis] != c.AnchorMax[axis])
+                throw std::invalid_argument("Measured UI uses point anchors; sizing owns dimensions");
+            if (c.HasMaximum[axis] && c.MaximumSize[axis] < c.MinimumSize[axis])
+                throw std::invalid_argument("UI maximum must not be smaller than minimum");
+        }
+    }
     if (!Finite(c.AnchorMin) || !Finite(c.AnchorMax) || !Finite(c.Offset) || !Finite(c.SizeDelta) ||
         !Finite(c.Pivot) || !Nonnegative(c.MinimumSize) || !Nonnegative(c.Margin) ||
         !Nonnegative(c.Padding))
@@ -90,6 +106,7 @@ Rect ResolveRect(const Rect &parent, const RectLayout &c)
 {
     CheckRect(parent);
     Validate(c);
+    if(c.LayoutVersion!=1)throw std::invalid_argument("Measured UI requires measure/arrange, not legacy ResolveRect");
     auto size = (c.AnchorMax - c.AnchorMin) * parent.Size + c.SizeDelta;
     auto position = parent.Position + c.AnchorMin * parent.Size + c.Offset - c.Pivot * c.SizeDelta;
     if (!Finite(size) || !Finite(position))
@@ -155,6 +172,34 @@ RectLayout EditRect(const Rect &parent, const RectLayout &initial, glm::vec2 del
         glm::length(check.Size - target.Size) > .01f)
         throw std::invalid_argument("UI edit cannot preserve the requested resolved edges");
     return result;
+}
+RectLayout EditMeasuredRect(const Rect &parent, const Rect &start, const RectLayout &initial,
+                            glm::vec2 delta, unsigned edges)
+{
+    Validate(initial);CheckRect(parent);CheckRect(start);
+    if(initial.LayoutVersion!=2 || !Finite(delta) || edges>15 || ((edges&1)&&(edges&4)) || ((edges&2)&&(edges&8)))
+        throw std::invalid_argument("Invalid measured UI gesture");
+    auto result=initial;
+    for(int axis=0;axis<2;++axis)
+    {
+        auto mode=axis?initial.HeightMode:initial.WidthMode;
+        unsigned leading=axis?2:1,trailing=axis?8:4;
+        if(!edges)
+        {
+            if(mode==SizeMode::Fill)throw std::invalid_argument("Fill owns position; edit margins in Properties");
+            result.Offset[axis]+=delta[axis];continue;
+        }
+        if(!(edges&(leading|trailing)))continue;
+        if(mode!=SizeMode::Fixed)throw std::invalid_argument("Fill/Content owns this dimension; edit its sizing constraint in Properties");
+        float desired=std::max(initial.MinimumSize[axis],start.Size[axis]+((edges&leading)?-delta[axis]:delta[axis]));
+        if(initial.HasMaximum[axis])desired=std::min(desired,initial.MaximumSize[axis]);
+        if(desired==start.Size[axis])continue;
+        float position=start.Position[axis]+((edges&leading)?start.Size[axis]-desired:0);
+        result.FixedSize[axis]=desired;
+        result.Offset[axis]=position-parent.Position[axis]-initial.AnchorMin[axis]*parent.Size[axis]+
+            initial.Pivot[axis]*desired-initial.Margin[axis];
+    }
+    Validate(result);return result;
 }
 void ArrangeFlow(const Rect &content, const FlowLayout &c, const std::vector<FlowItem> &items,
                  std::vector<Rect> &out)

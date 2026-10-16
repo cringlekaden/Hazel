@@ -2,6 +2,7 @@
 #include "Hazel/Renderer/Renderer2D.h"
 #include "Hazel/Scene/Entity.h"
 #include "Hazel/UI/RuntimeUISnapshot.h"
+#include "Hazel/UI/MeasuredLayout.h"
 #include <chrono>
 #include <unordered_map>
 namespace Hazel
@@ -60,9 +61,21 @@ class RuntimeUI
         uint64_t Epoch = 0;
         float Width = -1, Kerning = 0;
         bool Wrap = false;
+        std::array<std::vector<Renderer2D::TextLine>,2> MeasureLines;
+        std::array<std::string,2> MeasureText;
+        std::array<float,2> MeasureWidth{{-2,-2}}, MeasureKerning{};
+        std::array<bool,2> MeasureWrap{};
+        SpriteSource MeasureImageSource;
+        uint64_t MeasureImageEpoch=0;
+        glm::vec2 MeasureImageSize{-1,-1},MeasureResourceExtent{-1,-1};
     };
     void CaptureSources(GameUI::SurfaceMetrics surface, bool previewOrphans);
     void Build(GameUI::SurfaceMetrics surface, bool previewOrphans);
+    void MeasureTree(Entity root, GameUI::Rect parent);
+    glm::vec2 Intrinsic(Entity entity, float width);
+    GameUI::MeasuredLayout m_Measure;
+    std::vector<GameUI::MeasureNode> m_MeasureNodes;
+    std::vector<uint64_t> m_MeasureIDs;
     void Visit(Entity entity, GameUI::Rect parent, GameUI::Rect clip, float scale, bool enabled,
                uint64_t canvas, size_t depth, const GameUI::Rect *arranged = nullptr);
     bool Live(uint64_t id) const;

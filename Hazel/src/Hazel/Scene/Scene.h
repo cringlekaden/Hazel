@@ -13,6 +13,7 @@
 #include <map>
 #include <thread>
 #include <typeindex>
+#include <optional>
 #include "Components.h"
 
 class b2World;
@@ -58,7 +59,10 @@ namespace Hazel {
         const GameUI::ResolvedSnapshot& GetUISnapshot() const;
         GameUI::RuntimeUIDiagnostics GetUIDiagnostics() const;
         void RefreshUI();
+        void SetUISizing(uint64_t entity, GameUI::Axis axis, GameUI::SizeMode mode,
+                         float fixedSize, float minimum = 0, std::optional<float> maximum = {});
         void ValidateUI(bool resources=true);
+        void ValidateUILayoutDependencies(); // CPU-only, including hidden/zero-surface documents
         const std::string& GetUIError() const {return m_UIError;}
 
         std::vector<UUID> GetSubtree(Entity entity) const;

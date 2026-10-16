@@ -64,6 +64,12 @@ template <class A, class B, class C, class F> void Fields(A &a, B &b, C &c, F f)
     }
     COMPONENT(Rect)
     {
+        FIELD(Rect, LayoutVersion);
+        FIELD(Rect, WidthMode);
+        FIELD(Rect, HeightMode);
+        FIELD(Rect, FixedSize);
+        FIELD(Rect, MaximumSize);
+        FIELD(Rect, HasMaximum);
         FIELD(Rect, AnchorMin);
         FIELD(Rect, AnchorMax);
         FIELD(Rect, Offset);
@@ -302,7 +308,13 @@ void Write(Entity e, const UIEditValues &old, UIEditValues &next)
     FIELD(Canvas, Enabled);
     FIELD(Canvas, Modal);
 }
-COMPONENT(Rect, UIRectComponent) FIELD(Rect, AnchorMin);
+COMPONENT(Rect, UIRectComponent) FIELD(Rect, LayoutVersion);
+FIELD(Rect, WidthMode);
+FIELD(Rect, HeightMode);
+FIELD(Rect, FixedSize);
+FIELD(Rect, MaximumSize);
+FIELD(Rect, HasMaximum);
+FIELD(Rect, AnchorMin);
 FIELD(Rect, AnchorMax);
 FIELD(Rect, Offset);
 FIELD(Rect, SizeDelta);
@@ -504,6 +516,7 @@ void UIEditCommand::Publish(Scene &scene, const UIEditValues &current, UIEditVal
     Write(e, current, next); // next now contains the old values for changed fields
     try
     {
+        scene.ValidateUILayoutDependencies();
         scene.RefreshUI();
     }
     catch (...)

@@ -27,6 +27,7 @@ template <class F> void Reject(F f)
     }
     Check(bad, "Malformed UI configuration was accepted");
 }
+#include "MeasuredLayoutChecks.h"
 static void HardeningChecks()
 {
     // Audit D2: nonempty bounds/clip separately, but no effective intersection.
@@ -110,6 +111,7 @@ int main()
     try
     {
         HardeningChecks();
+        MeasuredLayoutChecks();
         for (auto viewport : std::vector<glm::vec2>{{1024, 600}, {1280, 720}, {960, 720}})
         {
             auto fit = FitCanvas(viewport, {});

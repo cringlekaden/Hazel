@@ -5,6 +5,32 @@ void HistoryWorkflowChecks()
     const auto original=e.m_EditorScenePath;
     e.NewScene();auto scene=e.m_EditorScene;scene->OnViewportResize(640,480);auto &panel=e.m_SceneHierarchyPanel;
     Check(panel.AddUI(0),"History owner canvas creation failed");auto canvas=panel.GetSelectedEntity();
+    Check(panel.AddUI(4), "Measured menu stack preset failed"); auto menu=panel.GetSelectedEntity();
+    Check(panel.AddUI(3), "Measured stack button preset failed"); auto start=panel.GetSelectedEntity();
+    start.GetComponent<TagComponent>().Tag="Menu start";
+    start.GetComponent<TextComponent>().TextString="Start exploring";
+    panel.SetSelectedEntity(menu);
+    Check(panel.AddUI(3), "Measured stack sibling creation failed"); auto options=panel.GetSelectedEntity();
+    options.GetComponent<TagComponent>().Tag="Menu options";
+    scene->RefreshUI(); auto menuHeight=scene->GetUISnapshot().Find(menu.GetUUID())->Bounds.Size.y;
+    options.GetComponent<TextComponent>().TextString="Options and journal settings with a deliberately longer translated label for wrapping";
+    scene->RefreshUI();
+    Check(scene->GetUISnapshot().Find(menu.GetUUID())->Bounds.Size.y>menuHeight &&
+              options.GetComponent<UIRectComponent>().WidthMode==GameUI::SizeMode::Fill,
+          "Editor menu preset did not reflow a longer native label");
+    panel.SetSelectedEntity(canvas);
+    Check(panel.AddUI(2), "Measured HUD text preset failed"); auto hud=panel.GetSelectedEntity();
+    hud.GetComponent<TagComponent>().Tag="HUD journal";
+    hud.GetComponent<TextComponent>().TextString="Journal: 1 / 9";
+    auto &hr=hud.GetComponent<UIRectComponent>();
+    hr.AnchorMin=hr.AnchorMax=hr.Pivot={1,1};hr.Offset={-24,-24};
+    scene->RefreshUI();
+    auto menuBounds=scene->GetUISnapshot().Find(menu.GetUUID())->Bounds;
+    scene->OnViewportResize(960,540);scene->RefreshUI();
+    Check(scene->GetUISnapshot().Find(menu.GetUUID())->Bounds.Size==menuBounds.Size &&
+              scene->GetUISnapshot().Find(hud.GetUUID())->PixelBounds.Position.x>640,
+          "Editor viewport resize changed Fixed stack size or failed corner HUD anchoring");
+    scene->OnViewportResize(640,480);scene->RefreshUI();panel.SetSelectedEntity(canvas);
     Check(panel.AddUI(3),"History owner button creation failed");auto control=panel.GetSelectedEntity();
     a.m_ActiveDocument=EditorDocument::Scene;auto &h=a.m_SceneHistory;
     const auto initial=a.SceneText();UIInspectorEditing inspector;
@@ -52,7 +78,7 @@ void HistoryWorkflowChecks()
     Prefab::Save(Project::GetAssetDirectory(),"Prefabs/history-workflow.hprefab",scene,canvas,true);
     a.SelectAsset(prefabPath);Check(a.m_PrefabScene&&a.m_PrefabHistory.Operations()==0,"Prefab history did not bind new document");
     auto prefab=a.m_PrefabScene;auto pcontrol=prefab->FindEntityByName("UI Button");auto &ph=a.m_PrefabHistory;
-    auto pbefore=UIEditValues::Capture(pcontrol),pnext=pbefore;pnext.Rect->SizeDelta.x+=11;
+    auto pbefore=UIEditValues::Capture(pcontrol),pnext=pbefore;pnext.Rect->FixedSize.x+=11;
     UIInspectorEditing pedit;PropertyUI::EditActivity immediate;immediate.Changed=immediate.Committed=true;immediate.Label="Preferred size";
     const auto retainedScene=a.SceneText();
     Check(pedit.Edit(*prefab,&ph,pcontrol.GetUUID(),"UI Rect",pbefore,pnext,immediate,0)&&ph.Operations()==1,"Prefab Inspector edit failed");

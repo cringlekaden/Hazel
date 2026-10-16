@@ -14,7 +14,27 @@ namespace Hazel {
         public bool Enabled {get=>InternalCalls.UI_GetValue(Entity.CheckedID,1);set=>InternalCalls.UI_SetValue(Entity.CheckedID,1,value);}
         public bool Modal {get=>InternalCalls.UI_GetValue(Entity.CheckedID,2);set=>InternalCalls.UI_SetValue(Entity.CheckedID,2,value);}
     }
+    public enum UISizeMode { Fixed, Fill, Content }
+    public struct UISizing {
+        public UISizeMode Mode;
+        public float FixedSize, Minimum;
+        public float? Maximum;
+        public UISizing(UISizeMode mode,float fixedSize=0,float minimum=0,float? maximum=null) {
+            Mode=mode;FixedSize=fixedSize;Minimum=minimum;Maximum=maximum;
+        }
+    }
     public class UIRectComponent : Component {
+        public uint LayoutVersion => InternalCalls.UI_LayoutVersion(Entity.CheckedID);
+        public UISizing Width {get=>ReadSizing(0);set=>WriteSizing(0,value);}
+        public UISizing Height {get=>ReadSizing(1);set=>WriteSizing(1,value);}
+        UISizing ReadSizing(int axis) {
+            int mode,has;float size,min,max;
+            InternalCalls.UI_GetSizing(Entity.CheckedID,axis,out mode,out size,out min,out has,out max);
+            return new UISizing((UISizeMode)mode,size,min,has!=0?(float?)max:null);
+        }
+        void WriteSizing(int axis,UISizing value) {
+            InternalCalls.UI_SetSizing(Entity.CheckedID,axis,(int)value.Mode,value.FixedSize,value.Minimum,value.Maximum.HasValue?1:0,value.Maximum??0);
+        }
         public bool Visible {get=>InternalCalls.UI_GetValue(Entity.CheckedID,4);set=>InternalCalls.UI_SetValue(Entity.CheckedID,4,value);}
         public bool Enabled {get=>InternalCalls.UI_GetValue(Entity.CheckedID,5);set=>InternalCalls.UI_SetValue(Entity.CheckedID,5,value);}
     }

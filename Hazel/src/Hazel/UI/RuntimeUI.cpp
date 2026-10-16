@@ -30,6 +30,7 @@ struct DependencyBytes
         Add(value.size());
         Bytes.insert(Bytes.end(), value.begin(), value.end());
     }
+    void Add(const std::filesystem::path &value) { Add(value.generic_u8string()); }
 };
 Rect Scaled(Rect r, glm::vec2 scale)
 {
@@ -88,8 +89,8 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
     state.Add(surface.Viewport);
     state.Add(surface.Framebuffer);
     state.Add(previewOrphans);
-    // Only layout/input dependencies are inspected. Text/image/color edits are
-    // paint dependencies, read by Draw and its text cache, and never cause reflow.
+    // Legacy/fixed visuals are paint dependencies. Content additionally observes
+    // text/font/base-image metrics; colors and button-state images remain paint.
     for (auto h : m_Scene.GetAllEntitiesWith<UIRectComponent>())
     {
         Entity e(h, &m_Scene);
@@ -118,6 +119,32 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
         }
         state.Add(uint64_t(0));
         auto &r = e.GetComponent<UIRectComponent>();
+        state.Add(r.LayoutVersion);
+        if(r.LayoutVersion==2){
+            state.Add(int(r.WidthMode));state.Add(int(r.HeightMode));
+            state.Add(r.FixedSize);state.Add(r.MaximumSize);
+            state.Add(bool(r.HasMaximum.x));state.Add(bool(r.HasMaximum.y));
+            if(r.WidthMode==SizeMode::Content || r.HeightMode==SizeMode::Content){
+                auto assets=m_Scene.GetAssets();state.Add(assets?assets->Epoch():uint64_t(0));
+                state.Add(e.HasComponent<TextComponent>());
+                if(e.HasComponent<TextComponent>()){
+                    auto &text=e.GetComponent<TextComponent>();
+                    if(text.TextString.size()>65536)throw std::invalid_argument("UI text exceeds 64 KiB");
+                    state.Add(text.TextString);state.Add(text.Kerning);state.Add(text.LineSpacing);
+                    auto style=e.HasComponent<UITextStyleComponent>()?e.GetComponent<UITextStyleComponent>():UITextStyleComponent{};
+                    state.Add(style.FontPath);state.Add(style.Size);state.Add(style.Wrap);
+                }
+                state.Add(e.HasComponent<SpriteRendererComponent>());
+                if(e.HasComponent<SpriteRendererComponent>()){
+                    auto &source=e.GetComponent<SpriteRendererComponent>().Source;state.Add(source.index());
+                    if(auto t=std::get_if<TextureSpriteSource>(&source)){
+                        state.Add(t->Texture);state.Add(uintptr_t(t->Resource.get()));
+                        if(t->Resource){state.Add(t->Resource->GetWidth());state.Add(t->Resource->GetHeight());}
+                    }
+                    if(auto s=std::get_if<SpriteReference>(&source)){state.Add(s->Sheet);state.Add(s->Region);}
+                }
+            }
+        }
         state.Add(r.AnchorMin);
         state.Add(r.AnchorMax);
         state.Add(r.Offset);
@@ -312,13 +339,15 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
                 {id, "Nested/parented Canvas resolves independently against the viewport"});
         auto parent = m_Scene.GetEntityByUUID(n.Parent);
         n.FlowOwned = !n.IsCanvas && parent && parent.HasComponent<UIRectComponent>() &&
-                      parent.HasComponent<UILayoutComponent>();
-        if (n.FlowOwned)
+                      !parent.HasComponent<UICanvasComponent>() && parent.HasComponent<UILayoutComponent>();
+        if (n.FlowOwned && e.GetComponent<UIRectComponent>().LayoutVersion==1)
             m_Build.Warnings.push_back(
                 {id, "Flow owns position/arranged size; viewport move/resize is unavailable"});
         if (e.HasComponent<UIRectComponent>())
         {
             auto &r = e.GetComponent<UIRectComponent>();
+            n.LayoutVersion=r.LayoutVersion;n.WidthMode=r.WidthMode;n.HeightMode=r.HeightMode;
+            if(n.IsCanvas && r.LayoutVersion==2)throw std::invalid_argument("Canvas owns its surface; place measured Rect on a child");
             if (!std::isfinite(r.Flex) || r.Flex < 0)
                 throw std::invalid_argument("Invalid UI flex");
         }
@@ -433,7 +462,9 @@ void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enable
     if (!r.Visible)
         return;
     auto &n = m_Build.Elements[m_Build.Index.at(e.GetUUID())];
-    n.Bounds = arranged ? *arranged : ResolveRect(parent, r);
+    if(r.LayoutVersion==2 && !n.MeasureResolved)MeasureTree(e,parent);
+    n.Bounds = arranged ? *arranged : r.LayoutVersion==2 ? n.Bounds : ResolveRect(parent, r);
+    if(r.LayoutVersion==1){n.Available=parent.Size;n.Measured=n.Bounds.Size;}
     n.ParentContent = parent;
     n.Scale = scale;
     n.Enabled = enabled && r.Enabled;
@@ -452,10 +483,13 @@ void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enable
     auto content = n.Bounds.Inset(r.Padding),
          childClip = r.ClipChildren ? clip.Intersect(n.Bounds) : clip;
     auto inside = parent.Intersect(n.Bounds);
-    if (inside.Position != n.Bounds.Position || inside.Size != n.Bounds.Size)
+    bool outside=inside.Position != n.Bounds.Position || inside.Size != n.Bounds.Size;
+    n.Overflow |= outside;
+    if (outside)
         m_Build.Warnings.push_back({n.ID, "Resolved rect overflows its parent content"});
+    if(n.Overflow&&!outside)m_Build.Warnings.push_back({n.ID,"Measured layout overflows available space; minimums are retained"});
     const auto &children = m_Scene.GetChildrenView(e.GetUUID());
-    if (e.HasComponent<UILayoutComponent>())
+    if (e.HasComponent<UILayoutComponent>() && r.LayoutVersion==1)
     {
         auto &cache = m_Cache[e.GetUUID()];
         cache.Items.clear();
@@ -468,6 +502,7 @@ void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enable
             if (item.Visible)
             {
                 auto &c = child.GetComponent<UIRectComponent>();
+                if(c.LayoutVersion==2)throw std::invalid_argument("Legacy Flow cannot own measured children; convert its containing subtree");
                 item = {c.SizeDelta, c.MinimumSize, c.Margin, c.Flex, c.Visible};
             }
             cache.Items.push_back(item);
@@ -778,6 +813,7 @@ void RuntimeUI::Draw()
                     cache.FontPath = style.FontPath;
                     cache.Epoch = epoch;
                     cache.Width = -1;
+                    cache.MeasureWidth={{-2,-2}};
                 }
                 auto content = n.Bounds.Inset(e.GetComponent<UIRectComponent>().Padding);
                 float width = content.Size.x / style.Size;

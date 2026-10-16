@@ -10,6 +10,9 @@ namespace Hazel
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_Consume(ulong scene,ulong id,out ulong entity,out string action);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_GetValue(ulong id,int property);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_SetValue(ulong id,int property,bool value);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static uint UI_LayoutVersion(ulong id);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_GetSizing(ulong id,int axis,out int mode,out float size,out float minimum,out int hasMaximum,out float maximum);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_SetSizing(ulong id,int axis,int mode,float size,float minimum,int hasMaximum,float maximum);
 
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void SpriteRendererComponent_SetSprite(ulong id,string sheet,ulong region);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void SpriteAnimationComponent_Play(ulong id,string sheet,ulong clip);

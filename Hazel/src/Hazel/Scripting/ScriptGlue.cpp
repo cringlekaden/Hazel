@@ -367,6 +367,24 @@ namespace Hazel {
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
         if(failure)mono_raise_exception(failure);return result;
     }
+    static uint32_t UI_LayoutVersion(uint64_t id) {
+        MonoException* failure=nullptr;uint32_t result=0;
+        try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI requires a runtime scene");scene->CheckThread();auto e=scene->GetEntityByUUID(id);if(!e||!scene->IsEntityValid(id)||!e.HasComponent<UIRectComponent>())throw std::invalid_argument("Sizing needs a live UI Rect");result=e.GetComponent<UIRectComponent>().LayoutVersion;}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
+        if(failure)mono_raise_exception(failure);return result;
+    }
+    static void UI_GetSizing(uint64_t id,int axis,int* mode,float* size,float* minimum,int* hasMaximum,float* maximum) {
+        MonoException* failure=nullptr;
+        try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI requires a runtime scene");scene->CheckThread();auto e=scene->GetEntityByUUID(id);if(!e||!scene->IsEntityValid(id)||!e.HasComponent<UIRectComponent>()||axis<0||axis>1)throw std::invalid_argument("Sizing needs a live UI Rect and valid axis");const auto& r=e.GetComponent<UIRectComponent>();if(r.LayoutVersion!=2)throw std::invalid_argument("Legacy UI has no measured sizing; convert it explicitly");*mode=int(axis?r.HeightMode:r.WidthMode);*size=r.FixedSize[axis];*minimum=r.MinimumSize[axis];*hasMaximum=r.HasMaximum[axis]?1:0;*maximum=r.MaximumSize[axis];}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
+        if(failure)mono_raise_exception(failure);
+    }
+    static void UI_SetSizing(uint64_t id,int axis,int mode,float size,float minimum,int hasMaximum,float maximum) {
+        MonoException* failure=nullptr;
+        try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI requires a runtime scene");if(axis<0||axis>1||hasMaximum<0||hasMaximum>1)throw std::invalid_argument("Invalid sizing axis/maximum flag");scene->SetUISizing(id,GameUI::Axis(axis),GameUI::SizeMode(mode),size,minimum,hasMaximum?std::optional<float>(maximum):std::optional<float>{});}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
+        if(failure)mono_raise_exception(failure);
+    }
     static bool* UI_Value(uint64_t id,int property) {
         auto* scene=ScriptEngine::GetSceneContext();auto e=scene?scene->GetEntityByUUID(id):Entity{};
         if(!e||!scene->IsEntityValid(id))return nullptr;
@@ -452,6 +470,9 @@ namespace Hazel {
         HZ_ADD_INTERNAL_CALL(UI_Consume);
         HZ_ADD_INTERNAL_CALL(UI_GetValue);
         HZ_ADD_INTERNAL_CALL(UI_SetValue);
+        HZ_ADD_INTERNAL_CALL(UI_LayoutVersion);
+        HZ_ADD_INTERNAL_CALL(UI_GetSizing);
+        HZ_ADD_INTERNAL_CALL(UI_SetSizing);
         HZ_ADD_INTERNAL_CALL(SpriteRendererComponent_SetSprite);
         HZ_ADD_INTERNAL_CALL(AudioSourceComponent_Play);
         HZ_ADD_INTERNAL_CALL(AudioSourceComponent_Stop);
