@@ -419,7 +419,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             PropertyUI::Vector("grid-gap","Column / row gaps",glm::value_ptr(c.GridGap),2,1,nullptr,"%.1f",{},0,4096);
             auto tracks=[](const char *name,std::vector<GameUI::Track> &values){
                 if(!ImGui::TreeNode(name))return;
-                int count=int(values.size());if(PropertyUI::DragInt("count","Tracks",count,1,1,64))values.resize(size_t(count));
+                int count=int(values.size());if(PropertyUI::DragInt("count","Tracks",count,1,1,64)){if(count>=1&&count<=64)values.resize(size_t(count));else PropertyUI::Validation("Grid track count must be 1..64");}
                 for(size_t i=0;i<values.size();++i){ImGui::PushID(int(i));
                     if(ImGui::TreeNode("track","%zu",i)){auto &t=values[i];int mode=int(t.Mode);
                         if(PropertyUI::Combo("mode","Sizing",mode,"Fixed\0Fill\0"))t.Mode=GameUI::TrackMode(mode);

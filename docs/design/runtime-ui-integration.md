@@ -401,3 +401,20 @@ Stage checkpoints: canonical/grid `a73d455`, wrap `5cdd75b`. Focused CPU checks
 pass for track/span/cap allocation, horizontal/vertical wrap, overflow/cycles,
 and image fit/crop/alignment/zero inputs. Full integration qualification follows
 below after fresh builds; these CPU checks do not establish GPU performance.
+
+Qualification evidence so far: Debug built with bounded `-j2` and all 16 native
+regression executables passed. Focused runtime/GPU integration also passed on
+physical HD4000 forced to GL4.1; managed layout/image round trips and domain/
+Start-Stop regressions passed. The real editor harness exercised native creation
+commands, shared Inspector transactions, history, save/reopen, prefab reuse,
+Play/Stop, the actual ImGui Inspector/static preview and GPU entity picking.
+These are automated native interactions, not physical desktop pointer acceptance.
+
+Before removing the obsolete resolver, a private native probe captured 872
+visible resolved bounds across repository scenes/prefabs at 1280x720, 1024x600,
+960x720 and 1920x1080. The canonical implementation produced the same keys and
+logged values (zero mismatches at 0.01 logical-pixel tolerance). The uncommitted
+Sandbox draft was included; its content/presentation remains local and its old
+file/diff were privately backed up before the required schema edits. Hidden
+rects are additionally covered by dependency/participation tests. Temporary
+conversion code and old header exports were removed; no migrator ships.

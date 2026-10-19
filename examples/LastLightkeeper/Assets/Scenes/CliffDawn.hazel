@@ -35864,6 +35864,6 @@ Entities:
   UILayoutComponent:
     Direction: 1
     Main: 0
-    Cross: 2
+    Cross: 0
     Gap: 12
     Kind: 0

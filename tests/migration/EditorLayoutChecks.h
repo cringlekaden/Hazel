@@ -1,10 +1,6 @@
 #pragma once
 namespace Hazel
 {
-static bool SameBounds(GameUI::Rect a, GameUI::Rect b)
-{
-    return glm::length(a.Position - b.Position) < .02f && glm::length(a.Size - b.Size) < .02f;
-}
 static void EditorLayoutChecks()
 {
     using namespace GameUI;

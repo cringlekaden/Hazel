@@ -388,6 +388,7 @@ private:
     }
     void OnImGuiRender() override {
         if(m_Frame==3) {
+            DrawContainerFixture();
             auto scene=m_Editor.m_ActiveScene;scene->RefreshUI();
             auto before=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
             auto generation=scene->GetUISnapshot().Generation;bool shown=m_Editor.m_ShowUIDebugger;
@@ -1295,6 +1296,10 @@ private:
         Check(!e.SaveProject(),"Failed project save reported success"); e.m_ProjectPath=projectPath; preserved();
         Check(Read(scenePath)==priorScene && Read(projectPath)==priorProject,"Failed save changed prior scene/project bytes");
     }
+    Ref<Scene> m_ContainerFixture;
+    SceneHierarchyPanel m_ContainerFixturePanel;
+    Ref<Framebuffer> m_ContainerPreview;
+    uint64_t m_ContainerIcon=0;
     EditorLayer& m_Editor;
     Ref<Scene> m_HierarchyCapture;
     Ref<Framebuffer> m_HierarchyPreviewCapture;

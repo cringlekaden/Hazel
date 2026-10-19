@@ -13,7 +13,7 @@ static void ProfileContainers()
         for(size_t i=0;i<idle.size();++i){s_Allocations=0;s_CountAllocations=true;auto start=Clock::now();ui.Resolve({1280,720});auto end=Clock::now();s_CountAllocations=false;idleAlloc+=s_Allocations;idle[i]=std::chrono::duration<double,std::milli>(end-start).count();}
         Check(ui.Snapshot().Generation==generation,"Idle container rebuilt generation");
         auto root=scene->GetEntityByUUID(2);
-        for(size_t i=0;i<changed.size();++i){root.GetComponent<UIRectComponent>().FixedSize.x=1248-float(i%2)*100;s_Allocations=0;s_CountAllocations=true;auto start=Clock::now();ui.Resolve({1280,720});auto end=Clock::now();s_CountAllocations=false;changedAlloc+=s_Allocations;changed[i]=std::chrono::duration<double,std::milli>(end-start).count();}
+        for(size_t i=0;i<changed.size();++i){root.GetComponent<UIRectComponent>().FixedSize.x=1248-float((i+1)%2)*100;s_Allocations=0;s_CountAllocations=true;auto start=Clock::now();ui.Resolve({1280,720});auto end=Clock::now();s_CountAllocations=false;changedAlloc+=s_Allocations;changed[i]=std::chrono::duration<double,std::milli>(end-start).count();}
         std::sort(idle.begin(),idle.end());std::sort(changed.begin(),changed.end());
         std::cout<<std::fixed<<std::setprecision(4)<<"LAYOUT_PROFILE "<<(kind==ContainerKind::Grid?"grid":"wrap")<<" children="<<count<<" unchanged_cpu_ms="<<idle[idle.size()/2]<<"/"<<idle[idle.size()*95/100]<<" changed_cpu_ms="<<changed[changed.size()/2]<<"/"<<changed[changed.size()*95/100]<<" idle_cpp_new="<<idleAlloc<<" changed_cpp_new="<<changedAlloc<<" samples="<<idle.size()<<"/"<<changed.size()<<"\n";
     }
