@@ -67,10 +67,19 @@ bool SceneHierarchyPanel::AddEntity(const std::string &name)
 bool SceneHierarchyPanel::AddUI(int kind) {
     if(!m_Context||!CanEdit(true))return false;
     try {
+        if(kind<0||kind>6)throw std::invalid_argument("Unknown UI creation preset");
         Entity parent=GetSelectedEntity();
         if(PrefabDocument&&!parent){auto roots=m_Context->GetChildren();if(!roots.empty())parent=m_Context->GetEntityByUUID(roots.front());}
         if(kind!=0&&(!parent||(!parent.HasComponent<UIRectComponent>()&&!parent.HasComponent<UICanvasComponent>()))) {
             auto canvas=m_Context->CreateEntity("UI Canvas");canvas.AddComponent<UICanvasComponent>();if(parent)m_Context->Reparent(canvas,parent,TransformPolicy::KeepLocal);parent=canvas;
+        }
+        if(kind!=0&&parent&&!parent.HasComponent<UICanvasComponent>()&&parent.HasComponent<UILayoutComponent>()){
+            const auto &layout=parent.GetComponent<UILayoutComponent>();GameUI::Validate(layout);
+            if(layout.Kind==GameUI::ContainerKind::Grid){
+                size_t occupied=0;for(auto id:m_Context->GetChildrenView(parent.GetUUID())){auto child=m_Context->GetEntityByUUID(id);
+                    if(child&&!child.HasComponent<UICanvasComponent>()&&child.HasComponent<UIRectComponent>()){auto &r=child.GetComponent<UIRectComponent>();GameUI::Validate(r);occupied+=size_t(r.RowSpan)*r.ColumnSpan;}}
+                if(occupied>=layout.Rows.size()*layout.Columns.size())throw std::invalid_argument("Grid has no free cell; add row/column tracks before creating another child");
+            }
         }
         const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid","UI Wrap"};
         auto e=m_Context->CreateEntity(names[kind]);if(parent)m_Context->Reparent(e,parent,TransformPolicy::KeepLocal);
@@ -369,8 +378,21 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         }
         if(flowOwned && parent.GetComponent<UILayoutComponent>().Kind==GameUI::ContainerKind::Grid){
             bool automatic=c.GridRow<0;
-            if(PropertyUI::Checkbox("auto-cell","Automatic cell",automatic)){c.GridRow=c.GridColumn=automatic?-1:0;}
-            if(!automatic){PropertyUI::DragInt("row","Row",c.GridRow,1,0,63);PropertyUI::DragInt("column","Column",c.GridColumn,1,0,63);}
+            if(PropertyUI::Checkbox("auto-cell","Automatic cell",automatic)){
+                auto resolved=m_Context->GetUISnapshot().Find(entity.GetUUID());
+                c.GridRow=automatic?-1:resolved&&resolved->GridRow>=0?resolved->GridRow:0;
+                c.GridColumn=automatic?-1:resolved&&resolved->GridColumn>=0?resolved->GridColumn:0;
+            }
+            if(!automatic){
+                const auto &grid=parent.GetComponent<UILayoutComponent>();char current[48];std::snprintf(current,sizeof(current),"Row %d / Column %d",c.GridRow,c.GridColumn);
+                PropertyUI::Row row("cell","Cell",{"Choose both coordinates atomically. Occupied/out-of-range spans reject without changing the document."});bool changed=false;
+                if(ImGui::BeginCombo("##value",current)){
+                    ImGuiListClipper clipper;clipper.Begin(int(grid.Rows.size()*grid.Columns.size()));
+                    while(clipper.Step())for(int cell=clipper.DisplayStart;cell<clipper.DisplayEnd;++cell){int r=cell/int(grid.Columns.size()),col=cell%int(grid.Columns.size());char label[48];std::snprintf(label,sizeof(label),"Row %d / Column %d",r,col);
+                        if(ImGui::Selectable(label,r==c.GridRow&&col==c.GridColumn)){c.GridRow=r;c.GridColumn=col;changed=true;}}
+                    ImGui::EndCombo();}
+                row.Result(changed,true);
+            }
             int rows=int(c.RowSpan),cols=int(c.ColumnSpan);
             if(PropertyUI::DragInt("row-span","Row span",rows,1,1,64))c.RowSpan=unsigned(rows);
             if(PropertyUI::DragInt("column-span","Column span",cols,1,1,64))c.ColumnSpan=unsigned(cols);
@@ -391,7 +413,9 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     DrawUIComponent<UILayoutComponent>("UI Container",entity,m_Sections,m_RestoreSections,[](auto& c){
         int kind=int(c.Kind),axis=int(c.Direction),main=int(c.Main),cross=int(c.Cross);
         if(PropertyUI::Combo("kind","Container",kind,"Stack\0Grid\0Wrap\0"))c.Kind=GameUI::ContainerKind(kind);
-        if(c.Kind==GameUI::ContainerKind::Grid){
+        bool gridSettings=c.Kind==GameUI::ContainerKind::Grid;
+        if(!gridSettings)gridSettings=ImGui::TreeNode("Grid settings (inactive)");
+        if(gridSettings){
             PropertyUI::Vector("grid-gap","Column / row gaps",glm::value_ptr(c.GridGap),2,1,nullptr,"%.1f",{},0,4096);
             auto tracks=[](const char *name,std::vector<GameUI::Track> &values){
                 if(!ImGui::TreeNode(name))return;
@@ -407,7 +431,9 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                 ImGui::TreePop();};
             tracks("Columns",c.Columns);tracks("Rows",c.Rows);
             PropertyUI::Help("Explicit cells reserve first; automatic children use the first free row-major cell. Hidden children retain cells. Track minima overflow rather than shrink.");
-        }else{
+            if(c.Kind!=GameUI::ContainerKind::Grid)ImGui::TreePop();
+        }
+        if(c.Kind!=GameUI::ContainerKind::Grid){
             if(PropertyUI::Combo("axis","Direction",axis,"Horizontal\0Vertical\0"))c.Direction=GameUI::Axis(axis);
             PropertyUI::DragFloat("gap","Item gap (px)",c.Gap,1,0,4096);
             if(c.Kind==GameUI::ContainerKind::Wrap){

@@ -231,7 +231,8 @@ void EditorLayer::UI_Debugger()
         if(n->Line>=0){ImGui::Text("Wrap line %d",n->Line);rect("Allocated line",n->Slot);}
         if(n->GridRow>=0){ImGui::Text("Grid row %d column %d",n->GridRow,n->GridColumn);rect("Allocated cell",n->Slot);}
         GameUI::UIImageVisual image;if(m_ActiveScene->GetUIImageVisual(n->ID,image)){
-            ImGui::Text("Last image paint: source %.1f x %.1f | fit %d | layout generation %llu",image.SourceSize.x,image.SourceSize.y,int(image.Fit),(unsigned long long)image.Generation);
+            const char *fits[]={"Stretch","Contain","Cover","Native"};
+            ImGui::Text("Last image paint: source %.1f x %.1f | %s | generation %llu",image.SourceSize.x,image.SourceSize.y,fits[int(image.Fit)],(unsigned long long)image.Generation);
             rect("Fitted image",image.Placement.Visual);rect("Source crop (normalized, top-left)",image.Placement.UV);
         }
         rect("Logical clip", n->Clip);

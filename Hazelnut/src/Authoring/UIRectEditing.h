@@ -29,11 +29,14 @@ class UIRectEditSession
     }
 
   private:
+    void Remember(const GameUI::ResolvedElement &node);
     Ref<Scene> m_Scene;
     DocumentHistory *m_History = nullptr; // borrowed owner, never stored in a command
     uint64_t m_Entity = 0, m_Identity = 0, m_Parent = 0;
     unsigned m_Edges = 0;
     float m_Scale = 1;
+    GameUI::Rect m_ExpectedSlot;
+    int m_ExpectedRow=-1,m_ExpectedColumn=-1,m_ExpectedLine=-1;
     GameUI::Rect m_ParentContent, m_ExpectedParentContent, m_InitialBounds;
     bool m_ContainerOwned = false;
     UIRectComponent m_Initial, m_Last;

@@ -38,9 +38,10 @@ void Scene::SetUILayout(uint64_t id,const GameUI::FlowLayout &layout)
     CheckThread();auto e=GetEntityByUUID(id);
     if(IsStopping()||!e||!IsEntityValid(id)||!e.HasComponent<UILayoutComponent>()||!e.HasComponent<UIRectComponent>())
         throw std::invalid_argument("Container requires a live UI Rect and UI Layout");
-    GameUI::Validate(layout);auto &live=e.GetComponent<UILayoutComponent>();auto before=live;
-    static_cast<GameUI::FlowLayout&>(live)=layout;
-    try{ValidateUILayoutDependencies();RefreshUI();}catch(...){live=before;try{RefreshUI();}catch(...){}throw;}
+    GameUI::Validate(layout);auto &live=e.GetComponent<UILayoutComponent>();auto candidate=live;
+    static_cast<GameUI::FlowLayout&>(candidate)=layout;
+    using std::swap;swap(live,candidate);
+    try{ValidateUILayoutDependencies();RefreshUI();}catch(...){swap(live,candidate);try{RefreshUI();}catch(...){}throw;}
 }
 void Scene::SetUIGridCell(uint64_t id,int row,int column,unsigned rowSpan,unsigned columnSpan)
 {

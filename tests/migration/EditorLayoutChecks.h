@@ -165,6 +165,14 @@ static void EditorLayoutChecks()
         Check(h.Operations()==1&&h.Undo(*f.World)&&f.State()==initial&&h.Redo(*f.World)&&f.State()==accepted,"Image fit/alignment history failed");
         before=UIEditValues::Capture(f.Control);next=before;next.Rect->ImageAlignment={NAN,0};Check(!inspector.Edit(*f.World,&h,f.Control.GetUUID(),"Invalid image alignment",before,next,activity,0)&&f.State()==accepted,"Invalid image fit edit changed accepted state");inspector.Finish(*f.World,&h,true);
     }
+    {
+        HistoryFixture f;auto &grid=f.Control.AddComponent<UILayoutComponent>();grid.Kind=ContainerKind::Grid;grid.Columns={{TrackMode::Fill,1},{TrackMode::Fill,1}};grid.Rows={{TrackMode::Fixed,80}};
+        auto child=f.World->CreateEntity("Grid gesture child");f.World->Reparent(child,f.Control,TransformPolicy::KeepLocal);child.AddComponent<UIRectComponent>().FixedSize={40,20};f.World->RefreshUI();
+        DocumentHistory h;h.Bind(f.World->GetIdentity());UIRectEditSession gesture;
+        Check(gesture.Begin(f.World,child.GetUUID(),4,&h)&&gesture.Update({10,0}),"Grid Fixed trailing resize failed");
+        grid.Columns[0].Value=2;
+        Check(!gesture.Update({12,0})&&!gesture.Active()&&!h.Active()&&child.GetComponent<UIRectComponent>().FixedSize.x==40&&grid.Columns[0].Value==2,"External cell constraint change retained gesture or overwrote native tracks");
+    }
     std::cout << "PASS: canonical grid tracks/atomic history/save-reopen/isolation; "
                  "measured Inspector and complete Fixed/owned-axis gestures\n";
 }

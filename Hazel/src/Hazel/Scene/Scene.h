@@ -62,8 +62,8 @@ namespace Hazel {
         void SetUIImageFit(uint64_t entity,GameUI::ImageFit fit,glm::vec2 alignment={.5f,.5f});
         void RefreshUI();
         void SetUILayout(uint64_t entity, const GameUI::FlowLayout &layout);
-    void SetUIGridCell(uint64_t entity,int row,int column,unsigned rowSpan=1,unsigned columnSpan=1);
-    void SetUISizing(uint64_t entity, GameUI::Axis axis, GameUI::SizeMode mode,
+        void SetUIGridCell(uint64_t entity,int row,int column,unsigned rowSpan=1,unsigned columnSpan=1);
+        void SetUISizing(uint64_t entity, GameUI::Axis axis, GameUI::SizeMode mode,
                          float fixedSize, float minimum = 0, std::optional<float> maximum = {});
         void ValidateUI(bool resources=true);
         void ValidateUILayoutDependencies(); // CPU-only, including hidden/zero-surface documents

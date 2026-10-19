@@ -17,6 +17,8 @@ void ContainerWorkflowChecks()
     std::vector<uint64_t> icons;
     for(int i=0;i<3;++i){panel.SetSelectedEntity(grid);Check(panel.AddUI(3),"Grid button creation command failed");auto button=panel.GetSelectedEntity();icons.push_back(button.GetUUID());
         edit(button,"Icon presentation",[&](auto &v){v.Text->Text=i==0?"Map":i==1?"Journal":"Settings";v.Image->Source=TextureSpriteSource{"Textures/history-image.png",1,{}};v.Rect->Fit=ImageFit::Contain;v.Rect->Padding=glm::vec4(4);v.Style->Size=18;});}
+    edit(grid,"Full grid",[](auto &v){v.Flow->Rows.resize(1);});auto full=SceneSerializer(scene).CaptureAuthoredState();panel.SetSelectedEntity(grid);
+    Check(!panel.AddUI(3)&&SceneSerializer(scene).CaptureAuthoredState()==full,"Full grid creation left an invalid child/entity");
     panel.SetSelectedEntity(canvas);Check(panel.AddUI(6),"Wrap creation command failed");auto wrap=panel.GetSelectedEntity();
     edit(wrap,"Responsive wrapping",[](auto &v){v.Rect->WidthMode=SizeMode::Fill;v.Rect->Offset={0,220};v.Rect->Margin={20,0,20,0};v.Flow->Gap=8;v.Flow->LineGap=10;});
     std::vector<uint64_t> chips;

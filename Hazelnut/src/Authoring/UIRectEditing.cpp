@@ -10,6 +10,11 @@ bool Same(const UIRectComponent &a, const UIRectComponent &b)
     UIEditValues first,second;first.Set(a);second.Set(b);return first.Same(second);
 }
 } // namespace
+void UIRectEditSession::Remember(const GameUI::ResolvedElement &n)
+{
+    m_ExpectedParentContent=n.ParentContent;m_ExpectedSlot=n.Slot;
+    m_ExpectedRow=n.GridRow;m_ExpectedColumn=n.GridColumn;m_ExpectedLine=n.Line;
+}
 bool UIRectEditSession::Begin(const Ref<Scene> &scene, uint64_t entity, unsigned edges, DocumentHistory *history)
 {
     Finish(true);
@@ -42,7 +47,7 @@ bool UIRectEditSession::Begin(const Ref<Scene> &scene, uint64_t entity, unsigned
         m_Edges = edges;
         m_Scale = n->Scale;
         m_ParentContent = n->ParentContent;
-        m_ExpectedParentContent=n->ParentContent;m_ContainerOwned=n->ContainerOwned;
+        Remember(*n);m_ContainerOwned=n->ContainerOwned;
         m_InitialBounds = n->Bounds;
         m_Initial = m_Last = e.GetComponent<UIRectComponent>();
         if(history && (!history->Begin(*scene,CreateScope<UIEditCommand>(*scene,entity,edges?"Resize UI rect":"Move UI rect",UIEditValues::Capture(e))))) {
@@ -91,7 +96,7 @@ bool UIRectEditSession::Update(glm::vec2 delta)
         auto n = m_Scene->GetUISnapshot().Find(m_Entity);
         if (!m_Scene->GetUISnapshot().Valid || !n || !n->LayoutResolved || n->ContainerOwned!=m_ContainerOwned || n->Parent != m_Parent ||
             n->Scale != m_Scale || n->ParentContent.Position != m_ExpectedParentContent.Position ||
-            n->ParentContent.Size != m_ExpectedParentContent.Size)
+            n->ParentContent.Size != m_ExpectedParentContent.Size || n->Slot.Position!=m_ExpectedSlot.Position || n->Slot.Size!=m_ExpectedSlot.Size || n->GridRow!=m_ExpectedRow || n->GridColumn!=m_ExpectedColumn || n->Line!=m_ExpectedLine)
         {
             m_Error = "UI parent/surface changed during gesture; cancelled";
             Finish(true);
@@ -127,7 +132,7 @@ bool UIRectEditSession::Update(glm::vec2 delta)
                 if(!command->Preview(*m_Scene,std::move(restore),rejected))Finish(true);
                 m_Error=reason;return false;
             }
-            m_Last=next;m_ExpectedParentContent=m_Scene->GetUISnapshot().Find(m_Entity)->ParentContent;m_Error.clear();return true;
+            m_Last=next;Remember(*m_Scene->GetUISnapshot().Find(m_Entity));m_Error.clear();return true;
         }
         e.GetComponent<UIRectComponent>() = next;
         try
@@ -144,7 +149,7 @@ bool UIRectEditSession::Update(glm::vec2 delta)
             throw;
         }
         m_Last = next;
-        m_ExpectedParentContent=m_Scene->GetUISnapshot().Find(m_Entity)->ParentContent;
+        Remember(*m_Scene->GetUISnapshot().Find(m_Entity));
         m_Error.clear();
         return true;
     }
@@ -161,7 +166,7 @@ void UIRectEditSession::Finish(bool cancel)
         if(!m_Scene->IsEntityValid(m_Entity)||!e.HasComponent<UIRectComponent>()||!Same(e.GetComponent<UIRectComponent>(),m_Last))
             throw std::runtime_error("UI gesture target changed before release; cancelled");
         m_Scene->RefreshUI();auto n=m_Scene->GetUISnapshot().Find(m_Entity);
-        if(!n||!n->LayoutResolved||n->ContainerOwned!=m_ContainerOwned||n->Parent!=m_Parent||n->Scale!=m_Scale||n->ParentContent.Position!=m_ExpectedParentContent.Position||n->ParentContent.Size!=m_ExpectedParentContent.Size)
+        if(!n||!n->LayoutResolved||n->ContainerOwned!=m_ContainerOwned||n->Parent!=m_Parent||n->Scale!=m_Scale||n->ParentContent.Position!=m_ExpectedParentContent.Position||n->ParentContent.Size!=m_ExpectedParentContent.Size||n->Slot.Position!=m_ExpectedSlot.Position||n->Slot.Size!=m_ExpectedSlot.Size||n->GridRow!=m_ExpectedRow||n->GridColumn!=m_ExpectedColumn||n->Line!=m_ExpectedLine)
             throw std::runtime_error("UI parent/surface changed before release; cancelled");
     }catch(const std::exception &error){m_Error=error.what();cancel=true;}
     if(m_Scene && m_History) {

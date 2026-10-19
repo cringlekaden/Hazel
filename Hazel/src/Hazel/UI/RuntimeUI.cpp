@@ -61,6 +61,7 @@ void RuntimeUI::Reset()
     m_Resolved.Index.clear();
     m_Resolved.Buttons.clear();
     m_Resolved.PainterOrder.clear();
+    m_Resolved.Guides.clear();
     m_Resolved.Warnings.clear();
     m_Source.clear();
     m_Cache.clear();
@@ -89,7 +90,7 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
     state.Add(surface.Viewport);
     state.Add(surface.Framebuffer);
     state.Add(previewOrphans);
-    // Legacy/fixed visuals are paint dependencies. Content additionally observes
+    // Fixed visuals are paint dependencies. Content additionally observes
     // text/font/base-image metrics; colors and button-state images remain paint.
     for (auto h : m_Scene.GetAllEntitiesWith<UIRectComponent>())
     {
