@@ -30,38 +30,20 @@ Entities:
     Parent: 19
     Order: 0
   UIRectComponent:
-    AnchorMin:
-    - 0.5
-    - 0
-    AnchorMax:
-    - 0.5
-    - 0
-    Offset:
-    - -480
-    - 58
-    SizeDelta:
-    - 960
-    - 170
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [-480, 58]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [960, 170]
+    Anchor: [0.5, 0]
 - Entity: 10
   TagComponent:
     Tag: Subtitle ribbon
@@ -89,38 +71,20 @@ Entities:
     Parent: 19
     Order: 1
   UIRectComponent:
-    AnchorMin:
-    - 0.5
-    - 0
-    AnchorMax:
-    - 0.5
-    - 0
-    Offset:
-    - -360
-    - 324
-    SizeDelta:
-    - 720
-    - 48
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [-360, 324]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [720, 48]
+    Anchor: [0.5, 0]
 - Entity: 11
   TagComponent:
     Tag: Eyebrow
@@ -150,38 +114,20 @@ Entities:
     Parent: 19
     Order: 2
   UIRectComponent:
-    AnchorMin:
-    - 0.5
-    - 0
-    AnchorMax:
-    - 0.5
-    - 0
-    Offset:
-    - -450
-    - 80
-    SizeDelta:
-    - 900
-    - 30
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [-450, 80]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [900, 30]
+    Anchor: [0.5, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 24
@@ -213,38 +159,20 @@ Entities:
     Parent: 19
     Order: 3
   UIRectComponent:
-    AnchorMin:
-    - 0.5
-    - 0
-    AnchorMax:
-    - 0.5
-    - 0
-    Offset:
-    - -500
-    - 144
-    SizeDelta:
-    - 1000
-    - 90
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [-500, 144]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [1000, 90]
+    Anchor: [0.5, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 68
@@ -279,38 +207,20 @@ Entities:
     Parent: 19
     Order: 8
   UIRectComponent:
-    AnchorMin:
-    - 0.5
-    - 0
-    AnchorMax:
-    - 0.5
-    - 0
-    Offset:
-    - -44
-    - 232
-    SizeDelta:
-    - 88
-    - 88
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [-44, 232]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [88, 88]
+    Anchor: [0.5, 0]
 - Entity: 14
   TagComponent:
     Tag: Subtitle
@@ -336,38 +246,20 @@ Entities:
     Parent: 19
     Order: 4
   UIRectComponent:
-    AnchorMin:
-    - 0.5
-    - 0
-    AnchorMax:
-    - 0.5
-    - 0
-    Offset:
-    - -450
-    - 324
-    SizeDelta:
-    - 900
-    - 48
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [-450, 324]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [900, 48]
+    Anchor: [0.5, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 28
@@ -410,38 +302,20 @@ Entities:
     Parent: 19
     Order: 5
   UIRectComponent:
-    AnchorMin:
-    - 0.5
-    - 0
-    AnchorMax:
-    - 0.5
-    - 0
-    Offset:
-    - -190
-    - 396
-    SizeDelta:
-    - 380
-    - 64
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [-190, 396]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [380, 64]
+    Anchor: [0.5, 0]
   UIButtonComponent:
     Action: play
     TabOrder: 0
@@ -503,38 +377,20 @@ Entities:
     Parent: 15
     Order: 0
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - 0
-    - 0
-    SizeDelta:
-    - 0
-    - 64
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 64]
+    Anchor: [0, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 28
@@ -566,38 +422,20 @@ Entities:
     Parent: 19
     Order: 6
   UIRectComponent:
-    AnchorMin:
-    - 0.5
-    - 0
-    AnchorMax:
-    - 0.5
-    - 0
-    Offset:
-    - -500
-    - 566
-    SizeDelta:
-    - 1000
-    - 38
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [-500, 566]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [1000, 38]
+    Anchor: [0.5, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 24
@@ -629,38 +467,20 @@ Entities:
     Parent: 19
     Order: 7
   UIRectComponent:
-    AnchorMin:
-    - 0.5
-    - 0
-    AnchorMax:
-    - 0.5
-    - 0
-    Offset:
-    - -450
-    - 644
-    SizeDelta:
-    - 900
-    - 26
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [-450, 644]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [900, 26]
+    Anchor: [0.5, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 20

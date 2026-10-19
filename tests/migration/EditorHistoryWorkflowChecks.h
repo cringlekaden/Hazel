@@ -23,7 +23,7 @@ void HistoryWorkflowChecks()
     hud.GetComponent<TagComponent>().Tag="HUD journal";
     hud.GetComponent<TextComponent>().TextString="Journal: 1 / 9";
     auto &hr=hud.GetComponent<UIRectComponent>();
-    hr.AnchorMin=hr.AnchorMax=hr.Pivot={1,1};hr.Offset={-24,-24};
+    hr.Anchor=hr.Anchor=hr.Pivot={1,1};hr.Offset={-24,-24};
     scene->RefreshUI();
     auto menuBounds=scene->GetUISnapshot().Find(menu.GetUUID())->Bounds;
     scene->OnViewportResize(960,540);scene->RefreshUI();

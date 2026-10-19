@@ -217,6 +217,8 @@ namespace Hazel {
     struct UIRectComponent : GameUI::RectLayout {
         bool Visible=true, Enabled=true, ClipChildren=true;
         float Flex=0;
+        GameUI::ImageFit Fit=GameUI::ImageFit::Stretch;
+        glm::vec2 ImageAlignment{.5f,.5f};
     };
     struct UILayoutComponent : GameUI::FlowLayout {};
     struct UITextStyleComponent {

@@ -187,38 +187,20 @@ Entities:
     Parent: 17
     Order: 0
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 16
-    - 10
-    SizeDelta:
-    - 220
-    - 54
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [16, 10]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [220, 54]
+    Anchor: [0, 0]
   UIButtonComponent:
     Action: menu
     TabOrder: 0
@@ -291,38 +273,20 @@ Entities:
     Parent: 14
     Order: 0
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - 0
-    - 0
-    SizeDelta:
-    - 0
-    - 54
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 54]
+    Anchor: [0, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 26
@@ -358,38 +322,20 @@ Entities:
     Parent: 17
     Order: 1
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - 16
-    - 80
-    SizeDelta:
-    - -32
-    - 34
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 80]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [16, 0, 16, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 34]
+    Anchor: [0, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 24

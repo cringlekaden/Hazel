@@ -24,6 +24,7 @@ namespace Hazel {
         }
     }
     public class UIRectComponent : Component {
+        public UIGridCell Cell {get{int row,column,rs,cs;InternalCalls.UI_GetCell(Entity.CheckedID,out row,out column,out rs,out cs);return new UIGridCell(row,column,rs,cs);}set=>InternalCalls.UI_SetCell(Entity.CheckedID,value.Row,value.Column,value.RowSpan,value.ColumnSpan);}
         public uint LayoutVersion => InternalCalls.UI_LayoutVersion(Entity.CheckedID);
         public UISizing Width {get=>ReadSizing(0);set=>WriteSizing(0,value);}
         public UISizing Height {get=>ReadSizing(1);set=>WriteSizing(1,value);}
@@ -45,7 +46,36 @@ namespace Hazel {
             return InternalCalls.UI_Consume(InternalCalls.Entity_GetSceneIdentity(),checkedID,out id,out action);
         }
     }
-    public class UILayoutComponent : Component {}
+    public enum UIContainerKind { Stack, Grid, Wrap }
+    public enum UIAxis { Horizontal, Vertical }
+    public enum UIAlign { Start, Center, End }
+    public enum UITrackMode { Fixed, Fill }
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public struct UITrack {
+        public UITrackMode Mode;public float Value,Minimum,Maximum;int hasMaximum;
+        public UITrack(UITrackMode mode,float value,float minimum=0,float? maximum=null){Mode=mode;Value=value;Minimum=minimum;Maximum=maximum??0;hasMaximum=maximum.HasValue?1:0;}
+        public float? Limit {get=>hasMaximum!=0?(float?)Maximum:null;set{hasMaximum=value.HasValue?1:0;Maximum=value??0;}}
+    }
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public struct UILayoutSettings {
+        public UIContainerKind Kind;public UIAxis Direction;public UIAlign Main,Cross,LineAlign;public float Gap,LineGap;public Vector2 GridGap;
+        public static UILayoutSettings Stack(UIAxis direction,float gap=12)=>new UILayoutSettings{Kind=UIContainerKind.Stack,Direction=direction,Gap=gap,LineGap=12,GridGap=new Vector2(12,12)};
+        public static UILayoutSettings Grid(Vector2 gap)=>new UILayoutSettings{Kind=UIContainerKind.Grid,GridGap=gap,Gap=12,LineGap=12};
+    }
+    public struct UIGridCell {
+        public int Row,Column,RowSpan,ColumnSpan;
+        public UIGridCell(int row,int column,int rowSpan=1,int columnSpan=1){Row=row;Column=column;RowSpan=rowSpan;ColumnSpan=columnSpan;}
+        public static UIGridCell Automatic=>new UIGridCell(-1,-1);
+    }
+    public class UILayoutComponent : Component {
+        public UILayoutSettings Settings {get{UILayoutSettings value;InternalCalls.UI_GetLayout(Entity.CheckedID,out value);return value;}set=>Apply(value);}
+        public UITrack[] Columns=>ReadTracks(false);
+        public UITrack[] Rows=>ReadTracks(true);
+        UITrack[] ReadTracks(bool rows){var id=Entity.CheckedID;var values=new UITrack[InternalCalls.UI_TrackCount(id,rows)];for(int i=0;i<values.Length;++i)InternalCalls.UI_GetTrack(id,rows,i,out values[i]);return values;}
+        // Apply settings and both track lists atomically; null retains the existing list.
+        public void Apply(UILayoutSettings settings,UITrack[] columns=null,UITrack[] rows=null)=>InternalCalls.UI_SetLayout(Entity.CheckedID,ref settings,columns,rows);
+        public void SetGrid(UITrack[] columns,UITrack[] rows,Vector2 gap)=>Apply(UILayoutSettings.Grid(gap),columns,rows);
+    }
     public class UITextStyleComponent : Component {}
     public class UINineSliceComponent : Component {}
 }

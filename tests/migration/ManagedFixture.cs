@@ -174,11 +174,11 @@ namespace Migration {
     public class UIProbe : Hazel.Entity {
         public bool Passed;
         void OnCreate() {
-            if(!HasComponent<Hazel.UICanvasComponent>() || !HasComponent<Hazel.UIRectComponent>() ||
+            if(!FindEntityByName("UI API canvas").HasComponent<Hazel.UICanvasComponent>() || !HasComponent<Hazel.UIRectComponent>() ||
                !HasComponent<Hazel.UILayoutComponent>() || !HasComponent<Hazel.UITextStyleComponent>() ||
                !HasComponent<Hazel.UINineSliceComponent>() || !HasComponent<Hazel.UIButtonComponent>())
                 throw new System.Exception("Runtime UI component reflection binding missing");
-            var canvas=GetComponent<Hazel.UICanvasComponent>();canvas.Visible=false;canvas.Visible=true;canvas.Enabled=false;canvas.Enabled=true;canvas.Modal=true;
+            var canvas=FindEntityByName("UI API canvas").GetComponent<Hazel.UICanvasComponent>();canvas.Visible=false;canvas.Visible=true;canvas.Enabled=false;canvas.Enabled=true;canvas.Modal=true;
             var rect=GetComponent<Hazel.UIRectComponent>();rect.Visible=false;
             if(rect.Visible||!canvas.Visible)throw new System.Exception("Rect visibility aliases Canvas");
             rect.Visible=true;rect.Enabled=false;
@@ -198,15 +198,19 @@ namespace Migration {
             text.Text="\ufeffManaged UI";
             if(text.Text[0]!='\ufeff')throw new System.Exception("Managed BOM text was not accepted/preserved");
             text.Text="Managed UI";
-            if(rect.LayoutVersion!=1)throw new System.Exception("Legacy UI was silently converted");
-            bool legacyRejected=false;try{rect.Width=new Hazel.UISizing(Hazel.UISizeMode.Fixed,120);}catch(System.InvalidOperationException){legacyRejected=true;}
-            if(!legacyRejected)throw new System.Exception("Sizing API silently converted legacy UI");
+            if(rect.LayoutVersion!=3)throw new System.Exception("Canonical UI schema mismatch");
             var measured=FindEntityByName("Measured API target").GetComponent<Hazel.UIRectComponent>();
             measured.Width=new Hazel.UISizing(Hazel.UISizeMode.Fixed,137,20,150);
             var sizing=measured.Width;
-            if(measured.LayoutVersion!=2||sizing.Mode!=Hazel.UISizeMode.Fixed||sizing.FixedSize!=137||sizing.Minimum!=20||sizing.Maximum!=150)throw new System.Exception("Measured sizing API roundtrip failed");
+            if(measured.LayoutVersion!=3||sizing.Mode!=Hazel.UISizeMode.Fixed||sizing.FixedSize!=137||sizing.Minimum!=20||sizing.Maximum!=150)throw new System.Exception("Measured sizing API roundtrip failed");
             bool invalidSizing=false;try{measured.Width=new Hazel.UISizing(Hazel.UISizeMode.Fixed,float.NaN,20,10);}catch(System.InvalidOperationException){invalidSizing=true;}
             if(!invalidSizing||measured.Width.FixedSize!=137)throw new System.Exception("Invalid sizing mutation changed accepted runtime state");
+            var container=GetComponent<Hazel.UILayoutComponent>();
+            container.SetGrid(new[]{new Hazel.UITrack(Hazel.UITrackMode.Fixed,120),new Hazel.UITrack(Hazel.UITrackMode.Fill,2,10,200)},new[]{new Hazel.UITrack(Hazel.UITrackMode.Fixed,80)},new Hazel.Vector2(4,6));
+            measured.Cell=new Hazel.UIGridCell(0,1);
+            if(container.Settings.Kind!=Hazel.UIContainerKind.Grid||container.Columns.Length!=2||container.Columns[1].Limit!=200||measured.Cell.Column!=1)throw new System.Exception("Managed grid ABI roundtrip failed");
+            bool invalidGrid=false;try{container.SetGrid(new Hazel.UITrack[0],container.Rows,new Hazel.Vector2(0,0));}catch(System.InvalidOperationException){invalidGrid=true;}
+            if(!invalidGrid||container.Columns.Length!=2)throw new System.Exception("Invalid grid mutation changed accepted state");
             Passed=canvas.Visible&&canvas.Enabled&&canvas.Modal&&rect.Visible&&rect.Enabled&&button.Interactable;
         }
     }

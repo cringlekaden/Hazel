@@ -6,14 +6,14 @@ static void MeasuredLayoutChecks()
         MeasureNode n;
         n.ID = id;
         n.Name = "layout";
-        n.Layout.LayoutVersion = 2;
+
         n.Layout.FixedSize = {100, 80};
         return n;
     };
     auto empty = [](size_t, float) { return glm::vec2(0); };
     MeasuredLayout layout;
     std::vector<MeasureNode> nodes{node(10), node(11), node(12)};
-    nodes[0].Stack = true;
+    nodes[0].Container = true;
     nodes[0].Flow.Gap = 5;
     nodes[0].Layout.Padding = glm::vec4(5);
     nodes[0].Children = {1, 2};
@@ -40,7 +40,7 @@ static void MeasuredLayoutChecks()
           "Repeated measure/arrange was nondeterministic");
     nodes = {node(20), node(21), node(22), node(23)};
     nodes[0].Children = {1, 2, 3};
-    nodes[0].Stack = true;
+    nodes[0].Container = true;
     nodes[0].Flow.Direction = Axis::Horizontal;
     nodes[0].Flow.Gap = 0;
     for (int i = 1; i < 4; ++i)
@@ -73,7 +73,7 @@ static void MeasuredLayoutChecks()
     nodes[0].Children = {1};
     nodes[0].Layout.HeightMode = SizeMode::Content;
     nodes[0].Layout.Padding = glm::vec4(5);
-    nodes[0].Stack = true;
+    nodes[0].Container = true;
     nodes[1].Parent = 0;
     nodes[1].Layout.WidthMode = SizeMode::Fill;
     nodes[1].Layout.HeightMode = SizeMode::Content;
@@ -116,7 +116,7 @@ static void MeasuredLayoutChecks()
     nodes[0].Children = {1};
     nodes[0].Layout.WidthMode = SizeMode::Content;
     nodes[1].Parent = 0;
-    nodes[1].Layout.AnchorMin.x = nodes[1].Layout.AnchorMax.x = .5f;
+    nodes[1].Layout.Anchor.x = nodes[1].Layout.Anchor.x = .5f;
     Reject([&] { layout.Resolve(nodes, {{}, {500, 500}}, empty); });
     nodes = {node(60)};
     nodes[0].Layout.WidthMode = SizeMode::Fill;

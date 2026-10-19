@@ -12,7 +12,7 @@ static void MeasuredSceneChecks(const std::filesystem::path &root)
     auto group = scene->CreateEntity("Measured stack");
     scene->Reparent(group, canvas, TransformPolicy::KeepLocal);
     group.AddComponent<UIRectComponent>();
-    group.GetComponent<UIRectComponent>().LayoutVersion = 2;
+
     group.GetComponent<UIRectComponent>().FixedSize = {120, 80};
     group.GetComponent<UIRectComponent>().HeightMode = SizeMode::Content;
     group.GetComponent<UIRectComponent>().Padding = glm::vec4(4);
@@ -20,7 +20,7 @@ static void MeasuredSceneChecks(const std::filesystem::path &root)
     auto label = scene->CreateEntity("Measured label");
     scene->Reparent(label, group, TransformPolicy::KeepLocal);
     label.AddComponent<UIRectComponent>();
-    label.GetComponent<UIRectComponent>().LayoutVersion = 2;
+
     label.GetComponent<UIRectComponent>().WidthMode = SizeMode::Fill;
     label.GetComponent<UIRectComponent>().HeightMode = SizeMode::Content;
     label.GetComponent<UIRectComponent>().Margin = {2, 3, 2, 3};
@@ -127,7 +127,7 @@ static void MeasuredSceneChecks(const std::filesystem::path &root)
     auto image = scene->CreateEntity("Intrinsic image");
     scene->Reparent(image, canvas, TransformPolicy::KeepLocal);
     auto &ir = image.AddComponent<UIRectComponent>();
-    ir.LayoutVersion = 2;
+
     ir.WidthMode = ir.HeightMode = SizeMode::Content;
     ir.Offset = {200, 0};
     image.AddComponent<SpriteRendererComponent>().Source = TextureSpriteSource{"image.png"};
@@ -146,7 +146,7 @@ static void MeasuredSceneChecks(const std::filesystem::path &root)
     Check(SceneSerializer(copy, root).CaptureAuthoredState() == state,
           "Measured copy lost authored fields");
     auto serialized = SceneSerializer(scene, root).SerializeText();
-    Check(serialized.find("LayoutVersion: 2") != std::string::npos &&
+    Check(serialized.find("LayoutVersion: 3") != std::string::npos &&
               serialized.find("Measured:") == std::string::npos,
           "Measured schema lost version or persisted derived measurements");
     auto loaded = CreateRef<Scene>();
@@ -160,7 +160,7 @@ static void MeasuredSceneChecks(const std::filesystem::path &root)
     {
         auto e = loaded->GetEntityByUUID(id);
         if (e.GetName() == "Measured label")
-            found = e.GetComponent<UIRectComponent>().LayoutVersion == 2 &&
+            found = GameUI::RectLayout::SchemaVersion == 3 &&
                     e.GetComponent<UIRectComponent>().HeightMode == SizeMode::Content;
     }
     Check(found, "Measured prefab instantiation lost sizing fields");

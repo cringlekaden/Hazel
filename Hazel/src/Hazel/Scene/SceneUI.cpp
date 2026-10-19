@@ -26,13 +26,30 @@ void Scene::SetUISizing(uint64_t id, GameUI::Axis axis, GameUI::SizeMode mode,
     if(IsStopping() || !e || !IsEntityValid(id) || !e.HasComponent<UIRectComponent>())
         throw std::invalid_argument("Sizing requires a live UI Rect");
     auto &r=e.GetComponent<UIRectComponent>();
-    if(r.LayoutVersion!=2)throw std::invalid_argument("Convert legacy UI explicitly before using measured sizing");
     if(axis!=GameUI::Axis::Horizontal && axis!=GameUI::Axis::Vertical)throw std::invalid_argument("Invalid UI sizing axis");
     const int a=axis==GameUI::Axis::Horizontal?0:1;auto before=r,next=r;
     (a?next.HeightMode:next.WidthMode)=mode;next.FixedSize[a]=fixedSize;
     next.MinimumSize[a]=minimum;next.HasMaximum[a]=maximum.has_value();next.MaximumSize[a]=maximum.value_or(0);
     GameUI::Validate(next);r=next;
     try{ValidateUILayoutDependencies();RefreshUI();}catch(...){r=before;try{RefreshUI();}catch(...){}throw;}
+}
+void Scene::SetUILayout(uint64_t id,const GameUI::FlowLayout &layout)
+{
+    CheckThread();auto e=GetEntityByUUID(id);
+    if(IsStopping()||!e||!IsEntityValid(id)||!e.HasComponent<UILayoutComponent>()||!e.HasComponent<UIRectComponent>())
+        throw std::invalid_argument("Container requires a live UI Rect and UI Layout");
+    GameUI::Validate(layout);auto &live=e.GetComponent<UILayoutComponent>();auto before=live;
+    static_cast<GameUI::FlowLayout&>(live)=layout;
+    try{ValidateUILayoutDependencies();RefreshUI();}catch(...){live=before;try{RefreshUI();}catch(...){}throw;}
+}
+void Scene::SetUIGridCell(uint64_t id,int row,int column,unsigned rowSpan,unsigned columnSpan)
+{
+    CheckThread();auto e=GetEntityByUUID(id);
+    if(IsStopping()||!e||!IsEntityValid(id)||!e.HasComponent<UIRectComponent>())throw std::invalid_argument("Cell requires a live UI Rect");
+    auto &live=e.GetComponent<UIRectComponent>();auto before=live,next=live;
+    next.GridRow=row;next.GridColumn=column;next.RowSpan=rowSpan;next.ColumnSpan=columnSpan;
+    GameUI::Validate(next);live=next;
+    try{ValidateUILayoutDependencies();RefreshUI();}catch(...){live=before;try{RefreshUI();}catch(...){}throw;}
 }
 void Scene::UpdateUIInput(const GameUI::InputFrame &frame)
 {
@@ -108,7 +125,7 @@ void Scene::ValidateUI(bool resources)
             !e.HasComponent<UILayoutComponent>() && !e.HasComponent<UITextStyleComponent>() &&
             !e.HasComponent<UIButtonComponent>() && !e.HasComponent<UINineSliceComponent>())
             continue;
-        if(e.HasComponent<UICanvasComponent>()&&e.HasComponent<UIRectComponent>()&&e.GetComponent<UIRectComponent>().LayoutVersion==2)
+        if(e.HasComponent<UICanvasComponent>()&&e.HasComponent<UIRectComponent>())
             throw std::invalid_argument("Canvas owns its surface; measured sizing belongs on a child Rect");
         ValidateUIConfiguration(YAML::Load(UIAuthoredState(e)));
         if(e.HasComponent<TextComponent>() && e.HasComponent<UIRectComponent>())
@@ -190,19 +207,15 @@ void Scene::ValidateUILayoutDependencies()
     GameUI::MeasuredLayout validation;std::vector<GameUI::MeasureNode> nodes;
     for(auto handle:GetAllEntitiesWith<UIRectComponent>())
     {
-        Entity root(handle,this);if(!IsEntityValid(root.GetUUID())||root.HasComponent<UICanvasComponent>()||root.GetComponent<UIRectComponent>().LayoutVersion!=2)continue;
+        Entity root(handle,this);if(!IsEntityValid(root.GetUUID())||root.HasComponent<UICanvasComponent>())continue;
         auto parent=GetEntityByUUID(GetRelationship(root).Parent);
-        if(parent && !parent.HasComponent<UICanvasComponent>() && parent.HasComponent<UIRectComponent>()){
-            if(parent.GetComponent<UIRectComponent>().LayoutVersion==2)continue;
-            if(parent.HasComponent<UILayoutComponent>())throw std::invalid_argument("Legacy Flow contains measured child '"+root.GetName()+"'; convert its containing subtree");
-        }
+        if(parent && !parent.HasComponent<UICanvasComponent>() && parent.HasComponent<UIRectComponent>())continue;
         nodes.clear();
         std::function<void(Entity,size_t,size_t)> collect=[&](Entity e,size_t parentIndex,size_t depth){
             if(!e||!IsEntityValid(e.GetUUID())||e.HasComponent<UICanvasComponent>()||!e.HasComponent<UIRectComponent>())return;
             if(depth>=MaxDepth||nodes.size()>=GameUI::InputRouter::MaxButtons)throw std::invalid_argument("Measured UI dependency limit exceeded");
-            if(e.GetComponent<UIRectComponent>().LayoutVersion!=2)throw std::invalid_argument("Measured group contains legacy child '"+e.GetName()+"'; convert the containing subtree");
-            size_t index=nodes.size();nodes.emplace_back();auto &n=nodes.back();n.ID=e.GetUUID();n.Name=e.GetName();n.Layout=e.GetComponent<UIRectComponent>();n.Parent=parentIndex;n.Stack=e.HasComponent<UILayoutComponent>();
-            if(n.Stack)n.Flow=e.GetComponent<UILayoutComponent>();
+            size_t index=nodes.size();nodes.emplace_back();auto &n=nodes.back();n.ID=e.GetUUID();n.Name=e.GetName();n.Layout=e.GetComponent<UIRectComponent>();n.Parent=parentIndex;n.Container=e.HasComponent<UILayoutComponent>();
+            if(n.Container)n.Flow=e.GetComponent<UILayoutComponent>();
             n.Weight=e.GetComponent<UIRectComponent>().Flex>0?e.GetComponent<UIRectComponent>().Flex:1;
             if(parentIndex!=std::numeric_limits<size_t>::max())nodes[parentIndex].Children.push_back(index);
             for(auto id:GetChildrenView(e.GetUUID()))collect(GetEntityByUUID(id),index,depth+1);

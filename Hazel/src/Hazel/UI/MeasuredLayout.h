@@ -6,14 +6,14 @@
 namespace Hazel::GameUI
 {
 // Indexed CPU layout inputs; callbacks supply visual metrics in logical units.
-// One tree is a v2 island. Its external parent has a definite content rectangle.
+// One contiguous UI rect tree is measured once. Its external parent has a definite content rectangle.
 struct MeasureNode
 {
     uint64_t ID = 0;
     std::string Name;
     RectLayout Layout;
     FlowLayout Flow;
-    bool Stack = false, Visible = true;
+    bool Container = false, Visible = true;
     float Weight = 1;
     size_t Parent = (std::numeric_limits<size_t>::max)();
     std::vector<size_t> Children;
@@ -23,7 +23,10 @@ struct MeasureResult
     Rect Bounds;
     glm::vec2 Available{}, Measured{};
     bool Overflow = false;
+    Rect Slot{};
+    int Row=-1, Column=-1, Line=-1;
 };
+struct LayoutGuide { size_t Node=0; int Axis=0, Index=0; bool Line=false; Rect Bounds{}; };
 class MeasuredLayout
 {
   public:
@@ -33,11 +36,26 @@ class MeasuredLayout
     void Resolve(const std::vector<MeasureNode> &nodes, Rect external, Intrinsic intrinsic,
                  size_t activeCount = 0);
     const std::vector<MeasureResult> &Results() const { return m_Results; }
+    const std::vector<LayoutGuide> &Guides() const { return m_Guides; }
 
   private:
     float Size(size_t node, int axis);
     float Available(size_t node, int axis);
     void Distribute(size_t parent);
+    void PlaceGrid(size_t parent);
+    void GridTracks(size_t parent, int axis);
+    struct Allocation { size_t Index; float Minimum,Maximum,Weight,Result; bool Capped; };
+    float Allocate(float free);
+    struct Group {
+        bool Placed=false;
+        std::array<unsigned char,2> GridState{};
+        std::array<std::vector<float>,2> Tracks,Starts;
+    };
+    std::vector<Group> m_Groups;
+    std::vector<Allocation> m_Allocations;
+    std::vector<LayoutGuide> m_Guides;
+    std::vector<glm::vec2> m_SlotSizes,m_SlotOffsets;
+    std::vector<size_t> m_Depths,m_Incoming;
     Rect Content(size_t node);
     void Arrange(size_t node);
     [[noreturn]] void Error(size_t node, int axis, const std::string &message) const;

@@ -80,7 +80,7 @@ void OwnedFont(const std::filesystem::path &p)
 GameUI::Align ReadAlign(const YAML::Node &n)
 {
     int v = n.as<int>();
-    if (v < 0 || v > 3)
+    if (v < 0 || v > 2)
         throw std::runtime_error("Invalid UI alignment");
     return GameUI::Align(v);
 }
@@ -123,29 +123,26 @@ static void Write(YAML::Emitter &out, const UICanvasComponent &v)
 }
 UIRectComponent ReadUIRectComponent(const YAML::Node &n)
 {
-    Keys(n, {"AnchorMin", "AnchorMax", "Offset", "SizeDelta", "Pivot", "MinimumSize", "Margin",
-             "Padding", "Visible", "Enabled", "ClipChildren", "Flex", "LayoutVersion",
-             "WidthMode", "HeightMode", "FixedSize", "MaximumSize", "HasMaximum"});
+    if(!n["LayoutVersion"] || n["LayoutVersion"].as<unsigned>()!=GameUI::RectLayout::SchemaVersion)
+        throw std::runtime_error("Unsupported UI Rect schema: expected LayoutVersion 3. Repository UI uses the canonical measured model; recover obsolete documents from their Git checkpoint.");
+    Keys(n, {"LayoutVersion","Anchor","Offset","Pivot","WidthMode","HeightMode","FixedSize","MinimumSize","MaximumSize","HasMaximum","Margin","Padding","Visible","Enabled","ClipChildren","Flex","GridRow","GridColumn","RowSpan","ColumnSpan","ImageFit","ImageAlignment"});
     UIRectComponent v;
-    if(n["LayoutVersion"])v.LayoutVersion=n["LayoutVersion"].as<unsigned>();
-    if(v.LayoutVersion==1 && (n["WidthMode"]||n["HeightMode"]||n["FixedSize"]||n["MaximumSize"]||n["HasMaximum"]))
-        throw std::runtime_error("Measured sizing fields require LayoutVersion 2");
     if(n["WidthMode"])v.WidthMode=GameUI::SizeMode(n["WidthMode"].as<int>());
     if(n["HeightMode"])v.HeightMode=GameUI::SizeMode(n["HeightMode"].as<int>());
     if(n["FixedSize"])v.FixedSize=Vector<2>(n["FixedSize"]);
     if(n["MaximumSize"])v.MaximumSize=Vector<2>(n["MaximumSize"]);
-    if(auto maximum=n["HasMaximum"]){
-        if(!maximum.IsSequence()||maximum.size()!=2)throw std::runtime_error("HasMaximum requires two booleans");
-        v.HasMaximum={maximum[0].as<bool>(),maximum[1].as<bool>()};
-    }
-    if (n["AnchorMin"])
-        v.AnchorMin = Vector<2>(n["AnchorMin"]);
-    if (n["AnchorMax"])
-        v.AnchorMax = Vector<2>(n["AnchorMax"]);
+    if(auto m=n["HasMaximum"]){if(!m.IsSequence()||m.size()!=2)throw std::runtime_error("HasMaximum needs two flags");v.HasMaximum={m[0].as<bool>(),m[1].as<bool>()};}
+    if(n["Anchor"])v.Anchor=Vector<2>(n["Anchor"]);
+    if(n["GridRow"])v.GridRow=n["GridRow"].as<int>();
+    if(n["GridColumn"])v.GridColumn=n["GridColumn"].as<int>();
+    if(n["RowSpan"])v.RowSpan=n["RowSpan"].as<unsigned>();
+    if(n["ColumnSpan"])v.ColumnSpan=n["ColumnSpan"].as<unsigned>();
+    if(n["ImageFit"])v.Fit=GameUI::ImageFit(n["ImageFit"].as<int>());
+    if(n["ImageAlignment"])v.ImageAlignment=Vector<2>(n["ImageAlignment"]);
+    if(v.Fit!=GameUI::ImageFit::Stretch)throw std::runtime_error("Unsupported UI image fit");
+    for(int a=0;a<2;++a)if(v.ImageAlignment[a]<0||v.ImageAlignment[a]>1)throw std::runtime_error("Image alignment must be normalized");
     if (n["Offset"])
         v.Offset = Vector<2>(n["Offset"]);
-    if (n["SizeDelta"])
-        v.SizeDelta = Vector<2>(n["SizeDelta"]);
     if (n["Pivot"])
         v.Pivot = Vector<2>(n["Pivot"]);
     if (n["MinimumSize"])
@@ -169,22 +166,21 @@ UIRectComponent ReadUIRectComponent(const YAML::Node &n)
 static void Write(YAML::Emitter &out, const UIRectComponent &v)
 {
     out << YAML::BeginMap;
-    if(v.LayoutVersion!=1){
-        out << YAML::Key << "LayoutVersion" << YAML::Value << v.LayoutVersion;
-        out << YAML::Key << "WidthMode" << YAML::Value << int(v.WidthMode);
-        out << YAML::Key << "HeightMode" << YAML::Value << int(v.HeightMode);
-        out << YAML::Key << "FixedSize" << YAML::Value;Write(out,v.FixedSize);
-        out << YAML::Key << "MaximumSize" << YAML::Value;Write(out,v.MaximumSize);
-        out << YAML::Key << "HasMaximum" << YAML::Value << YAML::Flow << YAML::BeginSeq << bool(v.HasMaximum.x) << bool(v.HasMaximum.y) << YAML::EndSeq;
-    }
-    out << YAML::Key << "AnchorMin" << YAML::Value;
-    Write(out, v.AnchorMin);
-    out << YAML::Key << "AnchorMax" << YAML::Value;
-    Write(out, v.AnchorMax);
+    out << YAML::Key << "LayoutVersion" << YAML::Value << GameUI::RectLayout::SchemaVersion;
+    out << YAML::Key << "WidthMode" << YAML::Value << int(v.WidthMode);
+    out << YAML::Key << "HeightMode" << YAML::Value << int(v.HeightMode);
+    out << YAML::Key << "FixedSize" << YAML::Value;Write(out,v.FixedSize);
+    out << YAML::Key << "MaximumSize" << YAML::Value;Write(out,v.MaximumSize);
+    out << YAML::Key << "HasMaximum" << YAML::Value << YAML::Flow << YAML::BeginSeq << bool(v.HasMaximum.x) << bool(v.HasMaximum.y) << YAML::EndSeq;
+    out << YAML::Key << "Anchor" << YAML::Value;Write(out,v.Anchor);
+    out << YAML::Key << "GridRow" << YAML::Value << v.GridRow;
+    out << YAML::Key << "GridColumn" << YAML::Value << v.GridColumn;
+    out << YAML::Key << "RowSpan" << YAML::Value << v.RowSpan;
+    out << YAML::Key << "ColumnSpan" << YAML::Value << v.ColumnSpan;
+    out << YAML::Key << "ImageFit" << YAML::Value << int(v.Fit);
+    out << YAML::Key << "ImageAlignment" << YAML::Value;Write(out,v.ImageAlignment);
     out << YAML::Key << "Offset" << YAML::Value;
     Write(out, v.Offset);
-    out << YAML::Key << "SizeDelta" << YAML::Value;
-    Write(out, v.SizeDelta);
     out << YAML::Key << "Pivot" << YAML::Value;
     Write(out, v.Pivot);
     out << YAML::Key << "MinimumSize" << YAML::Value;
@@ -203,36 +199,48 @@ static void Write(YAML::Emitter &out, const UIRectComponent &v)
     Write(out, v.Flex);
     out << YAML::EndMap;
 }
+static std::vector<GameUI::Track> ReadTracks(const YAML::Node &n)
+{
+    if(!n.IsSequence() || n.size()==0 || n.size()>64)throw std::runtime_error("Track list requires 1..64 entries");
+    std::vector<GameUI::Track> result;
+    for(auto item:n){
+        Keys(item,{"Mode","Value","Minimum","Maximum","HasMaximum"});GameUI::Track t;
+        if(item["Mode"])t.Mode=GameUI::TrackMode(item["Mode"].as<int>());
+        if(item["Value"])t.Value=item["Value"].as<float>();
+        if(item["Minimum"])t.Minimum=item["Minimum"].as<float>();
+        if(item["Maximum"])t.Maximum=item["Maximum"].as<float>();
+        if(item["HasMaximum"])t.HasMaximum=item["HasMaximum"].as<bool>();
+        GameUI::Validate(t);result.push_back(t);
+    }return result;
+}
 UILayoutComponent ReadUILayoutComponent(const YAML::Node &n)
 {
-    Keys(n, {"Direction", "Main", "Cross", "Gap"});
-    UILayoutComponent v;
-    if (n["Direction"])
-        v.Direction = GameUI::Axis(n["Direction"].as<int>());
-    if (n["Main"])
-        v.Main = ReadAlign(n["Main"]);
-    if (n["Cross"])
-        v.Cross = ReadAlign(n["Cross"]);
-    if (n["Gap"])
-        v.Gap = n["Gap"].as<float>();
-    if (int(v.Direction) < 0 || int(v.Direction) > 1)
-        throw std::runtime_error("Invalid flow direction");
-    if(v.Main>GameUI::Align::End)throw std::runtime_error("Flow main alignment must be Start, Center or End");
-    Positive(v.Gap);
-    return v;
+    Keys(n,{"Kind","Direction","Main","Cross","Gap","LineGap","LineAlign","GridGap","Columns","Rows"});UILayoutComponent v;
+    if(n["Kind"])v.Kind=GameUI::ContainerKind(n["Kind"].as<int>());
+    if(n["Direction"])v.Direction=GameUI::Axis(n["Direction"].as<int>());
+    if(n["Main"])v.Main=ReadAlign(n["Main"]);
+    if(n["Cross"])v.Cross=ReadAlign(n["Cross"]);
+    if(n["LineAlign"])v.LineAlign=ReadAlign(n["LineAlign"]);
+    if(n["Gap"])v.Gap=n["Gap"].as<float>();
+    if(n["LineGap"])v.LineGap=n["LineGap"].as<float>();
+    if(n["GridGap"])v.GridGap=Vector<2>(n["GridGap"]);
+    if(n["Columns"])v.Columns=ReadTracks(n["Columns"]);
+    if(n["Rows"])v.Rows=ReadTracks(n["Rows"]);
+    GameUI::Validate(v);return v;
 }
-static void Write(YAML::Emitter &out, const UILayoutComponent &v)
+static void Write(YAML::Emitter &out,const UILayoutComponent &v)
 {
-    out << YAML::BeginMap;
-    out << YAML::Key << "Direction" << YAML::Value;
-    Write(out, v.Direction);
-    out << YAML::Key << "Main" << YAML::Value;
-    Write(out, v.Main);
-    out << YAML::Key << "Cross" << YAML::Value;
-    Write(out, v.Cross);
-    out << YAML::Key << "Gap" << YAML::Value;
-    Write(out, v.Gap);
-    out << YAML::EndMap;
+    out<<YAML::BeginMap;
+    out<<YAML::Key<<"Kind"<<YAML::Value<<int(v.Kind);
+    out<<YAML::Key<<"Direction"<<YAML::Value<<int(v.Direction);
+    out<<YAML::Key<<"Main"<<YAML::Value<<int(v.Main);
+    out<<YAML::Key<<"Cross"<<YAML::Value<<int(v.Cross);
+    out<<YAML::Key<<"Gap"<<YAML::Value<<v.Gap;
+    out<<YAML::Key<<"LineGap"<<YAML::Value<<v.LineGap;
+    out<<YAML::Key<<"LineAlign"<<YAML::Value<<int(v.LineAlign);
+    out<<YAML::Key<<"GridGap"<<YAML::Value;Write(out,v.GridGap);
+    auto tracks=[&](const char*name,const auto &list){out<<YAML::Key<<name<<YAML::Value<<YAML::BeginSeq;for(const auto&t:list)out<<YAML::Flow<<YAML::BeginMap<<YAML::Key<<"Mode"<<YAML::Value<<int(t.Mode)<<YAML::Key<<"Value"<<YAML::Value<<t.Value<<YAML::Key<<"Minimum"<<YAML::Value<<t.Minimum<<YAML::Key<<"Maximum"<<YAML::Value<<t.Maximum<<YAML::Key<<"HasMaximum"<<YAML::Value<<t.HasMaximum<<YAML::EndMap;out<<YAML::EndSeq;};
+    tracks("Columns",v.Columns);tracks("Rows",v.Rows);out<<YAML::EndMap;
 }
 UITextStyleComponent ReadUITextStyleComponent(const YAML::Node &n)
 {

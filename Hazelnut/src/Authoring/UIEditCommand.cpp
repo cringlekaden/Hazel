@@ -30,6 +30,10 @@ bool Equal(const glm::vec<L, T, Q> &a, const glm::vec<L, T, Q> &b)
             return false;
     return true;
 }
+bool Equal(const GameUI::Track &a, const GameUI::Track &b)
+{ return a.Mode==b.Mode && Equal(a.Value,b.Value) && Equal(a.Minimum,b.Minimum) && Equal(a.Maximum,b.Maximum) && a.HasMaximum==b.HasMaximum; }
+bool Equal(const std::vector<GameUI::Track> &a,const std::vector<GameUI::Track> &b)
+{ if(a.size()!=b.size())return false;for(size_t i=0;i<a.size();++i)if(!Equal(a[i],b[i]))return false;return true; }
 bool Equal(const SpriteSource &a, const SpriteSource &b)
 {
     if (a.index() != b.index())
@@ -64,16 +68,13 @@ template <class A, class B, class C, class F> void Fields(A &a, B &b, C &c, F f)
     }
     COMPONENT(Rect)
     {
-        FIELD(Rect, LayoutVersion);
         FIELD(Rect, WidthMode);
         FIELD(Rect, HeightMode);
         FIELD(Rect, FixedSize);
         FIELD(Rect, MaximumSize);
         FIELD(Rect, HasMaximum);
-        FIELD(Rect, AnchorMin);
-        FIELD(Rect, AnchorMax);
+        FIELD(Rect, Anchor);
         FIELD(Rect, Offset);
-        FIELD(Rect, SizeDelta);
         FIELD(Rect, Pivot);
         FIELD(Rect, MinimumSize);
         FIELD(Rect, Margin);
@@ -82,6 +83,12 @@ template <class A, class B, class C, class F> void Fields(A &a, B &b, C &c, F f)
         FIELD(Rect, Visible);
         FIELD(Rect, Enabled);
         FIELD(Rect, ClipChildren);
+        FIELD(Rect, GridRow);
+        FIELD(Rect, GridColumn);
+        FIELD(Rect, RowSpan);
+        FIELD(Rect, ColumnSpan);
+        FIELD(Rect, Fit);
+        FIELD(Rect, ImageAlignment);
     }
     COMPONENT(Flow)
     {
@@ -89,6 +96,13 @@ template <class A, class B, class C, class F> void Fields(A &a, B &b, C &c, F f)
         FIELD(Flow, Main);
         FIELD(Flow, Cross);
         FIELD(Flow, Gap);
+FIELD(Flow, Kind);
+FIELD(Flow, LineGap);
+FIELD(Flow, LineAlign);
+FIELD(Flow, GridGap);
+FIELD(Flow, Columns);
+FIELD(Flow, Rows);
+
     }
     COMPONENT(Style)
     {
@@ -133,6 +147,7 @@ template <class T> size_t Storage(const T &)
 {
     return 0;
 }
+size_t Storage(const std::vector<GameUI::Track> &v) { return v.capacity()*sizeof(GameUI::Track); }
 size_t Storage(const std::string &v)
 {
     return v.capacity() + 1;
@@ -194,11 +209,7 @@ void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
     }
     if (v.Flow)
     {
-        auto f = *v.Flow;
-        if (int(f.Direction) < 0 || int(f.Direction) > 1 || int(f.Main) < 0 || int(f.Main) > 2 ||
-            int(f.Cross) < 0 || int(f.Cross) > 3)
-            throw std::invalid_argument("Unsupported flow alignment");
-        Positive(f.Gap);
+        GameUI::Validate(*v.Flow);
     }
     if (v.Style)
     {
@@ -308,16 +319,13 @@ void Write(Entity e, const UIEditValues &old, UIEditValues &next)
     FIELD(Canvas, Enabled);
     FIELD(Canvas, Modal);
 }
-COMPONENT(Rect, UIRectComponent) FIELD(Rect, LayoutVersion);
-FIELD(Rect, WidthMode);
+COMPONENT(Rect, UIRectComponent) FIELD(Rect, WidthMode);
 FIELD(Rect, HeightMode);
 FIELD(Rect, FixedSize);
 FIELD(Rect, MaximumSize);
 FIELD(Rect, HasMaximum);
-FIELD(Rect, AnchorMin);
-FIELD(Rect, AnchorMax);
+FIELD(Rect, Anchor);
 FIELD(Rect, Offset);
-FIELD(Rect, SizeDelta);
 FIELD(Rect, Pivot);
 FIELD(Rect, MinimumSize);
 FIELD(Rect, Margin);
@@ -326,11 +334,25 @@ FIELD(Rect, Flex);
 FIELD(Rect, Visible);
 FIELD(Rect, Enabled);
 FIELD(Rect, ClipChildren);
+FIELD(Rect, GridRow);
+FIELD(Rect, GridColumn);
+FIELD(Rect, RowSpan);
+FIELD(Rect, ColumnSpan);
+FIELD(Rect, Fit);
+FIELD(Rect, ImageAlignment);
+
 }
 COMPONENT(Flow, UILayoutComponent) FIELD(Flow, Direction);
 FIELD(Flow, Main);
 FIELD(Flow, Cross);
 FIELD(Flow, Gap);
+FIELD(Flow, Kind);
+FIELD(Flow, LineGap);
+FIELD(Flow, LineAlign);
+FIELD(Flow, GridGap);
+FIELD(Flow, Columns);
+FIELD(Flow, Rows);
+
 }
 COMPONENT(Style, UITextStyleComponent) FIELD(Style, FontPath);
 FIELD(Style, Size);

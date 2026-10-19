@@ -31,53 +31,47 @@ struct CanvasFit
 };
 CanvasFit FitCanvas(glm::vec2 viewportPixels, const CanvasLayout &config);
 enum class SizeMode { Fixed, Fill, Content };
+enum class Axis { Horizontal, Vertical };
+enum class Align { Start, Center, End };
+enum class ContainerKind { Stack, Grid, Wrap };
+enum class TrackMode { Fixed, Fill };
+enum class ImageFit { Stretch, Contain, Cover, Native };
+struct Track
+{
+    TrackMode Mode = TrackMode::Fixed;
+    float Value = 96, Minimum = 0, Maximum = 0;
+    bool HasMaximum = false;
+    bool operator==(const Track &o) const
+    { return Mode==o.Mode && Value==o.Value && Minimum==o.Minimum && Maximum==o.Maximum && HasMaximum==o.HasMaximum; }
+};
 struct RectLayout
 {
-    // Missing persisted fields always retain v1 anchors/stretch/pivot semantics.
-    unsigned LayoutVersion = 1;
+    static constexpr unsigned SchemaVersion = 3;
     SizeMode WidthMode = SizeMode::Fixed, HeightMode = SizeMode::Fixed;
-    glm::vec2 FixedSize{240, 48}, MaximumSize{};
-    glm::bvec2 HasMaximum{false, false};
-    glm::vec2 AnchorMin{}, AnchorMax{}, Offset{}, SizeDelta{240, 48}, Pivot{};
-    glm::vec2 MinimumSize{};
+    glm::vec2 FixedSize{240,48}, MaximumSize{}, MinimumSize{};
+    glm::bvec2 HasMaximum{false,false};
+    glm::vec2 Anchor{}, Offset{}, Pivot{};
     glm::vec4 Margin{}, Padding{};
-};
-void Validate(const RectLayout &config);
-Rect ResolveRect(const Rect &parent, const RectLayout &config);
-// Invert legacy anchors/pivot/margins for a viewport gesture. No new layout
-// semantics: zero edges moves; bits 1/2/4/8 resize left/top/right/bottom.
-RectLayout EditRect(const Rect &parent, const RectLayout &initial, glm::vec2 delta, unsigned edges);
-RectLayout EditMeasuredRect(const Rect &parent, const Rect &start, const RectLayout &initial,
-                            glm::vec2 delta, unsigned edges);
-Rect FramebufferCoverage(const Rect &pixels, glm::vec2 ratio, glm::vec2 framebuffer);
-enum class Axis
-{
-    Horizontal,
-    Vertical
-};
-enum class Align
-{
-    Start,
-    Center,
-    End,
-    Stretch
+    int GridRow=-1, GridColumn=-1;
+    unsigned RowSpan=1, ColumnSpan=1;
 };
 struct FlowLayout
 {
+    ContainerKind Kind = ContainerKind::Stack;
     Axis Direction = Axis::Vertical;
-    Align Main = Align::Start, Cross = Align::Stretch;
-    float Gap = 12;
+    Align Main=Align::Start, Cross=Align::Start, LineAlign=Align::Start;
+    float Gap=12, LineGap=12;
+    glm::vec2 GridGap{12,12};
+    std::vector<Track> Columns{Track{},Track{},Track{}}, Rows{Track{}};
 };
-struct FlowItem
-{
-    glm::vec2 PreferredSize{}, MinimumSize{};
-    glm::vec4 Margin{};
-    float Flex = 0;
-    bool Visible = true;
-};
-// Caller retains output capacity. Hidden children consume neither space nor gaps.
-void ArrangeFlow(const Rect &content, const FlowLayout &config, const std::vector<FlowItem> &items,
-                 std::vector<Rect> &output);
+void Validate(const RectLayout &config);
+void Validate(const FlowLayout &config);
+void Validate(const Track &config);
+RectLayout EditMeasuredRect(const Rect &parent, const Rect &start, const RectLayout &initial,
+                            glm::vec2 delta, unsigned edges);
+Rect FramebufferCoverage(const Rect &pixels, glm::vec2 ratio, glm::vec2 framebuffer);
+struct ImagePlacement { Rect Visual{}, UV{{0,0},{1,1}}; };
+ImagePlacement FitImage(const Rect &box, glm::vec2 sourceSize, ImageFit fit, glm::vec2 alignment);
 
 enum class HitPolicy
 {

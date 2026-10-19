@@ -249,8 +249,8 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
     ScriptEngine::Init(target);
     {
         auto ui=CreateRef<Scene>();auto entity=ui->CreateEntity("UI managed probe");
-        entity.AddComponent<UICanvasComponent>();entity.AddComponent<UIRectComponent>();entity.AddComponent<UILayoutComponent>();entity.AddComponent<UITextStyleComponent>();entity.AddComponent<UINineSliceComponent>();entity.AddComponent<UIButtonComponent>();entity.AddComponent<SpriteRendererComponent>();entity.AddComponent<TextComponent>(TextComponent{"",Ref<Font>{}});entity.AddComponent<ScriptComponent>().ClassName="Migration.UIProbe";
-        auto measured=ui->CreateEntity("Measured API target");ui->Reparent(measured,entity,TransformPolicy::KeepLocal);measured.AddComponent<UIRectComponent>().LayoutVersion=2;
+        auto canvas=ui->CreateEntity("UI API canvas");canvas.AddComponent<UICanvasComponent>();ui->Reparent(entity,canvas,TransformPolicy::KeepLocal);entity.AddComponent<UIRectComponent>();entity.AddComponent<UILayoutComponent>();entity.AddComponent<UITextStyleComponent>();entity.AddComponent<UINineSliceComponent>();entity.AddComponent<UIButtonComponent>();entity.AddComponent<SpriteRendererComponent>();entity.AddComponent<TextComponent>(TextComponent{"",Ref<Font>{}});entity.AddComponent<ScriptComponent>().ClassName="Migration.UIProbe";
+        auto measured=ui->CreateEntity("Measured API target");ui->Reparent(measured,entity,TransformPolicy::KeepLocal);measured.AddComponent<UIRectComponent>();
         for(int cycle=0;cycle<2;cycle++){ui->OnRuntimeStart();auto probe=ScriptEngine::GetEntityScriptInstance(entity.GetUUID());Check(probe&&probe->GetFieldValue<bool>("Passed")&&entity.GetComponent<TextComponent>().TextString=="Managed UI","Managed UI component/state/action bindings failed");ui->OnRuntimeStop();Check(!probe->GetManagedObject(),"UI managed instance survived Stop");}
         std::cout<<"PASS: all six managed UI components, text/state/action APIs and repeated Start/Stop isolation\n";
     }
@@ -268,7 +268,7 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
     auto native=scene->CreateEntityWithUUID(102,"Native"); native.AddComponent<NativeScriptComponent>().Bind<NativeProbe>();
     auto uiCanvas=scene->CreateEntity("Reload canvas");uiCanvas.AddComponent<UICanvasComponent>().ReferenceSize={320,240};
     auto uiControl=scene->CreateEntity("Reload control");scene->Reparent(uiControl,uiCanvas,TransformPolicy::KeepLocal);
-    uiControl.AddComponent<UIRectComponent>().SizeDelta={100,40};uiControl.AddComponent<UIButtonComponent>().Action="reload-check";
+    uiControl.AddComponent<UIRectComponent>().FixedSize={100,40};uiControl.AddComponent<UIButtonComponent>().Action="reload-check";
     auto& saved=ScriptEngine::GetScriptFieldMap(script)["Speed"]; saved.Field=fields.at("Speed"); saved.SetValue<float>(4.0f);
     scene->OnRuntimeStart(); auto instance=ScriptEngine::GetEntityScriptInstance(100);
     Check(instance && instance->GetFieldValue<float>("Speed")==4 && instance->GetFieldValue<int>("Creates")==1,"Runtime field override/OnCreate failed");

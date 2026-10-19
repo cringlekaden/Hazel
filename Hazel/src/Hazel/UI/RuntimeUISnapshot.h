@@ -17,16 +17,18 @@ struct ResolvedElement
     Rect Bounds{}, ParentContent{}, Clip{}; // canvas logical units
     Rect PixelBounds{}, PixelClip{}, FramebufferBounds{}, FramebufferClip{};
     glm::vec2 Available{}, Measured{};
-    unsigned LayoutVersion = 1;
+    Rect Slot{};
+    int GridRow=-1,GridColumn=-1,Line=-1;
     SizeMode WidthMode = SizeMode::Fixed, HeightMode = SizeMode::Fixed;
     bool MeasureResolved = false, Overflow = false;
     size_t MeasureIndex = std::numeric_limits<size_t>::max();
     float Scale = 1;
     size_t Order = 0, ButtonIndex = std::numeric_limits<size_t>::max();
     bool IsCanvas = false, Visible = false, Enabled = false, LayoutResolved = false;
-    bool FocusEligible = false, FlowOwned = false;
+    bool FocusEligible = false, ContainerOwned = false;
     HitPolicy Hit = HitPolicy::PassThrough;
 };
+struct ResolvedGuide {uint64_t Owner=0;int Axis=0,Index=0;bool Line=false;Rect Bounds{};};
 struct ResolvedSnapshot
 {
     uint64_t Generation = 0, SceneIdentity = 0, Modal = 0;
@@ -34,6 +36,7 @@ struct ResolvedSnapshot
     bool PreviewOrphans = false, Valid = false;
     std::vector<ResolvedElement> Elements;
     std::vector<size_t> PainterOrder;
+    std::vector<ResolvedGuide> Guides;
     std::vector<Button> Buttons;
     std::unordered_map<uint64_t, size_t> Index;
     struct Warning

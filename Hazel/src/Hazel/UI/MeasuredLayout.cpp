@@ -33,6 +33,10 @@ void MeasuredLayout::Error(size_t index, int axis, const std::string &message) c
 float MeasuredLayout::Available(size_t i, int axis)
 {
     const auto &n = (*m_Nodes)[i];
+    if(n.Parent!=None && (*m_Nodes)[n.Parent].Container && (*m_Nodes)[n.Parent].Flow.Kind==ContainerKind::Grid) {
+        GridTracks(n.Parent,axis);
+        return std::max(0.f,m_SlotSizes[i][axis]-Margin(n.Layout,axis));
+    }
     float parent =
         n.Parent == None
             ? m_External.Size[axis]
@@ -61,7 +65,8 @@ float MeasuredLayout::Size(size_t i, int axis)
         desired = r.FixedSize[axis];
         break;
     case SizeMode::Fill:
-        if (n.Parent != None && (*m_Nodes)[n.Parent].Stack && Main((*m_Nodes)[n.Parent]) == axis)
+        if (n.Parent != None && (*m_Nodes)[n.Parent].Container &&
+            (*m_Nodes)[n.Parent].Flow.Kind==ContainerKind::Stack && Main((*m_Nodes)[n.Parent]) == axis)
         {
             Distribute(n.Parent);
             desired = m_Sizes[i][axis];
@@ -77,24 +82,32 @@ float MeasuredLayout::Size(size_t i, int axis)
             Error(i, axis, "invalid intrinsic measurement");
         float children = 0;
         size_t visible = 0;
-        for (auto child : n.Children)
+        if(n.Container && n.Flow.Kind==ContainerKind::Grid) {
+            const auto &tracks=axis?n.Flow.Rows:n.Flow.Columns;
+            for(const auto &t:tracks) {
+                if(t.Mode==TrackMode::Fill)Error(i,axis,"Fill tracks need a definite container axis");
+                children+=t.HasMaximum?std::min(std::max(t.Value,t.Minimum),t.Maximum):std::max(t.Value,t.Minimum);
+            }
+            children+=(tracks.size()-1)*n.Flow.GridGap[axis];
+        }
+        else for (auto child : n.Children)
         {
             const auto &c = (*m_Nodes)[child];
             if (!c.Visible)
                 continue;
-            if (!n.Stack && (c.Layout.AnchorMin[axis] != 0 || c.Layout.Pivot[axis] != 0))
+            if (!n.Container && (c.Layout.Anchor[axis] != 0 || c.Layout.Pivot[axis] != 0))
                 Error(child, axis,
                       "a Content parent requires zero child anchor/pivot on this axis");
             float extent = Size(child, axis) + Margin(c.Layout, axis);
-            if (n.Stack && Main(n) == axis)
+            if (n.Container && Main(n) == axis)
             {
                 children += extent;
                 ++visible;
             }
             else
-                children = std::max(children, extent + (n.Stack ? 0 : c.Layout.Offset[axis]));
+                children = std::max(children, extent + (n.Container ? 0 : c.Layout.Offset[axis]));
         }
-        if (n.Stack && Main(n) == axis && visible)
+        if (n.Container && n.Flow.Kind==ContainerKind::Stack && Main(n) == axis && visible)
             children += (visible - 1) * n.Flow.Gap;
         desired = std::max(visual[axis], children) + Padding(r, axis);
         break;
@@ -137,70 +150,114 @@ void MeasuredLayout::Distribute(size_t parent)
     if (!std::isfinite(used))
         Error(parent, axis, "stack extent overflow");
     m_Results[parent].Overflow |= used > available;
-    float free = std::max(0.f, available - used), weight = 0;
-    double uncappedWeight = 0;
-    m_Caps.clear();
-    for (auto i : p.Children)
-    {
-        const auto &n = (*m_Nodes)[i];
-        if (!n.Visible || Mode(n.Layout, axis) != SizeMode::Fill)
-            continue;
-        weight += n.Weight;
-        if (n.Layout.HasMaximum[axis])
-            m_Caps.emplace_back(
-                (double(n.Layout.MaximumSize[axis]) - n.Layout.MinimumSize[axis]) / n.Weight, i);
-        else
-            uncappedWeight += n.Weight;
+    m_Allocations.clear();
+    for(auto i:p.Children) {
+        const auto &n=(*m_Nodes)[i];
+        if(n.Visible && Mode(n.Layout,axis)==SizeMode::Fill)
+            m_Allocations.push_back({i,n.Layout.MinimumSize[axis],n.Layout.MaximumSize[axis],n.Weight,0,n.Layout.HasMaximum[axis]});
     }
-    if (!std::isfinite(weight))
-        Error(parent, axis, "Fill weight overflow");
-    // Capped weighted water filling by sorted saturation thresholds: bounded
-    // O(n log n), with no convergence solver. Uncapped arithmetic retains the
-    // legacy proportional-flow operation order for exact conversion geometry.
-    double level = 0, remaining = free;
-    std::sort(m_Caps.begin(), m_Caps.end());
-    m_CapWeights.assign(m_Caps.size() + 1, uncappedWeight);
-    for (size_t k = m_Caps.size(); k > 0; --k)
-        m_CapWeights[k - 1] = m_CapWeights[k] + (*m_Nodes)[m_Caps[k - 1].second].Weight;
-    for (size_t k = 0; k < m_Caps.size(); ++k)
-    {
-        auto [threshold, i] = m_Caps[k];
-        (void)i;
-        double activeWeight = m_CapWeights[k];
-        if (activeWeight <= 0)
-            break;
-        double cost = (threshold - level) * activeWeight;
-        if (remaining <= cost)
-        {
-            level += remaining / activeWeight;
-            remaining = 0;
-            break;
-        }
-        remaining -= cost;
-        level = threshold;
-    }
-    if (uncappedWeight > 0)
-    {
-        level += remaining / uncappedWeight;
-        remaining = 0;
-    }
-    m_Spare[parent] = weight ? float(remaining) : free;
-    for (auto i : p.Children)
-    {
-        const auto &n = (*m_Nodes)[i];
-        if (n.Visible && Mode(n.Layout, axis) == SizeMode::Fill)
-        {
-            double capped = double(m_Sizes[i][axis]) + double(n.Weight) * level;
-            if (n.Layout.HasMaximum[axis])
-                capped = std::min(capped, double(n.Layout.MaximumSize[axis]));
-            float size =
-                m_Caps.empty() ? m_Sizes[i][axis] + free * n.Weight / weight : float(capped);
-            m_Sizes[i][axis] = Clamp(size, n.Layout, axis);
-            m_State[i][axis] = 2;
-            m_Results[i].Measured[axis] = m_Sizes[i][axis];
-        }
+    m_Spare[parent]=Allocate(std::max(0.f,available-used));
+    for(auto &a:m_Allocations) {
+        m_Sizes[a.Index][axis]=a.Result;m_State[a.Index][axis]=2;
+        m_Results[a.Index].Measured[axis]=a.Result;
     }
     m_Distribution[parent] = 2;
+}
+float MeasuredLayout::Allocate(float free)
+{
+    double uncapped=0,remaining=free,level=0;
+    m_Caps.clear();
+    for(size_t i=0;i<m_Allocations.size();++i) {
+        const auto &a=m_Allocations[i];
+        if(a.Capped)m_Caps.emplace_back((double(a.Maximum)-a.Minimum)/a.Weight,i);
+        else uncapped+=a.Weight;
+    }
+    std::sort(m_Caps.begin(),m_Caps.end());
+    m_CapWeights.assign(m_Caps.size()+1,uncapped);
+    for(size_t k=m_Caps.size();k>0;--k)m_CapWeights[k-1]=m_CapWeights[k]+m_Allocations[m_Caps[k-1].second].Weight;
+    for(size_t k=0;k<m_Caps.size();++k) {
+        double active=m_CapWeights[k];if(active<=0)break;
+        double cost=(m_Caps[k].first-level)*active;
+        if(remaining<=cost){level+=remaining/active;remaining=0;break;}
+        remaining-=cost;level=m_Caps[k].first;
+    }
+    if(uncapped>0){level+=remaining/uncapped;remaining=0;}
+    for(auto &a:m_Allocations) {
+        double result=double(a.Minimum)+double(a.Weight)*level;
+        if(a.Capped)result=std::min(result,double(a.Maximum));
+        if(!std::isfinite(result)||result>std::numeric_limits<float>::max())throw std::invalid_argument("Fill allocation overflow");
+        a.Result=float(result);
+    }
+    return float(remaining);
+}
+void MeasuredLayout::PlaceGrid(size_t parent)
+{
+    auto &group=m_Groups[parent];if(group.Placed)return;
+    const auto &n=(*m_Nodes)[parent];
+    const int rows=int(n.Flow.Rows.size()),columns=int(n.Flow.Columns.size());
+    std::array<uint64_t,64> occupied{};
+    size_t work=0;
+    for(auto child:n.Children)Validate((*m_Nodes)[child].Layout);
+    auto reserve=[&](size_t child,int row,int col,bool test){
+        const auto &r=(*m_Nodes)[child].Layout;
+        if(row<0||col<0||row>=rows||col>=columns||row+int(r.RowSpan)>rows||col+int(r.ColumnSpan)>columns)return false;
+        uint64_t mask=r.ColumnSpan==64?~uint64_t(0):((uint64_t(1)<<r.ColumnSpan)-1)<<col;
+        for(int y=row;y<row+int(r.RowSpan);++y){
+            if(++work>16*1024*1024)Error(child,0,"grid placement work limit exceeded; use explicit cells");
+            if(occupied[y]&mask)return false;
+        }
+        if(test)return true;
+        for(int y=row;y<row+int(r.RowSpan);++y)occupied[y]|=mask;
+        m_Results[child].Row=row;m_Results[child].Column=col;return true;
+    };
+    for(auto child:n.Children) {
+        const auto &r=(*m_Nodes)[child].Layout;
+        if(r.GridRow>=0 && !reserve(child,r.GridRow,r.GridColumn,false))
+            Error(child,0,"grid cell/span is out of range or occupied");
+    }
+    for(auto child:n.Children) {
+        if((*m_Nodes)[child].Layout.GridRow>=0)continue;
+        bool placed=false;
+        for(int cell=0;cell<rows*columns;++cell)
+            if(reserve(child,cell/columns,cell%columns,true)) {
+                reserve(child,cell/columns,cell%columns,false);placed=true;break;
+            }
+        if(!placed)Error(child,0,"grid has no free cell for this span; add tracks or change placement");
+    }
+    group.Placed=true;
+}
+void MeasuredLayout::GridTracks(size_t parent,int axis)
+{
+    auto &g=m_Groups[parent];if(g.GridState[axis]==2)return;
+    if(g.GridState[axis]==1)Error(parent,axis,"recursive grid track allocation");
+    g.GridState[axis]=1;PlaceGrid(parent);
+    const auto &n=(*m_Nodes)[parent];const auto &tracks=axis?n.Flow.Rows:n.Flow.Columns;
+    // Determine the container before taking shared scratch storage: dependencies
+    // may resolve other containers recursively.
+    float available=std::max(0.f,Size(parent,axis)-Padding(n.Layout,axis));
+    auto &sizes=g.Tracks[axis],&starts=g.Starts[axis];sizes.resize(tracks.size());starts.resize(tracks.size());
+    float used=(tracks.size()-1)*n.Flow.GridGap[axis];
+    m_Allocations.clear();
+    for(size_t t=0;t<tracks.size();++t) {
+        const auto &v=tracks[t];
+        sizes[t]=v.Mode==TrackMode::Fill?v.Minimum:std::max(v.Minimum,v.Value);
+        if(v.HasMaximum)sizes[t]=std::min(sizes[t],v.Maximum);
+        used+=sizes[t];
+        if(v.Mode==TrackMode::Fill)m_Allocations.push_back({t,v.Minimum,v.Maximum,v.Value,0,v.HasMaximum});
+    }
+    if(!std::isfinite(used))Error(parent,axis,"grid track extent overflow");
+    m_Results[parent].Overflow|=used>available;
+    Allocate(std::max(0.f,available-used));
+    for(auto &a:m_Allocations)sizes[a.Index]=a.Result;
+    float cursor=0;
+    for(size_t t=0;t<tracks.size();++t){starts[t]=cursor;cursor+=sizes[t]+n.Flow.GridGap[axis];}
+    for(auto child:n.Children) {
+        int first=axis?m_Results[child].Row:m_Results[child].Column;
+        unsigned span=axis?(*m_Nodes)[child].Layout.RowSpan:(*m_Nodes)[child].Layout.ColumnSpan;
+        m_SlotOffsets[child][axis]=starts[first];
+        m_SlotSizes[child][axis]=starts[first+span-1]+sizes[first+span-1]-starts[first];
+    }
+    g.GridState[axis]=2;
 }
 Rect MeasuredLayout::Content(size_t i)
 {
@@ -216,13 +273,13 @@ void MeasuredLayout::Arrange(size_t i)
     out.Bounds.Size = m_Sizes[i];
     for (int axis = 0; axis < 2; ++axis)
     {
-        out.Available[axis] = std::max(0.f, parent.Size[axis] - Margin(n.Layout, axis));
+        out.Available[axis] = std::max(0.f, (n.Parent!=None && (*m_Nodes)[n.Parent].Container && (*m_Nodes)[n.Parent].Flow.Kind==ContainerKind::Grid ? m_SlotSizes[i][axis] : parent.Size[axis]) - Margin(n.Layout, axis));
         out.Bounds.Position[axis] = parent.Position[axis] +
-                                    n.Layout.AnchorMin[axis] * parent.Size[axis] +
+                                    n.Layout.Anchor[axis] * parent.Size[axis] +
                                     n.Layout.Offset[axis] + n.Layout.Margin[axis] -
                                     n.Layout.Pivot[axis] * out.Bounds.Size[axis];
     }
-    if (n.Parent != None && (*m_Nodes)[n.Parent].Stack)
+    if (n.Parent != None && (*m_Nodes)[n.Parent].Container)
         out.Bounds.Position = m_Positions[i];
     for (int axis = 0; axis < 2; ++axis)
         if (!std::isfinite(out.Bounds.Position[axis]) ||
@@ -230,7 +287,24 @@ void MeasuredLayout::Arrange(size_t i)
             Error(i, axis, "arranged position overflow");
     auto inside = out.Bounds.Intersect(parent);
     out.Overflow |= inside.Position != out.Bounds.Position || inside.Size != out.Bounds.Size;
-    if (n.Stack)
+    if(n.Container && n.Flow.Kind==ContainerKind::Grid) {
+        GridTracks(i,0);GridTracks(i,1);auto content=Content(i);
+        for(int axis=0;axis<2;++axis)for(size_t t=0;t<m_Groups[i].Tracks[axis].size();++t) {
+            Rect track=content;track.Position[axis]+=m_Groups[i].Starts[axis][t];track.Size[axis]=m_Groups[i].Tracks[axis][t];
+            m_Guides.push_back({i,axis,int(t),false,track});
+        }
+        for(auto child:n.Children) {
+            auto &result=m_Results[child];result.Slot={content.Position+m_SlotOffsets[child],m_SlotSizes[child]};
+            for(int axis=0;axis<2;++axis) {
+                const auto &r=(*m_Nodes)[child].Layout;
+                float space=std::max(0.f,result.Slot.Size[axis]-Margin(r,axis));
+                auto align=axis?n.Flow.Cross:n.Flow.Main;
+                m_Positions[child][axis]=result.Slot.Position[axis]+r.Margin[axis]+std::max(0.f,space-m_Sizes[child][axis])*(align==Align::Center?.5f:align==Align::End?1.f:0.f);
+                result.Overflow|=m_Sizes[child][axis]>space;
+            }
+        }
+    }
+    else if (n.Container)
     {
         Distribute(i);
         int axis = Main(n), cross = 1 - axis;
@@ -277,22 +351,24 @@ void MeasuredLayout::Resolve(const std::vector<MeasureNode> &nodes, Rect externa
         m_Sizes.assign(count, {});
         m_Positions.assign(count, {});
         m_Distribution.assign(count, 0);
-        m_Spare.assign(count, 0);
-        std::vector<size_t> depths(count), incoming(count);
+        m_Spare.assign(count, 0);m_SlotSizes.assign(count,{});m_SlotOffsets.assign(count,{});m_Guides.clear();
+        if(m_Groups.size()<count)m_Groups.resize(count);
+        for(size_t i=0;i<count;++i){m_Groups[i].Placed=false;m_Groups[i].GridState={};}
+        m_Depths.assign(count,0);m_Incoming.assign(count,0);
+        auto &depths=m_Depths,&incoming=m_Incoming;
         for (size_t i = 0; i < count; ++i)
         {
             const auto &n = nodes[i];
             Validate(n.Layout);
-            if (n.Layout.LayoutVersion != 2 || (n.Parent != None && n.Parent >= i) ||
+            if ((n.Parent != None && n.Parent >= i) ||
                 !std::isfinite(n.Weight) || n.Weight <= 0)
                 Error(i, 0, "invalid measured tree/weight");
             depths[i] = n.Parent == None ? 1 : depths[n.Parent] + 1;
             if (depths[i] > 256)
                 Error(i, 0, "layout depth exceeds 256");
-            if (n.Stack)
+            if (n.Container)
             {
-                std::vector<Rect> discard;
-                ArrangeFlow({}, n.Flow, {}, discard);
+                Validate(n.Flow);
             }
             for (auto child : n.Children)
             {
@@ -301,10 +377,10 @@ void MeasuredLayout::Resolve(const std::vector<MeasureNode> &nodes, Rect externa
                 if (++incoming[child] != 1)
                     Error(child, 0, "duplicate layout child");
             }
-            if (n.Parent == None || !nodes[n.Parent].Stack)
+            if (n.Parent == None || !nodes[n.Parent].Container)
                 for (int axis = 0; axis < 2; ++axis)
                     if (Mode(n.Layout, axis) == SizeMode::Fill &&
-                        (n.Layout.AnchorMin[axis] != 0 || n.Layout.Offset[axis] != 0 ||
+                        (n.Layout.Anchor[axis] != 0 || n.Layout.Offset[axis] != 0 ||
                          n.Layout.Pivot[axis] != 0))
                         Error(i, axis,
                               "Fill owns free position; use margins, zero anchor/offset/pivot");
@@ -312,6 +388,7 @@ void MeasuredLayout::Resolve(const std::vector<MeasureNode> &nodes, Rect externa
         for (size_t i = 0; i < count; ++i)
             if (nodes[i].Parent != None && incoming[i] != 1)
                 Error(i, 0, "missing layout child");
+        for(size_t i=0;i<count;++i)if(nodes[i].Container && nodes[i].Flow.Kind==ContainerKind::Grid)PlaceGrid(i);
         for (size_t i = 0; i < count; ++i)
         {
             Size(i, 0);

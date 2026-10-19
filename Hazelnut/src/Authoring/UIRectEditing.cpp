@@ -7,12 +7,7 @@ namespace
 {
 bool Same(const UIRectComponent &a, const UIRectComponent &b)
 {
-    return a.LayoutVersion==b.LayoutVersion && a.WidthMode==b.WidthMode && a.HeightMode==b.HeightMode &&
-           a.FixedSize==b.FixedSize && a.MaximumSize==b.MaximumSize && a.HasMaximum==b.HasMaximum &&
-           a.AnchorMin == b.AnchorMin && a.AnchorMax == b.AnchorMax && a.Offset == b.Offset &&
-           a.SizeDelta == b.SizeDelta && a.Pivot == b.Pivot && a.MinimumSize == b.MinimumSize &&
-           a.Margin == b.Margin && a.Padding == b.Padding && a.Flex == b.Flex &&
-           a.Visible == b.Visible && a.Enabled == b.Enabled && a.ClipChildren == b.ClipChildren;
+    UIEditValues first,second;first.Set(a);second.Set(b);return first.Same(second);
 }
 } // namespace
 bool UIRectEditSession::Begin(const Ref<Scene> &scene, uint64_t entity, unsigned edges, DocumentHistory *history)
@@ -29,12 +24,12 @@ bool UIRectEditSession::Begin(const Ref<Scene> &scene, uint64_t entity, unsigned
         if (!scene->GetUISnapshot().Valid || !n || !n->LayoutResolved || n->IsCanvas || !e || !e.HasComponent<UIRectComponent>() ||
             n->Scale <= 0)
             throw std::invalid_argument("Selected rect has no resolved editable geometry");
-        if (n->FlowOwned && (n->LayoutVersion==1 || !edges || (edges&3)))
+        if (n->ContainerOwned && (!edges || (edges&3)))
             throw std::invalid_argument(
-                "Stack owns position: use Properties, or resize measured Fixed dimensions from right/bottom");
+                "Container owns position: use Properties, or resize measured Fixed dimensions from right/bottom");
         if (edges > 15 || ((edges & 1) && (edges & 4)) || ((edges & 2) && (edges & 8)))
             throw std::invalid_argument("Unsupported resize edges");
-        if(n->LayoutVersion==2){
+        {
             if(!edges && (n->WidthMode==GameUI::SizeMode::Fill || n->HeightMode==GameUI::SizeMode::Fill))
                 throw std::invalid_argument("Fill owns position; edit margins in Properties");
             if(((edges&5)&&n->WidthMode!=GameUI::SizeMode::Fixed)||((edges&10)&&n->HeightMode!=GameUI::SizeMode::Fixed))
@@ -47,7 +42,7 @@ bool UIRectEditSession::Begin(const Ref<Scene> &scene, uint64_t entity, unsigned
         m_Edges = edges;
         m_Scale = n->Scale;
         m_ParentContent = n->ParentContent;
-        m_ExpectedParentContent=n->ParentContent;m_FlowOwned=n->FlowOwned;
+        m_ExpectedParentContent=n->ParentContent;m_ContainerOwned=n->ContainerOwned;
         m_InitialBounds = n->Bounds;
         m_Initial = m_Last = e.GetComponent<UIRectComponent>();
         if(history && (!history->Begin(*scene,CreateScope<UIEditCommand>(*scene,entity,edges?"Resize UI rect":"Move UI rect",UIEditValues::Capture(e))))) {
@@ -94,7 +89,7 @@ bool UIRectEditSession::Update(glm::vec2 delta)
         }
         m_Scene->RefreshUI();
         auto n = m_Scene->GetUISnapshot().Find(m_Entity);
-        if (!m_Scene->GetUISnapshot().Valid || !n || !n->LayoutResolved || n->FlowOwned!=m_FlowOwned || n->Parent != m_Parent ||
+        if (!m_Scene->GetUISnapshot().Valid || !n || !n->LayoutResolved || n->ContainerOwned!=m_ContainerOwned || n->Parent != m_Parent ||
             n->Scale != m_Scale || n->ParentContent.Position != m_ExpectedParentContent.Position ||
             n->ParentContent.Size != m_ExpectedParentContent.Size)
         {
@@ -104,11 +99,9 @@ bool UIRectEditSession::Update(glm::vec2 delta)
         }
         auto next = m_Initial;
         static_cast<GameUI::RectLayout &>(next) =
-            m_Initial.LayoutVersion==2 ? GameUI::EditMeasuredRect(m_ParentContent,m_InitialBounds,m_Initial,delta,m_Edges) :
-            GameUI::EditRect(m_ParentContent, m_Initial, delta, m_Edges);
-        if(m_FlowOwned)next.Offset=m_Initial.Offset;
+            GameUI::EditMeasuredRect(m_ParentContent,m_InitialBounds,m_Initial,delta,m_Edges);
+        if(m_ContainerOwned)next.Offset=m_Initial.Offset;
         auto checkResolvedGesture=[&]{
-            if(m_Initial.LayoutVersion!=2)return;
             auto resolved=m_Scene->GetUISnapshot().Find(m_Entity);
             if(!resolved||!resolved->LayoutResolved)throw std::invalid_argument("Layout no longer resolves this gesture target");
             const auto &bounds=resolved->Bounds;
@@ -168,7 +161,7 @@ void UIRectEditSession::Finish(bool cancel)
         if(!m_Scene->IsEntityValid(m_Entity)||!e.HasComponent<UIRectComponent>()||!Same(e.GetComponent<UIRectComponent>(),m_Last))
             throw std::runtime_error("UI gesture target changed before release; cancelled");
         m_Scene->RefreshUI();auto n=m_Scene->GetUISnapshot().Find(m_Entity);
-        if(!n||!n->LayoutResolved||n->FlowOwned!=m_FlowOwned||n->Parent!=m_Parent||n->Scale!=m_Scale||n->ParentContent.Position!=m_ExpectedParentContent.Position||n->ParentContent.Size!=m_ExpectedParentContent.Size)
+        if(!n||!n->LayoutResolved||n->ContainerOwned!=m_ContainerOwned||n->Parent!=m_Parent||n->Scale!=m_Scale||n->ParentContent.Position!=m_ExpectedParentContent.Position||n->ParentContent.Size!=m_ExpectedParentContent.Size)
             throw std::runtime_error("UI parent/surface changed before release; cancelled");
     }catch(const std::exception &error){m_Error=error.what();cancel=true;}
     if(m_Scene && m_History) {
@@ -185,8 +178,6 @@ void UIRectEditSession::Finish(bool cancel)
             auto &r = e.GetComponent<UIRectComponent>();
             if (r.Offset == m_Last.Offset)
                 r.Offset = m_Initial.Offset;
-            if (r.SizeDelta == m_Last.SizeDelta)
-                r.SizeDelta = m_Initial.SizeDelta;
             if(r.FixedSize==m_Last.FixedSize)r.FixedSize=m_Initial.FixedSize;
         }
     }

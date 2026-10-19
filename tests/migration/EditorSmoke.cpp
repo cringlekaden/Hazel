@@ -874,15 +874,15 @@ private:
         // D6 uses the same reversible controller called by viewport handles.
         // Preserve the established v1 stretch/minimum regression independently
         // of the now-measured creation presets checked above.
-        Check(uiPanel.GetComponent<UIRectComponent>().LayoutVersion==2&&uiButton.GetComponent<UIRectComponent>().LayoutVersion==2,"New creation presets are not measured");
-        uiPanel.GetComponent<UIRectComponent>().LayoutVersion=1;uiText.GetComponent<UIRectComponent>().LayoutVersion=1;uiButton.GetComponent<UIRectComponent>().LayoutVersion=1;
-        auto& editRect=uiButton.GetComponent<UIRectComponent>();editRect.AnchorMin={0,0};editRect.AnchorMax={1,1};
-        editRect.SizeDelta={-100,-80};editRect.Pivot={.75f,.5f};editRect.MinimumSize={150,100};scene->RefreshUI();
+
+
+        auto& editRect=uiButton.GetComponent<UIRectComponent>();editRect.Anchor={.5f,.5f};editRect.HeightMode=GameUI::SizeMode::Fixed;
+        editRect.FixedSize={200,120};editRect.Pivot={.75f,.5f};editRect.MinimumSize={150,100};scene->RefreshUI();
         auto editBefore=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
         auto startBounds=scene->GetUISnapshot().Find(uiButton.GetUUID())->Bounds;
         UIRectEditSession gesture;Check(gesture.Begin(scene,uiButton.GetUUID(),4),"Viewport resize controller did not begin");
         Check(gesture.Update({20,0}),"Viewport right edge resize failed");auto endBounds=scene->GetUISnapshot().Find(uiButton.GetUUID())->Bounds;
-        Check(std::abs(endBounds.Position.x-startBounds.Position.x)<.001f&&std::abs(endBounds.Size.x-startBounds.Size.x-20)<.001f&&editRect.SizeDelta.x<0,"D6: stretched/pivot resize moved opposite edge or destroyed negative delta");
+        Check(std::abs(endBounds.Position.x-startBounds.Position.x)<.001f&&std::abs(endBounds.Size.x-startBounds.Size.x-20)<.001f&&editRect.FixedSize.x==220,"D6: Fixed/pivot resize moved opposite edge");
         auto lastValid=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
         Check(!gesture.Update({NAN,0})&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==lastValid,"Invalid viewport edit changed last valid authored state");
         gesture.Finish(true);Check(SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==editBefore,"Escape/cancel did not restore rect");
@@ -890,8 +890,8 @@ private:
         auto movedBounds=scene->GetUISnapshot().Find(uiButton.GetUUID())->Bounds;
         Check(glm::length(movedBounds.Position-startBounds.Position-glm::vec2(12,8))<.001f&&movedBounds.Size==startBounds.Size,"Viewport move changed resolved size");gesture.Finish(true);
         auto& parentRect=uiPanel.GetComponent<UIRectComponent>();auto parentBefore=parentRect;
-        Check(gesture.Begin(scene,uiButton.GetUUID(),4),"Second resize could not begin");parentRect.SizeDelta.x+=10;
-        Check(!gesture.Update({10,0})&&!gesture.Active()&&parentRect.SizeDelta.x==parentBefore.SizeDelta.x+10,"Parent change did not cancel transaction or was overwritten");parentRect=parentBefore;
+        Check(gesture.Begin(scene,uiButton.GetUUID(),4),"Second resize could not begin");parentRect.FixedSize.x+=10;
+        Check(!gesture.Update({10,0})&&!gesture.Active()&&parentRect.FixedSize.x==parentBefore.FixedSize.x+10,"Parent change did not cancel transaction or was overwritten");parentRect=parentBefore;
         const bool eventHovered=e.m_ViewportHovered;e.m_ViewportHovered=false;
         Check(e.m_UIEdit.Begin(scene,uiButton.GetUUID(),4)&&e.m_UIEdit.Update({20,0}),"Editor event gesture did not begin");
         WindowLostFocusEvent lostUIFocus;e.OnEvent(lostUIFocus);
@@ -900,14 +900,14 @@ private:
         WindowResizeEvent minimizedUI(0,0);e.OnEvent(minimizedUI);
         Check(!e.m_UIEdit.Active()&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==editBefore,"Minimization event did not cancel authored geometry");
         e.m_ViewportHovered=eventHovered;
-        editRect.SizeDelta={100,40};uiPanel.AddComponent<UILayoutComponent>();scene->RefreshUI();
-        Check(scene->GetUISnapshot().Find(uiButton.GetUUID())->FlowOwned&&!gesture.Begin(scene,uiButton.GetUUID(),0)&&!gesture.Begin(scene,uiButton.GetUUID(),4),"Flow-owned viewport edits wrote ignored geometry");uiPanel.RemoveComponent<UILayoutComponent>();
+        editRect.FixedSize={100,40};uiPanel.AddComponent<UILayoutComponent>();scene->RefreshUI();
+        Check(scene->GetUISnapshot().Find(uiButton.GetUUID())->ContainerOwned&&!gesture.Begin(scene,uiButton.GetUUID(),0),"Container-owned viewport move wrote ignored geometry");uiPanel.RemoveComponent<UILayoutComponent>();
         // Reject failures after the edited rect itself validates, including descendant overflow.
         auto ordinaryButton=uiButton.GetComponent<UIRectComponent>();auto ordinaryText=uiText.GetComponent<UIRectComponent>();
         uiButton.GetComponent<UIRectComponent>()=UIRectComponent{};
         scene->Reparent(uiText,uiButton,TransformPolicy::KeepLocal);
-        auto& overflowRect=uiText.GetComponent<UIRectComponent>();overflowRect.AnchorMin=overflowRect.AnchorMax={1,0};
-        overflowRect.Offset={(std::numeric_limits<float>::max)()*.75f,0};overflowRect.SizeDelta={1,1};scene->RefreshUI();
+        auto& overflowRect=uiText.GetComponent<UIRectComponent>();overflowRect.Anchor=overflowRect.Anchor={1,0};
+        overflowRect.Offset={(std::numeric_limits<float>::max)()*.75f,0};overflowRect.FixedSize={1,1};scene->RefreshUI();
         auto beforeOverflow=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
         Check(gesture.Begin(scene,uiButton.GetUUID(),4)&&!gesture.Update({(std::numeric_limits<float>::max)()*.5f,0}),"Descendant overflow did not reject viewport edit");
         Check(scene->GetUISnapshot().Valid&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==beforeOverflow,"Post-write resolution failure did not restore last valid authored state");gesture.Finish(true);

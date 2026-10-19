@@ -28,6 +28,7 @@ template <class F> void Reject(F f)
     Check(bad, "Malformed UI configuration was accepted");
 }
 #include "MeasuredLayoutChecks.h"
+#include "GridLayoutChecks.h"
 static void HardeningChecks()
 {
     // Audit D2: nonempty bounds/clip separately, but no effective intersection.
@@ -82,29 +83,7 @@ static void HardeningChecks()
     Hazel::UTF8::Decode("\xf4\x8f\xbf\xbf",chars);Check(chars[0]==0x10ffff,"Last Unicode scalar rejected");
     for(auto invalid:std::vector<std::string>{std::string("A\0B",3),"\xc0\xaf","\xe0\x80\xaf","\xed\xa0\x80","\xf4\x90\x80\x80","\xf5\x80\x80\x80","\x80","\xc2","\xe2\x28\xa1","\xff"})
         Reject([&]{Hazel::UTF8::Decode(invalid,chars);});
-    // D6: invert resolved edges; negative deltas and minimum-clamped authored sizes remain valid.
-    Rect parent{{20,30},{800,600}};
-    for(auto stretch:{false,true})for(auto pivot:std::vector<glm::vec2>{{0,0},{.5f,.5f},{1,1}})
-    {
-        RectLayout r;r.AnchorMin={.1f,.1f};r.AnchorMax=stretch?glm::vec2(.9f):r.AnchorMin;
-        r.SizeDelta=stretch?glm::vec2(-100,-80):glm::vec2(140,80);r.Pivot=pivot;
-        r.Margin={3,4,5,6};r.MinimumSize={20,20};auto start=ResolveRect(parent,r);
-        for(unsigned edges:{0u,1u,2u,4u,8u,3u,12u})
-        {
-            auto edited=EditRect(parent,r,{15,12},edges);auto actual=ResolveRect(parent,edited);
-            if(!edges){Check(glm::length(actual.Position-start.Position-glm::vec2(15,12))<.001f&&actual.Size==start.Size,"Move changed resolved size");Check(edited.SizeDelta==r.SizeDelta,"Move rewrote size delta");}
-            if(edges&1)Check(Same(actual.Position.x+actual.Size.x,start.Position.x+start.Size.x),"Left resize moved opposite edge");
-            if(edges&2)Check(Same(actual.Position.y+actual.Size.y,start.Position.y+start.Size.y),"Top resize moved opposite edge");
-            if(edges&4)Check(Same(actual.Position.x,start.Position.x),"Right resize moved opposite edge");
-            if(edges&8)Check(Same(actual.Position.y,start.Position.y),"Bottom resize moved opposite edge");
-            if(stretch)Check(edited.SizeDelta.x<0&&edited.SizeDelta.y<0,"Resize destroyed valid negative stretch delta");
-        }
-    }
-    RectLayout minimum;minimum.SizeDelta={-50,-50};minimum.MinimumSize={40,30};minimum.Pivot={1,1};
-    auto moved=EditRect(parent,minimum,{10,10},0);Check(moved.SizeDelta==minimum.SizeDelta,"Minimum-constrained move changed authored size");
-    auto clamped=EditRect(parent,minimum,{100,100},3);Check(ResolveRect(parent,clamped).Size==minimum.MinimumSize,"Resize escaped minimum");
-    Reject([&]{EditRect(parent,minimum,{NAN,0},4);});
-    std::cout<<"PASS: D2/D5, clipped/fractional hits, disabled blockers, queue limits, strict scalars and legacy resolved-edge edits\n";
+    std::cout<<"PASS: D2/D5 clipped/fractional hits, queue limits and strict Unicode scalars\n";
 }
 int main()
 {
@@ -112,83 +91,10 @@ int main()
     {
         HardeningChecks();
         MeasuredLayoutChecks();
-        for (auto viewport : std::vector<glm::vec2>{{1024, 600}, {1280, 720}, {960, 720}})
-        {
-            auto fit = FitCanvas(viewport, {});
-            Check(Same(fit.Bounds.Size.x, 1280), "Canvas reference width changed");
-            RectLayout anchored;
-            anchored.AnchorMin = anchored.AnchorMax = {1, 1};
-            anchored.Pivot = {1, 1};
-            anchored.Offset = {-24, -24};
-            anchored.SizeDelta = {240, 48};
-            auto button = ResolveRect(fit.Content, anchored);
-            Check(Same(button.Position.x + button.Size.x,
-                       fit.Content.Position.x + fit.Content.Size.x - 24),
-                  "Right margin changed after resize");
-            Check(Same(button.Position.y + button.Size.y,
-                       fit.Content.Position.y + fit.Content.Size.y - 24),
-                  "Bottom margin changed after resize");
-            Check(glm::length(fit.ToLogical((button.Position + button.Size * .5f) * fit.Scale) -
-                              (button.Position + button.Size * .5f)) < .001f,
-                  "Pointer mapping differs from drawn rectangle");
-            RectLayout stretch;
-            stretch.AnchorMax = {1, 1};
-            stretch.SizeDelta = {-40, -60};
-            stretch.Offset = {20, 30};
-            auto panel = ResolveRect(fit.Content, stretch);
-            Check(Same(panel.Size.x, fit.Content.Size.x - 40) &&
-                      Same(panel.Position.y, fit.Content.Position.y + 30),
-                  "Stretched anchors lost offsets");
-        }
-        Check(FitCanvas({0, 600}, {}).Scale == 0, "Minimized canvas did not suspend dimensions");
-        Reject(
-            []
-            {
-                CanvasLayout c;
-                c.ReferenceSize.x = 0;
-                FitCanvas({100, 100}, c);
-            });
-        Reject(
-            []
-            {
-                RectLayout c;
-                c.AnchorMin = {1, 0};
-                ResolveRect({{0, 0}, {100, 100}}, c);
-            });
-        Reject(
-            []
-            {
-                RectLayout c;
-                c.Margin.x = -1;
-                Validate(c);
-            });
-        Reject(
-            []
-            {
-                RectLayout c;
-                c.Offset.y = std::numeric_limits<float>::quiet_NaN();
-                Validate(c);
-            });
-        std::vector<FlowItem> items(3);
-        items[0].PreferredSize = {20, 40};
-        items[1].Visible = false;
-        items[2].PreferredSize = {30, 50};
-        items[2].Flex = 1;
-        FlowLayout flow;
-        flow.Gap = 10;
-        std::vector<Rect> layout;
-        ArrangeFlow({{10, 20}, {200, 200}}, flow, items, layout);
-        Check(layout[1].Size == glm::vec2(0) && Same(layout[0].Position.y, 20) &&
-                  Same(layout[2].Position.y, 70) && Same(layout[2].Size.y, 150),
-              "Hidden row consumed a gap or flex space lost");
-        flow.Direction = Axis::Horizontal;
-        flow.Main = Align::End;
-        flow.Cross = Align::Center;
-        items[2].Flex = 0;
-        ArrangeFlow({{0, 0}, {200, 100}}, flow, items, layout);
-        Check(Same(layout[0].Position.x, 140) && Same(layout[2].Position.x, 170) &&
-                  Same(layout[0].Position.y, 30),
-              "Horizontal alignment differs from declared padding/gaps");
+        GridLayoutChecks();
+        Check(FitCanvas({0,600},{}).Scale==0,"Minimized canvas did not suspend layout");
+        Reject([]{RectLayout r;r.Margin.x=-1;Validate(r);});
+        Reject([]{RectLayout r;r.Offset.y=NAN;Validate(r);});
         Check(!Rect{{0, 0}, {10, 10}}.Contains({10, 5}) && Rect{{0, 0}, {10, 10}}.Contains({0, 0}),
               "Adjacent button edges overlap");
         Check(Rect{{0, 0}, {10, 10}}.Intersect({{20, 20}, {10, 10}}).Size == glm::vec2(0),

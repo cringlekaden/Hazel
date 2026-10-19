@@ -6,7 +6,6 @@
 #include "Hazel/Scene/Scene.h"
 #include "SpriteWidgets.h"
 #include "Authoring/UIInspectorEditing.h"
-#include "Authoring/UILayoutConversion.h"
 #include <functional>
 #include <unordered_map>
 #include <map>
@@ -76,7 +75,6 @@ class SceneHierarchyPanel
     void ParentMenu(Entity entity);
     std::string ReparentPreview(uint64_t scene,uint64_t child,uint64_t parent,TransformPolicy mode) const;
     void DrawDeleteDialog();
-    void DrawConversionDialog(Entity entity);
     bool HierarchyFailed(const std::string& reason);
     std::set<uint64_t> m_Matches, m_Reveal;
     std::string m_HierarchyError;
@@ -104,9 +102,6 @@ class SceneHierarchyPanel
     std::string m_UIFontDraft;
     std::filesystem::path m_UIFontBound;
     bool m_UIFontInitialized=false;
-    UILayoutConversion m_Conversion;
-    uint64_t m_ConversionDocument=0,m_ConversionRoot=0;
-    bool m_ConversionWanted=false,m_FreezeConversion=false;
 };
 
 } // namespace Hazel

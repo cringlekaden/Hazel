@@ -12,7 +12,7 @@ struct HistoryFixture
         World->SetAssets(Project::GetActive()->GetAssets());World->OnViewportResize(640,480);
         Canvas=World->CreateEntity("History canvas");Canvas.AddComponent<UICanvasComponent>().SafeInsets={};
         Control=World->CreateEntity("History control");World->Reparent(Control,Canvas,TransformPolicy::KeepLocal);
-        Control.AddComponent<UIRectComponent>().SizeDelta={160,80};Control.AddComponent<TextComponent>().TextString="Original";
+        Control.AddComponent<UIRectComponent>().FixedSize={160,80};Control.AddComponent<TextComponent>().TextString="Original";
         Control.AddComponent<SpriteRendererComponent>();Control.AddComponent<UIButtonComponent>();
         World->RefreshUI();
     }
@@ -86,12 +86,12 @@ static void EditorHistoryChecks()
     }
     {
         HistoryFixture f;DocumentHistory h;h.Bind(f.World->GetIdentity());h.MarkSaved(f.State());
-        auto &r=f.Control.GetComponent<UIRectComponent>();r.AnchorMax={1,1};r.SizeDelta={-100,-80};r.Pivot={.75f,.5f};r.MinimumSize={160,80};
+        auto &r=f.Control.GetComponent<UIRectComponent>();r.Anchor={1,1};r.FixedSize={200,120};r.Pivot={.75f,.5f};r.MinimumSize={160,80};
         const auto start=f.State();f.World->RefreshUI();const auto bounds=f.World->GetUISnapshot().Find(f.Control.GetUUID())->Bounds;
         UIRectEditSession gesture;Check(gesture.Begin(f.World,f.Control.GetUUID(),4,&h),"History resize begin failed");
         for(int i=1;i<=20;++i)Check(gesture.Update({float(i),0}),"History resize sample failed");
         const auto end=f.World->GetUISnapshot().Find(f.Control.GetUUID())->Bounds;
-        Check(end.Position.x==bounds.Position.x&&std::abs(end.Size.x-bounds.Size.x-20)<.001f&&r.SizeDelta.x<0&&!h.Operations(),"D6 math/history changed opposite edge or stretch delta");
+        Check(end.Position.x==bounds.Position.x&&std::abs(end.Size.x-bounds.Size.x-20)<.001f&&r.FixedSize.x==220&&!h.Operations(),"D6 math/history changed opposite edge or Fixed size");
         const auto valid=f.State();Check(!gesture.Update({NAN,0})&&f.State()==valid,"Invalid history resize changed last valid state");gesture.Finish(false);
         Check(h.Operations()==1&&h.Undo(*f.World)&&f.State()==start,"Complete resize did not create exactly one reversible entry");
         Check(h.Redo(*f.World),"Resize redo failed");const auto movedStart=f.State();
@@ -101,7 +101,7 @@ static void EditorHistoryChecks()
         const auto nativeOffset=r.Offset;Check(gesture.Begin(f.World,f.Control.GetUUID(),0,&h)&&gesture.Update({12,8}),"Native interruption setup failed");
         r.Visible=false;Check(!gesture.Update({13,9})&&!gesture.Active()&&r.Offset==nativeOffset&&!r.Visible,"Native gesture interruption overwrote native flag or retained move");
         r.Visible=true;auto group=f.World->CreateEntity("Flow");group.AddComponent<UIRectComponent>();group.AddComponent<UILayoutComponent>();f.World->Reparent(group,f.Canvas,TransformPolicy::KeepLocal);
-        f.World->Reparent(f.Control,group,TransformPolicy::KeepLocal);f.Control.GetComponent<UIRectComponent>().AnchorMax={0,0};f.Control.GetComponent<UIRectComponent>().SizeDelta={160,80};
+        f.World->Reparent(f.Control,group,TransformPolicy::KeepLocal);f.Control.GetComponent<UIRectComponent>().Anchor={0,0};f.Control.GetComponent<UIRectComponent>().FixedSize={160,80};
         Check(!gesture.Begin(f.World,f.Control.GetUUID(),0,&h)&&!h.Active(),"Flow position accepted an ineffective history gesture");
         f.World->Reparent(f.Control,f.Canvas,TransformPolicy::KeepLocal);
         const auto originalOffset=f.Control.GetComponent<UIRectComponent>().Offset;
@@ -145,7 +145,7 @@ static void EditorHistoryChecks()
         std::filesystem::copy_file("assets/textures/Checkerboard.png",root/"Textures/history-image.png",std::filesystem::copy_options::overwrite_existing);
         const auto start=f.State();std::string error;
         auto initial=UIEditValues::Capture(f.Control),proposed=initial;
-        proposed.Rect->AnchorMin={.5f,0};proposed.Rect->AnchorMax={.5f,0};proposed.Rect->Pivot={.5f,0};proposed.Rect->MinimumSize={100,60};
+        proposed.Rect->Anchor={.5f,0};proposed.Rect->Pivot={.5f,0};proposed.Rect->MinimumSize={100,60};
         proposed.Flow->Gap=12;proposed.Flow->Cross=GameUI::Align::Center;
         proposed.Style->FontPath="Fonts/history.ttf";proposed.Style->Size=32;proposed.Style->Wrap=false;
         proposed.Slice->Borders={2,2,2,2};proposed.Slice->BorderScale=2;
@@ -180,12 +180,12 @@ static void EditorHistoryChecks()
     {
         HistoryFixture f;DocumentHistory h;h.Bind(f.World->GetIdentity());UIRectEditSession gesture;
         for(auto pivot:std::vector<glm::vec2>{{0,0},{.25f,.75f}})for(unsigned edge:{1u,2u,4u,8u}){
-            auto &r=f.Control.GetComponent<UIRectComponent>();r.AnchorMin=r.AnchorMax={0,0};r.SizeDelta={80,40};r.MinimumSize={160,80};r.Pivot=pivot;r.Offset={};
+            auto &r=f.Control.GetComponent<UIRectComponent>();r.Anchor={0,0};r.FixedSize={80,40};r.MinimumSize={160,80};r.Pivot=pivot;r.Offset={};
             f.World->RefreshUI();const auto start=f.State();const auto bounds=f.World->GetUISnapshot().Find(f.Control.GetUUID())->Bounds;
             Check(gesture.Begin(f.World,f.Control.GetUUID(),edge,&h)&&gesture.Update(edge==1?glm::vec2(-20,0):edge==2?glm::vec2(0,-20):edge==4?glm::vec2(20,0):glm::vec2(0,20)),"Constrained edge edit failed");gesture.Finish(false);
             auto b=f.World->GetUISnapshot().Find(f.Control.GetUUID())->Bounds;
             Check(std::abs((edge==1?b.Position.x+b.Size.x:edge==2?b.Position.y+b.Size.y:edge==4?b.Position.x:b.Position.y)-(edge==1?bounds.Position.x+bounds.Size.x:edge==2?bounds.Position.y+bounds.Size.y:edge==4?bounds.Position.x:bounds.Position.y))<.001f,"Constrained pivoted edit moved opposite edge");
-            Check(h.Undo(*f.World)&&f.State()==start,"Constrained edge history did not restore legacy authored values");
+            Check(h.Undo(*f.World)&&f.State()==start,"Constrained edge history did not restore authored constraints");
         }
     }
     std::cout<<"PASS: document history transactions/branches/save-point eviction/native changes/lifetime guards; one-entry Inspector and D6 viewport edits\n";

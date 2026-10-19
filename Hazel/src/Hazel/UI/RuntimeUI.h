@@ -49,8 +49,6 @@ class RuntimeUI
   private:
     struct Cache
     {
-        std::vector<GameUI::FlowItem> Items;
-        std::vector<GameUI::Rect> Arranged;
         std::vector<Renderer2D::TextLine> Lines;
         std::string Text;
         std::filesystem::path FontPath;
@@ -77,7 +75,7 @@ class RuntimeUI
     std::vector<GameUI::MeasureNode> m_MeasureNodes;
     std::vector<uint64_t> m_MeasureIDs;
     void Visit(Entity entity, GameUI::Rect parent, GameUI::Rect clip, float scale, bool enabled,
-               uint64_t canvas, size_t depth, const GameUI::Rect *arranged = nullptr);
+               uint64_t canvas, size_t depth);
     bool Live(uint64_t id) const;
     void PruneActions();
     void WarnOverflow();

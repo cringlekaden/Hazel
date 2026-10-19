@@ -5,6 +5,12 @@ namespace Hazel
 {
 	public static class InternalCalls
 	{
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_GetLayout(ulong id,out UILayoutSettings settings);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static int UI_TrackCount(ulong id,bool rows);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_GetTrack(ulong id,bool rows,int index,out UITrack track);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_SetLayout(ulong id,ref UILayoutSettings settings,UITrack[] columns,UITrack[] rows);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_GetCell(ulong id,out int row,out int column,out int rowSpan,out int columnSpan);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_SetCell(ulong id,int row,int column,int rowSpan,int columnSpan);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_IsPointerCaptured();
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_IsKeyDown(KeyCode key);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_Consume(ulong scene,ulong id,out ulong entity,out string action);

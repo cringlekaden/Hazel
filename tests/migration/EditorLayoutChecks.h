@@ -1,5 +1,4 @@
 #pragma once
-#include "Authoring/UILayoutConversion.h"
 namespace Hazel
 {
 static bool SameBounds(GameUI::Rect a, GameUI::Rect b)
@@ -9,123 +8,10 @@ static bool SameBounds(GameUI::Rect a, GameUI::Rect b)
 static void EditorLayoutChecks()
 {
     using namespace GameUI;
-    for (int recipe = 0; recipe < 3; ++recipe)
-    {
-        std::cout << "Layout conversion recipe " << recipe << "\n";
-        HistoryFixture f;
-        auto &r = f.Control.GetComponent<UIRectComponent>();
-        if (recipe == 0)
-        {
-            r.Pivot = {.3f, .6f};
-            r.Offset = {40, 50};
-            r.SizeDelta = {-20, 30};
-            r.MinimumSize = {80, 60};
-        }
-        if (recipe == 1)
-        {
-            r.AnchorMax = {1, 1};
-            r.Pivot = {.2f, .4f};
-            r.Offset = {12, 8};
-            r.SizeDelta = {-80, -50};
-            r.Margin = {3, 4, 5, 6};
-            r.MinimumSize = {1400, 1000};
-        }
-        if (recipe == 2)
-        {
-            r.SizeDelta = {300, 200};
-            r.Padding = glm::vec4(4);
-            f.Control.AddComponent<UILayoutComponent>().Gap = 10;
-            for (int i = 0; i < 2; ++i)
-            {
-                auto child = f.World->CreateEntity("Conversion flow child");
-                f.World->Reparent(child, f.Control, TransformPolicy::KeepLocal);
-                auto &c = child.AddComponent<UIRectComponent>();
-                c.SizeDelta = {100, float(35 + 10 * i)};
-                c.Flex = float(i + 1);
-            }
-        }
-        f.World->RefreshUI();
-        const auto before = f.State();
-        std::vector<std::pair<uint64_t, Rect>> old;
-        for (auto id : f.World->GetSubtree(f.Control))
-            old.emplace_back(id, f.World->GetUISnapshot().Find(id)->Bounds);
-        DocumentHistory h;
-        h.Bind(f.World->GetIdentity());
-        h.MarkSaved(before);
-        {
-            UILayoutConversion cancelled;
-            cancelled.Preview(f.World, f.Control.GetUUID(), false);
-            Check(cancelled.Valid() && f.State() == before && !h.CanUndo(),
-                  "Conversion preview mutated source or rejected supported legacy layout");
-        }
-        UILayoutConversion conversion;
-        conversion.Preview(f.World, f.Control.GetUUID(), false);
-        Check(conversion.Valid(), conversion.Error());
-        Check(conversion.Commit(*f.World, h) && h.Operations() == 1,
-              "Subtree conversion did not commit as one shared edit");
-        for (auto [id, bounds] : old)
-            Check(SameBounds(bounds, f.World->GetUISnapshot().Find(id)->Bounds),
-                  "Conversion changed current resolved appearance");
-        const auto after = f.State();
-        Check(after != before && h.Dirty(after), "Conversion missing authored/dirty fields");
-        Check(h.Undo(*f.World) && f.State() == before && !h.Dirty(f.State()),
-              "Conversion Undo did not restore exact legacy fields/save point");
-        Check(h.Redo(*f.World) && f.State() == after,
-              "Conversion Redo did not restore measured authored fields");
-        f.World->OnViewportResize(960, 480);
-        f.World->RefreshUI();
-        auto responsive = f.World->GetUISnapshot().Find(f.Control.GetUUID())->Bounds;
-        Check(h.Undo(*f.World), "Conversion Undo failed after viewport resize");
-        Check(SameBounds(responsive, f.World->GetUISnapshot().Find(f.Control.GetUUID())->Bounds),
-              "Conversion lost representable responsive intent");
-        Check(h.Redo(*f.World), "Conversion Redo failed after viewport resize");
-        auto serialized = SceneSerializer(f.World).SerializeText();
-        auto loaded = CreateRef<Scene>();
-        Check(SceneSerializer(loaded).DeserializeText(serialized) &&
-                  SceneSerializer(loaded).CaptureAuthoredState() == after,
-              "Converted save/reopen roundtrip lost sizing state");
-        auto id = f.Control.GetUUID();
-        auto kept = f.Control.GetComponent<UIRectComponent>();
-        f.Control.RemoveComponent<UIRectComponent>();
-        f.Control.AddComponent<UIRectComponent>(kept);
-        auto changed = f.State();
-        Check(!h.Undo(*f.World) && f.State() == changed,
-              "Conversion Undo partially applied after component retirement");
-        (void)id;
-    }
     {
         HistoryFixture f;
         auto &r = f.Control.GetComponent<UIRectComponent>();
-        r.AnchorMin.x = .25f;
-        r.AnchorMax.x = .75f;
-        f.World->RefreshUI();
-        const auto before = f.State();
-        DocumentHistory h;
-        h.Bind(f.World->GetIdentity());
-        UILayoutConversion preview;
-        preview.Preview(f.World, f.Control.GetUUID(), false);
-        Check(!preview.Valid() && !preview.Notes().empty() && f.State() == before,
-              "Ambiguous stretch was silently converted");
-        preview.Preview(f.World, f.Control.GetUUID(), true);
-        Check(preview.Valid() && preview.Commit(*f.World, h) && h.Undo(*f.World) &&
-                  f.State() == before,
-              "Explicit freeze choice/cancel/Undo lost authored state");
-        preview.Preview(f.World, f.Control.GetUUID(), true);
-        r.Offset.y += 5;
-        f.World->RefreshUI();
-        Check(!preview.Commit(*f.World, h), "Stale conversion preview accepted changed layout");
-        preview.Preview(f.World, f.Control.GetUUID(), true);
-        HistoryFixture other;
-        DocumentHistory ph;
-        ph.Bind(other.World->GetIdentity());
-        auto unchanged = other.State();
-        Check(!preview.Commit(*other.World, ph) && other.State() == unchanged && !ph.CanUndo(),
-              "Conversion applied to another document");
-    }
-    {
-        HistoryFixture f;
-        auto &r = f.Control.GetComponent<UIRectComponent>();
-        r.LayoutVersion = 2;
+
         r.FixedSize = {160, 80};
         r.HeightMode = SizeMode::Content;
         auto &style = f.Control.AddComponent<UITextStyleComponent>();
@@ -187,7 +73,7 @@ static void EditorLayoutChecks()
         auto child = f.World->CreateEntity("Fixed stack child");
         f.World->Reparent(child, f.Control, TransformPolicy::KeepLocal);
         auto &cr = child.AddComponent<UIRectComponent>();
-        cr.LayoutVersion = 2;
+
         cr.FixedSize = {80, 30};
         cr.Offset = {9, 7};
         h.Clear();
@@ -220,15 +106,15 @@ static void EditorLayoutChecks()
     {
         HistoryFixture f;
         auto &parent = f.Control.GetComponent<UIRectComponent>();
-        parent.LayoutVersion = 2;
+
         parent.WidthMode = SizeMode::Content;
         parent.FixedSize.y = 80;
-        parent.AnchorMin.x = parent.AnchorMax.x = parent.Pivot.x = .5f;
+        parent.Anchor.x = parent.Pivot.x = .5f;
         f.Control.GetComponent<TextComponent>().TextString = "";
         auto child = f.World->CreateEntity("Reflow edge child");
         f.World->Reparent(child, f.Control, TransformPolicy::KeepLocal);
         auto &r = child.AddComponent<UIRectComponent>();
-        r.LayoutVersion = 2;
+
         r.FixedSize = {80, 30};
         f.World->RefreshUI();
         DocumentHistory h;
@@ -250,7 +136,20 @@ static void EditorLayoutChecks()
                   r.FixedSize.x == 80,
               "Content-parent gesture did not remain one reversible operation");
     }
-    std::cout << "PASS: native conversion preview/choice/atomic history/responsive "
-                 "roundtrip/isolation; measured Inspector and complete Fixed/owned-axis gestures\n";
+    {
+        HistoryFixture f;f.Control.AddComponent<UILayoutComponent>();f.World->RefreshUI();
+        DocumentHistory h;h.Bind(f.World->GetIdentity());auto saved=f.State();h.MarkSaved(saved);
+        UIInspectorEditing edit;PropertyUI::EditActivity activity;activity.Changed=activity.Committed=true;
+        auto before=UIEditValues::Capture(f.Control),next=before;
+        next.Flow->Kind=ContainerKind::Grid;next.Flow->Columns={{TrackMode::Fill,1,0,100,true},{TrackMode::Fixed,40}};next.Flow->Rows={{TrackMode::Fixed,80}};next.Flow->GridGap={4,6};
+        Check(edit.Edit(*f.World,&h,f.Control.GetUUID(),"Grid tracks",before,next,activity,0),edit.Error());
+        auto changed=f.State();Check(h.Operations()==1&&changed!=saved&&h.Undo(*f.World)&&f.State()==saved&&h.Redo(*f.World)&&f.State()==changed,"Grid track list/mode edit failed coherent history");
+        before=UIEditValues::Capture(f.Control);next=before;next.Flow->Columns[0].Maximum=-1;
+        Check(!edit.Edit(*f.World,&h,f.Control.GetUUID(),"Invalid track",before,next,activity,0)&&f.State()==changed,"Invalid track edit lost last valid state");edit.Finish(*f.World,&h,true);
+        auto other=CreateRef<Scene>();auto otherState=SceneSerializer(other).CaptureAuthoredState();Check(!h.Undo(*other)&&SceneSerializer(other).CaptureAuthoredState()==otherState,"Grid edit applied to another document");
+        auto serialized=SceneSerializer(f.World).SerializeText();auto loaded=CreateRef<Scene>();Check(SceneSerializer(loaded).DeserializeText(serialized)&&SceneSerializer(loaded).CaptureAuthoredState()==changed,"Grid Inspector save/reopen lost values");
+    }
+    std::cout << "PASS: canonical grid tracks/atomic history/save-reopen/isolation; "
+                 "measured Inspector and complete Fixed/owned-axis gestures\n";
 }
 } // namespace Hazel

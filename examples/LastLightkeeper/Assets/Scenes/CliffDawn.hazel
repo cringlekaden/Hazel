@@ -35126,38 +35126,20 @@ Entities:
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 32
-    - 24
-    SizeDelta:
-    - 700
-    - 32
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [32, 24]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [700, 32]
+    Anchor: [0, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 22
@@ -35191,38 +35173,20 @@ Entities:
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 32
-    - 82
-    SizeDelta:
-    - 670
-    - 180
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [32, 82]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [670, 180]
+    Anchor: [0, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 76
@@ -35260,38 +35224,20 @@ Entities:
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 32
-    - 276
-    SizeDelta:
-    - 650
-    - 80
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [32, 276]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [650, 80]
+    Anchor: [0, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 26
@@ -35327,38 +35273,20 @@ Entities:
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 32
-    - 369
-    SizeDelta:
-    - 660
-    - 80
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [32, 369]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [660, 80]
+    Anchor: [0, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 24
@@ -35385,38 +35313,20 @@ Entities:
     - 1
     - 1
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 0
-    - 0
-    SizeDelta:
-    - 420
-    - 54
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [420, 54]
+    Anchor: [0, 0]
   SpriteRendererComponent:
     Color: &id004
     - 0.53
@@ -35495,38 +35405,20 @@ Entities:
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - 18
-    - 0
-    SizeDelta:
-    - -36
-    - 54
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [18, 0, 18, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 54]
+    Anchor: [0, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 27
@@ -35553,38 +35445,20 @@ Entities:
     - 1
     - 1
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 0
-    - 0
-    SizeDelta:
-    - 420
-    - 54
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [420, 54]
+    Anchor: [0, 0]
   SpriteRendererComponent:
     Color: *id004
     Source: *id005
@@ -35656,38 +35530,20 @@ Entities:
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - 18
-    - 0
-    SizeDelta:
-    - -36
-    - 54
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [18, 0, 18, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 54]
+    Anchor: [0, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 27
@@ -35714,38 +35570,20 @@ Entities:
     - 1
     - 1
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 0
-    - 0
-    SizeDelta:
-    - 420
-    - 54
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [420, 54]
+    Anchor: [0, 0]
   SpriteRendererComponent:
     Color: *id004
     Source: *id005
@@ -35817,38 +35655,20 @@ Entities:
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - 18
-    - 0
-    SizeDelta:
-    - -36
-    - 54
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [18, 0, 18, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 54]
+    Anchor: [0, 0]
   UITextStyleComponent:
     FontPath: ''
     Size: 27
@@ -35884,38 +35704,20 @@ Entities:
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 1
-    AnchorMax:
-    - 1
-    - 1
-    Offset:
-    - 32
-    - -10
-    SizeDelta:
-    - -64
-    - 28
-    Pivot:
-    - 0
-    - 1
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, -10]
+    Pivot: [0, 1]
+    MinimumSize: [0, 0]
+    Margin: [32, 0, 32, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 28]
+    Anchor: [0, 1]
   UITextStyleComponent:
     FontPath: ''
     Size: 22
@@ -36045,40 +35847,23 @@ Entities:
     - 1
     - 1
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 32
-    - 464
-    SizeDelta:
-    - 420
-    - 186
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [32, 464]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [420, 186]
+    Anchor: [0, 0]
   UILayoutComponent:
     Direction: 1
     Main: 0
-    Cross: 3
+    Cross: 2
     Gap: 12
+    Kind: 0

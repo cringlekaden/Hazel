@@ -76,45 +76,38 @@ CanvasFit FitCanvas(glm::vec2 pixels, const CanvasLayout &config)
 }
 void Validate(const RectLayout &c)
 {
-    if (c.LayoutVersion != 1 && c.LayoutVersion != 2)
-        throw std::invalid_argument("Unsupported UI layout version");
-    if (c.LayoutVersion == 2)
-    {
-        if (!Nonnegative(c.FixedSize) || !Nonnegative(c.MaximumSize) ||
-            c.WidthMode < SizeMode::Fixed || c.WidthMode > SizeMode::Content ||
-            c.HeightMode < SizeMode::Fixed || c.HeightMode > SizeMode::Content)
-            throw std::invalid_argument("Invalid measured UI sizing rule");
-        for (int axis = 0; axis < 2; ++axis)
-        {
-            if (c.AnchorMin[axis] != c.AnchorMax[axis])
-                throw std::invalid_argument("Measured UI uses point anchors; sizing owns dimensions");
-            if (c.HasMaximum[axis] && c.MaximumSize[axis] < c.MinimumSize[axis])
-                throw std::invalid_argument("UI maximum must not be smaller than minimum");
-        }
-    }
-    if (!Finite(c.AnchorMin) || !Finite(c.AnchorMax) || !Finite(c.Offset) || !Finite(c.SizeDelta) ||
-        !Finite(c.Pivot) || !Nonnegative(c.MinimumSize) || !Nonnegative(c.Margin) ||
-        !Nonnegative(c.Padding))
-        throw std::invalid_argument("Invalid UI layout number");
-    for (int i = 0; i < 2; i++)
-        if (c.AnchorMin[i] < 0 || c.AnchorMax[i] > 1 || c.AnchorMin[i] > c.AnchorMax[i] ||
-            c.Pivot[i] < 0 || c.Pivot[i] > 1)
-            throw std::invalid_argument(
-                "UI anchors and pivot require ordered normalized coordinates");
+    if (!Nonnegative(c.FixedSize) || !Nonnegative(c.MaximumSize) ||
+        c.WidthMode<SizeMode::Fixed || c.WidthMode>SizeMode::Content ||
+        c.HeightMode<SizeMode::Fixed || c.HeightMode>SizeMode::Content ||
+        !Finite(c.Anchor) || !Finite(c.Offset) || !Finite(c.Pivot) ||
+        !Nonnegative(c.MinimumSize) || !Nonnegative(c.Margin) || !Nonnegative(c.Padding))
+        throw std::invalid_argument("Invalid UI layout value");
+    for(int a=0;a<2;++a)
+        if(c.Anchor[a]<0 || c.Anchor[a]>1 || c.Pivot[a]<0 || c.Pivot[a]>1 ||
+           (c.HasMaximum[a] && c.MaximumSize[a]<c.MinimumSize[a]))
+            throw std::invalid_argument("UI anchors/pivots must be normalized; maximum must be at least minimum");
+    if(c.GridRow < -1 || c.GridColumn < -1 || ((c.GridRow==-1)!=(c.GridColumn==-1)) ||
+       !c.RowSpan || !c.ColumnSpan || c.RowSpan>64 || c.ColumnSpan>64)
+        throw std::invalid_argument("Grid placement needs both row/column or Auto, and spans 1..64");
 }
-Rect ResolveRect(const Rect &parent, const RectLayout &c)
+void Validate(const Track &c)
 {
-    CheckRect(parent);
-    Validate(c);
-    if(c.LayoutVersion!=1)throw std::invalid_argument("Measured UI requires measure/arrange, not legacy ResolveRect");
-    auto size = (c.AnchorMax - c.AnchorMin) * parent.Size + c.SizeDelta;
-    auto position = parent.Position + c.AnchorMin * parent.Size + c.Offset - c.Pivot * c.SizeDelta;
-    if (!Finite(size) || !Finite(position))
-        throw std::invalid_argument("UI rectangle overflow");
-    Rect rect{position, glm::max(glm::vec2(0), size)};
-    rect = rect.Inset(c.Margin);
-    rect.Size = glm::max(c.MinimumSize, rect.Size);
-    return rect;
+    if(c.Mode<TrackMode::Fixed || c.Mode>TrackMode::Fill || !std::isfinite(c.Value) ||
+       c.Value<0 || (c.Mode==TrackMode::Fill && c.Value==0) || !std::isfinite(c.Minimum) ||
+       c.Minimum<0 || !std::isfinite(c.Maximum) || c.Maximum<0 || (c.HasMaximum && c.Maximum<c.Minimum))
+        throw std::invalid_argument("Tracks require finite Fixed sizes or positive Fill weights and ordered min/max");
+}
+void Validate(const FlowLayout &c)
+{
+    if(c.Kind<ContainerKind::Stack || c.Kind>ContainerKind::Grid ||
+       c.Direction<Axis::Horizontal || c.Direction>Axis::Vertical ||
+       c.Main<Align::Start || c.Main>Align::End || c.Cross<Align::Start || c.Cross>Align::End ||
+       c.LineAlign<Align::Start || c.LineAlign>Align::End ||
+       !std::isfinite(c.Gap) || c.Gap<0 || !std::isfinite(c.LineGap) || c.LineGap<0 || !Nonnegative(c.GridGap) ||
+       c.Rows.empty() || c.Columns.empty() || c.Rows.size()>64 || c.Columns.size()>64)
+        throw std::invalid_argument("Invalid UI container configuration (tracks 1..64 per axis)");
+    for(const auto &t:c.Columns)Validate(t);
+    for(const auto &t:c.Rows)Validate(t);
 }
 Rect FramebufferCoverage(const Rect &pixels, glm::vec2 ratio, glm::vec2 framebuffer)
 {
@@ -127,57 +120,11 @@ Rect FramebufferCoverage(const Rect &pixels, glm::vec2 ratio, glm::vec2 framebuf
     auto lo = glm::ceil(clipped.Position), hi = glm::floor(clipped.Position + clipped.Size);
     return {lo, glm::max(glm::vec2(0), hi - lo)};
 }
-RectLayout EditRect(const Rect &parent, const RectLayout &initial, glm::vec2 delta, unsigned edges)
-{
-    if (!Finite(delta) || edges > 15 || ((edges & 1) && (edges & 4)) ||
-        ((edges & 2) && (edges & 8)))
-        throw std::invalid_argument("Invalid UI edit gesture");
-    auto start = ResolveRect(parent, initial), target = start;
-    if (!edges)
-        target.Position += delta;
-    else
-        for (int axis = 0; axis < 2; ++axis)
-        {
-            const unsigned nearEdge = axis ? 2 : 1, farEdge = axis ? 8 : 4;
-            if (edges & nearEdge)
-            {
-                float end = start.Position[axis] + start.Size[axis];
-                target.Size[axis] =
-                    std::max(initial.MinimumSize[axis], start.Size[axis] - delta[axis]);
-                target.Position[axis] = end - target.Size[axis];
-            }
-            else if (edges & farEdge)
-                target.Size[axis] =
-                    std::max(initial.MinimumSize[axis], start.Size[axis] + delta[axis]);
-        }
-    CheckRect(target);
-    auto result = initial;
-    for (int axis = 0; axis < 2; ++axis)
-    {
-        if (target.Size[axis] == start.Size[axis] && target.Position[axis] == start.Position[axis])
-            continue;
-        // Preserve authored values when a minimum clamps an attempted resize,
-        // or during movement of an already minimum-constrained rectangle.
-        if (target.Size[axis] != start.Size[axis])
-            result.SizeDelta[axis] =
-                target.Size[axis] + initial.Margin[axis] + initial.Margin[axis + 2] -
-                (initial.AnchorMax[axis] - initial.AnchorMin[axis]) * parent.Size[axis];
-        result.Offset[axis] = target.Position[axis] - parent.Position[axis] -
-                              initial.AnchorMin[axis] * parent.Size[axis] +
-                              initial.Pivot[axis] * result.SizeDelta[axis] - initial.Margin[axis];
-    }
-    Validate(result);
-    auto check = ResolveRect(parent, result);
-    if (glm::length(check.Position - target.Position) > .01f ||
-        glm::length(check.Size - target.Size) > .01f)
-        throw std::invalid_argument("UI edit cannot preserve the requested resolved edges");
-    return result;
-}
 RectLayout EditMeasuredRect(const Rect &parent, const Rect &start, const RectLayout &initial,
                             glm::vec2 delta, unsigned edges)
 {
     Validate(initial);CheckRect(parent);CheckRect(start);
-    if(initial.LayoutVersion!=2 || !Finite(delta) || edges>15 || ((edges&1)&&(edges&4)) || ((edges&2)&&(edges&8)))
+    if(!Finite(delta) || edges>15 || ((edges&1)&&(edges&4)) || ((edges&2)&&(edges&8)))
         throw std::invalid_argument("Invalid measured UI gesture");
     auto result=initial;
     for(int axis=0;axis<2;++axis)
@@ -196,69 +143,10 @@ RectLayout EditMeasuredRect(const Rect &parent, const Rect &start, const RectLay
         if(desired==start.Size[axis])continue;
         float position=start.Position[axis]+((edges&leading)?start.Size[axis]-desired:0);
         result.FixedSize[axis]=desired;
-        result.Offset[axis]=position-parent.Position[axis]-initial.AnchorMin[axis]*parent.Size[axis]+
+        result.Offset[axis]=position-parent.Position[axis]-initial.Anchor[axis]*parent.Size[axis]+
             initial.Pivot[axis]*desired-initial.Margin[axis];
     }
     Validate(result);return result;
-}
-void ArrangeFlow(const Rect &content, const FlowLayout &c, const std::vector<FlowItem> &items,
-                 std::vector<Rect> &out)
-{
-    CheckRect(content);
-    if (items.size() > InputRouter::MaxButtons || !std::isfinite(c.Gap) || c.Gap < 0 ||
-        (c.Direction != Axis::Horizontal && c.Direction != Axis::Vertical) ||
-        c.Main < Align::Start || c.Main > Align::End || c.Cross < Align::Start ||
-        c.Cross > Align::Stretch)
-        throw std::invalid_argument("Invalid or oversized UI flow group");
-    const int main = c.Direction == Axis::Horizontal ? 0 : 1, cross = 1 - main;
-    size_t visible = 0;
-    float used = 0, flex = 0;
-    for (const auto &item : items)
-    {
-        if (!Nonnegative(item.PreferredSize) || !Nonnegative(item.MinimumSize) ||
-            !Nonnegative(item.Margin) || !std::isfinite(item.Flex) || item.Flex < 0)
-            throw std::invalid_argument("Invalid UI flow item");
-        if (!item.Visible)
-            continue;
-        ++visible;
-        used += std::max(item.PreferredSize[main], item.MinimumSize[main]) + item.Margin[main] +
-                item.Margin[main + 2];
-        flex += item.Flex;
-    }
-    used += (visible ? visible - 1 : 0) * c.Gap;
-    if (!std::isfinite(used) || !std::isfinite(flex))
-        throw std::invalid_argument("UI flow size overflow");
-    float free = std::max(0.f, content.Size[main] - used);
-    float cursor = content.Position[main] + (flex > 0 ? 0
-                                                      : free * (c.Main == Align::Center ? .5f
-                                                                : c.Main == Align::End  ? 1
-                                                                                        : 0));
-    out.resize(items.size());
-    for (size_t i = 0; i < items.size(); i++)
-    {
-        const auto &item = items[i];
-        if (!item.Visible)
-        {
-            out[i] = {};
-            continue;
-        }
-        glm::vec2 size = glm::max(item.PreferredSize, item.MinimumSize);
-        if (flex > 0)
-            size[main] += free * item.Flex / flex;
-        float available =
-            std::max(0.f, content.Size[cross] - item.Margin[cross] - item.Margin[cross + 2]);
-        if (c.Cross == Align::Stretch)
-            size[cross] = std::max(item.MinimumSize[cross], available);
-        glm::vec2 pos = content.Position;
-        pos[main] = cursor + item.Margin[main];
-        pos[cross] += item.Margin[cross] +
-                      std::max(0.f, available - size[cross]) * (c.Cross == Align::Center ? .5f
-                                                                : c.Cross == Align::End  ? 1
-                                                                                         : 0);
-        out[i] = {pos, size};
-        CheckRect(out[i]);
-        cursor += size[main] + item.Margin[main] + item.Margin[main + 2] + c.Gap;
-    }
 }
 namespace
 {

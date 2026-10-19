@@ -369,13 +369,13 @@ namespace Hazel {
     }
     static uint32_t UI_LayoutVersion(uint64_t id) {
         MonoException* failure=nullptr;uint32_t result=0;
-        try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI requires a runtime scene");scene->CheckThread();auto e=scene->GetEntityByUUID(id);if(!e||!scene->IsEntityValid(id)||!e.HasComponent<UIRectComponent>())throw std::invalid_argument("Sizing needs a live UI Rect");result=e.GetComponent<UIRectComponent>().LayoutVersion;}
+        try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI requires a runtime scene");scene->CheckThread();auto e=scene->GetEntityByUUID(id);if(!e||!scene->IsEntityValid(id)||!e.HasComponent<UIRectComponent>())throw std::invalid_argument("Sizing needs a live UI Rect");result=GameUI::RectLayout::SchemaVersion;}
         catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
         if(failure)mono_raise_exception(failure);return result;
     }
     static void UI_GetSizing(uint64_t id,int axis,int* mode,float* size,float* minimum,int* hasMaximum,float* maximum) {
         MonoException* failure=nullptr;
-        try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI requires a runtime scene");scene->CheckThread();auto e=scene->GetEntityByUUID(id);if(!e||!scene->IsEntityValid(id)||!e.HasComponent<UIRectComponent>()||axis<0||axis>1)throw std::invalid_argument("Sizing needs a live UI Rect and valid axis");const auto& r=e.GetComponent<UIRectComponent>();if(r.LayoutVersion!=2)throw std::invalid_argument("Legacy UI has no measured sizing; convert it explicitly");*mode=int(axis?r.HeightMode:r.WidthMode);*size=r.FixedSize[axis];*minimum=r.MinimumSize[axis];*hasMaximum=r.HasMaximum[axis]?1:0;*maximum=r.MaximumSize[axis];}
+        try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI requires a runtime scene");scene->CheckThread();auto e=scene->GetEntityByUUID(id);if(!e||!scene->IsEntityValid(id)||!e.HasComponent<UIRectComponent>()||axis<0||axis>1)throw std::invalid_argument("Sizing needs a live UI Rect and valid axis");const auto& r=e.GetComponent<UIRectComponent>();*mode=int(axis?r.HeightMode:r.WidthMode);*size=r.FixedSize[axis];*minimum=r.MinimumSize[axis];*hasMaximum=r.HasMaximum[axis]?1:0;*maximum=r.MaximumSize[axis];}
         catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
         if(failure)mono_raise_exception(failure);
     }
@@ -384,6 +384,42 @@ namespace Hazel {
         try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI requires a runtime scene");if(axis<0||axis>1||hasMaximum<0||hasMaximum>1)throw std::invalid_argument("Invalid sizing axis/maximum flag");scene->SetUISizing(id,GameUI::Axis(axis),GameUI::SizeMode(mode),size,minimum,hasMaximum?std::optional<float>(maximum):std::optional<float>{});}
         catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
         if(failure)mono_raise_exception(failure);
+    }
+    // Blittable wire values: int flags, never native bool or retained managed references.
+    struct UILayoutWire { int Kind,Direction,Main,Cross,LineAlign;float Gap,LineGap;glm::vec2 GridGap; };
+    struct UITrackWire { int Mode;float Value,Minimum,Maximum;int HasMaximum; };
+    static_assert(sizeof(UILayoutWire)==36 && sizeof(UITrackWire)==20,"Managed UI layout ABI");
+    static Entity UI_LayoutEntity(uint64_t id) {
+        auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI requires a runtime scene");scene->CheckThread();
+        auto e=scene->GetEntityByUUID(id);if(!e||!scene->IsEntityValid(id)||!e.HasComponent<UILayoutComponent>())throw std::invalid_argument("Container needs a live UI Layout");return e;
+    }
+    static void UI_GetLayout(uint64_t id,UILayoutWire* result) {
+        MonoException* failure=nullptr;try{auto &v=UI_LayoutEntity(id).GetComponent<UILayoutComponent>();*result={int(v.Kind),int(v.Direction),int(v.Main),int(v.Cross),int(v.LineAlign),v.Gap,v.LineGap,v.GridGap};}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);
+    }
+    static int UI_TrackCount(uint64_t id,bool rows) {
+        int count=0;MonoException* failure=nullptr;try{auto &v=UI_LayoutEntity(id).GetComponent<UILayoutComponent>();count=int(rows?v.Rows.size():v.Columns.size());}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);return count;
+    }
+    static void UI_GetTrack(uint64_t id,bool rows,int index,UITrackWire* result) {
+        MonoException* failure=nullptr;try{auto &v=UI_LayoutEntity(id).GetComponent<UILayoutComponent>();auto &tracks=rows?v.Rows:v.Columns;if(index<0||size_t(index)>=tracks.size())throw std::invalid_argument("Track index out of range");auto &t=tracks[index];*result={int(t.Mode),t.Value,t.Minimum,t.Maximum,t.HasMaximum?1:0};}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);
+    }
+    static void UI_SetLayout(uint64_t id,UILayoutWire* wire,MonoArray* columns,MonoArray* rows) {
+        MonoException* failure=nullptr;try{auto e=UI_LayoutEntity(id);auto next=e.GetComponent<UILayoutComponent>();auto &v=*wire;
+            next.Kind=GameUI::ContainerKind(v.Kind);next.Direction=GameUI::Axis(v.Direction);next.Main=GameUI::Align(v.Main);next.Cross=GameUI::Align(v.Cross);next.LineAlign=GameUI::Align(v.LineAlign);next.Gap=v.Gap;next.LineGap=v.LineGap;next.GridGap=v.GridGap;
+            auto read=[](MonoArray* array,std::vector<GameUI::Track> &tracks){if(!array)return;auto count=mono_array_length(array);if(!count||count>64)throw std::invalid_argument("Grid needs 1..64 tracks");tracks.clear();tracks.reserve(count);
+                for(uintptr_t i=0;i<count;++i){auto &t=*reinterpret_cast<UITrackWire*>(mono_array_addr_with_size(array,sizeof(UITrackWire),i));if(t.HasMaximum<0||t.HasMaximum>1)throw std::invalid_argument("Invalid track maximum flag");tracks.push_back({GameUI::TrackMode(t.Mode),t.Value,t.Minimum,t.Maximum,t.HasMaximum!=0});}};
+            read(columns,next.Columns);read(rows,next.Rows);ScriptEngine::GetSceneContext()->SetUILayout(id,next);
+        }catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);
+    }
+    static void UI_GetCell(uint64_t id,int* row,int* column,int* rowSpan,int* columnSpan) {
+        MonoException* failure=nullptr;try{auto e=CheckedSpriteEntity<UIRectComponent>(id);auto &r=e.GetComponent<UIRectComponent>();*row=r.GridRow;*column=r.GridColumn;*rowSpan=int(r.RowSpan);*columnSpan=int(r.ColumnSpan);}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);
+    }
+    static void UI_SetCell(uint64_t id,int row,int column,int rowSpan,int columnSpan) {
+        MonoException* failure=nullptr;try{if(rowSpan<1||columnSpan<1)throw std::invalid_argument("Cell spans must be positive");auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI requires a runtime scene");scene->SetUIGridCell(id,row,column,unsigned(rowSpan),unsigned(columnSpan));}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);
     }
     static bool* UI_Value(uint64_t id,int property) {
         auto* scene=ScriptEngine::GetSceneContext();auto e=scene?scene->GetEntityByUUID(id):Entity{};
@@ -471,6 +507,13 @@ namespace Hazel {
         HZ_ADD_INTERNAL_CALL(UI_GetValue);
         HZ_ADD_INTERNAL_CALL(UI_SetValue);
         HZ_ADD_INTERNAL_CALL(UI_LayoutVersion);
+        HZ_ADD_INTERNAL_CALL(UI_GetLayout);
+        HZ_ADD_INTERNAL_CALL(UI_TrackCount);
+        HZ_ADD_INTERNAL_CALL(UI_GetTrack);
+        HZ_ADD_INTERNAL_CALL(UI_SetLayout);
+        HZ_ADD_INTERNAL_CALL(UI_GetCell);
+        HZ_ADD_INTERNAL_CALL(UI_SetCell);
+
         HZ_ADD_INTERNAL_CALL(UI_GetSizing);
         HZ_ADD_INTERNAL_CALL(UI_SetSizing);
         HZ_ADD_INTERNAL_CALL(SpriteRendererComponent_SetSprite);

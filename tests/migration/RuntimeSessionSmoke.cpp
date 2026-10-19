@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
         session.SetInput({300,100},false); Check(!session.GetMouseWorldPosition(mouse),"Inactive viewport accepts clicks");
         // D1 through the real host/session ownership boundary, before another Update.
         auto canvas=current->CreateEntity("Ownership canvas");auto& uiCanvas=canvas.AddComponent<UICanvasComponent>();uiCanvas.ReferenceSize={400,400};uiCanvas.SafeInsets=glm::vec4(0);
-        auto button=current->CreateEntity("Ownership button");current->Reparent(button,canvas,TransformPolicy::KeepLocal);button.AddComponent<UIRectComponent>().SizeDelta={100,40};button.AddComponent<UIButtonComponent>().Action="activate";
+        auto button=current->CreateEntity("Ownership button");current->Reparent(button,canvas,TransformPolicy::KeepLocal);button.AddComponent<UIRectComponent>().FixedSize={100,40};button.AddComponent<UIButtonComponent>().Action="activate";
         session.Update(0); // Commit the queued runtime parent operation.
         auto queue=[&]{session.SetInput({20,20},true);GameUI::InputFrame f;f.Enabled=true;f.Mouse={20,20};current->UpdateUIInput(f);f.PointerPressed=f.PointerReleased=true;f.PressPosition=f.Mouse;current->UpdateUIInput(f);};
         GameUI::Action uiAction;queue();Check(current->ConsumeUIAction(button.GetUUID(),uiAction),"Ownership fixture did not activate before cancellation");queue();session.SetInput({20,20},false);

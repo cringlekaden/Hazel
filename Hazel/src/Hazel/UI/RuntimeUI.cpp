@@ -119,8 +119,7 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
         }
         state.Add(uint64_t(0));
         auto &r = e.GetComponent<UIRectComponent>();
-        state.Add(r.LayoutVersion);
-        if(r.LayoutVersion==2){
+        {
             state.Add(int(r.WidthMode));state.Add(int(r.HeightMode));
             state.Add(r.FixedSize);state.Add(r.MaximumSize);
             state.Add(bool(r.HasMaximum.x));state.Add(bool(r.HasMaximum.y));
@@ -145,10 +144,8 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
                 }
             }
         }
-        state.Add(r.AnchorMin);
-        state.Add(r.AnchorMax);
+        state.Add(r.Anchor);
         state.Add(r.Offset);
-        state.Add(r.SizeDelta);
         state.Add(r.Pivot);
         state.Add(r.MinimumSize);
         state.Add(r.Margin);
@@ -157,14 +154,19 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
         state.Add(r.Enabled);
         state.Add(r.ClipChildren);
         state.Add(r.Flex);
+        state.Add(r.GridRow);state.Add(r.GridColumn);state.Add(r.RowSpan);state.Add(r.ColumnSpan);
         state.Add(e.HasComponent<UILayoutComponent>());
         if (e.HasComponent<UILayoutComponent>())
         {
             auto &f = e.GetComponent<UILayoutComponent>();
+            Validate(f);
             state.Add(int(f.Direction));
             state.Add(int(f.Main));
             state.Add(int(f.Cross));
-            state.Add(f.Gap);
+            state.Add(int(f.Kind));state.Add(f.Gap);state.Add(f.LineGap);state.Add(int(f.LineAlign));state.Add(f.GridGap);
+            for(const auto *tracks:{&f.Columns,&f.Rows}) {
+                state.Add(tracks->size());for(const auto&t:*tracks){state.Add(int(t.Mode));state.Add(t.Value);state.Add(t.Minimum);state.Add(t.Maximum);state.Add(t.HasMaximum);}
+            }
         }
         state.Add(e.HasComponent<UIButtonComponent>());
         if (e.HasComponent<UIButtonComponent>())
@@ -281,6 +283,7 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
     m_Build.Buttons.clear();
     m_Build.Warnings.clear();
     m_Build.Modal = 0;
+    m_Build.Guides.clear();
     m_Build.Valid = false;
     m_Build.Surface = surface;
     m_Build.PreviewOrphans = previewOrphans;
@@ -338,16 +341,13 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
             m_Build.Warnings.push_back(
                 {id, "Nested/parented Canvas resolves independently against the viewport"});
         auto parent = m_Scene.GetEntityByUUID(n.Parent);
-        n.FlowOwned = !n.IsCanvas && parent && parent.HasComponent<UIRectComponent>() &&
+        n.ContainerOwned = !n.IsCanvas && parent && parent.HasComponent<UIRectComponent>() &&
                       !parent.HasComponent<UICanvasComponent>() && parent.HasComponent<UILayoutComponent>();
-        if (n.FlowOwned && e.GetComponent<UIRectComponent>().LayoutVersion==1)
-            m_Build.Warnings.push_back(
-                {id, "Flow owns position/arranged size; viewport move/resize is unavailable"});
         if (e.HasComponent<UIRectComponent>())
         {
             auto &r = e.GetComponent<UIRectComponent>();
-            n.LayoutVersion=r.LayoutVersion;n.WidthMode=r.WidthMode;n.HeightMode=r.HeightMode;
-            if(n.IsCanvas && r.LayoutVersion==2)throw std::invalid_argument("Canvas owns its surface; place measured Rect on a child");
+            n.WidthMode=r.WidthMode;n.HeightMode=r.HeightMode;
+            if(n.IsCanvas)throw std::invalid_argument("Canvas owns its surface; place measured Rect on a child");
             if (!std::isfinite(r.Flex) || r.Flex < 0)
                 throw std::invalid_argument("Invalid UI flex");
         }
@@ -452,7 +452,7 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
     }
 }
 void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enabled, uint64_t canvas,
-                      size_t depth, const Rect *arranged)
+                      size_t depth)
 {
     if (!e || !m_Scene.IsEntityValid(e.GetUUID()) || !e.HasComponent<UIRectComponent>())
         return;
@@ -462,9 +462,7 @@ void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enable
     if (!r.Visible)
         return;
     auto &n = m_Build.Elements[m_Build.Index.at(e.GetUUID())];
-    if(r.LayoutVersion==2 && !n.MeasureResolved)MeasureTree(e,parent);
-    n.Bounds = arranged ? *arranged : r.LayoutVersion==2 ? n.Bounds : ResolveRect(parent, r);
-    if(r.LayoutVersion==1){n.Available=parent.Size;n.Measured=n.Bounds.Size;}
+    if(!n.MeasureResolved)MeasureTree(e,parent);
     n.ParentContent = parent;
     n.Scale = scale;
     n.Enabled = enabled && r.Enabled;
@@ -489,37 +487,11 @@ void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enable
         m_Build.Warnings.push_back({n.ID, "Resolved rect overflows its parent content"});
     if(n.Overflow&&!outside)m_Build.Warnings.push_back({n.ID,"Measured layout overflows available space; minimums are retained"});
     const auto &children = m_Scene.GetChildrenView(e.GetUUID());
-    if (e.HasComponent<UILayoutComponent>() && r.LayoutVersion==1)
-    {
-        auto &cache = m_Cache[e.GetUUID()];
-        cache.Items.clear();
-        for (auto id : children)
-        {
-            auto child = m_Scene.GetEntityByUUID(id);
-            FlowItem item;
-            item.Visible = child.HasComponent<UIRectComponent>() &&
-                           !child.HasComponent<UICanvasComponent>() && m_Scene.IsEntityValid(id);
-            if (item.Visible)
-            {
-                auto &c = child.GetComponent<UIRectComponent>();
-                if(c.LayoutVersion==2)throw std::invalid_argument("Legacy Flow cannot own measured children; convert its containing subtree");
-                item = {c.SizeDelta, c.MinimumSize, c.Margin, c.Flex, c.Visible};
-            }
-            cache.Items.push_back(item);
-        }
-        ArrangeFlow(content, e.GetComponent<UILayoutComponent>(), cache.Items, cache.Arranged);
-        for (size_t i = 0; i < children.size(); ++i)
-            if (cache.Items[i].Visible)
-                Visit(m_Scene.GetEntityByUUID(children[i]), content, childClip, scale, n.Enabled,
-                      canvas, depth + 1, &cache.Arranged[i]);
+    for(auto id:children) {
+        auto child=m_Scene.GetEntityByUUID(id);
+        if(!child.HasComponent<UICanvasComponent>())
+            Visit(child,content,childClip,scale,n.Enabled,canvas,depth+1);
     }
-    else
-        for (auto id : children)
-        {
-            auto child = m_Scene.GetEntityByUUID(id);
-            if (!child.HasComponent<UICanvasComponent>())
-                Visit(child, content, childClip, scale, n.Enabled, canvas, depth + 1);
-        }
 }
 void RuntimeUI::PruneActions()
 {

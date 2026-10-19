@@ -123,9 +123,6 @@ void RuntimeUI::MeasureTree(Entity root, Rect parent)
             return;
         if (depth >= Scene::MaxDepth)
             throw std::invalid_argument("Measured UI exceeds depth 256");
-        if (e.GetComponent<UIRectComponent>().LayoutVersion != 2)
-            throw std::invalid_argument("Measured UI group contains legacy child '" + e.GetName() +
-                                        "'; convert the containing subtree");
         m_MeasureIDs.push_back(e.GetUUID());
         for (auto id : m_Scene.GetChildrenView(e.GetUUID()))
             collect(m_Scene.GetEntityByUUID(id), depth + 1);
@@ -144,8 +141,8 @@ void RuntimeUI::MeasureTree(Entity root, Rect parent)
         n.ID = e.GetUUID();
         n.Name = e.GetName();
         n.Layout = r;
-        n.Stack = e.HasComponent<UILayoutComponent>();
-        if (n.Stack)
+        n.Container = e.HasComponent<UILayoutComponent>();
+        if (n.Container)
             n.Flow = e.GetComponent<UILayoutComponent>();
         n.Weight = r.Flex > 0 ? r.Flex : 1;
         n.Visible = out.Visible;
@@ -189,9 +186,11 @@ void RuntimeUI::MeasureTree(Entity root, Rect parent)
         out.Available = measured.Available;
         out.Measured = measured.Measured;
         out.Overflow = measured.Overflow;
+        out.Slot=measured.Slot;out.GridRow=measured.Row;out.GridColumn=measured.Column;out.Line=measured.Line;
         out.MeasureResolved = true;
         if (m_MeasureNodes[i].Visible)
             ++m_Diagnostics.Arrangements;
     }
+    for(const auto &g:m_Measure.Guides())m_Build.Guides.push_back({m_MeasureIDs[g.Node],g.Axis,g.Index,g.Line,g.Bounds});
 }
 } // namespace Hazel

@@ -37,6 +37,7 @@ static void Check(bool value, const char *why)
         throw std::runtime_error(why);
 }
 #include "MeasuredSceneChecks.h"
+#include "ContainerSceneChecks.h"
 struct UIFixture
 {
     Ref<Scene> World=CreateRef<Scene>();Entity Canvas,Group,Control;
@@ -45,9 +46,9 @@ struct UIFixture
         World->OnViewportResize(320,240);
         Canvas=World->CreateEntity("Canvas");auto& c=Canvas.AddComponent<UICanvasComponent>();c.ReferenceSize={320,240};c.SafeInsets=glm::vec4(0);
         Group=World->CreateEntity("Group");World->Reparent(Group,Canvas,TransformPolicy::KeepLocal);
-        auto& r=Group.AddComponent<UIRectComponent>();r.Offset={10,10};r.SizeDelta={150,80};
+        auto& r=Group.AddComponent<UIRectComponent>();r.Offset={10,10};r.FixedSize={150,80};
         Control=World->CreateEntity("Button");World->Reparent(Control,Group,TransformPolicy::KeepLocal);
-        Control.AddComponent<UIRectComponent>().SizeDelta={80,40};Control.AddComponent<UIButtonComponent>().Action="activate";
+        Control.AddComponent<UIRectComponent>().FixedSize={80,40};Control.AddComponent<UIButtonComponent>().Action="activate";
     }
     void Queue()
     {
@@ -86,9 +87,9 @@ static void HardeningSceneChecks()
      Check(f.World->GetUIDiagnostics().DroppedActions==5&&!f.World->ConsumeUIAction(0,action),"Cancellation lost overflow diagnostics or retained work");}
     {UIFixture f;auto& r=f.Control.GetComponent<UIRectComponent>();r.Offset={300,300};f.World->RefreshUI();Check(!f.World->GetUISnapshot().Find(f.Control.GetUUID())->FocusEligible,"D2: fully clipped scene button eligible");
      f.Canvas.GetComponent<UICanvasComponent>().Modal=true;InputFrame input;input.Enabled=true;f.World->UpdateUIInput(input);input.AcceptDown=true;f.World->UpdateUIInput(input);Check(!f.World->ConsumeUIAction(0,action)&&!f.World->GetUIDiagnostics().Focus,"D2: clipped scene button activated");}
-    {UIFixture f;auto& r=f.Control.GetComponent<UIRectComponent>();r.Offset={.1f,.1f};r.SizeDelta={.4f,.4f};f.Group.GetComponent<UIRectComponent>().Offset={0,0};
+    {UIFixture f;auto& r=f.Control.GetComponent<UIRectComponent>();r.Offset={.1f,.1f};r.FixedSize={.4f,.4f};f.Group.GetComponent<UIRectComponent>().Offset={0,0};
      f.World->SetUIFramebufferSize({400,300});f.World->RefreshUI();auto n=f.World->GetUISnapshot().Find(f.Control.GetUUID());Check(!n->FocusEligible&&n->FramebufferClip.Size==glm::vec2(0),"Fractional empty framebuffer coverage remained eligible");
-     r.SizeDelta={2,2};f.World->RefreshUI();n=f.World->GetUISnapshot().Find(f.Control.GetUUID());Check(n->FocusEligible&&n->FramebufferClip.Position==glm::vec2(1)&&n->PixelClip.Position==glm::vec2(.8f),"Framebuffer/pixel clip conversion differs");
+     r.FixedSize={2,2};f.World->RefreshUI();n=f.World->GetUISnapshot().Find(f.Control.GetUUID());Check(n->FocusEligible&&n->FramebufferClip.Position==glm::vec2(1)&&n->PixelClip.Position==glm::vec2(.8f),"Framebuffer/pixel clip conversion differs");
      f.World->SetUIFramebufferSize({0,0});f.World->RefreshUI();Check(f.World->GetUISnapshot().PainterOrder.empty()&&!f.World->GetUISnapshot().Find(f.Control.GetUUID())->FocusEligible,"Zero framebuffer did not suspend UI");}
     {UIFixture f;f.Canvas.GetComponent<UICanvasComponent>().Modal=true;f.World->RefreshUI();InputFrame input;input.Enabled=true;input.Mouse={25,25};f.World->UpdateUIInput(input);input.LeftDown=true;f.World->UpdateUIInput(input);
      f.Group.GetComponent<UIRectComponent>().Enabled=false;f.World->RefreshUI();Check(!f.World->GetUIDiagnostics().Capture,"Raw ancestor disable retained capture");
@@ -111,12 +112,12 @@ static void ProfileRuntimeUI()
         // One staged import avoids repeated O(N) hierarchy reparent transactions
         // during fixture setup. It never writes a scene/project/save document.
         std::ostringstream yaml;yaml<<"SceneVersion: 2\nScene: UI profile\nEntities:\n- Entity: 1\n  UICanvasComponent: { ReferenceSize: [1280, 720], SafeInsets: [0, 0, 0, 0] }\n  Relationship: { Parent: 0, Order: 0 }\n";
-        yaml<<"- Entity: 2\n  UIRectComponent: { Offset: [16, 16], SizeDelta: [1248, 688] }\n  Relationship: { Parent: 1, Order: 0 }\n";
+        yaml<<"- Entity: 2\n  UIRectComponent: { LayoutVersion: 3, Offset: [16, 16], FixedSize: [1248, 688] }\n  Relationship: { Parent: 1, Order: 0 }\n";
         for(int i=0;i<count-1;++i)
         {
             int columns=count==2048?32:4;
             int x=(i%columns)*(count==2048?38:300),y=(i/columns)*(count==2048?10:36);
-            yaml<<"- Entity: "<<i+3<<"\n  Relationship: { Parent: 2, Order: "<<i<<" }\n  UIRectComponent: { Offset: ["<<x<<", "<<y<<"], SizeDelta: ["<<(count==2048?36:280)<<", "<<(count==2048?10:32)<<"] }\n";
+            yaml<<"- Entity: "<<i+3<<"\n  Relationship: { Parent: 2, Order: "<<i<<" }\n  UIRectComponent: { LayoutVersion: 3, Offset: ["<<x<<", "<<y<<"], FixedSize: ["<<(count==2048?36:280)<<", "<<(count==2048?10:32)<<"] }\n";
             if(i%2==0)yaml<<"  TextComponent: { TextString: 'Item "<<i<<"', Color: [1, 1, 1, 1], Kerning: 0, LineSpacing: 0 }\n  UITextStyleComponent: { Size: "<<(count==2048?8:18)<<", Wrap: false }\n";
             else yaml<<"  SpriteRendererComponent: { Color: [0.12, 0.24, 0.32, 1] }\n";
             bool control=count==64?i<8:i%4==0;
@@ -178,7 +179,7 @@ int main(int argc,char** argv)
         std::filesystem::copy_file(Resources::Resolve("fonts/opensans/OpenSans-Regular.ttf"),
                                    root / "font.ttf");
         std::filesystem::copy_file("assets/textures/Checkerboard.png", root / "image.png");
-        MeasuredSceneChecks(root);
+        MeasuredSceneChecks(root);        ContainerSceneChecks(root);
         auto scene = CreateRef<Scene>();
         scene->SetAssets(CreateRef<ProjectAssets>(root));
         scene->OnViewportResize(320, 240);
@@ -190,14 +191,14 @@ int main(int argc,char** argv)
         scene->Reparent(panel, canvas, TransformPolicy::KeepLocal);
         auto &r = panel.AddComponent<UIRectComponent>();
         r.Offset = {20, 30};
-        r.SizeDelta = {180, 100};
+        r.FixedSize = {180, 100};
         r.Padding = {10, 10, 10, 10};
         panel.AddComponent<SpriteRendererComponent>(glm::vec4(0, 0, 1, 1));
         auto button = scene->CreateEntity("Button");
         scene->Reparent(button, panel, TransformPolicy::KeepLocal);
         auto &b = button.AddComponent<UIRectComponent>();
         b.Offset = {-30, 10};
-        b.SizeDelta = {80, 40};
+        b.FixedSize = {80, 40};
         button.AddComponent<SpriteRendererComponent>(glm::vec4(1, 0, 0, 1));
         button.AddComponent<UIButtonComponent>().Action = "play";
         auto text = scene->CreateEntity("Text");

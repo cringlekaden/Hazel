@@ -193,16 +193,13 @@ std::string SceneSerializer::CaptureAuthoredState() const
             state.Value(c.Modal);
         });
         state.Component<UIRectComponent>(e, [&](auto &c) {
-            state.Value(c.LayoutVersion);
-            if(c.LayoutVersion==2){
+            {
                 state.Value(int(c.WidthMode));state.Value(int(c.HeightMode));
                 state.Value(c.FixedSize);state.Value(c.MaximumSize);
                 state.Value(bool(c.HasMaximum.x));state.Value(bool(c.HasMaximum.y));
             }
-            state.Value(c.AnchorMin);
-            state.Value(c.AnchorMax);
+            state.Value(c.Anchor);
             state.Value(c.Offset);
-            state.Value(c.SizeDelta);
             state.Value(c.Pivot);
             state.Value(c.MinimumSize);
             state.Value(c.Margin);
@@ -210,13 +207,15 @@ std::string SceneSerializer::CaptureAuthoredState() const
             state.Value(c.Visible);
             state.Value(c.Enabled);
             state.Value(c.ClipChildren);
-            state.Value(c.Flex);
+            state.Value(c.Flex);state.Value(c.GridRow);state.Value(c.GridColumn);state.Value(c.RowSpan);state.Value(c.ColumnSpan);
+            state.Value(int(c.Fit));state.Value(c.ImageAlignment);
         });
         state.Component<UILayoutComponent>(e, [&](auto &c) {
             state.Value(int(c.Direction));
             state.Value(int(c.Main));
             state.Value(int(c.Cross));
-            state.Value(c.Gap);
+            state.Value(c.Gap);state.Value(int(c.Kind));state.Value(c.LineGap);state.Value(int(c.LineAlign));state.Value(c.GridGap);
+            for(const auto *tracks:{&c.Columns,&c.Rows}){state.Value(uint64_t(tracks->size()));for(const auto&t:*tracks){state.Value(int(t.Mode));state.Value(t.Value);state.Value(t.Minimum);state.Value(t.Maximum);state.Value(t.HasMaximum);}}
         });
         state.Component<UITextStyleComponent>(e, [&](auto &c) {
             state.Value(c.FontPath);

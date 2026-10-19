@@ -62,8 +62,8 @@ void EditorLayer::UI_RectEditing()
         GameUI::Rect display{m_ViewportBounds[0] + selectedBounds.Position * displayScale,
                              selectedBounds.Size * displayScale};
         edges = Edges(mouse, display);
-        unsigned allowed=n->FlowOwned?0:15;
-        if(n->LayoutVersion==2){allowed=15;if(n->WidthMode!=GameUI::SizeMode::Fixed)allowed&=~5u;if(n->HeightMode!=GameUI::SizeMode::Fixed)allowed&=~10u;if(n->FlowOwned)allowed&=~3u;}
+        unsigned allowed=n->ContainerOwned?0:15;
+        {allowed=15;if(n->WidthMode!=GameUI::SizeMode::Fixed)allowed&=~5u;if(n->HeightMode!=GameUI::SizeMode::Fixed)allowed&=~10u;if(n->ContainerOwned)allowed&=~3u;}
         selectedHandle = canEdit && !n->IsCanvas && edges && !(edges&~allowed) &&
                          ImGui::IsWindowHovered() && !io.WantTextInput;
         auto draw = ImGui::GetWindowDrawList();
@@ -166,6 +166,11 @@ void EditorLayer::UI_DebugOverlay()
             draw->AddText({p.x, p.y}, IM_COL32(240, 240, 240, 255), label);
         }
     }
+    if(m_UIBoundsOverlay)for(const auto &guide:s.Guides)if(auto owner=s.Find(guide.Owner)){
+        auto p=m_ViewportBounds[0]+guide.Bounds.Position*owner->Scale*scale;
+        auto q=p+guide.Bounds.Size*owner->Scale*scale;
+        draw->AddRect({p.x,p.y},{q.x,q.y},IM_COL32(170,110,255,180));
+    }
     draw->PopClipRect();
 }
 void EditorLayer::UI_Debugger()
@@ -211,17 +216,18 @@ void EditorLayer::UI_Debugger()
                     (unsigned long long)n->Canvas, n->Order);
         ImGui::Text("Visible %s | enabled %s | arranged %s", n->Visible ? "yes" : "no",
                     n->Enabled ? "yes" : "no", n->LayoutResolved ? "yes" : "no");
-        ImGui::Text("Hit %s | focus eligible %s | flow-owned %s", Policy(n->Hit),
-                    n->FocusEligible ? "yes" : "no", n->FlowOwned ? "yes" : "no");
+        ImGui::Text("Hit %s | focus eligible %s | container-owned %s", Policy(n->Hit),
+                    n->FocusEligible ? "yes" : "no", n->ContainerOwned ? "yes" : "no");
         auto rect = [](const char *name, GameUI::Rect r) {
             ImGui::Text("%s: (%.2f, %.2f) %.2f x %.2f", name, r.Position.x, r.Position.y, r.Size.x,
                         r.Size.y);
         };
         rect("Logical bounds", n->Bounds);
         auto mode=[](GameUI::SizeMode value){return value==GameUI::SizeMode::Fixed?"Fixed":value==GameUI::SizeMode::Fill?"Fill":"Content";};
-        ImGui::Text("Layout v%u: %s / %s | controlling parent %llu",n->LayoutVersion,mode(n->WidthMode),mode(n->HeightMode),(unsigned long long)n->Parent);
+        ImGui::Text("Layout v%u: %s / %s | controlling parent %llu",GameUI::RectLayout::SchemaVersion,mode(n->WidthMode),mode(n->HeightMode),(unsigned long long)n->Parent);
         ImGui::Text("Available %.2f x %.2f | measured %.2f x %.2f",n->Available.x,n->Available.y,n->Measured.x,n->Measured.y);
         ImGui::Text("Arranged %.2f x %.2f | overflow %s",n->Bounds.Size.x,n->Bounds.Size.y,n->Overflow?"yes":"no");
+        if(n->GridRow>=0){ImGui::Text("Grid row %d column %d",n->GridRow,n->GridColumn);rect("Allocated cell",n->Slot);}
         rect("Logical clip", n->Clip);
         rect("Pixel bounds", n->PixelBounds);
         rect("Effective pixel clip", n->PixelClip);

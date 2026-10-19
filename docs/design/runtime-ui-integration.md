@@ -249,7 +249,9 @@ were added.
 
 The next layout slice from this checkpoint is recorded below.
 
-## P2 versioned sizing and measure/arrange
+## P2 versioned sizing and measure/arrange (historical checkpoint)
+
+> Superseded by the canonical-container slice below: the version-1/2 resolver and conversion tooling described in this checkpoint were subsequently removed at the user's direction. These paragraphs record what the earlier checkpoint verified, not the current support contract.
 
 Starting at `f8b05a85c21a20fc7d799f42b80998ec7da48fe2`. LayoutVersion 1
 (also missing fields) retains legacy anchors, SizeDelta, pivot and flow exactly.
@@ -349,3 +351,39 @@ and document transaction contracts, with cell placement, native Inspector and
 save/reopen tests. Auto tracks, wrapped containers, aspect modes, scrolling,
 structural/multi-selection history and the known per-element rendering bottleneck
 remain separate work. This slice does not make the full UI system production-ready.
+
+## Canonical containers and image presentation (current work)
+
+The scope correction supersedes the version-compatibility plan above. Repository
+UI is being reauthored to one measured model; schema 3 rejects obsolete UI Rects.
+There will be no shipped legacy resolver or conversion UI. The Sandbox user draft
+remains uncommitted with its presentation preserved and schema fields updated.
+
+Grid: 1–64 explicit Fixed/weighted-Fill tracks per axis, at most 4096 cells.
+Fixed tracks clamp their authored sizes; Fill reserves minima then shares remaining
+space with capped redistribution. Content container axes sum Fixed tracks/gaps;
+Fill tracks require a definite container axis. Tracks never grow from children.
+Explicit cells/spans reserve first; remaining children take first fitting cells
+in row-major order. Overlap, out-of-range spans and capacity exhaustion reject
+atomically. Hidden grid children retain reservations; tracks/empty cells remain.
+Main/Cross align children horizontally/vertically within cells; anchors/offsets/
+pivots do not own slot positions. Child minima may overflow a cell without shrink.
+
+Wrap: Fixed/Fill main axis is required. Visible children break greedily in hierarchy
+order using Fixed/Content sizes or Fill minima, including margins/item gaps.
+Oversized first items retain size on their own line. Each line distributes its
+remaining main space among Fill items; cross thickness is the maximum non-Fill
+size or Fill minimum. Cross Fill fills that line thickness, not the entire panel.
+LineGap separates lines; Main aligns each line, Cross aligns its items, LineAlign
+positions the line block. Cross Content sums line thickness/gaps plus padding.
+Hidden items collapse; disabled items participate. Indefinite child/text/container
+dependencies reject with entity/axis paths, without convergence iterations.
+
+Image fit does not size controls: base-image region pixels supply intrinsic
+measurement; active button-state images use their own region for painting only.
+Stretch keeps background painting over the border box. Contain/Cover/Native fit
+inside padding, with normalized alignment and inherited clipping. Cover crops UVs
+within the selected atlas region; Native uses source pixels as logical units.
+Nine-slice requires Stretch and owns border fitting. Hits remain the arranged
+control box/effective clip, including image letterboxing; fitted paint geometry is
+separate transient diagnostic data. World sprites and renderer batching are unchanged.
