@@ -29,6 +29,7 @@ template <class F> void Reject(F f)
 }
 #include "MeasuredLayoutChecks.h"
 #include "GridLayoutChecks.h"
+#include "WrapLayoutChecks.h"
 static void HardeningChecks()
 {
     // Audit D2: nonempty bounds/clip separately, but no effective intersection.
@@ -92,6 +93,7 @@ int main()
         HardeningChecks();
         MeasuredLayoutChecks();
         GridLayoutChecks();
+        WrapLayoutChecks();
         Check(FitCanvas({0,600},{}).Scale==0,"Minimized canvas did not suspend layout");
         Reject([]{RectLayout r;r.Margin.x=-1;Validate(r);});
         Reject([]{RectLayout r;r.Offset.y=NAN;Validate(r);});

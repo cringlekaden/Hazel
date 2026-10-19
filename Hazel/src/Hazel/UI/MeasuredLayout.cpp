@@ -37,6 +37,9 @@ float MeasuredLayout::Available(size_t i, int axis)
         GridTracks(n.Parent,axis);
         return std::max(0.f,m_SlotSizes[i][axis]-Margin(n.Layout,axis));
     }
+    if(n.Parent!=None && (*m_Nodes)[n.Parent].Container && (*m_Nodes)[n.Parent].Flow.Kind==ContainerKind::Wrap){
+        WrapLines(n.Parent);return std::max(0.f,m_SlotSizes[i][axis]-Margin(n.Layout,axis));
+    }
     float parent =
         n.Parent == None
             ? m_External.Size[axis]
@@ -66,9 +69,9 @@ float MeasuredLayout::Size(size_t i, int axis)
         break;
     case SizeMode::Fill:
         if (n.Parent != None && (*m_Nodes)[n.Parent].Container &&
-            (*m_Nodes)[n.Parent].Flow.Kind==ContainerKind::Stack && Main((*m_Nodes)[n.Parent]) == axis)
+            (*m_Nodes)[n.Parent].Flow.Kind!=ContainerKind::Grid && Main((*m_Nodes)[n.Parent]) == axis)
         {
-            Distribute(n.Parent);
+            if((*m_Nodes)[n.Parent].Flow.Kind==ContainerKind::Wrap)WrapLines(n.Parent);else Distribute(n.Parent);
             desired = m_Sizes[i][axis];
         }
         else
@@ -89,6 +92,12 @@ float MeasuredLayout::Size(size_t i, int axis)
                 children+=t.HasMaximum?std::min(std::max(t.Value,t.Minimum),t.Maximum):std::max(t.Value,t.Minimum);
             }
             children+=(tracks.size()-1)*n.Flow.GridGap[axis];
+        }
+        else if(n.Container && n.Flow.Kind==ContainerKind::Wrap){
+            if(Main(n)==axis)Error(i,axis,"Wrap requires Fixed/Fill main size; Content main is indefinite");
+            WrapLines(i);const auto &lines=m_Groups[i].Lines;
+            for(const auto &line:lines)children+=line.Thickness;
+            if(!lines.empty())children+=(lines.size()-1)*n.Flow.LineGap;
         }
         else for (auto child : n.Children)
         {
@@ -259,6 +268,43 @@ void MeasuredLayout::GridTracks(size_t parent,int axis)
     }
     g.GridState[axis]=2;
 }
+void MeasuredLayout::WrapLines(size_t parent)
+{
+    auto &g=m_Groups[parent];if(g.WrapState==2)return;
+    const auto &n=(*m_Nodes)[parent];int axis=Main(n),cross=1-axis;
+    if(g.WrapState==1)Error(parent,cross,"indefinite wrap dependency: line sizing needs a child's definite main size");
+    if(Mode(n.Layout,axis)==SizeMode::Content)Error(parent,axis,"Wrap requires Fixed/Fill main size; Content main is indefinite");
+    g.WrapState=1;
+    float available=std::max(0.f,Size(parent,axis)-Padding(n.Layout,axis));
+    g.Items.clear();g.Lines.clear();
+    for(auto child:n.Children)if((*m_Nodes)[child].Visible){
+        const auto &c=(*m_Nodes)[child];
+        float preferred=Mode(c.Layout,axis)==SizeMode::Fill?c.Layout.MinimumSize[axis]:Size(child,axis);
+        m_Sizes[child][axis]=preferred;g.Items.push_back(child);
+        float outer=preferred+Margin(c.Layout,axis);
+        if(!std::isfinite(outer))Error(child,axis,"wrap item extent overflow");
+        if(g.Lines.empty() || (g.Lines.back().End>g.Lines.back().Begin && g.Lines.back().Used+n.Flow.Gap+outer>available))
+            g.Lines.push_back({g.Items.size()-1,g.Items.size()-1,0,0,0});
+        auto &line=g.Lines.back();if(line.End>line.Begin)line.Used+=n.Flow.Gap;
+        line.Used+=outer;++line.End;
+    }
+    for(size_t index=0;index<g.Lines.size();++index){
+        auto &line=g.Lines[index];m_Allocations.clear();
+        m_Results[parent].Overflow|=line.Used>available;
+        for(size_t k=line.Begin;k<line.End;++k){auto i=g.Items[k];const auto &c=(*m_Nodes)[i];
+            if(Mode(c.Layout,axis)==SizeMode::Fill)m_Allocations.push_back({i,c.Layout.MinimumSize[axis],c.Layout.MaximumSize[axis],c.Weight,0,c.Layout.HasMaximum[axis]});}
+        line.Spare=Allocate(std::max(0.f,available-line.Used));
+        for(auto &a:m_Allocations){m_Sizes[a.Index][axis]=a.Result;m_State[a.Index][axis]=2;m_Results[a.Index].Measured[axis]=a.Result;}
+        for(size_t k=line.Begin;k<line.End;++k){auto i=g.Items[k];const auto &c=(*m_Nodes)[i];
+            float extent=Mode(c.Layout,cross)==SizeMode::Fill?c.Layout.MinimumSize[cross]:Size(i,cross);
+            line.Thickness=std::max(line.Thickness,extent+Margin(c.Layout,cross));}
+        for(size_t k=line.Begin;k<line.End;++k){auto i=g.Items[k];const auto &c=(*m_Nodes)[i];
+            m_Results[i].Line=int(index);m_SlotSizes[i][axis]=available;m_SlotSizes[i][cross]=line.Thickness;
+            if(Mode(c.Layout,cross)==SizeMode::Fill){float desired=std::max(0.f,line.Thickness-Margin(c.Layout,cross));m_Sizes[i][cross]=Clamp(desired,c.Layout,cross);m_State[i][cross]=2;m_Results[i].Measured[cross]=desired;}}
+        if(!std::isfinite(line.Thickness))Error(parent,cross,"wrap line extent overflow");
+    }
+    g.WrapState=2;
+}
 Rect MeasuredLayout::Content(size_t i)
 {
     return m_Results[i].Bounds.Inset((*m_Nodes)[i].Layout.Padding);
@@ -273,7 +319,7 @@ void MeasuredLayout::Arrange(size_t i)
     out.Bounds.Size = m_Sizes[i];
     for (int axis = 0; axis < 2; ++axis)
     {
-        out.Available[axis] = std::max(0.f, (n.Parent!=None && (*m_Nodes)[n.Parent].Container && (*m_Nodes)[n.Parent].Flow.Kind==ContainerKind::Grid ? m_SlotSizes[i][axis] : parent.Size[axis]) - Margin(n.Layout, axis));
+        out.Available[axis] = std::max(0.f, (n.Parent!=None && (*m_Nodes)[n.Parent].Container && (*m_Nodes)[n.Parent].Flow.Kind!=ContainerKind::Stack ? m_SlotSizes[i][axis] : parent.Size[axis]) - Margin(n.Layout, axis));
         out.Bounds.Position[axis] = parent.Position[axis] +
                                     n.Layout.Anchor[axis] * parent.Size[axis] +
                                     n.Layout.Offset[axis] + n.Layout.Margin[axis] -
@@ -302,6 +348,27 @@ void MeasuredLayout::Arrange(size_t i)
                 m_Positions[child][axis]=result.Slot.Position[axis]+r.Margin[axis]+std::max(0.f,space-m_Sizes[child][axis])*(align==Align::Center?.5f:align==Align::End?1.f:0.f);
                 result.Overflow|=m_Sizes[child][axis]>space;
             }
+        }
+    }
+    else if(n.Container && n.Flow.Kind==ContainerKind::Wrap){
+        WrapLines(i);int axis=Main(n),cross=1-axis;auto content=Content(i);auto &g=m_Groups[i];
+        float extent=g.Lines.empty()?0:(g.Lines.size()-1)*n.Flow.LineGap;
+        for(const auto &line:g.Lines)extent+=line.Thickness;
+        if(!std::isfinite(extent))Error(i,cross,"wrap block extent overflow");
+        m_Results[i].Overflow|=extent>content.Size[cross];
+        float crossCursor=content.Position[cross]+std::max(0.f,content.Size[cross]-extent)*(n.Flow.LineAlign==Align::Center?.5f:n.Flow.LineAlign==Align::End?1.f:0.f);
+        for(size_t l=0;l<g.Lines.size();++l){const auto &line=g.Lines[l];
+            Rect band=content;band.Position[cross]=crossCursor;band.Size[cross]=line.Thickness;
+            m_Guides.push_back({i,cross,int(l),true,band});
+            float cursor=content.Position[axis]+line.Spare*(n.Flow.Main==Align::Center?.5f:n.Flow.Main==Align::End?1.f:0.f);
+            for(size_t k=line.Begin;k<line.End;++k){auto child=g.Items[k];const auto &r=(*m_Nodes)[child].Layout;
+                m_Results[child].Slot=band;
+                m_Positions[child][axis]=cursor+r.Margin[axis];
+                float spare=std::max(0.f,line.Thickness-Margin(r,cross)-m_Sizes[child][cross]);
+                m_Positions[child][cross]=crossCursor+r.Margin[cross]+spare*(n.Flow.Cross==Align::Center?.5f:n.Flow.Cross==Align::End?1.f:0.f);
+                cursor+=m_Sizes[child][axis]+Margin(r,axis)+n.Flow.Gap;
+            }
+            crossCursor+=line.Thickness+n.Flow.LineGap;
         }
     }
     else if (n.Container)
@@ -353,7 +420,7 @@ void MeasuredLayout::Resolve(const std::vector<MeasureNode> &nodes, Rect externa
         m_Distribution.assign(count, 0);
         m_Spare.assign(count, 0);m_SlotSizes.assign(count,{});m_SlotOffsets.assign(count,{});m_Guides.clear();
         if(m_Groups.size()<count)m_Groups.resize(count);
-        for(size_t i=0;i<count;++i){m_Groups[i].Placed=false;m_Groups[i].GridState={};}
+        for(size_t i=0;i<count;++i){m_Groups[i].Placed=false;m_Groups[i].GridState={};m_Groups[i].WrapState=0;}
         m_Depths.assign(count,0);m_Incoming.assign(count,0);
         auto &depths=m_Depths,&incoming=m_Incoming;
         for (size_t i = 0; i < count; ++i)
@@ -369,6 +436,7 @@ void MeasuredLayout::Resolve(const std::vector<MeasureNode> &nodes, Rect externa
             if (n.Container)
             {
                 Validate(n.Flow);
+                if(n.Flow.Kind==ContainerKind::Wrap && Mode(n.Layout,Main(n))==SizeMode::Content)Error(i,Main(n),"Wrap requires a definite Fixed/Fill main size");
             }
             for (auto child : n.Children)
             {

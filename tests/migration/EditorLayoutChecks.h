@@ -149,6 +149,15 @@ static void EditorLayoutChecks()
         auto other=CreateRef<Scene>();auto otherState=SceneSerializer(other).CaptureAuthoredState();Check(!h.Undo(*other)&&SceneSerializer(other).CaptureAuthoredState()==otherState,"Grid edit applied to another document");
         auto serialized=SceneSerializer(f.World).SerializeText();auto loaded=CreateRef<Scene>();Check(SceneSerializer(loaded).DeserializeText(serialized)&&SceneSerializer(loaded).CaptureAuthoredState()==changed,"Grid Inspector save/reopen lost values");
     }
+    {
+        HistoryFixture f;f.Control.AddComponent<UILayoutComponent>();f.World->RefreshUI();DocumentHistory h;h.Bind(f.World->GetIdentity());
+        const auto initial=f.State();auto before=UIEditValues::Capture(f.Control),next=before;next.Flow->Kind=ContainerKind::Wrap;next.Flow->Direction=Axis::Horizontal;next.Flow->LineGap=18;next.Flow->LineAlign=Align::Center;
+        UIInspectorEditing edit;PropertyUI::EditActivity committed;committed.Changed=committed.Committed=true;
+        Check(edit.Edit(*f.World,&h,f.Control.GetUUID(),"Wrap settings",before,next,committed,0),edit.Error());auto accepted=f.State();
+        Check(h.Operations()==1&&h.Undo(*f.World)&&f.State()==initial&&h.Redo(*f.World)&&f.State()==accepted,"Wrap mode/line configuration failed shared history");
+        before=UIEditValues::Capture(f.Control);next=before;next.Rect->WidthMode=SizeMode::Content;
+        Check(!edit.Edit(*f.World,&h,f.Control.GetUUID(),"Indefinite wrap",before,next,committed,0)&&f.State()==accepted,"Indefinite wrap edit replaced valid geometry");edit.Finish(*f.World,&h,true);
+    }
     std::cout << "PASS: canonical grid tracks/atomic history/save-reopen/isolation; "
                  "measured Inspector and complete Fixed/owned-axis gestures\n";
 }

@@ -60,6 +60,7 @@ namespace Hazel {
     public struct UILayoutSettings {
         public UIContainerKind Kind;public UIAxis Direction;public UIAlign Main,Cross,LineAlign;public float Gap,LineGap;public Vector2 GridGap;
         public static UILayoutSettings Stack(UIAxis direction,float gap=12)=>new UILayoutSettings{Kind=UIContainerKind.Stack,Direction=direction,Gap=gap,LineGap=12,GridGap=new Vector2(12,12)};
+        public static UILayoutSettings Wrap(UIAxis direction,float gap=12,float lineGap=12){var settings=Stack(direction,gap);settings.Kind=UIContainerKind.Wrap;settings.LineGap=lineGap;return settings;}
         public static UILayoutSettings Grid(Vector2 gap)=>new UILayoutSettings{Kind=UIContainerKind.Grid,GridGap=gap,Gap=12,LineGap=12};
     }
     public struct UIGridCell {

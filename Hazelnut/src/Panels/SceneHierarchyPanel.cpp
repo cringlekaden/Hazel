@@ -72,7 +72,7 @@ bool SceneHierarchyPanel::AddUI(int kind) {
         if(kind!=0&&(!parent||(!parent.HasComponent<UIRectComponent>()&&!parent.HasComponent<UICanvasComponent>()))) {
             auto canvas=m_Context->CreateEntity("UI Canvas");canvas.AddComponent<UICanvasComponent>();if(parent)m_Context->Reparent(canvas,parent,TransformPolicy::KeepLocal);parent=canvas;
         }
-        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid"};
+        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid","UI Wrap"};
         auto e=m_Context->CreateEntity(names[kind]);if(parent)m_Context->Reparent(e,parent,TransformPolicy::KeepLocal);
         if(kind==0)e.AddComponent<UICanvasComponent>();
         else {
@@ -82,11 +82,14 @@ bool SceneHierarchyPanel::AddUI(int kind) {
             if(kind==3){e.AddComponent<SpriteRendererComponent>(glm::vec4(.15f,.25f,.35f,1));e.AddComponent<UIButtonComponent>();}
             if(kind==4){rect.FixedSize={360,240};auto &flow=e.AddComponent<UILayoutComponent>();flow.Cross=GameUI::Align::Start;rect.HeightMode=GameUI::SizeMode::Content;rect.Padding=glm::vec4(12);}
             if(kind==5){rect.FixedSize={360,240};auto &grid=e.AddComponent<UILayoutComponent>();grid.Kind=GameUI::ContainerKind::Grid;grid.Columns.assign(3,GameUI::Track{});grid.Rows.assign(2,GameUI::Track{});}
+            if(kind==6){rect.FixedSize={360,240};auto &wrap=e.AddComponent<UILayoutComponent>();wrap.Kind=GameUI::ContainerKind::Wrap;wrap.Direction=GameUI::Axis::Horizontal;rect.HeightMode=GameUI::SizeMode::Content;rect.Padding=glm::vec4(12);}
             if(kind==2){rect.WidthMode=rect.HeightMode=GameUI::SizeMode::Content;}
             if(kind==3){rect.HeightMode=GameUI::SizeMode::Content;rect.MinimumSize={48,40};}
             if(parent && !parent.HasComponent<UICanvasComponent>() && parent.HasComponent<UIRectComponent>() && parent.HasComponent<UILayoutComponent>()){
                 rect.Offset={};
-                if(parent.GetComponent<UILayoutComponent>().Kind==GameUI::ContainerKind::Grid || parent.GetComponent<UILayoutComponent>().Direction==GameUI::Axis::Vertical)rect.WidthMode=GameUI::SizeMode::Fill;
+                auto &container=parent.GetComponent<UILayoutComponent>();
+                if(container.Kind==GameUI::ContainerKind::Grid || (container.Kind==GameUI::ContainerKind::Stack && container.Direction==GameUI::Axis::Vertical))rect.WidthMode=GameUI::SizeMode::Fill;
+                if(container.Kind==GameUI::ContainerKind::Wrap && kind==3)rect.WidthMode=GameUI::SizeMode::Content;
             }
         }
         return SetSelectedEntity(e);
@@ -94,8 +97,8 @@ bool SceneHierarchyPanel::AddUI(int kind) {
 }
 void SceneHierarchyPanel::UIAddMenu(){
     if(ImGui::BeginMenu("Runtime UI")) {
-        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid"};
-        for(int i=0;i<6;i++)if(ImGui::MenuItem(names[i]))AddUI(i);
+        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap"};
+        for(int i=0;i<7;i++)if(ImGui::MenuItem(names[i]))AddUI(i);
         ImGui::EndMenu();
     }
 }
@@ -380,7 +383,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     },[this](const std::string& error){m_HierarchyError=error;});
     DrawUIComponent<UILayoutComponent>("UI Container",entity,m_Sections,m_RestoreSections,[](auto& c){
         int kind=int(c.Kind),axis=int(c.Direction),main=int(c.Main),cross=int(c.Cross);
-        if(PropertyUI::Combo("kind","Container",kind,"Stack\0Grid\0"))c.Kind=GameUI::ContainerKind(kind);
+        if(PropertyUI::Combo("kind","Container",kind,"Stack\0Grid\0Wrap\0"))c.Kind=GameUI::ContainerKind(kind);
         if(c.Kind==GameUI::ContainerKind::Grid){
             PropertyUI::Vector("grid-gap","Column / row gaps",glm::value_ptr(c.GridGap),2,1,nullptr,"%.1f",{},0,4096);
             auto tracks=[](const char *name,std::vector<GameUI::Track> &values){
@@ -400,6 +403,11 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         }else{
             if(PropertyUI::Combo("axis","Direction",axis,"Horizontal\0Vertical\0"))c.Direction=GameUI::Axis(axis);
             PropertyUI::DragFloat("gap","Item gap (px)",c.Gap,1,0,4096);
+            if(c.Kind==GameUI::ContainerKind::Wrap){
+                PropertyUI::DragFloat("line-gap","Line gap (px)",c.LineGap,1,0,4096);
+                int line=int(c.LineAlign);if(PropertyUI::Combo("line-align","Line block alignment",line,"Start\0Center\0End\0"))c.LineAlign=GameUI::Align(line);
+                PropertyUI::Help("Main size must be Fixed/Fill. Items break greedily; Fill uses its minimum for breaking and shares space within the resulting line. Cross Fill fills line thickness, not the panel.");}
+
         }
         if(PropertyUI::Combo("main",c.Kind==GameUI::ContainerKind::Grid?"Cell horizontal":"Main alignment",main,"Start\0Center\0End\0"))c.Main=GameUI::Align(main);
         if(PropertyUI::Combo("cross",c.Kind==GameUI::ContainerKind::Grid?"Cell vertical":"Cross alignment",cross,"Start\0Center\0End\0"))c.Cross=GameUI::Align(cross);
@@ -425,7 +433,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     DrawUIComponent<UIButtonComponent>("UI Button",entity,m_Sections,m_RestoreSections,[this](auto& c){
         PropertyUI::Text("action","Action identity",c.Action);PropertyUI::DragInt("tab","Tab order",c.TabOrder);PropertyUI::Checkbox("interactive","Interactable",c.Interactable);
         const char* states[]={"Normal","Hovered","Pressed","Disabled","Focused"};
-        for(int i=0;i<6;i++){ImGui::PushID(i);PropertyUI::Color("tint",states[i],glm::value_ptr(c.Colors[i]));if(ImGui::TreeNode("State image (optional)")){SpriteRendererComponent temp;temp.Source=c.Images[i];temp.Color=c.Colors[i];SpriteSourceEditor(temp,m_UIStatePickers[i],OpenAsset,[this]{return CanEdit(true);});c.Images[i]=temp.Source;c.Colors[i]=temp.Color;ImGui::TreePop();}ImGui::PopID();}
+        for(int i=0;i<7;i++){ImGui::PushID(i);PropertyUI::Color("tint",states[i],glm::value_ptr(c.Colors[i]));if(ImGui::TreeNode("State image (optional)")){SpriteRendererComponent temp;temp.Source=c.Images[i];temp.Color=c.Colors[i];SpriteSourceEditor(temp,m_UIStatePickers[i],OpenAsset,[this]{return CanEdit(true);});c.Images[i]=temp.Source;c.Colors[i]=temp.Color;ImGui::TreePop();}ImGui::PopID();}
         PropertyUI::Help("C#: UIButtonComponent.TryConsumeAction or GameUI.TryConsumeAction. Pointer activation occurs on release; Tab/arrows change focus; Enter/Space activate once.");
     });
 

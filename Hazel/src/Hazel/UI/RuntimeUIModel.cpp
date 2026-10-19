@@ -99,7 +99,7 @@ void Validate(const Track &c)
 }
 void Validate(const FlowLayout &c)
 {
-    if(c.Kind<ContainerKind::Stack || c.Kind>ContainerKind::Grid ||
+    if(c.Kind<ContainerKind::Stack || c.Kind>ContainerKind::Wrap ||
        c.Direction<Axis::Horizontal || c.Direction>Axis::Vertical ||
        c.Main<Align::Start || c.Main>Align::End || c.Cross<Align::Start || c.Cross>Align::End ||
        c.LineAlign<Align::Start || c.LineAlign>Align::End ||

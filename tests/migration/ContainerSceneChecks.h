@@ -24,6 +24,22 @@ static void ContainerSceneChecks(const std::filesystem::path &root)
     Check(SceneSerializer(Scene::Copy(scene),root).CaptureAuthoredState()==authored,"Grid scene clone changed authored fields");
     Prefab::Save(root,"grid.hprefab",scene,grid);auto instance=Prefab::Instantiate(root,"grid.hprefab",*loaded);
     Check(instance.GetComponent<UILayoutComponent>().Columns.size()==2&&instance.GetComponent<UILayoutComponent>().Columns[0].Value==2,"Grid prefab lost track definitions");
+    // The same live scene switches container ownership; no duplicate editor geometry.
+    for(auto id:children){auto &r=scene->GetEntityByUUID(id).GetComponent<UIRectComponent>();r.WidthMode=r.HeightMode=SizeMode::Fixed;r.FixedSize={110,40};}
+    auto wrap=grid.GetComponent<UILayoutComponent>();wrap.Kind=ContainerKind::Wrap;wrap.Direction=Axis::Horizontal;wrap.Gap=8;wrap.LineGap=9;
+    scene->SetUILayout(grid.GetUUID(),wrap);scene->SetUISizing(grid.GetUUID(),Axis::Vertical,SizeMode::Content,160);
+    Check(scene->GetUISnapshot().Find(children[2])->Line==1&&scene->GetUISnapshot().Find(grid.GetUUID())->Bounds.Size.y==89,"Scene wrap lines/Content height failed");
+    auto label=scene->GetEntityByUUID(children[0]);label.AddComponent<TextComponent>().TextString="One";label.AddComponent<UITextStyleComponent>().Size=20;label.GetComponent<UIRectComponent>().HeightMode=SizeMode::Content;
+    scene->RefreshUI();auto oldHeight=scene->GetUISnapshot().Find(children[0])->Bounds.Size.y;
+    scene->UpdateUIInput(input);inputGeneration=scene->GetUIDiagnostics().InputGeneration;
+    label.GetComponent<TextComponent>().TextString="A longer translated label that wraps over several lines";scene->RefreshUI();
+    Check(scene->GetUISnapshot().Find(children[0])->Bounds.Size.y>oldHeight&&scene->GetUISnapshot().Generation>inputGeneration&&scene->GetUIDiagnostics().InputGeneration==inputGeneration,"Text mutation did not remeasure/reflow wrap between input and rendering");
+    generation=scene->GetUISnapshot().Generation;scene->RefreshUI();Check(scene->GetUISnapshot().Generation==generation,"Unchanged wrap generation rebuilt");
+    scene->SetUISizing(grid.GetUUID(),Axis::Horizontal,SizeMode::Fixed,140);
+    Check(scene->GetUISnapshot().Find(children[2])->Line==2,"Narrow runtime constraint did not reflow wrap");
+    scene->GetEntityByUUID(children[1]).GetComponent<UIRectComponent>().Enabled=false;scene->RefreshUI();Check(scene->GetUISnapshot().Find(children[2])->Line==2,"Disabled wrap child collapsed layout");
+    scene->GetEntityByUUID(children[1]).GetComponent<UIRectComponent>().Visible=false;scene->RefreshUI();Check(scene->GetUISnapshot().Find(children[2])->Line==1,"Hidden wrap child failed to collapse");
+    auto wrapText=SceneSerializer(scene,root).SerializeText();auto wrapCopy=CreateRef<Scene>();Check(SceneSerializer(wrapCopy,root).DeserializeText(wrapText)&&SceneSerializer(wrapCopy,root).CaptureAuthoredState()==SceneSerializer(scene,root).CaptureAuthoredState(),"Wrap serialization lost authored values");
     auto unsupported=yaml;auto at=unsupported.find("LayoutVersion: 3");unsupported.replace(at,16,"LayoutVersion: 2");auto before=SceneSerializer(scene,root).CaptureAuthoredState();
     Check(!SceneSerializer(scene,root).DeserializeText(unsupported)&&SceneSerializer(scene,root).CaptureAuthoredState()==before,"Unsupported schema partially replaced a document");
     std::cout<<"PASS: scene grid generation reuse/native writes/atomic mutation/cell eligibility and schema-copy-prefab roundtrip\n";

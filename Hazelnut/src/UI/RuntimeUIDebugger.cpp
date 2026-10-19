@@ -227,6 +227,7 @@ void EditorLayer::UI_Debugger()
         ImGui::Text("Layout v%u: %s / %s | controlling parent %llu",GameUI::RectLayout::SchemaVersion,mode(n->WidthMode),mode(n->HeightMode),(unsigned long long)n->Parent);
         ImGui::Text("Available %.2f x %.2f | measured %.2f x %.2f",n->Available.x,n->Available.y,n->Measured.x,n->Measured.y);
         ImGui::Text("Arranged %.2f x %.2f | overflow %s",n->Bounds.Size.x,n->Bounds.Size.y,n->Overflow?"yes":"no");
+        if(n->Line>=0){ImGui::Text("Wrap line %d",n->Line);rect("Allocated line",n->Slot);}
         if(n->GridRow>=0){ImGui::Text("Grid row %d column %d",n->GridRow,n->GridColumn);rect("Allocated cell",n->Slot);}
         rect("Logical clip", n->Clip);
         rect("Pixel bounds", n->PixelBounds);

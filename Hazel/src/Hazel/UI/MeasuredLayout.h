@@ -43,11 +43,16 @@ class MeasuredLayout
     float Available(size_t node, int axis);
     void Distribute(size_t parent);
     void PlaceGrid(size_t parent);
+    void WrapLines(size_t parent);
+    struct WrapLine {size_t Begin,End;float Used,Thickness,Spare;};
     void GridTracks(size_t parent, int axis);
     struct Allocation { size_t Index; float Minimum,Maximum,Weight,Result; bool Capped; };
     float Allocate(float free);
     struct Group {
         bool Placed=false;
+        unsigned char WrapState=0;
+        std::vector<size_t> Items;
+        std::vector<WrapLine> Lines;
         std::array<unsigned char,2> GridState{};
         std::array<std::vector<float>,2> Tracks,Starts;
     };

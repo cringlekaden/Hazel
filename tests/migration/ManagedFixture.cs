@@ -211,6 +211,8 @@ namespace Migration {
             if(container.Settings.Kind!=Hazel.UIContainerKind.Grid||container.Columns.Length!=2||container.Columns[1].Limit!=200||measured.Cell.Column!=1)throw new System.Exception("Managed grid ABI roundtrip failed");
             bool invalidGrid=false;try{container.SetGrid(new Hazel.UITrack[0],container.Rows,new Hazel.Vector2(0,0));}catch(System.InvalidOperationException){invalidGrid=true;}
             if(!invalidGrid||container.Columns.Length!=2)throw new System.Exception("Invalid grid mutation changed accepted state");
+            container.Settings=Hazel.UILayoutSettings.Wrap(Hazel.UIAxis.Horizontal,4,9);
+            if(container.Settings.LineGap!=9||container.Settings.Kind!=Hazel.UIContainerKind.Wrap)throw new System.Exception("Managed wrap settings roundtrip failed");
             Passed=canvas.Visible&&canvas.Enabled&&canvas.Modal&&rect.Visible&&rect.Enabled&&button.Interactable;
         }
     }
