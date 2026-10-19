@@ -73,6 +73,7 @@ public:
             EditorHistoryChecks();
             EditorLayoutChecks();
             HistoryWorkflowChecks();
+            ContainerWorkflowChecks();
             CaptionChecks();
             WorkspaceChecks();
             NativeCreationChecks();
@@ -851,6 +852,7 @@ private:
         std::cout<<"PASS: prefab identity/independence/self/external references/malformed assets, script creation, preferences recovery/scopes, absolute Python discovery\n";
     }
     #include "EditorHistoryWorkflowChecks.h"
+    #include "EditorContainerWorkflowChecks.h"
     void HierarchyAuthoringChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=e.m_SceneHierarchyPanel;
         const auto scene=e.m_EditorScene;const auto before=a.SceneText();const auto saved=a.m_SceneHistory.SavedAuthored();

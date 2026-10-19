@@ -51,6 +51,15 @@ void Scene::SetUIGridCell(uint64_t id,int row,int column,unsigned rowSpan,unsign
     GameUI::Validate(next);live=next;
     try{ValidateUILayoutDependencies();RefreshUI();}catch(...){live=before;try{RefreshUI();}catch(...){}throw;}
 }
+void Scene::SetUIImageFit(uint64_t id,GameUI::ImageFit fit,glm::vec2 alignment)
+{
+    CheckThread();auto e=GetEntityByUUID(id);
+    if(IsStopping()||!e||!IsEntityValid(id)||!e.HasComponent<UIRectComponent>())throw std::invalid_argument("Image fit needs a live UI Rect");
+    GameUI::FitImage({}, {1,1},fit,alignment);
+    if(e.HasComponent<UINineSliceComponent>()&&fit!=GameUI::ImageFit::Stretch)throw std::invalid_argument("Nine-slice requires Stretch image fit");
+    auto &r=e.GetComponent<UIRectComponent>();r.Fit=fit;r.ImageAlignment=alignment;
+}
+bool Scene::GetUIImageVisual(uint64_t id,GameUI::UIImageVisual &result) const {CheckThread();return m_UI->ImageVisual(id,result);}
 void Scene::UpdateUIInput(const GameUI::InputFrame &frame)
 {
     RefreshUI();
@@ -182,8 +191,7 @@ void Scene::ValidateUI(bool resources)
                     if (!sprite->Texture)
                         throw std::runtime_error("Nine-slice needs an image");
                     auto size =
-                        glm::abs(sprite->UV[2] - sprite->UV[0]) *
-                        glm::vec2(sprite->Texture->GetWidth(), sprite->Texture->GetHeight());
+                        sprite->PixelSize();
                     if (borders.x + borders.z > size.x || borders.y + borders.w > size.y)
                         throw std::runtime_error("Nine-slice borders exceed source");
                 };

@@ -207,6 +207,10 @@ void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
         GameUI::Validate(*v.Rect);
         Positive(v.Rect->Flex);
     }
+    if(v.Rect){
+        GameUI::FitImage({}, {1,1},v.Rect->Fit,v.Rect->ImageAlignment);
+        if(v.Slice&&v.Rect->Fit!=GameUI::ImageFit::Stretch)throw std::invalid_argument("Nine-slice requires Stretch image fit");
+    }
     if (v.Flow)
     {
         GameUI::Validate(*v.Flow);
@@ -282,8 +286,7 @@ void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
                 auto sprite = assets->Resolve(source);
                 if (!sprite || !sprite->Texture)
                     throw std::invalid_argument("Nine-slice requires an image");
-                auto size = glm::abs(sprite->UV[2] - sprite->UV[0]) *
-                            glm::vec2(sprite->Texture->GetWidth(), sprite->Texture->GetHeight());
+                auto size = sprite->PixelSize();
                 if (v.Slice->Borders.x + v.Slice->Borders.z > size.x ||
                     v.Slice->Borders.y + v.Slice->Borders.w > size.y)
                     throw std::invalid_argument("Nine-slice borders exceed the source region");

@@ -352,7 +352,7 @@ save/reopen tests. Auto tracks, wrapped containers, aspect modes, scrolling,
 structural/multi-selection history and the known per-element rendering bottleneck
 remain separate work. This slice does not make the full UI system production-ready.
 
-## Canonical containers and image presentation (current work)
+## Canonical containers and image presentation
 
 The scope correction supersedes the version-compatibility plan above. Repository
 UI is being reauthored to one measured model; schema 3 rejects obsolete UI Rects.
@@ -387,3 +387,17 @@ within the selected atlas region; Native uses source pixels as logical units.
 Nine-slice requires Stretch and owns border fitting. Hits remain the arranged
 control box/effective clip, including image letterboxing; fitted paint geometry is
 separate transient diagnostic data. World sprites and renderer batching are unchanged.
+
+The canonical slice removes `ResolveRect`, `ArrangeFlow`, the Rect legacy mode and
+`UILayoutConversion`/its dialog/commands. One schema-3 Rect has one point Anchor;
+Fixed/Fill/Content is the only sizing interpretation. All repository-owned UI
+scenes/prefabs and fixture APIs are reauthored; no permanent migrator ships.
+`ResolvedSprite::SourceSize` records atlas region pixel dimensions separately
+from half-texel-safe sample UVs. Layout, nine-slice validation and fit now use
+that extent. Image-fit diagnostics are last-paint values, separate from the
+immutable layout snapshot; fitting/alignment are paint-only changes.
+
+Stage checkpoints: canonical/grid `a73d455`, wrap `5cdd75b`. Focused CPU checks
+pass for track/span/cap allocation, horizontal/vertical wrap, overflow/cycles,
+and image fit/crop/alignment/zero inputs. Full integration qualification follows
+below after fresh builds; these CPU checks do not establish GPU performance.

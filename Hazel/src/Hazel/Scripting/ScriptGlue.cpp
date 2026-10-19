@@ -421,6 +421,14 @@ namespace Hazel {
         MonoException* failure=nullptr;try{if(rowSpan<1||columnSpan<1)throw std::invalid_argument("Cell spans must be positive");auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI requires a runtime scene");scene->SetUIGridCell(id,row,column,unsigned(rowSpan),unsigned(columnSpan));}
         catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);
     }
+    static void UI_GetImageFit(uint64_t id,int* fit,glm::vec2* alignment) {
+        MonoException* failure=nullptr;try{auto e=CheckedSpriteEntity<UIRectComponent>(id);auto &r=e.GetComponent<UIRectComponent>();*fit=int(r.Fit);*alignment=r.ImageAlignment;}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);
+    }
+    static void UI_SetImageFit(uint64_t id,int fit,glm::vec2* alignment) {
+        MonoException* failure=nullptr;try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI requires a runtime scene");scene->SetUIImageFit(id,GameUI::ImageFit(fit),*alignment);}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);
+    }
     static bool* UI_Value(uint64_t id,int property) {
         auto* scene=ScriptEngine::GetSceneContext();auto e=scene?scene->GetEntityByUUID(id):Entity{};
         if(!e||!scene->IsEntityValid(id))return nullptr;
@@ -507,6 +515,8 @@ namespace Hazel {
         HZ_ADD_INTERNAL_CALL(UI_GetValue);
         HZ_ADD_INTERNAL_CALL(UI_SetValue);
         HZ_ADD_INTERNAL_CALL(UI_LayoutVersion);
+        HZ_ADD_INTERNAL_CALL(UI_GetImageFit);
+        HZ_ADD_INTERNAL_CALL(UI_SetImageFit);
         HZ_ADD_INTERNAL_CALL(UI_GetLayout);
         HZ_ADD_INTERNAL_CALL(UI_TrackCount);
         HZ_ADD_INTERNAL_CALL(UI_GetTrack);

@@ -8,6 +8,9 @@ struct ResolvedSprite {
     std::array<glm::vec2,4> UV{{{0,0},{1,0},{1,1},{0,1}}};
     std::array<glm::vec2,4> Corners=SpriteCorners({.5f,.5f});
     float TilingFactor=1;
+    glm::vec2 SourceSize{}; // authored region pixels, independent of half-texel sample UVs
+    glm::vec2 PixelSize() const {return SourceSize.x>0&&SourceSize.y>0?SourceSize:Texture?glm::vec2(Texture->GetWidth(),Texture->GetHeight()):glm::vec2(0);}
+
 };
 struct SpriteResolution { Ref<const ResolvedSprite> Data; std::string Error; };
 struct ResolvedClip {

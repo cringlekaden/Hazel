@@ -227,7 +227,16 @@ void MeasuredLayout::PlaceGrid(size_t parent)
     for(auto child:n.Children) {
         if((*m_Nodes)[child].Layout.GridRow>=0)continue;
         bool placed=false;
-        for(int cell=0;cell<rows*columns;++cell)
+        const auto &placement=(*m_Nodes)[child].Layout;
+        if(placement.RowSpan==1&&placement.ColumnSpan==1){
+            const uint64_t legal=columns==64?~uint64_t(0):(uint64_t(1)<<columns)-1;
+            for(int row=0;row<rows;++row){
+                if(++work>16*1024*1024)Error(child,0,"grid placement work limit exceeded; use explicit cells");
+                uint64_t free=~occupied[row]&legal;if(!free)continue;
+                int col=0;while(!(free&(uint64_t(1)<<col)))++col;
+                placed=reserve(child,row,col,false);break;
+            }
+        }else for(int cell=0;cell<rows*columns;++cell)
             if(reserve(child,cell/columns,cell%columns,true)) {
                 reserve(child,cell/columns,cell%columns,false);placed=true;break;
             }

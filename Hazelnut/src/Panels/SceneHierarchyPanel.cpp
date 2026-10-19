@@ -375,6 +375,13 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             if(PropertyUI::DragInt("row-span","Row span",rows,1,1,64))c.RowSpan=unsigned(rows);
             if(PropertyUI::DragInt("column-span","Column span",cols,1,1,64))c.ColumnSpan=unsigned(cols);
         }
+        if(entity.HasComponent<SpriteRendererComponent>()){
+            int fit=int(c.Fit);
+            if(entity.HasComponent<UINineSliceComponent>())PropertyUI::ReadOnly("fit-owned","Image fit","Stretch (nine-slice)");
+            else if(PropertyUI::Combo("image-fit","Image fit",fit,"Stretch\0Contain\0Cover\0Native size\0"))c.Fit=GameUI::ImageFit(fit);
+            if(c.Fit!=GameUI::ImageFit::Stretch)PropertyUI::Vector("image-align","Image alignment",glm::value_ptr(c.ImageAlignment),2,.01f,nullptr,"%.2f",{},0,1);
+            PropertyUI::Help("Stretch paints the border box. Other modes use the padded content box and source region; alignment is 0 = left/top, 1 = right/bottom. Fit changes art, not text layout or button hit bounds.");
+        }
         PropertyUI::Vector("margin","Margin L/T/R/B",glm::value_ptr(c.Margin),4,1,nullptr,"%.0f",{},0,4096);
         PropertyUI::Vector("padding","Padding L/T/R/B",glm::value_ptr(c.Padding),4,1,nullptr,"%.0f",{},0,4096);
         PropertyUI::DragFloat("flex","Fill weight (0 = 1)",c.Flex,.1f,0,100);

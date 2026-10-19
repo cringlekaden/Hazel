@@ -58,6 +58,8 @@ namespace Hazel {
         void SetUIFramebufferSize(glm::vec2 size);
         const GameUI::ResolvedSnapshot& GetUISnapshot() const;
         GameUI::RuntimeUIDiagnostics GetUIDiagnostics() const;
+        bool GetUIImageVisual(uint64_t entity,GameUI::UIImageVisual &result) const;
+        void SetUIImageFit(uint64_t entity,GameUI::ImageFit fit,glm::vec2 alignment={.5f,.5f});
         void RefreshUI();
         void SetUILayout(uint64_t entity, const GameUI::FlowLayout &layout);
     void SetUIGridCell(uint64_t entity,int row,int column,unsigned rowSpan=1,unsigned columnSpan=1);

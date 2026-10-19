@@ -109,6 +109,30 @@ void Validate(const FlowLayout &c)
     for(const auto &t:c.Columns)Validate(t);
     for(const auto &t:c.Rows)Validate(t);
 }
+ImagePlacement FitImage(const Rect &box,glm::vec2 source,ImageFit fit,glm::vec2 alignment)
+{
+    CheckRect(box);
+    if(!Nonnegative(source)||!Finite(alignment)||alignment.x<0||alignment.y<0||alignment.x>1||alignment.y>1||fit<ImageFit::Stretch||fit>ImageFit::Native)
+        throw std::invalid_argument("Image fit needs a valid mode, finite source size and normalized alignment");
+    ImagePlacement out;out.Visual={box.Position,{}};
+    if(box.Size.x==0||box.Size.y==0){out.UV.Size={};return out;}
+    if(fit==ImageFit::Stretch){out.Visual=box;return out;}
+    if(source.x==0||source.y==0){out.UV.Size={};return out;}
+    if(fit==ImageFit::Contain){
+        double scale=std::min(double(box.Size.x)/source.x,double(box.Size.y)/source.y);
+        out.Visual.Size={float(source.x*scale),float(source.y*scale)};
+        out.Visual.Position=box.Position+glm::max(glm::vec2(0),box.Size-out.Visual.Size)*alignment;
+    }else if(fit==ImageFit::Cover){
+        double scale=std::max(double(box.Size.x)/source.x,double(box.Size.y)/source.y);
+        out.Visual=box;out.UV.Size={float(box.Size.x/(source.x*scale)),float(box.Size.y/(source.y*scale))};
+        out.UV.Position=(glm::vec2(1)-out.UV.Size)*alignment;
+    }else{
+        out.Visual.Size=glm::min(box.Size,source);
+        out.Visual.Position=box.Position+glm::max(glm::vec2(0),box.Size-source)*alignment;
+        out.UV.Size=out.Visual.Size/source;out.UV.Position=(glm::vec2(1)-out.UV.Size)*alignment;
+    }
+    CheckRect(out.Visual);return out;
+}
 Rect FramebufferCoverage(const Rect &pixels, glm::vec2 ratio, glm::vec2 framebuffer)
 {
     CheckRect(pixels);

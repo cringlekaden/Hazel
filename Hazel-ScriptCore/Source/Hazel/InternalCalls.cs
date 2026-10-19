@@ -5,6 +5,8 @@ namespace Hazel
 {
 	public static class InternalCalls
 	{
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_GetImageFit(ulong id,out int fit,out Vector2 alignment);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_SetImageFit(ulong id,int fit,ref Vector2 alignment);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_GetLayout(ulong id,out UILayoutSettings settings);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static int UI_TrackCount(ulong id,bool rows);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_GetTrack(ulong id,bool rows,int index,out UITrack track);

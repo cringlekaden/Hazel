@@ -100,8 +100,7 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
                     throw std::invalid_argument("Intrinsic UI image needs project assets");
                 auto sprite = assets->Resolve(source);
                 if (sprite->Texture)
-                    pixels = glm::abs(sprite->UV[2] - sprite->UV[0]) *
-                             glm::vec2(sprite->Texture->GetWidth(), sprite->Texture->GetHeight());
+                    pixels = sprite->PixelSize();
             }
         }
         cache.MeasureImageSource = source;

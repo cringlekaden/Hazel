@@ -648,8 +648,7 @@ void Image(Rect bounds, float scale, const ResolvedSprite &sprite, const glm::ve
     }
     if (!sprite.Texture)
         throw std::runtime_error("Nine-slice requires a texture/sprite");
-    const glm::vec2 sourceSize = glm::abs(sprite.UV[2] - sprite.UV[0]) *
-                                 glm::vec2(sprite.Texture->GetWidth(), sprite.Texture->GetHeight());
+    const glm::vec2 sourceSize = sprite.PixelSize();
     if (!std::isfinite(nine->BorderScale) || nine->BorderScale <= 0)
         throw std::invalid_argument("Invalid nine-slice border scale");
     auto b = nine->Borders;
@@ -683,6 +682,12 @@ void Image(Rect bounds, float scale, const ResolvedSprite &sprite, const glm::ve
         }
 }
 } // namespace
+bool RuntimeUI::ImageVisual(uint64_t id,UIImageVisual &result) const
+{
+    auto it=m_Cache.find(id);auto n=m_Resolved.Find(id);
+    if(!m_Resolved.Valid||!n||!n->LayoutResolved||it==m_Cache.end()||!it->second.PaintImage.Generation||it->second.PaintImage.Generation!=m_Resolved.Generation)return false;
+    result=it->second.PaintImage;return true;
+}
 void RuntimeUI::Draw()
 {
     if (!m_Resolved.Valid || m_Resolved.PainterOrder.empty() ||
@@ -753,8 +758,19 @@ void RuntimeUI::Draw()
                     }
                     sprite = cache.Images[stateIndex].get();
                 }
-                if (sprite)
-                    Image(n.Bounds, n.Scale, *sprite, s.Color * tint, int(uint32_t(e)), nine);
+                if(sprite){
+                    auto &rect=e.GetComponent<UIRectComponent>();
+                    if(nine&&rect.Fit!=ImageFit::Stretch)throw std::invalid_argument("Nine-slice requires Stretch image fit");
+                    glm::vec2 sourceSize=sprite->PixelSize();
+                    auto fitted=FitImage(rect.Fit==ImageFit::Stretch?n.Bounds:n.Bounds.Inset(rect.Padding),sourceSize,rect.Fit,rect.ImageAlignment);
+                    auto draw=*sprite;
+                    // Sprite UVs use bottom-left coordinates; fit/crop uses top-left local units.
+                    auto lo=fitted.UV.Position,hi=lo+fitted.UV.Size;
+                    auto uv=[&](float u,float v){return sprite->UV[0]+(sprite->UV[2]-sprite->UV[0])*glm::vec2(u,v);};
+                    draw.UV={uv(lo.x,1-hi.y),uv(hi.x,1-hi.y),uv(hi.x,1-lo.y),uv(lo.x,1-lo.y)};
+                    if(fitted.Visual.Size.x>0&&fitted.Visual.Size.y>0)Image(fitted.Visual,n.Scale,draw,s.Color*tint,int(uint32_t(e)),nine);
+                    m_Cache[n.ID].PaintImage={m_Resolved.Generation,sourceSize,rect.Fit,fitted};
+                }
             }
             // A text/image element still respects painter order across renderer
             // batches.

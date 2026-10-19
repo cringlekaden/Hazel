@@ -213,6 +213,10 @@ namespace Migration {
             if(!invalidGrid||container.Columns.Length!=2)throw new System.Exception("Invalid grid mutation changed accepted state");
             container.Settings=Hazel.UILayoutSettings.Wrap(Hazel.UIAxis.Horizontal,4,9);
             if(container.Settings.LineGap!=9||container.Settings.Kind!=Hazel.UIContainerKind.Wrap)throw new System.Exception("Managed wrap settings roundtrip failed");
+            measured.SetImageFit(Hazel.UIImageFit.Cover,new Hazel.Vector2(1,0));
+            if(measured.ImageFit!=Hazel.UIImageFit.Cover||measured.ImageAlignment.X!=1)throw new System.Exception("Managed image fitting roundtrip failed");
+            bool invalidFit=false;try{measured.SetImageFit(Hazel.UIImageFit.Contain,new Hazel.Vector2(2,0));}catch(System.InvalidOperationException){invalidFit=true;}
+            if(!invalidFit||measured.ImageFit!=Hazel.UIImageFit.Cover)throw new System.Exception("Invalid managed fit changed accepted values");
             Passed=canvas.Visible&&canvas.Enabled&&canvas.Modal&&rect.Visible&&rect.Enabled&&button.Interactable;
         }
     }

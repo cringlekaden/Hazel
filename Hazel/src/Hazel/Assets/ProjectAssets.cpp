@@ -49,7 +49,7 @@ Ref<const ResolvedSprite> ProjectAssets::Resolve(const SpriteSource& source) {
         if(!r->Region && r->Sheet.empty())return draw;
         auto key=ReferenceKey(r->Sheet,r->Region);auto it=m_Sprites.find(key);if(it!=m_Sprites.end()) return it->second;
         auto sheet=Sheet(r->Sheet);auto region=sheet->Region(r->Region);
-        draw->Texture=Texture(sheet->Texture,sheet->Sampling); draw->UV=SpriteUV(region.Rect,sheet->Sampling.Width,sheet->Sampling.Height);draw->Corners=SpriteCorners(region.Pivot);
+        draw->Texture=Texture(sheet->Texture,sheet->Sampling); draw->UV=SpriteUV(region.Rect,sheet->Sampling.Width,sheet->Sampling.Height);draw->Corners=SpriteCorners(region.Pivot);draw->SourceSize={region.Rect.Width,region.Rect.Height};
         m_Sprites.emplace(key,draw);
     }
     return draw;

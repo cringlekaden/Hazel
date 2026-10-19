@@ -156,6 +156,7 @@ void EditorLayer::UI_DebugOverlay()
         };
         if (m_UIBoundsOverlay)
             bounds(n.PixelBounds, IM_COL32(255, 190, 70, 150));
+        if(m_UIBoundsOverlay){GameUI::UIImageVisual image;if(m_ActiveScene->GetUIImageVisual(n.ID,image))bounds({image.Placement.Visual.Position*n.Scale,image.Placement.Visual.Size*n.Scale},IM_COL32(100,255,140,220));}
         if (m_UIClipOverlay)
             bounds(n.PixelClip, IM_COL32(90, 210, 255, 220));
         if (m_UIHitOverlay && n.Hit != GameUI::HitPolicy::PassThrough)
@@ -229,6 +230,10 @@ void EditorLayer::UI_Debugger()
         ImGui::Text("Arranged %.2f x %.2f | overflow %s",n->Bounds.Size.x,n->Bounds.Size.y,n->Overflow?"yes":"no");
         if(n->Line>=0){ImGui::Text("Wrap line %d",n->Line);rect("Allocated line",n->Slot);}
         if(n->GridRow>=0){ImGui::Text("Grid row %d column %d",n->GridRow,n->GridColumn);rect("Allocated cell",n->Slot);}
+        GameUI::UIImageVisual image;if(m_ActiveScene->GetUIImageVisual(n->ID,image)){
+            ImGui::Text("Last image paint: source %.1f x %.1f | fit %d | layout generation %llu",image.SourceSize.x,image.SourceSize.y,int(image.Fit),(unsigned long long)image.Generation);
+            rect("Fitted image",image.Placement.Visual);rect("Source crop (normalized, top-left)",image.Placement.UV);
+        }
         rect("Logical clip", n->Clip);
         rect("Pixel bounds", n->PixelBounds);
         rect("Effective pixel clip", n->PixelClip);

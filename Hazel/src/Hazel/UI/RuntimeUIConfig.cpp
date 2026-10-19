@@ -139,7 +139,7 @@ UIRectComponent ReadUIRectComponent(const YAML::Node &n)
     if(n["ColumnSpan"])v.ColumnSpan=n["ColumnSpan"].as<unsigned>();
     if(n["ImageFit"])v.Fit=GameUI::ImageFit(n["ImageFit"].as<int>());
     if(n["ImageAlignment"])v.ImageAlignment=Vector<2>(n["ImageAlignment"]);
-    if(v.Fit!=GameUI::ImageFit::Stretch)throw std::runtime_error("Unsupported UI image fit");
+    GameUI::FitImage({}, {1,1},v.Fit,v.ImageAlignment);
     for(int a=0;a<2;++a)if(v.ImageAlignment[a]<0||v.ImageAlignment[a]>1)throw std::runtime_error("Image alignment must be normalized");
     if (n["Offset"])
         v.Offset = Vector<2>(n["Offset"]);
@@ -356,6 +356,8 @@ static void Write(YAML::Emitter &out, const UIButtonComponent &v)
 }
 void ValidateUIConfiguration(const YAML::Node &node)
 {
+    if(node["UINineSliceComponent"] && node["UIRectComponent"] && ReadUIRectComponent(node["UIRectComponent"]).Fit!=GameUI::ImageFit::Stretch)
+        throw std::invalid_argument("Nine-slice owns border fitting and requires Image Fit Stretch");
     if (auto n = node["UICanvasComponent"])
         ReadUICanvasComponent(n);
     if (auto n = node["UIRectComponent"])

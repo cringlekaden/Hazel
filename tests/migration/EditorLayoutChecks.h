@@ -158,6 +158,13 @@ static void EditorLayoutChecks()
         before=UIEditValues::Capture(f.Control);next=before;next.Rect->WidthMode=SizeMode::Content;
         Check(!edit.Edit(*f.World,&h,f.Control.GetUUID(),"Indefinite wrap",before,next,committed,0)&&f.State()==accepted,"Indefinite wrap edit replaced valid geometry");edit.Finish(*f.World,&h,true);
     }
+    {
+        HistoryFixture f;f.World->RefreshUI();DocumentHistory h;h.Bind(f.World->GetIdentity());UIInspectorEditing inspector;PropertyUI::EditActivity activity;activity.Changed=activity.Committed=true;
+        auto initial=f.State();auto before=UIEditValues::Capture(f.Control);auto next=before;next.Rect->Fit=ImageFit::Cover;next.Rect->ImageAlignment={1,0};
+        Check(inspector.Edit(*f.World,&h,f.Control.GetUUID(),"Image fit",before,next,activity,0),inspector.Error());auto accepted=f.State();
+        Check(h.Operations()==1&&h.Undo(*f.World)&&f.State()==initial&&h.Redo(*f.World)&&f.State()==accepted,"Image fit/alignment history failed");
+        before=UIEditValues::Capture(f.Control);next=before;next.Rect->ImageAlignment={NAN,0};Check(!inspector.Edit(*f.World,&h,f.Control.GetUUID(),"Invalid image alignment",before,next,activity,0)&&f.State()==accepted,"Invalid image fit edit changed accepted state");inspector.Finish(*f.World,&h,true);
+    }
     std::cout << "PASS: canonical grid tracks/atomic history/save-reopen/isolation; "
                  "measured Inspector and complete Fixed/owned-axis gestures\n";
 }

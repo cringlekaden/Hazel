@@ -14,6 +14,7 @@ namespace Hazel {
         public bool Enabled {get=>InternalCalls.UI_GetValue(Entity.CheckedID,1);set=>InternalCalls.UI_SetValue(Entity.CheckedID,1,value);}
         public bool Modal {get=>InternalCalls.UI_GetValue(Entity.CheckedID,2);set=>InternalCalls.UI_SetValue(Entity.CheckedID,2,value);}
     }
+    public enum UIImageFit { Stretch, Contain, Cover, Native }
     public enum UISizeMode { Fixed, Fill, Content }
     public struct UISizing {
         public UISizeMode Mode;
@@ -24,6 +25,9 @@ namespace Hazel {
         }
     }
     public class UIRectComponent : Component {
+        public UIImageFit ImageFit {get{int fit;Vector2 alignment;InternalCalls.UI_GetImageFit(Entity.CheckedID,out fit,out alignment);return (UIImageFit)fit;}set=>SetImageFit(value,ImageAlignment);}
+        public Vector2 ImageAlignment {get{int fit;Vector2 alignment;InternalCalls.UI_GetImageFit(Entity.CheckedID,out fit,out alignment);return alignment;}set=>SetImageFit(ImageFit,value);}
+        public void SetImageFit(UIImageFit fit,Vector2 alignment)=>InternalCalls.UI_SetImageFit(Entity.CheckedID,(int)fit,ref alignment);
         public UIGridCell Cell {get{int row,column,rs,cs;InternalCalls.UI_GetCell(Entity.CheckedID,out row,out column,out rs,out cs);return new UIGridCell(row,column,rs,cs);}set=>InternalCalls.UI_SetCell(Entity.CheckedID,value.Row,value.Column,value.RowSpan,value.ColumnSpan);}
         public uint LayoutVersion => InternalCalls.UI_LayoutVersion(Entity.CheckedID);
         public UISizing Width {get=>ReadSizing(0);set=>WriteSizing(0,value);}

@@ -37,6 +37,7 @@ class RuntimeUI
         return m_Resolved.Modal || m_PointerOver || m_Input.Captured();
     }
     bool Bounds(uint64_t entity, GameUI::Rect &pixels) const;
+    bool ImageVisual(uint64_t entity,GameUI::UIImageVisual &result) const;
     const GameUI::ResolvedSnapshot &Snapshot() const
     {
         return m_Resolved;
@@ -49,6 +50,7 @@ class RuntimeUI
   private:
     struct Cache
     {
+        GameUI::UIImageVisual PaintImage;
         std::vector<Renderer2D::TextLine> Lines;
         std::string Text;
         std::filesystem::path FontPath;

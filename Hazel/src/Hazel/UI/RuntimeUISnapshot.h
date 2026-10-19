@@ -51,6 +51,14 @@ struct ResolvedSnapshot
         return found == Index.end() ? nullptr : &Elements[found->second];
     }
 };
+// Last successful paint, separate from immutable arranged geometry. Read-only diagnostics.
+struct UIImageVisual
+{
+    uint64_t Generation=0;
+    glm::vec2 SourceSize{};
+    ImageFit Fit=ImageFit::Stretch;
+    ImagePlacement Placement;
+};
 struct RuntimeUIDiagnostics
 {
     uint64_t SourceChecks = 0, Resolves = 0, Reuses = 0, InputGeneration = 0;
