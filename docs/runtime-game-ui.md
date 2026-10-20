@@ -115,3 +115,27 @@ Scene and prefab histories are independent and close/reset with their documents.
 Unassigned texture/region picker modes remain editable and serialize as the existing `None` source; assign an asset before saving to retain its source mode. Generated native images keep their resource during color edits; changing their source is rejected because history cannot retain a GPU object.
 
 History covers Canvas, Rect, Flow, Text Style, Nine Slice and Button configuration, their text/image presentation, measured sizing, grid tracks and placement. Creation/deletion, component addition/removal, hierarchy operations, world transforms, script fields and other document types are not yet undoable; their changes still affect exact dirty detection. The wider production control system remains later work.
+
+Runtime UI rendering keeps hierarchy/canvas painter order, including translucent
+images, interleaved text, focus outlines and nested clipping. Adjacent compatible
+geometry batches automatically; font/primitive changes retain ordered draws.
+Changing clips does not reorder elements. Fitted images and nine-slice use the
+same arranged bounds and entity IDs as before. There is no author-facing batching
+mode or texture sort.
+
+Open **Runtime UI Debugger → Rendering costs** for UI-only submitted elements,
+draw runs, upload groups, clip transitions and capacity/texture flush counts.
+CPU source/layout, preparation and submission are separate measurements. GPU
+intervals arrive later and show their submission age; they can include gaps while
+the CPU feeds commands and exclude window presentation. These counters do not
+establish a whole-game frame budget. Use Release `MigrationGameUIIntegrationSmoke
+--profile-render` for the reproducible bounded pass profile and `--profile-layout`
+for changed/unchanged grid/wrap CPU and allocation measurements.
+
+Text preparation reuses normalized glyph geometry when its text, font/asset epoch,
+width, spacing, size and alignment are unchanged. Position and tint still repaint
+immediately, including native writes that leave layout generation unchanged.
+Retained glyph geometry is capped at 16 MiB per scene; labels over 4 KiB and
+budget-exhausted labels draw through uncached preparation. This cap does not bound
+all font/atlas or document memory. Large alternating image/text interfaces still
+need many ordered draws; the implementation record documents the measured limits.

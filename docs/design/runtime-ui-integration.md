@@ -500,3 +500,254 @@ workspace. That launch restored the selected button, rendered, resized and close
 normally. Original scene, session, preferences and ImGui-layout hashes were
 unchanged. The desktop run used physical HD4000 via Xwayland; the Release editor
 suite forced GL4.1. Other runtime/layout code and scene formats were unchanged.
+
+### Painter-ordered submission and rendering qualification
+
+The runtime UI pass drains pending world geometry before replacing its camera or
+raster state. It appends primitives in existing snapshot painter order to bounded
+Renderer2D runs. Adjacent compatible primitives merge; image/text, font-atlas and
+line-width changes retain separate ordered draws. Each occupied primitive buffer
+uploads once per chunk, rather than once per element. Texture-slot, geometry and
+8,192-run capacity boundaries submit before storage is reused. There is no texture
+sort, combined image/text shader, or second layout model.
+
+Each primitive captures the snapshot's inward-snapped framebuffer clip. The
+fragment test uses half-open framebuffer coordinates, including empty clips;
+texture samples/MSDF derivatives precede discard. Differing clips therefore need
+no mutable scissor boundary. UI disables depth/scissor during its pass, submits
+before restoring the host's depth/scissor box and line width, and leaves viewport,
+framebuffer and blend configuration untouched. Material bindings are renderer
+owned; following world/overlay passes establish their camera/material normally.
+Entity IDs, sprite UVs, image fitting and nine-slice geometry retain their existing
+paths. Focus outlines retain the former line-before-glyph ordering.
+
+CPU diagnostics separate exact source detection, layout, preparation and buffer
+submission. UI-only counts are differences around the pass, excluding the drained
+host geometry. GPU timestamp pairs use a bounded asynchronous ring: read only
+available results, skip timing when full, and expose the originating submission.
+Their command interval can include CPU-feeding gaps; it is not pure GPU busy time
+or presentation latency. No normal rendering wait, synchronous per-sample query,
+or `glFinish` is introduced.
+
+A completed GLSL chunk uses a free fragment sampler for its font when available. Full
+texture chunks share unit zero and restore white before later quad runs; this
+keeps all configured quad slots. Sampler changes happen after the previous chunk
+submits, and the text sampler returns to zero at EndScene for ordinary world text.
+SPIR-V programs retain declared sampler binding zero: named lookup is not guaranteed
+by [ARB_gl_spirv](https://github.com/KhronosGroup/OpenGL-Registry/blob/main/extensions/ARB/ARB_gl_spirv.txt)
+and its shared-unit fallback is covered by the same ordered renderer. A llvmpipe
+GL4.6 reproduction failed the immediate-reference ID comparison before this guard;
+the physical GL4.1 profile uses GLSL and its measured path is unchanged.
+Multiple atlases stay pinned by their runs until submission. The renderer retains
+its existing 20,000-quad-per-primitive and 40,000-line-segment limits per chunk.
+
+Prepared normalized glyph geometry is scene-owned, separate from snapshots and
+last-paint image diagnostics. Text bytes, font/path/asset epoch, wrapping width,
+kerning, line spacing, size, content dimensions and alignment invalidate it.
+Position, canvas scale and tint remain live draw values. Exact native detection at
+input/render/pending-delivery boundaries is unchanged; paint-only writes can reuse
+a layout generation while rebuilding glyph data. Image fitting/source UVs are
+still read from current presentation/resource state; direct texture uploads stay
+visible without layout invalidation. Retirement/pruning/reset release glyph data.
+Retention is capped at 16 MiB per scene and 4 KiB of source text per cached control;
+longer text or an exhausted budget uses uncached preparation, within the existing
+64 KiB UI-text limit. Capacity is reused; this is not an atlas/font-family cache.
+
+Inactive instrumentation now avoids clock reads, owned profile-name construction
+and locking. A session epoch prevents an old scope entering a replacement trace.
+Layout warnings retain typed codes/entity IDs and static messages instead of
+allocating the same warning string for each overflowing child on every reflow.
+These changes do not alter authored fields, scene formats, history or UI routing.
+
+**Release qualification on Grandpa, 2026-10-20.** Frozen baseline `0383019` added
+phase counters/profile fixtures to `79648e2` without changing its per-element
+submission path. Final measurements use the new run/cache implementation. Same
+1280x720 offscreen RGBA8/entity-ID/depth target, no MSAA, i3-3227U/HD4000, Mesa
+26.2.4, physical Intel GL4.1 forced, GLSL410, 16 texture slots, GLFW X11/GLX through
+Xwayland on Plasma Wayland. Native Wayland and Xvfb were not used. No concurrent
+build/test; normal desktop activity and driver scheduling remain sources of jitter.
+
+Each fixture/mode has 20 warm-up and 120 CPU samples. GPU timestamp pairs use a
+32-pair ring in the probe; only ready results are collected, with `glFlush` outside
+the CPU sample and no waits. Baseline collected 119–120 GPU samples, final 109–119;
+zero ring-saturation skips. Pending tail samples are discarded. GPU intervals may
+include CPU-feeding gaps and other scheduling, especially at many ordered draws;
+they do **not** measure GPU busy time or end-to-end frame/presentation latency.
+The normal UI timer uses 16 pairs and reports pending/unsupported hardware rather
+than waiting. Timestamp counter availability/wrap are handled. See the
+[Khronos timer-query contract](https://github.com/KhronosGroup/OpenGL-Registry/blob/main/extensions/ARB/ARB_timer_query.txt).
+
+Fixtures are maintained in `RenderProfile.h`: N translucent image rectangles,
+each with its own clip; **mixed** additionally puts four-glyph text on every second
+rectangle (3N image/glyph quads). Mode **unchanged** repeats the boundary/pass;
+**move** alternates one rect's offset; **paint** alternates one native image resource
+and, for mixed, one four-character label. All fixtures retain exact painter order.
+A move rebuilds the current whole layout, not just that rect. Text/image mutation
+in these Fixed boxes leaves layout generation unchanged and still repaints.
+
+Below, each cell is **baseline median/p95 → final median/p95 ms**. Source is exact
+native dependency detection; layout is Build/measure/arrange; preparation includes
+shared `Scene::PrepareSprites` plus UI preparation/pass bookkeeping; submission
+is timed buffer Flush/upload/draw work. Boundary+paint includes publication and
+reconciliation overhead, so individual phase percentiles should not be summed.
+Debugger preparation excludes the shared scene-wide PrepareSprites call. These
+profiles exclude input routing, gameplay/scripts, world draws and presentation.
+
+Unchanged:
+
+| Fixture / N | Source | Layout | Preparation | Submission | Boundary+paint | GPU interval |
+| --- | --- | --- | --- | --- | --- | --- |
+| images / 64 | 0.0774/0.1337 → 0.1078/0.1614 | 0.0000/0.0000 → 0.0000/0.0000 | 1.0336/1.5118 → 0.1214/0.2271 | 0.5212/3.2046 → 0.0220/2.0687 | 1.6280/4.8627 → 0.2636/2.3293 | 0.2693/0.2738 → 0.0419/0.0622 |
+| images / 512 | 0.6733/1.0541 → 0.5857/1.0231 | 0.0000/0.0000 → 0.0000/0.0000 | 11.7180/14.6926 → 0.4422/0.7731 | 6.8840/11.9942 → 0.0386/0.0712 | 19.5945/27.3361 → 1.0801/1.8806 | 15.3490/21.4493 → 0.4702/0.7624 |
+| images / 2048 | 2.3811/3.2527 → 2.4952/3.2064 | 0.0000/0.0000 → 0.0000/0.0000 | 41.7161/44.3729 → 1.7865/2.2358 | 21.7934/25.6108 → 0.1084/0.1522 | 66.2076/73.2030 → 4.4701/5.3669 | 60.3767/65.9783 → 2.3854/2.9812 |
+| mixed / 64 | 0.0803/0.1116 → 0.0927/0.1540 | 0.0000/0.0000 → 0.0000/0.0000 | 1.3608/1.8178 → 0.1411/0.2226 | 1.2377/3.0773 → 0.3389/0.6033 | 2.6928/4.8009 → 0.5941/0.9620 | 1.3240/4.6063 → 0.3815/1.9601 |
+| mixed / 512 | 0.5979/0.8215 → 0.9132/1.2255 | 0.0000/0.0000 → 0.0000/0.0000 | 11.8924/13.1423 → 1.0651/1.3710 | 10.6684/12.7509 → 3.1980/4.3360 | 23.2735/25.9350 → 5.2569/6.4993 | 21.2827/24.6070 → 5.0650/9.5294 |
+| mixed / 2048 | 2.3843/3.0358 → 2.9885/3.6733 | 0.0000/0.0000 → 0.0000/0.0000 | 47.8586/53.3623 → 3.4150/4.2649 | 43.4124/52.2363 → 17.1169/19.0429 | 93.9778/108.7344 → 23.7344/26.1793 | 90.1349/104.8554 → 19.6930/25.8299 |
+
+One moving rect:
+
+| Fixture / N | Source | Layout | Preparation | Submission | Boundary+paint | GPU interval |
+| --- | --- | --- | --- | --- | --- | --- |
+| images / 64 | 0.0722/0.1197 → 0.0840/0.1528 | 0.1621/0.2840 → 0.1808/0.3138 | 1.0271/1.4449 → 0.0927/0.1737 | 0.5096/2.2850 → 0.0193/0.0373 | 1.7917/3.6777 → 0.4027/0.6438 | 0.2686/0.2722 → 0.0401/0.0450 |
+| images / 512 | 0.6059/0.8615 → 0.5460/0.6276 | 1.1956/1.7246 → 1.2124/1.7033 | 9.9066/11.4578 → 0.3761/0.6164 | 5.0486/7.1804 → 0.0342/0.0483 | 17.0862/19.9177 → 2.1973/3.0323 | 12.4131/15.9264 → 0.7594/0.8718 |
+| images / 2048 | 2.3916/3.5033 → 2.3853/3.2192 | 5.0812/6.6198 → 5.3678/6.6219 | 42.7887/52.4261 → 1.5036/1.9688 | 21.2912/27.9346 → 0.1011/0.1230 | 72.2500/89.6516 → 9.5752/11.0094 | 60.8094/77.5548 → 3.4030/3.4075 |
+| mixed / 64 | 0.0778/0.1209 → 0.1242/0.2095 | 0.1576/0.2058 → 0.2648/0.3945 | 1.3582/1.8129 → 0.1920/0.2980 | 1.2521/1.8652 → 0.4542/0.6826 | 2.8597/4.0203 → 1.0604/1.4545 | 1.3218/3.8494 → 0.5699/3.2299 |
+| mixed / 512 | 0.5979/0.7909 → 0.8830/1.2038 | 1.1915/1.8179 → 1.7264/2.3177 | 11.9481/13.0960 → 0.9673/1.2298 | 10.6573/11.5789 → 3.5220/4.3313 | 24.6078/26.3887 → 7.0547/8.5599 | 21.0458/24.5177 → 5.9822/11.2336 |
+| mixed / 2048 | 2.3774/2.7890 → 2.6757/3.3955 | 4.9963/6.3915 → 5.5547/7.5655 | 48.2495/50.3149 → 2.8548/4.0715 | 42.9238/47.4155 → 19.0033/25.5453 | 99.1486/103.7965 → 30.7090/38.5616 | 89.2402/95.3888 → 22.0376/29.4598 |
+
+One changing image/label:
+
+| Fixture / N | Source | Layout | Preparation | Submission | Boundary+paint | GPU interval |
+| --- | --- | --- | --- | --- | --- | --- |
+| images / 64 | 0.0733/0.1116 → 0.0697/0.1174 | 0.0000/0.0000 → 0.0000/0.0000 | 1.0049/1.4231 → 0.0944/0.1600 | 0.5178/2.3577 → 0.0203/2.0564 | 1.5969/3.5952 → 0.1960/2.2584 | 0.2690/0.2764 → 0.0314/0.0704 |
+| images / 512 | 0.6139/0.9097 → 0.5708/0.8459 | 0.0000/0.0000 → 0.0000/0.0000 | 10.0870/11.1016 → 0.4235/0.6958 | 5.0229/6.7932 → 0.0443/0.0688 | 15.9084/17.7802 → 1.0586/1.5646 | 12.7870/15.9016 → 0.3827/0.6037 |
+| images / 2048 | 2.3670/3.0286 → 2.4814/3.2760 | 0.0000/0.0000 → 0.0000/0.0000 | 42.1859/45.2738 → 1.8196/2.7541 | 21.5514/27.4793 → 0.1184/0.1652 | 66.3785/73.9084 → 4.4821/5.6949 | 60.6232/68.0514 → 2.3318/2.3366 |
+| mixed / 64 | 0.0814/0.1174 → 0.1709/0.2698 | 0.0000/0.0000 → 0.0000/0.0000 | 1.3769/1.7242 → 0.2723/0.4016 | 1.2541/1.7711 → 0.5996/0.8400 | 2.7251/3.9781 → 1.0685/1.5949 | 1.2795/3.7770 → 0.5914/3.6441 |
+| mixed / 512 | 0.5985/0.8201 → 0.9265/1.3054 | 0.0000/0.0000 → 0.0000/0.0000 | 12.0487/13.4332 → 1.0927/1.5365 | 10.7493/12.0007 → 3.1968/3.9655 | 23.5348/25.3577 → 5.2500/6.3094 | 21.5034/24.8984 → 4.9592/10.1676 |
+| mixed / 2048 | 2.3780/3.1384 → 3.0783/3.9959 | 0.0000/0.0000 → 0.0000/0.0000 | 48.2829/55.1592 → 3.4607/4.7259 | 42.8558/50.2502 → 17.7301/25.1289 | 93.8784/107.3428 → 24.5103/32.9873 | 89.3878/103.0132 → 20.3511/29.6940 |
+
+Counts below apply to every mode. Flush counts were entirely **End** before and
+remain one **End** upload group after; texture/capacity/external flushes are zero
+in these particular fixtures. Separate regressions force those rollover paths.
+Image/text and font boundaries remain draw runs, not buffer reuploads.
+
+| Fixture / N | Draws before → after | Upload bytes before → after | Ordinary C++ new, 120 unchanged samples, before → after |
+| --- | --- | --- | --- |
+| images / 64 | 64 → 1 | 12288 → 16384 | 69240 → 120 |
+| images / 512 | 512 → 1 | 98304 → 131072 | 553440 → 480 |
+| images / 2048 | 2048 → 1 | 393216 → 524288 | 2213760 → 1920 |
+| mixed / 64 | 96 → 65 | 32768 → 45056 | 84600 → 120 |
+| mixed / 512 | 768 → 513 | 262144 → 360448 | 676320 → 480 |
+| mixed / 2048 | 3072 → 2049 | 1048576 → 1441792 | 2705280 → 1920 |
+
+The retained clip vec4 increases vertex upload bytes; fewer uploads/draws provide
+the measured win. Final unchanged/move mixed fixtures reuse 32/256/1024 prepared
+labels (4/32/128 KiB), with zero rebuilds after warm-up. Paint mode rebuilds one
+label and reuses the rest. New counts for moving rects equal unchanged counts;
+paint adds 120 allocations to final totals (baseline added 240). The residual
+1/4/16 allocations per frame originate in shared sprite-preview progress message
+construction, plus changed sprite resolutions. Counts cover ordinary C++ new,
+not aligned new, driver/OS malloc, setup or retained bytes; no allocation-free
+whole-frame claim is made.
+
+A measured intermediate at 2048 mixed, before free-sampler/glyph reuse, was
+3.9895/6.3417 ms preparation and 18.9093/25.6200 ms submission, 26.1874/34.5272 total.
+The free sampler alone measured 3.9367/4.6971, 17.3262/19.4094 and 24.6049/27.0462.
+Final unchanged is 3.4150/4.2649, 17.1169/19.0429 and 23.7344/26.1793. These small
+incremental differences have scheduling noise; the robust result is removal of
+per-element uploads and inactive trace allocations, not a universal cache speedup.
+The largest mixed case still has 2049 required ordered runs and substantial CPU
+submission cost. No universal 16.7 ms budget passes; do not use these fixtures to
+certify long captions, many fonts, heavy overdraw or whole-game frame times.
+
+The existing `--profile-layout` separately repeats 20 warm-ups, 200 unchanged
+boundaries and 100 alternating-width grid/wrap reflows. It does not draw or route
+input. Same-run baseline versus final below; timings are median/p95 ms and new
+counts are totals across 100 changed boundaries. Every unchanged fixture reused
+its generation and counted zero ordinary C++ new.
+
+| Container / children | Unchanged before → after | Changed before → after | Changed new before → after |
+| --- | --- | --- | --- |
+| grid / 64 | 0.0664/0.1195 → 0.0673/0.1053 | 0.2512/0.2894 → 0.2454/0.4216 | 3300 → 100 |
+| grid / 512 | 0.5121/0.6961 → 0.5207/0.5605 | 1.9787/2.5856 → 1.9234/2.1836 | 26159 → 559 |
+| grid / 2048 | 2.1100/3.0038 → 2.1367/2.4655 | 9.4427/11.1669 → 8.5799/9.8556 | 133405 → 2105 |
+| wrap / 64 | 0.0641/0.1005 → 0.0650/0.0874 | 0.2324/0.2826 → 0.2349/0.3841 | 91 → 91 |
+| wrap / 512 | 0.5120/0.7562 → 0.5206/0.6377 | 1.8948/2.6197 → 1.8981/2.8592 | 550 → 550 |
+| wrap / 2048 | 2.2188/3.0895 → 2.2002/2.8032 | 10.0908/17.3172 → 10.1859/15.2196 | 42704 → 2104 |
+
+These changed-allocation totals include the first dirty build of the spare
+snapshot: the warm-up only exercises the unchanged generation. Its previously
+empty index alone adds one map node per resolved element. Do not interpret the
+100-sample total as a steady per-frame allocation rate; zero steady-state reflow
+allocation is not claimed. The render profile separately warms each mutation
+mode before counting. Large source detection/reflows remain linear costs. Static
+warning text removes most observed overflow-related allocations without retaining
+per-document strings. This work does not add virtualization, scrolling, typography
+libraries or change D8's existing text coverage/blend convention.
+
+Renderer checkpoint: **`272a5aa`**. Debug and Release built with bounded `-j2`;
+the full 16-executable suite passed once in Debug physical/native GL4.2 and once
+in Release physical/forced GL4.1. After the final SPIR-V sampler guard, both
+configurations were rebuilt/relinked, and affected checks passed again: Release
+hardware Core/Renderer2D/UI integration, software llvmpipe GL4.6 Renderer2D
+(default SPIR-V plus two-slot GLSL), and both native editor suites. The expanded
+Rendering costs section was explicitly opened in the real ImGui harness. The
+unchanged physical GLSL paths reuse the broader suite/example evidence rather
+than repeating all historical checks. The software specialization test is not
+HD4000 GPU-performance evidence.
+
+New regressions compare full 128x128 RGBA (one-LSB tolerance) and exact entity IDs
+against immediate painter order for translucent quad/text/line/circle overlap,
+multiple fonts, nested/empty/adversarial clips. They assert one draw for 64
+compatible different-clip quads; force texture-slot, all geometry/index and
+8,192-run rollover; exercise a completely full sampler chunk and subsequent
+ordinary world text. Real scene checks cover pending host geometry/stat isolation,
+raster/line-width restoration, nine-slice picking, fractional framebuffer coverage,
+raw text/font/alignment/image/resource mutations with unchanged generations,
+prepared reuse/oversized fallback, retirement/reset and replacement scenes.
+Inactive tracing/session retirement is checked separately. The existing atlas
+fit/crop/color/picking, scene/prefab/history, P1 interaction, scripting/domain and
+reliability regressions remain in the suite. Native editor fixtures now render
+three complete Play/Stop cycles and verify unchanged authored state/history;
+the expanded-five-state Button Inspector regression remains enabled.
+
+All five source projects passed player/editor startup, rendering, resize and
+shutdown on physical HD4000 GL4.2 via Xwayland, with authored hashes unchanged.
+The existing strict native three-game gameplay/save/lifecycle checks and managed
+example contracts passed. Fresh Lightkeeper menu, HUD and Mara dialogue captures
+were inspected. These are bounded automated/native observations; they do not
+claim physical pointer/key usability or native Wayland support. No desktop
+packages/settings were changed and no denied input injection is credited.
+
+A fresh Nutella/LastLightkeeper archive from checkpoint `272a5aa` passed relocated
+startup/render/resize/shutdown from an unrelated Unicode working directory, with
+source resources/examples/SDK and the bundled GAC temporarily unavailable. It
+loaded shipped libraries/resources, used private saves/data, and rendered on
+physical HD4000 forced to GL4.1 through Xwayland. The extracted menu capture was
+inspected. Export dependency/license closure passed; no new dependency or asset
+license was introduced. Master, stash, vendor pins and the exact Sandbox draft
+remain unchanged. No example scene/prefab/script was reauthored for this work.
+
+Remaining physical acceptance: launch Lightkeeper from F5, inspect its menu,
+dialogue and HUD at 1280x720 and 1024x600, and check focus/hover/selection. In
+Hazelnut open **Runtime UI Debugger → Rendering costs**, inspect positive clip/
+submission counts, delayed GPU age and selected bounds; repeat Play/Stop and
+inspect image/text picking and the expanded Button Inspector. Repeat ordinary
+resize/focus/minimize behavior on the actual display and Windows hardware. CI is
+triggered by the final push and **not awaited**; no Windows hardware result is
+claimed locally.
+
+Remaining limits: large mixed interfaces still incur primitive/program changes
+and many draws; source detection/reflows are linear and changed layouts still
+allocate. Font-family/atlas ownership remains a separate cache problem; the new
+16 MiB cap covers prepared glyph geometry only. D8's coverage/blend correction,
+broader P2 authoring/history, controller/navigation, scrolling and production
+controls remain open. The whole UI system is not production-ready.
+
+Recommended next bounded audit milestone: P3 text-rendering correctness and
+resource ownership—fix D8 with analytic coverage/opacity reference tests on
+contrasting backgrounds, and define bounded font/atlas lifetime and failure
+behavior. Keep the existing layout model and painter-run contracts. Larger
+scrolling/data views should wait for their navigation/control prerequisites and
+a visible-item/virtualization budget that accounts for the measured mixed-run
+cost; do not certify them from image-only throughput.
