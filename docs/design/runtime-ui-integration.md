@@ -355,8 +355,8 @@ remain separate work. This slice does not make the full UI system production-rea
 ## Canonical containers and image presentation
 
 The scope correction supersedes the version-compatibility plan above. Repository
-UI is being reauthored to one measured model; schema 3 rejects obsolete UI Rects.
-There will be no shipped legacy resolver or conversion UI. The Sandbox user draft
+UI uses one measured model; schema 3 rejects obsolete UI Rects.
+The legacy resolver and conversion UI have been removed. The Sandbox user draft
 remains uncommitted with its presentation preserved and schema fields updated.
 
 Grid: 1–64 explicit Fixed/weighted-Fill tracks per axis, at most 4096 cells.
@@ -399,11 +399,11 @@ immutable layout snapshot; fitting/alignment are paint-only changes.
 
 Stage checkpoints: canonical/grid `a73d455`, wrap `5cdd75b`. Focused CPU checks
 pass for track/span/cap allocation, horizontal/vertical wrap, overflow/cycles,
-and image fit/crop/alignment/zero inputs. Full integration qualification follows
-below after fresh builds; these CPU checks do not establish GPU performance.
+and image fit/crop/alignment/zero inputs. Integration qualification follows
+below; these CPU checks do not establish GPU performance.
 
-Qualification evidence so far: Debug built with bounded `-j2` and all 16 native
-regression executables passed. Focused runtime/GPU integration also passed on
+Qualification: Debug and Release built with bounded `-j2`. All 16 Debug native
+and all 16 Release hardware `gl41` regression executables passed. Focused runtime/GPU integration also passed on
 physical HD4000 forced to GL4.1; managed layout/image round trips and domain/
 Start-Stop regressions passed. The real editor harness exercised native creation
 commands, shared Inspector transactions, history, save/reopen, prefab reuse,
@@ -418,3 +418,60 @@ Sandbox draft was included; its content/presentation remains local and its old
 file/diff were privately backed up before the required schema edits. Hidden
 rects are additionally covered by dependency/participation tests. Temporary
 conversion code and old header exports were removed; no migrator ships.
+
+
+Release CPU layout profile on Grandpa (i3-3227U, Intel HD4000, 8 GB), no concurrent
+build/test: 20 warm-ups, 200 unchanged boundaries and 100 alternating-width
+changes per fixture. Times include native-write source detection and resolution,
+not input routing, drawing, presentation or GPU duration. The context used physical
+Intel Mesa 26.2.4, GL4.1 forced, GLFW X11/GLX through Xwayland on Plasma Wayland.
+
+| Container / children | Unchanged median / p95 ms | Changed median / p95 ms |
+| --- | --- | --- |
+| Grid / 64 | 0.1250 / 0.1358 | 0.2746 / 0.4315 |
+| Grid / 512 | 0.5486 / 0.7219 | 2.0230 / 2.4856 |
+| Grid / 2048 | 2.2717 / 2.9400 | 9.2452 / 14.6242 |
+| Wrap / 64 | 0.0684 / 0.0899 | 0.2385 / 0.2824 |
+| Wrap / 512 | 0.5479 / 0.7949 | 1.9336 / 2.6154 |
+| Wrap / 2048 | 2.3112 / 3.0323 | 8.8735 / 9.9195 |
+
+Every unchanged fixture reused its generation and counted zero C++ `new`
+allocations. Changed-boundary allocation totals over 100 samples were
+3300/26159/133405 (grid) and 91/550/42704 (wrap); storage reuse does not make large
+reflows allocation-free. These simple rect fixtures do not establish text-heavy,
+GPU or whole-frame budgets. Run the existing integration executable with
+`--profile-layout` to repeat; the normal regression suite does not time fixtures.
+
+
+All five source examples passed player/editor startup, nonblank rendering, resize
+and graceful shutdown checks with authored descriptor/scene hashes unchanged.
+The strict three-game native regression and managed gameplay/progress/save tests
+also passed. These launcher checks use two-thread llvmpipe GL4.1 through Xwayland;
+they are distinct from the physical-GPU regression suite/profile above. Fresh
+Lightkeeper and Sandbox startup captures were inspected. The active desktop was
+confirmed using logind and KWin/Xwayland processes: inherited shell XDG variables
+still reported the retired X11 session. Native Wayland is not supported/tested.
+
+The final Nine Slice Add Component guard requires Stretch first; it never silently
+changes image fit. Both affected editor workflows passed again in Debug/Release.
+The native-authored grid/wrap/image fixture exported through normal dependency
+closure and passed extracted Nutella startup/render/resize/shutdown with source
+resources and SDK unavailable; its atlas, wrapped chips and combined image/text
+capture were inspected. No fixture content was added to the example games.
+
+Physical acceptance still to perform: create Grid/Wrap from Hierarchy, assign
+atlas regions in Properties, edit track counts/spans, narrow the preview, and
+check debugger track/line/image overlays. Drag a Fixed edge, cancel with Escape,
+then Undo/Redo and save/reopen a scene and prefab; computed axes must refuse edits.
+Verify Nine Slice is unavailable until Stretch is selected. Repeat Play/Stop and
+check the result in exported Nutella. KWin's earlier input permission block was
+not bypassed; no physical pointer/key acceptance is claimed by the native harness.
+
+Next bounded milestone: profile and reduce runtime UI draw submission/flush costs
+using contiguous painter-ordered batching, with clipping, alpha blending, text/
+image interleaving and entity-picking regressions. Preserve native-write detection
+and measure source/resolve/draw CPU separately from GPU duration. Larger changed
+layouts still allocate and should remain in that performance investigation. Do
+this before expanding into large scrolling/data views. Structural/multi-selection
+history, broader authoring tools and the rest of P2 remain open; the whole UI
+system is not yet production-ready.

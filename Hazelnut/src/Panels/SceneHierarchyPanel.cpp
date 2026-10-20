@@ -963,13 +963,18 @@ template <typename T> void SceneHierarchyPanel::DisplayAddComponentEntry(const s
     if (!m_SelectionContext.HasComponent<T>())
     {
         bool allowed=true;
+        const char *unavailable="Unparent first: rigidbody and collider owners must be roots";
         if constexpr(std::is_same_v<T,Rigidbody2DComponent> || std::is_same_v<T,BoxCollider2DComponent> || std::is_same_v<T,CircleCollider2DComponent>)allowed=!uint64_t(m_Context->GetRelationship(m_SelectionContext).Parent);
+        if constexpr(std::is_same_v<T,UINineSliceComponent>){
+            allowed=m_SelectionContext.HasComponent<UIRectComponent>()&&m_SelectionContext.GetComponent<UIRectComponent>().Fit==GameUI::ImageFit::Stretch;
+            unavailable="Choose Stretch in UI Rect before adding Nine Slice; it owns border fitting";
+        }
         if (ImGui::MenuItem(entryName.c_str(),nullptr,false,allowed) && CanEdit(true))
         {
             try{FinishUIEdit();m_SelectionContext.AddComponent<T>();m_HierarchyError.clear();ImGui::CloseCurrentPopup();}
             catch(const std::exception& e){HierarchyFailed(e.what());}
         }
-        if(!allowed)PropertyUI::Help("Unparent first: rigidbody and collider owners must be roots");
+        if(!allowed)PropertyUI::Help(unavailable);
     }
 }
 
