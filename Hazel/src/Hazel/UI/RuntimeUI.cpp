@@ -236,12 +236,16 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
     try
     {
         CaptureSources(surface, previewOrphans);
+        const auto sourceEnd=std::chrono::steady_clock::now();
+        m_Diagnostics.LastSourceMilliseconds=std::chrono::duration<double,std::milli>(sourceEnd-start).count();
+        m_Diagnostics.LastLayoutMilliseconds=0;
         if (m_Resolved.Valid && m_Candidate == m_Source)
         {
             ++m_Diagnostics.Reuses;
             return;
         }
         Build(surface, previewOrphans);
+        m_Diagnostics.LastLayoutMilliseconds=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-sourceEnd).count();
         m_Build.Generation = ++m_NextGeneration;
         m_Build.Valid = true;
         std::swap(m_Resolved, m_Build);
@@ -691,6 +695,8 @@ bool RuntimeUI::ImageVisual(uint64_t id,UIImageVisual &result) const
 }
 void RuntimeUI::Draw()
 {
+    const auto paintStart=std::chrono::steady_clock::now();
+    const auto submitStart=Renderer2D::GetStats().SubmitMilliseconds;
     if (!m_Resolved.Valid || m_Resolved.PainterOrder.empty() ||
         m_Resolved.Surface.Viewport.x <= 0 || m_Resolved.Surface.Viewport.y <= 0)
         return;
@@ -863,5 +869,7 @@ void RuntimeUI::Draw()
         throw;
     }
     RenderCommand::SetRasterState(prior);
+    m_Diagnostics.LastSubmitMilliseconds=Renderer2D::GetStats().SubmitMilliseconds-submitStart;
+    m_Diagnostics.LastPrepareMilliseconds=std::max(0.,std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-paintStart).count()-m_Diagnostics.LastSubmitMilliseconds);
 }
 } // namespace Hazel

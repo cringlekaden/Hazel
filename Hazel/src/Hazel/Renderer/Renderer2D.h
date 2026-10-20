@@ -23,7 +23,8 @@ namespace Hazel {
 		static void BeginScene(const EditorCamera& camera);
 		static void BeginScene(const OrthographicCamera& camera); // TODO: Remove
 		static void EndScene();
-		static void Flush();
+		enum class FlushReason { End, Primitive, Font, Textures, Capacity, External, Count };
+        static void Flush(FlushReason reason = FlushReason::External);
 
 		// Primitives
 		static void DrawQuad(const glm::vec2& position, const glm::vec2& size, const glm::vec4& color);
@@ -69,6 +70,9 @@ namespace Hazel {
 		{
 			uint32_t DrawCalls = 0;
 			uint32_t QuadCount = 0;
+            std::array<uint32_t, size_t(FlushReason::Count)> Flushes{};
+            uint64_t UploadedBytes = 0;
+            double SubmitMilliseconds = 0;
 
 			uint32_t GetTotalVertexCount() const { return QuadCount * 4; }
 			uint32_t GetTotalIndexCount() const { return QuadCount * 6; }
@@ -79,7 +83,7 @@ namespace Hazel {
 
 	private:
 		static void StartBatch();
-		static void NextBatch();
+		static void NextBatch(FlushReason reason = FlushReason::Capacity);
 	};
 
 }

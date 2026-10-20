@@ -66,6 +66,8 @@ struct RuntimeUIDiagnostics
     uint64_t Measurements = 0, MeasurementReuses = 0, Arrangements = 0;
     uint64_t ImageMeasurements = 0, ImageMeasurementReuses = 0;
     double LastResolveMilliseconds = 0, LastRoutingMilliseconds = 0;
+    double LastSourceMilliseconds=0, LastLayoutMilliseconds=0;
+    double LastPrepareMilliseconds=0, LastSubmitMilliseconds=0;
     uint64_t Focus = 0, Capture = 0, Hover = 0, Modal = 0;
     bool InputEnabled = false, GameplayBlocked = false, PointerBlocked = false;
 };

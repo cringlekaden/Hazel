@@ -271,7 +271,7 @@ namespace Hazel {
 	{
 		HZ_PROFILE_FUNCTION();
 
-		Flush();
+		Flush(FlushReason::End);
 	}
 
 	void Renderer2D::StartBatch()
@@ -291,12 +291,15 @@ namespace Hazel {
 		s_Data->TextureSlotIndex = 1;
 	}
 
-	void Renderer2D::Flush()
+	void Renderer2D::Flush(FlushReason reason)
 	{
+        const auto start=std::chrono::steady_clock::now();
+        if(s_Data->QuadIndexCount||s_Data->CircleIndexCount||s_Data->TextIndexCount||s_Data->LineVertexCount)++s_Data->Stats.Flushes[size_t(reason)];
 		if (s_Data->QuadIndexCount)
 		{
 			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data->QuadVertexBufferPtr - (uint8_t*)s_Data->QuadVertexBufferBase.get());
 			s_Data->QuadVertexBuffer->SetData(s_Data->QuadVertexBufferBase.get(), dataSize);
+            s_Data->Stats.UploadedBytes+=dataSize;
 
 			// Bind textures
 			for (uint32_t i = 0; i < s_Data->TextureSlotIndex; i++)
@@ -311,6 +314,7 @@ namespace Hazel {
 		{
 			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data->CircleVertexBufferPtr - (uint8_t*)s_Data->CircleVertexBufferBase.get());
 			s_Data->CircleVertexBuffer->SetData(s_Data->CircleVertexBufferBase.get(), dataSize);
+            s_Data->Stats.UploadedBytes+=dataSize;
 
 			s_Data->CircleShader->Bind();
 			RenderCommand::DrawIndexed(s_Data->CircleVertexArray, s_Data->CircleIndexCount);
@@ -321,6 +325,7 @@ namespace Hazel {
 		{
 			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data->LineVertexBufferPtr - (uint8_t*)s_Data->LineVertexBufferBase.get());
 			s_Data->LineVertexBuffer->SetData(s_Data->LineVertexBufferBase.get(), dataSize);
+            s_Data->Stats.UploadedBytes+=dataSize;
 
 			s_Data->LineShader->Bind();
 			RenderCommand::SetLineWidth(s_Data->LineWidth);
@@ -332,6 +337,7 @@ namespace Hazel {
 		{
 			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data->TextVertexBufferPtr - (uint8_t*)s_Data->TextVertexBufferBase.get());
 			s_Data->TextVertexBuffer->SetData(s_Data->TextVertexBufferBase.get(), dataSize);
+            s_Data->Stats.UploadedBytes+=dataSize;
 
 			s_Data->FontAtlasTexture->Bind(0);
 
@@ -339,11 +345,12 @@ namespace Hazel {
 			RenderCommand::DrawIndexed(s_Data->TextVertexArray, s_Data->TextIndexCount);
 			s_Data->Stats.DrawCalls++;
 		}
+        s_Data->Stats.SubmitMilliseconds+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
 	}
 
-	void Renderer2D::NextBatch()
+	void Renderer2D::NextBatch(FlushReason reason)
 	{
-		Flush();
+		Flush(reason);
 		StartBatch();
 	}
 
@@ -434,7 +441,7 @@ namespace Hazel {
 		if (texture && textureIndex == 0.0f)
 		{
 			if (s_Data->TextureSlotIndex >= s_Data->TextureSlotLimit)
-				NextBatch();
+				NextBatch(FlushReason::Textures);
 
 			textureIndex = (float)s_Data->TextureSlotIndex;
 			s_Data->TextureSlots[s_Data->TextureSlotIndex] = texture;
@@ -614,7 +621,7 @@ namespace Hazel {
 		Ref<Texture2D> fontAtlas = font->GetAtlasTexture();
 
 		if (s_Data->TextIndexCount && s_Data->FontAtlasTexture != fontAtlas)
-			NextBatch();
+			NextBatch(FlushReason::Font);
 		s_Data->FontAtlasTexture = fontAtlas;
 
 		double x = 0.0;

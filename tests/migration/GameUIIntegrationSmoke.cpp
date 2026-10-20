@@ -154,6 +154,7 @@ static void ProfileRuntimeUI()
     std::cout<<"PASS: bounded UI profile; CPU median/p95, separate GL timer query, idle generation and C++ allocation count\n";
 }
 #include "ContainerProfile.h"
+#include "RenderProfile.h"
 int main(int argc,char** argv)
 {
     try
@@ -164,6 +165,7 @@ int main(int argc,char** argv)
         spec.EnableImGui = false;
         Application app(spec);
         glfwHideWindow(static_cast<GLFWwindow *>(app.GetWindow().GetNativeWindow()));
+        if(argc==2&&std::string(argv[1])=="--profile-render"){ProfileRendering();return 0;}
         if(argc==2&&std::string(argv[1])=="--profile-layout"){ProfileContainers();return 0;}
         if(argc==2&&std::string(argv[1])=="--profile"){ProfileRuntimeUI();return 0;}
         HardeningSceneChecks();
