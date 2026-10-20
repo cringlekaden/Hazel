@@ -9,11 +9,13 @@
 namespace Hazel {
     RasterState OpenGLRendererAPI::GetRasterState() const {
         RasterState state;state.DepthTest=glIsEnabled(GL_DEPTH_TEST);state.ClipEnabled=glIsEnabled(GL_SCISSOR_TEST);
+        glGetFloatv(GL_LINE_WIDTH,&state.LineWidth);
         glGetIntegerv(GL_SCISSOR_BOX,&state.ClipRect.x);glGetIntegerv(GL_VIEWPORT,&state.Viewport.x);return state;
     }
     void OpenGLRendererAPI::SetRasterState(const RasterState& state) {
         if(state.DepthTest)glEnable(GL_DEPTH_TEST);else glDisable(GL_DEPTH_TEST);
         if(state.ClipEnabled)glEnable(GL_SCISSOR_TEST);else glDisable(GL_SCISSOR_TEST);
+        SetLineWidth(state.LineWidth);
         glScissor(state.ClipRect.x,state.ClipRect.y,state.ClipRect.z,state.ClipRect.w);
     }
 
@@ -76,16 +78,16 @@ namespace Hazel {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void OpenGLRendererAPI::DrawIndexed(const Ref<VertexArray>& vertexArray, std::uint32_t indexCount)
+    void OpenGLRendererAPI::DrawIndexed(const Ref<VertexArray>& vertexArray, std::uint32_t indexCount, std::uint32_t firstIndex)
     {
         vertexArray->Bind();
         const std::uint32_t count = indexCount != 0 ? indexCount : vertexArray->GetIndexBuffer()->GetCount();
-        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(count), GL_UNSIGNED_INT, nullptr);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(count), GL_UNSIGNED_INT, reinterpret_cast<const void*>(uintptr_t(firstIndex)*sizeof(uint32_t)));
     }
-    void OpenGLRendererAPI::DrawLines(const Ref<VertexArray>& vertexArray, std::uint32_t count)
+    void OpenGLRendererAPI::DrawLines(const Ref<VertexArray>& vertexArray, std::uint32_t count, std::uint32_t firstVertex)
     {
         vertexArray->Bind();
-        glDrawArrays(GL_LINES,0,static_cast<GLsizei>(count));
+        glDrawArrays(GL_LINES,static_cast<GLint>(firstVertex),static_cast<GLsizei>(count));
     }
     void OpenGLRendererAPI::SetLineWidth(float width) {
         const auto& caps = OpenGLCapabilities::Get();

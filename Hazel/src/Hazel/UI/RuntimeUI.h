@@ -1,5 +1,6 @@
 #pragma once
 #include "Hazel/Renderer/Renderer2D.h"
+#include "Hazel/Renderer/GPUTimer.h"
 #include "Hazel/Scene/Entity.h"
 #include "Hazel/UI/RuntimeUISnapshot.h"
 #include "Hazel/UI/MeasuredLayout.h"
@@ -51,6 +52,11 @@ class RuntimeUI
     struct Cache
     {
         GameUI::UIImageVisual PaintImage;
+        std::vector<Renderer2D::TextGlyph> Glyphs;
+        bool PreparedValid=false;
+        glm::vec2 PreparedContent{-1};
+        float PreparedSize=0,PreparedSpacing=0;
+        GameUI::Align PreparedHorizontal=GameUI::Align::Start,PreparedVertical=GameUI::Align::Start;
         std::vector<Renderer2D::TextLine> Lines;
         std::string Text;
         std::filesystem::path FontPath;
@@ -90,6 +96,9 @@ class RuntimeUI
     GameUI::InputRouter m_Input;
     std::deque<GameUI::Action> m_Actions;
     GameUI::RuntimeUIDiagnostics m_Diagnostics;
+    Scope<GPUTimer> m_GPUTimer;
+    uint64_t m_PaintSubmission=0;
+    size_t m_PreparedBytes=0;
     uint64_t m_NextGeneration = 0, m_OuterDrops = 0, m_ReportedDrops = 0;
     std::chrono::steady_clock::time_point m_LastWarning{};
     bool m_PointerOver = false, m_KeyboardOwns = false, m_InputEnabled = false;

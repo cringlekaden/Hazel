@@ -28,6 +28,7 @@ namespace Hazel {
 
 		// Editor-only
 		int EntityID;
+        glm::vec4 ClipRect;
 	};
 
 	struct CircleVertex
@@ -40,6 +41,7 @@ namespace Hazel {
 
 		// Editor-only
 		int EntityID;
+        glm::vec4 ClipRect;
 	};
 
 	struct LineVertex
@@ -49,6 +51,7 @@ namespace Hazel {
 
 		// Editor-only
 		int EntityID;
+        glm::vec4 ClipRect;
 	};
 
 	struct TextVertex
@@ -61,6 +64,7 @@ namespace Hazel {
 
 		// Editor-only
 		int EntityID;
+        glm::vec4 ClipRect;
 	};
 
 	struct Renderer2DData
@@ -70,6 +74,11 @@ namespace Hazel {
 		static constexpr uint32_t MaxIndices = MaxQuads * 6;
 		static constexpr uint32_t MaxTextureSlots = 32;
 		uint32_t TextureSlotLimit = 0;
+        bool Ordered=false;
+        glm::vec4 ClipRect{-1};
+        struct Run {int Kind;uint32_t First,Count;Ref<Texture2D> Font;float LineWidth;};
+        std::vector<Run> Runs; // at most 8192, reused between chunks/frames
+
 
 		Ref<VertexArray> QuadVertexArray;
 		Ref<VertexBuffer> QuadVertexBuffer;
@@ -110,6 +119,7 @@ namespace Hazel {
 		uint32_t TextureSlotIndex = 1; // 0 = white texture
 
 		Ref<Texture2D> FontAtlasTexture;
+        uint32_t FontSamplerUnit=0;
 
 		glm::vec4 QuadVertexPositions[4];
 
@@ -141,7 +151,8 @@ namespace Hazel {
 			{ ShaderDataType::Float2, "a_TexCoord"     },
 			{ ShaderDataType::Float,  "a_TexIndex"     },
 			{ ShaderDataType::Float,  "a_TilingFactor" },
-			{ ShaderDataType::Int,    "a_EntityID"     }
+			{ ShaderDataType::Int, "a_EntityID" },
+            { ShaderDataType::Float4, "a_ClipRect" }
 		});
 		s_Data->QuadVertexArray->AddVertexBuffer(s_Data->QuadVertexBuffer);
 
@@ -177,7 +188,8 @@ namespace Hazel {
 			{ ShaderDataType::Float4, "a_Color"         },
 			{ ShaderDataType::Float,  "a_Thickness"     },
 			{ ShaderDataType::Float,  "a_Fade"          },
-			{ ShaderDataType::Int,    "a_EntityID"      }
+			{ ShaderDataType::Int, "a_EntityID" },
+            { ShaderDataType::Float4, "a_ClipRect" }
 		});
 		s_Data->CircleVertexArray->AddVertexBuffer(s_Data->CircleVertexBuffer);
 		s_Data->CircleVertexArray->SetIndexBuffer(quadIB); // Use quad IB
@@ -190,7 +202,8 @@ namespace Hazel {
 		s_Data->LineVertexBuffer->SetLayout({
 			{ ShaderDataType::Float3, "a_Position" },
 			{ ShaderDataType::Float4, "a_Color"    },
-			{ ShaderDataType::Int,    "a_EntityID" }
+			{ ShaderDataType::Int, "a_EntityID" },
+            { ShaderDataType::Float4, "a_ClipRect" }
 		});
 		s_Data->LineVertexArray->AddVertexBuffer(s_Data->LineVertexBuffer);
 		s_Data->LineVertexBufferBase = CreateScope<LineVertex[]>(s_Data->MaxVertices);
@@ -203,7 +216,8 @@ namespace Hazel {
 			{ ShaderDataType::Float3, "a_Position"     },
 			{ ShaderDataType::Float4, "a_Color"        },
 			{ ShaderDataType::Float2, "a_TexCoord"     },
-			{ ShaderDataType::Int,    "a_EntityID"     }
+			{ ShaderDataType::Int, "a_EntityID" },
+            { ShaderDataType::Float4, "a_ClipRect" }
 		});
 		s_Data->TextVertexArray->AddVertexBuffer(s_Data->TextVertexBuffer);
 		s_Data->TextVertexArray->SetIndexBuffer(quadIB);
@@ -239,6 +253,7 @@ namespace Hazel {
 
 	void Renderer2D::BeginScene(const OrthographicCamera& camera)
 	{
+        s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);
 		HZ_PROFILE_FUNCTION();
 
 		s_Data->CameraBuffer.ViewProjection = camera.GetViewProjectionMatrix();
@@ -249,6 +264,7 @@ namespace Hazel {
 
 	void Renderer2D::BeginScene(const Camera& camera, const glm::mat4& transform)
 	{
+        s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);
 		HZ_PROFILE_FUNCTION();
 
 		s_Data->CameraBuffer.ViewProjection = camera.GetProjection() * glm::inverse(transform);
@@ -259,6 +275,7 @@ namespace Hazel {
 
 	void Renderer2D::BeginScene(const EditorCamera& camera)
 	{
+        s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);
 		HZ_PROFILE_FUNCTION();
 
 		s_Data->CameraBuffer.ViewProjection = camera.GetViewProjection();
@@ -267,14 +284,147 @@ namespace Hazel {
 		StartBatch();
 	}
 
-	void Renderer2D::EndScene()
-	{
-		HZ_PROFILE_FUNCTION();
+    void Renderer2D::BeginOrderedScene(const Camera &camera, const glm::mat4 &transform)
+    {
+        // Drain the previous pass before updating its camera or raster state.
+        EndScene();
+        BeginScene(camera, transform);
+        s_Data->Ordered = true;
+    }
+    void Renderer2D::SetPrimitiveClip(glm::ivec4 clip)
+    {
+        if (!s_Data->Ordered)
+            throw std::logic_error("Primitive clip requires an ordered pass");
+        if (s_Data->ClipRect != glm::vec4(clip))
+            ++s_Data->Stats.ClipTransitions;
+        s_Data->ClipRect = glm::vec4(clip);
+    }
+    void Renderer2D::EndScene()
+    {
+        HZ_PROFILE_FUNCTION();
+        Flush(FlushReason::End);
+        StartBatch();
+        if (s_Data->FontSamplerUnit)
+        {
+            s_Data->TextShader->Bind();
+            s_Data->TextShader->SetInt("u_FontAtlas", 0);
+            s_Data->FontSamplerUnit = 0;
+        }
+        s_Data->Ordered = false;
+        s_Data->ClipRect = glm::vec4(-1);
+        s_Data->FontAtlasTexture.reset();
+    }
+    void Renderer2D::EnsureRunSpace()
+    {
+        if (s_Data->Ordered && s_Data->Runs.size() >= 8192)
+            NextBatch(FlushReason::Capacity);
+    }
+    void Renderer2D::QueueRun(Primitive kind, uint32_t count)
+    {
+        if (!s_Data->Ordered)
+            return;
+        const int type = int(kind);
+        auto &runs = s_Data->Runs;
+        if (!runs.empty())
+        {
+            auto &last = runs.back();
+            if (last.Kind == type &&
+                (kind != Primitive::Text || last.Font == s_Data->FontAtlasTexture) &&
+                (kind != Primitive::Line || last.LineWidth == s_Data->LineWidth))
+            {
+                last.Count += count;
+                return;
+            }
+            if (last.Kind != type)
+                ++s_Data->Stats.PrimitiveTransitions;
+            else if (kind == Primitive::Text)
+                ++s_Data->Stats.FontTransitions;
+        }
+        uint32_t first = kind == Primitive::Quad     ? s_Data->QuadIndexCount
+                         : kind == Primitive::Text   ? s_Data->TextIndexCount
+                         : kind == Primitive::Circle ? s_Data->CircleIndexCount
+                                                     : s_Data->LineVertexCount;
+        runs.push_back({type, first, count,
+                        kind == Primitive::Text ? s_Data->FontAtlasTexture : Ref<Texture2D>{},
+                        s_Data->LineWidth});
+    }
+    void Renderer2D::FlushOrdered()
+    {
+        auto upload = [](auto &buffer, auto &base, auto end) {
+            uint32_t bytes = uint32_t(reinterpret_cast<uint8_t *>(end) -
+                                      reinterpret_cast<uint8_t *>(base.get()));
+            if (bytes)
+            {
+                buffer->SetData(base.get(), bytes);
+                s_Data->Stats.UploadedBytes += bytes;
+            }
+        };
+        upload(s_Data->QuadVertexBuffer, s_Data->QuadVertexBufferBase, s_Data->QuadVertexBufferPtr);
+        upload(s_Data->CircleVertexBuffer, s_Data->CircleVertexBufferBase,
+               s_Data->CircleVertexBufferPtr);
+        upload(s_Data->LineVertexBuffer, s_Data->LineVertexBufferBase, s_Data->LineVertexBufferPtr);
+        upload(s_Data->TextVertexBuffer, s_Data->TextVertexBufferBase, s_Data->TextVertexBufferPtr);
+        for (uint32_t i = 0; s_Data->QuadIndexCount && i < s_Data->TextureSlotIndex; ++i)
+            s_Data->TextureSlots[i]->Bind(i);
+        // Geometry is now complete: use an actually free sampler for text when
+        // possible, preserving every configured quad slot. A full chunk shares
+        // unit zero and restores white before a subsequent quad run.
+        // SPIR-V does not guarantee named uniform lookup. Its declared sampler
+        // binding stays immutable; use the same shared-unit fallback as full chunks.
+        const bool movableSampler =
+            s_Data->TextShader->GetProgramLoadingPath() != Shader::ProgramLoadingPath::SPIRV;
+        const uint32_t fontUnit = movableSampler && s_Data->QuadIndexCount &&
+                                          s_Data->TextureSlotIndex < s_Data->TextureSlotLimit
+                                      ? s_Data->TextureSlotIndex
+                                      : 0;
+        if (s_Data->TextIndexCount && s_Data->FontSamplerUnit != fontUnit)
+        {
+            s_Data->TextShader->Bind();
+            s_Data->TextShader->SetInt("u_FontAtlas", fontUnit);
+            s_Data->FontSamplerUnit = fontUnit;
+        }
+        Ref<Texture2D> unitZero = s_Data->QuadIndexCount ? s_Data->WhiteTexture : Ref<Texture2D>{},
+                       boundFont;
+        for (const auto &run : s_Data->Runs)
+        {
+            switch (Primitive(run.Kind))
+            {
+            case Primitive::Quad:
+                if (unitZero != s_Data->WhiteTexture)
+                {
+                    s_Data->WhiteTexture->Bind(0);
+                    unitZero = s_Data->WhiteTexture;
+                }
+                s_Data->QuadShader->Bind();
+                RenderCommand::DrawIndexed(s_Data->QuadVertexArray, run.Count, run.First);
+                break;
+            case Primitive::Text:
+                if ((fontUnit ? boundFont : unitZero) != run.Font)
+                {
+                    run.Font->Bind(fontUnit);
+                    if (fontUnit)
+                        boundFont = run.Font;
+                    else
+                        unitZero = run.Font;
+                }
+                s_Data->TextShader->Bind();
+                RenderCommand::DrawIndexed(s_Data->TextVertexArray, run.Count, run.First);
+                break;
+            case Primitive::Circle:
+                s_Data->CircleShader->Bind();
+                RenderCommand::DrawIndexed(s_Data->CircleVertexArray, run.Count, run.First);
+                break;
+            case Primitive::Line:
+                s_Data->LineShader->Bind();
+                RenderCommand::SetLineWidth(run.LineWidth);
+                RenderCommand::DrawLines(s_Data->LineVertexArray, run.Count, run.First);
+                break;
+            }
+            ++s_Data->Stats.DrawCalls;
+        }
+    }
 
-		Flush(FlushReason::End);
-	}
-
-	void Renderer2D::StartBatch()
+    void Renderer2D::StartBatch()
 	{
 		s_Data->QuadIndexCount = 0;
 		s_Data->QuadVertexBufferPtr = s_Data->QuadVertexBufferBase.get();
@@ -288,13 +438,19 @@ namespace Hazel {
 		s_Data->TextIndexCount = 0;
 		s_Data->TextVertexBufferPtr = s_Data->TextVertexBufferBase.get();
 
-		s_Data->TextureSlotIndex = 1;
+		for(uint32_t i=1;i<s_Data->TextureSlotIndex;++i)s_Data->TextureSlots[i].reset();
+        s_Data->TextureSlotIndex = 1;
+        s_Data->Runs.clear();
 	}
 
 	void Renderer2D::Flush(FlushReason reason)
 	{
+        if(!(s_Data->QuadIndexCount||s_Data->CircleIndexCount||s_Data->TextIndexCount||s_Data->LineVertexCount))return;
         const auto start=std::chrono::steady_clock::now();
         if(s_Data->QuadIndexCount||s_Data->CircleIndexCount||s_Data->TextIndexCount||s_Data->LineVertexCount)++s_Data->Stats.Flushes[size_t(reason)];
+        if(s_Data->Ordered){
+            FlushOrdered();s_Data->Stats.SubmitMilliseconds+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();return;
+        }
 		if (s_Data->QuadIndexCount)
 		{
 			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data->QuadVertexBufferPtr - (uint8_t*)s_Data->QuadVertexBufferBase.get());
@@ -386,6 +542,7 @@ namespace Hazel {
 
 	void Renderer2D::DrawQuad(const glm::mat4& transform, const glm::vec4& color, int entityID)
 	{
+        EnsureRunSpace();
 		HZ_PROFILE_FUNCTION();
 
 		constexpr size_t quadVertexCount = 4;
@@ -404,12 +561,15 @@ namespace Hazel {
 			s_Data->QuadVertexBufferPtr->TexIndex = textureIndex;
 			s_Data->QuadVertexBufferPtr->TilingFactor = tilingFactor;
 			s_Data->QuadVertexBufferPtr->EntityID = entityID;
+            s_Data->QuadVertexBufferPtr->ClipRect=s_Data->ClipRect;
 			s_Data->QuadVertexBufferPtr++;
 		}
 
-		s_Data->QuadIndexCount += 6;
+		QueueRun(Primitive::Quad,6);
+        s_Data->QuadIndexCount += 6;
 
 		s_Data->Stats.QuadCount++;
+        ++s_Data->Stats.GeometryCount;
 	}
 
 	void Renderer2D::DrawQuad(const glm::mat4& transform, const Ref<Texture2D>& texture, float tilingFactor, const glm::vec4& tintColor, int entityID)
@@ -420,6 +580,7 @@ namespace Hazel {
 
     void Renderer2D::DrawSprite(const glm::mat4& transform, const ResolvedSprite& sprite, const glm::vec4& tintColor, int entityID)
 	{
+        EnsureRunSpace();
 		HZ_PROFILE_FUNCTION();
         const auto& texture=sprite.Texture;
 
@@ -456,12 +617,15 @@ namespace Hazel {
 			s_Data->QuadVertexBufferPtr->TexIndex = textureIndex;
 			s_Data->QuadVertexBufferPtr->TilingFactor = sprite.TilingFactor;
 			s_Data->QuadVertexBufferPtr->EntityID = entityID;
+            s_Data->QuadVertexBufferPtr->ClipRect=s_Data->ClipRect;
 			s_Data->QuadVertexBufferPtr++;
 		}
 
-		s_Data->QuadIndexCount += 6;
+		QueueRun(Primitive::Quad,6);
+        s_Data->QuadIndexCount += 6;
 
 		s_Data->Stats.QuadCount++;
+        ++s_Data->Stats.GeometryCount;
 	}
 
 	void Renderer2D::DrawRotatedQuad(const glm::vec2& position, const glm::vec2& size, float rotation, const glm::vec4& color)
@@ -498,6 +662,7 @@ namespace Hazel {
 
 	void Renderer2D::DrawCircle(const glm::mat4& transform, const glm::vec4& color, float thickness /*= 1.0f*/, float fade /*= 0.005f*/, int entityID /*= -1*/)
 	{
+        EnsureRunSpace();
 		HZ_PROFILE_FUNCTION();
 
 		if (s_Data->CircleIndexCount + 6 > Renderer2DData::MaxIndices)
@@ -511,29 +676,37 @@ namespace Hazel {
 			s_Data->CircleVertexBufferPtr->Thickness = thickness;
 			s_Data->CircleVertexBufferPtr->Fade = fade;
 			s_Data->CircleVertexBufferPtr->EntityID = entityID;
+            s_Data->CircleVertexBufferPtr->ClipRect=s_Data->ClipRect;
 			s_Data->CircleVertexBufferPtr++;
 		}
 
-		s_Data->CircleIndexCount += 6;
+		QueueRun(Primitive::Circle,6);
+        s_Data->CircleIndexCount += 6;
 
 		s_Data->Stats.QuadCount++;
+        ++s_Data->Stats.GeometryCount;
 	}
 
 	void Renderer2D::DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color, int entityID)
 	{
+        EnsureRunSpace();
 		if (s_Data->LineVertexCount + 2 > Renderer2DData::MaxVertices)
 			NextBatch();
 		s_Data->LineVertexBufferPtr->Position = p0;
 		s_Data->LineVertexBufferPtr->Color = color;
 		s_Data->LineVertexBufferPtr->EntityID = entityID;
+            s_Data->LineVertexBufferPtr->ClipRect=s_Data->ClipRect;
 		s_Data->LineVertexBufferPtr++;
 
 		s_Data->LineVertexBufferPtr->Position = p1;
 		s_Data->LineVertexBufferPtr->Color = color;
 		s_Data->LineVertexBufferPtr->EntityID = entityID;
+            s_Data->LineVertexBufferPtr->ClipRect=s_Data->ClipRect;
 		s_Data->LineVertexBufferPtr++;
 
-		s_Data->LineVertexCount += 2;
+		QueueRun(Primitive::Line,2);
+        s_Data->LineVertexCount += 2;
+        ++s_Data->Stats.GeometryCount;
 	}
 
 	void Renderer2D::DrawRect(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color, int entityID)
@@ -610,128 +783,117 @@ namespace Hazel {
         }
         emit(start,chars.size());
     }
-	void Renderer2D::DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const TextParams& textParams, int entityID)
-	{
-		if (string.empty()) return;
+    void Renderer2D::AppendTextGlyphs(const std::string &string, const Ref<Font> &font,
+                                      const TextParams &params, std::vector<TextGlyph> &glyphs,
+                                      glm::vec2 offset)
+    {
+        if (string.empty())
+            return;
         thread_local std::vector<uint32_t> codepoints;
-        UTF8::Decode(string,codepoints);
-		if (!font || !font->GetAtlasTexture()) throw std::invalid_argument("Text requires a usable font");
-		const auto& fontGeometry = font->GetMSDFData()->FontGeometry;
-		const auto& metrics = fontGeometry.getMetrics();
-		Ref<Texture2D> fontAtlas = font->GetAtlasTexture();
+        UTF8::Decode(string, codepoints);
+        if (!font || !font->GetAtlasTexture())
+            throw std::invalid_argument("Text requires a usable font");
+        const auto &geometry = font->GetMSDFData()->FontGeometry;
+        const auto &metrics = geometry.getMetrics();
+        const double scale = 1.0 / (metrics.ascenderY - metrics.descenderY);
+        double x = 0, y = 0;
+        const float space = geometry.getGlyph(' ')->getAdvance();
+        const glm::vec2 texel(1.f / font->GetAtlasTexture()->GetWidth(),
+                              1.f / font->GetAtlasTexture()->GetHeight());
+        for (size_t i = 0; i < codepoints.size(); ++i)
+        {
+            auto ch = codepoints[i];
+            if (ch == '\r' || ch == 0xfeff)
+                continue;
+            if (ch == '\n')
+            {
+                x = 0;
+                y -= scale * metrics.lineHeight + params.LineSpacing;
+                continue;
+            }
+            if (ch == ' ')
+            {
+                float advance = space;
+                if (i + 1 < codepoints.size())
+                {
+                    double paired = advance;
+                    geometry.getAdvance(paired, ch, codepoints[i + 1]);
+                    advance = float(paired);
+                }
+                x += scale * advance + params.Kerning;
+                continue;
+            }
+            if (ch == '\t')
+            {
+                x += 4.f * (scale * space + params.Kerning);
+                continue;
+            }
+            auto glyph = geometry.getGlyph(ch);
+            if (!glyph)
+                glyph = geometry.getGlyph('?');
+            if (!glyph)
+                return;
+            double al, ab, ar, at, pl, pb, pr, pt;
+            glyph->getQuadAtlasBounds(al, ab, ar, at);
+            glyph->getQuadPlaneBounds(pl, pb, pr, pt);
+            TextGlyph prepared;
+            prepared.Min = glm::vec2(pl, pb) * float(scale) + glm::vec2(x, y) + offset;
+            prepared.Max = glm::vec2(pr, pt) * float(scale) + glm::vec2(x, y) + offset;
+            prepared.UVMin = glm::vec2(al, ab) * texel;
+            prepared.UVMax = glm::vec2(ar, at) * texel;
+            glyphs.push_back(prepared);
+            if (i + 1 < codepoints.size())
+            {
+                double advance = glyph->getAdvance();
+                geometry.getAdvance(advance, ch, codepoints[i + 1]);
+                x += scale * advance + params.Kerning;
+            }
+        }
+    }
+    void Renderer2D::DrawTextGlyphs(const std::vector<TextGlyph> &glyphs, const Ref<Font> &font,
+                                    const glm::mat4 &transform, const glm::vec4 &color,
+                                    int entityID)
+    {
+        if (glyphs.empty())
+            return;
+        if (!font || !font->GetAtlasTexture())
+            throw std::invalid_argument("Text requires a usable font");
+        auto atlas = font->GetAtlasTexture();
+        if (!s_Data->Ordered && s_Data->TextIndexCount && s_Data->FontAtlasTexture != atlas)
+            NextBatch(FlushReason::Font);
+        s_Data->FontAtlasTexture = atlas;
+        for (const auto &g : glyphs)
+        {
+            EnsureRunSpace();
+            if (s_Data->TextIndexCount + 6 > Renderer2DData::MaxIndices)
+                NextBatch();
+            const glm::vec2 positions[]{g.Min, {g.Min.x, g.Max.y}, g.Max, {g.Max.x, g.Min.y}};
+            const glm::vec2 uv[]{g.UVMin, {g.UVMin.x, g.UVMax.y}, g.UVMax, {g.UVMax.x, g.UVMin.y}};
+            for (size_t i = 0; i < 4; ++i)
+            {
+                auto &v = *s_Data->TextVertexBufferPtr++;
+                v.Position = transform * glm::vec4(positions[i], 0, 1);
+                v.Color = color;
+                v.TexCoord = uv[i];
+                v.EntityID = entityID;
+                v.ClipRect = s_Data->ClipRect;
+            }
+            QueueRun(Primitive::Text, 6);
+            s_Data->TextIndexCount += 6;
+            ++s_Data->Stats.QuadCount;
+            ++s_Data->Stats.GeometryCount;
+        }
+    }
+    void Renderer2D::DrawString(const std::string &string, Ref<Font> font,
+                                const glm::mat4 &transform, const TextParams &params, int entityID)
+    {
+        thread_local std::vector<TextGlyph> glyphs;
+        glyphs.clear();
+        AppendTextGlyphs(string, font, params, glyphs);
+        DrawTextGlyphs(glyphs, font, transform, params.Color, entityID);
+    }
 
-		if (s_Data->TextIndexCount && s_Data->FontAtlasTexture != fontAtlas)
-			NextBatch(FlushReason::Font);
-		s_Data->FontAtlasTexture = fontAtlas;
-
-		double x = 0.0;
-		double fsScale = 1.0 / (metrics.ascenderY - metrics.descenderY);
-		double y = 0.0;
-
-		const float spaceGlyphAdvance = fontGeometry.getGlyph(' ')->getAdvance();
-
-		for (size_t i = 0; i < codepoints.size(); i++)
-		{
-			auto character = codepoints[i];
-			if (character == '\r' || character == 0xfeff)
-				continue;
-
-			if (character == '\n')
-			{
-				x = 0;
-				y -= fsScale * metrics.lineHeight + textParams.LineSpacing;
-				continue;
-			}
-
-			if (character == ' ')
-			{
-				float advance = spaceGlyphAdvance;
-				if (i + 1 < codepoints.size())
-				{
-					auto nextCharacter = codepoints[i + 1];
-					double dAdvance = advance;
-					fontGeometry.getAdvance(dAdvance, character, nextCharacter);
-					advance = (float)dAdvance;
-				}
-
-				x += fsScale * advance + textParams.Kerning;
-				continue;
-			}
-
-			if (character == '\t')
-			{
-				// NOTE(Yan): is this right?
-				x += 4.0f * (fsScale * spaceGlyphAdvance + textParams.Kerning);
-				continue;
-			}
-
-			auto glyph = fontGeometry.getGlyph(character);
-			if (!glyph)
-				glyph = fontGeometry.getGlyph('?');
-			if (!glyph)
-				return;
-
-			double al, ab, ar, at;
-			glyph->getQuadAtlasBounds(al, ab, ar, at);
-			glm::vec2 texCoordMin((float)al, (float)ab);
-			glm::vec2 texCoordMax((float)ar, (float)at);
-
-			double pl, pb, pr, pt;
-			glyph->getQuadPlaneBounds(pl, pb, pr, pt);
-			glm::vec2 quadMin((float)pl, (float)pb);
-			glm::vec2 quadMax((float)pr, (float)pt);
-
-			quadMin *= fsScale, quadMax *= fsScale;
-			quadMin += glm::vec2(x, y);
-			quadMax += glm::vec2(x, y);
-
-			float texelWidth = 1.0f / fontAtlas->GetWidth();
-			float texelHeight = 1.0f / fontAtlas->GetHeight();
-			texCoordMin *= glm::vec2(texelWidth, texelHeight);
-			texCoordMax *= glm::vec2(texelWidth, texelHeight);
-
-			if (s_Data->TextIndexCount + 6 > Renderer2DData::MaxIndices)
-				NextBatch();
-			// render here
-			s_Data->TextVertexBufferPtr->Position = transform * glm::vec4(quadMin, 0.0f, 1.0f);
-			s_Data->TextVertexBufferPtr->Color = textParams.Color;
-			s_Data->TextVertexBufferPtr->TexCoord = texCoordMin;
-			s_Data->TextVertexBufferPtr->EntityID = entityID;
-			s_Data->TextVertexBufferPtr++;
-
-			s_Data->TextVertexBufferPtr->Position = transform * glm::vec4(quadMin.x, quadMax.y, 0.0f, 1.0f);
-			s_Data->TextVertexBufferPtr->Color = textParams.Color;
-			s_Data->TextVertexBufferPtr->TexCoord = { texCoordMin.x, texCoordMax.y };
-			s_Data->TextVertexBufferPtr->EntityID = entityID;
-			s_Data->TextVertexBufferPtr++;
-
-			s_Data->TextVertexBufferPtr->Position = transform * glm::vec4(quadMax, 0.0f, 1.0f);
-			s_Data->TextVertexBufferPtr->Color = textParams.Color;
-			s_Data->TextVertexBufferPtr->TexCoord = texCoordMax;
-			s_Data->TextVertexBufferPtr->EntityID = entityID;
-			s_Data->TextVertexBufferPtr++;
-
-			s_Data->TextVertexBufferPtr->Position = transform * glm::vec4(quadMax.x, quadMin.y, 0.0f, 1.0f);
-			s_Data->TextVertexBufferPtr->Color = textParams.Color;
-			s_Data->TextVertexBufferPtr->TexCoord = { texCoordMax.x, texCoordMin.y };
-			s_Data->TextVertexBufferPtr->EntityID = entityID;
-			s_Data->TextVertexBufferPtr++;
-
-			s_Data->TextIndexCount += 6;
-			s_Data->Stats.QuadCount++;
-
-			if (i + 1 < codepoints.size())
-			{
-				double advance = glyph->getAdvance();
-				auto nextCharacter = codepoints[i + 1];
-				fontGeometry.getAdvance(advance, character, nextCharacter);
-
-				x += fsScale * advance + textParams.Kerning;
-			}
-		}
-	}
-
-	void Renderer2D::DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID)
+    void Renderer2D::DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID)
 	{
 		DrawString(string, component.FontAsset, transform, { component.Color, component.Kerning, component.LineSpacing }, entityID);
 	}
@@ -746,6 +908,8 @@ namespace Hazel {
 		if (!(width > 0)) throw std::invalid_argument("Line width must be positive");
 		s_Data->LineWidth = width;
 	}
+
+	uint32_t Renderer2D::GetGeometryCount() {return s_Data->Stats.GeometryCount;}
 
 	void Renderer2D::ResetStats()
 	{

@@ -65,6 +65,7 @@ void RuntimeUI::Reset()
     m_Resolved.Warnings.clear();
     m_Source.clear();
     m_Cache.clear();
+    m_GPUTimer.reset();m_PaintSubmission=0;m_PreparedBytes=0;
     m_Diagnostics = {};
     m_OuterDrops = m_ReportedDrops = 0;
     // Generation IDs never alias an older published snapshot, including Play/Stop.
@@ -74,7 +75,7 @@ void RuntimeUI::Retire(uint64_t id)
     if (m_Input.Focused() == id)
         m_KeyboardOwns = false;
     m_Input.Retire(m_Scene.GetIdentity(), id);
-    m_Cache.erase(id);
+    if(auto it=m_Cache.find(id);it!=m_Cache.end()){m_PreparedBytes-=it->second.Glyphs.capacity()*sizeof(Renderer2D::TextGlyph);m_Cache.erase(it);}
     m_Actions.erase(std::remove_if(m_Actions.begin(), m_Actions.end(),
                                    [&](const Action &a) { return a.Entity == id; }),
                     m_Actions.end());
@@ -258,8 +259,10 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
         for (auto it = m_Cache.begin(); it != m_Cache.end();)
         {
             auto n = m_Resolved.Find(it->first);
-            if (!n || !n->LayoutResolved)
+            if (!n || !n->LayoutResolved){
+                m_PreparedBytes-=it->second.Glyphs.capacity()*sizeof(Renderer2D::TextGlyph);
                 it = m_Cache.erase(it);
+            }
             else
                 ++it;
         }
@@ -339,12 +342,12 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
         }
         if (!n.IsCanvas && interrupted)
             m_Build.Warnings.push_back(
-                {id, "Interrupted UI rect chain: an ancestor has no UI Rect/Canvas"});
+                {id, ResolvedSnapshot::WarningCode::Interrupted});
         else if (!n.IsCanvas && !foundCanvas)
-            m_Build.Warnings.push_back({id, "Orphan UI rect: runtime requires a Canvas ancestor"});
+            m_Build.Warnings.push_back({id, ResolvedSnapshot::WarningCode::Orphan});
         if (n.IsCanvas && uint64_t(n.Parent))
             m_Build.Warnings.push_back(
-                {id, "Nested/parented Canvas resolves independently against the viewport"});
+                {id, ResolvedSnapshot::WarningCode::NestedCanvas});
         auto parent = m_Scene.GetEntityByUUID(n.Parent);
         n.ContainerOwned = !n.IsCanvas && parent && parent.HasComponent<UIRectComponent>() &&
                       !parent.HasComponent<UICanvasComponent>() && parent.HasComponent<UILayoutComponent>();
@@ -380,13 +383,13 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
     {
         Entity e(h, &m_Scene);
         if (m_Scene.IsEntityValid(e.GetUUID()) && !e.HasComponent<UIRectComponent>())
-            m_Build.Warnings.push_back({e.GetUUID(), "UI Flow needs a UI Rect"});
+            m_Build.Warnings.push_back({e.GetUUID(), ResolvedSnapshot::WarningCode::ContainerRect});
     }
     for (auto h : m_Scene.GetAllEntitiesWith<UIButtonComponent>())
     {
         Entity e(h, &m_Scene);
         if (m_Scene.IsEntityValid(e.GetUUID()) && !e.HasComponent<UIRectComponent>())
-            m_Build.Warnings.push_back({e.GetUUID(), "UI Button needs a UI Rect"});
+            m_Build.Warnings.push_back({e.GetUUID(), ResolvedSnapshot::WarningCode::ButtonRect});
     }
     if (surface.Viewport.x == 0 || surface.Viewport.y == 0 || surface.Framebuffer.x == 0 ||
         surface.Framebuffer.y == 0)
@@ -489,8 +492,8 @@ void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enable
     bool outside=inside.Position != n.Bounds.Position || inside.Size != n.Bounds.Size;
     n.Overflow |= outside;
     if (outside)
-        m_Build.Warnings.push_back({n.ID, "Resolved rect overflows its parent content"});
-    if(n.Overflow&&!outside)m_Build.Warnings.push_back({n.ID,"Measured layout overflows available space; minimums are retained"});
+        m_Build.Warnings.push_back({n.ID, ResolvedSnapshot::WarningCode::Overflow});
+    if(n.Overflow&&!outside)m_Build.Warnings.push_back({n.ID,ResolvedSnapshot::WarningCode::MeasureOverflow});
     const auto &children = m_Scene.GetChildrenView(e.GetUUID());
     for(auto id:children) {
         auto child=m_Scene.GetEntityByUUID(id);
@@ -695,17 +698,37 @@ bool RuntimeUI::ImageVisual(uint64_t id,UIImageVisual &result) const
 }
 void RuntimeUI::Draw()
 {
-    const auto paintStart=std::chrono::steady_clock::now();
-    const auto submitStart=Renderer2D::GetStats().SubmitMilliseconds;
+    static_assert(std::tuple_size_v<decltype(m_Diagnostics.FlushReasons)> ==
+                  size_t(Renderer2D::FlushReason::Count));
+    m_Diagnostics.VisibleElements = m_Diagnostics.SubmittedElements = m_Diagnostics.DrawCalls =
+        m_Diagnostics.UploadGroups = 0;
+    m_Diagnostics.ClipTransitions = m_Diagnostics.PrimitiveTransitions =
+        m_Diagnostics.FontTransitions = 0;
+    m_Diagnostics.FlushReasons = {};
+    m_Diagnostics.LastPrepareMilliseconds = m_Diagnostics.LastSubmitMilliseconds = 0;
+    m_Diagnostics.GPUAvailable = false;
+    m_Diagnostics.PreparedRebuilds = m_Diagnostics.PreparedReuses = 0;
+    m_Diagnostics.PreparedBytes = m_PreparedBytes;
     if (!m_Resolved.Valid || m_Resolved.PainterOrder.empty() ||
         m_Resolved.Surface.Viewport.x <= 0 || m_Resolved.Surface.Viewport.y <= 0)
         return;
+    // A host's pending world geometry must use its own camera and raster state.
+    Renderer2D::EndScene();
+    const auto paintStart = std::chrono::steady_clock::now();
+    const auto before = Renderer2D::GetStats();
+    const auto submitStart = before.SubmitMilliseconds;
     auto prior = RenderCommand::GetRasterState();
     auto state = prior;
     state.DepthTest = false;
-    state.ClipEnabled = true;
+    state.ClipEnabled = false;
     Camera camera(glm::ortho(0.f, m_Resolved.Surface.Viewport.x, -m_Resolved.Surface.Viewport.y,
                              0.f, -1.f, 1.f));
+    Renderer2D::BeginOrderedScene(camera, glm::mat4(1));
+    RenderCommand::SetRasterState(state);
+    if (!m_GPUTimer)
+        m_GPUTimer = GPUTimer::Create();
+    if (m_GPUTimer)
+        m_GPUTimer->Begin(++m_PaintSubmission);
     try
     {
         for (auto index : m_Resolved.PainterOrder)
@@ -717,12 +740,13 @@ void RuntimeUI::Draw()
             const auto p = n.FramebufferClip.Position, z = n.FramebufferClip.Size;
             if (z.x <= 0 || z.y <= 0)
                 continue;
+            ++m_Diagnostics.VisibleElements;
+            auto geometryBefore = Renderer2D::GetGeometryCount();
             // Exact same inward-snapped coverage was used for hit eligibility.
             state.ClipRect = {prior.Viewport.x + int(p.x),
                               prior.Viewport.y + prior.Viewport.w - int(p.y + z.y), int(z.x),
                               int(z.y)};
-            RenderCommand::SetRasterState(state);
-            Renderer2D::BeginScene(camera, glm::mat4(1));
+            Renderer2D::SetPrimitiveClip(state.ClipRect);
             auto tint = glm::vec4(1);
             const SpriteSource *overrideImage = nullptr;
             int stateIndex = 0;
@@ -734,7 +758,7 @@ void RuntimeUI::Draw()
                                 : int(m_Input.State(m_Resolved.Buttons[n.ButtonIndex]));
                 if (m_Resolved.PreviewOrphans && !n.Canvas)
                     index = n.Enabled && b.Interactable ? int(ButtonState::Normal)
-                                                       : int(ButtonState::Disabled);
+                                                        : int(ButtonState::Disabled);
                 if (index == int(ButtonState::Focused) && !m_Resolved.Modal && !m_KeyboardOwns)
                     index = 0;
                 tint = b.Colors[index];
@@ -765,24 +789,40 @@ void RuntimeUI::Draw()
                     }
                     sprite = cache.Images[stateIndex].get();
                 }
-                if(sprite){
-                    auto &rect=e.GetComponent<UIRectComponent>();
-                    if(nine&&rect.Fit!=ImageFit::Stretch)throw std::invalid_argument("Nine-slice requires Stretch image fit");
-                    glm::vec2 sourceSize=sprite->PixelSize();
-                    auto fitted=FitImage(rect.Fit==ImageFit::Stretch?n.Bounds:n.Bounds.Inset(rect.Padding),sourceSize,rect.Fit,rect.ImageAlignment);
-                    auto draw=*sprite;
+                if (sprite)
+                {
+                    auto &rect = e.GetComponent<UIRectComponent>();
+                    if (nine && rect.Fit != ImageFit::Stretch)
+                        throw std::invalid_argument("Nine-slice requires Stretch image fit");
+                    glm::vec2 sourceSize = sprite->PixelSize();
+                    auto fitted = FitImage(
+                        rect.Fit == ImageFit::Stretch ? n.Bounds : n.Bounds.Inset(rect.Padding),
+                        sourceSize, rect.Fit, rect.ImageAlignment);
+                    auto draw = *sprite;
                     // Sprite UVs use bottom-left coordinates; fit/crop uses top-left local units.
-                    auto lo=fitted.UV.Position,hi=lo+fitted.UV.Size;
-                    auto uv=[&](float u,float v){return sprite->UV[0]+(sprite->UV[2]-sprite->UV[0])*glm::vec2(u,v);};
-                    draw.UV={uv(lo.x,1-hi.y),uv(hi.x,1-hi.y),uv(hi.x,1-lo.y),uv(lo.x,1-lo.y)};
-                    if(fitted.Visual.Size.x>0&&fitted.Visual.Size.y>0)Image(fitted.Visual,n.Scale,draw,s.Color*tint,int(uint32_t(e)),nine);
-                    m_Cache[n.ID].PaintImage={m_Resolved.Generation,sourceSize,rect.Fit,fitted};
+                    auto lo = fitted.UV.Position, hi = lo + fitted.UV.Size;
+                    auto uv = [&](float u, float v) {
+                        return sprite->UV[0] + (sprite->UV[2] - sprite->UV[0]) * glm::vec2(u, v);
+                    };
+                    draw.UV = {uv(lo.x, 1 - hi.y), uv(hi.x, 1 - hi.y), uv(hi.x, 1 - lo.y),
+                               uv(lo.x, 1 - lo.y)};
+                    if (fitted.Visual.Size.x > 0 && fitted.Visual.Size.y > 0)
+                        Image(fitted.Visual, n.Scale, draw, s.Color * tint, int(uint32_t(e)), nine);
+                    m_Cache[n.ID].PaintImage = {m_Resolved.Generation, sourceSize, rect.Fit,
+                                                fitted};
                 }
             }
-            // A text/image element still respects painter order across renderer
-            // batches.
-            Renderer2D::EndScene();
-            Renderer2D::BeginScene(camera, glm::mat4(1));
+            // The former text/focus flush drew lines before glyphs; retain that layering.
+            if (e.HasComponent<UIButtonComponent>())
+            {
+                if (n.FocusEligible && m_Input.Focused() == n.ID &&
+                    (m_Resolved.Modal || m_KeyboardOwns))
+                {
+                    auto inset = n.Bounds.Inset(glm::vec4(2));
+                    Renderer2D::DrawRect(Transform(inset, n.Scale), {1, .9f, .65f, 1},
+                                         int(uint32_t(e)));
+                }
+            }
             if (e.HasComponent<TextComponent>())
             {
                 auto &t = e.GetComponent<TextComponent>();
@@ -808,7 +848,8 @@ void RuntimeUI::Draw()
                     cache.FontPath = style.FontPath;
                     cache.Epoch = epoch;
                     cache.Width = -1;
-                    cache.MeasureWidth={{-2,-2}};
+                    cache.PreparedValid = false;
+                    cache.MeasureWidth = {{-2, -2}};
                 }
                 auto content = n.Bounds.Inset(e.GetComponent<UIRectComponent>().Padding);
                 float width = content.Size.x / style.Size;
@@ -817,59 +858,132 @@ void RuntimeUI::Draw()
                 {
                     Renderer2D::LayoutText(t.TextString, cache.FontAsset, width, style.Wrap,
                                            t.Kerning, cache.Lines);
+                    cache.PreparedValid = false;
                     cache.Text = t.TextString;
                     cache.Width = width;
                     cache.Kerning = t.Kerning;
                     cache.Wrap = style.Wrap;
                 }
+                // Position/tint are live draw values. Only normalized glyph geometry is cached.
+                const glm::vec2 normalizedContent = content.Size / style.Size;
+                const bool changed =
+                    !cache.PreparedValid || cache.PreparedContent != normalizedContent ||
+                    cache.PreparedSize != style.Size || cache.PreparedSpacing != t.LineSpacing ||
+                    cache.PreparedHorizontal != style.Horizontal ||
+                    cache.PreparedVertical != style.Vertical;
+                constexpr size_t budget = 16 * 1024 * 1024, maxTextBytes = 4096;
+                const size_t priorBytes = cache.Glyphs.capacity() * sizeof(Renderer2D::TextGlyph);
+                const size_t wanted = std::max(cache.Glyphs.capacity(), t.TextString.size()) *
+                                      sizeof(Renderer2D::TextGlyph);
+                const bool retain = t.TextString.size() <= maxTextBytes &&
+                                    m_PreparedBytes - priorBytes + wanted <= budget;
+                if (!retain)
+                {
+                    m_PreparedBytes -= priorBytes;
+                    std::vector<Renderer2D::TextGlyph>().swap(cache.Glyphs);
+                    cache.PreparedValid = false;
+                }
                 auto metrics = cache.FontAsset->GetMSDFData()->FontGeometry.getMetrics();
                 const float normalized = 1.f / float(metrics.ascenderY - metrics.descenderY);
-                float lineHeight =
-                    (float(metrics.lineHeight) * normalized + t.LineSpacing) * style.Size;
-                float height = style.Size + (cache.Lines.size() - 1) * lineHeight;
-                float y = content.Position.y;
-                if (style.Vertical == Align::Center)
-                    y += (content.Size.y - height) * .5f;
-                else if (style.Vertical == Align::End)
-                    y += content.Size.y - height;
-                y += float(metrics.ascenderY) * normalized * style.Size;
-                for (auto &line : cache.Lines)
+                const float lineHeight = float(metrics.lineHeight) * normalized + t.LineSpacing;
+                const float height = 1.f + (cache.Lines.size() - 1) * lineHeight;
+                auto visitLines = [&](auto emit) {
+                    float y = style.Vertical == Align::Center ? (normalizedContent.y - height) * .5f
+                              : style.Vertical == Align::End  ? normalizedContent.y - height
+                                                              : 0;
+                    y += float(metrics.ascenderY) * normalized;
+                    for (const auto &line : cache.Lines)
+                    {
+                        const float x = style.Horizontal == Align::Center
+                                            ? (normalizedContent.x - line.Width) * .5f
+                                        : style.Horizontal == Align::End
+                                            ? normalizedContent.x - line.Width
+                                            : 0;
+                        emit(line, glm::vec2(x, -y));
+                        y += lineHeight;
+                    }
+                };
+                const auto transform =
+                    glm::translate(glm::mat4(1), glm::vec3(content.Position.x * n.Scale,
+                                                           -content.Position.y * n.Scale, 0)) *
+                    glm::scale(glm::mat4(1), glm::vec3(style.Size * n.Scale));
+                if (retain)
                 {
-                    float x = content.Position.x;
-                    if (style.Horizontal == Align::Center)
-                        x += (content.Size.x - line.Width * style.Size) * .5f;
-                    else if (style.Horizontal == Align::End)
-                        x += content.Size.x - line.Width * style.Size;
-                    auto transform =
-                        glm::translate(glm::mat4(1), glm::vec3(x * n.Scale, -y * n.Scale, 0)) *
-                        glm::scale(glm::mat4(1), glm::vec3(style.Size * n.Scale));
-                    Renderer2D::DrawString(line.Text, cache.FontAsset, transform,
-                                           {t.Color * tint, t.Kerning, t.LineSpacing},
-                                           int(uint32_t(e)));
-                    y += lineHeight;
+                    if (changed)
+                    {
+                        cache.PreparedValid = false;
+                        cache.Glyphs.clear();
+                        cache.Glyphs.reserve(t.TextString.size());
+                        m_PreparedBytes = m_PreparedBytes - priorBytes +
+                                          cache.Glyphs.capacity() * sizeof(Renderer2D::TextGlyph);
+                        visitLines([&](const auto &line, glm::vec2 offset) {
+                            Renderer2D::AppendTextGlyphs(line.Text, cache.FontAsset,
+                                                         {t.Color, t.Kerning, t.LineSpacing},
+                                                         cache.Glyphs, offset);
+                        });
+                        cache.PreparedContent = normalizedContent;
+                        cache.PreparedSize = style.Size;
+                        cache.PreparedSpacing = t.LineSpacing;
+                        cache.PreparedHorizontal = style.Horizontal;
+                        cache.PreparedVertical = style.Vertical;
+                        cache.PreparedValid = true;
+                        ++m_Diagnostics.PreparedRebuilds;
+                    }
+                    else
+                        ++m_Diagnostics.PreparedReuses;
+                    Renderer2D::DrawTextGlyphs(cache.Glyphs, cache.FontAsset, transform,
+                                               t.Color * tint, int(uint32_t(e)));
                 }
-            }
-            if (e.HasComponent<UIButtonComponent>())
-            {
-                if (n.FocusEligible && m_Input.Focused() == n.ID &&
-                    (m_Resolved.Modal || m_KeyboardOwns))
+                else
                 {
-                    auto inset = n.Bounds.Inset(glm::vec4(2));
-                    Renderer2D::DrawRect(Transform(inset, n.Scale), {1, .9f, .65f, 1},
-                                         int(uint32_t(e)));
+                    ++m_Diagnostics.PreparedRebuilds;
+                    visitLines([&](const auto &line, glm::vec2 offset) {
+                        Renderer2D::DrawString(
+                            line.Text, cache.FontAsset,
+                            transform * glm::translate(glm::mat4(1), glm::vec3(offset, 0)),
+                            {t.Color * tint, t.Kerning, t.LineSpacing}, int(uint32_t(e)));
+                    });
                 }
+                m_Diagnostics.PreparedBytes = m_PreparedBytes;
             }
-            Renderer2D::EndScene();
+            if (Renderer2D::GetGeometryCount() != geometryBefore)
+                ++m_Diagnostics.SubmittedElements;
         }
+        Renderer2D::EndScene();
+        if (m_GPUTimer)
+            m_GPUTimer->End();
     }
     catch (...)
     {
         Renderer2D::EndScene();
+        if (m_GPUTimer)
+            m_GPUTimer->End();
         RenderCommand::SetRasterState(prior);
         throw;
     }
     RenderCommand::SetRasterState(prior);
-    m_Diagnostics.LastSubmitMilliseconds=Renderer2D::GetStats().SubmitMilliseconds-submitStart;
-    m_Diagnostics.LastPrepareMilliseconds=std::max(0.,std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-paintStart).count()-m_Diagnostics.LastSubmitMilliseconds);
+    const auto after = Renderer2D::GetStats();
+    m_Diagnostics.DrawCalls = after.DrawCalls - before.DrawCalls;
+    m_Diagnostics.ClipTransitions = after.ClipTransitions - before.ClipTransitions;
+    m_Diagnostics.PrimitiveTransitions = after.PrimitiveTransitions - before.PrimitiveTransitions;
+    m_Diagnostics.FontTransitions = after.FontTransitions - before.FontTransitions;
+    for (size_t i = 0; i < m_Diagnostics.FlushReasons.size(); ++i)
+    {
+        m_Diagnostics.FlushReasons[i] = after.Flushes[i] - before.Flushes[i];
+        m_Diagnostics.UploadGroups += m_Diagnostics.FlushReasons[i];
+    }
+    m_Diagnostics.PaintSubmission = m_PaintSubmission;
+    if (m_GPUTimer)
+    {
+        auto result = m_GPUTimer->Latest();
+        m_Diagnostics.GPUAvailable = result.Available;
+        m_Diagnostics.LastGPUMilliseconds = result.Milliseconds;
+        m_Diagnostics.GPUSubmission = result.Submission;
+    }
+    m_Diagnostics.LastSubmitMilliseconds = Renderer2D::GetStats().SubmitMilliseconds - submitStart;
+    m_Diagnostics.LastPrepareMilliseconds = std::max(
+        0., std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - paintStart)
+                    .count() -
+                m_Diagnostics.LastSubmitMilliseconds);
 }
 } // namespace Hazel

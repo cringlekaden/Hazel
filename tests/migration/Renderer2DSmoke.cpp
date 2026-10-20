@@ -43,6 +43,7 @@ static std::size_t Pixels(int entity) {
     glReadPixels(0,0,128,128,GL_RED_INTEGER,GL_INT,ids.data()); glReadBuffer(GL_COLOR_ATTACHMENT0);
     return std::count(ids.begin(),ids.end(),entity);
 }
+#include "OrderedBatchChecks.h"
 static void Primitives() {
     Begin(); Renderer2D::DrawQuad(Transform(),{1,0,0,1},42); End();
     Check(ID()==42 && Color()[0]>250 && Color()[1]<5,"Solid quad color/entity mismatch");
@@ -222,7 +223,7 @@ int main() {
             target=Framebuffer::Create(framebuffer);
             Check(Renderer::GetSettings().TextureSlots==(reduced ? 2u : std::min(32u,Renderer::GetCapabilities().MaxTextureSlots)),"Application renderer settings mismatch");
             RenderingControls(application,requests);
-            Primitives(); Textures(); Text(); Overflow(); GenericSubmit();
+            Primitives(); Textures(); Text(); Overflow(); GenericSubmit(); OrderedBatchChecks();
             Check(glGetError()==GL_NO_ERROR,"Final renderer GL error");
             target->Unbind(); target.reset(); glEnable(GL_DEPTH_TEST);
         }

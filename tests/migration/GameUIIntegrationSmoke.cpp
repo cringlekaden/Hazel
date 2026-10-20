@@ -39,6 +39,7 @@ static void Check(bool value, const char *why)
 #include "MeasuredSceneChecks.h"
 #include "ContainerSceneChecks.h"
 #include "ImageFitSceneChecks.h"
+#include "RuntimeUIPaintChecks.h"
 struct UIFixture
 {
     Ref<Scene> World=CreateRef<Scene>();Entity Canvas,Group,Control;
@@ -100,59 +101,6 @@ static void HardeningSceneChecks()
      bool rejected=false;try{scene->RefreshUI();}catch(const std::runtime_error&){rejected=true;}Check(rejected,"Hidden declared nodes escaped 4096 limit");}
     std::cout<<"PASS: scene D1/D2/D4/D5, generation reuse/raw writes, interrupted/reparented/replaced ancestors, fractional/zero surfaces and multiple consumers\n";
 }
-static void ProfileRuntimeUI()
-{
-    FramebufferSpecification spec;spec.Width=1280;spec.Height=720;
-    spec.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
-    auto framebuffer=Framebuffer::Create(spec);framebuffer->Bind();
-    using Clock=std::chrono::steady_clock;
-    auto milliseconds=[](Clock::time_point a,Clock::time_point b){return std::chrono::duration<double,std::milli>(b-a).count();};
-    auto stats=[](std::vector<double> values){std::sort(values.begin(),values.end());return std::pair<double,double>{values[values.size()/2],values[(values.size()*95)/100]};};
-    for(int count:{64,512,2048})
-    {
-        // One staged import avoids repeated O(N) hierarchy reparent transactions
-        // during fixture setup. It never writes a scene/project/save document.
-        std::ostringstream yaml;yaml<<"SceneVersion: 2\nScene: UI profile\nEntities:\n- Entity: 1\n  UICanvasComponent: { ReferenceSize: [1280, 720], SafeInsets: [0, 0, 0, 0] }\n  Relationship: { Parent: 0, Order: 0 }\n";
-        yaml<<"- Entity: 2\n  UIRectComponent: { LayoutVersion: 3, Offset: [16, 16], FixedSize: [1248, 688] }\n  Relationship: { Parent: 1, Order: 0 }\n";
-        for(int i=0;i<count-1;++i)
-        {
-            int columns=count==2048?32:4;
-            int x=(i%columns)*(count==2048?38:300),y=(i/columns)*(count==2048?10:36);
-            yaml<<"- Entity: "<<i+3<<"\n  Relationship: { Parent: 2, Order: "<<i<<" }\n  UIRectComponent: { LayoutVersion: 3, Offset: ["<<x<<", "<<y<<"], FixedSize: ["<<(count==2048?36:280)<<", "<<(count==2048?10:32)<<"] }\n";
-            if(i%2==0)yaml<<"  TextComponent: { TextString: 'Item "<<i<<"', Color: [1, 1, 1, 1], Kerning: 0, LineSpacing: 0 }\n  UITextStyleComponent: { Size: "<<(count==2048?8:18)<<", Wrap: false }\n";
-            else yaml<<"  SpriteRendererComponent: { Color: [0.12, 0.24, 0.32, 1] }\n";
-            bool control=count==64?i<8:i%4==0;
-            if(control)yaml<<"  UIButtonComponent: { Action: 'activate', TabOrder: "<<i<<" }\n";
-        }
-        auto scene=CreateRef<Scene>();SceneSerializer loader(scene);
-        Check(loader.DeserializeText(yaml.str()),"Profile staged fixture failed to import");
-        scene->OnViewportResize(1280,720);scene->PrepareSprites(true);
-        RuntimeUI ui(*scene);InputFrame frame;frame.Enabled=true;frame.Mouse={-1,-1};
-        for(int i=0;i<20;++i){ui.Resolve({1280,720});ui.UpdateInput(frame);ui.Draw();}
-        auto generation=ui.Snapshot().Generation;auto resolves=ui.Diagnostics().Resolves;
-        std::vector<double> detect(300),route(300),renderDetect(300),draw(300),gpu(20),changed(30);
-        uint64_t allocations=0;
-        for(int i=0;i<300;++i)
-        {
-            s_Allocations=0;s_CountAllocations=true;auto a=Clock::now();ui.Resolve({1280,720});auto b=Clock::now();ui.UpdateInput(frame);auto c=Clock::now();ui.Resolve({1280,720});auto beforeDraw=Clock::now();s_CountAllocations=false;allocations+=s_Allocations;
-            ui.Draw();auto d=Clock::now();detect[i]=milliseconds(a,b);route[i]=milliseconds(b,c);renderDetect[i]=milliseconds(c,beforeDraw);draw[i]=milliseconds(beforeDraw,d);
-        }
-        Check(ui.Snapshot().Generation==generation&&ui.Diagnostics().Resolves==resolves,"Idle profile rebuilt snapshot");
-        GLuint query=0;glGenQueries(1,&query);
-        for(int i=0;i<20;++i){glBeginQuery(GL_TIME_ELAPSED,query);ui.Draw();glEndQuery(GL_TIME_ELAPSED);GLuint64 nanos=0;glGetQueryObjectui64v(query,GL_QUERY_RESULT,&nanos);gpu[i]=double(nanos)/1e6;}
-        glDeleteQueries(1,&query);
-        auto moving=scene->GetEntityByUUID(3);
-        for(int i=0;i<30;++i){moving.GetComponent<UIRectComponent>().Offset.x=float(i%2);auto a=Clock::now();ui.Resolve({1280,720});ui.UpdateInput(frame);auto b=Clock::now();changed[i]=milliseconds(a,b);}
-        Renderer2D::ResetStats();ui.Draw();auto render=Renderer2D::GetStats();
-        auto a=stats(detect),b=stats(route),c=stats(draw),d=stats(changed),g=stats(gpu),r=stats(renderDetect);
-        std::cout<<std::fixed<<std::setprecision(4)<<"PROFILE nodes="<<count<<" controls="<<ui.Snapshot().Buttons.size()
-            <<" detect_ms="<<a.first<<"/"<<a.second<<" route_ms="<<b.first<<"/"<<b.second<<" render_detect_ms="<<r.first<<"/"<<r.second<<" submit_cpu_ms="<<c.first<<"/"<<c.second
-            <<" changed_layout+route_ms="<<d.first<<"/"<<d.second<<" gpu_ms="<<g.first<<"/"<<g.second
-            <<" idle_cpp_new="<<allocations<<" draws="<<render.DrawCalls<<" quads="<<render.QuadCount<<" idle_generations=1\n";
-    }
-    framebuffer->Unbind();Check(glGetError()==GL_NO_ERROR,"Profile OpenGL error");
-    std::cout<<"PASS: bounded UI profile; CPU median/p95, separate GL timer query, idle generation and C++ allocation count\n";
-}
 #include "ContainerProfile.h"
 #include "RenderProfile.h"
 int main(int argc,char** argv)
@@ -167,7 +115,9 @@ int main(int argc,char** argv)
         glfwHideWindow(static_cast<GLFWwindow *>(app.GetWindow().GetNativeWindow()));
         if(argc==2&&std::string(argv[1])=="--profile-render"){ProfileRendering();return 0;}
         if(argc==2&&std::string(argv[1])=="--profile-layout"){ProfileContainers();return 0;}
-        if(argc==2&&std::string(argv[1])=="--profile"){ProfileRuntimeUI();return 0;}
+        s_Allocations=0;s_CountAllocations=true;
+        {InstrumentationTimer inactive("Inactive renderer trace scope must not allocate a profile name");}
+        s_CountAllocations=false;Check(s_Allocations==0,"Inactive tracing allocated in the normal renderer path");
         HardeningSceneChecks();
         const auto root = std::filesystem::temp_directory_path() /
                           ("hazel-ui-" + std::to_string(std::random_device{}()));
@@ -187,6 +137,7 @@ int main(int argc,char** argv)
         MeasuredSceneChecks(root);
         ContainerSceneChecks(root);
         ImageFitSceneChecks(root);
+        RuntimeUIPaintChecks(root);
         auto scene = CreateRef<Scene>();
         scene->SetAssets(CreateRef<ProjectAssets>(root));
         scene->OnViewportResize(320, 240);

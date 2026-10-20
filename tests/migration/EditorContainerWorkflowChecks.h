@@ -51,7 +51,17 @@ void ContainerWorkflowChecks()
     auto reopenedCanvas=scene->FindEntityByName("UI Canvas");Prefab::Save(Project::GetAssetDirectory(),"Prefabs/container-workflow.hprefab",scene,reopenedCanvas,true);
     owner.SelectAsset(Project::GetAssetDirectory()/"Prefabs/container-workflow.hprefab");Check(owner.m_PrefabScene&&owner.m_PrefabScene->FindEntityByName("UI Grid").GetComponent<UILayoutComponent>().Columns.size()==3,"Container prefab editing lost tracks");owner.ClosePrefab();
     panel.SetSelectedEntity(scene->FindEntityByName("UI Grid"));auto authored=owner.SceneText();
-    Check(editor.OnScenePlay(true),"Container fixture Play failed");editor.OnSceneStop();Check(owner.SceneText()==authored,"Container fixture Stop imported runtime state");
+    FramebufferSpecification paint;paint.Width=640;paint.Height=480;paint.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
+    auto target=Framebuffer::Create(paint);auto viewport=RenderCommand::GetRasterState().Viewport;
+    for(int i=0;i<3;++i){
+        Check(editor.OnScenePlay(true),"Container fixture Play failed");
+        auto running=editor.m_ActiveScene;running->OnViewportResize(640,480);running->SetUIFramebufferSize({640,480});
+        target->Bind();RenderCommand::Clear();target->ClearAttachment(1,-1);running->OnUpdateRuntime(0);
+        Check(running->GetUIDiagnostics().DrawCalls>0&&running->GetUIDiagnostics().PreparedRebuilds>0,"Editor Play omitted the real UI pass/preparation");
+        running->OnUpdateRuntime(0);Check(running->GetUIDiagnostics().PreparedReuses>0,"Editor Play rebuilt unchanged glyph data");
+        target->Unbind();editor.OnSceneStop();Check(owner.SceneText()==authored,"Container fixture Stop imported runtime paint/history state");
+    }
+    RenderCommand::SetViewport(viewport.x,viewport.y,viewport.z,viewport.w);
     m_ContainerFixture=scene;m_ContainerFixturePanel.SetContext(scene);m_ContainerFixturePanel.SetSelectedEntity(scene->FindEntityByName("UI Grid"));m_ContainerIcon=icons.front();
     Check(editor.OpenScene(original),"Container fixture failed to restore original disposable document");
     std::cout<<"PASS: real editor commands/Inspector transactions: icon grid, responsive wrap, wrapped text with image fits, history/cancel/ownership, save-reopen, prefab and Play-Stop\n";

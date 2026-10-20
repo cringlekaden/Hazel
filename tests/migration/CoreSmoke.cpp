@@ -19,6 +19,7 @@
 #include <optional>
 
 static void Check(bool value, const char* message) { if (!value) throw std::runtime_error(message); }
+#include "InstrumentationChecks.h"
 struct Counts { int attached=0, detached=0, destroyed=0; };
 class CountLayer : public Hazel::Layer {
 public:
@@ -86,6 +87,8 @@ static void CheckCore()
     {std::ofstream file(path,std::ios::binary); file.write("abcd",4);}
     auto file=FileSystem::ReadFileBinary(path); std::filesystem::remove(path);
     Check(file.Size==4 && file.Data[3]=='d',"Binary filesystem read");
+    auto traceRoot=path;traceRoot+=".trace";std::filesystem::create_directory(traceRoot);
+    InstrumentationChecks(traceRoot);std::filesystem::remove_all(traceRoot);
     std::unordered_set<UUID> ids{UUID(1),UUID(1),UUID(2)};
     Check(ids.size()==2,"UUID hash/value identity");
     Timer timer; Check(timer.Elapsed()>=0.0f,"Monotonic timer");

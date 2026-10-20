@@ -35,13 +35,13 @@ namespace Hazel {
             s_RendererAPI->Clear();
         }
 
-        static void DrawIndexed(const Ref<VertexArray>& vertexArray, std::uint32_t indexCount = 0)
+        static void DrawIndexed(const Ref<VertexArray>& vertexArray, std::uint32_t indexCount = 0, std::uint32_t firstIndex = 0)
         {
-            s_RendererAPI->DrawIndexed(vertexArray, indexCount);
+            s_RendererAPI->DrawIndexed(vertexArray, indexCount, firstIndex);
         }
-        static void DrawLines(const Ref<VertexArray>& vertexArray, std::uint32_t vertexCount)
+        static void DrawLines(const Ref<VertexArray>& vertexArray, std::uint32_t vertexCount, std::uint32_t firstVertex = 0)
         {
-            s_RendererAPI->DrawLines(vertexArray, vertexCount);
+            s_RendererAPI->DrawLines(vertexArray, vertexCount, firstVertex);
         }
         static void SetLineWidth(float width) { s_RendererAPI->SetLineWidth(width); }
         static std::uint32_t GetMaxTextureSlots() { return s_RendererAPI->GetMaxTextureSlots(); }

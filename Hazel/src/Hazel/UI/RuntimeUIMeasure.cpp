@@ -26,7 +26,7 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
                 cache.FontAsset = assets ? assets->FontAsset(style.FontPath) : Font::GetDefault();
                 cache.FontPath = style.FontPath;
                 cache.Epoch = epoch;
-                cache.Width = -1;
+                cache.Width = -1;cache.PreparedValid=false;
                 cache.MeasureWidth = {{-2, -2}};
             }
             int slot = width < 0 ? 0 : 1;

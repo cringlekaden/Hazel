@@ -204,6 +204,17 @@ void EditorLayer::UI_Debugger()
     ImGui::Text("Image metric misses/hits %llu / %llu",(unsigned long long)d.ImageMeasurements,(unsigned long long)d.ImageMeasurementReuses);
     ImGui::Text("Rects/hits %zu / %zu | dropped activations %llu", s.PainterOrder.size(),
                 s.Buttons.size(), (unsigned long long)d.DroppedActions);
+    ImGui::Text("UI rects visible/submitted %u / %u | draw runs %u",d.VisibleElements,d.SubmittedElements,d.DrawCalls);
+    if(ImGui::CollapsingHeader("Rendering costs")){
+        ImGui::Text("Upload groups %u | clip changes %u",d.UploadGroups,d.ClipTransitions);
+        ImGui::Text("CPU source/layout %.3f / %.3f ms",d.LastSourceMilliseconds,d.LastLayoutMilliseconds);
+        ImGui::Text("CPU preparation/submission %.3f / %.3f ms",d.LastPrepareMilliseconds,d.LastSubmitMilliseconds);
+        if(d.GPUAvailable)ImGui::Text("GPU interval %.3f ms (%llu submissions old)",d.LastGPUMilliseconds,(unsigned long long)(d.PaintSubmission-d.GPUSubmission));
+        else ImGui::TextDisabled("GPU interval pending/unavailable");
+        ImGui::Text("Text prep rebuild/reuse %llu / %llu | %.1f KiB",(unsigned long long)d.PreparedRebuilds,(unsigned long long)d.PreparedReuses,double(d.PreparedBytes)/1024);
+        ImGui::Text("Run changes: primitive %u | font %u",d.PrimitiveTransitions,d.FontTransitions);
+        ImGui::Text("Flush: end %u | slots %u | capacity %u | external %u",d.FlushReasons[0],d.FlushReasons[3],d.FlushReasons[4],d.FlushReasons[5]);
+    }
     ImGui::Checkbox("Bounds overlay", &m_UIBoundsOverlay);
     ImGui::SameLine();
     ImGui::Checkbox("Clip overlay", &m_UIClipOverlay);
@@ -250,7 +261,7 @@ void EditorLayer::UI_Debugger()
     if (!s.Warnings.empty() && ImGui::CollapsingHeader("Layout warnings"))
         for (auto &warning : s.Warnings)
             ImGui::TextWrapped("%llu: %s", (unsigned long long)warning.Entity,
-                               warning.Message.c_str());
+                               warning.Message());
     ImGui::End();
 }
 } // namespace Hazel

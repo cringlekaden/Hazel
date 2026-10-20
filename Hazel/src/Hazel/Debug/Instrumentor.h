@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <atomic>
 #include <cstdint>
 #include <fstream>
 #include <functional>
@@ -41,6 +42,8 @@ namespace Hazel {
                 return;
 
             m_SessionActive = true;
+            m_CurrentSession=++m_NextSession;
+            m_PublishedSession.store(m_CurrentSession,std::memory_order_release);
             m_FirstEvent = true;
 
             m_OutputStream
@@ -55,11 +58,13 @@ namespace Hazel {
             EndSessionInternal();
         }
 
-        void WriteProfile(const ProfileResult& result)
+        uint64_t Session() const {return m_PublishedSession.load(std::memory_order_acquire);}
+
+        void WriteProfile(const ProfileResult& result, uint64_t session=0)
         {
             std::lock_guard<std::mutex> lock(m_Mutex);
 
-            if (!m_SessionActive)
+            if (!m_SessionActive || (session && session!=m_CurrentSession))
                 return;
 
             const double start =
@@ -145,11 +150,14 @@ namespace Hazel {
             m_OutputStream << "]}";
             m_OutputStream.close();
             m_SessionActive = false;
+            m_PublishedSession.store(0,std::memory_order_release);
         }
 
         std::mutex m_Mutex;
         std::ofstream m_OutputStream;
         bool m_SessionActive = false;
+        uint64_t m_CurrentSession=0,m_NextSession=0;
+        std::atomic<uint64_t> m_PublishedSession{0};
         bool m_FirstEvent = true;
     };
 
@@ -158,7 +166,8 @@ namespace Hazel {
     public:
         explicit InstrumentationTimer(const char* name)
             : m_Name(name),
-              m_Start(ProfileClock::now())
+              m_Session(Instrumentor::Get().Session()),
+              m_Start(m_Session?ProfileClock::now():ProfileClock::time_point{})
         {
         }
 
@@ -172,7 +181,7 @@ namespace Hazel {
 
         void Stop()
         {
-            if (m_Stopped)
+            if (m_Stopped || !m_Session)
                 return;
 
             const auto end = ProfileClock::now();
@@ -183,11 +192,12 @@ namespace Hazel {
                 m_Start,
                 end - m_Start,
                 std::this_thread::get_id()
-            });
+            },m_Session);
         }
 
     private:
         const char* m_Name;
+        uint64_t m_Session=0;
         ProfileClock::time_point m_Start;
         bool m_Stopped = false;
     };

@@ -393,7 +393,11 @@ private:
             auto before=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
             auto generation=scene->GetUISnapshot().Generation;bool shown=m_Editor.m_ShowUIDebugger;
             auto previousFocus=ImGui::GetCurrentContext()->NavWindow;
-            m_Editor.m_ShowUIDebugger=true;m_Editor.UI_Debugger();m_Editor.m_ShowUIDebugger=shown;
+            m_Editor.m_ShowUIDebugger=true;
+            ImGui::SetNextWindowCollapsed(false,ImGuiCond_Always);
+            ImGui::Begin("Runtime UI Debugger");
+            ImGui::GetStateStorage()->SetInt(ImGui::GetID("Rendering costs"),1);ImGui::End();
+            m_Editor.UI_Debugger();m_Editor.m_ShowUIDebugger=shown;
             ImGui::FocusWindow(previousFocus);
             GameUI::Action action;
             Check(scene->GetUISnapshot().Generation==generation&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==before&&!scene->ConsumeUIAction(0,action),"Debugger changed authoring/generation or dispatched actions");

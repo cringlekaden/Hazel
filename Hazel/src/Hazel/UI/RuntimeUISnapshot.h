@@ -39,10 +39,24 @@ struct ResolvedSnapshot
     std::vector<ResolvedGuide> Guides;
     std::vector<Button> Buttons;
     std::unordered_map<uint64_t, size_t> Index;
+    enum class WarningCode { Interrupted, Orphan, NestedCanvas, ContainerRect, ButtonRect, Overflow, MeasureOverflow };
     struct Warning
     {
         uint64_t Entity = 0;
-        std::string Message;
+        WarningCode Code;
+        const char *Message() const
+        {
+            switch(Code){
+                case WarningCode::Interrupted:return "Interrupted UI rect chain: an ancestor has no UI Rect/Canvas";
+                case WarningCode::Orphan:return "Orphan UI rect: runtime requires a Canvas ancestor";
+                case WarningCode::NestedCanvas:return "Nested/parented Canvas resolves independently against the viewport";
+                case WarningCode::ContainerRect:return "UI Flow needs a UI Rect";
+                case WarningCode::ButtonRect:return "UI Button needs a UI Rect";
+                case WarningCode::Overflow:return "Resolved rect overflows its parent content";
+                case WarningCode::MeasureOverflow:return "Measured layout overflows available space; minimums are retained";
+            }
+            return "Unknown UI warning";
+        }
     };
     std::vector<Warning> Warnings;
     const ResolvedElement *Find(uint64_t id) const
@@ -68,6 +82,12 @@ struct RuntimeUIDiagnostics
     double LastResolveMilliseconds = 0, LastRoutingMilliseconds = 0;
     double LastSourceMilliseconds=0, LastLayoutMilliseconds=0;
     double LastPrepareMilliseconds=0, LastSubmitMilliseconds=0;
+    uint32_t VisibleElements=0, SubmittedElements=0, DrawCalls=0, UploadGroups=0;
+    uint32_t ClipTransitions=0,PrimitiveTransitions=0,FontTransitions=0;
+    std::array<uint32_t,6> FlushReasons{}; // Renderer2D::FlushReason order
+    uint64_t PaintSubmission=0,GPUSubmission=0,PreparedRebuilds=0,PreparedReuses=0,PreparedBytes=0;
+    double LastGPUMilliseconds=0;
+    bool GPUAvailable=false;
     uint64_t Focus = 0, Capture = 0, Hover = 0, Modal = 0;
     bool InputEnabled = false, GameplayBlocked = false, PointerBlocked = false;
 };

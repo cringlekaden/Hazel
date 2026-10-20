@@ -9,7 +9,7 @@
 
 namespace Hazel {
 
-    struct RasterState { bool DepthTest=true, ClipEnabled=false; glm::ivec4 ClipRect{}, Viewport{}; };
+    struct RasterState { bool DepthTest=true, ClipEnabled=false; glm::ivec4 ClipRect{}, Viewport{}; float LineWidth=1; };
 
     class RendererAPI
     {
@@ -32,8 +32,8 @@ namespace Hazel {
         virtual void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) = 0;
         virtual void SetClearColor(const glm::vec4& color) = 0;
         virtual void Clear() = 0;
-        virtual void DrawIndexed(const Ref<VertexArray>& vertexArray, std::uint32_t indexCount = 0) = 0;
-        virtual void DrawLines(const Ref<VertexArray>& vertexArray, std::uint32_t vertexCount) = 0;
+        virtual void DrawIndexed(const Ref<VertexArray>& vertexArray, std::uint32_t indexCount = 0, std::uint32_t firstIndex = 0) = 0;
+        virtual void DrawLines(const Ref<VertexArray>& vertexArray, std::uint32_t vertexCount, std::uint32_t firstVertex = 0) = 0;
         virtual void SetLineWidth(float width) = 0;
         virtual std::uint32_t GetMaxTextureSlots() const = 0;
 
