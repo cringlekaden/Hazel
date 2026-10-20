@@ -459,6 +459,14 @@ closure and passed extracted Nutella startup/render/resize/shutdown with source
 resources and SDK unavailable; its atlas, wrapped chips and combined image/text
 capture were inspected. No fixture content was added to the example games.
 
+Final package qualification passed: all five newly built game archives passed
+relocated startup/render/resize/shutdown, and the strict native gameplay/save/
+lifecycle regression passed against the extracted projects and shipped Mono.
+Extracted Hazelnut and Nutella also passed from unrelated Unicode working paths
+with source resources and SDK unavailable. These checks used llvmpipe GL4.1
+through Xwayland. Master, stash, vendor pins and settings remain unchanged; the
+Sandbox user draft is the only uncommitted file.
+
 Physical acceptance still to perform: create Grid/Wrap from Hierarchy, assign
 atlas regions in Properties, edit track counts/spans, narrow the preview, and
 check debugger track/line/image overlays. Drag a Fixed edge, cancel with Escape,
