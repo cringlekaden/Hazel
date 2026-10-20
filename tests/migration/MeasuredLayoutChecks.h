@@ -116,7 +116,7 @@ static void MeasuredLayoutChecks()
     nodes[0].Children = {1};
     nodes[0].Layout.WidthMode = SizeMode::Content;
     nodes[1].Parent = 0;
-    nodes[1].Layout.Anchor.x = nodes[1].Layout.Anchor.x = .5f;
+    nodes[1].Layout.Anchor.x = .5f;
     Reject([&] { layout.Resolve(nodes, {{}, {500, 500}}, empty); });
     nodes = {node(60)};
     nodes[0].Layout.WidthMode = SizeMode::Fill;

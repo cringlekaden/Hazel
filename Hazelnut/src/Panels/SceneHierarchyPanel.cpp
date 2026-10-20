@@ -402,11 +402,16 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             if(entity.HasComponent<UINineSliceComponent>())PropertyUI::ReadOnly("fit-owned","Image fit","Stretch (nine-slice)");
             else if(PropertyUI::Combo("image-fit","Image fit",fit,"Stretch\0Contain\0Cover\0Native size\0"))c.Fit=GameUI::ImageFit(fit);
             if(c.Fit!=GameUI::ImageFit::Stretch)PropertyUI::Vector("image-align","Image alignment",glm::value_ptr(c.ImageAlignment),2,.01f,nullptr,"%.2f",{},0,1);
-            PropertyUI::Help("Stretch paints the border box. Other modes use the padded content box and source region; alignment is 0 = left/top, 1 = right/bottom. Fit changes art, not text layout or button hit bounds.");
+            PropertyUI::Help("Stretch paints the border box. Other modes use the padded content box and source region; alignment is 0 = left/top, 1 = right/bottom. Fit changes art, not text layout or button hit bounds. UI uses one tile; the sprite tiling value applies to world sprites.");
         }
         PropertyUI::Vector("margin","Margin L/T/R/B",glm::value_ptr(c.Margin),4,1,nullptr,"%.0f",{},0,4096);
         PropertyUI::Vector("padding","Padding L/T/R/B",glm::value_ptr(c.Padding),4,1,nullptr,"%.0f",{},0,4096);
-        PropertyUI::DragFloat("flex","Fill weight (0 = 1)",c.Flex,.1f,0,100);
+        if(flowOwned){
+            const auto &container=parent.GetComponent<UILayoutComponent>();
+            bool mainFill=container.Direction==GameUI::Axis::Horizontal?c.WidthMode==GameUI::SizeMode::Fill:c.HeightMode==GameUI::SizeMode::Fill;
+            if(container.Kind!=GameUI::ContainerKind::Grid&&mainFill)PropertyUI::DragFloat("flex","Fill weight (0 = 1)",c.Flex,.1f,0,100);
+            if(auto resolved=m_Context->GetUISnapshot().Find(entity.GetUUID());resolved&&resolved->LayoutResolved){char value[80];std::snprintf(value,sizeof(value),"%.1f, %.1f px (computed)",resolved->Bounds.Position.x,resolved->Bounds.Position.y);PropertyUI::ReadOnly("position","Canvas position",value);}
+        }
         PropertyUI::Checkbox("visible","Visible",c.Visible);PropertyUI::Checkbox("enabled","Enabled",c.Enabled);PropertyUI::Checkbox("clip","Clip children",c.ClipChildren);
         PropertyUI::Help("Logical pixels, top-left origin. Drag a selected element in the viewport to move it; drag an edge/corner handle to resize. Escape cancels the gesture. Containers own child positions; Fill owns free positioning on its axis.");
     },[this](const std::string& error){m_HierarchyError=error;});

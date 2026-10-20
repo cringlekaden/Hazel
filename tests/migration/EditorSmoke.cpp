@@ -909,7 +909,7 @@ private:
         auto ordinaryButton=uiButton.GetComponent<UIRectComponent>();auto ordinaryText=uiText.GetComponent<UIRectComponent>();
         uiButton.GetComponent<UIRectComponent>()=UIRectComponent{};
         scene->Reparent(uiText,uiButton,TransformPolicy::KeepLocal);
-        auto& overflowRect=uiText.GetComponent<UIRectComponent>();overflowRect.Anchor=overflowRect.Anchor={1,0};
+        auto& overflowRect=uiText.GetComponent<UIRectComponent>();overflowRect.Anchor={1,0};
         overflowRect.Offset={(std::numeric_limits<float>::max)()*.75f,0};overflowRect.FixedSize={1,1};scene->RefreshUI();
         auto beforeOverflow=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
         Check(gesture.Begin(scene,uiButton.GetUUID(),4)&&!gesture.Update({(std::numeric_limits<float>::max)()*.5f,0}),"Descendant overflow did not reject viewport edit");

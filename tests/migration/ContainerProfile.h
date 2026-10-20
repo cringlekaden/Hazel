@@ -4,7 +4,7 @@ static void ProfileContainers()
 {
     using Clock=std::chrono::steady_clock;
     for(auto kind:{ContainerKind::Grid,ContainerKind::Wrap})for(int count:{64,512,2048}){
-        std::ostringstream text;text<<"SceneVersion: 2\nScene: Container CPU profile\nEntities:\n- Entity: 1\n  UICanvasComponent: {ReferenceSize: [1280, 720], SafeInsets: [0, 0, 0, 0]}\n- Entity: 2\n  Relationship: {Parent: 1, Order: 0}\n  UIRectComponent: {LayoutVersion: 3, FixedSize: [1248, 688]}\n  UILayoutComponent:\n    Kind: "<<int(kind)<<"\n    Direction: 0\n    Gap: 2\n    LineGap: 3\n";
+        std::ostringstream text;text<<"SceneVersion: 2\nScene: Container CPU profile\nEntities:\n- Entity: 1\n  UICanvasComponent: {ReferenceSize: [1280, 720], SafeInsets: [0, 0, 0, 0]}\n  Relationship: {Parent: 0, Order: 0}\n- Entity: 2\n  Relationship: {Parent: 1, Order: 0}\n  UIRectComponent: {LayoutVersion: 3, FixedSize: [1248, 688]}\n  UILayoutComponent:\n    Kind: "<<int(kind)<<"\n    Direction: 0\n    Gap: 2\n    LineGap: 3\n";
         if(kind==ContainerKind::Grid){text<<"    GridGap: [2, 3]\n    Columns: [";for(int i=0;i<32;++i)text<<(i?", ":"")<<"{Mode: 1, Value: 1}";text<<"]\n    Rows: [";for(int i=0;i<(count+31)/32;++i)text<<(i?", ":"")<<"{Mode: 0, Value: 12}";text<<"]\n";}
         for(int i=0;i<count;++i)text<<"- Entity: "<<i+3<<"\n  Relationship: {Parent: 2, Order: "<<i<<"}\n  UIRectComponent: {LayoutVersion: 3, FixedSize: [36, 10]}\n";
         auto scene=CreateRef<Scene>();Check(SceneSerializer(scene).DeserializeText(text.str()),"Container profile import failed");scene->OnViewportResize(1280,720);
