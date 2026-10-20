@@ -74,6 +74,23 @@ void DrawContainerFixture()
     Check(a.m_PrefabPreview->ReadPixel(1,int(point.x),int(spec.Height-point.y))==int(uint32_t(entity)),"Actual native preview picking disagreed with grid geometry");a.m_PrefabPreview->Unbind();
     m_ContainerPreview=a.m_PrefabPreview;a.m_PrefabScene=scene;a.m_PrefabPreview=buffer;a.m_PrefabCamera=camera;a.m_PrefabFit=fit;
     m_ContainerFixturePanel.DrawAssetProperties(m_ContainerFixturePanel.GetSelectedEntity());ImGui::End();
+    // Reproduce F5 workspace restoration with a selected, expanded button. The
+    // grid-only Inspector above does not exercise button-state array indexing.
+    ImGui::SetNextWindowPos({origin.x+500,origin.y+60});ImGui::SetNextWindowSize({400,700});
+    ImGui::Begin("Button Inspector qualification",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoFocusOnAppearing|ImGuiWindowFlags_NoInputs);
+    Check(m_ContainerFixturePanel.SetSelectedEntity(entity),"Button Inspector selection retired unexpectedly");
+    m_ContainerFixturePanel.RestoreSections({{"UI Button",true}});
+    ImGui::PushID(std::to_string(m_ContainerFixture->GetIdentity()).c_str());
+    ImGui::PushID(std::to_string(uint64_t(entity.GetUUID())).c_str());
+    ImGui::PushID("UI Button");ImGui::PushID("##component");
+    for(size_t i=0;i<entity.GetComponent<UIButtonComponent>().Colors.size();++i){
+        ImGui::PushID(int(i));ImGui::GetStateStorage()->SetInt(ImGui::GetID("State image (optional)"),1);ImGui::PopID();
+    }
+    ImGui::PopID();ImGui::PopID();ImGui::PopID();ImGui::PopID();
+    m_ContainerFixturePanel.DrawAssetProperties(entity);
+    Check(m_ContainerFixturePanel.Sections().at("UI Button"),"Restored button Inspector stayed collapsed");
+    ImGui::End();
+    std::cout<<"PASS: restored selected button Inspector with all five tint/state-image editors expanded\n";
     GameUI::Action action;Check(SceneSerializer(m_ContainerFixture).CaptureAuthoredState()==before&&!m_ContainerFixture->ConsumeUIAction(0,action),"Native Inspector/preview changed authored values or dispatched actions");
     std::cout<<"PASS: actual ImGui container Inspector/static preview, arranged GPU picking and no authoring/action side effects\n";
 }

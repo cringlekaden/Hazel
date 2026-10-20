@@ -21,6 +21,7 @@
 #include <cctype>
 #include <cstring>
 #include <cstdio>
+#include <iterator>
 #include <type_traits>
 
 /* The Microsoft C++ compiler is non-compliant with the C++ standard and needs
@@ -107,7 +108,7 @@ bool SceneHierarchyPanel::AddUI(int kind) {
 void SceneHierarchyPanel::UIAddMenu(){
     if(ImGui::BeginMenu("Runtime UI")) {
         const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap"};
-        for(int i=0;i<7;i++)if(ImGui::MenuItem(names[i]))AddUI(i);
+        for(size_t i=0;i<std::size(names);++i)if(ImGui::MenuItem(names[i]))AddUI(int(i));
         ImGui::EndMenu();
     }
 }
@@ -470,8 +471,20 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     });
     DrawUIComponent<UIButtonComponent>("UI Button",entity,m_Sections,m_RestoreSections,[this](auto& c){
         PropertyUI::Text("action","Action identity",c.Action);PropertyUI::DragInt("tab","Tab order",c.TabOrder);PropertyUI::Checkbox("interactive","Interactable",c.Interactable);
-        const char* states[]={"Normal","Hovered","Pressed","Disabled","Focused"};
-        for(int i=0;i<7;i++){ImGui::PushID(i);PropertyUI::Color("tint",states[i],glm::value_ptr(c.Colors[i]));if(ImGui::TreeNode("State image (optional)")){SpriteRendererComponent temp;temp.Source=c.Images[i];temp.Color=c.Colors[i];SpriteSourceEditor(temp,m_UIStatePickers[i],OpenAsset,[this]{return CanEdit(true);});c.Images[i]=temp.Source;c.Colors[i]=temp.Color;ImGui::TreePop();}ImGui::PopID();}
+        static constexpr const char* states[]={"Normal","Hovered","Pressed","Disabled","Focused"};
+        static_assert(std::size(states)==std::tuple_size_v<decltype(c.Colors)>);
+        static_assert(std::size(states)==std::tuple_size_v<decltype(c.Images)>);
+        static_assert(std::size(states)==std::tuple_size_v<decltype(m_UIStatePickers)>);
+        for(size_t i=0;i<std::size(states);++i){
+            ImGui::PushID(int(i));
+            PropertyUI::Color("tint",states[i],glm::value_ptr(c.Colors[i]));
+            if(ImGui::TreeNode("State image (optional)")){
+                SpriteRendererComponent temp;temp.Source=c.Images[i];temp.Color=c.Colors[i];
+                SpriteSourceEditor(temp,m_UIStatePickers[i],OpenAsset,[this]{return CanEdit(true);});
+                c.Images[i]=temp.Source;c.Colors[i]=temp.Color;ImGui::TreePop();
+            }
+            ImGui::PopID();
+        }
         PropertyUI::Help("C#: UIButtonComponent.TryConsumeAction or GameUI.TryConsumeAction. Pointer activation occurs on release; Tab/arrows change focus; Enter/Space activate once.");
     });
 

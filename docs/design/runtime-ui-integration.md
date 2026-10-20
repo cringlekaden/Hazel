@@ -483,3 +483,20 @@ layouts still allocate and should remain in that performance investigation. Do
 this before expanding into large scrolling/data views. Structural/multi-selection
 history, broader authoring tools and the rest of P2 remain open; the whole UI
 system is not yet production-ready.
+
+F5 startup follow-up: restoring a workspace with a selected, expanded UI Button
+exposed an Inspector regression: its loop used the seven creation-preset count
+against five state labels/colors/images/pickers. Bounds now derive from the state
+array with compile-time checks across all state storage; the creation menu derives
+its own count independently. The native ImGui fixture now restores an expanded
+button and opens all five state-image editors, in addition to the grid Inspector.
+The earlier grid-only render checks did not cover this path. Reproduction and
+verification use private scene/workspace copies; no user settings reset is needed.
+
+Follow-up verification passed: bounded Debug/Release builds, both focused native
+editor suites with the expanded-button regression, and a no-argument Debug GDB
+launch using the F5 signal policy and a private copy of the remembered Sandbox
+workspace. That launch restored the selected button, rendered, resized and closed
+normally. Original scene, session, preferences and ImGui-layout hashes were
+unchanged. The desktop run used physical HD4000 via Xwayland; the Release editor
+suite forced GL4.1. Other runtime/layout code and scene formats were unchanged.
