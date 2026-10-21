@@ -1,3 +1,4 @@
+#include "FontFamilyFixture.h"
 // Scene/runtime boundary checks supplement the renderer's immediate-reference pixels.
 static void RuntimeUIPaintChecks(const std::filesystem::path &root)
 {
@@ -24,7 +25,7 @@ static void RuntimeUIPaintChecks(const std::filesystem::path &root)
     second.AddComponent<SpriteRendererComponent>(glm::vec4(0, 1, 0, .5f));
     second.AddComponent<TextComponent>().TextString = "A";
     second.AddComponent<UITextStyleComponent>().Size = 24;
-    second.GetComponent<UITextStyleComponent>().FontPath = "font.ttf";
+    WriteTestFamily(root,"font.hfont","font.ttf");second.GetComponent<TextComponent>().Font.Family="font.hfont";
     auto nine = make("Nine slice", panel, {0, 65}, {60, 20});
     nine.AddComponent<SpriteRendererComponent>().Source = TextureSpriteSource{"image.png", 1, {}};
     nine.AddComponent<UINineSliceComponent>().Borders = glm::vec4(2);
@@ -113,7 +114,7 @@ static void RuntimeUIPaintChecks(const std::filesystem::path &root)
     ui.Draw();
     Check(ui.Diagnostics().PreparedReuses == 2,
           "Position-only layout change rebuilt normalized text preparation");
-    style.FontPath.clear();
+    second.GetComponent<TextComponent>().Font.Family.clear();
     ui.Resolve({128, 128});
     ui.Draw();
     Check(ui.Diagnostics().PreparedRebuilds == 1, "Font mutation reused retired atlas preparation");

@@ -47,7 +47,6 @@ Entities:
     FixedSize: [1000, 90]
     Anchor: [0.5, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 68
     Horizontal: 1
     Vertical: 1
@@ -96,7 +95,6 @@ Entities:
     FixedSize: [900, 48]
     Anchor: [0.5, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 28
     Horizontal: 1
     Vertical: 1
@@ -234,7 +232,6 @@ Entities:
     FixedSize: [0, 64]
     Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 28
     Horizontal: 1
     Vertical: 1
@@ -285,7 +282,6 @@ Entities:
     FixedSize: [900, 40]
     Anchor: [0.5, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 24
     Horizontal: 1
     Vertical: 1

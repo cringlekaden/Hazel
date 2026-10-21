@@ -906,7 +906,9 @@ namespace Hazel {
 
     void Renderer2D::DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID)
 	{
-		DrawString(string, component.FontAsset, transform, { component.Color, component.Kerning, component.LineSpacing }, entityID);
+        if(!component.ResolvedFont || component.ResolvedSelection!=component.Font)
+            throw std::invalid_argument("Resolve the text family before component drawing; standalone draws take an explicit Font face");
+        DrawString(string, component.ResolvedFont, transform, { component.Color, component.Kerning, component.LineSpacing }, entityID);
 	}
 
 	float Renderer2D::GetLineWidth()

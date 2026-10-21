@@ -1,5 +1,5 @@
 // Optional bounded UI pass profile; no presentation and no blocking GPU reads.
-static void ProfileRendering()
+static void ProfileRendering(int maximum=2048)
 {
     using Clock = std::chrono::steady_clock;
     auto ms = [](auto a, auto b) {
@@ -28,6 +28,7 @@ static void ProfileRendering()
     for (bool mixed : {false, true})
         for (int count : {64, 512, 2048})
         {
+            if(count>maximum)continue;
             std::ostringstream yaml;
             yaml << "SceneVersion: 2\nScene: Render profile\nEntities:\n- Entity: 1\n  "
                     "Relationship: {Parent: 0, Order: 0}\n  UICanvasComponent: {ReferenceSize: "

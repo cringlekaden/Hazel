@@ -301,7 +301,7 @@ namespace Hazel {
 			{
 				auto path=ContentBrowserPath(payload->Data,payload->DataSize);
                 if(path.extension()==".hprefab") m_Authoring->InstantiatePrefab(path);
-                else if(path.extension()==".hsprites")m_Authoring->SelectAsset(path);
+                else if(path.extension()==".hsprites" || path.extension()==".hfont")m_Authoring->SelectAsset(path);
                 else if(path.extension()==".hazel")m_Authoring->Guard(OperationIntent::OpenScene,[this,path]{return OpenScene(path);});
 			}
 			ImGui::EndDragDropTarget();

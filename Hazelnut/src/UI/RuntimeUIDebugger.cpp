@@ -225,11 +225,11 @@ void EditorLayer::UI_Debugger()
         ImGui::TextDisabled("Live includes cache, default, prepared text and draw pins. Bytes estimate RGB8 storage, excluding driver overhead.");
         auto selectedFont=m_SceneHierarchyPanel.GetSelectedEntity();
         if(selectedFont && selectedFont.HasComponent<TextComponent>()) {
-            auto path=selectedFont.HasComponent<UITextStyleComponent>()?selectedFont.GetComponent<UITextStyleComponent>().FontPath:std::filesystem::path{};
             if(auto assets=m_ActiveScene->GetAssets()) {
-                auto font=assets->FontStatus(path);auto atlas=font.Actual->GetAtlasTexture();
-                ImGui::TextWrapped("Selected: %s",path.empty()?"Shipped Open Sans":path.generic_u8string().c_str());
-                ImGui::TextWrapped("Actual: %s%s",font.Actual->GetPath().filename().generic_u8string().c_str(),font.Fallback?" (fallback)":"");
+                auto selection=selectedFont.GetComponent<TextComponent>().Font;auto font=assets->FamilyStatus(selection);auto atlas=font.Actual->GetAtlasTexture();
+                ImGui::TextWrapped("Selected: %s",selection.Family.empty()?"Engine Open Sans":selection.Family.generic_u8string().c_str());
+                ImGui::TextWrapped("Actual: %s%s",font.Actual->GetPath().filename().generic_u8string().c_str(),font.DefaultFallback?" (fallback)":"");
+                if(font.StyleFallback)ImGui::TextWrapped("Requested %s is absent; using Regular",FontStyleName(selection.Style));
                 ImGui::Text("Atlas %u x %u | %.1f KiB",atlas->GetWidth(),atlas->GetHeight(),double(font.Actual->GetAtlasBytes())/1024);
                 if(!font.Error.empty())ImGui::TextWrapped("%s",font.Error.c_str());
             }

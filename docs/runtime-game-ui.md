@@ -7,7 +7,7 @@ Runtime UI is ordinary scene content; it runs in Nutella without ImGui. World te
 1. In Hazelnut's Hierarchy, choose **Add Entity → Runtime UI → Canvas**. Set reference pixels (default 1280×720), safe insets and sort order in the Inspector. Enable **Block gameplay** for a menu, pause or dialogue canvas.
 2. Select the canvas and create **Panel**, **Text**, **Button**, **Stack**, **Grid** or **Wrap** through the same menu. All presets use the canonical measured model (Rect schema 3). A Stack defaults to Fixed width and Content height. Reselect the group before adding each sibling button; vertical-stack children use Fill width and buttons measure Content height. Rects use top-left logical pixels; Transform does not position UI.
 3. Set Width/Height to **Fixed**, **Fill** or **Content** in UI Rect. Fixed authors a border-box size; Fill uses parent space; Content measures visuals/children plus padding. Minimum and optional finite maximum constrain each axis. Choosing free Fill explicitly gives that axis to the parent and clears its anchor/offset/pivot; margins set the insets. Content text width is natural unless capped, so use Fixed/Fill width or an enabled Content maximum to wrap labels. Stacks own child positions; use sizing, margins and Fill weight. Resize handles edit only Fixed dimensions; container children resize from right/bottom. Computed dimensions/positions stay read-only, and gestures never switch modes. If parent reflow/alignment would move the opposite edge, that resize sample is rejected; edit Fixed size in Properties instead. Escape cancels.
-4. Text uses the existing **Text Component** for content, color, kerning and line spacing. **UI Text Style** supplies size, wrapping and horizontal/vertical alignment. Size is logical pixels per font ascender-to-descender height. Kerning and line spacing remain font-height units, as in world text. Drag a project TTF/OTF onto Font asset, or leave it empty for the packaged default font. Separate styled text children provide mixed emphasis; text has no markup.
+4. Text uses the existing **Text Component** for content, color, kerning and line spacing. **UI Text Style** supplies size, wrapping and horizontal/vertical alignment. Size is logical pixels per font ascender-to-descender height. Kerning and line spacing remain font-height units, as in world text. Choose a project .hfont family and real face style in Text Renderer, or leave the family empty for engine Open Sans. Separate styled text children provide mixed emphasis; text has no markup.
 5. Images use **Sprite Renderer** with the normal texture/sheet picker and UI Rect Image Fit. For framed panels add **UI Nine Slice**: source borders are left/top/right/bottom pixels within the selected source region, with a separate border scale. Borders must fit; small targets proportionally clamp their display borders. Corners keep their shape, edges stretch in one direction, and the center fills. Layout owns the UI pivot; sprite pivots remain unchanged for world sprites.
 6. Buttons have an action identity, tab order, interactable state and five editable tint/image states. An unassigned state image inherits Sprite Renderer. Keyboard focus has a persistent outline, including hover/press. Controls activate on pointer release inside their live clipped bounds with framebuffer coverage, or Enter/Space while keyboard focus belongs to UI. Tab starts navigation; Tab/Shift-Tab and arrows traverse. Escape or a click outside controls releases nonmodal keyboard ownership. A modal canvas blocks gameplay and buttons in other canvases. Higher canvas sort order wins; ties use stable entity identities; child hierarchy order supplies painter order within a canvas.
 7. Use the viewport's Window/Small/Widescreen/Classic aspect selector to preview the actual runtime layout. Editing does not dispatch actions. In Play, pointer coordinates map to the displayed image, including its letterboxing. Stop before changing authored values. **Validate UI** checks configuration/assets. Save/reopen as a normal scene. Use the existing **Create Prefab** workflow on the canvas/group to save a reusable subtree. Detached rect prefabs have a static default-canvas editor preview; runtime instances need a canvas ancestor.
@@ -146,13 +146,13 @@ writes source-over alpha and restores blend state before images. The engine has
 no automatic sRGB conversion; mixed transparent targets still inherit the older
 sprite-alpha semantics and are not general opacity layers.
 
-**UI Text Style** shows the actual atlas and has **Reload font** for explicit
+**Text Renderer → Font details** shows the actual atlas and has **Reload family** for explicit
 freshness. Failed reload keeps the accepted font; first-load failures use shipped
-Open Sans. The authored path remains intact and the Inspector/debugger explains
+Open Sans. The authored family selection remains intact and the Inspector/debugger explains
 the error/fallback. Repair the file and Reload, or use the normal asset Refresh
 before Play. A failure is cached rather than retried every frame. Missing-font
 scenes can be saved/reopened for repair; export still rejects invalid closure.
-Undo/Redo restores authored paths even if a file subsequently disappears.
+Undo/Redo restores authored selections even if a file subsequently disappears.
 
 **Runtime UI Debugger → Font resources** shows cache/live/pinned atlas estimates.
 The reusable LRU retains at most eight fonts/12 MiB; all live atlas objects,
@@ -160,5 +160,62 @@ including active text/draw pins and default, are admitted within 24/24 MiB.
 Pinned resources can prevent a new font loading; release unused screens/resources
 and Reload to retry. Per-face input is limited to 4 MiB and atlas to 1024²/3 MiB.
 Estimates exclude driver and dependency scratch/outline memory. Fixed Latin-1,
-replacement `?`, strict UTF-8 and the existing lack of shaping/fallback families
+replacement `?`, strict UTF-8 and the existing lack of shaping/fallback chains
 remain unchanged; correct coverage does not expand character support.
+
+## Font families and declared coverage
+
+Text Renderer owns **Font family** and **Face style**, shared by world and UI text.
+Empty family selects engine Open Sans (the four shipped real faces). UI Text Style
+owns size, alignment and wrapping. Project families are `.hfont` assets; no face is
+synthetically emboldened/slanted. An absent optional style explicitly uses Regular,
+with a message in Properties. Family errors keep the live accepted face, or use
+engine Regular if none survives; authored selections are never rewritten.
+
+In Content Browser choose **New Font Family…**, select/import a Regular TTF/OTF
+and its notice, and choose a project destination. The Font Family asset editor
+opens on creation or double-click. Add real Bold/Italic/Bold Italic slots and their
+associated notices only where supplied. **Choose / import…** selects project files
+or copies an external file to a destination you choose inside Assets; it never
+overwrites an existing file. Associate the correct notices yourself: an association
+is not evidence that a font can legally be redistributed. Existing Open Sans
+fixtures use its shipped Apache license; this milestone adds no fonts/dependencies.
+
+Save, Reopen/discard, Reload saved and normal Save All/unsaved-document guards
+apply to the family draft, like sprite-sheet assets. Failed writes/conflicts keep
+the draft and accepted file; Save Copy/Reopen/Cancel use the existing conflict UI.
+Family draft editing does not have document Undo; text fields keep their local
+ImGui Undo. Text component family/style assignments do use scene/prefab history.
+Drag a `.hfont` from Content Browser onto Text Renderer's family field (or type its
+asset-relative path), choose a style, then Undo/Redo, save/reopen and Play/Stop.
+**Font details → Edit family** opens the assigned asset; Reload family explicitly
+rechecks its descriptor/dependencies. Runtime uses saved assets, never an unsaved
+asset-editor draft. Native field changes and managed `text.SetFont("Fonts/UI.hfont",
+FontStyle.Bold)` invalidate Content/wrapping and prepared glyphs together.
+
+**Coverage declaration** holds Required text and informational Sample text, each
+at most 8192 strict UTF-8 bytes / 4096 unique scalars. **Inspect coverage** is CPU
+only; it does not create/upload face atlases. Results distinguish the inspected source character
+map, its CPU plan for the fixed Latin-1 glyph set, and conservative combining/joining/bidi
+warnings. Newline, CR, tab and BOM follow the normal text contract. Missing atlas
+glyphs paint `?`. Source coverage alone does not certify a language, shaping or
+correct line breaks. The diagnostic recognizer is deliberately incomplete, not a
+Unicode conformance service. Every supplied style must satisfy Required text in
+Hazel's current atlas and supported behavior before export; sample results never
+block export or promise language support. Detailed output is bounded to 32 unique
+problem scalars per result. These explicit source inspections do not certify an
+older accepted resource after a failed reload. Preview separately counts actual
+replacement glyphs in its accepted atlas; ungenerated faces have no live atlas. Face preview updates explicitly, uses the actual face
+and shows its last accepted resource; it is not a shaping/localization preview.
+
+Descriptor Version 1 uses `FontFamily: {Version, Name, Faces, Required, Sample}`.
+Faces is a mapping keyed Regular/Bold/Italic/**Bold Italic**; each provided slot has
+`File` and 1–8 `Notices` paths relative to **Assets**, not the descriptor directory.
+Regular is required. Descriptors are capped at 64 KiB, names at 128 bytes, paths
+at 1024 bytes; absolute/traversal paths and duplicate keys/notices reject. Normal
+export audits all `.hfont` files and referenced families, every provided face and
+its notices, then verifies that the dependencies are included. Packages preserve
+relative structure and also ship engine Open Sans/resources/licenses. No system
+font or source-checkout fallback is used. Nonempty obsolete UI FontPath fields
+are unsupported; writers only emit Text FontFamily/FontStyle. An empty historical
+marker carries no selection and is ignored (including the preserved Sandbox draft).

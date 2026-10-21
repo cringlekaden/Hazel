@@ -32066,7 +32066,6 @@ Entities:
     FixedSize: [0, 26]
     Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 23
     Horizontal: 0
     Vertical: 0
@@ -32111,7 +32110,6 @@ Entities:
     FixedSize: [0, 34]
     Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 28
     Horizontal: 0
     Vertical: 0
@@ -32200,7 +32198,6 @@ Entities:
     FixedSize: [0, 34]
     Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 27
     Horizontal: 0
     Vertical: 0
@@ -32245,7 +32242,6 @@ Entities:
     FixedSize: [0, 26]
     Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 22
     Horizontal: 0
     Vertical: 0
@@ -32294,7 +32290,6 @@ Entities:
     FixedSize: [0, 24]
     Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 20
     Horizontal: 0
     Vertical: 0
@@ -32339,7 +32334,6 @@ Entities:
     FixedSize: [500, 24]
     Anchor: [1, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 20
     Horizontal: 0
     Vertical: 0
@@ -32416,7 +32410,6 @@ Entities:
     FixedSize: [0, 190]
     Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 31
     Horizontal: 0
     Vertical: 0
@@ -32461,7 +32454,6 @@ Entities:
     FixedSize: [420, 44]
     Anchor: [1, 1]
   UITextStyleComponent:
-    FontPath: ''
     Size: 25
     Horizontal: 1
     Vertical: 1
@@ -33036,7 +33028,6 @@ Entities:
     FixedSize: [180, 44]
     Anchor: [0, 1]
   UITextStyleComponent:
-    FontPath: ''
     Size: 25
     Horizontal: 1
     Vertical: 1
@@ -33131,7 +33122,6 @@ Entities:
     FixedSize: [170, 34]
     Anchor: [1, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 21
     Horizontal: 1
     Vertical: 1
@@ -33226,7 +33216,6 @@ Entities:
     FixedSize: [170, 34]
     Anchor: [1, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 21
     Horizontal: 1
     Vertical: 1

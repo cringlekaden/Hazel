@@ -76,8 +76,22 @@ namespace Hazel
         public void Stop() => InternalCalls.AudioSourceComponent_Stop(Entity.CheckedID);
     }
 
+    public enum FontStyle { Regular, Bold, Italic, BoldItalic }
+
 	public class TextComponent : Component
 	{
+
+        public string FontFamily {
+            get => InternalCalls.TextComponent_GetFontFamily(Entity.CheckedID);
+            set => SetFont(value, Style);
+        }
+        public FontStyle Style {
+            get => (FontStyle)InternalCalls.TextComponent_GetFontStyle(Entity.CheckedID);
+            set => SetFont(FontFamily, value);
+        }
+        // Empty family uses packaged engine Open Sans; absent optional faces use Regular.
+        public void SetFont(string family, FontStyle style = FontStyle.Regular) =>
+            InternalCalls.TextComponent_SetFont(Entity.CheckedID, family ?? "", (int)style);
 
 		public string Text
 		{

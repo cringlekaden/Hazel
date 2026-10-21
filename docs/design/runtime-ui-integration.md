@@ -916,3 +916,70 @@ editor suites passed again; rendering/SPIR-V/profile/example/package paths are
 unchanged and reuse the broader qualification above. Both applications were
 relinked against the final font implementation. Full native Resource Refs remain
 context-bound; no cross-thread/final-owner-after-context support is implied.
+
+## P3: native font-family assets and declared coverage
+
+Built on `6cbe965`. `FontFamilyDefinition`/`.hfont` Version 1 owns bounded project
+metadata: a required Regular face, optional real Bold/Italic/Bold Italic slots,
+per-face notice associations and Required/Sample UTF-8 corpora. All paths are
+asset-root-relative. `TextComponent::Font` is the sole authored family/style
+selection for UI and world text; UI Text Style retains geometry/alignment only.
+Empty selection uses the four already shipped Open Sans faces. Missing optional
+styles select Regular explicitly; no synthetic weight/slant or inactive fallback/
+locale/shaping fields exist. Raw nonempty UI FontPath references reject rather
+than invoke an old authoring path. Writers remove empty markers; the exact local
+Sandbox draft keeps its bytes and its empty marker has no selection semantics.
+
+ProjectAssets keeps at most 128 family metadata/failure records with weak accepted
+face references. It does not own a second atlas cache. Font's existing bounded
+LRU/admission rules remain; a bounded weak live-identity index lets families share
+an identical still-live face even after eviction. Active Text components and UI
+prepared data pin immutable accepted fonts; draw runs pin atlas textures through
+submission. Scene copies/duplication clear transient text pins, Stop releases them,
+and project/renderer retirement keeps the P3 resource-thread contract. Scene/
+prefab history captures only authored selections, including world-text Inspector
+edits. The earlier 16 MiB prepared-glyph and cache/live atlas limits still apply.
+
+Descriptor/face refresh happens explicitly at first use, Reload or Refresh/Play,
+never as a filesystem freshness probe per frame. A malformed/missing dependency
+retains the accepted descriptor and live face; rejected atlas admission retains a
+live accepted face or uses engine Regular. Failed references are not retried on
+every draw. Asset epoch and exact family/style native comparisons invalidate
+Content/wrapped measurements and prepared geometry together. Measurement and
+painting use the same accepted immutable face. Inactive evicted historical bytes
+are not guaranteed retention. Runtime never rewrites the authored selection.
+
+Coverage uses strict scalar decoding and CPU font/atlas planning without texture
+generation/upload. It distinguishes source cmap presence, the CPU-planned
+Latin-1 glyph set, conservative unsupported combining/joining/bidi flags and `?`
+replacement. Source inspection describes current files, not a potentially older
+accepted resource after failed reload; preview separately reports actual glyph
+availability in its accepted atlas. Ungenerated faces have no live atlas.
+CR/newline/tab/FEFF follow rendering's control policy. The recognizer
+is not a Unicode property table or proof of correct language typography. Both
+corpora cap at 8192 bytes/4096 unique scalars, with 32 problem details per result;
+descriptors cap at 64 KiB, names at 128 bytes, paths at 1024 bytes and notice lists
+at eight per face. Required coverage must pass on every supplied style before
+export; Sample is informational. A valid unmet requirement can be saved for repair,
+but cannot falsely pass export. Existing FreeType/MSDF parsing scratch limitations
+remain; no new dependency/font is shipped.
+
+Content Browser's **New Font Family…** and `.hfont` Open use the native asset editor
+with face/notice choose/import, bounded coverage inspection and an explicit real
+face preview. Detailed declarations/diagnostics are collapsible. Family drafts
+use FileDocument atomic writes/external-conflict checks and the existing editor
+Save All, guarded replacement/close, Play/export and Save Copy/Reopen/Cancel
+services. Asset draft Undo is not added (same scope as sprite-sheet drafts);
+scene/prefab family/style edits use shared history. No Python is needed to author,
+inspect or assign a family. Runtime remains independent of ImGui.
+
+Native export audits every `.hfont` and referenced family, all supplied face styles
+and their notices, preserving root-relative structure. Duplicate slots/notice paths,
+malformed/oversized content, external/traversal/symlink escapes, missing dependencies
+and unmet required atlas/typography coverage reject with family/style/file context.
+The normal packager verifies these dependencies are included, and separately
+validates all four engine default faces and notices before/after resource staging.
+An associated notice is not a redistribution-permission certification; fixtures
+reuse shipped Apache-licensed Open Sans without new assets.
+
+Local qualification and remaining acceptance are recorded after the checks below.

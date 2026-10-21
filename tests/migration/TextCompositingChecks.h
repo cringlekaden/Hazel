@@ -1,3 +1,4 @@
+#include "FontFamilyFixture.h"
 #include "Hazel/Assets/ProjectAssets.h"
 // Independent numeric reference: RGB8 MSDF distance, straight-alpha inputs,
 // linear RGBA8 attachment (no sRGB conversion, dithering or multisampling).
@@ -82,12 +83,13 @@ static void TextCompositingChecks(bool reproduce = false) {
     // Same numeric reference through the real scene-owned runtime UI path.
     {
         auto scene=CreateRef<Scene>();auto assets=CreateRef<ProjectAssets>(std::filesystem::current_path()/"assets");scene->SetAssets(assets);
-        auto uiFont=assets->FontAsset("fonts/opensans/OpenSans-Regular.ttf");auto uiAtlas=uiFont->GetAtlasTexture();
+        std::filesystem::copy_file(assets->Root()/"fonts/opensans/OpenSans-Regular.ttf",assets->Root()/"analytic-face.ttf",std::filesystem::copy_options::overwrite_existing);
+        auto uiFont=assets->FontAsset("analytic-face.ttf");auto uiAtlas=uiFont->GetAtlasTexture();
         std::vector<unsigned char> uniform(size_t(uiAtlas->GetWidth())*uiAtlas->GetHeight()*3,128);uiAtlas->SetData(uniform.data(),uint32_t(uniform.size()));
         scene->OnViewportResize(128,128);auto canvas=scene->CreateEntity("Analytic canvas");auto& canvasData=canvas.AddComponent<UICanvasComponent>();canvasData.ReferenceSize={128,128};canvasData.SafeInsets={};
         auto label=scene->CreateEntity("Analytic label");scene->Reparent(label,canvas,TransformPolicy::KeepLocal);
         label.AddComponent<UIRectComponent>().FixedSize={64,64};auto& text=label.AddComponent<TextComponent>();text.TextString="M";text.Color=tint;
-        auto& style=label.AddComponent<UITextStyleComponent>();style.Size=8;style.FontPath="fonts/opensans/OpenSans-Regular.ttf";
+        auto& style=label.AddComponent<UITextStyleComponent>();style.Size=8;WriteTestFamily(assets->Root(),"test.hfont","analytic-face.ttf");label.GetComponent<TextComponent>().Font.Family="test.hfont";
         Begin();Renderer2D::EndScene();EditorCamera camera(45,1,.1f,1000);scene->OnUpdateEditor(0,camera);
         std::vector<int> ids(128*128);glReadBuffer(GL_COLOR_ATTACHMENT1);glReadPixels(0,0,128,128,GL_RED_INTEGER,GL_INT,ids.data());
         auto found=std::find(ids.begin(),ids.end(),int(uint32_t(label)));Check(found!=ids.end(),"Runtime analytic text did not pick");

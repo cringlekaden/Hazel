@@ -1,6 +1,7 @@
 #include "hzpch.h"
 #include "Hazel/UI/RuntimeUIConfig.h"
 #include "DocumentSchema.h"
+#include "Hazel/Assets/FontFamily.h"
 #include "Hazel/Core/OperationProgress.h"
 #include "Hazel/Project/RendererRequestsSerializer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
@@ -198,7 +199,11 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
             }
         if (auto n = entity["TextComponent"])
         {
-            Keys(n, {"TextString", "Color", "Kerning", "LineSpacing"}, "TextComponent");
+            Keys(n, {"TextString", "Color", "Kerning", "LineSpacing", "FontFamily", "FontStyle"}, "TextComponent");
+            FontSelection selection;
+            if(n["FontFamily"])selection.Family=std::filesystem::u8path(n["FontFamily"].as<std::string>());
+            if(n["FontStyle"]) {auto style=n["FontStyle"].as<unsigned>();if(style>3)throw std::runtime_error("Invalid Text FontStyle");selection.Style=FontStyle(style);}
+            selection.Validate();
             Vector(n["Color"],4);
             for (const char* key : {"Color", "Kerning", "LineSpacing"}) Finite(n[key]);
         }

@@ -148,16 +148,13 @@ void Scene::ValidateUI(bool resources)
         {
             if (!e.HasComponent<TextComponent>() || !e.HasComponent<UIRectComponent>())
                 throw std::runtime_error("UI text style needs Text and UI Rect");
-            auto path = e.GetComponent<UITextStyleComponent>().FontPath;
-            if (!path.empty())
-            {
-                if (!m_Assets)
-                    throw std::runtime_error("UI font needs project assets");
-                (void)Project::ResolveOwnedAsset(m_Assets->Root(),path);
-                // Structural validation preserves authored references when a resource fails.
-                // Export closure remains strict; runtime resolution reports/falls back locally.
-                if (resources)
-                    m_Assets->FontAsset(path);
+        }
+        if(e.HasComponent<TextComponent>()) {
+            auto& text=e.GetComponent<TextComponent>();text.Font.Validate();
+            if(!text.Font.Family.empty()) {
+                if(!m_Assets)throw std::runtime_error("Text family needs project assets");
+                (void)Project::ResolveOwnedAsset(m_Assets->Root(),text.Font.Family);
+                if(resources)ResolveTextFont(text,m_Assets);
             }
         }
         auto validateSource = [&](const SpriteSource &source) {

@@ -4,6 +4,7 @@
 #include "HazelSDK.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/SpriteSheetPanel.h"
+#include "Panels/FontFamilyPanel.h"
 #include "ProjectTools.h"
 #include "Panels/ConsolePanel.h"
 #include "Hazel/Core/FileDocument.h"
@@ -151,6 +152,7 @@ class AuthoringPanel
     uint64_t m_PrefabSourceID = 0, m_PrefabSourceScene = 0;
     SceneHierarchyPanel m_PrefabInspector;
     SpriteSheetPanel m_Sprites;
+    FontFamilyPanel m_Fonts;
     TransformComponent m_InitialTransform;
     bool m_ShowPreferences = false, m_ShowProject = false, m_ShowNew = false, m_ShowScripts = false,
          m_ShowBuild = false, m_ShowExport = false, m_ShowPrefab = false, m_CreatePrefab = false;

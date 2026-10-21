@@ -202,7 +202,12 @@ namespace Hazel {
 	struct TextComponent
 	{
 		std::string TextString;
-		Ref<Font> FontAsset = Font::GetDefault();
+		FontSelection Font; // sole authored family/style selection, shared by UI/world text
+        // Transient active-user pin; never serialized, compared or retained in commands.
+        Ref<Hazel::Font> ResolvedFont;
+        FontSelection ResolvedSelection;
+        std::weak_ptr<ProjectAssets> FontOwner;
+        uint64_t FontEpoch=0;
 		glm::vec4 Color{ 1.0f };
 		float Kerning = 0.0f;
 		float LineSpacing = 0.0f;
@@ -222,7 +227,6 @@ namespace Hazel {
     };
     struct UILayoutComponent : GameUI::FlowLayout {};
     struct UITextStyleComponent {
-        std::filesystem::path FontPath; // empty selects the packaged default font
         float Size=24;
         GameUI::Align Horizontal=GameUI::Align::Start, Vertical=GameUI::Align::Start;
         bool Wrap=true;

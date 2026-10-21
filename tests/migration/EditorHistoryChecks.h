@@ -1,3 +1,4 @@
+#include "FontFamilyFixture.h"
 #pragma once
 #include "Authoring/DocumentHistory.h"
 #include "Hazel/Core/Resources.h"
@@ -147,7 +148,7 @@ static void EditorHistoryChecks()
         auto initial=UIEditValues::Capture(f.Control),proposed=initial;
         proposed.Rect->Anchor={.5f,0};proposed.Rect->Pivot={.5f,0};proposed.Rect->MinimumSize={100,60};
         proposed.Flow->Gap=12;proposed.Flow->Cross=GameUI::Align::Center;
-        proposed.Style->FontPath="Fonts/history.ttf";proposed.Style->Size=32;proposed.Style->Wrap=false;
+        WriteTestFamily(root,"Fonts/history.hfont","Fonts/history.ttf");proposed.Text->Font.Family="Fonts/history.hfont";proposed.Style->Size=32;proposed.Style->Wrap=false;
         proposed.Slice->Borders={2,2,2,2};proposed.Slice->BorderScale=2;
         proposed.Button->Action="journal";proposed.Button->TabOrder=4;proposed.Button->Colors[1]={.8f,.9f,1,1};
         proposed.Text->Text="Longer journal caption";proposed.Text->Color={.7f,.8f,.9f,1};proposed.Text->Kerning=.01f;proposed.Text->LineSpacing=.2f;

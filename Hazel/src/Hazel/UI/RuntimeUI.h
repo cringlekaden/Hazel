@@ -59,7 +59,7 @@ class RuntimeUI
         GameUI::Align PreparedHorizontal=GameUI::Align::Start,PreparedVertical=GameUI::Align::Start;
         std::vector<Renderer2D::TextLine> Lines;
         std::string Text;
-        std::filesystem::path FontPath;
+        FontSelection Selection;
         Ref<Font> FontAsset;
         std::array<Ref<const ResolvedSprite>, 5> Images;
         std::array<SpriteSource, 5> ImageSources;
@@ -99,6 +99,8 @@ class RuntimeUI
     Scope<GPUTimer> m_GPUTimer;
     uint64_t m_PaintSubmission=0;
     size_t m_PreparedBytes=0;
+    std::weak_ptr<ProjectAssets> m_AssetOwner;
+    uint64_t m_AssetGeneration=0;
     uint64_t m_NextGeneration = 0, m_OuterDrops = 0, m_ReportedDrops = 0;
     std::chrono::steady_clock::time_point m_LastWarning{};
     bool m_PointerOver = false, m_KeyboardOwns = false, m_InputEnabled = false;

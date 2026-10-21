@@ -1,6 +1,7 @@
 #pragma once
 #include <filesystem>
 #include <string>
+#include <vector>
 #include "Hazel/Core/Base.h"
 #include "Hazel/Renderer/Texture.h"
 
@@ -18,6 +19,16 @@ namespace Hazel {
         uint32_t CacheEntries=0, LiveAtlases=0, PinnedAtlases=0, LiveFonts=0;
         FontLimits Limits;
     };
+    struct FontCoverageIssue {
+        uint32_t Scalar=0;
+        bool Source=false, Atlas=false, Typography=false;
+    };
+    struct FontCoverage {
+        uint32_t Scalars=0, MissingSource=0, MissingAtlas=0, Unsupported=0;
+        std::vector<FontCoverageIssue> Issues; // first 32 unique problems, in scalar order
+        bool Satisfied() const {return !MissingSource && !MissingAtlas && !Unsupported;}
+        std::string Summary() const;
+    };
     class Font {
     public:
         explicit Font(const std::filesystem::path& font);
@@ -26,6 +37,7 @@ namespace Hazel {
         Ref<Texture2D> GetAtlasTexture() const {return m_AtlasTexture;}
         const std::filesystem::path& GetPath() const {return m_Path;}
         uint64_t GetAtlasBytes() const {return m_AtlasBytes;}
+        static FontCoverage InspectCoverage(const std::filesystem::path& path,const std::string& corpus);
         static void ValidateFile(const std::filesystem::path& path);
         // Load/Initialize/Trim/Shutdown and all resource owners are rendering-thread bound.
         // Load hashes bounded input at explicit asset freshness boundaries, never per draw.

@@ -1,3 +1,4 @@
+#include "FontFamilyFixture.h"
 #include "Hazel.h"
 #include "Hazel/Scene/Prefab.h"
 #include "Hazel/Scene/SceneSerializer.h"
@@ -41,6 +42,7 @@ static void Check(bool value, const char *why)
 #include "ImageFitSceneChecks.h"
 #include "RuntimeUIPaintChecks.h"
 #include "FontReloadSceneChecks.h"
+#include "FontFamilySceneChecks.h"
 struct UIFixture
 {
     Ref<Scene> World=CreateRef<Scene>();Entity Canvas,Group,Control;
@@ -114,6 +116,7 @@ int main(int argc,char** argv)
         spec.EnableImGui = false;
         Application app(spec);
         glfwHideWindow(static_cast<GLFWwindow *>(app.GetWindow().GetNativeWindow()));
+        if(argc==2&&std::string(argv[1])=="--profile-render-small"){ProfileRendering(64);return 0;}
         if(argc==2&&std::string(argv[1])=="--profile-render"){ProfileRendering();return 0;}
         if(argc==2&&std::string(argv[1])=="--profile-layout"){ProfileContainers();return 0;}
         s_Allocations=0;s_CountAllocations=true;
@@ -140,6 +143,7 @@ int main(int argc,char** argv)
         ImageFitSceneChecks(root);
         RuntimeUIPaintChecks(root);
         FontReloadSceneChecks(root);
+        FontFamilySceneChecks(root);
         auto scene = CreateRef<Scene>();
         scene->SetAssets(CreateRef<ProjectAssets>(root));
         scene->OnViewportResize(320, 240);
@@ -167,7 +171,8 @@ int main(int argc,char** argv)
         text.AddComponent<TextComponent>().TextString = "Light\nkeeper";
         auto &style = text.AddComponent<UITextStyleComponent>();
         style.Size = 18;
-        style.FontPath = "font.ttf";
+        WriteTestFamily(root,"font.hfont","font.ttf");
+        text.GetComponent<TextComponent>().Font.Family="font.hfont";
         button.GetComponent<UIButtonComponent>().Images[1] =
             TextureSpriteSource{"image.png", 1, {}};
         scene->ValidateUI();

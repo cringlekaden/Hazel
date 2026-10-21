@@ -259,7 +259,7 @@ void SceneHierarchyPanel::DrawUIComponent(const std::string &name,Entity entity,
     std::function<void(const std::string&)> report)
 {
     if(!m_Context || !entity.BelongsTo(m_Context.get()) || !entity || !m_Context->IsEntityValid(entity.GetUUID()))return;
-    if(!entity.HasComponent<UIRectComponent>()&&!entity.HasComponent<UICanvasComponent>()){
+    if(!std::is_same_v<T,TextComponent> && !entity.HasComponent<UIRectComponent>()&&!entity.HasComponent<UICanvasComponent>()){
         DrawComponent<T>(name,entity,sections,restore,ui,report);return;
     }
     DrawComponent<T>(name,entity,sections,restore,[&](auto &component){
@@ -452,22 +452,6 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         if(PropertyUI::Combo("cross",c.Kind==GameUI::ContainerKind::Grid?"Cell vertical":"Cross alignment",cross,"Start\0Center\0End\0"))c.Cross=GameUI::Align(cross);
     });
     DrawUIComponent<UITextStyleComponent>("UI Text Style",entity,m_Sections,m_RestoreSections,[this](auto& c){
-        if(!m_UIFontInitialized||m_UIFontBound!=c.FontPath){m_UIFontDraft=c.FontPath.generic_u8string();m_UIFontBound=c.FontPath;m_UIFontInitialized=true;}
-        auto assign=[&](std::filesystem::path path){try{if(!path.empty()){if(path.extension()!=".ttf"&&path.extension()!=".otf")throw std::runtime_error("Select a project TTF/OTF");auto root=m_Context->GetAssets();if(!root)throw std::runtime_error("Open a project before assigning a font");Font::ValidateFile(Project::ResolveOwnedAsset(root->Root(),path));}c.FontPath=path;m_UIFontBound=path;m_UIFontDraft=path.generic_u8string();m_HierarchyError.clear();}catch(const std::exception& error){m_HierarchyError=error.what();}};
-        auto edit=PropertyUI::Text("font","Font asset",m_UIFontDraft);
-        if(edit.Committed)assign(std::filesystem::u8path(m_UIFontDraft));
-        if(ImGui::BeginDragDropTarget()){if(auto payload=ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))assign(ContentBrowserPath(payload->Data,payload->DataSize));ImGui::EndDragDropTarget();}
-        PropertyUI::Help("Empty uses the shipped default. Drag a TTF/OTF from Assets. Use separate styled text children for mixed emphasis; no markup is parsed.");
-        if(auto assets=m_Context->GetAssets()) {
-            auto font=assets->FontStatus(c.FontPath);auto atlas=font.Actual->GetAtlasTexture();
-            char description[128];std::snprintf(description,sizeof(description),"%u x %u | %.1f KiB",atlas->GetWidth(),atlas->GetHeight(),double(font.Actual->GetAtlasBytes())/1024);
-            PropertyUI::ReadOnly("font-atlas","Atlas (estimated)",description);
-            if(font.Fallback)ImGui::TextWrapped("Using shipped Open Sans fallback; authored reference retained.");
-            else if(!font.Error.empty())ImGui::TextWrapped("Using the last accepted font; replacement rejected.");
-            if(!font.Error.empty())ImGui::TextWrapped("%s",font.Error.c_str());
-            if(!c.FontPath.empty() && ImGui::SmallButton("Reload font"))assets->Reload(c.FontPath);
-            PropertyUI::Help("Reload preserves an accepted font on failure. Fixed Latin-1 coverage; no shaping or fallback families.");
-        }
         PropertyUI::DragFloat("size","Size (px)",c.Size,1,1,512);
         int horizontal=int(c.Horizontal),vertical=int(c.Vertical);
         if(PropertyUI::Combo("horizontal","Horizontal",horizontal,"Left\0Center\0Right\0"))c.Horizontal=GameUI::Align(horizontal);
@@ -966,8 +950,35 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
 
     DrawUIComponent<TextComponent>(
         "Text Renderer", entity, m_Sections,m_RestoreSections,
-        [](auto &component)
+        [this](auto &component)
         {
+            if(!m_UIFontInitialized || m_UIFontBound!=component.Font.Family){m_UIFontDraft=component.Font.Family.generic_u8string();m_UIFontBound=component.Font.Family;m_UIFontInitialized=true;}
+            auto assign=[&](std::filesystem::path path){try {
+                auto assets=m_Context->GetAssets();if(assets && path.is_absolute())path=Project::MakeAssetReference(assets->Root(),path);FontSelection selection{path,component.Font.Style};selection.Validate();
+                if(!path.empty()) {if(!assets)throw std::runtime_error("Open a project before assigning a family");ReadFontFamily(Project::ResolveOwnedAsset(assets->Root(),path));}
+                component.Font=selection;m_UIFontBound=path;m_UIFontDraft=path.generic_u8string();m_HierarchyError.clear();
+            }catch(const std::exception& error){m_HierarchyError=error.what();}};
+            auto edit=PropertyUI::Text("font","Font family",m_UIFontDraft);
+            if(edit.Committed)assign(std::filesystem::u8path(m_UIFontDraft));
+            if(ImGui::BeginDragDropTarget()){if(auto payload=ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))assign(ContentBrowserPath(payload->Data,payload->DataSize));ImGui::EndDragDropTarget();}
+            PropertyUI::Help("Empty uses engine Open Sans. Create .hfont assets in Content Browser. Styles use real faces; an absent style uses Regular, never synthesis.");
+            int face=int(component.Font.Style);if(PropertyUI::Combo("font-style","Face style",face,"Regular\0Bold\0Italic\0Bold Italic\0"))component.Font.Style=FontStyle(face);
+            if(auto assets=m_Context->GetAssets()) {
+                auto font=assets->FamilyStatus(component.Font);auto atlas=font.Actual->GetAtlasTexture();
+                auto faceName=font.Face.lexically_relative(assets->Root());if(faceName.empty() || *faceName.begin()=="..")faceName=std::filesystem::path("[engine]")/font.Face.filename();
+                PropertyUI::ReadOnly("actual-face","Resolved face",faceName.generic_u8string().c_str());
+                if(font.StyleFallback)ImGui::TextWrapped("Requested face is absent; using Regular.");
+                if(font.DefaultFallback)ImGui::TextWrapped("Using engine Regular fallback; authored selection retained.");
+                if(!font.Error.empty())ImGui::TextWrapped("%s",font.Error.c_str());
+                if(ImGui::TreeNode("Font details")) {
+                    char description[128];std::snprintf(description,sizeof(description),"%u x %u | %.1f KiB",atlas->GetWidth(),atlas->GetHeight(),double(font.Actual->GetAtlasBytes())/1024);
+                    PropertyUI::ReadOnly("font-atlas","Atlas (estimated)",description);
+                    if(ImGui::SmallButton("Reload family"))assets->Reload(component.Font.Family);
+                    if(!component.Font.Family.empty() && OpenAsset){ImGui::SameLine();if(ImGui::SmallButton("Edit family"))OpenAsset(Project::ResolveOwnedAsset(assets->Root(),component.Font.Family));}
+                    ImGui::TextWrapped("Fixed Latin-1 atlas; no shaping, bidi or fallback families. Coverage inspection is available in the family asset editor.");
+                    ImGui::TreePop();
+                }
+            }
             PropertyUI::Multiline("text", "Text", component.TextString);
             PropertyUI::Color("Color", "Color", glm::value_ptr(component.Color));
             PropertyUI::DragFloat("Kerning", "Kerning", component.Kerning, 0.025f);

@@ -57,6 +57,7 @@ namespace Hazel {
 		if constexpr (std::is_same_v<T, NativeScriptComponent>) copy.Instance.reset();
         if constexpr (std::is_same_v<T, SpriteRendererComponent>) {copy.Resolved={};copy.PreparedEpoch=0;copy.PreparedSource=std::monostate{};}
         if constexpr (std::is_same_v<T, SpriteAnimationComponent>) copy.ResetRuntime();
+        if constexpr (std::is_same_v<T, TextComponent>) {copy.ResolvedFont.reset();copy.FontOwner.reset();copy.FontEpoch=0;copy.ResolvedSelection={};}
 		return copy;
 	}
 
@@ -374,6 +375,7 @@ namespace Hazel {
 	void Scene::OnRuntimeStop()
 	{
         ResetUI();
+        for(auto e:m_Registry.view<TextComponent>()){auto& text=m_Registry.get<TextComponent>(e);text.ResolvedFont.reset();text.FontOwner.reset();text.FontEpoch=0;}
 		m_Stopping = true; CancelPendingLifecycle();
         if (ScriptEngine::GetSceneContext() == this) ScriptEngine::OnRuntimeStop();
 
@@ -514,7 +516,8 @@ namespace Hazel {
 					auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
                     if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
 
-					Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
+					ResolveTextFont(text,m_Assets);
+                    Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
 				}
 			}
 
@@ -781,7 +784,8 @@ namespace Hazel {
 				auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
                     if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
 
-				Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
+				ResolveTextFont(text,m_Assets);
+                    Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
 			}
 		}
 

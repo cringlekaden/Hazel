@@ -86,6 +86,13 @@ namespace Hazel
 		#region TextComponent
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		internal extern static string TextComponent_GetText(ulong entityID);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal extern static string TextComponent_GetFontFamily(ulong entityID);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal extern static int TextComponent_GetFontStyle(ulong entityID);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal extern static void TextComponent_SetFont(ulong entityID, string family, int style);
+
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		internal extern static void TextComponent_SetText(ulong entityID, string text);
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]

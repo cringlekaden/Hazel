@@ -65,18 +65,6 @@ void Positive(float v, bool zero = true)
     if (!std::isfinite(v) || v < 0 || (!zero && v == 0))
         throw std::runtime_error("Invalid UI dimension");
 }
-void OwnedFont(const std::filesystem::path &p)
-{
-    if (p.empty())
-        return;
-    auto n = Project::NormalizeAssetPath(p);
-    if (n.has_root_path() || (n.extension() != ".ttf" && n.extension() != ".otf") ||
-        p.generic_u8string().find(':') != std::string::npos)
-        throw std::runtime_error("Font must be a project-relative TTF/OTF");
-    for (auto part : n)
-        if (part == "..")
-            throw std::runtime_error("Font escapes project");
-}
 GameUI::Align ReadAlign(const YAML::Node &n)
 {
     int v = n.as<int>();
@@ -246,8 +234,10 @@ UITextStyleComponent ReadUITextStyleComponent(const YAML::Node &n)
 {
     Keys(n, {"FontPath", "Size", "Horizontal", "Vertical", "Wrap"});
     UITextStyleComponent v;
-    if (n["FontPath"])
-        v.FontPath = std::filesystem::u8path(n["FontPath"].as<std::string>());
+    // An empty historical marker has no interpretation. Nonempty raw paths are
+    // unsupported; FontSelection on Text is the only authored selection.
+    if(n["FontPath"] && !n["FontPath"].as<std::string>().empty())
+        throw std::runtime_error("Raw UI FontPath is unsupported; author Text.FontFamily (.hfont)");
     if (n["Size"])
         v.Size = n["Size"].as<float>();
     if (n["Horizontal"])
@@ -260,14 +250,11 @@ UITextStyleComponent ReadUITextStyleComponent(const YAML::Node &n)
     Positive(v.Size, false);
     if (v.Size > 512)
         throw std::runtime_error("UI font size exceeds 512");
-    OwnedFont(v.FontPath);
     return v;
 }
 static void Write(YAML::Emitter &out, const UITextStyleComponent &v)
 {
     out << YAML::BeginMap;
-    out << YAML::Key << "FontPath" << YAML::Value;
-    Write(out, v.FontPath);
     out << YAML::Key << "Size" << YAML::Value;
     Write(out, v.Size);
     out << YAML::Key << "Horizontal" << YAML::Value;

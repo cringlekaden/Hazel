@@ -1,3 +1,4 @@
+#include "FontFamilyFixture.h"
 static void MeasuredSceneChecks(const std::filesystem::path &root)
 {
     auto scene = CreateRef<Scene>();
@@ -28,7 +29,7 @@ static void MeasuredSceneChecks(const std::filesystem::path &root)
     auto &text = label.AddComponent<TextComponent>();
     text.TextString = "Longer translated labels wrap predictably";
     auto &style = label.AddComponent<UITextStyleComponent>();
-    style.FontPath = "font.ttf";
+    WriteTestFamily(root,"font.hfont","font.ttf");text.Font.Family="font.hfont";
     style.Size = 20;
     style.Wrap = true;
     label.AddComponent<UIButtonComponent>().Action = "measured";
@@ -101,7 +102,7 @@ static void MeasuredSceneChecks(const std::filesystem::path &root)
           "Font size mutation missed measurement invalidation");
     std::filesystem::copy_file(root / "font.ttf", root / "other-font.ttf");
     generation = scene->GetUISnapshot().Generation;
-    style.FontPath = "other-font.ttf";
+    WriteTestFamily(root,"other-font.hfont","other-font.ttf");text.Font.Family="other-font.hfont";
     scene->RefreshUI();
     Check(scene->GetUISnapshot().Generation > generation, "Font asset mutation did not reflow");
     group.GetComponent<UIRectComponent>().Offset = {};

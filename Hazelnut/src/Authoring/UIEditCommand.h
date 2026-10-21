@@ -9,6 +9,7 @@ struct UITextValue
     std::string Text;
     glm::vec4 Color{1};
     float Kerning = 0, LineSpacing = 0;
+    FontSelection Font;
 };
 struct UIImageValue
 {
@@ -46,7 +47,7 @@ struct UIEditValues
         else if constexpr (std::is_same_v<T, UIButtonComponent>)
             Button = value;
         else if constexpr (std::is_same_v<T, TextComponent>)
-            Text = UITextValue{value.TextString, value.Color, value.Kerning, value.LineSpacing};
+            Text = UITextValue{value.TextString, value.Color, value.Kerning, value.LineSpacing, value.Font};
         else if constexpr (std::is_same_v<T, SpriteRendererComponent>)
             Image = UIImageValue{value.Color, value.Source};
         StripResources();

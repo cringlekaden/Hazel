@@ -21,10 +21,10 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
             auto &cache = m_Cache[e.GetUUID()];
             const auto assets = m_Scene.GetAssets();
             auto epoch = assets ? assets->Epoch() : 1;
-            if (!cache.FontAsset || cache.FontPath != style.FontPath || cache.Epoch != epoch)
+            if (!cache.FontAsset || cache.Selection != text.Font || cache.Epoch != epoch)
             {
-                cache.FontAsset = assets ? assets->FontAsset(style.FontPath) : Font::GetDefault();
-                cache.FontPath = style.FontPath;
+                cache.FontAsset = ResolveTextFont(text,assets);
+                cache.Selection = text.Font;
                 cache.Epoch = epoch;
                 cache.Width = -1;cache.PreparedValid=false;
                 cache.MeasureWidth = {{-2, -2}};

@@ -81,9 +81,9 @@ def validate_project(descriptor, config, assets):
             if clip:
                 if Path(clip).suffix!='.wav' or resolve_owned(assets,clip) not in included:
                     raise RuntimeError('Missing/excluded WAV audio clip '+str(clip)+' in '+str(scene))
-            font=entity.get('UITextStyleComponent',{}).get('FontPath')
+            font=entity.get('TextComponent',{}).get('FontFamily')
             if font and resolve_owned(assets,font) not in included:
-                raise RuntimeError('UI font selects excluded compiler output: '+font+' in '+str(scene))
+                raise RuntimeError('Text family selects excluded compiler output: '+font+' in '+str(scene))
             texture = entity.get('SpriteRendererComponent', {}).get('TexturePath')
             if texture and resolve_owned(assets,texture) not in included:
                 raise RuntimeError('Texture selects excluded compiler output: '+texture+' in '+str(scene))
@@ -134,7 +134,16 @@ def validate_sprites(assets, files, descriptor=None):
         raise RuntimeError(result.stderr.strip() or 'Native sprite dependency audit failed')
     for line in result.stdout.splitlines():
         if line.startswith('DEPENDENCY ') and resolve_owned(assets,line[len('DEPENDENCY '):]) not in included:
-            raise RuntimeError('Sprite dependency selects excluded compiler output: '+line[len('DEPENDENCY '):])
+            raise RuntimeError('Asset dependency selects excluded compiler output: '+line[len('DEPENDENCY '):])
+    print(result.stdout,end='')
+
+
+def validate_engine_fonts(resources):
+    auditor = hz.binaries('Release') / 'SpriteAssetAudit' / ('SpriteAssetAudit.exe' if hz.SYSTEM=='windows' else 'SpriteAssetAudit')
+    env=os.environ.copy()
+    if hz.SYSTEM=='linux':env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
+    result=subprocess.run([str(auditor),'--engine-fonts',str(resources)],capture_output=True,text=True,encoding='utf-8',env=env)
+    if result.returncode:raise RuntimeError(result.stderr.strip() or 'Engine font-family closure failed')
     print(result.stdout,end='')
 
 
@@ -282,6 +291,7 @@ def package(app, project, output, archive_name=None):
         raise RuntimeError('--name requires one application and a portable archive name')
     descriptor, config, assets = load_project(project)
     validate_project(descriptor, config, assets)
+    validate_engine_fonts(hz.ROOT/'Hazel/Resources')
     output = output.resolve(); output.mkdir(parents=True, exist_ok=True)
     prefix = hz.mono_prefix()
     commit = hz.output(['git', '-C', hz.ROOT, 'rev-parse', 'HEAD'])
@@ -295,6 +305,7 @@ def package(app, project, output, archive_name=None):
             if not executable.is_file(): raise RuntimeError('Build Release before packaging ' + name)
             hz.copy_changed(executable, path/executable.name)
             hz.copy_tree(hz.ROOT/'Hazel/Resources', path/'Resources')
+            validate_engine_fonts(path/'Resources')
             if name == 'Hazelnut':
                 hz.copy_tree(hz.ROOT/'Hazelnut/Resources/Icons', path/'Resources/Icons')
                 hz.copy_changed(hz.ROOT/'Hazelnut/Resources/imgui.ini', path/'Resources/imgui.ini')

@@ -405,7 +405,9 @@ namespace Hazel {
 
 			auto& textComponent = entity.GetComponent<TextComponent>();
 			out << YAML::Key << "TextString" << YAML::Value << textComponent.TextString;
-			// TODO: textComponent.FontAsset
+			textComponent.Font.Validate();
+            out << YAML::Key << "FontFamily" << YAML::Value << textComponent.Font.Family.generic_u8string();
+            out << YAML::Key << "FontStyle" << YAML::Value << int(textComponent.Font.Style);
 			out << YAML::Key << "Color" << YAML::Value << textComponent.Color;
 			out << YAML::Key << "Kerning" << YAML::Value << textComponent.Kerning;
 			out << YAML::Key << "LineSpacing" << YAML::Value << textComponent.LineSpacing;
@@ -683,9 +685,11 @@ namespace Hazel {
 				auto textComponent = entity["TextComponent"];
 				if (textComponent)
 				{
-					auto& tc = deserializedEntity.AddComponent<TextComponent>(TextComponent{"",resources==ResourceLoading::Resolve?Font::GetDefault():Ref<Font>{}});
+					auto& tc = deserializedEntity.AddComponent<TextComponent>();
 					tc.TextString = textComponent["TextString"].as<std::string>();
-					// tc.FontAsset // TODO
+					if(textComponent["FontFamily"])tc.Font.Family=std::filesystem::u8path(textComponent["FontFamily"].as<std::string>());
+                    if(textComponent["FontStyle"])tc.Font.Style=FontStyle(textComponent["FontStyle"].as<unsigned>());
+                    tc.Font.Validate();
 					tc.Color = textComponent["Color"].as<glm::vec4>();
 					tc.Kerning = textComponent["Kerning"].as<float>();
 					tc.LineSpacing = textComponent["LineSpacing"].as<float>();
@@ -715,11 +719,11 @@ namespace Hazel {
                     m_Report.Problems.push_back({id,"Script field "+name,error.what(),resource});
                 }
             }
-        if(resources==ResourceLoading::Resolve)for(auto handle:staged->GetAllEntitiesWith<UITextStyleComponent>()) {
-            Entity entity(handle,staged.get());auto path=entity.GetComponent<UITextStyleComponent>().FontPath;
-            if(!path.empty()) {
-                auto font=staged->GetAssets()->FontStatus(path);
-                if(!font.Error.empty())m_Report.Problems.push_back({entity.GetUUID(),"UI font",font.Error,m_AssetRoot/path});
+        if(resources==ResourceLoading::Resolve)for(auto handle:staged->GetAllEntitiesWith<TextComponent>()) {
+            Entity entity(handle,staged.get());auto& text=entity.GetComponent<TextComponent>();
+            if(auto assets=staged->GetAssets()) {
+                auto font=assets->FamilyStatus(text.Font);
+                if(!font.Error.empty())m_Report.Problems.push_back({entity.GetUUID(),"Text family",font.Error,m_AssetRoot/text.Font.Family});
             }
         }
         for (auto handle : staged->GetAllEntitiesWith<SpriteRendererComponent>())

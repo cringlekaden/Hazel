@@ -299,6 +299,31 @@ namespace Hazel {
         if(failure)mono_raise_exception(failure);
     }
 
+    static MonoString* TextComponent_GetFontFamily(UUID entityID) {
+        return ScriptEngine::CreateString(CheckedSpriteEntity<TextComponent>(entityID).GetComponent<TextComponent>().Font.Family.generic_u8string().c_str());
+    }
+    static int TextComponent_GetFontStyle(UUID entityID) {
+        return int(CheckedSpriteEntity<TextComponent>(entityID).GetComponent<TextComponent>().Font.Style);
+    }
+    static void TextComponent_SetFont(UUID entityID,MonoString* family,int style) {
+        auto entity=CheckedSpriteEntity<TextComponent>(entityID);MonoException* failure=nullptr;
+        try {
+            if(style<0 || style>3)throw std::invalid_argument("Font style must be Regular, Bold, Italic or BoldItalic");
+            if(family) {
+                auto chars=mono_string_chars(family);int length=mono_string_length(family);
+                if(length>1024)throw std::invalid_argument("Family reference exceeds 1024 UTF-16 units");
+                for(int i=0;i<length;++i){auto c=chars[i];if(!c)throw std::invalid_argument("Family reference contains NUL");
+                    if(c>=0xd800 && c<=0xdbff){if(++i>=length || chars[i]<0xdc00 || chars[i]>0xdfff)throw std::invalid_argument("Invalid UTF-16 family reference");}
+                    else if(c>=0xdc00 && c<=0xdfff)throw std::invalid_argument("Invalid UTF-16 family reference");}
+            }
+            FontSelection selection{std::filesystem::u8path(Utils::MonoStringToString(family)),FontStyle(style)};selection.Validate();
+            auto* scene=ScriptEngine::GetSceneContext();scene->CheckThread();
+            if(!selection.Family.empty()) {auto assets=scene->GetAssets();if(!assets)throw std::invalid_argument("Family selection needs project assets");(void)Project::ResolveOwnedAsset(assets->Root(),selection.Family);}
+            entity.GetComponent<TextComponent>().Font=std::move(selection);
+        }catch(const std::exception& error){failure=mono_get_exception_argument("font",error.what());}
+        if(failure)mono_raise_exception(failure);
+    }
+
 	static void TextComponent_GetColor(UUID entityID, glm::vec4* color)
 	{
         Entity entity=CheckedSpriteEntity<TextComponent>(entityID);
@@ -559,6 +584,9 @@ namespace Hazel {
 		HZ_ADD_INTERNAL_CALL(Rigidbody2DComponent_SetType);
 
 		HZ_ADD_INTERNAL_CALL(TextComponent_GetText);
+        HZ_ADD_INTERNAL_CALL(TextComponent_GetFontFamily);
+        HZ_ADD_INTERNAL_CALL(TextComponent_GetFontStyle);
+        HZ_ADD_INTERNAL_CALL(TextComponent_SetFont);
 		HZ_ADD_INTERNAL_CALL(TextComponent_SetText);
 		HZ_ADD_INTERNAL_CALL(TextComponent_GetColor);
 		HZ_ADD_INTERNAL_CALL(TextComponent_SetColor);

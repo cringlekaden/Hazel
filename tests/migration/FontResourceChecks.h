@@ -1,3 +1,4 @@
+#include "FontFamilyFixture.h"
 #include "Hazel/Assets/ProjectAssets.h"
 #include <thread>
 static void FontResourceChecks(const std::filesystem::path& root) {
@@ -29,6 +30,9 @@ static void FontResourceChecks(const std::filesystem::path& root) {
         for(int i=0;i<20;++i)pressure.FontAsset("b.ttf");
         Check(Hazel::Font::Resources().Generations==state.Generations,"Rejected project font regenerated every lookup");
         Check(Hazel::Font::Load(a,second)==second && Hazel::Font::Resources().Generations==state.Generations,"Unchanged accepted font regenerated after LRU eviction");
+        WriteTestFamily(root,"shared-pressure.hfont","a.ttf");
+        Check(pressure.FamilyFont({"shared-pressure.hfont"})==second && Hazel::Font::Resources().Generations==state.Generations,
+              "A family sharing a live face failed admission/reused a duplicate after eviction");
         heldAtlas.reset();
         Check(pressure.FontStatus("b.ttf").Fallback,"Admission failure retried without explicit freshness boundary");
         pressure.Reload("b.ttf");auto third=pressure.FontAsset("b.ttf");

@@ -3,6 +3,10 @@
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include "MSDFData.h"
+#include "Hazel/Utils/UTF8.h"
+#include <set>
+#include <sstream>
+#include <iomanip>
 #include <fstream>
 #include <algorithm>
 #include <cmath>
@@ -21,10 +25,12 @@ namespace {
     std::thread::id owner;
     std::list<CacheEntry> cache; // front is MRU; bounded and deliberately small
     std::vector<AtlasRecord> atlases;
+    std::vector<std::weak_ptr<Font>> liveFaces; // identity index only; owns no atlas/Font
     void CheckThread() {
         if(owner!=std::this_thread::get_id())throw std::logic_error("Font resources require the renderer thread/context");
     }
     void Prune() {
+        liveFaces.erase(std::remove_if(liveFaces.begin(),liveFaces.end(),[](const auto& f){return f.expired();}),liveFaces.end());
         atlases.erase(std::remove_if(atlases.begin(),atlases.end(),[](const auto& a){return a.Texture.expired();}),atlases.end());
     }
     uint64_t LiveBytes() {uint64_t bytes=0;for(auto& a:atlases)bytes+=a.Bytes;return bytes;}
@@ -123,6 +129,56 @@ void Font::ValidateFile(const std::filesystem::path& path) {
     Input input(path);int w=0,h=0;
     (void)PlanFont(input.Bytes,input.Path,limits.AtlasDimension,w,h);
 }
+std::string FontCoverage::Summary() const {
+    std::ostringstream out;out<<Scalars<<" checked, "<<MissingSource<<" absent in face, "<<MissingAtlas<<" unavailable in Latin-1 atlas, "<<Unsupported<<" need unsupported typography";
+    for(auto& issue:Issues) {
+        out<<"; U+"<<std::uppercase<<std::hex<<std::setw(4)<<std::setfill('0')<<issue.Scalar<<std::dec;
+        // Render printable representatives without injecting bidi/format controls
+        // into diagnostics. Code points remain authoritative if the Console font
+        // cannot itself show the representative.
+        if(!issue.Typography && issue.Scalar>=0x20 && !(issue.Scalar>=0x7f && issue.Scalar<=0x9f)) {
+            auto cp=issue.Scalar;std::string glyph;
+            if(cp<0x80)glyph+=char(cp);
+            else if(cp<0x800){glyph+=char(0xc0|(cp>>6));glyph+=char(0x80|(cp&63));}
+            else if(cp<0x10000){glyph+=char(0xe0|(cp>>12));glyph+=char(0x80|((cp>>6)&63));glyph+=char(0x80|(cp&63));}
+            else{glyph+=char(0xf0|(cp>>18));glyph+=char(0x80|((cp>>12)&63));glyph+=char(0x80|((cp>>6)&63));glyph+=char(0x80|(cp&63));}
+            out<<" ('"<<glyph<<"')";
+        }
+        out<<(issue.Source?" source-present":" source-missing")<<(issue.Atlas?" atlas-present":" replacement ?")<<(issue.Typography?" typography unsupported":"");
+    }
+    if(MissingAtlas>Issues.size() || Unsupported>Issues.size())out<<"; further details omitted";
+    return out.str();
+}
+FontCoverage Font::InspectCoverage(const std::filesystem::path& path,const std::string& corpus) {
+    if(corpus.size()>8192)throw std::invalid_argument("Font corpus exceeds 8192 bytes");
+    std::vector<uint32_t> decoded;UTF8::Decode(corpus,decoded);
+    std::set<uint32_t> scalars(decoded.begin(),decoded.end());
+    if(scalars.size()>4096)throw std::invalid_argument("Font corpus exceeds 4096 unique scalars");
+    Input input(path);FontHandles handles;
+    if(!handles.Library || !(handles.Face=msdfgen::loadFontData(handles.Library,input.Bytes.data(),int(input.Bytes.size()))))throw std::runtime_error("Invalid font: "+path.generic_u8string());
+    // CPU atlas plan verifies the exact fixed glyph set, including load failures; no rasterization/upload.
+    int w=0,h=0;auto plan=PlanFont(input.Bytes,input.Path,limits.AtlasDimension,w,h);
+    FontCoverage result;
+    for(auto scalar:scalars) {
+        if(scalar=='\n' || scalar=='\r' || scalar=='\t' || scalar==0xfeff)continue;
+        ++result.Scalars;msdfgen::GlyphIndex glyph;
+        bool source=msdfgen::getGlyphIndex(glyph,handles.Face,scalar) && glyph.getIndex()!=0;
+        bool atlas=plan->FontGeometry.getGlyph(scalar)!=nullptr;
+        // Conservative diagnostics, not a Unicode conformance/language classifier. In
+        // particular cmap presence cannot certify combining, joining or bidi text.
+        bool typography=(scalar>=0x300 && scalar<=0x36f) || (scalar>=0x590 && scalar<=0x109f) ||
+            (scalar>=0x1780 && scalar<=0x17ff) || (scalar>=0x1ab0 && scalar<=0x1aff) ||
+            (scalar>=0x1dc0 && scalar<=0x1dff) || (scalar>=0x200b && scalar<=0x200f) ||
+            (scalar>=0x202a && scalar<=0x202e) || (scalar>=0x2066 && scalar<=0x2069) ||
+            (scalar>=0x20d0 && scalar<=0x20ff) || (scalar>=0xfb1d && scalar<=0xfdff) ||
+            (scalar>=0xfe00 && scalar<=0xfe0f) || (scalar>=0xfe20 && scalar<=0xfe2f) ||
+            (scalar>=0xfe70 && scalar<=0xfeff) || scalar==0x1100 || (scalar>=0x1160 && scalar<=0x11ff) ||
+            (scalar>=0xe0100 && scalar<=0xe01ef);
+        result.MissingSource+=!source;result.MissingAtlas+=!atlas;result.Unsupported+=typography;
+        if((!source || !atlas || typography) && result.Issues.size()<32)result.Issues.push_back({scalar,source,atlas,typography});
+    }
+    return result;
+}
 Font::Font(const std::filesystem::path& path) {CheckThread();Input input(path);Generate(input);}
 Font::Font(Input& input) {Generate(input);}
 void Font::Generate(Input& input) {
@@ -149,10 +205,13 @@ Font::~Font() {
     if(m_Accounted){HZ_CORE_ASSERT(owner==std::this_thread::get_id(),"Font owners must retire on the renderer thread before context teardown");--stats.LiveFonts;}
 }
 Ref<Font> Font::Load(const std::filesystem::path& path,const Ref<Font>& accepted) {
-    CheckThread();Input input(path);
+    CheckThread();Input input(path);Prune();
     for(auto it=cache.begin();it!=cache.end();++it)if(it->Key==input.Key){auto font=it->Data;cache.splice(cache.begin(),cache,it);++stats.Hits;return font;}
     // LRU eviction removes reusable ownership, not the accepted live version.
     if(accepted && accepted->m_IdentityKey==input.Key){++stats.Hits;return accepted;}
+    // Families sharing a still-live face also share it after LRU eviction. This
+    // bounded weak index is not another cache and does not extend retention.
+    for(auto& weak:liveFaces)if(auto live=weak.lock();live && live->m_IdentityKey==input.Key){++stats.Hits;return live;}
     auto retain=[](const Ref<Font>& font) {
         if(!limits.CacheEntries||font->GetAtlasBytes()>limits.CacheBytes)return;
         for(auto it=cache.begin();it!=cache.end();) {
@@ -164,11 +223,11 @@ Ref<Font> Font::Load(const std::filesystem::path& path,const Ref<Font>& accepted
     Ref<Font> font;
     try{font=Ref<Font>(new Font(input));}
     catch(...){if(accepted)retain(accepted);throw;}
-    retain(font);return font;
+    liveFaces.push_back(font);retain(font);return font;
 }
 Ref<Font> Font::GetDefault() {
     CheckThread();
-    if(!s_DefaultFont)s_DefaultFont=CreateRef<Font>(Hazel::Resources::Resolve("fonts/opensans/OpenSans-Regular.ttf"));
+    if(!s_DefaultFont){s_DefaultFont=CreateRef<Font>(Hazel::Resources::Resolve("fonts/opensans/OpenSans-Regular.ttf"));liveFaces.push_back(s_DefaultFont); }
     return s_DefaultFont;
 }
 void Font::ReleaseRoot(const std::filesystem::path& root){

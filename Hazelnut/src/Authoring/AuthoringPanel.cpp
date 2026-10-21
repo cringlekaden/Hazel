@@ -154,6 +154,22 @@ void AuthoringPanel::BindProject()
         m_Editor.m_ContentBrowserPanel->SelectAsset = [this](auto &path) { SelectAsset(path); };
     if (Project::GetActive())
         m_Sprites.Bind(Project::GetActive()->GetAssets());
+    m_Fonts.Bind(Project::GetActive()?Project::GetActive()->GetAssets():nullptr);
+    m_Fonts.Availability=availability;
+    m_Fonts.GuardPending=[this]{return m_Documents.Pending();};
+    m_Fonts.ReportError=[this](const std::string& error){
+        m_Editor.ActionFailed(error);
+        if(m_Fonts.HasDocument() && Project::GetActive()) {
+            const auto file=std::filesystem::weakly_canonical(Project::GetAssetDirectory()/std::filesystem::u8path(m_Fonts.Name()));
+            if(error.find("Document changed on disk: "+file.generic_u8string())!=std::string::npos) {
+                m_ShowSaveConflict=true;m_ConflictDocument=EditorDocument::FontFamily;m_ConflictIdentity=m_Fonts.Identity();
+            }
+        }
+    };
+    m_Fonts.AssetsChanged=[this]{if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->Refresh();};
+    m_Fonts.ReplaceDocument=[this](std::function<bool()> action){Guard(OperationIntent::OpenFontFamily,std::move(action));};
+    m_Fonts.RequestClose=[this]{Guard(OperationIntent::CloseFontFamily,[this]{m_Fonts.Close();if(m_ActiveDocument==EditorDocument::FontFamily)m_ActiveDocument=EditorDocument::Scene;return true;});};
+    if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->CreateFontFamily=[this](const auto& folder){if(Require(EditorAction::EditAsset))m_Fonts.BeginCreate(folder);};
     m_Sprites.ReportError = [this](const std::string &error) { m_Editor.ActionFailed(error); };
     m_Sprites.Availability = availability;
     m_Sprites.AssetsChanged = [this]
@@ -725,6 +741,7 @@ void AuthoringPanel::Menus()
         if(m_Editor.m_ContentBrowserPanel)ImGui::MenuItem("Content Browser",nullptr,&m_Editor.m_ContentBrowserPanel->Visible);
         ImGui::MenuItem("Statistics",nullptr,&m_Editor.m_ShowStats);
         ImGui::MenuItem("Runtime UI Debugger",nullptr,&m_Editor.m_ShowUIDebugger);
+        if(ImGui::MenuItem("Font Family",nullptr,m_Fonts.Visible(),m_Fonts.HasDocument()))m_Fonts.Show();
         if (ImGui::MenuItem("Sprite Sheet", nullptr, m_Sprites.Visible(), m_Sprites.HasDocument()))
             m_Sprites.Show();
         if (ImGui::MenuItem("Prefab Inspector", nullptr, m_ShowPrefab, bool(m_PrefabScene)))
@@ -1248,6 +1265,12 @@ void AuthoringPanel::SelectAsset(const std::filesystem::path &path)
         OpenScript(path);
         return;
     }
+    if(path.extension()==".ttf" || path.extension()==".otf") {
+        if(Require(EditorAction::EditAsset))m_Fonts.BeginCreate(path);return;
+    }
+    if(path.extension()==".hfont") {
+        Guard(OperationIntent::OpenFontFamily,[this,path]{if(!m_Fonts.Open(path))return false;m_ActiveDocument=EditorDocument::FontFamily;return true;});return;
+    }
     if (path.extension() == ".hsprites")
     {
         Guard(OperationIntent::OpenSheet,
@@ -1469,6 +1492,8 @@ void AuthoringPanel::Render()
     Scripts();
     Export();
     Prefabs();
+    m_Fonts.Render(bool(Availability(EditorAction::EditAsset)));
+    if(m_Fonts.Focused()){if(m_ActiveDocument!=EditorDocument::FontFamily)CancelEdits();m_ActiveDocument=EditorDocument::FontFamily;}
     m_Sprites.Render(bool(Availability(EditorAction::EditAsset)));
     if (m_Sprites.Focused()) {if(m_ActiveDocument!=EditorDocument::Sheet)CancelEdits();m_ActiveDocument=EditorDocument::Sheet;}
     HistoryFeedback(m_SceneHistory);HistoryFeedback(m_PrefabHistory);

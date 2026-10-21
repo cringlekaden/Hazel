@@ -218,7 +218,6 @@ std::string SceneSerializer::CaptureAuthoredState() const
             for(const auto *tracks:{&c.Columns,&c.Rows}){state.Value(uint64_t(tracks->size()));for(const auto&t:*tracks){state.Value(int(t.Mode));state.Value(t.Value);state.Value(t.Minimum);state.Value(t.Maximum);state.Value(t.HasMaximum);}}
         });
         state.Component<UITextStyleComponent>(e, [&](auto &c) {
-            state.Value(c.FontPath);
             state.Value(c.Size);
             state.Value(int(c.Horizontal));
             state.Value(int(c.Vertical));
@@ -239,6 +238,7 @@ std::string SceneSerializer::CaptureAuthoredState() const
         });
         state.Component<TextComponent>(e, [&](auto &c) {
             state.Value(c.TextString);
+            state.Value(c.Font.Family);state.Value(int(c.Font.Style));
             state.Value(c.Color);
             state.Value(c.Kerning);
             state.Value(c.LineSpacing);

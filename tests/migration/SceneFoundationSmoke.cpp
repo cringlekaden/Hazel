@@ -14,6 +14,7 @@
 #include "Hazel/Project/ProjectSerializer.h"
 #include "Hazel/Assets/ProjectAssets.h"
 #include "Hazel/Assets/SpriteSheetDocument.h"
+#include "Hazel/Assets/FontFamilyDocument.h"
 #include <fstream>
 #include <algorithm>
 #include <entt.hpp>
@@ -34,9 +35,11 @@ static void AuthoredComparisonContracts() {
     e.AddComponent<SpriteRendererComponent>();e.AddComponent<SpriteAnimationComponent>();
     e.AddComponent<AudioSourceComponent>();e.AddComponent<CameraComponent>();e.AddComponent<ScriptComponent>();
     e.AddComponent<Rigidbody2DComponent>();e.AddComponent<BoxCollider2DComponent>();e.AddComponent<CircleCollider2DComponent>();
-    e.AddComponent<TextComponent>(TextComponent{"",nullptr});e.AddComponent<CircleRendererComponent>();
+    e.AddComponent<TextComponent>(TextComponent{});e.AddComponent<CircleRendererComponent>();
     SceneSerializer serializer(scene);const auto baseline=serializer.CaptureAuthoredState();
     auto changed=[&](auto& field,auto value){const auto old=field;field=value;Check(serializer.CaptureAuthoredState()!=baseline,"Persisted edit did not dirty exact authored state");field=old;Check(serializer.CaptureAuthoredState()==baseline,"Revert did not restore exact authored state");};
+    changed(e.GetComponent<TextComponent>().Font.Family,std::filesystem::path("Fonts/Owned.hfont"));
+    changed(e.GetComponent<TextComponent>().Font.Style,FontStyle::Bold);
     changed(e.GetComponent<TagComponent>().Tag,std::string("Changed"));
     changed(e.GetComponent<TransformComponent>().Translation,glm::vec3(1,2,0));
     changed(e.GetComponent<SpriteRendererComponent>().Color,glm::vec4(.4f));
@@ -183,12 +186,25 @@ static void StorageChecks() {
     std::cout<<"PASS: project save isolation, editor overlay, UTF-8 atomic replace, traversal/size/corrupt/future rejection\n";
 }
 
+static void CPUFontFamilyDocument() {
+    using namespace Hazel;const auto root=std::filesystem::temp_directory_path()/("hazel-cpu-family-"+std::to_string(uint64_t(UUID())));
+    std::filesystem::create_directories(root);
+    struct Cleanup{std::filesystem::path Root;~Cleanup(){std::error_code ec;std::filesystem::remove_all(Root,ec);}} cleanup{root};
+    std::filesystem::copy_file("assets/fonts/opensans/OpenSans-Regular.ttf",root/"face.ttf");
+    std::filesystem::copy_file("assets/fonts/opensans/LICENSE.txt",root/"LICENSE.txt");
+    FontFamilyDefinition definition;definition.Faces[0]={"face.ttf",{"LICENSE.txt"}};definition.Required="café";
+    {auto assets=CreateRef<ProjectAssets>(root);FontFamilyDocument document(assets);document.Create("CPU.hfont",definition);
+     document.Draft().Name="CPU saved";document.Changed();document.Save();
+     Check(!document.Dirty() && AuditFontFamily(root,"CPU.hfont").size()==3,"CPU-only family authoring/closure failed");}
+    std::cout<<"PASS: font-family create/save/coverage/closure/retirement without a renderer or application\n";
+}
 int main()
 {
     try {
         StorageChecks();
         Hazel::Log::Init();
         AuthoredComparisonContracts();
+        CPUFontFamilyDocument();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();
         Hazel::ProjectCreationChecks();Hazel::RendererPolicyChecks(); Hazel::HierarchyChecks(); Hazel::SubtreePrefabChecks();

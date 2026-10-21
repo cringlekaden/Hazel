@@ -1,5 +1,6 @@
 #pragma once
 #include "SpriteSheet.h"
+#include "FontFamily.h"
 #include "Hazel/Renderer/Font.h"
 #include <unordered_map>
 namespace Hazel {
@@ -19,12 +20,24 @@ struct ResolvedClip {
     const SpriteClip& Definition() const { return Sheet->Clip(ID); }
 };
 struct FontResolution { Ref<Font> Actual; std::string Error; bool Fallback=false; };
+struct TextComponent;
+struct FamilyResolution {
+    Ref<Font> Actual;
+    FontStyle Requested=FontStyle::Regular, Selected=FontStyle::Regular;
+    std::filesystem::path Face;
+    std::string Error;
+    bool StyleFallback=false, DefaultFallback=false;
+};
 class ProjectAssets {
 public:
     explicit ProjectAssets(std::filesystem::path root):m_Root(std::filesystem::weakly_canonical(root)) {}
     ~ProjectAssets();
     const std::filesystem::path& Root() const {return m_Root;}
     uint64_t Epoch() const {return m_Epoch;}
+    Ref<Font> FamilyFont(const FontSelection& selection);
+    FamilyResolution FamilyStatus(const FontSelection& selection);
+    Ref<const FontFamilyDefinition> Family(const std::filesystem::path& reference);
+    void ImportFontFile(const std::filesystem::path& source,const std::filesystem::path& destination,bool face);
     Ref<Font> FontAsset(const std::filesystem::path& reference);
     FontResolution FontStatus(const std::filesystem::path& reference);
     Ref<const SpriteSheetDefinition> Sheet(const std::filesystem::path& reference);
@@ -37,6 +50,12 @@ public:
 private:
     std::filesystem::path m_Root; uint64_t m_Epoch=1;
     struct SheetEntry { Ref<const SpriteSheetDefinition> Data; std::string Error; };
+    struct FamilyFace {std::weak_ptr<Font> Accepted;std::string Error;bool Loaded=false;};
+    struct FamilyEntry {Ref<const FontFamilyDefinition> Accepted;std::array<FamilyFace,4> Faces;std::string Error;};
+    std::unordered_map<std::string,FamilyEntry> m_Families;
+    FamilyEntry* FamilyEntryFor(const std::filesystem::path& reference);
+    void ReloadFamily(const std::string& key,FamilyEntry& entry);
+    Ref<Font> ResolveFamilyFace(const std::string& key,FamilyEntry& entry,FontStyle style);
     struct FontEntry {std::weak_ptr<Font> Accepted;std::string Error;};
     std::unordered_map<std::string,FontEntry> m_Fonts;
     bool m_FontLimitReported=false;
@@ -46,6 +65,8 @@ private:
     std::unordered_map<std::string,Ref<const ResolvedSprite>> m_Sprites;
     std::unordered_map<std::string,Ref<const ResolvedClip>> m_Clips;
 };
+// Shared UI/world face resolution, retaining the accepted face on the active text component.
+Ref<Font> ResolveTextFont(TextComponent& text,const Ref<ProjectAssets>& assets);
 // CPU-only closure validation shared by export and editor reference scans.
 struct SpriteAssetUse { std::filesystem::path File; std::string Location; SpriteReference Sprite; AnimationReference Animation; };
 std::vector<SpriteAssetUse> FindSpriteAssetUses(const std::filesystem::path& root,const std::vector<std::filesystem::path>& files);

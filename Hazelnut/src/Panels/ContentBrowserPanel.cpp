@@ -23,6 +23,8 @@ const char *Type(const std::filesystem::path &path)
     if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".bmp" ||
         extension == ".tga")
         return "Texture";
+    if (extension == ".hfont")return "Font Family";
+    if (extension == ".ttf" || extension == ".otf")return "Font Face";
     if (extension == ".hsprites")
         return "Sprite Sheet";
     if (extension == ".hprefab")
@@ -131,6 +133,8 @@ void ContentBrowserPanel::OnImGuiRender()
     ImGui::BeginDisabled(!canImport);
     if (ImGui::Button("Import Texture...") && Allowed(EditorAction::EditAsset) && ImportTexture)
         ImportTexture();
+    PropertyUI::WrapButton("New Font Family...");
+    if(ImGui::Button("New Font Family...") && CreateFontFamily && Allowed(EditorAction::EditAsset))CreateFontFamily(Folder());
     ImGui::EndDisabled();
     PropertyUI::Help(canImport.Reason ? canImport.Reason
                                       : "Copies into Assets; optional sheet creation is a separate step");
@@ -168,7 +172,7 @@ void ContentBrowserPanel::OnImGuiRender()
     if (ImGui::Button("X##clear-search"))
         m_Search.clear();
     PropertyUI::Help("Clear search");
-    PropertyUI::Combo("type", "Type", m_Type, "All\0Texture\0Sprite Sheet\0Prefab\0Scene\0Script\0Other\0");
+    PropertyUI::Combo("type", "Type", m_Type, "All\0Texture\0Sprite Sheet\0Prefab\0Scene\0Script\0Other\0Font Family\0Font Face\0");
     if ((!m_Search.empty() || m_Type) && ImGui::SmallButton("Reset filters"))
     {
         m_Search.clear();
@@ -177,7 +181,7 @@ void ContentBrowserPanel::OnImGuiRender()
     if (!m_Search.empty() || m_Type)
         ImGui::TextDisabled("Searching all Assets");
     PropertyUI::Validation(m_Error.c_str());
-    const char *types[] = {"All", "Texture", "Sprite Sheet", "Prefab", "Scene", "Script", "Other"};
+    const char *types[] = {"All", "Texture", "Sprite Sheet", "Prefab", "Scene", "Script", "Other", "Font Family", "Font Face"};
     std::vector<const Entry *> visible;
     const auto query = Lower(m_Search);
     for (const auto &entry : m_Entries)
@@ -237,6 +241,7 @@ void ContentBrowserPanel::OnImGuiRender()
                 if (!entry->Directory && entry->Type == "Texture" && CreateSpriteSheet &&
                     ImGui::MenuItem("Create Sprite Sheet...") && Allowed(EditorAction::EditAsset))
                     CreateSpriteSheet(entry->Path);
+                if(!entry->Directory && entry->Type=="Font Face" && CreateFontFamily && ImGui::MenuItem("Create Font Family...") && Allowed(EditorAction::EditAsset))CreateFontFamily(entry->Path);
                 ImGui::EndDisabled();
                 ImGui::EndPopup();
             }

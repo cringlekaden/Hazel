@@ -8,6 +8,11 @@ static void EditorDocumentChecks()
     std::vector<DocumentInfo> docs = {{EditorDocument::Scene, 10, "Scene", true, {}},
                                       {EditorDocument::Prefab, 20, "Prefab", true, {}},
                                       {EditorDocument::Sheet, 30, "Sheet", true, {}}};
+    Check(EditorDocuments::Affects(OperationIntent::OpenFontFamily,EditorDocument::FontFamily) &&
+          !EditorDocuments::Affects(OperationIntent::OpenFontFamily,EditorDocument::Scene) &&
+          EditorDocuments::Affects(OperationIntent::Play,EditorDocument::FontFamily) &&
+          EditorDocuments::Affects(OperationIntent::CloseEditor,EditorDocument::FontFamily),
+          "Family document replacement/Play/close isolation contract missing");
     EditorDocuments guard;
     int operations = 0, saves = 0;
     auto action = [&]

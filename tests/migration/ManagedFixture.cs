@@ -198,6 +198,15 @@ namespace Migration {
             text.Text="\ufeffManaged UI";
             if(text.Text[0]!='\ufeff')throw new System.Exception("Managed BOM text was not accepted/preserved");
             text.Text="Managed UI";
+            text.SetFont("Fonts/Runtime.hfont",Hazel.FontStyle.BoldItalic);
+            if(text.FontFamily!="Fonts/Runtime.hfont" || text.Style!=Hazel.FontStyle.BoldItalic)throw new System.Exception("Managed family/style roundtrip failed");
+            foreach(var path in new[]{"../outside.hfont","Fonts/raw.ttf","C:/external.hfont","invalid\ud800.hfont"}) {
+                bool rejected=false;try{text.FontFamily=path;}catch(System.ArgumentException){rejected=true;}
+                if(!rejected || text.FontFamily!="Fonts/Runtime.hfont")throw new System.Exception("Invalid family selection changed accepted state");
+            }
+            bool invalidStyle=false;try{text.Style=(Hazel.FontStyle)99;}catch(System.ArgumentException){invalidStyle=true;}
+            if(!invalidStyle || text.Style!=Hazel.FontStyle.BoldItalic)throw new System.Exception("Invalid style changed accepted state");
+            text.SetFont("");
             if(rect.LayoutVersion!=3)throw new System.Exception("Canonical UI schema mismatch");
             var measured=FindEntityByName("Measured API target").GetComponent<Hazel.UIRectComponent>();
             measured.Width=new Hazel.UISizing(Hazel.UISizeMode.Fixed,137,20,150);

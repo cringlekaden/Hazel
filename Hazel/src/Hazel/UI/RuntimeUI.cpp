@@ -64,7 +64,7 @@ void RuntimeUI::Reset()
     m_Resolved.Guides.clear();
     m_Resolved.Warnings.clear();
     m_Source.clear();
-    m_Cache.clear();
+    m_Cache.clear();m_AssetOwner.reset();
     m_GPUTimer.reset();m_PaintSubmission=0;m_PreparedBytes=0;
     m_Diagnostics = {};
     m_OuterDrops = m_ReportedDrops = 0;
@@ -83,11 +83,17 @@ void RuntimeUI::Retire(uint64_t id)
 void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
 {
     ++m_Diagnostics.SourceChecks;
+    auto assets=m_Scene.GetAssets();
+    if(m_AssetOwner.owner_before(assets) || assets.owner_before(m_AssetOwner)) {
+        // Ownership identity includes expired control blocks, so allocator address
+        // reuse and equal numeric epochs cannot hide a project replacement.
+        m_AssetOwner=assets;++m_AssetGeneration;m_Cache.clear();m_PreparedBytes=0;CancelInput();
+    }
     m_Candidate.clear();
     m_RectIDs.clear();
     m_CanvasIDs.clear();
     DependencyBytes state{m_Candidate};
-    state.Add(m_Scene.GetIdentity());
+    state.Add(m_Scene.GetIdentity());state.Add(m_AssetGeneration);
     state.Add(surface.Viewport);
     state.Add(surface.Framebuffer);
     state.Add(previewOrphans);
@@ -130,10 +136,11 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
                 state.Add(e.HasComponent<TextComponent>());
                 if(e.HasComponent<TextComponent>()){
                     auto &text=e.GetComponent<TextComponent>();
+                    if(text.Font.Family.native().size()>1024 || unsigned(text.Font.Style)>3)throw std::invalid_argument("Invalid native text family/style");
                     if(text.TextString.size()>65536)throw std::invalid_argument("UI text exceeds 64 KiB");
                     state.Add(text.TextString);state.Add(text.Kerning);state.Add(text.LineSpacing);
                     auto style=e.HasComponent<UITextStyleComponent>()?e.GetComponent<UITextStyleComponent>():UITextStyleComponent{};
-                    state.Add(style.FontPath);state.Add(style.Size);state.Add(style.Wrap);
+                    state.Add(text.Font.Family);state.Add(int(text.Font.Style));state.Add(style.Size);state.Add(style.Wrap);
                 }
                 state.Add(e.HasComponent<SpriteRendererComponent>());
                 if(e.HasComponent<SpriteRendererComponent>()){
@@ -835,17 +842,14 @@ void RuntimeUI::Draw()
                     style.Vertical < Align::Start || style.Vertical > Align::End ||
                     !std::isfinite(t.Kerning) || !std::isfinite(t.LineSpacing))
                     throw std::invalid_argument("Invalid native UI text style/spacing");
-                if (!style.FontPath.empty() && style.FontPath.extension() != ".ttf" &&
-                    style.FontPath.extension() != ".otf")
-                    throw std::invalid_argument("UI font must be a project TTF/OTF");
                 auto &cache = m_Cache[e.GetUUID()];
                 const auto assets = m_Scene.GetAssets();
                 const auto epoch = assets ? assets->Epoch() : 1;
-                if (!cache.FontAsset || cache.FontPath != style.FontPath || cache.Epoch != epoch)
+                if (!cache.FontAsset || cache.Selection != t.Font || cache.Epoch != epoch)
                 {
                     cache.FontAsset =
-                        assets ? assets->FontAsset(style.FontPath) : Font::GetDefault();
-                    cache.FontPath = style.FontPath;
+                        ResolveTextFont(t,assets);
+                    cache.Selection = t.Font;
                     cache.Epoch = epoch;
                     cache.Width = -1;
                     cache.PreparedValid = false;

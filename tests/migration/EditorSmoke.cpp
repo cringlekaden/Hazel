@@ -74,6 +74,7 @@ public:
             EditorLayoutChecks();
             HistoryWorkflowChecks();
             ContainerWorkflowChecks();
+            FontFamilyWorkflowChecks();
             CaptionChecks();
             WorkspaceChecks();
             NativeCreationChecks();
@@ -389,6 +390,7 @@ private:
     void OnImGuiRender() override {
         if(m_Frame==3) {
             DrawContainerFixture();
+            DrawFontFamilyFixture();
             auto scene=m_Editor.m_ActiveScene;scene->RefreshUI();
             auto before=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
             auto generation=scene->GetUISnapshot().Generation;bool shown=m_Editor.m_ShowUIDebugger;
@@ -858,6 +860,7 @@ private:
     }
     #include "EditorHistoryWorkflowChecks.h"
     #include "EditorContainerWorkflowChecks.h"
+    #include "EditorFontFamilyWorkflowChecks.h"
     void HierarchyAuthoringChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=e.m_SceneHierarchyPanel;
         const auto scene=e.m_EditorScene;const auto before=a.SceneText();const auto saved=a.m_SceneHistory.SavedAuthored();
@@ -1300,6 +1303,7 @@ private:
         Check(!e.SaveProject(),"Failed project save reported success"); e.m_ProjectPath=projectPath; preserved();
         Check(Read(scenePath)==priorScene && Read(projectPath)==priorProject,"Failed save changed prior scene/project bytes");
     }
+    Scope<FontFamilyPanel> m_FamilyFixture;
     Ref<Scene> m_ContainerFixture;
     SceneHierarchyPanel m_ContainerFixturePanel;
     Ref<Framebuffer> m_ContainerPreview;

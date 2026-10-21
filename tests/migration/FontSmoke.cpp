@@ -49,6 +49,7 @@ static void CheckAtlas(const Hazel::Ref<Hazel::Font>& font)
     Check(glGetError()==GL_NO_ERROR,"Font atlas OpenGL error");
 }
 #include "FontResourceChecks.h"
+#include "FontFamilyChecks.h"
 int main()
 {
     try {
@@ -66,13 +67,13 @@ int main()
                 Hazel::Application application(specification);
                 glfwHideWindow(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()));
                 std::cout<<"Renderer: "<<glGetString(GL_RENDERER)<<"; Version: "<<glGetString(GL_VERSION)<<'\n';
-                if(iteration==0)FontResourceChecks(fixture.Directory);
+                if(iteration==0){FontResourceChecks(fixture.Directory);FontFamilyChecks(fixture.Directory);}
                 auto font=Hazel::Font::GetDefault();
                 cache=font;
                 Check(Hazel::Font::GetDefault()==font,"Default font cache not shared");
                 CheckAtlas(font);
                 Hazel::TextComponent text;
-                Check(text.FontAsset==font,"Target text component lost default font");
+                Check(Hazel::ResolveTextFont(text,{})==font,"Target text component lost default font");
                 auto other=Hazel::CreateRef<Hazel::Font>(unicode);
                 CheckAtlas(other);
                 Reject([&]{ Hazel::CreateRef<Hazel::Font>(fixture.Directory/"missing.ttf"); },"Missing font accepted");

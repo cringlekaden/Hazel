@@ -36,7 +36,7 @@ namespace Hazel {
             for (const auto *text : {&s.Scene, &s.BrowserFolder, &s.BrowserSearch, &s.Sheet,
                                      &s.Prefab, &s.ExportFolder, &s.ExportName})
                 Text(*text);
-            if (s.BrowserType < 0 || s.BrowserType > 6 || !std::isfinite(s.Thumbnail) ||
+            if (s.BrowserType < 0 || s.BrowserType > 8 || !std::isfinite(s.Thumbnail) ||
                 s.Thumbnail < 32 || s.Thumbnail > 160 || !std::isfinite(s.Pitch) ||
                 !std::isfinite(s.Yaw) || !std::isfinite(s.Distance) || s.Distance < .1f ||
                 s.Distance > 100000)

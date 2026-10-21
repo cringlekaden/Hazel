@@ -29,6 +29,7 @@ std::vector<DocumentInfo> AuthoringPanel::Documents() const
     if (m_Sprites.HasDocument())
         docs.push_back({EditorDocument::Sheet, m_Sprites.Identity(), m_Sprites.Name(), m_Sprites.Dirty(),
                         canSaveAsset ? "" : canSaveAsset.Reason});
+    if(m_Fonts.HasDocument())docs.push_back({EditorDocument::FontFamily,m_Fonts.Identity(),m_Fonts.Name(),m_Fonts.Dirty(),canSaveAsset?"":canSaveAsset.Reason});
     return docs;
 }
 DocumentSaveResult AuthoringPanel::SaveDocument(const DocumentInfo &document)
@@ -54,6 +55,9 @@ DocumentSaveResult AuthoringPanel::SaveDocument(const DocumentInfo &document)
             break;
         case EditorDocument::Sheet:
             saved = m_Sprites.Save();
+            break;
+        case EditorDocument::FontFamily:
+            saved=m_Fonts.Save();
             break;
         case EditorDocument::Prefab:
             if (!Require(EditorAction::SaveAsset))
@@ -162,7 +166,7 @@ bool AuthoringPanel::SaveActive(bool saveAs)
     auto found = std::find_if(docs.begin(), docs.end(),
                               [&](const auto &doc) { return doc.Kind == m_ActiveDocument; });
     if (found == docs.end())
-        return m_Editor.ActionFailed("Focus a scene, prefab or sprite sheet document first");
+        return m_Editor.ActionFailed("Focus a scene, prefab, sprite sheet or font family first");
     if (saveAs)
     {
         if (m_ActiveDocument != EditorDocument::Scene)

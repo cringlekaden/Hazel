@@ -106,7 +106,6 @@ FIELD(Flow, Rows);
     }
     COMPONENT(Style)
     {
-        FIELD(Style, FontPath);
         FIELD(Style, Size);
         FIELD(Style, Horizontal);
         FIELD(Style, Vertical);
@@ -131,6 +130,7 @@ FIELD(Flow, Rows);
     COMPONENT(Text)
     {
         FIELD(Text, Text);
+        FIELD(Text, Font);
         FIELD(Text, Color);
         FIELD(Text, Kerning);
         FIELD(Text, LineSpacing);
@@ -156,6 +156,7 @@ size_t Storage(const std::filesystem::path &v)
 {
     return (v.native().capacity() + 1) * sizeof(std::filesystem::path::value_type);
 }
+size_t Storage(const FontSelection &v) {return Storage(v.Family);}
 size_t Storage(const SpriteSource &v)
 {
     if (auto t = std::get_if<TextureSpriteSource>(&v))
@@ -222,19 +223,7 @@ void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
         if (s.Size > 512 || int(s.Horizontal) < 0 || int(s.Horizontal) > 2 || int(s.Vertical) < 0 ||
             int(s.Vertical) > 2)
             throw std::invalid_argument("Invalid text style size/alignment");
-        if (!s.FontPath.empty() && (!old.Style || s.FontPath != old.Style->FontPath))
-        {
-            auto assets = scene.GetAssets();
-            if (!assets)
-                throw std::invalid_argument("Open a project before assigning a font");
-            if ((s.FontPath.extension() != ".ttf" && s.FontPath.extension() != ".otf") ||
-                s.FontPath.generic_u8string().find(':') != std::string::npos)
-                throw std::invalid_argument("Font must be a project-relative TTF/OTF");
-            // History restores authored references even if the file retired since
-            // the edit. Inspector assignment validates input; resolution reports
-            // errors and keeps accepted resources/fallback without rewriting paths.
-            (void)Project::ResolveOwnedAsset(assets->Root(), s.FontPath);
-        }
+
     }
     if (v.Slice)
     {
@@ -258,7 +247,11 @@ void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
     {
         if (v.Text->Text.size() > 65536)
             throw std::invalid_argument("UI text exceeds 64 KiB");
-        UTF8::Validate(v.Text->Text);
+        UTF8::Validate(v.Text->Text);v.Text->Font.Validate();
+        if(!v.Text->Font.Family.empty()) {
+            auto assets=scene.GetAssets();if(!assets)throw std::runtime_error("Text family needs project assets");
+            (void)Project::ResolveOwnedAsset(assets->Root(),v.Text->Font.Family);
+        }
         Finite(v.Text->Color);
         if (!std::isfinite(v.Text->Kerning) || !std::isfinite(v.Text->LineSpacing))
             throw std::invalid_argument("Text spacing must be finite");
@@ -360,7 +353,7 @@ FIELD(Flow, Columns);
 FIELD(Flow, Rows);
 
 }
-COMPONENT(Style, UITextStyleComponent) FIELD(Style, FontPath);
+COMPONENT(Style, UITextStyleComponent)
 FIELD(Style, Size);
 FIELD(Style, Horizontal);
 FIELD(Style, Vertical);
@@ -379,6 +372,7 @@ for (int i = 0; i < 5; ++i)
 }
 }
 COMPONENT(Text, TextComponent) change(c.TextString, old.Text->Text, next.Text->Text);
+FIELD(Text, Font);
 FIELD(Text, Color);
 FIELD(Text, Kerning);
 FIELD(Text, LineSpacing);
