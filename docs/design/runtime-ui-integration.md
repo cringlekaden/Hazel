@@ -790,7 +790,8 @@ retire on the renderer thread before Application teardown, as with other GPU Ref
 shutdown diagnoses remaining owners, and construction/cache APIs reject wrong
 threads. This is not an asynchronous font-generation API.
 
-Default limits (tests may lower them only with no live owners):
+Default limits (tests may lower them only with no live owners; a valid cache
+configuration must admit at least one maximum-size atlas):
 
 | Resource | Limit / accounting |
 | --- | --- |

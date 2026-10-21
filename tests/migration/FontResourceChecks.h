@@ -8,6 +8,8 @@ static void FontResourceChecks(const std::filesystem::path& root) {
     copy(regular,a);copy(regular,b);
     const auto atlasBytes=Hazel::Font::GetDefault()->GetAtlasBytes();
     Hazel::Font::Shutdown();Hazel::FontLimits limits;limits.CacheEntries=1;limits.LiveAtlases=3;
+    auto invalidLimits=limits;invalidLimits.CacheEntries=0;
+    Reject([&]{Hazel::Font::Initialize(invalidLimits);},"Non-admitting cache configuration accepted");
     Hazel::Font::Initialize(limits);
     {
         auto fallback=Hazel::Font::GetDefault();
@@ -35,7 +37,7 @@ static void FontResourceChecks(const std::filesystem::path& root) {
         Check(wrongThread,"Font graphics generation accepted the wrong thread");
     }
     Hazel::Font::Shutdown();Check(Hazel::Font::Resources().LiveAtlases==0,"Inactive atlases retained after shutdown");
-    limits.LiveAtlases=16;limits.LiveAtlasBytes=2*atlasBytes;limits.CacheEntries=8;limits.CacheBytes=atlasBytes;Hazel::Font::Initialize(limits);
+    limits.LiveAtlases=16;limits.LiveAtlasBytes=2*atlasBytes;limits.CacheEntries=8;limits.CacheBytes=atlasBytes;limits.AtlasBytes=atlasBytes;Hazel::Font::Initialize(limits);
     {
         auto fallback=Hazel::Font::GetDefault();auto font=Hazel::Font::Load(a);
         Hazel::Renderer2D::BeginOrderedScene(Hazel::Camera(glm::mat4(1)),glm::mat4(1));

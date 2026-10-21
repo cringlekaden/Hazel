@@ -72,7 +72,7 @@ void Font::Initialize(const FontLimits& requested) {
     if(!requested.InputBytes||requested.InputBytes>4*1024*1024||!requested.AtlasDimension||requested.AtlasDimension>1024||
        !requested.AtlasBytes||requested.AtlasBytes>3*1024*1024||!requested.LiveAtlases||requested.LiveAtlases>24||
        !requested.LiveAtlasBytes||requested.LiveAtlasBytes>24*1024*1024||!requested.GeneratorBytes||requested.GeneratorBytes>32*1024*1024||
-       requested.CacheEntries>8||requested.CacheBytes>12*1024*1024)
+       !requested.CacheEntries||requested.CacheEntries>8||requested.CacheBytes<requested.AtlasBytes||requested.CacheBytes>12*1024*1024)
         throw std::invalid_argument("Invalid font resource limits");
     owner=std::this_thread::get_id();limits=requested;stats={};
 }

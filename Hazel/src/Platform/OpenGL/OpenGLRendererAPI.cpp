@@ -75,9 +75,11 @@ namespace Hazel {
     }
     void OpenGLRendererAPI::SetTextCompositing(bool text) {
         if(!m_TextBlend.Active || m_TextBlend.Text==text)return;
-        glBlendFuncSeparatei(0,m_TextBlend.SourceRGB,m_TextBlend.DestinationRGB,
-            text?GL_ONE:m_TextBlend.SourceAlpha,text?GL_ONE_MINUS_SRC_ALPHA:m_TextBlend.DestinationAlpha);
-        glBlendEquationSeparatei(0,m_TextBlend.EquationRGB,text?GL_FUNC_ADD:m_TextBlend.EquationAlpha);
+        if(m_TextBlend.SourceAlpha!=GL_ONE || m_TextBlend.DestinationAlpha!=GL_ONE_MINUS_SRC_ALPHA)
+            glBlendFuncSeparatei(0,m_TextBlend.SourceRGB,m_TextBlend.DestinationRGB,
+                text?GL_ONE:m_TextBlend.SourceAlpha,text?GL_ONE_MINUS_SRC_ALPHA:m_TextBlend.DestinationAlpha);
+        if(m_TextBlend.EquationAlpha!=GL_FUNC_ADD)
+            glBlendEquationSeparatei(0,m_TextBlend.EquationRGB,text?GL_FUNC_ADD:m_TextBlend.EquationAlpha);
         m_TextBlend.Text=text;
     }
     void OpenGLRendererAPI::EndTextCompositing() {
