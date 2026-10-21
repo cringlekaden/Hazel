@@ -40,6 +40,7 @@ static void Check(bool value, const char *why)
 #include "ContainerSceneChecks.h"
 #include "ImageFitSceneChecks.h"
 #include "RuntimeUIPaintChecks.h"
+#include "FontReloadSceneChecks.h"
 struct UIFixture
 {
     Ref<Scene> World=CreateRef<Scene>();Entity Canvas,Group,Control;
@@ -138,6 +139,7 @@ int main(int argc,char** argv)
         ContainerSceneChecks(root);
         ImageFitSceneChecks(root);
         RuntimeUIPaintChecks(root);
+        FontReloadSceneChecks(root);
         auto scene = CreateRef<Scene>();
         scene->SetAssets(CreateRef<ProjectAssets>(root));
         scene->OnViewportResize(320, 240);

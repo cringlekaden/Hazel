@@ -139,3 +139,26 @@ Retained glyph geometry is capped at 16 MiB per scene; labels over 4 KiB and
 budget-exhausted labels draw through uncached preparation. This cap does not bound
 all font/atlas or document memory. Large alternating image/text interfaces still
 need many ordered draws; the implementation record documents the measured limits.
+
+Text antialiasing uses straight tint RGB and coverage × authored opacity as source
+alpha. World/UI text shares the correction; brighter edges are expected. Text
+writes source-over alpha and restores blend state before images. The engine has
+no automatic sRGB conversion; mixed transparent targets still inherit the older
+sprite-alpha semantics and are not general opacity layers.
+
+**UI Text Style** shows the actual atlas and has **Reload font** for explicit
+freshness. Failed reload keeps the accepted font; first-load failures use shipped
+Open Sans. The authored path remains intact and the Inspector/debugger explains
+the error/fallback. Repair the file and Reload, or use the normal asset Refresh
+before Play. A failure is cached rather than retried every frame. Missing-font
+scenes can be saved/reopened for repair; export still rejects invalid closure.
+Undo/Redo restores authored paths even if a file subsequently disappears.
+
+**Runtime UI Debugger → Font resources** shows cache/live/pinned atlas estimates.
+The reusable LRU retains at most eight fonts/12 MiB; all live atlas objects,
+including active text/draw pins and default, are admitted within 24/24 MiB.
+Pinned resources can prevent a new font loading; release unused screens/resources
+and Reload to retry. Per-face input is limited to 4 MiB and atlas to 1024²/3 MiB.
+Estimates exclude driver and dependency scratch/outline memory. Fixed Latin-1,
+replacement `?`, strict UTF-8 and the existing lack of shaping/fallback families
+remain unchanged; correct coverage does not expand character support.

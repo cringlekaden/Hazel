@@ -153,7 +153,9 @@ void Scene::ValidateUI(bool resources)
             {
                 if (!m_Assets)
                     throw std::runtime_error("UI font needs project assets");
-                Font::ValidateFile(Project::ResolveOwnedAsset(m_Assets->Root(), path));
+                (void)Project::ResolveOwnedAsset(m_Assets->Root(),path);
+                // Structural validation preserves authored references when a resource fails.
+                // Export closure remains strict; runtime resolution reports/falls back locally.
                 if (resources)
                     m_Assets->FontAsset(path);
             }

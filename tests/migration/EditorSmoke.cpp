@@ -396,7 +396,7 @@ private:
             m_Editor.m_ShowUIDebugger=true;
             ImGui::SetNextWindowCollapsed(false,ImGuiCond_Always);
             ImGui::Begin("Runtime UI Debugger");
-            ImGui::GetStateStorage()->SetInt(ImGui::GetID("Rendering costs"),1);ImGui::End();
+            ImGui::GetStateStorage()->SetInt(ImGui::GetID("Rendering costs"),1);ImGui::GetStateStorage()->SetInt(ImGui::GetID("Font resources"),1);ImGui::End();
             m_Editor.UI_Debugger();m_Editor.m_ShowUIDebugger=shown;
             ImGui::FocusWindow(previousFocus);
             GameUI::Action action;

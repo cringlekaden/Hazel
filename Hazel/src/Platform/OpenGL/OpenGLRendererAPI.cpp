@@ -63,6 +63,27 @@ namespace Hazel {
         glEnable(GL_LINE_SMOOTH);
     }
 
+    void OpenGLRendererAPI::BeginTextCompositing() {
+        if(m_TextBlend.Active)throw std::logic_error("Nested text compositing scope");
+        glGetIntegeri_v(GL_BLEND_SRC_RGB,0,&m_TextBlend.SourceRGB);
+        glGetIntegeri_v(GL_BLEND_DST_RGB,0,&m_TextBlend.DestinationRGB);
+        glGetIntegeri_v(GL_BLEND_SRC_ALPHA,0,&m_TextBlend.SourceAlpha);
+        glGetIntegeri_v(GL_BLEND_DST_ALPHA,0,&m_TextBlend.DestinationAlpha);
+        glGetIntegeri_v(GL_BLEND_EQUATION_RGB,0,&m_TextBlend.EquationRGB);
+        glGetIntegeri_v(GL_BLEND_EQUATION_ALPHA,0,&m_TextBlend.EquationAlpha);
+        m_TextBlend.Active=true;m_TextBlend.Text=false;
+    }
+    void OpenGLRendererAPI::SetTextCompositing(bool text) {
+        if(!m_TextBlend.Active || m_TextBlend.Text==text)return;
+        glBlendFuncSeparatei(0,m_TextBlend.SourceRGB,m_TextBlend.DestinationRGB,
+            text?GL_ONE:m_TextBlend.SourceAlpha,text?GL_ONE_MINUS_SRC_ALPHA:m_TextBlend.DestinationAlpha);
+        glBlendEquationSeparatei(0,m_TextBlend.EquationRGB,text?GL_FUNC_ADD:m_TextBlend.EquationAlpha);
+        m_TextBlend.Text=text;
+    }
+    void OpenGLRendererAPI::EndTextCompositing() {
+        SetTextCompositing(false);m_TextBlend.Active=false;
+    }
+
     void OpenGLRendererAPI::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
     {
         glViewport(static_cast<GLint>(x), static_cast<GLint>(y), static_cast<GLsizei>(width), static_cast<GLsizei>(height));

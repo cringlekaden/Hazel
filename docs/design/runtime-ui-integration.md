@@ -751,3 +751,79 @@ behavior. Keep the existing layout model and painter-run contracts. Larger
 scrolling/data views should wait for their navigation/control prerequisites and
 a visible-item/virtualization budget that accounts for the measured mixed-run
 cost; do not certify them from image-only throughput.
+
+## P3: text coverage and bounded font resources
+
+D8 reproduction used a private RGB8 atlas filled with distance 128/255, a small
+quad forcing `screenPxRange=1`, and an independent RGBA8 numeric reference.
+On physical HD4000 GL4.1, red at 40% authored opacity read 21 versus expected 41.
+The shader now outputs straight tint RGB and `As = coverage * authoredAlpha`.
+Default straight-alpha RGB blending gives `Cout = Ctint*As + Cdst*(1-As)`.
+For text-only transparent targets, Cdst/Cout are accumulated associated RGB;
+clear to transparent black (or an associated clear color).
+Text submission alone uses `Aout = As + Adst*(1-As)`; its scope captures/restores
+attachment-zero blend factors/equations, leaving enable, other attachments and
+sprite/material semantics unchanged. This also keeps an opaque target opaque.
+Ordinary sprites retain their existing `As² + Adst*(1-As)` stored-alpha behavior;
+a mixed transparent render target is therefore not a general reusable opacity
+layer. This milestone does not change sprite or render-target material semantics.
+
+RGBA8/RGB8 are linear UNORM formats; Hazel currently does no sRGB texture decode,
+framebuffer conversion or automatic tint transfer. Equations apply to the stored
+numeric channels, not a claimed physically linear presentation pipeline. MSDF
+coverage/derivatives still evaluate before nonuniform clip/zero-alpha discard;
+zero coverage/opacity does not write picking. The same shader/submission policy
+serves world text, UI, window and offscreen targets, GLSL410 and SPIR-V.
+
+`Font::Load` is a small context-wide LRU, keyed by canonical source identity,
+bounded content digest and fixed generation parameters. ProjectAssets keeps weak
+accepted references and bounded failure metadata, not a second owning font cache.
+Refresh/reload reads files explicitly; draw/measure boundaries perform no freshness
+filesystem probes. Same content reuses the accepted font. A completed changed face
+publishes a new immutable Font/atlas; older prepared geometry keeps its own Font.
+CPU draw runs pin atlas textures until submission; backend command lifetime covers
+already submitted GPU work. Atlas-only external owners are included in live counts.
+Eviction releases cache ownership and cannot invalidate pins. Project retirement
+releases its root's reusable entries; Trim and renderer Shutdown release reusable
+and default ownership before context destruction. Native resource owners must
+retire on the renderer thread before Application teardown, as with other GPU Refs;
+shutdown diagnoses remaining owners, and construction/cache APIs reject wrong
+threads. This is not an asynchronous font-generation API.
+
+Default limits (tests may lower them only with no live owners):
+
+| Resource | Limit / accounting |
+| --- | --- |
+| Opened font input | 4 MiB, checked before allocation/read; no whole-file oversized read |
+| Per atlas | 1024×1024, 3 MiB RGB8 level zero, also checked against the backend limit |
+| Reusable LRU | 8 entries / 12 MiB atlas bytes; oldest entries evict first |
+| Live atlas objects | 24 / 24 MiB, including default, caches, active and pending-draw pins |
+| Controlled generator scratch | 32 MiB: input + RGB8 atlas + two float-RGB glyph buffers + two error buffers |
+| Work | One synchronous font generation, two workers; Latin-1 only, ≤32768 loaded outline edges |
+| Project reference/error metadata | 256 entries; additional references use default with one limit warning |
+
+Atlas bytes estimate format storage, not driver overhead, deferred GPU deletion,
+CPU metrics/outlines, allocator capacity or total process memory. FreeType parsing,
+outline loading/normalization before the edge check, kerning structures, MSDF
+per-edge work and worker stacks have dependency-owned allocations outside the
+scratch calculation. Input/glyph/work/count limits constrain exposure but do not
+establish a hard whole-process temporary-memory bound. The existing 16 MiB
+prepared-glyph capacity remains a separate per-scene limit.
+
+Admission first evicts reusable entries; if live pins still prevent it, loading
+rejects before atlas generation/upload. Project resolution retains the last
+accepted resource (including failed replacement after admission pressure), or
+uses shipped Open Sans when none remains. An evicted inactive resource is not a
+promise to retain historical bytes indefinitely. Failure diagnostics are cached,
+logged on change, and retried only by explicit Reload/Refresh; files are never
+silently rewritten. A failed shipped default at renderer startup is fatal.
+Validation/export share CPU font planning and remain strict about malformed,
+missing or oversized packaged references. Editor documents retain such references
+and reopen with editable problems. History restores paths even after file loss.
+
+Accepted asset epochs invalidate Content measurement/wrapping and prepared UVs
+together; a failed replacement uses the same accepted metrics/atlas for both.
+Raw native text/font-path writes remain observed at the existing boundaries.
+**UI Text Style** shows atlas diagnostics and Reload font; **Runtime UI Debugger →
+Font resources** distinguishes reusable, live and pinned estimates/limits.
+There are no author-facing tuning switches or new typography dependencies.

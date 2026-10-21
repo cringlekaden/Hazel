@@ -20,6 +20,9 @@ namespace Hazel {
         static RasterState GetRasterState() {return s_RendererAPI->GetRasterState();}
         static void SetRasterState(const RasterState& state) {s_RendererAPI->SetRasterState(state);}
 
+        static void BeginTextCompositing(){s_RendererAPI->BeginTextCompositing();}
+        static void SetTextCompositing(bool text){s_RendererAPI->SetTextCompositing(text);}
+        static void EndTextCompositing(){s_RendererAPI->EndTextCompositing();}
         static void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
         {
             s_RendererAPI->SetViewport(x, y, width, height);

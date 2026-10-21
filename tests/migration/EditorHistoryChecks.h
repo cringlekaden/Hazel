@@ -155,6 +155,11 @@ static void EditorHistoryChecks()
         Check(h.Begin(*f.World,CreateScope<UIEditCommand>(*f.World,f.Control.GetUUID(),"UI configuration",initial)),"Configuration transaction begin failed");
         Check(dynamic_cast<UIEditCommand*>(h.Transaction())->Preview(*f.World,proposed,error)&&h.Commit(*f.World),error.c_str());
         const auto changed=f.State();Check(h.Undo(*f.World)&&f.State()==start&&h.Redo(*f.World)&&f.State()==changed,"Typed flow/style/slice/button/text/image edit failed Undo/Redo");
+        // Resource loss after a committed edit must not strand its authored path
+        // in history or prevent unrelated text changes. This fixture uses copies.
+        std::filesystem::rename(root/"Fonts/history.ttf",root/"Fonts/history-hidden.ttf");
+        Check(h.Undo(*f.World)&&h.Redo(*f.World)&&f.State()==changed,"Missing font prevented authored Undo/Redo");
+        std::filesystem::rename(root/"Fonts/history-hidden.ttf",root/"Fonts/history.ttf");
         auto canvasBefore=UIEditValues::Capture(f.Canvas),canvasAfter=canvasBefore;canvasAfter.Canvas->ReferenceSize={1024,600};canvasAfter.Canvas->SafeInsets={8,8,8,8};canvasAfter.Canvas->SortOrder=3;canvasAfter.Canvas->Modal=true;
         Check(h.Begin(*f.World,CreateScope<UIEditCommand>(*f.World,f.Canvas.GetUUID(),"Canvas settings",canvasBefore)),"Canvas transaction begin failed");
         Check(dynamic_cast<UIEditCommand*>(h.Transaction())->Preview(*f.World,canvasAfter,error)&&h.Commit(*f.World)&&h.Undo(*f.World)&&f.State()==changed,"Canvas fields did not restore independently");

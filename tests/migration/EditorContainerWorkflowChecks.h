@@ -89,7 +89,7 @@ void DrawContainerFixture()
     ImGui::SetNextWindowPos({origin.x+500,origin.y+60});ImGui::SetNextWindowSize({400,700});
     ImGui::Begin("Button Inspector qualification",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoFocusOnAppearing|ImGuiWindowFlags_NoInputs);
     Check(m_ContainerFixturePanel.SetSelectedEntity(entity),"Button Inspector selection retired unexpectedly");
-    m_ContainerFixturePanel.RestoreSections({{"UI Button",true}});
+    m_ContainerFixturePanel.RestoreSections({{"UI Button",true},{"UI Text Style",true}});
     ImGui::PushID(std::to_string(m_ContainerFixture->GetIdentity()).c_str());
     ImGui::PushID(std::to_string(uint64_t(entity.GetUUID())).c_str());
     ImGui::PushID("UI Button");ImGui::PushID("##component");

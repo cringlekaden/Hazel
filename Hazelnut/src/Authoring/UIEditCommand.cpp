@@ -230,7 +230,10 @@ void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
             if ((s.FontPath.extension() != ".ttf" && s.FontPath.extension() != ".otf") ||
                 s.FontPath.generic_u8string().find(':') != std::string::npos)
                 throw std::invalid_argument("Font must be a project-relative TTF/OTF");
-            Font::ValidateFile(Project::ResolveOwnedAsset(assets->Root(), s.FontPath));
+            // History restores authored references even if the file retired since
+            // the edit. Inspector assignment validates input; resolution reports
+            // errors and keeps accepted resources/fallback without rewriting paths.
+            (void)Project::ResolveOwnedAsset(assets->Root(), s.FontPath);
         }
     }
     if (v.Slice)

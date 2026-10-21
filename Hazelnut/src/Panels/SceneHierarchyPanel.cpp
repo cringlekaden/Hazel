@@ -458,6 +458,16 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         if(edit.Committed)assign(std::filesystem::u8path(m_UIFontDraft));
         if(ImGui::BeginDragDropTarget()){if(auto payload=ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))assign(ContentBrowserPath(payload->Data,payload->DataSize));ImGui::EndDragDropTarget();}
         PropertyUI::Help("Empty uses the shipped default. Drag a TTF/OTF from Assets. Use separate styled text children for mixed emphasis; no markup is parsed.");
+        if(auto assets=m_Context->GetAssets()) {
+            auto font=assets->FontStatus(c.FontPath);auto atlas=font.Actual->GetAtlasTexture();
+            char description[128];std::snprintf(description,sizeof(description),"%u x %u | %.1f KiB",atlas->GetWidth(),atlas->GetHeight(),double(font.Actual->GetAtlasBytes())/1024);
+            PropertyUI::ReadOnly("font-atlas","Atlas (estimated)",description);
+            if(font.Fallback)ImGui::TextWrapped("Using shipped Open Sans fallback; authored reference retained.");
+            else if(!font.Error.empty())ImGui::TextWrapped("Using the last accepted font; replacement rejected.");
+            if(!font.Error.empty())ImGui::TextWrapped("%s",font.Error.c_str());
+            if(!c.FontPath.empty() && ImGui::SmallButton("Reload font"))assets->Reload(c.FontPath);
+            PropertyUI::Help("Reload preserves an accepted font on failure. Fixed Latin-1 coverage; no shaping or fallback families.");
+        }
         PropertyUI::DragFloat("size","Size (px)",c.Size,1,1,512);
         int horizontal=int(c.Horizontal),vertical=int(c.Vertical);
         if(PropertyUI::Combo("horizontal","Horizontal",horizontal,"Left\0Center\0Right\0"))c.Horizontal=GameUI::Align(horizontal);

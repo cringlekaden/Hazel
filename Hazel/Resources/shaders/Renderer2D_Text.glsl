@@ -67,8 +67,6 @@ float median(float r, float g, float b) {
 
 void main()
 {
-	vec4 texColor = Input.Color * texture(u_FontAtlas, Input.TexCoord);
-
 	vec3 msd = texture(u_FontAtlas, Input.TexCoord).rgb;
     float sd = median(msd.r, msd.g, msd.b);
     float screenPxDistance = screenPxRange()*(sd - 0.5);
@@ -76,8 +74,8 @@ void main()
 	if (opacity == 0.0)
 		discard;
 
-	vec4 bgColor = vec4(0.0);
-    o_Color = mix(bgColor, Input.Color, opacity);
+    // Straight-alpha source: coverage belongs only in alpha. RGB is the tint.
+    o_Color = vec4(Input.Color.rgb, Input.Color.a * opacity);
 	if (o_Color.a == 0.0)
 		discard;
 

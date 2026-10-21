@@ -14,17 +14,19 @@ struct ResolvedSprite {
 };
 struct SpriteResolution { Ref<const ResolvedSprite> Data; std::string Error; };
 struct ResolvedClip {
-    Ref<Font> FontAsset(const std::filesystem::path& reference);
     Ref<const SpriteSheetDefinition> Sheet; SpriteID ID=0;
     std::vector<Ref<const ResolvedSprite>> Frames;
     const SpriteClip& Definition() const { return Sheet->Clip(ID); }
 };
+struct FontResolution { Ref<Font> Actual; std::string Error; bool Fallback=false; };
 class ProjectAssets {
 public:
     explicit ProjectAssets(std::filesystem::path root):m_Root(std::filesystem::weakly_canonical(root)) {}
+    ~ProjectAssets();
     const std::filesystem::path& Root() const {return m_Root;}
     uint64_t Epoch() const {return m_Epoch;}
     Ref<Font> FontAsset(const std::filesystem::path& reference);
+    FontResolution FontStatus(const std::filesystem::path& reference);
     Ref<const SpriteSheetDefinition> Sheet(const std::filesystem::path& reference);
     Ref<Texture2D> Texture(const std::filesystem::path& reference,const TextureSpecification& specification,bool owned=true);
     Ref<const ResolvedSprite> Resolve(const SpriteSource& source);
@@ -35,7 +37,10 @@ public:
 private:
     std::filesystem::path m_Root; uint64_t m_Epoch=1;
     struct SheetEntry { Ref<const SpriteSheetDefinition> Data; std::string Error; };
-    std::unordered_map<std::string,Ref<Font>> m_Fonts;
+    struct FontEntry {std::weak_ptr<Font> Accepted;std::string Error;};
+    std::unordered_map<std::string,FontEntry> m_Fonts;
+    bool m_FontLimitReported=false;
+    void ReloadFont(const std::string& key, FontEntry& entry);
     std::unordered_map<std::string,SheetEntry> m_Sheets;
     std::unordered_map<std::string,Ref<Texture2D>> m_Textures;
     std::unordered_map<std::string,Ref<const ResolvedSprite>> m_Sprites;

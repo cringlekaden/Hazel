@@ -139,7 +139,8 @@ namespace Hazel {
 	{
 		HZ_PROFILE_FUNCTION();
 
-		s_Data = CreateScope<Renderer2DData>();
+		Font::Initialize();
+        s_Data = CreateScope<Renderer2DData>();
 		s_Data->TextureSlotLimit = RenderCommand::GetSettings().TextureSlots;
 		HZ_CORE_INFO("Renderer2D texture slots: {}", s_Data->TextureSlotLimit);
 		s_Data->QuadVertexArray = VertexArray::Create();
@@ -241,6 +242,7 @@ namespace Hazel {
 		s_Data->QuadVertexPositions[3] = { -0.5f,  0.5f, 0.0f, 1.0f };
 
 		s_Data->CameraUniformBuffer = UniformBuffer::Create(sizeof(Renderer2DData::CameraData), 0);
+        Font::GetDefault(); // reserve the context-owned fallback before any custom admission
 	}
 
 	void Renderer2D::Shutdown()
@@ -387,6 +389,7 @@ namespace Hazel {
                        boundFont;
         for (const auto &run : s_Data->Runs)
         {
+            RenderCommand::SetTextCompositing(Primitive(run.Kind) == Primitive::Text);
             switch (Primitive(run.Kind))
             {
             case Primitive::Quad:
@@ -447,9 +450,15 @@ namespace Hazel {
 	{
         if(!(s_Data->QuadIndexCount||s_Data->CircleIndexCount||s_Data->TextIndexCount||s_Data->LineVertexCount))return;
         const auto start=std::chrono::steady_clock::now();
+        struct TextCompositingScope {
+            bool Active;
+            explicit TextCompositingScope(bool active):Active(active){if(Active)RenderCommand::BeginTextCompositing();}
+            void Finish(){if(Active){RenderCommand::EndTextCompositing();Active=false;}}
+            ~TextCompositingScope(){Finish();}
+        } textScope(s_Data->TextIndexCount!=0);
         if(s_Data->QuadIndexCount||s_Data->CircleIndexCount||s_Data->TextIndexCount||s_Data->LineVertexCount)++s_Data->Stats.Flushes[size_t(reason)];
         if(s_Data->Ordered){
-            FlushOrdered();s_Data->Stats.SubmitMilliseconds+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();return;
+            FlushOrdered();textScope.Finish();s_Data->Stats.SubmitMilliseconds+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();return;
         }
 		if (s_Data->QuadIndexCount)
 		{
@@ -498,9 +507,11 @@ namespace Hazel {
 			s_Data->FontAtlasTexture->Bind(0);
 
 			s_Data->TextShader->Bind();
+            RenderCommand::SetTextCompositing(true);
 			RenderCommand::DrawIndexed(s_Data->TextVertexArray, s_Data->TextIndexCount);
 			s_Data->Stats.DrawCalls++;
 		}
+        textScope.Finish();
         s_Data->Stats.SubmitMilliseconds+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
 	}
 

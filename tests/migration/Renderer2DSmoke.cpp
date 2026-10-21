@@ -44,6 +44,7 @@ static std::size_t Pixels(int entity) {
     return std::count(ids.begin(),ids.end(),entity);
 }
 #include "OrderedBatchChecks.h"
+#include "TextCompositingChecks.h"
 static void Primitives() {
     Begin(); Renderer2D::DrawQuad(Transform(),{1,0,0,1},42); End();
     Check(ID()==42 && Color()[0]>250 && Color()[1]<5,"Solid quad color/entity mismatch");
@@ -202,7 +203,7 @@ static void RenderingControls(Application& application, const RuntimeRendererReq
           Renderer::GetResolution().Requested.TextureSlots==requests.TextureSlots && Renderer2D::GetQuadShaderLoadingPath()==loaded,
           "Failed policy validation changed live renderer/program state");
 }
-int main() {
+int main(int argc,char** argv) {
     try {
         Log::Init(); Fixture fixture; const auto cwd=std::filesystem::current_path();
         ApplicationSpecification invalid; invalid.Name="Migration Missing Shader"; invalid.Resources.Root=fixture.Directory/"missing-resources";
@@ -223,6 +224,8 @@ int main() {
             target=Framebuffer::Create(framebuffer);
             Check(Renderer::GetSettings().TextureSlots==(reduced ? 2u : std::min(32u,Renderer::GetCapabilities().MaxTextureSlots)),"Application renderer settings mismatch");
             RenderingControls(application,requests);
+            TextCompositingChecks(argc>1 && std::string(argv[1])=="--reproduce-d8");
+            if(argc>1)return 0;
             Primitives(); Textures(); Text(); Overflow(); GenericSubmit(); OrderedBatchChecks();
             Check(glGetError()==GL_NO_ERROR,"Final renderer GL error");
             target->Unbind(); target.reset(); glEnable(GL_DEPTH_TEST);

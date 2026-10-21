@@ -48,6 +48,7 @@ static void CheckAtlas(const Hazel::Ref<Hazel::Font>& font)
     Check(*extrema.first<64 && *extrema.second>192,"MSDF atlas GPU data lacks signed-distance range");
     Check(glGetError()==GL_NO_ERROR,"Font atlas OpenGL error");
 }
+#include "FontResourceChecks.h"
 int main()
 {
     try {
@@ -65,6 +66,7 @@ int main()
                 Hazel::Application application(specification);
                 glfwHideWindow(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()));
                 std::cout<<"Renderer: "<<glGetString(GL_RENDERER)<<"; Version: "<<glGetString(GL_VERSION)<<'\n';
+                if(iteration==0)FontResourceChecks(fixture.Directory);
                 auto font=Hazel::Font::GetDefault();
                 cache=font;
                 Check(Hazel::Font::GetDefault()==font,"Default font cache not shared");

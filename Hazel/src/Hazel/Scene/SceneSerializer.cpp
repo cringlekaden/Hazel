@@ -715,6 +715,13 @@ namespace Hazel {
                     m_Report.Problems.push_back({id,"Script field "+name,error.what(),resource});
                 }
             }
+        if(resources==ResourceLoading::Resolve)for(auto handle:staged->GetAllEntitiesWith<UITextStyleComponent>()) {
+            Entity entity(handle,staged.get());auto path=entity.GetComponent<UITextStyleComponent>().FontPath;
+            if(!path.empty()) {
+                auto font=staged->GetAssets()->FontStatus(path);
+                if(!font.Error.empty())m_Report.Problems.push_back({entity.GetUUID(),"UI font",font.Error,m_AssetRoot/path});
+            }
+        }
         for (auto handle : staged->GetAllEntitiesWith<SpriteRendererComponent>())
         {
             Entity entity(handle, staged.get());

@@ -19,11 +19,35 @@ std::string TextureKey(const std::filesystem::path& path,const TextureSpecificat
 }
 std::string ReferenceKey(const std::filesystem::path& path,SpriteID id) {return Project::NormalizeAssetPath(path).lexically_normal().generic_u8string()+"|"+SpriteIDText(id);}
 }
+ProjectAssets::~ProjectAssets() {
+    if(!m_Fonts.empty())Font::ReleaseRoot(m_Root);
+}
+void ProjectAssets::ReloadFont(const std::string& key,FontEntry& entry) {
+    try {auto previous=entry.Accepted.lock();auto accepted=Font::Load(Project::ResolveOwnedAsset(m_Root,std::filesystem::u8path(key)),previous);entry.Accepted=accepted;entry.Error.clear();}
+    catch(const std::exception& error) {
+        const std::string diagnostic=error.what();
+        if(entry.Error!=diagnostic)HZ_CORE_WARN("Font '{}': {}. Keeping accepted resource, or shipped default; Refresh assets to retry.",key,diagnostic);
+        entry.Error=diagnostic;
+    }
+}
 Ref<Font> ProjectAssets::FontAsset(const std::filesystem::path& reference) {
-    if(reference.empty())return Font::GetDefault();
-    auto path=Project::ResolveOwnedAsset(m_Root,reference);auto key=path.generic_u8string();auto it=m_Fonts.find(key);
-    if(it!=m_Fonts.end())return it->second;
-    auto font=CreateRef<Font>(path);m_Fonts.emplace(key,font);return font;
+    auto fallback=Font::GetDefault(); // reserve the safe resource before custom admission
+    if(reference.empty())return fallback;
+    const auto key=reference.generic_u8string();auto it=m_Fonts.find(key);
+    if(it==m_Fonts.end()) {
+        if(m_Fonts.size()>=256) {
+            if(!m_FontLimitReported){HZ_CORE_WARN("Project font reference limit (256) reached; using shipped default for additional references");m_FontLimitReported=true;}
+            return fallback;
+        }
+        it=m_Fonts.emplace(key,FontEntry{}).first;ReloadFont(key,it->second);
+    } else if(it->second.Error.empty() && it->second.Accepted.expired())ReloadFont(key,it->second);
+    auto accepted=it->second.Accepted.lock();return accepted?accepted:fallback;
+}
+FontResolution ProjectAssets::FontStatus(const std::filesystem::path& reference) {
+    auto actual=FontAsset(reference);
+    auto it=m_Fonts.find(reference.generic_u8string());
+    return {actual,it!=m_Fonts.end()?it->second.Error:reference.empty()?std::string{}:"Project font reference limit (256)",
+        !reference.empty()&&(it==m_Fonts.end()||it->second.Accepted.expired())};
 }
 Ref<const SpriteSheetDefinition> ProjectAssets::Sheet(const std::filesystem::path& reference) {
     auto path=Project::ResolveOwnedAsset(m_Root,reference); if(path.extension()!=".hsprites") throw std::runtime_error("Expected .hsprites asset");
@@ -62,6 +86,12 @@ Ref<const ResolvedClip> ProjectAssets::Clip(const AnimationReference& reference)
     m_Clips.emplace(key,result);return result;
 }
 void ProjectAssets::Reload(const std::filesystem::path& reference) {
+    if(reference.extension()==".ttf"||reference.extension()==".otf"){
+        auto it=m_Fonts.find(reference.generic_u8string());
+        if(it!=m_Fonts.end())ReloadFont(it->first,it->second);
+        else FontAsset(reference);
+        ++m_Epoch;return;
+    }
     auto path=Project::ResolveOwnedAsset(m_Root,reference);const auto key=path.generic_u8string();
     // Drop derived resolutions and image resources only at this deliberate authoring boundary.
     ++m_Epoch;m_Sprites.clear();m_Clips.clear();m_Textures.clear();
@@ -77,7 +107,8 @@ void ProjectAssets::Refresh() {
     for(auto& p:paths) {
         try{Reload(p);}catch(const std::exception& e){HZ_CORE_WARN("Sprite asset refresh: {}",e.what());}
     }
-    ++m_Epoch;m_Textures.clear();m_Sprites.clear();m_Clips.clear();m_Fonts.clear();
+    for(auto& entry:m_Fonts)ReloadFont(entry.first,entry.second);
+    ++m_Epoch;m_Textures.clear();m_Sprites.clear();m_Clips.clear();
 }
 void ProjectAssets::ImportTexture(const std::filesystem::path& source,const std::filesystem::path& destination) {
     Texture2D::ReadImage(source); // Validate through the shared engine decoder before copying.
