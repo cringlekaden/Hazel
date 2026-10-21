@@ -44,6 +44,15 @@ void FontFamilyWorkflowChecks() {
     for(int i=0;i<3;++i){Check(editor.OnScenePlay(true),"Family authored Play failed");auto running=editor.m_ActiveScene;auto live=running->FindEntityByName("UI Text");ResolveTextFont(live.GetComponent<TextComponent>(),assets);editor.OnSceneStop();Check(owner.SceneText()==authored,"Play/Stop imported font resources into authored state/history");}
     auto closure=AuditSpriteAssets(assets->Root(),{"Scenes/family-native.hazel","Prefabs/family-native.hprefab"});
     for(const auto* file:{"Fonts/Native.hfont","Fonts/Family-Regular.ttf","Fonts/Family-Bold.ttf","Fonts/Family-NOTICE.txt"})Check(std::find(closure.begin(),closure.end(),file)!=closure.end(),"Native family export closure incomplete");
+    // Opt-in downstream package qualification retains only the useful, native-
+    // authored fixture; normal runs still delete their entire temporary project.
+    if(const auto* output=std::getenv("HAZEL_EDITOR_FONT_FIXTURE");output && *output) {
+        const auto destination=std::filesystem::absolute(std::filesystem::u8path(output));
+        for(const auto* file:{"Fonts/Native.hfont","Fonts/Family-Regular.ttf","Fonts/Family-Bold.ttf","Fonts/Family-NOTICE.txt","Scenes/family-native.hazel","Prefabs/family-native.hprefab"}) {
+            auto target=destination/file;std::filesystem::create_directories(target.parent_path());
+            std::filesystem::copy_file(assets->Root()/file,target,std::filesystem::copy_options::overwrite_existing);
+        }
+    }
     // Keep the ordinary native asset editor open for real ImGui rendering/preview
     // checks on following frames; use private test resources only.
     auto& family=owner.m_Fonts;family.m_Style=1;family.m_PreviewFont=assets->FamilyFont({"Fonts/Native.hfont",FontStyle::Bold});family.m_AcceptedPreview="Native café preview";

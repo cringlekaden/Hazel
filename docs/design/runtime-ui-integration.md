@@ -982,4 +982,77 @@ validates all four engine default faces and notices before/after resource stagin
 An associated notice is not a redistribution-permission certification; fixtures
 reuse shipped Apache-licensed Open Sans without new assets.
 
-Local qualification and remaining acceptance are recorded after the checks below.
+Implementation checkpoint **`30fcb1b`** passed the focused Release font, real-scene/UI,
+CPU-only document and native editor checks. Full Debug and Release builds passed
+with two compiler jobs and unchanged dependency artifacts. All **16 regression
+executables per configuration** passed: Release on physical HD4000 forced
+OpenGL/GLSL 4.1/410, Debug on the same hardware's native GL4.2 context. This includes D8's
+independent analytic compositing and ordered-run/clip/picking regressions, managed
+family/style round trips, accepted-version reflow, cache pressure and teardown.
+The native ImGui harness creates/imports a family, edits/inspects its declaration,
+saves/reopens with shared conflict guards, assigns through scene/prefab history,
+checks real preview glyph readback and repeats Play/Stop. It also retains the
+expanded five-state Button regression. An earlier development run mixed objects
+compiled while a header was changing; those objects were rebuilt before the
+passing editor/full-suite checkpoints. No crashed run is counted as a pass.
+
+Representative Release warm check on Grandpa: i3-3227U/8 GB, kernel
+7.2.7-1-cachyos, GCC 16.2.1, Intel HD4000/Mesa 26.2.4, physical GL4.1 forced,
+GLSL410, 16 texture slots, 1280×720 RGBA8/ID target, no concurrent build/test.
+GLFW X11/GLX runs through Xwayland on Plasma Wayland; this is not native Wayland
+or Xvfb. Existing profile infrastructure uses 20 warm-ups / 120 CPU samples,
+nonblocking timestamp pairs (111–119 ready GPU samples, zero saturation skips).
+Values below are median/p95 ms; comparison is the previously recorded P3 resource
+checkpoint, whose unchanged warm drawing path also applies to `6cbe965`.
+
+| 64 elements, unchanged | Previous CPU boundary+paint → current | Previous GPU interval → current |
+| --- | --- | --- |
+| Images | 0.1992/2.2214 → 0.1994/2.3887 | 0.0408/0.0437 → 0.0402/0.0619 |
+| Mixed images/text | 0.8535/1.3238 → 0.6489/1.0484 | 0.5790/1.9949 → 0.4911/1.8662 |
+
+Draws remain 1/65, ordinary C++ new totals 120 across 120 samples, and mixed
+preparation reuses 32 labels / 4 KiB with zero unchanged rebuilds. Moving one rect
+measured CPU 0.3552/0.6107 (images), 0.9446/1.5089 (mixed); changing paint/one
+label measured 0.1938/0.3553 and 1.0290/1.4000, with one mixed label rebuild.
+These exclude input, gameplay, world draws and presentation; GPU command intervals
+include possible CPU-feeding gaps and are not busy time or additive to CPU.
+Scheduling/tail variation is visible; no universal speedup/frame budget is claimed.
+Large mixed-run costs and changed-layout allocation debt remain open. Family file
+freshness/coverage are explicit operations, outside the warm rendering loop.
+
+A normal export of the native-authored family fixture passed extracted Nutella
+startup/render/resize/shutdown on physical GL4.1 from an unrelated Unicode path,
+with source resources/examples/SDK and GAC unavailable. Project Regular/Bold faces,
+associated notice and all four engine default faces/license were checked byte for
+byte. Post-extraction missing/corrupt face, missing notice and malformed descriptor
+cases all rendered safe fallback with unchanged authored references. Normal Bold
+and fallback Regular text captures were inspected. Required-coverage failure is
+separately asserted by native closure tests; notices are associations, not legal
+permission certifications. No font/dependency/vendor/pin was added.
+
+The Release source-example suite passed all five projects (MeadowRun, Skybound,
+LastLightkeeper, Sandbox and SceneTransitions) in Nutella and Hazelnut, including
+startup/render/resize/close and authored-file hash checks. Its existing bounded
+gameplay/save/lifecycle checks and managed example builds passed too. These ran on
+physical HD4000 native GL4.2 via Xwayland, not software rendering. Lightkeeper menu
+and Sandbox text captures were inspected. The exact unrelated Sandbox draft,
+master, stash and vendor pins remain unchanged.
+
+Remaining physical acceptance: create a family from Content Browser (also try a
+face's context menu), choose/import a face and correct notice with native dialogs,
+inspect a required `café Ω` versus informational sample, and verify export rejects
+unmet required atlas coverage. Assign real Bold/absent Italic in world and wrapped
+Content UI text, Undo/Redo, save/reopen scene and prefab, then Play/Stop. Corrupt a
+replacement, Reload and inspect accepted/fallback status; repair and retry. Repeat
+on Windows hardware and actual desktop DPI/focus transitions. Native harness and
+owned-window checks do not certify physical pointer/dialog usability or native
+Wayland support. CI is triggered by push and **not awaited or polled**.
+
+Next bounded P3 work is the shaping/bidi/boundary dependency and language-corpus
+review, followed by a shared CPU shaped-layout adapter and glyph-ID/page ownership
+acceptance slice. Choose actual shipping scripts, representative combining/bidi/
+line-break cases and licensed faces within reviewed input/page budgets before
+pinning HarfBuzz, boundary and bidi libraries (see the audit's alternatives).
+Do not infer language support from cmap presence or expand the fixed Latin-1 atlas
+as a substitute for shaping. Family/notice authoring does not complete P3 or make
+the UI production-ready.
