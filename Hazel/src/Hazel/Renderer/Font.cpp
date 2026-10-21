@@ -151,6 +151,8 @@ Font::~Font() {
 Ref<Font> Font::Load(const std::filesystem::path& path,const Ref<Font>& accepted) {
     CheckThread();Input input(path);
     for(auto it=cache.begin();it!=cache.end();++it)if(it->Key==input.Key){auto font=it->Data;cache.splice(cache.begin(),cache,it);++stats.Hits;return font;}
+    // LRU eviction removes reusable ownership, not the accepted live version.
+    if(accepted && accepted->m_IdentityKey==input.Key){++stats.Hits;return accepted;}
     auto retain=[](const Ref<Font>& font) {
         if(!limits.CacheEntries||font->GetAtlasBytes()>limits.CacheBytes)return;
         for(auto it=cache.begin();it!=cache.end();) {

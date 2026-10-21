@@ -28,6 +28,7 @@ static void FontResourceChecks(const std::filesystem::path& root) {
         Check(blocked.Fallback && !blocked.Error.empty(),"Pinned admission did not expose fallback/diagnostic");
         for(int i=0;i<20;++i)pressure.FontAsset("b.ttf");
         Check(Hazel::Font::Resources().Generations==state.Generations,"Rejected project font regenerated every lookup");
+        Check(Hazel::Font::Load(a,second)==second && Hazel::Font::Resources().Generations==state.Generations,"Unchanged accepted font regenerated after LRU eviction");
         heldAtlas.reset();
         Check(pressure.FontStatus("b.ttf").Fallback,"Admission failure retried without explicit freshness boundary");
         pressure.Reload("b.ttf");auto third=pressure.FontAsset("b.ttf");

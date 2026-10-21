@@ -906,3 +906,13 @@ ownership budgets. Review shaping/bidi/boundary dependencies and the language
 corpus separately before expanding glyph coverage. This slice does not complete
 P3, broader P2 authoring, or the production UI system; large mixed rendering and
 scrolling/virtualization prerequisites remain open.
+
+Final cache-pressure follow-up: Load/Refresh also reuses an identical live
+accepted version after its LRU entry was evicted; it must not generate a duplicate
+atlas or reject that unchanged face under pin pressure. The regression checks
+same-content identity with the reusable entry absent and the live budget full.
+After this final guard, Debug and Release focused Font/UI integration/native
+editor suites passed again; rendering/SPIR-V/profile/example/package paths are
+unchanged and reuse the broader qualification above. Both applications were
+relinked against the final font implementation. Full native Resource Refs remain
+context-bound; no cross-thread/final-owner-after-context support is implied.
