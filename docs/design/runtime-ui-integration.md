@@ -828,3 +828,81 @@ Raw native text/font-path writes remain observed at the existing boundaries.
 **UI Text Style** shows atlas diagnostics and Reload font; **Runtime UI Debugger →
 Font resources** distinguishes reusable, live and pinned estimates/limits.
 There are no author-facing tuning switches or new typography dependencies.
+
+Qualification at implementation checkpoints `184f965` and `b4977f0`: Debug and
+Release Premake/GNU Make builds used two jobs. All 16 regression executables
+passed in Debug physical/native GL4.2 and final Release physical/forced GL4.1.
+Release Renderer2D also passed on software llvmpipe GL4.6 (SPIR-V and two-slot
+GLSL). Tests exercise analytic RGBA/picking for partial coverage/opacity,
+contrasting opaque and associated translucent backgrounds, overlapping text,
+subsequent sprite semantics, real DrawString/scene UI/window targets and indexed
+blend-state restoration. RGBA8 references disable sRGB conversion/dithering and
+allow two byte levels for quantization/driver rounding; window tests assert RGB
+because destination alpha is platform-selected. Existing ordered/clip/capacity,
+expanded Button Inspector, scene/prefab/history and Play/Stop regressions remain.
+Font checks lower count/byte/scratch/dimension limits without large allocations,
+pin atlas-only and pending-draw owners, reject wrong-thread load/non-admitting
+limits, preserve failed replacements, retry explicitly, compare changed content
+with identical pathname/size/timestamp, and verify Content/wrap/prepared version
+consistency, editable missing-font round trips and strict export rejection.
+
+Warm Release rendering repeated the existing 64/512/2048 image/mixed fixtures,
+including unchanged/move/paint modes, on Grandpa: i3-3227U/8 GB, kernel
+7.2.7-1-cachyos, GCC 16.2.1, physical HD4000/Mesa 26.2.4-arch3.1 forced GL4.1,
+GLSL410, 1280×720 RGBA8/entity-ID target. GLFW X11/GLX ran through Xwayland on
+Plasma Wayland; no native Wayland or Xvfb claim. No build/test ran concurrently.
+The same 20 warm-ups/120 CPU samples and asynchronous GPU timestamps apply.
+The table is **baseline `1bac10d` → final, median/p95 ms**, unchanged mode:
+
+| Fixture / N | Boundary + paint CPU | GPU command interval |
+| --- | --- | --- |
+| images / 64 | 0.4194/0.6459 → 0.1992/2.2214 | 0.0478/0.0977 → 0.0408/0.0437 |
+| images / 512 | 1.2563/2.1653 → 1.0930/1.6399 | 0.6106/0.8719 → 0.4057/0.7627 |
+| images / 2048 | 4.3917/6.1196 → 4.5582/5.0780 | 3.4058/3.4078 → 2.6499/3.4046 |
+| mixed / 64 | 0.7148/1.2661 → 0.8535/1.3238 | 0.5735/0.6150 → 0.5790/1.9949 |
+| mixed / 512 | 6.0896/7.5105 → 5.2158/6.2452 | 5.6207/8.2588 → 4.7278/9.6325 |
+| mixed / 2048 | 23.7743/30.4500 → 24.7913/32.8851 | 17.6966/24.9083 → 21.3736/29.0111 |
+
+This is boundary/source/layout/preparation/submission wall time, excluding input,
+gameplay, world drawing and presentation; GPU intervals can include CPU-feeding
+gaps and are not GPU busy time or values to add to CPU time. Draw/upload/ordinary
+C++ new counts are unchanged: images one draw, mixed 65/513/2049 draws; 120/480/
+1920 new calls over 120 unchanged samples. Prepared labels reuse 32/256/1024
+entries; paint rebuilds one. The 2048 mixed submission phase rose from
+16.9387/23.6508 to 18.3867/27.1424 ms. Correct text alpha requires state transitions
+between alternating image/text runs; redundant equation calls are skipped when
+already ADD, but those required boundaries remain. Small-case/tail variation
+shows scheduling noise; no general speedup or universal frame budget is claimed.
+Cold font generation is excluded. Large mixed rendering, linear source/reflow
+costs and changed-layout allocations remain separate performance debt.
+
+All five source examples passed Release physical-HD4000 GL4.2 player/editor
+startup/render/resize/shutdown with descriptor/scene hashes unchanged. Existing
+strict native three-game gameplay/save/lifecycle and managed progress contracts
+passed. Fresh Lightkeeper menu/dialogue/HUD/world-label and Sandbox captures were
+inspected; authored colors were not adjusted to reproduce D8's darkening.
+A newly exported Lightkeeper Nutella archive passed relocated physical GL4.1
+startup/render/resize/shutdown from an unrelated Unicode directory with source
+resources/examples/SDK and GAC unavailable. Manifest/dependency closure, exact
+shipped Open Sans bytes and Apache license were checked. Private post-extraction
+missing/corrupt custom-font references both rendered with fallback and unchanged
+authored references; both fault captures and normal package text were inspected.
+No extra font/dependency/notice was introduced. Master, stash, settings, vendor
+pins and the exact unrelated Sandbox draft were preserved. CI is triggered by
+push and **not awaited or polled**; no new local Windows qualification is claimed.
+
+Remaining physical acceptance: in a disposable project assign a TTF/OTF in
+**UI Text Style**, compare partial-opacity text over dark/light panels and world
+text, then rename/corrupt the file and Reload. Verify the last accepted/fallback
+message, retained path and normal wrapped Content layout; restore the file and
+Reload, Undo/Redo, save/reopen and repeat Play/Stop. Open **Font resources** to
+compare cache/live/pinned estimates and limits. Repeat on Windows hardware and
+with actual desktop focus/DPI transitions; native ImGui harness results are not
+physical pointer/key or native Wayland acceptance.
+
+Next bounded P3 slice: native font-family descriptors (regular/bold/italic face
+references), declared coverage diagnostics and package/notice validation on these
+ownership budgets. Review shaping/bidi/boundary dependencies and the language
+corpus separately before expanding glyph coverage. This slice does not complete
+P3, broader P2 authoring, or the production UI system; large mixed rendering and
+scrolling/virtualization prerequisites remain open.
