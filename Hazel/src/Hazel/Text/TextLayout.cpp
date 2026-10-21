@@ -258,7 +258,7 @@ Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>
                     clusters.erase(std::unique(clusters.begin(),clusters.end()),clusters.end());
                     for(unsigned i=0;i<n;++i) {
                         Require(info[i].cluster>=s.Begin && info[i].cluster<s.End,"Invalid shaped source cluster");
-                        if(!info[i].codepoint)throw std::runtime_error("Missing font coverage at scalar "+std::to_string(info[i].cluster)+"; no cross-family fallback in CPU foundation");
+                        if(!info[i].codepoint)throw std::runtime_error("Missing font coverage in cluster starting at scalar "+std::to_string(info[i].cluster)+"; no cross-family fallback in CPU foundation");
                         const auto next=*std::upper_bound(clusters.begin(),clusters.end(),info[i].cluster);
                         Glyph glyph{info[i].codepoint,info[i].cluster,next,p.Width+run.Width,0,
                             pos[i].x_advance*scale,-pos[i].y_advance*scale,pos[i].x_offset*scale,-pos[i].y_offset*scale};

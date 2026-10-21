@@ -1178,6 +1178,8 @@ Coordinates are logical units with +X right/+Y down, `EmSize` logical units/em;
 glyph X/Y is its pen/baseline and offsets are separate. Line height/baseline use
 that accepted OT face's horizontal extents. RTL glyphs/runs remain in visual
 left-to-right order, while source/ranges retain logical identities.
+Width is shaped advance, not a tight ink box; overhang bounds require the
+glyph-index geometry integration that follows.
 
 Absent Width is unwrapped; finite nonnegative Width is definite (including zero).
 Greedy candidates are permitted UAX14/grapheme boundaries and are **reshaped with
@@ -1248,4 +1250,67 @@ remain unchanged until actual renderer integration.
    coverage, compositor/picking/order and old examples at declared viewports,
    update Hazelnut/export guarantees only when those rendered checks pass.
 
-Local qualification is recorded at the final checkpoint below.
+### Local qualification (2026-10-21)
+
+Implementation checkpoint **`f838084`**, with the final cluster-error wording,
+passed bounded Debug/Release Premake/GNU Make builds with two compiler jobs and
+cached existing dependencies. New Debug library targets built from empty outputs
+with a compiler/basic-shell-only PATH: no Python, Meson, CMake, Ninja, Autotools,
+gperf, pkg-config, Git or curl available to their build. No generated input was
+missing. Windows `--os=windows --migration-tests --shader-tools vs2022` generation
+passed; source lists, C11/C++17, static archives, /MDd-/MD and consumer project
+references were inspected. This is not an MSVC or macOS build result. Both actual
+ELF HB objects have hidden public symbols and Nutella exports no `hb_*` symbols.
+
+All **17 regression executables per configuration** passed once after integration
+stabilized: Release physical HD4000 forced GL4.1/GLSL410 and Debug physical native
+GL4.2. Grandpa is i3-3227U/8 GB, GCC 16.2.1, kernel 7.2.7-1-cachyos, Intel HD4000
+Mesa 26.2.4-arch3.1. Active logind session is Plasma Wayland; GLFW uses X11/GLX
+through Xwayland `:0`. No Xvfb/software or native Wayland qualification is claimed.
+Selected late-edited objects and new Release libraries were explicitly rebuilt:
+GNU Make does not track changed compiler flags automatically. Earlier failed
+development builds/checks are not counted as passes.
+
+New CPU checks pass **766 GraphemeBreakTest, 19,338 LineBreakTest and 91,707
+BidiCharacterTest Unicode 17 cases**, without skips, and all 12 authored corpus
+rows. Line tests use strict UAX14 behavior and map the library's indeterminate
+complete-input EOF to a boundary; bidi tests compare per-line L1-reset levels and
+L2 ordering. This qualifies the pinned dependency algorithms, not every script in
+Hazel's narrower selected-script/shaping policy. Service references independently
+check cmap presentation forms for Arabic initial/final and lam-alef joining,
+Latin ffi, composed/decomposed equivalence, multiple glyphs per combining cluster,
+RTL punctuation mirroring, mixed Hebrew/Latin/numbers source order, em scaling,
+byte/UTF16 maps, paragraph/empty/zero-width handling and contextual Arabic
+reshaping at emergency line boundaries. Repeated corpus positions/ranges are
+identical. Missing known-script coverage and unsupported scripts remain distinct
+failures. Limits, failed publication/recovery, owner-thread rejection, noncopyable
+resource-accounted results and CPU pins surviving service retirement are checked.
+
+Real accepted Font checks cover shared source identity, changed/failed reload,
+CPU layout surviving renderer shutdown without pinning GPU resources, repeated
+Application contexts and zero retained CPU owners afterward. One private padded
+4 MiB font file creates seven pinned immutable input versions (under 32 MiB total)
+with ordinary small Latin-1 atlases; the next version forces reusable eviction,
+rejects before raster generation, and recovers when a CPU pin is released. Private
+services also lower count/byte/work/workspace caps. No enormous atlas/RAM-exhaustion
+test is used. Existing D8 analytic pixels, ordered batches/clips/picking, family/
+history/prefab/native mutation, expanded Button Inspector and Play/Stop checks pass.
+Native ImGui harness results do not claim physical dialog/pointer usability.
+
+The normal package pipeline exported a fresh Release Nutella/SceneTransitions
+archive. Extraction in an unrelated Unicode directory passed `--help` and
+`--list-projects`; all three upstream notices and Unicode notice matched their
+source bytes, no test font/corpus leaked, and private HB symbols were absent from
+dynamic exports. An isolated missing-notice source root rejects packaging.
+This is new dependency/notice/CLI closure evidence, not another rendered relocated
+game acceptance. Unchanged shader/painter paths and example content reuse the
+preceding GPU/SPIR-V/source-game/package evidence; no whole-frame or new warm
+performance result is inferred. Font creation now retains CPU source data; current
+draw/measure loops do not call the new layouter or probe files per frame.
+
+Master, stash, existing vendor pins, settings and exact Sandbox draft remain
+unchanged. CI is triggered by pushes and **not awaited or polled**. Remaining
+acceptance is Windows compilation/runtime and competent-reader review when the
+declared corpus is actually rendered by the next integration. No new language
+support is advertised in Hazelnut/export. This foundation completes this bounded
+slice, not all of P3 or the production UI milestone.
