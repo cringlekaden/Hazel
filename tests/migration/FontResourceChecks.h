@@ -19,6 +19,7 @@ static void FontResourceChecks(const std::filesystem::path& root) {
         Check(Hazel::Font::Load(a)==first && Hazel::Font::Resources().Hits==1,"Content-key font reuse missing");
         copy(bold,a);std::filesystem::resize_file(a,128*1024);std::filesystem::last_write_time(a,stamp);
         auto second=Hazel::Font::Load(a,first);
+        Check(first->GetCPUFace()!=second->GetCPUFace(),"Changed accepted bytes reused incompatible CPU face");
         Check(second!=first && first->GetAtlasTexture()->GetRendererID()==oldID,"Font replacement mutated a live atlas");
         auto state=Hazel::Font::Resources();
         Check(state.CacheEntries==1 && state.LiveAtlases==3 && state.PinnedAtlases==3,"Cache versus pinned accounting wrong");
@@ -68,6 +69,7 @@ static void FontResourceChecks(const std::filesystem::path& root) {
         {std::ofstream out(a,std::ios::binary);out<<"broken replacement";}
         assets.Reload("a.ttf");auto failed=assets.FontStatus("a.ttf");
         Check(failed.Actual==accepted && !failed.Fallback && !failed.Error.empty(),"Failed reload lost accepted resource/reference");
+        Check(failed.Actual->GetCPUFace()==accepted->GetCPUFace(),"Failed reload lost accepted CPU face");
         auto generations=Hazel::Font::Resources().Generations;
         for(int i=0;i<100;++i)Check(assets.FontAsset("a.ttf")==accepted,"Failed reload retried/changed resource");
         auto missing=assets.FontStatus("missing.ttf");Check(missing.Fallback && !missing.Error.empty(),"Missing font fallback/diagnostic absent");
@@ -83,5 +85,30 @@ static void FontResourceChecks(const std::filesystem::path& root) {
     }
     Check(Hazel::Font::Resources().CacheEntries==0,"Project retirement retained its cache entries");
     Hazel::Font::Shutdown();Check(Hazel::Font::Resources().LiveAtlases==0,"Project/default teardown leaked atlas");
+    Hazel::Font::Initialize();
+    // Exercise the separate CPU input budget with small Latin-1 atlases. One
+    // private 4 MiB file is reused; live source retention stays below 32 MiB.
+    // Padding does not modify font tables or require a large generated atlas.
+    {
+        auto fallback=Hazel::Font::GetDefault();const auto padded=root/"cpu-pressure.ttf";
+        copy(regular,padded);std::filesystem::resize_file(padded,4*1024*1024);
+        std::vector<Hazel::Ref<const Hazel::Text::Face>> sources;
+        for(int i=0;i<7;++i) {
+            {std::fstream file(padded,std::ios::binary|std::ios::in|std::ios::out);file.seekp(-1,std::ios::end);file.put(char(i+1));}
+            sources.push_back(Hazel::Font::Load(padded)->GetCPUFace());
+        }
+        auto before=Hazel::Font::Resources();auto identity=sources[0]->Identity();
+        {std::fstream file(padded,std::ios::binary|std::ios::in|std::ios::out);file.seekp(-1,std::ios::end);file.put(8);}
+        Reject([&]{Hazel::Font::Load(padded);},"Pinned CPU sources exceeded their independent input budget");
+        auto rejected=Hazel::Font::Resources();
+        Check(rejected.Generations==before.Generations && rejected.Evictions>before.Evictions,
+              "CPU pressure did not evict reusable ownership before rejecting generation");
+        Check(sources[0]->Identity()==identity && Hazel::Text::Service::Main().Usage().FaceBytes<=32*1024*1024,
+              "CPU eviction invalidated a pinned source or exceeded retention");
+        sources[0].reset();auto retry=Hazel::Font::Load(padded);
+        Check(retry && retry->GetCPUFace(),"CPU admission did not recover after releasing a source pin");
+    }
+    Hazel::Font::Shutdown();
+    Check(Hazel::Text::Service::Main().Usage().Faces==0,"CPU source owners survived font/cache retirement");
     Hazel::Font::Initialize();
 }

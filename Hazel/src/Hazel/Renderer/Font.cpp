@@ -4,6 +4,7 @@
 #include "Hazel/Renderer/RenderCommand.h"
 #include "MSDFData.h"
 #include "Hazel/Utils/UTF8.h"
+#include "Hazel/Text/TextLayout.h"
 #include <set>
 #include <sstream>
 #include <iomanip>
@@ -188,6 +189,11 @@ void Font::Generate(Input& input) {
     while(!cache.empty() && (LiveBytes()+bytes>limits.LiveAtlasBytes||atlases.size()>=limits.LiveAtlases))Evict();
     if(LiveBytes()+bytes>limits.LiveAtlasBytes||atlases.size()>=limits.LiveAtlases)
         throw std::runtime_error("Font admission blocked by live/pinned atlases; release owners or retry after Stop: "+input.Path.generic_u8string());
+    Ref<const Text::Face> cpu;
+    for(;;) {
+        try { cpu=Text::Service::Main().CreateFace(input.Bytes,input.Key);break; }
+        catch(const Text::ResourcePressure&) { if(cache.empty())throw;Evict(); }
+    }
     for(auto& glyph:data->Glyphs)glyph.edgeColoring(msdfgen::edgeColoringInkTrap,3,0);
     msdf_atlas::GeneratorAttributes attributes;attributes.config.overlapSupport=true;attributes.scanlinePass=true;
     msdf_atlas::ImmediateAtlasGenerator<float,3,msdf_atlas::msdfGenerator,msdf_atlas::BitmapAtlasStorage<uint8_t,3>> generator(w,hgt);
@@ -198,6 +204,7 @@ void Font::Generate(Input& input) {
     spec.GenerateMips=false;spec.MinFilter=TextureFilter::Linear;
     auto atlas=Texture2D::Create(spec);atlas->SetData(bitmap.pixels,uint32_t(bytes));
     atlases.push_back({atlas,bytes}); // publish only the completed resource
+    m_CPUFace=std::move(cpu);
     m_Path=input.Path;m_IdentityKey=input.Key;m_Data=std::move(data);m_AtlasTexture=std::move(atlas);m_AtlasBytes=bytes;m_Accounted=true;
     ++stats.LiveFonts;++stats.Generations;
 }

@@ -104,7 +104,7 @@ static void Textures() {
     Check(ID()==int(100+limit),"Texture slot overflow lost final quad");
     std::cout<<"Selected fragment texture batch capacity: "<<limit<<'\n';
 }
-static void Text() {
+static void WorldTextChecks() {
     auto font=Hazel::Font::GetDefault(); Renderer2D::TextParams parameters;
     Begin(); Renderer2D::DrawString(u8"é",font,Transform(-.3f,-.3f,1),parameters,90); End();
     Check(Renderer2D::GetStats().QuadCount==1 && Pixels(90)>100,"UTF-8 glyph rendering/picking mismatch");
@@ -226,7 +226,7 @@ int main(int argc,char** argv) {
             RenderingControls(application,requests);
             TextCompositingChecks(argc>1 && std::string(argv[1])=="--reproduce-d8");
             if(argc>1)return 0;
-            Primitives(); Textures(); Text(); Overflow(); GenericSubmit(); OrderedBatchChecks();
+            Primitives(); Textures(); WorldTextChecks(); Overflow(); GenericSubmit(); OrderedBatchChecks();
             Check(glGetError()==GL_NO_ERROR,"Final renderer GL error");
             target->Unbind(); target.reset(); glEnable(GL_DEPTH_TEST);
         }

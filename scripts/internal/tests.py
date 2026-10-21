@@ -24,6 +24,35 @@ def launcher_checks():
     print('PASS: Linux/Windows F5 leaves editor project selection to session restore; runtime example remains explicit', flush=True)
 
 
+def typography_inputs(working):
+    """Pinned CPU-only fixtures never become application/game resources."""
+    from internal.packaging import licenses
+    expected={'DejaVuSans.ttf':'7da195a74c55bef988d0d48f9508bd5d849425c1770dba5d7bfc6ce9ed848954',
+              'LICENSE-DejaVu.txt':'7a083b136e64d064794c3419751e5c7dd10d2f64c108fe5ba161eae5e5958a93'}
+    for file, digest in expected.items():
+        source=hz.ROOT/'tests/fixtures/typography'/file
+        if hashlib.sha256(source.read_bytes()).hexdigest()!=digest:
+            raise RuntimeError('Typography reference bytes changed: '+file)
+    hz.copy_tree(hz.ROOT/'tests/fixtures/typography',working/'typography')
+    for source in ('Hazel/vendor/libunibreak/src/GraphemeBreakTest.txt',
+                   'Hazel/vendor/libunibreak/src/LineBreakTest.txt',
+                   'Hazel/vendor/SheenBidi/Tools/Unicode/BidiCharacterTest.txt'):
+        file=hz.ROOT/source
+        if '17.0.0' not in file.read_text(encoding='utf-8').splitlines()[0]:
+            raise RuntimeError('Unexpected Unicode conformance version: '+source)
+        hz.copy_changed(file,working/'typography'/file.name)
+    package=working/'notice-closure';licenses(package)
+    for name,file in (('harfbuzz','COPYING'),('libunibreak','LICENCE'),('SheenBidi','LICENSE')):
+        if (package/'licenses/vendor'/name/file).read_bytes()!=(hz.ROOT/'Hazel/vendor'/name/file).read_bytes():
+            raise RuntimeError('Typography notice closure mismatch: '+name)
+    unicode='scripts/dependencies/licenses/typography/LICENSE-Unicode.txt'
+    if (package/'licenses/typography/LICENSE-Unicode.txt').read_bytes()!=(hz.ROOT/unicode).read_bytes():
+        raise RuntimeError('Unicode notice closure mismatch')
+    if any(file.name=='DejaVuSans.ttf' for file in package.rglob('*')):
+        raise RuntimeError('Test-only face leaked into application closure')
+    print('PASS: pinned test face/Unicode versions and linked typography notice closure; no fixture font shipped',flush=True)
+
+
 def authoring_checks(working):
     """Exercise the same transactional project service invoked by editor jobs."""
     import yaml
@@ -85,6 +114,7 @@ def test(configuration, profile='native'):
         hz.copy_tree(hz.ROOT/'Hazelnut/Resources/Icons',working/'assets/Icons')
         hz.copy_changed(hz.ROOT/'Hazelnut/Resources/imgui.ini',working/'assets/imgui.ini')
         hz.copy_tree(hz.ROOT/'tests/fixtures/assets',working/'assets')
+        typography_inputs(working)
         hz.copy_tree(hz.ROOT/'tests/fixtures/AuthoringProject',working/'AuthoringProject')
         hz.copy_changed(base/'MigrationManagedFixture/MigrationManagedFixture.dll',working/'AuthoringProject/Assets/Scripts/Binaries/Regression.dll')
         env=os.environ.copy()
@@ -99,7 +129,7 @@ def test(configuration, profile='native'):
         if hz.SYSTEM=='windows' and profile in ('software','gl41'):
             for dll in software_driver().glob('*.dll'): hz.copy_changed(dll,private/dll.name)
             env.update(GALLIUM_DRIVER='llvmpipe',LP_NUM_THREADS='2',MESA_SHADER_CACHE_DIR=str(working/'mesa-cache'))
-        names=('GameUIModelSmoke','GameUIIntegrationSmoke','ShaderToolsSmoke','SpriteSmoke','SceneFoundationSmoke','ProjectPhysicsSmoke','MonoSmoke','SceneSmoke','CoreSmoke','RendererSmoke','RendererFeaturesSmoke','Renderer2DSmoke','FontSmoke','SceneGPUSmoke','RuntimeSessionSmoke','EditorSmoke')
+        names=('TypographySmoke','GameUIModelSmoke','GameUIIntegrationSmoke','ShaderToolsSmoke','SpriteSmoke','SceneFoundationSmoke','ProjectPhysicsSmoke','MonoSmoke','SceneSmoke','CoreSmoke','RendererSmoke','RendererFeaturesSmoke','Renderer2DSmoke','FontSmoke','SceneGPUSmoke','RuntimeSessionSmoke','EditorSmoke')
         for name in names:
             target='Migration'+name;suffix='.exe' if hz.SYSTEM=='windows' else ''
             executable=base/target/(target+suffix)

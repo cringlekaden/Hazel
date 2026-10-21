@@ -219,3 +219,11 @@ relative structure and also ship engine Open Sans/resources/licenses. No system
 font or source-checkout fallback is used. Nonempty obsolete UI FontPath fields
 are unsupported; writers only emit Text FontFamily/FontStyle. An empty historical
 marker carries no selection and is ignored (including the preserved Sandbox draft).
+
+The engine also contains a tested CPU typography foundation (HarfBuzz/libunibreak/
+SheenBidi, Unicode 17), with a representative Latin/Greek/Cyrillic/Arabic/Hebrew
+fixture corpus. It is not yet the measurement/drawing path. Hazelnut preview,
+Required coverage and exported games retain the current Latin-1 renderer contract;
+selecting a face with Arabic/Hebrew cmap coverage does not enable their rendering.
+Glyph-ID atlas pages and shared measurement/drawing integration are the next
+bounded milestone. No old/new typography switch or inactive family option exists.

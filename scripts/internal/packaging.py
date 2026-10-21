@@ -251,17 +251,23 @@ def native_closure(executable, package):
 
 
 def licenses(package):
+    for name, file in (('harfbuzz','COPYING'),('libunibreak','LICENCE'),('SheenBidi','LICENSE')):
+        if not (hz.ROOT/'Hazel/vendor'/name/file).is_file():
+            raise RuntimeError('Missing linked typography dependency notice: '+name+'/'+file)
+    if not (hz.ROOT/'scripts/dependencies/licenses/typography/LICENSE-Unicode.txt').is_file():
+        raise RuntimeError('Missing Unicode data notice for linked typography dependencies')
     hz.copy_changed(hz.ROOT/'LICENSE', package/'licenses/Hazel/LICENSE')
     hz.copy_changed(hz.ROOT/'Hazel/vendor/mono/LICENSE', package/'licenses/Mono/LICENSE')
     for source in (hz.ROOT/'Hazel/vendor').iterdir():
         if source.is_dir():
             for notice in source.rglob('*'):
-                if notice.is_file() and notice.name.lower().startswith(('license', 'copying', 'copyright')):
+                if notice.is_file() and notice.name.lower().startswith(('license', 'licence', 'copying', 'copyright', 'notice')):
                     hz.copy_changed(notice, package/'licenses/vendor'/source.name/notice.relative_to(source))
     for config in ('Release',):
         path = hz.ROOT/'build/dependencies/install'/f'{config}-{hz.SYSTEM}-x86_64/licenses'
         hz.copy_tree(path, package/'licenses/shader-tools')
     hz.copy_changed(hz.ROOT/'Hazel/Resources/fonts/opensans/LICENSE.txt', package/'licenses/OpenSans/LICENSE.txt')
+    hz.copy_tree(hz.ROOT/'scripts/dependencies/licenses/typography',package/'licenses/typography')
 
 
 def project_files(assets):

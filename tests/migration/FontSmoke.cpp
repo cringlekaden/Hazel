@@ -1,6 +1,7 @@
 // Real context tests for the actual target MSDF atlas and application-bound cache.
 #include "Hazel.h"
 #include "Hazel/Renderer/MSDFData.h"
+#include "Hazel/Text/TextLayout.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <algorithm>
@@ -60,6 +61,7 @@ int main()
         const auto invalid=fixture.Directory/"invalid.ttf";
         { std::ofstream output(invalid,std::ios::binary); output<<"not a font"; }
         for (int iteration=0; iteration<2; ++iteration) {
+            Hazel::Ref<const Hazel::Text::Layout> cpuSurvivor;
             std::weak_ptr<Hazel::Font> cache;
             {
                 Hazel::ApplicationSpecification specification;
@@ -72,6 +74,10 @@ int main()
                 cache=font;
                 Check(Hazel::Font::GetDefault()==font,"Default font cache not shared");
                 CheckAtlas(font);
+                auto cpu=font->GetCPUFace();
+                Check(cpu && cpu==Hazel::Font::GetDefault()->GetCPUFace(),"Accepted CPU font identity lost");
+                cpuSurvivor=Hazel::Text::Service::Main().Arrange(u8"Accepted café Καλημέρα Привет",cpu);
+                Check(cpuSurvivor->Font==cpu && !cpuSurvivor->Glyphs.empty(),"Accepted CPU face did not shape");
                 Hazel::TextComponent text;
                 Check(Hazel::ResolveTextFont(text,{})==font,"Target text component lost default font");
                 auto other=Hazel::CreateRef<Hazel::Font>(unicode);
@@ -84,6 +90,11 @@ int main()
                 // engine-owned default remains until Renderer2D::Shutdown resets it.
             }
             Check(cache.expired(),"Default font survived application/context destruction");
+            Check(cpuSurvivor && cpuSurvivor->Font && Hazel::Text::Service::Main().Usage().Faces==1,
+                  "CPU layout failed to survive renderer retirement independently");
+            cpuSurvivor.reset();
+            Check(Hazel::Text::Service::Main().Usage().Faces==0 && Hazel::Text::Service::Main().Usage().Results==0,
+                  "Accepted CPU resources leaked across application restart");
         }
         std::cout<<"PASS: target glyphs/metrics/MSDF GPU atlas, UTF-8 font path, invalid/missing diagnostics, shared default/text component and repeated context-bound font shutdown\n";
         return 0;

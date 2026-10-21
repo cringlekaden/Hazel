@@ -1056,3 +1056,196 @@ pinning HarfBuzz, boundary and bidi libraries (see the audit's alternatives).
 Do not infer language support from cmap presence or expand the fixed Latin-1 atlas
 as a substitute for shaping. Family/notice authoring does not complete P3 or make
 the UI production-ready.
+
+## P3: CPU typography foundation (renderer integration follows)
+
+Built from `aff70d1`, preserving the current family/coverage/atlas/painter path.
+No component/schema, family field, managed API, example, save format or authoring
+switch is added. The current renderer and export coverage still use Latin-1.
+The new service is the shared CPU foundation for the next glyph-ID integration,
+not newly rendered language support or completion of P3.
+
+### Dependencies and build review
+
+All new source is pristine pinned Git submodules; existing gitlinks are unchanged.
+Root-owned `scripts/dependencies/typography.lua` builds static archives with the
+existing Premake configurations, C11/C++17 and matching Windows dynamic CRT.
+Their ELF/Mach-O symbols are hidden so the private static HarfBuzz cannot
+interpose or depend on GTK/Pango's independently loaded system HarfBuzz.
+
+| Dependency / exact pin | Needed capability and selected data |
+| --- | --- |
+| HarfBuzz **12.3.2**, `b42511e071162fe76102f613a6ccc009726c99af` | OpenType substitution/positioning, glyph IDs/clusters, horizontal metrics and normalization; built-in Unicode **17.0.0** tables |
+| libunibreak **8.0**, `28a2756b864c343f438cd22537d49d394d4666a5` | Unicode **17.0.0** UAX14 line and UAX29 extended-grapheme boundaries; word implementation exists upstream but is not needed/compiled here |
+| SheenBidi **3.0.0**, `cfe430e7375a7845b679adae9d51dac6deaa8858` | Unicode **17.0.0** UAX9 paragraphs/levels, line L1/L2 visual runs and script locator (including paired-punctuation handling) |
+
+The [HarfBuzz configuration](https://github.com/harfbuzz/harfbuzz/blob/12.3.2/CONFIG.md)
+and [checked-in UCD table](https://github.com/harfbuzz/harfbuzz/blob/12.3.2/src/hb-ucd-table.hh)
+were inspected against its public shaping/cluster/plan APIs. The inspected newer
+14.6 tag already has Unicode 18 data; this pin keeps the foundation's Unicode data
+aligned at 17. It includes the release's allocation/fuzzing fixes. This is an
+explicit source selection, not a claim that future security updates are unneeded.
+[libunibreak's release](https://github.com/adah1972/libunibreak/releases/tag/libunibreak_8_0)
+contains updated grapheme/line tables; older releases' differing boundary versions
+are not assumed equivalent. [SheenBidi's release](https://github.com/Tehreer/SheenBidi/releases/tag/v3.0.0)
+adds Unicode 17 and allocator support. It supplies bidi, not shaping or line breaking.
+The combination satisfies this bounded script/corpus scope without ICU.
+
+HarfBuzz compiles upstream `src/harfbuzz.cc` with OT font funcs and built-in data;
+no hb-ft/system HarfBuzz, ICU/GLib/Graphite/platform shaper, subset/raster/GPU/tools/
+bindings target is enabled. AAT, variations, vertical/color/paint/draw and optional
+file/environment APIs are disabled. CFF outline shaping remains available.
+UniBreak compiles eight library sources; word/tests/generators are excluded.
+Sheen compiles its unity source with scratch-pool caching disabled, without its
+experimental editing API. Generated headers/tables already exist at these pins;
+Premake builds never run Meson, Autotools, CMake, gperf or Unicode generators and
+never fetch typography inputs. A source checkout/submodule acquisition is the
+separate initial network step. Plain C/C++ and upstream Windows atomic branches
+fit Linux/Windows and future macOS; no macOS build/support is claimed here.
+
+Pinned existing FreeType is **2.11.0** (`2d57b059`), msdfgen `b9061f9`, atlas-gen
+`b50e101`. HB's OT functions do not share or mutate their FreeType handles. All
+face consumers use the same accepted bytes/index-zero face. Upcoming MSDF work
+can open those bytes independently for glyph-index outline extraction.
+
+Licenses: HarfBuzz Old MIT COPYING (and subsidiary notices), libunibreak zlib-style
+LICENCE, SheenBidi Apache-2.0 LICENSE and source copyright, plus Unicode License V3
+are packaged by the common application/game notice collector. Its formerly
+missing `LICENCE`/`NOTICE` spellings are included; missing linked dependency/Unicode
+notices reject packaging. Exact Unicode notice/provenance lives under
+`scripts/dependencies/licenses/typography`. Test-only fonts/corpora are outside
+runtime Resources/Assets and do not enter game packages.
+
+### Corpus, results and ownership contract
+
+`tests/fixtures/typography/corpus.tsv` declares English/French/German, composed and
+decomposed accents, Greek/Cyrillic, Arabic joining with Latin/numbers, Hebrew
+mixed direction, punctuation, ligatures, whitespace and a long unbroken string.
+It is representative CPU test coverage, not every language/font feature.
+Shipped Open Sans is reused for accepted Latin/Greek/Cyrillic face checks. One
+unmodified static **DejaVu Sans 2.37**, 757,076 bytes, supplies a complete face for
+mixed Arabic/Hebrew/Latin fixtures. The official archive checksum, exact font/
+complete license hashes and redistribution terms are recorded in its fixture
+README. No system font, giant atlas, font subsetter or added game font is used.
+CJK, color emoji, vertical text, variable features, cross-family fallback,
+dictionary/hyphenation and discretionary soft-hyphen painting are outside this
+slice. They require a declared corpus/font/budget review and, where appropriate,
+additional algorithms or renderer contracts; none has an inert authored field.
+CJK needs licensed face/page budgets and a line-tailoring corpus; color glyphs
+need raster/compositing formats, vertical text needs vertical metrics/orientation,
+and variations need axis-keyed matching HB/FT instances before those claims expand.
+
+`Hazel/Text/TextLayout` exposes thread-affine `Text::Service`, immutable `Face` and
+immutable published `Layout` through existing Ref/Scope conventions. Each accepted
+`Font` owns its exact-byte CPU face, shared through `GetCPUFace()`; family/style
+resolution remains ProjectAssets' existing accepted-version path. No second font
+or atlas cache exists. CPU layout results pin CPU faces, never Font/atlas/GPU refs,
+and can survive scene/project/renderer retirement. Live CPU input admission is
+separate from atlas admission. A failed replacement still keeps the prior accepted
+Font/CPU face; metadata/source freshness remains explicit, outside drawing loops.
+CPU admission first evicts reusable entries from the existing Font LRU; if live
+CPU result/Font pins still prevent admission it rejects with ResourcePressure.
+There is no retry of rejected files on every frame, or second owning CPU LRU.
+Accepted resources carrying variable/color tables can continue on the unchanged
+renderer path, but Arrange explicitly rejects those unimplemented CPU behaviors.
+
+Service creation/calls and final Ref release belong to the service's owner thread;
+`Service::Main()` is the renderer/main-thread instance. Wrong-thread calls reject.
+Independent services have separate caller-owned budgets. Sheen's process-default
+allocator is scoped under an adapter mutex, all its objects die before the old
+allocator is restored, and per-call allocation is checked. Other engine code must
+use this adapter rather than concurrent direct Sheen calls. HB buffers/plans are
+per operation; plans are uncached, so language/feature combinations cannot build
+an unbounded retained shape-plan cache. Language tags are the finite tested set
+`und/en/fr/de/el/ru/ar/he`; no arbitrary HB language interning loop exists.
+
+Strict UTF-8 reuses Hazel's decoder: leading BOM ignored, embedded NUL/overlong/
+surrogate/out-of-range/truncated sequences reject. Each scalar and terminal
+boundary retain original byte and C# UTF-16 offsets, including skipped leading BOM
+units. No boundary is invented inside a UTF-8 encoding or surrogate pair. Extended
+grapheme and permitted/mandatory line boundaries are distinct from HB glyph
+clusters. Source remains in logical order. Glyph clusters are scalar half-open
+ranges, with possibly many scalars/glyphs per cluster; byte/UTF16 ranges follow the
+boundary map. Actual caret/ligature caret positions and selection widgets follow
+later, not an assumption that one glyph is one editable character.
+
+Paragraphs retain source/separator ranges and resolved base levels. Sheen line
+runs apply whitespace reset and visual reordering, then intersect indexed script
+runs. There is one explicitly selected complete face per call, no per-code-point
+fallback. Script/direction cuts through an extended grapheme reject. Glyph IDs,
+advances, offsets, source ranges and visual run positions are backend-independent.
+Coordinates are logical units with +X right/+Y down, `EmSize` logical units/em;
+glyph X/Y is its pen/baseline and offsets are separate. Line height/baseline use
+that accepted OT face's horizontal extents. RTL glyphs/runs remain in visual
+left-to-right order, while source/ranges retain logical identities.
+
+Absent Width is unwrapped; finite nonnegative Width is definite (including zero).
+Greedy candidates are permitted UAX14/grapheme boundaries and are **reshaped with
+the chosen line's context**, never cut out of paragraph-shaped geometry. If the
+first unbroken item cannot fit, explicit emergency grapheme wrapping overrides
+UAX14 opportunities; it is marked separately from permitted breaks. An oversized
+single grapheme retains its advance and reports Overflow, never truncates/scales.
+Following emergency fragments avoid reshaping the whole remaining long word.
+Trailing space advances are retained; there is no trim/justification/hyphenation.
+Tabs have four-space advance (not tab stops); CRLF is one paragraph separator,
+line separators break, interior FEFF remains zero-width through HB. Empty input
+has one empty caret line; trailing paragraph separators add an empty line.
+
+### Budgets and failure policy
+
+Defaults may be lowered for private test services, never silently raised:
+
+| Resource | Limit / accounting boundary |
+| --- | --- |
+| Input | 64 KiB UTF-8, 16,384 decoded scalars; static face input remains ≤4 MiB |
+| Published result | 4,096 lines/runs, 65,536 glyphs; retained source/vector capacity accounted |
+| Contextual work | 32,768 actual script/bidi shaping calls, 1,048,576 cumulative candidate-line scalars per Arrange |
+| HB work buffers | compiled fresh-buffer maximum 65,536 glyph entries / 1,048,576 operations; fail rather than publish incomplete shaping |
+| Sheen workspace | 8 MiB per Arrange through checked allocate/reallocate/free; scratch pool disabled |
+| Retained CPU faces | 24 / 32 MiB of source/vector/identity/engine-object storage per service, including external pins |
+| Retained CPU results | 8,192 / 16 MiB per service, including externally pinned results; count allows two 4,096-element UI generations, subject to bytes; no automatic result cache |
+
+Identity strings are bounded to 4096 bytes, language to the finite tested set;
+glyph/run/line growth is checked before publication. Script intersections use
+indexed ranges. Temporary candidate/output vectors are bounded by the same glyph/
+run/input caps but are separate from retained-result bytes; at most accepted and
+trial candidates plus current output coexist. HB's sanitized tables/lazy OT data,
+dependency parsing/plans, allocator/control-block overhead and worker stacks are
+not an exact total in the input/result counters. Input/output/work caps constrain
+exposure; they do not establish a hard process-memory or frame-time limit. The
+existing atlas/cache/generator/prepared-geometry caps are unchanged and separate.
+
+Malformed text/faces, unknown scripts/languages, missing glyph ID zero,
+unsupported features, wrong thread and exhausted caps throw bounded actionable
+errors. No partial Layout is published, accepted resources are immutable, and a
+caller can retain its previous result. Source-missing coverage is not quietly
+reported as successful replacement shaping. GPU generation/scene dispatch is not
+part of this service. Runtime fallback and author-visible family/coverage status
+remain unchanged until actual renderer integration.
+
+### Next bounded integration
+
+1. Add immutable glyph-ID atlas pages backed by accepted `Text::Face` bytes.
+   Pinned APIs are `FontGeometry::loadGlyphset(..., enableKerning=false)`,
+   `GlyphGeometry::load(FontHandle*, geometryScale, GlyphIndex)`,
+   `FontGeometry::getGlyph(GlyphIndex)` and `msdfgen::loadGlyph(..., GlyphIndex)`.
+   Disable MSDF pair kerning: HB already supplies positioned advances. Use one
+   accepted byte resource for FT outline extraction and HB metrics; never reopen
+   a mutable pathname for an old layout's page.
+2. Separate renderer-owned page admission/uploads from CPU face/result ownership.
+   Change ProjectAssets' accepted family records to CPU-face-first resolution:
+   `FamilyFont` currently requires constructing a Latin-1 atlas. Preserve its
+   style/status/reload/failure contracts while replacing that coupling, keeping
+   CPU → GPU ownership absent and one reusable face identity/cache policy.
+   Bound page bytes/glyphs/pending generation, prewarm this corpus and pin page/UV
+   versions through prepared geometry and ordered draw runs. No live atlas UV
+   replacement. Define missing-page behavior before dynamic requests; do not
+   smuggle cross-family fallback into per-code-point page generation.
+3. Switch `Renderer2D::MeasureText/LayoutText/PrepareString/DrawString` and
+   `RuntimeUIMeasure` to the same immutable result, converting the current
+   font-height-based size/spacing into explicit em metrics. Keep layout/paint
+   native-write keys and family epochs authoritative. Then validate glyph-ID page
+   coverage, compositor/picking/order and old examples at declared viewports,
+   update Hazelnut/export guarantees only when those rendered checks pass.
+
+Local qualification is recorded at the final checkpoint below.

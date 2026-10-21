@@ -6,6 +6,7 @@
 #include "Hazel/Renderer/Texture.h"
 
 namespace Hazel {
+    namespace Text { class Face; }
     struct MSDFData;
     // Atlas bytes are RGB8 level-zero estimates, excluding driver allocation overhead.
     struct FontLimits {
@@ -37,6 +38,7 @@ namespace Hazel {
         Ref<Texture2D> GetAtlasTexture() const {return m_AtlasTexture;}
         const std::filesystem::path& GetPath() const {return m_Path;}
         uint64_t GetAtlasBytes() const {return m_AtlasBytes;}
+        const Ref<const Text::Face>& GetCPUFace() const {return m_CPUFace;}
         static FontCoverage InspectCoverage(const std::filesystem::path& path,const std::string& corpus);
         static void ValidateFile(const std::filesystem::path& path);
         // Load/Initialize/Trim/Shutdown and all resource owners are rendering-thread bound.
@@ -54,6 +56,7 @@ namespace Hazel {
         void Generate(Input& input);
         Scope<MSDFData> m_Data;
         Ref<Texture2D> m_AtlasTexture;
+        Ref<const Text::Face> m_CPUFace; // exact accepted bytes; no GPU reference back to Font
         std::filesystem::path m_Path;
         std::string m_IdentityKey;
         uint64_t m_AtlasBytes=0;

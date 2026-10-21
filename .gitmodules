@@ -23,3 +23,12 @@
 [submodule "Hazel/vendor/ImGuizmo"]
 	path = Hazel/vendor/ImGuizmo
 	url = https://github.com/TheCherno/ImGuizmo
+[submodule "Hazel/vendor/libunibreak"]
+	path = Hazel/vendor/libunibreak
+	url = https://github.com/adah1972/libunibreak.git
+[submodule "Hazel/vendor/SheenBidi"]
+	path = Hazel/vendor/SheenBidi
+	url = https://github.com/Tehreer/SheenBidi.git
+[submodule "Hazel/vendor/harfbuzz"]
+	path = Hazel/vendor/harfbuzz
+	url = https://github.com/harfbuzz/harfbuzz.git

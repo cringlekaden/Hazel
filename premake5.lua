@@ -586,3 +586,4 @@ include "scripts/dependencies/physics.lua"
 include "scripts/dependencies/mono.lua"
 
 include "scripts/dependencies/editor.lua"
+include "scripts/dependencies/typography.lua"

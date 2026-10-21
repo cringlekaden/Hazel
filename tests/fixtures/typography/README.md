@@ -1,0 +1,38 @@
+# CPU typography fixtures
+
+`corpus.tsv` is Hazel-authored UTF-8 test material (repository license), covering
+English/French/German, composed/decomposed accents, Greek/Cyrillic, Arabic joining
+and Arabic/Latin/numbers, Hebrew/Latin/numbers, punctuation, tab/NBSP, ligatures
+and a long word. This is a representative CPU-layout corpus, not a rendering or
+language certification. Reader-reviewed language typography remains an integration
+acceptance task. CJK, color emoji, vertical and variable typography are excluded.
+
+One added static face is needed because shipped Open Sans does not cover the
+Arabic/Hebrew fixture. **Unmodified DejaVu Sans 2.37**, 757,076 bytes, is taken from
+the project's [official single-face archive](https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-sans-ttf-2.37.zip).
+The [upstream download page](https://dejavu-fonts.github.io/Download.html) publishes
+archive SHA-256 `5c6e497a2f36552cb5ffb112c413a6af39c0f3c47653662b90b4fa6499822fd7`.
+
+| File | SHA-256 |
+| --- | --- |
+| DejaVuSans.ttf | `7da195a74c55bef988d0d48f9508bd5d849425c1770dba5d7bfc6ce9ed848954` |
+| LICENSE-DejaVu.txt | `7a083b136e64d064794c3419751e5c7dd10d2f64c108fe5ba161eae5e5958a93` |
+
+The complete archive LICENSE is retained byte-for-byte, including Bitstream Vera,
+Arev and contributed-glyph notices. Redistribution with notices is permitted;
+modified-font naming and standalone-sale restrictions apply. No face is modified,
+subsetted, installed as a system font, or added to game content. Input remains
+below Hazel's existing 4 MiB limit. Latin/Greek/Cyrillic source coverage in engine
+Open Sans is separately exercised by accepted-resource integration tests.
+
+The regression runner copies Unicode 17 `GraphemeBreakTest.txt` and
+`LineBreakTest.txt` from the pinned libunibreak checkout, and `BidiCharacterTest.txt`
+from pinned SheenBidi into its private working directory. Their original headers
+and Unicode notices remain intact. Unicode License V3 is in
+`scripts/dependencies/licenses/typography/LICENSE-Unicode.txt`. Builds run none of
+the upstream generators. Conformance tests check dependency behavior independently
+of Hazel's selected-script/layout policy, which is tested separately.
+
+Fixtures/corpora are outside runtime Resources/Assets and are never included in
+normal application/game exports. To run the CPU check without a display, supply a
+fixture directory containing these files to `MigrationTypographySmoke`.
