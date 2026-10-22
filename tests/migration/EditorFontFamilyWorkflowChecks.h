@@ -64,6 +64,7 @@ void FontFamilyWorkflowChecks() {
         auto start=UIEditValues::Capture(label),after=start;
         after.Text->Font={"Fonts/Corpus.hfont"};
         after.Text->Text=i==0?u8"A longer café label: ffi, composed é and decomposed e\u0301":i==1?u8"مرحبا Hazel 123 — שלום (45) — more source for a constrained paragraph":u8"One visible line\nAnother visible line\nA third line remains authored\n";
+        after.Rect->WidthMode=after.Rect->HeightMode=GameUI::SizeMode::Fixed;
         after.Rect->Offset={36,float(150+i*100)};after.Rect->FixedSize={300,80};after.Rect->Padding=glm::vec4(8);
         if(i==0){after.Rect->WidthMode=GameUI::SizeMode::Fill;after.Rect->Offset.x=0;after.Rect->Margin={36,0,900,0};}
         after.Style->Size=24;after.Style->Wrap=i!=0;after.Style->Overflow=i==2?Text::Overflow::Clip:Text::Overflow::Ellipsis;after.Style->MaxLines=i==0?1:2;
@@ -79,6 +80,8 @@ void FontFamilyWorkflowChecks() {
     for(int iteration=0;iteration<3;++iteration) {
         Check(editor.OnScenePlay(true),"Overflow Play failed");auto running=editor.m_ActiveScene;running->OnViewportResize(640,480);running->SetUIFramebufferSize({640,480});overflowTarget->Bind();RenderCommand::Clear();running->OnUpdateRuntime(0);running->OnUpdateRuntime(0);
         Check(running->GetUIDiagnostics().PreparedReuses>=3,"Overflow runtime did not reuse prepared text");
+        auto wrapped=running->GetUITextLayout(overflowIDs[1]);
+        Check(wrapped && wrapped->Omitted && wrapped->Lines.size()==2 && wrapped->Lines.back().Ellipsized && running->GetUISnapshot().Find(overflowIDs[1])->Bounds.Size.x==300,"Native paragraph did not demonstrate constrained wrapped ellipsis");
         auto narrow=running->GetUITextLayout(overflowIDs.front());Check(narrow && narrow->Omitted,"Native constrained label did not truncate");
         running->OnViewportResize(960,480);running->SetUIFramebufferSize({640,480});running->OnUpdateRuntime(0);
         auto wide=running->GetUITextLayout(overflowIDs.front());Check(wide && wide->Lines[0].End>narrow->Lines[0].End,"Native overflow preview/Play resize did not restore more source");

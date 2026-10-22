@@ -188,7 +188,8 @@ cross-family fallback, rich text and editing/IME remain outside this scope.
 
 **UI Text Style → Overflow** defaults to **Clip**, with **Max lines = 0**
 (unlimited within the 4096-line engine limit). Wrap remains independent. Clip
-keeps ordinary partial-line pixel clipping; a positive Max lines removes whole
+keeps the established element/inherited border-box pixel clip; padding positions
+and wraps text without adding another clip. A positive Max lines removes whole
 subsequent lines without a marker. Existing scenes keep these defaults.
 
 **Ellipsis** fits complete font-height line boxes inside the padded content area,

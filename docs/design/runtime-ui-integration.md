@@ -1575,7 +1575,9 @@ layout schema generation, game content or renderer mode is added.
 UI authors the last two in `UITextStyleComponent`. Defaults are Clip / 0
 (unlimited within existing line limits), preserving current documents. Width is a
 constraint independently of Wrap. Clip leaves height to the caller's pixel clip;
-positive MaxLines removes whole subsequent lines in either mode. Ellipsis also
+positive MaxLines removes whole subsequent lines in either mode. Clip retains
+the established border-box/inherited clip; padding alone does not add a scissor.
+Ellipsis also
 limits to complete font-height boxes: first box is accepted ascender–descender
 height, then accepted line advances including authored spacing. Padding supplies
 the inner UI box; ancestor clipping does not reflow text. A four-float-ULP height
@@ -1652,3 +1654,102 @@ Clip/Ellipsis and 0–4096, using the established live-entity/thread guard. Play
 copies stay isolated. Runtime UI Debugger reads the last completed paint result;
 line/omission/marker/search status is transient, with no reshaping or action
 side effects from inspection.
+
+### Local qualification and measured limits (2026-10-22)
+
+Production checkpoint **`93d6df0bea5a14fbe579160fb489dc801c93899b`** builds with
+Premake/GNU Make, two compiler jobs. All **17 regression executables** pass in
+Debug physical/native GL4.2 and final Release physical/forced GL4.1. The earlier
+Release overflow renderer checks also pass on llvmpipe GL4.6/SPIR-V and explicit
+two-slot GLSL; the final CPU-only negative-constraint guard does not change those
+valid rendering cases. Grandpa: i3-3227U/8 GB, GCC 16.2.1, Intel HD4000/Mesa
+26.2.4-arch3.1. Plasma Wayland hosts GLFW X11/GLX through Xwayland, not native
+Wayland or Xvfb. No Windows hardware/MSVC or macOS result is inferred. CI is
+**not awaited or polled**.
+
+New CPU checks independently reference cmap advances at fit boundaries, retained
+ASCII/grapheme ends, Arabic final forms and RTL marker placement. They cover
+Clip MaxLines, finite height/spacing and normalized-height rounding, marker-only/
+too-small/empty boxes, CRLF/U+2028/trailing empty lines, accents, ffi, mixed bidi,
+BOM/byte/UTF-16 mappings and generated sentinels. A private in-memory fixture cmap
+removes U+2026: strict layout rejects; permitted rendering reports generated
+`.notdef`. Long 4096-character input exercises conservative bounded selection;
+lowered work limits reject without publication. A targeted C++ allocation failure
+also proves `Renderer2D::LayoutText` preserves its old complete line view; view
+publication now swaps only after every entry succeeds.
+
+Rendered checks compare final contextual glyph IDs/positions with the complete
+retained string, exercise physical left/center/right, translucent ordering,
+subsequent empty clips, padded ink/picking and marker-page admission failure.
+Real scenes verify native mutations with reused Fixed-box generations, Content
+reflow, zero-line reuse, scene/copy/duplicate/prefab and full-source round trips.
+The Unicode 17 conformance/corpus, D8 analytic pixels, capacity, reload/resource
+retirement, domain lifecycle, history and expanded Button Inspector checks remain
+passing.
+
+The maintained native fixture creates three useful labels through native commands
+and shared Inspector transactions: responsive unwrapped Ellipsis, Fixed-width
+mixed-direction wrapped Ellipsis/MaxLines=2, and Clip/MaxLines=2 with explicit
+newlines. It explicitly selects sizing ownership and asserts the paragraph's
+actual 300-unit width, two lines and omission, rather than merely assigning an
+inactive FixedSize value to Content sizing. Actual ImGui properties/scene preview,
+resize, Undo/Redo, scene/prefab save/reopen and repeated Play/Stop are exercised.
+After the final fixture-only sizing/assertion correction, affected EditorSmoke
+passes again in both configurations and the normal export is rechecked. These
+native harness checks do not certify physical pointer/dialog usability.
+
+Release source checks pass all five games in Nutella and Hazelnut on physical
+native GL4.2, including startup/render/resize/close and unchanged authored hashes.
+Existing native/managed gameplay, Lightkeeper progress/save migration and chapter
+checks pass. Fresh Lightkeeper menu, HUD and Mara dialogue captures were inspected;
+no authored correction was needed. A normal export of the native fixture renders
+from an unrelated Unicode directory on physical GL4.1 with source resources,
+examples, SDK and GAC unavailable. Scene/prefab, project faces/notices and engine/
+dependency closure are checked; the test collection is absent. Missing/corrupt
+project-face cases retain authored references and render the established fallback.
+
+Frozen-code Release measurements use a 1280×720 RGBA8/ID target with no concurrent
+compiler/test. The new `--profile-overflow` fixture has 121 UTF-8 bytes, width 8
+font-height units, Wrap/Ellipsis, MaxLines=2, height 2.2, spacing .1 and 24-pixel
+text. Accepted-face load/ASCII planning is outside its cold timer. Cold CPU layout
+and line views: **1.277 ms**, 52 shaping calls / 370 cumulative scalars. First
+page/geometry preparation: **1940 ms**, including upload enqueue, not GPU
+completion; 24 ink quads. This pause remains a practical limit.
+
+| Overflow fixture | Median / p95 ms | Scope |
+| --- | --- | --- |
+| Changed source + width | .7244 / 1.1410 | 100 samples after 20; CPU layout/LRU, no page generation |
+| Warm lookup | .0008 / .0021 | 120 after 20; zero new shaping or pages |
+| Cached glyph CPU submission | .0598 / 2.4122 | Eight ordered draws; no presentation |
+| GPU command interval | .0195 / .0443 | 53 ready nonblocking samples; no synchronous waits |
+
+The existing 64-element guard uses 20 warm-up / 120 samples. Unchanged images:
+CPU boundary+paint **.1717/2.4084 ms**, GPU interval **.0401/.0618**, one draw.
+Mixed (32 labels): **1.1451/1.5269**, GPU **.5702/3.6619**, 65 draws; all 32
+prepared labels reuse (6 KiB), zero rebuilds. Both count 120 ordinary C++ new calls
+across 120 frames. Mixed move is 1.2563/1.9761; changing paint/one label is
+.8118/1.2356 with one label rebuild and 480 new calls total. One End flush;
+no capacity/texture flush in this guard (separate regressions force them).
+These exclude input, gameplay, world rendering and presentation; GPU intervals
+can include CPU-feeding gaps and are not additive busy time. Scheduling tails
+vary; no universal budget or speedup is claimed. No large-fixture campaign was
+repeated. Large alternating-run submission, changed-layout allocations, trial
+shaping and cold synchronous page preparation remain costs.
+
+Manual acceptance:
+
+1. In a disposable scene/prefab, select a complete licensed family, Fixed/Fill
+   width and Ellipsis/MaxLines=2. Resize, change padding/spacing, try Clip and 0,
+   and confirm full Source survives Undo/Redo, save/reopen and Play/Stop.
+2. Check marker-only/too-small boxes and the debugger's omitted/fit/search status.
+   Have competent readers review Arabic joining, Hebrew/Arabic/Latin punctuation
+   and truncated lines; numeric/capture checks do not replace that review.
+3. Repeat physical Windows/DPI/focus/detached-viewport checks and a normal export.
+
+This completes bounded overflow implementation, not all P3 or production UI.
+Existing script/font exclusions and cross-family fallback remain. Rich spans,
+locale preview and editing are separate work. **Smallest next endpoint slice:**
+remappable device-neutral UI actions with scoped directional/gamepad focus (P4),
+before composing more controls or scrolling/data views. Retain the measured
+rendering and cold-preparation limits in that work; do not infer large-list budgets
+from the small guard.
