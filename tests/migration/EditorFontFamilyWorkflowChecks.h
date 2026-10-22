@@ -75,15 +75,16 @@ void FontFamilyWorkflowChecks() {
     Prefab::Save(assets->Root(),"Prefabs/overflow-native.hprefab",scene,scene->FindEntityByName("UI Canvas"),true);
     owner.SelectAsset(assets->Root()/"Prefabs/overflow-native.hprefab");Check(bool(owner.m_PrefabScene),"Overflow prefab editor failed");owner.ClosePrefab();
     auto overflowAuthored=owner.SceneText();
-    FramebufferSpecification specification;specification.Width=640;specification.Height=480;specification.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};auto overflowTarget=Framebuffer::Create(specification);
+    FramebufferSpecification specification;specification.Width=640;specification.Height=480;specification.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};auto overflowTarget=Framebuffer::Create(specification);auto overflowViewport=RenderCommand::GetRasterState().Viewport;
     for(int iteration=0;iteration<3;++iteration) {
-        Check(editor.OnScenePlay(true),"Overflow Play failed");auto running=editor.m_ActiveScene;running->OnViewportResize(640,480);overflowTarget->Bind();RenderCommand::Clear();running->OnUpdateRuntime(0);running->OnUpdateRuntime(0);
+        Check(editor.OnScenePlay(true),"Overflow Play failed");auto running=editor.m_ActiveScene;running->OnViewportResize(640,480);running->SetUIFramebufferSize({640,480});overflowTarget->Bind();RenderCommand::Clear();running->OnUpdateRuntime(0);running->OnUpdateRuntime(0);
         Check(running->GetUIDiagnostics().PreparedReuses>=3,"Overflow runtime did not reuse prepared text");
         auto narrow=running->GetUITextLayout(overflowIDs.front());Check(narrow && narrow->Omitted,"Native constrained label did not truncate");
         running->OnViewportResize(960,480);running->SetUIFramebufferSize({640,480});running->OnUpdateRuntime(0);
         auto wide=running->GetUITextLayout(overflowIDs.front());Check(wide && wide->Lines[0].End>narrow->Lines[0].End,"Native overflow preview/Play resize did not restore more source");
         overflowTarget->Unbind();editor.OnSceneStop();Check(owner.SceneText()==overflowAuthored,"Overflow Play/Stop changed full authored source/history");
     }
+    RenderCommand::SetViewport(overflowViewport.x,overflowViewport.y,overflowViewport.z,overflowViewport.w);
     m_OverflowFixture=scene;m_OverflowTarget=overflowIDs.front();m_OverflowFixturePanel.SetContext(scene);m_OverflowFixturePanel.SetSelectedEntity(scene->GetEntityByUUID(m_OverflowTarget));m_OverflowFixturePanel.RestoreSections({{"UI Text Style",true}});
     SceneSerializer(corpusScene).Serialize(assets->Root()/"Scenes/corpus-native.hazel");
     Prefab::Save(assets->Root(),"Prefabs/corpus-native.hprefab",corpusScene,corpusLabel);

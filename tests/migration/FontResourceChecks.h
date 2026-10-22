@@ -13,6 +13,8 @@ static void FontResourceChecks(const std::filesystem::path& root) {
     auto invalid=limits;invalid.CacheEntries=0;Reject([&]{Font::Initialize(invalid);},"Non-admitting cache accepted");Font::Initialize(limits);
     {
         auto fallback=Font::GetDefault();auto defaultPage=page(fallback);
+        Reject([&]{fallback->Layout("A",-.5f,false);},"Fractional negative text width accepted as indefinite");
+        Reject([&]{fallback->Layout("A",1,false,0,0,Text::Overflow::Ellipsis,0,-.5f);},"Fractional negative text height accepted as indefinite");
         std::filesystem::resize_file(a,128*1024);auto stamp=std::filesystem::last_write_time(a);
         auto first=Font::Load(a);auto firstPage=page(first);auto oldID=firstPage->Texture->GetRendererID();
         Check(Font::Load(a)==first,"Content-key reuse missing");

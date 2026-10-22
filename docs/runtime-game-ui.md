@@ -195,7 +195,8 @@ subsequent lines without a marker. Existing scenes keep these defaults.
 then replaces the logical tail of each overwide line and/or the last retained
 line with shaped U+2026 (`…`). Max lines also applies. A line fits vertically when
 one font height plus its preceding line advances fits; authored line spacing is
-included. No complete line means no glyphs. If the marker alone is too wide, that
+included. Height edges allow four float ULPs for measure/arrange rounding; zero
+remains empty. No complete line means no glyphs. If the marker alone is too wide, that
 line paints nothing and the debugger explains why. Ink overhang clips to the
 padded content box and inherited clip. Left/center/right remain physical alignment;
 the jointly reshaped marker follows paragraph direction (visual left for RTL).
@@ -227,7 +228,7 @@ save/reopen, duplication, prefab reuse and Play/Stop.
 
 Text Renderer owns **Font family** and **Face style**, shared by world and UI text.
 Empty family selects engine Open Sans (the four shipped real faces). UI Text Style
-owns size, alignment and wrapping. Project families are `.hfont` assets; no face is
+owns size, alignment, wrapping and overflow/line limits. Project families are `.hfont` assets; no face is
 synthetically emboldened/slanted. An absent optional style explicitly uses Regular,
 with a message in Properties. Family errors keep the live accepted face, or use
 engine Regular if none survives; authored selections are never rewritten.

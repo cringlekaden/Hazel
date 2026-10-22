@@ -373,8 +373,13 @@ Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>
     if(options.MaxLines)keep=std::min(keep,size_t(options.MaxLines));
     if(options.OverflowMode==Overflow::Ellipsis && options.Height) {
         size_t fit=0;
-        if(*options.Height>=boxHeight) {
-            const double additional=(double(*options.Height)-boxHeight)/lineHeight;
+        // Normalize/scale/arrange each round floats. Admit a four-ULP edge
+        // tolerance so Content's own font-height box does not lose its last line.
+        // Exact zero remains empty; width/ellipsis candidates still fit strictly.
+        float edge=*options.Height;
+        if(edge>0)for(int i=0;i<4;++i)edge=std::nextafter(edge,std::numeric_limits<float>::infinity());
+        if(edge>=boxHeight) {
+            const double additional=(double(edge)-boxHeight)/lineHeight;
             fit=additional>=double(out.Lines.size())?out.Lines.size():1+size_t(std::floor(additional));
         }
         keep=std::min(keep,fit);

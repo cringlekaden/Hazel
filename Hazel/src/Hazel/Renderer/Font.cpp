@@ -202,7 +202,7 @@ std::vector<Ref<const FontPage>> Font::PreparePages(const Text::Layout& layout) 
     return result;
 }
 Ref<const Text::Layout> Font::Layout(const std::string& text,float width,bool wrap,float tracking,float spacing,Text::Overflow overflow,uint32_t maxLines,float height) {
-    CheckThread();if(!std::isfinite(width) || !std::isfinite(height) || width< -1 || height< -1)throw std::invalid_argument("Text constraints must be finite, -1 (indefinite) or nonnegative");
+    CheckThread();if(!std::isfinite(width) || !std::isfinite(height) || (width<0 && width!=-1) || (height<0 && height!=-1))throw std::invalid_argument("Text constraints must be finite, -1 (indefinite) or nonnegative");
     if(!wrap && overflow==Text::Overflow::Clip)width=-1;
     if(overflow==Text::Overflow::Clip)height=-1;
     for(auto it=m_Layouts.begin();it!=m_Layouts.end();++it)if(it->Width==width && it->Wrap==wrap && it->Height==height && it->OverflowMode==overflow && it->MaxLines==maxLines && it->Tracking==tracking && it->Spacing==spacing && it->Result->Source==text){auto result=it->Result;m_Layouts.splice(m_Layouts.begin(),m_Layouts,it);++stats.LayoutHits;return result;}

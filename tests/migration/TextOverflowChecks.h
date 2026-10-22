@@ -20,6 +20,10 @@ static void OverflowChecks(Service& service,const Ref<const Face>& face,hb_font_
     auto empty=service.Arrange("",face,options);Check(!empty->Omitted && empty->Lines.size()==1 && empty->Glyphs.empty(),"Empty input marked omitted");
     options.MaxLines=1;auto newline=service.Arrange("a\n",face,options);
     Check(newline->Omitted && newline->OriginalLines==2 && newline->Lines[0].End==1 && newline->Glyphs.back().Generated,"Omitted trailing empty line lacks marker");
+    for(const auto& separator:{std::string("a\r\n"),std::string(u8"a\u2028b")}) {
+        auto separated=service.Arrange(separator,face,options);
+        Check(separated->OriginalLines==2 && separated->Lines.size()==1 && separated->Lines[0].End==1 && separated->Glyphs.back().Generated && separated->Source==separator,"CRLF/line separator truncation corrupted source/context");
+    }
     options.OverflowMode=Overflow::Clip;auto clip=service.Arrange("a\nb\n",face,options);
     Check(clip->Lines.size()==1 && clip->Omitted && clip->Glyphs.size()==1 && !clip->Glyphs[0].Generated,"Clip MaxLines failed");
     options.MaxLines=0;options.Height=0;
@@ -30,6 +34,10 @@ static void OverflowChecks(Service& service,const Ref<const Face>& face,hb_font_
     auto vertical=service.Arrange("a\nb",face,options);Check(vertical->Lines.size()==1 && vertical->Glyphs.back().Generated,"Font-height box/line spacing contract failed");
     options.Height=face->HeightEm()+face->LineHeightEm()+options.LineSpacing;
     Check(service.Arrange("a\nb",face,options)->Lines.size()==2,"Exact second full-line boundary rejected");
+    options={};options.EmSize=1/face->HeightEm();options.LineSpacing=.1f;options.OverflowMode=Overflow::Ellipsis;
+    options.Height=1+face->LineHeightEm()/face->HeightEm()+options.LineSpacing;
+    auto normalized=service.Arrange("a\nb",face,options);Check(normalized->Lines.size()==2 && !normalized->Omitted,"Normalized Content height lost its last line to float rounding");
+    options.Height=*options.Height-.0001f;Check(service.Arrange("a\nb",face,options)->Lines.size()==1,"Height tolerance admitted a materially incomplete line");
     options={};options.OverflowMode=Overflow::Ellipsis;options.MaxLines=1;options.Width=2.5f;
     auto wrapped=service.Arrange("one two three four five",face,options);
     Check(wrapped->Omitted && wrapped->Lines.size()==1 && wrapped->Width<=*options.Width && wrapped->Glyphs.back().Generated,"Wrapped MaxLines/width omitted marker");

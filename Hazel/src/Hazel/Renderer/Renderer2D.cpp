@@ -763,12 +763,13 @@ namespace Hazel {
     Ref<const Text::Layout> Renderer2D::LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines,float spacing,Text::Overflow overflow,uint32_t maxLines,float height) {
         if(!font)throw std::invalid_argument("Layout needs a font");
         auto result=font->Layout(text,width,wrap,kerning,spacing,overflow,maxLines,height);
-        lines.clear();
+        std::vector<TextLine> complete;complete.reserve(result->Lines.size());
         for(uint32_t i=0;i<result->Lines.size();++i) {
             const auto& line=result->Lines[i];
             auto begin=result->Boundaries[line.Begin].Byte,end=result->Boundaries[line.End].Byte;
-            lines.push_back({text.substr(begin,end-begin),line.Width,result,i});
+            complete.push_back({text.substr(begin,end-begin),line.Width,result,i});
         }
+        lines.swap(complete); // allocation failure cannot partially publish the line view
         return result;
     }
     namespace {

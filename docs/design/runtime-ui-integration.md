@@ -1561,3 +1561,94 @@ Clip/Ellipsis overflow and MaxLines, reshaping at the chosen truncation boundary
 using these shared results/pages, with native preview/history and mixed-bidi
 regressions. Keep scrolling/new controls and the large alternating-run performance
 work separate.
+
+## P3: explicit text overflow and MaxLines
+
+Continues `51e1f97` / `7725874`; implementation checkpoint `1dd4460`. One shared
+CPU service remains authoritative for world/UI text, metrics and immutable
+accepted-face glyph pages. No dependency, font asset, shader/blend convention,
+layout schema generation, game content or renderer mode is added.
+
+### Presentation and source contract
+
+`Text::Options` adds independent Wrap, optional Height, Clip/Ellipsis and MaxLines;
+UI authors the last two in `UITextStyleComponent`. Defaults are Clip / 0
+(unlimited within existing line limits), preserving current documents. Width is a
+constraint independently of Wrap. Clip leaves height to the caller's pixel clip;
+positive MaxLines removes whole subsequent lines in either mode. Ellipsis also
+limits to complete font-height boxes: first box is accepted ascender–descender
+height, then accepted line advances including authored spacing. Padding supplies
+the inner UI box; ancestor clipping does not reflow text. A four-float-ULP height
+edge tolerance absorbs normalization/arrangement rounding; zero stays empty. Width
+fitting is strict. Zero/insufficient height
+has no visible line. If U+2026 alone cannot fit width, the affected line is blank,
+with MarkerDoesNotFit; a missing complete line has the same explicit status.
+
+Ellipsis marks actual omitted content, including omitted explicit/trailing empty
+lines. Fitting text gets no marker; empty source has no omitted content. Each
+horizontal overflow line replaces a logical source tail; vertical/MaxLines
+omission marks the last retained line. U+2026 is shaped **with** its retained
+logical line, rerunning script/bidi/contextual processing with the original
+paragraph base direction. Arabic final forms, ligatures/combining clusters and
+neutral punctuation follow that final context. RTL's marker is at its visual
+trailing edge; physical left/center/right UI alignment is unchanged.
+
+Only original extended-grapheme boundaries are candidates. Up to 128 boundaries
+are tested longest-first; longer lines use an advance-estimated ±48-boundary
+neighborhood, geometrically decreasing checkpoints and the empty prefix, at most
+128 candidates. Every admitted candidate is fully reshaped and measured. Prefix
+width monotonicity is never assumed. ConservativeTruncation explicitly reports
+that a long line may omit more than the mathematically longest fitting prefix.
+The existing 1,048,576 cumulative shape-scalar / 32,768 dependency-call caps cover
+original layout, marker and all trials together. Exceeding work/output/input
+limits rejects publication rather than returning partial success. Unsupported
+font rules merging generated and authored content into one cluster also reject.
+
+Layout Source/Scalars/Boundaries/Paragraphs retain the complete original logical
+input and byte/UTF-16 mapping, including BOM offsets. Retained glyph clusters
+remain original scalar ranges. Generated glyphs set Generated and both cluster
+indices to UINT32_MAX; runs flag ContainsGenerated and retain only authored
+ranges. Lines expose retained End/Ellipsized, and layouts OriginalLines/Omitted,
+conservative/fit status and MissingMarkerGlyphs. No generated character acquires
+an invented authored offset. Interior FEFF at a trial's first scalar retains its
+format semantics instead of becoming a newly ignored document BOM.
+
+U+2026 uses the same accepted face. Strict CPU calls reject absent marker coverage
+with marker context; renderer layouts explicitly retain `.notdef` and its missing
+marker count. Empty `.notdef`/unavailable pages use the existing visible metric
+placeholder. No cross-family fallback is added. Glyph ink/placeholder overhang is
+clipped to UI's padded content box using the existing inward framebuffer coverage
+helper, while images retain their own clip. Painter runs capture that clip before
+later submissions; no mutable-scissor ordering boundary is introduced.
+
+### Measurement, lifetime and native editing
+
+Content measures the width-constrained result and MaxLines without constraining
+it by its own future height. Natural Content width stays indefinite; Fixed/Fill or
+an enabled Content maximum supplies definite width as before. Final paint uses
+arranged padded width/height, so a constrained height may remove additional lines
+without feeding back into its intrinsic size. UI keeps its existing one-font-
+height plus subsequent line-advance sizing; CPU Height remains line advances.
+Measurement and paint use the same final-layout service/accepted face, with their
+explicitly different intrinsic/final constraints. No derived text rewrites source.
+
+Font's existing bounded result LRU keys width, wrapping, spacing, overflow,
+MaxLines and relevant height. Scene-owned measurement/paint keys and exact native
+Content dependency bytes include the authored fields. A zero-line final result
+has its own retained immutable handle and reuses normally. Publication assigns
+keys only after success; discarded geometry is compacted when its capacity is
+large, retaining original source maps. CPU trial buffers remain separately bounded
+temporary storage, not a claimed hard process-memory cap. Page/live-pin/prepared
+budgets are unchanged; only final glyphs request pages. Graphical world loading
+keeps its prewarm; UI no longer prewarms an unconstrained surrogate of its source
+before painting. Final constrained UI preparation may still pause on first use.
+
+Native **UI Text Style** exposes Overflow and Max lines (0 unlimited) beside Wrap
+and alignment. Shared scene/prefab Inspector history, exact dirty comparisons,
+serialization, copy/duplicate and prefab paths include both fields. Invalid edits
+keep valid values; Escape/cancel and Undo/Redo keep the full string. Managed
+`UITextStyleComponent.Overflow`, `MaxLines` and `SetOverflow(mode, lines=0)` validate
+Clip/Ellipsis and 0–4096, using the established live-entity/thread guard. Play
+copies stay isolated. Runtime UI Debugger reads the last completed paint result;
+line/omission/marker/search status is transient, with no reshaping or action
+side effects from inspection.

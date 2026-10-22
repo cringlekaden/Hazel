@@ -16,6 +16,12 @@ static void TextOverflowSceneChecks(const std::filesystem::path& root) {
     std::vector<int> ids(128*128);glReadBuffer(GL_COLOR_ATTACHMENT1);glReadPixels(0,0,128,128,GL_RED_INTEGER,GL_INT,ids.data());size_t pixels=0;
     for(int y=0;y<128;++y)for(int x=0;x<128;++x)if(ids[y*128+x]==int(uint32_t(label))){++pixels;Check(x>=12 && x<94 && y>=72 && y<116,"Overflow ink escaped padded content clip");}
     Check(pixels>15,"Ellipsis scene has no pickable text");
+    std::vector<Renderer2D::TextLine> view;auto font=text.ResolvedFont;
+    Renderer2D::LayoutText("keep",font,-1,false,0,view);auto acceptedView=view.front().Result;
+    auto cached=font->Layout("a\nb",-1,false);bool failed=false;s_FailAllocation=0;
+    try{Renderer2D::LayoutText("a\nb",font,-1,false,0,view);}catch(const std::bad_alloc&){failed=true;}
+    s_FailAllocation=-1;
+    Check(failed && view.size()==1 && view.front().Result==acceptedView,"Failed line-view publication replaced valid cache data");
     auto generations=Font::Resources().Generations,builds=Font::Resources().LayoutBuilds;paint();
     Check(ui.TextLayout(label.GetUUID())==first && ui.Diagnostics().PreparedReuses==1 && Font::Resources().LayoutBuilds==builds && Font::Resources().Generations==generations,"Warm overflow reshaped or regenerated pages");
     auto generation=ui.Snapshot().Generation;style.MaxLines=2;style.Wrap=true;text.TextString="one two three four five six seven eight";paint();
