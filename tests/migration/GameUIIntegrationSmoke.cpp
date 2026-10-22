@@ -41,6 +41,7 @@ static void Check(bool value, const char *why)
 #include "ContainerSceneChecks.h"
 #include "ImageFitSceneChecks.h"
 #include "RuntimeUIPaintChecks.h"
+#include "TextOverflowSceneChecks.h"
 #include "FontReloadSceneChecks.h"
 #include "FontFamilySceneChecks.h"
 struct UIFixture
@@ -142,6 +143,7 @@ int main(int argc,char** argv)
         ContainerSceneChecks(root);
         ImageFitSceneChecks(root);
         RuntimeUIPaintChecks(root);
+        TextOverflowSceneChecks(root);
         FontReloadSceneChecks(root);
         FontFamilySceneChecks(root);
         auto scene = CreateRef<Scene>();

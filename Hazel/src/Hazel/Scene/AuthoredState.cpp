@@ -221,7 +221,7 @@ std::string SceneSerializer::CaptureAuthoredState() const
             state.Value(c.Size);
             state.Value(int(c.Horizontal));
             state.Value(int(c.Vertical));
-            state.Value(c.Wrap);
+            state.Value(c.Wrap);state.Value(int(c.Overflow));state.Value(c.MaxLines);
         });
         state.Component<UINineSliceComponent>(e, [&](auto &c) {
             state.Value(c.Borders);

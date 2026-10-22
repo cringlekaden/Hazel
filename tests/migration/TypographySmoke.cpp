@@ -95,6 +95,7 @@ static void BidiConformance(const std::filesystem::path& file) {
 static std::vector<uint32_t> IDs(const Ref<const Layout>& layout) {
     std::vector<uint32_t> result;for(const auto& g:layout->Glyphs)result.push_back(g.ID);return result;
 }
+#include "TextOverflowChecks.h"
 static void ServiceChecks(const std::filesystem::path& root) {
     const auto bytes=Read(root/"DejaVuSans.ttf");Service service;auto face=service.CreateFace(bytes,"DejaVuSans-2.37-pinned");
     // Independent reference IDs come from cmap entries for explicit presentation
@@ -205,6 +206,7 @@ static void ServiceChecks(const std::filesystem::path& root) {
     Ref<const Layout> survivor;
     {Service temporary;survivor=temporary.Arrange("retained",temporary.CreateFace(bytes,"retired owner"));}
     Check(survivor->Font && !survivor->Glyphs.empty(),"Result invalid after service retirement");survivor.reset();
+    OverflowChecks(service,face,cmap);
     hb_font_destroy(cmap);hb_face_destroy(reference);
     std::cout<<"PASS: CPU typography corpus "<<cases<<", analytic cmap/cluster/bidi/line references, strict source maps, limits and retirement\n";
 }

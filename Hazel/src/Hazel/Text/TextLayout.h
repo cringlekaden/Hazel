@@ -51,16 +51,19 @@ struct SourceBoundary {
 struct Glyph {
     uint32_t ID=0, ClusterBegin=0, ClusterEnd=0; // scalar range, not glyph count
     float X=0, Y=0, AdvanceX=0, AdvanceY=0, OffsetX=0, OffsetY=0;
+    bool Generated=false; // marker cluster has no authored source: both cluster offsets are UINT32_MAX
 };
 struct Run {
     uint32_t Begin=0, End=0, FirstGlyph=0, GlyphCount=0, Script=0;
     uint8_t Level=0; // odd=RTL; runs/glyphs are stored in visual left-to-right order
     float X=0, Width=0;
+    bool ContainsGenerated=false;
 };
 struct Line {
     uint32_t Begin=0, End=0, FirstRun=0, RunCount=0;
     float Width=0, Baseline=0;
     bool Overflow=false, EmergencyBreak=false;
+    bool Ellipsized=false;
 };
 struct Paragraph { uint32_t Begin=0, End=0, SeparatorEnd=0; uint8_t Level=0; };
 class Layout {
@@ -78,7 +81,9 @@ public:
     std::vector<Glyph> Glyphs;
     Ref<const Face> Font;
     float Width=0, Height=0;
-    uint32_t ShapeCalls=0, ShapeScalars=0, MissingGlyphs=0;
+    uint32_t ShapeCalls=0, ShapeScalars=0, MissingGlyphs=0, MissingMarkerGlyphs=0;
+    bool Omitted=false, MarkerDoesNotFit=false, ConservativeTruncation=false;
+    uint32_t OriginalLines=0;
     uint64_t RetainedBytes() const { return m_Bytes; }
 private:
     friend class Service;
@@ -86,9 +91,14 @@ private:
     uint64_t m_Bytes=0;
 };
 enum class Direction { Auto, LTR, RTL };
+enum class Overflow { Clip, Ellipsis };
 struct Options {
     float EmSize=1; // logical units per em; +X right, +Y down; offsets same units
     std::optional<float> Width; // absent = unwrapped; zero is a definite constraint
+    std::optional<float> Height; // full font-height line boxes; Clip retains pixel-clipped lines
+    bool Wrap=true; // Width also constrains unwrapped Ellipsis
+    Overflow OverflowMode=Overflow::Clip;
+    uint32_t MaxLines=0; // zero = unlimited within Limits::Lines
     float Tracking=0, LineSpacing=0; // logical units; tracking between complete clusters
     bool PermitNotdef=false; // renderer reports missing source coverage, never cross-face substitution
     Direction BaseDirection=Direction::Auto;
@@ -105,6 +115,7 @@ public:
     Service(const Service&)=delete;
     Service& operator=(const Service&)=delete;
 private:
+    Ref<Layout> Build(std::string_view text,const Ref<const Face>& face,const Options& options, uint32_t& calls,uint32_t& scalars);
     void CheckThread() const;
     Limits m_Limits;
     Ref<Budget> m_Budget;

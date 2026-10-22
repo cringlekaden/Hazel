@@ -272,6 +272,12 @@ void EditorLayer::UI_Debugger()
             ImGui::Text("Last image paint: source %.1f x %.1f | %s | generation %llu",image.SourceSize.x,image.SourceSize.y,fits[int(image.Fit)],(unsigned long long)image.Generation);
             rect("Fitted image",image.Placement.Visual);rect("Source crop (normalized, top-left)",image.Placement.UV);
         }
+        if(auto text=m_ActiveScene->GetUITextLayout(n->ID)) {
+            ImGui::Text("Text: %zu / %u lines | omitted %s",text->Lines.size(),text->OriginalLines,text->Omitted?"yes":"no");
+            if(text->MissingMarkerGlyphs)ImGui::TextWrapped("Selected face lacks U+2026: marker uses .notdef (no cross-family fallback).");
+            if(text->MarkerDoesNotFit)ImGui::TextWrapped("No complete marker/line fits the content box.");
+            if(text->ConservativeTruncation)ImGui::TextWrapped("Long-line ellipsis used bounded candidate selection; additional source clusters may be omitted.");
+        }
         rect("Logical clip", n->Clip);
         rect("Pixel bounds", n->PixelBounds);
         rect("Effective pixel clip", n->PixelClip);

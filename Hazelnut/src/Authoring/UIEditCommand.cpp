@@ -110,6 +110,8 @@ FIELD(Flow, Rows);
         FIELD(Style, Horizontal);
         FIELD(Style, Vertical);
         FIELD(Style, Wrap);
+        FIELD(Style, Overflow);
+        FIELD(Style, MaxLines);
     }
     COMPONENT(Slice)
     {
@@ -221,7 +223,7 @@ void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
         auto &s = *v.Style;
         Positive(s.Size, false);
         if (s.Size > 512 || int(s.Horizontal) < 0 || int(s.Horizontal) > 2 || int(s.Vertical) < 0 ||
-            int(s.Vertical) > 2)
+            int(s.Vertical) > 2 || unsigned(s.Overflow)>1 || s.MaxLines>4096)
             throw std::invalid_argument("Invalid text style size/alignment");
 
     }
@@ -358,6 +360,8 @@ FIELD(Style, Size);
 FIELD(Style, Horizontal);
 FIELD(Style, Vertical);
 FIELD(Style, Wrap);
+        FIELD(Style, Overflow);
+        FIELD(Style, MaxLines);
 }
 COMPONENT(Slice, UINineSliceComponent) FIELD(Slice, Borders);
 FIELD(Slice, BorderScale);

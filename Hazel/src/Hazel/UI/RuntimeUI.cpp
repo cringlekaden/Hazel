@@ -139,7 +139,7 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
                     if(text.TextString.size()>65536)throw std::invalid_argument("UI text exceeds 64 KiB");
                     state.Add(text.TextString);state.Add(text.Kerning);state.Add(text.LineSpacing);
                     auto style=e.HasComponent<UITextStyleComponent>()?e.GetComponent<UITextStyleComponent>():UITextStyleComponent{};
-                    state.Add(text.Font.Family);state.Add(int(text.Font.Style));state.Add(style.Size);state.Add(style.Wrap);
+                    state.Add(text.Font.Family);state.Add(int(text.Font.Style));state.Add(style.Size);state.Add(style.Wrap);state.Add(int(style.Overflow));state.Add(style.MaxLines);
                 }
                 state.Add(e.HasComponent<SpriteRendererComponent>());
                 if(e.HasComponent<SpriteRendererComponent>()){
@@ -696,6 +696,11 @@ void Image(Rect bounds, float scale, const ResolvedSprite &sprite, const glm::ve
         }
 }
 } // namespace
+Ref<const Text::Layout> RuntimeUI::TextLayout(uint64_t id) const {
+    auto it=m_Cache.find(id);auto n=m_Resolved.Find(id);
+    if(!m_Resolved.Valid || !n || !n->LayoutResolved || it==m_Cache.end() || it->second.PaintGeneration!=m_Resolved.Generation)return {};
+    return it->second.PaintLayout;
+}
 bool RuntimeUI::ImageVisual(uint64_t id,UIImageVisual &result) const
 {
     auto it=m_Cache.find(id);auto n=m_Resolved.Find(id);
@@ -839,7 +844,7 @@ void RuntimeUI::Draw()
                 if (!std::isfinite(style.Size) || style.Size <= 0 || style.Size > 512 ||
                     style.Horizontal < Align::Start || style.Horizontal > Align::End ||
                     style.Vertical < Align::Start || style.Vertical > Align::End ||
-                    !std::isfinite(t.Kerning) || !std::isfinite(t.LineSpacing))
+                    unsigned(style.Overflow)>1 || style.MaxLines>4096 || !std::isfinite(t.Kerning) || !std::isfinite(t.LineSpacing))
                     throw std::invalid_argument("Invalid native UI text style/spacing");
                 auto &cache = m_Cache[e.GetUUID()];
                 const auto assets = m_Scene.GetAssets();
@@ -853,27 +858,39 @@ void RuntimeUI::Draw()
                     cache.Width = -1;
                     cache.PreparedValid = false;
                     cache.MeasureWidth = {{-2, -2}};
-                    cache.MeasureLines[0].clear();cache.MeasureLines[1].clear();cache.Lines.clear();
+                    cache.MeasureLines[0].clear();cache.MeasureLines[1].clear();cache.Lines.clear();cache.PaintLayout.reset();
                 }
                 auto content = n.Bounds.Inset(e.GetComponent<UIRectComponent>().Padding);
+                if(style.Overflow==Text::Overflow::Ellipsis) {
+                    // Ellipsis owns a finite content box; ink overhang is clipped
+                    // there too. Images on this same element retain their clip.
+                    auto logical=n.Clip.Intersect(content);
+                    auto ratio=m_Resolved.Surface.Framebuffer/m_Resolved.Surface.Viewport;
+                    auto coverage=FramebufferCoverage({logical.Position*n.Scale,logical.Size*n.Scale},ratio,m_Resolved.Surface.Framebuffer);
+                    const auto a=coverage.Position,size=coverage.Size;
+                    Renderer2D::SetPrimitiveClip({prior.Viewport.x+int(a.x),prior.Viewport.y+prior.Viewport.w-int(a.y+size.y),int(size.x),int(size.y)});
+                }
                 float width = content.Size.x / style.Size;
-                if (cache.Lines.empty() || cache.Text != t.TextString || cache.Width != width ||
-                    cache.Kerning != t.Kerning || cache.LineSpacing!=t.LineSpacing || cache.Wrap != style.Wrap)
+                float textHeight=style.Overflow==Text::Overflow::Ellipsis?content.Size.y/style.Size:-1;
+                if (!cache.PaintLayout || cache.Lines.size()!=cache.PaintLayout->Lines.size() || cache.Text != t.TextString || cache.Width != width ||
+                    cache.Kerning != t.Kerning || cache.LineSpacing!=t.LineSpacing || cache.Wrap != style.Wrap || cache.Overflow!=style.Overflow || cache.MaxLines!=style.MaxLines || cache.Height!=textHeight)
                 {
+                    cache.PreparedValid=false;
                     bool measured=false;
-                    for(size_t slot=0;slot<2;++slot)if(!cache.MeasureLines[slot].empty() && cache.MeasureLines[slot].front().Result->Font==cache.FontAsset->GetCPUFace() && cache.MeasureText[slot]==t.TextString &&
+                    for(size_t slot=0;slot<2;++slot)if(style.Overflow==Text::Overflow::Clip && cache.MeasureOverflow[slot]==style.Overflow && cache.MeasureMaxLines[slot]==style.MaxLines && !cache.MeasureLines[slot].empty() && cache.MeasureLines[slot].front().Result->Font==cache.FontAsset->GetCPUFace() && cache.MeasureText[slot]==t.TextString &&
                         cache.MeasureKerning[slot]==t.Kerning && cache.MeasureSpacing[slot]==t.LineSpacing && cache.MeasureWrap[slot]==style.Wrap &&
                         (!style.Wrap || cache.MeasureWidth[slot]==width)) {
-                        cache.Lines=cache.MeasureLines[slot];measured=true;break;
+                        cache.Lines=cache.MeasureLines[slot];cache.PaintLayout=cache.Lines.front().Result;measured=true;break;
                     }
-                    if(!measured)Renderer2D::LayoutText(t.TextString, cache.FontAsset, width, style.Wrap,
-                                           t.Kerning, cache.Lines,t.LineSpacing);
+                    if(!measured)cache.PaintLayout=Renderer2D::LayoutText(t.TextString, cache.FontAsset, width, style.Wrap,
+                                           t.Kerning, cache.Lines,t.LineSpacing,style.Overflow,style.MaxLines,textHeight);
                     cache.PreparedValid = false;
                     cache.Text = t.TextString;
                     cache.Width = width;
                     cache.Kerning = t.Kerning;
                     cache.LineSpacing=t.LineSpacing;
                     cache.Wrap = style.Wrap;
+                    cache.Overflow=style.Overflow;cache.MaxLines=style.MaxLines;cache.Height=textHeight;
                 }
                 // Position/tint are live draw values. Only normalized glyph geometry is cached.
                 const glm::vec2 normalizedContent = content.Size / style.Size;
@@ -897,7 +914,7 @@ void RuntimeUI::Draw()
                 auto face=cache.FontAsset->GetCPUFace();
                 const float normalized=1/face->HeightEm();
                 const float lineHeight=face->LineHeightEm()*normalized+t.LineSpacing;
-                const float height = 1.f + (cache.Lines.size() - 1) * lineHeight;
+                const float height = cache.Lines.empty()?0:1.f + (cache.Lines.size() - 1) * lineHeight;
                 auto visitLines = [&](auto emit) {
                     float y = style.Vertical == Align::Center ? (normalizedContent.y - height) * .5f
                               : style.Vertical == Align::End  ? normalizedContent.y - height
@@ -953,6 +970,7 @@ void RuntimeUI::Draw()
                         m_ScratchGlyphs.clear(); // no unaccounted page pins across frames
                     });
                 }
+                cache.PaintGeneration=m_Resolved.Generation;
                 m_Diagnostics.PreparedBytes = m_PreparedBytes;
             }
             if (Renderer2D::GetGeometryCount() != geometryBefore)

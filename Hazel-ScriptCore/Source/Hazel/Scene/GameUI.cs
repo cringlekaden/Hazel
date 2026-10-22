@@ -81,6 +81,12 @@ namespace Hazel {
         public void Apply(UILayoutSettings settings,UITrack[] columns=null,UITrack[] rows=null)=>InternalCalls.UI_SetLayout(Entity.CheckedID,ref settings,columns,rows);
         public void SetGrid(UITrack[] columns,UITrack[] rows,Vector2 gap)=>Apply(UILayoutSettings.Grid(gap),columns,rows);
     }
-    public class UITextStyleComponent : Component {}
+    public enum UITextOverflow { Clip, Ellipsis }
+    public class UITextStyleComponent : Component {
+        public UITextOverflow Overflow {get{int mode=0;uint lines=0;InternalCalls.UI_TextOverflow(Entity.CheckedID,ref mode,ref lines,false);return (UITextOverflow)mode;}set=>SetOverflow(value,MaxLines);}
+        // Zero is unlimited within the 4096-line engine limit.
+        public uint MaxLines {get{int mode=0;uint lines=0;InternalCalls.UI_TextOverflow(Entity.CheckedID,ref mode,ref lines,false);return lines;}set=>SetOverflow(Overflow,value);}
+        public void SetOverflow(UITextOverflow overflow,uint maxLines=0){int mode=(int)overflow;InternalCalls.UI_TextOverflow(Entity.CheckedID,ref mode,ref maxLines,true);}
+    }
     public class UINineSliceComponent : Component {}
 }

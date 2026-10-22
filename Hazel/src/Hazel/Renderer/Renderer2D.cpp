@@ -760,15 +760,16 @@ namespace Hazel {
         if(!font)throw std::invalid_argument("Measurement needs a font");
         return font->Layout(text,-1,false,kerning)->Width;
     }
-    void Renderer2D::LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines,float spacing) {
+    Ref<const Text::Layout> Renderer2D::LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines,float spacing,Text::Overflow overflow,uint32_t maxLines,float height) {
         if(!font)throw std::invalid_argument("Layout needs a font");
-        auto result=font->Layout(text,width,wrap,kerning,spacing);
+        auto result=font->Layout(text,width,wrap,kerning,spacing,overflow,maxLines,height);
         lines.clear();
         for(uint32_t i=0;i<result->Lines.size();++i) {
             const auto& line=result->Lines[i];
             auto begin=result->Boundaries[line.Begin].Byte,end=result->Boundaries[line.End].Byte;
             lines.push_back({text.substr(begin,end-begin),line.Width,result,i});
         }
+        return result;
     }
     namespace {
     void AppendPositionedLine(const Text::Layout& layout,uint32_t index,const std::vector<Ref<const FontPage>>& pages,

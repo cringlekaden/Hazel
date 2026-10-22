@@ -208,6 +208,13 @@ namespace Migration {
             if(!invalidStyle || text.Style!=Hazel.FontStyle.BoldItalic)throw new System.Exception("Invalid style changed accepted state");
             text.SetFont("");
             if(rect.LayoutVersion!=3)throw new System.Exception("Canonical UI schema mismatch");
+            var overflow=GetComponent<Hazel.UITextStyleComponent>();overflow.SetOverflow(Hazel.UITextOverflow.Ellipsis,2);
+            if(overflow.Overflow!=Hazel.UITextOverflow.Ellipsis || overflow.MaxLines!=2)throw new System.Exception("Managed overflow roundtrip failed");
+            bool badOverflow=false;try{overflow.SetOverflow((Hazel.UITextOverflow)99,3);}catch(System.InvalidOperationException){badOverflow=true;}
+            if(!badOverflow || overflow.MaxLines!=2)throw new System.Exception("Invalid overflow changed state");
+            badOverflow=false;try{overflow.MaxLines=4097;}catch(System.InvalidOperationException){badOverflow=true;}
+            if(!badOverflow || overflow.MaxLines!=2)throw new System.Exception("Invalid MaxLines changed state");
+            overflow.MaxLines=0;overflow.Overflow=Hazel.UITextOverflow.Clip;
             var measured=FindEntityByName("Measured API target").GetComponent<Hazel.UIRectComponent>();
             measured.Width=new Hazel.UISizing(Hazel.UISizeMode.Fixed,137,20,150);
             var sizing=measured.Width;

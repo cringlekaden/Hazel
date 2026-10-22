@@ -1304,6 +1304,10 @@ private:
         Check(Read(scenePath)==priorScene && Read(projectPath)==priorProject,"Failed save changed prior scene/project bytes");
     }
     Scope<FontFamilyPanel> m_FamilyFixture;
+    Ref<Scene> m_OverflowFixture;
+    SceneHierarchyPanel m_OverflowFixturePanel;
+    Ref<Framebuffer> m_OverflowPreview;
+    uint64_t m_OverflowTarget=0;
     Ref<Scene> m_ContainerFixture;
     SceneHierarchyPanel m_ContainerFixturePanel;
     Ref<Framebuffer> m_ContainerPreview;

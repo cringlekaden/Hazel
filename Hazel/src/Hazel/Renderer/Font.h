@@ -53,7 +53,7 @@ namespace Hazel {
         const std::string& TextWarning() const {return m_TextWarning;}
         // Font-height units. Shared results retain logical maps; page preparation
         // is a separate renderer-thread boundary and cannot change layout metrics.
-        Ref<const Text::Layout> Layout(const std::string& text,float width,bool wrap,float tracking=0,float spacing=0);
+        Ref<const Text::Layout> Layout(const std::string& text,float width,bool wrap,float tracking=0,float spacing=0,Text::Overflow overflow=Text::Overflow::Clip,uint32_t maxLines=0,float height=-1);
         std::vector<Ref<const FontPage>> PreparePages(const Text::Layout& layout);
         static FontCoverage InspectCoverage(const std::filesystem::path& path,const std::string& corpus);
         static void ValidateFile(const std::filesystem::path& path);
@@ -66,7 +66,7 @@ namespace Hazel {
         static void Shutdown();
     private:
         struct Input;
-        struct LayoutEntry { float Width,Tracking,Spacing;bool Wrap;Ref<const Text::Layout> Result; };
+        struct LayoutEntry { float Width,Tracking,Spacing,Height;bool Wrap;Text::Overflow OverflowMode;uint32_t MaxLines;Ref<const Text::Layout> Result; };
         explicit Font(Input& input);
         void Accept(Input& input);
         Ref<const FontPage> GeneratePage(const std::vector<uint32_t>& ids);

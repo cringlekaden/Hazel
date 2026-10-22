@@ -457,6 +457,11 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         if(PropertyUI::Combo("horizontal","Horizontal",horizontal,"Left\0Center\0Right\0"))c.Horizontal=GameUI::Align(horizontal);
         if(PropertyUI::Combo("vertical","Vertical",vertical,"Top\0Center\0Bottom\0"))c.Vertical=GameUI::Align(vertical);
         PropertyUI::Checkbox("wrap","Wrap",c.Wrap);
+        int overflow=int(c.Overflow);
+        if(PropertyUI::Combo("overflow","Overflow",overflow,"Clip\0Ellipsis\0"))c.Overflow=Text::Overflow(overflow);
+        int lines=int(c.MaxLines);
+        if(PropertyUI::DragInt("max-lines","Max lines",lines,1,0,4096))c.MaxLines=uint32_t(lines);
+        PropertyUI::Help("0 lines means unlimited. Clip keeps partial lines at box edges; Max lines removes whole lines. Ellipsis fits complete lines and marks omitted content. Source text is unchanged.");
     });
     DrawUIComponent<UINineSliceComponent>("UI Nine Slice",entity,m_Sections,m_RestoreSections,[](auto& c){
         PropertyUI::Vector("border","Source L/T/R/B (px)",glm::value_ptr(c.Borders),4,1,nullptr,"%.0f",{},0,4096);

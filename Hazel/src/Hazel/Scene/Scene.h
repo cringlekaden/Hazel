@@ -58,6 +58,7 @@ namespace Hazel {
         void SetUIFramebufferSize(glm::vec2 size);
         const GameUI::ResolvedSnapshot& GetUISnapshot() const;
         GameUI::RuntimeUIDiagnostics GetUIDiagnostics() const;
+        Ref<const Text::Layout> GetUITextLayout(uint64_t entity) const; // last completed paint, never resolves
         bool GetUIImageVisual(uint64_t entity,GameUI::UIImageVisual &result) const;
         void SetUIImageFit(uint64_t entity,GameUI::ImageFit fit,glm::vec2 alignment={.5f,.5f});
         void RefreshUI();

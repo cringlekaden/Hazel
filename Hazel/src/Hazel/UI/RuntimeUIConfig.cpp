@@ -232,7 +232,7 @@ static void Write(YAML::Emitter &out,const UILayoutComponent &v)
 }
 UITextStyleComponent ReadUITextStyleComponent(const YAML::Node &n)
 {
-    Keys(n, {"FontPath", "Size", "Horizontal", "Vertical", "Wrap"});
+    Keys(n, {"FontPath", "Size", "Horizontal", "Vertical", "Wrap", "Overflow", "MaxLines"});
     UITextStyleComponent v;
     // An empty historical marker has no interpretation. Nonempty raw paths are
     // unsupported; FontSelection on Text is the only authored selection.
@@ -246,6 +246,13 @@ UITextStyleComponent ReadUITextStyleComponent(const YAML::Node &n)
         v.Vertical = ReadAlign(n["Vertical"]);
     if (n["Wrap"])
         v.Wrap = n["Wrap"].as<bool>();
+    if(n["Overflow"]) {
+        auto mode=n["Overflow"].as<std::string>();
+        if(mode!="Clip" && mode!="Ellipsis")throw std::runtime_error("Text Overflow must be Clip or Ellipsis");
+        v.Overflow=mode=="Clip"?Text::Overflow::Clip:Text::Overflow::Ellipsis;
+    }
+    if(n["MaxLines"])v.MaxLines=n["MaxLines"].as<uint32_t>();
+    if(v.MaxLines>4096)throw std::runtime_error("Text MaxLines must be 0 (unlimited) to 4096");
     if(v.Horizontal>GameUI::Align::End||v.Vertical>GameUI::Align::End)throw std::runtime_error("Text alignment must be Start, Center or End");
     Positive(v.Size, false);
     if (v.Size > 512)
@@ -263,6 +270,8 @@ static void Write(YAML::Emitter &out, const UITextStyleComponent &v)
     Write(out, v.Vertical);
     out << YAML::Key << "Wrap" << YAML::Value;
     Write(out, v.Wrap);
+    out << YAML::Key << "Overflow" << YAML::Value << (v.Overflow==Text::Overflow::Clip?"Clip":"Ellipsis");
+    out << YAML::Key << "MaxLines" << YAML::Value << v.MaxLines;
     out << YAML::EndMap;
 }
 UINineSliceComponent ReadUINineSliceComponent(const YAML::Node &n)

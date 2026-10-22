@@ -201,10 +201,12 @@ std::vector<Ref<const FontPage>> Font::PreparePages(const Text::Layout& layout) 
     }
     return result;
 }
-Ref<const Text::Layout> Font::Layout(const std::string& text,float width,bool wrap,float tracking,float spacing) {
-    CheckThread();if(!wrap)width=-1;
-    for(auto it=m_Layouts.begin();it!=m_Layouts.end();++it)if(it->Width==width && it->Wrap==wrap && it->Tracking==tracking && it->Spacing==spacing && it->Result->Source==text){auto result=it->Result;m_Layouts.splice(m_Layouts.begin(),m_Layouts,it);++stats.LayoutHits;return result;}
-    Text::Options options;options.EmSize=1/m_CPUFace->HeightEm();options.Tracking=tracking;options.LineSpacing=spacing;options.PermitNotdef=true;if(wrap)options.Width=width;
+Ref<const Text::Layout> Font::Layout(const std::string& text,float width,bool wrap,float tracking,float spacing,Text::Overflow overflow,uint32_t maxLines,float height) {
+    CheckThread();if(!std::isfinite(width) || !std::isfinite(height) || width< -1 || height< -1)throw std::invalid_argument("Text constraints must be finite, -1 (indefinite) or nonnegative");
+    if(!wrap && overflow==Text::Overflow::Clip)width=-1;
+    if(overflow==Text::Overflow::Clip)height=-1;
+    for(auto it=m_Layouts.begin();it!=m_Layouts.end();++it)if(it->Width==width && it->Wrap==wrap && it->Height==height && it->OverflowMode==overflow && it->MaxLines==maxLines && it->Tracking==tracking && it->Spacing==spacing && it->Result->Source==text){auto result=it->Result;m_Layouts.splice(m_Layouts.begin(),m_Layouts,it);++stats.LayoutHits;return result;}
+    Text::Options options;options.EmSize=1/m_CPUFace->HeightEm();options.Tracking=tracking;options.LineSpacing=spacing;options.PermitNotdef=true;options.Wrap=wrap;options.OverflowMode=overflow;options.MaxLines=maxLines;if(width>=0)options.Width=width;if(height>=0)options.Height=height;
     Ref<const Text::Layout> result;
     for(;;)try{result=Text::Service::Main().Arrange(text,m_CPUFace,options);break;}catch(const Text::ResourcePressure&){if(m_Layouts.empty())throw;m_LayoutBytes-=m_Layouts.back().Result->RetainedBytes();m_Layouts.pop_back();}
     ++stats.LayoutBuilds;
@@ -214,7 +216,7 @@ Ref<const Text::Layout> Font::Layout(const std::string& text,float width,bool wr
     }
     const auto bytes=result->RetainedBytes();
     while(!m_Layouts.empty() && (m_Layouts.size()>=128 || m_LayoutBytes+bytes>256*1024)){m_LayoutBytes-=m_Layouts.back().Result->RetainedBytes();m_Layouts.pop_back();}
-    if(bytes<=256*1024){m_Layouts.push_front({width,tracking,spacing,wrap,result});m_LayoutBytes+=bytes;}return result;
+    if(bytes<=256*1024){m_Layouts.push_front({width,tracking,spacing,height,wrap,overflow,maxLines,result});m_LayoutBytes+=bytes;}return result;
 }
 Ref<Font> Font::Load(const std::filesystem::path& path,const Ref<Font>& accepted) {
     CheckThread();Input input(path);Prune();

@@ -410,6 +410,18 @@ namespace Hazel {
         catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
         if(failure)mono_raise_exception(failure);
     }
+    static void UI_TextOverflow(uint64_t id,int* mode,uint32_t* lines,bool write) {
+        MonoException* failure=nullptr;
+        try {
+            auto* scene=ScriptEngine::GetSceneContext();if(!scene || scene->IsStopping())throw std::invalid_argument("Text overflow requires a runtime scene");
+            scene->CheckThread();auto e=scene->GetEntityByUUID(id);
+            if(!e || !scene->IsEntityValid(id) || !e.HasComponent<UITextStyleComponent>())throw std::invalid_argument("Text overflow needs a live UI Text Style");
+            auto& style=e.GetComponent<UITextStyleComponent>();
+            if(write){if(*mode<0 || *mode>1 || *lines>4096)throw std::invalid_argument("Overflow must be Clip/Ellipsis; MaxLines must be 0 to 4096");style.Overflow=Text::Overflow(*mode);style.MaxLines=*lines;}
+            else {*mode=int(style.Overflow);*lines=style.MaxLines;}
+        } catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
+        if(failure)mono_raise_exception(failure);
+    }
     // Blittable wire values: int flags, never native bool or retained managed references.
     struct UILayoutWire { int Kind,Direction,Main,Cross,LineAlign;float Gap,LineGap;glm::vec2 GridGap; };
     struct UITrackWire { int Mode;float Value,Minimum,Maximum;int HasMaximum; };
@@ -549,6 +561,7 @@ namespace Hazel {
         HZ_ADD_INTERNAL_CALL(UI_GetCell);
         HZ_ADD_INTERNAL_CALL(UI_SetCell);
 
+        HZ_ADD_INTERNAL_CALL(UI_TextOverflow);
         HZ_ADD_INTERNAL_CALL(UI_GetSizing);
         HZ_ADD_INTERNAL_CALL(UI_SetSizing);
         HZ_ADD_INTERNAL_CALL(SpriteRendererComponent_SetSprite);

@@ -148,7 +148,7 @@ static void EditorHistoryChecks()
         auto initial=UIEditValues::Capture(f.Control),proposed=initial;
         proposed.Rect->Anchor={.5f,0};proposed.Rect->Pivot={.5f,0};proposed.Rect->MinimumSize={100,60};
         proposed.Flow->Gap=12;proposed.Flow->Cross=GameUI::Align::Center;
-        WriteTestFamily(root,"Fonts/history.hfont","Fonts/history.ttf");proposed.Text->Font.Family="Fonts/history.hfont";proposed.Style->Size=32;proposed.Style->Wrap=false;
+        WriteTestFamily(root,"Fonts/history.hfont","Fonts/history.ttf");proposed.Text->Font.Family="Fonts/history.hfont";proposed.Style->Size=32;proposed.Style->Wrap=false;proposed.Style->Overflow=Text::Overflow::Ellipsis;proposed.Style->MaxLines=2;
         proposed.Slice->Borders={2,2,2,2};proposed.Slice->BorderScale=2;
         proposed.Button->Action="journal";proposed.Button->TabOrder=4;proposed.Button->Colors[1]={.8f,.9f,1,1};
         proposed.Text->Text="Longer journal caption";proposed.Text->Color={.7f,.8f,.9f,1};proposed.Text->Kerning=.01f;proposed.Text->LineSpacing=.2f;
@@ -156,6 +156,13 @@ static void EditorHistoryChecks()
         Check(h.Begin(*f.World,CreateScope<UIEditCommand>(*f.World,f.Control.GetUUID(),"UI configuration",initial)),"Configuration transaction begin failed");
         Check(dynamic_cast<UIEditCommand*>(h.Transaction())->Preview(*f.World,proposed,error)&&h.Commit(*f.World),error.c_str());
         const auto changed=f.State();Check(h.Undo(*f.World)&&f.State()==start&&h.Redo(*f.World)&&f.State()==changed,"Typed flow/style/slice/button/text/image edit failed Undo/Redo");
+        auto overflowBefore=UIEditValues::Capture(f.Control),badOverflow=overflowBefore;badOverflow.Style->MaxLines=4097;
+        UIEditCommand invalidOverflow(*f.World,f.Control.GetUUID(),"Invalid MaxLines",overflowBefore);
+        Check(!invalidOverflow.Preview(*f.World,badOverflow,error) && f.State()==changed,"Invalid MaxLines changed authored state/history");invalidOverflow.Cancel(*f.World);
+        UIInspectorEditing overflowEdit;PropertyUI::EditActivity overflowActivity;overflowActivity.Changed=true;overflowActivity.Item=602;overflowActivity.Label="Max lines";
+        auto overflowAfter=overflowBefore;overflowAfter.Style->MaxLines=3;
+        Check(overflowEdit.Edit(*f.World,&h,f.Control.GetUUID(),"Text overflow",overflowBefore,overflowAfter,overflowActivity,602),overflowEdit.Error());
+        overflowEdit.Finish(*f.World,&h,true);Check(f.State()==changed && h.Operations()==1,"Cancelled overflow interaction retained an authored/history change");
         // Resource loss after a committed edit must not strand its authored path
         // in history or prevent unrelated text changes. This fixture uses copies.
         std::filesystem::rename(root/"Fonts/history.ttf",root/"Fonts/history-hidden.ttf");

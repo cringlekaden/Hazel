@@ -60,6 +60,7 @@ void Scene::SetUIImageFit(uint64_t id,GameUI::ImageFit fit,glm::vec2 alignment)
     if(e.HasComponent<UINineSliceComponent>()&&fit!=GameUI::ImageFit::Stretch)throw std::invalid_argument("Nine-slice requires Stretch image fit");
     auto &r=e.GetComponent<UIRectComponent>();r.Fit=fit;r.ImageAlignment=alignment;
 }
+Ref<const Text::Layout> Scene::GetUITextLayout(uint64_t id) const {CheckThread();return m_UI->TextLayout(id);}
 bool Scene::GetUIImageVisual(uint64_t id,GameUI::UIImageVisual &result) const {CheckThread();return m_UI->ImageVisual(id,result);}
 void Scene::UpdateUIInput(const GameUI::InputFrame &frame)
 {

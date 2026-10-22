@@ -150,7 +150,7 @@ Ref<const Face> Service::CreateFace(const std::vector<uint8_t>& bytes,std::strin
     face->m_Budget=m_Budget;++live.Faces;live.FaceBytes+=retained;return face;
 }
 
-Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>& face,const Options& options) {
+Ref<Layout> Service::Build(std::string_view source,const Ref<const Face>& face,const Options& options,uint32_t& calls,uint32_t& workScalars) {
     CheckThread();
     Require(face && face->m_Budget->Owner==m_Owner,"Text layout needs an accepted CPU face on the same owner thread");
     Require(face->m_Data->StaticOutline,"CPU typography supports static outline faces; variable/color tables are unsupported");
@@ -161,7 +161,7 @@ Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>
     bool known=false;
     for(const auto* language:{"und","en","fr","de","el","ru","ar","he"})known|=options.Language==language;
     Require(known,"CPU foundation language must be und/en/fr/de/el/ru/ar/he");
-    Admit(m_Budget->Live.Results<m_Limits.Results,"CPU layout result count exhausted; release inactive results");
+
     auto result=CreateRef<Layout>();result->Source=std::string(source);result->Font=face;
     std::vector<size_t> offsets;UTF8::Decode(source,result->Scalars,&offsets);
     auto& out=*result;const auto count=uint32_t(out.Scalars.size());
@@ -215,8 +215,8 @@ Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>
         auto shape=[&](SBParagraphRef paragraph,uint32_t begin,uint32_t end) {
             Prepared p;
             if(begin==end)return p;
-            Require(end-begin<=m_Limits.ShapeScalars-out.ShapeScalars,"Text contextual line-shaping scalar work limit exceeded");
-            out.ShapeScalars+=end-begin;
+            Require(end-begin<=m_Limits.ShapeScalars-workScalars,"Text contextual line-shaping scalar work limit exceeded");
+            out.ShapeScalars+=end-begin;workScalars+=end-begin;
             BidiLine line(SBParagraphCreateLine(paragraph,begin,end-begin));
             const auto runs=SBLineGetRunsPtr(line);const auto runCount=SBLineGetRunCount(line);
             Require(runCount<=m_Limits.Runs,"Text bidi run limit exceeded");
@@ -233,8 +233,8 @@ Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>
                 if(br.level&1)std::reverse(parts.begin(),parts.end());
                 for(const auto& s:parts) {
                     Require(p.Runs.size()<m_Limits.Runs,"Text shaped run limit exceeded");
-                    Require(out.ShapeCalls<m_Limits.ShapeCalls,"Text dependency shaping-call work limit exceeded");
-                    ++out.ShapeCalls;
+                    Require(calls<m_Limits.ShapeCalls,"Text dependency shaping-call work limit exceeded");
+                    ++out.ShapeCalls;++calls;
                     Require(out.Boundaries[s.Begin].Grapheme && out.Boundaries[s.End].Grapheme,"Script/direction boundary interrupts a grapheme; unsupported run segmentation");
                     Buffer buffer(hb_buffer_create());
                     hb_buffer_set_direction(buffer,(br.level&1)?HB_DIRECTION_RTL:HB_DIRECTION_LTR);
@@ -310,7 +310,7 @@ Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>
                 for(auto i=start+1;i<textEnd;++i)if(out.Boundaries[i].Mandatory){hardEnd=i;break;}
                 uint32_t chosen=hardEnd;Prepared accepted;
                 bool emergency=false,haveFit=false;
-                if(!options.Width)accepted=shape(paragraph,start,hardEnd);
+                if(!options.Width || !options.Wrap)accepted=shape(paragraph,start,hardEnd);
                 else if(emergencyEnd>start) {
                     const auto end=std::min(hardEnd,emergencyEnd);
                     for(auto j=start+1;j<=end;++j) {
@@ -355,7 +355,138 @@ Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>
         }
         out.Height=out.Lines.size()*lineHeight;
     }
-    for(const auto& glyph:out.Glyphs)out.MissingGlyphs+=glyph.ID==0;
+    return result;
+}
+Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>& face,const Options& options) {
+    CheckThread();
+    Require(!options.Height || (std::isfinite(*options.Height) && *options.Height>=0 && *options.Height<=1e7f),"Invalid text available height");
+    Require(options.OverflowMode==Overflow::Clip || options.OverflowMode==Overflow::Ellipsis,"Invalid text overflow mode");
+    Require(options.MaxLines<=m_Limits.Lines,"Text MaxLines exceeds layout line limit");
+    Admit(m_Budget->Live.Results<m_Limits.Results,"CPU layout result count exhausted; release inactive results");
+    uint32_t calls=0,workScalars=0;
+    auto result=Build(source,face,options,calls,workScalars);auto& out=*result;
+    out.OriginalLines=uint32_t(out.Lines.size());
+    const float lineHeight=face->LineHeightEm()*options.EmSize+options.LineSpacing;
+    const float boxHeight=face->HeightEm()*options.EmSize;
+    Require(std::isfinite(boxHeight) && boxHeight>0,"Invalid font-height text box");
+    size_t keep=out.Lines.size();
+    if(options.MaxLines)keep=std::min(keep,size_t(options.MaxLines));
+    if(options.OverflowMode==Overflow::Ellipsis && options.Height) {
+        size_t fit=0;
+        if(*options.Height>=boxHeight) {
+            const double additional=(double(*options.Height)-boxHeight)/lineHeight;
+            fit=additional>=double(out.Lines.size())?out.Lines.size():1+size_t(std::floor(additional));
+        }
+        keep=std::min(keep,fit);
+    }
+    // Only published geometry requests pages. The authored source and all its
+    // original scalar/byte/UTF-16/grapheme boundaries remain intact.
+    auto trim=[&](size_t n) {
+        out.Lines.resize(n);
+        size_t runs=n?out.Lines.back().FirstRun+out.Lines.back().RunCount:0;
+        out.Runs.resize(runs);
+        out.Glyphs.resize(runs?out.Runs.back().FirstGlyph+out.Runs.back().GlyphCount:0);
+    };
+    const bool omittedLines=keep<out.Lines.size() && !out.Scalars.empty();out.Omitted=omittedLines;trim(keep);
+    if(!keep && omittedLines && options.OverflowMode==Overflow::Ellipsis)out.MarkerDoesNotFit=true;
+    for(size_t index=0;index<out.Lines.size();++index) {
+        auto& line=out.Lines[index];
+        const bool omittedTail=index+1==keep && omittedLines;
+        const bool tooWide=options.Width && line.Width>*options.Width;
+        if(options.OverflowMode!=Overflow::Ellipsis || (!omittedTail && !tooWide))continue;
+        out.Omitted=true;
+        // Arrange the complete retained logical line plus U+2026 afresh. This
+        // reruns bidi, scripts and contextual shaping rather than splicing quads.
+        Options candidateOptions=options;candidateOptions.Width.reset();candidateOptions.Height.reset();
+        candidateOptions.MaxLines=0;candidateOptions.OverflowMode=Overflow::Clip;
+        for(const auto& paragraph:out.Paragraphs)if(line.Begin>=paragraph.Begin && line.Begin<=paragraph.End) {
+            candidateOptions.BaseDirection=paragraph.Level&1?Direction::RTL:Direction::LTR;break;
+        }
+        const float available=options.Width.value_or(1e7f);
+        Ref<Layout> marker;
+        try{marker=Build(u8"…",face,candidateOptions,calls,workScalars);}
+        catch(const std::exception& error){throw std::runtime_error(std::string("Ellipsis U+2026 marker: ")+error.what());}
+        const bool markerFits=marker->Width<=available;
+        Ref<Layout> accepted;uint32_t retained=line.Begin;
+        if(markerFits) {
+            std::vector<uint32_t> ends;
+            uint32_t markerEnd=line.End;
+            while(markerEnd>line.Begin && out.Scalars[markerEnd-1]==0x2028)--markerEnd;
+            // A width-only marker must replace at least one authored grapheme.
+            if(!omittedTail && markerEnd==line.End && markerEnd>line.Begin) {
+                --markerEnd;while(markerEnd>line.Begin && !out.Boundaries[markerEnd].Grapheme)--markerEnd;
+            }
+            for(uint32_t end=line.Begin;end<=markerEnd;++end)if(out.Boundaries[end].Grapheme)ends.push_back(end);
+            std::vector<uint32_t> candidates;
+            if(ends.size()<=128)candidates=ends;
+            else {
+                out.ConservativeTruncation=true;
+                // Predict a neighborhood using existing logical cluster advances;
+                // it is a hint only. Every accepted candidate is independently
+                // reshaped and measured; no monotonic-prefix assumption is made.
+                std::vector<float> advance(line.End-line.Begin+1,0);
+                for(uint32_t r=line.FirstRun;r<line.FirstRun+line.RunCount;++r)
+                    for(uint32_t g=out.Runs[r].FirstGlyph;g<out.Runs[r].FirstGlyph+out.Runs[r].GlyphCount;++g)
+                        advance[out.Glyphs[g].ClusterBegin-line.Begin]+=out.Glyphs[g].AdvanceX;
+                float width=0;uint32_t estimate=line.Begin;
+                for(uint32_t i=line.Begin;i<line.End;++i){width+=advance[i-line.Begin];if(width+marker->Width<=available)estimate=i+1;}
+                auto at=size_t(std::lower_bound(ends.begin(),ends.end(),estimate)-ends.begin());
+                size_t first=at>48?at-48:0,last=std::min(ends.size(),at+49);
+                candidates.insert(candidates.end(),ends.begin()+first,ends.begin()+last);
+                for(size_t n=ends.size()-1;n;n/=2)candidates.push_back(ends[n]);
+                candidates.push_back(line.Begin);candidates.push_back(markerEnd);
+                std::sort(candidates.begin(),candidates.end());candidates.erase(std::unique(candidates.begin(),candidates.end()),candidates.end());
+            }
+            Require(candidates.size()<=128,"Ellipsis candidate work limit exceeded");
+            for(auto it=candidates.rbegin();it!=candidates.rend();++it) {
+                if(*it==line.Begin){accepted=std::move(marker);retained=line.Begin;break;}
+                const auto first=out.Boundaries[line.Begin].Byte,last=out.Boundaries[*it].Byte;
+                auto candidateSource=out.Source.substr(first,last-first)+u8"…";
+                // The public decoder ignores one document-leading BOM. A FEFF
+                // retained at a line start is instead an interior format scalar;
+                // protect it with an ignored synthetic BOM in this private trial.
+                if(candidateSource.compare(0,3,"\xef\xbb\xbf")==0)candidateSource.insert(0,"\xef\xbb\xbf");
+                if(candidateSource.size()>m_Limits.InputBytes || *it-line.Begin>=m_Limits.Scalars)continue;
+                auto candidate=Build(candidateSource,face,candidateOptions,calls,workScalars);
+                if(candidate->Width<=available){accepted=std::move(candidate);retained=*it;break;}
+            }
+        }
+        // Rebuild compact output below: no discarded tail pins atlas pages.
+        const auto oldRuns=line.RunCount;
+        std::vector<Run> replacementRuns;std::vector<Glyph> replacementGlyphs;
+        if(accepted) {
+            replacementRuns=std::move(accepted->Runs);replacementGlyphs=std::move(accepted->Glyphs);
+            const uint32_t prefix=retained-line.Begin;
+            for(auto& run:replacementRuns){run.ContainsGenerated=run.End>prefix;run.Begin=line.Begin+std::min(run.Begin,prefix);run.End=line.Begin+std::min(run.End,prefix);}
+            for(auto& glyph:replacementGlyphs){
+                glyph.Y=line.Baseline;
+                if(glyph.ClusterBegin>=prefix){glyph.Generated=true;glyph.ClusterBegin=glyph.ClusterEnd=UINT32_MAX;}
+                else {Require(glyph.ClusterEnd<=prefix,"Ellipsis marker merged with an authored cluster");glyph.ClusterBegin+=line.Begin;glyph.ClusterEnd+=line.Begin;}
+            }
+            line.Width=accepted->Width;
+        } else {line.Width=0;out.MarkerDoesNotFit=true;}
+        const uint32_t firstGlyph=line.FirstRun<out.Runs.size()?out.Runs[line.FirstRun].FirstGlyph:uint32_t(out.Glyphs.size());
+        const uint32_t endGlyph=oldRuns?out.Runs[line.FirstRun+oldRuns-1].FirstGlyph+out.Runs[line.FirstRun+oldRuns-1].GlyphCount:firstGlyph;
+        const int64_t glyphDelta=int64_t(replacementGlyphs.size())-(endGlyph-firstGlyph),runDelta=int64_t(replacementRuns.size())-oldRuns;
+        for(auto& run:replacementRuns)run.FirstGlyph+=firstGlyph;
+        out.Glyphs.erase(out.Glyphs.begin()+firstGlyph,out.Glyphs.begin()+endGlyph);
+        out.Glyphs.insert(out.Glyphs.begin()+firstGlyph,replacementGlyphs.begin(),replacementGlyphs.end());
+        out.Runs.erase(out.Runs.begin()+line.FirstRun,out.Runs.begin()+line.FirstRun+oldRuns);
+        out.Runs.insert(out.Runs.begin()+line.FirstRun,replacementRuns.begin(),replacementRuns.end());
+        for(size_t r=line.FirstRun+replacementRuns.size();r<out.Runs.size();++r)out.Runs[r].FirstGlyph=uint32_t(int64_t(out.Runs[r].FirstGlyph)+glyphDelta);
+        for(size_t l=index+1;l<out.Lines.size();++l)out.Lines[l].FirstRun=uint32_t(int64_t(out.Lines[l].FirstRun)+runDelta);
+        line.RunCount=uint32_t(replacementRuns.size());line.End=retained;line.Ellipsized=true;line.Overflow=false;
+        Require(out.Runs.size()<=m_Limits.Runs && out.Glyphs.size()<=m_Limits.Glyphs,"Ellipsis output limit exceeded");
+    }
+    out.Width=0;for(const auto& line:out.Lines)out.Width=std::max(out.Width,line.Width);
+    out.Height=out.Lines.size()*lineHeight;
+    if(out.Omitted) {
+        // Keep source maps, not unused shaped tail capacity, in retained results.
+        auto compact=[](auto& values){using Values=std::decay_t<decltype(values)>;if(values.capacity()>std::max(size_t(64),values.size()*2))Values(values.begin(),values.end()).swap(values);};
+        compact(out.Glyphs);compact(out.Runs);compact(out.Lines);
+    }
+    out.ShapeCalls=calls;out.ShapeScalars=workScalars;
+    for(const auto& glyph:out.Glyphs){out.MissingGlyphs+=glyph.ID==0;out.MissingMarkerGlyphs+=glyph.Generated && glyph.ID==0;}
     const auto bytes=Bytes(out);
     Admit(bytes<=m_Limits.ResultBytes-m_Budget->Live.ResultBytes,"CPU text result retention exhausted; release inactive results");
     out.m_Bytes=bytes;out.m_Budget=m_Budget;++m_Budget->Live.Results;m_Budget->Live.ResultBytes+=bytes;

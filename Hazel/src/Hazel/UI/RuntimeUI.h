@@ -38,6 +38,7 @@ class RuntimeUI
         return m_Resolved.Modal || m_PointerOver || m_Input.Captured();
     }
     bool Bounds(uint64_t entity, GameUI::Rect &pixels) const;
+    Ref<const Hazel::Text::Layout> TextLayout(uint64_t entity) const;
     bool ImageVisual(uint64_t entity,GameUI::UIImageVisual &result) const;
     const GameUI::ResolvedSnapshot &Snapshot() const
     {
@@ -59,6 +60,8 @@ class RuntimeUI
         float PreparedSize=0,PreparedSpacing=0;
         GameUI::Align PreparedHorizontal=GameUI::Align::Start,PreparedVertical=GameUI::Align::Start;
         std::vector<Renderer2D::TextLine> Lines;
+        Ref<const Hazel::Text::Layout> PaintLayout;
+        uint64_t PaintGeneration=0;
         std::string Text;
         FontSelection Selection;
         Ref<Font> FontAsset;
@@ -68,10 +71,15 @@ class RuntimeUI
         uint64_t Epoch = 0;
         float Width = -1, Kerning = 0, LineSpacing=0;
         bool Wrap = false;
+        Hazel::Text::Overflow Overflow=Hazel::Text::Overflow::Clip;
+        uint32_t MaxLines=0;
+        float Height=-1;
         std::array<std::vector<Renderer2D::TextLine>,2> MeasureLines;
         std::array<std::string,2> MeasureText;
         std::array<float,2> MeasureWidth{{-2,-2}}, MeasureKerning{}, MeasureSpacing{};
         std::array<bool,2> MeasureWrap{};
+        std::array<Hazel::Text::Overflow,2> MeasureOverflow{};
+        std::array<uint32_t,2> MeasureMaxLines{};
         SpriteSource MeasureImageSource;
         uint64_t MeasureImageEpoch=0;
         glm::vec2 MeasureImageSize{-1,-1},MeasureResourceExtent{-1,-1};

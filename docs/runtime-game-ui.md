@@ -7,7 +7,7 @@ Runtime UI is ordinary scene content; it runs in Nutella without ImGui. World an
 1. In Hazelnut's Hierarchy, choose **Add Entity → Runtime UI → Canvas**. Set reference pixels (default 1280×720), safe insets and sort order in the Inspector. Enable **Block gameplay** for a menu, pause or dialogue canvas.
 2. Select the canvas and create **Panel**, **Text**, **Button**, **Stack**, **Grid** or **Wrap** through the same menu. All presets use the canonical measured model (Rect schema 3). A Stack defaults to Fixed width and Content height. Reselect the group before adding each sibling button; vertical-stack children use Fill width and buttons measure Content height. Rects use top-left logical pixels; Transform does not position UI.
 3. Set Width/Height to **Fixed**, **Fill** or **Content** in UI Rect. Fixed authors a border-box size; Fill uses parent space; Content measures visuals/children plus padding. Minimum and optional finite maximum constrain each axis. Choosing free Fill explicitly gives that axis to the parent and clears its anchor/offset/pivot; margins set the insets. Content text width is natural unless capped, so use Fixed/Fill width or an enabled Content maximum to wrap labels. Stacks own child positions; use sizing, margins and Fill weight. Resize handles edit only Fixed dimensions; container children resize from right/bottom. Computed dimensions/positions stay read-only, and gestures never switch modes. If parent reflow/alignment would move the opposite edge, that resize sample is rejected; edit Fixed size in Properties instead. Escape cancels.
-4. Text uses the existing **Text Component** for content, color, kerning and line spacing. **UI Text Style** supplies size, wrapping and horizontal/vertical alignment. Size is logical pixels per font ascender-to-descender height. Kerning and line spacing remain font-height units, as in world text. Choose a project .hfont family and real face style in Text Renderer, or leave the family empty for engine Open Sans. Separate styled text children provide mixed emphasis; text has no markup.
+4. Text uses the existing **Text Component** for content, color, kerning and line spacing. **UI Text Style** supplies size, wrapping, Clip/Ellipsis overflow, Max lines and horizontal/vertical alignment. Size is logical pixels per font ascender-to-descender height. Kerning and line spacing remain font-height units, as in world text. Choose a project .hfont family and real face style in Text Renderer, or leave the family empty for engine Open Sans. Separate styled text children provide mixed emphasis; text has no markup.
 5. Images use **Sprite Renderer** with the normal texture/sheet picker and UI Rect Image Fit. For framed panels add **UI Nine Slice**: source borders are left/top/right/bottom pixels within the selected source region, with a separate border scale. Borders must fit; small targets proportionally clamp their display borders. Corners keep their shape, edges stretch in one direction, and the center fills. Layout owns the UI pivot; sprite pivots remain unchanged for world sprites.
 6. Buttons have an action identity, tab order, interactable state and five editable tint/image states. An unassigned state image inherits Sprite Renderer. Keyboard focus has a persistent outline, including hover/press. Controls activate on pointer release inside their live clipped bounds with framebuffer coverage, or Enter/Space while keyboard focus belongs to UI. Tab starts navigation; Tab/Shift-Tab and arrows traverse. Escape or a click outside controls releases nonmodal keyboard ownership. A modal canvas blocks gameplay and buttons in other canvases. Higher canvas sort order wins; ties use stable entity identities; child hierarchy order supplies painter order within a canvas.
 7. Use the viewport's Window/Small/Widescreen/Classic aspect selector to preview the actual runtime layout. Editing does not dispatch actions. In Play, pointer coordinates map to the displayed image, including its letterboxing. Stop before changing authored values. **Validate UI** checks configuration/assets. Save/reopen as a normal scene. Use the existing **Create Prefab** workflow on the canvas/group to save a reusable subtree. Detached rect prefabs have a static default-canvas editor preview; runtime instances need a canvas ancestor.
@@ -163,7 +163,7 @@ show page count/bytes, shaping reuse and page failures.
 
 Pages group CPU-shaped printable ASCII together, then use glyph-ID blocks for
 other requests; this is packing, not another typography path. Pages are immutable and prepared synchronously, so first use can pause while
-outlines are generated. Graphical startup with a nonzero viewport prewarms current text; loading also tries the selected families' declared Required/Sample text. Unchanged UI reuses positioned
+outlines are generated. Graphical startup with a nonzero viewport prewarms world text and its families' declared Required/Sample text. UI prepares only its final constrained text at the actual paint boundary, so omitted text does not request pages. Unchanged UI reuses positioned
 results and prepared glyphs; world text retains its CPU layout. Drawing never
 rereads a font. Missing source glyphs show that face's `.notdef` (or a visible
 metric placeholder if it has no outline), with a bounded warning. Page pressure
@@ -183,6 +183,45 @@ to the accepted face's line advance. Tabs advance four spaces; trailing spaces
 are retained. Wrapping reshapes each chosen line with its own joining context.
 CJK, color emoji, vertical/variable typography, discretionary soft hyphens,
 cross-family fallback, rich text and editing/IME remain outside this scope.
+
+## Text overflow
+
+**UI Text Style → Overflow** defaults to **Clip**, with **Max lines = 0**
+(unlimited within the 4096-line engine limit). Wrap remains independent. Clip
+keeps ordinary partial-line pixel clipping; a positive Max lines removes whole
+subsequent lines without a marker. Existing scenes keep these defaults.
+
+**Ellipsis** fits complete font-height line boxes inside the padded content area,
+then replaces the logical tail of each overwide line and/or the last retained
+line with shaped U+2026 (`…`). Max lines also applies. A line fits vertically when
+one font height plus its preceding line advances fits; authored line spacing is
+included. No complete line means no glyphs. If the marker alone is too wide, that
+line paints nothing and the debugger explains why. Ink overhang clips to the
+padded content box and inherited clip. Left/center/right remain physical alignment;
+the jointly reshaped marker follows paragraph direction (visual left for RTL).
+
+Source text is never edited. Explicit newlines and trailing empty lines count;
+omitting even a trailing empty line warrants a marker. Empty source has no omitted
+content. Content sizing measures width-constrained text and Max lines without
+using its own eventual height as a constraint. Fixed/Fill and Content maxima keep
+the existing layout ownership; padding is removed before text fitting. Painting
+uses the final arranged content height. These intrinsic and final constraints may
+differ without a circular dependency. Clipping ancestors do not change line layout.
+
+Short-line ellipsis tests every grapheme-safe prefix, longest first, by reshaping
+retained text **with** the marker. For more than 128 boundaries it tests a bounded
+advance-estimated neighborhood plus geometric checkpoints; it may omit additional
+clusters and reports conservative truncation. It never assumes prefix widths are
+monotonic. Existing cumulative shaping/output limits still apply and reject the
+whole result on exhaustion. The selected face supplies the marker; missing U+2026
+uses its explicit `.notdef`/normal placeholder policy, never another family.
+
+**Runtime UI Debugger** shows final/original line counts, omission, a marker that
+cannot fit, conservative selection and missing marker coverage after painting.
+Inspector edits participate in scene/prefab Undo/Redo. Managed scripts can use
+`style.SetOverflow(UITextOverflow.Ellipsis, 2)`, `style.Overflow` and `style.MaxLines`;
+invalid values reject without changing the accepted fields. Full strings survive
+save/reopen, duplication, prefab reuse and Play/Stop.
 
 ## Font families and declared coverage
 

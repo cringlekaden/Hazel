@@ -816,6 +816,9 @@ namespace Hazel {
         }
         std::vector<const Font*> prewarmedFaces;
         if(strict && Application::TryGet() && m_ViewportWidth && m_ViewportHeight)for(auto e:m_Registry.view<TextComponent>()) {
+            // UI must prepare only its final constrained result, not an unwrapped
+            // world-text surrogate that requests discarded glyph pages.
+            if(m_Registry.has<UIRectComponent>(e))continue;
             auto& text=m_Registry.get<TextComponent>(e);auto font=ResolveTextFont(text,m_Assets);
             if(!text.LayoutCache || text.LayoutCache->Source!=text.TextString || text.LayoutCache->Font!=font->GetCPUFace() ||
                 text.LayoutTracking!=text.Kerning || text.LayoutSpacing!=text.LineSpacing) {

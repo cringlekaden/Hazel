@@ -91,6 +91,10 @@ static void PagePressurePixels() {
         glyphs.resize(1);glyphs[0].Min={-.5f,-.5f};glyphs[0].Max={.5f,.5f};
         Begin();Renderer2D::DrawTextGlyphs(glyphs,blocked,glm::mat4(1),{1,1,1,1},411);End();
         Check(ID()==411 && Color()[0]>250 && Color()[1]<5 && Color()[2]>250,"Unavailable page placeholder is invisible or unpickable");
+        std::vector<Renderer2D::TextLine> clipped;
+        auto ellipsis=Renderer2D::LayoutText("a long label that cannot fit",blocked,1,false,0,clipped,0,Text::Overflow::Ellipsis,1);
+        glyphs.clear();Renderer2D::AppendTextLineGlyphs(clipped.front(),blocked,glyphs);
+        Check(ellipsis->Omitted && !glyphs.empty() && !glyphs.back().Page && ellipsis->Glyphs.back().Generated,"Marker page pressure bypassed normal placeholder/admission");
         auto failures=Hazel::Font::Resources().PageFailures;
         Renderer2D::AppendTextGlyphs(u8"مرحبا",blocked,{},glyphs);
         Check(Hazel::Font::Resources().PageFailures==failures,"Warm page failure retried generation");

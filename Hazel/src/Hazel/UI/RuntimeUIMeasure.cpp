@@ -13,7 +13,7 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
         auto style = e.HasComponent<UITextStyleComponent>() ? e.GetComponent<UITextStyleComponent>()
                                                             : UITextStyleComponent{};
         if (!std::isfinite(style.Size) || style.Size <= 0 || style.Size > 512 ||
-            !std::isfinite(text.Kerning) || !std::isfinite(text.LineSpacing))
+            unsigned(style.Overflow)>1 || style.MaxLines>4096 || !std::isfinite(text.Kerning) || !std::isfinite(text.LineSpacing))
             throw std::invalid_argument("Invalid intrinsic UI text style/spacing");
         if (!text.TextString.empty() && text.TextString != "\xef\xbb\xbf" && width != 0)
         {
@@ -34,18 +34,19 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
             float normalizedWidth = width < 0 ? -1 : width / style.Size;
             if (cache.MeasureWidth[slot] != normalizedWidth ||
                 cache.MeasureText[slot] != text.TextString ||
-                cache.MeasureKerning[slot] != text.Kerning || cache.MeasureSpacing[slot] != text.LineSpacing || cache.MeasureWrap[slot] != wrap)
+                cache.MeasureKerning[slot] != text.Kerning || cache.MeasureSpacing[slot] != text.LineSpacing || cache.MeasureWrap[slot] != wrap || cache.MeasureOverflow[slot]!=style.Overflow || cache.MeasureMaxLines[slot]!=style.MaxLines)
             {
                 cache.MeasureWidth[slot]=-2; // failed publication must not leave a valid key with empty lines
                 cache.MeasureLines[slot].clear();
                 if(cache.Text!=text.TextString || cache.Kerning!=text.Kerning || cache.LineSpacing!=text.LineSpacing)cache.Lines.clear();
                 Renderer2D::LayoutText(text.TextString, cache.FontAsset, normalizedWidth, wrap,
-                                       text.Kerning, cache.MeasureLines[slot],text.LineSpacing);
+                                       text.Kerning, cache.MeasureLines[slot],text.LineSpacing,style.Overflow,style.MaxLines);
                 cache.MeasureWidth[slot] = normalizedWidth;
                 cache.MeasureText[slot] = text.TextString;
                 cache.MeasureKerning[slot] = text.Kerning;
                 cache.MeasureSpacing[slot] = text.LineSpacing;
                 cache.MeasureWrap[slot] = wrap;
+                cache.MeasureOverflow[slot]=style.Overflow;cache.MeasureMaxLines[slot]=style.MaxLines;
                 ++m_Diagnostics.Measurements;
             }
             else

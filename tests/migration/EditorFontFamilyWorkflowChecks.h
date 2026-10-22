@@ -53,13 +53,45 @@ void FontFamilyWorkflowChecks() {
     corpusLabel.GetComponent<TextComponent>().Font={"Fonts/Corpus.hfont"};
     corpusLabel.GetComponent<TextComponent>().TextString=u8"café Ω Привет\nمرحبا Hazel 123\nשלום Hazel (45)";
     corpusLabel.GetComponent<UIRectComponent>().FixedSize={580,200};
+    // Maintained constrained labels authored through the actual native commands
+    // and shared Inspector transactions, not a handwritten scene generator.
+    Check(editor.OpenScene(path),"Overflow native workflow failed to reopen document");
+    scene=editor.m_EditorScene;scene->CreateEntity("Overflow fixture camera").AddComponent<CameraComponent>();
+    auto canvas=scene->FindEntityByName("UI Canvas");
+    std::vector<uint64_t> overflowIDs;
+    for(int i=0;i<3;++i) {
+        panel.SetSelectedEntity(canvas);Check(panel.AddUI(2),"Overflow native Text preset failed");auto label=panel.GetSelectedEntity();overflowIDs.push_back(label.GetUUID());
+        auto start=UIEditValues::Capture(label),after=start;
+        after.Text->Font={"Fonts/Corpus.hfont"};
+        after.Text->Text=i==0?u8"A longer café label: ffi, composed é and decomposed e\u0301":i==1?u8"مرحبا Hazel 123 — שלום (45) — more source for a constrained paragraph":u8"One visible line\nAnother visible line\nA third line remains authored\n";
+        after.Rect->Offset={36,float(150+i*100)};after.Rect->FixedSize={300,80};after.Rect->Padding=glm::vec4(8);
+        if(i==0){after.Rect->WidthMode=GameUI::SizeMode::Fill;after.Rect->Offset.x=0;after.Rect->Margin={36,0,900,0};}
+        after.Style->Size=24;after.Style->Wrap=i!=0;after.Style->Overflow=i==2?Text::Overflow::Clip:Text::Overflow::Ellipsis;after.Style->MaxLines=i==0?1:2;
+        auto count=owner.m_SceneHistory.Operations();
+        Check(editing.Edit(*scene,&owner.m_SceneHistory,label.GetUUID(),"Text overflow",start,after,activity,0),editing.Error());
+        Check(owner.m_SceneHistory.Operations()==count+1 && owner.UndoRedo(false) && label.GetComponent<TextComponent>().TextString==start.Text->Text && owner.UndoRedo(true) && label.GetComponent<UITextStyleComponent>().MaxLines==after.Style->MaxLines,"Overflow Inspector transaction/source Undo/Redo failed");
+    }
+    auto overflowPath=assets->Root()/"Scenes/overflow-native.hazel";editor.m_EditorScenePath=overflowPath;Check(editor.SaveScene() && editor.OpenScene(overflowPath),"Overflow native scene save/reopen failed");scene=editor.m_EditorScene;
+    Prefab::Save(assets->Root(),"Prefabs/overflow-native.hprefab",scene,scene->FindEntityByName("UI Canvas"),true);
+    owner.SelectAsset(assets->Root()/"Prefabs/overflow-native.hprefab");Check(bool(owner.m_PrefabScene),"Overflow prefab editor failed");owner.ClosePrefab();
+    auto overflowAuthored=owner.SceneText();
+    FramebufferSpecification specification;specification.Width=640;specification.Height=480;specification.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};auto overflowTarget=Framebuffer::Create(specification);
+    for(int iteration=0;iteration<3;++iteration) {
+        Check(editor.OnScenePlay(true),"Overflow Play failed");auto running=editor.m_ActiveScene;running->OnViewportResize(640,480);overflowTarget->Bind();RenderCommand::Clear();running->OnUpdateRuntime(0);running->OnUpdateRuntime(0);
+        Check(running->GetUIDiagnostics().PreparedReuses>=3,"Overflow runtime did not reuse prepared text");
+        auto narrow=running->GetUITextLayout(overflowIDs.front());Check(narrow && narrow->Omitted,"Native constrained label did not truncate");
+        running->OnViewportResize(960,480);running->SetUIFramebufferSize({640,480});running->OnUpdateRuntime(0);
+        auto wide=running->GetUITextLayout(overflowIDs.front());Check(wide && wide->Lines[0].End>narrow->Lines[0].End,"Native overflow preview/Play resize did not restore more source");
+        overflowTarget->Unbind();editor.OnSceneStop();Check(owner.SceneText()==overflowAuthored,"Overflow Play/Stop changed full authored source/history");
+    }
+    m_OverflowFixture=scene;m_OverflowTarget=overflowIDs.front();m_OverflowFixturePanel.SetContext(scene);m_OverflowFixturePanel.SetSelectedEntity(scene->GetEntityByUUID(m_OverflowTarget));m_OverflowFixturePanel.RestoreSections({{"UI Text Style",true}});
     SceneSerializer(corpusScene).Serialize(assets->Root()/"Scenes/corpus-native.hazel");
     Prefab::Save(assets->Root(),"Prefabs/corpus-native.hprefab",corpusScene,corpusLabel);
     // Opt-in downstream package qualification retains only the useful, native-
     // authored fixture; normal runs still delete their entire temporary project.
     if(const auto* output=std::getenv("HAZEL_EDITOR_FONT_FIXTURE");output && *output) {
         const auto destination=std::filesystem::absolute(std::filesystem::u8path(output));
-        for(const auto* file:{"Fonts/Native.hfont","Fonts/Family-Regular.ttf","Fonts/Family-Bold.ttf","Fonts/Family-NOTICE.txt","Scenes/family-native.hazel","Prefabs/family-native.hprefab","Fonts/Corpus.hfont","Fonts/Corpus.ttf","Fonts/Corpus-NOTICE.txt","Scenes/corpus-native.hazel","Prefabs/corpus-native.hprefab"}) {
+        for(const auto* file:{"Fonts/Native.hfont","Fonts/Family-Regular.ttf","Fonts/Family-Bold.ttf","Fonts/Family-NOTICE.txt","Scenes/family-native.hazel","Prefabs/family-native.hprefab","Fonts/Corpus.hfont","Fonts/Corpus.ttf","Fonts/Corpus-NOTICE.txt","Scenes/corpus-native.hazel","Prefabs/corpus-native.hprefab","Scenes/overflow-native.hazel","Prefabs/overflow-native.hprefab"}) {
             auto target=destination/file;std::filesystem::create_directories(target.parent_path());
             std::filesystem::copy_file(assets->Root()/file,target,std::filesystem::copy_options::overwrite_existing);
         }
@@ -76,6 +108,19 @@ void FontFamilyWorkflowChecks() {
 }
 
 void DrawFontFamilyFixture() {
+    if(m_OverflowFixture) {
+        auto authored=SceneSerializer(m_OverflowFixture).CaptureAuthoredState();
+        ImGui::SetNextWindowPos({560,80},ImGuiCond_Always);ImGui::SetNextWindowSize({440,520},ImGuiCond_Always);
+        ImGui::Begin("Overflow qualification",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoInputs);
+        auto& owner=*m_Editor.m_Authoring;auto savedScene=owner.m_PrefabScene;auto savedPreview=owner.m_PrefabPreview;auto camera=owner.m_PrefabCamera;bool fit=owner.m_PrefabFit;
+        owner.m_PrefabScene=m_OverflowFixture;owner.m_PrefabPreview=m_OverflowPreview;owner.m_PrefabFit=true;
+        ImGui::GetStateStorage()->SetInt(ImGui::GetID("Subtree preview"),1);owner.PrefabPreview();
+        m_OverflowPreview=owner.m_PrefabPreview;owner.m_PrefabScene=savedScene;owner.m_PrefabPreview=savedPreview;owner.m_PrefabCamera=camera;owner.m_PrefabFit=fit;
+        Check(bool(m_OverflowPreview) && m_OverflowFixture->GetUIError().empty() && bool(m_OverflowFixture->GetUITextLayout(m_OverflowTarget)),"Native overflow scene preview failed");
+        m_OverflowFixturePanel.DrawAssetProperties(m_OverflowFixturePanel.GetSelectedEntity());ImGui::End();
+        GameUI::Action action;Check(SceneSerializer(m_OverflowFixture).CaptureAuthoredState()==authored && !m_OverflowFixture->ConsumeUIAction(0,action),"Overflow Inspector/preview modified source or dispatched an action");
+        std::cout<<"PASS: actual native overflow Inspector and scene preview, authored source unchanged\n";
+    }
     if(!m_FamilyFixture)return;
     auto& panel=*m_FamilyFixture;const auto before=panel.CopyDraftText();auto generations=Font::Resources().Generations;
     ImGui::SetNextWindowPos({60,80},ImGuiCond_Always);ImGui::SetNextWindowSize({460,640},ImGuiCond_Always);

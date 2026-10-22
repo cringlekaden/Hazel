@@ -69,7 +69,7 @@ namespace Hazel {
         static void DrawTextGlyphs(const std::vector<TextGlyph>& glyphs,const Ref<Font>& font,
                                   const glm::mat4& transform,const glm::vec4& color,int entityID=-1);
         static float MeasureText(const std::string& text, const Ref<Font>& font, float kerning=0);
-        static void LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines,float spacing=0);
+        static Ref<const Text::Layout> LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines,float spacing=0,Text::Overflow overflow=Text::Overflow::Clip,uint32_t maxLines=0,float height=-1);
 		static void DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const TextParams& textParams, int entityID = -1);
 		static void DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID = -1);
 

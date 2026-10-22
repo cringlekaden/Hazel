@@ -232,6 +232,8 @@ namespace Hazel {
         float Size=24;
         GameUI::Align Horizontal=GameUI::Align::Start, Vertical=GameUI::Align::Start;
         bool Wrap=true;
+        Text::Overflow Overflow=Text::Overflow::Clip;
+        uint32_t MaxLines=0; // unlimited within CPU layout limits
     };
     struct UINineSliceComponent {
         glm::vec4 Borders{4}; // source pixels: left, top, right, bottom
