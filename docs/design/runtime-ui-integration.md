@@ -1434,5 +1434,130 @@ The initial fixed-ID-only packing increased the 64-element mixed fixture from
 65 to 97 draws; the measured refinement groups CPU-shaped printable ASCII into
 one immutable cohort page and restores 65. Every glyph still uses the same CPU
 layout/glyph-ID page path. Other page/font boundaries remain ordered draws.
-Debug, source-game and relocated-package qualification follow below.
+Debug, source-game and relocated-package qualification are recorded below.
 
+### Measured Release costs (2026-10-21)
+
+Grandpa i3-3227U/8 GB, GCC 16.2.1, HD4000/Mesa 26.2.4-arch3.1, physical
+GL4.1/GLSL410 through Xwayland on Plasma Wayland. No compiler was active before
+or after either measured run; a concurrent unrelated package build earlier in
+development was left alone and its timings are not qualification. No desktop
+package/settings, vendor or dependency pin was changed by this work.
+
+Existing `--profile-render-small`: 1280×720 RGBA8/ID, 20 warm-up / 120 samples;
+median/p95 ms. These are UI boundary + paint costs, excluding input, gameplay,
+world draws and presentation. Timestamp intervals are asynchronously collected,
+can include CPU feeding gaps and are not GPU busy time or additive to CPU.
+
+| 64 unchanged elements | Source | Layout | Prepare | CPU submit | Boundary + paint | GPU interval | Draws |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Images | .0667/.1184 | 0/0 | .0900/.2043 | .0168/2.2479 | .1833/2.4899 | .0409/.0726 | 1 |
+| Mixed (32 labels) | .1531/.2216 | 0/0 | .2864/.4494 | .6465/1.0499 | 1.1056/1.7339 | .5719/3.5483 | 65 |
+
+Mixed labels reuse all 32 prepared entries (6 KiB, up from 4 KiB because glyphs
+now pin page versions). Both unchanged cases record 120 ordinary C++ new calls
+across 120 frames. Moving a rect: total .3152/.5177 images and 1.3631/2.1184 mixed.
+Changing paint/one label: .1812/.2735 and 1.0220/1.3449, 240/840 allocations over
+120 frames; mixed rebuilds exactly one label. One upload/end flush per frame;
+primitive/page transitions remain ordered runs. Ready GPU counts are 110–119,
+zero query-ring saturation skips. Relative to the previous recorded unchanged
+.1994/2.3887 images and .6489/1.0484 mixed, this is **not a warm CPU speedup**.
+Tail variation is visible and the proposed small-UI p95 budget is not established.
+No 512/2048 rendering campaign was repeated or large-run budget claimed.
+
+New `MigrationRenderer2DSmoke --profile-typography` uses the exact 12-row pinned
+corpus as one 24-pixel world text block on a 1280×720 RGBA8/ID target. Cold CPU:
+accepted face load **3.440 ms**, shaping **.517 ms**, page/geometry preparation
+**5301 ms** including upload enqueue, not GPU completion. Ten live pages estimate
+**7,274,496 bytes**; 296 ink quads. Unused IDs in a requested block contribute to
+cold work/storage; loading feedback is important. No new test font is shipped
+with ordinary games.
+
+| Warm corpus, 20 warm-up / 120 samples | CPU prepare | CPU submit | GPU interval | Ready samples / draws |
+| --- | --- | --- | --- | --- |
+| Cached glyph paint (UI equivalent) | .0001/.0002 | .1937/3.4530 | .1668/.1788 | 70 / 65 |
+| World geometry preparation each frame | .1057/.1673 | .2043/.4260 | .1673/.1781 | 64 / 65 |
+
+Both have **zero new shaping or page generation**. The optional probe uses the
+existing nonblocking GPUTimer; latest-result collection can discard intermediate
+ready samples. The cached-paint CPU tail is not concealed or interpreted as a
+universal GPU cost. A single post-measurement capture was inspected internally:
+accents, Greek/Cyrillic, joined Arabic and mixed Hebrew/Arabic/Latin/numbers are
+present. Automated IDs/bounds/pixels plus this inspection are not competent-reader
+acceptance. Page alternation within a font can still add many ordered draws;
+ASCII grouping avoids the measured ordinary-label regression, not that general
+limit. World geometry preparation and changed-text/changed-layout allocations
+remain costs. The known large alternating image/text submission debt is separate.
+
+### Final local qualification and remaining acceptance
+
+Implementation checkpoint **`7725874d566225e2e71f2a05e0454984dd0e98c4`** passes
+bounded Premake/GNU Make Debug/Release builds with two compiler jobs. After
+stabilization, **all 17 regression executables per configuration pass**: Release
+physical HD4000 GL4.1 and Debug physical native GL4.2. Release's llvmpipe GL4.6
+SPIR-V specialization and explicit two-slot/GLSL alternatives also pass. This is
+X11/GLX through Xwayland, not native Wayland. No MSVC/macOS build or physical
+Windows language/DPI acceptance is claimed; no new platform-specific production
+code or dependency is introduced. CI is **not awaited or polled**.
+
+Checks include all 12 rendered corpus rows against CPU positions/source maps,
+composed/decomposed accents, ffi and multi-glyph clusters/offsets, Arabic line
+context, mixed bidi/numbers, multiple pages/fonts/capacity, empty outlines,
+placeholder pixels and picking, immutable accepted bytes after file corruption,
+weak source/page reuse after Font LRU retirement, lowered admission/work limits,
+active page and texture-only draw pins, reload recovery and repeated contexts.
+D8 independent analytic RGBA8/window pixels, adversarial clips/painter order,
+resource/native-write invalidation, scene/prefab history, repeated Play/Stop,
+expanded Button Inspector and headless domain lifecycle remain passing. The
+rejected-measurement regression restores previous authored text/bounds without
+leaving empty lines under a valid cache key. Private fixture setup now copies its
+two pinned font/notice inputs into the editor's isolated working directory.
+
+Release source-example checks pass all five projects in Nutella and Hazelnut:
+startup/render/resize/graceful close and authored-file hashes unchanged. Existing
+managed/native gameplay, Lightkeeper LK1/LK2 migration, LK1–LK4 progress/retention,
+chapter transitions and lifecycle assertions pass. Fresh Lightkeeper menu, HUD
+and Mara dialogue captures were inspected internally at supported fixture sizes;
+no authored appearance correction was needed. Gameplay, saves and example assets
+are unchanged.
+
+A fresh normal Nutella export of the native-authored corpus scene/family/prefab
+passes startup/render/resize/shutdown from an unrelated Unicode directory while
+source resources/examples/SDK and GAC are unavailable. The imported DejaVu face,
+complete associated notice, descriptor and scene are byte-exact; four engine faces/
+notice and linked dependency notices are checked. Test corpus/conformance inputs
+and the unimported test-font collection are absent. Post-extraction missing and
+corrupt project-face cases render the established engine fallback with explicit
+missing-source status, retain authored references and close cleanly. Fallback does
+not acquire Arabic/Hebrew glyph coverage: `.notdef` remains an honest failure
+indicator. The healthy mixed-script package capture was inspected internally.
+
+Master remains `f50c5559`; stash, existing vendor pins/settings/layouts and the
+exact unrelated Sandbox draft remain unchanged. Only implementation/tests and
+existing guide/record changed; temporary captures, profiles and private exports
+remain ignored.
+
+Manual acceptance still needed:
+
+1. In a disposable project, import a complete licensed face/notice, create a family
+   and inspect Required versus Sample. Preview the pinned accent/Greek/Cyrillic/
+   Arabic/Hebrew examples; have competent readers review joining, punctuation and
+   mixed-direction wrapping. Automated positions/pixels are not reader acceptance.
+2. Assign it to Content-height UI text and world text; narrow/widen the viewport,
+   try physical left/center/right alignment, style fallback, tracking and spacing.
+   Undo/Redo, save/reopen scene/prefab and Play/Stop. Check actual desktop focus/DPI
+   transitions and repeat on Windows hardware.
+3. Corrupt a replacement while a screen is live, Reload and confirm the accepted
+   face remains; repair/reload and confirm wrapping and paint change together.
+   Inspect cache/live/pinned/page diagnostics. Initial page generation can pause;
+   warm unchanged text must not repeatedly prepare.
+
+Remaining P3: declared-reader/platform qualification, explicit overflow/cluster-
+safe ellipsis and later bounded spans/locale preview. Cross-family fallback is
+still deferred and must respect grapheme/joining runs; CJK, color/vertical/variable
+fonts, editable text/IME and localization databases remain excluded. This does
+not complete P3 or make the UI production-ready. **Smallest next slice:** explicit
+Clip/Ellipsis overflow and MaxLines, reshaping at the chosen truncation boundary,
+using these shared results/pages, with native preview/history and mixed-bidi
+regressions. Keep scrolling/new controls and the large alternating-run performance
+work separate.
