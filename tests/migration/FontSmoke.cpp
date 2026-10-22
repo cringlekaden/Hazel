@@ -1,6 +1,5 @@
 // Real context tests for the actual target MSDF atlas and application-bound cache.
 #include "Hazel.h"
-#include "Hazel/Renderer/MSDFData.h"
 #include "Hazel/Text/TextLayout.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -33,11 +32,10 @@ struct Fixture {
 };
 static void CheckAtlas(const Hazel::Ref<Hazel::Font>& font)
 {
-    const auto* data=font->GetMSDFData();
-    Check(data && data->Glyphs.size()>100,"Font geometry missing");
-    Check(data->FontGeometry.getGlyph('A') && data->FontGeometry.getGlyph(0x00e9),"Latin-1 glyphs lost");
-    Check(data->FontGeometry.getMetrics().lineHeight>0,"Font metrics invalid");
-    auto texture=font->GetAtlasTexture();
+    auto layout=font->Layout(u8"Aé",-1,false);auto pages=font->PreparePages(*layout);
+    Check(!pages.empty() && layout->Glyphs.size()==2,"Glyph-index page missing");
+    for(auto& glyph:layout->Glyphs)Check(std::any_of(pages.begin(),pages.end(),[&](const auto& page){return page->Find(glyph.ID);}),"Shaped glyph ID missing from pages");
+    auto texture=pages[0]->Texture;
     Check(texture && texture->IsLoaded() && texture->GetWidth()>0 && texture->GetHeight()>0,"Font atlas missing");
     Check(texture->GetSpecification().Format==Hazel::ImageFormat::RGB8 &&
           !texture->GetSpecification().GenerateMips,"MSDF atlas specification changed");

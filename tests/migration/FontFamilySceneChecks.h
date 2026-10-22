@@ -16,6 +16,13 @@ static void FontFamilySceneChecks(const std::filesystem::path& root) {
     label.AddComponent<UITextStyleComponent>().Size=16;
     RuntimeUI ui(*scene);ui.Resolve({128,128});ui.Draw();auto first=ui.Snapshot().Find(label.GetUUID())->Bounds.Size.x;auto generation=ui.Snapshot().Generation;
     auto regular=label.GetComponent<TextComponent>().ResolvedFont;
+    auto acceptedBounds=ui.Snapshot().Find(label.GetUUID())->Bounds.Size;
+    label.GetComponent<TextComponent>().TextString=u8"漢";
+    bool rejected=false;try{ui.Resolve({128,128});}catch(const std::exception&){rejected=true;}
+    Check(rejected,"Unsupported script unexpectedly published UI measurement");
+    label.GetComponent<TextComponent>().TextString="iiiiiiii";
+    ui.Resolve({128,128});ui.Draw();
+    Check(ui.Snapshot().Find(label.GetUUID())->Bounds.Size==acceptedBounds,"Rejected measurement poisoned restored cache keys/geometry");
     label.GetComponent<TextComponent>().Font.Style=FontStyle::Bold; // direct native mutation between boundaries
     ui.Resolve({128,128});ui.Draw();auto bold=label.GetComponent<TextComponent>().ResolvedFont;
     auto width=ui.Snapshot().Find(label.GetUUID())->Bounds.Size.x;

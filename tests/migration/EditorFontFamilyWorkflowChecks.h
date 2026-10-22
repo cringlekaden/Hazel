@@ -13,7 +13,7 @@ void FontFamilyWorkflowChecks() {
     owner.m_Fonts.m_Document->Draft().Name="Edited native family";owner.m_Fonts.m_Document->Changed();owner.m_ActiveDocument=EditorDocument::FontFamily;
     auto docs=owner.Documents();Check(std::any_of(docs.begin(),docs.end(),[](const auto& d){return d.Kind==EditorDocument::FontFamily && d.Dirty;}),"Family draft bypassed shared dirty-document service");
     Check(owner.SaveActive() && !owner.m_Fonts.Dirty(),"Native family Ctrl-S/save service failed");
-    owner.m_Fonts.Inspect();Check(!owner.m_Fonts.m_Coverage.empty() && owner.m_Fonts.m_Coverage[0].Required.Satisfied() && owner.m_Fonts.m_Coverage[0].Sample.MissingAtlas,"Native family coverage inspection confused source and atlas");
+    owner.m_Fonts.Inspect();Check(!owner.m_Fonts.m_Coverage.empty() && owner.m_Fonts.m_Coverage[0].Required.Satisfied() && owner.m_Fonts.m_Coverage[0].Sample.Satisfied(),"Native family coverage did not use shaped Greek support");
     const auto savedFamily=Read(assets->Root()/"Fonts/Native.hfont");
     owner.m_Fonts.m_Document->Draft().Name="Conflicted";owner.m_Fonts.m_Document->Changed();
     {std::ofstream out(assets->Root()/"Fonts/Native.hfont");out<<"Foreign edit";}
@@ -44,11 +44,22 @@ void FontFamilyWorkflowChecks() {
     for(int i=0;i<3;++i){Check(editor.OnScenePlay(true),"Family authored Play failed");auto running=editor.m_ActiveScene;auto live=running->FindEntityByName("UI Text");ResolveTextFont(live.GetComponent<TextComponent>(),assets);editor.OnSceneStop();Check(owner.SceneText()==authored,"Play/Stop imported font resources into authored state/history");}
     auto closure=AuditSpriteAssets(assets->Root(),{"Scenes/family-native.hazel","Prefabs/family-native.hprefab"});
     for(const auto* file:{"Fonts/Native.hfont","Fonts/Family-Regular.ttf","Fonts/Family-Bold.ttf","Fonts/Family-NOTICE.txt"})Check(std::find(closure.begin(),closure.end(),file)!=closure.end(),"Native family export closure incomplete");
+    assets->ImportFontFile(std::filesystem::absolute("typography/DejaVuSans.ttf"),"Fonts/Corpus.ttf",true);
+    assets->ImportFontFile(std::filesystem::absolute("typography/LICENSE-DejaVu.txt"),"Fonts/Corpus-NOTICE.txt",false);
+    FontFamilyDefinition corpus;corpus.Name="Tested typography corpus";corpus.Faces[0]={"Fonts/Corpus.ttf",{"Fonts/Corpus-NOTICE.txt"}};
+    corpus.Required=u8"café Ω Привет مرحبا שלום";FontFamilyDocument corpusDocument(assets);corpusDocument.Create("Fonts/Corpus.hfont",corpus);
+    Check(InspectFontFamily(assets->Root(),corpus).front().Required.Satisfied(),"Native mixed-script required coverage failed");
+    auto corpusScene=Scene::Copy(scene);auto corpusLabel=corpusScene->FindEntityByName("UI Text");
+    corpusLabel.GetComponent<TextComponent>().Font={"Fonts/Corpus.hfont"};
+    corpusLabel.GetComponent<TextComponent>().TextString=u8"café Ω Привет\nمرحبا Hazel 123\nשלום Hazel (45)";
+    corpusLabel.GetComponent<UIRectComponent>().FixedSize={580,200};
+    SceneSerializer(corpusScene).Serialize(assets->Root()/"Scenes/corpus-native.hazel");
+    Prefab::Save(assets->Root(),"Prefabs/corpus-native.hprefab",corpusScene,corpusLabel);
     // Opt-in downstream package qualification retains only the useful, native-
     // authored fixture; normal runs still delete their entire temporary project.
     if(const auto* output=std::getenv("HAZEL_EDITOR_FONT_FIXTURE");output && *output) {
         const auto destination=std::filesystem::absolute(std::filesystem::u8path(output));
-        for(const auto* file:{"Fonts/Native.hfont","Fonts/Family-Regular.ttf","Fonts/Family-Bold.ttf","Fonts/Family-NOTICE.txt","Scenes/family-native.hazel","Prefabs/family-native.hprefab"}) {
+        for(const auto* file:{"Fonts/Native.hfont","Fonts/Family-Regular.ttf","Fonts/Family-Bold.ttf","Fonts/Family-NOTICE.txt","Scenes/family-native.hazel","Prefabs/family-native.hprefab","Fonts/Corpus.hfont","Fonts/Corpus.ttf","Fonts/Corpus-NOTICE.txt","Scenes/corpus-native.hazel","Prefabs/corpus-native.hprefab"}) {
             auto target=destination/file;std::filesystem::create_directories(target.parent_path());
             std::filesystem::copy_file(assets->Root()/file,target,std::filesystem::copy_options::overwrite_existing);
         }
@@ -57,9 +68,9 @@ void FontFamilyWorkflowChecks() {
     // checks on following frames; use private test resources only.
     auto& family=owner.m_Fonts;family.m_Style=1;family.m_PreviewFont=assets->FamilyFont({"Fonts/Native.hfont",FontStyle::Bold});family.m_AcceptedPreview="Native café preview";
     m_FamilyFixture=CreateScope<FontFamilyPanel>();m_FamilyFixture->Bind(assets);
-    Check(m_FamilyFixture->Open(assets->Root()/"Fonts/Native.hfont"),"Family ImGui fixture failed to open");
-    m_FamilyFixture->m_Style=1;m_FamilyFixture->m_Preview="Native café preview";m_FamilyFixture->UpdatePreview();
-    Check(m_FamilyFixture->m_PreviewFont && m_FamilyFixture->m_AtlasCoverage.find("0 replaced")!=std::string::npos,"Accepted preview atlas coverage disagreed with actual glyphs");
+    Check(m_FamilyFixture->Open(assets->Root()/"Fonts/Corpus.hfont"),"Family ImGui fixture failed to open");
+    m_FamilyFixture->m_Style=0;m_FamilyFixture->m_Preview=u8"café مرحبا שלום 123";m_FamilyFixture->UpdatePreview();
+    Check(m_FamilyFixture->m_PreviewFont && m_FamilyFixture->m_AtlasCoverage.find("0 .notdef")!=std::string::npos,"Accepted preview atlas coverage disagreed with actual glyphs");
     Check(editor.OpenScene(original),"Family workflow did not restore disposable scene");
     std::cout<<"PASS: native font-family create/import/edit/coverage/save/reopen guards, Inspector history, scene/prefab closure and repeated Play/Stop\n";
 }

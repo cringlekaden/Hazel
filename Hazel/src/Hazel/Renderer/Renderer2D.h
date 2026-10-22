@@ -61,14 +61,15 @@ namespace Hazel {
 			float Kerning = 0.0f;
 			float LineSpacing = 0.0f;
 		};
-        struct TextLine { std::string Text; float Width=0; };
-        struct TextGlyph {glm::vec2 Min,Max,UVMin,UVMax;};
+        struct TextLine { std::string Text; float Width=0; Ref<const Text::Layout> Result; uint32_t Index=0; };
+        struct TextGlyph {glm::vec2 Min,Max,UVMin,UVMax; Ref<const FontPage> Page;};
+        static void AppendTextLineGlyphs(const TextLine& line,const Ref<Font>& font,std::vector<TextGlyph>& glyphs,glm::vec2 offset={});
         static void AppendTextGlyphs(const std::string& text,const Ref<Font>& font,const TextParams& params,
                                      std::vector<TextGlyph>& glyphs,glm::vec2 offset={});
         static void DrawTextGlyphs(const std::vector<TextGlyph>& glyphs,const Ref<Font>& font,
                                   const glm::mat4& transform,const glm::vec4& color,int entityID=-1);
         static float MeasureText(const std::string& text, const Ref<Font>& font, float kerning=0);
-        static void LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines);
+        static void LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines,float spacing=0);
 		static void DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const TextParams& textParams, int entityID = -1);
 		static void DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID = -1);
 

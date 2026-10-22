@@ -216,21 +216,27 @@ void EditorLayer::UI_Debugger()
         ImGui::Text("Flush: end %u | slots %u | capacity %u | external %u",d.FlushReasons[0],d.FlushReasons[3],d.FlushReasons[4],d.FlushReasons[5]);
     }
     if(ImGui::CollapsingHeader("Font resources")) {
-        auto fonts=Font::Resources();
-        ImGui::Text("Reusable cache %u / %u | %.1f / %.1f MiB",fonts.CacheEntries,fonts.Limits.CacheEntries,double(fonts.CacheBytes)/(1024*1024),double(fonts.Limits.CacheBytes)/(1024*1024));
+        auto fonts=Font::Resources();auto cpu=Text::Service::Main().Usage();
+        ImGui::Text("CPU sources %u / 24 | %.1f / 32 MiB",cpu.Faces,double(cpu.FaceBytes)/(1024*1024));
+        ImGui::Text("CPU layouts %u / 8192 | %.1f / 16 MiB",cpu.Results,double(cpu.ResultBytes)/(1024*1024));
+        ImGui::Text("Face cache %u / %u | page cache %u",fonts.CacheEntries,fonts.Limits.CacheEntries,fonts.CachePages);
+        ImGui::Text("Retained pages %.1f / %.1f MiB",double(fonts.CacheBytes)/(1024*1024),double(fonts.Limits.CacheBytes)/(1024*1024));
         ImGui::Text("Live atlases %u / %u | %.1f / %.1f MiB",fonts.LiveAtlases,fonts.Limits.LiveAtlases,double(fonts.LiveAtlasBytes)/(1024*1024),double(fonts.Limits.LiveAtlasBytes)/(1024*1024));
         ImGui::Text("Pinned atlases %u | %.1f MiB (included in live)",fonts.PinnedAtlases,double(fonts.PinnedBytes)/(1024*1024));
+        ImGui::Text("Font layout build/hit %llu / %llu | page hit/fail %llu / %llu",(unsigned long long)fonts.LayoutBuilds,(unsigned long long)fonts.LayoutHits,(unsigned long long)fonts.PageHits,(unsigned long long)fonts.PageFailures);
         ImGui::Text("Fonts %u | generation/hit/evict %llu / %llu / %llu",fonts.LiveFonts,(unsigned long long)fonts.Generations,(unsigned long long)fonts.Hits,(unsigned long long)fonts.Evictions);
-        ImGui::Text("Per font: source %.0f MiB | edge %u px | atlas %.0f MiB",double(fonts.Limits.InputBytes)/(1024*1024),fonts.Limits.AtlasDimension,double(fonts.Limits.AtlasBytes)/(1024*1024));
+        ImGui::Text("Per page: source %.0f MiB | edge %u px | atlas %.0f MiB",double(fonts.Limits.InputBytes)/(1024*1024),fonts.Limits.AtlasDimension,double(fonts.Limits.AtlasBytes)/(1024*1024));
         ImGui::TextDisabled("Live includes cache, default, prepared text and draw pins. Bytes estimate RGB8 storage, excluding driver overhead.");
         auto selectedFont=m_SceneHierarchyPanel.GetSelectedEntity();
         if(selectedFont && selectedFont.HasComponent<TextComponent>()) {
             if(auto assets=m_ActiveScene->GetAssets()) {
-                auto selection=selectedFont.GetComponent<TextComponent>().Font;auto font=assets->FamilyStatus(selection);auto atlas=font.Actual->GetAtlasTexture();
+                auto selection=selectedFont.GetComponent<TextComponent>().Font;auto font=assets->FamilyStatus(selection);
                 ImGui::TextWrapped("Selected: %s",selection.Family.empty()?"Engine Open Sans":selection.Family.generic_u8string().c_str());
                 ImGui::TextWrapped("Actual: %s%s",font.Actual->GetPath().filename().generic_u8string().c_str(),font.DefaultFallback?" (fallback)":"");
                 if(font.StyleFallback)ImGui::TextWrapped("Requested %s is absent; using Regular",FontStyleName(selection.Style));
-                ImGui::Text("Atlas %u x %u | %.1f KiB",atlas->GetWidth(),atlas->GetHeight(),double(font.Actual->GetAtlasBytes())/1024);
+                ImGui::Text("%u pages | %.1f KiB",font.Actual->PageCount(),double(font.Actual->GetAtlasBytes())/1024);
+                if(!font.Actual->PageError().empty())ImGui::TextWrapped("%s",font.Actual->PageError().c_str());
+                if(!font.Actual->TextWarning().empty())ImGui::TextWrapped("%s",font.Actual->TextWarning().c_str());
                 if(!font.Error.empty())ImGui::TextWrapped("%s",font.Error.c_str());
             }
         }

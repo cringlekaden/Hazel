@@ -964,24 +964,27 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             PropertyUI::Help("Empty uses engine Open Sans. Create .hfont assets in Content Browser. Styles use real faces; an absent style uses Regular, never synthesis.");
             int face=int(component.Font.Style);if(PropertyUI::Combo("font-style","Face style",face,"Regular\0Bold\0Italic\0Bold Italic\0"))component.Font.Style=FontStyle(face);
             if(auto assets=m_Context->GetAssets()) {
-                auto font=assets->FamilyStatus(component.Font);auto atlas=font.Actual->GetAtlasTexture();
+                auto font=assets->FamilyStatus(component.Font);
                 auto faceName=font.Face.lexically_relative(assets->Root());if(faceName.empty() || *faceName.begin()=="..")faceName=std::filesystem::path("[engine]")/font.Face.filename();
                 PropertyUI::ReadOnly("actual-face","Resolved face",faceName.generic_u8string().c_str());
                 if(font.StyleFallback)ImGui::TextWrapped("Requested face is absent; using Regular.");
                 if(font.DefaultFallback)ImGui::TextWrapped("Using engine Regular fallback; authored selection retained.");
                 if(!font.Error.empty())ImGui::TextWrapped("%s",font.Error.c_str());
                 if(ImGui::TreeNode("Font details")) {
-                    char description[128];std::snprintf(description,sizeof(description),"%u x %u | %.1f KiB",atlas->GetWidth(),atlas->GetHeight(),double(font.Actual->GetAtlasBytes())/1024);
-                    PropertyUI::ReadOnly("font-atlas","Atlas (estimated)",description);
+                    char description[128];std::snprintf(description,sizeof(description),"%u pages | %.1f KiB",font.Actual->PageCount(),double(font.Actual->GetAtlasBytes())/1024);
+                    PropertyUI::ReadOnly("font-atlas","Pages (estimated)",description);
+                    if(!font.Actual->PageError().empty())ImGui::TextWrapped("%s",font.Actual->PageError().c_str());
+                    if(!font.Actual->TextWarning().empty())ImGui::TextWrapped("%s",font.Actual->TextWarning().c_str());
                     if(ImGui::SmallButton("Reload family"))assets->Reload(component.Font.Family);
                     if(!component.Font.Family.empty() && OpenAsset){ImGui::SameLine();if(ImGui::SmallButton("Edit family"))OpenAsset(Project::ResolveOwnedAsset(assets->Root(),component.Font.Family));}
-                    ImGui::TextWrapped("Fixed Latin-1 atlas; no shaping, bidi or fallback families. Coverage inspection is available in the family asset editor.");
+                    ImGui::TextWrapped("Shaped Latin/Greek/Cyrillic/Arabic/Hebrew corpus; no cross-family fallback, CJK, color or vertical text. Inspect coverage in the family asset editor.");
                     ImGui::TreePop();
                 }
             }
             PropertyUI::Multiline("text", "Text", component.TextString);
             PropertyUI::Color("Color", "Color", glm::value_ptr(component.Color));
-            PropertyUI::DragFloat("Kerning", "Kerning", component.Kerning, 0.025f);
+            PropertyUI::DragFloat("Kerning", "Tracking", component.Kerning, 0.025f);
+            PropertyUI::Help("Extra font-height gap per shaped cluster. OpenType kerning is already applied; Arabic joins retain their spacing.");
             PropertyUI::DragFloat("Line Spacing", "Line Spacing", component.LineSpacing, 0.025f);
         });
 

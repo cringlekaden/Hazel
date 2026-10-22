@@ -102,6 +102,14 @@ Face::~Face() {
     if(m_Budget) { --m_Budget->Live.Faces; m_Budget->Live.FaceBytes-=m_Data->Bytes.capacity()+m_Identity.capacity()+sizeof(Face)+sizeof(Data); }
 }
 uint32_t Face::UnitsPerEm() const { return hb_face_get_upem(m_Data->Face); }
+uint32_t Face::GlyphCount() const { return hb_face_get_glyph_count(m_Data->Face); }
+const std::vector<uint8_t>& Face::Bytes() const { return m_Data->Bytes; }
+float Face::HeightEm() const { hb_font_extents_t e{};Require(hb_font_get_h_extents(m_Data->Font,&e),"Font has no horizontal extents");return float(e.ascender-e.descender)/UnitsPerEm(); }
+float Face::AscenderEm() const { hb_font_extents_t e{};Require(hb_font_get_h_extents(m_Data->Font,&e),"Font has no horizontal extents");return float(e.ascender)/UnitsPerEm(); }
+float Face::LineHeightEm() const { hb_font_extents_t e{};Require(hb_font_get_h_extents(m_Data->Font,&e),"Font has no horizontal extents");return float(e.ascender-e.descender+e.line_gap)/UnitsPerEm(); }
+bool Face::HasScalar(uint32_t scalar) const { hb_codepoint_t id=0;return hb_font_get_nominal_glyph(m_Data->Font,scalar,&id) && id; }
+
+bool Face::HasInk(uint32_t id) const { hb_glyph_extents_t e{};return !hb_font_get_glyph_extents(m_Data->Font,id,&e) || e.width!=0 || e.height!=0; }
 Layout::~Layout() { if(m_Budget) { --m_Budget->Live.Results; m_Budget->Live.ResultBytes-=m_Bytes; } }
 Service::Service(const Limits& cap):m_Limits(cap),m_Budget(CreateRef<Budget>()),m_Owner(std::this_thread::get_id()) {
     const Limits defaults;
@@ -183,7 +191,8 @@ Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>
     hb_font_extents_t extents{};
     Require(hb_font_get_h_extents(face->m_Data->Font,&extents),"Font has no horizontal extents");
     const float scale=options.EmSize/face->UnitsPerEm();
-    const float lineHeight=(extents.ascender-extents.descender+extents.line_gap)*scale;
+    Require(std::isfinite(options.Tracking) && std::abs(options.Tracking)<=512 && std::isfinite(options.LineSpacing) && std::abs(options.LineSpacing)<=512,"Invalid text spacing");
+    const float lineHeight=(extents.ascender-extents.descender+extents.line_gap)*scale+options.LineSpacing;
     Require(std::isfinite(lineHeight) && lineHeight>0,"Invalid font line height");
     const auto language=hb_language_from_string(options.Language.c_str(),int(options.Language.size()));
     BidiMemory memory(m_Limits.BidiBytes);
@@ -258,12 +267,17 @@ Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>
                     clusters.erase(std::unique(clusters.begin(),clusters.end()),clusters.end());
                     for(unsigned i=0;i<n;++i) {
                         Require(info[i].cluster>=s.Begin && info[i].cluster<s.End,"Invalid shaped source cluster");
-                        if(!info[i].codepoint)throw std::runtime_error("Missing font coverage in cluster starting at scalar "+std::to_string(info[i].cluster)+"; no cross-family fallback in CPU foundation");
+                        if(!info[i].codepoint && !options.PermitNotdef)throw std::runtime_error("Missing font coverage in cluster starting at scalar "+std::to_string(info[i].cluster)+"; no cross-family fallback in CPU foundation");
                         const auto next=*std::upper_bound(clusters.begin(),clusters.end(),info[i].cluster);
                         Glyph glyph{info[i].codepoint,info[i].cluster,next,p.Width+run.Width,0,
                             pos[i].x_advance*scale,-pos[i].y_advance*scale,pos[i].x_offset*scale,-pos[i].y_offset*scale};
                         if(out.Scalars[info[i].cluster]=='\t')glyph.AdvanceX*=4; // fixed four-space advance, not tab stops
                         Require(std::isfinite(glyph.AdvanceX) && glyph.AdvanceX>=0,"Unsupported negative/nonfinite horizontal glyph advance");
+                        // Tracking never separates the glyphs of one HB cluster. Joining
+                        // Arabic runs accept tracking only on whitespace, retaining joins.
+                        const bool last=i+1==n || info[i+1].cluster!=info[i].cluster;
+                        if(last && (s.Tag!=HB_TAG('A','r','a','b') || out.Scalars[info[i].cluster]==' '))
+                            glyph.AdvanceX=std::max(0.f,glyph.AdvanceX+options.Tracking);
                         run.Width+=glyph.AdvanceX;p.Glyphs.push_back(glyph);
                     }
                     p.Width+=run.Width;p.Runs.push_back(run);
@@ -341,6 +355,7 @@ Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>
         }
         out.Height=out.Lines.size()*lineHeight;
     }
+    for(const auto& glyph:out.Glyphs)out.MissingGlyphs+=glyph.ID==0;
     const auto bytes=Bytes(out);
     Admit(bytes<=m_Limits.ResultBytes-m_Budget->Live.ResultBytes,"CPU text result retention exhausted; release inactive results");
     out.m_Bytes=bytes;out.m_Budget=m_Budget;++m_Budget->Live.Results;m_Budget->Live.ResultBytes+=bytes;

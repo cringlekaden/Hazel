@@ -3,6 +3,7 @@
 #include "Hazel/UI/RuntimeUIConfig.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Core/OperationProgress.h"
+#include "Hazel/Core/Application.h"
 #include "Hazel/Audio/AudioPlayback.h"
 #include "Hazel/Project/Project.h"
 #include "Scene.h"
@@ -57,7 +58,7 @@ namespace Hazel {
 		if constexpr (std::is_same_v<T, NativeScriptComponent>) copy.Instance.reset();
         if constexpr (std::is_same_v<T, SpriteRendererComponent>) {copy.Resolved={};copy.PreparedEpoch=0;copy.PreparedSource=std::monostate{};}
         if constexpr (std::is_same_v<T, SpriteAnimationComponent>) copy.ResetRuntime();
-        if constexpr (std::is_same_v<T, TextComponent>) {copy.ResolvedFont.reset();copy.FontOwner.reset();copy.FontEpoch=0;copy.ResolvedSelection={};}
+        if constexpr (std::is_same_v<T, TextComponent>) {copy.ResolvedFont.reset();copy.LayoutCache.reset();copy.FontOwner.reset();copy.FontEpoch=0;copy.ResolvedSelection={};}
 		return copy;
 	}
 
@@ -375,7 +376,7 @@ namespace Hazel {
 	void Scene::OnRuntimeStop()
 	{
         ResetUI();
-        for(auto e:m_Registry.view<TextComponent>()){auto& text=m_Registry.get<TextComponent>(e);text.ResolvedFont.reset();text.FontOwner.reset();text.FontEpoch=0;}
+        for(auto e:m_Registry.view<TextComponent>()){auto& text=m_Registry.get<TextComponent>(e);text.ResolvedFont.reset();text.LayoutCache.reset();text.FontOwner.reset();text.FontEpoch=0;}
 		m_Stopping = true; CancelPendingLifecycle();
         if (ScriptEngine::GetSceneContext() == this) ScriptEngine::OnRuntimeStop();
 
@@ -812,6 +813,24 @@ namespace Hazel {
                 } catch(const std::exception& error) {s.Resolved.Error=error.what();HZ_CORE_ERROR("Sprite '{}': {}",m_Registry.get<TagComponent>(e).Tag,s.Resolved.Error);}
             }
             if(strict && !s.Resolved.Error.empty()) throw std::runtime_error(s.Resolved.Error);
+        }
+        std::vector<const Font*> prewarmedFaces;
+        if(strict && Application::TryGet() && m_ViewportWidth && m_ViewportHeight)for(auto e:m_Registry.view<TextComponent>()) {
+            auto& text=m_Registry.get<TextComponent>(e);auto font=ResolveTextFont(text,m_Assets);
+            if(!text.LayoutCache || text.LayoutCache->Source!=text.TextString || text.LayoutCache->Font!=font->GetCPUFace() ||
+                text.LayoutTracking!=text.Kerning || text.LayoutSpacing!=text.LineSpacing) {
+                OperationProgress::Report("Prepare shaped text pages");
+                auto layout=font->Layout(text.TextString,-1,false,text.Kerning,text.LineSpacing);
+                (void)font->PreparePages(*layout);
+                if(m_Assets && std::find(prewarmedFaces.begin(),prewarmedFaces.end(),font.get())==prewarmedFaces.end()) {
+                    prewarmedFaces.push_back(font.get());
+                    if(auto family=m_Assets->Family(text.Font.Family))for(const auto* corpus:{&family->Required,&family->Sample})if(!corpus->empty()) {
+                        try{auto declared=font->Layout(*corpus,-1,false);(void)font->PreparePages(*declared);}
+                        catch(const std::exception& error){HZ_CORE_WARN("Family corpus prewarm skipped: {}",error.what());}
+                    }
+                }
+                text.LayoutCache=layout;text.LayoutTracking=text.Kerning;text.LayoutSpacing=text.LineSpacing;
+            }
         }
         for(auto e:m_Registry.view<SpriteAnimationComponent>()) {
             auto& a=m_Registry.get<SpriteAnimationComponent>(e);

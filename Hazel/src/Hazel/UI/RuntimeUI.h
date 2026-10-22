@@ -49,6 +49,7 @@ class RuntimeUI
     void Reset();
 
   private:
+    std::vector<Renderer2D::TextGlyph> m_ScratchGlyphs;
     struct Cache
     {
         GameUI::UIImageVisual PaintImage;
@@ -65,11 +66,11 @@ class RuntimeUI
         std::array<SpriteSource, 5> ImageSources;
         std::array<uint64_t, 5> ImageEpochs{};
         uint64_t Epoch = 0;
-        float Width = -1, Kerning = 0;
+        float Width = -1, Kerning = 0, LineSpacing=0;
         bool Wrap = false;
         std::array<std::vector<Renderer2D::TextLine>,2> MeasureLines;
         std::array<std::string,2> MeasureText;
-        std::array<float,2> MeasureWidth{{-2,-2}}, MeasureKerning{};
+        std::array<float,2> MeasureWidth{{-2,-2}}, MeasureKerning{}, MeasureSpacing{};
         std::array<bool,2> MeasureWrap{};
         SpriteSource MeasureImageSource;
         uint64_t MeasureImageEpoch=0;

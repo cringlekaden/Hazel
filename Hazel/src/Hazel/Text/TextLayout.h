@@ -26,6 +26,13 @@ public:
     ~Face();
     const std::string& Identity() const { return m_Identity; }
     uint32_t UnitsPerEm() const;
+    uint32_t GlyphCount() const;
+    const std::vector<uint8_t>& Bytes() const; // immutable accepted input, never a reopened path
+    float HeightEm() const;
+    float AscenderEm() const;
+    float LineHeightEm() const;
+    bool HasScalar(uint32_t scalar) const;
+    bool HasInk(uint32_t glyphID) const;
 private:
     friend class Service;
     struct Data;
@@ -71,7 +78,8 @@ public:
     std::vector<Glyph> Glyphs;
     Ref<const Face> Font;
     float Width=0, Height=0;
-    uint32_t ShapeCalls=0, ShapeScalars=0;
+    uint32_t ShapeCalls=0, ShapeScalars=0, MissingGlyphs=0;
+    uint64_t RetainedBytes() const { return m_Bytes; }
 private:
     friend class Service;
     Ref<Budget> m_Budget;
@@ -81,6 +89,8 @@ enum class Direction { Auto, LTR, RTL };
 struct Options {
     float EmSize=1; // logical units per em; +X right, +Y down; offsets same units
     std::optional<float> Width; // absent = unwrapped; zero is a definite constraint
+    float Tracking=0, LineSpacing=0; // logical units; tracking between complete clusters
+    bool PermitNotdef=false; // renderer reports missing source coverage, never cross-face substitution
     Direction BaseDirection=Direction::Auto;
     std::string Language="und"; // tested shaping tags: und/en/fr/de/el/ru/ar/he
 };

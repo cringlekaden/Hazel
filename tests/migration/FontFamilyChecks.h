@@ -20,10 +20,13 @@ static void FontFamilyChecks(const std::filesystem::path& temporary) {
     auto generations=Hazel::Font::Resources().Generations;
     auto coverage=InspectFontFamily(root,definition);
     Check(Hazel::Font::Resources().Generations==generations,"Coverage inspection generated an atlas");
-    Check(coverage.size()==1 && coverage[0].Required.Satisfied() && coverage[0].Sample.MissingAtlas>0 && coverage[0].Sample.Unsupported>0,"Source/atlas/typography diagnostics confused");
+    Check(coverage.size()==1 && coverage[0].Required.Satisfied() && coverage[0].Sample.MissingSource>0,"Source/shaping diagnostics confused");
     auto greek=Hazel::Font::InspectCoverage(root/"Faces/Regular.ttf","Ω");
-    Check(greek.MissingSource==0 && greek.MissingAtlas==1 && greek.Unsupported==0,"Source cmap incorrectly claimed atlas coverage or shaping requirement");
-    Check(Hazel::Font::InspectCoverage(root/"Faces/Regular.ttf","\n\r\t\xef\xbb\xbf").Satisfied(),"Ordinary text controls reported missing");
+    Check(greek.MissingSource==0 && greek.Unsupported==0,"Greek source/shaping coverage was incorrectly restricted");
+    Check(Hazel::Font::InspectCoverage(root/"Faces/Regular.ttf",u8"\n\r\t\ufeff\u061c\u2028\u2029\u2060").Satisfied(),"Ordinary text controls reported missing");
+    auto mixed=Hazel::Font::InspectCoverage(root/"Faces/Regular.ttf",u8"A漢");
+    Check(mixed.Unsupported==1 && mixed.Issues.size()==1 && mixed.Issues[0].Scalar==0x6f22 && mixed.Issues[0].Typography,
+        "Unsupported corpus incorrectly labels supported Latin scalars");
     {
         auto assets=CreateRef<ProjectAssets>(root);FontFamilyDocument document(assets);document.Open("UI.hfont");
         auto regular=assets->FamilyFont({"UI.hfont"});
@@ -43,8 +46,8 @@ static void FontFamilyChecks(const std::filesystem::path& temporary) {
         Check(!document.Dirty() && ReadFontFamily(root/"UI.hfont").Name=="Saved","Successful family save did not accept point");
         document.Draft().Name="Cancelled";document.Changed();document.Discard();Check(document.Draft().Name=="Saved" && !document.Dirty(),"Family discard leaked draft");
         auto files=AuditFontFamily(root,"UI.hfont");Check(files.size()==3,"Family/face/notice closure incomplete");
-        document.Draft().Required="Ω";document.Changed();document.Save();
-        Reject([&]{AuditFontFamily(root,"UI.hfont");},"Unmet required atlas coverage allowed export");
+        document.Draft().Required="\u0870";document.Changed();document.Save();
+        Reject([&]{AuditFontFamily(root,"UI.hfont");},"Missing required source coverage allowed export");
         document.Draft().Required.clear();document.Save();
         std::filesystem::remove(root/"font-LICENSE.txt");
         Reject([&]{AuditFontFamily(root,"UI.hfont");},"Missing notice allowed export");

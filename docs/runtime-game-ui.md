@@ -1,6 +1,6 @@
 # Authoring runtime game UI
 
-Runtime UI is ordinary scene content; it runs in Nutella without ImGui. World text and sprites keep their existing rendering paths; text shares the strict decoder described below. Gameplay decisions belong in C#.
+Runtime UI is ordinary scene content; it runs in Nutella without ImGui. World and UI text share shaped CPU layout and glyph-ID pages; sprites keep their existing rendering path. Gameplay decisions belong in C#.
 
 ## Build a menu
 
@@ -100,7 +100,7 @@ The scene publishes indexed, read-only geometry with a monotonic generation. Bor
 
 Hosts supply viewport size and framebuffer extent before input/render (`RuntimeSession::ResizeFramebuffer` / `Scene::SetUIFramebufferSize`). Changing geometry after input may publish a newer render generation; it never replays that input. Limits are 4096 declared UI rects including hidden ones, 4096 container children and scene hierarchy depth 256. Invalid derived values reject resolution and cancel interaction; Edit retains the document and displays the error.
 
-Text uses strict UTF-8 scalar decoding for measurement, wrapping and drawing. One leading BOM is ignored; U+FEFF elsewhere is a retained format scalar with zero visual advance. Embedded NUL, malformed/truncated sequences, overlong encodings, surrogates and values above U+10FFFF are rejected. Managed setters also reject invalid UTF-16 before conversion, preserving the previous value. UI text remains limited to 64 KiB. Encoding support does not expand the current Latin-1 atlas or add shaping/fallback fonts.
+Text uses strict UTF-8 scalar decoding for measurement, wrapping and drawing. One leading BOM is ignored; U+FEFF elsewhere is a retained format scalar with zero visual advance. Embedded NUL, malformed/truncated sequences, overlong encodings, surrogates and values above U+10FFFF are rejected. Managed setters also reject invalid UTF-16 before conversion, preserving the previous value. UI layout input is limited to 64 KiB / 16,384 scalars; output is capped at 65,536 glyphs and 4096 lines/runs. Shaping, bidi and grapheme-safe line breaks use the shared Unicode 17 CPU service. The tested corpus covers Latin accents/ligatures, Greek, Cyrillic, Arabic joining and mixed Hebrew/Arabic/Latin/numbers; this is not an all-Unicode guarantee. A selected face must cover the complete text: there is no cross-family fallback.
 
 ## Inspect and edit UI
 
@@ -154,14 +154,35 @@ before Play. A failure is cached rather than retried every frame. Missing-font
 scenes can be saved/reopened for repair; export still rejects invalid closure.
 Undo/Redo restores authored selections even if a file subsequently disappears.
 
-**Runtime UI Debugger → Font resources** shows cache/live/pinned atlas estimates.
-The reusable LRU retains at most eight fonts/12 MiB; all live atlas objects,
-including active text/draw pins and default, are admitted within 24/24 MiB.
-Pinned resources can prevent a new font loading; release unused screens/resources
-and Reload to retry. Per-face input is limited to 4 MiB and atlas to 1024²/3 MiB.
-Estimates exclude driver and dependency scratch/outline memory. Fixed Latin-1,
-replacement `?`, strict UTF-8 and the existing lack of shaping/fallback chains
-remain unchanged; correct coverage does not expand character support.
+**Runtime UI Debugger → Font resources** distinguishes the eight-entry face cache,
+reusable pages (12 MiB) and live pages (24 / 24 MiB), including prepared-text and
+pending-draw pins. Per page: at most 128 glyph IDs, 1024² / 3 MiB RGB8. Source
+input remains 4 MiB per face; live CPU sources have their separate 24 / 32 MiB
+budget. These estimates exclude driver/dependency allocations. Resource details
+show page count/bytes, shaping reuse and page failures.
+
+Pages group CPU-shaped printable ASCII together, then use glyph-ID blocks for
+other requests; this is packing, not another typography path. Pages are immutable and prepared synchronously, so first use can pause while
+outlines are generated. Graphical startup with a nonzero viewport prewarms current text; loading also tries the selected families' declared Required/Sample text. Unchanged UI reuses positioned
+results and prepared glyphs; world text retains its CPU layout. Drawing never
+rereads a font. Missing source glyphs show that face's `.notdef` (or a visible
+metric placeholder if it has no outline), with a bounded warning. Page pressure
+shows magenta rectangles at shaped positions without changing advances; release
+unused screens/resources and **Reload family** to retry preparation. Authoring
+keeps the family reference. Required coverage checks source/shaping support,
+not GPU residency or a guarantee that every screen fits resource limits.
+
+Size remains logical pixels per accepted font ascender-to-descender height.
+The shared service converts that to em units; UI aligns whole shaped lines and
+world text starts at the first baseline. `Kerning` is additional cluster tracking
+in font-height units; OpenType kerning is already applied exactly once by
+HarfBuzz. Start/End alignment remains physical left/right; UI layouts do not
+automatically mirror for RTL paragraphs. Tracking never splits ligature/combining clusters and is suppressed
+inside Arabic joining runs except whitespace. Line spacing adds font-height units
+to the accepted face's line advance. Tabs advance four spaces; trailing spaces
+are retained. Wrapping reshapes each chosen line with its own joining context.
+CJK, color emoji, vertical/variable typography, discretionary soft hyphens,
+cross-family fallback, rich text and editing/IME remain outside this scope.
 
 ## Font families and declared coverage
 
@@ -195,18 +216,15 @@ FontStyle.Bold)` invalidate Content/wrapping and prepared glyphs together.
 
 **Coverage declaration** holds Required text and informational Sample text, each
 at most 8192 strict UTF-8 bytes / 4096 unique scalars. **Inspect coverage** is CPU
-only; it does not create/upload face atlases. Results distinguish the inspected source character
-map, its CPU plan for the fixed Latin-1 glyph set, and conservative combining/joining/bidi
-warnings. Newline, CR, tab and BOM follow the normal text contract. Missing atlas
-glyphs paint `?`. Source coverage alone does not certify a language, shaping or
-correct line breaks. The diagnostic recognizer is deliberately incomplete, not a
-Unicode conformance service. Every supplied style must satisfy Required text in
-Hazel's current atlas and supported behavior before export; sample results never
-block export or promise language support. Detailed output is bounded to 32 unique
-problem scalars per result. These explicit source inspections do not certify an
-older accepted resource after a failed reload. Preview separately counts actual
-replacement glyphs in its accepted atlas; ungenerated faces have no live atlas. Face preview updates explicitly, uses the actual face
-and shows its last accepted resource; it is not a shaping/localization preview.
+only; it does not generate/upload GPU pages. Results distinguish missing nominal
+source glyphs from unsupported script/feature/segmentation behavior. The actual
+CPU service checks shaping of the declaration; cmap presence alone does not
+certify a language. Every provided style must satisfy Required text before export;
+Sample remains informational. Newline, CR, tab, BOM and supported format controls
+follow the text contract. Details are bounded to 32 code points; unsupported
+layout reports its cause. Page residency/admission is separate: **Update preview**
+uses the actual renderer and reports accepted pages, `.notdef` count and failures.
+This is representative rendering, not competent-reader language acceptance.
 
 Descriptor Version 1 uses `FontFamily: {Version, Name, Faces, Required, Sample}`.
 Faces is a mapping keyed Regular/Bold/Italic/**Bold Italic**; each provided slot has
@@ -220,10 +238,9 @@ font or source-checkout fallback is used. Nonempty obsolete UI FontPath fields
 are unsupported; writers only emit Text FontFamily/FontStyle. An empty historical
 marker carries no selection and is ignored (including the preserved Sandbox draft).
 
-The engine also contains a tested CPU typography foundation (HarfBuzz/libunibreak/
-SheenBidi, Unicode 17), with a representative Latin/Greek/Cyrillic/Arabic/Hebrew
-fixture corpus. It is not yet the measurement/drawing path. Hazelnut preview,
-Required coverage and exported games retain the current Latin-1 renderer contract;
-selecting a face with Arabic/Hebrew cmap coverage does not enable their rendering.
-Glyph-ID atlas pages and shared measurement/drawing integration are the next
-bounded milestone. No old/new typography switch or inactive family option exists.
+Measurement, wrapping, family previews, ordinary world text and runtime UI now
+consume the same immutable CPU results and accepted face versions. No old/new
+renderer mode or fixed Latin-1 path remains. Test-only DejaVu/corpus resources
+stay outside game packages unless explicitly imported into a project; packages
+include the project's declared faces/notices and engine defaults, without system
+font or SDK fallback. Review real Arabic/Hebrew content with competent readers.

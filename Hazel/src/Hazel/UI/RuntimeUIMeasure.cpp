@@ -1,6 +1,5 @@
 #include "hzpch.h"
 #include "RuntimeUI.h"
-#include "Hazel/Renderer/MSDFData.h"
 #include <cmath>
 namespace Hazel
 {
@@ -28,19 +27,24 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
                 cache.Epoch = epoch;
                 cache.Width = -1;cache.PreparedValid=false;
                 cache.MeasureWidth = {{-2, -2}};
+                    cache.MeasureLines[0].clear();cache.MeasureLines[1].clear();cache.Lines.clear();
             }
             int slot = width < 0 ? 0 : 1;
             bool wrap = width >= 0 && style.Wrap;
             float normalizedWidth = width < 0 ? -1 : width / style.Size;
             if (cache.MeasureWidth[slot] != normalizedWidth ||
                 cache.MeasureText[slot] != text.TextString ||
-                cache.MeasureKerning[slot] != text.Kerning || cache.MeasureWrap[slot] != wrap)
+                cache.MeasureKerning[slot] != text.Kerning || cache.MeasureSpacing[slot] != text.LineSpacing || cache.MeasureWrap[slot] != wrap)
             {
+                cache.MeasureWidth[slot]=-2; // failed publication must not leave a valid key with empty lines
+                cache.MeasureLines[slot].clear();
+                if(cache.Text!=text.TextString || cache.Kerning!=text.Kerning || cache.LineSpacing!=text.LineSpacing)cache.Lines.clear();
                 Renderer2D::LayoutText(text.TextString, cache.FontAsset, normalizedWidth, wrap,
-                                       text.Kerning, cache.MeasureLines[slot]);
+                                       text.Kerning, cache.MeasureLines[slot],text.LineSpacing);
                 cache.MeasureWidth[slot] = normalizedWidth;
                 cache.MeasureText[slot] = text.TextString;
                 cache.MeasureKerning[slot] = text.Kerning;
+                cache.MeasureSpacing[slot] = text.LineSpacing;
                 cache.MeasureWrap[slot] = wrap;
                 ++m_Diagnostics.Measurements;
             }
@@ -49,10 +53,8 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
             auto &lines = cache.MeasureLines[slot];
             for (auto &line : lines)
                 size.x = std::max(size.x, line.Width * style.Size);
-            auto metrics = cache.FontAsset->GetMSDFData()->FontGeometry.getMetrics();
-            float normalized = 1.f / float(metrics.ascenderY - metrics.descenderY);
-            float lineHeight =
-                (float(metrics.lineHeight) * normalized + text.LineSpacing) * style.Size;
+            auto face=cache.FontAsset->GetCPUFace();
+            float lineHeight=(face->LineHeightEm()/face->HeightEm()+text.LineSpacing)*style.Size;
             size.y = lines.empty() ? 0 : style.Size + (lines.size() - 1) * lineHeight;
             if (!std::isfinite(size.y) || size.y < 0)
                 throw std::invalid_argument("Intrinsic text height is invalid");

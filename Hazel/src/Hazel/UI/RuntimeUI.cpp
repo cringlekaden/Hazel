@@ -1,6 +1,5 @@
 #include "hzpch.h"
 #include "RuntimeUI.h"
-#include "Hazel/Renderer/MSDFData.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include <cmath>
 #include <cstring>
@@ -854,18 +853,26 @@ void RuntimeUI::Draw()
                     cache.Width = -1;
                     cache.PreparedValid = false;
                     cache.MeasureWidth = {{-2, -2}};
+                    cache.MeasureLines[0].clear();cache.MeasureLines[1].clear();cache.Lines.clear();
                 }
                 auto content = n.Bounds.Inset(e.GetComponent<UIRectComponent>().Padding);
                 float width = content.Size.x / style.Size;
-                if (cache.Text != t.TextString || cache.Width != width ||
-                    cache.Kerning != t.Kerning || cache.Wrap != style.Wrap)
+                if (cache.Lines.empty() || cache.Text != t.TextString || cache.Width != width ||
+                    cache.Kerning != t.Kerning || cache.LineSpacing!=t.LineSpacing || cache.Wrap != style.Wrap)
                 {
-                    Renderer2D::LayoutText(t.TextString, cache.FontAsset, width, style.Wrap,
-                                           t.Kerning, cache.Lines);
+                    bool measured=false;
+                    for(size_t slot=0;slot<2;++slot)if(!cache.MeasureLines[slot].empty() && cache.MeasureLines[slot].front().Result->Font==cache.FontAsset->GetCPUFace() && cache.MeasureText[slot]==t.TextString &&
+                        cache.MeasureKerning[slot]==t.Kerning && cache.MeasureSpacing[slot]==t.LineSpacing && cache.MeasureWrap[slot]==style.Wrap &&
+                        (!style.Wrap || cache.MeasureWidth[slot]==width)) {
+                        cache.Lines=cache.MeasureLines[slot];measured=true;break;
+                    }
+                    if(!measured)Renderer2D::LayoutText(t.TextString, cache.FontAsset, width, style.Wrap,
+                                           t.Kerning, cache.Lines,t.LineSpacing);
                     cache.PreparedValid = false;
                     cache.Text = t.TextString;
                     cache.Width = width;
                     cache.Kerning = t.Kerning;
+                    cache.LineSpacing=t.LineSpacing;
                     cache.Wrap = style.Wrap;
                 }
                 // Position/tint are live draw values. Only normalized glyph geometry is cached.
@@ -877,7 +884,7 @@ void RuntimeUI::Draw()
                     cache.PreparedVertical != style.Vertical;
                 constexpr size_t budget = 16 * 1024 * 1024, maxTextBytes = 4096;
                 const size_t priorBytes = cache.Glyphs.capacity() * sizeof(Renderer2D::TextGlyph);
-                const size_t wanted = std::max(cache.Glyphs.capacity(), t.TextString.size()) *
+                const size_t wanted = std::max(cache.Glyphs.capacity(), cache.Lines.empty()?size_t(0):cache.Lines.front().Result->Glyphs.size()) *
                                       sizeof(Renderer2D::TextGlyph);
                 const bool retain = t.TextString.size() <= maxTextBytes &&
                                     m_PreparedBytes - priorBytes + wanted <= budget;
@@ -887,15 +894,15 @@ void RuntimeUI::Draw()
                     std::vector<Renderer2D::TextGlyph>().swap(cache.Glyphs);
                     cache.PreparedValid = false;
                 }
-                auto metrics = cache.FontAsset->GetMSDFData()->FontGeometry.getMetrics();
-                const float normalized = 1.f / float(metrics.ascenderY - metrics.descenderY);
-                const float lineHeight = float(metrics.lineHeight) * normalized + t.LineSpacing;
+                auto face=cache.FontAsset->GetCPUFace();
+                const float normalized=1/face->HeightEm();
+                const float lineHeight=face->LineHeightEm()*normalized+t.LineSpacing;
                 const float height = 1.f + (cache.Lines.size() - 1) * lineHeight;
                 auto visitLines = [&](auto emit) {
                     float y = style.Vertical == Align::Center ? (normalizedContent.y - height) * .5f
                               : style.Vertical == Align::End  ? normalizedContent.y - height
                                                               : 0;
-                    y += float(metrics.ascenderY) * normalized;
+                    y += face->AscenderEm() * normalized;
                     for (const auto &line : cache.Lines)
                     {
                         const float x = style.Horizontal == Align::Center
@@ -917,13 +924,11 @@ void RuntimeUI::Draw()
                     {
                         cache.PreparedValid = false;
                         cache.Glyphs.clear();
-                        cache.Glyphs.reserve(t.TextString.size());
+                        cache.Glyphs.reserve(cache.Lines.empty()?0:cache.Lines.front().Result->Glyphs.size());
                         m_PreparedBytes = m_PreparedBytes - priorBytes +
                                           cache.Glyphs.capacity() * sizeof(Renderer2D::TextGlyph);
                         visitLines([&](const auto &line, glm::vec2 offset) {
-                            Renderer2D::AppendTextGlyphs(line.Text, cache.FontAsset,
-                                                         {t.Color, t.Kerning, t.LineSpacing},
-                                                         cache.Glyphs, offset);
+                            Renderer2D::AppendTextLineGlyphs(line, cache.FontAsset, cache.Glyphs, offset);
                         });
                         cache.PreparedContent = normalizedContent;
                         cache.PreparedSize = style.Size;
@@ -942,10 +947,10 @@ void RuntimeUI::Draw()
                 {
                     ++m_Diagnostics.PreparedRebuilds;
                     visitLines([&](const auto &line, glm::vec2 offset) {
-                        Renderer2D::DrawString(
-                            line.Text, cache.FontAsset,
-                            transform * glm::translate(glm::mat4(1), glm::vec3(offset, 0)),
-                            {t.Color * tint, t.Kerning, t.LineSpacing}, int(uint32_t(e)));
+                        m_ScratchGlyphs.clear();
+                        Renderer2D::AppendTextLineGlyphs(line,cache.FontAsset,m_ScratchGlyphs,offset);
+                        Renderer2D::DrawTextGlyphs(m_ScratchGlyphs,cache.FontAsset,transform,t.Color*tint,int(uint32_t(e)));
+                        m_ScratchGlyphs.clear(); // no unaccounted page pins across frames
                     });
                 }
                 m_Diagnostics.PreparedBytes = m_PreparedBytes;
@@ -959,6 +964,7 @@ void RuntimeUI::Draw()
     }
     catch (...)
     {
+        m_ScratchGlyphs.clear();
         Renderer2D::EndScene();
         if (m_GPUTimer)
             m_GPUTimer->End();

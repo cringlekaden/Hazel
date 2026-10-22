@@ -2,113 +2,83 @@
 #include "Hazel/Assets/ProjectAssets.h"
 #include <thread>
 static void FontResourceChecks(const std::filesystem::path& root) {
+    using namespace Hazel;
     const auto regular=std::filesystem::absolute("assets/fonts/opensans/OpenSans-Regular.ttf");
     const auto bold=std::filesystem::absolute("assets/fonts/opensans/OpenSans-Bold.ttf");
     const auto a=root/"a.ttf",b=root/"b.ttf";
     auto copy=[](const auto& from,const auto& to){std::filesystem::copy_file(from,to,std::filesystem::copy_options::overwrite_existing);};
+    auto page=[](const Ref<Font>& font,const char* text="A"){auto layout=font->Layout(text,-1,false);auto pages=font->PreparePages(*layout);Check(!pages.empty(),"Page preparation failed");return pages.front();};
     copy(regular,a);copy(regular,b);
-    const auto atlasBytes=Hazel::Font::GetDefault()->GetAtlasBytes();
-    Hazel::Font::Shutdown();Hazel::FontLimits limits;limits.CacheEntries=1;limits.LiveAtlases=3;
-    auto invalidLimits=limits;invalidLimits.CacheEntries=0;
-    Reject([&]{Hazel::Font::Initialize(invalidLimits);},"Non-admitting cache configuration accepted");
-    Hazel::Font::Initialize(limits);
+    Font::Shutdown();FontLimits limits;limits.CacheEntries=1;limits.LiveAtlases=3;
+    auto invalid=limits;invalid.CacheEntries=0;Reject([&]{Font::Initialize(invalid);},"Non-admitting cache accepted");Font::Initialize(limits);
     {
-        auto fallback=Hazel::Font::GetDefault();
+        auto fallback=Font::GetDefault();auto defaultPage=page(fallback);
         std::filesystem::resize_file(a,128*1024);auto stamp=std::filesystem::last_write_time(a);
-        auto first=Hazel::Font::Load(a);auto oldID=first->GetAtlasTexture()->GetRendererID();
-        Check(Hazel::Font::Load(a)==first && Hazel::Font::Resources().Hits==1,"Content-key font reuse missing");
+        auto first=Font::Load(a);auto firstPage=page(first);auto oldID=firstPage->Texture->GetRendererID();
+        Check(Font::Load(a)==first,"Content-key reuse missing");
         copy(bold,a);std::filesystem::resize_file(a,128*1024);std::filesystem::last_write_time(a,stamp);
-        auto second=Hazel::Font::Load(a,first);
-        Check(first->GetCPUFace()!=second->GetCPUFace(),"Changed accepted bytes reused incompatible CPU face");
-        Check(second!=first && first->GetAtlasTexture()->GetRendererID()==oldID,"Font replacement mutated a live atlas");
-        auto state=Hazel::Font::Resources();
-        Check(state.CacheEntries==1 && state.LiveAtlases==3 && state.PinnedAtlases==3,"Cache versus pinned accounting wrong");
-        auto heldAtlas=first->GetAtlasTexture();first.reset();
-        Reject([&]{Hazel::Font::Load(b);},"Atlas-only pin did not prevent admission");
-        Check(Hazel::Font::Resources().Generations==state.Generations,"Rejected admission generated an atlas");
-        Hazel::ProjectAssets pressure(root);auto blocked=pressure.FontStatus("b.ttf");
-        Check(blocked.Fallback && !blocked.Error.empty(),"Pinned admission did not expose fallback/diagnostic");
-        for(int i=0;i<20;++i)pressure.FontAsset("b.ttf");
-        Check(Hazel::Font::Resources().Generations==state.Generations,"Rejected project font regenerated every lookup");
-        Check(Hazel::Font::Load(a,second)==second && Hazel::Font::Resources().Generations==state.Generations,"Unchanged accepted font regenerated after LRU eviction");
-        WriteTestFamily(root,"shared-pressure.hfont","a.ttf");
-        Check(pressure.FamilyFont({"shared-pressure.hfont"})==second && Hazel::Font::Resources().Generations==state.Generations,
-              "A family sharing a live face failed admission/reused a duplicate after eviction");
-        heldAtlas.reset();
-        Check(pressure.FontStatus("b.ttf").Fallback,"Admission failure retried without explicit freshness boundary");
-        pressure.Reload("b.ttf");auto third=pressure.FontAsset("b.ttf");
-        Check(!pressure.FontStatus("b.ttf").Fallback,"Explicit retry did not recover from pin pressure");
-        Check(Hazel::Font::Resources().CacheEntries==1 && Hazel::Font::Resources().LiveAtlases==3,"Cache/live limit violated");
-        bool wrongThread=false;std::thread worker([&]{try{Hazel::Font::Load(a);}catch(const std::logic_error&){wrongThread=true;}});worker.join();
-        Check(wrongThread,"Font graphics generation accepted the wrong thread");
+        auto second=Font::Load(a,first);auto secondPage=page(second);
+        Check(first->GetCPUFace()!=second->GetCPUFace() && firstPage->Texture->GetRendererID()==oldID,"Replacement mutated accepted bytes/page");
+        Check(Font::Resources().LiveAtlases==3 && Font::Resources().PinnedAtlases==3,"Cache/pin accounting wrong");
+        auto heldAtlas=firstPage->Texture;firstPage.reset();first.reset();
+        auto third=Font::Load(b);auto layout=third->Layout("A",-1,false);auto state=Font::Resources();
+        Check(third->PreparePages(*layout).empty() && !third->PageError().empty(),"Texture-only pin ignored during page admission");
+        for(int i=0;i<20;++i)third->PreparePages(*layout);
+        Check(Font::Resources().Generations==state.Generations && Font::Resources().PageFailures==state.PageFailures+1,"Rejected page regenerated each lookup");
+        heldAtlas.reset();Check(third->PreparePages(*layout).empty(),"Page failure retried without freshness");
+        Font::Load(b,third);auto thirdPage=page(third);Check(third->PageError().empty(),"Explicit page retry failed");
+        WriteTestFamily(root,"shared-pressure.hfont","a.ttf");ProjectAssets pressure(root);
+        Check(pressure.FamilyFont({"shared-pressure.hfont"})==second,"Shared face duplicated after eviction");
+        bool wrong=false;std::thread worker([&]{try{Font::Load(a);}catch(const std::logic_error&){wrong=true;}});worker.join();Check(wrong,"Font operation accepted wrong thread");
     }
-    Hazel::Font::Shutdown();Check(Hazel::Font::Resources().LiveAtlases==0,"Inactive atlases retained after shutdown");
-    limits.LiveAtlases=16;limits.LiveAtlasBytes=2*atlasBytes;limits.CacheEntries=8;limits.CacheBytes=atlasBytes;limits.AtlasBytes=atlasBytes;Hazel::Font::Initialize(limits);
+    Font::Shutdown();Check(Font::Resources().LiveAtlases==0,"Shutdown retained pages");
+    limits={};limits.LiveAtlases=1;Font::Initialize(limits);
     {
-        auto fallback=Hazel::Font::GetDefault();auto font=Hazel::Font::Load(a);
-        Hazel::Renderer2D::BeginOrderedScene(Hazel::Camera(glm::mat4(1)),glm::mat4(1));
-        Hazel::Renderer2D::DrawString("A",font,glm::mat4(1),{},91);
-        font.reset();Hazel::Font::Trim();
-        Check(Hazel::Font::Resources().LiveAtlases==2,"Pending draw failed to pin atlas");
-        Reject([&]{Hazel::Font::Load(b);},"Pending draw pin ignored by admission");
-        Hazel::Renderer2D::EndScene();
-        Check(Hazel::Font::Resources().LiveAtlases==1,"Submitted draws retained atlas");
-        Check(bool(Hazel::Font::Load(b)),"Admission did not recover after draw retirement");
+        auto font=Font::Load(a);auto glyphs=std::vector<Renderer2D::TextGlyph>{};Renderer2D::AppendTextGlyphs("A",font,{},glyphs);
+        Renderer2D::BeginOrderedScene(Camera(glm::mat4(1)),glm::mat4(1));Renderer2D::DrawTextGlyphs(glyphs,font,glm::mat4(1),glm::vec4(1),91);
+        glyphs.clear();font.reset();Font::Trim();Check(Font::Resources().LiveAtlases==1,"Pending draw lost texture pin");
+        auto other=Font::Load(b);auto layout=other->Layout("B",-1,false);Check(other->PreparePages(*layout).empty(),"Pending draw pin ignored");
+        Renderer2D::EndScene();Check(Font::Resources().LiveAtlases==0,"Submitted draws retained texture");
+        Font::Trim();Check(!other->PreparePages(*layout).empty(),"Admission did not recover after draw retirement");
     }
-    Hazel::Font::Shutdown();
-    Hazel::FontLimits rejected;rejected.AtlasDimension=32;Hazel::Font::Initialize(rejected);
-    Reject([&]{Hazel::Font::Load(a);},"Small atlas dimension limit ignored");
-    Check(Hazel::Font::Resources().LiveAtlases==0,"Dimension rejection published a partial atlas");
-    Hazel::Font::Shutdown();rejected={};rejected.GeneratorBytes=64;Hazel::Font::Initialize(rejected);
-    Reject([&]{Hazel::Font::Load(a);},"Generator scratch admission limit ignored");
-    Check(Hazel::Font::Resources().Generations==0,"Scratch rejection generated an atlas");
-    Hazel::Font::Shutdown();Hazel::Font::Initialize();
+    Font::Shutdown();limits={};limits.AtlasDimension=32;Font::Initialize(limits);
+    {auto font=Font::Load(a);auto layout=font->Layout("MW",-1,false);Check(font->PreparePages(*layout).empty() && Font::Resources().Generations==0,"Dimension rejection published a page");}
+    Font::Shutdown();limits={};limits.GeneratorBytes=64;Font::Initialize(limits);
+    {auto font=Font::Load(a);auto layout=font->Layout("M",-1,false);Check(font->PreparePages(*layout).empty() && Font::Resources().Generations==0,"Scratch rejection published page");}
+    Font::Shutdown();Font::Initialize();
     {
-        Hazel::ProjectAssets assets(root);copy(regular,a);
-        auto accepted=assets.FontAsset("a.ttf");auto id=accepted->GetAtlasTexture()->GetRendererID();
+        ProjectAssets assets(root);copy(regular,a);auto accepted=assets.FontAsset("a.ttf");auto oldPage=page(accepted);auto id=oldPage->Texture->GetRendererID();
         {std::ofstream out(a,std::ios::binary);out<<"broken replacement";}
         assets.Reload("a.ttf");auto failed=assets.FontStatus("a.ttf");
-        Check(failed.Actual==accepted && !failed.Fallback && !failed.Error.empty(),"Failed reload lost accepted resource/reference");
-        Check(failed.Actual->GetCPUFace()==accepted->GetCPUFace(),"Failed reload lost accepted CPU face");
-        auto generations=Hazel::Font::Resources().Generations;
-        for(int i=0;i<100;++i)Check(assets.FontAsset("a.ttf")==accepted,"Failed reload retried/changed resource");
-        auto missing=assets.FontStatus("missing.ttf");Check(missing.Fallback && !missing.Error.empty(),"Missing font fallback/diagnostic absent");
-        Check(Hazel::Font::Resources().Generations==generations,"Failure generated resources repeatedly");
+        Check(failed.Actual==accepted && !failed.Fallback && !failed.Error.empty(),"Failed reload lost accepted face");
+        // Previously unseen glyphs rasterize OLD accepted bytes after file corruption.
+        Check(!accepted->PreparePages(*accepted->Layout(u8"Ω",-1,false)).empty(),"Old layout reopened corrupted pathname");
+        auto generations=Font::Resources().Generations;for(int i=0;i<100;++i)Check(assets.FontAsset("a.ttf")==accepted,"Failed reload retried");
+        Check(assets.FontStatus("missing.ttf").Fallback && Font::Resources().Generations==generations,"Missing font retry storm");
         copy(bold,a);assets.Reload("a.ttf");auto recovered=assets.FontStatus("a.ttf");
-        Check(recovered.Actual!=accepted && recovered.Error.empty() && !recovered.Fallback,"Font reload failed to recover");
-        Check(accepted->GetAtlasTexture()->GetRendererID()==id,"Recovery invalidated live previous atlas");
-        auto oversized=root/"oversized.ttf";
-        {std::ofstream out(oversized,std::ios::binary);out.seekp(4*1024*1024);out.put('x');}
-        Reject([&]{Hazel::Font::ValidateFile(oversized);},"Oversized font input accepted");
-        auto before=Hazel::Font::Resources();
-        Check(before.CacheEntries<=before.Limits.CacheEntries && before.CacheBytes<=before.Limits.CacheBytes && before.LiveAtlasBytes<=before.Limits.LiveAtlasBytes,"Resource budgets exceeded");
+        Check(recovered.Actual!=accepted && recovered.Error.empty() && oldPage->Texture->GetRendererID()==id,"Reload invalidated pinned page");
+        auto oversized=root/"oversized.ttf";{std::ofstream out(oversized,std::ios::binary);out.seekp(4*1024*1024);out.put('x');}
+        Reject([&]{Font::ValidateFile(oversized);},"Oversized input accepted");
     }
-    Check(Hazel::Font::Resources().CacheEntries==0,"Project retirement retained its cache entries");
-    Hazel::Font::Shutdown();Check(Hazel::Font::Resources().LiveAtlases==0,"Project/default teardown leaked atlas");
-    Hazel::Font::Initialize();
-    // Exercise the separate CPU input budget with small Latin-1 atlases. One
-    // private 4 MiB file is reused; live source retention stays below 32 MiB.
-    // Padding does not modify font tables or require a large generated atlas.
+    Check(Font::Resources().CacheEntries==0,"Project retained its reusable font cache");Font::Shutdown();Font::Initialize();
     {
-        auto fallback=Hazel::Font::GetDefault();const auto padded=root/"cpu-pressure.ttf";
-        copy(regular,padded);std::filesystem::resize_file(padded,4*1024*1024);
-        std::vector<Hazel::Ref<const Hazel::Text::Face>> sources;
-        for(int i=0;i<7;++i) {
-            {std::fstream file(padded,std::ios::binary|std::ios::in|std::ios::out);file.seekp(-1,std::ios::end);file.put(char(i+1));}
-            sources.push_back(Hazel::Font::Load(padded)->GetCPUFace());
-        }
-        auto before=Hazel::Font::Resources();auto identity=sources[0]->Identity();
-        {std::fstream file(padded,std::ios::binary|std::ios::in|std::ios::out);file.seekp(-1,std::ios::end);file.put(8);}
-        Reject([&]{Hazel::Font::Load(padded);},"Pinned CPU sources exceeded their independent input budget");
-        auto rejected=Hazel::Font::Resources();
-        Check(rejected.Generations==before.Generations && rejected.Evictions>before.Evictions,
-              "CPU pressure did not evict reusable ownership before rejecting generation");
-        Check(sources[0]->Identity()==identity && Hazel::Text::Service::Main().Usage().FaceBytes<=32*1024*1024,
-              "CPU eviction invalidated a pinned source or exceeded retention");
-        sources[0].reset();auto retry=Hazel::Font::Load(padded);
-        Check(retry && retry->GetCPUFace(),"CPU admission did not recover after releasing a source pin");
+        auto original=Font::Load(b);auto result=original->Layout("A",-1,false);auto pinned=page(original);auto cpu=original->GetCPUFace();
+        original.reset();Font::Trim();auto before=Text::Service::Main().Usage();auto generations=Font::Resources().Generations;
+        auto restored=Font::Load(b);
+        Check(restored->GetCPUFace()==cpu && Text::Service::Main().Usage().Faces==before.Faces,
+              "Page/result-only pin duplicated accepted CPU source after Font LRU eviction");
+        Check(restored->PreparePages(*result).front()==pinned && Font::Resources().Generations==generations,
+              "Page-only owner failed immutable page reuse");
     }
-    Hazel::Font::Shutdown();
-    Check(Hazel::Text::Service::Main().Usage().Faces==0,"CPU source owners survived font/cache retirement");
-    Hazel::Font::Initialize();
+    Font::Shutdown();Font::Initialize();
+    {
+        auto fallback=Font::GetDefault();const auto padded=root/"cpu-pressure.ttf";copy(regular,padded);std::filesystem::resize_file(padded,4*1024*1024);
+        std::vector<Ref<const Text::Face>> sources;
+        for(int i=0;i<7;++i){{std::fstream f(padded,std::ios::binary|std::ios::in|std::ios::out);f.seekp(-1,std::ios::end);f.put(char(i+1));}sources.push_back(Font::Load(padded)->GetCPUFace());}
+        auto before=Font::Resources();{std::fstream f(padded,std::ios::binary|std::ios::in|std::ios::out);f.seekp(-1,std::ios::end);f.put(8);}
+        Reject([&]{Font::Load(padded);},"Pinned CPU inputs exceeded budget");
+        Check(Font::Resources().Generations==before.Generations && Font::Resources().Evictions>before.Evictions,"CPU pressure skipped reusable eviction");
+        sources[0].reset();Check(bool(Font::Load(padded)),"CPU admission failed after source pin released");
+    }
+    Font::Shutdown();Check(Text::Service::Main().Usage().Faces==0,"CPU source retention leaked");Font::Initialize();
 }

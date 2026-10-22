@@ -208,6 +208,8 @@ namespace Hazel {
         FontSelection ResolvedSelection;
         std::weak_ptr<ProjectAssets> FontOwner;
         uint64_t FontEpoch=0;
+        mutable Ref<const Text::Layout> LayoutCache; // CPU-only, not authored/copied
+        mutable float LayoutTracking=0, LayoutSpacing=0;
 		glm::vec4 Color{ 1.0f };
 		float Kerning = 0.0f;
 		float LineSpacing = 0.0f;

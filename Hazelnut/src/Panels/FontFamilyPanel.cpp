@@ -6,7 +6,6 @@
 #include "Hazel/Utils/PlatformUtils.h"
 #include "Hazel/Utils/UTF8.h"
 #include "Hazel/Renderer/Renderer2D.h"
-#include "Hazel/Renderer/MSDFData.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include <imgui.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -77,10 +76,10 @@ void FontFamilyPanel::UpdatePreview() {
         std::vector<uint32_t> scalars;UTF8::Decode(m_Preview,scalars);
         auto selected=m_Document->Draft().Select(FontStyle(m_Style));
         auto font=Font::Load(Project::ResolveOwnedAsset(m_Assets->Root(),m_Document->Draft().Faces[unsigned(selected)].File),m_PreviewFont);
-        uint32_t missing=0,checked=0;
-        for(auto scalar:scalars)if(scalar!='\n' && scalar!='\r' && scalar!='\t' && scalar!=0xfeff){++checked;missing+=font->GetMSDFData()->FontGeometry.getGlyph(scalar)==nullptr;}
+        auto layout=font->Layout(m_Preview,-1,false);auto pages=font->PreparePages(*layout);
         m_PreviewFont=std::move(font);m_AcceptedPreview=m_Preview;
-        m_AtlasCoverage=std::to_string(checked)+" scalars in preview; "+std::to_string(missing)+" replaced by ? in this accepted atlas";m_Error.clear();
+        m_AtlasCoverage=std::to_string(layout->Glyphs.size())+" shaped glyphs; "+std::to_string(layout->MissingGlyphs)+" .notdef; "+std::to_string(pages.size())+" resident pages";
+        m_Error=m_PreviewFont->PageError();
     }catch(const std::exception& error){m_Error=error.what();}
 }
 void FontFamilyPanel::Render(bool editable) {
@@ -133,14 +132,14 @@ void FontFamilyPanel::Render(bool editable) {
         }
         if(ImGui::TreeNode("Coverage declaration")) {
             changed|=PropertyUI::Multiline("required","Required text",def.Required).Changed;
-            PropertyUI::Help("Up to 8192 UTF-8 bytes / 4096 unique scalars. Every provided style must satisfy this exact corpus in the current atlas. Unmet requirements block export. Empty declares no additional coverage.");
+            PropertyUI::Help("Up to 8192 UTF-8 bytes / 4096 unique scalars. Every provided style must shape this exact corpus without missing source glyphs. Unmet requirements block export. Empty declares no additional coverage.");
             changed|=PropertyUI::Multiline("sample","Sample text",def.Sample).Changed;
             if(ImGui::Button("Inspect coverage"))Inspect();
-            ImGui::TextDisabled("Source at last inspection / CPU atlas plan; no live atlas is generated. Preview reports its accepted atlas separately.");
+            ImGui::TextDisabled("CPU source/shaping inspection; no GPU pages generated. Preview reports accepted resident pages separately.");
             if(m_CoverageStale || m_CoverageEpoch!=m_Assets->Epoch())ImGui::TextDisabled("Results need inspection after draft or dependency changes.");
             PropertyUI::Validation(m_CoverageError.c_str());
             for(auto& report:m_Coverage){ImGui::Text("%s",FontStyleName(report.Style));ImGui::TextWrapped("Required: %s",report.Required.Summary().c_str());ImGui::TextWrapped("Sample (informational): %s",report.Sample.Summary().c_str());}
-            ImGui::TextWrapped("Source character-map coverage is distinct from atlas availability. Missing atlas characters render as ?. Combining/joining/bidi flags are conservative warnings, not a language-support guarantee. Newline, tab, CR and BOM follow the normal text contract.");
+            ImGui::TextWrapped("Latin/Greek/Cyrillic/Arabic/Hebrew corpus uses shaping and bidi. Missing source glyphs show .notdef; unavailable pages show magenta metric placeholders. No cross-family fallback or all-Unicode guarantee. Newline, tab, CR and BOM follow the text contract.");
             ImGui::TreePop();
         }
         if(changed){m_Document->Changed();m_CoverageStale=true;}

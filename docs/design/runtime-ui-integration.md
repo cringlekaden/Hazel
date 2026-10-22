@@ -1314,3 +1314,125 @@ acceptance is Windows compilation/runtime and competent-reader review when the
 declared corpus is actually rendered by the next integration. No new language
 support is advertised in Hazelnut/export. This foundation completes this bounded
 slice, not all of P3 or the production UI milestone.
+
+## P3: shared rendered typography and immutable glyph-ID pages
+
+Continues `2c3166a`; the preceding CPU dependency/conformance review remains in
+force. World text, UI intrinsic measurement/wrapping, prepared geometry and family
+previews use `Text::Layout`. There is no Latin-1 resolver or renderer switch.
+Component/family schemas, managed family/style APIs and authored assets are
+unchanged. CPU source/layout owners never own a texture or require a context.
+
+### Ownership, preparation and drawing
+
+`Font` accepts immutable CPU bytes/metrics before any GPU generation. Its existing
+bounded identity/LRU and ProjectAssets' accepted-family records remain the only
+owning face cache. Page construction opens **accepted bytes**, never the current
+pathname. `FontGeometry::loadGlyphset(font, 1, ids, true, false)` uses the pinned
+`GlyphGeometry::load(..., GlyphIndex)` / `msdfgen::loadGlyph(..., GlyphIndex)` path;
+lookup/UVs are keyed by glyph IDs. MSDF pair kerning is disabled: HarfBuzz already
+positions glyphs, including substitutions without a source character mapping.
+
+A page contains at most 128 glyph IDs. A CPU-shaped printable-ASCII cohort
+keeps common labels together; other requests use deterministic 128-ID blocks
+(last block may be shorter). The optional cohort is packing only, not a separate
+renderer/coverage path, and is omitted if it exceeds its work cap. It is immutable after completed generation/upload; no incremental
+repack invalidates UVs. Whitespace advances come from the CPU result without a
+quad/page request. Prepared glyphs pin their exact page/CPU face. Ordered runs
+pin textures until submission, including when a page object is evicted. Weak
+records account for those texture-only pins. Trim/project retirement/shutdown
+release reusable ownership without invalidating active owners. All generation,
+uploads, draw preparation and final GPU-owner release remain renderer-thread
+bound; CPU results can survive renderer/application retirement independently.
+
+One synchronous preparation runs at a time, with two existing MSDF workers.
+Graphical application loading with a nonzero viewport prewarms startup text and attempts declared family corpora with existing
+progress feedback. New contextual glyphs may prepare on first changed-text/wrap
+use. No background scheduler, filesystem polling or per-frame regeneration is
+introduced. A weak CPU-source identity index reuses accepted bytes even after the Font wrapper
+LRU retires while pages/results remain pinned; it owns no face. Per-source cohort
+metadata is bounded to 128 IDs. One pass-local last-layout page lookup avoids
+rescanning a paragraph for every line. Two reusable ID work vectors request at
+most 512 KiB in total and retire on renderer shutdown. Font layouts retain a
+bounded 128-result / 256 KiB LRU per live Font,
+subject to the shared CPU service's 16 MiB live-result admission. UI keeps natural/
+constrained/paint results; world components pin their current CPU result. Exact
+native text/spacing/selection/asset-owner/epoch checks remain authoritative.
+Paint-only position/tint changes do not reshape; layout changes cannot hide behind
+a snapshot generation. Copy/Stop clear component CPU caches and font pins; history
+stores authored values only.
+
+UI lines retain the full CPU result and line index, with source byte/UTF16/cluster
+maps intact. Painting does not reshape substrings. Plane bounds are in em units,
+scaled by `1 / Face::HeightEm()` into the established font-height units, then by
+UI size/canvas scale or world transform. CPU +Y-down offsets become renderer
++Y-up; first world baseline is zero, UI top alignment adds the accepted ascender.
+Line advance is accepted horizontal extents plus authored LineSpacing. Content
+height remains one font height plus subsequent line advances; advance width is
+not tight ink width and overhang can clip. `Kerning` is extra tracking once per
+complete HB cluster (including its trailing advance), never an additional MSDF
+pair adjustment; it is suppressed within Arabic joins except whitespace.
+HarfBuzz's standard kerning/substitution/mark positioning remain enabled.
+
+Horizontal Start/End alignment remains physical left/right; there is no automatic
+RTL mirroring of canvas/containers.
+
+D8 straight-tint RGB / coverage × opacity alpha, source-over text alpha, derivative
+ordering, painter runs, per-vertex clips and picking are unchanged. A run changes
+texture for each page/font boundary; no translucent sorting or shader merger is
+introduced. Existing capacity/texture rollover and state restoration still apply.
+
+### Limits and failure behavior
+
+- Face input ≤4 MiB; CPU face/results/work bounds remain those above.
+- Each page ≤128 IDs, 1024² / 3 MiB RGB8; all live page/texture records ≤24 / 24 MiB.
+  Reusable page ownership ≤12 MiB / 24 pages; the reusable face LRU remains eight.
+  Active/prepared/pending-draw pins count against live admission.
+- Generator estimate ≤32 MiB: source bytes, RGB8 atlas and existing two-worker
+  pixel/error workspaces. Page outlines ≤32,768 edges, checked after dependency
+  parsing. FT/parser/outline intermediates, HB lazy tables, allocator/driver
+  overhead and worker stacks are not a hard total-process memory bound.
+- Requests are bounded by 65,536 layout glyphs; preparation deduplicates IDs and
+  only admits complete pages. Per-scene prepared glyph retention stays ≤16 MiB,
+  now reserved from shaped glyph count, not source byte count. Uncached scratch
+  is bounded by CPU output limits and separately retained vector capacity.
+- Failed replacement keeps accepted metrics/bytes/pages. Missing source glyphs
+  explicitly publish `.notdef` status in renderer layouts (strict CPU Arrange
+  still rejects by default). No per-code-point cross-family fallback occurs.
+  Empty `.notdef` uses a visible placeholder. Unsupported scripts/features and
+  exhausted CPU-work/result limits reject rather than publish partial layout.
+- Failed page admission/generation preserves CPU advances/offsets and unaffected
+  text, paints magenta metric placeholders and reports once per accepted face /
+  explicit retry. Reload retries; Trim permits retry at the next preparation.
+  Completed pages remain valid. Prepared placeholders refresh on the normal
+  family reload/asset epoch, text/layout invalidation or explicit preparation.
+
+Coverage inspection now runs CPU source/shaping checks without GPU construction.
+Required declarations block export on missing source/unsupported behavior; Sample
+is informational. It does not certify live page admission, reader correctness or
+arbitrary language/font features. Runtime/preview diagnostics separately expose
+missing source warnings, page availability/failure, cache/live/pinned bytes and
+layout reuse. Project face/notice closure and test-only fixture separation remain
+unchanged. Tested rendering scope is the pinned Latin/Greek/Cyrillic/Arabic/Hebrew
+corpus, not CJK/color emoji/vertical/variable fonts, general family fallback,
+soft-hyphen painting, rich text or editing/IME.
+
+Headless scene/script lifecycle does not prepare GPU resources. Custom renderer hosts can prepare pages explicitly or on first drawing.
+
+### Release checkpoint
+
+Release Premake/GNU Make with two compiler jobs passes all 17 regression
+executables on physical HD4000 forced GL4.1 through Xwayland (Plasma Wayland).
+The llvmpipe GL4.6/SPIR-V and explicit two-slot/GLSL alternatives also pass the
+renderer/corpus/compositor assertions. Native ImGui checks import the licensed
+fixture, declare coverage, save a mixed-script scene/prefab and render the actual
+family preview; they do not certify physical dialog usability or competent-reader
+language acceptance. Headless scene/domain tests, failed-measurement recovery,
+accepted-byte reload/page pins and all prior history/input regressions pass.
+
+The initial fixed-ID-only packing increased the 64-element mixed fixture from
+65 to 97 draws; the measured refinement groups CPU-shaped printable ASCII into
+one immutable cohort page and restores 65. Every glyph still uses the same CPU
+layout/glyph-ID page path. Other page/font boundaries remain ordered draws.
+Debug, source-game and relocated-package qualification follow below.
+

@@ -1398,6 +1398,9 @@ int main(int argc, char** argv) {
         std::filesystem::create_directories(directory / "assets/Icons");
         for (const char* name : { "assets", "AuthoringProject" })
             std::filesystem::copy(source / name, directory / name, std::filesystem::copy_options::recursive);
+        std::filesystem::create_directories(directory / "typography");
+        for(const auto* name:{"DejaVuSans.ttf","LICENSE-DejaVu.txt"})
+            std::filesystem::copy_file(source/"typography"/name,directory/"typography"/name);
         std::filesystem::create_directories(directory / "assets/Scripts");
         std::filesystem::create_directories(directory / "AuthoringProject/Assets/Scripts/Binaries");
         std::filesystem::copy_file(core, directory / "assets/Scripts/Hazel-ScriptCore.dll");

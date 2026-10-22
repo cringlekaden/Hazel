@@ -3,13 +3,15 @@
 // Independent numeric reference: RGB8 MSDF distance, straight-alpha inputs,
 // linear RGBA8 attachment (no sRGB conversion, dithering or multisampling).
 static void TextCompositingChecks(bool reproduce = false) {
-    auto font=CreateRef<Hazel::Font>("assets/fonts/opensans/OpenSans-Regular.ttf");
-    auto atlas=font->GetAtlasTexture();
+    std::filesystem::copy_file("assets/fonts/opensans/OpenSans-Regular.ttf","assets/analytic-private.ttf",std::filesystem::copy_options::overwrite_existing);
+    auto font=CreateRef<Hazel::Font>("assets/analytic-private.ttf");
+    auto analyticPages=font->PreparePages(*font->Layout("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",-1,false));
+    auto atlas=analyticPages.front()->Texture;
     std::vector<unsigned char> distance(size_t(atlas->GetWidth())*atlas->GetHeight()*3,128);
     atlas->SetData(distance.data(),uint32_t(distance.size()));
     // Small quad / full-atlas UV makes screenPxRange clamp to exactly 1.
     Check(atlas->GetWidth()>=64 && atlas->GetHeight()>=64,"Analytic atlas assumption");
-    std::vector<Renderer2D::TextGlyph> glyphs{{{-.25f,-.25f},{.25f,.25f},{0,0},{1,1}}};
+    std::vector<Renderer2D::TextGlyph> glyphs{{{-.25f,-.25f},{.25f,.25f},{0,0},{1,1},analyticPages.front()}};
     const bool dither=glIsEnabled(GL_DITHER);glDisable(GL_DITHER);
     const bool srgb=glIsEnabled(GL_FRAMEBUFFER_SRGB);glDisable(GL_FRAMEBUFFER_SRGB);
     auto over=[](glm::vec4 dst,glm::vec4 tint,float coverage) {
@@ -84,7 +86,7 @@ static void TextCompositingChecks(bool reproduce = false) {
     {
         auto scene=CreateRef<Scene>();auto assets=CreateRef<ProjectAssets>(std::filesystem::current_path()/"assets");scene->SetAssets(assets);
         std::filesystem::copy_file(assets->Root()/"fonts/opensans/OpenSans-Regular.ttf",assets->Root()/"analytic-face.ttf",std::filesystem::copy_options::overwrite_existing);
-        auto uiFont=assets->FontAsset("analytic-face.ttf");auto uiAtlas=uiFont->GetAtlasTexture();
+        auto uiFont=assets->FontAsset("analytic-face.ttf");auto uiPages=uiFont->PreparePages(*uiFont->Layout("M",-1,false));auto uiAtlas=uiPages.front()->Texture;
         std::vector<unsigned char> uniform(size_t(uiAtlas->GetWidth())*uiAtlas->GetHeight()*3,128);uiAtlas->SetData(uniform.data(),uint32_t(uniform.size()));
         scene->OnViewportResize(128,128);auto canvas=scene->CreateEntity("Analytic canvas");auto& canvasData=canvas.AddComponent<UICanvasComponent>();canvasData.ReferenceSize={128,128};canvasData.SafeInsets={};
         auto label=scene->CreateEntity("Analytic label");scene->Reparent(label,canvas,TransformPolicy::KeepLocal);

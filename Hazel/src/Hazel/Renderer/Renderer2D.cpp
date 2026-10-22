@@ -11,7 +11,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "MSDFData.h"
 #include "Hazel/Utils/UTF8.h"
 #include <algorithm>
 #include <stdexcept>
@@ -78,6 +77,8 @@ namespace Hazel {
         glm::vec4 ClipRect{-1};
         struct Run {int Kind;uint32_t First,Count;Ref<Texture2D> Font;float LineWidth;};
         std::vector<Run> Runs; // at most 8192, reused between chunks/frames
+        Ref<const Text::Layout> LineLayout;
+        std::vector<Ref<const FontPage>> LinePages; // one pass-local preparation, never CPU-owned
 
 
 		Ref<VertexArray> QuadVertexArray;
@@ -315,6 +316,7 @@ namespace Hazel {
         s_Data->Ordered = false;
         s_Data->ClipRect = glm::vec4(-1);
         s_Data->FontAtlasTexture.reset();
+        s_Data->LineLayout.reset();s_Data->LinePages.clear();
     }
     void Renderer2D::EnsureRunSpace()
     {
@@ -756,110 +758,51 @@ namespace Hazel {
 
     float Renderer2D::MeasureText(const std::string& text,const Ref<Font>& font,float kerning) {
         if(!font)throw std::invalid_argument("Measurement needs a font");
-        const auto& g=font->GetMSDFData()->FontGeometry;const auto& metrics=g.getMetrics();
-        const double scale=1/(metrics.ascenderY-metrics.descenderY);
-        thread_local std::vector<uint32_t> chars;UTF8::Decode(text,chars);
-        double x=0,maximum=0;
-        for(size_t i=0;i<chars.size();i++) {
-            auto ch=chars[i];if(ch=='\r'||ch==0xfeff)continue;if(ch=='\n'){maximum=std::max(maximum,x);x=0;continue;}
-            if(ch=='\t'){x+=4*(scale*g.getGlyph(' ')->getAdvance()+kerning);continue;}
-            auto glyph=g.getGlyph(ch);if(!glyph)glyph=g.getGlyph('?');if(!glyph)continue;
-            double advance=glyph->getAdvance();if(i+1<chars.size())g.getAdvance(advance,ch,chars[i+1]);x+=scale*advance+kerning;
-        }
-        return float(std::max(maximum,x));
+        return font->Layout(text,-1,false,kerning)->Width;
     }
-    void Renderer2D::LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines) {
-        if(text.size()>65536)throw std::invalid_argument("UI text exceeds 64 KiB");
-        lines.clear();
+    void Renderer2D::LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines,float spacing) {
         if(!font)throw std::invalid_argument("Layout needs a font");
-        const auto& geometry=font->GetMSDFData()->FontGeometry;const auto metrics=geometry.getMetrics();
-        const double scale=1/(metrics.ascenderY-metrics.descenderY);
-        thread_local std::vector<uint32_t> chars;
-        thread_local std::vector<size_t> bytes;UTF8::Decode(text,chars,&bytes);
-        auto base=[&](uint32_t ch){auto glyph=geometry.getGlyph(ch);if(!glyph)glyph=geometry.getGlyph('?');return glyph?glyph->getAdvance():0.;};
-        auto emit=[&](size_t begin,size_t end){auto line=text.substr(bytes[begin],bytes[end]-bytes[begin]);lines.push_back({line,MeasureText(line,font,kerning)});};
-        size_t start=0,lastSpace=std::string::npos;double advance=0,previous=0;uint32_t previousChar=0;
-        for(size_t i=0;i<chars.size();i++) {
-            const auto ch=chars[i];if(ch=='\r')continue;if(ch==0xfeff){previousChar=0;continue;}
-            if(ch=='\n'){emit(start,i);start=i+1;advance=0;lastSpace=std::string::npos;previousChar=0;continue;}
-            if(previousChar&&previousChar!='\t'){double paired=base(previousChar);geometry.getAdvance(paired,previousChar,ch);advance+=scale*paired+kerning-previous;}
-            double current=ch=='\t'?4*(scale*base(' ')+kerning):scale*base(ch)+kerning;
-            if(wrap&&width>0&&i>start&&advance+current>width) {
-                size_t end=lastSpace!=std::string::npos&&lastSpace>=start?lastSpace:i;
-                emit(start,end);start=end;
-                while(start<chars.size()&&(chars[start]==' '||chars[start]=='\t'))++start;
-                advance=0;previousChar=0;lastSpace=std::string::npos;i=start-1;continue;
-            }
-            advance+=current;previous=current;previousChar=ch;if(ch==' '||ch=='\t')lastSpace=i;
+        auto result=font->Layout(text,width,wrap,kerning,spacing);
+        lines.clear();
+        for(uint32_t i=0;i<result->Lines.size();++i) {
+            const auto& line=result->Lines[i];
+            auto begin=result->Boundaries[line.Begin].Byte,end=result->Boundaries[line.End].Byte;
+            lines.push_back({text.substr(begin,end-begin),line.Width,result,i});
         }
-        emit(start,chars.size());
     }
-    void Renderer2D::AppendTextGlyphs(const std::string &string, const Ref<Font> &font,
-                                      const TextParams &params, std::vector<TextGlyph> &glyphs,
-                                      glm::vec2 offset)
-    {
-        if (string.empty())
-            return;
-        thread_local std::vector<uint32_t> codepoints;
-        UTF8::Decode(string, codepoints);
-        if (!font || !font->GetAtlasTexture())
-            throw std::invalid_argument("Text requires a usable font");
-        const auto &geometry = font->GetMSDFData()->FontGeometry;
-        const auto &metrics = geometry.getMetrics();
-        const double scale = 1.0 / (metrics.ascenderY - metrics.descenderY);
-        double x = 0, y = 0;
-        const float space = geometry.getGlyph(' ')->getAdvance();
-        const glm::vec2 texel(1.f / font->GetAtlasTexture()->GetWidth(),
-                              1.f / font->GetAtlasTexture()->GetHeight());
-        for (size_t i = 0; i < codepoints.size(); ++i)
-        {
-            auto ch = codepoints[i];
-            if (ch == '\r' || ch == 0xfeff)
-                continue;
-            if (ch == '\n')
-            {
-                x = 0;
-                y -= scale * metrics.lineHeight + params.LineSpacing;
-                continue;
-            }
-            if (ch == ' ')
-            {
-                float advance = space;
-                if (i + 1 < codepoints.size())
-                {
-                    double paired = advance;
-                    geometry.getAdvance(paired, ch, codepoints[i + 1]);
-                    advance = float(paired);
-                }
-                x += scale * advance + params.Kerning;
-                continue;
-            }
-            if (ch == '\t')
-            {
-                x += 4.f * (scale * space + params.Kerning);
-                continue;
-            }
-            auto glyph = geometry.getGlyph(ch);
-            if (!glyph)
-                glyph = geometry.getGlyph('?');
-            if (!glyph)
-                return;
-            double al, ab, ar, at, pl, pb, pr, pt;
-            glyph->getQuadAtlasBounds(al, ab, ar, at);
-            glyph->getQuadPlaneBounds(pl, pb, pr, pt);
-            TextGlyph prepared;
-            prepared.Min = glm::vec2(pl, pb) * float(scale) + glm::vec2(x, y) + offset;
-            prepared.Max = glm::vec2(pr, pt) * float(scale) + glm::vec2(x, y) + offset;
-            prepared.UVMin = glm::vec2(al, ab) * texel;
-            prepared.UVMax = glm::vec2(ar, at) * texel;
-            glyphs.push_back(prepared);
-            if (i + 1 < codepoints.size())
-            {
-                double advance = glyph->getAdvance();
-                geometry.getAdvance(advance, ch, codepoints[i + 1]);
-                x += scale * advance + params.Kerning;
+    namespace {
+    void AppendPositionedLine(const Text::Layout& layout,uint32_t index,const std::vector<Ref<const FontPage>>& pages,
+                              std::vector<Renderer2D::TextGlyph>& glyphs,glm::vec2 offset) {
+        const auto& line=layout.Lines.at(index);const float scale=1/layout.Font->HeightEm();
+        for(uint32_t r=line.FirstRun;r<line.FirstRun+line.RunCount;++r) {
+            const auto& run=layout.Runs[r];
+            for(uint32_t i=run.FirstGlyph;i<run.FirstGlyph+run.GlyphCount;++i) {
+                const auto& positioned=layout.Glyphs[i];Ref<const FontPage> page;const FontPage::Glyph* geometry=nullptr;
+                for(auto& candidate:pages)if(auto found=candidate->Find(positioned.ID)){page=candidate;geometry=found;break;}
+                if(geometry && geometry->Empty && positioned.ID!=0)continue; // advance already belongs to CPU layout
+                if(geometry && geometry->Empty){geometry=nullptr;page.reset();}
+                if(!geometry && positioned.ID!=0 && !layout.Font->HasInk(positioned.ID))continue;
+                const glm::vec2 pen(positioned.X+positioned.OffsetX,-positioned.OffsetY);
+                if(geometry)glyphs.push_back({geometry->Min*scale+pen+offset,geometry->Max*scale+pen+offset,geometry->UVMin,geometry->UVMax,page});
+                else glyphs.push_back({pen+offset+glm::vec2(0,-.2f),pen+offset+glm::vec2(std::max(.15f,positioned.AdvanceX),.7f),{0,0},{1,1},{}});
             }
         }
+    }
+    }
+    void Renderer2D::AppendTextLineGlyphs(const TextLine& line,const Ref<Font>& font,std::vector<TextGlyph>& glyphs,glm::vec2 offset) {
+        if(!line.Result || !font || line.Result->Font!=font->GetCPUFace())throw std::invalid_argument("Prepared line/font version mismatch");
+        if(!s_Data->LineLayout || s_Data->LineLayout!=line.Result) {
+            s_Data->LinePages.clear();s_Data->LineLayout.reset();
+            auto pages=font->PreparePages(*line.Result);
+            s_Data->LinePages=std::move(pages);s_Data->LineLayout=line.Result;
+        }
+        AppendPositionedLine(*line.Result,line.Index,s_Data->LinePages,glyphs,offset);
+    }
+    void Renderer2D::AppendTextGlyphs(const std::string& text,const Ref<Font>& font,const TextParams& params,std::vector<TextGlyph>& glyphs,glm::vec2 offset) {
+        if(!font)throw std::invalid_argument("Text needs a font");
+        auto layout=font->Layout(text,-1,false,params.Kerning,params.LineSpacing);auto pages=font->PreparePages(*layout);
+        const float baseline=layout->Lines.front().Baseline;
+        for(uint32_t i=0;i<layout->Lines.size();++i)AppendPositionedLine(*layout,i,pages,glyphs,offset+glm::vec2(0,baseline-layout->Lines[i].Baseline));
     }
     void Renderer2D::DrawTextGlyphs(const std::vector<TextGlyph> &glyphs, const Ref<Font> &font,
                                     const glm::mat4 &transform, const glm::vec4 &color,
@@ -867,24 +810,23 @@ namespace Hazel {
     {
         if (glyphs.empty())
             return;
-        if (!font || !font->GetAtlasTexture())
-            throw std::invalid_argument("Text requires a usable font");
-        auto atlas = font->GetAtlasTexture();
-        if (!s_Data->Ordered && s_Data->TextIndexCount && s_Data->FontAtlasTexture != atlas)
-            NextBatch(FlushReason::Font);
-        s_Data->FontAtlasTexture = atlas;
+        if (!font)throw std::invalid_argument("Text requires a usable font");
         for (const auto &g : glyphs)
         {
+            auto atlas=g.Page?g.Page->Texture:s_Data->WhiteTexture;
+            if(!atlas)continue;
+            if(g.Page && g.Page->Face!=font->GetCPUFace())throw std::invalid_argument("Prepared glyph/font version mismatch");
+            if(!s_Data->Ordered && s_Data->TextIndexCount && s_Data->FontAtlasTexture!=atlas)NextBatch(FlushReason::Font);
+            s_Data->FontAtlasTexture=atlas;
             EnsureRunSpace();
-            if (s_Data->TextIndexCount + 6 > Renderer2DData::MaxIndices)
-                NextBatch();
+            if (s_Data->TextIndexCount + 6 > Renderer2DData::MaxIndices)NextBatch();
             const glm::vec2 positions[]{g.Min, {g.Min.x, g.Max.y}, g.Max, {g.Max.x, g.Min.y}};
             const glm::vec2 uv[]{g.UVMin, {g.UVMin.x, g.UVMax.y}, g.UVMax, {g.UVMax.x, g.UVMin.y}};
             for (size_t i = 0; i < 4; ++i)
             {
                 auto &v = *s_Data->TextVertexBufferPtr++;
                 v.Position = transform * glm::vec4(positions[i], 0, 1);
-                v.Color = color;
+                v.Color = g.Page?color:glm::vec4(1,0,1,color.a);
                 v.TexCoord = uv[i];
                 v.EntityID = entityID;
                 v.ClipRect = s_Data->ClipRect;
@@ -900,15 +842,31 @@ namespace Hazel {
     {
         thread_local std::vector<TextGlyph> glyphs;
         glyphs.clear();
-        AppendTextGlyphs(string, font, params, glyphs);
-        DrawTextGlyphs(glyphs, font, transform, params.Color, entityID);
+        try {
+            AppendTextGlyphs(string, font, params, glyphs);
+            DrawTextGlyphs(glyphs, font, transform, params.Color, entityID);
+            glyphs.clear(); // scratch capacity is reusable; GPU page ownership is not
+        } catch(...) {glyphs.clear();throw;}
+
     }
 
     void Renderer2D::DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID)
 	{
         if(!component.ResolvedFont || component.ResolvedSelection!=component.Font)
             throw std::invalid_argument("Resolve the text family before component drawing; standalone draws take an explicit Font face");
-        DrawString(string, component.ResolvedFont, transform, { component.Color, component.Kerning, component.LineSpacing }, entityID);
+        auto font=component.ResolvedFont;
+        if(!component.LayoutCache || component.LayoutCache->Font!=font->GetCPUFace() || component.LayoutCache->Source!=string ||
+            component.LayoutTracking!=component.Kerning || component.LayoutSpacing!=component.LineSpacing) {
+            auto accepted=font->Layout(string,-1,false,component.Kerning,component.LineSpacing);
+            component.LayoutCache=accepted;component.LayoutTracking=component.Kerning;component.LayoutSpacing=component.LineSpacing;
+        }
+        auto layout=component.LayoutCache;auto pages=font->PreparePages(*layout);
+        thread_local std::vector<TextGlyph> glyphs;glyphs.clear();
+        try {
+            for(uint32_t i=0;i<layout->Lines.size();++i)AppendPositionedLine(*layout,i,pages,glyphs,{0,layout->Lines.front().Baseline-layout->Lines[i].Baseline});
+            DrawTextGlyphs(glyphs,font,transform,component.Color,entityID);glyphs.clear();
+        }catch(...){glyphs.clear();throw;}
+
 	}
 
 	float Renderer2D::GetLineWidth()
