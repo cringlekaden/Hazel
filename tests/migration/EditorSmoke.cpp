@@ -3,6 +3,7 @@
 #endif
 // Real pinned EditorLayer/panels in Application; files and layout are isolated.
 #include "EditorLayer.h"
+#include "Hazel/Events/MouseEvent.h"
 #include "UI/PropertyUI.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Authoring/EditorPreferences.h"
@@ -75,6 +76,7 @@ public:
             HistoryWorkflowChecks();
             ContainerWorkflowChecks();
             FontFamilyWorkflowChecks();
+            UIActionWorkflowChecks();
             CaptionChecks();
             WorkspaceChecks();
             NativeCreationChecks();
@@ -138,7 +140,9 @@ public:
             auto& a=*e.m_Authoring;ToolRequest probe{python.Executable,{},e.m_ProjectPath,{},"Minimized completion"};
             probe.Generation=a.m_ProjectGeneration;
             Check(a.m_Tools.Start(std::move(probe)),"Minimized completion fixture did not start");
-            m_MinimizedStart=std::chrono::steady_clock::now();
+            // Start the polling deadline at the first idle/minimized tick, after
+            // this frame's intentional cold preview/font work has completed.
+            m_MinimizedStart={};
             WindowResizeEvent minimized(0,0);Application::Get().OnEvent(minimized);
             Application::Get().SubmitToMainThread([this]{CheckMinimizedCompletion();});
             break;
@@ -370,6 +374,7 @@ public:
     }
 private:
     void CheckMinimizedCompletion() {
+        if(m_MinimizedStart==std::chrono::steady_clock::time_point{})m_MinimizedStart=std::chrono::steady_clock::now();
         Check(m_Frame==3,"Editor rendering/scene updates continued while minimized");
         auto& a=*m_Editor.m_Authoring;
         if(a.m_Tools.Busy()) {
@@ -391,6 +396,8 @@ private:
         if(m_Frame==3) {
             DrawContainerFixture();
             DrawFontFamilyFixture();
+            ImGui::Begin("UI bindings qualification",nullptr,ImGuiWindowFlags_NoSavedSettings);
+            m_Editor.m_Authoring->m_UIBindings.Draw();ImGui::End();
             auto scene=m_Editor.m_ActiveScene;scene->RefreshUI();
             auto before=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
             auto generation=scene->GetUISnapshot().Generation;bool shown=m_Editor.m_ShowUIDebugger;
@@ -861,6 +868,7 @@ private:
     #include "EditorHistoryWorkflowChecks.h"
     #include "EditorContainerWorkflowChecks.h"
     #include "EditorFontFamilyWorkflowChecks.h"
+    #include "EditorUIActionWorkflowChecks.h"
     void HierarchyAuthoringChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=e.m_SceneHierarchyPanel;
         const auto scene=e.m_EditorScene;const auto before=a.SceneText();const auto saved=a.m_SceneHistory.SavedAuthored();

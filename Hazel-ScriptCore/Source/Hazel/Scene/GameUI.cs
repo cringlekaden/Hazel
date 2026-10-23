@@ -2,6 +2,12 @@ using System;
 namespace Hazel {
     // UI actions never retain a delegate or managed object in the engine.
     public static class GameUI {
+        public static ulong FocusScope => InternalCalls.UI_FocusScope();
+        public static bool TryConsumeCancel() => InternalCalls.UI_Cancel(InternalCalls.Entity_GetSceneIdentity(),0);
+        public static UIBinding GetBinding(UIAction action) {int k=0,a=0,p=0,s=0;InternalCalls.UI_Binding((int)action,ref k,ref a,ref p,ref s,false);return new UIBinding(k,a,p,(UIShiftMatch)s);}
+        public static void SetBinding(UIAction action,UIBinding binding) {int k=binding.Key,a=binding.Alternate,p=binding.GamepadButton,s=(int)binding.Shift;InternalCalls.UI_Binding((int)action,ref k,ref a,ref p,ref s,true);}
+        public static UIInputSettings InputSettings {get{var v=new UIInputSettings();InternalCalls.UI_InputSettings(ref v,false);return v;}set{InternalCalls.UI_InputSettings(ref value,true);}}
+        public static void ResetBindings()=>InternalCalls.UI_ResetBindings();
         public static bool IsPointerCaptured => InternalCalls.UI_IsPointerCaptured();
         public static bool IsKeyDown(KeyCode key) => InternalCalls.UI_IsKeyDown(key);
         public static bool TryConsumeAction(out Entity button,out string action) {
@@ -9,7 +15,17 @@ namespace Hazel {
             button=result?new Entity(id):null;return result;
         }
     }
+    public enum UIAction { Press, Up, Down, Left, Right, Next, Previous, Accept, Cancel }
+    public enum UIShiftMatch { Any, Without, With }
+    public enum UIGamepadButton { None=-1,A,B,X,Y,LeftBumper,RightBumper,Back,Start,Guide,LeftThumb,RightThumb,Up,Right,Down,Left }
+    public struct UIBinding {
+        public int Key,Alternate,GamepadButton;public UIShiftMatch Shift;
+        public UIBinding(int key,int alternate=-1,int gamepadButton=-1,UIShiftMatch shift=UIShiftMatch.Any){Key=key;Alternate=alternate;GamepadButton=gamepadButton;Shift=shift;}
+    }
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public struct UIInputSettings {public int PointerButton,Stick;public float DeadZone,NeutralZone,RepeatDelay,RepeatInterval;}
     public class UICanvasComponent : Component {
+        public bool TryConsumeCancel()=>InternalCalls.UI_Cancel(InternalCalls.Entity_GetSceneIdentity(),Entity.CheckedID);
         public bool Visible {get=>InternalCalls.UI_GetValue(Entity.CheckedID,0);set=>InternalCalls.UI_SetValue(Entity.CheckedID,0,value);}
         public bool Enabled {get=>InternalCalls.UI_GetValue(Entity.CheckedID,1);set=>InternalCalls.UI_SetValue(Entity.CheckedID,1,value);}
         public bool Modal {get=>InternalCalls.UI_GetValue(Entity.CheckedID,2);set=>InternalCalls.UI_SetValue(Entity.CheckedID,2,value);}

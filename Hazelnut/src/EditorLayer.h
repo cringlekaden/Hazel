@@ -5,6 +5,7 @@
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/ContentBrowserPanel.h"
 #include "Authoring/UIRectEditing.h"
+#include "UI/UIBindingEditor.h"
 
 #include "Hazel/Renderer/EditorCamera.h"
 #include "Hazel/Scene/RuntimeSession.h"
@@ -106,6 +107,8 @@ namespace Hazel {
         glm::vec2 m_UIGestureStart{};
         bool m_ShowUIDebugger=false,m_UIBoundsOverlay=false,m_UIClipOverlay=false,m_UIHitOverlay=false;
         void UI_RectEditing();
+        UIBindingEditor m_UIOverride;
+        uint64_t m_UIOverrideSession=0;
         void UI_Debugger();
         void UI_DebugOverlay();
         int m_UIPreview=0;

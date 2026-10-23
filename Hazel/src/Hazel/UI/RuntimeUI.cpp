@@ -49,6 +49,7 @@ void RuntimeUI::CancelInput()
     }
     m_Actions.clear();
     m_InputEnabled = false;
+    m_ActionOwnsFrame=false;
     m_PointerOver = m_KeyboardOwns = false;
 }
 void RuntimeUI::Reset()
@@ -71,7 +72,7 @@ void RuntimeUI::Reset()
 }
 void RuntimeUI::Retire(uint64_t id)
 {
-    if (m_Input.Focused() == id)
+    if (m_Input.Focused() == id && !m_Resolved.Modal)
         m_KeyboardOwns = false;
     m_Input.Retire(m_Scene.GetIdentity(), id);
     if(auto it=m_Cache.find(id);it!=m_Cache.end()){m_PreparedBytes-=it->second.Glyphs.capacity()*sizeof(Renderer2D::TextGlyph);m_Cache.erase(it);}
@@ -257,9 +258,10 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
         m_Build.Valid = true;
         std::swap(m_Resolved, m_Build);
         m_Source.swap(m_Candidate);
+        m_Input.SetScope(m_Scene.GetIdentity(),m_Resolved.Modal);
         m_Input.Reconcile(m_Scene.GetIdentity(), m_Resolved.Buttons, m_Resolved.Generation);
         PruneActions();
-        if (!m_Input.Focused())
+        if (!m_Input.Focused() && !m_Resolved.Modal)
             m_KeyboardOwns = false;
         // Remove retired cache entries, including now-interrupted rect subtrees.
         for (auto it = m_Cache.begin(); it != m_Cache.end();)
@@ -544,6 +546,44 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
     if (!m_Resolved.Valid)
         throw std::logic_error("UI input requires a resolved snapshot");
     const auto start = std::chrono::steady_clock::now();
+    if(!pixels.Events.empty()) {
+        if(pixels.Events.size()>64)throw std::invalid_argument("UI action edge limit exceeded (64)");
+        InputFrame step;step.Enabled=pixels.Enabled;step.Mouse=pixels.Mouse;
+        step.LeftDown=pixels.LeftDown;step.AcceptDown=pixels.AcceptDown;
+        bool pointer=pixels.SuppressAccept||m_Input.Captured()||pixels.LeftDown;
+        bool cancelling=pixels.CancelDown;
+        bool firstPointer=true,firstAccept=true;
+        for(auto edge:pixels.Events){
+            if(size_t(edge.Action)>=size_t(UIAction::Count)||!std::isfinite(edge.Point.x)||!std::isfinite(edge.Point.y))throw std::invalid_argument("Invalid UI action edge");
+            if(edge.Action==UIAction::Press){pointer=true;if(firstPointer){step.LeftDown=!edge.Down;firstPointer=false;}}
+            if(edge.Action==UIAction::Accept&&firstAccept){step.AcceptDown=!edge.Down;firstAccept=false;}
+            cancelling|=edge.Action==UIAction::Cancel&&edge.Down;
+        }
+        bool owned=false;step.SuppressAccept=pointer;
+        for(auto edge:pixels.Events){
+            step.PointerPressed=step.PointerReleased=step.AcceptPressed=false;
+            step.NextDown=step.PreviousDown=step.NextPressed=step.PreviousPressed=step.FocusNavigation=false;
+            step.Navigate={};step.CancelDown=cancelling;
+            if(edge.Action==UIAction::Press){step.Mouse=edge.Point;step.LeftDown=edge.Down;step.PointerPressed=edge.Down;step.PointerReleased=!edge.Down;step.PressPosition=step.ReleasePosition=edge.Point;step.HasReleasePosition=true;}
+            else if(edge.Action==UIAction::Accept){step.AcceptDown=edge.Down;step.AcceptPressed=edge.Down;}
+            else if(edge.Down){switch(edge.Action){
+                case UIAction::Next:step.FocusNavigation=step.NextPressed=true;break;
+                case UIAction::Previous:step.FocusNavigation=step.PreviousDown=step.PreviousPressed=true;break;
+                case UIAction::Up:step.FocusNavigation=true;step.Navigate.y=-1;break;
+                case UIAction::Down:step.FocusNavigation=true;step.Navigate.y=1;break;
+                case UIAction::Left:step.FocusNavigation=true;step.Navigate.x=-1;break;
+                case UIAction::Right:step.FocusNavigation=true;step.Navigate.x=1;break;
+                default:break;
+            }}
+            UpdateInput(step);owned|=m_ActionOwnsFrame;
+        }
+        step.Mouse=pixels.Mouse;step.LeftDown=pixels.LeftDown;step.AcceptDown=pixels.AcceptDown;
+        step.PointerPressed=step.PointerReleased=step.AcceptPressed=false;
+        step.NextDown=step.PreviousDown=step.NextPressed=step.PreviousPressed=step.FocusNavigation=false;step.Navigate={};
+        UpdateInput(step);m_ActionOwnsFrame|=owned;
+        m_Diagnostics.LastRoutingMilliseconds=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
+        return;
+    }
     m_PointerOver = false;
     auto input = pixels;
     const auto &surface = m_Resolved.Surface;
@@ -554,6 +594,8 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
     input.Mouse *= ratio;
     input.PressPosition *= ratio;
     input.ReleasePosition *= ratio;
+    m_ActionOwnsFrame=input.Enabled&&(m_Input.Captured()||((m_KeyboardOwns||m_ActionOwnsFrame)&&input.CancelDown));
+    const bool previousKeyboardOwns=m_KeyboardOwns;
     m_InputEnabled = input.Enabled;
     uint64_t entryFocus = 0;
     int entryOrder =
@@ -573,11 +615,13 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
     }
     bool entering = !m_Resolved.Modal && !m_KeyboardOwns && input.FocusNavigation && entryFocus &&
                     input.Enabled && !input.CancelDown;
-    if (!input.Enabled || input.CancelDown || (input.PointerPressed && !m_PointerOver))
-        m_KeyboardOwns = false;
-    else if (input.FocusNavigation && entryFocus)
-        m_KeyboardOwns = true;
-    input.KeyboardEnabled = !entering && (m_Resolved.Modal || m_KeyboardOwns);
+    if (!input.Enabled)m_KeyboardOwns=false;
+    else if(!m_Resolved.Modal) {
+        if(input.CancelDown || (input.PointerPressed&&!m_PointerOver))m_KeyboardOwns=false;
+        else if(input.FocusNavigation&&entryFocus)m_KeyboardOwns=true;
+    }
+    m_Input.SetScope(m_Scene.GetIdentity(),m_Resolved.Modal);
+    input.KeyboardEnabled = !entering && (m_Resolved.Modal || m_KeyboardOwns || (previousKeyboardOwns&&input.CancelDown));
     m_Input.Update(m_Scene.GetIdentity(), m_Resolved.Buttons, input, m_Resolved.Generation);
     if (entering)
         m_Input.SetFocus(m_Scene.GetIdentity(), entryFocus, m_Resolved.Buttons);
@@ -599,6 +643,7 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
                 ++m_OuterDrops;
         }
         PruneActions();
+        m_ActionOwnsFrame |= !m_Actions.empty();
     }
     m_Diagnostics.InputGeneration = m_Resolved.Generation;
     m_Diagnostics.LastRoutingMilliseconds =
@@ -621,6 +666,12 @@ bool RuntimeUI::Consume(uint64_t entity, Action &action)
         }
     return false;
 }
+bool RuntimeUI::ConsumeCancel(uint64_t scope)
+{
+    if(!m_InputEnabled||!m_Input.ConsumeCancel(m_Scene.GetIdentity(),scope))return false;
+    ResolveSurface(m_Resolved.Surface,m_Resolved.PreviewOrphans);
+    return m_InputEnabled&&m_Resolved.Valid&&m_Input.Scope()==scope;
+}
 bool RuntimeUI::Bounds(uint64_t id, Rect &pixels) const
 {
     auto n = m_Resolved.Find(id);
@@ -636,6 +687,7 @@ RuntimeUIDiagnostics RuntimeUI::Diagnostics() const
     result.Capture = m_Input.Captured();
     result.Hover = m_Input.Hovered();
     result.Modal = m_Resolved.Modal;
+    result.Scope=m_Input.Scope();result.NavigationMisses=m_Input.NavigationMisses();
     result.InputEnabled = m_InputEnabled;
     result.GameplayBlocked = BlocksGameplay();
     result.PointerBlocked = BlocksPointer();

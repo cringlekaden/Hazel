@@ -1,6 +1,6 @@
 #pragma once
 #include "Hazel/Core/Base.h"
-#include "Hazel/UI/RuntimeUIModel.h"
+#include "Hazel/UI/UIActions.h"
 #include "Hazel/Events/Event.h"
 #include "Hazel/Core/Timestep.h"
 #include "Hazel/Project/RuntimeStorage.h"
@@ -45,6 +45,17 @@ namespace Hazel {
         bool IsGameplayMouseEnabled() const;
         void SubmitUIEvent(Event& event,glm::vec2 viewportMouse,bool enabled);
 
+        const GameUI::UIBindings& GetUIBindings() const {return m_UIAdapter.Bindings();}
+        GameUI::UIAction LastUIAction() const {return m_UIAdapter.LastAction();}
+        bool IsUIGamepadArmed() const {return m_UIAdapter.GamepadReady();}
+        GameUI::InputDevice GetUIDevice() const {return m_UIAdapter.Device();}
+        uint64_t DroppedUIEdges() const {return m_UIAdapter.Dropped();}
+        const std::string& UIBindingWarning() const {return m_UIBindingWarning;}
+        void ApplyUIBindings(const GameUI::UIBindings& bindings); // Per-user full override; disk only for persistent sessions.
+        void ResetUIBindings();
+        void CancelUIGestures();
+        // Same production adapter/router boundary, with caller-supplied samples for deterministic hosts/tests.
+        void RouteUIInput(const GameUI::DeviceSample& sample,float seconds,bool enabled);
         bool GetMouseWorldPosition(glm::vec2& position) const;
     private:
         void CheckThread() const;
@@ -58,9 +69,10 @@ namespace Hazel {
         glm::vec2 m_FramebufferSize{};
         bool m_FramebufferExplicit = false;
         glm::vec2 m_Mouse = {};
-        GameUI::InputFrame m_UIEdges;
+        GameUI::UIInputAdapter m_UIAdapter;
+        std::string m_UIBindingWarning;
         uint64_t m_UIEdgeScene=0;
-        bool m_GameplayEnabled=false;
+        bool m_GameplayEnabled=false,m_UINeutralLatch=false;
         bool m_InputEnabled = false, m_Stopping = false, m_Updating = false;
         std::string m_Error;
         RuntimeStorage m_Storage;

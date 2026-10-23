@@ -27,6 +27,7 @@ template <class F> void Reject(F f)
     }
     Check(bad, "Malformed UI configuration was accepted");
 }
+#include "UIActionChecks.h"
 #include "MeasuredLayoutChecks.h"
 #include "GridLayoutChecks.h"
 #include "WrapLayoutChecks.h"
@@ -91,6 +92,7 @@ int main()
 {
     try
     {
+        UIActionChecks();
         HardeningChecks();
         MeasuredLayoutChecks();
         GridLayoutChecks();

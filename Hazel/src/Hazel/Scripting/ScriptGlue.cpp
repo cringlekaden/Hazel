@@ -382,6 +382,24 @@ namespace Hazel {
                 HZ_CORE_ERROR("Scene.LoadScene request rejected (no running project session or conflicting/invalid request)");
         } catch (const std::exception& error) { HZ_CORE_ERROR("Scene.LoadScene request: {}", error.what()); }
     }
+    static RuntimeSession& UI_Session(){auto* s=ScriptEngine::GetRuntimeSession();if(!s)throw std::logic_error("UI bindings require an active session");return *s;}
+    static void UI_Binding(int action,int* key,int* alternate,int* pad,int* shift,bool write) {
+        MonoException* failure=nullptr;
+        try{if(action<1||action>=int(GameUI::UIAction::Count))throw std::invalid_argument("Invalid digital UI action");auto& session=UI_Session();auto b=session.GetUIBindings();
+            if(write){if(*shift<0||*shift>2)throw std::invalid_argument("Invalid Shift match");b.Actions[size_t(action)]={*key,*alternate,*pad,GameUI::ShiftMatch(*shift)};session.ApplyUIBindings(b);}
+            else {auto x=b.Actions[size_t(action)];*key=x.Key;*alternate=x.Alternate;*pad=x.Pad;*shift=int(x.Shift);}}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);
+    }
+    struct UIInputSettings {int PointerButton,Stick;float DeadZone,NeutralZone,RepeatDelay,RepeatInterval;};
+    static void UI_InputSettings(UIInputSettings* value,bool write) {
+        MonoException* failure=nullptr;
+        try{auto& session=UI_Session();auto b=session.GetUIBindings();if(write){b.PointerButton=value->PointerButton;b.Stick=value->Stick;b.DeadZone=value->DeadZone;b.NeutralZone=value->NeutralZone;b.RepeatDelay=value->RepeatDelay;b.RepeatInterval=value->RepeatInterval;session.ApplyUIBindings(b);}
+            else *value={b.PointerButton,b.Stick,b.DeadZone,b.NeutralZone,b.RepeatDelay,b.RepeatInterval};}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);
+    }
+    static void UI_ResetBindings(){MonoException* failure=nullptr;try{UI_Session().ResetUIBindings();}catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);}
+    static uint64_t UI_FocusScope(){auto* scene=ScriptEngine::GetSceneContext();return scene?scene->GetUIDiagnostics().Scope:0;}
+    static bool UI_Cancel(uint64_t identity,uint64_t scope){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(scene&&scene->GetIdentity()==identity)result=scene->ConsumeUICancel(scope);}catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);return result;}
     static bool UI_IsPointerCaptured(){auto* scene=ScriptEngine::GetSceneContext();return scene&&scene->IsUICapturingPointer();}
     static bool UI_IsKeyDown(KeyCode key) {
         auto* session=ScriptEngine::GetRuntimeSession();return session&&session->IsInputEnabled()&&Input::IsKeyPressed(key);
@@ -547,6 +565,11 @@ namespace Hazel {
 	{
         RegisterHierarchyFunctions();
         HZ_ADD_INTERNAL_CALL(UI_IsKeyDown);
+        HZ_ADD_INTERNAL_CALL(UI_Binding);
+        HZ_ADD_INTERNAL_CALL(UI_InputSettings);
+        HZ_ADD_INTERNAL_CALL(UI_ResetBindings);
+        HZ_ADD_INTERNAL_CALL(UI_FocusScope);
+        HZ_ADD_INTERNAL_CALL(UI_Cancel);
         HZ_ADD_INTERNAL_CALL(UI_IsPointerCaptured);
         HZ_ADD_INTERNAL_CALL(UI_Consume);
         HZ_ADD_INTERNAL_CALL(UI_GetValue);

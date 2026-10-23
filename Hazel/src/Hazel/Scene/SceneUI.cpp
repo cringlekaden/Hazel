@@ -87,6 +87,7 @@ bool Scene::ConsumeUIAction(uint64_t entity, GameUI::Action &action)
     CheckThread();
     return m_UI->Consume(entity, action);
 }
+bool Scene::ConsumeUICancel(uint64_t scope){CheckThread();return m_UI->ConsumeCancel(scope);}
 bool Scene::IsGameplayInputBlocked() const
 {
     return m_UI->BlocksGameplay();

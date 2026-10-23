@@ -171,6 +171,23 @@ namespace Migration {
 }
 
 namespace Migration {
+    public class UIActionsProbe : Hazel.Entity {
+        public bool Passed;
+        void OnCreate(){
+            var original=Hazel.GameUI.GetBinding(Hazel.UIAction.Accept);
+            var current=original;current.Key=(int)Hazel.KeyCode.V;
+            Hazel.GameUI.SetBinding(Hazel.UIAction.Accept,current);
+            if(Hazel.GameUI.GetBinding(Hazel.UIAction.Accept).Key!=(int)Hazel.KeyCode.V)throw new System.Exception("Managed UI rebind failed");
+            bool conflict=false;try{Hazel.GameUI.SetBinding(Hazel.UIAction.Cancel,current);}catch(System.InvalidOperationException){conflict=true;}
+            if(!conflict||Hazel.GameUI.GetBinding(Hazel.UIAction.Cancel).Key!=(int)Hazel.KeyCode.Escape)throw new System.Exception("Managed binding conflict changed accepted state");
+            var settings=Hazel.GameUI.InputSettings;var invalid=settings;invalid.DeadZone=invalid.NeutralZone;
+            bool rejected=false;try{Hazel.GameUI.InputSettings=invalid;}catch(System.InvalidOperationException){rejected=true;}
+            if(!rejected||Hazel.GameUI.InputSettings.DeadZone!=settings.DeadZone)throw new System.Exception("Managed input settings validation failed");
+            Hazel.GameUI.SetBinding(Hazel.UIAction.Accept,original);
+            if(Hazel.GameUI.TryConsumeCancel()||FindEntityByName("Action menu").GetComponent<Hazel.UICanvasComponent>().TryConsumeCancel())throw new System.Exception("New session had stale Cancel");
+            Passed=true;
+        }
+    }
     public class UIProbe : Hazel.Entity {
         public bool Passed;
         void OnCreate() {

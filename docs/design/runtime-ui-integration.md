@@ -1753,3 +1753,110 @@ remappable device-neutral UI actions with scoped directional/gamepad focus (P4),
 before composing more controls or scrolling/data views. Retain the measured
 rendering and cold-preparation limits in that work; do not infer large-list budgets
 from the small guard.
+
+## P4: device-neutral actions and scoped spatial focus
+
+Continues `bc33f35`. `UIInputAdapter` maps bounded hardware samples/ordered host
+edges to Point/Press, directional Navigate, Next/Previous, Accept and Cancel.
+`InputRouter` remains the single geometry/focus/activation authority. Platform
+Input owns standardized gamepad sampling; common UI has no GLFW constants.
+Scroll/Adjust remain future control contracts, without inactive binding fields.
+
+Project `UIBindings` Version 1 is an optional `.hproj` section; omission selects
+engine defaults. Bindings carry primary/alternate physical key codes, Shift match
+and standardized gamepad button per action, plus pointer button, selected stick,
+engage/neutral thresholds and repeat timings. Invalid enums/nonfinite values,
+ambiguous overlapping chords and shared gamepad buttons reject the whole edit.
+Next/Previous/Accept/Cancel retain keyboard alternatives. Ctrl/Alt/Super chords
+are reserved for host/editor ownership. This is a UI map, not gameplay actions.
+
+Defaults: left mouse Press; arrows spatial navigation; Tab/Shift+Tab ordered
+navigation; Enter/Space and gamepad South Accept; Escape and East Cancel; D-pad
+and left stick navigation. Stick engages at .55, rearms at .25; navigation repeat
+starts after .35 seconds, every .10 seconds. Repeat applies only to navigation,
+not Accept/Cancel. Host repeat events are ignored. Long update gaps produce at
+most one repeat per sampled action, using at most .1 seconds of repeat clock.
+The first standardized connected gamepad is used. Connection revisions, ownership
+loss and rebinding require neutral rearming; no held connect/restore activation.
+Pointer movement alone does not change focus; a fresh navigation gesture owns
+keyboard/gamepad focus, and a pointer press selects its actual hit target.
+
+Tab order remains authored TabOrder then stable painter-list rank. First eligible
+control is initial focus (last for initial Previous). Directional candidates use
+the center of bounds intersected with effective framebuffer clip; their center
+must lie strictly in the requested half-plane. Score is forward-distance squared
+plus four times perpendicular-distance squared, ties by tab rank. No candidate
+retains focus; directional navigation does not wrap. Partly clipped controls use
+their visible region; empty/disabled/retired targets are excluded. Active highest
+modal canvas restricts the same published hit list. Nonmodal canvases share scene
+scope zero. Up to 64 scene-local scope/return-focus IDs retain eligible previous
+focus; oldest records evict. No entity/component pointer crosses a publication.
+
+Cancel is a scoped, destructive once-only record, separate from button activation;
+it cancels capture and pending activations, never fabricates a click or loads a
+scene. A canvas consumes only its active scope; ordinary scene scope is zero.
+Delivery reconciles native mutations just like existing button delivery. Scene,
+domain, Stop, ownership loss and scope replacement retire pending records.
+Pointer gestures retain release-frame ownership even with simultaneous Accept.
+
+Runtime overrides are complete validated maps in the existing RuntimeStorage slot
+`engine-ui-bindings`, under the project's SaveNamespace. Precedence is engine
+initial defaults → authored project map → valid player override. A reset stores
+`default` and follows future project defaults. Missing namespace rejects persistent
+overrides. Editor Play uses memory only. Writes succeed before effective state
+changes; corrupt user files remain untouched with one diagnostic and usable
+project defaults. This does not modify project assets/editor-wide preferences.
+
+Native Project Settings exposes the binding form, key capture/selection, gamepad
+buttons, stick/dead zones/repeat and reset/revert; Save Project Settings uses the
+existing staged descriptor/conflict/atomic-write path. Runtime UI Debugger shows
+scope, focus/capture, device, navigation misses, dropped edges and effective Play
+bindings, with isolated override/reset. Capture is editor-owned and Escape cancels.
+The normal scene/prefab history is unchanged; settings forms use their existing
+save/revert document workflow rather than a competing undo service.
+
+### Local qualification
+
+Bounded Premake/GNU Make builds used two compiler jobs. All **17 regression
+executables per configuration** pass: Release physical HD4000 forced GL4.1 and
+Debug physical native GL4.2, via GLFW X11/GLX through Xwayland on Plasma Wayland.
+The final outside-press editor ownership guard additionally passes the affected
+Release editor check; the Debug full suite includes it. No native Wayland,
+physical controller, Windows/MSVC or mixed-DPI qualification is inferred.
+
+New deterministic CPU checks cover spatial/tab order, exact ties/no candidate,
+clipped eligibility, modal return focus, ordered quick clicks/Accept, cancelled
+release plus Accept, opposing directions, neutral/dead-zone/disconnect/repeat,
+pointer takeover of held navigation, overlapping physical bindings, modifiers,
+binding round trips/conflicts and bounded edge overflow. Real RuntimeSession
+checks exercise the production adapter/router with synthetic gamepad samples,
+ordered host key events, once-only delivery, scoped Cancel, native retirement,
+managed binding/settings access and persistent/corrupt/reset/failed-write cases.
+The same suite retains domain/scene replacement and all P1 lifetime assertions.
+
+Native ImGui authoring creates a four-button spatial menu using normal commands
+and shared Inspector transactions, saves/reopens scene/prefab and project
+bindings, and tests three Play/Stop cycles with remapped keyboard samples. Its
+binding form, preview and expanded five-state Button Inspector are drawn by real
+ImGui. These are native harness assertions, not physical input acceptance.
+A pre-existing minimized-tool test incorrectly included same-frame cold preview
+work in its five-second polling deadline; the deadline now starts at the first
+actual minimized/idle tick, retaining the no-frame-advance/completion assertions.
+
+Play's viewport disables ImGui navigation inputs. Keyboard ownership no longer
+depends on pointer hover, and an outside press retires viewport ownership before
+the next ImGui focus update. Text fields, popups, binding capture, other editor
+windows, focus loss and minimization still gate input. Nonmodal ownership is
+retained underneath modal scopes; closing a pointer-opened modal does not acquire
+keyboard ownership. Consumed held UI inputs in the effective map keep the
+established gameplay gate until neutral, including across scene transitions.
+Raw native polling and game-specific `GameUI.IsKeyDown` shortcuts remain deliberate
+escape hatches, not newly remapped gameplay actions.
+
+No renderer/text/font/cache implementation changed and no new performance budget
+is claimed. Prior rendering measurements exclude input and remain the applicable
+rendering-only evidence. Normal binding lookup/sampling does not serialize a
+document or probe project files. Binding parsing/storage happens at Start or
+explicit edit/reset; idle adapter storage is bounded and reusable.
+
+Source-example/package qualification follows below. CI is not awaited or polled.

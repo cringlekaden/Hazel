@@ -139,6 +139,7 @@ void AuthoringPanel::RememberProject()
 void AuthoringPanel::BindProject()
 {
     ++m_ProjectGeneration;
+    m_UIBindings.Values=Project::GetActive()?Project::GetActive()->GetUIBindings():GameUI::UIBindings::Defaults();m_UIBindings.CancelCapture();
     m_RenderingDraft=Project::GetActive()?Project::GetActive()->GetRendererRequests():RuntimeRendererRequests{};
     m_RenderingAuthored=Project::GetActive()&&Project::GetActive()->GetConfig().Rendering.has_value();
     if(!RenderingRestartReason().empty())Notify(RenderingRestartReason(),spdlog::level::info);
@@ -666,6 +667,7 @@ void AuthoringPanel::Menus()
             m_Startup = config.StartScene.generic_u8string();
             m_AssetDirectory = config.AssetDirectory.generic_u8string();
             m_Module = config.ScriptModulePath.generic_u8string();
+            m_UIBindings.Values=Project::GetActive()->GetUIBindings();m_UIBindings.CancelCapture();
             m_ShowProject = true;
             m_ProjectChoicesLoaded = false;
         }
@@ -954,8 +956,7 @@ void AuthoringPanel::RefreshProjectChoices()
 }
 void AuthoringPanel::ProjectSettings()
 {
-    if (!m_ShowProject || !Project::GetActive())
-        return;
+    if (!m_ShowProject || !Project::GetActive()){m_UIBindings.CancelCapture();return;}
     ImGui::SetNextWindowPos(
         ImVec2(ImGui::GetMainViewport()->WorkPos.x + 40, ImGui::GetMainViewport()->WorkPos.y + 40),
         ImGuiCond_FirstUseEver);
@@ -1008,8 +1009,13 @@ void AuthoringPanel::ProjectSettings()
         }
     }
     ProjectRendering();
+    if(ImGui::CollapsingHeader("Runtime UI bindings")){
+        ImGui::TextWrapped("Project defaults for Play and Nutella. Player overrides use project-scoped user data. Ctrl/Alt/Super chords remain editor-owned.");
+        m_UIBindings.Draw(bool(Availability(EditorAction::EditAsset)));
+        if(ImGui::Button("Revert binding form")){m_UIBindings.Values=Project::GetActive()->GetUIBindings();m_UIBindings.CancelCapture();}
+    }else m_UIBindings.CancelCapture();
     bool renderingValid=true;try{RendererPolicy::Validate(m_RenderingDraft);}catch(const std::exception&){renderingValid=false;}
-    bool valid = renderingValid && (m_SaveNamespace.empty() || RuntimeStorage::ValidName(m_SaveNamespace)) && !m_ProjectName.empty() && Portable(m_AssetDirectory) && Portable(m_Startup) &&
+    bool valid = m_UIBindings.Valid() && renderingValid && (m_SaveNamespace.empty() || RuntimeStorage::ValidName(m_SaveNamespace)) && !m_ProjectName.empty() && Portable(m_AssetDirectory) && Portable(m_Startup) &&
                  Portable(m_Module);
     if (!valid)
         ImGui::TextWrapped("Choose project-relative assets, startup scene "
@@ -1020,6 +1026,7 @@ void AuthoringPanel::ProjectSettings()
     {
         auto config = Project::GetActive()->GetConfig();
         if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;
+        config.UIBindings=m_UIBindings.Values;
         config.Name = m_ProjectName;
         config.ScriptProject = m_ScriptProject;
         config.SaveNamespace = m_SaveNamespace;
@@ -1058,7 +1065,8 @@ void AuthoringPanel::ProjectSettings()
             const auto path=FileDialogs::SaveFile("Hazel project\0*.hproj\0");
             if(!path.empty() && Require(EditorAction::SaveAsset))try {
                 auto candidate=CreateRef<Project>();auto& config=candidate->GetConfig();
-                config=Project::GetActive()->GetConfig();if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;config.Name=m_ProjectName;config.ScriptProject=m_ScriptProject;config.SaveNamespace=m_SaveNamespace;
+                config=Project::GetActive()->GetConfig();if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;
+        config.UIBindings=m_UIBindings.Values;config.Name=m_ProjectName;config.ScriptProject=m_ScriptProject;config.SaveNamespace=m_SaveNamespace;
                 config.StartScene=Path(m_Startup);config.AssetDirectory=Path(m_AssetDirectory);config.ScriptModulePath=Path(m_Module);
                 const auto text=ProjectSerializer(candidate).SerializeText();
                 FileSystem::WriteFileAtomically(Path(path),[&](auto& out){out<<text;},WriteMode::CreateNew);

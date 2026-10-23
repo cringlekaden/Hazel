@@ -176,8 +176,7 @@ void EditorLayer::UI_DebugOverlay()
 }
 void EditorLayer::UI_Debugger()
 {
-    if (!m_ShowUIDebugger)
-        return;
+    if (!m_ShowUIDebugger){m_UIOverride.CancelCapture();return;}
     ImGui::SetNextWindowSize({440, 500}, ImGuiCond_FirstUseEver);
     if (!ImGui::Begin("Runtime UI Debugger", &m_ShowUIDebugger))
     {
@@ -195,6 +194,26 @@ void EditorLayer::UI_Debugger()
     ImGui::Text("Input %s | gameplay blocked %s | pointer blocked %s",
                 d.InputEnabled ? "enabled" : "inactive", d.GameplayBlocked ? "yes" : "no",
                 d.PointerBlocked ? "yes" : "no");
+    ImGui::Text("Focus scope %llu | no directional target %llu",(unsigned long long)d.Scope,(unsigned long long)d.NavigationMisses);
+    if(m_SceneState==SceneState::Play){
+        const auto device=m_RuntimeSession.GetUIDevice();
+        ImGui::Text("Last action device: %s | dropped edges %llu",device==GameUI::InputDevice::Gamepad?"gamepad":device==GameUI::InputDevice::Keyboard?"keyboard":"pointer",(unsigned long long)m_RuntimeSession.DroppedUIEdges());
+        ImGui::Text("Action: %s | pad %s",GameUI::ActionName(m_RuntimeSession.LastUIAction()),m_RuntimeSession.IsUIGamepadArmed()?"armed":"awaiting neutral / absent");
+        if(!m_RuntimeSession.UIBindingWarning().empty())ImGui::TextWrapped("%s",m_RuntimeSession.UIBindingWarning().c_str());
+        if(ImGui::CollapsingHeader("Effective bindings / Play override")){
+            if(m_UIOverrideSession!=m_RuntimeSession.GetIdentity()){m_UIOverrideSession=m_RuntimeSession.GetIdentity();m_UIOverride.Values=m_RuntimeSession.GetUIBindings();m_UIOverride.CancelCapture();}
+            const auto& effective=m_RuntimeSession.GetUIBindings();
+            for(size_t a=1;a<size_t(GameUI::UIAction::Count);++a){auto binding=effective.Actions[a];ImGui::Text("%s: %s / %s | pad %d",GameUI::ActionName(GameUI::UIAction(a)),GameUI::KeyName(binding.Key).c_str(),GameUI::KeyName(binding.Alternate).c_str(),binding.Pad);}
+            ImGui::TextDisabled("Override draft below; Apply publishes, Read discards edits.");
+            m_UIOverride.Draw();
+            ImGui::BeginDisabled(!m_UIOverride.Valid());
+            if(ImGui::Button("Apply Play override"))try{m_RuntimeSession.ApplyUIBindings(m_UIOverride.Values);}catch(const std::exception& error){m_ActionError=error.what();}
+            ImGui::EndDisabled();ImGui::SameLine();
+            if(ImGui::Button("Reset Play override"))try{m_RuntimeSession.ResetUIBindings();m_UIOverride.Values=m_RuntimeSession.GetUIBindings();}catch(const std::exception& error){m_ActionError=error.what();}
+            if(ImGui::Button("Read effective bindings")){m_UIOverride.Values=m_RuntimeSession.GetUIBindings();m_UIOverride.CancelCapture();}
+            ImGui::TextDisabled("Play uses isolated memory; Nutella persists overrides.");
+        }else m_UIOverride.CancelCapture();
+    }else {m_UIOverride.CancelCapture();m_UIOverrideSession=0;}
     ImGui::Text("Resolve %llu | reuse %llu | source checks %llu", (unsigned long long)d.Resolves,
                 (unsigned long long)d.Reuses, (unsigned long long)d.SourceChecks);
     ImGui::Text("Last rebuild %.3f ms | routing %.3f ms (CPU)", d.LastResolveMilliseconds,

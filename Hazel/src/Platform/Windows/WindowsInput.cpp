@@ -7,6 +7,29 @@
 
 namespace Hazel {
 
+    namespace { uint64_t s_GamepadRevision=1;
+        void GamepadChanged(int,int){++s_GamepadRevision;}
+    }
+    GamepadSample Input::GetGamepad() {
+        // This callback owns only connection revision, never scene/action state.
+        glfwSetJoystickCallback(GamepadChanged);
+        GamepadSample result;result.Revision=s_GamepadRevision;
+        for(int id=GLFW_JOYSTICK_1;id<=GLFW_JOYSTICK_LAST;++id) {
+            GLFWgamepadstate state{};if(!glfwGetGamepadState(id,&state))continue;
+            result.Device=id;
+            const int buttons[]={GLFW_GAMEPAD_BUTTON_A,GLFW_GAMEPAD_BUTTON_B,GLFW_GAMEPAD_BUTTON_X,GLFW_GAMEPAD_BUTTON_Y,
+                GLFW_GAMEPAD_BUTTON_LEFT_BUMPER,GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER,GLFW_GAMEPAD_BUTTON_BACK,GLFW_GAMEPAD_BUTTON_START,
+                GLFW_GAMEPAD_BUTTON_GUIDE,GLFW_GAMEPAD_BUTTON_LEFT_THUMB,GLFW_GAMEPAD_BUTTON_RIGHT_THUMB,
+                GLFW_GAMEPAD_BUTTON_DPAD_UP,GLFW_GAMEPAD_BUTTON_DPAD_RIGHT,GLFW_GAMEPAD_BUTTON_DPAD_DOWN,GLFW_GAMEPAD_BUTTON_DPAD_LEFT};
+            for(size_t i=0;i<result.Buttons.size();++i)result.Buttons[i]=state.buttons[buttons[i]]==GLFW_PRESS;
+            const int axes[]={GLFW_GAMEPAD_AXIS_LEFT_X,GLFW_GAMEPAD_AXIS_LEFT_Y,GLFW_GAMEPAD_AXIS_RIGHT_X,GLFW_GAMEPAD_AXIS_RIGHT_Y};
+            for(size_t i=0;i<result.Sticks.size();++i)result.Sticks[i]=state.axes[axes[i]];
+            break;
+        }
+        return result;
+    }
+
+
 	bool Input::IsKeyPressed(const KeyCode key)
 	{
 		auto* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());

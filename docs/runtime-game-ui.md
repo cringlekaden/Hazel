@@ -9,7 +9,7 @@ Runtime UI is ordinary scene content; it runs in Nutella without ImGui. World an
 3. Set Width/Height to **Fixed**, **Fill** or **Content** in UI Rect. Fixed authors a border-box size; Fill uses parent space; Content measures visuals/children plus padding. Minimum and optional finite maximum constrain each axis. Choosing free Fill explicitly gives that axis to the parent and clears its anchor/offset/pivot; margins set the insets. Content text width is natural unless capped, so use Fixed/Fill width or an enabled Content maximum to wrap labels. Stacks own child positions; use sizing, margins and Fill weight. Resize handles edit only Fixed dimensions; container children resize from right/bottom. Computed dimensions/positions stay read-only, and gestures never switch modes. If parent reflow/alignment would move the opposite edge, that resize sample is rejected; edit Fixed size in Properties instead. Escape cancels.
 4. Text uses the existing **Text Component** for content, color, kerning and line spacing. **UI Text Style** supplies size, wrapping, Clip/Ellipsis overflow, Max lines and horizontal/vertical alignment. Size is logical pixels per font ascender-to-descender height. Kerning and line spacing remain font-height units, as in world text. Choose a project .hfont family and real face style in Text Renderer, or leave the family empty for engine Open Sans. Separate styled text children provide mixed emphasis; text has no markup.
 5. Images use **Sprite Renderer** with the normal texture/sheet picker and UI Rect Image Fit. For framed panels add **UI Nine Slice**: source borders are left/top/right/bottom pixels within the selected source region, with a separate border scale. Borders must fit; small targets proportionally clamp their display borders. Corners keep their shape, edges stretch in one direction, and the center fills. Layout owns the UI pivot; sprite pivots remain unchanged for world sprites.
-6. Buttons have an action identity, tab order, interactable state and five editable tint/image states. An unassigned state image inherits Sprite Renderer. Keyboard focus has a persistent outline, including hover/press. Controls activate on pointer release inside their live clipped bounds with framebuffer coverage, or Enter/Space while keyboard focus belongs to UI. Tab starts navigation; Tab/Shift-Tab and arrows traverse. Escape or a click outside controls releases nonmodal keyboard ownership. A modal canvas blocks gameplay and buttons in other canvases. Higher canvas sort order wins; ties use stable entity identities; child hierarchy order supplies painter order within a canvas.
+6. Buttons have an action identity, tab order, interactable state and five editable tint/image states. An unassigned state image inherits Sprite Renderer. Keyboard focus has a persistent outline, including hover/press. Controls activate on pointer release inside their live clipped bounds with framebuffer coverage, or the configured Accept action while focus belongs to UI. Tab/Shift-Tab traverses tab order; arrows and gamepad navigation use spatial neighbors. Escape or a click outside controls releases nonmodal keyboard ownership. A modal canvas blocks gameplay and buttons in other canvases. Higher canvas sort order wins; ties use stable entity identities; child hierarchy order supplies painter order within a canvas.
 7. Use the viewport's Window/Small/Widescreen/Classic aspect selector to preview the actual runtime layout. Editing does not dispatch actions. In Play, pointer coordinates map to the displayed image, including its letterboxing. Stop before changing authored values. **Validate UI** checks configuration/assets. Save/reopen as a normal scene. Use the existing **Create Prefab** workflow on the canvas/group to save a reusable subtree. Detached rect prefabs have a static default-canvas editor preview; runtime instances need a canvas ancestor.
 
 The examples contain editable **TitleUI.hprefab** assets. Each keeps its game's own textures/palette. All UI assets and button-state references use project ownership and export closure.
@@ -285,3 +285,82 @@ renderer mode or fixed Latin-1 path remains. Test-only DejaVu/corpus resources
 stay outside game packages unless explicitly imported into a project; packages
 include the project's declared faces/notices and engine defaults, without system
 font or SDK fallback. Review real Arabic/Hebrew content with competent readers.
+
+## UI input and focus
+
+**Project Settings → Runtime UI bindings** edits the project's one UI map. Expand
+an action to choose/capture a primary or alternate key, match Shift and select a
+standard gamepad button. Pointer Press uses its separate mouse button. Choose a
+left/right stick or None, engage/neutral thresholds and navigation repeat timings.
+Escape cancels capture; select Escape from the key list to bind it. Release keys
+before capture. Conflicts/invalid values block Save; Revert discards the form and
+Reset chooses engine defaults. Save uses normal project conflict/atomic-write
+handling. It does not alter editor-wide shortcuts or game save data.
+
+Defaults are arrows for **spatial** navigation, Tab/Shift+Tab for tab order,
+Enter/Space or gamepad South for Accept, Escape or East for Cancel, D-pad/left
+stick for navigation and left mouse for Press. Keyboard codes are physical keys,
+not text input. Ctrl/Alt/Super chords belong to the host, cannot be assigned here
+and require rearming before UI resumes. The first standardized mapped controller
+is used; unmapped joysticks are not UI gamepads. Physical Windows/controller
+acceptance remains separate from synthetic regression coverage.
+
+Initial navigation selects the first eligible tab target (last for Previous).
+Subsequent directions choose a visible neighbor, using effective clipped centers:
+forward distance squared + four times perpendicular distance squared. Ties use
+TabOrder/painter rank; no candidate leaves focus in place, without directional
+wrap. Tab wraps. Fully clipped, zero-covered-pixel, hidden and disabled controls
+cannot focus; partial clips use their visible region. Pointer presses focus their
+hit target. Motion alone never steals focus. A pointer press suppresses held
+navigation repeats until those directions rearm.
+
+Stick engage/neutral defaults are .55/.25. A selected direction stays latched
+until neutral, including when reversing the stick. Opposing directions cancel;
+a diagonal chooses horizontal. Navigation repeats after .35 s, every .10 s,
+at most one repeat per action/update and at most .1 s of repeat clock per update.
+Accept and Cancel never repeat. Multiple Accept bindings form one gesture until
+all sources release. Held input on connect, restore or rebind cannot activate;
+disconnect/connection revision retires input ownership and requires rearming.
+
+Highest eligible modal canvas owns the active scope; otherwise scope zero is the
+scene's nonmodal UI. Tab order is shared across its eligible canvases. Modal
+changes remember scene-local focus IDs and restore an eligible prior target or
+the first eligible tab target. The underlying nonmodal keyboard-ownership state
+is retained, so closing a pointer-opened modal does not unexpectedly capture
+continuous gameplay. There is no screen asset/stack service yet.
+
+Cancel cancels gestures/pending activations and publishes a scoped once-only
+record; the game chooses what it means. It never invents a button click or unloads
+a scene. Cache the actual canvas component and call `canvas.TryConsumeCancel()`;
+`GameUI.TryConsumeCancel()` consumes scene scope zero. Use one consumer per scope.
+Scene/domain/Stop, ownership loss and scope replacement retire records. A consumed
+UI gesture remains gated from gameplay until its held UI inputs return neutral,
+including across a scene transition. Native raw `Input` is still physical polling;
+native gameplay callers must honor RuntimeSession's established gate.
+
+`GameUI.GetBinding(action)` / `SetBinding(action, binding)`, `InputSettings` and
+`ResetBindings()` expose validated player overrides. Digital actions are Up,
+Down, Left, Right, Next, Previous, Accept and Cancel; Press uses InputSettings'
+PointerButton. Stick is -1 None, 0 Left or 1 Right. Setters cancel/rearm input and
+reject conflicts without changing effective values. For example:
+
+```csharp
+var accept = GameUI.GetBinding(UIAction.Accept);
+accept.Alternate = (int)KeyCode.Z;
+GameUI.SetBinding(UIAction.Accept, accept);
+```
+
+Nutella persists a complete override in RuntimeStorage's reserved
+`engine-ui-bindings` slot under the project's SaveNamespace. A reset follows
+project defaults again. A project without a SaveNamespace can use defaults;
+persistent override writes reject with a clear error. Editor Play overrides stay
+in memory and end with the session. Corrupt player data is left intact, warns once
+at Start and falls back to usable project defaults. Successful writes precede
+publication. No packaged asset or editor preference is rewritten.
+
+**Runtime UI Debugger → Effective bindings / Play override** shows the actual map,
+last action device, pad rearming, scope/focus/capture, navigation misses and edge
+limits. Its override draft is separate until Apply; Read discards draft changes.
+The input buffer holds 64 ordered edges; overflow cancels the frame and rearms
+rather than delivering a partial gesture. Existing button queues remain bounded
+and destructive. Scope-return memory holds 64 IDs, evicting oldest entries.

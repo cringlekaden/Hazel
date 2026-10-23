@@ -88,9 +88,15 @@ struct Button
     bool Visible = true, Interactable = true;
     HitPolicy Hit = HitPolicy::Control;
 };
+enum class UIAction : uint8_t { Press, Up, Down, Left, Right, Next, Previous, Accept, Cancel, Count };
+enum class InputDevice : uint8_t { Pointer, Keyboard, Gamepad };
+struct ActionEdge { UIAction Action; bool Down=true; glm::vec2 Point{}; InputDevice Device=InputDevice::Keyboard; };
 struct InputFrame
 {
     glm::vec2 Mouse{};
+    std::vector<ActionEdge> Events; // Ordered, bounded device-neutral edges; navigation may repeat.
+    glm::ivec2 Navigate{};
+    bool NextPressed=false, PreviousPressed=false, SuppressAccept=false;
     bool KeyboardEnabled = true, FocusNavigation = false;
     bool Enabled = false, LeftDown = false, AcceptDown = false, NextDown = false,
          PreviousDown = false;
@@ -139,6 +145,11 @@ class InputRouter
         return m_Hover;
     }
     void Reset();
+    void SetScope(uint64_t scene,uint64_t scope);
+    uint64_t Scope() const {return m_Scope;}
+    bool ConsumeCancel(uint64_t scene,uint64_t scope);
+    uint64_t NavigationMisses() const {return m_NavigationMisses;}
+
     void Retire(uint64_t scene, uint64_t id);
     uint64_t DroppedActions() const
     {
@@ -146,6 +157,12 @@ class InputRouter
     }
 
   private:
+    void UpdateSample(uint64_t scene,const std::vector<Button>& buttons,const InputFrame& frame);
+    void Navigate(const std::vector<Button>& buttons,glm::ivec2 direction);
+    uint64_t m_Scope=0,m_NavigationMisses=0;
+    std::vector<std::pair<uint64_t,uint64_t>> m_ReturnFocus;
+    unsigned m_Cancels=0;
+    bool m_ScopeChanged=false,m_Cancel=false;
     uint64_t m_Scene = 0, m_Focus = 0, m_Hover = 0, m_Capture = 0, m_KeyCapture = 0;
     bool m_Ready = false, m_Left = false, m_Accept = false, m_Next = false, m_Previous = false;
     bool m_PointerGesture = false;

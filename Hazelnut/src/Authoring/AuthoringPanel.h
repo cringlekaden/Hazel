@@ -1,5 +1,6 @@
 #pragma once
 #include "EditorDocuments.h"
+#include "UI/UIBindingEditor.h"
 #include "EditorPreferences.h"
 #include "HazelSDK.h"
 #include "Panels/SceneHierarchyPanel.h"
@@ -30,6 +31,7 @@ class AuthoringPanel
     void Tick(double timestep = 0);
     void PollTools(); // Main thread, including minimized frames.
     void ShowConsole() { m_Console.Show(); }
+    bool CapturingUIBinding() const {return m_UIBindings.Capturing();}
     void BindProject();
     void RememberProject();
     void SelectAsset(const std::filesystem::path &path);
@@ -109,6 +111,7 @@ class AuthoringPanel
     ProjectWorkspace m_Workspace;
     std::filesystem::path m_WorkspaceProject;
     std::filesystem::path m_CreatedProject;
+    UIBindingEditor m_UIBindings;
     RuntimeRendererRequests m_RenderingDraft;
     bool m_RenderingAuthored=false;
     mutable std::string m_RenderingRestart;

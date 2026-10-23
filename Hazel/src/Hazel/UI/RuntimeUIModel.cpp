@@ -191,6 +191,7 @@ void InputRouter::Reset()
 {
     m_Scene = m_Focus = m_Hover = m_Capture = m_KeyCapture = m_Generation = m_Dropped = 0;
     m_Ready = m_Left = m_Accept = m_Next = m_Previous = m_PointerGesture = false;
+    m_Scope=m_NavigationMisses=0;m_ReturnFocus.clear();m_Cancels=0;m_ScopeChanged=m_Cancel=false;
     m_Order.clear();
     m_IDs.clear();
     m_Index.clear();
@@ -255,7 +256,13 @@ void InputRouter::Reconcile(uint64_t scene, const std::vector<Button> &buttons, 
         auto found = m_Index.find(id);
         return found != m_Index.end() && m_Ranks[found->second] != NoRank;
     };
-    if (!m_Ready)
+    if(m_ScopeChanged) {
+        m_Focus=0;
+        for(auto saved:m_ReturnFocus)if(saved.first==m_Scope&&eligible(saved.second))m_Focus=saved.second;
+        m_ScopeChanged=false;
+        if(!m_Focus&&!m_Order.empty())m_Focus=buttons[m_Order.front()].ID;
+    }
+    else if (!m_Ready)
         m_Focus = 0;
     else if (!eligible(m_Focus))
         m_Focus = m_Order.empty() ? 0 : buttons[m_Order.front()].ID;
@@ -275,6 +282,38 @@ void InputRouter::Reconcile(uint64_t scene, const std::vector<Button> &buttons, 
                     m_Actions.end());
     m_Generation = generation;
 }
+void InputRouter::SetScope(uint64_t scene,uint64_t scope)
+{
+    if(scene!=m_Scene){Reset();m_Scene=scene;}
+    if(scope==m_Scope)return;
+    auto saved=std::find_if(m_ReturnFocus.begin(),m_ReturnFocus.end(),[&](auto p){return p.first==m_Scope;});
+    if(saved!=m_ReturnFocus.end())saved->second=m_Focus;
+    else {if(m_ReturnFocus.size()==64)m_ReturnFocus.erase(m_ReturnFocus.begin());m_ReturnFocus.emplace_back(m_Scope,m_Focus);}
+    m_Scope=scope;m_ScopeChanged=true;m_Generation=0;m_Capture=m_KeyCapture=0;m_Actions.clear();m_Cancels=0;
+    // Retain physical gesture ownership until release: a newly opened scope cannot inherit a click.
+}
+bool InputRouter::ConsumeCancel(uint64_t scene,uint64_t scope)
+{
+    if(scene!=m_Scene||scope!=m_Scope||!m_Cancels)return false;
+    --m_Cancels;return true;
+}
+void InputRouter::Navigate(const std::vector<Button>& buttons,glm::ivec2 direction)
+{
+    auto current=m_Index.find(m_Focus);if(current==m_Index.end()||m_Order.empty())return;
+    const auto origin=buttons[current->second].Bounds.Intersect(buttons[current->second].Clip);
+    const glm::vec2 center=origin.Position+origin.Size*.5f;
+    size_t best=NoRank;double bestScore=std::numeric_limits<double>::infinity();
+    for(auto index:m_Order){if(index==current->second)continue;
+        auto rect=buttons[index].Bounds.Intersect(buttons[index].Clip);auto delta=rect.Position+rect.Size*.5f-center;
+        double main=direction.x?delta.x*direction.x:delta.y*direction.y;
+        if(main<=0)continue;
+        double cross=direction.x?delta.y:delta.x;
+        // Euclidean distance plus perpendicular penalty favors aligned nearby targets.
+        double score=main*main+cross*cross*4.0;
+        if(score<bestScore){bestScore=score;best=index;}
+    }
+    if(best!=NoRank){m_Focus=buttons[best].ID;m_KeyCapture=0;}else ++m_NavigationMisses;
+}
 void InputRouter::Update(uint64_t scene, const std::vector<Button> &buttons, const InputFrame &f,
                          uint64_t generation)
 {
@@ -282,6 +321,33 @@ void InputRouter::Update(uint64_t scene, const std::vector<Button> &buttons, con
         (f.PointerReleased && f.HasReleasePosition && !Finite(f.ReleasePosition)))
         throw std::invalid_argument("Invalid UI pointer frame");
     Reconcile(scene, buttons, generation);
+    for(auto edge:f.Events)if(size_t(edge.Action)>=size_t(UIAction::Count)||!Finite(edge.Point))throw std::invalid_argument("Invalid UI action edge");
+    if(f.Events.size()>64)throw std::invalid_argument("UI action edge limit exceeded (64)");
+    if(f.Events.empty()){UpdateSample(scene,buttons,f);return;}
+    // A pointer release owns this entire sampled gesture, even if Accept follows it.
+    bool pointer=f.SuppressAccept||m_PointerGesture||m_Left;
+    bool cancelling=f.CancelDown;
+    for(auto e:f.Events)cancelling|=e.Action==UIAction::Cancel&&e.Down;
+    for(auto e:f.Events)pointer|=e.Action==UIAction::Press;
+    InputFrame step;step.Enabled=f.Enabled;step.KeyboardEnabled=f.KeyboardEnabled;
+    step.Mouse=f.Mouse;step.LeftDown=m_Left;step.AcceptDown=m_Accept;step.SuppressAccept=pointer;
+    const bool ready=m_Ready;
+    if(!ready){step.LeftDown=f.LeftDown;step.AcceptDown=f.AcceptDown;UpdateSample(scene,buttons,step);return;}
+    for(auto e:f.Events){
+        step.PointerPressed=step.PointerReleased=step.AcceptPressed=false;step.CancelDown=cancelling;
+        step.NextPressed=step.PreviousPressed=false;step.Navigate={};
+        if(e.Action==UIAction::Press){step.Mouse=e.Point;step.LeftDown=e.Down;step.PointerPressed=e.Down;step.PointerReleased=!e.Down;step.PressPosition=step.ReleasePosition=e.Point;step.HasReleasePosition=true;}
+        else if(e.Action==UIAction::Accept){step.AcceptDown=e.Down;step.AcceptPressed=e.Down;}
+        else if(e.Action==UIAction::Cancel)step.CancelDown=cancelling;
+        else if(e.Down){switch(e.Action){case UIAction::Next:step.NextPressed=true;break;case UIAction::Previous:step.PreviousPressed=true;break;case UIAction::Up:step.Navigate.y=-1;break;case UIAction::Down:step.Navigate.y=1;break;case UIAction::Left:step.Navigate.x=-1;break;case UIAction::Right:step.Navigate.x=1;break;default:break;}}
+        UpdateSample(scene,buttons,step);
+    }
+    step.Mouse=f.Mouse;step.LeftDown=f.LeftDown;step.AcceptDown=f.AcceptDown;
+    step.PointerPressed=step.PointerReleased=step.AcceptPressed=false;step.CancelDown=cancelling;step.NextPressed=step.PreviousPressed=false;step.Navigate={};
+    UpdateSample(scene,buttons,step);
+}
+void InputRouter::UpdateSample(uint64_t scene,const std::vector<Button>& buttons,const InputFrame& f)
+{
     const bool armed = m_Ready;
     m_Ready = scene != 0 && f.Enabled;
     m_Hover = 0;
@@ -291,16 +357,17 @@ void InputRouter::Update(uint64_t scene, const std::vector<Button> &buttons, con
         if (!m_Focus && !m_Order.empty())
             m_Focus = buttons[m_Order.front()].ID;
         if (armed && f.KeyboardEnabled && !m_Order.empty() &&
-            ((f.NextDown && !m_Next) || (f.PreviousDown && !m_Previous)))
+            (f.NextPressed || f.PreviousPressed || (f.NextDown && !m_Next) || (f.PreviousDown && !m_Previous)))
         {
             auto found = m_Index.find(m_Focus);
             size_t rank = found == m_Index.end() ? 0 : m_Ranks[found->second];
             const size_t count = m_Order.size();
             m_Focus =
-                buttons[m_Order[(rank + ((f.PreviousDown && !m_Previous) ? count - 1 : 1)) % count]]
+                buttons[m_Order[(rank + ((f.PreviousPressed || (f.PreviousDown && !m_Previous)) ? count - 1 : 1)) % count]]
                     .ID;
         }
-        const bool gestureOwns = m_PointerGesture || m_Capture || m_Left || f.LeftDown ||
+        if(armed&&f.KeyboardEnabled&&(f.Navigate.x||f.Navigate.y))Navigate(buttons,f.Navigate);
+        const bool gestureOwns = f.SuppressAccept || m_PointerGesture || m_Capture || m_Left || f.LeftDown ||
                                  f.PointerPressed || f.PointerReleased;
         if (armed && (f.PointerPressed || (f.LeftDown && !m_Left)))
         {
@@ -311,6 +378,7 @@ void InputRouter::Update(uint64_t scene, const std::vector<Button> &buttons, con
         }
         if (f.CancelDown)
         {
+            if(armed&&!m_Cancel&&f.KeyboardEnabled){if(m_Cancels<MaxActions)++m_Cancels;else ++m_Dropped;}
             m_Capture = m_KeyCapture = 0;
             m_Actions.clear();
         }
@@ -355,8 +423,9 @@ void InputRouter::Update(uint64_t scene, const std::vector<Button> &buttons, con
     {
         m_Focus = m_Hover = m_Capture = m_KeyCapture = 0;
         m_PointerGesture = false;
-        m_Actions.clear();
+        m_Actions.clear();m_Cancels=0;
     }
+    m_Cancel=f.CancelDown;
     m_Left = f.LeftDown;
     m_Accept = f.AcceptDown;
     m_Next = f.NextDown;
@@ -366,6 +435,9 @@ void InputRouter::Retire(uint64_t scene, uint64_t id)
 {
     if (scene != m_Scene || !id)
         return;
+    for(auto& saved:m_ReturnFocus)if(saved.second==id)saved.second=0;
+    m_ReturnFocus.erase(std::remove_if(m_ReturnFocus.begin(),m_ReturnFocus.end(),[&](auto saved){return saved.first==id;}),m_ReturnFocus.end());
+    if(m_Scope==id)m_Cancels=0;
     if (m_Focus == id)
         m_Focus = 0;
     if (m_Hover == id)

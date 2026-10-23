@@ -25,9 +25,10 @@ class RuntimeUI
     void UpdateInput(const GameUI::InputFrame &frame);
     void Draw(); // uses the published snapshot; host resolves before rendering
     bool Consume(uint64_t entity, GameUI::Action &action);
+    bool ConsumeCancel(uint64_t scope);
     bool BlocksGameplay() const
     {
-        return m_Resolved.Modal || m_KeyboardOwns || m_Input.Captured();
+        return m_Resolved.Modal || m_ActionOwnsFrame || m_KeyboardOwns || m_Input.Captured();
     }
     bool CapturesPointer() const
     {
@@ -35,7 +36,7 @@ class RuntimeUI
     }
     bool BlocksPointer() const
     {
-        return m_Resolved.Modal || m_PointerOver || m_Input.Captured();
+        return m_Resolved.Modal || m_ActionOwnsFrame || m_PointerOver || m_Input.Captured();
     }
     bool Bounds(uint64_t entity, GameUI::Rect &pixels) const;
     Ref<const Hazel::Text::Layout> TextLayout(uint64_t entity) const;
@@ -112,6 +113,7 @@ class RuntimeUI
     uint64_t m_AssetGeneration=0;
     uint64_t m_NextGeneration = 0, m_OuterDrops = 0, m_ReportedDrops = 0;
     std::chrono::steady_clock::time_point m_LastWarning{};
+    bool m_ActionOwnsFrame=false;
     bool m_PointerOver = false, m_KeyboardOwns = false, m_InputEnabled = false;
 };
 } // namespace Hazel

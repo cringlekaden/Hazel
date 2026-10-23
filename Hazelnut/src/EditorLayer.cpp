@@ -264,7 +264,7 @@ namespace Hazel {
         }
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
-		ImGui::Begin("Viewport");
+		ImGui::Begin("Viewport",nullptr,m_SceneState==SceneState::Play?ImGuiWindowFlags_NoNavInputs:0);
 		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
 		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
 		auto viewportOffset = ImGui::GetWindowPos();
@@ -275,8 +275,9 @@ namespace Hazel {
 		m_ViewportHovered = ImGui::IsWindowHovered();
 
 		const bool runtimePointer=m_SceneState==SceneState::Play&&m_ActiveScene->IsUICapturingPointer();
-        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused || (!m_ViewportHovered&&!runtimePointer) ||
-            (m_SceneState==SceneState::Play?RuntimeUIWidgetBlocksInput():io.WantTextInput||ImGui::IsAnyItemActive()));
+        Application::Get().GetImGuiLayer()->BlockEvents(m_SceneState==SceneState::Play
+            ? (!m_ViewportFocused || RuntimeUIWidgetBlocksInput())
+            : (!m_ViewportFocused || (!m_ViewportHovered&&!runtimePointer) || io.WantTextInput || ImGui::IsAnyItemActive()));
 
         ImGui::SetNextItemWidth(180);
         ImGui::Combo("##UI preview aspect",&m_UIPreview,"Window\0Small 1024 x 600\0Widescreen 16:9\0Classic 4:3\0");
@@ -384,7 +385,7 @@ namespace Hazel {
         // ownership. Existing runtime capture continues outside the image.
         const bool viewportGesture=viewport&&context.ActiveId==viewport->MoveId&&
             (m_ViewportHovered||(m_ActiveScene&&m_ActiveScene->IsUICapturingPointer()));
-        return context.IO.WantTextInput||ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId)||
+        return m_UIOverride.Capturing()||(m_Authoring&&m_Authoring->CapturingUIBinding())||context.IO.WantTextInput||ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId)||
             (ImGui::IsAnyItemActive()&&!viewportGesture);
     }
 	void EditorLayer::OnEvent(Event& e)
@@ -394,6 +395,15 @@ namespace Hazel {
             (!static_cast<WindowResizeEvent&>(e).GetWidth() || !static_cast<WindowResizeEvent&>(e).GetHeight())))
             {if(m_Authoring)m_Authoring->CancelEdits();else m_UIEdit.Finish(true);}
         if(m_Loading && m_Loading->Busy())return;
+        // Events arrive before the next ImGui frame. Retire viewport ownership
+        // immediately on an outside press, rather than trusting last frame's
+        // NavWindow while a text field or another editor panel acquires focus.
+        if(m_SceneState==SceneState::Play&&e.GetEventType()==EventType::MouseButtonPressed) {
+            auto point=Input::GetMouseScreenPosition()-m_ViewportBounds[0];
+            if(!GameUI::Rect{{0,0},m_ViewportSize}.Contains(point)){
+                m_ViewportFocused=false;m_RuntimeSession.SetInput(ViewportMouse(),false);
+            }
+        }
         if(m_SceneState==SceneState::Play)m_RuntimeSession.SubmitUIEvent(e,ViewportMouse(),m_ViewportFocused && !RuntimeUIWidgetBlocksInput());
 		if(m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_CameraController.OnEvent(e);
 		if (m_SceneState == SceneState::Edit && m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))

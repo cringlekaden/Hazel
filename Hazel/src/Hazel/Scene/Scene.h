@@ -47,6 +47,7 @@ namespace Hazel {
         const std::vector<UUID>& GetChildrenView(UUID parent) const;
         void UpdateUIInput(const GameUI::InputFrame& frame);
         bool ConsumeUIAction(uint64_t entity,GameUI::Action& action);
+        bool ConsumeUICancel(uint64_t scope);
         bool IsGameplayInputBlocked() const;
         bool IsGameplayPointerBlocked() const;
         bool IsUICapturingPointer() const;
