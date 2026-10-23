@@ -383,7 +383,9 @@ and ordinary Canvas behavior are described under Connect C# decisions above.
 Tab order is local to the published active scope.
 
 Cancel cancels gestures/pending activations once per sampled update (multiple
-Cancel edges coalesce). Managed screens use Ignore, Close screen or Notify owner;
+Cancel edges coalesce). Final held-state synchronization retains the semantic
+Cancel record and observes release, so a fresh quick Cancel can rearm in the next
+sample when the scope has not transitioned. Managed screens use Ignore, Close screen or Notify owner;
 unmanaged scopes expose `canvas.TryConsumeCancel()` or scene-zero
 `GameUI.TryConsumeCancel()`. It never invents a button click or unloads a scene.
 Scene/domain/Stop, ownership loss and scope replacement retire records. A consumed

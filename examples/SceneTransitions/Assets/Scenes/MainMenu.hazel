@@ -350,6 +350,6 @@ Entities:
       InitialFocus: 4
       DefaultAction: 4
       EventOwner: 7
-SceneVersion: 2
   ScriptComponent:
     ClassName: SceneTransitions.MenuOwner
+SceneVersion: 2

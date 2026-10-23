@@ -2047,7 +2047,84 @@ canvases through the same pipeline, without a bulk rewrite.
 
 ### Qualification
 
-Local qualification results are recorded below once complete. No rendering shader,
-font/resource policy or platform backend changes are part of this slice. Prior
-render-only performance evidence still applies; no new whole-frame budget is
-claimed. CI is not awaited or polled.
+Premake/GNU Make builds with two compiler jobs pass in Debug and Release. All
+17 regression executables pass in each configuration on the final implementation
+checkpoint `b992b4f`: Release forced OpenGL 4.1 / GLSL410, Debug native OpenGL 4.2,
+on accelerated Intel HD4000 / Mesa 26.2.4-arch3.1. The desktop is Plasma Wayland;
+GLFW uses X11/GLX through Xwayland, not native Wayland. No desktop packages/settings
+were changed. CI is not awaited or polled.
+
+Focused production checks cover initial/default/remembered/fallback focus,
+republication while unarmed, nested modal/nonmodal scopes, empty modals, unavailable
+roots, idempotent/FIFO/replace/non-top operations, request limits, native owner/class
+and managed-status changes, component retirement, prefab/copy remapping and exact
+snapshot reuse. Managed checks verify an unrelated script cannot steal records,
+Notify-owner Cancel/context delivery, once-only activation, held transition gates,
+retired request issuers, domain replacement and three Play/Stop cycles. Synthetic
+input crosses the production adapter/router boundary; it is not physical controller
+acceptance.
+
+The actual native ImGui harness creates/configures the three-screen flow with
+shared Inspector transactions, Undo/Redo, scene/prefab save/reopen, selected closed-
+screen preview and three scripted keyboard Play/Stop runs. Inspection does not
+mutate authored state or dispatch actions. Existing P1, binding, expanded five-state
+Button Inspector, history, typography/overflow, D8/painter/capacity and lifecycle
+regressions remain enabled. New regressions exposed and fixed both loss of initial
+focus during unarmed reflow and semantic Cancel being cleared by ordered-input final
+synchronization. Aggregate cancellation suppresses activations for the sample;
+final held synchronization preserves the Cancel record and observes the actual
+release so the next quick gesture can rearm.
+
+No rendering shader, font/resource policy or platform backend changes are part of
+this slice. Prior render-only performance evidence still applies; no new
+whole-frame budget or GPU timing is claimed. Native mutation detection remains
+exact at input/render/candidate-delivery boundaries; idle event polls do no extra
+source walk when there is no matching recipient.
+
+Release source acceptance passes all five projects in Hazelnut and Nutella:
+startup, rendering, resize, graceful shutdown and unchanged authored hashes. The
+existing native/managed game checks pass collection/completion, Lightkeeper
+chapter/progress/save/failure recovery and repeated lifecycle. A small extension
+to the maintained native probe exercises SceneTransitions' actual MenuOwner:
+production synthetic Accept → typed Play → Level1, with the old scope retired.
+This also caught the controller block's incorrect placement after the scene-version
+field; the corrected scene and its prefab structure are validated and exercised.
+No other game content or save/progress format was changed.
+
+The normal Nutella export of the native-authored screen fixture passes extraction
+to an unrelated Unicode directory, startup/resize/shutdown and a bounded scripted
+nested-open/close/return probe, with source resources/examples, SDK and external
+Mono GAC unavailable. The descriptor, scene/prefab, real face files and exact
+notices are checked; no typography test corpus/font collection ships. Packaged
+assets remain byte-identical. The package probe exercises the service, not physical
+keyboard/controller input. Current package menu, SceneTransitions title and
+Lightkeeper HUD/Mara dialogue captures were inspected internally. No screenshot
+comparison or competent-reader language acceptance is inferred.
+
+Master, stash, vendor pins, settings/layouts and the exact unrelated Sandbox draft
+remain unchanged. Native Windows/MSVC, physical controllers, DPI/monitor transitions
+and native Wayland remain unqualified locally. No denied desktop injection is
+credited, and no CI run was awaited or polled.
+
+Concise physical acceptance (disposable project or extracted fixture):
+
+1. Create a Screen; assign a script owner and named initial/default targets. Make
+   Settings/Confirmation initially closed, configure Cancel, and save/reopen their
+   connected prefab. Undo/Redo policy and target edits; select a closed screen to
+   preview it without changing initial state.
+2. In Play and Nutella, open Settings and Confirmation by pointer and keyboard;
+   Cancel back to each invoking control. Check non-top close, nonmodal ownership,
+   disabled/clipped/deleted return targets and the debugger's current scope/owner.
+3. Hold Accept or a pointer press across open/close, release, then press again.
+   Try quick Cancel gestures, focus loss/minimize/restore, gamepad neutral/repeat
+   and disconnect. Verify no activation reaches a newly exposed screen or gameplay.
+4. Reload scripts and repeat Play/Stop; authoring/history stay unchanged. Repeat on
+   physical Windows hardware and mixed-DPI/detached viewports before claiming them.
+
+**Next bounded composed-controls slice:** Toggle/checkbox and radio-group state,
+plus a simple progress display, composed from the existing layout/visual/input
+primitives. Add validated values and owner-only change events, non-color selected
+cues, native presets/Inspector/history and keyboard/controller tests. Sliders can
+follow with real Adjust actions. Keep scrolling/data views, themes, structural
+history and the known large alternating draw-run debt separate. This screen slice
+does not finish all P4 or the practical screen-space production endpoint.
