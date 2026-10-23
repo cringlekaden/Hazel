@@ -37,6 +37,12 @@ static void UIActionSessionChecks(const Ref<Project>& project,const std::filesys
     sample.Keys[Key::Escape]=true;route();Check(scene->ConsumeUICancel(0)&&scene->IsGameplayInputBlocked(),"Nonmodal Cancel released its gameplay gate during the consumed frame");
     route();Check(!session.IsGameplayInputEnabled(),"Held consumed Cancel leaked to gameplay on the next update");
     sample.Keys.fill(false);route();Check(!scene->IsGameplayInputBlocked(),"Cancel did not release nonmodal keyboard ownership afterward");
+    scene->GetEntityByUUID(80).GetComponent<UICanvasComponent>().Modal=true;scene->RefreshUI();route();
+    MouseButtonPressedEvent pointerDown(Mouse::ButtonLeft);MouseButtonReleasedEvent pointerUp(Mouse::ButtonLeft);
+    session.SubmitUIEvent(pointerDown,{10,10},true);session.SubmitUIEvent(pointerUp,{10,10},true);
+    KeyPressedEvent rightDown(Key::Right);KeyReleasedEvent rightUp(Key::Right);
+    session.SubmitUIEvent(rightDown,{10,10},true);session.SubmitUIEvent(rightUp,{10,10},true);route();
+    Check(scene->GetUIDiagnostics().Focus==84&&scene->ConsumeUIAction(0,action)&&action.Entity==81&&!scene->ConsumeUIAction(0,action),"Ordered fresh navigation after a pointer click was lost/duplicated in the real scene");
     authored->GetEntityByUUID(2).RemoveComponent<ScriptComponent>();
     auto override=defaults;override.Actions[size_t(UIAction::Accept)].Key=Key::X;session.ApplyUIBindings(override);
     Check(ParseBindings(session.Storage().Read("engine-ui-bindings")).Actions[size_t(UIAction::Accept)].Key==Key::X,"Override was not stored through project user-data service");

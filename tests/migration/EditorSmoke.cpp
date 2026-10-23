@@ -393,6 +393,17 @@ private:
         std::cout<<"PASS: main-thread Console/tool polling continues while minimized without advancing scene/render frames\n";
     }
     void OnImGuiRender() override {
+        if(m_Frame==7) {
+            auto& editor=m_Editor;auto* viewport=ImGui::FindWindowByName("Viewport");
+            Check(viewport&&(viewport->Flags&ImGuiWindowFlags_NoNavInputs),"Play viewport let ImGui compete for UI navigation keys");
+            auto authored=SceneSerializer(editor.m_EditorScene).CaptureAuthoredState();
+            auto bindings=GameUI::SerializeBindings(editor.m_RuntimeSession.GetUIBindings());
+            auto* focus=ImGui::GetCurrentContext()->NavWindow;bool shown=editor.m_ShowUIDebugger;editor.m_ShowUIDebugger=true;
+            ImGui::Begin("Runtime UI Debugger");ImGui::GetStateStorage()->SetInt(ImGui::GetID("Effective bindings / Play override"),1);ImGui::End();
+            editor.UI_Debugger();editor.m_ShowUIDebugger=shown;ImGui::FocusWindow(focus);
+            Check(GameUI::SerializeBindings(editor.m_RuntimeSession.GetUIBindings())==bindings&&SceneSerializer(editor.m_EditorScene).CaptureAuthoredState()==authored,"Play binding diagnostics modified effective input or authoring state");
+            std::cout<<"PASS: actual Play binding debugger / host gating and ImGui viewport navigation isolation\n";
+        }
         if(m_Frame==3) {
             DrawContainerFixture();
             DrawFontFamilyFixture();

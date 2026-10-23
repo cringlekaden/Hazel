@@ -54,6 +54,11 @@ static void UIActionChecks()
     adapter.PointerEdge(0,true,{10,10});adapter.PointerEdge(0,false,{10,10});update();
     while(route.Consume(1,action)){}for(int i=0;i<10;++i)update(.1f);
     Check(route.Focused()==1,"Held navigation stole focus back after pointer ownership");
+    adapter.Cancel();sample={};route.Reset();update();
+    adapter.PointerEdge(0,true,{10,10});adapter.PointerEdge(0,false,{10,10});
+    adapter.KeyEdge(Key::Right,true,false,false);adapter.KeyEdge(Key::Right,false,false,false);update();
+    Check(route.Focused()==4,"Fresh ordered navigation after a quick click was suppressed");
+    while(route.Consume(1,action)){}
     // Multiple physical bindings are one logical gesture until all are released.
     adapter.Cancel();sample={};route.Reset();update();
     adapter.KeyEdge(Key::Enter,true,false,false);sample.Keys[Key::Enter]=true;update();Check(route.Consume(1,action),"Primary Accept missing");

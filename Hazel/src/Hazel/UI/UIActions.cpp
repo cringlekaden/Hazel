@@ -122,7 +122,7 @@ InputFrame UIInputAdapter::Sample(const DeviceSample& s,float seconds,bool enabl
             if(!m_Held[a]&&m_Armed[a]){
                 f.Events.push_back(e);m_Device=e.Device;m_LastAction=e.Action;
                 m_Repeat[a]=m_Bindings.RepeatDelay;m_Repeating[a]=true;
-                if(e.Action==UIAction::Press)for(size_t nav=1;nav<=size_t(UIAction::Previous);++nav){m_Repeating[nav]=false;m_Armed[nav]=false;}
+                if(e.Action==UIAction::Press)for(size_t nav=1;nav<=size_t(UIAction::Previous);++nav){m_Repeating[nav]=false;if(m_Held[nav]||m_Sources[nav])m_Armed[nav]=false;}
             }
             m_Held[a]=true;m_Armed[a]=false;
         }else {

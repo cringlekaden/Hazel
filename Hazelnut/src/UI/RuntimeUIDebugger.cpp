@@ -196,6 +196,7 @@ void EditorLayer::UI_Debugger()
                 d.PointerBlocked ? "yes" : "no");
     ImGui::Text("Focus scope %llu | no directional target %llu",(unsigned long long)d.Scope,(unsigned long long)d.NavigationMisses);
     if(m_SceneState==SceneState::Play){
+        ImGui::Text("Host gameplay: keys %s | pointer %s",m_RuntimeSession.IsGameplayInputEnabled()?"available":"gated",m_RuntimeSession.IsGameplayMouseEnabled()?"available":"gated");
         const auto device=m_RuntimeSession.GetUIDevice();
         ImGui::Text("Last action device: %s | dropped edges %llu",device==GameUI::InputDevice::Gamepad?"gamepad":device==GameUI::InputDevice::Keyboard?"keyboard":"pointer",(unsigned long long)m_RuntimeSession.DroppedUIEdges());
         ImGui::Text("Action: %s | pad %s",GameUI::ActionName(m_RuntimeSession.LastUIAction()),m_RuntimeSession.IsUIGamepadArmed()?"armed":"awaiting neutral / absent");
