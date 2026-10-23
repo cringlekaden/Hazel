@@ -59,6 +59,11 @@ static void UIActionChecks()
     adapter.KeyEdge(Key::Right,true,false,false);adapter.KeyEdge(Key::Right,false,false,false);update();
     Check(route.Focused()==4,"Fresh ordered navigation after a quick click was suppressed");
     while(route.Consume(1,action)){}
+    // Aggregate cancellation suppresses this sample, then synchronizes final held state.
+    {InputRouter quick;InputFrame frame;frame.Enabled=true;quick.Update(77,b,frame);
+        frame.Events={{UIAction::Cancel,true},{UIAction::Cancel,false}};
+        quick.Update(77,b,frame);Check(quick.ConsumeCancel(77,0)&&!quick.ConsumeCancel(77,0),"Quick Cancel duplicated/lost");
+        quick.Update(77,b,frame);Check(quick.ConsumeCancel(77,0),"Fresh quick Cancel in next sample stayed latched");}
     // Multiple physical bindings are one logical gesture until all are released.
     adapter.Cancel();sample={};route.Reset();update();
     adapter.KeyEdge(Key::Enter,true,false,false);sample.Keys[Key::Enter]=true;update();Check(route.Consume(1,action),"Primary Accept missing");

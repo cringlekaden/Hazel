@@ -337,7 +337,7 @@ void InputRouter::Update(uint64_t scene, const std::vector<Button> &buttons, con
         UpdateSample(scene,buttons,step);
     }
     step.Mouse=f.Mouse;step.LeftDown=f.LeftDown;step.AcceptDown=f.AcceptDown;
-    step.PointerPressed=step.PointerReleased=step.AcceptPressed=false;step.CancelDown=cancelling;step.NextPressed=step.PreviousPressed=false;step.Navigate={};
+    step.PointerPressed=step.PointerReleased=step.AcceptPressed=false;step.CancelDown=f.CancelDown;step.NextPressed=step.PreviousPressed=false;step.Navigate={};
     UpdateSample(scene,buttons,step);
 }
 void InputRouter::UpdateSample(uint64_t scene,const std::vector<Button>& buttons,const InputFrame& f)

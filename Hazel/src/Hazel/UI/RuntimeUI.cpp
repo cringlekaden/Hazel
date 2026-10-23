@@ -619,7 +619,7 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
             }}
             UpdateInput(step);owned|=m_ActionOwnsFrame;
         }
-        step.Mouse=pixels.Mouse;step.LeftDown=pixels.LeftDown;step.AcceptDown=pixels.AcceptDown;
+        step.Mouse=pixels.Mouse;step.LeftDown=pixels.LeftDown;step.AcceptDown=pixels.AcceptDown;step.CancelDown=pixels.CancelDown;
         step.PointerPressed=step.PointerReleased=step.AcceptPressed=false;
         step.NextDown=step.PreviousDown=step.NextPressed=step.PreviousPressed=step.FocusNavigation=false;step.Navigate={};
         UpdateInput(step);m_ActionOwnsFrame|=owned;
@@ -677,7 +677,11 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
     }
     else
     {
-        if (input.CancelDown){m_Diagnostics.RetiredEvents+=m_Actions.size();m_Actions.clear();}
+        if (input.CancelDown){
+            const auto before=m_Actions.size();
+            m_Actions.erase(std::remove_if(m_Actions.begin(),m_Actions.end(),[](const Action &event){return event.Kind==UIEventKind::Activated;}),m_Actions.end());
+            m_Diagnostics.RetiredEvents+=before-m_Actions.size();
+        }
         Action a;
         while (m_Input.Consume(m_Scene.GetIdentity(), a))
         {
