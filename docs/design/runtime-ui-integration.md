@@ -1789,10 +1789,10 @@ plus four times perpendicular-distance squared, ties by tab rank. No candidate
 retains focus; directional navigation does not wrap. Partly clipped controls use
 their visible region; empty/disabled/retired targets are excluded. Active highest
 modal canvas restricts the same published hit list. Nonmodal canvases share scene
-scope zero. Up to 64 scene-local scope/return-focus IDs retain eligible previous
+scope zero. Up to 64 scene-local scope/return-focus records retain eligible previous
 focus; oldest records evict. No entity/component pointer crosses a publication.
 
-Cancel is a scoped, destructive once-only record, separate from button activation;
+Cancel is a scoped, destructive request, coalesced once per sampled update and separate from button activation;
 it cancels capture and pending activations, never fabricates a click or loads a
 scene. A canvas consumes only its active scope; ordinary scene scope is zero.
 Delivery reconciles native mutations just like existing button delivery. Scene,
@@ -1860,3 +1860,72 @@ document or probe project files. Binding parsing/storage happens at Start or
 explicit edit/reset; idle adapter storage is bounded and reusable.
 
 Source-example/package qualification follows below. CI is not awaited or polled.
+
+### Final integration and remaining acceptance
+
+Implementation checkpoint `25a1df4` is followed by ordering correction `2946e3a`.
+The focused regression first reproduced a quick pointer click incorrectly
+suppressing a fresh arrow edge later in the same sample. Pointer takeover now
+disarms only directions already held; subsequent fresh navigation remains
+ordered. Model and real RuntimeSession/scene checks pass again in Debug and
+Release on physical GL4.1. The additional Play debugger test passes in both configurations: it draws effective
+bindings/host gating and checks viewport NoNavInputs without changing authoring.
+
+The existing native harness's simulated Other-widget ID now hashes the retained
+window ID: calling GetID outside Begin/End was invalid after long cold-loading
+frames allowed ImGui to compact the inactive window's transient stack. Vendor
+source and production ID handling are unchanged. This is separate from the
+expanded Button Inspector regression, which remains enabled.
+
+Release source checks pass all five projects in Nutella and Hazelnut, including
+startup/render/resize/close, authored hashes and existing native/managed gameplay,
+progress/save and chapter assertions. Lightkeeper menu, HUD and Mara dialogue
+captures and the native four-button menu were inspected internally. No game,
+scene/prefab, save format, font or license was reauthored for this milestone.
+After the ordering correction, both final applications were relinked, all five
+source-example checks repeated successfully, and the normal Nutella export of
+the native-authored spatial menu passes relocation
+with source resources/examples/SDK/GAC unavailable: project defaults, persisted
+override and restart, corrupt override rejection without rewriting it, and reset
+back to project defaults. Scene/prefab/project dependency and notice closure are
+checked; no test-font collection ships. This is rendered startup/lifecycle and
+persistence qualification, not physical keyboard/controller acceptance.
+
+On 2026-10-23 the restarted Plasma Wayland session changed its Xwayland auth path.
+An initial example launch failed before GLFW initialization using the expired
+path; it is not a successful run. Repeating with the current session passed.
+Both sessions use accelerated HD4000/Mesa 26.2.4-arch3.1 and GLFW X11/GLX through
+Xwayland; there is no native Wayland claim. No desktop packages/settings were
+changed by this work. No input injection denied by KWin is credited.
+
+Master, stash, vendor pins, settings/layouts and the exact unrelated Sandbox draft
+remain unchanged. CI is triggered by pushes and not awaited/polled. No new frame
+budget is claimed; large alternating rendering runs and cold glyph preparation
+remain the previously measured separate costs.
+
+Focused physical acceptance (disposable project, then Windows hardware):
+
+1. In Project Settings, capture/select an alternate Accept key and remap Cancel;
+   inspect conflicts, cancel capture, reset/revert, Save and reopen. Create a
+   four-button menu, set TabOrder, save/reopen scene/prefab, and repeat Play/Stop.
+2. In Play and Nutella, Tab/Shift+Tab wrap; arrows choose spatial neighbors and
+   retain focus at an edge. Check disabled/partly/fully clipped controls, modal
+   return focus, a quick click followed by an arrow, and no gameplay input while
+   UI owns the gesture. Text fields/popups/other editor panels keep ownership.
+3. Connect while holding confirm, release to neutral, then test D-pad/stick,
+   repeat, jitter, pointer takeover, held Accept, disconnect/reconnect and focus/
+   minimize/restore. Cancel is consumed by the active scope, never an invented
+   button activation. Verify a persistent override/reset in a relocated player.
+
+Physical keyboard/controller usability, Windows input/DPI and detached-monitor
+workflows remain unverified locally. Existing game-specific raw-key shortcuts
+remain game logic; this is UI remapping, not gamepad gameplay support or a general
+input framework. One standardized controller and the present highest-modal /
+scene scopes are supported, without a screen/popup asset stack or new controls.
+
+**Next bounded P4 slice:** scene-owned screen/modal stack with explicit initial,
+default/cancel and return-focus targets, one declared scoped event owner, native
+configuration and deterministic push/pop/retirement. Build composed controls on
+that ownership foundation afterward; keep scrolling and large data views behind
+their separate rendering/virtualization budgets. This does not complete all P4
+or the practical screen-space production endpoint.

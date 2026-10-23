@@ -9,7 +9,7 @@ Runtime UI is ordinary scene content; it runs in Nutella without ImGui. World an
 3. Set Width/Height to **Fixed**, **Fill** or **Content** in UI Rect. Fixed authors a border-box size; Fill uses parent space; Content measures visuals/children plus padding. Minimum and optional finite maximum constrain each axis. Choosing free Fill explicitly gives that axis to the parent and clears its anchor/offset/pivot; margins set the insets. Content text width is natural unless capped, so use Fixed/Fill width or an enabled Content maximum to wrap labels. Stacks own child positions; use sizing, margins and Fill weight. Resize handles edit only Fixed dimensions; container children resize from right/bottom. Computed dimensions/positions stay read-only, and gestures never switch modes. If parent reflow/alignment would move the opposite edge, that resize sample is rejected; edit Fixed size in Properties instead. Escape cancels.
 4. Text uses the existing **Text Component** for content, color, kerning and line spacing. **UI Text Style** supplies size, wrapping, Clip/Ellipsis overflow, Max lines and horizontal/vertical alignment. Size is logical pixels per font ascender-to-descender height. Kerning and line spacing remain font-height units, as in world text. Choose a project .hfont family and real face style in Text Renderer, or leave the family empty for engine Open Sans. Separate styled text children provide mixed emphasis; text has no markup.
 5. Images use **Sprite Renderer** with the normal texture/sheet picker and UI Rect Image Fit. For framed panels add **UI Nine Slice**: source borders are left/top/right/bottom pixels within the selected source region, with a separate border scale. Borders must fit; small targets proportionally clamp their display borders. Corners keep their shape, edges stretch in one direction, and the center fills. Layout owns the UI pivot; sprite pivots remain unchanged for world sprites.
-6. Buttons have an action identity, tab order, interactable state and five editable tint/image states. An unassigned state image inherits Sprite Renderer. Keyboard focus has a persistent outline, including hover/press. Controls activate on pointer release inside their live clipped bounds with framebuffer coverage, or the configured Accept action while focus belongs to UI. Tab/Shift-Tab traverses tab order; arrows and gamepad navigation use spatial neighbors. Escape or a click outside controls releases nonmodal keyboard ownership. A modal canvas blocks gameplay and buttons in other canvases. Higher canvas sort order wins; ties use stable entity identities; child hierarchy order supplies painter order within a canvas.
+6. Buttons have an action identity, tab order, interactable state and five editable tint/image states. An unassigned state image inherits Sprite Renderer. Keyboard focus has a persistent outline, including hover/press. Controls activate on pointer release inside their live clipped bounds with framebuffer coverage, or the configured Accept action while focus belongs to UI. Tab/Shift-Tab traverses tab order; arrows and gamepad navigation use spatial neighbors. Cancel or a click outside controls releases nonmodal keyboard ownership. A modal canvas blocks gameplay and buttons in other canvases. Higher canvas sort order wins; ties use stable entity identities; child hierarchy order supplies painter order within a canvas.
 7. Use the viewport's Window/Small/Widescreen/Classic aspect selector to preview the actual runtime layout. Editing does not dispatch actions. In Play, pointer coordinates map to the displayed image, including its letterboxing. Stop before changing authored values. **Validate UI** checks configuration/assets. Save/reopen as a normal scene. Use the existing **Create Prefab** workflow on the canvas/group to save a reusable subtree. Detached rect prefabs have a static default-canvas editor preview; runtime instances need a canvas ancestor.
 
 The examples contain editable **TitleUI.hprefab** assets. Each keeps its game's own textures/palette. All UI assets and button-state references use project ownership and export closure.
@@ -329,12 +329,12 @@ the first eligible tab target. The underlying nonmodal keyboard-ownership state
 is retained, so closing a pointer-opened modal does not unexpectedly capture
 continuous gameplay. There is no screen asset/stack service yet.
 
-Cancel cancels gestures/pending activations and publishes a scoped once-only
-record; the game chooses what it means. It never invents a button click or unloads
+Cancel cancels gestures/pending activations and publishes one scoped request per
+sampled update (multiple Cancel edges in that update coalesce); the game chooses what it means. It never invents a button click or unloads
 a scene. Cache the actual canvas component and call `canvas.TryConsumeCancel()`;
 `GameUI.TryConsumeCancel()` consumes scene scope zero. Use one consumer per scope.
 Scene/domain/Stop, ownership loss and scope replacement retire records. A consumed
-UI gesture remains gated from gameplay until its held UI inputs return neutral,
+UI gesture remains gated from gameplay until held inputs in the effective UI map return neutral,
 including across a scene transition. Native raw `Input` is still physical polling;
 native gameplay callers must honor RuntimeSession's established gate.
 
@@ -363,4 +363,4 @@ last action device, pad rearming, scope/focus/capture, navigation misses and edg
 limits. Its override draft is separate until Apply; Read discards draft changes.
 The input buffer holds 64 ordered edges; overflow cancels the frame and rearms
 rather than delivering a partial gesture. Existing button queues remain bounded
-and destructive. Scope-return memory holds 64 IDs, evicting oldest entries.
+and destructive. Scope-return memory holds 64 scope/target records, evicting oldest entries.

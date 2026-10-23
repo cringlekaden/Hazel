@@ -890,7 +890,9 @@ private:
         ImGui::StartMouseMovingWindow(viewport);e.m_ViewportHovered=true;
         Check(!e.RuntimeUIWidgetBlocksInput(),"ImGui viewport MoveId canceled runtime mouse gesture");
         e.m_ViewportHovered=false;Check(e.RuntimeUIWidgetBlocksInput(),"Viewport title/background drag bypassed input guard");
-        e.m_ViewportHovered=true;ImGui::SetActiveID(viewport->GetID("Other widget"),viewport);
+        e.m_ViewportHovered=true;// OnUpdate is outside Begin/End; cold loading may compact this
+        // inactive window's transient ID stack. Its retained window ID is the seed.
+        ImGui::SetActiveID(ImHashStr("Other widget",0,viewport->ID),viewport);
         Check(e.RuntimeUIWidgetBlocksInput(),"Active editor widget leaked runtime input");
         ImGui::ClearActiveID();ImGui::GetCurrentContext()->MovingWindow=nullptr;ImGui::FocusWindow(previousFocus);e.m_ViewportHovered=wasHovered;
         panel.SetSelectedEntity({});Check(panel.AddUI(0),"Canvas preset failed");auto canvas=panel.GetSelectedEntity();
