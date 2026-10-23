@@ -41,6 +41,12 @@ static void UIScreenSceneChecks(const std::filesystem::path &root)
     scene->RefreshUI();
     Check(scene->GetUIDiagnostics().Focus == 102,
           "Initial focus was not published while input rearms");
+    a.GetComponent<UIRectComponent>().FixedSize.x = 110;
+    scene->RefreshUI();
+    Check(scene->GetUIDiagnostics().Focus == 102,
+          "Layout publication lost configured focus while input was rearming");
+    a.GetComponent<UIRectComponent>().FixedSize.x = 100;
+    scene->RefreshUI();
     InputFrame f;
     f.Enabled = true;
     f.Mouse = {600, 450};
@@ -223,7 +229,8 @@ static void UIScreenSceneChecks(const std::filesystem::path &root)
     Check(scene->GetUISnapshot().Generation == repeatedGeneration,
           "Repeated Open rebuilt/reset the screen");
     scene->ResetUI();
-    Check(scene->GetUISnapshot().Scope==0&&scene->GetUISnapshot().Screens.empty(),"Reset retained published screen identities");
+    Check(scene->GetUISnapshot().Scope == 0 && scene->GetUISnapshot().Screens.empty(),
+          "Reset retained published screen identities");
     route();
     Check(!scene->ConsumeUIEvent(900, event), "Reset/domain retirement retained scoped events");
     scene->OnRuntimeStop();

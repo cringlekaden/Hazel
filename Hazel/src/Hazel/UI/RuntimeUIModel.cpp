@@ -261,10 +261,8 @@ void InputRouter::Reconcile(uint64_t scene, const std::vector<Button> &buttons, 
         m_ScopeChanged=false;
         if(!m_Focus&&!m_Order.empty())m_Focus=buttons[m_Order.front()].ID;
     }
-    else if (!m_Ready)
-        m_Focus = 0;
     else if (!eligible(m_Focus))
-        m_Focus = m_Order.empty() ? 0 : buttons[m_Order.front()].ID;
+        m_Focus = !m_Ready || m_Order.empty() ? 0 : buttons[m_Order.front()].ID;
     if (!eligible(m_Capture))
         m_Capture = 0;
     if (!eligible(m_KeyCapture))

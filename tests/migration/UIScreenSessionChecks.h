@@ -67,6 +67,24 @@ static void UIScreenSessionChecks(const Ref<Project> &project)
         sample.Keys.fill(false);
         route();
         Check(scene->GetUIDiagnostics().Focus == 501, "Session did not restore invoking focus");
+        // The managed envelope must carry semantic Cancel/context, not a fabricated activation.
+        auto &child = scene->GetEntityByUUID(600).GetComponent<UICanvasComponent>();
+        child.Screen.Cancel = ScreenCancel::NotifyOwner;
+        child.Screen.CancelTarget = 601;
+        sample.Keys[Key::Enter] = true;
+        route();
+        scene->OnUpdateRuntime(.016f);
+        sample.Keys.fill(false);
+        route();
+        sample.Keys[Key::Escape] = true;
+        route();
+        scene->OnUpdateRuntime(.016f);
+        Check(!scene->IsUIScreenOpen(600) && owner->GetFieldValue<int>("Count") == 3 &&
+                  owner->GetFieldValue<int>("LastKind") == int(UIEventKind::Cancel) &&
+                  owner->GetFieldValue<uint64_t>("LastSource") == 601,
+              "Managed semantic Cancel/context delivery failed");
+        sample.Keys.fill(false);
+        route();
         // Domain replacement must retire a transferred event and any uncommitted
         // screen request.
         sample.Keys[Key::Enter] = true;

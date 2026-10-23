@@ -4,6 +4,7 @@
 #endif
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Scene/RuntimeSession.h"
+#include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include <box2d/box2d.h>
 #include <glad/glad.h>
@@ -48,7 +49,7 @@ int main(int argc,char** argv) {
 #endif
     const auto temporary=std::filesystem::temp_directory_path()/std::filesystem::u8path("hazel games space-é-"+std::to_string(std::random_device{}()));
     try {
-        Check(argc==4 || argc==5,"Usage: ExampleGamesSmoke MeadowRun.hproj Skybound.hproj captures [LastLightkeeper.hproj]");Log::Init();
+        Check(argc>=4 && argc<=6,"Usage: ExampleGamesSmoke MeadowRun.hproj Skybound.hproj captures [LastLightkeeper.hproj] [SceneTransitions.hproj]");Log::Init();
         ApplicationSpecification spec;spec.Name="Example regression";spec.EnableImGui=false;Application app(spec);
         glfwHideWindow(static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow()));
         FramebufferSpecification frame;frame.Width=960;frame.Height=720;
@@ -153,7 +154,7 @@ int main(int argc,char** argv) {
             Check(camera.GetOrthographicSize()>=12&&camera.GetOrthographicSize()*camera.GetAspectRatio()>=15.99f,"Resize cropped the authored game area");
             session.Stop();Check(!scene->IsRunning(),"Authored scene entered runtime");
         }
-        if(argc==5) {
+        if(argc>=5) {
 #ifdef HZ_PLATFORM_WINDOWS
             WindowsCrashTrace trace;
             WindowsCrashTrace::Enabled=true;
@@ -353,6 +354,19 @@ int main(int argc,char** argv) {
             controller=ScriptEngine::GetEntityScriptInstance(session.GetScene()->FindEntityByName("Title / Journey menu").GetUUID());invoke("Start",nullptr,0);tick(session);tick(session);Check(session.GetScene()->GetName()=="Breakwater","Fresh New Game failed");session.Stop();
             Check(menu->FindEntityByName("StartLabel").GetComponent<TextComponent>().TextString=="Enter   Begin","Runtime changed authored menu");
             std::cout<<"PASS: Lightkeeper LK1/LK2 migration, service latch, focus/shutters, cliff transitions, wisp counterplay, Mara, observatory long/opposed sightlines/carriage/crew/winch/recovery/failure-safe exit, tower fixed mirror/independent contacts/telegraph/dodge/focus/recovery/failure-safe writes, landing/ending/credits/completed Continue, corrupt/future retention, New Game and Stop isolation\n";
+        }
+        if(argc==6){
+            const auto source=std::filesystem::u8path(argv[5]);const auto copied=temporary/"SceneTransitions";
+            std::filesystem::copy(source.parent_path(),copied,std::filesystem::copy_options::recursive);
+            auto project=Project::Load(copied/source.filename());Check(bool(project),"Cannot open scoped-menu example");ScriptEngine::Init(Project::GetAssetFileSystemPath(project->GetConfig().ScriptModulePath));
+            auto menu=project->LoadScene(project->GetConfig().StartScene);const auto authored=SceneSerializer(menu).CaptureAuthoredState();RuntimeSession session;session.Resize(960,720);session.ResizeFramebuffer(960,720);session.Start(project,menu);
+            GameUI::DeviceSample sample;sample.Point={900,700};session.SetInput(sample.Point,true);session.RouteUIInput(sample,.016f,true);
+            Check(session.GetScene()->GetUIDiagnostics().Scope==7&&session.GetScene()->GetUIDiagnostics().EventOwner==7,"Example menu did not declare its Canvas owner");
+            sample.Keys[Key::Enter]=true;session.RouteUIInput(sample,.016f,true);auto old=session.GetScene();old->OnUpdateRuntime(.016f);
+            session.SetInput(sample.Point,false);tick(session);
+            Check(session.GetScene()!=old&&session.GetScene()->GetName()=="Level1"&&old->GetUISnapshot().Scope==0,"Scoped menu Play event did not transition/retire its scope");
+            Capture(std::filesystem::u8path(argv[3])/"SceneTransitions-level.ppm",960,720);session.Stop();Check(SceneSerializer(menu).CaptureAuthoredState()==authored,"Scoped menu changed authored content");
+            std::cout<<"PASS: SceneTransitions declared Canvas owner, synthetic production Accept, typed Play delivery, real scene transition and retired scope\n";
         }
         ScriptEngine::Shutdown();framebuffer->Unbind();std::filesystem::remove_all(temporary);
         std::cout<<"PASS: real project scripts, collection/completion/checkpoint, repeated lifecycle, authored field isolation, camera fit, bounded prefab spawn/destruction/reload and cross-project class isolation\n";

@@ -122,7 +122,7 @@ def game_tests(configuration,profile,packages,output):
             env.update(HAZEL_RESOURCES=str(hz.binaries(configuration)/'Nutella/Resources'),HAZEL_MONO=str(hz.binaries(configuration)/'Nutella/mono'),HAZEL_DATA=str(working/'native data'))
             if hz.SYSTEM=='linux':env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
             with (logs/'RuntimeSmoke.log').open('w',encoding='utf-8') as stream:
-                result=subprocess.run([str(native),*[str(PROJECTS[game]) for game in NATIVE_GAMES],str(shots),str(hz.ROOT/'examples/LastLightkeeper/LastLightkeeper.hproj')],cwd=working,env=env,stdout=stream,stderr=subprocess.STDOUT,timeout=GAME_RUNTIME_TIMEOUT[configuration])
+                result=subprocess.run([str(native),*[str(PROJECTS[game]) for game in NATIVE_GAMES],str(shots),str(hz.ROOT/'examples/LastLightkeeper/LastLightkeeper.hproj'),str(PROJECTS['SceneTransitions'])],cwd=working,env=env,stdout=stream,stderr=subprocess.STDOUT,timeout=GAME_RUNTIME_TIMEOUT[configuration])
             if result.returncode:raise RuntimeError(f'Game runtime regression (exit {result.returncode}):\n'+(logs/'RuntimeSmoke.log').read_text(errors='replace'))
             for capture in shots.glob('*.ppm'):ppm_to_png(capture)
         roots=[]
@@ -141,7 +141,7 @@ def game_tests(configuration,profile,packages,output):
                     isolated=env.copy()
                     isolated.update(HAZEL_RESOURCES=str(roots[0]/'Resources'),HAZEL_MONO=str(roots[0]/'mono'),HAZEL_DATA=str(working/'packaged native data'))
                     with unavailable_gac(roots[0]), (logs/'PackagedRuntimeSmoke.log').open('w',encoding='utf-8') as stream:
-                        result=subprocess.run([str(probe),*[str(next(root.glob('*.hproj'))) for root in roots[:2]],str(shots),str(next(roots[2].glob('*.hproj')))],cwd=working,env=isolated,stdout=stream,stderr=subprocess.STDOUT,timeout=GAME_RUNTIME_TIMEOUT[configuration])
+                        result=subprocess.run([str(probe),*[str(next(root.glob('*.hproj'))) for root in roots[:2]],str(shots),str(next(roots[2].glob('*.hproj'))),str(next(roots[GAMES.index('SceneTransitions')].glob('*.hproj')))],cwd=working,env=isolated,stdout=stream,stderr=subprocess.STDOUT,timeout=GAME_RUNTIME_TIMEOUT[configuration])
                     if result.returncode:raise RuntimeError('Extracted game runtime regression:\n'+(logs/'PackagedRuntimeSmoke.log').read_text(errors='replace'))
                     for capture in shots.glob('*.ppm'):ppm_to_png(capture)
                 for index,game in enumerate(GAMES):
