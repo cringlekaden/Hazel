@@ -31,15 +31,16 @@ struct ResolvedElement
 struct ResolvedGuide {uint64_t Owner=0;int Axis=0,Index=0;bool Line=false;Rect Bounds{};};
 struct ResolvedSnapshot
 {
-    uint64_t Generation = 0, SceneIdentity = 0, Modal = 0;
+    uint64_t Generation = 0, SceneIdentity = 0, Modal = 0, Scope = 0;
     SurfaceMetrics Surface;
     bool PreviewOrphans = false, Valid = false;
     std::vector<ResolvedElement> Elements;
     std::vector<size_t> PainterOrder;
     std::vector<ResolvedGuide> Guides;
     std::vector<Button> Buttons;
+    std::vector<ScreenState> Screens;
     std::unordered_map<uint64_t, size_t> Index;
-    enum class WarningCode { Interrupted, Orphan, NestedCanvas, ContainerRect, ButtonRect, Overflow, MeasureOverflow };
+    enum class WarningCode { Interrupted, Orphan, NestedCanvas, ContainerRect, ButtonRect, Overflow, MeasureOverflow, ScreenTarget };
     struct Warning
     {
         uint64_t Entity = 0;
@@ -47,6 +48,7 @@ struct ResolvedSnapshot
         const char *Message() const
         {
             switch(Code){
+                case WarningCode::ScreenTarget:return "Screen target is missing or outside its canvas; choose a live target in Properties";
                 case WarningCode::Interrupted:return "Interrupted UI rect chain: an ancestor has no UI Rect/Canvas";
                 case WarningCode::Orphan:return "Orphan UI rect: runtime requires a Canvas ancestor";
                 case WarningCode::NestedCanvas:return "Nested/parented Canvas resolves independently against the viewport";
@@ -89,6 +91,8 @@ struct RuntimeUIDiagnostics
     double LastGPUMilliseconds=0;
     bool GPUAvailable=false;
     uint64_t Scope=0, NavigationMisses=0;
+    uint64_t EventOwner=0, PendingEvents=0, RetiredEvents=0, PendingScreens=0, RejectedScreens=0;
+    std::string ScreenProblem;
     uint64_t Focus = 0, Capture = 0, Hover = 0, Modal = 0;
     bool InputEnabled = false, GameplayBlocked = false, PointerBlocked = false;
 };

@@ -1,4 +1,5 @@
 #pragma once
+#include "UIScreen.h"
 // Backend-independent layout and interaction model. No ImGui, GPU objects,
 // managed callbacks, or world-camera coordinates belong in this layer.
 #include <glm/glm.hpp>
@@ -110,6 +111,10 @@ struct Action
 {
     uint64_t Entity = 0;
     std::string Name;
+    uint64_t Screen=0, Owner=0, Sequence=0;
+    UIEventKind Kind=UIEventKind::Activated;
+    uint64_t OwnerLifetime=0, OwnerComponent=0;
+    std::string OwnerClass;
 };
 enum class ButtonState
 {
@@ -160,7 +165,6 @@ class InputRouter
     void UpdateSample(uint64_t scene,const std::vector<Button>& buttons,const InputFrame& frame);
     void Navigate(const std::vector<Button>& buttons,glm::ivec2 direction);
     uint64_t m_Scope=0,m_NavigationMisses=0;
-    std::vector<std::pair<uint64_t,uint64_t>> m_ReturnFocus;
     unsigned m_Cancels=0;
     bool m_ScopeChanged=false,m_Cancel=false;
     uint64_t m_Scene = 0, m_Focus = 0, m_Hover = 0, m_Capture = 0, m_KeyCapture = 0;

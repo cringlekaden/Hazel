@@ -68,13 +68,13 @@ bool SceneHierarchyPanel::AddEntity(const std::string &name)
 bool SceneHierarchyPanel::AddUI(int kind) {
     if(!m_Context||!CanEdit(true))return false;
     try {
-        if(kind<0||kind>6)throw std::invalid_argument("Unknown UI creation preset");
+        if(kind<0||kind>7)throw std::invalid_argument("Unknown UI creation preset");
         Entity parent=GetSelectedEntity();
         if(PrefabDocument&&!parent){auto roots=m_Context->GetChildren();if(!roots.empty())parent=m_Context->GetEntityByUUID(roots.front());}
-        if(kind!=0&&(!parent||(!parent.HasComponent<UIRectComponent>()&&!parent.HasComponent<UICanvasComponent>()))) {
+        if(kind!=0&&kind!=7&&(!parent||(!parent.HasComponent<UIRectComponent>()&&!parent.HasComponent<UICanvasComponent>()))) {
             auto canvas=m_Context->CreateEntity("UI Canvas");canvas.AddComponent<UICanvasComponent>();if(parent)m_Context->Reparent(canvas,parent,TransformPolicy::KeepLocal);parent=canvas;
         }
-        if(kind!=0&&parent&&!parent.HasComponent<UICanvasComponent>()&&parent.HasComponent<UILayoutComponent>()){
+        if(kind!=0&&kind!=7&&parent&&!parent.HasComponent<UICanvasComponent>()&&parent.HasComponent<UILayoutComponent>()){
             const auto &layout=parent.GetComponent<UILayoutComponent>();GameUI::Validate(layout);
             if(layout.Kind==GameUI::ContainerKind::Grid){
                 size_t occupied=0;for(auto id:m_Context->GetChildrenView(parent.GetUUID())){auto child=m_Context->GetEntityByUUID(id);
@@ -82,9 +82,9 @@ bool SceneHierarchyPanel::AddUI(int kind) {
                 if(occupied>=layout.Rows.size()*layout.Columns.size())throw std::invalid_argument("Grid has no free cell; add row/column tracks before creating another child");
             }
         }
-        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid","UI Wrap"};
+        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid","UI Wrap","UI Screen"};
         auto e=m_Context->CreateEntity(names[kind]);if(parent)m_Context->Reparent(e,parent,TransformPolicy::KeepLocal);
-        if(kind==0)e.AddComponent<UICanvasComponent>();
+        if(kind==0||kind==7){auto &c=e.AddComponent<UICanvasComponent>();if(kind==7){c.Screen.Managed=true;c.Modal=true;}}
         else {
             auto& rect=e.AddComponent<UIRectComponent>();rect.Offset={24,24};
             if(kind==1){rect.FixedSize={360,240};e.AddComponent<SpriteRendererComponent>(glm::vec4(.08f,.12f,.18f,.95f));}
@@ -107,7 +107,7 @@ bool SceneHierarchyPanel::AddUI(int kind) {
 }
 void SceneHierarchyPanel::UIAddMenu(){
     if(ImGui::BeginMenu("Runtime UI")) {
-        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap"};
+        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap","Screen"};
         for(size_t i=0;i<std::size(names);++i)if(ImGui::MenuItem(names[i]))AddUI(int(i));
         ImGui::EndMenu();
     }
@@ -336,12 +336,43 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             if(changed && CanEdit(true))try{m_Context->SetLocalTransform(entity,proposed);m_HierarchyError.clear();}catch(const std::exception& e){HierarchyFailed(e.what());}
         });
 
-    DrawUIComponent<UICanvasComponent>("UI Canvas",entity,m_Sections,m_RestoreSections,[](auto& c){
+    DrawUIComponent<UICanvasComponent>("UI Canvas",entity,m_Sections,m_RestoreSections,[this,entity](auto& c)mutable{
         PropertyUI::Vector("reference","Reference pixels",glm::value_ptr(c.ReferenceSize),2,1,nullptr,"%.0f",{},1,8192);
         PropertyUI::Vector("insets","Safe L/T/R/B (px)",glm::value_ptr(c.SafeInsets),4,1,nullptr,"%.0f",{},0,4096);
         PropertyUI::DragInt("order","Sort order",c.SortOrder);
         PropertyUI::Checkbox("visible","Visible",c.Visible);PropertyUI::Checkbox("enabled","Enabled",c.Enabled);PropertyUI::Checkbox("modal","Block gameplay",c.Modal);
-        PropertyUI::Help("Uniform reference scale; extra aspect space extends the logical canvas. Higher sort order draws and receives input last. A modal canvas blocks gameplay and controls in other canvases.");
+        PropertyUI::Help("Uniform reference scale; extra aspect space extends logical space. Ordinary canvases use sort order; managed screens draw above them in open order.");
+        PropertyUI::Checkbox("screen","Managed screen",c.Screen.Managed);
+        if(c.Screen.Managed){
+            PropertyUI::Checkbox("initial-open","Initially open",c.Screen.InitiallyOpen);
+            int policy=int(c.Screen.Cancel);if(PropertyUI::Combo("cancel-policy","Cancel",policy,"Ignore\0Close screen\0Notify owner\0"))c.Screen.Cancel=GameUI::ScreenCancel(policy);
+            auto canvasOf=[&](Entity e){for(size_t depth=0;e&&depth<Scene::MaxDepth;++depth){if(e.HasComponent<UICanvasComponent>())return uint64_t(e.GetUUID());e=m_Context->GetEntityByUUID(m_Context->GetRelationship(e).Parent);}return uint64_t(0);};
+            auto picker=[&](const char* key,const char* label,uint64_t &id,int kind){
+                auto target=m_Context->GetEntityByUUID(id);std::string current=!id?"Automatic / none":target?target.GetName():"Missing target #"+std::to_string(id);
+                PropertyUI::Row row(key,label);bool changed=false;
+                if(ImGui::BeginCombo("##value",current.c_str())){
+                    if(ImGui::Selectable("Automatic / none",!id)){id=0;changed=true;}
+                    for(auto handle:m_Context->GetAllEntitiesWith<IDComponent>()){
+                        Entity candidate(handle,m_Context.get());if(!m_Context->IsEntityValid(candidate.GetUUID()))continue;
+                        bool valid=kind==0?(candidate.HasComponent<UIButtonComponent>()&&canvasOf(candidate)==uint64_t(entity.GetUUID())):
+                            kind==1?(candidate.HasComponent<UIButtonComponent>()&&canvasOf(candidate)!=uint64_t(entity.GetUUID())):(candidate.HasComponent<ScriptComponent>()||candidate.HasComponent<NativeScriptComponent>());
+                        if(!valid)continue;auto value=uint64_t(candidate.GetUUID());auto name=candidate.GetName()+"##"+std::to_string(value);
+                        if(ImGui::Selectable(name.c_str(),id==value)){id=value;changed=true;}
+                    }ImGui::EndCombo();
+                }row.Result(changed,true);
+            };
+            picker("event-owner","Event owner",c.Screen.EventOwner,2);
+            if(!c.Screen.EventOwner)PropertyUI::Validation("Assign one script owner for button events. Built-in Close works without an owner.");
+            picker("initial-focus","Initial focus",c.Screen.InitialFocus,0);
+            if(ImGui::TreeNode("Focus and Cancel details")){
+                picker("default-action","Default action",c.Screen.DefaultAction,0);
+                if(c.Screen.Cancel==GameUI::ScreenCancel::NotifyOwner)picker("cancel-target","Cancel context",c.Screen.CancelTarget,0);
+                picker("return-focus","Return fallback",c.Screen.ReturnFocus,1);
+                PropertyUI::Help("Initial focus defaults to the first eligible button. Default action is used only without eligible focus. Cancel context identifies a control in the semantic Cancel event; it never clicks it. Return fallback is tried after remembered underlying focus.");
+                ImGui::TreePop();
+            }
+            PropertyUI::Help("Open/Close/ReplaceTop are queued runtime operations. Initially open is authored; Play stack/focus/events never modify this document.");
+        }
     });
     DrawUIComponent<UIRectComponent>("UI Rect",entity,m_Sections,m_RestoreSections,[this,entity](auto& c)mutable{
         auto parent=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);

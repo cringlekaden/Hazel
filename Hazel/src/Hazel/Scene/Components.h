@@ -1,4 +1,5 @@
 #pragma once
+#include "Hazel/UI/UIScreen.h"
 // Actual target component shapes; explicit public-header prerequisites.
 #include "Hazel/Core/Base.h"
 #include <string>
@@ -220,6 +221,7 @@ namespace Hazel {
     struct UICanvasComponent : GameUI::CanvasLayout {
         int SortOrder=0;
         bool Visible=true, Enabled=true, Modal=false;
+        GameUI::ScreenPolicy Screen;
     };
     struct UIRectComponent : GameUI::RectLayout {
         bool Visible=true, Enabled=true, ClipChildren=true;

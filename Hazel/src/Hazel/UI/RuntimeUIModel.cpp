@@ -191,7 +191,7 @@ void InputRouter::Reset()
 {
     m_Scene = m_Focus = m_Hover = m_Capture = m_KeyCapture = m_Generation = m_Dropped = 0;
     m_Ready = m_Left = m_Accept = m_Next = m_Previous = m_PointerGesture = false;
-    m_Scope=m_NavigationMisses=0;m_ReturnFocus.clear();m_Cancels=0;m_ScopeChanged=m_Cancel=false;
+    m_Scope=m_NavigationMisses=0;m_Cancels=0;m_ScopeChanged=m_Cancel=false;
     m_Order.clear();
     m_IDs.clear();
     m_Index.clear();
@@ -258,7 +258,6 @@ void InputRouter::Reconcile(uint64_t scene, const std::vector<Button> &buttons, 
     };
     if(m_ScopeChanged) {
         m_Focus=0;
-        for(auto saved:m_ReturnFocus)if(saved.first==m_Scope&&eligible(saved.second))m_Focus=saved.second;
         m_ScopeChanged=false;
         if(!m_Focus&&!m_Order.empty())m_Focus=buttons[m_Order.front()].ID;
     }
@@ -286,9 +285,6 @@ void InputRouter::SetScope(uint64_t scene,uint64_t scope)
 {
     if(scene!=m_Scene){Reset();m_Scene=scene;}
     if(scope==m_Scope)return;
-    auto saved=std::find_if(m_ReturnFocus.begin(),m_ReturnFocus.end(),[&](auto p){return p.first==m_Scope;});
-    if(saved!=m_ReturnFocus.end())saved->second=m_Focus;
-    else {if(m_ReturnFocus.size()==64)m_ReturnFocus.erase(m_ReturnFocus.begin());m_ReturnFocus.emplace_back(m_Scope,m_Focus);}
     m_Scope=scope;m_ScopeChanged=true;m_Generation=0;m_Capture=m_KeyCapture=0;m_Actions.clear();m_Cancels=0;
     // Retain physical gesture ownership until release: a newly opened scope cannot inherit a click.
 }
@@ -412,7 +408,7 @@ void InputRouter::UpdateSample(uint64_t scene,const std::vector<Button>& buttons
                 if (Usable(b) && !b.Action.empty())
                 {
                     if (m_Actions.size() < MaxActions)
-                        m_Actions.push_back({b.ID, b.Action});
+                    {Action event;event.Entity=b.ID;event.Name=b.Action;m_Actions.push_back(std::move(event));}
                     else
                         ++m_Dropped; // Explicit drop-newest; host reports the counter.
                 }
@@ -435,8 +431,6 @@ void InputRouter::Retire(uint64_t scene, uint64_t id)
 {
     if (scene != m_Scene || !id)
         return;
-    for(auto& saved:m_ReturnFocus)if(saved.second==id)saved.second=0;
-    m_ReturnFocus.erase(std::remove_if(m_ReturnFocus.begin(),m_ReturnFocus.end(),[&](auto saved){return saved.first==id;}),m_ReturnFocus.end());
     if(m_Scope==id)m_Cancels=0;
     if (m_Focus == id)
         m_Focus = 0;
@@ -460,10 +454,13 @@ bool InputRouter::Consume(uint64_t scene, Action &a)
 }
 bool InputRouter::SetFocus(uint64_t scene, uint64_t id, const std::vector<Button> &buttons)
 {
+    if(scene==m_Scene&&!id){m_Focus=m_KeyCapture=0;return true;}
     auto found = m_Index.find(id);
-    if (scene != m_Scene || !m_Ready || found == m_Index.end() || found->second >= buttons.size() ||
+    if (scene != m_Scene || found == m_Index.end() || found->second >= buttons.size() ||
         buttons[found->second].ID != id || !Usable(buttons[found->second]))
         return false;
+    // Selecting initial/return focus does not arm gestures. UpdateSample alone
+    // advances input readiness; a new screen can show its target while rearming.
     m_Focus = id;
     m_KeyCapture = 0;
     return true;

@@ -191,6 +191,8 @@ std::string SceneSerializer::CaptureAuthoredState() const
             state.Value(c.Visible);
             state.Value(c.Enabled);
             state.Value(c.Modal);
+            state.Value(c.Screen.Managed);state.Value(c.Screen.InitiallyOpen);state.Value(unsigned(c.Screen.Cancel));
+            state.Value(c.Screen.InitialFocus);state.Value(c.Screen.DefaultAction);state.Value(c.Screen.CancelTarget);state.Value(c.Screen.ReturnFocus);state.Value(c.Screen.EventOwner);
         });
         state.Component<UIRectComponent>(e, [&](auto &c) {
             {

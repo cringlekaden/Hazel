@@ -26,9 +26,17 @@ class RuntimeUI
     void Draw(); // uses the published snapshot; host resolves before rendering
     bool Consume(uint64_t entity, GameUI::Action &action);
     bool ConsumeCancel(uint64_t scope);
+    bool RequestScreen(GameUI::ScreenOperation operation,uint64_t screen=0);
+    bool CommitScreens(); // called only at Scene's update boundaries
+    bool IsScreenOpen(uint64_t screen) const;
+    void SetPreviewScreen(uint64_t screen);
+    bool HasScreenRequests() const {return !m_ScreenRequests.empty();}
+    bool ConsumeEvent(uint64_t owner,GameUI::Action &event);
+    bool Focus(uint64_t target);
+    static constexpr size_t MaxScreens=64, MaxScreenRequests=64;
     bool BlocksGameplay() const
     {
-        return m_Resolved.Modal || m_ActionOwnsFrame || m_KeyboardOwns || m_Input.Captured();
+        return m_TransitionNeutral || m_Resolved.Modal || m_ActionOwnsFrame || m_KeyboardOwns || m_Input.Captured();
     }
     bool CapturesPointer() const
     {
@@ -36,7 +44,7 @@ class RuntimeUI
     }
     bool BlocksPointer() const
     {
-        return m_Resolved.Modal || m_ActionOwnsFrame || m_PointerOver || m_Input.Captured();
+        return m_TransitionNeutral || m_Resolved.Modal || m_ActionOwnsFrame || m_PointerOver || m_Input.Captured();
     }
     bool Bounds(uint64_t entity, GameUI::Rect &pixels) const;
     Ref<const Hazel::Text::Layout> TextLayout(uint64_t entity) const;
@@ -51,6 +59,28 @@ class RuntimeUI
     void Reset();
 
   private:
+    struct ScreenEntry { uint64_t ID=0,Lifetime=0,Component=0; GameUI::ScreenPolicy Policy;
+        uint64_t OwnerLifetime=0,OwnerComponent=0;std::string OwnerClass;};
+    struct ScreenRequest {GameUI::ScreenOperation Operation;uint64_t ID=0,Lifetime=0,Component=0;
+        uint64_t Issuer=0,IssuerLifetime=0,IssuerComponent=0;std::string IssuerClass;};
+    struct ScopeFocus {uint64_t Scope=0,Target=0;bool Keyboard=false;};
+    std::vector<ScreenEntry> m_Screens;
+    std::vector<uint64_t> m_OpenScreens;
+    std::deque<ScreenRequest> m_ScreenRequests;
+    std::vector<ScopeFocus> m_ScreenFocus;
+    uint64_t m_PreviewScreen=0;
+    void RememberFocus(uint64_t scope,uint64_t target,bool keyboard);
+    uint64_t m_ScreenRevision=0,m_EventSequence=0,m_LastScope=0,m_ReturnFallback=0,m_PendingFocus=0;
+    bool m_TransitionNeutral=false;
+    std::chrono::steady_clock::time_point m_LastScreenWarning{};
+    const ScreenEntry *Screen(uint64_t id) const;
+    void SyncScreens();
+    void AcceptScreenOwner(ScreenEntry &entry,const GameUI::ScreenPolicy &policy);
+    void CancelScreenInput();
+    void PublishScope();
+    void QueueEvent(GameUI::Action event);
+    bool EventValid(const GameUI::Action &event) const;
+    void ScreenProblem(const std::string &message);
     std::vector<Renderer2D::TextGlyph> m_ScratchGlyphs;
     struct Cache
     {

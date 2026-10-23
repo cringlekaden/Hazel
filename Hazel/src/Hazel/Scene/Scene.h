@@ -48,6 +48,12 @@ namespace Hazel {
         void UpdateUIInput(const GameUI::InputFrame& frame);
         bool ConsumeUIAction(uint64_t entity,GameUI::Action& action);
         bool ConsumeUICancel(uint64_t scope);
+        bool RequestUIScreen(GameUI::ScreenOperation operation,uint64_t screen=0);
+        void CommitUIScreens();
+        bool IsUIScreenOpen(uint64_t screen) const;
+        bool ConsumeUIEvent(uint64_t owner,GameUI::Action &event);
+        bool FocusUI(uint64_t target);
+        void SetUIPreviewTarget(uint64_t selected); // transient Edit-only screen isolation
         bool IsGameplayInputBlocked() const;
         bool IsGameplayPointerBlocked() const;
         bool IsUICapturingPointer() const;
@@ -153,6 +159,7 @@ namespace Hazel {
         glm::vec2 m_UIFramebufferSize{};
         bool m_UIFramebufferExplicit = false;
         std::string m_UIError;
+        bool m_UIScriptCallbacks=false;
         void RenderUI();
         mutable bool m_HierarchyValidationDirty=true;
 		template<typename T>

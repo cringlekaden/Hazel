@@ -125,6 +125,8 @@ namespace Hazel {
 
 				if(m_ViewportFocused && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_EditorCamera.OnUpdate(ts);
 
+                auto selected=m_SceneHierarchyPanel.GetSelectedEntity();
+                m_ActiveScene->SetUIPreviewTarget(selected&&selected.BelongsTo(m_ActiveScene.get())?uint64_t(selected.GetUUID()):0);
 				m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
 				break;
 			}

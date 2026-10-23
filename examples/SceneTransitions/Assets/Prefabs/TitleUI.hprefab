@@ -125,8 +125,6 @@ Entities:
       Type: Region
       Sheet: Textures/MenuFrame.hsprites
       RegionID: d1500e0000000001
-  ScriptComponent:
-    ClassName: SceneTransitions.PlayButton
   Relationship:
     Parent: 7
     Order: 2
@@ -318,3 +316,12 @@ Entities:
     Visible: true
     Enabled: true
     Modal: true
+    Screen:
+      Managed: true
+      InitiallyOpen: true
+      Cancel: 0
+      InitialFocus: 4
+      DefaultAction: 4
+      EventOwner: 7
+  ScriptComponent:
+    ClassName: SceneTransitions.MenuOwner

@@ -398,6 +398,21 @@ namespace Hazel {
         catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);
     }
     static void UI_ResetBindings(){MonoException* failure=nullptr;try{UI_Session().ResetUIBindings();}catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);}
+    static bool UI_Focus(uint64_t identity,uint64_t id){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(scene&&scene->GetIdentity()==identity)result=scene->FocusUI(id);}catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;}
+    static bool UI_Screen(uint64_t identity,uint64_t id,int operation) {
+        MonoException* failure=nullptr;bool result=false;
+        try{auto* scene=ScriptEngine::GetSceneContext();if(scene&&scene->GetIdentity()==identity){scene->CheckThread();if(operation==-1){scene->RefreshUI();result=scene->IsUIScreenOpen(id);}else if(operation>=0&&operation<=3)result=scene->RequestUIScreen(GameUI::ScreenOperation(operation),id);else throw std::invalid_argument("Invalid UI screen operation");}}
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
+    }
+    static bool UI_ConsumeEvent(uint64_t identity,uint64_t* screen,uint64_t* source,int* kind,uint64_t* sequence,MonoString** name) {
+        *screen=*source=*sequence=0;*kind=0;*name=nullptr;MonoException* failure=nullptr;bool result=false;
+        try{auto* scene=ScriptEngine::GetSceneContext();auto owner=ScriptEngine::GetExecutingEntity();
+            if(!owner)throw std::invalid_argument("Scoped UI events must be consumed from the declared owner's lifecycle callback");
+            if(scene&&scene->GetIdentity()==identity){auto entity=scene->GetEntityByUUID(owner);auto instance=ScriptEngine::GetEntityScriptInstance(owner);
+                if(!entity||!entity.HasComponent<ScriptComponent>()||!instance||instance->GetScriptClass()!=ScriptEngine::GetEntityClass(entity.GetComponent<ScriptComponent>().ClassName))return false;
+                GameUI::Action event;if(scene->ConsumeUIEvent(owner,event)){*screen=event.Screen;*source=event.Entity;*kind=int(event.Kind);*sequence=event.Sequence;*name=ScriptEngine::CreateString(event.Name.c_str());result=true;}}}
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
+    }
     static uint64_t UI_FocusScope(){auto* scene=ScriptEngine::GetSceneContext();return scene?scene->GetUIDiagnostics().Scope:0;}
     static bool UI_Cancel(uint64_t identity,uint64_t scope){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(scene&&scene->GetIdentity()==identity)result=scene->ConsumeUICancel(scope);}catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);return result;}
     static bool UI_IsPointerCaptured(){auto* scene=ScriptEngine::GetSceneContext();return scene&&scene->IsUICapturingPointer();}
@@ -568,6 +583,9 @@ namespace Hazel {
         HZ_ADD_INTERNAL_CALL(UI_Binding);
         HZ_ADD_INTERNAL_CALL(UI_InputSettings);
         HZ_ADD_INTERNAL_CALL(UI_ResetBindings);
+        HZ_ADD_INTERNAL_CALL(UI_Focus);
+        HZ_ADD_INTERNAL_CALL(UI_Screen);
+        HZ_ADD_INTERNAL_CALL(UI_ConsumeEvent);
         HZ_ADD_INTERNAL_CALL(UI_FocusScope);
         HZ_ADD_INTERNAL_CALL(UI_Cancel);
         HZ_ADD_INTERNAL_CALL(UI_IsPointerCaptured);

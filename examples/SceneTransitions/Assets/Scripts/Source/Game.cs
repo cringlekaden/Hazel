@@ -2,8 +2,13 @@ using Hazel;
 
 namespace SceneTransitions
 {
-    public class PlayButton : Entity {
-        void OnUpdate(float dt) { string action;if(GetComponent<UIButtonComponent>().TryConsumeAction(out action))Scene.LoadScene("Scenes/Level1.hazel"); }
+    public class MenuOwner : Entity {
+        void OnUpdate(float dt) {
+            UIEvent value;
+            while(GameUI.TryConsumeEvent(out value))
+                if(value.Kind==UIEventKind.Activated && value.Action=="play")
+                    Scene.LoadScene("Scenes/Level1.hazel");
+        }
     }
     public class Player : Entity
     {

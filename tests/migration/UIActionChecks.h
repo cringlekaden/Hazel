@@ -45,7 +45,7 @@ static void UIActionChecks()
     f.Navigate={1,0};route.Update(2,b,f);Check(route.Focused()==4,"Fully clipped directional candidate admitted");
     b[2].Bounds={{80,0},{20,20}};b[3].Bounds=b[2].Bounds;route.SetFocus(2,1,b);route.Update(2,b,f);Check(route.Focused()==3,"Directional tie not broken by tab rank");
     route.SetScope(2,99);std::vector<Button> modal{{10,{{0,0},{20,20}},{{0,0},{200,200}},"modal"}};f.Navigate={};route.Update(2,modal,f);Check(route.Focused()==10,"Modal initial focus missing");
-    route.SetScope(2,0);route.Update(2,b,f);Check(route.Focused()==3,"Closing scope did not restore prior eligible target");
+    route.SetScope(2,0);route.Update(2,b,f);Check(route.Focused()==1,"Router did not choose deterministic default; scene owns return-focus restoration");
     b[2].Interactable=false;route.Reconcile(2,b);Check(route.Focused()==1,"Retired focus did not choose first eligible target");
     route.SetScope(3,0);route.Update(3,b,f);Check(!route.ConsumeCancel(2,0)&&!route.Consume(2,action),"Scope/actions crossed scene identity");
     adapter.Cancel();sample={};route.Reset();update();
@@ -70,5 +70,5 @@ static void UIActionChecks()
     adapter.Configure(bindings);sample={};adapter.Sample(sample,0,true);
     for(int i=0;i<66;++i)adapter.KeyEdge(Key::Enter,i%2==0,false,false);
     auto overflow=adapter.Sample(sample,0,true);Check(!overflow.Enabled&&overflow.Events.empty()&&adapter.Dropped()>0,"Edge overflow partially routed gestures");
-    std::cout<<"PASS: device-neutral ordered edges, spatial/tab focus, scope restoration, pad neutral/repeat/disconnect, once activation, binding validation and cancellation\n";
+    std::cout<<"PASS: device-neutral ordered edges, spatial/tab focus, scope reconciliation, pad neutral/repeat/disconnect, once activation, binding validation and cancellation\n";
 }

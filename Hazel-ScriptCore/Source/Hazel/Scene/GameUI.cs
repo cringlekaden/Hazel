@@ -2,6 +2,14 @@ using System;
 namespace Hazel {
     // UI actions never retain a delegate or managed object in the engine.
     public static class GameUI {
+        public static bool Focus(Entity target)=>InternalCalls.UI_Focus(InternalCalls.Entity_GetSceneIdentity(),target==null?0:target.CheckedID);
+        public static bool PopScreen()=>InternalCalls.UI_Screen(InternalCalls.Entity_GetSceneIdentity(),0,2);
+        // The engine derives the consumer from the executing script; callers cannot steal another owner's events.
+        public static bool TryConsumeEvent(out UIEvent value){
+            ulong screen,source,sequence;int kind;string action;
+            bool result=InternalCalls.UI_ConsumeEvent(InternalCalls.Entity_GetSceneIdentity(),out screen,out source,out kind,out sequence,out action);
+            value=result?new UIEvent{Screen=new Entity(screen),Source=new Entity(source),Kind=(UIEventKind)kind,Sequence=sequence,Action=action}:default(UIEvent);return result;
+        }
         public static ulong FocusScope => InternalCalls.UI_FocusScope();
         public static bool TryConsumeCancel() => InternalCalls.UI_Cancel(InternalCalls.Entity_GetSceneIdentity(),0);
         public static UIBinding GetBinding(UIAction action) {int k=0,a=0,p=0,s=0;InternalCalls.UI_Binding((int)action,ref k,ref a,ref p,ref s,false);return new UIBinding(k,a,p,(UIShiftMatch)s);}
@@ -15,6 +23,8 @@ namespace Hazel {
             button=result?new Entity(id):null;return result;
         }
     }
+    public enum UIEventKind { Activated, Cancel }
+    public struct UIEvent {public Entity Screen,Source;public UIEventKind Kind;public ulong Sequence;public string Action;}
     public enum UIAction { Press, Up, Down, Left, Right, Next, Previous, Accept, Cancel }
     public enum UIShiftMatch { Any, Without, With }
     public enum UIGamepadButton { None=-1,A,B,X,Y,LeftBumper,RightBumper,Back,Start,Guide,LeftThumb,RightThumb,Up,Right,Down,Left }
@@ -25,6 +35,10 @@ namespace Hazel {
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct UIInputSettings {public int PointerButton,Stick;public float DeadZone,NeutralZone,RepeatDelay,RepeatInterval;}
     public class UICanvasComponent : Component {
+        public bool IsOpen=>InternalCalls.UI_Screen(InternalCalls.Entity_GetSceneIdentity(),Entity.CheckedID,-1);
+        public bool Open()=>InternalCalls.UI_Screen(InternalCalls.Entity_GetSceneIdentity(),Entity.CheckedID,0);
+        public bool Close()=>InternalCalls.UI_Screen(InternalCalls.Entity_GetSceneIdentity(),Entity.CheckedID,1);
+        public bool ReplaceTop()=>InternalCalls.UI_Screen(InternalCalls.Entity_GetSceneIdentity(),Entity.CheckedID,3);
         public bool TryConsumeCancel()=>InternalCalls.UI_Cancel(InternalCalls.Entity_GetSceneIdentity(),Entity.CheckedID);
         public bool Visible {get=>InternalCalls.UI_GetValue(Entity.CheckedID,0);set=>InternalCalls.UI_SetValue(Entity.CheckedID,0,value);}
         public bool Enabled {get=>InternalCalls.UI_GetValue(Entity.CheckedID,1);set=>InternalCalls.UI_SetValue(Entity.CheckedID,1,value);}

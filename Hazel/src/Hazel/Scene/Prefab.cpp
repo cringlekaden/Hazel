@@ -38,6 +38,11 @@ void Prefab::Validate(const std::filesystem::path &root, const Ref<Scene> &scene
         local.insert(id);
     for (auto id : ids) {
         auto node = scene->GetEntityByUUID(id);
+        if(node.HasComponent<UICanvasComponent>()) {
+            const auto &c=node.GetComponent<UICanvasComponent>().Screen;
+            for(auto ref:{c.InitialFocus,c.DefaultAction,c.CancelTarget,c.ReturnFocus,c.EventOwner})if(ref&&!local.count(ref))
+                throw std::runtime_error("External UI screen reference on '"+node.GetName()+"'. Include the target or clear it");
+        }
         if (node.HasComponent<NativeScriptComponent>())
             throw std::runtime_error("Native script factories cannot be serialized into prefabs");
         for (auto &[name, field] : ScriptEngine::GetScriptFieldMap(node)) {

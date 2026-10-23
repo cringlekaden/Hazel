@@ -64,7 +64,7 @@ Ref<const Text::Layout> Scene::GetUITextLayout(uint64_t id) const {CheckThread()
 bool Scene::GetUIImageVisual(uint64_t id,GameUI::UIImageVisual &result) const {CheckThread();return m_UI->ImageVisual(id,result);}
 void Scene::UpdateUIInput(const GameUI::InputFrame &frame)
 {
-    RefreshUI();
+    RefreshUI();if(m_UI->CommitScreens())RefreshUI();
     m_UI->UpdateInput(frame);
 }
 void Scene::RenderUI()
@@ -87,6 +87,19 @@ bool Scene::ConsumeUIAction(uint64_t entity, GameUI::Action &action)
     CheckThread();
     return m_UI->Consume(entity, action);
 }
+bool Scene::RequestUIScreen(GameUI::ScreenOperation operation,uint64_t screen){CheckThread();return m_UI->RequestScreen(operation,screen);}
+void Scene::CommitUIScreens(){CheckThread();if(m_UIScriptCallbacks)throw std::logic_error("Screen commits cannot run inside script callbacks; queue RequestUIScreen instead");if(m_UI->HasScreenRequests()){RefreshUI();if(m_UI->CommitScreens())RefreshUI();}}
+bool Scene::IsUIScreenOpen(uint64_t screen) const {CheckThread();return m_UI->IsScreenOpen(screen);}
+void Scene::SetUIPreviewTarget(uint64_t selected){
+    CheckThread();uint64_t screen=0;auto e=GetEntityByUUID(selected);
+    for(size_t depth=0;!m_IsRunning&&e&&IsEntityValid(e.GetUUID())&&depth<MaxDepth;++depth){
+        if(e.HasComponent<UICanvasComponent>()){if(e.GetComponent<UICanvasComponent>().Screen.Managed)screen=e.GetUUID();break;}
+        e=GetEntityByUUID(GetRelationship(e).Parent);
+    }
+    m_UI->SetPreviewScreen(screen);
+}
+bool Scene::FocusUI(uint64_t target){CheckThread();RefreshUI();return m_UI->Focus(target);}
+bool Scene::ConsumeUIEvent(uint64_t owner,GameUI::Action &event){CheckThread();return m_UI->ConsumeEvent(owner,event);}
 bool Scene::ConsumeUICancel(uint64_t scope){CheckThread();return m_UI->ConsumeCancel(scope);}
 bool Scene::IsGameplayInputBlocked() const
 {
@@ -126,6 +139,8 @@ GameUI::RuntimeUIDiagnostics Scene::GetUIDiagnostics() const { CheckThread();ret
 void Scene::ValidateUI(bool resources)
 {
     ValidateUILayoutDependencies();
+    size_t screens=0;for(auto h:m_Registry.view<UICanvasComponent>())if(m_Registry.get<UICanvasComponent>(h).Screen.Managed)++screens;
+    if(screens>RuntimeUI::MaxScreens)throw std::runtime_error("UI managed screen limit exceeded (64)");
     if(m_Registry.view<UIRectComponent>().size()>GameUI::InputRouter::MaxButtons)
         throw std::runtime_error("UI declared rect limit exceeded (4096, including hidden rects)");
     for (auto h : m_Registry.view<IDComponent>())

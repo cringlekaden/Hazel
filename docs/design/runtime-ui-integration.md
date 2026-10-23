@@ -1929,3 +1929,125 @@ configuration and deterministic push/pop/retirement. Build composed controls on
 that ownership foundation afterward; keep scrolling and large data views behind
 their separate rendering/virtualization budgets. This does not complete all P4
 or the practical screen-space production endpoint.
+
+## P4: scene-owned screens, focus targets and scoped event owners
+
+Baseline: `ef9f946`, after `2946e3a` and `25a1df4`, on
+`feature/runtime-ui-hardening`. The existing action adapter, spatial navigation,
+typography, painter ordering and document history remain in place. This is the
+screen/ownership slice, not completion of P4 or production UI.
+
+### Authored configuration and live authority
+
+`UICanvasComponent::Screen` is a small optional authored policy: Managed,
+InitiallyOpen, Cancel (Ignore/Close/NotifyOwner), InitialFocus, DefaultAction,
+CancelTarget (semantic context), ReturnFocus and EventOwner. Ordinary canvases
+keep their existing defaults. Canvas serialization/strict validation, exact binary
+authored comparison, shared Inspector transactions, scene copy/duplication and
+prefab remapping include every field. Prefabs reject external screen references,
+using the same connected-subtree rule as script Entity fields; export checks it
+again. No screen asset format, migrator or competing history is introduced.
+
+`RuntimeUI`, owned by the Scene, is the single live authority. Its screen code is
+split into `RuntimeUIScreen.cpp`; the router no longer owns independent return
+records or computes a modal filter. One snapshot supplies painter order, active
+scope and modal blocking to drawing, picking and routing. Ordinary canvases draw
+first in authored sort/UUID order. Open managed screens follow in opening order;
+initial opens use sort/UUID order. Closed screens do not participate at runtime.
+The foreground visible/enabled managed screen owns UI focus/hits, including a
+nonmodal overlay. Underlying UI controls cannot click through. Nonmodal does not
+impose unconditional gameplay blocking; existing keyboard/pointer ownership gates
+apply. Any available modal still blocks gameplay, even without buttons. Without
+a managed foreground, ordinary highest-modal/scene-zero scopes use the same list.
+
+Open order, requests, focus/keyboard-return records, events and diagnostics are
+transient. They never write Visible, history or dirty state. InitiallyOpen changes
+an Edit default, not a running stack. Hidden/disabled open roots remain remembered
+but unavailable; their descendants cannot interact. Canvas geometry remains an
+independent screen surface, including authored nested canvases. Closing a non-top
+screen does not implicitly close higher screens or their independent surfaces.
+
+### Requests, focus and delivery
+
+Scene request/focus/owner-consume APIs and managed Canvas Open/Close/ReplaceTop,
+GameUI.PopScreen/Focus/TryConsumeEvent expose the service. Requests are FIFO and
+commit before input and after script callbacks, outside control iteration.
+Consume/Resolve never commit requests. Open/Close are idempotent; Open does not
+raise/reset an open screen. ReplaceTop accepts a closed target or the current top;
+an already-open lower target rejects atomically. Pop removes the last open screen.
+Opening a closed unavailable target rejects at commit; close remains available.
+The API bool means enqueued, with actual state available through IsOpen and
+rejection diagnostics. Retired target/component or managed issuer/class rejects.
+
+Opening selects eligible configured initial focus, otherwise first TabOrder/
+painter target. Selection can be published while input is still rearming; it does
+not arm activation. DefaultAction is considered only without eligible focus; it
+never bypasses another focused control. Explicit GameUI.Focus requires a live input
+owner and current eligibility; null clears focus. Closing restores eligible prior
+focus and keyboard ownership, then the closing ReturnFocus, underlying initial
+focus and deterministic first eligible target. Missing, retired, reparented,
+disabled and fully clipped targets diagnose/fall back, without registry borrowing.
+Pointer-opened modal dismissal preserves the underlying nonmodal ownership state.
+
+Every screen transition cancels pending delivery/capture and rearms the existing
+session input adapter. Native owner/class/component changes and managed-status
+changes do so even when the scope UUID remains equal. Managed scope changes caused
+by eligibility changes also retire the gesture. An enabled release-only sample can
+establish neutral, but its releases never route into the new scope; fresh down
+edges cannot click through. RuntimeSession retains its physical held-input gameplay
+gate until the effective map returns neutral. Accept still activates once, Cancel
+wins over simultaneous activation, and navigation repeat remains separate.
+
+One outer delivery stream contains typed Activated/Cancel records with source,
+screen, declared owner, monotonic sequence and authored action identity. There are
+no delegates or unnecessary lifecycle notifications. Managed records are invisible
+to unscoped button/global/Cancel consumers; unmanaged canvases retain those simple
+conveniences, without duplicate queues for game delivery. The managed bridge
+derives the consumer from its executing Entity lifecycle callback and verifies its
+actual declared script class. Native callers supply the designated scene-local
+owner ID. Source eligibility/action, scope, owner lifetime/component/class and
+accepted policy are rechecked at candidate delivery, preserving exact native-write
+detection. A new/retired receiver cannot inherit old events. Stop, scene/domain
+replacement and reset retire queues, published scope IDs and return records.
+
+Cancel Ignore consumes/cancels the gesture without a game event. Close requests
+closure of the current managed screen and needs no script owner. NotifyOwner emits
+a semantic Cancel, with an eligible configured context or the screen itself as
+source; it never manufactures a button activation or loads a scene. Missing/unready
+owners reject events with a bounded diagnostic. Raw native input remains a trusted
+escape hatch; native gameplay must honor the established session/scene gate.
+
+Limits: 64 declared managed screens, 64 pending requests, 64 outer events and 64
+return records (oldest return record evicts; newest queue entry rejects/drops).
+Existing 4096-rect, depth-256 and 128-byte action limits remain. Owner/issuer class
+metadata is capped at 512 bytes with no NUL; identity metadata contains no registry
+handles, GPU resources or managed objects. Bounded vectors reserve before stack
+mutation; diagnostics are rate limited and retained for inspection. These are
+service limits, not a total-process memory or frame-budget claim.
+
+### Native authoring and representative use
+
+Hierarchy → Runtime UI → Screen creates a managed modal Canvas. Canvas Properties
+exposes initial state, Cancel and named, document-local owner/focus selectors;
+detailed default/Cancel-context/return fields are progressive. HUD Canvas remains
+simple. Selecting a screen/child previews that screen in Edit even if initially
+closed; otherwise initially-open screens compose. Prefab preview follows selection.
+Preview and runtime stack changes do not alter authored values. The existing Runtime
+UI Debugger shows screen availability/order, scope, owner, pending/retired events,
+request counts and recent issues; no extra management panel or optimization mode.
+
+The maintained native harness creates Menu → Settings → Confirmation using current
+Panel/Text/Button presets, shared Inspector edits and an ordinary owner script
+(`tests/fixtures/AuthoringProject/Assets/Scripts/Source/ScreenOwner.cs`). It requests
+screen operations and relies on engine focus/gating/retirement. SceneTransitions'
+TitleUI/main menu now declares its Canvas as event owner and consumes the typed
+Play event; the per-button polling class is removed. Its gameplay scene, save/data
+formats, art, fonts and notices are unchanged. Other examples remain on ordinary
+canvases through the same pipeline, without a bulk rewrite.
+
+### Qualification
+
+Local qualification results are recorded below once complete. No rendering shader,
+font/resource policy or platform backend changes are part of this slice. Prior
+render-only performance evidence still applies; no new whole-frame budget is
+claimed. CI is not awaited or polled.

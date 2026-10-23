@@ -77,6 +77,11 @@ def validate_project(descriptor, config, assets):
                         raise RuntimeError('Missing/excluded prefab reference '+str(reference)+' in '+str(scene))
                 if scene.suffix=='.hprefab' and field.get('Type')=='Entity' and field.get('Data') not in ids | {0}:
                     raise RuntimeError('Unsafe external entity reference in prefab '+str(scene))
+            if scene.suffix=='.hprefab':
+                screen=entity.get('UICanvasComponent',{}).get('Screen',{})
+                for field in ('InitialFocus','DefaultAction','CancelTarget','ReturnFocus','EventOwner'):
+                    if screen.get(field,0) not in ids | {0}:
+                        raise RuntimeError('Unsafe external screen '+field+' reference in prefab '+str(scene))
             clip = entity.get('AudioSourceComponent', {}).get('Clip')
             if clip:
                 if Path(clip).suffix!='.wav' or resolve_owned(assets,clip) not in included:

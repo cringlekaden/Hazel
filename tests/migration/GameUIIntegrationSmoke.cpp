@@ -39,6 +39,7 @@ static void Check(bool value, const char *why)
     if (!value)
         throw std::runtime_error(why);
 }
+#include "UIScreenSceneChecks.h"
 #include "MeasuredSceneChecks.h"
 #include "ContainerSceneChecks.h"
 #include "ImageFitSceneChecks.h"
@@ -141,6 +142,7 @@ int main(int argc,char** argv)
         std::filesystem::copy_file(Resources::Resolve("fonts/opensans/OpenSans-Regular.ttf"),
                                    root / "font.ttf");
         std::filesystem::copy_file("assets/textures/Checkerboard.png", root / "image.png");
+        UIScreenSceneChecks(root);
         MeasuredSceneChecks(root);
         ContainerSceneChecks(root);
         ImageFitSceneChecks(root);

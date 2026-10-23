@@ -65,6 +65,8 @@ template <class A, class B, class C, class F> void Fields(A &a, B &b, C &c, F f)
         FIELD(Canvas, Visible);
         FIELD(Canvas, Enabled);
         FIELD(Canvas, Modal);
+        FIELD(Canvas, Screen.Managed);FIELD(Canvas, Screen.InitiallyOpen);FIELD(Canvas, Screen.Cancel);
+        FIELD(Canvas, Screen.InitialFocus);FIELD(Canvas, Screen.DefaultAction);FIELD(Canvas, Screen.CancelTarget);FIELD(Canvas, Screen.ReturnFocus);FIELD(Canvas, Screen.EventOwner);
     }
     COMPONENT(Rect)
     {
@@ -203,8 +205,10 @@ void Source(Scene &scene, const SpriteSource &source)
 }
 void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
 {
-    if (v.Canvas)
+    if (v.Canvas){
         GameUI::FitCanvas({1280, 720}, *v.Canvas);
+        if(unsigned(v.Canvas->Screen.Cancel)>2)throw std::invalid_argument("Invalid screen Cancel policy");
+    }
     if (v.Rect)
     {
         GameUI::Validate(*v.Rect);
@@ -319,6 +323,8 @@ void Write(Entity e, const UIEditValues &old, UIEditValues &next)
     FIELD(Canvas, Visible);
     FIELD(Canvas, Enabled);
     FIELD(Canvas, Modal);
+    FIELD(Canvas, Screen.Managed);FIELD(Canvas, Screen.InitiallyOpen);FIELD(Canvas, Screen.Cancel);
+    FIELD(Canvas, Screen.InitialFocus);FIELD(Canvas, Screen.DefaultAction);FIELD(Canvas, Screen.CancelTarget);FIELD(Canvas, Screen.ReturnFocus);FIELD(Canvas, Screen.EventOwner);
 }
 COMPONENT(Rect, UIRectComponent) FIELD(Rect, WidthMode);
 FIELD(Rect, HeightMode);

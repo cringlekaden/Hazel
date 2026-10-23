@@ -29,7 +29,10 @@
 
 namespace Hazel {
     static RuntimeSession* s_RuntimeSession = nullptr;
+    static thread_local uint64_t s_ExecutingEntity=0;
+    struct ScriptInvocation {uint64_t Previous;explicit ScriptInvocation(uint64_t id):Previous(s_ExecutingEntity){s_ExecutingEntity=id;}~ScriptInvocation(){s_ExecutingEntity=Previous;}};
     static const std::thread::id s_RuntimeThread = std::this_thread::get_id();
+    uint64_t ScriptEngine::GetExecutingEntity(){return std::this_thread::get_id()==s_RuntimeThread?s_ExecutingEntity:0;}
     RuntimeSession* ScriptEngine::GetRuntimeSession() {
         // Reject managed worker requests before observing the borrowed owner.
         return std::this_thread::get_id() == s_RuntimeThread ? s_RuntimeSession : nullptr;
@@ -684,7 +687,7 @@ namespace Hazel {
 	}
 
 	ScriptInstance::ScriptInstance(Ref<ScriptClass> scriptClass, Entity entity)
-		: m_ScriptClass(scriptClass)
+		: m_ScriptClass(scriptClass), m_EntityID(entity.GetUUID())
 	{
 		m_GCHandle = mono_gchandle_new(scriptClass->Instantiate(), true);
 
@@ -728,18 +731,21 @@ namespace Hazel {
 
 	void ScriptInstance::InvokeOnCreate()
 	{
+        ScriptInvocation invocation(m_EntityID);
         m_Created=true;
 		if (m_OnCreateMethod)
 			m_ScriptClass->InvokeMethod(GetManagedObject(), m_OnCreateMethod);
 	}
 
     void ScriptInstance::InvokeOnDestroy() {
+        ScriptInvocation invocation(m_EntityID);
         if(!m_Created) return; m_Created=false;
         if(m_OnDestroyMethod && GetManagedObject()) m_ScriptClass->InvokeMethod(GetManagedObject(),m_OnDestroyMethod);
     }
 
 	void ScriptInstance::InvokeOnUpdate(float ts)
 	{
+        ScriptInvocation invocation(m_EntityID);
 		if (m_OnUpdateMethod)
 		{
 			void* param = &ts;

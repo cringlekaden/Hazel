@@ -4,7 +4,7 @@ Runtime UI is ordinary scene content; it runs in Nutella without ImGui. World an
 
 ## Build a menu
 
-1. In Hazelnut's Hierarchy, choose **Add Entity → Runtime UI → Canvas**. Set reference pixels (default 1280×720), safe insets and sort order in the Inspector. Enable **Block gameplay** for a menu, pause or dialogue canvas.
+1. In Hazelnut's Hierarchy, choose **Add Entity → Runtime UI → Screen** for a menu, pause or dialogue. A Screen is a Canvas with Managed screen enabled and Block gameplay on by default. Use **Canvas** for an ordinary HUD. Set reference pixels (default 1280×720) and safe insets. Ordinary canvases use sort order; open screens draw above them in runtime open order.
 2. Select the canvas and create **Panel**, **Text**, **Button**, **Stack**, **Grid** or **Wrap** through the same menu. All presets use the canonical measured model (Rect schema 3). A Stack defaults to Fixed width and Content height. Reselect the group before adding each sibling button; vertical-stack children use Fill width and buttons measure Content height. Rects use top-left logical pixels; Transform does not position UI.
 3. Set Width/Height to **Fixed**, **Fill** or **Content** in UI Rect. Fixed authors a border-box size; Fill uses parent space; Content measures visuals/children plus padding. Minimum and optional finite maximum constrain each axis. Choosing free Fill explicitly gives that axis to the parent and clears its anchor/offset/pivot; margins set the insets. Content text width is natural unless capped, so use Fixed/Fill width or an enabled Content maximum to wrap labels. Stacks own child positions; use sizing, margins and Fill weight. Resize handles edit only Fixed dimensions; container children resize from right/bottom. Computed dimensions/positions stay read-only, and gestures never switch modes. If parent reflow/alignment would move the opposite edge, that resize sample is rejected; edit Fixed size in Properties instead. Escape cancels.
 4. Text uses the existing **Text Component** for content, color, kerning and line spacing. **UI Text Style** supplies size, wrapping, Clip/Ellipsis overflow, Max lines and horizontal/vertical alignment. Size is logical pixels per font ascender-to-descender height. Kerning and line spacing remain font-height units, as in world text. Choose a project .hfont family and real face style in Text Renderer, or leave the family empty for engine Open Sans. Separate styled text children provide mixed emphasis; text has no markup.
@@ -16,32 +16,87 @@ The examples contain editable **TitleUI.hprefab** assets. Each keeps its game's 
 
 ## Connect C# decisions
 
-Attach an ordinary Entity script to a controller; author Entity references in the Inspector. Consume actions before combining them with alternate shortcuts, so a shortcut cannot leave a queued duplicate.
+Attach an ordinary Entity script to the screen/controller and select it in
+**UI Canvas → Event owner**. Each managed scope has one declared recipient. The
+engine derives the consuming entity from its executing managed lifecycle callback;
+an unrelated script cannot pass another owner's ID to steal its events.
 
 ```csharp
 using Hazel;
 public class MainMenu : Entity {
-    public Entity Play;
+    public Entity Settings; // assign the child screen in Properties
     void OnUpdate(float dt) {
-        string action;
-        if (Play.GetComponent<UIButtonComponent>().TryConsumeAction(out action))
-            Scene.LoadScene("Scenes/Level1.hazel");
+        UIEvent value;
+        while (GameUI.TryConsumeEvent(out value)) {
+            if (value.Kind == UIEventKind.Activated && value.Action == "settings")
+                Settings.GetComponent<UICanvasComponent>().Open();
+            else if (value.Kind == UIEventKind.Cancel)
+                value.Screen.GetComponent<UICanvasComponent>().Close();
+        }
     }
 }
 ```
 
-For a central controller:
+Use **Cancel → Close screen** for dismissal that needs no script decision. Custom
+Cancel uses **Notify owner**; the optional Cancel context identifies a button in
+that semantic event, without activating it. Initial focus defaults to the first
+eligible TabOrder/painter target. A configured initial target is tried first;
+missing/ineligible targets diagnose and fall back. Default action is selected
+only when no eligible control has focus, so Accept never bypasses a focused
+button. `GameUI.Focus(entity)` selects an eligible current-scope control; null
+clears focus. Explicit nonzero focus requires a live input owner; use the authored
+initial target for opening. Requests to focus a different/inactive scope reject.
 
-```csharp
-Entity button;
-string action;
-while (GameUI.TryConsumeAction(out button, out action)) {
-    if (action == "resume")
-        FindEntityByName("Pause canvas").GetComponent<UICanvasComponent>().Visible = false;
-}
-```
+`UICanvasComponent.Open()`, `Close()`, `ReplaceTop()` and `GameUI.PopScreen()`
+queue operations. Their bool means enqueued, not already committed. Commit occurs
+before input and after script updates, outside control iteration/callbacks.
+Initially open is authored; runtime order never edits Visible or the document.
+Open/Close are idempotent; reopening an open screen does not raise/reset it.
+ReplaceTop requires a closed target or the existing top; an already-open lower
+target is rejected without closing anything. Pop closes the last open screen.
+Closing a non-top screen leaves higher screens open. Hidden/disabled roots remain
+remembered but unavailable; opening a closed unavailable root rejects at commit.
+Independent nested canvases retain their independent geometry and runtime order.
 
-Use `UIRectComponent.Visible/Enabled`, `UICanvasComponent.Visible/Enabled/Modal`, `UIButtonComponent.Interactable`, and existing `TextComponent.Text/Color/Kerning/LineSpacing` for dynamic presentation. Entity references are checked against the current scene. Actions contain identities/strings, never delegates. Delivery requires membership and eligibility in the current resolved tree; destruction, ancestor removal/replacement/reparent, and observed hide/disable changes retire pending work. Scene transition, Stop, script-domain reload, focus loss and viewport deactivation cancel both action queues, focus and capture. Restoring input samples held keys before arming new activation. Action identities allow at most 128 bytes and no embedded NUL. Queues hold 64 activations; overflow drops newest with a counter and rate-limited warning. Actions are consumed once; do not have multiple controllers consume the same global queue.
+The foreground available managed screen owns UI focus/hits, including a nonmodal
+overlay. Ordinary canvases beneath it cannot receive UI actions. Nonmodal does not
+impose unconditional gameplay blocking: the existing keyboard/pointer gate applies.
+Any available modal screen still blocks gameplay, including one without buttons.
+Without a foreground managed screen, ordinary highest-modal/scene-zero scopes
+continue through the same published geometry/hit pipeline.
+
+Closing restores eligible remembered underlying focus, then the closing screen's
+Return fallback, underlying initial focus and first eligible target. Eligibility
+includes scene identity, scope membership and effective framebuffer clipping.
+Underlying keyboard ownership is restored too: a pointer-opened modal does not
+unexpectedly acquire gameplay keys when closed. Transitions cancel capture/events
+and require an enabled neutral sample before routing fresh gestures. Held inputs
+remain gated by RuntimeSession until neutral; no opening/closing gesture clicks
+through. Requests are FIFO, at most 64 pending, with at most 64 declared screens;
+newest overflow rejects with diagnostics. Focus-return memory holds 64 records,
+evicting oldest. A failed/retired request does not partially perform that operation.
+
+Managed button activation and Notify-owner Cancel share one bounded delivery queue
+(64 records, drop newest). Events carry source/screen entities, kind, sequence and
+the existing action identifier (128 bytes, no NUL). No lifecycle notifications or
+retained delegates are needed. Input events become visible to that frame's script
+updates; screen changes requested there commit after all scripts return. Screen
+changes, ownership loss, retired sources/owners, scope changes, Stop and domain
+replacement retire stale records. Owner/class/lifetime changes cannot transfer an
+old record. Queued managed requests also validate their issuer before commit.
+
+Unmanaged canvases retain `UIButtonComponent.TryConsumeAction`,
+`GameUI.TryConsumeAction` and scoped `TryConsumeCancel` conveniences. Those methods
+cannot consume a managed screen's records; there is one delivery stream, without
+duplicate activation. Use a managed screen for a menu with a declared owner.
+Native consumers use the equivalent Scene request/focus/owner-consume APIs on the
+scene thread. Native field writes are reconciled before candidate delivery.
+
+Use `UIRectComponent.Visible/Enabled`, `UICanvasComponent.Visible/Enabled/Modal`,
+`UIButtonComponent.Interactable` and existing Text properties for dynamic values.
+References remain checked against the current scene. Visibility/structural changes
+retire work before delivery. Use Open/Close for managed screen lifetime rather
+than manually reproducing focus and modal cleanup with visibility toggles.
 
 `Input` supplies gameplay input and respects UI ownership. `GameUI.IsKeyDown` supplies viewport-gated keys for UI-specific shortcuts such as Escape to close a modal or N to confirm starting over. `GameUI.IsPointerCaptured` lets alternate shortcuts defer to an active pointer gesture while retaining their held-key history. Keep gameplay movement and interaction on `Input`; do not bypass modal blocking with this UI API. Visibility or enabled changes update native layout/routing, with no per-frame positioning script.
 
@@ -322,17 +377,15 @@ Accept and Cancel never repeat. Multiple Accept bindings form one gesture until
 all sources release. Held input on connect, restore or rebind cannot activate;
 disconnect/connection revision retires input ownership and requires rearming.
 
-Highest eligible modal canvas owns the active scope; otherwise scope zero is the
-scene's nonmodal UI. Tab order is shared across its eligible canvases. Modal
-changes remember scene-local focus IDs and restore an eligible prior target or
-the first eligible tab target. The underlying nonmodal keyboard-ownership state
-is retained, so closing a pointer-opened modal does not unexpectedly capture
-continuous gameplay. There is no screen asset/stack service yet.
+The scene UI service owns screen order, interaction scope and modal blocking;
+the router only consumes its published eligible controls. Managed-screen policies
+and ordinary Canvas behavior are described under Connect C# decisions above.
+Tab order is local to the published active scope.
 
-Cancel cancels gestures/pending activations and publishes one scoped request per
-sampled update (multiple Cancel edges in that update coalesce); the game chooses what it means. It never invents a button click or unloads
-a scene. Cache the actual canvas component and call `canvas.TryConsumeCancel()`;
-`GameUI.TryConsumeCancel()` consumes scene scope zero. Use one consumer per scope.
+Cancel cancels gestures/pending activations once per sampled update (multiple
+Cancel edges coalesce). Managed screens use Ignore, Close screen or Notify owner;
+unmanaged scopes expose `canvas.TryConsumeCancel()` or scene-zero
+`GameUI.TryConsumeCancel()`. It never invents a button click or unloads a scene.
 Scene/domain/Stop, ownership loss and scope replacement retire records. A consumed
 UI gesture remains gated from gameplay until held inputs in the effective UI map return neutral,
 including across a scene transition. Native raw `Input` is still physical polling;
@@ -364,3 +417,28 @@ limits. Its override draft is separate until Apply; Read discards draft changes.
 The input buffer holds 64 ordered edges; overflow cancels the frame and rearms
 rather than delivering a partial gesture. Existing button queues remain bounded
 and destructive. Scope-return memory holds 64 scope/target records, evicting oldest entries.
+
+## Author a composed screen flow
+
+Create a Menu Screen and attach its owner script. Create Settings and Confirmation
+screens as children so the connected subtree can be saved as one prefab; turn
+Initially open off on those two. Add current Panel/Text/Button presets, give buttons
+meaningful actions and assign the same controller as each screen's Event owner.
+Choose initial focus with the named local entity selector. Settings/Confirmation
+can use built-in Close on Cancel; choose Notify owner when a game decision is
+needed. Assign the controller's Entity fields through normal script properties.
+No manual focus stack or gameplay blocking code is needed.
+
+Selecting a managed screen or its children previews that screen in Edit, including
+a closed screen, without changing initial state. With no managed selection,
+initially-open screens compose above ordinary canvases. Prefab preview follows its
+selection too. Screen policy edits and target assignments use shared scene/prefab
+Undo/Redo; structural creation and script fields retain their existing separate
+limitations. Save/reopen, Play, open Settings, open Confirmation, Cancel twice and
+check focus returns to each invoking control. Stop preserves authored policy and
+history. Prefab references must be internal to the saved subtree (or cleared).
+
+**Runtime UI Debugger → Screens and scoped events** shows open/available order,
+foreground scope, owner, pending requests/events, retired delivery and the most
+recent issue. Target warnings are attached to resolved Canvas nodes. This is
+transient inspection, not a second editor/runtime screen manager.

@@ -1,6 +1,14 @@
 // Exercises the actual published Hazel managed API in native embedding tests.
 using System;
 namespace Migration {
+    public class ScreenRetiringProbe : Hazel.Entity {
+        public Hazel.Entity Target;
+        void OnUpdate(float dt){Target.GetComponent<Hazel.UICanvasComponent>().Open();Destroy();}
+    }
+    public class ScreenOtherProbe : Hazel.Entity {
+        public int Stolen;
+        void OnUpdate(float dt){Hazel.UIEvent value;while(Hazel.GameUI.TryConsumeEvent(out value))++Stolen;Hazel.Entity source;string name;while(Hazel.GameUI.TryConsumeAction(out source,out name))++Stolen;}
+    }
     public class Probe : Hazel.Entity {
         public float Speed = 2.5f;
         public char Character = '\u00e9';

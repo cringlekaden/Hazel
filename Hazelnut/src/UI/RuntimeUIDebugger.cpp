@@ -195,6 +195,15 @@ void EditorLayer::UI_Debugger()
                 d.InputEnabled ? "enabled" : "inactive", d.GameplayBlocked ? "yes" : "no",
                 d.PointerBlocked ? "yes" : "no");
     ImGui::Text("Focus scope %llu | no directional target %llu",(unsigned long long)d.Scope,(unsigned long long)d.NavigationMisses);
+    if(ImGui::CollapsingHeader("Screens and scoped events")){
+        ImGui::Text("Owner %llu | queued %llu | retired %llu",(unsigned long long)d.EventOwner,(unsigned long long)d.PendingEvents,(unsigned long long)d.RetiredEvents);
+        ImGui::Text("Requests %llu / 64 | rejected %llu",(unsigned long long)d.PendingScreens,(unsigned long long)d.RejectedScreens);
+        if(!d.ScreenProblem.empty())ImGui::TextWrapped("%s",d.ScreenProblem.c_str());
+        unsigned order=0;for(const auto &screen:s.Screens){auto entity=m_ActiveScene->GetEntityByUUID(screen.ID);auto name=entity?entity.GetName():std::string("Retired");
+            ImGui::TextWrapped("%s: %s%s%s | order %u | owner %llu",name.c_str(),screen.Open?"open":"closed",screen.Available?"":" / unavailable",screen.Modal?" / modal":"",screen.Open?++order:0,(unsigned long long)screen.Owner);
+        }
+        ImGui::TextDisabled("Runtime order and events are transient. Foreground screen owns UI focus.");
+    }
     if(m_SceneState==SceneState::Play){
         ImGui::Text("Host gameplay: keys %s | pointer %s",m_RuntimeSession.IsGameplayInputEnabled()?"available":"gated",m_RuntimeSession.IsGameplayMouseEnabled()?"available":"gated");
         const auto device=m_RuntimeSession.GetUIDevice();

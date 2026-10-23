@@ -263,6 +263,13 @@ namespace Hazel {
         for(auto id:sourceIDs) {
             auto original=from->GetEntityByUUID(id);auto target=staged->GetEntityByUUID(remap.at(id));
             CopyComponentIfExists(AllComponents{},target,original);
+            if(target.HasComponent<UICanvasComponent>()) {
+                auto &screen=target.GetComponent<UICanvasComponent>().Screen;
+                for(auto ref:{&screen.InitialFocus,&screen.DefaultAction,&screen.CancelTarget,&screen.ReturnFocus,&screen.EventOwner}) {
+                    if(auto found=remap.find(UUID(*ref));found!=remap.end())*ref=found->second;
+                    else if(*ref&&!retainExternal)throw std::runtime_error("External UI screen reference on '"+original.GetName()+"'. Include the target or clear the reference");
+                }
+            }
             auto stored=from->m_ScriptFields.find(id);
             auto fields=stored==from->m_ScriptFields.end()?ScriptFieldMap{}:stored->second;
             for(auto& [name,field]:fields)if(field.Field.Type==ScriptFieldType::Entity) {
@@ -411,6 +418,7 @@ namespace Hazel {
 			SynchronizePhysics2D(); // Components added between frames are ready for scripts.
 			// Update scripts
 			{
+                struct CallbackPhase {bool &Active;explicit CallbackPhase(bool &value):Active(value){Active=true;}~CallbackPhase(){Active=false;}} callbackPhase(m_UIScriptCallbacks);
 				// C# Entity OnUpdate
                 std::vector<UUID> updates;
                 for(auto root:GetChildren())for(auto id:GetSubtree(GetEntityByUUID(root)))if(GetEntityByUUID(id).HasComponent<ScriptComponent>())updates.push_back(id);
@@ -459,6 +467,7 @@ namespace Hazel {
 			}
 		}
 
+        CommitUIScreens(); // Requests from script callbacks commit after all callbacks have returned.
         PrepareSprites();
 		// Render 2D
 		Camera* mainCamera = nullptr;

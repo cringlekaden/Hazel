@@ -75,7 +75,7 @@ GameUI::Align ReadAlign(const YAML::Node &n)
 } // namespace
 UICanvasComponent ReadUICanvasComponent(const YAML::Node &n)
 {
-    Keys(n, {"ReferenceSize", "SafeInsets", "SortOrder", "Visible", "Enabled", "Modal"});
+    Keys(n, {"ReferenceSize", "SafeInsets", "SortOrder", "Visible", "Enabled", "Modal", "Screen"});
     UICanvasComponent v;
     if (n["ReferenceSize"])
         v.ReferenceSize = Vector<2>(n["ReferenceSize"]);
@@ -89,6 +89,18 @@ UICanvasComponent ReadUICanvasComponent(const YAML::Node &n)
         v.Enabled = n["Enabled"].as<bool>();
     if (n["Modal"])
         v.Modal = n["Modal"].as<bool>();
+    if(auto nscreen=n["Screen"]){
+        Keys(nscreen,{"Managed","InitiallyOpen","Cancel","InitialFocus","DefaultAction","CancelTarget","ReturnFocus","EventOwner"});
+        auto &c=v.Screen;
+        if(nscreen["Managed"])c.Managed=nscreen["Managed"].as<bool>();
+        if(nscreen["InitiallyOpen"])c.InitiallyOpen=nscreen["InitiallyOpen"].as<bool>();
+        if(nscreen["Cancel"]){auto value=nscreen["Cancel"].as<unsigned>();if(value>2)throw std::runtime_error("Invalid UI screen Cancel policy");c.Cancel=GameUI::ScreenCancel(value);}
+        if(nscreen["InitialFocus"])c.InitialFocus=nscreen["InitialFocus"].as<uint64_t>();
+        if(nscreen["DefaultAction"])c.DefaultAction=nscreen["DefaultAction"].as<uint64_t>();
+        if(nscreen["CancelTarget"])c.CancelTarget=nscreen["CancelTarget"].as<uint64_t>();
+        if(nscreen["ReturnFocus"])c.ReturnFocus=nscreen["ReturnFocus"].as<uint64_t>();
+        if(nscreen["EventOwner"])c.EventOwner=nscreen["EventOwner"].as<uint64_t>();
+    }
     GameUI::FitCanvas({1280, 720}, v);
     return v;
 }
@@ -107,7 +119,17 @@ static void Write(YAML::Emitter &out, const UICanvasComponent &v)
     Write(out, v.Enabled);
     out << YAML::Key << "Modal" << YAML::Value;
     Write(out, v.Modal);
-    out << YAML::EndMap;
+    const auto &c=v.Screen;
+    out << YAML::Key << "Screen" << YAML::Value << YAML::BeginMap;
+    out << YAML::Key << "Managed" << YAML::Value << c.Managed;
+    out << YAML::Key << "InitiallyOpen" << YAML::Value << c.InitiallyOpen;
+    out << YAML::Key << "Cancel" << YAML::Value << unsigned(c.Cancel);
+    out << YAML::Key << "InitialFocus" << YAML::Value << c.InitialFocus;
+    out << YAML::Key << "DefaultAction" << YAML::Value << c.DefaultAction;
+    out << YAML::Key << "CancelTarget" << YAML::Value << c.CancelTarget;
+    out << YAML::Key << "ReturnFocus" << YAML::Value << c.ReturnFocus;
+    out << YAML::Key << "EventOwner" << YAML::Value << c.EventOwner;
+    out << YAML::EndMap << YAML::EndMap;
 }
 UIRectComponent ReadUIRectComponent(const YAML::Node &n)
 {

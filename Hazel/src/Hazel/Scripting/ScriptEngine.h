@@ -108,6 +108,7 @@ namespace Hazel {
 		MonoMethod* m_OnUpdateMethod = nullptr;
         MonoMethod* m_OnDestroyMethod = nullptr;
         bool m_Created = false;
+        uint64_t m_EntityID=0;
 
 
 		friend class ScriptEngine;
@@ -141,6 +142,7 @@ namespace Hazel {
 		static Scene* GetSceneContext();
         // Borrowed until session Stop; never retained by managed code.
         static RuntimeSession* GetRuntimeSession();
+        static uint64_t GetExecutingEntity(); // current main-thread managed lifecycle callback only
 
 		static Ref<ScriptInstance> GetEntityScriptInstance(UUID entityID);
 

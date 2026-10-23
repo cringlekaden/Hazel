@@ -47,7 +47,7 @@ void RuntimeUI::CancelInput()
         m_OuterDrops += m_Input.DroppedActions();
         m_Input.Reset();
     }
-    m_Actions.clear();
+    m_Diagnostics.RetiredEvents+=m_Actions.size();m_Actions.clear();
     m_InputEnabled = false;
     m_ActionOwnsFrame=false;
     m_PointerOver = m_KeyboardOwns = false;
@@ -56,7 +56,8 @@ void RuntimeUI::Reset()
 {
     CancelInput();
     m_Resolved.Valid = false;
-    m_Resolved.Modal = 0;
+    m_Resolved.Modal = m_Resolved.Scope = 0;
+    m_Resolved.Screens.clear();
     m_Resolved.Elements.clear();
     m_Resolved.Index.clear();
     m_Resolved.Buttons.clear();
@@ -66,19 +67,29 @@ void RuntimeUI::Reset()
     m_Source.clear();
     m_Cache.clear();m_AssetOwner.reset();
     m_GPUTimer.reset();m_PaintSubmission=0;m_PreparedBytes=0;
+    m_Screens.clear();m_OpenScreens.clear();m_ScreenRequests.clear();m_ScreenFocus.clear();
+    m_LastScope=m_ReturnFallback=m_PendingFocus=m_PreviewScreen=0;m_TransitionNeutral=false;++m_ScreenRevision;
     m_Diagnostics = {};
     m_OuterDrops = m_ReportedDrops = 0;
     // Generation IDs never alias an older published snapshot, including Play/Stop.
 }
 void RuntimeUI::Retire(uint64_t id)
 {
+    if(auto screen=Screen(m_Resolved.Scope);screen&&screen->Policy.EventOwner==id){RememberFocus(screen->ID,m_Input.Focused(),m_KeyboardOwns);CancelScreenInput();}
+
     if (m_Input.Focused() == id && !m_Resolved.Modal)
         m_KeyboardOwns = false;
     m_Input.Retire(m_Scene.GetIdentity(), id);
+    if(m_PendingFocus==id)m_PendingFocus=0;
+    for(auto &saved:m_ScreenFocus)if(saved.Target==id)saved.Target=0;
+    m_ScreenFocus.erase(std::remove_if(m_ScreenFocus.begin(),m_ScreenFocus.end(),[&](auto saved){return saved.Scope==id;}),m_ScreenFocus.end());
+    m_ScreenRequests.erase(std::remove_if(m_ScreenRequests.begin(),m_ScreenRequests.end(),[&](auto r){return r.ID==id;}),m_ScreenRequests.end());
     if(auto it=m_Cache.find(id);it!=m_Cache.end()){m_PreparedBytes-=it->second.Glyphs.capacity()*sizeof(Renderer2D::TextGlyph);m_Cache.erase(it);}
+    auto pendingBefore=m_Actions.size();
     m_Actions.erase(std::remove_if(m_Actions.begin(), m_Actions.end(),
-                                   [&](const Action &a) { return a.Entity == id; }),
+                                   [&](const Action &a) { return a.Entity == id || a.Owner == id || a.Screen == id; }),
                     m_Actions.end());
+    m_Diagnostics.RetiredEvents+=pendingBefore-m_Actions.size();
 }
 void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
 {
@@ -96,7 +107,7 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
     state.Add(m_Scene.GetIdentity());state.Add(m_AssetGeneration);
     state.Add(surface.Viewport);
     state.Add(surface.Framebuffer);
-    state.Add(previewOrphans);
+    state.Add(previewOrphans);state.Add(previewOrphans?m_PreviewScreen:uint64_t(0));
     // Fixed visuals are paint dependencies. Content additionally observes
     // text/font/base-image metrics; colors and button-state images remain paint.
     for (auto h : m_Scene.GetAllEntitiesWith<UIRectComponent>())
@@ -203,6 +214,12 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
         state.Add(c.Visible);
         state.Add(c.Enabled);
         state.Add(c.Modal);
+        auto &screen=c.Screen;state.Add(screen.Managed);state.Add(screen.InitiallyOpen);state.Add(unsigned(screen.Cancel));
+        state.Add(screen.InitialFocus);state.Add(screen.DefaultAction);state.Add(screen.CancelTarget);state.Add(screen.ReturnFocus);state.Add(screen.EventOwner);
+        if(screen.Managed){
+            auto owner=m_Scene.GetEntityByUUID(screen.EventOwner);state.Add(bool(owner)&&m_Scene.IsEntityValid(screen.EventOwner));
+            if(owner&&m_Scene.IsEntityValid(screen.EventOwner)){state.Add(m_Scene.GetAuthoringLifetime(screen.EventOwner));state.Add(m_Scene.GetAuthoringComponentVersion(screen.EventOwner,typeid(ScriptComponent)));if(owner.HasComponent<ScriptComponent>()){const auto &name=owner.GetComponent<ScriptComponent>().ClassName;if(name.size()>512||name.find('\0')!=std::string::npos)throw std::invalid_argument("Invalid UI owner class (512 bytes, no NUL)");state.Add(name);}}
+        }
         // Independent canvases may have ordinary world ancestors. Their parent
         // links are dependencies too, without scanning unrelated world entities.
         auto ancestor = e;
@@ -220,6 +237,7 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
         }
         state.Add(uint64_t(0));
     }
+    SyncScreens();state.Add(m_ScreenRevision);
     state.Add(uint64_t(0));
     for (auto h : m_Scene.GetAllEntitiesWith<UILayoutComponent>())
     {
@@ -258,8 +276,7 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
         m_Build.Valid = true;
         std::swap(m_Resolved, m_Build);
         m_Source.swap(m_Candidate);
-        m_Input.SetScope(m_Scene.GetIdentity(),m_Resolved.Modal);
-        m_Input.Reconcile(m_Scene.GetIdentity(), m_Resolved.Buttons, m_Resolved.Generation);
+        PublishScope();
         PruneActions();
         if (!m_Input.Focused() && !m_Resolved.Modal)
             m_KeyboardOwns = false;
@@ -298,7 +315,8 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
     m_Build.PainterOrder.clear();
     m_Build.Buttons.clear();
     m_Build.Warnings.clear();
-    m_Build.Modal = 0;
+    m_Build.Modal = m_Build.Scope = 0;
+    m_Build.Screens.clear();
     m_Build.Guides.clear();
     m_Build.Valid = false;
     m_Build.Surface = surface;
@@ -405,17 +423,26 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
     m_Canvases.clear();
     for (auto id : m_CanvasIDs)
         m_Canvases.push_back(m_Scene.GetEntityByUUID(id));
-    std::sort(m_Canvases.begin(), m_Canvases.end(), [](Entity a, Entity b) {
+    std::sort(m_Canvases.begin(), m_Canvases.end(), [this](Entity a, Entity b) {
         auto x = a.GetComponent<UICanvasComponent>().SortOrder,
              y = b.GetComponent<UICanvasComponent>().SortOrder;
+        auto &ca=a.GetComponent<UICanvasComponent>(),&cb=b.GetComponent<UICanvasComponent>();
+        if(ca.Screen.Managed!=cb.Screen.Managed)return !ca.Screen.Managed;
+        if(ca.Screen.Managed){auto ia=std::find(m_OpenScreens.begin(),m_OpenScreens.end(),uint64_t(a.GetUUID()));auto ib=std::find(m_OpenScreens.begin(),m_OpenScreens.end(),uint64_t(b.GetUUID()));if(ia!=ib)return ia<ib;}
         return x == y ? uint64_t(a.GetUUID()) < uint64_t(b.GetUUID()) : x < y;
     });
     for (auto canvas : m_Canvases)
     {
         auto &n = m_Build.Elements[m_Build.Index.at(canvas.GetUUID())];
         auto &c = canvas.GetComponent<UICanvasComponent>();
-        if (!n.Visible)
-            continue;
+        if(c.Screen.Managed){
+            bool open=IsScreenOpen(n.ID),available=n.Visible&&n.Enabled;
+            m_Build.Screens.push_back({n.ID,c.Screen.EventOwner,open,available,c.Modal});
+            if(previewOrphans){if(m_PreviewScreen? n.ID!=m_PreviewScreen:!open)continue;}
+            else if(!open)continue;
+            if(open&&available)m_Build.Scope=n.ID;
+        }
+        if (!n.Visible)continue;
         auto fit = FitCanvas(surface.Viewport, c);
         n.Scale = fit.Scale;
         n.Bounds = fit.Bounds;
@@ -447,6 +474,8 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
                 Visit(e, fit.Content, fit.Bounds, fit.Scale, true, 0, 0);
         }
     }
+    if(previewOrphans&&m_PreviewScreen){auto selected=m_Build.Find(m_PreviewScreen);if(selected&&selected->LayoutResolved)m_Build.Scope=m_PreviewScreen;}
+    if(!m_Build.Scope)m_Build.Scope=m_Build.Modal;
     for (auto index : m_Build.PainterOrder)
     {
         auto &n = m_Build.Elements[index];
@@ -454,7 +483,7 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
         if (!e.HasComponent<UIButtonComponent>())
             continue;
         auto &b = e.GetComponent<UIButtonComponent>();
-        bool scope = n.Canvas && (!m_Build.Modal || n.Canvas == m_Build.Modal);
+        bool scope = n.Canvas && (!m_Build.Scope || n.Canvas == m_Build.Scope);
         n.FocusEligible = scope && n.Enabled && b.Interactable && Nonempty(n.PixelClip);
         n.Hit = !scope            ? HitPolicy::PassThrough
                 : n.FocusEligible ? HitPolicy::Control
@@ -465,6 +494,14 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
         // tests can exclude a covered edge through reciprocal rounding.
         m_Build.Buttons.push_back({n.ID, n.FramebufferBounds, n.FramebufferClip, b.Action,
                                   b.TabOrder, true, n.FocusEligible, n.Hit});
+    }
+    for(const auto &entry:m_Screens){
+        for(auto target:{entry.Policy.InitialFocus,entry.Policy.DefaultAction,entry.Policy.CancelTarget})if(target){
+            auto n=m_Build.Find(target);auto e=m_Scene.GetEntityByUUID(target);
+            if(!n||n->Canvas!=entry.ID||!e||!e.HasComponent<UIButtonComponent>())
+                m_Build.Warnings.push_back({entry.ID,ResolvedSnapshot::WarningCode::ScreenTarget});
+        }
+        if(entry.Policy.EventOwner&&!m_Scene.IsEntityValid(entry.Policy.EventOwner))m_Build.Warnings.push_back({entry.ID,ResolvedSnapshot::WarningCode::ScreenTarget});
     }
 }
 void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enabled, uint64_t canvas,
@@ -511,14 +548,9 @@ void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enable
 }
 void RuntimeUI::PruneActions()
 {
-    m_Actions.erase(std::remove_if(m_Actions.begin(), m_Actions.end(),
-                                   [&](const Action &a) {
-                                       auto n = m_Resolved.Find(a.Entity);
-                                       return !Live(a.Entity) ||
-                                              n->ButtonIndex >= m_Resolved.Buttons.size() ||
-                                              m_Resolved.Buttons[n->ButtonIndex].Action != a.Name;
-                                   }),
-                    m_Actions.end());
+    auto before=m_Actions.size();
+    m_Actions.erase(std::remove_if(m_Actions.begin(),m_Actions.end(),[&](const Action &a){return !EventValid(a);}),m_Actions.end());
+    m_Diagnostics.RetiredEvents+=before-m_Actions.size();
 }
 bool RuntimeUI::Live(uint64_t id) const
 {
@@ -543,6 +575,16 @@ void RuntimeUI::WarnOverflow()
 }
 void RuntimeUI::UpdateInput(const InputFrame &pixels)
 {
+    if(m_TransitionNeutral){
+        const bool neutral=pixels.Enabled&&!pixels.LeftDown&&!pixels.AcceptDown&&!pixels.CancelDown&&!pixels.NextDown&&!pixels.PreviousDown&&!pixels.Navigate.x&&!pixels.Navigate.y&&!pixels.PointerPressed&&!pixels.AcceptPressed&&!pixels.NextPressed&&!pixels.PreviousPressed&&
+            std::none_of(pixels.Events.begin(),pixels.Events.end(),[](const ActionEdge &edge){return edge.Down;});
+        if(!neutral){m_InputEnabled=false;return;}
+        m_TransitionNeutral=false;PublishScope();
+        // Release-only samples establish neutral, but their releases never enter the new scope.
+        auto ready=pixels;ready.Events.clear();ready.PointerReleased=false;ready.HasReleasePosition=false;
+        UpdateInput(ready);return;
+    }
+
     if (!m_Resolved.Valid)
         throw std::logic_error("UI input requires a resolved snapshot");
     const auto start = std::chrono::steady_clock::now();
@@ -620,27 +662,34 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
         if(input.CancelDown || (input.PointerPressed&&!m_PointerOver))m_KeyboardOwns=false;
         else if(input.FocusNavigation&&entryFocus)m_KeyboardOwns=true;
     }
-    m_Input.SetScope(m_Scene.GetIdentity(),m_Resolved.Modal);
+    m_Input.SetScope(m_Scene.GetIdentity(),m_Resolved.Scope);
     input.KeyboardEnabled = !entering && (m_Resolved.Modal || m_KeyboardOwns || (previousKeyboardOwns&&input.CancelDown));
+    if(m_PendingFocus&&m_Input.SetFocus(m_Scene.GetIdentity(),m_PendingFocus,m_Resolved.Buttons))m_PendingFocus=0;
+    if(input.KeyboardEnabled&&!m_Input.Focused())if(auto screen=Screen(m_Resolved.Scope);screen&&Live(screen->Policy.DefaultAction))m_Input.SetFocus(m_Scene.GetIdentity(),screen->Policy.DefaultAction,m_Resolved.Buttons);
     m_Input.Update(m_Scene.GetIdentity(), m_Resolved.Buttons, input, m_Resolved.Generation);
+    if(m_PendingFocus&&input.Enabled){if(input.PointerPressed||m_Input.Captured())m_PendingFocus=0;else if(m_Input.SetFocus(m_Scene.GetIdentity(),m_PendingFocus,m_Resolved.Buttons))m_PendingFocus=0;}
     if (entering)
         m_Input.SetFocus(m_Scene.GetIdentity(), entryFocus, m_Resolved.Buttons);
     if (!input.Enabled)
     {
-        m_Actions.clear();
+        m_Diagnostics.RetiredEvents+=m_Actions.size();m_Actions.clear();
         m_PointerOver = false;
     }
     else
     {
-        if (input.CancelDown)
-            m_Actions.clear();
+        if (input.CancelDown){m_Diagnostics.RetiredEvents+=m_Actions.size();m_Actions.clear();}
         Action a;
         while (m_Input.Consume(m_Scene.GetIdentity(), a))
         {
             if (m_Actions.size() < InputRouter::MaxActions)
-                m_Actions.push_back(std::move(a));
+                QueueEvent(std::move(a));
             else
                 ++m_OuterDrops;
+        }
+        if(auto screen=Screen(m_Resolved.Scope);screen&&m_Input.ConsumeCancel(m_Scene.GetIdentity(),m_Resolved.Scope)){
+            m_ActionOwnsFrame=true;
+            if(screen->Policy.Cancel==ScreenCancel::Close)RequestScreen(ScreenOperation::Close,screen->ID);
+            else if(screen->Policy.Cancel==ScreenCancel::NotifyOwner){Action event;event.Kind=UIEventKind::Cancel;event.Entity=Live(screen->Policy.CancelTarget)?screen->Policy.CancelTarget:screen->ID;QueueEvent(std::move(event));}
         }
         PruneActions();
         m_ActionOwnsFrame |= !m_Actions.empty();
@@ -652,13 +701,13 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
 }
 bool RuntimeUI::Consume(uint64_t entity, Action &action)
 {
-    if (m_Actions.empty())
-        return false; // Idle per-control polling does no dependency traversal.
+    if (std::none_of(m_Actions.begin(),m_Actions.end(),[&](const Action &a){return !a.Screen&&(!entity||a.Entity==entity);}))
+        return false; // No candidate delivery: no dependency traversal.
     ResolveSurface(m_Resolved.Surface,
                    m_Resolved.PreviewOrphans); // catches unnotified native writes before delivery
     PruneActions();
     for (auto it = m_Actions.begin(); it != m_Actions.end(); ++it)
-        if (!entity || it->Entity == entity)
+        if (!it->Screen && (!entity || it->Entity == entity))
         {
             action = std::move(*it);
             m_Actions.erase(it);
@@ -668,9 +717,9 @@ bool RuntimeUI::Consume(uint64_t entity, Action &action)
 }
 bool RuntimeUI::ConsumeCancel(uint64_t scope)
 {
-    if(!m_InputEnabled||!m_Input.ConsumeCancel(m_Scene.GetIdentity(),scope))return false;
+    if(Screen(scope)||!m_InputEnabled||!m_Input.ConsumeCancel(m_Scene.GetIdentity(),scope))return false;
     ResolveSurface(m_Resolved.Surface,m_Resolved.PreviewOrphans);
-    return m_InputEnabled&&m_Resolved.Valid&&m_Input.Scope()==scope;
+    return !Screen(scope)&&m_InputEnabled&&m_Resolved.Valid&&m_Input.Scope()==scope;
 }
 bool RuntimeUI::Bounds(uint64_t id, Rect &pixels) const
 {
@@ -688,6 +737,8 @@ RuntimeUIDiagnostics RuntimeUI::Diagnostics() const
     result.Hover = m_Input.Hovered();
     result.Modal = m_Resolved.Modal;
     result.Scope=m_Input.Scope();result.NavigationMisses=m_Input.NavigationMisses();
+    if(auto screen=Screen(result.Scope))result.EventOwner=screen->Policy.EventOwner;
+    result.PendingEvents=m_Actions.size();result.PendingScreens=m_ScreenRequests.size();
     result.InputEnabled = m_InputEnabled;
     result.GameplayBlocked = BlocksGameplay();
     result.PointerBlocked = BlocksPointer();
