@@ -195,12 +195,13 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
             state.Add(b.Action);
             state.Add(b.TabOrder);
             state.Add(b.Interactable);if(b.Kind!=ControlKind::Button){state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIButtonComponent)));}state.Add(int(b.Kind));state.Add(b.InitiallyChecked);state.Add(b.Indicator);state.Add(b.Group);state.Add(b.EventOwner);
+            if(b.Kind!=ControlKind::Button&&b.Indicator)state.Add(Decoration(id,b.Indicator));
             if(unsigned(b.Kind)>2)throw std::invalid_argument("Invalid UI control kind");
         }
         state.Add(e.HasComponent<UIRadioGroupComponent>());
         if(e.HasComponent<UIRadioGroupComponent>()){auto &g=e.GetComponent<UIRadioGroupComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIRadioGroupComponent)));if(g.Action.size()>128||g.Action.find('\0')!=std::string::npos)throw std::invalid_argument("Invalid radio action");state.Add(g.Required);state.Add(g.InitialSelection);state.Add(g.EventOwner);state.Add(g.Action);}
         state.Add(e.HasComponent<UIProgressComponent>());
-        if(e.HasComponent<UIProgressComponent>()){auto &p=e.GetComponent<UIProgressComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIProgressComponent)));state.Add(p.Minimum);state.Add(p.Maximum);state.Add(p.InitialValue);state.Add(p.Fill);state.Add(int(p.Direction));}
+        if(e.HasComponent<UIProgressComponent>()){auto &p=e.GetComponent<UIProgressComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIProgressComponent)));state.Add(p.Minimum);state.Add(p.Maximum);state.Add(p.InitialValue);state.Add(p.Fill);state.Add(int(p.Direction));if(p.Fill)state.Add(Decoration(id,p.Fill));}
         uint64_t valueOwner=e.HasComponent<UIRadioGroupComponent>()?e.GetComponent<UIRadioGroupComponent>().EventOwner:e.HasComponent<UIButtonComponent>()?e.GetComponent<UIButtonComponent>().EventOwner:0;
         if(valueOwner){auto owner=m_Scene.GetEntityByUUID(valueOwner);state.Add(m_Scene.GetAuthoringLifetime(valueOwner));state.Add(m_Scene.GetAuthoringComponentVersion(valueOwner,typeid(ScriptComponent)));
             if(owner&&owner.HasComponent<ScriptComponent>()){const auto &name=owner.GetComponent<ScriptComponent>().ClassName;if(name.size()>512||name.find('\0')!=std::string::npos)throw std::invalid_argument("Invalid value owner class");state.Add(name);}}

@@ -2156,7 +2156,10 @@ its directional fill from the intersection of the fill Rect and root padded cont
 no authored geometry is rewritten. Invalid native ranges retain accepted values,
 with no fill if no valid version exists. Diagnostics are transient. Existing source
 checks additionally observe control defaults, relationships, component lifetimes
-and standalone owner identity/class. Runtime setters change only values and reuse
+and standalone owner identity/class. Referenced-part eligibility is an exact source
+dependency even for Fixed rects: Sprite/Rect/interaction/child-chain retirement or
+restoration rebuilds composition diagnostics instead of reusing a stale generation.
+Runtime setters change only values and reuse
 unchanged layout generations. Normal drawing does no document serialization,
 filesystem probing or text/font work for control properties.
 

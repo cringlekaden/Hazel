@@ -304,6 +304,27 @@ static void UIValueControlChecks(const std::filesystem::path &root)
         rejected = true;
     }
     Check(rejected, "Duplicate group fields were accepted");
+    auto beforePartRetirement = scene->GetUISnapshot().Generation;
+    auto visualSource = indicator.GetComponent<SpriteRendererComponent>();
+    indicator.RemoveComponent<SpriteRendererComponent>();
+    scene->RefreshUI();
+    Check(scene->GetUISnapshot().Generation > beforePartRetirement &&
+              !scene->GetUIDiagnostics().ControlProblem.empty(),
+          "Indicator component retirement reused stale composition diagnostics");
+    indicator.AddComponent<SpriteRendererComponent>(visualSource);
+    scene->RefreshUI();
+    Check(scene->GetUIDiagnostics().ControlProblem.empty(),
+          "Restored indicator did not clear diagnostics");
+    auto beforeFillRetirement = scene->GetUISnapshot().Generation;
+    auto fillSource = fill.GetComponent<SpriteRendererComponent>();
+    fill.RemoveComponent<SpriteRendererComponent>();
+    scene->RefreshUI();
+    Check(scene->GetUISnapshot().Generation > beforeFillRetirement &&
+              !scene->GetUIDiagnostics().ControlProblem.empty(),
+          "Fill component retirement reused stale composition diagnostics");
+    fill.AddComponent<SpriteRendererComponent>(fillSource);
+    scene->RefreshUI();
+    Check(scene->GetUIDiagnostics().ControlProblem.empty(), "Restored fill did not clear diagnostics");
     // Targeted GPU checks: composed indicator visibility and fill picking, no extra focus targets.
     auto target =
         Framebuffer::Create({400,
