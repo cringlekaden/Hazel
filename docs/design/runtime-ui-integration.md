@@ -2163,7 +2163,8 @@ Runtime setters change only values and reuse
 unchanged layout generations. Normal drawing does no document serialization,
 filesystem probing or text/font work for control properties.
 
-Typed ToggleChanged and SelectionChanged append to the existing envelope and sole
+The managed UIEvent also exposes the actual Owner identity, alongside native
+recipient stamping. Typed ToggleChanged and SelectionChanged append to the existing envelope and sole
 outer delivery stream; toggles carry previous/new bools, groups previous/new member
 identities. Admission precedes user mutation. At 64 queued records the new user
 change rejects atomically, with no implicit retry. Missing/unready owners reject
@@ -2192,3 +2193,10 @@ Qualification and physical acceptance are recorded after final local stabilizati
 This slice does not complete all P4 or production UI. Next: a bounded slider with
 real remappable Adjust actions, finite stepped range, coherent pointer drag/cancel
 and owner-addressed value events, reusing this admission/state/scope foundation.
+
+Value/event admission publishes the scene value immediately. Later intentional
+scope/owner/input cancellation retires notification rather than rolling back a
+surviving control; component retirement/reset reinitializes its state. This is not
+an implicit settings Apply/Discard/save mechanism. Queue exhaustion and unavailable
+owners reject before mutation, so pressure never silently accepts an unqueued
+user change. Diagnostics distinguish rejected admission from retired delivery.

@@ -513,7 +513,7 @@ while (GameUI.TryConsumeEvent(out value)) {
 Toggle Source identifies the control; radio Source identifies the group, with
 PreviousSelection/Selection identifying members. Empty selections are null; a
 previous member may have retired, so its ID is historical context, not a live
-object guarantee. Screen, Owner validation, sequence and action retain the existing
+object guarantee. Screen, explicit Owner, sequence and action retain the existing
 scope contract. A gesture emits a value change **instead of** Activated. Managed
 screens use their single declared owner; on an ordinary Canvas, assign Toggle or
 Group's **Standalone notification → Event owner** explicitly. Screen is null in
@@ -527,7 +527,10 @@ group, membership, action, owner lifetime/class and scope are checked before
 candidate delivery. Retirement, transitions, ownership loss, Stop/domain replacement
 cancel stale events as before; a different receiver never inherits old work.
 Programmatic setters and lifecycle fallback do not add records or coalesce queued
-historical payloads into the current value.
+historical payloads into the current value. Admission publishes the value immediately.
+Intentional lifetime/scope/ownership cancellation retires notification, without rolling
+back a surviving control's value; component retirement or UI reset reinitializes it.
+Closing a screen is not an Apply/Discard transaction or a settings save.
 
 Defaults, ranges, direction, membership and visual assignments use existing
 scene/prefab Inspector Undo/Redo, exact dirty comparison, copy and reference remap.

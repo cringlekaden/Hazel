@@ -30,6 +30,7 @@ namespace Migration {
             if(Progress!=null){var meter=Progress.GetComponent<UIProgressComponent>();meter.Value=meter.Value+dt*.05f;}
             Hazel.UIEvent value;
             while(Hazel.GameUI.TryConsumeEvent(out value)){
+                if(value.Owner==null||value.Owner.ID!=ID)throw new System.Exception("Declared screen recipient mismatch");
                 ++Count;LastSource=value.Source.ID;LastScreen=value.Screen.ID;LastKind=(int)value.Kind;
                 if(value.Kind==Hazel.UIEventKind.ToggleChanged){++ValueChanges;LastPreviousChecked=value.PreviousChecked;LastChecked=value.Checked;continue;}
                 if(value.Kind==Hazel.UIEventKind.SelectionChanged){++ValueChanges;LastPreviousSelection=value.PreviousSelection==null?0:value.PreviousSelection.ID;LastSelection=value.Selection==null?0:value.Selection.ID;continue;}

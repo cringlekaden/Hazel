@@ -404,14 +404,14 @@ namespace Hazel {
         try{auto* scene=ScriptEngine::GetSceneContext();if(scene&&scene->GetIdentity()==identity){scene->CheckThread();if(operation==-1){scene->RefreshUI();result=scene->IsUIScreenOpen(id);}else if(operation>=0&&operation<=3)result=scene->RequestUIScreen(GameUI::ScreenOperation(operation),id);else throw std::invalid_argument("Invalid UI screen operation");}}
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
     }
-    static bool UI_ConsumeEvent(uint64_t identity,uint64_t* screen,uint64_t* source,int* kind,uint64_t* sequence,MonoString** name,bool* previousChecked,bool* checked,uint64_t* previousSelection,uint64_t* selection) {
-        *previousChecked=*checked=false;*previousSelection=*selection=0;
+    static bool UI_ConsumeEvent(uint64_t identity,uint64_t* screen,uint64_t* source,int* kind,uint64_t* sequence,MonoString** name,bool* previousChecked,bool* checked,uint64_t* previousSelection,uint64_t* selection,uint64_t* recipient) {
+        *recipient=0;*previousChecked=*checked=false;*previousSelection=*selection=0;
         *screen=*source=*sequence=0;*kind=0;*name=nullptr;MonoException* failure=nullptr;bool result=false;
         try{auto* scene=ScriptEngine::GetSceneContext();auto owner=ScriptEngine::GetExecutingEntity();
             if(!owner)throw std::invalid_argument("Scoped UI events must be consumed from the declared owner's lifecycle callback");
             if(scene&&scene->GetIdentity()==identity){auto entity=scene->GetEntityByUUID(owner);auto instance=ScriptEngine::GetEntityScriptInstance(owner);
                 if(!entity||!entity.HasComponent<ScriptComponent>()||!instance||instance->GetScriptClass()!=ScriptEngine::GetEntityClass(entity.GetComponent<ScriptComponent>().ClassName))return false;
-                GameUI::Action event;if(scene->ConsumeUIEvent(owner,event)){*screen=event.Screen;*source=event.Entity;*kind=int(event.Kind);*sequence=event.Sequence;*name=ScriptEngine::CreateString(event.Name.c_str());*previousChecked=event.PreviousChecked;*checked=event.Checked;*previousSelection=event.PreviousSelection;*selection=event.Selection;result=true;}}}
+                GameUI::Action event;if(scene->ConsumeUIEvent(owner,event)){*screen=event.Screen;*source=event.Entity;*kind=int(event.Kind);*sequence=event.Sequence;*name=ScriptEngine::CreateString(event.Name.c_str());*previousChecked=event.PreviousChecked;*checked=event.Checked;*previousSelection=event.PreviousSelection;*selection=event.Selection;*recipient=event.Owner;result=true;}}}
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
     }
     static bool UI_Checked(uint64_t id,bool write,bool value){

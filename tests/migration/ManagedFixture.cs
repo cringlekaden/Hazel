@@ -279,6 +279,7 @@ namespace Migration {
         void OnUpdate(float dt){
             Hazel.UIEvent e;
             while(Hazel.GameUI.TryConsumeEvent(out e)){
+                if(e.Owner==null||e.Owner.ID!=ID)throw new System.Exception("Value event owner identity");
                 if(e.Kind==Hazel.UIEventKind.ToggleChanged){if(e.Source.ID!=101||e.Screen.ID!=100||e.PreviousChecked==e.Checked)throw new System.Exception("Toggle payload");++ToggleChanges;LastChecked=e.Checked;}
                 else if(e.Kind==Hazel.UIEventKind.SelectionChanged){if(e.Source.ID!=200||e.Selection==null)throw new System.Exception("Radio payload");++RadioChanges;Previous=e.PreviousSelection==null?0:e.PreviousSelection.ID;Selected=e.Selection.ID;}
                 else throw new System.Exception("Value gesture generated an unrelated activation");
