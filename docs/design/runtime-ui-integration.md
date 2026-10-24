@@ -2159,16 +2159,15 @@ checks additionally observe control defaults, relationships, component lifetimes
 and standalone owner identity/class. Referenced-part eligibility is an exact source
 dependency even for Fixed rects: Sprite/Rect/interaction/child-chain retirement or
 restoration rebuilds composition diagnostics instead of reusing a stale generation.
-Runtime setters change only values and reuse
-unchanged layout generations. Normal drawing does no document serialization,
+Runtime setters change only values and reuse unchanged layout generations. Normal drawing does no document serialization,
 filesystem probing or text/font work for control properties.
 
 The managed UIEvent also exposes the actual Owner identity, alongside native
-recipient stamping. Typed ToggleChanged and SelectionChanged append to the existing envelope and sole
-outer delivery stream; toggles carry previous/new bools, groups previous/new member
+recipient stamping. Typed ToggleChanged and SelectionChanged append to the existing
+envelope and sole outer delivery stream; toggles carry previous/new bools, groups previous/new member
 identities. Admission precedes user mutation. At 64 queued records the new user
-change rejects atomically, with no implicit retry. Missing/unready owners reject
-likewise. Managed scopes retain one screen owner; ordinary canvases need an explicit
+change rejects atomically, with no implicit retry. Missing owner identities and configured managed classes without a matching live
+instance reject likewise; native hosts consume their explicitly declared scene IDs. Managed scopes retain one screen owner; ordinary canvases need an explicit
 Toggle/Group recipient through the same stream. Old unscoped consumers cannot steal
 these records. Programmatic setters, initial synchronization and lifecycle fallback
 are silent. Multiple accepted changes retain ordered historical payloads. Candidate
@@ -2179,8 +2178,8 @@ No callbacks/delegates or registry observations are stored.
 Broken control references reopen as editable-with-problems without clearing authored
 IDs; strict Save/Start/export validate them. Inspector commands validate their target
 and dependent initial-selection references, allowing unrelated broken parts to be
-repaired individually without clearing them. Malformed
-fields/ranges reject staged loading. All authored fields participate in strict parsing, binary authored comparison,
+repaired individually without clearing them. Malformed fields/ranges reject staged
+loading. All authored fields participate in strict parsing, binary authored comparison,
 scene copy/duplication, subtree/prefab remapping and export containment checks.
 Shared UIEditCommand captures fields and component guards; it retains no transient
 values/resources. Native hierarchy presets, named selectors, progress/radio sections
@@ -2189,14 +2188,82 @@ outside structural history; this milestone does not redesign that service.
 The native-authored Menu/Settings/Confirmation fixture now includes Music,
 Low/Medium/High and a script-updated progress display using only existing resources.
 
-Qualification and physical acceptance are recorded after final local stabilization.
 This slice does not complete all P4 or production UI. Next: a bounded slider with
 real remappable Adjust actions, finite stepped range, coherent pointer drag/cancel
 and owner-addressed value events, reusing this admission/state/scope foundation.
 
 Value/event admission publishes the scene value immediately. Later intentional
 scope/owner/input cancellation retires notification rather than rolling back a
-surviving control; component retirement/reset reinitializes its state. This is not
+surviving control; control-value component retirement/reset reinitializes its state. This is not
 an implicit settings Apply/Discard/save mechanism. Queue exhaustion and unavailable
 owners reject before mutation, so pressure never silently accepts an unqueued
 user change. Diagnostics distinguish rejected admission from retired delivery.
+
+### Qualification and remaining physical acceptance
+
+Source checkpoints: `8e6b06c` (controls/integration), `8b5771f` (part retirement)
+and `e0a3754` (explicit managed Owner). A focused regression reproduced Fixed-rect
+indicator retirement reusing stale composition diagnostics; indicator and progress-
+fill removal/restoration now republish correctly. Test fixtures reacquire EnTT
+components after structural changes and observe runtime reparent commit boundaries.
+
+On 2026-10-24, bounded Premake/GNU Make builds with **two compiler jobs** and all
+**17 regression executables** pass in each final configuration: Release forced
+OpenGL 4.1 / GLSL410, Debug native OpenGL 4.2. Both use accelerated Intel HD4000,
+Mesa 26.2.4-arch3.1, on Plasma Wayland through GLFW X11/GLX/Xwayland. This is not
+native Wayland, Xvfb/software, Windows/MSVC or physical-controller qualification.
+The session's refreshed X authority was inherited; no desktop settings/packages
+were changed. CI was not awaited or polled.
+
+Focused production checks cover once-only pointer/Accept, synthetic standardized
+controller input through the real adapter, value/previous-value and owner payloads,
+ordered multiple changes, capacity rejection without state mutation, silent setters,
+radio fallback/clear/reparenting, disabled/clipped/modal eligibility, native fields
+and same-value component replacement, finite/clamped/signed ranges, four fill
+directions and zero surfaces. Numeric GPU readbacks verify selected-part visibility,
+disabled checked cues, padded directional fill and entity picking. Copy/duplicate,
+scene/prefab roundtrips, broken-reference repair, shared property history and three
+Play/Stop cycles pass. The maintained ImGui harness creates/configures the new
+presets and settings flow, draws their real properties and closed-screen preview,
+and verifies Undo/Redo, save/reopen and no Edit events/authored side effects.
+Existing screen/binding/P1, expanded five-state Button Inspector, shaped corpus,
+overflow, D8/painter/capacity, font reload and lifecycle regressions remain enabled.
+
+All five source projects pass Hazelnut and Nutella startup/render/resize/shutdown
+with authored hashes unchanged. Existing gameplay/progress/save checks pass,
+including Lightkeeper chapter/corrupt/future-save behavior and SceneTransitions'
+real declared-owner Play transition. The normal exported native fixture passes
+relocation to an unrelated Unicode directory with source resources/examples, SDK
+and external Mono GAC unavailable. Its bounded script probe checks public control
+setters, radio membership, progress clamping and nested screen open/close/return;
+it is not physical input acceptance. Scene/prefab/asset hashes and existing font/
+notice closure are checked; no test font collection, new artwork/font asset or new dependency ships.
+The package menu and representative Lightkeeper HUD/dialogue were inspected
+internally; no screenshot comparison or competent-reader acceptance is inferred.
+
+No broad performance campaign or new frame budget is claimed. Values reuse the
+resolved generation, and new visuals use existing ordered primitives; the known
+large alternating draw-run and changed-layout allocation costs remain separate.
+Master, stash, vendor pins, settings/layouts and the exact Sandbox draft are
+preserved. Structural history, indeterminate/radial progress, sliders, themes and
+other control families are outside this slice.
+
+Physical acceptance (disposable project and extracted fixture):
+
+1. Create Checkbox/Toggle, Radio Group and Progress under a Settings screen; label
+   them, choose initial selection/checked state, range/direction and named parts.
+   Preview, Undo/Redo, cancel an unfinished edit, save/reopen scene/prefab and
+   repeat Play/Stop. Original authored values/history must survive.
+2. Use pointer and keyboard: each release/Accept changes once; arrows/Tab move
+   radio focus without selecting, selected activation emits nothing, progress is
+   skipped. Check selected cues through hover/press/focus/disabled state and
+   clipping. Open/close confirmation, test return focus and no click-through.
+3. Repeat on a physical controller (neutral connect/reconnect, held confirm,
+   disconnect, focus loss/minimize), Windows hardware and mixed-DPI/detached
+   viewports. Inspect actual Owner/value records and normalized fill in the
+   existing debugger. These physical cases remain unverified locally.
+
+Next bounded slice: a finite stepped slider with real remappable Adjust actions,
+coherent pointer capture/drag/cancel and owner-addressed value changes, native
+presets/properties/history and synthetic plus physical acceptance. This completes
+the requested composed-controls slice, not all P4 or production screen-space UI.

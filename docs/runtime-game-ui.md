@@ -529,7 +529,7 @@ cancel stale events as before; a different receiver never inherits old work.
 Programmatic setters and lifecycle fallback do not add records or coalesce queued
 historical payloads into the current value. Admission publishes the value immediately.
 Intentional lifetime/scope/ownership cancellation retires notification, without rolling
-back a surviving control's value; component retirement or UI reset reinitializes it.
+back a surviving control's value; control-value component retirement or UI reset reinitializes it.
 Closing a screen is not an Apply/Discard transaction or a settings save.
 
 Defaults, ranges, direction, membership and visual assignments use existing
