@@ -15,5 +15,6 @@ UITextStyleComponent ReadUITextStyleComponent(const YAML::Node &node);
 UINineSliceComponent ReadUINineSliceComponent(const YAML::Node &node);
 UIButtonComponent ReadUIButtonComponent(const YAML::Node &node);
 UIRadioGroupComponent ReadUIRadioGroupComponent(const YAML::Node &node);
+UISliderComponent ReadUISliderComponent(const YAML::Node &node);
 UIProgressComponent ReadUIProgressComponent(const YAML::Node &node);
 } // namespace Hazel

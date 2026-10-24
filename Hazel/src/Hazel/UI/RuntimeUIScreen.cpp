@@ -25,6 +25,7 @@ void RuntimeUI::ScreenProblem(const std::string &message)
 }
 void RuntimeUI::CancelScreenInput()
 {
+    EndSlider(false,true,false);
     if (auto session = ScriptEngine::GetRuntimeSession();
         session && session->GetScene().get() == &m_Scene)
         session->CancelUIGestures();
@@ -399,9 +400,9 @@ void RuntimeUI::PublishScope()
     if (m_PendingFocus && !Live(m_PendingFocus))
         m_PendingFocus = 0;
 }
-bool RuntimeUI::QueueEvent(Action event)
+bool RuntimeUI::StampEvent(Action &event)
 {
-    const bool value=event.Kind==UIEventKind::ToggleChanged||event.Kind==UIEventKind::SelectionChanged;
+    const bool value=event.Kind==UIEventKind::ToggleChanged||event.Kind==UIEventKind::SelectionChanged||event.Kind>=UIEventKind::SliderChanged;
     if (auto screen = Screen(m_Resolved.Scope)) {
         event.Screen=screen->ID;event.Owner=screen->Policy.EventOwner;
     } else if(value) event.Owner=ValueOwner(event.Entity);
@@ -419,7 +420,12 @@ bool RuntimeUI::QueueEvent(Action event)
         if(owner.HasComponent<ScriptComponent>())event.OwnerClass=owner.GetComponent<ScriptComponent>().ClassName;
         if(event.OwnerClass.size()>512){ScreenProblem("Event owner class exceeds 512 bytes");return false;}
     }
-    if(m_Actions.size()==InputRouter::MaxActions){++m_OuterDrops;if(value)ControlProblem("Event queue full (64); user value change rejected");return false;}
+    return true;
+}
+bool RuntimeUI::QueueEvent(Action event){
+    const bool value=event.Kind==UIEventKind::ToggleChanged||event.Kind==UIEventKind::SelectionChanged||event.Kind>=UIEventKind::SliderChanged;
+    if(!StampEvent(event))return false;
+    if(m_Actions.size()+ReservedSliderSlots()>=InputRouter::MaxActions){++m_OuterDrops;if(value)ControlProblem("Event queue full (64); user value change rejected");return false;}
     event.Sequence=++m_EventSequence;m_Actions.push_back(std::move(event));return true;
 }
 bool RuntimeUI::EventValid(const Action &event) const
@@ -435,6 +441,15 @@ bool RuntimeUI::EventValid(const Action &event) const
         if(!screen||m_Resolved.Scope!=event.Screen||!IsScreenOpen(event.Screen)||screen->Policy.EventOwner!=event.Owner)return false;
         if(event.Kind==UIEventKind::Cancel)return screen->Policy.Cancel==ScreenCancel::NotifyOwner&&
             event.Entity==(Live(screen->Policy.CancelTarget)?screen->Policy.CancelTarget:event.Screen);
+    }
+    if(event.Kind>=UIEventKind::SliderChanged){
+        auto e=m_Scene.GetEntityByUUID(event.Entity);
+        return Live(event.Entity)&&e&&e.HasComponent<UISliderComponent>()&&e.HasComponent<UIButtonComponent>()&&
+            e.GetComponent<UIButtonComponent>().Kind==ControlKind::Slider&&e.GetComponent<UIButtonComponent>().Action==event.Name&&
+            m_Scene.GetAuthoringLifetime(event.Entity)==event.SourceLifetime&&
+            m_Scene.GetAuthoringComponentVersion(event.Entity,typeid(UIButtonComponent))==event.SourceComponent&&
+            m_Scene.GetAuthoringComponentVersion(event.Entity,typeid(UISliderComponent))==event.ControlComponent&&
+            (event.Screen||(!Screen(CanvasOf(event.Entity))&&ValueOwner(event.Entity)==event.Owner));
     }
     if(event.Kind==UIEventKind::ToggleChanged||event.Kind==UIEventKind::SelectionChanged){
         auto source=event.Kind==UIEventKind::ToggleChanged?event.Entity:event.Selection;
@@ -466,6 +481,7 @@ bool RuntimeUI::Focus(uint64_t target)
         m_PendingFocus = 0;
     if (target)
         m_KeyboardOwns = true;
+    ReconcileSlider();
     return true;
 }
 bool RuntimeUI::ConsumeEvent(uint64_t owner, Action &event)

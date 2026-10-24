@@ -140,6 +140,9 @@ bool Scene::IsUIChecked(uint64_t id){CheckThread();RefreshUI();return m_UI->Chec
 void Scene::SetUIChecked(uint64_t id,bool value){CheckThread();RefreshUI();m_UI->SetChecked(id,value);}
 uint64_t Scene::GetUISelection(uint64_t id){CheckThread();RefreshUI();return m_UI->Selection(id);}
 void Scene::SetUISelection(uint64_t id,uint64_t member){CheckThread();RefreshUI();m_UI->Select(id,member);}
+float Scene::GetUISliderValue(uint64_t id){CheckThread();RefreshUI();return m_UI->SliderValue(id);}
+void Scene::SetUISliderValue(uint64_t id,float value){CheckThread();RefreshUI();m_UI->SetSliderValue(id,value);}
+bool Scene::IsUISliderEditing() const {CheckThread();return m_UI->SliderEditing();}
 float Scene::GetUIProgress(uint64_t id){CheckThread();RefreshUI();return m_UI->Progress(id);}
 void Scene::SetUIProgress(uint64_t id,float value){CheckThread();RefreshUI();m_UI->SetProgress(id,value);}
 void Scene::ValidateUIControls(uint64_t target) const {m_UI->ValidateControls(target);}

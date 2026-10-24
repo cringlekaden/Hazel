@@ -56,6 +56,9 @@ namespace Hazel {
     void SetUIChecked(uint64_t id,bool value);
     uint64_t GetUISelection(uint64_t group);
     void SetUISelection(uint64_t group,uint64_t member);
+    float GetUISliderValue(uint64_t id);
+    void SetUISliderValue(uint64_t id,float value);
+    bool IsUISliderEditing() const;
     float GetUIProgress(uint64_t id);
     void SetUIProgress(uint64_t id,float value);
     void ValidateUIControls(uint64_t target=0) const;

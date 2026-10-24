@@ -29,6 +29,11 @@ bool UIRectEditSession::Begin(const Ref<Scene> &scene, uint64_t entity, unsigned
         if (!scene->GetUISnapshot().Valid || !n || !n->LayoutResolved || n->IsCanvas || !e || !e.HasComponent<UIRectComponent>() ||
             n->Scale <= 0)
             throw std::invalid_argument("Selected rect has no resolved editable geometry");
+        auto parent=scene->GetEntityByUUID(scene->GetRelationship(e).Parent);
+        if(parent&&parent.HasComponent<UISliderComponent>()){
+            auto &s=parent.GetComponent<UISliderComponent>();
+            if(s.Thumb==entity||s.Fill==entity)throw std::invalid_argument("Slider owns this part's placement: edit thumb size or track bounds in Properties");
+        }
         if (n->ContainerOwned && (!edges || (edges&3)))
             throw std::invalid_argument(
                 "Container owns position: use Properties, or resize measured Fixed dimensions from right/bottom");

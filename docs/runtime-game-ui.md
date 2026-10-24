@@ -544,3 +544,86 @@ owner and action identities, then connect Progress to an ordinary script field.
 The maintained native screen fixture demonstrates Music, Low/Medium/High and a
 script-updated meter; its owner consumes typed events and requests screens without
 maintaining duplicate checked/selection state or indicator geometry.
+
+## Stepped sliders and Adjust
+
+**Runtime UI → Slider / Vertical Slider** creates a Button with Slider behavior,
+UI Slider configuration, and named direct Sprite/Rect track, fill and thumb
+leaves. Assign the screen owner (or **Standalone notification → Event owner**),
+then label the row with normal Text. Parts remain decorative. Track bounds and
+thumb size set travel; thumb position and fill extent are computed, without
+writing Rects. Edit those dimensions in Properties; viewport gestures on derived
+thumb/fill are rejected. Focus has an outline; active editing uses a cyan outline,
+and disabled parts dim. Edit preview shows the quantized initial value, without
+runtime events or authoring-history changes.
+
+Minimum/Maximum must be finite and increasing, within ±1e9. Step is finite,
+positive, at least 1e-6 and the largest endpoint's float spacing. At most 65,536
+intervals are allowed. Values clamp and snap to `Minimum + integer * Step`, with
+Maximum always an exact reachable endpoint, including a shorter last interval.
+Nearest wins; ties choose the larger numeric value. Values are reconstructed,
+never incremented by floating-point addition. Initial values snap/clamp too.
+Increasing toward Right/Left/Down/Up controls presentation, independently of the
+numeric Adjust actions. Invalid native range writes retain accepted state and
+report a problem; replacing the component retires its old state.
+
+A focused slider stays in ordinary Tab/spatial navigation until **Accept** enters
+editing. **AdjustDecrease/AdjustIncrease** change one lattice position; Accept
+commits, Cancel restores the starting value and remains in the screen. While
+editing, navigation is inactive. Defaults are Left/Down and Right/Up, D-pad
+Left/Right, or the configured stick (left/down decreases, right/up increases).
+Bindings are in existing Project Settings and runtime overrides. Navigation and
+Adjust may share bindings across their exclusive contexts; conflicts with
+Accept/Cancel or within either context reject. Context changes rearm held inputs;
+repeat uses the existing delay/rate and at most one step per sample. Binding
+format 2 includes both Adjust actions; unsupported/corrupt overrides retain usable
+project defaults with a warning, until reset/replaced through the native editor.
+
+Track-click jumps to the nearest value and starts editing. Thumb-drag preserves
+the press offset. Mapping uses the full track intersected with padded content,
+not the clipped visible portion; travel reserves half the thumb at each end.
+Captured dragging outside clamps, and outside release commits. Picking up a
+keyboard edit on the same slider continues its original start/gesture; a click
+on a different control interrupts and requires neutral before another edit. A zero-travel
+pointer edit rejects; keyboard adjustment can still change its value. Adjust and
+Accept do not compete with an active pointer drag; Cancel can restore it.
+Geometry/surface changes, lost focus/ownership, part retirement or focus movement
+interrupt the gesture and retain the latest accepted value. Interrupted releases
+cannot activate exposed controls. New input must neutral-rearm.
+
+Use `UISliderComponent.Value` or native `Scene::GetUISliderValue/SetUISliderValue`.
+Finite setters snap silently and interrupt a current edit **before** applying the
+new value; a stale Cancel cannot overwrite it. Native authored-default changes
+reset to the new accepted default at publication. Runtime values/revisions/edits
+are scene-owned and never enter authoring history or serialized content.
+
+The single owner stream reports `SliderChanged`, `SliderCommitted` and
+`SliderCancelled`: Source is the slider; Action/Screen/Owner retain their normal
+meaning. Value/PreviousValue describe the update, StartValue the edit's start,
+and Gesture associates its records. On terminal events PreviousValue equals
+StartValue. Payloads are historical: a silent setter interrupts before its write,
+so its terminal reports the ended edit, not an echo of the programmatic value.
+Read the current component value when reconciling interrupted feedback. `Interrupted` distinguishes interruption from explicit Cancel.
+Unconsumed previews for one gesture coalesce (earliest previous, latest value)
+and move to the stream's tail with a new Sequence; consumed previews are never
+rewritten. Cancel may publish a restoration preview, then its terminal. A no-op
+edit has a terminal without a change. Two slots are reserved before starting,
+so other events cannot steal preview/terminal admission. Full queues reject
+starting the edit, without changing its value. Existing scope/source/owner/domain
+retirement and ownership-loss rules can retire all pending records; retirement
+never rolls back a surviving value or transfers delivery to a new owner.
+
+```csharp
+while (GameUI.TryConsumeEvent(out UIEvent e)) {
+    if (e.Action != "volume") continue;
+    if (e.Kind == UIEventKind.SliderChanged) ApplyLiveVolume(e.Value);
+    if (e.Kind == UIEventKind.SliderCommitted) SaveVolume(e.Value);
+    if (e.Kind == UIEventKind.SliderCancelled)
+        ApplyLiveVolume(e.Interrupted ? e.Source.GetComponent<UISliderComponent>().Value : e.Value);
+}
+```
+
+The maintained native Settings fixture includes stepped volume, reversed vertical
+level and an owner showing live/terminal feedback. The Runtime UI Debugger shows
+value/normalized position, editing device, gesture, capture and rejection details.
+This is one control edit, not a screen-wide Apply/Discard or persistence service.

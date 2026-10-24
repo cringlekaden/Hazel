@@ -240,6 +240,7 @@ std::string SceneSerializer::CaptureAuthoredState() const
                 state.Source(source);
         });
         state.Component<UIRadioGroupComponent>(e,[&](auto &c){state.Value(c.Required);state.Value(c.InitialSelection);state.Value(c.EventOwner);state.Value(c.Action);});
+        state.Component<UISliderComponent>(e,[&](auto &c){state.Value(c.Minimum);state.Value(c.Maximum);state.Value(c.Step);state.Value(c.InitialValue);state.Value(c.Track);state.Value(c.Fill);state.Value(c.Thumb);state.Value(unsigned(c.Direction));});
         state.Component<UIProgressComponent>(e,[&](auto &c){state.Value(c.Minimum);state.Value(c.Maximum);state.Value(c.InitialValue);state.Value(c.Fill);state.Value(unsigned(c.Direction));});
         state.Component<TextComponent>(e, [&](auto &c) {
             state.Value(c.TextString);

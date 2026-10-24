@@ -133,6 +133,7 @@ FIELD(Flow, Rows);
         }
     }
     COMPONENT(Group){FIELD(Group, Required);FIELD(Group, InitialSelection);FIELD(Group, EventOwner);FIELD(Group, Action);}
+    COMPONENT(Slider){FIELD(Slider, Minimum);FIELD(Slider, Maximum);FIELD(Slider, Step);FIELD(Slider, InitialValue);FIELD(Slider, Direction);FIELD(Slider, Track);FIELD(Slider, Fill);FIELD(Slider, Thumb);}
     COMPONENT(Progress){FIELD(Progress, Minimum);FIELD(Progress, Maximum);FIELD(Progress, InitialValue);FIELD(Progress, Fill);FIELD(Progress, Direction);}
     COMPONENT(Text)
     {
@@ -252,6 +253,7 @@ void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
                 Source(scene, v.Button->Images[i]);
         }
     }
+    if(v.Slider){v.Slider->Validate();if(!std::isfinite(v.Slider->InitialValue)||unsigned(v.Slider->Direction)>3)throw std::invalid_argument("Invalid slider initial value/direction");}
     if (v.Text)
     {
         if (v.Text->Text.size() > 65536)
@@ -385,6 +387,7 @@ for (int i = 0; i < 5; ++i)
 }
 }
 COMPONENT(Group, UIRadioGroupComponent) FIELD(Group, Required);FIELD(Group, InitialSelection);FIELD(Group, EventOwner);FIELD(Group, Action);}
+COMPONENT(Slider, UISliderComponent) FIELD(Slider, Minimum);FIELD(Slider, Maximum);FIELD(Slider, Step);FIELD(Slider, InitialValue);FIELD(Slider, Direction);FIELD(Slider, Track);FIELD(Slider, Fill);FIELD(Slider, Thumb);}
 COMPONENT(Progress, UIProgressComponent) FIELD(Progress, Minimum);FIELD(Progress, Maximum);FIELD(Progress, InitialValue);FIELD(Progress, Fill);FIELD(Progress, Direction);}
 COMPONENT(Text, TextComponent) change(c.TextString, old.Text->Text, next.Text->Text);
 FIELD(Text, Font);
@@ -432,6 +435,7 @@ UIEditValues UIEditValues::Capture(Entity e)
     CAPTURE(UIButtonComponent, Button);
     CAPTURE(UIRadioGroupComponent, Group);
     CAPTURE(UIProgressComponent, Progress);
+    CAPTURE(UISliderComponent, Slider);
     CAPTURE(TextComponent, Text);
     CAPTURE(SpriteRendererComponent, Image);
 #undef CAPTURE
@@ -483,7 +487,8 @@ UIEditCommand::UIEditCommand(Scene &scene, uint64_t entity, std::string name, UI
         scene.GetAuthoringComponentVersion(entity, typeid(TextComponent)),
         scene.GetAuthoringComponentVersion(entity, typeid(SpriteRendererComponent)),
         scene.GetAuthoringComponentVersion(entity,typeid(UIRadioGroupComponent)),
-        scene.GetAuthoringComponentVersion(entity,typeid(UIProgressComponent))};
+        scene.GetAuthoringComponentVersion(entity,typeid(UIProgressComponent)),
+        scene.GetAuthoringComponentVersion(entity,typeid(UISliderComponent))};
     while (e)
     {
         if (m_Guards.size() >= Scene::MaxDepth)
@@ -507,10 +512,10 @@ Entity UIEditCommand::Target(Scene &scene, bool cancelling) const
         throw std::runtime_error("UI entity lifetime ended; select a live entity");
     if (cancelling)
         return e;
-    const std::array<std::type_index, 10> types = {
+    const std::array<std::type_index, 11> types = {
         typeid(UICanvasComponent),    typeid(UIRectComponent),        typeid(UILayoutComponent),
         typeid(UITextStyleComponent), typeid(UINineSliceComponent),   typeid(UIButtonComponent),
-        typeid(TextComponent),        typeid(SpriteRendererComponent),typeid(UIRadioGroupComponent),typeid(UIProgressComponent)};
+        typeid(TextComponent),        typeid(SpriteRendererComponent),typeid(UIRadioGroupComponent),typeid(UIProgressComponent),typeid(UISliderComponent)};
     for (size_t i = 0; i < types.size(); ++i)
         if (scene.GetAuthoringComponentVersion(m_Entity, types[i]) != m_ComponentVersions[i])
             throw std::runtime_error(
@@ -645,6 +650,7 @@ void UIEditCommand::Cancel(Scene &scene)
     KEEP(Image, SpriteRendererComponent, 7);
     KEEP(Group, UIRadioGroupComponent, 8);
     KEEP(Progress, UIProgressComponent, 9);
+    KEEP(Slider, UISliderComponent, 10);
 #undef KEEP
     auto restored = Merge(before, after, subset, true, true), next = current;
 #define RESTORE(member)                                                                            \
@@ -660,6 +666,7 @@ void UIEditCommand::Cancel(Scene &scene)
     RESTORE(Image);
     RESTORE(Group);
     RESTORE(Progress);
+    RESTORE(Slider);
 #undef RESTORE
     Publish(scene, current, std::move(next), true);
 }

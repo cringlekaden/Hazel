@@ -42,6 +42,7 @@ bool Nonempty(Rect r)
 } // namespace
 void RuntimeUI::CancelInput()
 {
+    EndSlider(false,true,false);
     if (m_InputEnabled || m_Input.Captured() || m_Input.Focused() || !m_Actions.empty())
     {
         m_OuterDrops += m_Input.DroppedActions();
@@ -75,6 +76,7 @@ void RuntimeUI::Reset()
 }
 void RuntimeUI::Retire(uint64_t id)
 {
+    if(m_Slider.ID&&(m_Slider.ID==id||m_Slider.Terminal.Owner==id||m_Slider.Terminal.Screen==id||m_Values.at(m_Slider.ID).Track==id||m_Values.at(m_Slider.ID).Thumb==id||m_Values.at(m_Slider.ID).Fill==id))EndSlider(false,true);
     if(auto screen=Screen(m_Resolved.Scope);screen&&screen->Policy.EventOwner==id){RememberFocus(screen->ID,m_Input.Focused(),m_KeyboardOwns);CancelScreenInput();}
 
     if (m_Input.Focused() == id && !m_Resolved.Modal)
@@ -196,12 +198,14 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
             state.Add(b.TabOrder);
             state.Add(b.Interactable);if(b.Kind!=ControlKind::Button){state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIButtonComponent)));}state.Add(int(b.Kind));state.Add(b.InitiallyChecked);state.Add(b.Indicator);state.Add(b.Group);state.Add(b.EventOwner);
             if(b.Kind!=ControlKind::Button&&b.Indicator)state.Add(Decoration(id,b.Indicator));
-            if(unsigned(b.Kind)>2)throw std::invalid_argument("Invalid UI control kind");
+            if(unsigned(b.Kind)>3)throw std::invalid_argument("Invalid UI control kind");
         }
         state.Add(e.HasComponent<UIRadioGroupComponent>());
         if(e.HasComponent<UIRadioGroupComponent>()){auto &g=e.GetComponent<UIRadioGroupComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIRadioGroupComponent)));if(g.Action.size()>128||g.Action.find('\0')!=std::string::npos)throw std::invalid_argument("Invalid radio action");state.Add(g.Required);state.Add(g.InitialSelection);state.Add(g.EventOwner);state.Add(g.Action);}
         state.Add(e.HasComponent<UIProgressComponent>());
         if(e.HasComponent<UIProgressComponent>()){auto &p=e.GetComponent<UIProgressComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIProgressComponent)));state.Add(p.Minimum);state.Add(p.Maximum);state.Add(p.InitialValue);state.Add(p.Fill);state.Add(int(p.Direction));if(p.Fill)state.Add(Decoration(id,p.Fill));}
+        state.Add(e.HasComponent<UISliderComponent>());
+        if(e.HasComponent<UISliderComponent>()){auto &v=e.GetComponent<UISliderComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UISliderComponent)));state.Add(v.Minimum);state.Add(v.Maximum);state.Add(v.Step);state.Add(v.InitialValue);state.Add(v.Track);state.Add(v.Fill);state.Add(v.Thumb);state.Add(unsigned(v.Direction));for(auto part:{v.Track,v.Fill,v.Thumb})state.Add(Decoration(id,part));}
         uint64_t valueOwner=e.HasComponent<UIRadioGroupComponent>()?e.GetComponent<UIRadioGroupComponent>().EventOwner:e.HasComponent<UIButtonComponent>()?e.GetComponent<UIButtonComponent>().EventOwner:0;
         if(valueOwner){auto owner=m_Scene.GetEntityByUUID(valueOwner);state.Add(m_Scene.GetAuthoringLifetime(valueOwner));state.Add(m_Scene.GetAuthoringComponentVersion(valueOwner,typeid(ScriptComponent)));
             if(owner&&owner.HasComponent<ScriptComponent>()){const auto &name=owner.GetComponent<ScriptComponent>().ClassName;if(name.size()>512||name.find('\0')!=std::string::npos)throw std::invalid_argument("Invalid value owner class");state.Add(name);}}
@@ -287,6 +291,7 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
         m_Source.swap(m_Candidate);
         PublishScope();
         SyncControls();
+        SyncSliders();
         PruneActions();
         if (!m_Input.Focused() && !m_Resolved.Modal)
             m_KeyboardOwns = false;
@@ -503,7 +508,7 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
         // scissoring. Converting that region back to viewport pixels for hit
         // tests can exclude a covered edge through reciprocal rounding.
         m_Build.Buttons.push_back({n.ID, n.FramebufferBounds, n.FramebufferClip, b.Action,
-                                  b.TabOrder, true, n.FocusEligible, n.Hit});
+                                  b.TabOrder, true, n.FocusEligible, n.Hit,b.Kind==ControlKind::Slider});
     }
     for(const auto &entry:m_Screens){
         for(auto target:{entry.Policy.InitialFocus,entry.Policy.DefaultAction,entry.Policy.CancelTarget})if(target){
@@ -534,6 +539,7 @@ void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enable
     n.LayoutResolved = true;
     n.Order = m_Build.PainterOrder.size();
     m_Build.PainterOrder.push_back(m_Build.Index.at(n.ID));
+    n.InheritedClip=clip;
     n.Clip = clip.Intersect(n.Bounds);
     n.PixelBounds = Scaled(n.Bounds, glm::vec2(scale));
     auto ratio = m_Build.Surface.Framebuffer / m_Build.Surface.Viewport;
@@ -585,11 +591,12 @@ void RuntimeUI::WarnOverflow()
 }
 void RuntimeUI::UpdateInput(const InputFrame &pixels)
 {
-    if(m_TransitionNeutral){
-        const bool neutral=pixels.Enabled&&!pixels.LeftDown&&!pixels.AcceptDown&&!pixels.CancelDown&&!pixels.NextDown&&!pixels.PreviousDown&&!pixels.Navigate.x&&!pixels.Navigate.y&&!pixels.PointerPressed&&!pixels.AcceptPressed&&!pixels.NextPressed&&!pixels.PreviousPressed&&
+    if(m_TransitionNeutral || m_SliderNeutral){
+        if(!pixels.Enabled){CancelInput();return;}
+        const bool neutral=pixels.Enabled&&!pixels.LeftDown&&!pixels.AcceptDown&&!pixels.CancelDown&&!pixels.NextDown&&!pixels.PreviousDown&&!pixels.Navigate.x&&!pixels.Navigate.y&&!pixels.Adjust&&!pixels.PointerPressed&&!pixels.AcceptPressed&&!pixels.NextPressed&&!pixels.PreviousPressed&&
             std::none_of(pixels.Events.begin(),pixels.Events.end(),[](const ActionEdge &edge){return edge.Down;});
         if(!neutral){m_InputEnabled=false;return;}
-        m_TransitionNeutral=false;PublishScope();
+        m_TransitionNeutral=false;m_SliderNeutral=false;PublishScope();
         // Release-only samples establish neutral, but their releases never enter the new scope.
         auto ready=pixels;ready.Events.clear();ready.PointerReleased=false;ready.HasReleasePosition=false;
         UpdateInput(ready);return;
@@ -615,10 +622,12 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
         for(auto edge:pixels.Events){
             step.PointerPressed=step.PointerReleased=step.AcceptPressed=false;
             step.NextDown=step.PreviousDown=step.NextPressed=step.PreviousPressed=step.FocusNavigation=false;
-            step.Navigate={};step.CancelDown=cancelling;
+            step.Navigate={};step.Adjust=0;step.CancelDown=cancelling;
             if(edge.Action==UIAction::Press){step.Mouse=edge.Point;step.LeftDown=edge.Down;step.PointerPressed=edge.Down;step.PointerReleased=!edge.Down;step.PressPosition=step.ReleasePosition=edge.Point;step.HasReleasePosition=true;}
             else if(edge.Action==UIAction::Accept){step.AcceptDown=edge.Down;step.AcceptPressed=edge.Down;}
             else if(edge.Down){switch(edge.Action){
+                case UIAction::AdjustDecrease:step.Adjust=-1;break;
+                case UIAction::AdjustIncrease:step.Adjust=1;break;
                 case UIAction::Next:step.FocusNavigation=step.NextPressed=true;break;
                 case UIAction::Previous:step.FocusNavigation=step.PreviousDown=step.PreviousPressed=true;break;
                 case UIAction::Up:step.FocusNavigation=true;step.Navigate.y=-1;break;
@@ -631,7 +640,7 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
         }
         step.Mouse=pixels.Mouse;step.LeftDown=pixels.LeftDown;step.AcceptDown=pixels.AcceptDown;step.CancelDown=pixels.CancelDown;
         step.PointerPressed=step.PointerReleased=step.AcceptPressed=false;
-        step.NextDown=step.PreviousDown=step.NextPressed=step.PreviousPressed=step.FocusNavigation=false;step.Navigate={};
+        step.NextDown=step.PreviousDown=step.NextPressed=step.PreviousPressed=step.FocusNavigation=false;step.Navigate={};step.Adjust=0;
         UpdateInput(step);m_ActionOwnsFrame|=owned;
         m_Diagnostics.LastRoutingMilliseconds=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
         return;
@@ -647,6 +656,9 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
     input.PressPosition *= ratio;
     input.ReleasePosition *= ratio;
     m_ActionOwnsFrame=input.Enabled&&(m_Input.Captured()||((m_KeyboardOwns||m_ActionOwnsFrame)&&input.CancelDown));
+    const bool editing=m_Slider.ID!=0;
+    input.Editing=editing;
+    if(!input.Enabled)EndSlider(false,true);
     const bool previousKeyboardOwns=m_KeyboardOwns;
     m_InputEnabled = input.Enabled;
     uint64_t entryFocus = 0;
@@ -665,11 +677,20 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
             entryOrder = b.TabOrder;
         }
     }
+    if(input.Enabled&&m_Slider.ID&&!m_Slider.Pointer&&(input.PointerPressed||input.LeftDown)){
+        const auto *target=m_Resolved.Find(m_Slider.ID);
+        if(!target||!target->FramebufferBounds.Intersect(target->FramebufferClip).Contains(input.Mouse)){
+            EndSlider(false,true);m_KeyboardOwns=false;m_ActionOwnsFrame=true;
+            m_Diagnostics.InputGeneration=m_Resolved.Generation;
+            m_Diagnostics.LastRoutingMilliseconds=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
+            return; // This press owns its release; it cannot become a gameplay click.
+        }
+    }
     bool entering = !m_Resolved.Modal && !m_KeyboardOwns && input.FocusNavigation && entryFocus &&
                     input.Enabled && !input.CancelDown;
     if (!input.Enabled)m_KeyboardOwns=false;
     else if(!m_Resolved.Modal) {
-        if(input.CancelDown || (input.PointerPressed&&!m_PointerOver))m_KeyboardOwns=false;
+        if((input.CancelDown&&!editing) || (input.PointerPressed&&!m_PointerOver))m_KeyboardOwns=false;
         else if(input.FocusNavigation&&entryFocus)m_KeyboardOwns=true;
     }
     m_Input.SetScope(m_Scene.GetIdentity(),m_Resolved.Scope);
@@ -677,6 +698,7 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
     if(m_PendingFocus&&m_Input.SetFocus(m_Scene.GetIdentity(),m_PendingFocus,m_Resolved.Buttons))m_PendingFocus=0;
     if(input.KeyboardEnabled&&!m_Input.Focused())if(auto screen=Screen(m_Resolved.Scope);screen&&Live(screen->Policy.DefaultAction))m_Input.SetFocus(m_Scene.GetIdentity(),screen->Policy.DefaultAction,m_Resolved.Buttons);
     m_Input.Update(m_Scene.GetIdentity(), m_Resolved.Buttons, input, m_Resolved.Generation);
+    ReconcileSlider();
     if(m_PendingFocus&&input.Enabled){if(input.PointerPressed||m_Input.Captured())m_PendingFocus=0;else if(m_Input.SetFocus(m_Scene.GetIdentity(),m_PendingFocus,m_Resolved.Buttons))m_PendingFocus=0;}
     if (entering)
         m_Input.SetFocus(m_Scene.GetIdentity(), entryFocus, m_Resolved.Buttons);
@@ -697,7 +719,8 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
         {
             ActivateControl(std::move(a));
         }
-        if(auto screen=Screen(m_Resolved.Scope);screen&&m_Input.ConsumeCancel(m_Scene.GetIdentity(),m_Resolved.Scope)){
+        if(editing&&m_Slider.ID&&input.Adjust)AdjustSlider(input.Adjust);
+        if(auto screen=Screen(m_Resolved.Scope);screen&&!editing&&m_Input.ConsumeCancel(m_Scene.GetIdentity(),m_Resolved.Scope)){
             m_ActionOwnsFrame=true;
             if(screen->Policy.Cancel==ScreenCancel::Close)RequestScreen(ScreenOperation::Close,screen->ID);
             else if(screen->Policy.Cancel==ScreenCancel::NotifyOwner){Action event;event.Kind=UIEventKind::Cancel;event.Entity=Live(screen->Policy.CancelTarget)?screen->Policy.CancelTarget:screen->ID;QueueEvent(std::move(event));}
@@ -743,6 +766,7 @@ bool RuntimeUI::Bounds(uint64_t id, Rect &pixels) const
 RuntimeUIDiagnostics RuntimeUI::Diagnostics() const
 {
     auto result = m_Diagnostics;
+    result.SliderEdit=m_Slider.ID;result.SliderGesture=m_Slider.Terminal.Gesture;result.SliderPointer=m_Slider.Pointer;
     result.Focus = m_Input.Focused();
     result.Capture = m_Input.Captured();
     result.Hover = m_Input.Hovered();
@@ -863,8 +887,9 @@ void RuntimeUI::Draw()
             if (!m_Scene.IsEntityValid(e.GetUUID()))
                 continue;
             Rect visualBounds=n.Bounds;bool visualVisible=true;
-            ControlVisual(n.ID,visualBounds,visualVisible);if(!visualVisible)continue;
-            const auto p = n.FramebufferClip.Position, z = n.FramebufferClip.Size;
+            bool derived=ControlVisual(n.ID,visualBounds,visualVisible);if(!visualVisible)continue;
+            auto paintClip=derived?FramebufferCoverage(Scaled(visualBounds.Intersect(n.InheritedClip),glm::vec2(n.Scale)),m_Resolved.Surface.Framebuffer/m_Resolved.Surface.Viewport,m_Resolved.Surface.Framebuffer):n.FramebufferClip;
+            const auto p = paintClip.Position, z = paintClip.Size;
             if (z.x <= 0 || z.y <= 0)
                 continue;
             ++m_Diagnostics.VisibleElements;
@@ -875,6 +900,10 @@ void RuntimeUI::Draw()
                               int(z.y)};
             Renderer2D::SetPrimitiveClip(state.ClipRect);
             auto tint = glm::vec4(1);
+            if(auto part=m_ControlVisuals.find(n.ID);part!=m_ControlVisuals.end()){
+                auto owner=m_Scene.GetEntityByUUID(part->second);auto root=m_Resolved.Find(part->second);
+                if(owner&&root&&owner.HasComponent<UISliderComponent>()&&(!root->Enabled||!owner.GetComponent<UIButtonComponent>().Interactable))tint=glm::vec4(.4f,.4f,.4f,1);
+            }
             const SpriteSource *overrideImage = nullptr;
             int stateIndex = 0;
             if (e.HasComponent<UIButtonComponent>())
@@ -941,7 +970,7 @@ void RuntimeUI::Draw()
             }
             if(e.HasComponent<UIButtonComponent>()){
                 auto &b=e.GetComponent<UIButtonComponent>();
-                if(b.Kind!=ControlKind::Button&&!Decoration(n.ID,b.Indicator)){
+                if((b.Kind==ControlKind::Toggle||b.Kind==ControlKind::Radio)&&!Decoration(n.ID,b.Indicator)){
                     Rect mark{n.Bounds.Position+glm::vec2(8,std::max(0.f,(n.Bounds.Size.y-16)*.5f)),glm::vec2(16)};
                     Renderer2D::DrawRect(Transform(mark,n.Scale),{1,1,1,1},int(uint32_t(e)));
                     bool selected=false;auto it=m_Values.find(b.Kind==ControlKind::Radio?b.Group:n.ID);
@@ -956,7 +985,7 @@ void RuntimeUI::Draw()
                     (m_Resolved.Modal || m_KeyboardOwns))
                 {
                     auto inset = n.Bounds.Inset(glm::vec4(2));
-                    Renderer2D::DrawRect(Transform(inset, n.Scale), {1, .9f, .65f, 1},
+                    Renderer2D::DrawRect(Transform(inset, n.Scale), m_Slider.ID==n.ID?glm::vec4(.3f,1,1,1):glm::vec4(1,.9f,.65f,1),
                                          int(uint32_t(e)));
                 }
             }

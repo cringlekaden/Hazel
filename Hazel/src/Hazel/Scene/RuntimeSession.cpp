@@ -169,7 +169,7 @@ namespace Hazel {
         if(sample.Pad.Device>=0){for(bool down:sample.Pad.Buttons)neutral&=!down;for(float axis:sample.Pad.Sticks)neutral&=std::isfinite(axis)&&std::abs(axis)<=m_UIAdapter.Bindings().NeutralZone;}
         if(neutral)m_UINeutralLatch=false;
         const auto drops=m_UIAdapter.Dropped();
-        auto frame=m_UIAdapter.Sample(sample,seconds,enabled&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0)));
+        auto frame=m_UIAdapter.Sample(sample,seconds,enabled&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0)),m_Scene->IsUISliderEditing());
         if(drops!=m_UIAdapter.Dropped()){
             static auto last=std::chrono::steady_clock::time_point{};
             const auto now=std::chrono::steady_clock::now();

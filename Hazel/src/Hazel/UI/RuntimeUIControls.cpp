@@ -56,7 +56,7 @@ bool RuntimeUI::Decoration(uint64_t owner, uint64_t visual) const
     return e && m_Scene.IsEntityValid(visual) && m_Scene.GetRelationship(e).Parent == UUID(owner) &&
            e.HasComponent<UIRectComponent>() && e.HasComponent<SpriteRendererComponent>() &&
            !e.HasComponent<UIButtonComponent>() && !e.HasComponent<UIProgressComponent>() &&
-           !e.HasComponent<UIRadioGroupComponent>() && !e.HasComponent<TextComponent>() &&
+           !e.HasComponent<UIRadioGroupComponent>() && !e.HasComponent<UISliderComponent>() && !e.HasComponent<TextComponent>() &&
            !e.HasComponent<UICanvasComponent>() && m_Scene.GetChildrenView(visual).empty();
 }
 void RuntimeUI::ValidateControls(uint64_t target) const
@@ -76,7 +76,7 @@ void RuntimeUI::ValidateControls(uint64_t target) const
         if (target && uint64_t(e.GetUUID()) != target)
             continue;
         auto &b = e.GetComponent<UIButtonComponent>();
-        if (unsigned(b.Kind) > 2)
+        if (unsigned(b.Kind) > 3)
             throw std::invalid_argument("Invalid UI control kind");
         if (b.Kind != ControlKind::Button)
         {
@@ -89,6 +89,7 @@ void RuntimeUI::ValidateControls(uint64_t target) const
         }
         if (b.Kind == ControlKind::Radio && b.EventOwner)
             throw std::invalid_argument("Radio events use the group/screen owner, not an option owner");
+        if(b.Kind==ControlKind::Slider&&!e.HasComponent<UISliderComponent>())throw std::invalid_argument("Slider behavior needs UI Slider configuration");
         if (b.Kind != ControlKind::Radio && b.Group)
             throw std::invalid_argument("Only radio options can reference a group");
         if (b.EventOwner && !m_Scene.IsEntityValid(b.EventOwner))
@@ -114,6 +115,14 @@ void RuntimeUI::ValidateControls(uint64_t target) const
                                         ": initial selection is not a member");
         if (g.EventOwner && !m_Scene.IsEntityValid(g.EventOwner))
             throw std::invalid_argument("Radio group event owner is missing");
+    }
+    for(auto h:m_Scene.GetAllEntitiesWith<UISliderComponent>()){
+        Entity e(h,&m_Scene);auto id=uint64_t(e.GetUUID());auto &v=e.GetComponent<UISliderComponent>();
+        if(target&&target!=id&&target!=v.Track&&target!=v.Fill&&target!=v.Thumb)continue;
+        v.Validate();if(!std::isfinite(v.InitialValue)||unsigned(v.Direction)>3)throw std::invalid_argument("Slider requires finite initial value and valid direction");
+        if(!e.HasComponent<UIRectComponent>()||(!target&&(!e.HasComponent<UIButtonComponent>()||e.GetComponent<UIButtonComponent>().Kind!=ControlKind::Slider))||e.HasComponent<UIProgressComponent>()||e.HasComponent<UIRadioGroupComponent>())throw std::invalid_argument("Slider needs a Rect and Slider Button behavior");
+        if((!target&&(!v.Track||!v.Thumb))||(v.Track&&v.Track==v.Thumb)||(v.Fill&&(v.Fill==v.Track||v.Fill==v.Thumb)))throw std::invalid_argument("Slider requires distinct track/thumb and optional fill");
+        visual(id,v.Track);visual(id,v.Fill);visual(id,v.Thumb);
     }
     for (auto h : m_Scene.GetAllEntitiesWith<UIProgressComponent>())
     {
@@ -180,7 +189,7 @@ void RuntimeUI::SyncControls()
         auto e = m_Scene.GetEntityByUUID(it->first);
         if (!e || !e.HasComponent<UIRectComponent>() ||
             (!e.HasComponent<UIButtonComponent>() && !e.HasComponent<UIRadioGroupComponent>() &&
-             !e.HasComponent<UIProgressComponent>()))
+             !e.HasComponent<UIProgressComponent>()&&!e.HasComponent<UISliderComponent>()))
             it = m_Values.erase(it);
         else
             ++it;
@@ -207,6 +216,7 @@ void RuntimeUI::SyncControls()
                 m_Values.erase(id);
                 continue;
             }
+            if(b.Kind==ControlKind::Slider)continue;
             visual(id, b.Indicator);
             if (b.Kind == ControlKind::Radio && !Member(b.Group, id, false))
                 ControlProblem("Radio option #" + std::to_string(id) +
@@ -380,6 +390,7 @@ uint64_t RuntimeUI::ValueOwner(uint64_t source) const
 }
 void RuntimeUI::ActivateControl(Action event)
 {
+    if(m_SliderNeutral)return;
     auto e = m_Scene.GetEntityByUUID(event.Entity);
     if (!Live(event.Entity) || !e || !e.HasComponent<UIButtonComponent>())
         return;
@@ -389,6 +400,7 @@ void RuntimeUI::ActivateControl(Action event)
         QueueEvent(std::move(event));
         return;
     }
+    if(b.Kind==ControlKind::Slider){if(event.Phase!=RoutedPhase::Activate)RouteSlider(event);else if(m_Slider.ID==event.Entity)EndSlider(false);else BeginSlider(event.Entity,false);return;}
     const auto source = event.Entity;
     if (b.Kind == ControlKind::Toggle)
     {
@@ -449,7 +461,7 @@ bool RuntimeUI::ControlVisual(uint64_t id, Rect &bounds, bool &visible) const
     if (parent.HasComponent<UIButtonComponent>())
     {
         auto &b = parent.GetComponent<UIButtonComponent>();
-        if (b.Kind != ControlKind::Button && b.Indicator == id && Decoration(owner, id))
+        if ((b.Kind == ControlKind::Toggle || b.Kind == ControlKind::Radio) && b.Indicator == id && Decoration(owner, id))
         {
             auto it = m_Values.find(b.Kind == ControlKind::Radio ? b.Group : owner);
             visible =
@@ -457,6 +469,11 @@ bool RuntimeUI::ControlVisual(uint64_t id, Rect &bounds, bool &visible) const
                 (b.Kind == ControlKind::Radio ? it->second.Selected == owner : it->second.Checked);
             return true;
         }
+    }
+    if(parent.HasComponent<UISliderComponent>()){
+        auto it=m_Values.find(owner);if(it==m_Values.end()){visible=false;return true;}
+        try{auto g=SliderGeometryFor(owner);if(id==it->second.Thumb)bounds=g.Thumb;else if(id==it->second.Fill){bounds=g.Fill;visible=bounds.Size.x>0&&bounds.Size.y>0;}return true;}
+        catch(...){visible=false;return true;}
     }
     if (parent.HasComponent<UIProgressComponent>())
     {

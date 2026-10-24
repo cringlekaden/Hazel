@@ -293,9 +293,10 @@ void EditorLayer::UI_Debugger()
         };
         rect("Logical bounds", n->Bounds);
         try{
-            if(selected.HasComponent<UIButtonComponent>()&&selected.GetComponent<UIButtonComponent>().Kind!=GameUI::ControlKind::Button)
+            if(selected.HasComponent<UIButtonComponent>()&&(selected.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Toggle||selected.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio))
                 ImGui::Text("%s: %s",selected.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio?"Radio":"Toggle",m_ActiveScene->IsUIChecked(n->ID)?"selected / checked":"unselected / unchecked");
             if(selected.HasComponent<UIRadioGroupComponent>())ImGui::Text("Selected member %llu",(unsigned long long)m_ActiveScene->GetUISelection(n->ID));
+            if(selected.HasComponent<UISliderComponent>()){auto &v=selected.GetComponent<UISliderComponent>();float value=m_ActiveScene->GetUISliderValue(n->ID);v.Validate();ImGui::Text("Slider %.4g | normalized %.3f",value,(value-v.Minimum)/(v.Maximum-v.Minimum));ImGui::Text("Edit: %s | gesture %llu",d.SliderEdit==n->ID?(d.SliderPointer?"pointer":"Adjust"):"idle",(unsigned long long)(d.SliderEdit==n->ID?d.SliderGesture:0));}
             if(selected.HasComponent<UIProgressComponent>())ImGui::Text("Progress %.3f (passive)",m_ActiveScene->GetUIProgress(n->ID));
             GameUI::Rect visual;bool visible=true;if(m_ActiveScene->GetUIControlVisual(n->ID,visual,visible)){rect("Control visual",visual);ImGui::Text("Paint %s (layout unchanged)",visible?"visible":"hidden");}
         }catch(const std::exception &error){ImGui::TextWrapped("%s",error.what());}

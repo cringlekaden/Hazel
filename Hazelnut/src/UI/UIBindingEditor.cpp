@@ -19,6 +19,7 @@ bool UIBindingEditor::Valid(){try{GameUI::Validate(Values);Error.clear();return 
 void UIBindingEditor::Draw(bool editable){
     if(!editable)CancelCapture();
     ImGui::BeginDisabled(!editable);
+    PropertyUI::Help("Navigation and Adjust bindings may overlap: focused sliders use Adjust only during explicit editing. Accept confirms; Cancel restores. Context changes rearm held input.");
     PropertyUI::DragInt("pointer","Pointer button",Values.PointerButton,1,0,7);
     int stick=Values.Stick+1;PropertyUI::Combo("stick","Navigation stick",stick,"None\0Left\0Right\0");Values.Stick=stick-1;
     PropertyUI::SliderFloat("dead","Engage threshold",Values.DeadZone,.1f,1);

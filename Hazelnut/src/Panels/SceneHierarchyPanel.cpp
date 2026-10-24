@@ -68,7 +68,7 @@ bool SceneHierarchyPanel::AddEntity(const std::string &name)
 bool SceneHierarchyPanel::AddUI(int kind) {
     if(!m_Context||!CanEdit(true))return false;
     try {
-        if(kind<0||kind>10)throw std::invalid_argument("Unknown UI creation preset");
+        if(kind<0||kind>12)throw std::invalid_argument("Unknown UI creation preset");
         Entity parent=GetSelectedEntity();
         if(PrefabDocument&&!parent){auto roots=m_Context->GetChildren();if(!roots.empty())parent=m_Context->GetEntityByUUID(roots.front());}
         if(kind!=0&&kind!=7&&(!parent||(!parent.HasComponent<UIRectComponent>()&&!parent.HasComponent<UICanvasComponent>()))) {
@@ -82,7 +82,7 @@ bool SceneHierarchyPanel::AddUI(int kind) {
                 if(occupied>=layout.Rows.size()*layout.Columns.size())throw std::invalid_argument("Grid has no free cell; add row/column tracks before creating another child");
             }
         }
-        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid","UI Wrap","UI Screen","UI Checkbox","UI Radio Group","UI Progress"};
+        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid","UI Wrap","UI Screen","UI Checkbox","UI Radio Group","UI Progress","UI Slider","UI Vertical Slider"};
         auto e=m_Context->CreateEntity(names[kind]);if(parent)m_Context->Reparent(e,parent,TransformPolicy::KeepLocal);
         if(kind==0||kind==7){auto &c=e.AddComponent<UICanvasComponent>();if(kind==7){c.Screen.Managed=true;c.Modal=true;}}
         else {
@@ -122,6 +122,21 @@ bool SceneHierarchyPanel::AddUI(int kind) {
                     if(i==0)g.InitialSelection=child.GetUUID();
                 }
             }
+            if(kind==11||kind==12){
+                bool vertical=kind==12;rect.FixedSize=vertical?glm::vec2(64,240):glm::vec2(280,48);rect.Padding=glm::vec4(8);
+                e.AddComponent<SpriteRendererComponent>(glm::vec4(.07f,.10f,.15f,1));
+                auto &b=e.AddComponent<UIButtonComponent>();b.Kind=GameUI::ControlKind::Slider;b.Action=vertical?"level":"volume";
+                auto &v=e.AddComponent<UISliderComponent>();v.InitialValue=.5f;v.Direction=vertical?GameUI::FillDirection::Up:GameUI::FillDirection::Right;
+                auto part=[&](const char *name,glm::vec4 color,bool thumb){auto child=m_Context->CreateEntity(name);m_Context->Reparent(child,e,TransformPolicy::KeepLocal);
+                    auto &r=child.AddComponent<UIRectComponent>();r.Anchor=r.Pivot=glm::vec2(.5f);
+                    r.FixedSize=thumb?glm::vec2(20,28):(vertical?glm::vec2(8,200):glm::vec2(240,8));
+                    if(vertical&&thumb)r.FixedSize={28,20};
+                    if(!thumb){if(vertical){r.HeightMode=GameUI::SizeMode::Fill;r.Anchor.y=r.Pivot.y=0;}else{r.WidthMode=GameUI::SizeMode::Fill;r.Anchor.x=r.Pivot.x=0;}}
+                    child.AddComponent<SpriteRendererComponent>(color);return uint64_t(child.GetUUID());};
+                v.Track=part("Slider track",{.22f,.27f,.33f,1},false);
+                v.Fill=part("Slider fill",{.3f,.65f,.8f,1},false);
+                v.Thumb=part("Slider thumb",{.95f,.95f,.85f,1},true);
+            }
             if(kind==10){
                 rect.FixedSize={280,24};rect.Padding=glm::vec4(3);e.AddComponent<SpriteRendererComponent>(glm::vec4(.08f,.12f,.18f,1));
                 auto fill=m_Context->CreateEntity("Progress fill");m_Context->Reparent(fill,e,TransformPolicy::KeepLocal);
@@ -134,7 +149,7 @@ bool SceneHierarchyPanel::AddUI(int kind) {
 }
 void SceneHierarchyPanel::UIAddMenu(){
     if(ImGui::BeginMenu("Runtime UI")) {
-        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap","Screen","Checkbox / Toggle","Radio Group","Progress"};
+        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap","Screen","Checkbox / Toggle","Radio Group","Progress","Slider","Vertical Slider"};
         for(size_t i=0;i<std::size(names);++i)if(ImGui::MenuItem(names[i]))AddUI(int(i));
         ImGui::EndMenu();
     }
@@ -348,6 +363,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             DisplayAddComponentEntry<UIButtonComponent>("UI Button");
             DisplayAddComponentEntry<UIRadioGroupComponent>("UI Radio Group");
             DisplayAddComponentEntry<UIProgressComponent>("UI Progress");
+            DisplayAddComponentEntry<UISliderComponent>("UI Slider");
             if(entity.HasComponent<TextComponent>())DisplayAddComponentEntry<UITextStyleComponent>("UI Text Style");
             if(entity.HasComponent<SpriteRendererComponent>())DisplayAddComponentEntry<UINineSliceComponent>("UI Nine Slice");
         }
@@ -378,7 +394,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             }ImGui::EndCombo();
         }row.Result(changed,true);
     };
-    auto visualTarget=[&](Entity candidate){return m_Context->GetRelationship(candidate).Parent==entity.GetUUID()&&candidate.HasComponent<SpriteRendererComponent>()&&candidate.HasComponent<UIRectComponent>()&&!candidate.HasComponent<UIButtonComponent>()&&!candidate.HasComponent<TextComponent>()&&!candidate.HasComponent<UIProgressComponent>()&&!candidate.HasComponent<UIRadioGroupComponent>()&&!candidate.HasComponent<UICanvasComponent>()&&m_Context->GetChildrenView(candidate.GetUUID()).empty();};
+    auto visualTarget=[&](Entity candidate){return m_Context->GetRelationship(candidate).Parent==entity.GetUUID()&&candidate.HasComponent<SpriteRendererComponent>()&&candidate.HasComponent<UIRectComponent>()&&!candidate.HasComponent<UIButtonComponent>()&&!candidate.HasComponent<TextComponent>()&&!candidate.HasComponent<UISliderComponent>()&&!candidate.HasComponent<UIProgressComponent>()&&!candidate.HasComponent<UIRadioGroupComponent>()&&!candidate.HasComponent<UICanvasComponent>()&&m_Context->GetChildrenView(candidate.GetUUID()).empty();};
     auto ownerTarget=[](Entity candidate){return candidate.HasComponent<ScriptComponent>()||candidate.HasComponent<NativeScriptComponent>();};
     DrawUIComponent<UICanvasComponent>("UI Canvas",entity,m_Sections,m_RestoreSections,[this,entity](auto& c)mutable{
         PropertyUI::Vector("reference","Reference pixels",glm::value_ptr(c.ReferenceSize),2,1,nullptr,"%.0f",{},1,8192);
@@ -420,6 +436,12 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     });
     DrawUIComponent<UIRectComponent>("UI Rect",entity,m_Sections,m_RestoreSections,[this,entity](auto& c)mutable{
         auto parent=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);
+        bool derivedPosition=false;
+        if(parent&&parent.HasComponent<UISliderComponent>()){
+            auto &s=parent.GetComponent<UISliderComponent>();derivedPosition=s.Thumb==uint64_t(entity.GetUUID());
+            if(s.Fill==uint64_t(entity.GetUUID())){PropertyUI::Help("Slider computes this fill from its track and live value. Edit the track bounds or the slider range; this Rect is a decorative leaf.");return;}
+            if(derivedPosition)PropertyUI::Help("Slider computes thumb position. Size remains authored; edit track bounds to change travel.");
+        }
         bool flowOwned=parent&&!parent.HasComponent<UICanvasComponent>()&&parent.HasComponent<UIRectComponent>()&&parent.HasComponent<UILayoutComponent>();
         {
             auto resolved=m_Context->GetUISnapshot().Find(entity.GetUUID());
@@ -437,17 +459,17 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                 bool has=c.HasMaximum[axis];
                 if(PropertyUI::Checkbox("bounded","Maximum enabled",has)){c.HasMaximum[axis]=has;if(has)c.MaximumSize[axis]=std::max(c.MinimumSize[axis],resolved&&resolved->LayoutResolved?resolved->Bounds.Size[axis]:c.FixedSize[axis]);}
                 if(has)PropertyUI::DragFloat("max","Maximum (px)",c.MaximumSize[axis],1,0,FLT_MAX,"%.1f");
-                bool owned=flowOwned||mode==GameUI::SizeMode::Fill;
+                bool owned=derivedPosition||flowOwned||mode==GameUI::SizeMode::Fill;
                 if(!owned){
                 PropertyUI::DragFloat("anchor","Anchor",c.Anchor[axis],.01f,0,1,"%.2f");
                 PropertyUI::DragFloat("offset","Offset (px)",c.Offset[axis],1,-FLT_MAX,FLT_MAX,"%.1f");
                 PropertyUI::DragFloat("pivot","Pivot",c.Pivot[axis],.01f,0,1,"%.2f");}
-                if(owned)PropertyUI::Help(flowOwned?"The parent container owns position. Set child sizing/margins; positions are computed.":"Fill owns this axis's position and size. Margins set its insets; maximum can leave spare space.");
+                if(owned)PropertyUI::Help(derivedPosition?"Slider owns position; thumb size sets its usable travel.":flowOwned?"The parent container owns position. Set child sizing/margins; positions are computed.":"Fill owns this axis's position and size. Margins set its insets; maximum can leave spare space.");
                 if(resolved&&resolved->LayoutResolved)ImGui::TextDisabled("Available %.1f | measured %.1f | arranged %.1f",resolved->Available[axis],resolved->Measured[axis],resolved->Bounds.Size[axis]);
                 ImGui::PopID();
             }
         }
-        if(!flowOwned && c.WidthMode!=GameUI::SizeMode::Fill && c.HeightMode!=GameUI::SizeMode::Fill){
+        if(!derivedPosition && !flowOwned && c.WidthMode!=GameUI::SizeMode::Fill && c.HeightMode!=GameUI::SizeMode::Fill){
             int preset=0;if(PropertyUI::Combo("anchor-preset","Anchor preset",preset,"Custom\0Top left\0Top center\0Top right\0Center\0Bottom left\0Bottom center\0Bottom right\0")){
                 const glm::vec2 anchors[]={{0,0},{0,0},{.5f,0},{1,0},{.5f,.5f},{0,1},{.5f,1},{1,1}};
                 if(preset){c.Anchor=c.Pivot=anchors[preset];c.Offset={};}}
@@ -545,13 +567,13 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     });
     DrawUIComponent<UIButtonComponent>("UI Button",entity,m_Sections,m_RestoreSections,[&,entity](auto& c)mutable{
         PropertyUI::DragInt("tab","Tab order",c.TabOrder);PropertyUI::Checkbox("interactive","Interactable",c.Interactable);
-        int kind=int(c.Kind);if(PropertyUI::Combo("kind","Behavior",kind,"Button\0Toggle / Checkbox\0Radio option\0")){
-            c.Kind=GameUI::ControlKind(kind);if(c.Kind!=GameUI::ControlKind::Toggle)c.EventOwner=0;if(c.Kind!=GameUI::ControlKind::Radio)c.Group=0;
+        int kind=int(c.Kind);if(PropertyUI::Combo("kind","Behavior",kind,"Button\0Toggle / Checkbox\0Radio option\0Slider\0")){
+            c.Kind=GameUI::ControlKind(kind);if(c.Kind!=GameUI::ControlKind::Toggle&&c.Kind!=GameUI::ControlKind::Radio){c.Indicator=0;c.InitiallyChecked=false;}if(c.Kind!=GameUI::ControlKind::Toggle&&c.Kind!=GameUI::ControlKind::Slider)c.EventOwner=0;if(c.Kind!=GameUI::ControlKind::Radio)c.Group=0;
             else if(!c.Group){auto current=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);for(size_t depth=0;current&&depth<Scene::MaxDepth;++depth){if(current.HasComponent<UIRadioGroupComponent>()){c.Group=current.GetUUID();break;}if(current.HasComponent<UICanvasComponent>())break;current=m_Context->GetEntityByUUID(m_Context->GetRelationship(current).Parent);}}
         }
         if(c.Kind!=GameUI::ControlKind::Radio)PropertyUI::Text("action","Action identity",c.Action);
         else PropertyUI::Help("Selection changes use the group's action identity and member references.");
-        if(c.Kind!=GameUI::ControlKind::Button){
+        if(c.Kind==GameUI::ControlKind::Toggle||c.Kind==GameUI::ControlKind::Radio){
             if(c.Kind==GameUI::ControlKind::Toggle)PropertyUI::Checkbox("initial-checked","Initially checked",c.InitiallyChecked);
             else targetPicker("group","Radio group",c.Group,[&](Entity candidate){
                 if(!candidate.HasComponent<UIRadioGroupComponent>())return false;
@@ -561,6 +583,10 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             targetPicker("indicator","Selected visual",c.Indicator,visualTarget);
             if(!c.Indicator)PropertyUI::Help("A square cue is drawn when selected. Optional Sprite/Rect child replaces it; layout space stays reserved.");
             if(c.Kind==GameUI::ControlKind::Toggle&&ImGui::TreeNode("Standalone notification")){targetPicker("value-owner","Event owner",c.EventOwner,ownerTarget);PropertyUI::Help("Managed screens use their declared owner. Ordinary canvases require this explicit recipient.");ImGui::TreePop();}
+        }
+        if(c.Kind==GameUI::ControlKind::Slider){
+            if(ImGui::TreeNode("Standalone notification")){targetPicker("value-owner","Event owner",c.EventOwner,ownerTarget);ImGui::TreePop();}
+            PropertyUI::Help("Accept enters/confirms editing; Adjust changes a step; Cancel restores the starting value. Pointer track-click/drag edits directly. Slider configuration below owns range and parts.");
         }
         static constexpr const char* states[]={"Normal","Hovered","Pressed","Disabled","Focused"};
         static_assert(std::size(states)==std::tuple_size_v<decltype(c.Colors)>);
@@ -585,6 +611,13 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         targetPicker("initial-selection","Initial selection",c.InitialSelection,[&](Entity candidate){return candidate.HasComponent<UIButtonComponent>()&&candidate.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio&&candidate.GetComponent<UIButtonComponent>().Group==uint64_t(entity.GetUUID());});
         if(ImGui::TreeNode("Standalone notification")){targetPicker("value-owner","Event owner",c.EventOwner,ownerTarget);PropertyUI::Help("Managed screens use their declared owner. Ordinary canvases require this explicit recipient.");ImGui::TreePop();}
         PropertyUI::Help("Tab and directions move focus; Accept selects. Activating the current option does nothing. Required selection falls back by Tab order then ID.");
+    });
+    DrawUIComponent<UISliderComponent>("UI Slider",entity,m_Sections,m_RestoreSections,[&](auto &c){
+        PropertyUI::DragFloat("minimum","Minimum",c.Minimum);PropertyUI::DragFloat("maximum","Maximum",c.Maximum);
+        PropertyUI::DragFloat("step","Step",c.Step,.01f);PropertyUI::DragFloat("initial","Initial value",c.InitialValue);
+        int direction=int(c.Direction);if(PropertyUI::Combo("direction","Increasing toward",direction,"Right\0Left\0Down\0Up\0"))c.Direction=GameUI::FillDirection(direction);
+        targetPicker("track","Track",c.Track,visualTarget);targetPicker("fill","Fill (optional)",c.Fill,visualTarget);targetPicker("thumb","Thumb",c.Thumb,visualTarget);
+        PropertyUI::Help("Direct Sprite/Rect leaves. Track and thumb size determine travel; thumb position and fill extent are computed. Initial value clamps/snaps. Setters are silent; typed events report live, committed and cancelled edits.");
     });
     DrawUIComponent<UIProgressComponent>("UI Progress",entity,m_Sections,m_RestoreSections,[&](auto &c){
         PropertyUI::DragFloat("minimum","Minimum",c.Minimum);PropertyUI::DragFloat("maximum","Maximum",c.Maximum);PropertyUI::DragFloat("initial","Initial value",c.InitialValue);

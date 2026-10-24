@@ -323,7 +323,7 @@ void InputRouter::Update(uint64_t scene, const std::vector<Button> &buttons, con
     bool cancelling=f.CancelDown;
     for(auto e:f.Events)cancelling|=e.Action==UIAction::Cancel&&e.Down;
     for(auto e:f.Events)pointer|=e.Action==UIAction::Press;
-    InputFrame step;step.Enabled=f.Enabled;step.KeyboardEnabled=f.KeyboardEnabled;
+    InputFrame step;step.Enabled=f.Enabled;step.KeyboardEnabled=f.KeyboardEnabled;step.Editing=f.Editing;
     step.Mouse=f.Mouse;step.LeftDown=m_Left;step.AcceptDown=m_Accept;step.SuppressAccept=pointer;
     const bool ready=m_Ready;
     if(!ready){step.LeftDown=f.LeftDown;step.AcceptDown=f.AcceptDown;UpdateSample(scene,buttons,step);return;}
@@ -342,6 +342,9 @@ void InputRouter::Update(uint64_t scene, const std::vector<Button> &buttons, con
 }
 void InputRouter::UpdateSample(uint64_t scene,const std::vector<Button>& buttons,const InputFrame& f)
 {
+    auto routed=[&](uint64_t id,RoutedPhase phase,glm::vec2 point){auto it=m_Index.find(id);if(it==m_Index.end())return;
+        if(m_Actions.size()==MaxActions){++m_Dropped;return;}Action a;a.Entity=id;a.Name=buttons[it->second].Action;a.Phase=phase;a.Point=point;m_Actions.push_back(std::move(a));};
+    auto continuous=[&](uint64_t id){auto it=m_Index.find(id);return it!=m_Index.end()&&buttons[it->second].Continuous;};
     const bool armed = m_Ready;
     m_Ready = scene != 0 && f.Enabled;
     m_Hover = 0;
@@ -350,7 +353,7 @@ void InputRouter::UpdateSample(uint64_t scene,const std::vector<Button>& buttons
         m_Hover = Hit(buttons, f.Mouse);
         if (!m_Focus && !m_Order.empty())
             m_Focus = buttons[m_Order.front()].ID;
-        if (armed && f.KeyboardEnabled && !m_Order.empty() &&
+        if (armed && !f.Editing && f.KeyboardEnabled && !m_Order.empty() &&
             (f.NextPressed || f.PreviousPressed || (f.NextDown && !m_Next) || (f.PreviousDown && !m_Previous)))
         {
             auto found = m_Index.find(m_Focus);
@@ -360,21 +363,21 @@ void InputRouter::UpdateSample(uint64_t scene,const std::vector<Button>& buttons
                 buttons[m_Order[(rank + ((f.PreviousPressed || (f.PreviousDown && !m_Previous)) ? count - 1 : 1)) % count]]
                     .ID;
         }
-        if(armed&&f.KeyboardEnabled&&(f.Navigate.x||f.Navigate.y))Navigate(buttons,f.Navigate);
+        if(armed&&!f.Editing&&f.KeyboardEnabled&&(f.Navigate.x||f.Navigate.y))Navigate(buttons,f.Navigate);
         const bool gestureOwns = f.SuppressAccept || m_PointerGesture || m_Capture || m_Left || f.LeftDown ||
                                  f.PointerPressed || f.PointerReleased;
-        if (armed && (f.PointerPressed || (f.LeftDown && !m_Left)))
+        if (armed && !f.CancelDown && (f.PointerPressed || (f.LeftDown && !m_Left)))
         {
             m_PointerGesture = true;
             m_Capture = Hit(buttons, f.PointerPressed ? f.PressPosition : f.Mouse);
-            if (m_Capture)
-                m_Focus = m_Capture;
+            if (m_Capture){m_Focus = m_Capture;if(continuous(m_Capture))routed(m_Capture,RoutedPhase::Begin,f.PointerPressed?f.PressPosition:f.Mouse);}
+
         }
         if (f.CancelDown)
         {
-            if(armed&&!m_Cancel&&f.KeyboardEnabled){if(m_Cancels<MaxActions)++m_Cancels;else ++m_Dropped;}
-            m_Capture = m_KeyCapture = 0;
             m_Actions.clear();
+            if(armed&&!m_Cancel&&f.KeyboardEnabled){if(f.Editing)routed(m_Focus,RoutedPhase::Cancel,f.Mouse);else if(m_Cancels<MaxActions)++m_Cancels;else ++m_Dropped;}
+            m_Capture = m_KeyCapture = 0;
         }
         if (m_KeyCapture != m_Focus || !f.AcceptDown || !f.KeyboardEnabled || gestureOwns)
             m_KeyCapture = 0;
@@ -382,13 +385,14 @@ void InputRouter::UpdateSample(uint64_t scene,const std::vector<Button>& buttons
                             (f.AcceptPressed || (f.AcceptDown && !m_Accept));
         if (accept)
             m_KeyCapture = m_Focus;
+        if(armed&&!f.CancelDown&&m_Capture&&continuous(m_Capture)&&f.LeftDown)routed(m_Capture,RoutedPhase::Move,f.Mouse);
         uint64_t activate = 0;
         if (armed && !f.CancelDown && (f.PointerReleased || (!f.LeftDown && m_Left)))
         {
             auto release = Hit(
                 buttons, f.PointerReleased && f.HasReleasePosition ? f.ReleasePosition : f.Mouse);
-            if (m_Capture == release)
-                activate = m_Capture;
+            if(continuous(m_Capture))routed(m_Capture,RoutedPhase::End,f.PointerReleased&&f.HasReleasePosition?f.ReleasePosition:f.Mouse);
+            else if (m_Capture == release)activate = m_Capture;
         }
         if (!f.LeftDown)
         {
@@ -403,7 +407,7 @@ void InputRouter::UpdateSample(uint64_t scene,const std::vector<Button>& buttons
             if (found != m_Index.end())
             {
                 const auto &b = buttons[found->second];
-                if (Usable(b) && !b.Action.empty())
+                if (Usable(b) && (!b.Action.empty() || b.Continuous))
                 {
                     if (m_Actions.size() < MaxActions)
                     {Action event;event.Entity=b.ID;event.Name=b.Action;m_Actions.push_back(std::move(event));}

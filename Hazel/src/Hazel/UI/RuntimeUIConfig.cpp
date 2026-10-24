@@ -322,7 +322,7 @@ UIButtonComponent ReadUIButtonComponent(const YAML::Node &n)
 {
     Keys(n, {"Action", "TabOrder", "Interactable", "Colors", "Images", "Kind", "InitiallyChecked", "Indicator", "Group", "EventOwner"});
     UIButtonComponent v;
-    if(n["Kind"]){auto kind=n["Kind"].as<unsigned>();if(kind>2)throw std::invalid_argument("Invalid UI control kind");v.Kind=GameUI::ControlKind(kind);}
+    if(n["Kind"]){auto kind=n["Kind"].as<unsigned>();if(kind>3)throw std::invalid_argument("Invalid UI control kind");v.Kind=GameUI::ControlKind(kind);}
     if(n["InitiallyChecked"])v.InitiallyChecked=n["InitiallyChecked"].as<bool>();
     if(n["Indicator"])v.Indicator=n["Indicator"].as<uint64_t>();
     if(n["Group"])v.Group=n["Group"].as<uint64_t>();
@@ -414,6 +414,24 @@ static void Write(YAML::Emitter &out,const UIProgressComponent &v){
        <<YAML::Key<<"Fill"<<YAML::Value<<v.Fill
        <<YAML::Key<<"Direction"<<YAML::Value<<unsigned(v.Direction)<<YAML::EndMap;
 }
+UISliderComponent ReadUISliderComponent(const YAML::Node &n){
+    Keys(n,{"Minimum","Maximum","Step","InitialValue","Track","Fill","Thumb","Direction"});UISliderComponent v;
+    if(n["Minimum"])v.Minimum=n["Minimum"].as<float>();
+    if(n["Maximum"])v.Maximum=n["Maximum"].as<float>();
+    if(n["Step"])v.Step=n["Step"].as<float>();
+    if(n["InitialValue"])v.InitialValue=n["InitialValue"].as<float>();
+    if(n["Track"])v.Track=n["Track"].as<uint64_t>();
+    if(n["Fill"])v.Fill=n["Fill"].as<uint64_t>();
+    if(n["Thumb"])v.Thumb=n["Thumb"].as<uint64_t>();
+    if(n["Direction"])v.Direction=GameUI::FillDirection(n["Direction"].as<unsigned>());
+    v.Validate();if(!std::isfinite(v.InitialValue)||unsigned(v.Direction)>3)throw std::invalid_argument("Invalid slider value/direction");return v;
+}
+static void Write(YAML::Emitter &out,const UISliderComponent &v){
+    out<<YAML::BeginMap<<YAML::Key<<"Minimum"<<YAML::Value<<v.Minimum<<YAML::Key<<"Maximum"<<YAML::Value<<v.Maximum
+       <<YAML::Key<<"Step"<<YAML::Value<<v.Step<<YAML::Key<<"InitialValue"<<YAML::Value<<v.InitialValue
+       <<YAML::Key<<"Track"<<YAML::Value<<v.Track<<YAML::Key<<"Fill"<<YAML::Value<<v.Fill<<YAML::Key<<"Thumb"<<YAML::Value<<v.Thumb
+       <<YAML::Key<<"Direction"<<YAML::Value<<unsigned(v.Direction)<<YAML::EndMap;
+}
 void ValidateUIConfiguration(const YAML::Node &node)
 {
     if(node["UINineSliceComponent"] && node["UIRectComponent"] && ReadUIRectComponent(node["UIRectComponent"]).Fit!=GameUI::ImageFit::Stretch)
@@ -431,6 +449,7 @@ void ValidateUIConfiguration(const YAML::Node &node)
     if (auto n = node["UIButtonComponent"]) ReadUIButtonComponent(n);
     if (auto n = node["UIRadioGroupComponent"]) ReadUIRadioGroupComponent(n);
     if (auto n = node["UIProgressComponent"]) ReadUIProgressComponent(n);
+    if(auto n=node["UISliderComponent"])ReadUISliderComponent(n);
 }
 void ReadUIComponents(const YAML::Node &node, Entity entity)
 {
@@ -447,6 +466,7 @@ void ReadUIComponents(const YAML::Node &node, Entity entity)
     if (auto n = node["UIButtonComponent"]) entity.AddComponent<UIButtonComponent>(ReadUIButtonComponent(n));
     if (auto n = node["UIRadioGroupComponent"]) entity.AddComponent<UIRadioGroupComponent>(ReadUIRadioGroupComponent(n));
     if (auto n = node["UIProgressComponent"]) entity.AddComponent<UIProgressComponent>(ReadUIProgressComponent(n));
+    if(auto n=node["UISliderComponent"])entity.AddComponent<UISliderComponent>(ReadUISliderComponent(n));
 }
 void WriteUIComponents(YAML::Emitter &out, Entity entity)
 {
@@ -481,6 +501,7 @@ void WriteUIComponents(YAML::Emitter &out, Entity entity)
         Write(out, entity.GetComponent<UIButtonComponent>());
     }
     if(entity.HasComponent<UIRadioGroupComponent>()){out<<YAML::Key<<"UIRadioGroupComponent"<<YAML::Value;Write(out,entity.GetComponent<UIRadioGroupComponent>());}
+    if(entity.HasComponent<UISliderComponent>()){out<<YAML::Key<<"UISliderComponent"<<YAML::Value;Write(out,entity.GetComponent<UISliderComponent>());}
     if(entity.HasComponent<UIProgressComponent>()){out<<YAML::Key<<"UIProgressComponent"<<YAML::Value;Write(out,entity.GetComponent<UIProgressComponent>());}
 
 }
@@ -488,7 +509,7 @@ std::string UIAuthoredState(Entity entity)
 {
     if (!entity.HasComponent<UICanvasComponent>() && !entity.HasComponent<UIRectComponent>() &&
         !entity.HasComponent<UILayoutComponent>() && !entity.HasComponent<UITextStyleComponent>() &&
-        !entity.HasComponent<UINineSliceComponent>() && !entity.HasComponent<UIButtonComponent>() && !entity.HasComponent<UIRadioGroupComponent>() && !entity.HasComponent<UIProgressComponent>())
+        !entity.HasComponent<UINineSliceComponent>() && !entity.HasComponent<UIButtonComponent>() && !entity.HasComponent<UIRadioGroupComponent>() && !entity.HasComponent<UIProgressComponent>() && !entity.HasComponent<UISliderComponent>())
         return {};
     YAML::Emitter out;
     out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);

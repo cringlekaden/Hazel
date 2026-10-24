@@ -15,7 +15,7 @@ struct ResolvedElement
 {
     uint64_t ID = 0, Parent = 0, Canvas = 0;
     Rect Bounds{}, ParentContent{}, Clip{}; // canvas logical units
-    Rect PixelBounds{}, PixelClip{}, FramebufferBounds{}, FramebufferClip{};
+    Rect PixelBounds{}, PixelClip{}, FramebufferBounds{}, FramebufferClip{}, InheritedClip{};
     glm::vec2 Available{}, Measured{};
     Rect Slot{};
     int GridRow=-1,GridColumn=-1,Line=-1;
@@ -91,6 +91,8 @@ struct RuntimeUIDiagnostics
     double LastGPUMilliseconds=0;
     bool GPUAvailable=false;
     uint64_t Scope=0, NavigationMisses=0;
+    uint64_t SliderEdit=0, SliderGesture=0;
+    bool SliderPointer=false;
     uint64_t EventOwner=0, PendingEvents=0, RetiredEvents=0, PendingScreens=0, RejectedScreens=0;
     std::string ScreenProblem, ControlProblem;
     uint64_t RejectedChanges=0;

@@ -88,8 +88,9 @@ struct Button
     int TabOrder = 0;
     bool Visible = true, Interactable = true;
     HitPolicy Hit = HitPolicy::Control;
+    bool Continuous=false;
 };
-enum class UIAction : uint8_t { Press, Up, Down, Left, Right, Next, Previous, Accept, Cancel, Count };
+enum class UIAction : uint8_t { Press, Up, Down, Left, Right, Next, Previous, Accept, Cancel, AdjustDecrease, AdjustIncrease, Count };
 enum class InputDevice : uint8_t { Pointer, Keyboard, Gamepad };
 struct ActionEdge { UIAction Action; bool Down=true; glm::vec2 Point{}; InputDevice Device=InputDevice::Keyboard; };
 struct InputFrame
@@ -97,6 +98,8 @@ struct InputFrame
     glm::vec2 Mouse{};
     std::vector<ActionEdge> Events; // Ordered, bounded device-neutral edges; navigation may repeat.
     glm::ivec2 Navigate{};
+    int Adjust=0;
+    bool Editing=false;
     bool NextPressed=false, PreviousPressed=false, SuppressAccept=false;
     bool KeyboardEnabled = true, FocusNavigation = false;
     bool Enabled = false, LeftDown = false, AcceptDown = false, NextDown = false,
@@ -107,6 +110,7 @@ struct InputFrame
     glm::vec2 PressPosition{}, ReleasePosition{};
     bool HasReleasePosition = false;
 };
+enum class RoutedPhase : uint8_t { Activate, Begin, Move, End, Cancel };
 struct Action
 {
     uint64_t Entity = 0;
@@ -118,6 +122,11 @@ struct Action
     uint64_t SourceLifetime=0, SourceComponent=0, ControlLifetime=0, ControlComponent=0;
     uint64_t OwnerLifetime=0, OwnerComponent=0;
     std::string OwnerClass;
+    float PreviousValue=0, Value=0, StartValue=0;
+    uint64_t Gesture=0;
+    bool Interrupted=false;
+    RoutedPhase Phase=RoutedPhase::Activate;
+    glm::vec2 Point{};
 };
 enum class ButtonState
 {
@@ -153,6 +162,7 @@ class InputRouter
         return m_Hover;
     }
     void Reset();
+    void CancelCapture(){m_Capture=m_KeyCapture=0;}
     void SetScope(uint64_t scene,uint64_t scope);
     uint64_t Scope() const {return m_Scope;}
     bool ConsumeCancel(uint64_t scene,uint64_t scope);

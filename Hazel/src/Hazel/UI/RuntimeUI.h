@@ -37,6 +37,9 @@ class RuntimeUI
     void SetChecked(uint64_t id,bool value);
     uint64_t Selection(uint64_t group);
     void Select(uint64_t group,uint64_t member);
+    float SliderValue(uint64_t id);
+    void SetSliderValue(uint64_t id,float value);
+    bool SliderEditing() const {return m_Slider.ID!=0;}
     float Progress(uint64_t id);
     void SetProgress(uint64_t id,float value);
     void ValidateControls(uint64_t target=0) const;
@@ -87,11 +90,35 @@ class RuntimeUI
     void CancelScreenInput();
     void PublishScope();
     bool QueueEvent(GameUI::Action event);
+    bool StampEvent(GameUI::Action &event);
+    size_t ReservedSliderSlots() const;
+    struct SliderEdit {
+        uint64_t ID=0,Revision=0,Track=0,Fill=0,Thumb=0;
+        float Start=0,Grab=0;
+        bool Pointer=false;
+        float Scale=1;
+        glm::vec2 Viewport{},Framebuffer{};
+        GameUI::SliderGeometry Geometry;
+        GameUI::Action Terminal;
+    } m_Slider;
+    uint64_t m_NextGesture=0;
+    bool m_SliderNeutral=false;
+    GameUI::SliderGeometry SliderGeometryFor(uint64_t id) const;
+    void SyncSliders();
+    void ReconcileSlider();
+    bool BeginSlider(uint64_t id,bool pointer,glm::vec2 point={});
+    bool ChangeSlider(float value);
+    void EndSlider(bool cancel,bool interrupted=false,bool deliver=true);
+    void RouteSlider(const GameUI::Action &action);
+    void AdjustSlider(int delta);
     struct ValueState {
         uint64_t Lifetime=0, Component=0, InitialSelection=0, Selected=0;
         GameUI::ControlKind Kind=GameUI::ControlKind::Button;
         bool InitialChecked=false, Checked=false, Required=false;
         float Minimum=0,Maximum=1,Initial=0,Value=0;
+        GameUI::SteppedRange Range;
+        uint64_t Revision=0;
+        uint64_t Track=0,Fill=0,Thumb=0;
         GameUI::FillDirection Direction=GameUI::FillDirection::Right;
         uint64_t Owner=0,OwnerLifetime=0,OwnerComponent=0;
         std::string OwnerClass;

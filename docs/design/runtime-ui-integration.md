@@ -2267,3 +2267,59 @@ Next bounded slice: a finite stepped slider with real remappable Adjust actions,
 coherent pointer capture/drag/cancel and owner-addressed value changes, native
 presets/properties/history and synthetic plus physical acceptance. This completes
 the requested composed-controls slice, not all P4 or production screen-space UI.
+
+## P4: stepped slider edits and contextual Adjust
+
+Built on checkpoint `9e92d8b`. `UISliderComponent` authors a `SteppedRange`, initial
+value, direction and local Track/Fill/Thumb IDs; Button Kind Slider uses the
+existing router and immutable scene snapshot. Scene UI owns accepted quantized
+values/revisions and at most one live edit. There is no additional hit tester,
+event stream, atlas/layout cache, or history system.
+
+`UI/Slider` is the backend-independent numeric/derived-geometry contract. Finite
+endpoints within ±1e9, step ≥1e-6 and endpoint float spacing, and ≤65,536 intervals
+bound precision/work. Integer positions reconstruct values with double
+intermediates, explicit endpoints, a shorter final interval and high numeric ties.
+Initial and silent runtime setters quantize identically. Track intersects padded
+root content, independently of effective input/paint clipping. Thumb extent sets
+usable travel and press offset; zero pointer travel rejects. Fill and thumb paint
+are derived without Rect writes. Snapshots now preserve inherited logical clip,
+so moved derived leaves use current paint bounds instead of their old leaf clip.
+The same painter/scissor/picking path remains authoritative.
+
+AdjustDecrease/Increase extend the common map, managed APIs, binding editor,
+project defaults and user overrides (canonical binding format 2). Navigation and
+adjustment are exclusive contexts. Existing repeat/neutral/device rules apply;
+context changes reset/rearm the adapter. Accept begins/confirms; Cancel restores;
+track/drag edits directly. Pointer edits ignore adjustment and retain release
+ownership. Full track mapping survives partial clipping and outside release.
+Geometry/surface/part/focus changes interrupt retaining the latest value. Silent
+setters interrupt before publishing their revision; they cannot be rolled back
+by a retired edit. Runtime reset, screens, owners and script domains retain their
+existing cancellation/retirement contracts.
+
+Gesture start stamps the existing owner/lifetime/class envelope and reserves two
+of the 64 delivery slots. Preview coalescing keeps the earliest unsent previous
+value and latest current value; moving the preview to the tail preserves sequence
+order with intervening events. Consumption releases preview capacity but retains
+its next-preview reservation plus one terminal. Explicit Cancel restores only
+while the edit owns the accepted revision, then emits a cancelled terminal.
+Confirm emits committed even for no change; other interruptions emit cancelled
+with Interrupted where delivery remains eligible. Source/scope/owner/domain or
+input-ownership retirement can cancel pending delivery under P1; it never changes
+an already accepted surviving value. No competing Activated is generated.
+
+Persistence, exact authored comparison, copy/duplicate, prefab reference remap,
+strict validation, managed value/envelope ABI and shared UI property history
+include slider fields. The native presets add horizontal and reversed vertical
+parts; Inspector exposes range/step/default/direction/targets. Computed placement
+is explained; ineffective thumb/fill viewport edits reject. Five Button visual
+states remain five regardless of creation-preset count. The existing debugger
+shows live value, edit device/gesture/capture and problems. The native Settings
+fixture owner demonstrates live feedback and terminals without duplicating
+quantization, geometry or capture logic.
+
+Qualification results follow after local checks. Physical controller, Windows
+execution and physical DPI acceptance remain separate from synthetic device
+coverage. No sliders were added to shipped gameplay or save formats. The known
+large alternating image/text render-run cost remains outside this slice.

@@ -59,8 +59,8 @@ void UIScreenWorkflowChecks()
         edit(body, "Screen panel",
              [&](auto &v)
              {
-                 v.Rect->FixedSize = screen==settings?glm::vec2(600,400):glm::vec2(440,360);
-                 v.Rect->Offset = screen==settings?glm::vec2(20,40):glm::vec2(100,50);
+                 v.Rect->FixedSize = screen==settings?glm::vec2(600,440):glm::vec2(440,360);
+                 v.Rect->Offset = screen==settings?glm::vec2(20,20):glm::vec2(100,50);
                  v.Image->Color = {.06f, .09f, .14f, 1};
              });
         panel.SetSelectedEntity(body);
@@ -99,19 +99,29 @@ void UIScreenWorkflowChecks()
         }
     }
     panel.SetSelectedEntity(settingsBody);Check(panel.AddUI(8),"Checkbox preset failed");auto checkbox=panel.GetSelectedEntity();
-    edit(checkbox,"Checkbox label/default",[](auto &v){v.Text->Text="Music";v.Button->Action="music";v.Button->InitiallyChecked=true;v.Button->TabOrder=10;v.Rect->Offset={24,270};});
+    edit(checkbox,"Checkbox label/default",[](auto &v){v.Text->Text="Music";v.Button->Action="music";v.Button->InitiallyChecked=true;v.Button->TabOrder=10;v.Rect->Offset={24,255};});
     auto configuredCheckbox=SceneSerializer(scene).CaptureAuthoredState();
     Check(documents.UndoRedo(false)&&!checkbox.GetComponent<UIButtonComponent>().InitiallyChecked,"Toggle Inspector transaction did not undo");
     Check(documents.UndoRedo(true)&&SceneSerializer(scene).CaptureAuthoredState()==configuredCheckbox,"Toggle Inspector transaction did not redo");
     panel.SetSelectedEntity(settingsBody);Check(panel.AddUI(9),"Radio group preset failed");auto radio=panel.GetSelectedEntity();
-    edit(radio,"Radio group configuration",[](auto &v){v.Rect->Offset={320,80};v.Rect->FixedSize.x=240;v.Group->Action="quality";});
+    edit(radio,"Radio group configuration",[](auto &v){v.Rect->Offset={320,80};v.Rect->FixedSize.x=180;v.Group->Action="quality";});
     int index=0;for(auto id:scene->GetChildrenView(radio.GetUUID())){
         auto option=scene->GetEntityByUUID(id);int optionIndex=index++;
         edit(option,"Radio label",[&](auto &v){v.Text->Text=optionIndex==0?"Low":optionIndex==1?"Medium":"High";v.Button->TabOrder=20+optionIndex;});
     }
     panel.SetSelectedEntity(settingsBody);Check(panel.AddUI(10),"Progress preset failed");auto progress=panel.GetSelectedEntity();
-    edit(progress,"Progress range/default",[](auto &v){v.Rect->Offset={24,330};v.Rect->FixedSize.x=540;v.Progress->Minimum=0;v.Progress->Maximum=1;v.Progress->InitialValue=.25f;});
+    edit(progress,"Progress range/default",[](auto &v){v.Rect->Offset={24,390};v.Rect->FixedSize.x=540;v.Progress->Minimum=0;v.Progress->Maximum=1;v.Progress->InitialValue=.25f;});
     for(auto ref:{std::pair<const char*,Entity>{"Toggle",checkbox},{"Choices",radio},{"Progress",progress}}){auto &field=ScriptEngine::GetScriptFieldMap(menu)[ref.first];field.Field={ScriptFieldType::Entity,ref.first,nullptr};field.SetValue<uint64_t>(ref.second.GetUUID());}
+    panel.SetSelectedEntity(settingsBody);Check(panel.AddUI(11),"Horizontal slider preset failed");auto volume=panel.GetSelectedEntity();
+    edit(volume,"Stepped volume",[](auto &v){v.Rect->Offset={24,325};v.Rect->FixedSize={460,48};v.Slider->Minimum=0;v.Slider->Maximum=100;v.Slider->Step=5;v.Slider->InitialValue=50;v.Button->Action="volume";v.Button->TabOrder=30;});
+    auto sliderAuthored=documents.SceneText();Check(documents.UndoRedo(false)&&volume.GetComponent<UISliderComponent>().Maximum==1,"Slider range history undo failed");Check(documents.UndoRedo(true)&&documents.SceneText()==sliderAuthored,"Slider history redo failed");
+    {auto before=UIEditValues::Capture(volume),invalid=before;invalid.Slider->Step=0;UIInspectorEditing inspector;PropertyUI::EditActivity a;a.Changed=a.Committed=true;
+     Check(!inspector.Edit(*scene,&documents.m_SceneHistory,volume.GetUUID(),"Invalid slider",before,invalid,a,0)&&documents.SceneText()==sliderAuthored,"Invalid slider edit changed authored/history state");inspector.Finish(*scene,&documents.m_SceneHistory,true);Check(documents.SceneText()==sliderAuthored,"Invalid slider cancellation changed authored state");}
+    panel.SetSelectedEntity(settingsBody);Check(panel.AddUI(12),"Vertical slider preset failed");auto level=panel.GetSelectedEntity();
+    edit(level,"Reverse vertical slider",[](auto &v){v.Rect->Offset={520,80};v.Rect->FixedSize={56,200};v.Slider->Minimum=-1;v.Slider->Maximum=1;v.Slider->Step=.25f;v.Slider->InitialValue=0;v.Button->Action="level";v.Button->TabOrder=31;});
+    panel.SetSelectedEntity(settingsBody);Check(panel.AddUI(2),"Slider value label preset failed");auto feedback=panel.GetSelectedEntity();
+    edit(feedback,"Slider feedback",[](auto &v){v.Rect->Offset={24,302};v.Style->Size=18;v.Text->Text="Volume 50 / Adjust: accept to edit";});
+    for(auto ref:{std::pair<const char*,Entity>{"Volume",volume},{"Level",level},{"Feedback",feedback}}){auto &field=ScriptEngine::GetScriptFieldMap(menu)[ref.first];field.Field={ScriptFieldType::Entity,ref.first,nullptr};field.SetValue<uint64_t>(ref.second.GetUUID());}
     scene->ValidateUI(false);
     for (size_t i = 0; i < 3; ++i)
     {
@@ -128,6 +138,7 @@ void UIScreenWorkflowChecks()
           "Screen policy Inspector edit did not undo");
     Check(documents.UndoRedo(true) && documents.SceneText() == configured,
           "Screen policy redo failed");
+    auto volumeID=uint64_t(volume.GetUUID());
     auto menuID = uint64_t(menu.GetUUID()), settingsID = uint64_t(settings.GetUUID()),
          confirmationID = uint64_t(confirmation.GetUUID());
     auto path = Project::GetAssetDirectory() / "Scenes/screens-native.hazel";
@@ -176,6 +187,13 @@ void UIScreenWorkflowChecks()
         Check(runtime->IsUIScreenOpen(settingsID), "Native owner did not open settings");
         sample.Keys.fill(false);
         route();
+        Check(runtime->FocusUI(volumeID),"Fixture slider focus failed");
+        sample.Keys[Key::Enter]=true;route();runtime->OnUpdateRuntime(.016f);
+        sample.Keys.fill(false);route();sample.Keys[Key::Right]=true;route();runtime->OnUpdateRuntime(.016f);
+        Check(runtime->GetUISliderValue(volumeID)==55&&runtime->IsUISliderEditing(),"Fixture keyboard Adjust failed");
+        sample.Keys.fill(false);route();sample.Keys[Key::Escape]=true;route();runtime->OnUpdateRuntime(.016f);
+        Check(runtime->GetUISliderValue(volumeID)==50&&runtime->IsUIScreenOpen(settingsID),"Fixture Cancel failed value rollback / closed screen");
+        sample.Keys.fill(false);route();Check(runtime->FocusUI(first[1]),"Fixture return to command failed");
         sample.Keys[Key::Enter] = true;
         route();
         runtime->OnUpdateRuntime(.016f);
@@ -234,7 +252,7 @@ void DrawUIScreenFixture()
     for(auto handle:m_ScreenFixture->GetAllEntitiesWith<UIRectComponent>()){
         Entity item(handle,m_ScreenFixture.get());
         if(item.HasComponent<UIProgressComponent>()||item.HasComponent<UIRadioGroupComponent>()||(item.HasComponent<UIButtonComponent>()&&item.GetComponent<UIButtonComponent>().Kind!=GameUI::ControlKind::Button)){
-            m_ScreenFixturePanel.SetSelectedEntity(item);m_ScreenFixturePanel.RestoreSections({{"UI Button",true},{"UI Radio Group",true},{"UI Progress",true}});m_ScreenFixturePanel.DrawAssetProperties(item);
+            m_ScreenFixturePanel.SetSelectedEntity(item);m_ScreenFixturePanel.RestoreSections({{"UI Button",true},{"UI Radio Group",true},{"UI Progress",true},{"UI Slider",true}});m_ScreenFixturePanel.DrawAssetProperties(item);
         }
     }
     m_ScreenFixturePanel.SetSelectedEntity(originalSelection);
