@@ -320,8 +320,13 @@ static void Write(YAML::Emitter &out, const UINineSliceComponent &v)
 }
 UIButtonComponent ReadUIButtonComponent(const YAML::Node &n)
 {
-    Keys(n, {"Action", "TabOrder", "Interactable", "Colors", "Images"});
+    Keys(n, {"Action", "TabOrder", "Interactable", "Colors", "Images", "Kind", "InitiallyChecked", "Indicator", "Group", "EventOwner"});
     UIButtonComponent v;
+    if(n["Kind"]){auto kind=n["Kind"].as<unsigned>();if(kind>2)throw std::invalid_argument("Invalid UI control kind");v.Kind=GameUI::ControlKind(kind);}
+    if(n["InitiallyChecked"])v.InitiallyChecked=n["InitiallyChecked"].as<bool>();
+    if(n["Indicator"])v.Indicator=n["Indicator"].as<uint64_t>();
+    if(n["Group"])v.Group=n["Group"].as<uint64_t>();
+    if(n["EventOwner"])v.EventOwner=n["EventOwner"].as<uint64_t>();
     if (n["Action"])
         v.Action = n["Action"].as<std::string>();
     if (n["TabOrder"])
@@ -352,6 +357,11 @@ UIButtonComponent ReadUIButtonComponent(const YAML::Node &n)
 static void Write(YAML::Emitter &out, const UIButtonComponent &v)
 {
     out << YAML::BeginMap;
+    out << YAML::Key << "Kind" << YAML::Value << unsigned(v.Kind);
+    out << YAML::Key << "InitiallyChecked" << YAML::Value << v.InitiallyChecked;
+    out << YAML::Key << "Indicator" << YAML::Value << v.Indicator;
+    out << YAML::Key << "Group" << YAML::Value << v.Group;
+    out << YAML::Key << "EventOwner" << YAML::Value << v.EventOwner;
     out << YAML::Key << "Action" << YAML::Value;
     Write(out, v.Action);
     out << YAML::Key << "TabOrder" << YAML::Value;
@@ -372,6 +382,38 @@ static void Write(YAML::Emitter &out, const UIButtonComponent &v)
     out << YAML::EndSeq;
     out << YAML::EndMap;
 }
+UIRadioGroupComponent ReadUIRadioGroupComponent(const YAML::Node &n){
+    Keys(n,{"Required","InitialSelection","EventOwner","Action"});UIRadioGroupComponent v;
+    if(n["Required"])v.Required=n["Required"].as<bool>();
+    if(n["InitialSelection"])v.InitialSelection=n["InitialSelection"].as<uint64_t>();
+    if(n["EventOwner"])v.EventOwner=n["EventOwner"].as<uint64_t>();
+    if(n["Action"])v.Action=n["Action"].as<std::string>();
+    if(v.Action.size()>128||v.Action.find('\0')!=std::string::npos)throw std::invalid_argument("Invalid radio action");
+    return v;
+}
+static void Write(YAML::Emitter &out,const UIRadioGroupComponent &v){
+    out<<YAML::BeginMap<<YAML::Key<<"Required"<<YAML::Value<<v.Required
+       <<YAML::Key<<"InitialSelection"<<YAML::Value<<v.InitialSelection
+       <<YAML::Key<<"EventOwner"<<YAML::Value<<v.EventOwner
+       <<YAML::Key<<"Action"<<YAML::Value<<v.Action<<YAML::EndMap;
+}
+UIProgressComponent ReadUIProgressComponent(const YAML::Node &n){
+    Keys(n,{"Minimum","Maximum","InitialValue","Fill","Direction"});UIProgressComponent v;
+    if(n["Minimum"])v.Minimum=n["Minimum"].as<float>();
+    if(n["Maximum"])v.Maximum=n["Maximum"].as<float>();
+    if(n["InitialValue"])v.InitialValue=n["InitialValue"].as<float>();
+    if(n["Fill"])v.Fill=n["Fill"].as<uint64_t>();
+    if(n["Direction"]){auto d=n["Direction"].as<unsigned>();if(d>3)throw std::invalid_argument("Invalid progress direction");v.Direction=GameUI::FillDirection(d);}
+    if(!std::isfinite(v.Minimum)||!std::isfinite(v.Maximum)||!std::isfinite(v.InitialValue)||v.Minimum>=v.Maximum||!std::isfinite(v.Maximum-v.Minimum))throw std::invalid_argument("Progress needs a finite increasing range and value");
+    return v;
+}
+static void Write(YAML::Emitter &out,const UIProgressComponent &v){
+    out<<YAML::BeginMap<<YAML::Key<<"Minimum"<<YAML::Value<<v.Minimum
+       <<YAML::Key<<"Maximum"<<YAML::Value<<v.Maximum
+       <<YAML::Key<<"InitialValue"<<YAML::Value<<v.InitialValue
+       <<YAML::Key<<"Fill"<<YAML::Value<<v.Fill
+       <<YAML::Key<<"Direction"<<YAML::Value<<unsigned(v.Direction)<<YAML::EndMap;
+}
 void ValidateUIConfiguration(const YAML::Node &node)
 {
     if(node["UINineSliceComponent"] && node["UIRectComponent"] && ReadUIRectComponent(node["UIRectComponent"]).Fit!=GameUI::ImageFit::Stretch)
@@ -386,8 +428,9 @@ void ValidateUIConfiguration(const YAML::Node &node)
         ReadUITextStyleComponent(n);
     if (auto n = node["UINineSliceComponent"])
         ReadUINineSliceComponent(n);
-    if (auto n = node["UIButtonComponent"])
-        ReadUIButtonComponent(n);
+    if (auto n = node["UIButtonComponent"]) ReadUIButtonComponent(n);
+    if (auto n = node["UIRadioGroupComponent"]) ReadUIRadioGroupComponent(n);
+    if (auto n = node["UIProgressComponent"]) ReadUIProgressComponent(n);
 }
 void ReadUIComponents(const YAML::Node &node, Entity entity)
 {
@@ -401,8 +444,9 @@ void ReadUIComponents(const YAML::Node &node, Entity entity)
         entity.AddComponent<UITextStyleComponent>(ReadUITextStyleComponent(n));
     if (auto n = node["UINineSliceComponent"])
         entity.AddComponent<UINineSliceComponent>(ReadUINineSliceComponent(n));
-    if (auto n = node["UIButtonComponent"])
-        entity.AddComponent<UIButtonComponent>(ReadUIButtonComponent(n));
+    if (auto n = node["UIButtonComponent"]) entity.AddComponent<UIButtonComponent>(ReadUIButtonComponent(n));
+    if (auto n = node["UIRadioGroupComponent"]) entity.AddComponent<UIRadioGroupComponent>(ReadUIRadioGroupComponent(n));
+    if (auto n = node["UIProgressComponent"]) entity.AddComponent<UIProgressComponent>(ReadUIProgressComponent(n));
 }
 void WriteUIComponents(YAML::Emitter &out, Entity entity)
 {
@@ -436,12 +480,15 @@ void WriteUIComponents(YAML::Emitter &out, Entity entity)
         out << YAML::Key << "UIButtonComponent" << YAML::Value;
         Write(out, entity.GetComponent<UIButtonComponent>());
     }
+    if(entity.HasComponent<UIRadioGroupComponent>()){out<<YAML::Key<<"UIRadioGroupComponent"<<YAML::Value;Write(out,entity.GetComponent<UIRadioGroupComponent>());}
+    if(entity.HasComponent<UIProgressComponent>()){out<<YAML::Key<<"UIProgressComponent"<<YAML::Value;Write(out,entity.GetComponent<UIProgressComponent>());}
+
 }
 std::string UIAuthoredState(Entity entity)
 {
     if (!entity.HasComponent<UICanvasComponent>() && !entity.HasComponent<UIRectComponent>() &&
         !entity.HasComponent<UILayoutComponent>() && !entity.HasComponent<UITextStyleComponent>() &&
-        !entity.HasComponent<UINineSliceComponent>() && !entity.HasComponent<UIButtonComponent>())
+        !entity.HasComponent<UINineSliceComponent>() && !entity.HasComponent<UIButtonComponent>() && !entity.HasComponent<UIRadioGroupComponent>() && !entity.HasComponent<UIProgressComponent>())
         return {};
     YAML::Emitter out;
     out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);

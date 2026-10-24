@@ -10,8 +10,11 @@ namespace Hazel
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_ResetBindings();
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static ulong UI_FocusScope();
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_Focus(ulong identity,ulong target);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_Checked(ulong id,bool write,bool value);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static ulong UI_Selection(ulong id,bool write,ulong value);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static float UI_Progress(ulong id,bool write,float value);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_Screen(ulong identity,ulong screen,int operation);
-        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_ConsumeEvent(ulong identity,out ulong screen,out ulong source,out int kind,out ulong sequence,out string action);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_ConsumeEvent(ulong identity,out ulong screen,out ulong source,out int kind,out ulong sequence,out string action,out bool previousChecked,out bool value,out ulong previousSelection,out ulong selection);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_Cancel(ulong identity,ulong scope);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_GetImageFit(ulong id,out int fit,out Vector2 alignment);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_SetImageFit(ulong id,int fit,ref Vector2 alignment);

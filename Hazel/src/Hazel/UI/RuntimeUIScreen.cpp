@@ -399,70 +399,59 @@ void RuntimeUI::PublishScope()
     if (m_PendingFocus && !Live(m_PendingFocus))
         m_PendingFocus = 0;
 }
-void RuntimeUI::QueueEvent(Action event)
+bool RuntimeUI::QueueEvent(Action event)
 {
-    if (auto screen = Screen(m_Resolved.Scope))
-    {
-        event.Screen = screen->ID;
-        event.Owner = screen->Policy.EventOwner;
-        auto owner = m_Scene.GetEntityByUUID(event.Owner);
-        if (!owner || !m_Scene.IsEntityValid(event.Owner))
-        {
-            ScreenProblem("Screen " + std::to_string(screen->ID) +
-                          " has no live event owner; event rejected");
-            return;
-        }
-        if (owner.HasComponent<ScriptComponent>() &&
-            !owner.GetComponent<ScriptComponent>().ClassName.empty())
-        {
-            auto instance = ScriptEngine::GetEntityScriptInstance(event.Owner);
-            if (!instance ||
-                instance->GetScriptClass() !=
-                    ScriptEngine::GetEntityClass(owner.GetComponent<ScriptComponent>().ClassName))
-            {
-                ScreenProblem("Screen owner script is not the declared live class; event rejected");
-                return;
+    const bool value=event.Kind==UIEventKind::ToggleChanged||event.Kind==UIEventKind::SelectionChanged;
+    if (auto screen = Screen(m_Resolved.Scope)) {
+        event.Screen=screen->ID;event.Owner=screen->Policy.EventOwner;
+    } else if(value) event.Owner=ValueOwner(event.Entity);
+    if(event.Screen||value){
+        auto owner=m_Scene.GetEntityByUUID(event.Owner);
+        if(!owner||!m_Scene.IsEntityValid(event.Owner)){if(value)ControlProblem("User change rejected: assign a live event owner on its screen or standalone control/group");else ScreenProblem("Screen event requires a live declared owner");return false;}
+        if(owner.HasComponent<ScriptComponent>()&&!owner.GetComponent<ScriptComponent>().ClassName.empty()){
+            auto instance=ScriptEngine::GetEntityScriptInstance(event.Owner);
+            if(!instance||instance->GetScriptClass()!=ScriptEngine::GetEntityClass(owner.GetComponent<ScriptComponent>().ClassName)){
+                ScreenProblem("Declared event owner script is not live; user change rejected");return false;
             }
         }
-        event.OwnerLifetime = m_Scene.GetAuthoringLifetime(event.Owner);
-        event.OwnerComponent =
-            m_Scene.GetAuthoringComponentVersion(event.Owner, typeid(ScriptComponent));
-        if (owner.HasComponent<ScriptComponent>())
-            event.OwnerClass = owner.GetComponent<ScriptComponent>().ClassName;
+        event.OwnerLifetime=m_Scene.GetAuthoringLifetime(event.Owner);
+        event.OwnerComponent=m_Scene.GetAuthoringComponentVersion(event.Owner,typeid(ScriptComponent));
+        if(owner.HasComponent<ScriptComponent>())event.OwnerClass=owner.GetComponent<ScriptComponent>().ClassName;
+        if(event.OwnerClass.size()>512){ScreenProblem("Event owner class exceeds 512 bytes");return false;}
     }
-    if (m_Actions.size() == InputRouter::MaxActions)
-    {
-        ++m_OuterDrops;
-        return;
-    }
-    event.Sequence = ++m_EventSequence;
-    m_Actions.push_back(std::move(event));
+    if(m_Actions.size()==InputRouter::MaxActions){++m_OuterDrops;if(value)ControlProblem("Event queue full (64); user value change rejected");return false;}
+    event.Sequence=++m_EventSequence;m_Actions.push_back(std::move(event));return true;
 }
 bool RuntimeUI::EventValid(const Action &event) const
 {
-    if (event.Screen)
-    {
-        auto screen = Screen(event.Screen);
-        auto owner = m_Scene.GetEntityByUUID(event.Owner);
-        if (!screen || m_Resolved.Scope != event.Screen || !IsScreenOpen(event.Screen) ||
-            screen->Policy.EventOwner != event.Owner || !owner ||
-            !m_Scene.IsEntityValid(event.Owner) ||
-            m_Scene.GetAuthoringLifetime(event.Owner) != event.OwnerLifetime ||
-            m_Scene.GetAuthoringComponentVersion(event.Owner, typeid(ScriptComponent)) !=
-                event.OwnerComponent ||
-            (owner.HasComponent<ScriptComponent>() ? owner.GetComponent<ScriptComponent>().ClassName
-                                                   : std::string{}) != event.OwnerClass)
-            return false;
-        if (event.Kind == UIEventKind::Cancel)
-            return screen->Policy.Cancel == ScreenCancel::NotifyOwner &&
-                   event.Entity == (Live(screen->Policy.CancelTarget) ? screen->Policy.CancelTarget
-                                                                      : event.Screen);
+    if(event.Owner){
+        auto owner=m_Scene.GetEntityByUUID(event.Owner);
+        if(!owner||!m_Scene.IsEntityValid(event.Owner)||m_Scene.GetAuthoringLifetime(event.Owner)!=event.OwnerLifetime||
+            m_Scene.GetAuthoringComponentVersion(event.Owner,typeid(ScriptComponent))!=event.OwnerComponent||
+            (owner.HasComponent<ScriptComponent>()?owner.GetComponent<ScriptComponent>().ClassName:std::string{})!=event.OwnerClass)return false;
     }
-    auto n = m_Resolved.Find(event.Entity);
-    if (!event.Screen && n && Screen(n->Canvas))
-        return false;
-    return Live(event.Entity) && n->ButtonIndex < m_Resolved.Buttons.size() &&
-           m_Resolved.Buttons[n->ButtonIndex].Action == event.Name;
+    if (event.Screen) {
+        auto screen=Screen(event.Screen);
+        if(!screen||m_Resolved.Scope!=event.Screen||!IsScreenOpen(event.Screen)||screen->Policy.EventOwner!=event.Owner)return false;
+        if(event.Kind==UIEventKind::Cancel)return screen->Policy.Cancel==ScreenCancel::NotifyOwner&&
+            event.Entity==(Live(screen->Policy.CancelTarget)?screen->Policy.CancelTarget:event.Screen);
+    }
+    if(event.Kind==UIEventKind::ToggleChanged||event.Kind==UIEventKind::SelectionChanged){
+        auto source=event.Kind==UIEventKind::ToggleChanged?event.Entity:event.Selection;
+        auto e=m_Scene.GetEntityByUUID(source),control=m_Scene.GetEntityByUUID(event.Control);
+        if(!e||!control||!Live(source)||!e.HasComponent<UIButtonComponent>()||
+            m_Scene.GetAuthoringLifetime(source)!=event.SourceLifetime||
+            m_Scene.GetAuthoringComponentVersion(source,typeid(UIButtonComponent))!=event.SourceComponent||
+            m_Scene.GetAuthoringLifetime(event.Control)!=event.ControlLifetime)return false;
+        const auto &b=e.GetComponent<UIButtonComponent>();
+        if(event.Kind==UIEventKind::ToggleChanged){if(b.Kind!=ControlKind::Toggle||b.Action!=event.Name)return false;}
+        else if(!Member(event.Control,source,true)||!control.HasComponent<UIRadioGroupComponent>()||control.GetComponent<UIRadioGroupComponent>().Action!=event.Name)return false;
+        if(m_Scene.GetAuthoringComponentVersion(event.Control,event.Kind==UIEventKind::ToggleChanged?typeid(UIButtonComponent):typeid(UIRadioGroupComponent))!=event.ControlComponent)return false;
+        return event.Screen||(!Screen(CanvasOf(source))&&ValueOwner(event.Entity)==event.Owner);
+    }
+    auto n=m_Resolved.Find(event.Entity);
+    if(!event.Screen&&n&&Screen(n->Canvas))return false;
+    return Live(event.Entity)&&n->ButtonIndex<m_Resolved.Buttons.size()&&m_Resolved.Buttons[n->ButtonIndex].Action==event.Name;
 }
 bool RuntimeUI::Focus(uint64_t target)
 {
@@ -482,12 +471,12 @@ bool RuntimeUI::Focus(uint64_t target)
 bool RuntimeUI::ConsumeEvent(uint64_t owner, Action &event)
 {
     if (!owner || std::none_of(m_Actions.begin(), m_Actions.end(), [&](const auto &event)
-                               { return event.Owner == owner && event.Screen; }))
+                               { return event.Owner == owner; }))
         return false;
     ResolveSurface(m_Resolved.Surface, m_Resolved.PreviewOrphans);
     PruneActions();
     for (auto it = m_Actions.begin(); it != m_Actions.end(); ++it)
-        if (it->Owner == owner && it->Screen)
+        if (it->Owner == owner)
         {
             event = std::move(*it);
             m_Actions.erase(it);

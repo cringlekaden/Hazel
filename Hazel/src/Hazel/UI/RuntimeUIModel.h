@@ -113,6 +113,9 @@ struct Action
     std::string Name;
     uint64_t Screen=0, Owner=0, Sequence=0;
     UIEventKind Kind=UIEventKind::Activated;
+    bool PreviousChecked=false, Checked=false;
+    uint64_t PreviousSelection=0, Selection=0, Control=0;
+    uint64_t SourceLifetime=0, SourceComponent=0, ControlLifetime=0, ControlComponent=0;
     uint64_t OwnerLifetime=0, OwnerComponent=0;
     std::string OwnerClass;
 };

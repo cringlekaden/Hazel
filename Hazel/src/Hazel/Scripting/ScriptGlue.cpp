@@ -404,13 +404,29 @@ namespace Hazel {
         try{auto* scene=ScriptEngine::GetSceneContext();if(scene&&scene->GetIdentity()==identity){scene->CheckThread();if(operation==-1){scene->RefreshUI();result=scene->IsUIScreenOpen(id);}else if(operation>=0&&operation<=3)result=scene->RequestUIScreen(GameUI::ScreenOperation(operation),id);else throw std::invalid_argument("Invalid UI screen operation");}}
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
     }
-    static bool UI_ConsumeEvent(uint64_t identity,uint64_t* screen,uint64_t* source,int* kind,uint64_t* sequence,MonoString** name) {
+    static bool UI_ConsumeEvent(uint64_t identity,uint64_t* screen,uint64_t* source,int* kind,uint64_t* sequence,MonoString** name,bool* previousChecked,bool* checked,uint64_t* previousSelection,uint64_t* selection) {
+        *previousChecked=*checked=false;*previousSelection=*selection=0;
         *screen=*source=*sequence=0;*kind=0;*name=nullptr;MonoException* failure=nullptr;bool result=false;
         try{auto* scene=ScriptEngine::GetSceneContext();auto owner=ScriptEngine::GetExecutingEntity();
             if(!owner)throw std::invalid_argument("Scoped UI events must be consumed from the declared owner's lifecycle callback");
             if(scene&&scene->GetIdentity()==identity){auto entity=scene->GetEntityByUUID(owner);auto instance=ScriptEngine::GetEntityScriptInstance(owner);
                 if(!entity||!entity.HasComponent<ScriptComponent>()||!instance||instance->GetScriptClass()!=ScriptEngine::GetEntityClass(entity.GetComponent<ScriptComponent>().ClassName))return false;
-                GameUI::Action event;if(scene->ConsumeUIEvent(owner,event)){*screen=event.Screen;*source=event.Entity;*kind=int(event.Kind);*sequence=event.Sequence;*name=ScriptEngine::CreateString(event.Name.c_str());result=true;}}}
+                GameUI::Action event;if(scene->ConsumeUIEvent(owner,event)){*screen=event.Screen;*source=event.Entity;*kind=int(event.Kind);*sequence=event.Sequence;*name=ScriptEngine::CreateString(event.Name.c_str());*previousChecked=event.PreviousChecked;*checked=event.Checked;*previousSelection=event.PreviousSelection;*selection=event.Selection;result=true;}}}
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
+    }
+    static bool UI_Checked(uint64_t id,bool write,bool value){
+        MonoException* failure=nullptr;bool result=false;
+        try{auto* s=ScriptEngine::GetSceneContext();if(!s)throw std::invalid_argument("Control requires a runtime scene");if(write)s->SetUIChecked(id,value);result=s->IsUIChecked(id);}
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
+    }
+    static uint64_t UI_Selection(uint64_t id,bool write,uint64_t value){
+        MonoException* failure=nullptr;uint64_t result=0;
+        try{auto* s=ScriptEngine::GetSceneContext();if(!s)throw std::invalid_argument("Control requires a runtime scene");if(write)s->SetUISelection(id,value);result=s->GetUISelection(id);}
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
+    }
+    static float UI_Progress(uint64_t id,bool write,float value){
+        MonoException* failure=nullptr;float result=0;
+        try{auto* s=ScriptEngine::GetSceneContext();if(!s)throw std::invalid_argument("Control requires a runtime scene");if(write)s->SetUIProgress(id,value);result=s->GetUIProgress(id);}
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
     }
     static uint64_t UI_FocusScope(){auto* scene=ScriptEngine::GetSceneContext();return scene?scene->GetUIDiagnostics().Scope:0;}
@@ -566,12 +582,14 @@ namespace Hazel {
         RegisterComponent<UITextStyleComponent>("Hazel.UITextStyleComponent");
         RegisterComponent<UINineSliceComponent>("Hazel.UINineSliceComponent");
         RegisterComponent<UIButtonComponent>("Hazel.UIButtonComponent");
+        RegisterComponent<UIRadioGroupComponent>("Hazel.UIRadioGroupComponent");
+        RegisterComponent<UIProgressComponent>("Hazel.UIProgressComponent");
 
 	}
 
 	void ScriptGlue::ValidateComponents(MonoImage* image)
 	{
-		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent", "Hazel.SpriteRendererComponent", "Hazel.SpriteAnimationComponent", "Hazel.AudioSourceComponent", "Hazel.UICanvasComponent", "Hazel.UIRectComponent", "Hazel.UILayoutComponent", "Hazel.UITextStyleComponent", "Hazel.UINineSliceComponent", "Hazel.UIButtonComponent" })
+		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent", "Hazel.SpriteRendererComponent", "Hazel.SpriteAnimationComponent", "Hazel.AudioSourceComponent", "Hazel.UICanvasComponent", "Hazel.UIRectComponent", "Hazel.UILayoutComponent", "Hazel.UITextStyleComponent", "Hazel.UINineSliceComponent", "Hazel.UIButtonComponent", "Hazel.UIRadioGroupComponent", "Hazel.UIProgressComponent" })
 			if (!mono_reflection_type_from_name(const_cast<char*>(name), image))
 				throw std::runtime_error(std::string("Missing managed component: ") + name);
 	}
@@ -586,6 +604,9 @@ namespace Hazel {
         HZ_ADD_INTERNAL_CALL(UI_Focus);
         HZ_ADD_INTERNAL_CALL(UI_Screen);
         HZ_ADD_INTERNAL_CALL(UI_ConsumeEvent);
+        HZ_ADD_INTERNAL_CALL(UI_Checked);
+        HZ_ADD_INTERNAL_CALL(UI_Selection);
+        HZ_ADD_INTERNAL_CALL(UI_Progress);
         HZ_ADD_INTERNAL_CALL(UI_FocusScope);
         HZ_ADD_INTERNAL_CALL(UI_Cancel);
         HZ_ADD_INTERNAL_CALL(UI_IsPointerCaptured);

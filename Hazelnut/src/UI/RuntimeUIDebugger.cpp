@@ -199,6 +199,8 @@ void EditorLayer::UI_Debugger()
         ImGui::Text("Owner %llu | queued %llu | retired %llu",(unsigned long long)d.EventOwner,(unsigned long long)d.PendingEvents,(unsigned long long)d.RetiredEvents);
         ImGui::Text("Requests %llu / 64 | issues %llu",(unsigned long long)d.PendingScreens,(unsigned long long)d.RejectedScreens);
         if(!d.ScreenProblem.empty())ImGui::TextWrapped("%s",d.ScreenProblem.c_str());
+        if(!d.ControlProblem.empty())ImGui::TextWrapped("Control: %s",d.ControlProblem.c_str());
+        if(d.RejectedChanges)ImGui::Text("Control diagnostics %llu",(unsigned long long)d.RejectedChanges);
         unsigned order=0;for(const auto &screen:s.Screens){auto entity=m_ActiveScene->GetEntityByUUID(screen.ID);auto name=entity?entity.GetName():std::string("Retired");
             ImGui::TextWrapped("%s: %s%s%s | order %u | owner %llu",name.c_str(),screen.Open?"open":"closed",screen.Available?"":" / unavailable",screen.Modal?" / modal":"",screen.Open?++order:0,(unsigned long long)screen.Owner);
         }
@@ -290,6 +292,14 @@ void EditorLayer::UI_Debugger()
                         r.Size.y);
         };
         rect("Logical bounds", n->Bounds);
+        try{
+            if(selected.HasComponent<UIButtonComponent>()&&selected.GetComponent<UIButtonComponent>().Kind!=GameUI::ControlKind::Button)
+                ImGui::Text("%s: %s",selected.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio?"Radio":"Toggle",m_ActiveScene->IsUIChecked(n->ID)?"selected / checked":"unselected / unchecked");
+            if(selected.HasComponent<UIRadioGroupComponent>())ImGui::Text("Selected member %llu",(unsigned long long)m_ActiveScene->GetUISelection(n->ID));
+            if(selected.HasComponent<UIProgressComponent>())ImGui::Text("Progress %.3f (passive)",m_ActiveScene->GetUIProgress(n->ID));
+            GameUI::Rect visual;bool visible=true;if(m_ActiveScene->GetUIControlVisual(n->ID,visual,visible)){rect("Control visual",visual);ImGui::Text("Paint %s (layout unchanged)",visible?"visible":"hidden");}
+        }catch(const std::exception &error){ImGui::TextWrapped("%s",error.what());}
+
         auto mode=[](GameUI::SizeMode value){return value==GameUI::SizeMode::Fixed?"Fixed":value==GameUI::SizeMode::Fill?"Fill":"Content";};
         ImGui::Text("Layout v%u: %s / %s | controlling parent %llu",GameUI::RectLayout::SchemaVersion,mode(n->WidthMode),mode(n->HeightMode),(unsigned long long)n->Parent);
         ImGui::Text("Available %.2f x %.2f | measured %.2f x %.2f",n->Available.x,n->Available.y,n->Measured.x,n->Measured.y);

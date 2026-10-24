@@ -2128,3 +2128,64 @@ cues, native presets/Inspector/history and keyboard/controller tests. Sliders ca
 follow with real Adjust actions. Keep scrolling/data views, themes, structural
 history and the known large alternating draw-run debt separate. This screen slice
 does not finish all P4 or the practical screen-space production endpoint.
+
+## P4: composed values — toggle, radio selection and determinate progress
+
+Baseline `76fb469` on `feature/runtime-ui-hardening`. The implementation extends
+UIButton's existing interaction with `Kind` (Button/Toggle/Radio), InitiallyChecked,
+Indicator/Group and standalone EventOwner references. UIRadioGroup owns Required,
+InitialSelection, EventOwner and Action. UIProgress owns finite increasing
+Minimum/Maximum, InitialValue, Fill and Right/Left/Down/Up direction. The current
+schema-3 layout and all existing defaults remain unchanged; no new vendor, shader,
+control tree, input path or permanent migration mode is introduced.
+
+Scene-owned transient values are stamped by entity/component lifetime and exact
+authored defaults. Snapshot publication reconciles structural membership, enabled/
+visible ancestors and required-group fallback. Selection is authoritative only on
+the group; options never own checked flags. Navigation changes focus, not selection.
+Fallback uses TabOrder then UUID; optional selected activation is a no-op, explicit
+clear is permitted only for optional groups. Clipping affects eligibility rather
+than the logical selected choice; closed-screen values survive closing. A detached
+connected control prefab may lack its eventual Canvas; instantiated members must
+share their group's Canvas and remain descendants.
+
+Paint uses existing Rect/Text/Sprite/focus primitives and painter-ordered runs.
+Optional visual parts are direct Sprite/Rect child leaves, not additional targets.
+The built-in square cue handles an absent/broken selected visual. Progress derives
+its directional fill from the intersection of the fill Rect and root padded content;
+no authored geometry is rewritten. Invalid native ranges retain accepted values,
+with no fill if no valid version exists. Diagnostics are transient. Existing source
+checks additionally observe control defaults, relationships, component lifetimes
+and standalone owner identity/class. Runtime setters change only values and reuse
+unchanged layout generations. Normal drawing does no document serialization,
+filesystem probing or text/font work for control properties.
+
+Typed ToggleChanged and SelectionChanged append to the existing envelope and sole
+outer delivery stream; toggles carry previous/new bools, groups previous/new member
+identities. Admission precedes user mutation. At 64 queued records the new user
+change rejects atomically, with no implicit retry. Missing/unready owners reject
+likewise. Managed scopes retain one screen owner; ordinary canvases need an explicit
+Toggle/Group recipient through the same stream. Old unscoped consumers cannot steal
+these records. Programmatic setters, initial synchronization and lifecycle fallback
+are silent. Multiple accepted changes retain ordered historical payloads. Candidate
+delivery rechecks source/group lifetimes, membership/action, owner class/lifetime
+and current scope; transitions/domain/Stop retain the established retirement rules.
+No callbacks/delegates or registry observations are stored.
+
+Broken control references reopen as editable-with-problems without clearing authored
+IDs; strict Save/Start/export validate them. Inspector commands validate their target
+and dependent initial-selection references, allowing unrelated broken parts to be
+repaired individually without clearing them. Malformed
+fields/ranges reject staged loading. All authored fields participate in strict parsing, binary authored comparison,
+scene copy/duplication, subtree/prefab remapping and export containment checks.
+Shared UIEditCommand captures fields and component guards; it retains no transient
+values/resources. Native hierarchy presets, named selectors, progress/radio sections
+and the existing debugger expose the workflow. Creation/script fields remain
+outside structural history; this milestone does not redesign that service.
+The native-authored Menu/Settings/Confirmation fixture now includes Music,
+Low/Medium/High and a script-updated progress display using only existing resources.
+
+Qualification and physical acceptance are recorded after final local stabilization.
+This slice does not complete all P4 or production UI. Next: a bounded slider with
+real remappable Adjust actions, finite stepped range, coherent pointer drag/cancel
+and owner-addressed value events, reusing this admission/state/scope foundation.

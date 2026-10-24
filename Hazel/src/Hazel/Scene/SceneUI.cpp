@@ -136,9 +136,17 @@ void Scene::SetUIFramebufferSize(glm::vec2 size)
 }
 const GameUI::ResolvedSnapshot& Scene::GetUISnapshot() const { CheckThread();return m_UI->Snapshot(); }
 GameUI::RuntimeUIDiagnostics Scene::GetUIDiagnostics() const { CheckThread();return m_UI->Diagnostics(); }
-void Scene::ValidateUI(bool resources)
+bool Scene::IsUIChecked(uint64_t id){CheckThread();RefreshUI();return m_UI->Checked(id);}
+void Scene::SetUIChecked(uint64_t id,bool value){CheckThread();RefreshUI();m_UI->SetChecked(id,value);}
+uint64_t Scene::GetUISelection(uint64_t id){CheckThread();RefreshUI();return m_UI->Selection(id);}
+void Scene::SetUISelection(uint64_t id,uint64_t member){CheckThread();RefreshUI();m_UI->Select(id,member);}
+float Scene::GetUIProgress(uint64_t id){CheckThread();RefreshUI();return m_UI->Progress(id);}
+void Scene::SetUIProgress(uint64_t id,float value){CheckThread();RefreshUI();m_UI->SetProgress(id,value);}
+void Scene::ValidateUIControls(uint64_t target) const {m_UI->ValidateControls(target);}
+bool Scene::GetUIControlVisual(uint64_t id,GameUI::Rect &bounds,bool &visible) const {CheckThread();return m_UI->ControlVisual(id,bounds,visible);}
+void Scene::ValidateUI(bool resources,bool controls)
 {
-    ValidateUILayoutDependencies();
+    ValidateUILayoutDependencies();if(controls)ValidateUIControls();
     size_t screens=0;for(auto h:m_Registry.view<UICanvasComponent>())if(m_Registry.get<UICanvasComponent>(h).Screen.Managed)++screens;
     if(screens>RuntimeUI::MaxScreens)throw std::runtime_error("UI managed screen limit exceeded (64)");
     if(m_Registry.view<UIRectComponent>().size()>GameUI::InputRouter::MaxButtons)

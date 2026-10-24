@@ -262,3 +262,27 @@ namespace Migration {
         }
     }
 }
+
+namespace Migration {
+    public class ValueOwnerProbe : Hazel.Entity {
+        public bool SettersPassed,LastChecked;
+        public int ToggleChanges,RadioChanges;
+        public ulong Previous,Selected;
+        void OnCreate(){
+            var toggle=FindEntityByName("Value 101").GetComponent<Hazel.UIButtonComponent>();
+            var group=FindEntityByName("Value 200").GetComponent<Hazel.UIRadioGroupComponent>();
+            var progress=FindEntityByName("Value 300").GetComponent<Hazel.UIProgressComponent>();
+            toggle.Checked=true;toggle.Checked=false;group.Selection=FindEntityByName("Value 202");group.Selection=FindEntityByName("Value 201");
+            progress.Value=100;bool clamped=progress.Value==1;progress.Value=.25f;
+            SettersPassed=clamped&&!toggle.Checked&&group.Selection.ID==201&&progress.Value==.25f;
+        }
+        void OnUpdate(float dt){
+            Hazel.UIEvent e;
+            while(Hazel.GameUI.TryConsumeEvent(out e)){
+                if(e.Kind==Hazel.UIEventKind.ToggleChanged){if(e.Source.ID!=101||e.Screen.ID!=100||e.PreviousChecked==e.Checked)throw new System.Exception("Toggle payload");++ToggleChanges;LastChecked=e.Checked;}
+                else if(e.Kind==Hazel.UIEventKind.SelectionChanged){if(e.Source.ID!=200||e.Selection==null)throw new System.Exception("Radio payload");++RadioChanges;Previous=e.PreviousSelection==null?0:e.PreviousSelection.ID;Selected=e.Selection.ID;}
+                else throw new System.Exception("Value gesture generated an unrelated activation");
+            }
+        }
+    }
+}

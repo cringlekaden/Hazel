@@ -270,6 +270,11 @@ namespace Hazel {
                     else if(*ref&&!retainExternal)throw std::runtime_error("External UI screen reference on '"+original.GetName()+"'. Include the target or clear the reference");
                 }
             }
+            std::vector<uint64_t*> controlRefs;
+            if(target.HasComponent<UIButtonComponent>()){auto &b=target.GetComponent<UIButtonComponent>();controlRefs={&b.Indicator,&b.Group,&b.EventOwner};}
+            if(target.HasComponent<UIRadioGroupComponent>()){auto &g=target.GetComponent<UIRadioGroupComponent>();controlRefs.push_back(&g.InitialSelection);controlRefs.push_back(&g.EventOwner);}
+            if(target.HasComponent<UIProgressComponent>())controlRefs.push_back(&target.GetComponent<UIProgressComponent>().Fill);
+            for(auto ref:controlRefs){if(auto found=remap.find(UUID(*ref));found!=remap.end())*ref=found->second;else if(*ref&&!retainExternal)throw std::runtime_error("External UI control reference on '"+original.GetName()+"'; include the target or clear it");}
             auto stored=from->m_ScriptFields.find(id);
             auto fields=stored==from->m_ScriptFields.end()?ScriptFieldMap{}:stored->second;
             for(auto& [name,field]:fields)if(field.Field.Type==ScriptFieldType::Entity) {
@@ -911,6 +916,8 @@ namespace Hazel {
     template<> void Scene::OnComponentAdded<UITextStyleComponent>(Entity,UITextStyleComponent&) {}
     template<> void Scene::OnComponentAdded<UINineSliceComponent>(Entity,UINineSliceComponent&) {}
     template<> void Scene::OnComponentAdded<UIButtonComponent>(Entity,UIButtonComponent&) {}
+    template<> void Scene::OnComponentAdded<UIRadioGroupComponent>(Entity,UIRadioGroupComponent&) {}
+    template<> void Scene::OnComponentAdded<UIProgressComponent>(Entity,UIProgressComponent&) {}
     template<typename T>
 
 	void Scene::OnComponentAdded(Entity entity, T& component)

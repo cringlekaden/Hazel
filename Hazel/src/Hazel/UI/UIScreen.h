@@ -19,7 +19,9 @@ struct ScreenPolicy {
   bool operator!=(const ScreenPolicy &b) const { return !(*this == b); }
 };
 enum class ScreenOperation : uint8_t { Open, Close, Pop, Replace };
-enum class UIEventKind : uint8_t { Activated, Cancel };
+enum class UIEventKind : uint8_t { Activated, Cancel, ToggleChanged, SelectionChanged };
+enum class ControlKind : uint8_t { Button, Toggle, Radio };
+enum class FillDirection : uint8_t { Right, Left, Down, Up };
 struct ScreenState {
   uint64_t ID = 0, Owner = 0;
   bool Open = false, Available = false, Modal = false;

@@ -38,6 +38,7 @@ void UIScreenWorkflowChecks()
         field.Field = {ScriptFieldType::Entity, ref.first, nullptr};
         field.SetValue<uint64_t>(ref.second.GetUUID());
     }
+    Entity settingsBody;
     std::vector<uint64_t> first;
     for (auto screen : {menu, settings, confirmation})
     {
@@ -54,12 +55,12 @@ void UIScreenWorkflowChecks()
              });
         panel.SetSelectedEntity(screen);
         Check(panel.AddUI(1), "Screen panel creation failed");
-        auto body = panel.GetSelectedEntity();
+        auto body = panel.GetSelectedEntity();if(screen==settings)settingsBody=body;
         edit(body, "Screen panel",
-             [](auto &v)
+             [&](auto &v)
              {
-                 v.Rect->FixedSize = {440, 360};
-                 v.Rect->Offset = {100, 50};
+                 v.Rect->FixedSize = screen==settings?glm::vec2(600,400):glm::vec2(440,360);
+                 v.Rect->Offset = screen==settings?glm::vec2(20,40):glm::vec2(100,50);
                  v.Image->Color = {.06f, .09f, .14f, 1};
              });
         panel.SetSelectedEntity(body);
@@ -97,6 +98,21 @@ void UIScreenWorkflowChecks()
                 first.push_back(button.GetUUID());
         }
     }
+    panel.SetSelectedEntity(settingsBody);Check(panel.AddUI(8),"Checkbox preset failed");auto checkbox=panel.GetSelectedEntity();
+    edit(checkbox,"Checkbox label/default",[](auto &v){v.Text->Text="Music";v.Button->Action="music";v.Button->InitiallyChecked=true;v.Button->TabOrder=10;v.Rect->Offset={24,270};});
+    auto configuredCheckbox=SceneSerializer(scene).CaptureAuthoredState();
+    Check(documents.UndoRedo(false)&&!checkbox.GetComponent<UIButtonComponent>().InitiallyChecked,"Toggle Inspector transaction did not undo");
+    Check(documents.UndoRedo(true)&&SceneSerializer(scene).CaptureAuthoredState()==configuredCheckbox,"Toggle Inspector transaction did not redo");
+    panel.SetSelectedEntity(settingsBody);Check(panel.AddUI(9),"Radio group preset failed");auto radio=panel.GetSelectedEntity();
+    edit(radio,"Radio group configuration",[](auto &v){v.Rect->Offset={320,80};v.Rect->FixedSize.x=240;v.Group->Action="quality";});
+    int index=0;for(auto id:scene->GetChildrenView(radio.GetUUID())){
+        auto option=scene->GetEntityByUUID(id);int optionIndex=index++;
+        edit(option,"Radio label",[&](auto &v){v.Text->Text=optionIndex==0?"Low":optionIndex==1?"Medium":"High";v.Button->TabOrder=20+optionIndex;});
+    }
+    panel.SetSelectedEntity(settingsBody);Check(panel.AddUI(10),"Progress preset failed");auto progress=panel.GetSelectedEntity();
+    edit(progress,"Progress range/default",[](auto &v){v.Rect->Offset={24,330};v.Rect->FixedSize.x=540;v.Progress->Minimum=0;v.Progress->Maximum=1;v.Progress->InitialValue=.25f;});
+    for(auto ref:{std::pair<const char*,Entity>{"Toggle",checkbox},{"Choices",radio},{"Progress",progress}}){auto &field=ScriptEngine::GetScriptFieldMap(menu)[ref.first];field.Field={ScriptFieldType::Entity,ref.first,nullptr};field.SetValue<uint64_t>(ref.second.GetUUID());}
+    scene->ValidateUI(false);
     for (size_t i = 0; i < 3; ++i)
     {
         auto target = i == 0 ? menu : i == 1 ? settings : confirmation;
@@ -214,6 +230,15 @@ void DrawUIScreenFixture()
                  ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking |
                      ImGuiWindowFlags_NoInputs);
     m_ScreenFixturePanel.DrawAssetProperties(m_ScreenFixturePanel.GetSelectedEntity());
+    auto originalSelection=m_ScreenFixturePanel.GetSelectedEntity();
+    for(auto handle:m_ScreenFixture->GetAllEntitiesWith<UIRectComponent>()){
+        Entity item(handle,m_ScreenFixture.get());
+        if(item.HasComponent<UIProgressComponent>()||item.HasComponent<UIRadioGroupComponent>()||(item.HasComponent<UIButtonComponent>()&&item.GetComponent<UIButtonComponent>().Kind!=GameUI::ControlKind::Button)){
+            m_ScreenFixturePanel.SetSelectedEntity(item);m_ScreenFixturePanel.RestoreSections({{"UI Button",true},{"UI Radio Group",true},{"UI Progress",true}});m_ScreenFixturePanel.DrawAssetProperties(item);
+        }
+    }
+    m_ScreenFixturePanel.SetSelectedEntity(originalSelection);
+
     auto &owner = *m_Editor.m_Authoring;
     auto previousScene = owner.m_PrefabScene;
     auto previousPreview = owner.m_PrefabPreview;
@@ -243,7 +268,7 @@ void DrawUIScreenFixture()
           "Native closed-screen selection preview failed");
     GameUI::Action event;
     Check(SceneSerializer(m_ScreenFixture).CaptureAuthoredState() == authored &&
-              !m_ScreenFixture->ConsumeUIAction(0, event),
+              !m_ScreenFixture->ConsumeUIAction(0, event) && !m_ScreenFixture->ConsumeUIEvent(m_ScreenFixtureMenu,event),
           "Screen Inspector/preview changed authored content or dispatched an action");
     std::cout << "PASS: actual native screen selectors and closed-screen preview, no "
                  "authored/action side effects\n";

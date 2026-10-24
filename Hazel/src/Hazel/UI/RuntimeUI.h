@@ -33,6 +33,14 @@ class RuntimeUI
     bool HasScreenRequests() const {return !m_ScreenRequests.empty();}
     bool ConsumeEvent(uint64_t owner,GameUI::Action &event);
     bool Focus(uint64_t target);
+    bool Checked(uint64_t id);
+    void SetChecked(uint64_t id,bool value);
+    uint64_t Selection(uint64_t group);
+    void Select(uint64_t group,uint64_t member);
+    float Progress(uint64_t id);
+    void SetProgress(uint64_t id,float value);
+    void ValidateControls(uint64_t target=0) const;
+    bool ControlVisual(uint64_t id,GameUI::Rect &bounds,bool &visible) const;
     static constexpr size_t MaxScreens=64, MaxScreenRequests=64;
     bool BlocksGameplay() const
     {
@@ -78,7 +86,25 @@ class RuntimeUI
     void AcceptScreenOwner(ScreenEntry &entry,const GameUI::ScreenPolicy &policy);
     void CancelScreenInput();
     void PublishScope();
-    void QueueEvent(GameUI::Action event);
+    bool QueueEvent(GameUI::Action event);
+    struct ValueState {
+        uint64_t Lifetime=0, Component=0, InitialSelection=0, Selected=0;
+        GameUI::ControlKind Kind=GameUI::ControlKind::Button;
+        bool InitialChecked=false, Checked=false, Required=false;
+        float Minimum=0,Maximum=1,Initial=0,Value=0;
+        GameUI::FillDirection Direction=GameUI::FillDirection::Right;
+        uint64_t Owner=0,OwnerLifetime=0,OwnerComponent=0;
+        std::string OwnerClass;
+    };
+    std::unordered_map<uint64_t,ValueState> m_Values;
+    std::unordered_map<uint64_t,uint64_t> m_ControlVisuals;
+    void SyncControls();
+    void ControlProblem(const std::string &message);
+    void ActivateControl(GameUI::Action event);
+    uint64_t CanvasOf(uint64_t id) const;
+    bool Member(uint64_t group,uint64_t id,bool eligible) const;
+    bool Decoration(uint64_t owner,uint64_t visual) const;
+    uint64_t ValueOwner(uint64_t source) const;
     bool EventValid(const GameUI::Action &event) const;
     void ScreenProblem(const std::string &message);
     std::vector<Renderer2D::TextGlyph> m_ScratchGlyphs;

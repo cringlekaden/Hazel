@@ -6,9 +6,9 @@ namespace Hazel {
         public static bool PopScreen()=>InternalCalls.UI_Screen(InternalCalls.Entity_GetSceneIdentity(),0,2);
         // The engine derives the consumer from the executing script; callers cannot steal another owner's events.
         public static bool TryConsumeEvent(out UIEvent value){
-            ulong screen,source,sequence;int kind;string action;
-            bool result=InternalCalls.UI_ConsumeEvent(InternalCalls.Entity_GetSceneIdentity(),out screen,out source,out kind,out sequence,out action);
-            value=result?new UIEvent{Screen=new Entity(screen),Source=new Entity(source),Kind=(UIEventKind)kind,Sequence=sequence,Action=action}:default(UIEvent);return result;
+            ulong screen,source,sequence,previousSelection,selection;int kind;string action;bool previousChecked,checkedValue;
+            bool result=InternalCalls.UI_ConsumeEvent(InternalCalls.Entity_GetSceneIdentity(),out screen,out source,out kind,out sequence,out action,out previousChecked,out checkedValue,out previousSelection,out selection);
+            value=result?new UIEvent{Screen=screen==0?null:new Entity(screen),Source=new Entity(source),Kind=(UIEventKind)kind,Sequence=sequence,Action=action,PreviousChecked=previousChecked,Checked=checkedValue,PreviousSelection=previousSelection==0?null:new Entity(previousSelection),Selection=selection==0?null:new Entity(selection)}:default(UIEvent);return result;
         }
         public static ulong FocusScope => InternalCalls.UI_FocusScope();
         public static bool TryConsumeCancel() => InternalCalls.UI_Cancel(InternalCalls.Entity_GetSceneIdentity(),0);
@@ -23,8 +23,8 @@ namespace Hazel {
             button=result?new Entity(id):null;return result;
         }
     }
-    public enum UIEventKind { Activated, Cancel }
-    public struct UIEvent {public Entity Screen,Source;public UIEventKind Kind;public ulong Sequence;public string Action;}
+    public enum UIEventKind { Activated, Cancel, ToggleChanged, SelectionChanged }
+    public struct UIEvent {public Entity Screen,Source;public UIEventKind Kind;public ulong Sequence;public string Action;public bool PreviousChecked,Checked;public Entity PreviousSelection,Selection;}
     public enum UIAction { Press, Up, Down, Left, Right, Next, Previous, Accept, Cancel }
     public enum UIShiftMatch { Any, Without, With }
     public enum UIGamepadButton { None=-1,A,B,X,Y,LeftBumper,RightBumper,Back,Start,Guide,LeftThumb,RightThumb,Up,Right,Down,Left }
@@ -73,7 +73,15 @@ namespace Hazel {
         public bool Visible {get=>InternalCalls.UI_GetValue(Entity.CheckedID,4);set=>InternalCalls.UI_SetValue(Entity.CheckedID,4,value);}
         public bool Enabled {get=>InternalCalls.UI_GetValue(Entity.CheckedID,5);set=>InternalCalls.UI_SetValue(Entity.CheckedID,5,value);}
     }
+    public class UIRadioGroupComponent : Component {
+        public Entity Selection {get{ulong id=InternalCalls.UI_Selection(Entity.CheckedID,false,0);return id==0?null:new Entity(id);}set=>InternalCalls.UI_Selection(Entity.CheckedID,true,value==null?0:value.CheckedID);}
+    }
+    public class UIProgressComponent : Component {
+        public float Value {get=>InternalCalls.UI_Progress(Entity.CheckedID,false,0);set=>InternalCalls.UI_Progress(Entity.CheckedID,true,value);}
+    }
     public class UIButtonComponent : Component {
+        // Radio options are readable here; set selection through their group.
+        public bool Checked {get=>InternalCalls.UI_Checked(Entity.CheckedID,false,false);set=>InternalCalls.UI_Checked(Entity.CheckedID,true,value);}
         public bool Interactable {get=>InternalCalls.UI_GetValue(Entity.CheckedID,3);set=>InternalCalls.UI_SetValue(Entity.CheckedID,3,value);}
         public bool TryConsumeAction(out string action) {
             ulong id;var checkedID=Entity.CheckedID;

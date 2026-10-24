@@ -201,6 +201,32 @@ static void EditorHistoryChecks()
             Check(h.Undo(*f.World)&&f.State()==start,"Constrained edge history did not restore authored constraints");
         }
     }
+    {
+        HistoryFixture f;DocumentHistory h;h.Bind(f.World->GetIdentity());
+        f.Control.GetComponent<UIButtonComponent>().Kind=GameUI::ControlKind::Toggle;
+        auto start=f.State();h.MarkSaved(start);auto before=UIEditValues::Capture(f.Control),next=before;next.Button->InitiallyChecked=true;
+        UIInspectorEditing inspector;PropertyUI::EditActivity edit;edit.Changed=edit.Committed=true;
+        Check(inspector.Edit(*f.World,&h,f.Control.GetUUID(),"Toggle default",before,next,edit,0)&&h.Operations()==1,"Toggle Inspector did not commit once");
+        auto accepted=f.State();Check(h.Undo(*f.World)&&f.State()==start&&!h.Dirty(f.State())&&h.Redo(*f.World)&&f.State()==accepted,"Toggle history/save point lost defaults");
+        before=UIEditValues::Capture(f.Control);next=before;next.Button->Indicator=f.Canvas.GetUUID();
+        Check(!inspector.Edit(*f.World,&h,f.Control.GetUUID(),"Invalid visual",before,next,edit,0)&&f.State()==accepted,"Invalid visual edit was partially applied");
+        next=before;next.Button->InitiallyChecked=false;edit.Committed=false;edit.Item=850;
+        Check(inspector.Edit(*f.World,&h,f.Control.GetUUID(),"Pending toggle",before,next,edit,850),"Toggle preview failed");
+        inspector.Finish(*f.World,&h,true);Check(f.State()==accepted&&h.Operations()==1,"Cancelled toggle created history or changed defaults");
+        auto meter=f.World->CreateEntity("Progress history");meter.AddComponent<UIRectComponent>();meter.AddComponent<UIProgressComponent>();f.World->Reparent(meter,f.Canvas,TransformPolicy::KeepLocal);
+        before=UIEditValues::Capture(meter);next=before;next.Progress->InitialValue=.6f;next.Progress->Direction=GameUI::FillDirection::Up;edit.Committed=true;
+        Check(inspector.Edit(*f.World,&h,meter.GetUUID(),"Progress default",before,next,edit,0),"Progress Inspector failed");auto valid=f.State();
+        Check(h.Undo(*f.World)&&meter.GetComponent<UIProgressComponent>().InitialValue==0&&h.Redo(*f.World)&&f.State()==valid,"Progress properties did not Undo/Redo");
+        before=UIEditValues::Capture(meter);next=before;next.Progress->Maximum=next.Progress->Minimum;
+        Check(!inspector.Edit(*f.World,&h,meter.GetUUID(),"Invalid progress range",before,next,edit,0)&&f.State()==valid,"Invalid progress range corrupted authored state");
+    }
+    {
+        HistoryFixture f;DocumentHistory h;h.Bind(f.World->GetIdentity());
+        f.Control.GetComponent<UIButtonComponent>().Kind=GameUI::ControlKind::Toggle;f.Control.GetComponent<UIButtonComponent>().Indicator=888;
+        auto other=f.World->CreateEntity("Other broken toggle");other.AddComponent<UIRectComponent>();auto &button=other.AddComponent<UIButtonComponent>();button.Kind=GameUI::ControlKind::Toggle;button.Indicator=999;f.World->Reparent(other,f.Canvas,TransformPolicy::KeepLocal);
+        auto before=UIEditValues::Capture(f.Control),next=before;next.Button->Indicator=0;UIEditCommand repair(*f.World,f.Control.GetUUID(),"Repair visual",before);std::string error;
+        Check(repair.Preview(*f.World,next,error)&&button.Indicator==999,"An unrelated broken reference prevented native repair or was silently cleared");
+    }
     std::cout<<"PASS: document history transactions/branches/save-point eviction/native changes/lifetime guards; one-entry Inspector and D6 viewport edits\n";
 }
 } // namespace Hazel

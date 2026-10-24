@@ -68,7 +68,7 @@ bool SceneHierarchyPanel::AddEntity(const std::string &name)
 bool SceneHierarchyPanel::AddUI(int kind) {
     if(!m_Context||!CanEdit(true))return false;
     try {
-        if(kind<0||kind>7)throw std::invalid_argument("Unknown UI creation preset");
+        if(kind<0||kind>10)throw std::invalid_argument("Unknown UI creation preset");
         Entity parent=GetSelectedEntity();
         if(PrefabDocument&&!parent){auto roots=m_Context->GetChildren();if(!roots.empty())parent=m_Context->GetEntityByUUID(roots.front());}
         if(kind!=0&&kind!=7&&(!parent||(!parent.HasComponent<UIRectComponent>()&&!parent.HasComponent<UICanvasComponent>()))) {
@@ -82,7 +82,7 @@ bool SceneHierarchyPanel::AddUI(int kind) {
                 if(occupied>=layout.Rows.size()*layout.Columns.size())throw std::invalid_argument("Grid has no free cell; add row/column tracks before creating another child");
             }
         }
-        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid","UI Wrap","UI Screen"};
+        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid","UI Wrap","UI Screen","UI Checkbox","UI Radio Group","UI Progress"};
         auto e=m_Context->CreateEntity(names[kind]);if(parent)m_Context->Reparent(e,parent,TransformPolicy::KeepLocal);
         if(kind==0||kind==7){auto &c=e.AddComponent<UICanvasComponent>();if(kind==7){c.Screen.Managed=true;c.Modal=true;}}
         else {
@@ -102,12 +102,39 @@ bool SceneHierarchyPanel::AddUI(int kind) {
                 if(container.Kind==GameUI::ContainerKind::Wrap && kind==3)rect.WidthMode=GameUI::SizeMode::Content;
             }
         }
+        if(kind>=8){
+            auto &rect=e.GetComponent<UIRectComponent>();rect.FixedSize={280,44};
+            auto option=[&](Entity control,const char *label,GameUI::ControlKind kind){
+                auto &r=control.GetComponent<UIRectComponent>();r.Padding={40,6,8,6};
+                control.AddComponent<SpriteRendererComponent>(glm::vec4(.12f,.19f,.27f,1));
+                control.AddComponent<TextComponent>().TextString=label;
+                control.AddComponent<UITextStyleComponent>().Vertical=GameUI::Align::Center;
+                auto &b=control.AddComponent<UIButtonComponent>();b.Kind=kind;
+            };
+            if(kind==8){option(e,"Checkbox",GameUI::ControlKind::Toggle);e.GetComponent<UIButtonComponent>().Action="checked";}
+            if(kind==9){
+                rect.HeightMode=GameUI::SizeMode::Content;auto &flow=e.AddComponent<UILayoutComponent>();flow.Direction=GameUI::Axis::Vertical;flow.Gap=8;
+                auto &g=e.AddComponent<UIRadioGroupComponent>();
+                for(int i=0;i<3;++i){auto child=m_Context->CreateEntity("Option "+std::to_string(i+1));m_Context->Reparent(child,e,TransformPolicy::KeepLocal);
+                    auto &r=child.AddComponent<UIRectComponent>();r.WidthMode=GameUI::SizeMode::Fill;r.FixedSize={280,44};
+                    option(child,("Option "+std::to_string(i+1)).c_str(),GameUI::ControlKind::Radio);
+                    child.GetComponent<UIButtonComponent>().Group=e.GetUUID();child.GetComponent<UIButtonComponent>().TabOrder=i;
+                    if(i==0)g.InitialSelection=child.GetUUID();
+                }
+            }
+            if(kind==10){
+                rect.FixedSize={280,24};rect.Padding=glm::vec4(3);e.AddComponent<SpriteRendererComponent>(glm::vec4(.08f,.12f,.18f,1));
+                auto fill=m_Context->CreateEntity("Progress fill");m_Context->Reparent(fill,e,TransformPolicy::KeepLocal);
+                auto &r=fill.AddComponent<UIRectComponent>();r.WidthMode=r.HeightMode=GameUI::SizeMode::Fill;r.FixedSize={};
+                fill.AddComponent<SpriteRendererComponent>(glm::vec4(.35f,.75f,.65f,1));auto &p=e.AddComponent<UIProgressComponent>();p.Fill=fill.GetUUID();p.InitialValue=.5f;
+            }
+        }
         return SetSelectedEntity(e);
     }catch(const std::exception& error){return HierarchyFailed(error.what());}
 }
 void SceneHierarchyPanel::UIAddMenu(){
     if(ImGui::BeginMenu("Runtime UI")) {
-        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap","Screen"};
+        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap","Screen","Checkbox / Toggle","Radio Group","Progress"};
         for(size_t i=0;i<std::size(names);++i)if(ImGui::MenuItem(names[i]))AddUI(int(i));
         ImGui::EndMenu();
     }
@@ -319,6 +346,8 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         if(entity.HasComponent<UIRectComponent>()){
             DisplayAddComponentEntry<UILayoutComponent>("UI Container");
             DisplayAddComponentEntry<UIButtonComponent>("UI Button");
+            DisplayAddComponentEntry<UIRadioGroupComponent>("UI Radio Group");
+            DisplayAddComponentEntry<UIProgressComponent>("UI Progress");
             if(entity.HasComponent<TextComponent>())DisplayAddComponentEntry<UITextStyleComponent>("UI Text Style");
             if(entity.HasComponent<SpriteRendererComponent>())DisplayAddComponentEntry<UINineSliceComponent>("UI Nine Slice");
         }
@@ -336,6 +365,21 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             if(changed && CanEdit(true))try{m_Context->SetLocalTransform(entity,proposed);m_HierarchyError.clear();}catch(const std::exception& e){HierarchyFailed(e.what());}
         });
 
+    // Named, document-local choices; no cross-document drag payloads or stored pointers.
+    auto targetPicker=[&](const char *key,const char *label,uint64_t &id,std::function<bool(Entity)> allowed){
+        auto target=m_Context->GetEntityByUUID(id);auto current=!id?std::string("None / automatic"):target?target.GetName():"Missing #"+std::to_string(id);
+        PropertyUI::Row row(key,label);bool changed=false;
+        if(ImGui::BeginCombo("##value",current.c_str())){
+            if(ImGui::Selectable("None / automatic",!id)){id=0;changed=true;}
+            for(auto handle:m_Context->GetAllEntitiesWith<IDComponent>()){
+                Entity candidate(handle,m_Context.get());if(!m_Context->IsEntityValid(candidate.GetUUID())||!allowed(candidate))continue;
+                auto value=uint64_t(candidate.GetUUID());auto name=candidate.GetName()+"##"+std::to_string(value);
+                if(ImGui::Selectable(name.c_str(),value==id)){id=value;changed=true;}
+            }ImGui::EndCombo();
+        }row.Result(changed,true);
+    };
+    auto visualTarget=[&](Entity candidate){return m_Context->GetRelationship(candidate).Parent==entity.GetUUID()&&candidate.HasComponent<SpriteRendererComponent>()&&candidate.HasComponent<UIRectComponent>()&&!candidate.HasComponent<UIButtonComponent>()&&!candidate.HasComponent<TextComponent>()&&!candidate.HasComponent<UIProgressComponent>()&&!candidate.HasComponent<UIRadioGroupComponent>()&&!candidate.HasComponent<UICanvasComponent>()&&m_Context->GetChildrenView(candidate.GetUUID()).empty();};
+    auto ownerTarget=[](Entity candidate){return candidate.HasComponent<ScriptComponent>()||candidate.HasComponent<NativeScriptComponent>();};
     DrawUIComponent<UICanvasComponent>("UI Canvas",entity,m_Sections,m_RestoreSections,[this,entity](auto& c)mutable{
         PropertyUI::Vector("reference","Reference pixels",glm::value_ptr(c.ReferenceSize),2,1,nullptr,"%.0f",{},1,8192);
         PropertyUI::Vector("insets","Safe L/T/R/B (px)",glm::value_ptr(c.SafeInsets),4,1,nullptr,"%.0f",{},0,4096);
@@ -499,8 +543,25 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         PropertyUI::DragFloat("border-scale","Border scale",c.BorderScale,.1f,.01f,64);
         PropertyUI::Help("Borders must fit the source sprite region. Pixel borders retain their size; the middle stretches. Small targets clamp borders proportionally.");
     });
-    DrawUIComponent<UIButtonComponent>("UI Button",entity,m_Sections,m_RestoreSections,[this](auto& c){
-        PropertyUI::Text("action","Action identity",c.Action);PropertyUI::DragInt("tab","Tab order",c.TabOrder);PropertyUI::Checkbox("interactive","Interactable",c.Interactable);
+    DrawUIComponent<UIButtonComponent>("UI Button",entity,m_Sections,m_RestoreSections,[&,entity](auto& c)mutable{
+        PropertyUI::DragInt("tab","Tab order",c.TabOrder);PropertyUI::Checkbox("interactive","Interactable",c.Interactable);
+        int kind=int(c.Kind);if(PropertyUI::Combo("kind","Behavior",kind,"Button\0Toggle / Checkbox\0Radio option\0")){
+            c.Kind=GameUI::ControlKind(kind);if(c.Kind!=GameUI::ControlKind::Toggle)c.EventOwner=0;if(c.Kind!=GameUI::ControlKind::Radio)c.Group=0;
+            else if(!c.Group){auto current=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);for(size_t depth=0;current&&depth<Scene::MaxDepth;++depth){if(current.HasComponent<UIRadioGroupComponent>()){c.Group=current.GetUUID();break;}if(current.HasComponent<UICanvasComponent>())break;current=m_Context->GetEntityByUUID(m_Context->GetRelationship(current).Parent);}}
+        }
+        if(c.Kind!=GameUI::ControlKind::Radio)PropertyUI::Text("action","Action identity",c.Action);
+        else PropertyUI::Help("Selection changes use the group's action identity and member references.");
+        if(c.Kind!=GameUI::ControlKind::Button){
+            if(c.Kind==GameUI::ControlKind::Toggle)PropertyUI::Checkbox("initial-checked","Initially checked",c.InitiallyChecked);
+            else targetPicker("group","Radio group",c.Group,[&](Entity candidate){
+                if(!candidate.HasComponent<UIRadioGroupComponent>())return false;
+                auto current=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);
+                for(size_t depth=0;current&&depth<Scene::MaxDepth;++depth){if(current==candidate)return true;if(current.HasComponent<UICanvasComponent>())break;current=m_Context->GetEntityByUUID(m_Context->GetRelationship(current).Parent);}return false;
+            });
+            targetPicker("indicator","Selected visual",c.Indicator,visualTarget);
+            if(!c.Indicator)PropertyUI::Help("A square cue is drawn when selected. Optional Sprite/Rect child replaces it; layout space stays reserved.");
+            if(c.Kind==GameUI::ControlKind::Toggle&&ImGui::TreeNode("Standalone notification")){targetPicker("value-owner","Event owner",c.EventOwner,ownerTarget);PropertyUI::Help("Managed screens use their declared owner. Ordinary canvases require this explicit recipient.");ImGui::TreePop();}
+        }
         static constexpr const char* states[]={"Normal","Hovered","Pressed","Disabled","Focused"};
         static_assert(std::size(states)==std::tuple_size_v<decltype(c.Colors)>);
         static_assert(std::size(states)==std::tuple_size_v<decltype(c.Images)>);
@@ -515,9 +576,22 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             }
             ImGui::PopID();
         }
-        PropertyUI::Help("C#: UIButtonComponent.TryConsumeAction or GameUI.TryConsumeAction. Pointer activation occurs on release; Tab/arrows change focus; Enter/Space activate once.");
+        if(c.Kind==GameUI::ControlKind::Button)PropertyUI::Help("C#: UIButtonComponent.TryConsumeAction on ordinary canvases; managed screens use GameUI.TryConsumeEvent. Pointer release / Accept activates once.");
+        else PropertyUI::Help("Pointer release / Accept changes the value once. GameUI.TryConsumeEvent delivers a typed change to the declared owner. Normal setters are silent.");
     });
 
+    DrawUIComponent<UIRadioGroupComponent>("UI Radio Group",entity,m_Sections,m_RestoreSections,[&](auto &c){
+        PropertyUI::Checkbox("required","Require selection",c.Required);PropertyUI::Text("action","Action identity",c.Action);
+        targetPicker("initial-selection","Initial selection",c.InitialSelection,[&](Entity candidate){return candidate.HasComponent<UIButtonComponent>()&&candidate.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio&&candidate.GetComponent<UIButtonComponent>().Group==uint64_t(entity.GetUUID());});
+        if(ImGui::TreeNode("Standalone notification")){targetPicker("value-owner","Event owner",c.EventOwner,ownerTarget);PropertyUI::Help("Managed screens use their declared owner. Ordinary canvases require this explicit recipient.");ImGui::TreePop();}
+        PropertyUI::Help("Tab and directions move focus; Accept selects. Activating the current option does nothing. Required selection falls back by Tab order then ID.");
+    });
+    DrawUIComponent<UIProgressComponent>("UI Progress",entity,m_Sections,m_RestoreSections,[&](auto &c){
+        PropertyUI::DragFloat("minimum","Minimum",c.Minimum);PropertyUI::DragFloat("maximum","Maximum",c.Maximum);PropertyUI::DragFloat("initial","Initial value",c.InitialValue);
+        int direction=int(c.Direction);if(PropertyUI::Combo("direction","Fill direction",direction,"Right\0Left\0Down\0Up\0"))c.Direction=GameUI::FillDirection(direction);
+        targetPicker("fill","Fill visual",c.Fill,visualTarget);if(!c.Fill)PropertyUI::Validation("Assign a direct Sprite/Rect child to show progress.");
+        PropertyUI::Help("Finite values clamp to the increasing range. Fill is computed inside content bounds; no input or user events.");
+    });
     if(entity.HasComponent<UICanvasComponent>()||entity.HasComponent<UIRectComponent>()) {
         if(ImGui::Button("Validate UI"))try{m_Context->ValidateUI(false);m_HierarchyError.clear();}catch(const std::exception& error){HierarchyFailed(error.what());}
         if(!m_HierarchyError.empty())PropertyUI::Validation(m_HierarchyError.c_str());

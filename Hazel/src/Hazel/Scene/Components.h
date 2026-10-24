@@ -242,11 +242,25 @@ namespace Hazel {
         float BorderScale=1;
     };
     struct UIButtonComponent {
+        GameUI::ControlKind Kind=GameUI::ControlKind::Button;
+        bool InitiallyChecked=false;
+        uint64_t Indicator=0, Group=0, EventOwner=0; // local identities, never borrowed objects
         std::string Action="activate";
         int TabOrder=0;
         bool Interactable=true;
         std::array<glm::vec4,5> Colors{{glm::vec4(1),glm::vec4(1.15f,1.15f,1.15f,1),glm::vec4(.75f,.75f,.75f,1),glm::vec4(.5f),glm::vec4(1.2f,1.15f,.8f,1)}};
         std::array<SpriteSource,5> Images;
+    };
+
+    struct UIRadioGroupComponent {
+        bool Required=true;
+        uint64_t InitialSelection=0, EventOwner=0;
+        std::string Action="selection";
+    };
+    struct UIProgressComponent {
+        float Minimum=0, Maximum=1, InitialValue=0;
+        uint64_t Fill=0;
+        GameUI::FillDirection Direction=GameUI::FillDirection::Right;
     };
 
 	template<typename... Component>
@@ -258,6 +272,6 @@ namespace Hazel {
 		ComponentGroup<TransformComponent, SpriteRendererComponent, SpriteAnimationComponent, AudioSourceComponent,
 			CircleRendererComponent, CameraComponent, ScriptComponent,
 			NativeScriptComponent, Rigidbody2DComponent, BoxCollider2DComponent,
-			CircleCollider2DComponent, TextComponent, UICanvasComponent, UIRectComponent, UILayoutComponent, UITextStyleComponent, UINineSliceComponent, UIButtonComponent>;
+			CircleCollider2DComponent, TextComponent, UICanvasComponent, UIRectComponent, UILayoutComponent, UITextStyleComponent, UINineSliceComponent, UIButtonComponent, UIRadioGroupComponent, UIProgressComponent>;
 
 }

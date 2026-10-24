@@ -76,7 +76,7 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
         ++checked;
         Keys(entity, {"Entity", "TagComponent", "TransformComponent", "CameraComponent", "ScriptComponent",
                       "SpriteRendererComponent", "SpriteAnimationComponent", "CircleRendererComponent",
-                      "AudioSourceComponent", "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent", "Relationship", "UICanvasComponent", "UIRectComponent", "UILayoutComponent", "UITextStyleComponent", "UINineSliceComponent", "UIButtonComponent"}, "Entity");
+                      "AudioSourceComponent", "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent", "Relationship", "UICanvasComponent", "UIRectComponent", "UILayoutComponent", "UITextStyleComponent", "UINineSliceComponent", "UIButtonComponent", "UIRadioGroupComponent", "UIProgressComponent"}, "Entity");
         if(hierarchy) {
             auto rel=entity["Relationship"];
             Keys(rel,{"Parent","Order"},"Relationship");rel["Parent"].as<uint64_t>();rel["Order"].as<uint32_t>();

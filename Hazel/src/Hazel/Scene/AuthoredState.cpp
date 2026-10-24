@@ -230,6 +230,7 @@ std::string SceneSerializer::CaptureAuthoredState() const
             state.Value(c.BorderScale);
         });
         state.Component<UIButtonComponent>(e, [&](auto &c) {
+            state.Value(unsigned(c.Kind));state.Value(c.InitiallyChecked);state.Value(c.Indicator);state.Value(c.Group);state.Value(c.EventOwner);
             state.Value(c.Action);
             state.Value(c.TabOrder);
             state.Value(c.Interactable);
@@ -238,6 +239,8 @@ std::string SceneSerializer::CaptureAuthoredState() const
             for (const auto &source : c.Images)
                 state.Source(source);
         });
+        state.Component<UIRadioGroupComponent>(e,[&](auto &c){state.Value(c.Required);state.Value(c.InitialSelection);state.Value(c.EventOwner);state.Value(c.Action);});
+        state.Component<UIProgressComponent>(e,[&](auto &c){state.Value(c.Minimum);state.Value(c.Maximum);state.Value(c.InitialValue);state.Value(c.Fill);state.Value(unsigned(c.Direction));});
         state.Component<TextComponent>(e, [&](auto &c) {
             state.Value(c.TextString);
             state.Value(c.Font.Family);state.Value(int(c.Font.Style));

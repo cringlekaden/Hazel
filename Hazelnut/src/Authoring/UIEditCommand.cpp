@@ -122,6 +122,7 @@ FIELD(Flow, Rows);
     }
     COMPONENT(Button)
     {
+        FIELD(Button, Kind);FIELD(Button, InitiallyChecked);FIELD(Button, Indicator);FIELD(Button, Group);FIELD(Button, EventOwner);
         FIELD(Button, Action);
         FIELD(Button, TabOrder);
         FIELD(Button, Interactable);
@@ -131,6 +132,8 @@ FIELD(Flow, Rows);
             f(a.Button->Images[i], b.Button->Images[i], c.Button->Images[i]);
         }
     }
+    COMPONENT(Group){FIELD(Group, Required);FIELD(Group, InitialSelection);FIELD(Group, EventOwner);FIELD(Group, Action);}
+    COMPONENT(Progress){FIELD(Progress, Minimum);FIELD(Progress, Maximum);FIELD(Progress, InitialValue);FIELD(Progress, Fill);FIELD(Progress, Direction);}
     COMPONENT(Text)
     {
         FIELD(Text, Text);
@@ -372,7 +375,7 @@ FIELD(Style, Wrap);
 COMPONENT(Slice, UINineSliceComponent) FIELD(Slice, Borders);
 FIELD(Slice, BorderScale);
 }
-COMPONENT(Button, UIButtonComponent) FIELD(Button, Action);
+COMPONENT(Button, UIButtonComponent) FIELD(Button, Kind);FIELD(Button, InitiallyChecked);FIELD(Button, Indicator);FIELD(Button, Group);FIELD(Button, EventOwner);FIELD(Button, Action);
 FIELD(Button, TabOrder);
 FIELD(Button, Interactable);
 for (int i = 0; i < 5; ++i)
@@ -381,6 +384,8 @@ for (int i = 0; i < 5; ++i)
     change(c.Images[i], old.Button->Images[i], next.Button->Images[i]);
 }
 }
+COMPONENT(Group, UIRadioGroupComponent) FIELD(Group, Required);FIELD(Group, InitialSelection);FIELD(Group, EventOwner);FIELD(Group, Action);}
+COMPONENT(Progress, UIProgressComponent) FIELD(Progress, Minimum);FIELD(Progress, Maximum);FIELD(Progress, InitialValue);FIELD(Progress, Fill);FIELD(Progress, Direction);}
 COMPONENT(Text, TextComponent) change(c.TextString, old.Text->Text, next.Text->Text);
 FIELD(Text, Font);
 FIELD(Text, Color);
@@ -425,6 +430,8 @@ UIEditValues UIEditValues::Capture(Entity e)
     CAPTURE(UITextStyleComponent, Style);
     CAPTURE(UINineSliceComponent, Slice);
     CAPTURE(UIButtonComponent, Button);
+    CAPTURE(UIRadioGroupComponent, Group);
+    CAPTURE(UIProgressComponent, Progress);
     CAPTURE(TextComponent, Text);
     CAPTURE(SpriteRendererComponent, Image);
 #undef CAPTURE
@@ -474,7 +481,9 @@ UIEditCommand::UIEditCommand(Scene &scene, uint64_t entity, std::string name, UI
         scene.GetAuthoringComponentVersion(entity, typeid(UINineSliceComponent)),
         scene.GetAuthoringComponentVersion(entity, typeid(UIButtonComponent)),
         scene.GetAuthoringComponentVersion(entity, typeid(TextComponent)),
-        scene.GetAuthoringComponentVersion(entity, typeid(SpriteRendererComponent))};
+        scene.GetAuthoringComponentVersion(entity, typeid(SpriteRendererComponent)),
+        scene.GetAuthoringComponentVersion(entity,typeid(UIRadioGroupComponent)),
+        scene.GetAuthoringComponentVersion(entity,typeid(UIProgressComponent))};
     while (e)
     {
         if (m_Guards.size() >= Scene::MaxDepth)
@@ -498,10 +507,10 @@ Entity UIEditCommand::Target(Scene &scene, bool cancelling) const
         throw std::runtime_error("UI entity lifetime ended; select a live entity");
     if (cancelling)
         return e;
-    const std::array<std::type_index, 8> types = {
+    const std::array<std::type_index, 10> types = {
         typeid(UICanvasComponent),    typeid(UIRectComponent),        typeid(UILayoutComponent),
         typeid(UITextStyleComponent), typeid(UINineSliceComponent),   typeid(UIButtonComponent),
-        typeid(TextComponent),        typeid(SpriteRendererComponent)};
+        typeid(TextComponent),        typeid(SpriteRendererComponent),typeid(UIRadioGroupComponent),typeid(UIProgressComponent)};
     for (size_t i = 0; i < types.size(); ++i)
         if (scene.GetAuthoringComponentVersion(m_Entity, types[i]) != m_ComponentVersions[i])
             throw std::runtime_error(
@@ -548,7 +557,7 @@ void UIEditCommand::Publish(Scene &scene, const UIEditValues &current, UIEditVal
     Write(e, current, next); // next now contains the old values for changed fields
     try
     {
-        scene.ValidateUILayoutDependencies();
+        scene.ValidateUILayoutDependencies();scene.ValidateUIControls(e.GetUUID());
         scene.RefreshUI();
     }
     catch (...)
@@ -634,6 +643,8 @@ void UIEditCommand::Cancel(Scene &scene)
     KEEP(Button, UIButtonComponent, 5);
     KEEP(Text, TextComponent, 6);
     KEEP(Image, SpriteRendererComponent, 7);
+    KEEP(Group, UIRadioGroupComponent, 8);
+    KEEP(Progress, UIProgressComponent, 9);
 #undef KEEP
     auto restored = Merge(before, after, subset, true, true), next = current;
 #define RESTORE(member)                                                                            \
@@ -647,6 +658,8 @@ void UIEditCommand::Cancel(Scene &scene)
     RESTORE(Button);
     RESTORE(Text);
     RESTORE(Image);
+    RESTORE(Group);
+    RESTORE(Progress);
 #undef RESTORE
     Publish(scene, current, std::move(next), true);
 }

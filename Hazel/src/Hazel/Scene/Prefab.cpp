@@ -43,6 +43,11 @@ void Prefab::Validate(const std::filesystem::path &root, const Ref<Scene> &scene
             for(auto ref:{c.InitialFocus,c.DefaultAction,c.CancelTarget,c.ReturnFocus,c.EventOwner})if(ref&&!local.count(ref))
                 throw std::runtime_error("External UI screen reference on '"+node.GetName()+"'. Include the target or clear it");
         }
+        std::vector<uint64_t> controlRefs;
+        if(node.HasComponent<UIButtonComponent>()){auto &b=node.GetComponent<UIButtonComponent>();controlRefs={b.Indicator,b.Group,b.EventOwner};}
+        if(node.HasComponent<UIRadioGroupComponent>()){auto &g=node.GetComponent<UIRadioGroupComponent>();controlRefs.push_back(g.InitialSelection);controlRefs.push_back(g.EventOwner);}
+        if(node.HasComponent<UIProgressComponent>())controlRefs.push_back(node.GetComponent<UIProgressComponent>().Fill);
+        for(auto ref:controlRefs)if(ref&&!local.count(ref))throw std::runtime_error("External UI control reference on '"+node.GetName()+"'; include the target or clear it");
         if (node.HasComponent<NativeScriptComponent>())
             throw std::runtime_error("Native script factories cannot be serialized into prefabs");
         for (auto &[name, field] : ScriptEngine::GetScriptFieldMap(node)) {

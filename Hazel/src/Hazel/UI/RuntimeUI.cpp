@@ -65,7 +65,7 @@ void RuntimeUI::Reset()
     m_Resolved.Guides.clear();
     m_Resolved.Warnings.clear();
     m_Source.clear();
-    m_Cache.clear();m_AssetOwner.reset();
+    m_Cache.clear();m_Values.clear();m_ControlVisuals.clear();m_AssetOwner.reset();
     m_GPUTimer.reset();m_PaintSubmission=0;m_PreparedBytes=0;
     m_Screens.clear();m_OpenScreens.clear();m_ScreenRequests.clear();m_ScreenFocus.clear();
     m_LastScope=m_ReturnFallback=m_PendingFocus=m_PreviewScreen=0;m_TransitionNeutral=false;++m_ScreenRevision;
@@ -194,8 +194,16 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
             auto &b = e.GetComponent<UIButtonComponent>();
             state.Add(b.Action);
             state.Add(b.TabOrder);
-            state.Add(b.Interactable);
+            state.Add(b.Interactable);if(b.Kind!=ControlKind::Button){state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIButtonComponent)));}state.Add(int(b.Kind));state.Add(b.InitiallyChecked);state.Add(b.Indicator);state.Add(b.Group);state.Add(b.EventOwner);
+            if(unsigned(b.Kind)>2)throw std::invalid_argument("Invalid UI control kind");
         }
+        state.Add(e.HasComponent<UIRadioGroupComponent>());
+        if(e.HasComponent<UIRadioGroupComponent>()){auto &g=e.GetComponent<UIRadioGroupComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIRadioGroupComponent)));if(g.Action.size()>128||g.Action.find('\0')!=std::string::npos)throw std::invalid_argument("Invalid radio action");state.Add(g.Required);state.Add(g.InitialSelection);state.Add(g.EventOwner);state.Add(g.Action);}
+        state.Add(e.HasComponent<UIProgressComponent>());
+        if(e.HasComponent<UIProgressComponent>()){auto &p=e.GetComponent<UIProgressComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIProgressComponent)));state.Add(p.Minimum);state.Add(p.Maximum);state.Add(p.InitialValue);state.Add(p.Fill);state.Add(int(p.Direction));}
+        uint64_t valueOwner=e.HasComponent<UIRadioGroupComponent>()?e.GetComponent<UIRadioGroupComponent>().EventOwner:e.HasComponent<UIButtonComponent>()?e.GetComponent<UIButtonComponent>().EventOwner:0;
+        if(valueOwner){auto owner=m_Scene.GetEntityByUUID(valueOwner);state.Add(m_Scene.GetAuthoringLifetime(valueOwner));state.Add(m_Scene.GetAuthoringComponentVersion(valueOwner,typeid(ScriptComponent)));
+            if(owner&&owner.HasComponent<ScriptComponent>()){const auto &name=owner.GetComponent<ScriptComponent>().ClassName;if(name.size()>512||name.find('\0')!=std::string::npos)throw std::invalid_argument("Invalid value owner class");state.Add(name);}}
         state.Add(e.HasComponent<UICanvasComponent>());
     }
     state.Add(uint64_t(0));
@@ -277,6 +285,7 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
         std::swap(m_Resolved, m_Build);
         m_Source.swap(m_Candidate);
         PublishScope();
+        SyncControls();
         PruneActions();
         if (!m_Input.Focused() && !m_Resolved.Modal)
             m_KeyboardOwns = false;
@@ -480,11 +489,11 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
     {
         auto &n = m_Build.Elements[index];
         auto e = m_Scene.GetEntityByUUID(n.ID);
-        if (!e.HasComponent<UIButtonComponent>())
+        if (!e.HasComponent<UIButtonComponent>() || e.HasComponent<UIProgressComponent>() || e.HasComponent<UIRadioGroupComponent>())
             continue;
         auto &b = e.GetComponent<UIButtonComponent>();
         bool scope = n.Canvas && (!m_Build.Scope || n.Canvas == m_Build.Scope);
-        n.FocusEligible = scope && n.Enabled && b.Interactable && Nonempty(n.PixelClip);
+        n.FocusEligible = scope && n.Enabled && b.Interactable && (b.Kind!=ControlKind::Radio||Member(b.Group,n.ID,false)) && Nonempty(n.PixelClip);
         n.Hit = !scope            ? HitPolicy::PassThrough
                 : n.FocusEligible ? HitPolicy::Control
                                   : HitPolicy::Block;
@@ -567,7 +576,7 @@ void RuntimeUI::WarnOverflow()
         (m_ReportedDrops == 0 || now - m_LastWarning >= std::chrono::seconds(1)))
     {
         HZ_CORE_WARN(
-            "Runtime UI action queue full (64); dropping newest activation; total dropped {}",
+            "Runtime UI event queue full (64); newest event rejected (value changes not applied); total rejected {}",
             drops);
         m_ReportedDrops = drops;
         m_LastWarning = now;
@@ -685,10 +694,7 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
         Action a;
         while (m_Input.Consume(m_Scene.GetIdentity(), a))
         {
-            if (m_Actions.size() < InputRouter::MaxActions)
-                QueueEvent(std::move(a));
-            else
-                ++m_OuterDrops;
+            ActivateControl(std::move(a));
         }
         if(auto screen=Screen(m_Resolved.Scope);screen&&m_Input.ConsumeCancel(m_Scene.GetIdentity(),m_Resolved.Scope)){
             m_ActionOwnsFrame=true;
@@ -705,13 +711,13 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
 }
 bool RuntimeUI::Consume(uint64_t entity, Action &action)
 {
-    if (std::none_of(m_Actions.begin(),m_Actions.end(),[&](const Action &a){return !a.Screen&&(!entity||a.Entity==entity);}))
+    if (std::none_of(m_Actions.begin(),m_Actions.end(),[&](const Action &a){return !a.Owner&&!a.Screen&&(!entity||a.Entity==entity);}))
         return false; // No candidate delivery: no dependency traversal.
     ResolveSurface(m_Resolved.Surface,
                    m_Resolved.PreviewOrphans); // catches unnotified native writes before delivery
     PruneActions();
     for (auto it = m_Actions.begin(); it != m_Actions.end(); ++it)
-        if (!it->Screen && (!entity || it->Entity == entity))
+        if (!it->Owner && !it->Screen && (!entity || it->Entity == entity))
         {
             action = std::move(*it);
             m_Actions.erase(it);
@@ -855,6 +861,8 @@ void RuntimeUI::Draw()
             auto e = m_Scene.GetEntityByUUID(n.ID);
             if (!m_Scene.IsEntityValid(e.GetUUID()))
                 continue;
+            Rect visualBounds=n.Bounds;bool visualVisible=true;
+            ControlVisual(n.ID,visualBounds,visualVisible);if(!visualVisible)continue;
             const auto p = n.FramebufferClip.Position, z = n.FramebufferClip.Size;
             if (z.x <= 0 || z.y <= 0)
                 continue;
@@ -914,7 +922,7 @@ void RuntimeUI::Draw()
                         throw std::invalid_argument("Nine-slice requires Stretch image fit");
                     glm::vec2 sourceSize = sprite->PixelSize();
                     auto fitted = FitImage(
-                        rect.Fit == ImageFit::Stretch ? n.Bounds : n.Bounds.Inset(rect.Padding),
+                        rect.Fit == ImageFit::Stretch ? visualBounds : visualBounds.Inset(rect.Padding),
                         sourceSize, rect.Fit, rect.ImageAlignment);
                     auto draw = *sprite;
                     // Sprite UVs use bottom-left coordinates; fit/crop uses top-left local units.
@@ -928,6 +936,16 @@ void RuntimeUI::Draw()
                         Image(fitted.Visual, n.Scale, draw, s.Color * tint, int(uint32_t(e)), nine);
                     m_Cache[n.ID].PaintImage = {m_Resolved.Generation, sourceSize, rect.Fit,
                                                 fitted};
+                }
+            }
+            if(e.HasComponent<UIButtonComponent>()){
+                auto &b=e.GetComponent<UIButtonComponent>();
+                if(b.Kind!=ControlKind::Button&&!Decoration(n.ID,b.Indicator)){
+                    Rect mark{n.Bounds.Position+glm::vec2(8,std::max(0.f,(n.Bounds.Size.y-16)*.5f)),glm::vec2(16)};
+                    Renderer2D::DrawRect(Transform(mark,n.Scale),{1,1,1,1},int(uint32_t(e)));
+                    bool selected=false;auto it=m_Values.find(b.Kind==ControlKind::Radio?b.Group:n.ID);
+                    if(it!=m_Values.end())selected=b.Kind==ControlKind::Radio?it->second.Selected==n.ID:it->second.Checked;
+                    if(selected)Renderer2D::DrawQuad(Transform(mark.Inset(glm::vec4(4)),n.Scale),glm::vec4(1),int(uint32_t(e)));
                 }
             }
             // The former text/focus flush drew lines before glyphs; retain that layering.

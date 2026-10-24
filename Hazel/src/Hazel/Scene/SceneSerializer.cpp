@@ -697,7 +697,10 @@ namespace Hazel {
 			}
 		}
 
-        OperationProgress::Report("Validate hierarchy and physics");staged->RebuildChildren();staged->ValidateHierarchy();staged->ValidateUI(resources==ResourceLoading::Resolve);
+        OperationProgress::Report("Validate hierarchy and physics");staged->RebuildChildren();staged->ValidateHierarchy();staged->ValidateUI(resources==ResourceLoading::Resolve,false);
+        // Keep authored references repairable. Runtime Start/Save/export remain strict;
+        // Edit previews use the service's safe missing-part/group behavior.
+        try{staged->ValidateUIControls();}catch(const std::exception &error){m_Report.Problems.push_back({0,"UI controls",error.what(),{}});}
         if(prefabDocument && data["PrefabVersion"].as<int>()==2) {
             const auto roots=staged->GetChildren();
             if(roots.size()!=1 || uint64_t(roots.front())!=data["PrefabRoot"].as<uint64_t>() || staged->GetSubtree(staged->GetEntityByUUID(roots.front())).size()!=staged->m_EntityMap.size())throw std::runtime_error("PrefabRoot must identify one complete connected subtree");

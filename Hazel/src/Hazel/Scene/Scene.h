@@ -52,6 +52,14 @@ namespace Hazel {
         void CommitUIScreens();
         bool IsUIScreenOpen(uint64_t screen) const;
         bool ConsumeUIEvent(uint64_t owner,GameUI::Action &event);
+    bool IsUIChecked(uint64_t id);
+    void SetUIChecked(uint64_t id,bool value);
+    uint64_t GetUISelection(uint64_t group);
+    void SetUISelection(uint64_t group,uint64_t member);
+    float GetUIProgress(uint64_t id);
+    void SetUIProgress(uint64_t id,float value);
+    void ValidateUIControls(uint64_t target=0) const;
+    bool GetUIControlVisual(uint64_t id,GameUI::Rect &bounds,bool &visible) const;
         bool FocusUI(uint64_t target);
         void SetUIPreviewTarget(uint64_t selected); // transient Edit-only screen isolation
         bool IsGameplayInputBlocked() const;
@@ -73,7 +81,7 @@ namespace Hazel {
         void SetUIGridCell(uint64_t entity,int row,int column,unsigned rowSpan=1,unsigned columnSpan=1);
         void SetUISizing(uint64_t entity, GameUI::Axis axis, GameUI::SizeMode mode,
                          float fixedSize, float minimum = 0, std::optional<float> maximum = {});
-        void ValidateUI(bool resources=true);
+        void ValidateUI(bool resources=true, bool controls=true);
         void ValidateUILayoutDependencies(); // CPU-only, including hidden/zero-surface documents
         const std::string& GetUIError() const {return m_UIError;}
 

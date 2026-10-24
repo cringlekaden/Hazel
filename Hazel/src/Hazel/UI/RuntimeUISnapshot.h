@@ -92,7 +92,8 @@ struct RuntimeUIDiagnostics
     bool GPUAvailable=false;
     uint64_t Scope=0, NavigationMisses=0;
     uint64_t EventOwner=0, PendingEvents=0, RetiredEvents=0, PendingScreens=0, RejectedScreens=0;
-    std::string ScreenProblem;
+    std::string ScreenProblem, ControlProblem;
+    uint64_t RejectedChanges=0;
     uint64_t Focus = 0, Capture = 0, Hover = 0, Modal = 0;
     bool InputEnabled = false, GameplayBlocked = false, PointerBlocked = false;
 };

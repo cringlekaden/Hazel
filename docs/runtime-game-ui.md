@@ -444,3 +444,100 @@ history. Prefab references must be internal to the saved subtree (or cleared).
 foreground scope, owner, pending requests/events, retired delivery and the most
 recent issue. Target warnings are attached to resolved Canvas nodes. This is
 transient inspection, not a second editor/runtime screen manager.
+
+## Composed value controls
+
+Hierarchy → Runtime UI adds **Checkbox / Toggle**, **Radio Group** (three options)
+and **Progress**. They reuse normal Rect/Text/Sprite entities and the existing
+Button router; no extra focus or hit-test system is involved. Caption and five
+interaction tints/images remain in the existing properties. Selection has a square
+outline/filled-square cue independent of hover, pressed, disabled and keyboard
+focus. A switch appearance can use the same Toggle behavior with different art.
+
+**UI Button → Behavior** selects Button, Toggle / Checkbox or Radio option.
+Toggle owns an **Initially checked** default. **Selected visual** optionally names
+a direct Sprite/Rect child leaf, with no text, controls, Canvas or children; it is
+painted only while checked/selected, without collapsing layout. With no valid
+visual, the control draws its built-in square cue. Ordinary decorative labels and
+indicators are not focus targets and do not intercept the parent control. Use
+normal bounds/clipping and Text padding to reserve label space for the cue.
+Broken assigned visuals diagnose rather than rewriting the reference. Files with
+broken control references reopen as editable-with-problems; repair them before
+strict Save, Start or export. Malformed fields/ranges still reject the file.
+
+A **UI Radio Group** owns the sole selected-member value; options reference their
+ancestor group by scene identity. They must share a Canvas (or one detached prefab
+subtree before instantiation). A group has Required selection, Initial selection
+and an action identity. An unspecified initial selection (0) chooses the eligible
+lowest TabOrder, then entity ID when Required; no eligible member leaves selection
+empty until one returns. Broken explicit initial references reject authored validation;
+live native retirement diagnoses and reconciles selection. Hidden/disabled, removed, reparented or cross-scope
+members cannot remain selected. Fully clipped members retain their logical choice
+but cannot receive input; closed screens retain their choice. Tab/directions move
+focus only; Accept/pointer selects. Activating the selected member does nothing,
+including in optional groups. Optional groups can be cleared programmatically;
+Required groups reject explicit clear. Reconciliation/fallback is silent.
+
+Progress uses a finite increasing Minimum/Maximum and Initial value. Finite values
+clamp to that range; NaN/infinity, equal/reversed ranges and overflowed spans reject.
+Right/Left/Down/Up fill uses the named direct Sprite/Rect child. Its paint rectangle
+is intersected with the progress root's padded content and scaled from the chosen
+edge; zero draws nothing, complete fills that intersection. This is derived paint,
+not Rect mutation or layout animation. Progress/background/fill are noninteractive
+and emit no user events. A bad native range retains the last accepted range/value;
+without an accepted range the fill is suppressed and diagnostics explain why.
+
+Runtime values live in Scene's UI service, separately from authored defaults.
+Read `button.Checked` (also for radio options), `group.Selection` and
+`progress.Value`. Set toggle Checked, group Selection (null clears optional groups)
+and progress Value through normal cached C# component wrappers. Native equivalents
+are `Scene::IsUIChecked/SetUIChecked`, `GetUISelection/SetUISelection` and
+`GetUIProgress/SetUIProgress`. Setters require Play and never emit a user-change
+event, including no-ops; ordinary synchronization cannot recursively notify itself.
+Native default-field writes are detected at the next normal boundary and silently
+reinitialize that value; component replacement cannot inherit retired state.
+Stop restores the unchanged authored document. No settings persistence is implied.
+
+Accepted user changes use **the existing owner-addressed stream only**:
+
+```csharp
+UIEvent value;
+while (GameUI.TryConsumeEvent(out value)) {
+    if (value.Kind == UIEventKind.ToggleChanged && value.Action == "music")
+        ApplyMusicPreference(value.Checked); // previous value: PreviousChecked
+    else if (value.Kind == UIEventKind.SelectionChanged && value.Action == "quality")
+        ApplyQualityChoice(value.Selection); // previous identity: PreviousSelection
+}
+```
+
+Toggle Source identifies the control; radio Source identifies the group, with
+PreviousSelection/Selection identifying members. Empty selections are null; a
+previous member may have retired, so its ID is historical context, not a live
+object guarantee. Screen, Owner validation, sequence and action retain the existing
+scope contract. A gesture emits a value change **instead of** Activated. Managed
+screens use their single declared owner; on an ordinary Canvas, assign Toggle or
+Group's **Standalone notification → Event owner** explicitly. Screen is null in
+that envelope. Unscoped button polling cannot consume any owner-addressed record.
+
+The 64-record queue admits an event before changing a user's value. A full queue,
+missing/retired owner or unready script rejects the entire change with bounded
+diagnostics; it is not retried later. Multiple accepted changes remain ordered
+with their own previous/new payloads, even within one sampled update. Source,
+group, membership, action, owner lifetime/class and scope are checked before
+candidate delivery. Retirement, transitions, ownership loss, Stop/domain replacement
+cancel stale events as before; a different receiver never inherits old work.
+Programmatic setters and lifecycle fallback do not add records or coalesce queued
+historical payloads into the current value.
+
+Defaults, ranges, direction, membership and visual assignments use existing
+scene/prefab Inspector Undo/Redo, exact dirty comparison, copy and reference remap.
+Invalid edits retain the last valid authored values; Escape cancels unfinished
+interactions. Structural creation/removal and script fields retain their existing
+history limits. **Runtime UI Debugger** shows selected values, derived visual bounds
+and control issues; Edit preview reads defaults and dispatches no events.
+
+For a settings screen, add the three presets, label the options, assign the screen
+owner and action identities, then connect Progress to an ordinary script field.
+The maintained native screen fixture demonstrates Music, Low/Medium/High and a
+script-updated meter; its owner consumes typed events and requests screens without
+maintaining duplicate checked/selection state or indicator geometry.
