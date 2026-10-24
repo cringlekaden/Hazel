@@ -575,7 +575,10 @@ Left/Right, or the configured stick (left/down decreases, right/up increases).
 Bindings are in existing Project Settings and runtime overrides. Navigation and
 Adjust may share bindings across their exclusive contexts; conflicts with
 Accept/Cancel or within either context reject. Context changes rearm held inputs;
-repeat uses the existing delay/rate and at most one step per sample. Binding
+repeat uses the existing delay/rate and at most one step per sample. Adjustment
+starts after the adapter observes edit mode and a neutral sample; cross-context
+chords/edges buffered before that boundary are discarded. Ordered quick edges
+within an armed context remain supported. Binding
 format 2 includes both Adjust actions; unsupported/corrupt overrides retain usable
 project defaults with a warning, until reset/replaced through the native editor.
 

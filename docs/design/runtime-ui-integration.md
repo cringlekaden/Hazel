@@ -2319,7 +2319,90 @@ shows live value, edit device/gesture/capture and problems. The native Settings
 fixture owner demonstrates live feedback and terminals without duplicating
 quantization, geometry or capture logic.
 
-Qualification results follow after local checks. Physical controller, Windows
-execution and physical DPI acceptance remain separate from synthetic device
-coverage. No sliders were added to shipped gameplay or save formats. The known
+The local qualification below covers Linux execution and synthetic device
+coverage. Physical controller, Windows execution and physical DPI acceptance
+remain separate. No sliders were added to shipped gameplay or save formats. The known
 large alternating image/text render-run cost remains outside this slice.
+
+The adjustment context is armed on a subsequent adapter sample after entering
+editing. It requires neutral and discards pretranslated/buffered edges across the
+context boundary; this deliberately suppresses held navigation and cross-context
+chords. Ordered quick edges within an armed context remain supported. A pointer
+pickup on the same slider continues the keyboard gesture's start and identity;
+an outside press interrupts, owns its release, then releases nonmodal gameplay
+ownership after neutral. Historical interrupted payloads precede a silent setter's
+write; feedback handlers can read the current component value when reconciling.
+
+### Local qualification — 2026-10-24
+
+Implementation checkpoint `9524b57`; the follow-up adds a real-session remapping
+regression and this qualification record. All builds used Premake/GNU Make/GCC,
+with two compiler jobs and existing dependency builds reused. Both complete
+17-executable suites passed: Release with OpenGL/GLSL forced to 4.1/410, and Debug
+native (effective GL 4.2, bind-based 4.1 resources, shaderc/Cross to GLSL 410).
+Physical rendering was Mesa 26.2.4-arch3.1 on Intel HD4000, through GLFW X11/GLX
+on Plasma Wayland/Xwayland. These were neither native Wayland nor Xvfb/software
+runs. No native SPIR-V specialization or Windows execution is claimed.
+
+Focused checks and the complete suites include:
+
+- Independent numeric endpoint/tie/nondivisible/precision/limit expectations,
+  four-direction travel and thumb-offset geometry, contextual bindings/repeat.
+- Real Scene/router/owner stream: clipped-track mapping, outside release,
+  pointer pickup of keyboard editing, explicit restore, programmatic interruption,
+  zero travel, changed geometry/framebuffer scale, hidden/retired/restored parts,
+  owner replacement, nonmodal outside-press gating and neutral release.
+- Reserved admission at 62 records, refusal at 63, coalesced previews and a
+  delivered terminal at capacity, ownership-loss retirement, silent setters,
+  exact authored-state isolation and generation reuse.
+- Targeted GL framebuffer entity-ID readback for the moved thumb, plus retained
+  toggle/radio/progress, painter/compositor, glyph/corpus/overflow/capacity,
+  expanded Button Inspector and lifecycle regressions.
+- Serialization, exact comparison, copy/duplicate and prefab part remapping;
+  native presets/Inspector, invalid-edit cancellation, shared Undo/Redo,
+  scene/prefab save/reopen, closed-screen preview and three Play/Stop cycles.
+- Actual managed value/event ABI and synthetic controller adjustment/cancellation.
+  Additional focused Release/Debug session runs remap Increase to keyboard K and
+  standardized controller X via the existing override service, reject the old
+  binding, reach the shorter final interval and consume coherent owner events.
+  Existing persistence/corrupt/reset/failed-write tests cover canonical format 2.
+
+All five repository examples passed normal Hazelnut and Nutella startup,
+render/resize/shutdown checks with authored files unchanged. Existing gameplay,
+Lightkeeper authoring/connectivity and versioned-save regressions also passed;
+these are deterministic/native checks, not physical gameplay acceptance.
+
+The maintained native Settings scene/prefab was exported through normal packaging
+and run from an unrelated UTF-8 temporary directory with source resources, SDK
+and GAC fallback unavailable. The normal Nutella process rendered/resized/closed
+and reported successful managed horizontal/vertical slider quantization plus
+nested screen operations. Packaged authored bytes remained unchanged; builtin
+family faces/notices closed correctly and test fonts/corpora were absent. This
+uses ordinary window lifecycle control and a small script probe, not injected
+keyboard/controller acceptance.
+
+Master remains `f50c5559d015086573a1c3848d6c9490d23e3073`; stash remains
+`2948648a2332d8bb809fe893cd8aa554265bd6b4`. The unrelated Sandbox Start scene
+was byte-compared to its pre-task copy. Vendors, pins and settings/layouts were
+preserved. No new dependency, font, gameplay asset or save format was introduced.
+CI was not awaited or polled.
+
+Physical acceptance still required:
+
+1. Create horizontal and Up-direction sliders under an owned screen; edit range,
+   step and parts, Undo/Redo, save/reopen and inspect the preview at narrow sizes.
+2. In Play and Nutella, Tab to a slider, Accept, adjust, confirm and Cancel; check
+   live/terminal feedback and return to navigation. Rebind Adjust and reset it.
+3. Pick up a keyboard edit with the thumb, drag beyond the viewport and release;
+   clip half the track, resize/minimize or lose focus mid-edit, and verify no
+   click-through, stuck capture or stale rollback.
+4. Check a real controller's held reconnect/disconnect and repeat, then Windows
+   and DPI/multiple-monitor behavior separately. No physical controller or
+   competent-reader typography acceptance is inferred from synthetic tests.
+
+This completes the bounded slider/Adjust slice, not all P4 or production UI.
+The known large alternating image/text draw-run cost and changed-layout allocation
+costs are unchanged; no new frame-budget claim is made. The next useful bounded
+slice is a static-content ScrollView with real Scroll actions, owned clipping and
+explicit document limits. Keep virtualization/large data views behind separate
+rendering-capacity qualification rather than extending this milestone.
