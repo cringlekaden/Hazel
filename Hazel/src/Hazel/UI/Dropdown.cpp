@@ -1,6 +1,6 @@
+#include "hzpch.h"
 #include "Dropdown.h"
 #include "Hazel/Utils/UTF8.h"
-#include "hzpch.h"
 #include <cmath>
 namespace Hazel::GameUI
 {

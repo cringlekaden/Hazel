@@ -251,6 +251,7 @@ void UIScreenWorkflowChecks()
         MouseScrolledEvent wheel(0,-.5f);session.SubmitUIEvent(wheel,{60,140},true);route();Check(runtime->GetUIScroll(scrollID).Offset.y==24,"Native authored fixture fractional wheel failed");
         Check(runtime->EnsureUIVisible(scrollID,farTarget,true)&&runtime->GetUIDiagnostics().Focus==farTarget,"Native fixture nested focus reveal failed");
         Check(runtime->EnsureUIVisible(scrollID,dropdownTrigger,true),"Native Dropdown trigger reveal failed");
+        {auto arrow=runtime->GetChildrenView(dropdownTrigger).front();auto t=runtime->GetUISnapshot().Find(dropdownTrigger),a=runtime->GetUISnapshot().Find(arrow);Check(a&&a->Bounds.Position.x>=t->Bounds.Position.x+t->Bounds.Size.x-32,"Dropdown arrow overlapped the caption area");}
         sample.Keys[Key::Enter]=true;route();runtime->OnUpdateRuntime(.016f);sample.Keys.fill(false);route();route();
         Check(runtime->IsUIDropdownOpen(dropdownID)&&runtime->GetUIDiagnostics().Focus==lastOption,"Native Dropdown selected-option reveal failed");
         auto placed=runtime->GetUISnapshot().Find(dropdownPopup);auto outer=runtime->GetUIScroll(scrollID);
