@@ -724,7 +724,9 @@ The trigger caption is computed from selection; empty selection uses Placeholder
 The root Radio Group supplies Initial selection, Require selection and Action
 identity. Required selection repairs silently by Tab order then ID when its option
 becomes unavailable; optional selection clears. Hidden/disabled options cannot be
-chosen. Programmatic setters are silent. The selected mark and focus outline are
+chosen. Deleting the authored initial target leaves a reference diagnostic: choose
+another initial target or clear that field before Save/Play. Runtime repair does
+not rewrite configuration. Programmatic setters are silent. The selected mark and focus outline are
 independent cues.
 
 Dropdown properties select the named trigger/popup and set minimum width, maximum

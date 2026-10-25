@@ -2597,3 +2597,16 @@ Existing rearming prevents click-through/reopen. Scrollbar Cancel first ends its
 capture as established. Ownership loss/disconnect closes without selection;
 normal screen changes retire owned popups. Native/managed setters are silent.
 Edit popup/scroll preview is transient and never dispatches owner events.
+
+Selections use an explicit origin identity to distinguish the dropdown envelope;
+component-version zero is a valid token in copied Play scenes. Removing/replacing
+an option's Rect cancels a queued choice even when its Button component survives.
+Retiring trigger/popup presentation queues dismissal at the normal boundary; broken
+triggers do not register/rebuild an invalid overlay every frame. Already-admitted
+selection payloads retain historical option IDs, while source/owner retirement
+still cancels delivery. Programmatic opens also return focus to their trigger.
+
+Initial selection remains authored configuration: deleting that referenced option
+leaves an editable reference diagnostic. Choose another initial target or clear
+that field before strict Save/Play validation. Runtime selection repair never
+rewrites it. Popup position/size and scroll state are derived; no auto-save occurs.

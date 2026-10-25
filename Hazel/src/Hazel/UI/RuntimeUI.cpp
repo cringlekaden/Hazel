@@ -92,11 +92,21 @@ void RuntimeUI::Retire(uint64_t id)
     if(m_PendingFocus==id)m_PendingFocus=0;
     for(auto &saved:m_ScreenFocus)if(saved.Target==id)saved.Target=0;
     m_ScreenFocus.erase(std::remove_if(m_ScreenFocus.begin(),m_ScreenFocus.end(),[&](auto saved){return saved.Scope==id;}),m_ScreenFocus.end());
-    m_ScreenRequests.erase(std::remove_if(m_ScreenRequests.begin(),m_ScreenRequests.end(),[&](auto r){return r.ID==id;}),m_ScreenRequests.end());
+    if(m_Choice&&(m_Choice->Event.Entity==id||m_Choice->Event.Origin==id||m_Choice->Event.Selection==id))m_Choice.reset();
+    m_ScreenRequests.erase(std::remove_if(m_ScreenRequests.begin(),m_ScreenRequests.end(),[&](const ScreenRequest &r){
+        if(r.ID==id||r.Option==id)return true;
+        auto root=m_Scene.GetEntityByUUID(r.ID);
+        return r.Kind!=RequestKind::Screen&&root&&root.HasComponent<UIDropdownComponent>()&&(root.GetComponent<UIDropdownComponent>().Trigger==id||root.GetComponent<UIDropdownComponent>().Popup==id);
+    }),m_ScreenRequests.end());
+    if(auto active=ActiveDropdown();active&&m_Scene.IsRunning()&&!m_Scene.IsStopping()){
+        auto root=m_Scene.GetEntityByUUID(active);if(root&&root.HasComponent<UIDropdownComponent>()){
+            const auto &d=root.GetComponent<UIDropdownComponent>();if(d.Trigger==id||d.Popup==id)RequestDropdown(active,false);
+        }
+    }
     if(auto it=m_Cache.find(id);it!=m_Cache.end()){m_PreparedBytes-=it->second.Glyphs.capacity()*sizeof(Renderer2D::TextGlyph);m_Cache.erase(it);}
     auto pendingBefore=m_Actions.size();
     m_Actions.erase(std::remove_if(m_Actions.begin(), m_Actions.end(),
-                                   [&](const Action &a) { return a.Entity == id || a.Owner == id || a.Screen == id; }),
+                                   [&](const Action &a) { return a.Entity == id || a.Origin == id || a.Owner == id || a.Screen == id; }),
                     m_Actions.end());
     m_Diagnostics.RetiredEvents+=pendingBefore-m_Actions.size();
 }

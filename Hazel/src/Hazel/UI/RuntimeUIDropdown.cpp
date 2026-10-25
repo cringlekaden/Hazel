@@ -145,6 +145,7 @@ void RuntimeUI::CloseOwnedPopup()
         if (entry && entry->Dropdown)
         {
             m_ReturnFallback = entry->Trigger;
+            RememberFocus(entry->ParentScope,entry->Trigger,m_KeyboardOwns);
             i = m_OpenScreens.erase(i);
             m_DropdownFocus = 0;
         }
@@ -228,6 +229,8 @@ void RuntimeUI::SyncDropdownScreens()
         }
         if (!valid)
         {
+            DropdownProblem(
+                "Dropdown named parts retired or left their local composition; repair references");
             auto id = i->ID;
             retire(id);
             i = m_Screens.erase(i);
@@ -265,6 +268,11 @@ void RuntimeUI::SyncDropdownScreens()
         if (!d.Popup || Screen(d.Popup))
             continue;
         auto popup = m_Scene.GetEntityByUUID(d.Popup);
+        auto trigger = m_Scene.GetEntityByUUID(d.Trigger);
+        if (!trigger || DropdownGroup(d.Trigger) != id ||
+            !trigger.HasComponent<UIButtonComponent>() || !trigger.HasComponent<TextComponent>() ||
+            trigger.GetComponent<UIButtonComponent>().Kind != ControlKind::Button)
+            continue;
         if (!root.HasComponent<UIRadioGroupComponent>() || !popup ||
             !m_Scene.IsEntityValid(d.Popup) || !popup.HasComponent<UIRectComponent>() ||
             !popup.HasComponent<UIScrollViewComponent>() ||

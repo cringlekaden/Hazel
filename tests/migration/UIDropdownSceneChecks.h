@@ -149,6 +149,8 @@ static void UIDropdownSceneChecks(const std::filesystem::path &directory)
               !scene->ConsumeUIEvent(900, event),
           "Pointer option activation lost/duplicated selection");
     scene->SetUISelection(200, 305);
+    Check(scene->FocusUI(400),"Programmatic invoker setup failed");open();close();
+    Check(scene->GetUIDiagnostics().Focus==210,"Programmatic popup close did not return to its trigger");
     // Actual queue pressure rejects before reservation/open; no silent user value
     // acceptance.
     Check(scene->FocusUI(400), "Pressure control focus failed");
@@ -345,6 +347,43 @@ static void UIDropdownSceneChecks(const std::filesystem::path &directory)
     Check(life->GetUISnapshot().Scope == 100 && !life->ConsumeUIEvent(900, event),
           "Dropdown component retirement retained owned scope/events");
     life->OnRuntimeStop();
+    auto retired = DropdownFixture();
+    retired->OnRuntimeStart();
+    auto neutralRetired = [&]
+    {
+        InputFrame n;
+        n.Enabled = true;
+        retired->UpdateUIInput(n);
+        retired->UpdateUIInput(n);
+    };
+    neutralRetired();
+    retired->RequestUIDropdown(200, true);
+    retired->CommitUIScreens();
+    retired->RefreshUI();
+    neutralRetired();
+    Check(retired->FocusUI(310), "Retirement choice focus failed");
+    InputFrame edge;
+    edge.Enabled = true;
+    edge.Events = {{UIAction::Accept, true}, {UIAction::Accept, false}};
+    retired->UpdateUIInput(edge);
+    auto optionRect = retired->GetEntityByUUID(310).GetComponent<UIRectComponent>();
+    retired->GetEntityByUUID(310).RemoveComponent<UIRectComponent>();
+    retired->GetEntityByUUID(310).AddComponent<UIRectComponent>(optionRect);
+    retired->CommitUIScreens();
+    retired->RefreshUI();
+    neutralRetired();
+    Check(retired->GetUISelection(200) == 311 && !retired->ConsumeUIEvent(900, event),
+          "Retired/replaced option Rect accepted an older gesture");
+    retired->GetEntityByUUID(210).RemoveComponent<UIButtonComponent>();
+    retired->CommitUIScreens();
+    retired->RefreshUI();
+    neutralRetired();
+    auto generation = retired->GetUISnapshot().Generation;
+    retired->RefreshUI();
+    retired->RefreshUI();
+    Check(!retired->IsUIDropdownOpen(200) && generation == retired->GetUISnapshot().Generation,
+          "Broken trigger retained overlay or repeatedly rebuilt it");
+    retired->OnRuntimeStop();
     std::cout << "PASS: owned dropdown composition, atomic selection/close delivery, "
                  "shared pad/actions, dismissal, queue reservation, detached "
                  "clipping/picking, scroll/resize, silent values and persistence\n";
