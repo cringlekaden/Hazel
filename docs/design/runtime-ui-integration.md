@@ -2538,3 +2538,16 @@ radio/value events and ScrollView. Do not add editable combos or virtualization.
 Large alternating image/text draw-run costs remain separate qualification debt
 before large scrolling data views. This milestone does not complete P4 or the
 production UI endpoint.
+
+Final source/export qualification: all five source projects (MeadowRun, Skybound,
+LastLightkeeper, Sandbox and SceneTransitions) pass Hazelnut/Nutella startup,
+render, resize and graceful shutdown checks without authored-file changes. Existing
+logical/native game regressions also pass, including Lightkeeper menus/dialogue,
+locations, progress/save compatibility and Stop isolation. The maintained native
+screen fixture exports into a private SceneTransitions copy, then runs from an
+unrelated UTF-8 directory with source resources, SDK and GAC unavailable. Normal
+Nutella OpenGL 4.1 startup/render/resize/shutdown and scripted static extent,
+normalized offset, nested reveal and screen return pass. Shipped Open Sans face
+bytes/notices and asset closure verify; test fonts/corpora are not bundled and
+packaged assets remain byte-identical. The source Sandbox draft, master, stash,
+settings/layouts and vendor pins remain unchanged. No CI wait/poll was performed.
