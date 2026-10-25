@@ -24,6 +24,10 @@ bool RuntimeUI::Member(uint64_t group, uint64_t id, bool eligible) const
     const auto &b = e.GetComponent<UIButtonComponent>();
     if (b.Kind != ControlKind::Radio || b.Group != group || CanvasOf(group) != CanvasOf(id))
         return false;
+    if(g.HasComponent<UIDropdownComponent>()){
+        auto popup=m_Scene.GetEntityByUUID(g.GetComponent<UIDropdownComponent>().Popup);
+        if(!popup||!popup.HasComponent<UIScrollViewComponent>()||m_Scene.GetRelationship(e).Parent!=UUID(popup.GetComponent<UIScrollViewComponent>().Content))return false;
+    }
     if (eligible && !b.Interactable)
         return false;
     bool descendant = false;
@@ -56,12 +60,12 @@ bool RuntimeUI::Decoration(uint64_t owner, uint64_t visual) const
     return e && m_Scene.IsEntityValid(visual) && m_Scene.GetRelationship(e).Parent == UUID(owner) &&
            e.HasComponent<UIRectComponent>() && e.HasComponent<SpriteRendererComponent>() &&
            !e.HasComponent<UIButtonComponent>() && !e.HasComponent<UIProgressComponent>() &&
-           !e.HasComponent<UIRadioGroupComponent>() && !e.HasComponent<UISliderComponent>() && !e.HasComponent<UIScrollViewComponent>() && !e.HasComponent<TextComponent>() &&
+           !e.HasComponent<UIRadioGroupComponent>() && !e.HasComponent<UISliderComponent>() && !e.HasComponent<UIScrollViewComponent>() && !e.HasComponent<UIDropdownComponent>() && !e.HasComponent<TextComponent>() &&
            !e.HasComponent<UICanvasComponent>() && m_Scene.GetChildrenView(visual).empty();
 }
 void RuntimeUI::ValidateControls(uint64_t target) const
 {
-    ValidateScrollViews(target);
+    ValidateScrollViews(target);ValidateDropdowns(target);
     std::unordered_set<uint64_t> visuals;
     auto visual = [&](uint64_t owner, uint64_t id) {
         if (id && (!Decoration(owner, id) || !visuals.insert(id).second))
@@ -255,7 +259,7 @@ void RuntimeUI::SyncControls()
                 v.InitialSelection = g.InitialSelection;
                 v.Selected = g.InitialSelection;
             }
-            if (v.Selected && !Member(id, v.Selected, true))
+            if (v.Selected && (!Member(id, v.Selected, true)||(v.SelectedLifetime&&(v.SelectedLifetime!=m_Scene.GetAuthoringLifetime(v.Selected)||v.SelectedComponent!=m_Scene.GetAuthoringComponentVersion(v.Selected,typeid(UIButtonComponent))))))
                 v.Selected = 0;
             if (!v.Selected && g.Required)
             {
@@ -279,6 +283,7 @@ void RuntimeUI::SyncControls()
                 }
                 v.Selected = best;
             }
+            v.SelectedLifetime=m_Scene.GetAuthoringLifetime(v.Selected);v.SelectedComponent=m_Scene.GetAuthoringComponentVersion(v.Selected,typeid(UIButtonComponent));
             owner(id, v);
         }
         else if (e.HasComponent<UIProgressComponent>())
@@ -357,7 +362,8 @@ void RuntimeUI::Select(uint64_t id, uint64_t member)
         (member && !Member(id, member, true)))
         throw std::invalid_argument(
             "Selection must be an enabled visible member; required groups cannot clear");
-    m_Values.at(id).Selected = member;
+    if(m_Values.at(id).Selected!=member&&e.HasComponent<UIDropdownComponent>())++m_DropdownRevision;
+    auto &v=m_Values.at(id);v.Selected=member;v.SelectedLifetime=m_Scene.GetAuthoringLifetime(member);v.SelectedComponent=m_Scene.GetAuthoringComponentVersion(member,typeid(UIButtonComponent));
 }
 float RuntimeUI::Progress(uint64_t id)
 {
@@ -396,6 +402,8 @@ void RuntimeUI::ActivateControl(Action event)
     if (!Live(event.Entity) || !e || !e.HasComponent<UIButtonComponent>())
         return;
     auto &b = e.GetComponent<UIButtonComponent>();
+    if(auto group=DropdownGroup(event.Entity)){RequestDropdown(group,true);return;}
+    if(b.Kind==ControlKind::Radio){auto group=m_Scene.GetEntityByUUID(b.Group);if(group&&group.HasComponent<UIDropdownComponent>()){RequestChoice(b.Group,event.Entity);return;}}
     if (b.Kind == ControlKind::Button)
     {
         QueueEvent(std::move(event));
@@ -439,8 +447,7 @@ void RuntimeUI::ActivateControl(Action event)
     {
         if (event.Kind == UIEventKind::ToggleChanged)
             m_Values.at(source).Checked = event.Checked;
-        else
-            m_Values.at(event.Control).Selected = source;
+        else{auto &v=m_Values.at(event.Control);v.Selected=source;v.SelectedLifetime=m_Scene.GetAuthoringLifetime(source);v.SelectedComponent=m_Scene.GetAuthoringComponentVersion(source,typeid(UIButtonComponent));}
     }
 }
 bool RuntimeUI::ControlVisual(uint64_t id, Rect &bounds, bool &visible) const

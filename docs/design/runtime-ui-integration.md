@@ -2551,3 +2551,49 @@ normalized offset, nested reveal and screen return pass. Shipped Open Sans face
 bytes/notices and asset closure verify; test fonts/corpora are not bundled and
 packaged assets remain byte-identical. The source Sandbox draft, master, stash,
 settings/layouts and vendor pins remain unchanged. No CI wait/poll was performed.
+
+## P4: finite static dropdown (implementation contract)
+
+A Dropdown composes a RadioGroup root, direct Button/Text trigger and a direct
+Rect/ScrollView popup. RadioGroup owns the only selection value/default/required
+policy/action/standalone recipient. Options are direct radio children of the
+popup's named Content stack, identified by UUID, never caption/index. Hidden or
+disabled choices are unavailable; selection repair follows existing radio
+TabOrder/UUID fallback silently (or empty when optional/no eligible member).
+Trigger text is derived from selected option text or the placeholder, through the
+existing shared text measure/paint path; authored strings/Rects are not rewritten.
+
+The popup is an owned Rect overlay on its invoking canvas surface, not an
+independent Canvas inside scrolling content. The existing scene screen authority
+owns its transient scope/order, requests, return focus and input retirement.
+Normal measure/arrange omits that subtree; the same solver arranges it as an owned
+root after normal scrolling. Drawing/hits use the same published painter list and
+explicit scope/clip data. The underlying ScrollView Canvas prohibition remains.
+One popup may be open, with at most 32 declared dropdowns/128 finite options each,
+within existing Rect/screen/request limits. Nested dropdowns are unsupported.
+
+Placement anchors to actual visible trigger coverage in canvas logical units,
+uses owning safe surface bounds, prefers below, flips above if that provides more
+room, then clamps width/height. Width is max(trigger width, minimum width), capped
+to the surface. Height is min(content plus padding, maximum height, available side).
+A bounded width-constrained content measure then final arrange uses existing text
+and ScrollView rules, never convergence or a separate label solver. Position-only
+scrolling reuses sizes; actual available-size changes may remeasure. A fully clipped
+trigger dismisses. Options use existing wrapping/ellipsis/padding; scrollbars keep
+fixed gutters. Selected radio cues remain separate from hover/focus.
+
+Opening reserves one event slot before changing scope; pressure rejects opening
+without changing selection. A choice queues one guarded selection/close request.
+Only after the intended invoking scope is republished does the service admit one
+SelectionChanged record and mutate the group. It is then an ordinary invoking-
+control event: source/owner/screen/domain retirement still applies. Option IDs are
+historical payloads, not proof of continued entity life. Same-choice activation
+closes without a change event. Requests that lose their owning scope do not commit
+selection. No popup-event retirement exemption or second delivery queue is used.
+
+Cancel and Tab/Previous dismiss without selection and return to the trigger; a
+fresh Tab then navigates normally. Outside press dismisses and owns its release.
+Existing rearming prevents click-through/reopen. Scrollbar Cancel first ends its
+capture as established. Ownership loss/disconnect closes without selection;
+normal screen changes retire owned popups. Native/managed setters are silent.
+Edit popup/scroll preview is transient and never dispatches owner events.

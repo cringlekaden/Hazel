@@ -13,7 +13,8 @@ struct SurfaceMetrics
 };
 struct ResolvedElement
 {
-    uint64_t ID = 0, Parent = 0, Canvas = 0;
+    uint64_t ID = 0, Parent = 0, Canvas = 0, Scope = 0;
+    bool OverlayRoot=false;
     Rect LayoutBounds{}, LayoutParentContent{}, LayoutSlot{};
     glm::vec2 Displacement{};
     uint64_t ScrollParent=0;
@@ -37,6 +38,7 @@ struct ScrollGeometry {
     glm::vec2 Extent{},Offset{},Range{};
     std::array<Rect,2> Tracks{},Thumbs{};
 };
+struct DropdownGeometry {uint64_t ID=0,Trigger=0,Popup=0,ParentScope=0,ParentModal=0,Selection=0; Rect Anchor,Bounds; bool Above=false;};
 struct ResolvedGuide {uint64_t Owner=0;int Axis=0,Index=0;bool Line=false;Rect Bounds{},LayoutBounds{};};
 struct ResolvedSnapshot
 {
@@ -47,6 +49,7 @@ struct ResolvedSnapshot
     std::vector<size_t> PainterOrder;
     std::vector<ResolvedGuide> Guides;
     std::vector<ScrollGeometry> Scrolls;
+    std::vector<DropdownGeometry> Dropdowns;
     std::vector<Button> Buttons;
     std::vector<ScreenState> Screens;
     std::unordered_map<uint64_t, size_t> Index;
@@ -104,6 +107,8 @@ struct RuntimeUIDiagnostics
     uint64_t ScrollPublications=0,ScrollRoutes=0,ScrollReveals=0,ScrollCapture=0;
     double LastScrollMilliseconds=0;
     std::string ScrollProblem;
+    std::string DropdownProblem;
+    uint64_t Dropdown=0, DropdownChoices=0, DropdownRejected=0;
     uint64_t SliderEdit=0, SliderGesture=0;
     bool SliderPointer=false;
     uint64_t EventOwner=0, PendingEvents=0, RetiredEvents=0, PendingScreens=0, RejectedScreens=0;

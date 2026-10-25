@@ -30,6 +30,7 @@ template <class F> void Reject(F f)
 #include "UIActionChecks.h"
 #include "UISliderChecks.h"
 #include "UIScrollChecks.h"
+#include "UIDropdownModelChecks.h"
 #include "MeasuredLayoutChecks.h"
 #include "GridLayoutChecks.h"
 #include "WrapLayoutChecks.h"
@@ -94,7 +95,7 @@ int main()
 {
     try
     {
-        UIActionChecks();UISliderChecks();UIScrollChecks();
+        UIActionChecks();UISliderChecks();UIScrollChecks();UIDropdownModelChecks();
         HardeningChecks();
         MeasuredLayoutChecks();
         GridLayoutChecks();

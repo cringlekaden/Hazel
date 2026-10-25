@@ -27,6 +27,7 @@ void Scene::SetUISizing(uint64_t id, GameUI::Axis axis, GameUI::SizeMode mode,
         throw std::invalid_argument("Sizing requires a live UI Rect");
     auto &r=e.GetComponent<UIRectComponent>();
     if(axis!=GameUI::Axis::Horizontal && axis!=GameUI::Axis::Vertical)throw std::invalid_argument("Invalid UI sizing axis");
+    auto parent=GetEntityByUUID(GetRelationship(e).Parent);if(parent&&parent.HasComponent<UIDropdownComponent>()&&parent.GetComponent<UIDropdownComponent>().Popup==id)throw std::invalid_argument("Dropdown owns popup sizing; edit its panel limits");
     const int a=axis==GameUI::Axis::Horizontal?0:1;auto before=r,next=r;
     (a?next.HeightMode:next.WidthMode)=mode;next.FixedSize[a]=fixedSize;
     next.MinimumSize[a]=minimum;next.HasMaximum[a]=maximum.has_value();next.MaximumSize[a]=maximum.value_or(0);
@@ -138,6 +139,9 @@ const GameUI::ResolvedSnapshot& Scene::GetUISnapshot() const { CheckThread();ret
 GameUI::RuntimeUIDiagnostics Scene::GetUIDiagnostics() const { CheckThread();return m_UI->Diagnostics(); }
 bool Scene::IsUIChecked(uint64_t id){CheckThread();RefreshUI();return m_UI->Checked(id);}
 void Scene::SetUIChecked(uint64_t id,bool value){CheckThread();RefreshUI();m_UI->SetChecked(id,value);}
+bool Scene::RequestUIDropdown(uint64_t id,bool open){CheckThread();RefreshUI();return m_UI->RequestDropdown(id,open);}
+bool Scene::IsUIDropdownOpen(uint64_t id) const {CheckThread();return m_UI->DropdownOpen(id);}
+void Scene::PreviewUIDropdown(uint64_t id,bool open){CheckThread();RefreshUI();m_UI->PreviewDropdown(id,open);RefreshUI();}
 uint64_t Scene::GetUISelection(uint64_t id){CheckThread();RefreshUI();return m_UI->Selection(id);}
 void Scene::SetUISelection(uint64_t id,uint64_t member){CheckThread();RefreshUI();m_UI->Select(id,member);}
 GameUI::ScrollGeometry Scene::GetUIScroll(uint64_t id){CheckThread();RefreshUI();return m_UI->ScrollInfo(id);}
@@ -243,15 +247,17 @@ void Scene::ValidateUILayoutDependencies()
     // Geometry from this probe is deliberately discarded. Zero visual metrics
     // and definite external space exercise only authored dependency structure;
     // actual text/images are measured by RuntimeUI at the real surface boundary.
+    std::unordered_set<uint64_t> popups;for(auto h:GetAllEntitiesWith<UIDropdownComponent>())popups.insert(m_Registry.get<UIDropdownComponent>(h).Popup);
     GameUI::MeasuredLayout validation;std::vector<GameUI::MeasureNode> nodes;
     for(auto handle:GetAllEntitiesWith<UIRectComponent>())
     {
         Entity root(handle,this);if(!IsEntityValid(root.GetUUID())||root.HasComponent<UICanvasComponent>())continue;
         auto parent=GetEntityByUUID(GetRelationship(root).Parent);
-        if(parent && !parent.HasComponent<UICanvasComponent>() && parent.HasComponent<UIRectComponent>())continue;
+        if(parent && !parent.HasComponent<UICanvasComponent>() && parent.HasComponent<UIRectComponent>()&&!popups.count(root.GetUUID()))continue;
         nodes.clear();
         std::function<void(Entity,size_t,size_t)> collect=[&](Entity e,size_t parentIndex,size_t depth){
             if(!e||!IsEntityValid(e.GetUUID())||e.HasComponent<UICanvasComponent>()||!e.HasComponent<UIRectComponent>())return;
+            if(depth&&popups.count(e.GetUUID()))return;
             if(depth>=MaxDepth||nodes.size()>=GameUI::InputRouter::MaxButtons)throw std::invalid_argument("Measured UI dependency limit exceeded");
             size_t index=nodes.size();nodes.emplace_back();auto &n=nodes.back();n.ID=e.GetUUID();n.Name=e.GetName();n.Layout=e.GetComponent<UIRectComponent>();n.Parent=parentIndex;n.Container=e.HasComponent<UILayoutComponent>();
             if(n.Container)n.Flow=e.GetComponent<UILayoutComponent>();

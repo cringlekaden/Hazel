@@ -30,6 +30,7 @@ bool UIRectEditSession::Begin(const Ref<Scene> &scene, uint64_t entity, unsigned
             n->Scale <= 0)
             throw std::invalid_argument("Selected rect has no resolved editable geometry");
         auto parent=scene->GetEntityByUUID(scene->GetRelationship(e).Parent);
+        if(parent&&parent.HasComponent<UIDropdownComponent>()&&parent.GetComponent<UIDropdownComponent>().Popup==entity)throw std::invalid_argument("Dropdown owns popup placement/size: edit panel limits in Properties");
         if(parent&&parent.HasComponent<UIScrollViewComponent>()){
             const auto &v=parent.GetComponent<UIScrollViewComponent>();if(v.Content==entity||v.HorizontalThumb==entity||v.VerticalThumb==entity)throw std::invalid_argument("ScrollView owns content/thumb placement: use content sizing, track bounds or transient preview in Properties");
         }

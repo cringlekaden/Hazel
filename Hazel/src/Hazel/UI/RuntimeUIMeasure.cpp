@@ -10,12 +10,13 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
     if (e.HasComponent<TextComponent>())
     {
         auto &text = e.GetComponent<TextComponent>();
+        const auto &displayText=DisplayText(e);
         auto style = e.HasComponent<UITextStyleComponent>() ? e.GetComponent<UITextStyleComponent>()
                                                             : UITextStyleComponent{};
         if (!std::isfinite(style.Size) || style.Size <= 0 || style.Size > 512 ||
             unsigned(style.Overflow)>1 || style.MaxLines>4096 || !std::isfinite(text.Kerning) || !std::isfinite(text.LineSpacing))
             throw std::invalid_argument("Invalid intrinsic UI text style/spacing");
-        if (!text.TextString.empty() && text.TextString != "\xef\xbb\xbf" && width != 0)
+        if (!displayText.empty() && displayText != "\xef\xbb\xbf" && width != 0)
         {
             auto &cache = m_Cache[e.GetUUID()];
             const auto assets = m_Scene.GetAssets();
@@ -33,16 +34,16 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
             bool wrap = width >= 0 && style.Wrap;
             float normalizedWidth = width < 0 ? -1 : width / style.Size;
             if (cache.MeasureWidth[slot] != normalizedWidth ||
-                cache.MeasureText[slot] != text.TextString ||
+                cache.MeasureText[slot] != displayText ||
                 cache.MeasureKerning[slot] != text.Kerning || cache.MeasureSpacing[slot] != text.LineSpacing || cache.MeasureWrap[slot] != wrap || cache.MeasureOverflow[slot]!=style.Overflow || cache.MeasureMaxLines[slot]!=style.MaxLines)
             {
                 cache.MeasureWidth[slot]=-2; // failed publication must not leave a valid key with empty lines
                 cache.MeasureLines[slot].clear();
-                if(cache.Text!=text.TextString || cache.Kerning!=text.Kerning || cache.LineSpacing!=text.LineSpacing)cache.Lines.clear();
-                Renderer2D::LayoutText(text.TextString, cache.FontAsset, normalizedWidth, wrap,
+                if(cache.Text!=displayText || cache.Kerning!=text.Kerning || cache.LineSpacing!=text.LineSpacing)cache.Lines.clear();
+                Renderer2D::LayoutText(displayText, cache.FontAsset, normalizedWidth, wrap,
                                        text.Kerning, cache.MeasureLines[slot],text.LineSpacing,style.Overflow,style.MaxLines);
                 cache.MeasureWidth[slot] = normalizedWidth;
-                cache.MeasureText[slot] = text.TextString;
+                cache.MeasureText[slot] = displayText;
                 cache.MeasureKerning[slot] = text.Kerning;
                 cache.MeasureSpacing[slot] = text.LineSpacing;
                 cache.MeasureWrap[slot] = wrap;
@@ -115,7 +116,7 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
     }
     return size;
 }
-void RuntimeUI::MeasureTree(Entity root, Rect parent)
+void RuntimeUI::MeasureTree(Entity root, Rect parent, const Rect *ownedBox)
 {
     m_MeasureIDs.clear();
     std::function<void(Entity, size_t)> collect = [&](Entity e, size_t depth)
@@ -125,6 +126,7 @@ void RuntimeUI::MeasureTree(Entity root, Rect parent)
             return;
         if (depth >= Scene::MaxDepth)
             throw std::invalid_argument("Measured UI exceeds depth 256");
+        if(e!=root&&OwnedPopup(e.GetUUID()))return;
         m_MeasureIDs.push_back(e.GetUUID());
         for (auto id : m_Scene.GetChildrenView(e.GetUUID()))
             collect(m_Scene.GetEntityByUUID(id), depth + 1);
@@ -143,6 +145,7 @@ void RuntimeUI::MeasureTree(Entity root, Rect parent)
         n.ID = e.GetUUID();
         n.Name = e.GetName();
         n.Layout = r;
+        if(i==0&&ownedBox){n.Layout.WidthMode=n.Layout.HeightMode=SizeMode::Fixed;n.Layout.FixedSize=ownedBox->Size;n.Layout.Anchor=n.Layout.Offset=n.Layout.Pivot={};n.Layout.Margin={};n.Layout.MinimumSize={};n.Layout.HasMaximum={false,false};}
         n.Unbounded={false,false};
         if(e.HasComponent<UIScrollViewComponent>()){const auto &v=e.GetComponent<UIScrollViewComponent>();
             for(int axis=0;axis<2;++axis)if((axis?v.Vertical:v.Horizontal)&&(axis?r.HeightMode:r.WidthMode)==SizeMode::Content)throw std::invalid_argument("Scroll viewport #"+std::to_string(n.ID)+(axis?".height: ":".width: ")+"scroll axis requires Fixed/Fill");}

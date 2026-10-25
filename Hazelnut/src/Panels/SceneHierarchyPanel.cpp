@@ -68,9 +68,16 @@ bool SceneHierarchyPanel::AddEntity(const std::string &name)
 bool SceneHierarchyPanel::AddUI(int kind) {
     if(!m_Context||!CanEdit(true))return false;
     try {
-        if(kind<0||kind>14)throw std::invalid_argument("Unknown UI creation preset");
+        if(kind<0||kind>16)throw std::invalid_argument("Unknown UI creation preset");
         Entity parent=GetSelectedEntity();
         if(PrefabDocument&&!parent){auto roots=m_Context->GetChildren();if(!roots.empty())parent=m_Context->GetEntityByUUID(roots.front());}
+        uint64_t dropdownGroup=0;
+        if(kind==16){auto ancestor=parent;for(size_t depth=0;ancestor&&depth<Scene::MaxDepth;++depth){if(ancestor.HasComponent<UIDropdownComponent>()){dropdownGroup=ancestor.GetUUID();break;}ancestor=m_Context->GetEntityByUUID(m_Context->GetRelationship(ancestor).Parent);}
+            if(!dropdownGroup)throw std::invalid_argument("Select a Dropdown or one of its parts before adding an option");
+            auto popup=m_Context->GetEntityByUUID(m_Context->GetEntityByUUID(dropdownGroup).GetComponent<UIDropdownComponent>().Popup);
+            if(!popup||!popup.HasComponent<UIScrollViewComponent>())throw std::invalid_argument("Repair Dropdown popup first");parent=m_Context->GetEntityByUUID(popup.GetComponent<UIScrollViewComponent>().Content);
+            if(!parent||m_Context->GetChildrenView(parent.GetUUID()).size()>=128)throw std::invalid_argument("Dropdown Content missing or option limit reached (128)");
+        }
         if(kind!=0&&kind!=7&&(!parent||(!parent.HasComponent<UIRectComponent>()&&!parent.HasComponent<UICanvasComponent>()))) {
             auto canvas=m_Context->CreateEntity("UI Canvas");canvas.AddComponent<UICanvasComponent>();if(parent)m_Context->Reparent(canvas,parent,TransformPolicy::KeepLocal);parent=canvas;
         }
@@ -82,7 +89,7 @@ bool SceneHierarchyPanel::AddUI(int kind) {
                 if(occupied>=layout.Rows.size()*layout.Columns.size())throw std::invalid_argument("Grid has no free cell; add row/column tracks before creating another child");
             }
         }
-        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid","UI Wrap","UI Screen","UI Checkbox","UI Radio Group","UI Progress","UI Slider","UI Vertical Slider","UI ScrollView","UI Horizontal ScrollView"};
+        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid","UI Wrap","UI Screen","UI Checkbox","UI Radio Group","UI Progress","UI Slider","UI Vertical Slider","UI ScrollView","UI Horizontal ScrollView","UI Dropdown","Dropdown option"};
         auto e=m_Context->CreateEntity(names[kind]);if(parent)m_Context->Reparent(e,parent,TransformPolicy::KeepLocal);
         if(kind==0||kind==7){auto &c=e.AddComponent<UICanvasComponent>();if(kind==7){c.Screen.Managed=true;c.Modal=true;}}
         else {
@@ -120,6 +127,21 @@ bool SceneHierarchyPanel::AddUI(int kind) {
                     option(child,("Option "+std::to_string(i+1)).c_str(),GameUI::ControlKind::Radio);
                     child.GetComponent<UIButtonComponent>().Group=e.GetUUID();child.GetComponent<UIButtonComponent>().TabOrder=i;
                     if(i==0)g.InitialSelection=child.GetUUID();
+                }
+            }
+            if(kind==15||kind==16){
+                auto radio=[&](Entity item,uint64_t group,const std::string &label){auto &r=item.GetComponent<UIRectComponent>();r.WidthMode=GameUI::SizeMode::Fill;r.FixedSize.y=44;r.Padding={32,6,6,6};item.AddComponent<SpriteRendererComponent>(glm::vec4(.12f,.19f,.27f,1));item.AddComponent<TextComponent>().TextString=label;auto &t=item.AddComponent<UITextStyleComponent>();t.Size=20;t.Vertical=GameUI::Align::Center;t.Wrap=false;t.Overflow=Text::Overflow::Ellipsis;t.MaxLines=1;auto &b=item.AddComponent<UIButtonComponent>();b.Kind=GameUI::ControlKind::Radio;b.Group=group;};
+                if(kind==16){rect.Offset={};radio(e,dropdownGroup,"Option");}
+                else{
+                    auto &g=e.AddComponent<UIRadioGroupComponent>();g.Action="choice";auto &d=e.AddComponent<UIDropdownComponent>();
+                    auto part=[&](const char *name,Entity owner){auto child=m_Context->CreateEntity(name);m_Context->Reparent(child,owner,TransformPolicy::KeepLocal);child.AddComponent<UIRectComponent>();return child;};
+                    auto trigger=part("Dropdown trigger",e);auto &tr=trigger.GetComponent<UIRectComponent>();tr.WidthMode=tr.HeightMode=GameUI::SizeMode::Fill;tr.Padding={8,6,32,6};trigger.AddComponent<UIButtonComponent>();trigger.AddComponent<SpriteRendererComponent>(glm::vec4(.12f,.19f,.27f,1));trigger.AddComponent<TextComponent>().TextString="Computed selection";auto &ts=trigger.AddComponent<UITextStyleComponent>();ts.Size=20;ts.Vertical=GameUI::Align::Center;ts.Wrap=false;ts.Overflow=Text::Overflow::Ellipsis;ts.MaxLines=1;
+                    auto cue=part("Dropdown arrow",trigger);auto &ar=cue.GetComponent<UIRectComponent>();ar.FixedSize={20,32};ar.Anchor={1,.5f};ar.Pivot={1,.5f};ar.Offset={-4,0};cue.AddComponent<TextComponent>().TextString="v";auto &as=cue.AddComponent<UITextStyleComponent>();as.Size=18;as.Horizontal=as.Vertical=GameUI::Align::Center;
+                    auto popup=part("Dropdown popup",e);auto &pr=popup.GetComponent<UIRectComponent>();pr.FixedSize={280,240};pr.Padding={4,4,20,4};popup.AddComponent<SpriteRendererComponent>(glm::vec4(.045f,.065f,.10f,1));auto &view=popup.AddComponent<UIScrollViewComponent>();
+                    auto content=part("Dropdown options",popup);auto &cr=content.GetComponent<UIRectComponent>();cr.WidthMode=GameUI::SizeMode::Fill;cr.HeightMode=GameUI::SizeMode::Content;auto &flow=content.AddComponent<UILayoutComponent>();flow.Gap=2;view.Content=content.GetUUID();
+                    for(int i=0;i<8;++i){auto item=part(("Option "+std::to_string(i+1)).c_str(),content);radio(item,e.GetUUID(),"Option "+std::to_string(i+1));if(i==0)g.InitialSelection=item.GetUUID();}
+                    auto track=part("Dropdown scroll track",popup);auto &rt=track.GetComponent<UIRectComponent>();rt.FixedSize={8,0};rt.HeightMode=GameUI::SizeMode::Fill;rt.Anchor.x=1;rt.Offset.x=4;track.AddComponent<SpriteRendererComponent>(glm::vec4(.20f,.25f,.30f,1));
+                    auto thumb=part("Dropdown scroll thumb",popup);thumb.GetComponent<UIRectComponent>().FixedSize={8,16};thumb.AddComponent<SpriteRendererComponent>(glm::vec4(.70f,.80f,.85f,1));view.VerticalTrack=track.GetUUID();view.VerticalThumb=thumb.GetUUID();d.Trigger=trigger.GetUUID();d.Popup=popup.GetUUID();
                 }
             }
             if(kind==13||kind==14){
@@ -162,7 +184,7 @@ bool SceneHierarchyPanel::AddUI(int kind) {
 }
 void SceneHierarchyPanel::UIAddMenu(){
     if(ImGui::BeginMenu("Runtime UI")) {
-        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap","Screen","Checkbox / Toggle","Radio Group","Progress","Slider","Vertical Slider","ScrollView","Horizontal ScrollView"};
+        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap","Screen","Checkbox / Toggle","Radio Group","Progress","Slider","Vertical Slider","ScrollView","Horizontal ScrollView","Dropdown","Dropdown option"};
         for(size_t i=0;i<std::size(names);++i)if(ImGui::MenuItem(names[i]))AddUI(int(i));
         ImGui::EndMenu();
     }
@@ -378,6 +400,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             DisplayAddComponentEntry<UIProgressComponent>("UI Progress");
             DisplayAddComponentEntry<UISliderComponent>("UI Slider");
             DisplayAddComponentEntry<UIScrollViewComponent>("UI ScrollView");
+            DisplayAddComponentEntry<UIDropdownComponent>("UI Dropdown");
             if(entity.HasComponent<TextComponent>())DisplayAddComponentEntry<UITextStyleComponent>("UI Text Style");
             if(entity.HasComponent<SpriteRendererComponent>())DisplayAddComponentEntry<UINineSliceComponent>("UI Nine Slice");
         }
@@ -451,6 +474,8 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     DrawUIComponent<UIRectComponent>("UI Rect",entity,m_Sections,m_RestoreSections,[this,entity](auto& c)mutable{
         auto parent=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);
         bool derivedPosition=false,scrollContent=false;
+        if(parent&&parent.HasComponent<UIDropdownComponent>()&&parent.GetComponent<UIDropdownComponent>().Popup==uint64_t(entity.GetUUID())){PropertyUI::Help("Dropdown owns popup placement and size on the invoking surface. Edit its minimum width/maximum height; padding reserves scrollbar gutters.");PropertyUI::Vector("padding","Padding L/T/R/B",glm::value_ptr(c.Padding),4,1,nullptr,"%.0f",{},0,4096);return;}
+
         if(parent&&parent.HasComponent<UIScrollViewComponent>()){
             auto &v=parent.GetComponent<UIScrollViewComponent>();scrollContent=derivedPosition=v.Content==uint64_t(entity.GetUUID());
             if(v.HorizontalThumb==uint64_t(entity.GetUUID())||v.VerticalThumb==uint64_t(entity.GetUUID())){PropertyUI::Help("ScrollView computes thumb size and position. Edit track bounds or Minimum thumb on its viewport.");return;}
@@ -630,7 +655,15 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         PropertyUI::Checkbox("required","Require selection",c.Required);PropertyUI::Text("action","Action identity",c.Action);
         targetPicker("initial-selection","Initial selection",c.InitialSelection,[&](Entity candidate){return candidate.HasComponent<UIButtonComponent>()&&candidate.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio&&candidate.GetComponent<UIButtonComponent>().Group==uint64_t(entity.GetUUID());});
         if(ImGui::TreeNode("Standalone notification")){targetPicker("value-owner","Event owner",c.EventOwner,ownerTarget);PropertyUI::Help("Managed screens use their declared owner. Ordinary canvases require this explicit recipient.");ImGui::TreePop();}
-        PropertyUI::Help("Tab and directions move focus; Accept selects. Activating the current option does nothing. Required selection falls back by Tab order then ID.");
+        PropertyUI::Help(entity.HasComponent<UIDropdownComponent>()?"Dropdown owns one group value. Navigation highlights; Accept selects and closes. Setters are silent. Required fallback: Tab order then ID.":"Tab and directions move focus; Accept selects. Activating the current option does nothing. Required selection falls back by Tab order then ID.");
+    });
+    DrawUIComponent<UIDropdownComponent>("UI Dropdown",entity,m_Sections,m_RestoreSections,[&](auto &c){
+        targetPicker("trigger","Trigger",c.Trigger,[&](Entity e){return m_Context->GetRelationship(e).Parent==entity.GetUUID()&&e.HasComponent<UIButtonComponent>()&&e.HasComponent<TextComponent>();});
+        targetPicker("popup","Popup",c.Popup,[&](Entity e){return m_Context->GetRelationship(e).Parent==entity.GetUUID()&&e.HasComponent<UIScrollViewComponent>()&&e.HasComponent<UIRectComponent>()&&!e.HasComponent<UICanvasComponent>();});
+        PropertyUI::Text("placeholder","Placeholder",c.Placeholder);
+        PropertyUI::DragFloat("min-width","Minimum width",c.MinimumWidth,1,1,4096);PropertyUI::DragFloat("max-height","Maximum height",c.MaximumHeight,1,1,4096);PropertyUI::DragFloat("gap","Popup gap",c.Gap,1,0,64);
+        PropertyUI::Help("Radio Group below owns initial/required selection, action and recipient. Add Dropdown option or duplicate/reorder option children. Trigger label is computed; option labels remain editable.");
+        if(!m_Context->IsRunning()&&!m_Context->IsSimulating()){bool preview=m_Context->IsUIDropdownOpen(entity.GetUUID());if(ImGui::Button(preview?"Close popup preview":"Preview popup"))try{m_Context->PreviewUIDropdown(entity.GetUUID(),!preview);}catch(const std::exception &e){m_HierarchyError=e.what();}}
     });
     DrawUIComponent<UIScrollViewComponent>("UI ScrollView",entity,m_Sections,m_RestoreSections,[&](auto &c){
         int axes=c.Horizontal?(c.Vertical?2:1):0;if(PropertyUI::Combo("axes","Axes",axes,"Vertical\0Horizontal\0Both\0")){c.Horizontal=axes!=0;c.Vertical=axes!=1;}
@@ -1128,7 +1161,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
 
     DrawUIComponent<TextComponent>(
         "Text Renderer", entity, m_Sections,m_RestoreSections,
-        [this](auto &component)
+        [this,entity](auto &component) mutable
         {
             if(!m_UIFontInitialized || m_UIFontBound!=component.Font.Family){m_UIFontDraft=component.Font.Family.generic_u8string();m_UIFontBound=component.Font.Family;m_UIFontInitialized=true;}
             auto assign=[&](std::filesystem::path path){try {
@@ -1159,7 +1192,9 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                     ImGui::TreePop();
                 }
             }
-            PropertyUI::Multiline("text", "Text", component.TextString);
+            auto p=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);
+            if(p&&p.HasComponent<UIDropdownComponent>()&&p.GetComponent<UIDropdownComponent>().Trigger==uint64_t(entity.GetUUID()))PropertyUI::ReadOnly("text","Text","Computed from selection / placeholder");
+            else PropertyUI::Multiline("text", "Text", component.TextString);
             PropertyUI::Color("Color", "Color", glm::value_ptr(component.Color));
             PropertyUI::DragFloat("Kerning", "Tracking", component.Kerning, 0.025f);
             PropertyUI::Help("Extra font-height gap per shaped cluster. OpenType kerning is already applied; Arabic joins retain their spacing.");

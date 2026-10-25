@@ -708,3 +708,59 @@ page preparation and drawing; position-only scrolling reuses shaping and intrins
 measurement. Declared limits are 64 ScrollViews, 4096 Rects, depth 256 and content
 extent 1,000,000 logical pixels per axis. These limits do not promise large-list
 performance or remove alternating image/text draw-run costs.
+
+### Finite dropdowns
+
+Create **UI → Dropdown** under a canvas or ScrollView content. The preset supplies
+one Radio Group value, a Button/Text trigger, an owned popup ScrollView, scrollbar
+parts and eight options. Select the dropdown or any part and use **Dropdown option**
+to append a choice; normal hierarchy duplication/reordering/removal edits the set.
+Options use their entity IDs, never their captions or array positions. Keep all
+parts/options inside a connected prefab. At most 32 dropdowns and 128 direct
+options per dropdown are supported, within the existing scene limits.
+
+Edit labels on the option Text components and availability on their Rect/Button.
+The trigger caption is computed from selection; empty selection uses Placeholder.
+The root Radio Group supplies Initial selection, Require selection and Action
+identity. Required selection repairs silently by Tab order then ID when its option
+becomes unavailable; optional selection clears. Hidden/disabled options cannot be
+chosen. Programmatic setters are silent. The selected mark and focus outline are
+independent cues.
+
+Dropdown properties select the named trigger/popup and set minimum width, maximum
+height and gap in canvas units. The popup uses the owning surface, escapes ancestor
+scroll clips, prefers below, flips above for more room and clamps to the safe
+surface. Its height is bounded and its existing ScrollView handles overflow.
+Padding reserves scrollbar gutters. Option text uses ordinary wrap/ellipsis fields.
+Popup Rect position/size are computed; edit the dropdown's limits instead. Do not
+add an independent Canvas inside the composition. Nested dropdowns are unsupported.
+
+In Play, Accept/pointer release opens and reveals the selected eligible option;
+navigation only highlights. Accept/release chooses once. Cancel or Tab/Shift+Tab
+closes unchanged and returns focus to the trigger; a fresh Tab then traverses.
+Outside press dismisses and consumes its release. Ownership loss/controller
+disconnect dismisses; normal screen changes retire the popup. One popup is open at
+a time. Opening another switches it. Trigger clipping, viewport changes and parent
+scrolling update placement; a fully clipped trigger dismisses.
+
+The invoking screen's declared owner receives one `SelectionChanged`, with Source
+set to the dropdown root and PreviousSelection/Selection containing option IDs.
+Same-choice activation closes without an event. The service reserves event admission
+before opening, then commits selection only after its intended close publishes the
+invoking scope. Queue pressure rejects opening/choice without accepting an
+unreported value. Unrelated screen/domain/source/owner retirement still cancels
+pending work. IDs in delivered payloads are historical; check entity validity before
+using them.
+
+C#: `dropdown.GetComponent<UIDropdownComponent>()` exposes `Selection`, `IsOpen`,
+`Open()` and `Close()`. Native equivalents are Scene `Get/SetUISelection`,
+`RequestUIDropdown` and `IsUIDropdownOpen`. Selection zero clears only an optional
+group. Request success means queued, not necessarily committed: invalid references,
+unavailable scope/owner, no eligible choices or resource limits diagnose and reject.
+No script should manage popup geometry, trigger text or return focus.
+
+**Preview popup** in the Inspector opens transient Edit presentation. ScrollView
+preview controls inspect offscreen options. Preview does not change authored
+selection, dispatch events, enter history or save open state. Popup/resource issues
+and current scope appear in the existing Runtime UI Debugger. Property edits use
+normal document Undo/Redo; hierarchy operations retain their existing limitations.

@@ -29,6 +29,7 @@ class SceneHierarchyPanel
     bool AddChild(Entity parent, const std::string& name="Child Entity");
     bool ReparentEntity(uint64_t scene, uint64_t child, uint64_t parent, TransformPolicy mode);
     bool DuplicateSelected();
+    bool MoveSelected(int direction);
     bool DropEntity(uint64_t scene, uint64_t entity, uint64_t parent);
     std::string DropReason(uint64_t scene, uint64_t entity, uint64_t parent) const;
     bool ClearStoredEntityReference(Entity entity, const std::string& field);

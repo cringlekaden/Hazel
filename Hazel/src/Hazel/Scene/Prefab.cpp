@@ -46,6 +46,7 @@ void Prefab::Validate(const std::filesystem::path &root, const Ref<Scene> &scene
         std::vector<uint64_t> controlRefs;
         if(node.HasComponent<UIButtonComponent>()){auto &b=node.GetComponent<UIButtonComponent>();controlRefs={b.Indicator,b.Group,b.EventOwner};}
         if(node.HasComponent<UIRadioGroupComponent>()){auto &g=node.GetComponent<UIRadioGroupComponent>();controlRefs.push_back(g.InitialSelection);controlRefs.push_back(g.EventOwner);}
+        if(node.HasComponent<UIDropdownComponent>()){auto &d=node.GetComponent<UIDropdownComponent>();controlRefs.push_back(d.Trigger);controlRefs.push_back(d.Popup);}
         if(node.HasComponent<UIScrollViewComponent>()){auto &v=node.GetComponent<UIScrollViewComponent>();for(auto ref:{v.Content,v.HorizontalTrack,v.HorizontalThumb,v.VerticalTrack,v.VerticalThumb})controlRefs.push_back(ref);}
         if(node.HasComponent<UISliderComponent>()){auto &v=node.GetComponent<UISliderComponent>();controlRefs.push_back(v.Track);controlRefs.push_back(v.Fill);controlRefs.push_back(v.Thumb);}
         if(node.HasComponent<UIProgressComponent>())controlRefs.push_back(node.GetComponent<UIProgressComponent>().Fill);

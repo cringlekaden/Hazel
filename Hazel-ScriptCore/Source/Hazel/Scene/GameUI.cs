@@ -76,6 +76,12 @@ namespace Hazel {
     public class UIRadioGroupComponent : Component {
         public Entity Selection {get{ulong id=InternalCalls.UI_Selection(Entity.CheckedID,false,0);return id==0?null:new Entity(id);}set=>InternalCalls.UI_Selection(Entity.CheckedID,true,value==null?0:value.CheckedID);}
     }
+    public class UIDropdownComponent : Component {
+        public Entity Selection {get{ulong id=InternalCalls.UI_Selection(Entity.CheckedID,false,0);return id==0?null:new Entity(id);}set=>InternalCalls.UI_Selection(Entity.CheckedID,true,value==null?0:value.CheckedID);}
+        public bool IsOpen=>InternalCalls.UI_Dropdown(Entity.CheckedID,-1);
+        public bool Open()=>InternalCalls.UI_Dropdown(Entity.CheckedID,1);
+        public bool Close()=>InternalCalls.UI_Dropdown(Entity.CheckedID,0);
+    }
     public class UIScrollViewComponent : Component {
         public Vector2 Offset {get{Vector2 offset,range,viewport,extent;InternalCalls.UI_ScrollInfo(Entity.CheckedID,out offset,out range,out viewport,out extent);return offset;}set{InternalCalls.UI_ScrollTo(Entity.CheckedID,ref value,false);}}
         public Vector2 Range {get{Vector2 offset,range,viewport,extent;InternalCalls.UI_ScrollInfo(Entity.CheckedID,out offset,out range,out viewport,out extent);return range;}}

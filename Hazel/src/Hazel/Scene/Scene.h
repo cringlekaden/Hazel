@@ -55,6 +55,9 @@ namespace Hazel {
     bool IsUIChecked(uint64_t id);
     void SetUIChecked(uint64_t id,bool value);
     uint64_t GetUISelection(uint64_t group);
+    bool RequestUIDropdown(uint64_t dropdown,bool open);
+    bool IsUIDropdownOpen(uint64_t dropdown) const;
+    void PreviewUIDropdown(uint64_t dropdown,bool open);
     void SetUISelection(uint64_t group,uint64_t member);
     GameUI::ScrollGeometry GetUIScroll(uint64_t id);
     void ScrollUITo(uint64_t id,glm::vec2 offset,bool normalized=false);
@@ -99,6 +102,7 @@ namespace Hazel {
         // Edit commands apply immediately. Runtime requests return a bounded result ID;
         // getters retain committed relationships until the next lifecycle boundary.
         uint64_t Reparent(Entity entity, Entity parent, TransformPolicy mode = TransformPolicy::KeepWorld);
+        void MoveSibling(Entity entity, int direction); // Edit-only adjacent order, stable IDs
         ParentingResult GetParentingResult(uint64_t request) const;
         void ValidateHierarchy() const;
         void CheckThread() const;

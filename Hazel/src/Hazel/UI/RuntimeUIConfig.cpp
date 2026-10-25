@@ -432,6 +432,17 @@ static void Write(YAML::Emitter &out,const UISliderComponent &v){
        <<YAML::Key<<"Track"<<YAML::Value<<v.Track<<YAML::Key<<"Fill"<<YAML::Value<<v.Fill<<YAML::Key<<"Thumb"<<YAML::Value<<v.Thumb
        <<YAML::Key<<"Direction"<<YAML::Value<<unsigned(v.Direction)<<YAML::EndMap;
 }
+UIDropdownComponent ReadUIDropdownComponent(const YAML::Node &n){
+    Keys(n,{"Trigger","Popup","MinimumWidth","MaximumHeight","Gap","Placeholder"});UIDropdownComponent v;
+    if(n["Trigger"])v.Trigger=n["Trigger"].as<uint64_t>();if(n["Popup"])v.Popup=n["Popup"].as<uint64_t>();
+    if(n["MinimumWidth"])v.MinimumWidth=n["MinimumWidth"].as<float>();if(n["MaximumHeight"])v.MaximumHeight=n["MaximumHeight"].as<float>();
+    if(n["Gap"])v.Gap=n["Gap"].as<float>();if(n["Placeholder"])v.Placeholder=n["Placeholder"].as<std::string>();GameUI::Validate(v);return v;
+}
+static void Write(YAML::Emitter &out,const UIDropdownComponent &v){
+    out<<YAML::BeginMap<<YAML::Key<<"Trigger"<<YAML::Value<<v.Trigger<<YAML::Key<<"Popup"<<YAML::Value<<v.Popup
+       <<YAML::Key<<"MinimumWidth"<<YAML::Value<<v.MinimumWidth<<YAML::Key<<"MaximumHeight"<<YAML::Value<<v.MaximumHeight
+       <<YAML::Key<<"Gap"<<YAML::Value<<v.Gap<<YAML::Key<<"Placeholder"<<YAML::Value<<v.Placeholder<<YAML::EndMap;
+}
 UIScrollViewComponent ReadUIScrollViewComponent(const YAML::Node &n){
     Keys(n,{"Content","Horizontal","Vertical","HorizontalTrack","HorizontalThumb","VerticalTrack","VerticalThumb","PixelsPerUnit","MinimumThumb","RevealMargin"});UIScrollViewComponent v;
 #define READ(field,type) if(n[#field])v.field=n[#field].as<type>()
@@ -465,6 +476,7 @@ void ValidateUIConfiguration(const YAML::Node &node)
     if (auto n = node["UIProgressComponent"]) ReadUIProgressComponent(n);
     if(auto n=node["UISliderComponent"])ReadUISliderComponent(n);
     if(auto n=node["UIScrollViewComponent"])ReadUIScrollViewComponent(n);
+    if(auto n=node["UIDropdownComponent"])ReadUIDropdownComponent(n);
 }
 void ReadUIComponents(const YAML::Node &node, Entity entity)
 {
@@ -483,6 +495,7 @@ void ReadUIComponents(const YAML::Node &node, Entity entity)
     if (auto n = node["UIProgressComponent"]) entity.AddComponent<UIProgressComponent>(ReadUIProgressComponent(n));
     if(auto n=node["UISliderComponent"])entity.AddComponent<UISliderComponent>(ReadUISliderComponent(n));
     if(auto n=node["UIScrollViewComponent"])entity.AddComponent<UIScrollViewComponent>(ReadUIScrollViewComponent(n));
+    if(auto n=node["UIDropdownComponent"])entity.AddComponent<UIDropdownComponent>(ReadUIDropdownComponent(n));
 }
 void WriteUIComponents(YAML::Emitter &out, Entity entity)
 {
@@ -517,6 +530,7 @@ void WriteUIComponents(YAML::Emitter &out, Entity entity)
         Write(out, entity.GetComponent<UIButtonComponent>());
     }
     if(entity.HasComponent<UIRadioGroupComponent>()){out<<YAML::Key<<"UIRadioGroupComponent"<<YAML::Value;Write(out,entity.GetComponent<UIRadioGroupComponent>());}
+    if(entity.HasComponent<UIDropdownComponent>()){out<<YAML::Key<<"UIDropdownComponent"<<YAML::Value;Write(out,entity.GetComponent<UIDropdownComponent>());}
     if(entity.HasComponent<UIScrollViewComponent>()){out<<YAML::Key<<"UIScrollViewComponent"<<YAML::Value;Write(out,entity.GetComponent<UIScrollViewComponent>());}
     if(entity.HasComponent<UISliderComponent>()){out<<YAML::Key<<"UISliderComponent"<<YAML::Value;Write(out,entity.GetComponent<UISliderComponent>());}
     if(entity.HasComponent<UIProgressComponent>()){out<<YAML::Key<<"UIProgressComponent"<<YAML::Value;Write(out,entity.GetComponent<UIProgressComponent>());}
@@ -526,7 +540,7 @@ std::string UIAuthoredState(Entity entity)
 {
     if (!entity.HasComponent<UICanvasComponent>() && !entity.HasComponent<UIRectComponent>() &&
         !entity.HasComponent<UILayoutComponent>() && !entity.HasComponent<UITextStyleComponent>() &&
-        !entity.HasComponent<UINineSliceComponent>() && !entity.HasComponent<UIButtonComponent>() && !entity.HasComponent<UIRadioGroupComponent>() && !entity.HasComponent<UIProgressComponent>() && !entity.HasComponent<UISliderComponent>() && !entity.HasComponent<UIScrollViewComponent>())
+        !entity.HasComponent<UINineSliceComponent>() && !entity.HasComponent<UIButtonComponent>() && !entity.HasComponent<UIRadioGroupComponent>() && !entity.HasComponent<UIProgressComponent>() && !entity.HasComponent<UISliderComponent>() && !entity.HasComponent<UIScrollViewComponent>() && !entity.HasComponent<UIDropdownComponent>())
         return {};
     YAML::Emitter out;
     out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);

@@ -157,7 +157,7 @@ bool RuntimeUI::BeginSlider(uint64_t id, bool pointer, glm::vec2 point)
     }
     try
     {
-        if (!Live(id) || (!takeover && m_Actions.size() + 2 > InputRouter::MaxActions))
+        if (!Live(id) || (!takeover && m_Actions.size() + ReservedDropdownSlots() + 2 > InputRouter::MaxActions))
             throw std::invalid_argument(
                 "Slider edit needs two free event slots and an eligible control");
         auto geometry = SliderGeometryFor(id);
@@ -261,7 +261,7 @@ bool RuntimeUI::ChangeSlider(float value)
         preview.PreviousValue = v.Value;
         preview.Value = value;
         preview.Sequence = ++m_EventSequence;
-        if (m_Actions.size() + 1 >= InputRouter::MaxActions)
+        if (m_Actions.size() + ReservedDropdownSlots() + 1 >= InputRouter::MaxActions)
             throw std::logic_error("Slider reservation invariant violated");
         m_Actions.push_back(std::move(preview));
     }
@@ -291,7 +291,7 @@ void RuntimeUI::EndSlider(bool cancel, bool interrupted, bool deliver)
     event.Value = it == m_Values.end() ? ending.Start : it->second.Value;
     if (EventValid(event))
     {
-        if (m_Actions.size() >= InputRouter::MaxActions)
+        if (m_Actions.size() + ReservedDropdownSlots() >= InputRouter::MaxActions)
             throw std::logic_error("Slider terminal reservation violated");
         event.Sequence = ++m_EventSequence;
         m_Actions.push_back(std::move(event));

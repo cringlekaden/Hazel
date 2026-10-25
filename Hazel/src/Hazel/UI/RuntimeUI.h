@@ -6,6 +6,7 @@
 #include "Hazel/UI/MeasuredLayout.h"
 #include <chrono>
 #include <unordered_map>
+#include <optional>
 namespace Hazel
 {
 // Scene-owned geometry and interaction. Authored components remain ordinary ECS
@@ -33,6 +34,11 @@ class RuntimeUI
     bool HasScreenRequests() const {return !m_ScreenRequests.empty();}
     bool ConsumeEvent(uint64_t owner,GameUI::Action &event);
     bool Focus(uint64_t target);
+    bool RequestDropdown(uint64_t id,bool open);
+    bool DropdownOpen(uint64_t id) const;
+    void PreviewDropdown(uint64_t id,bool open);
+    void ValidateDropdowns(uint64_t target=0) const;
+    bool OwnedPopup(uint64_t id) const;
     bool Checked(uint64_t id);
     void SetChecked(uint64_t id,bool value);
     uint64_t Selection(uint64_t group);
@@ -75,6 +81,28 @@ class RuntimeUI
     void Reset();
 
   private:
+    struct ScreenRequest;
+    enum class RequestKind {Screen,DropdownOpen,DropdownClose,DropdownChoice};
+    std::vector<uint64_t> m_DropdownIDs;
+    std::unordered_map<uint64_t,uint64_t> m_DropdownTriggers,m_DropdownPopups;
+    uint64_t m_DropdownRevision=0,m_PreviewDropdown=0,m_DropdownFocus=0;
+    bool m_ScopeCancellation=false;
+    struct PendingChoice {GameUI::Action Event;uint64_t ReturnScope=0,OptionLifetime=0,OptionComponent=0;};
+    std::optional<PendingChoice> m_Choice;
+    size_t ReservedDropdownSlots() const;
+    uint64_t ActiveDropdown() const;
+    uint64_t DropdownGroup(uint64_t trigger) const;
+    bool RequestChoice(uint64_t group,uint64_t option);
+    void SyncDropdownScreens();
+    bool CommitDropdownRequest(const ScreenRequest &request,bool &changed);
+    void CloseOwnedPopup();
+    void FinishDropdownChoice();
+    void FocusDropdownOption();
+    bool RouteDropdown(GameUI::InputFrame &input);
+    void ArrangeDropdown(bool measure);
+    const std::string &DisplayText(Entity entity) const;
+    bool ProgrammaticScrollAvailable(uint64_t id) const;
+    void DropdownProblem(const std::string &message);
     struct ScrollState {uint64_t Lifetime=0,Component=0,Content=0,ContentLifetime=0,ContentComponent=0;glm::vec2 Offset{};};
     struct BarCapture {uint64_t Owner=0,Track=0,Thumb=0,Component=0,Lifetime=0;int Axis=0;float Grab=0,MinimumThumb=0;bool Drag=false;GameUI::Rect Bounds;glm::vec2 Extent{},Viewport{},Surface{};} m_Bar;
     std::unordered_map<uint64_t,ScrollState> m_ScrollState;
@@ -100,8 +128,10 @@ class RuntimeUI
     void CancelScrollCapture(bool neutral);
     void ReconcileScrollCapture();
     struct ScreenEntry { uint64_t ID=0,Lifetime=0,Component=0; GameUI::ScreenPolicy Policy;
-        uint64_t OwnerLifetime=0,OwnerComponent=0;std::string OwnerClass;};
-    struct ScreenRequest {GameUI::ScreenOperation Operation;uint64_t ID=0,Lifetime=0,Component=0;
+        uint64_t OwnerLifetime=0,OwnerComponent=0;std::string OwnerClass;
+        uint64_t Dropdown=0,DropdownLifetime=0,Trigger=0,TriggerLifetime=0,TriggerComponent=0,Canvas=0,ParentScope=0;};
+    struct ScreenRequest {RequestKind Kind=RequestKind::Screen;GameUI::ScreenOperation Operation=GameUI::ScreenOperation::Open;uint64_t ID=0,Lifetime=0,Component=0;
+        uint64_t Option=0,OptionLifetime=0,OptionComponent=0;
         uint64_t Issuer=0,IssuerLifetime=0,IssuerComponent=0;std::string IssuerClass;};
     struct ScopeFocus {uint64_t Scope=0,Target=0;bool Keyboard=false;};
     std::vector<ScreenEntry> m_Screens;
@@ -115,11 +145,13 @@ class RuntimeUI
     std::chrono::steady_clock::time_point m_LastScreenWarning{};
     const ScreenEntry *Screen(uint64_t id) const;
     void SyncScreens();
+    bool StampRequestIssuer(ScreenRequest &request);
     void AcceptScreenOwner(ScreenEntry &entry,const GameUI::ScreenPolicy &policy);
     void CancelScreenInput();
     void PublishScope();
     bool QueueEvent(GameUI::Action event);
     bool StampEvent(GameUI::Action &event);
+    bool StampEventForScope(GameUI::Action &event,uint64_t scope);
     size_t ReservedSliderSlots() const;
     struct SliderEdit {
         uint64_t ID=0,Revision=0,Track=0,Fill=0,Thumb=0;
@@ -141,7 +173,7 @@ class RuntimeUI
     void RouteSlider(const GameUI::Action &action);
     void AdjustSlider(int delta);
     struct ValueState {
-        uint64_t Lifetime=0, Component=0, InitialSelection=0, Selected=0;
+        uint64_t Lifetime=0, Component=0, InitialSelection=0, Selected=0, SelectedLifetime=0,SelectedComponent=0;
         GameUI::ControlKind Kind=GameUI::ControlKind::Button;
         bool InitialChecked=false, Checked=false, Required=false;
         float Minimum=0,Maximum=1,Initial=0,Value=0;
@@ -199,13 +231,13 @@ class RuntimeUI
     };
     void CaptureSources(GameUI::SurfaceMetrics surface, bool previewOrphans);
     void Build(GameUI::SurfaceMetrics surface, bool previewOrphans);
-    void MeasureTree(Entity root, GameUI::Rect parent);
+    void MeasureTree(Entity root, GameUI::Rect parent, const GameUI::Rect *ownedBox=nullptr);
     glm::vec2 Intrinsic(Entity entity, float width);
     GameUI::MeasuredLayout m_Measure;
     std::vector<GameUI::MeasureNode> m_MeasureNodes;
     std::vector<uint64_t> m_MeasureIDs;
     void Visit(Entity entity, GameUI::Rect parent, GameUI::Rect clip, float scale, bool enabled,
-               uint64_t canvas, size_t depth);
+               uint64_t canvas, size_t depth, bool ownedRoot=false);
     bool Live(uint64_t id) const;
     void PruneActions();
     void WarnOverflow();

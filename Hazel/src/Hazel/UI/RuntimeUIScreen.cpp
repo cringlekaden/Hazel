@@ -25,6 +25,7 @@ void RuntimeUI::ScreenProblem(const std::string &message)
 }
 void RuntimeUI::CancelScreenInput()
 {
+    struct ScopeCancel {bool &Flag;bool Old;ScopeCancel(bool &v):Flag(v),Old(v){Flag=true;}~ScopeCancel(){Flag=Old;}} scopeCancel(m_ScopeCancellation);
     EndSlider(false,true,false);
     if (auto session = ScriptEngine::GetRuntimeSession();
         session && session->GetScene().get() == &m_Scene)
@@ -80,6 +81,7 @@ void RuntimeUI::SyncScreens()
     }
     for (auto it = m_Screens.begin(); it != m_Screens.end();)
     {
+        if(it->Dropdown){++it;continue;}
         auto entity = m_Scene.GetEntityByUUID(it->ID);
         if (!entity || !m_Scene.IsEntityValid(it->ID) ||
             !entity.HasComponent<UICanvasComponent>() ||
@@ -191,6 +193,8 @@ bool RuntimeUI::RequestScreen(ScreenOperation operation, uint64_t id)
     if (operation != ScreenOperation::Pop)
     {
         auto e = m_Scene.GetEntityByUUID(id);
+        auto entry=Screen(id);
+        if(entry&&entry->Dropdown){if(operation==ScreenOperation::Close)return RequestDropdown(entry->Dropdown,false);ScreenProblem("Use the Dropdown owner to open its popup");return false;}
         if (!e || !m_Scene.IsEntityValid(id) || !e.HasComponent<UICanvasComponent>() ||
             !e.GetComponent<UICanvasComponent>().Screen.Managed)
         {
@@ -209,6 +213,12 @@ bool RuntimeUI::RequestScreen(ScreenOperation operation, uint64_t id)
     request.ID = id;
     request.Lifetime = lifetime;
     request.Component = m_Scene.GetAuthoringComponentVersion(id, typeid(UICanvasComponent));
+    if(!StampRequestIssuer(request))return false;
+    m_ScreenRequests.push_back(std::move(request));
+    return true;
+}
+bool RuntimeUI::StampRequestIssuer(ScreenRequest &request)
+{
     if (auto issuer = ScriptEngine::GetExecutingEntity())
     {
         auto entity = m_Scene.GetEntityByUUID(issuer);
@@ -236,7 +246,6 @@ bool RuntimeUI::RequestScreen(ScreenOperation operation, uint64_t id)
         }
         request.IssuerClass = issuerClass;
     }
-    m_ScreenRequests.push_back(std::move(request));
     return true;
 }
 bool RuntimeUI::CommitScreens()
@@ -279,6 +288,9 @@ bool RuntimeUI::CommitScreens()
             }
         }
 
+        if(request.Kind!=RequestKind::Screen){CommitDropdownRequest(request,changed);continue;}
+        m_Choice.reset(); // unrelated scope operations never inherit a staged choice
+        if(ActiveDropdown()&&request.Operation==ScreenOperation::Pop){CloseOwnedPopup();changed=true;continue;}
         if (request.Operation == ScreenOperation::Pop)
         {
             if (!m_OpenScreens.empty())
@@ -294,6 +306,7 @@ bool RuntimeUI::CommitScreens()
         }
         if (request.Operation == ScreenOperation::Close)
         {
+            if(IsScreenOpen(request.ID)&&ActiveDropdown()){CloseOwnedPopup();changed=true;}
             close(request.ID);
             continue;
         }
@@ -314,6 +327,7 @@ bool RuntimeUI::CommitScreens()
                           "; make its authored ancestors visible/enabled first");
             continue;
         }
+        if(ActiveDropdown()){CloseOwnedPopup();changed=true;}
         if (request.Operation == ScreenOperation::Replace && !m_OpenScreens.empty() &&
             m_OpenScreens.back() != request.ID)
             close(m_OpenScreens.back());
@@ -400,10 +414,11 @@ void RuntimeUI::PublishScope()
     if (m_PendingFocus && !Live(m_PendingFocus))
         m_PendingFocus = 0;
 }
-bool RuntimeUI::StampEvent(Action &event)
+bool RuntimeUI::StampEvent(Action &event){return StampEventForScope(event,m_Resolved.Scope);}
+bool RuntimeUI::StampEventForScope(Action &event,uint64_t scope)
 {
     const bool value=event.Kind==UIEventKind::ToggleChanged||event.Kind==UIEventKind::SelectionChanged||event.Kind>=UIEventKind::SliderChanged;
-    if (auto screen = Screen(m_Resolved.Scope)) {
+    if (auto screen = Screen(scope)) {
         event.Screen=screen->ID;event.Owner=screen->Policy.EventOwner;
     } else if(value) event.Owner=ValueOwner(event.Entity);
     if(event.Screen||value){
@@ -425,7 +440,7 @@ bool RuntimeUI::StampEvent(Action &event)
 bool RuntimeUI::QueueEvent(Action event){
     const bool value=event.Kind==UIEventKind::ToggleChanged||event.Kind==UIEventKind::SelectionChanged||event.Kind>=UIEventKind::SliderChanged;
     if(!StampEvent(event))return false;
-    if(m_Actions.size()+ReservedSliderSlots()>=InputRouter::MaxActions){++m_OuterDrops;if(value)ControlProblem("Event queue full (64); user value change rejected");return false;}
+    if(m_Actions.size()+ReservedSliderSlots()+ReservedDropdownSlots()>=InputRouter::MaxActions){++m_OuterDrops;if(value)ControlProblem("Event queue full (64); user value change rejected");return false;}
     event.Sequence=++m_EventSequence;m_Actions.push_back(std::move(event));return true;
 }
 bool RuntimeUI::EventValid(const Action &event) const
@@ -451,6 +466,14 @@ bool RuntimeUI::EventValid(const Action &event) const
             m_Scene.GetAuthoringComponentVersion(event.Entity,typeid(UISliderComponent))==event.ControlComponent&&
             (event.Screen||(!Screen(CanvasOf(event.Entity))&&ValueOwner(event.Entity)==event.Owner));
     }
+    // Copied Play scenes legitimately use component token zero. Origin identifies
+    // this envelope; version tokens are compared below, never used as presence bits.
+    if(event.Kind==UIEventKind::SelectionChanged&&event.Origin){
+        auto root=m_Scene.GetEntityByUUID(event.Entity);auto trigger=m_Scene.GetEntityByUUID(event.Origin);
+        if(!root||!root.HasComponent<UIDropdownComponent>()||!root.HasComponent<UIRadioGroupComponent>()||!trigger||!trigger.HasComponent<UIButtonComponent>()||!Live(event.Origin))return false;
+        const auto &d=root.GetComponent<UIDropdownComponent>();const auto &g=root.GetComponent<UIRadioGroupComponent>();
+        return d.Trigger==event.Origin&&m_Scene.GetAuthoringLifetime(event.Entity)==event.ControlLifetime&&m_Scene.GetAuthoringComponentVersion(event.Entity,typeid(UIRadioGroupComponent))==event.ControlComponent&&m_Scene.GetAuthoringComponentVersion(event.Entity,typeid(UIDropdownComponent))==event.PresentationComponent&&m_Scene.GetAuthoringLifetime(event.Origin)==event.SourceLifetime&&m_Scene.GetAuthoringComponentVersion(event.Origin,typeid(UIButtonComponent))==event.SourceComponent&&g.Action==event.Name&&(event.Screen||(!Screen(CanvasOf(event.Entity))&&ValueOwner(event.Entity)==event.Owner));
+    }
     if(event.Kind==UIEventKind::ToggleChanged||event.Kind==UIEventKind::SelectionChanged){
         auto source=event.Kind==UIEventKind::ToggleChanged?event.Entity:event.Selection;
         auto e=m_Scene.GetEntityByUUID(source),control=m_Scene.GetEntityByUUID(event.Control);
@@ -465,7 +488,7 @@ bool RuntimeUI::EventValid(const Action &event) const
         return event.Screen||(!Screen(CanvasOf(source))&&ValueOwner(event.Entity)==event.Owner);
     }
     auto n=m_Resolved.Find(event.Entity);
-    if(!event.Screen&&n&&Screen(n->Canvas))return false;
+    if(!event.Screen&&n&&Screen(n->Scope))return false;
     return Live(event.Entity)&&n->ButtonIndex<m_Resolved.Buttons.size()&&m_Resolved.Buttons[n->ButtonIndex].Action==event.Name;
 }
 bool RuntimeUI::Focus(uint64_t target)

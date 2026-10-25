@@ -43,6 +43,7 @@ static void Check(bool value, const char *why)
 #include "UIValueControlChecks.h"
 #include "UISliderSceneChecks.h"
 #include "UIScrollSceneChecks.h"
+#include "UIDropdownSceneChecks.h"
 #include "MeasuredSceneChecks.h"
 #include "ContainerSceneChecks.h"
 #include "ImageFitSceneChecks.h"
@@ -148,7 +149,7 @@ int main(int argc,char** argv)
                                    root / "font.ttf");
         std::filesystem::copy_file("assets/textures/Checkerboard.png", root / "image.png");
         UIScreenSceneChecks(root);
-        UIValueControlChecks(root);UISliderSceneChecks(root);UIScrollSceneChecks(root);
+        UIValueControlChecks(root);UISliderSceneChecks(root);UIScrollSceneChecks(root);UIDropdownSceneChecks(root);
         MeasuredSceneChecks(root);
         ContainerSceneChecks(root);
         ImageFitSceneChecks(root);

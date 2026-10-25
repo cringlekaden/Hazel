@@ -115,6 +115,11 @@ bool SceneHierarchyPanel::ReparentEntity(uint64_t scene, uint64_t child, uint64_
         return HierarchyFailed(error.what());
     }
 }
+bool SceneHierarchyPanel::MoveSelected(int direction) {
+    auto entity=GetSelectedEntity();if(!entity||!CanEdit(true))return false;
+    try{FinishUIEdit();m_Context->MoveSibling(entity,direction);m_HierarchyError.clear();RevealSelected();return true;}
+    catch(const std::exception &error){return HierarchyFailed(error.what());}
+}
 bool SceneHierarchyPanel::DuplicateSelected() {
     auto e = GetSelectedEntity();
     if (!e || !CanEdit(true))
@@ -353,6 +358,8 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
             DuplicateSelected();
         if (CreatePrefab && ImGui::MenuItem("Create Prefab from Subtree..."))
             CreatePrefab(entity);
+        if(ImGui::MenuItem("Move Earlier"))MoveSelected(-1);
+        if(ImGui::MenuItem("Move Later"))MoveSelected(1);
         ParentMenu(entity);
         if (ImGui::MenuItem("Delete Subtree..."))
             RequestDelete();

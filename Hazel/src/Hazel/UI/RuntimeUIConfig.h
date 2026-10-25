@@ -15,6 +15,7 @@ UITextStyleComponent ReadUITextStyleComponent(const YAML::Node &node);
 UINineSliceComponent ReadUINineSliceComponent(const YAML::Node &node);
 UIButtonComponent ReadUIButtonComponent(const YAML::Node &node);
 UIRadioGroupComponent ReadUIRadioGroupComponent(const YAML::Node &node);
+UIDropdownComponent ReadUIDropdownComponent(const YAML::Node &node);
 UIScrollViewComponent ReadUIScrollViewComponent(const YAML::Node &node);
 UISliderComponent ReadUISliderComponent(const YAML::Node &node);
 UIProgressComponent ReadUIProgressComponent(const YAML::Node &node);

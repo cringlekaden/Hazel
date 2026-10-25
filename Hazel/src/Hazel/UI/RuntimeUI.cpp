@@ -42,6 +42,7 @@ bool Nonempty(Rect r)
 } // namespace
 void RuntimeUI::CancelInput()
 {
+    if(!m_ScopeCancellation){m_Choice.reset();m_ScreenRequests.erase(std::remove_if(m_ScreenRequests.begin(),m_ScreenRequests.end(),[](const auto &r){return r.Kind!=RequestKind::Screen;}),m_ScreenRequests.end());if(auto id=ActiveDropdown();id&&m_Scene.IsRunning()&&!m_Scene.IsStopping())RequestDropdown(id,false);}
     CancelScrollCapture(false);m_ScrollNeutral=false;
     EndSlider(false,true,false);
     if (m_InputEnabled || m_Input.Captured() || m_Input.Focused() || !m_Actions.empty())
@@ -65,10 +66,11 @@ void RuntimeUI::Reset()
     m_Resolved.Buttons.clear();
     m_Resolved.PainterOrder.clear();
     m_Resolved.Guides.clear();
-    m_Resolved.Scrolls.clear();
+    m_Resolved.Scrolls.clear();m_Resolved.Dropdowns.clear();
     m_Resolved.Warnings.clear();
     m_Source.clear();
     m_ScrollState.clear();m_ScrollParts.clear();m_ScrollFocus=0;
+    m_DropdownIDs.clear();m_DropdownTriggers.clear();m_DropdownPopups.clear();m_Choice.reset();m_PreviewDropdown=m_DropdownFocus=0;++m_DropdownRevision;
     m_Cache.clear();m_Values.clear();m_ControlVisuals.clear();m_AssetOwner.reset();
     m_GPUTimer.reset();m_PaintSubmission=0;m_PreparedBytes=0;
     m_Screens.clear();m_OpenScreens.clear();m_ScreenRequests.clear();m_ScreenFocus.clear();
@@ -100,7 +102,7 @@ void RuntimeUI::Retire(uint64_t id)
 }
 void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
 {
-    ++m_Diagnostics.SourceChecks;m_ScrollIDs.clear();
+    ++m_Diagnostics.SourceChecks;m_ScrollIDs.clear();m_DropdownIDs.clear();
     auto assets=m_Scene.GetAssets();
     if(m_AssetOwner.owner_before(assets) || assets.owner_before(m_AssetOwner)) {
         // Ownership identity includes expired control blocks, so allocator address
@@ -111,7 +113,7 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
     m_RectIDs.clear();
     m_CanvasIDs.clear();
     DependencyBytes state{m_Candidate};
-    state.Add(m_Scene.GetIdentity());state.Add(m_AssetGeneration);
+    state.Add(m_Scene.GetIdentity());state.Add(m_AssetGeneration);state.Add(m_DropdownRevision);state.Add(m_PreviewDropdown);
     state.Add(surface.Viewport);
     state.Add(surface.Framebuffer);
     state.Add(previewOrphans);state.Add(previewOrphans?m_PreviewScreen:uint64_t(0));
@@ -209,6 +211,17 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
         if(e.HasComponent<UIRadioGroupComponent>()){auto &g=e.GetComponent<UIRadioGroupComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIRadioGroupComponent)));if(g.Action.size()>128||g.Action.find('\0')!=std::string::npos)throw std::invalid_argument("Invalid radio action");state.Add(g.Required);state.Add(g.InitialSelection);state.Add(g.EventOwner);state.Add(g.Action);}
         state.Add(e.HasComponent<UIProgressComponent>());
         if(e.HasComponent<UIProgressComponent>()){auto &p=e.GetComponent<UIProgressComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIProgressComponent)));state.Add(p.Minimum);state.Add(p.Maximum);state.Add(p.InitialValue);state.Add(p.Fill);state.Add(int(p.Direction));if(p.Fill)state.Add(Decoration(id,p.Fill));}
+        state.Add(e.HasComponent<UIDropdownComponent>());
+        if(e.HasComponent<UIDropdownComponent>()){
+            const auto &d=e.GetComponent<UIDropdownComponent>();Validate(d);m_DropdownIDs.push_back(id);
+            state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIDropdownComponent)));
+            state.Add(d.Trigger);state.Add(d.Popup);state.Add(d.MinimumWidth);state.Add(d.MaximumHeight);state.Add(d.Gap);state.Add(d.Placeholder);
+            for(auto part:{d.Trigger,d.Popup}){state.Add(m_Scene.GetAuthoringLifetime(part));state.Add(m_Scene.GetAuthoringComponentVersion(part,typeid(UIRectComponent)));state.Add(m_Scene.GetAuthoringComponentVersion(part,typeid(UIButtonComponent)));state.Add(m_Scene.GetAuthoringComponentVersion(part,typeid(UIScrollViewComponent)));}
+        }
+        if(e.HasComponent<UIButtonComponent>()&&e.GetComponent<UIButtonComponent>().Kind==ControlKind::Radio){
+            auto g=m_Scene.GetEntityByUUID(e.GetComponent<UIButtonComponent>().Group);
+            if(g&&g.HasComponent<UIDropdownComponent>()){state.Add(e.HasComponent<TextComponent>());if(e.HasComponent<TextComponent>()){auto &text=e.GetComponent<TextComponent>().TextString;if(text.size()>65536)throw std::invalid_argument("Dropdown label exceeds 64 KiB");state.Add(text);}}
+        }
         state.Add(e.HasComponent<UIScrollViewComponent>());
         if(e.HasComponent<UIScrollViewComponent>()){auto &v=e.GetComponent<UIScrollViewComponent>();Validate(v);m_ScrollIDs.push_back(id);
             state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIScrollViewComponent)));
@@ -261,7 +274,11 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
         }
         state.Add(uint64_t(0));
     }
-    SyncScreens();state.Add(m_ScreenRevision);
+    m_DropdownTriggers.clear();m_DropdownPopups.clear();
+    if(m_DropdownIDs.size()>32)throw std::invalid_argument("Dropdown declaration limit exceeded (32)");
+    std::sort(m_DropdownIDs.begin(),m_DropdownIDs.end());
+    for(auto id:m_DropdownIDs){auto &d=m_Scene.GetEntityByUUID(id).GetComponent<UIDropdownComponent>();auto trigger=m_Scene.GetEntityByUUID(d.Trigger),popup=m_Scene.GetEntityByUUID(d.Popup);if(trigger&&m_Scene.GetRelationship(trigger).Parent==UUID(id))m_DropdownTriggers.emplace(d.Trigger,id);if(popup&&m_Scene.GetRelationship(popup).Parent==UUID(id))m_DropdownPopups.emplace(d.Popup,id);}
+    SyncScreens();SyncDropdownScreens();state.Add(m_ScreenRevision);
     state.Add(uint64_t(0));
     for (auto h : m_Scene.GetAllEntitiesWith<UILayoutComponent>())
     {
@@ -294,6 +311,7 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
             ++m_Diagnostics.Reuses;
             return;
         }
+        SyncControls();
         Build(surface, previewOrphans);
         m_Diagnostics.LastLayoutMilliseconds=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-sourceEnd).count();
         m_Build.Generation = ++m_NextGeneration;
@@ -301,10 +319,10 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
         std::swap(m_Resolved, m_Build);
         m_Source.swap(m_Candidate);
         PublishScope();
-        SyncControls();
         SyncSliders();
         ReconcileScrollCapture();
         PruneActions();
+        FocusDropdownOption();FinishDropdownChoice();
         if (!m_Input.Focused() && !m_Resolved.Modal)
             m_KeyboardOwns = false;
         // Remove retired cache entries, including now-interrupted rect subtrees.
@@ -344,7 +362,7 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
     m_Build.Warnings.clear();
     m_Build.Modal = m_Build.Scope = 0;
     m_Build.Screens.clear();
-    m_Build.Guides.clear();m_Build.Scrolls.clear();
+    m_Build.Guides.clear();m_Build.Scrolls.clear();m_Build.Dropdowns.clear();
     m_Build.Valid = false;
     m_Build.Surface = surface;
     m_Build.PreviewOrphans = previewOrphans;
@@ -401,6 +419,7 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
         if (n.IsCanvas && uint64_t(n.Parent))
             m_Build.Warnings.push_back(
                 {id, ResolvedSnapshot::WarningCode::NestedCanvas});
+        n.Scope=n.Canvas;
         auto parent = m_Scene.GetEntityByUUID(n.Parent);
         n.ContainerOwned = !n.IsCanvas && parent && parent.HasComponent<UIRectComponent>() &&
                       !parent.HasComponent<UICanvasComponent>() && parent.HasComponent<UILayoutComponent>();
@@ -505,11 +524,11 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
     if(!m_Build.Scope)m_Build.Scope=m_Build.Modal;
     for(auto &n:m_Build.Elements){n.LayoutBounds=n.Bounds;n.LayoutParentContent=n.ParentContent;n.LayoutSlot=n.Slot;}
     for(auto &g:m_Build.Guides)g.LayoutBounds=g.Bounds;
-    PrepareScrollState();ApplyScrollPresentation();BuildHitTargets();
+    PrepareScrollState();ApplyScrollPresentation();ArrangeDropdown(true);BuildHitTargets();
     for(const auto &entry:m_Screens){
         for(auto target:{entry.Policy.InitialFocus,entry.Policy.DefaultAction,entry.Policy.CancelTarget})if(target){
             auto n=m_Build.Find(target);auto e=m_Scene.GetEntityByUUID(target);
-            if(!n||n->Canvas!=entry.ID||!e||!e.HasComponent<UIButtonComponent>())
+            if(!n||n->Scope!=entry.ID||!e||!e.HasComponent<UIButtonComponent>())
                 m_Build.Warnings.push_back({entry.ID,ResolvedSnapshot::WarningCode::ScreenTarget});
         }
         if(entry.Policy.EventOwner&&!m_Scene.IsEntityValid(entry.Policy.EventOwner))m_Build.Warnings.push_back({entry.ID,ResolvedSnapshot::WarningCode::ScreenTarget});
@@ -524,7 +543,7 @@ void RuntimeUI::BuildHitTargets(){
         if (!e.HasComponent<UIButtonComponent>() || e.HasComponent<UIProgressComponent>() || e.HasComponent<UIRadioGroupComponent>())
             continue;
         auto &b = e.GetComponent<UIButtonComponent>();
-        bool scope = n.Canvas && (!m_Build.Scope || n.Canvas == m_Build.Scope);
+        bool scope = n.Canvas && (!m_Build.Scope || n.Scope == m_Build.Scope);
         n.FocusEligible = scope && n.Enabled && b.Interactable && (b.Kind!=ControlKind::Radio||Member(b.Group,n.ID,false)) && Nonempty(n.PixelClip);
         n.Hit = !scope            ? HitPolicy::PassThrough
                 : n.FocusEligible ? HitPolicy::Control
@@ -540,7 +559,7 @@ void RuntimeUI::BuildHitTargets(){
         if(!v.Viewport.Size.x||!v.Viewport.Size.y)continue;
         for(int axis=0;axis<2;++axis){auto track=axis?c.VerticalTrack:c.HorizontalTrack;auto thumb=axis?c.VerticalThumb:c.HorizontalThumb;
             auto n=const_cast<ResolvedElement*>(m_Build.Find(track));
-            if(!n||!thumb||!Decoration(v.ID,track)||!Decoration(v.ID,thumb)||v.Range[axis]<=0||!n->Visible||!n->Enabled||!n->LayoutResolved||(!m_Build.Scope?false:n->Canvas!=m_Build.Scope))continue;
+            if(!n||!thumb||!Decoration(v.ID,track)||!Decoration(v.ID,thumb)||v.Range[axis]<=0||!n->Visible||!n->Enabled||!n->LayoutResolved||(!m_Build.Scope?false:n->Scope!=m_Build.Scope))continue;
             n->ButtonIndex=m_Build.Buttons.size();n->Hit=HitPolicy::Control;
             auto ratio=m_Build.Surface.Framebuffer/m_Build.Surface.Viewport;auto rect=v.Tracks[axis];
             auto clip=FramebufferCoverage(Scaled(rect.Intersect(n->InheritedClip),glm::vec2(n->Scale)),ratio,m_Build.Surface.Framebuffer);
@@ -552,10 +571,11 @@ void RuntimeUI::BuildHitTargets(){
     for(size_t i=0;i<m_Build.Buttons.size();++i)const_cast<ResolvedElement*>(m_Build.Find(m_Build.Buttons[i].ID))->ButtonIndex=i;
 }
 void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enabled, uint64_t canvas,
-                      size_t depth)
+                      size_t depth, bool ownedRoot)
 {
     if (!e || !m_Scene.IsEntityValid(e.GetUUID()) || !e.HasComponent<UIRectComponent>())
         return;
+    if(OwnedPopup(e.GetUUID())&&!ownedRoot)return;
     if (depth >= Scene::MaxDepth)
         throw std::runtime_error("UI layout depth exceeded (256)");
     auto &r = e.GetComponent<UIRectComponent>();
@@ -567,7 +587,7 @@ void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enable
     n.Scale = scale;
     n.Enabled = enabled && r.Enabled;
     n.Visible = true;
-    n.Canvas = canvas;
+    n.Canvas = canvas;n.Scope=canvas;
     n.LayoutResolved = true;
     n.Order = m_Build.PainterOrder.size();
     m_Build.PainterOrder.push_back(m_Build.Index.at(n.ID));
@@ -702,7 +722,7 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
     m_ActionOwnsFrame=input.Enabled&&(m_Input.Captured()||((m_KeyboardOwns||m_ActionOwnsFrame)&&input.CancelDown));
     const bool editing=m_Slider.ID!=0;
     input.Editing=editing;
-    if(!input.Enabled){EndSlider(false,true);CancelScrollCapture(false);}
+    if(!input.Enabled){EndSlider(false,true);CancelScrollCapture(false);if(auto id=ActiveDropdown())RequestDropdown(id,false);}
     const bool previousKeyboardOwns=m_KeyboardOwns;
     m_InputEnabled = input.Enabled;
     uint64_t entryFocus = 0;
@@ -722,6 +742,7 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
         }
     }
     if(input.Enabled&&m_Bar.Owner&&input.CancelDown){CancelScrollCapture(true);m_ActionOwnsFrame=true;return;}
+    if(input.Enabled&&RouteDropdown(input))return;
     if(m_Bar.Owner){input.Navigate={};input.NextDown=input.PreviousDown=input.NextPressed=input.PreviousPressed=input.FocusNavigation=false;}
     if(input.Enabled){auto hovered=HoverScroll(input.Mouse);m_PointerOver|=hovered!=0;
         if(input.PointerPressed&&!m_Slider.ID&&!m_Bar.Owner){m_ScrollFocus=hovered;if(hovered){m_KeyboardOwns=true;m_ActionOwnsFrame=true;}}
@@ -817,7 +838,7 @@ bool RuntimeUI::Bounds(uint64_t id, Rect &pixels) const
 RuntimeUIDiagnostics RuntimeUI::Diagnostics() const
 {
     auto result = m_Diagnostics;
-    result.ScrollCapture=m_Bar.Owner;
+    result.ScrollCapture=m_Bar.Owner;result.Dropdown=ActiveDropdown();
     result.SliderEdit=m_Slider.ID;result.SliderGesture=m_Slider.Terminal.Gesture;result.SliderPointer=m_Slider.Pointer;
     result.Focus = m_Input.Focused();
     result.Capture = m_Input.Captured();
@@ -1044,6 +1065,7 @@ void RuntimeUI::Draw()
             if (e.HasComponent<TextComponent>())
             {
                 auto &t = e.GetComponent<TextComponent>();
+                const auto &displayText=DisplayText(e);
                 const UITextStyleComponent defaults;
                 const auto &style = e.HasComponent<UITextStyleComponent>()
                                         ? e.GetComponent<UITextStyleComponent>()
@@ -1079,20 +1101,20 @@ void RuntimeUI::Draw()
                 }
                 float width = content.Size.x / style.Size;
                 float textHeight=style.Overflow==Text::Overflow::Ellipsis?content.Size.y/style.Size:-1;
-                if (!cache.PaintLayout || cache.Lines.size()!=cache.PaintLayout->Lines.size() || cache.Text != t.TextString || cache.Width != width ||
+                if (!cache.PaintLayout || cache.Lines.size()!=cache.PaintLayout->Lines.size() || cache.Text != displayText || cache.Width != width ||
                     cache.Kerning != t.Kerning || cache.LineSpacing!=t.LineSpacing || cache.Wrap != style.Wrap || cache.Overflow!=style.Overflow || cache.MaxLines!=style.MaxLines || cache.Height!=textHeight)
                 {
                     cache.PreparedValid=false;
                     bool measured=false;
-                    for(size_t slot=0;slot<2;++slot)if(style.Overflow==Text::Overflow::Clip && cache.MeasureOverflow[slot]==style.Overflow && cache.MeasureMaxLines[slot]==style.MaxLines && !cache.MeasureLines[slot].empty() && cache.MeasureLines[slot].front().Result->Font==cache.FontAsset->GetCPUFace() && cache.MeasureText[slot]==t.TextString &&
+                    for(size_t slot=0;slot<2;++slot)if(style.Overflow==Text::Overflow::Clip && cache.MeasureOverflow[slot]==style.Overflow && cache.MeasureMaxLines[slot]==style.MaxLines && !cache.MeasureLines[slot].empty() && cache.MeasureLines[slot].front().Result->Font==cache.FontAsset->GetCPUFace() && cache.MeasureText[slot]==displayText &&
                         cache.MeasureKerning[slot]==t.Kerning && cache.MeasureSpacing[slot]==t.LineSpacing && cache.MeasureWrap[slot]==style.Wrap &&
                         (!style.Wrap || cache.MeasureWidth[slot]==width)) {
                         cache.Lines=cache.MeasureLines[slot];cache.PaintLayout=cache.Lines.front().Result;measured=true;break;
                     }
-                    if(!measured)cache.PaintLayout=Renderer2D::LayoutText(t.TextString, cache.FontAsset, width, style.Wrap,
+                    if(!measured)cache.PaintLayout=Renderer2D::LayoutText(displayText, cache.FontAsset, width, style.Wrap,
                                            t.Kerning, cache.Lines,t.LineSpacing,style.Overflow,style.MaxLines,textHeight);
                     cache.PreparedValid = false;
-                    cache.Text = t.TextString;
+                    cache.Text = displayText;
                     cache.Width = width;
                     cache.Kerning = t.Kerning;
                     cache.LineSpacing=t.LineSpacing;
@@ -1110,7 +1132,7 @@ void RuntimeUI::Draw()
                 const size_t priorBytes = cache.Glyphs.capacity() * sizeof(Renderer2D::TextGlyph);
                 const size_t wanted = std::max(cache.Glyphs.capacity(), cache.Lines.empty()?size_t(0):cache.Lines.front().Result->Glyphs.size()) *
                                       sizeof(Renderer2D::TextGlyph);
-                const bool retain = t.TextString.size() <= maxTextBytes &&
+                const bool retain = displayText.size() <= maxTextBytes &&
                                     m_PreparedBytes - priorBytes + wanted <= budget;
                 if (!retain)
                 {

@@ -309,3 +309,11 @@ namespace Migration {
         }}
     }
 }
+
+namespace Migration {
+    public class DropdownOwnerProbe : Hazel.Entity {
+        public bool Ready;public int Events;public ulong Selected,Previous;
+        void OnCreate(){var d=FindEntityByName("Dropdown").GetComponent<Hazel.UIDropdownComponent>();Ready=d.Selection.ID==311;d.Selection=FindEntityByName("Dropdown first option");Ready=Ready&&d.Selection.ID==300;d.Selection=FindEntityByName("Dropdown last option");}
+        void OnUpdate(float dt){Hazel.UIEvent e;while(Hazel.GameUI.TryConsumeEvent(out e)){if(e.Kind!=Hazel.UIEventKind.SelectionChanged||e.Source.ID!=200||e.Screen.ID!=100||e.Owner.ID!=ID)throw new System.Exception("Dropdown event identity/kind mismatch");++Events;Previous=e.PreviousSelection.ID;Selected=e.Selection.ID;}}
+    }
+}

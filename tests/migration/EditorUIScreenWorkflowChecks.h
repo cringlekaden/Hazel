@@ -142,6 +142,17 @@ void UIScreenWorkflowChecks()
     edit(horizontal,"Nested scroll row",[](auto &v){v.Rect->WidthMode=SizeMode::Fill;v.Rect->FixedSize.y=100;v.Scroll->RevealMargin=4;});
     auto horizontalContent=scene->GetEntityByUUID(horizontal.GetComponent<UIScrollViewComponent>().Content);uint64_t farTarget=0;
     int option=0;for(auto child:scene->GetChildrenView(horizontalContent.GetUUID())){auto e=scene->GetEntityByUUID(child);int tab=60+option++;edit(e,"Nested option order",[&](auto &v){v.Button->TabOrder=tab;});farTarget=child;}
+    panel.SetSelectedEntity(scrollContent);Check(panel.AddUI(15),"Dropdown preset failed");auto dropdown=panel.GetSelectedEntity();
+    edit(dropdown,"Dropdown placement/selection",[](auto &v){v.Rect->WidthMode=SizeMode::Fixed;v.Rect->FixedSize={240,44};v.Rect->Margin.x=264;v.Dropdown->MinimumWidth=380;v.Dropdown->MaximumHeight=180;v.Group->Action="mode";});
+    auto dropdownHistory=documents.SceneText();Check(documents.UndoRedo(false)&&dropdown.GetComponent<UIDropdownComponent>().MinimumWidth==160,"Dropdown history undo failed");Check(documents.UndoRedo(true)&&documents.SceneText()==dropdownHistory,"Dropdown history redo failed");
+    auto popup=scene->GetEntityByUUID(dropdown.GetComponent<UIDropdownComponent>().Popup);auto optionContent=scene->GetEntityByUUID(popup.GetComponent<UIScrollViewComponent>().Content);
+    panel.SetSelectedEntity(dropdown);Check(panel.AddUI(16),"Native Dropdown option creation failed");auto addedOption=panel.GetSelectedEntity();
+    edit(addedOption,"Long dropdown option",[](auto &v){v.Text->Text="A deliberately long static option label uses the ordinary ellipsis presentation";});
+    panel.SetSelectedEntity(addedOption);Check(panel.MoveSelected(-1),"Dropdown hierarchy reorder failed");Check(panel.MoveSelected(1),"Dropdown hierarchy restore order failed");
+    auto dropdownOptions=scene->GetChildrenView(optionContent.GetUUID());auto firstOption=uint64_t(dropdownOptions.front()),lastOption=uint64_t(dropdownOptions.back());
+    edit(scene->GetEntityByUUID(dropdownOptions[1]),"Disabled dropdown choice",[](auto &v){v.Button->Interactable=false;v.Text->Text="Unavailable choice";});
+    edit(dropdown,"Dropdown default",[&](auto &v){v.Group->InitialSelection=lastOption;});
+    for(auto ref:{std::pair<const char*,Entity>{"Dropdown",dropdown},{"DropdownChoice",scene->GetEntityByUUID(firstOption)}}){auto &field=ScriptEngine::GetScriptFieldMap(menu)[ref.first];field.Field={ScriptFieldType::Entity,ref.first,nullptr};field.SetValue<uint64_t>(ref.second.GetUUID());}
     panel.SetSelectedEntity(scrolling);Check(panel.AddUI(3),"Reveal command preset failed");auto reveal=panel.GetSelectedEntity();edit(reveal,"Reveal command",[](auto &v){v.Rect->Offset={24,8};v.Rect->WidthMode=v.Rect->HeightMode=SizeMode::Fixed;v.Rect->FixedSize={280,40};v.Button->Action="scroll-reveal";v.Button->TabOrder=-1;v.Text->Text="Reveal last nested option";});
     panel.SetSelectedEntity(settingsBody);Check(panel.AddUI(3),"Scrollable settings command failed");auto scrollOpen=panel.GetSelectedEntity();edit(scrollOpen,"More settings",[](auto &v){v.Rect->Offset={320,250};v.Rect->WidthMode=v.Rect->HeightMode=SizeMode::Fixed;v.Rect->FixedSize={190,48};v.Button->Action="scroll-settings";v.Button->TabOrder=32;v.Text->Text="More settings…";v.Style->Size=18;});
     for(auto ref:{std::pair<const char*,Entity>{"Scrolling",scrolling},{"ScrollView",scrollView},{"ScrollTarget",scene->GetEntityByUUID(farTarget)}}){auto &field=ScriptEngine::GetScriptFieldMap(menu)[ref.first];field.Field={ScriptFieldType::Entity,ref.first,nullptr};field.SetValue<uint64_t>(ref.second.GetUUID());}
@@ -164,6 +175,7 @@ void UIScreenWorkflowChecks()
           "Screen policy redo failed");
     auto scrollID=uint64_t(scrollView.GetUUID()),scrollingID=uint64_t(scrolling.GetUUID()),scrollOpenID=uint64_t(scrollOpen.GetUUID());
     auto volumeID=uint64_t(volume.GetUUID());
+    auto dropdownID=uint64_t(dropdown.GetUUID()),dropdownTrigger=dropdown.GetComponent<UIDropdownComponent>().Trigger,dropdownPopup=dropdown.GetComponent<UIDropdownComponent>().Popup;
     auto menuID = uint64_t(menu.GetUUID()), settingsID = uint64_t(settings.GetUUID()),
          confirmationID = uint64_t(confirmation.GetUUID());
     auto path = Project::GetAssetDirectory() / "Scenes/screens-native.hazel";
@@ -185,7 +197,7 @@ void UIScreenWorkflowChecks()
     m_ScreenFixtureMenu = menuID;
     m_ScreenFixtureSettings = settingsID;
     m_ScreenFixtureFirst = first;
-    m_ScreenFixtureScroll=scrollID;m_ScreenFixtureScrollCanvas=scrollingID;m_ScreenFixtureScrollTarget=farTarget;
+    m_ScreenFixtureScroll=scrollID;m_ScreenFixtureScrollCanvas=scrollingID;m_ScreenFixtureScrollTarget=farTarget;m_ScreenFixtureDropdown=dropdownID;
     m_ScreenFixturePanel.SetContext(m_ScreenFixture);
     m_ScreenFixturePanel.SetSelectedEntity(m_ScreenFixture->GetEntityByUUID(menuID));
     m_ScreenFixturePanel.RestoreSections({{"UI Canvas", true}});
@@ -238,6 +250,14 @@ void UIScreenWorkflowChecks()
         Check(runtime->IsUIScreenOpen(scrollingID),"Owner did not open scroll settings");sample.Keys.fill(false);route();route();
         MouseScrolledEvent wheel(0,-.5f);session.SubmitUIEvent(wheel,{60,140},true);route();Check(runtime->GetUIScroll(scrollID).Offset.y==24,"Native authored fixture fractional wheel failed");
         Check(runtime->EnsureUIVisible(scrollID,farTarget,true)&&runtime->GetUIDiagnostics().Focus==farTarget,"Native fixture nested focus reveal failed");
+        Check(runtime->EnsureUIVisible(scrollID,dropdownTrigger,true),"Native Dropdown trigger reveal failed");
+        sample.Keys[Key::Enter]=true;route();runtime->OnUpdateRuntime(.016f);sample.Keys.fill(false);route();route();
+        Check(runtime->IsUIDropdownOpen(dropdownID)&&runtime->GetUIDiagnostics().Focus==lastOption,"Native Dropdown selected-option reveal failed");
+        auto placed=runtime->GetUISnapshot().Find(dropdownPopup);auto outer=runtime->GetUIScroll(scrollID);
+        Check(placed->Bounds.Position.x+placed->Bounds.Size.x>outer.Viewport.Position.x+outer.Viewport.Size.x,"Fixture popup did not escape invoking scroll clip at surface edge");
+        Check(runtime->EnsureUIVisible(dropdownPopup,firstOption,true),"Native Dropdown first choice reveal failed");sample.Keys[Key::Enter]=true;route();runtime->OnUpdateRuntime(.016f);sample.Keys.fill(false);route();runtime->OnUpdateRuntime(.016f);
+        auto receiver=ScriptEngine::GetEntityScriptInstance(menuID);
+        Check(runtime->GetUISelection(dropdownID)==firstOption&&!runtime->IsUIDropdownOpen(dropdownID)&&receiver->GetFieldValue<uint64_t>("LastSelection")==firstOption&&runtime->GetUIDiagnostics().Focus==dropdownTrigger,"Native owner lost Dropdown event/return focus");
         sample.Keys[Key::Escape]=true;route();runtime->OnUpdateRuntime(.016f);sample.Keys.fill(false);route();
         Check(!runtime->IsUIScreenOpen(scrollingID)&&runtime->GetUIDiagnostics().Focus==scrollOpenID,"Scroll screen did not return to invoking control");runtime->FocusUI(first[1]);
         sample.Keys[Key::Escape] = true;
@@ -269,6 +289,7 @@ Ref<Scene> m_ScreenFixture;
 SceneHierarchyPanel m_ScreenFixturePanel;
 Ref<Framebuffer> m_ScreenFixturePreview;
 uint64_t m_ScreenFixtureMenu = 0, m_ScreenFixtureSettings = 0;
+uint64_t m_ScreenFixtureDropdown=0;
 uint64_t m_ScreenFixtureScroll=0,m_ScreenFixtureScrollCanvas=0,m_ScreenFixtureScrollTarget=0;
 std::vector<uint64_t> m_ScreenFixtureFirst;
 void DrawUIScreenFixture()
@@ -285,7 +306,7 @@ void DrawUIScreenFixture()
     for(auto handle:m_ScreenFixture->GetAllEntitiesWith<UIRectComponent>()){
         Entity item(handle,m_ScreenFixture.get());
         if(item.HasComponent<UIScrollViewComponent>()||item.HasComponent<UIProgressComponent>()||item.HasComponent<UIRadioGroupComponent>()||(item.HasComponent<UIButtonComponent>()&&item.GetComponent<UIButtonComponent>().Kind!=GameUI::ControlKind::Button)){
-            m_ScreenFixturePanel.SetSelectedEntity(item);m_ScreenFixturePanel.RestoreSections({{"UI Button",true},{"UI Radio Group",true},{"UI Progress",true},{"UI Slider",true},{"UI ScrollView",true}});m_ScreenFixturePanel.DrawAssetProperties(item);
+            m_ScreenFixturePanel.SetSelectedEntity(item);m_ScreenFixturePanel.RestoreSections({{"UI Button",true},{"UI Radio Group",true},{"UI Progress",true},{"UI Slider",true},{"UI ScrollView",true},{"UI Dropdown",true}});m_ScreenFixturePanel.DrawAssetProperties(item);
         }
     }
     m_ScreenFixturePanel.SetSelectedEntity(originalSelection);
@@ -320,9 +341,13 @@ void DrawUIScreenFixture()
     m_ScreenFixture->SetUIPreviewTarget(m_ScreenFixtureScrollCanvas);m_ScreenFixture->RefreshUI();
     auto previewBefore=SceneSerializer(m_ScreenFixture).CaptureAuthoredState();m_ScreenFixture->ScrollUITo(m_ScreenFixtureScroll,{0,.5f},true);
     Check(m_ScreenFixture->EnsureUIVisible(m_ScreenFixtureScroll,m_ScreenFixtureScrollTarget,false),"Native nested Edit preview reveal failed");
+    auto dc=m_ScreenFixture->GetEntityByUUID(m_ScreenFixtureDropdown).GetComponent<UIDropdownComponent>();
+    Check(m_ScreenFixture->EnsureUIVisible(m_ScreenFixtureScroll,dc.Trigger,false),"Native Dropdown Edit reveal failed");m_ScreenFixture->PreviewUIDropdown(m_ScreenFixtureDropdown,true);
+
     m_ScreenFixturePreview->Bind();RenderCommand::SetClearColor({0,0,0,1});RenderCommand::Clear();m_ScreenFixture->OnUpdateEditor(0,owner.m_PrefabCamera);m_ScreenFixturePreview->Unbind();
     Check(m_ScreenFixture->GetUIError().empty(),"Native scroll preview render failed");
     Check(SceneSerializer(m_ScreenFixture).CaptureAuthoredState()==previewBefore,"Transient scroll preview dirtied authored state");
+    m_ScreenFixture->PreviewUIDropdown(m_ScreenFixtureDropdown,false);
     GameUI::Action event;
     Check(SceneSerializer(m_ScreenFixture).CaptureAuthoredState() == authored &&
               !m_ScreenFixture->ConsumeUIAction(0, event) && !m_ScreenFixture->ConsumeUIEvent(m_ScreenFixtureMenu,event),

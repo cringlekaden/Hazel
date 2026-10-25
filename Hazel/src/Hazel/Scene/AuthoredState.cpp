@@ -240,6 +240,7 @@ std::string SceneSerializer::CaptureAuthoredState() const
                 state.Source(source);
         });
         state.Component<UIRadioGroupComponent>(e,[&](auto &c){state.Value(c.Required);state.Value(c.InitialSelection);state.Value(c.EventOwner);state.Value(c.Action);});
+        state.Component<UIDropdownComponent>(e,[&](auto &c){state.Value(c.Trigger);state.Value(c.Popup);state.Value(c.MinimumWidth);state.Value(c.MaximumHeight);state.Value(c.Gap);state.Value(c.Placeholder);});
         state.Component<UIScrollViewComponent>(e,[&](auto &c){state.Value(c.Content);state.Value(c.Horizontal);state.Value(c.Vertical);state.Value(c.HorizontalTrack);state.Value(c.HorizontalThumb);state.Value(c.VerticalTrack);state.Value(c.VerticalThumb);state.Value(c.PixelsPerUnit);state.Value(c.MinimumThumb);state.Value(c.RevealMargin);});
         state.Component<UISliderComponent>(e,[&](auto &c){state.Value(c.Minimum);state.Value(c.Maximum);state.Value(c.Step);state.Value(c.InitialValue);state.Value(c.Track);state.Value(c.Fill);state.Value(c.Thumb);state.Value(unsigned(c.Direction));});
         state.Component<UIProgressComponent>(e,[&](auto &c){state.Value(c.Minimum);state.Value(c.Maximum);state.Value(c.InitialValue);state.Value(c.Fill);state.Value(unsigned(c.Direction));});

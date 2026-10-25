@@ -220,7 +220,8 @@ void RuntimeUI::ApplyScrollPresentation()
         n.Displacement = {};
         n.ScrollParent = 0;
         auto inherited = n.InheritedClip;
-        if (parent && parent->LayoutResolved && parent->Canvas == n.Canvas)
+        if(n.OverlayRoot){auto canvas=m_Build.Find(n.Canvas);inherited=canvas?canvas->Clip:Rect{{0,0},m_Build.Surface.Viewport/n.Scale};}
+        if (!n.OverlayRoot && parent && parent->LayoutResolved && parent->Scope == n.Scope)
         {
             n.Displacement = parent->Displacement;
             n.ScrollParent = parent->ScrollParent;
@@ -243,7 +244,7 @@ void RuntimeUI::ApplyScrollPresentation()
         n.Bounds = Shift(n.LayoutBounds, n.Displacement);
         n.Slot = Shift(n.LayoutSlot, n.Displacement);
         n.ParentContent =
-            Shift(n.LayoutParentContent, parent ? parent->Displacement : glm::vec2(0));
+            Shift(n.LayoutParentContent, parent && !n.OverlayRoot ? parent->Displacement : glm::vec2(0));
         n.InheritedClip = inherited;
         n.Clip = inherited.Intersect(n.Bounds);
         n.PixelBounds = {n.Bounds.Position * n.Scale, n.Bounds.Size * n.Scale};
@@ -298,7 +299,7 @@ bool RuntimeUI::ScrollAvailable(uint64_t id) const
     auto g = ScrollNode(id);
     return n && g && n->LayoutResolved && n->Visible && n->Enabled &&
            (n->Canvas || (m_Resolved.PreviewOrphans && !m_Scene.IsRunning())) &&
-           (!m_Resolved.Scope || n->Canvas == m_Resolved.Scope) && Area(g->Viewport);
+           (!m_Resolved.Scope || n->Scope == m_Resolved.Scope) && Area(g->Viewport);
 }
 bool RuntimeUI::ScrollEligible(uint64_t id) const
 {
@@ -317,6 +318,7 @@ void RuntimeUI::RepublishScroll()
     const auto start = std::chrono::steady_clock::now();
     m_Build = m_Resolved;
     ApplyScrollPresentation();
+    ArrangeDropdown(false);
     BuildHitTargets();
     m_Build.Generation = ++m_NextGeneration;
     std::swap(m_Resolved, m_Build);
@@ -330,7 +332,7 @@ void RuntimeUI::RepublishScroll()
 }
 void RuntimeUI::ScrollTo(uint64_t id, glm::vec2 offset, bool normalized)
 {
-    if (!std::isfinite(offset.x) || !std::isfinite(offset.y) || !ScrollAvailable(id))
+    if (!std::isfinite(offset.x) || !std::isfinite(offset.y) || !ProgrammaticScrollAvailable(id))
         throw std::invalid_argument(
             "ScrollTo #" + std::to_string(id) + " requires finite offsets and an available viewport in scope #" + std::to_string(m_Resolved.Scope));
     auto g = *ScrollNode(id);
@@ -550,7 +552,7 @@ bool RuntimeUI::EnsureVisible(uint64_t view, uint64_t target, bool focus)
 {
     auto n = m_Resolved.Find(target);
     if (!n || !n->LayoutResolved || !n->Visible || !n->Enabled || !n->ScrollParent ||
-        !Area(n->Bounds) || (!m_Resolved.Scope ? false : n->Canvas != m_Resolved.Scope) ||
+        !Area(n->Bounds) || (!m_Resolved.Scope ? false : n->Scope != m_Resolved.Scope) ||
         (view &&
          (!ScrollAvailable(view) ||
           !Descendant(
@@ -576,7 +578,7 @@ bool RuntimeUI::EnsureVisible(uint64_t view, uint64_t target, bool focus)
     for (size_t depth = 0; id && depth < Scene::MaxDepth; ++depth)
     {
         auto g = ScrollNode(id);
-        if (!g || !ScrollAvailable(id))
+        if (!g || !ProgrammaticScrollAvailable(id))
         {
             for (auto [saved, offset] : m_RevealBackup)
                 m_ScrollState.at(saved).Offset = offset;
@@ -597,6 +599,7 @@ bool RuntimeUI::EnsureVisible(uint64_t view, uint64_t target, bool focus)
     }
     m_Build = m_Resolved;
     ApplyScrollPresentation();
+    ArrangeDropdown(false);
     BuildHitTargets();
     auto result = m_Build.Find(target);
     bool ok = result && Area(result->FramebufferClip) && (!focus || result->FocusEligible);
