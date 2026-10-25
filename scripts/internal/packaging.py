@@ -82,7 +82,7 @@ def validate_project(descriptor, config, assets):
                 for field in ('InitialFocus','DefaultAction','CancelTarget','ReturnFocus','EventOwner'):
                     if screen.get(field,0) not in ids | {0}:
                         raise RuntimeError('Unsafe external screen '+field+' reference in prefab '+str(scene))
-                for component,fields in [('UIButtonComponent',['Indicator','Group','EventOwner']),('UIRadioGroupComponent',['InitialSelection','EventOwner']),('UIProgressComponent',['Fill']),('UISliderComponent',['Track','Fill','Thumb'])]:
+                for component,fields in [('UIButtonComponent',['Indicator','Group','EventOwner']),('UIRadioGroupComponent',['InitialSelection','EventOwner']),('UIProgressComponent',['Fill']),('UISliderComponent',['Track','Fill','Thumb']),('UIScrollViewComponent',['Content','HorizontalTrack','HorizontalThumb','VerticalTrack','VerticalThumb'])]:
                     for field in fields:
                         if entity.get(component,{}).get(field,0) not in ids | {0}:
                             raise RuntimeError('Unsafe external UI control '+component+'.'+field+' in prefab '+str(scene))

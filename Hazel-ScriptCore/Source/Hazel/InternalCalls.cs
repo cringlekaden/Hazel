@@ -13,6 +13,9 @@ namespace Hazel
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_Checked(ulong id,bool write,bool value);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static ulong UI_Selection(ulong id,bool write,ulong value);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static float UI_Progress(ulong id,bool write,float value);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_ScrollInfo(ulong id,out Vector2 offset,out Vector2 range,out Vector2 viewport,out Vector2 extent);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_ScrollTo(ulong id,ref Vector2 offset,bool normalized);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_EnsureVisible(ulong id,ulong target,bool focus);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static float UI_Slider(ulong id,bool write,float value);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_Screen(ulong identity,ulong screen,int operation);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_ConsumeEvent(ulong identity,out ulong screen,out ulong source,out int kind,out ulong sequence,out string action,out bool previousChecked,out bool checkedValue,out ulong previousSelection,out ulong selection,out ulong owner,out float previousValue,out float value,out float startValue,out ulong gesture,out bool interrupted);

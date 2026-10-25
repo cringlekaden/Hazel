@@ -64,6 +64,10 @@ void EditorLayer::UI_RectEditing()
         edges = Edges(mouse, display);
         unsigned allowed=n->ContainerOwned?0:15;
         {allowed=15;if(n->WidthMode!=GameUI::SizeMode::Fixed)allowed&=~5u;if(n->HeightMode!=GameUI::SizeMode::Fixed)allowed&=~10u;if(n->ContainerOwned)allowed&=~3u;}
+        if(auto parent=m_ActiveScene->GetEntityByUUID(n->Parent);parent&&parent.HasComponent<UIScrollViewComponent>()){
+            const auto &v=parent.GetComponent<UIScrollViewComponent>();
+            if(v.Content==n->ID||v.HorizontalThumb==n->ID||v.VerticalThumb==n->ID)allowed=0;
+        }
         selectedHandle = canEdit && !n->IsCanvas && edges && !(edges&~allowed) &&
                          ImGui::IsWindowHovered() && !io.WantTextInput;
         auto draw = ImGui::GetWindowDrawList();
@@ -157,6 +161,7 @@ void EditorLayer::UI_DebugOverlay()
         if (m_UIBoundsOverlay)
             bounds(n.PixelBounds, IM_COL32(255, 190, 70, 150));
         if(m_UIBoundsOverlay){GameUI::UIImageVisual image;if(m_ActiveScene->GetUIImageVisual(n.ID,image))bounds({image.Placement.Visual.Position*n.Scale,image.Placement.Visual.Size*n.Scale},IM_COL32(100,255,140,220));}
+        if(m_UIBoundsOverlay){GameUI::Rect visual;bool visible=true;if(m_ActiveScene->GetUIControlVisual(n.ID,visual,visible)&&visible)bounds({visual.Position*n.Scale,visual.Size*n.Scale},IM_COL32(100,255,140,220));}
         if (m_UIClipOverlay)
             bounds(n.PixelClip, IM_COL32(90, 210, 255, 220));
         if (m_UIHitOverlay && n.Hit != GameUI::HitPolicy::PassThrough)
@@ -171,6 +176,11 @@ void EditorLayer::UI_DebugOverlay()
         auto p=m_ViewportBounds[0]+guide.Bounds.Position*owner->Scale*scale;
         auto q=p+guide.Bounds.Size*owner->Scale*scale;
         draw->AddRect({p.x,p.y},{q.x,q.y},IM_COL32(170,110,255,180));
+    }
+    if(m_UIClipOverlay)for(const auto &g:s.Scrolls)if(auto owner=s.Find(g.ID)){
+        auto p=m_ViewportBounds[0]+g.Viewport.Position*owner->Scale*scale;
+        auto q=p+g.Viewport.Size*owner->Scale*scale;
+        draw->AddRect({p.x,p.y},{q.x,q.y},IM_COL32(100,255,190,220));
     }
     draw->PopClipRect();
 }
@@ -215,7 +225,7 @@ void EditorLayer::UI_Debugger()
         if(ImGui::CollapsingHeader("Effective bindings / Play override")){
             if(m_UIOverrideSession!=m_RuntimeSession.GetIdentity()){m_UIOverrideSession=m_RuntimeSession.GetIdentity();m_UIOverride.Values=m_RuntimeSession.GetUIBindings();m_UIOverride.CancelCapture();}
             const auto& effective=m_RuntimeSession.GetUIBindings();
-            for(size_t a=1;a<size_t(GameUI::UIAction::Count);++a){auto binding=effective.Actions[a];ImGui::Text("%s: %s / %s | pad %d",GameUI::ActionName(GameUI::UIAction(a)),GameUI::KeyName(binding.Key).c_str(),GameUI::KeyName(binding.Alternate).c_str(),binding.Pad);}
+            for(size_t a=1;a<size_t(GameUI::UIAction::Count);++a){if(!GameUI::IsBindable(GameUI::UIAction(a)))continue;auto binding=effective.Actions[a];ImGui::Text("%s: %s / %s | pad %d",GameUI::ActionName(GameUI::UIAction(a)),GameUI::KeyName(binding.Key).c_str(),GameUI::KeyName(binding.Alternate).c_str(),binding.Pad);}
             ImGui::TextDisabled("Override draft below; Apply publishes, Read discards edits.");
             m_UIOverride.Draw();
             ImGui::BeginDisabled(!m_UIOverride.Valid());
@@ -226,6 +236,7 @@ void EditorLayer::UI_Debugger()
             ImGui::TextDisabled("Play uses isolated memory; Nutella persists overrides.");
         }else m_UIOverride.CancelCapture();
     }else {m_UIOverride.CancelCapture();m_UIOverrideSession=0;}
+    if(!s.Scrolls.empty()){ImGui::Text("Scroll publish/routes/reveals %llu / %llu / %llu | %.3f ms CPU",(unsigned long long)d.ScrollPublications,(unsigned long long)d.ScrollRoutes,(unsigned long long)d.ScrollReveals,d.LastScrollMilliseconds);ImGui::Text("Scrollbar capture %llu",(unsigned long long)d.ScrollCapture);if(!d.ScrollProblem.empty())ImGui::TextWrapped("%s",d.ScrollProblem.c_str());}
     ImGui::Text("Resolve %llu | reuse %llu | source checks %llu", (unsigned long long)d.Resolves,
                 (unsigned long long)d.Reuses, (unsigned long long)d.SourceChecks);
     ImGui::Text("Last rebuild %.3f ms | routing %.3f ms (CPU)", d.LastResolveMilliseconds,
@@ -296,6 +307,7 @@ void EditorLayer::UI_Debugger()
             if(selected.HasComponent<UIButtonComponent>()&&(selected.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Toggle||selected.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio))
                 ImGui::Text("%s: %s",selected.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio?"Radio":"Toggle",m_ActiveScene->IsUIChecked(n->ID)?"selected / checked":"unselected / unchecked");
             if(selected.HasComponent<UIRadioGroupComponent>())ImGui::Text("Selected member %llu",(unsigned long long)m_ActiveScene->GetUISelection(n->ID));
+            if(selected.HasComponent<UIScrollViewComponent>()){auto g=m_ActiveScene->GetUIScroll(n->ID);rect("Viewport",g.Viewport);ImGui::Text("Content %.1f x %.1f | offset %.1f / %.1f",g.Extent.x,g.Extent.y,g.Offset.x,g.Offset.y);ImGui::Text("Range %.1f / %.1f | outer %llu",g.Range.x,g.Range.y,(unsigned long long)g.Parent);}
             if(selected.HasComponent<UISliderComponent>()){auto &v=selected.GetComponent<UISliderComponent>();float value=m_ActiveScene->GetUISliderValue(n->ID);v.Validate();ImGui::Text("Slider %.4g | normalized %.3f",value,(value-v.Minimum)/(v.Maximum-v.Minimum));ImGui::Text("Edit: %s | gesture %llu",d.SliderEdit==n->ID?(d.SliderPointer?"pointer":"Adjust"):"idle",(unsigned long long)(d.SliderEdit==n->ID?d.SliderGesture:0));}
             if(selected.HasComponent<UIProgressComponent>())ImGui::Text("Progress %.3f (passive)",m_ActiveScene->GetUIProgress(n->ID));
             GameUI::Rect visual;bool visible=true;if(m_ActiveScene->GetUIControlVisual(n->ID,visual,visible)){rect("Control visual",visual);ImGui::Text("Paint %s (layout unchanged)",visible?"visible":"hidden");}

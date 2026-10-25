@@ -14,6 +14,9 @@ struct SurfaceMetrics
 struct ResolvedElement
 {
     uint64_t ID = 0, Parent = 0, Canvas = 0;
+    Rect LayoutBounds{}, LayoutParentContent{}, LayoutSlot{};
+    glm::vec2 Displacement{};
+    uint64_t ScrollParent=0;
     Rect Bounds{}, ParentContent{}, Clip{}; // canvas logical units
     Rect PixelBounds{}, PixelClip{}, FramebufferBounds{}, FramebufferClip{}, InheritedClip{};
     glm::vec2 Available{}, Measured{};
@@ -28,7 +31,13 @@ struct ResolvedElement
     bool FocusEligible = false, ContainerOwned = false;
     HitPolicy Hit = HitPolicy::PassThrough;
 };
-struct ResolvedGuide {uint64_t Owner=0;int Axis=0,Index=0;bool Line=false;Rect Bounds{};};
+struct ScrollGeometry {
+    uint64_t ID=0,Content=0,Parent=0;
+    Rect Viewport;
+    glm::vec2 Extent{},Offset{},Range{};
+    std::array<Rect,2> Tracks{},Thumbs{};
+};
+struct ResolvedGuide {uint64_t Owner=0;int Axis=0,Index=0;bool Line=false;Rect Bounds{},LayoutBounds{};};
 struct ResolvedSnapshot
 {
     uint64_t Generation = 0, SceneIdentity = 0, Modal = 0, Scope = 0;
@@ -37,6 +46,7 @@ struct ResolvedSnapshot
     std::vector<ResolvedElement> Elements;
     std::vector<size_t> PainterOrder;
     std::vector<ResolvedGuide> Guides;
+    std::vector<ScrollGeometry> Scrolls;
     std::vector<Button> Buttons;
     std::vector<ScreenState> Screens;
     std::unordered_map<uint64_t, size_t> Index;
@@ -91,6 +101,9 @@ struct RuntimeUIDiagnostics
     double LastGPUMilliseconds=0;
     bool GPUAvailable=false;
     uint64_t Scope=0, NavigationMisses=0;
+    uint64_t ScrollPublications=0,ScrollRoutes=0,ScrollReveals=0,ScrollCapture=0;
+    double LastScrollMilliseconds=0;
+    std::string ScrollProblem;
     uint64_t SliderEdit=0, SliderGesture=0;
     bool SliderPointer=false;
     uint64_t EventOwner=0, PendingEvents=0, RetiredEvents=0, PendingScreens=0, RejectedScreens=0;

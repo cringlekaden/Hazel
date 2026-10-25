@@ -143,6 +143,17 @@ void RuntimeUI::MeasureTree(Entity root, Rect parent)
         n.ID = e.GetUUID();
         n.Name = e.GetName();
         n.Layout = r;
+        n.Unbounded={false,false};
+        if(e.HasComponent<UIScrollViewComponent>()){const auto &v=e.GetComponent<UIScrollViewComponent>();
+            for(int axis=0;axis<2;++axis)if((axis?v.Vertical:v.Horizontal)&&(axis?r.HeightMode:r.WidthMode)==SizeMode::Content)throw std::invalid_argument("Scroll viewport #"+std::to_string(n.ID)+(axis?".height: ":".width: ")+"scroll axis requires Fixed/Fill");}
+
+        auto scrollParent=m_Scene.GetEntityByUUID(m_Scene.GetRelationship(e).Parent);
+        if(scrollParent&&scrollParent.HasComponent<UIScrollViewComponent>()){
+            const auto &v=scrollParent.GetComponent<UIScrollViewComponent>();
+            if(v.Content==uint64_t(e.GetUUID())){n.Unbounded={v.Horizontal,v.Vertical};
+                for(int axis=0;axis<2;++axis)if(r.Anchor[axis]!=0||r.Offset[axis]!=0||r.Pivot[axis]!=0||r.Margin[axis]!=0||r.Margin[axis+2]!=0)throw std::invalid_argument("Scroll content #"+std::to_string(n.ID)+": viewport owns position; zero anchor/offset/pivot/margins");
+            }
+        }
         n.Container = e.HasComponent<UILayoutComponent>();
         if (n.Container)
             n.Flow = e.GetComponent<UILayoutComponent>();

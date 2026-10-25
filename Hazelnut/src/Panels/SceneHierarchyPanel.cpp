@@ -68,7 +68,7 @@ bool SceneHierarchyPanel::AddEntity(const std::string &name)
 bool SceneHierarchyPanel::AddUI(int kind) {
     if(!m_Context||!CanEdit(true))return false;
     try {
-        if(kind<0||kind>12)throw std::invalid_argument("Unknown UI creation preset");
+        if(kind<0||kind>14)throw std::invalid_argument("Unknown UI creation preset");
         Entity parent=GetSelectedEntity();
         if(PrefabDocument&&!parent){auto roots=m_Context->GetChildren();if(!roots.empty())parent=m_Context->GetEntityByUUID(roots.front());}
         if(kind!=0&&kind!=7&&(!parent||(!parent.HasComponent<UIRectComponent>()&&!parent.HasComponent<UICanvasComponent>()))) {
@@ -82,7 +82,7 @@ bool SceneHierarchyPanel::AddUI(int kind) {
                 if(occupied>=layout.Rows.size()*layout.Columns.size())throw std::invalid_argument("Grid has no free cell; add row/column tracks before creating another child");
             }
         }
-        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid","UI Wrap","UI Screen","UI Checkbox","UI Radio Group","UI Progress","UI Slider","UI Vertical Slider"};
+        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid","UI Wrap","UI Screen","UI Checkbox","UI Radio Group","UI Progress","UI Slider","UI Vertical Slider","UI ScrollView","UI Horizontal ScrollView"};
         auto e=m_Context->CreateEntity(names[kind]);if(parent)m_Context->Reparent(e,parent,TransformPolicy::KeepLocal);
         if(kind==0||kind==7){auto &c=e.AddComponent<UICanvasComponent>();if(kind==7){c.Screen.Managed=true;c.Modal=true;}}
         else {
@@ -122,6 +122,19 @@ bool SceneHierarchyPanel::AddUI(int kind) {
                     if(i==0)g.InitialSelection=child.GetUUID();
                 }
             }
+            if(kind==13||kind==14){
+                bool horizontal=kind==14;rect.FixedSize={360,240};rect.Padding=horizontal?glm::vec4(8,8,8,24):glm::vec4(8,8,24,8);
+                e.AddComponent<SpriteRendererComponent>(glm::vec4(.06f,.09f,.14f,1));auto &v=e.AddComponent<UIScrollViewComponent>();v.Horizontal=horizontal;v.Vertical=!horizontal;
+                auto content=m_Context->CreateEntity("Scroll content");m_Context->Reparent(content,e,TransformPolicy::KeepLocal);auto &r=content.AddComponent<UIRectComponent>();r.WidthMode=horizontal?GameUI::SizeMode::Content:GameUI::SizeMode::Fill;r.HeightMode=horizontal?GameUI::SizeMode::Fill:GameUI::SizeMode::Content;
+                auto &flow=content.AddComponent<UILayoutComponent>();flow.Direction=horizontal?GameUI::Axis::Horizontal:GameUI::Axis::Vertical;flow.Gap=8;v.Content=content.GetUUID();
+                for(int i=0;i<8;++i){auto item=m_Context->CreateEntity("Scroll item "+std::to_string(i+1));m_Context->Reparent(item,content,TransformPolicy::KeepLocal);auto &ir=item.AddComponent<UIRectComponent>();ir.FixedSize={160,40};if(horizontal)ir.HeightMode=GameUI::SizeMode::Fill;else ir.WidthMode=GameUI::SizeMode::Fill;
+                    item.AddComponent<SpriteRendererComponent>(glm::vec4(.13f,.21f,.30f,1));item.AddComponent<TextComponent>().TextString="Item "+std::to_string(i+1);auto &style=item.AddComponent<UITextStyleComponent>();style.Size=18;style.Vertical=GameUI::Align::Center;ir.Padding=glm::vec4(6);auto &b=item.AddComponent<UIButtonComponent>();b.TabOrder=i;b.Action="item-"+std::to_string(i+1);}
+                auto track=m_Context->CreateEntity("Scroll track");m_Context->Reparent(track,e,TransformPolicy::KeepLocal);auto &tr=track.AddComponent<UIRectComponent>();tr.FixedSize=horizontal?glm::vec2(0,10):glm::vec2(10,0);
+                if(horizontal){tr.WidthMode=GameUI::SizeMode::Fill;tr.Anchor.y=1;tr.Offset.y=4;}else{tr.HeightMode=GameUI::SizeMode::Fill;tr.Anchor.x=1;tr.Offset.x=4;}
+                track.AddComponent<SpriteRendererComponent>(glm::vec4(.20f,.25f,.30f,1));
+                auto thumb=m_Context->CreateEntity("Scroll thumb");m_Context->Reparent(thumb,e,TransformPolicy::KeepLocal);thumb.AddComponent<UIRectComponent>().FixedSize={16,16};thumb.AddComponent<SpriteRendererComponent>(glm::vec4(.70f,.80f,.85f,1));
+                if(horizontal){v.HorizontalTrack=track.GetUUID();v.HorizontalThumb=thumb.GetUUID();}else{v.VerticalTrack=track.GetUUID();v.VerticalThumb=thumb.GetUUID();}
+            }
             if(kind==11||kind==12){
                 bool vertical=kind==12;rect.FixedSize=vertical?glm::vec2(64,240):glm::vec2(280,48);rect.Padding=glm::vec4(8);
                 e.AddComponent<SpriteRendererComponent>(glm::vec4(.07f,.10f,.15f,1));
@@ -149,7 +162,7 @@ bool SceneHierarchyPanel::AddUI(int kind) {
 }
 void SceneHierarchyPanel::UIAddMenu(){
     if(ImGui::BeginMenu("Runtime UI")) {
-        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap","Screen","Checkbox / Toggle","Radio Group","Progress","Slider","Vertical Slider"};
+        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap","Screen","Checkbox / Toggle","Radio Group","Progress","Slider","Vertical Slider","ScrollView","Horizontal ScrollView"};
         for(size_t i=0;i<std::size(names);++i)if(ImGui::MenuItem(names[i]))AddUI(int(i));
         ImGui::EndMenu();
     }
@@ -364,6 +377,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             DisplayAddComponentEntry<UIRadioGroupComponent>("UI Radio Group");
             DisplayAddComponentEntry<UIProgressComponent>("UI Progress");
             DisplayAddComponentEntry<UISliderComponent>("UI Slider");
+            DisplayAddComponentEntry<UIScrollViewComponent>("UI ScrollView");
             if(entity.HasComponent<TextComponent>())DisplayAddComponentEntry<UITextStyleComponent>("UI Text Style");
             if(entity.HasComponent<SpriteRendererComponent>())DisplayAddComponentEntry<UINineSliceComponent>("UI Nine Slice");
         }
@@ -394,7 +408,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             }ImGui::EndCombo();
         }row.Result(changed,true);
     };
-    auto visualTarget=[&](Entity candidate){return m_Context->GetRelationship(candidate).Parent==entity.GetUUID()&&candidate.HasComponent<SpriteRendererComponent>()&&candidate.HasComponent<UIRectComponent>()&&!candidate.HasComponent<UIButtonComponent>()&&!candidate.HasComponent<TextComponent>()&&!candidate.HasComponent<UISliderComponent>()&&!candidate.HasComponent<UIProgressComponent>()&&!candidate.HasComponent<UIRadioGroupComponent>()&&!candidate.HasComponent<UICanvasComponent>()&&m_Context->GetChildrenView(candidate.GetUUID()).empty();};
+    auto visualTarget=[&](Entity candidate){return m_Context->GetRelationship(candidate).Parent==entity.GetUUID()&&candidate.HasComponent<SpriteRendererComponent>()&&candidate.HasComponent<UIRectComponent>()&&!candidate.HasComponent<UIButtonComponent>()&&!candidate.HasComponent<TextComponent>()&&!candidate.HasComponent<UIScrollViewComponent>()&&!candidate.HasComponent<UISliderComponent>()&&!candidate.HasComponent<UIProgressComponent>()&&!candidate.HasComponent<UIRadioGroupComponent>()&&!candidate.HasComponent<UICanvasComponent>()&&m_Context->GetChildrenView(candidate.GetUUID()).empty();};
     auto ownerTarget=[](Entity candidate){return candidate.HasComponent<ScriptComponent>()||candidate.HasComponent<NativeScriptComponent>();};
     DrawUIComponent<UICanvasComponent>("UI Canvas",entity,m_Sections,m_RestoreSections,[this,entity](auto& c)mutable{
         PropertyUI::Vector("reference","Reference pixels",glm::value_ptr(c.ReferenceSize),2,1,nullptr,"%.0f",{},1,8192);
@@ -436,7 +450,12 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     });
     DrawUIComponent<UIRectComponent>("UI Rect",entity,m_Sections,m_RestoreSections,[this,entity](auto& c)mutable{
         auto parent=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);
-        bool derivedPosition=false;
+        bool derivedPosition=false,scrollContent=false;
+        if(parent&&parent.HasComponent<UIScrollViewComponent>()){
+            auto &v=parent.GetComponent<UIScrollViewComponent>();scrollContent=derivedPosition=v.Content==uint64_t(entity.GetUUID());
+            if(v.HorizontalThumb==uint64_t(entity.GetUUID())||v.VerticalThumb==uint64_t(entity.GetUUID())){PropertyUI::Help("ScrollView computes thumb size and position. Edit track bounds or Minimum thumb on its viewport.");return;}
+            if(derivedPosition)PropertyUI::Help("ScrollView owns content origin. Fixed/Content sizes define its extent; Fill is valid only on non-scroll axes. Preview offsets never alter this Rect.");
+        }
         if(parent&&parent.HasComponent<UISliderComponent>()){
             auto &s=parent.GetComponent<UISliderComponent>();derivedPosition=s.Thumb==uint64_t(entity.GetUUID());
             if(s.Fill==uint64_t(entity.GetUUID())){PropertyUI::Help("Slider computes this fill from its track and live value. Edit the track bounds or the slider range; this Rect is a decorative leaf.");return;}
@@ -464,7 +483,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                 PropertyUI::DragFloat("anchor","Anchor",c.Anchor[axis],.01f,0,1,"%.2f");
                 PropertyUI::DragFloat("offset","Offset (px)",c.Offset[axis],1,-FLT_MAX,FLT_MAX,"%.1f");
                 PropertyUI::DragFloat("pivot","Pivot",c.Pivot[axis],.01f,0,1,"%.2f");}
-                if(owned)PropertyUI::Help(derivedPosition?"Slider owns position; thumb size sets its usable travel.":flowOwned?"The parent container owns position. Set child sizing/margins; positions are computed.":"Fill owns this axis's position and size. Margins set its insets; maximum can leave spare space.");
+                if(owned)PropertyUI::Help(derivedPosition?"The composing control owns position; edit its sizing/parent viewport.":flowOwned?"The parent container owns position. Set child sizing/margins; positions are computed.":"Fill owns this axis's position and size. Margins set its insets; maximum can leave spare space.");
                 if(resolved&&resolved->LayoutResolved)ImGui::TextDisabled("Available %.1f | measured %.1f | arranged %.1f",resolved->Available[axis],resolved->Measured[axis],resolved->Bounds.Size[axis]);
                 ImGui::PopID();
             }
@@ -502,7 +521,8 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             if(c.Fit!=GameUI::ImageFit::Stretch)PropertyUI::Vector("image-align","Image alignment",glm::value_ptr(c.ImageAlignment),2,.01f,nullptr,"%.2f",{},0,1);
             PropertyUI::Help("Stretch paints the border box. Other modes use the padded content box and source region; alignment is 0 = left/top, 1 = right/bottom. Fit changes art, not text layout or button hit bounds. UI uses one tile; the sprite tiling value applies to world sprites.");
         }
-        PropertyUI::Vector("margin","Margin L/T/R/B",glm::value_ptr(c.Margin),4,1,nullptr,"%.0f",{},0,4096);
+        if(scrollContent)PropertyUI::ReadOnly("margin","Margin L/T/R/B","0 (viewport owns origin)");
+        else PropertyUI::Vector("margin","Margin L/T/R/B",glm::value_ptr(c.Margin),4,1,nullptr,"%.0f",{},0,4096);
         PropertyUI::Vector("padding","Padding L/T/R/B",glm::value_ptr(c.Padding),4,1,nullptr,"%.0f",{},0,4096);
         if(flowOwned){
             const auto &container=parent.GetComponent<UILayoutComponent>();
@@ -611,6 +631,21 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         targetPicker("initial-selection","Initial selection",c.InitialSelection,[&](Entity candidate){return candidate.HasComponent<UIButtonComponent>()&&candidate.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio&&candidate.GetComponent<UIButtonComponent>().Group==uint64_t(entity.GetUUID());});
         if(ImGui::TreeNode("Standalone notification")){targetPicker("value-owner","Event owner",c.EventOwner,ownerTarget);PropertyUI::Help("Managed screens use their declared owner. Ordinary canvases require this explicit recipient.");ImGui::TreePop();}
         PropertyUI::Help("Tab and directions move focus; Accept selects. Activating the current option does nothing. Required selection falls back by Tab order then ID.");
+    });
+    DrawUIComponent<UIScrollViewComponent>("UI ScrollView",entity,m_Sections,m_RestoreSections,[&](auto &c){
+        int axes=c.Horizontal?(c.Vertical?2:1):0;if(PropertyUI::Combo("axes","Axes",axes,"Vertical\0Horizontal\0Both\0")){c.Horizontal=axes!=0;c.Vertical=axes!=1;}
+        targetPicker("content","Content root",c.Content,[&](Entity candidate){return m_Context->GetRelationship(candidate).Parent==entity.GetUUID()&&candidate.HasComponent<UIRectComponent>()&&!candidate.HasComponent<UICanvasComponent>();});
+        PropertyUI::DragFloat("speed","Pixels per unit",c.PixelsPerUnit,1,1,1024);PropertyUI::DragFloat("reveal","Reveal margin",c.RevealMargin,1,0,64);
+        if(ImGui::TreeNode("Scrollbar parts")){PropertyUI::DragFloat("thumb-min","Minimum thumb",c.MinimumThumb,1,1,256);
+            targetPicker("h-track","Horizontal track",c.HorizontalTrack,visualTarget);targetPicker("h-thumb","Horizontal thumb",c.HorizontalThumb,visualTarget);
+            targetPicker("v-track","Vertical track",c.VerticalTrack,visualTarget);targetPicker("v-thumb","Vertical thumb",c.VerticalThumb,visualTarget);ImGui::TreePop();}
+        PropertyUI::Help("Fixed/Fill viewport; direct content group with zero origin/margins. Scroll axes use Content/Fixed extent. Padding can reserve fixed scrollbar gutters. Parts do not reflow when hidden. No nested Canvas in content.");
+        if(!m_Context->IsRunning()&&ImGui::TreeNode("Transient preview")){
+            try{auto g=m_Context->GetUIScroll(entity.GetUUID());glm::vec2 normalized{g.Range.x>0?g.Offset.x/g.Range.x:0,g.Range.y>0?g.Offset.y/g.Range.y:0};
+                bool changed=PropertyUI::SliderFloat("preview-x","Horizontal position",normalized.x,0,1);changed|=PropertyUI::SliderFloat("preview-y","Vertical position",normalized.y,0,1);
+                if(changed)m_Context->ScrollUITo(entity.GetUUID(),normalized,true);
+                ImGui::TextDisabled("View %.0f x %.0f | content %.0f x %.0f",g.Viewport.Size.x,g.Viewport.Size.y,g.Extent.x,g.Extent.y);
+            }catch(const std::exception &error){PropertyUI::Validation(error.what());}ImGui::TreePop();}
     });
     DrawUIComponent<UISliderComponent>("UI Slider",entity,m_Sections,m_RestoreSections,[&](auto &c){
         PropertyUI::DragFloat("minimum","Minimum",c.Minimum);PropertyUI::DragFloat("maximum","Maximum",c.Maximum);

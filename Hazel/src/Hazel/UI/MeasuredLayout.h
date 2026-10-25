@@ -15,6 +15,7 @@ struct MeasureNode
     FlowLayout Flow;
     bool Container = false, Visible = true;
     float Weight = 1;
+    glm::bvec2 Unbounded{false,false}; // named scroll content only; Fill cannot consume this constraint
     size_t Parent = (std::numeric_limits<size_t>::max)();
     std::vector<size_t> Children;
 };

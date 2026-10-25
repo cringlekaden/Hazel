@@ -40,6 +40,11 @@ class RuntimeUI
     float SliderValue(uint64_t id);
     void SetSliderValue(uint64_t id,float value);
     bool SliderEditing() const {return m_Slider.ID!=0;}
+    GameUI::ScrollGeometry ScrollInfo(uint64_t id) const;
+    void ScrollTo(uint64_t id,glm::vec2 offset,bool normalized=false);
+    bool EnsureVisible(uint64_t view,uint64_t target,bool focus=false);
+    void ValidateScrollViews(uint64_t target=0) const;
+    bool ScrollVisual(uint64_t id,GameUI::Rect &bounds,bool &visible) const;
     float Progress(uint64_t id);
     void SetProgress(uint64_t id,float value);
     void ValidateControls(uint64_t target=0) const;
@@ -47,7 +52,7 @@ class RuntimeUI
     static constexpr size_t MaxScreens=64, MaxScreenRequests=64;
     bool BlocksGameplay() const
     {
-        return m_TransitionNeutral || m_Resolved.Modal || m_ActionOwnsFrame || m_KeyboardOwns || m_Input.Captured();
+        return m_ScrollNeutral || m_TransitionNeutral || m_Resolved.Modal || m_ActionOwnsFrame || m_KeyboardOwns || m_Input.Captured();
     }
     bool CapturesPointer() const
     {
@@ -55,7 +60,7 @@ class RuntimeUI
     }
     bool BlocksPointer() const
     {
-        return m_TransitionNeutral || m_Resolved.Modal || m_ActionOwnsFrame || m_PointerOver || m_Input.Captured();
+        return m_ScrollNeutral || m_TransitionNeutral || m_Resolved.Modal || m_ActionOwnsFrame || m_PointerOver || m_Input.Captured();
     }
     bool Bounds(uint64_t entity, GameUI::Rect &pixels) const;
     Ref<const Hazel::Text::Layout> TextLayout(uint64_t entity) const;
@@ -70,6 +75,30 @@ class RuntimeUI
     void Reset();
 
   private:
+    struct ScrollState {uint64_t Lifetime=0,Component=0,Content=0,ContentLifetime=0,ContentComponent=0;glm::vec2 Offset{};};
+    struct BarCapture {uint64_t Owner=0,Track=0,Thumb=0,Component=0,Lifetime=0;int Axis=0;float Grab=0,MinimumThumb=0;bool Drag=false;GameUI::Rect Bounds;glm::vec2 Extent{},Viewport{},Surface{};} m_Bar;
+    std::unordered_map<uint64_t,ScrollState> m_ScrollState;
+    std::unordered_map<uint64_t,std::pair<uint64_t,int>> m_ScrollParts;
+    std::vector<uint64_t> m_ScrollIDs;
+    std::vector<GameUI::Button> m_NavigationButtons;
+    std::vector<std::pair<uint64_t,glm::vec2>> m_RevealBackup;
+    bool m_ScrollNeutral=false;
+    uint64_t m_ScrollFocus=0;
+    void PrepareScrollState();
+    void ApplyScrollPresentation();
+    void BuildHitTargets();
+    void RepublishScroll();
+    void ScrollProblem(const std::string &message);
+    const GameUI::ScrollGeometry *ScrollNode(uint64_t id) const;
+    bool ScrollAvailable(uint64_t id) const;
+    bool ScrollEligible(uint64_t id) const;
+    bool Descendant(uint64_t child,uint64_t ancestor) const;
+    uint64_t HoverScroll(glm::vec2 framebufferPoint) const;
+    bool RouteScroll(const GameUI::InputFrame &input);
+    bool NavigateScroll(GameUI::InputFrame &input);
+    void RouteScrollBar(const GameUI::Action &action);
+    void CancelScrollCapture(bool neutral);
+    void ReconcileScrollCapture();
     struct ScreenEntry { uint64_t ID=0,Lifetime=0,Component=0; GameUI::ScreenPolicy Policy;
         uint64_t OwnerLifetime=0,OwnerComponent=0;std::string OwnerClass;};
     struct ScreenRequest {GameUI::ScreenOperation Operation;uint64_t ID=0,Lifetime=0,Component=0;

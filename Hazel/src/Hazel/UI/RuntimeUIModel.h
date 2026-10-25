@@ -89,16 +89,19 @@ struct Button
     bool Visible = true, Interactable = true;
     HitPolicy Hit = HitPolicy::Control;
     bool Continuous=false;
+    bool Focusable=true;
 };
-enum class UIAction : uint8_t { Press, Up, Down, Left, Right, Next, Previous, Accept, Cancel, AdjustDecrease, AdjustIncrease, Count };
+enum class UIAction : uint8_t { Press, Up, Down, Left, Right, Next, Previous, Accept, Cancel, AdjustDecrease, AdjustIncrease, Scroll, ScrollUp, ScrollDown, ScrollLeft, ScrollRight, Count };
 enum class InputDevice : uint8_t { Pointer, Keyboard, Gamepad };
-struct ActionEdge { UIAction Action; bool Down=true; glm::vec2 Point{}; InputDevice Device=InputDevice::Keyboard; };
+struct ActionEdge { UIAction Action; bool Down=true; glm::vec2 Point{}; InputDevice Device=InputDevice::Keyboard; glm::vec2 Delta{}; };
 struct InputFrame
 {
     glm::vec2 Mouse{};
     std::vector<ActionEdge> Events; // Ordered, bounded device-neutral edges; navigation may repeat.
     glm::ivec2 Navigate{};
     int Adjust=0;
+    glm::vec2 Scroll{};
+    bool ScrollPage=false;
     bool Editing=false;
     bool NextPressed=false, PreviousPressed=false, SuppressAccept=false;
     bool KeyboardEnabled = true, FocusNavigation = false;
@@ -161,6 +164,8 @@ class InputRouter
     {
         return m_Hover;
     }
+    uint64_t NavigationTarget(const std::vector<Button>& candidates,glm::ivec2 direction,int sequential);
+    static uint64_t Occluder(const std::vector<Button>& buttons,glm::vec2 point);
     void Reset();
     void CancelCapture(){m_Capture=m_KeyCapture=0;}
     void SetScope(uint64_t scene,uint64_t scope);
@@ -184,7 +189,7 @@ class InputRouter
     bool m_Ready = false, m_Left = false, m_Accept = false, m_Next = false, m_Previous = false;
     bool m_PointerGesture = false;
     uint64_t m_Generation = 0, m_Dropped = 0;
-    std::vector<size_t> m_Order;
+    std::vector<size_t> m_Order,m_NavigationScratch;
     std::vector<uint64_t> m_IDs;
     std::vector<size_t> m_Ranks;
     std::unordered_map<uint64_t, size_t> m_Index;

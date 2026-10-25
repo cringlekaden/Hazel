@@ -385,7 +385,7 @@ namespace Hazel {
     static RuntimeSession& UI_Session(){auto* s=ScriptEngine::GetRuntimeSession();if(!s)throw std::logic_error("UI bindings require an active session");return *s;}
     static void UI_Binding(int action,int* key,int* alternate,int* pad,int* shift,bool write) {
         MonoException* failure=nullptr;
-        try{if(action<1||action>=int(GameUI::UIAction::Count))throw std::invalid_argument("Invalid digital UI action");auto& session=UI_Session();auto b=session.GetUIBindings();
+        try{if(action<1||action>=int(GameUI::UIAction::Count)||!GameUI::IsBindable(GameUI::UIAction(action)))throw std::invalid_argument("Invalid digital UI action");auto& session=UI_Session();auto b=session.GetUIBindings();
             if(write){if(*shift<0||*shift>2)throw std::invalid_argument("Invalid Shift match");b.Actions[size_t(action)]={*key,*alternate,*pad,GameUI::ShiftMatch(*shift)};session.ApplyUIBindings(b);}
             else {auto x=b.Actions[size_t(action)];*key=x.Key;*alternate=x.Alternate;*pad=x.Pad;*shift=int(x.Shift);}}
         catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);
@@ -430,6 +430,11 @@ namespace Hazel {
         try{auto* s=ScriptEngine::GetSceneContext();if(!s)throw std::invalid_argument("Control requires a runtime scene");if(write)s->SetUIProgress(id,value);result=s->GetUIProgress(id);}
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
     }
+    static void UI_ScrollInfo(uint64_t id,glm::vec2* offset,glm::vec2* range,glm::vec2* viewport,glm::vec2* extent){
+        MonoException* failure=nullptr;try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("ScrollView requires a scene");auto g=scene->GetUIScroll(id);*offset=g.Offset;*range=g.Range;*viewport=g.Viewport.Size;*extent=g.Extent;}catch(const std::exception&e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);
+    }
+    static void UI_ScrollTo(uint64_t id,glm::vec2* offset,bool normalized){MonoException* failure=nullptr;try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("ScrollView requires a scene");scene->ScrollUITo(id,*offset,normalized);}catch(const std::exception&e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);}
+    static bool UI_EnsureVisible(uint64_t id,uint64_t target,bool focus){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(scene)result=scene->EnsureUIVisible(id,target,focus);}catch(const std::exception&e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;}
     static float UI_Slider(uint64_t id,bool write,float value){
         MonoException* failure=nullptr;float result=0;
         try{auto* s=ScriptEngine::GetSceneContext();if(!s)throw std::invalid_argument("Control requires a runtime scene");if(write)s->SetUISliderValue(id,value);result=s->GetUISliderValue(id);}
@@ -591,12 +596,13 @@ namespace Hazel {
         RegisterComponent<UIRadioGroupComponent>("Hazel.UIRadioGroupComponent");
         RegisterComponent<UIProgressComponent>("Hazel.UIProgressComponent");
         RegisterComponent<UISliderComponent>("Hazel.UISliderComponent");
+        RegisterComponent<UIScrollViewComponent>("Hazel.UIScrollViewComponent");
 
 	}
 
 	void ScriptGlue::ValidateComponents(MonoImage* image)
 	{
-		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent", "Hazel.SpriteRendererComponent", "Hazel.SpriteAnimationComponent", "Hazel.AudioSourceComponent", "Hazel.UICanvasComponent", "Hazel.UIRectComponent", "Hazel.UILayoutComponent", "Hazel.UITextStyleComponent", "Hazel.UINineSliceComponent", "Hazel.UIButtonComponent", "Hazel.UIRadioGroupComponent", "Hazel.UIProgressComponent", "Hazel.UISliderComponent" })
+		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent", "Hazel.SpriteRendererComponent", "Hazel.SpriteAnimationComponent", "Hazel.AudioSourceComponent", "Hazel.UICanvasComponent", "Hazel.UIRectComponent", "Hazel.UILayoutComponent", "Hazel.UITextStyleComponent", "Hazel.UINineSliceComponent", "Hazel.UIButtonComponent", "Hazel.UIRadioGroupComponent", "Hazel.UIProgressComponent", "Hazel.UISliderComponent", "Hazel.UIScrollViewComponent" })
 			if (!mono_reflection_type_from_name(const_cast<char*>(name), image))
 				throw std::runtime_error(std::string("Missing managed component: ") + name);
 	}
@@ -615,6 +621,7 @@ namespace Hazel {
         HZ_ADD_INTERNAL_CALL(UI_Selection);
         HZ_ADD_INTERNAL_CALL(UI_Progress);
         HZ_ADD_INTERNAL_CALL(UI_Slider);
+        HZ_ADD_INTERNAL_CALL(UI_ScrollInfo);HZ_ADD_INTERNAL_CALL(UI_ScrollTo);HZ_ADD_INTERNAL_CALL(UI_EnsureVisible);
         HZ_ADD_INTERNAL_CALL(UI_FocusScope);
         HZ_ADD_INTERNAL_CALL(UI_Cancel);
         HZ_ADD_INTERNAL_CALL(UI_IsPointerCaptured);

@@ -175,14 +175,14 @@ RectLayout EditMeasuredRect(const Rect &parent, const Rect &start, const RectLay
 namespace
 {
 constexpr size_t NoRank = static_cast<size_t>(-1);
-uint64_t Hit(const std::vector<Button> &buttons, glm::vec2 point)
+uint64_t Hit(const std::vector<Button> &buttons, glm::vec2 point, bool blocked=false)
 {
     for (auto it = buttons.rbegin(); it != buttons.rend(); ++it)
     {
         if (!it->Visible || it->Hit == HitPolicy::PassThrough ||
             !it->Bounds.Intersect(it->Clip).Contains(point))
             continue;
-        return Usable(*it) ? it->ID : 0; // Block/disabled controls occlude lower controls.
+        return blocked || Usable(*it) ? it->ID : 0; // Block/disabled controls occlude lower controls.
     }
     return 0;
 }
@@ -243,7 +243,7 @@ void InputRouter::Reconcile(uint64_t scene, const std::vector<Button> &buttons, 
     m_Order.clear();
     m_Ranks.assign(buttons.size(), NoRank);
     for (size_t i = 0; i < buttons.size(); ++i)
-        if (Usable(buttons[i]))
+        if (Usable(buttons[i]) && buttons[i].Focusable)
             m_Order.push_back(i);
     std::sort(m_Order.begin(), m_Order.end(), [&](size_t a, size_t b) {
         return buttons[a].TabOrder != buttons[b].TabOrder
@@ -254,14 +254,14 @@ void InputRouter::Reconcile(uint64_t scene, const std::vector<Button> &buttons, 
         m_Ranks[m_Order[rank]] = rank;
     auto eligible = [&](uint64_t id) {
         auto found = m_Index.find(id);
-        return found != m_Index.end() && m_Ranks[found->second] != NoRank;
+        return found != m_Index.end() && Usable(buttons[found->second]);
     };
     if(m_ScopeChanged) {
         m_Focus=0;
         m_ScopeChanged=false;
         if(!m_Focus&&!m_Order.empty())m_Focus=buttons[m_Order.front()].ID;
     }
-    else if (!eligible(m_Focus))
+    else if (!eligible(m_Focus) || !buttons[m_Index.at(m_Focus)].Focusable)
         m_Focus = !m_Ready || m_Order.empty() ? 0 : buttons[m_Order.front()].ID;
     if (!eligible(m_Capture))
         m_Capture = 0;
@@ -291,22 +291,24 @@ bool InputRouter::ConsumeCancel(uint64_t scene,uint64_t scope)
     if(scene!=m_Scene||scope!=m_Scope||!m_Cancels)return false;
     --m_Cancels;return true;
 }
-void InputRouter::Navigate(const std::vector<Button>& buttons,glm::ivec2 direction)
-{
-    auto current=m_Index.find(m_Focus);if(current==m_Index.end()||m_Order.empty())return;
-    const auto origin=buttons[current->second].Bounds.Intersect(buttons[current->second].Clip);
-    const glm::vec2 center=origin.Position+origin.Size*.5f;
-    size_t best=NoRank;double bestScore=std::numeric_limits<double>::infinity();
-    for(auto index:m_Order){if(index==current->second)continue;
-        auto rect=buttons[index].Bounds.Intersect(buttons[index].Clip);auto delta=rect.Position+rect.Size*.5f-center;
-        double main=direction.x?delta.x*direction.x:delta.y*direction.y;
-        if(main<=0)continue;
-        double cross=direction.x?delta.y:delta.x;
-        // Euclidean distance plus perpendicular penalty favors aligned nearby targets.
-        double score=main*main+cross*cross*4.0;
-        if(score<bestScore){bestScore=score;best=index;}
-    }
-    if(best!=NoRank){m_Focus=buttons[best].ID;m_KeyCapture=0;}else ++m_NavigationMisses;
+uint64_t InputRouter::Occluder(const std::vector<Button>& buttons,glm::vec2 point){return Hit(buttons,point,true);}
+uint64_t InputRouter::NavigationTarget(const std::vector<Button>& buttons,glm::ivec2 direction,int sequential){
+    if(buttons.size()>MaxButtons)throw std::invalid_argument("Navigation candidate limit exceeded");
+    auto &order=m_NavigationScratch;order.clear();size_t current=NoRank;
+    for(size_t i=0;i<buttons.size();++i){if(Usable(buttons[i])&&buttons[i].Focusable)order.push_back(i);if(buttons[i].ID==m_Focus)current=i;}
+    std::sort(order.begin(),order.end(),[&](auto a,auto b){return buttons[a].TabOrder!=buttons[b].TabOrder?buttons[a].TabOrder<buttons[b].TabOrder:a<b;});
+    if(order.empty())return 0;
+    if(current==NoRank)return buttons[sequential<0?order.back():order.front()].ID;
+    if(sequential){auto it=std::find(order.begin(),order.end(),current);size_t rank=it==order.end()?0:size_t(it-order.begin());return buttons[order[(rank+(sequential<0?order.size()-1:1))%order.size()]].ID;}
+    auto origin=buttons[current].Bounds.Intersect(buttons[current].Clip);auto center=origin.Position+origin.Size*.5f;
+    size_t best=NoRank;double score=std::numeric_limits<double>::infinity();
+    for(auto i:order){if(i==current)continue;auto rect=buttons[i].Bounds.Intersect(buttons[i].Clip);auto delta=rect.Position+rect.Size*.5f-center;
+        double main=direction.x?delta.x*direction.x:delta.y*direction.y;if(main<=0)continue;double cross=direction.x?delta.y:delta.x;
+        double candidate=main*main+cross*cross*4.;if(candidate<score){score=candidate;best=i;}}
+    return best==NoRank?0:buttons[best].ID;
+}
+void InputRouter::Navigate(const std::vector<Button>& buttons,glm::ivec2 direction){
+    auto next=NavigationTarget(buttons,direction,0);if(next){m_Focus=next;m_KeyCapture=0;}else ++m_NavigationMisses;
 }
 void InputRouter::Update(uint64_t scene, const std::vector<Button> &buttons, const InputFrame &f,
                          uint64_t generation)
@@ -370,7 +372,7 @@ void InputRouter::UpdateSample(uint64_t scene,const std::vector<Button>& buttons
         {
             m_PointerGesture = true;
             m_Capture = Hit(buttons, f.PointerPressed ? f.PressPosition : f.Mouse);
-            if (m_Capture){m_Focus = m_Capture;if(continuous(m_Capture))routed(m_Capture,RoutedPhase::Begin,f.PointerPressed?f.PressPosition:f.Mouse);}
+            if (m_Capture){if(buttons[m_Index.at(m_Capture)].Focusable)m_Focus = m_Capture;if(continuous(m_Capture))routed(m_Capture,RoutedPhase::Begin,f.PointerPressed?f.PressPosition:f.Mouse);}
 
         }
         if (f.CancelDown)
@@ -459,7 +461,7 @@ bool InputRouter::SetFocus(uint64_t scene, uint64_t id, const std::vector<Button
     if(scene==m_Scene&&!id){m_Focus=m_KeyCapture=0;return true;}
     auto found = m_Index.find(id);
     if (scene != m_Scene || found == m_Index.end() || found->second >= buttons.size() ||
-        buttons[found->second].ID != id || !Usable(buttons[found->second]))
+        buttons[found->second].ID != id || !Usable(buttons[found->second]) || !buttons[found->second].Focusable)
         return false;
     // Selecting initial/return focus does not arm gestures. UpdateSample alone
     // advances input readiness; a new screen can show its target while rearming.

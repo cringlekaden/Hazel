@@ -273,6 +273,7 @@ namespace Hazel {
             std::vector<uint64_t*> controlRefs;
             if(target.HasComponent<UIButtonComponent>()){auto &b=target.GetComponent<UIButtonComponent>();controlRefs={&b.Indicator,&b.Group,&b.EventOwner};}
             if(target.HasComponent<UIRadioGroupComponent>()){auto &g=target.GetComponent<UIRadioGroupComponent>();controlRefs.push_back(&g.InitialSelection);controlRefs.push_back(&g.EventOwner);}
+            if(target.HasComponent<UIScrollViewComponent>()){auto &v=target.GetComponent<UIScrollViewComponent>();for(auto ref:{&v.Content,&v.HorizontalTrack,&v.HorizontalThumb,&v.VerticalTrack,&v.VerticalThumb})controlRefs.push_back(ref);}
             if(target.HasComponent<UISliderComponent>()){auto &v=target.GetComponent<UISliderComponent>();controlRefs.push_back(&v.Track);controlRefs.push_back(&v.Fill);controlRefs.push_back(&v.Thumb);}
             if(target.HasComponent<UIProgressComponent>())controlRefs.push_back(&target.GetComponent<UIProgressComponent>().Fill);
             for(auto ref:controlRefs){if(auto found=remap.find(UUID(*ref));found!=remap.end())*ref=found->second;else if(*ref&&!retainExternal)throw std::runtime_error("External UI control reference on '"+original.GetName()+"'; include the target or clear it");}
@@ -919,6 +920,7 @@ namespace Hazel {
     template<> void Scene::OnComponentAdded<UIButtonComponent>(Entity,UIButtonComponent&) {}
     template<> void Scene::OnComponentAdded<UIRadioGroupComponent>(Entity,UIRadioGroupComponent&) {}
     template<> void Scene::OnComponentAdded<UIProgressComponent>(Entity,UIProgressComponent&) {}
+    template<> void Scene::OnComponentAdded<UIScrollViewComponent>(Entity,UIScrollViewComponent&) {}
     template<> void Scene::OnComponentAdded<UISliderComponent>(Entity,UISliderComponent&) {}
     template<typename T>
 

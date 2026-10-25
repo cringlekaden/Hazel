@@ -56,6 +56,9 @@ namespace Hazel {
     void SetUIChecked(uint64_t id,bool value);
     uint64_t GetUISelection(uint64_t group);
     void SetUISelection(uint64_t group,uint64_t member);
+    GameUI::ScrollGeometry GetUIScroll(uint64_t id);
+    void ScrollUITo(uint64_t id,glm::vec2 offset,bool normalized=false);
+    bool EnsureUIVisible(uint64_t view,uint64_t target,bool focus=false);
     float GetUISliderValue(uint64_t id);
     void SetUISliderValue(uint64_t id,float value);
     bool IsUISliderEditing() const;

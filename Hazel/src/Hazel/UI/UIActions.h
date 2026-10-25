@@ -8,7 +8,7 @@
 namespace Hazel::GameUI {
 // Point is the viewport-local position on InputFrame. Press is its button gesture.
 // Adjust actions are exclusive with navigation during an explicit slider edit.
-// Scroll remains reserved for a later control milestone.
+// Scroll deltas use backend wheel units; the receiving view applies logical speed.
 struct DeviceSample {
     std::array<bool,349> Keys{};
     std::array<bool,8> Mouse{};
@@ -22,6 +22,7 @@ public:
     void Configure(const UIBindings& bindings);
     const UIBindings& Bindings() const {return m_Bindings;}
     void KeyEdge(int key,bool down,bool repeat,bool shift,bool commandModifier=false);
+    void ScrollEdge(glm::vec2 delta,glm::vec2 point);
     void PointerEdge(int button,bool down,glm::vec2 point);
     InputFrame Sample(const DeviceSample& sample,float seconds,bool enabled,bool adjusting=false);
     void Cancel();

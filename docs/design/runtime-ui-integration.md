@@ -2406,3 +2406,95 @@ costs are unchanged; no new frame-budget claim is made. The next useful bounded
 slice is a static-content ScrollView with real Scroll actions, owned clipping and
 explicit document limits. Keep virtualization/large data views behind separate
 rendering-capacity qualification rather than extending this milestone.
+
+## P4: static-content ScrollView
+
+The implemented model uses one free Rect viewport with a named,
+direct Rect content child; enabled axes release that child's available constraint
+in the existing measured-layout solver. The viewport is Fixed/Fill on scroll
+axes, and content is Fixed/Content there; cross-axis Fill remains useful for
+wrapped vertical text. Content origin, anchors, pivots and margins are zero and
+owned by the viewport. Its measured border box defines extent, including its
+padding; overflowing descendants do not silently enlarge a Fixed content box.
+No independent Canvas is allowed inside that content subtree. No convergence,
+implicit sizing conversion or second layout engine is involved.
+
+Scroll offsets are scene-owned logical units, clamped to max(content extent minus
+padded viewport extent, 0). Presentation publishes a new generation from retained
+unscrolled layout bounds, recomputing inherited clips, control hit regions and
+nested coordinates together. Scrolling alone does not measure/shape text; fully
+clipped elements skip glyph-page preparation and drawing, while static CPU
+measurement still visits content. ScrollView clipping always applies to its named
+content; optional scrollbar gutters use fixed authored padding, without auto-hide
+reflow. Empty bars hide at zero range. Track size and viewport/content ratio
+produce proportional thumbs with a finite minimum. Track clicks page once; thumb
+drags capture through outside release. Geometry/content changes interrupt capture,
+retaining accepted offsets. Scroll deltas during any active control edit/capture
+are consumed without moving its geometry; explicit programmatic scrolling follows
+the existing control-interruption contract.
+
+Wheel/trackpad deltas stay ordered in backend wheel units (GLFW X/Y offsets,
+positive Y reversed into UI-down), including fractional/two-axis input. The first
+eligible hovered view converts units using its logical speed; nested ancestors
+receive only unconsumed logical pixels. At the UI boundary residual is discarded,
+never replayed into another scope/gameplay. Keyboard/controller Page actions target
+the focused control's nearest view, then a clicked view, then the first eligible
+view in a keyboard-owning/modal scope. Page Up/Down and LB/RB page vertically, or
+horizontally in a horizontal-only view; explicit Left/Right page actions remain
+horizontal. All digital bindings use the existing map, repeat, overrides and
+neutral-rearming machinery (binding format 3). No direct device polling lives in
+ScrollView.
+
+Navigation candidates inside scroll content are distinct from immediately
+eligible controls. Tab/spatial choice uses the existing router's ranking, plans a
+minimal inner-to-outer reveal, then publishes geometry before focus/activation.
+P1 eligibility still requires nonempty effective framebuffer coverage. Failed
+reveal through non-scroll clips restores offsets. Oversized targets align their
+leading edge with a bounded margin and do not repeatedly oscillate. Explicit
+native/managed EnsureVisible validates local descendant/scope identities.
+
+Limits: 64 declared views within the existing 4096-Rect/256-depth scene limits;
+content extent at most 1,000,000 logical units per axis; input at most 64 ordered
+edges and 1024 wheel units per axis/edge; navigation tries at most 64 candidates.
+These are bounded static documents, not virtualized lists or large-data budgets.
+Offsets retain across screen close/reopen, clamp on actual reflow, and reset on
+content/component lifetime replacement, scene copy, Stop/reset or document
+replacement. Transient Edit previews are neither serialized nor history entries.
+
+Focused qualification on Grandpa (i3-3227U/HD4000, GCC 16, Mesa
+26.2.4-arch3.1): Release model, runtime-session, scene/GL and native ImGui editor
+checks pass. The real editor controller creates the maintained scroll Settings
+screen, nested horizontal region, controls and wrapped help, edits through shared
+Inspector transactions, saves/reopens scene/prefab, previews transient offsets and
+performs three scripted Play/Stop cycles. This is synthetic-input/native-harness
+evidence, not physical controller/trackpad or competent-reader acceptance.
+Scene checks cover proportional thumb/page/capture/picking, fractional/two-axis
+wheel, nested residuals, clipped logical navigation/reveal, non-scroll rejection
+rollback, modal and nonmodal ownership, slider interruption, reflow, content/part
+retirement, framebuffer scaling, copy/prefab and zero surfaces. The existing
+interaction, slider, typography/overflow and compositing checks remain enabled.
+
+`MigrationGameUIIntegrationSmoke --profile-scroll` measures a modest 64-row static
+document, 640×480 RGBA8/integer-ID framebuffer, 448×304 padded viewport. Every label
+is prepared first; each mode warms 20 updates and samples 100. Scrolling alternates
+endpoints. No concurrent build, software GL, Xvfb, presentation or synchronous
+GPU wait is involved. Desktop is Plasma Wayland, but this GLFW backend is **X11/GLX
+through Xwayland**, physical HD4000, forced OpenGL 4.1 / shaderc-Cross GLSL410.
+It is not native Wayland support.
+
+| CPU phase, ms median / p95 | Idle | Scrolling |
+| --- | ---: | ---: |
+| explicit source/dependency refresh | 0.1466 / 0.3140 | 0.1243 / 0.2484 |
+| scroll API, including its source check/publication | 0.0001 / 0.0002 (no call) | 0.2032 / 0.3555 |
+| runtime update/render API | 0.8722 / 1.4118 | 0.6968 / 1.2394 |
+
+Sorted sample indices 50/95 are reported. These are separate warm workloads, not
+an assertion that scrolling makes rendering faster. Each has **zero** text-layout,
+page-generation and intrinsic-measurement increases; idle also reuses the resolved
+generation. C++ `new` counts across the complete sampled API loop total 4,600 idle
+and 4,700 scrolling (46/47 per update), excluding dependency/driver `malloc`.
+Runtime render API includes lifecycle/source checks and CPU preparation/submission;
+it is neither isolated GPU duration nor whole-frame/input/presentation timing.
+Static offscreen CPU measurement/storage still scales with document size; scrolling
+republishes all resolved Rects/hit targets. No large-list budget, allocation-free
+claim or improvement to alternating image/text draw-run capacity is inferred.

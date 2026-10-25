@@ -122,6 +122,23 @@ void UIScreenWorkflowChecks()
     panel.SetSelectedEntity(settingsBody);Check(panel.AddUI(2),"Slider value label preset failed");auto feedback=panel.GetSelectedEntity();
     edit(feedback,"Slider feedback",[](auto &v){v.Rect->Offset={24,302};v.Style->Size=18;v.Text->Text="Volume 50 / Adjust: accept to edit";});
     for(auto ref:{std::pair<const char*,Entity>{"Volume",volume},{"Level",level},{"Feedback",feedback}}){auto &field=ScriptEngine::GetScriptFieldMap(menu)[ref.first];field.Field={ScriptFieldType::Entity,ref.first,nullptr};field.SetValue<uint64_t>(ref.second.GetUUID());}
+    panel.SetSelectedEntity(menu);Check(panel.AddUI(7),"Scrollable screen preset failed");auto scrolling=panel.GetSelectedEntity();scrolling.GetComponent<TagComponent>().Tag="Scrollable settings";
+    edit(scrolling,"Scrollable screen policy",[&](auto &v){v.Canvas->ReferenceSize={640,480};v.Canvas->SafeInsets={};v.Canvas->Screen.InitiallyOpen=false;v.Canvas->Screen.EventOwner=menu.GetUUID();v.Canvas->Screen.Cancel=ScreenCancel::Close;});
+    panel.SetSelectedEntity(scrolling);Check(panel.AddUI(13),"ScrollView preset failed");auto scrollView=panel.GetSelectedEntity();
+    edit(scrollView,"Scroll viewport",[](auto &v){v.Rect->Offset={24,60};v.Rect->FixedSize={592,380};v.Scroll->PixelsPerUnit=48;});
+    auto scrollContent=scene->GetEntityByUUID(scrollView.GetComponent<UIScrollViewComponent>().Content);
+    panel.SetSelectedEntity(scrollContent);Check(panel.AddUI(8),"Scrolled checkbox preset failed");auto scrollToggle=panel.GetSelectedEntity();
+    edit(scrollToggle,"Scrolled option",[](auto &v){v.Button->Action="extra-option";v.Button->TabOrder=50;v.Text->Text="Additional static setting";});
+    panel.SetSelectedEntity(scrollContent);Check(panel.AddUI(2),"Wrapped scroll text preset failed");auto paragraph=panel.GetSelectedEntity();
+    edit(paragraph,"Wrapped scroll help",[](auto &v){v.Rect->WidthMode=SizeMode::Fill;v.Rect->HeightMode=SizeMode::Content;v.Style->Size=20;v.Text->Text="This static help section wraps at the viewport width. Scroll with the wheel, Page keys or controller bumpers; Tab reveals offscreen controls without an owner script positioning them.";});
+    panel.SetSelectedEntity(scrollContent);Check(panel.AddUI(14),"Nested horizontal ScrollView preset failed");auto horizontal=panel.GetSelectedEntity();
+    edit(horizontal,"Nested scroll row",[](auto &v){v.Rect->WidthMode=SizeMode::Fill;v.Rect->FixedSize.y=100;v.Scroll->RevealMargin=4;});
+    auto horizontalContent=scene->GetEntityByUUID(horizontal.GetComponent<UIScrollViewComponent>().Content);uint64_t farTarget=0;
+    int option=0;for(auto child:scene->GetChildrenView(horizontalContent.GetUUID())){auto e=scene->GetEntityByUUID(child);int tab=60+option++;edit(e,"Nested option order",[&](auto &v){v.Button->TabOrder=tab;});farTarget=child;}
+    panel.SetSelectedEntity(scrolling);Check(panel.AddUI(3),"Reveal command preset failed");auto reveal=panel.GetSelectedEntity();edit(reveal,"Reveal command",[](auto &v){v.Rect->Offset={24,8};v.Rect->WidthMode=v.Rect->HeightMode=SizeMode::Fixed;v.Rect->FixedSize={280,40};v.Button->Action="scroll-reveal";v.Button->TabOrder=-1;v.Text->Text="Reveal last nested option";});
+    panel.SetSelectedEntity(settingsBody);Check(panel.AddUI(3),"Scrollable settings command failed");auto scrollOpen=panel.GetSelectedEntity();edit(scrollOpen,"More settings",[](auto &v){v.Rect->Offset={320,250};v.Rect->WidthMode=v.Rect->HeightMode=SizeMode::Fixed;v.Rect->FixedSize={190,48};v.Button->Action="scroll-settings";v.Button->TabOrder=32;v.Text->Text="More settings…";v.Style->Size=18;});
+    for(auto ref:{std::pair<const char*,Entity>{"Scrolling",scrolling},{"ScrollView",scrollView},{"ScrollTarget",scene->GetEntityByUUID(farTarget)}}){auto &field=ScriptEngine::GetScriptFieldMap(menu)[ref.first];field.Field={ScriptFieldType::Entity,ref.first,nullptr};field.SetValue<uint64_t>(ref.second.GetUUID());}
+    auto scrollConfigured=documents.SceneText();Check(documents.UndoRedo(false)&&documents.UndoRedo(true)&&documents.SceneText()==scrollConfigured,"Scroll fixture history failed");
     scene->ValidateUI(false);
     for (size_t i = 0; i < 3; ++i)
     {
@@ -138,6 +155,7 @@ void UIScreenWorkflowChecks()
           "Screen policy Inspector edit did not undo");
     Check(documents.UndoRedo(true) && documents.SceneText() == configured,
           "Screen policy redo failed");
+    auto scrollID=uint64_t(scrollView.GetUUID()),scrollingID=uint64_t(scrolling.GetUUID()),scrollOpenID=uint64_t(scrollOpen.GetUUID());
     auto volumeID=uint64_t(volume.GetUUID());
     auto menuID = uint64_t(menu.GetUUID()), settingsID = uint64_t(settings.GetUUID()),
          confirmationID = uint64_t(confirmation.GetUUID());
@@ -160,6 +178,7 @@ void UIScreenWorkflowChecks()
     m_ScreenFixtureMenu = menuID;
     m_ScreenFixtureSettings = settingsID;
     m_ScreenFixtureFirst = first;
+    m_ScreenFixtureScroll=scrollID;m_ScreenFixtureScrollCanvas=scrollingID;m_ScreenFixtureScrollTarget=farTarget;
     m_ScreenFixturePanel.SetContext(m_ScreenFixture);
     m_ScreenFixturePanel.SetSelectedEntity(m_ScreenFixture->GetEntityByUUID(menuID));
     m_ScreenFixturePanel.RestoreSections({{"UI Canvas", true}});
@@ -208,6 +227,12 @@ void UIScreenWorkflowChecks()
         route();
         Check(runtime->GetUIDiagnostics().Focus == first[1],
               "Confirmation did not return to invoking settings control");
+        Check(runtime->FocusUI(scrollOpenID),"Scrollable settings invoker focus failed");sample.Keys.fill(false);route();sample.Keys[Key::Enter]=true;route();runtime->OnUpdateRuntime(.016f);
+        Check(runtime->IsUIScreenOpen(scrollingID),"Owner did not open scroll settings");sample.Keys.fill(false);route();route();
+        MouseScrolledEvent wheel(0,-.5f);session.SubmitUIEvent(wheel,{60,140},true);route();Check(runtime->GetUIScroll(scrollID).Offset.y==24,"Native authored fixture fractional wheel failed");
+        Check(runtime->EnsureUIVisible(scrollID,farTarget,true)&&runtime->GetUIDiagnostics().Focus==farTarget,"Native fixture nested focus reveal failed");
+        sample.Keys[Key::Escape]=true;route();runtime->OnUpdateRuntime(.016f);sample.Keys.fill(false);route();
+        Check(!runtime->IsUIScreenOpen(scrollingID)&&runtime->GetUIDiagnostics().Focus==scrollOpenID,"Scroll screen did not return to invoking control");runtime->FocusUI(first[1]);
         sample.Keys[Key::Escape] = true;
         route();
         runtime->OnUpdateRuntime(.016f);
@@ -237,6 +262,7 @@ Ref<Scene> m_ScreenFixture;
 SceneHierarchyPanel m_ScreenFixturePanel;
 Ref<Framebuffer> m_ScreenFixturePreview;
 uint64_t m_ScreenFixtureMenu = 0, m_ScreenFixtureSettings = 0;
+uint64_t m_ScreenFixtureScroll=0,m_ScreenFixtureScrollCanvas=0,m_ScreenFixtureScrollTarget=0;
 std::vector<uint64_t> m_ScreenFixtureFirst;
 void DrawUIScreenFixture()
 {
@@ -251,8 +277,8 @@ void DrawUIScreenFixture()
     auto originalSelection=m_ScreenFixturePanel.GetSelectedEntity();
     for(auto handle:m_ScreenFixture->GetAllEntitiesWith<UIRectComponent>()){
         Entity item(handle,m_ScreenFixture.get());
-        if(item.HasComponent<UIProgressComponent>()||item.HasComponent<UIRadioGroupComponent>()||(item.HasComponent<UIButtonComponent>()&&item.GetComponent<UIButtonComponent>().Kind!=GameUI::ControlKind::Button)){
-            m_ScreenFixturePanel.SetSelectedEntity(item);m_ScreenFixturePanel.RestoreSections({{"UI Button",true},{"UI Radio Group",true},{"UI Progress",true},{"UI Slider",true}});m_ScreenFixturePanel.DrawAssetProperties(item);
+        if(item.HasComponent<UIScrollViewComponent>()||item.HasComponent<UIProgressComponent>()||item.HasComponent<UIRadioGroupComponent>()||(item.HasComponent<UIButtonComponent>()&&item.GetComponent<UIButtonComponent>().Kind!=GameUI::ControlKind::Button)){
+            m_ScreenFixturePanel.SetSelectedEntity(item);m_ScreenFixturePanel.RestoreSections({{"UI Button",true},{"UI Radio Group",true},{"UI Progress",true},{"UI Slider",true},{"UI ScrollView",true}});m_ScreenFixturePanel.DrawAssetProperties(item);
         }
     }
     m_ScreenFixturePanel.SetSelectedEntity(originalSelection);
@@ -284,6 +310,12 @@ void DrawUIScreenFixture()
               m_ScreenFixture->GetUISnapshot().Find(m_ScreenFixtureFirst[1])->LayoutResolved &&
               !m_ScreenFixture->GetUISnapshot().Find(m_ScreenFixtureFirst[0])->LayoutResolved,
           "Native closed-screen selection preview failed");
+    m_ScreenFixture->SetUIPreviewTarget(m_ScreenFixtureScrollCanvas);m_ScreenFixture->RefreshUI();
+    auto previewBefore=SceneSerializer(m_ScreenFixture).CaptureAuthoredState();m_ScreenFixture->ScrollUITo(m_ScreenFixtureScroll,{0,.5f},true);
+    Check(m_ScreenFixture->EnsureUIVisible(m_ScreenFixtureScroll,m_ScreenFixtureScrollTarget,false),"Native nested Edit preview reveal failed");
+    m_ScreenFixturePreview->Bind();RenderCommand::SetClearColor({0,0,0,1});RenderCommand::Clear();m_ScreenFixture->OnUpdateEditor(0,owner.m_PrefabCamera);m_ScreenFixturePreview->Unbind();
+    Check(m_ScreenFixture->GetUIError().empty(),"Native scroll preview render failed");
+    Check(SceneSerializer(m_ScreenFixture).CaptureAuthoredState()==previewBefore,"Transient scroll preview dirtied authored state");
     GameUI::Action event;
     Check(SceneSerializer(m_ScreenFixture).CaptureAuthoredState() == authored &&
               !m_ScreenFixture->ConsumeUIAction(0, event) && !m_ScreenFixture->ConsumeUIEvent(m_ScreenFixtureMenu,event),

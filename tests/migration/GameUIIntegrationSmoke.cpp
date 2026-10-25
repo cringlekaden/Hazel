@@ -42,6 +42,7 @@ static void Check(bool value, const char *why)
 #include "UIScreenSceneChecks.h"
 #include "UIValueControlChecks.h"
 #include "UISliderSceneChecks.h"
+#include "UIScrollSceneChecks.h"
 #include "MeasuredSceneChecks.h"
 #include "ContainerSceneChecks.h"
 #include "ImageFitSceneChecks.h"
@@ -112,6 +113,7 @@ static void HardeningSceneChecks()
 }
 #include "ContainerProfile.h"
 #include "RenderProfile.h"
+#include "ScrollProfile.h"
 int main(int argc,char** argv)
 {
     try
@@ -122,6 +124,7 @@ int main(int argc,char** argv)
         spec.EnableImGui = false;
         Application app(spec);
         glfwHideWindow(static_cast<GLFWwindow *>(app.GetWindow().GetNativeWindow()));
+        if(argc==2&&std::string(argv[1])=="--profile-scroll"){ProfileScrolling();return 0;}
         if(argc==2&&std::string(argv[1])=="--profile-render-small"){ProfileRendering(64);return 0;}
         if(argc==2&&std::string(argv[1])=="--profile-render"){ProfileRendering();return 0;}
         if(argc==2&&std::string(argv[1])=="--profile-layout"){ProfileContainers();return 0;}
@@ -145,7 +148,7 @@ int main(int argc,char** argv)
                                    root / "font.ttf");
         std::filesystem::copy_file("assets/textures/Checkerboard.png", root / "image.png");
         UIScreenSceneChecks(root);
-        UIValueControlChecks(root);UISliderSceneChecks(root);
+        UIValueControlChecks(root);UISliderSceneChecks(root);UIScrollSceneChecks(root);
         MeasuredSceneChecks(root);
         ContainerSceneChecks(root);
         ImageFitSceneChecks(root);

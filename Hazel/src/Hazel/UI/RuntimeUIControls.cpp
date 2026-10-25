@@ -56,11 +56,12 @@ bool RuntimeUI::Decoration(uint64_t owner, uint64_t visual) const
     return e && m_Scene.IsEntityValid(visual) && m_Scene.GetRelationship(e).Parent == UUID(owner) &&
            e.HasComponent<UIRectComponent>() && e.HasComponent<SpriteRendererComponent>() &&
            !e.HasComponent<UIButtonComponent>() && !e.HasComponent<UIProgressComponent>() &&
-           !e.HasComponent<UIRadioGroupComponent>() && !e.HasComponent<UISliderComponent>() && !e.HasComponent<TextComponent>() &&
+           !e.HasComponent<UIRadioGroupComponent>() && !e.HasComponent<UISliderComponent>() && !e.HasComponent<UIScrollViewComponent>() && !e.HasComponent<TextComponent>() &&
            !e.HasComponent<UICanvasComponent>() && m_Scene.GetChildrenView(visual).empty();
 }
 void RuntimeUI::ValidateControls(uint64_t target) const
 {
+    ValidateScrollViews(target);
     std::unordered_set<uint64_t> visuals;
     auto visual = [&](uint64_t owner, uint64_t id) {
         if (id && (!Decoration(owner, id) || !visuals.insert(id).second))
@@ -445,6 +446,7 @@ void RuntimeUI::ActivateControl(Action event)
 bool RuntimeUI::ControlVisual(uint64_t id, Rect &bounds, bool &visible) const
 {
     visible = true;
+    if(ScrollVisual(id,bounds,visible))return true;
     if (!m_ControlVisuals.count(id))
         return false;
     auto n = m_Resolved.Find(id);

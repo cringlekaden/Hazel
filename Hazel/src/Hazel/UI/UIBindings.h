@@ -13,6 +13,7 @@ struct UIBindings {
     float DeadZone=.55f, NeutralZone=.25f, RepeatDelay=.35f, RepeatInterval=.10f;
     static UIBindings Defaults();
 };
+bool IsBindable(UIAction action);
 const char* ActionName(UIAction action);
 std::string KeyName(int key);
 void Validate(const UIBindings& bindings); // conflicts reject atomically

@@ -579,7 +579,7 @@ repeat uses the existing delay/rate and at most one step per sample. Adjustment
 starts after the adapter observes edit mode and a neutral sample; cross-context
 chords/edges buffered before that boundary are discarded. Ordered quick edges
 within an armed context remain supported. Binding
-format 2 includes both Adjust actions; unsupported/corrupt overrides retain usable
+format 3 includes Adjust and Scroll actions; unsupported/corrupt overrides retain usable
 project defaults with a warning, until reset/replaced through the native editor.
 
 Track-click jumps to the nearest value and starts editing. Thumb-drag preserves
@@ -630,3 +630,79 @@ The maintained native Settings fixture includes stepped volume, reversed vertica
 level and an owner showing live/terminal feedback. The Runtime UI Debugger shows
 value/normalized position, editing device, gesture, capture and rejection details.
 This is one control edit, not a screen-wide Apply/Discard or persistence service.
+
+## Static scroll content
+
+Choose **Runtime UI → ScrollView** or **Horizontal ScrollView**. The preset creates
+one viewport, a named Content stack, eight sample buttons and a proportional
+scrollbar. Replace the sample rows with ordinary controls/text; this is a bounded
+static document, not a virtualized list. A ScrollView is a free, noninteractive
+Rect. Select its direct Content child and optional direct Sprite/Rect track/thumb
+parts in **UI ScrollView**. Parts are decorative leaves, never separate buttons.
+Fixed viewport padding reserves scrollbar gutters; bars hide when no range exists
+without changing layout. Track geometry stays authored; thumb placement is computed.
+
+The viewport must be Fixed/Fill on enabled scroll axes. Content is Fixed/Content
+there; cross-axis Fill gives wrapped text a definite width. Content anchors,
+pivots, offsets and margins are zero because the viewport owns its origin.
+Its measured border box, including padding, supplies extent. Children overflowing
+a Fixed content box do not enlarge the range. Content-sized stacks/wraps are useful
+for growing documents. A Canvas inside Content rejects as an independent surface;
+keep screens outside the scrolling subtree. Invalid indefinite Fill produces an
+entity/axis diagnostic instead of a convergence loop.
+
+Offsets use logical pixels and clamp to `max(extent - padded viewport, 0)` on each
+enabled axis. Wheel input preserves backend fractional X/Y offsets; positive wheel
+Y moves up. **Pixels per unit** converts the first hovered view's wheel units to
+logical pixels. Nested views consume only available motion and pass residual
+pixels to scroll ancestors. Residual stops at the UI scope; it never replays into
+underlying gameplay. A hovered view owns a wheel gesture even at its endpoint.
+While any control captures/edits, wheel/page input is consumed without moving its
+geometry. An explicit script scroll can interrupt that edit using the existing
+control interruption policy.
+
+**Project Settings → UI bindings** includes ScrollUp/Down/Left/Right. Defaults are
+Page Up/Down and controller LB/RB, with Home/End for horizontal pages. Each moves
+90% of the viewport; Up/Down use X in a horizontal-only view. Actions follow the
+focused control's nearest view, then the last clicked view, then the first view
+in a modal/keyboard-owning scope. An ordinary HUD does not take page actions before
+UI keyboard ownership. Existing repeat, neutral rearming, conflict validation and
+project-scoped player overrides apply. Binding format 3 includes these actions;
+unsupported overrides warn and retain usable project defaults. Scroll is a real
+ordered analog action, separate from the bindable digital pages and slider Adjust.
+
+Track clicks page once. Drag a thumb through outside release to clamp to exact
+endpoints; Cancel ends capture without restoring an older offset or closing the
+screen. Resize, content changes, retirement and ownership loss interrupt capture.
+The full track supplies mapping even when partially clipped.
+
+Tab/spatial navigation can select scroll-reachable controls: the engine reveals
+inside-out, republishes geometry, then focuses an actually eligible control.
+Fully clipped controls still cannot activate. Reveal uses a small configurable
+margin; oversized targets align their leading edge. Non-scroll clips can prevent
+reveal, in which case offsets restore and a diagnostic explains the rejection.
+Configured opening focus still follows ordinary eligibility/fallback; use reveal
+for a target initially outside the viewport.
+
+```csharp
+UIScrollViewComponent view = ScrollRoot.GetComponent<UIScrollViewComponent>();
+view.Offset = new Vector2(0, 120);       // finite, clamped logical pixels
+view.Normalized = new Vector2(0, .5f);   // clamped; zero range yields zero
+Vector2 range = view.Range;
+bool visible = view.EnsureVisible(Option, true); // reveal and focus in active scope
+```
+
+Native equivalents are `Scene::GetUIScroll`, `ScrollUITo` and `EnsureUIVisible`.
+Reveal rejects external/hidden/disabled/retired targets and invalid scopes.
+Internal scrolling emits no owner value/activation events. Offsets are scene-owned
+transient state: retained across close/reopen, clamped on reflow, reset on Stop,
+copy or component/content lifetime replacement. **Preview position** in the
+Inspector scrolls Edit preview without dirtying the scene, creating history or
+sending game events. The debugger shows viewport, extent, offset, range, capture,
+routing/reveal counts and publication CPU time.
+
+Static CPU measurement includes offscreen content. Fully clipped elements skip
+page preparation and drawing; position-only scrolling reuses shaping and intrinsic
+measurement. Declared limits are 64 ScrollViews, 4096 Rects, depth 256 and content
+extent 1,000,000 logical pixels per axis. These limits do not promise large-list
+performance or remove alternating image/text draw-run costs.

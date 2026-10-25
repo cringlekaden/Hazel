@@ -2,7 +2,7 @@ using Hazel;
 namespace Migration {
     // Also used by the maintained native-authored screen fixture.
     public class ScreenOwnerProbe : Hazel.Entity {
-        public Hazel.Entity Settings, Confirmation, Toggle, Choices, Progress, Volume, Level, Feedback;
+        public Hazel.Entity Settings, Confirmation, Toggle, Choices, Progress, Volume, Level, Feedback, Scrolling, ScrollView, ScrollTarget;
         public float LiveValue,CommittedValue;public int SliderChanges,SliderCommits,SliderCancels;
         public int ValueChanges;public bool LastPreviousChecked,LastChecked;public ulong LastPreviousSelection,LastSelection;
         public int Count;public ulong LastSource,LastScreen;public int LastKind;
@@ -28,7 +28,9 @@ namespace Migration {
                 }
                 else if(packageStep==1){if(!settings.IsOpen)throw new System.Exception("Package settings did not open");confirmation.Open();}
                 else if(packageStep==2){if(!confirmation.IsOpen)throw new System.Exception("Package confirmation did not open");confirmation.Close();}
-                else if(packageStep==3){if(confirmation.IsOpen||!settings.IsOpen)throw new System.Exception("Package confirmation did not close independently");settings.Close();}
+                else if(packageStep==3){if(confirmation.IsOpen||!settings.IsOpen||Scrolling==null)throw new System.Exception("Package confirmation/scroll refs");Scrolling.GetComponent<UICanvasComponent>().Open();}
+                else if(packageStep==4){var view=ScrollView.GetComponent<UIScrollViewComponent>();if(view.Range.Y<=0)throw new System.Exception("Package scroll extent");view.Normalized=new Vector2(0,.25f);if(!view.EnsureVisible(ScrollTarget))throw new System.Exception("Package nested reveal");System.Console.WriteLine("SCROLL-PACKAGE: static extent, offsets and nested reveal ready");Scrolling.GetComponent<UICanvasComponent>().Close();}
+                else if(packageStep==5){if(Scrolling.GetComponent<UICanvasComponent>().IsOpen||!settings.IsOpen)throw new System.Exception("Package scroll scope return");settings.Close();}
                 else {if(settings.IsOpen||!GetComponent<UICanvasComponent>().IsOpen)throw new System.Exception("Package menu return failed");System.Console.WriteLine("SCREEN-PACKAGE: nested open/close complete");packageProbe=false;}
                 ++packageStep;
             }
@@ -43,6 +45,8 @@ namespace Migration {
                 if(value.Kind==Hazel.UIEventKind.ToggleChanged){++ValueChanges;LastPreviousChecked=value.PreviousChecked;LastChecked=value.Checked;continue;}
                 if(value.Kind==Hazel.UIEventKind.SelectionChanged){++ValueChanges;LastPreviousSelection=value.PreviousSelection==null?0:value.PreviousSelection.ID;LastSelection=value.Selection==null?0:value.Selection.ID;continue;}
                 if(value.Kind==Hazel.UIEventKind.Cancel){value.Screen.GetComponent<Hazel.UICanvasComponent>().Close();continue;}
+                if(value.Action=="scroll-settings"&&Scrolling!=null){Scrolling.GetComponent<UICanvasComponent>().Open();continue;}
+                if(value.Action=="scroll-reveal"&&ScrollView!=null){ScrollView.GetComponent<UIScrollViewComponent>().EnsureVisible(ScrollTarget,true);continue;}
                 if(value.Action=="settings"&&Settings!=null)Settings.GetComponent<Hazel.UICanvasComponent>().Open();
                 else if(value.Action=="confirm"&&Confirmation!=null)Confirmation.GetComponent<Hazel.UICanvasComponent>().Open();
                 else if(value.Action=="back")value.Screen.GetComponent<Hazel.UICanvasComponent>().Close();

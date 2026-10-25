@@ -432,6 +432,20 @@ static void Write(YAML::Emitter &out,const UISliderComponent &v){
        <<YAML::Key<<"Track"<<YAML::Value<<v.Track<<YAML::Key<<"Fill"<<YAML::Value<<v.Fill<<YAML::Key<<"Thumb"<<YAML::Value<<v.Thumb
        <<YAML::Key<<"Direction"<<YAML::Value<<unsigned(v.Direction)<<YAML::EndMap;
 }
+UIScrollViewComponent ReadUIScrollViewComponent(const YAML::Node &n){
+    Keys(n,{"Content","Horizontal","Vertical","HorizontalTrack","HorizontalThumb","VerticalTrack","VerticalThumb","PixelsPerUnit","MinimumThumb","RevealMargin"});UIScrollViewComponent v;
+#define READ(field,type) if(n[#field])v.field=n[#field].as<type>()
+    READ(Content,uint64_t);READ(Horizontal,bool);READ(Vertical,bool);READ(HorizontalTrack,uint64_t);READ(HorizontalThumb,uint64_t);READ(VerticalTrack,uint64_t);READ(VerticalThumb,uint64_t);READ(PixelsPerUnit,float);READ(MinimumThumb,float);READ(RevealMargin,float);
+#undef READ
+    GameUI::Validate(v);return v;
+}
+static void Write(YAML::Emitter &out,const UIScrollViewComponent &v){
+    out<<YAML::BeginMap;
+#define WRITE(field) out<<YAML::Key<<#field<<YAML::Value<<v.field
+    WRITE(Content);WRITE(Horizontal);WRITE(Vertical);WRITE(HorizontalTrack);WRITE(HorizontalThumb);WRITE(VerticalTrack);WRITE(VerticalThumb);WRITE(PixelsPerUnit);WRITE(MinimumThumb);WRITE(RevealMargin);
+#undef WRITE
+    out<<YAML::EndMap;
+}
 void ValidateUIConfiguration(const YAML::Node &node)
 {
     if(node["UINineSliceComponent"] && node["UIRectComponent"] && ReadUIRectComponent(node["UIRectComponent"]).Fit!=GameUI::ImageFit::Stretch)
@@ -450,6 +464,7 @@ void ValidateUIConfiguration(const YAML::Node &node)
     if (auto n = node["UIRadioGroupComponent"]) ReadUIRadioGroupComponent(n);
     if (auto n = node["UIProgressComponent"]) ReadUIProgressComponent(n);
     if(auto n=node["UISliderComponent"])ReadUISliderComponent(n);
+    if(auto n=node["UIScrollViewComponent"])ReadUIScrollViewComponent(n);
 }
 void ReadUIComponents(const YAML::Node &node, Entity entity)
 {
@@ -467,6 +482,7 @@ void ReadUIComponents(const YAML::Node &node, Entity entity)
     if (auto n = node["UIRadioGroupComponent"]) entity.AddComponent<UIRadioGroupComponent>(ReadUIRadioGroupComponent(n));
     if (auto n = node["UIProgressComponent"]) entity.AddComponent<UIProgressComponent>(ReadUIProgressComponent(n));
     if(auto n=node["UISliderComponent"])entity.AddComponent<UISliderComponent>(ReadUISliderComponent(n));
+    if(auto n=node["UIScrollViewComponent"])entity.AddComponent<UIScrollViewComponent>(ReadUIScrollViewComponent(n));
 }
 void WriteUIComponents(YAML::Emitter &out, Entity entity)
 {
@@ -501,6 +517,7 @@ void WriteUIComponents(YAML::Emitter &out, Entity entity)
         Write(out, entity.GetComponent<UIButtonComponent>());
     }
     if(entity.HasComponent<UIRadioGroupComponent>()){out<<YAML::Key<<"UIRadioGroupComponent"<<YAML::Value;Write(out,entity.GetComponent<UIRadioGroupComponent>());}
+    if(entity.HasComponent<UIScrollViewComponent>()){out<<YAML::Key<<"UIScrollViewComponent"<<YAML::Value;Write(out,entity.GetComponent<UIScrollViewComponent>());}
     if(entity.HasComponent<UISliderComponent>()){out<<YAML::Key<<"UISliderComponent"<<YAML::Value;Write(out,entity.GetComponent<UISliderComponent>());}
     if(entity.HasComponent<UIProgressComponent>()){out<<YAML::Key<<"UIProgressComponent"<<YAML::Value;Write(out,entity.GetComponent<UIProgressComponent>());}
 
@@ -509,7 +526,7 @@ std::string UIAuthoredState(Entity entity)
 {
     if (!entity.HasComponent<UICanvasComponent>() && !entity.HasComponent<UIRectComponent>() &&
         !entity.HasComponent<UILayoutComponent>() && !entity.HasComponent<UITextStyleComponent>() &&
-        !entity.HasComponent<UINineSliceComponent>() && !entity.HasComponent<UIButtonComponent>() && !entity.HasComponent<UIRadioGroupComponent>() && !entity.HasComponent<UIProgressComponent>() && !entity.HasComponent<UISliderComponent>())
+        !entity.HasComponent<UINineSliceComponent>() && !entity.HasComponent<UIButtonComponent>() && !entity.HasComponent<UIRadioGroupComponent>() && !entity.HasComponent<UIProgressComponent>() && !entity.HasComponent<UISliderComponent>() && !entity.HasComponent<UIScrollViewComponent>())
         return {};
     YAML::Emitter out;
     out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);

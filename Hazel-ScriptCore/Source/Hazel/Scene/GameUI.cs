@@ -25,7 +25,7 @@ namespace Hazel {
     }
     public enum UIEventKind { Activated, Cancel, ToggleChanged, SelectionChanged, SliderChanged, SliderCommitted, SliderCancelled }
     public struct UIEvent {public Entity Screen,Source,Owner;public UIEventKind Kind;public ulong Sequence;public string Action;public bool PreviousChecked,Checked;public Entity PreviousSelection,Selection;public float PreviousValue,Value,StartValue;public ulong Gesture;public bool Interrupted;}
-    public enum UIAction { Press, Up, Down, Left, Right, Next, Previous, Accept, Cancel, AdjustDecrease, AdjustIncrease }
+    public enum UIAction { Press, Up, Down, Left, Right, Next, Previous, Accept, Cancel, AdjustDecrease, AdjustIncrease, Scroll, ScrollUp, ScrollDown, ScrollLeft, ScrollRight }
     public enum UIShiftMatch { Any, Without, With }
     public enum UIGamepadButton { None=-1,A,B,X,Y,LeftBumper,RightBumper,Back,Start,Guide,LeftThumb,RightThumb,Up,Right,Down,Left }
     public struct UIBinding {
@@ -75,6 +75,12 @@ namespace Hazel {
     }
     public class UIRadioGroupComponent : Component {
         public Entity Selection {get{ulong id=InternalCalls.UI_Selection(Entity.CheckedID,false,0);return id==0?null:new Entity(id);}set=>InternalCalls.UI_Selection(Entity.CheckedID,true,value==null?0:value.CheckedID);}
+    }
+    public class UIScrollViewComponent : Component {
+        public Vector2 Offset {get{Vector2 offset,range,viewport,extent;InternalCalls.UI_ScrollInfo(Entity.CheckedID,out offset,out range,out viewport,out extent);return offset;}set{InternalCalls.UI_ScrollTo(Entity.CheckedID,ref value,false);}}
+        public Vector2 Range {get{Vector2 offset,range,viewport,extent;InternalCalls.UI_ScrollInfo(Entity.CheckedID,out offset,out range,out viewport,out extent);return range;}}
+        public Vector2 Normalized {get{var o=Offset;var r=Range;return new Vector2(r.X>0?o.X/r.X:0,r.Y>0?o.Y/r.Y:0);}set{InternalCalls.UI_ScrollTo(Entity.CheckedID,ref value,true);}}
+        public bool EnsureVisible(Entity target,bool focus=false)=>InternalCalls.UI_EnsureVisible(Entity.CheckedID,target==null?0:target.CheckedID,focus);
     }
     public class UISliderComponent : Component {
         // Silent setter interrupts an edit before applying the quantized value.

@@ -140,6 +140,9 @@ bool Scene::IsUIChecked(uint64_t id){CheckThread();RefreshUI();return m_UI->Chec
 void Scene::SetUIChecked(uint64_t id,bool value){CheckThread();RefreshUI();m_UI->SetChecked(id,value);}
 uint64_t Scene::GetUISelection(uint64_t id){CheckThread();RefreshUI();return m_UI->Selection(id);}
 void Scene::SetUISelection(uint64_t id,uint64_t member){CheckThread();RefreshUI();m_UI->Select(id,member);}
+GameUI::ScrollGeometry Scene::GetUIScroll(uint64_t id){CheckThread();RefreshUI();return m_UI->ScrollInfo(id);}
+void Scene::ScrollUITo(uint64_t id,glm::vec2 offset,bool normalized){CheckThread();RefreshUI();m_UI->ScrollTo(id,offset,normalized);}
+bool Scene::EnsureUIVisible(uint64_t view,uint64_t target,bool focus){CheckThread();RefreshUI();return m_UI->EnsureVisible(view,target,focus);}
 float Scene::GetUISliderValue(uint64_t id){CheckThread();RefreshUI();return m_UI->SliderValue(id);}
 void Scene::SetUISliderValue(uint64_t id,float value){CheckThread();RefreshUI();m_UI->SetSliderValue(id,value);}
 bool Scene::IsUISliderEditing() const {CheckThread();return m_UI->SliderEditing();}
@@ -252,6 +255,8 @@ void Scene::ValidateUILayoutDependencies()
             if(depth>=MaxDepth||nodes.size()>=GameUI::InputRouter::MaxButtons)throw std::invalid_argument("Measured UI dependency limit exceeded");
             size_t index=nodes.size();nodes.emplace_back();auto &n=nodes.back();n.ID=e.GetUUID();n.Name=e.GetName();n.Layout=e.GetComponent<UIRectComponent>();n.Parent=parentIndex;n.Container=e.HasComponent<UILayoutComponent>();
             if(n.Container)n.Flow=e.GetComponent<UILayoutComponent>();
+            auto scrollParent=GetEntityByUUID(GetRelationship(e).Parent);
+            if(scrollParent&&scrollParent.HasComponent<UIScrollViewComponent>()){const auto &v=scrollParent.GetComponent<UIScrollViewComponent>();if(v.Content==uint64_t(e.GetUUID()))n.Unbounded={v.Horizontal,v.Vertical};}
             n.Weight=e.GetComponent<UIRectComponent>().Flex>0?e.GetComponent<UIRectComponent>().Flex:1;
             if(parentIndex!=std::numeric_limits<size_t>::max())nodes[parentIndex].Children.push_back(index);
             for(auto id:GetChildrenView(e.GetUUID()))collect(GetEntityByUUID(id),index,depth+1);

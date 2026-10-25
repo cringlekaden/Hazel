@@ -33,6 +33,7 @@ void MeasuredLayout::Error(size_t index, int axis, const std::string &message) c
 float MeasuredLayout::Available(size_t i, int axis)
 {
     const auto &n = (*m_Nodes)[i];
+    if(n.Unbounded[axis])Error(i,axis,"Scroll content has indefinite available space; use Fixed/Content, not Fill");
     if(n.Parent!=None && (*m_Nodes)[n.Parent].Container && (*m_Nodes)[n.Parent].Flow.Kind==ContainerKind::Grid) {
         GridTracks(n.Parent,axis);
         return std::max(0.f,m_SlotSizes[i][axis]-Margin(n.Layout,axis));
@@ -329,6 +330,7 @@ void MeasuredLayout::Arrange(size_t i)
     for (int axis = 0; axis < 2; ++axis)
     {
         out.Available[axis] = std::max(0.f, (n.Parent!=None && (*m_Nodes)[n.Parent].Container && (*m_Nodes)[n.Parent].Flow.Kind!=ContainerKind::Stack ? m_SlotSizes[i][axis] : parent.Size[axis]) - Margin(n.Layout, axis));
+        if(n.Unbounded[axis])out.Available[axis]=-1;
         out.Bounds.Position[axis] = parent.Position[axis] +
                                     n.Layout.Anchor[axis] * parent.Size[axis] +
                                     n.Layout.Offset[axis] + n.Layout.Margin[axis] -
@@ -341,7 +343,7 @@ void MeasuredLayout::Arrange(size_t i)
             !std::isfinite(out.Bounds.Position[axis] + out.Bounds.Size[axis]))
             Error(i, axis, "arranged position overflow");
     auto inside = out.Bounds.Intersect(parent);
-    out.Overflow |= inside.Position != out.Bounds.Position || inside.Size != out.Bounds.Size;
+    for(int axis=0;axis<2;++axis)out.Overflow |= !n.Unbounded[axis]&&(inside.Position[axis]!=out.Bounds.Position[axis]||inside.Size[axis]!=out.Bounds.Size[axis]);
     if(n.Container && n.Flow.Kind==ContainerKind::Grid) {
         GridTracks(i,0);GridTracks(i,1);auto content=Content(i);
         for(int axis=0;axis<2;++axis)for(size_t t=0;t<m_Groups[i].Tracks[axis].size();++t) {

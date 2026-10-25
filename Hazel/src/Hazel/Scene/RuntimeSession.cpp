@@ -152,6 +152,7 @@ namespace Hazel {
         if(event.GetEventType()==EventType::WindowLostFocus || (event.GetEventType()==EventType::WindowResize&&(!static_cast<WindowResizeEvent&>(event).GetWidth()||!static_cast<WindowResizeEvent&>(event).GetHeight()))){SetInput(mouse,false);return;}
         if(!enabled||!m_Scene)return;
         if(m_UIEdgeScene!=m_Scene->GetIdentity()){m_UIAdapter.Cancel();m_UIEdgeScene=m_Scene->GetIdentity();}
+        if(event.GetEventType()==EventType::MouseScrolled){auto &e=static_cast<MouseScrolledEvent&>(event);m_UIAdapter.ScrollEdge({e.GetXOffset(),e.GetYOffset()},mouse);}
         if(event.GetEventType()==EventType::MouseButtonPressed)m_UIAdapter.PointerEdge(static_cast<MouseButtonPressedEvent&>(event).GetMouseButton(),true,mouse);
         if(event.GetEventType()==EventType::MouseButtonReleased)m_UIAdapter.PointerEdge(static_cast<MouseButtonReleasedEvent&>(event).GetMouseButton(),false,mouse);
         const bool shift=Input::IsKeyPressed(Key::LeftShift)||Input::IsKeyPressed(Key::RightShift);

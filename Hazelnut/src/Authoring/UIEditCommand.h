@@ -29,6 +29,7 @@ struct UIEditValues
     std::optional<UIRadioGroupComponent> Group;
     std::optional<UIProgressComponent> Progress;
     std::optional<UISliderComponent> Slider;
+    std::optional<UIScrollViewComponent> Scroll;
     std::optional<UITextValue> Text;
     std::optional<UIImageValue> Image;
     static UIEditValues Capture(Entity entity);
@@ -52,6 +53,7 @@ struct UIEditValues
         else if constexpr (std::is_same_v<T, UIRadioGroupComponent>) Group=value;
         else if constexpr (std::is_same_v<T, UIProgressComponent>) Progress=value;
         else if constexpr (std::is_same_v<T, UISliderComponent>) Slider=value;
+        else if constexpr (std::is_same_v<T, UIScrollViewComponent>) Scroll=value;
         else if constexpr (std::is_same_v<T, TextComponent>)
             Text = UITextValue{value.TextString, value.Color, value.Kerning, value.LineSpacing, value.Font};
         else if constexpr (std::is_same_v<T, SpriteRendererComponent>)
@@ -89,7 +91,7 @@ class UIEditCommand final : public DocumentCommand
                  bool cancelling = false) const;
     uint64_t m_Document, m_Entity;
     std::vector<std::pair<uint64_t, uint64_t>> m_Guards;
-    std::array<uint64_t, 11> m_ComponentVersions{};
+    std::array<uint64_t, 12> m_ComponentVersions{};
     std::string m_Name;
     UIEditValues m_Before, m_After;
 };

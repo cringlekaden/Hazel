@@ -42,6 +42,7 @@ bool Nonempty(Rect r)
 } // namespace
 void RuntimeUI::CancelInput()
 {
+    CancelScrollCapture(false);m_ScrollNeutral=false;
     EndSlider(false,true,false);
     if (m_InputEnabled || m_Input.Captured() || m_Input.Focused() || !m_Actions.empty())
     {
@@ -64,8 +65,10 @@ void RuntimeUI::Reset()
     m_Resolved.Buttons.clear();
     m_Resolved.PainterOrder.clear();
     m_Resolved.Guides.clear();
+    m_Resolved.Scrolls.clear();
     m_Resolved.Warnings.clear();
     m_Source.clear();
+    m_ScrollState.clear();m_ScrollParts.clear();m_ScrollFocus=0;
     m_Cache.clear();m_Values.clear();m_ControlVisuals.clear();m_AssetOwner.reset();
     m_GPUTimer.reset();m_PaintSubmission=0;m_PreparedBytes=0;
     m_Screens.clear();m_OpenScreens.clear();m_ScreenRequests.clear();m_ScreenFocus.clear();
@@ -76,6 +79,8 @@ void RuntimeUI::Reset()
 }
 void RuntimeUI::Retire(uint64_t id)
 {
+    if(m_Bar.Owner&&(id==m_Bar.Owner||id==m_Bar.Track||id==m_Bar.Thumb||Descendant(id,m_Bar.Owner)))CancelScrollCapture(true);
+    if(m_ScrollFocus==id)m_ScrollFocus=0;
     if(m_Slider.ID&&(m_Slider.ID==id||m_Slider.Terminal.Owner==id||m_Slider.Terminal.Screen==id||m_Values.at(m_Slider.ID).Track==id||m_Values.at(m_Slider.ID).Thumb==id||m_Values.at(m_Slider.ID).Fill==id))EndSlider(false,true);
     if(auto screen=Screen(m_Resolved.Scope);screen&&screen->Policy.EventOwner==id){RememberFocus(screen->ID,m_Input.Focused(),m_KeyboardOwns);CancelScreenInput();}
 
@@ -95,7 +100,7 @@ void RuntimeUI::Retire(uint64_t id)
 }
 void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
 {
-    ++m_Diagnostics.SourceChecks;
+    ++m_Diagnostics.SourceChecks;m_ScrollIDs.clear();
     auto assets=m_Scene.GetAssets();
     if(m_AssetOwner.owner_before(assets) || assets.owner_before(m_AssetOwner)) {
         // Ownership identity includes expired control blocks, so allocator address
@@ -204,6 +209,12 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
         if(e.HasComponent<UIRadioGroupComponent>()){auto &g=e.GetComponent<UIRadioGroupComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIRadioGroupComponent)));if(g.Action.size()>128||g.Action.find('\0')!=std::string::npos)throw std::invalid_argument("Invalid radio action");state.Add(g.Required);state.Add(g.InitialSelection);state.Add(g.EventOwner);state.Add(g.Action);}
         state.Add(e.HasComponent<UIProgressComponent>());
         if(e.HasComponent<UIProgressComponent>()){auto &p=e.GetComponent<UIProgressComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIProgressComponent)));state.Add(p.Minimum);state.Add(p.Maximum);state.Add(p.InitialValue);state.Add(p.Fill);state.Add(int(p.Direction));if(p.Fill)state.Add(Decoration(id,p.Fill));}
+        state.Add(e.HasComponent<UIScrollViewComponent>());
+        if(e.HasComponent<UIScrollViewComponent>()){auto &v=e.GetComponent<UIScrollViewComponent>();Validate(v);m_ScrollIDs.push_back(id);
+            state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIScrollViewComponent)));
+            state.Add(v.Content);state.Add(v.Horizontal);state.Add(v.Vertical);state.Add(v.HorizontalTrack);state.Add(v.HorizontalThumb);state.Add(v.VerticalTrack);state.Add(v.VerticalThumb);state.Add(v.PixelsPerUnit);state.Add(v.MinimumThumb);state.Add(v.RevealMargin);
+            state.Add(m_Scene.GetAuthoringLifetime(v.Content));state.Add(m_Scene.GetAuthoringComponentVersion(v.Content,typeid(UIRectComponent)));
+            for(auto part:{v.HorizontalTrack,v.HorizontalThumb,v.VerticalTrack,v.VerticalThumb})state.Add(Decoration(id,part));}
         state.Add(e.HasComponent<UISliderComponent>());
         if(e.HasComponent<UISliderComponent>()){auto &v=e.GetComponent<UISliderComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UISliderComponent)));state.Add(v.Minimum);state.Add(v.Maximum);state.Add(v.Step);state.Add(v.InitialValue);state.Add(v.Track);state.Add(v.Fill);state.Add(v.Thumb);state.Add(unsigned(v.Direction));for(auto part:{v.Track,v.Fill,v.Thumb})state.Add(Decoration(id,part));}
         uint64_t valueOwner=e.HasComponent<UIRadioGroupComponent>()?e.GetComponent<UIRadioGroupComponent>().EventOwner:e.HasComponent<UIButtonComponent>()?e.GetComponent<UIButtonComponent>().EventOwner:0;
@@ -292,6 +303,7 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
         PublishScope();
         SyncControls();
         SyncSliders();
+        ReconcileScrollCapture();
         PruneActions();
         if (!m_Input.Focused() && !m_Resolved.Modal)
             m_KeyboardOwns = false;
@@ -332,7 +344,7 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
     m_Build.Warnings.clear();
     m_Build.Modal = m_Build.Scope = 0;
     m_Build.Screens.clear();
-    m_Build.Guides.clear();
+    m_Build.Guides.clear();m_Build.Scrolls.clear();
     m_Build.Valid = false;
     m_Build.Surface = surface;
     m_Build.PreviewOrphans = previewOrphans;
@@ -491,6 +503,20 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
     }
     if(previewOrphans&&m_PreviewScreen){auto selected=m_Build.Find(m_PreviewScreen);if(selected&&selected->LayoutResolved)m_Build.Scope=m_PreviewScreen;}
     if(!m_Build.Scope)m_Build.Scope=m_Build.Modal;
+    for(auto &n:m_Build.Elements){n.LayoutBounds=n.Bounds;n.LayoutParentContent=n.ParentContent;n.LayoutSlot=n.Slot;}
+    for(auto &g:m_Build.Guides)g.LayoutBounds=g.Bounds;
+    PrepareScrollState();ApplyScrollPresentation();BuildHitTargets();
+    for(const auto &entry:m_Screens){
+        for(auto target:{entry.Policy.InitialFocus,entry.Policy.DefaultAction,entry.Policy.CancelTarget})if(target){
+            auto n=m_Build.Find(target);auto e=m_Scene.GetEntityByUUID(target);
+            if(!n||n->Canvas!=entry.ID||!e||!e.HasComponent<UIButtonComponent>())
+                m_Build.Warnings.push_back({entry.ID,ResolvedSnapshot::WarningCode::ScreenTarget});
+        }
+        if(entry.Policy.EventOwner&&!m_Scene.IsEntityValid(entry.Policy.EventOwner))m_Build.Warnings.push_back({entry.ID,ResolvedSnapshot::WarningCode::ScreenTarget});
+    }
+}
+void RuntimeUI::BuildHitTargets(){
+    m_Build.Buttons.clear();
     for (auto index : m_Build.PainterOrder)
     {
         auto &n = m_Build.Elements[index];
@@ -510,14 +536,20 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
         m_Build.Buttons.push_back({n.ID, n.FramebufferBounds, n.FramebufferClip, b.Action,
                                   b.TabOrder, true, n.FocusEligible, n.Hit,b.Kind==ControlKind::Slider});
     }
-    for(const auto &entry:m_Screens){
-        for(auto target:{entry.Policy.InitialFocus,entry.Policy.DefaultAction,entry.Policy.CancelTarget})if(target){
-            auto n=m_Build.Find(target);auto e=m_Scene.GetEntityByUUID(target);
-            if(!n||n->Canvas!=entry.ID||!e||!e.HasComponent<UIButtonComponent>())
-                m_Build.Warnings.push_back({entry.ID,ResolvedSnapshot::WarningCode::ScreenTarget});
+    for(auto &v:m_Build.Scrolls){auto e=m_Scene.GetEntityByUUID(v.ID);auto &c=e.GetComponent<UIScrollViewComponent>();
+        if(!v.Viewport.Size.x||!v.Viewport.Size.y)continue;
+        for(int axis=0;axis<2;++axis){auto track=axis?c.VerticalTrack:c.HorizontalTrack;auto thumb=axis?c.VerticalThumb:c.HorizontalThumb;
+            auto n=const_cast<ResolvedElement*>(m_Build.Find(track));
+            if(!n||!thumb||!Decoration(v.ID,track)||!Decoration(v.ID,thumb)||v.Range[axis]<=0||!n->Visible||!n->Enabled||!n->LayoutResolved||(!m_Build.Scope?false:n->Canvas!=m_Build.Scope))continue;
+            n->ButtonIndex=m_Build.Buttons.size();n->Hit=HitPolicy::Control;
+            auto ratio=m_Build.Surface.Framebuffer/m_Build.Surface.Viewport;auto rect=v.Tracks[axis];
+            auto clip=FramebufferCoverage(Scaled(rect.Intersect(n->InheritedClip),glm::vec2(n->Scale)),ratio,m_Build.Surface.Framebuffer);
+            m_Build.Buttons.push_back({track,Scaled(rect,glm::vec2(n->Scale)*ratio),clip,"",0,true,true,HitPolicy::Control,true,false});
         }
-        if(entry.Policy.EventOwner&&!m_Scene.IsEntityValid(entry.Policy.EventOwner))m_Build.Warnings.push_back({entry.ID,ResolvedSnapshot::WarningCode::ScreenTarget});
     }
+    // Painter order includes internal pointer-only bars; their entity IDs are not focus targets.
+    std::stable_sort(m_Build.Buttons.begin(),m_Build.Buttons.end(),[&](const auto&a,const auto&b){return m_Build.Find(a.ID)->Order<m_Build.Find(b.ID)->Order;});
+    for(size_t i=0;i<m_Build.Buttons.size();++i)const_cast<ResolvedElement*>(m_Build.Find(m_Build.Buttons[i].ID))->ButtonIndex=i;
 }
 void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enabled, uint64_t canvas,
                       size_t depth)
@@ -550,7 +582,9 @@ void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enable
     auto content = n.Bounds.Inset(r.Padding),
          childClip = r.ClipChildren ? clip.Intersect(n.Bounds) : clip;
     auto inside = parent.Intersect(n.Bounds);
-    bool outside=inside.Position != n.Bounds.Position || inside.Size != n.Bounds.Size;
+    bool outside=false;glm::bvec2 scrollAxis{false,false};auto p=m_Scene.GetEntityByUUID(n.Parent);
+    if(p&&p.HasComponent<UIScrollViewComponent>()){const auto &v=p.GetComponent<UIScrollViewComponent>();if(v.Content==n.ID)scrollAxis={v.Horizontal,v.Vertical};}
+    for(int axis=0;axis<2;++axis)outside|=!scrollAxis[axis]&&(inside.Position[axis]!=n.Bounds.Position[axis]||inside.Size[axis]!=n.Bounds.Size[axis]);
     n.Overflow |= outside;
     if (outside)
         m_Build.Warnings.push_back({n.ID, ResolvedSnapshot::WarningCode::Overflow});
@@ -591,12 +625,12 @@ void RuntimeUI::WarnOverflow()
 }
 void RuntimeUI::UpdateInput(const InputFrame &pixels)
 {
-    if(m_TransitionNeutral || m_SliderNeutral){
+    if(m_TransitionNeutral || m_SliderNeutral || m_ScrollNeutral){
         if(!pixels.Enabled){CancelInput();return;}
-        const bool neutral=pixels.Enabled&&!pixels.LeftDown&&!pixels.AcceptDown&&!pixels.CancelDown&&!pixels.NextDown&&!pixels.PreviousDown&&!pixels.Navigate.x&&!pixels.Navigate.y&&!pixels.Adjust&&!pixels.PointerPressed&&!pixels.AcceptPressed&&!pixels.NextPressed&&!pixels.PreviousPressed&&
+        const bool neutral=pixels.Enabled&&!pixels.LeftDown&&!pixels.AcceptDown&&!pixels.CancelDown&&!pixels.NextDown&&!pixels.PreviousDown&&!pixels.Navigate.x&&!pixels.Navigate.y&&!pixels.Adjust&&!pixels.Scroll.x&&!pixels.Scroll.y&&!pixels.PointerPressed&&!pixels.AcceptPressed&&!pixels.NextPressed&&!pixels.PreviousPressed&&
             std::none_of(pixels.Events.begin(),pixels.Events.end(),[](const ActionEdge &edge){return edge.Down;});
         if(!neutral){m_InputEnabled=false;return;}
-        m_TransitionNeutral=false;m_SliderNeutral=false;PublishScope();
+        m_TransitionNeutral=false;m_SliderNeutral=false;m_ScrollNeutral=false;PublishScope();
         // Release-only samples establish neutral, but their releases never enter the new scope.
         auto ready=pixels;ready.Events.clear();ready.PointerReleased=false;ready.HasReleasePosition=false;
         UpdateInput(ready);return;
@@ -613,7 +647,8 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
         bool cancelling=pixels.CancelDown;
         bool firstPointer=true,firstAccept=true;
         for(auto edge:pixels.Events){
-            if(size_t(edge.Action)>=size_t(UIAction::Count)||!std::isfinite(edge.Point.x)||!std::isfinite(edge.Point.y))throw std::invalid_argument("Invalid UI action edge");
+            if(size_t(edge.Action)>=size_t(UIAction::Count)||!std::isfinite(edge.Point.x)||!std::isfinite(edge.Point.y)||!std::isfinite(edge.Delta.x)||!std::isfinite(edge.Delta.y))throw std::invalid_argument("Invalid UI action edge");
+            if(edge.Action==UIAction::Scroll||(edge.Down&&edge.Action>=UIAction::ScrollUp))pointer=true;
             if(edge.Action==UIAction::Press){pointer=true;if(firstPointer){step.LeftDown=!edge.Down;firstPointer=false;}}
             if(edge.Action==UIAction::Accept&&firstAccept){step.AcceptDown=!edge.Down;firstAccept=false;}
             cancelling|=edge.Action==UIAction::Cancel&&edge.Down;
@@ -622,10 +657,15 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
         for(auto edge:pixels.Events){
             step.PointerPressed=step.PointerReleased=step.AcceptPressed=false;
             step.NextDown=step.PreviousDown=step.NextPressed=step.PreviousPressed=step.FocusNavigation=false;
-            step.Navigate={};step.Adjust=0;step.CancelDown=cancelling;
-            if(edge.Action==UIAction::Press){step.Mouse=edge.Point;step.LeftDown=edge.Down;step.PointerPressed=edge.Down;step.PointerReleased=!edge.Down;step.PressPosition=step.ReleasePosition=edge.Point;step.HasReleasePosition=true;}
+            step.Navigate={};step.Adjust=0;step.Scroll={};step.ScrollPage=false;step.CancelDown=cancelling;
+            if(edge.Action==UIAction::Scroll){step.Mouse=edge.Point;step.Scroll=edge.Delta;}
+            else if(edge.Action==UIAction::Press){step.Mouse=edge.Point;step.LeftDown=edge.Down;step.PointerPressed=edge.Down;step.PointerReleased=!edge.Down;step.PressPosition=step.ReleasePosition=edge.Point;step.HasReleasePosition=true;}
             else if(edge.Action==UIAction::Accept){step.AcceptDown=edge.Down;step.AcceptPressed=edge.Down;}
             else if(edge.Down){switch(edge.Action){
+                case UIAction::ScrollUp:step.Scroll={0,-1};step.ScrollPage=true;break;
+                case UIAction::ScrollDown:step.Scroll={0,1};step.ScrollPage=true;break;
+                case UIAction::ScrollLeft:step.Scroll={-1,0};step.ScrollPage=true;break;
+                case UIAction::ScrollRight:step.Scroll={1,0};step.ScrollPage=true;break;
                 case UIAction::AdjustDecrease:step.Adjust=-1;break;
                 case UIAction::AdjustIncrease:step.Adjust=1;break;
                 case UIAction::Next:step.FocusNavigation=step.NextPressed=true;break;
@@ -640,7 +680,7 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
         }
         step.Mouse=pixels.Mouse;step.LeftDown=pixels.LeftDown;step.AcceptDown=pixels.AcceptDown;step.CancelDown=pixels.CancelDown;
         step.PointerPressed=step.PointerReleased=step.AcceptPressed=false;
-        step.NextDown=step.PreviousDown=step.NextPressed=step.PreviousPressed=step.FocusNavigation=false;step.Navigate={};step.Adjust=0;
+        step.NextDown=step.PreviousDown=step.NextPressed=step.PreviousPressed=step.FocusNavigation=false;step.Navigate={};step.Adjust=0;step.Scroll={};step.ScrollPage=false;
         UpdateInput(step);m_ActionOwnsFrame|=owned;
         m_Diagnostics.LastRoutingMilliseconds=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
         return;
@@ -658,7 +698,7 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
     m_ActionOwnsFrame=input.Enabled&&(m_Input.Captured()||((m_KeyboardOwns||m_ActionOwnsFrame)&&input.CancelDown));
     const bool editing=m_Slider.ID!=0;
     input.Editing=editing;
-    if(!input.Enabled)EndSlider(false,true);
+    if(!input.Enabled){EndSlider(false,true);CancelScrollCapture(false);}
     const bool previousKeyboardOwns=m_KeyboardOwns;
     m_InputEnabled = input.Enabled;
     uint64_t entryFocus = 0;
@@ -668,7 +708,7 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
     {
         if (b.Hit != HitPolicy::PassThrough && b.Bounds.Intersect(b.Clip).Contains(input.Mouse))
             m_PointerOver = true;
-        if (!b.Interactable)
+        if (!b.Interactable || !b.Focusable)
             continue;
         if (!entryFocus ||
             (input.PreviousDown ? b.TabOrder >= entryOrder : b.TabOrder < entryOrder))
@@ -676,6 +716,13 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
             entryFocus = b.ID;
             entryOrder = b.TabOrder;
         }
+    }
+    if(input.Enabled&&m_Bar.Owner&&input.CancelDown){CancelScrollCapture(true);m_ActionOwnsFrame=true;return;}
+    if(m_Bar.Owner){input.Navigate={};input.NextDown=input.PreviousDown=input.NextPressed=input.PreviousPressed=input.FocusNavigation=false;}
+    if(input.Enabled){auto hovered=HoverScroll(input.Mouse);m_PointerOver|=hovered!=0;
+        if(input.PointerPressed&&!m_Slider.ID&&!m_Bar.Owner){m_ScrollFocus=hovered;if(hovered){m_KeyboardOwns=true;m_ActionOwnsFrame=true;}}
+        m_ActionOwnsFrame|=RouteScroll(input);
+        if(!editing)NavigateScroll(input);
     }
     if(input.Enabled&&m_Slider.ID&&!m_Slider.Pointer&&(input.PointerPressed||input.LeftDown)){
         const auto *target=m_Resolved.Find(m_Slider.ID);
@@ -717,7 +764,7 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
         Action a;
         while (m_Input.Consume(m_Scene.GetIdentity(), a))
         {
-            ActivateControl(std::move(a));
+            if(m_ScrollParts.count(a.Entity))RouteScrollBar(a);else ActivateControl(std::move(a));
         }
         if(editing&&m_Slider.ID&&input.Adjust)AdjustSlider(input.Adjust);
         if(auto screen=Screen(m_Resolved.Scope);screen&&!editing&&m_Input.ConsumeCancel(m_Scene.GetIdentity(),m_Resolved.Scope)){
@@ -766,6 +813,7 @@ bool RuntimeUI::Bounds(uint64_t id, Rect &pixels) const
 RuntimeUIDiagnostics RuntimeUI::Diagnostics() const
 {
     auto result = m_Diagnostics;
+    result.ScrollCapture=m_Bar.Owner;
     result.SliderEdit=m_Slider.ID;result.SliderGesture=m_Slider.Terminal.Gesture;result.SliderPointer=m_Slider.Pointer;
     result.Focus = m_Input.Focused();
     result.Capture = m_Input.Captured();

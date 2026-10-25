@@ -294,3 +294,18 @@ namespace Migration {
         }
     }
 }
+
+namespace Migration {
+    public class ScrollOwnerProbe : Hazel.Entity {
+        public bool Ready,Revealed;public int Events;
+        void OnCreate(){
+            var view=FindEntityByName("Scroll root").GetComponent<Hazel.UIScrollViewComponent>();
+            view.Normalized=new Hazel.Vector2(0,.5f);bool half=view.Offset.Y==100&&view.Range.Y==200;
+            view.Offset=new Hazel.Vector2(0,50);bool reveal=view.EnsureVisible(FindEntityByName("Scroll far"));
+            Ready=half&&reveal&&view.Offset.Y==200;view.Offset=new Hazel.Vector2(0,0);
+        }
+        void OnUpdate(float dt){Hazel.UIEvent e;while(Hazel.GameUI.TryConsumeEvent(out e)){
+            ++Events;if(e.Action=="reveal")Revealed=FindEntityByName("Scroll root").GetComponent<Hazel.UIScrollViewComponent>().EnsureVisible(FindEntityByName("Scroll far"),true);
+        }}
+    }
+}

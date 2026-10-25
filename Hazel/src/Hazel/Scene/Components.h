@@ -1,5 +1,6 @@
 #pragma once
 #include "Hazel/UI/Slider.h"
+#include "Hazel/UI/ScrollView.h"
 #include "Hazel/UI/UIScreen.h"
 // Actual target component shapes; explicit public-header prerequisites.
 #include "Hazel/Core/Base.h"
@@ -258,6 +259,7 @@ namespace Hazel {
         uint64_t InitialSelection=0, EventOwner=0;
         std::string Action="selection";
     };
+    struct UIScrollViewComponent : GameUI::ScrollConfig {};
     struct UISliderComponent : GameUI::SteppedRange {
         float InitialValue=0;
         uint64_t Track=0, Fill=0, Thumb=0;
@@ -278,6 +280,6 @@ namespace Hazel {
 		ComponentGroup<TransformComponent, SpriteRendererComponent, SpriteAnimationComponent, AudioSourceComponent,
 			CircleRendererComponent, CameraComponent, ScriptComponent,
 			NativeScriptComponent, Rigidbody2DComponent, BoxCollider2DComponent,
-			CircleCollider2DComponent, TextComponent, UICanvasComponent, UIRectComponent, UILayoutComponent, UITextStyleComponent, UINineSliceComponent, UIButtonComponent, UIRadioGroupComponent, UIProgressComponent, UISliderComponent>;
+			CircleCollider2DComponent, TextComponent, UICanvasComponent, UIRectComponent, UILayoutComponent, UITextStyleComponent, UINineSliceComponent, UIButtonComponent, UIRadioGroupComponent, UIProgressComponent, UISliderComponent, UIScrollViewComponent>;
 
 }
