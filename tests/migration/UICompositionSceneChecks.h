@@ -222,6 +222,76 @@ static void UICompositionSceneChecks(const std::filesystem::path &directory)
     Check(!retired->ConsumeUIEvent(400, event) && !retired->ConsumeUIEvent(900, event),
           "Changed owner inherited a previous tab event");
     retired->OnRuntimeStop();
+    auto moved = CompositionFixture();
+    moved->OnRuntimeStart();
+    InputFrame mf;
+    mf.Enabled = true;
+    auto movedCommit = [&] {
+        moved->CommitUIScreens();
+        moved->RefreshUI();
+        moved->UpdateUIInput(mf);
+        moved->UpdateUIInput(mf);
+    };
+    movedCommit();
+    moved->SetUISelection(200, 211);
+    movedCommit();
+    Check(moved->EnsureUIVisible(232, 231, true), "Remembered target setup failed");
+    moved->SetUISelection(200, 210);
+    movedCommit();
+    moved->Reparent(moved->GetEntityByUUID(231), moved->GetEntityByUUID(100), TransformPolicy::KeepLocal);
+    moved->OnUpdateRuntime(0); // Runtime parenting commits at the administrative boundary.
+    Check(moved->GetRelationship(moved->GetEntityByUUID(231)).Parent == UUID(100),
+          "Page-focus fixture did not commit the runtime reparent");
+    moved->RefreshUI();
+    moved->SetUISelection(200, 211);
+    movedCommit();
+    Check(moved->GetUIDiagnostics().Focus == 211,
+          ("Configured focus escaped its page after committed reparenting into the same screen (focus=" +
+           std::to_string(moved->GetUIDiagnostics().Focus) + ")")
+              .c_str());
+    moved->OnRuntimeStop();
+    auto background = CompositionFixture();
+    auto foreground = background->CreateEntityWithUUID(500, "Foreground confirmation");
+    auto &fc = foreground.AddComponent<UICanvasComponent>();
+    fc.ReferenceSize = {400, 300};
+    fc.SafeInsets = {};
+    fc.Modal = true;
+    fc.SortOrder = 10;
+    fc.Screen.Managed = true;
+    fc.Screen.InitiallyOpen = false;
+    fc.Screen.EventOwner = 900;
+    auto foregroundButton = background->CreateEntityWithUUID(501, "Foreground action");
+    background->Reparent(foregroundButton, foreground, TransformPolicy::KeepLocal);
+    auto &fr = foregroundButton.AddComponent<UIRectComponent>();
+    fr.Offset = {12, 12};
+    fr.FixedSize = {100, 40};
+    foregroundButton.AddComponent<UIButtonComponent>().Action = "foreground";
+    background->OnRuntimeStart();
+    Check(background->RequestUIScreen(ScreenOperation::Open, 500), "Foreground screen setup failed");
+    background->CommitUIScreens();
+    InputFrame bf;
+    bf.Enabled = true;
+    bf.Mouse = {25, 25};
+    background->UpdateUIInput(bf);
+    background->UpdateUIInput(bf);
+    bf.LeftDown = bf.PointerPressed = true;
+    bf.PressPosition = bf.Mouse;
+    background->UpdateUIInput(bf);
+    Check(background->GetUIDiagnostics().Capture == 501, "Foreground capture setup failed");
+    background->SetUISelection(200, 211);
+    background->CommitUIScreens();
+    background->RefreshUI();
+    Check(background->GetUISelection(200) == 211 && background->GetUIDiagnostics().Capture == 501 &&
+              background->GetUISnapshot().Scope == 500,
+          "Background page change interrupted unrelated foreground modal capture");
+    bf.LeftDown = bf.PointerPressed = false;
+    bf.PointerReleased = bf.HasReleasePosition = true;
+    bf.ReleasePosition = bf.Mouse;
+    background->UpdateUIInput(bf);
+    Check(background->ConsumeUIEvent(900, event) && event.Entity == 501 &&
+              !background->ConsumeUIEvent(900, event),
+          "Foreground gesture was lost or duplicated");
+    background->OnRuntimeStop();
     auto contentSized = CompositionFixture();
     contentSized->GetEntityByUUID(200).GetComponent<UIRectComponent>().HeightMode = SizeMode::Content;
     contentSized->GetEntityByUUID(220).GetComponent<UIRectComponent>().HeightMode = SizeMode::Fixed;

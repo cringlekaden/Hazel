@@ -794,8 +794,8 @@ rules still apply: give pages a definite parent where Fill requires it. Pages ar
 ordinary sublayouts, not independent screen surfaces.
 
 When focus leaves departing page content, **Remember page focus** tries its prior
-eligible target; otherwise the configured initial target, a revealed eligible
-page descendant, then the selected tab. Focus already on a tab stays there.
+eligible target still inside that page; otherwise the configured initial target,
+a revealed eligible page descendant, then the selected tab. Focus already on a tab stays there.
 Page changes interrupt active editing/capture through the existing policy (retain
 the latest value, no stale Cancel rollback), dismiss an owned dropdown in departing
 content and require neutral rearming. Only departing/ineligible content loses queued
@@ -805,7 +805,7 @@ C#: `tabs.GetComponent<UITabsComponent>().Selection = tabEntity` silently queues
 selection; read Selection after the scene commit. Native `SetUISelection` does the
 same for a Tabs group. `UITabComponent.Page` exposes its named page. Ordinary radio
 setters retain their existing immediate/silent behavior. Closed/reopened screens
-retain values; Stop/reset/copy use authored defaults. Replacing Tabs configuration
+retain values; Stop/reset/copy use authored defaults. Replacing the Tabs component
 resets its group value; replacing a tab's mapping preserves an eligible tab identity
 but retires the old page's interactions. **Page preview** in the Tabs Inspector
 shows inactive content in Edit without changing initial selection, history, dirty
@@ -826,8 +826,9 @@ performance guarantees.
 Select a control and use **Tooltip for selected control**. For a Dropdown root,
 this targets its trigger. A tooltip has a named direct Text/Rect leaf with an
 optional Sprite background; edit that body's purpose/consequence text, font,
-wrapping/overflow, Fixed width and padding. Height is Content and placement is
-computed. Do not duplicate the control label. **UI Tooltip** sets delay (0–5 seconds)
+wrapping/overflow, Fixed width and padding. Height is Content, capped at 512
+logical units and available surface space; placement is computed. Do not duplicate
+the control label. **UI Tooltip** sets delay (0–5 seconds)
 and surface gap (0–64 units); **Preview tooltip/Hide tooltip** is transient Edit
 presentation. `UITooltipComponent.Body` lets a runtime script update its Text
 through the ordinary component API, without positioning scripts.
@@ -844,7 +845,8 @@ steps clamp to .25 seconds), not per input edge. Unchanged visible text reuses i
 layout/pages/prepared data; hidden bodies do not enter normal content measurement.
 
 Limits: 32 Tabs groups, 128 tabs per group, 128 declared tooltip sources and one
-visible tooltip, within existing scene/resource/request/event limits. Tooltips are
+visible tooltip, within existing scene/resource/request/event limits. Page and
+screen focus share the existing 64-record bounded history. Tooltips are
 plain text leaves, not interactive popovers or arbitrary widget trees. Font/asset
 and page budgets retain their existing failure policy. **Runtime UI Debugger**
 shows active page relationships, controlling page, passive tip bounds and issues.

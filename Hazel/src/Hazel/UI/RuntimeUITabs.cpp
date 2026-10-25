@@ -331,11 +331,19 @@ void RuntimeUI::PreparePages()
                         root.GetComponent<UITabsComponent>().RememberFocus;
         if (departing && remember)
             RememberFocus(old.Page, focus, m_KeyboardOwns);
-        m_RetainPageEvents = true;
+        const auto groupNode = m_Resolved.Find(old.Group);
+        const bool ownsScope = !m_Resolved.Scope || (groupNode && groupNode->Scope == m_Resolved.Scope);
+        const auto popup = ActiveDropdown();
+        const bool ownsPopup = popup && Descendant(popup, old.Page);
+        // A background page change must not interrupt the foreground modal's gesture.
+        // Retire only its old content unless it owns the active interaction boundary.
         // This boundary preserves unrelated scope events; only old content retires.
         for (const auto &n : m_Resolved.Elements)
             if (Descendant(n.ID, old.Page))
                 m_Input.Retire(m_Scene.GetIdentity(), n.ID);
+        if (!ownsScope && !ownsPopup && !departing)
+            continue;
+        m_RetainPageEvents = true;
         if (auto d = ActiveDropdown())
         {
             auto root = m_Scene.GetEntityByUUID(d);
@@ -385,12 +393,15 @@ void RuntimeUI::FocusPage()
                m_Scene.GetEntityByUUID(id).HasComponent<UIButtonComponent>() &&
                ((n->ScrollParent && EnsureVisible(0, id, false)) || Live(id)) && Live(id);
     };
-    if (!eligible(target))
+    // A target can remain live in this screen after moving out of the page.
+    // Test membership before EnsureVisible so stale memories cannot scroll it.
+    auto pageTarget = [&](uint64_t id) { return (!page || Descendant(id, page)) && eligible(id); };
+    if (!pageTarget(target))
     {
         target = 0;
         auto tab = m_Scene.GetEntityByUUID(fallback);
         if (tab && tab.HasComponent<UITabComponent>() &&
-            eligible(tab.GetComponent<UITabComponent>().InitialFocus))
+            pageTarget(tab.GetComponent<UITabComponent>().InitialFocus))
             target = tab.GetComponent<UITabComponent>().InitialFocus;
     }
     if (!target)
