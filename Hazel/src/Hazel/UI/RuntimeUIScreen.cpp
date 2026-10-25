@@ -257,7 +257,7 @@ bool RuntimeUI::CommitScreens()
     // Called by Scene before input/update and after scripts, never by Consume or
     // Resolve.
     auto oldFocus = m_Input.Focused(), oldScope = m_Input.Scope();
-    bool changed = false;
+    bool changed = false,pageChanged=false;
     auto close = [&](uint64_t id)
     {
         auto it = std::find(m_OpenScreens.begin(), m_OpenScreens.end(), id);
@@ -288,6 +288,7 @@ bool RuntimeUI::CommitScreens()
             }
         }
 
+        if(request.Kind==RequestKind::TabChoice){pageChanged|=CommitTab(request);continue;}
         if(request.Kind!=RequestKind::Screen){CommitDropdownRequest(request,changed);continue;}
         m_Choice.reset(); // unrelated scope operations never inherit a staged choice
         if(ActiveDropdown()&&request.Operation==ScreenOperation::Pop){CloseOwnedPopup();changed=true;continue;}
@@ -342,7 +343,8 @@ bool RuntimeUI::CommitScreens()
         }
     }
     if (!changed)
-        return false;
+        return pageChanged;
+    m_RetainPageEvents=false;
     RememberFocus(oldScope, oldFocus, m_KeyboardOwns);
     CancelScreenInput();
     ++m_ScreenRevision;
@@ -378,8 +380,7 @@ void RuntimeUI::PublishScope()
             RememberFocus(m_LastScope, m_Input.Focused(), m_KeyboardOwns);
         if (liveInput && scope != m_LastScope && (Screen(scope) || Screen(m_LastScope)))
             CancelScreenInput();
-        m_Diagnostics.RetiredEvents += m_Actions.size();
-        m_Actions.clear();
+        if(!m_RetainPageEvents){m_Diagnostics.RetiredEvents += m_Actions.size();m_Actions.clear();}
         m_Input.SetScope(m_Scene.GetIdentity(), scope);
         m_Input.Reconcile(m_Scene.GetIdentity(), m_Resolved.Buttons, m_Resolved.Generation);
         uint64_t target = 0;
@@ -468,6 +469,10 @@ bool RuntimeUI::EventValid(const Action &event) const
     }
     // Copied Play scenes legitimately use component token zero. Origin identifies
     // this envelope; version tokens are compared below, never used as presence bits.
+    if(event.Kind==UIEventKind::SelectionChanged&&event.Page){
+        auto root=m_Scene.GetEntityByUUID(event.Entity),tab=m_Scene.GetEntityByUUID(event.Selection);
+        if(!root||!root.HasComponent<UITabsComponent>()||!tab||!tab.HasComponent<UITabComponent>()||tab.GetComponent<UITabComponent>().Page!=event.Page||m_Scene.GetAuthoringComponentVersion(event.Selection,typeid(UITabComponent))!=event.PresentationComponent)return false;
+    }
     if(event.Kind==UIEventKind::SelectionChanged&&event.Origin){
         auto root=m_Scene.GetEntityByUUID(event.Entity);auto trigger=m_Scene.GetEntityByUUID(event.Origin);
         if(!root||!root.HasComponent<UIDropdownComponent>()||!root.HasComponent<UIRadioGroupComponent>()||!trigger||!trigger.HasComponent<UIButtonComponent>()||!Live(event.Origin))return false;
@@ -502,8 +507,7 @@ bool RuntimeUI::Focus(uint64_t target)
     m_PendingFocus = target;
     if (m_Input.SetFocus(m_Scene.GetIdentity(), target, m_Resolved.Buttons))
         m_PendingFocus = 0;
-    if (target)
-        m_KeyboardOwns = true;
+    if (target){m_KeyboardOwns = true;m_TipPointer=false;}
     ReconcileSlider();
     return true;
 }

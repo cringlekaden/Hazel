@@ -26,6 +26,7 @@ namespace Hazel {
         // Clip is absolute framebuffer x/y/width/height (bottom-left), captured
         // with each primitive. Negative width disables it for ordinary world data.
         static void BeginOrderedScene(const Camera& camera, const glm::mat4& transform);
+        static void SetPickingEnabled(bool enabled); // ordered-run state; preserves underlying picking attachment
         static void SetPrimitiveClip(glm::ivec4 clip);
         static void EndScene();
 		enum class FlushReason { End, Primitive, Font, Textures, Capacity, External, Count };

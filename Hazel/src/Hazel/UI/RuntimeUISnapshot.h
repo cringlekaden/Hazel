@@ -14,7 +14,8 @@ struct SurfaceMetrics
 struct ResolvedElement
 {
     uint64_t ID = 0, Parent = 0, Canvas = 0, Scope = 0;
-    bool OverlayRoot=false;
+    bool OverlayRoot=false, PassiveOverlay=false;
+    uint64_t Page=0;
     Rect LayoutBounds{}, LayoutParentContent{}, LayoutSlot{};
     glm::vec2 Displacement{};
     uint64_t ScrollParent=0;
@@ -38,6 +39,8 @@ struct ScrollGeometry {
     glm::vec2 Extent{},Offset{},Range{};
     std::array<Rect,2> Tracks{},Thumbs{};
 };
+struct PageGeometry {uint64_t Group=0,Tab=0,Page=0;};
+struct TooltipGeometry {uint64_t Source=0,Body=0;Rect Bounds;glm::vec2 Natural{};};
 struct DropdownGeometry {uint64_t ID=0,Trigger=0,Popup=0,ParentScope=0,ParentModal=0,Selection=0; Rect Anchor,Bounds; bool Above=false;};
 struct ResolvedGuide {uint64_t Owner=0;int Axis=0,Index=0;bool Line=false;Rect Bounds{},LayoutBounds{};};
 struct ResolvedSnapshot
@@ -50,6 +53,8 @@ struct ResolvedSnapshot
     std::vector<ResolvedGuide> Guides;
     std::vector<ScrollGeometry> Scrolls;
     std::vector<DropdownGeometry> Dropdowns;
+    std::vector<PageGeometry> Pages;
+    std::vector<TooltipGeometry> Tooltips;
     std::vector<Button> Buttons;
     std::vector<ScreenState> Screens;
     std::unordered_map<uint64_t, size_t> Index;
@@ -107,6 +112,8 @@ struct RuntimeUIDiagnostics
     uint64_t ScrollPublications=0,ScrollRoutes=0,ScrollReveals=0,ScrollCapture=0;
     double LastScrollMilliseconds=0;
     std::string ScrollProblem;
+    std::string CompositionProblem;
+    uint64_t PageChanges=0, Tooltip=0;
     std::string DropdownProblem;
     uint64_t Dropdown=0, DropdownChoices=0, DropdownRejected=0;
     uint64_t SliderEdit=0, SliderGesture=0;

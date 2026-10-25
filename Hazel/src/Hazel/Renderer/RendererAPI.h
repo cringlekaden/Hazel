@@ -9,7 +9,7 @@
 
 namespace Hazel {
 
-    struct RasterState { bool DepthTest=true, ClipEnabled=false; glm::ivec4 ClipRect{}, Viewport{}; float LineWidth=1; };
+    struct RasterState { bool DepthTest=true, ClipEnabled=false; glm::ivec4 ClipRect{}, Viewport{}; float LineWidth=1; glm::bvec4 PickingMask{true}; };
 
     class RendererAPI
     {
@@ -27,6 +27,7 @@ namespace Hazel {
         virtual const RendererCapabilities& GetCapabilities() const = 0;
         virtual const RendererSettings& GetSettings() const = 0;
         virtual const RendererResolution& GetResolution() const = 0;
+        virtual void SetPickingMask(glm::bvec4 mask) = 0;
         virtual RasterState GetRasterState() const = 0;
         virtual void SetRasterState(const RasterState& state) = 0;
         // Submission-local text coverage scope. Backends preserve target-0 blend

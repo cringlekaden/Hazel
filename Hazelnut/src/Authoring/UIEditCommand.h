@@ -30,6 +30,9 @@ struct UIEditValues
     std::optional<UIProgressComponent> Progress;
     std::optional<UISliderComponent> Slider;
     std::optional<UIScrollViewComponent> Scroll;
+    std::optional<UITabsComponent> Tabs;
+    std::optional<UITabComponent> Tab;
+    std::optional<UITooltipComponent> Tooltip;
     std::optional<UIDropdownComponent> Dropdown;
     std::optional<UITextValue> Text;
     std::optional<UIImageValue> Image;
@@ -55,6 +58,9 @@ struct UIEditValues
         else if constexpr (std::is_same_v<T, UIProgressComponent>) Progress=value;
         else if constexpr (std::is_same_v<T, UISliderComponent>) Slider=value;
         else if constexpr (std::is_same_v<T, UIScrollViewComponent>) Scroll=value;
+        else if constexpr (std::is_same_v<T, UITabsComponent>) Tabs=value;
+        else if constexpr (std::is_same_v<T, UITabComponent>) Tab=value;
+        else if constexpr (std::is_same_v<T, UITooltipComponent>) Tooltip=value;
         else if constexpr (std::is_same_v<T, UIDropdownComponent>) Dropdown=value;
         else if constexpr (std::is_same_v<T, TextComponent>)
             Text = UITextValue{value.TextString, value.Color, value.Kerning, value.LineSpacing, value.Font};
@@ -93,7 +99,7 @@ class UIEditCommand final : public DocumentCommand
                  bool cancelling = false) const;
     uint64_t m_Document, m_Entity;
     std::vector<std::pair<uint64_t, uint64_t>> m_Guards;
-    std::array<uint64_t, 13> m_ComponentVersions{};
+    std::array<uint64_t, 16> m_ComponentVersions{};
     std::string m_Name;
     UIEditValues m_Before, m_After;
 };

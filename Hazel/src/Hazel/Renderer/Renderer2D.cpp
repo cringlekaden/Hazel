@@ -73,9 +73,9 @@ namespace Hazel {
 		static constexpr uint32_t MaxIndices = MaxQuads * 6;
 		static constexpr uint32_t MaxTextureSlots = 32;
 		uint32_t TextureSlotLimit = 0;
-        bool Ordered=false;
+        bool Ordered=false,Picking=true,HasPassiveRuns=false;
         glm::vec4 ClipRect{-1};
-        struct Run {int Kind;uint32_t First,Count;Ref<Texture2D> Font;float LineWidth;};
+        struct Run {int Kind;uint32_t First,Count;Ref<Texture2D> Font;float LineWidth;bool Picking=true;};
         std::vector<Run> Runs; // at most 8192, reused between chunks/frames
         Ref<const Text::Layout> LineLayout;
         std::vector<Ref<const FontPage>> LinePages; // one pass-local preparation, never CPU-owned
@@ -292,8 +292,9 @@ namespace Hazel {
         // Drain the previous pass before updating its camera or raster state.
         EndScene();
         BeginScene(camera, transform);
-        s_Data->Ordered = true;
+        s_Data->Ordered = true;s_Data->Picking=true;
     }
+    void Renderer2D::SetPickingEnabled(bool enabled){if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered submission");s_Data->Picking=enabled;}
     void Renderer2D::SetPrimitiveClip(glm::ivec4 clip)
     {
         if (!s_Data->Ordered)
@@ -328,11 +329,12 @@ namespace Hazel {
         if (!s_Data->Ordered)
             return;
         const int type = int(kind);
+        s_Data->HasPassiveRuns|=!s_Data->Picking;
         auto &runs = s_Data->Runs;
         if (!runs.empty())
         {
             auto &last = runs.back();
-            if (last.Kind == type &&
+            if (last.Kind == type && last.Picking==s_Data->Picking &&
                 (kind != Primitive::Text || last.Font == s_Data->FontAtlasTexture) &&
                 (kind != Primitive::Line || last.LineWidth == s_Data->LineWidth))
             {
@@ -350,10 +352,11 @@ namespace Hazel {
                                                      : s_Data->LineVertexCount;
         runs.push_back({type, first, count,
                         kind == Primitive::Text ? s_Data->FontAtlasTexture : Ref<Texture2D>{},
-                        s_Data->LineWidth});
+                        s_Data->LineWidth,s_Data->Picking});
     }
     void Renderer2D::FlushOrdered()
     {
+        struct PickingScope {bool Active;glm::bvec4 Saved{true};explicit PickingScope(bool active):Active(active){if(Active)Saved=RenderCommand::GetRasterState().PickingMask;}~PickingScope(){if(Active)RenderCommand::SetPickingMask(Saved);}} picking(s_Data->HasPassiveRuns);
         auto upload = [](auto &buffer, auto &base, auto end) {
             uint32_t bytes = uint32_t(reinterpret_cast<uint8_t *>(end) -
                                       reinterpret_cast<uint8_t *>(base.get()));
@@ -391,6 +394,7 @@ namespace Hazel {
                        boundFont;
         for (const auto &run : s_Data->Runs)
         {
+            if(picking.Active)RenderCommand::SetPickingMask(run.Picking?picking.Saved:glm::bvec4(false));
             RenderCommand::SetTextCompositing(Primitive(run.Kind) == Primitive::Text);
             switch (Primitive(run.Kind))
             {
@@ -445,7 +449,7 @@ namespace Hazel {
 
 		for(uint32_t i=1;i<s_Data->TextureSlotIndex;++i)s_Data->TextureSlots[i].reset();
         s_Data->TextureSlotIndex = 1;
-        s_Data->Runs.clear();
+        s_Data->Runs.clear();s_Data->HasPassiveRuns=false;
 	}
 
 	void Renderer2D::Flush(FlushReason reason)

@@ -68,10 +68,28 @@ bool SceneHierarchyPanel::AddEntity(const std::string &name)
 bool SceneHierarchyPanel::AddUI(int kind) {
     if(!m_Context||!CanEdit(true))return false;
     try {
-        if(kind<0||kind>16)throw std::invalid_argument("Unknown UI creation preset");
+        if(kind<0||kind>21)throw std::invalid_argument("Unknown UI creation preset");
         Entity parent=GetSelectedEntity();
         if(PrefabDocument&&!parent){auto roots=m_Context->GetChildren();if(!roots.empty())parent=m_Context->GetEntityByUUID(roots.front());}
         uint64_t dropdownGroup=0;
+        if(kind==18||kind==20){
+            auto ancestor=parent;for(size_t depth=0;ancestor&&depth<Scene::MaxDepth;++depth){
+                if((kind==18&&ancestor.HasComponent<UITabsComponent>())||(kind==20&&ancestor.HasComponent<UIRadioGroupComponent>()&&!ancestor.HasComponent<UITabsComponent>()&&!ancestor.HasComponent<UIDropdownComponent>())){dropdownGroup=ancestor.GetUUID();break;}
+                ancestor=m_Context->GetEntityByUUID(m_Context->GetRelationship(ancestor).Parent);
+            }
+            if(!dropdownGroup)throw std::invalid_argument(kind==18?"Select Tabs or one of its parts":"Select a selectable list or row");
+            parent={};auto group=m_Context->GetEntityByUUID(dropdownGroup);
+            for(auto id:m_Context->GetChildrenView(group.GetUUID())){auto child=m_Context->GetEntityByUUID(id);
+                if(kind==18&&child.HasComponent<UILayoutComponent>())parent=child;
+                if(kind==20&&child.HasComponent<UIScrollViewComponent>())parent=m_Context->GetEntityByUUID(child.GetComponent<UIScrollViewComponent>().Content);
+            }
+            if(!parent||m_Context->GetChildrenView(parent.GetUUID()).size()>=128)throw std::invalid_argument("Repair named strip/content first, or remove rows (limit 128)");
+        }
+        if(kind==21){
+            if(parent&&parent.HasComponent<UIDropdownComponent>())parent=m_Context->GetEntityByUUID(parent.GetComponent<UIDropdownComponent>().Trigger);
+            if(!parent||!parent.HasComponent<UIButtonComponent>()||!parent.HasComponent<UIRectComponent>())throw std::invalid_argument("Select a control to explain with a Tooltip");
+            if(parent.HasComponent<UITooltipComponent>())throw std::invalid_argument("Control already has a Tooltip; edit its named body");
+        }
         if(kind==16){auto ancestor=parent;for(size_t depth=0;ancestor&&depth<Scene::MaxDepth;++depth){if(ancestor.HasComponent<UIDropdownComponent>()){dropdownGroup=ancestor.GetUUID();break;}ancestor=m_Context->GetEntityByUUID(m_Context->GetRelationship(ancestor).Parent);}
             if(!dropdownGroup)throw std::invalid_argument("Select a Dropdown or one of its parts before adding an option");
             auto popup=m_Context->GetEntityByUUID(m_Context->GetEntityByUUID(dropdownGroup).GetComponent<UIDropdownComponent>().Popup);
@@ -89,7 +107,7 @@ bool SceneHierarchyPanel::AddUI(int kind) {
                 if(occupied>=layout.Rows.size()*layout.Columns.size())throw std::invalid_argument("Grid has no free cell; add row/column tracks before creating another child");
             }
         }
-        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid","UI Wrap","UI Screen","UI Checkbox","UI Radio Group","UI Progress","UI Slider","UI Vertical Slider","UI ScrollView","UI Horizontal ScrollView","UI Dropdown","Dropdown option"};
+        const char* names[]={"UI Canvas","UI Panel","UI Text","UI Button","UI Stack","UI Grid","UI Wrap","UI Screen","UI Checkbox","UI Radio Group","UI Progress","UI Slider","UI Vertical Slider","UI ScrollView","UI Horizontal ScrollView","UI Dropdown","Dropdown option","UI Tabs","Tab and page","UI Selectable List","List row","Tooltip body"};
         auto e=m_Context->CreateEntity(names[kind]);if(parent)m_Context->Reparent(e,parent,TransformPolicy::KeepLocal);
         if(kind==0||kind==7){auto &c=e.AddComponent<UICanvasComponent>();if(kind==7){c.Screen.Managed=true;c.Modal=true;}}
         else {
@@ -127,6 +145,32 @@ bool SceneHierarchyPanel::AddUI(int kind) {
                     option(child,("Option "+std::to_string(i+1)).c_str(),GameUI::ControlKind::Radio);
                     child.GetComponent<UIButtonComponent>().Group=e.GetUUID();child.GetComponent<UIButtonComponent>().TabOrder=i;
                     if(i==0)g.InitialSelection=child.GetUUID();
+                }
+            }
+            if(kind==17||kind==18||kind==19||kind==20||kind==21){
+                auto part=[&](const char *name,Entity owner){auto child=m_Context->CreateEntity(name);m_Context->Reparent(child,owner,TransformPolicy::KeepLocal);child.AddComponent<UIRectComponent>();return child;};
+                auto row=[&](Entity item,uint64_t group,const std::string &label){auto &r=item.GetComponent<UIRectComponent>();r.Offset={};r.WidthMode=GameUI::SizeMode::Fill;r.FixedSize.y=44;option(item,label.c_str(),GameUI::ControlKind::Radio);auto &b=item.GetComponent<UIButtonComponent>();b.Group=group;auto &t=item.GetComponent<UITextStyleComponent>();t.Size=18;t.Wrap=false;t.MaxLines=1;t.Overflow=Text::Overflow::Ellipsis;};
+                auto page=[&](Entity tab,Entity group,int index){
+                    auto p=part(("Page "+std::to_string(index)).c_str(),group);auto &r=p.GetComponent<UIRectComponent>();r.WidthMode=r.HeightMode=GameUI::SizeMode::Fill;r.Margin.y=52;r.Padding=glm::vec4(12);p.AddComponent<SpriteRendererComponent>(glm::vec4(.06f,.09f,.14f,1));
+                    auto button=part("Page action",p);button.GetComponent<UIRectComponent>().FixedSize={240,44};option(button,"Page action",GameUI::ControlKind::Button);button.GetComponent<UIButtonComponent>().Action="page-action";auto &c=tab.AddComponent<UITabComponent>();c.Page=p.GetUUID();c.InitialFocus=button.GetUUID();
+                };
+                if(kind==17){
+                    rect.FixedSize={600,360};auto &g=e.AddComponent<UIRadioGroupComponent>();g.Action="page";e.AddComponent<UITabsComponent>();
+                    auto strip=part("Tab strip",e);auto &r=strip.GetComponent<UIRectComponent>();r.WidthMode=GameUI::SizeMode::Fill;r.FixedSize.y=44;auto &flow=strip.AddComponent<UILayoutComponent>();flow.Direction=GameUI::Axis::Horizontal;flow.Gap=6;
+                    for(int i=0;i<3;++i){auto tab=part(("Tab "+std::to_string(i+1)).c_str(),strip);row(tab,e.GetUUID(),"Page "+std::to_string(i+1));tab.GetComponent<UIButtonComponent>().TabOrder=i;page(tab,e,i+1);if(!i)g.InitialSelection=tab.GetUUID();}
+                }
+                if(kind==18){rect.Offset={};row(e,dropdownGroup,"Page");page(e,m_Context->GetEntityByUUID(dropdownGroup),int(m_Context->GetChildrenView(parent.GetUUID()).size()));}
+                if(kind==19){
+                    rect.FixedSize={360,240};auto &g=e.AddComponent<UIRadioGroupComponent>();g.Action="entry";
+                    auto view=part("List viewport",e);auto &r=view.GetComponent<UIRectComponent>();r.WidthMode=r.HeightMode=GameUI::SizeMode::Fill;r.Padding={8,8,24,8};view.AddComponent<SpriteRendererComponent>(glm::vec4(.05f,.07f,.10f,1));auto &v=view.AddComponent<UIScrollViewComponent>();
+                    auto content=part("List rows",view);auto &cr=content.GetComponent<UIRectComponent>();cr.WidthMode=GameUI::SizeMode::Fill;cr.HeightMode=GameUI::SizeMode::Content;content.AddComponent<UILayoutComponent>().Gap=4;v.Content=content.GetUUID();
+                    for(int i=0;i<8;++i){auto item=part(("Entry "+std::to_string(i+1)).c_str(),content);row(item,e.GetUUID(),"Journal entry "+std::to_string(i+1));item.GetComponent<UIButtonComponent>().TabOrder=i;if(!i)g.InitialSelection=item.GetUUID();}
+                    auto track=part("List scroll track",view);auto &tr=track.GetComponent<UIRectComponent>();tr.FixedSize={8,0};tr.HeightMode=GameUI::SizeMode::Fill;tr.Anchor.x=1;tr.Offset.x=4;track.AddComponent<SpriteRendererComponent>(glm::vec4(.2f,.25f,.3f,1));auto thumb=part("List scroll thumb",view);thumb.GetComponent<UIRectComponent>().FixedSize={8,16};thumb.AddComponent<SpriteRendererComponent>(glm::vec4(.7f,.8f,.85f,1));v.VerticalTrack=track.GetUUID();v.VerticalThumb=thumb.GetUUID();
+                }
+                if(kind==20){rect.Offset={};row(e,dropdownGroup,"Journal entry");}
+                if(kind==21){
+                    rect.Offset={};rect.FixedSize.x=280;rect.HeightMode=GameUI::SizeMode::Content;rect.Padding=glm::vec4(8);
+                    e.AddComponent<TextComponent>().TextString="Explain this control's purpose or consequences.";auto &style=e.AddComponent<UITextStyleComponent>();style.Size=18;style.MaxLines=8;style.Overflow=Text::Overflow::Ellipsis;e.AddComponent<SpriteRendererComponent>(glm::vec4(.025f,.035f,.05f,1));parent.AddComponent<UITooltipComponent>().Body=e.GetUUID();
                 }
             }
             if(kind==15||kind==16){
@@ -184,7 +228,7 @@ bool SceneHierarchyPanel::AddUI(int kind) {
 }
 void SceneHierarchyPanel::UIAddMenu(){
     if(ImGui::BeginMenu("Runtime UI")) {
-        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap","Screen","Checkbox / Toggle","Radio Group","Progress","Slider","Vertical Slider","ScrollView","Horizontal ScrollView","Dropdown","Dropdown option"};
+        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap","Screen","Checkbox / Toggle","Radio Group","Progress","Slider","Vertical Slider","ScrollView","Horizontal ScrollView","Dropdown","Dropdown option","Tabs","Tab and page","Selectable List","List row","Tooltip for selected control"};
         for(size_t i=0;i<std::size(names);++i)if(ImGui::MenuItem(names[i]))AddUI(int(i));
         ImGui::EndMenu();
     }
@@ -400,6 +444,9 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             DisplayAddComponentEntry<UIProgressComponent>("UI Progress");
             DisplayAddComponentEntry<UISliderComponent>("UI Slider");
             DisplayAddComponentEntry<UIScrollViewComponent>("UI ScrollView");
+            DisplayAddComponentEntry<UITabsComponent>("UI Tabs");
+            DisplayAddComponentEntry<UITabComponent>("UI Tab");
+            DisplayAddComponentEntry<UITooltipComponent>("UI Tooltip");
             DisplayAddComponentEntry<UIDropdownComponent>("UI Dropdown");
             if(entity.HasComponent<TextComponent>())DisplayAddComponentEntry<UITextStyleComponent>("UI Text Style");
             if(entity.HasComponent<SpriteRendererComponent>())DisplayAddComponentEntry<UINineSliceComponent>("UI Nine Slice");
@@ -474,6 +521,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     DrawUIComponent<UIRectComponent>("UI Rect",entity,m_Sections,m_RestoreSections,[this,entity](auto& c)mutable{
         auto parent=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);
         bool derivedPosition=false,scrollContent=false;
+        if(parent&&parent.HasComponent<UITooltipComponent>()&&parent.GetComponent<UITooltipComponent>().Body==uint64_t(entity.GetUUID())){PropertyUI::DragFloat("tooltip-width","Width",c.FixedSize.x,1,1,4096);PropertyUI::Vector("padding","Padding L/T/R/B",glm::value_ptr(c.Padding),4,1,nullptr,"%.0f",{},0,4096);PropertyUI::Help("Tooltip owns placement and Content height. Edit text/style on this leaf; preview from the source's Tooltip section.");return;}
         if(parent&&parent.HasComponent<UIDropdownComponent>()&&parent.GetComponent<UIDropdownComponent>().Popup==uint64_t(entity.GetUUID())){PropertyUI::Help("Dropdown owns popup placement and size on the invoking surface. Edit its minimum width/maximum height; padding reserves scrollbar gutters.");PropertyUI::Vector("padding","Padding L/T/R/B",glm::value_ptr(c.Padding),4,1,nullptr,"%.0f",{},0,4096);return;}
 
         if(parent&&parent.HasComponent<UIScrollViewComponent>()){
@@ -655,10 +703,29 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     });
 
     DrawUIComponent<UIRadioGroupComponent>("UI Radio Group",entity,m_Sections,m_RestoreSections,[&](auto &c){
-        PropertyUI::Checkbox("required","Require selection",c.Required);PropertyUI::Text("action","Action identity",c.Action);
+        if(entity.HasComponent<UITabsComponent>())PropertyUI::ReadOnly("required","Selection","Required by Tabs");else PropertyUI::Checkbox("required","Require selection",c.Required);PropertyUI::Text("action","Action identity",c.Action);
         targetPicker("initial-selection","Initial selection",c.InitialSelection,[&](Entity candidate){return candidate.HasComponent<UIButtonComponent>()&&candidate.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio&&candidate.GetComponent<UIButtonComponent>().Group==uint64_t(entity.GetUUID());});
         if(ImGui::TreeNode("Standalone notification")){targetPicker("value-owner","Event owner",c.EventOwner,ownerTarget);PropertyUI::Help("Managed screens use their declared owner. Ordinary canvases require this explicit recipient.");ImGui::TreePop();}
         PropertyUI::Help(entity.HasComponent<UIDropdownComponent>()?"Dropdown owns one group value. Navigation highlights; Accept selects and closes. Setters are silent. Required fallback: Tab order then ID.":"Tab and directions move focus; Accept selects. Activating the current option does nothing. Required selection falls back by Tab order then ID.");
+    });
+    DrawUIComponent<UITabsComponent>("UI Tabs",entity,m_Sections,m_RestoreSections,[&](auto &c){
+        PropertyUI::Checkbox("remember-page-focus","Remember page focus",c.RememberFocus);
+        PropertyUI::Help("Radio Group owns selection. Navigation focuses; Accept selects. Pages collapse when inactive. Add Tab and page from the hierarchy; drag/reorder tab siblings independently of page identities.");
+        if(!m_Context->IsRunning()&&!m_Context->IsSimulating()&&ImGui::TreeNode("Page preview")){
+            for(auto h:m_Context->GetAllEntitiesWith<UITabComponent>()){Entity tab(h,m_Context.get());if(tab.HasComponent<UIButtonComponent>()&&tab.GetComponent<UIButtonComponent>().Group==uint64_t(entity.GetUUID())){ImGui::PushID(std::to_string(uint64_t(tab.GetUUID())).c_str());if(ImGui::Selectable(tab.GetName().c_str()))try{m_Context->PreviewUITab(entity.GetUUID(),tab.GetUUID());}catch(const std::exception &e){m_HierarchyError=e.what();}ImGui::PopID();}}
+            if(ImGui::SmallButton("Use authored initial page"))m_Context->PreviewUITab(entity.GetUUID(),0);ImGui::TreePop();
+        }
+    });
+    DrawUIComponent<UITabComponent>("UI Tab",entity,m_Sections,m_RestoreSections,[&](auto &c){
+        auto group=entity.HasComponent<UIButtonComponent>()?entity.GetComponent<UIButtonComponent>().Group:0;
+        targetPicker("page","Page",c.Page,[&](Entity e){return e.HasComponent<UIRectComponent>()&&!e.HasComponent<UICanvasComponent>()&&uint64_t(m_Context->GetRelationship(e).Parent)==group;});
+        targetPicker("page-focus","Initial page focus",c.InitialFocus,[&](Entity e){if(!e.HasComponent<UIButtonComponent>())return false;for(size_t d=0;e&&d<Scene::MaxDepth;++d){if(uint64_t(e.GetUUID())==c.Page)return true;e=m_Context->GetEntityByUUID(m_Context->GetRelationship(e).Parent);}return false;});
+        PropertyUI::Help("One tab owns each direct page. Initial focus is used when focus leaves departing page content; tab activation keeps focus on the tab.");
+    });
+    DrawUIComponent<UITooltipComponent>("UI Tooltip",entity,m_Sections,m_RestoreSections,[&](auto &c){
+        targetPicker("tip-body","Text body",c.Body,[&](Entity e){return e.HasComponent<UIRectComponent>()&&e.HasComponent<TextComponent>()&&!e.HasComponent<UIButtonComponent>()&&m_Context->GetRelationship(e).Parent==entity.GetUUID();});
+        PropertyUI::DragFloat("delay","Delay (seconds)",c.Delay,.05f,0,5);PropertyUI::DragFloat("gap","Surface gap",c.Gap,1,0,64);PropertyUI::Help("Purpose/consequences, not a duplicate label. Hover or navigation focus discovers this passive overlay. Dropdowns, captures and edits suppress it.");
+        if(!m_Context->IsRunning()&&!m_Context->IsSimulating()){if(ImGui::SmallButton("Preview tooltip"))try{m_Context->PreviewUITooltip(entity.GetUUID(),true);}catch(const std::exception &e){m_HierarchyError=e.what();}ImGui::SameLine();if(ImGui::SmallButton("Hide tooltip"))m_Context->PreviewUITooltip(entity.GetUUID(),false);}
     });
     DrawUIComponent<UIDropdownComponent>("UI Dropdown",entity,m_Sections,m_RestoreSections,[&](auto &c){
         targetPicker("trigger","Trigger",c.Trigger,[&](Entity e){return m_Context->GetRelationship(e).Parent==entity.GetUUID()&&e.HasComponent<UIButtonComponent>()&&e.HasComponent<TextComponent>();});

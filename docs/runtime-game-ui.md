@@ -100,7 +100,7 @@ than manually reproducing focus and modal cleanup with visibility toggles.
 
 `Input` supplies gameplay input and respects UI ownership. `GameUI.IsKeyDown` supplies viewport-gated keys for UI-specific shortcuts such as Escape to close a modal or N to confirm starting over. `GameUI.IsPointerCaptured` lets alternate shortcuts defer to an active pointer gesture while retaining their held-key history. Keep gameplay movement and interaction on `Input`; do not bypass modal blocking with this UI API. Visibility or enabled changes update native layout/routing, with no per-frame positioning script.
 
-UI currently uses rectangular inherited clipping, uniform reference scaling, free/stack/grid/wrap layout and sibling text emphasis. It does not yet provide scrolling lists, rich-text parsing or editable text boxes. The native layout/model and renderer abstraction are independent of editor ImGui and backend-specific graphics calls.
+UI currently uses rectangular inherited clipping, uniform reference scaling, free/stack/grid/wrap layout and sibling text emphasis. Static scrolling/selection is supported within declared limits; rich-text parsing and editable text boxes remain later endpoint items. The native layout/model and renderer abstraction are independent of editor ImGui and backend-specific graphics calls.
 
 ## Canonical sizing and containers
 
@@ -767,3 +767,86 @@ preview controls inspect offscreen options. Preview does not change authored
 selection, dispatch events, enter history or save open state. Popup/resource issues
 and current scope appear in the existing Runtime UI Debugger. Property edits use
 normal document Undo/Redo; hierarchy operations retain their existing limitations.
+
+## Tabs, static lists and purpose tooltips
+
+**Runtime UI → Tabs** creates a required Radio Group, a strip of three Radio
+controls and three ordinary Rect pages. Select the group/one of its parts and use
+**Tab and page** to append a linked pair. Reorder tab siblings with Move
+Earlier/Later; identities and page links do not depend on caption or position.
+**UI Tab** selects a named direct page and optional initial focus inside it. Each
+page has one tab owner. Keep the connected group, strip, pages and focus targets
+inside a prefab. Independent Canvas/world content belongs outside page subtrees.
+Broken references remain visible for repair; strict Save/Play/export reject them.
+
+The Radio Group owns the sole Initial selection, current Selection and action
+identity. Required fallback is TabOrder then UUID; no eligible tab means no active
+page. Navigation focuses; Accept/release selects once and stays on the tab. Page
+switching commits through the existing scene request boundary, never midway through
+control iteration. Accepted user changes emit the normal owner-addressed
+SelectionChanged (Source = group, previous/new identities = tabs). Queue pressure
+rejects before changing selection. There is no extra Activated or page-event queue.
+
+Inactive page subtrees collapse from measurement and Content sizing. They do not
+paint, hit, focus, capture or prepare GPU glyph pages. Authored Visible/Enabled are
+not rewritten. Nested tabs obey all ancestor page gates. Content/Fill dependency
+rules still apply: give pages a definite parent where Fill requires it. Pages are
+ordinary sublayouts, not independent screen surfaces.
+
+When focus leaves departing page content, **Remember page focus** tries its prior
+eligible target; otherwise the configured initial target, a revealed eligible
+page descendant, then the selected tab. Focus already on a tab stays there.
+Page changes interrupt active editing/capture through the existing policy (retain
+the latest value, no stale Cancel rollback), dismiss an owned dropdown in departing
+content and require neutral rearming. Only departing/ineligible content loses queued
+events; unrelated same-scope events and the accepted tab change remain deliverable.
+
+C#: `tabs.GetComponent<UITabsComponent>().Selection = tabEntity` silently queues a
+selection; read Selection after the scene commit. Native `SetUISelection` does the
+same for a Tabs group. `UITabComponent.Page` exposes its named page. Ordinary radio
+setters retain their existing immediate/silent behavior. Closed/reopened screens
+retain values; Stop/reset/copy use authored defaults. Replacing Tabs configuration
+resets its group value; replacing a tab's mapping preserves an eligible tab identity
+but retires the old page's interactions. **Page preview** in the Tabs Inspector
+shows inactive content in Edit without changing initial selection, history, dirty
+state or events. Property edits use normal document Undo/Redo; structural commands
+retain their current history limits. The fixed endpoint checklist tracks that work.
+
+**Runtime UI → Selectable List** composes an ordinary Radio Group, ScrollView,
+Content stack, scrollbar and eight labeled Radio rows. **List row** adds a row to
+the selected list. Use normal Text, Interactable, Visible, Initial selection,
+Require selection and group action fields. Selected marks are independent from
+focus/hover/disabled color. Existing navigation reveals offscreen rows before
+activation. Owner delivery is the normal SelectionChanged and setters are silent.
+There is no separate list component/state/queue. The creation commands cap at 128
+rows; normal scene limits still apply (4096 UI Rects, depth 256). This is finite,
+scene-authored single selection, without data sources, recycling or large-list
+performance guarantees.
+
+Select a control and use **Tooltip for selected control**. For a Dropdown root,
+this targets its trigger. A tooltip has a named direct Text/Rect leaf with an
+optional Sprite background; edit that body's purpose/consequence text, font,
+wrapping/overflow, Fixed width and padding. Height is Content and placement is
+computed. Do not duplicate the control label. **UI Tooltip** sets delay (0–5 seconds)
+and surface gap (0–64 units); **Preview tooltip/Hide tooltip** is transient Edit
+presentation. `UITooltipComponent.Body` lets a runtime script update its Text
+through the ordinary component API, without positioning scripts.
+
+Eligible pointer hover or keyboard/controller focus discovers one tooltip after
+its delay. It anchors to the source's visible bounds, prefers below, flips above
+for space and clamps to the owning safe surface. It escapes ancestor scroll clips
+through the same owned-overlay measure/arrange path. Tooltips have no focus,
+capture, input-owning screen or hit entry, and preserve underlying GPU picking IDs.
+Dropdowns, captures/edits, ownership loss, source/scope retirement and conflicting
+gestures suppress/dismiss them. Anchoring/hit policy prevents hover feedback when
+the tooltip covers the source. Time advances once per host update (large elapsed
+steps clamp to .25 seconds), not per input edge. Unchanged visible text reuses its
+layout/pages/prepared data; hidden bodies do not enter normal content measurement.
+
+Limits: 32 Tabs groups, 128 tabs per group, 128 declared tooltip sources and one
+visible tooltip, within existing scene/resource/request/event limits. Tooltips are
+plain text leaves, not interactive popovers or arbitrary widget trees. Font/asset
+and page budgets retain their existing failure policy. **Runtime UI Debugger**
+shows active page relationships, controlling page, passive tip bounds and issues.
+Physical controller/Windows/DPI/competent-reader acceptance is separate from the
+synthetic/native harness evidence in the implementation record.

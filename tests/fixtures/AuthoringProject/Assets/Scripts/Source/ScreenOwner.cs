@@ -2,7 +2,7 @@ using Hazel;
 namespace Migration {
     // Also used by the maintained native-authored screen fixture.
     public class ScreenOwnerProbe : Hazel.Entity {
-        public Hazel.Entity Settings, Confirmation, Toggle, Choices, Progress, Volume, Level, Feedback, Scrolling, ScrollView, ScrollTarget, Dropdown, DropdownChoice;
+        public Hazel.Entity Settings, Confirmation, Toggle, Choices, Progress, Volume, Level, Feedback, Scrolling, ScrollView, ScrollTarget, Dropdown, DropdownChoice, Tabbed, Tabs, JournalTab, SettingsTab, JournalList, JournalChoice;
         public float LiveValue,CommittedValue;public int SliderChanges,SliderCommits,SliderCancels;
         public int ValueChanges;public bool LastPreviousChecked,LastChecked;public ulong LastPreviousSelection,LastSelection;
         public int Count;public ulong LastSource,LastScreen;public int LastKind;
@@ -32,7 +32,12 @@ namespace Migration {
                 else if(packageStep==4){var view=ScrollView.GetComponent<UIScrollViewComponent>();if(view.Range.Y<=0)throw new System.Exception("Package scroll extent");view.Normalized=new Vector2(0,.25f);if(!view.EnsureVisible(ScrollTarget))throw new System.Exception("Package nested reveal");System.Console.WriteLine("SCROLL-PACKAGE: static extent, offsets and nested reveal ready");if(Dropdown==null||!view.EnsureVisible(Dropdown))throw new System.Exception("Package dropdown trigger reveal");Dropdown.GetComponent<UIDropdownComponent>().Open();}
                 else if(packageStep==5){var d=Dropdown.GetComponent<UIDropdownComponent>();if(!d.IsOpen)throw new System.Exception("Package dropdown popup");d.Selection=DropdownChoice;if(d.Selection.ID!=DropdownChoice.ID)throw new System.Exception("Package dropdown value");d.Close();}
                 else if(packageStep==6){if(Dropdown.GetComponent<UIDropdownComponent>().IsOpen||!Scrolling.GetComponent<UICanvasComponent>().IsOpen)throw new System.Exception("Package owned popup return");System.Console.WriteLine("DROPDOWN-PACKAGE: owned popup and silent selection ready");Scrolling.GetComponent<UICanvasComponent>().Close();}
-                else if(packageStep==7){if(Scrolling.GetComponent<UICanvasComponent>().IsOpen||!settings.IsOpen)throw new System.Exception("Package scroll scope return");settings.Close();}
+                else if(packageStep==7){if(Tabbed==null||Tabs==null)throw new System.Exception("Package tabs missing");Tabbed.GetComponent<UICanvasComponent>().Open();}
+                else if(packageStep==8){Tabs.GetComponent<UITabsComponent>().Selection=JournalTab;}
+                else if(packageStep==9){if(Tabs.GetComponent<UITabsComponent>().Selection.ID!=JournalTab.ID)throw new System.Exception("Package page switch");var list=JournalList.GetComponent<UIRadioGroupComponent>();list.Selection=JournalChoice;JournalChoice.GetComponent<UITooltipComponent>().Body.GetComponent<TextComponent>().Text="This entry can be inspected without losing your place.";}
+                else if(packageStep==10){if(JournalList.GetComponent<UIRadioGroupComponent>().Selection.ID!=JournalChoice.ID)throw new System.Exception("Package selectable list");Tabs.GetComponent<UITabsComponent>().Selection=SettingsTab;}
+                else if(packageStep==11){if(Tabs.GetComponent<UITabsComponent>().Selection.ID!=SettingsTab.ID)throw new System.Exception("Package page return");System.Console.WriteLine("COMPOSITION-PACKAGE: tabs, list selection and tooltip content ready");Tabbed.GetComponent<UICanvasComponent>().Close();}
+                else if(packageStep==12){if(Scrolling.GetComponent<UICanvasComponent>().IsOpen||!settings.IsOpen)throw new System.Exception("Package scroll scope return");settings.Close();}
                 else {if(settings.IsOpen||!GetComponent<UICanvasComponent>().IsOpen)throw new System.Exception("Package menu return failed");System.Console.WriteLine("SCREEN-PACKAGE: nested open/close complete");packageProbe=false;}
                 ++packageStep;
             }
@@ -47,6 +52,7 @@ namespace Migration {
                 if(value.Kind==Hazel.UIEventKind.ToggleChanged){++ValueChanges;LastPreviousChecked=value.PreviousChecked;LastChecked=value.Checked;continue;}
                 if(value.Kind==Hazel.UIEventKind.SelectionChanged){++ValueChanges;LastPreviousSelection=value.PreviousSelection==null?0:value.PreviousSelection.ID;LastSelection=value.Selection==null?0:value.Selection.ID;continue;}
                 if(value.Kind==Hazel.UIEventKind.Cancel){value.Screen.GetComponent<Hazel.UICanvasComponent>().Close();continue;}
+                if(value.Action=="tabs-settings"&&Tabbed!=null){Tabbed.GetComponent<UICanvasComponent>().Open();continue;}
                 if(value.Action=="scroll-settings"&&Scrolling!=null){Scrolling.GetComponent<UICanvasComponent>().Open();continue;}
                 if(value.Action=="scroll-reveal"&&ScrollView!=null){ScrollView.GetComponent<UIScrollViewComponent>().EnsureVisible(ScrollTarget,true);continue;}
                 if(value.Action=="settings"&&Settings!=null)Settings.GetComponent<Hazel.UICanvasComponent>().Open();

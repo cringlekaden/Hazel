@@ -76,6 +76,12 @@ namespace Hazel {
     public class UIRadioGroupComponent : Component {
         public Entity Selection {get{ulong id=InternalCalls.UI_Selection(Entity.CheckedID,false,0);return id==0?null:new Entity(id);}set=>InternalCalls.UI_Selection(Entity.CheckedID,true,value==null?0:value.CheckedID);}
     }
+    public class UITabsComponent : Component {
+        // Silent, queued at the scene boundary; the Radio Group owns the only value.
+        public Entity Selection {get{ulong id=InternalCalls.UI_Selection(Entity.CheckedID,false,0);return id==0?null:new Entity(id);}set=>InternalCalls.UI_Selection(Entity.CheckedID,true,value==null?0:value.CheckedID);}
+    }
+    public class UITabComponent : Component {public Entity Page {get{ulong id=InternalCalls.UI_PresentationReference(Entity.CheckedID,0);return id==0?null:new Entity(id);}}}
+    public class UITooltipComponent : Component {public Entity Body {get{ulong id=InternalCalls.UI_PresentationReference(Entity.CheckedID,1);return id==0?null:new Entity(id);}}}
     public class UIDropdownComponent : Component {
         public Entity Selection {get{ulong id=InternalCalls.UI_Selection(Entity.CheckedID,false,0);return id==0?null:new Entity(id);}set=>InternalCalls.UI_Selection(Entity.CheckedID,true,value==null?0:value.CheckedID);}
         public bool IsOpen=>InternalCalls.UI_Dropdown(Entity.CheckedID,-1);

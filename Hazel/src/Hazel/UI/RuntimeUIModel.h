@@ -122,6 +122,7 @@ struct Action
     UIEventKind Kind=UIEventKind::Activated;
     bool PreviousChecked=false, Checked=false;
     uint64_t PreviousSelection=0, Selection=0, Control=0;
+    uint64_t Page=0; // tab presentation identity; historical selection payload stays unchanged
     uint64_t Origin=0, PresentationComponent=0; // owned-selection source guards, not authored or managed handles
     uint64_t SourceLifetime=0, SourceComponent=0, ControlLifetime=0, ControlComponent=0;
     uint64_t OwnerLifetime=0, OwnerComponent=0;

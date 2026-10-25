@@ -116,7 +116,7 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
     }
     return size;
 }
-void RuntimeUI::MeasureTree(Entity root, Rect parent, const Rect *ownedBox)
+void RuntimeUI::MeasureTree(Entity root, Rect parent, const Rect *ownedBox, bool contentHeight)
 {
     m_MeasureIDs.clear();
     std::function<void(Entity, size_t)> collect = [&](Entity e, size_t depth)
@@ -145,7 +145,7 @@ void RuntimeUI::MeasureTree(Entity root, Rect parent, const Rect *ownedBox)
         n.ID = e.GetUUID();
         n.Name = e.GetName();
         n.Layout = r;
-        if(i==0&&ownedBox){n.Layout.WidthMode=n.Layout.HeightMode=SizeMode::Fixed;n.Layout.FixedSize=ownedBox->Size;n.Layout.Anchor=n.Layout.Offset=n.Layout.Pivot={};n.Layout.Margin={};n.Layout.MinimumSize={};n.Layout.HasMaximum={false,false};}
+        if(i==0&&ownedBox){n.Layout.WidthMode=n.Layout.HeightMode=SizeMode::Fixed;n.Layout.FixedSize=ownedBox->Size;n.Layout.Anchor=n.Layout.Offset=n.Layout.Pivot={};n.Layout.Margin={};n.Layout.MinimumSize={};n.Layout.HasMaximum={false,false};if(contentHeight){n.Layout.HeightMode=SizeMode::Content;n.Layout.HasMaximum.y=true;n.Layout.MaximumSize.y=512;}}
         n.Unbounded={false,false};
         if(e.HasComponent<UIScrollViewComponent>()){const auto &v=e.GetComponent<UIScrollViewComponent>();
             for(int axis=0;axis<2;++axis)if((axis?v.Vertical:v.Horizontal)&&(axis?r.HeightMode:r.WidthMode)==SizeMode::Content)throw std::invalid_argument("Scroll viewport #"+std::to_string(n.ID)+(axis?".height: ":".width: ")+"scroll axis requires Fixed/Fill");}

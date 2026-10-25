@@ -157,6 +157,34 @@ void UIScreenWorkflowChecks()
     panel.SetSelectedEntity(settingsBody);Check(panel.AddUI(3),"Scrollable settings command failed");auto scrollOpen=panel.GetSelectedEntity();edit(scrollOpen,"More settings",[](auto &v){v.Rect->Offset={320,250};v.Rect->WidthMode=v.Rect->HeightMode=SizeMode::Fixed;v.Rect->FixedSize={190,48};v.Button->Action="scroll-settings";v.Button->TabOrder=32;v.Text->Text="More settings…";v.Style->Size=18;});
     for(auto ref:{std::pair<const char*,Entity>{"Scrolling",scrolling},{"ScrollView",scrollView},{"ScrollTarget",scene->GetEntityByUUID(farTarget)}}){auto &field=ScriptEngine::GetScriptFieldMap(menu)[ref.first];field.Field={ScriptFieldType::Entity,ref.first,nullptr};field.SetValue<uint64_t>(ref.second.GetUUID());}
     auto scrollConfigured=documents.SceneText();Check(documents.UndoRedo(false)&&documents.UndoRedo(true)&&documents.SceneText()==scrollConfigured,"Scroll fixture history failed");
+    // One additional screen keeps the pre-existing settings/confirmation flows intact.
+    panel.SetSelectedEntity(menu);Check(panel.AddUI(7),"Tabbed settings screen creation failed");auto tabbed=panel.GetSelectedEntity();
+    edit(tabbed,"Tabbed screen policy",[&](auto &v){v.Canvas->ReferenceSize={640,480};v.Canvas->SafeInsets={};v.Canvas->Screen.InitiallyOpen=false;v.Canvas->Screen.EventOwner=menu.GetUUID();v.Canvas->Screen.Cancel=ScreenCancel::Close;});
+    panel.SetSelectedEntity(tabbed);Check(panel.AddUI(17),"Tabs native preset failed");auto tabs=panel.GetSelectedEntity();
+    edit(tabs,"Tabs sizing and identity",[](auto &v){v.Rect->Offset={16,60};v.Rect->FixedSize={608,380};v.Group->Action="settings-page";v.Tabs->RememberFocus=true;});
+    auto strip=scene->GetEntityByUUID(scene->GetChildrenView(tabs.GetUUID()).front());auto tabItems=scene->GetChildrenView(strip.GetUUID());
+    auto settingsTab=scene->GetEntityByUUID(tabItems[0]),journalTab=scene->GetEntityByUUID(tabItems[1]);
+    auto settingsPage=scene->GetEntityByUUID(settingsTab.GetComponent<UITabComponent>().Page),journalPage=scene->GetEntityByUUID(journalTab.GetComponent<UITabComponent>().Page);
+    edit(settingsTab,"Settings tab caption",[](auto &v){v.Text->Text="Settings";});edit(journalTab,"Journal tab caption",[](auto &v){v.Text->Text="Journal";});
+    panel.SetSelectedEntity(tabs);Check(panel.AddUI(18),"Add tab and page native command failed");auto extraTab=panel.GetSelectedEntity();panel.MoveSelected(-1);panel.MoveSelected(1);
+    edit(extraTab,"Additional tab caption",[](auto &v){v.Text->Text="Notes";});
+    panel.SetSelectedEntity(settingsPage);Check(panel.AddUI(8),"Tabbed toggle creation failed");auto tabToggle=panel.GetSelectedEntity();edit(tabToggle,"Tabbed toggle",[](auto &v){v.Rect->Offset={0,48};v.Text->Text="Show journal hints";v.Button->Action="journal-hints";});
+    panel.SetSelectedEntity(settingsPage);Check(panel.AddUI(11),"Tabbed slider creation failed");auto tabSlider=panel.GetSelectedEntity();edit(tabSlider,"Tabbed slider",[](auto &v){v.Rect->Offset={0,100};v.Rect->FixedSize={420,48};v.Slider->Minimum=0;v.Slider->Maximum=100;v.Slider->Step=5;v.Slider->InitialValue=50;v.Button->Action="tab-volume";});
+    edit(settingsTab,"Settings page initial focus",[&](auto &v){v.Tab->InitialFocus=tabSlider.GetUUID();});
+    panel.SetSelectedEntity(tabSlider);Check(panel.AddUI(21),"Tooltip native creation failed");auto sliderTip=panel.GetSelectedEntity();edit(sliderTip,"Purpose tooltip",[](auto &v){v.Text->Text="Adjust preview volume. Accept confirms; Cancel restores the edit's starting value.";v.Rect->FixedSize.x=300;});
+    auto tipBefore=documents.SceneText();edit(tabSlider,"Tooltip discovery delay",[](auto &v){v.Tooltip->Delay=.25f;});Check(documents.UndoRedo(false)&&documents.UndoRedo(true),"Tooltip property undo/redo failed");
+    panel.SetSelectedEntity(settingsPage);Check(panel.AddUI(15),"Tabbed Dropdown creation failed");auto tabDropdown=panel.GetSelectedEntity();edit(tabDropdown,"Tabbed dropdown",[](auto &v){v.Rect->Offset={0,164};v.Rect->FixedSize={280,44};v.Group->Action="journal-format";v.Dropdown->MaximumHeight=160;});
+    auto journalHeading=scene->GetEntityByUUID(scene->GetChildrenView(journalPage.GetUUID()).front());edit(journalHeading,"Journal heading",[](auto &v){v.Text->Text="Journal entries";v.Button->Interactable=false;});
+    panel.SetSelectedEntity(journalPage);Check(panel.AddUI(19),"Selectable List native preset failed");auto list=panel.GetSelectedEntity();edit(list,"Journal list sizing",[](auto &v){v.Rect->Offset={0,48};v.Rect->FixedSize={540,244};v.Group->Action="journal-entry";});
+    panel.SetSelectedEntity(list);Check(panel.AddUI(20),"List row native creation failed");auto listLast=panel.GetSelectedEntity();edit(listLast,"Journal row caption",[](auto &v){v.Text->Text="A longer discovered journal entry with a stable identity";});
+    auto listView=scene->GetEntityByUUID(scene->GetChildrenView(list.GetUUID()).front());
+    edit(journalTab,"Journal initial focus",[&](auto &v){v.Tab->InitialFocus=list.GetComponent<UIRadioGroupComponent>().InitialSelection;});
+    panel.SetSelectedEntity(listLast);Check(panel.AddUI(21),"List row tooltip creation failed");auto rowTip=panel.GetSelectedEntity();edit(rowTip,"Journal row explanation",[](auto &v){v.Text->Text="Select this entry to inspect its consequences. The list remembers one choice.";});
+    panel.SetSelectedEntity(menu);Check(panel.AddUI(3),"Tabbed settings command failed");auto tabOpen=panel.GetSelectedEntity();edit(tabOpen,"Tabs and journal command",[](auto &v){v.Rect->Offset={24,350};v.Rect->WidthMode=v.Rect->HeightMode=SizeMode::Fixed;v.Rect->FixedSize={320,44};v.Text->Text="Settings and journal";v.Button->Action="tabs-settings";v.Button->TabOrder=90;});
+    edit(tabbed,"Tabs opening focus",[&](auto &v){v.Canvas->Screen.InitialFocus=settingsTab.GetUUID();});
+    for(auto ref:{std::pair<const char*,Entity>{"Tabbed",tabbed},{"Tabs",tabs},{"JournalTab",journalTab},{"SettingsTab",settingsTab},{"JournalList",list},{"JournalChoice",listLast}}){auto &field=ScriptEngine::GetScriptFieldMap(menu)[ref.first];field.Field={ScriptFieldType::Entity,ref.first,nullptr};field.SetValue<uint64_t>(ref.second.GetUUID());}
+    const auto tabsID=uint64_t(tabs.GetUUID()),tabbedID=uint64_t(tabbed.GetUUID()),settingsTabID=uint64_t(settingsTab.GetUUID()),journalTabID=uint64_t(journalTab.GetUUID()),settingsPageID=uint64_t(settingsPage.GetUUID()),listID=uint64_t(list.GetUUID()),listViewID=uint64_t(listView.GetUUID()),listLastID=uint64_t(listLast.GetUUID()),tabOpenID=uint64_t(tabOpen.GetUUID()),tabSliderID=uint64_t(tabSlider.GetUUID()),tabDropdownID=uint64_t(tabDropdown.GetUUID()),tabDropdownTrigger=tabDropdown.GetComponent<UIDropdownComponent>().Trigger;
+    m_CompositionTabs=tabsID;m_CompositionScreen=tabbedID;m_CompositionJournal=journalTabID;m_CompositionList=listID;m_CompositionView=listViewID;m_CompositionRow=listLastID;
     scene->ValidateUI(false);
     for (size_t i = 0; i < 3; ++i)
     {
@@ -268,6 +296,18 @@ void UIScreenWorkflowChecks()
         route();
         Check(runtime->GetUIDiagnostics().Focus == first[0],
               "Settings did not return to menu invoker");
+        Check(runtime->FocusUI(tabOpenID),"Tabbed screen invoker unavailable");sample.Keys[Key::Enter]=true;route();runtime->OnUpdateRuntime(.016f);sample.Keys.fill(false);route();route();
+        Check(runtime->IsUIScreenOpen(tabbedID)&&runtime->GetUIDiagnostics().Focus==settingsTabID,"Tabbed screen initial focus failed");
+        Check(runtime->FocusUI(journalTabID),"Journal tab unavailable");sample.Keys[Key::Enter]=true;route();runtime->OnUpdateRuntime(.016f);sample.Keys.fill(false);route();runtime->OnUpdateRuntime(0);route();
+        Check(runtime->GetUISelection(tabsID)==journalTabID&&!runtime->GetUISnapshot().Find(settingsPageID)->LayoutResolved,"Native tab selection did not gate inactive page");
+        Check(runtime->EnsureUIVisible(listViewID,listLastID,true),"Native selectable-list reveal failed");sample.Keys[Key::Enter]=true;route();runtime->OnUpdateRuntime(.016f);sample.Keys.fill(false);route();
+        Check(runtime->GetUISelection(listID)==listLastID&&receiver->GetFieldValue<uint64_t>("LastSelection")==listLastID,"Native list owner selection failed");
+        runtime->SetUISelection(tabsID,settingsTabID);runtime->OnUpdateRuntime(.016f);route();route();Check(runtime->GetUIDiagnostics().Focus==tabSliderID,"Page initial focus did not restore/reveal");
+        sample.Keys[Key::Enter]=true;route();runtime->OnUpdateRuntime(0);sample.Keys.fill(false);route();Check(runtime->IsUISliderEditing(),"Tabbed slider did not enter editing");
+        runtime->SetUISelection(tabsID,journalTabID);runtime->OnUpdateRuntime(0);route();route();Check(!runtime->IsUISliderEditing()&&runtime->GetUISliderValue(tabSliderID)==50,"Page departure left slider editing/stale rollback");
+        runtime->SetUISelection(tabsID,settingsTabID);runtime->OnUpdateRuntime(0);route();route();Check(runtime->FocusUI(tabDropdownTrigger),"Tabbed dropdown trigger unavailable");sample.Keys[Key::Enter]=true;route();runtime->OnUpdateRuntime(0);sample.Keys.fill(false);route();route();Check(runtime->IsUIDropdownOpen(tabDropdownID),"Tabbed dropdown did not open");
+        runtime->SetUISelection(tabsID,journalTabID);runtime->OnUpdateRuntime(0);route();route();Check(!runtime->IsUIDropdownOpen(tabDropdownID)&&runtime->GetUISnapshot().Scope==tabbedID,"Page departure retained owned dropdown scope");
+        sample.Keys[Key::Escape]=true;route();runtime->OnUpdateRuntime(0);sample.Keys.fill(false);route();Check(!runtime->IsUIScreenOpen(tabbedID)&&runtime->GetUIDiagnostics().Focus==tabOpenID,"Tabbed screen Cancel/return focus failed");
         editor.OnSceneStop();
         Check(documents.SceneText() == accepted,
               "Runtime screen changes dirtied authored document");
@@ -291,6 +331,7 @@ SceneHierarchyPanel m_ScreenFixturePanel;
 Ref<Framebuffer> m_ScreenFixturePreview;
 uint64_t m_ScreenFixtureMenu = 0, m_ScreenFixtureSettings = 0;
 uint64_t m_ScreenFixtureDropdown=0;
+uint64_t m_CompositionTabs=0,m_CompositionScreen=0,m_CompositionJournal=0,m_CompositionList=0,m_CompositionView=0,m_CompositionRow=0;
 uint64_t m_ScreenFixtureScroll=0,m_ScreenFixtureScrollCanvas=0,m_ScreenFixtureScrollTarget=0;
 std::vector<uint64_t> m_ScreenFixtureFirst;
 void DrawUIScreenFixture()
@@ -307,7 +348,7 @@ void DrawUIScreenFixture()
     for(auto handle:m_ScreenFixture->GetAllEntitiesWith<UIRectComponent>()){
         Entity item(handle,m_ScreenFixture.get());
         if(item.HasComponent<UIScrollViewComponent>()||item.HasComponent<UIProgressComponent>()||item.HasComponent<UIRadioGroupComponent>()||(item.HasComponent<UIButtonComponent>()&&item.GetComponent<UIButtonComponent>().Kind!=GameUI::ControlKind::Button)){
-            m_ScreenFixturePanel.SetSelectedEntity(item);m_ScreenFixturePanel.RestoreSections({{"UI Button",true},{"UI Radio Group",true},{"UI Progress",true},{"UI Slider",true},{"UI ScrollView",true},{"UI Dropdown",true}});m_ScreenFixturePanel.DrawAssetProperties(item);
+            m_ScreenFixturePanel.SetSelectedEntity(item);m_ScreenFixturePanel.RestoreSections({{"UI Button",true},{"UI Radio Group",true},{"UI Progress",true},{"UI Slider",true},{"UI ScrollView",true},{"UI Dropdown",true},{"UI Tabs",true},{"UI Tab",true},{"UI Tooltip",true}});m_ScreenFixturePanel.DrawAssetProperties(item);
         }
     }
     m_ScreenFixturePanel.SetSelectedEntity(originalSelection);
@@ -349,6 +390,10 @@ void DrawUIScreenFixture()
     Check(m_ScreenFixture->GetUIError().empty(),"Native scroll preview render failed");
     Check(SceneSerializer(m_ScreenFixture).CaptureAuthoredState()==previewBefore,"Transient scroll preview dirtied authored state");
     m_ScreenFixture->PreviewUIDropdown(m_ScreenFixtureDropdown,false);
+    m_ScreenFixture->SetUIPreviewTarget(m_CompositionScreen);m_ScreenFixture->PreviewUITab(m_CompositionTabs,m_CompositionJournal);
+    Check(m_ScreenFixture->EnsureUIVisible(m_CompositionView,m_CompositionRow,false),"Native list Edit reveal failed");m_ScreenFixture->PreviewUITooltip(m_CompositionRow,true);
+    m_ScreenFixturePreview->Bind();m_ScreenFixture->OnUpdateEditor(0,owner.m_PrefabCamera);m_ScreenFixturePreview->Unbind();Check(m_ScreenFixture->GetUISnapshot().Tooltips.size()==1,"Native tooltip Edit preview failed");
+    m_ScreenFixture->PreviewUITooltip(m_CompositionRow,false);m_ScreenFixture->PreviewUITab(m_CompositionTabs,0);
     GameUI::Action event;
     Check(SceneSerializer(m_ScreenFixture).CaptureAuthoredState() == authored &&
               !m_ScreenFixture->ConsumeUIAction(0, event) && !m_ScreenFixture->ConsumeUIEvent(m_ScreenFixtureMenu,event),

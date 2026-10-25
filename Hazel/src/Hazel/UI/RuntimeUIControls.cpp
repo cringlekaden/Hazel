@@ -28,6 +28,12 @@ bool RuntimeUI::Member(uint64_t group, uint64_t id, bool eligible) const
         auto popup=m_Scene.GetEntityByUUID(g.GetComponent<UIDropdownComponent>().Popup);
         if(!popup||!popup.HasComponent<UIScrollViewComponent>()||m_Scene.GetRelationship(e).Parent!=UUID(popup.GetComponent<UIScrollViewComponent>().Content))return false;
     }
+    if(g.HasComponent<UITabsComponent>()){
+        if(!e.HasComponent<UITabComponent>())return false;
+        auto page=m_Scene.GetEntityByUUID(e.GetComponent<UITabComponent>().Page);
+        if(!page||!m_Scene.IsEntityValid(page.GetUUID())||!page.HasComponent<UIRectComponent>()||page.HasComponent<UICanvasComponent>()||m_Scene.GetRelationship(page).Parent!=g.GetUUID()||Descendant(id,page.GetUUID()))return false;
+        if(eligible){auto &r=page.GetComponent<UIRectComponent>();if(!r.Visible||!r.Enabled)return false;}
+    }
     if (eligible && !b.Interactable)
         return false;
     bool descendant = false;
@@ -65,7 +71,7 @@ bool RuntimeUI::Decoration(uint64_t owner, uint64_t visual) const
 }
 void RuntimeUI::ValidateControls(uint64_t target) const
 {
-    ValidateScrollViews(target);ValidateDropdowns(target);
+    ValidateScrollViews(target);ValidateDropdowns(target);ValidatePages(target);
     std::unordered_set<uint64_t> visuals;
     auto visual = [&](uint64_t owner, uint64_t id) {
         if (id && (!Decoration(owner, id) || !visuals.insert(id).second))
@@ -249,13 +255,13 @@ void RuntimeUI::SyncControls()
             auto version = m_Scene.GetAuthoringComponentVersion(id, typeid(UIRadioGroupComponent));
             auto &v = m_Values[id];
             if (v.Lifetime != lifetime || v.Component != version ||
-                v.InitialSelection != g.InitialSelection || v.Required != g.Required ||
+                v.InitialSelection != g.InitialSelection || v.Required != g.Required || v.Tabs!=e.HasComponent<UITabsComponent>() || v.TabsComponent!=m_Scene.GetAuthoringComponentVersion(id,typeid(UITabsComponent)) ||
                 !m_Scene.IsRunning())
             {
                 v = {};
                 v.Lifetime = lifetime;
                 v.Component = version;
-                v.Required = g.Required;
+                v.Required = g.Required;v.Tabs=e.HasComponent<UITabsComponent>();v.TabsComponent=m_Scene.GetAuthoringComponentVersion(id,typeid(UITabsComponent));
                 v.InitialSelection = g.InitialSelection;
                 v.Selected = g.InitialSelection;
             }
@@ -357,6 +363,7 @@ void RuntimeUI::Select(uint64_t id, uint64_t member)
     if (!m_Scene.IsRunning() || m_Scene.IsStopping())
         throw std::invalid_argument("Select requires Play");
     (void)Selection(id);
+    if(auto root=m_Scene.GetEntityByUUID(id);root&&root.HasComponent<UITabsComponent>()){if(!RequestTab(id,member,false))throw std::invalid_argument("Tab selection request rejected; choose an eligible local tab and check queue limits");return;}
     auto e = m_Scene.GetEntityByUUID(id);
     if ((!member && e.GetComponent<UIRadioGroupComponent>().Required) ||
         (member && !Member(id, member, true)))
@@ -403,6 +410,7 @@ void RuntimeUI::ActivateControl(Action event)
         return;
     auto &b = e.GetComponent<UIButtonComponent>();
     if(auto group=DropdownGroup(event.Entity)){RequestDropdown(group,true);return;}
+    if(b.Kind==ControlKind::Radio&&e.HasComponent<UITabComponent>()){RequestTab(b.Group,event.Entity,true);return;}
     if(b.Kind==ControlKind::Radio){auto group=m_Scene.GetEntityByUUID(b.Group);if(group&&group.HasComponent<UIDropdownComponent>()){RequestChoice(b.Group,event.Entity);return;}}
     if (b.Kind == ControlKind::Button)
     {

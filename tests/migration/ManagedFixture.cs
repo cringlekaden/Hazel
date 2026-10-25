@@ -317,3 +317,15 @@ namespace Migration {
         void OnUpdate(float dt){Hazel.UIEvent e;while(Hazel.GameUI.TryConsumeEvent(out e)){if(e.Kind!=Hazel.UIEventKind.SelectionChanged||e.Source.ID!=200||e.Screen.ID!=100||e.Owner.ID!=ID)throw new System.Exception("Dropdown event identity/kind mismatch");++Events;Previous=e.PreviousSelection.ID;Selected=e.Selection.ID;}}
     }
 }
+
+namespace Migration {
+    public class CompositionOwnerProbe : Hazel.Entity {
+        public bool Ready;public int Events;public ulong Requested,Selected;
+        Hazel.UITabsComponent tabs;Hazel.Entity settings,journal;
+        void OnCreate(){tabs=FindEntityByName("Tabs fixture").GetComponent<Hazel.UITabsComponent>();settings=FindEntityByName("Settings tab");journal=FindEntityByName("Journal tab");Ready=tabs.Selection.ID==210&&settings.GetComponent<Hazel.UITabComponent>().Page.ID==220&&FindEntityByName("Journal action").GetComponent<Hazel.UITooltipComponent>().Body.ID==241;}
+        void OnUpdate(float dt){
+            if(Requested!=0){tabs.Selection=Requested==210?settings:journal;Requested=0;}
+            Hazel.UIEvent e;while(Hazel.GameUI.TryConsumeEvent(out e)){if(e.Kind!=Hazel.UIEventKind.SelectionChanged||e.Source.ID!=200||e.Screen.ID!=100||e.Owner.ID!=ID)throw new System.Exception("Composition owner envelope");++Events;Selected=e.Selection.ID;}
+        }
+    }
+}

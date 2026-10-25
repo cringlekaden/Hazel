@@ -12,6 +12,7 @@ namespace Hazel {
         const RendererCapabilities& GetCapabilities() const override;
         const RendererSettings& GetSettings() const override;
         const RendererResolution& GetResolution() const override;
+        void SetPickingMask(glm::bvec4 mask) override;
         RasterState GetRasterState() const override;
         void SetRasterState(const RasterState& state) override;
         void BeginTextCompositing() override;

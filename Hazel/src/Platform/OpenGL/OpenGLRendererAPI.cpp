@@ -7,15 +7,17 @@
 #include <algorithm>
 
 namespace Hazel {
+    void OpenGLRendererAPI::SetPickingMask(glm::bvec4 mask){glColorMaski(1,mask.x,mask.y,mask.z,mask.w);}
     RasterState OpenGLRendererAPI::GetRasterState() const {
         RasterState state;state.DepthTest=glIsEnabled(GL_DEPTH_TEST);state.ClipEnabled=glIsEnabled(GL_SCISSOR_TEST);
+        GLboolean mask[4];glGetBooleani_v(GL_COLOR_WRITEMASK,1,mask);state.PickingMask={mask[0]!=0,mask[1]!=0,mask[2]!=0,mask[3]!=0};
         glGetFloatv(GL_LINE_WIDTH,&state.LineWidth);
         glGetIntegerv(GL_SCISSOR_BOX,&state.ClipRect.x);glGetIntegerv(GL_VIEWPORT,&state.Viewport.x);return state;
     }
     void OpenGLRendererAPI::SetRasterState(const RasterState& state) {
         if(state.DepthTest)glEnable(GL_DEPTH_TEST);else glDisable(GL_DEPTH_TEST);
         if(state.ClipEnabled)glEnable(GL_SCISSOR_TEST);else glDisable(GL_SCISSOR_TEST);
-        SetLineWidth(state.LineWidth);
+        SetLineWidth(state.LineWidth);SetPickingMask(state.PickingMask);
         glScissor(state.ClipRect.x,state.ClipRect.y,state.ClipRect.z,state.ClipRect.w);
     }
 

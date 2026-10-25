@@ -261,6 +261,9 @@ namespace Hazel {
         std::string Action="selection";
     };
     struct UIScrollViewComponent : GameUI::ScrollConfig {};
+    struct UITabsComponent { bool RememberFocus=true; }; // required RadioGroup is the single selection authority
+    struct UITabComponent { uint64_t Page=0, InitialFocus=0; };
+    struct UITooltipComponent { uint64_t Body=0; float Delay=.6f, Gap=8; };
     struct UIDropdownComponent : GameUI::DropdownConfig {};
     struct UISliderComponent : GameUI::SteppedRange {
         float InitialValue=0;
@@ -282,6 +285,6 @@ namespace Hazel {
 		ComponentGroup<TransformComponent, SpriteRendererComponent, SpriteAnimationComponent, AudioSourceComponent,
 			CircleRendererComponent, CameraComponent, ScriptComponent,
 			NativeScriptComponent, Rigidbody2DComponent, BoxCollider2DComponent,
-			CircleCollider2DComponent, TextComponent, UICanvasComponent, UIRectComponent, UILayoutComponent, UITextStyleComponent, UINineSliceComponent, UIButtonComponent, UIRadioGroupComponent, UIProgressComponent, UISliderComponent, UIScrollViewComponent, UIDropdownComponent>;
+			CircleCollider2DComponent, TextComponent, UICanvasComponent, UIRectComponent, UILayoutComponent, UITextStyleComponent, UINineSliceComponent, UIButtonComponent, UIRadioGroupComponent, UIProgressComponent, UISliderComponent, UIScrollViewComponent, UIDropdownComponent, UITabsComponent, UITabComponent, UITooltipComponent>;
 
 }

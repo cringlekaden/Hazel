@@ -286,6 +286,9 @@ void EditorLayer::UI_Debugger()
         }
     }
     for(const auto &popup:s.Dropdowns)ImGui::Text("Owned popup %llu | parent scope %llu | %s",(unsigned long long)popup.Popup,(unsigned long long)popup.ParentScope,popup.Above?"above":"below");
+    if(!d.CompositionProblem.empty())ImGui::TextWrapped("%s",d.CompositionProblem.c_str());
+    for(const auto &page:s.Pages)ImGui::Text("Tabs %llu | selected %llu | page %llu",(unsigned long long)page.Group,(unsigned long long)page.Tab,(unsigned long long)page.Page);
+    for(const auto &tip:s.Tooltips)ImGui::Text("Tooltip %llu | body %llu (passive)",(unsigned long long)tip.Source,(unsigned long long)tip.Body);
     ImGui::Checkbox("Bounds overlay", &m_UIBoundsOverlay);
     ImGui::SameLine();
     ImGui::Checkbox("Clip overlay", &m_UIClipOverlay);
@@ -306,6 +309,7 @@ void EditorLayer::UI_Debugger()
                         r.Size.y);
         };
         rect("Logical bounds", n->Bounds);
+        if(n->Page)ImGui::Text("Controlling page %llu",(unsigned long long)n->Page);
         try{
             if(selected.HasComponent<UIButtonComponent>()&&(selected.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Toggle||selected.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio))
                 ImGui::Text("%s: %s",selected.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio?"Radio":"Toggle",m_ActiveScene->IsUIChecked(n->ID)?"selected / checked":"unselected / unchecked");

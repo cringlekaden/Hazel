@@ -34,6 +34,11 @@ class RuntimeUI
     bool HasScreenRequests() const {return !m_ScreenRequests.empty();}
     bool ConsumeEvent(uint64_t owner,GameUI::Action &event);
     bool Focus(uint64_t target);
+    void ValidatePages(uint64_t target=0) const;
+    void PreviewTab(uint64_t group,uint64_t tab); // zero removes Edit override
+    void PreviewTooltip(uint64_t source,bool open);
+    void Advance(float seconds); // one host update, never one input edge
+    bool RequestTab(uint64_t group,uint64_t tab,bool notify);
     bool RequestDropdown(uint64_t id,bool open);
     bool DropdownOpen(uint64_t id) const;
     void PreviewDropdown(uint64_t id,bool open);
@@ -82,7 +87,26 @@ class RuntimeUI
 
   private:
     struct ScreenRequest;
-    enum class RequestKind {Screen,DropdownOpen,DropdownClose,DropdownChoice};
+    std::unordered_map<uint64_t,uint64_t> m_PageTabs,m_TooltipBodies;
+    std::vector<uint64_t> m_TabGroups,m_TooltipIDs;
+    std::unordered_map<uint64_t,uint64_t> m_TabPreviews;
+    uint64_t m_PageFocus=0,m_PageFocusPage=0,m_PageFallback=0;
+    bool m_RetainPageEvents=false;
+    uint64_t m_TipCandidate=0,m_TipVisible=0,m_TipPreview=0;
+    float m_TipElapsed=0;
+    uint64_t m_TipLifetime=0,m_TipComponent=0;
+    glm::vec2 m_TipMouse{};
+    bool m_TipPointer=true;
+    void CaptureCompositions();
+    uint64_t PageSelection(uint64_t group) const;
+    bool PageActive(uint64_t entity) const;
+    void PreparePages();
+    void FocusPage();
+    bool CommitTab(const ScreenRequest &request);
+    void ArrangeTooltip(bool measure);
+    void AppendOverlay(Entity root,GameUI::Rect bounds,GameUI::Rect surface,float scale,uint64_t canvas,uint64_t scope,bool passive=false);
+    void CompositionProblem(const std::string &message);
+    enum class RequestKind {Screen,DropdownOpen,DropdownClose,DropdownChoice,TabChoice};
     std::vector<uint64_t> m_DropdownIDs;
     std::unordered_map<uint64_t,uint64_t> m_DropdownTriggers,m_DropdownPopups;
     uint64_t m_DropdownRevision=0,m_PreviewDropdown=0,m_DropdownFocus=0;
@@ -132,6 +156,8 @@ class RuntimeUI
         uint64_t Dropdown=0,DropdownLifetime=0,Trigger=0,TriggerLifetime=0,TriggerComponent=0,Canvas=0,ParentScope=0;};
     struct ScreenRequest {RequestKind Kind=RequestKind::Screen;GameUI::ScreenOperation Operation=GameUI::ScreenOperation::Open;uint64_t ID=0,Lifetime=0,Component=0;
         uint64_t Option=0,OptionLifetime=0,OptionComponent=0;
+        uint64_t RootComponent=0,PresentationComponent=0,Page=0,PageLifetime=0,PageComponent=0;
+        bool Notify=false;std::string Name;
         uint64_t Issuer=0,IssuerLifetime=0,IssuerComponent=0;std::string IssuerClass;};
     struct ScopeFocus {uint64_t Scope=0,Target=0;bool Keyboard=false;};
     std::vector<ScreenEntry> m_Screens;
@@ -175,7 +201,8 @@ class RuntimeUI
     struct ValueState {
         uint64_t Lifetime=0, Component=0, InitialSelection=0, Selected=0, SelectedLifetime=0,SelectedComponent=0;
         GameUI::ControlKind Kind=GameUI::ControlKind::Button;
-        bool InitialChecked=false, Checked=false, Required=false;
+        bool InitialChecked=false, Checked=false, Required=false, Tabs=false;
+        uint64_t TabsComponent=0;
         float Minimum=0,Maximum=1,Initial=0,Value=0;
         GameUI::SteppedRange Range;
         uint64_t Revision=0;
@@ -231,7 +258,7 @@ class RuntimeUI
     };
     void CaptureSources(GameUI::SurfaceMetrics surface, bool previewOrphans);
     void Build(GameUI::SurfaceMetrics surface, bool previewOrphans);
-    void MeasureTree(Entity root, GameUI::Rect parent, const GameUI::Rect *ownedBox=nullptr);
+    void MeasureTree(Entity root, GameUI::Rect parent, const GameUI::Rect *ownedBox=nullptr, bool contentHeight=false);
     glm::vec2 Intrinsic(Entity entity, float width);
     GameUI::MeasuredLayout m_Measure;
     std::vector<GameUI::MeasureNode> m_MeasureNodes;

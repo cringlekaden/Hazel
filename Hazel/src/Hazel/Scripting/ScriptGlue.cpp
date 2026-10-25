@@ -430,6 +430,7 @@ namespace Hazel {
         try{auto* s=ScriptEngine::GetSceneContext();if(!s)throw std::invalid_argument("Control requires a runtime scene");if(write)s->SetUIProgress(id,value);result=s->GetUIProgress(id);}
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
     }
+    static uint64_t UI_PresentationReference(uint64_t id,int kind){MonoException* failure=nullptr;uint64_t result=0;try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI reference requires a live scene");auto e=scene->GetEntityByUUID(id);if(!e||!scene->IsEntityValid(id))throw std::invalid_argument("UI source retired");if(kind==0&&e.HasComponent<UITabComponent>())result=e.GetComponent<UITabComponent>().Page;else if(kind==1&&e.HasComponent<UITooltipComponent>())result=e.GetComponent<UITooltipComponent>().Body;else throw std::invalid_argument("UI presentation component missing");}catch(const std::exception &e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;}
     static bool UI_Dropdown(uint64_t id,int operation){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("Dropdown requires a live scene");if(operation< -1||operation>1)throw std::invalid_argument("Invalid Dropdown operation");result=operation<0?scene->IsUIDropdownOpen(id):scene->RequestUIDropdown(id,operation!=0);}catch(const std::exception &e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;}
     static void UI_ScrollInfo(uint64_t id,glm::vec2* offset,glm::vec2* range,glm::vec2* viewport,glm::vec2* extent){
         MonoException* failure=nullptr;try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("ScrollView requires a scene");auto g=scene->GetUIScroll(id);*offset=g.Offset;*range=g.Range;*viewport=g.Viewport.Size;*extent=g.Extent;}catch(const std::exception&e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);
@@ -598,13 +599,16 @@ namespace Hazel {
         RegisterComponent<UIProgressComponent>("Hazel.UIProgressComponent");
         RegisterComponent<UISliderComponent>("Hazel.UISliderComponent");
         RegisterComponent<UIScrollViewComponent>("Hazel.UIScrollViewComponent");
+        RegisterComponent<UITabsComponent>("Hazel.UITabsComponent");
+        RegisterComponent<UITabComponent>("Hazel.UITabComponent");
+        RegisterComponent<UITooltipComponent>("Hazel.UITooltipComponent");
         RegisterComponent<UIDropdownComponent>("Hazel.UIDropdownComponent");
 
 	}
 
 	void ScriptGlue::ValidateComponents(MonoImage* image)
 	{
-		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent", "Hazel.SpriteRendererComponent", "Hazel.SpriteAnimationComponent", "Hazel.AudioSourceComponent", "Hazel.UICanvasComponent", "Hazel.UIRectComponent", "Hazel.UILayoutComponent", "Hazel.UITextStyleComponent", "Hazel.UINineSliceComponent", "Hazel.UIButtonComponent", "Hazel.UIRadioGroupComponent", "Hazel.UIProgressComponent", "Hazel.UISliderComponent", "Hazel.UIScrollViewComponent", "Hazel.UIDropdownComponent" })
+		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent", "Hazel.SpriteRendererComponent", "Hazel.SpriteAnimationComponent", "Hazel.AudioSourceComponent", "Hazel.UICanvasComponent", "Hazel.UIRectComponent", "Hazel.UILayoutComponent", "Hazel.UITextStyleComponent", "Hazel.UINineSliceComponent", "Hazel.UIButtonComponent", "Hazel.UIRadioGroupComponent", "Hazel.UIProgressComponent", "Hazel.UISliderComponent", "Hazel.UIScrollViewComponent", "Hazel.UIDropdownComponent", "Hazel.UITabsComponent", "Hazel.UITabComponent", "Hazel.UITooltipComponent" })
 			if (!mono_reflection_type_from_name(const_cast<char*>(name), image))
 				throw std::runtime_error(std::string("Missing managed component: ") + name);
 	}
@@ -624,6 +628,7 @@ namespace Hazel {
         HZ_ADD_INTERNAL_CALL(UI_Progress);
         HZ_ADD_INTERNAL_CALL(UI_Slider);
         HZ_ADD_INTERNAL_CALL(UI_Dropdown);
+        HZ_ADD_INTERNAL_CALL(UI_PresentationReference);
         HZ_ADD_INTERNAL_CALL(UI_ScrollInfo);HZ_ADD_INTERNAL_CALL(UI_ScrollTo);HZ_ADD_INTERNAL_CALL(UI_EnsureVisible);
         HZ_ADD_INTERNAL_CALL(UI_FocusScope);
         HZ_ADD_INTERNAL_CALL(UI_Cancel);

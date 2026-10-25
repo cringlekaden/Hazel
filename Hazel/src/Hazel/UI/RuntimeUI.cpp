@@ -42,6 +42,7 @@ bool Nonempty(Rect r)
 } // namespace
 void RuntimeUI::CancelInput()
 {
+    if(m_TipVisible||m_TipCandidate){m_TipVisible=m_TipCandidate=0;m_TipElapsed=0;++m_DropdownRevision;}
     if(!m_ScopeCancellation){m_Choice.reset();m_ScreenRequests.erase(std::remove_if(m_ScreenRequests.begin(),m_ScreenRequests.end(),[](const auto &r){return r.Kind!=RequestKind::Screen;}),m_ScreenRequests.end());if(auto id=ActiveDropdown();id&&m_Scene.IsRunning()&&!m_Scene.IsStopping())RequestDropdown(id,false);}
     CancelScrollCapture(false);m_ScrollNeutral=false;
     EndSlider(false,true,false);
@@ -50,7 +51,7 @@ void RuntimeUI::CancelInput()
         m_OuterDrops += m_Input.DroppedActions();
         m_Input.Reset();
     }
-    m_Diagnostics.RetiredEvents+=m_Actions.size();m_Actions.clear();
+    if(!m_RetainPageEvents){m_Diagnostics.RetiredEvents+=m_Actions.size();m_Actions.clear();}
     m_InputEnabled = false;
     m_ActionOwnsFrame=false;
     m_PointerOver = m_KeyboardOwns = false;
@@ -70,6 +71,7 @@ void RuntimeUI::Reset()
     m_Resolved.Warnings.clear();
     m_Source.clear();
     m_ScrollState.clear();m_ScrollParts.clear();m_ScrollFocus=0;
+    m_PageTabs.clear();m_TooltipBodies.clear();m_TabGroups.clear();m_TooltipIDs.clear();m_TabPreviews.clear();m_PageFocus=m_PageFocusPage=m_PageFallback=0;m_RetainPageEvents=false;m_TipCandidate=m_TipVisible=m_TipPreview=0;m_TipElapsed=0;
     m_DropdownIDs.clear();m_DropdownTriggers.clear();m_DropdownPopups.clear();m_Choice.reset();m_PreviewDropdown=m_DropdownFocus=0;++m_DropdownRevision;
     m_Cache.clear();m_Values.clear();m_ControlVisuals.clear();m_AssetOwner.reset();
     m_GPUTimer.reset();m_PaintSubmission=0;m_PreparedBytes=0;
@@ -81,6 +83,9 @@ void RuntimeUI::Reset()
 }
 void RuntimeUI::Retire(uint64_t id)
 {
+    if(id==m_TipCandidate||id==m_TipVisible||m_TooltipBodies.count(id)){m_TipCandidate=m_TipVisible=0;m_TipElapsed=0;++m_DropdownRevision;}
+    if(id==m_TipPreview||m_TooltipBodies.count(id)){m_TipPreview=0;++m_DropdownRevision;}
+
     if(m_Bar.Owner&&(id==m_Bar.Owner||id==m_Bar.Track||id==m_Bar.Thumb||Descendant(id,m_Bar.Owner)))CancelScrollCapture(true);
     if(m_ScrollFocus==id)m_ScrollFocus=0;
     if(m_Slider.ID&&(m_Slider.ID==id||m_Slider.Terminal.Owner==id||m_Slider.Terminal.Screen==id||m_Values.at(m_Slider.ID).Track==id||m_Values.at(m_Slider.ID).Thumb==id||m_Values.at(m_Slider.ID).Fill==id))EndSlider(false,true);
@@ -94,7 +99,7 @@ void RuntimeUI::Retire(uint64_t id)
     m_ScreenFocus.erase(std::remove_if(m_ScreenFocus.begin(),m_ScreenFocus.end(),[&](auto saved){return saved.Scope==id;}),m_ScreenFocus.end());
     if(m_Choice&&(m_Choice->Event.Entity==id||m_Choice->Event.Origin==id||m_Choice->Event.Selection==id))m_Choice.reset();
     m_ScreenRequests.erase(std::remove_if(m_ScreenRequests.begin(),m_ScreenRequests.end(),[&](const ScreenRequest &r){
-        if(r.ID==id||r.Option==id)return true;
+        if(r.ID==id||r.Option==id||r.Page==id)return true;
         auto root=m_Scene.GetEntityByUUID(r.ID);
         return r.Kind!=RequestKind::Screen&&root&&root.HasComponent<UIDropdownComponent>()&&(root.GetComponent<UIDropdownComponent>().Trigger==id||root.GetComponent<UIDropdownComponent>().Popup==id);
     }),m_ScreenRequests.end());
@@ -106,13 +111,13 @@ void RuntimeUI::Retire(uint64_t id)
     if(auto it=m_Cache.find(id);it!=m_Cache.end()){m_PreparedBytes-=it->second.Glyphs.capacity()*sizeof(Renderer2D::TextGlyph);m_Cache.erase(it);}
     auto pendingBefore=m_Actions.size();
     m_Actions.erase(std::remove_if(m_Actions.begin(), m_Actions.end(),
-                                   [&](const Action &a) { return a.Entity == id || a.Origin == id || a.Owner == id || a.Screen == id; }),
+                                   [&](const Action &a) { return a.Entity == id || a.Origin == id || a.Owner == id || a.Screen == id || (a.Page && (a.Selection==id||a.Page==id)); }),
                     m_Actions.end());
     m_Diagnostics.RetiredEvents+=pendingBefore-m_Actions.size();
 }
 void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
 {
-    ++m_Diagnostics.SourceChecks;m_ScrollIDs.clear();m_DropdownIDs.clear();
+    ++m_Diagnostics.SourceChecks;m_ScrollIDs.clear();m_DropdownIDs.clear();CaptureCompositions();
     auto assets=m_Scene.GetAssets();
     if(m_AssetOwner.owner_before(assets) || assets.owner_before(m_AssetOwner)) {
         // Ownership identity includes expired control blocks, so allocator address
@@ -123,7 +128,7 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
     m_RectIDs.clear();
     m_CanvasIDs.clear();
     DependencyBytes state{m_Candidate};
-    state.Add(m_Scene.GetIdentity());state.Add(m_AssetGeneration);state.Add(m_DropdownRevision);state.Add(m_PreviewDropdown);
+    state.Add(m_Scene.GetIdentity());state.Add(m_AssetGeneration);state.Add(m_DropdownRevision);state.Add(m_PreviewDropdown);state.Add(m_TipVisible);state.Add(m_TipPreview);for(auto group:m_TabGroups){state.Add(group);auto i=m_TabPreviews.find(group);state.Add(i==m_TabPreviews.end()?uint64_t(0):i->second);}
     state.Add(surface.Viewport);
     state.Add(surface.Framebuffer);
     state.Add(previewOrphans);state.Add(previewOrphans?m_PreviewScreen:uint64_t(0));
@@ -221,6 +226,9 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
         if(e.HasComponent<UIRadioGroupComponent>()){auto &g=e.GetComponent<UIRadioGroupComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIRadioGroupComponent)));if(g.Action.size()>128||g.Action.find('\0')!=std::string::npos)throw std::invalid_argument("Invalid radio action");state.Add(g.Required);state.Add(g.InitialSelection);state.Add(g.EventOwner);state.Add(g.Action);}
         state.Add(e.HasComponent<UIProgressComponent>());
         if(e.HasComponent<UIProgressComponent>()){auto &p=e.GetComponent<UIProgressComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIProgressComponent)));state.Add(p.Minimum);state.Add(p.Maximum);state.Add(p.InitialValue);state.Add(p.Fill);state.Add(int(p.Direction));if(p.Fill)state.Add(Decoration(id,p.Fill));}
+        state.Add(e.HasComponent<UITabsComponent>());if(e.HasComponent<UITabsComponent>()){state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UITabsComponent)));state.Add(e.GetComponent<UITabsComponent>().RememberFocus);}
+        state.Add(e.HasComponent<UITabComponent>());if(e.HasComponent<UITabComponent>()){auto &c=e.GetComponent<UITabComponent>();state.Add(c.Page);state.Add(c.InitialFocus);state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UITabComponent)));}
+        state.Add(e.HasComponent<UITooltipComponent>());if(e.HasComponent<UITooltipComponent>()){auto &c=e.GetComponent<UITooltipComponent>();state.Add(c.Body);state.Add(c.Delay);state.Add(c.Gap);state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UITooltipComponent)));}
         state.Add(e.HasComponent<UIDropdownComponent>());
         if(e.HasComponent<UIDropdownComponent>()){
             const auto &d=e.GetComponent<UIDropdownComponent>();Validate(d);m_DropdownIDs.push_back(id);
@@ -321,7 +329,7 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
             ++m_Diagnostics.Reuses;
             return;
         }
-        SyncControls();
+        SyncControls();PreparePages();
         Build(surface, previewOrphans);
         m_Diagnostics.LastLayoutMilliseconds=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-sourceEnd).count();
         m_Build.Generation = ++m_NextGeneration;
@@ -332,7 +340,7 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
         SyncSliders();
         ReconcileScrollCapture();
         PruneActions();
-        FocusDropdownOption();FinishDropdownChoice();
+        FocusDropdownOption();FinishDropdownChoice();FocusPage();
         if (!m_Input.Focused() && !m_Resolved.Modal)
             m_KeyboardOwns = false;
         // Remove retired cache entries, including now-interrupted rect subtrees.
@@ -353,6 +361,8 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
     }
     catch (...)
     {
+        m_RetainPageEvents=false;
+        m_PageFocus=m_PageFocusPage=m_PageFallback=0;
         CancelInput();
         m_Resolved.Valid = false;
         throw;
@@ -372,7 +382,7 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
     m_Build.Warnings.clear();
     m_Build.Modal = m_Build.Scope = 0;
     m_Build.Screens.clear();
-    m_Build.Guides.clear();m_Build.Scrolls.clear();m_Build.Dropdowns.clear();
+    m_Build.Guides.clear();m_Build.Scrolls.clear();m_Build.Dropdowns.clear();m_Build.Pages.clear();m_Build.Tooltips.clear();
     m_Build.Valid = false;
     m_Build.Surface = surface;
     m_Build.PreviewOrphans = previewOrphans;
@@ -430,6 +440,8 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
             m_Build.Warnings.push_back(
                 {id, ResolvedSnapshot::WarningCode::NestedCanvas});
         n.Scope=n.Canvas;
+        n.Visible &= PageActive(id);
+        for(auto parent=id;parent;){if(m_PageTabs.count(parent)){n.Page=parent;break;}auto p=m_Scene.GetEntityByUUID(parent);if(!p)break;parent=m_Scene.GetRelationship(p).Parent;}
         auto parent = m_Scene.GetEntityByUUID(n.Parent);
         n.ContainerOwned = !n.IsCanvas && parent && parent.HasComponent<UIRectComponent>() &&
                       !parent.HasComponent<UICanvasComponent>() && parent.HasComponent<UILayoutComponent>();
@@ -534,7 +546,8 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
     if(!m_Build.Scope)m_Build.Scope=m_Build.Modal;
     for(auto &n:m_Build.Elements){n.LayoutBounds=n.Bounds;n.LayoutParentContent=n.ParentContent;n.LayoutSlot=n.Slot;}
     for(auto &g:m_Build.Guides)g.LayoutBounds=g.Bounds;
-    PrepareScrollState();ApplyScrollPresentation();ArrangeDropdown(true);BuildHitTargets();
+    PrepareScrollState();ApplyScrollPresentation();ArrangeDropdown(true);ArrangeTooltip(true);BuildHitTargets();
+    for(auto group:m_TabGroups)if(auto node=m_Build.Find(group);node&&node->LayoutResolved&&node->Visible&&PageActive(group)){auto selected=m_Scene.GetEntityByUUID(PageSelection(group));if(selected&&selected.HasComponent<UITabComponent>())m_Build.Pages.push_back({group,selected.GetUUID(),selected.GetComponent<UITabComponent>().Page});}
     for(const auto &entry:m_Screens){
         for(auto target:{entry.Policy.InitialFocus,entry.Policy.DefaultAction,entry.Policy.CancelTarget})if(target){
             auto n=m_Build.Find(target);auto e=m_Scene.GetEntityByUUID(target);
@@ -589,7 +602,7 @@ void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enable
     if (depth >= Scene::MaxDepth)
         throw std::runtime_error("UI layout depth exceeded (256)");
     auto &r = e.GetComponent<UIRectComponent>();
-    if (!r.Visible)
+    if (!r.Visible || !PageActive(e.GetUUID()))
         return;
     auto &n = m_Build.Elements[m_Build.Index.at(e.GetUUID())];
     if(!n.MeasureResolved)MeasureTree(e,parent);
@@ -720,10 +733,13 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
     }
     m_PointerOver = false;
     auto input = pixels;
+    if(input.Mouse!=m_TipMouse||input.PointerPressed){m_TipPointer=true;m_TipMouse=input.Mouse;}
+    if(input.FocusNavigation||input.AcceptPressed||input.Adjust||input.ScrollPage)m_TipPointer=false;
     const auto &surface = m_Resolved.Surface;
     const bool usableSurface = surface.Viewport.x > 0 && surface.Viewport.y > 0 &&
                                surface.Framebuffer.x > 0 && surface.Framebuffer.y > 0;
     input.Enabled &= usableSurface;
+    if((!input.Enabled||input.PointerPressed||input.AcceptPressed||input.CancelDown)&&m_TipVisible){m_TipVisible=m_TipCandidate=0;m_TipElapsed=0;++m_DropdownRevision;}
     auto ratio = usableSurface ? surface.Framebuffer / surface.Viewport : glm::vec2(1);
     input.Mouse *= ratio;
     input.PressPosition *= ratio;
@@ -786,7 +802,7 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
         m_Input.SetFocus(m_Scene.GetIdentity(), entryFocus, m_Resolved.Buttons);
     if (!input.Enabled)
     {
-        m_Diagnostics.RetiredEvents+=m_Actions.size();m_Actions.clear();
+        if(!m_RetainPageEvents){m_Diagnostics.RetiredEvents+=m_Actions.size();m_Actions.clear();}
         m_PointerOver = false;
     }
     else
@@ -848,7 +864,7 @@ bool RuntimeUI::Bounds(uint64_t id, Rect &pixels) const
 RuntimeUIDiagnostics RuntimeUI::Diagnostics() const
 {
     auto result = m_Diagnostics;
-    result.ScrollCapture=m_Bar.Owner;result.Dropdown=ActiveDropdown();
+    result.Tooltip=m_TipVisible?m_TipVisible:m_TipPreview;result.ScrollCapture=m_Bar.Owner;result.Dropdown=ActiveDropdown();
     result.SliderEdit=m_Slider.ID;result.SliderGesture=m_Slider.Terminal.Gesture;result.SliderPointer=m_Slider.Pointer;
     result.Focus = m_Input.Focused();
     result.Capture = m_Input.Captured();
@@ -981,7 +997,7 @@ void RuntimeUI::Draw()
             state.ClipRect = {prior.Viewport.x + int(p.x),
                               prior.Viewport.y + prior.Viewport.w - int(p.y + z.y), int(z.x),
                               int(z.y)};
-            Renderer2D::SetPrimitiveClip(state.ClipRect);
+            Renderer2D::SetPrimitiveClip(state.ClipRect);Renderer2D::SetPickingEnabled(!n.PassiveOverlay);
             auto tint = glm::vec4(1);
             if(auto part=m_ControlVisuals.find(n.ID);part!=m_ControlVisuals.end()){
                 auto owner=m_Scene.GetEntityByUUID(part->second);auto root=m_Resolved.Find(part->second);

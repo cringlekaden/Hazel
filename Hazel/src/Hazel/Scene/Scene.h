@@ -55,6 +55,8 @@ namespace Hazel {
     bool IsUIChecked(uint64_t id);
     void SetUIChecked(uint64_t id,bool value);
     uint64_t GetUISelection(uint64_t group);
+    void PreviewUITab(uint64_t group,uint64_t tab);
+    void PreviewUITooltip(uint64_t source,bool open);
     bool RequestUIDropdown(uint64_t dropdown,bool open);
     bool IsUIDropdownOpen(uint64_t dropdown) const;
     void PreviewUIDropdown(uint64_t dropdown,bool open);

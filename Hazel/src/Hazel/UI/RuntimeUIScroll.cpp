@@ -318,7 +318,7 @@ void RuntimeUI::RepublishScroll()
     const auto start = std::chrono::steady_clock::now();
     m_Build = m_Resolved;
     ApplyScrollPresentation();
-    ArrangeDropdown(false);
+    ArrangeDropdown(false);ArrangeTooltip(false);
     BuildHitTargets();
     m_Build.Generation = ++m_NextGeneration;
     std::swap(m_Resolved, m_Build);
@@ -599,7 +599,7 @@ bool RuntimeUI::EnsureVisible(uint64_t view, uint64_t target, bool focus)
     }
     m_Build = m_Resolved;
     ApplyScrollPresentation();
-    ArrangeDropdown(false);
+    ArrangeDropdown(false);ArrangeTooltip(false);
     BuildHitTargets();
     auto result = m_Build.Find(target);
     bool ok = result && Area(result->FramebufferClip) && (!focus || result->FocusEligible);

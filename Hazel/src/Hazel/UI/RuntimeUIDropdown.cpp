@@ -1,6 +1,7 @@
+#include "hzpch.h"
+#include "Hazel/UI/OwnedOverlay.h"
 #include "Hazel/Utils/UTF8.h"
 #include "RuntimeUI.h"
-#include "hzpch.h"
 #include <cmath>
 namespace Hazel
 {
@@ -9,7 +10,7 @@ namespace
 {
 bool Area(Rect r) { return r.Size.x > 0 && r.Size.y > 0; }
 } // namespace
-bool RuntimeUI::OwnedPopup(uint64_t id) const { return m_DropdownPopups.count(id) != 0; }
+bool RuntimeUI::OwnedPopup(uint64_t id) const { return m_DropdownPopups.count(id) != 0 || m_TooltipBodies.count(id)!=0; }
 uint64_t RuntimeUI::DropdownGroup(uint64_t trigger) const
 {
     auto i = m_DropdownTriggers.find(trigger);
@@ -688,7 +689,7 @@ void RuntimeUI::ArrangeDropdown(bool measure)
         content && content->LayoutResolved
             ? std::min(d.MaximumHeight, content->LayoutBounds.Size.y + padding.y + padding.w)
             : d.MaximumHeight;
-    auto placement = PlaceDropdown(surface, anchor, width, wantedHeight, d.Gap);
+    auto placement = PlaceOwnedOverlay(surface, anchor, width, wantedHeight, d.Gap);
     if (!measure && prior && prior->LayoutResolved &&
         placement.Bounds.Size == prior->LayoutBounds.Size)
     {
@@ -727,7 +728,7 @@ void RuntimeUI::ArrangeDropdown(bool measure)
         content = m_Build.Find(v.Content);
         wantedHeight = std::min(d.MaximumHeight,
                                 (content ? content->Bounds.Size.y : 0) + padding.y + padding.w);
-        placement = PlaceDropdown(surface, anchor, width, wantedHeight, d.Gap);
+        placement = PlaceOwnedOverlay(surface, anchor, width, wantedHeight, d.Gap);
         if (placement.Bounds.Size.x <= padding.x + padding.z ||
             placement.Bounds.Size.y <= padding.y + padding.w)
         {
@@ -737,20 +738,7 @@ void RuntimeUI::ArrangeDropdown(bool measure)
         }
         if (placement.Bounds.Size != probe.Size || placement.Bounds.Position != probe.Position)
             MeasureTree(popup, placement.Bounds, &placement.Bounds);
-        size_t begin = m_Build.PainterOrder.size();
-        Visit(popup, placement.Bounds, surface, scale, true, canvasID, 0, true);
-        for (size_t i = begin; i < m_Build.PainterOrder.size(); ++i)
-        {
-            auto &n = m_Build.Elements[m_Build.PainterOrder[i]];
-            n.Scope = d.Popup;
-            n.OverlayRoot = n.ID == d.Popup;
-            n.LayoutBounds = n.Bounds;
-            n.LayoutParentContent = n.ParentContent;
-            n.LayoutSlot = n.Slot;
-        }
-        for (auto &g : m_Build.Guides)
-            if (auto n = m_Build.Find(g.Owner); n && n->Scope == d.Popup)
-                g.LayoutBounds = g.Bounds;
+        AppendOverlay(popup,placement.Bounds,surface,scale,canvasID,d.Popup);
     }
     m_Build.Scope = m_Build.Modal = d.Popup;
     ApplyScrollPresentation();

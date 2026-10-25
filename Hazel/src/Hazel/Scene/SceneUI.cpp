@@ -28,6 +28,7 @@ void Scene::SetUISizing(uint64_t id, GameUI::Axis axis, GameUI::SizeMode mode,
     auto &r=e.GetComponent<UIRectComponent>();
     if(axis!=GameUI::Axis::Horizontal && axis!=GameUI::Axis::Vertical)throw std::invalid_argument("Invalid UI sizing axis");
     auto parent=GetEntityByUUID(GetRelationship(e).Parent);if(parent&&parent.HasComponent<UIDropdownComponent>()&&parent.GetComponent<UIDropdownComponent>().Popup==id)throw std::invalid_argument("Dropdown owns popup sizing; edit its panel limits");
+    if(parent&&parent.HasComponent<UITooltipComponent>()&&parent.GetComponent<UITooltipComponent>().Body==id)throw std::invalid_argument("Tooltip placement is owned; edit body Fixed width and text style in Properties");
     const int a=axis==GameUI::Axis::Horizontal?0:1;auto before=r,next=r;
     (a?next.HeightMode:next.WidthMode)=mode;next.FixedSize[a]=fixedSize;
     next.MinimumSize[a]=minimum;next.HasMaximum[a]=maximum.has_value();next.MaximumSize[a]=maximum.value_or(0);
@@ -139,6 +140,8 @@ const GameUI::ResolvedSnapshot& Scene::GetUISnapshot() const { CheckThread();ret
 GameUI::RuntimeUIDiagnostics Scene::GetUIDiagnostics() const { CheckThread();return m_UI->Diagnostics(); }
 bool Scene::IsUIChecked(uint64_t id){CheckThread();RefreshUI();return m_UI->Checked(id);}
 void Scene::SetUIChecked(uint64_t id,bool value){CheckThread();RefreshUI();m_UI->SetChecked(id,value);}
+void Scene::PreviewUITab(uint64_t group,uint64_t tab){CheckThread();RefreshUI();m_UI->PreviewTab(group,tab);RefreshUI();}
+void Scene::PreviewUITooltip(uint64_t source,bool open){CheckThread();RefreshUI();m_UI->PreviewTooltip(source,open);RefreshUI();}
 bool Scene::RequestUIDropdown(uint64_t id,bool open){CheckThread();RefreshUI();return m_UI->RequestDropdown(id,open);}
 bool Scene::IsUIDropdownOpen(uint64_t id) const {CheckThread();return m_UI->DropdownOpen(id);}
 void Scene::PreviewUIDropdown(uint64_t id,bool open){CheckThread();RefreshUI();m_UI->PreviewDropdown(id,open);RefreshUI();}
@@ -247,7 +250,7 @@ void Scene::ValidateUILayoutDependencies()
     // Geometry from this probe is deliberately discarded. Zero visual metrics
     // and definite external space exercise only authored dependency structure;
     // actual text/images are measured by RuntimeUI at the real surface boundary.
-    std::unordered_set<uint64_t> popups;for(auto h:GetAllEntitiesWith<UIDropdownComponent>())popups.insert(m_Registry.get<UIDropdownComponent>(h).Popup);
+    std::unordered_set<uint64_t> popups;for(auto h:GetAllEntitiesWith<UIDropdownComponent>())popups.insert(m_Registry.get<UIDropdownComponent>(h).Popup);for(auto h:GetAllEntitiesWith<UITooltipComponent>())popups.insert(m_Registry.get<UITooltipComponent>(h).Body);
     GameUI::MeasuredLayout validation;std::vector<GameUI::MeasureNode> nodes;
     for(auto handle:GetAllEntitiesWith<UIRectComponent>())
     {

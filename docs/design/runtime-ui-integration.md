@@ -2666,3 +2666,55 @@ transfer and native authoring, reusing existing selection/scope ownership. Edita
 combos, search, dynamic sources and virtualization remain excluded. The known
 alternating image/text draw-run bottleneck remains separate; no new universal frame
 budget or completion of P4/the production UI endpoint is claimed.
+
+## Practical screen-space UI endpoint
+
+This is the fixed remaining checklist before architecture cleanup and macOS work.
+It narrows the historical audit's broader proposals; useful extensions must not
+silently become new completion gates.
+
+| Remaining area | Implementation | Evidence | Manual acceptance |
+| --- | --- | --- | --- |
+| Common controls: static tabs/pages, plain runtime tooltips, finite single-selection list | This milestone in progress; existing buttons/values/sliders/dropdowns/scrolling retained | Pending focused and integration qualification below | Physical keyboard/controller discovery and selection pending |
+| Text entry: caret, selection, clipboard, undo, declared platform composition behavior | Pending bounded text-entry milestone | Pending CPU/native platform/editor/package checks | Linux/Windows clipboard/composition acceptance pending; unsupported composition must be explicit |
+| Reusable styles/templates and bounded rich-text emphasis | Pending | Pending shared-update, override, typography and dependency closure checks | Native authoring/readability acceptance pending |
+| Essential UI structural authoring undo/workflow completion | Property/gesture history exists; essential create/delete/reorder/reparent/duplicate workflow remains pending | Pending document/history/recovery/prefab checks | End-to-end authoring/Undo acceptance pending |
+| Example integration, Linux/Windows acceptance, CI and packaging | Prior bounded examples/packages qualified; final endpoint integration pending | Final Debug/Release, CI and relocated-package evidence pending | Physical controller, Windows, DPI/monitor and competent-reader acceptance pending |
+
+The final demonstration is native Hazelnut authoring of a menu, settings screen,
+HUD, dialogue panel and static scrollable inventory/journal; connect ordinary
+scripts, save/reopen, export and run reliably. Close this checklist before cleanup
+and macOS. Explicitly deferred: virtualization/large data views, universal language
+coverage, world-space UI, advanced accessibility bridges, editable/searchable combos
+and other extensions. This checklist does not introduce those as prerequisites.
+
+### Tabs, tooltips and list implementation contract
+
+Tabs compose one required RadioGroup with Radio tab controls. Each tab names one
+unique ordinary Rect page directly under the group and an optional initial focus
+inside that page. The group is the sole selected value; navigation only focuses,
+Accept/release selects, setters are silent. Inactive page subtrees collapse from
+measurement (including Content sizing), paint, hit/focus/capture and GPU preparation
+without changing authored Visible/Enabled. Nested groups obey every ancestor page.
+Selection changes commit at the existing scene request boundary; only departing
+content loses events/interactions. Tab changes preserve unrelated owner events and
+admit the one SelectionChanged before mutation. Focus on the tab stays on it;
+focus departing content restores an eligible remembered/page initial target, then
+an eligible revealed descendant or the selected tab. Existing focus records and
+neutral rearming are reused. Close/reopen retains selection; Stop/reset/copy use
+authored defaults. Edit page preview is transient, separate from selection.
+
+Tooltips opt into a named direct Text/Rect leaf (optional Sprite background), using
+its existing font, text style, sizing and padding. They explain purpose/consequences;
+labels are never copied automatically. One tooltip at a time follows current hover
+or navigation focus after a bounded delay, anchors to the source, flips/clamps on
+its owning surface through the shared measured-overlay path, and is suppressed by
+dropdowns, captures, edits, input/scope loss or source retirement. It owns no input
+scope, focus, capture or hit target. Its paint preserves underlying picking IDs.
+The body does not participate in normal content measurement. Unchanged text reuses
+the existing layout/page/preparation caches. Plain text only; no arbitrary trees.
+
+The selectable-list preset is a RadioGroup containing the existing ScrollView,
+stack and Radio/Text rows. It adds no selection engine, event queue or dynamic-data
+API. Rows use UUIDs, non-color selected marks, existing navigation/reveal and the
+normal owner stream; optional/required and silent setter rules are unchanged.
