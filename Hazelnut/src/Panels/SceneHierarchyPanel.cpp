@@ -484,7 +484,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                 PropertyUI::DragFloat("offset","Offset (px)",c.Offset[axis],1,-FLT_MAX,FLT_MAX,"%.1f");
                 PropertyUI::DragFloat("pivot","Pivot",c.Pivot[axis],.01f,0,1,"%.2f");}
                 if(owned)PropertyUI::Help(derivedPosition?"The composing control owns position; edit its sizing/parent viewport.":flowOwned?"The parent container owns position. Set child sizing/margins; positions are computed.":"Fill owns this axis's position and size. Margins set its insets; maximum can leave spare space.");
-                if(resolved&&resolved->LayoutResolved)ImGui::TextDisabled("Available %.1f | measured %.1f | arranged %.1f",resolved->Available[axis],resolved->Measured[axis],resolved->Bounds.Size[axis]);
+                if(resolved&&resolved->LayoutResolved){if(resolved->Available[axis]<0)ImGui::TextDisabled("Available unbounded | measured %.1f | arranged %.1f",resolved->Measured[axis],resolved->Bounds.Size[axis]);else ImGui::TextDisabled("Available %.1f | measured %.1f | arranged %.1f",resolved->Available[axis],resolved->Measured[axis],resolved->Bounds.Size[axis]);}
                 ImGui::PopID();
             }
         }

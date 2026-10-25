@@ -126,6 +126,13 @@ void UIScreenWorkflowChecks()
     edit(scrolling,"Scrollable screen policy",[&](auto &v){v.Canvas->ReferenceSize={640,480};v.Canvas->SafeInsets={};v.Canvas->Screen.InitiallyOpen=false;v.Canvas->Screen.EventOwner=menu.GetUUID();v.Canvas->Screen.Cancel=ScreenCancel::Close;});
     panel.SetSelectedEntity(scrolling);Check(panel.AddUI(13),"ScrollView preset failed");auto scrollView=panel.GetSelectedEntity();
     edit(scrollView,"Scroll viewport",[](auto &v){v.Rect->Offset={24,60};v.Rect->FixedSize={592,380};v.Scroll->PixelsPerUnit=48;});
+    edit(scrollView,"Scroll wheel speed",[](auto &v){v.Scroll->PixelsPerUnit=64;});
+    auto scrollHistory=documents.SceneText();
+    Check(documents.UndoRedo(false)&&scrollView.GetComponent<UIScrollViewComponent>().PixelsPerUnit==48,"Scroll property history undo failed");
+    Check(documents.UndoRedo(true)&&documents.SceneText()==scrollHistory&&scrollView.GetComponent<UIScrollViewComponent>().PixelsPerUnit==64,"Scroll property history redo failed");
+    {auto before=UIEditValues::Capture(scrollView),invalid=before;invalid.Scroll->PixelsPerUnit=0;UIInspectorEditing inspector;PropertyUI::EditActivity a;a.Changed=a.Committed=true;
+     Check(!inspector.Edit(*scene,&documents.m_SceneHistory,scrollView.GetUUID(),"Invalid scroll speed",before,invalid,a,0)&&documents.SceneText()==scrollHistory,"Invalid scroll edit changed authored/history state");inspector.Finish(*scene,&documents.m_SceneHistory,true);}
+    edit(scrollView,"Scroll wheel speed",[](auto &v){v.Scroll->PixelsPerUnit=48;});
     auto scrollContent=scene->GetEntityByUUID(scrollView.GetComponent<UIScrollViewComponent>().Content);
     panel.SetSelectedEntity(scrollContent);Check(panel.AddUI(8),"Scrolled checkbox preset failed");auto scrollToggle=panel.GetSelectedEntity();
     edit(scrollToggle,"Scrolled option",[](auto &v){v.Button->Action="extra-option";v.Button->TabOrder=50;v.Text->Text="Additional static setting";});

@@ -656,7 +656,8 @@ enabled axis. Wheel input preserves backend fractional X/Y offsets; positive whe
 Y moves up. **Pixels per unit** converts the first hovered view's wheel units to
 logical pixels. Nested views consume only available motion and pass residual
 pixels to scroll ancestors. Residual stops at the UI scope; it never replays into
-underlying gameplay. A hovered view owns a wheel gesture even at its endpoint.
+underlying gameplay. A hovered view owns a wheel gesture even at its endpoint. A sampled scroll gesture
+suppresses concurrent Accept activation.
 While any control captures/edits, wheel/page input is consumed without moving its
 geometry. An explicit script scroll can interrupt that edit using the existing
 control interruption policy.
@@ -678,8 +679,9 @@ The full track supplies mapping even when partially clipped.
 
 Tab/spatial navigation can select scroll-reachable controls: the engine reveals
 inside-out, republishes geometry, then focuses an actually eligible control.
-Fully clipped controls still cannot activate. Reveal uses a small configurable
-margin; oversized targets align their leading edge. Non-scroll clips can prevent
+Fully clipped controls still cannot activate. First Tab can enter a nonmodal
+view whose initial viewport contains only text/disabled controls. Reveal uses a
+configurable margin, capped at one quarter of each viewport dimension; oversized targets align their leading edge. Non-scroll clips can prevent
 reveal, in which case offsets restore and a diagnostic explains the rejection.
 Configured opening focus still follows ordinary eligibility/fallback; use reveal
 for a target initially outside the viewport.

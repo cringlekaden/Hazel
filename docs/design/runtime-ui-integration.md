@@ -2498,3 +2498,43 @@ it is neither isolated GPU duration nor whole-frame/input/presentation timing.
 Static offscreen CPU measurement/storage still scales with document size; scrolling
 republishes all resolved Rects/hit targets. No large-list budget, allocation-free
 claim or improvement to alternating image/text draw-run capacity is inferred.
+
+Keyboard page actions require current UI keyboard ownership (or a modal scope),
+including when a prior clicked viewport is remembered. Cancel/ownership loss cannot
+resurrect that ownership. First Tab into nonmodal UI considers scroll-reachable
+logical candidates even when the initial viewport contains only static/disabled
+content; reveal precedes actual focus. Manual scrolling that clips current focus
+uses the existing visible eligible fallback. Native pointer coordinates are validated before each routing step, including
+framebuffer conversion, before that step can change offsets. Earlier accepted
+ordered gestures are not rolled back by a later programmer-invalid routing step.
+
+Final local Debug/native OpenGL 4.2 and Release/forced OpenGL 4.1 builds use
+Premake/GNU Make with two compiler jobs. Each passes all 17 sequential regression
+executables, including the new nonmodal entry/Cancel ownership, rejected native
+pointer, derived scrolled-slider picking and ScrollView property-history checks.
+The existing expanded-Button, screen/binding, typography/overflow, compositing,
+resource, lifecycle and editor regressions remain enabled. Both run on physical
+HD4000 through Xwayland; no Windows or physical controller/trackpad acceptance is
+inferred. CI is not awaited or polled.
+
+Physical acceptance remains:
+
+1. Create a ScrollView under a screen, add wrapped help and existing controls;
+   resize the viewport, tune speed/parts, Undo/Redo, save/reopen the scene/prefab.
+   Transient Edit preview must leave the dirty state/history unchanged.
+2. In Play/player, Tab through initially offscreen controls and nested content;
+   try wheel X/Y and fractional trackpad input, Page keys and rebound controller
+   bumpers. Check residual movement at inner endpoints and modal isolation.
+3. Drag each scrollbar outside and release; Cancel should end only that capture.
+   Lose focus/minimize/resize mid-drag. Wheel during a slider edit must leave its
+   geometry fixed; explicit script scrolling interrupts through the slider policy.
+4. Close/reopen retains position, Stop resets it, and Cancel on nonmodal UI releases
+   page ownership until fresh Tab/click. Repeat on physical Windows/controllers,
+   trackpads and DPI/multiple-monitor configurations; these remain unverified.
+
+The next bounded control slice is a finite static dropdown with an owned popup,
+selection, Cancel/return focus and native authoring, reusing existing screens,
+radio/value events and ScrollView. Do not add editable combos or virtualization.
+Large alternating image/text draw-run costs remain separate qualification debt
+before large scrolling data views. This milestone does not complete P4 or the
+production UI endpoint.

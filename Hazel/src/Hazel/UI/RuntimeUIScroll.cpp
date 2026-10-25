@@ -493,6 +493,8 @@ bool RuntimeUI::RouteScroll(const InputFrame &input)
     uint64_t id = 0;
     if (input.ScrollPage)
     {
+        if (!m_KeyboardOwns && !m_Resolved.Modal)
+            return false;
         auto focus = (m_KeyboardOwns || m_Resolved.Modal)
                          ? m_Resolved.Find(m_Input.Focused()) : nullptr;
         id = focus ? focus->ScrollParent : 0;
@@ -620,7 +622,7 @@ bool RuntimeUI::EnsureVisible(uint64_t view, uint64_t target, bool focus)
 bool RuntimeUI::NavigateScroll(InputFrame &input)
 {
     if (m_Resolved.Scrolls.empty() || !input.Enabled || input.Editing || m_Input.Captured() ||
-        m_Bar.Owner || input.CancelDown || (!m_KeyboardOwns && !m_Resolved.Modal) ||
+        m_Bar.Owner || input.CancelDown ||
         !(input.Navigate.x || input.Navigate.y || input.NextPressed || input.PreviousPressed))
         return false;
     m_NavigationButtons.clear();
@@ -641,6 +643,10 @@ bool RuntimeUI::NavigateScroll(InputFrame &input)
         }
         m_NavigationButtons.push_back(std::move(b));
     }
+    // First entry follows logical order, even when no control currently has
+    // framebuffer coverage. A remembered automatic focus is not UI ownership.
+    if (!m_KeyboardOwns && !m_Resolved.Modal)
+        m_Input.SetFocus(m_Scene.GetIdentity(), 0, m_Resolved.Buttons);
     for (size_t tries = 0; tries < 64; ++tries)
     {
         auto next = m_Input.NavigationTarget(m_NavigationButtons, input.Navigate,

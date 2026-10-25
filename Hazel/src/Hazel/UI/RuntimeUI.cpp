@@ -625,6 +625,9 @@ void RuntimeUI::WarnOverflow()
 }
 void RuntimeUI::UpdateInput(const InputFrame &pixels)
 {
+    auto finite=[](glm::vec2 p){return std::isfinite(p.x)&&std::isfinite(p.y);};
+    auto validPointer=[&](const InputFrame &f){return finite(f.Mouse)&&(!f.PointerPressed||finite(f.PressPosition))&&(!f.PointerReleased||!f.HasReleasePosition||finite(f.ReleasePosition));};
+    if(!validPointer(pixels))throw std::invalid_argument("Invalid UI pointer frame");
     if(m_TransitionNeutral || m_SliderNeutral || m_ScrollNeutral){
         if(!pixels.Enabled){CancelInput();return;}
         const bool neutral=pixels.Enabled&&!pixels.LeftDown&&!pixels.AcceptDown&&!pixels.CancelDown&&!pixels.NextDown&&!pixels.PreviousDown&&!pixels.Navigate.x&&!pixels.Navigate.y&&!pixels.Adjust&&!pixels.Scroll.x&&!pixels.Scroll.y&&!pixels.PointerPressed&&!pixels.AcceptPressed&&!pixels.NextPressed&&!pixels.PreviousPressed&&
@@ -695,6 +698,7 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
     input.Mouse *= ratio;
     input.PressPosition *= ratio;
     input.ReleasePosition *= ratio;
+    if(!validPointer(input))throw std::invalid_argument("UI pointer framebuffer conversion overflow");
     m_ActionOwnsFrame=input.Enabled&&(m_Input.Captured()||((m_KeyboardOwns||m_ActionOwnsFrame)&&input.CancelDown));
     const bool editing=m_Slider.ID!=0;
     input.Editing=editing;

@@ -85,6 +85,13 @@ static void UIScrollSceneChecks(const std::filesystem::path &root)
     Check(scene->GetUIDiagnostics().Resolves == before.Resolves &&
               scene->GetUIDiagnostics().Measurements == before.Measurements,
           "Scroll remeasured unchanged layout");
+    auto invalidPointer = f;
+    invalidPointer.Mouse.x = std::numeric_limits<float>::quiet_NaN();
+    invalidPointer.Scroll = {0, 1}; invalidPointer.ScrollPage = true;
+    bool invalidRejected = false;
+    try {scene->UpdateUIInput(invalidPointer);}catch(const std::invalid_argument &){invalidRejected=true;}
+    Check(invalidRejected && scene->GetUIScroll(200).Offset.y == 10,
+          "Rejected pointer frame partially applied its scroll action");
     auto generation = scene->GetUISnapshot().Generation;
     scene->RefreshUI();
     Check(scene->GetUISnapshot().Generation == generation,
@@ -305,7 +312,9 @@ static void UIScrollSceneChecks(const std::filesystem::path &root)
     // Slider in scroll content keeps capture geometry stable; explicit ScrollTo interrupts it.
     auto slider = rect(500, content, {}, {206, 50});
     slider.GetComponent<UIRectComponent>().WidthMode = SizeMode::Fill;
-    slider.AddComponent<UIButtonComponent>().Kind = ControlKind::Slider;
+    auto &sliderButton = slider.AddComponent<UIButtonComponent>();
+    sliderButton.Kind = ControlKind::Slider;
+    sliderButton.TabOrder = 30;
     auto &sv = slider.AddComponent<UISliderComponent>();
     sv.Track = 501;
     sv.Thumb = 502;
@@ -318,6 +327,14 @@ static void UIScrollSceneChecks(const std::filesystem::path &root)
     f.Enabled = true;
     route();
     Check(scene->EnsureUIVisible(200, 500, true), "Slider reveal failed");
+    Rect scrolledThumb; bool thumbVisible = false;
+    Check(scene->GetUIControlVisual(502, scrolledThumb, thumbVisible) && thumbVisible,
+          "Scrolled slider lost derived thumb presentation");
+    draw();
+    auto center = scrolledThumb.Position + scrolledThumb.Size * .5f;
+    Check(target->ReadPixel(1, int(center.x), 300 - int(center.y)) == int(uint32_t(sh)),
+          "Derived slider thumb picking did not follow scroll displacement");
+    target->Unbind();
     f.AcceptDown = true;
     route();
     f.AcceptDown = false;
@@ -453,7 +470,37 @@ static void UIScrollSceneChecks(const std::filesystem::path &root)
     unowned->UpdateUIInput(f);
     Check(unowned->GetUIScroll(200).Offset.y > 0,
           "Owned keyboard focus could not scroll a nonmodal view");
+    f = {}; f.Enabled = true; f.Mouse = {15, 15};
+    f.PointerPressed = f.LeftDown = true; f.PressPosition = f.Mouse;
+    unowned->UpdateUIInput(f);
+    f.PointerPressed = f.LeftDown = false;
+    f.PointerReleased = f.HasReleasePosition = true; f.ReleasePosition = f.Mouse;
+    unowned->UpdateUIInput(f);
+    f.PointerReleased = false;
+    f.Events = {{UIAction::Cancel, true}, {UIAction::Cancel, false}};
+    unowned->UpdateUIInput(f);
+    auto releasedOffset = unowned->GetUIScroll(200).Offset;
+    f.Events = {{UIAction::ScrollDown, true}, {UIAction::ScrollDown, false}};
+    unowned->UpdateUIInput(f);
+    Check(unowned->GetUIScroll(200).Offset == releasedOffset &&
+              !unowned->IsGameplayInputBlocked(),
+          "Remembered clicked viewport stole page input after Cancel released keyboard ownership");
     unowned->OnRuntimeStop();
+    auto leading = Scene::Copy(unowned);
+    leading->GetEntityByUUID(202).GetComponent<UIRectComponent>().FixedSize.y = 300;
+    leading->GetEntityByUUID(202).GetComponent<UIButtonComponent>().Interactable = false;
+    leading->OnViewportResize(400, 300);
+    leading->OnRuntimeStart();
+    f = {}; f.Enabled = true; f.Mouse = {390, 290};
+    leading->UpdateUIInput(f);
+    Check(!leading->GetUIDiagnostics().Focus, "Leading static content gained clipped focus");
+    f.Events = {{UIAction::Next, true}, {UIAction::Next, false}};
+    leading->UpdateUIInput(f);
+    Check(leading->GetUIDiagnostics().Focus == 203 &&
+              leading->GetUISnapshot().Find(203)->FocusEligible &&
+              leading->GetUIScroll(200).Offset.y > 0,
+          "First Tab could not enter nonmodal content with no initially visible control");
+    leading->OnRuntimeStop();
     std::cout
         << "PASS: static scroll measurement/publication, residual wheel, scrollbar "
            "capture/picking, focus reveal, control edits, reflow, copy/prefab and retirement\n";

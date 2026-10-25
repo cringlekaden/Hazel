@@ -236,7 +236,7 @@ void EditorLayer::UI_Debugger()
             ImGui::TextDisabled("Play uses isolated memory; Nutella persists overrides.");
         }else m_UIOverride.CancelCapture();
     }else {m_UIOverride.CancelCapture();m_UIOverrideSession=0;}
-    if(!s.Scrolls.empty()){ImGui::Text("Scroll publish/routes/reveals %llu / %llu / %llu | %.3f ms CPU",(unsigned long long)d.ScrollPublications,(unsigned long long)d.ScrollRoutes,(unsigned long long)d.ScrollReveals,d.LastScrollMilliseconds);ImGui::Text("Scrollbar capture %llu",(unsigned long long)d.ScrollCapture);if(!d.ScrollProblem.empty())ImGui::TextWrapped("%s",d.ScrollProblem.c_str());}
+    if(!s.Scrolls.empty()){ImGui::Text("Scroll publish/routes/reveals %llu / %llu / %llu | last %.3f ms CPU",(unsigned long long)d.ScrollPublications,(unsigned long long)d.ScrollRoutes,(unsigned long long)d.ScrollReveals,d.LastScrollMilliseconds);ImGui::Text("Scrollbar capture %llu",(unsigned long long)d.ScrollCapture);if(!d.ScrollProblem.empty())ImGui::TextWrapped("%s",d.ScrollProblem.c_str());}
     ImGui::Text("Resolve %llu | reuse %llu | source checks %llu", (unsigned long long)d.Resolves,
                 (unsigned long long)d.Reuses, (unsigned long long)d.SourceChecks);
     ImGui::Text("Last rebuild %.3f ms | routing %.3f ms (CPU)", d.LastResolveMilliseconds,
@@ -307,7 +307,7 @@ void EditorLayer::UI_Debugger()
             if(selected.HasComponent<UIButtonComponent>()&&(selected.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Toggle||selected.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio))
                 ImGui::Text("%s: %s",selected.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio?"Radio":"Toggle",m_ActiveScene->IsUIChecked(n->ID)?"selected / checked":"unselected / unchecked");
             if(selected.HasComponent<UIRadioGroupComponent>())ImGui::Text("Selected member %llu",(unsigned long long)m_ActiveScene->GetUISelection(n->ID));
-            if(selected.HasComponent<UIScrollViewComponent>()){auto g=m_ActiveScene->GetUIScroll(n->ID);rect("Viewport",g.Viewport);ImGui::Text("Content %.1f x %.1f | offset %.1f / %.1f",g.Extent.x,g.Extent.y,g.Offset.x,g.Offset.y);ImGui::Text("Range %.1f / %.1f | outer %llu",g.Range.x,g.Range.y,(unsigned long long)g.Parent);}
+            if(selected.HasComponent<UIScrollViewComponent>())for(const auto &g:s.Scrolls)if(g.ID==n->ID){rect("Viewport",g.Viewport);ImGui::Text("Content %.1f x %.1f | offset %.1f / %.1f",g.Extent.x,g.Extent.y,g.Offset.x,g.Offset.y);ImGui::Text("Range %.1f / %.1f | outer %llu",g.Range.x,g.Range.y,(unsigned long long)g.Parent);break;}
             if(selected.HasComponent<UISliderComponent>()){auto &v=selected.GetComponent<UISliderComponent>();float value=m_ActiveScene->GetUISliderValue(n->ID);v.Validate();ImGui::Text("Slider %.4g | normalized %.3f",value,(value-v.Minimum)/(v.Maximum-v.Minimum));ImGui::Text("Edit: %s | gesture %llu",d.SliderEdit==n->ID?(d.SliderPointer?"pointer":"Adjust"):"idle",(unsigned long long)(d.SliderEdit==n->ID?d.SliderGesture:0));}
             if(selected.HasComponent<UIProgressComponent>())ImGui::Text("Progress %.3f (passive)",m_ActiveScene->GetUIProgress(n->ID));
             GameUI::Rect visual;bool visible=true;if(m_ActiveScene->GetUIControlVisual(n->ID,visual,visible)){rect("Control visual",visual);ImGui::Text("Paint %s (layout unchanged)",visible?"visible":"hidden");}
@@ -315,7 +315,7 @@ void EditorLayer::UI_Debugger()
 
         auto mode=[](GameUI::SizeMode value){return value==GameUI::SizeMode::Fixed?"Fixed":value==GameUI::SizeMode::Fill?"Fill":"Content";};
         ImGui::Text("Layout v%u: %s / %s | controlling parent %llu",GameUI::RectLayout::SchemaVersion,mode(n->WidthMode),mode(n->HeightMode),(unsigned long long)n->Parent);
-        ImGui::Text("Available %.2f x %.2f | measured %.2f x %.2f",n->Available.x,n->Available.y,n->Measured.x,n->Measured.y);
+        char available[2][32];for(int axis=0;axis<2;++axis){if(n->Available[axis]<0)std::snprintf(available[axis],sizeof(available[axis]),"unbounded");else std::snprintf(available[axis],sizeof(available[axis]),"%.2f",n->Available[axis]);}ImGui::Text("Available %s x %s | measured %.2f x %.2f",available[0],available[1],n->Measured.x,n->Measured.y);
         ImGui::Text("Arranged %.2f x %.2f | overflow %s",n->Bounds.Size.x,n->Bounds.Size.y,n->Overflow?"yes":"no");
         if(n->Line>=0){ImGui::Text("Wrap line %d",n->Line);rect("Allocated line",n->Slot);}
         if(n->GridRow>=0){ImGui::Text("Grid row %d column %d",n->GridRow,n->GridColumn);rect("Allocated cell",n->Slot);}
