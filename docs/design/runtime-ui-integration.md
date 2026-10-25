@@ -2610,3 +2610,59 @@ Initial selection remains authored configuration: deleting that referenced optio
 leaves an editable reference diagnostic. Choose another initial target or clear
 that field before strict Save/Play validation. Runtime selection repair never
 rewrites it. Popup position/size and scroll state are derived; no auto-save occurs.
+
+### Dropdown qualification and remaining acceptance
+
+Runtime qualification baseline is `31da4ec` (from `b9baed0`, with `af7e9e0`
+composition and `1e19d43` retirement guards). Local Premake/GNU Make builds use
+`-j2`. All 17 regression executables pass in Debug/native OpenGL 4.2 and
+Release/OpenGL 4.1 on Grandpa's physical Intel HD4000, Mesa 26.2.4. Both use the
+bind-based 4.1 resource path and shaderc/Cross to GLSL 410; GPU SPIR-V
+specialization is unavailable. The desktop is Plasma Wayland, while Hazel uses
+GLFW X11/GLX through Xwayland. This is not native Wayland qualification.
+
+Focused checks cover independent flip/clamp expectations, controller/keyboard and
+pointer choices, same-choice closure, Cancel/Tab/outside dismissal, no click-through,
+queue reservation, historical option payloads, source/component/owner retirement,
+second-dropdown replacement, normal modal transitions, native label/eligibility
+writes, fractional framebuffer geometry and warm publication reuse. A GPU integer
+picking readback verifies popup options outside the invoking ScrollView's clip.
+Popup scrolling preserves text-layout build and measurement counters. These checks
+use 12-option compositions and the native nine-option Settings fixture; the 128
+option cap is a validation/work limit, not a large-list performance claim.
+
+The final Inspector-only followup makes the trigger action field read-only and
+identifies its Dropdown/Radio Group owner. EditorSmoke passes again in both
+configurations after that presentation-only change; runtime/package code is unchanged.
+
+The native ImGui harness creates/reorders/configures options, changes defaults and
+panel limits through shared property history, saves/reopens scene/prefab documents,
+draws preview/Inspector controls and exercises the declared script owner in three
+Play/Stop cycles. It checks caption/arrow separation and transient preview without
+authored changes/events. Copied-scene version-zero event guards are exercised by
+the managed session and native authoring workflows. Existing interaction, screen,
+binding, slider, typography/overflow, D8 compositor, capacity, reload and expanded
+Button Inspector regressions remain passing.
+
+All five source examples pass Hazelnut/Nutella startup/render/resize/shutdown and
+unchanged-authored-file checks, plus existing logical/native gameplay regressions.
+The maintained screen fixture exports into a private SceneTransitions project and
+runs in relocated Nutella from an unrelated UTF-8 directory with source resources,
+SDK and GAC unavailable. Managed popup open/silent selection/close and return scope
+checks pass. Scene/prefab bytes, packaged-asset immutability, Open Sans face/notice
+closure and absence of unrelated typography corpora verify. No new asset/license
+or dependency is introduced. The exact Sandbox draft, master, stash, settings,
+layouts and vendor pins are preserved; CI is not awaited or polled.
+
+Physical acceptance remains: author a disposable dropdown in scrolling content;
+try long/disabled options near surface edges, resize and change text/UI scale;
+use pointer/keyboard/real controller to select, Cancel, Tab and dismiss outside;
+verify one owner event, return focus, focus loss/reconnect, Undo/Redo, save/reopen
+and packaged behavior. Synthetic input and GL readbacks do not establish physical
+controller/trackpad, Windows, monitor/DPI or competent-reader acceptance.
+
+The next bounded control slice is static tabs/page switching with explicit focus
+transfer and native authoring, reusing existing selection/scope ownership. Editable
+combos, search, dynamic sources and virtualization remain excluded. The known
+alternating image/text draw-run bottleneck remains separate; no new universal frame
+budget or completion of P4/the production UI endpoint is claimed.

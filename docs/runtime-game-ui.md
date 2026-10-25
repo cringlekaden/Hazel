@@ -721,13 +721,14 @@ options per dropdown are supported, within the existing scene limits.
 
 Edit labels on the option Text components and availability on their Rect/Button.
 The trigger caption is computed from selection; empty selection uses Placeholder.
+Its Button action field is read-only: configure the root Radio Group action.
 The root Radio Group supplies Initial selection, Require selection and Action
 identity. Required selection repairs silently by Tab order then ID when its option
 becomes unavailable; optional selection clears. Hidden/disabled options cannot be
 chosen. Deleting the authored initial target leaves a reference diagnostic: choose
 another initial target or clear that field before Save/Play. Runtime repair does
-not rewrite configuration. Programmatic setters are silent. The selected mark and focus outline are
-independent cues.
+not rewrite configuration. Programmatic setters are silent. The selected mark and
+focus outline are independent cues.
 
 Dropdown properties select the named trigger/popup and set minimum width, maximum
 height and gap in canvas units. The popup uses the owning surface, escapes ancestor

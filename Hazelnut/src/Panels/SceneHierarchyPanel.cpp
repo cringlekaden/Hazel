@@ -616,7 +616,10 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             c.Kind=GameUI::ControlKind(kind);if(c.Kind!=GameUI::ControlKind::Toggle&&c.Kind!=GameUI::ControlKind::Radio){c.Indicator=0;c.InitiallyChecked=false;}if(c.Kind!=GameUI::ControlKind::Toggle&&c.Kind!=GameUI::ControlKind::Slider)c.EventOwner=0;if(c.Kind!=GameUI::ControlKind::Radio)c.Group=0;
             else if(!c.Group){auto current=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);for(size_t depth=0;current&&depth<Scene::MaxDepth;++depth){if(current.HasComponent<UIRadioGroupComponent>()){c.Group=current.GetUUID();break;}if(current.HasComponent<UICanvasComponent>())break;current=m_Context->GetEntityByUUID(m_Context->GetRelationship(current).Parent);}}
         }
-        if(c.Kind!=GameUI::ControlKind::Radio)PropertyUI::Text("action","Action identity",c.Action);
+        auto composition=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);
+        bool ownedTrigger=composition&&composition.HasComponent<UIDropdownComponent>()&&composition.GetComponent<UIDropdownComponent>().Trigger==uint64_t(entity.GetUUID());
+        if(ownedTrigger)PropertyUI::ReadOnly("action","Action identity","Owned by Dropdown / Radio Group");
+        else if(c.Kind!=GameUI::ControlKind::Radio)PropertyUI::Text("action","Action identity",c.Action);
         else PropertyUI::Help("Selection changes use the group's action identity and member references.");
         if(c.Kind==GameUI::ControlKind::Toggle||c.Kind==GameUI::ControlKind::Radio){
             if(c.Kind==GameUI::ControlKind::Toggle)PropertyUI::Checkbox("initial-checked","Initially checked",c.InitiallyChecked);
