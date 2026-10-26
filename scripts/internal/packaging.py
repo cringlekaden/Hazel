@@ -90,6 +90,9 @@ def validate_project(descriptor, config, assets):
             if clip:
                 if Path(clip).suffix!='.wav' or resolve_owned(assets,clip) not in included:
                     raise RuntimeError('Missing/excluded WAV audio clip '+str(clip)+' in '+str(scene))
+            style=entity.get('UIAppearanceComponent',{}).get('Asset')
+            if style and resolve_owned(assets,style) not in included:
+                raise RuntimeError('UI style selects excluded output: '+style+' in '+str(scene))
             font=entity.get('TextComponent',{}).get('FontFamily')
             if font and resolve_owned(assets,font) not in included:
                 raise RuntimeError('Text family selects excluded compiler output: '+font+' in '+str(scene))

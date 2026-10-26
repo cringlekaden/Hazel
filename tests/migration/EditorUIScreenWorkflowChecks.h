@@ -193,6 +193,25 @@ void UIScreenWorkflowChecks()
     for(auto ref:{std::pair<const char*,Entity>{"Tabbed",tabbed},{"Tabs",tabs},{"JournalTab",journalTab},{"SettingsTab",settingsTab},{"JournalList",list},{"JournalChoice",listLast},{"NameField",nameField},{"NoteField",noteField},{"NotesTab",extraTab}}){auto &field=ScriptEngine::GetScriptFieldMap(menu)[ref.first];field.Field={ScriptFieldType::Entity,ref.first,nullptr};field.SetValue<uint64_t>(ref.second.GetUUID());}
     const auto tabsID=uint64_t(tabs.GetUUID()),tabbedID=uint64_t(tabbed.GetUUID()),settingsTabID=uint64_t(settingsTab.GetUUID()),journalTabID=uint64_t(journalTab.GetUUID()),settingsPageID=uint64_t(settingsPage.GetUUID()),listID=uint64_t(list.GetUUID()),listViewID=uint64_t(listView.GetUUID()),listLastID=uint64_t(listLast.GetUUID()),tabOpenID=uint64_t(tabOpen.GetUUID()),tabSliderID=uint64_t(tabSlider.GetUUID()),tabDropdownID=uint64_t(tabDropdown.GetUUID()),tabDropdownTrigger=tabDropdown.GetComponent<UIDropdownComponent>().Trigger;
     m_CompositionTabs=tabsID;m_CompositionScreen=tabbedID;m_CompositionJournal=journalTabID;m_CompositionList=listID;m_CompositionView=listViewID;m_CompositionRow=listLastID;
+    // Explicit shared appearance, no implicit selector/canvas cascade.
+    auto style=[&](Entity target,const char* variant,uint32_t overrides=0){
+        if(!target.HasComponent<UIAppearanceComponent>())target.AddComponent<UIAppearanceComponent>();
+        edit(target,"Shared UI style",[&](auto& v){v.Appearance->Styled=true;v.Appearance->Selection={"Styles/Settings.hstyle",variant};v.Appearance->Overrides=overrides;});
+    };
+    style(scene->GetEntityByUUID(first[0]),"Control");style(scene->GetEntityByUUID(first[1]),"Control",UIStyleBit(UIStyleGroup::Foreground));
+    edit(scene->GetEntityByUUID(first[1]),"Local caption override",[](auto& v){v.Text->Color={1,.85f,.35f,1};});
+    style(journalHeading,"Heading");edit(journalHeading,"Engine heading style",[](auto& v){v.Appearance->Selection.Asset.clear();});
+    style(nameField,"Field");style(noteField,"Field");style(volume,"Control",UIStyleBit(UIStyleGroup::Padding));
+    style(scene->GetEntityByUUID(dropdown.GetComponent<UIDropdownComponent>().Trigger),"Control",UIStyleBit(UIStyleGroup::Padding));style(settingsTab,"Control",UIStyleBit(UIStyleGroup::Padding));style(journalTab,"Control",UIStyleBit(UIStyleGroup::Padding));style(listLast,"Control",UIStyleBit(UIStyleGroup::Padding));
+    {
+        auto assets=Project::GetActive()->GetAssets();UIStyleDocument shared(assets);shared.Open("Styles/Settings.hstyle");
+        const auto authoredBefore=SceneSerializer(scene).CaptureAuthoredState();auto previous=scene->GetUIPresentation(first[0]);
+        shared.Draft().Variants[0].Values.Background={.16f,.22f,.32f,1};shared.Changed();shared.Save();scene->RefreshUI();
+        Check(scene->GetUIPresentation(first[0]).Background!=previous.Background&&scene->GetUIPresentation(first[1]).Foreground==glm::vec4(1,.85f,.35f,1)&&SceneSerializer(scene).CaptureAuthoredState()==authoredBefore,"Shared style update changed local overrides or authored component data");
+        auto valid=Read(assets->Root()/"Styles/Settings.hstyle");{std::ofstream out(assets->Root()/"Styles/Settings.hstyle");out<<"Invalid replacement";}assets->Reload("Styles/Settings.hstyle");scene->RefreshUI();
+        Check(scene->GetUIPresentation(first[0]).Background==shared.Draft().Variants[0].Values.Background,"Malformed style did not retain accepted control presentation");
+        {std::ofstream out(assets->Root()/"Styles/Settings.hstyle");out<<valid;}assets->Reload("Styles/Settings.hstyle");scene->RefreshUI();
+    }
     scene->ValidateUI(false);
     for (size_t i = 0; i < 3; ++i)
     {
@@ -330,7 +349,7 @@ void UIScreenWorkflowChecks()
               "Runtime screen changes dirtied authored document");
     }
     if (const auto *output = std::getenv("HAZEL_EDITOR_FONT_FIXTURE"); output && *output)
-        for (auto ref : {"Scenes/screens-native.hazel", "Prefabs/screens-native.hprefab"})
+        for (auto ref : {"Scenes/screens-native.hazel", "Prefabs/screens-native.hprefab", "Styles/Settings.hstyle"})
         {
             auto destination = std::filesystem::u8path(output) / ref;
             std::filesystem::create_directories(destination.parent_path());
@@ -365,7 +384,7 @@ void DrawUIScreenFixture()
     for(auto handle:m_ScreenFixture->GetAllEntitiesWith<UIRectComponent>()){
         Entity item(handle,m_ScreenFixture.get());
         if(item.HasComponent<UIScrollViewComponent>()||item.HasComponent<UIProgressComponent>()||item.HasComponent<UIRadioGroupComponent>()||(item.HasComponent<UIButtonComponent>()&&item.GetComponent<UIButtonComponent>().Kind!=GameUI::ControlKind::Button)){
-            m_ScreenFixturePanel.SetSelectedEntity(item);m_ScreenFixturePanel.RestoreSections({{"UI Button",true},{"UI Radio Group",true},{"UI Progress",true},{"UI Slider",true},{"UI ScrollView",true},{"UI Dropdown",true},{"UI Tabs",true},{"UI Tab",true},{"UI Tooltip",true},{"UI Text Entry",true}});m_ScreenFixturePanel.DrawAssetProperties(item);
+            m_ScreenFixturePanel.SetSelectedEntity(item);m_ScreenFixturePanel.RestoreSections({{"UI Button",true},{"UI Radio Group",true},{"UI Progress",true},{"UI Slider",true},{"UI ScrollView",true},{"UI Dropdown",true},{"UI Tabs",true},{"UI Tab",true},{"UI Tooltip",true},{"UI Text Entry",true},{"UI Appearance",true}});m_ScreenFixturePanel.DrawAssetProperties(item);
         }
     }
     m_ScreenFixturePanel.SetSelectedEntity(originalSelection);

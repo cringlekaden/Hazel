@@ -475,8 +475,23 @@ static void Write(YAML::Emitter &out,const UIScrollViewComponent &v){
 #undef WRITE
     out<<YAML::EndMap;
 }
+UIAppearanceComponent ReadUIAppearanceComponent(const YAML::Node& node){
+    Keys(node,{"Styled","Asset","Variant","Overrides","Focus","Selected","Editing"});UIAppearanceComponent c;
+    if(node["Styled"])c.Styled=node["Styled"].as<bool>();
+    if(node["Asset"])c.Selection.Asset=std::filesystem::u8path(node["Asset"].as<std::string>());
+    if(node["Variant"])c.Selection.Variant=node["Variant"].as<std::string>();
+    if(node["Overrides"])c.Overrides=node["Overrides"].as<uint32_t>();
+    if(node["Focus"])c.Focus=Vector<4>(node["Focus"]);if(node["Selected"])c.Selected=Vector<4>(node["Selected"]);if(node["Editing"])c.Editing=Vector<4>(node["Editing"]);
+    c.Selection.Validate();if(c.Overrides&~UIStyleAll)throw std::invalid_argument("Invalid style override mask");
+    UIStyleValues v;v.Focus=c.Focus;v.Selected=c.Selected;v.Editing=c.Editing;v.Validate();return c;
+}
+static void Write(YAML::Emitter& out,const UIAppearanceComponent& c){
+    out<<YAML::BeginMap<<YAML::Key<<"Styled"<<YAML::Value<<c.Styled<<YAML::Key<<"Asset"<<YAML::Value<<c.Selection.Asset.generic_u8string()<<YAML::Key<<"Variant"<<YAML::Value<<c.Selection.Variant<<YAML::Key<<"Overrides"<<YAML::Value<<c.Overrides;
+    out<<YAML::Key<<"Focus"<<YAML::Value;Write(out,c.Focus);out<<YAML::Key<<"Selected"<<YAML::Value;Write(out,c.Selected);out<<YAML::Key<<"Editing"<<YAML::Value;Write(out,c.Editing);out<<YAML::EndMap;
+}
 void ValidateUIConfiguration(const YAML::Node &node)
 {
+    if(auto n=node["UIAppearanceComponent"])ReadUIAppearanceComponent(n);
     if(node["UINineSliceComponent"] && node["UIRectComponent"] && ReadUIRectComponent(node["UIRectComponent"]).Fit!=GameUI::ImageFit::Stretch)
         throw std::invalid_argument("Nine-slice owns border fitting and requires Image Fit Stretch");
     if (auto n = node["UICanvasComponent"])
@@ -502,6 +517,7 @@ void ValidateUIConfiguration(const YAML::Node &node)
 }
 void ReadUIComponents(const YAML::Node &node, Entity entity)
 {
+    if(auto n=node["UIAppearanceComponent"])entity.AddComponent<UIAppearanceComponent>(ReadUIAppearanceComponent(n));
     if (auto n = node["UICanvasComponent"])
         entity.AddComponent<UICanvasComponent>(ReadUICanvasComponent(n));
     if (auto n = node["UIRectComponent"])
@@ -525,6 +541,7 @@ void ReadUIComponents(const YAML::Node &node, Entity entity)
 }
 void WriteUIComponents(YAML::Emitter &out, Entity entity)
 {
+    if(entity.HasComponent<UIAppearanceComponent>()){out<<YAML::Key<<"UIAppearanceComponent"<<YAML::Value;Write(out,entity.GetComponent<UIAppearanceComponent>()); }
     if (entity.HasComponent<UICanvasComponent>())
     {
         out << YAML::Key << "UICanvasComponent" << YAML::Value;

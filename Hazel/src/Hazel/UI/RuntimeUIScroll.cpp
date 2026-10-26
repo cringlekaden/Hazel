@@ -190,7 +190,7 @@ void RuntimeUI::ApplyScrollPresentation()
             continue;
         auto e = m_Scene.GetEntityByUUID(id);
         const auto &v = e.GetComponent<UIScrollViewComponent>();
-        auto view = root->LayoutBounds.Inset(e.GetComponent<UIRectComponent>().Padding);
+        auto view = root->LayoutBounds.Inset(RectFor(e).Padding);
         auto extent =
             content && content->LayoutResolved ? content->LayoutBounds.Size : glm::vec2(0);
         if (extent.x > 1e6f || extent.y > 1e6f)
@@ -235,7 +235,7 @@ void RuntimeUI::ApplyScrollPresentation()
                     n.Displacement -= state->second.Offset;
                     n.ScrollParent = parent->ID;
                     inherited = inherited.Intersect(
-                        parent->Bounds.Inset(p.GetComponent<UIRectComponent>().Padding));
+                        parent->Bounds.Inset(RectFor(p).Padding));
                     content = true;
                 }
             if (!content && !parent->IsCanvas && p.GetComponent<UIRectComponent>().ClipChildren)

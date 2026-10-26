@@ -681,7 +681,7 @@ void RuntimeUI::ArrangeDropdown(bool measure)
     const float scale = trigger->Scale;
     const auto parentScope = m_Build.Scope, parentModal = m_Build.Modal;
     const auto v = popup.GetComponent<UIScrollViewComponent>();
-    const auto padding = popup.GetComponent<UIRectComponent>().Padding;
+    const auto padding = RectFor(popup).Padding;
     float width = std::min(surface.Size.x, std::max(trigger->Bounds.Size.x, d.MinimumWidth));
     auto prior = m_Build.Find(d.Popup);
     auto content = m_Build.Find(v.Content);

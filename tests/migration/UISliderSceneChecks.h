@@ -160,6 +160,36 @@ static void UISliderSceneChecks(const std::filesystem::path &root)
     Check(scene->ConsumeUIEvent(900, event) && event.Kind == UIEventKind::SliderCommitted &&
               event.Value == 10,
           "Outside release did not commit");
+    // Appearance-only reload preserves an edit; metric changes use the existing
+    // geometry interruption contract without rolling back the live value.
+    auto styleAssets = CreateRef<ProjectAssets>(root);
+    scene->SetAssets(styleAssets);
+    UIStyleDefinition sliderStyle;
+    { std::ofstream out(root / "Slider.hstyle"); out << WriteUIStyleText(sliderStyle); }
+    auto& appearance = slider.AddComponent<UIAppearanceComponent>();
+    appearance.Styled = true;
+    appearance.Selection = {"Slider.hstyle", "Control"};
+    scene->RefreshUI();
+    begin();
+    key(UIAction::AdjustDecrease);
+    sliderStyle.Variants[0].Values.Background = {.2f, .3f, .4f, 1};
+    { std::ofstream out(root / "Slider.hstyle"); out << WriteUIStyleText(sliderStyle); }
+    styleAssets->Reload("Slider.hstyle");
+    scene->RefreshUI();
+    Check(scene->IsUISliderEditing(), "Paint-only style reload interrupted a slider edit");
+    sliderStyle.Variants[0].Values.Padding = glm::vec4(2);
+    { std::ofstream out(root / "Slider.hstyle"); out << WriteUIStyleText(sliderStyle); }
+    styleAssets->Reload("Slider.hstyle");
+    scene->RefreshUI();
+    Check(!scene->IsUISliderEditing() && scene->GetUISliderValue(101) == 9,
+          "Style geometry change failed coherent slider interruption");
+    Check(scene->ConsumeUIEvent(900, event) && event.Kind == UIEventKind::SliderChanged &&
+              scene->ConsumeUIEvent(900, event) && event.Kind == UIEventKind::SliderCancelled &&
+              event.Interrupted && !scene->ConsumeUIEvent(900, event),
+          "Style metric interruption lost or duplicated the slider terminal");
+    slider.RemoveComponent<UIAppearanceComponent>();
+    scene->RefreshUI();
+    scene->SetUISliderValue(101, 10);
     begin();
     key(UIAction::AdjustDecrease);
     track.GetComponent<UIRectComponent>().FixedSize.x = 160;

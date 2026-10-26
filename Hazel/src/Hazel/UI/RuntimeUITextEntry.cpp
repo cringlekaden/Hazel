@@ -92,7 +92,7 @@ void RuntimeUI::SyncTextFields()
                            ": needs Text and Text Entry Button behavior");
             continue;
         }
-        const auto &c = e.GetComponent<UITextEntryComponent>();
+        const auto c = EntryFor(e);
         auto &v = m_TextStates[id];
         auto life = m_Scene.GetAuthoringLifetime(id),
              version = m_Scene.GetAuthoringComponentVersion(id, typeid(UITextEntryComponent));
@@ -163,13 +163,12 @@ void RuntimeUI::PrepareTextField(uint64_t id)
     if (found == m_TextStates.end() || !e || !n || !n->LayoutResolved)
         return;
     auto &v = found->second;
-    auto style = e.HasComponent<UITextStyleComponent>() ? e.GetComponent<UITextStyleComponent>()
-                                                        : UITextStyleComponent{};
+    auto style = TextStyleFor(e);
     auto &cache = m_Cache[id];
-    auto &text = e.GetComponent<TextComponent>();
+    auto &text = TextFor(e);
     auto assets = m_Scene.GetAssets();
     auto epoch = assets ? assets->Epoch() : 1;
-    auto content = n->Bounds.Inset(e.GetComponent<UIRectComponent>().Padding);
+    auto content = n->Bounds.Inset(RectFor(e).Padding);
     if (content.Size.x <= 0 || content.Size.y <= 0)
     {
         v.Layout.reset();
@@ -179,9 +178,20 @@ void RuntimeUI::PrepareTextField(uint64_t id)
         return;
     }
     float width = v.Config.Multiline && style.Wrap ? content.Size.x / style.Size : -1;
+    bool faceChanged=false;
+    if(v.Epoch!=epoch||cache.Selection!=text.Font||(!v.FontAsset&&!v.Prepared)){
+        v.Epoch=epoch;cache.Selection=text.Font;
+        try{auto actual=ResolveTextFont(text,assets);faceChanged=actual!=v.FontAsset;v.FontAsset=std::move(actual);}
+        catch(const std::exception& error){
+            v.FontAsset.reset();v.Layout.reset();v.Paint.reset();v.Geometry={};v.Prepared=true;v.PaintFailed=true;
+            cache.PreparedValid=false;cache.PaintLayout.reset();cache.PaintGeneration=0;
+            v.Problem=error.what();ControlProblem("Text Entry #"+std::to_string(id)+": "+v.Problem+"; value retained");return;
+        }
+    }
+    if(!v.FontAsset)return;
     if (!v.Prepared || v.PreparedValue != v.Buffer.Value() || v.Width != width || v.Size != style.Size ||
-        v.Tracking != text.Kerning || v.Spacing != text.LineSpacing || v.Epoch != epoch ||
-        v.Placeholder != v.Config.Placeholder || cache.Selection != text.Font)
+        v.Tracking != text.Kerning || v.Spacing != text.LineSpacing || faceChanged ||
+        v.Placeholder != v.Config.Placeholder)
     {
         v.Prepared = true;
         v.PreparedValue = v.Buffer.Value();
@@ -300,7 +310,7 @@ bool RuntimeUI::BeginTextField(uint64_t id, bool pointer, glm::vec2 point)
     {
         auto n = m_Resolved.Find(id);
         auto ratio = m_Resolved.Surface.Framebuffer / m_Resolved.Surface.Viewport;
-        auto content = n->Bounds.Inset(m_Scene.GetEntityByUUID(id).GetComponent<UIRectComponent>().Padding);
+        auto content = n->Bounds.Inset(RectFor(m_Scene.GetEntityByUUID(id)).Padding);
         auto local = point / (ratio * n->Scale) - content.Position;
         local = local / v.Size + v.Scroll;
         if (v.Layout)
@@ -502,7 +512,7 @@ void RuntimeUI::RouteTextControl(const Action &action)
         auto n = m_Resolved.Find(action.Entity);
         auto ratio = m_Resolved.Surface.Framebuffer / m_Resolved.Surface.Viewport;
         auto content =
-            n->Bounds.Inset(m_Scene.GetEntityByUUID(action.Entity).GetComponent<UIRectComponent>().Padding);
+            n->Bounds.Inset(RectFor(m_Scene.GetEntityByUUID(action.Entity)).Padding);
         auto point = (action.Point / (ratio * n->Scale) - content.Position) / v.Size + v.Scroll;
         if (v.Layout)
             v.Buffer.Point(v.Geometry.Hit(point), true);
@@ -581,7 +591,7 @@ bool RuntimeUI::RouteTextFrame(InputFrame &input)
             auto n = m_Resolved.Find(m_TextEdit.ID);
             auto size =
                 n->Bounds
-                    .Inset(m_Scene.GetEntityByUUID(m_TextEdit.ID).GetComponent<UIRectComponent>().Padding)
+                    .Inset(RectFor(m_Scene.GetEntityByUUID(m_TextEdit.ID)).Padding)
                     .Size /
                 v.Size;
             auto extent = glm::vec2(v.Layout->Width, v.Layout->Height);
@@ -605,7 +615,7 @@ void RuntimeUI::RevealTextCaret(uint64_t id)
     if (!v.Layout || v.Size <= 0)
         return;
     auto n = m_Resolved.Find(id);
-    auto content = n->Bounds.Inset(m_Scene.GetEntityByUUID(id).GetComponent<UIRectComponent>().Padding);
+    auto content = n->Bounds.Inset(RectFor(m_Scene.GetEntityByUUID(id)).Padding);
     auto visible = content.Size / v.Size;
     auto caret = v.Geometry.Locate(v.Buffer.Selection().Caret);
     auto target = caret.Point;
@@ -627,7 +637,7 @@ void RuntimeUI::DrawTextField(const ResolvedElement &n, Entity entity, const Ras
         return;
     PrepareTextField(n.ID);
     auto &v = it->second;
-    auto content = n.Bounds.Inset(entity.GetComponent<UIRectComponent>().Padding);
+    auto content = n.Bounds.Inset(RectFor(entity).Padding);
     auto logical = n.Clip.Intersect(content);
     auto ratio = m_Resolved.Surface.Framebuffer / m_Resolved.Surface.Viewport;
     auto coverage = FramebufferCoverage({logical.Position * n.Scale, logical.Size * n.Scale}, ratio,
@@ -687,7 +697,7 @@ void RuntimeUI::DrawTextField(const ResolvedElement &n, Entity entity, const Ras
             auto origin = (content.Position - v.Scroll * v.Size) * n.Scale;
             auto transform = glm::translate(glm::mat4(1), glm::vec3(origin.x, -origin.y, 0)) *
                              glm::scale(glm::mat4(1), glm::vec3(v.Size * n.Scale));
-            auto color = entity.GetComponent<TextComponent>().Color;
+            auto color = TextFor(entity).Color;
             if (v.Buffer.Value().empty())
                 color.a *= .6f;
             Renderer2D::DrawTextGlyphs(cache.Glyphs, v.FontAsset, transform, color, int(uint32_t(entity)));

@@ -3,6 +3,7 @@
 #include "Hazel/Project/Project.h"
 #include "Hazel/UI/RuntimeUI.h"
 #include "Hazel/UI/RuntimeUIConfig.h"
+#include "Hazel/UI/UIStyleApplication.h"
 #include "Scene.h"
 #include "Hazel/Utils/UTF8.h"
 namespace Hazel
@@ -159,6 +160,7 @@ void Scene::ValidateUIControls(uint64_t target) const {m_UI->ValidateControls(ta
 bool Scene::GetUIControlVisual(uint64_t id,GameUI::Rect &bounds,bool &visible) const {CheckThread();return m_UI->ControlVisual(id,bounds,visible);}
 void Scene::ValidateUI(bool resources,bool controls)
 {
+    m_UI->ValidateStyles(resources);
     ValidateUILayoutDependencies();if(controls)ValidateUIControls();
     size_t screens=0;for(auto h:m_Registry.view<UICanvasComponent>())if(m_Registry.get<UICanvasComponent>(h).Screen.Managed)++screens;
     if(screens>RuntimeUI::MaxScreens)throw std::runtime_error("UI managed screen limit exceeded (64)");
@@ -223,9 +225,14 @@ void Scene::ValidateUI(bool resources,bool controls)
                 throw std::runtime_error("Nine-slice needs UI Rect and Sprite Renderer");
             if (resources && m_Assets)
             {
+                auto appearance = LocalUIStyle(e);
+                if(e.HasComponent<UIAppearanceComponent>() && e.GetComponent<UIAppearanceComponent>().Styled) {
+                    Ref<const UIStyleDefinition> accepted;std::string error;
+                    appearance = ResolveUIStyle(e,m_Assets,accepted,error);
+                }
                 auto validate = [&](const SpriteSource &source) {
                     auto sprite = m_Assets->Resolve(source);
-                    auto borders = e.GetComponent<UINineSliceComponent>().Borders;
+                    auto borders = appearance.Slice.Borders;
                     if (!sprite->Texture)
                         throw std::runtime_error("Nine-slice needs an image");
                     auto size =
@@ -233,9 +240,9 @@ void Scene::ValidateUI(bool resources,bool controls)
                     if (borders.x + borders.z > size.x || borders.y + borders.w > size.y)
                         throw std::runtime_error("Nine-slice borders exceed source");
                 };
-                validate(e.GetComponent<SpriteRendererComponent>().Source);
+                validate(appearance.Image);
                 if (e.HasComponent<UIButtonComponent>())
-                    for (auto &source : e.GetComponent<UIButtonComponent>().Images)
+                    for (auto &source : appearance.States.Images)
                         if (source.index())
                             validate(source);
             }
@@ -283,4 +290,26 @@ void Scene::SetUITextEntry(uint64_t id,const std::string& value){CheckThread();R
 bool Scene::IsUITextInputOwned() const {CheckThread();return m_UI->TextOwnsInput();}
 bool Scene::IsUITextEditing() const {CheckThread();return m_UI->TextEditing();}
 void Scene::SetUIClipboard(Ref<Text::Clipboard> clipboard){CheckThread();m_UI->SetClipboard(std::move(clipboard));}
+}
+
+namespace Hazel {
+UIStyleValues Scene::GetUIPresentation(uint64_t id){CheckThread();RefreshUI();return m_UI->Presentation(id);}
+UIStyleSelection Scene::GetUIStyle(uint64_t id) {CheckThread();auto e=GetEntityByUUID(id);if(!e||!IsEntityValid(id)||!e.HasComponent<UIAppearanceComponent>())throw std::invalid_argument("Style selection needs a live UI Appearance component");return e.GetComponent<UIAppearanceComponent>().Selection;}
+void Scene::SetUIStyle(uint64_t id,const UIStyleSelection& selection,bool enabled){
+ CheckThread();auto e=GetEntityByUUID(id);if(IsStopping()||!e||!IsEntityValid(id)||!e.HasComponent<UIRectComponent>())throw std::invalid_argument("Style selection needs a live UI Rect");
+ selection.Validate();if(enabled){if(m_Assets){auto result=m_Assets->Style(selection.Asset);if(!result.Accepted||!result.Error.empty())throw std::invalid_argument(result.Error);result.Accepted->Find(selection.Variant);}else if(selection.Asset.empty())DefaultUIStyle().Find(selection.Variant);else throw std::invalid_argument("Style requires project assets");}
+ if(enabled && e.HasComponent<UINineSliceComponent>()) {
+     auto resolved=m_Assets?m_Assets->Style(selection.Asset).Accepted->Find(selection.Variant):DefaultUIStyle().Find(selection.Variant);
+     CopyUIStyleGroups(resolved,LocalUIStyle(e),e.HasComponent<UIAppearanceComponent>()?e.GetComponent<UIAppearanceComponent>().Overrides:0);
+     if(e.GetComponent<UIRectComponent>().Fit!=GameUI::ImageFit::Stretch)throw std::invalid_argument("Styled nine-slice requires Stretch fit");
+     auto validate=[&](const SpriteSource& source){glm::vec2 size{};
+         if(m_Assets){auto image=m_Assets->Resolve(source);if(image->Texture)size=image->PixelSize();}
+         else if(auto image=std::get_if<TextureSpriteSource>(&source);image&&image->Resource)size={image->Resource->GetWidth(),image->Resource->GetHeight()};
+         auto b=resolved.Slice.Borders;if(size.x<=0||size.y<=0||b.x+b.z>size.x||b.y+b.w>size.y)throw std::invalid_argument("Styled nine-slice needs an image with room for its source borders");
+     };validate(resolved.Image);if(e.HasComponent<UIButtonComponent>())for(auto& image:resolved.States.Images)if(image.index())validate(image);
+ }
+ if(!e.HasComponent<UIAppearanceComponent>())e.AddComponent<UIAppearanceComponent>();auto& c=e.GetComponent<UIAppearanceComponent>();auto before=c;c.Selection=selection;c.Styled=enabled;
+ try{RefreshUI();}catch(...){c=before;try{RefreshUI();}catch(...){}throw;}
+}
+void Scene::ResetUIStyleOverrides(uint64_t id,uint32_t groups){CheckThread();auto e=GetEntityByUUID(id);if(IsStopping()||!e||!IsEntityValid(id)||!e.HasComponent<UIAppearanceComponent>()||(groups&~UIStyleAll))throw std::invalid_argument("Invalid UI style reset target/groups");auto& c=e.GetComponent<UIAppearanceComponent>();auto before=c.Overrides;c.Overrides&=~groups;try{RefreshUI();}catch(...){c.Overrides=before;try{RefreshUI();}catch(...){}throw;}}
 }

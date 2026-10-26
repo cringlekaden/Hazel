@@ -12,11 +12,11 @@ static void FontReloadSceneChecks(const std::filesystem::path& root) {
     auto& style=label.AddComponent<UITextStyleComponent>();style.Size=16;WriteTestFamily(directory,"face.hfont","face.ttf");label.GetComponent<TextComponent>().Font.Family="face.hfont";
     RuntimeUI ui(*scene);ui.Resolve({128,128});ui.Draw();
     float before=ui.Snapshot().Find(label.GetUUID())->Bounds.Size.x;
-    auto accepted=assets->FamilyFont({"face.hfont"});auto generation=ui.Snapshot().Generation;
+    auto accepted=assets->FamilyFont({"face.hfont"});auto generation=ui.Snapshot().Generation;auto layoutBuilds=Font::Resources().LayoutBuilds;
     {std::ofstream out(file,std::ios::binary);out<<"invalid replacement";}
     assets->Reload("face.ttf");ui.Resolve({128,128});ui.Draw();
     Check(assets->FamilyFont({"face.hfont"})==accepted && ui.Snapshot().Find(label.GetUUID())->Bounds.Size.x==before,"Failed replacement split measurement/drawing versions");
-    Check(ui.Snapshot().Generation>generation && ui.Diagnostics().PreparedRebuilds==1,"Explicit failed freshness boundary skipped preparation invalidation");
+    Check(ui.Snapshot().Generation>generation && ui.Diagnostics().PreparedRebuilds==0 && ui.Diagnostics().PreparedReuses==1 && Font::Resources().LayoutBuilds==layoutBuilds,"Failed freshness boundary discarded preparation for the unchanged accepted face");
     std::filesystem::copy_file("assets/fonts/opensans/OpenSans-Bold.ttf",file,std::filesystem::copy_options::overwrite_existing);
     assets->Reload("face.ttf");ui.Resolve({128,128});ui.Draw();
     auto actual=assets->FamilyFont({"face.hfont"});auto after=ui.Snapshot().Find(label.GetUUID())->Bounds.Size.x;

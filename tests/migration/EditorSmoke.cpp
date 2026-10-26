@@ -11,6 +11,7 @@
 #include "Authoring/RendererLaunch.h"
 #include "Authoring/AuthoringPanel.h"
 #include "Authoring/UIRectEditing.h"
+#include "Hazel/UI/UIStyleApplication.h"
 #include "Hazel/Utils/Toolchain.h"
 #include "Hazel/Utils/Process.h"
 #include "Hazel/Scene/Prefab.h"
@@ -76,6 +77,7 @@ public:
             HistoryWorkflowChecks();
             ContainerWorkflowChecks();
             FontFamilyWorkflowChecks();
+            UIStyleWorkflowChecks();
             UIActionWorkflowChecks();
             UIScreenWorkflowChecks();
             CaptionChecks();
@@ -408,6 +410,7 @@ private:
         if(m_Frame==3) {
             DrawContainerFixture();
             DrawUIScreenFixture();
+            m_StylePanelFixture.Render(false);
             DrawFontFamilyFixture();
             ImGui::Begin("UI bindings qualification",nullptr,ImGuiWindowFlags_NoSavedSettings);
             m_Editor.m_Authoring->m_UIBindings.Draw();ImGui::End();
@@ -882,6 +885,7 @@ private:
     #include "EditorContainerWorkflowChecks.h"
     #include "EditorFontFamilyWorkflowChecks.h"
     #include "EditorUIActionWorkflowChecks.h"
+    #include "EditorUIStyleWorkflowChecks.h"
     #include "EditorUIScreenWorkflowChecks.h"
     void HierarchyAuthoringChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=e.m_SceneHierarchyPanel;

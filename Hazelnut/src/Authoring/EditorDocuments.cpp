@@ -17,6 +17,9 @@ bool EditorDocuments::Affects(OperationIntent intent, EditorDocument kind)
     case OperationIntent::OpenSheet:
     case OperationIntent::CloseSheet:
         return kind == EditorDocument::Sheet;
+    case OperationIntent::OpenUIStyle:
+    case OperationIntent::CloseUIStyle:
+        return kind == EditorDocument::UIStyle;
     case OperationIntent::OpenFontFamily:
     case OperationIntent::CloseFontFamily:
         return kind == EditorDocument::FontFamily;
@@ -56,6 +59,10 @@ const char *EditorDocuments::Description(OperationIntent intent)
         return "Close prefab document";
     case OperationIntent::CloseSheet:
         return "Close sheet document";
+    case OperationIntent::OpenUIStyle:
+        return "Open / replace UI-style draft";
+    case OperationIntent::CloseUIStyle:
+        return "Close UI-style document";
     case OperationIntent::OpenFontFamily:
         return "Open / replace font-family draft";
     case OperationIntent::CloseFontFamily:

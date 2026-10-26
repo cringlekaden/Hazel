@@ -46,6 +46,10 @@ namespace Hazel {
         Relationship GetRelationship(Entity entity) const;
         std::vector<UUID> GetChildren(UUID parent = UUID(0)) const;
         const std::vector<UUID>& GetChildrenView(UUID parent) const;
+        UIStyleValues GetUIPresentation(uint64_t entity);
+        UIStyleSelection GetUIStyle(uint64_t entity);
+        void SetUIStyle(uint64_t entity,const UIStyleSelection& selection,bool enabled=true);
+        void ResetUIStyleOverrides(uint64_t entity,uint32_t groups);
         void UpdateUIInput(const GameUI::InputFrame& frame);
         bool ConsumeUIAction(uint64_t entity,GameUI::Action& action);
         bool ConsumeUICancel(uint64_t scope);

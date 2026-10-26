@@ -32,7 +32,7 @@ class ContentBrowserPanel
     std::function<void(const std::filesystem::path &)> SelectAsset;
     std::function<void(const std::filesystem::path &)> CreateSpriteSheet;
     std::function<void()> ImportTexture;
-    std::function<void(const std::filesystem::path&)> CreateFontFamily;
+    std::function<void(const std::filesystem::path&)> CreateFontFamily,CreateUIStyle;
 
   private:
     struct Entry

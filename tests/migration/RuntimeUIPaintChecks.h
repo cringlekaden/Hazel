@@ -118,11 +118,16 @@ static void RuntimeUIPaintChecks(const std::filesystem::path &root)
     ui.Resolve({128, 128});
     ui.Draw();
     Check(ui.Diagnostics().PreparedRebuilds == 1, "Font mutation reused retired atlas preparation");
+    auto acceptedBeforeRefresh=second.GetComponent<TextComponent>().ResolvedFont;
+    auto layoutsBeforeRefresh=Font::Resources().LayoutBuilds;
     scene->GetAssets()->Refresh();
     scene->PrepareSprites(true);
     ui.Resolve({128, 128});
     ui.Draw();
-    Check(ui.Diagnostics().PreparedRebuilds == 2, "Asset retirement reused stale font preparation");
+    Check(ui.Diagnostics().PreparedRebuilds == 0 && ui.Diagnostics().PreparedReuses == 2 &&
+              second.GetComponent<TextComponent>().ResolvedFont == acceptedBeforeRefresh &&
+              Font::Resources().LayoutBuilds == layoutsBeforeRefresh,
+          "Unchanged accepted faces were reshaped/reprepared after asset refresh");
     auto resource = Texture2D::Create(TextureSpecification());
     uint32_t red = 0xff0000ff;
     resource->SetData(&red, 4);

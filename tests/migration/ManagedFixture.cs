@@ -348,3 +348,10 @@ namespace Migration {
         }
     }
 }
+namespace Migration {
+    public class StyleOwnerProbe : Hazel.Entity {
+        public bool Ready,Changed;
+        void OnCreate(){var e=FindEntityByName("Name field");var appearance=e.GetComponent<Hazel.UIAppearanceComponent>();var value=e.GetComponent<Hazel.UITextEntryComponent>().Text;appearance.Style=new Hazel.UIStyleSelection("","Field");appearance.ResetOverrides(Hazel.UIStyleGroups.Foreground);appearance.UseLocalOverrides(Hazel.UIStyleGroups.Background);if(appearance.Overrides!=Hazel.UIStyleGroups.Background)throw new System.Exception("Typed override presence");appearance.ResetOverrides(Hazel.UIStyleGroups.Background);Ready=appearance.Style.Enabled&&appearance.Style.Variant=="Field"&&e.GetComponent<Hazel.UITextEntryComponent>().Text==value;}
+        void OnUpdate(float dt){if(Changed)return;var e=FindEntityByName("Name field");var appearance=e.GetComponent<Hazel.UIAppearanceComponent>();appearance.Style=new Hazel.UIStyleSelection("","Control");Changed=appearance.Style.Asset==""&&appearance.Style.Variant=="Control";Hazel.UIEvent value;if(Hazel.GameUI.TryConsumeEvent(out value))throw new System.Exception("Appearance assignment fabricated a control event");}
+    }
+}

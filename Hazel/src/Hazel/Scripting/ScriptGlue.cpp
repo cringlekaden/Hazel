@@ -418,6 +418,22 @@ namespace Hazel {
                 GameUI::Action event;if(scene->ConsumeUIEvent(owner,event)){*screen=event.Screen;*source=event.Entity;*kind=int(event.Kind);*sequence=event.Sequence;*name=ScriptEngine::CreateString(event.Name.c_str());*previousChecked=event.PreviousChecked;*checked=event.Checked;*previousSelection=event.PreviousSelection;*selection=event.Selection;*recipient=event.Owner;*previousValue=event.PreviousValue;*value=event.Value;*startValue=event.StartValue;*gesture=event.Gesture;*interrupted=event.Interrupted;*previousText=ScriptEngine::CreateString(event.PreviousText.c_str());*text=ScriptEngine::CreateString(event.TextValue.c_str());result=true;}}}
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
     }
+    static std::string UIStyleString(MonoString* value){
+        if(!value)return {};int size=mono_string_length(value);if(size>1024)throw std::invalid_argument("UI style selection exceeds 1024 UTF-16 units");auto chars=mono_string_chars(value);
+        for(int i=0;i<size;++i){auto c=chars[i];if(!c)throw std::invalid_argument("UI style selection contains NUL");if(c>=0xd800&&c<=0xdbff){if(++i>=size||chars[i]<0xdc00||chars[i]>0xdfff)throw std::invalid_argument("Invalid UI style UTF-16");}else if(c>=0xdc00&&c<=0xdfff)throw std::invalid_argument("Invalid UI style UTF-16");}
+        return Utils::MonoStringToString(value);
+    }
+    static void UI_Style(uint64_t id,bool write,MonoString* asset,MonoString* variant,bool enabled,MonoString** actualAsset,MonoString** actualVariant,bool* actualEnabled){
+        *actualAsset=*actualVariant=nullptr;*actualEnabled=false;MonoException* failure=nullptr;
+        try{auto scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("Style requires a runtime scene");scene->CheckThread();if(write)scene->SetUIStyle(id,{std::filesystem::u8path(UIStyleString(asset)),UIStyleString(variant)},enabled);auto selection=scene->GetUIStyle(id);*actualAsset=ScriptEngine::CreateString(selection.Asset.generic_u8string().c_str());*actualVariant=ScriptEngine::CreateString(selection.Variant.c_str());*actualEnabled=scene->GetEntityByUUID(id).GetComponent<UIAppearanceComponent>().Styled;}
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);
+    }
+    static uint32_t UI_StyleOverrides(uint64_t id,uint32_t groups,bool enable){
+        uint32_t result=0;MonoException* failure=nullptr;
+        try{auto scene=ScriptEngine::GetSceneContext();if(!scene||scene->IsStopping())throw std::invalid_argument("Overrides need a live runtime scene");scene->CheckThread();auto entity=scene->GetEntityByUUID(id);if(!entity||!scene->IsEntityValid(id)||!entity.HasComponent<UIAppearanceComponent>()||(groups&~UIStyleAll))throw std::invalid_argument("Invalid UI override target/groups");auto& c=entity.GetComponent<UIAppearanceComponent>();auto before=c.Overrides;if(enable){c.Overrides|=groups;try{scene->RefreshUI();}catch(...){c.Overrides=before;try{scene->RefreshUI();}catch(...){}throw;}}result=c.Overrides;}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);return result;
+    }
+    static void UI_StyleReset(uint64_t id,uint32_t groups){MonoException* failure=nullptr;try{auto scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("Style requires a runtime scene");scene->ResetUIStyleOverrides(id,groups);}catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);}
     static MonoString* UI_TextEntry(uint64_t id,bool write,MonoString* value){MonoException* failure=nullptr;MonoString* result=nullptr;try{auto s=ScriptEngine::GetSceneContext();if(!s)throw std::invalid_argument("Text Entry requires a runtime scene");if(write){if(value){int n=mono_string_length(value);if(n>16384)throw std::invalid_argument("Managed text input exceeds bounded UTF-16 length");auto chars=mono_string_chars(value);for(int i=0;i<n;++i){auto c=chars[i];if(!c)throw std::invalid_argument("Text input cannot contain NUL");if(c>=0xd800&&c<=0xdbff){if(++i>=n||chars[i]<0xdc00||chars[i]>0xdfff)throw std::invalid_argument("Unpaired UTF-16 surrogate");}else if(c>=0xdc00&&c<=0xdfff)throw std::invalid_argument("Unpaired UTF-16 surrogate");}}s->SetUITextEntry(id,Utils::MonoStringToString(value));}result=ScriptEngine::CreateString(s->GetUITextEntry(id).c_str());}catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;}
     static bool UI_Checked(uint64_t id,bool write,bool value){
         MonoException* failure=nullptr;bool result=false;
@@ -604,6 +620,7 @@ namespace Hazel {
         RegisterComponent<UIProgressComponent>("Hazel.UIProgressComponent");
         RegisterComponent<UISliderComponent>("Hazel.UISliderComponent");
         RegisterComponent<UIScrollViewComponent>("Hazel.UIScrollViewComponent");
+        RegisterComponent<UIAppearanceComponent>("Hazel.UIAppearanceComponent");
         RegisterComponent<UITextEntryComponent>("Hazel.UITextEntryComponent");
         RegisterComponent<UITabsComponent>("Hazel.UITabsComponent");
         RegisterComponent<UITabComponent>("Hazel.UITabComponent");
@@ -614,7 +631,7 @@ namespace Hazel {
 
 	void ScriptGlue::ValidateComponents(MonoImage* image)
 	{
-		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent", "Hazel.SpriteRendererComponent", "Hazel.SpriteAnimationComponent", "Hazel.AudioSourceComponent", "Hazel.UICanvasComponent", "Hazel.UIRectComponent", "Hazel.UILayoutComponent", "Hazel.UITextStyleComponent", "Hazel.UINineSliceComponent", "Hazel.UIButtonComponent", "Hazel.UIRadioGroupComponent", "Hazel.UIProgressComponent", "Hazel.UISliderComponent", "Hazel.UIScrollViewComponent", "Hazel.UIDropdownComponent", "Hazel.UITabsComponent", "Hazel.UITabComponent", "Hazel.UITooltipComponent" })
+		for (const char* name : { "Hazel.TransformComponent", "Hazel.Rigidbody2DComponent", "Hazel.TextComponent", "Hazel.CameraComponent", "Hazel.SpriteRendererComponent", "Hazel.SpriteAnimationComponent", "Hazel.AudioSourceComponent", "Hazel.UICanvasComponent", "Hazel.UIRectComponent", "Hazel.UILayoutComponent", "Hazel.UITextStyleComponent", "Hazel.UINineSliceComponent", "Hazel.UIButtonComponent", "Hazel.UIRadioGroupComponent", "Hazel.UIProgressComponent", "Hazel.UISliderComponent", "Hazel.UIScrollViewComponent", "Hazel.UIDropdownComponent", "Hazel.UITabsComponent", "Hazel.UITabComponent", "Hazel.UITooltipComponent", "Hazel.UIAppearanceComponent" })
 			if (!mono_reflection_type_from_name(const_cast<char*>(name), image))
 				throw std::runtime_error(std::string("Missing managed component: ") + name);
 	}
@@ -629,6 +646,9 @@ namespace Hazel {
         HZ_ADD_INTERNAL_CALL(UI_Focus);
         HZ_ADD_INTERNAL_CALL(UI_Screen);
         HZ_ADD_INTERNAL_CALL(UI_ConsumeEvent);
+        HZ_ADD_INTERNAL_CALL(UI_Style);
+        HZ_ADD_INTERNAL_CALL(UI_StyleReset);
+        HZ_ADD_INTERNAL_CALL(UI_StyleOverrides);
         HZ_ADD_INTERNAL_CALL(UI_TextEntry);
         HZ_ADD_INTERNAL_CALL(UI_TextInputOwned);
         HZ_ADD_INTERNAL_CALL(UI_Checked);

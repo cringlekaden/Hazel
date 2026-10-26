@@ -8,6 +8,10 @@
 #include "Hazel/UI/UI.h"
 #include "Hazel/Core/Application.h"
 #include "SpriteWidgets.h"
+#include "Hazel/UI/UIStyleApplication.h"
+#include "Hazel/Assets/UIStyleDocument.h"
+#include "Hazel/Utils/PlatformUtils.h"
+#include "UI/StyleWidgets.h"
 #include "UI/PropertyUI.h"
 
 #include <imgui.h>
@@ -68,6 +72,14 @@ bool SceneHierarchyPanel::AddEntity(const std::string &name)
 bool SceneHierarchyPanel::AddUI(int kind) {
     if(!m_Context||!CanEdit(true))return false;
     try {
+        if(kind>=24&&kind<=26){
+            const int base=kind==24?3:kind==25?22:4;
+            if(!AddUI(base))return false;auto root=GetSelectedEntity();
+            if(!root.HasComponent<UIAppearanceComponent>())root.AddComponent<UIAppearanceComponent>();
+            auto& a=root.GetComponent<UIAppearanceComponent>();a.Styled=true;a.Selection.Variant=kind==24?"Control":kind==25?"Field":"Panel";
+            if(kind==26){if(!root.HasComponent<SpriteRendererComponent>())root.AddComponent<SpriteRendererComponent>();SetSelectedEntity(root);if(!AddUI(2))return false;auto title=GetSelectedEntity();title.GetComponent<TextComponent>().TextString="Screen heading";if(!title.HasComponent<UIAppearanceComponent>())title.AddComponent<UIAppearanceComponent>();title.GetComponent<UIAppearanceComponent>().Styled=true;title.GetComponent<UIAppearanceComponent>().Selection.Variant="Heading";SetSelectedEntity(root);if(!AddUI(24))return false;SetSelectedEntity(root);if(!AddUI(25))return false;SetSelectedEntity(root);}
+            return true;
+        }
         if(kind<0||kind>23)throw std::invalid_argument("Unknown UI creation preset");
         Entity parent=GetSelectedEntity();
         if(PrefabDocument&&!parent){auto roots=m_Context->GetChildren();if(!roots.empty())parent=m_Context->GetEntityByUUID(roots.front());}
@@ -230,12 +242,13 @@ bool SceneHierarchyPanel::AddUI(int kind) {
                 fill.AddComponent<SpriteRendererComponent>(glm::vec4(.35f,.75f,.65f,1));auto &p=e.AddComponent<UIProgressComponent>();p.Fill=fill.GetUUID();p.InitialValue=.5f;
             }
         }
+        if(e.HasComponent<UIRectComponent>()&&!e.HasComponent<UIAppearanceComponent>())e.AddComponent<UIAppearanceComponent>();
         return SetSelectedEntity(e);
     }catch(const std::exception& error){return HierarchyFailed(error.what());}
 }
 void SceneHierarchyPanel::UIAddMenu(){
     if(ImGui::BeginMenu("Runtime UI")) {
-        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap","Screen","Checkbox / Toggle","Radio Group","Progress","Slider","Vertical Slider","ScrollView","Horizontal ScrollView","Dropdown","Dropdown option","Tabs","Tab and page","Selectable List","List row","Tooltip for selected control","Text Entry","Multiline Text Entry"};
+        const char* names[]={"Canvas","Panel","Text","Button","Stack","Grid","Wrap","Screen","Checkbox / Toggle","Radio Group","Progress","Slider","Vertical Slider","ScrollView","Horizontal ScrollView","Dropdown","Dropdown option","Tabs","Tab and page","Selectable List","List row","Tooltip for selected control","Text Entry","Multiline Text Entry","Styled Button","Styled Text Entry","Styled Panel template"};
         for(size_t i=0;i<std::size(names);++i)if(ImGui::MenuItem(names[i]))AddUI(int(i));
         ImGui::EndMenu();
     }
@@ -397,11 +410,27 @@ void SceneHierarchyPanel::DrawUIComponent(const std::string &name,Entity entity,
             auto before=UIEditValues::Capture(entity),proposed=before;
             UIEditCommand guard(*document,target,name,before);
             auto draft=component;
+            const bool styled=before.Appearance&&before.Appearance->Styled;
+            if(styled){
+                ApplyUIStyle(draft,document->GetUIPresentation(target));
+                uint32_t groups=0;
+                if constexpr(std::is_same_v<T,UIRectComponent>)groups=UIStyleBit(UIStyleGroup::Padding);
+                if constexpr(std::is_same_v<T,UITextStyleComponent>)groups=UIStyleBit(UIStyleGroup::Size);
+                if constexpr(std::is_same_v<T,TextComponent>)groups=UIStyleBit(UIStyleGroup::Font)|UIStyleBit(UIStyleGroup::Foreground)|UIStyleBit(UIStyleGroup::Spacing);
+                if constexpr(std::is_same_v<T,SpriteRendererComponent>)groups=UIStyleBit(UIStyleGroup::Background)|UIStyleBit(UIStyleGroup::Image);
+                if constexpr(std::is_same_v<T,UIButtonComponent>)groups=UIStyleBit(UIStyleGroup::States);
+                if constexpr(std::is_same_v<T,UINineSliceComponent>)groups=UIStyleBit(UIStyleGroup::Slice);
+                if constexpr(std::is_same_v<T,UITextEntryComponent>)groups=UIStyleBit(UIStyleGroup::Caret)|UIStyleBit(UIStyleGroup::Selection);
+                std::string origins;for(unsigned i=0;i<unsigned(UIStyleGroup::Count);++i)if(groups&UIStyleBit(UIStyleGroup(i))){if(!origins.empty())origins+=" | ";origins+=UIStyleGroupName(UIStyleGroup(i));origins+=(before.Appearance->Overrides&UIStyleBit(UIStyleGroup(i)))?": local":": style";}
+                if(!origins.empty()){ImGui::PushTextWrapPos(0);ImGui::TextDisabled("%s",origins.c_str());ImGui::PopTextWrapPos();}
+            }
+            const auto shown=draft;
             PropertyUI::EditActivity activity;
             {PropertyUI::ActivityScope observation(activity);ui(draft);}
             if(m_Context!=document || GetSelectedEntity()!=entity)
                 throw std::runtime_error("UI document or selection changed while editing; retry in the current Inspector");
             guard.Check(*document);
+            if(styled){auto local=component;auto groups=MergeUIStyleEdit(entity,shown,draft,local);if constexpr(std::is_same_v<T,UIAppearanceComponent>)local.Overrides|=groups;draft=std::move(local);proposed.Appearance->Overrides|=groups;}
             proposed.Set(draft);
             const bool changed=!before.Same(proposed);
             if(!m_UIInspectorEdit.Edit(*document,m_History,target,name,before,
@@ -451,6 +480,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             DisplayAddComponentEntry<UIProgressComponent>("UI Progress");
             DisplayAddComponentEntry<UISliderComponent>("UI Slider");
             DisplayAddComponentEntry<UIScrollViewComponent>("UI ScrollView");
+            DisplayAddComponentEntry<UIAppearanceComponent>("UI Appearance");
             DisplayAddComponentEntry<UITextEntryComponent>("UI Text Entry");
             DisplayAddComponentEntry<UITabsComponent>("UI Tabs");
             DisplayAddComponentEntry<UITabComponent>("UI Tab");
@@ -721,6 +751,38 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         targetPicker("initial-selection","Initial selection",c.InitialSelection,[&](Entity candidate){return candidate.HasComponent<UIButtonComponent>()&&candidate.GetComponent<UIButtonComponent>().Kind==GameUI::ControlKind::Radio&&candidate.GetComponent<UIButtonComponent>().Group==uint64_t(entity.GetUUID());});
         if(ImGui::TreeNode("Standalone notification")){targetPicker("value-owner","Event owner",c.EventOwner,ownerTarget);PropertyUI::Help("Managed screens use their declared owner. Ordinary canvases require this explicit recipient.");ImGui::TreePop();}
         PropertyUI::Help(entity.HasComponent<UIDropdownComponent>()?"Dropdown owns one group value. Navigation highlights; Accept selects and closes. Setters are silent. Required fallback: Tab order then ID.":"Tab and directions move focus; Accept selects. Activating the current option does nothing. Required selection falls back by Tab order then ID.");
+    });
+    DrawUIComponent<UIAppearanceComponent>("UI Appearance",entity,m_Sections,m_RestoreSections,[&](auto& c){
+        const auto previousAsset=c.Selection.Asset;const bool previouslyStyled=c.Styled;
+        PropertyUI::Checkbox("styled","Use shared style",c.Styled);
+        std::string path=c.Selection.Asset.generic_u8string();
+        if(PropertyUI::Text("style-asset","Style asset",path))c.Selection.Asset=std::filesystem::u8path(path);
+        if(ImGui::BeginDragDropTarget()){if(auto payload=ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))try{auto p=ContentBrowserPath(payload->Data,payload->DataSize);if(p.extension()!=".hstyle")throw std::invalid_argument("Drop a .hstyle asset");c.Selection.Asset=Project::MakeAssetReference(Project::GetAssetDirectory(),p);c.Styled=true;}catch(const std::exception& error){m_HierarchyError=error.what();}ImGui::EndDragDropTarget();}
+        static std::vector<std::filesystem::path> styleChoices;
+        if(ImGui::SmallButton("Choose style...")){styleChoices.clear();if(auto assets=m_Context->GetAssets())for(auto& entry:std::filesystem::recursive_directory_iterator(assets->Root()))if(entry.is_regular_file()&&entry.path().extension()==".hstyle")styleChoices.push_back(Project::MakeAssetReference(assets->Root(),entry.path()));std::sort(styleChoices.begin(),styleChoices.end());ImGui::OpenPopup("Choose UI style");}
+        if(ImGui::BeginPopup("Choose UI style")){
+            if(ImGui::Selectable("Engine defaults")){c.Selection.Asset.clear();c.Styled=true;}
+            for(auto& ref:styleChoices)if(ImGui::Selectable(ref.generic_u8string().c_str())){c.Selection.Asset=ref;c.Styled=true;}
+            ImGui::EndPopup();
+        }
+        if(c.Styled){auto assets=m_Context->GetAssets();auto status=assets?assets->Style(c.Selection.Asset):ProjectAssets::StyleResolution{CreateRef<UIStyleDefinition>(DefaultUIStyle()),{}};
+            if(status.Accepted && (previousAsset!=c.Selection.Asset || !previouslyStyled) &&
+               std::none_of(status.Accepted->Variants.begin(),status.Accepted->Variants.end(),[&](const auto& v){return v.Name==c.Selection.Variant;}))c.Selection.Variant=status.Accepted->Variants.front().Name;
+            if(status.Accepted){PropertyUI::Row row("variant","Variant");row.Width();if(ImGui::BeginCombo("##variant",c.Selection.Variant.c_str())){for(auto& v:status.Accepted->Variants)if(ImGui::Selectable(v.Name.c_str()))c.Selection.Variant=v.Name;ImGui::EndCombo();}}
+            PropertyUI::Validation(status.Error.c_str());
+            if(ImGui::SmallButton("Reload saved style")&&assets)assets->Reload(c.Selection.Asset);
+            if(!c.Selection.Asset.empty()){ImGui::SameLine();if(ImGui::SmallButton("Open style")&&OpenAsset)OpenAsset(Project::GetAssetDirectory()/c.Selection.Asset);}
+            if(ImGui::TreeNode("Local override groups")){
+            for(unsigned g=0;g<unsigned(UIStyleGroup::Count);++g){auto group=UIStyleGroup(g);bool local=(c.Overrides&UIStyleBit(group))!=0;ImGui::PushID(int(g));if(PropertyUI::Checkbox("override",UIStyleGroupName(group),local)){if(local)c.Overrides|=UIStyleBit(group);else c.Overrides&=~UIStyleBit(group);}ImGui::SameLine();ImGui::TextDisabled("%s",local?"local":"inherited");ImGui::PopID();}
+            if(ImGui::SmallButton("Reset all to style"))c.Overrides=0;
+            ImGui::TreePop();}
+            PropertyUI::Help("Empty asset selects engine defaults. Existing presentation fields show resolved values; editing one creates a typed local override. Reset removes presence, never overwrites saved local values. Values/actions/part references are not styled.");
+            if(ImGui::TreeNode("Local focus / selection / editing cues")){PropertyUI::Color("focus","Focus",glm::value_ptr(c.Focus));PropertyUI::Color("selected","Selected",glm::value_ptr(c.Selected));PropertyUI::Color("editing","Editing",glm::value_ptr(c.Editing));ImGui::TreePop();}
+        }
+        if(ImGui::SmallButton("Extract presentation to style...")){
+            auto chosen=FileDialogs::SaveFile("Hazel UI Style\0*.hstyle\0");
+            if(!chosen.empty())try{auto assets=m_Context->GetAssets();if(!assets)throw std::invalid_argument("Open a project");UIStyleDefinition def;def.Name=entity.GetName();def.Variants.front().Values=m_Context->GetUIPresentation(entity.GetUUID());UIStyleDocument doc(assets);doc.Create(Project::MakeAssetReference(assets->Root(),std::filesystem::u8path(chosen)),def);c.Selection={doc.Reference(),"Control"};c.Styled=true;c.Overrides=0;}catch(const std::exception& error){m_HierarchyError=error.what();}
+        }
     });
     DrawUIComponent<UITextEntryComponent>("UI Text Entry",entity,m_Sections,m_RestoreSections,[&](auto &c){
         PropertyUI::Text("placeholder","Placeholder",c.Placeholder);

@@ -261,6 +261,12 @@ namespace Hazel {
         std::string Action="selection";
     };
     struct UIScrollViewComponent : GameUI::ScrollConfig {};
+    struct UIAppearanceComponent {
+        bool Styled=false;
+        UIStyleSelection Selection;
+        uint32_t Overrides=0; // explicit presence for local component appearance groups
+        glm::vec4 Focus{1,.9f,.65f,1},Selected{1},Editing{.3f,1,1,1};
+    };
     struct UITextEntryComponent {
         std::string Placeholder;
         uint32_t MaxBytes=4096,MaxGraphemes=1024,MaxLines=64;
@@ -291,6 +297,6 @@ namespace Hazel {
 		ComponentGroup<TransformComponent, SpriteRendererComponent, SpriteAnimationComponent, AudioSourceComponent,
 			CircleRendererComponent, CameraComponent, ScriptComponent,
 			NativeScriptComponent, Rigidbody2DComponent, BoxCollider2DComponent,
-			CircleCollider2DComponent, TextComponent, UICanvasComponent, UIRectComponent, UILayoutComponent, UITextStyleComponent, UINineSliceComponent, UIButtonComponent, UIRadioGroupComponent, UIProgressComponent, UISliderComponent, UIScrollViewComponent, UIDropdownComponent, UITabsComponent, UITabComponent, UITooltipComponent, UITextEntryComponent>;
+			CircleCollider2DComponent, TextComponent, UICanvasComponent, UIRectComponent, UILayoutComponent, UITextStyleComponent, UINineSliceComponent, UIButtonComponent, UIRadioGroupComponent, UIProgressComponent, UISliderComponent, UIScrollViewComponent, UIDropdownComponent, UITabsComponent, UITabComponent, UITooltipComponent, UITextEntryComponent, UIAppearanceComponent>;
 
 }

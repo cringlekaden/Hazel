@@ -175,6 +175,7 @@ Ref<const ResolvedClip> ProjectAssets::Clip(const AnimationReference& reference)
     m_Clips.emplace(key,result);return result;
 }
 void ProjectAssets::Reload(const std::filesystem::path& reference) {
+    if(reference.extension()==".hstyle") {auto resolution=Style(reference);auto it=m_Styles.find(reference.generic_u8string());if(it!=m_Styles.end())ReloadStyle(it->first,it->second);++m_Epoch;return;}
     if(reference.empty() || reference.extension()==".hfont") {
         auto* entry=FamilyEntryFor(reference);if(entry)ReloadFamily(reference.generic_u8string(),*entry);
         ++m_Epoch;return;
@@ -198,6 +199,8 @@ void ProjectAssets::Reload(const std::filesystem::path& reference) {
     } catch(const std::exception& e) {m_Sheets[key].Error=e.what();throw;}
 }
 void ProjectAssets::Refresh() {
+    // Explicit freshness boundary: retire unpinned metadata, then retry live styles.
+    for(auto it=m_Styles.begin();it!=m_Styles.end();)if(!it->second.Accepted||it->second.Accepted.use_count()==1){m_StyleBytes-=it->second.Bytes;it=m_Styles.erase(it);}else{ReloadStyle(it->first,it->second);++it;}
     std::vector<std::filesystem::path> paths;for(auto& p:m_Sheets) paths.push_back(std::filesystem::u8path(p.first).lexically_relative(m_Root));
     for(auto& p:paths) {
         try{Reload(p);}catch(const std::exception& e){HZ_CORE_WARN("Sprite asset refresh: {}",e.what());}
@@ -259,7 +262,12 @@ std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path
             it=sheets.emplace(key,std::move(s)).first;
         } return it->second;
     };
+    auto style=[&](const std::filesystem::path& reference){
+        auto definition=ReadUIStyle(Project::ResolveOwnedAsset(root,reference));dependencies.insert(reference);
+        for(auto& dep:AuditUIStyle(root,definition))dependencies.insert(dep);
+    };
     for(auto file:files) {
+        if(file.extension()==".hstyle")style(file);
         if(file.extension()==".hsprites")get(file);
         if(file.extension()==".hfont")family(file);
     }
@@ -272,16 +280,25 @@ std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path
         auto doc=YAML::Load(FileDocument::Read(Project::ResolveOwnedAsset(root,file)));
         DocumentSchema::Scene(doc,file.extension()==".hprefab");
         for(auto e:doc["Entities"]) {
+            if(auto n=e["UIAppearanceComponent"]){auto selection=ReadUIAppearanceComponent(n).Selection;if(!selection.Asset.empty()){try{style(selection.Asset);ReadUIStyle(Project::ResolveOwnedAsset(root,selection.Asset)).Find(selection.Variant);}catch(const std::exception& error){throw std::runtime_error(file.generic_u8string()+" style "+selection.Asset.generic_u8string()+": "+error.what());}}else DefaultUIStyle().Find(selection.Variant);}
             if(auto n=e["UINineSliceComponent"]) {
-                const auto borders=ReadUINineSliceComponent(n).Borders;
+                UIStyleValues appearance;
+                auto nine=ReadUINineSliceComponent(n);appearance.Slice={nine.Borders,nine.BorderScale};
+                if(e["SpriteRendererComponent"])appearance.Image=ReadSpriteSource(e["SpriteRendererComponent"]);
+                if(auto button=e["UIButtonComponent"]){auto b=ReadUIButtonComponent(button);appearance.States={b.Colors,b.Images};}
+                if(auto node=e["UIAppearanceComponent"]){auto c=ReadUIAppearanceComponent(node);if(c.Styled){
+                    auto resolved=c.Selection.Asset.empty()?DefaultUIStyle().Find(c.Selection.Variant):ReadUIStyle(Project::ResolveOwnedAsset(root,c.Selection.Asset)).Find(c.Selection.Variant);
+                    CopyUIStyleGroups(resolved,appearance,c.Overrides);appearance=std::move(resolved);
+                }}
+                const auto borders=appearance.Slice.Borders;
                 auto validate=[&](const SpriteSource& source){glm::vec2 size{};
                     if(auto image=std::get_if<SpriteReference>(&source);image&&image->Region){const auto rect=get(image->Sheet).Region(image->Region).Rect;size={rect.Width,rect.Height};}
                     if(auto image=std::get_if<TextureSpriteSource>(&source);image&&!image->Texture.empty()){auto pixels=Texture2D::ReadImage(Project::ResolveOwnedAsset(root,image->Texture));size={pixels.Width,pixels.Height};}
                     if(size.x<=0||size.y<=0||borders.x+borders.z>size.x||borders.y+borders.w>size.y)throw std::runtime_error(file.generic_u8string()+": nine-slice borders exceed source image");
                 };
                 if(!e["SpriteRendererComponent"])throw std::runtime_error("Nine-slice requires an image");
-                validate(ReadSpriteSource(e["SpriteRendererComponent"]));
-                if(auto button=e["UIButtonComponent"])for(auto& source:ReadUIButtonComponent(button).Images)if(source.index()!=0)validate(source);
+                validate(appearance.Image);
+                if(e["UIButtonComponent"])for(auto& source:appearance.States.Images)if(source.index()!=0)validate(source);
             }
             if(auto n=e["TextComponent"])if(n["FontFamily"] && !n["FontFamily"].as<std::string>().empty()) {
                 auto reference=std::filesystem::u8path(n["FontFamily"].as<std::string>());

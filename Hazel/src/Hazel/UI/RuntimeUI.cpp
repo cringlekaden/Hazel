@@ -59,6 +59,7 @@ void RuntimeUI::CancelInput()
 }
 void RuntimeUI::Reset()
 {
+    m_Styles.clear();m_StyleCandidate.clear();m_StyleBuilding=false;
     EndTextField(false,true,false);m_TextStates.clear();m_TextTime=0;
     CancelInput();
     m_Resolved.Valid = false;
@@ -85,6 +86,7 @@ void RuntimeUI::Reset()
 }
 void RuntimeUI::Retire(uint64_t id)
 {
+    m_Styles.erase(id);m_StyleCandidate.erase(id);
     if(m_TextEdit.ID==id||m_TextEdit.Terminal.Owner==id)EndTextField(false,true,false);m_TextStates.erase(id);
     if(id==m_TipCandidate||id==m_TipVisible||m_TooltipBodies.count(id)){m_TipCandidate=m_TipVisible=0;m_TipElapsed=0;++m_DropdownRevision;}
     if(id==m_TipPreview||m_TooltipBodies.count(id)){m_TipPreview=0;++m_DropdownRevision;}
@@ -120,12 +122,13 @@ void RuntimeUI::Retire(uint64_t id)
 }
 void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
 {
+    if(m_Diagnostics.ControlProblem.rfind("Style #",0)==0)m_Diagnostics.ControlProblem.clear();
     ++m_Diagnostics.SourceChecks;m_ScrollIDs.clear();m_DropdownIDs.clear();CaptureCompositions();
     auto assets=m_Scene.GetAssets();
     if(m_AssetOwner.owner_before(assets) || assets.owner_before(m_AssetOwner)) {
         // Ownership identity includes expired control blocks, so allocator address
         // reuse and equal numeric epochs cannot hide a project replacement.
-        m_AssetOwner=assets;++m_AssetGeneration;m_Cache.clear();m_PreparedBytes=0;CancelInput();
+        m_AssetOwner=assets;++m_AssetGeneration;m_Cache.clear();m_Styles.clear();m_StyleCandidate.clear();m_PreparedBytes=0;CancelInput();
     }
     m_Candidate.clear();
     m_RectIDs.clear();
@@ -143,6 +146,9 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
         auto id = uint64_t(e.GetUUID());
         if (!m_Scene.IsEntityValid(id))
             continue;
+        CaptureStyle(e);
+        state.Add(e.HasComponent<UIAppearanceComponent>());
+        if(e.HasComponent<UIAppearanceComponent>()){const auto& c=e.GetComponent<UIAppearanceComponent>();state.Add(c.Styled);state.Add(c.Selection.Asset);state.Add(c.Selection.Variant);state.Add(c.Overrides);state.Add(c.Focus);state.Add(c.Selected);state.Add(c.Editing);state.Add(assets?assets->Epoch():uint64_t(0));}
         m_RectIDs.push_back(id);
         state.Add(id);
         auto relation = m_Scene.GetRelationship(e);
@@ -324,22 +330,29 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
     const auto start = std::chrono::steady_clock::now();
     try
     {
+        m_StyleBuilding=true;
         CaptureSources(surface, previewOrphans);
         const auto sourceEnd=std::chrono::steady_clock::now();
         m_Diagnostics.LastSourceMilliseconds=std::chrono::duration<double,std::milli>(sourceEnd-start).count();
         m_Diagnostics.LastLayoutMilliseconds=0;
         if (m_Resolved.Valid && m_Candidate == m_Source)
         {
+            // Paint-only native writes do not require a new layout generation,
+            // but their effective presentation must publish at this boundary.
+            m_Styles.swap(m_StyleCandidate);
+            m_StyleBuilding=false;
             ++m_Diagnostics.Reuses;
             return;
         }
-        SyncControls();SyncTextFields();PreparePages();
+        const auto styleProblem=m_Diagnostics.ControlProblem.rfind("Style #",0)==0?m_Diagnostics.ControlProblem:std::string{};
+        SyncControls();if(!styleProblem.empty())ControlProblem(styleProblem);SyncTextFields();PreparePages();
         Build(surface, previewOrphans);
         m_Diagnostics.LastLayoutMilliseconds=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-sourceEnd).count();
         m_Build.Generation = ++m_NextGeneration;
         m_Build.Valid = true;
         std::swap(m_Resolved, m_Build);
         m_Source.swap(m_Candidate);
+        m_Styles.swap(m_StyleCandidate);m_StyleBuilding=false;
         PublishScope();
         SyncSliders();ReconcileTextField();
         ReconcileScrollCapture();
@@ -365,6 +378,7 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
     }
     catch (...)
     {
+        m_StyleBuilding=false;
         m_RetainPageEvents=false;
         m_PageFocus=m_PageFocusPage=m_PageFallback=0;
         CancelInput();
@@ -411,7 +425,7 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
                 throw std::runtime_error("UI ancestry exceeds depth 256");
             if (ancestor.HasComponent<UIRectComponent>())
             {
-                auto &r = ancestor.GetComponent<UIRectComponent>();
+                auto r = RectFor(ancestor);
                 Validate(r);
                 if (!n.IsCanvas || ancestor != e)
                 {
@@ -451,7 +465,7 @@ void RuntimeUI::Build(SurfaceMetrics surface, bool previewOrphans)
                       !parent.HasComponent<UICanvasComponent>() && parent.HasComponent<UILayoutComponent>();
         if (e.HasComponent<UIRectComponent>())
         {
-            auto &r = e.GetComponent<UIRectComponent>();
+            auto r = RectFor(e);
             n.WidthMode=r.WidthMode;n.HeightMode=r.HeightMode;
             if(n.IsCanvas)throw std::invalid_argument("Canvas owns its surface; place measured Rect on a child");
             if (!std::isfinite(r.Flex) || r.Flex < 0)
@@ -605,7 +619,7 @@ void RuntimeUI::Visit(Entity e, Rect parent, Rect clip, float scale, bool enable
     if(OwnedPopup(e.GetUUID())&&!ownedRoot)return;
     if (depth >= Scene::MaxDepth)
         throw std::runtime_error("UI layout depth exceeded (256)");
-    auto &r = e.GetComponent<UIRectComponent>();
+    auto r = RectFor(e);
     if (!r.Visible || !PageActive(e.GetUUID()))
         return;
     auto &n = m_Build.Elements[m_Build.Index.at(e.GetUUID())];
@@ -1015,13 +1029,16 @@ void RuntimeUI::Draw()
             auto tint = glm::vec4(1);
             if(auto part=m_ControlVisuals.find(n.ID);part!=m_ControlVisuals.end()){
                 auto owner=m_Scene.GetEntityByUUID(part->second);auto root=m_Resolved.Find(part->second);
+                if(owner&&root&&owner.HasComponent<UIButtonComponent>()){
+                    const auto& b=owner.GetComponent<UIButtonComponent>();if((b.Kind==ControlKind::Toggle||b.Kind==ControlKind::Radio)&&b.Indicator==n.ID)tint*=Presentation(part->second).Selected;
+                }
                 if(owner&&root&&owner.HasComponent<UISliderComponent>()&&(!root->Enabled||!owner.GetComponent<UIButtonComponent>().Interactable))tint=glm::vec4(.4f,.4f,.4f,1);
             }
             const SpriteSource *overrideImage = nullptr;
             int stateIndex = 0;
             if (e.HasComponent<UIButtonComponent>())
             {
-                auto &b = e.GetComponent<UIButtonComponent>();
+                auto b = ButtonFor(e);
                 int index = n.ButtonIndex >= m_Resolved.Buttons.size()
                                 ? 0
                                 : int(m_Input.State(m_Resolved.Buttons[n.ButtonIndex]));
@@ -1034,13 +1051,29 @@ void RuntimeUI::Draw()
                 stateIndex = index;
                 overrideImage = &b.Images[index];
             }
-            const UINineSliceComponent *nine = e.HasComponent<UINineSliceComponent>()
-                                                   ? &e.GetComponent<UINineSliceComponent>()
-                                                   : nullptr;
+            auto slice=e.HasComponent<UINineSliceComponent>()?SliceFor(e):UINineSliceComponent{};
+            const UINineSliceComponent* nine=e.HasComponent<UINineSliceComponent>()?&slice:nullptr;
             if (e.HasComponent<SpriteRendererComponent>())
             {
-                auto &s = e.GetComponent<SpriteRendererComponent>();
+                auto s = SpriteFor(e);
                 auto *sprite = m_Scene.RenderedSprite(e);
+                if(Styled(e)){
+                    auto& p=m_Styles.at(n.ID);
+                    if(!p.Sprite){
+                        try{
+                            auto assets=m_Scene.GetAssets();
+                            if(assets)p.Sprite=assets->Resolve(s.Source);
+                            else{
+                                auto draw=CreateRef<ResolvedSprite>();
+                                if(auto texture=std::get_if<TextureSpriteSource>(&s.Source);texture&&texture->Resource){draw->Texture=texture->Resource;draw->TilingFactor=texture->TilingFactor;}
+                                else if(!std::holds_alternative<std::monostate>(s.Source))throw std::runtime_error("Style image needs a project asset root");
+                                p.Sprite=std::move(draw);
+                            }
+                        }
+                        catch(const std::exception& error){ControlProblem("Style image #"+std::to_string(n.ID)+": "+error.what()+"; solid fallback until Reload/Refresh");p.Sprite=CreateRef<ResolvedSprite>();}
+                    }
+                    sprite=p.Sprite.get();
+                }
                 if (overrideImage && overrideImage->index() != 0)
                 {
                     if (!m_Scene.GetAssets())
@@ -1051,7 +1084,9 @@ void RuntimeUI::Draw()
                         cache.ImageEpochs[stateIndex] != assets->Epoch() ||
                         !(cache.ImageSources[stateIndex] == *overrideImage))
                     {
-                        auto candidate = assets->Resolve(*overrideImage);
+                        Ref<const ResolvedSprite> candidate;
+                        try{candidate=assets->Resolve(*overrideImage);}
+                        catch(const std::exception& error){if(!Styled(e))throw;ControlProblem("Style state image #"+std::to_string(n.ID)+": "+error.what()+"; base fallback until Reload/Refresh");candidate=cache.Images[stateIndex]?cache.Images[stateIndex]:CreateRef<ResolvedSprite>();}
                         cache.Images[stateIndex] = std::move(candidate);
                         cache.ImageSources[stateIndex] = *overrideImage;
                         cache.ImageEpochs[stateIndex] = assets->Epoch();
@@ -1060,10 +1095,17 @@ void RuntimeUI::Draw()
                 }
                 if (sprite)
                 {
-                    auto &rect = e.GetComponent<UIRectComponent>();
+                    auto rect = RectFor(e);
+                    glm::vec2 sourceSize = sprite->PixelSize();
+                    if(nine && Styled(e) &&
+                       (rect.Fit!=ImageFit::Stretch || !sprite->Texture ||
+                        nine->Borders.x+nine->Borders.z>sourceSize.x ||
+                        nine->Borders.y+nine->Borders.w>sourceSize.y)){
+                        ControlProblem("Style slice #"+std::to_string(n.ID)+": incompatible image/fit/borders; unsliced fallback. Repair the style/local overrides before export");
+                        nine=nullptr;
+                    }
                     if (nine && rect.Fit != ImageFit::Stretch)
                         throw std::invalid_argument("Nine-slice requires Stretch image fit");
-                    glm::vec2 sourceSize = sprite->PixelSize();
                     auto fitted = FitImage(
                         rect.Fit == ImageFit::Stretch ? visualBounds : visualBounds.Inset(rect.Padding),
                         sourceSize, rect.Fit, rect.ImageAlignment);
@@ -1085,10 +1127,10 @@ void RuntimeUI::Draw()
                 auto &b=e.GetComponent<UIButtonComponent>();
                 if((b.Kind==ControlKind::Toggle||b.Kind==ControlKind::Radio)&&!Decoration(n.ID,b.Indicator)){
                     Rect mark{n.Bounds.Position+glm::vec2(8,std::max(0.f,(n.Bounds.Size.y-16)*.5f)),glm::vec2(16)};
-                    Renderer2D::DrawRect(Transform(mark,n.Scale),{1,1,1,1},int(uint32_t(e)));
+                    Renderer2D::DrawRect(Transform(mark,n.Scale),Presentation(n.ID).Selected,int(uint32_t(e)));
                     bool selected=false;auto it=m_Values.find(b.Kind==ControlKind::Radio?b.Group:n.ID);
                     if(it!=m_Values.end())selected=b.Kind==ControlKind::Radio?it->second.Selected==n.ID:it->second.Checked;
-                    if(selected)Renderer2D::DrawQuad(Transform(mark.Inset(glm::vec4(4)),n.Scale),glm::vec4(1),int(uint32_t(e)));
+                    if(selected)Renderer2D::DrawQuad(Transform(mark.Inset(glm::vec4(4)),n.Scale),Presentation(n.ID).Selected,int(uint32_t(e)));
                 }
             }
             // The former text/focus flush drew lines before glyphs; retain that layering.
@@ -1098,19 +1140,16 @@ void RuntimeUI::Draw()
                     (m_Resolved.Modal || m_KeyboardOwns))
                 {
                     auto inset = n.Bounds.Inset(glm::vec4(2));
-                    Renderer2D::DrawRect(Transform(inset, n.Scale), m_Slider.ID==n.ID?glm::vec4(.3f,1,1,1):glm::vec4(1,.9f,.65f,1),
+                    Renderer2D::DrawRect(Transform(inset, n.Scale), (m_Slider.ID==n.ID||m_TextEdit.ID==n.ID)?Presentation(n.ID).Editing:Presentation(n.ID).Focus,
                                          int(uint32_t(e)));
                 }
             }
             if(e.HasComponent<UITextEntryComponent>())DrawTextField(n,e,prior);
             else if (e.HasComponent<TextComponent>())
             {
-                auto &t = e.GetComponent<TextComponent>();
+                auto &t = TextFor(e);
                 const auto &displayText=DisplayText(e);
-                const UITextStyleComponent defaults;
-                const auto &style = e.HasComponent<UITextStyleComponent>()
-                                        ? e.GetComponent<UITextStyleComponent>()
-                                        : defaults;
+                const auto style = TextStyleFor(e);
                 if (!std::isfinite(style.Size) || style.Size <= 0 || style.Size > 512 ||
                     style.Horizontal < Align::Start || style.Horizontal > Align::End ||
                     style.Vertical < Align::Start || style.Vertical > Align::End ||
@@ -1121,16 +1160,11 @@ void RuntimeUI::Draw()
                 const auto epoch = assets ? assets->Epoch() : 1;
                 if (!cache.FontAsset || cache.Selection != t.Font || cache.Epoch != epoch)
                 {
-                    cache.FontAsset =
-                        ResolveTextFont(t,assets);
-                    cache.Selection = t.Font;
-                    cache.Epoch = epoch;
-                    cache.Width = -1;
-                    cache.PreparedValid = false;
-                    cache.MeasureWidth = {{-2, -2}};
-                    cache.MeasureLines[0].clear();cache.MeasureLines[1].clear();cache.Lines.clear();cache.PaintLayout.reset();
+                    auto actual=ResolveTextFont(t,assets);bool changed=actual!=cache.FontAsset;
+                    cache.Selection=t.Font;cache.Epoch=epoch;cache.FontAsset=std::move(actual);
+                    if(changed){cache.Width=-1;cache.PreparedValid=false;cache.MeasureWidth={{-2,-2}};cache.MeasureLines[0].clear();cache.MeasureLines[1].clear();cache.Lines.clear();cache.PaintLayout.reset();}
                 }
-                auto content = n.Bounds.Inset(e.GetComponent<UIRectComponent>().Padding);
+                auto content = n.Bounds.Inset(RectFor(e).Padding);
                 if(style.Overflow==Text::Overflow::Ellipsis) {
                     // Ellipsis owns a finite content box; ink overhang is clipped
                     // there too. Images on this same element retain their clip.

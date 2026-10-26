@@ -40,7 +40,7 @@ SliderGeometry RuntimeUI::SliderGeometryFor(uint64_t id) const
             throw std::invalid_argument("Slider assigned fill is missing, hidden or disabled; "
                                         "repair or clear its reference");
     }
-    return ArrangeSlider(root->Bounds.Inset(e.GetComponent<UIRectComponent>().Padding),
+    return ArrangeSlider(root->Bounds.Inset(RectFor(e).Padding),
                          track->Bounds, thumb->Bounds.Size,
                          (v.Value - v.Range.Minimum) / (v.Range.Maximum - v.Range.Minimum),
                          v.Direction);

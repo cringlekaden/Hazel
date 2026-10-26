@@ -1,8 +1,10 @@
 #pragma once
 #include "SpriteSheet.h"
 #include "FontFamily.h"
+#include "UIStyle.h"
 #include "Hazel/Renderer/Font.h"
 #include <unordered_map>
+#include <atomic>
 namespace Hazel {
 struct ResolvedSprite {
     Ref<Texture2D> Texture;
@@ -34,6 +36,13 @@ public:
     ~ProjectAssets();
     const std::filesystem::path& Root() const {return m_Root;}
     uint64_t Epoch() const {return m_Epoch;}
+    struct StyleResolution {Ref<const UIStyleDefinition> Accepted;std::string Error;};
+    StyleResolution Style(const std::filesystem::path& reference);
+    size_t StyleBytes() const{return m_StyleBytes;}
+    size_t StyleCount() const{return m_Styles.size();}
+    size_t StyleLiveBytes() const{return m_StyleBudget->Bytes.load();}
+    size_t StyleLiveVersions() const{return m_StyleBudget->Versions.load();}
+    static constexpr size_t MaxStyleEntries=64, MaxStyleBytes=4*1024*1024, MaxStyleLiveBytes=8*1024*1024, MaxStyleVersions=128;
     Ref<Font> FamilyFont(const FontSelection& selection);
     FamilyResolution FamilyStatus(const FontSelection& selection);
     Ref<const FontFamilyDefinition> Family(const std::filesystem::path& reference);
@@ -48,6 +57,12 @@ public:
     void Refresh(); // explicit freshness boundary before Play; no per-frame file checks
     void ImportTexture(const std::filesystem::path& source,const std::filesystem::path& destination);
 private:
+    struct StyleBudget {std::atomic<size_t> Bytes{0},Versions{0};};
+    Ref<StyleBudget> m_StyleBudget=CreateRef<StyleBudget>();
+    struct StyleEntry {Ref<const UIStyleDefinition> Accepted;std::string Error;size_t Bytes=0;};
+    std::unordered_map<std::string,StyleEntry> m_Styles;
+    size_t m_StyleBytes=0;
+    void ReloadStyle(const std::string& key,StyleEntry& entry);
     std::filesystem::path m_Root; uint64_t m_Epoch=1;
     struct SheetEntry { Ref<const SpriteSheetDefinition> Data; std::string Error; };
     struct FamilyFace {std::weak_ptr<Font> Accepted;std::string Error;bool Loaded=false;};

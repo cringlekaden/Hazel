@@ -133,6 +133,7 @@ FIELD(Flow, Rows);
         }
     }
     COMPONENT(Group){FIELD(Group, Required);FIELD(Group, InitialSelection);FIELD(Group, EventOwner);FIELD(Group, Action);}
+    COMPONENT(Appearance){FIELD(Appearance, Styled);FIELD(Appearance, Selection);FIELD(Appearance, Overrides);FIELD(Appearance, Focus);FIELD(Appearance, Selected);FIELD(Appearance, Editing);}
     COMPONENT(Entry){FIELD(Entry, Placeholder);FIELD(Entry, MaxBytes);FIELD(Entry, MaxGraphemes);FIELD(Entry, MaxLines);FIELD(Entry, Multiline);FIELD(Entry, ReadOnly);FIELD(Entry, CaretColor);FIELD(Entry, SelectionColor);}
     COMPONENT(Tabs){FIELD(Tabs, RememberFocus);}
     COMPONENT(Tab){FIELD(Tab, Page);FIELD(Tab, InitialFocus);}
@@ -170,6 +171,7 @@ size_t Storage(const std::filesystem::path &v)
 {
     return (v.native().capacity() + 1) * sizeof(std::filesystem::path::value_type);
 }
+size_t Storage(const UIStyleSelection &v){return Storage(v.Asset)+Storage(v.Variant);}
 size_t Storage(const FontSelection &v) {return Storage(v.Family);}
 size_t Storage(const SpriteSource &v)
 {
@@ -215,6 +217,7 @@ void Source(Scene &scene, const SpriteSource &source)
 }
 void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
 {
+    if(v.Appearance){v.Appearance->Selection.Validate();if(v.Appearance->Overrides&~UIStyleAll)throw std::invalid_argument("Invalid override mask");}
     if (v.Canvas){
         GameUI::FitCanvas({1280, 720}, *v.Canvas);
         if(unsigned(v.Canvas->Screen.Cancel)>2)throw std::invalid_argument("Invalid screen Cancel policy");
@@ -395,6 +398,7 @@ for (int i = 0; i < 5; ++i)
 }
 }
 COMPONENT(Group, UIRadioGroupComponent) FIELD(Group, Required);FIELD(Group, InitialSelection);FIELD(Group, EventOwner);FIELD(Group, Action);}
+COMPONENT(Appearance, UIAppearanceComponent) FIELD(Appearance, Styled);FIELD(Appearance, Selection);FIELD(Appearance, Overrides);FIELD(Appearance, Focus);FIELD(Appearance, Selected);FIELD(Appearance, Editing);}
 COMPONENT(Entry, UITextEntryComponent) FIELD(Entry, Placeholder);FIELD(Entry, MaxBytes);FIELD(Entry, MaxGraphemes);FIELD(Entry, MaxLines);FIELD(Entry, Multiline);FIELD(Entry, ReadOnly);FIELD(Entry, CaretColor);FIELD(Entry, SelectionColor);}
 COMPONENT(Tabs, UITabsComponent) FIELD(Tabs, RememberFocus); }
 COMPONENT(Tab, UITabComponent) FIELD(Tab, Page);FIELD(Tab, InitialFocus);}
@@ -451,6 +455,7 @@ UIEditValues UIEditValues::Capture(Entity e)
     CAPTURE(UIProgressComponent, Progress);
     CAPTURE(UISliderComponent, Slider);
     CAPTURE(UIScrollViewComponent, Scroll);
+    CAPTURE(UIAppearanceComponent, Appearance);
     CAPTURE(UITextEntryComponent, Entry);
     CAPTURE(UITabsComponent, Tabs);
     CAPTURE(UITabComponent, Tab);
@@ -508,7 +513,7 @@ UIEditCommand::UIEditCommand(Scene &scene, uint64_t entity, std::string name, UI
         scene.GetAuthoringComponentVersion(entity, typeid(SpriteRendererComponent)),
         scene.GetAuthoringComponentVersion(entity,typeid(UIRadioGroupComponent)),
         scene.GetAuthoringComponentVersion(entity,typeid(UIProgressComponent)),
-        scene.GetAuthoringComponentVersion(entity,typeid(UISliderComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UIScrollViewComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UIDropdownComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITabsComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITabComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITooltipComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITextEntryComponent))};
+        scene.GetAuthoringComponentVersion(entity,typeid(UISliderComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UIScrollViewComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UIDropdownComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITabsComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITabComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITooltipComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITextEntryComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UIAppearanceComponent))};
     while (e)
     {
         if (m_Guards.size() >= Scene::MaxDepth)
@@ -532,10 +537,10 @@ Entity UIEditCommand::Target(Scene &scene, bool cancelling) const
         throw std::runtime_error("UI entity lifetime ended; select a live entity");
     if (cancelling)
         return e;
-    const std::array<std::type_index, 17> types = {
+    const std::array<std::type_index, 18> types = {
         typeid(UICanvasComponent),    typeid(UIRectComponent),        typeid(UILayoutComponent),
         typeid(UITextStyleComponent), typeid(UINineSliceComponent),   typeid(UIButtonComponent),
-        typeid(TextComponent),        typeid(SpriteRendererComponent),typeid(UIRadioGroupComponent),typeid(UIProgressComponent),typeid(UISliderComponent),typeid(UIScrollViewComponent),typeid(UIDropdownComponent),typeid(UITabsComponent),typeid(UITabComponent),typeid(UITooltipComponent),typeid(UITextEntryComponent)};
+        typeid(TextComponent),        typeid(SpriteRendererComponent),typeid(UIRadioGroupComponent),typeid(UIProgressComponent),typeid(UISliderComponent),typeid(UIScrollViewComponent),typeid(UIDropdownComponent),typeid(UITabsComponent),typeid(UITabComponent),typeid(UITooltipComponent),typeid(UITextEntryComponent),typeid(UIAppearanceComponent)};
     for (size_t i = 0; i < types.size(); ++i)
         if (scene.GetAuthoringComponentVersion(m_Entity, types[i]) != m_ComponentVersions[i])
             throw std::runtime_error(
@@ -677,6 +682,7 @@ void UIEditCommand::Cancel(Scene &scene)
     KEEP(Tab, UITabComponent, 14);
     KEEP(Tooltip, UITooltipComponent, 15);
     KEEP(Entry, UITextEntryComponent, 16);
+    KEEP(Appearance, UIAppearanceComponent, 17);
 #undef KEEP
     auto restored = Merge(before, after, subset, true, true), next = current;
 #define RESTORE(member)                                                                            \
@@ -698,6 +704,7 @@ void UIEditCommand::Cancel(Scene &scene)
     RESTORE(Tab);
     RESTORE(Tooltip);
     RESTORE(Entry);
+    RESTORE(Appearance);
     RESTORE(Dropdown);
 #undef RESTORE
     Publish(scene, current, std::move(next), true);

@@ -40,6 +40,7 @@ static Ref<Scene> Make(const char* name, const char* script = nullptr) {
 #include "UIDropdownSessionChecks.h"
 #include "UICompositionSessionChecks.h"
 #include "UITextEntrySessionChecks.h"
+#include "UIStyleSessionChecks.h"
 int main(int argc, char** argv) {
     const auto directory = std::filesystem::temp_directory_path() / std::filesystem::u8path("hazel-runtime space-é-"+std::to_string(std::random_device{}()));
     try {
@@ -55,6 +56,8 @@ int main(int argc, char** argv) {
         resources.Root=directory/"Resources";
         std::filesystem::create_directories(resources.Root/"Scripts");
         std::filesystem::copy_file(std::filesystem::u8path(argv[1]),resources.Root/"Scripts/Hazel-ScriptCore.dll");
+        std::filesystem::create_directories(resources.Root/"UI");
+        std::filesystem::copy_file(Resources::Resolve("UI/Default.hstyle"),resources.Root/"UI/Default.hstyle");
         Resources::Configure(resources);
         ScriptEngine::Init(std::filesystem::u8path(argv[2]));
         auto source=Make("Source", "Migration.TransitionOnCreate"), target=Make("Target", "Migration.SceneProbe");
@@ -162,7 +165,7 @@ int main(int argc, char** argv) {
               "Runtime motion/camera edits leaked into authored scene");
         UIActionSessionChecks(project,directory);
         UIScreenSessionChecks(project);
-        UIValueSessionChecks(project);UIScrollSessionChecks(project);UIDropdownSessionChecks(project);UICompositionSessionChecks(project);UITextEntrySessionChecks(project);
+        UIValueSessionChecks(project);UIScrollSessionChecks(project);UIDropdownSessionChecks(project);UICompositionSessionChecks(project);UITextEntrySessionChecks(project);UIStyleSessionChecks(project);
         ScriptEngine::Shutdown(); Check(!session.GetScene() && !ScriptEngine::GetRuntimeSession(),"Domain shutdown retained runtime session");
         std::cout<<"PASS: shared runtime OnCreate/OnUpdate transitions, failure recovery, first request wins, cancellation, authored copy, retained domain, retired observations/physics, repeated transitions and viewport input\n";
     } catch (const std::exception& error) { std::cerr<<"FAIL: "<<error.what()<<'\n'; std::error_code ignored; std::filesystem::remove_all(directory,ignored);return 1; }

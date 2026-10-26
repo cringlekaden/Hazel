@@ -77,6 +77,14 @@ namespace Hazel {
     public class UIRadioGroupComponent : Component {
         public Entity Selection {get{ulong id=InternalCalls.UI_Selection(Entity.CheckedID,false,0);return id==0?null:new Entity(id);}set=>InternalCalls.UI_Selection(Entity.CheckedID,true,value==null?0:value.CheckedID);}
     }
+    [System.Flags] public enum UIStyleGroups : uint {Font=1,Size=2,Spacing=4,Foreground=8,Background=16,Image=32,States=64,Padding=128,Slice=256,Focus=512,Selected=1024,Editing=2048,Caret=4096,Selection=8192,All=16383}
+    public struct UIStyleSelection {public string Asset,Variant;public bool Enabled;public UIStyleSelection(string asset,string variant="Control",bool enabled=true){Asset=asset;Variant=variant;Enabled=enabled;}}
+    public class UIAppearanceComponent : Component {
+        public UIStyleSelection Style {get{string asset,variant;bool enabled;InternalCalls.UI_Style(Entity.CheckedID,false,null,null,false,out asset,out variant,out enabled);return new UIStyleSelection(asset,variant,enabled);}set{string asset,variant;bool enabled;InternalCalls.UI_Style(Entity.CheckedID,true,value.Asset,value.Variant,value.Enabled,out asset,out variant,out enabled);}}
+        public UIStyleGroups Overrides => (UIStyleGroups)InternalCalls.UI_StyleOverrides(Entity.CheckedID,0,false);
+        public void UseLocalOverrides(UIStyleGroups groups)=>InternalCalls.UI_StyleOverrides(Entity.CheckedID,(uint)groups,true);
+        public void ResetOverrides(UIStyleGroups groups=UIStyleGroups.All)=>InternalCalls.UI_StyleReset(Entity.CheckedID,(uint)groups);
+    }
     public class UITextEntryComponent : Component {
         public string Text {get=>InternalCalls.UI_TextEntry(Entity.CheckedID,false,null);set=>InternalCalls.UI_TextEntry(Entity.CheckedID,true,value);}
     }

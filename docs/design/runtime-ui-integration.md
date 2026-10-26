@@ -2975,3 +2975,94 @@ would require a separate backend bridge, not key emulation or a new endpoint gat
 The next fixed checklist implementation is reusable styles/templates and bounded
 rich-text emphasis; essential structural authoring history and final endpoint
 integration remain pending. This does not complete the screen-space UI endpoint.
+
+## Reusable presentation and detached templates — implementation contract
+
+This slice adds styles/templates only; bounded rich-text emphasis remains the next
+presentation pass. `.hstyle` version 1 contains up to 16 flat named variants. There
+is no selector, property-path cascade or variant inheritance. Omitted asset fields
+use engine values; the selected variant is then overlaid with explicitly present
+local groups in `UIAppearanceComponent`. Ordinary unstyled components retain their
+existing meaning. `Styled` is a separate on/off flag; an empty asset selects the
+shipped engine style, not a missing selection. Zero colors/padding remain values.
+
+The typed vocabulary is family/face, logical text size, tracking/additional line
+spacing, foreground/background, base image, all five state color/image pairs,
+padding, existing nine-slice metrics, focus/selected/editing cues, and text-entry
+caret/selection. State pairs are one atomic override group. Wrap/alignment/overflow,
+sizing modes, margins, named parts, values/ranges, contents, actions and ownership
+remain per-control. A style never creates components or another widget tree.
+Selected tint preserves the existing filled/check/underline indicator; it does
+not replace selection with color alone. Slice data applies only to existing
+nine-slice elements. Styles apply to visual Rects, not independent Canvas surfaces.
+
+ProjectAssets owns accepted immutable metadata, with explicit Load/Reload/Refresh
+freshness and cached failures. Malformed/missing dependencies retain accepted
+versions; removed named variants retain the live user's last accepted variant
+with a diagnostic. New invalid selections are rejected by the validated native/
+managed API. Authored references are never rewritten to fallback data. Scene-owned
+resolved presentation feeds the existing measure/arrange, text preparation,
+clipping, named control parts and painter order; authored component values stay
+separate. Exact native field/selection/override detection remains at existing
+publication boundaries. No per-frame file probes or document serialization.
+
+Paint changes reuse accepted font/layout/prepared data when face and metrics are
+unchanged. Metrics use normal invalidation: sliders interrupt on changed geometry;
+text edits retain content/selection, reflow and reveal their caret; viewport
+transactions keep their existing parent-geometry conflict/cancellation rules.
+Presentation changes never enter the value event stream, apart from an existing
+edit's legitimate interruption terminal. Silent setters and screen ownership stay
+unchanged.
+
+Limits: 64 KiB asset input, 16 variants, 14 typed groups, names of 128/64 UTF-8 bytes,
+portable references up to 1024 UTF-8 bytes; text size 0 < size <= 512 logical font-height
+pixels, tracking -8..8 and additional line spacing 0..8 font heights. Existing
+image/font/text/layout limits still apply. Per-project retained metadata is capped
+at 64 entries/4 MiB estimated bytes; accepted live versions (including retired
+versions pinned by users) separately cap at 128/8 MiB estimated bytes. Admission
+rejects before replacement, preserves accepted users and retries only at explicit
+freshness boundaries. Refresh retires unpinned cache records. Engine defaults are
+one fixed CPU definition outside the project cache. Estimates include typed
+metadata/serialized storage, not a hard total-process heap/dependency-work limit.
+Fonts/pages/textures continue to use existing ownership and caches.
+
+Native style documents use FileDocument atomic writes, conflict/recovery and the
+common Save/Discard/Cancel/Save Copy guards. Scene/prefab assignments and local
+overrides use shared property history; active text widgets keep ImGui undo.
+Existing Inspector fields display effective appearance; changing a group makes it
+local, and reset removes presence without erasing stored local values. Add UI
+Appearance to older controls first (component creation retains the existing
+structural-history limitation); new native presets have an inert slot. Style
+assets have explicit saved-versus-draft behavior, not a second global undo system.
+Preview is a separate non-script scene through the same layout/renderer; it does
+not publish drafts into live users. Explicit copy-group-to-all-variants supports
+shared typography edits without an implicit cascade.
+
+Styled Button, Styled Text Entry and Styled Panel starters reuse native creation
+commands and shipped engine style roles. Save them or a connected screen via the
+existing `.hprefab` workflow, then instantiate from Content Browser. Rect template
+roots use a selected scene Canvas/Rect container (a selected control uses its
+parent). They are detached structures with remapped local references and fresh
+runtime state; shared appearance continues through style references. No linked
+prefab inheritance/merge system or second template format is introduced.
+
+Export audits style assets, every declared variant and their families, face files,
+notices and sprite/texture dependencies through existing containment/closure.
+Dormant authored local references still follow the normal strict document policy.
+Builtin roles need no project copies; shipped resources remain self-contained.
+Nine-slice use validates the effective base/state images and source borders, not
+inactive stored locals. Validated runtime assignment rejects incompatible slice
+compositions. A live resource/local change that makes a styled slice incompatible
+uses a diagnosed unsliced image/solid fallback rather than throwing the whole UI
+pass; repair it before strict validation/export. Asset metadata acceptance alone
+is not proof that every possible local component composition is valid.
+
+The next bounded presentation pass is **rich-text emphasis**: a small typed inline
+span model for existing face styles and color emphasis, source-map-safe shaping/
+bidi/wrap/ellipsis across spans, normal face/page ownership and package closure,
+native authoring/preview/property history, and focused CPU/render/package checks.
+Do not add editable rich documents, arbitrary markup/effects, fallback families or
+new typography dependencies. Structural history and final endpoint integration
+remain their existing separate checklist items.
+
+Qualification and physical acceptance are recorded after the final local checks.

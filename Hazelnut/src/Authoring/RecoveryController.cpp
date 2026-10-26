@@ -128,6 +128,7 @@ void AuthoringPanel::SaveConflictControls()
             std::string text;
             if(m_ConflictDocument==EditorDocument::Scene)text=SceneSerializer(m_Editor.m_EditorScene).SerializeText();
             else if(m_ConflictDocument==EditorDocument::Prefab)text=Prefab::Serialize(Project::GetAssetDirectory(),m_PrefabScene,Prefab::GetEntity(m_PrefabScene),true);
+            else if(m_ConflictDocument==EditorDocument::UIStyle)text=m_Styles.CopyDraftText();
             else if(m_ConflictDocument==EditorDocument::FontFamily)text=m_Fonts.CopyDraftText();
             else text=m_Sprites.CopyDraftText();
             if(!Require(m_ConflictDocument==EditorDocument::Scene?EditorAction::SaveScene:EditorAction::SaveAsset))throw std::runtime_error("Save unavailable; draft retained");
@@ -139,7 +140,7 @@ void AuthoringPanel::SaveConflictControls()
     ImGui::SameLine();
     if(ImGui::Button("Reopen")) {
         const auto kind=m_ConflictDocument;
-        const auto path=kind==EditorDocument::Scene?m_Editor.m_EditorScenePath:kind==EditorDocument::Prefab?m_PrefabFile.Path():Project::GetAssetDirectory()/std::filesystem::u8path(kind==EditorDocument::FontFamily?m_Fonts.Name():m_Sprites.Name());
+        const auto path=kind==EditorDocument::Scene?m_Editor.m_EditorScenePath:kind==EditorDocument::Prefab?m_PrefabFile.Path():Project::GetAssetDirectory()/std::filesystem::u8path(kind==EditorDocument::UIStyle?m_Styles.Name():kind==EditorDocument::FontFamily?m_Fonts.Name():m_Sprites.Name());
         m_ShowSaveConflict=false;ImGui::CloseCurrentPopup();
         if(m_Documents.Pending())m_Documents.Resolve(GuardChoice::Cancel,Documents(),{});
         if(kind==EditorDocument::Scene)Guard(OperationIntent::OpenScene,[this,path]{return m_Editor.OpenScene(path);});

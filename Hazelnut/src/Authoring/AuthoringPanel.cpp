@@ -171,6 +171,22 @@ void AuthoringPanel::BindProject()
     m_Fonts.ReplaceDocument=[this](std::function<bool()> action){Guard(OperationIntent::OpenFontFamily,std::move(action));};
     m_Fonts.RequestClose=[this]{Guard(OperationIntent::CloseFontFamily,[this]{m_Fonts.Close();if(m_ActiveDocument==EditorDocument::FontFamily)m_ActiveDocument=EditorDocument::Scene;return true;});};
     if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->CreateFontFamily=[this](const auto& folder){if(Require(EditorAction::EditAsset))m_Fonts.BeginCreate(folder);};
+    m_Styles.Bind(Project::GetActive()?Project::GetActive()->GetAssets():nullptr);
+    m_Styles.Availability=availability;
+    m_Styles.GuardPending=[this]{return m_Documents.Pending();};
+    m_Styles.ReportError=[this](const std::string& error){
+        m_Editor.ActionFailed(error);
+        if(m_Styles.HasDocument() && Project::GetActive()) {
+            const auto file=std::filesystem::weakly_canonical(Project::GetAssetDirectory()/std::filesystem::u8path(m_Styles.Name()));
+            if(error.find("Document changed on disk: "+file.generic_u8string())!=std::string::npos) {
+                m_ShowSaveConflict=true;m_ConflictDocument=EditorDocument::UIStyle;m_ConflictIdentity=m_Styles.Identity();
+            }
+        }
+    };
+    m_Styles.AssetsChanged=[this]{if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->Refresh();};
+    m_Styles.ReplaceDocument=[this](std::function<bool()> action){Guard(OperationIntent::OpenUIStyle,std::move(action));};
+    m_Styles.RequestClose=[this]{Guard(OperationIntent::CloseUIStyle,[this]{m_Styles.Close();if(m_ActiveDocument==EditorDocument::UIStyle)m_ActiveDocument=EditorDocument::Scene;return true;});};
+    if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->CreateUIStyle=[this](const auto& folder){if(Require(EditorAction::EditAsset))m_Styles.BeginCreate(folder);};
     m_Sprites.ReportError = [this](const std::string &error) { m_Editor.ActionFailed(error); };
     m_Sprites.Availability = availability;
     m_Sprites.AssetsChanged = [this]
@@ -743,6 +759,7 @@ void AuthoringPanel::Menus()
         if(m_Editor.m_ContentBrowserPanel)ImGui::MenuItem("Content Browser",nullptr,&m_Editor.m_ContentBrowserPanel->Visible);
         ImGui::MenuItem("Statistics",nullptr,&m_Editor.m_ShowStats);
         ImGui::MenuItem("Runtime UI Debugger",nullptr,&m_Editor.m_ShowUIDebugger);
+        if(ImGui::MenuItem("UI Style",nullptr,m_Styles.Visible(),m_Styles.HasDocument()))m_Styles.Show();
         if(ImGui::MenuItem("Font Family",nullptr,m_Fonts.Visible(),m_Fonts.HasDocument()))m_Fonts.Show();
         if (ImGui::MenuItem("Sprite Sheet", nullptr, m_Sprites.Visible(), m_Sprites.HasDocument()))
             m_Sprites.Show();
@@ -1276,6 +1293,7 @@ void AuthoringPanel::SelectAsset(const std::filesystem::path &path)
     if(path.extension()==".ttf" || path.extension()==".otf") {
         if(Require(EditorAction::EditAsset))m_Fonts.BeginCreate(path);return;
     }
+    if(path.extension()==".hstyle") {Guard(OperationIntent::OpenUIStyle,[this,path]{if(!m_Styles.Open(path))return false;m_ActiveDocument=EditorDocument::UIStyle;return true;});return;}
     if(path.extension()==".hfont") {
         Guard(OperationIntent::OpenFontFamily,[this,path]{if(!m_Fonts.Open(path))return false;m_ActiveDocument=EditorDocument::FontFamily;return true;});return;
     }
@@ -1350,12 +1368,16 @@ void AuthoringPanel::InstantiatePrefab(const std::filesystem::path &path, bool u
         return;
     try
     {
+        auto parent=m_Editor.m_SceneHierarchyPanel.GetSelectedEntity();
+        for(size_t depth=0;parent&&parent.HasComponent<UIButtonComponent>()&&depth<Scene::MaxDepth;++depth)parent=m_Editor.m_EditorScene->GetEntityByUUID(m_Editor.m_EditorScene->GetRelationship(parent).Parent);
         auto relative = Project::MakeAssetReference(Project::GetAssetDirectory(), path);
         auto entity =
             useInspectorTransform
                 ? Prefab::Instantiate(Project::GetAssetDirectory(), relative, *m_Editor.m_EditorScene,
                                       m_InitialTransform)
                 : Prefab::Instantiate(Project::GetAssetDirectory(), relative, *m_Editor.m_EditorScene);
+        if(entity.HasComponent<UIRectComponent>()&&parent&&parent.BelongsTo(m_Editor.m_EditorScene.get())&&(parent.HasComponent<UIRectComponent>()||parent.HasComponent<UICanvasComponent>()))
+            m_Editor.m_EditorScene->Reparent(entity,parent,TransformPolicy::KeepLocal);
         m_Editor.m_SceneHierarchyPanel.SetSelectedEntity(entity);
     }
     catch (const std::exception &error)
@@ -1472,7 +1494,7 @@ void AuthoringPanel::Prefabs()
     else ImGui::TextWrapped("Select an entity in this asset's hierarchy to edit its local properties.");
     ImGui::Separator();
     ImGui::TextWrapped("Viewport drops use the asset's authored transform. Set "
-                       "placement below for Instantiate and Select.");
+                       "placement below for Instantiate and Select. Instances are detached structures; style references stay shared.");
     ImGui::TextUnformatted("Initial instance transform");
     const TransformComponent defaults;
     PropertyUI::Vector("position", "Position", glm::value_ptr(m_InitialTransform.Translation), 3, .1f,
@@ -1484,6 +1506,7 @@ void AuthoringPanel::Prefabs()
     PropertyUI::Vector("scale", "Scale", glm::value_ptr(m_InitialTransform.Scale), 3, .1f,
                        glm::value_ptr(defaults.Scale), "%.2f", {}, .001f, 1000);
     ImGui::BeginDisabled(dirty || !Availability(EditorAction::EditScene));
+    ImGui::TextWrapped("UI templates: select a scene Canvas or container first. Rect roots instantiate there; selecting a control uses its parent. Instances are detached structures; style references continue to share appearance.");
     if (ImGui::Button("Instantiate and Select"))
         InstantiatePrefab(Project::GetAssetDirectory() / Path(m_PrefabReference), true);
     ImGui::EndDisabled();
@@ -1500,6 +1523,8 @@ void AuthoringPanel::Render()
     Scripts();
     Export();
     Prefabs();
+    m_Styles.Render(bool(Availability(EditorAction::EditAsset)));
+    if(m_Styles.Focused()){if(m_ActiveDocument!=EditorDocument::UIStyle)CancelEdits();m_ActiveDocument=EditorDocument::UIStyle;}
     m_Fonts.Render(bool(Availability(EditorAction::EditAsset)));
     if(m_Fonts.Focused()){if(m_ActiveDocument!=EditorDocument::FontFamily)CancelEdits();m_ActiveDocument=EditorDocument::FontFamily;}
     m_Sprites.Render(bool(Availability(EditorAction::EditAsset)));

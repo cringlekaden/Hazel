@@ -939,3 +939,68 @@ are suppressed during it, along with normal gameplay input.
 Linux Xwayland evidence is not native Wayland support. See the
 [implementation contract](design/runtime-ui-integration.md#bounded-runtime-text-entry-fixed-endpoint-slice)
 for source mappings, resource accounting and platform limits.
+
+
+## Shared appearance and templates
+
+Use **Runtime UI → Styled Button / Styled Text Entry / Styled Panel template** for
+ready-to-edit starters. They reference the shipped Control, Field, Heading and
+Panel roles without copying engine assets into your project. Existing unstyled
+components remain useful; add **UI Appearance** to opt a Rect into shared styling.
+
+In Content Browser choose **Create UI Style** to create a project `.hstyle`.
+Double-click it (or use **Open style** in the Inspector). Edit flat named variants,
+then **Update control preview** to inspect the draft through the real UI renderer.
+The five state samples and cue swatches are isolated from game events. Save
+publishes an accepted version; a malformed replacement retains the previous
+presentation with diagnostics. **Reload saved** / asset Refresh retries. The asset
+document uses the usual Save/Discard/Cancel and external-write conflict handling;
+unsaved draft edits are not live scene edits.
+
+Assign a style by dropping it on **UI Appearance**, using **Choose style**, and
+selecting a variant. An empty asset means the built-in style. The order is engine
+values → selected variant → explicitly present local groups. Existing Inspector
+fields show resolved values with a `style`/`local` source label. Editing an inherited
+field makes its typed group local. Expand **Local override groups** to reset one
+presence checkbox or **Reset all to style**. Stored local values are preserved;
+zero is an actual value, never an inheritance sentinel. Five Button state
+color/image pairs are one override group. Font, size, spacing, foreground,
+background, image, padding, slice, focus/selection/editing, caret and selection
+colors have separate groups. Only components already present consume a group.
+
+**Extract presentation to style** creates a project asset from the effective
+appearance and assigns it in one property edit. Use portable image assets first:
+native-only texture owners cannot be extracted. Styles affect presentation only;
+values, labels, ranges, named parts, owners/actions and layout size modes stay with
+the control. Metric updates reflow text and follow existing geometry-interruption
+rules for active sliders. Paint-only changes keep accepted text geometry reusable.
+
+```csharp
+var appearance = field.GetComponent<UIAppearanceComponent>();
+appearance.Style = new UIStyleSelection("Styles/Settings.hstyle", "Field");
+appearance.ResetOverrides(UIStyleGroups.Background | UIStyleGroups.Foreground);
+// UseLocalOverrides(groups) enables the control's stored authored group values.
+```
+
+Native equivalents are `Scene::SetUIStyle`, `ResetUIStyleOverrides` and
+`GetUIPresentation`. Assignment is validated and silent. Inspect effective resource
+errors and retained/live metadata in **Runtime UI Debugger**. Missing/invalid
+required resources fail strict validation/export actionably; authored references
+remain editable. Every declared variant contributes families, faces, notices and
+images to package closure, even if that variant is not currently selected.
+
+For reuse, **Create Prefab** from a styled control or a connected screen subtree,
+find the `.hprefab` in Content Browser and instantiate it. For Rect roots select a
+scene Canvas/group first; selecting a control uses its parent. Include referenced
+screen owners and local visual/focus targets in the saved subtree. Instances are
+**detached structures**, with remapped identities and independent runtime values;
+they continue sharing appearance through style references. There is no linked
+structural merge. Component creation and other structural edits retain the
+existing history limits; style assignments/overrides use ordinary property Undo.
+
+Limits: 64 KiB/style, 16 variants, 14 groups; per project 64 retained entries/4 MiB
+estimated metadata and 128 live versions/8 MiB estimated metadata. Release inactive
+users and Refresh after admission pressure. Existing font/page/image limits still
+apply. No arbitrary selectors, variant inheritance, animation or rich text are
+implemented by styles. Bounded rich-text emphasis is the next presentation pass;
+physical Windows/DPI/readability acceptance remains separate.

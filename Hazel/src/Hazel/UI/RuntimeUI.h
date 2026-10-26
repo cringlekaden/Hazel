@@ -89,11 +89,25 @@ class RuntimeUI
     bool TextEditing() const {return m_TextEdit.ID!=0;}
     bool TextOwnsInput() const {return m_TextEdit.ID||m_TextRearm||m_TextPointerNeutral;}
     void SetClipboard(Ref<Text::Clipboard> clipboard){m_Clipboard=std::move(clipboard);}
+    UIStyleValues Presentation(uint64_t entity) const;
+    void ValidateStyles(bool dependencies) const;
     void ValidateTextFields(uint64_t target=0) const;
     void CancelInput();
     void Reset();
 
   private:
+    struct StyledPresentation {UIStyleSelection Selection;uint64_t Epoch=0;UIStyleValues Values;Ref<const UIStyleDefinition> Asset;TextComponent Text;Ref<const ResolvedSprite> Sprite;};
+    std::unordered_map<uint64_t,StyledPresentation> m_Styles,m_StyleCandidate;
+    bool m_StyleBuilding=false;
+    void CaptureStyle(Entity e);
+    const StyledPresentation* Styled(Entity e) const;
+    UIRectComponent RectFor(Entity e) const;
+    UITextStyleComponent TextStyleFor(Entity e) const;
+    UITextEntryComponent EntryFor(Entity e) const;
+    TextComponent& TextFor(Entity e);
+    SpriteRendererComponent SpriteFor(Entity e) const;
+    UIButtonComponent ButtonFor(Entity e) const;
+    UINineSliceComponent SliceFor(Entity e) const;
     struct TextState {
         Text::EditBuffer Buffer;
         UITextEntryComponent Config;

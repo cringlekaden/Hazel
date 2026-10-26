@@ -9,10 +9,9 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
     glm::vec2 size{};
     if (e.HasComponent<TextComponent>()&&!e.HasComponent<UITextEntryComponent>())
     {
-        auto &text = e.GetComponent<TextComponent>();
+        auto &text = TextFor(e);
         const auto &displayText=DisplayText(e);
-        auto style = e.HasComponent<UITextStyleComponent>() ? e.GetComponent<UITextStyleComponent>()
-                                                            : UITextStyleComponent{};
+        auto style = TextStyleFor(e);
         if (!std::isfinite(style.Size) || style.Size <= 0 || style.Size > 512 ||
             unsigned(style.Overflow)>1 || style.MaxLines>4096 || !std::isfinite(text.Kerning) || !std::isfinite(text.LineSpacing))
             throw std::invalid_argument("Invalid intrinsic UI text style/spacing");
@@ -23,12 +22,9 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
             auto epoch = assets ? assets->Epoch() : 1;
             if (!cache.FontAsset || cache.Selection != text.Font || cache.Epoch != epoch)
             {
-                cache.FontAsset = ResolveTextFont(text,assets);
-                cache.Selection = text.Font;
-                cache.Epoch = epoch;
-                cache.Width = -1;cache.PreparedValid=false;
-                cache.MeasureWidth = {{-2, -2}};
-                    cache.MeasureLines[0].clear();cache.MeasureLines[1].clear();cache.Lines.clear();
+                auto actual=ResolveTextFont(text,assets);bool changed=actual!=cache.FontAsset;
+                cache.Selection=text.Font;cache.Epoch=epoch;cache.FontAsset=std::move(actual);
+                if(changed){cache.Width=-1;cache.PreparedValid=false;cache.MeasureWidth={{-2,-2}};cache.MeasureLines[0].clear();cache.MeasureLines[1].clear();cache.Lines.clear();}
             }
             int slot = width < 0 ? 0 : 1;
             bool wrap = width >= 0 && style.Wrap;
@@ -64,7 +60,8 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
     }
     if (e.HasComponent<SpriteRendererComponent>())
     {
-        auto &source = e.GetComponent<SpriteRendererComponent>().Source;
+        auto image=SpriteFor(e);
+        auto &source = image.Source;
         auto &cache = m_Cache[e.GetUUID()];
         auto assets = m_Scene.GetAssets();
         auto epoch = assets ? assets->Epoch() : 1;
@@ -140,7 +137,7 @@ void RuntimeUI::MeasureTree(Entity root, Rect parent, const Rect *ownedBox, bool
     {
         auto e = m_Scene.GetEntityByUUID(m_MeasureIDs[i]);
         auto &n = m_MeasureNodes[i];
-        auto &r = e.GetComponent<UIRectComponent>();
+        auto r = RectFor(e);
         auto &out = m_Build.Elements[m_Build.Index.at(e.GetUUID())];
         n.ID = e.GetUUID();
         n.Name = e.GetName();

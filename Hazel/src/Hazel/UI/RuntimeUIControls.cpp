@@ -507,7 +507,7 @@ bool RuntimeUI::ControlVisual(uint64_t id, Rect &bounds, bool &visible) const
             return true;
         }
         const auto &v = it->second;
-        bounds = bounds.Intersect(root->Bounds.Inset(parent.GetComponent<UIRectComponent>().Padding));
+        bounds = bounds.Intersect(root->Bounds.Inset(RectFor(parent).Padding));
         float ratio = (v.Value - v.Minimum) / (v.Maximum - v.Minimum);
         int axis = unsigned(v.Direction) >= 2 ? 1 : 0;
         if (unsigned(v.Direction) > 3)

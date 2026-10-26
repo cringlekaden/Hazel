@@ -329,6 +329,11 @@ void EditorLayer::UI_Debugger()
             GameUI::Rect visual;bool visible=true;if(m_ActiveScene->GetUIControlVisual(n->ID,visual,visible)){rect("Control visual",visual);ImGui::Text("Paint %s (layout unchanged)",visible?"visible":"hidden");}
         }catch(const std::exception &error){ImGui::TextWrapped("%s",error.what());}
 
+        if(selected.HasComponent<UIAppearanceComponent>()){
+            const auto& appearance=selected.GetComponent<UIAppearanceComponent>();ImGui::TextWrapped("Style: %s / %s (%s)",appearance.Selection.Asset.empty()?"engine":appearance.Selection.Asset.generic_u8string().c_str(),appearance.Selection.Variant.c_str(),appearance.Styled?"enabled":"local primitives");
+            ImGui::Text("Override groups: 0x%04x",appearance.Overrides);
+            if(auto assets=m_ActiveScene->GetAssets();assets&&appearance.Styled){auto status=assets->Style(appearance.Selection.Asset);if(!status.Error.empty())ImGui::TextWrapped("%s",status.Error.c_str());ImGui::Text("Style metadata: %zu entries, %zu bytes (4 MiB estimate cap)",assets->StyleCount(),assets->StyleBytes());}
+        }
         auto mode=[](GameUI::SizeMode value){return value==GameUI::SizeMode::Fixed?"Fixed":value==GameUI::SizeMode::Fill?"Fill":"Content";};
         ImGui::Text("Scope %llu | surface Canvas %llu%s",(unsigned long long)n->Scope,(unsigned long long)n->Canvas,n->OverlayRoot?" (owned overlay)":"");
         ImGui::Text("Layout v%u: %s / %s | controlling parent %llu",GameUI::RectLayout::SchemaVersion,mode(n->WidthMode),mode(n->HeightMode),(unsigned long long)n->Parent);
