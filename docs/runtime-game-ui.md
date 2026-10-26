@@ -100,7 +100,7 @@ than manually reproducing focus and modal cleanup with visibility toggles.
 
 `Input` supplies gameplay input and respects UI ownership. `GameUI.IsKeyDown` supplies viewport-gated keys for UI-specific shortcuts such as Escape to close a modal or N to confirm starting over. `GameUI.IsPointerCaptured` lets alternate shortcuts defer to an active pointer gesture while retaining their held-key history. Keep gameplay movement and interaction on `Input`; do not bypass modal blocking with this UI API. Visibility or enabled changes update native layout/routing, with no per-frame positioning script.
 
-UI currently uses rectangular inherited clipping, uniform reference scaling, free/stack/grid/wrap layout and sibling text emphasis. Static scrolling/selection is supported within declared limits; rich-text parsing and editable text boxes remain later endpoint items. The native layout/model and renderer abstraction are independent of editor ImGui and backend-specific graphics calls.
+UI currently uses rectangular inherited clipping, uniform reference scaling, free/stack/grid/wrap layout and sibling text emphasis. Static scrolling/selection is supported within declared limits; bounded text entry is described below; rich-text parsing remains a later endpoint item. The native layout/model and renderer abstraction are independent of editor ImGui and backend-specific graphics calls.
 
 ## Canonical sizing and containers
 
@@ -237,7 +237,8 @@ inside Arabic joining runs except whitespace. Line spacing adds font-height unit
 to the accepted face's line advance. Tabs advance four spaces; trailing spaces
 are retained. Wrapping reshapes each chosen line with its own joining context.
 CJK, color emoji, vertical/variable typography, discretionary soft hyphens,
-cross-family fallback, rich text and editing/IME remain outside this scope.
+cross-family fallback, rich text and native preedit/candidate-window integration
+remain outside this scope. Bounded committed-text editing is described below.
 
 ## Text overflow
 
@@ -855,3 +856,86 @@ and page budgets retain their existing failure policy. **Runtime UI Debugger**
 shows active page relationships, controlling page, passive tip bounds and issues.
 Physical controller/Windows/DPI/competent-reader acceptance is separate from the
 synthetic/native harness evidence in the implementation record.
+
+## Runtime text entry
+
+**Runtime UI → Text Entry** creates a name-like single line; **Multiline Text
+Entry** creates a note field. Put them on an ordinary page/screen and assign the
+normal screen event owner. Text Renderer supplies initial content, family/style,
+color and spacing. UI Text Entry supplies placeholder, read-only/selectable mode,
+byte/grapheme/explicit-line limits and caret/selection colors. UI Rect supplies
+Fixed/Fill viewport size and padding. Multiline wrapping uses UI Text Style; other
+alignment/overflow controls are computed or unavailable for this text window.
+A placeholder is presentation of an empty value, never editable or serialized as
+that value. Edit preview does not type, send events or dirty the scene.
+
+Pointer press places the caret and starts editing; drag selects through outside
+release. Accept enters a focused field. Left/Right move visually, including bidi;
+Without Shift, Left/Right first collapse a selection to its logical start/end.
+Ctrl+Left/Right move through logical Unicode word boundaries. Shift extends a
+logical selection, which can paint several visual spans. Home/End use the visual
+line, Ctrl+Home/End the document; Up/Down retain preferred X. Backspace/Delete remove
+whole extended graphemes. Ligature interior positions use an equal-advance,
+grapheme-safe fallback rather than font-specific GDEF carets. Internal scrolling
+reveals the caret; wheel/trackpad scroll is owned by the active text window.
+
+Enter commits a single line. In a note, Enter inserts a newline and Ctrl+Enter
+submits. Tab/Shift+Tab commit and traverse controls. Escape restores the edit's
+starting value/history. Outside press commits and consumes that gesture; press
+again to activate other content. Input/focus loss, page/screen changes interrupt editing using existing ownership rules. Accepted content is retained;
+retired events are not replayed on return. An explicit programmatic focus transfer
+retains content and immediately sends an interrupted terminal event while its
+source and owner remain valid. Structural/source/component retirement
+(including reparenting), domain reset and Stop reinitialize from authored values.
+
+Ctrl+A/C/X/V select/copy/cut/paste; Ctrl+Z and Ctrl+Y/Shift+Ctrl+Z operate local text
+undo. Contiguous typing/deletion coalesce until a movement, selection, paste/copy
+or edit boundary. This is independent of Hazelnut scene/prefab Undo/Redo. Read-only
+fields allow selection/copy but reject mutations. Clipboard failures leave the
+value unchanged. Paste rejects malformed/oversized input, normalizes CRLF/CR and
+Unicode line/paragraph separators, and turns newlines/tabs into spaces in a single
+line. No partial or grapheme-splitting truncation occurs.
+
+Use `field.GetComponent<UITextEntryComponent>().Text` (or native
+`Scene::GetUITextEntry/SetUITextEntry`) for the accepted value. Setters are silent,
+clear local history and interrupt any prior edit before replacing it, so a stale
+Cancel cannot restore older text. The ordinary runtime Text getter/setter resolves
+the same field value. Authored defaults remain in the Edit scene copy.
+
+```csharp
+UIEvent e;
+while (GameUI.TryConsumeEvent(out e)) {
+    if (e.Kind == UIEventKind.TextChanged) PreviewName(e.Text);
+    else if (e.Kind == UIEventKind.TextCommitted) AcceptName(e.Text);
+    else if (e.Kind == UIEventKind.TextCancelled) PreviewName(e.Text);
+}
+```
+
+These share the normal owner stream. `PreviousText`/`Text` are historical payloads:
+pending changes coalesce first-undelivered previous → newest current; a terminal
+previous is the edit-start value. Interrupted cancellation retains the accepted
+value. A setter can supersede that historical value; query Text for current state.
+Beginning an edit reserves bounded change/completion capacity; queue pressure
+rejects an edit before mutation. Source/owner/domain retirement never transfers
+old text events to a new owner. There is no extra Activated event or text bus.
+
+Limits: 16 fields/scene, at most 16384 UTF-8 bytes/4096 graphemes/256 explicit lines
+per field; presets use smaller defaults. Local undo is 32 states/128 KiB per field,
+evicting oldest. Native queued text payload is 128 KiB within the normal 64-record
+stream. Existing CPU layout, glyph-page and UI preparation budgets still apply.
+Unsupported rendering/coverage or page pressure preserves editable text with
+resource diagnostics. Caret blink and selection do not reshape unchanged text.
+This is a bounded input control, not a document editor or universal script/font
+fallback system.
+
+**Linux and Windows currently implement committed characters and UTF-8 clipboard
+access, not full IME composition.** GLFW provides no engine preedit updates,
+composition caret/selection or candidate-window positioning here. Actual dead-key,
+AltGr, IME commit and clipboard behavior still needs physical acceptance on each
+platform. The native Inspector/debugger reports these capabilities and errors.
+Controllers enter/exit/cancel; text needs a supported committed-text source.
+`GameUI.IsTextInputOwned` reports editing/rearming ownership; raw UI key queries
+are suppressed during it, along with normal gameplay input.
+Linux Xwayland evidence is not native Wayland support. See the
+[implementation contract](design/runtime-ui-integration.md#bounded-runtime-text-entry-fixed-endpoint-slice)
+for source mappings, resource accounting and platform limits.

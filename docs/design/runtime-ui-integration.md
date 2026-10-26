@@ -2676,7 +2676,7 @@ silently become new completion gates.
 | Remaining area | Implementation | Evidence | Manual acceptance |
 | --- | --- | --- | --- |
 | Common controls: static tabs/pages, plain runtime tooltips, finite single-selection list | Implemented in `07f24a7`, isolated focus/scope corrections in `8d2583e`; prior controls retained | Debug/Release 17-executable suites, native authoring and relocated fixture pass (below) | Physical keyboard/controller, Windows/DPI and readability acceptance pending |
-| Text entry: caret, selection, clipboard, undo, declared platform composition behavior | Pending bounded text-entry milestone | Pending CPU/native platform/editor/package checks | Linux/Windows clipboard/composition acceptance pending; unsupported composition must be explicit |
+| Text entry: caret, selection, clipboard, undo, declared platform composition behavior | Implemented in `263e733`; committed-text/clipboard boundary, explicit unsupported native preedit protocol | Debug/Release 17-executable suites, native authoring, source examples and relocated fixture pass (below) | Physical Linux/Windows layouts, clipboard, IME committed input and DPI pending; preedit/candidate protocol unsupported |
 | Reusable styles/templates and bounded rich-text emphasis | Pending | Pending shared-update, override, typography and dependency closure checks | Native authoring/readability acceptance pending |
 | Essential UI structural authoring undo/workflow completion | Property/gesture history exists; essential create/delete/reorder/reparent/duplicate workflow remains pending | Pending document/history/recovery/prefab checks | End-to-end authoring/Undo acceptance pending |
 | Example integration, Linux/Windows acceptance, CI and packaging | Prior bounded examples/packages qualified; final endpoint integration pending | Final Debug/Release, CI and relocated-package evidence pending | Physical controller, Windows, DPI/monitor and competent-reader acceptance pending |
@@ -2782,3 +2782,196 @@ behavior, with native authoring and package checks. Styles/templates and bounded
 emphasis, essential structural authoring history and final endpoint integration
 remain pending. This closes implementation of this common-controls slice, not all
 of P4 or the practical screen-space UI endpoint.
+
+## Bounded runtime text entry (fixed endpoint slice)
+
+Implementation `263e733`: `UITextEntryComponent` composes a Rect/Text/Button
+with Text Entry behavior (only an owned tooltip body may be a child). Text Renderer stores authored
+initial content/font/style; the live Scene owns accepted value, selection, local
+undo, internal scroll and the single active edit. Fixed/Fill dimensions define its
+padded viewport; Content sizing, display ellipsis/MaxLines and non-start alignment
+are rejected for this control. Multiline may wrap through the existing shared CPU
+layout; single-line never wraps. No runtime ImGui or second shaping engine is used.
+
+`Text::EditBuffer` is window/font/context independent. The pinned Unicode 17
+libunibreak supplies extended grapheme and word boundaries; Premake additionally
+compiles its existing `wordbreak.c` (included generated data, unchanged pin/source
+and existing notice). `EditGeometry` consumes immutable accepted `Text::Layout`
+glyph clusters and visual runs. Left/Right and Home/End follow visual positions;
+Ctrl+Left/Right follow logical UAX #29 word boundaries, including whitespace
+segments; deletion follows logical extended graphemes. Without Shift, Left/Right
+first collapse an existing selection to its logical start/end; subsequent movement
+follows visual stops. Up/Down retain preferred X.
+Soft-wrap and bidi positions retain scalar, line and upstream/downstream affinity.
+Byte/UTF-16 offsets remain available in accepted layout/buffer mappings. They refer
+to normalized runtime values, not pre-normalization clipboard buffers; authored
+initial strings remain unchanged.
+Ligature interior carets divide cluster advance equally among graphemes; no GDEF
+precision claim. Selection intersects grapheme spans per visual run and merges
+only adjacent spans, allowing disjoint bidi rectangles.
+
+Committed characters originate in Window character callbacks. Key callbacks carry
+modifier snapshots and generate editing commands, never characters. Pointer edges
+also preserve the text-selection Shift modifier across quick interactions. Ordered text
+edges share the production UI adapter's bounded FIFO with pointer actions. Ctrl+Alt
+(AltGr) is not interpreted as Ctrl shortcuts; committed characters remain accepted.
+An Inspector text widget/dialog and the running viewport retain the existing
+exclusive host-ownership gates. Raw managed UI-key shortcuts are also suppressed
+while text editing/rearming owns input (`GameUI.IsTextInputOwned`). Controllers enter/finish/cancel editing; no
+on-screen keyboard is provided.
+
+| Platform boundary | Implemented | Unsupported | Physical acceptance |
+| --- | --- | --- | --- |
+| Linux GLFW X11/GLX (also Xwayland) | UTF-32 committed callbacks → strict UTF-8; native UTF-8 clipboard | Engine preedit updates, composition selection/caret, explicit composition commit/cancel and candidate positioning; native Wayland | Actual layouts, AltGr/dead keys, IME commit and clipboard pending |
+| Windows GLFW Win32 | Same committed-text and clipboard adapters, modifier snapshots | Same engine composition/preedit/candidate protocol | Native Windows keyboard/clipboard/IME/DPI pending |
+
+Pinned GLFW X11 uses XIM `PreeditNothing/StatusNothing` and committed lookup;
+Win32 supplies character events. Its public callback API has no preedit protocol.
+These are committed-text capabilities, not full IME support. Hazel cannot arbitrate
+composition-level Enter/Escape or position a native candidate window; those need a
+future native composition bridge, not ordinary key emulation. The native Inspector
+and existing debugger state this limitation. No composition fields, fake key
+sequences, GLFW fork, permission bypass or macOS implementation were added.
+[GLFW's input guide](https://www.glfw.org/docs/3.4/input_guide.html) distinguishes
+character input from physical keys and describes the clipboard boundary.
+
+Pointer press enters editing and places the caret; drag selection uses the same
+router capture through outside release. Accept enters from focus, with opening
+held input rearmed. Enter commits a single line; multiline Enter inserts newline
+and Ctrl+Enter submits. Tab/Shift+Tab commit and traverse existing navigation.
+Escape restores the edit-start buffer/history. Outside press commits, consumes its
+release and needs another press to activate other content. Focus/input loss and
+page/screen interruption retain accepted content, retire editing and use existing
+ownership cleanup; retired scopes cannot deliver old events. An explicit focus
+transfer ends editing immediately and delivers an interrupted terminal while the
+source/scope/owner remain valid. Background page
+changes preserve an unrelated foreground edit. Silent programmatic setters end an
+old edit as interrupted before replacing its value/history; a later Cancel cannot
+roll back the replacement. Close/reopen retains live values; Stop/copy/reset use
+initial authored state. Changing authored initial content, limits or edit mode
+reinitializes the accepted field; font/appearance changes preserve value and reflow.
+Structural/source/component retirement (including runtime
+reparenting) retires the field state; next publication starts from authored initial
+content. Domain replacement follows the existing UI reset. Preview never edits
+runtime values or sends events.
+
+Change, commit and cancellation use the existing owner stream (`TextChanged`,
+`TextCommitted`, `TextCancelled`), never Activated. Payloads are historical
+`PreviousText`/`Text`; terminal previous is edit-start, current is retained/restored
+value, with gesture identity and Interrupted. Pending changes for one gesture
+coalesce first-undelivered previous to newest current without changing its stream
+position. Admission precedes mutation, reserving change/terminal slots and payload
+capacity at entry. Source/component/owner/domain retirement keeps normal event
+retirement rules; no new owner inherits old text. Normal setters are silent apart
+from retiring a pre-existing edit. Managed `UITextEntryComponent.Text` and the
+ordinary runtime Text getter/setter resolve the same value.
+
+Limits: 16 declared fields/scene; authored maximum 1–16384 UTF-8 bytes, 1–4096
+graphemes, 1–256 explicit lines (defaults 4096/1024/64, single preset one line).
+Clipboard input is bounded before engine copying/decoding; malformed/oversized
+input rejects wholly. CRLF/CR and Unicode line/paragraph separators normalize to
+LF; single-line newlines/tabs become spaces. A leading BOM remains a noneditable
+signature in stored values and source offsets; inserted clipboard BOM is ignored.
+No shaping success is claimed for unsupported scripts. Missing glyphs retain
+replacement-glyph diagnostics; layout/page pressure or unsupported layout retains
+editable content and a visible error, without publishing stale layout as current.
+
+Local undo keeps at most 32 states/128 KiB per field, evicting oldest; redo is
+invalidated by a new edit. Contiguous insert/delete coalesce until movement,
+selection, paste, copy or edit completion; there is no claimed IME transaction
+boundary. One active start snapshot and tentative edit are separately bounded by
+that same field history limit. Native queued text payloads total at most 128 KiB
+in addition to the existing 64-record limit. Existing 64 KiB ordered input payload,
+CPU layout/result and 16 MiB UI prepared-glyph limits still apply. GLFW/OS clipboard
+retrieval may allocate before Hazel can inspect its length; dependency allocations,
+script-retained consumed strings and external scene owners are not a hard total
+process-memory guarantee. Caret blink/selection/scroll reuse shaped results/pages.
+
+Native presets create a name-like single line and a scrolling multiline note.
+Properties expose initial text, placeholder, limits/read-only mode, style/padding,
+caret/selection colors and normal action/owner fields. Shared scene/prefab property
+history captures these authored fields; runtime text undo is independent. The
+maintained Notes page demonstrates both controls and an owner consuming text events
+without geometry/selection scripts. Structural history, rich emphasis, styles and
+remaining endpoint acceptance stay separate checklist items.
+
+### Text-entry qualification — 2026-10-26
+
+Audited checkout was `0a0f4c239a0a1a8724ad08632e248ee87fc2e57a`, with no later
+remote source checkpoint. Implementation is `263e733` plus `6c430ea` (immediate
+explicit-focus interruption and nearest-line pointer placement). Final local
+Premake/GNU Make/GCC Debug and Release builds used two compiler jobs. All 17
+regression executables pass against the settled sources in Debug/native OpenGL
+4.2 and Release/forced OpenGL 4.1. Both use physical HD4000/Mesa 26.2.4, GLFW
+X11/GLX through Xwayland on Plasma Wayland. No native Wayland or Windows/MSVC
+execution is inferred. Existing shader/compiler checks pass; GPU SPIR-V
+specialization is unavailable on this device. CI was not awaited or polled.
+
+CPU checks cover strict input/BOM/byte/UTF-16 mappings, combining and Arabic
+edits/reshaping, word boundaries, visual RTL movement, disjoint bidi selection,
+ligature interior fallback, soft-wrap affinity, preferred-X vertical movement,
+long-line outside-pointer placement, clipboard normalization/rejection, read-only
+selection and bounded/coalesced undo/redo. All automated clipboard access uses an
+injected provider; the desktop clipboard is untouched.
+
+Scene/session checks cover production committed-character/key adapters, AltGr
+shortcut separation, synthetic controller entry/held rearming, pointer selection
+through outside release, typed historical/coalesced owner events, record/payload
+pressure and recovery, commit/Cancel, silent replacement, explicit focus transfer,
+unsupported-layout recovery, ownership loss, entity/domain retirement and repeated
+Play/Stop. Scene/copy/prefab roundtrips preserve initial content. Targeted physical
+GPU readbacks check caret position, independent straight-alpha selection color
+(RGBA8, two-code-value RGB tolerance), padded clipping and entity picking. The warm
+caret-movement/blink assertion adds **zero font-layout builds and zero snapshot
+generations**; it is reuse evidence, not whole-frame timing or large-document
+qualification. Existing compositor, typography/overflow, screen/control/binding,
+capacity/reload, history and expanded Button Inspector regressions remain passing.
+
+The actual native ImGui harness creates single-line and constrained six-line note
+fields on the maintained Notes page through hierarchy commands/shared property
+transactions. It exercises expanded Inspector drawing, property Undo/Redo,
+scene/prefab save/reopen, production committed text, native multiline end/submit,
+script owner delivery and three Play/Stop cycles without authored-state changes.
+It is automated authoring/session evidence, not physical typing or reader approval.
+
+Existing logical/native game checks pass. All five source examples pass
+owned-window Hazelnut/Nutella startup/render/resize/shutdown, with authored files
+unchanged.
+A normal Release export of the maintained fixture passes relocated Nutella from
+an unrelated UTF-8 directory with source resources, SDK and GAC unavailable. Its
+owner verifies text setters/getters, Notes/page return and existing composed
+controls; scene/prefab bytes, Open Sans faces/notices, absence of unrelated test
+corpora and packaged asset immutability verify. The first short lifecycle probe
+closed before its multi-frame script completed; rerunning with a bounded wait for
+the explicit completion marker passes. No engine fix was needed for that harness
+failure. The player uses physical HD4000/OpenGL 4.1 and GLSL 410.
+
+Edits deliberately copy a bounded candidate/history before event admission;
+selection geometry still builds bounded temporary rectangles. No allocation-free,
+large-document or universal script/font claim is made. The existing alternating
+image/text run bottleneck remains separate. Master, stash, vendor pins,
+settings/layouts and the exact unrelated Sandbox draft remain unchanged.
+
+### Text-entry manual acceptance
+
+Automated caret/source-map and readback assertions are not competent-reader or
+native keyboard approval. In a disposable document/package:
+
+1. Create both entry presets under an owned screen; set placeholder, limits and
+   padding, use property Undo/Redo, then save/reopen the scene and connected prefab.
+2. In Play/player, type composed/decomposed accents and corpus text with a complete
+   selected face; check visual arrows, word movement, Shift/pointer selection,
+   wrapped Up/Down and caret reveal. Review mixed-direction selection with a reader.
+3. Use the real OS clipboard for Copy/Cut/Paste and local Undo/Redo; test a non-US
+   layout, AltGr/dead keys and an IME's committed input on Linux and Windows. Do not
+   infer preedit/candidate support: that protocol is explicitly unsupported.
+4. Check Enter/Ctrl+Enter, Tab, Escape, outside press, page/screen changes,
+   programmatic replacement, focus loss and repeated Play/Stop. Check controller
+   entry/finish/cancel and caret/picking under physical Windows/mixed-DPI resizing.
+
+Closing the text-entry checklist row requires recording those platform/readability
+acceptances against this declared committed-text contract; full native preedit
+would require a separate backend bridge, not key emulation or a new endpoint gate.
+The next fixed checklist implementation is reusable styles/templates and bounded
+rich-text emphasis; essential structural authoring history and final endpoint
+integration remain pending. This does not complete the screen-space UI endpoint.
