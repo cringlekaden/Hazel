@@ -795,11 +795,13 @@ ordinary sublayouts, not independent screen surfaces.
 
 When focus leaves departing page content, **Remember page focus** tries its prior
 eligible target still inside that page; otherwise the configured initial target,
-a revealed eligible page descendant, then the selected tab. Focus already on a tab stays there.
-Page changes interrupt active editing/capture through the existing policy (retain
-the latest value, no stale Cancel rollback), dismiss an owned dropdown in departing
-content and require neutral rearming. Only departing/ineligible content loses queued
+a revealed eligible page descendant, then the selected tab. Focus already on a tab
+stays there.
+Page changes in the active input scope interrupt editing/capture through the
+existing policy (retain the latest value, no stale Cancel rollback), dismiss an owned
+dropdown in departing content and require neutral rearming. Only departing/ineligible content loses queued
 events; unrelated same-scope events and the accepted tab change remain deliverable.
+A silent background-page change leaves a foreground modal's capture/focus alone.
 
 C#: `tabs.GetComponent<UITabsComponent>().Selection = tabEntity` silently queues a
 selection; read Selection after the scene commit. Native `SetUISelection` does the
@@ -844,8 +846,9 @@ the tooltip covers the source. Time advances once per host update (large elapsed
 steps clamp to .25 seconds), not per input edge. Unchanged visible text reuses its
 layout/pages/prepared data; hidden bodies do not enter normal content measurement.
 
-Limits: 32 Tabs groups, 128 tabs per group, 128 declared tooltip sources and one
-visible tooltip, within existing scene/resource/request/event limits. Page and
+Strict Save/Play/export validation caps Tabs at 32 groups and 128 tabs per group.
+Runtime source checks also cap groups at 32, tooltip sources at 128, and the entire
+UI at 4096 declared Rects. There is one visible tooltip, within existing scene/resource/request/event limits. Page and
 screen focus share the existing 64-record bounded history. Tooltips are
 plain text leaves, not interactive popovers or arbitrary widget trees. Font/asset
 and page budgets retain their existing failure policy. **Runtime UI Debugger**

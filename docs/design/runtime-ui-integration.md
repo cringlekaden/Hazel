@@ -2675,7 +2675,7 @@ silently become new completion gates.
 
 | Remaining area | Implementation | Evidence | Manual acceptance |
 | --- | --- | --- | --- |
-| Common controls: static tabs/pages, plain runtime tooltips, finite single-selection list | This milestone in progress; existing buttons/values/sliders/dropdowns/scrolling retained | Pending focused and integration qualification below | Physical keyboard/controller discovery and selection pending |
+| Common controls: static tabs/pages, plain runtime tooltips, finite single-selection list | Implemented in `07f24a7`, isolated focus/scope corrections in `8d2583e`; prior controls retained | Debug/Release 17-executable suites, native authoring and relocated fixture pass (below) | Physical keyboard/controller, Windows/DPI and readability acceptance pending |
 | Text entry: caret, selection, clipboard, undo, declared platform composition behavior | Pending bounded text-entry milestone | Pending CPU/native platform/editor/package checks | Linux/Windows clipboard/composition acceptance pending; unsupported composition must be explicit |
 | Reusable styles/templates and bounded rich-text emphasis | Pending | Pending shared-update, override, typography and dependency closure checks | Native authoring/readability acceptance pending |
 | Essential UI structural authoring undo/workflow completion | Property/gesture history exists; essential create/delete/reorder/reparent/duplicate workflow remains pending | Pending document/history/recovery/prefab checks | End-to-end authoring/Undo acceptance pending |
@@ -2699,9 +2699,10 @@ without changing authored Visible/Enabled. Nested groups obey every ancestor pag
 Selection changes commit at the existing scene request boundary; only departing
 content loses events/interactions. Tab changes preserve unrelated owner events and
 admit the one SelectionChanged before mutation. Focus on the tab stays on it;
-focus departing content restores an eligible remembered/page initial target, then
-an eligible revealed descendant or the selected tab. Existing focus records and
-neutral rearming are reused. Close/reopen retains selection; Stop/reset/copy use
+focus departing content restores a remembered/page initial target still inside the
+destination page, then an eligible revealed descendant or the selected tab. Existing
+focus records and neutral rearming are reused. A background page change preserves foreground modal
+capture and delivery. Close/reopen retains selection; Stop/reset/copy use
 authored defaults. Edit page preview is transient, separate from selection.
 
 Tooltips opt into a named direct Text/Rect leaf (optional Sprite background), using
@@ -2718,3 +2719,66 @@ The selectable-list preset is a RadioGroup containing the existing ScrollView,
 stack and Radio/Text rows. It adds no selection engine, event queue or dynamic-data
 API. Rows use UUIDs, non-color selected marks, existing navigation/reveal and the
 normal owner stream; optional/required and silent setter rules are unchanged.
+
+
+### Tabs/tooltips/list qualification and remaining acceptance
+
+Qualification source is `8d2583e`, following `07f24a7` from `dd1df9f`. On
+2026-10-25, local Premake/GNU Make builds with two compiler jobs and all 17
+regression executables passed in Debug/native OpenGL 4.2 and Release/OpenGL 4.1.
+Both use physical Intel HD4000/Mesa 26.2.4, GLFW X11/GLX through Xwayland on Plasma
+Wayland, with the existing bind-based resource path and shaderc/Cross GLSL 410.
+This is neither native Wayland nor Windows/controller/DPI qualification. Shaders
+are unchanged; GPU SPIR-V specialization is unavailable on this device.
+
+Focused scene/session checks cover deferred selection, Content measurement
+collapse, inactive-page picking through transparent active content, selective event
+retirement, one owner change event, queue-pressure rejection, native mapping/owner
+changes, nested groups, remembered/revealed focus and copy/prefab remapping. A
+regression commits runtime reparenting before asserting that an old initial-focus
+reference cannot escape its page. Another preserves foreground modal capture and
+once-only release delivery while a background page changes. Managed key/gamepad
+samples use the production adapter in three isolated Play/Stop cycles; ordinary
+radio selection remains the sole list state and event source.
+
+Tooltip checks exercise delay, surface bounds, input-loss dismissal, passive GPU
+picking and exact picking-mask restoration. Warm unchanged tooltip drawing leaves
+both the snapshot generation and font-layout build count unchanged. Edit page/tip
+preview leaves authored state and queues unchanged. Existing screen/binding,
+slider/value, typography/overflow, analytic D8 compositor, capacity/reload and
+expanded Button Inspector regressions remain passing. No broad rendering profile
+was repeated; the alternating image/text draw-run bottleneck remains separate.
+
+The native ImGui harness extends the maintained screen fixture with settings and
+journal pages, an added/reordered tab, toggle/slider/dropdown controls, a nine-row
+scrollable radio list and purpose tooltips. It exercises named targets, shared
+property Undo/Redo, scene/prefab save/reopen, transient preview, selection delivery,
+page changes during slider editing/open dropdowns and repeated Play/Stop. The owner
+handles application events without maintaining page/selection/tooltip geometry.
+Structural history remains the separate checklist item above.
+
+Existing logical/native game regressions pass. All five source examples pass
+owned-window Hazelnut/Nutella startup/render/resize/shutdown with authored files
+unchanged. A
+normal Release export of the native fixture passes relocated Nutella checks from
+an unrelated UTF-8 directory with source resources, SDK and GAC unavailable. Its
+script verifies page switching, list selection, tooltip content and nested return;
+scene/prefab bytes, asset immutability, shipped Open Sans faces/notices and exclusion
+of unrelated test corpora verify. That player uses physical HD4000/OpenGL 4.1.
+Master, stash, vendors/pins, settings/layouts and the exact Sandbox draft are
+preserved. CI was not awaited or polled.
+
+Manual acceptance: create disposable Tabs and Selectable List presets; configure
+named pages/focus and useful tooltip text; preview, Undo/Redo and save/reopen. In
+Play and the exported player, use pointer, keyboard and a real controller to
+navigate without selecting, Accept/select once, Cancel dropdowns/edits and return
+between pages/screens. Check disabled/deleted targets, focus loss, long captions,
+resizing and DPI/monitor changes. Review readable selection/focus cues and tooltip
+placement. Automated input/readbacks are not physical or competent-reader approval.
+
+The next fixed checklist item is bounded text entry: grapheme-safe caret/selection,
+clipboard, local text undo and explicitly declared Linux/Windows composition
+behavior, with native authoring and package checks. Styles/templates and bounded
+emphasis, essential structural authoring history and final endpoint integration
+remain pending. This closes implementation of this common-controls slice, not all
+of P4 or the practical screen-space UI endpoint.
