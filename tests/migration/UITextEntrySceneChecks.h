@@ -70,6 +70,19 @@ static void UITextEntrySceneChecks(const std::filesystem::path &directory)
     {
     }
     neutral();
+    enter(500);
+    command(C::Insert, "!");
+    auto transferredValue = s->GetUITextEntry(500);
+    Check(s->FocusUI(400) && !s->IsUITextEditing(),
+          "Programmatic focus transfer left the previous text editor active");
+    bool interruptedTransfer = false;
+    while (s->ConsumeUIEvent(900, event))
+        interruptedTransfer |= event.Kind == UIEventKind::TextCancelled && event.Interrupted &&
+                               event.TextValue == transferredValue;
+    Check(interruptedTransfer && s->GetUITextEntry(500) == transferredValue,
+          "Focus transfer lost its terminal event or rolled back accepted content");
+    s->SetUITextEntry(500, "Programmatic");
+    neutral();
     f.Mouse={36,148};f.LeftDown=true;f.Events={{UIAction::Press,true,f.Mouse}};s->UpdateUIInput(f);f.Events.clear();
     Check(s->IsUITextEditing()&&s->GetUIDiagnostics().Capture==500&&s->GetUIDiagnostics().TextCaret==0,"Pointer press did not hit the shaped start caret");
     f.Mouse={390,148};s->UpdateUIInput(f);f.LeftDown=false;f.Events={{UIAction::Press,false,f.Mouse}};s->UpdateUIInput(f);f.Events.clear();

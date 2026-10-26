@@ -394,9 +394,16 @@ void RuntimeUI::ReconcileTextField()
         return;
     auto it = m_TextStates.find(m_TextEdit.ID);
     if (it == m_TextStates.end() || !it->second.Valid || !Live(m_TextEdit.ID) ||
-        m_Input.Focused() != m_TextEdit.ID || !EventValid(m_TextEdit.Terminal))
+        !EventValid(m_TextEdit.Terminal))
     {
         EndTextField(false, true, false);
+        return;
+    }
+    if (m_Input.Focused() != m_TextEdit.ID)
+    {
+        // A deliberate focus transfer retains content and completes the edit
+        // while its source/scope/owner are still eligible for delivery.
+        EndTextField(false, true, true);
         return;
     }
     PrepareTextField(m_TextEdit.ID);

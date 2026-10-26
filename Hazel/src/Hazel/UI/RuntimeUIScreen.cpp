@@ -514,6 +514,7 @@ bool RuntimeUI::Focus(uint64_t target)
         m_PendingFocus = 0;
     if (target){m_KeyboardOwns = true;m_TipPointer=false;}
     ReconcileSlider();
+    ReconcileTextField();
     return true;
 }
 bool RuntimeUI::ConsumeEvent(uint64_t owner, Action &event)

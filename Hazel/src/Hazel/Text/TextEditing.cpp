@@ -439,17 +439,19 @@ Position EditGeometry::Hit(glm::vec2 p) const
 {
     Check(!m_Stops.empty(), "No caret geometry");
     const CaretStop *best = &m_Stops.front();
-    float distance = INFINITY;
+    float vertical = INFINITY, horizontal = INFINITY;
     for (auto &s : m_Stops)
     {
         float dy = p.y < s.Point.y              ? s.Point.y - p.y
                    : p.y > s.Point.y + s.Height ? p.y - s.Point.y - s.Height
                                                 : 0;
-        float d = dy * 10000 + std::abs(p.x - s.Point.x);
-        if (d < distance)
+        float dx = std::abs(p.x - s.Point.x);
+        // Pick the nearest line first, even far outside a long captured line.
+        if (dy < vertical || (dy == vertical && dx < horizontal))
         {
             best = &s;
-            distance = d;
+            vertical = dy;
+            horizontal = dx;
         }
     }
     return best->Source;

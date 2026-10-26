@@ -145,6 +145,11 @@ static void TextEditingChecks(const std::filesystem::path &root)
           "RTL Left/Right did not follow visual positions");
     b.Reset(u8"سلام",{});layout=service.Arrange(b.Value(),face,options);geometry.Build(layout);b.Point({3},false);b.Apply({C::Backspace},&geometry);Check(b.Value()==u8"سلم","Arabic deletion split a logical grapheme");auto joined=service.Arrange(b.Value(),face,options);bool reshaped=layout->Glyphs.size()!=joined->Glyphs.size();for(size_t i=0;i<std::min(layout->Glyphs.size(),joined->Glyphs.size());++i)reshaped|=layout->Glyphs[i].ID!=joined->Glyphs[i].ID;Check(reshaped,"Arabic context did not reshape after deleting a ligature participant");
     layout=service.Arrange("iiii\nWWWW\niiii",face,options);geometry.Build(layout);preferred=-1;auto wide=geometry.Move({2},0,1,preferred);auto restored=geometry.Move(wide,0,1,preferred);Check(restored.Scalar==12,"Vertical movement lost its preferred X across unequal advances");
+    layout = service.Arrange("a\n" + std::string(2048, 'W'), face, options);
+    geometry.Build(layout);
+    auto firstLine = geometry.Locate({0});
+    Check(geometry.Hit({100000, firstLine.Point.y + firstLine.Height * .99f}).Line == 0,
+          "Outside pointer hit chose a distant long line over the nearest line");
     options.Width = 1.6f;
     layout = service.Arrange("word word word", face, options);
     geometry.Build(layout);
