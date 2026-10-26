@@ -42,6 +42,7 @@ bool Nonempty(Rect r)
 } // namespace
 void RuntimeUI::CancelInput()
 {
+    EndTextField(false,true,false);m_TextPointerNeutral=m_TextRearm=false;
     if(m_TipVisible||m_TipCandidate){m_TipVisible=m_TipCandidate=0;m_TipElapsed=0;++m_DropdownRevision;}
     if(!m_ScopeCancellation){m_Choice.reset();m_ScreenRequests.erase(std::remove_if(m_ScreenRequests.begin(),m_ScreenRequests.end(),[](const auto &r){return r.Kind!=RequestKind::Screen;}),m_ScreenRequests.end());if(auto id=ActiveDropdown();id&&m_Scene.IsRunning()&&!m_Scene.IsStopping())RequestDropdown(id,false);}
     CancelScrollCapture(false);m_ScrollNeutral=false;
@@ -58,6 +59,7 @@ void RuntimeUI::CancelInput()
 }
 void RuntimeUI::Reset()
 {
+    EndTextField(false,true,false);m_TextStates.clear();m_TextTime=0;
     CancelInput();
     m_Resolved.Valid = false;
     m_Resolved.Modal = m_Resolved.Scope = 0;
@@ -83,6 +85,7 @@ void RuntimeUI::Reset()
 }
 void RuntimeUI::Retire(uint64_t id)
 {
+    if(m_TextEdit.ID==id||m_TextEdit.Terminal.Owner==id)EndTextField(false,true,false);m_TextStates.erase(id);
     if(id==m_TipCandidate||id==m_TipVisible||m_TooltipBodies.count(id)){m_TipCandidate=m_TipVisible=0;m_TipElapsed=0;++m_DropdownRevision;}
     if(id==m_TipPreview||m_TooltipBodies.count(id)){m_TipPreview=0;++m_DropdownRevision;}
 
@@ -220,12 +223,13 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
             state.Add(b.TabOrder);
             state.Add(b.Interactable);if(b.Kind!=ControlKind::Button){state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIButtonComponent)));}state.Add(int(b.Kind));state.Add(b.InitiallyChecked);state.Add(b.Indicator);state.Add(b.Group);state.Add(b.EventOwner);
             if(b.Kind!=ControlKind::Button&&b.Indicator)state.Add(Decoration(id,b.Indicator));
-            if(unsigned(b.Kind)>3)throw std::invalid_argument("Invalid UI control kind");
+            if(unsigned(b.Kind)>4)throw std::invalid_argument("Invalid UI control kind");
         }
         state.Add(e.HasComponent<UIRadioGroupComponent>());
         if(e.HasComponent<UIRadioGroupComponent>()){auto &g=e.GetComponent<UIRadioGroupComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIRadioGroupComponent)));if(g.Action.size()>128||g.Action.find('\0')!=std::string::npos)throw std::invalid_argument("Invalid radio action");state.Add(g.Required);state.Add(g.InitialSelection);state.Add(g.EventOwner);state.Add(g.Action);}
         state.Add(e.HasComponent<UIProgressComponent>());
         if(e.HasComponent<UIProgressComponent>()){auto &p=e.GetComponent<UIProgressComponent>();state.Add(m_Scene.GetAuthoringLifetime(id));state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UIProgressComponent)));state.Add(p.Minimum);state.Add(p.Maximum);state.Add(p.InitialValue);state.Add(p.Fill);state.Add(int(p.Direction));if(p.Fill)state.Add(Decoration(id,p.Fill));}
+        state.Add(e.HasComponent<UITextEntryComponent>());if(e.HasComponent<UITextEntryComponent>()){const auto &c=e.GetComponent<UITextEntryComponent>();state.Add(c.Placeholder);state.Add(c.MaxBytes);state.Add(c.MaxGraphemes);state.Add(c.MaxLines);state.Add(c.Multiline);state.Add(c.ReadOnly);state.Add(c.CaretColor);state.Add(c.SelectionColor);state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UITextEntryComponent)));}
         state.Add(e.HasComponent<UITabsComponent>());if(e.HasComponent<UITabsComponent>()){state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UITabsComponent)));state.Add(e.GetComponent<UITabsComponent>().RememberFocus);}
         state.Add(e.HasComponent<UITabComponent>());if(e.HasComponent<UITabComponent>()){auto &c=e.GetComponent<UITabComponent>();state.Add(c.Page);state.Add(c.InitialFocus);state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UITabComponent)));}
         state.Add(e.HasComponent<UITooltipComponent>());if(e.HasComponent<UITooltipComponent>()){auto &c=e.GetComponent<UITooltipComponent>();state.Add(c.Body);state.Add(c.Delay);state.Add(c.Gap);state.Add(m_Scene.GetAuthoringComponentVersion(id,typeid(UITooltipComponent)));}
@@ -329,7 +333,7 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
             ++m_Diagnostics.Reuses;
             return;
         }
-        SyncControls();PreparePages();
+        SyncControls();SyncTextFields();PreparePages();
         Build(surface, previewOrphans);
         m_Diagnostics.LastLayoutMilliseconds=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-sourceEnd).count();
         m_Build.Generation = ++m_NextGeneration;
@@ -337,7 +341,7 @@ void RuntimeUI::ResolveSurface(SurfaceMetrics surface, bool previewOrphans)
         std::swap(m_Resolved, m_Build);
         m_Source.swap(m_Candidate);
         PublishScope();
-        SyncSliders();
+        SyncSliders();ReconcileTextField();
         ReconcileScrollCapture();
         PruneActions();
         FocusDropdownOption();FinishDropdownChoice();FocusPage();
@@ -576,7 +580,7 @@ void RuntimeUI::BuildHitTargets(){
         // scissoring. Converting that region back to viewport pixels for hit
         // tests can exclude a covered edge through reciprocal rounding.
         m_Build.Buttons.push_back({n.ID, n.FramebufferBounds, n.FramebufferClip, b.Action,
-                                  b.TabOrder, true, n.FocusEligible, n.Hit,b.Kind==ControlKind::Slider});
+                                  b.TabOrder, true, n.FocusEligible, n.Hit,b.Kind==ControlKind::Slider||b.Kind==ControlKind::TextEntry});
     }
     for(auto &v:m_Build.Scrolls){auto e=m_Scene.GetEntityByUUID(v.ID);auto &c=e.GetComponent<UIScrollViewComponent>();
         if(!v.Viewport.Size.x||!v.Viewport.Size.y)continue;
@@ -668,6 +672,7 @@ void RuntimeUI::WarnOverflow()
 }
 void RuntimeUI::UpdateInput(const InputFrame &pixels)
 {
+    if(!pixels.Enabled&&(m_TextEdit.ID||m_TextRearm||m_TextPointerNeutral))CancelInput();
     auto finite=[](glm::vec2 p){return std::isfinite(p.x)&&std::isfinite(p.y);};
     auto validPointer=[&](const InputFrame &f){return finite(f.Mouse)&&(!f.PointerPressed||finite(f.PressPosition))&&(!f.PointerReleased||!f.HasReleasePosition||finite(f.ReleasePosition));};
     if(!validPointer(pixels))throw std::invalid_argument("Invalid UI pointer frame");
@@ -687,25 +692,28 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
     const auto start = std::chrono::steady_clock::now();
     if(!pixels.Events.empty()) {
         if(pixels.Events.size()>64)throw std::invalid_argument("UI action edge limit exceeded (64)");
-        InputFrame step;step.Enabled=pixels.Enabled;step.Mouse=pixels.Mouse;
+        InputFrame step;step.Enabled=pixels.Enabled;step.Mouse=pixels.Mouse;step.Shift=pixels.Shift;step.TextKeysHeld=pixels.TextKeysHeld;
         step.LeftDown=pixels.LeftDown;step.AcceptDown=pixels.AcceptDown;
         bool pointer=pixels.SuppressAccept||m_Input.Captured()||pixels.LeftDown;
         bool cancelling=pixels.CancelDown;
-        bool firstPointer=true,firstAccept=true;
+        bool firstPointer=true,firstAccept=true;size_t textBytes=0;
         for(auto edge:pixels.Events){
+            textBytes+=edge.Text.Text.size();if(edge.Text.Text.size()>16384||textBytes>65536)throw std::invalid_argument("UI text edge payload limit exceeded");
             if(size_t(edge.Action)>=size_t(UIAction::Count)||!std::isfinite(edge.Point.x)||!std::isfinite(edge.Point.y)||!std::isfinite(edge.Delta.x)||!std::isfinite(edge.Delta.y))throw std::invalid_argument("Invalid UI action edge");
-            if(edge.Action==UIAction::Scroll||(edge.Down&&edge.Action>=UIAction::ScrollUp))pointer=true;
+            if(edge.Action==UIAction::Scroll||(edge.Down&&edge.Action>=UIAction::ScrollUp&&edge.Action<=UIAction::ScrollRight))pointer=true;
             if(edge.Action==UIAction::Press){pointer=true;if(firstPointer){step.LeftDown=!edge.Down;firstPointer=false;}}
             if(edge.Action==UIAction::Accept&&firstAccept){step.AcceptDown=!edge.Down;firstAccept=false;}
             cancelling|=edge.Action==UIAction::Cancel&&edge.Down;
         }
+        if(m_TextEdit.ID&&!pixels.AcceptDown&&!pixels.TextKeysHeld)m_TextEdit.SuppressText=false;
         bool owned=false;step.SuppressAccept=pointer;
         for(auto edge:pixels.Events){
+            if(edge.Action==UIAction::Text){m_TextShift=edge.Text.Shift;TextCommand(edge.Text);owned|=TextEditing();continue;}
             step.PointerPressed=step.PointerReleased=step.AcceptPressed=false;
             step.NextDown=step.PreviousDown=step.NextPressed=step.PreviousPressed=step.FocusNavigation=false;
             step.Navigate={};step.Adjust=0;step.Scroll={};step.ScrollPage=false;step.CancelDown=cancelling;
             if(edge.Action==UIAction::Scroll){step.Mouse=edge.Point;step.Scroll=edge.Delta;}
-            else if(edge.Action==UIAction::Press){step.Mouse=edge.Point;step.LeftDown=edge.Down;step.PointerPressed=edge.Down;step.PointerReleased=!edge.Down;step.PressPosition=step.ReleasePosition=edge.Point;step.HasReleasePosition=true;}
+            else if(edge.Action==UIAction::Press){step.Shift=edge.Device==InputDevice::Pointer?edge.Text.Shift:pixels.Shift;step.Mouse=edge.Point;step.LeftDown=edge.Down;step.PointerPressed=edge.Down;step.PointerReleased=!edge.Down;step.PressPosition=step.ReleasePosition=edge.Point;step.HasReleasePosition=true;}
             else if(edge.Action==UIAction::Accept){step.AcceptDown=edge.Down;step.AcceptPressed=edge.Down;}
             else if(edge.Down){switch(edge.Action){
                 case UIAction::ScrollUp:step.Scroll={0,-1};step.ScrollPage=true;break;
@@ -746,6 +754,8 @@ void RuntimeUI::UpdateInput(const InputFrame &pixels)
     input.ReleasePosition *= ratio;
     if(!validPointer(input))throw std::invalid_argument("UI pointer framebuffer conversion overflow");
     m_ActionOwnsFrame=input.Enabled&&(m_Input.Captured()||((m_KeyboardOwns||m_ActionOwnsFrame)&&input.CancelDown));
+    m_TextShift=input.Shift;
+    if(RouteTextFrame(input))return;
     const bool editing=m_Slider.ID!=0;
     input.Editing=editing;
     if(!input.Enabled){EndSlider(false,true);CancelScrollCapture(false);if(auto id=ActiveDropdown())RequestDropdown(id,false);}
@@ -864,6 +874,7 @@ bool RuntimeUI::Bounds(uint64_t id, Rect &pixels) const
 RuntimeUIDiagnostics RuntimeUI::Diagnostics() const
 {
     auto result = m_Diagnostics;
+    result.TextEdit=m_TextEdit.ID;if(m_TextEdit.ID){auto& field=m_TextStates.at(m_TextEdit.ID);result.TextCaret=field.Buffer.Selection().Caret.Scalar;result.TextAnchor=field.Buffer.Selection().Anchor.Scalar;result.TextError=field.Problem;result.TextHistoryBytes=field.Buffer.RetainedHistoryBytes();}result.TextEventBytes=TextQueueBytes();
     result.Tooltip=m_TipVisible?m_TipVisible:m_TipPreview;result.ScrollCapture=m_Bar.Owner;result.Dropdown=ActiveDropdown();
     result.SliderEdit=m_Slider.ID;result.SliderGesture=m_Slider.Terminal.Gesture;result.SliderPointer=m_Slider.Pointer;
     result.Focus = m_Input.Focused();
@@ -936,6 +947,9 @@ void Image(Rect bounds, float scale, const ResolvedSprite &sprite, const glm::ve
 Ref<const Text::Layout> RuntimeUI::TextLayout(uint64_t id) const {
     auto it=m_Cache.find(id);auto n=m_Resolved.Find(id);
     if(!m_Resolved.Valid || !n || !n->LayoutResolved || it==m_Cache.end() || it->second.PaintGeneration!=m_Resolved.Generation)return {};
+    if(auto field=m_TextStates.find(id);field!=m_TextStates.end()){
+        if(!field->second.Prepared||!it->second.PaintLayout||it->second.PaintLayout->Source!=field->second.Buffer.Value())return {};
+    }
     return it->second.PaintLayout;
 }
 bool RuntimeUI::ImageVisual(uint64_t id,UIImageVisual &result) const
@@ -1088,7 +1102,8 @@ void RuntimeUI::Draw()
                                          int(uint32_t(e)));
                 }
             }
-            if (e.HasComponent<TextComponent>())
+            if(e.HasComponent<UITextEntryComponent>())DrawTextField(n,e,prior);
+            else if (e.HasComponent<TextComponent>())
             {
                 auto &t = e.GetComponent<TextComponent>();
                 const auto &displayText=DisplayText(e);

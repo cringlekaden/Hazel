@@ -355,6 +355,7 @@ void RuntimeUI::PreparePages()
         }
         if (focus)
             RememberFocus(m_Resolved.Scope, focus, keyboard);
+        if(m_TextEdit.ID)EndTextField(false,true,true);
         if (m_Slider.ID)
             EndSlider(false, true, true);
         CancelScreenInput();

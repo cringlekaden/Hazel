@@ -1,3 +1,4 @@
+#include "Hazel/Core/TextInput.h"
 #include "EditorLayer.h"
 #include "Authoring/AuthoringPanel.h"
 #include <imgui.h>
@@ -286,6 +287,13 @@ void EditorLayer::UI_Debugger()
         }
     }
     for(const auto &popup:s.Dropdowns)ImGui::Text("Owned popup %llu | parent scope %llu | %s",(unsigned long long)popup.Popup,(unsigned long long)popup.ParentScope,popup.Above?"above":"below");
+    if(ImGui::TreeNode("Runtime text entry")){
+        ImGui::Text("Editing %llu | caret scalar %llu / anchor %llu",(unsigned long long)d.TextEdit,(unsigned long long)d.TextCaret,(unsigned long long)d.TextAnchor);
+        ImGui::Text("Local undo %.1f KiB | event text %.1f / 128 KiB",double(d.TextHistoryBytes)/1024,double(d.TextEventBytes)/1024);
+        ImGui::TextWrapped("%s",GetTextInputCapabilities().Backend);
+        ImGui::TextUnformatted("Preedit, composition selection and candidate position: unsupported");
+        if(!d.TextError.empty())ImGui::TextWrapped("%s",d.TextError.c_str());ImGui::TreePop();
+    }
     if(!d.CompositionProblem.empty())ImGui::TextWrapped("%s",d.CompositionProblem.c_str());
     for(const auto &page:s.Pages)ImGui::Text("Tabs %llu | selected %llu | page %llu",(unsigned long long)page.Group,(unsigned long long)page.Tab,(unsigned long long)page.Page);
     for(const auto &tip:s.Tooltips)ImGui::Text("Tooltip %llu | body %llu (passive)",(unsigned long long)tip.Source,(unsigned long long)tip.Body);

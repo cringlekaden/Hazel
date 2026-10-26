@@ -99,14 +99,15 @@ namespace Hazel {
             WindowCloseEvent event;
             data.EventCallback(event);
         });
-        glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/)
+        glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int /*scancode*/, int action, int mods)
         {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
             switch (action)
             {
                 case GLFW_PRESS:
                 {
-                    KeyPressedEvent event(static_cast<KeyCode>(key), false);
+                    KeyPressedEvent event(static_cast<KeyCode>(key), false,
+                        ((mods&GLFW_MOD_SHIFT)?1:0)|((mods&GLFW_MOD_CONTROL)?2:0)|((mods&GLFW_MOD_ALT)?4:0)|((mods&GLFW_MOD_SUPER)?8:0));
                     data.EventCallback(event);
                     break;
                 }
@@ -118,7 +119,8 @@ namespace Hazel {
                 }
                 case GLFW_REPEAT:
                 {
-                    KeyPressedEvent event(static_cast<KeyCode>(key), true);
+                    KeyPressedEvent event(static_cast<KeyCode>(key), true,
+                        ((mods&GLFW_MOD_SHIFT)?1:0)|((mods&GLFW_MOD_CONTROL)?2:0)|((mods&GLFW_MOD_ALT)?4:0)|((mods&GLFW_MOD_SUPER)?8:0));
                     data.EventCallback(event);
                     break;
                 }

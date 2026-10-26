@@ -428,7 +428,7 @@ bool RuntimeUI::CommitDropdownRequest(const ScreenRequest &r, bool &changed)
                 m_Scene.GetAuthoringComponentVersion(r.ID, typeid(UIRadioGroupComponent));
             if (!StampEventForScope(event, entry.ParentScope) ||
                 event.Owner != entry.Policy.EventOwner ||
-                m_Actions.size() + ReservedSliderSlots() >= InputRouter::MaxActions)
+                m_Actions.size() + ReservedSliderSlots()+ReservedTextSlots() >= InputRouter::MaxActions)
             {
                 DropdownProblem("Dropdown choice has no valid owner/event admission; "
                                 "selection unchanged");
@@ -494,7 +494,7 @@ bool RuntimeUI::CommitDropdownRequest(const ScreenRequest &r, bool &changed)
     probe.Entity = r.ID;
     probe.Kind = UIEventKind::SelectionChanged;
     if (!StampEventForScope(probe, parentScope) || probe.Owner != entry.Policy.EventOwner ||
-        m_Actions.size() + ReservedSliderSlots() + 1 > InputRouter::MaxActions)
+        m_Actions.size() + ReservedSliderSlots()+ReservedTextSlots() + 1 > InputRouter::MaxActions)
     {
         DropdownProblem("Dropdown opening rejected: reserve one owner event slot first");
         return false;
@@ -531,7 +531,7 @@ void RuntimeUI::FinishDropdownChoice()
                         "publication; selection unchanged");
         return;
     }
-    if (m_Actions.size() + ReservedSliderSlots() >= InputRouter::MaxActions)
+    if (m_Actions.size() + ReservedSliderSlots()+ReservedTextSlots() >= InputRouter::MaxActions)
     {
         DropdownProblem("Dropdown reserved admission unavailable; selection unchanged");
         return;

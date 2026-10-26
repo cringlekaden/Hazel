@@ -162,7 +162,7 @@ Ref<Layout> Service::Build(std::string_view source,const Ref<const Face>& face,c
     for(const auto* language:{"und","en","fr","de","el","ru","ar","he"})known|=options.Language==language;
     Require(known,"CPU foundation language must be und/en/fr/de/el/ru/ar/he");
 
-    auto result=CreateRef<Layout>();result->Source=std::string(source);result->Font=face;
+    auto result=CreateRef<Layout>();result->Source=std::string(source);result->Font=face;result->EmSize=options.EmSize;
     std::vector<size_t> offsets;UTF8::Decode(source,result->Scalars,&offsets);
     auto& out=*result;const auto count=uint32_t(out.Scalars.size());
     Require(count<=m_Limits.Scalars,"Text exceeds CPU layout scalar limit");

@@ -107,7 +107,7 @@ namespace Hazel {
         ChangedAuthoringStructure(entity.GetUUID(), typeid(T));
         if constexpr(std::is_same_v<T,UICanvasComponent> || std::is_same_v<T,UIRectComponent> ||
                      std::is_same_v<T,UILayoutComponent> || std::is_same_v<T,UIButtonComponent> ||
-                     std::is_same_v<T,UIRadioGroupComponent> || std::is_same_v<T,UISliderComponent> || std::is_same_v<T,UIScrollViewComponent> || std::is_same_v<T,UIDropdownComponent> || std::is_same_v<T,UITabsComponent> || std::is_same_v<T,UITabComponent> || std::is_same_v<T,UITooltipComponent>)
+                     std::is_same_v<T,UIRadioGroupComponent> || std::is_same_v<T,UISliderComponent> || std::is_same_v<T,UIScrollViewComponent> || std::is_same_v<T,UIDropdownComponent> || std::is_same_v<T,UITabsComponent> || std::is_same_v<T,UITabComponent> || std::is_same_v<T,UITooltipComponent>||std::is_same_v<T,UITextEntryComponent>)
             RetireUISubtree(entity.GetUUID());
         else RetireUI(entity.GetUUID());
 		if constexpr (std::is_same_v<T, AudioSourceComponent>) StopAudio(entity);

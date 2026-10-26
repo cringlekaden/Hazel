@@ -271,6 +271,7 @@ namespace Hazel {
         Entity entity=CheckedSpriteEntity<TextComponent>(entityID);
 
 		auto& tc = entity.GetComponent<TextComponent>();
+		if(entity.HasComponent<UITextEntryComponent>())return ScriptEngine::CreateString(ScriptEngine::GetSceneContext()->GetUITextEntry(entityID).c_str());
 		return ScriptEngine::CreateString(tc.TextString.c_str());
 	}
 
@@ -282,6 +283,7 @@ namespace Hazel {
             if(!scene)throw std::invalid_argument("Text needs a runtime scene");scene->CheckThread();
             auto entity=scene->GetEntityByUUID(entityID);
             if(!entity||!scene->IsEntityValid(entityID)||!entity.HasComponent<TextComponent>())throw std::invalid_argument("Text needs a live Text component");
+            if(entity.HasComponent<UITextEntryComponent>()&&textString&&mono_string_length(textString)>16384)throw std::invalid_argument("Managed text input exceeds bounded UTF-16 length");
             if(textString) {
                 auto chars=mono_string_chars(textString);auto length=mono_string_length(textString);
                 for(int i=0;i<length;++i) {
@@ -294,7 +296,7 @@ namespace Hazel {
             }
             auto text=Utils::MonoStringToString(textString);UTF8::Validate(text);
             if(entity.HasComponent<UIRectComponent>()&&text.size()>65536)throw std::invalid_argument("UI text exceeds 64 KiB");
-            entity.GetComponent<TextComponent>().TextString=std::move(text);
+            if(entity.HasComponent<UITextEntryComponent>())scene->SetUITextEntry(entityID,text);else entity.GetComponent<TextComponent>().TextString=std::move(text);
         }catch(const std::exception& e){failure=mono_get_exception_argument("text",e.what());}
         if(failure)mono_raise_exception(failure);
     }
@@ -404,7 +406,8 @@ namespace Hazel {
         try{auto* scene=ScriptEngine::GetSceneContext();if(scene&&scene->GetIdentity()==identity){scene->CheckThread();if(operation==-1){scene->RefreshUI();result=scene->IsUIScreenOpen(id);}else if(operation>=0&&operation<=3)result=scene->RequestUIScreen(GameUI::ScreenOperation(operation),id);else throw std::invalid_argument("Invalid UI screen operation");}}
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
     }
-    static bool UI_ConsumeEvent(uint64_t identity,uint64_t* screen,uint64_t* source,int* kind,uint64_t* sequence,MonoString** name,bool* previousChecked,bool* checked,uint64_t* previousSelection,uint64_t* selection,uint64_t* recipient,float* previousValue,float* value,float* startValue,uint64_t* gesture,bool* interrupted) {
+    static bool UI_ConsumeEvent(uint64_t identity,uint64_t* screen,uint64_t* source,int* kind,uint64_t* sequence,MonoString** name,bool* previousChecked,bool* checked,uint64_t* previousSelection,uint64_t* selection,uint64_t* recipient,float* previousValue,float* value,float* startValue,uint64_t* gesture,bool* interrupted,MonoString** previousText,MonoString** text) {
+        *previousText=*text=nullptr;
         *previousValue=*value=*startValue=0;*gesture=0;*interrupted=false;
         *recipient=0;*previousChecked=*checked=false;*previousSelection=*selection=0;
         *screen=*source=*sequence=0;*kind=0;*name=nullptr;MonoException* failure=nullptr;bool result=false;
@@ -412,9 +415,10 @@ namespace Hazel {
             if(!owner)throw std::invalid_argument("Scoped UI events must be consumed from the declared owner's lifecycle callback");
             if(scene&&scene->GetIdentity()==identity){auto entity=scene->GetEntityByUUID(owner);auto instance=ScriptEngine::GetEntityScriptInstance(owner);
                 if(!entity||!entity.HasComponent<ScriptComponent>()||!instance||instance->GetScriptClass()!=ScriptEngine::GetEntityClass(entity.GetComponent<ScriptComponent>().ClassName))return false;
-                GameUI::Action event;if(scene->ConsumeUIEvent(owner,event)){*screen=event.Screen;*source=event.Entity;*kind=int(event.Kind);*sequence=event.Sequence;*name=ScriptEngine::CreateString(event.Name.c_str());*previousChecked=event.PreviousChecked;*checked=event.Checked;*previousSelection=event.PreviousSelection;*selection=event.Selection;*recipient=event.Owner;*previousValue=event.PreviousValue;*value=event.Value;*startValue=event.StartValue;*gesture=event.Gesture;*interrupted=event.Interrupted;result=true;}}}
+                GameUI::Action event;if(scene->ConsumeUIEvent(owner,event)){*screen=event.Screen;*source=event.Entity;*kind=int(event.Kind);*sequence=event.Sequence;*name=ScriptEngine::CreateString(event.Name.c_str());*previousChecked=event.PreviousChecked;*checked=event.Checked;*previousSelection=event.PreviousSelection;*selection=event.Selection;*recipient=event.Owner;*previousValue=event.PreviousValue;*value=event.Value;*startValue=event.StartValue;*gesture=event.Gesture;*interrupted=event.Interrupted;*previousText=ScriptEngine::CreateString(event.PreviousText.c_str());*text=ScriptEngine::CreateString(event.TextValue.c_str());result=true;}}}
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
     }
+    static MonoString* UI_TextEntry(uint64_t id,bool write,MonoString* value){MonoException* failure=nullptr;MonoString* result=nullptr;try{auto s=ScriptEngine::GetSceneContext();if(!s)throw std::invalid_argument("Text Entry requires a runtime scene");if(write){if(value){int n=mono_string_length(value);if(n>16384)throw std::invalid_argument("Managed text input exceeds bounded UTF-16 length");auto chars=mono_string_chars(value);for(int i=0;i<n;++i){auto c=chars[i];if(!c)throw std::invalid_argument("Text input cannot contain NUL");if(c>=0xd800&&c<=0xdbff){if(++i>=n||chars[i]<0xdc00||chars[i]>0xdfff)throw std::invalid_argument("Unpaired UTF-16 surrogate");}else if(c>=0xdc00&&c<=0xdfff)throw std::invalid_argument("Unpaired UTF-16 surrogate");}}s->SetUITextEntry(id,Utils::MonoStringToString(value));}result=ScriptEngine::CreateString(s->GetUITextEntry(id).c_str());}catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;}
     static bool UI_Checked(uint64_t id,bool write,bool value){
         MonoException* failure=nullptr;bool result=false;
         try{auto* s=ScriptEngine::GetSceneContext();if(!s)throw std::invalid_argument("Control requires a runtime scene");if(write)s->SetUIChecked(id,value);result=s->IsUIChecked(id);}
@@ -445,8 +449,9 @@ namespace Hazel {
     static uint64_t UI_FocusScope(){auto* scene=ScriptEngine::GetSceneContext();return scene?scene->GetUIDiagnostics().Scope:0;}
     static bool UI_Cancel(uint64_t identity,uint64_t scope){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(scene&&scene->GetIdentity()==identity)result=scene->ConsumeUICancel(scope);}catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);return result;}
     static bool UI_IsPointerCaptured(){auto* scene=ScriptEngine::GetSceneContext();return scene&&scene->IsUICapturingPointer();}
+    static bool UI_TextInputOwned(){auto scene=ScriptEngine::GetSceneContext();return scene&&scene->IsUITextInputOwned();}
     static bool UI_IsKeyDown(KeyCode key) {
-        auto* session=ScriptEngine::GetRuntimeSession();return session&&session->IsInputEnabled()&&Input::IsKeyPressed(key);
+        auto* session=ScriptEngine::GetRuntimeSession();return session&&session->IsInputEnabled()&&session->GetScene()&&!session->GetScene()->IsUITextInputOwned()&&Input::IsKeyPressed(key);
     }
     static bool UI_Consume(uint64_t identity,uint64_t id,uint64_t* entity,MonoString** name) {
         *entity=0;*name=nullptr;MonoException* failure=nullptr;bool result=false;
@@ -599,6 +604,7 @@ namespace Hazel {
         RegisterComponent<UIProgressComponent>("Hazel.UIProgressComponent");
         RegisterComponent<UISliderComponent>("Hazel.UISliderComponent");
         RegisterComponent<UIScrollViewComponent>("Hazel.UIScrollViewComponent");
+        RegisterComponent<UITextEntryComponent>("Hazel.UITextEntryComponent");
         RegisterComponent<UITabsComponent>("Hazel.UITabsComponent");
         RegisterComponent<UITabComponent>("Hazel.UITabComponent");
         RegisterComponent<UITooltipComponent>("Hazel.UITooltipComponent");
@@ -623,6 +629,8 @@ namespace Hazel {
         HZ_ADD_INTERNAL_CALL(UI_Focus);
         HZ_ADD_INTERNAL_CALL(UI_Screen);
         HZ_ADD_INTERNAL_CALL(UI_ConsumeEvent);
+        HZ_ADD_INTERNAL_CALL(UI_TextEntry);
+        HZ_ADD_INTERNAL_CALL(UI_TextInputOwned);
         HZ_ADD_INTERNAL_CALL(UI_Checked);
         HZ_ADD_INTERNAL_CALL(UI_Selection);
         HZ_ADD_INTERNAL_CALL(UI_Progress);

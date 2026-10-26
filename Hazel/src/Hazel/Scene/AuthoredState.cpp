@@ -240,6 +240,7 @@ std::string SceneSerializer::CaptureAuthoredState() const
                 state.Source(source);
         });
         state.Component<UIRadioGroupComponent>(e,[&](auto &c){state.Value(c.Required);state.Value(c.InitialSelection);state.Value(c.EventOwner);state.Value(c.Action);});
+        state.Component<UITextEntryComponent>(e,[&](auto &c){state.Value(c.Placeholder);state.Value(c.MaxBytes);state.Value(c.MaxGraphemes);state.Value(c.MaxLines);state.Value(c.Multiline);state.Value(c.ReadOnly);state.Value(c.CaretColor);state.Value(c.SelectionColor);});
         state.Component<UITabsComponent>(e,[&](auto &c){state.Value(c.RememberFocus);});
         state.Component<UITabComponent>(e,[&](auto &c){state.Value(c.Page);state.Value(c.InitialFocus);});
         state.Component<UITooltipComponent>(e,[&](auto &c){state.Value(c.Body);state.Value(c.Delay);state.Value(c.Gap);});

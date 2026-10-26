@@ -2,9 +2,10 @@ using Hazel;
 namespace Migration {
     // Also used by the maintained native-authored screen fixture.
     public class ScreenOwnerProbe : Hazel.Entity {
-        public Hazel.Entity Settings, Confirmation, Toggle, Choices, Progress, Volume, Level, Feedback, Scrolling, ScrollView, ScrollTarget, Dropdown, DropdownChoice, Tabbed, Tabs, JournalTab, SettingsTab, JournalList, JournalChoice;
+        public Hazel.Entity Settings, Confirmation, Toggle, Choices, Progress, Volume, Level, Feedback, Scrolling, ScrollView, ScrollTarget, Dropdown, DropdownChoice, Tabbed, Tabs, JournalTab, SettingsTab, JournalList, JournalChoice, NameField, NoteField, NotesTab;
         public float LiveValue,CommittedValue;public int SliderChanges,SliderCommits,SliderCancels;
         public int ValueChanges;public bool LastPreviousChecked,LastChecked;public ulong LastPreviousSelection,LastSelection;
+        public int TextChanges,TextCommits,TextCancels;public string LastText;
         public int Count;public ulong LastSource,LastScreen;public int LastKind;
         bool packageProbe;int packageStep;
         void OnCreate(){packageProbe=System.Environment.GetEnvironmentVariable("HAZEL_UI_SCREEN_PACKAGE_PROBE")=="1";}
@@ -34,10 +35,11 @@ namespace Migration {
                 else if(packageStep==6){if(Dropdown.GetComponent<UIDropdownComponent>().IsOpen||!Scrolling.GetComponent<UICanvasComponent>().IsOpen)throw new System.Exception("Package owned popup return");System.Console.WriteLine("DROPDOWN-PACKAGE: owned popup and silent selection ready");Scrolling.GetComponent<UICanvasComponent>().Close();}
                 else if(packageStep==7){if(Tabbed==null||Tabs==null)throw new System.Exception("Package tabs missing");Tabbed.GetComponent<UICanvasComponent>().Open();}
                 else if(packageStep==8){Tabs.GetComponent<UITabsComponent>().Selection=JournalTab;}
-                else if(packageStep==9){if(Tabs.GetComponent<UITabsComponent>().Selection.ID!=JournalTab.ID)throw new System.Exception("Package page switch");var list=JournalList.GetComponent<UIRadioGroupComponent>();list.Selection=JournalChoice;JournalChoice.GetComponent<UITooltipComponent>().Body.GetComponent<TextComponent>().Text="This entry can be inspected without losing your place.";}
-                else if(packageStep==10){if(JournalList.GetComponent<UIRadioGroupComponent>().Selection.ID!=JournalChoice.ID)throw new System.Exception("Package selectable list");Tabs.GetComponent<UITabsComponent>().Selection=SettingsTab;}
-                else if(packageStep==11){if(Tabs.GetComponent<UITabsComponent>().Selection.ID!=SettingsTab.ID)throw new System.Exception("Package page return");System.Console.WriteLine("COMPOSITION-PACKAGE: tabs, list selection and tooltip content ready");Tabbed.GetComponent<UICanvasComponent>().Close();}
-                else if(packageStep==12){if(Scrolling.GetComponent<UICanvasComponent>().IsOpen||!settings.IsOpen)throw new System.Exception("Package scroll scope return");settings.Close();}
+                else if(packageStep==9){if(Tabs.GetComponent<UITabsComponent>().Selection.ID!=JournalTab.ID)throw new System.Exception("Package page switch");var list=JournalList.GetComponent<UIRadioGroupComponent>();list.Selection=JournalChoice;JournalChoice.GetComponent<UITooltipComponent>().Body.GetComponent<TextComponent>().Text="This entry can be inspected without losing your place.";Tabs.GetComponent<UITabsComponent>().Selection=NotesTab;}
+                else if(packageStep==10){if(JournalList.GetComponent<UIRadioGroupComponent>().Selection.ID!=JournalChoice.ID||Tabs.GetComponent<UITabsComponent>().Selection.ID!=NotesTab.ID)throw new System.Exception("Package list/notes page");NameField.GetComponent<UITextEntryComponent>().Text="Relocated name é";NoteField.GetComponent<UITextEntryComponent>().Text="Relocated note\nSecond line";}
+                else if(packageStep==11){if(NameField.GetComponent<UITextEntryComponent>().Text!="Relocated name é"||NoteField.GetComponent<UITextEntryComponent>().Text!="Relocated note\nSecond line")throw new System.Exception("Package text-entry value");System.Console.WriteLine("TEXT-ENTRY-PACKAGE: canonical fields and silent text ready");Tabs.GetComponent<UITabsComponent>().Selection=SettingsTab;}
+                else if(packageStep==12){if(Tabs.GetComponent<UITabsComponent>().Selection.ID!=SettingsTab.ID)throw new System.Exception("Package page return");System.Console.WriteLine("COMPOSITION-PACKAGE: tabs, list selection and tooltip content ready");Tabbed.GetComponent<UICanvasComponent>().Close();}
+                else if(packageStep==13){if(Scrolling.GetComponent<UICanvasComponent>().IsOpen||!settings.IsOpen)throw new System.Exception("Package scroll scope return");settings.Close();}
                 else {if(settings.IsOpen||!GetComponent<UICanvasComponent>().IsOpen)throw new System.Exception("Package menu return failed");System.Console.WriteLine("SCREEN-PACKAGE: nested open/close complete");packageProbe=false;}
                 ++packageStep;
             }
@@ -45,6 +47,9 @@ namespace Migration {
             Hazel.UIEvent value;
             while(Hazel.GameUI.TryConsumeEvent(out value)){
                 if(value.Owner==null||value.Owner.ID!=ID)throw new System.Exception("Declared screen recipient mismatch");
+                if(value.Kind==UIEventKind.TextChanged){++TextChanges;LastText=value.Text;continue;}
+                if(value.Kind==UIEventKind.TextCommitted){++TextCommits;LastText=value.Text;continue;}
+                if(value.Kind==UIEventKind.TextCancelled){++TextCancels;LastText=value.Text;continue;}
                 ++Count;LastSource=value.Source.ID;LastScreen=value.Screen.ID;LastKind=(int)value.Kind;
                 if(value.Kind==UIEventKind.SliderChanged){++SliderChanges;LiveValue=value.Value;if(Feedback!=null)Feedback.GetComponent<TextComponent>().Text="Live "+value.Action+": "+value.Value.ToString("0.##");continue;}
                 if(value.Kind==UIEventKind.SliderCommitted){++SliderCommits;CommittedValue=value.Value;if(Feedback!=null)Feedback.GetComponent<TextComponent>().Text="Committed "+value.Action+": "+value.Value.ToString("0.##");continue;}

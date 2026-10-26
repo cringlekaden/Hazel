@@ -2,6 +2,7 @@
 #include "RuntimeUIConfig.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Scene/Entity.h"
+#include "Hazel/Utils/UTF8.h"
 #include <cmath>
 #include <limits>
 #include <set>
@@ -322,7 +323,7 @@ UIButtonComponent ReadUIButtonComponent(const YAML::Node &n)
 {
     Keys(n, {"Action", "TabOrder", "Interactable", "Colors", "Images", "Kind", "InitiallyChecked", "Indicator", "Group", "EventOwner"});
     UIButtonComponent v;
-    if(n["Kind"]){auto kind=n["Kind"].as<unsigned>();if(kind>3)throw std::invalid_argument("Invalid UI control kind");v.Kind=GameUI::ControlKind(kind);}
+    if(n["Kind"]){auto kind=n["Kind"].as<unsigned>();if(kind>4)throw std::invalid_argument("Invalid UI control kind");v.Kind=GameUI::ControlKind(kind);}
     if(n["InitiallyChecked"])v.InitiallyChecked=n["InitiallyChecked"].as<bool>();
     if(n["Indicator"])v.Indicator=n["Indicator"].as<uint64_t>();
     if(n["Group"])v.Group=n["Group"].as<uint64_t>();
@@ -432,6 +433,17 @@ static void Write(YAML::Emitter &out,const UISliderComponent &v){
        <<YAML::Key<<"Track"<<YAML::Value<<v.Track<<YAML::Key<<"Fill"<<YAML::Value<<v.Fill<<YAML::Key<<"Thumb"<<YAML::Value<<v.Thumb
        <<YAML::Key<<"Direction"<<YAML::Value<<unsigned(v.Direction)<<YAML::EndMap;
 }
+UITextEntryComponent ReadUITextEntryComponent(const YAML::Node &n){
+    Keys(n,{"Placeholder","MaxBytes","MaxGraphemes","MaxLines","Multiline","ReadOnly","CaretColor","SelectionColor"});UITextEntryComponent c;
+    if(n["Placeholder"])c.Placeholder=n["Placeholder"].as<std::string>();
+    if(n["MaxBytes"])c.MaxBytes=n["MaxBytes"].as<uint32_t>();if(n["MaxGraphemes"])c.MaxGraphemes=n["MaxGraphemes"].as<uint32_t>();if(n["MaxLines"])c.MaxLines=n["MaxLines"].as<uint32_t>();
+    if(n["Multiline"])c.Multiline=n["Multiline"].as<bool>();if(n["ReadOnly"])c.ReadOnly=n["ReadOnly"].as<bool>();
+    if(n["CaretColor"])c.CaretColor=Vector<4>(n["CaretColor"]);if(n["SelectionColor"])c.SelectionColor=Vector<4>(n["SelectionColor"]);
+    Text::EditBuffer::Normalize("",{c.MaxBytes,c.MaxGraphemes,c.MaxLines,c.Multiline,c.ReadOnly});
+    if(c.Placeholder.size()>1024)throw std::invalid_argument("Text placeholder exceeds 1024 bytes");UTF8::Validate(c.Placeholder);
+    for(int i=0;i<4;++i)if(!std::isfinite(c.CaretColor[i])||c.CaretColor[i]<0||c.CaretColor[i]>1||!std::isfinite(c.SelectionColor[i])||c.SelectionColor[i]<0||c.SelectionColor[i]>1)throw std::invalid_argument("Text-entry colors must be finite 0..1");return c;
+}
+static void Write(YAML::Emitter &o,const UITextEntryComponent &c){o<<YAML::BeginMap<<YAML::Key<<"Placeholder"<<YAML::Value<<c.Placeholder<<YAML::Key<<"MaxBytes"<<YAML::Value<<c.MaxBytes<<YAML::Key<<"MaxGraphemes"<<YAML::Value<<c.MaxGraphemes<<YAML::Key<<"MaxLines"<<YAML::Value<<c.MaxLines<<YAML::Key<<"Multiline"<<YAML::Value<<c.Multiline<<YAML::Key<<"ReadOnly"<<YAML::Value<<c.ReadOnly<<YAML::Key<<"CaretColor"<<YAML::Value;Write(o,c.CaretColor);o<<YAML::Key<<"SelectionColor"<<YAML::Value;Write(o,c.SelectionColor);o<<YAML::EndMap;}
 UITabsComponent ReadUITabsComponent(const YAML::Node &n){Keys(n,{"RememberFocus"});UITabsComponent c;if(n["RememberFocus"])c.RememberFocus=n["RememberFocus"].as<bool>();return c;}
 UITabComponent ReadUITabComponent(const YAML::Node &n){Keys(n,{"Page","InitialFocus"});UITabComponent c;if(n["Page"])c.Page=n["Page"].as<uint64_t>();if(n["InitialFocus"])c.InitialFocus=n["InitialFocus"].as<uint64_t>();return c;}
 UITooltipComponent ReadUITooltipComponent(const YAML::Node &n){Keys(n,{"Body","Delay","Gap"});UITooltipComponent c;if(n["Body"])c.Body=n["Body"].as<uint64_t>();if(n["Delay"])c.Delay=n["Delay"].as<float>();if(n["Gap"])c.Gap=n["Gap"].as<float>();if(!std::isfinite(c.Delay)||c.Delay<0||c.Delay>5||!std::isfinite(c.Gap)||c.Gap<0||c.Gap>64)throw std::invalid_argument("Tooltip delay 0..5 seconds and gap 0..64 must be finite");return c;}
@@ -483,6 +495,7 @@ void ValidateUIConfiguration(const YAML::Node &node)
     if(auto n=node["UISliderComponent"])ReadUISliderComponent(n);
     if(auto n=node["UIScrollViewComponent"])ReadUIScrollViewComponent(n);
     if(auto n=node["UITabsComponent"])ReadUITabsComponent(n);
+    if(auto n=node["UITextEntryComponent"])ReadUITextEntryComponent(n);
     if(auto n=node["UITabComponent"])ReadUITabComponent(n);
     if(auto n=node["UITooltipComponent"])ReadUITooltipComponent(n);
     if(auto n=node["UIDropdownComponent"])ReadUIDropdownComponent(n);
@@ -505,6 +518,7 @@ void ReadUIComponents(const YAML::Node &node, Entity entity)
     if(auto n=node["UISliderComponent"])entity.AddComponent<UISliderComponent>(ReadUISliderComponent(n));
     if(auto n=node["UIScrollViewComponent"])entity.AddComponent<UIScrollViewComponent>(ReadUIScrollViewComponent(n));
     if(auto n=node["UITabsComponent"])entity.AddComponent<UITabsComponent>(ReadUITabsComponent(n));
+    if(auto n=node["UITextEntryComponent"])entity.AddComponent<UITextEntryComponent>(ReadUITextEntryComponent(n));
     if(auto n=node["UITabComponent"])entity.AddComponent<UITabComponent>(ReadUITabComponent(n));
     if(auto n=node["UITooltipComponent"])entity.AddComponent<UITooltipComponent>(ReadUITooltipComponent(n));
     if(auto n=node["UIDropdownComponent"])entity.AddComponent<UIDropdownComponent>(ReadUIDropdownComponent(n));
@@ -542,6 +556,7 @@ void WriteUIComponents(YAML::Emitter &out, Entity entity)
         Write(out, entity.GetComponent<UIButtonComponent>());
     }
     if(entity.HasComponent<UIRadioGroupComponent>()){out<<YAML::Key<<"UIRadioGroupComponent"<<YAML::Value;Write(out,entity.GetComponent<UIRadioGroupComponent>());}
+    if(entity.HasComponent<UITextEntryComponent>()){out<<YAML::Key<<"UITextEntryComponent"<<YAML::Value;Write(out,entity.GetComponent<UITextEntryComponent>());}
     if(entity.HasComponent<UITabsComponent>()){out<<YAML::Key<<"UITabsComponent"<<YAML::Value;Write(out,entity.GetComponent<UITabsComponent>());}
     if(entity.HasComponent<UITabComponent>()){out<<YAML::Key<<"UITabComponent"<<YAML::Value;Write(out,entity.GetComponent<UITabComponent>());}
     if(entity.HasComponent<UITooltipComponent>()){out<<YAML::Key<<"UITooltipComponent"<<YAML::Value;Write(out,entity.GetComponent<UITooltipComponent>());}
@@ -555,7 +570,7 @@ std::string UIAuthoredState(Entity entity)
 {
     if (!entity.HasComponent<UICanvasComponent>() && !entity.HasComponent<UIRectComponent>() &&
         !entity.HasComponent<UILayoutComponent>() && !entity.HasComponent<UITextStyleComponent>() &&
-        !entity.HasComponent<UINineSliceComponent>() && !entity.HasComponent<UIButtonComponent>() && !entity.HasComponent<UIRadioGroupComponent>() && !entity.HasComponent<UIProgressComponent>() && !entity.HasComponent<UISliderComponent>() && !entity.HasComponent<UIScrollViewComponent>() && !entity.HasComponent<UITabsComponent>() && !entity.HasComponent<UITabComponent>() && !entity.HasComponent<UITooltipComponent>() && !entity.HasComponent<UIDropdownComponent>())
+        !entity.HasComponent<UINineSliceComponent>() && !entity.HasComponent<UIButtonComponent>() && !entity.HasComponent<UIRadioGroupComponent>() && !entity.HasComponent<UIProgressComponent>() && !entity.HasComponent<UISliderComponent>() && !entity.HasComponent<UIScrollViewComponent>() && !entity.HasComponent<UITabsComponent>() && !entity.HasComponent<UITabComponent>() && !entity.HasComponent<UITooltipComponent>() && !entity.HasComponent<UITextEntryComponent>() && !entity.HasComponent<UIDropdownComponent>())
         return {};
     YAML::Emitter out;
     out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);

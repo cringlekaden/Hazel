@@ -924,6 +924,7 @@ namespace Hazel {
     template<> void Scene::OnComponentAdded<UIButtonComponent>(Entity,UIButtonComponent&) {}
     template<> void Scene::OnComponentAdded<UIRadioGroupComponent>(Entity,UIRadioGroupComponent&) {}
     template<> void Scene::OnComponentAdded<UIProgressComponent>(Entity,UIProgressComponent&) {}
+    template<> void Scene::OnComponentAdded<UITextEntryComponent>(Entity,UITextEntryComponent&) {}
     template<> void Scene::OnComponentAdded<UITabsComponent>(Entity,UITabsComponent&) {}
     template<> void Scene::OnComponentAdded<UITabComponent>(Entity,UITabComponent&) {}
     template<> void Scene::OnComponentAdded<UITooltipComponent>(Entity,UITooltipComponent&) {}

@@ -7,7 +7,7 @@ using namespace GameUI;
 glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
 {
     glm::vec2 size{};
-    if (e.HasComponent<TextComponent>())
+    if (e.HasComponent<TextComponent>()&&!e.HasComponent<UITextEntryComponent>())
     {
         auto &text = e.GetComponent<TextComponent>();
         const auto &displayText=DisplayText(e);

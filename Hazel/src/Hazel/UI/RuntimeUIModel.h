@@ -1,5 +1,6 @@
 #pragma once
 #include "UIScreen.h"
+#include "Hazel/Text/TextEditing.h"
 // Backend-independent layout and interaction model. No ImGui, GPU objects,
 // managed callbacks, or world-camera coordinates belong in this layer.
 #include <glm/glm.hpp>
@@ -91,9 +92,9 @@ struct Button
     bool Continuous=false;
     bool Focusable=true;
 };
-enum class UIAction : uint8_t { Press, Up, Down, Left, Right, Next, Previous, Accept, Cancel, AdjustDecrease, AdjustIncrease, Scroll, ScrollUp, ScrollDown, ScrollLeft, ScrollRight, Count };
+enum class UIAction : uint8_t { Press, Up, Down, Left, Right, Next, Previous, Accept, Cancel, AdjustDecrease, AdjustIncrease, Scroll, ScrollUp, ScrollDown, ScrollLeft, ScrollRight, Text, Count };
 enum class InputDevice : uint8_t { Pointer, Keyboard, Gamepad };
-struct ActionEdge { UIAction Action; bool Down=true; glm::vec2 Point{}; InputDevice Device=InputDevice::Keyboard; glm::vec2 Delta{}; };
+struct ActionEdge { UIAction Action; bool Down=true; glm::vec2 Point{}; InputDevice Device=InputDevice::Keyboard; glm::vec2 Delta{}; Hazel::Text::EditInput Text{}; };
 struct InputFrame
 {
     glm::vec2 Mouse{};
@@ -103,6 +104,7 @@ struct InputFrame
     glm::vec2 Scroll{};
     bool ScrollPage=false;
     bool Editing=false;
+    bool Shift=false,TextKeysHeld=false;
     bool NextPressed=false, PreviousPressed=false, SuppressAccept=false;
     bool KeyboardEnabled = true, FocusNavigation = false;
     bool Enabled = false, LeftDown = false, AcceptDown = false, NextDown = false,
@@ -118,6 +120,7 @@ struct Action
 {
     uint64_t Entity = 0;
     std::string Name;
+    std::string PreviousText{},TextValue{};
     uint64_t Screen=0, Owner=0, Sequence=0;
     UIEventKind Kind=UIEventKind::Activated;
     bool PreviousChecked=false, Checked=false;

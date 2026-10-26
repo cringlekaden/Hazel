@@ -26,6 +26,7 @@ void RuntimeUI::ScreenProblem(const std::string &message)
 void RuntimeUI::CancelScreenInput()
 {
     struct ScopeCancel {bool &Flag;bool Old;ScopeCancel(bool &v):Flag(v),Old(v){Flag=true;}~ScopeCancel(){Flag=Old;}} scopeCancel(m_ScopeCancellation);
+    EndTextField(false,true,false);
     EndSlider(false,true,false);
     if (auto session = ScriptEngine::GetRuntimeSession();
         session && session->GetScene().get() == &m_Scene)
@@ -441,7 +442,7 @@ bool RuntimeUI::StampEventForScope(Action &event,uint64_t scope)
 bool RuntimeUI::QueueEvent(Action event){
     const bool value=event.Kind==UIEventKind::ToggleChanged||event.Kind==UIEventKind::SelectionChanged||event.Kind>=UIEventKind::SliderChanged;
     if(!StampEvent(event))return false;
-    if(m_Actions.size()+ReservedSliderSlots()+ReservedDropdownSlots()>=InputRouter::MaxActions){++m_OuterDrops;if(value)ControlProblem("Event queue full (64); user value change rejected");return false;}
+    if(m_Actions.size()+ReservedSliderSlots()+ReservedDropdownSlots()+ReservedTextSlots()>=InputRouter::MaxActions){++m_OuterDrops;if(value)ControlProblem("Event queue full (64); user value change rejected");return false;}
     event.Sequence=++m_EventSequence;m_Actions.push_back(std::move(event));return true;
 }
 bool RuntimeUI::EventValid(const Action &event) const
@@ -457,6 +458,10 @@ bool RuntimeUI::EventValid(const Action &event) const
         if(!screen||m_Resolved.Scope!=event.Screen||!IsScreenOpen(event.Screen)||screen->Policy.EventOwner!=event.Owner)return false;
         if(event.Kind==UIEventKind::Cancel)return screen->Policy.Cancel==ScreenCancel::NotifyOwner&&
             event.Entity==(Live(screen->Policy.CancelTarget)?screen->Policy.CancelTarget:event.Screen);
+    }
+    if(event.Kind>=UIEventKind::TextChanged){
+        auto e=m_Scene.GetEntityByUUID(event.Entity);
+        return Live(event.Entity)&&e&&e.HasComponent<UITextEntryComponent>()&&e.HasComponent<UIButtonComponent>()&&e.GetComponent<UIButtonComponent>().Kind==ControlKind::TextEntry&&e.GetComponent<UIButtonComponent>().Action==event.Name&&m_Scene.GetAuthoringLifetime(event.Entity)==event.SourceLifetime&&m_Scene.GetAuthoringComponentVersion(event.Entity,typeid(UIButtonComponent))==event.SourceComponent&&m_Scene.GetAuthoringComponentVersion(event.Entity,typeid(UITextEntryComponent))==event.ControlComponent&&(event.Screen||ValueOwner(event.Entity)==event.Owner);
     }
     if(event.Kind>=UIEventKind::SliderChanged){
         auto e=m_Scene.GetEntityByUUID(event.Entity);

@@ -19,6 +19,7 @@
 class b2World;
 
 namespace Hazel {
+    namespace Text { class Clipboard; }
     class AudioPlayback;
     class RuntimeUI;
 
@@ -80,6 +81,11 @@ namespace Hazel {
         void ResetUI();
         void RetireUI(uint64_t entity);
         void RetireUISubtree(uint64_t entity);
+        std::string GetUITextEntry(uint64_t entity);
+        void SetUITextEntry(uint64_t entity,const std::string& value);
+        bool IsUITextEditing() const;
+        bool IsUITextInputOwned() const;
+        void SetUIClipboard(Ref<Text::Clipboard> clipboard);
         void CancelUIInput();
         void SetUIFramebufferSize(glm::vec2 size);
         const GameUI::ResolvedSnapshot& GetUISnapshot() const;

@@ -21,9 +21,10 @@ void RuntimeUI::PreviewTooltip(uint64_t source, bool open)
 }
 void RuntimeUI::Advance(float seconds)
 {
+    if(std::isfinite(seconds)&&seconds>0)m_TextTime=std::fmod(m_TextTime+std::min(seconds,.25f),1.f);
     uint64_t candidate = 0;
     if (m_Scene.IsRunning() && m_InputEnabled && !m_TransitionNeutral && !m_ScrollNeutral &&
-        !m_SliderNeutral && !m_Input.Captured() && !m_Slider.ID && !m_Bar.Owner && !ActiveDropdown())
+        !m_SliderNeutral && !m_Input.Captured() && !m_TextEdit.ID && !m_Slider.ID && !m_Bar.Owner && !ActiveDropdown())
     {
         auto id = m_TipPointer ? m_Input.Hovered() : m_Input.Focused();
         auto e = m_Scene.GetEntityByUUID(id);
@@ -86,7 +87,7 @@ void RuntimeUI::ArrangeTooltip(bool measure)
             n.LayoutResolved = false;
             n.PassiveOverlay = false;
         }
-    if (!source || ActiveDropdown() || m_Slider.ID || m_Bar.Owner || m_Input.Captured())
+    if (!source || ActiveDropdown() || m_TextEdit.ID || m_Slider.ID || m_Bar.Owner || m_Input.Captured())
         return;
     auto e = m_Scene.GetEntityByUUID(source);
     auto n = m_Build.Find(source);

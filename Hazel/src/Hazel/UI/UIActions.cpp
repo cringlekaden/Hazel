@@ -17,8 +17,8 @@ size_t Opposite(size_t a){switch(UIAction(a)){case UIAction::Up:return 2;case UI
 bool ShiftOK(ShiftMatch match,bool shift){return match==ShiftMatch::Any||(match==ShiftMatch::With)==shift;}
 bool ValidKey(int k){if(k==Key::LeftControl||k==Key::RightControl||k==Key::LeftAlt||k==Key::RightAlt||k==Key::LeftSuper||k==Key::RightSuper)return false;return k==-1||(k==32||k==39||(k>=44&&k<=57)||k==59||k==61||(k>=65&&k<=93)||k==96)||(k>=161&&k<=162)||(k>=256&&k<=269)||(k>=280&&k<=284)||(k>=290&&k<=314)||(k>=320&&k<=336)||(k>=340&&k<=348);}
 }
-bool IsBindable(UIAction a){return size_t(a)<size_t(UIAction::Count)&&a!=UIAction::Press&&a!=UIAction::Scroll;}
-const char* ActionName(UIAction a){static const char* names[]={"Press","Up","Down","Left","Right","Next","Previous","Accept","Cancel","AdjustDecrease","AdjustIncrease","Scroll","ScrollUp","ScrollDown","ScrollLeft","ScrollRight"};return size_t(a)<N?names[size_t(a)]:"None";}
+bool IsBindable(UIAction a){return size_t(a)<size_t(UIAction::Count)&&a!=UIAction::Press&&a!=UIAction::Scroll&&a!=UIAction::Text;}
+const char* ActionName(UIAction a){static const char* names[]={"Press","Up","Down","Left","Right","Next","Previous","Accept","Cancel","AdjustDecrease","AdjustIncrease","Scroll","ScrollUp","ScrollDown","ScrollLeft","ScrollRight","Text"};return size_t(a)<N?names[size_t(a)]:"None";}
 std::string KeyName(int k){if(k==-1)return "None";if(k>=Key::F1&&k<=Key::F25)return "F"+std::to_string(k-Key::F1+1);if(k>=Key::KP0&&k<=Key::KP9)return "Keypad "+std::to_string(k-Key::KP0);if(k>=33&&k<=96)return std::string(1,char(k));switch(k){case Key::LeftShift:return "Left Shift";case Key::RightShift:return "Right Shift";case Key::Backspace:return "Backspace";case Key::Delete:return "Delete";case Key::Home:return "Home";case Key::End:return "End";case Key::PageUp:return "Page Up";case Key::PageDown:return "Page Down";case Key::Space:return "Space";case Key::Enter:return "Enter";case Key::Escape:return "Escape";case Key::Tab:return "Tab";case Key::Up:return "Up";case Key::Down:return "Down";case Key::Left:return "Left";case Key::Right:return "Right";default:return "Key "+std::to_string(k);}}
 UIBindings UIBindings::Defaults(){
     UIBindings b;
@@ -36,7 +36,7 @@ void Validate(const UIBindings& b){
     if(b.PointerButton<0||b.PointerButton>7||b.Stick< -1||b.Stick>1||!std::isfinite(b.DeadZone)||!std::isfinite(b.NeutralZone)||!std::isfinite(b.RepeatDelay)||!std::isfinite(b.RepeatInterval)||b.NeutralZone<0||b.NeutralZone>=b.DeadZone||b.DeadZone>1||b.RepeatDelay<.1f||b.RepeatDelay>2||b.RepeatInterval<.03f||b.RepeatInterval>1)throw std::invalid_argument("UI bindings: invalid pointer, stick, dead zone or repeat settings");
     for(size_t a=0;a<N;++a){const auto& x=b.Actions[a];
         if(!ValidKey(x.Key)||!ValidKey(x.Alternate)||x.Pad< -1||x.Pad>=int(GamepadButton::Count)||int(x.Shift)<0||int(x.Shift)>2)throw std::invalid_argument(std::string("UI binding invalid: ")+ActionName(UIAction(a)));
-        if((a==0||a==size_t(UIAction::Scroll))&&(x.Key!=-1||x.Alternate!=-1||x.Pad!=-1))throw std::invalid_argument("Press uses the pointer button; keyboard/gamepad use Accept");
+        if((a==0||a==size_t(UIAction::Scroll)||a==size_t(UIAction::Text))&&(x.Key!=-1||x.Alternate!=-1||x.Pad!=-1))throw std::invalid_argument("Press uses the pointer button; keyboard/gamepad use Accept");
         for(size_t c=1;c<a;++c){if(!IsBindable(UIAction(c)))continue;if(Exclusive(a,c))continue;auto& y=b.Actions[c];bool shiftOverlap=x.Shift==ShiftMatch::Any||y.Shift==ShiftMatch::Any||x.Shift==y.Shift;
             bool keyConflict=false;for(int k:{x.Key,x.Alternate})if(k!=-1&&(k==y.Key||k==y.Alternate))keyConflict=true;
             if((shiftOverlap&&keyConflict)||(x.Pad!=-1&&x.Pad==y.Pad))throw std::invalid_argument(std::string("UI binding conflict: ")+ActionName(UIAction(c))+" / "+ActionName(UIAction(a)));
@@ -74,26 +74,34 @@ void UIInputAdapter::KeyEdge(int key,bool down,bool repeat,bool shift,bool comma
             Queue({UIAction(a),down,{},InputDevice::Keyboard},uint8_t((key==b.Key?1:0)|(key==b.Alternate?2:0)));
     }
 }
+void UIInputAdapter::TextEdge(const Text::EditInput& input){
+    size_t bytes=input.Text.size();for(auto& e:m_Edges)bytes+=e.Edge.Text.Text.size();
+    if(bytes>65536){++m_Dropped;m_Overflow=true;return;}
+    ActionEdge edge{UIAction::Text};edge.Text=input;Queue(std::move(edge),0);
+}
 void UIInputAdapter::ScrollEdge(glm::vec2 delta,glm::vec2 point){
     if(!std::isfinite(delta.x)||!std::isfinite(delta.y)||std::abs(delta.x)>1024||std::abs(delta.y)>1024)throw std::invalid_argument("Wheel delta exceeds finite +/-1024 backend units");
     if(delta.x||delta.y)Queue({UIAction::Scroll,true,point,InputDevice::Pointer,{delta.x,-delta.y}},0);
 }
-void UIInputAdapter::PointerEdge(int button,bool down,glm::vec2 point){
-    if(button==m_Bindings.PointerButton)Queue({UIAction::Press,down,point,InputDevice::Pointer});
+void UIInputAdapter::PointerEdge(int button,bool down,glm::vec2 point,bool shift){
+    if(button==m_Bindings.PointerButton){ActionEdge edge{UIAction::Press,down,point,InputDevice::Pointer};edge.Text.Shift=shift;Queue(std::move(edge));}
 }
-InputFrame UIInputAdapter::Sample(const DeviceSample& s,float seconds,bool enabled,bool adjusting){
+InputFrame UIInputAdapter::Sample(const DeviceSample& s,float seconds,bool enabled,bool adjusting,bool textEditing){
     if(adjusting!=m_Adjusting){Cancel();m_Adjusting=adjusting;}
-    InputFrame f;f.Mouse=s.Point;f.Enabled=enabled;
+    if(m_TextEditing!=textEditing){if(!textEditing){auto pending=std::move(m_Edges);Cancel();m_Edges=std::move(pending);}m_TextEditing=textEditing;}
+    InputFrame f;f.Mouse=s.Point;f.Enabled=enabled;f.Shift=s.Keys[Key::LeftShift]||s.Keys[Key::RightShift];
     if(!std::isfinite(seconds)||seconds<0)throw std::invalid_argument("UI input timestep must be finite and nonnegative");
     if(!enabled||m_Overflow){if(m_Overflow)++m_Dropped;Cancel();f.Enabled=false;return f;}
+    for(auto b:m_Bindings.Actions)for(int k:{b.Key,b.Alternate})if(k>=0)f.TextKeysHeld|=s.Keys[size_t(k)];
+    f.TextKeysHeld|=s.Keys[Key::LeftControl]||s.Keys[Key::RightControl]||s.Keys[Key::LeftAlt]||s.Keys[Key::RightAlt];
     const bool shift=s.Keys[Key::LeftShift]||s.Keys[Key::RightShift];
     const bool command=s.Keys[Key::LeftControl]||s.Keys[Key::RightControl]||s.Keys[Key::LeftAlt]||s.Keys[Key::RightAlt]||s.Keys[Key::LeftSuper]||s.Keys[Key::RightSuper];
-    if(command){Cancel();f.Enabled=false;return f;}
+    if(command&&!textEditing){Cancel();f.Enabled=false;return f;}
     std::array<bool,N> held{}, keyboard{},pad{},physical{};
     std::array<uint8_t,N> sources{};
     held[0]=physical[0]=s.Mouse[size_t(m_Bindings.PointerButton)];sources[0]=held[0]?1:0;
     for(size_t a=1;a<N;++a){if(!Active(a,m_Adjusting))continue;auto& b=m_Bindings.Actions[a];
-        const bool first=b.Key>=0&&s.Keys[size_t(b.Key)],second=b.Alternate>=0&&s.Keys[size_t(b.Alternate)];
+        const bool first=!textEditing&&b.Key>=0&&s.Keys[size_t(b.Key)],second=!textEditing&&b.Alternate>=0&&s.Keys[size_t(b.Alternate)];
         physical[a]=first||second;
         if(ShiftOK(b.Shift,shift)){sources[a]=uint8_t((first?1:0)|(second?2:0));keyboard[a]=physical[a];}
         else if(physical[a])m_Armed[a]=false; // Changing Shift alone is not a fresh Tab gesture.
@@ -132,7 +140,7 @@ InputFrame UIInputAdapter::Sample(const DeviceSample& s,float seconds,bool enabl
     if(!m_Ready){
         m_Ready=true;m_Held=held;m_Sources=sources;
         for(size_t a=0;a<N;++a)m_Armed[a]=!held[a]&&!physical[a];
-        m_Edges.clear();return f;
+        if(textEditing)for(auto& e:m_Edges)if(e.Edge.Action==UIAction::Text)f.Events.push_back(e.Edge);m_Edges.clear();return f;
     }
     std::array<bool,N> touched{};
     auto emit=[&](ActionEdge e){size_t a=size_t(e.Action);touched[a]=true;
@@ -150,7 +158,7 @@ InputFrame UIInputAdapter::Sample(const DeviceSample& s,float seconds,bool enabl
     };
     // Merge binding sources before generating logical edges. Releasing Enter while
     // Space or gamepad South is still held cannot release/re-press Accept.
-    for(auto queued:m_Edges){auto e=queued.Edge;if(e.Action==UIAction::Scroll){f.Events.push_back(e);m_Device=e.Device;m_LastAction=e.Action;continue;}size_t a=size_t(e.Action);if(!Active(a,m_Adjusting))continue;
+    for(auto queued:m_Edges){auto e=queued.Edge;if(e.Action==UIAction::Scroll||e.Action==UIAction::Text){f.Events.push_back(e);m_Device=e.Device;m_LastAction=e.Action;continue;}size_t a=size_t(e.Action);if(!Active(a,m_Adjusting))continue;
         if(e.Down)m_Sources[a]|=queued.Source;else m_Sources[a]&=uint8_t(~queued.Source);
         e.Down=m_Sources[a]!=0;
         if(Repeated(a)&&e.Down){

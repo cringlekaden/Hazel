@@ -168,6 +168,14 @@ void UIScreenWorkflowChecks()
     edit(settingsTab,"Settings tab caption",[](auto &v){v.Text->Text="Settings";});edit(journalTab,"Journal tab caption",[](auto &v){v.Text->Text="Journal";});
     panel.SetSelectedEntity(tabs);Check(panel.AddUI(18),"Add tab and page native command failed");auto extraTab=panel.GetSelectedEntity();panel.MoveSelected(-1);panel.MoveSelected(1);
     edit(extraTab,"Additional tab caption",[](auto &v){v.Text->Text="Notes";});
+    auto notesPage=scene->GetEntityByUUID(extraTab.GetComponent<UITabComponent>().Page);
+    panel.SetSelectedEntity(notesPage);Check(panel.AddUI(22),"Single-line text-entry preset failed");auto nameField=panel.GetSelectedEntity();
+    edit(nameField,"Name field initial and limit",[](auto &v){v.Rect->Offset={0,48};v.Text->Text="Ada";v.Entry->MaxBytes=512;v.Entry->MaxGraphemes=64;v.Button->Action="profile-name";});
+    Check(documents.UndoRedo(false)&&documents.UndoRedo(true),"Text-entry property Undo/Redo failed");
+    panel.SetSelectedEntity(notesPage);Check(panel.AddUI(23),"Multiline text-entry preset failed");auto noteField=panel.GetSelectedEntity();
+    edit(noteField,"Journal note initial and viewport",[](auto &v){v.Rect->Offset={0,110};v.Rect->FixedSize={540,112};v.Text->Text="A journal note.\nSecond line.\nThird line.\nFourth line.\nFifth line.\nLast line.";v.Entry->MaxBytes=4096;v.Entry->MaxLines=64;v.Button->Action="journal-note";});
+    edit(extraTab,"Notes initial focus",[&](auto &v){v.Tab->InitialFocus=nameField.GetUUID();});
+    const auto nameFieldID=uint64_t(nameField.GetUUID()),noteFieldID=uint64_t(noteField.GetUUID()),notesTabID=uint64_t(extraTab.GetUUID());
     panel.SetSelectedEntity(settingsPage);Check(panel.AddUI(8),"Tabbed toggle creation failed");auto tabToggle=panel.GetSelectedEntity();edit(tabToggle,"Tabbed toggle",[](auto &v){v.Rect->Offset={0,48};v.Text->Text="Show journal hints";v.Button->Action="journal-hints";});
     panel.SetSelectedEntity(settingsPage);Check(panel.AddUI(11),"Tabbed slider creation failed");auto tabSlider=panel.GetSelectedEntity();edit(tabSlider,"Tabbed slider",[](auto &v){v.Rect->Offset={0,100};v.Rect->FixedSize={420,48};v.Slider->Minimum=0;v.Slider->Maximum=100;v.Slider->Step=5;v.Slider->InitialValue=50;v.Button->Action="tab-volume";});
     edit(settingsTab,"Settings page initial focus",[&](auto &v){v.Tab->InitialFocus=tabSlider.GetUUID();});
@@ -182,7 +190,7 @@ void UIScreenWorkflowChecks()
     panel.SetSelectedEntity(listLast);Check(panel.AddUI(21),"List row tooltip creation failed");auto rowTip=panel.GetSelectedEntity();edit(rowTip,"Journal row explanation",[](auto &v){v.Text->Text="Select this entry to inspect its consequences. The list remembers one choice.";});
     panel.SetSelectedEntity(menu);Check(panel.AddUI(3),"Tabbed settings command failed");auto tabOpen=panel.GetSelectedEntity();edit(tabOpen,"Tabs and journal command",[](auto &v){v.Rect->Offset={24,350};v.Rect->WidthMode=v.Rect->HeightMode=SizeMode::Fixed;v.Rect->FixedSize={320,44};v.Text->Text="Settings and journal";v.Button->Action="tabs-settings";v.Button->TabOrder=90;});
     edit(tabbed,"Tabs opening focus",[&](auto &v){v.Canvas->Screen.InitialFocus=settingsTab.GetUUID();});
-    for(auto ref:{std::pair<const char*,Entity>{"Tabbed",tabbed},{"Tabs",tabs},{"JournalTab",journalTab},{"SettingsTab",settingsTab},{"JournalList",list},{"JournalChoice",listLast}}){auto &field=ScriptEngine::GetScriptFieldMap(menu)[ref.first];field.Field={ScriptFieldType::Entity,ref.first,nullptr};field.SetValue<uint64_t>(ref.second.GetUUID());}
+    for(auto ref:{std::pair<const char*,Entity>{"Tabbed",tabbed},{"Tabs",tabs},{"JournalTab",journalTab},{"SettingsTab",settingsTab},{"JournalList",list},{"JournalChoice",listLast},{"NameField",nameField},{"NoteField",noteField},{"NotesTab",extraTab}}){auto &field=ScriptEngine::GetScriptFieldMap(menu)[ref.first];field.Field={ScriptFieldType::Entity,ref.first,nullptr};field.SetValue<uint64_t>(ref.second.GetUUID());}
     const auto tabsID=uint64_t(tabs.GetUUID()),tabbedID=uint64_t(tabbed.GetUUID()),settingsTabID=uint64_t(settingsTab.GetUUID()),journalTabID=uint64_t(journalTab.GetUUID()),settingsPageID=uint64_t(settingsPage.GetUUID()),listID=uint64_t(list.GetUUID()),listViewID=uint64_t(listView.GetUUID()),listLastID=uint64_t(listLast.GetUUID()),tabOpenID=uint64_t(tabOpen.GetUUID()),tabSliderID=uint64_t(tabSlider.GetUUID()),tabDropdownID=uint64_t(tabDropdown.GetUUID()),tabDropdownTrigger=tabDropdown.GetComponent<UIDropdownComponent>().Trigger;
     m_CompositionTabs=tabsID;m_CompositionScreen=tabbedID;m_CompositionJournal=journalTabID;m_CompositionList=listID;m_CompositionView=listViewID;m_CompositionRow=listLastID;
     scene->ValidateUI(false);
@@ -307,6 +315,15 @@ void UIScreenWorkflowChecks()
         runtime->SetUISelection(tabsID,journalTabID);runtime->OnUpdateRuntime(0);route();route();Check(!runtime->IsUISliderEditing()&&runtime->GetUISliderValue(tabSliderID)==50,"Page departure left slider editing/stale rollback");
         runtime->SetUISelection(tabsID,settingsTabID);runtime->OnUpdateRuntime(0);route();route();Check(runtime->FocusUI(tabDropdownTrigger),"Tabbed dropdown trigger unavailable");sample.Keys[Key::Enter]=true;route();runtime->OnUpdateRuntime(0);sample.Keys.fill(false);route();route();Check(runtime->IsUIDropdownOpen(tabDropdownID),"Tabbed dropdown did not open");
         runtime->SetUISelection(tabsID,journalTabID);runtime->OnUpdateRuntime(0);route();route();Check(!runtime->IsUIDropdownOpen(tabDropdownID)&&runtime->GetUISnapshot().Scope==tabbedID,"Page departure retained owned dropdown scope");
+        runtime->SetUISelection(tabsID,notesTabID);runtime->OnUpdateRuntime(0);route();route();Check(runtime->FocusUI(nameFieldID),"Native name entry focus failed");
+        sample.Keys[Key::Enter]=true;route();runtime->OnUpdateRuntime(0);sample.Keys.fill(false);route();route();Check(runtime->IsUITextEditing(),"Native text entry did not start");
+        KeyTypedEvent typed(0xe9);editor.m_RuntimeSession.SubmitUIEvent(typed,sample.Point,true);route();runtime->OnUpdateRuntime(0);
+        Check(runtime->GetUITextEntry(nameFieldID).find(u8"é")!=std::string::npos,"Production committed-character adapter lost native fixture input");
+        KeyPressedEvent submit(Key::Enter,false,0);editor.m_RuntimeSession.SubmitUIEvent(submit,sample.Point,true);route();runtime->OnUpdateRuntime(0);route();route();Check(!runtime->IsUITextEditing()&&receiver->GetFieldValue<int>("TextCommits")>0,"Native text commit/owner delivery failed");
+        Check(runtime->FocusUI(noteFieldID),"Native multiline focus failed");sample.Keys[Key::Enter]=true;route();runtime->OnUpdateRuntime(0);sample.Keys.fill(false);route();route();
+        KeyPressedEvent noteEnd(Key::End,false,2);editor.m_RuntimeSession.SubmitUIEvent(noteEnd,sample.Point,true);route();runtime->OnUpdateRuntime(0);Check(runtime->IsUITextEditing()&&runtime->GetUIDiagnostics().TextCaret>0,"Constrained note did not keep an end caret");
+        KeyPressedEvent noteSubmit(Key::Enter,false,2);editor.m_RuntimeSession.SubmitUIEvent(noteSubmit,sample.Point,true);route();runtime->OnUpdateRuntime(0);route();route();Check(!runtime->IsUITextEditing(),"Multiline native submit failed");
+        runtime->SetUITextEntry(noteFieldID,"Silent note\nwith another line");Check(runtime->GetUITextEntry(noteFieldID)=="Silent note\nwith another line","Native notes setter failed");
         sample.Keys[Key::Escape]=true;route();runtime->OnUpdateRuntime(0);sample.Keys.fill(false);route();Check(!runtime->IsUIScreenOpen(tabbedID)&&runtime->GetUIDiagnostics().Focus==tabOpenID,"Tabbed screen Cancel/return focus failed");
         editor.OnSceneStop();
         Check(documents.SceneText() == accepted,
@@ -348,7 +365,7 @@ void DrawUIScreenFixture()
     for(auto handle:m_ScreenFixture->GetAllEntitiesWith<UIRectComponent>()){
         Entity item(handle,m_ScreenFixture.get());
         if(item.HasComponent<UIScrollViewComponent>()||item.HasComponent<UIProgressComponent>()||item.HasComponent<UIRadioGroupComponent>()||(item.HasComponent<UIButtonComponent>()&&item.GetComponent<UIButtonComponent>().Kind!=GameUI::ControlKind::Button)){
-            m_ScreenFixturePanel.SetSelectedEntity(item);m_ScreenFixturePanel.RestoreSections({{"UI Button",true},{"UI Radio Group",true},{"UI Progress",true},{"UI Slider",true},{"UI ScrollView",true},{"UI Dropdown",true},{"UI Tabs",true},{"UI Tab",true},{"UI Tooltip",true}});m_ScreenFixturePanel.DrawAssetProperties(item);
+            m_ScreenFixturePanel.SetSelectedEntity(item);m_ScreenFixturePanel.RestoreSections({{"UI Button",true},{"UI Radio Group",true},{"UI Progress",true},{"UI Slider",true},{"UI ScrollView",true},{"UI Dropdown",true},{"UI Tabs",true},{"UI Tab",true},{"UI Tooltip",true},{"UI Text Entry",true}});m_ScreenFixturePanel.DrawAssetProperties(item);
         }
     }
     m_ScreenFixturePanel.SetSelectedEntity(originalSelection);

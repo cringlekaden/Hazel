@@ -19,8 +19,8 @@ struct ScreenPolicy {
   bool operator!=(const ScreenPolicy &b) const { return !(*this == b); }
 };
 enum class ScreenOperation : uint8_t { Open, Close, Pop, Replace };
-enum class UIEventKind : uint8_t { Activated, Cancel, ToggleChanged, SelectionChanged, SliderChanged, SliderCommitted, SliderCancelled };
-enum class ControlKind : uint8_t { Button, Toggle, Radio, Slider };
+enum class UIEventKind : uint8_t { Activated, Cancel, ToggleChanged, SelectionChanged, SliderChanged, SliderCommitted, SliderCancelled, TextChanged, TextCommitted, TextCancelled };
+enum class ControlKind : uint8_t { Button, Toggle, Radio, Slider, TextEntry };
 enum class FillDirection : uint8_t { Right, Left, Down, Up };
 struct ScreenState {
   uint64_t ID = 0, Owner = 0;

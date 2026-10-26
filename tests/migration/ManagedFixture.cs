@@ -329,3 +329,22 @@ namespace Migration {
         }
     }
 }
+namespace Migration {
+    public class TextEntryOwnerProbe : Hazel.Entity {
+        public bool Ready,Replace,Owned;public int Changes,Commits,Cancels;public string LastText,Before;
+        Hazel.UITextEntryComponent field;
+        void OnCreate(){field=FindEntityByName("Name field").GetComponent<Hazel.UITextEntryComponent>();Ready=field.Text=="a\u0301";}
+        void OnUpdate(float dt){
+            Owned=Hazel.GameUI.IsTextInputOwned;
+            if(Replace){field.Text="Programmatic é";Replace=false;}
+            Hazel.UIEvent e;while(Hazel.GameUI.TryConsumeEvent(out e)){
+                if(e.Owner==null||e.Owner.ID!=ID||e.Source.ID!=500)throw new System.Exception("Text owner envelope");
+                Before=e.PreviousText;LastText=e.Text;
+                if(e.Kind==Hazel.UIEventKind.TextChanged)++Changes;
+                else if(e.Kind==Hazel.UIEventKind.TextCommitted)++Commits;
+                else if(e.Kind==Hazel.UIEventKind.TextCancelled)++Cancels;
+                else throw new System.Exception("Duplicate/non-text field event");
+            }
+        }
+    }
+}

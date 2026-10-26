@@ -80,7 +80,7 @@ public:
     std::vector<Run> Runs;
     std::vector<Glyph> Glyphs;
     Ref<const Face> Font;
-    float Width=0, Height=0;
+    float Width=0, Height=0, EmSize=1;
     uint32_t ShapeCalls=0, ShapeScalars=0, MissingGlyphs=0, MissingMarkerGlyphs=0;
     bool Omitted=false, MarkerDoesNotFit=false, ConservativeTruncation=false;
     uint32_t OriginalLines=0;

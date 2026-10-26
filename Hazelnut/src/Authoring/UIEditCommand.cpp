@@ -133,6 +133,7 @@ FIELD(Flow, Rows);
         }
     }
     COMPONENT(Group){FIELD(Group, Required);FIELD(Group, InitialSelection);FIELD(Group, EventOwner);FIELD(Group, Action);}
+    COMPONENT(Entry){FIELD(Entry, Placeholder);FIELD(Entry, MaxBytes);FIELD(Entry, MaxGraphemes);FIELD(Entry, MaxLines);FIELD(Entry, Multiline);FIELD(Entry, ReadOnly);FIELD(Entry, CaretColor);FIELD(Entry, SelectionColor);}
     COMPONENT(Tabs){FIELD(Tabs, RememberFocus);}
     COMPONENT(Tab){FIELD(Tab, Page);FIELD(Tab, InitialFocus);}
     COMPONENT(Tooltip){FIELD(Tooltip, Body);FIELD(Tooltip, Delay);FIELD(Tooltip, Gap);}
@@ -394,6 +395,7 @@ for (int i = 0; i < 5; ++i)
 }
 }
 COMPONENT(Group, UIRadioGroupComponent) FIELD(Group, Required);FIELD(Group, InitialSelection);FIELD(Group, EventOwner);FIELD(Group, Action);}
+COMPONENT(Entry, UITextEntryComponent) FIELD(Entry, Placeholder);FIELD(Entry, MaxBytes);FIELD(Entry, MaxGraphemes);FIELD(Entry, MaxLines);FIELD(Entry, Multiline);FIELD(Entry, ReadOnly);FIELD(Entry, CaretColor);FIELD(Entry, SelectionColor);}
 COMPONENT(Tabs, UITabsComponent) FIELD(Tabs, RememberFocus); }
 COMPONENT(Tab, UITabComponent) FIELD(Tab, Page);FIELD(Tab, InitialFocus);}
 COMPONENT(Tooltip, UITooltipComponent) FIELD(Tooltip, Body);FIELD(Tooltip, Delay);FIELD(Tooltip, Gap);}
@@ -449,6 +451,7 @@ UIEditValues UIEditValues::Capture(Entity e)
     CAPTURE(UIProgressComponent, Progress);
     CAPTURE(UISliderComponent, Slider);
     CAPTURE(UIScrollViewComponent, Scroll);
+    CAPTURE(UITextEntryComponent, Entry);
     CAPTURE(UITabsComponent, Tabs);
     CAPTURE(UITabComponent, Tab);
     CAPTURE(UITooltipComponent, Tooltip);
@@ -505,7 +508,7 @@ UIEditCommand::UIEditCommand(Scene &scene, uint64_t entity, std::string name, UI
         scene.GetAuthoringComponentVersion(entity, typeid(SpriteRendererComponent)),
         scene.GetAuthoringComponentVersion(entity,typeid(UIRadioGroupComponent)),
         scene.GetAuthoringComponentVersion(entity,typeid(UIProgressComponent)),
-        scene.GetAuthoringComponentVersion(entity,typeid(UISliderComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UIScrollViewComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UIDropdownComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITabsComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITabComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITooltipComponent))};
+        scene.GetAuthoringComponentVersion(entity,typeid(UISliderComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UIScrollViewComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UIDropdownComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITabsComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITabComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITooltipComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITextEntryComponent))};
     while (e)
     {
         if (m_Guards.size() >= Scene::MaxDepth)
@@ -529,10 +532,10 @@ Entity UIEditCommand::Target(Scene &scene, bool cancelling) const
         throw std::runtime_error("UI entity lifetime ended; select a live entity");
     if (cancelling)
         return e;
-    const std::array<std::type_index, 16> types = {
+    const std::array<std::type_index, 17> types = {
         typeid(UICanvasComponent),    typeid(UIRectComponent),        typeid(UILayoutComponent),
         typeid(UITextStyleComponent), typeid(UINineSliceComponent),   typeid(UIButtonComponent),
-        typeid(TextComponent),        typeid(SpriteRendererComponent),typeid(UIRadioGroupComponent),typeid(UIProgressComponent),typeid(UISliderComponent),typeid(UIScrollViewComponent),typeid(UIDropdownComponent),typeid(UITabsComponent),typeid(UITabComponent),typeid(UITooltipComponent)};
+        typeid(TextComponent),        typeid(SpriteRendererComponent),typeid(UIRadioGroupComponent),typeid(UIProgressComponent),typeid(UISliderComponent),typeid(UIScrollViewComponent),typeid(UIDropdownComponent),typeid(UITabsComponent),typeid(UITabComponent),typeid(UITooltipComponent),typeid(UITextEntryComponent)};
     for (size_t i = 0; i < types.size(); ++i)
         if (scene.GetAuthoringComponentVersion(m_Entity, types[i]) != m_ComponentVersions[i])
             throw std::runtime_error(
@@ -673,6 +676,7 @@ void UIEditCommand::Cancel(Scene &scene)
     KEEP(Tabs, UITabsComponent, 13);
     KEEP(Tab, UITabComponent, 14);
     KEEP(Tooltip, UITooltipComponent, 15);
+    KEEP(Entry, UITextEntryComponent, 16);
 #undef KEEP
     auto restored = Merge(before, after, subset, true, true), next = current;
 #define RESTORE(member)                                                                            \
@@ -693,6 +697,7 @@ void UIEditCommand::Cancel(Scene &scene)
     RESTORE(Tabs);
     RESTORE(Tab);
     RESTORE(Tooltip);
+    RESTORE(Entry);
     RESTORE(Dropdown);
 #undef RESTORE
     Publish(scene, current, std::move(next), true);

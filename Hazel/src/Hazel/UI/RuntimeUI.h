@@ -4,11 +4,13 @@
 #include "Hazel/Scene/Entity.h"
 #include "Hazel/UI/RuntimeUISnapshot.h"
 #include "Hazel/UI/MeasuredLayout.h"
+#include "Hazel/Core/TextInput.h"
 #include <chrono>
 #include <unordered_map>
 #include <optional>
 namespace Hazel
 {
+struct RasterState;
 // Scene-owned geometry and interaction. Authored components remain ordinary ECS
 // values, including native raw writes. Resolve compares exact dependency bytes
 // at input/render/delivery boundaries, without hashing or document serialization.
@@ -63,7 +65,7 @@ class RuntimeUI
     static constexpr size_t MaxScreens=64, MaxScreenRequests=64;
     bool BlocksGameplay() const
     {
-        return m_ScrollNeutral || m_TransitionNeutral || m_Resolved.Modal || m_ActionOwnsFrame || m_KeyboardOwns || m_Input.Captured();
+        return m_TextEdit.ID || m_TextPointerNeutral || m_TextRearm || m_ScrollNeutral || m_TransitionNeutral || m_Resolved.Modal || m_ActionOwnsFrame || m_KeyboardOwns || m_Input.Captured();
     }
     bool CapturesPointer() const
     {
@@ -71,7 +73,7 @@ class RuntimeUI
     }
     bool BlocksPointer() const
     {
-        return m_ScrollNeutral || m_TransitionNeutral || m_Resolved.Modal || m_ActionOwnsFrame || m_PointerOver || m_Input.Captured();
+        return m_TextEdit.ID || m_TextPointerNeutral || m_TextRearm || m_ScrollNeutral || m_TransitionNeutral || m_Resolved.Modal || m_ActionOwnsFrame || m_PointerOver || m_Input.Captured();
     }
     bool Bounds(uint64_t entity, GameUI::Rect &pixels) const;
     Ref<const Hazel::Text::Layout> TextLayout(uint64_t entity) const;
@@ -82,10 +84,52 @@ class RuntimeUI
     }
     GameUI::RuntimeUIDiagnostics Diagnostics() const;
     void Retire(uint64_t id);
+    std::string EntryValue(uint64_t id);
+    void SetEntryValue(uint64_t id,const std::string& value);
+    bool TextEditing() const {return m_TextEdit.ID!=0;}
+    bool TextOwnsInput() const {return m_TextEdit.ID||m_TextRearm||m_TextPointerNeutral;}
+    void SetClipboard(Ref<Text::Clipboard> clipboard){m_Clipboard=std::move(clipboard);}
+    void ValidateTextFields(uint64_t target=0) const;
     void CancelInput();
     void Reset();
 
   private:
+    struct TextState {
+        Text::EditBuffer Buffer;
+        UITextEntryComponent Config;
+        std::string Initial,PreparedValue,Problem,Placeholder;
+        uint64_t Lifetime=0,Component=0,Revision=0,LayoutRevision=0,Epoch=0;
+        Ref<Font> FontAsset;
+        Ref<const Text::Layout> Layout,Paint;
+        Text::EditGeometry Geometry;
+        float Width=-1,Size=0,Tracking=0,Spacing=0;
+        glm::vec2 Scroll{};
+        bool Prepared=false,PaintFailed=false,Valid=false;
+    };
+    struct TextEdit {
+        uint64_t ID=0,Revision=0;
+        Text::EditBuffer Before;
+        GameUI::Action Terminal;
+        bool Drag=false,SuppressText=false;
+    } m_TextEdit;
+    std::unordered_map<uint64_t,TextState> m_TextStates;
+    Ref<Text::Clipboard> m_Clipboard;
+    float m_TextTime=0;
+    bool m_TextShift=false,m_TextPointerNeutral=false,m_TextRearm=false;
+    void SyncTextFields();
+    void ReconcileTextField();
+    void PrepareTextField(uint64_t id);
+    bool BeginTextField(uint64_t id,bool pointer,glm::vec2 point={});
+    void EndTextField(bool cancel,bool interrupted=false,bool deliver=true);
+    void TextCommand(const Text::EditInput& input);
+    bool RouteTextFrame(GameUI::InputFrame& input);
+    void RouteTextControl(const GameUI::Action& action);
+    void RevealTextCaret(uint64_t id);
+    void DrawTextField(const GameUI::ResolvedElement& n,Entity entity,const RasterState& raster);
+    size_t ReservedTextSlots() const;
+    size_t TextPayloadBytes(const GameUI::Action& event) const;
+    size_t TextQueueBytes() const;
+    bool QueueTextChange(const Text::EditBuffer& next);
     struct ScreenRequest;
     std::unordered_map<uint64_t,uint64_t> m_PageTabs,m_TooltipBodies;
     std::vector<uint64_t> m_TabGroups,m_TooltipIDs;
@@ -128,7 +172,7 @@ class RuntimeUI
     bool ProgrammaticScrollAvailable(uint64_t id) const;
     void DropdownProblem(const std::string &message);
     struct ScrollState {uint64_t Lifetime=0,Component=0,Content=0,ContentLifetime=0,ContentComponent=0;glm::vec2 Offset{};};
-    struct BarCapture {uint64_t Owner=0,Track=0,Thumb=0,Component=0,Lifetime=0;int Axis=0;float Grab=0,MinimumThumb=0;bool Drag=false;GameUI::Rect Bounds;glm::vec2 Extent{},Viewport{},Surface{};} m_Bar;
+    struct BarCapture {uint64_t Owner=0,Track=0,Thumb=0,Component=0,Lifetime=0;int Axis=0;float Grab=0,MinimumThumb=0;bool Drag=false,SuppressText=false;GameUI::Rect Bounds;glm::vec2 Extent{},Viewport{},Surface{};} m_Bar;
     std::unordered_map<uint64_t,ScrollState> m_ScrollState;
     std::unordered_map<uint64_t,std::pair<uint64_t,int>> m_ScrollParts;
     std::vector<uint64_t> m_ScrollIDs;

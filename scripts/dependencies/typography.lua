@@ -41,7 +41,7 @@ project "UniBreak"
     local dir = root .. "/Hazel/vendor/libunibreak/src/"
     includedirs { dir }
     for _, file in ipairs { "unibreakbase", "unibreakdef", "linebreak", "linebreakdata", "linebreakdef",
-                            "eastasianwidthdef", "emojidef", "graphemebreak" } do
+                            "eastasianwidthdef", "emojidef", "graphemebreak", "wordbreak" } do
         files { dir .. file .. ".c" }
     end
 project "SheenBidi"

@@ -157,7 +157,7 @@ bool RuntimeUI::BeginSlider(uint64_t id, bool pointer, glm::vec2 point)
     }
     try
     {
-        if (!Live(id) || (!takeover && m_Actions.size() + ReservedDropdownSlots() + 2 > InputRouter::MaxActions))
+        if (!Live(id) || (!takeover && m_Actions.size() + ReservedDropdownSlots() + ReservedTextSlots() + 2 > InputRouter::MaxActions))
             throw std::invalid_argument(
                 "Slider edit needs two free event slots and an eligible control");
         auto geometry = SliderGeometryFor(id);

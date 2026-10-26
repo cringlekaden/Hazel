@@ -6,9 +6,9 @@ namespace Hazel {
         public static bool PopScreen()=>InternalCalls.UI_Screen(InternalCalls.Entity_GetSceneIdentity(),0,2);
         // The engine derives the consumer from the executing script; callers cannot steal another owner's events.
         public static bool TryConsumeEvent(out UIEvent value){
-            ulong screen,source,sequence,previousSelection,selection,owner;int kind;string action;bool previousChecked,checkedValue,interrupted;float previousValue,currentValue,startValue;ulong gesture;
-            bool result=InternalCalls.UI_ConsumeEvent(InternalCalls.Entity_GetSceneIdentity(),out screen,out source,out kind,out sequence,out action,out previousChecked,out checkedValue,out previousSelection,out selection,out owner,out previousValue,out currentValue,out startValue,out gesture,out interrupted);
-            value=result?new UIEvent{Screen=screen==0?null:new Entity(screen),Source=new Entity(source),Owner=new Entity(owner),PreviousValue=previousValue,Value=currentValue,StartValue=startValue,Gesture=gesture,Interrupted=interrupted,Kind=(UIEventKind)kind,Sequence=sequence,Action=action,PreviousChecked=previousChecked,Checked=checkedValue,PreviousSelection=previousSelection==0?null:new Entity(previousSelection),Selection=selection==0?null:new Entity(selection)}:default(UIEvent);return result;
+            ulong screen,source,sequence,previousSelection,selection,owner;int kind;string action;bool previousChecked,checkedValue,interrupted;float previousValue,currentValue,startValue;ulong gesture;string previousText,text;
+            bool result=InternalCalls.UI_ConsumeEvent(InternalCalls.Entity_GetSceneIdentity(),out screen,out source,out kind,out sequence,out action,out previousChecked,out checkedValue,out previousSelection,out selection,out owner,out previousValue,out currentValue,out startValue,out gesture,out interrupted,out previousText,out text);
+            value=result?new UIEvent{Screen=screen==0?null:new Entity(screen),Source=new Entity(source),Owner=new Entity(owner),PreviousText=previousText,Text=text,PreviousValue=previousValue,Value=currentValue,StartValue=startValue,Gesture=gesture,Interrupted=interrupted,Kind=(UIEventKind)kind,Sequence=sequence,Action=action,PreviousChecked=previousChecked,Checked=checkedValue,PreviousSelection=previousSelection==0?null:new Entity(previousSelection),Selection=selection==0?null:new Entity(selection)}:default(UIEvent);return result;
         }
         public static ulong FocusScope => InternalCalls.UI_FocusScope();
         public static bool TryConsumeCancel() => InternalCalls.UI_Cancel(InternalCalls.Entity_GetSceneIdentity(),0);
@@ -16,6 +16,7 @@ namespace Hazel {
         public static void SetBinding(UIAction action,UIBinding binding) {int k=binding.Key,a=binding.Alternate,p=binding.GamepadButton,s=(int)binding.Shift;InternalCalls.UI_Binding((int)action,ref k,ref a,ref p,ref s,true);}
         public static UIInputSettings InputSettings {get{var v=new UIInputSettings();InternalCalls.UI_InputSettings(ref v,false);return v;}set{InternalCalls.UI_InputSettings(ref value,true);}}
         public static void ResetBindings()=>InternalCalls.UI_ResetBindings();
+        public static bool IsTextInputOwned => InternalCalls.UI_TextInputOwned();
         public static bool IsPointerCaptured => InternalCalls.UI_IsPointerCaptured();
         public static bool IsKeyDown(KeyCode key) => InternalCalls.UI_IsKeyDown(key);
         public static bool TryConsumeAction(out Entity button,out string action) {
@@ -23,8 +24,8 @@ namespace Hazel {
             button=result?new Entity(id):null;return result;
         }
     }
-    public enum UIEventKind { Activated, Cancel, ToggleChanged, SelectionChanged, SliderChanged, SliderCommitted, SliderCancelled }
-    public struct UIEvent {public Entity Screen,Source,Owner;public UIEventKind Kind;public ulong Sequence;public string Action;public bool PreviousChecked,Checked;public Entity PreviousSelection,Selection;public float PreviousValue,Value,StartValue;public ulong Gesture;public bool Interrupted;}
+    public enum UIEventKind { Activated, Cancel, ToggleChanged, SelectionChanged, SliderChanged, SliderCommitted, SliderCancelled, TextChanged, TextCommitted, TextCancelled }
+    public struct UIEvent {public Entity Screen,Source,Owner;public UIEventKind Kind;public ulong Sequence;public string Action;public bool PreviousChecked,Checked;public Entity PreviousSelection,Selection;public float PreviousValue,Value,StartValue;public ulong Gesture;public bool Interrupted;public string PreviousText,Text;}
     public enum UIAction { Press, Up, Down, Left, Right, Next, Previous, Accept, Cancel, AdjustDecrease, AdjustIncrease, Scroll, ScrollUp, ScrollDown, ScrollLeft, ScrollRight }
     public enum UIShiftMatch { Any, Without, With }
     public enum UIGamepadButton { None=-1,A,B,X,Y,LeftBumper,RightBumper,Back,Start,Guide,LeftThumb,RightThumb,Up,Right,Down,Left }
@@ -75,6 +76,9 @@ namespace Hazel {
     }
     public class UIRadioGroupComponent : Component {
         public Entity Selection {get{ulong id=InternalCalls.UI_Selection(Entity.CheckedID,false,0);return id==0?null:new Entity(id);}set=>InternalCalls.UI_Selection(Entity.CheckedID,true,value==null?0:value.CheckedID);}
+    }
+    public class UITextEntryComponent : Component {
+        public string Text {get=>InternalCalls.UI_TextEntry(Entity.CheckedID,false,null);set=>InternalCalls.UI_TextEntry(Entity.CheckedID,true,value);}
     }
     public class UITabsComponent : Component {
         // Silent, queued at the scene boundary; the Radio Group owns the only value.

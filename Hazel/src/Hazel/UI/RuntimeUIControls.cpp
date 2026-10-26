@@ -71,7 +71,7 @@ bool RuntimeUI::Decoration(uint64_t owner, uint64_t visual) const
 }
 void RuntimeUI::ValidateControls(uint64_t target) const
 {
-    ValidateScrollViews(target);ValidateDropdowns(target);ValidatePages(target);
+    ValidateScrollViews(target);ValidateDropdowns(target);ValidatePages(target);ValidateTextFields(target);
     std::unordered_set<uint64_t> visuals;
     auto visual = [&](uint64_t owner, uint64_t id) {
         if (id && (!Decoration(owner, id) || !visuals.insert(id).second))
@@ -87,7 +87,7 @@ void RuntimeUI::ValidateControls(uint64_t target) const
         if (target && uint64_t(e.GetUUID()) != target)
             continue;
         auto &b = e.GetComponent<UIButtonComponent>();
-        if (unsigned(b.Kind) > 3)
+        if (unsigned(b.Kind) > 4)
             throw std::invalid_argument("Invalid UI control kind");
         if (b.Kind != ControlKind::Button)
         {
@@ -100,6 +100,7 @@ void RuntimeUI::ValidateControls(uint64_t target) const
         }
         if (b.Kind == ControlKind::Radio && b.EventOwner)
             throw std::invalid_argument("Radio events use the group/screen owner, not an option owner");
+        if(b.Kind==ControlKind::TextEntry&&!e.HasComponent<UITextEntryComponent>())throw std::invalid_argument("Text Entry behavior needs UI Text Entry configuration");
         if(b.Kind==ControlKind::Slider&&!e.HasComponent<UISliderComponent>())throw std::invalid_argument("Slider behavior needs UI Slider configuration");
         if (b.Kind != ControlKind::Radio && b.Group)
             throw std::invalid_argument("Only radio options can reference a group");
@@ -227,7 +228,7 @@ void RuntimeUI::SyncControls()
                 m_Values.erase(id);
                 continue;
             }
-            if(b.Kind==ControlKind::Slider)continue;
+            if(b.Kind==ControlKind::Slider||b.Kind==ControlKind::TextEntry)continue;
             visual(id, b.Indicator);
             if (b.Kind == ControlKind::Radio && !Member(b.Group, id, false))
                 ControlProblem("Radio option #" + std::to_string(id) +
@@ -417,6 +418,7 @@ void RuntimeUI::ActivateControl(Action event)
         QueueEvent(std::move(event));
         return;
     }
+    if(b.Kind==ControlKind::TextEntry){RouteTextControl(event);return;}
     if(b.Kind==ControlKind::Slider){if(event.Phase!=RoutedPhase::Activate)RouteSlider(event);else if(m_Slider.ID==event.Entity)EndSlider(false);else BeginSlider(event.Entity,false);return;}
     const auto source = event.Entity;
     if (b.Kind == ControlKind::Toggle)

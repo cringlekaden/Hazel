@@ -114,6 +114,8 @@ struct RuntimeUIDiagnostics
     std::string ScrollProblem;
     std::string CompositionProblem;
     uint64_t PageChanges=0, Tooltip=0;
+    uint64_t TextEdit=0,TextCaret=0,TextAnchor=0,TextHistoryBytes=0,TextEventBytes=0;
+    std::string TextError;
     std::string DropdownProblem;
     uint64_t Dropdown=0, DropdownChoices=0, DropdownRejected=0;
     uint64_t SliderEdit=0, SliderGesture=0;

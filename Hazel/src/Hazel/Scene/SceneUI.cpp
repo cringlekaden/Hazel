@@ -276,3 +276,11 @@ void Scene::ValidateUILayoutDependencies()
     }
 }
 } // namespace Hazel
+
+namespace Hazel {
+std::string Scene::GetUITextEntry(uint64_t id){CheckThread();RefreshUI();return m_UI->EntryValue(id);}
+void Scene::SetUITextEntry(uint64_t id,const std::string& value){CheckThread();RefreshUI();m_UI->SetEntryValue(id,value);}
+bool Scene::IsUITextInputOwned() const {CheckThread();return m_UI->TextOwnsInput();}
+bool Scene::IsUITextEditing() const {CheckThread();return m_UI->TextEditing();}
+void Scene::SetUIClipboard(Ref<Text::Clipboard> clipboard){CheckThread();m_UI->SetClipboard(std::move(clipboard));}
+}

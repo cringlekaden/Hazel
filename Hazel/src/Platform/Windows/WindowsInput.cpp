@@ -1,6 +1,8 @@
 // Adapted upstream Input API; native Windows GLFW implementation.
 #include "hzpch.h"
 #include "Hazel/Core/Input.h"
+#include "Hazel/Core/TextInput.h"
+#include "Hazel/Utils/UTF8.h"
 
 #include "Hazel/Core/Application.h"
 #include <GLFW/glfw3.h>
@@ -69,4 +71,24 @@ namespace Hazel {
 		return GetMousePosition().y;
 	}
 
+}
+
+namespace Hazel {
+TextInputCapabilities GetTextInputCapabilities(){TextInputCapabilities result;result.Backend="Windows / GLFW: committed characters and UTF-8 clipboard; no preedit/candidate positioning";return result;}
+bool NativeTextClipboard::Read(std::string& value,size_t limit,std::string& error){
+    if(!Application::TryGet()){error="Clipboard needs an application window";return false;}
+    auto window=static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+    const auto data=glfwGetClipboardString(window);
+    if(!data){error="Native UTF-8 clipboard unavailable";return false;}
+    size_t length=0;while(length<=limit&&data[length])++length;
+    if(length>limit){error="Clipboard exceeds bounded text input; paste rejected";return false;}
+    try{UTF8::Validate(std::string_view(data,length));value.assign(data,length);return true;}catch(const std::exception& e){error=e.what();return false;}
+}
+bool NativeTextClipboard::Write(const std::string& value,std::string& error){
+    if(!Application::TryGet()){error="Clipboard needs an application window";return false;}
+    if(value.size()>Text::EditBuffer::MaxBytes){error="Clipboard copy exceeds 16384 bytes";return false;}
+    try{UTF8::Validate(value);}catch(const std::exception& e){error=e.what();return false;}
+    glfwGetError(nullptr);glfwSetClipboardString(static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow()),value.c_str());
+    const char* message=nullptr;auto status=glfwGetError(&message);if(status!=GLFW_NO_ERROR){error=message?message:"Native clipboard write failed";return false;}return true;
+}
 }
