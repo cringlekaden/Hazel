@@ -1,3 +1,4 @@
+#include <limits>
 #include "Hazel/Assets/UIStyleDocument.h"
 #include "Hazel/UI/UIStyleApplication.h"
 static void UIStyleSceneChecks(const std::filesystem::path &directory)
@@ -302,7 +303,12 @@ static void UIStyleSceneChecks(const std::filesystem::path &directory)
     native->OnRuntimeStart();target->Bind();RenderCommand::SetClearColor({0,0,0,1});RenderCommand::Clear();target->ClearAttachment(1,-1);native->OnUpdateRuntime(0);
     std::array<uint8_t,4> nativePixel{};GLint read;glGetIntegerv(GL_READ_BUFFER,&read);glReadBuffer(GL_COLOR_ATTACHMENT0);glReadPixels(20,280,1,1,GL_RGBA,GL_UNSIGNED_BYTE,nativePixel.data());glReadBuffer(read);
     Check(nativePixel[0]>250&&nativePixel[1]<3&&nativePixel[2]<3&&target->ReadPixel(1,20,280)==int(uint32_t(primitive)),"Styled native texture override lost ownership without project assets");
-    target->Unbind();native->OnRuntimeStop();
+    target->Unbind();
+    auto broken=native->CreateEntity("Rejected appearance target");native->Reparent(broken,canvas,TransformPolicy::KeepLocal);
+    auto& brokenRect=broken.AddComponent<UIRectComponent>();brokenRect.FixedSize.x=std::numeric_limits<float>::quiet_NaN();
+    bool assignmentRejected=false;try{native->SetUIStyle(broken.GetUUID(),{{},"Control"});}catch(const std::exception&){assignmentRejected=true;}
+    Check(assignmentRejected&&!broken.HasComponent<UIAppearanceComponent>(),"Failed style publication left a partially added authored component");
+    brokenRect.FixedSize.x=40;native->RefreshUI();native->OnRuntimeStop();
     std::cout << "PASS: real styled pixels, shared/local/reset ownership, paint/metric "
                  "invalidation, active text reflow, failed/missing-variant reload, native writes, "
                  "scene/prefab closure and independent values\n";

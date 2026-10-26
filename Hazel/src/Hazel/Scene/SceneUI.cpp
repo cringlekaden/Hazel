@@ -308,8 +308,10 @@ void Scene::SetUIStyle(uint64_t id,const UIStyleSelection& selection,bool enable
          auto b=resolved.Slice.Borders;if(size.x<=0||size.y<=0||b.x+b.z>size.x||b.y+b.w>size.y)throw std::invalid_argument("Styled nine-slice needs an image with room for its source borders");
      };validate(resolved.Image);if(e.HasComponent<UIButtonComponent>())for(auto& image:resolved.States.Images)if(image.index())validate(image);
  }
- if(!e.HasComponent<UIAppearanceComponent>())e.AddComponent<UIAppearanceComponent>();auto& c=e.GetComponent<UIAppearanceComponent>();auto before=c;c.Selection=selection;c.Styled=enabled;
- try{RefreshUI();}catch(...){c=before;try{RefreshUI();}catch(...){}throw;}
+ const bool added=!e.HasComponent<UIAppearanceComponent>();
+ if(added)e.AddComponent<UIAppearanceComponent>();
+ auto& c=e.GetComponent<UIAppearanceComponent>();auto before=c;c.Selection=selection;c.Styled=enabled;
+ try{RefreshUI();}catch(...){if(added)e.RemoveComponent<UIAppearanceComponent>();else c=before;try{RefreshUI();}catch(...){}throw;}
 }
 void Scene::ResetUIStyleOverrides(uint64_t id,uint32_t groups){CheckThread();auto e=GetEntityByUUID(id);if(IsStopping()||!e||!IsEntityValid(id)||!e.HasComponent<UIAppearanceComponent>()||(groups&~UIStyleAll))throw std::invalid_argument("Invalid UI style reset target/groups");auto& c=e.GetComponent<UIAppearanceComponent>();auto before=c.Overrides;c.Overrides&=~groups;try{RefreshUI();}catch(...){c.Overrides=before;try{RefreshUI();}catch(...){}throw;}}
 }

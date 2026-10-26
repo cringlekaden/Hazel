@@ -275,7 +275,10 @@ void EditorLayer::UI_Debugger()
         auto selectedFont=m_SceneHierarchyPanel.GetSelectedEntity();
         if(selectedFont && selectedFont.HasComponent<TextComponent>()) {
             if(auto assets=m_ActiveScene->GetAssets()) {
-                auto selection=selectedFont.GetComponent<TextComponent>().Font;auto font=assets->FamilyStatus(selection);
+                auto selection=selectedFont.GetComponent<TextComponent>().Font;
+                auto live=m_ActiveScene->GetEntityByUUID(selectedFont.GetUUID());
+                if(live && live.HasComponent<UIRectComponent>() && s.Valid)selection=m_ActiveScene->GetUIPresentation(live.GetUUID()).Font;
+                auto font=assets->FamilyStatus(selection);
                 ImGui::TextWrapped("Selected: %s",selection.Family.empty()?"Engine Open Sans":selection.Family.generic_u8string().c_str());
                 ImGui::TextWrapped("Actual: %s%s",font.Actual->GetPath().filename().generic_u8string().c_str(),font.DefaultFallback?" (fallback)":"");
                 if(font.StyleFallback)ImGui::TextWrapped("Requested %s is absent; using Regular",FontStyleName(selection.Style));
@@ -332,7 +335,7 @@ void EditorLayer::UI_Debugger()
         if(selected.HasComponent<UIAppearanceComponent>()){
             const auto& appearance=selected.GetComponent<UIAppearanceComponent>();ImGui::TextWrapped("Style: %s / %s (%s)",appearance.Selection.Asset.empty()?"engine":appearance.Selection.Asset.generic_u8string().c_str(),appearance.Selection.Variant.c_str(),appearance.Styled?"enabled":"local primitives");
             ImGui::Text("Override groups: 0x%04x",appearance.Overrides);
-            if(auto assets=m_ActiveScene->GetAssets();assets&&appearance.Styled){auto status=assets->Style(appearance.Selection.Asset);if(!status.Error.empty())ImGui::TextWrapped("%s",status.Error.c_str());ImGui::Text("Style metadata: %zu entries, %zu bytes (4 MiB estimate cap)",assets->StyleCount(),assets->StyleBytes());}
+            if(auto assets=m_ActiveScene->GetAssets();assets&&appearance.Styled){auto status=assets->Style(appearance.Selection.Asset);if(!status.Error.empty())ImGui::TextWrapped("%s",status.Error.c_str());ImGui::Text("Style metadata: %zu / 64 entries | %.1f / 4096 KiB retained",assets->StyleCount(),double(assets->StyleBytes())/1024);ImGui::Text("Live: %zu / 128 versions | %.1f / 8192 KiB estimated",assets->StyleLiveVersions(),double(assets->StyleLiveBytes())/1024);}
         }
         auto mode=[](GameUI::SizeMode value){return value==GameUI::SizeMode::Fixed?"Fixed":value==GameUI::SizeMode::Fill?"Fill":"Content";};
         ImGui::Text("Scope %llu | surface Canvas %llu%s",(unsigned long long)n->Scope,(unsigned long long)n->Canvas,n->OverlayRoot?" (owned overlay)":"");
