@@ -220,7 +220,8 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
     std::filesystem::copy_file(core,fixture.Path/"Resources/Scripts/Hazel-ScriptCore.dll");
     std::filesystem::copy_file(app,target);
     std::filesystem::current_path(fixture.Path);
-    auto resources = Resources::Defaults("SceneSmoke"); resources.Root=fixture.Path/"Resources"; Resources::Configure(resources);
+    auto resources = Resources::Defaults("SceneSmoke"); auto engineFonts=resources.Root/"fonts"; resources.Root=fixture.Path/"Resources"; Resources::Configure(resources);
+    std::filesystem::copy(engineFonts,resources.Root/"fonts",std::filesystem::copy_options::recursive);
     auto project=Project::New(); project->GetConfig().AssetDirectory=".";
     project->GetConfig().ScriptModulePath=target.filename();
     Check(Project::SaveActive(fixture.Path/"Scene.hproj"),"Managed scene project setup failed");
@@ -247,6 +248,9 @@ static void ManagedChecks(const std::filesystem::path& core,const std::filesyste
     bool staleTicket=false;try{ScriptEngine::CommitAssembly(std::move(staged));}catch(const std::exception&){staleTicket=true;}
     Check(staleTicket && !ScriptEngine::EntityClassExists("Migration.SceneProbe"),"Stale assembly ticket published after project retirement");
     ScriptEngine::Init(target);
+    // Accepted CPU face ownership only: no window, atlas upload or graphics API.
+    Hazel::Font::Initialize();
+    struct FontScope {~FontScope(){Hazel::Font::Shutdown();}} fontScope;
     {
         auto ui=CreateRef<Scene>();ui->SetAssets(CreateRef<ProjectAssets>(fixture.Path));auto entity=ui->CreateEntity("UI managed probe");
         auto canvas=ui->CreateEntity("UI API canvas");canvas.AddComponent<UICanvasComponent>();ui->Reparent(entity,canvas,TransformPolicy::KeepLocal);entity.AddComponent<UIRectComponent>();entity.AddComponent<UILayoutComponent>();entity.AddComponent<UITextStyleComponent>();entity.AddComponent<UINineSliceComponent>();entity.AddComponent<UIButtonComponent>();entity.AddComponent<SpriteRendererComponent>();entity.AddComponent<TextComponent>(TextComponent{});entity.AddComponent<ScriptComponent>().ClassName="Migration.UIProbe";

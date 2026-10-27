@@ -336,6 +336,7 @@ void Scene::SetDisplayText(uint64_t id,const std::string& source,const std::vect
     if(parent&&parent.HasComponent<UIDropdownComponent>()&&parent.GetComponent<UIDropdownComponent>().Trigger==id&&!spans.empty())throw std::invalid_argument("Computed dropdown captions are plain; put emphasis on option labels");
     auto candidate=e.GetComponent<TextComponent>();candidate.TextString=source;candidate.Spans=std::move(spans);
     auto effective=candidate;
+    if(!candidate.Spans.empty()){
     if(e.HasComponent<UIRectComponent>()){
         Ref<const UIStyleDefinition> definition;std::string error;
         try{ApplyUIStyle(effective,ResolveUIStyle(e,m_Assets,definition,error));}
@@ -343,6 +344,7 @@ void Scene::SetDisplayText(uint64_t id,const std::string& source,const std::vect
     }
     const auto& palette=ResolveTextFonts(effective,m_Assets,candidate.Spans);
     (void)palette[0]->Layout(source,-1,false,effective.Kerning,effective.LineSpacing,Text::Overflow::Clip,0,-1,TextFaces(palette),candidate.Spans);
+    }
     auto& accepted=e.GetComponent<TextComponent>();accepted.TextString=std::move(candidate.TextString);accepted.Spans=std::move(candidate.Spans);
 }
 }
