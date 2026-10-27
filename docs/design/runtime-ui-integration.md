@@ -2678,7 +2678,7 @@ silently become new completion gates.
 | Common controls: static tabs/pages, plain runtime tooltips, finite single-selection list | Implemented in `07f24a7`, isolated focus/scope corrections in `8d2583e`; prior controls retained | Debug/Release 17-executable suites, native authoring and relocated fixture pass (below) | Physical keyboard/controller, Windows/DPI and readability acceptance pending |
 | Text entry: caret, selection, clipboard, undo, declared platform composition behavior | Implemented in `263e733`; committed-text/clipboard boundary, explicit unsupported native preedit protocol | Debug/Release 17-executable suites, native authoring, source examples and relocated fixture pass (below) | Physical Linux/Windows layouts, clipboard, IME committed input and DPI pending; preedit/candidate protocol unsupported |
 | Reusable styles/templates and bounded rich-text emphasis | Implemented: shared styles/templates plus typed face/color spans (`f8ae030`, `bd1032d`; contracts below) | Debug/Release 17-executable suites, native source+span history/prefabs, numeric compositing, reload/pressure, source examples and relocated package pass | Physical range authoring, Windows/DPI and competent-reader acceptance pending |
-| Essential UI structural authoring undo/workflow completion | Property/gesture history exists; essential create/delete/reorder/reparent/duplicate workflow remains pending | Pending document/history/recovery/prefab checks | End-to-end authoring/Undo acceptance pending |
+| Essential UI structural authoring undo/workflow completion | Implemented in `f135f9a`, guard/validation refinement in `e50fa06`: native hierarchy/presets, deletion, duplication, reparent/reorder, component menus and prefab instances share property/gesture history | Debug/Release 17-executable suites, native document/fixture checks, source examples and relocated edited fixture pass (below) | Physical end-to-end authoring/Undo acceptance pending |
 | Example integration, Linux/Windows acceptance, CI and packaging | Prior bounded examples/packages qualified; final endpoint integration pending | Final Debug/Release, CI and relocated-package evidence pending | Physical controller, Windows, DPI/monitor and competent-reader acceptance pending |
 
 The final demonstration is native Hazelnut authoring of a menu, settings screen,
@@ -3309,3 +3309,144 @@ state, and verify property commands still replay safely around structural Undo.
 No linked-prefab merge, new multi-selection system or additional presentation
 feature becomes a prerequisite. Final endpoint integration/physical acceptance
 follows; this does not declare all historical P3 or the UI production-ready.
+
+### Shared structural document history
+
+The existing scene/prefab `DocumentHistory` now accepts stopped-document commands
+through `Execute`, alongside continuous UI property/viewport transactions. Native
+hierarchy creation (all 27 UI presets, automatic parts and canvases included),
+Create Child, duplicate, both deletion policies, reparent/drop, sibling movement,
+component menus and scene prefab instantiation share this route. Keyboard commands
+and Content Browser/asset placement call the same panel operations. A prefab
+instance placed from an asset Inspector activates the scene history/selection;
+the source prefab keeps its independent document and history. A composed
+creation or instantiated subtree is one named entry, not an entry per child.
+Standalone entity-name/world-transform/script-field property editing retains its existing
+scope; this does not advertise universal property history. Filesystem creation or
+saving of a prefab is distinct and is never reversed by deleting its source file.
+
+`StructuralCommand` uses the existing scene codec and exact authored inventory.
+It stages the native operation on a disposable Edit copy, then retains only
+changed entity/component/relationship records, stable UUIDs, before/after selection
+and lifetime guards. Resource-free typed picker values preserve incomplete image
+assignments that file serialization intentionally normalizes to `None`; exact
+component guards reuse the existing binary authored inventory. Creation/deletion
+owns a complete affected entity record;
+a surviving entity owns only changed component/relationship records. An unrelated
+component field write survives; an external write inside an owned record conflicts
+and rejects. Incoming references in surviving entities remain authored and become
+repair diagnostics while the target is absent. Duplicate and prefab remapping use
+the existing services once; redo reuses the allocated authored identities.
+
+Execute/Undo/Redo merge records into the current authored document, decode without
+resource loading, validate hierarchy/physics/layout/data, and patch a disposable
+copy before publishing. The live `Scene` and document identity remain stable.
+EnTT allocator generations/handles are preserved for surviving entities; restored
+objects receive fresh entity/component lifetimes. Publication retires transient UI
+state and borrowed hover/picker observations; it does not revive events, capture,
+font pages or managed/native instances. Component pointers must be reacquired after
+structural publication. Commands never own a staged scene or a GPU/resource graph.
+Objects containing native-only script bindings or procedural images reject an
+operation that would require reconstructing those unserializable values.
+
+Authorized restoration reports exact old/new lifetime/component/structure tokens
+to existing entries. Only matching guards are reconciled; authored conflict and
+ancestor-chain checks remain. This permits property → delete → Undo delete → Undo
+property → Redo property → Redo delete, and the corresponding component-removal
+sequence. Independently deleting/recreating a UUID or replacing a component never
+counts as authorized restoration. External hierarchy ancestors also carry lifetime
+guards, so restoring a subtree cannot attach it to an unrelated replacement parent.
+Unowned ancestor property changes are preserved.
+
+Guard comparisons use the existing exact binary authored inventory, including
+entity names and parent/order relationships. Value capture does not repeat UI
+validation; decoded candidates and staged publication retain hierarchy, physics,
+layout/data and repair-aware validation. YAML is used only to capture/merge
+structural codec records at command boundaries, never for normal dirty polling.
+Internal captures quote strings to avoid repeated auto-scalar formatting; the
+on-disk scene/prefab encoding and schema are unchanged.
+
+All validation/allocation and history admission precede live publication. A failed
+operation leaves the live registry, selection, cursor, redo branch and accepted
+save baseline intact. Retention remains 100 operations/64 MiB, conservatively
+including record strings, guard/reference data and restoration maps. Oversized
+commands reject; oldest entries evict with feedback. Temporary whole-document
+codec/staging data and the existing accepted dirty baseline are outside that
+retained-command cap. Serialization occurs only at structural command boundaries,
+not in ordinary drawing or dirty-state polling. Missing assets and existing
+repairable control references use the normal metadata/repair-aware codec; strict
+Play/save/export requirements remain unchanged.
+
+Pending Inspector edits finish before structural execution; unfinished viewport
+moves/resizes cancel. Selection follows before/after UUIDs, resolving only living
+entities: undo creation restores prior selection, redo selects its result, undo
+delete restores the previous target when valid, and hierarchy/component edits
+retain valid selection. Scene/prefab histories remain independent, reset on
+New/Open/Close/recovery replacement, and survive Play/Stop with runtime mutations
+isolated in the runtime scene copy. Successful writes alone establish save points;
+exact authored comparison, including native writes, remains authoritative even
+when history entries or save-point revisions are evicted.
+
+Qualification of `f135f9a` plus `e50fa06`: bounded Debug/Release builds (`-j2`)
+and both complete 17-executable suites passed on physical HD4000. Release used
+forced OpenGL 4.1/GLSL410; Debug used native OpenGL 4.2, with an additional focused
+Debug editor run at 4.1. The desktop is Plasma Wayland; GLFW uses X11/GLX through
+Xwayland, not native Wayland or Xvfb/software rendering. CPU-only checks do not
+require a graphics context. The initial unoptimized Debug editor qualification timed out. A parent-launched
+GDB probe located repeated whole-scene YAML/validation in structural guards; the
+exact-inventory checks above replace that duplicate work. The revised focused
+Debug editor run passed in about 4m50s on Grandpa. The full suite now gives only
+Debug EditorSmoke a 600-second ceiling (other executables remain at 240 seconds),
+retaining the complete native authoring fixture instead of dropping checks.
+No renderer/shader path changed; prior rendering performance evidence remains
+applicable, without a new performance claim.
+
+All five source examples passed startup/render/resize/shutdown in Hazelnut and
+Nutella with authored files unchanged; existing gameplay, Lightkeeper menu/HUD/
+dialogue, progress/save and scene-transition checks also passed. The maintained
+styled screen fixture was exported after its structural authoring/restoration
+sequence and ran in relocated Nutella with source resources, SDK and GAC
+unavailable. Closure checked its scene/prefab, styles, families, faces, images and
+notices. Packaged assets remained byte-identical after execution. No example or
+save formats changed. Master, stash, vendor pins, settings/layouts and the exact
+unrelated Sandbox draft were preserved. CI is triggered by pushes and was not
+awaited or polled.
+
+
+New native-command checks cover every maintained creation preset and component
+menu type, complete composed transactions, property/delete/component restoration,
+fresh lifetimes, stable redo identities, prefab/duplicate remapping, incoming
+repairable references, Keep Children/world pose, reparent/reorder/cycles, pending
+Inspector/viewport edits, external mutations/replacement parents, branch/admission
+failure, history/save-point eviction and incomplete picker values. The real
+`AuthoringPanel` workflow verifies scene versus prefab ownership, asset Inspector
+instantiation selecting the scene history, successful/conflicting saves,
+Open/New/Close and repeated Play/Simulate/Stop. The maintained styled Settings
+fixture duplicates, reorders, deletes/restores composed content before saving and
+reopening, including rich spans and named control references. The ImGui harness
+renders actual panels and invokes production command entry points; this is not
+physical menu-click/keyboard or controller acceptance.
+
+Concise physical acceptance, using a disposable project:
+
+- Create a styled composition, add controls and edit their text/Rect properties.
+  Interleave Ctrl+Z/Redo across creation, a completed viewport drag, duplication
+  and deletion. Escape an unfinished drag; verify valid selection and one entry
+  per completed operation.
+- Reparent/reorder via the hierarchy, reject a cycle, add/edit/remove a component,
+  then Undo removal and the earlier property edit. Delete/restore a composed
+  screen and inspect its named parts, page relationships and rich paragraph.
+- Instantiate a prefab from the asset Inspector, Undo/Redo in the scene, switch
+  back to the source prefab and verify its separate history. Save/reopen both;
+  asset files remain present when instance creation is undone.
+- Play/Stop repeatedly, then export/run the edited fixture. Finish physical
+  Windows, declared DPI/monitor, keyboard/controller and competent-reader checks
+  in final integration; existing composition capability exclusions still apply.
+
+The next work is **final endpoint integration and qualification**, not another
+feature family: complete the fixed menu/settings/HUD/dialogue/static scrollable
+inventory-or-journal demonstration, connect ordinary owner scripts, save/reopen,
+export/relocate and verify the repository examples and supported Linux/Windows
+paths. Resolve concrete integration defects and collect the remaining physical
+acceptance/CI evidence. Structural implementation does not declare the whole UI
+production-ready or introduce additional completion requirements.
