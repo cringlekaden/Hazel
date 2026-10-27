@@ -83,7 +83,10 @@ Nodes Entities(const YAML::Node &doc)
 }
 std::string Encoded(const YAML::Node &node)
 {
-    return node.IsDefined() ? YAML::Dump(node) : std::string{};
+    if(!node.IsDefined())return {};
+    YAML::Emitter out;out<<YAML::DoubleQuoted<<node;
+    if(!out.good())throw std::runtime_error(out.GetLastError());
+    return out.c_str();
 }
 void Opaque(Entity e)
 {
@@ -112,6 +115,11 @@ template <class... T, class F> void EachComponent(ComponentGroup<T...>, F visit)
 {
     (visit(typeid(T)), ...);
 }
+template<class F> void EachAuthored(F visit){
+    EachComponent(ComponentGroup<TagComponent,Relationship>{},visit);
+    EachComponent(AllComponents{},visit);
+}
+
 template <class... T, class F>
 void PreserveUnowned(ComponentGroup<T...>, Scene &current, Scene &decoded,
                      const std::vector<uint64_t> &ids, F owned)
@@ -147,7 +155,7 @@ std::string ExactComponent(Scene &scene, uint64_t id, std::type_index wanted)
         return {};
     SceneSerializer codec(Borrow(scene));
     std::string value;
-    EachComponent(AllComponents{}, [&](const std::type_info &type) {
+    EachAuthored([&](const std::type_info &type) {
         if (wanted == type)
             value = codec.CaptureAuthoredState(entity, &type);
     });
@@ -243,7 +251,7 @@ StructuralCommand::StructuralCommand(const Ref<Scene> &before, const Ref<Scene> 
     for (const auto &[id, guard] : m_Guards)
     {
         auto left = before->GetEntityByUUID(id), right = after->GetEntityByUUID(id);
-        EachComponent(AllComponents{}, [&](const std::type_info &type) {
+        EachAuthored([&](const std::type_info &type) {
             auto x = left ? beforeCodec.CaptureAuthoredState(left, &type) : std::string{},
                  y = right ? afterCodec.CaptureAuthoredState(right, &type) : std::string{};
             if (!left || !right || x != y)
@@ -327,30 +335,13 @@ void StructuralCommand::CheckSide(Scene &scene, bool after) const
             throw std::runtime_error("Hierarchy ancestor #" + std::to_string(parent.ID) +
                                      " was independently retired/replaced; restore the intended "
                                      "parent or clear obsolete history");
-    auto nodes = Entities(Snapshot(scene));
-    for (auto &r : m_Records)
-    {
-        auto it = nodes.find(r.ID);
-        std::string value;
-        if (it != nodes.end())
-            value = r.Key.empty() ? Encoded(it->second)
-                                  : Encoded(static_cast<const YAML::Node &>(it->second)[r.Key]);
-        if (value != (after ? r.After : r.Before))
-            throw std::runtime_error("Authored structural field changed outside history (entity " +
-                                     std::to_string(r.ID) + ", " + r.Key +
-                                     "); revert it or clear history");
-    }
     for (const auto &component : m_Components)
         if (ExactComponent(scene, component.ID, component.Type) !=
             (after ? component.After : component.Before))
             throw std::runtime_error(
                 "Owned authored component of entity #" + std::to_string(component.ID) +
                 " changed outside history; revert it or clear obsolete history");
-    for (const auto &image : m_PickerImages)
-        if (!(ImageValue(scene.GetEntityByUUID(image.ID), image.Slot) ==
-              (after ? image.After : image.Before)))
-            throw std::runtime_error(
-                "Unassigned image-picker value changed outside structural history");
+
 }
 void StructuralCommand::Check(Scene &scene) const
 {
@@ -391,7 +382,7 @@ void StructuralCommand::Apply(Scene &scene, bool undo)
     SceneSerializer codec(decoded,
                           scene.GetAssets() ? scene.GetAssets()->Root() : std::filesystem::path{},
                           true, scene.GetAssets());
-    if (!codec.DeserializeText(YAML::Dump(document), false, ResourceLoading::MetadataOnly))
+    if (!codec.DeserializeText(Encoded(document), false, ResourceLoading::MetadataOnly))
         throw std::runtime_error("Structural restore rejected: " + codec.Report().Error);
     std::vector<uint64_t> affected;
     affected.reserve(m_Guards.size());

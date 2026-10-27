@@ -427,8 +427,11 @@ namespace Hazel {
 	std::string SceneSerializer::SerializeTextImpl(Entity only, bool portablePaths, bool controls)
 	{
 		m_Scene->ValidateHierarchy();
-        m_Scene->ValidateUI(false,controls);
+        // A structural command's value capture is not a validation boundary.
+        // Its decoded candidate is fully validated before live publication.
+        if(controls)m_Scene->ValidateUI(false);
 		YAML::Emitter out;
+        if(!portablePaths)out<<YAML::DoubleQuoted;
 		out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);
 		out.SetDoublePrecision(std::numeric_limits<double>::max_digits10);
 		out << YAML::BeginMap;

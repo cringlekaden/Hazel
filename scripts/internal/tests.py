@@ -142,7 +142,10 @@ def test(configuration, profile='native'):
             log=logs/f'{hz.SYSTEM}-{configuration}-{profile}-{name}.log'
             print('TEST',name,flush=True)
             with log.open('w',encoding='utf-8') as out:
-                result=subprocess.run(list(map(str,command)),cwd=working,env=env,stdout=out,stderr=subprocess.STDOUT,timeout=240)
+                # Full native structural/presentation authoring is bounded work;
+                # its unoptimized Debug run on Grandpa exceeds the old 240s cap.
+                limit=600 if name=='EditorSmoke' and configuration=='Debug' else 240
+                result=subprocess.run(list(map(str,command)),cwd=working,env=env,stdout=out,stderr=subprocess.STDOUT,timeout=limit)
             if result.returncode:
                 print(log.read_text(errors='replace'));raise RuntimeError(f'{name} failed ({result.returncode}); log: {log}')
             if 'PASS:' not in log.read_text(errors='replace'):raise RuntimeError('Missing acceptance evidence: '+str(log))

@@ -108,6 +108,10 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
     for (auto id : ids)
     {
         auto e = m_Scene->GetEntityByUUID(id);
+        if(component && *component==typeid(Relationship)) {
+            const auto relation=m_Scene->GetRelationship(e);
+            state.Value(relation.Parent);state.Value(relation.Order);continue;
+        }
         if(!component){state.Value(id);auto r=m_Scene->GetRelationship(e);state.Value(r.Parent);state.Value(r.Order);}
         state.Component<TagComponent>(e, [&](auto &c) { state.Value(c.Tag); });
         state.Component<TransformComponent>(e, [&](auto &c) {
