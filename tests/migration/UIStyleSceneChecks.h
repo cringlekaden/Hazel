@@ -261,6 +261,18 @@ static void UIStyleSceneChecks(const std::filesystem::path &directory)
     Check(SceneSerializer(authored).CaptureAuthoredState() ==
               SceneSerializer(loaded).CaptureAuthoredState(),
           "Style assignment did not survive authored roundtrip");
+    auto missingVariantDocument=YAML::Load(SceneSerializer(authored).SerializeText());
+    for(auto node:missingVariantDocument["Entities"])if(node["Entity"].as<uint64_t>()==500)node["UIAppearanceComponent"]["Variant"]="Removed role";
+    YAML::Emitter missingVariantText;missingVariantText<<missingVariantDocument;
+    auto repairable=CreateRef<Scene>();repairable->SetAssets(assets);
+    SceneSerializer repairReader(repairable);
+    Check(repairReader.DeserializeText(missingVariantText.c_str()) && repairReader.Report().State==DocumentLoadState::EditableWithProblems && repairable->GetUIStyle(500).Variant=="Removed role",
+          "Missing style variant prevented native repair/diagnostics or rewrote the authored reference");
+    repairable->OnViewportResize(400,300);
+    for(int i=0;i<3;++i)Check(repairable->GetUIPresentation(500).Size==UIStyleValues{}.Size,
+                             "Repairable missing variant failed to reuse its safe fallback across publications");
+    bool strictRejected=false;try{repairable->ValidateUI(true);}catch(const std::exception&){strictRejected=true;}
+    Check(strictRejected,"Strict validation accepted a missing required style variant");
     Prefab::Save(folder, "Styled.hprefab", authored, authored->GetEntityByUUID(100), true);
     auto prefab = Prefab::Load(folder, "Styled.hprefab");
     auto firstInstance = loaded->InstantiateEntity(Prefab::GetEntity(prefab), {});
@@ -300,6 +312,8 @@ static void UIStyleSceneChecks(const std::filesystem::path &directory)
     auto texture=Texture2D::Create(TextureSpecification());uint32_t red=0xff0000ff;texture->SetData(&red,sizeof(red));
     primitive.AddComponent<SpriteRendererComponent>().Source=TextureSpriteSource{{},1,texture};
     auto& nativeStyle=primitive.AddComponent<UIAppearanceComponent>();nativeStyle.Styled=true;nativeStyle.Overrides=UIStyleBit(UIStyleGroup::Image)|UIStyleBit(UIStyleGroup::Background);
+    auto& nativeButton=primitive.AddComponent<UIButtonComponent>();nativeButton.Interactable=false;nativeButton.Colors.fill(glm::vec4(1));
+    nativeStyle.Overrides|=UIStyleBit(UIStyleGroup::States);
     native->OnRuntimeStart();target->Bind();RenderCommand::SetClearColor({0,0,0,1});RenderCommand::Clear();target->ClearAttachment(1,-1);native->OnUpdateRuntime(0);
     std::array<uint8_t,4> nativePixel{};GLint read;glGetIntegerv(GL_READ_BUFFER,&read);glReadBuffer(GL_COLOR_ATTACHMENT0);glReadPixels(20,280,1,1,GL_RGBA,GL_UNSIGNED_BYTE,nativePixel.data());glReadBuffer(read);
     Check(nativePixel[0]>250&&nativePixel[1]<3&&nativePixel[2]<3&&target->ReadPixel(1,20,280)==int(uint32_t(primitive)),"Styled native texture override lost ownership without project assets");

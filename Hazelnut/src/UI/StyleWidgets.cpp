@@ -10,6 +10,7 @@ bool StyleValuesEditor(UIStyleValues &v, StyleWidgetState &state)
     bool changed = false;
     if (ImGui::TreeNode("Typography"))
     {
+        std::string dropError;
         std::string family = v.Font.Family.generic_u8string();
         if (PropertyUI::Text("family", "Family asset", family))
         {
@@ -20,12 +21,17 @@ bool StyleValuesEditor(UIStyleValues &v, StyleWidgetState &state)
         {
             if (auto payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
             {
-                auto path = ContentBrowserPath(payload->Data, payload->DataSize);
-                if (path.extension() == ".hfont")
+                try
                 {
-                    v.Font.Family = Project::MakeAssetReference(Project::GetAssetDirectory(), path);
+                    auto path = ContentBrowserPath(payload->Data, payload->DataSize);
+                    if (path.extension() != ".hfont")
+                        throw std::invalid_argument("Drop a project .hfont family");
+                    auto reference = Project::MakeAssetReference(Project::GetAssetDirectory(), path);
+                    FontSelection{reference, v.Font.Style}.Validate();
+                    v.Font.Family = std::move(reference);
                     changed = true;
                 }
+                catch (const std::exception& error) { dropError = error.what(); }
             }
             ImGui::EndDragDropTarget();
         }
@@ -42,6 +48,9 @@ bool StyleValuesEditor(UIStyleValues &v, StyleWidgetState &state)
                          "pixels; spacing uses font-height units (tracking -8..8, additional line "
                          "spacing 0..8). Wrap/alignment/overflow belong to each text element.");
         ImGui::TreePop();
+        // Report through the document panel only after balancing the native
+        // ImGui scopes; a rejected cross-project payload cannot corrupt its stack.
+        if(!dropError.empty())throw std::invalid_argument(dropError);
     }
     if (ImGui::TreeNode("Colors and cues"))
     {

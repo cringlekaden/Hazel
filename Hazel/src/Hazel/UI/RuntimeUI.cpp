@@ -1034,7 +1034,7 @@ void RuntimeUI::Draw()
                 }
                 if(owner&&root&&owner.HasComponent<UISliderComponent>()&&(!root->Enabled||!owner.GetComponent<UIButtonComponent>().Interactable))tint=glm::vec4(.4f,.4f,.4f,1);
             }
-            const SpriteSource *overrideImage = nullptr;
+            SpriteSource overrideImage;
             int stateIndex = 0;
             if (e.HasComponent<UIButtonComponent>())
             {
@@ -1049,7 +1049,7 @@ void RuntimeUI::Draw()
                     index = 0;
                 tint = b.Colors[index];
                 stateIndex = index;
-                overrideImage = &b.Images[index];
+                overrideImage = b.Images[index];
             }
             auto slice=e.HasComponent<UINineSliceComponent>()?SliceFor(e):UINineSliceComponent{};
             const UINineSliceComponent* nine=e.HasComponent<UINineSliceComponent>()?&slice:nullptr;
@@ -1074,7 +1074,7 @@ void RuntimeUI::Draw()
                     }
                     sprite=p.Sprite.get();
                 }
-                if (overrideImage && overrideImage->index() != 0)
+                if (overrideImage.index() != 0)
                 {
                     if (!m_Scene.GetAssets())
                         throw std::runtime_error("UI image needs project assets");
@@ -1082,13 +1082,13 @@ void RuntimeUI::Draw()
                     auto &cache = m_Cache[n.ID];
                     if (!cache.Images[stateIndex] ||
                         cache.ImageEpochs[stateIndex] != assets->Epoch() ||
-                        !(cache.ImageSources[stateIndex] == *overrideImage))
+                        !(cache.ImageSources[stateIndex] == overrideImage))
                     {
                         Ref<const ResolvedSprite> candidate;
-                        try{candidate=assets->Resolve(*overrideImage);}
+                        try{candidate=assets->Resolve(overrideImage);}
                         catch(const std::exception& error){if(!Styled(e))throw;ControlProblem("Style state image #"+std::to_string(n.ID)+": "+error.what()+"; base fallback until Reload/Refresh");candidate=cache.Images[stateIndex]?cache.Images[stateIndex]:CreateRef<ResolvedSprite>();}
                         cache.Images[stateIndex] = std::move(candidate);
-                        cache.ImageSources[stateIndex] = *overrideImage;
+                        cache.ImageSources[stateIndex] = overrideImage;
                         cache.ImageEpochs[stateIndex] = assets->Epoch();
                     }
                     sprite = cache.Images[stateIndex].get();

@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "Hazel/UI/UIStyleApplication.h"
 #include "Hazel/Core/OperationProgress.h"
 #include <cmath>
 #include "SceneSerializer.h"
@@ -722,6 +723,21 @@ namespace Hazel {
                     m_Report.Problems.push_back({id,"Script field "+name,error.what(),resource});
                 }
             }
+        if(resources==ResourceLoading::Resolve) {
+            size_t styleProblems=0;
+            for(auto handle:staged->GetAllEntitiesWith<UIAppearanceComponent>()) {
+                Entity entity(handle,staged.get());const auto& c=entity.GetComponent<UIAppearanceComponent>();
+                if(!c.Styled)continue;
+                try {
+                    Ref<const UIStyleDefinition> accepted;std::string error;
+                    (void)ResolveUIStyle(entity,staged->GetAssets(),accepted,error);
+                    if(!error.empty())throw std::runtime_error(error);
+                } catch(const std::exception& error) {
+                    if(++styleProblems<=32)m_Report.Problems.push_back({entity.GetUUID(),"UI style",std::string(error.what()).substr(0,1024),m_AssetRoot/c.Selection.Asset});
+                }
+            }
+            if(styleProblems>32)m_Report.Problems.push_back({0,"UI styles",std::to_string(styleProblems-32)+" additional style issues; inspect affected controls",{}});
+        }
         if(resources==ResourceLoading::Resolve)for(auto handle:staged->GetAllEntitiesWith<TextComponent>()) {
             Entity entity(handle,staged.get());auto& text=entity.GetComponent<TextComponent>();
             if(auto assets=staged->GetAssets()) {

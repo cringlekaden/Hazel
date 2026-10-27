@@ -44,11 +44,13 @@ void RuntimeUI::CaptureStyle(Entity e)
     catch (const std::exception &failure)
     {
         error = failure.what();
+        next.Asset.reset();
         if (current != m_Styles.end() && current->second.Selection == selection &&
             current->second.Asset)
         {
-            next.Asset = current->second.Asset;
-            values = next.Asset->Find(selection.Variant);
+            const auto& variants=current->second.Asset->Variants;
+            auto previous=std::find_if(variants.begin(),variants.end(),[&](const auto& v){return v.Name==selection.Variant;});
+            if(previous!=variants.end()) {next.Asset=current->second.Asset;values=previous->Values;}
         }
         CopyUIStyleGroups(values, LocalUIStyle(e),
                           e.GetComponent<UIAppearanceComponent>().Overrides);
@@ -93,13 +95,19 @@ void RuntimeUI::ValidateStyles(bool dependencies) const
             continue;
         Ref<const UIStyleDefinition> accepted;
         std::string error;
-        auto v = ResolveUIStyle(e, m_Scene.GetAssets(), accepted, error);
+        try { (void)ResolveUIStyle(e, m_Scene.GetAssets(), accepted, error); }
+        catch(const std::exception&) {
+            // A retired variant is a repairable asset reference, not malformed
+            // component data. Strict Play/export validation still rejects it.
+            const bool missingVariant=accepted && std::none_of(accepted->Variants.begin(),accepted->Variants.end(),[&](const auto& v){return v.Name==c.Selection.Variant;});
+            if(dependencies || !missingVariant)throw;
+            continue;
+        }
         if (dependencies && !error.empty())
             throw std::runtime_error("UI style #" + std::to_string(uint64_t(e.GetUUID())) + ": " +
                                      error);
         if (dependencies && accepted && !c.Selection.Asset.empty())
             AuditUIStyle(m_Scene.GetAssets()->Root(), *accepted);
-        (void)v;
     }
 }
 UIRectComponent RuntimeUI::RectFor(Entity e) const

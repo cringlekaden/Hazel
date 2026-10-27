@@ -160,7 +160,9 @@ void Scene::ValidateUIControls(uint64_t target) const {m_UI->ValidateControls(ta
 bool Scene::GetUIControlVisual(uint64_t id,GameUI::Rect &bounds,bool &visible) const {CheckThread();return m_UI->ControlVisual(id,bounds,visible);}
 void Scene::ValidateUI(bool resources,bool controls)
 {
-    m_UI->ValidateStyles(resources);
+    // Partial document staging retains repairable presentation references.
+    // Full Play/export validation requires all declared style resources.
+    m_UI->ValidateStyles(resources && controls);
     ValidateUILayoutDependencies();if(controls)ValidateUIControls();
     size_t screens=0;for(auto h:m_Registry.view<UICanvasComponent>())if(m_Registry.get<UICanvasComponent>(h).Screen.Managed)++screens;
     if(screens>RuntimeUI::MaxScreens)throw std::runtime_error("UI managed screen limit exceeded (64)");

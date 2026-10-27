@@ -138,6 +138,7 @@ def validate_sprites(assets, files, descriptor=None):
         inventory = Path(temporary) / 'assets.txt'
         inventory.write_text(''.join(name+'\n' for name in relative), encoding='utf-8')
         env = os.environ.copy()
+        env['HAZEL_RESOURCES']=str(hz.ROOT/'Hazel/Resources')
         if hz.SYSTEM=='linux': env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
         command=[str(auditor),str(assets),str(inventory)]
         if descriptor is not None: command += ['--project',str(descriptor)]

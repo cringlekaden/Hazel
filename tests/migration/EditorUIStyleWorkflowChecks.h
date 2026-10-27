@@ -10,6 +10,10 @@ void UIStyleWorkflowChecks()
     owner.m_Styles.m_Create = false;
     UIStyleDefinition definition = DefaultUIStyle();
     definition.Name = "Maintained settings";
+    // Existing native-imported, Apache-licensed faces also exercise style-owned
+    // family/notice closure in the relocated fixture (no new shipped font).
+    definition.Variants[0].Values.Font.Family = "Fonts/Native.hfont";
+    definition.Variants[1].Values.Font.Family = "Fonts/Native.hfont";
     owner.Guard(OperationIntent::OpenUIStyle,
                 [&] { return owner.m_Styles.Create("Styles/Settings.hstyle", definition); });
     Check(owner.m_Styles.HasDocument(), "Style asset creation failed");

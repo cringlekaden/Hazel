@@ -1,6 +1,7 @@
 #include "Hazel/Assets/ProjectAssets.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Core/Log.h"
+#include "Hazel/Core/Resources.h"
 #include <iostream>
 #include <fstream>
 #ifdef HZ_PLATFORM_WINDOWS
@@ -22,7 +23,8 @@ int main(int argc,char** argv) {
                 try{Hazel::Font::ValidateFile(Hazel::Project::ResolveOwnedAsset(root,family.Faces[i].File));}
                 catch(const std::exception& error){throw std::runtime_error(std::string("Engine Open Sans / ")+Hazel::FontStyleName(Hazel::FontStyle(i))+": "+error.what());}
             }
-            std::cout<<"PASS: engine family faces and notice closure\n";return 0;
+            (void)Hazel::ReadUIStyle(root/"UI/Default.hstyle");
+            std::cout<<"PASS: engine family faces, notices and builtin style closure\n";return 0;
         }
         if(arguments.size()!=3 && arguments.size()!=5)throw std::runtime_error("Usage: SpriteAssetAudit Assets-root inventory.txt [--project descriptor.hproj]");
         if(arguments.size()==5) {
@@ -33,6 +35,11 @@ int main(int argc,char** argv) {
             if(std::filesystem::weakly_canonical(project->GetAssetRoot())!=std::filesystem::weakly_canonical(std::filesystem::u8path(arguments[1])))
                 throw std::runtime_error("Project asset root changed during export validation");
         }
+        // CPU tools share the normal resource-root boundary. The caller supplies
+        // HAZEL_RESOURCES; use its inventory directory for transient tool data.
+        Hazel::ApplicationResourceSpecification resources;
+        resources.UserData=std::filesystem::absolute(std::filesystem::u8path(arguments[2])).parent_path();
+        Hazel::Resources::Configure(Hazel::Resources::Defaults("SpriteAssetAudit",resources));
         const auto root=std::filesystem::u8path(arguments[1]);
         std::ifstream input(std::filesystem::u8path(arguments[2]),std::ios::binary);if(!input)throw std::runtime_error("Cannot read asset inventory");
         std::vector<std::filesystem::path> files;std::string line;
