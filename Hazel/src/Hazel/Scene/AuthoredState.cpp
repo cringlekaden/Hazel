@@ -251,6 +251,7 @@ std::string SceneSerializer::CaptureAuthoredState() const
         state.Component<UIProgressComponent>(e,[&](auto &c){state.Value(c.Minimum);state.Value(c.Maximum);state.Value(c.InitialValue);state.Value(c.Fill);state.Value(unsigned(c.Direction));});
         state.Component<TextComponent>(e, [&](auto &c) {
             state.Value(c.TextString);
+            state.Value(c.Spans.size());for(const auto& span:c.Spans){state.Value(span.Begin);state.Value(span.End);state.Value(bool(span.Face));if(span.Face)state.Value(unsigned(*span.Face));state.Value(bool(span.Color));if(span.Color)state.Value(*span.Color);}
             state.Value(c.Font.Family);state.Value(int(c.Font.Style));
             state.Value(c.Color);
             state.Value(c.Kerning);

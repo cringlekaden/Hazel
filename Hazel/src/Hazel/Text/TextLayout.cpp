@@ -1,10 +1,7 @@
 #include "hzpch.h"
 #include "TextLayout.h"
-#include "Hazel/Utils/UTF8.h"
 #include <hb.h>
 #include <hb-ot.h>
-#include <graphemebreak.h>
-#include <linebreak.h>
 #include <SheenBidi/SheenBidi.h>
 #include <algorithm>
 #include <cmath>
@@ -82,7 +79,8 @@ struct BidiMemory {
 uint64_t Bytes(const Layout& l) {
     return sizeof(Layout)+l.Source.capacity()+l.Scalars.capacity()*sizeof(uint32_t)+
         l.Boundaries.capacity()*sizeof(SourceBoundary)+l.Paragraphs.capacity()*sizeof(Paragraph)+
-        l.Lines.capacity()*sizeof(Line)+l.Runs.capacity()*sizeof(Run)+l.Glyphs.capacity()*sizeof(Glyph);
+        l.Lines.capacity()*sizeof(Line)+l.Runs.capacity()*sizeof(Run)+l.Glyphs.capacity()*sizeof(Glyph)+
+        l.EmphasisStops.capacity()+l.FaceRanges.capacity()*sizeof(FaceRange);
 }
 bool SupportedScript(uint32_t tag) {
     return tag==HB_TAG('L','a','t','n') || tag==HB_TAG('G','r','e','k') || tag==HB_TAG('C','y','r','l') ||
@@ -150,7 +148,7 @@ Ref<const Face> Service::CreateFace(const std::vector<uint8_t>& bytes,std::strin
     face->m_Budget=m_Budget;++live.Faces;live.FaceBytes+=retained;return face;
 }
 
-Ref<Layout> Service::Build(std::string_view source,const Ref<const Face>& face,const Options& options,uint32_t& calls,uint32_t& workScalars) {
+Ref<Layout> Service::Build(std::string_view source,const Ref<const Face>& face,const Options& options,uint32_t& calls,uint32_t& workScalars,const FaceSet& faces,const std::vector<FaceRange>& ranges) {
     CheckThread();
     Require(face && face->m_Budget->Owner==m_Owner,"Text layout needs an accepted CPU face on the same owner thread");
     Require(face->m_Data->StaticOutline,"CPU typography supports static outline faces; variable/color tables are unsupported");
@@ -163,47 +161,38 @@ Ref<Layout> Service::Build(std::string_view source,const Ref<const Face>& face,c
     Require(known,"CPU foundation language must be und/en/fr/de/el/ru/ar/he");
 
     auto result=CreateRef<Layout>();result->Source=std::string(source);result->Font=face;result->EmSize=options.EmSize;
-    std::vector<size_t> offsets;UTF8::Decode(source,result->Scalars,&offsets);
+    auto mapped=SourceMap::Analyze(source);result->Scalars=std::move(mapped.Scalars);result->Boundaries=std::move(mapped.Boundaries);
     auto& out=*result;const auto count=uint32_t(out.Scalars.size());
     Require(count<=m_Limits.Scalars,"Text exceeds CPU layout scalar limit");
-    out.Boundaries.resize(size_t(count)+1);
-    uint32_t utf16=source.size()>=3 && source.substr(0,3)=="\xef\xbb\xbf"?1:0;
-    for(uint32_t i=0;i<=count;++i) {
-        out.Boundaries[i].Byte=uint32_t(offsets[i]);out.Boundaries[i].UTF16=utf16;
-        if(i<count)utf16+=out.Scalars[i]>0xffff?2:1;
+    Require(ranges.size()<=MaxSpans,"Text face-run input limit exceeded (128)");
+    out.Faces=faces;out.Faces[0]=face;out.FaceRanges=ranges;
+    uint32_t last=0;for(const auto& range:ranges){
+        Require(range.Begin<range.End&&range.Begin>=last&&range.End<=count&&range.FaceIndex>0&&range.FaceIndex<5,"Invalid text face ranges");last=range.End;
+        Require(out.Boundaries[range.Begin].Grapheme&&out.Boundaries[range.End].Grapheme,"Face boundary splits a grapheme");
+        auto actual=out.Faces[range.FaceIndex];Require(actual&&actual->m_Budget->Owner==m_Owner&&actual->m_Data->StaticOutline,"Rich text needs accepted static faces on its owning thread");
     }
-    std::vector<char> graphemes(count),breaks(count);
-    if(count) {
-        set_graphemebreaks_utf32(out.Scalars.data(),count,nullptr,graphemes.data());
-        set_linebreaks_utf32(out.Scalars.data(),count,"-strict",breaks.data());
-    }
-    out.Boundaries[0].Grapheme=true;
-    for(uint32_t i=1;i<=count;++i) {
-        auto& b=out.Boundaries[i];b.Grapheme=graphemes[i-1]==GRAPHEMEBREAK_BREAK;
-        b.Mandatory=breaks[i-1]==LINEBREAK_MUSTBREAK;
-        b.Line=b.Grapheme && (b.Mandatory || breaks[i-1]==LINEBREAK_ALLOWBREAK);
-    }
-    out.Boundaries[count].Grapheme=true;out.Boundaries[count].Line=true;
     for(auto cp:out.Scalars) {
         Require(cp!=0xad,"Discretionary soft hyphen layout is not supported in this foundation");
         Require(cp>=0x20 || cp=='\r' || cp=='\n' || cp=='\t',"Unsupported text control in CPU layout");
     }
     hb_font_extents_t extents{};
     Require(hb_font_get_h_extents(face->m_Data->Font,&extents),"Font has no horizontal extents");
-    const float scale=options.EmSize/face->UnitsPerEm();
     Require(std::isfinite(options.Tracking) && std::abs(options.Tracking)<=512 && std::isfinite(options.LineSpacing) && std::abs(options.LineSpacing)<=512,"Invalid text spacing");
-    const float lineHeight=(extents.ascender-extents.descender+extents.line_gap)*scale+options.LineSpacing;
+    float ascent=face->AscenderEm(), descent=face->HeightEm()-face->AscenderEm(), advance=face->LineHeightEm();
+    for(const auto& range:ranges){auto actual=out.Faces[range.FaceIndex];ascent=std::max(ascent,actual->AscenderEm());descent=std::max(descent,actual->HeightEm()-actual->AscenderEm());advance=std::max(advance,actual->LineHeightEm());}
+    const float lineHeight=std::max(advance,ascent+descent)*options.EmSize+options.LineSpacing;
+    out.BoxHeight=(ascent+descent)*options.EmSize;out.Ascender=ascent*options.EmSize;out.LineHeight=lineHeight;
     Require(std::isfinite(lineHeight) && lineHeight>0,"Invalid font line height");
     const auto language=hb_language_from_string(options.Language.c_str(),int(options.Language.size()));
     BidiMemory memory(m_Limits.BidiBytes);
     SBCodepointSequence sequence{SBStringEncodingUTF32,out.Scalars.data(),count};
     // Sheen rejects zero-length sequences. Empty text still has one caret line.
     if(!count) {
-        out.Lines.push_back({0,0,0,0,0,extents.ascender*scale});out.Height=lineHeight;
+        out.Lines.push_back({0,0,0,0,0,out.Ascender});out.Height=lineHeight;
     } else {
         Algorithm algorithm(SBAlgorithmCreate(&sequence));
         Scripts locator(SBScriptLocatorCreate());SBScriptLocatorLoadCodepoints(locator,&sequence);
-        struct Script { uint32_t Begin,End,Tag; };
+        struct Script { uint32_t Begin,End,Tag; uint8_t FaceIndex=0; };
         std::vector<Script> scripts;
         while(SBScriptLocatorMoveNext(locator)) {
             auto a=SBScriptLocatorGetAgent(locator);auto tag=SBScriptGetUnicodeTag(a->script);
@@ -228,7 +217,12 @@ Ref<Layout> Service::Build(std::string_view source,const Ref<const Face>& face,c
                 for(auto it=first;it!=scripts.end() && it->Begin<br.offset+br.length;++it) {
                     const auto& s=*it;
                     auto a=std::max(uint32_t(br.offset),s.Begin),b=std::min(uint32_t(br.offset+br.length),s.End);
-                    if(a<b)parts.push_back({a,b,s.Tag});
+                    while(a<b){
+                        uint8_t slot=0;uint32_t end=b;
+                        for(const auto& range:ranges){if(range.End<=a)continue;if(range.Begin>a){end=std::min(end,range.Begin);break;}slot=range.FaceIndex;end=std::min(end,range.End);break;}
+                        if(!parts.empty()&&parts.back().End==a&&parts.back().Tag==s.Tag&&out.Faces[parts.back().FaceIndex]==out.Faces[slot])parts.back().End=end;
+                        else parts.push_back({a,end,s.Tag,slot});a=end;
+                    }
                 }
                 if(br.level&1)std::reverse(parts.begin(),parts.end());
                 for(const auto& s:parts) {
@@ -236,6 +230,7 @@ Ref<Layout> Service::Build(std::string_view source,const Ref<const Face>& face,c
                     Require(calls<m_Limits.ShapeCalls,"Text dependency shaping-call work limit exceeded");
                     ++out.ShapeCalls;++calls;
                     Require(out.Boundaries[s.Begin].Grapheme && out.Boundaries[s.End].Grapheme,"Script/direction boundary interrupts a grapheme; unsupported run segmentation");
+                    auto actual=out.Faces[s.FaceIndex];const float glyphScale=options.EmSize/actual->UnitsPerEm();
                     Buffer buffer(hb_buffer_create());
                     hb_buffer_set_direction(buffer,(br.level&1)?HB_DIRECTION_RTL:HB_DIRECTION_LTR);
                     hb_buffer_set_script(buffer,hb_script_from_iso15924_tag(s.Tag));hb_buffer_set_language(buffer,language);
@@ -256,11 +251,11 @@ Ref<Layout> Service::Build(std::string_view source,const Ref<const Face>& face,c
                     const char* shapers[]={"ot",nullptr};
                     // No cached shape plans: bounded caller results own all retained
                     // layout, rather than an unbounded font/language plan cache.
-                    Plan plan(hb_shape_plan_create(face->m_Data->Face,&properties,nullptr,0,shapers));
-                    Require(hb_shape_plan_execute(plan,face->m_Data->Font,buffer,nullptr,0) && hb_buffer_allocation_successful(buffer),"OpenType shaping failed or exceeded dependency limits");
+                    Plan plan(hb_shape_plan_create(actual->m_Data->Face,&properties,nullptr,0,shapers));
+                    Require(hb_shape_plan_execute(plan,actual->m_Data->Font,buffer,nullptr,0) && hb_buffer_allocation_successful(buffer),"OpenType shaping failed or exceeded dependency limits");
                     unsigned n=0;info=hb_buffer_get_glyph_infos(buffer,&n);auto pos=hb_buffer_get_glyph_positions(buffer,nullptr);
                     Require(n<=m_Limits.Glyphs-p.Glyphs.size(),"Text glyph limit exceeded");
-                    Run run{s.Begin,s.End,uint32_t(p.Glyphs.size()),n,s.Tag,uint8_t(br.level),p.Width,0};
+                    Run run{s.Begin,s.End,uint32_t(p.Glyphs.size()),n,s.Tag,uint8_t(br.level),p.Width,0};run.FaceIndex=s.FaceIndex;
                     std::vector<uint32_t> clusters;clusters.reserve(n+1);
                     for(unsigned i=0;i<n;++i)clusters.push_back(info[i].cluster);
                     clusters.push_back(s.End);std::sort(clusters.begin(),clusters.end());
@@ -270,7 +265,8 @@ Ref<Layout> Service::Build(std::string_view source,const Ref<const Face>& face,c
                         if(!info[i].codepoint && !options.PermitNotdef)throw std::runtime_error("Missing font coverage in cluster starting at scalar "+std::to_string(info[i].cluster)+"; no cross-family fallback in CPU foundation");
                         const auto next=*std::upper_bound(clusters.begin(),clusters.end(),info[i].cluster);
                         Glyph glyph{info[i].codepoint,info[i].cluster,next,p.Width+run.Width,0,
-                            pos[i].x_advance*scale,-pos[i].y_advance*scale,pos[i].x_offset*scale,-pos[i].y_offset*scale};
+                            pos[i].x_advance*glyphScale,-pos[i].y_advance*glyphScale,pos[i].x_offset*glyphScale,-pos[i].y_offset*glyphScale};
+                        glyph.FaceIndex=s.FaceIndex;glyph.PaintSource=glyph.ClusterBegin;
                         if(out.Scalars[info[i].cluster]=='\t')glyph.AdvanceX*=4; // fixed four-space advance, not tab stops
                         Require(std::isfinite(glyph.AdvanceX) && glyph.AdvanceX>=0,"Unsupported negative/nonfinite horizontal glyph advance");
                         // Tracking never separates the glyphs of one HB cluster. Joining
@@ -288,7 +284,7 @@ Ref<Layout> Service::Build(std::string_view source,const Ref<const Face>& face,c
         auto publish=[&](uint32_t begin,uint32_t end,Prepared&& p,bool emergency) {
             Require(out.Lines.size()<m_Limits.Lines && p.Runs.size()<=m_Limits.Runs-out.Runs.size() &&
                 p.Glyphs.size()<=m_Limits.Glyphs-out.Glyphs.size(),"Text output line/run/glyph limit exceeded");
-            const float baseline=out.Lines.size()*lineHeight+extents.ascender*scale;
+            const float baseline=out.Lines.size()*lineHeight+out.Ascender;
             out.Lines.push_back({begin,end,uint32_t(out.Runs.size()),uint32_t(p.Runs.size()),p.Width,baseline,
                 options.Width && p.Width>*options.Width,emergency});
             for(auto run:p.Runs) { run.FirstGlyph+=uint32_t(out.Glyphs.size());out.Runs.push_back(run); }
@@ -355,19 +351,46 @@ Ref<Layout> Service::Build(std::string_view source,const Ref<const Face>& face,c
         }
         out.Height=out.Lines.size()*lineHeight;
     }
+    std::vector<int32_t> intersections(size_t(count)+2,0);
+    for(const auto& glyph:out.Glyphs)if(glyph.ClusterBegin+1<glyph.ClusterEnd){++intersections[glyph.ClusterBegin+1];--intersections[glyph.ClusterEnd];}
+    out.EmphasisStops.resize(size_t(count)+1);int32_t active=0;
+    for(uint32_t i=0;i<=count;++i){active+=intersections[i];out.EmphasisStops[i]=out.Boundaries[i].Grapheme&&!active;}
     return result;
 }
-Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>& face,const Options& options) {
+bool MatchesFaceRanges(const Layout& layout,const std::vector<Span>& spans) {
+    size_t at=0;std::optional<FaceRange> current;
+    auto flush=[&]{if(!current)return true;bool same=at<layout.FaceRanges.size()&&layout.FaceRanges[at]==*current;++at;current.reset();return same;};
+    for(const auto& span:spans)if(span.Face){FaceRange next{span.Begin,span.End,uint8_t(unsigned(*span.Face)+1)};
+        if(current&&current->End==next.Begin&&current->FaceIndex==next.FaceIndex)current->End=next.End;
+        else {if(!flush())return false;current=next;}}
+    return flush()&&at==layout.FaceRanges.size();
+}
+void ValidateEmphasis(const Layout& layout,const std::vector<Span>& spans) {
+    ValidateSpanFields(spans);
+    for(const auto& span:spans)for(auto endpoint:{span.Begin,span.End}) {
+        if(endpoint>=layout.Boundaries.size()||!layout.Boundaries[endpoint].Grapheme)throw std::invalid_argument("Emphasis endpoint splits a grapheme or exceeds the source");
+        if(!layout.EmphasisStops[endpoint])throw std::invalid_argument("Emphasis boundary at scalar "+std::to_string(endpoint)+" splits a shaped cluster/ligature; select the whole cluster");
+    }
+}
+Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>& face,const Options& options,const FaceSet& faces,const std::vector<FaceRange>& ranges) {
     CheckThread();
+    Require(ranges.size()<=MaxSpans,"Text face-run input limit exceeded (128)");
     Require(!options.Height || (std::isfinite(*options.Height) && *options.Height>=0 && *options.Height<=1e7f),"Invalid text available height");
     Require(options.OverflowMode==Overflow::Clip || options.OverflowMode==Overflow::Ellipsis,"Invalid text overflow mode");
     Require(options.MaxLines<=m_Limits.Lines,"Text MaxLines exceeds layout line limit");
     Admit(m_Budget->Live.Results<m_Limits.Results,"CPU layout result count exhausted; release inactive results");
     uint32_t calls=0,workScalars=0;
-    auto result=Build(source,face,options,calls,workScalars);auto& out=*result;
+    Ref<Layout> baseline;
+    if(!ranges.empty()){
+        auto baselineOptions=options;baselineOptions.PermitNotdef=true;
+        baseline=Build(source,face,baselineOptions,calls,workScalars,{},{});
+        for(const auto& range:ranges)for(auto endpoint:{range.Begin,range.End})Require(endpoint<baseline->EmphasisStops.size()&&baseline->EmphasisStops[endpoint],"Face emphasis splits a base shaped cluster/ligature; select the whole cluster");
+        baseline.reset();
+    }
+    auto result=Build(source,face,options,calls,workScalars,faces,ranges);auto& out=*result;
     out.OriginalLines=uint32_t(out.Lines.size());
-    const float lineHeight=face->LineHeightEm()*options.EmSize+options.LineSpacing;
-    const float boxHeight=face->HeightEm()*options.EmSize;
+    const float lineHeight=out.LineHeight;
+    const float boxHeight=out.BoxHeight;
     Require(std::isfinite(boxHeight) && boxHeight>0,"Invalid font-height text box");
     size_t keep=out.Lines.size();
     if(options.MaxLines)keep=std::min(keep,size_t(options.MaxLines));
@@ -408,12 +431,17 @@ Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>
             candidateOptions.BaseDirection=paragraph.Level&1?Direction::RTL:Direction::LTR;break;
         }
         const float available=options.Width.value_or(1e7f);
+        auto slotAt=[&](uint32_t scalar){uint8_t slot=0;for(const auto& range:ranges)if(scalar>=range.Begin&&scalar<range.End){slot=range.FaceIndex;break;}return slot;};
+        auto markerSource=[&](uint32_t end){return end>line.Begin?end-1:std::min(line.Begin,uint32_t(out.Scalars.size()-1));};
+        auto markerRanges=[&](uint32_t end){std::vector<FaceRange> pieces;const auto prefix=end-line.Begin;
+            for(auto range:ranges){auto a=std::max(range.Begin,line.Begin),b=std::min(range.End,end);if(a<b)pieces.push_back({a-line.Begin,b-line.Begin,range.FaceIndex});}
+            auto slot=slotAt(markerSource(end));if(slot){if(!pieces.empty()&&pieces.back().End==prefix&&pieces.back().FaceIndex==slot)pieces.back().End=prefix+1;else pieces.push_back({prefix,prefix+1,slot});}return pieces;};
         Ref<Layout> marker;
-        try{marker=Build(u8"…",face,candidateOptions,calls,workScalars);}
+        try{marker=Build(u8"…",face,candidateOptions,calls,workScalars,faces,markerRanges(line.Begin));}
         catch(const std::exception& error){throw std::runtime_error(std::string("Ellipsis U+2026 marker: ")+error.what());}
         const bool markerFits=marker->Width<=available;
         Ref<Layout> accepted;uint32_t retained=line.Begin;
-        if(markerFits) {
+        if(markerFits || !ranges.empty()) {
             std::vector<uint32_t> ends;
             uint32_t markerEnd=line.End;
             while(markerEnd>line.Begin && out.Scalars[markerEnd-1]==0x2028)--markerEnd;
@@ -444,7 +472,7 @@ Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>
             }
             Require(candidates.size()<=128,"Ellipsis candidate work limit exceeded");
             for(auto it=candidates.rbegin();it!=candidates.rend();++it) {
-                if(*it==line.Begin){accepted=std::move(marker);retained=line.Begin;break;}
+                if(*it==line.Begin){if(markerFits){accepted=std::move(marker);retained=line.Begin;}break;}
                 const auto first=out.Boundaries[line.Begin].Byte,last=out.Boundaries[*it].Byte;
                 auto candidateSource=out.Source.substr(first,last-first)+u8"…";
                 // The public decoder ignores one document-leading BOM. A FEFF
@@ -452,7 +480,7 @@ Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>
                 // protect it with an ignored synthetic BOM in this private trial.
                 if(candidateSource.compare(0,3,"\xef\xbb\xbf")==0)candidateSource.insert(0,"\xef\xbb\xbf");
                 if(candidateSource.size()>m_Limits.InputBytes || *it-line.Begin>=m_Limits.Scalars)continue;
-                auto candidate=Build(candidateSource,face,candidateOptions,calls,workScalars);
+                auto candidate=Build(candidateSource,face,candidateOptions,calls,workScalars,faces,markerRanges(*it));
                 if(candidate->Width<=available){accepted=std::move(candidate);retained=*it;break;}
             }
         }
@@ -465,8 +493,8 @@ Ref<const Layout> Service::Arrange(std::string_view source,const Ref<const Face>
             for(auto& run:replacementRuns){run.ContainsGenerated=run.End>prefix;run.Begin=line.Begin+std::min(run.Begin,prefix);run.End=line.Begin+std::min(run.End,prefix);}
             for(auto& glyph:replacementGlyphs){
                 glyph.Y=line.Baseline;
-                if(glyph.ClusterBegin>=prefix){glyph.Generated=true;glyph.ClusterBegin=glyph.ClusterEnd=UINT32_MAX;}
-                else {Require(glyph.ClusterEnd<=prefix,"Ellipsis marker merged with an authored cluster");glyph.ClusterBegin+=line.Begin;glyph.ClusterEnd+=line.Begin;}
+                if(glyph.ClusterBegin>=prefix){glyph.Generated=true;glyph.ClusterBegin=glyph.ClusterEnd=UINT32_MAX;glyph.PaintSource=markerSource(retained);}
+                else {Require(glyph.ClusterEnd<=prefix,"Ellipsis marker merged with an authored cluster");glyph.ClusterBegin+=line.Begin;glyph.ClusterEnd+=line.Begin;glyph.PaintSource=glyph.ClusterBegin;}
             }
             line.Width=accepted->Width;
         } else {line.Width=0;out.MarkerDoesNotFit=true;}

@@ -185,6 +185,11 @@ void Scene::ValidateUI(bool resources,bool controls)
             const auto& text=e.GetComponent<TextComponent>().TextString;
             if(text.size()>65536)throw std::invalid_argument("UI text exceeds 64 KiB");
             UTF8::Validate(text);
+            const auto& spans=e.GetComponent<TextComponent>().Spans;
+            (void)Text::NormalizeSpans(text,spans);
+            if(e.HasComponent<UITextEntryComponent>()&&!spans.empty())throw std::invalid_argument("Runtime text entry is plain; remove display emphasis");
+            auto parent=GetEntityByUUID(GetRelationship(e).Parent);
+            if(parent&&parent.HasComponent<UIDropdownComponent>()&&parent.GetComponent<UIDropdownComponent>().Trigger==uint64_t(e.GetUUID())&&!spans.empty())throw std::invalid_argument("Computed dropdown captions are plain; put emphasis on option labels");
         }
         if (e.HasComponent<UITextStyleComponent>())
         {
@@ -316,4 +321,28 @@ void Scene::SetUIStyle(uint64_t id,const UIStyleSelection& selection,bool enable
  try{RefreshUI();}catch(...){if(added)e.RemoveComponent<UIAppearanceComponent>();else c=before;try{RefreshUI();}catch(...){}throw;}
 }
 void Scene::ResetUIStyleOverrides(uint64_t id,uint32_t groups){CheckThread();auto e=GetEntityByUUID(id);if(IsStopping()||!e||!IsEntityValid(id)||!e.HasComponent<UIAppearanceComponent>()||(groups&~UIStyleAll))throw std::invalid_argument("Invalid UI style reset target/groups");auto& c=e.GetComponent<UIAppearanceComponent>();auto before=c.Overrides;c.Overrides&=~groups;try{RefreshUI();}catch(...){c.Overrides=before;try{RefreshUI();}catch(...){}throw;}}
+}
+
+namespace Hazel {
+void Scene::SetDisplayText(uint64_t id,const std::string& source,const std::vector<Text::Span>& input) {
+    CheckThread();auto e=GetEntityByUUID(id);
+    if(IsStopping()||!e||!IsEntityValid(id)||!e.HasComponent<TextComponent>())throw std::invalid_argument("Display text needs a live scene Text component");
+    auto spans=Text::NormalizeSpans(source,input);
+    if(e.HasComponent<UITextEntryComponent>()) {
+        if(!spans.empty())throw std::invalid_argument("Runtime text entry is plain; remove display emphasis");
+        SetUITextEntry(id,source);return;
+    }
+    auto parent=GetEntityByUUID(GetRelationship(e).Parent);
+    if(parent&&parent.HasComponent<UIDropdownComponent>()&&parent.GetComponent<UIDropdownComponent>().Trigger==id&&!spans.empty())throw std::invalid_argument("Computed dropdown captions are plain; put emphasis on option labels");
+    auto candidate=e.GetComponent<TextComponent>();candidate.TextString=source;candidate.Spans=std::move(spans);
+    auto effective=candidate;
+    if(e.HasComponent<UIRectComponent>()){
+        Ref<const UIStyleDefinition> definition;std::string error;
+        try{ApplyUIStyle(effective,ResolveUIStyle(e,m_Assets,definition,error));}
+        catch(const std::exception&){ApplyUIStyle(effective,m_UI->Presentation(id));}
+    }
+    const auto& palette=ResolveTextFonts(effective,m_Assets,candidate.Spans);
+    (void)palette[0]->Layout(source,-1,false,effective.Kerning,effective.LineSpacing,Text::Overflow::Clip,0,-1,TextFaces(palette),candidate.Spans);
+    auto& accepted=e.GetComponent<TextComponent>();accepted.TextString=std::move(candidate.TextString);accepted.Spans=std::move(candidate.Spans);
+}
 }

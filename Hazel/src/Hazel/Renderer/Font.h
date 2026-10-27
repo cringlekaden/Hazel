@@ -53,8 +53,8 @@ namespace Hazel {
         const std::string& TextWarning() const {return m_TextWarning;}
         // Font-height units. Shared results retain logical maps; page preparation
         // is a separate renderer-thread boundary and cannot change layout metrics.
-        Ref<const Text::Layout> Layout(const std::string& text,float width,bool wrap,float tracking=0,float spacing=0,Text::Overflow overflow=Text::Overflow::Clip,uint32_t maxLines=0,float height=-1);
-        std::vector<Ref<const FontPage>> PreparePages(const Text::Layout& layout);
+        Ref<const Text::Layout> Layout(const std::string& text,float width,bool wrap,float tracking=0,float spacing=0,Text::Overflow overflow=Text::Overflow::Clip,uint32_t maxLines=0,float height=-1,const Text::FaceSet& faces={},const std::vector<Text::Span>& spans={});
+        std::vector<Ref<const FontPage>> PreparePages(const Text::Layout& layout,uint8_t faceIndex=0);
         static FontCoverage InspectCoverage(const std::filesystem::path& path,const std::string& corpus);
         static void ValidateFile(const std::filesystem::path& path);
         static Ref<Font> Load(const std::filesystem::path& path, const Ref<Font>& accepted={});
@@ -78,4 +78,6 @@ namespace Hazel {
         bool m_Accounted=false;
         static Ref<Font> s_DefaultFont;
     };
+    using FontPalette=std::array<Ref<Font>,5>;
+    inline Text::FaceSet TextFaces(const FontPalette& fonts){Text::FaceSet result{};for(size_t i=0;i<fonts.size();++i)if(fonts[i])result[i]=fonts[i]->GetCPUFace();return result;}
 }

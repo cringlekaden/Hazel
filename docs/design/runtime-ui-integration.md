@@ -3141,3 +3141,70 @@ Styles/template **implementation** is complete for this slice. Rich-text emphasi
 physical acceptance, essential structural history and final endpoint integration
 remain their existing checklist items. This does not complete the practical UI
 endpoint or make the entire UI system production-ready.
+
+
+### Bounded display emphasis contract (qualification in progress)
+
+Display text owns one source and at most 128 sorted, nonoverlapping half-open
+scalar spans (one leading BOM excluded). Optional face style and RGBA inherit
+when absent; adjacent equal spans coalesce. Native conversion helpers also
+accept exact UTF-8, UTF-16 and grapheme boundaries. All endpoints must be
+grapheme- and shaped-cluster-safe; a boundary inside an ffi ligature rejects.
+Color boundaries do not split shaping. Face boundaries segment the existing
+paragraph bidi/script runs with full line context. Real supplied family faces
+use existing Regular fallback diagnostics; no synthesis or cross-family chain.
+Mixed faces share the maximum ascender/descent/line height on one baseline.
+
+Inline RGB replaces inherited foreground RGB; inline alpha multiplies the
+effective base alpha and interaction alpha. Interaction RGB multiplies both.
+Zero root opacity hides every span. Existing straight-alpha coverage is unchanged.
+Ellipsis reshapes retained logical source plus marker together; marker inherits
+the last retained scalar's attributes (line-start attributes for an empty
+prefix), retains generated-source mappings, and pins normal immutable pages.
+
+Plain replacement clears emphasis. Atomic source+span replacement validates
+before publication. Editor source changes preserve common grapheme prefix/suffix
+ranges, shift unaffected suffix ranges, and visibly remove intersected ranges
+in the same history transaction. Text entry and computed dropdown captions are
+plain; rich option labels do not transfer ranges to a replacement caption.
+Only face/range changes affect positioning keys; colors are read at painting.
+No rich-text parser, size spans, rich editing or new cache is introduced.
+
+Existing typography budgets also bound rich layout: 64 KiB source, 16,384 scalars,
+4,096 runs/lines, 65,536 glyphs, 1,048,576 contextual shape scalars and 32,768 shape
+calls. The conservative base-cluster safety pass consumes the same work budget.
+The existing 16 MiB CPU-result budget includes face references, face ranges and
+source stops; existing 256 KiB/128-result per-Font reuse and 16 MiB prepared-quad
+retention remain. Each glyph adds one CPU face-slot index and one original paint
+source scalar; prepared quads pin the base CPU version plus their actual immutable
+page. No CPU result owns a texture. Up to four requested face slots reuse normal
+family/Font/Page ownership. Pending runs pin their existing atlas textures.
+
+Span colors are intentionally absent from geometry keys. Face ranges, accepted
+face versions, source, constraints and spacing are keys; original paint-source
+indices select live colors. Color-only changes do not split shaping or regenerate
+pages. A face change remeasures Content and reprepares. Native writes still pass
+through existing input/render/delivery source checks; fixed paint reads exact
+current spans before submission. Invalid native candidates diagnose rather than
+publishing partial results; restore/repair the complete source/range candidate.
+Atomic setters and Inspector transactions preserve accepted source+spans on
+rejection. Failed face reload keeps accepted resources; page pressure uses the
+existing bounded retry/visible metric-placeholder contract. Missing source glyphs
+retain .notdef diagnostics and do not become a cross-family fallback.
+
+Scene/prefab `TextComponent.Emphasis` is an optional version-1 typed block with
+scalar Begin/End, optional Face and optional RGBA Color. Absence is plain text,
+not another rendering path. Normal copy/duplicate/history own only source and
+span values, not face/page resources. `SetDisplayText` is atomic; ordinary managed
+`Text` replacement clears spans, and managed `SetRichText` / `Emphasis` use exact
+UTF-16 endpoints through the shared conversion service. Export validates rich
+source against the effective styled family and actual requested faces on CPU,
+including shaped-boundary checks, and uses existing family/face/notice closure.
+Text entry and computed dropdown triggers reject conflicting emphasis.
+
+The next essential authoring slice remains **shared structural history**: bounded
+document-owned create/delete/duplicate/reparent/reorder transactions with authored
+subtrees, stable identities and reference remapping, selection restoration,
+save-point/recovery handling and scene/prefab isolation. Reuse DocumentHistory; do
+not add another UI history or require linked-prefab inheritance. Final endpoint
+example integration and physical acceptance follow that slice.

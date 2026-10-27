@@ -291,6 +291,7 @@ class RuntimeUI
         GameUI::Align PreparedHorizontal=GameUI::Align::Start,PreparedVertical=GameUI::Align::Start;
         std::vector<Renderer2D::TextLine> Lines;
         Ref<const Hazel::Text::Layout> PaintLayout;
+        Hazel::Text::FaceSet Faces{};
         uint64_t PaintGeneration=0;
         std::string Text;
         FontSelection Selection;

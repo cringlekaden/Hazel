@@ -6,7 +6,6 @@
 #include <string>
 #include <vector>
 namespace Hazel {
-enum class FontStyle : uint8_t { Regular, Bold, Italic, BoldItalic };
 const char* FontStyleName(FontStyle style);
 struct FontSelection {
     std::filesystem::path Family; // empty = engine Open Sans family
@@ -36,6 +35,8 @@ std::string WriteFontFamilyText(const FontFamilyDefinition& definition);
 // CPU only, bounded input. Paths in descriptors are relative to the asset root, not the descriptor.
 std::vector<FamilyCoverage> InspectFontFamily(const std::filesystem::path& root,const FontFamilyDefinition& definition);
 std::vector<std::filesystem::path> AuditFontFamily(const std::filesystem::path& root,const std::filesystem::path& reference);
+// Export/authoring validation: CPU only, actual requested face runs and source.
+void AuditTextEmphasis(const std::filesystem::path& root,const FontSelection& selection,const std::string& source,const std::vector<Text::Span>& spans);
 const FontFamilyDefinition& DefaultFontFamily();
 std::filesystem::path DefaultFontFace(FontStyle requested);
 }

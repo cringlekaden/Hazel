@@ -10,6 +10,7 @@ struct UITextValue
     glm::vec4 Color{1};
     float Kerning = 0, LineSpacing = 0;
     FontSelection Font;
+    std::vector<Text::Span> Spans;
 };
 struct UIImageValue
 {
@@ -67,7 +68,7 @@ struct UIEditValues
         else if constexpr (std::is_same_v<T, UITooltipComponent>) Tooltip=value;
         else if constexpr (std::is_same_v<T, UIDropdownComponent>) Dropdown=value;
         else if constexpr (std::is_same_v<T, TextComponent>)
-            Text = UITextValue{value.TextString, value.Color, value.Kerning, value.LineSpacing, value.Font};
+            Text = UITextValue{value.TextString, value.Color, value.Kerning, value.LineSpacing, value.Font, value.Spans};
         else if constexpr (std::is_same_v<T, SpriteRendererComponent>)
             Image = UIImageValue{value.Color, value.Source};
         StripResources();

@@ -56,6 +56,7 @@ static std::string Read(const std::filesystem::path& file) {
     std::ifstream input(file,std::ios::binary); return {std::istreambuf_iterator<char>(input),{}};
 }
 }
+#include "UI/TextEmphasisUI.h"
 #include "EditorStateChecks.h"
 #include "EditorDocumentChecks.h"
 #include "EditorHistoryChecks.h"

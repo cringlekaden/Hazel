@@ -63,14 +63,14 @@ namespace Hazel {
 			float LineSpacing = 0.0f;
 		};
         struct TextLine { std::string Text; float Width=0; Ref<const Text::Layout> Result; uint32_t Index=0; };
-        struct TextGlyph {glm::vec2 Min,Max,UVMin,UVMax; Ref<const FontPage> Page;};
-        static void AppendTextLineGlyphs(const TextLine& line,const Ref<Font>& font,std::vector<TextGlyph>& glyphs,glm::vec2 offset={});
+        struct TextGlyph {glm::vec2 Min,Max,UVMin,UVMax; Ref<const FontPage> Page; Ref<const Text::Face> BaseFace; uint32_t PaintSource=UINT32_MAX;};
+        static void AppendTextLineGlyphs(const TextLine& line,const Ref<Font>& font,std::vector<TextGlyph>& glyphs,glm::vec2 offset={},const FontPalette& faces={});
         static void AppendTextGlyphs(const std::string& text,const Ref<Font>& font,const TextParams& params,
                                      std::vector<TextGlyph>& glyphs,glm::vec2 offset={});
         static void DrawTextGlyphs(const std::vector<TextGlyph>& glyphs,const Ref<Font>& font,
-                                  const glm::mat4& transform,const glm::vec4& color,int entityID=-1);
+                                  const glm::mat4& transform,const glm::vec4& color,int entityID=-1,const std::vector<Text::Span>& spans={},glm::vec4 interaction=glm::vec4(1));
         static float MeasureText(const std::string& text, const Ref<Font>& font, float kerning=0);
-        static Ref<const Text::Layout> LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines,float spacing=0,Text::Overflow overflow=Text::Overflow::Clip,uint32_t maxLines=0,float height=-1);
+        static Ref<const Text::Layout> LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines,float spacing=0,Text::Overflow overflow=Text::Overflow::Clip,uint32_t maxLines=0,float height=-1,const FontPalette& faces={},const std::vector<Text::Span>& spans={});
 		static void DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const TextParams& textParams, int entityID = -1);
 		static void DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID = -1);
 

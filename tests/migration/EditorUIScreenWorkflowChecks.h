@@ -212,6 +212,18 @@ void UIScreenWorkflowChecks()
         Check(scene->GetUIPresentation(first[0]).Background==shared.Draft().Variants[0].Values.Background,"Malformed style did not retain accepted control presentation");
         {std::ofstream out(assets->Root()/"Styles/Settings.hstyle");out<<valid;}assets->Reload("Styles/Settings.hstyle");scene->RefreshUI();
     }
+    panel.SetSelectedEntity(settingsPage);Check(panel.AddUI(2),"Rich journal Text preset failed");auto rich=panel.GetSelectedEntity();rich.GetComponent<TagComponent>().Tag="Emphasis journal";
+    edit(rich,"Dialogue emphasis source and spans",[](auto& v){v.Rect->Offset={0,224};v.Rect->FixedSize={540,76};v.Rect->Padding=glm::vec4(4);v.Style->Size=20;v.Style->Wrap=true;v.Style->Overflow=Text::Overflow::Ellipsis;v.Style->MaxLines=2;v.Appearance->Styled=true;v.Appearance->Selection={"","Control"};v.Appearance->Overrides=UIStyleBit(UIStyleGroup::Size)|UIStyleBit(UIStyleGroup::Padding);
+        v.Text->Text="Remember the bright beacon. A quiet journal paragraph keeps its full source, wraps and indicates omitted content without changing the saved text.";
+        v.Text->Spans={{0,8,FontStyle::Bold,{}},{13,26,FontStyle::Italic,glm::vec4(1,.75f,.3f,.9f)}};});
+    const auto richID=uint64_t(rich.GetUUID());auto richBefore=documents.SceneText();
+    Check(documents.UndoRedo(false)&&rich.GetComponent<TextComponent>().Spans.empty()&&documents.UndoRedo(true)&&documents.SceneText()==richBefore,"Source+span Inspector Undo/Redo split one edit");
+    auto richSource=rich.GetComponent<TextComponent>().TextString;auto richSpans=rich.GetComponent<TextComponent>().Spans;
+    edit(rich,"Source edit remaps emphasis",[](auto& v){auto next=std::string("New ")+v.Text->Text;auto remap=Text::RemapSpans(v.Text->Text,next,v.Text->Spans);v.Text->Text=next;v.Text->Spans=std::move(remap.Spans);});
+    Check(rich.GetComponent<TextComponent>().Spans.front().Begin==4&&documents.UndoRedo(false)&&rich.GetComponent<TextComponent>().TextString==richSource&&rich.GetComponent<TextComponent>().Spans==richSpans,"Source remap Undo did not restore typed emphasis");
+    Prefab::Save(Project::GetAssetDirectory(),"Prefabs/EmphasisParagraph.hprefab",scene,rich);
+    auto richTemplate=Prefab::Load(Project::GetAssetDirectory(),"Prefabs/EmphasisParagraph.hprefab");Check(Prefab::GetEntity(richTemplate).GetComponent<TextComponent>().Spans==richSpans,"Rich paragraph prefab lost spans");
+    m_EmphasisFixture=richID;
     scene->ValidateUI(false);
     for (size_t i = 0; i < 3; ++i)
     {
@@ -389,6 +401,12 @@ void DrawUIScreenFixture()
     }
     m_ScreenFixturePanel.SetSelectedEntity(originalSelection);
 
+    if(auto label=m_ScreenFixture->GetEntityByUUID(m_EmphasisFixture)){
+        m_ScreenFixturePanel.SetSelectedEntity(label);m_ScreenFixturePanel.RestoreSections({{"Text Renderer",true}});
+        m_ScreenFixturePanel.DrawAssetProperties(label);
+        auto draft=label.GetComponent<TextComponent>();auto before=UIEditValues::Capture(label);ImGui::PushID("native-emphasis-preview");ImGui::SetNextItemOpen(true,ImGuiCond_Always);DrawTextEmphasis(draft,false,m_ScreenFixture->GetAssets());ImGui::PopID();
+        auto after=before;after.Set(draft);Check(before.Same(after),"Rich Inspector preview changed authored source/spans");
+    }
     auto &owner = *m_Editor.m_Authoring;
     auto previousScene = owner.m_PrefabScene;
     auto previousPreview = owner.m_PrefabPreview;
@@ -437,3 +455,5 @@ void DrawUIScreenFixture()
     std::cout << "PASS: actual native screen selectors and closed-screen preview, no "
                  "authored/action side effects\n";
 }
+
+uint64_t m_EmphasisFixture=0;

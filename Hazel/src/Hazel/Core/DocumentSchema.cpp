@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "Hazel/Text/TextSpanSerialization.h"
 #include "Hazel/UI/RuntimeUIConfig.h"
 #include "DocumentSchema.h"
 #include "Hazel/Assets/FontFamily.h"
@@ -160,7 +161,9 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
             }
         if (auto n = entity["TextComponent"])
         {
-            Keys(n, {"TextString", "Color", "Kerning", "LineSpacing", "FontFamily", "FontStyle"}, "TextComponent");
+            Keys(n, {"TextString", "Color", "Kerning", "LineSpacing", "FontFamily", "FontStyle", "Emphasis"}, "TextComponent");
+            auto spans=Text::ReadSpans(n["Emphasis"],n["TextString"].as<std::string>());
+            if(entity["UITextEntryComponent"]&&!spans.empty())throw std::invalid_argument("Runtime text entry is plain; remove display emphasis");
             FontSelection selection;
             if(n["FontFamily"])selection.Family=std::filesystem::u8path(n["FontFamily"].as<std::string>());
             if(n["FontStyle"]) {auto style=n["FontStyle"].as<unsigned>();if(style>3)throw std::runtime_error("Invalid Text FontStyle");selection.Style=FontStyle(style);}

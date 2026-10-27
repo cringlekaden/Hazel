@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "Hazel/Text/TextSpanSerialization.h"
 #include "Hazel/Audio/AudioPlayback.h"
 #include "ProjectAssets.h"
 #include "Hazel/Scene/Components.h"
@@ -99,6 +100,16 @@ Ref<Font> ResolveTextFont(TextComponent& text,const Ref<ProjectAssets>& assets) 
         text.ResolvedSelection=text.Font;text.FontEpoch=epoch;text.FontOwner=assets;
     }
     return text.ResolvedFont;
+}
+const FontPalette& ResolveTextFonts(TextComponent& text,const Ref<ProjectAssets>& assets,const std::vector<Text::Span>& spans) {
+    auto base=ResolveTextFont(text,assets);Text::ValidateSpanFields(spans);uint8_t mask=0;
+    for(const auto& span:spans)if(span.Face)mask|=1u<<unsigned(*span.Face);
+    const auto epoch=assets?assets->Epoch():1;
+    const bool sameOwner=!text.FacesOwner.owner_before(assets)&&!assets.owner_before(text.FacesOwner);
+    if(text.ResolvedFaces[0]==base&&text.FacesEpoch==epoch&&text.FacesSelection==text.Font&&text.FaceRequests==mask&&sameOwner)return text.ResolvedFaces;
+    auto next=text.ResolvedFaces;next[0]=base;
+    for(unsigned i=0;i<4;++i)if(mask&(1u<<i))next[i+1]=assets?assets->FamilyFont({text.Font.Family,FontStyle(i)}):Font::Load(DefaultFontFace(FontStyle(i)),next[i+1]);else next[i+1].reset();
+    text.ResolvedFaces=std::move(next);text.FacesEpoch=epoch;text.FacesSelection=text.Font;text.FaceRequests=mask;text.FacesOwner=assets;return text.ResolvedFaces;
 }
 void ProjectAssets::ImportFontFile(const std::filesystem::path& source,const std::filesystem::path& destination,bool face) {
     // Native asset import. Never overwrite an existing file; descriptor assignment remains a draft edit.
@@ -304,6 +315,15 @@ std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path
                 auto reference=std::filesystem::u8path(n["FontFamily"].as<std::string>());
                 try{family(reference);}
                 catch(const std::exception& error){throw std::runtime_error(file.generic_u8string()+" entity "+e["Entity"].as<std::string>()+" family "+reference.generic_u8string()+": "+error.what());}
+            }
+            if(auto n=e["TextComponent"];n&&n["Emphasis"]) {
+                try {
+                    auto source=n["TextString"].as<std::string>();auto spans=Text::ReadSpans(n["Emphasis"],source);
+                    FontSelection font;if(n["FontFamily"])font.Family=std::filesystem::u8path(n["FontFamily"].as<std::string>());if(n["FontStyle"])font.Style=FontStyle(n["FontStyle"].as<unsigned>());
+                    if(auto node=e["UIAppearanceComponent"]){auto c=ReadUIAppearanceComponent(node);if(c.Styled&&!(c.Overrides&UIStyleBit(UIStyleGroup::Font)))font=(c.Selection.Asset.empty()?DefaultUIStyle().Find(c.Selection.Variant):ReadUIStyle(Project::ResolveOwnedAsset(root,c.Selection.Asset)).Find(c.Selection.Variant)).Font;}
+                    AuditTextEmphasis(root,font,source,spans);
+                    for(auto parent:doc["Entities"])if(auto d=parent["UIDropdownComponent"];d&&d["Trigger"]&&d["Trigger"].as<uint64_t>()==e["Entity"].as<uint64_t>()&&!spans.empty())throw std::invalid_argument("Computed dropdown captions are plain; style option labels");
+                }catch(const std::exception& error){throw std::runtime_error(file.generic_u8string()+" entity "+e["Entity"].as<std::string>()+" emphasis: "+error.what());}
             }
             if(auto n=e["UIButtonComponent"]){for(auto& source:ReadUIButtonComponent(n).Images)if(auto t=std::get_if<TextureSpriteSource>(&source)){if(!t->Texture.empty()){auto path=Project::ResolveOwnedAsset(root,t->Texture);Texture2D::ReadImage(path);dependencies.insert(path.lexically_relative(std::filesystem::weakly_canonical(root)));}}}
         }

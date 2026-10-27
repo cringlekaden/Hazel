@@ -1009,6 +1009,63 @@ existing history limits; style assignments/overrides use ordinary property Undo.
 Limits: 64 KiB/style, 16 variants, 14 groups; per project 64 retained entries/4 MiB
 estimated metadata and 128 live versions/8 MiB estimated metadata. Release inactive
 users and Refresh after admission pressure. Existing font/page/image limits still
-apply. No arbitrary selectors, variant inheritance, animation or rich text are
-implemented by styles. Bounded rich-text emphasis is the next presentation pass;
-physical Windows/DPI/readability acceptance remains separate.
+apply. No arbitrary selectors, variant inheritance or animation are implemented by styles.
+Display emphasis is layered after style resolution as described below; physical
+Windows/DPI/readability acceptance remains separate.
+
+## Display-text emphasis
+
+Text Renderer → **Inline emphasis** uses half-open **grapheme** indices with a
+**Selected text** snippet. Choose **From grapheme**, **To (exclusive)** and a
+face, then **Apply range**. Existing rows allow Inherit/Regular/Bold/Italic/Bold
+Italic and an optional explicit color; **Remove emphasis** restores inheritance.
+Overlaps reject. Select complete ligatures (for example all of `ffi`), not glyph
+fragments. Face styles select actual supplied family files; absent optional faces
+use Regular with a visible diagnostic, never synthesized bold/italic. Inspect the
+actual output in the normal viewport/Play preview.
+
+Source changes preserve unaffected common grapheme prefix/suffix ranges and shift
+suffix ranges. Ranges intersecting the changed region are removed, with a visible
+normalization message. Source and spans are one ordinary property Undo/Redo edit.
+The source string remains complete through wrapping, MaxLines and ellipsis.
+Text entry and computed dropdown trigger captions are plain; option labels can
+have emphasis but their ranges are not copied into the derived closed caption.
+
+Base appearance still resolves engine → style variant → local overrides. Inline
+RGB replaces foreground RGB; its alpha multiplies effective foreground alpha and
+interaction opacity. Interaction RGB tints both inherited and explicit colors.
+A zero base opacity hides every span. Color boundaries preserve shaping/joining;
+unsafe grapheme or shaped-cluster boundaries reject with a diagnostic.
+
+```csharp
+var label = entity.GetComponent<TextComponent>();
+label.SetRichText("Remember the beacon.",
+    new TextEmphasis(0, 8, FontStyle.Bold),
+    new TextEmphasis(13, 19, FontStyle.Italic, new Vector4(1, .75f, .3f, .9f)));
+// Ranges use exact C# UTF-16 indices, including a leading BOM if present.
+// Unpaired surrogates, interior graphemes/ligatures and overlaps reject atomically.
+var spans = label.Emphasis;
+label.Text = "Plain replacement"; // explicitly clears display emphasis
+```
+
+Native `Scene::SetDisplayText(id, source, spans)` validates the entire replacement.
+`Text::Span` uses decoded scalar endpoints; `Text::SourceMap` converts Scalar,
+UTF8Byte, UTF16 and Grapheme units without rounding interior encodings. Direct
+native component edits remain observed; source and its spans must be valid as a
+whole. Use the atomic setter when changing both. No presentation value events.
+
+Mixed faces share one baseline and the maximum ascent/descent/line advance of the
+requested faces. Font size retains the existing base-family font-height units.
+Ellipsis reshapes the retained line and U+2026 together. Marker face/color inherit
+the last retained logical scalar, or line-start attributes when no prefix fits;
+generated glyphs retain generated-source semantics, not fake source characters.
+Physical alignment stays physical; bidi does not automatically mirror it.
+
+Limits remain 64 KiB / 16,384 scalars, at most 128 ordered nonoverlapping spans and
+the existing run/glyph/work/result/page budgets. Adjacent equal attributes merge.
+Positions/pages are immutable and reusable; color edits reuse positioned data.
+All requested faces use existing family accepted versions, reload/fallback and
+page admission. Missing pages retain diagnosed metric placeholders, not silently
+missing ink. Export checks rich source against the actual requested faces and
+includes normal family/face/notice closure. No markup parser, per-span sizes,
+rich editing, cross-family fallback or expanded script guarantee is provided.

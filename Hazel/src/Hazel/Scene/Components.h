@@ -212,6 +212,12 @@ namespace Hazel {
         FontSelection ResolvedSelection;
         std::weak_ptr<ProjectAssets> FontOwner;
         uint64_t FontEpoch=0;
+        std::vector<Text::Span> Spans;
+        FontPalette ResolvedFaces{}; // renderer-thread active users, never authored
+        uint64_t FacesEpoch=0;
+        uint8_t FaceRequests=0;
+        FontSelection FacesSelection;
+        std::weak_ptr<ProjectAssets> FacesOwner;
         mutable Ref<const Text::Layout> LayoutCache; // CPU-only, not authored/copied
         mutable float LayoutTracking=0, LayoutSpacing=0;
 		glm::vec4 Color{ 1.0f };

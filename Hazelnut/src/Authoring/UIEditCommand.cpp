@@ -145,6 +145,7 @@ FIELD(Flow, Rows);
     COMPONENT(Text)
     {
         FIELD(Text, Text);
+        FIELD(Text, Spans);
         FIELD(Text, Font);
         FIELD(Text, Color);
         FIELD(Text, Kerning);
@@ -162,6 +163,7 @@ template <class T> size_t Storage(const T &)
 {
     return 0;
 }
+size_t Storage(const std::vector<Text::Span> &v) { return v.capacity()*sizeof(Text::Span); }
 size_t Storage(const std::vector<GameUI::Track> &v) { return v.capacity()*sizeof(GameUI::Track); }
 size_t Storage(const std::string &v)
 {
@@ -269,7 +271,7 @@ void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
     {
         if (v.Text->Text.size() > 65536)
             throw std::invalid_argument("UI text exceeds 64 KiB");
-        UTF8::Validate(v.Text->Text);v.Text->Font.Validate();
+        (void)Text::NormalizeSpans(v.Text->Text,v.Text->Spans);v.Text->Font.Validate();
         if(!v.Text->Font.Family.empty()) {
             auto assets=scene.GetAssets();if(!assets)throw std::runtime_error("Text family needs project assets");
             (void)Project::ResolveOwnedAsset(assets->Root(),v.Text->Font.Family);
@@ -408,6 +410,7 @@ COMPONENT(Scroll, UIScrollViewComponent) FIELD(Scroll, Content);FIELD(Scroll, Ho
 COMPONENT(Slider, UISliderComponent) FIELD(Slider, Minimum);FIELD(Slider, Maximum);FIELD(Slider, Step);FIELD(Slider, InitialValue);FIELD(Slider, Direction);FIELD(Slider, Track);FIELD(Slider, Fill);FIELD(Slider, Thumb);}
 COMPONENT(Progress, UIProgressComponent) FIELD(Progress, Minimum);FIELD(Progress, Maximum);FIELD(Progress, InitialValue);FIELD(Progress, Fill);FIELD(Progress, Direction);}
 COMPONENT(Text, TextComponent) change(c.TextString, old.Text->Text, next.Text->Text);
+FIELD(Text, Spans);
 FIELD(Text, Font);
 FIELD(Text, Color);
 FIELD(Text, Kerning);
@@ -587,6 +590,10 @@ void UIEditCommand::Publish(Scene &scene, const UIEditValues &current, UIEditVal
     Write(e, current, next); // next now contains the old values for changed fields
     try
     {
+        if(next.Text && !e.GetComponent<TextComponent>().Spans.empty()) {
+            const auto& text=e.GetComponent<TextComponent>();
+            scene.SetDisplayText(e.GetUUID(),text.TextString,text.Spans);
+        }
         scene.ValidateUILayoutDependencies();scene.ValidateUIControls(e.GetUUID());
         scene.RefreshUI();
     }
@@ -613,6 +620,7 @@ bool UIEditCommand::Preview(Scene &scene, const UIEditValues &sampleBefore, UIEd
     try
     {
         proposed.StripResources();
+        if(proposed.Text)proposed.Text->Spans=Text::NormalizeSpans(proposed.Text->Text,proposed.Text->Spans);
         Check(scene);
         auto current = UIEditValues::Capture(Target(scene));
         // Preserve fields changed elsewhere since the last sample, unless this

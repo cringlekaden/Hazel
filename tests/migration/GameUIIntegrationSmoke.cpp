@@ -54,6 +54,7 @@ static void Check(bool value, const char *why)
 #include "TextOverflowSceneChecks.h"
 #include "FontReloadSceneChecks.h"
 #include "FontFamilySceneChecks.h"
+#include "TextEmphasisSceneChecks.h"
 struct UIFixture
 {
     Ref<Scene> World=CreateRef<Scene>();Entity Canvas,Group,Control;
@@ -160,6 +161,7 @@ int main(int argc,char** argv)
         TextOverflowSceneChecks(root);
         FontReloadSceneChecks(root);
         FontFamilySceneChecks(root);
+        TextEmphasisSceneChecks(root);
         auto scene = CreateRef<Scene>();
         scene->SetAssets(CreateRef<ProjectAssets>(root));
         scene->OnViewportResize(320, 240);

@@ -110,6 +110,12 @@ namespace Hazel
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		internal extern static string TextComponent_GetText(ulong entityID);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal extern static void TextComponent_SetRichText(ulong entityID, string source, TextEmphasis[] spans);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal extern static int TextComponent_GetEmphasisCount(ulong entityID);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal extern static void TextComponent_GetEmphasis(ulong entityID, TextEmphasis[] spans);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern static string TextComponent_GetFontFamily(ulong entityID);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern static int TextComponent_GetFontStyle(ulong entityID);

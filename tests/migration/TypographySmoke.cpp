@@ -211,10 +211,11 @@ static void ServiceChecks(const std::filesystem::path& root) {
     std::cout<<"PASS: CPU typography corpus "<<cases<<", analytic cmap/cluster/bidi/line references, strict source maps, limits and retirement\n";
 }
 #include "TextEditingChecks.h"
+#include "TextEmphasisChecks.h"
 int main(int argc,char** argv) {
     try {
         const auto root=argc>1?std::filesystem::u8path(argv[1]):std::filesystem::path("typography");
         BreakConformance(root/"GraphemeBreakTest.txt",true);BreakConformance(root/"LineBreakTest.txt",false);
-        BidiConformance(root/"BidiCharacterTest.txt");ServiceChecks(root);TextEditingChecks(root);return 0;
+        BidiConformance(root/"BidiCharacterTest.txt");ServiceChecks(root);TextEditingChecks(root);TextEmphasisChecks(root);return 0;
     } catch(const std::exception& error) {std::cerr<<"FAIL: "<<error.what()<<'\n';return 1;}
 }

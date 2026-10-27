@@ -764,9 +764,10 @@ namespace Hazel {
         if(!font)throw std::invalid_argument("Measurement needs a font");
         return font->Layout(text,-1,false,kerning)->Width;
     }
-    Ref<const Text::Layout> Renderer2D::LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines,float spacing,Text::Overflow overflow,uint32_t maxLines,float height) {
+    Ref<const Text::Layout> Renderer2D::LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines,float spacing,Text::Overflow overflow,uint32_t maxLines,float height,const FontPalette& faces,const std::vector<Text::Span>& spans) {
         if(!font)throw std::invalid_argument("Layout needs a font");
-        auto result=font->Layout(text,width,wrap,kerning,spacing,overflow,maxLines,height);
+        Text::FaceSet cpuFaces{};for(size_t i=0;i<faces.size();++i)if(faces[i])cpuFaces[i]=faces[i]->GetCPUFace();
+        auto result=font->Layout(text,width,wrap,kerning,spacing,overflow,maxLines,height,cpuFaces,spans);
         std::vector<TextLine> complete;complete.reserve(result->Lines.size());
         for(uint32_t i=0;i<result->Lines.size();++i) {
             const auto& line=result->Lines[i];
@@ -779,27 +780,32 @@ namespace Hazel {
     namespace {
     void AppendPositionedLine(const Text::Layout& layout,uint32_t index,const std::vector<Ref<const FontPage>>& pages,
                               std::vector<Renderer2D::TextGlyph>& glyphs,glm::vec2 offset) {
-        const auto& line=layout.Lines.at(index);const float scale=1/layout.Font->HeightEm();
+        const auto& line=layout.Lines.at(index);const float scale=layout.EmSize;
         for(uint32_t r=line.FirstRun;r<line.FirstRun+line.RunCount;++r) {
             const auto& run=layout.Runs[r];
             for(uint32_t i=run.FirstGlyph;i<run.FirstGlyph+run.GlyphCount;++i) {
                 const auto& positioned=layout.Glyphs[i];Ref<const FontPage> page;const FontPage::Glyph* geometry=nullptr;
-                for(auto& candidate:pages)if(auto found=candidate->Find(positioned.ID)){page=candidate;geometry=found;break;}
+                for(auto& candidate:pages)if(candidate->Face==layout.Faces[positioned.FaceIndex])if(auto found=candidate->Find(positioned.ID)){page=candidate;geometry=found;break;}
                 if(geometry && geometry->Empty && positioned.ID!=0)continue; // advance already belongs to CPU layout
                 if(geometry && geometry->Empty){geometry=nullptr;page.reset();}
-                if(!geometry && positioned.ID!=0 && !layout.Font->HasInk(positioned.ID))continue;
+                if(!geometry && positioned.ID!=0 && !layout.Faces[positioned.FaceIndex]->HasInk(positioned.ID))continue;
                 const glm::vec2 pen(positioned.X+positioned.OffsetX,-positioned.OffsetY);
-                if(geometry)glyphs.push_back({geometry->Min*scale+pen+offset,geometry->Max*scale+pen+offset,geometry->UVMin,geometry->UVMax,page});
-                else glyphs.push_back({pen+offset+glm::vec2(0,-.2f),pen+offset+glm::vec2(std::max(.15f,positioned.AdvanceX),.7f),{0,0},{1,1},{}});
+                if(geometry)glyphs.push_back({geometry->Min*scale+pen+offset,geometry->Max*scale+pen+offset,geometry->UVMin,geometry->UVMax,page,layout.Font,positioned.PaintSource});
+                else glyphs.push_back({pen+offset+glm::vec2(0,-.2f),pen+offset+glm::vec2(std::max(.15f,positioned.AdvanceX),.7f),{0,0},{1,1},{},layout.Font,positioned.PaintSource});
             }
         }
     }
     }
-    void Renderer2D::AppendTextLineGlyphs(const TextLine& line,const Ref<Font>& font,std::vector<TextGlyph>& glyphs,glm::vec2 offset) {
+    void Renderer2D::AppendTextLineGlyphs(const TextLine& line,const Ref<Font>& font,std::vector<TextGlyph>& glyphs,glm::vec2 offset,const FontPalette& faces) {
         if(!line.Result || !font || line.Result->Font!=font->GetCPUFace())throw std::invalid_argument("Prepared line/font version mismatch");
         if(!s_Data->LineLayout || s_Data->LineLayout!=line.Result) {
             s_Data->LinePages.clear();s_Data->LineLayout.reset();
-            auto pages=font->PreparePages(*line.Result);
+            std::vector<Ref<const FontPage>> pages;
+            for(uint8_t i=0;i<5;++i)if(std::any_of(line.Result->Glyphs.begin(),line.Result->Glyphs.end(),[&](const auto& g){return g.FaceIndex==i;})) {
+                auto owner=i?faces[i]:font;
+                if(!owner || owner->GetCPUFace()!=line.Result->Faces[i])throw std::invalid_argument("Prepared rich line/face version mismatch");
+                auto next=owner->PreparePages(*line.Result,i);pages.insert(pages.end(),next.begin(),next.end());
+            }
             s_Data->LinePages=std::move(pages);s_Data->LineLayout=line.Result;
         }
         AppendPositionedLine(*line.Result,line.Index,s_Data->LinePages,glyphs,offset);
@@ -812,16 +818,18 @@ namespace Hazel {
     }
     void Renderer2D::DrawTextGlyphs(const std::vector<TextGlyph> &glyphs, const Ref<Font> &font,
                                     const glm::mat4 &transform, const glm::vec4 &color,
-                                    int entityID)
+                                    int entityID,const std::vector<Text::Span>& spans,glm::vec4 interaction)
     {
-        if (glyphs.empty())
+        if (glyphs.empty() || color.a==0 || interaction.a==0)
             return;
         if (!font)throw std::invalid_argument("Text requires a usable font");
         for (const auto &g : glyphs)
         {
             auto atlas=g.Page?g.Page->Texture:s_Data->WhiteTexture;
             if(!atlas)continue;
-            if(g.Page && g.Page->Face!=font->GetCPUFace())throw std::invalid_argument("Prepared glyph/font version mismatch");
+            if((g.BaseFace && g.BaseFace!=font->GetCPUFace()) || (!g.BaseFace&&g.Page&&g.Page->Face!=font->GetCPUFace()))throw std::invalid_argument("Prepared glyph/font version mismatch");
+            auto paint=color*interaction;
+            if(auto span=Text::SpanAt(spans,g.PaintSource);span&&span->Color){paint=*span->Color*interaction;paint.a*=color.a;}
             if(!s_Data->Ordered && s_Data->TextIndexCount && s_Data->FontAtlasTexture!=atlas)NextBatch(FlushReason::Font);
             s_Data->FontAtlasTexture=atlas;
             EnsureRunSpace();
@@ -832,7 +840,7 @@ namespace Hazel {
             {
                 auto &v = *s_Data->TextVertexBufferPtr++;
                 v.Position = transform * glm::vec4(positions[i], 0, 1);
-                v.Color = g.Page?color:glm::vec4(1,0,1,color.a);
+                v.Color = g.Page?paint:glm::vec4(1,0,1,paint.a);
                 v.TexCoord = uv[i];
                 v.EntityID = entityID;
                 v.ClipRect = s_Data->ClipRect;
@@ -858,19 +866,21 @@ namespace Hazel {
 
     void Renderer2D::DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID)
 	{
+        if(!component.Spans.empty()&&string!=component.TextString)throw std::invalid_argument("Rich component draws require its canonical source; replace source and spans atomically");
         if(!component.ResolvedFont || component.ResolvedSelection!=component.Font)
             throw std::invalid_argument("Resolve the text family before component drawing; standalone draws take an explicit Font face");
         auto font=component.ResolvedFont;
-        if(!component.LayoutCache || component.LayoutCache->Font!=font->GetCPUFace() || component.LayoutCache->Source!=string ||
+        Text::FaceSet faces{};for(size_t i=0;i<component.ResolvedFaces.size();++i)if(component.ResolvedFaces[i])faces[i]=component.ResolvedFaces[i]->GetCPUFace();faces[0]=font->GetCPUFace();
+        if(!component.LayoutCache || component.LayoutCache->Faces!=faces || !Text::MatchesFaceRanges(*component.LayoutCache,component.Spans) || component.LayoutCache->Source!=string ||
             component.LayoutTracking!=component.Kerning || component.LayoutSpacing!=component.LineSpacing) {
-            auto accepted=font->Layout(string,-1,false,component.Kerning,component.LineSpacing);
+            auto accepted=font->Layout(string,-1,false,component.Kerning,component.LineSpacing,Text::Overflow::Clip,0,-1,faces,component.Spans);
             component.LayoutCache=accepted;component.LayoutTracking=component.Kerning;component.LayoutSpacing=component.LineSpacing;
         }
-        auto layout=component.LayoutCache;auto pages=font->PreparePages(*layout);
+        auto layout=component.LayoutCache;Text::ValidateEmphasis(*layout,component.Spans);
         thread_local std::vector<TextGlyph> glyphs;glyphs.clear();
         try {
-            for(uint32_t i=0;i<layout->Lines.size();++i)AppendPositionedLine(*layout,i,pages,glyphs,{0,layout->Lines.front().Baseline-layout->Lines[i].Baseline});
-            DrawTextGlyphs(glyphs,font,transform,component.Color,entityID);glyphs.clear();
+            for(uint32_t i=0;i<layout->Lines.size();++i){TextLine line{{},layout->Lines[i].Width,layout,i};AppendTextLineGlyphs(line,font,glyphs,{0,layout->Lines.front().Baseline-layout->Lines[i].Baseline},component.ResolvedFaces);}
+            DrawTextGlyphs(glyphs,font,transform,component.Color,entityID,component.Spans);glyphs.clear();
         }catch(...){glyphs.clear();throw;}
 
 	}

@@ -58,7 +58,7 @@ namespace Hazel {
 		if constexpr (std::is_same_v<T, NativeScriptComponent>) copy.Instance.reset();
         if constexpr (std::is_same_v<T, SpriteRendererComponent>) {copy.Resolved={};copy.PreparedEpoch=0;copy.PreparedSource=std::monostate{};}
         if constexpr (std::is_same_v<T, SpriteAnimationComponent>) copy.ResetRuntime();
-        if constexpr (std::is_same_v<T, TextComponent>) {copy.ResolvedFont.reset();copy.LayoutCache.reset();copy.FontOwner.reset();copy.FontEpoch=0;copy.ResolvedSelection={};}
+        if constexpr (std::is_same_v<T, TextComponent>) {copy.ResolvedFont.reset();copy.ResolvedFaces={};copy.FacesOwner.reset();copy.FacesEpoch=0;copy.LayoutCache.reset();copy.FontOwner.reset();copy.FontEpoch=0;copy.ResolvedSelection={};}
 		return copy;
 	}
 
@@ -393,7 +393,7 @@ namespace Hazel {
 	void Scene::OnRuntimeStop()
 	{
         ResetUI();
-        for(auto e:m_Registry.view<TextComponent>()){auto& text=m_Registry.get<TextComponent>(e);text.ResolvedFont.reset();text.LayoutCache.reset();text.FontOwner.reset();text.FontEpoch=0;}
+        for(auto e:m_Registry.view<TextComponent>()){auto& text=m_Registry.get<TextComponent>(e);text.ResolvedFont.reset();text.ResolvedFaces={};text.FacesOwner.reset();text.FacesEpoch=0;text.LayoutCache.reset();text.FontOwner.reset();text.FontEpoch=0;}
 		m_Stopping = true; CancelPendingLifecycle();
         if (ScriptEngine::GetSceneContext() == this) ScriptEngine::OnRuntimeStop();
 
@@ -537,7 +537,7 @@ namespace Hazel {
 					auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
                     if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
 
-					ResolveTextFont(text,m_Assets);
+					ResolveTextFonts(text,m_Assets,text.Spans);
                     Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
 				}
 			}
@@ -805,7 +805,7 @@ namespace Hazel {
 				auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
                     if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
 
-				ResolveTextFont(text,m_Assets);
+				ResolveTextFonts(text,m_Assets,text.Spans);
                     Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
 			}
 		}
@@ -839,12 +839,12 @@ namespace Hazel {
             // UI must prepare only its final constrained result, not an unwrapped
             // world-text surrogate that requests discarded glyph pages.
             if(m_Registry.has<UIRectComponent>(e))continue;
-            auto& text=m_Registry.get<TextComponent>(e);auto font=ResolveTextFont(text,m_Assets);
-            if(!text.LayoutCache || text.LayoutCache->Source!=text.TextString || text.LayoutCache->Font!=font->GetCPUFace() ||
+            auto& text=m_Registry.get<TextComponent>(e);const auto& palette=ResolveTextFonts(text,m_Assets,text.Spans);auto font=palette[0];auto faces=TextFaces(palette);
+            if(!text.LayoutCache || text.LayoutCache->Source!=text.TextString || text.LayoutCache->Faces!=faces || !Text::MatchesFaceRanges(*text.LayoutCache,text.Spans) ||
                 text.LayoutTracking!=text.Kerning || text.LayoutSpacing!=text.LineSpacing) {
                 OperationProgress::Report("Prepare shaped text pages");
-                auto layout=font->Layout(text.TextString,-1,false,text.Kerning,text.LineSpacing);
-                (void)font->PreparePages(*layout);
+                auto layout=font->Layout(text.TextString,-1,false,text.Kerning,text.LineSpacing,Text::Overflow::Clip,0,-1,faces,text.Spans);
+                for(uint8_t i=0;i<5;++i)if(palette[i]&&std::any_of(layout->Glyphs.begin(),layout->Glyphs.end(),[&](const auto& g){return g.FaceIndex==i;}))(void)palette[i]->PreparePages(*layout,i);
                 if(m_Assets && std::find(prewarmedFaces.begin(),prewarmedFaces.end(),font.get())==prewarmedFaces.end()) {
                     prewarmedFaces.push_back(font.get());
                     if(auto family=m_Assets->Family(text.Font.Family))for(const auto* corpus:{&family->Required,&family->Sample})if(!corpus->empty()) {

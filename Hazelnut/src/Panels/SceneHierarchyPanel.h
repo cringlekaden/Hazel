@@ -100,6 +100,7 @@ class SceneHierarchyPanel
     std::set<std::string> m_RestoreSections;
     std::unordered_map<uint32_t, SpritePickerState> m_Pickers;
     std::array<SpritePickerState,5> m_UIStatePickers;
+    std::string m_UIEmphasisNotice;
     std::string m_UIFontDraft;
     std::filesystem::path m_UIFontBound;
     bool m_UIFontInitialized=false;

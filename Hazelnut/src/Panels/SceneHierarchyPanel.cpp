@@ -1,3 +1,4 @@
+#include "UI/TextEmphasisUI.h"
 #include "SceneHierarchyPanel.h"
 #include "ContentBrowserPayload.h"
 #include "Hazel/Scene/Components.h"
@@ -444,7 +445,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
     if (!entity || !m_Context || !entity.BelongsTo(m_Context.get()) || !m_Context->IsEntityValid(entity.GetUUID()))return;
     const auto document=m_Context; // keep the observed scene alive through modal property callbacks
     m_UIInspectorEdit.Poll(*m_Context,m_History,entity.GetUUID(),CanEdit(),!ImGui::GetIO().AppFocusLost,ImGui::IsKeyPressed(ImGuiKey_Escape,false),ImGui::GetActiveID());
-    if(m_SectionEntity!=uint64_t(entity.GetUUID())){m_Sections.clear();m_RestoreSections.clear();m_SectionEntity=entity.GetUUID();}
+    if(m_SectionEntity!=uint64_t(entity.GetUUID())){m_Sections.clear();m_RestoreSections.clear();m_UIEmphasisNotice.clear();m_SectionEntity=entity.GetUUID();}
     ImGui::PushID(std::to_string(m_Context->GetIdentity()).c_str());
     ImGui::PushID(std::to_string(uint64_t(entity.GetUUID())).c_str());
     const bool editable = CanEdit();
@@ -1350,7 +1351,15 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             }
             auto p=m_Context->GetEntityByUUID(m_Context->GetRelationship(entity).Parent);
             if(p&&p.HasComponent<UIDropdownComponent>()&&p.GetComponent<UIDropdownComponent>().Trigger==uint64_t(entity.GetUUID()))PropertyUI::ReadOnly("text","Text","Computed from selection / placeholder");
-            else PropertyUI::Multiline("text", "Text", component.TextString);
+            else {
+                auto beforeSource=component.TextString;
+                if(PropertyUI::Multiline("text", "Text", component.TextString) && beforeSource!=component.TextString){
+                    auto edit=Text::RemapSpans(beforeSource,component.TextString,component.Spans);component.Spans=std::move(edit.Spans);
+                    if(edit.Removed||edit.Shifted)m_UIEmphasisNotice="Source edit: "+std::to_string(edit.Removed)+" affected emphasis ranges removed, "+std::to_string(edit.Shifted)+" unaffected ranges shifted. Undo restores both.";
+                }
+            }
+            if(!m_UIEmphasisNotice.empty())ImGui::TextWrapped("%s",m_UIEmphasisNotice.c_str());
+            DrawTextEmphasis(component,entity.HasComponent<UITextEntryComponent>()||(p&&p.HasComponent<UIDropdownComponent>()&&p.GetComponent<UIDropdownComponent>().Trigger==uint64_t(entity.GetUUID())),m_Context->GetAssets());
             PropertyUI::Color("Color", "Color", glm::value_ptr(component.Color));
             PropertyUI::DragFloat("Kerning", "Tracking", component.Kerning, 0.025f);
             PropertyUI::Help("Extra font-height gap per shaped cluster. OpenType kerning is already applied; Arabic joins retain their spacing.");

@@ -47,6 +47,7 @@ static std::size_t Pixels(int entity) {
 #include "TextCompositingChecks.h"
 #include "GlyphPageChecks.h"
 #include "TextOverflowRenderChecks.h"
+#include "TextEmphasisRenderChecks.h"
 #include "TypographyRenderProfile.h"
 static void Primitives() {
     Begin(); Renderer2D::DrawQuad(Transform(),{1,0,0,1},42); End();
@@ -233,7 +234,7 @@ int main(int argc,char** argv) {
             if(argc==2 && std::string(argv[1])=="--profile-typography"){TypographyRenderProfile();return 0;}
             TextCompositingChecks(argc>1 && std::string(argv[1])=="--reproduce-d8");
             if(argc>1)return 0;
-            Primitives(); Textures(); WorldTextChecks(); GlyphPageChecks(); TextOverflowRenderChecks(); PagePressurePixels(); Overflow(); GenericSubmit(); OrderedBatchChecks();
+            Primitives(); Textures(); WorldTextChecks(); GlyphPageChecks(); TextOverflowRenderChecks(); TextEmphasisRenderChecks(); PagePressurePixels(); Overflow(); GenericSubmit(); OrderedBatchChecks();
             Check(glGetError()==GL_NO_ERROR,"Final renderer GL error");
             target->Unbind(); target.reset(); glEnable(GL_DEPTH_TEST);
         }

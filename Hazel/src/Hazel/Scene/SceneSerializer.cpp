@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "Hazel/Text/TextSpanSerialization.h"
 #include "Hazel/UI/UIStyleApplication.h"
 #include "Hazel/Core/OperationProgress.h"
 #include <cmath>
@@ -409,6 +410,7 @@ namespace Hazel {
 			textComponent.Font.Validate();
             out << YAML::Key << "FontFamily" << YAML::Value << textComponent.Font.Family.generic_u8string();
             out << YAML::Key << "FontStyle" << YAML::Value << int(textComponent.Font.Style);
+            if(!textComponent.Spans.empty()){out<<YAML::Key<<"Emphasis"<<YAML::Value;Text::WriteSpans(out,textComponent.TextString,textComponent.Spans);}
 			out << YAML::Key << "Color" << YAML::Value << textComponent.Color;
 			out << YAML::Key << "Kerning" << YAML::Value << textComponent.Kerning;
 			out << YAML::Key << "LineSpacing" << YAML::Value << textComponent.LineSpacing;
@@ -691,6 +693,7 @@ namespace Hazel {
 					if(textComponent["FontFamily"])tc.Font.Family=std::filesystem::u8path(textComponent["FontFamily"].as<std::string>());
                     if(textComponent["FontStyle"])tc.Font.Style=FontStyle(textComponent["FontStyle"].as<unsigned>());
                     tc.Font.Validate();
+                    tc.Spans=Text::ReadSpans(textComponent["Emphasis"],tc.TextString);
 					tc.Color = textComponent["Color"].as<glm::vec4>();
 					tc.Kerning = textComponent["Kerning"].as<float>();
 					tc.LineSpacing = textComponent["LineSpacing"].as<float>();

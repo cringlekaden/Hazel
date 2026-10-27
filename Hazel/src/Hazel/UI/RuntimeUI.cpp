@@ -147,6 +147,17 @@ void RuntimeUI::CaptureSources(SurfaceMetrics surface, bool previewOrphans)
         if (!m_Scene.IsEntityValid(id))
             continue;
         CaptureStyle(e);
+        if(e.HasComponent<TextComponent>()){
+            const auto& text=e.GetComponent<TextComponent>();Text::ValidateSpanFields(text.Spans);
+            // Exact geometry dependencies omit colors. Their live source ranges
+            // are validated against the shared layout before painting.
+            state.Add(std::count_if(text.Spans.begin(),text.Spans.end(),[](const auto& span){return bool(span.Face);}));
+            for(const auto& span:text.Spans)if(span.Face){state.Add(span.Begin);state.Add(span.End);state.Add(unsigned(*span.Face));}
+            if(e.HasComponent<UITextEntryComponent>()&&!text.Spans.empty())throw std::invalid_argument("Runtime text entry is plain; remove display emphasis");
+            auto parent=m_Scene.GetEntityByUUID(m_Scene.GetRelationship(e).Parent);
+            if(parent&&parent.HasComponent<UIDropdownComponent>()&&parent.GetComponent<UIDropdownComponent>().Trigger==id&&!text.Spans.empty())throw std::invalid_argument("Computed dropdown captions are plain; put emphasis on option labels");
+        }
+
         state.Add(e.HasComponent<UIAppearanceComponent>());
         if(e.HasComponent<UIAppearanceComponent>()){const auto& c=e.GetComponent<UIAppearanceComponent>();state.Add(c.Styled);state.Add(c.Selection.Asset);state.Add(c.Selection.Variant);state.Add(c.Overrides);state.Add(c.Focus);state.Add(c.Selected);state.Add(c.Editing);state.Add(assets?assets->Epoch():uint64_t(0));}
         m_RectIDs.push_back(id);
@@ -1158,9 +1169,12 @@ void RuntimeUI::Draw()
                 auto &cache = m_Cache[e.GetUUID()];
                 const auto assets = m_Scene.GetAssets();
                 const auto epoch = assets ? assets->Epoch() : 1;
-                if (!cache.FontAsset || cache.Selection != t.Font || cache.Epoch != epoch)
+                const auto& spans=e.GetComponent<TextComponent>().Spans;
+                if(!spans.empty()&&displayText!=e.GetComponent<TextComponent>().TextString)throw std::invalid_argument("Computed dropdown captions are plain; put emphasis on option labels instead");
+                const auto& palette=ResolveTextFonts(t,assets,spans);const auto faces=TextFaces(palette);
+                if (!cache.FontAsset || cache.Selection != t.Font || cache.Epoch != epoch || cache.Faces!=faces)
                 {
-                    auto actual=ResolveTextFont(t,assets);bool changed=actual!=cache.FontAsset;
+                    auto actual=palette[0];bool changed=actual!=cache.FontAsset || cache.Faces!=faces;cache.Faces=faces;
                     cache.Selection=t.Font;cache.Epoch=epoch;cache.FontAsset=std::move(actual);
                     if(changed){cache.Width=-1;cache.PreparedValid=false;cache.MeasureWidth={{-2,-2}};cache.MeasureLines[0].clear();cache.MeasureLines[1].clear();cache.Lines.clear();cache.PaintLayout.reset();}
                 }
@@ -1176,18 +1190,18 @@ void RuntimeUI::Draw()
                 }
                 float width = content.Size.x / style.Size;
                 float textHeight=style.Overflow==Text::Overflow::Ellipsis?content.Size.y/style.Size:-1;
-                if (!cache.PaintLayout || cache.Lines.size()!=cache.PaintLayout->Lines.size() || cache.Text != displayText || cache.Width != width ||
+                if (!cache.PaintLayout || !Text::MatchesFaceRanges(*cache.PaintLayout,spans) || cache.Lines.size()!=cache.PaintLayout->Lines.size() || cache.Text != displayText || cache.Width != width ||
                     cache.Kerning != t.Kerning || cache.LineSpacing!=t.LineSpacing || cache.Wrap != style.Wrap || cache.Overflow!=style.Overflow || cache.MaxLines!=style.MaxLines || cache.Height!=textHeight)
                 {
                     cache.PreparedValid=false;
                     bool measured=false;
-                    for(size_t slot=0;slot<2;++slot)if(style.Overflow==Text::Overflow::Clip && cache.MeasureOverflow[slot]==style.Overflow && cache.MeasureMaxLines[slot]==style.MaxLines && !cache.MeasureLines[slot].empty() && cache.MeasureLines[slot].front().Result->Font==cache.FontAsset->GetCPUFace() && cache.MeasureText[slot]==displayText &&
+                    for(size_t slot=0;slot<2;++slot)if(style.Overflow==Text::Overflow::Clip && cache.MeasureOverflow[slot]==style.Overflow && cache.MeasureMaxLines[slot]==style.MaxLines && !cache.MeasureLines[slot].empty() && cache.MeasureLines[slot].front().Result->Faces==faces && Text::MatchesFaceRanges(*cache.MeasureLines[slot].front().Result,spans) && cache.MeasureText[slot]==displayText &&
                         cache.MeasureKerning[slot]==t.Kerning && cache.MeasureSpacing[slot]==t.LineSpacing && cache.MeasureWrap[slot]==style.Wrap &&
                         (!style.Wrap || cache.MeasureWidth[slot]==width)) {
                         cache.Lines=cache.MeasureLines[slot];cache.PaintLayout=cache.Lines.front().Result;measured=true;break;
                     }
                     if(!measured)cache.PaintLayout=Renderer2D::LayoutText(displayText, cache.FontAsset, width, style.Wrap,
-                                           t.Kerning, cache.Lines,t.LineSpacing,style.Overflow,style.MaxLines,textHeight);
+                                           t.Kerning, cache.Lines,t.LineSpacing,style.Overflow,style.MaxLines,textHeight,palette,spans);
                     cache.PreparedValid = false;
                     cache.Text = displayText;
                     cache.Width = width;
@@ -1196,6 +1210,7 @@ void RuntimeUI::Draw()
                     cache.Wrap = style.Wrap;
                     cache.Overflow=style.Overflow;cache.MaxLines=style.MaxLines;cache.Height=textHeight;
                 }
+                Text::ValidateEmphasis(*cache.PaintLayout,spans);
                 // Position/tint are live draw values. Only normalized glyph geometry is cached.
                 const glm::vec2 normalizedContent = content.Size / style.Size;
                 const bool changed =
@@ -1216,14 +1231,13 @@ void RuntimeUI::Draw()
                     cache.PreparedValid = false;
                 }
                 auto face=cache.FontAsset->GetCPUFace();
-                const float normalized=1/face->HeightEm();
-                const float lineHeight=face->LineHeightEm()*normalized+t.LineSpacing;
-                const float height = cache.Lines.empty()?0:1.f + (cache.Lines.size() - 1) * lineHeight;
+                const float lineHeight=cache.PaintLayout->LineHeight;
+                const float height = cache.Lines.empty()?0:cache.PaintLayout->BoxHeight + (cache.Lines.size() - 1) * lineHeight;
                 auto visitLines = [&](auto emit) {
                     float y = style.Vertical == Align::Center ? (normalizedContent.y - height) * .5f
                               : style.Vertical == Align::End  ? normalizedContent.y - height
                                                               : 0;
-                    y += face->AscenderEm() * normalized;
+                    y += cache.PaintLayout->Ascender;
                     for (const auto &line : cache.Lines)
                     {
                         const float x = style.Horizontal == Align::Center
@@ -1249,7 +1263,7 @@ void RuntimeUI::Draw()
                         m_PreparedBytes = m_PreparedBytes - priorBytes +
                                           cache.Glyphs.capacity() * sizeof(Renderer2D::TextGlyph);
                         visitLines([&](const auto &line, glm::vec2 offset) {
-                            Renderer2D::AppendTextLineGlyphs(line, cache.FontAsset, cache.Glyphs, offset);
+                            Renderer2D::AppendTextLineGlyphs(line, cache.FontAsset, cache.Glyphs, offset,palette);
                         });
                         cache.PreparedContent = normalizedContent;
                         cache.PreparedSize = style.Size;
@@ -1262,15 +1276,15 @@ void RuntimeUI::Draw()
                     else
                         ++m_Diagnostics.PreparedReuses;
                     Renderer2D::DrawTextGlyphs(cache.Glyphs, cache.FontAsset, transform,
-                                               t.Color * tint, int(uint32_t(e)));
+                                               t.Color, int(uint32_t(e)),spans,tint);
                 }
                 else
                 {
                     ++m_Diagnostics.PreparedRebuilds;
                     visitLines([&](const auto &line, glm::vec2 offset) {
                         m_ScratchGlyphs.clear();
-                        Renderer2D::AppendTextLineGlyphs(line,cache.FontAsset,m_ScratchGlyphs,offset);
-                        Renderer2D::DrawTextGlyphs(m_ScratchGlyphs,cache.FontAsset,transform,t.Color*tint,int(uint32_t(e)));
+                        Renderer2D::AppendTextLineGlyphs(line,cache.FontAsset,m_ScratchGlyphs,offset,palette);
+                        Renderer2D::DrawTextGlyphs(m_ScratchGlyphs,cache.FontAsset,transform,t.Color,int(uint32_t(e)),spans,tint);
                         m_ScratchGlyphs.clear(); // no unaccounted page pins across frames
                     });
                 }

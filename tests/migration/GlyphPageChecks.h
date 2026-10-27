@@ -98,6 +98,11 @@ static void PagePressurePixels() {
         auto failures=Hazel::Font::Resources().PageFailures;
         Renderer2D::AppendTextGlyphs(u8"مرحبا",blocked,{},glyphs);
         Check(Hazel::Font::Resources().PageFailures==failures,"Warm page failure retried generation");
+        FontPalette rich{};rich[0]=first;rich[2]=blocked;std::vector<Text::Span> emphasis{{2,3,FontStyle::Bold,{}}};std::vector<Renderer2D::TextLine> richLines;
+        auto mixed=Renderer2D::LayoutText("A B",first,-1,false,0,richLines,0,Text::Overflow::Clip,0,-1,rich,emphasis);glyphs.clear();Renderer2D::AppendTextLineGlyphs(richLines.front(),first,glyphs,{},rich);
+        Check(glyphs.size()==2&&glyphs.front().Page&&glyphs.front().Page==pin&&!glyphs.back().Page,"Mixed-face page pressure invalidated an active pin or omitted the blocked glyph");
+        Check(mixed->Glyphs.back().FaceIndex==2&&Hazel::Font::Resources().PageFailures==failures,"Rich page failure retried admission or lost face identity");
+        Begin();Renderer2D::DrawTextGlyphs(glyphs,first,Transform(-.5f,-.1f,.6f),{1,1,1,1},412,emphasis);End();Check(Pixels(412)>0,"Mixed-face pressure produced no visible text/placeholder");
     }
     Hazel::Font::Shutdown();Check(Hazel::Font::Resources().LiveAtlases==0,"Pressure page/texture pins leaked");Hazel::Font::Initialize();Hazel::Font::GetDefault();
 }

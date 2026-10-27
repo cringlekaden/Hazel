@@ -82,6 +82,7 @@ private:
 };
 // Shared UI/world face resolution, retaining the accepted face on the active text component.
 Ref<Font> ResolveTextFont(TextComponent& text,const Ref<ProjectAssets>& assets);
+const FontPalette& ResolveTextFonts(TextComponent& text,const Ref<ProjectAssets>& assets,const std::vector<Text::Span>& spans);
 // CPU-only closure validation shared by export and editor reference scans.
 struct SpriteAssetUse { std::filesystem::path File; std::string Location; SpriteReference Sprite; AnimationReference Animation; };
 std::vector<SpriteAssetUse> FindSpriteAssetUses(const std::filesystem::path& root,const std::vector<std::filesystem::path>& files);

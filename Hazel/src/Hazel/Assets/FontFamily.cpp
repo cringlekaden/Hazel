@@ -126,4 +126,20 @@ const FontFamilyDefinition& DefaultFontFamily() {
     }();return family;
 }
 std::filesystem::path DefaultFontFace(FontStyle requested) {return Resources::Resolve(DefaultFontFamily().Faces[unsigned(DefaultFontFamily().Select(requested))].File);}
+void AuditTextEmphasis(const std::filesystem::path& root,const FontSelection& selection,const std::string& source,const std::vector<Text::Span>& input) {
+    selection.Validate();auto spans=Text::NormalizeSpans(source,input);if(spans.empty())return;
+    const auto family=selection.Family.empty()?DefaultFontFamily():ReadFontFamily(Project::ResolveOwnedAsset(root,selection.Family));
+    Text::Service service;Text::FaceSet faces{};std::array<Ref<const Text::Face>,4> accepted{};
+    auto face=[&](FontStyle style){auto actual=family.Select(style);auto& result=accepted[unsigned(actual)];if(result)return result;
+        auto path=selection.Family.empty()?DefaultFontFace(actual):Project::ResolveOwnedAsset(root,family.Faces[unsigned(actual)].File);
+        std::ifstream file(path,std::ios::binary|std::ios::ate);auto size=file?file.tellg():std::streampos(-1);
+        if(size<=0||uint64_t(size)>FontLimits{}.InputBytes)throw std::invalid_argument("Emphasis face missing or exceeds 4 MiB: "+path.generic_u8string());
+        std::vector<uint8_t> bytes(size_t(size),0);file.seekg(0);if(!file.read(reinterpret_cast<char*>(bytes.data()),std::streamsize(bytes.size())))throw std::invalid_argument("Cannot read emphasis face: "+path.generic_u8string());
+        result=service.CreateFace(bytes,path.generic_u8string());return result;};
+    faces[0]=face(selection.Style);std::vector<Text::FaceRange> ranges;
+    for(const auto& s:spans)if(s.Face){auto index=uint8_t(unsigned(*s.Face)+1);faces[index]=face(*s.Face);
+        if(!ranges.empty()&&ranges.back().End==s.Begin&&ranges.back().FaceIndex==index)ranges.back().End=s.End;else ranges.push_back({s.Begin,s.End,index});}
+    auto result=service.Arrange(source,faces[0],{},faces,ranges);Text::ValidateEmphasis(*result,spans);
+}
+
 }

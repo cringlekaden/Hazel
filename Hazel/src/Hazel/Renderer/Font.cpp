@@ -160,11 +160,11 @@ Ref<const FontPage> Font::GeneratePage(const std::vector<uint32_t>& ids) {
     if(bytes<=limits.CacheBytes)pages.push_front(page);
     return page;
 }
-std::vector<Ref<const FontPage>> Font::PreparePages(const Text::Layout& layout) {
-    CheckThread();if(layout.Font!=m_CPUFace)throw std::invalid_argument("Layout/page accepted face mismatch");
+std::vector<Ref<const FontPage>> Font::PreparePages(const Text::Layout& layout,uint8_t faceIndex) {
+    CheckThread();if(faceIndex>=layout.Faces.size() || layout.Faces[faceIndex]!=m_CPUFace)throw std::invalid_argument("Layout/page accepted face mismatch");
     if(layout.Glyphs.size()>65536)throw std::invalid_argument("Page preparation exceeds 65536 glyphs");
     auto& ids=glyphIDs;auto& missing=missingIDs;ids.clear();missing.clear();ids.reserve(layout.Glyphs.size());
-    for(auto& g:layout.Glyphs)ids.push_back(g.ID);
+    for(auto& g:layout.Glyphs)if(g.FaceIndex==faceIndex)ids.push_back(g.ID);
     std::sort(ids.begin(),ids.end());ids.erase(std::unique(ids.begin(),ids.end()),ids.end());
     std::vector<Ref<const FontPage>> result;result.reserve(std::min(size_t(24),livePages.size()));
     Prune();auto source=std::find_if(sources.begin(),sources.end(),[&](const auto& record){return record.Face.lock()==m_CPUFace;});
@@ -201,14 +201,19 @@ std::vector<Ref<const FontPage>> Font::PreparePages(const Text::Layout& layout) 
     }
     return result;
 }
-Ref<const Text::Layout> Font::Layout(const std::string& text,float width,bool wrap,float tracking,float spacing,Text::Overflow overflow,uint32_t maxLines,float height) {
+Ref<const Text::Layout> Font::Layout(const std::string& text,float width,bool wrap,float tracking,float spacing,Text::Overflow overflow,uint32_t maxLines,float height,const Text::FaceSet& requestedFaces,const std::vector<Text::Span>& spans) {
     CheckThread();if(!std::isfinite(width) || !std::isfinite(height) || (width<0 && width!=-1) || (height<0 && height!=-1))throw std::invalid_argument("Text constraints must be finite, -1 (indefinite) or nonnegative");
     if(!wrap && overflow==Text::Overflow::Clip)width=-1;
     if(overflow==Text::Overflow::Clip)height=-1;
-    for(auto it=m_Layouts.begin();it!=m_Layouts.end();++it)if(it->Width==width && it->Wrap==wrap && it->Height==height && it->OverflowMode==overflow && it->MaxLines==maxLines && it->Tracking==tracking && it->Spacing==spacing && it->Result->Source==text){auto result=it->Result;m_Layouts.splice(m_Layouts.begin(),m_Layouts,it);++stats.LayoutHits;return result;}
+    Text::ValidateSpanFields(spans);Text::FaceSet faces=requestedFaces;faces[0]=m_CPUFace;
+    std::vector<Text::FaceRange> ranges;ranges.reserve(spans.size());
+    for(const auto& span:spans)if(span.Face){auto slot=uint8_t(unsigned(*span.Face)+1);if(!faces[slot])throw std::invalid_argument("Resolve all requested emphasis faces before layout");
+        if(!ranges.empty()&&ranges.back().End==span.Begin&&ranges.back().FaceIndex==slot)ranges.back().End=span.End;else ranges.push_back({span.Begin,span.End,slot});}
+    for(auto it=m_Layouts.begin();it!=m_Layouts.end();++it)if(it->Width==width && it->Wrap==wrap && it->Height==height && it->OverflowMode==overflow && it->MaxLines==maxLines && it->Tracking==tracking && it->Spacing==spacing && it->Result->Source==text && it->Result->Faces==faces && it->Result->FaceRanges==ranges){auto result=it->Result;Text::ValidateEmphasis(*result,spans);m_Layouts.splice(m_Layouts.begin(),m_Layouts,it);++stats.LayoutHits;return result;}
     Text::Options options;options.EmSize=1/m_CPUFace->HeightEm();options.Tracking=tracking;options.LineSpacing=spacing;options.PermitNotdef=true;options.Wrap=wrap;options.OverflowMode=overflow;options.MaxLines=maxLines;if(width>=0)options.Width=width;if(height>=0)options.Height=height;
     Ref<const Text::Layout> result;
-    for(;;)try{result=Text::Service::Main().Arrange(text,m_CPUFace,options);break;}catch(const Text::ResourcePressure&){if(m_Layouts.empty())throw;m_LayoutBytes-=m_Layouts.back().Result->RetainedBytes();m_Layouts.pop_back();}
+    for(;;)try{result=Text::Service::Main().Arrange(text,m_CPUFace,options,faces,ranges);break;}catch(const Text::ResourcePressure&){if(m_Layouts.empty())throw;m_LayoutBytes-=m_Layouts.back().Result->RetainedBytes();m_Layouts.pop_back();}
+    Text::ValidateEmphasis(*result,spans);
     ++stats.LayoutBuilds;
     if(result->MissingGlyphs && m_TextWarning.empty()) {
         m_TextWarning="Observed missing source glyphs: .notdef, no cross-family fallback";

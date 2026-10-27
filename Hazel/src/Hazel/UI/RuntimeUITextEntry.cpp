@@ -49,6 +49,7 @@ void RuntimeUI::ValidateTextFields(uint64_t target) const
             e.HasComponent<UIRadioGroupComponent>() || extraChildren)
             throw std::invalid_argument("Text Entry needs a Rect/Text/Button with Text Entry behavior (only an owned tooltip body may be a child) "
                                         "and no competing container/value components");
+        if(!e.GetComponent<TextComponent>().Spans.empty())throw std::invalid_argument("Runtime text entry is plain; remove display emphasis");
         const auto &r = e.GetComponent<UIRectComponent>();
         if (r.WidthMode == SizeMode::Content || r.HeightMode == SizeMode::Content)
             throw std::invalid_argument(
@@ -98,6 +99,7 @@ void RuntimeUI::SyncTextFields()
              version = m_Scene.GetAuthoringComponentVersion(id, typeid(UITextEntryComponent));
         try
         {
+            if(!e.GetComponent<TextComponent>().Spans.empty())throw std::invalid_argument("Text Entry is plain; remove display emphasis");
             ValidateEntry(c);
             const auto &initial = e.GetComponent<TextComponent>().TextString;
             bool reset = v.Lifetime != life || v.Component != version || v.Initial != initial ||

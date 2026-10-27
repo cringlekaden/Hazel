@@ -283,7 +283,7 @@ namespace Hazel {
             if(!scene)throw std::invalid_argument("Text needs a runtime scene");scene->CheckThread();
             auto entity=scene->GetEntityByUUID(entityID);
             if(!entity||!scene->IsEntityValid(entityID)||!entity.HasComponent<TextComponent>())throw std::invalid_argument("Text needs a live Text component");
-            if(entity.HasComponent<UITextEntryComponent>()&&textString&&mono_string_length(textString)>16384)throw std::invalid_argument("Managed text input exceeds bounded UTF-16 length");
+            if(textString&&mono_string_length(textString)>32768)throw std::invalid_argument("Managed text input exceeds bounded UTF-16 length");
             if(textString) {
                 auto chars=mono_string_chars(textString);auto length=mono_string_length(textString);
                 for(int i=0;i<length;++i) {
@@ -296,8 +296,37 @@ namespace Hazel {
             }
             auto text=Utils::MonoStringToString(textString);UTF8::Validate(text);
             if(entity.HasComponent<UIRectComponent>()&&text.size()>65536)throw std::invalid_argument("UI text exceeds 64 KiB");
-            if(entity.HasComponent<UITextEntryComponent>())scene->SetUITextEntry(entityID,text);else entity.GetComponent<TextComponent>().TextString=std::move(text);
+            scene->SetDisplayText(entityID,text);
         }catch(const std::exception& e){failure=mono_get_exception_argument("text",e.what());}
+        if(failure)mono_raise_exception(failure);
+    }
+
+    struct TextSpanWire {uint32_t Begin,End,Flags;int32_t Face;glm::vec4 Color;};
+    static_assert(sizeof(TextSpanWire)==32,"Managed emphasis ABI");
+    static void TextComponent_SetRichText(UUID entityID,MonoString* source,MonoArray* array) {
+        MonoException* failure=nullptr;
+        try {
+            if(source){auto chars=mono_string_chars(source);int length=mono_string_length(source);
+                if(length>32768)throw std::invalid_argument("Display text exceeds bounded UTF-16 input");
+                for(int i=0;i<length;++i){auto c=chars[i];if(!c)throw std::invalid_argument("Text contains NUL");if(c>=0xd800&&c<=0xdbff){if(++i>=length||chars[i]<0xdc00||chars[i]>0xdfff)throw std::invalid_argument("Unpaired UTF-16 surrogate");}else if(c>=0xdc00&&c<=0xdfff)throw std::invalid_argument("Unpaired UTF-16 surrogate");}}
+            auto text=Utils::MonoStringToString(source);auto map=Text::SourceMap::Analyze(text);
+            const auto count=array?mono_array_length(array):0;if(count>Text::MaxSpans)throw std::invalid_argument("Display emphasis exceeds 128 spans");
+            std::vector<Text::Span> spans;spans.reserve(count);
+            for(size_t i=0;i<count;++i){auto wire=mono_array_get(array,TextSpanWire,i);if(wire.Flags&~3u)throw std::invalid_argument("Invalid emphasis flags");Text::Span s;
+                s.Begin=map.Scalar(wire.Begin,Text::SourceUnit::UTF16);s.End=map.Scalar(wire.End,Text::SourceUnit::UTF16);
+                if(wire.Flags&1){if(wire.Face<0||wire.Face>3)throw std::invalid_argument("Invalid emphasis face");s.Face=FontStyle(wire.Face);}if(wire.Flags&2)s.Color=wire.Color;spans.push_back(s);}
+            auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("Display text needs a runtime scene");scene->SetDisplayText(entityID,text,spans);
+        }catch(const std::exception& e){failure=mono_get_exception_argument("emphasis",e.what());}
+        if(failure)mono_raise_exception(failure);
+    }
+    static int TextComponent_GetEmphasisCount(UUID entityID){return int(CheckedSpriteEntity<TextComponent>(entityID).GetComponent<TextComponent>().Spans.size());}
+    static void TextComponent_GetEmphasis(UUID entityID,MonoArray* array) {
+        MonoException* failure=nullptr;
+        try {const auto& c=CheckedSpriteEntity<TextComponent>(entityID).GetComponent<TextComponent>();
+            if(!array||mono_array_length(array)!=c.Spans.size()||c.Spans.size()>Text::MaxSpans)throw std::invalid_argument("Emphasis array length changed; retry");
+            auto map=Text::SourceMap::Analyze(c.TextString);Text::NormalizeSpans(map,c.Spans);
+            for(size_t i=0;i<c.Spans.size();++i){const auto& s=c.Spans[i];TextSpanWire wire{map.Offset(s.Begin,Text::SourceUnit::UTF16),map.Offset(s.End,Text::SourceUnit::UTF16),uint32_t((s.Face?1:0)|(s.Color?2:0)),s.Face?int(*s.Face):0,s.Color.value_or(glm::vec4(1))};mono_array_set(array,TextSpanWire,i,wire);}
+        }catch(const std::exception& e){failure=mono_get_exception_argument("emphasis",e.what());}
         if(failure)mono_raise_exception(failure);
     }
 
@@ -710,6 +739,9 @@ namespace Hazel {
 		HZ_ADD_INTERNAL_CALL(Rigidbody2DComponent_SetType);
 
 		HZ_ADD_INTERNAL_CALL(TextComponent_GetText);
+        HZ_ADD_INTERNAL_CALL(TextComponent_SetRichText);
+        HZ_ADD_INTERNAL_CALL(TextComponent_GetEmphasisCount);
+        HZ_ADD_INTERNAL_CALL(TextComponent_GetEmphasis);
         HZ_ADD_INTERNAL_CALL(TextComponent_GetFontFamily);
         HZ_ADD_INTERNAL_CALL(TextComponent_GetFontStyle);
         HZ_ADD_INTERNAL_CALL(TextComponent_SetFont);

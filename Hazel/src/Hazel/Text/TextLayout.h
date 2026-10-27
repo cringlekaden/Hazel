@@ -1,5 +1,7 @@
 #pragma once
 #include "Hazel/Core/Base.h"
+#include "TextSource.h"
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <stdexcept>
@@ -44,19 +46,18 @@ private:
 // Boundary i is before scalar i; terminal entry maps the end. UTF-16 offsets
 // count original C# code units, including an ignored leading BOM. Interior
 // byte/UTF-16 surrogate positions are deliberately not scalar boundaries.
-struct SourceBoundary {
-    uint32_t Byte=0, UTF16=0;
-    bool Grapheme=false, Line=false, Mandatory=false;
-};
 struct Glyph {
     uint32_t ID=0, ClusterBegin=0, ClusterEnd=0; // scalar range, not glyph count
     float X=0, Y=0, AdvanceX=0, AdvanceY=0, OffsetX=0, OffsetY=0;
+    uint8_t FaceIndex=0;
+    uint32_t PaintSource=UINT32_MAX;
     bool Generated=false; // marker cluster has no authored source: both cluster offsets are UINT32_MAX
 };
 struct Run {
     uint32_t Begin=0, End=0, FirstGlyph=0, GlyphCount=0, Script=0;
     uint8_t Level=0; // odd=RTL; runs/glyphs are stored in visual left-to-right order
     float X=0, Width=0;
+    uint8_t FaceIndex=0;
     bool ContainsGenerated=false;
 };
 struct Line {
@@ -66,6 +67,10 @@ struct Line {
     bool Ellipsized=false;
 };
 struct Paragraph { uint32_t Begin=0, End=0, SeparatorEnd=0; uint8_t Level=0; };
+struct FaceRange {
+    uint32_t Begin=0,End=0;uint8_t FaceIndex=0;
+    bool operator==(const FaceRange& b) const {return Begin==b.Begin&&End==b.End&&FaceIndex==b.FaceIndex;}
+};
 class Layout {
 public:
     Layout()=default;
@@ -80,6 +85,10 @@ public:
     std::vector<Run> Runs;
     std::vector<Glyph> Glyphs;
     Ref<const Face> Font;
+    std::array<Ref<const Face>,5> Faces{};
+    std::vector<uint8_t> EmphasisStops;
+    std::vector<FaceRange> FaceRanges;
+    float BoxHeight=0, LineHeight=0, Ascender=0;
     float Width=0, Height=0, EmSize=1;
     uint32_t ShapeCalls=0, ShapeScalars=0, MissingGlyphs=0, MissingMarkerGlyphs=0;
     bool Omitted=false, MarkerDoesNotFit=false, ConservativeTruncation=false;
@@ -104,18 +113,21 @@ struct Options {
     Direction BaseDirection=Direction::Auto;
     std::string Language="und"; // tested shaping tags: und/en/fr/de/el/ru/ar/he
 };
+using FaceSet=std::array<Ref<const Face>,5>;
+void ValidateEmphasis(const Layout& layout,const std::vector<Span>& spans);
+bool MatchesFaceRanges(const Layout& layout,const std::vector<Span>& spans);
 class Service {
 public:
     explicit Service(const Limits& limits={});
     // Renderer/main thread's CPU service. Does not create or retain GPU objects.
     static Service& Main();
     Ref<const Face> CreateFace(const std::vector<uint8_t>& bytes, std::string identity);
-    Ref<const Layout> Arrange(std::string_view text, const Ref<const Face>& face, const Options& options={});
+    Ref<const Layout> Arrange(std::string_view text, const Ref<const Face>& face, const Options& options={}, const FaceSet& faces={}, const std::vector<FaceRange>& ranges={});
     Resources Usage() const;
     Service(const Service&)=delete;
     Service& operator=(const Service&)=delete;
 private:
-    Ref<Layout> Build(std::string_view text,const Ref<const Face>& face,const Options& options, uint32_t& calls,uint32_t& scalars);
+    Ref<Layout> Build(std::string_view text,const Ref<const Face>& face,const Options& options, uint32_t& calls,uint32_t& scalars,const FaceSet& faces,const std::vector<FaceRange>& ranges);
     void CheckThread() const;
     Limits m_Limits;
     Ref<Budget> m_Budget;

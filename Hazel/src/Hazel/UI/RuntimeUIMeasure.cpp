@@ -20,9 +20,11 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
             auto &cache = m_Cache[e.GetUUID()];
             const auto assets = m_Scene.GetAssets();
             auto epoch = assets ? assets->Epoch() : 1;
-            if (!cache.FontAsset || cache.Selection != text.Font || cache.Epoch != epoch)
+            const auto& spans=e.GetComponent<TextComponent>().Spans;
+            const auto& palette=ResolveTextFonts(text,assets,spans);const auto faces=TextFaces(palette);
+            if (!cache.FontAsset || cache.Selection != text.Font || cache.Epoch != epoch || cache.Faces!=faces)
             {
-                auto actual=ResolveTextFont(text,assets);bool changed=actual!=cache.FontAsset;
+                auto actual=palette[0];bool changed=actual!=cache.FontAsset || cache.Faces!=faces;cache.Faces=faces;
                 cache.Selection=text.Font;cache.Epoch=epoch;cache.FontAsset=std::move(actual);
                 if(changed){cache.Width=-1;cache.PreparedValid=false;cache.MeasureWidth={{-2,-2}};cache.MeasureLines[0].clear();cache.MeasureLines[1].clear();cache.Lines.clear();}
             }
@@ -31,13 +33,14 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
             float normalizedWidth = width < 0 ? -1 : width / style.Size;
             if (cache.MeasureWidth[slot] != normalizedWidth ||
                 cache.MeasureText[slot] != displayText ||
+                (!cache.MeasureLines[slot].empty()&&!Text::MatchesFaceRanges(*cache.MeasureLines[slot].front().Result,spans)) ||
                 cache.MeasureKerning[slot] != text.Kerning || cache.MeasureSpacing[slot] != text.LineSpacing || cache.MeasureWrap[slot] != wrap || cache.MeasureOverflow[slot]!=style.Overflow || cache.MeasureMaxLines[slot]!=style.MaxLines)
             {
                 cache.MeasureWidth[slot]=-2; // failed publication must not leave a valid key with empty lines
                 cache.MeasureLines[slot].clear();
                 if(cache.Text!=displayText || cache.Kerning!=text.Kerning || cache.LineSpacing!=text.LineSpacing)cache.Lines.clear();
                 Renderer2D::LayoutText(displayText, cache.FontAsset, normalizedWidth, wrap,
-                                       text.Kerning, cache.MeasureLines[slot],text.LineSpacing,style.Overflow,style.MaxLines);
+                                       text.Kerning, cache.MeasureLines[slot],text.LineSpacing,style.Overflow,style.MaxLines,-1,palette,spans);
                 cache.MeasureWidth[slot] = normalizedWidth;
                 cache.MeasureText[slot] = displayText;
                 cache.MeasureKerning[slot] = text.Kerning;
@@ -51,9 +54,9 @@ glm::vec2 RuntimeUI::Intrinsic(Entity e, float width)
             auto &lines = cache.MeasureLines[slot];
             for (auto &line : lines)
                 size.x = std::max(size.x, line.Width * style.Size);
-            auto face=cache.FontAsset->GetCPUFace();
-            float lineHeight=(face->LineHeightEm()/face->HeightEm()+text.LineSpacing)*style.Size;
-            size.y = lines.empty() ? 0 : style.Size + (lines.size() - 1) * lineHeight;
+            if(!lines.empty())Text::ValidateEmphasis(*lines.front().Result,spans);
+            float lineHeight=lines.empty()?0:lines.front().Result->LineHeight*style.Size;
+            size.y = lines.empty() ? 0 : lines.front().Result->BoxHeight*style.Size + (lines.size() - 1) * lineHeight;
             if (!std::isfinite(size.y) || size.y < 0)
                 throw std::invalid_argument("Intrinsic text height is invalid");
         }

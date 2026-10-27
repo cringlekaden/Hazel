@@ -46,6 +46,7 @@ namespace Hazel {
         Relationship GetRelationship(Entity entity) const;
         std::vector<UUID> GetChildren(UUID parent = UUID(0)) const;
         const std::vector<UUID>& GetChildrenView(UUID parent) const;
+        void SetDisplayText(uint64_t entity,const std::string& source,const std::vector<Text::Span>& spans={});
         UIStyleValues GetUIPresentation(uint64_t entity);
         UIStyleSelection GetUIStyle(uint64_t entity);
         void SetUIStyle(uint64_t entity,const UIStyleSelection& selection,bool enabled=true);
