@@ -116,6 +116,8 @@ void AuthoringPanel::MarkSceneSaved() {
     m_SceneHistory.Bind(m_Editor.m_EditorScene->GetIdentity());
     m_SceneHistory.MarkSaved(SceneText());
     m_Editor.m_SceneHierarchyPanel.BindHistory(&m_SceneHistory);
+    m_Editor.m_SceneHierarchyPanel.BeforeStructure=[this]{m_Editor.m_UIEdit.Finish(true);m_Editor.m_HoveredEntity={};};
+    m_PrefabInspector.BeforeStructure=[this]{m_Editor.m_UIEdit.Finish(true);m_Editor.m_HoveredEntity={};};
 }
 std::string AuthoringPanel::SceneText() const
 {
@@ -1368,17 +1370,22 @@ void AuthoringPanel::InstantiatePrefab(const std::filesystem::path &path, bool u
         return;
     try
     {
-        auto parent=m_Editor.m_SceneHierarchyPanel.GetSelectedEntity();
-        for(size_t depth=0;parent&&parent.HasComponent<UIButtonComponent>()&&depth<Scene::MaxDepth;++depth)parent=m_Editor.m_EditorScene->GetEntityByUUID(m_Editor.m_EditorScene->GetRelationship(parent).Parent);
-        auto relative = Project::MakeAssetReference(Project::GetAssetDirectory(), path);
-        auto entity =
-            useInspectorTransform
-                ? Prefab::Instantiate(Project::GetAssetDirectory(), relative, *m_Editor.m_EditorScene,
-                                      m_InitialTransform)
-                : Prefab::Instantiate(Project::GetAssetDirectory(), relative, *m_Editor.m_EditorScene);
-        if(entity.HasComponent<UIRectComponent>()&&parent&&parent.BelongsTo(m_Editor.m_EditorScene.get())&&(parent.HasComponent<UIRectComponent>()||parent.HasComponent<UICanvasComponent>()))
-            m_Editor.m_EditorScene->Reparent(entity,parent,TransformPolicy::KeepLocal);
-        m_Editor.m_SceneHierarchyPanel.SetSelectedEntity(entity);
+        auto& panel=m_Editor.m_SceneHierarchyPanel;
+        if(!panel.Structural("Instantiate prefab",[&]{
+            auto parent=panel.GetSelectedEntity();
+            // The operation runs in the panel's disposable Edit scene.
+            auto destination=panel.AuthoringScene();
+            for(size_t depth=0;parent&&parent.HasComponent<UIButtonComponent>()&&depth<Scene::MaxDepth;++depth)parent=destination->GetEntityByUUID(destination->GetRelationship(parent).Parent);
+            auto relative=Project::MakeAssetReference(Project::GetAssetDirectory(),path);
+            auto entity=useInspectorTransform?Prefab::Instantiate(Project::GetAssetDirectory(),relative,*destination,m_InitialTransform):Prefab::Instantiate(Project::GetAssetDirectory(),relative,*destination);
+            if(entity.HasComponent<UIRectComponent>()&&parent&&(parent.HasComponent<UIRectComponent>()||parent.HasComponent<UICanvasComponent>()))destination->Reparent(entity,parent,TransformPolicy::KeepLocal);
+            return panel.SetSelectedEntity(entity);
+        }))m_Editor.ActionFailed("Prefab instantiation rejected; inspect hierarchy diagnostics");
+        else {
+            m_ActiveDocument=EditorDocument::Scene;
+            m_Editor.m_ActionError.clear();
+            if(ImGui::GetCurrentContext())ImGui::SetWindowFocus(m_Editor.m_SceneHierarchyPanel.HierarchyVisible?"Scene Hierarchy":"Viewport");
+        }
     }
     catch (const std::exception &error)
     {

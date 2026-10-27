@@ -60,6 +60,7 @@ static std::string Read(const std::filesystem::path& file) {
 #include "EditorStateChecks.h"
 #include "EditorDocumentChecks.h"
 #include "EditorHistoryChecks.h"
+#include "EditorStructuralChecks.h"
 #include "EditorLayoutChecks.h"
 #include "EditorConsoleChecks.h"
 namespace Hazel {
@@ -74,6 +75,7 @@ public:
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project/assembly startup failed");
             EditorDocumentChecks();
             EditorHistoryChecks();
+            EditorStructuralChecks();
             EditorLayoutChecks();
             HistoryWorkflowChecks();
             ContainerWorkflowChecks();

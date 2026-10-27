@@ -423,11 +423,11 @@ namespace Hazel {
 	}
 
     std::string SceneSerializer::SerializeText(Entity only) { return SerializeTextImpl(only, true); }
-    std::string SceneSerializer::SerializeAuthoredSnapshot(Entity only) { return SerializeTextImpl(only, false); }
-	std::string SceneSerializer::SerializeTextImpl(Entity only, bool portablePaths)
+    std::string SceneSerializer::SerializeAuthoredSnapshot(Entity only, bool controls) { return SerializeTextImpl(only, false, controls); }
+	std::string SceneSerializer::SerializeTextImpl(Entity only, bool portablePaths, bool controls)
 	{
 		m_Scene->ValidateHierarchy();
-        m_Scene->ValidateUI(false);
+        m_Scene->ValidateUI(false,controls);
 		YAML::Emitter out;
 		out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);
 		out.SetDoublePrecision(std::numeric_limits<double>::max_digits10);

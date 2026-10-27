@@ -55,6 +55,7 @@ void SceneHierarchyPanel::RevealSelected() {
 bool SceneHierarchyPanel::AddChild(Entity parent, const std::string &name) {
     if (!m_Context || !CanEdit(true) || !parent.BelongsTo(m_Context.get()) || !parent)
         return false;
+    if(!m_Structuring){const auto id=parent.GetUUID();return Structural("Create child",[&]{return AddChild(m_Context->GetEntityByUUID(id),name);});}
     Entity child;
     try {
         child = m_Context->CreateEntity(name);
@@ -96,6 +97,7 @@ bool SceneHierarchyPanel::ReparentEntity(uint64_t scene, uint64_t child, uint64_
                                          TransformPolicy mode) {
     if (!m_Context || !CanEdit(true))
         return false;
+    if(!m_Structuring){if(scene!=m_Context->GetIdentity())return HierarchyFailed("Reparent document was replaced");return Structural("Reparent entity",[&]{return ReparentEntity(m_Context->GetIdentity(),child,parent,mode);});}
     try {
         if (scene != m_Context->GetIdentity())
             throw std::runtime_error("Cannot reparent across scenes or a replaced document");
@@ -117,6 +119,7 @@ bool SceneHierarchyPanel::ReparentEntity(uint64_t scene, uint64_t child, uint64_
 }
 bool SceneHierarchyPanel::MoveSelected(int direction) {
     auto entity=GetSelectedEntity();if(!entity||!CanEdit(true))return false;
+    if(!m_Structuring)return Structural("Reorder entity",[&]{return MoveSelected(direction);});
     try{FinishUIEdit();m_Context->MoveSibling(entity,direction);m_HierarchyError.clear();RevealSelected();return true;}
     catch(const std::exception &error){return HierarchyFailed(error.what());}
 }
@@ -124,6 +127,7 @@ bool SceneHierarchyPanel::DuplicateSelected() {
     auto e = GetSelectedEntity();
     if (!e || !CanEdit(true))
         return false;
+    if(!m_Structuring)return Structural("Duplicate subtree",[&]{return DuplicateSelected();});
     try {
         if (PrefabDocument && !uint64_t(m_Context->GetRelationship(e).Parent))
             throw std::runtime_error(
@@ -166,6 +170,7 @@ bool SceneHierarchyPanel::ConfirmDelete(uint64_t scene, uint64_t id, size_t expe
                                         DestroyPolicy policy, TransformPolicy mode) {
     if (!m_Context || !CanEdit(true))
         return false;
+    if(!m_Structuring){if(scene!=m_Context->GetIdentity())return HierarchyFailed("Delete document was replaced");return Structural("Delete subtree",[&]{return ConfirmDelete(m_Context->GetIdentity(),id,expectedCount,policy,mode);});}
     try {
         if (scene != m_Context->GetIdentity())
             throw std::runtime_error("Delete document has been replaced");

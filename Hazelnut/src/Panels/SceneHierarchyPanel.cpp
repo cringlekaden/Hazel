@@ -1,4 +1,5 @@
 #include "UI/TextEmphasisUI.h"
+#include "Authoring/StructuralCommand.h"
 #include "SceneHierarchyPanel.h"
 #include "ContentBrowserPayload.h"
 #include "Hazel/Scene/Components.h"
@@ -66,12 +67,14 @@ bool SceneHierarchyPanel::AddEntity(const std::string &name)
 {
     if (!m_Context || !CanEdit(true))
         return false;
+    if(!m_Structuring)return Structural("Create entity",[&]{return AddEntity(name);});
     if(PrefabDocument) { auto roots=m_Context->GetChildren();return !roots.empty() && AddChild(m_Context->GetEntityByUUID(roots.front()),name); }
     try {m_HierarchyError.clear();return SetSelectedEntity(m_Context->CreateEntity(name));}
     catch(const std::exception& error){return HierarchyFailed(error.what());}
 }
 bool SceneHierarchyPanel::AddUI(int kind) {
     if(!m_Context||!CanEdit(true))return false;
+    if(!m_Structuring)return Structural("Create UI composition",[&]{return AddUI(kind);});
     try {
         if(kind>=24&&kind<=26){
             const int base=kind==24?3:kind==25?22:4;
@@ -338,7 +341,7 @@ static bool SamePhysics(const Rigidbody2DComponent& a,const Rigidbody2DComponent
 static bool SamePhysics(const BoxCollider2DComponent& a,const BoxCollider2DComponent& b){return a.Offset==b.Offset && a.Size==b.Size && a.Density==b.Density && a.Friction==b.Friction && a.Restitution==b.Restitution && a.RestitutionThreshold==b.RestitutionThreshold;}
 static bool SamePhysics(const CircleCollider2DComponent& a,const CircleCollider2DComponent& b){return a.Offset==b.Offset && a.Radius==b.Radius && a.Density==b.Density && a.Friction==b.Friction && a.Restitution==b.Restitution && a.RestitutionThreshold==b.RestitutionThreshold;}
 template <typename T, typename UIFunction>
-static void DrawComponent(const std::string &name, Entity entity, std::map<std::string,bool>& sections,std::set<std::string>& restore,UIFunction uiFunction, const std::function<void(const std::string&)>& report = {}, const std::function<void()> &beforeRemove = {})
+static void DrawComponentBody(const std::string &name, Entity entity, std::map<std::string,bool>& sections,std::set<std::string>& restore,UIFunction uiFunction, const std::function<void(const std::string&)>& report = {}, const std::function<void()> &beforeRemove = {},const std::function<void()>& remove = {})
 {
     const ImGuiTreeNodeFlags treeNodeFlags =
         ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth |
@@ -384,12 +387,121 @@ static void DrawComponent(const std::string &name, Entity entity, std::map<std::
         if (removeComponent)
         {
             if(beforeRemove)beforeRemove();
-            entity.RemoveComponent<T>();
+            if(remove)remove();else entity.RemoveComponent<T>();
         }
         ImGui::PopID();
     }
 }
 
+template <class T, class F>
+void SceneHierarchyPanel::DrawComponent(const std::string &name, Entity entity,
+                                        std::map<std::string, bool> &sections,
+                                        std::set<std::string> &restore, F ui,
+                                        std::function<void(const std::string &)> report,
+                                        std::function<void()> beforeRemove)
+{
+    const auto id = uint64_t(entity.GetUUID());
+    DrawComponentBody<T>(
+        name, entity, sections, restore, ui, report, beforeRemove, [this, id, name] {
+            Structural("Remove " + name, [&] { return RemoveAuthoredComponent<T>(id); });
+        });
+}
+void SceneHierarchyPanel::RestoreHistorySelection(uint64_t id)
+{
+    m_SelectionContext = {};
+    m_Pickers.clear();
+    m_UIStatePickers = {};
+    m_UIFontInitialized = false;
+    m_SectionEntity = 0;
+    m_Reveal.clear();
+    m_DragHover = 0;
+    m_SelectionContext = m_Context ? m_Context->GetEntityByUUID(id) : Entity{};
+    try
+    {
+        RevealSelected();
+    }
+    catch (const std::bad_alloc &)
+    {
+        m_Reveal.clear();
+    }
+}
+bool SceneHierarchyPanel::Structural(const std::string &name,
+                                     const std::function<bool()> &operation)
+{
+    if (!m_Context || !CanEdit(true))
+        return false;
+    if (m_Structuring)
+        return operation();
+    FinishUIEdit(false);
+    if (BeforeStructure)
+        BeforeStructure();
+    if (ImGui::GetCurrentContext())
+        ImGui::ClearActiveID();
+    const auto document = m_Context;
+    auto *history = m_History;
+    auto selected = GetSelectedEntity();
+    const auto id = selected ? uint64_t(selected.GetUUID()) : 0;
+    if (history && history->Active())
+        return HierarchyFailed("Finish or cancel the active transaction before changing structure");
+    try
+    {
+        auto staged = Scene::CopyForAuthoring(document);
+        m_Context = staged;
+        m_History = nullptr;
+        m_Structuring = true;
+        m_SelectionContext = staged->GetEntityByUUID(id);
+        bool ok = false;
+        uint64_t result = 0;
+        try
+        {
+            ok = operation();
+            auto e = GetSelectedEntity();
+            result = e ? uint64_t(e.GetUUID()) : 0;
+        }
+        catch (...)
+        {
+            m_Context = document;
+            m_History = history;
+            m_Structuring = false;
+            RestoreHistorySelection(id);
+            throw;
+        }
+        m_Context = document;
+        m_History = history;
+        m_Structuring = false;
+        RestoreHistorySelection(id);
+        if (!ok)
+            throw std::runtime_error(m_HierarchyError.empty() ? "Structural operation rejected"
+                                                              : m_HierarchyError);
+        auto command = CreateScope<StructuralCommand>(document, staged, name, id, result);
+        staged.reset();
+        // Detached previews/tools have no retained document history and advertise
+        // no Undo. Real scene/prefab panels bind their document-owned service.
+        DocumentHistory transient;
+        auto *owner = history ? history : &transient;
+        if (!history)
+            owner->Bind(document->GetIdentity());
+        m_SelectionContext = {};
+        m_Pickers.clear();
+        m_UIStatePickers = {};
+        if (!owner->Execute(*document, std::move(command)))
+        {
+            RestoreHistorySelection(id);
+            return HierarchyFailed(owner->Diagnostic());
+        }
+        RestoreHistorySelection(owner->Selection().value_or(id));
+        m_HierarchyError.clear();
+        return true;
+    }
+    catch (const std::exception &error)
+    {
+        m_Context = document;
+        m_History = history;
+        m_Structuring = false;
+        RestoreHistorySelection(id);
+        return HierarchyFailed(error.what());
+    }
+}
 
 void SceneHierarchyPanel::FinishUIEdit(bool cancel)
 {
@@ -438,7 +550,7 @@ void SceneHierarchyPanel::DrawUIComponent(const std::string &name,Entity entity,
                 std::move(proposed),activity,ImGui::GetActiveID()))m_HierarchyError=m_UIInspectorEdit.Error();
             else if(changed)m_HierarchyError.clear();
         }catch(const std::exception &error){m_HierarchyError=error.what();if(report)report(error.what());}
-    },report,[this]{FinishUIEdit();});
+    },report,[this]{FinishUIEdit(false);});
 }
 void SceneHierarchyPanel::DrawComponents(Entity entity)
 {
@@ -1386,7 +1498,7 @@ template <typename T> void SceneHierarchyPanel::DisplayAddComponentEntry(const s
         }
         if (ImGui::MenuItem(entryName.c_str(),nullptr,false,allowed) && CanEdit(true))
         {
-            try{FinishUIEdit();m_SelectionContext.AddComponent<T>();m_HierarchyError.clear();ImGui::CloseCurrentPopup();}
+            try{if(Structural("Add "+entryName,[&]{return AddAuthoredComponent<T>(m_SelectionContext.GetUUID());})){m_HierarchyError.clear();ImGui::CloseCurrentPopup();}}
             catch(const std::exception& e){HierarchyFailed(e.what());}
         }
         if(!allowed)PropertyUI::Help(unavailable);

@@ -9,6 +9,7 @@ namespace
 struct State
 {
     std::string Bytes;
+    const std::type_info* Filter=nullptr;
     template <class T> void Value(T value)
     {
         static_assert(std::is_arithmetic_v<T>);
@@ -48,6 +49,7 @@ struct State
     }
     template <class T, class F> void Component(Entity e, F write)
     {
+        if(Filter && *Filter!=typeid(T))return;
         Value(e.HasComponent<T>());
         if (e.HasComponent<T>())
             write(e.GetComponent<T>());
@@ -92,23 +94,21 @@ struct State
     }
 };
 } // namespace
-std::string SceneSerializer::CaptureAuthoredState() const
+std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_info* component) const
 {
-    State state;
-    state.Bytes.reserve(m_Scene->GetAllEntitiesWith<IDComponent>().size() * 160);
-    state.Value(m_Scene->GetName());
+    State state;state.Filter=component;
+    state.Bytes.reserve((only ? 1 : m_Scene->GetAllEntitiesWith<IDComponent>().size()) * 160);
+    if(!component)state.Value(m_Scene->GetName());
     std::vector<uint64_t> ids;
-    for (auto h : m_Scene->GetAllEntitiesWith<IDComponent>())
+    if(only)ids.push_back(only.GetUUID());
+    else for (auto h : m_Scene->GetAllEntitiesWith<IDComponent>())
         ids.push_back(Entity(h, m_Scene.get()).GetUUID());
     std::sort(ids.begin(), ids.end());
-    state.Value(uint64_t(ids.size()));
+    if(!component)state.Value(uint64_t(ids.size()));
     for (auto id : ids)
     {
         auto e = m_Scene->GetEntityByUUID(id);
-        state.Value(id);
-        auto r = m_Scene->GetRelationship(e);
-        state.Value(r.Parent);
-        state.Value(r.Order);
+        if(!component){state.Value(id);auto r=m_Scene->GetRelationship(e);state.Value(r.Parent);state.Value(r.Order);}
         state.Component<TagComponent>(e, [&](auto &c) { state.Value(c.Tag); });
         state.Component<TransformComponent>(e, [&](auto &c) {
             state.Value(c.Translation);

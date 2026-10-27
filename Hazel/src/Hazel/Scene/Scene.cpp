@@ -7,6 +7,7 @@
 #include "Hazel/Audio/AudioPlayback.h"
 #include "Hazel/Project/Project.h"
 #include "Scene.h"
+#include "SceneSerializer.h"
 #include "RuntimeSession.h"
 #include "Entity.h"
 
@@ -132,7 +133,138 @@ namespace Hazel {
 		return newScene;
 	}
 
-	Entity Scene::CreateEntity(const std::string& name)
+    Ref<Scene> Scene::CopyForAuthoring(const Ref<Scene> &source)
+    {
+        source->CheckThread();
+        if (source->IsRunning() || source->IsSimulating() || source->IsStopping())
+            throw std::runtime_error("Stop runtime before staging authoring changes");
+        auto copy = CreateRef<Scene>();
+        copy->m_Assets = source->m_Assets;
+        copy->m_Name = source->m_Name;
+        copy->m_ViewportWidth = source->m_ViewportWidth;
+        copy->m_ViewportHeight = source->m_ViewportHeight;
+        if (source->m_Registry.size())
+            copy->m_Registry.assign(source->m_Registry.data(),
+                                    source->m_Registry.data() + source->m_Registry.size());
+        copy->m_EntityMap = source->m_EntityMap;
+        for (const auto &[id, h] : copy->m_EntityMap)
+        {
+            copy->m_Registry.emplace<IDComponent>(h, id);
+            copy->m_Registry.emplace<TagComponent>(h, source->m_Registry.get<TagComponent>(h));
+        }
+        CopyComponent(AllComponents{}, copy->m_Registry, source->m_Registry, copy->m_EntityMap);
+        copy->m_Relationships = source->m_Relationships;
+        copy->m_Children = source->m_Children;
+        copy->m_ScriptFields = source->m_ScriptFields;
+        copy->m_AuthoringLifetimes = source->m_AuthoringLifetimes;
+        copy->m_AuthoringComponentVersions = source->m_AuthoringComponentVersions;
+        copy->m_AuthoringStructureVersions = source->m_AuthoringStructureVersions;
+        copy->m_NextAuthoringStructureVersion = source->m_NextAuthoringStructureVersion;
+        return copy;
+    }
+    template <class... T>
+    static void PatchComponents(ComponentGroup<T...>, Scene &target, const Ref<Scene> &decoded,
+                                Entity to, Entity from)
+    {
+        SceneSerializer a(Ref<Scene>(&target, [](Scene *) {})), b(decoded);
+        (
+            [&] {
+                if constexpr (!std::is_same_v<T, NativeScriptComponent>)
+                {
+                    if (a.CaptureAuthoredState(to, &typeid(T)) ==
+                        b.CaptureAuthoredState(from, &typeid(T)))
+                        return;
+                    if (to.HasComponent<T>())
+                        to.RemoveComponent<T>();
+                    if (from.HasComponent<T>())
+                        to.AddComponent<T>(CopyForScene(from.GetComponent<T>()));
+                }
+            }(),
+            ...);
+    }
+    static void KeepGenerated(SpriteSource &next, const SpriteSource &current)
+    {
+        if (auto generated = std::get_if<TextureSpriteSource>(&current);
+            generated && generated->Texture.empty() && generated->Resource)
+        {
+            if (std::holds_alternative<std::monostate>(next))
+                next = current;
+            else if (auto texture = std::get_if<TextureSpriteSource>(&next);
+                     texture && texture->Texture.empty())
+                texture->Resource = generated->Resource;
+        }
+    }
+    void Scene::PatchAuthoring(const Ref<Scene> &decoded, const std::vector<uint64_t> &affected)
+    {
+        CheckThread();
+        // Work on a disposable staging scene. Decoded relationships are already
+        // validated; install them before physics-placement component callbacks.
+        auto graph = decoded->m_Relationships;
+        for (auto id : affected)
+            if (!decoded->IsEntityValid(id) && IsEntityValid(id))
+            {
+                auto h = m_EntityMap.at(id);
+                m_Registry.destroy(h);
+                m_EntityMap.erase(id);
+                m_ScriptFields.erase(id);
+                m_AuthoringLifetimes.erase(id);
+                m_AuthoringComponentVersions.erase(id);
+                m_AuthoringStructureVersions.erase(id);
+            }
+        for (auto id : affected)
+            if (decoded->IsEntityValid(id) && !IsEntityValid(id))
+                CreateEntityWithUUID(id, decoded->GetEntityByUUID(id).GetName());
+        m_Relationships = std::move(graph);
+        RebuildChildren();
+        for (auto id : affected)
+            if (decoded->IsEntityValid(id))
+            {
+                auto to = GetEntityByUUID(id), from = decoded->GetEntityByUUID(id);
+                to.GetComponent<TagComponent>() = from.GetComponent<TagComponent>();
+                if (to.HasComponent<SpriteRendererComponent>() &&
+                    from.HasComponent<SpriteRendererComponent>())
+                    KeepGenerated(from.GetComponent<SpriteRendererComponent>().Source,
+                                  to.GetComponent<SpriteRendererComponent>().Source);
+                if (to.HasComponent<UIButtonComponent>() && from.HasComponent<UIButtonComponent>())
+                    for (size_t i = 0; i < 5; ++i)
+                        KeepGenerated(from.GetComponent<UIButtonComponent>().Images[i],
+                                      to.GetComponent<UIButtonComponent>().Images[i]);
+                PatchComponents(AllComponents{}, *this, decoded, to, from);
+                // Script values are part of the existing codec and exact inventory.
+                auto f = decoded->m_ScriptFields.find(id);
+                if (f != decoded->m_ScriptFields.end())
+                    m_ScriptFields[id] = f->second;
+                else
+                    m_ScriptFields.erase(id);
+                ChangedAuthoringStructure(id);
+            }
+        ValidateHierarchy();
+        ValidateUI(false, false);
+    }
+    void Scene::PublishAuthoring(Scene &staged)
+    {
+        CheckThread();
+        staged.CheckThread();
+        if (IsRunning() || IsSimulating() || IsStopping() || staged.IsRunning() ||
+            staged.IsSimulating())
+            throw std::runtime_error("Authoring publication requires stopped scenes");
+        // Every allocating operation/validation precedes this swap. Runtime UI
+        // state is retired; it never travels with an authored UUID restoration.
+        ResetUI();
+        using std::swap;
+        swap(m_Registry, staged.m_Registry);
+        swap(m_EntityMap, staged.m_EntityMap);
+        swap(m_Relationships, staged.m_Relationships);
+        swap(m_Children, staged.m_Children);
+        swap(m_ScriptFields, staged.m_ScriptFields);
+        swap(m_AuthoringLifetimes, staged.m_AuthoringLifetimes);
+        swap(m_AuthoringComponentVersions, staged.m_AuthoringComponentVersions);
+        swap(m_AuthoringStructureVersions, staged.m_AuthoringStructureVersions);
+        swap(m_NextAuthoringStructureVersion, staged.m_NextAuthoringStructureVersion);
+        m_HierarchyValidationDirty = true;
+    }
+
+    Entity Scene::CreateEntity(const std::string& name)
 	{
 		return CreateEntityWithUUID(UUID(), name);
 	}

@@ -108,6 +108,64 @@ bool DocumentHistory::Commit(Scene &scene)
         return false;
     }
 }
+void DocumentHistory::Reconcile(DocumentCommand& command) noexcept {
+    const auto& mappings=command.Restorations();
+    for(auto& e:m_Entries)e.Command->Reconcile(mappings);
+}
+bool DocumentHistory::Execute(Scene& scene,Scope<DocumentCommand> command) {
+    bool allocated=false;
+    try {
+        Check(scene);if(Active())throw std::runtime_error("Finish the active edit before structural history");
+        if(!command||!m_MaxOperations||command->Bytes()>m_MaxBytes)throw std::runtime_error("Structural edit exceeds history limits");
+        command->SetMemoryLimit(m_MaxBytes);command->Check(scene);
+        if(!command->Changed()){m_Selection=command->Selection(false);m_Diagnostic.clear();return true;}
+        const size_t bytes=command->Bytes();size_t total=bytes,evicted=0;
+        for (size_t i = 0; i < m_Cursor; ++i)
+            total += m_Entries[i].Bytes;
+        size_t count = m_Cursor + 1;
+        while (count > m_MaxOperations || total > m_MaxBytes)
+        {
+            total -= m_Entries[evicted++].Bytes;
+            --count;
+        }
+        std::string feedback =
+            evicted ? "History limit: evicted " + std::to_string(evicted) +
+                          " oldest edit(s); exact content still determines dirty state."
+                    : "";
+        const auto before = Revision();
+        m_Entries.push_back({before, m_Next + 1, std::move(command), bytes});
+        allocated = true;
+        auto &applied = *m_Entries.back().Command;
+        applied.Apply(scene, false); // atomic publication
+        // No allocations after publication. The prepared slot preserves redo on failure.
+        m_Selection = applied.Selection(false);
+        Reconcile(applied);
+        while (m_Cursor + 1 < m_Entries.size())
+        {
+            m_Bytes -= m_Entries[m_Cursor].Bytes;
+            m_Entries.erase(m_Entries.begin() + m_Cursor);
+        }
+        ++m_Next;
+        ++m_Cursor;
+        m_Bytes += bytes;
+        while (m_Entries.size() > m_MaxOperations || m_Bytes > m_MaxBytes)
+        {
+            m_Base = m_Entries.front().After;
+            m_Bytes -= m_Entries.front().Bytes;
+            m_Entries.pop_front();
+            --m_Cursor;
+        }
+        m_Diagnostic = std::move(feedback);
+        return true;
+    }
+    catch (const std::exception &error)
+    {
+        if (allocated)
+            m_Entries.pop_back();
+        m_Diagnostic = error.what();
+        return false;
+    }
+}
 bool DocumentHistory::Cancel(Scene &scene)
 {
     if (!Active())
@@ -134,7 +192,8 @@ bool DocumentHistory::Undo(Scene &scene)
         Check(scene);
         if (!CanUndo())
             throw std::runtime_error("No available Undo; finish the current edit first");
-        m_Entries[m_Cursor - 1].Command->Apply(scene, true);
+        auto& command=*m_Entries[m_Cursor-1].Command;command.Apply(scene,true);
+        m_Selection=command.Selection(true);Reconcile(command);
         --m_Cursor;
         m_Diagnostic.clear();
         return true;
@@ -152,7 +211,8 @@ bool DocumentHistory::Redo(Scene &scene)
         Check(scene);
         if (!CanRedo())
             throw std::runtime_error("No available Redo; finish the current edit first");
-        m_Entries[m_Cursor].Command->Apply(scene, false);
+        auto& command=*m_Entries[m_Cursor].Command;command.Apply(scene,false);
+        m_Selection=command.Selection(false);Reconcile(command);
         ++m_Cursor;
         m_Diagnostic.clear();
         return true;
@@ -167,7 +227,7 @@ void DocumentHistory::Clear()
 {
     if (Active())
         throw std::logic_error("Cancel the transaction before clearing history");
-    m_Entries.clear();
+    m_Entries.clear();m_Selection.reset();
     m_Cursor = m_Bytes = 0;
     m_Base = ++m_Next;
     m_Diagnostic.clear();

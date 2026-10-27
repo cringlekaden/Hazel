@@ -245,6 +245,12 @@ void UIScreenWorkflowChecks()
     auto dropdownID=uint64_t(dropdown.GetUUID()),dropdownTrigger=dropdown.GetComponent<UIDropdownComponent>().Trigger,dropdownPopup=dropdown.GetComponent<UIDropdownComponent>().Popup;
     auto menuID = uint64_t(menu.GetUUID()), settingsID = uint64_t(settings.GetUUID()),
          confirmationID = uint64_t(confirmation.GetUUID());
+    // Exercise structural history on the actual styled composed fixture before
+    // save/export, retaining the exact authored result and all named references.
+    const auto structuralBaseline=documents.SceneText();panel.SetSelectedEntity(settings);
+    Check(panel.DuplicateSelected()&&documents.UndoRedo(false)&&documents.SceneText()==structuralBaseline,"Styled screen duplicate/Undo lost reference data");
+    panel.SetSelectedEntity(rich);Check(panel.MoveSelected(-1)&&documents.UndoRedo(false)&&documents.SceneText()==structuralBaseline,"Styled journal reorder/Undo failed");
+    panel.SetSelectedEntity(settingsBody);Check(panel.DeleteSelected()&&documents.UndoRedo(false)&&documents.SceneText()==structuralBaseline,"Composed Settings restore lost rich text/styles/control relationships");
     auto path = Project::GetAssetDirectory() / "Scenes/screens-native.hazel";
     editor.m_EditorScenePath = path;
     Check(editor.SaveScene() && editor.OpenScene(path), "Screen scene save/reopen failed");

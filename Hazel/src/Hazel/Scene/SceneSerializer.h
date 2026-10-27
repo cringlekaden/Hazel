@@ -17,17 +17,17 @@ namespace Hazel {
         std::string SerializeText(Entity only = {});
         // For editor dirty comparisons: authored spelling, no path canonicalization
         // or filesystem probes. File serialization keeps its existing portable contract.
-        std::string SerializeAuthoredSnapshot(Entity only = {});
+        std::string SerializeAuthoredSnapshot(Entity only = {}, bool controls = true);
         // Exact in-memory authored comparison, not a file format or hash. Includes
         // all persisted values; excludes runtime handles, caches and playback.
         // Save/load/Play keep their full validation. No YAML/filesystem work here.
-        std::string CaptureAuthoredState() const;
+        std::string CaptureAuthoredState(Entity only = {}, const std::type_info* component = nullptr) const;
         bool DeserializeText(const std::string& text, bool prefabDocument = false, ResourceLoading resources = ResourceLoading::Resolve);
 
 		bool Deserialize(const std::string& filepath);
         const DocumentLoadReport& Report() const { return m_Report; }
 	private:
-        std::string SerializeTextImpl(Entity only, bool portablePaths);
+        std::string SerializeTextImpl(Entity only, bool portablePaths, bool controls = true);
 		Ref<Scene> m_Scene;
 		std::filesystem::path m_AssetRoot;
 		bool m_Repair = false;

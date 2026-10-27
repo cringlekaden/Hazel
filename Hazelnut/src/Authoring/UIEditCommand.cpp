@@ -9,6 +9,7 @@ namespace Hazel
 {
 namespace
 {
+const std::array<std::type_index,18> UIHistoryComponents={typeid(UICanvasComponent),typeid(UIRectComponent),typeid(UILayoutComponent),typeid(UITextStyleComponent),typeid(UINineSliceComponent),typeid(UIButtonComponent),typeid(TextComponent),typeid(SpriteRendererComponent),typeid(UIRadioGroupComponent),typeid(UIProgressComponent),typeid(UISliderComponent),typeid(UIScrollViewComponent),typeid(UIDropdownComponent),typeid(UITabsComponent),typeid(UITabComponent),typeid(UITooltipComponent),typeid(UITextEntryComponent),typeid(UIAppearanceComponent)};
 void Strip(SpriteSource &source)
 {
     if (auto t = std::get_if<TextureSpriteSource>(&source))
@@ -505,18 +506,7 @@ UIEditCommand::UIEditCommand(Scene &scene, uint64_t entity, std::string name, UI
     m_Before.StripResources();
     m_After.StripResources();
     auto e = scene.GetEntityByUUID(entity);
-    m_ComponentVersions = {
-        scene.GetAuthoringComponentVersion(entity, typeid(UICanvasComponent)),
-        scene.GetAuthoringComponentVersion(entity, typeid(UIRectComponent)),
-        scene.GetAuthoringComponentVersion(entity, typeid(UILayoutComponent)),
-        scene.GetAuthoringComponentVersion(entity, typeid(UITextStyleComponent)),
-        scene.GetAuthoringComponentVersion(entity, typeid(UINineSliceComponent)),
-        scene.GetAuthoringComponentVersion(entity, typeid(UIButtonComponent)),
-        scene.GetAuthoringComponentVersion(entity, typeid(TextComponent)),
-        scene.GetAuthoringComponentVersion(entity, typeid(SpriteRendererComponent)),
-        scene.GetAuthoringComponentVersion(entity,typeid(UIRadioGroupComponent)),
-        scene.GetAuthoringComponentVersion(entity,typeid(UIProgressComponent)),
-        scene.GetAuthoringComponentVersion(entity,typeid(UISliderComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UIScrollViewComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UIDropdownComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITabsComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITabComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITooltipComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UITextEntryComponent)),scene.GetAuthoringComponentVersion(entity,typeid(UIAppearanceComponent))};
+    for(size_t i=0;i<UIHistoryComponents.size();++i)m_ComponentVersions[i]=scene.GetAuthoringComponentVersion(entity,UIHistoryComponents[i]);
     while (e)
     {
         if (m_Guards.size() >= Scene::MaxDepth)
@@ -540,10 +530,7 @@ Entity UIEditCommand::Target(Scene &scene, bool cancelling) const
         throw std::runtime_error("UI entity lifetime ended; select a live entity");
     if (cancelling)
         return e;
-    const std::array<std::type_index, 18> types = {
-        typeid(UICanvasComponent),    typeid(UIRectComponent),        typeid(UILayoutComponent),
-        typeid(UITextStyleComponent), typeid(UINineSliceComponent),   typeid(UIButtonComponent),
-        typeid(TextComponent),        typeid(SpriteRendererComponent),typeid(UIRadioGroupComponent),typeid(UIProgressComponent),typeid(UISliderComponent),typeid(UIScrollViewComponent),typeid(UIDropdownComponent),typeid(UITabsComponent),typeid(UITabComponent),typeid(UITooltipComponent),typeid(UITextEntryComponent),typeid(UIAppearanceComponent)};
+    const auto& types=UIHistoryComponents;
     for (size_t i = 0; i < types.size(); ++i)
         if (scene.GetAuthoringComponentVersion(m_Entity, types[i]) != m_ComponentVersions[i])
             throw std::runtime_error(
@@ -560,6 +547,16 @@ Entity UIEditCommand::Target(Scene &scene, bool cancelling) const
     if (ancestor)
         throw std::runtime_error("UI ancestor chain changed; retry the edit");
     return e;
+}
+void UIEditCommand::Reconcile(const std::vector<HistoryRestore>& mappings) noexcept {
+    const auto& types=UIHistoryComponents;
+    for(const auto& r:mappings){
+        if(!m_Guards.empty()&&m_Entity==r.Before.Entity&&m_Guards.front().second==r.Before.Lifetime){
+            m_Guards.front().second=r.After.Lifetime;
+            for(size_t i=0;i<types.size();++i){auto a=r.Before.Components.find(types[i]),b=r.After.Components.find(types[i]);if(a!=r.Before.Components.end()&&b!=r.After.Components.end()&&m_ComponentVersions[i]==a->second)m_ComponentVersions[i]=b->second;}
+        }
+        for(size_t i=1;i<m_Guards.size();++i)if(m_Guards[i].first==r.Before.Entity&&m_Guards[i].second==r.Before.Structure)m_Guards[i].second=r.After.Structure;
+    }
 }
 void UIEditCommand::Check(Scene &scene) const
 {

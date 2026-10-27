@@ -32,8 +32,8 @@ void FontFamilyWorkflowChecks() {
     text.GetComponent<UITextStyleComponent>().Size=32;text.GetComponent<UIRectComponent>().FixedSize={580,64};text.GetComponent<UIRectComponent>().Offset={36,36};
     text.AddComponent<SpriteRendererComponent>(glm::vec4(.08f,.12f,.22f,1));
     owner.m_ActiveDocument=EditorDocument::Scene;auto& history=owner.m_SceneHistory;auto before=UIEditValues::Capture(text),next=before;
-    next.Text->Font={"Fonts/Native.hfont",FontStyle::Bold};UIInspectorEditing editing;PropertyUI::EditActivity activity;activity.Changed=activity.Committed=true;
-    Check(editing.Edit(*scene,&history,text.GetUUID(),"Text family",before,next,activity,0) && history.Operations()==1,"Family assignment did not use one shared Inspector command");
+    const auto initialOperations=history.Operations();next.Text->Font={"Fonts/Native.hfont",FontStyle::Bold};UIInspectorEditing editing;PropertyUI::EditActivity activity;activity.Changed=activity.Committed=true;
+    Check(editing.Edit(*scene,&history,text.GetUUID(),"Text family",before,next,activity,0) && history.Operations()==initialOperations+1,"Family assignment did not use one shared Inspector command");
     Check(owner.UndoRedo(false) && text.GetComponent<TextComponent>().Font.Family.empty() && owner.UndoRedo(true) && text.GetComponent<TextComponent>().Font==next.Text->Font,"Family assignment Undo/Redo lost selection");
     auto path=assets->Root()/"Scenes/family-native.hazel";editor.m_EditorScenePath=path;Check(editor.SaveScene(),"Family scene save failed");
     Check(editor.OpenScene(path),"Family scene reopen failed");scene=editor.m_EditorScene;text=scene->FindEntityByName("UI Text");

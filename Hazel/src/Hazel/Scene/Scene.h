@@ -37,6 +37,8 @@ namespace Hazel {
 		~Scene();
 
 		static Ref<Scene> Copy(Ref<Scene> other);
+        // Editor transaction staging preserves the entity allocator/generations.
+        static Ref<Scene> CopyForAuthoring(const Ref<Scene>& source);
 
 		Entity CreateEntity(const std::string& name = std::string());
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
@@ -179,6 +181,11 @@ namespace Hazel {
 			return m_Registry.view<Components...>();
 		}
 	private:
+        // Only the document command can publish preflighted Edit state. Ordinary
+        // native replacement must use the serializer's fresh document lifetimes.
+        void PatchAuthoring(const Ref<Scene>& decoded,const std::vector<uint64_t>& affected);
+        void PublishAuthoring(Scene& staged);
+        friend class StructuralCommand;
         void ChangedAuthoringStructure(UUID id);
         void ChangedAuthoringStructure(UUID id, std::type_index type);
         std::unordered_map<UUID, uint64_t> m_AuthoringLifetimes;

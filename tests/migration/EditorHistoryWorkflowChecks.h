@@ -33,19 +33,19 @@ void HistoryWorkflowChecks()
     scene->OnViewportResize(640,480);scene->RefreshUI();panel.SetSelectedEntity(canvas);
     Check(panel.AddUI(3),"History owner button creation failed");auto control=panel.GetSelectedEntity();
     a.m_ActiveDocument=EditorDocument::Scene;auto &h=a.m_SceneHistory;
-    const auto initial=a.SceneText();UIInspectorEditing inspector;
+    const auto initial=a.SceneText();const auto initialOperations=h.Operations();UIInspectorEditing inspector;
     PropertyUI::EditActivity activity;activity.Item=401;activity.Label="Position";activity.Changed=true;
     auto before=UIEditValues::Capture(control),next=before;next.Rect->Offset.x+=13;
     Check(inspector.Edit(*scene,&h,control.GetUUID(),"UI Rect",before,next,activity,401),"Owned Inspector preview failed");
     const auto file=m_Directory/"AuthoringProject/Assets/Scenes/history-workflow.hazel";
     e.m_EditorScenePath=file;
-    Check(e.SaveScene()&&!h.Active()&&h.Operations()==1&&!h.Dirty(a.SceneText()),"Save did not finish Inspector transaction/establish accepted point");
+    Check(e.SaveScene()&&!h.Active()&&h.Operations()==initialOperations+1&&!h.Dirty(a.SceneText()),"Save did not finish Inspector transaction/establish accepted point");
     inspector.Poll(*scene,&h,control.GetUUID(),true,true,false,0);
     const auto written=Read(file),saved=a.SceneText();
     Check(a.UndoRedo(false)&&a.SceneText()==initial&&h.Dirty(a.SceneText()),"Undo across successful save did not restore dirty state");
     Check(a.UndoRedo(true)&&a.SceneText()==saved&&!h.Dirty(a.SceneText()),"Redo to accepted save content did not clear dirty state");
     Check(e.m_UIEdit.Begin(scene,control.GetUUID(),4,&h)&&e.m_UIEdit.Update({20,0}),"Owned viewport history setup failed");e.m_UIEdit.Finish(false);
-    const auto edited=a.SceneText();Check(h.Operations()==2&&h.Dirty(edited),"Viewport owner did not commit one entry");
+    const auto edited=a.SceneText();Check(h.Operations()==initialOperations+2&&h.Dirty(edited),"Viewport owner did not commit one entry");
     {std::ofstream out(file);out<<"Controlled foreign disk edit";}
     Check(!e.SaveScene()&&h.SavedAuthored()==saved&&a.SceneText()==edited&&Read(file)=="Controlled foreign disk edit","Failed save accepted save point or overwrote foreign file/draft");
     {std::ofstream out(file);out<<written;}
@@ -58,6 +58,17 @@ void HistoryWorkflowChecks()
     panel.SetSelectedEntity(control);const auto target=a.AssignmentTarget();
     Check(a.m_Sprites.AssignSprite({"Textures/history-assignment.hsprites",1},target)&&h.UndoName()=="Assign UI sprite"&&!h.CanRedo(),"Sprite-sheet UI assignment bypassed document history or retained redo branch");
     Check(a.UndoRedo(false)&&a.SceneText()==saved,"UI assignment Undo did not restore the accepted source");
+    // The real Content Browser/asset callback publishes one instance command,
+    // interleaved with property history and the normal scene selection owner.
+    Prefab::Save(Project::GetAssetDirectory(),"Prefabs/history-instance.hprefab",scene,control,true);
+    panel.SetSelectedEntity(canvas);
+    a.m_ActiveDocument=EditorDocument::Prefab; // invocation from the asset Inspector
+    a.InstantiatePrefab(Project::GetAssetDirectory()/"Prefabs/history-instance.hprefab",false);
+    auto instance=panel.GetSelectedEntity();auto instanceID=instance.GetUUID();
+    Check(a.m_ActiveDocument==EditorDocument::Scene&&instanceID!=control.GetUUID()&&!h.CanRedo()&&h.UndoName()=="Instantiate prefab","Actual asset callback bypassed shared history");
+    const auto withInstance=a.SceneText();
+    Check(a.UndoRedo(false)&&a.SceneText()==saved&&panel.GetSelectedEntity()==canvas&&a.UndoRedo(true)&&a.SceneText()==withInstance&&panel.GetSelectedEntity().GetUUID()==instanceID,"Prefab callback Undo/Redo lost identities/selection");
+    Check(a.UndoRedo(false)&&a.SceneText()==saved,"Prefab history did not return to accepted saved scene");
     auto retired=scene->CreateEntity("Retired assignment target");retired.AddComponent<UIRectComponent>();retired.AddComponent<SpriteRendererComponent>();panel.SetSelectedEntity(retired);
     const auto stale=a.AssignmentTarget();scene->DestroyEntity(retired);auto replacement=scene->CreateEntityWithUUID(stale.Entity,"Reused assignment UUID");replacement.AddComponent<UIRectComponent>();replacement.AddComponent<SpriteRendererComponent>();
     Check(!a.m_Sprites.AssignSprite({"Textures/history-assignment.hsprites",1},stale)&&replacement.GetComponent<SpriteRendererComponent>().Source.index()==0,"Reused UUID accepted a retired asset-assignment target");scene->DestroyEntity(replacement);
@@ -87,6 +98,9 @@ void HistoryWorkflowChecks()
     const auto psaved=SceneSerializer(prefab).CaptureAuthoredState();
     Check(a.UndoRedo(false)&&ph.Dirty(SceneSerializer(prefab).CaptureAuthoredState())&&a.SceneText()==retainedScene&&h.Operations()==count,"Prefab Undo mixed document histories");
     Check(a.UndoRedo(true)&&SceneSerializer(prefab).CaptureAuthoredState()==psaved,"Prefab Redo did not restore saved state");
+    a.m_PrefabInspector.SetSelectedEntity(pcontrol);const auto sceneEntries=h.Operations();
+    Check(a.m_PrefabInspector.DeleteSelected()&&a.UndoRedo(false)&&SceneSerializer(prefab).CaptureAuthoredState()==psaved,"Prefab subtree restore failed");
+    Check(a.UndoRedo(false)&&SceneSerializer(prefab).CaptureAuthoredState()!=psaved&&a.UndoRedo(true)&&SceneSerializer(prefab).CaptureAuthoredState()==psaved&&h.Operations()==sceneEntries,"Prefab structural restore did not reconcile its property history independently");
     a.ClosePrefab();Check(!a.m_PrefabScene&&ph.Operations()==0&&ph.Identity()==0,"Closed prefab retained stale history");
     a.SelectAsset(prefabPath);Check(a.m_PrefabScene&&a.m_PrefabHistory.Operations()==0&&SceneSerializer(a.m_PrefabScene).CaptureAuthoredState()==psaved,"Prefab save/reopen changed authored results/history lifetime");a.ClosePrefab();
     Check(!e.OpenScene(m_Directory/"missing-history-scene.hazel")&&e.m_EditorScene==scene&&h.Operations()==count,"Failed Open discarded valid history");

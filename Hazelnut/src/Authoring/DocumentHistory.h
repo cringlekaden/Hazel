@@ -4,10 +4,24 @@
 #include <deque>
 #include <limits>
 #include <string>
+#include <vector>
+#include <map>
+#include <typeindex>
+#include <optional>
 
 namespace Hazel
 {
 class Scene;
+struct HistoryStamp
+{
+    uint64_t Entity = 0, Lifetime = 0, Structure = 0;
+    std::map<std::type_index, uint64_t> Components;
+};
+struct HistoryRestore
+{
+    HistoryStamp Before, After;
+};
+HistoryStamp CaptureHistoryStamp(Scene &, uint64_t);
 // Commands own authored values and identity guards only. Context is supplied by
 // the document owner at application, never retained in a history entry.
 class DocumentCommand
@@ -20,6 +34,18 @@ class DocumentCommand
     virtual void Check(Scene &scene) const = 0;
     virtual void Apply(Scene &scene, bool undo) = 0; // atomic, including validation
     virtual void Cancel(Scene &scene) = 0;
+    virtual void Reconcile(const std::vector<HistoryRestore> &) noexcept
+    {
+    }
+    virtual const std::vector<HistoryRestore> &Restorations() const
+    {
+        static const std::vector<HistoryRestore> empty;
+        return empty;
+    }
+    virtual std::optional<uint64_t> Selection(bool) const
+    {
+        return {};
+    }
     void SetMemoryLimit(size_t bytes)
     {
         m_MemoryLimit = bytes;
@@ -43,6 +69,11 @@ class DocumentHistory
         return m_Transaction.get();
     }
     bool Commit(Scene &scene);
+    bool Execute(Scene &scene, Scope<DocumentCommand> command);
+    std::optional<uint64_t> Selection() const
+    {
+        return m_Selection;
+    }
     bool Cancel(Scene &scene);
     bool Undo(Scene &scene);
     bool Redo(Scene &scene);
@@ -96,12 +127,14 @@ class DocumentHistory
         Scope<DocumentCommand> Command;
         size_t Bytes;
     };
+    void Reconcile(DocumentCommand &command) noexcept;
     void Check(Scene &scene) const;
     uint64_t Revision() const;
     std::deque<Entry> m_Entries;
     Scope<DocumentCommand> m_Transaction;
     uint64_t m_Document = 0, m_Base = 1, m_Next = 1, m_Save = 1;
     size_t m_Cursor = 0, m_Bytes = 0, m_MaxOperations, m_MaxBytes;
+    std::optional<uint64_t> m_Selection;
     std::string m_SavedAuthored, m_Diagnostic;
 };
 } // namespace Hazel

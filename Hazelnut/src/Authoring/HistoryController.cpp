@@ -57,9 +57,13 @@ bool AuthoringPanel::UndoRedo(bool redo)
         return m_Editor.ActionFailed("Select a scene or prefab document for authoring history");
     if (history->Active() || m_Editor.m_UIEdit.Active())
         return m_Editor.ActionFailed("Finish or cancel the active edit before Undo / Redo");
+    m_Editor.m_HoveredEntity={};
     const bool applied = redo ? history->Redo(*scene) : history->Undo(*scene);
     if (!applied)
         return m_Editor.ActionFailed(history->Diagnostic());
+    auto& panel=m_ActiveDocument==EditorDocument::Scene?m_Editor.m_SceneHierarchyPanel:m_PrefabInspector;
+    if(auto selected=history->Selection())panel.RestoreHistorySelection(*selected);
+    else {auto e=panel.GetSelectedEntity();if(!e)panel.RestoreHistorySelection(0);}
     m_Editor.m_ActionError.clear();
     return true;
 }

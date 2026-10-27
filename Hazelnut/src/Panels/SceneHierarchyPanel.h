@@ -50,6 +50,7 @@ class SceneHierarchyPanel
     {
         return m_Focused;
     }
+    Ref<Scene> AuthoringScene() const {return m_Context;}
     bool AddEntity(const std::string &name = "Empty Entity");
     bool AddUI(int kind);
     void UIAddMenu();
@@ -62,9 +63,15 @@ class SceneHierarchyPanel
     bool SetSelectedEntity(Entity entity);
     void BindHistory(DocumentHistory *history) { if(history!=m_History)FinishUIEdit();m_History = history; }
     void FinishUIEdit(bool cancel = true);
+    bool Structural(const std::string& name,const std::function<bool()>& operation);
+    std::function<void()> BeforeStructure; // finish viewport edits / retire borrowed hover
+    void RestoreHistorySelection(uint64_t id);
+    template<class T> bool AddAuthoredComponent(uint64_t id){return Structural("Add component",[&]{auto e=m_Context->GetEntityByUUID(id);if(!e)throw std::runtime_error("Component target retired");e.AddComponent<T>();return true;});}
+    template<class T> bool RemoveAuthoredComponent(uint64_t id){return Structural("Remove component",[&]{auto e=m_Context->GetEntityByUUID(id);if(!e)throw std::runtime_error("Component target retired");if constexpr(std::is_same_v<T,TransformComponent>)throw std::runtime_error("Transform is required");else e.RemoveComponent<T>();return true;});}
     static bool AssignSpriteTexture(SpriteRendererComponent &component, const std::filesystem::path &path);
 
   private:
+    template<typename T,class F> void DrawComponent(const std::string& name,Entity entity,std::map<std::string,bool>& sections,std::set<std::string>& restore,F ui,std::function<void(const std::string&)> report={},std::function<void()> beforeRemove={});
     template <typename T> void DisplayAddComponentEntry(const std::string &entryName);
 
     void DrawEntityNode(Entity entity);
@@ -87,6 +94,7 @@ class SceneHierarchyPanel
     bool CanEdit(bool report = false) const;
 
   private:
+    bool m_Structuring=false;
     Ref<Scene> m_Context;
     DocumentHistory *m_History = nullptr; // document-owned; detached on document retirement
     UIInspectorEditing m_UIInspectorEdit;

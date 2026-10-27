@@ -91,6 +91,7 @@ class UIEditCommand final : public DocumentCommand
         return !m_Before.Same(m_After);
     }
     void Check(Scene &scene) const override;
+    void Reconcile(const std::vector<HistoryRestore>& mappings) noexcept override;
     void Apply(Scene &scene, bool undo) override;
     void Cancel(Scene &scene) override;
     uint64_t EntityID() const
