@@ -1017,7 +1017,7 @@ Windows/DPI/readability acceptance remains separate.
 
 Text Renderer → **Inline emphasis** uses half-open **grapheme** indices with a
 **Selected text** snippet. Choose **From grapheme**, **To (exclusive)** and a
-face, then **Apply range**. Existing rows allow Inherit/Regular/Bold/Italic/Bold
+face and/or **New explicit color**, then **Apply range**. Existing rows allow Inherit/Regular/Bold/Italic/Bold
 Italic and an optional explicit color; **Remove emphasis** restores inheritance.
 Overlaps reject. Select complete ligatures (for example all of `ffi`), not glyph
 fragments. Face styles select actual supplied family files; absent optional faces
@@ -1052,7 +1052,10 @@ Native `Scene::SetDisplayText(id, source, spans)` validates the entire replaceme
 `Text::Span` uses decoded scalar endpoints; `Text::SourceMap` converts Scalar,
 UTF8Byte, UTF16 and Grapheme units without rounding interior encodings. Direct
 native component edits remain observed; source and its spans must be valid as a
-whole. Use the atomic setter when changing both. No presentation value events.
+whole. Use the atomic setter when changing both. No presentation value events. Plain
+replacement does not load fonts. Rich validation requires the existing accepted
+font service on its owner thread (Application initializes it; CPU-only tooling
+initializes font ownership explicitly without generating pages).
 
 Mixed faces share one baseline and the maximum ascent/descent/line advance of the
 requested faces. Font size retains the existing base-family font-height units.

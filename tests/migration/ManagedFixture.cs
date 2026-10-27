@@ -235,6 +235,8 @@ namespace Migration {
             text.SetRichText("A café label",new Hazel.TextEmphasis(2,6,Hazel.FontStyle.Bold,new Hazel.Vector4(1,.2f,.3f,.5f)));
             var spans=text.Emphasis;
             if(spans.Length!=1||spans[0].Start!=2||spans[0].End!=6||spans[0].Face!=Hazel.FontStyle.Bold||!spans[0].Color.HasValue)throw new System.Exception("Managed emphasis UTF-16/face/color roundtrip failed");
+            var ink=spans[0].Color.Value;
+            if(ink.X!=1||ink.Y!=.2f||ink.Z!=.3f||ink.W!=.5f)throw new System.Exception("Managed emphasis RGBA payload roundtrip failed");
             bool badSpan=false;try{text.SetRichText("e\u0301",new Hazel.TextEmphasis(0,1,Hazel.FontStyle.Italic));}catch(System.ArgumentException){badSpan=true;}
             if(!badSpan||text.Text!="A café label"||text.Emphasis.Length!=1)throw new System.Exception("Invalid emphasis partially published source/spans");
             text.Text="Managed UI";if(text.Emphasis.Length!=0)throw new System.Exception("Plain replacement retained stale emphasis");

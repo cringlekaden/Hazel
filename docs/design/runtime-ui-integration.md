@@ -2677,7 +2677,7 @@ silently become new completion gates.
 | --- | --- | --- | --- |
 | Common controls: static tabs/pages, plain runtime tooltips, finite single-selection list | Implemented in `07f24a7`, isolated focus/scope corrections in `8d2583e`; prior controls retained | Debug/Release 17-executable suites, native authoring and relocated fixture pass (below) | Physical keyboard/controller, Windows/DPI and readability acceptance pending |
 | Text entry: caret, selection, clipboard, undo, declared platform composition behavior | Implemented in `263e733`; committed-text/clipboard boundary, explicit unsupported native preedit protocol | Debug/Release 17-executable suites, native authoring, source examples and relocated fixture pass (below) | Physical Linux/Windows layouts, clipboard, IME committed input and DPI pending; preedit/candidate protocol unsupported |
-| Reusable styles/templates and bounded rich-text emphasis | Styles/templates implemented (contract below); bounded rich-text emphasis remains pending | Shared-update, override, history, rendered output and dependency qualification recorded below | Physical authoring/readability and Windows/DPI acceptance pending |
+| Reusable styles/templates and bounded rich-text emphasis | Implemented: shared styles/templates plus typed face/color spans (`f8ae030`, `bd1032d`; contracts below) | Debug/Release 17-executable suites, native source+span history/prefabs, numeric compositing, reload/pressure, source examples and relocated package pass | Physical range authoring, Windows/DPI and competent-reader acceptance pending |
 | Essential UI structural authoring undo/workflow completion | Property/gesture history exists; essential create/delete/reorder/reparent/duplicate workflow remains pending | Pending document/history/recovery/prefab checks | End-to-end authoring/Undo acceptance pending |
 | Example integration, Linux/Windows acceptance, CI and packaging | Prior bounded examples/packages qualified; final endpoint integration pending | Final Debug/Release, CI and relocated-package evidence pending | Physical controller, Windows, DPI/monitor and competent-reader acceptance pending |
 
@@ -3061,7 +3061,7 @@ uses a diagnosed unsliced image/solid fallback rather than throwing the whole UI
 pass; repair it before strict validation/export. Asset metadata acceptance alone
 is not proof that every possible local component composition is valid.
 
-The next bounded presentation pass is **rich-text emphasis**: a small typed inline
+The subsequent **rich-text emphasis** pass is recorded below: a small typed inline
 span model for existing face styles and color emphasis, source-map-safe shaping/
 bidi/wrap/ellipsis across spans, normal face/page ownership and package closure,
 native authoring/preview/property history, and focused CPU/render/package checks.
@@ -3143,7 +3143,7 @@ remain their existing checklist items. This does not complete the practical UI
 endpoint or make the entire UI system production-ready.
 
 
-### Bounded display emphasis contract (qualification in progress)
+### Bounded display emphasis contract
 
 Display text owns one source and at most 128 sorted, nonoverlapping half-open
 scalar spans (one leading BOM excluded). Optional face style and RGBA inherit
@@ -3208,3 +3208,104 @@ subtrees, stable identities and reference remapping, selection restoration,
 save-point/recovery handling and scene/prefab isolation. Reuse DocumentHistory; do
 not add another UI history or require linked-prefab inheritance. Final endpoint
 example integration and physical acceptance follow that slice.
+
+Plain replacement validates bounded Unicode/source data and clears emphasis without
+loading a font. Rich validation uses accepted CPU face versions on the existing
+font owner thread; a headless scripting fixture initializes that ownership without
+a window or atlas upload. Serialized spans must already be canonical; native
+callers can normalize through `SetDisplayText` before Save. This avoids silently
+changing authored span structure across exact save/reopen comparisons.
+
+Validity is defined against the selected accepted faces. If a different face
+creates a ligature across an endpoint, select a complete cluster or remove that
+range. Source+span setters and Inspector transactions reject incompatible ranges.
+Invalid direct native/document compositions follow validation-error behavior,
+not silent glyph-fragment coloring. Resource reload rejection retains accepted
+faces; unavailable pages remain the existing diagnosed metric-placeholder case.
+
+### Display emphasis qualification — 27 October 2026
+
+Implementation checkpoints: `f8ae030` and headless/plain-setter correction
+`bd1032d`. Debug and Release builds used two compiler jobs and both complete
+17-executable suites passed. Extra CPU budget assertions were included in Debug
+and were also rerun in Release. Explicit RGBA payload assertions subsequently
+passed headless/managed sessions in both configurations and the relocated player.
+Coverage includes strict source conversions and
+remapping, finite/range/overlap/cluster rejection, actual Bold/Italic metrics and
+shared baselines, joining/bidi context, wrapping/ellipsis generated mappings,
+color-only reuse, native/managed atomic replacement, scene/copy/prefab/history,
+face reload rejection/recovery, page pressure/pins and repeated contexts/Play/Stop.
+The native Settings fixture adds a shared-style dialogue/journal paragraph with
+real Bold/Italic, explicit color, constrained wrapping and ellipsis. Source edits
+and spans undo together; the actual ImGui range properties render without
+authored changes or game events. These are native command/Inspector-harness
+checks, not physical range-selection or language-reader acceptance.
+
+D8 and painter regressions remain. New independent linear RGBA8/MSDF references
+check inline RGB replacement, base × inline × interaction opacity, coverage once,
+translucent destinations and zero-opacity picking (two channel-value tolerance,
+single-sample target; sRGB conversion and dithering disabled). World components and runtime UI use
+the same accepted rich positioning/page path. Existing compositor/shader state
+restoration and multiple-font/capacity cases remain in both settings.
+
+Grandpa: Intel HD4000/Mesa 26.2.4, GCC 16, Premake/GNU Make; Plasma Wayland hosts
+GLFW X11/GLX through Xwayland on the physical GPU. Debug used native GL 4.2;
+the Release regression suite/profile and relocated fixture used forced GL 4.1.
+Source-example lifecycle checks used native GL 4.2. Renderer regressions exercise shaderc/Cross → GLSL 410
+and explicit GLSL compatibility/two texture slots; SPIR-V specialization was not
+available locally. This is not native Wayland or physical Windows evidence.
+
+A modest Release probe, with no concurrent build, used `Bold italic ordinary`
+(20 scalars), two face ranges and color emphasis in a width-3.5/font-height,
+two-line Ellipsis box on the 128×128 RGBA8 test target. Two contexts/settings
+produced 4 CPU runs, 11 visible glyph quads, 3 atlas pages and 3 draws. New-paragraph
+layout with already accepted faces took 0.337/0.526 ms; page/geometry preparation
+including upload calls took 1090.9/1105.7 ms. These are two cold trials, not cold
+percentiles or full startup. After 20 warmups, 120 cached LayoutText/line-view
+samples per context measured 1.208/1.218 µs median and 1.313/1.319 µs p95, with
+zero new layouts/pages. Native color changes also retain resolved generations
+and prepared data. Timings are CPU wall time; no GPU duration, source detection,
+scene arrangement, input or presentation is included. Color boundaries add no
+font run; different real faces/pages require ordered atlas boundaries. First-use
+page generation and large alternating image/text workloads remain limitations;
+no whole-frame budget or large-list performance claim is added.
+
+All five repository examples passed native startup/render/resize/shutdown in
+Hazelnut and Nutella with authored files unchanged. Existing example model and
+Last Lightkeeper menu/dialogue/HUD/progress checks passed; one representative
+Lightkeeper title capture was inspected internally. No game assets/colors were
+rewritten. The native-authored Settings scene/prefab was exported to a relocated
+Nutella package and exercised from an unrelated directory while source resources,
+SDK and GAC were unavailable. Its script verified typed Bold/Italic/color spans;
+closure checked project families/faces/notices and byte-identical built-in four
+Open Sans faces/license. Test corpora/fonts did not leak into the package.
+Ownership/input checks remain synthetic/native-harness evidence; window lifecycle
+checks are not physical editing/controller or language-reader acceptance. CI was
+not awaited or polled.
+
+Concise manual acceptance:
+
+- In Text Renderer, choose a grapheme range using its snippet, apply a real face
+  and/or color, and inspect the viewport. An absent optional face must visibly
+  report Regular fallback. Test ordinary world text too.
+- Edit before/inside an emphasized word, observe the range-normalization message,
+  finish the field, and Undo/Redo source plus spans together. Remove emphasis and
+  save/reopen a scene and detached prefab.
+- Resize wrapped/ellipsized text; inspect ligatures, composed/decomposed accents
+  and mixed-direction paragraphs with a competent reader. Set effective text
+  opacity to zero and confirm explicit colors disappear.
+- Play/Stop repeatedly and run the exported fixture on physical Windows and at
+  the declared DPI/monitor scales. Native keyboard/controller and IME acceptance
+  retain their existing separate status; rich text entry is unsupported.
+
+**Presentation implementation is complete within this bounded contract.** The
+next checklist item is essential structural authoring history for existing UI
+create/delete/duplicate/reparent/reorder, component add/remove and prefab
+instantiation commands. Use one document-owned transaction for each authored
+subtree/reference/selection change, bounded storage and stable identities; retain
+exact out-of-history detection, lifetime guards, save points, recovery/document
+replacement and scene/prefab isolation. Restore authored data, not runtime/font/GPU
+state, and verify property commands still replay safely around structural Undo.
+No linked-prefab merge, new multi-selection system or additional presentation
+feature becomes a prerequisite. Final endpoint integration/physical acceptance
+follows; this does not declare all historical P3 or the UI production-ready.

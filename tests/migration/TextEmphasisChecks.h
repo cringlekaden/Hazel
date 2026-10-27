@@ -9,6 +9,10 @@ static void TextEmphasisChecks(const std::filesystem::path& root)
     auto spans=NormalizeSpans("abcd",{{0,2,Hazel::FontStyle::Bold,{}},{2,4,Hazel::FontStyle::Bold,{}}});
     Check(spans.size()==1&&spans[0].End==4,"Equivalent adjacent emphasis failed to coalesce");
     Reject([&]{NormalizeSpans("abc",{{0,2,Hazel::FontStyle::Bold,{}},{1,3,{},glm::vec4(1)}});},"Overlapping emphasis admitted");
+    Reject([&]{NormalizeSpans("x",{{0,1,{},glm::vec4(std::nanf(""))}});},"Nonfinite emphasis color admitted");
+    Reject([&]{NormalizeSpans("x",{{0,0,Hazel::FontStyle::Bold,{}}});},"Empty emphasis range admitted");
+    std::vector<Span> excessive;for(uint32_t i=0;i<129;++i)excessive.push_back({i,i+1,Hazel::FontStyle::Bold,{}});
+    Reject([&]{NormalizeSpans(std::string(129,'x'),excessive);},"Input emphasis count exceeded its work limit before coalescing");
     auto remap=RemapSpans("One two three","One added two three",{{0,3,Hazel::FontStyle::Bold,{}},{4,7,{},glm::vec4(1,0,0,1)},{8,13,Hazel::FontStyle::Italic,{}}});
     Check(remap.Removed==0&&remap.Shifted==2&&remap.Spans[1].Begin==10,"Source edit lost unaffected emphasis");
     remap=RemapSpans("alpha beta","alXXpha beta",{{0,5,Hazel::FontStyle::Bold,{}},{6,10,Hazel::FontStyle::Italic,{}}});
