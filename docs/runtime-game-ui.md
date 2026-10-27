@@ -966,10 +966,13 @@ presence checkbox or **Reset all to style**. Stored local values are preserved;
 zero is an actual value, never an inheritance sentinel. Five Button state
 color/image pairs are one override group. Font, size, spacing, foreground,
 background, image, padding, slice, focus/selection/editing, caret and selection
-colors have separate groups. Only components already present consume a group.
+colors have separate groups. Only components already present consume a group. Preserve a checkbox/list/tab
+indicator gutter or slider-part spacing with a suitable variant or local Padding
+override; styles do not infer control-type selectors.
 
 **Extract presentation to style** creates a project asset from the effective
-appearance and assigns it in one property edit. Use portable image assets first:
+appearance and assigns it in one property edit. Undo restores the assignment; the
+created asset remains in Content Browser. Use portable image assets first:
 native-only texture owners cannot be extracted. Styles affect presentation only;
 values, labels, ranges, named parts, owners/actions and layout size modes stay with
 the control. Metric updates reflow text and follow existing geometry-interruption
@@ -981,6 +984,11 @@ appearance.Style = new UIStyleSelection("Styles/Settings.hstyle", "Field");
 appearance.ResetOverrides(UIStyleGroups.Background | UIStyleGroups.Foreground);
 // UseLocalOverrides(groups) enables the control's stored authored group values.
 ```
+
+Existing component APIs still read/write their stored local presentation values.
+Enable the matching override group for a programmatic local value to take effect
+while shared styling is enabled. Native writes remain observed at the normal
+input/render/delivery boundaries.
 
 Native equivalents are `Scene::SetUIStyle`, `ResetUIStyleOverrides` and
 `GetUIPresentation`. Assignment is validated and silent. Inspect effective resource

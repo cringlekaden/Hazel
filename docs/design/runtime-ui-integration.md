@@ -2677,7 +2677,7 @@ silently become new completion gates.
 | --- | --- | --- | --- |
 | Common controls: static tabs/pages, plain runtime tooltips, finite single-selection list | Implemented in `07f24a7`, isolated focus/scope corrections in `8d2583e`; prior controls retained | Debug/Release 17-executable suites, native authoring and relocated fixture pass (below) | Physical keyboard/controller, Windows/DPI and readability acceptance pending |
 | Text entry: caret, selection, clipboard, undo, declared platform composition behavior | Implemented in `263e733`; committed-text/clipboard boundary, explicit unsupported native preedit protocol | Debug/Release 17-executable suites, native authoring, source examples and relocated fixture pass (below) | Physical Linux/Windows layouts, clipboard, IME committed input and DPI pending; preedit/candidate protocol unsupported |
-| Reusable styles/templates and bounded rich-text emphasis | Pending | Pending shared-update, override, typography and dependency closure checks | Native authoring/readability acceptance pending |
+| Reusable styles/templates and bounded rich-text emphasis | Styles/templates implemented (contract below); bounded rich-text emphasis remains pending | Shared-update, override, history, rendered output and dependency qualification recorded below | Physical authoring/readability and Windows/DPI acceptance pending |
 | Essential UI structural authoring undo/workflow completion | Property/gesture history exists; essential create/delete/reorder/reparent/duplicate workflow remains pending | Pending document/history/recovery/prefab checks | End-to-end authoring/Undo acceptance pending |
 | Example integration, Linux/Windows acceptance, CI and packaging | Prior bounded examples/packages qualified; final endpoint integration pending | Final Debug/Release, CI and relocated-package evidence pending | Physical controller, Windows, DPI/monitor and competent-reader acceptance pending |
 
@@ -3000,7 +3000,11 @@ ProjectAssets owns accepted immutable metadata, with explicit Load/Reload/Refres
 freshness and cached failures. Malformed/missing dependencies retain accepted
 versions; removed named variants retain the live user's last accepted variant
 with a diagnostic. New invalid selections are rejected by the validated native/
-managed API. Authored references are never rewritten to fallback data. Scene-owned
+managed API. Authored references are never rewritten to fallback data. Open retains missing
+style/variant references as editable problems (32 detailed style reports plus a
+summary); strict Play/export validation rejects them. Fresh missing variants use
+safe defaults across repeated publications; live users can retain their previous
+accepted variant. Scene-owned
 resolved presentation feeds the existing measure/arrange, text preparation,
 clipping, named control parts and painter order; authored component values stay
 separate. Exact native field/selection/override detection remains at existing
@@ -3065,4 +3069,75 @@ Do not add editable rich documents, arbitrary markup/effects, fallback families 
 new typography dependencies. Structural history and final endpoint integration
 remain their existing separate checklist items.
 
-Qualification and physical acceptance are recorded after the final local checks.
+### Styles/templates qualification — 26 October 2026
+
+Implementation checkpoints: `77397c2`, `beed77a`, `ed309ca`. The final corrected
+sources passed Debug and Release builds with two compiler jobs and the complete
+17-executable suite in each configuration. These retain interaction/screens,
+control values, history, expanded Button Inspector, typography/overflow, D8
+compositing, painter order and lifecycle checks. The CPU export auditor was then
+rebuilt in both configurations and qualified through the final package check.
+
+Grandpa: Intel HD4000, Mesa 26.2.4, GCC 16, Premake/GNU Make. Plasma **Wayland**
+hosts GLFW **X11/GLX through Xwayland** on the physical GPU: Debug/native used
+OpenGL 4.2; Release and the relocated fixture forced OpenGL 4.1/GLSL 410. This is
+not native Wayland, Xvfb/software, physical Windows or controller acceptance.
+No CI result was polled or awaited.
+
+Focused evidence covers:
+
+- Typed codec/zero-presence/reset semantics, immutable accepted versions, cached
+  failures/recovery, 64-entry retention and 128-live-version admission pressure.
+- Actual RGBA8 inherited/local/shared-update pixels, selected filled/unfilled
+  cues, editing caret color, atlas-image/slice picking and native texture owners.
+  Selected button-state images are owned through submission; Debug caught the
+  temporary-projection pointer lifetime defect, now covered by rendered checks.
+- Paint-only reload: **zero additional shaped-layout builds and zero prepared
+  glyph rebuilds**, with the same retained text result. Native paint-only writes
+  publish while reusing the layout generation. Metric changes reflow/reprepare
+  as needed; active text/value/focus remain intact, and changed slider geometry
+  produces its existing interrupted terminal without stale rollback.
+- Native creation, asset drafts/preview/save/conflict/cancel, assignment/override/
+  reset property Undo/Redo, scene/prefab roundtrips and detached independent
+  instances. Managed selection/reset and three Play/Stop cycles preserve values
+  and authored state. Missing variants reopen with repair diagnostics and reuse
+  safe fallback across publications; strict validation rejects them.
+
+The native ImGui harness exercises production commands, property transactions and
+real panel/preview rendering. It does not establish physical drag/drop or reader
+acceptance. The maintained settings fixture includes shared controls, one local
+caption override, project-family references, builtin heading, text fields,
+slider/dropdown/tab/list cues and a styled prefab. Styles need no game-script
+visual synchronization.
+
+All five source examples (MeadowRun, Skybound, LastLightkeeper, Sandbox and
+SceneTransitions) passed startup/render/resize/shutdown in both Hazelnut and
+Nutella, with authored files unchanged. Existing native gameplay/lifecycle and
+managed progress/logic checks passed. A private SceneTransitions-based settings
+fixture exported and ran relocated with source resources, SDK and GAC unavailable.
+It verified the `.hstyle`, project `.hfont`, both supplied Open Sans faces and their
+notice, builtin style/resource bytes, managed style roundtrip, screen/control
+flow, resize/shutdown and unchanged package assets. The test corpus/font collection
+was not included. Export's CPU auditor now receives the engine resource root;
+builtin roles are validated without a graphics context.
+
+No new frame-time or large-interface budget is claimed. These reuse counters are
+not CPU/GPU duration measurements; the alternating image/text rendering debt
+remains separate. Master, stash, vendor pins/settings/layouts and the exact
+unrelated Sandbox draft were preserved.
+
+Manual acceptance:
+
+1. Create a styled panel and project style in Hazelnut; assign two controls,
+   override one foreground, reset/Undo/Redo, change a shared variant and inspect
+   the five states plus non-color focus/selection cues on a narrow panel.
+2. Save/reopen a connected styled prefab, instantiate twice, edit independent
+   values in Play and Stop, and inspect field caret/selection, slider interruption
+   and dropdown/tab/list presentation after metric changes.
+3. Run the exported fixture from another directory and review readability,
+   physical keyboard/controller operation and Windows/mixed-DPI resizing.
+
+Styles/template **implementation** is complete for this slice. Rich-text emphasis,
+physical acceptance, essential structural history and final endpoint integration
+remain their existing checklist items. This does not complete the practical UI
+endpoint or make the entire UI system production-ready.
