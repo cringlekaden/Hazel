@@ -1,5 +1,5 @@
-#include "OpenGLGPUTimer.h"
 #include "hzpch.h"
+#include "OpenGLGPUTimer.h"
 #include <glad/glad.h>
 namespace Hazel
 {

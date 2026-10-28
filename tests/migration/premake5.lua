@@ -65,7 +65,8 @@ project "MigrationTypographySmoke"
     objdir (repoRoot .. "/bin-int/" .. outputdir .. "/%{prj.name}")
     files { repoRoot .. "/tests/migration/TypographySmoke.cpp" }
     includedirs { repoRoot .. "/Hazel/src" }
-    externalincludedirs { repoRoot .. "/Hazel/vendor/spdlog/include", repoRoot .. "/Hazel/vendor/harfbuzz/src",
+    externalincludedirs { repoRoot .. "/Hazel/vendor/spdlog/include", repoRoot .. "/Hazel/vendor/glm",
+        repoRoot .. "/Hazel/vendor/harfbuzz/src",
         repoRoot .. "/Hazel/vendor/libunibreak/src", repoRoot .. "/Hazel/vendor/SheenBidi/Headers" }
     links { "Hazel" }
     filter "system:linux"

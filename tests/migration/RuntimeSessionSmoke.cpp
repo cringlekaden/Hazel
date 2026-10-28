@@ -5,6 +5,7 @@
 #include "Hazel/Events/KeyEvent.h"
 #include "Hazel/Events/MouseEvent.h"
 #include "Hazel/Scene/SceneSerializer.h"
+#include "Hazel/Scene/Prefab.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include <GLFW/glfw3.h>
 #include <yaml-cpp/yaml.h>
@@ -42,6 +43,7 @@ static Ref<Scene> Make(const char* name, const char* script = nullptr) {
 #include "UICompositionSessionChecks.h"
 #include "UITextEntrySessionChecks.h"
 #include "UIStyleSessionChecks.h"
+#include "ManagedStringChecks.h"
 int main(int argc, char** argv) {
     const auto directory = std::filesystem::temp_directory_path() / std::filesystem::u8path("hazel-runtime space-é-"+std::to_string(std::random_device{}()));
     try {
@@ -171,6 +173,7 @@ int main(int argc, char** argv) {
         Check(motion->GetEntityByUUID(2).GetComponent<TransformComponent>().Translation.x==0 &&
               motion->GetPrimaryCameraEntity().GetComponent<CameraComponent>().Camera.GetOrthographicSize()==10,
               "Runtime motion/camera edits leaked into authored scene");
+        ManagedStringChecks(project,directory);
         UIActionSessionChecks(project,directory);
         UIScreenSessionChecks(project);
         UIValueSessionChecks(project);UIScrollSessionChecks(project);UIDropdownSessionChecks(project);UICompositionSessionChecks(project);UITextEntrySessionChecks(project);UIStyleSessionChecks(project);

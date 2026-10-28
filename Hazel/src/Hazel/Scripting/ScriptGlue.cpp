@@ -1,5 +1,6 @@
 #include "hzpch.h"
 #include "ScriptGlue.h"
+#include "ManagedString.h"
 #include <cmath>
 #include "Hazel/Utils/UTF8.h"
 #include "ScriptEngine.h"
@@ -26,19 +27,6 @@
 
 namespace Hazel {
 
-	namespace Utils {
-
-		std::string MonoStringToString(MonoString* string)
-		{
-			if (!string) return {};
-			char* cStr = mono_string_to_utf8(string);
-			std::string str(cStr);
-			mono_free(cStr);
-			return str;
-		}
-
-	}
-
 	static std::unordered_map<MonoType*, std::function<bool(Entity)>> s_EntityHasComponentFuncs;
 
 #define HZ_ADD_INTERNAL_CALL(Name) mono_add_internal_call("Hazel.InternalCalls::" #Name, reinterpret_cast<const void*>(Name))
@@ -49,29 +37,59 @@ namespace Hazel {
         return session->Storage();
     }
     static bool SaveData_IsPersistent() {
-        MonoException* failure=nullptr;bool result=false;
-        try {if(ScriptEngine::GetRuntimeSession())result=CheckedStorage().IsPersistent();}
-        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
-        if(failure)mono_raise_exception(failure);return result;
+        MonoException* failure = nullptr;
+        bool result = false;
+        try {
+            if (ScriptEngine::GetRuntimeSession())
+                result = CheckedStorage().IsPersistent();
+        } catch (const std::exception& e) {
+            failure = mono_get_exception_invalid_operation(e.what());
+        }
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
     static MonoString* SaveData_Read(MonoString* slot) {
-        MonoException* failure=nullptr;MonoString* result=nullptr;
-        try {auto payload=CheckedStorage().Read(Utils::MonoStringToString(slot));result=mono_string_new(mono_domain_get(),payload.c_str());}
-        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
-        if(failure)mono_raise_exception(failure);return result;
+        MonoException* failure = nullptr;
+        MonoString* result = nullptr;
+        try {
+            const auto name = ManagedStrings::Read(slot, 96, 96, "Save slot");
+            const auto payload = CheckedStorage().Read(name);
+            result = mono_string_new(mono_domain_get(), payload.c_str());
+        } catch (const std::exception& e) {
+            failure = mono_get_exception_invalid_operation(e.what());
+        }
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
-    static void SaveData_Write(MonoString* slot,MonoString* payload) {
-        MonoException* failure=nullptr;
-        try {CheckedStorage().Write(Utils::MonoStringToString(slot),Utils::MonoStringToString(payload));}
-        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
-        if(failure)mono_raise_exception(failure);
+    static void SaveData_Write(MonoString* slot, MonoString* payload) {
+        MonoException* failure = nullptr;
+        try {
+            const auto name = ManagedStrings::Read(slot, 96, 96, "Save slot");
+            const auto text = ManagedStrings::Read(payload, RuntimeStorage::MaximumPayload,
+                                                   RuntimeStorage::MaximumPayload, "Save payload");
+            CheckedStorage().Write(name, text);
+        } catch (const std::exception& e) {
+            failure = mono_get_exception_invalid_operation(e.what());
+        }
+        if (failure)
+            mono_raise_exception(failure);
     }
 
-	static void NativeLog(MonoString* string, int parameter)
-	{
-		std::string str = Utils::MonoStringToString(string);
-		Log::GetClientLogger()->log(spdlog::source_loc{"Managed",0,""},spdlog::level::info,"{}, {}",str,parameter);
-	}
+    static void NativeLog(MonoString* value, int parameter) {
+        MonoException* failure = nullptr;
+        try {
+            const auto text = ManagedStrings::Read(value, 32768, 131072, "Log message",
+                                                   ManagedStrings::NulPolicy::Preserve);
+            Log::GetClientLogger()->log(spdlog::source_loc{"Managed",0,""}, spdlog::level::info,
+                                        "{}, {}", text, parameter);
+        } catch (const std::exception& e) {
+            failure = mono_get_exception_argument("message", e.what());
+        }
+        if (failure)
+            mono_raise_exception(failure);
+    }
 
 	static void NativeLog_Vector(glm::vec3* parameter, glm::vec3* outResult)
 	{
@@ -95,18 +113,31 @@ namespace Hazel {
         auto* scene=ScriptEngine::GetSceneContext();
         if(scene && scene->GetIdentity()==identity && scene->IsEntityValid(id)) scene->DestroyEntity(scene->GetEntityByUUID(id));
     }
-    static uint64_t Entity_Instantiate(MonoString* path,glm::vec3* position,glm::vec3* rotation,glm::vec3* scale,bool replaceRotationAndScale) {
+    static uint64_t Entity_Instantiate(MonoString* path, glm::vec3* position, glm::vec3* rotation,
+                                       glm::vec3* scale, bool replaceRotationAndScale) {
+        MonoException* failure = nullptr;
+        uint64_t result = 0;
         try {
-            auto* scene=ScriptEngine::GetSceneContext();
-            if(!scene || !Project::GetActive()) throw std::runtime_error("Instantiation needs an active main-thread runtime project");
-            TransformComponent transform; transform.Translation=*position; transform.Rotation=*rotation; transform.Scale=*scale;
-            auto result=Prefab::Instantiate(Project::GetAssetDirectory(),std::filesystem::u8path(Utils::MonoStringToString(path)),*scene,transform,replaceRotationAndScale);
-            return result.GetUUID();
-        } catch(const std::exception& error) {
-            HZ_CORE_ERROR("Instantiate prefab: {}",error.what());
-            mono_raise_exception(mono_get_exception_invalid_operation(error.what())); return 0;
+            const auto reference = ManagedStrings::Read(path, ManagedStrings::PathUnits,
+                                                        ManagedStrings::PathBytes, "Prefab path");
+            auto* scene = ScriptEngine::GetSceneContext();
+            if (!scene || !Project::GetActive())
+                throw std::runtime_error("Instantiation needs an active main-thread runtime project");
+            TransformComponent transform;
+            transform.Translation = *position;
+            transform.Rotation = *rotation;
+            transform.Scale = *scale;
+            result = Prefab::Instantiate(Project::GetAssetDirectory(), std::filesystem::u8path(reference),
+                                         *scene, transform, replaceRotationAndScale).GetUUID();
+        } catch (const std::exception& error) {
+            HZ_CORE_ERROR("Instantiate prefab: {}", error.what());
+            failure = mono_get_exception_invalid_operation(error.what());
         }
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
+
 	static MonoObject* GetScriptInstance(UUID entityID)
 	{
 		return ScriptEngine::GetManagedInstance(entityID);
@@ -117,20 +148,40 @@ namespace Hazel {
         if(!entity || !entity.HasComponent<T>()) {mono_raise_exception(mono_get_exception_invalid_operation("Sprite operation requires a live entity with the requested component"));return {};}
         return entity;
     }
-    static void SpriteRendererComponent_SetSprite(uint64_t id,MonoString* sheet,uint64_t region) {
-        auto entity=CheckedSpriteEntity<SpriteRendererComponent>(id);if(!entity)return;
-        std::string error;
-        try {SpriteReference reference{std::filesystem::u8path(Utils::MonoStringToString(sheet)),region};
-            auto* scene=ScriptEngine::GetSceneContext();if(!scene->GetAssets())throw std::runtime_error("Project assets unavailable");
-            scene->GetAssets()->Resolve(reference);entity.GetComponent<SpriteRendererComponent>().Source=reference;
-        }catch(const std::exception& e){error=e.what();}
-        if(!error.empty())mono_raise_exception(mono_get_exception_invalid_operation(error.c_str()));
+    static void SpriteRendererComponent_SetSprite(uint64_t id, MonoString* sheet, uint64_t region) {
+        MonoException* failure = nullptr;
+        try {
+            auto entity = CheckedSpriteEntity<SpriteRendererComponent>(id);
+            const auto path = ManagedStrings::Read(sheet, ManagedStrings::PathUnits,
+                                                   ManagedStrings::PathBytes, "Sprite sheet path");
+            SpriteReference reference{std::filesystem::u8path(path), region};
+            auto* scene = ScriptEngine::GetSceneContext();
+            if (!scene->GetAssets())
+                throw std::runtime_error("Project assets unavailable");
+            scene->GetAssets()->Resolve(reference);
+            entity.GetComponent<SpriteRendererComponent>().Source = reference;
+        } catch (const std::exception& e) {
+            failure = mono_get_exception_invalid_operation(e.what());
+        }
+        if (failure)
+            mono_raise_exception(failure);
     }
-    static void SpriteAnimationComponent_Play(uint64_t id,MonoString* sheet,uint64_t clip) {
-        auto entity=CheckedSpriteEntity<SpriteAnimationComponent>(id);if(!entity)return;
-        AnimationReference reference{std::filesystem::u8path(Utils::MonoStringToString(sheet)),clip};
-        if(!ScriptEngine::GetSceneContext()->PlayAnimation(entity,reference))mono_raise_exception(mono_get_exception_invalid_operation("Cannot play clip; see native asset diagnostic"));
+    static void SpriteAnimationComponent_Play(uint64_t id, MonoString* sheet, uint64_t clip) {
+        MonoException* failure = nullptr;
+        try {
+            auto entity = CheckedSpriteEntity<SpriteAnimationComponent>(id);
+            const auto path = ManagedStrings::Read(sheet, ManagedStrings::PathUnits,
+                                                   ManagedStrings::PathBytes, "Animation sheet path");
+            AnimationReference reference{std::filesystem::u8path(path), clip};
+            if (!ScriptEngine::GetSceneContext()->PlayAnimation(entity, reference))
+                throw std::runtime_error("Cannot play clip; see native asset diagnostic");
+        } catch (const std::exception& e) {
+            failure = mono_get_exception_invalid_operation(e.what());
+        }
+        if (failure)
+            mono_raise_exception(failure);
     }
+
     static void SpriteAnimationComponent_Control(uint64_t id,int action) {
         auto entity=CheckedSpriteEntity<SpriteAnimationComponent>(id);if(!entity)return;
         auto& a=entity.GetComponent<SpriteAnimationComponent>();
@@ -143,7 +194,9 @@ namespace Hazel {
         MonoException* failure=nullptr;bool result=false;
         try {auto entity=CheckedSpriteEntity<AudioSourceComponent>(id);if(entity)result=ScriptEngine::GetSceneContext()->PlayAudio(entity);}
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
-        if(failure)mono_raise_exception(failure);return result;
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
     static void AudioSourceComponent_Stop(uint64_t id) {
         auto entity=CheckedSpriteEntity<AudioSourceComponent>(id);if(entity)ScriptEngine::GetSceneContext()->StopAudio(entity);
@@ -157,23 +210,29 @@ namespace Hazel {
         MonoException* failure=nullptr;bool result=false;
         try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::runtime_error("Component lookup needs a runtime scene");scene->CheckThread();auto entity=scene->GetEntityByUUID(entityID);if(!entity||!scene->IsEntityValid(entityID)||!componentType)throw std::runtime_error("Component lookup needs a live entity and type");auto* type=mono_reflection_type_get_type(componentType);auto found=s_EntityHasComponentFuncs.find(type);if(found==s_EntityHasComponentFuncs.end())throw std::runtime_error("Component type has no native binding");result=found->second(entity);}
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
-        if(failure)mono_raise_exception(failure);return result;
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
 
-	static uint64_t Entity_FindEntityByName(MonoString* name)
-	{
-		char* nameCStr = mono_string_to_utf8(name);
-
-		Scene* scene = ScriptEngine::GetSceneContext();
-		HZ_CORE_ASSERT(scene);
-		Entity entity = scene->FindEntityByName(nameCStr);
-		mono_free(nameCStr);
-
-		if (!entity)
-			return 0;
-
-		return entity.GetUUID();
-	}
+    static uint64_t Entity_FindEntityByName(MonoString* name) {
+        MonoException* failure = nullptr;
+        uint64_t result = 0;
+        try {
+            const auto text = ManagedStrings::Read(name, 32768, 131072, "Entity name");
+            auto* scene = ScriptEngine::GetSceneContext();
+            if (!scene)
+                throw std::runtime_error("Entity lookup needs a runtime scene");
+            auto entity = scene->FindEntityByName(text);
+            if (entity)
+                result = entity.GetUUID();
+        } catch (const std::exception& e) {
+            failure = mono_get_exception_argument("name", e.what());
+        }
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
+    }
 
     static b2Body* CheckedBody(Entity entity) {
         auto* body=static_cast<b2Body*>(entity.GetComponent<Rigidbody2DComponent>().RuntimeBody);
@@ -280,22 +339,12 @@ namespace Hazel {
         MonoException* failure=nullptr;
         try {
             auto* scene=ScriptEngine::GetSceneContext();
-            if(!scene)throw std::invalid_argument("Text needs a runtime scene");scene->CheckThread();
+            if (!scene)
+                throw std::invalid_argument("Text needs a runtime scene");
+            scene->CheckThread();
             auto entity=scene->GetEntityByUUID(entityID);
             if(!entity||!scene->IsEntityValid(entityID)||!entity.HasComponent<TextComponent>())throw std::invalid_argument("Text needs a live Text component");
-            if(textString&&mono_string_length(textString)>32768)throw std::invalid_argument("Managed text input exceeds bounded UTF-16 length");
-            if(textString) {
-                auto chars=mono_string_chars(textString);auto length=mono_string_length(textString);
-                for(int i=0;i<length;++i) {
-                    auto c=chars[i];
-                    if(!c)throw std::invalid_argument("Text cannot contain embedded NUL");
-                    if(c>=0xd800&&c<=0xdbff) {
-                        if(++i>=length||chars[i]<0xdc00||chars[i]>0xdfff)throw std::invalid_argument("Text contains an unpaired UTF-16 surrogate");
-                    } else if(c>=0xdc00&&c<=0xdfff)throw std::invalid_argument("Text contains an unpaired UTF-16 surrogate");
-                }
-            }
-            auto text=Utils::MonoStringToString(textString);UTF8::Validate(text);
-            if(entity.HasComponent<UIRectComponent>()&&text.size()>65536)throw std::invalid_argument("UI text exceeds 64 KiB");
+            const auto text = ManagedStrings::Read(textString, 32768, 65536, "Text");
             scene->SetDisplayText(entityID,text);
         }catch(const std::exception& e){failure=mono_get_exception_argument("text",e.what());}
         if(failure)mono_raise_exception(failure);
@@ -306,10 +355,8 @@ namespace Hazel {
     static void TextComponent_SetRichText(UUID entityID,MonoString* source,MonoArray* array) {
         MonoException* failure=nullptr;
         try {
-            if(source){auto chars=mono_string_chars(source);int length=mono_string_length(source);
-                if(length>32768)throw std::invalid_argument("Display text exceeds bounded UTF-16 input");
-                for(int i=0;i<length;++i){auto c=chars[i];if(!c)throw std::invalid_argument("Text contains NUL");if(c>=0xd800&&c<=0xdbff){if(++i>=length||chars[i]<0xdc00||chars[i]>0xdfff)throw std::invalid_argument("Unpaired UTF-16 surrogate");}else if(c>=0xdc00&&c<=0xdfff)throw std::invalid_argument("Unpaired UTF-16 surrogate");}}
-            auto text=Utils::MonoStringToString(source);auto map=Text::SourceMap::Analyze(text);
+            const auto text = ManagedStrings::Read(source, 32768, 65536, "Display text");
+            const auto map = Text::SourceMap::Analyze(text);
             const auto count=array?mono_array_length(array):0;if(count>Text::MaxSpans)throw std::invalid_argument("Display emphasis exceeds 128 spans");
             std::vector<Text::Span> spans;spans.reserve(count);
             for(size_t i=0;i<count;++i){auto wire=mono_array_get(array,TextSpanWire,i);if(wire.Flags&~3u)throw std::invalid_argument("Invalid emphasis flags");Text::Span s;
@@ -340,14 +387,9 @@ namespace Hazel {
         auto entity=CheckedSpriteEntity<TextComponent>(entityID);MonoException* failure=nullptr;
         try {
             if(style<0 || style>3)throw std::invalid_argument("Font style must be Regular, Bold, Italic or BoldItalic");
-            if(family) {
-                auto chars=mono_string_chars(family);int length=mono_string_length(family);
-                if(length>1024)throw std::invalid_argument("Family reference exceeds 1024 UTF-16 units");
-                for(int i=0;i<length;++i){auto c=chars[i];if(!c)throw std::invalid_argument("Family reference contains NUL");
-                    if(c>=0xd800 && c<=0xdbff){if(++i>=length || chars[i]<0xdc00 || chars[i]>0xdfff)throw std::invalid_argument("Invalid UTF-16 family reference");}
-                    else if(c>=0xdc00 && c<=0xdfff)throw std::invalid_argument("Invalid UTF-16 family reference");}
-            }
-            FontSelection selection{std::filesystem::u8path(Utils::MonoStringToString(family)),FontStyle(style)};selection.Validate();
+            const auto path = ManagedStrings::Read(family, 1024, 1024, "Font family");
+            FontSelection selection{std::filesystem::u8path(path), FontStyle(style)};
+            selection.Validate();
             auto* scene=ScriptEngine::GetSceneContext();scene->CheckThread();
             if(!selection.Family.empty()) {auto assets=scene->GetAssets();if(!assets)throw std::invalid_argument("Family selection needs project assets");(void)Project::ResolveOwnedAsset(assets->Root(),selection.Family);}
             entity.GetComponent<TextComponent>().Font=std::move(selection);
@@ -409,7 +451,7 @@ namespace Hazel {
     static void Scene_LoadScene(MonoString* path) {
         auto* session = ScriptEngine::GetRuntimeSession();
         try {
-            if (!session || !session->RequestSceneLoad(std::filesystem::u8path(Utils::MonoStringToString(path))))
+            if (!session || !session->RequestSceneLoad(std::filesystem::u8path(ManagedStrings::Read(path, ManagedStrings::PathUnits, ManagedStrings::PathBytes, "Scene path"))))
                 HZ_CORE_ERROR("Scene.LoadScene request rejected (no running project session or conflicting/invalid request)");
         } catch (const std::exception& error) { HZ_CORE_ERROR("Scene.LoadScene request: {}", error.what()); }
     }
@@ -432,7 +474,9 @@ namespace Hazel {
         MonoException* failure=nullptr;float result=1;
         try {auto &session=UI_Session();if(write)session.SetAudioVolume(value);result=session.GetAudioVolume();}
         catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
-        if(failure)mono_raise_exception(failure);return result;
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
     static void Runtime_Exit(){
         MonoException* failure=nullptr;try{UI_Session().RequestExit();}
@@ -440,11 +484,18 @@ namespace Hazel {
         if(failure)mono_raise_exception(failure);
     }
     static void UI_ResetBindings(){MonoException* failure=nullptr;try{UI_Session().ResetUIBindings();}catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);}
-    static bool UI_Focus(uint64_t identity,uint64_t id){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(scene&&scene->GetIdentity()==identity)result=scene->FocusUI(id);}catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;}
+    static bool UI_Focus(uint64_t identity,uint64_t id){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(scene&&scene->GetIdentity()==identity)result=scene->FocusUI(id);}catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
+    }
     static bool UI_Screen(uint64_t identity,uint64_t id,int operation) {
         MonoException* failure=nullptr;bool result=false;
         try{auto* scene=ScriptEngine::GetSceneContext();if(scene&&scene->GetIdentity()==identity){scene->CheckThread();if(operation==-1){scene->RefreshUI();result=scene->IsUIScreenOpen(id);}else if(operation>=0&&operation<=3)result=scene->RequestUIScreen(GameUI::ScreenOperation(operation),id);else throw std::invalid_argument("Invalid UI screen operation");}}
-        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
     static bool UI_ConsumeEvent(uint64_t identity,uint64_t* screen,uint64_t* source,int* kind,uint64_t* sequence,MonoString** name,bool* previousChecked,bool* checked,uint64_t* previousSelection,uint64_t* selection,uint64_t* recipient,float* previousValue,float* value,float* startValue,uint64_t* gesture,bool* interrupted,MonoString** previousText,MonoString** text) {
         *previousText=*text=nullptr;
@@ -456,54 +507,103 @@ namespace Hazel {
             if(scene&&scene->GetIdentity()==identity){auto entity=scene->GetEntityByUUID(owner);auto instance=ScriptEngine::GetEntityScriptInstance(owner);
                 if(!entity||!entity.HasComponent<ScriptComponent>()||!instance||instance->GetScriptClass()!=ScriptEngine::GetEntityClass(entity.GetComponent<ScriptComponent>().ClassName))return false;
                 GameUI::Action event;if(scene->ConsumeUIEvent(owner,event)){*screen=event.Screen;*source=event.Entity;*kind=int(event.Kind);*sequence=event.Sequence;*name=ScriptEngine::CreateString(event.Name.c_str());*previousChecked=event.PreviousChecked;*checked=event.Checked;*previousSelection=event.PreviousSelection;*selection=event.Selection;*recipient=event.Owner;*previousValue=event.PreviousValue;*value=event.Value;*startValue=event.StartValue;*gesture=event.Gesture;*interrupted=event.Interrupted;*previousText=ScriptEngine::CreateString(event.PreviousText.c_str());*text=ScriptEngine::CreateString(event.TextValue.c_str());result=true;}}}
-        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
-    }
-    static std::string UIStyleString(MonoString* value){
-        if(!value)return {};int size=mono_string_length(value);if(size>1024)throw std::invalid_argument("UI style selection exceeds 1024 UTF-16 units");auto chars=mono_string_chars(value);
-        for(int i=0;i<size;++i){auto c=chars[i];if(!c)throw std::invalid_argument("UI style selection contains NUL");if(c>=0xd800&&c<=0xdbff){if(++i>=size||chars[i]<0xdc00||chars[i]>0xdfff)throw std::invalid_argument("Invalid UI style UTF-16");}else if(c>=0xdc00&&c<=0xdfff)throw std::invalid_argument("Invalid UI style UTF-16");}
-        return Utils::MonoStringToString(value);
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
     static void UI_Style(uint64_t id,bool write,MonoString* asset,MonoString* variant,bool enabled,MonoString** actualAsset,MonoString** actualVariant,bool* actualEnabled){
         *actualAsset=*actualVariant=nullptr;*actualEnabled=false;MonoException* failure=nullptr;
-        try{auto scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("Style requires a runtime scene");scene->CheckThread();if(write)scene->SetUIStyle(id,{std::filesystem::u8path(UIStyleString(asset)),UIStyleString(variant)},enabled);auto selection=scene->GetUIStyle(id);*actualAsset=ScriptEngine::CreateString(selection.Asset.generic_u8string().c_str());*actualVariant=ScriptEngine::CreateString(selection.Variant.c_str());*actualEnabled=scene->GetEntityByUUID(id).GetComponent<UIAppearanceComponent>().Styled;}
+        try{auto scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("Style requires a runtime scene");scene->CheckThread();if(write)scene->SetUIStyle(id,{std::filesystem::u8path(ManagedStrings::Read(asset, 1024, 1024, "UI style asset")),ManagedStrings::Read(variant, 1024, 128, "UI style variant")},enabled);auto selection=scene->GetUIStyle(id);*actualAsset=ScriptEngine::CreateString(selection.Asset.generic_u8string().c_str());*actualVariant=ScriptEngine::CreateString(selection.Variant.c_str());*actualEnabled=scene->GetEntityByUUID(id).GetComponent<UIAppearanceComponent>().Styled;}
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);
     }
     static uint32_t UI_StyleOverrides(uint64_t id,uint32_t groups,bool enable){
         uint32_t result=0;MonoException* failure=nullptr;
         try{auto scene=ScriptEngine::GetSceneContext();if(!scene||scene->IsStopping())throw std::invalid_argument("Overrides need a live runtime scene");scene->CheckThread();auto entity=scene->GetEntityByUUID(id);if(!entity||!scene->IsEntityValid(id)||!entity.HasComponent<UIAppearanceComponent>()||(groups&~UIStyleAll))throw std::invalid_argument("Invalid UI override target/groups");auto& c=entity.GetComponent<UIAppearanceComponent>();auto before=c.Overrides;if(enable){c.Overrides|=groups;try{scene->RefreshUI();}catch(...){c.Overrides=before;try{scene->RefreshUI();}catch(...){}throw;}}result=c.Overrides;}
-        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);return result;
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
     static void UI_StyleReset(uint64_t id,uint32_t groups){MonoException* failure=nullptr;try{auto scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("Style requires a runtime scene");scene->ResetUIStyleOverrides(id,groups);}catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);}
-    static MonoString* UI_TextEntry(uint64_t id,bool write,MonoString* value){MonoException* failure=nullptr;MonoString* result=nullptr;try{auto s=ScriptEngine::GetSceneContext();if(!s)throw std::invalid_argument("Text Entry requires a runtime scene");if(write){if(value){int n=mono_string_length(value);if(n>16384)throw std::invalid_argument("Managed text input exceeds bounded UTF-16 length");auto chars=mono_string_chars(value);for(int i=0;i<n;++i){auto c=chars[i];if(!c)throw std::invalid_argument("Text input cannot contain NUL");if(c>=0xd800&&c<=0xdbff){if(++i>=n||chars[i]<0xdc00||chars[i]>0xdfff)throw std::invalid_argument("Unpaired UTF-16 surrogate");}else if(c>=0xdc00&&c<=0xdfff)throw std::invalid_argument("Unpaired UTF-16 surrogate");}}s->SetUITextEntry(id,Utils::MonoStringToString(value));}result=ScriptEngine::CreateString(s->GetUITextEntry(id).c_str());}catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;}
+    static MonoString* UI_TextEntry(uint64_t id, bool write, MonoString* value) {
+        MonoException* failure = nullptr;
+        MonoString* result = nullptr;
+        try {
+            auto* scene = ScriptEngine::GetSceneContext();
+            if (!scene)
+                throw std::invalid_argument("Text Entry requires a runtime scene");
+            if (write) {
+                const auto text = ManagedStrings::Read(value, Text::EditBuffer::MaxBytes,
+                                                       Text::EditBuffer::MaxBytes, "Text entry");
+                scene->SetUITextEntry(id, text);
+            }
+            result = ScriptEngine::CreateString(scene->GetUITextEntry(id).c_str());
+        } catch (const std::exception& e) {
+            failure = mono_get_exception_invalid_operation(e.what());
+        }
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
+    }
+
     static bool UI_Checked(uint64_t id,bool write,bool value){
         MonoException* failure=nullptr;bool result=false;
         try{auto* s=ScriptEngine::GetSceneContext();if(!s)throw std::invalid_argument("Control requires a runtime scene");if(write)s->SetUIChecked(id,value);result=s->IsUIChecked(id);}
-        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
     static uint64_t UI_Selection(uint64_t id,bool write,uint64_t value){
         MonoException* failure=nullptr;uint64_t result=0;
         try{auto* s=ScriptEngine::GetSceneContext();if(!s)throw std::invalid_argument("Control requires a runtime scene");if(write)s->SetUISelection(id,value);result=s->GetUISelection(id);}
-        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
     static float UI_Progress(uint64_t id,bool write,float value){
         MonoException* failure=nullptr;float result=0;
         try{auto* s=ScriptEngine::GetSceneContext();if(!s)throw std::invalid_argument("Control requires a runtime scene");if(write)s->SetUIProgress(id,value);result=s->GetUIProgress(id);}
-        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
-    static uint64_t UI_PresentationReference(uint64_t id,int kind){MonoException* failure=nullptr;uint64_t result=0;try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI reference requires a live scene");auto e=scene->GetEntityByUUID(id);if(!e||!scene->IsEntityValid(id))throw std::invalid_argument("UI source retired");if(kind==0&&e.HasComponent<UITabComponent>())result=e.GetComponent<UITabComponent>().Page;else if(kind==1&&e.HasComponent<UITooltipComponent>())result=e.GetComponent<UITooltipComponent>().Body;else throw std::invalid_argument("UI presentation component missing");}catch(const std::exception &e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;}
-    static bool UI_Dropdown(uint64_t id,int operation){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("Dropdown requires a live scene");if(operation< -1||operation>1)throw std::invalid_argument("Invalid Dropdown operation");result=operation<0?scene->IsUIDropdownOpen(id):scene->RequestUIDropdown(id,operation!=0);}catch(const std::exception &e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;}
+    static uint64_t UI_PresentationReference(uint64_t id,int kind){MonoException* failure=nullptr;uint64_t result=0;try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI reference requires a live scene");auto e=scene->GetEntityByUUID(id);if(!e||!scene->IsEntityValid(id))throw std::invalid_argument("UI source retired");if(kind==0&&e.HasComponent<UITabComponent>())result=e.GetComponent<UITabComponent>().Page;else if(kind==1&&e.HasComponent<UITooltipComponent>())result=e.GetComponent<UITooltipComponent>().Body;else throw std::invalid_argument("UI presentation component missing");}catch(const std::exception &e){failure=mono_get_exception_invalid_operation(e.what());}
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
+    }
+    static bool UI_Dropdown(uint64_t id,int operation){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("Dropdown requires a live scene");if(operation< -1||operation>1)throw std::invalid_argument("Invalid Dropdown operation");result=operation<0?scene->IsUIDropdownOpen(id):scene->RequestUIDropdown(id,operation!=0);}catch(const std::exception &e){failure=mono_get_exception_invalid_operation(e.what());}
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
+    }
     static void UI_ScrollInfo(uint64_t id,glm::vec2* offset,glm::vec2* range,glm::vec2* viewport,glm::vec2* extent){
         MonoException* failure=nullptr;try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("ScrollView requires a scene");auto g=scene->GetUIScroll(id);*offset=g.Offset;*range=g.Range;*viewport=g.Viewport.Size;*extent=g.Extent;}catch(const std::exception&e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);
     }
     static void UI_ScrollTo(uint64_t id,glm::vec2* offset,bool normalized){MonoException* failure=nullptr;try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("ScrollView requires a scene");scene->ScrollUITo(id,*offset,normalized);}catch(const std::exception&e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);}
-    static bool UI_EnsureVisible(uint64_t id,uint64_t target,bool focus){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(scene)result=scene->EnsureUIVisible(id,target,focus);}catch(const std::exception&e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;}
+    static bool UI_EnsureVisible(uint64_t id,uint64_t target,bool focus){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(scene)result=scene->EnsureUIVisible(id,target,focus);}catch(const std::exception&e){failure=mono_get_exception_invalid_operation(e.what());}
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
+    }
     static float UI_Slider(uint64_t id,bool write,float value){
         MonoException* failure=nullptr;float result=0;
         try{auto* s=ScriptEngine::GetSceneContext();if(!s)throw std::invalid_argument("Control requires a runtime scene");if(write)s->SetUISliderValue(id,value);result=s->GetUISliderValue(id);}
-        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;
+        catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
     static uint64_t UI_FocusScope(){auto* scene=ScriptEngine::GetSceneContext();return scene?scene->GetUIDiagnostics().Scope:0;}
-    static bool UI_Cancel(uint64_t identity,uint64_t scope){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(scene&&scene->GetIdentity()==identity)result=scene->ConsumeUICancel(scope);}catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);return result;}
+    static bool UI_Cancel(uint64_t identity,uint64_t scope){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(scene&&scene->GetIdentity()==identity)result=scene->ConsumeUICancel(scope);}catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
+    }
     static bool UI_IsPointerCaptured(){auto* scene=ScriptEngine::GetSceneContext();return scene&&scene->IsUICapturingPointer();}
     static bool UI_TextInputOwned(){auto scene=ScriptEngine::GetSceneContext();return scene&&scene->IsUITextInputOwned();}
     static bool UI_IsKeyDown(KeyCode key) {
@@ -513,13 +613,17 @@ namespace Hazel {
         *entity=0;*name=nullptr;MonoException* failure=nullptr;bool result=false;
         try{auto* scene=ScriptEngine::GetSceneContext();if(scene){scene->CheckThread();if(scene->GetIdentity()==identity){GameUI::Action action;if(scene->ConsumeUIAction(id,action)){*entity=action.Entity;*name=ScriptEngine::CreateString(action.Name.c_str());result=true;}}}}
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
-        if(failure)mono_raise_exception(failure);return result;
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
     static uint32_t UI_LayoutVersion(uint64_t id) {
         MonoException* failure=nullptr;uint32_t result=0;
         try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::invalid_argument("UI requires a runtime scene");scene->CheckThread();auto e=scene->GetEntityByUUID(id);if(!e||!scene->IsEntityValid(id)||!e.HasComponent<UIRectComponent>())throw std::invalid_argument("Sizing needs a live UI Rect");result=GameUI::RectLayout::SchemaVersion;}
         catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
-        if(failure)mono_raise_exception(failure);return result;
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
     static void UI_GetSizing(uint64_t id,int axis,int* mode,float* size,float* minimum,int* hasMaximum,float* maximum) {
         MonoException* failure=nullptr;
@@ -559,7 +663,10 @@ namespace Hazel {
     }
     static int UI_TrackCount(uint64_t id,bool rows) {
         int count=0;MonoException* failure=nullptr;try{auto &v=UI_LayoutEntity(id).GetComponent<UILayoutComponent>();count=int(rows?v.Rows.size():v.Columns.size());}
-        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);return count;
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
+        if (failure)
+            mono_raise_exception(failure);
+        return count;
     }
     static void UI_GetTrack(uint64_t id,bool rows,int index,UITrackWire* result) {
         MonoException* failure=nullptr;try{auto &v=UI_LayoutEntity(id).GetComponent<UILayoutComponent>();auto &tracks=rows?v.Rows:v.Columns;if(index<0||size_t(index)>=tracks.size())throw std::invalid_argument("Track index out of range");auto &t=tracks[index];*result={int(t.Mode),t.Value,t.Minimum,t.Maximum,t.HasMaximum?1:0};}
@@ -608,7 +715,9 @@ namespace Hazel {
         MonoException* failure=nullptr;bool result=false;
         try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::runtime_error("UI requires a runtime scene");scene->CheckThread();auto* value=UI_Value(id,property);if(!value)throw std::runtime_error("UI property needs a live UI component");result=*value;}
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
-        if(failure)mono_raise_exception(failure);return result;
+        if (failure)
+            mono_raise_exception(failure);
+        return result;
     }
     static void UI_SetValue(uint64_t id,int property,bool value) {
         MonoException* failure=nullptr;

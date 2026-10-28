@@ -147,6 +147,17 @@ namespace Migration {
             var animation=GetComponent<Hazel.SpriteAnimationComponent>();
             animation.Play(Clip);animation.Pause();
             if(animation.IsPlaying)throw new System.Exception("Pause did not stop playback");
+            foreach(var path in new[]{Icon.Sheet+"\0suffix","\ud800.hsprites","\udfff",new string('p',32769)}) {
+                bool rejected=false;
+                try{GetComponent<Hazel.SpriteRendererComponent>().SetSprite(new Hazel.Sprite(path,Icon.ID));}
+                catch(System.InvalidOperationException){rejected=true;}
+                if(!rejected)throw new System.Exception("Malformed sprite sheet path was accepted");
+                rejected=false;
+                try{animation.Play(new Hazel.SpriteAnimation(path,Clip.ID));}
+                catch(System.InvalidOperationException){rejected=true;}
+                if(!rejected||animation.IsPlaying)throw new System.Exception("Malformed animation path changed paused playback");
+            }
+
             animation.Resume();if(!animation.IsPlaying)throw new System.Exception("Resume did not start playback");
             animation.Stop();if(animation.IsPlaying || animation.IsFinished)throw new System.Exception("Stop did not reset playback");
             animation.Play(Clip);Passed=true;
@@ -216,12 +227,14 @@ namespace Migration {
             if(button.TryConsumeAction(out action)||Hazel.GameUI.TryConsumeAction(out entity,out action))throw new System.Exception("Fresh scene retained UI actions");
             if(Hazel.GameUI.IsPointerCaptured)throw new System.Exception("Fresh scene retained pointer capture");
             var text=GetComponent<Hazel.TextComponent>();text.Text="Managed UI";
-            foreach(var invalid in new[]{"A\0B","\ud800","\udfff"}) {
+            foreach(var invalid in new[]{"A\0B","\ud800","\udfff",new string('x',32769)}) {
                 bool rejected=false;try{text.Text=invalid;}catch(System.ArgumentException){rejected=true;}
                 if(!rejected||text.Text!="Managed UI")throw new System.Exception("Managed text accepted invalid UTF-16/NUL or changed last valid text");
             }
             text.Text="\ufeffManaged UI";
             if(text.Text[0]!='\ufeff')throw new System.Exception("Managed BOM text was not accepted/preserved");
+            text.Text="UI é \ud83d\ude80";
+            if(text.Text!="UI é \ud83d\ude80")throw new System.Exception("Supplementary text was lost");
             text.Text="Managed UI";
             text.SetFont("Fonts/Runtime.hfont",Hazel.FontStyle.BoldItalic);
             if(text.FontFamily!="Fonts/Runtime.hfont" || text.Style!=Hazel.FontStyle.BoldItalic)throw new System.Exception("Managed family/style roundtrip failed");
@@ -239,6 +252,10 @@ namespace Migration {
             if(ink.X!=1||ink.Y!=.2f||ink.Z!=.3f||ink.W!=.5f)throw new System.Exception("Managed emphasis RGBA payload roundtrip failed");
             bool badSpan=false;try{text.SetRichText("e\u0301",new Hazel.TextEmphasis(0,1,Hazel.FontStyle.Italic));}catch(System.ArgumentException){badSpan=true;}
             if(!badSpan||text.Text!="A café label"||text.Emphasis.Length!=1)throw new System.Exception("Invalid emphasis partially published source/spans");
+            foreach(var source in new[]{"bad\0text","\ud800","\udfff",new string('x',32769)}) {
+                bool rejected=false;try{text.SetRichText(source);}catch(System.ArgumentException){rejected=true;}
+                if(!rejected||text.Text!="A café label"||text.Emphasis.Length!=1)throw new System.Exception("Malformed rich replacement changed accepted source/spans");
+            }
             text.Text="Managed UI";if(text.Emphasis.Length!=0)throw new System.Exception("Plain replacement retained stale emphasis");
             if(rect.LayoutVersion!=3)throw new System.Exception("Canonical UI schema mismatch");
             var overflow=GetComponent<Hazel.UITextStyleComponent>();overflow.SetOverflow(Hazel.UITextOverflow.Ellipsis,2);
@@ -361,5 +378,68 @@ namespace Migration {
         public bool Ready,Changed;
         void OnCreate(){var e=FindEntityByName("Name field");var appearance=e.GetComponent<Hazel.UIAppearanceComponent>();var value=e.GetComponent<Hazel.UITextEntryComponent>().Text;appearance.Style=new Hazel.UIStyleSelection("","Field");appearance.ResetOverrides(Hazel.UIStyleGroups.Foreground);appearance.UseLocalOverrides(Hazel.UIStyleGroups.Background);if(appearance.Overrides!=Hazel.UIStyleGroups.Background)throw new System.Exception("Typed override presence");appearance.ResetOverrides(Hazel.UIStyleGroups.Background);Ready=appearance.Style.Enabled&&appearance.Style.Variant=="Field"&&e.GetComponent<Hazel.UITextEntryComponent>().Text==value;}
         void OnUpdate(float dt){if(Changed)return;var e=FindEntityByName("Name field");var appearance=e.GetComponent<Hazel.UIAppearanceComponent>();appearance.Style=new Hazel.UIStyleSelection("","Control");Changed=appearance.Style.Asset==""&&appearance.Style.Variant=="Control";Hazel.UIEvent value;if(Hazel.GameUI.TryConsumeEvent(out value))throw new System.Exception("Appearance assignment fabricated a control event");}
+    }
+}
+
+namespace Migration {
+    public class ManagedStringProbe : Hazel.Entity {
+        public bool Passed, LoadValid;
+        public Hazel.Prefab SnapshotPrefab;
+        public Hazel.Sprite SnapshotSprite;
+        public Hazel.SpriteAnimation SnapshotClip;
+        const string Payload = "Café Ελληνικά \ud83d\ude80";
+        const string PrefabPath = "Prefabs/café \ud83d\ude80.hprefab";
+        const string ScenePath = "Scenes/café \ud83d\ude80.hazel";
+
+        static void Reject(System.Action action) {
+            bool rejected = false;
+            try { action(); } catch (System.InvalidOperationException) { rejected = true; }
+            if (!rejected) throw new System.Exception("Malformed managed input was accepted");
+        }
+        void OnUpdate(float dt) {
+            if (LoadValid) { LoadValid = false; Hazel.Scene.LoadScene(ScenePath); return; }
+            if (Passed) return;
+            Hazel.SaveData.Write("journey", Payload);
+            if (Hazel.SaveData.Read("journey") != Payload) throw new System.Exception("Unicode save roundtrip");
+            foreach (var slot in new[] {"journey\0other", "café", "journey\ud800", "\udfff", new string('s', 97), null, ""}) {
+                Reject(() => Hazel.SaveData.Write(slot, "replacement"));
+                Reject(() => Hazel.SaveData.Read(slot));
+                if (Hazel.SaveData.Read("journey") != Payload) throw new System.Exception("Rejected slot changed valid prefix");
+            }
+            foreach (var payload in new[] {Payload + "\0tail", "\ud800", "\udfff", "\ud800x", new string('x', 65537), new string('é', 32769), null, ""}) {
+                Reject(() => Hazel.SaveData.Write("journey", payload));
+                if (Hazel.SaveData.Read("journey") != Payload) throw new System.Exception("Rejected replacement changed accepted save");
+            }
+            var boundary = new string('é', 32768); // Exactly 65536 UTF-8 bytes, not UTF-16 units.
+            Hazel.SaveData.Write("boundary", boundary);
+            Reject(() => Hazel.SaveData.Write("boundary", boundary + "x"));
+            if (Hazel.SaveData.Read("boundary") != boundary) throw new System.Exception("Payload byte limit changed accepted contents");
+
+            int count = Children.Length;
+            var child = Hazel.Entity.Instantiate(new Hazel.Prefab(PrefabPath), Hazel.Vector3.Zero);
+            if (child == null || !child.IsValid || Children.Length != count)
+                throw new System.Exception("Valid supplementary prefab path failed");
+            child.Destroy();
+            foreach (var path in new[] {PrefabPath + "\0suffix", "\ud800.hprefab", "\udfff", new string('p', 32769)}) {
+                Reject(() => Hazel.Entity.Instantiate(new Hazel.Prefab(path), Hazel.Vector3.Zero));
+                if (Children.Length != count) throw new System.Exception("Malformed prefab partially mutated hierarchy");
+            }
+            foreach (var path in new[] {ScenePath + "\0suffix", "Scenes/Target.hazel\0suffix", "\ud800.hazel", "\udfff", new string('p', 32769)})
+                Hazel.Scene.LoadScene(path); // Existing API logs rejection; native harness checks no request commits.
+            foreach (var path in new string[] {null, ""}) {
+                bool rejected = false;
+                try { Hazel.Scene.LoadScene(path); } catch (System.ArgumentException) { rejected = true; }
+                if (!rejected) throw new System.Exception("Empty scene-path contract changed");
+            }
+            if (FindEntityByName("café \ud83d\ude80") == null) throw new System.Exception("Unicode entity identifier was lost");
+            bool badName = false;
+            try { FindEntityByName("café \ud83d\ude80\0suffix"); } catch (System.ArgumentException) { badName = true; }
+            if (!badName) throw new System.Exception("Entity name was truncated");
+            Passed = true;
+        }
+        public void PoisonPrefab() { SnapshotPrefab = new Hazel.Prefab(PrefabPath + "\0suffix"); }
+        public void PoisonSprite() { SnapshotSprite = new Hazel.Sprite("sheet\ud800.hsprites", 1); }
+        public void PoisonClip() { SnapshotClip = new Hazel.SpriteAnimation("sheet\0suffix", 1); }
+        public void ClearSnapshot() { SnapshotPrefab = null; SnapshotSprite = null; SnapshotClip = null; }
     }
 }
