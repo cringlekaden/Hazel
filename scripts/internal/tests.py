@@ -205,5 +205,10 @@ def test(configuration, profile='native'):
                 result=subprocess.run(list(map(str,command)),cwd=working,env=env,stdout=out,stderr=subprocess.STDOUT,timeout=limit)
             if result.returncode:
                 print(log.read_text(errors='replace'));raise RuntimeError(f'{name} failed ({result.returncode}); log: {log}')
-            if 'PASS:' not in log.read_text(errors='replace'):raise RuntimeError('Missing acceptance evidence: '+str(log))
+            evidence=log.read_text(errors='replace')
+            if 'PASS:' not in evidence:raise RuntimeError('Missing acceptance evidence: '+str(log))
+            if name=='EditorSmoke' and env.get('HAZEL_FINAL_UI_PROJECT'):
+                tutorial='PASS: native tutorial Inspector, composed creation/duplicate/delete/property undo, prefab instantiate, save/reopen and repeated Play/Stop in a private project'
+                if tutorial not in evidence:raise RuntimeError('Selected tutorial authoring did not execute: '+str(log))
+                print(tutorial,flush=True)
         print(f'PASS: {configuration} {profile}, {len(names)} sequential regression executables')

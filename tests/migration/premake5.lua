@@ -38,6 +38,9 @@ project ("Migration" .. test)
         links { "opengl32", "Comdlg32", "Shell32", "Ole32", "Advapi32" }
     filter { "system:windows", "action:vs*" }
         buildoptions { "/utf-8" }
+        -- EditorSmoke includes the maintained integration checks in one TU.
+        -- Its Debug MSVC object exceeds COFF's ordinary section-count limit.
+        if test == "EditorSmoke" then buildoptions { "/bigobj" } end
     filter "configurations:Debug"
         defines { "HZ_DEBUG" }
         runtime "Debug"
