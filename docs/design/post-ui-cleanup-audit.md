@@ -424,3 +424,43 @@ Each slice includes corresponding documentation corrections and meaningful focus
 **Human acceptance still needed:** physical Windows hardware and normal desktop use; actual controller mapping/disconnect/remap/neutral behavior; monitor/DPI/framebuffer/detached viewport behavior; real keyboard layout/dead-key/clipboard and committed-text behavior; competent-reader review of the declared Arabic/Hebrew and other typography; any wider end-to-end authoring/pacing acceptance not covered by the owner's successful tutorial. Unsupported IME preedit is a limitation, not an acceptance task that can be passed by committed-character callbacks.
 
 The audit's only maintained output is this document. Its publication does not mean the recommendations have been implemented or that CI is green.
+
+## First cleanup slice implementation status
+
+Implementation began on 2026-10-28 from `0a631e67fc0221f7356274e6fa60b338c8792480` on `feature/runtime-ui-hardening`. The original audited baseline, findings and historical evidence above remain unchanged. This appendix records only A1–A3 and D1–D5; it does not authorize or claim subsequent slices.
+
+- **A1:** `hzpch.h` now precedes all other includes in the three identified TUs. All 119 engine C++ files using it pass the first-include scan. Each affected header also compiles on its own without PCH. PCH, platform selection, UTF-8 and dynamic CRT policies remain enabled.
+- **A2:** TypographySmoke explicitly declares the pinned GLM include root alongside its direct HarfBuzz, libunibreak, SheenBidi and spdlog requirements. Generated GNU Make and isolated VS2022 projects include it. The actual generated GNU include set also compiled the complete typography source with header tracing selecting `Hazel/vendor/glm`, never `/usr/include/glm`. VS generation additionally checked PCH Use, UTF-8, dynamic Debug/Release CRT and exclusion of Linux OS sources; generation is not Windows compilation.
+- **A3:** a scripting-local `ManagedStrings::Read` reads the explicit UTF-16 length, checks surrogate pairs/NUL policy and counts UTF-8 bytes before allocating output. It emits exact Unicode directly, so there is no Mono conversion buffer to leak or failed conversion to dereference. All direct `mono_string_to_utf8` calls in first-party scripting were replaced, including live asset snapshots and exception messages. Exceptions are translated after native temporary values have left scope; Scene.LoadScene retains its existing log-and-reject native behavior and C# null/empty argument guard.
+
+| Input | Enforced boundary / retained semantics |
+| --- | --- |
+| Save slot | 96 UTF-16 units / 96 UTF-8 bytes, then native portable ASCII name validation; NUL/surrogates rejected |
+| Save payload | 65536 UTF-16 units and 65536 UTF-8 bytes, nonempty, no NUL; native storage also validates UTF-8 before persistence/after disk decoding |
+| Scene/prefab/sprite paths and live asset snapshots | 32768 UTF-16 units / 131072 UTF-8 bytes, no NUL; native path/schema/ownership validation remains authoritative |
+| Display text/emphasis | Existing 32768 UTF-16 bound plus 65536 UTF-8 bytes; native scalar/span/layout limits unchanged |
+| Text entry | Existing 16384-unit boundary plus 16384 bytes; native configured byte/grapheme/line limits unchanged |
+| Family / style selection | Existing UTF-16 bound 1024; native 1024-byte family/asset and 128-byte style-variant limits checked before publication |
+| Entity names / log and exception messages | 32768 UTF-16 units / 131072 bytes; names reject NUL, diagnostics preserve it by explicit length. Invalid exception messages produce a bounded diagnostic instead of recursive managed formatting |
+
+Null retains the empty-string convention at the native reader; operation-specific empty-input rules still apply. Data/path malformed input rejects before filesystem access, mutation or request admission. This does not turn unrelated APIs into one string policy or expand supported typography.
+
+The existing managed fixture now exercises real internal calls with disposable persistent storage: valid Unicode/supplementary payloads, exact UTF-8 boundary, malformed/oversized replacements and slots, unchanged accepted/persisted values, no prefix-slot aliasing, malformed scene/prefab paths against actual valid prefix targets, Unicode path success, live-domain preservation on rejected asset snapshots, and retained plain/rich text behavior. Sprite tests also check rejection preserves paused animation. Diagnostic NUL preservation is checked independently. No test writes to the owner's profile or saves.
+
+**Implementation checkpoint:** `7bc5f2307efc30a6ad26d1cdedd82e520a0f8f65` contains A1–A3 and their regressions. All completed-source local checks below use that native/managed source. Local platform: CachyOS x86_64, GCC 16.2.1, pinned isolated Mono 6.12, physical Intel HD4000 / Mesa 26.2.4 through Xwayland. No local Ubuntu or Windows compilation is claimed.
+
+| Verification | Result / ignored evidence |
+| --- | --- |
+| Debug and Release builds, two compiler jobs | PASS; canonical Premake build path (Debug `hazel.build('Debug', tests=True)` under build lock; Release `python3 scripts/hazel.py build --config Release --tests`). `build/testing/cleanup-slice/final-{debug,release}-build.log` |
+| Debug `test --config Debug --profile native` | PASS, all 17 sequential executables; physical HD4000 GL4.2. `final-debug-tests.log` and `build/testing/logs/linux-Debug-native-*.log` |
+| Release `test --config Release --profile gl41` | PASS, all 17 sequential executables; physical HD4000 forced GL4.1. `final-release-tests.log` and `build/testing/logs/linux-Release-gl41-*.log` |
+| GNU/VS project declarations, pinned GLM and standalone headers | PASS; `generation-checks.log`, `pinned-glm-syntax.log`, `header-self-containment.log`, under `build/testing/cleanup-slice/`. Generation is not Windows compilation |
+| Disposable Release packaging / extracted CLI | PASS: private SceneTransitions Release script-build → package both applications; native/managed/font closure, archive and all-file checksums, notices, Nutella help/discovery/error contracts from unrelated cwd. `final-package-cli.log`; graphical relocation remains CI work |
+
+Focused Debug RuntimeSessionSmoke, SceneSmoke and TypographySmoke also passed during repair; the table records the full final-source gates rather than counting those iterations as additional qualification. CI results will be recorded separately. Full source-game/playthrough and graphical package relocation gates are left to the existing CI cycle; no unrelated local game campaign was repeated and Xvfb is unavailable locally. Neither generated VS configuration nor Linux automation establishes physical Windows/controller/DPI or competent-reader acceptance.
+
+Preservation was recorded before edits and rechecked after Debug/Release qualification: 305 authored/user-state manifest hashes match, including Sandbox `Start.hazel` (`da6c537dfb525efd0e70fa993a4081323af4c6c336030c658e59d388ae285219`), saves, preferences/session/layouts and ignored VS Code files. Stash `2948648a2332d8bb809fe893cd8aa554265bd6b4`, all 14 recursive submodule pins and their clean working trees are unchanged; there are no new/missing user-profile or save files. The remaining manifest entry is the ignored autogenerated `examples/SceneTransitions/Assets/Scripts/SceneTransitions.make`, normally regenerated for Release by the canonical build. No authored file was changed by qualification. No dependency installation/update, workflow/settings change, example-content edit or merge was performed.
+
+**D1–D5:** README now links directly to the UI Tutorial/UI/storage references and a new current `docs/getting-started.md`. The guide distinguishes prerequisites from checkout-owned acquisition, setup/build/run/script-build/package/editor-export, actual output paths, correct Release export commands, snapshot downloads/login/retention/checksums and successful whole-run selection. Historical editor/runtime milestone records point to the current guide; their old results are not promoted to this repair SHA. The six retained README artifact IDs were rechecked as present/unexpired (2027-01-06 expiry); no archive download was claimed. Storage documentation records the enforced Unicode contract.
+
+Still pending: B1/B2 ownership consolidation, C4 custom-prefix editor preflight, workflow/coverage consolidation, D6–D19 and the wider documentation navigation/history work, plus physical Windows/controller/DPI and competent-reader acceptance. Those are not silently included in this first slice. The next bounded implementation slice remains audit order 2.
