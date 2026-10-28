@@ -65,7 +65,7 @@ Plain `package` validates/packages saved content and **existing Release outputs*
 - [Runtime UI authoring, styles, fonts, input and bounded history](docs/runtime-game-ui.md)
 - [Sandbox UI Tutorial](examples/Sandbox/README.md) and [runtime saves/audio](docs/runtime-storage-audio.md)
 - [Sprite-sheet reference and historical design](docs/design/sprite-sheet-authoring.md), [data/lifecycle contracts](docs/authoring-reliability.md)
-- [Cleanup audit and implementation evidence](docs/design/post-ui-cleanup-audit.md#first-cleanup-slice-implementation-status); older [editor](docs/editor-authoring.md) and [runtime](docs/nutella-runtime.md) milestone records retain their checkpoint context
+- [Cleanup audit and implementation evidence](docs/design/post-ui-cleanup-audit.md#second-cleanup-slice-implementation-status); older [editor](docs/editor-authoring.md) and [runtime](docs/nutella-runtime.md) milestone records retain their checkpoint context
 
 The [Linux/Windows workflow](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml) is intended to qualify Debug/Release, rendering/lifecycle regressions and relocated packages. Both jobs failed at compilation at audit baseline `650d09e`; the cleanup status records repair results rather than treating older successful runs as current guarantees. Automated checks do not replace physical Windows/controller/DPI or competent-reader typography acceptance. macOS and additional graphics backends are not implemented.
 

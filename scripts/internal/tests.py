@@ -53,6 +53,63 @@ def typography_inputs(working):
     print('PASS: pinned test face/Unicode versions and linked typography notice closure; no fixture font shipped',flush=True)
 
 
+def sdk_readiness_checks(working):
+    """Production preflight with controlled SDK paths, without changing host SDKs."""
+    from unittest.mock import patch
+    from internal.authoring import preflight
+    if hz.SYSTEM == 'linux':
+        installed=hz.mono_prefix()
+        selected=working/'Mono SDK space é'/'usr';selected.mkdir(parents=True)
+        for name in ('bin','lib','include'):
+            (selected/name).symlink_to(installed/name, target_is_directory=True)
+        config=installed.parent/'etc' if installed!=Path('/usr') else Path('/etc')
+        (selected.parent/'etc').symlink_to(config, target_is_directory=True)
+        defaults={base/name for base in (hz.ROOT/'build/dependencies/mono/linux/usr',Path('/usr'))
+                  for name in ('lib/mono/4.5/mcs.exe','lib/mono/4.7.2-api/mscorlib.dll')}
+        original=Path.is_file;consulted=[];unavailable=set()
+        def controlled(file):
+            if file in defaults:
+                consulted.append(file);return False
+            return file not in unavailable and original(file)
+        resolver=hz.mono_prefix
+        with patch.dict(os.environ,{'HAZEL_MONO_SDK':str(selected)}), patch.object(Path,'is_file',controlled):
+            with patch.object(hz,'mono_prefix',wraps=resolver) as resolve:
+                preflight('scripts')
+                assert resolve.call_count==1, 'Readiness resolved a second SDK'
+            assert resolver()==selected and not consulted, 'Custom SDK ignored or default SDK consulted'
+            from internal.authoring import create_project
+            descriptor=create_project('Custom SDK é','CustomSDKProbe',working/'custom compiler project é')
+            hz.script_build(descriptor,'Debug')
+            assert (descriptor.parent/'Assets/Scripts/Binaries/CustomSDKProbe.dll').is_file()
+            for name in ('lib/mono/4.5/mcs.exe','lib/mono/4.7.2-api/mscorlib.dll'):
+                unavailable.add(selected/name)
+                try:preflight('scripts')
+                except RuntimeError as error:
+                    assert str(selected) in str(error) and name in str(error), str(error)
+                else:raise RuntimeError('Incomplete explicitly selected SDK was accepted')
+                runtime=hz.mono_command(selected)[:-1]
+                assert subprocess.run(list(map(str,[*runtime,'--version'])),capture_output=True).returncode==0
+                unavailable.clear()
+            assert not consulted, 'Incomplete override silently fell back to a default SDK'
+        print('PASS: real custom Mono SDK with spaces/Unicode, default candidates unavailable, one readiness resolution, compiled project scripts, missing compiler/profile rejection and independent runtime',flush=True)
+    else:
+        # Windows compilation uses MSBuild/reference assemblies, not Linux mcs.
+        from internal import authoring
+        pack=working/'Targeting SDK space é'
+        reference=pack/'Reference Assemblies/Microsoft/Framework/.NETFramework/v4.7.2/mscorlib.dll'
+        reference.parent.mkdir(parents=True);reference.write_bytes(b'controlled targeting availability')
+        with patch.dict(os.environ,{'ProgramFiles(x86)':str(pack)}), \
+             patch.object(authoring,'native_contract',return_value=hz.mono_prefix()), \
+             patch.object(hz,'vs_toolchain') as compiler, patch.object(hz,'diagnose') as diagnose:
+            preflight('scripts');compiler.assert_called_with(False)
+            preflight('export');compiler.assert_called_with(True);diagnose.assert_called_once()
+            reference.unlink()
+            try:preflight('scripts')
+            except RuntimeError as error:assert '.NET Framework 4.7.2' in str(error)
+            else:raise RuntimeError('Missing Windows targeting pack accepted')
+        print('PASS: Windows script/export compiler selection and missing managed targeting-pack diagnostics',flush=True)
+
+
 def authoring_checks(working):
     """Exercise the same transactional project service invoked by editor jobs."""
     import yaml
@@ -109,7 +166,7 @@ def test(configuration, profile='native'):
     logs=hz.ROOT/'build/testing/logs';logs.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='hazel tests space-é-') as temporary:
         working=Path(temporary)
-        hz.yaml_tools();authoring_checks(working)
+        hz.yaml_tools();sdk_readiness_checks(working);authoring_checks(working)
         hz.copy_tree(hz.ROOT/'Hazel/Resources',working/'assets')
         hz.copy_tree(hz.ROOT/'Hazelnut/Resources/Icons',working/'assets/Icons')
         hz.copy_changed(hz.ROOT/'Hazelnut/Resources/imgui.ini',working/'assets/imgui.ini')

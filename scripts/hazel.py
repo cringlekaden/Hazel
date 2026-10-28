@@ -249,8 +249,8 @@ def script_build(project, configuration):
     if not (scripts / 'premake5.lua').is_file():
         raise RuntimeError('Project needs Assets/Scripts/premake5.lua; see the bundled example')
     from internal.authoring import native_contract
-    native_contract(configuration)
-    generator = premake(); prefix = mono_prefix()
+    prefix = native_contract(configuration)
+    generator = premake()
     env = os.environ.copy()
     env['HAZEL_SCRIPTCORE'] = (binaries(configuration) / 'Hazel-ScriptCore/Hazel-ScriptCore.dll').as_posix()
     identity = hashlib.sha256(str(descriptor).encode('utf-8')).hexdigest()[:16]
