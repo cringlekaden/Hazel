@@ -21,7 +21,6 @@ struct ResolvedClip {
     std::vector<Ref<const ResolvedSprite>> Frames;
     const SpriteClip& Definition() const { return Sheet->Clip(ID); }
 };
-struct FontResolution { Ref<Font> Actual; std::string Error; bool Fallback=false; };
 struct TextComponent;
 struct FamilyResolution {
     Ref<Font> Actual;
@@ -47,8 +46,6 @@ public:
     FamilyResolution FamilyStatus(const FontSelection& selection);
     Ref<const FontFamilyDefinition> Family(const std::filesystem::path& reference);
     void ImportFontFile(const std::filesystem::path& source,const std::filesystem::path& destination,bool face);
-    Ref<Font> FontAsset(const std::filesystem::path& reference);
-    FontResolution FontStatus(const std::filesystem::path& reference);
     Ref<const SpriteSheetDefinition> Sheet(const std::filesystem::path& reference);
     Ref<Texture2D> Texture(const std::filesystem::path& reference,const TextureSpecification& specification,bool owned=true);
     Ref<const ResolvedSprite> Resolve(const SpriteSource& source);
@@ -71,10 +68,7 @@ private:
     FamilyEntry* FamilyEntryFor(const std::filesystem::path& reference);
     void ReloadFamily(const std::string& key,FamilyEntry& entry);
     Ref<Font> ResolveFamilyFace(const std::string& key,FamilyEntry& entry,FontStyle style);
-    struct FontEntry {std::weak_ptr<Font> Accepted;std::string Error;};
-    std::unordered_map<std::string,FontEntry> m_Fonts;
     bool m_FontLimitReported=false;
-    void ReloadFont(const std::string& key, FontEntry& entry);
     std::unordered_map<std::string,SheetEntry> m_Sheets;
     std::unordered_map<std::string,Ref<Texture2D>> m_Textures;
     std::unordered_map<std::string,Ref<const ResolvedSprite>> m_Sprites;

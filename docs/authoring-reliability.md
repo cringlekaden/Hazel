@@ -47,6 +47,31 @@ Hover/selection and legacy borrowed observations are cleared at scene replacemen
 and teardown. Selection checks scene identity before inspecting registry validity;
 `Entity::operator bool` still requires a live owning Scene.
 
+## Authored entity references and detached prefabs
+
+One narrow native visitor enumerates authored cross-entity fields for subtree
+remapping and prefab ownership checks: screen focus/actions/owners; control
+indicators/groups/owners; progress, slider and scroll parts; dropdown trigger/popup;
+tab page **and initial focus**; tooltip body; and stored script Entity fields.
+Hierarchy relationships keep their own graph validation. Runtime state, queued
+events/captures, resources and numeric script fields are not authored references.
+
+Duplicate remaps targets inside its subtree once and retains allowed same-scene
+external targets. Detached extraction/prefabs reject nonzero external references
+before publication; they never clear them or bind them to unrelated destination
+entities. Zero is ownership-neutral; required/optional and component/role rules
+remain in control validation. Native metadata audit owns scene/prefab schema,
+hierarchy and prefab-reference ownership. Python packaging consumes its dependency
+closure and retains package inventory/exclusions, filesystem/deployment checks and
+managed assembly/class closure; it does not carry a parallel UI reference list.
+
+Deletion/history retains repairable incoming references while targets are absent.
+Undo restores the authored UUIDs with fresh lifetimes and preserves surviving
+owners' values. Interleaved property/structural history still uses explicit exact
+snapshots, payloads and native-write guards; the visitor does not serialize history,
+retarget incoming references or weaken conflict detection. Authored formats and
+detached-instance semantics are unchanged.
+
 ## Save behavior
 
 Scene and project saves reserve an exclusive sibling temporary, check writing,
@@ -77,5 +102,5 @@ after New/Open/Play/Simulate/Stop; try a missing/corrupt project, scene and asse
 and try saving to an inaccessible destination. Prior valid work must remain usable.
 
 Runtime/project deployment is covered by the [Nutella milestone](nutella-runtime.md).
-Custom font persistence, live component synchronization, macOS/ARM64, Metal and
-larger feature systems remain deferred.
+Current `.hfont` ownership/reload behavior is documented in [runtime UI resources](runtime-game-ui.md#font-families-and-declared-coverage).
+macOS/ARM64, Metal and larger feature systems remain deferred.

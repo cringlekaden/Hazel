@@ -25,7 +25,7 @@ std::string ReferenceKey(const std::filesystem::path& path,SpriteID id) {return 
 ProjectAssets::~ProjectAssets() {
     // Family document/coverage services are CPU-only. Metadata entries alone
     // must not invoke rendering-thread teardown in native authoring/export tools.
-    bool usedFaces=!m_Fonts.empty();const std::weak_ptr<Font> empty;
+    bool usedFaces=false;const std::weak_ptr<Font> empty;
     for(const auto& family:m_Families)for(const auto& face:family.second.Faces)
         usedFaces |= face.Accepted.owner_before(empty) || empty.owner_before(face.Accepted);
     if(usedFaces)Font::ReleaseRoot(m_Root);
@@ -122,33 +122,6 @@ void ProjectAssets::ImportFontFile(const std::filesystem::path& source,const std
     std::filesystem::create_directories(path.parent_path());
     FileSystem::WriteFileAtomically(path,[&](auto& out){out.write(bytes.data(),std::streamsize(bytes.size()));},WriteMode::CreateNew);
 }
-void ProjectAssets::ReloadFont(const std::string& key,FontEntry& entry) {
-    try {auto previous=entry.Accepted.lock();auto accepted=Font::Load(Project::ResolveOwnedAsset(m_Root,std::filesystem::u8path(key)),previous);entry.Accepted=accepted;entry.Error.clear();}
-    catch(const std::exception& error) {
-        const std::string diagnostic=error.what();
-        if(entry.Error!=diagnostic)HZ_CORE_WARN("Font '{}': {}. Keeping accepted resource, or shipped default; Refresh assets to retry.",key,diagnostic);
-        entry.Error=diagnostic;
-    }
-}
-Ref<Font> ProjectAssets::FontAsset(const std::filesystem::path& reference) {
-    auto fallback=Font::GetDefault(); // reserve the safe resource before custom admission
-    if(reference.empty())return fallback;
-    const auto key=reference.generic_u8string();auto it=m_Fonts.find(key);
-    if(it==m_Fonts.end()) {
-        if(m_Fonts.size()>=256) {
-            if(!m_FontLimitReported){HZ_CORE_WARN("Project font reference limit (256) reached; using shipped default for additional references");m_FontLimitReported=true;}
-            return fallback;
-        }
-        it=m_Fonts.emplace(key,FontEntry{}).first;ReloadFont(key,it->second);
-    } else if(it->second.Error.empty() && it->second.Accepted.expired())ReloadFont(key,it->second);
-    auto accepted=it->second.Accepted.lock();return accepted?accepted:fallback;
-}
-FontResolution ProjectAssets::FontStatus(const std::filesystem::path& reference) {
-    auto actual=FontAsset(reference);
-    auto it=m_Fonts.find(reference.generic_u8string());
-    return {actual,it!=m_Fonts.end()?it->second.Error:reference.empty()?std::string{}:"Project font reference limit (256)",
-        !reference.empty()&&(it==m_Fonts.end()||it->second.Accepted.expired())};
-}
 Ref<const SpriteSheetDefinition> ProjectAssets::Sheet(const std::filesystem::path& reference) {
     auto path=Project::ResolveOwnedAsset(m_Root,reference); if(path.extension()!=".hsprites") throw std::runtime_error("Expected .hsprites asset");
     auto key=path.generic_u8string(); auto it=m_Sheets.find(key);
@@ -192,9 +165,8 @@ void ProjectAssets::Reload(const std::filesystem::path& reference) {
         ++m_Epoch;return;
     }
     if(reference.extension()==".ttf"||reference.extension()==".otf"){
-        auto it=m_Fonts.find(reference.generic_u8string());
-        if(it!=m_Fonts.end())ReloadFont(it->first,it->second);
-        else FontAsset(reference);
+        // Faces are owned only through accepted families, never a second raw map.
+        (void)Project::ResolveOwnedAsset(m_Root,reference);
         // A direct face reload invalidates families using it, including cached failures.
         for(auto& pair:m_Families)ReloadFamily(pair.first,pair.second);
         ++m_Epoch;return;
@@ -216,7 +188,6 @@ void ProjectAssets::Refresh() {
     for(auto& p:paths) {
         try{Reload(p);}catch(const std::exception& e){HZ_CORE_WARN("Sprite asset refresh: {}",e.what());}
     }
-    for(auto& entry:m_Fonts)ReloadFont(entry.first,entry.second);
     for(auto& entry:m_Families)ReloadFamily(entry.first,entry.second);
     ++m_Epoch;m_Textures.clear();m_Sprites.clear();m_Clips.clear();
 }
@@ -291,6 +262,16 @@ std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path
         auto doc=YAML::Load(FileDocument::Read(Project::ResolveOwnedAsset(root,file)));
         DocumentSchema::Scene(doc,file.extension()==".hprefab");
         for(auto e:doc["Entities"]) {
+            // Python consumes this same dependency closure for package inventory
+            // exclusions; it does not carry a second prefab-reference schema.
+            for(auto field:e["ScriptComponent"]["ScriptFields"]) {
+                if(field["Type"].as<std::string>()=="Prefab" && field["Data"] && !field["Data"].as<std::string>().empty()) {
+                    auto reference=std::filesystem::u8path(field["Data"].as<std::string>());
+                    auto path=Prefab::Resolve(root,reference);
+                    if(!std::filesystem::is_regular_file(path))throw std::runtime_error("Missing prefab reference: "+reference.generic_u8string());
+                    dependencies.insert(path.lexically_relative(std::filesystem::weakly_canonical(root)));
+                }
+            }
             if(auto n=e["UIAppearanceComponent"]){auto selection=ReadUIAppearanceComponent(n).Selection;if(!selection.Asset.empty()){try{style(selection.Asset);ReadUIStyle(Project::ResolveOwnedAsset(root,selection.Asset)).Find(selection.Variant);}catch(const std::exception& error){throw std::runtime_error(file.generic_u8string()+" style "+selection.Asset.generic_u8string()+": "+error.what());}}else DefaultUIStyle().Find(selection.Variant);}
             if(auto n=e["UINineSliceComponent"]) {
                 UIStyleValues appearance;

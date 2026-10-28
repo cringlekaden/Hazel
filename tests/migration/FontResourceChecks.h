@@ -49,16 +49,20 @@ static void FontResourceChecks(const std::filesystem::path& root) {
     {auto font=Font::Load(a);auto layout=font->Layout("M",-1,false);Check(font->PreparePages(*layout).empty() && Font::Resources().Generations==0,"Scratch rejection published page");}
     Font::Shutdown();Font::Initialize();
     {
-        ProjectAssets assets(root);copy(regular,a);auto accepted=assets.FontAsset("a.ttf");auto oldPage=page(accepted);auto id=oldPage->Texture->GetRendererID();
+        ProjectAssets assets(root);copy(regular,a);WriteTestFamily(root,"reload.hfont","a.ttf");auto accepted=assets.FamilyFont({"reload.hfont"});auto oldPage=page(accepted);auto id=oldPage->Texture->GetRendererID();
         {std::ofstream out(a,std::ios::binary);out<<"broken replacement";}
-        assets.Reload("a.ttf");auto failed=assets.FontStatus("a.ttf");
-        Check(failed.Actual==accepted && !failed.Fallback && !failed.Error.empty(),"Failed reload lost accepted face");
+        assets.Reload("a.ttf");auto failed=assets.FamilyStatus({"reload.hfont"});
+        Check(failed.Actual==accepted && !failed.DefaultFallback && !failed.Error.empty(),"Failed reload lost accepted face");
         // Previously unseen glyphs rasterize OLD accepted bytes after file corruption.
         Check(!accepted->PreparePages(*accepted->Layout(u8"Ω",-1,false)).empty(),"Old layout reopened corrupted pathname");
-        auto generations=Font::Resources().Generations;for(int i=0;i<100;++i)Check(assets.FontAsset("a.ttf")==accepted,"Failed reload retried");
-        Check(assets.FontStatus("missing.ttf").Fallback && Font::Resources().Generations==generations,"Missing font retry storm");
-        copy(bold,a);assets.Reload("a.ttf");auto recovered=assets.FontStatus("a.ttf");
+        auto generations=Font::Resources().Generations;for(int i=0;i<100;++i)Check(assets.FamilyFont({"reload.hfont"})==accepted,"Failed reload retried");
+        Check(assets.FamilyStatus({"missing.hfont"}).DefaultFallback && Font::Resources().Generations==generations,"Missing font retry storm");
+        copy(bold,a);assets.Reload("a.ttf");auto recovered=assets.FamilyStatus({"reload.hfont"});
         Check(recovered.Actual!=accepted && recovered.Error.empty() && oldPage->Texture->GetRendererID()==id,"Reload invalidated pinned page");
+        WriteTestFamily(root,"missing.hfont","a.ttf");assets.Reload("missing.hfont");
+        Check(assets.FamilyStatus({"missing.hfont"}).Actual==recovered.Actual &&
+              assets.FamilyStatus({"missing.hfont"}).Error.empty(),"Missing-first-load family did not recover on explicit retry");
+        assets.Refresh();Check(assets.FamilyFont({"reload.hfont"})==recovered.Actual,"Family refresh lost accepted identity");
         auto oversized=root/"oversized.ttf";{std::ofstream out(oversized,std::ios::binary);out.seekp(4*1024*1024);out.put('x');}
         Reject([&]{Font::ValidateFile(oversized);},"Oversized input accepted");
     }

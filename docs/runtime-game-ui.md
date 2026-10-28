@@ -221,6 +221,18 @@ before Play. A failure is cached rather than retried every frame. Missing-font
 scenes can be saved/reopened for repair; export still rejects invalid closure.
 Undo/Redo restores authored selections even if a file subsequently disappears.
 
+Project text has one ownership route: the `.hfont` descriptor selects real faces
+through `ProjectAssets::FamilyFont` / `FamilyStatus`, and active text components,
+prepared glyphs and submitted draws retain the accepted resources they use.
+`Font::Load` remains the low-level renderer resource service; there is no second
+project raw-face map or raw-font assignment API. Reloading a `.hfont`, refreshing
+assets, or explicitly reloading a face dependency retries family admission and
+advances the asset epoch. Failure keeps live accepted faces/pages; missing first
+loads use the documented engine fallback. Changing the project/asset owner also
+invalidates component resolution, even when the new owner has the same epoch.
+Metadata-only family inspection/export does not create GPU owners. Release active
+scenes/pins and project caches on the renderer thread before its GL context dies.
+
 **Runtime UI Debugger → Font resources** distinguishes the eight-entry face cache,
 reusable pages (12 MiB) and live pages (24 / 24 MiB), including prepared-text and
 pending-draw pins. Per page: at most 128 glyph IDs, 1024² / 3 MiB RGB8. Source
@@ -309,7 +321,10 @@ associated notices only where supplied. **Choose / import…** selects project f
 or copies an external file to a destination you choose inside Assets; it never
 overwrites an existing file. Associate the correct notices yourself: an association
 is not evidence that a font can legally be redistributed. Existing Open Sans
-fixtures use its shipped Apache license; this milestone adds no fonts/dependencies.
+faces use their shipped Apache license. The linked typography dependencies and
+notices are listed in [the typography notice ledger](../scripts/dependencies/licenses/typography/NOTICE.md);
+Sandbox explicitly imports DejaVu with its own project notice. Test-only font
+fixtures are not automatically shipped with games.
 
 Save, Reopen/discard, Reload saved and normal Save All/unsaved-document guards
 apply to the family draft, like sprite-sheet assets. Failed writes/conflicts keep

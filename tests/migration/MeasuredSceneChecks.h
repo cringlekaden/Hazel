@@ -36,7 +36,7 @@ static void MeasuredSceneChecks(const std::filesystem::path &root)
     scene->RefreshUI();
     auto bounds = scene->GetUISnapshot().Find(label.GetUUID())->Bounds;
     std::vector<Renderer2D::TextLine> lines;
-    auto font = assets->FontAsset("font.ttf");
+    auto font = assets->FamilyFont({"font.hfont"});
     Renderer2D::LayoutText(text.TextString, font, 108.f / 20, true, 0, lines);
     Check(bounds.Size.x == 108 && lines.size() > 1, "Measured label did not receive stack width");
     auto smallHeight = bounds.Size.y;

@@ -158,6 +158,14 @@ static void UICompositionSceneChecks(const std::filesystem::path &directory)
     Check(instance.HasComponent<UITabsComponent>() &&
               instance.GetComponent<UIRadioGroupComponent>().InitialSelection != 210,
           "Tab/page/tooltip prefab remapping failed");
+    auto assertFocus = [&](const Ref<Scene>& world, Entity group) {
+        auto tab=world->GetEntityByUUID(group.GetComponent<UIRadioGroupComponent>().InitialSelection);
+        const auto& config=tab.GetComponent<UITabComponent>();
+        auto targets=world->GetSubtree(world->GetEntityByUUID(config.Page));
+        Check(config.InitialFocus!=221 && std::find(targets.begin(),targets.end(),UUID(config.InitialFocus))!=targets.end(),
+              "Duplicated/instantiated tab InitialFocus did not bind to its new page");
+    };
+    assertFocus(edit,duplicate);assertFocus(target,instance);
     auto nested = CompositionFixture();
     auto nestedRoot = nested->DuplicateEntity(nested->GetEntityByUUID(200));
     nested->Reparent(nestedRoot, nested->GetEntityByUUID(220), TransformPolicy::KeepLocal);

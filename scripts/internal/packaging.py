@@ -59,46 +59,9 @@ def validate_project(descriptor, config, assets):
     if not scenes: raise RuntimeError('No .hazel scenes in selected asset root')
     for file in assets.rglob('*'):
         if file.is_symlink() and not file.resolve().is_relative_to(assets): raise RuntimeError('External asset symlink: ' + str(file))
-    for scene in scenes:
-        content = yaml.safe_load(scene.read_text(encoding='utf-8'))
-        if not isinstance(content, dict) or 'Scene' not in content: raise RuntimeError('Invalid scene: ' + str(scene))
-        if scene.suffix=='.hprefab' and (content.get('PrefabVersion') not in (1,2) or (content.get('PrefabVersion')==1 and len(content.get('Entities',[]))!=1)):
-            raise RuntimeError('Unsupported prefab version/entity count: '+str(scene))
-        ids = {entity['Entity'] for entity in content.get('Entities', []) or []}
-        seen = set()
-        for entity in content.get('Entities', []) or []:
-            ident = entity['Entity']
-            if ident in seen: raise RuntimeError('Duplicate entity UUID in ' + str(scene))
-            seen.add(ident)
-            for field in entity.get('ScriptComponent',{}).get('ScriptFields',[]) or []:
-                if field.get('Type')=='Prefab' and field.get('Data'):
-                    reference=field['Data']
-                    if Path(reference).suffix!='.hprefab' or resolve_owned(assets,reference) not in included:
-                        raise RuntimeError('Missing/excluded prefab reference '+str(reference)+' in '+str(scene))
-                if scene.suffix=='.hprefab' and field.get('Type')=='Entity' and field.get('Data') not in ids | {0}:
-                    raise RuntimeError('Unsafe external entity reference in prefab '+str(scene))
-            if scene.suffix=='.hprefab':
-                screen=entity.get('UICanvasComponent',{}).get('Screen',{})
-                for field in ('InitialFocus','DefaultAction','CancelTarget','ReturnFocus','EventOwner'):
-                    if screen.get(field,0) not in ids | {0}:
-                        raise RuntimeError('Unsafe external screen '+field+' reference in prefab '+str(scene))
-                for component,fields in [('UIButtonComponent',['Indicator','Group','EventOwner']),('UIRadioGroupComponent',['InitialSelection','EventOwner']),('UIProgressComponent',['Fill']),('UISliderComponent',['Track','Fill','Thumb']),('UIDropdownComponent',['Trigger','Popup']),('UITabComponent',['Page','InitialFocus']),('UITooltipComponent',['Body']),('UIScrollViewComponent',['Content','HorizontalTrack','HorizontalThumb','VerticalTrack','VerticalThumb'])]:
-                    for field in fields:
-                        if entity.get(component,{}).get(field,0) not in ids | {0}:
-                            raise RuntimeError('Unsafe external UI control '+component+'.'+field+' in prefab '+str(scene))
-            clip = entity.get('AudioSourceComponent', {}).get('Clip')
-            if clip:
-                if Path(clip).suffix!='.wav' or resolve_owned(assets,clip) not in included:
-                    raise RuntimeError('Missing/excluded WAV audio clip '+str(clip)+' in '+str(scene))
-            style=entity.get('UIAppearanceComponent',{}).get('Asset')
-            if style and resolve_owned(assets,style) not in included:
-                raise RuntimeError('UI style selects excluded output: '+style+' in '+str(scene))
-            font=entity.get('TextComponent',{}).get('FontFamily')
-            if font and resolve_owned(assets,font) not in included:
-                raise RuntimeError('Text family selects excluded compiler output: '+font+' in '+str(scene))
-            texture = entity.get('SpriteRendererComponent', {}).get('TexturePath')
-            if texture and resolve_owned(assets,texture) not in included:
-                raise RuntimeError('Texture selects excluded compiler output: '+texture+' in '+str(scene))
+    # Native audit already loads every scene/prefab through its canonical schema,
+    # hierarchy and authored-reference ownership checks. Its dependency output
+    # above is checked against this package's exact inclusion/exclusion inventory.
     core = hz.binaries('Release') / 'Hazel-ScriptCore/Hazel-ScriptCore.dll'
     module = resolve_owned(assets, config['ScriptModulePath'])
     assembly_files = [file for file in files if file.suffix.lower()=='.dll']

@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "AuthoredEntityReferences.h"
 #include "Hazel/UI/RuntimeUI.h"
 #include "Hazel/UI/RuntimeUIConfig.h"
 #include "Hazel/Project/Project.h"
@@ -395,30 +396,15 @@ namespace Hazel {
         for(auto id:sourceIDs) {
             auto original=from->GetEntityByUUID(id);auto target=staged->GetEntityByUUID(remap.at(id));
             CopyComponentIfExists(AllComponents{},target,original);
-            if(target.HasComponent<UICanvasComponent>()) {
-                auto &screen=target.GetComponent<UICanvasComponent>().Screen;
-                for(auto ref:{&screen.InitialFocus,&screen.DefaultAction,&screen.CancelTarget,&screen.ReturnFocus,&screen.EventOwner}) {
-                    if(auto found=remap.find(UUID(*ref));found!=remap.end())*ref=found->second;
-                    else if(*ref&&!retainExternal)throw std::runtime_error("External UI screen reference on '"+original.GetName()+"'. Include the target or clear the reference");
-                }
-            }
-            std::vector<uint64_t*> controlRefs;
-            if(target.HasComponent<UIButtonComponent>()){auto &b=target.GetComponent<UIButtonComponent>();controlRefs={&b.Indicator,&b.Group,&b.EventOwner};}
-            if(target.HasComponent<UIRadioGroupComponent>()){auto &g=target.GetComponent<UIRadioGroupComponent>();controlRefs.push_back(&g.InitialSelection);controlRefs.push_back(&g.EventOwner);}
-            if(target.HasComponent<UITabComponent>()){auto &c=target.GetComponent<UITabComponent>();controlRefs.push_back(&c.Page);controlRefs.push_back(&c.InitialFocus);}
-            if(target.HasComponent<UITooltipComponent>())controlRefs.push_back(&target.GetComponent<UITooltipComponent>().Body);
-            if(target.HasComponent<UIDropdownComponent>()){auto &d=target.GetComponent<UIDropdownComponent>();controlRefs.push_back(&d.Trigger);controlRefs.push_back(&d.Popup);}
-            if(target.HasComponent<UIScrollViewComponent>()){auto &v=target.GetComponent<UIScrollViewComponent>();for(auto ref:{&v.Content,&v.HorizontalTrack,&v.HorizontalThumb,&v.VerticalTrack,&v.VerticalThumb})controlRefs.push_back(ref);}
-            if(target.HasComponent<UISliderComponent>()){auto &v=target.GetComponent<UISliderComponent>();controlRefs.push_back(&v.Track);controlRefs.push_back(&v.Fill);controlRefs.push_back(&v.Thumb);}
-            if(target.HasComponent<UIProgressComponent>())controlRefs.push_back(&target.GetComponent<UIProgressComponent>().Fill);
-            for(auto ref:controlRefs){if(auto found=remap.find(UUID(*ref));found!=remap.end())*ref=found->second;else if(*ref&&!retainExternal)throw std::runtime_error("External UI control reference on '"+original.GetName()+"'; include the target or clear it");}
             auto stored=from->m_ScriptFields.find(id);
             auto fields=stored==from->m_ScriptFields.end()?ScriptFieldMap{}:stored->second;
-            for(auto& [name,field]:fields)if(field.Field.Type==ScriptFieldType::Entity) {
-                auto reference=UUID(field.GetValue<uint64_t>());
-                if(remap.count(reference))field.SetValue<uint64_t>(remap.at(reference));
-                else if(uint64_t(reference) && !retainExternal)throw std::runtime_error("External entity reference in field '"+name+"' on '"+original.GetName()+"'. Clear it or include that entity in the subtree");
-            }
+            VisitAuthoredEntityReferences(target, fields, [&](uint64_t& reference, std::string_view field) {
+                if (auto found = remap.find(UUID(reference)); found != remap.end())
+                    reference = found->second;
+                else if (reference && !retainExternal)
+                    throw std::runtime_error("External entity reference '" + std::string(field) +
+                        "' on '" + original.GetName() + "'. Include the target or clear it");
+            });
             staged->m_ScriptFields[target.GetUUID()]=std::move(fields);
         }
         // Copy relationships only after every component and identity is staged.

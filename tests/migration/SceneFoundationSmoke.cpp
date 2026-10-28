@@ -64,6 +64,7 @@ static void AuthoredComparisonContracts() {
 #include "ProjectCreationChecks.h"
 #include "RendererPolicyChecks.h"
 #include "HierarchyChecks.h"
+#include "AuthoredReferenceChecks.h"
 static void Finite(const glm::mat4& projection)
 {
     for (int column=0; column<4; ++column)
@@ -207,7 +208,7 @@ int main()
         CPUFontFamilyDocument();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();
-        Hazel::ProjectCreationChecks();Hazel::RendererPolicyChecks(); Hazel::HierarchyChecks(); Hazel::SubtreePrefabChecks();
+        Hazel::ProjectCreationChecks();Hazel::RendererPolicyChecks(); Hazel::HierarchyChecks(); Hazel::SubtreePrefabChecks();AuthoredReferenceChecks();
         RecoveryContracts();
         Hazel::SceneCamera camera;
         Finite(camera.GetProjection());

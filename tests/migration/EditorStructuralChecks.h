@@ -165,6 +165,11 @@ static void EditorStructuralChecks()
                   editor.AddAuthoredComponent<SpriteRendererComponent>(indicator),
               "Indicator components failed");
         scene->GetEntityByUUID(controlID).GetComponent<UIButtonComponent>().Indicator = indicator;
+        auto control=scene->GetEntityByUUID(controlID);
+        control.AddComponent<ScriptComponent>().ClassName="Regression.Player";
+        auto& incoming=ScriptEngine::GetScriptFieldMap(control)["RepairTarget"];
+        incoming.Field={ScriptFieldType::Entity,"RepairTarget",nullptr};incoming.SetValue<uint64_t>(indicator);
+        const auto indicatorLife=scene->GetAuthoringLifetime(indicator);
         const auto start = SceneSerializer(scene).CaptureAuthoredState();
         editor.RestoreHistorySelection(indicator);
         history.Clear();
@@ -172,8 +177,11 @@ static void EditorStructuralChecks()
                   scene->GetEntityByUUID(controlID).GetComponent<UIButtonComponent>().Indicator ==
                       indicator,
               "Delete silently cleared incoming visual reference");
-        Check(history.Undo(*scene) && SceneSerializer(scene).CaptureAuthoredState() == start,
-              "Referenced visual restore lost authored data");
+        Check(ScriptEngine::GetScriptFieldMap(scene->GetEntityByUUID(controlID)).at("RepairTarget").GetValue<uint64_t>()==indicator,
+              "Delete silently rewrote a repairable incoming script Entity reference");
+        Check(history.Undo(*scene) && SceneSerializer(scene).CaptureAuthoredState() == start &&
+                  scene->GetAuthoringLifetime(indicator)!=indicatorLife,
+              "Referenced visual/script restore lost authored data or reused a retired lifetime");
         // A changed hierarchy outside history must reject restoration atomically.
         Check(history.Redo(*scene), history.Diagnostic());
         auto foreign = scene->CreateEntity("Outside child");

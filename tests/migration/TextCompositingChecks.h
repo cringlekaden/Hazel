@@ -86,7 +86,7 @@ static void TextCompositingChecks(bool reproduce = false) {
     {
         auto scene=CreateRef<Scene>();auto assets=CreateRef<ProjectAssets>(std::filesystem::current_path()/"assets");scene->SetAssets(assets);
         std::filesystem::copy_file(assets->Root()/"fonts/opensans/OpenSans-Regular.ttf",assets->Root()/"analytic-face.ttf",std::filesystem::copy_options::overwrite_existing);
-        auto uiFont=assets->FontAsset("analytic-face.ttf");auto uiPages=uiFont->PreparePages(*uiFont->Layout("M",-1,false));auto uiAtlas=uiPages.front()->Texture;
+        auto uiFont=Hazel::Font::Load(assets->Root()/"analytic-face.ttf");auto uiPages=uiFont->PreparePages(*uiFont->Layout("M",-1,false));auto uiAtlas=uiPages.front()->Texture;
         std::vector<unsigned char> uniform(size_t(uiAtlas->GetWidth())*uiAtlas->GetHeight()*3,128);uiAtlas->SetData(uniform.data(),uint32_t(uniform.size()));
         scene->OnViewportResize(128,128);auto canvas=scene->CreateEntity("Analytic canvas");auto& canvasData=canvas.AddComponent<UICanvasComponent>();canvasData.ReferenceSize={128,128};canvasData.SafeInsets={};
         auto label=scene->CreateEntity("Analytic label");scene->Reparent(label,canvas,TransformPolicy::KeepLocal);
