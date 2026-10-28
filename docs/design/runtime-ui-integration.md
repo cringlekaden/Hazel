@@ -1,5 +1,7 @@
 # Runtime UI integration
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../README.md) and [history index](../history.md).
+
 Baseline: clean feature/last-lightkeeper at 0213e48; existing content and saves are accepted. Both baseline CI jobs passed.
 
 ## Inventory

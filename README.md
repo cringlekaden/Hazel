@@ -1,72 +1,60 @@
 # Hazel
 
-A Linux/Windows extension of [TheCherno/Hazel](https://github.com/TheCherno/Hazel/tree/1feb70572fa87fa1c4ba784a2cfeada5b4a500db). **Hazelnut** edits projects; **Nutella** runs standalone games. This fork adds cross-platform tooling, managed scripting, sprite animation, detached prefabs and authored screen-space runtime UI.
+A C++ 2D game engine with a scene editor, C# scripting and standalone game export, for **Windows and Linux**.
 
-## Downloads
+![Hazelnut editing The Last Lightkeeper](docs/images/hazelnut-lightkeeper.png)
+*The Last Lightkeeper in Hazelnut: menu authoring, hierarchy, properties and shared styles. [Full resolution](docs/images/hazelnut-lightkeeper.png).*
 
-Historical verified master snapshot [`a31187d`](https://github.com/cringlekaden/Hazel/actions/runs/37756280905) (GitHub login required). It includes the editor usability/sprite-authoring work and MeadowRun/Skybound, **before** the later runtime UI and Last Lightkeeper integration:
+**Hazel** is the engine library. **Hazelnut** is its editor. **Nutella** runs the exported game without the editor. This fork builds on [TheCherno's public Hazel source](https://github.com/TheCherno/Hazel/tree/1feb70572fa87fa1c4ba784a2cfeada5b4a500db); it is separate from TheCherno's commercial Hazel product.
 
-| Application | Windows x64 | Linux x86_64 |
+## Start here
+
+| Try it | Make something | Explore |
 | --- | --- | --- |
-| Hazelnut + Nutella | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37756280905/artifacts/11541340516) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37756280905/artifacts/11541596001) |
-| MeadowRun | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37756280905/artifacts/11541416345) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37756280905/artifacts/11541730832) |
-| Skybound | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37756280905/artifacts/11541147123) | [Download](https://github.com/cringlekaden/Hazel/actions/runs/37756280905/artifacts/11541532045) |
+| [Downloads and snapshots](docs/packaging.md#choose-a-snapshot) | [Set up Windows or Linux](docs/getting-started.md) | [Documentation](docs/README.md) |
+| [Run an example](docs/README.md#learn-from-an-example) | [Editor guide](docs/editor-guide.md) · [C# scripting](docs/scripting.md) | [Contribute / report a bug](CONTRIBUTING.md) |
+| [Exported-game requirements](docs/platforms-and-dependencies.md#platform-status) | [Sprites](docs/sprite-authoring.md) · [Runtime UI](docs/runtime-game-ui.md) | [Development and CI](docs/development.md) |
 
-Extract the download, then the application archive inside it, and follow `LAUNCH.txt` to run `Hazelnut` or `Nutella` (`.exe` on Windows). Verify the included archive checksum and file inventory. Artifacts expire: select a **successful whole run**, confirm its SHA/platform and inspect its artifacts; an upload alone does not establish that later gates passed. [Download and checksum instructions](docs/getting-started.md#choose-a-download-or-a-source-checkout) explain authentication, retention and package contents. No formal release is published.
+The engine includes a 2D renderer, Box2D physics, sprite regions/animation, scene hierarchy and detached prefabs. Menus and HUDs use authored screen-space UI: measured layout, styles, font families, text, controls, scrolling, focus and remappable input. Hazelnut provides native authoring, bounded document history, script builds and game export.
 
-Requires **OpenGL 4.1 core**, Windows 10 x64 or newer, or an X11/GLX Linux desktop. Official Linux builds target Ubuntu 24.04 / glibc 2.39 or newer. Prepared games need no SDK, Python or compiler; runtime dependencies are bundled.
+## Build and open the tutorial
 
-## Build from source
+Install the [platform prerequisites](docs/getting-started.md#prerequisites-installed-by-you), then clone the current UI branch with its pinned submodules:
 
 ```sh
 git clone --branch feature/runtime-ui-hardening --recurse-submodules https://github.com/cringlekaden/Hazel.git
 cd Hazel
-scripts/setup.sh                  # Linux
-```
-
-These current UI/tutorial instructions target `feature/runtime-ui-hardening` until branch integration. On Windows, run `./scripts/setup.ps1` instead. Install the [Windows or Linux prerequisites](docs/getting-started.md#prerequisites-installed-by-you) first: Python 3.9+ with pip/pinned PyYAML, Git, native compiler/development libraries, and the documented Mono compiler/profile or Windows .NET 4.7.2 targeting pack. Setup checks prerequisites, acquires checkout-owned pinned tools through **Premake**, and builds Debug with two compiler jobs; it never installs system packages. Premake is the only build system.
-
-```sh
+scripts/setup.sh --tests
 python3 scripts/hazel.py script-build examples/Sandbox/Sandbox.hproj --config Debug
 python3 scripts/hazel.py run Hazelnut --config Debug --project examples/Sandbox/Sandbox.hproj
 ```
 
-Use `python` on Windows. `run` stages/launches existing products; it does not compile them. [Getting started](docs/getting-started.md) has concrete package lists, SDK selection, troubleshooting, VS Code templates and command semantics. Native outputs are in `bin/`, intermediates in `bin-int/`, generated tooling/dependencies in `build/`, deployed project scripts at their configured asset paths, and packages in `dist/` by default.
+On Windows, use `./scripts/setup.ps1 --tests` and `python`. Setup prepares tools/checks the environment and builds Debug with two compiler jobs; Premake is the build system. `run` launches existing products. [Getting started](docs/getting-started.md) has complete prerequisites, Mono SDK selection, outputs and troubleshooting.
 
-## Use the editor
+Open **Assets/Scenes/UI Tutorial.hazel** and Play. Its [five pages](examples/Sandbox/README.md) demonstrate layout, typography, controls, screens and reusable compositions. Stop returns to the authored scene.
 
-- **File > New Project / Open** creates or opens content. Normal Open reports recoverable missing resources while preserving references; invalid or unsupported input keeps the previous session.
-- **Content Browser** imports textures, searches assets and opens sprite sheets. Slice regions, author clips, then assign them to the named entity.
-- **Scene Hierarchy > Add Entity** creates a root. Drag onto an entity to parent it, or onto **Scene Root** to detach it. Both preserve world pose; invalid or nonrepresentable moves are rejected. Properties edit local transforms. Rigidbody/collider owners must remain roots.
-- **Ctrl+S / File > Save** saves the active scene, prefab or sheet; **Save All** covers eligible dirty documents. Operation guards distinguish saving, using saved assets, cancellation and actual discard.
-- The compact viewport toolbar controls **Play / Simulate / Stop / Pause / Step**. **View > Console** combines logs, tool progress and results.
-- **Project** contains script build/export and settings. Runtime rendering requests travel with the project; device/effective values are read-only. **Editor Preferences** owns user settings and the optional Windows custom caption; Linux retains native decorations.
+![Sandbox UI Tutorial controls](docs/images/ui-tutorial-controls.png)
+*Controls, styles and event ownership are editable scene content; game scripts handle decisions.*
 
-Hazelnut restores the last successful project. Explicit `--project` / `--scene` arguments override restoration; `--no-restore` disables it. VS Code templates live under `scripts/internal/vscode/`: older F5 configurations with an explicit project will always open that project. Local `.vscode/` and docking layouts are user-owned.
+## Example games
 
-A **Hazel source SDK** is a compatible checkout prepared by setup, including the native/managed tools—not the application's executable or Resources directory. Python and SDK discovery are automatic; Preferences can override or reset them. If discovery fails, select the prepared checkout root. Distributed applications do not include this source SDK. Native creation, editing, saving and script-free or already prepared Play remain available without it; script builds and exports need the relevant toolchain.
+| [The Last Lightkeeper](examples/LastLightkeeper/README.md) | [MeadowRun](examples/MeadowRun/README.md) · [Skybound](examples/Skybound/README.md) |
+| --- | --- |
+| ![Lightkeeper gameplay](docs/images/lightkeeper-gameplay.png) | ![MeadowRun gameplay](docs/images/meadowrun-gameplay.png) |
+| Island restoration, dialogue, persistent journeys and settings | Collectibles, physics, sprite animation, parallax and prefab spawning |
 
-## Games and export
+[SceneTransitions](examples/SceneTransitions/README.md) is the smallest runtime/scripting example. Every project has source launch and export instructions. Prepared game packages need **no compiler, Python or source SDK**; changing scripts and exporting requires the authoring toolchain.
 
-Start with the [five-page Sandbox UI Tutorial](examples/Sandbox/README.md): open **Assets/Scenes/UI Tutorial.hazel** and Play. [MeadowRun](examples/MeadowRun/README.md) is a garden expedition; [Skybound](examples/Skybound/README.md) is a scrolling flight game. [The Last Lightkeeper](examples/LastLightkeeper/README.md) begins an authored island restoration adventure. Their READMEs describe controls and assets. `SceneTransitions` is the focused runtime/CLI example.
+## Status and support
 
-```sh
-python3 scripts/hazel.py build --config Release
-python3 scripts/hazel.py script-build examples/Skybound/Skybound.hproj --config Release
-python3 scripts/hazel.py run Nutella --config Release --project examples/Skybound/Skybound.hproj
-python3 scripts/hazel.py package --app Nutella --project examples/Skybound/Skybound.hproj
-```
+Requires **OpenGL 4.1 core**. Windows x64 and Linux x86_64/X11 (including Xwayland) are maintained; official Linux packages target Ubuntu 24.04/glibc 2.39+. Native Wayland and macOS are not implemented. See [platform scope and UI limits](docs/platforms-and-dependencies.md#platform-status).
 
-Plain `package` validates/packages saved content and **existing Release outputs**; it does not build them. Editor **Export Game** / CLI `editor-export` performs targeted Release native and project-script builds before packaging; see the [complete export sequence](docs/getting-started.md#release-build-and-export). Extracted Nutella discovers its single root `.hproj`; `--project <file>` selects one explicitly. Detached prefabs instantiate independent subtrees with remapped internal references; linked overrides and variants are deferred.
+[![C/C++ CI — runtime-ui-hardening branch](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml/badge.svg?branch=feature%2Fruntime-ui-hardening)](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Afeature%2Fruntime-ui-hardening)
 
-## Documentation and verification
+The badge is **workflow-wide**. Open a run for its separate **Windows Debug, Release and extracted binaries** and **Linux Debug, Release and extracted binaries (Ubuntu 24.04)** results. [CI coverage](docs/development.md#canonical-ci) includes software/GL4.1 regressions, editor/tutorial authoring and relocated packages. Current work targets `feature/runtime-ui-hardening`; older master snapshots predate parts of this guide. There is no published release; [download guidance](docs/packaging.md) identifies snapshot contents and retention.
 
-- [Getting started, downloads, setup, scripting builds and export](docs/getting-started.md)
-- [Runtime UI authoring, styles, fonts, input and bounded history](docs/runtime-game-ui.md)
-- [Sandbox UI Tutorial](examples/Sandbox/README.md) and [runtime saves/audio](docs/runtime-storage-audio.md)
-- [Sprite-sheet reference and historical design](docs/design/sprite-sheet-authoring.md), [data/lifecycle contracts](docs/authoring-reliability.md)
-- [Cleanup audit and implementation evidence](docs/design/post-ui-cleanup-audit.md#second-cleanup-slice-implementation-status); older [editor](docs/editor-authoring.md) and [runtime](docs/nutella-runtime.md) milestone records retain their checkpoint context
+Physical Windows/controller/DPI and competent-reader typography acceptance remain outstanding. Automated/software graphics checks do not establish that acceptance. Final qualification and branch integration precede macOS compatibility and subsequent 3D work.
 
-The [Linux/Windows workflow](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml) is intended to qualify Debug/Release, rendering/lifecycle regressions and relocated packages. Both jobs failed at compilation at audit baseline `650d09e`; the cleanup status records repair results rather than treating older successful runs as current guarantees. Automated checks do not replace physical Windows/controller/DPI or competent-reader typography acceptance. macOS and additional graphics backends are not implemented.
+## License and attribution
 
-Source follows the retained [Apache-2.0 license](LICENSE); dependencies and project assets have their own notices. [Upstream provenance](docs/migration/PROVENANCE.md) records imports. The broader documentation inventory/navigation consolidation remains a later cleanup slice.
+[Apache-2.0](LICENSE), retaining upstream attribution. Dependencies, fonts and project art/audio have their own [licenses and provenance](docs/platforms-and-dependencies.md#licensing-and-provenance). Lightkeeper uses Kenney CC0 assets; MeadowRun and Skybound include original example art. [Historical records](docs/history.md) preserve the project's migration/design evidence.

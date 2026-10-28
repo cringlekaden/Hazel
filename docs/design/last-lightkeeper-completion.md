@@ -1,5 +1,7 @@
 # Completion checkpoints and runtime UI design
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../README.md) and [history index](../history.md).
+
 Historical content plan and initial UI inspection. The content checkpoints below
 are complete. Runtime UI is now integrated and the example migration is complete;
 see [the implementation checkpoint](runtime-ui-integration.md) and

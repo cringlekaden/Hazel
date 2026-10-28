@@ -1,5 +1,7 @@
 # Hazelnut usability and authoring audit
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../README.md) and [history index](../history.md).
+
 Audit date: 2026-10-04. **Recommendation: first make the existing authoring workflow coherent; retain native window decorations; deliver hierarchy as a separate architectural milestone.** Everything below is a proposal unless explicitly identified as current source behavior. No features were implemented.
 
 ## 1. Baseline and preservation

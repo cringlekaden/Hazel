@@ -2,6 +2,15 @@
 
 Runtime UI is ordinary scene content; it runs in Nutella without ImGui. World and UI text share shaped CPU layout and glyph-ID pages; sprites keep their existing rendering path. Gameplay decisions belong in C#.
 
+[Documentation](README.md) · [Editor guide](editor-guide.md) · [Sandbox UI Tutorial](../examples/Sandbox/README.md)
+
+Start with the five-page tutorial, then use this page as the authoring/API reference.
+
+![Sandbox tutorial controls](images/ui-tutorial-controls.png)
+*Authored controls share layout, focus, styles and event ownership. Linux/Nutella capture.*
+
+**Find a subject:** [Menus and owners](#build-a-menu) · [Sizing](#canonical-sizing-and-containers) · [Inspector/history](#inspect-and-edit-ui) · [Fonts](#font-families-and-declared-coverage) · [Input](#ui-input-and-focus) · [Screens](#author-a-composed-screen-flow) · [Values](#composed-value-controls) · [Scrolling](#static-scroll-content) · [Tabs/tooltips](#tabs-static-lists-and-purpose-tooltips) · [Text entry](#runtime-text-entry) · [Styles](#shared-appearance-and-templates) · [Emphasis](#display-text-emphasis)
+
 ## Build a menu
 
 1. In Hazelnut's Hierarchy, choose **Add Entity → Runtime UI → Screen** for a menu, pause or dialogue. A Screen is a Canvas with Managed screen enabled and Block gameplay on by default. Use **Canvas** for an ordinary HUD. Set reference pixels (default 1280×720) and safe insets. Ordinary canvases use sort order; open screens draw above them in runtime open order.
@@ -307,6 +316,9 @@ save/reopen, duplication, prefab reuse and Play/Stop.
 
 ## Font families and declared coverage
 
+![Tutorial multilingual text and family styles](images/ui-tutorial-text.png)
+*The tutorial contrasts real family faces, wrapping, overflow and pinned multilingual samples. See [resource ownership](settings-and-resources.md#fonts-styles-and-caches) for accepted versions, reload and cache lifetimes.*
+
 Text Renderer owns **Font family** and **Face style**, shared by world and UI text.
 Empty family selects engine Open Sans (the four shipped real faces). UI Text Style
 owns size, alignment, wrapping and overflow/line limits. Project families are `.hfont` assets; no face is
@@ -463,8 +475,7 @@ Selecting a managed screen or its children previews that screen in Edit, includi
 a closed screen, without changing initial state. With no managed selection,
 initially-open screens compose above ordinary canvases. Prefab preview follows its
 selection too. Screen policy edits and target assignments use shared scene/prefab
-Undo/Redo; structural creation and script fields retain their existing separate
-limitations. Save/reopen, Play, open Settings, open Confirmation, Cancel twice and
+Undo/Redo, including structural creation. Standalone script-field property edits retain their existing behavior. Save/reopen, Play, open Settings, open Confirmation, Cancel twice and
 check focus returns to each invoking control. Stop preserves authored policy and
 history. Prefab references must be internal to the saved subtree (or cleared).
 
@@ -563,8 +574,7 @@ Closing a screen is not an Apply/Discard transaction or a settings save.
 Defaults, ranges, direction, membership and visual assignments use existing
 scene/prefab Inspector Undo/Redo, exact dirty comparison, copy and reference remap.
 Invalid edits retain the last valid authored values; Escape cancels unfinished
-interactions. Structural creation/removal and script fields retain their existing
-history limits. **Runtime UI Debugger** shows selected values, derived visual bounds
+interactions. Structural creation/removal shares that bounded document history; standalone script-field property editing retains its existing behavior. **Runtime UI Debugger** shows selected values, derived visual bounds
 and control issues; Edit preview reads defaults and dispatches no events.
 
 For a settings screen, add the three presets, label the options, assign the screen
@@ -839,8 +849,7 @@ retain values; Stop/reset/copy use authored defaults. Replacing the Tabs compone
 resets its group value; replacing a tab's mapping preserves an eligible tab identity
 but retires the old page's interactions. **Page preview** in the Tabs Inspector
 shows inactive content in Edit without changing initial selection, history, dirty
-state or events. Property edits use normal document Undo/Redo; structural commands
-retain their current history limits. The fixed endpoint checklist tracks that work.
+state or events. Property and structural commands share the bounded document history described in [Inspect and edit UI](#inspect-and-edit-ui).
 
 **Runtime UI → Selectable List** composes an ordinary Radio Group, ScrollView,
 Content stack, scrollbar and eight labeled Radio rows. **List row** adds a row to
@@ -970,6 +979,9 @@ for source mappings, resource accounting and platform limits.
 
 ## Shared appearance and templates
 
+![UI Style asset in Hazelnut](images/hazelnut-ui-style.png)
+*Edit a shared style asset; local override groups remain visible on individual controls.*
+
 Use **Runtime UI → Styled Button / Styled Text Entry / Styled Panel template** for
 ready-to-edit starters. They reference the shipped Control, Field, Heading and
 Panel roles without copying engine assets into your project. Existing unstyled
@@ -1030,8 +1042,7 @@ scene Canvas/group first; selecting a control uses its parent. Include reference
 screen owners and local visual/focus targets in the saved subtree. Instances are
 **detached structures**, with remapped identities and independent runtime values;
 they continue sharing appearance through style references. There is no linked
-structural merge. Component creation and other structural edits retain the
-existing history limits; style assignments/overrides use ordinary property Undo.
+structural merge. Component creation and other structural edits share document history with style assignments/overrides; asset-file creation/save remains separate.
 
 Limits: 64 KiB/style, 16 variants, 14 groups; per project 64 retained entries/4 MiB
 estimated metadata and 128 live versions/8 MiB estimated metadata. Release inactive

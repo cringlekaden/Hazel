@@ -1,8 +1,6 @@
 # Authoring reliability contracts
 
-The completed repairs from `fix/authoring-reliability` were merged into master at
-`b0fb5fc`. These contracts remain obligations of the Nutella milestone. Historical
-migration verification records retain their original context.
+Current reference for ownership and failure behavior, including later prefab/history cleanup. [Editor guide](editor-guide.md), [Scripting](scripting.md), [Settings/resources](settings-and-resources.md) and [Packaging](packaging.md) explain the workflows. Historical verification below describes its named fixtures/checkpoints rather than physical acceptance.
 
 ## Texture references
 
@@ -82,7 +80,7 @@ destination is never deleted first. No fsync/FlushFileBuffers or power-loss
 durability guarantee is implemented. Concurrent edits by another writer are not
 detected; saving is still a single editor command.
 
-## Focused acceptance
+## Verification scope
 
 The existing SceneSmoke, ProjectPhysicsSmoke and actual EditorLayer EditorSmoke
 contain the regressions. EditorSmoke starts with the F5 project argument
@@ -101,6 +99,6 @@ relocate it; change a live script value, reload and Stop/restart; select immedia
 after New/Open/Play/Simulate/Stop; try a missing/corrupt project, scene and assembly;
 and try saving to an inaccessible destination. Prior valid work must remain usable.
 
-Runtime/project deployment is covered by the [Nutella milestone](nutella-runtime.md).
+Current runtime/project deployment is covered by [Packaging](packaging.md); the [Nutella milestone](nutella-runtime.md) retains historical evidence.
 Current `.hfont` ownership/reload behavior is documented in [runtime UI resources](runtime-game-ui.md#font-families-and-declared-coverage).
 macOS/ARM64, Metal and larger feature systems remain deferred.

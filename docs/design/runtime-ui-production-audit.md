@@ -1,5 +1,7 @@
 # Runtime UI production audit and implementation design
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../README.md) and [history index](../history.md).
+
 This is an audit and proposed design, not an implementation. **Verdict: a useful, integrated first runtime UI milestone; not yet a general production menu system.** Hazel already owns UI in scenes, renders it without editor ImGui, authors it natively, and packages its resources. Preserve those foundations. Ordinary settings, inventories, scrolling journals, text entry, shared themes, controller navigation, and world-space interaction still require substantial engine work or game-specific reconstruction.
 
 “Production” below means passing a bounded support contract and its acceptance gates. It does not mean correctness for arbitrary scenes, every language/font, every display configuration, or platforms that have not been tested.

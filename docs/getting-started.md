@@ -4,13 +4,7 @@ Hazel is the engine library. Hazelnut edits projects; Nutella runs prepared game
 
 ## Choose a download or a source checkout
 
-A prepared game needs no Python, compiler or Hazel source SDK. Download a game archive, extract the outer GitHub artifact ZIP and then the application archive inside it, and follow `LAUNCH.txt`. On Linux run `./Nutella`; on Windows run `Nutella.exe`. Nutella discovers the single root `.hproj` beside it, independently of the working directory; `--project <file.hproj>` selects a descriptor explicitly. Keep Assets, Resources, mono, native libraries and licenses together.
-
-[README downloads](../README.md#downloads) are explicitly identified snapshots. GitHub Actions downloads require a signed-in account and expire according to artifact retention. In the [C/C++ workflow](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml), select a **successful whole run**, confirm its branch/commit and platform, then choose its application/game artifact. The Windows job can upload applications before later tests finish: an artifact alone is not a passed run. These artifacts are not automatically updated releases.
-
-Verify the inner archive using its sibling `.sha256` file (`sha256sum -c <archive>.sha256` on Linux; `Get-FileHash <archive> -Algorithm SHA256` and compare on Windows). Extracted `SHA256SUMS` lists per-file hashes; `build.json` identifies source/configuration/platform and `LAUNCH.txt` gives the deployment requirements. Official Ubuntu CI packages target Ubuntu 24.04 / glibc 2.39 or newer, X11/GLX and the system OpenGL driver. Local rolling-distribution builds require their build host's library baseline. Windows packages require Windows 10 x64 or newer and carry the Release CRT. Neither package bundles a software graphics driver.
-
-A packaged Hazelnut can create/edit/save content and play script-free or already compiled content without a source SDK. Compiling changed scripts and exporting need a compatible **prepared source checkout**, Python and the relevant compiler tools. Select that checkout root in **Edit > Editor Preferences** if automatic discovery fails; the executable or Resources folder is not an SDK. Downloaded older packages do not acquire newer UI/tutorial features from current documentation.
+Choose a matching qualified [download snapshot](packaging.md#choose-a-snapshot), or build the source below. Prepared games run without Python, a compiler or the source SDK. Downloaded editors can edit/save and play prepared content; compiling changed scripts and exporting additionally require the authoring tools.
 
 ## Clone the source
 
@@ -95,9 +89,9 @@ python3 scripts/hazel.py script-build examples/Sandbox/Sandbox.hproj --config De
 python3 scripts/hazel.py run Hazelnut --config Debug --project examples/Sandbox/Sandbox.hproj
 ```
 
-Open **Assets/Scenes/UI Tutorial.hazel** in Content Browser and Play; the project keeps its Start scene as startup. [The tutorial guide](../examples/Sandbox/README.md) maps its five authored pages. [Runtime UI](runtime-game-ui.md) covers layout, styles/fonts, controls, owner events and bounded Undo; [storage/audio](runtime-storage-audio.md) covers player data. Other examples: [MeadowRun](../examples/MeadowRun/README.md), [Skybound](../examples/Skybound/README.md), [The Last Lightkeeper](../examples/LastLightkeeper/README.md), and `examples/SceneTransitions/SceneTransitions.hproj` for focused scene transitions.
+Open **Assets/Scenes/UI Tutorial.hazel** in Content Browser and Play; the project keeps its Start scene as startup. [The tutorial guide](../examples/Sandbox/README.md) maps its five authored pages. [Runtime UI](runtime-game-ui.md) covers layout, styles/fonts, controls, owner events and bounded Undo; [storage/audio](runtime-storage-audio.md) covers player data. Other examples: [MeadowRun](../examples/MeadowRun/README.md), [Skybound](../examples/Skybound/README.md), [The Last Lightkeeper](../examples/LastLightkeeper/README.md), and [SceneTransitions](../examples/SceneTransitions/README.md) for focused scene transitions.
 
-Hazelnut's **File > New Project** creates editable native content without compiling scripts. Use **Project > Build Scripts** before scripted Play. **Project > Export Game** uses saved files and the editor-export sequence. Stop returns to the retained authored scene. Prepared source tools and interpreter selection live in **Edit > Editor Preferences**.
+Hazelnut's **File > New Project…** creates editable native content without compiling scripts. Use **Project > Build Scripts** before scripted Play. **Project > Export Game** uses saved files and the editor-export sequence. Stop returns to the retained authored scene. Prepared source tools and interpreter selection live in **Edit > Editor Preferences**.
 
 ## Release build and export
 
@@ -130,19 +124,13 @@ python3 scripts/hazel.py editor-export examples/Skybound/Skybound.hproj --name S
 
 Root native Makefiles and some generated VS files live beside project definitions and are ignored. Nothing needs moving to use this workflow. Local `.vscode/` is user-owned: copy the maintained `scripts/internal/vscode/linux/` or `windows/` templates only when wanted, preserving existing files. F5 builds Debug through the same CLI; Hazelnut restores its last project, while Nutella's template intentionally selects SceneTransitions. Linux cppdbg uses optional GDB; `database` supplies optional clangd/Bear integration.
 
-Engine Resources and Mono roots are executable-adjacent; project paths are descriptor-relative. Writable application data defaults to `${XDG_DATA_HOME:-~/.local/share}/Hazel/<app>` or `%LOCALAPPDATA%/Hazel/<app>`. `HAZEL_DATA` selects an isolated application profile; `HAZEL_SAVE_ROOT` separately selects game-save storage. Neither overrides project Assets. Preserve user preferences/session/workspaces/layouts; use disposable profiles/projects for tests.
+[Settings and resources](settings-and-resources.md) explains application profiles, player saves, caches and runtime roots. Preserve user preferences/session/workspaces/layouts; use disposable profiles/projects for tests.
 
-## Testing and evidence
+## Next steps
 
-```sh
-python3 scripts/hazel.py build --config Debug --tests
-python3 scripts/hazel.py test --config Debug --profile native
-python3 scripts/hazel.py build --config Release --tests
-python3 scripts/hazel.py test --config Release --profile gl41
-```
-
-Linux native/forced-4.1 testing uses the current display/driver; software is a separate profile. Headless software example: `xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test --config Debug --profile software`. Windows uses the pinned isolated test Mesa driver for software/gl41 profiles, not a bundled production driver. The maintained workflows also build example scripts, check packages/games and run source/SDK-hidden relocation; see [C/C++ CI](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml) and the [cleanup audit status](design/post-ui-cleanup-audit.md#second-cleanup-slice-implementation-status).
-
-At the audit baseline `650d09e`, both CI jobs failed during Debug compilation; downstream Release/runtime/package gates did not run. The first cleanup slice repairs those defects, but only completed runs at the repair SHA establish its CI outcome. Existing local HD4000 GL4.1/4.2 through Xwayland, software rendering, and Windows CI are separate evidence. Physical Windows/controller/DPI and competent-reader typography acceptance remain outstanding.
-
-This guide fixes the first slice's setup/build/export/download instructions. The audit's wider documentation index, everyday editor/scripting/sprite guides and historical-record consolidation remain later work; old milestone records retain their original checkpoints and should not be used as current setup recipes.
+- [Editor guide](editor-guide.md): hierarchy, prefabs, Save, Undo and Play/Stop.
+- [Scripting](scripting.md): create, compile and assign C# behavior.
+- [Sprite authoring](sprite-authoring.md) and [Runtime UI](runtime-game-ui.md).
+- [Packaging](packaging.md): download verification, deployment contents and export.
+- [Development and troubleshooting](development.md): focused checks and canonical CI coverage.
+- [Platforms and dependencies](platforms-and-dependencies.md): support scope, licenses and remaining physical acceptance.

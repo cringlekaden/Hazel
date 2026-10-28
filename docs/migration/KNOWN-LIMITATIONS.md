@@ -1,5 +1,7 @@
 # Known limitations and portability boundaries
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../README.md) and [history index](../history.md).
+
 Migration final acceptance passed; see PROGRESS.md for code checkpoint/CI/local evidence. These records distinguish retained upstream boundaries from verified hardware constraints and unrun checks.
 
 | Boundary | Status and likely adaptation |

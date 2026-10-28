@@ -16,5 +16,10 @@ Pristine source pins (Git submodules; no build-time downloads/generators):
 All three include generated Unicode 17 data. The accompanying unmodified Unicode
 License V3 was downloaded from https://www.unicode.org/license.txt;
 SHA-256 `e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96`.
-No fonts or conformance corpora accompany these runtime libraries. The optional
-test-only DejaVu face and its complete notice remain under tests/fixtures/typography.
+No fonts or conformance corpora accompany these runtime libraries themselves.
+The CPU fixtures and complete DejaVu notice remain under
+[tests/fixtures/typography](../../../../tests/fixtures/typography/README.md).
+Sandbox's explicitly authored Corpus family independently redistributes the same
+pinned face with its [project notice](../../../../examples/Sandbox/Assets/Fonts/Corpus-NOTICE.txt);
+that project dependency is included in Sandbox exports. See the current
+[dependency and licensing guide](../../../../docs/platforms-and-dependencies.md#licensing-and-provenance).

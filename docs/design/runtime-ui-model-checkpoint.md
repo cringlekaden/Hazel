@@ -1,5 +1,7 @@
 # Runtime UI model checkpoint
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../README.md) and [history index](../history.md).
+
 Historical checkpoint at `0213e48`. The scene/renderer/asset/managed integration now builds on this model; see [the integration plan](runtime-ui-integration.md). Its native Debug rendering/integration regression passed on Grandpa. Editor and complete example/package verification remain in progress. The original checkpoint description below records what existed at that commit.
 
 This is a **partial milestone 3**, not a rendered or editor-authored UI system.

@@ -37,5 +37,26 @@ of Hazel's selected-script/layout policy, which is tested separately.
 
 The test corpora/conformance files remain outside runtime Resources/Assets and
 are not implicitly included in application/game exports. The explicit Sandbox
-tutorial face above is a project-owned dependency, not a test-directory export. To run the CPU check without a display, supply a
-fixture directory containing these files to `MigrationTypographySmoke`.
+tutorial face above is a project-owned dependency, not a test-directory export.
+
+## Run the CPU check
+
+Build with `python3 scripts/hazel.py build --config Release --tests` first. A fixture-directory argument alone is insufficient: accepted-resource checks also load cwd-relative `assets/fonts/opensans`. From the checkout, this display-free Linux command reproduces the runner layout without touching project/profile state:
+
+```sh
+python3 - <<'CHECK'
+import subprocess, sys, tempfile
+from pathlib import Path
+sys.path.insert(0, 'scripts')
+import hazel
+from internal.tests import typography_inputs
+with tempfile.TemporaryDirectory(prefix='Hazel-typography-') as directory:
+    work = Path(directory)
+    hazel.copy_tree(hazel.ROOT / 'Hazel/Resources', work / 'assets')
+    typography_inputs(work)  # pinned face, corpus, Unicode 17 data + notice checks
+    executable = hazel.binaries('Release') / 'MigrationTypographySmoke/MigrationTypographySmoke'
+    subprocess.run([str(executable), str(work / 'typography')], cwd=work, check=True)
+CHECK
+```
+
+On Windows use `python` and the `.exe` executable; the canonical `hazel.py test` command prepares this same private layout automatically on both OSes. No system fonts, extra fixture downloads or display are needed. [Development guide](../../../docs/development.md) describes the broader suites.

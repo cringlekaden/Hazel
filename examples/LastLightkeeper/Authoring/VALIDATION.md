@@ -1,5 +1,7 @@
 # Revision validation
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../../../docs/README.md) and [history index](../../../docs/history.md).
+
 Work continues from pushed `4e5f6f1` on `feature/last-lightkeeper`. Master remains
 `463cbdd`; vendors, settings and the existing stash are preserved. Prior chapter
 one history is retained in VALIDATION-CHAPTER-ONE.md. The player's approximately

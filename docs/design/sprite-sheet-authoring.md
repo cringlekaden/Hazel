@@ -1,5 +1,7 @@
 # Sprite sheets and frame animation in Hazelnut
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../README.md) and [history index](../history.md).
+
 Implementation design, 2026-10-03. This supersedes the initial static-only recommendations: sampling extends Hazel's existing `TextureSpecification`; reusable frame animation is included. All sprite loading uses common `Texture2D` decoding/upload. This branch preserves the unmerged editor-authoring baseline and does not merge master.
 
 ## Audited baseline

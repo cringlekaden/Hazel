@@ -1,7 +1,6 @@
 # Runtime progress and audio
 
-These additions retain RuntimeSession/Scene ownership, Premake, Mono and the
-OpenGL renderer. No vendor submodule revision was changed.
+Current runtime storage/audio reference. See [Scripting](scripting.md), [Settings and resources](settings-and-resources.md) and [Packaging](packaging.md) for task workflows and ownership.
 
 ## Durable progress
 

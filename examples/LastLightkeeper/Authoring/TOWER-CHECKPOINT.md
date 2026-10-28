@@ -1,5 +1,7 @@
 # Upper tower and full-game endpoint
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../../../docs/README.md) and [history index](../../../docs/history.md).
+
 Separate editable UpperTower, HarborHome, Ending and Credits scenes complete the
 remaining route. Existing polished chapters and asset pixels are retained.
 

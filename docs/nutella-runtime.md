@@ -1,5 +1,7 @@
 # Nutella milestone
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](README.md) and [history index](history.md).
+
 Historical milestone record: commands, counts and download evidence below describe
 its original checkpoint. For current prerequisites, command semantics, Release
 export and snapshot/download selection, use [Getting started](getting-started.md).

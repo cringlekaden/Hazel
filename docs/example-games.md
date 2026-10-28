@@ -1,5 +1,7 @@
 # Example games milestone
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](README.md) and [history index](history.md).
+
 Historical example-game milestone record. Current prefab, lifecycle, level and editor workflows are recorded in [editor-authoring.md](editor-authoring.md).
 
 Nutella implementation `5d972f3` passed Windows/Linux CI 37100603151; its
