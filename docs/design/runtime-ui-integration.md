@@ -2679,12 +2679,13 @@ silently become new completion gates.
 | Text entry: caret, selection, clipboard, undo, declared platform composition behavior | Implemented in `263e733`; committed-text/clipboard boundary, explicit unsupported native preedit protocol | Debug/Release 17-executable suites, native authoring, source examples and relocated fixture pass (below) | Physical Linux/Windows layouts, clipboard, IME committed input and DPI pending; preedit/candidate protocol unsupported |
 | Reusable styles/templates and bounded rich-text emphasis | Implemented: shared styles/templates plus typed face/color spans (`f8ae030`, `bd1032d`; contracts below) | Debug/Release 17-executable suites, native source+span history/prefabs, numeric compositing, reload/pressure, source examples and relocated package pass | Physical range authoring, Windows/DPI and competent-reader acceptance pending |
 | Essential UI structural authoring undo/workflow completion | Implemented in `f135f9a`, guard/validation refinement in `e50fa06`: native hierarchy/presets, deletion, duplication, reparent/reorder, component menus and prefab instances share property/gesture history | Debug/Release 17-executable suites, native document/fixture checks, source examples and relocated edited fixture pass (below) | Physical end-to-end authoring/Undo acceptance pending |
-| Example integration, Linux/Windows acceptance, CI and packaging | Prior bounded examples/packages qualified; final endpoint integration pending | Final Debug/Release, CI and relocated-package evidence pending | Physical controller, Windows, DPI/monitor and competent-reader acceptance pending |
+| Example integration, Linux/Windows acceptance, CI and packaging | All five projects integrated; separate Sandbox tutorial and complete Lightkeeper menu/settings implemented (`c32c760`, `b4789ca`, `a734cfb`) | Local Debug/Release suites, source examples, strict extracted-project regressions and six relocated Nutella exports pass (below). CI restoration belongs to the following cleanup pass and was not awaited/polled | Physical end-to-end authoring, keyboard/controller, Windows, DPI/monitor and competent-reader acceptance pending |
 
 The final demonstration is native Hazelnut authoring of a menu, settings screen,
 HUD, dialogue panel and static scrollable inventory/journal; connect ordinary
 scripts, save/reopen, export and run reliably. Close this checklist before cleanup
-and macOS. Explicitly deferred: virtualization/large data views, universal language
+and macOS; distinguish implemented/local evidence from the human acceptance and
+CI qualification still recorded in the table. Explicitly deferred: virtualization/large data views, universal language
 coverage, world-space UI, advanced accessibility bridges, editable/searchable combos
 and other extensions. This checklist does not introduce those as prerequisites.
 
@@ -3567,3 +3568,90 @@ ordinary buttons retain their existing consumption convenience. Focused checks
 cover once-only delivery, native owner changes (including zero → declared),
 retirement and unaddressed behavior. Lightkeeper HUDs remain ordinary canvases,
 so they do not steal gameplay keyboard ownership at startup.
+
+#### Final integration qualification
+
+The implementation checkpoints are `c32c760` (session audio/deferred Exit),
+`b4789ca` (ordinary HUD event ownership) and `a734cfb` (example content, tutorial,
+owner scripts and maintained integration checks). Debug and Release builds used
+two compiler jobs. Both complete 17-executable regression suites passed; after
+the HUD ownership correction, GameUIIntegrationSmoke, RuntimeSessionSmoke and
+EditorSmoke were rebuilt and passed again in both configurations. Prior D8,
+typography, control, screen, property/structural history and expanded Button
+Inspector checks remain in those suites.
+
+All 23 scenes and maintained prefabs pass native hierarchy/UI/resource and
+script-class validation. All five source projects passed actual Hazelnut and
+Nutella startup, rendering, resizing and graceful shutdown without changing
+authored files. The real-script/native-session checks also passed existing
+MeadowRun/Skybound collection/completion, SceneTransitions Play, and Lightkeeper
+progression, chapter transitions, old/corrupt/future saves and failure-safe writes.
+New checks exercise title settings, HUD pause, nested Settings/Back, Cancel,
+gameplay ownership and deferred Quit. An isolated player save root verifies sound
+write/restart, a deliberately failed write retaining live feedback and accepted
+data, repair/retry, and an untouched journey slot. No user save or clipboard is
+used for these checks.
+
+The optional native editor workflow (`HAZEL_FINAL_UI_PROJECT` pointing to
+Sandbox.hproj) copies the project, edits a tutorial property through the shared
+Inspector transaction, creates/duplicates/deletes a composed preset, interleaves
+property/structural Undo, instantiates/undoes its prefab, saves/reopens and repeats
+Play/Stop, including Game.Exit returning to Edit. The original scene is untouched.
+This uses production editor commands/ImGui tooling, not a claim that every asset
+was created by physical mouse clicks.
+
+Tutorial and Lightkeeper title/settings were rendered at 1280×720 and 1024×600;
+the tutorial checks cover all five tabs, correct event recipient, modal Cancel
+and return focus, reveal, silent setters, UTF-8 committed text/Cancel, scrolled
+dropdown dismissal and authored/runtime separation. Representative captures were
+inspected internally for readable spacing, focus/selection cues and clipping.
+These framebuffer checks are separate from physical monitor/DPI or competent-reader
+acceptance. After settling, eight unchanged tutorial updates preserve snapshot
+generation, shaping-build count, page-generation count and prepared-data rebuild
+count. This is reuse evidence, not a whole-frame timing or large-list budget claim.
+
+All five Release game exports and a sixth tutorial-start export from a private
+Sandbox copy passed native/managed dependency and notice audits. Extracted-project
+regressions passed the same real-script/gameplay/settings/tutorial checks with
+source assets, engine resources and Mono SDK unavailable; that probe also hid the
+bundled GAC. All five relocated Nutella games passed actual startup/render/resize/
+shutdown from an unrelated directory. The separate tutorial-start Nutella passed
+at forced OpenGL 4.1 with source/SDK and bundled GAC unavailable. Tutorial closure
+checks compare the scene, style, family/face/notice, sprite region/image, prefab,
+provenance, script source and packaged README against source bytes; its packaged
+Assets tree remains byte-identical after execution. Test corpora/conformance files
+are not implicitly exported. No system-font or external-GAC assumption is needed.
+
+Linux graphics evidence is physical Intel HD4000 (Ivy Bridge GT2), Mesa
+26.2.4-arch3.1, Plasma Wayland with GLFW **X11/GLX through Xwayland**. Release suite
+and the post-fix focused checks use forced OpenGL 4.1/GLSL410; the full Debug suite
+and source examples use native OpenGL 4.2. No software/Xvfb result or native Wayland
+support is inferred. Rendering/shaders were not redesigned; large alternating
+image/text runs and cold font/page preparation retain their documented costs.
+The exact protected Sandbox draft hash, master and stash were rechecked after
+relocation; vendors, pins, user settings/layouts and project startup were preserved.
+
+Physical acceptance:
+
+- Open Sandbox, Build Scripts, open UI Tutorial and Play. At both target sizes,
+  traverse its pages, scroll/reveal the journal, open/Cancel a modal and dropdown,
+  adjust/cancel sliders, use the silent setter, and edit/copy/paste/Undo text.
+  Check real keyboard layouts/dead keys and a physical controller separately.
+- In a disposable copy, edit shared/local appearance and rich text, duplicate,
+  delete/restore, instantiate the card prefab, interleave property/structural Undo,
+  save/reopen and repeat Play/Stop. Export with tutorial startup selected in that
+  copy; the repository's Start scene/startup choice remains unchanged.
+- In Lightkeeper, Begin/Continue, pause, open Settings, change real volume/mute
+  and UI navigation, Cancel a volume edit, resume, and restart the player to
+  confirm persistence. Cancel New Game/return/Quit confirmations before trying
+  accepted destructive actions against disposable progress.
+- Complete Windows, controller, monitor/DPI and competent-reader acceptance.
+  Native IME preedit/candidate positioning remains explicitly unsupported;
+  committed-text callbacks are not full IME composition.
+
+No implementation blocker remains from this local qualification. The intended
+next step is human acceptance, then the separate architecture/cleanup
+audit and restoration of Linux/Windows CI, followed by macOS compatibility. There
+is no additional feature family added to the fixed endpoint. CI was not awaited
+or polled, and implementation/local qualification does not declare the whole UI
+production-ready.

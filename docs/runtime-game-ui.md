@@ -1116,3 +1116,12 @@ Lightkeeper audio drag/Adjust changes are live previews until release/confirm
 visible in the current scene but are not silently saved; a new completed edit
 saves them. Scene re-entry reads the last saved sound settings. Back never rolls
 back completed edits. The settings status distinguishes preview from saved data.
+
+For repeatable repository-data checks, `python scripts/hazel.py test-games
+--config Release --profile native` exercises all examples and the tutorial through
+the production scene/session APIs, including isolated save failures. To include
+the tutorial's private-copy authoring sequence in the regular editor suite, set
+`HAZEL_FINAL_UI_PROJECT` to the absolute `examples/Sandbox/Sandbox.hproj` path
+before `python scripts/hazel.py test --config Release --profile native`.
+These checks use synthetic input and native editor commands, not physical
+keyboard/controller, clipboard-layout or competent-reader acceptance.
