@@ -78,6 +78,26 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 3
   TagComponent:
     Tag: Subtitle
@@ -126,6 +146,26 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 4
   TagComponent:
     Tag: Play
@@ -213,6 +253,26 @@ Entities:
     - 4
     - 4
     BorderScale: 3
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 5
   TagComponent:
     Tag: Play label
@@ -261,6 +321,26 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 6
   TagComponent:
     Tag: Hint
@@ -311,6 +391,26 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 7
   TagComponent:
     Tag: UI Canvas

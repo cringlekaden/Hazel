@@ -1,0 +1,22 @@
+[
+  {
+    "pack": "ui-pack-pixel-adventure",
+    "page": "https://kenney.nl/assets/ui-pack-pixel-adventure",
+    "archive_sha256": "0b0ed4802ebcfff5e44e370f394baa1d751862a5a4a7612ac4ce84e85faa0627",
+    "license": "CC0-1.0",
+    "license_verified": "Included License.txt",
+    "imported": "Selected individual files",
+    "adaptation": "Unmodified Small tiles / Thin outline ui_0013.png copied as Textures/Tutorial.png. Native 16x16 region and 4-pixel nine-slice borders; no bitmap changes.",
+    "name": "UI Pack - Pixel Adventure",
+    "version": "2.0 (included license)",
+    "archive_url": "https://kenney.nl/media/pages/assets/ui-pack-pixel-adventure/405ba5278a-1729196257/kenney_ui-pack-pixel-adventure.zip",
+    "asset_sha256": "2b04321b512ba21e3af340940ab0073e3fb231d1929d38ac61a897e36a6a0793"
+  },
+  {
+    "name": "DejaVu Sans",
+    "source": "Existing pinned tests/fixtures/typography/DejaVuSans.ttf; see tests/fixtures/typography/README.md",
+    "sha256": "7da195a74c55bef988d0d48f9508bd5d849425c1770dba5d7bfc6ce9ed848954",
+    "license": "DejaVu / Bitstream Vera; exact notice Assets/Fonts/Corpus-NOTICE.txt",
+    "adaptation": "Unmodified static face, reused for declared tutorial corpus. Not a system-font dependency."
+  }
+]

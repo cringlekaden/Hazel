@@ -3,6 +3,47 @@ PrefabRoot: 7
 SceneVersion: 2
 Scene: Title UI
 Entities:
+- Entity: 7
+  TagComponent:
+    Tag: UI Canvas
+  Relationship:
+    Parent: 0
+    Order: 0
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UICanvasComponent:
+    ReferenceSize:
+    - 1280
+    - 720
+    SafeInsets:
+    - 16
+    - 16
+    - 16
+    - 16
+    SortOrder: 0
+    Visible: true
+    Enabled: true
+    Modal: true
+    Screen:
+      Managed: true
+      InitiallyOpen: true
+      Cancel: 0
+      InitialFocus: 4
+      DefaultAction: 4
+      EventOwner: 7
+  ScriptComponent:
+    ClassName: SceneTransitions.MenuOwner
 - Entity: 2
   TagComponent:
     Tag: Title
@@ -32,11 +73,25 @@ Entities:
     Parent: 7
     Order: 0
   UIRectComponent:
-    Offset: [-500, 144]
-    Pivot: [0, 0]
-    MinimumSize: [0, 0]
-    Margin: [0, 0, 0, 0]
-    Padding: [0, 0, 0, 0]
+    Offset:
+    - -500
+    - 144
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
     Flex: 0
     Visible: true
     Enabled: true
@@ -44,13 +99,37 @@ Entities:
     LayoutVersion: 3
     WidthMode: 0
     HeightMode: 0
-    FixedSize: [1000, 90]
-    Anchor: [0.5, 0]
+    FixedSize:
+    - 1000
+    - 90
+    Anchor:
+    - 0.5
+    - 0
   UITextStyleComponent:
     Size: 68
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 3
   TagComponent:
     Tag: Subtitle
@@ -80,11 +159,25 @@ Entities:
     Parent: 7
     Order: 1
   UIRectComponent:
-    Offset: [-450, 282]
-    Pivot: [0, 0]
-    MinimumSize: [0, 0]
-    Margin: [0, 0, 0, 0]
-    Padding: [0, 0, 0, 0]
+    Offset:
+    - -450
+    - 282
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
     Flex: 0
     Visible: true
     Enabled: true
@@ -92,13 +185,37 @@ Entities:
     LayoutVersion: 3
     WidthMode: 0
     HeightMode: 0
-    FixedSize: [900, 48]
-    Anchor: [0.5, 0]
+    FixedSize:
+    - 900
+    - 48
+    Anchor:
+    - 0.5
+    - 0
   UITextStyleComponent:
     Size: 28
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 4
   TagComponent:
     Tag: Play
@@ -129,11 +246,25 @@ Entities:
     Parent: 7
     Order: 2
   UIRectComponent:
-    Offset: [-190, 390]
-    Pivot: [0, 0]
-    MinimumSize: [0, 0]
-    Margin: [0, 0, 0, 0]
-    Padding: [0, 0, 0, 0]
+    Offset:
+    - -190
+    - 390
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
     Flex: 0
     Visible: true
     Enabled: true
@@ -141,8 +272,12 @@ Entities:
     LayoutVersion: 3
     WidthMode: 0
     HeightMode: 0
-    FixedSize: [380, 64]
-    Anchor: [0.5, 0]
+    FixedSize:
+    - 380
+    - 64
+    Anchor:
+    - 0.5
+    - 0
   UIButtonComponent:
     Action: play
     TabOrder: 0
@@ -186,54 +321,26 @@ Entities:
     - 4
     - 4
     BorderScale: 3
-- Entity: 5
-  TagComponent:
-    Tag: Play label
-  TransformComponent:
-    Translation:
-    - 0
-    - 0
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
     - 1
-    - 1
-    - 1
-  TextComponent:
-    TextString: PLAY
-    Color:
-    - 0.96
     - 0.9
-    - 0.78
+    - 0.65
     - 1
-    Kerning: 0
-    LineSpacing: 0
-  Relationship:
-    Parent: 4
-    Order: 0
-  UIRectComponent:
-    Offset: [0, 0]
-    Pivot: [0, 0]
-    MinimumSize: [0, 0]
-    Margin: [0, 0, 0, 0]
-    Padding: [0, 0, 0, 0]
-    Flex: 0
-    Visible: true
-    Enabled: true
-    ClipChildren: true
-    LayoutVersion: 3
-    WidthMode: 1
-    HeightMode: 0
-    FixedSize: [0, 64]
-    Anchor: [0, 0]
-  UITextStyleComponent:
-    Size: 28
-    Horizontal: 1
-    Vertical: 1
-    Wrap: true
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 6
   TagComponent:
     Tag: Hint
@@ -265,11 +372,25 @@ Entities:
     Parent: 7
     Order: 3
   UIRectComponent:
-    Offset: [-450, 530]
-    Pivot: [0, 0]
-    MinimumSize: [0, 0]
-    Margin: [0, 0, 0, 0]
-    Padding: [0, 0, 0, 0]
+    Offset:
+    - -450
+    - 530
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
     Flex: 0
     Visible: true
     Enabled: true
@@ -277,19 +398,40 @@ Entities:
     LayoutVersion: 3
     WidthMode: 0
     HeightMode: 0
-    FixedSize: [900, 40]
-    Anchor: [0.5, 0]
+    FixedSize:
+    - 900
+    - 40
+    Anchor:
+    - 0.5
+    - 0
   UITextStyleComponent:
     Size: 24
     Horizontal: 1
     Vertical: 1
     Wrap: true
-- Entity: 7
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 5
   TagComponent:
-    Tag: UI Canvas
-  Relationship:
-    Parent: 0
-    Order: 0
+    Tag: Play label
   TransformComponent:
     Translation:
     - 0
@@ -303,25 +445,73 @@ Entities:
     - 1
     - 1
     - 1
-  UICanvasComponent:
-    ReferenceSize:
-    - 1280
-    - 720
-    SafeInsets:
-    - 16
-    - 16
-    - 16
-    - 16
-    SortOrder: 0
+  TextComponent:
+    TextString: PLAY
+    Color:
+    - 0.96
+    - 0.9
+    - 0.78
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  Relationship:
+    Parent: 4
+    Order: 0
+  UIRectComponent:
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
     Visible: true
     Enabled: true
-    Modal: true
-    Screen:
-      Managed: true
-      InitiallyOpen: true
-      Cancel: 0
-      InitialFocus: 4
-      DefaultAction: 4
-      EventOwner: 7
-  ScriptComponent:
-    ClassName: SceneTransitions.MenuOwner
+    ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 0
+    - 64
+    Anchor:
+    - 0
+    - 0
+  UITextStyleComponent:
+    Size: 28
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1

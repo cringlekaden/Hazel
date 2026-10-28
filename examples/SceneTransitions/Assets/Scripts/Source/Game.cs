@@ -27,7 +27,7 @@ namespace SceneTransitions
             if (Input.IsKeyDown(KeyCode.Escape)) Scene.LoadScene("Scenes/MainMenu.hazel");
         }
     }
-    public class MenuButton : Entity {
-        void OnUpdate(float dt) { string action;if(GetComponent<UIButtonComponent>().TryConsumeAction(out action))Scene.LoadScene("Scenes/MainMenu.hazel"); }
+    public class ReturnOwner : Entity {
+        void OnUpdate(float dt) {UIEvent e;while(GameUI.TryConsumeEvent(out e))if((e.Kind==UIEventKind.Activated&&e.Action=="menu")||e.Kind==UIEventKind.Cancel)Scene.LoadScene("Scenes/MainMenu.hazel");}
     }
 }

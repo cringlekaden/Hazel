@@ -1,4 +1,5 @@
 Scene: Flight
+SceneVersion: 2
 Entities:
 - Entity: 1
   TagComponent:
@@ -375,6 +376,26 @@ Entities:
     Horizontal: 0
     Vertical: 0
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 21
   TagComponent:
     Tag: HUD controls
@@ -419,6 +440,26 @@ Entities:
     Horizontal: 0
     Vertical: 0
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 22
   TagComponent:
     Tag: Ready
@@ -463,6 +504,26 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 23
   TagComponent:
     Tag: GameOverPanel
@@ -558,6 +619,26 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 25
   TagComponent:
     Tag: ResultHint
@@ -602,6 +683,26 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 26
   TagComponent:
     Tag: Restart
@@ -647,7 +748,7 @@ Entities:
     FixedSize: [460, 66]
     Anchor: [0, 0]
   UIButtonComponent:
-    Action: restart
+    Action: play
     TabOrder: 0
     Interactable: true
     Colors:
@@ -682,6 +783,26 @@ Entities:
         Type: None
     - Source:
         Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 27
   TagComponent:
     Tag: RestartLabel
@@ -726,6 +847,26 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 28
   TagComponent:
     Tag: Menu
@@ -771,7 +912,7 @@ Entities:
     FixedSize: [460, 66]
     Anchor: [0, 0]
   UIButtonComponent:
-    Action: menu
+    Action: play
     TabOrder: 1
     Interactable: true
     Colors:
@@ -806,6 +947,26 @@ Entities:
         Type: None
     - Source:
         Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 29
   TagComponent:
     Tag: MenuLabel
@@ -850,6 +1011,26 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 30
   TagComponent:
     Tag: UI Canvas
@@ -881,7 +1062,15 @@ Entities:
     SortOrder: 0
     Visible: true
     Enabled: true
-    Modal: false
+    Modal: true
+    Screen:
+      Managed: true
+      InitiallyOpen: true
+      Cancel: 2
+      InitialFocus: 26
+      EventOwner: 30
+  ScriptComponent:
+    ClassName: Skybound.MenuOwner
 - Entity: 31
   TagComponent:
     Tag: Flight result
@@ -911,7 +1100,12 @@ Entities:
     - 16
     - 16
     SortOrder: 100
-    Visible: false
+    Visible: true
     Enabled: true
     Modal: true
-SceneVersion: 2
+    Screen:
+      Managed: true
+      InitiallyOpen: false
+      Cancel: 2
+      InitialFocus: 26
+      EventOwner: 18

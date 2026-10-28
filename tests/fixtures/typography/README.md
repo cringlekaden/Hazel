@@ -21,7 +21,9 @@ archive SHA-256 `5c6e497a2f36552cb5ffb112c413a6af39c0f3c47653662b90b4fa6499822fd
 The complete archive LICENSE is retained byte-for-byte, including Bitstream Vera,
 Arev and contributed-glyph notices. Redistribution with notices is permitted;
 modified-font naming and standalone-sale restrictions apply. No face is modified,
-subsetted, installed as a system font, or added to game content. Input remains
+subsetted or installed as a system font. Sandbox’s explicitly authored UI Tutorial
+now redistributes these exact bytes as `Assets/Fonts/Corpus.ttf`, with the complete
+notice; other games and application resources do not implicitly include it. Input remains
 below Hazel's existing 4 MiB limit. Latin/Greek/Cyrillic source coverage in engine
 Open Sans is separately exercised by accepted-resource integration tests.
 
@@ -33,6 +35,7 @@ and Unicode notices remain intact. Unicode License V3 is in
 the upstream generators. Conformance tests check dependency behavior independently
 of Hazel's selected-script/layout policy, which is tested separately.
 
-Fixtures/corpora are outside runtime Resources/Assets and are never included in
-normal application/game exports. To run the CPU check without a display, supply a
+The test corpora/conformance files remain outside runtime Resources/Assets and
+are not implicitly included in application/game exports. The explicit Sandbox
+tutorial face above is a project-owned dependency, not a test-directory export. To run the CPU check without a display, supply a
 fixture directory containing these files to `MigrationTypographySmoke`.

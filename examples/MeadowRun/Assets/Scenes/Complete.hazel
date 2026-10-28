@@ -1,4 +1,5 @@
 Scene: Complete
+SceneVersion: 2
 Entities:
 - Entity: 1
   TagComponent:
@@ -141,6 +142,26 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 5
   TagComponent:
     Tag: Message
@@ -185,6 +206,26 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 6
   TagComponent:
     Tag: Restart
@@ -211,12 +252,6 @@ Entities:
       Type: Texture
       Texture: Textures/Button.png
       TilingFactor: 1
-  ScriptComponent:
-    ClassName: MeadowRun.SceneButton
-    ScriptFields:
-    - Name: Destination
-      Type: Int
-      Data: 0
   Relationship:
     Parent: 10
     Order: 2
@@ -271,6 +306,26 @@ Entities:
         Type: None
     - Source:
         Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 7
   TagComponent:
     Tag: RestartLabel
@@ -319,6 +374,26 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 8
   TagComponent:
     Tag: Menu
@@ -345,12 +420,6 @@ Entities:
       Type: Texture
       Texture: Textures/Button.png
       TilingFactor: 1
-  ScriptComponent:
-    ClassName: MeadowRun.SceneButton
-    ScriptFields:
-    - Name: Destination
-      Type: Int
-      Data: 1
   Relationship:
     Parent: 10
     Order: 3
@@ -405,6 +474,26 @@ Entities:
         Type: None
     - Source:
         Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 9
   TagComponent:
     Tag: MenuLabel
@@ -449,6 +538,26 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 10
   TagComponent:
     Tag: UI Canvas
@@ -481,4 +590,11 @@ Entities:
     Visible: true
     Enabled: true
     Modal: true
-SceneVersion: 2
+    Screen:
+      Managed: true
+      InitiallyOpen: true
+      Cancel: 2
+      InitialFocus: 6
+      EventOwner: 10
+  ScriptComponent:
+    ClassName: MeadowRun.MenuOwner

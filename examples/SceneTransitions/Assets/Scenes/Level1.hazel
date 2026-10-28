@@ -1,4 +1,5 @@
 Scene: Level1
+SceneVersion: 2
 Entities:
 - Entity: 10
   TagComponent:
@@ -181,8 +182,6 @@ Entities:
       Type: Region
       Sheet: Textures/MenuFrame.hsprites
       RegionID: d1500e0000000001
-  ScriptComponent:
-    ClassName: SceneTransitions.MenuButton
   Relationship:
     Parent: 17
     Order: 0
@@ -244,6 +243,26 @@ Entities:
     - 4
     - 4
     BorderScale: 3
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 15
   TagComponent:
     Tag: Menu label
@@ -292,6 +311,26 @@ Entities:
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 16
   TagComponent:
     Tag: Controls
@@ -340,6 +379,26 @@ Entities:
     Horizontal: 0
     Vertical: 0
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 17
   TagComponent:
     Tag: UI Canvas
@@ -372,4 +431,10 @@ Entities:
     Visible: true
     Enabled: true
     Modal: false
-SceneVersion: 2
+    Screen:
+      Managed: true
+      InitiallyOpen: true
+      Cancel: 2
+      EventOwner: 17
+  ScriptComponent:
+    ClassName: SceneTransitions.ReturnOwner

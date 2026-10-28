@@ -1,0 +1,372 @@
+UIStyle:
+  Version: 1
+  Name: Skybound interface
+  Variants:
+  - Name: Control
+    Values:
+      Font:
+        Family: ''
+        Style: 0
+      Size: 20
+      Spacing:
+      - 0
+      - 0
+      Foreground:
+      - 0.93
+      - 0.95
+      - 0.96
+      - 1
+      Background:
+      - 0.13
+      - 0.23
+      - 0.28
+      - 1
+      Image:
+        Source:
+          Type: None
+      States:
+        Colors:
+        - - 1
+          - 1
+          - 1
+          - 1
+        - - 1.14999998
+          - 1.14999998
+          - 1.14999998
+          - 1
+        - - 0.75
+          - 0.75
+          - 0.75
+          - 1
+        - - 0.5
+          - 0.5
+          - 0.5
+          - 0.5
+        - - 1.20000005
+          - 1.14999998
+          - 0.800000012
+          - 1
+        Images:
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+      Padding:
+      - 12
+      - 6
+      - 12
+      - 6
+      Slice:
+        Borders:
+        - 4
+        - 4
+        - 4
+        - 4
+        Scale: 1
+      Focus:
+      - 1
+      - 0.899999976
+      - 0.649999976
+      - 1
+      Selected:
+      - 1
+      - 1
+      - 1
+      - 1
+      Editing:
+      - 0.300000012
+      - 1
+      - 1
+      - 1
+      Caret:
+      - 1
+      - 1
+      - 1
+      - 1
+      Selection:
+      - 0.180000007
+      - 0.419999987
+      - 0.800000012
+      - 0.5
+  - Name: Field
+    Values:
+      Font:
+        Family: ''
+        Style: 0
+      Size: 20
+      Spacing:
+      - 0
+      - 0
+      Foreground:
+      - 0.93
+      - 0.95
+      - 0.96
+      - 1
+      Background:
+      - 0.035
+      - 0.06
+      - 0.08
+      - 1
+      Image:
+        Source:
+          Type: None
+      States:
+        Colors:
+        - - 1
+          - 1
+          - 1
+          - 1
+        - - 1.14999998
+          - 1.14999998
+          - 1.14999998
+          - 1
+        - - 0.75
+          - 0.75
+          - 0.75
+          - 1
+        - - 0.5
+          - 0.5
+          - 0.5
+          - 0.5
+        - - 1.20000005
+          - 1.14999998
+          - 0.800000012
+          - 1
+        Images:
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+      Padding:
+      - 12
+      - 6
+      - 12
+      - 6
+      Slice:
+        Borders:
+        - 4
+        - 4
+        - 4
+        - 4
+        Scale: 1
+      Focus:
+      - 1
+      - 0.899999976
+      - 0.649999976
+      - 1
+      Selected:
+      - 1
+      - 1
+      - 1
+      - 1
+      Editing:
+      - 0.300000012
+      - 1
+      - 1
+      - 1
+      Caret:
+      - 1
+      - 1
+      - 1
+      - 1
+      Selection:
+      - 0.180000007
+      - 0.419999987
+      - 0.800000012
+      - 0.5
+  - Name: Quiet
+    Values:
+      Font:
+        Family: ''
+        Style: 0
+      Size: 20
+      Spacing:
+      - 0
+      - 0
+      Foreground:
+      - 0.93
+      - 0.95
+      - 0.96
+      - 1
+      Background:
+      - 0.06
+      - 0.1
+      - 0.13
+      - 1
+      Image:
+        Source:
+          Type: None
+      States:
+        Colors:
+        - - 1
+          - 1
+          - 1
+          - 1
+        - - 1.14999998
+          - 1.14999998
+          - 1.14999998
+          - 1
+        - - 0.75
+          - 0.75
+          - 0.75
+          - 1
+        - - 0.5
+          - 0.5
+          - 0.5
+          - 0.5
+        - - 1.20000005
+          - 1.14999998
+          - 0.800000012
+          - 1
+        Images:
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+      Padding:
+      - 12
+      - 6
+      - 12
+      - 6
+      Slice:
+        Borders:
+        - 4
+        - 4
+        - 4
+        - 4
+        Scale: 1
+      Focus:
+      - 1
+      - 0.899999976
+      - 0.649999976
+      - 1
+      Selected:
+      - 1
+      - 1
+      - 1
+      - 1
+      Editing:
+      - 0.300000012
+      - 1
+      - 1
+      - 1
+      Caret:
+      - 1
+      - 1
+      - 1
+      - 1
+      Selection:
+      - 0.180000007
+      - 0.419999987
+      - 0.800000012
+      - 0.5
+  - Name: Heading
+    Values:
+      Font:
+        Family: ''
+        Style: 1
+      Size: 26
+      Spacing:
+      - 0
+      - 0
+      Foreground:
+      - 0.93
+      - 0.95
+      - 0.96
+      - 1
+      Background:
+      - 0.13
+      - 0.23
+      - 0.28
+      - 1
+      Image:
+        Source:
+          Type: None
+      States:
+        Colors:
+        - - 1
+          - 1
+          - 1
+          - 1
+        - - 1.14999998
+          - 1.14999998
+          - 1.14999998
+          - 1
+        - - 0.75
+          - 0.75
+          - 0.75
+          - 1
+        - - 0.5
+          - 0.5
+          - 0.5
+          - 0.5
+        - - 1.20000005
+          - 1.14999998
+          - 0.800000012
+          - 1
+        Images:
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+      Padding:
+      - 12
+      - 6
+      - 12
+      - 6
+      Slice:
+        Borders:
+        - 4
+        - 4
+        - 4
+        - 4
+        Scale: 1
+      Focus:
+      - 1
+      - 0.899999976
+      - 0.649999976
+      - 1
+      Selected:
+      - 1
+      - 1
+      - 1
+      - 1
+      Editing:
+      - 0.300000012
+      - 1
+      - 1
+      - 1
+      Caret:
+      - 1
+      - 1
+      - 1
+      - 1
+      Selection:
+      - 0.180000007
+      - 0.419999987
+      - 0.800000012
+      - 0.5

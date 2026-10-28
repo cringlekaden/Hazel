@@ -83,6 +83,7 @@ public:
             UIStyleWorkflowChecks();
             UIActionWorkflowChecks();
             UIScreenWorkflowChecks();
+            ExampleIntegrationWorkflowChecks();
             CaptionChecks();
             WorkspaceChecks();
             NativeCreationChecks();
@@ -890,6 +891,7 @@ private:
     #include "EditorUIActionWorkflowChecks.h"
     #include "EditorUIStyleWorkflowChecks.h"
     #include "EditorUIScreenWorkflowChecks.h"
+    #include "EditorExampleIntegrationChecks.h"
     void HierarchyAuthoringChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=e.m_SceneHierarchyPanel;
         const auto scene=e.m_EditorScene;const auto before=a.SceneText();const auto saved=a.m_SceneHistory.SavedAuthored();

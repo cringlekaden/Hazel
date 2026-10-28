@@ -20,13 +20,13 @@ namespace Skybound {
         }
         void OnUpdate(float dt) { Fit(); }
     }
-    public class SceneButton : Entity {
-        public int Destination; // 0: flight, 1: menu
-        private UIButtonComponent button;
-        void OnCreate() { button=GetComponent<UIButtonComponent>(); }
+    public class MenuOwner : Entity {
         void OnUpdate(float dt) {
-            string action;
-            if(button.TryConsumeAction(out action)) Scene.LoadScene(Destination==1?"Scenes/MainMenu.hazel":"Scenes/Flight.hazel");
+            UIEvent e;
+            while(GameUI.TryConsumeEvent(out e)) {
+                if(e.Kind==UIEventKind.Activated && e.Action=="play") Scene.LoadScene("Scenes/Flight.hazel");
+                else if(e.Kind==UIEventKind.Cancel || (e.Kind==UIEventKind.Activated && e.Action=="menu")) Scene.LoadScene("Scenes/MainMenu.hazel");
+            }
         }
     }
 }

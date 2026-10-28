@@ -3450,3 +3450,120 @@ export/relocate and verify the repository examples and supported Linux/Windows
 paths. Resolve concrete integration defects and collect the remaining physical
 acceptance/CI evidence. Structural implementation does not declare the whole UI
 production-ready or introduce additional completion requirements.
+
+### Final example integration — implementation plan
+
+Starting at `13893a5`, all five projects already contain schema-3 UI. Preserve
+Sandbox `Assets/Scenes/Start.hazel` byte-for-byte (SHA-256
+`da6c537dfb525efd0e70fa993a4081323af4c6c336030c658e59d388ae285219`)
+and its startup choice. Work in this order:
+
+1. Inventory every scene/prefab and retain intentional world rendering. Move
+   remaining example menus and Lightkeeper pause/dialogue to declared screen
+   ownership; preserve gameplay/progression and existing save payloads.
+2. Complete Lightkeeper title/pause/settings/confirmation with real persisted
+   settings, explicit immediate-apply semantics and coherent Cancel/return focus.
+   Use project-scoped player storage, separate from editor settings and journey.
+3. Add Sandbox `UI Tutorial.hazel`, its ordinary owner script, shared appearance,
+   licensed faces and reusable prefab. Organize layout, text, controls and
+   composition into readable pages; retain canonical authored scene content.
+4. Add focused integration checks, inspect 1280×720 and 1024×600 output, run
+   bounded Debug/Release suites and all examples, then relocated packages.
+   Record physical/platform acceptance separately; do not await CI.
+
+No new feature family, legacy path or permanent content generator is planned.
+
+#### Integration inventory and authored ownership
+
+| Project | Maintained scene inventory | Integration policy |
+| --- | --- | --- |
+| LastLightkeeper | MainMenu, Credits, Dawn, CliffDawn, ObservatoryDawn, Ending; Breakwater, CliffCistern, SeaCaves, Observatory, UpperTower, HarborHome | Title/chapter screens declare their Menu owner. Gameplay HUD buttons address the journey controller; dialogue, pause and confirmations use managed scopes. Each scene has the same detached settings composition with its own owner. Island art, optics, character labels, progression and journey payloads remain gameplay data. |
+| MeadowRun | MainMenu, Meadow, Orchard, LanternGrove, Complete | Menu/completion Canvas owns the typed actions; remove per-button SceneButton polling. Existing HUD values remain authored text updated by gameplay, not a second value model. World exit labels stay world text. |
+| Skybound | MainMenu, Flight | Menu owner replaces per-button polling; Game owns its managed result screen and opens it at death. Flight simulation, pipes, clouds and ground fitting remain world gameplay. |
+| SceneTransitions | MainMenu, Level1 | Both menu and return control use explicit Canvas owners; the small scene/physics demonstration stays small. |
+| Sandbox | Start (protected user draft), **UI Tutorial** (new) | Startup selection and exact Start bytes retained. Tutorial is a separate authored screen with five pages, ordinary owner script, licensed corpus face, shared appearance and a detached card prefab. |
+
+The editable TitleUI prefabs track current composition. Lightkeeper's title
+composition contains its settings/confirmation screens and owner references;
+SettingsUI is also available separately. Templates remain detached structures,
+with shared .hstyle appearance. Game-specific code/resources stay project-owned;
+only existing engine services and the built-in Open Sans family are shared across
+games. No runtime script constructs these interfaces.
+
+#### Lightkeeper settings and application lifecycle
+
+Sound mute/master gain apply immediately through the scene audio engine, without
+restarting voices or editing AudioSource authored gains. A live RuntimeSession
+owns master gain across scene transitions; Stop resets it. Finite [0,1] validation
+rejects invalid values before publication. `Game.AudioVolume` exposes this narrow
+runtime setting; it does not modify an engine-global/editor preference. Sound
+settings persist in the project's `presentation` SaveData slot (`UI1|volume|mute`),
+separately from the untouched `journey` format. Hazelnut Play uses the existing
+memory-only session storage. Corrupt settings retain defaults and the original
+file until an explicit setting change; failed writes report that the current
+session is applied but not saved. Slider Cancel restores its starting value;
+interruption follows the existing edit contract. Back retains accepted changes.
+
+Navigation pace and stick selection use `GameUI.InputSettings` and the existing
+project-scoped `engine-ui-bindings` override. Reset uses the existing reset API;
+it changes sound/input only, never progress. Keyboard/gamepad mappings remain
+editable in Hazelnut Project Settings; no alternate input map is introduced.
+The screen explains that these are UI navigation settings, not game movement or
+unimplemented display/graphics controls. No arbitrary volume color correction or
+save-format migration is used.
+
+`Game.Exit()` requests a deferred host operation, outside managed callbacks.
+Nutella closes normally; Hazelnut stops Play and keeps the document/history.
+Stop retires unconsumed exit requests. The menu offers Quit, while pause requires
+confirmation for Quit/return-to-title and explains checkpoint retention. New Game
+only replaces journey data after explicit confirmation and a successful write.
+
+#### Tutorial capability map and launch
+
+Open Sandbox, Build Scripts, then open `Assets/Scenes/UI Tutorial.hazel` and Play.
+`Start.hazel` and the project startup choice are unchanged. For a standalone
+starting tutorial, choose that scene in Project Settings in a private project
+copy before exporting. [Sandbox README](../../examples/Sandbox/README.md) is the
+short author-facing guide; the existing package pipeline includes it.
+
+| Page | Authored demonstrations |
+| --- | --- |
+| Welcome | Managed menu/dialogue-style confirmation, automatic return focus, progress/HUD preview; explanation of native history/debugger |
+| Layout | Anchors/pivots, Fixed/Fill/Content, min/max, margins/padding, free/stack, explicit grid/span, horizontal/vertical Wrap, all four image fits with a rectangular atlas region, nine-slice |
+| Text | Built-in family with real face/color emphasis, a licensed pinned multilingual family, wrap, Clip/Ellipsis/MaxLines, declared typography exclusions |
+| Controls | Shared style with explicit local foreground override, toggle, radio, stepped horizontal/reversed vertical sliders, scrolled dropdown, passive tooltip, single/multiline entry; user events versus silent setters |
+| Compose | Static selectable journal, nested horizontal scrolling, focus reveal, detached styled prefab and named parts |
+
+The ordinary `Sandbox.UITutorial` script updates preview progress/text accent and
+feedback only; tabs, popup positioning, captions, text editing, scrolling,
+selection, focus and screen lifetime remain engine-owned. In C#, event envelopes
+create fresh Entity wrappers: these examples compare stable `.ID` values inside
+the validated current scene, not wrapper reference equality. Historical interrupted
+slider terminal events read the current value rather than overwriting a newer
+silent replacement. No new owning UI abstraction is introduced.
+
+The only additional face shipped is the existing pinned DejaVu Sans 2.37 corpus
+face (757,076 bytes, SHA-256
+`7da195a74c55bef988d0d48f9508bd5d849425c1770dba5d7bfc6ce9ed848954`), explicitly
+owned by Sandbox with its exact existing notice. This does not implicitly ship
+test corpora/fonts in other games. Frame art is the existing Kenney CC0 Pixel
+Adventure frame, with provenance/notice copied unchanged except its local name.
+The tutorial's English instructions avoid unsupported Open Sans arrow glyphs;
+its multilingual paragraph explicitly selects the complete corpus face.
+
+Lightkeeper audio drag/Adjust changes are live previews until release/confirm
+(or explicit Cancel restoring the starting value). Interrupted previews remain
+visible in the current scene but are not silently saved; a new completed edit
+saves them. Scene re-entry reads the last saved sound settings. Back never rolls
+back completed edits. The settings status distinguishes preview from saved data.
+
+The pause integration check exposed one engine gap: plain buttons on ordinary
+canvases serialized an EventOwner but did not address their Activated envelope.
+That existing field now routes those activations through the same owner stream,
+with owner/class/lifetime stamping and pending-delivery owner-change validation.
+Managed screen ownership still wins. No second queue or HUD screen manager is
+added. The Inspector exposes optional standalone button notification; owner-zero
+ordinary buttons retain their existing consumption convenience. Focused checks
+cover once-only delivery, native owner changes (including zero → declared),
+retirement and unaddressed behavior. Lightkeeper HUDs remain ordinary canvases,
+so they do not steal gameplay keyboard ownership at startup.

@@ -7,7 +7,7 @@ Runtime UI is ordinary scene content; it runs in Nutella without ImGui. World an
 1. In Hazelnut's Hierarchy, choose **Add Entity → Runtime UI → Screen** for a menu, pause or dialogue. A Screen is a Canvas with Managed screen enabled and Block gameplay on by default. Use **Canvas** for an ordinary HUD. Set reference pixels (default 1280×720) and safe insets. Ordinary canvases use sort order; open screens draw above them in runtime open order.
 2. Select the canvas and create **Panel**, **Text**, **Button**, **Stack**, **Grid** or **Wrap** through the same menu. All presets use the canonical measured model (Rect schema 3). A Stack defaults to Fixed width and Content height. Reselect the group before adding each sibling button; vertical-stack children use Fill width and buttons measure Content height. Rects use top-left logical pixels; Transform does not position UI.
 3. Set Width/Height to **Fixed**, **Fill** or **Content** in UI Rect. Fixed authors a border-box size; Fill uses parent space; Content measures visuals/children plus padding. Minimum and optional finite maximum constrain each axis. Choosing free Fill explicitly gives that axis to the parent and clears its anchor/offset/pivot; margins set the insets. Content text width is natural unless capped, so use Fixed/Fill width or an enabled Content maximum to wrap labels. Stacks own child positions; use sizing, margins and Fill weight. Resize handles edit only Fixed dimensions; container children resize from right/bottom. Computed dimensions/positions stay read-only, and gestures never switch modes. If parent reflow/alignment would move the opposite edge, that resize sample is rejected; edit Fixed size in Properties instead. Escape cancels.
-4. Text uses the existing **Text Component** for content, color, kerning and line spacing. **UI Text Style** supplies size, wrapping, Clip/Ellipsis overflow, Max lines and horizontal/vertical alignment. Size is logical pixels per font ascender-to-descender height. Kerning and line spacing remain font-height units, as in world text. Choose a project .hfont family and real face style in Text Renderer, or leave the family empty for engine Open Sans. Separate styled text children provide mixed emphasis; text has no markup.
+4. Text uses the existing **Text Component** for content, color, kerning and line spacing. **UI Text Style** supplies size, wrapping, Clip/Ellipsis overflow, Max lines and horizontal/vertical alignment. Size is logical pixels per font ascender-to-descender height. Kerning and line spacing remain font-height units, as in world text. Choose a project .hfont family and real face style in Text Renderer, or leave the family empty for engine Open Sans. Use the Text Emphasis range editor for bounded face/color spans; text has no markup parser.
 5. Images use **Sprite Renderer** with the normal texture/sheet picker and UI Rect Image Fit. For framed panels add **UI Nine Slice**: source borders are left/top/right/bottom pixels within the selected source region, with a separate border scale. Borders must fit; small targets proportionally clamp their display borders. Corners keep their shape, edges stretch in one direction, and the center fills. Layout owns the UI pivot; sprite pivots remain unchanged for world sprites.
 6. Buttons have an action identity, tab order, interactable state and five editable tint/image states. An unassigned state image inherits Sprite Renderer. Keyboard focus has a persistent outline, including hover/press. Controls activate on pointer release inside their live clipped bounds with framebuffer coverage, or the configured Accept action while focus belongs to UI. Tab/Shift-Tab traverses tab order; arrows and gamepad navigation use spatial neighbors. Cancel or a click outside controls releases nonmodal keyboard ownership. A modal canvas blocks gameplay and buttons in other canvases. Higher canvas sort order wins; ties use stable entity identities; child hierarchy order supplies painter order within a canvas.
 7. Use the viewport's Window/Small/Widescreen/Classic aspect selector to preview the actual runtime layout. Editing does not dispatch actions. In Play, pointer coordinates map to the displayed image, including its letterboxing. Stop before changing authored values. **Validate UI** checks configuration/assets. Save/reopen as a normal scene. Use the existing **Create Prefab** workflow on the canvas/group to save a reusable subtree. Detached rect prefabs have a static default-canvas editor preview; runtime instances need a canvas ancestor.
@@ -85,7 +85,13 @@ changes, ownership loss, retired sources/owners, scope changes, Stop and domain
 replacement retire stale records. Owner/class/lifetime changes cannot transfer an
 old record. Queued managed requests also validate their issuer before commit.
 
-Unmanaged canvases retain `UIButtonComponent.TryConsumeAction`,
+A button on an ordinary HUD can choose **Button → Standalone notification →
+Event owner** and use the same `GameUI.TryConsumeEvent` stream without making its
+Canvas an input-owning screen. Managed screen ownership takes precedence. Owner
+changes retire queued activation and cancel a captured press; a replacement
+receiver never inherits an old gesture.
+
+Ordinary buttons without an explicit standalone owner retain `UIButtonComponent.TryConsumeAction`,
 `GameUI.TryConsumeAction` and scoped `TryConsumeCancel` conveniences. Those methods
 cannot consume a managed screen's records; there is one delivery stream, without
 duplicate activation. Use a managed screen for a menu with a declared owner.
@@ -100,7 +106,7 @@ than manually reproducing focus and modal cleanup with visibility toggles.
 
 `Input` supplies gameplay input and respects UI ownership. `GameUI.IsKeyDown` supplies viewport-gated keys for UI-specific shortcuts such as Escape to close a modal or N to confirm starting over. `GameUI.IsPointerCaptured` lets alternate shortcuts defer to an active pointer gesture while retaining their held-key history. Keep gameplay movement and interaction on `Input`; do not bypass modal blocking with this UI API. Visibility or enabled changes update native layout/routing, with no per-frame positioning script.
 
-UI currently uses rectangular inherited clipping, uniform reference scaling, free/stack/grid/wrap layout and sibling text emphasis. Static scrolling/selection is supported within declared limits; bounded text entry is described below; rich-text parsing remains a later endpoint item. The native layout/model and renderer abstraction are independent of editor ImGui and backend-specific graphics calls.
+UI uses rectangular inherited clipping, uniform reference scaling, free/stack/grid/wrap layout and bounded typed face/color emphasis. Static scrolling/selection and bounded plain text entry are supported within declared limits; markup parsing is outside the endpoint. The native layout/model and renderer abstraction are independent of editor ImGui and backend-specific graphics calls.
 
 ## Canonical sizing and containers
 
@@ -124,7 +130,7 @@ Combined text/images share the control's content area; text alignment/wrapping m
 
 For an icon group, create a Grid, set its row/column count before adding buttons, and use Fill-width children with Contain images. Assign sprite regions through the normal sheet picker. Use the debugger's track/cell outlines to inspect spans and overflow. For responsive chips, create a horizontal Wrap with Fill width and Content height, give children Fixed or Content widths, and narrow the runtime preview to check line breaks. A vertical Wrap needs definite height instead. Changing container mode never converts child sizing automatically; prepare inactive grid settings and choose meaningful child constraints first.
 
-For a HUD, add a Content text child to a Canvas, set its free Anchor/Pivot to the desired corner and use logical offsets. For a menu, use a stack with constrained width, Content height, padding/gap and Fill-width, Content-height buttons. Change a label to verify wrapped reflow, preview another aspect, Undo/Redo, save/reopen and Play/Stop. Broader controls remain later milestones.
+For a HUD, add a Content text child to a Canvas, set its free Anchor/Pivot to the desired corner and use logical offsets. For a menu, use a stack with constrained width, Content height, padding/gap and Fill-width, Content-height buttons. Change a label to verify wrapped reflow, preview another aspect, Undo/Redo, save/reopen and Play/Stop. Use the composed controls and managed screens described below for real menus.
 
 For measured runtime content, cache the normal component wrapper and change sizing when values change:
 
@@ -243,7 +249,7 @@ inside Arabic joining runs except whitespace. Line spacing adds font-height unit
 to the accepted face's line advance. Tabs advance four spaces; trailing spaces
 are retained. Wrapping reshapes each chosen line with its own joining context.
 CJK, color emoji, vertical/variable typography, discretionary soft hyphens,
-cross-family fallback, rich text and native preedit/candidate-window integration
+cross-family fallback, editable rich documents and native preedit/candidate-window integration
 remain outside this scope. Bounded committed-text editing is described below.
 
 ## Text overflow
@@ -1078,3 +1084,35 @@ page admission. Missing pages retain diagnosed metric placeholders, not silently
 missing ink. Export checks rich source against the actual requested faces and
 includes normal family/face/notice closure. No markup parser, per-span sizes,
 rich editing, cross-family fallback or expanded script guarantee is provided.
+
+
+## Repository examples and tutorial
+
+Open Sandbox, Build Scripts, then open **Scenes/UI Tutorial.hazel** from Content
+Browser and Play. The protected Start scene and startup choice remain unchanged.
+[Sandbox's short tutorial guide](../examples/Sandbox/README.md) maps each page
+to the authored components, script, styles, prefab, and input workflow. To export
+it as the starting experience, choose Startup scene in Project Settings in a
+private project copy before exporting. Nutella does not accept an ad-hoc scene
+command-line override.
+
+All applicable example menus use explicit owners and the current action stream.
+MeadowRun and SceneTransitions retain small technical/demo menus; Skybound's
+result screen belongs to Game. LastLightkeeper demonstrates title/Continue,
+New Game confirmation, pause/Resume, Settings, return-to-title/Quit confirmations,
+dialogue and HUD without an example-only input or drawing path.
+
+Lightkeeper Sound settings apply real session mute/master volume. Navigation
+settings use the existing player UI binding overrides. Changes apply immediately;
+Back keeps accepted changes. Audio persists separately in `presentation`, input
+in `engine-ui-bindings`; neither changes `journey`. Failed writes show that the
+current session is applied but not saved. Hazelnut Play keeps these memory-only.
+`Game.AudioVolume` is finite [0,1] session gain; `Game.Exit()` defers to the host
+(Stop Play in Hazelnut, close Nutella). Stop resets session gain and exit requests.
+No unsupported display option or automatic rollback-on-Back is advertised.
+
+Lightkeeper audio drag/Adjust changes are live previews until release/confirm
+(or explicit Cancel restoring the starting value). Interrupted previews remain
+visible in the current scene but are not silently saved; a new completed edit
+saves them. Scene re-entry reads the last saved sound settings. Back never rolls
+back completed edits. The settings status distinguishes preview from saved data.

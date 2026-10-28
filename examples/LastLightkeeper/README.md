@@ -5,8 +5,8 @@ storm-damaged island to restore its lower lighthouse signal and bring mechanic
 Mara home. This project begins the planned 30–45-minute game; it contains the
 four playable chapters: **The Breakwater**, **The Cliff Cistern / Sea Caves**,
 **The Observatory**, and **The Upper Tower**, followed by the morning landing,
-ending and credits. Runtime UI authoring and presentation migration remain separate
-milestones; the current game still uses its existing presentation layer.
+ending and credits. Menus, HUD, dialogue, pause, settings and confirmations are
+editable native runtime UI; ordinary scripts connect their declared event owners.
 
 The author played the original Breakwater chapter in about **five minutes** once
 its mechanics were understood. That is the pacing evidence; the old 8–12-minute
@@ -201,7 +201,7 @@ The existing routes, puzzle settings and LK1/LK2 save payloads are unchanged.
 All gameplay locations share left-aligned HUD baselines, consistent panel insets
 and a dedicated warning row. Menu button labels sit on the same vertical baseline.
 Dialogue and pause controls use a fixed authored footer.
-New Game confirmation waits for another N or click; Esc cancels, and selecting
+New Game uses an explicit confirmation screen; Cancel keeps the save, and selecting
 Credits or Continue cancels the pending replacement. Save failure remains visible
 until a successful retry; checkpoints only confirm an actual write. Chapter exits remain in the current
 scene if writing fails, so session repairs can be saved on retry.
@@ -213,3 +213,31 @@ falls and storage areas. Existing Kenney atlas pixels, sheet IDs and licenses ar
 preserved. The composition scripts retain these choices; the shipped scenes remain
 ordinary Hazelnut documents. The observatory adds separate authored scenes without
 regenerating these polished chapters or their trees.
+
+## Menu and settings
+
+The title offers Begin/Continue, New Game (confirmation before replacement),
+Credits, Settings and Quit. Escape or the HUD Pause button opens pause; Resume,
+Settings, Return to title and Quit use managed screens and return focus.
+Returning/quitting explains last-checkpoint retention. Dialogue and notes keep
+their existing story content and progression.
+
+Settings has Sound, Navigation and Help tabs. Mute/master volume affect the real
+scene audio mixer; navigation pace and stick choice affect the existing UI action
+adapter. Changes apply immediately. Back keeps them. Audio writes a separate
+project-scoped `presentation` slot; navigation uses `engine-ui-bindings`. Neither
+changes `journey`. Slider Cancel restores the edit's initial value; explicit
+Reset restores presentation/input defaults. A failed write is visible and does
+not claim persistence. Hazelnut Play is memory-only; Nutella persists player
+settings. No display/graphics options are advertised.
+
+`Assets/Styles/Interface.hstyle`, `Prefabs/TitleUI.hprefab` and
+`Prefabs/SettingsUI.hprefab` are editable assets. The Settings script only handles
+application decisions/persistence, not focus, capture, internal geometry or value
+quantization. Quit stops Play in Hazelnut and closes Nutella.
+
+Lightkeeper audio drag/Adjust changes are live previews until release/confirm
+(or explicit Cancel restoring the starting value). Interrupted previews remain
+visible in the current scene but are not silently saved; a new completed edit
+saves them. Scene re-entry reads the last saved sound settings. Back never rolls
+back completed edits. The settings status distinguishes preview from saved data.

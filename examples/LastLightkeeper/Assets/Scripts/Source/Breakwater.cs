@@ -26,7 +26,7 @@ namespace LastLightkeeper {
         private bool saveFailed;
         private readonly HashSet<Cell> stone=new HashSet<Cell>();
         void OnCreate(){
-            keys=new Controls();body=Player.GetComponent<Rigidbody2DComponent>();
+            keys=new Controls(this);body=Player.GetComponent<Rigidbody2DComponent>();
             objective=Objective.GetComponent<TextComponent>();context=Context.GetComponent<TextComponent>();place=Place.GetComponent<TextComponent>();
             inventory=Inventory.GetComponent<TextComponent>();tideLabel=TideLabel.GetComponent<TextComponent>();dialogue=Dialogue.GetComponent<TextComponent>();saveLabel=SaveLabel.GetComponent<TextComponent>();footer=FindEntityByName("DialogueFooter").GetComponent<TextComponent>();
             try{journey=Journey.Decode(SaveData.Read("journey"));}catch(Exception ex){journey=new Journey();saveBlocked=true;Notice("Save kept. Return to the title to choose a new game.",12);Console.WriteLine("Lightkeeper save: "+ex.Message);}
@@ -75,7 +75,7 @@ namespace LastLightkeeper {
         // Stable IDs are loaded from the shipped sheet identity table, not regenerated.
         static Sprite Region(string pack,int tile)=>Art.Region(pack,tile);
         void Talk(string[] text,Action done=null){pages=text;page=0;afterDialogue=done;context.Text="";journal=false;SetDialogue();}
-        void SetDialogue(){dialogue.Text=pages==null?"":pages[page];footer.Text=pages==null?"":"Enter   "+(page+1==pages.Length?(afterDialogue!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);Presentation.Dialogue(DialoguePanel,pages!=null,false);}
+        void SetDialogue(){dialogue.Text=pages==null?"":pages[page];footer.Text=pages==null?"":""+(page+1==pages.Length?(afterDialogue!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);Presentation.Dialogue(DialoguePanel,pages!=null,false);}
         void CloseDialogue(){pages=null;SetDialogue();var callback=afterDialogue;afterDialogue=null;callback?.Invoke();}
         void Checkpoint(bool announce){
             var marker=FindEntityByName("Checkpoint"+journey.Checkpoint);Player.Translation=marker.Translation;body.LinearVelocity=Vector2.Zero;grace=.65f;
@@ -139,8 +139,8 @@ namespace LastLightkeeper {
         void OnUpdate(float dt){
             keys.Poll();dt=Math.Min(.1f,Math.Max(0,dt));
             if(!ready){ready=true;Light();}
-            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED":"";footer.Text=paused?"Enter   Resume":"";Presentation.Dialogue(DialoguePanel,paused,paused);}}
-            if(paused){body.LinearVelocity=Vector2.Zero;if(keys.Advance){paused=false;dialogue.Text="";footer.Text="";Presentation.HideUI(DialoguePanel);}if(keys.Menu)Scene.LoadScene("Scenes/MainMenu.hazel");return;}
+            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";Presentation.Dialogue(DialoguePanel,paused,paused);}}
+            if(paused){body.LinearVelocity=Vector2.Zero;if(keys.Advance){paused=false;Presentation.HideUI(DialoguePanel);}if(keys.Menu)Scene.LoadScene("Scenes/MainMenu.hazel");return;}
             if(keys.Journal && (pages==null || journal)){if(pages!=null && journal)CloseDialogue();else{Talk(Story.Journal(journey));journal=true;}}
             if(pages!=null){body.LinearVelocity=Vector2.Zero;if(keys.Advance || keys.Interact){if(++page>=pages.Length)CloseDialogue();else SetDialogue();}return;}
             clock+=dt;grace=Math.Max(0,grace-dt);noticeTime=Math.Max(0,noticeTime-dt);

@@ -3,6 +3,46 @@ PrefabRoot: 17
 SceneVersion: 2
 Scene: Title UI
 Entities:
+- Entity: 17
+  TagComponent:
+    Tag: UI Canvas
+  Relationship:
+    Parent: 0
+    Order: 0
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UICanvasComponent:
+    ReferenceSize:
+    - 1280
+    - 720
+    SafeInsets:
+    - 16
+    - 16
+    - 16
+    - 16
+    SortOrder: 0
+    Visible: true
+    Enabled: true
+    Modal: true
+    Screen:
+      Managed: true
+      InitiallyOpen: true
+      Cancel: 2
+      InitialFocus: 13
+      EventOwner: 17
+  ScriptComponent:
+    ClassName: MeadowRun.MenuOwner
 - Entity: 8
   TagComponent:
     Tag: Title ribbon
@@ -30,11 +70,25 @@ Entities:
     Parent: 17
     Order: 0
   UIRectComponent:
-    Offset: [-480, 58]
-    Pivot: [0, 0]
-    MinimumSize: [0, 0]
-    Margin: [0, 0, 0, 0]
-    Padding: [0, 0, 0, 0]
+    Offset:
+    - -480
+    - 58
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
     Flex: 0
     Visible: true
     Enabled: true
@@ -42,8 +96,12 @@ Entities:
     LayoutVersion: 3
     WidthMode: 0
     HeightMode: 0
-    FixedSize: [960, 170]
-    Anchor: [0.5, 0]
+    FixedSize:
+    - 960
+    - 170
+    Anchor:
+    - 0.5
+    - 0
 - Entity: 9
   TagComponent:
     Tag: Hero
@@ -72,11 +130,25 @@ Entities:
     Parent: 17
     Order: 7
   UIRectComponent:
-    Offset: [-44, 232]
-    Pivot: [0, 0]
-    MinimumSize: [0, 0]
-    Margin: [0, 0, 0, 0]
-    Padding: [0, 0, 0, 0]
+    Offset:
+    - -44
+    - 232
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
     Flex: 0
     Visible: true
     Enabled: true
@@ -84,8 +156,12 @@ Entities:
     LayoutVersion: 3
     WidthMode: 0
     HeightMode: 0
-    FixedSize: [88, 88]
-    Anchor: [0.5, 0]
+    FixedSize:
+    - 88
+    - 88
+    Anchor:
+    - 0.5
+    - 0
 - Entity: 10
   TagComponent:
     Tag: Eyebrow
@@ -104,7 +180,7 @@ Entities:
     - 1
   TextComponent:
     TextString: A SMALL GARDEN EXPEDITION
-    Color: &id001
+    Color:
     - 0.99
     - 0.95
     - 0.82
@@ -115,11 +191,25 @@ Entities:
     Parent: 17
     Order: 1
   UIRectComponent:
-    Offset: [-450, 80]
-    Pivot: [0, 0]
-    MinimumSize: [0, 0]
-    Margin: [0, 0, 0, 0]
-    Padding: [0, 0, 0, 0]
+    Offset:
+    - -450
+    - 80
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
     Flex: 0
     Visible: true
     Enabled: true
@@ -127,13 +217,37 @@ Entities:
     LayoutVersion: 3
     WidthMode: 0
     HeightMode: 0
-    FixedSize: [900, 30]
-    Anchor: [0.5, 0]
+    FixedSize:
+    - 900
+    - 30
+    Anchor:
+    - 0.5
+    - 0
   UITextStyleComponent:
     Size: 24
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 11
   TagComponent:
     Tag: Title
@@ -152,18 +266,36 @@ Entities:
     - 1
   TextComponent:
     TextString: MEADOW RUN
-    Color: *id001
+    Color:
+    - 0.99
+    - 0.95
+    - 0.82
+    - 1
     Kerning: 0
     LineSpacing: 0
   Relationship:
     Parent: 17
     Order: 2
   UIRectComponent:
-    Offset: [-500, 144]
-    Pivot: [0, 0]
-    MinimumSize: [0, 0]
-    Margin: [0, 0, 0, 0]
-    Padding: [0, 0, 0, 0]
+    Offset:
+    - -500
+    - 144
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
     Flex: 0
     Visible: true
     Enabled: true
@@ -171,13 +303,37 @@ Entities:
     LayoutVersion: 3
     WidthMode: 0
     HeightMode: 0
-    FixedSize: [1000, 90]
-    Anchor: [0.5, 0]
+    FixedSize:
+    - 1000
+    - 90
+    Anchor:
+    - 0.5
+    - 0
   UITextStyleComponent:
     Size: 68
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 12
   TagComponent:
     Tag: Subtitle
@@ -196,7 +352,7 @@ Entities:
     - 1
   TextComponent:
     TextString: Three gardens. One trail home.
-    Color: &id002
+    Color:
     - 0.13
     - 0.25
     - 0.23
@@ -207,11 +363,25 @@ Entities:
     Parent: 17
     Order: 3
   UIRectComponent:
-    Offset: [-450, 324]
-    Pivot: [0, 0]
-    MinimumSize: [0, 0]
-    Margin: [0, 0, 0, 0]
-    Padding: [0, 0, 0, 0]
+    Offset:
+    - -450
+    - 324
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
     Flex: 0
     Visible: true
     Enabled: true
@@ -219,13 +389,37 @@ Entities:
     LayoutVersion: 3
     WidthMode: 0
     HeightMode: 0
-    FixedSize: [900, 48]
-    Anchor: [0.5, 0]
+    FixedSize:
+    - 900
+    - 48
+    Anchor:
+    - 0.5
+    - 0
   UITextStyleComponent:
     Size: 28
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 13
   TagComponent:
     Tag: Play
@@ -252,21 +446,29 @@ Entities:
       Type: Texture
       Texture: Textures/Button.png
       TilingFactor: 1
-  ScriptComponent:
-    ClassName: MeadowRun.SceneButton
-    ScriptFields:
-    - Name: Destination
-      Type: Int
-      Data: 0
   Relationship:
     Parent: 17
     Order: 4
   UIRectComponent:
-    Offset: [-190, 396]
-    Pivot: [0, 0]
-    MinimumSize: [0, 0]
-    Margin: [0, 0, 0, 0]
-    Padding: [0, 0, 0, 0]
+    Offset:
+    - -190
+    - 396
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
     Flex: 0
     Visible: true
     Enabled: true
@@ -274,8 +476,12 @@ Entities:
     LayoutVersion: 3
     WidthMode: 0
     HeightMode: 0
-    FixedSize: [380, 64]
-    Anchor: [0.5, 0]
+    FixedSize:
+    - 380
+    - 64
+    Anchor:
+    - 0.5
+    - 0
   UIButtonComponent:
     Action: play
     TabOrder: 0
@@ -312,50 +518,26 @@ Entities:
         Type: None
     - Source:
         Type: None
-- Entity: 14
-  TagComponent:
-    Tag: PlayLabel
-  TransformComponent:
-    Translation:
-    - 0
-    - 0
-    - 0
-    Rotation:
-    - 0
-    - 0
-    - 0
-    Scale:
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
     - 1
     - 1
     - 1
-  TextComponent:
-    TextString: EXPLORE
-    Color: *id001
-    Kerning: 0
-    LineSpacing: 0
-  Relationship:
-    Parent: 13
-    Order: 0
-  UIRectComponent:
-    Offset: [0, 0]
-    Pivot: [0, 0]
-    MinimumSize: [0, 0]
-    Margin: [0, 0, 0, 0]
-    Padding: [0, 0, 0, 0]
-    Flex: 0
-    Visible: true
-    Enabled: true
-    ClipChildren: true
-    LayoutVersion: 3
-    WidthMode: 1
-    HeightMode: 0
-    FixedSize: [0, 64]
-    Anchor: [0, 0]
-  UITextStyleComponent:
-    Size: 28
-    Horizontal: 1
-    Vertical: 1
-    Wrap: true
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 15
   TagComponent:
     Tag: Controls
@@ -374,18 +556,36 @@ Entities:
     - 1
   TextComponent:
     TextString: WASD / arrows to move  |  Enter to begin
-    Color: *id002
+    Color:
+    - 0.13
+    - 0.25
+    - 0.23
+    - 1
     Kerning: 0
     LineSpacing: 0
   Relationship:
     Parent: 17
     Order: 5
   UIRectComponent:
-    Offset: [-500, 566]
-    Pivot: [0, 0]
-    MinimumSize: [0, 0]
-    Margin: [0, 0, 0, 0]
-    Padding: [0, 0, 0, 0]
+    Offset:
+    - -500
+    - 566
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
     Flex: 0
     Visible: true
     Enabled: true
@@ -393,13 +593,37 @@ Entities:
     LayoutVersion: 3
     WidthMode: 0
     HeightMode: 0
-    FixedSize: [1000, 38]
-    Anchor: [0.5, 0]
+    FixedSize:
+    - 1000
+    - 38
+    Anchor:
+    - 0.5
+    - 0
   UITextStyleComponent:
     Size: 24
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 16
   TagComponent:
     Tag: Footnote
@@ -418,18 +642,36 @@ Entities:
     - 1
   TextComponent:
     TextString: An original Hazel example
-    Color: *id002
+    Color:
+    - 0.13
+    - 0.25
+    - 0.23
+    - 1
     Kerning: 0
     LineSpacing: 0
   Relationship:
     Parent: 17
     Order: 6
   UIRectComponent:
-    Offset: [-450, 644]
-    Pivot: [0, 0]
-    MinimumSize: [0, 0]
-    Margin: [0, 0, 0, 0]
-    Padding: [0, 0, 0, 0]
+    Offset:
+    - -450
+    - 644
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
     Flex: 0
     Visible: true
     Enabled: true
@@ -437,19 +679,40 @@ Entities:
     LayoutVersion: 3
     WidthMode: 0
     HeightMode: 0
-    FixedSize: [900, 26]
-    Anchor: [0.5, 0]
+    FixedSize:
+    - 900
+    - 26
+    Anchor:
+    - 0.5
+    - 0
   UITextStyleComponent:
     Size: 20
     Horizontal: 1
     Vertical: 1
     Wrap: true
-- Entity: 17
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 14
   TagComponent:
-    Tag: UI Canvas
-  Relationship:
-    Parent: 0
-    Order: 0
+    Tag: PlayLabel
   TransformComponent:
     Translation:
     - 0
@@ -463,16 +726,73 @@ Entities:
     - 1
     - 1
     - 1
-  UICanvasComponent:
-    ReferenceSize:
-    - 1280
-    - 720
-    SafeInsets:
-    - 16
-    - 16
-    - 16
-    - 16
-    SortOrder: 0
+  TextComponent:
+    TextString: EXPLORE
+    Color:
+    - 0.99
+    - 0.95
+    - 0.82
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  Relationship:
+    Parent: 13
+    Order: 0
+  UIRectComponent:
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Flex: 0
     Visible: true
     Enabled: true
-    Modal: true
+    ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 0
+    - 64
+    Anchor:
+    - 0
+    - 0
+  UITextStyleComponent:
+    Size: 28
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
