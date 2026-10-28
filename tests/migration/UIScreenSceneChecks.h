@@ -367,6 +367,35 @@ static void UIScreenSceneChecks(const std::filesystem::path &root)
     Check(instance.GetComponent<UICanvasComponent>().Screen.EventOwner ==
               uint64_t(document->GetChildrenView(instance.GetUUID()).front()),
           "Screen prefab reference remap failed");
+    {
+        auto hud=CreateRef<Scene>();hud->OnViewportResize(400,300);
+        auto receiver=hud->CreateEntityWithUUID(900,"HUD owner");
+        auto replacement=hud->CreateEntityWithUUID(901,"Replacement owner");
+        auto canvas=hud->CreateEntityWithUUID(100,"Ordinary HUD");
+        auto &surface=canvas.AddComponent<UICanvasComponent>();surface.ReferenceSize={400,300};surface.SafeInsets={};
+        auto button=hud->CreateEntityWithUUID(101,"HUD command");hud->Reparent(button,canvas,TransformPolicy::KeepLocal);
+        auto &rect=button.AddComponent<UIRectComponent>();rect.Offset={20,20};rect.FixedSize={100,50};
+        auto &config=button.AddComponent<UIButtonComponent>();config.EventOwner=900;config.Action="pause";
+        hud->OnRuntimeStart();InputFrame f;f.Enabled=true;f.Mouse=f.PressPosition={30,30};
+        auto route=[&]{hud->UpdateUIInput(f);};route();route();
+        auto click=[&]{f.LeftDown=true;f.PointerPressed=true;route();f.PointerPressed=false;f.LeftDown=false;f.PointerReleased=true;route();f.PointerReleased=false;route();};
+        Action action;click();
+        Check(!hud->ConsumeUIAction(101,action)&&!hud->ConsumeUIEvent(901,action)&&hud->ConsumeUIEvent(900,action)&&action.Kind==UIEventKind::Activated&&action.Screen==0&&action.Entity==101&&action.Owner==900&&!hud->ConsumeUIEvent(900,action),"Ordinary HUD activation bypassed its declared owner or duplicated delivery");
+        click();config.EventOwner=901;
+        Check(!hud->ConsumeUIEvent(900,action)&&!hud->ConsumeUIEvent(901,action),"An owner change transferred a queued HUD activation");
+        click();Check(hud->ConsumeUIEvent(901,action),"Fresh HUD activation did not use its replacement owner");
+        config.EventOwner=900;f.LeftDown=true;f.PointerPressed=true;route();f.PointerPressed=false;
+        Check(hud->IsUICapturingPointer(),"HUD test did not capture its press");config.EventOwner=901;hud->RefreshUI();
+        Check(!hud->IsUICapturingPointer(),"HUD owner replacement retained pointer capture");
+        f.LeftDown=false;f.PointerReleased=true;route();f.PointerReleased=false;route();
+        Check(!hud->ConsumeUIEvent(900,action)&&!hud->ConsumeUIEvent(901,action),"A captured HUD release transferred to its new owner");
+        config.EventOwner=0;click();config.EventOwner=900;
+        Check(!hud->ConsumeUIAction(101,action)&&!hud->ConsumeUIEvent(900,action),"Declaring an owner transferred an old unaddressed activation");
+        click();hud->DestroyEntity(receiver);
+        Check(!hud->ConsumeUIEvent(900,action),"Retired HUD owner retained an activation");
+        config.EventOwner=0;click();Check(hud->ConsumeUIAction(101,action)&&!hud->ConsumeUIEvent(901,action),"Unaddressed ordinary buttons lost existing consumption");
+        hud->OnRuntimeStop();
+    }
     std::cout << "PASS: scene screen order/focus/Cancel, owner-only stream, "
                  "native eligibility, transitions, bounded requests and "
                  "reference roundtrips\n";

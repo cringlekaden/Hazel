@@ -422,10 +422,10 @@ bool RuntimeUI::StampEventForScope(Action &event,uint64_t scope)
     const bool value=event.Kind==UIEventKind::ToggleChanged||event.Kind==UIEventKind::SelectionChanged||event.Kind>=UIEventKind::SliderChanged;
     if (auto screen = Screen(scope)) {
         event.Screen=screen->ID;event.Owner=screen->Policy.EventOwner;
-    } else if(value) event.Owner=ValueOwner(event.Entity);
-    if(event.Screen||value){
+    } else if(value || event.Kind==UIEventKind::Activated) event.Owner=ValueOwner(event.Entity);
+    if(event.Screen||value||event.Owner){
         auto owner=m_Scene.GetEntityByUUID(event.Owner);
-        if(!owner||!m_Scene.IsEntityValid(event.Owner)){if(value)ControlProblem("User change rejected: assign a live event owner on its screen or standalone control/group");else ScreenProblem("Screen event requires a live declared owner");return false;}
+        if(!owner||!m_Scene.IsEntityValid(event.Owner)){if(value)ControlProblem("User change rejected: assign a live event owner on its screen or standalone control/group");else ScreenProblem("UI event requires a live declared owner");return false;}
         if(owner.HasComponent<ScriptComponent>()&&!owner.GetComponent<ScriptComponent>().ClassName.empty()){
             auto instance=ScriptEngine::GetEntityScriptInstance(event.Owner);
             if(!instance||instance->GetScriptClass()!=ScriptEngine::GetEntityClass(owner.GetComponent<ScriptComponent>().ClassName)){
@@ -498,7 +498,7 @@ bool RuntimeUI::EventValid(const Action &event) const
         return event.Screen||(!Screen(CanvasOf(source))&&ValueOwner(event.Entity)==event.Owner);
     }
     auto n=m_Resolved.Find(event.Entity);
-    if(!event.Screen&&n&&Screen(n->Scope))return false;
+    if(!event.Screen&&n&&(Screen(n->Scope)||ValueOwner(event.Entity)!=event.Owner))return false;
     return Live(event.Entity)&&n->ButtonIndex<m_Resolved.Buttons.size()&&m_Resolved.Buttons[n->ButtonIndex].Action==event.Name;
 }
 bool RuntimeUI::Focus(uint64_t target)

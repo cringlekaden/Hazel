@@ -855,7 +855,10 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             }
             ImGui::PopID();
         }
-        if(c.Kind==GameUI::ControlKind::Button)PropertyUI::Help("C#: UIButtonComponent.TryConsumeAction on ordinary canvases; managed screens use GameUI.TryConsumeEvent. Pointer release / Accept activates once.");
+        if(c.Kind==GameUI::ControlKind::Button){
+            if(ImGui::TreeNode("Standalone notification")){targetPicker("button-owner","Event owner",c.EventOwner,ownerTarget);PropertyUI::Help("Optional recipient for an ordinary Canvas button. Managed screens always use their screen owner.");ImGui::TreePop();}
+            PropertyUI::Help("GameUI.TryConsumeEvent delivers to a declared owner. Without an owner on an ordinary Canvas, use TryConsumeAction. Pointer release / Accept activates once.");
+        }
         else PropertyUI::Help("Pointer release / Accept changes the value once. GameUI.TryConsumeEvent delivers a typed change to the declared owner. Normal setters are silent.");
     });
 

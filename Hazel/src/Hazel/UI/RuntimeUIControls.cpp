@@ -225,7 +225,13 @@ void RuntimeUI::SyncControls()
             auto &b = e.GetComponent<UIButtonComponent>();
             if (b.Kind == ControlKind::Button)
             {
-                m_Values.erase(id);
+                // Reuse the existing owner stamp for explicitly addressed HUD
+                // buttons. Rebinding must cancel an in-flight pointer gesture,
+                // including the transition from an unaddressed button.
+                if(b.EventOwner || m_Values.count(id)){
+                    auto &v=m_Values[id];owner(id,v);v.Kind=b.Kind;
+                    if(!b.EventOwner)m_Values.erase(id);
+                }
                 continue;
             }
             if(b.Kind==ControlKind::Slider||b.Kind==ControlKind::TextEntry)continue;
