@@ -54,6 +54,10 @@ namespace Hazel {
         void ApplyUIBindings(const GameUI::UIBindings& bindings); // Per-user full override; disk only for persistent sessions.
         void ResetUIBindings();
         void CancelUIGestures();
+        float GetAudioVolume() const {CheckThread();return m_AudioVolume;}
+        void SetAudioVolume(float volume);
+        void RequestExit();
+        bool ConsumeExitRequest(); // Host: Stop Play in editor; close player window.
         // Same production adapter/router boundary, with caller-supplied samples for deterministic hosts/tests.
         void RouteUIInput(const GameUI::DeviceSample& sample,float seconds,bool enabled);
         bool GetMouseWorldPosition(glm::vec2& position) const;
@@ -77,5 +81,7 @@ namespace Hazel {
         std::string m_Error;
         RuntimeStorage m_Storage;
         bool m_PersistentStorage=false;
+        float m_AudioVolume=1;
+        bool m_ExitRequested=false;
     };
 }

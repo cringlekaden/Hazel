@@ -133,6 +133,7 @@ namespace Hazel {
 
 		bool PlayAudio(Entity entity);
         void StopAudio(Entity entity);
+        void SetAudioMasterVolume(float volume);
         void OnRuntimeStart();
 		void OnRuntimeStop();
 
@@ -193,6 +194,7 @@ namespace Hazel {
         std::unordered_map<UUID, uint64_t> m_AuthoringStructureVersions;
         uint64_t m_NextAuthoringStructureVersion = 0;
         Scope<AudioPlayback> m_Audio;
+        float m_AudioMasterVolume=1; // Runtime session value, never authored/copied.
         Scope<RuntimeUI> m_UI;
         glm::vec2 m_UIFramebufferSize{};
         bool m_UIFramebufferExplicit = false;

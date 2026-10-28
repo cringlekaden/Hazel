@@ -64,12 +64,19 @@ namespace Hazel {
         try { m_Scene->OnRuntimeStart(); }
         catch (...) { Stop(); throw; }
     }
+    void RuntimeSession::SetAudioVolume(float volume) {
+        CheckThread();if(!m_Scene||m_Stopping)throw std::logic_error("Audio settings require an active session");
+        m_Scene->SetAudioMasterVolume(volume);m_AudioVolume=volume;
+    }
+    void RuntimeSession::RequestExit() {CheckThread();if(m_Scene&&!m_Stopping)m_ExitRequested=true;}
+    bool RuntimeSession::ConsumeExitRequest() {CheckThread();bool requested=m_ExitRequested;m_ExitRequested=false;return requested;}
     void RuntimeSession::Stop() {
         CheckThread();
         if (m_Stopping) return;
         if (m_Updating) throw std::logic_error("Cannot stop a scene inside its callback; request a transition instead");
         m_Stopping = true;
         m_UIAdapter.Cancel();m_UIEdgeScene=0;m_UINeutralLatch=false;
+        m_ExitRequested=false;m_AudioVolume=1;
         m_Pending.reset(); m_Identity = 0; m_InputEnabled = false;
         // Unbind before native OnDestroy, so retired callbacks cannot queue work.
         if (ScriptEngine::GetRuntimeSession() == this) ScriptEngine::SetRuntimeSession(nullptr);
@@ -112,6 +119,7 @@ namespace Hazel {
         m_Scene->OnRuntimeStop();
         auto previous = std::move(m_Scene);
         m_Scene = std::move(candidate); m_Stopping = false;
+        m_Scene->SetAudioMasterVolume(m_AudioVolume);
         ScriptEngine::SetRuntimeSession(this);
         try { m_Scene->OnRuntimeStart(); m_Error.clear(); HZ_CORE_INFO("Runtime scene: {}", reference.generic_u8string()); }
         catch (const std::runtime_error& error) {

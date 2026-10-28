@@ -8,6 +8,8 @@ namespace Hazel
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_Binding(int action,ref int key,ref int alternate,ref int pad,ref int shift,bool write);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_InputSettings(ref UIInputSettings settings,bool write);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void UI_ResetBindings();
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static float Runtime_AudioVolume(float value,bool write);
+        [MethodImpl(MethodImplOptions.InternalCall)] internal extern static void Runtime_Exit();
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static ulong UI_FocusScope();
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_Focus(ulong identity,ulong target);
         [MethodImpl(MethodImplOptions.InternalCall)] internal extern static bool UI_Checked(ulong id,bool write,bool value);

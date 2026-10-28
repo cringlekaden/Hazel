@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <limits>
 #include <stdexcept>
 using namespace Hazel;
 static void Check(bool value, const char* message) { if (!value) throw std::runtime_error(message); }
@@ -64,13 +65,20 @@ int main(int argc, char** argv) {
         SceneSerializer(target,project->GetAssetRoot()).Serialize((directory/"Assets/Scenes/Target.hazel").generic_u8string());
         RuntimeSession session; session.Resize(800,400);
         session.Start(project,source);
+        session.SetAudioVolume(.25f);
+        for(float invalid:{-1.f,1.01f,std::numeric_limits<float>::infinity(),std::numeric_limits<float>::quiet_NaN()}) {
+            bool rejected=false;try{session.SetAudioVolume(invalid);}catch(const std::invalid_argument&){rejected=true;}
+            Check(rejected&&session.GetAudioVolume()==.25f,"Rejected audio setting changed accepted session volume");
+        }
+        session.RequestExit();session.RequestExit();
+        Check(session.ConsumeExitRequest()&&!session.ConsumeExitRequest(),"Runtime exit was not deferred/once-only");
         const auto identity=session.GetIdentity();
         auto retired=session.GetScene(); auto instance=ScriptEngine::GetEntityScriptInstance(2);
         auto scriptClass=instance->GetScriptClass();
         Check(retired!=source && retired->FindEntityByName("Source"),"Runtime did not copy authored scene");
         Check(instance->GetFieldValue<int>("Creates")==1,"OnCreate request did not return to callback");
         session.Update(0.016f);
-        Check(session.GetScene()!=retired && session.GetScene()->FindEntityByName("Target"),"OnCreate transition failed");
+        Check(session.GetAudioVolume()==.25f && session.GetScene()!=retired && session.GetScene()->FindEntityByName("Target"),"OnCreate transition failed");
         Check(!retired->IsRunning() && !retired->GetEntityByUUID(2).GetComponent<Rigidbody2DComponent>().RuntimeBody && !instance->GetManagedObject(),"Transition retained old scripts/physics");
         Check(ScriptEngine::GetEntityClass("Migration.TransitionOnCreate")==scriptClass,"Ordinary scene transition replaced script domain");
         Check(session.GetIdentity()==identity && ScriptEngine::GetSceneContext()==session.GetScene().get(),"Session identity/script scene context mismatch");

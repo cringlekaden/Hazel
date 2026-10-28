@@ -495,7 +495,14 @@ namespace Hazel {
         if(!m_Assets)throw std::runtime_error("Audio requires project assets");
         auto file=Project::ResolveOwnedAsset(m_Assets->Root(),source.Clip);
         if(!m_Audio)m_Audio=CreateScope<AudioPlayback>();
+        m_Audio->SetMasterVolume(m_AudioMasterVolume);
         return m_Audio->Play(entity.GetUUID(),file,source.Gain,source.Loop);
+    }
+    void Scene::SetAudioMasterVolume(float volume) {
+        CheckThread();
+        if(!std::isfinite(volume)||volume<0||volume>1)throw std::invalid_argument("Audio volume must be finite and between 0 and 1");
+        if(m_Audio)m_Audio->SetMasterVolume(volume);
+        m_AudioMasterVolume=volume;
     }
     void Scene::StopAudio(Entity entity) {if(m_Audio && entity && entity.BelongsTo(this))m_Audio->Stop(entity.GetUUID());}
 

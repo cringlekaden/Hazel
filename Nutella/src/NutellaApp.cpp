@@ -29,6 +29,7 @@ namespace Hazel {
             RenderCommand::SetClearColor({0.08f, 0.09f, 0.12f, 1.0f});
             RenderCommand::Clear();
             m_Session.Update(timestep);
+            if(m_Session.ConsumeExitRequest())Application::Get().Close();
         }
     private:
         Ref<Project> m_Project;

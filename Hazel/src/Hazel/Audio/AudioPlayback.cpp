@@ -32,6 +32,10 @@ void AudioPlayback::ValidateClip(const std::filesystem::path& file) {
 }
 AudioPlayback::AudioPlayback() : m_State(std::make_unique<State>()) {}
 AudioPlayback::~AudioPlayback()=default;
+void AudioPlayback::SetMasterVolume(float volume) {
+    if(!std::isfinite(volume)||volume<0||volume>1)throw std::invalid_argument("Audio volume must be finite and between 0 and 1");
+    if(m_State->Ready)ma_engine_set_volume(&m_State->Engine,volume);
+}
 void AudioPlayback::Stop(uint64_t owner){m_State->Voices.erase(owner);}
 bool AudioPlayback::Play(uint64_t owner,const std::filesystem::path& file,float gain,bool loop) {
     if(!std::isfinite(gain) || gain<0 || gain>1 || file.extension()!=".wav")throw std::invalid_argument("Audio requires a WAV clip and gain between 0 and 1");

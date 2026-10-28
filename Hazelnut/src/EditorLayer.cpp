@@ -144,6 +144,7 @@ namespace Hazel {
                 m_RuntimeSession.SetInput(ViewportMouse(),uiInput);
                 m_RuntimeSession.SetGameplayInputEnabled(uiInput&&m_ViewportHovered);
                 m_RuntimeSession.Update(ts);
+                if(m_RuntimeSession.ConsumeExitRequest()){OnSceneStop();break;}
                 if (m_ActiveScene != m_RuntimeSession.GetScene()) {
                     ClearSceneObservers();
                     m_ActiveScene = m_RuntimeSession.GetScene();

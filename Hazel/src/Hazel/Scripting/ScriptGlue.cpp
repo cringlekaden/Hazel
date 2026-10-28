@@ -428,6 +428,17 @@ namespace Hazel {
             else *value={b.PointerButton,b.Stick,b.DeadZone,b.NeutralZone,b.RepeatDelay,b.RepeatInterval};}
         catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);
     }
+    static float Runtime_AudioVolume(float value,bool write){
+        MonoException* failure=nullptr;float result=1;
+        try {auto &session=UI_Session();if(write)session.SetAudioVolume(value);result=session.GetAudioVolume();}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
+        if(failure)mono_raise_exception(failure);return result;
+    }
+    static void Runtime_Exit(){
+        MonoException* failure=nullptr;try{UI_Session().RequestExit();}
+        catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}
+        if(failure)mono_raise_exception(failure);
+    }
     static void UI_ResetBindings(){MonoException* failure=nullptr;try{UI_Session().ResetUIBindings();}catch(const std::exception& error){failure=mono_get_exception_invalid_operation(error.what());}if(failure)mono_raise_exception(failure);}
     static bool UI_Focus(uint64_t identity,uint64_t id){MonoException* failure=nullptr;bool result=false;try{auto* scene=ScriptEngine::GetSceneContext();if(scene&&scene->GetIdentity()==identity)result=scene->FocusUI(id);}catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}if(failure)mono_raise_exception(failure);return result;}
     static bool UI_Screen(uint64_t identity,uint64_t id,int operation) {
@@ -672,6 +683,8 @@ namespace Hazel {
         HZ_ADD_INTERNAL_CALL(UI_Binding);
         HZ_ADD_INTERNAL_CALL(UI_InputSettings);
         HZ_ADD_INTERNAL_CALL(UI_ResetBindings);
+        HZ_ADD_INTERNAL_CALL(Runtime_AudioVolume);
+        HZ_ADD_INTERNAL_CALL(Runtime_Exit);
         HZ_ADD_INTERNAL_CALL(UI_Focus);
         HZ_ADD_INTERNAL_CALL(UI_Screen);
         HZ_ADD_INTERNAL_CALL(UI_ConsumeEvent);
