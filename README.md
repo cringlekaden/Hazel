@@ -51,6 +51,8 @@ Requires **OpenGL 4.1 core**. Windows x64 and Linux x86_64/X11 (including Xwayla
 
 [![C/C++ CI — runtime-ui-hardening branch](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml/badge.svg?branch=feature%2Fruntime-ui-hardening)](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Afeature%2Fruntime-ui-hardening)
 
+Cleanup checkpoint [`556e0a0`](https://github.com/cringlekaden/Hazel/actions/runs/40760243767) platform results: [Linux](https://github.com/cringlekaden/Hazel/actions/runs/40760243767/job/123069903378) · [Windows](https://github.com/cringlekaden/Hazel/actions/runs/40760243767/job/123069902863).
+
 The badge is **workflow-wide**. Open a run for its separate **Windows Debug, Release and extracted binaries** and **Linux Debug, Release and extracted binaries (Ubuntu 24.04)** results. [CI coverage](docs/development.md#canonical-ci) includes software/GL4.1 regressions, editor/tutorial authoring and relocated packages. Current work targets `feature/runtime-ui-hardening`; older master snapshots predate parts of this guide. There is no published release; [download guidance](docs/packaging.md) identifies snapshot contents and retention.
 
 Physical Windows/controller/DPI and competent-reader typography acceptance remain outstanding. Automated/software graphics checks do not establish that acceptance. Final qualification and branch integration precede macOS compatibility and subsequent 3D work.
