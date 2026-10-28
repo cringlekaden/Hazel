@@ -13,6 +13,17 @@
 #ifdef HZ_PLATFORM_WINDOWS
 #include "Platform/Windows/WindowsCommandLine.h"
 #endif
+namespace {
+constexpr const char* Usage =
+    "Usage: HazelProject COMMAND [arguments]\n"
+    "  create --name NAME --identifier ID --destination FOLDER --templates FOLDER\n"
+    "  validate PROJECT.hproj\n"
+    "  slice-sheet ASSETS_ROOT SHEET IMAGE TILE_SIZE\n"
+    "  add-clip ASSETS_ROOT SHEET NAME DURATION ORDINALS_CSV\n"
+    "  set-region ASSETS_ROOT SHEET REGION_ID X Y WIDTH HEIGHT NAME\n"
+    "  measure-scene PROJECT.hproj SCENE_ASSET  (maintainer CPU diagnostic)\n"
+    "Sheet/image/scene arguments are project asset-relative paths.\n";
+}
 int main(int argc, char **argv) {
     try {
         std::vector<std::string> args;
@@ -22,6 +33,10 @@ int main(int argc, char **argv) {
         for (int i = 0; i < argc; ++i)
             args.emplace_back(argv[i]);
 #endif
+        if (args.size() == 2 && (args[1] == "--help" || args[1] == "-h")) {
+            std::cout << Usage;
+            return 0;
+        }
         if (args.size() == 2 && args[1] == "--contract") {
             std::cout << "HAZEL_AUTHORING_CONTRACT=1\n";
             return 0;
@@ -83,8 +98,7 @@ int main(int argc, char **argv) {
             return 0;
         }
         if (args.size() != 10 || args[1] != "create")
-            throw std::runtime_error("Usage: HazelProject create --name NAME --identifier ID "
-                                     "--destination FOLDER --templates FOLDER");
+            throw std::runtime_error(Usage);
         std::map<std::string, std::string> values;
         for (size_t i = 2; i < args.size(); i += 2)
             if (!values.emplace(args[i], args[i + 1]).second)
@@ -102,7 +116,7 @@ int main(int argc, char **argv) {
                   << "\nEditing ready; scripts intentionally not compiled\n";
         return 0;
     } catch (const std::exception &e) {
-        std::cerr << "Project creation: " << e.what() << '\n';
+        std::cerr << "HazelProject: " << e.what() << '\n';
         return 1;
     }
 }

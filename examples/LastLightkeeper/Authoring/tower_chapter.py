@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""One-time native scene composition. Existing chapters are never regenerated."""
+"""Historical pre-runtime-UI composition; see Authoring/README.md.
+Reproduction is restricted to disposable copies. Edit current content in Hazelnut.
+"""
 import argparse, math, yaml
-from compose import Scene, terrain, quarter, game_hud, menu, pine, WHITE, AMBER, CLIPS, ASSETS
+from compose import historical_arguments, Scene, terrain, quarter, game_hud, menu, pine, WHITE, AMBER, CLIPS, ASSETS
 from observatory import masonry_collisions
 STONE=[.79,.74,.65,1]
 IRON=[.68,.74,.79,1]
@@ -121,8 +123,7 @@ def harbor():
     return s
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--write',action='store_true');parser.add_argument('--overwrite',action='store_true');args=parser.parse_args()
-    if not args.write:raise SystemExit('Pass --write to compose native scenes.')
+    args=historical_arguments()
     scenes=[tower(),harbor(),menu('Ending',True),menu('Credits')]
     scenes[2].by_name['Chapter']['TextComponent']['TextString']='THE MORNING BOAT'
     credits=scenes[3];credits.by_name['Chapter']['TextComponent']['TextString']='THE LAST LIGHTKEEPER'

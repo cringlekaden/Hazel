@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare tracked trees; hashes include vendor blobs and dependency gitlinks."""
+"""Historical upstream-import provenance; writes a new scratch evidence directory."""
 import argparse
 import collections
 import csv
@@ -24,8 +24,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("upstream", type=Path)
     parser.add_argument("--baseline", default=BASELINE)
-    parser.add_argument("--output", type=Path, default=Path("docs/migration/evidence"))
+    parser.add_argument("--output", type=Path, required=True, help="new scratch directory; never overwrite recorded evidence")
     args = parser.parse_args()
+    if args.output.exists():
+        parser.error('--output must be a new scratch directory; recorded evidence is immutable')
     local = tree(Path(__file__).resolve().parents[2], args.baseline)
     upstream = tree(args.upstream, TARGET)
     rows = []
