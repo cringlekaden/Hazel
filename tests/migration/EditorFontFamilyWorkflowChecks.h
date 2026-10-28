@@ -89,7 +89,7 @@ void FontFamilyWorkflowChecks() {
     }
     RenderCommand::SetViewport(overflowViewport.x,overflowViewport.y,overflowViewport.z,overflowViewport.w);
     m_OverflowFixture=scene;m_OverflowTarget=overflowIDs.front();m_OverflowFixturePanel.SetContext(scene);m_OverflowFixturePanel.SetSelectedEntity(scene->GetEntityByUUID(m_OverflowTarget));m_OverflowFixturePanel.RestoreSections({{"UI Text Style",true}});
-    SceneSerializer(corpusScene).Serialize(assets->Root()/"Scenes/corpus-native.hazel");
+    SceneSerializer(corpusScene).Serialize((assets->Root()/"Scenes/corpus-native.hazel").generic_u8string());
     Prefab::Save(assets->Root(),"Prefabs/corpus-native.hprefab",corpusScene,corpusLabel);
     // Opt-in downstream package qualification retains only the useful, native-
     // authored fixture; normal runs still delete their entire temporary project.

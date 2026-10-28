@@ -27,8 +27,8 @@ static void UIScrollSessionChecks(const Ref<Project> &project)
     config.PixelsPerUnit = 20;
     auto content = make(201, "Scroll content", view, {}, {100, 300});
     content.GetComponent<UIRectComponent>().WidthMode = SizeMode::Fill;
-    auto far = make(202, "Scroll far", content, {0, 260}, {100, 40});
-    far.AddComponent<UIButtonComponent>();
+    auto distantButton = make(202, "Scroll far", content, {0, 260}, {100, 40});
+    distantButton.AddComponent<UIButtonComponent>();
     auto command = make(300, "Reveal command", canvas, {200, 0}, {100, 40});
     command.AddComponent<UIButtonComponent>().Action = "reveal";
     auto baseline = SceneSerializer(authored).CaptureAuthoredState();

@@ -20,11 +20,11 @@ static void UISliderChecks()
         auto g = ArrangeSlider({{0, 0}, {200, 100}}, {{10, 10}, {180, 80}}, {20, 20}, .5f,
                                FillDirection(d));
         Check(g.Thumb.Position == glm::vec2(90, 40), "Centered slider thumb not centered");
-        auto near = g.Thumb.Position;
-        near[g.Axis] = g.Start - 1000;
-        auto far = near;
-        far[g.Axis] = g.Start + g.Travel + 1000;
-        Check(g.Position(near) == (g.Reverse ? 1 : 0) && g.Position(far) == (g.Reverse ? 0 : 1),
+        auto beforeTrack = g.Thumb.Position;
+        beforeTrack[g.Axis] = g.Start - 1000;
+        auto afterTrack = beforeTrack;
+        afterTrack[g.Axis] = g.Start + g.Travel + 1000;
+        Check(g.Position(beforeTrack) == (g.Reverse ? 1 : 0) && g.Position(afterTrack) == (g.Reverse ? 0 : 1),
               "Outside drag does not clamp/reverse");
         auto p = g.Thumb.Position + g.Thumb.Size * .5f;
         p[g.Axis] += 3;
