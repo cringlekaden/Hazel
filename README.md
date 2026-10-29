@@ -55,7 +55,7 @@ Cleanup checkpoint [`556e0a0`](https://github.com/cringlekaden/Hazel/actions/run
 
 The badge is **workflow-wide**. Open a run for its separate **Windows Debug, Release and extracted binaries** and **Linux Debug, Release and extracted binaries (Ubuntu 24.04)** results. [CI coverage](docs/development.md#canonical-ci) includes software/GL4.1 regressions, editor/tutorial authoring and relocated packages. Current work targets `feature/runtime-ui-hardening`; older master snapshots predate parts of this guide. There is no published release; [download guidance](docs/packaging.md) identifies snapshot contents and retention.
 
-Physical Windows/controller/DPI and competent-reader typography acceptance remain outstanding. Automated/software graphics checks do not establish that acceptance. Final qualification and branch integration precede macOS compatibility and subsequent 3D work.
+The owner has completed hands-on acceptance and approved integration. Completed canonical CI remains the integration gate. Automated/software graphics checks remain distinct from physical-platform and competent-reader typography evidence. macOS compatibility and subsequent 3D work follow integration.
 
 ## License and attribution
 

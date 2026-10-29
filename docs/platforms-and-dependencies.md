@@ -7,9 +7,9 @@
 | Windows x64 | Windows 10 or newer; MSVC 2022 source builds, dynamic CRT, UTF-8 source/paths; Release CRT included in packages |
 | Linux x86_64 | X11/GLX, including Xwayland; GCC/Premake builds. Official Ubuntu 24.04 packages require glibc 2.39+. Native Wayland is not implemented |
 | Graphics | OpenGL **4.1 core** minimum; capability checks select supported resource/shader paths. Later GL features are optional, rather than a higher minimum |
-| macOS / other backends | Not implemented. macOS/OpenGL 4.1 compatibility is planned after cleanup/final acceptance, before 3D |
+| macOS / other backends | Not implemented. macOS/OpenGL 4.1 compatibility is planned after branch integration, before 3D |
 
-Linux HD4000 accelerated GL4.2 and forced GL4.1 through Xwayland, software rendering and Windows CI are distinct evidence. A forced Mesa version is not an Apple-driver/macOS test. Windows software CI does not establish physical GPU, controller or monitor/DPI acceptance. The owner tested the Sandbox tutorial; physical Windows/controller/DPI and competent-reader typography acceptance remain outstanding.
+Linux HD4000 accelerated GL4.2 and forced GL4.1 through Xwayland, software rendering and Windows CI are distinct evidence. A forced Mesa version is not an Apple-driver/macOS test. Windows software CI does not establish physical GPU, controller or monitor/DPI acceptance. The owner reports hands-on acceptance complete and approves integration; this approval does not add independently enumerated hardware or reader-review results to the automated evidence.
 
 The current UI endpoint includes authored layout/text/styles, controls/scrolling/screens/focus/remappable input, native authoring and bounded history. Limits include finite authored lists, declared font coverage and committed-text input without native IME preedit/candidate positioning. [Runtime UI](runtime-game-ui.md) gives the exact supported behavior; it does not promise universal language coverage, rich-text editing, virtualization or accessibility APIs.
 
