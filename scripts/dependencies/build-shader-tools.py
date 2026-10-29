@@ -55,6 +55,14 @@ def build(configuration, options, sources, system, architecture):
             f'/p:Configuration={configuration}', '/p:Platform=x64', '/verbosity:minimal')
     else:
         make_arguments = ['make', '-C', workspace, f'config={configuration.lower()}', f'-j{options.jobs}']
+        if system == 'macos':
+            try:
+                previous = json.loads((prefix / 'shader-tools.json').read_text())
+                same_toolchain = (previous.get('sdk_version') == output('xcrun', '--sdk', 'macosx', '--show-sdk-version') and
+                                  previous.get('deployment_target') == os.environ.get('MACOSX_DEPLOYMENT_TARGET'))
+            except (OSError, ValueError):
+                same_toolchain = False
+            if not same_toolchain: make_arguments.append('--always-make')
         # GNU 4.4's FIFO jobserver failed on this host; older Make uses pipes
         # already and does not understand --jobserver-style.
         version = output('make', '--version').splitlines()[0].split()[-1]
@@ -146,7 +154,7 @@ def main():
         architecture = 'x86_64'
     elif system == 'macos' and machine in ('arm64', 'aarch64'):
         architecture = 'arm64'
-        os.environ.setdefault('MACOSX_DEPLOYMENT_TARGET', '13.0')
+        os.environ.setdefault('MACOSX_DEPLOYMENT_TARGET', '27.0')
     else:
         parser.error('Supported dependency targets are Windows/Linux x86_64 and native macOS arm64')
     source_root = ROOT / 'build/dependencies/sources'

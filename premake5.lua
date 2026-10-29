@@ -39,7 +39,11 @@ newoption
 
 workspace "Hazel"
     defines { "GLM_ENABLE_EXPERIMENTAL" }
-    architecture "x64"
+    architecture (os.target() == "macosx" and "ARM64" or "x64")
+    filter "system:macosx"
+        systemversion "27.0"
+        xcodebuildsettings { ["SDKROOT"] = "macosx", ["ONLY_ACTIVE_ARCH"] = "YES", ["CODE_SIGNING_ALLOWED"] = "NO", ["HEADER_SEARCH_PATHS"] = "$(inherited) $(USER_HEADER_SEARCH_PATHS)" }
+    filter {}
     startproject "Hazelnut"
 
     configurations
@@ -56,7 +60,7 @@ workspace "Hazel"
 -- Debug-windows-x86_64
 -- Debug-linux-x86_64
 --
-outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+outputdir = os.target() == "macosx" and "%{cfg.buildcfg}-macos-arm64" or "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 
 --
@@ -239,6 +243,7 @@ project "Hazel"
     {
         "Hazel/src/**.h",
         "Hazel/src/**.cpp",
+        "Hazel/src/**.mm",
         "Hazel/vendor/stb_image/**.h",
         "Hazel/vendor/stb_image/**.cpp"
     }
@@ -310,7 +315,8 @@ project "Hazel"
         --
         removefiles
         {
-            "Hazel/src/Platform/Linux/**.cpp"
+            "Hazel/src/Platform/Linux/**.cpp",
+            "Hazel/src/Platform/macOS/**"
         }
 
 
@@ -356,7 +362,8 @@ project "Hazel"
         --
         removefiles
         {
-            "Hazel/src/Platform/Windows/**.cpp"
+            "Hazel/src/Platform/Windows/**.cpp",
+            "Hazel/src/Platform/macOS/**"
         }
 
         
@@ -587,3 +594,4 @@ include "scripts/dependencies/mono.lua"
 
 include "scripts/dependencies/editor.lua"
 include "scripts/dependencies/typography.lua"
+if os.target() == "macosx" then include "scripts/dependencies/macos.lua" end

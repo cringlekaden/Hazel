@@ -18,7 +18,7 @@ workspace "HazelShaderTools"
     architecture (macos and "ARM64" or "x64")
     configurations { "Debug", "Release" }
     filter "system:macosx"
-        systemversion "13.0"
+        systemversion "27.0"
     filter {}
 
 for _, name in ipairs { "shaderc", "glslang", "SPIRV-Tools", "SPIRV-Tools-opt", "spirv-cross-core", "spirv-cross-glsl" } do

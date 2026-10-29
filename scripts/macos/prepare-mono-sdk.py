@@ -8,8 +8,8 @@ from pathlib import Path
 import shutil
 import stat
 import subprocess
-import tarfile
 import tempfile
+import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
 PIN = json.loads((ROOT / 'scripts/dependencies/mono.json').read_text())['macos_feasibility']
@@ -52,14 +52,37 @@ def dependencies(path):
 
 
 def prepare(archive, destination):
+    if not archive.is_file():
+        archive.parent.mkdir(parents=True, exist_ok=True)
+        token_url = 'https://ghcr.io/token?service=ghcr.io&scope=repository:homebrew/core/mono:pull'
+        with urllib.request.urlopen(token_url) as response:
+            token = json.load(response)['token']
+        request = urllib.request.Request(PIN['bottle_url'], headers={'Authorization': 'Bearer ' + token})
+        with urllib.request.urlopen(request) as response, archive.open('wb') as target:
+            shutil.copyfileobj(response, target)
     if digest(archive) != PIN['bottle_sha256']:
         raise RuntimeError('Mono candidate bottle checksum mismatch')
     if destination.exists():
-        raise RuntimeError('Preserve existing local Mono SDK candidate: ' + str(destination))
+        manifest_path = destination.parent / 'candidate-manifest.json'
+        manifest = json.loads(manifest_path.read_text())
+        if manifest['producer']['bottle_sha256'] != PIN['bottle_sha256']:
+            raise RuntimeError('Existing Mono SDK has a different producer; preserve it before preparing')
+        for name, checksum in manifest['required_files'].items():
+            if digest((destination / name).resolve()) != checksum:
+                raise RuntimeError('Existing Mono SDK file changed: ' + name)
+        for item in manifest['native_files']:
+            if digest(destination / item['path']) != item['sha256']:
+                raise RuntimeError('Existing Mono SDK native file changed: ' + item['path'])
+            if tuple(map(int, item['minimum_macos'].split('.'))) > (27, 0):
+                raise RuntimeError('Mono SDK requires newer than macOS 27.0')
+        manifest['producer']['requirements'] = ['Acquire the exact checksum-pinned native bottle; no global Homebrew/Mono installation required', 'Use macOS 27.0 or newer on native arm64']
+        manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
+        print('Verified existing checksum-pinned native Mono SDK:', destination)
+        return
     temporary_root = ROOT / 'build/dependencies/mono/macos-arm64'
     temporary_root.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='mono-extract-', dir=temporary_root) as temporary:
-        with tarfile.open(archive) as package: package.extractall(temporary, filter='data')
+        run('/usr/bin/tar', '-xzf', archive, '-C', temporary)
         source = Path(temporary) / 'mono' / PIN['version']
         if not source.is_dir(): raise RuntimeError('Unexpected Mono bottle layout')
         shutil.copytree(source, destination, symlinks=True)
@@ -97,6 +120,8 @@ def prepare(archive, destination):
                       if '@@HOMEBREW' in dependency or '/opt/homebrew' in dependency or '/Cellar/' in dependency]
     if bad_architecture: raise RuntimeError('Non-arm64 Mono native files: ' + ', '.join(bad_architecture))
     if bad_dependency: raise RuntimeError('Unrelocated Mono dependency: ' + repr(bad_dependency))
+    if any(not item['minimum_macos'] or tuple(map(int, item['minimum_macos'].split('.'))) > (27, 0) for item in native):
+        raise RuntimeError('Mono candidate native closure exceeds macOS 27.0 floor or lacks version metadata')
 
     required_hashes = {name: digest((destination / name).resolve()) for name in required}
     manifest = {
@@ -107,7 +132,7 @@ def prepare(archive, destination):
             'bottle_url': PIN['bottle_url'], 'bottle_sha256': PIN['bottle_sha256'],
             'bottle_archive': archive.name,
             'requirements': ['Homebrew is evidence/acquisition tooling for this local candidate only',
-                             'A production macOS 13 SDK must be rebuilt from the pinned source with a proven arm64 producer toolchain'],
+                             'The pinned native bottle supports the macOS 27.0 consumer floor'],
         },
         'consumer': {
             'homebrew_required': False,

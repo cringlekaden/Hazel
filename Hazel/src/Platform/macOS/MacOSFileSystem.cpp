@@ -1,0 +1,52 @@
+#include "hzpch.h"
+#include "Hazel/Core/FileSystem.h"
+#include <fcntl.h>
+#include <unistd.h>
+#include <cerrno>
+#include <system_error>
+#include <mach-o/dyld.h>
+#include <stdio.h>
+
+namespace Hazel {
+void FileSystem::PublishDirectoryNew(const std::filesystem::path& source,const std::filesystem::path& destination) {
+    if(renamex_np(source.c_str(),destination.c_str(),RENAME_EXCL)!=0)
+        throw std::system_error(errno,std::generic_category(),"Publish new project directory (no replacement)");
+}
+std::filesystem::path FileSystem::GetEnvironmentPath(const char* name) {
+    const char* value = std::getenv(name);
+    return value && *value ? std::filesystem::u8path(value) : std::filesystem::path{};
+}
+std::filesystem::path FileSystem::GetExecutablePath() {
+    uint32_t size=0; _NSGetExecutablePath(nullptr,&size);
+    std::vector<char> buffer(size);
+    if (_NSGetExecutablePath(buffer.data(),&size)) throw std::runtime_error("Executable discovery failed");
+    return std::filesystem::canonical(buffer.data());
+}
+std::filesystem::path FileSystem::GetUserDataDirectory() {
+    const char* value = std::getenv("HOME");
+    if (!value || !*value) throw std::runtime_error("HOME is required to locate writable application data");
+    return std::filesystem::u8path(value) / "Library/Application Support";
+}
+std::FILE* FileSystem::OpenExclusiveOutput(const std::filesystem::path& path) {
+    const int descriptor = open(path.c_str(), O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0666);
+    if (descriptor < 0) {
+        if (errno == EEXIST) return nullptr;
+        throw std::system_error(errno, std::generic_category(), "Create save temporary " + path.generic_u8string());
+    }
+    auto* file = fdopen(descriptor, "wb");
+    if (!file) {
+        const int error = errno; close(descriptor);
+        std::error_code ignored; std::filesystem::remove(path, ignored);
+        throw std::system_error(error, std::generic_category(), "Open save temporary stream");
+    }
+    return file;
+}
+void FileSystem::ReplaceFile(const std::filesystem::path& source, const std::filesystem::path& destination, WriteMode mode) {
+    if (mode == WriteMode::Replace) { std::filesystem::rename(source, destination); return; }
+    // Atomic exclusive publication of a complete sibling file; link never replaces a destination.
+    if (link(source.c_str(), destination.c_str()) != 0)
+        throw std::system_error(errno, std::generic_category(), "Publish new file " + destination.generic_u8string());
+    std::error_code ignored; std::filesystem::remove(source, ignored);
+}
+}
+

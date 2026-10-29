@@ -9,7 +9,7 @@
 #ifdef HZ_DEBUG
 	#if defined(HZ_PLATFORM_WINDOWS)
 		#define HZ_DEBUGBREAK() __debugbreak()
-	#elif defined(HZ_PLATFORM_LINUX)
+	#elif defined(HZ_PLATFORM_LINUX) || defined(HZ_PLATFORM_MACOS)
 		#include <signal.h>
 		#define HZ_DEBUGBREAK() raise(SIGTRAP)
 	#else

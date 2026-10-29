@@ -38,7 +38,7 @@ def compile_managed(layout):
 def compile_host(layout):
     sdk = layout / 'sdk'
     binary = layout / 'bin/MonoEmbeddingProbe'; binary.parent.mkdir()
-    run(['xcrun', 'clang++', '-std=c++17', '-arch', 'arm64', '-mmacosx-version-min=13.0',
+    run(['xcrun', 'clang++', '-std=c++17', '-arch', 'arm64', '-mmacosx-version-min=27.0',
          '-I' + str(sdk / 'include/mono-2.0'), FIXTURE / 'host.cpp',
          '-L' + str(sdk / 'lib'), '-lmonosgen-2.0',
          '-Wl,-rpath,@executable_path/../sdk/lib', '-o', binary])

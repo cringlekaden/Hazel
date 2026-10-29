@@ -6,7 +6,7 @@ if os.target() == "linux" and not _OPTIONS["dotnet"] then _OPTIONS["dotnet"] = "
 local prefix = _OPTIONS["mono-root"] and path.getabsolute(_OPTIONS["mono-root"], root) or "/usr"
 local includes = windows and (root .. "/Hazel/vendor/mono/include") or (prefix .. "/include/mono-2.0")
 local assemblies = windows and (root .. "/Hazelnut/mono/lib") or (prefix .. "/lib")
-local config = windows and "" or path.getabsolute("../etc/mono/config", prefix)
+local config = windows and "" or path.getabsolute(os.target() == "macosx" and "etc/mono/config" or "../etc/mono/config", prefix)
 if not windows and not os.isfile(includes .. "/mono/jit/jit.h") then
     error("Mono development headers missing: install mono-devel/mono or provide --mono-root=SDK_PREFIX")
 end

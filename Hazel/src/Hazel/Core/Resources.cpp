@@ -12,7 +12,13 @@ namespace Hazel {
     ApplicationResourceSpecification Resources::Defaults(const std::string& application,
         ApplicationResourceSpecification specification) {
         if (specification.Root.empty() || specification.MonoRoot.empty()) {
-            const auto executable = FileSystem::GetExecutablePath().parent_path();
+            auto executable = FileSystem::GetExecutablePath().parent_path();
+#ifdef HZ_PLATFORM_MACOS
+            // One layout authority for development products and future bundles.
+            if (executable.filename() == "MacOS" && executable.parent_path().filename() == "Contents" &&
+                executable.parent_path().parent_path().extension() == ".app")
+                executable = executable.parent_path();
+#endif
             if (specification.Root.empty()) specification.Root = ConfiguredPath("HAZEL_RESOURCES", executable / "Resources");
             if (specification.MonoRoot.empty()) specification.MonoRoot = ConfiguredPath("HAZEL_MONO", executable / "mono");
         }

@@ -1,0 +1,216 @@
+#include "hzpch.h"
+
+#include "Platform/macOS/MacOSWindow.h"
+#include "Hazel/Core/Log.h"
+#include "Hazel/Events/ApplicationEvent.h"
+#include "Hazel/Events/MouseEvent.h"
+#include "Hazel/Events/KeyEvent.h"
+#include "Hazel/Renderer/GraphicsContext.h"
+
+#include <cstdlib>
+#include <pthread.h>
+
+namespace Hazel {
+
+    static unsigned int s_GLFWWindowCount = 0;
+
+    static void GLFWErrorCallback(int error, const char* description)
+    {
+        HZ_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
+    }
+
+    Scope<Window> Window::Create(const WindowProps& props)
+    {
+        return CreateScope<MacOSWindow>(props);
+    }
+
+    MacOSWindow::MacOSWindow(const WindowProps& props)
+    {
+        HZ_PROFILE_FUNCTION();
+        Init(props);
+    }
+
+    MacOSWindow::~MacOSWindow()
+    {
+        HZ_PROFILE_FUNCTION();
+        Shutdown();
+    }
+
+    void MacOSWindow::Init(const WindowProps& props)
+    {
+        HZ_PROFILE_FUNCTION();
+        if (!pthread_main_np()) throw std::runtime_error("macOS windows require the main thread");
+        m_Data.Title = props.Title;
+        m_Data.Width = props.Width;
+        m_Data.Height = props.Height;
+        HZ_CORE_INFO("Creating window {0} ({1}, {2})", props.Title, props.Width, props.Height);
+        if (s_GLFWWindowCount == 0)
+        {
+            HZ_CORE_INFO("Initializing GLFW");
+            glfwSetErrorCallback(GLFWErrorCallback);
+            int success = 0;
+            {
+                HZ_PROFILE_SCOPE("glfwInit");
+                success = glfwInit();
+            }
+            HZ_CORE_ASSERT(success, "Could not initialize GLFW...");
+            if (!success)
+            {
+                HZ_CORE_ERROR("Could not initialize GLFW...");
+                std::abort();
+            }
+            glfwSetErrorCallback(GLFWErrorCallback);
+        }
+        GraphicsContext::ConfigureWindowHints();
+        {
+            HZ_PROFILE_SCOPE("glfwCreateWindow");
+            m_Window = glfwCreateWindow(
+                (int)props.Width,
+                (int)props.Height,
+                m_Data.Title.c_str(),
+                nullptr,
+                nullptr);
+        }
+        HZ_CORE_ASSERT(m_Window, "Failed to create a graphics window...");
+        if (!m_Window)
+        {
+            HZ_CORE_ERROR("Failed to create a graphics window...");
+            std::abort();
+        }
+        int width = 0, height = 0;
+        glfwGetWindowSize(m_Window, &width, &height);
+        m_Data.Width = static_cast<unsigned int>(width);
+        m_Data.Height = static_cast<unsigned int>(height);
+        ++s_GLFWWindowCount;
+        m_Context = GraphicsContext::Create(m_Window);
+        m_Context->Init();
+        glfwSetWindowUserPointer(m_Window, &m_Data);
+        SetVSync(true);
+        glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
+        {
+            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            data.Width = width;
+            data.Height = height;
+            WindowResizeEvent event(width, height);
+            data.EventCallback(event);
+        });
+        glfwSetWindowFocusCallback(m_Window, [](GLFWwindow* window, int focused) {if(!focused){auto& data=*(WindowData*)glfwGetWindowUserPointer(window);WindowLostFocusEvent event;data.EventCallback(event);}});
+        glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window)
+        {
+            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            WindowCloseEvent event;
+            data.EventCallback(event);
+        });
+        glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int /*scancode*/, int action, int mods)
+        {
+            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            switch (action)
+            {
+                case GLFW_PRESS:
+                {
+                    KeyPressedEvent event(static_cast<KeyCode>(key), false,
+                        ((mods&GLFW_MOD_SHIFT)?1:0)|((mods&GLFW_MOD_CONTROL)?2:0)|((mods&GLFW_MOD_ALT)?4:0)|((mods&GLFW_MOD_SUPER)?8:0));
+                    data.EventCallback(event);
+                    break;
+                }
+                case GLFW_RELEASE:
+                {
+                    KeyReleasedEvent event(static_cast<KeyCode>(key));
+                    data.EventCallback(event);
+                    break;
+                }
+                case GLFW_REPEAT:
+                {
+                    KeyPressedEvent event(static_cast<KeyCode>(key), true,
+                        ((mods&GLFW_MOD_SHIFT)?1:0)|((mods&GLFW_MOD_CONTROL)?2:0)|((mods&GLFW_MOD_ALT)?4:0)|((mods&GLFW_MOD_SUPER)?8:0));
+                    data.EventCallback(event);
+                    break;
+                }
+            }
+        });
+        glfwSetCharCallback(m_Window, [](GLFWwindow* window, unsigned int keycode)
+        {
+            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            KeyTypedEvent event(keycode);
+            data.EventCallback(event);
+        });
+        glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* window, int button, int action, int /*mods*/)
+        {
+            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            switch (action)
+            {
+                case GLFW_PRESS:
+                {
+                    MouseButtonPressedEvent event(button);
+                    data.EventCallback(event);
+                    break;
+                }
+                case GLFW_RELEASE:
+                {
+                    MouseButtonReleasedEvent event(button);
+                    data.EventCallback(event);
+                    break;
+                }
+            }
+        });
+        glfwSetScrollCallback(m_Window, [](GLFWwindow* window, double xOffset, double yOffset)
+        {
+            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            MouseScrolledEvent event((float)xOffset, (float)yOffset);
+            data.EventCallback(event);
+        });
+        glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos)
+        {
+            WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+            MouseMovedEvent event((float)xPos, (float)yPos);
+            data.EventCallback(event);
+        });
+    }
+
+    void MacOSWindow::Shutdown()
+    {
+        HZ_PROFILE_FUNCTION();
+        m_Context.reset();
+        glfwDestroyWindow(m_Window);
+        if (--s_GLFWWindowCount == 0)
+        {
+            HZ_CORE_INFO("Terminating GLFW");
+            glfwTerminate();
+        }
+    }
+
+    void MacOSWindow::OnUpdate()
+    {
+        HZ_PROFILE_FUNCTION();
+        glfwPollEvents();
+        m_Context->SwapBuffers();
+    }
+
+    void MacOSWindow::RequestClose() {
+        WindowCloseEvent event;if(m_Data.EventCallback)m_Data.EventCallback(event);
+    }
+    void MacOSWindow::SetTitle(const std::string& title) {
+        if(m_Data.Title==title)return;
+        m_Data.Title=title;glfwSetWindowTitle(m_Window,title.c_str());
+    }
+
+    void MacOSWindow::SetVSync(bool enabled)
+    {
+        HZ_PROFILE_FUNCTION();
+        auto* previous = glfwGetCurrentContext();
+        if (previous != m_Window) glfwMakeContextCurrent(m_Window);
+        if (glfwGetCurrentContext() != m_Window) {
+            if (previous != m_Window) glfwMakeContextCurrent(previous);
+            throw std::runtime_error("Cannot apply swap interval: owning window context unavailable");
+        }
+        glfwSwapInterval(enabled ? 1 : 0);
+        m_Data.VSync = enabled; // Submitted interval; compositor/driver timing is not measured.
+        if (previous != m_Window) glfwMakeContextCurrent(previous);
+    }
+
+    bool MacOSWindow::IsVSync() const
+    {
+        return m_Data.VSync;
+    }
+}
+

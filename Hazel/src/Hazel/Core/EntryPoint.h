@@ -5,7 +5,7 @@
 #include "Platform/Windows/WindowsCommandLine.h"
 #endif
 
-#if defined(HZ_PLATFORM_WINDOWS) || defined(HZ_PLATFORM_LINUX)
+#if defined(HZ_PLATFORM_WINDOWS) || defined(HZ_PLATFORM_LINUX) || defined(HZ_PLATFORM_MACOS)
 
 extern Hazel::Scope<Hazel::Application> Hazel::CreateApplication(Hazel::ApplicationCommandLineArgs args);
 
