@@ -100,3 +100,81 @@ Entities:
       Color: [0.457780361, 0.271779716, 0.516014218, 1]
       Source:
         Type: None
+  - Entity: 4725327554835410179
+    Relationship:
+      Parent: 0
+      Order: 3
+    TagComponent:
+      Tag: UI Canvas
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    UICanvasComponent:
+      ReferenceSize: [1280, 720]
+      SafeInsets: [16, 16, 16, 16]
+      SortOrder: 0
+      Visible: true
+      Enabled: true
+      Modal: false
+  - Entity: 1233722617798641945
+    Relationship:
+      Parent: 4725327554835410179
+      Order: 0
+    TagComponent:
+      Tag: UI Button
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.150000006, 0.25, 0.349999994, 1]
+      Source:
+        Type: None
+    TextComponent:
+      TextString: Button
+      Color: [1, 1, 1, 1]
+      Kerning: 0
+      LineSpacing: 0
+    UIRectComponent:
+      Offset: [342.315796, 272.21051]
+      Pivot: [0, 0]
+      MinimumSize: [0, 0]
+      Margin: [0, 0, 0, 0]
+      Padding: [8, 8, 8, 8]
+      Visible: true
+      Enabled: true
+      ClipChildren: true
+      Flex: 0
+      LayoutVersion: 3
+      WidthMode: 0
+      HeightMode: 0
+      FixedSize: [349.894745, 184.421051]
+      Anchor: [0, 0]
+    UITextStyleComponent:
+      FontPath: ""
+      Size: 105
+      Horizontal: 1
+      Vertical: 1
+      Wrap: true
+    UIButtonComponent:
+      Action: activate
+      TabOrder: 0
+      Interactable: true
+      Colors:
+        - [1, 1, 1, 1]
+        - [1.14999998, 1.14999998, 1.14999998, 1]
+        - [0.75, 0.75, 0.75, 1]
+        - [0.5, 0.5, 0.5, 0.5]
+        - [1.20000005, 1.14999998, 0.800000012, 1]
+      Images:
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
