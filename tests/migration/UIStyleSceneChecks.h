@@ -109,9 +109,11 @@ static void UIStyleSceneChecks(const std::filesystem::path &directory)
     Check(pixel(500) == inherited && pixel(501) == overridden,
           "Failed style replacement partially changed rendered controls");
     {
-        std::ofstream out(folder / "Shared.hstyle");
+        std::ofstream out(folder / "Shared.hstyle", std::ios::binary);
         out << good;
     }
+    Check(FileDocument::Read(folder / "Shared.hstyle") == good,
+          "Style repair did not restore the exact accepted bytes");
     assets->Reload("Shared.hstyle");
     target->Unbind();
     s->SetUITextEntry(500, "Live value");
@@ -161,9 +163,11 @@ static void UIStyleSceneChecks(const std::filesystem::path &directory)
     Check(s->GetUIPresentation(501).Size == 28 && !s->GetUIDiagnostics().ControlProblem.empty(),
           "Missing variant did not retain accepted presentation with a diagnostic");
     {
-        std::ofstream out(folder / "Shared.hstyle");
+        std::ofstream out(folder / "Shared.hstyle", std::ios::binary);
         out << WriteUIStyleText(file.Draft());
     }
+    Check(FileDocument::Read(folder / "Shared.hstyle") == WriteUIStyleText(file.Draft()),
+          "Variant repair changed accepted style line endings");
     assets->Reload("Shared.hstyle");
     paint();
     target->Unbind();
@@ -214,9 +218,11 @@ static void UIStyleSceneChecks(const std::filesystem::path &directory)
     }
     Check(rejected, "Style export accepted a missing associated notice");
     {
-        std::ofstream out(folder / "font-LICENSE.txt");
+        std::ofstream out(folder / "font-LICENSE.txt", std::ios::binary);
         out << notice;
     }
+    Check(FileDocument::Read(folder / "font-LICENSE.txt") == notice,
+          "Notice repair changed the original bytes");
     file.Draft().Variants[0].Values.Image = SpriteReference{"Images.hsprites", 7};
     file.Draft().Variants[0].Values.Slice.Borders = glm::vec4(1);
     file.Changed();

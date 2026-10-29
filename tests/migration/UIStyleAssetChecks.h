@@ -73,6 +73,22 @@ static void UIStyleAssetChecks()
     Check(assets->StyleLiveVersions() == 2 && assets->StyleLiveBytes() > assets->StyleBytes(),
           "Pinned old style version was not separately accounted");
     auto saved = FileDocument::Read(root / "Shared.hstyle");
+    // Model Windows text-mode LF -> CRLF conversion on every platform. A
+    // newline-only foreign edit must remain a conflict, never be normalized.
+    std::string translated;
+    for (char c : saved) {
+        if (c == '\n') translated += '\r';
+        translated += c;
+    }
+    Check(translated != saved, "Style fixture has no line-ending control");
+    FileDocument exact;
+    exact.Open(root / "Shared.hstyle");
+    FileSystem::WriteFileAtomically(root / "Shared.hstyle", [&](auto& out) { out << translated; });
+    reject([&] { exact.Check(); });
+    Check(FileDocument::Read(root / "Shared.hstyle") == translated,
+          "Conflict detection rewrote a newline-only foreign edit");
+    FileSystem::WriteFileAtomically(root / "Shared.hstyle", [&](auto& out) { out << saved; });
+    exact.Check();
     {
         std::ofstream out(root / "Shared.hstyle");
         out << "not a style";
@@ -89,9 +105,11 @@ static void UIStyleAssetChecks()
     Check(doc.Dirty() && FileDocument::Read(root / "Shared.hstyle") == "not a style",
           "Conflict overwrote foreign bytes or discarded draft");
     {
-        std::ofstream out(root / "Shared.hstyle");
+        std::ofstream out(root / "Shared.hstyle", std::ios::binary);
         out << saved;
     }
+    Check(FileDocument::Read(root / "Shared.hstyle") == saved,
+          "Style repair changed the accepted byte baseline");
     assets->Reload("Shared.hstyle");
     Check(assets->Style("Shared.hstyle").Error.empty(), "Repaired style could not reload");
     UIStyleDocument reopened(assets);

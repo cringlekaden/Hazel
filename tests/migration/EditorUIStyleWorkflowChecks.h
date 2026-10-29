@@ -33,9 +33,11 @@ void UIStyleWorkflowChecks()
               owner.m_ConflictDocument == EditorDocument::UIStyle,
           "Style draft bypassed shared conflict handling");
     {
-        std::ofstream out(assets->Root() / "Styles/Settings.hstyle");
+        std::ofstream out(assets->Root() / "Styles/Settings.hstyle", std::ios::binary);
         out << saved;
     }
+    Check(Read(assets->Root() / "Styles/Settings.hstyle") == saved,
+          "Style workflow repair changed accepted bytes");
     owner.m_ShowSaveConflict = false;
     m_Editor.m_ActionError.clear();
     owner.Guard(OperationIntent::CloseUIStyle, [&] {
