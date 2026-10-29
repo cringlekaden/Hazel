@@ -9,11 +9,17 @@ local headers = shaderc .. "/third_party/spirv-headers/include"
 local generated = root .. "/build/dependencies/generated"
 local output = root .. "/build/dependencies/premake"
 local inputs = json.decode(io.readfile(root .. "/scripts/dependencies/shader-sources.json"))
+local macos = os.target() == "macosx"
+local artifactSystem = macos and "macos" or os.target()
+local artifactArchitecture = macos and "arm64" or "x86_64"
 
 workspace "HazelShaderTools"
     location (output)
-    architecture "x64"
+    architecture (macos and "ARM64" or "x64")
     configurations { "Debug", "Release" }
+    filter "system:macosx"
+        systemversion "13.0"
+    filter {}
 
 for _, name in ipairs { "shaderc", "glslang", "SPIRV-Tools", "SPIRV-Tools-opt", "spirv-cross-core", "spirv-cross-glsl" } do
     project (name)
@@ -23,8 +29,8 @@ for _, name in ipairs { "shaderc", "glslang", "SPIRV-Tools", "SPIRV-Tools-opt", 
         cppdialect "C++17"
         staticruntime "Off"
         warnings "Off"
-        targetdir (output .. "/bin/%{cfg.buildcfg}-%{cfg.system}-x86_64")
-        objdir (output .. "/obj/%{cfg.buildcfg}-%{cfg.system}-x86_64/" .. name)
+        targetdir (output .. "/bin/%{cfg.buildcfg}-" .. artifactSystem .. "-" .. artifactArchitecture)
+        objdir (output .. "/obj/%{cfg.buildcfg}-" .. artifactSystem .. "-" .. artifactArchitecture .. "/" .. name)
         local sources = {}
         for _, file in ipairs(inputs[name]) do
             if name == "glslang" and os.target() == "windows" then
@@ -45,6 +51,9 @@ for _, name in ipairs { "shaderc", "glslang", "SPIRV-Tools", "SPIRV-Tools-opt", 
             filter "system:linux"
                 defines { "GLSLANG_OSINCLUDE_UNIX" }
                 forceincludes { root .. "/scripts/dependencies/shader-tools-compat.h" }
+            filter "system:macosx"
+                defines { "GLSLANG_OSINCLUDE_UNIX" }
+                forceincludes { root .. "/scripts/dependencies/shader-tools-compat.h" }
             filter "system:windows"
                 defines { "GLSLANG_OSINCLUDE_WIN32" }
                 buildoptions { '/FI"' .. root .. '/scripts/dependencies/shader-tools-compat.h"' }
@@ -58,6 +67,8 @@ for _, name in ipairs { "shaderc", "glslang", "SPIRV-Tools", "SPIRV-Tools-opt", 
                 -- Pinned upstream enables resource timers only on platforms
                 -- providing getrusage/sys/resource.h, including Linux.
                 defines { "SPIRV_LINUX", "SPIRV_TIMER_ENABLED" }
+            filter "system:macosx"
+                defines { "SPIRV_MAC", "SPIRV_TIMER_ENABLED" }
             filter "system:windows"
                 defines { "SPIRV_WINDOWS" }
             filter "configurations:Debug"
@@ -68,6 +79,9 @@ for _, name in ipairs { "shaderc", "glslang", "SPIRV-Tools", "SPIRV-Tools-opt", 
         end
         filter "system:linux"
             toolset "gcc"
+            pic "On"
+        filter "system:macosx"
+            toolset "clang"
             pic "On"
         filter "system:windows"
             systemversion "latest"

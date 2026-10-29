@@ -43,8 +43,8 @@ def checkout(name, destination):
         raise RuntimeError(f'Dependency revision mismatch: {name}')
 
 
-def build(configuration, options, sources, system):
-    prefix = ROOT / 'build/dependencies/install' / f'{configuration}-{system}-x86_64'
+def build(configuration, options, sources, system, architecture):
+    prefix = ROOT / 'build/dependencies/install' / f'{configuration}-{system}-{architecture}'
     libdir = prefix / 'lib'
     libdir.mkdir(parents=True, exist_ok=True)
     include = prefix / 'include'
@@ -63,7 +63,7 @@ def build(configuration, options, sources, system):
         if numbers >= (4, 4):
             make_arguments.append('--jobserver-style=pipe')
         run(*make_arguments)
-    artifacts = workspace / 'bin' / f'{configuration}-{system}-x86_64'
+    artifacts = workspace / 'bin' / f'{configuration}-{system}-{architecture}'
     library_name = lambda name: (name + '.lib') if system == 'windows' else ('lib' + name + '.a')
     # Match the actual upstream combined archive: shaderc API/util, full glslang
     # (including HLSL/OGLCompiler/SPIRV) and both validation/optimization libraries.
@@ -81,7 +81,7 @@ def build(configuration, options, sources, system):
                 raise RuntimeError('MSVC librarian unavailable for archive integration')
             librarian = candidates[-1]
         run(librarian, '/NOLOGO', f'/OUT:{destination}', *merged)
-    else:
+    elif system == 'linux':
         # MRI filenames are simple; never interpolate checkout paths into shell
         # commands or depend on the MRI parser's path-with-spaces behavior.
         import tempfile
@@ -94,6 +94,10 @@ def build(configuration, options, sources, system):
             commands += ['SAVE', 'END']
             subprocess.run(['ar', '-M'], input='\n'.join(commands) + '\n', cwd=temporary, text=True, check=True)
             shutil.copyfile(temporary / 'shaderc_combined.a', destination)
+    else:
+        # Apple's ar does not implement GNU MRI mode. libtool merges each
+        # constituent archive without introducing a second build system.
+        run('xcrun', 'libtool', '-static', '-o', destination, *merged)
     for name in ('spirv-cross-glsl', 'spirv-cross-core'):
         shutil.copyfile(artifacts / library_name(name), libdir / library_name(name))
     shutil.copytree(sources['shaderc'] / 'libshaderc/include/shaderc', include / 'shaderc', dirs_exist_ok=True)
@@ -113,10 +117,15 @@ def build(configuration, options, sources, system):
                 shutil.copyfile(license_file, licenses / license_file.name)
     sys.path.insert(0, str(ROOT / 'scripts'))
     from hazel import dependency_digest
-    manifest = dict(build_inputs_sha256=dependency_digest(), configuration=configuration, system=system, build_system='Premake',
+    manifest = dict(build_inputs_sha256=dependency_digest(), configuration=configuration, system=system,
+                    architecture=architecture, build_system='Premake',
                     pins_sha256=hashlib.sha256(PINS_FILE.read_bytes()).hexdigest(), pins=PINS,
                     premake=output(options.premake, f'--file={ROOT / "scripts/dependencies/shader-workspace.lua"}', '--version').splitlines()[0],
                     source_manifest_sha256=hashlib.sha256((ROOT / 'scripts/dependencies/shader-sources.json').read_bytes()).hexdigest(),
+                    compiler=(output('xcrun', '--sdk', 'macosx', '--find', 'clang++') if system=='macos' else None),
+                    sdk=(output('xcrun', '--sdk', 'macosx', '--show-sdk-path') if system=='macos' else None),
+                    sdk_version=(output('xcrun', '--sdk', 'macosx', '--show-sdk-version') if system=='macos' else None),
+                    deployment_target=(os.environ.get('MACOSX_DEPLOYMENT_TARGET') if system=='macos' else None),
                     jobs=options.jobs, source_status='clean', windows_crt=('MDd' if configuration=='Debug' else 'MD') if system=='windows' else None)
     (prefix / 'shader-tools.json').write_text(json.dumps(manifest, indent=2) + '\n')
     print(f'Installed clean pinned Premake shader tools: {prefix}', flush=True)
@@ -130,9 +139,16 @@ def main():
     parser.add_argument('--msbuild', default='msbuild')
     parser.add_argument('--prepare-only', action='store_true', help='Fetch/verify pins and generate inputs/projects without compilation')
     options = parser.parse_args()
-    system = platform.system().lower()
-    if system not in ('linux', 'windows') or platform.machine().lower() not in ('x86_64', 'amd64'):
-        parser.error('Only the currently implemented Linux/Windows x86_64 builds are available')
+    host = platform.system().lower()
+    system = 'macos' if host == 'darwin' else host
+    machine = platform.machine().lower()
+    if system in ('linux', 'windows') and machine in ('x86_64', 'amd64'):
+        architecture = 'x86_64'
+    elif system == 'macos' and machine in ('arm64', 'aarch64'):
+        architecture = 'arm64'
+        os.environ.setdefault('MACOSX_DEPLOYMENT_TARGET', '13.0')
+    else:
+        parser.error('Supported dependency targets are Windows/Linux x86_64 and native macOS arm64')
     source_root = ROOT / 'build/dependencies/sources'
     sources = {'shaderc': source_root / 'shaderc', 'spirv-cross': source_root / 'spirv-cross'}
     for name in ('glslang', 'spirv-headers', 'spirv-tools'):
@@ -145,7 +161,7 @@ def main():
         return
     configurations = ['Debug', 'Release'] if options.config == 'all' else [options.config]
     for configuration in configurations:
-        build(configuration, options, sources, system)
+        build(configuration, options, sources, system, architecture)
 
 
 if __name__ == '__main__':
