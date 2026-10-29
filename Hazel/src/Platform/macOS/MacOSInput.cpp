@@ -92,4 +92,3 @@ bool NativeTextClipboard::Write(const std::string& value,std::string& error){
     const char* message=nullptr;auto status=glfwGetError(&message);if(status!=GLFW_NO_ERROR){error=message?message:"Native clipboard write failed";return false;}return true;
 }
 }
-

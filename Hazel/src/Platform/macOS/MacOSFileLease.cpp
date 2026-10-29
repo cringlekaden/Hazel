@@ -21,4 +21,3 @@ namespace Hazel {
     }
     FileLease::~FileLease() { close(static_cast<int>(m_Handle)); }
 } // namespace Hazel
-

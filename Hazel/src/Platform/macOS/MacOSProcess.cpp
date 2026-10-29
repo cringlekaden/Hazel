@@ -187,4 +187,3 @@ ProcessResult Process::RunStreams(const std::filesystem::path &exe, const std::v
     return result;
 }
 } // namespace Hazel
-

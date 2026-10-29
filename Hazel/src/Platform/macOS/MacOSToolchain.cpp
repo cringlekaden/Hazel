@@ -17,4 +17,3 @@ std::vector<std::filesystem::path> Toolchain::PlatformPythonCandidates()
 	return paths;
 }
 } // namespace Hazel
-
