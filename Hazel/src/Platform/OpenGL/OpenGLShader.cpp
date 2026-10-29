@@ -78,7 +78,7 @@ std::filesystem::path GetCacheDirectory() { return Resources::CacheDirectory(); 
 std::string CacheKey(GLenum stage,const std::string& source)
 {
     // Stable across processes and OSes; filenames alone cannot identify cached source.
-    const std::string input="hazel-pipeline-v3-validated-cache-debugnames-glsl410-vulkan12-74a79040df6d52c4667ed87c9c70904c7561aef8d61f1fb981c947ba76a5fdec-"+std::to_string(stage)+source;
+    const std::string input="hazel-pipeline-v4-canonical-varyings-glsl410-vulkan12-74a79040df6d52c4667ed87c9c70904c7561aef8d61f1fb981c947ba76a5fdec-"+std::to_string(stage)+source;
     uint64_t hash=14695981039346656037ull;
     for (unsigned char byte:input) { hash^=byte; hash*=1099511628211ull; }
     std::ostringstream output; output<<std::hex<<std::setw(16)<<std::setfill('0')<<hash;
@@ -247,6 +247,19 @@ void OpenGLShader::CompileOrGetOpenGLBinaries()
     options.SetTargetEnvironment(shaderc_target_env_opengl,shaderc_env_version_opengl_4_5);
     for (const auto& [stage,spirv]:m_VulkanSPIRV) {
         spirv_cross::CompilerGLSL glslCompiler(spirv);
+        // GLSL 410 links varyings by name; location-based SPIR-V permits
+        // different source names between stages. Canonicalize that interface
+        // before Cross emits GLSL, including synthesized struct/block types.
+        const auto resources = glslCompiler.get_shader_resources();
+        const auto& interface = stage == GL_VERTEX_SHADER ? resources.stage_outputs : resources.stage_inputs;
+        for (const auto& resource : interface) {
+            if (!glslCompiler.has_decoration(resource.id, spv::DecorationLocation)) continue;
+            const auto location = glslCompiler.get_decoration(resource.id, spv::DecorationLocation);
+            const auto name = "hz_Varying" + std::to_string(location);
+            glslCompiler.set_name(resource.id, name);
+            if (glslCompiler.get_type(resource.base_type_id).basetype == spirv_cross::SPIRType::Struct)
+                glslCompiler.set_name(resource.base_type_id, name + "Type");
+        }
         auto glslOptions=glslCompiler.get_common_options();
         glslOptions.version=410; glslOptions.es=false; glslOptions.enable_420pack_extension=false;
         glslCompiler.set_common_options(glslOptions);

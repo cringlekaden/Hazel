@@ -371,8 +371,10 @@ namespace Hazel {
                s_Data->CircleVertexBufferPtr);
         upload(s_Data->LineVertexBuffer, s_Data->LineVertexBufferBase, s_Data->LineVertexBufferPtr);
         upload(s_Data->TextVertexBuffer, s_Data->TextVertexBufferBase, s_Data->TextVertexBufferPtr);
-        for (uint32_t i = 0; s_Data->QuadIndexCount && i < s_Data->TextureSlotIndex; ++i)
-            s_Data->TextureSlots[i]->Bind(i);
+        // Every active sampler-array element must reference a complete texture,
+        // including branches unused by this batch on strict core drivers.
+        for (uint32_t i = 0; s_Data->QuadIndexCount && i < s_Data->TextureSlotLimit; ++i)
+            (i < s_Data->TextureSlotIndex ? s_Data->TextureSlots[i] : s_Data->WhiteTexture)->Bind(i);
         // Geometry is now complete: use an actually free sampler for text when
         // possible, preserving every configured quad slot. A full chunk shares
         // unit zero and restores white before a subsequent quad run.

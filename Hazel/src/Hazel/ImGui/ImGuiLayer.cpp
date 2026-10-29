@@ -82,7 +82,7 @@ namespace Hazel {
         GLFWwindow* window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
         m_GLFWInitialized = ImGui_ImplGlfw_InitForOpenGL(window, true);
         if (!m_GLFWInitialized) throw std::runtime_error("Failed to initialize ImGui GLFW backend");
-        m_OpenGLInitialized = ImGui_ImplOpenGL3_Init("#version 130");
+        m_OpenGLInitialized = ImGui_ImplOpenGL3_Init("#version 410 core");
         if (!m_OpenGLInitialized) throw std::runtime_error("Failed to initialize ImGui OpenGL backend");
     }
 
