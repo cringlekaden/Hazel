@@ -80,6 +80,9 @@ Build logs still contain existing source/vendor warnings and `dsymutil` warnings
 for some combined shader archive symbols. Native linking and the exercised
 runtime paths pass; complete debug-symbol quality remains a follow-up. Logs and
 local manifests are retained under ignored `build/macos-*` and `build/testing`.
+The final GPU suite still prints a log-once Apple `GLD_TEXTURE_INDEX_2D`
+unloadable-texture diagnostic while all reference pixels/picking assertions pass;
+triage its originating draw during the next graphics/editor qualification.
 Linux/Windows CI definitions and vendor gitlinks were unchanged; those operating
 systems were not executed during this native Mac run.
 
