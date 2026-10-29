@@ -97,8 +97,8 @@ Clang, applies the SDK/deployment target and writes architecture-specific cache
 and installation identities. macOS uses `xcrun libtool -static` to combine the
 shader archives; Linux retains GNU `ar -M`, and Windows retains `lib.exe`.
 
-The Release libraries were built natively with two jobs. All installed archives
-contain arm64 objects. The maintained consumer at
+The Debug and Release libraries were built natively with two jobs. All installed
+archives contain arm64 objects. The maintained consumer at
 `tests/macos/feasibility/shader` linked the resulting libraries, compiled a
 representative GLSL 450 vertex shader to Vulkan 1.2 SPIR-V, validated it,
 reflected its uniform binding with SPIRV-Cross, and emitted desktop GLSL 410
