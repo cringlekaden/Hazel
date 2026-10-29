@@ -17,7 +17,7 @@ namespace LastLightkeeper {
         readonly Dictionary<Cell,bool> noMirrors=new Dictionary<Cell,bool>();
 
         void OnCreate(){
-            keys=new Controls();body=Player.GetComponent<Rigidbody2DComponent>();
+            keys=new Controls(this);body=Player.GetComponent<Rigidbody2DComponent>();
             objective=Objective.GetComponent<TextComponent>();context=Context.GetComponent<TextComponent>();
             dialogue=Dialogue.GetComponent<TextComponent>();footer=FindEntityByName("DialogueFooter").GetComponent<TextComponent>();saveLabel=SaveLabel.GetComponent<TextComponent>();
             try{journey=Journey.Decode(SaveData.Read("journey"));}catch(Exception ex){journey=new Journey();saveBlocked=true;notice="Save kept. Return to the title to choose a new game.";noticeTime=20;Console.WriteLine(ex.Message);}
@@ -63,7 +63,7 @@ namespace LastLightkeeper {
             if(hit){Sound(SoundHazard);Notice("Back on the survey terrace. Repairs kept.");}
         }
         void Talk(string[] text,Action done=null){pages=text;page=0;after=done;journal=false;context.Text="";body.LinearVelocity=Vector2.Zero;ShowDialogue();}
-        void ShowDialogue(){dialogue.Text=pages==null?"":pages[page];footer.Text=pages==null?"":"Enter   "+(page+1==pages.Length?(after!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);Presentation.Dialogue(DialoguePanel,pages!=null,false);}
+        void ShowDialogue(){dialogue.Text=pages==null?"":pages[page];footer.Text=pages==null?"":""+(page+1==pages.Length?(after!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);Presentation.Dialogue(DialoguePanel,pages!=null,false);}
         void CloseDialogue(){pages=null;ShowDialogue();var callback=after;after=null;callback?.Invoke();}
         void Focus(bool active){
             rig.Begin();
@@ -120,7 +120,7 @@ namespace LastLightkeeper {
         }
         void OnUpdate(float dt){
             keys.Poll();dt=Math.Min(.1f,Math.Max(0,dt));
-            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED":"";footer.Text=paused?"Enter   Resume":"";Presentation.Dialogue(DialoguePanel,paused,paused);}}
+            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";Presentation.Dialogue(DialoguePanel,paused,paused);}}
             if(paused){body.LinearVelocity=Vector2.Zero;if(keys.Menu && (saveBlocked || Persist()))Scene.LoadScene("Scenes/MainMenu.hazel");if(keys.Advance){paused=false;ShowDialogue();}return;}
             if(keys.Journal && journal && pages!=null)CloseDialogue();
             else if(keys.Journal && pages==null){Talk(new[]{"OBSERVATORY\n"+Story.Objective(journey)+".\nWASD or arrows: move. E: use. Hold Space: focus.\nWhite survey posts face their distant receivers.","THE BROKEN HALL\nSouthern bridge joins the terraces.\nEast winch moves the carriage, not the receivers.\nThe crew are behind the north instrument door."});journal=true;}

@@ -1,4 +1,5 @@
 #include "Hazel/UI/RuntimeUIModel.h"
+#include "Hazel/Utils/UTF8.h"
 #include <iostream>
 #include <limits>
 #include <stdexcept>
@@ -26,87 +27,83 @@ template <class F> void Reject(F f)
     }
     Check(bad, "Malformed UI configuration was accepted");
 }
+#include "UIActionChecks.h"
+#include "UISliderChecks.h"
+#include "UIScrollChecks.h"
+#include "UIDropdownModelChecks.h"
+#include "MeasuredLayoutChecks.h"
+#include "GridLayoutChecks.h"
+#include "WrapLayoutChecks.h"
+#include "ImageFitChecks.h"
+static void HardeningChecks()
+{
+    // Audit D2: nonempty bounds/clip separately, but no effective intersection.
+    std::vector<Button> clipped{{1,{{100,100},{50,30}},{{0,0},{50,30}},"offscreen"}};
+    InputRouter router;InputFrame input;input.Enabled=true;Action action;
+    router.Update(1,clipped,input);input.AcceptDown=true;router.Update(1,clipped,input);
+    Check(router.Focused()==0&&!router.Consume(1,action),"D2: completely clipped button focused/activated");
+    clipped[0].Bounds.Size={0,30};router.Update(1,clipped,input);
+    Check(!router.SetFocus(1,1,clipped),"Zero-size button accepted focus");
+    auto tiny=FramebufferCoverage({{.1f,.1f},{.4f,.4f}},{1.25f,1.25f},{100,100});
+    Check(tiny.Size==glm::vec2(0),"Fractional clip gained framebuffer coverage");
+    auto covered=FramebufferCoverage({{.1f,.1f},{2,2}},{1.25f,1.25f},{100,100});
+    Check(covered.Position==glm::vec2(1)&&covered.Size==glm::vec2(1),"Framebuffer clip did not snap inward");
+    // Audit D5: gesture owns the release frame even when capture is cancelled.
+    for(bool retire:{false,true})
+    {
+        InputRouter r;std::vector<Button> b{{1,{{0,0},{100,40}},{{0,0},{100,40}},"activate"}};
+        InputFrame f;f.Enabled=true;f.Mouse={10,10};r.Update(2,b,f);
+        f.LeftDown=true;r.Update(2,b,f);if(retire)r.Retire(2,1);
+        f.LeftDown=false;f.Mouse={120,10};f.AcceptDown=true;f.AcceptPressed=true;r.Update(2,b,f);
+        Check(!r.Consume(2,action),"D5: cancelled pointer release became keyboard activation");
+        f.AcceptDown=f.AcceptPressed=false;r.Update(2,b,f);f.AcceptDown=true;r.Update(2,b,f);
+        Check(r.Consume(2,action),"Independent Accept after cancellation was suppressed");
+    }
+    {
+        InputRouter r;std::vector<Button> b{{1,{{0,0},{100,40}},{{0,0},{100,40}},"lower"},
+            {2,{{0,0},{100,40}},{{0,0},{100,40}},"disabled",1,true,false}};
+        InputFrame f;f.Enabled=true;f.Mouse={10,10};r.Update(3,b,f);
+        f.PointerPressed=f.PointerReleased=true;f.PressPosition=f.Mouse;r.Update(3,b,f);
+        Check(!r.Consume(3,action),"Disabled control let a click activate a lower control");
+        b.back().Hit=HitPolicy::PassThrough;f.PointerPressed=f.PointerReleased=false;r.Update(3,b,f);
+        f.PointerPressed=f.PointerReleased=true;r.Update(3,b,f);
+        Check(r.Consume(3,action)&&action.Entity==1,"Explicit pass-through blocked lower control");
+    }
+    {
+        InputRouter r;std::vector<Button> b{{1,{{0,0},{100,40}},{{0,0},{100,40}},"activate"}};
+        InputFrame f;f.Enabled=true;r.Update(4,b,f,1);
+        for(size_t i=0;i<InputRouter::MaxActions+5;++i)
+        {f.AcceptDown=false;r.Update(4,b,f,1);f.AcceptDown=true;r.Update(4,b,f,1);}
+        Check(r.DroppedActions()==5,"Model queue overflow did not count drop-newest");
+        size_t delivered=0;while(r.Consume(4,action))++delivered;
+        Check(delivered==InputRouter::MaxActions,"Bounded queue changed retained activation count");
+    }
+    // Audit D3: exact scalar decoding, byte offsets and format policy.
+    std::vector<uint32_t> chars;std::vector<size_t> bytes;
+    Hazel::UTF8::Decode(std::string("\xef\xbb\xbf")+u8"Aé😀",chars,&bytes);
+    Check(chars==std::vector<uint32_t>{'A',0xe9,0x1f600}&&bytes==std::vector<size_t>{3,4,6,10},"Leading BOM/scalar offsets changed");
+    Hazel::UTF8::Decode("\xef\xbb\xbf",chars,&bytes);
+    Check(chars.empty()&&bytes==std::vector<size_t>{3},"BOM-only text did not become empty");
+    Hazel::UTF8::Decode(std::string("A\xef\xbb\xbf"),chars);
+    Check(chars.size()==2&&chars[1]==0xfeff,"Nonleading BOM scalar was not retained");
+    Hazel::UTF8::Decode("\xf4\x8f\xbf\xbf",chars);Check(chars[0]==0x10ffff,"Last Unicode scalar rejected");
+    for(auto invalid:std::vector<std::string>{std::string("A\0B",3),"\xc0\xaf","\xe0\x80\xaf","\xed\xa0\x80","\xf4\x90\x80\x80","\xf5\x80\x80\x80","\x80","\xc2","\xe2\x28\xa1","\xff"})
+        Reject([&]{Hazel::UTF8::Decode(invalid,chars);});
+    std::cout<<"PASS: D2/D5 clipped/fractional hits, queue limits and strict Unicode scalars\n";
+}
 int main()
 {
     try
     {
-        for (auto viewport : std::vector<glm::vec2>{{1024, 600}, {1280, 720}, {960, 720}})
-        {
-            auto fit = FitCanvas(viewport, {});
-            Check(Same(fit.Bounds.Size.x, 1280), "Canvas reference width changed");
-            RectLayout anchored;
-            anchored.AnchorMin = anchored.AnchorMax = {1, 1};
-            anchored.Pivot = {1, 1};
-            anchored.Offset = {-24, -24};
-            anchored.SizeDelta = {240, 48};
-            auto button = ResolveRect(fit.Content, anchored);
-            Check(Same(button.Position.x + button.Size.x,
-                       fit.Content.Position.x + fit.Content.Size.x - 24),
-                  "Right margin changed after resize");
-            Check(Same(button.Position.y + button.Size.y,
-                       fit.Content.Position.y + fit.Content.Size.y - 24),
-                  "Bottom margin changed after resize");
-            Check(glm::length(fit.ToLogical((button.Position + button.Size * .5f) * fit.Scale) -
-                              (button.Position + button.Size * .5f)) < .001f,
-                  "Pointer mapping differs from drawn rectangle");
-            RectLayout stretch;
-            stretch.AnchorMax = {1, 1};
-            stretch.SizeDelta = {-40, -60};
-            stretch.Offset = {20, 30};
-            auto panel = ResolveRect(fit.Content, stretch);
-            Check(Same(panel.Size.x, fit.Content.Size.x - 40) &&
-                      Same(panel.Position.y, fit.Content.Position.y + 30),
-                  "Stretched anchors lost offsets");
-        }
-        Check(FitCanvas({0, 600}, {}).Scale == 0, "Minimized canvas did not suspend dimensions");
-        Reject(
-            []
-            {
-                CanvasLayout c;
-                c.ReferenceSize.x = 0;
-                FitCanvas({100, 100}, c);
-            });
-        Reject(
-            []
-            {
-                RectLayout c;
-                c.AnchorMin = {1, 0};
-                ResolveRect({{0, 0}, {100, 100}}, c);
-            });
-        Reject(
-            []
-            {
-                RectLayout c;
-                c.Margin.x = -1;
-                Validate(c);
-            });
-        Reject(
-            []
-            {
-                RectLayout c;
-                c.Offset.y = std::numeric_limits<float>::quiet_NaN();
-                Validate(c);
-            });
-        std::vector<FlowItem> items(3);
-        items[0].PreferredSize = {20, 40};
-        items[1].Visible = false;
-        items[2].PreferredSize = {30, 50};
-        items[2].Flex = 1;
-        FlowLayout flow;
-        flow.Gap = 10;
-        std::vector<Rect> layout;
-        ArrangeFlow({{10, 20}, {200, 200}}, flow, items, layout);
-        Check(layout[1].Size == glm::vec2(0) && Same(layout[0].Position.y, 20) &&
-                  Same(layout[2].Position.y, 70) && Same(layout[2].Size.y, 150),
-              "Hidden row consumed a gap or flex space lost");
-        flow.Direction = Axis::Horizontal;
-        flow.Main = Align::End;
-        flow.Cross = Align::Center;
-        items[2].Flex = 0;
-        ArrangeFlow({{0, 0}, {200, 100}}, flow, items, layout);
-        Check(Same(layout[0].Position.x, 140) && Same(layout[2].Position.x, 170) &&
-                  Same(layout[0].Position.y, 30),
-              "Horizontal alignment differs from declared padding/gaps");
+        UIActionChecks();UISliderChecks();UIScrollChecks();UIDropdownModelChecks();
+        HardeningChecks();
+        MeasuredLayoutChecks();
+        GridLayoutChecks();
+        WrapLayoutChecks();
+        ImageFitChecks();
+        Check(FitCanvas({0,600},{}).Scale==0,"Minimized canvas did not suspend layout");
+        Reject([]{RectLayout r;r.Margin.x=-1;Validate(r);});
+        Reject([]{RectLayout r;r.Offset.y=NAN;Validate(r);});
         Check(!Rect{{0, 0}, {10, 10}}.Contains({10, 5}) && Rect{{0, 0}, {10, 10}}.Contains({0, 0}),
               "Adjacent button edges overlap");
         Check(Rect{{0, 0}, {10, 10}}.Intersect({{20, 20}, {10, 10}}).Size == glm::vec2(0),
@@ -163,6 +160,7 @@ int main()
         Check(router.Focused() == 2, "Reverse tab order wrong");
         Check(!router.SetFocus(41, 3, buttons) && !router.SetFocus(40, 1, buttons),
               "Disabled or retired focus accepted");
+        Check(!router.SetFocus(41,2,{}),"Stale indexed focus accessed a replaced button list");
         input.PreviousDown = false;
         input.LeftDown = true;
         router.Update(41, buttons, input);

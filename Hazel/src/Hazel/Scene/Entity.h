@@ -26,6 +26,7 @@ namespace Hazel {
             ValidatePhysicsCandidate<T>(args...);
             T& component = m_Scene->m_Registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
 			m_Scene->OnComponentAdded<T>(*this, component);
+            m_Scene->ChangedAuthoringStructure(GetUUID(), typeid(T));
             m_Scene->m_HierarchyValidationDirty=true;
 			return component;
 		}
@@ -40,6 +41,7 @@ namespace Hazel {
             if (HasComponent<T>()) m_Scene->OnComponentRemoving<T>(*this);
 			T& component = m_Scene->m_Registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
 			m_Scene->OnComponentAdded<T>(*this, component);
+            m_Scene->ChangedAuthoringStructure(GetUUID(), typeid(T));
             m_Scene->m_HierarchyValidationDirty=true;
 			return component;
 		}
@@ -102,7 +104,13 @@ namespace Hazel {
 
 	template<typename T> void Scene::OnComponentRemoving(Entity entity)
 	{
-        RetireUI(entity.GetUUID());
+        ChangedAuthoringStructure(entity.GetUUID(), typeid(T));
+        if constexpr(std::is_same_v<T,UIAppearanceComponent>) {}
+        else if constexpr(std::is_same_v<T,UICanvasComponent> || std::is_same_v<T,UIRectComponent> ||
+                     std::is_same_v<T,UILayoutComponent> || std::is_same_v<T,UIButtonComponent> ||
+                     std::is_same_v<T,UIRadioGroupComponent> || std::is_same_v<T,UISliderComponent> || std::is_same_v<T,UIScrollViewComponent> || std::is_same_v<T,UIDropdownComponent> || std::is_same_v<T,UITabsComponent> || std::is_same_v<T,UITabComponent> || std::is_same_v<T,UITooltipComponent>||std::is_same_v<T,UITextEntryComponent>)
+            RetireUISubtree(entity.GetUUID());
+        else RetireUI(entity.GetUUID());
 		if constexpr (std::is_same_v<T, AudioSourceComponent>) StopAudio(entity);
         if constexpr (std::is_same_v<T, NativeScriptComponent>) DestroyNativeScript(entity);
 		if constexpr (std::is_same_v<T, Rigidbody2DComponent>) DestroyPhysicsBody(entity);

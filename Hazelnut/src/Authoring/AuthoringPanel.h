@@ -1,9 +1,12 @@
 #pragma once
 #include "EditorDocuments.h"
+#include "UI/UIBindingEditor.h"
 #include "EditorPreferences.h"
 #include "HazelSDK.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/SpriteSheetPanel.h"
+#include "Panels/FontFamilyPanel.h"
+#include "Panels/UIStylePanel.h"
 #include "ProjectTools.h"
 #include "Panels/ConsolePanel.h"
 #include "Hazel/Core/FileDocument.h"
@@ -29,6 +32,7 @@ class AuthoringPanel
     void Tick(double timestep = 0);
     void PollTools(); // Main thread, including minimized frames.
     void ShowConsole() { m_Console.Show(); }
+    bool CapturingUIBinding() const {return m_UIBindings.Capturing();}
     void BindProject();
     void RememberProject();
     void SelectAsset(const std::filesystem::path &path);
@@ -48,6 +52,10 @@ class AuthoringPanel
     ActionAvailability Availability(EditorAction action) const;
     bool Require(EditorAction action);
     void MarkSceneSaved();
+    DocumentHistory &SceneHistory() { return m_SceneHistory; }
+    void CancelEdits();
+    void PrepareSave();
+    bool UndoRedo(bool redo);
     void ReportOpen(const std::filesystem::path& path,const DocumentLoadReport& report);
     bool SpriteDirty() const { return m_Sprites.Dirty(); }
     void GuardPlay(bool simulate);
@@ -93,6 +101,10 @@ class AuthoringPanel
     void DocumentGuard();
     std::string ActiveName() const;
     SceneTarget AssignmentTarget() const;
+    DocumentHistory *ActiveHistory();
+    Ref<Scene> ActiveHistoryScene() const;
+    void HistoryMenu();
+    void HistoryFeedback(DocumentHistory &history);
     Entity ResolveTarget(SceneTarget target);
     EditorLayer &m_Editor;
     EditorPreferences m_Preferences, m_Draft;
@@ -100,6 +112,7 @@ class AuthoringPanel
     ProjectWorkspace m_Workspace;
     std::filesystem::path m_WorkspaceProject;
     std::filesystem::path m_CreatedProject;
+    UIBindingEditor m_UIBindings;
     RuntimeRendererRequests m_RenderingDraft;
     bool m_RenderingAuthored=false;
     mutable std::string m_RenderingRestart;
@@ -116,6 +129,7 @@ class AuthoringPanel
     ConsolePanel m_Console;
     uint64_t m_ProjectGeneration=0;
     EditorDocuments m_Documents;
+    DocumentHistory m_SceneHistory, m_PrefabHistory;
     EditorDocument m_ActiveDocument = EditorDocument::Scene;
     bool m_PrefabFocused = false;
     bool m_ResolvingDocumentAction = false;
@@ -125,7 +139,7 @@ class AuthoringPanel
     bool m_ProjectChoicesLoaded = false;
     std::unordered_map<std::string, bool> m_RecentAvailable;
     bool m_ExitAfterJob = false;
-    std::string m_PreferenceRecovery, m_SavedScene, m_SavedPrefab, m_PrefabReference,
+    std::string m_PreferenceRecovery, m_PrefabReference,
         m_ProjectName, m_ScriptProject, m_SaveNamespace;
     std::string m_Name = "My Game", m_Identifier = "MyGame", m_Destination, m_Startup, m_AssetDirectory,
                 m_Module;
@@ -142,6 +156,8 @@ class AuthoringPanel
     uint64_t m_PrefabSourceID = 0, m_PrefabSourceScene = 0;
     SceneHierarchyPanel m_PrefabInspector;
     SpriteSheetPanel m_Sprites;
+    FontFamilyPanel m_Fonts;
+    UIStylePanel m_Styles;
     TransformComponent m_InitialTransform;
     bool m_ShowPreferences = false, m_ShowProject = false, m_ShowNew = false, m_ShowScripts = false,
          m_ShowBuild = false, m_ShowExport = false, m_ShowPrefab = false, m_CreatePrefab = false;

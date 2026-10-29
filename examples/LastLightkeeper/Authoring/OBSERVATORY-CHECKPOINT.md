@@ -1,5 +1,7 @@
 # Observatory playable checkpoint
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../../../docs/README.md) and [history index](../../../docs/history.md).
+
 Continuation of clean `13cbbdd`, with the previous chapters' art, trees,
 dialogue, sound, HUD and collision authoring retained. MainMenu's chapter label
 and the Cliff Dawn departure action now include the observatory.

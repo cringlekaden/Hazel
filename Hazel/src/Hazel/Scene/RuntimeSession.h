@@ -1,6 +1,6 @@
 #pragma once
 #include "Hazel/Core/Base.h"
-#include "Hazel/UI/RuntimeUIModel.h"
+#include "Hazel/UI/UIActions.h"
 #include "Hazel/Events/Event.h"
 #include "Hazel/Core/Timestep.h"
 #include "Hazel/Project/RuntimeStorage.h"
@@ -35,6 +35,7 @@ namespace Hazel {
         uint64_t GetIdentity() const { return m_Identity; }
         const std::string& GetError() const { return m_Error; }
         void Resize(uint32_t width, uint32_t height);
+        void ResizeFramebuffer(uint32_t width, uint32_t height);
         // Host supplies viewport-local coordinates, top-left origin. Inactive
         // viewports suppress input; the engine has no editor/ImGui dependency.
         void SetInput(glm::vec2 mousePosition, bool enabled);
@@ -44,6 +45,21 @@ namespace Hazel {
         bool IsGameplayMouseEnabled() const;
         void SubmitUIEvent(Event& event,glm::vec2 viewportMouse,bool enabled);
 
+        const GameUI::UIBindings& GetUIBindings() const {return m_UIAdapter.Bindings();}
+        GameUI::UIAction LastUIAction() const {return m_UIAdapter.LastAction();}
+        bool IsUIGamepadArmed() const {return m_UIAdapter.GamepadReady();}
+        GameUI::InputDevice GetUIDevice() const {return m_UIAdapter.Device();}
+        uint64_t DroppedUIEdges() const {return m_UIAdapter.Dropped();}
+        const std::string& UIBindingWarning() const {return m_UIBindingWarning;}
+        void ApplyUIBindings(const GameUI::UIBindings& bindings); // Per-user full override; disk only for persistent sessions.
+        void ResetUIBindings();
+        void CancelUIGestures();
+        float GetAudioVolume() const {CheckThread();return m_AudioVolume;}
+        void SetAudioVolume(float volume);
+        void RequestExit();
+        bool ConsumeExitRequest(); // Host: Stop Play in editor; close player window.
+        // Same production adapter/router boundary, with caller-supplied samples for deterministic hosts/tests.
+        void RouteUIInput(const GameUI::DeviceSample& sample,float seconds,bool enabled);
         bool GetMouseWorldPosition(glm::vec2& position) const;
     private:
         void CheckThread() const;
@@ -54,13 +70,18 @@ namespace Hazel {
         std::thread::id m_Thread;
         uint64_t m_Identity = 0;
         uint32_t m_Width = 0, m_Height = 0;
+        glm::vec2 m_FramebufferSize{};
+        bool m_FramebufferExplicit = false;
         glm::vec2 m_Mouse = {};
-        GameUI::InputFrame m_UIEdges;
+        GameUI::UIInputAdapter m_UIAdapter;
+        std::string m_UIBindingWarning;
         uint64_t m_UIEdgeScene=0;
-        bool m_GameplayEnabled=false;
+        bool m_GameplayEnabled=false,m_UINeutralLatch=false;
         bool m_InputEnabled = false, m_Stopping = false, m_Updating = false;
         std::string m_Error;
         RuntimeStorage m_Storage;
         bool m_PersistentStorage=false;
+        float m_AudioVolume=1;
+        bool m_ExitRequested=false;
     };
 }

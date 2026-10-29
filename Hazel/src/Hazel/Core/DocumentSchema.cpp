@@ -1,6 +1,8 @@
 #include "hzpch.h"
+#include "Hazel/Text/TextSpanSerialization.h"
 #include "Hazel/UI/RuntimeUIConfig.h"
 #include "DocumentSchema.h"
+#include "Hazel/Assets/FontFamily.h"
 #include "Hazel/Core/OperationProgress.h"
 #include "Hazel/Project/RendererRequestsSerializer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
@@ -13,29 +15,6 @@ namespace Hazel::DocumentSchema
 {
 namespace
 {
-void Walk(const YAML::Node& node, unsigned depth, size_t& remaining)
-{
-    if (depth > 64 || !remaining--)
-        throw std::runtime_error("Document nesting/size exceeds supported limits");
-    const auto tag = node.Tag();
-    if (!tag.empty() && tag != "?" && tag != "!" && tag != "tag:yaml.org,2002:str" && tag != "tag:yaml.org,2002:int" &&
-        tag != "tag:yaml.org,2002:float" && tag != "tag:yaml.org,2002:bool" && tag != "tag:yaml.org,2002:null" &&
-        tag != "tag:yaml.org,2002:map" && tag != "tag:yaml.org,2002:seq")
-        throw std::runtime_error("Unsupported YAML tag: " + tag);
-    if (node.IsMap())
-    {
-        std::set<std::string> seen;
-        for (auto pair : node)
-        {
-            const auto key = pair.first.as<std::string>();
-            if (!seen.insert(key).second)
-                throw std::runtime_error("Duplicate document key: " + key);
-            Walk(pair.second, depth + 1, remaining);
-        }
-    }
-    else if (node.IsSequence())
-        for (auto child : node) Walk(child, depth + 1, remaining);
-}
 void Finite(const YAML::Node& node, bool wide = false)
 {
     if (node.IsSequence()) { for (auto value : node) Finite(value,wide); }
@@ -48,30 +27,14 @@ void Vector(const YAML::Node& node,size_t size)
     Finite(node);
 }
 }
-void Structure(const YAML::Node& node)
-{
-    size_t remaining = 1000000;
-    Walk(node, 0, remaining);
-}
-void Keys(const YAML::Node& node, std::initializer_list<const char*> allowed,
-          const std::string& location)
-{
-    if (!node.IsMap()) throw std::runtime_error(location + " must be a mapping");
-    for (auto pair : node)
-    {
-        const auto key = pair.first.as<std::string>();
-        if (std::none_of(allowed.begin(), allowed.end(), [&](const char* name) { return key == name; }))
-            throw std::runtime_error("Unsupported field " + location + "." + key +
-                                     "; original data must be opened with a compatible editor");
-    }
-}
 bool Project(const YAML::Node& root)
 {
     Structure(root);
     Keys(root, {"Project"}, "root");
     auto project = root["Project"];
-    Keys(project, {"Version", "Name", "ScriptProject", "StartScene", "AssetDirectory", "ScriptModulePath", "AuthoringVersion", "Rendering", "SaveNamespace"}, "Project");
+    Keys(project, {"Version", "Name", "ScriptProject", "StartScene", "AssetDirectory", "ScriptModulePath", "AuthoringVersion", "Rendering", "SaveNamespace", "UIBindings"}, "Project");
     if(project["SaveNamespace"] && !project["SaveNamespace"].as<std::string>().empty() && !RuntimeStorage::ValidName(project["SaveNamespace"].as<std::string>()))throw std::runtime_error("Invalid project SaveNamespace");
+    if(project["UIBindings"])GameUI::ParseBindings(YAML::Dump(project["UIBindings"]));
     if(project["Rendering"])RendererRequestsSerializer::Read(project["Rendering"]);
     if(project["AuthoringVersion"] && project["AuthoringVersion"].as<int>()!=1)
         throw std::runtime_error("Unsupported project authoring/template contract; use a compatible editor");
@@ -114,7 +77,7 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
         ++checked;
         Keys(entity, {"Entity", "TagComponent", "TransformComponent", "CameraComponent", "ScriptComponent",
                       "SpriteRendererComponent", "SpriteAnimationComponent", "CircleRendererComponent",
-                      "AudioSourceComponent", "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent", "Relationship", "UICanvasComponent", "UIRectComponent", "UILayoutComponent", "UITextStyleComponent", "UINineSliceComponent", "UIButtonComponent"}, "Entity");
+                      "AudioSourceComponent", "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent", "Relationship", "UICanvasComponent", "UIRectComponent", "UILayoutComponent", "UITextStyleComponent", "UINineSliceComponent", "UIButtonComponent", "UIRadioGroupComponent", "UIProgressComponent", "UISliderComponent", "UIScrollViewComponent", "UIDropdownComponent", "UITabsComponent", "UITabComponent", "UITooltipComponent", "UITextEntryComponent", "UIAppearanceComponent"}, "Entity");
         if(hierarchy) {
             auto rel=entity["Relationship"];
             Keys(rel,{"Parent","Order"},"Relationship");rel["Parent"].as<uint64_t>();rel["Order"].as<uint32_t>();
@@ -198,7 +161,13 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
             }
         if (auto n = entity["TextComponent"])
         {
-            Keys(n, {"TextString", "Color", "Kerning", "LineSpacing"}, "TextComponent");
+            Keys(n, {"TextString", "Color", "Kerning", "LineSpacing", "FontFamily", "FontStyle", "Emphasis"}, "TextComponent");
+            auto spans=Text::ReadSpans(n["Emphasis"],n["TextString"].as<std::string>());
+            if(entity["UITextEntryComponent"]&&!spans.empty())throw std::invalid_argument("Runtime text entry is plain; remove display emphasis");
+            FontSelection selection;
+            if(n["FontFamily"])selection.Family=std::filesystem::u8path(n["FontFamily"].as<std::string>());
+            if(n["FontStyle"]) {auto style=n["FontStyle"].as<unsigned>();if(style>3)throw std::runtime_error("Invalid Text FontStyle");selection.Style=FontStyle(style);}
+            selection.Validate();
             Vector(n["Color"],4);
             for (const char* key : {"Color", "Kerning", "LineSpacing"}) Finite(n[key]);
         }

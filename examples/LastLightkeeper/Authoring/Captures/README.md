@@ -1,5 +1,7 @@
 # Actual captures
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../../../../docs/README.md) and [history index](../../../../docs/history.md).
+
 Revised game: Title-revised, Breakwater-revised, Cistern-blocked, Cistern-solved,
 Caves-telegraph, Mara-reunion and Cliff-ending are actual Release OpenGL 4.1
 renderer frames. Tide-warning-revised and Tide-surge-revised are owned-window

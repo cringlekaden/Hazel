@@ -65,6 +65,7 @@ void AuthoringPanel::PrefabPreview() {
             RenderCommand::SetClearColor({.08f, .08f, .08f, 1});
             RenderCommand::Clear();
             m_PrefabPreview->ClearAttachment(1, -1);
+            auto selected=m_PrefabInspector.GetSelectedEntity();m_PrefabScene->SetUIPreviewTarget(selected?uint64_t(selected.GetUUID()):0);
             m_PrefabScene->OnUpdateEditor(0, m_PrefabCamera);
         }
         ImGui::Image(ImTextureID(uint64_t(m_PrefabPreview->GetColorAttachmentRendererID())),

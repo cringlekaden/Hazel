@@ -9,6 +9,7 @@ namespace
 struct State
 {
     std::string Bytes;
+    const std::type_info* Filter=nullptr;
     template <class T> void Value(T value)
     {
         static_assert(std::is_arithmetic_v<T>);
@@ -48,6 +49,7 @@ struct State
     }
     template <class T, class F> void Component(Entity e, F write)
     {
+        if(Filter && *Filter!=typeid(T))return;
         Value(e.HasComponent<T>());
         if (e.HasComponent<T>())
             write(e.GetComponent<T>());
@@ -92,23 +94,25 @@ struct State
     }
 };
 } // namespace
-std::string SceneSerializer::CaptureAuthoredState() const
+std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_info* component) const
 {
-    State state;
-    state.Bytes.reserve(m_Scene->GetAllEntitiesWith<IDComponent>().size() * 160);
-    state.Value(m_Scene->GetName());
+    State state;state.Filter=component;
+    state.Bytes.reserve((only ? 1 : m_Scene->GetAllEntitiesWith<IDComponent>().size()) * 160);
+    if(!component)state.Value(m_Scene->GetName());
     std::vector<uint64_t> ids;
-    for (auto h : m_Scene->GetAllEntitiesWith<IDComponent>())
+    if(only)ids.push_back(only.GetUUID());
+    else for (auto h : m_Scene->GetAllEntitiesWith<IDComponent>())
         ids.push_back(Entity(h, m_Scene.get()).GetUUID());
     std::sort(ids.begin(), ids.end());
-    state.Value(uint64_t(ids.size()));
+    if(!component)state.Value(uint64_t(ids.size()));
     for (auto id : ids)
     {
         auto e = m_Scene->GetEntityByUUID(id);
-        state.Value(id);
-        auto r = m_Scene->GetRelationship(e);
-        state.Value(r.Parent);
-        state.Value(r.Order);
+        if(component && *component==typeid(Relationship)) {
+            const auto relation=m_Scene->GetRelationship(e);
+            state.Value(relation.Parent);state.Value(relation.Order);continue;
+        }
+        if(!component){state.Value(id);auto r=m_Scene->GetRelationship(e);state.Value(r.Parent);state.Value(r.Order);}
         state.Component<TagComponent>(e, [&](auto &c) { state.Value(c.Tag); });
         state.Component<TransformComponent>(e, [&](auto &c) {
             state.Value(c.Translation);
@@ -191,12 +195,17 @@ std::string SceneSerializer::CaptureAuthoredState() const
             state.Value(c.Visible);
             state.Value(c.Enabled);
             state.Value(c.Modal);
+            state.Value(c.Screen.Managed);state.Value(c.Screen.InitiallyOpen);state.Value(unsigned(c.Screen.Cancel));
+            state.Value(c.Screen.InitialFocus);state.Value(c.Screen.DefaultAction);state.Value(c.Screen.CancelTarget);state.Value(c.Screen.ReturnFocus);state.Value(c.Screen.EventOwner);
         });
         state.Component<UIRectComponent>(e, [&](auto &c) {
-            state.Value(c.AnchorMin);
-            state.Value(c.AnchorMax);
+            {
+                state.Value(int(c.WidthMode));state.Value(int(c.HeightMode));
+                state.Value(c.FixedSize);state.Value(c.MaximumSize);
+                state.Value(bool(c.HasMaximum.x));state.Value(bool(c.HasMaximum.y));
+            }
+            state.Value(c.Anchor);
             state.Value(c.Offset);
-            state.Value(c.SizeDelta);
             state.Value(c.Pivot);
             state.Value(c.MinimumSize);
             state.Value(c.Margin);
@@ -204,26 +213,28 @@ std::string SceneSerializer::CaptureAuthoredState() const
             state.Value(c.Visible);
             state.Value(c.Enabled);
             state.Value(c.ClipChildren);
-            state.Value(c.Flex);
+            state.Value(c.Flex);state.Value(c.GridRow);state.Value(c.GridColumn);state.Value(c.RowSpan);state.Value(c.ColumnSpan);
+            state.Value(int(c.Fit));state.Value(c.ImageAlignment);
         });
         state.Component<UILayoutComponent>(e, [&](auto &c) {
             state.Value(int(c.Direction));
             state.Value(int(c.Main));
             state.Value(int(c.Cross));
-            state.Value(c.Gap);
+            state.Value(c.Gap);state.Value(int(c.Kind));state.Value(c.LineGap);state.Value(int(c.LineAlign));state.Value(c.GridGap);
+            for(const auto *tracks:{&c.Columns,&c.Rows}){state.Value(uint64_t(tracks->size()));for(const auto&t:*tracks){state.Value(int(t.Mode));state.Value(t.Value);state.Value(t.Minimum);state.Value(t.Maximum);state.Value(t.HasMaximum);}}
         });
         state.Component<UITextStyleComponent>(e, [&](auto &c) {
-            state.Value(c.FontPath);
             state.Value(c.Size);
             state.Value(int(c.Horizontal));
             state.Value(int(c.Vertical));
-            state.Value(c.Wrap);
+            state.Value(c.Wrap);state.Value(int(c.Overflow));state.Value(c.MaxLines);
         });
         state.Component<UINineSliceComponent>(e, [&](auto &c) {
             state.Value(c.Borders);
             state.Value(c.BorderScale);
         });
         state.Component<UIButtonComponent>(e, [&](auto &c) {
+            state.Value(unsigned(c.Kind));state.Value(c.InitiallyChecked);state.Value(c.Indicator);state.Value(c.Group);state.Value(c.EventOwner);
             state.Value(c.Action);
             state.Value(c.TabOrder);
             state.Value(c.Interactable);
@@ -232,8 +243,20 @@ std::string SceneSerializer::CaptureAuthoredState() const
             for (const auto &source : c.Images)
                 state.Source(source);
         });
+        state.Component<UIRadioGroupComponent>(e,[&](auto &c){state.Value(c.Required);state.Value(c.InitialSelection);state.Value(c.EventOwner);state.Value(c.Action);});
+        state.Component<UIAppearanceComponent>(e,[&](auto &c){state.Value(c.Styled);state.Value(c.Selection.Asset);state.Value(c.Selection.Variant);state.Value(c.Overrides);state.Value(c.Focus);state.Value(c.Selected);state.Value(c.Editing);});
+        state.Component<UITextEntryComponent>(e,[&](auto &c){state.Value(c.Placeholder);state.Value(c.MaxBytes);state.Value(c.MaxGraphemes);state.Value(c.MaxLines);state.Value(c.Multiline);state.Value(c.ReadOnly);state.Value(c.CaretColor);state.Value(c.SelectionColor);});
+        state.Component<UITabsComponent>(e,[&](auto &c){state.Value(c.RememberFocus);});
+        state.Component<UITabComponent>(e,[&](auto &c){state.Value(c.Page);state.Value(c.InitialFocus);});
+        state.Component<UITooltipComponent>(e,[&](auto &c){state.Value(c.Body);state.Value(c.Delay);state.Value(c.Gap);});
+        state.Component<UIDropdownComponent>(e,[&](auto &c){state.Value(c.Trigger);state.Value(c.Popup);state.Value(c.MinimumWidth);state.Value(c.MaximumHeight);state.Value(c.Gap);state.Value(c.Placeholder);});
+        state.Component<UIScrollViewComponent>(e,[&](auto &c){state.Value(c.Content);state.Value(c.Horizontal);state.Value(c.Vertical);state.Value(c.HorizontalTrack);state.Value(c.HorizontalThumb);state.Value(c.VerticalTrack);state.Value(c.VerticalThumb);state.Value(c.PixelsPerUnit);state.Value(c.MinimumThumb);state.Value(c.RevealMargin);});
+        state.Component<UISliderComponent>(e,[&](auto &c){state.Value(c.Minimum);state.Value(c.Maximum);state.Value(c.Step);state.Value(c.InitialValue);state.Value(c.Track);state.Value(c.Fill);state.Value(c.Thumb);state.Value(unsigned(c.Direction));});
+        state.Component<UIProgressComponent>(e,[&](auto &c){state.Value(c.Minimum);state.Value(c.Maximum);state.Value(c.InitialValue);state.Value(c.Fill);state.Value(unsigned(c.Direction));});
         state.Component<TextComponent>(e, [&](auto &c) {
             state.Value(c.TextString);
+            state.Value(c.Spans.size());for(const auto& span:c.Spans){state.Value(span.Begin);state.Value(span.End);state.Value(bool(span.Face));if(span.Face)state.Value(unsigned(*span.Face));state.Value(bool(span.Color));if(span.Color)state.Value(*span.Color);}
+            state.Value(c.Font.Family);state.Value(int(c.Font.Style));
             state.Value(c.Color);
             state.Value(c.Kerning);
             state.Value(c.LineSpacing);

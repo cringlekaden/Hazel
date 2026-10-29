@@ -35126,44 +35126,45 @@ Entities:
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 32
-    - 24
-    SizeDelta:
-    - 700
-    - 32
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [32, 24]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [700, 32]
+    Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 22
     Horizontal: 0
     Vertical: 0
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 1385
   TagComponent:
     Tag: Heading
@@ -35191,44 +35192,45 @@ Entities:
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 32
-    - 82
-    SizeDelta:
-    - 670
-    - 180
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [32, 82]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [670, 180]
+    Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 76
     Horizontal: 0
     Vertical: 0
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 1386
   TagComponent:
     Tag: Subtitle
@@ -35260,44 +35262,45 @@ Entities:
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 32
-    - 276
-    SizeDelta:
-    - 650
-    - 80
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [32, 276]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [650, 80]
+    Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 26
     Horizontal: 0
     Vertical: 0
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 1387
   TagComponent:
     Tag: Status
@@ -35327,44 +35330,45 @@ Entities:
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 32
-    - 369
-    SizeDelta:
-    - 660
-    - 80
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [32, 369]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [660, 80]
+    Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 24
     Horizontal: 0
     Vertical: 0
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 1388
   TagComponent:
     Tag: StartButton
@@ -35385,38 +35389,20 @@ Entities:
     - 1
     - 1
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 0
-    - 0
-    SizeDelta:
-    - 420
-    - 54
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [420, 54]
+    Anchor: [0, 0]
   SpriteRendererComponent:
     Color: &id004
     - 0.53
@@ -35470,6 +35456,26 @@ Entities:
         Type: None
     - Source:
         Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 1398
   TagComponent:
     Tag: StartLabel
@@ -35490,49 +35496,50 @@ Entities:
     - 1
     - 1
   TextComponent:
-    TextString: Enter   Begin
+    TextString: Begin
     Color: *id003
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - 18
-    - 0
-    SizeDelta:
-    - -36
-    - 54
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [18, 0, 18, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 54]
+    Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 27
     Horizontal: 0
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 1399
   TagComponent:
     Tag: NewButton
@@ -35553,38 +35560,20 @@ Entities:
     - 1
     - 1
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 0
-    - 0
-    SizeDelta:
-    - 420
-    - 54
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [420, 54]
+    Anchor: [0, 0]
   SpriteRendererComponent:
     Color: *id004
     Source: *id005
@@ -35631,6 +35620,26 @@ Entities:
         Type: None
     - Source:
         Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 1409
   TagComponent:
     Tag: NewLabel
@@ -35651,49 +35660,50 @@ Entities:
     - 1
     - 1
   TextComponent:
-    TextString: N   New game
+    TextString: New game
     Color: *id003
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - 18
-    - 0
-    SizeDelta:
-    - -36
-    - 54
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [18, 0, 18, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 54]
+    Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 27
     Horizontal: 0
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 1410
   TagComponent:
     Tag: CreditsButton
@@ -35714,38 +35724,20 @@ Entities:
     - 1
     - 1
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 0
-    - 0
-    SizeDelta:
-    - 420
-    - 54
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [420, 54]
+    Anchor: [0, 0]
   SpriteRendererComponent:
     Color: *id004
     Source: *id005
@@ -35792,6 +35784,26 @@ Entities:
         Type: None
     - Source:
         Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 1420
   TagComponent:
     Tag: CreditsLabel
@@ -35812,49 +35824,50 @@ Entities:
     - 1
     - 1
   TextComponent:
-    TextString: C   Credits
+    TextString: Credits
     Color: *id003
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - 18
-    - 0
-    SizeDelta:
-    - -36
-    - 54
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [18, 0, 18, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 54]
+    Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 27
     Horizontal: 0
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 1421
   TagComponent:
     Tag: Controls
@@ -35884,50 +35897,51 @@ Entities:
     Kerning: 0
     LineSpacing: 0.15
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 1
-    AnchorMax:
-    - 1
-    - 1
-    Offset:
-    - 32
-    - -10
-    SizeDelta:
-    - -64
-    - 28
-    Pivot:
-    - 0
-    - 1
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, -10]
+    Pivot: [0, 1]
+    MinimumSize: [0, 0]
+    Margin: [32, 0, 32, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 28]
+    Anchor: [0, 1]
   UITextStyleComponent:
-    FontPath: ''
     Size: 22
     Horizontal: 0
     Vertical: 0
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 1422
   TagComponent:
     Tag: Title / Journey menu
   Relationship:
-    Parent: 0
-    Order: 84
+    Parent: 1424
+    Order: 6
   TransformComponent:
     Translation:
     - 0
@@ -35968,12 +35982,28 @@ Entities:
     - Name: Ending
       Type: Bool
       Data: true
+    - Name: SettingsScreen
+      Type: Entity
+      Data: 100001
+    - Name: NewGameConfirmation
+      Type: Entity
+      Data: 100091
+    - Name: NewLabel
+      Type: Entity
+      Data: 1409
+    - Name: CreditsLabel
+      Type: Entity
+      Data: 1420
+    - Name: ControlsHint
+      Type: Entity
+      Data: 1421
+
 - Entity: 1423
   TagComponent:
     Tag: Mara at landing
   Relationship:
     Parent: 0
-    Order: 85
+    Order: 84
   TransformComponent:
     Translation:
     - 11
@@ -35998,7 +36028,7 @@ Entities:
     Tag: Journey menu
   Relationship:
     Parent: 0
-    Order: 86
+    Order: 85
   TransformComponent:
     Translation:
     - 0
@@ -36025,6 +36055,12 @@ Entities:
     Visible: true
     Enabled: true
     Modal: true
+    Screen:
+      Managed: true
+      InitiallyOpen: true
+      Cancel: 2
+      InitialFocus: 1388
+      EventOwner: 1422
 - Entity: 1425
   TagComponent:
     Tag: Menu actions
@@ -36045,18 +36081,525 @@ Entities:
     - 1
     - 1
   UIRectComponent:
-    AnchorMin:
+    Offset: [32, 464]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
+    Flex: 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [420, 186]
+    Anchor: [0, 0]
+  UILayoutComponent:
+    Direction: 1
+    Main: 0
+    Cross: 0
+    Gap: 12
+    Kind: 0
+- Entity: 100001
+  TagComponent:
+    Tag: Settings screen
+  Relationship:
+    Parent: 1424
+    Order: 9
+  TransformComponent:
+    Translation:
     - 0
     - 0
-    AnchorMax:
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UICanvasComponent:
+    ReferenceSize:
+    - 1024
+    - 600
+    SafeInsets:
+    - 12
+    - 12
+    - 12
+    - 12
+    SortOrder: 0
+    Visible: true
+    Enabled: true
+    Modal: true
+    Screen:
+      Managed: true
+      InitiallyOpen: false
+      Cancel: 1
+      EventOwner: 100001
+      InitialFocus: 0
+      DefaultAction: 0
+      ReturnFocus: 0
+  ScriptComponent:
+    ClassName: LastLightkeeper.Settings
+    ScriptFields:
+    - Name: Mute
+      Type: Entity
+      Data: 100060
+    - Name: Volume
+      Type: Entity
+      Data: 100062
+    - Name: Pace
+      Type: Entity
+      Data: 100068
+    - Name: Deliberate
+      Type: Entity
+      Data: 100069
+    - Name: Standard
+      Type: Entity
+      Data: 100070
+    - Name: Quick
+      Type: Entity
+      Data: 100071
+    - Name: Stick
+      Type: Entity
+      Data: 100072
+    - Name: LeftStick
+      Type: Entity
+      Data: 100079
+    - Name: NoStick
+      Type: Entity
+      Data: 100080
+    - Name: RightStick
+      Type: Entity
+      Data: 100081
+    - Name: SettingsStatus
+      Type: Entity
+      Data: 100090
+- Entity: 100002
+  TagComponent:
+    Tag: Settings frame
+  Relationship:
+    Parent: 100001
+    Order: 1
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 780
+    - 520
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 0.5
+    - 0.5
+    Pivot:
+    - 0.5
+    - 0.5
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 24
+    - 20
+    - 24
+    - 20
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  SpriteRendererComponent:
+    Color:
+    - 0.035
+    - 0.055
+    - 0.075
+    - 0.98
+    Source:
+      Type: None
+- Entity: 100003
+  TagComponent:
+    Tag: Settings heading
+  Relationship:
+    Parent: 100002
+    Order: 0
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 2
+    FixedSize:
     - 0
     - 0
     Offset:
-    - 32
-    - 464
-    SizeDelta:
-    - 420
-    - 186
+    - 0
+    - 0
+    Anchor:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: SETTINGS
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 28
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100004
+  TagComponent:
+    Tag: Settings Back
+  Relationship:
+    Parent: 100002
+    Order: 1
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 104
+    - 40
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 1
+    - 0
+    Pivot:
+    - 1
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 12
+    - 6
+    - 12
+    - 6
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: Back
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 20
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  SpriteRendererComponent:
+    Color:
+    - 0.13
+    - 0.23
+    - 0.28
+    - 1
+    Source:
+      Type: None
+  UIButtonComponent:
+    Kind: 0
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 0
+    EventOwner: 0
+    Action: settings-back
+    TabOrder: 0
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100005
+  Relationship:
+    Parent: 100002
+    Order: 2
+  TagComponent:
+    Tag: Settings tabs
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 1
+    FixedSize:
+    - 732
+    - 416
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 60
+    - 0
+    - 40
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UIRadioGroupComponent:
+    Required: true
+    InitialSelection: 100011
+    EventOwner: 0
+    Action: page
+  UITabsComponent:
+    RememberFocus: true
+- Entity: 100006
+  Relationship:
+    Parent: 100005
+    Order: 0
+  TagComponent:
+    Tag: Tab strip
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 240
+    - 44
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
     Pivot:
     - 0
     - 0
@@ -36073,12 +36616,4672 @@ Entities:
     - 0
     - 0
     - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
     Flex: 0
+  UILayoutComponent:
+    Kind: 0
+    Direction: 0
+    Main: 0
+    Cross: 0
+    Gap: 6
+    LineGap: 12
+    LineAlign: 0
+    GridGap:
+    - 12
+    - 12
+    Columns:
+    - Mode: 0
+      Value: 96
+      Minimum: 0
+      Maximum: 0
+      HasMaximum: false
+    - Mode: 0
+      Value: 96
+      Minimum: 0
+      Maximum: 0
+      HasMaximum: false
+    - Mode: 0
+      Value: 96
+      Minimum: 0
+      Maximum: 0
+      HasMaximum: false
+    Rows:
+    - Mode: 0
+      Value: 96
+      Minimum: 0
+      Maximum: 0
+      HasMaximum: false
+- Entity: 100007
+  Relationship:
+    Parent: 100005
+    Order: 1
+  TagComponent:
+    Tag: Sound page
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.0599999987
+    - 0.0900000036
+    - 0.140000001
+    - 1
+    Source:
+      Type: None
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 1
+    FixedSize:
+    - 240
+    - 48
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 52
+    - 0
+    - 0
+    Padding:
+    - 12
+    - 12
+    - 12
+    - 12
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+- Entity: 100008
+  Relationship:
+    Parent: 100005
+    Order: 2
+  TagComponent:
+    Tag: Navigation page
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.0599999987
+    - 0.0900000036
+    - 0.140000001
+    - 1
+    Source:
+      Type: None
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 1
+    FixedSize:
+    - 240
+    - 48
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 52
+    - 0
+    - 0
+    Padding:
+    - 12
+    - 12
+    - 12
+    - 12
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+- Entity: 100009
+  Relationship:
+    Parent: 100005
+    Order: 3
+  TagComponent:
+    Tag: Help page
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.0599999987
+    - 0.0900000036
+    - 0.140000001
+    - 1
+    Source:
+      Type: None
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 1
+    FixedSize:
+    - 240
+    - 48
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 52
+    - 0
+    - 0
+    Padding:
+    - 12
+    - 12
+    - 12
+    - 12
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+- Entity: 100011
+  Relationship:
+    Parent: 100006
+    Order: 0
+  TagComponent:
+    Tag: Sound tab
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.119999997
+    - 0.189999998
+    - 0.270000011
+    - 1
+    Source:
+      Type: None
+  TextComponent:
+    TextString: Sound
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 150
+    - 44
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 36
+    - 6
+    - 12
+    - 6
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UITextStyleComponent:
+    Size: 18
+    Horizontal: 0
+    Vertical: 1
+    Wrap: false
+    Overflow: Ellipsis
+    MaxLines: 1
+  UIButtonComponent:
+    Kind: 2
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 100005
+    EventOwner: 0
+    Action: page
+    TabOrder: -100
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UITabComponent:
+    Page: 100007
+    InitialFocus: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100012
+  Relationship:
+    Parent: 100006
+    Order: 1
+  TagComponent:
+    Tag: Navigation tab
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.119999997
+    - 0.189999998
+    - 0.270000011
+    - 1
+    Source:
+      Type: None
+  TextComponent:
+    TextString: Navigation
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 150
+    - 44
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 36
+    - 6
+    - 12
+    - 6
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UITextStyleComponent:
+    Size: 18
+    Horizontal: 0
+    Vertical: 1
+    Wrap: false
+    Overflow: Ellipsis
+    MaxLines: 1
+  UIButtonComponent:
+    Kind: 2
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 100005
+    EventOwner: 0
+    Action: page
+    TabOrder: -99
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UITabComponent:
+    Page: 100008
+    InitialFocus: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100013
+  Relationship:
+    Parent: 100006
+    Order: 2
+  TagComponent:
+    Tag: Help tab
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.119999997
+    - 0.189999998
+    - 0.270000011
+    - 1
+    Source:
+      Type: None
+  TextComponent:
+    TextString: Help
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 150
+    - 44
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 36
+    - 6
+    - 12
+    - 6
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UITextStyleComponent:
+    Size: 18
+    Horizontal: 0
+    Vertical: 1
+    Wrap: false
+    Overflow: Ellipsis
+    MaxLines: 1
+  UIButtonComponent:
+    Kind: 2
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 100005
+    EventOwner: 0
+    Action: page
+    TabOrder: -98
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UITabComponent:
+    Page: 100009
+    InitialFocus: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100058
+  TagComponent:
+    Tag: Sound settings
+  Relationship:
+    Parent: 100007
+    Order: 0
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 2
+    FixedSize:
+    - 300
+    - 44
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
     Visible: true
     Enabled: true
     ClipChildren: true
   UILayoutComponent:
+    Kind: 0
+    Direction: 1
+    Gap: 12
+    Main: 0
+    Cross: 0
+- Entity: 100059
+  TagComponent:
+    Tag: Sound help
+  Relationship:
+    Parent: 100058
+    Order: 0
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 2
+    FixedSize:
+    - 0
+    - 0
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: Changes apply now. Completed sound edits are saved; Back does not roll them back. Your journey is untouched.
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 18
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100060
+  Relationship:
+    Parent: 100058
+    Order: 1
+  TagComponent:
+    Tag: Mute sound
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.119999997
+    - 0.189999998
+    - 0.270000011
+    - 1
+    Source:
+      Type: None
+  TextComponent:
+    TextString: Mute all sound
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 280
+    - 44
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 40
+    - 6
+    - 8
+    - 6
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UITextStyleComponent:
+    Size: 24
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIButtonComponent:
+    Kind: 1
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 0
+    EventOwner: 0
+    Action: sound-mute
+    TabOrder: 10
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100061
+  TagComponent:
+    Tag: Volume help
+  Relationship:
+    Parent: 100058
+    Order: 2
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 2
+    FixedSize:
+    - 0
+    - 0
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: Master volume · Accept to edit; Adjust changes; Cancel restores the starting volume.
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 18
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100062
+  Relationship:
+    Parent: 100058
+    Order: 3
+  TagComponent:
+    Tag: Master volume
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.0700000003
+    - 0.100000001
+    - 0.150000006
+    - 1
+    Source:
+      Type: None
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 600
+    - 44
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 8
+    - 8
+    - 8
+    - 8
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UIButtonComponent:
+    Kind: 3
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 0
+    EventOwner: 0
+    Action: sound-volume
+    TabOrder: 30
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UISliderComponent:
+    Minimum: 0
+    Maximum: 1
+    Step: 0.05
+    InitialValue: 1
+    Track: 100063
+    Fill: 100064
+    Thumb: 100065
+    Direction: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100063
+  Relationship:
+    Parent: 100062
+    Order: 0
+  TagComponent:
+    Tag: Slider track
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.219999999
+    - 0.270000011
+    - 0.330000013
+    - 1
+    Source:
+      Type: None
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 240
+    - 8
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0.5
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0.5
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+- Entity: 100064
+  Relationship:
+    Parent: 100062
+    Order: 1
+  TagComponent:
+    Tag: Slider fill
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.300000012
+    - 0.649999976
+    - 0.800000012
+    - 1
+    Source:
+      Type: None
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 240
+    - 8
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0.5
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0.5
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+- Entity: 100065
+  Relationship:
+    Parent: 100062
+    Order: 2
+  TagComponent:
+    Tag: Slider thumb
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.949999988
+    - 0.949999988
+    - 0.850000024
+    - 1
+    Source:
+      Type: None
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 20
+    - 28
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0.5
+    - 0.5
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0.5
+    - 0.5
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+- Entity: 100066
+  TagComponent:
+    Tag: Navigation settings
+  Relationship:
+    Parent: 100008
+    Order: 0
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 2
+    FixedSize:
+    - 300
+    - 44
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  UILayoutComponent:
+    Kind: 0
+    Direction: 1
+    Gap: 12
+    Main: 0
+    Cross: 0
+- Entity: 100067
+  TagComponent:
+    Tag: Navigation help
+  Relationship:
+    Parent: 100066
+    Order: 0
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 2
+    FixedSize:
+    - 0
+    - 0
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: These are your UI input overrides. Game movement controls are unchanged.
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 18
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100068
+  Relationship:
+    Parent: 100066
+    Order: 1
+  TagComponent:
+    Tag: Navigation pace
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 2
+    FixedSize:
+    - 180
+    - 44
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UILayoutComponent:
+    Kind: 0
     Direction: 1
     Main: 0
-    Cross: 3
-    Gap: 12
+    Cross: 0
+    Gap: 8
+    LineGap: 12
+    LineAlign: 0
+    GridGap:
+    - 12
+    - 12
+    Columns:
+    - Mode: 0
+      Value: 96
+      Minimum: 0
+      Maximum: 0
+      HasMaximum: false
+    - Mode: 0
+      Value: 96
+      Minimum: 0
+      Maximum: 0
+      HasMaximum: false
+    - Mode: 0
+      Value: 96
+      Minimum: 0
+      Maximum: 0
+      HasMaximum: false
+    Rows:
+    - Mode: 0
+      Value: 96
+      Minimum: 0
+      Maximum: 0
+      HasMaximum: false
+  UIRadioGroupComponent:
+    Required: true
+    InitialSelection: 100070
+    EventOwner: 0
+    Action: repeat
+- Entity: 100069
+  Relationship:
+    Parent: 100068
+    Order: 0
+  TagComponent:
+    Tag: Option 1
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.119999997
+    - 0.189999998
+    - 0.270000011
+    - 1
+    Source:
+      Type: None
+  TextComponent:
+    TextString: 'Repeat: deliberate'
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 280
+    - 44
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 40
+    - 6
+    - 8
+    - 6
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UITextStyleComponent:
+    Size: 24
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIButtonComponent:
+    Kind: 2
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 100068
+    EventOwner: 0
+    Action: activate
+    TabOrder: 20
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100070
+  Relationship:
+    Parent: 100068
+    Order: 1
+  TagComponent:
+    Tag: Option 2
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.119999997
+    - 0.189999998
+    - 0.270000011
+    - 1
+    Source:
+      Type: None
+  TextComponent:
+    TextString: 'Repeat: standard'
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 280
+    - 44
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 40
+    - 6
+    - 8
+    - 6
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UITextStyleComponent:
+    Size: 24
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIButtonComponent:
+    Kind: 2
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 100068
+    EventOwner: 0
+    Action: activate
+    TabOrder: 21
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100071
+  Relationship:
+    Parent: 100068
+    Order: 2
+  TagComponent:
+    Tag: Option 3
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.119999997
+    - 0.189999998
+    - 0.270000011
+    - 1
+    Source:
+      Type: None
+  TextComponent:
+    TextString: 'Repeat: quick'
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 280
+    - 44
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 40
+    - 6
+    - 8
+    - 6
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UITextStyleComponent:
+    Size: 24
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIButtonComponent:
+    Kind: 2
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 100068
+    EventOwner: 0
+    Action: activate
+    TabOrder: 22
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100072
+  Relationship:
+    Parent: 100066
+    Order: 2
+  TagComponent:
+    Tag: Navigation stick
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 400
+    - 44
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 264
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UIRadioGroupComponent:
+    Required: true
+    InitialSelection: 100079
+    EventOwner: 0
+    Action: stick
+  UIDropdownComponent:
+    Trigger: 100073
+    Popup: 100074
+    MinimumWidth: 380
+    MaximumHeight: 180
+    Gap: 4
+    Placeholder: Choose…
+- Entity: 100073
+  Relationship:
+    Parent: 100072
+    Order: 0
+  TagComponent:
+    Tag: Dropdown trigger
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.119999997
+    - 0.189999998
+    - 0.270000011
+    - 1
+    Source:
+      Type: None
+  TextComponent:
+    TextString: Computed selection
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 1
+    FixedSize:
+    - 240
+    - 48
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 8
+    - 6
+    - 32
+    - 6
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UITextStyleComponent:
+    Size: 20
+    Horizontal: 0
+    Vertical: 1
+    Wrap: false
+    Overflow: Ellipsis
+    MaxLines: 1
+  UIButtonComponent:
+    Kind: 0
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 0
+    EventOwner: 0
+    Action: activate
+    TabOrder: 0
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100074
+  Relationship:
+    Parent: 100072
+    Order: 1
+  TagComponent:
+    Tag: Dropdown popup
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.0450000018
+    - 0.0649999976
+    - 0.100000001
+    - 1
+    Source:
+      Type: None
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 280
+    - 240
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 4
+    - 4
+    - 20
+    - 4
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UIScrollViewComponent:
+    Content: 100076
+    Horizontal: false
+    Vertical: true
+    HorizontalTrack: 0
+    HorizontalThumb: 0
+    VerticalTrack: 100077
+    VerticalThumb: 100078
+    PixelsPerUnit: 48
+    MinimumThumb: 16
+    RevealMargin: 4
+- Entity: 100075
+  Relationship:
+    Parent: 100073
+    Order: 0
+  TagComponent:
+    Tag: Dropdown arrow
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  TextComponent:
+    TextString: v
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 20
+    - 32
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 1
+    - 0.5
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 28
+    - 0
+    Pivot:
+    - 1
+    - 0.5
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UITextStyleComponent:
+    Size: 18
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100076
+  Relationship:
+    Parent: 100074
+    Order: 0
+  TagComponent:
+    Tag: Dropdown options
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 2
+    FixedSize:
+    - 240
+    - 48
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UILayoutComponent:
+    Kind: 0
+    Direction: 1
+    Main: 0
+    Cross: 0
+    Gap: 2
+    LineGap: 12
+    LineAlign: 0
+    GridGap:
+    - 12
+    - 12
+    Columns:
+    - Mode: 0
+      Value: 96
+      Minimum: 0
+      Maximum: 0
+      HasMaximum: false
+    - Mode: 0
+      Value: 96
+      Minimum: 0
+      Maximum: 0
+      HasMaximum: false
+    - Mode: 0
+      Value: 96
+      Minimum: 0
+      Maximum: 0
+      HasMaximum: false
+    Rows:
+    - Mode: 0
+      Value: 96
+      Minimum: 0
+      Maximum: 0
+      HasMaximum: false
+- Entity: 100077
+  Relationship:
+    Parent: 100074
+    Order: 1
+  TagComponent:
+    Tag: Dropdown scroll track
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.200000003
+    - 0.25
+    - 0.300000012
+    - 1
+    Source:
+      Type: None
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 1
+    FixedSize:
+    - 8
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 1
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 4
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+- Entity: 100078
+  Relationship:
+    Parent: 100074
+    Order: 2
+  TagComponent:
+    Tag: Dropdown scroll thumb
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.699999988
+    - 0.800000012
+    - 0.850000024
+    - 1
+    Source:
+      Type: None
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 8
+    - 16
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+- Entity: 100079
+  Relationship:
+    Parent: 100076
+    Order: 0
+  TagComponent:
+    Tag: Option 1
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.119999997
+    - 0.189999998
+    - 0.270000011
+    - 1
+    Source:
+      Type: None
+  TextComponent:
+    TextString: Left stick + D-pad
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 240
+    - 44
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 32
+    - 6
+    - 6
+    - 6
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UITextStyleComponent:
+    Size: 20
+    Horizontal: 0
+    Vertical: 1
+    Wrap: false
+    Overflow: Ellipsis
+    MaxLines: 1
+  UIButtonComponent:
+    Kind: 2
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 100072
+    EventOwner: 0
+    Action: activate
+    TabOrder: 0
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100080
+  Relationship:
+    Parent: 100076
+    Order: 1
+  TagComponent:
+    Tag: Option 2
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.119999997
+    - 0.189999998
+    - 0.270000011
+    - 1
+    Source:
+      Type: None
+  TextComponent:
+    TextString: D-pad only
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 240
+    - 44
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 32
+    - 6
+    - 6
+    - 6
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UITextStyleComponent:
+    Size: 20
+    Horizontal: 0
+    Vertical: 1
+    Wrap: false
+    Overflow: Ellipsis
+    MaxLines: 1
+  UIButtonComponent:
+    Kind: 2
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 100072
+    EventOwner: 0
+    Action: activate
+    TabOrder: 0
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100081
+  Relationship:
+    Parent: 100076
+    Order: 2
+  TagComponent:
+    Tag: Option 3
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.119999997
+    - 0.189999998
+    - 0.270000011
+    - 1
+    Source:
+      Type: None
+  TextComponent:
+    TextString: Right stick + D-pad
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize:
+    - 240
+    - 44
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 32
+    - 6
+    - 6
+    - 6
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UITextStyleComponent:
+    Size: 20
+    Horizontal: 0
+    Vertical: 1
+    Wrap: false
+    Overflow: Ellipsis
+    MaxLines: 1
+  UIButtonComponent:
+    Kind: 2
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 100072
+    EventOwner: 0
+    Action: activate
+    TabOrder: 0
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100088
+  TagComponent:
+    Tag: Settings guide
+  Relationship:
+    Parent: 100009
+    Order: 0
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 2
+    FixedSize:
+    - 0
+    - 0
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: 'Pointer: click or drag. Keyboard: Tab / Shift+Tab, arrows, Accept and Cancel. Sliders use an explicit edit mode. Gamepad: D-pad/stick, confirm/cancel; bumpers scroll. Bindings remain remappable in Hazelnut Project UI Input; player navigation overrides here use that same service. No graphics or display options are advertised.'
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 18
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100089
+  TagComponent:
+    Tag: Reset settings
+  Relationship:
+    Parent: 100002
+    Order: 3
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 180
+    - 36
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 0
+    - 1
+    Pivot:
+    - 0
+    - 1
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 12
+    - 6
+    - 12
+    - 6
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: Reset settings
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 20
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  SpriteRendererComponent:
+    Color:
+    - 0.13
+    - 0.23
+    - 0.28
+    - 1
+    Source:
+      Type: None
+  UIButtonComponent:
+    Kind: 0
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 0
+    EventOwner: 0
+    Action: settings-reset
+    TabOrder: 0
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100090
+  TagComponent:
+    Tag: Settings status
+  Relationship:
+    Parent: 100002
+    Order: 4
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 460
+    - 36
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 1
+    - 1
+    Pivot:
+    - 1
+    - 1
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: Immediate changes · stored separately from journey
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 16
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100091
+  TagComponent:
+    Tag: New game confirmation
+  Relationship:
+    Parent: 1424
+    Order: 10
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UICanvasComponent:
+    ReferenceSize:
+    - 1024
+    - 600
+    SafeInsets:
+    - 12
+    - 12
+    - 12
+    - 12
+    SortOrder: 0
+    Visible: true
+    Enabled: true
+    Modal: true
+    Screen:
+      Managed: true
+      InitiallyOpen: false
+      Cancel: 2
+      EventOwner: 1422
+      InitialFocus: 100096
+      DefaultAction: 0
+      ReturnFocus: 0
+- Entity: 100092
+  TagComponent:
+    Tag: New game confirmation frame
+  Relationship:
+    Parent: 100091
+    Order: 1
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 600
+    - 260
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 0.5
+    - 0.5
+    Pivot:
+    - 0.5
+    - 0.5
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 24
+    - 24
+    - 24
+    - 24
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  SpriteRendererComponent:
+    Color:
+    - 0.035
+    - 0.055
+    - 0.075
+    - 0.98
+    Source:
+      Type: None
+- Entity: 100093
+  TagComponent:
+    Tag: New game confirmation heading
+  Relationship:
+    Parent: 100092
+    Order: 0
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 2
+    FixedSize:
+    - 0
+    - 0
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: PLEASE CONFIRM
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 26
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100094
+  TagComponent:
+    Tag: New game confirmation message
+  Relationship:
+    Parent: 100092
+    Order: 1
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 2
+    FixedSize:
+    - 0
+    - 0
+    Offset:
+    - 0
+    - 50
+    Anchor:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: Replace the current journey? Your existing save is kept until you confirm and the new save succeeds.
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 20
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100095
+  TagComponent:
+    Tag: New game confirmation accept
+  Relationship:
+    Parent: 100092
+    Order: 2
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 250
+    - 44
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 0
+    - 1
+    Pivot:
+    - 0
+    - 1
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 12
+    - 6
+    - 12
+    - 6
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: Confirm
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 20
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  SpriteRendererComponent:
+    Color:
+    - 0.13
+    - 0.23
+    - 0.28
+    - 1
+    Source:
+      Type: None
+  UIButtonComponent:
+    Kind: 0
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 0
+    EventOwner: 0
+    Action: new-confirm
+    TabOrder: 0
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100096
+  TagComponent:
+    Tag: New game confirmation cancel
+  Relationship:
+    Parent: 100092
+    Order: 3
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 250
+    - 44
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 1
+    - 1
+    Pivot:
+    - 1
+    - 1
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 12
+    - 6
+    - 12
+    - 6
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: Keep playing
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 20
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  SpriteRendererComponent:
+    Color:
+    - 0.13
+    - 0.23
+    - 0.28
+    - 1
+    Source:
+      Type: None
+  UIButtonComponent:
+    Kind: 0
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 0
+    EventOwner: 0
+    Action: dismiss
+    TabOrder: 0
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100097
+  TagComponent:
+    Tag: Open Settings
+  Relationship:
+    Parent: 1424
+    Order: 7
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 260
+    - 50
+    Offset:
+    - 780
+    - 470
+    Anchor:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 12
+    - 6
+    - 12
+    - 6
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: Settings
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 24
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  SpriteRendererComponent:
+    Color:
+    - 0.13
+    - 0.23
+    - 0.28
+    - 1
+    Source:
+      Type: None
+  UIButtonComponent:
+    Kind: 0
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 0
+    EventOwner: 0
+    Action: settings
+    TabOrder: 10
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100098
+  TagComponent:
+    Tag: Quit game
+  Relationship:
+    Parent: 1424
+    Order: 8
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 260
+    - 50
+    Offset:
+    - 780
+    - 532
+    Anchor:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 12
+    - 6
+    - 12
+    - 6
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: Quit
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 24
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  SpriteRendererComponent:
+    Color:
+    - 0.13
+    - 0.23
+    - 0.28
+    - 1
+    Source:
+      Type: None
+  UIButtonComponent:
+    Kind: 0
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 0
+    EventOwner: 0
+    Action: quit
+    TabOrder: 11
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100099
+  TagComponent:
+    Tag: Settings screen backdrop
+  Relationship:
+    Parent: 100001
+    Order: 0
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 1
+    FixedSize:
+    - 0
+    - 0
+    Anchor:
+    - 0
+    - 0
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  SpriteRendererComponent:
+    Color:
+    - 0.01
+    - 0.02
+    - 0.03
+    - 0.72
+    Source:
+      Type: None
+- Entity: 100100
+  TagComponent:
+    Tag: New game confirmation backdrop
+  Relationship:
+    Parent: 100091
+    Order: 0
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 1
+    FixedSize:
+    - 0
+    - 0
+    Anchor:
+    - 0
+    - 0
+    Offset:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  SpriteRendererComponent:
+    Color:
+    - 0.01
+    - 0.02
+    - 0.03
+    - 0.72
+    Source:
+      Type: None

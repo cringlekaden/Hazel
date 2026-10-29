@@ -1,5 +1,7 @@
 # Migration progress and final parity
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../README.md) and [history index](../history.md).
+
 ## Current working baseline (2026-10-02)
 
 The user explicitly authorized merging the completed migration into master.

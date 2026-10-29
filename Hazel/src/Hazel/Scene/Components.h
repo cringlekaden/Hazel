@@ -1,4 +1,8 @@
 #pragma once
+#include "Hazel/UI/Slider.h"
+#include "Hazel/UI/ScrollView.h"
+#include "Hazel/UI/Dropdown.h"
+#include "Hazel/UI/UIScreen.h"
 // Actual target component shapes; explicit public-header prerequisites.
 #include "Hazel/Core/Base.h"
 #include <string>
@@ -202,7 +206,20 @@ namespace Hazel {
 	struct TextComponent
 	{
 		std::string TextString;
-		Ref<Font> FontAsset = Font::GetDefault();
+		FontSelection Font; // sole authored family/style selection, shared by UI/world text
+        // Transient active-user pin; never serialized, compared or retained in commands.
+        Ref<Hazel::Font> ResolvedFont;
+        FontSelection ResolvedSelection;
+        std::weak_ptr<ProjectAssets> FontOwner;
+        uint64_t FontEpoch=0;
+        std::vector<Text::Span> Spans;
+        FontPalette ResolvedFaces{}; // renderer-thread active users, never authored
+        uint64_t FacesEpoch=0;
+        uint8_t FaceRequests=0;
+        FontSelection FacesSelection;
+        std::weak_ptr<ProjectAssets> FacesOwner;
+        mutable Ref<const Text::Layout> LayoutCache; // CPU-only, not authored/copied
+        mutable float LayoutTracking=0, LayoutSpacing=0;
 		glm::vec4 Color{ 1.0f };
 		float Kerning = 0.0f;
 		float LineSpacing = 0.0f;
@@ -213,28 +230,68 @@ namespace Hazel {
     struct UICanvasComponent : GameUI::CanvasLayout {
         int SortOrder=0;
         bool Visible=true, Enabled=true, Modal=false;
+        GameUI::ScreenPolicy Screen;
     };
     struct UIRectComponent : GameUI::RectLayout {
         bool Visible=true, Enabled=true, ClipChildren=true;
         float Flex=0;
+        GameUI::ImageFit Fit=GameUI::ImageFit::Stretch;
+        glm::vec2 ImageAlignment{.5f,.5f};
     };
     struct UILayoutComponent : GameUI::FlowLayout {};
     struct UITextStyleComponent {
-        std::filesystem::path FontPath; // empty selects the packaged default font
         float Size=24;
         GameUI::Align Horizontal=GameUI::Align::Start, Vertical=GameUI::Align::Start;
         bool Wrap=true;
+        Text::Overflow Overflow=Text::Overflow::Clip;
+        uint32_t MaxLines=0; // unlimited within CPU layout limits
     };
     struct UINineSliceComponent {
         glm::vec4 Borders{4}; // source pixels: left, top, right, bottom
         float BorderScale=1;
     };
     struct UIButtonComponent {
+        GameUI::ControlKind Kind=GameUI::ControlKind::Button;
+        bool InitiallyChecked=false;
+        uint64_t Indicator=0, Group=0, EventOwner=0; // local identities, never borrowed objects
         std::string Action="activate";
         int TabOrder=0;
         bool Interactable=true;
         std::array<glm::vec4,5> Colors{{glm::vec4(1),glm::vec4(1.15f,1.15f,1.15f,1),glm::vec4(.75f,.75f,.75f,1),glm::vec4(.5f),glm::vec4(1.2f,1.15f,.8f,1)}};
         std::array<SpriteSource,5> Images;
+    };
+
+    struct UIRadioGroupComponent {
+        bool Required=true;
+        uint64_t InitialSelection=0, EventOwner=0;
+        std::string Action="selection";
+    };
+    struct UIScrollViewComponent : GameUI::ScrollConfig {};
+    struct UIAppearanceComponent {
+        bool Styled=false;
+        UIStyleSelection Selection;
+        uint32_t Overrides=0; // explicit presence for local component appearance groups
+        glm::vec4 Focus{1,.9f,.65f,1},Selected{1},Editing{.3f,1,1,1};
+    };
+    struct UITextEntryComponent {
+        std::string Placeholder;
+        uint32_t MaxBytes=4096,MaxGraphemes=1024,MaxLines=64;
+        bool Multiline=false,ReadOnly=false;
+        glm::vec4 CaretColor{1}, SelectionColor{.18f,.42f,.8f,.5f};
+    };
+    struct UITabsComponent { bool RememberFocus=true; }; // required RadioGroup is the single selection authority
+    struct UITabComponent { uint64_t Page=0, InitialFocus=0; };
+    struct UITooltipComponent { uint64_t Body=0; float Delay=.6f, Gap=8; };
+    struct UIDropdownComponent : GameUI::DropdownConfig {};
+    struct UISliderComponent : GameUI::SteppedRange {
+        float InitialValue=0;
+        uint64_t Track=0, Fill=0, Thumb=0;
+        GameUI::FillDirection Direction=GameUI::FillDirection::Right;
+    };
+    struct UIProgressComponent {
+        float Minimum=0, Maximum=1, InitialValue=0;
+        uint64_t Fill=0;
+        GameUI::FillDirection Direction=GameUI::FillDirection::Right;
     };
 
 	template<typename... Component>
@@ -246,6 +303,6 @@ namespace Hazel {
 		ComponentGroup<TransformComponent, SpriteRendererComponent, SpriteAnimationComponent, AudioSourceComponent,
 			CircleRendererComponent, CameraComponent, ScriptComponent,
 			NativeScriptComponent, Rigidbody2DComponent, BoxCollider2DComponent,
-			CircleCollider2DComponent, TextComponent, UICanvasComponent, UIRectComponent, UILayoutComponent, UITextStyleComponent, UINineSliceComponent, UIButtonComponent>;
+			CircleCollider2DComponent, TextComponent, UICanvasComponent, UIRectComponent, UILayoutComponent, UITextStyleComponent, UINineSliceComponent, UIButtonComponent, UIRadioGroupComponent, UIProgressComponent, UISliderComponent, UIScrollViewComponent, UIDropdownComponent, UITabsComponent, UITabComponent, UITooltipComponent, UITextEntryComponent, UIAppearanceComponent>;
 
 }

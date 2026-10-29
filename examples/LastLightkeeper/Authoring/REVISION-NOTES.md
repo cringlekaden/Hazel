@@ -1,5 +1,7 @@
 # Chapter revision and continuation
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../../../docs/README.md) and [history index](../../../docs/history.md).
+
 Player evidence: the author completed the first chapter in about **five minutes**
 after learning its mechanics. This replaces the unverified 8–12-minute estimate.
 No automated run is pacing evidence. Additional content must earn its time through

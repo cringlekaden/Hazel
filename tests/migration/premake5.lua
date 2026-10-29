@@ -38,6 +38,9 @@ project ("Migration" .. test)
         links { "opengl32", "Comdlg32", "Shell32", "Ole32", "Advapi32" }
     filter { "system:windows", "action:vs*" }
         buildoptions { "/utf-8" }
+        -- EditorSmoke includes the maintained integration checks in one TU.
+        -- Its Debug MSVC object exceeds COFF's ordinary section-count limit.
+        if test == "EditorSmoke" then buildoptions { "/bigobj" } end
     filter "configurations:Debug"
         defines { "HZ_DEBUG" }
         runtime "Debug"
@@ -53,3 +56,35 @@ project ("Migration" .. test)
     filter {}
 
 end
+
+project "MigrationTypographySmoke"
+    location (repoRoot .. "/build/MigrationTypographySmoke")
+    kind "ConsoleApp"
+    language "C++"
+    cppdialect "C++17"
+    staticruntime "Off"
+    warnings "Extra"
+    targetdir (repoRoot .. "/bin/" .. outputdir .. "/%{prj.name}")
+    objdir (repoRoot .. "/bin-int/" .. outputdir .. "/%{prj.name}")
+    files { repoRoot .. "/tests/migration/TypographySmoke.cpp" }
+    includedirs { repoRoot .. "/Hazel/src" }
+    externalincludedirs { repoRoot .. "/Hazel/vendor/spdlog/include", repoRoot .. "/Hazel/vendor/glm",
+        repoRoot .. "/Hazel/vendor/harfbuzz/src",
+        repoRoot .. "/Hazel/vendor/libunibreak/src", repoRoot .. "/Hazel/vendor/SheenBidi/Headers" }
+    links { "Hazel" }
+    filter "system:linux"
+        defines { "HZ_PLATFORM_LINUX" }
+        links { "pthread" }
+    filter "system:windows"
+        defines { "HZ_PLATFORM_WINDOWS" }
+        systemversion "latest"
+    filter { "system:windows", "action:vs*" }
+        buildoptions { "/utf-8" }
+    filter "configurations:Debug"
+        defines { "HZ_DEBUG" }
+        runtime "Debug"
+        symbols "On"
+    filter { "configurations:Release or Dist" }
+        runtime "Release"
+        optimize "On"
+    filter {}

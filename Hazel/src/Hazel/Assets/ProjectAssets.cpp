@@ -1,6 +1,8 @@
 #include "hzpch.h"
+#include "Hazel/Text/TextSpanSerialization.h"
 #include "Hazel/Audio/AudioPlayback.h"
 #include "ProjectAssets.h"
+#include "Hazel/Scene/Components.h"
 #include "Hazel/UI/RuntimeUIConfig.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Scene/Prefab.h"
@@ -12,6 +14,7 @@
 #include <sstream>
 #include <cmath>
 #include <map>
+#include <fstream>
 namespace Hazel {
 namespace {
 std::string TextureKey(const std::filesystem::path& path,const TextureSpecification& s) {
@@ -19,11 +22,105 @@ std::string TextureKey(const std::filesystem::path& path,const TextureSpecificat
 }
 std::string ReferenceKey(const std::filesystem::path& path,SpriteID id) {return Project::NormalizeAssetPath(path).lexically_normal().generic_u8string()+"|"+SpriteIDText(id);}
 }
-Ref<Font> ProjectAssets::FontAsset(const std::filesystem::path& reference) {
-    if(reference.empty())return Font::GetDefault();
-    auto path=Project::ResolveOwnedAsset(m_Root,reference);auto key=path.generic_u8string();auto it=m_Fonts.find(key);
-    if(it!=m_Fonts.end())return it->second;
-    auto font=CreateRef<Font>(path);m_Fonts.emplace(key,font);return font;
+ProjectAssets::~ProjectAssets() {
+    // Family document/coverage services are CPU-only. Metadata entries alone
+    // must not invoke rendering-thread teardown in native authoring/export tools.
+    bool usedFaces=false;const std::weak_ptr<Font> empty;
+    for(const auto& family:m_Families)for(const auto& face:family.second.Faces)
+        usedFaces |= face.Accepted.owner_before(empty) || empty.owner_before(face.Accepted);
+    if(usedFaces)Font::ReleaseRoot(m_Root);
+}
+void ProjectAssets::ReloadFamily(const std::string& key,FamilyEntry& entry) {
+    try {
+        auto def=key.empty()?DefaultFontFamily():ReadFontFamily(Project::ResolveOwnedAsset(m_Root,std::filesystem::u8path(key)));
+        if(!key.empty())for(unsigned i=0;i<4;++i)if(!def.Faces[i].File.empty()) {
+            try {
+                Font::ValidateFile(Project::ResolveOwnedAsset(m_Root,def.Faces[i].File));
+                for(auto& notice:def.Faces[i].Notices)if(!std::filesystem::is_regular_file(Project::ResolveOwnedAsset(m_Root,notice)))throw std::runtime_error("Missing notice: "+notice.generic_u8string());
+            }catch(const std::exception& error){throw std::runtime_error(std::string(FontStyleName(FontStyle(i)))+" ["+def.Faces[i].File.generic_u8string()+"]: "+error.what());}
+        }
+        entry.Accepted=CreateRef<FontFamilyDefinition>(std::move(def));entry.Error.clear();
+        for(auto& face:entry.Faces){face.Loaded=false;face.Error.clear();}
+    }catch(const std::exception& error){
+        if(entry.Error!=error.what())HZ_CORE_WARN("Font family '{}': {}. Accepted family retained, or engine default; Reload to retry.",key,error.what());
+        entry.Error=error.what();
+    }
+}
+ProjectAssets::FamilyEntry* ProjectAssets::FamilyEntryFor(const std::filesystem::path& reference) {
+    FontSelection{reference}.Validate();const auto key=reference.generic_u8string();
+    auto it=m_Families.find(key);
+    if(it==m_Families.end()) {
+        if(m_Families.size()>=128){if(!m_FontLimitReported){HZ_CORE_WARN("Project font-family reference limit (128); additional families use engine default");m_FontLimitReported=true;}return nullptr;}
+        it=m_Families.emplace(key,FamilyEntry{}).first;ReloadFamily(key,it->second);
+    }
+    return &it->second;
+}
+Ref<const FontFamilyDefinition> ProjectAssets::Family(const std::filesystem::path& reference) {
+    auto* entry=FamilyEntryFor(reference);return entry?entry->Accepted:nullptr;
+}
+Ref<Font> ProjectAssets::ResolveFamilyFace(const std::string& key,FamilyEntry& entry,FontStyle requested) {
+    if(!entry.Accepted)return Font::GetDefault();
+    auto selected=entry.Accepted->Select(requested);auto& face=entry.Faces[unsigned(selected)];
+    auto accepted=face.Accepted.lock();
+    if(!face.Loaded || (!accepted && face.Error.empty())) {
+        face.Loaded=true;
+        try {
+            auto path=key.empty()?DefaultFontFace(selected):Project::ResolveOwnedAsset(m_Root,entry.Accepted->Faces[unsigned(selected)].File);
+            accepted=key.empty() && selected==FontStyle::Regular?Font::GetDefault():Font::Load(path,accepted);
+            face.Accepted=accepted;face.Error.clear();
+        }catch(const std::exception& error){
+            if(face.Error!=error.what())HZ_CORE_WARN("Font family '{}' / {}: {}. Keeping accepted face or engine Regular; Reload to retry.",key,FontStyleName(selected),error.what());
+            face.Error=error.what();
+        }
+    }
+    return accepted?accepted:Font::GetDefault();
+}
+Ref<Font> ProjectAssets::FamilyFont(const FontSelection& selection) {
+    selection.Validate();auto fallback=Font::GetDefault(); // reserve safe fallback before custom admission
+    auto* entry=FamilyEntryFor(selection.Family);
+    return entry?ResolveFamilyFace(selection.Family.generic_u8string(),*entry,selection.Style):fallback;
+}
+FamilyResolution ProjectAssets::FamilyStatus(const FontSelection& selection) {
+    auto actual=FamilyFont(selection);FamilyResolution result;result.Actual=actual;result.Requested=selection.Style;result.Face=actual->GetPath();
+    auto* entry=FamilyEntryFor(selection.Family);
+    if(!entry){result.DefaultFallback=true;result.Error="Project font-family reference limit (128)";return result;}
+    result.Error=entry->Error;
+    if(!entry->Accepted){result.DefaultFallback=true;return result;}
+    result.Selected=entry->Accepted->Select(selection.Style);result.StyleFallback=result.Selected!=selection.Style;
+    const auto& face=entry->Faces[unsigned(result.Selected)];
+    if(!face.Error.empty()){if(!result.Error.empty())result.Error+="; ";result.Error+=face.Error;}
+    result.DefaultFallback=face.Accepted.expired();return result;
+}
+Ref<Font> ResolveTextFont(TextComponent& text,const Ref<ProjectAssets>& assets) {
+    const auto epoch=assets?assets->Epoch():1;
+    const bool sameOwner=!text.FontOwner.owner_before(assets) && !assets.owner_before(text.FontOwner);
+    if(!text.ResolvedFont || text.ResolvedSelection!=text.Font || text.FontEpoch!=epoch || !sameOwner) {
+        text.Font.Validate();
+        text.ResolvedFont=assets?assets->FamilyFont(text.Font):text.Font.Family.empty()?(text.Font.Style==FontStyle::Regular?Font::GetDefault():Font::Load(DefaultFontFace(text.Font.Style),text.ResolvedFont)):Font::GetDefault();
+        text.ResolvedSelection=text.Font;text.FontEpoch=epoch;text.FontOwner=assets;
+    }
+    return text.ResolvedFont;
+}
+const FontPalette& ResolveTextFonts(TextComponent& text,const Ref<ProjectAssets>& assets,const std::vector<Text::Span>& spans) {
+    auto base=ResolveTextFont(text,assets);Text::ValidateSpanFields(spans);uint8_t mask=0;
+    for(const auto& span:spans)if(span.Face)mask|=1u<<unsigned(*span.Face);
+    const auto epoch=assets?assets->Epoch():1;
+    const bool sameOwner=!text.FacesOwner.owner_before(assets)&&!assets.owner_before(text.FacesOwner);
+    if(text.ResolvedFaces[0]==base&&text.FacesEpoch==epoch&&text.FacesSelection==text.Font&&text.FaceRequests==mask&&sameOwner)return text.ResolvedFaces;
+    auto next=text.ResolvedFaces;next[0]=base;
+    for(unsigned i=0;i<4;++i)if(mask&(1u<<i))next[i+1]=assets?assets->FamilyFont({text.Font.Family,FontStyle(i)}):Font::Load(DefaultFontFace(FontStyle(i)),next[i+1]);else next[i+1].reset();
+    text.ResolvedFaces=std::move(next);text.FacesEpoch=epoch;text.FacesSelection=text.Font;text.FaceRequests=mask;text.FacesOwner=assets;return text.ResolvedFaces;
+}
+void ProjectAssets::ImportFontFile(const std::filesystem::path& source,const std::filesystem::path& destination,bool face) {
+    // Native asset import. Never overwrite an existing file; descriptor assignment remains a draft edit.
+    auto path=Project::ResolveOwnedAsset(m_Root,destination);
+    if(face){Font::ValidateFile(source);FontSelection probe;auto ext=path.extension();if(ext!=".ttf" && ext!=".otf")throw std::runtime_error("Imported face needs .ttf/.otf extension");}
+    std::ifstream in(source,std::ios::binary|std::ios::ate);auto size=in?in.tellg():std::streampos(-1);
+    const uint64_t cap=face?4*1024*1024:1024*1024;
+    if(size<=0 || uint64_t(size)>cap)throw std::runtime_error("Imported face/notice is empty or exceeds its input limit");
+    std::string bytes(size_t(size),'\0');in.seekg(0);if(!in.read(bytes.data(),std::streamsize(bytes.size())))throw std::runtime_error("Cannot read imported dependency");
+    std::filesystem::create_directories(path.parent_path());
+    FileSystem::WriteFileAtomically(path,[&](auto& out){out.write(bytes.data(),std::streamsize(bytes.size()));},WriteMode::CreateNew);
 }
 Ref<const SpriteSheetDefinition> ProjectAssets::Sheet(const std::filesystem::path& reference) {
     auto path=Project::ResolveOwnedAsset(m_Root,reference); if(path.extension()!=".hsprites") throw std::runtime_error("Expected .hsprites asset");
@@ -49,7 +146,7 @@ Ref<const ResolvedSprite> ProjectAssets::Resolve(const SpriteSource& source) {
         if(!r->Region && r->Sheet.empty())return draw;
         auto key=ReferenceKey(r->Sheet,r->Region);auto it=m_Sprites.find(key);if(it!=m_Sprites.end()) return it->second;
         auto sheet=Sheet(r->Sheet);auto region=sheet->Region(r->Region);
-        draw->Texture=Texture(sheet->Texture,sheet->Sampling); draw->UV=SpriteUV(region.Rect,sheet->Sampling.Width,sheet->Sampling.Height);draw->Corners=SpriteCorners(region.Pivot);
+        draw->Texture=Texture(sheet->Texture,sheet->Sampling); draw->UV=SpriteUV(region.Rect,sheet->Sampling.Width,sheet->Sampling.Height);draw->Corners=SpriteCorners(region.Pivot);draw->SourceSize={region.Rect.Width,region.Rect.Height};
         m_Sprites.emplace(key,draw);
     }
     return draw;
@@ -62,6 +159,18 @@ Ref<const ResolvedClip> ProjectAssets::Clip(const AnimationReference& reference)
     m_Clips.emplace(key,result);return result;
 }
 void ProjectAssets::Reload(const std::filesystem::path& reference) {
+    if(reference.extension()==".hstyle") {auto resolution=Style(reference);auto it=m_Styles.find(reference.generic_u8string());if(it!=m_Styles.end())ReloadStyle(it->first,it->second);++m_Epoch;return;}
+    if(reference.empty() || reference.extension()==".hfont") {
+        auto* entry=FamilyEntryFor(reference);if(entry)ReloadFamily(reference.generic_u8string(),*entry);
+        ++m_Epoch;return;
+    }
+    if(reference.extension()==".ttf"||reference.extension()==".otf"){
+        // Faces are owned only through accepted families, never a second raw map.
+        (void)Project::ResolveOwnedAsset(m_Root,reference);
+        // A direct face reload invalidates families using it, including cached failures.
+        for(auto& pair:m_Families)ReloadFamily(pair.first,pair.second);
+        ++m_Epoch;return;
+    }
     auto path=Project::ResolveOwnedAsset(m_Root,reference);const auto key=path.generic_u8string();
     // Drop derived resolutions and image resources only at this deliberate authoring boundary.
     ++m_Epoch;m_Sprites.clear();m_Clips.clear();m_Textures.clear();
@@ -73,11 +182,14 @@ void ProjectAssets::Reload(const std::filesystem::path& reference) {
     } catch(const std::exception& e) {m_Sheets[key].Error=e.what();throw;}
 }
 void ProjectAssets::Refresh() {
+    // Explicit freshness boundary: retire unpinned metadata, then retry live styles.
+    for(auto it=m_Styles.begin();it!=m_Styles.end();)if(!it->second.Accepted||it->second.Accepted.use_count()==1){m_StyleBytes-=it->second.Bytes;it=m_Styles.erase(it);}else{ReloadStyle(it->first,it->second);++it;}
     std::vector<std::filesystem::path> paths;for(auto& p:m_Sheets) paths.push_back(std::filesystem::u8path(p.first).lexically_relative(m_Root));
     for(auto& p:paths) {
         try{Reload(p);}catch(const std::exception& e){HZ_CORE_WARN("Sprite asset refresh: {}",e.what());}
     }
-    ++m_Epoch;m_Textures.clear();m_Sprites.clear();m_Clips.clear();m_Fonts.clear();
+    for(auto& entry:m_Families)ReloadFamily(entry.first,entry.second);
+    ++m_Epoch;m_Textures.clear();m_Sprites.clear();m_Clips.clear();
 }
 void ProjectAssets::ImportTexture(const std::filesystem::path& source,const std::filesystem::path& destination) {
     Texture2D::ReadImage(source); // Validate through the shared engine decoder before copying.
@@ -117,6 +229,11 @@ std::vector<SpriteAssetUse> FindSpriteAssetUses(const std::filesystem::path& roo
 }
 std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path& root,const std::vector<std::filesystem::path>& files) {
     std::map<std::string,SpriteSheetDefinition> sheets;std::set<std::filesystem::path> dependencies;
+    std::set<std::filesystem::path> auditedFamilies;
+    auto family=[&](const std::filesystem::path& reference) {
+        auto owned=Project::ResolveOwnedAsset(root,reference);
+        if(auditedFamilies.insert(owned).second)for(auto& dependency:AuditFontFamily(root,reference))dependencies.insert(dependency);
+    };
     auto get=[&](const std::filesystem::path& ref)->const SpriteSheetDefinition& {
         auto path=Project::ResolveOwnedAsset(root,ref);auto key=path.generic_u8string();auto it=sheets.find(key);
         if(it==sheets.end()) {
@@ -127,7 +244,15 @@ std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path
             it=sheets.emplace(key,std::move(s)).first;
         } return it->second;
     };
-    for(auto file:files) if(file.extension()==".hsprites") get(file);
+    auto style=[&](const std::filesystem::path& reference){
+        auto definition=ReadUIStyle(Project::ResolveOwnedAsset(root,reference));dependencies.insert(reference);
+        for(auto& dep:AuditUIStyle(root,definition))dependencies.insert(dep);
+    };
+    for(auto file:files) {
+        if(file.extension()==".hstyle")style(file);
+        if(file.extension()==".hsprites")get(file);
+        if(file.extension()==".hfont")family(file);
+    }
     for(auto use:FindSpriteAssetUses(root,files)) {
         try { if(use.Sprite.Region) get(use.Sprite.Sheet).Region(use.Sprite.Region);if(use.Animation.Clip) get(use.Animation.Sheet).Clip(use.Animation.Clip); }
         catch(const std::exception& e) {throw std::runtime_error(use.Location+": "+e.what());}
@@ -137,18 +262,50 @@ std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path
         auto doc=YAML::Load(FileDocument::Read(Project::ResolveOwnedAsset(root,file)));
         DocumentSchema::Scene(doc,file.extension()==".hprefab");
         for(auto e:doc["Entities"]) {
+            // Python consumes this same dependency closure for package inventory
+            // exclusions; it does not carry a second prefab-reference schema.
+            for(auto field:e["ScriptComponent"]["ScriptFields"]) {
+                if(field["Type"].as<std::string>()=="Prefab" && field["Data"] && !field["Data"].as<std::string>().empty()) {
+                    auto reference=std::filesystem::u8path(field["Data"].as<std::string>());
+                    auto path=Prefab::Resolve(root,reference);
+                    if(!std::filesystem::is_regular_file(path))throw std::runtime_error("Missing prefab reference: "+reference.generic_u8string());
+                    dependencies.insert(path.lexically_relative(std::filesystem::weakly_canonical(root)));
+                }
+            }
+            if(auto n=e["UIAppearanceComponent"]){auto selection=ReadUIAppearanceComponent(n).Selection;if(!selection.Asset.empty()){try{style(selection.Asset);ReadUIStyle(Project::ResolveOwnedAsset(root,selection.Asset)).Find(selection.Variant);}catch(const std::exception& error){throw std::runtime_error(file.generic_u8string()+" style "+selection.Asset.generic_u8string()+": "+error.what());}}else DefaultUIStyle().Find(selection.Variant);}
             if(auto n=e["UINineSliceComponent"]) {
-                const auto borders=ReadUINineSliceComponent(n).Borders;
+                UIStyleValues appearance;
+                auto nine=ReadUINineSliceComponent(n);appearance.Slice={nine.Borders,nine.BorderScale};
+                if(e["SpriteRendererComponent"])appearance.Image=ReadSpriteSource(e["SpriteRendererComponent"]);
+                if(auto button=e["UIButtonComponent"]){auto b=ReadUIButtonComponent(button);appearance.States={b.Colors,b.Images};}
+                if(auto node=e["UIAppearanceComponent"]){auto c=ReadUIAppearanceComponent(node);if(c.Styled){
+                    auto resolved=c.Selection.Asset.empty()?DefaultUIStyle().Find(c.Selection.Variant):ReadUIStyle(Project::ResolveOwnedAsset(root,c.Selection.Asset)).Find(c.Selection.Variant);
+                    CopyUIStyleGroups(resolved,appearance,c.Overrides);appearance=std::move(resolved);
+                }}
+                const auto borders=appearance.Slice.Borders;
                 auto validate=[&](const SpriteSource& source){glm::vec2 size{};
                     if(auto image=std::get_if<SpriteReference>(&source);image&&image->Region){const auto rect=get(image->Sheet).Region(image->Region).Rect;size={rect.Width,rect.Height};}
                     if(auto image=std::get_if<TextureSpriteSource>(&source);image&&!image->Texture.empty()){auto pixels=Texture2D::ReadImage(Project::ResolveOwnedAsset(root,image->Texture));size={pixels.Width,pixels.Height};}
                     if(size.x<=0||size.y<=0||borders.x+borders.z>size.x||borders.y+borders.w>size.y)throw std::runtime_error(file.generic_u8string()+": nine-slice borders exceed source image");
                 };
                 if(!e["SpriteRendererComponent"])throw std::runtime_error("Nine-slice requires an image");
-                validate(ReadSpriteSource(e["SpriteRendererComponent"]));
-                if(auto button=e["UIButtonComponent"])for(auto& source:ReadUIButtonComponent(button).Images)if(source.index()!=0)validate(source);
+                validate(appearance.Image);
+                if(e["UIButtonComponent"])for(auto& source:appearance.States.Images)if(source.index()!=0)validate(source);
             }
-            if(auto n=e["UITextStyleComponent"]){auto font=ReadUITextStyleComponent(n).FontPath;if(!font.empty()){auto path=Project::ResolveOwnedAsset(root,font);Font::ValidateFile(path);dependencies.insert(path.lexically_relative(std::filesystem::weakly_canonical(root)));}}
+            if(auto n=e["TextComponent"])if(n["FontFamily"] && !n["FontFamily"].as<std::string>().empty()) {
+                auto reference=std::filesystem::u8path(n["FontFamily"].as<std::string>());
+                try{family(reference);}
+                catch(const std::exception& error){throw std::runtime_error(file.generic_u8string()+" entity "+e["Entity"].as<std::string>()+" family "+reference.generic_u8string()+": "+error.what());}
+            }
+            if(auto n=e["TextComponent"];n&&n["Emphasis"]) {
+                try {
+                    auto source=n["TextString"].as<std::string>();auto spans=Text::ReadSpans(n["Emphasis"],source);
+                    FontSelection font;if(n["FontFamily"])font.Family=std::filesystem::u8path(n["FontFamily"].as<std::string>());if(n["FontStyle"])font.Style=FontStyle(n["FontStyle"].as<unsigned>());
+                    if(auto node=e["UIAppearanceComponent"]){auto c=ReadUIAppearanceComponent(node);if(c.Styled&&!(c.Overrides&UIStyleBit(UIStyleGroup::Font)))font=(c.Selection.Asset.empty()?DefaultUIStyle().Find(c.Selection.Variant):ReadUIStyle(Project::ResolveOwnedAsset(root,c.Selection.Asset)).Find(c.Selection.Variant)).Font;}
+                    AuditTextEmphasis(root,font,source,spans);
+                    for(auto parent:doc["Entities"])if(auto d=parent["UIDropdownComponent"];d&&d["Trigger"]&&d["Trigger"].as<uint64_t>()==e["Entity"].as<uint64_t>()&&!spans.empty())throw std::invalid_argument("Computed dropdown captions are plain; style option labels");
+                }catch(const std::exception& error){throw std::runtime_error(file.generic_u8string()+" entity "+e["Entity"].as<std::string>()+" emphasis: "+error.what());}
+            }
             if(auto n=e["UIButtonComponent"]){for(auto& source:ReadUIButtonComponent(n).Images)if(auto t=std::get_if<TextureSpriteSource>(&source)){if(!t->Texture.empty()){auto path=Project::ResolveOwnedAsset(root,t->Texture);Texture2D::ReadImage(path);dependencies.insert(path.lexically_relative(std::filesystem::weakly_canonical(root)));}}}
         }
         for(auto e:doc["Entities"]) if(auto n=e["AudioSourceComponent"]) {

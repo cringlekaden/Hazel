@@ -8,6 +8,9 @@ layout(location = 1) in vec4 a_Color;
 layout(location = 2) in vec2 a_TexCoord;
 layout(location = 3) in int a_EntityID;
 
+layout(location = 4) in vec4 a_ClipRect;
+layout(location = 3) out flat vec4 v_ClipRect;
+
 layout(std140, binding = 0) uniform Camera
 {
 	mat4 u_ViewProjection;
@@ -27,12 +30,15 @@ void main()
 	Output.Color = a_Color;
 	Output.TexCoord = a_TexCoord;
 	v_EntityID = a_EntityID;
+    v_ClipRect = a_ClipRect;
 
 	gl_Position = u_ViewProjection * vec4(a_Position, 1.0);
 }
 
 #type fragment
 #version 450 core
+
+layout(location = 3) in flat vec4 v_ClipRect;
 
 layout(location = 0) out vec4 o_Color;
 layout(location = 1) out int o_EntityID;
@@ -61,8 +67,6 @@ float median(float r, float g, float b) {
 
 void main()
 {
-	vec4 texColor = Input.Color * texture(u_FontAtlas, Input.TexCoord);
-
 	vec3 msd = texture(u_FontAtlas, Input.TexCoord).rgb;
     float sd = median(msd.r, msd.g, msd.b);
     float screenPxDistance = screenPxRange()*(sd - 0.5);
@@ -70,10 +74,13 @@ void main()
 	if (opacity == 0.0)
 		discard;
 
-	vec4 bgColor = vec4(0.0);
-    o_Color = mix(bgColor, Input.Color, opacity);
+    // Straight-alpha source: coverage belongs only in alpha. RGB is the tint.
+    o_Color = vec4(Input.Color.rgb, Input.Color.a * opacity);
 	if (o_Color.a == 0.0)
 		discard;
 
-	o_EntityID = v_EntityID;
+	// Evaluate texture derivatives/coverage before the nonuniform clip discard.
+    if (v_ClipRect.z >= 0.0 && (gl_FragCoord.x < v_ClipRect.x || gl_FragCoord.y < v_ClipRect.y ||
+        gl_FragCoord.x >= v_ClipRect.x + v_ClipRect.z || gl_FragCoord.y >= v_ClipRect.y + v_ClipRect.w)) discard;
+    o_EntityID = v_EntityID;
 }

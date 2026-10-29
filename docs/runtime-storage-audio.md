@@ -1,7 +1,6 @@
 # Runtime progress and audio
 
-These additions retain RuntimeSession/Scene ownership, Premake, Mono and the
-OpenGL renderer. No vendor submodule revision was changed.
+Current runtime storage/audio reference. See [Scripting](scripting.md), [Settings and resources](settings-and-resources.md) and [Packaging](packaging.md) for task workflows and ownership.
 
 ## Durable progress
 
@@ -14,6 +13,18 @@ Windows device names, trailing periods and more than 96 characters.
 
 `Hazel.SaveData.Read("journey")` returns an empty string for no slot.
 `SaveData.Write("journey", payload)` writes 1–65536 UTF-8 bytes without NUL.
+The managed boundary reads the complete explicit-length UTF-16 string: unpaired
+surrogates and embedded NUL reject before native storage access or mutation.
+Slots are 1–96 portable ASCII bytes; payloads are 1–65536 strict UTF-8 bytes,
+measured after Unicode conversion (for example 32768 `é` characters fill the byte
+limit). Input longer than those limits is rejected, never truncated. Null slots
+or payloads retain empty-input semantics and are rejected by the native contract;
+a missing valid slot still returns empty text. Invalid input throws managed
+InvalidOperationException and preserves the previous file and accepted overlay.
+Valid non-ASCII/supplementary payload characters survive unchanged. Native reads
+and writes also validate UTF-8. See [Getting started](getting-started.md) for
+compiler versus packaged-runtime requirements.
+
 The game owns its payload schema, version/migration and recovery UI. The native
 YAML envelope is separately versioned (`Version: 1`, owner, slot and payload).
 Wrong ownership, malformed/future versions, oversize files and I/O failures throw

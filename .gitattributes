@@ -8,3 +8,8 @@ Hazel/vendor/mono/** -whitespace
 Hazelnut/mono/** -whitespace
 # This unmodified vendor README uses a seven-equals Markdown heading.
 Hazel/vendor/mono/README.md conflict-marker-size=32
+
+# Unmodified typography fixture/notice bytes are checked on Linux and Windows.
+tests/fixtures/typography/DejaVuSans.ttf binary
+tests/fixtures/typography/LICENSE-DejaVu.txt -text -whitespace
+scripts/dependencies/licenses/typography/LICENSE-Unicode.txt -text

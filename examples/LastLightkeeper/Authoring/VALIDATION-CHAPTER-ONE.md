@@ -1,5 +1,7 @@
 # Validation record
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../../../docs/README.md) and [history index](../../../docs/history.md).
+
 Baseline master: `463cbdd`. Dedicated branch: `feature/last-lightkeeper`; no merge.
 All existing vendor submodule pins and the existing stash were retained. Builds
 used the public Premake workflow, two compiler jobs, and sequential regressions.

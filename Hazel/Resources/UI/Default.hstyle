@@ -1,0 +1,27 @@
+UIStyle:
+  Version: 1
+  Name: Hazel screen UI
+  Variants:
+    - Name: Control
+      Values:
+        Foreground: [1, 1, 1, 1]
+        Background: [0.15, 0.20, 0.28, 1]
+        Padding: [10, 6, 10, 6]
+    - Name: Field
+      Values:
+        Foreground: [1, 1, 1, 1]
+        Background: [0.07, 0.10, 0.16, 1]
+        Padding: [8, 8, 8, 8]
+    - Name: Heading
+      Values:
+        Font: {Family: '', Style: 1}
+        Size: 30
+        Background: [0, 0, 0, 0]
+    - Name: Panel
+      Values:
+        Background: [0.09, 0.12, 0.18, 1]
+        Padding: [16, 16, 16, 16]
+    - Name: Accent
+      Values:
+        Background: [0.35, 0.65, 0.95, 1]
+        Padding: [0, 0, 0, 0]

@@ -18,7 +18,7 @@ namespace LastLightkeeper {
         Entity wisp,mark,mara;int maraStep;
         readonly Vector3[] escapeRoute={new Vector3(11,-4,.6f),new Vector3(11,-3,.6f),new Vector3(9,-3,.6f),new Vector3(8,-6,.6f),new Vector3(-8,-6,.6f),new Vector3(-16,-6,.6f)};Vector3 wispHome,attack;int wispState;float wispTime;
         void OnCreate(){
-            keys=new Controls();body=Player.GetComponent<Rigidbody2DComponent>();
+            keys=new Controls(this);body=Player.GetComponent<Rigidbody2DComponent>();
             objective=Objective.GetComponent<TextComponent>();context=Context.GetComponent<TextComponent>();dialogue=Dialogue.GetComponent<TextComponent>();saveLabel=SaveLabel.GetComponent<TextComponent>();footer=FindEntityByName("DialogueFooter").GetComponent<TextComponent>();
             try{journey=Journey.Decode(SaveData.Read("journey"));}catch(Exception ex){journey=new Journey();saveBlocked=true;Notice("Save kept. Return to the title to choose a new game.",20);Console.WriteLine(ex.Message);}
             // Editor-only direct chapter practice; durable saves are never modified.
@@ -46,7 +46,7 @@ namespace LastLightkeeper {
         bool Persist(){if(saveBlocked)return false;try{SaveData.Write("journey",journey.Encode());saveFailed=false;saveLabel.Text=SaveData.IsPersistent?"Progress saved":"Editor practice";return true;}catch(Exception ex){saveLabel.Text="Not saved - retry before quitting";Notice("Couldn't save. Retry at the checkpoint before quitting.",10);saveFailed=true;Console.WriteLine(ex.Message);return false;}}
         bool Restore(Restoration r){if(!journey.Restore(r))return false;Apply();Sound(SoundRestore);Persist();return true;}
         void Talk(string[] text,Action done=null){pages=text;page=0;after=done;journal=false;context.Text="";ShowDialogue();body.LinearVelocity=Vector2.Zero;}
-        void ShowDialogue(){dialogue.Text=pages==null?"":pages[page];footer.Text=pages==null?"":"Enter   "+(page+1==pages.Length?(after!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);Presentation.Dialogue(DialoguePanel,pages!=null,false);}
+        void ShowDialogue(){dialogue.Text=pages==null?"":pages[page];footer.Text=pages==null?"":""+(page+1==pages.Length?(after!=null?"Continue":"Close"):"Next    "+(page+1)+" of "+pages.Length);Presentation.Dialogue(DialoguePanel,pages!=null,false);}
         void CloseDialogue(){pages=null;ShowDialogue();var callback=after;after=null;callback?.Invoke();}
         void Remove(string name){var e=FindEntityByName(name);if(e!=null && e.IsValid)e.Destroy();}
         void Apply(){
@@ -151,7 +151,7 @@ namespace LastLightkeeper {
         }
         void OnUpdate(float dt){
             keys.Poll();dt=Math.Min(.1f,Math.Max(0,dt));
-            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";dialogue.Text=paused?"PAUSED":"";footer.Text=paused?"Enter   Resume":"";Presentation.Dialogue(DialoguePanel,paused,paused);}}
+            if(keys.Escape){if(pages!=null)CloseDialogue();else{paused=!paused;context.Text="";Presentation.Dialogue(DialoguePanel,paused,paused);}}
             if(paused){body.LinearVelocity=Vector2.Zero;if(keys.Menu)Scene.LoadScene("Scenes/MainMenu.hazel");if(keys.Advance){paused=false;ShowDialogue();}return;}
             if(keys.Journal && journal && pages!=null)CloseDialogue();
             else if(keys.Journal && pages==null){Talk(new[]{"CLIFF NOTES\n"+Story.Objective(journey)+".\nWASD or arrows: move. E: use nearby equipment.\nHold Space to focus. Aim by moving first.",Caves?"SEA CAVES\nGallery receiver on the northern wall.\nMove off the wisp's mark, or focus the lamp on it.\nThe dry western passage leads to the landing.":"CISTERN\nWorkshop west. Drain receiver beside the pool.\nInspection walk above it; stairs at the east end.\nBoth receiver latches hold after the lamp moves."});journal=true;}

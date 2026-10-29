@@ -1,4 +1,6 @@
 #include "hzpch.h"
+#include "Hazel/Text/TextSpanSerialization.h"
+#include "Hazel/UI/UIStyleApplication.h"
 #include "Hazel/Core/OperationProgress.h"
 #include <cmath>
 #include "SceneSerializer.h"
@@ -405,7 +407,10 @@ namespace Hazel {
 
 			auto& textComponent = entity.GetComponent<TextComponent>();
 			out << YAML::Key << "TextString" << YAML::Value << textComponent.TextString;
-			// TODO: textComponent.FontAsset
+			textComponent.Font.Validate();
+            out << YAML::Key << "FontFamily" << YAML::Value << textComponent.Font.Family.generic_u8string();
+            out << YAML::Key << "FontStyle" << YAML::Value << int(textComponent.Font.Style);
+            if(!textComponent.Spans.empty()){out<<YAML::Key<<"Emphasis"<<YAML::Value;Text::WriteSpans(out,textComponent.TextString,textComponent.Spans);}
 			out << YAML::Key << "Color" << YAML::Value << textComponent.Color;
 			out << YAML::Key << "Kerning" << YAML::Value << textComponent.Kerning;
 			out << YAML::Key << "LineSpacing" << YAML::Value << textComponent.LineSpacing;
@@ -418,12 +423,15 @@ namespace Hazel {
 	}
 
     std::string SceneSerializer::SerializeText(Entity only) { return SerializeTextImpl(only, true); }
-    std::string SceneSerializer::SerializeAuthoredSnapshot(Entity only) { return SerializeTextImpl(only, false); }
-	std::string SceneSerializer::SerializeTextImpl(Entity only, bool portablePaths)
+    std::string SceneSerializer::SerializeAuthoredSnapshot(Entity only, bool controls) { return SerializeTextImpl(only, false, controls); }
+	std::string SceneSerializer::SerializeTextImpl(Entity only, bool portablePaths, bool controls)
 	{
 		m_Scene->ValidateHierarchy();
-        m_Scene->ValidateUI(false);
+        // A structural command's value capture is not a validation boundary.
+        // Its decoded candidate is fully validated before live publication.
+        if(controls)m_Scene->ValidateUI(false);
 		YAML::Emitter out;
+        if(!portablePaths)out<<YAML::DoubleQuoted;
 		out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);
 		out.SetDoublePrecision(std::numeric_limits<double>::max_digits10);
 		out << YAML::BeginMap;
@@ -683,9 +691,12 @@ namespace Hazel {
 				auto textComponent = entity["TextComponent"];
 				if (textComponent)
 				{
-					auto& tc = deserializedEntity.AddComponent<TextComponent>(TextComponent{"",resources==ResourceLoading::Resolve?Font::GetDefault():Ref<Font>{}});
+					auto& tc = deserializedEntity.AddComponent<TextComponent>();
 					tc.TextString = textComponent["TextString"].as<std::string>();
-					// tc.FontAsset // TODO
+					if(textComponent["FontFamily"])tc.Font.Family=std::filesystem::u8path(textComponent["FontFamily"].as<std::string>());
+                    if(textComponent["FontStyle"])tc.Font.Style=FontStyle(textComponent["FontStyle"].as<unsigned>());
+                    tc.Font.Validate();
+                    tc.Spans=Text::ReadSpans(textComponent["Emphasis"],tc.TextString);
 					tc.Color = textComponent["Color"].as<glm::vec4>();
 					tc.Kerning = textComponent["Kerning"].as<float>();
 					tc.LineSpacing = textComponent["LineSpacing"].as<float>();
@@ -693,7 +704,10 @@ namespace Hazel {
 			}
 		}
 
-        OperationProgress::Report("Validate hierarchy and physics");staged->RebuildChildren();staged->ValidateHierarchy();staged->ValidateUI(resources==ResourceLoading::Resolve);
+        OperationProgress::Report("Validate hierarchy and physics");staged->RebuildChildren();staged->ValidateHierarchy();staged->ValidateUI(resources==ResourceLoading::Resolve,false);
+        // Keep authored references repairable. Runtime Start/Save/export remain strict;
+        // Edit previews use the service's safe missing-part/group behavior.
+        try{staged->ValidateUIControls();}catch(const std::exception &error){m_Report.Problems.push_back({0,"UI controls",error.what(),{}});}
         if(prefabDocument && data["PrefabVersion"].as<int>()==2) {
             const auto roots=staged->GetChildren();
             if(roots.size()!=1 || uint64_t(roots.front())!=data["PrefabRoot"].as<uint64_t>() || staged->GetSubtree(staged->GetEntityByUUID(roots.front())).size()!=staged->m_EntityMap.size())throw std::runtime_error("PrefabRoot must identify one complete connected subtree");
@@ -715,6 +729,28 @@ namespace Hazel {
                     m_Report.Problems.push_back({id,"Script field "+name,error.what(),resource});
                 }
             }
+        if(resources==ResourceLoading::Resolve) {
+            size_t styleProblems=0;
+            for(auto handle:staged->GetAllEntitiesWith<UIAppearanceComponent>()) {
+                Entity entity(handle,staged.get());const auto& c=entity.GetComponent<UIAppearanceComponent>();
+                if(!c.Styled)continue;
+                try {
+                    Ref<const UIStyleDefinition> accepted;std::string error;
+                    (void)ResolveUIStyle(entity,staged->GetAssets(),accepted,error);
+                    if(!error.empty())throw std::runtime_error(error);
+                } catch(const std::exception& error) {
+                    if(++styleProblems<=32)m_Report.Problems.push_back({entity.GetUUID(),"UI style",std::string(error.what()).substr(0,1024),m_AssetRoot/c.Selection.Asset});
+                }
+            }
+            if(styleProblems>32)m_Report.Problems.push_back({0,"UI styles",std::to_string(styleProblems-32)+" additional style issues; inspect affected controls",{}});
+        }
+        if(resources==ResourceLoading::Resolve)for(auto handle:staged->GetAllEntitiesWith<TextComponent>()) {
+            Entity entity(handle,staged.get());auto& text=entity.GetComponent<TextComponent>();
+            if(auto assets=staged->GetAssets()) {
+                auto font=assets->FamilyStatus(text.Font);
+                if(!font.Error.empty())m_Report.Problems.push_back({entity.GetUUID(),"Text family",font.Error,m_AssetRoot/text.Font.Family});
+            }
+        }
         for (auto handle : staged->GetAllEntitiesWith<SpriteRendererComponent>())
         {
             Entity entity(handle, staged.get());
@@ -741,6 +777,9 @@ namespace Hazel {
         m_Scene->ResetUI();
 		m_Scene->m_Registry = std::move(staged->m_Registry);
 		m_Scene->m_EntityMap = std::move(staged->m_EntityMap);
+        // A same-Scene document replacement must never reuse authoring lifetime
+        // tokens from either the old content or the staging Scene.
+        for(const auto &item:m_Scene->m_EntityMap)m_Scene->ChangedAuthoringStructure(item.first);
         m_Scene->m_Relationships=std::move(staged->m_Relationships);
         m_Scene->RebuildChildren();
 		m_Scene->m_ScriptFields = std::move(stagedScriptFields);

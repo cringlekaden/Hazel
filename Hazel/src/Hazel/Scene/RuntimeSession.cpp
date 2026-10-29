@@ -36,6 +36,7 @@ namespace Hazel {
         CheckThread();
         if (m_Updating || m_Stopping) throw std::logic_error("Cannot start a session inside its update/stop");
         if(project) {
+            GameUI::Validate(project->GetUIBindings());
             RendererPolicy::Validate(project->GetRendererRequests());
             if(Application::TryGet()) {
                 const auto reason=RendererPolicy::RestartReason(project->GetRendererRequests(),Renderer::GetResolution(),Renderer::GetCapabilities());
@@ -51,17 +52,31 @@ namespace Hazel {
         auto root=FileSystem::GetEnvironmentPath("HAZEL_SAVE_ROOT");
         if(root.empty())root=FileSystem::GetUserDataDirectory()/"Hazel/Games";
         m_Storage.Configure(root,project?project->GetConfig().SaveNamespace:"",m_PersistentStorage);
-        m_Identity = ++s_NextSession; m_Error.clear();
+        m_Identity = ++s_NextSession; m_Error.clear();m_UIBindingWarning.clear();
+        m_UIAdapter.Configure(project?project->GetUIBindings():GameUI::UIBindings::Defaults());
+        if(project&&!project->GetConfig().SaveNamespace.empty())try {
+            const auto payload=m_Storage.Read("engine-ui-bindings");
+            if(!payload.empty()&&payload!="default"){m_UIAdapter.Configure(GameUI::ParseBindings(payload));HZ_CORE_INFO("Runtime UI: accepted player binding override ({})",project->GetConfig().SaveNamespace);}
+            else HZ_CORE_INFO("Runtime UI: project binding defaults ({})",project->GetConfig().SaveNamespace);
+        }catch(const std::exception& error){m_UIBindingWarning=std::string("UI override rejected; using project defaults: ")+error.what();HZ_CORE_WARN("{}",m_UIBindingWarning);}
         m_Scene->OnViewportResize(m_Width, m_Height);
         ScriptEngine::SetRuntimeSession(this);
         try { m_Scene->OnRuntimeStart(); }
         catch (...) { Stop(); throw; }
     }
+    void RuntimeSession::SetAudioVolume(float volume) {
+        CheckThread();if(!m_Scene||m_Stopping)throw std::logic_error("Audio settings require an active session");
+        m_Scene->SetAudioMasterVolume(volume);m_AudioVolume=volume;
+    }
+    void RuntimeSession::RequestExit() {CheckThread();if(m_Scene&&!m_Stopping)m_ExitRequested=true;}
+    bool RuntimeSession::ConsumeExitRequest() {CheckThread();bool requested=m_ExitRequested;m_ExitRequested=false;return requested;}
     void RuntimeSession::Stop() {
         CheckThread();
         if (m_Stopping) return;
         if (m_Updating) throw std::logic_error("Cannot stop a scene inside its callback; request a transition instead");
         m_Stopping = true;
+        m_UIAdapter.Cancel();m_UIEdgeScene=0;m_UINeutralLatch=false;
+        m_ExitRequested=false;m_AudioVolume=1;
         m_Pending.reset(); m_Identity = 0; m_InputEnabled = false;
         // Unbind before native OnDestroy, so retired callbacks cannot queue work.
         if (ScriptEngine::GetRuntimeSession() == this) ScriptEngine::SetRuntimeSession(nullptr);
@@ -104,12 +119,25 @@ namespace Hazel {
         m_Scene->OnRuntimeStop();
         auto previous = std::move(m_Scene);
         m_Scene = std::move(candidate); m_Stopping = false;
+        m_Scene->SetAudioMasterVolume(m_AudioVolume);
         ScriptEngine::SetRuntimeSession(this);
         try { m_Scene->OnRuntimeStart(); m_Error.clear(); HZ_CORE_INFO("Runtime scene: {}", reference.generic_u8string()); }
-        catch (const std::runtime_error& error) {
-            m_Pending.reset(); m_Scene->OnRuntimeStop(); m_Scene = std::move(previous);
-            m_Scene->OnRuntimeStart();
-            m_Error = "Cannot start target scene: " + std::string(error.what()); HZ_CORE_ERROR("{}", m_Error);
+        catch (const std::exception& error) {
+            // Retire a partially started target just like Stop. Its OnDestroy
+            // callbacks must not submit work into the recovered session.
+            m_Stopping = true;
+            ScriptEngine::SetRuntimeSession(nullptr);
+            m_Scene->OnRuntimeStop();
+            m_Pending.reset();m_ExitRequested=false;
+            m_Scene = std::move(previous);m_Stopping=false;
+            m_Error = "Cannot start target scene: " + std::string(error.what());
+            // This is a restart of the previous scene, not rollback of scripts'
+            // arbitrary side effects (including accepted storage/gain changes).
+            m_Scene->SetAudioMasterVolume(m_AudioVolume);
+            ScriptEngine::SetRuntimeSession(this);
+            try { m_Scene->OnRuntimeStart(); }
+            catch (...) { Stop(); throw; }
+            HZ_CORE_ERROR("{}", m_Error);
         }
     }
     void RuntimeSession::Update(Timestep timestep) {
@@ -119,16 +147,11 @@ namespace Hazel {
         CommitPendingTransition(); // One transition at most; target OnCreate waits one more frame.
         m_Updating = true;
         try {
-            auto input=m_UIEdgeScene==m_Scene->GetIdentity()?m_UIEdges:GameUI::InputFrame{};
-            m_UIEdges={};m_UIEdgeScene=0;input.Mouse=m_Mouse;input.Enabled=m_InputEnabled&&m_Width&&m_Height;
-            input.FocusNavigation=Input::IsKeyPressed(Key::Tab);
-            input.CancelDown=Input::IsKeyPressed(Key::Escape);
-            input.LeftDown=Input::IsMouseButtonPressed(Mouse::ButtonLeft);
-            input.AcceptDown=Input::IsKeyPressed(Key::Enter)||Input::IsKeyPressed(Key::Space);
-            const bool shift=Input::IsKeyPressed(Key::LeftShift)||Input::IsKeyPressed(Key::RightShift);
-            input.NextDown=(Input::IsKeyPressed(Key::Tab)&&!shift)||Input::IsKeyPressed(Key::Down)||Input::IsKeyPressed(Key::Right);
-            input.PreviousDown=(Input::IsKeyPressed(Key::Tab)&&shift)||Input::IsKeyPressed(Key::Up)||Input::IsKeyPressed(Key::Left);
-            m_Scene->UpdateUIInput(input);
+            GameUI::DeviceSample sample;sample.Point=m_Mouse;sample.Pad=Input::GetGamepad();
+            for(auto b:m_UIAdapter.Bindings().Actions)for(int key:{b.Key,b.Alternate})if(key>=0)sample.Keys[size_t(key)]=Input::IsKeyPressed(KeyCode(key));
+            for(auto key:{Key::LeftShift,Key::RightShift,Key::LeftControl,Key::RightControl,Key::LeftAlt,Key::RightAlt,Key::LeftSuper,Key::RightSuper})sample.Keys[key]=Input::IsKeyPressed(key);
+            sample.Mouse[size_t(m_UIAdapter.Bindings().PointerButton)]=Input::IsMouseButtonPressed(MouseCode(m_UIAdapter.Bindings().PointerButton));
+            RouteUIInput(sample,timestep.GetSeconds(),m_InputEnabled);
             m_Scene->OnUpdateRuntime(timestep); m_Updating = false;
         }
         catch (...) { m_Updating = false; throw; }
@@ -136,19 +159,80 @@ namespace Hazel {
     void RuntimeSession::Resize(uint32_t width, uint32_t height) {
         CheckThread(); m_Width = width; m_Height = height;
         if (m_Scene) m_Scene->OnViewportResize(width, height);
+        if(!width||!height)SetInput(m_Mouse,false);
     }
-    bool RuntimeSession::IsGameplayInputEnabled() const {return m_InputEnabled&&m_GameplayEnabled&&(!m_Scene||!m_Scene->IsGameplayInputBlocked());}
-    bool RuntimeSession::IsGameplayMouseEnabled() const {return m_InputEnabled&&m_GameplayEnabled&&(!m_Scene||!m_Scene->IsGameplayPointerBlocked());}
+    void RuntimeSession::ResizeFramebuffer(uint32_t width,uint32_t height) {
+        CheckThread();m_FramebufferExplicit=true;m_FramebufferSize={width,height};
+        if(m_Scene)m_Scene->SetUIFramebufferSize(m_FramebufferSize);
+        if(!width||!height)SetInput(m_Mouse,false);
+    }
+    bool RuntimeSession::IsGameplayInputEnabled() const {return m_InputEnabled&&m_GameplayEnabled&&!m_UINeutralLatch&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0))&&(!m_Scene||!m_Scene->IsGameplayInputBlocked());}
+    bool RuntimeSession::IsGameplayMouseEnabled() const {return m_InputEnabled&&m_GameplayEnabled&&!m_UINeutralLatch&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0))&&(!m_Scene||!m_Scene->IsGameplayPointerBlocked());}
     void RuntimeSession::SubmitUIEvent(Event& event,glm::vec2 mouse,bool enabled) {
-        if(event.GetEventType()==EventType::WindowLostFocus || (event.GetEventType()==EventType::WindowResize&&(!static_cast<WindowResizeEvent&>(event).GetWidth()||!static_cast<WindowResizeEvent&>(event).GetHeight()))){m_UIEdges={};m_UIEdgeScene=0;if(m_Scene)m_Scene->ResetUI();return;}
+        if(event.GetEventType()==EventType::WindowLostFocus || (event.GetEventType()==EventType::WindowResize&&(!static_cast<WindowResizeEvent&>(event).GetWidth()||!static_cast<WindowResizeEvent&>(event).GetHeight()))){SetInput(mouse,false);return;}
         if(!enabled||!m_Scene)return;
-        if(m_UIEdgeScene!=m_Scene->GetIdentity()){m_UIEdges={};m_UIEdgeScene=m_Scene->GetIdentity();}
-        if(event.GetEventType()==EventType::MouseButtonPressed&&static_cast<MouseButtonPressedEvent&>(event).GetMouseButton()==Mouse::ButtonLeft){m_UIEdges.PointerPressed=true;m_UIEdges.PressPosition=mouse;}
-        if(event.GetEventType()==EventType::MouseButtonReleased&&static_cast<MouseButtonReleasedEvent&>(event).GetMouseButton()==Mouse::ButtonLeft){m_UIEdges.PointerReleased=true;m_UIEdges.ReleasePosition=mouse;m_UIEdges.HasReleasePosition=true;}
-        if(event.GetEventType()==EventType::KeyPressed){auto& e=static_cast<KeyPressedEvent&>(event);if(!e.IsRepeat()&&(e.GetKeyCode()==Key::Enter||e.GetKeyCode()==Key::Space))m_UIEdges.AcceptPressed=true;}
+        if(m_UIEdgeScene!=m_Scene->GetIdentity()){m_UIAdapter.Cancel();m_UIEdgeScene=m_Scene->GetIdentity();}
+        if(event.GetEventType()==EventType::MouseScrolled){auto &e=static_cast<MouseScrolledEvent&>(event);m_UIAdapter.ScrollEdge({e.GetXOffset(),e.GetYOffset()},mouse);}
+        if(event.GetEventType()==EventType::MouseButtonPressed)m_UIAdapter.PointerEdge(static_cast<MouseButtonPressedEvent&>(event).GetMouseButton(),true,mouse,Input::IsKeyPressed(Key::LeftShift)||Input::IsKeyPressed(Key::RightShift));
+        if(event.GetEventType()==EventType::MouseButtonReleased)m_UIAdapter.PointerEdge(static_cast<MouseButtonReleasedEvent&>(event).GetMouseButton(),false,mouse,Input::IsKeyPressed(Key::LeftShift)||Input::IsKeyPressed(Key::RightShift));
+        const bool shift=Input::IsKeyPressed(Key::LeftShift)||Input::IsKeyPressed(Key::RightShift);
+        const bool command=Input::IsKeyPressed(Key::LeftControl)||Input::IsKeyPressed(Key::RightControl)||Input::IsKeyPressed(Key::LeftAlt)||Input::IsKeyPressed(Key::RightAlt)||Input::IsKeyPressed(Key::LeftSuper)||Input::IsKeyPressed(Key::RightSuper);
+        if(event.GetEventType()==EventType::KeyTyped){auto cp=static_cast<KeyTypedEvent&>(event).GetKeyCode();try{m_UIAdapter.TextEdge({Text::EditCommand::Insert,Text::EncodeScalar(cp)});}catch(const std::exception& e){HZ_CORE_WARN("Text input rejected: {}",e.what());}}
+        if(event.GetEventType()==EventType::KeyPressed){auto& e=static_cast<KeyPressedEvent&>(event);
+            if(m_Scene->IsUITextEditing()){
+                const int mods=e.GetModifiers();bool sh=mods<0?shift:(mods&1)!=0;
+                bool ctrl=mods<0?(Input::IsKeyPressed(Key::LeftControl)||Input::IsKeyPressed(Key::RightControl)):(mods&2)!=0;
+                bool alt=mods<0?(Input::IsKeyPressed(Key::LeftAlt)||Input::IsKeyPressed(Key::RightAlt)):(mods&4)!=0;
+                bool super=mods<0?(Input::IsKeyPressed(Key::LeftSuper)||Input::IsKeyPressed(Key::RightSuper)):(mods&8)!=0;
+                using C=Text::EditCommand;std::optional<C> edit;auto key=e.GetKeyCode();
+                if(!alt&&!super){
+                    if(ctrl){switch(key){case Key::A:edit=C::All;break;case Key::C:edit=C::Copy;break;case Key::X:edit=C::Cut;break;case Key::V:edit=C::Paste;break;case Key::Z:edit=sh?C::Redo:C::Undo;break;case Key::Y:edit=C::Redo;break;default:break;}}
+                    if(!edit)switch(key){case Key::Backspace:edit=C::Backspace;break;case Key::Delete:edit=C::Delete;break;case Key::Left:edit=C::Left;break;case Key::Right:edit=C::Right;break;case Key::Up:edit=C::Up;break;case Key::Down:edit=C::Down;break;case Key::Home:edit=C::Home;break;case Key::End:edit=C::End;break;case Key::Enter:case Key::KPEnter:if(!e.IsRepeat())edit=ctrl?C::Submit:C::Enter;break;case Key::Escape:if(!e.IsRepeat())edit=C::Cancel;break;case Key::Tab:if(!e.IsRepeat())edit=sh?C::Previous:C::Next;break;default:break;}
+                }
+                if(edit)m_UIAdapter.TextEdge({*edit,{},sh,ctrl});
+            }else m_UIAdapter.KeyEdge(e.GetKeyCode(),true,e.IsRepeat(),shift,command);
+        }
+        if(event.GetEventType()==EventType::KeyReleased)m_UIAdapter.KeyEdge(static_cast<KeyReleasedEvent&>(event).GetKeyCode(),false,false,shift,command);
     }
+    void RuntimeSession::CancelUIGestures(){CheckThread();if(m_Scene&&m_Scene->IsGameplayInputBlocked())m_UINeutralLatch=true;m_UIAdapter.Cancel();if(m_Scene)m_Scene->CancelUIInput();}
+    void RuntimeSession::RouteUIInput(const GameUI::DeviceSample& sample,float seconds,bool enabled){
+        CheckThread();if(!m_Scene)return;
+        if(m_UIEdgeScene!=m_Scene->GetIdentity()){m_UIAdapter.Cancel();m_UIEdgeScene=m_Scene->GetIdentity();}
+        bool neutral=!sample.Mouse[size_t(m_UIAdapter.Bindings().PointerButton)];
+        for(auto binding:m_UIAdapter.Bindings().Actions)for(int key:{binding.Key,binding.Alternate})if(key>=0)neutral&=!sample.Keys[size_t(key)];
+        for(auto key:{Key::LeftControl,Key::RightControl,Key::LeftAlt,Key::RightAlt,Key::LeftSuper,Key::RightSuper})neutral&=!sample.Keys[key];
+        if(sample.Pad.Device>=0){for(bool down:sample.Pad.Buttons)neutral&=!down;for(float axis:sample.Pad.Sticks)neutral&=std::isfinite(axis)&&std::abs(axis)<=m_UIAdapter.Bindings().NeutralZone;}
+        if(neutral)m_UINeutralLatch=false;
+        const auto drops=m_UIAdapter.Dropped();
+        auto frame=m_UIAdapter.Sample(sample,seconds,enabled&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0)),m_Scene->IsUISliderEditing(),m_Scene->IsUITextEditing());
+        if(drops!=m_UIAdapter.Dropped()){
+            static auto last=std::chrono::steady_clock::time_point{};
+            const auto now=std::chrono::steady_clock::now();
+            if(now-last>=std::chrono::seconds(1)){HZ_CORE_WARN("UI input edge limit (64): cancelling frame; dropped {}",m_UIAdapter.Dropped());last=now;}
+        }
+        if(m_FramebufferExplicit)m_Scene->SetUIFramebufferSize(m_FramebufferSize);
+        m_Scene->UpdateUIInput(frame);
+        if((m_Scene->IsGameplayInputBlocked()||(!frame.Enabled&&enabled))&&!neutral)m_UINeutralLatch=true;
+    }
+    void RuntimeSession::ApplyUIBindings(const GameUI::UIBindings& bindings){
+        CheckThread();if(!m_Scene)throw std::logic_error("UI overrides require an active session");
+        auto text=GameUI::SerializeBindings(bindings);
+        // Write first. A failed persistent write cannot publish a false accepted override.
+        if(m_Project&&!m_Project->GetConfig().SaveNamespace.empty())m_Storage.Write("engine-ui-bindings",text);
+        else if(m_PersistentStorage)throw std::invalid_argument("Persistent UI overrides require a project SaveNamespace");
+        CancelUIGestures();m_UIAdapter.Configure(bindings);m_UIBindingWarning.clear();
+    }
+    void RuntimeSession::ResetUIBindings(){
+        CheckThread();if(!m_Scene)throw std::logic_error("UI overrides require an active session");
+        if(m_Project&&!m_Project->GetConfig().SaveNamespace.empty())m_Storage.Write("engine-ui-bindings","default");
+        CancelUIGestures();m_UIAdapter.Configure(m_Project?m_Project->GetUIBindings():GameUI::UIBindings::Defaults());m_UIBindingWarning.clear();
+    }
+
     void RuntimeSession::SetInput(glm::vec2 position, bool enabled) {
-        CheckThread(); m_Mouse = position; m_InputEnabled = enabled;m_GameplayEnabled=enabled; if(!enabled){m_UIEdges={};m_UIEdgeScene=0;}
+        CheckThread(); m_Mouse = position;
+        m_InputEnabled = enabled&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0));
+        m_GameplayEnabled=m_InputEnabled;
+        if(!m_InputEnabled){if(m_Scene&&m_Scene->IsGameplayInputBlocked())m_UINeutralLatch=true;m_UIAdapter.Cancel();m_UIEdgeScene=0;if(m_Scene)m_Scene->CancelUIInput();}
     }
     bool RuntimeSession::GetMouseWorldPosition(glm::vec2& position) const {
         if (!m_Scene || !IsGameplayMouseEnabled() || !m_Width || !m_Height || m_Mouse.x < 0 || m_Mouse.y < 0 || m_Mouse.x >= m_Width || m_Mouse.y >= m_Height) return false;

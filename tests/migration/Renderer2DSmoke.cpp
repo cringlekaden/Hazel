@@ -43,6 +43,12 @@ static std::size_t Pixels(int entity) {
     glReadPixels(0,0,128,128,GL_RED_INTEGER,GL_INT,ids.data()); glReadBuffer(GL_COLOR_ATTACHMENT0);
     return std::count(ids.begin(),ids.end(),entity);
 }
+#include "OrderedBatchChecks.h"
+#include "TextCompositingChecks.h"
+#include "GlyphPageChecks.h"
+#include "TextOverflowRenderChecks.h"
+#include "TextEmphasisRenderChecks.h"
+#include "TypographyRenderProfile.h"
 static void Primitives() {
     Begin(); Renderer2D::DrawQuad(Transform(),{1,0,0,1},42); End();
     Check(ID()==42 && Color()[0]>250 && Color()[1]<5,"Solid quad color/entity mismatch");
@@ -102,8 +108,10 @@ static void Textures() {
     Check(ID()==int(100+limit),"Texture slot overflow lost final quad");
     std::cout<<"Selected fragment texture batch capacity: "<<limit<<'\n';
 }
-static void Text() {
+static void WorldTextChecks() {
     auto font=Hazel::Font::GetDefault(); Renderer2D::TextParams parameters;
+    std::vector<Renderer2D::TextGlyph> ascii;Renderer2D::AppendTextGlyphs("Item",font,{},ascii);
+    Check(ascii.size()==4 && std::all_of(ascii.begin(),ascii.end(),[&](const auto& glyph){return glyph.Page==ascii.front().Page;}),"Common ASCII glyphs fragmented across page draws");
     Begin(); Renderer2D::DrawString(u8"é",font,Transform(-.3f,-.3f,1),parameters,90); End();
     Check(Renderer2D::GetStats().QuadCount==1 && Pixels(90)>100,"UTF-8 glyph rendering/picking mismatch");
     Begin(); Renderer2D::DrawString("A \tA\nA\r",font,Transform(-.5f,.1f,.7f),{glm::vec4(1),.01f,.02f},91); End();
@@ -115,9 +123,9 @@ static void Text() {
     Begin(); Renderer2D::DrawString("",font,glm::mat4(1),parameters); End();
     Check(Renderer2D::GetStats().DrawCalls==0,"Empty text produced draw");
     Begin(); Renderer2D::DrawString("?",font,Transform(-.3f,-.3f,1),parameters,94); End();
-    const auto fallbackPixels=Pixels(94);
+    Check(Pixels(94)>0,"Question-mark glyph missing");
     Begin(); Renderer2D::DrawString(u8"🙂",font,Transform(-.3f,-.3f,1),parameters,94); End();
-    Check(Renderer2D::GetStats().QuadCount==1 && Pixels(94)==fallbackPixels,"Non-Latin1 UTF-8 fallback changed target atlas behavior");
+    Check(Renderer2D::GetStats().QuadCount==1 && Pixels(94)>0 && font->Layout(u8"🙂",-1,false)->MissingGlyphs==1,"Missing source glyph did not display explicit .notdef");
     bool rejected=false;
     try { Renderer2D::DrawString("A",{},glm::mat4(1),parameters); } catch(const std::invalid_argument&) { rejected=true; }
     Check(rejected,"Invalid text font accepted");
@@ -201,7 +209,7 @@ static void RenderingControls(Application& application, const RuntimeRendererReq
           Renderer::GetResolution().Requested.TextureSlots==requests.TextureSlots && Renderer2D::GetQuadShaderLoadingPath()==loaded,
           "Failed policy validation changed live renderer/program state");
 }
-int main() {
+int main(int argc,char** argv) {
     try {
         Log::Init(); Fixture fixture; const auto cwd=std::filesystem::current_path();
         ApplicationSpecification invalid; invalid.Name="Migration Missing Shader"; invalid.Resources.Root=fixture.Directory/"missing-resources";
@@ -222,7 +230,11 @@ int main() {
             target=Framebuffer::Create(framebuffer);
             Check(Renderer::GetSettings().TextureSlots==(reduced ? 2u : std::min(32u,Renderer::GetCapabilities().MaxTextureSlots)),"Application renderer settings mismatch");
             RenderingControls(application,requests);
-            Primitives(); Textures(); Text(); Overflow(); GenericSubmit();
+            if(argc==2 && std::string(argv[1])=="--profile-overflow"){TextOverflowProfile();return 0;}
+            if(argc==2 && std::string(argv[1])=="--profile-typography"){TypographyRenderProfile();return 0;}
+            TextCompositingChecks(argc>1 && std::string(argv[1])=="--reproduce-d8");
+            if(argc>1)return 0;
+            Primitives(); Textures(); WorldTextChecks(); GlyphPageChecks(); TextOverflowRenderChecks(); TextEmphasisRenderChecks(); PagePressurePixels(); Overflow(); GenericSubmit(); OrderedBatchChecks();
             Check(glGetError()==GL_NO_ERROR,"Final renderer GL error");
             target->Unbind(); target.reset(); glEnable(GL_DEPTH_TEST);
         }

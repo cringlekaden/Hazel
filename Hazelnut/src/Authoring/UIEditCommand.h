@@ -1,0 +1,112 @@
+#pragma once
+#include "DocumentHistory.h"
+#include "Hazel/Scene/Entity.h"
+#include <optional>
+namespace Hazel
+{
+struct UITextValue
+{
+    std::string Text;
+    glm::vec4 Color{1};
+    float Kerning = 0, LineSpacing = 0;
+    FontSelection Font;
+    std::vector<Text::Span> Spans;
+};
+struct UIImageValue
+{
+    glm::vec4 Color{1};
+    SpriteSource Source;
+};
+// Only authored values. Native SpriteSource resources are stripped on capture
+// and command construction; no font, GPU, registry or managed object is retained.
+struct UIEditValues
+{
+    std::optional<UICanvasComponent> Canvas;
+    std::optional<UIRectComponent> Rect;
+    std::optional<UILayoutComponent> Flow;
+    std::optional<UITextStyleComponent> Style;
+    std::optional<UINineSliceComponent> Slice;
+    std::optional<UIButtonComponent> Button;
+    std::optional<UIRadioGroupComponent> Group;
+    std::optional<UIProgressComponent> Progress;
+    std::optional<UISliderComponent> Slider;
+    std::optional<UIScrollViewComponent> Scroll;
+    std::optional<UIAppearanceComponent> Appearance;
+    std::optional<UITextEntryComponent> Entry;
+    std::optional<UITabsComponent> Tabs;
+    std::optional<UITabComponent> Tab;
+    std::optional<UITooltipComponent> Tooltip;
+    std::optional<UIDropdownComponent> Dropdown;
+    std::optional<UITextValue> Text;
+    std::optional<UIImageValue> Image;
+    static UIEditValues Capture(Entity entity);
+    void StripResources();
+    size_t Bytes() const;
+    bool Same(const UIEditValues &other) const;
+    template <class T> void Set(const T &value)
+    {
+        if constexpr (std::is_same_v<T, UICanvasComponent>)
+            Canvas = value;
+        else if constexpr (std::is_same_v<T, UIRectComponent>)
+            Rect = value;
+        else if constexpr (std::is_same_v<T, UILayoutComponent>)
+            Flow = value;
+        else if constexpr (std::is_same_v<T, UITextStyleComponent>)
+            Style = value;
+        else if constexpr (std::is_same_v<T, UINineSliceComponent>)
+            Slice = value;
+        else if constexpr (std::is_same_v<T, UIButtonComponent>)
+            Button = value;
+        else if constexpr (std::is_same_v<T, UIRadioGroupComponent>) Group=value;
+        else if constexpr (std::is_same_v<T, UIProgressComponent>) Progress=value;
+        else if constexpr (std::is_same_v<T, UISliderComponent>) Slider=value;
+        else if constexpr (std::is_same_v<T, UIScrollViewComponent>) Scroll=value;
+        else if constexpr (std::is_same_v<T, UIAppearanceComponent>) Appearance=value;
+        else if constexpr (std::is_same_v<T, UITextEntryComponent>) Entry=value;
+        else if constexpr (std::is_same_v<T, UITabsComponent>) Tabs=value;
+        else if constexpr (std::is_same_v<T, UITabComponent>) Tab=value;
+        else if constexpr (std::is_same_v<T, UITooltipComponent>) Tooltip=value;
+        else if constexpr (std::is_same_v<T, UIDropdownComponent>) Dropdown=value;
+        else if constexpr (std::is_same_v<T, TextComponent>)
+            Text = UITextValue{value.TextString, value.Color, value.Kerning, value.LineSpacing, value.Font, value.Spans};
+        else if constexpr (std::is_same_v<T, SpriteRendererComponent>)
+            Image = UIImageValue{value.Color, value.Source};
+        StripResources();
+    }
+};
+class UIEditCommand final : public DocumentCommand
+{
+  public:
+    UIEditCommand(Scene &scene, uint64_t entity, std::string name, UIEditValues before);
+    bool Preview(Scene &scene, UIEditValues proposed, std::string &error);
+    bool Preview(Scene &scene, const UIEditValues &sampleBefore, UIEditValues proposed,
+                 std::string &error);
+    const std::string &Name() const override
+    {
+        return m_Name;
+    }
+    size_t Bytes() const override;
+    bool Changed() const override
+    {
+        return !m_Before.Same(m_After);
+    }
+    void Check(Scene &scene) const override;
+    void Reconcile(const std::vector<HistoryRestore>& mappings) noexcept override;
+    void Apply(Scene &scene, bool undo) override;
+    void Cancel(Scene &scene) override;
+    uint64_t EntityID() const
+    {
+        return m_Entity;
+    }
+
+  private:
+    Entity Target(Scene &scene, bool cancelling = false) const;
+    void Publish(Scene &scene, const UIEditValues &current, UIEditValues next,
+                 bool cancelling = false) const;
+    uint64_t m_Document, m_Entity;
+    std::vector<std::pair<uint64_t, uint64_t>> m_Guards;
+    std::array<uint64_t, 18> m_ComponentVersions{};
+    std::string m_Name;
+    UIEditValues m_Before, m_After;
+};
+} // namespace Hazel

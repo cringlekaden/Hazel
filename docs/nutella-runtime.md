@@ -1,5 +1,12 @@
 # Nutella milestone
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](README.md) and [history index](history.md).
+
+Historical milestone record: commands, counts and download evidence below describe
+its original checkpoint. For current prerequisites, command semantics, Release
+export and snapshot/download selection, use [Getting started](getting-started.md).
+Current runtime UI and tutorial are linked from [the root README](../README.md).
+
 ## Audit and design (2026-10-02)
 
 Baseline: verified authoring branch `11259a2` (CI 36984752108, passed) merged
@@ -79,8 +86,10 @@ Final implementation CI: [37100603151](https://github.com/cringlekaden/Hazel/act
 commit `5d972f323eb35904b27a994a5fc5292e01a5c7d1`, fully passed on Windows 2022
 and Ubuntu 24.04: Debug/Release builds and all 13 regressions per configuration,
 script-build, complete dependency-closure packaging, and extracted-archive tests
-under isolated software graphics and the OpenGL 4.1 path. Direct verified downloads
-are in README. Downloaded archives are independently checked against archive and
+under isolated software graphics and the OpenGL 4.1 path. Artifacts attached to
+that run describe that checkpoint; the current README can select a different
+snapshot. Use the current getting-started guide for download selection/retention.
+The archives downloaded during this milestone were checked against archive and
 all-file checksums, clean commit metadata, and absence of compiler intermediates
 or test drivers. The final documentation-only checkpoint skips redundant CI;
 its implementation is identical to this verified commit.

@@ -1,5 +1,7 @@
 # The Last Lightkeeper — feasibility and content plan
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../README.md) and [history index](../history.md).
+
 Baseline: current master `463cbdd`, 2026-10-10. Work is isolated on
 `feature/last-lightkeeper`; no merge, vendor-pin updates, macOS or Metal work.
 Repository inspected: Premake/native and managed builds, Nutella RuntimeSession,

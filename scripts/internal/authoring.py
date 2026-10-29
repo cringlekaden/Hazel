@@ -17,9 +17,10 @@ def native_generator():
 
 
 def native_contract(configuration='Debug'):
+    prefix = hz.mono_prefix()
     env = os.environ.copy()
     if hz.SYSTEM == 'linux':
-        env['LD_LIBRARY_PATH'] = str(hz.mono_prefix() / 'lib')
+        env['LD_LIBRARY_PATH'] = str(prefix / 'lib')
     probe = subprocess.run([str(native_generator()), '--contract'], cwd=hz.ROOT, env=env,
                            capture_output=True, text=True, encoding='utf-8', timeout=10)
     if probe.returncode or probe.stdout.strip() != 'HAZEL_AUTHORING_CONTRACT=1':
@@ -30,13 +31,14 @@ def native_contract(configuration='Debug'):
         raise RuntimeError('Missing ' + configuration + ' ScriptCore/contract validator; '
                            'build matching SDK tools')
     # mono_command ends in mcs.exe: this probe uses the runtime, not the compiler.
-    runtime = hz.mono_command(hz.mono_prefix())[:-1]
+    runtime = hz.mono_command(prefix)[:-1]
     probe = subprocess.run(list(map(str, [*runtime, audit, '--core-contract', core])),
                            cwd=hz.ROOT, env=env, capture_output=True, text=True,
                            encoding='utf-8', timeout=15)
     if probe.returncode or 'HAZEL_SCRIPTCORE_CONTRACT=1' not in probe.stdout:
         raise RuntimeError(probe.stderr.strip() or
                            'Incompatible ScriptCore API contract; rebuild matching SDK tools')
+    return prefix
 
 
 def create_project(name, technical, destination, build=False):
@@ -59,15 +61,19 @@ def create_project(name, technical, destination, build=False):
 
 
 def preflight(operation):
-    native_contract('Debug')
+    prefix = native_contract('Debug')
     if hz.SYSTEM=='windows':
         hz.vs_toolchain(operation=='export')
         targeting=Path(os.environ.get('ProgramFiles(x86)','C:/Program Files (x86)'))/'Reference Assemblies/Microsoft/Framework/.NETFramework/v4.7.2/mscorlib.dll'
         if not targeting.is_file(): raise RuntimeError('Install .NET Framework 4.7.2 targeting pack for script builds')
     else:
-        prefix=hz.ROOT/'build/dependencies/mono/linux/usr'
-        if not (prefix/'lib/mono/4.5/mcs.exe').is_file() and not Path('/usr/lib/mono/4.5/mcs.exe').is_file():
-            raise RuntimeError('Mono compiler SDK unavailable. Run SDK setup once or install mono-devel; precompiled Play still works.')
+        # native_contract resolved this complete SDK once, through mono_prefix.
+        # Never re-check unrelated local/system candidates after honoring an override.
+        required=('lib/mono/4.5/mcs.exe','lib/mono/4.7.2-api/mscorlib.dll')
+        missing=[name for name in required if not (prefix/name).is_file()]
+        if missing:
+            raise RuntimeError('Mono compiler SDK incomplete at '+str(prefix)+': missing '+
+                               ', '.join(missing)+'. Select a complete HAZEL_MONO_SDK; precompiled Play uses only the runtime.')
     if not (hz.binaries('Debug')/'Hazel-ScriptCore/Hazel-ScriptCore.dll').is_file():
         raise RuntimeError('SDK Debug ScriptCore is missing. Build/setup this SDK first; script builds need matching ScriptCore.')
     premake=hz.ROOT/'build/tools/premake-core/bin/release'/('premake5.exe' if hz.SYSTEM=='windows' else 'premake5')

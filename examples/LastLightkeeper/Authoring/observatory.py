@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""One-time composition of editable native scenes, never run by the game.
-Existing scenes require explicit --overwrite; preserved chapters are not touched.
+"""Historical pre-runtime-UI composition; see Authoring/README.md.
+Reproduction is restricted to disposable copies. Edit current content in Hazelnut.
 """
 import argparse
 import yaml
-from compose import Scene, terrain, quarter, game_hud, menu, WHITE, AMBER, CLIPS, ASSETS
+from compose import historical_arguments, Scene, terrain, quarter, game_hud, menu, WHITE, AMBER, CLIPS, ASSETS
 
 SLATE=[.69,.73,.81,1]
 COPPER=[.9,.77,.62,1]
@@ -152,8 +152,7 @@ def masonry_collisions(s, additional_gates=()):
         p=e['Relationship']['Parent'];e['Relationship']['Order']=s.orders.get(p,0);s.orders[p]=s.orders.get(p,0)+1
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--write',action='store_true');parser.add_argument('--overwrite',action='store_true');args=parser.parse_args()
-    if not args.write:raise SystemExit('Pass --write to compose native scenes.')
+    args=historical_arguments()
     scenes=[observatory(),menu('ObservatoryDawn',True)]
     scenes[1].by_name['Chapter']['TextComponent']['TextString']='THE OBSERVATORY'
     for s in scenes:

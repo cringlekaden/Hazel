@@ -46,3 +46,6 @@ compile_commands.json
 /tests/examples/Makefile
 /tests/examples/*.make
 /tests/examples/*.csproj
+
+# Optional clangd index beside the compilation database
+/.cache/clangd/

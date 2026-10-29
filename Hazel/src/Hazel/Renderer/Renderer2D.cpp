@@ -11,7 +11,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "MSDFData.h"
+#include "Hazel/Utils/UTF8.h"
 #include <algorithm>
 #include <stdexcept>
 
@@ -27,6 +27,7 @@ namespace Hazel {
 
 		// Editor-only
 		int EntityID;
+        glm::vec4 ClipRect;
 	};
 
 	struct CircleVertex
@@ -39,6 +40,7 @@ namespace Hazel {
 
 		// Editor-only
 		int EntityID;
+        glm::vec4 ClipRect;
 	};
 
 	struct LineVertex
@@ -48,6 +50,7 @@ namespace Hazel {
 
 		// Editor-only
 		int EntityID;
+        glm::vec4 ClipRect;
 	};
 
 	struct TextVertex
@@ -60,6 +63,7 @@ namespace Hazel {
 
 		// Editor-only
 		int EntityID;
+        glm::vec4 ClipRect;
 	};
 
 	struct Renderer2DData
@@ -69,6 +73,13 @@ namespace Hazel {
 		static constexpr uint32_t MaxIndices = MaxQuads * 6;
 		static constexpr uint32_t MaxTextureSlots = 32;
 		uint32_t TextureSlotLimit = 0;
+        bool Ordered=false,Picking=true,HasPassiveRuns=false;
+        glm::vec4 ClipRect{-1};
+        struct Run {int Kind;uint32_t First,Count;Ref<Texture2D> Font;float LineWidth;bool Picking=true;};
+        std::vector<Run> Runs; // at most 8192, reused between chunks/frames
+        Ref<const Text::Layout> LineLayout;
+        std::vector<Ref<const FontPage>> LinePages; // one pass-local preparation, never CPU-owned
+
 
 		Ref<VertexArray> QuadVertexArray;
 		Ref<VertexBuffer> QuadVertexBuffer;
@@ -109,6 +120,7 @@ namespace Hazel {
 		uint32_t TextureSlotIndex = 1; // 0 = white texture
 
 		Ref<Texture2D> FontAtlasTexture;
+        uint32_t FontSamplerUnit=0;
 
 		glm::vec4 QuadVertexPositions[4];
 
@@ -128,7 +140,8 @@ namespace Hazel {
 	{
 		HZ_PROFILE_FUNCTION();
 
-		s_Data = CreateScope<Renderer2DData>();
+		Font::Initialize();
+        s_Data = CreateScope<Renderer2DData>();
 		s_Data->TextureSlotLimit = RenderCommand::GetSettings().TextureSlots;
 		HZ_CORE_INFO("Renderer2D texture slots: {}", s_Data->TextureSlotLimit);
 		s_Data->QuadVertexArray = VertexArray::Create();
@@ -140,7 +153,8 @@ namespace Hazel {
 			{ ShaderDataType::Float2, "a_TexCoord"     },
 			{ ShaderDataType::Float,  "a_TexIndex"     },
 			{ ShaderDataType::Float,  "a_TilingFactor" },
-			{ ShaderDataType::Int,    "a_EntityID"     }
+			{ ShaderDataType::Int, "a_EntityID" },
+            { ShaderDataType::Float4, "a_ClipRect" }
 		});
 		s_Data->QuadVertexArray->AddVertexBuffer(s_Data->QuadVertexBuffer);
 
@@ -176,7 +190,8 @@ namespace Hazel {
 			{ ShaderDataType::Float4, "a_Color"         },
 			{ ShaderDataType::Float,  "a_Thickness"     },
 			{ ShaderDataType::Float,  "a_Fade"          },
-			{ ShaderDataType::Int,    "a_EntityID"      }
+			{ ShaderDataType::Int, "a_EntityID" },
+            { ShaderDataType::Float4, "a_ClipRect" }
 		});
 		s_Data->CircleVertexArray->AddVertexBuffer(s_Data->CircleVertexBuffer);
 		s_Data->CircleVertexArray->SetIndexBuffer(quadIB); // Use quad IB
@@ -189,7 +204,8 @@ namespace Hazel {
 		s_Data->LineVertexBuffer->SetLayout({
 			{ ShaderDataType::Float3, "a_Position" },
 			{ ShaderDataType::Float4, "a_Color"    },
-			{ ShaderDataType::Int,    "a_EntityID" }
+			{ ShaderDataType::Int, "a_EntityID" },
+            { ShaderDataType::Float4, "a_ClipRect" }
 		});
 		s_Data->LineVertexArray->AddVertexBuffer(s_Data->LineVertexBuffer);
 		s_Data->LineVertexBufferBase = CreateScope<LineVertex[]>(s_Data->MaxVertices);
@@ -202,7 +218,8 @@ namespace Hazel {
 			{ ShaderDataType::Float3, "a_Position"     },
 			{ ShaderDataType::Float4, "a_Color"        },
 			{ ShaderDataType::Float2, "a_TexCoord"     },
-			{ ShaderDataType::Int,    "a_EntityID"     }
+			{ ShaderDataType::Int, "a_EntityID" },
+            { ShaderDataType::Float4, "a_ClipRect" }
 		});
 		s_Data->TextVertexArray->AddVertexBuffer(s_Data->TextVertexBuffer);
 		s_Data->TextVertexArray->SetIndexBuffer(quadIB);
@@ -226,6 +243,7 @@ namespace Hazel {
 		s_Data->QuadVertexPositions[3] = { -0.5f,  0.5f, 0.0f, 1.0f };
 
 		s_Data->CameraUniformBuffer = UniformBuffer::Create(sizeof(Renderer2DData::CameraData), 0);
+        Font::GetDefault(); // reserve the context-owned fallback before any custom admission
 	}
 
 	void Renderer2D::Shutdown()
@@ -238,6 +256,7 @@ namespace Hazel {
 
 	void Renderer2D::BeginScene(const OrthographicCamera& camera)
 	{
+        s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);
 		HZ_PROFILE_FUNCTION();
 
 		s_Data->CameraBuffer.ViewProjection = camera.GetViewProjectionMatrix();
@@ -248,6 +267,7 @@ namespace Hazel {
 
 	void Renderer2D::BeginScene(const Camera& camera, const glm::mat4& transform)
 	{
+        s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);
 		HZ_PROFILE_FUNCTION();
 
 		s_Data->CameraBuffer.ViewProjection = camera.GetProjection() * glm::inverse(transform);
@@ -258,6 +278,7 @@ namespace Hazel {
 
 	void Renderer2D::BeginScene(const EditorCamera& camera)
 	{
+        s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);
 		HZ_PROFILE_FUNCTION();
 
 		s_Data->CameraBuffer.ViewProjection = camera.GetViewProjection();
@@ -266,14 +287,153 @@ namespace Hazel {
 		StartBatch();
 	}
 
-	void Renderer2D::EndScene()
-	{
-		HZ_PROFILE_FUNCTION();
+    void Renderer2D::BeginOrderedScene(const Camera &camera, const glm::mat4 &transform)
+    {
+        // Drain the previous pass before updating its camera or raster state.
+        EndScene();
+        BeginScene(camera, transform);
+        s_Data->Ordered = true;s_Data->Picking=true;
+    }
+    void Renderer2D::SetPickingEnabled(bool enabled){if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered submission");s_Data->Picking=enabled;}
+    void Renderer2D::SetPrimitiveClip(glm::ivec4 clip)
+    {
+        if (!s_Data->Ordered)
+            throw std::logic_error("Primitive clip requires an ordered pass");
+        if (s_Data->ClipRect != glm::vec4(clip))
+            ++s_Data->Stats.ClipTransitions;
+        s_Data->ClipRect = glm::vec4(clip);
+    }
+    void Renderer2D::EndScene()
+    {
+        HZ_PROFILE_FUNCTION();
+        Flush(FlushReason::End);
+        StartBatch();
+        if (s_Data->FontSamplerUnit)
+        {
+            s_Data->TextShader->Bind();
+            s_Data->TextShader->SetInt("u_FontAtlas", 0);
+            s_Data->FontSamplerUnit = 0;
+        }
+        s_Data->Ordered = false;
+        s_Data->ClipRect = glm::vec4(-1);
+        s_Data->FontAtlasTexture.reset();
+        s_Data->LineLayout.reset();s_Data->LinePages.clear();
+    }
+    void Renderer2D::EnsureRunSpace()
+    {
+        if (s_Data->Ordered && s_Data->Runs.size() >= 8192)
+            NextBatch(FlushReason::Capacity);
+    }
+    void Renderer2D::QueueRun(Primitive kind, uint32_t count)
+    {
+        if (!s_Data->Ordered)
+            return;
+        const int type = int(kind);
+        s_Data->HasPassiveRuns|=!s_Data->Picking;
+        auto &runs = s_Data->Runs;
+        if (!runs.empty())
+        {
+            auto &last = runs.back();
+            if (last.Kind == type && last.Picking==s_Data->Picking &&
+                (kind != Primitive::Text || last.Font == s_Data->FontAtlasTexture) &&
+                (kind != Primitive::Line || last.LineWidth == s_Data->LineWidth))
+            {
+                last.Count += count;
+                return;
+            }
+            if (last.Kind != type)
+                ++s_Data->Stats.PrimitiveTransitions;
+            else if (kind == Primitive::Text)
+                ++s_Data->Stats.FontTransitions;
+        }
+        uint32_t first = kind == Primitive::Quad     ? s_Data->QuadIndexCount
+                         : kind == Primitive::Text   ? s_Data->TextIndexCount
+                         : kind == Primitive::Circle ? s_Data->CircleIndexCount
+                                                     : s_Data->LineVertexCount;
+        runs.push_back({type, first, count,
+                        kind == Primitive::Text ? s_Data->FontAtlasTexture : Ref<Texture2D>{},
+                        s_Data->LineWidth,s_Data->Picking});
+    }
+    void Renderer2D::FlushOrdered()
+    {
+        struct PickingScope {bool Active;glm::bvec4 Saved{true};explicit PickingScope(bool active):Active(active){if(Active)Saved=RenderCommand::GetRasterState().PickingMask;}~PickingScope(){if(Active)RenderCommand::SetPickingMask(Saved);}} picking(s_Data->HasPassiveRuns);
+        auto upload = [](auto &buffer, auto &base, auto end) {
+            uint32_t bytes = uint32_t(reinterpret_cast<uint8_t *>(end) -
+                                      reinterpret_cast<uint8_t *>(base.get()));
+            if (bytes)
+            {
+                buffer->SetData(base.get(), bytes);
+                s_Data->Stats.UploadedBytes += bytes;
+            }
+        };
+        upload(s_Data->QuadVertexBuffer, s_Data->QuadVertexBufferBase, s_Data->QuadVertexBufferPtr);
+        upload(s_Data->CircleVertexBuffer, s_Data->CircleVertexBufferBase,
+               s_Data->CircleVertexBufferPtr);
+        upload(s_Data->LineVertexBuffer, s_Data->LineVertexBufferBase, s_Data->LineVertexBufferPtr);
+        upload(s_Data->TextVertexBuffer, s_Data->TextVertexBufferBase, s_Data->TextVertexBufferPtr);
+        for (uint32_t i = 0; s_Data->QuadIndexCount && i < s_Data->TextureSlotIndex; ++i)
+            s_Data->TextureSlots[i]->Bind(i);
+        // Geometry is now complete: use an actually free sampler for text when
+        // possible, preserving every configured quad slot. A full chunk shares
+        // unit zero and restores white before a subsequent quad run.
+        // SPIR-V does not guarantee named uniform lookup. Its declared sampler
+        // binding stays immutable; use the same shared-unit fallback as full chunks.
+        const bool movableSampler =
+            s_Data->TextShader->GetProgramLoadingPath() != Shader::ProgramLoadingPath::SPIRV;
+        const uint32_t fontUnit = movableSampler && s_Data->QuadIndexCount &&
+                                          s_Data->TextureSlotIndex < s_Data->TextureSlotLimit
+                                      ? s_Data->TextureSlotIndex
+                                      : 0;
+        if (s_Data->TextIndexCount && s_Data->FontSamplerUnit != fontUnit)
+        {
+            s_Data->TextShader->Bind();
+            s_Data->TextShader->SetInt("u_FontAtlas", fontUnit);
+            s_Data->FontSamplerUnit = fontUnit;
+        }
+        Ref<Texture2D> unitZero = s_Data->QuadIndexCount ? s_Data->WhiteTexture : Ref<Texture2D>{},
+                       boundFont;
+        for (const auto &run : s_Data->Runs)
+        {
+            if(picking.Active)RenderCommand::SetPickingMask(run.Picking?picking.Saved:glm::bvec4(false));
+            RenderCommand::SetTextCompositing(Primitive(run.Kind) == Primitive::Text);
+            switch (Primitive(run.Kind))
+            {
+            case Primitive::Quad:
+                if (unitZero != s_Data->WhiteTexture)
+                {
+                    s_Data->WhiteTexture->Bind(0);
+                    unitZero = s_Data->WhiteTexture;
+                }
+                s_Data->QuadShader->Bind();
+                RenderCommand::DrawIndexed(s_Data->QuadVertexArray, run.Count, run.First);
+                break;
+            case Primitive::Text:
+                if ((fontUnit ? boundFont : unitZero) != run.Font)
+                {
+                    run.Font->Bind(fontUnit);
+                    if (fontUnit)
+                        boundFont = run.Font;
+                    else
+                        unitZero = run.Font;
+                }
+                s_Data->TextShader->Bind();
+                RenderCommand::DrawIndexed(s_Data->TextVertexArray, run.Count, run.First);
+                break;
+            case Primitive::Circle:
+                s_Data->CircleShader->Bind();
+                RenderCommand::DrawIndexed(s_Data->CircleVertexArray, run.Count, run.First);
+                break;
+            case Primitive::Line:
+                s_Data->LineShader->Bind();
+                RenderCommand::SetLineWidth(run.LineWidth);
+                RenderCommand::DrawLines(s_Data->LineVertexArray, run.Count, run.First);
+                break;
+            }
+            ++s_Data->Stats.DrawCalls;
+        }
+    }
 
-		Flush();
-	}
-
-	void Renderer2D::StartBatch()
+    void Renderer2D::StartBatch()
 	{
 		s_Data->QuadIndexCount = 0;
 		s_Data->QuadVertexBufferPtr = s_Data->QuadVertexBufferBase.get();
@@ -287,15 +447,30 @@ namespace Hazel {
 		s_Data->TextIndexCount = 0;
 		s_Data->TextVertexBufferPtr = s_Data->TextVertexBufferBase.get();
 
-		s_Data->TextureSlotIndex = 1;
+		for(uint32_t i=1;i<s_Data->TextureSlotIndex;++i)s_Data->TextureSlots[i].reset();
+        s_Data->TextureSlotIndex = 1;
+        s_Data->Runs.clear();s_Data->HasPassiveRuns=false;
 	}
 
-	void Renderer2D::Flush()
+	void Renderer2D::Flush(FlushReason reason)
 	{
+        if(!(s_Data->QuadIndexCount||s_Data->CircleIndexCount||s_Data->TextIndexCount||s_Data->LineVertexCount))return;
+        const auto start=std::chrono::steady_clock::now();
+        struct TextCompositingScope {
+            bool Active;
+            explicit TextCompositingScope(bool active):Active(active){if(Active)RenderCommand::BeginTextCompositing();}
+            void Finish(){if(Active){RenderCommand::EndTextCompositing();Active=false;}}
+            ~TextCompositingScope(){Finish();}
+        } textScope(s_Data->TextIndexCount!=0);
+        if(s_Data->QuadIndexCount||s_Data->CircleIndexCount||s_Data->TextIndexCount||s_Data->LineVertexCount)++s_Data->Stats.Flushes[size_t(reason)];
+        if(s_Data->Ordered){
+            FlushOrdered();textScope.Finish();s_Data->Stats.SubmitMilliseconds+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();return;
+        }
 		if (s_Data->QuadIndexCount)
 		{
 			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data->QuadVertexBufferPtr - (uint8_t*)s_Data->QuadVertexBufferBase.get());
 			s_Data->QuadVertexBuffer->SetData(s_Data->QuadVertexBufferBase.get(), dataSize);
+            s_Data->Stats.UploadedBytes+=dataSize;
 
 			// Bind textures
 			for (uint32_t i = 0; i < s_Data->TextureSlotIndex; i++)
@@ -310,6 +485,7 @@ namespace Hazel {
 		{
 			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data->CircleVertexBufferPtr - (uint8_t*)s_Data->CircleVertexBufferBase.get());
 			s_Data->CircleVertexBuffer->SetData(s_Data->CircleVertexBufferBase.get(), dataSize);
+            s_Data->Stats.UploadedBytes+=dataSize;
 
 			s_Data->CircleShader->Bind();
 			RenderCommand::DrawIndexed(s_Data->CircleVertexArray, s_Data->CircleIndexCount);
@@ -320,6 +496,7 @@ namespace Hazel {
 		{
 			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data->LineVertexBufferPtr - (uint8_t*)s_Data->LineVertexBufferBase.get());
 			s_Data->LineVertexBuffer->SetData(s_Data->LineVertexBufferBase.get(), dataSize);
+            s_Data->Stats.UploadedBytes+=dataSize;
 
 			s_Data->LineShader->Bind();
 			RenderCommand::SetLineWidth(s_Data->LineWidth);
@@ -331,18 +508,22 @@ namespace Hazel {
 		{
 			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data->TextVertexBufferPtr - (uint8_t*)s_Data->TextVertexBufferBase.get());
 			s_Data->TextVertexBuffer->SetData(s_Data->TextVertexBufferBase.get(), dataSize);
+            s_Data->Stats.UploadedBytes+=dataSize;
 
 			s_Data->FontAtlasTexture->Bind(0);
 
 			s_Data->TextShader->Bind();
+            RenderCommand::SetTextCompositing(true);
 			RenderCommand::DrawIndexed(s_Data->TextVertexArray, s_Data->TextIndexCount);
 			s_Data->Stats.DrawCalls++;
 		}
+        textScope.Finish();
+        s_Data->Stats.SubmitMilliseconds+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
 	}
 
-	void Renderer2D::NextBatch()
+	void Renderer2D::NextBatch(FlushReason reason)
 	{
-		Flush();
+		Flush(reason);
 		StartBatch();
 	}
 
@@ -378,6 +559,7 @@ namespace Hazel {
 
 	void Renderer2D::DrawQuad(const glm::mat4& transform, const glm::vec4& color, int entityID)
 	{
+        EnsureRunSpace();
 		HZ_PROFILE_FUNCTION();
 
 		constexpr size_t quadVertexCount = 4;
@@ -396,12 +578,15 @@ namespace Hazel {
 			s_Data->QuadVertexBufferPtr->TexIndex = textureIndex;
 			s_Data->QuadVertexBufferPtr->TilingFactor = tilingFactor;
 			s_Data->QuadVertexBufferPtr->EntityID = entityID;
+            s_Data->QuadVertexBufferPtr->ClipRect=s_Data->ClipRect;
 			s_Data->QuadVertexBufferPtr++;
 		}
 
-		s_Data->QuadIndexCount += 6;
+		QueueRun(Primitive::Quad,6);
+        s_Data->QuadIndexCount += 6;
 
 		s_Data->Stats.QuadCount++;
+        ++s_Data->Stats.GeometryCount;
 	}
 
 	void Renderer2D::DrawQuad(const glm::mat4& transform, const Ref<Texture2D>& texture, float tilingFactor, const glm::vec4& tintColor, int entityID)
@@ -412,6 +597,7 @@ namespace Hazel {
 
     void Renderer2D::DrawSprite(const glm::mat4& transform, const ResolvedSprite& sprite, const glm::vec4& tintColor, int entityID)
 	{
+        EnsureRunSpace();
 		HZ_PROFILE_FUNCTION();
         const auto& texture=sprite.Texture;
 
@@ -433,7 +619,7 @@ namespace Hazel {
 		if (texture && textureIndex == 0.0f)
 		{
 			if (s_Data->TextureSlotIndex >= s_Data->TextureSlotLimit)
-				NextBatch();
+				NextBatch(FlushReason::Textures);
 
 			textureIndex = (float)s_Data->TextureSlotIndex;
 			s_Data->TextureSlots[s_Data->TextureSlotIndex] = texture;
@@ -448,12 +634,15 @@ namespace Hazel {
 			s_Data->QuadVertexBufferPtr->TexIndex = textureIndex;
 			s_Data->QuadVertexBufferPtr->TilingFactor = sprite.TilingFactor;
 			s_Data->QuadVertexBufferPtr->EntityID = entityID;
+            s_Data->QuadVertexBufferPtr->ClipRect=s_Data->ClipRect;
 			s_Data->QuadVertexBufferPtr++;
 		}
 
-		s_Data->QuadIndexCount += 6;
+		QueueRun(Primitive::Quad,6);
+        s_Data->QuadIndexCount += 6;
 
 		s_Data->Stats.QuadCount++;
+        ++s_Data->Stats.GeometryCount;
 	}
 
 	void Renderer2D::DrawRotatedQuad(const glm::vec2& position, const glm::vec2& size, float rotation, const glm::vec4& color)
@@ -490,6 +679,7 @@ namespace Hazel {
 
 	void Renderer2D::DrawCircle(const glm::mat4& transform, const glm::vec4& color, float thickness /*= 1.0f*/, float fade /*= 0.005f*/, int entityID /*= -1*/)
 	{
+        EnsureRunSpace();
 		HZ_PROFILE_FUNCTION();
 
 		if (s_Data->CircleIndexCount + 6 > Renderer2DData::MaxIndices)
@@ -503,29 +693,37 @@ namespace Hazel {
 			s_Data->CircleVertexBufferPtr->Thickness = thickness;
 			s_Data->CircleVertexBufferPtr->Fade = fade;
 			s_Data->CircleVertexBufferPtr->EntityID = entityID;
+            s_Data->CircleVertexBufferPtr->ClipRect=s_Data->ClipRect;
 			s_Data->CircleVertexBufferPtr++;
 		}
 
-		s_Data->CircleIndexCount += 6;
+		QueueRun(Primitive::Circle,6);
+        s_Data->CircleIndexCount += 6;
 
 		s_Data->Stats.QuadCount++;
+        ++s_Data->Stats.GeometryCount;
 	}
 
 	void Renderer2D::DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color, int entityID)
 	{
+        EnsureRunSpace();
 		if (s_Data->LineVertexCount + 2 > Renderer2DData::MaxVertices)
 			NextBatch();
 		s_Data->LineVertexBufferPtr->Position = p0;
 		s_Data->LineVertexBufferPtr->Color = color;
 		s_Data->LineVertexBufferPtr->EntityID = entityID;
+            s_Data->LineVertexBufferPtr->ClipRect=s_Data->ClipRect;
 		s_Data->LineVertexBufferPtr++;
 
 		s_Data->LineVertexBufferPtr->Position = p1;
 		s_Data->LineVertexBufferPtr->Color = color;
 		s_Data->LineVertexBufferPtr->EntityID = entityID;
+            s_Data->LineVertexBufferPtr->ClipRect=s_Data->ClipRect;
 		s_Data->LineVertexBufferPtr++;
 
-		s_Data->LineVertexCount += 2;
+		QueueRun(Primitive::Line,2);
+        s_Data->LineVertexCount += 2;
+        ++s_Data->Stats.GeometryCount;
 	}
 
 	void Renderer2D::DrawRect(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color, int entityID)
@@ -564,169 +762,127 @@ namespace Hazel {
 
     float Renderer2D::MeasureText(const std::string& text,const Ref<Font>& font,float kerning) {
         if(!font)throw std::invalid_argument("Measurement needs a font");
-        const auto& g=font->GetMSDFData()->FontGeometry;const auto& metrics=g.getMetrics();
-        const double scale=1/(metrics.ascenderY-metrics.descenderY);
-        std::vector<msdf_atlas::unicode_t> chars;msdf_atlas::utf8Decode(chars,text.c_str());
-        double x=0,maximum=0;
-        for(size_t i=0;i<chars.size();i++) {
-            auto ch=chars[i];if(ch=='\r')continue;if(ch=='\n'){maximum=std::max(maximum,x);x=0;continue;}
-            if(ch=='\t'){x+=4*(scale*g.getGlyph(' ')->getAdvance()+kerning);continue;}
-            auto glyph=g.getGlyph(ch);if(!glyph)glyph=g.getGlyph('?');if(!glyph)continue;
-            double advance=glyph->getAdvance();if(i+1<chars.size())g.getAdvance(advance,ch,chars[i+1]);x+=scale*advance+kerning;
-        }
-        return float(std::max(maximum,x));
+        return font->Layout(text,-1,false,kerning)->Width;
     }
-    void Renderer2D::LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines) {
-        if(text.size()>65536)throw std::invalid_argument("UI text exceeds 64 KiB");
-        lines.clear();
-        const auto& geometry=font->GetMSDFData()->FontGeometry;const auto metrics=geometry.getMetrics();
-        const double scale=1/(metrics.ascenderY-metrics.descenderY);
-        std::vector<msdf_atlas::unicode_t> chars;msdf_atlas::utf8Decode(chars,text.c_str());
-        std::vector<size_t> bytes;bytes.reserve(chars.size()+1);
-        for(size_t i=0;i<text.size();){bytes.push_back(i);++i;while(i<text.size()&&(static_cast<unsigned char>(text[i])&0xc0)==0x80)++i;}bytes.push_back(text.size());
-        if(bytes.size()!=chars.size()+1)throw std::invalid_argument("UI text must be UTF-8");
-        auto base=[&](uint32_t ch){auto glyph=geometry.getGlyph(ch);if(!glyph)glyph=geometry.getGlyph('?');return glyph?glyph->getAdvance():0.;};
-        auto emit=[&](size_t begin,size_t end){auto line=text.substr(bytes[begin],bytes[end]-bytes[begin]);lines.push_back({line,MeasureText(line,font,kerning)});};
-        size_t start=0,lastSpace=std::string::npos;double advance=0,previous=0;uint32_t previousChar=0;
-        for(size_t i=0;i<chars.size();i++) {
-            const auto ch=chars[i];if(ch=='\r')continue;
-            if(ch=='\n'){emit(start,i);start=i+1;advance=0;lastSpace=std::string::npos;previousChar=0;continue;}
-            if(previousChar&&previousChar!='\t'){double paired=base(previousChar);geometry.getAdvance(paired,previousChar,ch);advance+=scale*paired+kerning-previous;}
-            double current=ch=='\t'?4*(scale*base(' ')+kerning):scale*base(ch)+kerning;
-            if(wrap&&width>0&&i>start&&advance+current>width) {
-                size_t end=lastSpace!=std::string::npos&&lastSpace>=start?lastSpace:i;
-                emit(start,end);start=end;
-                while(start<chars.size()&&(chars[start]==' '||chars[start]=='\t'))++start;
-                advance=0;previousChar=0;lastSpace=std::string::npos;i=start-1;continue;
+    Ref<const Text::Layout> Renderer2D::LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines,float spacing,Text::Overflow overflow,uint32_t maxLines,float height,const FontPalette& faces,const std::vector<Text::Span>& spans) {
+        if(!font)throw std::invalid_argument("Layout needs a font");
+        Text::FaceSet cpuFaces{};for(size_t i=0;i<faces.size();++i)if(faces[i])cpuFaces[i]=faces[i]->GetCPUFace();
+        auto result=font->Layout(text,width,wrap,kerning,spacing,overflow,maxLines,height,cpuFaces,spans);
+        std::vector<TextLine> complete;complete.reserve(result->Lines.size());
+        for(uint32_t i=0;i<result->Lines.size();++i) {
+            const auto& line=result->Lines[i];
+            auto begin=result->Boundaries[line.Begin].Byte,end=result->Boundaries[line.End].Byte;
+            complete.push_back({text.substr(begin,end-begin),line.Width,result,i});
+        }
+        lines.swap(complete); // allocation failure cannot partially publish the line view
+        return result;
+    }
+    namespace {
+    void AppendPositionedLine(const Text::Layout& layout,uint32_t index,const std::vector<Ref<const FontPage>>& pages,
+                              std::vector<Renderer2D::TextGlyph>& glyphs,glm::vec2 offset) {
+        const auto& line=layout.Lines.at(index);const float scale=layout.EmSize;
+        for(uint32_t r=line.FirstRun;r<line.FirstRun+line.RunCount;++r) {
+            const auto& run=layout.Runs[r];
+            for(uint32_t i=run.FirstGlyph;i<run.FirstGlyph+run.GlyphCount;++i) {
+                const auto& positioned=layout.Glyphs[i];Ref<const FontPage> page;const FontPage::Glyph* geometry=nullptr;
+                for(auto& candidate:pages)if(candidate->Face==layout.Faces[positioned.FaceIndex])if(auto found=candidate->Find(positioned.ID)){page=candidate;geometry=found;break;}
+                if(geometry && geometry->Empty && positioned.ID!=0)continue; // advance already belongs to CPU layout
+                if(geometry && geometry->Empty){geometry=nullptr;page.reset();}
+                if(!geometry && positioned.ID!=0 && !layout.Faces[positioned.FaceIndex]->HasInk(positioned.ID))continue;
+                const glm::vec2 pen(positioned.X+positioned.OffsetX,-positioned.OffsetY);
+                if(geometry)glyphs.push_back({geometry->Min*scale+pen+offset,geometry->Max*scale+pen+offset,geometry->UVMin,geometry->UVMax,page,layout.Font,positioned.PaintSource});
+                else glyphs.push_back({pen+offset+glm::vec2(0,-.2f),pen+offset+glm::vec2(std::max(.15f,positioned.AdvanceX),.7f),{0,0},{1,1},{},layout.Font,positioned.PaintSource});
             }
-            advance+=current;previous=current;previousChar=ch;if(ch==' '||ch=='\t')lastSpace=i;
         }
-        emit(start,chars.size());
     }
-	void Renderer2D::DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const TextParams& textParams, int entityID)
+    }
+    void Renderer2D::AppendTextLineGlyphs(const TextLine& line,const Ref<Font>& font,std::vector<TextGlyph>& glyphs,glm::vec2 offset,const FontPalette& faces) {
+        if(!line.Result || !font || line.Result->Font!=font->GetCPUFace())throw std::invalid_argument("Prepared line/font version mismatch");
+        if(!s_Data->LineLayout || s_Data->LineLayout!=line.Result) {
+            s_Data->LinePages.clear();s_Data->LineLayout.reset();
+            std::vector<Ref<const FontPage>> pages;
+            for(uint8_t i=0;i<5;++i)if(std::any_of(line.Result->Glyphs.begin(),line.Result->Glyphs.end(),[&](const auto& g){return g.FaceIndex==i;})) {
+                auto owner=i?faces[i]:font;
+                if(!owner || owner->GetCPUFace()!=line.Result->Faces[i])throw std::invalid_argument("Prepared rich line/face version mismatch");
+                auto next=owner->PreparePages(*line.Result,i);pages.insert(pages.end(),next.begin(),next.end());
+            }
+            s_Data->LinePages=std::move(pages);s_Data->LineLayout=line.Result;
+        }
+        AppendPositionedLine(*line.Result,line.Index,s_Data->LinePages,glyphs,offset);
+    }
+    void Renderer2D::AppendTextGlyphs(const std::string& text,const Ref<Font>& font,const TextParams& params,std::vector<TextGlyph>& glyphs,glm::vec2 offset) {
+        if(!font)throw std::invalid_argument("Text needs a font");
+        auto layout=font->Layout(text,-1,false,params.Kerning,params.LineSpacing);auto pages=font->PreparePages(*layout);
+        const float baseline=layout->Lines.front().Baseline;
+        for(uint32_t i=0;i<layout->Lines.size();++i)AppendPositionedLine(*layout,i,pages,glyphs,offset+glm::vec2(0,baseline-layout->Lines[i].Baseline));
+    }
+    void Renderer2D::DrawTextGlyphs(const std::vector<TextGlyph> &glyphs, const Ref<Font> &font,
+                                    const glm::mat4 &transform, const glm::vec4 &color,
+                                    int entityID,const std::vector<Text::Span>& spans,glm::vec4 interaction)
+    {
+        if (glyphs.empty() || color.a==0 || interaction.a==0)
+            return;
+        if (!font)throw std::invalid_argument("Text requires a usable font");
+        for (const auto &g : glyphs)
+        {
+            auto atlas=g.Page?g.Page->Texture:s_Data->WhiteTexture;
+            if(!atlas)continue;
+            if((g.BaseFace && g.BaseFace!=font->GetCPUFace()) || (!g.BaseFace&&g.Page&&g.Page->Face!=font->GetCPUFace()))throw std::invalid_argument("Prepared glyph/font version mismatch");
+            auto paint=color*interaction;
+            if(auto span=Text::SpanAt(spans,g.PaintSource);span&&span->Color){paint=*span->Color*interaction;paint.a*=color.a;}
+            if(!s_Data->Ordered && s_Data->TextIndexCount && s_Data->FontAtlasTexture!=atlas)NextBatch(FlushReason::Font);
+            s_Data->FontAtlasTexture=atlas;
+            EnsureRunSpace();
+            if (s_Data->TextIndexCount + 6 > Renderer2DData::MaxIndices)NextBatch();
+            const glm::vec2 positions[]{g.Min, {g.Min.x, g.Max.y}, g.Max, {g.Max.x, g.Min.y}};
+            const glm::vec2 uv[]{g.UVMin, {g.UVMin.x, g.UVMax.y}, g.UVMax, {g.UVMax.x, g.UVMin.y}};
+            for (size_t i = 0; i < 4; ++i)
+            {
+                auto &v = *s_Data->TextVertexBufferPtr++;
+                v.Position = transform * glm::vec4(positions[i], 0, 1);
+                v.Color = g.Page?paint:glm::vec4(1,0,1,paint.a);
+                v.TexCoord = uv[i];
+                v.EntityID = entityID;
+                v.ClipRect = s_Data->ClipRect;
+            }
+            QueueRun(Primitive::Text, 6);
+            s_Data->TextIndexCount += 6;
+            ++s_Data->Stats.QuadCount;
+            ++s_Data->Stats.GeometryCount;
+        }
+    }
+    void Renderer2D::DrawString(const std::string &string, Ref<Font> font,
+                                const glm::mat4 &transform, const TextParams &params, int entityID)
+    {
+        thread_local std::vector<TextGlyph> glyphs;
+        glyphs.clear();
+        try {
+            AppendTextGlyphs(string, font, params, glyphs);
+            DrawTextGlyphs(glyphs, font, transform, params.Color, entityID);
+            glyphs.clear(); // scratch capacity is reusable; GPU page ownership is not
+        } catch(...) {glyphs.clear();throw;}
+
+    }
+
+    void Renderer2D::DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID)
 	{
-		if (string.empty()) return;
-		if (!font || !font->GetAtlasTexture()) throw std::invalid_argument("Text requires a usable font");
-		const auto& fontGeometry = font->GetMSDFData()->FontGeometry;
-		const auto& metrics = fontGeometry.getMetrics();
-		Ref<Texture2D> fontAtlas = font->GetAtlasTexture();
+        if(!component.Spans.empty()&&string!=component.TextString)throw std::invalid_argument("Rich component draws require its canonical source; replace source and spans atomically");
+        if(!component.ResolvedFont || component.ResolvedSelection!=component.Font)
+            throw std::invalid_argument("Resolve the text family before component drawing; standalone draws take an explicit Font face");
+        auto font=component.ResolvedFont;
+        Text::FaceSet faces{};for(size_t i=0;i<component.ResolvedFaces.size();++i)if(component.ResolvedFaces[i])faces[i]=component.ResolvedFaces[i]->GetCPUFace();faces[0]=font->GetCPUFace();
+        if(!component.LayoutCache || component.LayoutCache->Faces!=faces || !Text::MatchesFaceRanges(*component.LayoutCache,component.Spans) || component.LayoutCache->Source!=string ||
+            component.LayoutTracking!=component.Kerning || component.LayoutSpacing!=component.LineSpacing) {
+            auto accepted=font->Layout(string,-1,false,component.Kerning,component.LineSpacing,Text::Overflow::Clip,0,-1,faces,component.Spans);
+            component.LayoutCache=accepted;component.LayoutTracking=component.Kerning;component.LayoutSpacing=component.LineSpacing;
+        }
+        auto layout=component.LayoutCache;Text::ValidateEmphasis(*layout,component.Spans);
+        thread_local std::vector<TextGlyph> glyphs;glyphs.clear();
+        try {
+            for(uint32_t i=0;i<layout->Lines.size();++i){TextLine line{{},layout->Lines[i].Width,layout,i};AppendTextLineGlyphs(line,font,glyphs,{0,layout->Lines.front().Baseline-layout->Lines[i].Baseline},component.ResolvedFaces);}
+            DrawTextGlyphs(glyphs,font,transform,component.Color,entityID,component.Spans);glyphs.clear();
+        }catch(...){glyphs.clear();throw;}
 
-		if (s_Data->TextIndexCount && s_Data->FontAtlasTexture != fontAtlas)
-			NextBatch();
-		s_Data->FontAtlasTexture = fontAtlas;
-
-		double x = 0.0;
-		double fsScale = 1.0 / (metrics.ascenderY - metrics.descenderY);
-		double y = 0.0;
-
-		const float spaceGlyphAdvance = fontGeometry.getGlyph(' ')->getAdvance();
-
-		std::vector<msdf_atlas::unicode_t> codepoints;
-		msdf_atlas::utf8Decode(codepoints, string.c_str());
-		for (size_t i = 0; i < codepoints.size(); i++)
-		{
-			auto character = codepoints[i];
-			if (character == '\r')
-				continue;
-
-			if (character == '\n')
-			{
-				x = 0;
-				y -= fsScale * metrics.lineHeight + textParams.LineSpacing;
-				continue;
-			}
-
-			if (character == ' ')
-			{
-				float advance = spaceGlyphAdvance;
-				if (i + 1 < codepoints.size())
-				{
-					auto nextCharacter = codepoints[i + 1];
-					double dAdvance = advance;
-					fontGeometry.getAdvance(dAdvance, character, nextCharacter);
-					advance = (float)dAdvance;
-				}
-
-				x += fsScale * advance + textParams.Kerning;
-				continue;
-			}
-
-			if (character == '\t')
-			{
-				// NOTE(Yan): is this right?
-				x += 4.0f * (fsScale * spaceGlyphAdvance + textParams.Kerning);
-				continue;
-			}
-
-			auto glyph = fontGeometry.getGlyph(character);
-			if (!glyph)
-				glyph = fontGeometry.getGlyph('?');
-			if (!glyph)
-				return;
-
-			double al, ab, ar, at;
-			glyph->getQuadAtlasBounds(al, ab, ar, at);
-			glm::vec2 texCoordMin((float)al, (float)ab);
-			glm::vec2 texCoordMax((float)ar, (float)at);
-
-			double pl, pb, pr, pt;
-			glyph->getQuadPlaneBounds(pl, pb, pr, pt);
-			glm::vec2 quadMin((float)pl, (float)pb);
-			glm::vec2 quadMax((float)pr, (float)pt);
-
-			quadMin *= fsScale, quadMax *= fsScale;
-			quadMin += glm::vec2(x, y);
-			quadMax += glm::vec2(x, y);
-
-			float texelWidth = 1.0f / fontAtlas->GetWidth();
-			float texelHeight = 1.0f / fontAtlas->GetHeight();
-			texCoordMin *= glm::vec2(texelWidth, texelHeight);
-			texCoordMax *= glm::vec2(texelWidth, texelHeight);
-
-			if (s_Data->TextIndexCount + 6 > Renderer2DData::MaxIndices)
-				NextBatch();
-			// render here
-			s_Data->TextVertexBufferPtr->Position = transform * glm::vec4(quadMin, 0.0f, 1.0f);
-			s_Data->TextVertexBufferPtr->Color = textParams.Color;
-			s_Data->TextVertexBufferPtr->TexCoord = texCoordMin;
-			s_Data->TextVertexBufferPtr->EntityID = entityID;
-			s_Data->TextVertexBufferPtr++;
-
-			s_Data->TextVertexBufferPtr->Position = transform * glm::vec4(quadMin.x, quadMax.y, 0.0f, 1.0f);
-			s_Data->TextVertexBufferPtr->Color = textParams.Color;
-			s_Data->TextVertexBufferPtr->TexCoord = { texCoordMin.x, texCoordMax.y };
-			s_Data->TextVertexBufferPtr->EntityID = entityID;
-			s_Data->TextVertexBufferPtr++;
-
-			s_Data->TextVertexBufferPtr->Position = transform * glm::vec4(quadMax, 0.0f, 1.0f);
-			s_Data->TextVertexBufferPtr->Color = textParams.Color;
-			s_Data->TextVertexBufferPtr->TexCoord = texCoordMax;
-			s_Data->TextVertexBufferPtr->EntityID = entityID;
-			s_Data->TextVertexBufferPtr++;
-
-			s_Data->TextVertexBufferPtr->Position = transform * glm::vec4(quadMax.x, quadMin.y, 0.0f, 1.0f);
-			s_Data->TextVertexBufferPtr->Color = textParams.Color;
-			s_Data->TextVertexBufferPtr->TexCoord = { texCoordMax.x, texCoordMin.y };
-			s_Data->TextVertexBufferPtr->EntityID = entityID;
-			s_Data->TextVertexBufferPtr++;
-
-			s_Data->TextIndexCount += 6;
-			s_Data->Stats.QuadCount++;
-
-			if (i + 1 < codepoints.size())
-			{
-				double advance = glyph->getAdvance();
-				auto nextCharacter = codepoints[i + 1];
-				fontGeometry.getAdvance(advance, character, nextCharacter);
-
-				x += fsScale * advance + textParams.Kerning;
-			}
-		}
-	}
-
-	void Renderer2D::DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID)
-	{
-		DrawString(string, component.FontAsset, transform, { component.Color, component.Kerning, component.LineSpacing }, entityID);
 	}
 
 	float Renderer2D::GetLineWidth()
@@ -739,6 +895,8 @@ namespace Hazel {
 		if (!(width > 0)) throw std::invalid_argument("Line width must be positive");
 		s_Data->LineWidth = width;
 	}
+
+	uint32_t Renderer2D::GetGeometryCount() {return s_Data->Stats.GeometryCount;}
 
 	void Renderer2D::ResetStats()
 	{

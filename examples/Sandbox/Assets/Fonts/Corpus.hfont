@@ -1,0 +1,10 @@
+FontFamily:
+  Version: 1
+  Name: Tutorial corpus · DejaVu Sans
+  Faces:
+    Regular:
+      File: Fonts/Corpus.ttf
+      Notices:
+      - Fonts/Corpus-NOTICE.txt
+  Required: café Ελληνικά Привет مرحبا שלום
+  Sample: English Français Deutsch café 123

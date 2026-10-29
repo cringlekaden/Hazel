@@ -1,11 +1,14 @@
 #include "hzpch.h"
+#include "AuthoredEntityReferences.h"
 #include "Hazel/UI/RuntimeUI.h"
 #include "Hazel/UI/RuntimeUIConfig.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Core/OperationProgress.h"
+#include "Hazel/Core/Application.h"
 #include "Hazel/Audio/AudioPlayback.h"
 #include "Hazel/Project/Project.h"
 #include "Scene.h"
+#include "SceneSerializer.h"
 #include "RuntimeSession.h"
 #include "Entity.h"
 
@@ -57,6 +60,7 @@ namespace Hazel {
 		if constexpr (std::is_same_v<T, NativeScriptComponent>) copy.Instance.reset();
         if constexpr (std::is_same_v<T, SpriteRendererComponent>) {copy.Resolved={};copy.PreparedEpoch=0;copy.PreparedSource=std::monostate{};}
         if constexpr (std::is_same_v<T, SpriteAnimationComponent>) copy.ResetRuntime();
+        if constexpr (std::is_same_v<T, TextComponent>) {copy.ResolvedFont.reset();copy.ResolvedFaces={};copy.FacesOwner.reset();copy.FacesEpoch=0;copy.LayoutCache.reset();copy.FontOwner.reset();copy.FontEpoch=0;copy.ResolvedSelection={};}
 		return copy;
 	}
 
@@ -130,10 +134,170 @@ namespace Hazel {
 		return newScene;
 	}
 
-	Entity Scene::CreateEntity(const std::string& name)
+    Ref<Scene> Scene::CopyForAuthoring(const Ref<Scene> &source)
+    {
+        source->CheckThread();
+        if (source->IsRunning() || source->IsSimulating() || source->IsStopping())
+            throw std::runtime_error("Stop runtime before staging authoring changes");
+        auto copy = CreateRef<Scene>();
+        copy->m_Assets = source->m_Assets;
+        copy->m_Name = source->m_Name;
+        copy->m_ViewportWidth = source->m_ViewportWidth;
+        copy->m_ViewportHeight = source->m_ViewportHeight;
+        if (source->m_Registry.size())
+            copy->m_Registry.assign(source->m_Registry.data(),
+                                    source->m_Registry.data() + source->m_Registry.size());
+        copy->m_EntityMap = source->m_EntityMap;
+        for (const auto &[id, h] : copy->m_EntityMap)
+        {
+            copy->m_Registry.emplace<IDComponent>(h, id);
+            copy->m_Registry.emplace<TagComponent>(h, source->m_Registry.get<TagComponent>(h));
+        }
+        CopyComponent(AllComponents{}, copy->m_Registry, source->m_Registry, copy->m_EntityMap);
+        copy->m_Relationships = source->m_Relationships;
+        copy->m_Children = source->m_Children;
+        copy->m_ScriptFields = source->m_ScriptFields;
+        copy->m_AuthoringLifetimes = source->m_AuthoringLifetimes;
+        copy->m_AuthoringComponentVersions = source->m_AuthoringComponentVersions;
+        copy->m_AuthoringStructureVersions = source->m_AuthoringStructureVersions;
+        copy->m_NextAuthoringStructureVersion = source->m_NextAuthoringStructureVersion;
+        return copy;
+    }
+    template <class... T>
+    static void PatchComponents(ComponentGroup<T...>, Scene &target, const Ref<Scene> &decoded,
+                                Entity to, Entity from)
+    {
+        SceneSerializer a(Ref<Scene>(&target, [](Scene *) {})), b(decoded);
+        (
+            [&] {
+                if constexpr (!std::is_same_v<T, NativeScriptComponent>)
+                {
+                    if (a.CaptureAuthoredState(to, &typeid(T)) ==
+                        b.CaptureAuthoredState(from, &typeid(T)))
+                        return;
+                    if (to.HasComponent<T>())
+                        to.RemoveComponent<T>();
+                    if (from.HasComponent<T>())
+                        to.AddComponent<T>(CopyForScene(from.GetComponent<T>()));
+                }
+            }(),
+            ...);
+    }
+    static void KeepGenerated(SpriteSource &next, const SpriteSource &current)
+    {
+        if (auto generated = std::get_if<TextureSpriteSource>(&current);
+            generated && generated->Texture.empty() && generated->Resource)
+        {
+            if (std::holds_alternative<std::monostate>(next))
+                next = current;
+            else if (auto texture = std::get_if<TextureSpriteSource>(&next);
+                     texture && texture->Texture.empty())
+                texture->Resource = generated->Resource;
+        }
+    }
+    void Scene::PatchAuthoring(const Ref<Scene> &decoded, const std::vector<uint64_t> &affected)
+    {
+        CheckThread();
+        // Work on a disposable staging scene. Decoded relationships are already
+        // validated; install them before physics-placement component callbacks.
+        auto graph = decoded->m_Relationships;
+        for (auto id : affected)
+            if (!decoded->IsEntityValid(id) && IsEntityValid(id))
+            {
+                auto h = m_EntityMap.at(id);
+                m_Registry.destroy(h);
+                m_EntityMap.erase(id);
+                m_ScriptFields.erase(id);
+                m_AuthoringLifetimes.erase(id);
+                m_AuthoringComponentVersions.erase(id);
+                m_AuthoringStructureVersions.erase(id);
+            }
+        for (auto id : affected)
+            if (decoded->IsEntityValid(id) && !IsEntityValid(id))
+                CreateEntityWithUUID(id, decoded->GetEntityByUUID(id).GetName());
+        m_Relationships = std::move(graph);
+        RebuildChildren();
+        for (auto id : affected)
+            if (decoded->IsEntityValid(id))
+            {
+                auto to = GetEntityByUUID(id), from = decoded->GetEntityByUUID(id);
+                to.GetComponent<TagComponent>() = from.GetComponent<TagComponent>();
+                if (to.HasComponent<SpriteRendererComponent>() &&
+                    from.HasComponent<SpriteRendererComponent>())
+                    KeepGenerated(from.GetComponent<SpriteRendererComponent>().Source,
+                                  to.GetComponent<SpriteRendererComponent>().Source);
+                if (to.HasComponent<UIButtonComponent>() && from.HasComponent<UIButtonComponent>())
+                    for (size_t i = 0; i < 5; ++i)
+                        KeepGenerated(from.GetComponent<UIButtonComponent>().Images[i],
+                                      to.GetComponent<UIButtonComponent>().Images[i]);
+                PatchComponents(AllComponents{}, *this, decoded, to, from);
+                // Script values are part of the existing codec and exact inventory.
+                auto f = decoded->m_ScriptFields.find(id);
+                if (f != decoded->m_ScriptFields.end())
+                    m_ScriptFields[id] = f->second;
+                else
+                    m_ScriptFields.erase(id);
+                ChangedAuthoringStructure(id);
+            }
+        ValidateHierarchy();
+        ValidateUI(false, false);
+    }
+    void Scene::PublishAuthoring(Scene &staged)
+    {
+        CheckThread();
+        staged.CheckThread();
+        if (IsRunning() || IsSimulating() || IsStopping() || staged.IsRunning() ||
+            staged.IsSimulating())
+            throw std::runtime_error("Authoring publication requires stopped scenes");
+        // Every allocating operation/validation precedes this swap. Runtime UI
+        // state is retired; it never travels with an authored UUID restoration.
+        ResetUI();
+        using std::swap;
+        swap(m_Registry, staged.m_Registry);
+        swap(m_EntityMap, staged.m_EntityMap);
+        swap(m_Relationships, staged.m_Relationships);
+        swap(m_Children, staged.m_Children);
+        swap(m_ScriptFields, staged.m_ScriptFields);
+        swap(m_AuthoringLifetimes, staged.m_AuthoringLifetimes);
+        swap(m_AuthoringComponentVersions, staged.m_AuthoringComponentVersions);
+        swap(m_AuthoringStructureVersions, staged.m_AuthoringStructureVersions);
+        swap(m_NextAuthoringStructureVersion, staged.m_NextAuthoringStructureVersion);
+        m_HierarchyValidationDirty = true;
+    }
+
+    Entity Scene::CreateEntity(const std::string& name)
 	{
 		return CreateEntityWithUUID(UUID(), name);
 	}
+
+    void Scene::ChangedAuthoringStructure(UUID id)
+    {
+        m_AuthoringStructureVersions[id] = ++m_NextAuthoringStructureVersion;
+        m_AuthoringLifetimes.try_emplace(id, m_NextAuthoringStructureVersion);
+    }
+    void Scene::ChangedAuthoringStructure(UUID id, std::type_index type)
+    {
+        ChangedAuthoringStructure(id);
+        m_AuthoringComponentVersions[id][type] = m_NextAuthoringStructureVersion;
+    }
+    uint64_t Scene::GetAuthoringLifetime(UUID id) const
+    {
+        CheckThread();auto it=m_AuthoringLifetimes.find(id);
+        return IsEntityValid(id)&&it!=m_AuthoringLifetimes.end()?it->second:0;
+    }
+    uint64_t Scene::GetAuthoringComponentVersion(UUID id,std::type_index type) const
+    {
+        CheckThread();auto entity=m_AuthoringComponentVersions.find(id);
+        if(!IsEntityValid(id)||entity==m_AuthoringComponentVersions.end())return 0;
+        auto component=entity->second.find(type);
+        return component==entity->second.end()?0:component->second;
+    }
+    uint64_t Scene::GetAuthoringStructureVersion(UUID id) const
+    {
+        CheckThread();
+        auto found = m_AuthoringStructureVersions.find(id);
+        return IsEntityValid(id) && found != m_AuthoringStructureVersions.end() ? found->second : 0;
+    }
 
 	Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
 	{
@@ -175,12 +339,13 @@ namespace Hazel {
             // Validation includes the still-present parent until after detaching every child.
             graph[entity.GetUUID()]={m_Relationships.at(entity.GetUUID()).Parent,m_Relationships.at(entity.GetUUID()).Order};
             ValidateGraph(graph,changes);
+            RetireUISubtree(entity.GetUUID());
             m_Relationships=std::move(graph);
             for(const auto& item:changes)m_Registry.get<TransformComponent>(m_EntityMap.at(item.first))=item.second;
             RebuildChildren();DestroyEntityNow(entity);return;
         }
         if(policy!=DestroyPolicy::Subtree)throw std::runtime_error("Unknown destruction policy");
-        auto ids=GetSubtree(entity);std::reverse(ids.begin(),ids.end());
+        auto ids=GetSubtree(entity);for(auto id:ids)RetireUI(id);std::reverse(ids.begin(),ids.end());
         if(m_IsRunning) {
             for(auto id:ids)if(m_PendingDestroy.insert(id).second)m_DestroyOrder.push_back(id);
             return;
@@ -233,11 +398,13 @@ namespace Hazel {
             CopyComponentIfExists(AllComponents{},target,original);
             auto stored=from->m_ScriptFields.find(id);
             auto fields=stored==from->m_ScriptFields.end()?ScriptFieldMap{}:stored->second;
-            for(auto& [name,field]:fields)if(field.Field.Type==ScriptFieldType::Entity) {
-                auto reference=UUID(field.GetValue<uint64_t>());
-                if(remap.count(reference))field.SetValue<uint64_t>(remap.at(reference));
-                else if(uint64_t(reference) && !retainExternal)throw std::runtime_error("External entity reference in field '"+name+"' on '"+original.GetName()+"'. Clear it or include that entity in the subtree");
-            }
+            VisitAuthoredEntityReferences(target, fields, [&](uint64_t& reference, std::string_view field) {
+                if (auto found = remap.find(UUID(reference)); found != remap.end())
+                    reference = found->second;
+                else if (reference && !retainExternal)
+                    throw std::runtime_error("External entity reference '" + std::string(field) +
+                        "' on '" + original.GetName() + "'. Include the target or clear it");
+            });
             staged->m_ScriptFields[target.GetUUID()]=std::move(fields);
         }
         // Copy relationships only after every component and identity is staged.
@@ -300,6 +467,9 @@ namespace Hazel {
         DestroyPhysicsBody(entity);
 		RemoveRelationship(id);
         m_EntityMap.erase(entity.GetUUID());
+        m_AuthoringStructureVersions.erase(id);
+        m_AuthoringLifetimes.erase(id);
+        m_AuthoringComponentVersions.erase(id);
 		m_ScriptFields.erase(entity.GetUUID());
 		m_Registry.destroy(entity);m_Destroying.erase(id);
 	}
@@ -311,7 +481,14 @@ namespace Hazel {
         if(!m_Assets)throw std::runtime_error("Audio requires project assets");
         auto file=Project::ResolveOwnedAsset(m_Assets->Root(),source.Clip);
         if(!m_Audio)m_Audio=CreateScope<AudioPlayback>();
+        m_Audio->SetMasterVolume(m_AudioMasterVolume);
         return m_Audio->Play(entity.GetUUID(),file,source.Gain,source.Loop);
+    }
+    void Scene::SetAudioMasterVolume(float volume) {
+        CheckThread();
+        if(!std::isfinite(volume)||volume<0||volume>1)throw std::invalid_argument("Audio volume must be finite and between 0 and 1");
+        if(m_Audio)m_Audio->SetMasterVolume(volume);
+        m_AudioMasterVolume=volume;
     }
     void Scene::StopAudio(Entity entity) {if(m_Audio && entity && entity.BelongsTo(this))m_Audio->Stop(entity.GetUUID());}
 
@@ -341,6 +518,7 @@ namespace Hazel {
 	void Scene::OnRuntimeStop()
 	{
         ResetUI();
+        for(auto e:m_Registry.view<TextComponent>()){auto& text=m_Registry.get<TextComponent>(e);text.ResolvedFont.reset();text.ResolvedFaces={};text.FacesOwner.reset();text.FacesEpoch=0;text.LayoutCache.reset();text.FontOwner.reset();text.FontEpoch=0;}
 		m_Stopping = true; CancelPendingLifecycle();
         if (ScriptEngine::GetSceneContext() == this) ScriptEngine::OnRuntimeStop();
 
@@ -375,6 +553,7 @@ namespace Hazel {
 			SynchronizePhysics2D(); // Components added between frames are ready for scripts.
 			// Update scripts
 			{
+                struct CallbackPhase {bool &Active;explicit CallbackPhase(bool &value):Active(value){Active=true;}~CallbackPhase(){Active=false;}} callbackPhase(m_UIScriptCallbacks);
 				// C# Entity OnUpdate
                 std::vector<UUID> updates;
                 for(auto root:GetChildren())for(auto id:GetSubtree(GetEntityByUUID(root)))if(GetEntityByUUID(id).HasComponent<ScriptComponent>())updates.push_back(id);
@@ -423,6 +602,8 @@ namespace Hazel {
 			}
 		}
 
+        CommitUIScreens(); // Requests from script callbacks commit after all callbacks have returned.
+        m_UI->Advance(ts.GetSeconds());
         PrepareSprites();
 		// Render 2D
 		Camera* mainCamera = nullptr;
@@ -481,7 +662,8 @@ namespace Hazel {
 					auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
                     if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
 
-					Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
+					ResolveTextFonts(text,m_Assets,text.Spans);
+                    Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
 				}
 			}
 
@@ -539,6 +721,7 @@ namespace Hazel {
 
 		m_ViewportWidth = width;
 		m_ViewportHeight = height;
+        if(!width||!height)CancelUIInput();
 
 		// Resize our non-FixedAspectRatio cameras
 		auto view = m_Registry.view<CameraComponent>();
@@ -747,7 +930,8 @@ namespace Hazel {
 				auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
                     if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
 
-				Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
+				ResolveTextFonts(text,m_Assets,text.Spans);
+                    Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
 			}
 		}
 
@@ -774,6 +958,27 @@ namespace Hazel {
                 } catch(const std::exception& error) {s.Resolved.Error=error.what();HZ_CORE_ERROR("Sprite '{}': {}",m_Registry.get<TagComponent>(e).Tag,s.Resolved.Error);}
             }
             if(strict && !s.Resolved.Error.empty()) throw std::runtime_error(s.Resolved.Error);
+        }
+        std::vector<const Font*> prewarmedFaces;
+        if(strict && Application::TryGet() && m_ViewportWidth && m_ViewportHeight)for(auto e:m_Registry.view<TextComponent>()) {
+            // UI must prepare only its final constrained result, not an unwrapped
+            // world-text surrogate that requests discarded glyph pages.
+            if(m_Registry.has<UIRectComponent>(e))continue;
+            auto& text=m_Registry.get<TextComponent>(e);const auto& palette=ResolveTextFonts(text,m_Assets,text.Spans);auto font=palette[0];auto faces=TextFaces(palette);
+            if(!text.LayoutCache || text.LayoutCache->Source!=text.TextString || text.LayoutCache->Faces!=faces || !Text::MatchesFaceRanges(*text.LayoutCache,text.Spans) ||
+                text.LayoutTracking!=text.Kerning || text.LayoutSpacing!=text.LineSpacing) {
+                OperationProgress::Report("Prepare shaped text pages");
+                auto layout=font->Layout(text.TextString,-1,false,text.Kerning,text.LineSpacing,Text::Overflow::Clip,0,-1,faces,text.Spans);
+                for(uint8_t i=0;i<5;++i)if(palette[i]&&std::any_of(layout->Glyphs.begin(),layout->Glyphs.end(),[&](const auto& g){return g.FaceIndex==i;}))(void)palette[i]->PreparePages(*layout,i);
+                if(m_Assets && std::find(prewarmedFaces.begin(),prewarmedFaces.end(),font.get())==prewarmedFaces.end()) {
+                    prewarmedFaces.push_back(font.get());
+                    if(auto family=m_Assets->Family(text.Font.Family))for(const auto* corpus:{&family->Required,&family->Sample})if(!corpus->empty()) {
+                        try{auto declared=font->Layout(*corpus,-1,false);(void)font->PreparePages(*declared);}
+                        catch(const std::exception& error){HZ_CORE_WARN("Family corpus prewarm skipped: {}",error.what());}
+                    }
+                }
+                text.LayoutCache=layout;text.LayoutTracking=text.Kerning;text.LayoutSpacing=text.LineSpacing;
+            }
         }
         for(auto e:m_Registry.view<SpriteAnimationComponent>()) {
             auto& a=m_Registry.get<SpriteAnimationComponent>(e);
@@ -842,6 +1047,16 @@ namespace Hazel {
     template<> void Scene::OnComponentAdded<UITextStyleComponent>(Entity,UITextStyleComponent&) {}
     template<> void Scene::OnComponentAdded<UINineSliceComponent>(Entity,UINineSliceComponent&) {}
     template<> void Scene::OnComponentAdded<UIButtonComponent>(Entity,UIButtonComponent&) {}
+    template<> void Scene::OnComponentAdded<UIRadioGroupComponent>(Entity,UIRadioGroupComponent&) {}
+    template<> void Scene::OnComponentAdded<UIProgressComponent>(Entity,UIProgressComponent&) {}
+    template<> void Scene::OnComponentAdded<UIAppearanceComponent>(Entity,UIAppearanceComponent&) {}
+    template<> void Scene::OnComponentAdded<UITextEntryComponent>(Entity,UITextEntryComponent&) {}
+    template<> void Scene::OnComponentAdded<UITabsComponent>(Entity,UITabsComponent&) {}
+    template<> void Scene::OnComponentAdded<UITabComponent>(Entity,UITabComponent&) {}
+    template<> void Scene::OnComponentAdded<UITooltipComponent>(Entity,UITooltipComponent&) {}
+    template<> void Scene::OnComponentAdded<UIDropdownComponent>(Entity,UIDropdownComponent&) {}
+    template<> void Scene::OnComponentAdded<UIScrollViewComponent>(Entity,UIScrollViewComponent&) {}
+    template<> void Scene::OnComponentAdded<UISliderComponent>(Entity,UISliderComponent&) {}
     template<typename T>
 
 	void Scene::OnComponentAdded(Entity entity, T& component)

@@ -6,6 +6,7 @@
 #include "EditorLayer.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Core/FileSystem.h"
+#include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Project/ProjectSerializer.h"
 #include "Hazel/Utils/PlatformUtils.h"
@@ -73,7 +74,11 @@ namespace Hazel {
 		HZ_PROFILE_FUNCTION();
         Application::Get().SetCloseRequest({});
         Application::Get().SetBackgroundTick({});
-        if(m_Authoring)m_Authoring->FlushWorkspace();
+        if(m_Authoring) {
+            m_Authoring->CancelEdits();
+            m_Authoring->FlushWorkspace();
+        }
+        m_SceneHierarchyPanel.BindHistory(nullptr);
         m_Authoring.reset();
         if (m_SceneState != SceneState::Edit) OnSceneStop();
         ClearSceneObservers();
@@ -102,6 +107,9 @@ namespace Hazel {
 		// Render
 		Renderer2D::ResetStats();
 		m_Framebuffer->Bind();
+        auto extent=m_Framebuffer->GetSpecification();
+        m_ActiveScene->SetUIFramebufferSize({extent.Width,extent.Height});
+        if(m_SceneState==SceneState::Play)m_RuntimeSession.ResizeFramebuffer(extent.Width,extent.Height);
 		RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
 		RenderCommand::Clear();
 
@@ -117,6 +125,8 @@ namespace Hazel {
 
 				if(m_ViewportFocused && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_EditorCamera.OnUpdate(ts);
 
+                auto selected=m_SceneHierarchyPanel.GetSelectedEntity();
+                m_ActiveScene->SetUIPreviewTarget(selected&&selected.BelongsTo(m_ActiveScene.get())?uint64_t(selected.GetUUID()):0);
 				m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
 				break;
 			}
@@ -134,6 +144,7 @@ namespace Hazel {
                 m_RuntimeSession.SetInput(ViewportMouse(),uiInput);
                 m_RuntimeSession.SetGameplayInputEnabled(uiInput&&m_ViewportHovered);
                 m_RuntimeSession.Update(ts);
+                if(m_RuntimeSession.ConsumeExitRequest()){OnSceneStop();break;}
                 if (m_ActiveScene != m_RuntimeSession.GetScene()) {
                     ClearSceneObservers();
                     m_ActiveScene = m_RuntimeSession.GetScene();
@@ -256,7 +267,7 @@ namespace Hazel {
         }
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
-		ImGui::Begin("Viewport");
+		ImGui::Begin("Viewport",nullptr,m_SceneState==SceneState::Play?ImGuiWindowFlags_NoNavInputs:0);
 		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
 		auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
 		auto viewportOffset = ImGui::GetWindowPos();
@@ -267,8 +278,9 @@ namespace Hazel {
 		m_ViewportHovered = ImGui::IsWindowHovered();
 
 		const bool runtimePointer=m_SceneState==SceneState::Play&&m_ActiveScene->IsUICapturingPointer();
-        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused || (!m_ViewportHovered&&!runtimePointer) ||
-            (m_SceneState==SceneState::Play?RuntimeUIWidgetBlocksInput():io.WantTextInput||ImGui::IsAnyItemActive()));
+        Application::Get().GetImGuiLayer()->BlockEvents(m_SceneState==SceneState::Play
+            ? (!m_ViewportFocused || RuntimeUIWidgetBlocksInput())
+            : (!m_ViewportFocused || (!m_ViewportHovered&&!runtimePointer) || io.WantTextInput || ImGui::IsAnyItemActive()));
 
         ImGui::SetNextItemWidth(180);
         ImGui::Combo("##UI preview aspect",&m_UIPreview,"Window\0Small 1024 x 600\0Widescreen 16:9\0Classic 4:3\0");
@@ -284,26 +296,8 @@ namespace Hazel {
 		uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
         m_ViewportHovered=ImGui::IsItemHovered();
-        if(ImGui::IsMouseReleased(0))m_UIDragging=false;
-        if(m_SceneState!=SceneState::Play&&ImGui::IsItemClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && !io.KeyAlt)m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
-        auto uiSelected=m_SceneHierarchyPanel.GetSelectedEntity();GameUI::Rect uiBounds;
-        if(uiSelected&&uiSelected.HasComponent<UICanvasComponent>()&&m_ActiveScene->GetUIError().empty()) {
-            const auto fit=GameUI::FitCanvas(m_ViewportSize,uiSelected.GetComponent<UICanvasComponent>());
-            auto p=fit.Content.Position*fit.Scale+m_ViewportBounds[0],q=p+fit.Content.Size*fit.Scale;
-            ImGui::GetWindowDrawList()->AddRect({p.x,p.y},{q.x,q.y},IM_COL32(255,190,70,255));
-        }
-        if(uiSelected&&uiSelected.HasComponent<UIRectComponent>()&&m_ActiveScene->GetUIBounds(uiSelected.GetUUID(),uiBounds)) {
-            auto p=uiBounds.Position+m_ViewportBounds[0],q=p+uiBounds.Size;
-            auto draw=ImGui::GetWindowDrawList();draw->AddRect({p.x,p.y},{q.x,q.y},IM_COL32(255,190,70,255));draw->AddRectFilled({q.x-8,q.y-8},{q.x,q.y},IM_COL32(255,190,70,255));
-            if(m_SceneState==SceneState::Edit&&m_Authoring->Availability(EditorAction::EditScene)) {
-                if(ImGui::IsMouseClicked(0)){m_UIDragging=ImGui::IsItemHovered();m_UIResizing=io.MousePos.x>=q.x-12&&io.MousePos.x<=q.x+4&&io.MousePos.y>=q.y-12&&io.MousePos.y<=q.y+4;}
-                if(m_UIDragging&&ImGui::IsMouseDragging(0)&&!io.KeyAlt) {
-                    auto owner=uiSelected;while(owner&&!owner.HasComponent<UICanvasComponent>())owner=m_ActiveScene->GetEntityByUUID(m_ActiveScene->GetRelationship(owner).Parent);
-                    float scale=owner?GameUI::FitCanvas(m_ViewportSize,owner.GetComponent<UICanvasComponent>()).Scale:1;
-                    if(scale>0){auto& rect=uiSelected.GetComponent<UIRectComponent>();auto delta=glm::vec2(io.MouseDelta.x,io.MouseDelta.y)/scale;if(m_UIResizing)rect.SizeDelta=glm::max(rect.MinimumSize,rect.SizeDelta+delta);else rect.Offset+=delta;}
-                }
-            }
-        }
+        UI_RectEditing();
+        UI_DebugOverlay();
 
 		if (ImGui::BeginDragDropTarget())
 		{
@@ -311,7 +305,7 @@ namespace Hazel {
 			{
 				auto path=ContentBrowserPath(payload->Data,payload->DataSize);
                 if(path.extension()==".hprefab") m_Authoring->InstantiatePrefab(path);
-                else if(path.extension()==".hsprites")m_Authoring->SelectAsset(path);
+                else if(path.extension()==".hsprites" || path.extension()==".hfont")m_Authoring->SelectAsset(path);
                 else if(path.extension()==".hazel")m_Authoring->Guard(OperationIntent::OpenScene,[this,path]{return OpenScene(path);});
 			}
 			ImGui::EndDragDropTarget();
@@ -366,6 +360,7 @@ namespace Hazel {
 		ImGui::PopStyleVar();
 
         if(m_Authoring){m_Authoring->ObserveSceneFocus();m_Authoring->Render();m_Authoring->Shortcuts();}
+        UI_Debugger();
 		UI_Toolbar();
 		ImGui::End();
 	}
@@ -393,12 +388,25 @@ namespace Hazel {
         // ownership. Existing runtime capture continues outside the image.
         const bool viewportGesture=viewport&&context.ActiveId==viewport->MoveId&&
             (m_ViewportHovered||(m_ActiveScene&&m_ActiveScene->IsUICapturingPointer()));
-        return context.IO.WantTextInput||ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId)||
+        return m_UIOverride.Capturing()||(m_Authoring&&m_Authoring->CapturingUIBinding())||context.IO.WantTextInput||ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId)||
             (ImGui::IsAnyItemActive()&&!viewportGesture);
     }
 	void EditorLayer::OnEvent(Event& e)
 	{
+        if(e.GetEventType()==EventType::WindowLostFocus ||
+           (e.GetEventType()==EventType::WindowResize &&
+            (!static_cast<WindowResizeEvent&>(e).GetWidth() || !static_cast<WindowResizeEvent&>(e).GetHeight())))
+            {if(m_Authoring)m_Authoring->CancelEdits();else m_UIEdit.Finish(true);}
         if(m_Loading && m_Loading->Busy())return;
+        // Events arrive before the next ImGui frame. Retire viewport ownership
+        // immediately on an outside press, rather than trusting last frame's
+        // NavWindow while a text field or another editor panel acquires focus.
+        if(m_SceneState==SceneState::Play&&e.GetEventType()==EventType::MouseButtonPressed) {
+            auto point=Input::GetMouseScreenPosition()-m_ViewportBounds[0];
+            if(!GameUI::Rect{{0,0},m_ViewportSize}.Contains(point)){
+                m_ViewportFocused=false;m_RuntimeSession.SetInput(ViewportMouse(),false);
+            }
+        }
         if(m_SceneState==SceneState::Play)m_RuntimeSession.SubmitUIEvent(e,ViewportMouse(),m_ViewportFocused && !RuntimeUIWidgetBlocksInput());
 		if(m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_CameraController.OnEvent(e);
 		if (m_SceneState == SceneState::Edit && m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))
@@ -488,6 +496,8 @@ namespace Hazel {
 
 	void EditorLayer::ClearSceneObservers()
 	{
+        if(m_Authoring)m_Authoring->CancelEdits();
+        m_UIEdit.Finish(true);
 		m_HoveredEntity = {};
         m_GizmoError.clear();
 		m_SceneHierarchyPanel.SetContext(nullptr);
@@ -689,6 +699,7 @@ namespace Hazel {
 	{
         if(m_Authoring && !m_Authoring->Require(EditorAction::SaveScene))return false;
 		try {
+            if(m_Authoring)m_Authoring->PrepareSave();
             auto text=SceneSerializer(scene).SerializeText();
             const auto target=std::filesystem::absolute(path).lexically_normal();
             if(m_SceneFile.Path()==target) {
@@ -706,7 +717,7 @@ namespace Hazel {
                 if(!m_OpenIsProject && m_OpenPath==m_SceneFile.Path() &&
                    (m_OpenLoad.State==DocumentLoadState::Ready || m_OpenLoad.State==DocumentLoadState::EditableWithProblems))m_OpenLoad=m_SceneLoad;
             }
-            if(m_Authoring)m_Authoring->MarkSceneSaved();
+            if(scene==m_EditorScene && m_Authoring)m_Authoring->MarkSceneSaved();
             m_ActionError.clear();return true;
         }
 		catch (const std::runtime_error& error) { return ActionFailed("Save scene '" + path.generic_u8string() + "': " + error.what()); }
@@ -732,6 +743,7 @@ namespace Hazel {
         if(m_Authoring && !m_Authoring->Require(EditorAction::Play))return false;
         if(m_Authoring && !useSavedAssets){m_Authoring->GuardPlay(false);return m_SceneState==SceneState::Play;}
 		if (m_SceneState == SceneState::Play) return true;
+        if(m_Authoring)m_Authoring->CancelEdits();
 		try {
             if(Project::GetActive())Project::GetActive()->GetAssets()->Refresh();
             if (m_SceneState != SceneState::Edit) OnSceneStop();
@@ -748,6 +760,7 @@ namespace Hazel {
 
 	bool EditorLayer::OnSceneSimulate(bool useSavedAssets)
 	{
+        if(m_Authoring)m_Authoring->CancelEdits();
         if(m_Authoring && !m_Authoring->Require(EditorAction::Simulate))return false;
         if(m_Authoring && !useSavedAssets){m_Authoring->GuardPlay(true);return m_SceneState==SceneState::Simulate;}
         try {

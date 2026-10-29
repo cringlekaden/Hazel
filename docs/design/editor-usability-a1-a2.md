@@ -1,5 +1,7 @@
 # Editor usability implementation: A–H
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](../README.md) and [history index](../history.md).
+
 Baseline: `5de70c93a89e1c8df3fd37553569d9499f793c7a` on
 `feature/sprite-sheet-authoring`, including the complete audit and descended from
 `9a48282f59b4cbc188615ec66763c448b70a2e83`. Implementation branch:

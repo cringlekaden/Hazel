@@ -1,6 +1,6 @@
 // Real context tests for the actual target MSDF atlas and application-bound cache.
 #include "Hazel.h"
-#include "Hazel/Renderer/MSDFData.h"
+#include "Hazel/Text/TextLayout.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <algorithm>
@@ -32,11 +32,10 @@ struct Fixture {
 };
 static void CheckAtlas(const Hazel::Ref<Hazel::Font>& font)
 {
-    const auto* data=font->GetMSDFData();
-    Check(data && data->Glyphs.size()>100,"Font geometry missing");
-    Check(data->FontGeometry.getGlyph('A') && data->FontGeometry.getGlyph(0x00e9),"Latin-1 glyphs lost");
-    Check(data->FontGeometry.getMetrics().lineHeight>0,"Font metrics invalid");
-    auto texture=font->GetAtlasTexture();
+    auto layout=font->Layout(u8"Aé",-1,false);auto pages=font->PreparePages(*layout);
+    Check(!pages.empty() && layout->Glyphs.size()==2,"Glyph-index page missing");
+    for(auto& glyph:layout->Glyphs)Check(std::any_of(pages.begin(),pages.end(),[&](const auto& page){return page->Find(glyph.ID);}),"Shaped glyph ID missing from pages");
+    auto texture=pages[0]->Texture;
     Check(texture && texture->IsLoaded() && texture->GetWidth()>0 && texture->GetHeight()>0,"Font atlas missing");
     Check(texture->GetSpecification().Format==Hazel::ImageFormat::RGB8 &&
           !texture->GetSpecification().GenerateMips,"MSDF atlas specification changed");
@@ -48,6 +47,8 @@ static void CheckAtlas(const Hazel::Ref<Hazel::Font>& font)
     Check(*extrema.first<64 && *extrema.second>192,"MSDF atlas GPU data lacks signed-distance range");
     Check(glGetError()==GL_NO_ERROR,"Font atlas OpenGL error");
 }
+#include "FontResourceChecks.h"
+#include "FontFamilyChecks.h"
 int main()
 {
     try {
@@ -58,6 +59,7 @@ int main()
         const auto invalid=fixture.Directory/"invalid.ttf";
         { std::ofstream output(invalid,std::ios::binary); output<<"not a font"; }
         for (int iteration=0; iteration<2; ++iteration) {
+            Hazel::Ref<const Hazel::Text::Layout> cpuSurvivor;
             std::weak_ptr<Hazel::Font> cache;
             {
                 Hazel::ApplicationSpecification specification;
@@ -65,12 +67,17 @@ int main()
                 Hazel::Application application(specification);
                 glfwHideWindow(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()));
                 std::cout<<"Renderer: "<<glGetString(GL_RENDERER)<<"; Version: "<<glGetString(GL_VERSION)<<'\n';
+                if(iteration==0){FontResourceChecks(fixture.Directory);FontFamilyChecks(fixture.Directory);}
                 auto font=Hazel::Font::GetDefault();
                 cache=font;
                 Check(Hazel::Font::GetDefault()==font,"Default font cache not shared");
                 CheckAtlas(font);
+                auto cpu=font->GetCPUFace();
+                Check(cpu && cpu==Hazel::Font::GetDefault()->GetCPUFace(),"Accepted CPU font identity lost");
+                cpuSurvivor=Hazel::Text::Service::Main().Arrange(u8"Accepted café Καλημέρα Привет",cpu);
+                Check(cpuSurvivor->Font==cpu && !cpuSurvivor->Glyphs.empty(),"Accepted CPU face did not shape");
                 Hazel::TextComponent text;
-                Check(text.FontAsset==font,"Target text component lost default font");
+                Check(Hazel::ResolveTextFont(text,{})==font,"Target text component lost default font");
                 auto other=Hazel::CreateRef<Hazel::Font>(unicode);
                 CheckAtlas(other);
                 Reject([&]{ Hazel::CreateRef<Hazel::Font>(fixture.Directory/"missing.ttf"); },"Missing font accepted");
@@ -81,6 +88,11 @@ int main()
                 // engine-owned default remains until Renderer2D::Shutdown resets it.
             }
             Check(cache.expired(),"Default font survived application/context destruction");
+            Check(cpuSurvivor && cpuSurvivor->Font && Hazel::Text::Service::Main().Usage().Faces==1,
+                  "CPU layout failed to survive renderer retirement independently");
+            cpuSurvivor.reset();
+            Check(Hazel::Text::Service::Main().Usage().Faces==0 && Hazel::Text::Service::Main().Usage().Results==0,
+                  "Accepted CPU resources leaked across application restart");
         }
         std::cout<<"PASS: target glyphs/metrics/MSDF GPU atlas, UTF-8 font path, invalid/missing diagnostics, shared default/text component and repeated context-bound font shutdown\n";
         return 0;

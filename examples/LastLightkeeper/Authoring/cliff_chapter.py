@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Authored chapter composition. Outputs normal, editable Hazel scene documents.
-No runtime terrain generation. Use --overwrite only after reviewing scene edits.
+"""Historical pre-runtime-UI composition; see Authoring/README.md.
+Reproduction is restricted to disposable copies. Edit current content in Hazelnut.
 """
 import argparse
-from compose import Scene,terrain,STORM,WHITE,AMBER,CLIPS,game_hud,pine,quarter
+from compose import historical_arguments, Scene,terrain,STORM,WHITE,AMBER,CLIPS,game_hud,pine,quarter
 
 COLD=[.57,.68,.77,1]
 CAVE=[.58,.62,.71,1]
@@ -150,7 +150,7 @@ def sea_caves():
     hud(s,True);return s
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--overwrite',action='store_true');args=p.parse_args()
+    args=historical_arguments()
     for scene in [cistern(),sea_caves()]:scene.save(args.overwrite);print(scene.name,len(scene.entities),'authored entities')
     from compose import menu
     endpoint=menu('CliffDawn',True)

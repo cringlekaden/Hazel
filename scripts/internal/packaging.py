@@ -59,34 +59,9 @@ def validate_project(descriptor, config, assets):
     if not scenes: raise RuntimeError('No .hazel scenes in selected asset root')
     for file in assets.rglob('*'):
         if file.is_symlink() and not file.resolve().is_relative_to(assets): raise RuntimeError('External asset symlink: ' + str(file))
-    for scene in scenes:
-        content = yaml.safe_load(scene.read_text(encoding='utf-8'))
-        if not isinstance(content, dict) or 'Scene' not in content: raise RuntimeError('Invalid scene: ' + str(scene))
-        if scene.suffix=='.hprefab' and (content.get('PrefabVersion') not in (1,2) or (content.get('PrefabVersion')==1 and len(content.get('Entities',[]))!=1)):
-            raise RuntimeError('Unsupported prefab version/entity count: '+str(scene))
-        ids = {entity['Entity'] for entity in content.get('Entities', []) or []}
-        seen = set()
-        for entity in content.get('Entities', []) or []:
-            ident = entity['Entity']
-            if ident in seen: raise RuntimeError('Duplicate entity UUID in ' + str(scene))
-            seen.add(ident)
-            for field in entity.get('ScriptComponent',{}).get('ScriptFields',[]) or []:
-                if field.get('Type')=='Prefab' and field.get('Data'):
-                    reference=field['Data']
-                    if Path(reference).suffix!='.hprefab' or resolve_owned(assets,reference) not in included:
-                        raise RuntimeError('Missing/excluded prefab reference '+str(reference)+' in '+str(scene))
-                if scene.suffix=='.hprefab' and field.get('Type')=='Entity' and field.get('Data') not in ids | {0}:
-                    raise RuntimeError('Unsafe external entity reference in prefab '+str(scene))
-            clip = entity.get('AudioSourceComponent', {}).get('Clip')
-            if clip:
-                if Path(clip).suffix!='.wav' or resolve_owned(assets,clip) not in included:
-                    raise RuntimeError('Missing/excluded WAV audio clip '+str(clip)+' in '+str(scene))
-            font=entity.get('UITextStyleComponent',{}).get('FontPath')
-            if font and resolve_owned(assets,font) not in included:
-                raise RuntimeError('UI font selects excluded compiler output: '+font+' in '+str(scene))
-            texture = entity.get('SpriteRendererComponent', {}).get('TexturePath')
-            if texture and resolve_owned(assets,texture) not in included:
-                raise RuntimeError('Texture selects excluded compiler output: '+texture+' in '+str(scene))
+    # Native audit already loads every scene/prefab through its canonical schema,
+    # hierarchy and authored-reference ownership checks. Its dependency output
+    # above is checked against this package's exact inclusion/exclusion inventory.
     core = hz.binaries('Release') / 'Hazel-ScriptCore/Hazel-ScriptCore.dll'
     module = resolve_owned(assets, config['ScriptModulePath'])
     assembly_files = [file for file in files if file.suffix.lower()=='.dll']
@@ -126,6 +101,7 @@ def validate_sprites(assets, files, descriptor=None):
         inventory = Path(temporary) / 'assets.txt'
         inventory.write_text(''.join(name+'\n' for name in relative), encoding='utf-8')
         env = os.environ.copy()
+        env['HAZEL_RESOURCES']=str(hz.ROOT/'Hazel/Resources')
         if hz.SYSTEM=='linux': env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
         command=[str(auditor),str(assets),str(inventory)]
         if descriptor is not None: command += ['--project',str(descriptor)]
@@ -134,7 +110,16 @@ def validate_sprites(assets, files, descriptor=None):
         raise RuntimeError(result.stderr.strip() or 'Native sprite dependency audit failed')
     for line in result.stdout.splitlines():
         if line.startswith('DEPENDENCY ') and resolve_owned(assets,line[len('DEPENDENCY '):]) not in included:
-            raise RuntimeError('Sprite dependency selects excluded compiler output: '+line[len('DEPENDENCY '):])
+            raise RuntimeError('Asset dependency selects excluded compiler output: '+line[len('DEPENDENCY '):])
+    print(result.stdout,end='')
+
+
+def validate_engine_fonts(resources):
+    auditor = hz.binaries('Release') / 'SpriteAssetAudit' / ('SpriteAssetAudit.exe' if hz.SYSTEM=='windows' else 'SpriteAssetAudit')
+    env=os.environ.copy()
+    if hz.SYSTEM=='linux':env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
+    result=subprocess.run([str(auditor),'--engine-fonts',str(resources)],capture_output=True,text=True,encoding='utf-8',env=env)
+    if result.returncode:raise RuntimeError(result.stderr.strip() or 'Engine font-family closure failed')
     print(result.stdout,end='')
 
 
@@ -242,17 +227,23 @@ def native_closure(executable, package):
 
 
 def licenses(package):
+    for name, file in (('harfbuzz','COPYING'),('libunibreak','LICENCE'),('SheenBidi','LICENSE')):
+        if not (hz.ROOT/'Hazel/vendor'/name/file).is_file():
+            raise RuntimeError('Missing linked typography dependency notice: '+name+'/'+file)
+    if not (hz.ROOT/'scripts/dependencies/licenses/typography/LICENSE-Unicode.txt').is_file():
+        raise RuntimeError('Missing Unicode data notice for linked typography dependencies')
     hz.copy_changed(hz.ROOT/'LICENSE', package/'licenses/Hazel/LICENSE')
     hz.copy_changed(hz.ROOT/'Hazel/vendor/mono/LICENSE', package/'licenses/Mono/LICENSE')
     for source in (hz.ROOT/'Hazel/vendor').iterdir():
         if source.is_dir():
             for notice in source.rglob('*'):
-                if notice.is_file() and notice.name.lower().startswith(('license', 'copying', 'copyright')):
+                if notice.is_file() and notice.name.lower().startswith(('license', 'licence', 'copying', 'copyright', 'notice')):
                     hz.copy_changed(notice, package/'licenses/vendor'/source.name/notice.relative_to(source))
     for config in ('Release',):
         path = hz.ROOT/'build/dependencies/install'/f'{config}-{hz.SYSTEM}-x86_64/licenses'
         hz.copy_tree(path, package/'licenses/shader-tools')
     hz.copy_changed(hz.ROOT/'Hazel/Resources/fonts/opensans/LICENSE.txt', package/'licenses/OpenSans/LICENSE.txt')
+    hz.copy_tree(hz.ROOT/'scripts/dependencies/licenses/typography',package/'licenses/typography')
 
 
 def project_files(assets):
@@ -282,6 +273,7 @@ def package(app, project, output, archive_name=None):
         raise RuntimeError('--name requires one application and a portable archive name')
     descriptor, config, assets = load_project(project)
     validate_project(descriptor, config, assets)
+    validate_engine_fonts(hz.ROOT/'Hazel/Resources')
     output = output.resolve(); output.mkdir(parents=True, exist_ok=True)
     prefix = hz.mono_prefix()
     commit = hz.output(['git', '-C', hz.ROOT, 'rev-parse', 'HEAD'])
@@ -295,6 +287,7 @@ def package(app, project, output, archive_name=None):
             if not executable.is_file(): raise RuntimeError('Build Release before packaging ' + name)
             hz.copy_changed(executable, path/executable.name)
             hz.copy_tree(hz.ROOT/'Hazel/Resources', path/'Resources')
+            validate_engine_fonts(path/'Resources')
             if name == 'Hazelnut':
                 hz.copy_tree(hz.ROOT/'Hazelnut/Resources/Icons', path/'Resources/Icons')
                 hz.copy_changed(hz.ROOT/'Hazelnut/Resources/imgui.ini', path/'Resources/imgui.ini')

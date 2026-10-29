@@ -2,6 +2,7 @@
 #include "Hazel/Scene/RuntimeSession.h"
 #include "Hazel/Core/Resources.h"
 #include "ScriptEngine.h"
+#include "ManagedString.h"
 
 #include "ScriptGlue.h"
 
@@ -29,7 +30,10 @@
 
 namespace Hazel {
     static RuntimeSession* s_RuntimeSession = nullptr;
+    static thread_local uint64_t s_ExecutingEntity=0;
+    struct ScriptInvocation {uint64_t Previous;explicit ScriptInvocation(uint64_t id):Previous(s_ExecutingEntity){s_ExecutingEntity=id;}~ScriptInvocation(){s_ExecutingEntity=Previous;}};
     static const std::thread::id s_RuntimeThread = std::this_thread::get_id();
+    uint64_t ScriptEngine::GetExecutingEntity(){return std::this_thread::get_id()==s_RuntimeThread?s_ExecutingEntity:0;}
     RuntimeSession* ScriptEngine::GetRuntimeSession() {
         // Reject managed worker requests before observing the borrowed owner.
         return std::this_thread::get_id() == s_RuntimeThread ? s_RuntimeSession : nullptr;
@@ -423,7 +427,7 @@ namespace Hazel {
 		if (beforeReplacement) beforeReplacement();
 		s_Data->ShuttingDown = true;
 		s_Data->AppAssemblyFileWatcher.reset(); // Join before changing the global owner/metadata.
-		if(scene) { scene->ResetUI(); scene->m_Stopping=true; scene->CancelPendingLifecycle(); OnRuntimeStop(); scene->CancelPendingLifecycle(); candidate->SceneContext=scene; }
+		if(scene) { if(auto* session=GetRuntimeSession())session->CancelUIGestures(); scene->ResetUI(); scene->m_Stopping=true; scene->CancelPendingLifecycle(); OnRuntimeStop(); scene->CancelPendingLifecycle(); candidate->SceneContext=scene; }
         ReleaseDomainMetadata();
 		mono_domain_set(s_Data->RootDomain, false);
 		if (s_Data->AppDomain) mono_domain_unload(s_Data->AppDomain);
@@ -676,15 +680,23 @@ namespace Hazel {
 			MonoString* message = nullptr;
 			for (auto* base = type; base && !message; base = mono_class_get_parent(base))
 				if (auto* field = mono_class_get_field_from_name(base, "_message")) mono_field_get_value(exception, field, &message);
-			char* text = message ? mono_string_to_utf8(message) : nullptr;
-			Log::GetCoreLogger()->log(spdlog::source_loc{"Managed",0,""},spdlog::level::err,"Managed exception {}.{}: {}", mono_class_get_namespace(type), mono_class_get_name(type), text ? text : "(no message)");
-			mono_free(text);
+            try {
+                const auto text = message
+                    ? ManagedStrings::Read(message, 32768, 131072, "Exception message",
+                                           ManagedStrings::NulPolicy::Preserve)
+                    : std::string("(no message)");
+                Log::GetCoreLogger()->log(spdlog::source_loc{"Managed",0,""}, spdlog::level::err,
+                    "Managed exception {}.{}: {}", mono_class_get_namespace(type), mono_class_get_name(type), text);
+            } catch (const std::exception& error) {
+                HZ_CORE_ERROR("Managed exception {}.{}: message unavailable ({})",
+                    mono_class_get_namespace(type), mono_class_get_name(type), error.what());
+            }
 		}
 		return result;
 	}
 
 	ScriptInstance::ScriptInstance(Ref<ScriptClass> scriptClass, Entity entity)
-		: m_ScriptClass(scriptClass)
+		: m_ScriptClass(scriptClass), m_EntityID(entity.GetUUID())
 	{
 		m_GCHandle = mono_gchandle_new(scriptClass->Instantiate(), true);
 
@@ -728,18 +740,23 @@ namespace Hazel {
 
 	void ScriptInstance::InvokeOnCreate()
 	{
+        ScriptInvocation invocation(m_EntityID);
         m_Created=true;
 		if (m_OnCreateMethod)
 			m_ScriptClass->InvokeMethod(GetManagedObject(), m_OnCreateMethod);
 	}
 
     void ScriptInstance::InvokeOnDestroy() {
-        if(!m_Created) return; m_Created=false;
+        ScriptInvocation invocation(m_EntityID);
+        if (!m_Created)
+            return;
+        m_Created = false;
         if(m_OnDestroyMethod && GetManagedObject()) m_ScriptClass->InvokeMethod(GetManagedObject(),m_OnDestroyMethod);
     }
 
 	void ScriptInstance::InvokeOnUpdate(float ts)
 	{
+        ScriptInvocation invocation(m_EntityID);
 		if (m_OnUpdateMethod)
 		{
 			void* param = &ts;
@@ -757,22 +774,34 @@ namespace Hazel {
 
 		const ScriptField& field = it->second;
         if(field.Type==ScriptFieldType::Sprite || field.Type==ScriptFieldType::SpriteAnimation) {
-            auto& saved=*static_cast<ScriptFieldInstance*>(buffer);saved.AssetReference.clear();saved.AssetID=0;
-            MonoObject* reference=nullptr;mono_field_get_value(GetManagedObject(),field.ClassField,&reference);
-            if(reference) {
-                auto* type=mono_class_from_name(s_Data->CoreAssemblyImage,"Hazel",field.Type==ScriptFieldType::Sprite?"Sprite":"SpriteAnimation");MonoString* path=nullptr;
-                mono_field_get_value(reference,mono_class_get_field_from_name(type,"Sheet"),&path);
-                mono_field_get_value(reference,mono_class_get_field_from_name(type,"ID"),&saved.AssetID);
-                if(path){char* utf8=mono_string_to_utf8(path);saved.AssetReference=utf8;mono_free(utf8);}
+            auto& saved = *static_cast<ScriptFieldInstance*>(buffer);
+            std::string asset;
+            uint64_t id = 0;
+            MonoObject* reference = nullptr;
+            mono_field_get_value(GetManagedObject(), field.ClassField, &reference);
+            if (reference) {
+                auto* type = mono_class_from_name(s_Data->CoreAssemblyImage, "Hazel",
+                    field.Type == ScriptFieldType::Sprite ? "Sprite" : "SpriteAnimation");
+                MonoString* path = nullptr;
+                mono_field_get_value(reference, mono_class_get_field_from_name(type, "Sheet"), &path);
+                mono_field_get_value(reference, mono_class_get_field_from_name(type, "ID"), &id);
+                asset = ManagedStrings::Read(path, ManagedStrings::PathUnits,
+                                             ManagedStrings::PathBytes, "Snapshot sheet path");
             }
-        } else if(field.Type==ScriptFieldType::Prefab) {
-            MonoObject* reference=nullptr; mono_field_get_value(GetManagedObject(),field.ClassField,&reference);
-            auto& path=*static_cast<std::string*>(buffer); path.clear();
-            if(reference) {
-                auto* type=mono_class_from_name(s_Data->CoreAssemblyImage,"Hazel","Prefab"); MonoString* text=nullptr;
-                mono_field_get_value(reference,mono_class_get_field_from_name(type,"Path"),&text);
-                if(text) { auto* utf8=mono_string_to_utf8(text); path=utf8; mono_free(utf8); }
+            saved.AssetReference = std::move(asset);
+            saved.AssetID = id;
+        } else if (field.Type == ScriptFieldType::Prefab) {
+            MonoObject* reference = nullptr;
+            mono_field_get_value(GetManagedObject(), field.ClassField, &reference);
+            std::string path;
+            if (reference) {
+                auto* type = mono_class_from_name(s_Data->CoreAssemblyImage, "Hazel", "Prefab");
+                MonoString* text = nullptr;
+                mono_field_get_value(reference, mono_class_get_field_from_name(type, "Path"), &text);
+                path = ManagedStrings::Read(text, ManagedStrings::PathUnits,
+                                            ManagedStrings::PathBytes, "Snapshot prefab path");
             }
+            *static_cast<std::string*>(buffer) = std::move(path);
         } else if (field.Type == ScriptFieldType::Entity) {
             MonoObject* reference = nullptr;
 			mono_field_get_value(GetManagedObject(), field.ClassField, &reference);

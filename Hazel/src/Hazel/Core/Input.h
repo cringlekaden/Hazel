@@ -3,6 +3,7 @@
 
 #include "Hazel/Core/KeyCodes.h"
 #include "Hazel/Core/MouseCodes.h"
+#include "Hazel/Core/Gamepad.h"
 
 #include <glm/glm.hpp>
 
@@ -12,6 +13,7 @@ namespace Hazel {
 	{
 	public:
 		static bool IsKeyPressed(KeyCode key);
+        static GamepadSample GetGamepad(); // Main thread; first standardized connected device.
 
 		static bool IsMouseButtonPressed(MouseCode button);
 		static glm::vec2 GetMousePosition();

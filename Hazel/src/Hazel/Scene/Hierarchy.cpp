@@ -294,10 +294,25 @@ void Scene::CheckReparent(UUID child, UUID parent, TransformPolicy mode, Relatio
     }
     ValidateGraph(graph, transforms);
 }
+void Scene::MoveSibling(Entity entity, int direction) {
+    CheckThread();CheckEntity(entity);
+    if(m_IsRunning||IsSimulating()||m_Stopping)throw std::invalid_argument("Stop Play/Simulate before reordering siblings");
+    if(direction!=-1&&direction!=1)throw std::invalid_argument("Sibling direction must be -1 or +1");
+    auto id=entity.GetUUID();const auto relation=m_Relationships.at(id);
+    auto siblings=GetChildren(relation.Parent);auto found=std::find(siblings.begin(),siblings.end(),id);
+    auto index=std::distance(siblings.begin(),found),next=index+direction;
+    if(found==siblings.end()||next<0||size_t(next)>=siblings.size())return;
+    // The graph changes only order, not ownership or transforms. Validate before publishing.
+    auto graph=m_Relationships;std::swap(graph.at(id).Order,graph.at(siblings[size_t(next)]).Order);
+    ValidateGraph(graph,{});RetireUISubtree(id);ChangedAuthoringStructure(id);
+    m_Relationships=std::move(graph);RebuildChildren();
+}
 void Scene::ApplyReparent(UUID child, UUID parent, TransformPolicy mode) {
     Relationships graph;
     Transforms transforms;
     CheckReparent(child, parent, mode, graph, transforms);
+    RetireUISubtree(child); // Only after validation: rejected reparent keeps the gesture intact.
+    ChangedAuthoringStructure(child);
     m_Relationships = std::move(graph);
     for (const auto &item : transforms)
         m_Registry.get<TransformComponent>(m_EntityMap.at(item.first)) = item.second;

@@ -1,6 +1,11 @@
 #include "Hazel.h"
 #include "Hazel/Scene/RuntimeSession.h"
+#include "Hazel/Project/ProjectSerializer.h"
+#include "Hazel/Events/ApplicationEvent.h"
+#include "Hazel/Events/KeyEvent.h"
+#include "Hazel/Events/MouseEvent.h"
 #include "Hazel/Scene/SceneSerializer.h"
+#include "Hazel/Scene/Prefab.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include <GLFW/glfw3.h>
 #include <yaml-cpp/yaml.h>
@@ -8,6 +13,7 @@
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <limits>
 #include <stdexcept>
 using namespace Hazel;
 static void Check(bool value, const char* message) { if (!value) throw std::runtime_error(message); }
@@ -29,6 +35,16 @@ static Ref<Scene> Make(const char* name, const char* script = nullptr) {
     if (script) entity.AddComponent<ScriptComponent>().ClassName=script;
     return scene;
 }
+#include "UIActionSessionChecks.h"
+#include "UIScreenSessionChecks.h"
+#include "UIValueSessionChecks.h"
+#include "UIScrollSessionChecks.h"
+#include "UIDropdownSessionChecks.h"
+#include "UICompositionSessionChecks.h"
+#include "UITextEntrySessionChecks.h"
+#include "UIStyleSessionChecks.h"
+#include "ManagedStringChecks.h"
+#include "RuntimeFailureChecks.h"
 int main(int argc, char** argv) {
     const auto directory = std::filesystem::temp_directory_path() / std::filesystem::u8path("hazel-runtime space-é-"+std::to_string(std::random_device{}()));
     try {
@@ -44,19 +60,30 @@ int main(int argc, char** argv) {
         resources.Root=directory/"Resources";
         std::filesystem::create_directories(resources.Root/"Scripts");
         std::filesystem::copy_file(std::filesystem::u8path(argv[1]),resources.Root/"Scripts/Hazel-ScriptCore.dll");
+        std::filesystem::create_directories(resources.Root/"UI");
+        std::filesystem::copy_file(Resources::Resolve("UI/Default.hstyle"),resources.Root/"UI/Default.hstyle");
         Resources::Configure(resources);
         ScriptEngine::Init(std::filesystem::u8path(argv[2]));
+        UIFlagFailureChecks(project);
+        TargetStartFailureChecks(project,directory);
         auto source=Make("Source", "Migration.TransitionOnCreate"), target=Make("Target", "Migration.SceneProbe");
         SceneSerializer(target,project->GetAssetRoot()).Serialize((directory/"Assets/Scenes/Target.hazel").generic_u8string());
         RuntimeSession session; session.Resize(800,400);
         session.Start(project,source);
+        session.SetAudioVolume(.25f);
+        for(float invalid:{-1.f,1.01f,std::numeric_limits<float>::infinity(),std::numeric_limits<float>::quiet_NaN()}) {
+            bool rejected=false;try{session.SetAudioVolume(invalid);}catch(const std::invalid_argument&){rejected=true;}
+            Check(rejected&&session.GetAudioVolume()==.25f,"Rejected audio setting changed accepted session volume");
+        }
+        session.RequestExit();session.RequestExit();
+        Check(session.ConsumeExitRequest()&&!session.ConsumeExitRequest(),"Runtime exit was not deferred/once-only");
         const auto identity=session.GetIdentity();
         auto retired=session.GetScene(); auto instance=ScriptEngine::GetEntityScriptInstance(2);
         auto scriptClass=instance->GetScriptClass();
         Check(retired!=source && retired->FindEntityByName("Source"),"Runtime did not copy authored scene");
         Check(instance->GetFieldValue<int>("Creates")==1,"OnCreate request did not return to callback");
         session.Update(0.016f);
-        Check(session.GetScene()!=retired && session.GetScene()->FindEntityByName("Target"),"OnCreate transition failed");
+        Check(session.GetAudioVolume()==.25f && session.GetScene()!=retired && session.GetScene()->FindEntityByName("Target"),"OnCreate transition failed");
         Check(!retired->IsRunning() && !retired->GetEntityByUUID(2).GetComponent<Rigidbody2DComponent>().RuntimeBody && !instance->GetManagedObject(),"Transition retained old scripts/physics");
         Check(ScriptEngine::GetEntityClass("Migration.TransitionOnCreate")==scriptClass,"Ordinary scene transition replaced script domain");
         Check(session.GetIdentity()==identity && ScriptEngine::GetSceneContext()==session.GetScene().get(),"Session identity/script scene context mismatch");
@@ -90,6 +117,19 @@ int main(int argc, char** argv) {
         session.Resize(400,400); session.SetInput({300,100},true);
         Check(session.GetMouseWorldPosition(mouse) && std::abs(mouse.x-2.5f)<1e-4f,"Resized viewport mapping failed");
         session.SetInput({300,100},false); Check(!session.GetMouseWorldPosition(mouse),"Inactive viewport accepts clicks");
+        // D1 through the real host/session ownership boundary, before another Update.
+        auto canvas=current->CreateEntity("Ownership canvas");auto& uiCanvas=canvas.AddComponent<UICanvasComponent>();uiCanvas.ReferenceSize={400,400};uiCanvas.SafeInsets=glm::vec4(0);
+        auto button=current->CreateEntity("Ownership button");current->Reparent(button,canvas,TransformPolicy::KeepLocal);button.AddComponent<UIRectComponent>().FixedSize={100,40};button.AddComponent<UIButtonComponent>().Action="activate";
+        session.Update(0); // Commit the queued runtime parent operation.
+        auto queue=[&]{session.SetInput({20,20},true);GameUI::InputFrame f;f.Enabled=true;f.Mouse={20,20};current->UpdateUIInput(f);f.PointerPressed=f.PointerReleased=true;f.PressPosition=f.Mouse;current->UpdateUIInput(f);};
+        GameUI::Action uiAction;queue();Check(current->ConsumeUIAction(button.GetUUID(),uiAction),"Ownership fixture did not activate before cancellation");queue();session.SetInput({20,20},false);
+        Check(!current->ConsumeUIAction(0,uiAction),"Host ownership loss retained transferred UI activation");
+        queue();WindowLostFocusEvent lost;session.SubmitUIEvent(lost,{20,20},false);
+        Check(!current->ConsumeUIAction(0,uiAction)&&!current->IsUICapturingPointer()&&!session.IsInputEnabled()&&!session.GetMouseWorldPosition(mouse),"Window focus loss retained UI work/capture/input ownership");
+        queue();session.ResizeFramebuffer(0,0);session.SetInput({20,20},true);
+        Check(!current->ConsumeUIAction(0,uiAction)&&!session.IsInputEnabled()&&!session.IsGameplayInputEnabled(),"Framebuffer minimization retained UI work/input ownership");session.ResizeFramebuffer(400,400);
+        queue();session.RequestSceneLoad("Scenes/Target.hazel");session.Update(0);
+        Check(session.GetScene()!=current&&!current->ConsumeUIAction(0,uiAction)&&!current->GetUIDiagnostics().Focus&&!session.GetScene()->ConsumeUIAction(0,uiAction),"Scene transition delivered retired UI work/focus");
         session.RequestSceneLoad("Scenes/Target.hazel"); session.Stop();
         Check(!session.RequestSceneLoad("Scenes/Target.hazel") && !ScriptEngine::GetRuntimeSession(),"Stopped session retained request binding");
         auto update=Make("Update", "Migration.TransitionOnUpdate");
@@ -136,6 +176,10 @@ int main(int argc, char** argv) {
         Check(motion->GetEntityByUUID(2).GetComponent<TransformComponent>().Translation.x==0 &&
               motion->GetPrimaryCameraEntity().GetComponent<CameraComponent>().Camera.GetOrthographicSize()==10,
               "Runtime motion/camera edits leaked into authored scene");
+        ManagedStringChecks(project,directory);
+        UIActionSessionChecks(project,directory);
+        UIScreenSessionChecks(project);
+        UIValueSessionChecks(project);UIScrollSessionChecks(project);UIDropdownSessionChecks(project);UICompositionSessionChecks(project);UITextEntrySessionChecks(project);UIStyleSessionChecks(project);
         ScriptEngine::Shutdown(); Check(!session.GetScene() && !ScriptEngine::GetRuntimeSession(),"Domain shutdown retained runtime session");
         std::cout<<"PASS: shared runtime OnCreate/OnUpdate transitions, failure recovery, first request wins, cancellation, authored copy, retained domain, retired observations/physics, repeated transitions and viewport input\n";
     } catch (const std::exception& error) { std::cerr<<"FAIL: "<<error.what()<<'\n'; std::error_code ignored; std::filesystem::remove_all(directory,ignored);return 1; }

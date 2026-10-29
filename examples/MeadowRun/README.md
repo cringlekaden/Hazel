@@ -1,50 +1,43 @@
 # MeadowRun
 
-An original, independently authored Hazel example. WASD / arrow keys: move. Collect five lantern seeds, avoid the pond, then reach the north-east trail. R restarts the meadow; Escape returns from the meadow to the title. Completion has clickable Explore Again / Title Menu controls, and Enter restarts. The pond returns you to camp without losing seeds.
+A lantern-seed expedition. Explore three garden stages, collect five lantern seeds in each and open the north-east trail. Pond recovery returns you to camp without losing collected seeds.
 
-## Edit, build, play and package
+![MeadowRun gameplay](../../docs/images/meadowrun-gameplay.png)
+*Authored garden, collectible sprites and runtime HUD. Linux capture.*
 
-From the Hazel checkout (Windows: use `python` instead of `python3`):
+## Play and edit
+
+WASD / arrows move; **R** restarts the current stage; **Escape** returns to title. Completion offers **Explore Again / Title Menu**; Enter starts a fresh expedition.
+
+From a [prepared checkout](../../docs/getting-started.md), build Debug scripts and launch the player or editor (Windows: `python`):
 
 ```sh
-python3 scripts/hazel.py script-build examples/MeadowRun/MeadowRun.hproj
-python3 scripts/hazel.py run Hazelnut --project examples/MeadowRun/MeadowRun.hproj
-python3 scripts/hazel.py run Nutella --project examples/MeadowRun/MeadowRun.hproj
+python3 scripts/hazel.py script-build examples/MeadowRun/MeadowRun.hproj --config Debug
+python3 scripts/hazel.py run Nutella --config Debug --project examples/MeadowRun/MeadowRun.hproj
+python3 scripts/hazel.py run Hazelnut --config Debug --project examples/MeadowRun/MeadowRun.hproj
+```
+
+Open `Assets/Scenes/Meadow.hazel` in Hazelnut for direct practice. Play runs a copy; Stop retains authored content. MainMenu, Meadow, Orchard, LanternGrove and Complete are authored scenes. Explorer physics, controller speed, boundaries, trees/rocks, pond, seeds, exit and HUD are editable. `LanternSeed` is a detached prefab instantiated on entry and destroyed on pickup. Each stage has distinct scenery/collision and its own checkpoint.
+
+Open `Textures/Lanterns.hsprites`: **Regions** contains the Explorer and seed variants; **Animation** exposes Lantern pulse with ordered frames, durations and Loop. The seed prefab uses that clip with autoplay. Save the sheet, assign its region/clip through the Inspector, save the scene/prefab and Play. See [Sprite authoring](../../docs/sprite-authoring.md).
+
+The camera fits a 16×12 world area, revealing additional scenery at other aspects. Native menus/HUD use runtime UI canvas coordinates, including the editor viewport offset; gameplay/world queries remain separate. A 900×640 or larger window is recommended.
+
+## Export
+
+```sh
+python3 scripts/hazel.py build --config Release
 python3 scripts/hazel.py script-build examples/MeadowRun/MeadowRun.hproj --config Release
 python3 scripts/hazel.py package --app Nutella --project examples/MeadowRun/MeadowRun.hproj --name MeadowRun --output dist/games
 ```
 
-Build the engine first with `scripts/setup.sh` / `scripts/setup.ps1`; build Release
-before packaging with `python3 scripts/hazel.py build --config Release`.
-In Hazelnut, use the toolbar triangle to Play and square to Stop. Scene files are
-editable through the hierarchy/inspector; supported public script fields expose
-tuning. Stop preserves authored content. Scenes use existing `.hazel` serialization
-and `Hazel.Scene.LoadScene`, without a separate game/runtime format.
+Extract the archive and run `./Nutella` / `Nutella.exe` from any directory. Prepared games need no compiler, Python or SDK. [Packaging](../../docs/packaging.md) covers checksums, host deployment baseline and the editor-export alternative.
 
-Authored content: MainMenu, Meadow, Orchard, LanternGrove and Complete scenes; Explorer body and speed, collision boundaries, trees/rocks, pond, seeds, exit and HUD. Each stage has five lantern seeds, distinct scenery/collision layouts, a pond checkpoint, and progression through its north-east exit. R restarts the current stage; final completion offers a fresh expedition. Seeds instantiate from LanternSeed and are destroyed on pickup.
-
-Camera policy: fit the entire 16 x 12 world area, revealing additional background
-at other aspect ratios. Gameplay bounds/speed remain fixed. Mouse hit testing uses
-the current camera and active runtime viewport, including Hazelnut offsets. A very
-small window remains functional but reduces text size; 900 x 640 or larger is recommended.
+## Assets
 
 All assets/scripts belong to this project; no shared mutable state or assembly.
 Texture paths are asset-relative. Original pixel art is documented in LICENSE.txt;
 optional regeneration source is `examples/art/generate.py` (Pillow required only
 for regeneration). Open Sans and all required engine/runtime licenses are packaged.
 
-Extract the Nutella archive and run `Nutella` / `Nutella.exe` with no arguments,
-from any directory. No checkout/compiler/SDK is needed for precompiled scripts.
-Packages require OpenGL 4.1; Windows 10 x64+ or official Ubuntu 24.04/glibc 2.39+
-Linux with X11/GLX. Compiling changed scripts separately requires the Hazel SDK.
-
-Author in Hazelnut: open any level through File > Open Scene; select its controller > Script to choose LanternSeed and level progression. Inspect LanternSeed, Pond or Tree in Content Browser, edit/save in Prefab Inspector, then Instantiate and Select with an initial transform. Project > Build Scripts and Export Game share canonical SDK tooling; configure SDK/Python in Edit > Editor Preferences.
-
-Sprite authoring sample: open `Textures/Lanterns.hsprites` in Content Browser.
-Its Regions tab contains Explorer (used as a static region in Meadow), plus three
-seed brightness variants. Its Animation tab exposes Lantern pulse: ordered frames,
-individual durations and Loop. LanternSeed.hprefab uses that clip with autoplay,
-so lantern seeds pulse in every level. Existing movement, triggers and picking
-remain unchanged. Save the sheet, drag regions/clips onto the corresponding entity
-or prefab Inspector fields, save the scene/prefab, then Play. These references and the original
-atlas are included in Nutella exports with this project's license.
+[Editor guide](../../docs/editor-guide.md) · [Runtime UI](../../docs/runtime-game-ui.md) · [All examples](../../docs/README.md#learn-from-an-example)

@@ -14,6 +14,7 @@ public:
     AudioPlayback& operator=(const AudioPlayback&) = delete;
     bool Play(uint64_t owner, const std::filesystem::path& file, float gain, bool loop);
     void Stop(uint64_t owner);
+    void SetMasterVolume(float volume);
 private:
     struct State;
     std::unique_ptr<State> m_State;

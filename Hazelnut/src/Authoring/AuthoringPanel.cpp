@@ -111,7 +111,14 @@ bool AuthoringPanel::Require(EditorAction action)
     auto availability = Availability(action);
     return availability ? true : m_Editor.ActionFailed(availability.Reason);
 }
-void AuthoringPanel::MarkSceneSaved() { m_SavedScene = SceneText(); }
+void AuthoringPanel::MarkSceneSaved() {
+    if(!m_Editor.m_EditorScene)return;
+    m_SceneHistory.Bind(m_Editor.m_EditorScene->GetIdentity());
+    m_SceneHistory.MarkSaved(SceneText());
+    m_Editor.m_SceneHierarchyPanel.BindHistory(&m_SceneHistory);
+    m_Editor.m_SceneHierarchyPanel.BeforeStructure=[this]{m_Editor.m_UIEdit.Finish(true);m_Editor.m_HoveredEntity={};};
+    m_PrefabInspector.BeforeStructure=[this]{m_Editor.m_UIEdit.Finish(true);m_Editor.m_HoveredEntity={};};
+}
 std::string AuthoringPanel::SceneText() const
 {
     return SceneSerializer(m_Editor.m_EditorScene).CaptureAuthoredState();
@@ -134,6 +141,7 @@ void AuthoringPanel::RememberProject()
 void AuthoringPanel::BindProject()
 {
     ++m_ProjectGeneration;
+    m_UIBindings.Values=Project::GetActive()?Project::GetActive()->GetUIBindings():GameUI::UIBindings::Defaults();m_UIBindings.CancelCapture();
     m_RenderingDraft=Project::GetActive()?Project::GetActive()->GetRendererRequests():RuntimeRendererRequests{};
     m_RenderingAuthored=Project::GetActive()&&Project::GetActive()->GetConfig().Rendering.has_value();
     if(!RenderingRestartReason().empty())Notify(RenderingRestartReason(),spdlog::level::info);
@@ -149,6 +157,38 @@ void AuthoringPanel::BindProject()
         m_Editor.m_ContentBrowserPanel->SelectAsset = [this](auto &path) { SelectAsset(path); };
     if (Project::GetActive())
         m_Sprites.Bind(Project::GetActive()->GetAssets());
+    m_Fonts.Bind(Project::GetActive()?Project::GetActive()->GetAssets():nullptr);
+    m_Fonts.Availability=availability;
+    m_Fonts.GuardPending=[this]{return m_Documents.Pending();};
+    m_Fonts.ReportError=[this](const std::string& error){
+        m_Editor.ActionFailed(error);
+        if(m_Fonts.HasDocument() && Project::GetActive()) {
+            const auto file=std::filesystem::weakly_canonical(Project::GetAssetDirectory()/std::filesystem::u8path(m_Fonts.Name()));
+            if(error.find("Document changed on disk: "+file.generic_u8string())!=std::string::npos) {
+                m_ShowSaveConflict=true;m_ConflictDocument=EditorDocument::FontFamily;m_ConflictIdentity=m_Fonts.Identity();
+            }
+        }
+    };
+    m_Fonts.AssetsChanged=[this]{if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->Refresh();};
+    m_Fonts.ReplaceDocument=[this](std::function<bool()> action){Guard(OperationIntent::OpenFontFamily,std::move(action));};
+    m_Fonts.RequestClose=[this]{Guard(OperationIntent::CloseFontFamily,[this]{m_Fonts.Close();if(m_ActiveDocument==EditorDocument::FontFamily)m_ActiveDocument=EditorDocument::Scene;return true;});};
+    if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->CreateFontFamily=[this](const auto& folder){if(Require(EditorAction::EditAsset))m_Fonts.BeginCreate(folder);};
+    m_Styles.Bind(Project::GetActive()?Project::GetActive()->GetAssets():nullptr);
+    m_Styles.Availability=availability;
+    m_Styles.GuardPending=[this]{return m_Documents.Pending();};
+    m_Styles.ReportError=[this](const std::string& error){
+        m_Editor.ActionFailed(error);
+        if(m_Styles.HasDocument() && Project::GetActive()) {
+            const auto file=std::filesystem::weakly_canonical(Project::GetAssetDirectory()/std::filesystem::u8path(m_Styles.Name()));
+            if(error.find("Document changed on disk: "+file.generic_u8string())!=std::string::npos) {
+                m_ShowSaveConflict=true;m_ConflictDocument=EditorDocument::UIStyle;m_ConflictIdentity=m_Styles.Identity();
+            }
+        }
+    };
+    m_Styles.AssetsChanged=[this]{if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->Refresh();};
+    m_Styles.ReplaceDocument=[this](std::function<bool()> action){Guard(OperationIntent::OpenUIStyle,std::move(action));};
+    m_Styles.RequestClose=[this]{Guard(OperationIntent::CloseUIStyle,[this]{m_Styles.Close();if(m_ActiveDocument==EditorDocument::UIStyle)m_ActiveDocument=EditorDocument::Scene;return true;});};
+    if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->CreateUIStyle=[this](const auto& folder){if(Require(EditorAction::EditAsset))m_Styles.BeginCreate(folder);};
     m_Sprites.ReportError = [this](const std::string &error) { m_Editor.ActionFailed(error); };
     m_Sprites.Availability = availability;
     m_Sprites.AssetsChanged = [this]
@@ -203,7 +243,18 @@ void AuthoringPanel::BindProject()
                 return false;
             if (!entity.HasComponent<SpriteRendererComponent>())
                 entity.AddComponent<SpriteRendererComponent>();
-            entity.GetComponent<SpriteRendererComponent>().Source = reference;
+            if (entity.HasComponent<UIRectComponent>() || entity.HasComponent<UICanvasComponent>())
+            {
+                CancelEdits();
+                auto before=UIEditValues::Capture(entity),next=before;
+                next.Image->Source=reference;
+                UIInspectorEditing edit;PropertyUI::EditActivity immediate;
+                immediate.Changed=immediate.Committed=true;
+                if(!edit.Edit(*m_Editor.m_EditorScene,&m_SceneHistory,entity.GetUUID(),
+                              "Assign UI sprite",before,std::move(next),immediate,0))
+                    return m_Editor.ActionFailed(edit.Error());
+            }
+            else entity.GetComponent<SpriteRendererComponent>().Source = reference;
             m_Editor.m_ActionError.clear();
             return true;
         }
@@ -255,6 +306,7 @@ void AuthoringPanel::BindProject()
     m_PrefabFile={};
     m_PrefabInspector.SetContext(nullptr);
     m_PrefabScene.reset();
+    m_PrefabHistory.Bind(0);
     m_ShowPrefab = false;
     m_CreatePrefab = false;
     m_PrefabSourceID = m_PrefabSourceScene = 0;
@@ -475,8 +527,10 @@ void AuthoringPanel::Shortcuts()
     const bool viewportFocused = FocusedPanel("Viewport");
     const bool sceneFocused = FocusedPanel("Scene Hierarchy") || FocusedPanel("Properties");
     const bool prefabFocused=FocusedPanel("Prefab Inspector") && bool(m_PrefabScene);
-    if (io.KeyCtrl)
+    if (io.KeyCtrl || io.KeySuper)
     {
+        if(ImGui::IsKeyPressed(ImGuiKey_Z,false)){if(viewportFocused||sceneFocused)m_ActiveDocument=EditorDocument::Scene;else if(prefabFocused)m_ActiveDocument=EditorDocument::Prefab;UndoRedo(io.KeyShift);return;}
+        if(ImGui::IsKeyPressed(ImGuiKey_Y,false)){if(viewportFocused||sceneFocused)m_ActiveDocument=EditorDocument::Scene;else if(prefabFocused)m_ActiveDocument=EditorDocument::Prefab;UndoRedo(true);return;}
         if (ImGui::IsKeyPressed(ImGuiKey_O, false))
             Guard(OperationIntent::OpenProject, [this] { return m_Editor.OpenProject(); });
         if (ImGui::IsKeyPressed(ImGuiKey_N, false))
@@ -631,6 +685,7 @@ void AuthoringPanel::Menus()
             m_Startup = config.StartScene.generic_u8string();
             m_AssetDirectory = config.AssetDirectory.generic_u8string();
             m_Module = config.ScriptModulePath.generic_u8string();
+            m_UIBindings.Values=Project::GetActive()->GetUIBindings();m_UIBindings.CancelCapture();
             m_ShowProject = true;
             m_ProjectChoicesLoaded = false;
         }
@@ -690,6 +745,7 @@ void AuthoringPanel::Menus()
     }
     if (ImGui::BeginMenu("Edit"))
     {
+        HistoryMenu();
         if (ImGui::MenuItem("Editor Preferences..."))
         {
             m_Draft = m_Preferences;
@@ -704,6 +760,9 @@ void AuthoringPanel::Menus()
         ImGui::MenuItem("Properties",nullptr,&m_Editor.m_SceneHierarchyPanel.PropertiesVisible);
         if(m_Editor.m_ContentBrowserPanel)ImGui::MenuItem("Content Browser",nullptr,&m_Editor.m_ContentBrowserPanel->Visible);
         ImGui::MenuItem("Statistics",nullptr,&m_Editor.m_ShowStats);
+        ImGui::MenuItem("Runtime UI Debugger",nullptr,&m_Editor.m_ShowUIDebugger);
+        if(ImGui::MenuItem("UI Style",nullptr,m_Styles.Visible(),m_Styles.HasDocument()))m_Styles.Show();
+        if(ImGui::MenuItem("Font Family",nullptr,m_Fonts.Visible(),m_Fonts.HasDocument()))m_Fonts.Show();
         if (ImGui::MenuItem("Sprite Sheet", nullptr, m_Sprites.Visible(), m_Sprites.HasDocument()))
             m_Sprites.Show();
         if (ImGui::MenuItem("Prefab Inspector", nullptr, m_ShowPrefab, bool(m_PrefabScene)))
@@ -916,8 +975,7 @@ void AuthoringPanel::RefreshProjectChoices()
 }
 void AuthoringPanel::ProjectSettings()
 {
-    if (!m_ShowProject || !Project::GetActive())
-        return;
+    if (!m_ShowProject || !Project::GetActive()){m_UIBindings.CancelCapture();return;}
     ImGui::SetNextWindowPos(
         ImVec2(ImGui::GetMainViewport()->WorkPos.x + 40, ImGui::GetMainViewport()->WorkPos.y + 40),
         ImGuiCond_FirstUseEver);
@@ -970,8 +1028,13 @@ void AuthoringPanel::ProjectSettings()
         }
     }
     ProjectRendering();
+    if(ImGui::CollapsingHeader("Runtime UI bindings")){
+        ImGui::TextWrapped("Project defaults for Play and Nutella. Player overrides use project-scoped user data. Ctrl/Alt/Super chords remain editor-owned.");
+        m_UIBindings.Draw(bool(Availability(EditorAction::EditAsset)));
+        if(ImGui::Button("Revert binding form")){m_UIBindings.Values=Project::GetActive()->GetUIBindings();m_UIBindings.CancelCapture();}
+    }else m_UIBindings.CancelCapture();
     bool renderingValid=true;try{RendererPolicy::Validate(m_RenderingDraft);}catch(const std::exception&){renderingValid=false;}
-    bool valid = renderingValid && (m_SaveNamespace.empty() || RuntimeStorage::ValidName(m_SaveNamespace)) && !m_ProjectName.empty() && Portable(m_AssetDirectory) && Portable(m_Startup) &&
+    bool valid = m_UIBindings.Valid() && renderingValid && (m_SaveNamespace.empty() || RuntimeStorage::ValidName(m_SaveNamespace)) && !m_ProjectName.empty() && Portable(m_AssetDirectory) && Portable(m_Startup) &&
                  Portable(m_Module);
     if (!valid)
         ImGui::TextWrapped("Choose project-relative assets, startup scene "
@@ -982,6 +1045,7 @@ void AuthoringPanel::ProjectSettings()
     {
         auto config = Project::GetActive()->GetConfig();
         if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;
+        config.UIBindings=m_UIBindings.Values;
         config.Name = m_ProjectName;
         config.ScriptProject = m_ScriptProject;
         config.SaveNamespace = m_SaveNamespace;
@@ -1020,7 +1084,8 @@ void AuthoringPanel::ProjectSettings()
             const auto path=FileDialogs::SaveFile("Hazel project\0*.hproj\0");
             if(!path.empty() && Require(EditorAction::SaveAsset))try {
                 auto candidate=CreateRef<Project>();auto& config=candidate->GetConfig();
-                config=Project::GetActive()->GetConfig();if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;config.Name=m_ProjectName;config.ScriptProject=m_ScriptProject;config.SaveNamespace=m_SaveNamespace;
+                config=Project::GetActive()->GetConfig();if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;
+        config.UIBindings=m_UIBindings.Values;config.Name=m_ProjectName;config.ScriptProject=m_ScriptProject;config.SaveNamespace=m_SaveNamespace;
                 config.StartScene=Path(m_Startup);config.AssetDirectory=Path(m_AssetDirectory);config.ScriptModulePath=Path(m_Module);
                 const auto text=ProjectSerializer(candidate).SerializeText();
                 FileSystem::WriteFileAtomically(Path(path),[&](auto& out){out<<text;},WriteMode::CreateNew);
@@ -1227,6 +1292,13 @@ void AuthoringPanel::SelectAsset(const std::filesystem::path &path)
         OpenScript(path);
         return;
     }
+    if(path.extension()==".ttf" || path.extension()==".otf") {
+        if(Require(EditorAction::EditAsset))m_Fonts.BeginCreate(path);return;
+    }
+    if(path.extension()==".hstyle") {Guard(OperationIntent::OpenUIStyle,[this,path]{if(!m_Styles.Open(path))return false;m_ActiveDocument=EditorDocument::UIStyle;return true;});return;}
+    if(path.extension()==".hfont") {
+        Guard(OperationIntent::OpenFontFamily,[this,path]{if(!m_Fonts.Open(path))return false;m_ActiveDocument=EditorDocument::FontFamily;return true;});return;
+    }
     if (path.extension() == ".hsprites")
     {
         Guard(OperationIntent::OpenSheet,
@@ -1262,7 +1334,10 @@ void AuthoringPanel::SelectAsset(const std::filesystem::path &path)
                   m_PrefabFile=std::move(file);
                   m_PrefabReference = relative.generic_u8string();
                   m_InitialTransform = transform;
-                  m_SavedPrefab = std::move(saved);
+                  m_PrefabInspector.FinishUIEdit();
+                  m_PrefabHistory.Bind(scene->GetIdentity());
+                  m_PrefabHistory.MarkSaved(std::move(saved));
+                  m_PrefabInspector.BindHistory(&m_PrefabHistory);
                   m_PrefabInspector.SetContext(scene);
                   m_PrefabInspector.PrefabDocument=true;
                   m_PrefabFit=true;
@@ -1295,13 +1370,22 @@ void AuthoringPanel::InstantiatePrefab(const std::filesystem::path &path, bool u
         return;
     try
     {
-        auto relative = Project::MakeAssetReference(Project::GetAssetDirectory(), path);
-        auto entity =
-            useInspectorTransform
-                ? Prefab::Instantiate(Project::GetAssetDirectory(), relative, *m_Editor.m_EditorScene,
-                                      m_InitialTransform)
-                : Prefab::Instantiate(Project::GetAssetDirectory(), relative, *m_Editor.m_EditorScene);
-        m_Editor.m_SceneHierarchyPanel.SetSelectedEntity(entity);
+        auto& panel=m_Editor.m_SceneHierarchyPanel;
+        if(!panel.Structural("Instantiate prefab",[&]{
+            auto parent=panel.GetSelectedEntity();
+            // The operation runs in the panel's disposable Edit scene.
+            auto destination=panel.AuthoringScene();
+            for(size_t depth=0;parent&&parent.HasComponent<UIButtonComponent>()&&depth<Scene::MaxDepth;++depth)parent=destination->GetEntityByUUID(destination->GetRelationship(parent).Parent);
+            auto relative=Project::MakeAssetReference(Project::GetAssetDirectory(),path);
+            auto entity=useInspectorTransform?Prefab::Instantiate(Project::GetAssetDirectory(),relative,*destination,m_InitialTransform):Prefab::Instantiate(Project::GetAssetDirectory(),relative,*destination);
+            if(entity.HasComponent<UIRectComponent>()&&parent&&(parent.HasComponent<UIRectComponent>()||parent.HasComponent<UICanvasComponent>()))destination->Reparent(entity,parent,TransformPolicy::KeepLocal);
+            return panel.SetSelectedEntity(entity);
+        }))m_Editor.ActionFailed("Prefab instantiation rejected; inspect hierarchy diagnostics");
+        else {
+            m_ActiveDocument=EditorDocument::Scene;
+            m_Editor.m_ActionError.clear();
+            if(ImGui::GetCurrentContext())ImGui::SetWindowFocus(m_Editor.m_SceneHierarchyPanel.HierarchyVisible?"Scene Hierarchy":"Viewport");
+        }
     }
     catch (const std::exception &error)
     {
@@ -1379,9 +1463,11 @@ void AuthoringPanel::Prefabs()
     ImGui::SetNextWindowSize({570, 590}, ImGuiCond_FirstUseEver);
     ImGui::Begin("Prefab Inspector");
     m_PrefabFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
-    if (m_PrefabFocused)
+    if (m_PrefabFocused) {
+        if(m_ActiveDocument!=EditorDocument::Prefab){m_Editor.m_UIEdit.Finish(true);m_Editor.m_SceneHierarchyPanel.FinishUIEdit();}
         m_ActiveDocument = EditorDocument::Prefab;
-    bool dirty = SceneSerializer(m_PrefabScene).CaptureAuthoredState() != m_SavedPrefab;
+    }
+    bool dirty = m_PrefabHistory.Dirty(SceneSerializer(m_PrefabScene).CaptureAuthoredState());
     ImGui::TextWrapped("%s%s", m_PrefabReference.c_str(), dirty ? " * Unsaved" : "");
     if(m_PrefabFile.NeedsBackup())ImGui::TextWrapped("First Save preserves the opened original before writing supported content/defaults. Unresolved references remain authored values.");
     ImGui::TextWrapped("Detached instances. Saving affects future instances "
@@ -1415,7 +1501,7 @@ void AuthoringPanel::Prefabs()
     else ImGui::TextWrapped("Select an entity in this asset's hierarchy to edit its local properties.");
     ImGui::Separator();
     ImGui::TextWrapped("Viewport drops use the asset's authored transform. Set "
-                       "placement below for Instantiate and Select.");
+                       "placement below for Instantiate and Select. Instances are detached structures; style references stay shared.");
     ImGui::TextUnformatted("Initial instance transform");
     const TransformComponent defaults;
     PropertyUI::Vector("position", "Position", glm::value_ptr(m_InitialTransform.Translation), 3, .1f,
@@ -1427,6 +1513,7 @@ void AuthoringPanel::Prefabs()
     PropertyUI::Vector("scale", "Scale", glm::value_ptr(m_InitialTransform.Scale), 3, .1f,
                        glm::value_ptr(defaults.Scale), "%.2f", {}, .001f, 1000);
     ImGui::BeginDisabled(dirty || !Availability(EditorAction::EditScene));
+    ImGui::TextWrapped("UI templates: select a scene Canvas or container first. Rect roots instantiate there; selecting a control uses its parent. Instances are detached structures; style references continue to share appearance.");
     if (ImGui::Button("Instantiate and Select"))
         InstantiatePrefab(Project::GetAssetDirectory() / Path(m_PrefabReference), true);
     ImGui::EndDisabled();
@@ -1443,9 +1530,13 @@ void AuthoringPanel::Render()
     Scripts();
     Export();
     Prefabs();
+    m_Styles.Render(bool(Availability(EditorAction::EditAsset)));
+    if(m_Styles.Focused()){if(m_ActiveDocument!=EditorDocument::UIStyle)CancelEdits();m_ActiveDocument=EditorDocument::UIStyle;}
+    m_Fonts.Render(bool(Availability(EditorAction::EditAsset)));
+    if(m_Fonts.Focused()){if(m_ActiveDocument!=EditorDocument::FontFamily)CancelEdits();m_ActiveDocument=EditorDocument::FontFamily;}
     m_Sprites.Render(bool(Availability(EditorAction::EditAsset)));
-    if (m_Sprites.Focused())
-        m_ActiveDocument = EditorDocument::Sheet;
+    if (m_Sprites.Focused()) {if(m_ActiveDocument!=EditorDocument::Sheet)CancelEdits();m_ActiveDocument=EditorDocument::Sheet;}
+    HistoryFeedback(m_SceneHistory);HistoryFeedback(m_PrefabHistory);
     DocumentGuard();
     m_Console.ExitRequested = m_ExitAfterJob;
     m_Console.CapturePreferenceAvailable = m_PreferenceRecovery.empty();

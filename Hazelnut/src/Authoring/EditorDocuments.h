@@ -10,7 +10,9 @@ enum class EditorDocument
 {
     Scene,
     Prefab,
-    Sheet
+    Sheet,
+    FontFamily,
+    UIStyle
 };
 enum class OperationIntent
 {
@@ -20,8 +22,12 @@ enum class OperationIntent
     NewScene,
     OpenPrefab,
     OpenSheet,
+    OpenFontFamily,
+    OpenUIStyle,
     ClosePrefab,
     CloseSheet,
+    CloseFontFamily,
+    CloseUIStyle,
     CloseEditor,
     Play,
     Simulate,
@@ -55,7 +61,7 @@ struct DocumentSaveResult
     SaveOutcome Outcome;
     std::string Message;
 };
-// Exactly the three existing authored document types. No ImGui, serializers,
+// Existing authored document owners share replacement/save guards. No ImGui, serializers,
 // assets or session ownership. Destructive callbacks stage replacement themselves:
 // failed/cancelled Open must never discard the previous drafts beforehand.
 class EditorDocuments

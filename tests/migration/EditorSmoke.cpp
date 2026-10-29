@@ -3,12 +3,15 @@
 #endif
 // Real pinned EditorLayer/panels in Application; files and layout are isolated.
 #include "EditorLayer.h"
+#include "Hazel/Events/MouseEvent.h"
 #include "UI/PropertyUI.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Authoring/EditorPreferences.h"
 #include "Hazel/Core/WindowCaption.h"
 #include "Authoring/RendererLaunch.h"
 #include "Authoring/AuthoringPanel.h"
+#include "Authoring/UIRectEditing.h"
+#include "Hazel/UI/UIStyleApplication.h"
 #include "Hazel/Utils/Toolchain.h"
 #include "Hazel/Utils/Process.h"
 #include "Hazel/Scene/Prefab.h"
@@ -30,6 +33,7 @@
 #include <GLFW/glfw3native.h>
 #endif
 #include <filesystem>
+#include <limits>
 #include <yaml-cpp/yaml.h>
 #include <fstream>
 #include <iostream>
@@ -47,12 +51,17 @@
 #endif
 namespace Hazel {
 static void Check(bool condition, const char* message) { if (!condition) throw std::runtime_error(message); }
+static void Check(bool condition, const std::string& message) { if (!condition) throw std::runtime_error(message); }
 static std::string Read(const std::filesystem::path& file) {
     std::ifstream input(file,std::ios::binary); return {std::istreambuf_iterator<char>(input),{}};
 }
 }
+#include "UI/TextEmphasisUI.h"
 #include "EditorStateChecks.h"
 #include "EditorDocumentChecks.h"
+#include "EditorHistoryChecks.h"
+#include "EditorStructuralChecks.h"
+#include "EditorLayoutChecks.h"
 #include "EditorConsoleChecks.h"
 namespace Hazel {
 class EditorWorkflowSmoke : public Layer {
@@ -65,6 +74,16 @@ public:
         case 3: {
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project/assembly startup failed");
             EditorDocumentChecks();
+            EditorHistoryChecks();
+            EditorStructuralChecks();
+            EditorLayoutChecks();
+            HistoryWorkflowChecks();
+            ContainerWorkflowChecks();
+            FontFamilyWorkflowChecks();
+            UIStyleWorkflowChecks();
+            UIActionWorkflowChecks();
+            UIScreenWorkflowChecks();
+            ExampleIntegrationWorkflowChecks();
             CaptionChecks();
             WorkspaceChecks();
             NativeCreationChecks();
@@ -128,7 +147,9 @@ public:
             auto& a=*e.m_Authoring;ToolRequest probe{python.Executable,{},e.m_ProjectPath,{},"Minimized completion"};
             probe.Generation=a.m_ProjectGeneration;
             Check(a.m_Tools.Start(std::move(probe)),"Minimized completion fixture did not start");
-            m_MinimizedStart=std::chrono::steady_clock::now();
+            // Start the polling deadline at the first idle/minimized tick, after
+            // this frame's intentional cold preview/font work has completed.
+            m_MinimizedStart={};
             WindowResizeEvent minimized(0,0);Application::Get().OnEvent(minimized);
             Application::Get().SubmitToMainThread([this]{CheckMinimizedCompletion();});
             break;
@@ -220,10 +241,10 @@ public:
             Check(e.m_ActiveScene == e.m_EditorScene && !e.m_ActiveScene->IsRunning(), "Editor stop did not restore editor scene");
             e.m_HoveredEntity=e.m_EditorScene->GetEntityByUUID(901);
             {
-                const auto saved=e.m_Authoring->m_SavedScene;
+                const auto saved=e.m_Authoring->m_SceneHistory.SavedAuthored();
                 e.m_EditorScene->GetEntityByUUID(901).GetComponent<TagComponent>().Tag="Unsaved simulation edit";
                 Check(e.m_Authoring->InvokeRuntime(AuthoringPanel::RuntimeAction::Simulate),"Runtime toolbar Simulate failed");
-                Check(e.m_Authoring->m_SavedScene==saved && saved!=SceneSerializer(e.m_EditorScene).CaptureAuthoredState(),"Simulation incorrectly marked unsaved authoring as saved");
+                Check(e.m_Authoring->m_SceneHistory.SavedAuthored()==saved && saved!=SceneSerializer(e.m_EditorScene).CaptureAuthoredState(),"Simulation incorrectly marked unsaved authoring as saved");
             }
             Check(!e.m_HoveredEntity,"Simulate retained editor hover"); break;
         case 9:
@@ -360,6 +381,7 @@ public:
     }
 private:
     void CheckMinimizedCompletion() {
+        if(m_MinimizedStart==std::chrono::steady_clock::time_point{})m_MinimizedStart=std::chrono::steady_clock::now();
         Check(m_Frame==3,"Editor rendering/scene updates continued while minimized");
         auto& a=*m_Editor.m_Authoring;
         if(a.m_Tools.Busy()) {
@@ -378,6 +400,37 @@ private:
         std::cout<<"PASS: main-thread Console/tool polling continues while minimized without advancing scene/render frames\n";
     }
     void OnImGuiRender() override {
+        if(m_Frame==7) {
+            auto& editor=m_Editor;auto* viewport=ImGui::FindWindowByName("Viewport");
+            Check(viewport&&(viewport->Flags&ImGuiWindowFlags_NoNavInputs),"Play viewport let ImGui compete for UI navigation keys");
+            auto authored=SceneSerializer(editor.m_EditorScene).CaptureAuthoredState();
+            auto bindings=GameUI::SerializeBindings(editor.m_RuntimeSession.GetUIBindings());
+            auto* focus=ImGui::GetCurrentContext()->NavWindow;bool shown=editor.m_ShowUIDebugger;editor.m_ShowUIDebugger=true;
+            ImGui::Begin("Runtime UI Debugger");ImGui::GetStateStorage()->SetInt(ImGui::GetID("Effective bindings / Play override"),1);ImGui::End();
+            editor.UI_Debugger();editor.m_ShowUIDebugger=shown;ImGui::FocusWindow(focus);
+            Check(GameUI::SerializeBindings(editor.m_RuntimeSession.GetUIBindings())==bindings&&SceneSerializer(editor.m_EditorScene).CaptureAuthoredState()==authored,"Play binding diagnostics modified effective input or authoring state");
+            std::cout<<"PASS: actual Play binding debugger / host gating and ImGui viewport navigation isolation\n";
+        }
+        if(m_Frame==3) {
+            DrawContainerFixture();
+            DrawUIScreenFixture();
+            m_StylePanelFixture.Render(false);
+            DrawFontFamilyFixture();
+            ImGui::Begin("UI bindings qualification",nullptr,ImGuiWindowFlags_NoSavedSettings);
+            m_Editor.m_Authoring->m_UIBindings.Draw();ImGui::End();
+            auto scene=m_Editor.m_ActiveScene;scene->RefreshUI();
+            auto before=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
+            auto generation=scene->GetUISnapshot().Generation;bool shown=m_Editor.m_ShowUIDebugger;
+            auto previousFocus=ImGui::GetCurrentContext()->NavWindow;
+            m_Editor.m_ShowUIDebugger=true;
+            ImGui::SetNextWindowCollapsed(false,ImGuiCond_Always);
+            ImGui::Begin("Runtime UI Debugger");
+            ImGui::GetStateStorage()->SetInt(ImGui::GetID("Rendering costs"),1);ImGui::GetStateStorage()->SetInt(ImGui::GetID("Font resources"),1);ImGui::End();
+            m_Editor.UI_Debugger();m_Editor.m_ShowUIDebugger=shown;
+            ImGui::FocusWindow(previousFocus);
+            GameUI::Action action;
+            Check(scene->GetUISnapshot().Generation==generation&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==before&&!scene->ConsumeUIAction(0,action),"Debugger changed authoring/generation or dispatched actions");
+        }
         if(m_Frame!=13&&!(m_Frame==16&&std::getenv("HAZEL_EDITOR_CAPTURE")&&!std::getenv("HAZEL_CONSOLE_CAPTURE")))return;
         if(std::getenv("HAZEL_HIERARCHY_CAPTURE")) {
             m_Editor.m_ActionError.clear();ImGui::ClosePopupsOverWindow(nullptr,false);
@@ -529,10 +582,10 @@ private:
         Check(a.SaveActive()&&Read(e.m_EditorScenePath)==savedScene&&Prefab::GetEntity(Prefab::Load(Project::GetAssetDirectory(),std::filesystem::u8path(a.m_PrefabReference))).GetName()=="Saved active prefab","Active prefab Save wrote scene or omitted prefab");
         a.ClosePrefab();
         auto entity=scene->GetEntityByUUID(901);entity.GetComponent<TagComponent>().Tag="Saved active scene";a.m_ActiveDocument=EditorDocument::Scene;
-        Check(a.SaveActive()&&a.SceneText()==a.m_SavedScene,"Active scene Save failed");
-        const auto saved=a.m_SavedScene;
+        Check(a.SaveActive()&&a.SceneText()==a.m_SceneHistory.SavedAuthored(),"Active scene Save failed");
+        const auto saved=a.m_SceneHistory.SavedAuthored();
         auto& box=entity.GetComponent<BoxCollider2DComponent>();const auto size=box.Size;box.Size.x=0;
-        Check(!e.OnSceneSimulate(true)&&e.m_ActiveScene==scene&&e.m_SceneState==EditorLayer::SceneState::Edit&&a.m_SavedScene==saved,"Invalid Simulate started physics or lost editor draft");box.Size=size;
+        Check(!e.OnSceneSimulate(true)&&e.m_ActiveScene==scene&&e.m_SceneState==EditorLayer::SceneState::Edit&&a.m_SceneHistory.SavedAuthored()==saved,"Invalid Simulate started physics or lost editor draft");box.Size=size;
         RecoveryRetryChecks();
         RuntimeGuardChecks();
         std::cout<<"PASS: production Save-and-Assign failure/success, stale target rejection, failed Open draft preservation, busy callback/save guards, active sheet/prefab/scene Save and Simulate preflight\n";
@@ -832,9 +885,16 @@ private:
 #endif
         std::cout<<"PASS: prefab identity/independence/self/external references/malformed assets, script creation, preferences recovery/scopes, absolute Python discovery\n";
     }
+    #include "EditorHistoryWorkflowChecks.h"
+    #include "EditorContainerWorkflowChecks.h"
+    #include "EditorFontFamilyWorkflowChecks.h"
+    #include "EditorUIActionWorkflowChecks.h"
+    #include "EditorUIStyleWorkflowChecks.h"
+    #include "EditorUIScreenWorkflowChecks.h"
+    #include "EditorExampleIntegrationChecks.h"
     void HierarchyAuthoringChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& panel=e.m_SceneHierarchyPanel;
-        const auto scene=e.m_EditorScene;const auto before=a.SceneText();const auto saved=a.m_SavedScene;
+        const auto scene=e.m_EditorScene;const auto before=a.SceneText();const auto saved=a.m_SceneHistory.SavedAuthored();
         const auto oldSelection=panel.GetSelectedEntity();const uint64_t oldID=oldSelection?uint64_t(Entity(oldSelection).GetUUID()):0;
         // Exercise the actual native presets and shared preview, without YAML authoring.
         auto* viewport=ImGui::FindWindowByName("Viewport");Check(viewport,"UI input check lacks actual viewport");
@@ -842,7 +902,9 @@ private:
         ImGui::StartMouseMovingWindow(viewport);e.m_ViewportHovered=true;
         Check(!e.RuntimeUIWidgetBlocksInput(),"ImGui viewport MoveId canceled runtime mouse gesture");
         e.m_ViewportHovered=false;Check(e.RuntimeUIWidgetBlocksInput(),"Viewport title/background drag bypassed input guard");
-        e.m_ViewportHovered=true;ImGui::SetActiveID(viewport->GetID("Other widget"),viewport);
+        e.m_ViewportHovered=true;// OnUpdate is outside Begin/End; cold loading may compact this
+        // inactive window's transient ID stack. Its retained window ID is the seed.
+        ImGui::SetActiveID(ImHashStr("Other widget",0,viewport->ID),viewport);
         Check(e.RuntimeUIWidgetBlocksInput(),"Active editor widget leaked runtime input");
         ImGui::ClearActiveID();ImGui::GetCurrentContext()->MovingWindow=nullptr;ImGui::FocusWindow(previousFocus);e.m_ViewportHovered=wasHovered;
         panel.SetSelectedEntity({});Check(panel.AddUI(0),"Canvas preset failed");auto canvas=panel.GetSelectedEntity();
@@ -852,6 +914,48 @@ private:
         Check(panel.AddUI(2),"Text preset failed");auto uiText=panel.GetSelectedEntity();Check(uiText.HasComponent<UITextStyleComponent>()&&uiText.HasComponent<TextComponent>(),"Text preset lacks style/text");
         panel.SetSelectedEntity(uiPanel);Check(panel.AddUI(3),"Button preset failed");auto uiButton=panel.GetSelectedEntity();Check(uiButton.HasComponent<UIButtonComponent>(),"Button preset lacks action component");
         scene->OnViewportResize(640,480);scene->OnUpdateEditor(0,e.m_EditorCamera);GameUI::Rect resolved;Check(scene->GetUIBounds(uiButton.GetUUID(),resolved)&&resolved.Size.x>0,"Editor UI preset preview lacks bounds");GameUI::Action action;Check(!scene->ConsumeUIAction(0,action),"Edit preview activated a game button");
+        // D6 uses the same reversible controller called by viewport handles.
+        // Preserve the established v1 stretch/minimum regression independently
+        // of the now-measured creation presets checked above.
+
+
+        auto& editRect=uiButton.GetComponent<UIRectComponent>();editRect.Anchor={.5f,.5f};editRect.HeightMode=GameUI::SizeMode::Fixed;
+        editRect.FixedSize={200,120};editRect.Pivot={.75f,.5f};editRect.MinimumSize={150,100};scene->RefreshUI();
+        auto editBefore=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
+        auto startBounds=scene->GetUISnapshot().Find(uiButton.GetUUID())->Bounds;
+        UIRectEditSession gesture;Check(gesture.Begin(scene,uiButton.GetUUID(),4),"Viewport resize controller did not begin");
+        Check(gesture.Update({20,0}),"Viewport right edge resize failed");auto endBounds=scene->GetUISnapshot().Find(uiButton.GetUUID())->Bounds;
+        Check(std::abs(endBounds.Position.x-startBounds.Position.x)<.001f&&std::abs(endBounds.Size.x-startBounds.Size.x-20)<.001f&&editRect.FixedSize.x==220,"D6: Fixed/pivot resize moved opposite edge");
+        auto lastValid=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
+        Check(!gesture.Update({NAN,0})&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==lastValid,"Invalid viewport edit changed last valid authored state");
+        gesture.Finish(true);Check(SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==editBefore,"Escape/cancel did not restore rect");
+        Check(gesture.Begin(scene,uiButton.GetUUID(),0)&&gesture.Update({12,8}),"Viewport move failed");
+        auto movedBounds=scene->GetUISnapshot().Find(uiButton.GetUUID())->Bounds;
+        Check(glm::length(movedBounds.Position-startBounds.Position-glm::vec2(12,8))<.001f&&movedBounds.Size==startBounds.Size,"Viewport move changed resolved size");gesture.Finish(true);
+        auto& parentRect=uiPanel.GetComponent<UIRectComponent>();auto parentBefore=parentRect;
+        Check(gesture.Begin(scene,uiButton.GetUUID(),4),"Second resize could not begin");parentRect.FixedSize.x+=10;
+        Check(!gesture.Update({10,0})&&!gesture.Active()&&parentRect.FixedSize.x==parentBefore.FixedSize.x+10,"Parent change did not cancel transaction or was overwritten");parentRect=parentBefore;
+        const bool eventHovered=e.m_ViewportHovered;e.m_ViewportHovered=false;
+        Check(e.m_UIEdit.Begin(scene,uiButton.GetUUID(),4)&&e.m_UIEdit.Update({20,0}),"Editor event gesture did not begin");
+        WindowLostFocusEvent lostUIFocus;e.OnEvent(lostUIFocus);
+        Check(!e.m_UIEdit.Active()&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==editBefore,"Focus-loss event did not cancel authored geometry immediately");
+        Check(e.m_UIEdit.Begin(scene,uiButton.GetUUID(),4)&&e.m_UIEdit.Update({20,0}),"Minimization gesture did not begin");
+        WindowResizeEvent minimizedUI(0,0);e.OnEvent(minimizedUI);
+        Check(!e.m_UIEdit.Active()&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==editBefore,"Minimization event did not cancel authored geometry");
+        e.m_ViewportHovered=eventHovered;
+        editRect.FixedSize={100,40};uiPanel.AddComponent<UILayoutComponent>();scene->RefreshUI();
+        Check(scene->GetUISnapshot().Find(uiButton.GetUUID())->ContainerOwned&&!gesture.Begin(scene,uiButton.GetUUID(),0),"Container-owned viewport move wrote ignored geometry");uiPanel.RemoveComponent<UILayoutComponent>();
+        // Reject failures after the edited rect itself validates, including descendant overflow.
+        auto ordinaryButton=uiButton.GetComponent<UIRectComponent>();auto ordinaryText=uiText.GetComponent<UIRectComponent>();
+        uiButton.GetComponent<UIRectComponent>()=UIRectComponent{};
+        scene->Reparent(uiText,uiButton,TransformPolicy::KeepLocal);
+        auto& overflowRect=uiText.GetComponent<UIRectComponent>();overflowRect.Anchor={1,0};
+        overflowRect.Offset={(std::numeric_limits<float>::max)()*.75f,0};overflowRect.FixedSize={1,1};scene->RefreshUI();
+        auto beforeOverflow=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();
+        Check(gesture.Begin(scene,uiButton.GetUUID(),4)&&!gesture.Update({(std::numeric_limits<float>::max)()*.5f,0}),"Descendant overflow did not reject viewport edit");
+        Check(scene->GetUISnapshot().Valid&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==beforeOverflow,"Post-write resolution failure did not restore last valid authored state");gesture.Finish(true);
+        uiButton.GetComponent<UIRectComponent>()=ordinaryButton;uiText.GetComponent<UIRectComponent>()=ordinaryText;scene->Reparent(uiText,uiPanel,TransformPolicy::KeepLocal);
+        panel.SetSelectedEntity(uiButton);scene->RefreshUI();
         const auto uiSnapshot=SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState();auto uiCopy=Scene::Copy(scene);Check(SceneSerializer(uiCopy,Project::GetAssetDirectory()).CaptureAuthoredState()==uiSnapshot,"Editor UI copy changed authored fields");
         const auto uiPrefab=std::filesystem::path("Prefabs/EditorUI.hprefab");Prefab::Save(Project::GetAssetDirectory(),uiPrefab,scene,canvas);auto reopenedUI=Prefab::Load(Project::GetAssetDirectory(),uiPrefab);Check(Prefab::GetEntity(reopenedUI).HasComponent<UICanvasComponent>(),"Editor UI prefab reopen lost canvas");
         scene->DestroyEntity(canvas);scene->OnViewportResize(uint32_t(e.m_ViewportSize.x),uint32_t(e.m_ViewportSize.y));panel.SetSelectedEntity(scene->GetEntityByUUID(oldID));Check(a.SceneText()==before,"UI authoring checks modified existing scene");std::filesystem::remove(Project::GetAssetDirectory()/uiPrefab);
@@ -879,7 +983,7 @@ private:
         panel.SetSelectedEntity(child);
         const auto dropBefore=a.SceneText();
         Check(panel.DropEntity(scene->GetIdentity(),child.GetUUID(),0) && panel.GetSelectedEntity()==child && scene->GetWorldTransform(child)==world,"Production Scene Root drop lost world pose/selection");
-        Check(a.SceneText()!=dropBefore && a.m_SavedScene==saved,"Successful root drop did not change the draft independently of saved state");
+        Check(a.SceneText()!=dropBefore && a.m_SceneHistory.SavedAuthored()==saved,"Successful root drop did not change the draft independently of saved state");
         Check(panel.DropEntity(scene->GetIdentity(),child.GetUUID(),root.GetUUID()) && a.SceneText()==dropBefore,"Production row drop changed world pose or order");
         Check(!panel.DropEntity(scene->GetIdentity(),root.GetUUID(),leaf.GetUUID()) && a.SceneText()==dropBefore,"Production cycle drop mutated draft");
         auto physics=scene->CreateEntity("Drop physics");physics.AddComponent<Rigidbody2DComponent>();
@@ -921,7 +1025,7 @@ private:
         Check(a.SceneText()==closeDraft && panel.GetSelectedEntity()==closeSelection,"Cancelled caption close changed draft or selection");
         Check(panel.ConfirmDelete(scene->GetIdentity(),duplicate.GetUUID(),3,DestroyPolicy::Subtree,TransformPolicy::KeepWorld),"Confirmed subtree deletion failed");
         Check(panel.ConfirmDelete(scene->GetIdentity(),root.GetUUID(),3,DestroyPolicy::Subtree,TransformPolicy::KeepWorld),"Original subtree cleanup failed");
-        Check(a.SceneText()==before && a.m_SavedScene==saved,"Hierarchy cleanup altered unrelated content/saved state");
+        Check(a.SceneText()==before && a.m_SceneHistory.SavedAuthored()==saved,"Hierarchy cleanup altered unrelated content/saved state");
         panel.SetSelectedEntity(scene->GetEntityByUUID(oldID));e.m_ActionError.clear();
         std::cout<<"PASS: actual hierarchy controller create/reparent/identity/cycle/selection, subtree duplicate/count-confirmed delete, connected prefab edits, nested Play/Stop isolation/selection and pending-document mutation guards\n";
     }
@@ -966,12 +1070,12 @@ private:
         auto& e=m_Editor;auto& a=*e.m_Authoring;auto& window=Application::Get().GetWindow();
         const auto project=Project::GetActive();const auto previous=project->GetRendererRequests();
         const auto scene=e.m_EditorScene;const auto path=e.m_EditorScenePath;
-        const auto text=a.SceneText();const auto savedSnapshot=a.m_SavedScene;
+        const auto text=a.SceneText();const auto savedSnapshot=a.m_SceneHistory.SavedAuthored();
         const auto name=project->GetConfig().Name;const auto form=a.m_ProjectName;
         a.m_ProjectName="Unaccepted general settings draft";
         RuntimeRendererRequests request=previous;request.TextureSlots=2;request.VSync=false;
         Check(a.SaveRenderingRequests(request) && project->GetConfig().Name==name && a.m_ProjectName=="Unaccepted general settings draft" &&
-              e.m_EditorScene==scene && e.m_EditorScenePath==path && a.SceneText()==text && a.m_SavedScene==savedSnapshot,
+              e.m_EditorScene==scene && e.m_EditorScenePath==path && a.SceneText()==text && a.m_SceneHistory.SavedAuthored()==savedSnapshot,
               "Renderer-only save replaced content or unrelated configuration/form draft");
         Check(!a.Availability(EditorAction::Play) && !a.Availability(EditorAction::Simulate) && !e.OnScenePlay(true) && !e.OnSceneSimulate(true) &&
               e.m_EditorScene==scene && a.SceneText()==text && e.m_SceneState==EditorLayer::SceneState::Edit,
@@ -1063,6 +1167,11 @@ private:
         const auto project=e.m_ProjectPath;
         auto previous=e.m_EditorScene;
         auto entity=previous->CreateEntity("Unsaved recovery sentinel");
+        entity.AddComponent<UIRectComponent>();
+        auto values=UIEditValues::Capture(entity),changed=values;changed.Rect->Offset.x=7;
+        UIInspectorEditing edit;PropertyUI::EditActivity immediate;immediate.Changed=immediate.Committed=true;
+        Check(edit.Edit(*previous,&a.m_SceneHistory,entity.GetUUID(),"Recovery sentinel",values,changed,immediate,0),"Recovery history setup failed");
+        const auto historyCount=a.m_SceneHistory.Operations();
         e.m_SceneHierarchyPanel.SetSelectedEntity(entity);
         const auto draft=a.SceneText();const auto selection=entity.GetUUID();
         const auto future=m_Directory/"future-scene.hazel";
@@ -1074,6 +1183,7 @@ private:
         Check(!a.m_Documents.Resolve(GuardChoice::Discard,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Unknown scene replaced the session");
         a.m_ResolvingDocumentAction=false;
         Check(e.m_EditorScene==previous && a.SceneText()==draft && Read(future)==unknown && e.m_SceneHierarchyPanel.GetSelectedEntity().GetUUID()==selection,"Rejected schema lost draft/source/selection");
+        Check(a.m_SceneHistory.Identity()==previous->GetIdentity()&&a.m_SceneHistory.Operations()==historyCount,"Failed recovery replacement lost history");
         a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),{});
         const auto missing=m_Directory/"recoverable-scene.hazel";
         const std::string source=u8"Scene: Recovery é\nEntities:\n  - Entity: 42\n    TagComponent: {Tag: Unresolved}\n    SpriteRendererComponent:\n      Color: [1, 1, 1, 1]\n      TexturePath: Textures/no file é.png\n      TilingFactor: 1\n";
@@ -1087,7 +1197,8 @@ private:
         Check(a.m_Documents.Resolve(GuardChoice::Discard,a.Documents(),[&](const auto& doc){return a.SaveDocument(doc);}),"Normal guarded Open rejected missing texture");
         a.m_ResolvingDocumentAction=false;
         auto recovery=e.m_EditorScene;auto unresolved=recovery->GetEntityByUUID(42);
-        Check(e.m_SceneLoad.State==DocumentLoadState::EditableWithProblems && e.m_SceneLoad.Migration && a.SceneText()==a.m_SavedScene,"Recovery state was not explicit or missing asset marked dirty");
+        Check(a.m_SceneHistory.Identity()==recovery->GetIdentity()&&a.m_SceneHistory.Identity()!=previous->GetIdentity()&&!a.m_SceneHistory.Operations()&&!a.m_SceneHistory.Active(),"Recovery replacement retained another document's history");
+        Check(e.m_SceneLoad.State==DocumentLoadState::EditableWithProblems && e.m_SceneLoad.Migration && a.SceneText()==a.m_SceneHistory.SavedAuthored(),"Recovery state was not explicit or missing asset marked dirty");
         unresolved.GetComponent<TagComponent>().Tag="Edited unresolved";
         Check(e.SaveScene(),"Recovery scene save failed");
         Check(!e.m_SceneLoad.Migration && e.m_SceneLoad.State==DocumentLoadState::EditableWithProblems,"Saving migration hid unresolved resources or retained obsolete encoding status");
@@ -1225,6 +1336,15 @@ private:
         Check(!e.SaveProject(),"Failed project save reported success"); e.m_ProjectPath=projectPath; preserved();
         Check(Read(scenePath)==priorScene && Read(projectPath)==priorProject,"Failed save changed prior scene/project bytes");
     }
+    Scope<FontFamilyPanel> m_FamilyFixture;
+    Ref<Scene> m_OverflowFixture;
+    SceneHierarchyPanel m_OverflowFixturePanel;
+    Ref<Framebuffer> m_OverflowPreview;
+    uint64_t m_OverflowTarget=0;
+    Ref<Scene> m_ContainerFixture;
+    SceneHierarchyPanel m_ContainerFixturePanel;
+    Ref<Framebuffer> m_ContainerPreview;
+    uint64_t m_ContainerIcon=0;
     EditorLayer& m_Editor;
     Ref<Scene> m_HierarchyCapture;
     Ref<Framebuffer> m_HierarchyPreviewCapture;
@@ -1315,6 +1435,9 @@ int main(int argc, char** argv) {
         std::filesystem::create_directories(directory / "assets/Icons");
         for (const char* name : { "assets", "AuthoringProject" })
             std::filesystem::copy(source / name, directory / name, std::filesystem::copy_options::recursive);
+        std::filesystem::create_directories(directory / "typography");
+        for(const auto* name:{"DejaVuSans.ttf","LICENSE-DejaVu.txt"})
+            std::filesystem::copy_file(source/"typography"/name,directory/"typography"/name);
         std::filesystem::create_directories(directory / "assets/Scripts");
         std::filesystem::create_directories(directory / "AuthoringProject/Assets/Scripts/Binaries");
         std::filesystem::copy_file(core, directory / "assets/Scripts/Hazel-ScriptCore.dll");

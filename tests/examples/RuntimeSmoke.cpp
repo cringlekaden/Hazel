@@ -3,7 +3,10 @@
 #include "Platform/Windows/WindowsCommandLine.h"
 #endif
 #include "Hazel/Core/FileSystem.h"
+#include "Hazel/Events/KeyEvent.h"
 #include "Hazel/Scene/RuntimeSession.h"
+#include "Hazel/Scene/SceneSerializer.h"
+#include "Hazel/Scene/Prefab.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include <box2d/box2d.h>
 #include <glad/glad.h>
@@ -13,6 +16,7 @@
 #include <set>
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -39,6 +43,7 @@ static void Capture(const std::filesystem::path& path,unsigned width,unsigned he
     });
     glPixelStorei(GL_PACK_ALIGNMENT,4);
 }
+#include "UIIntegrationChecks.h"
 int main(int argc,char** argv) {
 #ifdef HZ_PLATFORM_WINDOWS
     // Match production launchers: CRT narrow argv cannot represent Unicode paths.
@@ -48,7 +53,7 @@ int main(int argc,char** argv) {
 #endif
     const auto temporary=std::filesystem::temp_directory_path()/std::filesystem::u8path("hazel games space-é-"+std::to_string(std::random_device{}()));
     try {
-        Check(argc==4 || argc==5,"Usage: ExampleGamesSmoke MeadowRun.hproj Skybound.hproj captures [LastLightkeeper.hproj]");Log::Init();
+        Check(argc>=4 && argc<=7,"Usage: ExampleGamesSmoke MeadowRun.hproj Skybound.hproj captures [LastLightkeeper.hproj] [SceneTransitions.hproj]");Log::Init();
         ApplicationSpecification spec;spec.Name="Example regression";spec.EnableImGui=false;Application app(spec);
         glfwHideWindow(static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow()));
         FramebufferSpecification frame;frame.Width=960;frame.Height=720;
@@ -64,8 +69,18 @@ int main(int argc,char** argv) {
             ScriptEngine::Init(Project::GetAssetFileSystemPath(project->GetConfig().ScriptModulePath));
             Check(ScriptEngine::EntityClassExists(meadow?"MeadowRun.Explorer":"Skybound.Game")&&
                   !ScriptEngine::EntityClassExists(meadow?"Skybound.Game":"MeadowRun.Explorer"),"Project managed classes leaked across switch");
+            ValidateExampleDocuments(project);
             RuntimeSession session;session.Resize(960,720);
             auto menu=project->LoadScene(project->GetConfig().StartScene);session.Start(project,menu);tick(session);
+            {
+                GameUI::DeviceSample input;input.Point={900,700};session.SetInput(input.Point,true);
+                auto title=session.GetScene();session.RouteUIInput(input,.016f,true);title->OnUpdateRuntime(.016f);
+                uint64_t play=0;for(auto h:title->GetAllEntitiesWith<UIButtonComponent>()){Entity e(h,title.get());if(e.GetComponent<UIButtonComponent>().Action=="play")play=e.GetUUID();}
+                Check(play&&title->FocusUI(play),"Example title has no eligible Play action");
+                input.Keys[Key::Enter]=true;session.RouteUIInput(input,.016f,true);title->OnUpdateRuntime(.016f);
+                session.SetInput({},false);tick(session);
+                Check(session.GetScene()!=title&&session.GetScene()->GetName()==(meadow?"Meadow":"Flight"),"Example Play event did not reach its declared Canvas owner");
+            }
             auto scene=project->LoadScene(meadow?"Scenes/Meadow.hazel":"Scenes/Flight.hazel");
             const auto count=scene->GetAllEntitiesWith<IDComponent>().size();
             session.Start(project,scene);
@@ -153,7 +168,7 @@ int main(int argc,char** argv) {
             Check(camera.GetOrthographicSize()>=12&&camera.GetOrthographicSize()*camera.GetAspectRatio()>=15.99f,"Resize cropped the authored game area");
             session.Stop();Check(!scene->IsRunning(),"Authored scene entered runtime");
         }
-        if(argc==5) {
+        if(argc>=5) {
 #ifdef HZ_PLATFORM_WINDOWS
             WindowsCrashTrace trace;
             WindowsCrashTrace::Enabled=true;
@@ -162,17 +177,20 @@ int main(int argc,char** argv) {
             auto project=Project::Load(std::filesystem::u8path(argv[4]));Check(bool(project),"Cannot open Lightkeeper project");
             ScriptEngine::Init(Project::GetAssetFileSystemPath(project->GetConfig().ScriptModulePath));
             Check(ScriptEngine::EntityClassExists("LastLightkeeper.Breakwater") && !ScriptEngine::EntityClassExists("Skybound.Game"),"Lightkeeper project domain isolation failed");
+            ValidateExampleDocuments(project);
             RuntimeSession session;session.Resize(960,720);
             auto menu=project->LoadScene(project->GetConfig().StartScene);
             std::cout<<"Lightkeeper: title start"<<std::endl;session.Start(project,menu);tick(session);
+            LightkeeperMenuIntegrationChecks(session,framebuffer,std::filesystem::u8path(argv[3]));
             Check(!session.Storage().IsPersistent(),"Editor-style session enabled player persistence");
-            Check(session.GetScene()->FindEntityByName("StartLabel").GetComponent<TextComponent>().TextString=="Enter   Begin","New journey menu did not initialize");
+            Check(session.GetScene()->FindEntityByName("StartLabel").GetComponent<TextComponent>().TextString=="Begin","New journey menu did not initialize");
             session.Storage().Write("journey","LK1|31|5|2|1");
             Check(session.RequestSceneLoad("Scenes/Breakwater.hazel"),"Island transition request rejected");tick(session);
             auto runtime=session.GetScene();auto player=runtime->FindEntityByName("Iona");
             Check(bool(player) && session.GetError().empty(),"Authored island failed to start");
             Check(session.Storage().Read("journey").find("LK2|543|")==0 && !runtime->FindEntityByName("ServiceDoor"),"Service receiver/latching door or LK1 migration failed");
             Check(runtime->GetAllEntitiesWith<IDComponent>().size()<=project->LoadScene("Scenes/Breakwater.hazel")->GetAllEntitiesWith<IDComponent>().size()+15,"Island exceeded its authored content plus bounded beam pool");
+            LightkeeperPauseIntegrationChecks(session);
             auto controller=ScriptEngine::GetEntityScriptInstance(runtime->FindEntityByName("Breakwater / Journey controller").GetUUID());
             auto invoke=[&](const char* method,void** values,int count) {
                 auto object=controller->GetManagedObject();MonoObject* exception=nullptr;
@@ -217,7 +235,7 @@ int main(int argc,char** argv) {
             chapter();at("LanternSleeve");invoke("Interact",nullptr,0);invoke("CloseDialogue",nullptr,0);
             Check(session.Storage().Read("journey").find("LK2|1663|")==0,"Focus upgrade wasn't saved");
             Check(session.RequestSceneLoad("Scenes/CliffCistern.hazel"),"Mid-cistern Continue rejected");tick(session);tick(session);chapter();
-            Check(runtime->FindEntityByName("DialoguePanel").GetComponent<UICanvasComponent>().Visible==false,"Resumed cistern retained empty dialogue overlay");
+            Check(!runtime->IsUIScreenOpen(runtime->FindEntityByName("DialoguePanel").GetUUID()),"Resumed cistern retained empty dialogue overlay");
             at("RestMarker");{
                 auto object=controller->GetManagedObject();auto klass=mono_object_get_class(object);bool blocked=true;
                 mono_field_set_value(object,mono_class_get_field_from_name(klass,"saveBlocked"),&blocked);
@@ -242,7 +260,7 @@ int main(int argc,char** argv) {
             at("Handle1");invoke("Interact",nullptr,0);invoke("Interact",nullptr,0);at("FocusPad2");invoke("Focus",focused,1);
             Check(!runtime->FindEntityByName("GalleryGate"),"Gallery focus receiver did not latch");shot("LastLightkeeper-caves-gallery",-7,3);
             Check(session.RequestSceneLoad("Scenes/SeaCaves.hazel"),"Mid-cave Continue rejected");tick(session);tick(session);chapter();
-            Check(runtime->FindEntityByName("DialoguePanel").GetComponent<UICanvasComponent>().Visible==false && !runtime->FindEntityByName("GalleryGate"),"Resumed cave overlay or latched progress incorrect");
+            Check(!runtime->IsUIScreenOpen(runtime->FindEntityByName("DialoguePanel").GetUUID()) && !runtime->FindEntityByName("GalleryGate"),"Resumed cave overlay or latched progress incorrect");
             // Meaningful antagonist contracts through real managed methods; no screen-click bot.
             float zero=0;auto object=controller->GetManagedObject();auto klass=mono_object_get_class(object);
             mono_field_set_value(object,mono_class_get_field_from_name(klass,"grace"),&zero);
@@ -275,7 +293,7 @@ int main(int argc,char** argv) {
             Check(session.Storage().Read("journey").find("LK3|261759|")==0,"Survey lens migration failed");
             at("WestPost");invoke("Focus",focused,1);Check(!runtime->FindEntityByName("SpanGate") && bool(runtime->FindEntityByName("CrewGate")),"Long sightline failed or opened unrelated latch");shot("LastLightkeeper-survey-span",-7,0);
             Check(session.RequestSceneLoad("Scenes/Observatory.hazel"),"Mid-survey Continue rejected");tick(session);tick(session);chapter();
-            Check(!runtime->FindEntityByName("SpanGate") && runtime->FindEntityByName("DialoguePanel").GetComponent<UICanvasComponent>().Visible==false,"Resumed survey lost latch or retained blank dialogue");
+            Check(!runtime->FindEntityByName("SpanGate") && !runtime->IsUIScreenOpen(runtime->FindEntityByName("DialoguePanel").GetUUID()),"Resumed survey lost latch or retained blank dialogue");
             at("EastPost");tick(session,0);
             object=controller->GetManagedObject();klass=mono_object_get_class(object);
             // Facing is a game-owned value type; set through its real managed field.
@@ -322,7 +340,7 @@ int main(int argc,char** argv) {
             Check(session.Storage().Read("journey").substr(session.Storage().Read("journey").size()-2)=="|2" && bool(runtime->FindEntityByName("MainGate")),"One contact prematurely released lantern bay");shot("LastLightkeeper-tower-contact",6,5);
             Check(session.RequestSceneLoad("Scenes/UpperTower.hazel"),"Partial tower Continue rejected");tick(session);tick(session);chapter();
             object=controller->GetManagedObject();klass=mono_object_get_class(object);
-            Check(runtime->FindEntityByName("DialoguePanel").GetComponent<UICanvasComponent>().Visible==false && !runtime->FindEntityByName("EntryGate"),"Tower Continue lost latch or retained overlay");
+            Check(!runtime->IsUIScreenOpen(runtime->FindEntityByName("DialoguePanel").GetUUID()) && !runtime->FindEntityByName("EntryGate"),"Tower Continue lost latch or retained overlay");
             mono_field_set_value(object,mono_class_get_field_from_name(klass,"grace"),&zero);int awakeTower=0;float towerWait=0;
             mono_field_set_value(object,mono_class_get_field_from_name(klass,"wispState"),&awakeTower);mono_field_set_value(object,mono_class_get_field_from_name(klass,"wispTime"),&towerWait);
             at("Aim1");advance=.1f;invoke("Wisp",elapsed,1);Check(runtime->FindEntityByName("RushMark").GetComponent<TransformComponent>().Scale.x>1,"Final encounter has no telegraph");shot("LastLightkeeper-tower-telegraph",6,5);
@@ -351,9 +369,25 @@ int main(int argc,char** argv) {
             for(const auto* bad:{"LK9|future","broken"}){session.Storage().Write("journey",bad);session.RequestSceneLoad("Scenes/MainMenu.hazel");tick(session);tick(session);controller=ScriptEngine::GetEntityScriptInstance(session.GetScene()->FindEntityByName("Title / Journey menu").GetUUID());invoke("Start",nullptr,0);tick(session);Check(session.GetScene()->GetName()=="MainMenu" && session.Storage().Read("journey")==bad,"Unreadable save was overwritten or continued");}
             session.Stop();session.Start(project,menu);tick(session);Check(session.Storage().Read("journey").empty(),"Editor Stop retained progress");
             controller=ScriptEngine::GetEntityScriptInstance(session.GetScene()->FindEntityByName("Title / Journey menu").GetUUID());invoke("Start",nullptr,0);tick(session);tick(session);Check(session.GetScene()->GetName()=="Breakwater","Fresh New Game failed");session.Stop();
-            Check(menu->FindEntityByName("StartLabel").GetComponent<TextComponent>().TextString=="Enter   Begin","Runtime changed authored menu");
+            Check(menu->FindEntityByName("StartLabel").GetComponent<TextComponent>().TextString=="Begin","Runtime changed authored menu");
+            LightkeeperSettingsPersistenceChecks(project,menu,temporary/"isolated settings saves");
             std::cout<<"PASS: Lightkeeper LK1/LK2 migration, service latch, focus/shutters, cliff transitions, wisp counterplay, Mara, observatory long/opposed sightlines/carriage/crew/winch/recovery/failure-safe exit, tower fixed mirror/independent contacts/telegraph/dodge/focus/recovery/failure-safe writes, landing/ending/credits/completed Continue, corrupt/future retention, New Game and Stop isolation\n";
         }
+        if(argc>=6){
+            const auto source=std::filesystem::u8path(argv[5]);const auto copied=temporary/"SceneTransitions";
+            std::filesystem::copy(source.parent_path(),copied,std::filesystem::copy_options::recursive);
+            auto project=Project::Load(copied/source.filename());Check(bool(project),"Cannot open scoped-menu example");ScriptEngine::Init(Project::GetAssetFileSystemPath(project->GetConfig().ScriptModulePath));
+            ValidateExampleDocuments(project);
+            auto menu=project->LoadScene(project->GetConfig().StartScene);const auto authored=SceneSerializer(menu).CaptureAuthoredState();RuntimeSession session;session.Resize(960,720);session.ResizeFramebuffer(960,720);session.Start(project,menu);
+            GameUI::DeviceSample sample;sample.Point={900,700};session.SetInput(sample.Point,true);session.RouteUIInput(sample,.016f,true);
+            Check(session.GetScene()->GetUIDiagnostics().Scope==7&&session.GetScene()->GetUIDiagnostics().EventOwner==7,"Example menu did not declare its Canvas owner");
+            sample.Keys[Key::Enter]=true;session.RouteUIInput(sample,.016f,true);auto old=session.GetScene();old->OnUpdateRuntime(.016f);
+            session.SetInput(sample.Point,false);tick(session);
+            Check(session.GetScene()!=old&&session.GetScene()->GetName()=="Level1"&&old->GetUISnapshot().Scope==0,"Scoped menu Play event did not transition/retire its scope");
+            Capture(std::filesystem::u8path(argv[3])/"SceneTransitions-level.ppm",960,720);session.Stop();Check(SceneSerializer(menu).CaptureAuthoredState()==authored,"Scoped menu changed authored content");
+            std::cout<<"PASS: SceneTransitions declared Canvas owner, synthetic production Accept, typed Play delivery, real scene transition and retired scope\n";
+        }
+        if(argc>=7)TutorialIntegrationChecks(std::filesystem::u8path(argv[6]),std::filesystem::u8path(argv[3]),framebuffer);
         ScriptEngine::Shutdown();framebuffer->Unbind();std::filesystem::remove_all(temporary);
         std::cout<<"PASS: real project scripts, collection/completion/checkpoint, repeated lifecycle, authored field isolation, camera fit, bounded prefab spawn/destruction/reload and cross-project class isolation\n";
     }catch(const std::exception& error) {

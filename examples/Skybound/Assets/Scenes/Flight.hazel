@@ -1,4 +1,5 @@
 Scene: Flight
+SceneVersion: 2
 Entities:
 - Entity: 1
   TagComponent:
@@ -313,38 +314,20 @@ Entities:
     Parent: 30
     Order: 0
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - 0
-    - 0
-    SizeDelta:
-    - 0
-    - 66
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 66]
+    Anchor: [0, 0]
 - Entity: 20
   TagComponent:
     Tag: Score
@@ -374,44 +357,45 @@ Entities:
     Parent: 30
     Order: 1
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 20
-    - 15
-    SizeDelta:
-    - 250
-    - 38
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [20, 15]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [250, 38]
+    Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 30
     Horizontal: 0
     Vertical: 0
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 21
   TagComponent:
     Tag: HUD controls
@@ -437,44 +421,45 @@ Entities:
     Parent: 30
     Order: 2
   UIRectComponent:
-    AnchorMin:
-    - 1
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - -20
-    - 15
-    SizeDelta:
-    - 700
-    - 36
-    Pivot:
-    - 1
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [-20, 15]
+    Pivot: [1, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [700, 36]
+    Anchor: [1, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 24
     Horizontal: 0
     Vertical: 0
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 22
   TagComponent:
     Tag: Ready
@@ -500,44 +485,45 @@ Entities:
     Parent: 30
     Order: 3
   UIRectComponent:
-    AnchorMin:
-    - 0.5
-    - 0
-    AnchorMax:
-    - 0.5
-    - 0
-    Offset:
-    - -550
-    - 430
-    SizeDelta:
-    - 1100
-    - 52
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [-550, 430]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [1100, 52]
+    Anchor: [0.5, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 30
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 23
   TagComponent:
     Tag: GameOverPanel
@@ -568,38 +554,20 @@ Entities:
     Parent: 31
     Order: 0
   UIRectComponent:
-    AnchorMin:
-    - 0.5
-    - 0.5
-    AnchorMax:
-    - 0.5
-    - 0.5
-    Offset:
-    - -270
-    - -200
-    SizeDelta:
-    - 540
-    - 380
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [-270, -200]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [540, 380]
+    Anchor: [0.5, 0.5]
   UINineSliceComponent:
     Borders:
     - 8
@@ -632,44 +600,45 @@ Entities:
     Parent: 23
     Order: 0
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - 20
-    - 34
-    SizeDelta:
-    - -40
-    - 50
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 34]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [20, 0, 20, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 50]
+    Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 34
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 25
   TagComponent:
     Tag: ResultHint
@@ -695,44 +664,45 @@ Entities:
     Parent: 23
     Order: 1
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - 20
-    - 100
-    SizeDelta:
-    - -40
-    - 40
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 100]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [20, 0, 20, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 40]
+    Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 26
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 26
   TagComponent:
     Tag: Restart
@@ -763,40 +733,22 @@ Entities:
     Parent: 23
     Order: 2
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 40
-    - 168
-    SizeDelta:
-    - 460
-    - 66
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [40, 168]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [460, 66]
+    Anchor: [0, 0]
   UIButtonComponent:
-    Action: restart
+    Action: play
     TabOrder: 0
     Interactable: true
     Colors:
@@ -831,6 +783,26 @@ Entities:
         Type: None
     - Source:
         Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 27
   TagComponent:
     Tag: RestartLabel
@@ -856,44 +828,45 @@ Entities:
     Parent: 26
     Order: 0
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - 0
-    - 0
-    SizeDelta:
-    - 0
-    - 66
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 66]
+    Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 28
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 28
   TagComponent:
     Tag: Menu
@@ -924,40 +897,22 @@ Entities:
     Parent: 23
     Order: 3
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 0
-    - 0
-    Offset:
-    - 40
-    - 256
-    SizeDelta:
-    - 460
-    - 66
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [40, 256]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize: [460, 66]
+    Anchor: [0, 0]
   UIButtonComponent:
-    Action: menu
+    Action: play
     TabOrder: 1
     Interactable: true
     Colors:
@@ -992,6 +947,26 @@ Entities:
         Type: None
     - Source:
         Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 29
   TagComponent:
     Tag: MenuLabel
@@ -1017,44 +992,45 @@ Entities:
     Parent: 28
     Order: 0
   UIRectComponent:
-    AnchorMin:
-    - 0
-    - 0
-    AnchorMax:
-    - 1
-    - 0
-    Offset:
-    - 0
-    - 0
-    SizeDelta:
-    - 0
-    - 66
-    Pivot:
-    - 0
-    - 0
-    MinimumSize:
-    - 0
-    - 0
-    Margin:
-    - 0
-    - 0
-    - 0
-    - 0
-    Padding:
-    - 0
-    - 0
-    - 0
-    - 0
+    Offset: [0, 0]
+    Pivot: [0, 0]
+    MinimumSize: [0, 0]
+    Margin: [0, 0, 0, 0]
+    Padding: [0, 0, 0, 0]
     Flex: 0
     Visible: true
     Enabled: true
     ClipChildren: true
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 0
+    FixedSize: [0, 66]
+    Anchor: [0, 0]
   UITextStyleComponent:
-    FontPath: ''
     Size: 28
     Horizontal: 1
     Vertical: 1
     Wrap: true
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
 - Entity: 30
   TagComponent:
     Tag: UI Canvas
@@ -1086,7 +1062,15 @@ Entities:
     SortOrder: 0
     Visible: true
     Enabled: true
-    Modal: false
+    Modal: true
+    Screen:
+      Managed: true
+      InitiallyOpen: true
+      Cancel: 2
+      InitialFocus: 26
+      EventOwner: 30
+  ScriptComponent:
+    ClassName: Skybound.MenuOwner
 - Entity: 31
   TagComponent:
     Tag: Flight result
@@ -1116,7 +1100,12 @@ Entities:
     - 16
     - 16
     SortOrder: 100
-    Visible: false
+    Visible: true
     Enabled: true
     Modal: true
-SceneVersion: 2
+    Screen:
+      Managed: true
+      InitiallyOpen: false
+      Cancel: 2
+      InitialFocus: 26
+      EventOwner: 18

@@ -55,6 +55,7 @@ void SceneHierarchyPanel::RevealSelected() {
 bool SceneHierarchyPanel::AddChild(Entity parent, const std::string &name) {
     if (!m_Context || !CanEdit(true) || !parent.BelongsTo(m_Context.get()) || !parent)
         return false;
+    if(!m_Structuring){const auto id=parent.GetUUID();return Structural("Create child",[&]{return AddChild(m_Context->GetEntityByUUID(id),name);});}
     Entity child;
     try {
         child = m_Context->CreateEntity(name);
@@ -96,6 +97,7 @@ bool SceneHierarchyPanel::ReparentEntity(uint64_t scene, uint64_t child, uint64_
                                          TransformPolicy mode) {
     if (!m_Context || !CanEdit(true))
         return false;
+    if(!m_Structuring){if(scene!=m_Context->GetIdentity())return HierarchyFailed("Reparent document was replaced");return Structural("Reparent entity",[&]{return ReparentEntity(m_Context->GetIdentity(),child,parent,mode);});}
     try {
         if (scene != m_Context->GetIdentity())
             throw std::runtime_error("Cannot reparent across scenes or a replaced document");
@@ -106,6 +108,7 @@ bool SceneHierarchyPanel::ReparentEntity(uint64_t scene, uint64_t child, uint64_
         if (PrefabDocument && (!parent || !uint64_t(m_Context->GetRelationship(entity).Parent)))
             throw std::runtime_error("Prefab keeps its sole root. Move children under an entity in "
                                      "this asset; the root cannot be parented");
+        FinishUIEdit();
         m_Context->Reparent(entity, target, mode);
         m_HierarchyError.clear();
         RevealSelected();
@@ -114,10 +117,17 @@ bool SceneHierarchyPanel::ReparentEntity(uint64_t scene, uint64_t child, uint64_
         return HierarchyFailed(error.what());
     }
 }
+bool SceneHierarchyPanel::MoveSelected(int direction) {
+    auto entity=GetSelectedEntity();if(!entity||!CanEdit(true))return false;
+    if(!m_Structuring)return Structural("Reorder entity",[&]{return MoveSelected(direction);});
+    try{FinishUIEdit();m_Context->MoveSibling(entity,direction);m_HierarchyError.clear();RevealSelected();return true;}
+    catch(const std::exception &error){return HierarchyFailed(error.what());}
+}
 bool SceneHierarchyPanel::DuplicateSelected() {
     auto e = GetSelectedEntity();
     if (!e || !CanEdit(true))
         return false;
+    if(!m_Structuring)return Structural("Duplicate subtree",[&]{return DuplicateSelected();});
     try {
         if (PrefabDocument && !uint64_t(m_Context->GetRelationship(e).Parent))
             throw std::runtime_error(
@@ -160,6 +170,7 @@ bool SceneHierarchyPanel::ConfirmDelete(uint64_t scene, uint64_t id, size_t expe
                                         DestroyPolicy policy, TransformPolicy mode) {
     if (!m_Context || !CanEdit(true))
         return false;
+    if(!m_Structuring){if(scene!=m_Context->GetIdentity())return HierarchyFailed("Delete document was replaced");return Structural("Delete subtree",[&]{return ConfirmDelete(m_Context->GetIdentity(),id,expectedCount,policy,mode);});}
     try {
         if (scene != m_Context->GetIdentity())
             throw std::runtime_error("Delete document has been replaced");
@@ -172,6 +183,7 @@ bool SceneHierarchyPanel::ConfirmDelete(uint64_t scene, uint64_t id, size_t expe
                                policy == DestroyPolicy::KeepChildren))
             throw std::runtime_error(
                 "Prefab must remain a connected subtree; delete a child subtree instead");
+        FinishUIEdit();
         m_Context->DestroyEntity(e, policy, mode);
         if (!GetSelectedEntity()) {
             m_SelectionContext = {};
@@ -351,6 +363,8 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
             DuplicateSelected();
         if (CreatePrefab && ImGui::MenuItem("Create Prefab from Subtree..."))
             CreatePrefab(entity);
+        if(ImGui::MenuItem("Move Earlier"))MoveSelected(-1);
+        if(ImGui::MenuItem("Move Later"))MoveSelected(1);
         ParentMenu(entity);
         if (ImGui::MenuItem("Delete Subtree..."))
             RequestDelete();

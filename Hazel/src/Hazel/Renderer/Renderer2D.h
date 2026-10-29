@@ -22,8 +22,15 @@ namespace Hazel {
 		static void BeginScene(const Camera& camera, const glm::mat4& transform);
 		static void BeginScene(const EditorCamera& camera);
 		static void BeginScene(const OrthographicCamera& camera); // TODO: Remove
-		static void EndScene();
-		static void Flush();
+		// Ordered runs are internal rendering policy, not an author-facing option.
+        // Clip is absolute framebuffer x/y/width/height (bottom-left), captured
+        // with each primitive. Negative width disables it for ordinary world data.
+        static void BeginOrderedScene(const Camera& camera, const glm::mat4& transform);
+        static void SetPickingEnabled(bool enabled); // ordered-run state; preserves underlying picking attachment
+        static void SetPrimitiveClip(glm::ivec4 clip);
+        static void EndScene();
+		enum class FlushReason { End, Primitive, Font, Textures, Capacity, External, Count };
+        static void Flush(FlushReason reason = FlushReason::External);
 
 		// Primitives
 		static void DrawQuad(const glm::vec2& position, const glm::vec2& size, const glm::vec4& color);
@@ -55,9 +62,15 @@ namespace Hazel {
 			float Kerning = 0.0f;
 			float LineSpacing = 0.0f;
 		};
-        struct TextLine { std::string Text; float Width=0; };
+        struct TextLine { std::string Text; float Width=0; Ref<const Text::Layout> Result; uint32_t Index=0; };
+        struct TextGlyph {glm::vec2 Min,Max,UVMin,UVMax; Ref<const FontPage> Page; Ref<const Text::Face> BaseFace; uint32_t PaintSource=UINT32_MAX;};
+        static void AppendTextLineGlyphs(const TextLine& line,const Ref<Font>& font,std::vector<TextGlyph>& glyphs,glm::vec2 offset={},const FontPalette& faces={});
+        static void AppendTextGlyphs(const std::string& text,const Ref<Font>& font,const TextParams& params,
+                                     std::vector<TextGlyph>& glyphs,glm::vec2 offset={});
+        static void DrawTextGlyphs(const std::vector<TextGlyph>& glyphs,const Ref<Font>& font,
+                                  const glm::mat4& transform,const glm::vec4& color,int entityID=-1,const std::vector<Text::Span>& spans={},glm::vec4 interaction=glm::vec4(1));
         static float MeasureText(const std::string& text, const Ref<Font>& font, float kerning=0);
-        static void LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines);
+        static Ref<const Text::Layout> LayoutText(const std::string& text,const Ref<Font>& font,float width,bool wrap,float kerning,std::vector<TextLine>& lines,float spacing=0,Text::Overflow overflow=Text::Overflow::Clip,uint32_t maxLines=0,float height=-1,const FontPalette& faces={},const std::vector<Text::Span>& spans={});
 		static void DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const TextParams& textParams, int entityID = -1);
 		static void DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID = -1);
 
@@ -68,18 +81,27 @@ namespace Hazel {
 		struct Statistics
 		{
 			uint32_t DrawCalls = 0;
-			uint32_t QuadCount = 0;
+			uint32_t QuadCount = 0, GeometryCount=0;
+            std::array<uint32_t, size_t(FlushReason::Count)> Flushes{};
+            uint64_t UploadedBytes = 0;
+            double SubmitMilliseconds = 0;
+            uint32_t PrimitiveTransitions=0, FontTransitions=0, ClipTransitions=0;
 
 			uint32_t GetTotalVertexCount() const { return QuadCount * 4; }
 			uint32_t GetTotalIndexCount() const { return QuadCount * 6; }
 		};
-		static void ResetStats();
+		static uint32_t GetGeometryCount();
+        static void ResetStats();
 		static Statistics GetStats();
         static Shader::ProgramLoadingPath GetQuadShaderLoadingPath();
 
 	private:
-		static void StartBatch();
-		static void NextBatch();
+		enum class Primitive { Quad, Circle, Line, Text };
+        static void EnsureRunSpace();
+        static void QueueRun(Primitive primitive, uint32_t count);
+        static void FlushOrdered();
+        static void StartBatch();
+		static void NextBatch(FlushReason reason = FlushReason::Capacity);
 	};
 
 }

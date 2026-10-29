@@ -9,13 +9,13 @@ namespace MeadowRun {
         void Fit() { camera.OrthographicSize=Math.Max(Math.Max(1,MinimumHeight),Math.Max(1,MinimumWidth)/camera.AspectRatio); }
         void OnUpdate(float dt) { Fit(); }
     }
-    public class SceneButton : Entity {
-        public int Destination; // 0: meadow, 1: menu
-        private UIButtonComponent button;
-        void OnCreate() { button=GetComponent<UIButtonComponent>(); }
+    public class MenuOwner : Entity {
         void OnUpdate(float dt) {
-            string action;
-            if(button.TryConsumeAction(out action)) Scene.LoadScene(Destination==1?"Scenes/MainMenu.hazel":"Scenes/Meadow.hazel");
+            UIEvent e;
+            while(GameUI.TryConsumeEvent(out e)) {
+                if(e.Kind==UIEventKind.Activated && e.Action=="play") Scene.LoadScene("Scenes/Meadow.hazel");
+                else if(e.Kind==UIEventKind.Cancel || (e.Kind==UIEventKind.Activated && e.Action=="menu")) Scene.LoadScene("Scenes/MainMenu.hazel");
+            }
         }
     }
 }

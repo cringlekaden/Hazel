@@ -1,5 +1,6 @@
 #include "hzpch.h"
 #include "Prefab.h"
+#include "AuthoredEntityReferences.h"
 #include "Hazel/Core/FileDocument.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Core/DocumentSchema.h"
@@ -38,16 +39,15 @@ void Prefab::Validate(const std::filesystem::path &root, const Ref<Scene> &scene
         local.insert(id);
     for (auto id : ids) {
         auto node = scene->GetEntityByUUID(id);
+        auto& fields = ScriptEngine::GetScriptFieldMap(node);
+        VisitAuthoredEntityReferences(node, fields, [&](uint64_t& reference, std::string_view field) {
+            if (reference && !local.count(reference))
+                throw std::runtime_error("External entity reference '" + std::string(field) +
+                    "' on '" + node.GetName() + "'. Include the target or clear it");
+        });
         if (node.HasComponent<NativeScriptComponent>())
             throw std::runtime_error("Native script factories cannot be serialized into prefabs");
-        for (auto &[name, field] : ScriptEngine::GetScriptFieldMap(node)) {
-            if (field.Field.Type == ScriptFieldType::Entity) {
-                auto value = field.GetValue<uint64_t>();
-                if (value && !local.count(value))
-                    throw std::runtime_error("External entity reference '" + name + "' on '" +
-                                             node.GetName() +
-                                             "'. Clear it or include the entity in this subtree");
-            }
+        for (auto &[name, field] : fields) {
             if (field.Field.Type == ScriptFieldType::Prefab && !field.AssetReference.empty()) {
                 auto path = Resolve(root, std::filesystem::u8path(field.AssetReference));
                 if (requireResources && !std::filesystem::is_regular_file(path))

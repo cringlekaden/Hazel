@@ -1,6 +1,14 @@
 // Exercises the actual published Hazel managed API in native embedding tests.
 using System;
 namespace Migration {
+    public class ScreenRetiringProbe : Hazel.Entity {
+        public Hazel.Entity Target;
+        void OnUpdate(float dt){Target.GetComponent<Hazel.UICanvasComponent>().Open();Destroy();}
+    }
+    public class ScreenOtherProbe : Hazel.Entity {
+        public int Stolen;
+        void OnUpdate(float dt){Hazel.UIEvent value;while(Hazel.GameUI.TryConsumeEvent(out value))++Stolen;Hazel.Entity source;string name;while(Hazel.GameUI.TryConsumeAction(out source,out name))++Stolen;}
+    }
     public class Probe : Hazel.Entity {
         public float Speed = 2.5f;
         public char Character = '\u00e9';
@@ -139,6 +147,17 @@ namespace Migration {
             var animation=GetComponent<Hazel.SpriteAnimationComponent>();
             animation.Play(Clip);animation.Pause();
             if(animation.IsPlaying)throw new System.Exception("Pause did not stop playback");
+            foreach(var path in new[]{Icon.Sheet+"\0suffix","\ud800.hsprites","\udfff",new string('p',32769)}) {
+                bool rejected=false;
+                try{GetComponent<Hazel.SpriteRendererComponent>().SetSprite(new Hazel.Sprite(path,Icon.ID));}
+                catch(System.InvalidOperationException){rejected=true;}
+                if(!rejected)throw new System.Exception("Malformed sprite sheet path was accepted");
+                rejected=false;
+                try{animation.Play(new Hazel.SpriteAnimation(path,Clip.ID));}
+                catch(System.InvalidOperationException){rejected=true;}
+                if(!rejected||animation.IsPlaying)throw new System.Exception("Malformed animation path changed paused playback");
+            }
+
             animation.Resume();if(!animation.IsPlaying)throw new System.Exception("Resume did not start playback");
             animation.Stop();if(animation.IsPlaying || animation.IsFinished)throw new System.Exception("Stop did not reset playback");
             animation.Play(Clip);Passed=true;
@@ -171,14 +190,31 @@ namespace Migration {
 }
 
 namespace Migration {
+    public class UIActionsProbe : Hazel.Entity {
+        public bool Passed;
+        void OnCreate(){
+            var original=Hazel.GameUI.GetBinding(Hazel.UIAction.Accept);
+            var current=original;current.Key=(int)Hazel.KeyCode.V;
+            Hazel.GameUI.SetBinding(Hazel.UIAction.Accept,current);
+            if(Hazel.GameUI.GetBinding(Hazel.UIAction.Accept).Key!=(int)Hazel.KeyCode.V)throw new System.Exception("Managed UI rebind failed");
+            bool conflict=false;try{Hazel.GameUI.SetBinding(Hazel.UIAction.Cancel,current);}catch(System.InvalidOperationException){conflict=true;}
+            if(!conflict||Hazel.GameUI.GetBinding(Hazel.UIAction.Cancel).Key!=(int)Hazel.KeyCode.Escape)throw new System.Exception("Managed binding conflict changed accepted state");
+            var settings=Hazel.GameUI.InputSettings;var invalid=settings;invalid.DeadZone=invalid.NeutralZone;
+            bool rejected=false;try{Hazel.GameUI.InputSettings=invalid;}catch(System.InvalidOperationException){rejected=true;}
+            if(!rejected||Hazel.GameUI.InputSettings.DeadZone!=settings.DeadZone)throw new System.Exception("Managed input settings validation failed");
+            Hazel.GameUI.SetBinding(Hazel.UIAction.Accept,original);
+            if(Hazel.GameUI.TryConsumeCancel()||FindEntityByName("Action menu").GetComponent<Hazel.UICanvasComponent>().TryConsumeCancel())throw new System.Exception("New session had stale Cancel");
+            Passed=true;
+        }
+    }
     public class UIProbe : Hazel.Entity {
         public bool Passed;
         void OnCreate() {
-            if(!HasComponent<Hazel.UICanvasComponent>() || !HasComponent<Hazel.UIRectComponent>() ||
+            if(!FindEntityByName("UI API canvas").HasComponent<Hazel.UICanvasComponent>() || !HasComponent<Hazel.UIRectComponent>() ||
                !HasComponent<Hazel.UILayoutComponent>() || !HasComponent<Hazel.UITextStyleComponent>() ||
                !HasComponent<Hazel.UINineSliceComponent>() || !HasComponent<Hazel.UIButtonComponent>())
                 throw new System.Exception("Runtime UI component reflection binding missing");
-            var canvas=GetComponent<Hazel.UICanvasComponent>();canvas.Visible=false;canvas.Visible=true;canvas.Enabled=false;canvas.Enabled=true;canvas.Modal=true;
+            var canvas=FindEntityByName("UI API canvas").GetComponent<Hazel.UICanvasComponent>();canvas.Visible=false;canvas.Visible=true;canvas.Enabled=false;canvas.Enabled=true;canvas.Modal=true;
             var rect=GetComponent<Hazel.UIRectComponent>();rect.Visible=false;
             if(rect.Visible||!canvas.Visible)throw new System.Exception("Rect visibility aliases Canvas");
             rect.Visible=true;rect.Enabled=false;
@@ -190,8 +226,280 @@ namespace Migration {
             string action;Hazel.Entity entity;
             if(button.TryConsumeAction(out action)||Hazel.GameUI.TryConsumeAction(out entity,out action))throw new System.Exception("Fresh scene retained UI actions");
             if(Hazel.GameUI.IsPointerCaptured)throw new System.Exception("Fresh scene retained pointer capture");
-            GetComponent<Hazel.TextComponent>().Text="Managed UI";
+            var text=GetComponent<Hazel.TextComponent>();text.Text="Managed UI";
+            foreach(var invalid in new[]{"A\0B","\ud800","\udfff",new string('x',32769)}) {
+                bool rejected=false;try{text.Text=invalid;}catch(System.ArgumentException){rejected=true;}
+                if(!rejected||text.Text!="Managed UI")throw new System.Exception("Managed text accepted invalid UTF-16/NUL or changed last valid text");
+            }
+            text.Text="\ufeffManaged UI";
+            if(text.Text[0]!='\ufeff')throw new System.Exception("Managed BOM text was not accepted/preserved");
+            text.Text="UI é \ud83d\ude80";
+            if(text.Text!="UI é \ud83d\ude80")throw new System.Exception("Supplementary text was lost");
+            text.Text="Managed UI";
+            text.SetFont("Fonts/Runtime.hfont",Hazel.FontStyle.BoldItalic);
+            if(text.FontFamily!="Fonts/Runtime.hfont" || text.Style!=Hazel.FontStyle.BoldItalic)throw new System.Exception("Managed family/style roundtrip failed");
+            foreach(var path in new[]{"../outside.hfont","Fonts/raw.ttf","C:/external.hfont","invalid\ud800.hfont"}) {
+                bool rejected=false;try{text.FontFamily=path;}catch(System.ArgumentException){rejected=true;}
+                if(!rejected || text.FontFamily!="Fonts/Runtime.hfont")throw new System.Exception("Invalid family selection changed accepted state");
+            }
+            bool invalidStyle=false;try{text.Style=(Hazel.FontStyle)99;}catch(System.ArgumentException){invalidStyle=true;}
+            if(!invalidStyle || text.Style!=Hazel.FontStyle.BoldItalic)throw new System.Exception("Invalid style changed accepted state");
+            text.SetFont("");
+            text.SetRichText("A café label",new Hazel.TextEmphasis(2,6,Hazel.FontStyle.Bold,new Hazel.Vector4(1,.2f,.3f,.5f)));
+            var spans=text.Emphasis;
+            if(spans.Length!=1||spans[0].Start!=2||spans[0].End!=6||spans[0].Face!=Hazel.FontStyle.Bold||!spans[0].Color.HasValue)throw new System.Exception("Managed emphasis UTF-16/face/color roundtrip failed");
+            var ink=spans[0].Color.Value;
+            if(ink.X!=1||ink.Y!=.2f||ink.Z!=.3f||ink.W!=.5f)throw new System.Exception("Managed emphasis RGBA payload roundtrip failed");
+            bool badSpan=false;try{text.SetRichText("e\u0301",new Hazel.TextEmphasis(0,1,Hazel.FontStyle.Italic));}catch(System.ArgumentException){badSpan=true;}
+            if(!badSpan||text.Text!="A café label"||text.Emphasis.Length!=1)throw new System.Exception("Invalid emphasis partially published source/spans");
+            foreach(var source in new[]{"bad\0text","\ud800","\udfff",new string('x',32769)}) {
+                bool rejected=false;try{text.SetRichText(source);}catch(System.ArgumentException){rejected=true;}
+                if(!rejected||text.Text!="A café label"||text.Emphasis.Length!=1)throw new System.Exception("Malformed rich replacement changed accepted source/spans");
+            }
+            text.Text="Managed UI";if(text.Emphasis.Length!=0)throw new System.Exception("Plain replacement retained stale emphasis");
+            if(rect.LayoutVersion!=3)throw new System.Exception("Canonical UI schema mismatch");
+            var overflow=GetComponent<Hazel.UITextStyleComponent>();overflow.SetOverflow(Hazel.UITextOverflow.Ellipsis,2);
+            if(overflow.Overflow!=Hazel.UITextOverflow.Ellipsis || overflow.MaxLines!=2)throw new System.Exception("Managed overflow roundtrip failed");
+            bool badOverflow=false;try{overflow.SetOverflow((Hazel.UITextOverflow)99,3);}catch(System.InvalidOperationException){badOverflow=true;}
+            if(!badOverflow || overflow.MaxLines!=2)throw new System.Exception("Invalid overflow changed state");
+            badOverflow=false;try{overflow.MaxLines=4097;}catch(System.InvalidOperationException){badOverflow=true;}
+            if(!badOverflow || overflow.MaxLines!=2)throw new System.Exception("Invalid MaxLines changed state");
+            overflow.MaxLines=0;overflow.Overflow=Hazel.UITextOverflow.Clip;
+            var measured=FindEntityByName("Measured API target").GetComponent<Hazel.UIRectComponent>();
+            measured.Width=new Hazel.UISizing(Hazel.UISizeMode.Fixed,137,20,150);
+            var sizing=measured.Width;
+            if(measured.LayoutVersion!=3||sizing.Mode!=Hazel.UISizeMode.Fixed||sizing.FixedSize!=137||sizing.Minimum!=20||sizing.Maximum!=150)throw new System.Exception("Measured sizing API roundtrip failed");
+            bool invalidSizing=false;try{measured.Width=new Hazel.UISizing(Hazel.UISizeMode.Fixed,float.NaN,20,10);}catch(System.InvalidOperationException){invalidSizing=true;}
+            if(!invalidSizing||measured.Width.FixedSize!=137)throw new System.Exception("Invalid sizing mutation changed accepted runtime state");
+            var container=GetComponent<Hazel.UILayoutComponent>();
+            container.SetGrid(new[]{new Hazel.UITrack(Hazel.UITrackMode.Fixed,120),new Hazel.UITrack(Hazel.UITrackMode.Fill,2,10,200)},new[]{new Hazel.UITrack(Hazel.UITrackMode.Fixed,80)},new Hazel.Vector2(4,6));
+            measured.Cell=new Hazel.UIGridCell(0,1);
+            if(container.Settings.Kind!=Hazel.UIContainerKind.Grid||container.Columns.Length!=2||container.Columns[1].Limit!=200||measured.Cell.Column!=1)throw new System.Exception("Managed grid ABI roundtrip failed");
+            bool invalidGrid=false;try{container.SetGrid(new Hazel.UITrack[0],container.Rows,new Hazel.Vector2(0,0));}catch(System.InvalidOperationException){invalidGrid=true;}
+            if(!invalidGrid||container.Columns.Length!=2)throw new System.Exception("Invalid grid mutation changed accepted state");
+            container.Settings=Hazel.UILayoutSettings.Wrap(Hazel.UIAxis.Horizontal,4,9);
+            if(container.Settings.LineGap!=9||container.Settings.Kind!=Hazel.UIContainerKind.Wrap)throw new System.Exception("Managed wrap settings roundtrip failed");
+            measured.SetImageFit(Hazel.UIImageFit.Cover,new Hazel.Vector2(1,0));
+            if(measured.ImageFit!=Hazel.UIImageFit.Cover||measured.ImageAlignment.X!=1)throw new System.Exception("Managed image fitting roundtrip failed");
+            bool invalidFit=false;try{measured.SetImageFit(Hazel.UIImageFit.Contain,new Hazel.Vector2(2,0));}catch(System.InvalidOperationException){invalidFit=true;}
+            if(!invalidFit||measured.ImageFit!=Hazel.UIImageFit.Cover)throw new System.Exception("Invalid managed fit changed accepted values");
             Passed=canvas.Visible&&canvas.Enabled&&canvas.Modal&&rect.Visible&&rect.Enabled&&button.Interactable;
         }
+    }
+}
+
+namespace Migration {
+    public class ValueOwnerProbe : Hazel.Entity {
+        public bool SettersPassed,LastChecked;
+        public int ToggleChanges,RadioChanges,SliderChanges,SliderCommits,SliderCancels;
+        public float SliderPrevious,SliderValue;public ulong SliderGesture;
+        public ulong Previous,Selected;
+        void OnCreate(){
+            var toggle=FindEntityByName("Value 101").GetComponent<Hazel.UIButtonComponent>();
+            var group=FindEntityByName("Value 200").GetComponent<Hazel.UIRadioGroupComponent>();
+            var progress=FindEntityByName("Value 300").GetComponent<Hazel.UIProgressComponent>();
+            toggle.Checked=true;toggle.Checked=false;group.Selection=FindEntityByName("Value 202");group.Selection=FindEntityByName("Value 201");
+            progress.Value=100;bool clamped=progress.Value==1;progress.Value=.25f;
+            var slider=FindEntityByName("Value 500").GetComponent<Hazel.UISliderComponent>();slider.Value=9.5f;bool snapped=slider.Value==10;slider.Value=3;
+            SettersPassed=snapped&&clamped&&!toggle.Checked&&group.Selection.ID==201&&progress.Value==.25f;
+        }
+        void OnUpdate(float dt){
+            Hazel.UIEvent e;
+            while(Hazel.GameUI.TryConsumeEvent(out e)){
+                if(e.Owner==null||e.Owner.ID!=ID)throw new System.Exception("Value event owner identity");
+                if(e.Kind==Hazel.UIEventKind.ToggleChanged){if(e.Source.ID!=101||e.Screen.ID!=100||e.PreviousChecked==e.Checked)throw new System.Exception("Toggle payload");++ToggleChanges;LastChecked=e.Checked;}
+                else if(e.Kind==Hazel.UIEventKind.SelectionChanged){if(e.Source.ID!=200||e.Selection==null)throw new System.Exception("Radio payload");++RadioChanges;Previous=e.PreviousSelection==null?0:e.PreviousSelection.ID;Selected=e.Selection.ID;}
+                else if(e.Kind==Hazel.UIEventKind.SliderChanged||e.Kind==Hazel.UIEventKind.SliderCommitted||e.Kind==Hazel.UIEventKind.SliderCancelled){
+                    if(e.Source.ID!=500||e.Screen.ID!=100||e.Gesture==0||e.StartValue!=3||e.Interrupted)throw new System.Exception("Slider payload");
+                    if(e.Kind==Hazel.UIEventKind.SliderChanged)++SliderChanges;else if(e.Kind==Hazel.UIEventKind.SliderCommitted)++SliderCommits;else ++SliderCancels;
+                    SliderPrevious=e.PreviousValue;SliderValue=e.Value;SliderGesture=e.Gesture;
+                }
+                else throw new System.Exception("Value gesture generated an unrelated activation");
+            }
+        }
+    }
+}
+
+namespace Migration {
+    public class ScrollOwnerProbe : Hazel.Entity {
+        public bool Ready,Revealed;public int Events;
+        public Hazel.Vector2 ObservedNormalized;
+        public Hazel.Vector2 ObservedOffset,ObservedRange;
+        public void ReadSeparateScrollInfo() {
+            var view=FindEntityByName("Scroll root").GetComponent<Hazel.UIScrollViewComponent>();
+            ObservedOffset=view.Offset;ObservedRange=view.Range;
+        }
+        public void ReadNormalized() {
+            ObservedNormalized=FindEntityByName("Scroll root").GetComponent<Hazel.UIScrollViewComponent>().Normalized;
+        }
+        void OnCreate(){
+            var view=FindEntityByName("Scroll root").GetComponent<Hazel.UIScrollViewComponent>();
+            view.Normalized=new Hazel.Vector2(0,.5f);bool half=view.Offset.Y==100&&view.Range.Y==200;
+            view.Offset=new Hazel.Vector2(0,50);bool reveal=view.EnsureVisible(FindEntityByName("Scroll far"));
+            Ready=half&&reveal&&view.Offset.Y==200;view.Offset=new Hazel.Vector2(0,0);
+        }
+        void OnUpdate(float dt){Hazel.UIEvent e;while(Hazel.GameUI.TryConsumeEvent(out e)){
+            ++Events;if(e.Action=="reveal")Revealed=FindEntityByName("Scroll root").GetComponent<Hazel.UIScrollViewComponent>().EnsureVisible(FindEntityByName("Scroll far"),true);
+        }}
+    }
+}
+
+namespace Migration {
+    public class UIFlagFailureProbe : Hazel.Entity {
+        public int Property;
+        public bool Rejected;
+        public void ChangeFlag() {
+            Rejected=false;
+            try {
+                var canvas=FindEntityByName("Atomic canvas").GetComponent<Hazel.UICanvasComponent>();
+                var control=FindEntityByName("Atomic button");
+                switch(Property) {
+                    case 0: canvas.Visible=false;break;
+                    case 1: canvas.Enabled=false;break;
+                    case 2: canvas.Modal=true;break;
+                    case 3: control.GetComponent<Hazel.UIButtonComponent>().Interactable=false;break;
+                    case 4: control.GetComponent<Hazel.UIRectComponent>().Visible=false;break;
+                    case 5: control.GetComponent<Hazel.UIRectComponent>().Enabled=false;break;
+                    default: throw new Exception("Unknown flag probe");
+                }
+            } catch(InvalidOperationException) { Rejected=true; }
+        }
+    }
+    public class RecoveryTargetProbe : Hazel.Entity {
+        private static RecoveryTargetProbe retired;
+        private static string clipToRemove;
+        private static int creates,destroys;
+        private static bool bodyReady,cleanupRejected;
+        public static void Configure(string clip) { clipToRemove=clip; }
+        void OnCreate() {
+            retired=this;++creates;
+            bodyReady=GetComponent<Hazel.Rigidbody2DComponent>()!=null;
+            GetComponent<Hazel.Rigidbody2DComponent>().LinearVelocity=new Hazel.Vector2(1,0);
+            Hazel.SaveData.Write("target-side-effect","accepted before native startup failure");
+            Hazel.Game.AudioVolume=.75f;
+            Hazel.Game.Exit();
+            Hazel.Scene.LoadScene("Scenes/RecoveryTrap.hazel");
+            // Remove only the test-owned dependency, after target loading has
+            // accepted it and before the next entity starts its native audio.
+            System.IO.File.Delete(clipToRemove);
+        }
+        void OnDestroy() {
+            ++destroys;
+            Hazel.Scene.LoadScene("Scenes/RecoveryTrap.hazel");
+            try { Hazel.Game.Exit(); } catch(InvalidOperationException) { cleanupRejected=true; }
+        }
+        public static int Report() {
+            return creates+10*destroys+(bodyReady?100:0)+(cleanupRejected?1000:0)+
+                   (retired!=null&&!retired.IsValid?10000:0);
+        }
+    }
+}
+
+namespace Migration {
+    public class DropdownOwnerProbe : Hazel.Entity {
+        public bool Ready;public int Events;public ulong Selected,Previous;
+        void OnCreate(){var d=FindEntityByName("Dropdown").GetComponent<Hazel.UIDropdownComponent>();Ready=d.Selection.ID==311;d.Selection=FindEntityByName("Dropdown first option");Ready=Ready&&d.Selection.ID==300;d.Selection=FindEntityByName("Dropdown last option");}
+        void OnUpdate(float dt){Hazel.UIEvent e;while(Hazel.GameUI.TryConsumeEvent(out e)){if(e.Kind!=Hazel.UIEventKind.SelectionChanged||e.Source.ID!=200||e.Screen.ID!=100||e.Owner.ID!=ID)throw new System.Exception("Dropdown event identity/kind mismatch");++Events;Previous=e.PreviousSelection.ID;Selected=e.Selection.ID;}}
+    }
+}
+
+namespace Migration {
+    public class CompositionOwnerProbe : Hazel.Entity {
+        public bool Ready;public int Events;public ulong Requested,Selected;
+        Hazel.UITabsComponent tabs;Hazel.Entity settings,journal;
+        void OnCreate(){tabs=FindEntityByName("Tabs fixture").GetComponent<Hazel.UITabsComponent>();settings=FindEntityByName("Settings tab");journal=FindEntityByName("Journal tab");Ready=tabs.Selection.ID==210&&settings.GetComponent<Hazel.UITabComponent>().Page.ID==220&&FindEntityByName("Journal action").GetComponent<Hazel.UITooltipComponent>().Body.ID==241;}
+        void OnUpdate(float dt){
+            if(Requested!=0){tabs.Selection=Requested==210?settings:journal;Requested=0;}
+            Hazel.UIEvent e;while(Hazel.GameUI.TryConsumeEvent(out e)){if(e.Kind!=Hazel.UIEventKind.SelectionChanged||e.Source.ID!=200||e.Screen.ID!=100||e.Owner.ID!=ID)throw new System.Exception("Composition owner envelope");++Events;Selected=e.Selection.ID;}
+        }
+    }
+}
+namespace Migration {
+    public class TextEntryOwnerProbe : Hazel.Entity {
+        public bool Ready,Replace,Owned;public int Changes,Commits,Cancels;public string LastText,Before;
+        Hazel.UITextEntryComponent field;
+        void OnCreate(){field=FindEntityByName("Name field").GetComponent<Hazel.UITextEntryComponent>();Ready=field.Text=="a\u0301";}
+        void OnUpdate(float dt){
+            Owned=Hazel.GameUI.IsTextInputOwned;
+            if(Replace){field.Text="Programmatic é";Replace=false;}
+            Hazel.UIEvent e;while(Hazel.GameUI.TryConsumeEvent(out e)){
+                if(e.Owner==null||e.Owner.ID!=ID||e.Source.ID!=500)throw new System.Exception("Text owner envelope");
+                Before=e.PreviousText;LastText=e.Text;
+                if(e.Kind==Hazel.UIEventKind.TextChanged)++Changes;
+                else if(e.Kind==Hazel.UIEventKind.TextCommitted)++Commits;
+                else if(e.Kind==Hazel.UIEventKind.TextCancelled)++Cancels;
+                else throw new System.Exception("Duplicate/non-text field event");
+            }
+        }
+    }
+}
+namespace Migration {
+    public class StyleOwnerProbe : Hazel.Entity {
+        public bool Ready,Changed;
+        void OnCreate(){var e=FindEntityByName("Name field");var appearance=e.GetComponent<Hazel.UIAppearanceComponent>();var value=e.GetComponent<Hazel.UITextEntryComponent>().Text;appearance.Style=new Hazel.UIStyleSelection("","Field");appearance.ResetOverrides(Hazel.UIStyleGroups.Foreground);appearance.UseLocalOverrides(Hazel.UIStyleGroups.Background);if(appearance.Overrides!=Hazel.UIStyleGroups.Background)throw new System.Exception("Typed override presence");appearance.ResetOverrides(Hazel.UIStyleGroups.Background);Ready=appearance.Style.Enabled&&appearance.Style.Variant=="Field"&&e.GetComponent<Hazel.UITextEntryComponent>().Text==value;}
+        void OnUpdate(float dt){if(Changed)return;var e=FindEntityByName("Name field");var appearance=e.GetComponent<Hazel.UIAppearanceComponent>();appearance.Style=new Hazel.UIStyleSelection("","Control");Changed=appearance.Style.Asset==""&&appearance.Style.Variant=="Control";Hazel.UIEvent value;if(Hazel.GameUI.TryConsumeEvent(out value))throw new System.Exception("Appearance assignment fabricated a control event");}
+    }
+}
+
+namespace Migration {
+    public class ManagedStringProbe : Hazel.Entity {
+        public bool Passed, LoadValid;
+        public Hazel.Prefab SnapshotPrefab;
+        public Hazel.Sprite SnapshotSprite;
+        public Hazel.SpriteAnimation SnapshotClip;
+        const string Payload = "Café Ελληνικά \ud83d\ude80";
+        const string PrefabPath = "Prefabs/café \ud83d\ude80.hprefab";
+        const string ScenePath = "Scenes/café \ud83d\ude80.hazel";
+
+        static void Reject(System.Action action) {
+            bool rejected = false;
+            try { action(); } catch (System.InvalidOperationException) { rejected = true; }
+            if (!rejected) throw new System.Exception("Malformed managed input was accepted");
+        }
+        void OnUpdate(float dt) {
+            if (LoadValid) { LoadValid = false; Hazel.Scene.LoadScene(ScenePath); return; }
+            if (Passed) return;
+            Hazel.SaveData.Write("journey", Payload);
+            if (Hazel.SaveData.Read("journey") != Payload) throw new System.Exception("Unicode save roundtrip");
+            foreach (var slot in new[] {"journey\0other", "café", "journey\ud800", "\udfff", new string('s', 97), null, ""}) {
+                Reject(() => Hazel.SaveData.Write(slot, "replacement"));
+                Reject(() => Hazel.SaveData.Read(slot));
+                if (Hazel.SaveData.Read("journey") != Payload) throw new System.Exception("Rejected slot changed valid prefix");
+            }
+            foreach (var payload in new[] {Payload + "\0tail", "\ud800", "\udfff", "\ud800x", new string('x', 65537), new string('é', 32769), null, ""}) {
+                Reject(() => Hazel.SaveData.Write("journey", payload));
+                if (Hazel.SaveData.Read("journey") != Payload) throw new System.Exception("Rejected replacement changed accepted save");
+            }
+            var boundary = new string('é', 32768); // Exactly 65536 UTF-8 bytes, not UTF-16 units.
+            Hazel.SaveData.Write("boundary", boundary);
+            Reject(() => Hazel.SaveData.Write("boundary", boundary + "x"));
+            if (Hazel.SaveData.Read("boundary") != boundary) throw new System.Exception("Payload byte limit changed accepted contents");
+
+            int count = Children.Length;
+            var child = Hazel.Entity.Instantiate(new Hazel.Prefab(PrefabPath), Hazel.Vector3.Zero);
+            if (child == null || !child.IsValid || Children.Length != count)
+                throw new System.Exception("Valid supplementary prefab path failed");
+            child.Destroy();
+            foreach (var path in new[] {PrefabPath + "\0suffix", "\ud800.hprefab", "\udfff", new string('p', 32769)}) {
+                Reject(() => Hazel.Entity.Instantiate(new Hazel.Prefab(path), Hazel.Vector3.Zero));
+                if (Children.Length != count) throw new System.Exception("Malformed prefab partially mutated hierarchy");
+            }
+            foreach (var path in new[] {ScenePath + "\0suffix", "Scenes/Target.hazel\0suffix", "\ud800.hazel", "\udfff", new string('p', 32769)})
+                Hazel.Scene.LoadScene(path); // Existing API logs rejection; native harness checks no request commits.
+            foreach (var path in new string[] {null, ""}) {
+                bool rejected = false;
+                try { Hazel.Scene.LoadScene(path); } catch (System.ArgumentException) { rejected = true; }
+                if (!rejected) throw new System.Exception("Empty scene-path contract changed");
+            }
+            if (FindEntityByName("café \ud83d\ude80") == null) throw new System.Exception("Unicode entity identifier was lost");
+            bool badName = false;
+            try { FindEntityByName("café \ud83d\ude80\0suffix"); } catch (System.ArgumentException) { badName = true; }
+            if (!badName) throw new System.Exception("Entity name was truncated");
+            Passed = true;
+        }
+        public void PoisonPrefab() { SnapshotPrefab = new Hazel.Prefab(PrefabPath + "\0suffix"); }
+        public void PoisonSprite() { SnapshotSprite = new Hazel.Sprite("sheet\ud800.hsprites", 1); }
+        public void PoisonClip() { SnapshotClip = new Hazel.SpriteAnimation("sheet\0suffix", 1); }
+        public void ClearSnapshot() { SnapshotPrefab = null; SnapshotSprite = null; SnapshotClip = null; }
     }
 }

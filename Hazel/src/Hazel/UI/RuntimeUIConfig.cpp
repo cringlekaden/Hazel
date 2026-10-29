@@ -2,6 +2,7 @@
 #include "RuntimeUIConfig.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Scene/Entity.h"
+#include "Hazel/Utils/UTF8.h"
 #include <cmath>
 #include <limits>
 #include <set>
@@ -65,29 +66,17 @@ void Positive(float v, bool zero = true)
     if (!std::isfinite(v) || v < 0 || (!zero && v == 0))
         throw std::runtime_error("Invalid UI dimension");
 }
-void OwnedFont(const std::filesystem::path &p)
-{
-    if (p.empty())
-        return;
-    auto n = Project::NormalizeAssetPath(p);
-    if (n.has_root_path() || (n.extension() != ".ttf" && n.extension() != ".otf") ||
-        p.generic_u8string().find(':') != std::string::npos)
-        throw std::runtime_error("Font must be a project-relative TTF/OTF");
-    for (auto part : n)
-        if (part == "..")
-            throw std::runtime_error("Font escapes project");
-}
 GameUI::Align ReadAlign(const YAML::Node &n)
 {
     int v = n.as<int>();
-    if (v < 0 || v > 3)
+    if (v < 0 || v > 2)
         throw std::runtime_error("Invalid UI alignment");
     return GameUI::Align(v);
 }
 } // namespace
 UICanvasComponent ReadUICanvasComponent(const YAML::Node &n)
 {
-    Keys(n, {"ReferenceSize", "SafeInsets", "SortOrder", "Visible", "Enabled", "Modal"});
+    Keys(n, {"ReferenceSize", "SafeInsets", "SortOrder", "Visible", "Enabled", "Modal", "Screen"});
     UICanvasComponent v;
     if (n["ReferenceSize"])
         v.ReferenceSize = Vector<2>(n["ReferenceSize"]);
@@ -101,6 +90,18 @@ UICanvasComponent ReadUICanvasComponent(const YAML::Node &n)
         v.Enabled = n["Enabled"].as<bool>();
     if (n["Modal"])
         v.Modal = n["Modal"].as<bool>();
+    if(auto nscreen=n["Screen"]){
+        Keys(nscreen,{"Managed","InitiallyOpen","Cancel","InitialFocus","DefaultAction","CancelTarget","ReturnFocus","EventOwner"});
+        auto &c=v.Screen;
+        if(nscreen["Managed"])c.Managed=nscreen["Managed"].as<bool>();
+        if(nscreen["InitiallyOpen"])c.InitiallyOpen=nscreen["InitiallyOpen"].as<bool>();
+        if(nscreen["Cancel"]){auto value=nscreen["Cancel"].as<unsigned>();if(value>2)throw std::runtime_error("Invalid UI screen Cancel policy");c.Cancel=GameUI::ScreenCancel(value);}
+        if(nscreen["InitialFocus"])c.InitialFocus=nscreen["InitialFocus"].as<uint64_t>();
+        if(nscreen["DefaultAction"])c.DefaultAction=nscreen["DefaultAction"].as<uint64_t>();
+        if(nscreen["CancelTarget"])c.CancelTarget=nscreen["CancelTarget"].as<uint64_t>();
+        if(nscreen["ReturnFocus"])c.ReturnFocus=nscreen["ReturnFocus"].as<uint64_t>();
+        if(nscreen["EventOwner"])c.EventOwner=nscreen["EventOwner"].as<uint64_t>();
+    }
     GameUI::FitCanvas({1280, 720}, v);
     return v;
 }
@@ -119,21 +120,40 @@ static void Write(YAML::Emitter &out, const UICanvasComponent &v)
     Write(out, v.Enabled);
     out << YAML::Key << "Modal" << YAML::Value;
     Write(out, v.Modal);
-    out << YAML::EndMap;
+    const auto &c=v.Screen;
+    out << YAML::Key << "Screen" << YAML::Value << YAML::BeginMap;
+    out << YAML::Key << "Managed" << YAML::Value << c.Managed;
+    out << YAML::Key << "InitiallyOpen" << YAML::Value << c.InitiallyOpen;
+    out << YAML::Key << "Cancel" << YAML::Value << unsigned(c.Cancel);
+    out << YAML::Key << "InitialFocus" << YAML::Value << c.InitialFocus;
+    out << YAML::Key << "DefaultAction" << YAML::Value << c.DefaultAction;
+    out << YAML::Key << "CancelTarget" << YAML::Value << c.CancelTarget;
+    out << YAML::Key << "ReturnFocus" << YAML::Value << c.ReturnFocus;
+    out << YAML::Key << "EventOwner" << YAML::Value << c.EventOwner;
+    out << YAML::EndMap << YAML::EndMap;
 }
 UIRectComponent ReadUIRectComponent(const YAML::Node &n)
 {
-    Keys(n, {"AnchorMin", "AnchorMax", "Offset", "SizeDelta", "Pivot", "MinimumSize", "Margin",
-             "Padding", "Visible", "Enabled", "ClipChildren", "Flex"});
+    if(!n["LayoutVersion"] || n["LayoutVersion"].as<unsigned>()!=GameUI::RectLayout::SchemaVersion)
+        throw std::runtime_error("Unsupported UI Rect schema: expected LayoutVersion 3. Repository UI uses the canonical measured model; recover obsolete documents from their Git checkpoint.");
+    Keys(n, {"LayoutVersion","Anchor","Offset","Pivot","WidthMode","HeightMode","FixedSize","MinimumSize","MaximumSize","HasMaximum","Margin","Padding","Visible","Enabled","ClipChildren","Flex","GridRow","GridColumn","RowSpan","ColumnSpan","ImageFit","ImageAlignment"});
     UIRectComponent v;
-    if (n["AnchorMin"])
-        v.AnchorMin = Vector<2>(n["AnchorMin"]);
-    if (n["AnchorMax"])
-        v.AnchorMax = Vector<2>(n["AnchorMax"]);
+    if(n["WidthMode"])v.WidthMode=GameUI::SizeMode(n["WidthMode"].as<int>());
+    if(n["HeightMode"])v.HeightMode=GameUI::SizeMode(n["HeightMode"].as<int>());
+    if(n["FixedSize"])v.FixedSize=Vector<2>(n["FixedSize"]);
+    if(n["MaximumSize"])v.MaximumSize=Vector<2>(n["MaximumSize"]);
+    if(auto m=n["HasMaximum"]){if(!m.IsSequence()||m.size()!=2)throw std::runtime_error("HasMaximum needs two flags");v.HasMaximum={m[0].as<bool>(),m[1].as<bool>()};}
+    if(n["Anchor"])v.Anchor=Vector<2>(n["Anchor"]);
+    if(n["GridRow"])v.GridRow=n["GridRow"].as<int>();
+    if(n["GridColumn"])v.GridColumn=n["GridColumn"].as<int>();
+    if(n["RowSpan"])v.RowSpan=n["RowSpan"].as<unsigned>();
+    if(n["ColumnSpan"])v.ColumnSpan=n["ColumnSpan"].as<unsigned>();
+    if(n["ImageFit"])v.Fit=GameUI::ImageFit(n["ImageFit"].as<int>());
+    if(n["ImageAlignment"])v.ImageAlignment=Vector<2>(n["ImageAlignment"]);
+    GameUI::FitImage({}, {1,1},v.Fit,v.ImageAlignment);
+    for(int a=0;a<2;++a)if(v.ImageAlignment[a]<0||v.ImageAlignment[a]>1)throw std::runtime_error("Image alignment must be normalized");
     if (n["Offset"])
         v.Offset = Vector<2>(n["Offset"]);
-    if (n["SizeDelta"])
-        v.SizeDelta = Vector<2>(n["SizeDelta"]);
     if (n["Pivot"])
         v.Pivot = Vector<2>(n["Pivot"]);
     if (n["MinimumSize"])
@@ -157,14 +177,21 @@ UIRectComponent ReadUIRectComponent(const YAML::Node &n)
 static void Write(YAML::Emitter &out, const UIRectComponent &v)
 {
     out << YAML::BeginMap;
-    out << YAML::Key << "AnchorMin" << YAML::Value;
-    Write(out, v.AnchorMin);
-    out << YAML::Key << "AnchorMax" << YAML::Value;
-    Write(out, v.AnchorMax);
+    out << YAML::Key << "LayoutVersion" << YAML::Value << GameUI::RectLayout::SchemaVersion;
+    out << YAML::Key << "WidthMode" << YAML::Value << int(v.WidthMode);
+    out << YAML::Key << "HeightMode" << YAML::Value << int(v.HeightMode);
+    out << YAML::Key << "FixedSize" << YAML::Value;Write(out,v.FixedSize);
+    out << YAML::Key << "MaximumSize" << YAML::Value;Write(out,v.MaximumSize);
+    out << YAML::Key << "HasMaximum" << YAML::Value << YAML::Flow << YAML::BeginSeq << bool(v.HasMaximum.x) << bool(v.HasMaximum.y) << YAML::EndSeq;
+    out << YAML::Key << "Anchor" << YAML::Value;Write(out,v.Anchor);
+    out << YAML::Key << "GridRow" << YAML::Value << v.GridRow;
+    out << YAML::Key << "GridColumn" << YAML::Value << v.GridColumn;
+    out << YAML::Key << "RowSpan" << YAML::Value << v.RowSpan;
+    out << YAML::Key << "ColumnSpan" << YAML::Value << v.ColumnSpan;
+    out << YAML::Key << "ImageFit" << YAML::Value << int(v.Fit);
+    out << YAML::Key << "ImageAlignment" << YAML::Value;Write(out,v.ImageAlignment);
     out << YAML::Key << "Offset" << YAML::Value;
     Write(out, v.Offset);
-    out << YAML::Key << "SizeDelta" << YAML::Value;
-    Write(out, v.SizeDelta);
     out << YAML::Key << "Pivot" << YAML::Value;
     Write(out, v.Pivot);
     out << YAML::Key << "MinimumSize" << YAML::Value;
@@ -183,43 +210,57 @@ static void Write(YAML::Emitter &out, const UIRectComponent &v)
     Write(out, v.Flex);
     out << YAML::EndMap;
 }
+static std::vector<GameUI::Track> ReadTracks(const YAML::Node &n)
+{
+    if(!n.IsSequence() || n.size()==0 || n.size()>64)throw std::runtime_error("Track list requires 1..64 entries");
+    std::vector<GameUI::Track> result;
+    for(auto item:n){
+        Keys(item,{"Mode","Value","Minimum","Maximum","HasMaximum"});GameUI::Track t;
+        if(item["Mode"])t.Mode=GameUI::TrackMode(item["Mode"].as<int>());
+        if(item["Value"])t.Value=item["Value"].as<float>();
+        if(item["Minimum"])t.Minimum=item["Minimum"].as<float>();
+        if(item["Maximum"])t.Maximum=item["Maximum"].as<float>();
+        if(item["HasMaximum"])t.HasMaximum=item["HasMaximum"].as<bool>();
+        GameUI::Validate(t);result.push_back(t);
+    }return result;
+}
 UILayoutComponent ReadUILayoutComponent(const YAML::Node &n)
 {
-    Keys(n, {"Direction", "Main", "Cross", "Gap"});
-    UILayoutComponent v;
-    if (n["Direction"])
-        v.Direction = GameUI::Axis(n["Direction"].as<int>());
-    if (n["Main"])
-        v.Main = ReadAlign(n["Main"]);
-    if (n["Cross"])
-        v.Cross = ReadAlign(n["Cross"]);
-    if (n["Gap"])
-        v.Gap = n["Gap"].as<float>();
-    if (int(v.Direction) < 0 || int(v.Direction) > 1)
-        throw std::runtime_error("Invalid flow direction");
-    if(v.Main>GameUI::Align::End)throw std::runtime_error("Flow main alignment must be Start, Center or End");
-    Positive(v.Gap);
-    return v;
+    Keys(n,{"Kind","Direction","Main","Cross","Gap","LineGap","LineAlign","GridGap","Columns","Rows"});UILayoutComponent v;
+    if(n["Kind"])v.Kind=GameUI::ContainerKind(n["Kind"].as<int>());
+    if(n["Direction"])v.Direction=GameUI::Axis(n["Direction"].as<int>());
+    if(n["Main"])v.Main=ReadAlign(n["Main"]);
+    if(n["Cross"])v.Cross=ReadAlign(n["Cross"]);
+    if(n["LineAlign"])v.LineAlign=ReadAlign(n["LineAlign"]);
+    if(n["Gap"])v.Gap=n["Gap"].as<float>();
+    if(n["LineGap"])v.LineGap=n["LineGap"].as<float>();
+    if(n["GridGap"])v.GridGap=Vector<2>(n["GridGap"]);
+    if(n["Columns"])v.Columns=ReadTracks(n["Columns"]);
+    if(n["Rows"])v.Rows=ReadTracks(n["Rows"]);
+    GameUI::Validate(v);return v;
 }
-static void Write(YAML::Emitter &out, const UILayoutComponent &v)
+static void Write(YAML::Emitter &out,const UILayoutComponent &v)
 {
-    out << YAML::BeginMap;
-    out << YAML::Key << "Direction" << YAML::Value;
-    Write(out, v.Direction);
-    out << YAML::Key << "Main" << YAML::Value;
-    Write(out, v.Main);
-    out << YAML::Key << "Cross" << YAML::Value;
-    Write(out, v.Cross);
-    out << YAML::Key << "Gap" << YAML::Value;
-    Write(out, v.Gap);
-    out << YAML::EndMap;
+    out<<YAML::BeginMap;
+    out<<YAML::Key<<"Kind"<<YAML::Value<<int(v.Kind);
+    out<<YAML::Key<<"Direction"<<YAML::Value<<int(v.Direction);
+    out<<YAML::Key<<"Main"<<YAML::Value<<int(v.Main);
+    out<<YAML::Key<<"Cross"<<YAML::Value<<int(v.Cross);
+    out<<YAML::Key<<"Gap"<<YAML::Value<<v.Gap;
+    out<<YAML::Key<<"LineGap"<<YAML::Value<<v.LineGap;
+    out<<YAML::Key<<"LineAlign"<<YAML::Value<<int(v.LineAlign);
+    out<<YAML::Key<<"GridGap"<<YAML::Value;Write(out,v.GridGap);
+    auto tracks=[&](const char*name,const auto &list){out<<YAML::Key<<name<<YAML::Value<<YAML::BeginSeq;for(const auto&t:list)out<<YAML::Flow<<YAML::BeginMap<<YAML::Key<<"Mode"<<YAML::Value<<int(t.Mode)<<YAML::Key<<"Value"<<YAML::Value<<t.Value<<YAML::Key<<"Minimum"<<YAML::Value<<t.Minimum<<YAML::Key<<"Maximum"<<YAML::Value<<t.Maximum<<YAML::Key<<"HasMaximum"<<YAML::Value<<t.HasMaximum<<YAML::EndMap;out<<YAML::EndSeq;};
+    tracks("Columns",v.Columns);tracks("Rows",v.Rows);out<<YAML::EndMap;
 }
 UITextStyleComponent ReadUITextStyleComponent(const YAML::Node &n)
 {
-    Keys(n, {"FontPath", "Size", "Horizontal", "Vertical", "Wrap"});
+    Keys(n, {"FontPath", "Size", "Horizontal", "Vertical", "Wrap", "Overflow", "MaxLines"});
     UITextStyleComponent v;
-    if (n["FontPath"])
-        v.FontPath = std::filesystem::u8path(n["FontPath"].as<std::string>());
+    // An empty historical marker has no interpretation. Nonempty raw paths are
+    // unsupported; FontSelection on Text is the only authored selection.
+    if(n["FontPath"] && !n["FontPath"].as<std::string>().empty())
+        throw std::runtime_error("Raw UI FontPath is unsupported; author Text.FontFamily (.hfont)");
     if (n["Size"])
         v.Size = n["Size"].as<float>();
     if (n["Horizontal"])
@@ -228,18 +269,22 @@ UITextStyleComponent ReadUITextStyleComponent(const YAML::Node &n)
         v.Vertical = ReadAlign(n["Vertical"]);
     if (n["Wrap"])
         v.Wrap = n["Wrap"].as<bool>();
+    if(n["Overflow"]) {
+        auto mode=n["Overflow"].as<std::string>();
+        if(mode!="Clip" && mode!="Ellipsis")throw std::runtime_error("Text Overflow must be Clip or Ellipsis");
+        v.Overflow=mode=="Clip"?Text::Overflow::Clip:Text::Overflow::Ellipsis;
+    }
+    if(n["MaxLines"])v.MaxLines=n["MaxLines"].as<uint32_t>();
+    if(v.MaxLines>4096)throw std::runtime_error("Text MaxLines must be 0 (unlimited) to 4096");
     if(v.Horizontal>GameUI::Align::End||v.Vertical>GameUI::Align::End)throw std::runtime_error("Text alignment must be Start, Center or End");
     Positive(v.Size, false);
     if (v.Size > 512)
         throw std::runtime_error("UI font size exceeds 512");
-    OwnedFont(v.FontPath);
     return v;
 }
 static void Write(YAML::Emitter &out, const UITextStyleComponent &v)
 {
     out << YAML::BeginMap;
-    out << YAML::Key << "FontPath" << YAML::Value;
-    Write(out, v.FontPath);
     out << YAML::Key << "Size" << YAML::Value;
     Write(out, v.Size);
     out << YAML::Key << "Horizontal" << YAML::Value;
@@ -248,6 +293,8 @@ static void Write(YAML::Emitter &out, const UITextStyleComponent &v)
     Write(out, v.Vertical);
     out << YAML::Key << "Wrap" << YAML::Value;
     Write(out, v.Wrap);
+    out << YAML::Key << "Overflow" << YAML::Value << (v.Overflow==Text::Overflow::Clip?"Clip":"Ellipsis");
+    out << YAML::Key << "MaxLines" << YAML::Value << v.MaxLines;
     out << YAML::EndMap;
 }
 UINineSliceComponent ReadUINineSliceComponent(const YAML::Node &n)
@@ -274,8 +321,13 @@ static void Write(YAML::Emitter &out, const UINineSliceComponent &v)
 }
 UIButtonComponent ReadUIButtonComponent(const YAML::Node &n)
 {
-    Keys(n, {"Action", "TabOrder", "Interactable", "Colors", "Images"});
+    Keys(n, {"Action", "TabOrder", "Interactable", "Colors", "Images", "Kind", "InitiallyChecked", "Indicator", "Group", "EventOwner"});
     UIButtonComponent v;
+    if(n["Kind"]){auto kind=n["Kind"].as<unsigned>();if(kind>4)throw std::invalid_argument("Invalid UI control kind");v.Kind=GameUI::ControlKind(kind);}
+    if(n["InitiallyChecked"])v.InitiallyChecked=n["InitiallyChecked"].as<bool>();
+    if(n["Indicator"])v.Indicator=n["Indicator"].as<uint64_t>();
+    if(n["Group"])v.Group=n["Group"].as<uint64_t>();
+    if(n["EventOwner"])v.EventOwner=n["EventOwner"].as<uint64_t>();
     if (n["Action"])
         v.Action = n["Action"].as<std::string>();
     if (n["TabOrder"])
@@ -306,6 +358,11 @@ UIButtonComponent ReadUIButtonComponent(const YAML::Node &n)
 static void Write(YAML::Emitter &out, const UIButtonComponent &v)
 {
     out << YAML::BeginMap;
+    out << YAML::Key << "Kind" << YAML::Value << unsigned(v.Kind);
+    out << YAML::Key << "InitiallyChecked" << YAML::Value << v.InitiallyChecked;
+    out << YAML::Key << "Indicator" << YAML::Value << v.Indicator;
+    out << YAML::Key << "Group" << YAML::Value << v.Group;
+    out << YAML::Key << "EventOwner" << YAML::Value << v.EventOwner;
     out << YAML::Key << "Action" << YAML::Value;
     Write(out, v.Action);
     out << YAML::Key << "TabOrder" << YAML::Value;
@@ -326,8 +383,117 @@ static void Write(YAML::Emitter &out, const UIButtonComponent &v)
     out << YAML::EndSeq;
     out << YAML::EndMap;
 }
+UIRadioGroupComponent ReadUIRadioGroupComponent(const YAML::Node &n){
+    Keys(n,{"Required","InitialSelection","EventOwner","Action"});UIRadioGroupComponent v;
+    if(n["Required"])v.Required=n["Required"].as<bool>();
+    if(n["InitialSelection"])v.InitialSelection=n["InitialSelection"].as<uint64_t>();
+    if(n["EventOwner"])v.EventOwner=n["EventOwner"].as<uint64_t>();
+    if(n["Action"])v.Action=n["Action"].as<std::string>();
+    if(v.Action.size()>128||v.Action.find('\0')!=std::string::npos)throw std::invalid_argument("Invalid radio action");
+    return v;
+}
+static void Write(YAML::Emitter &out,const UIRadioGroupComponent &v){
+    out<<YAML::BeginMap<<YAML::Key<<"Required"<<YAML::Value<<v.Required
+       <<YAML::Key<<"InitialSelection"<<YAML::Value<<v.InitialSelection
+       <<YAML::Key<<"EventOwner"<<YAML::Value<<v.EventOwner
+       <<YAML::Key<<"Action"<<YAML::Value<<v.Action<<YAML::EndMap;
+}
+UIProgressComponent ReadUIProgressComponent(const YAML::Node &n){
+    Keys(n,{"Minimum","Maximum","InitialValue","Fill","Direction"});UIProgressComponent v;
+    if(n["Minimum"])v.Minimum=n["Minimum"].as<float>();
+    if(n["Maximum"])v.Maximum=n["Maximum"].as<float>();
+    if(n["InitialValue"])v.InitialValue=n["InitialValue"].as<float>();
+    if(n["Fill"])v.Fill=n["Fill"].as<uint64_t>();
+    if(n["Direction"]){auto d=n["Direction"].as<unsigned>();if(d>3)throw std::invalid_argument("Invalid progress direction");v.Direction=GameUI::FillDirection(d);}
+    if(!std::isfinite(v.Minimum)||!std::isfinite(v.Maximum)||!std::isfinite(v.InitialValue)||v.Minimum>=v.Maximum||!std::isfinite(v.Maximum-v.Minimum))throw std::invalid_argument("Progress needs a finite increasing range and value");
+    return v;
+}
+static void Write(YAML::Emitter &out,const UIProgressComponent &v){
+    out<<YAML::BeginMap<<YAML::Key<<"Minimum"<<YAML::Value<<v.Minimum
+       <<YAML::Key<<"Maximum"<<YAML::Value<<v.Maximum
+       <<YAML::Key<<"InitialValue"<<YAML::Value<<v.InitialValue
+       <<YAML::Key<<"Fill"<<YAML::Value<<v.Fill
+       <<YAML::Key<<"Direction"<<YAML::Value<<unsigned(v.Direction)<<YAML::EndMap;
+}
+UISliderComponent ReadUISliderComponent(const YAML::Node &n){
+    Keys(n,{"Minimum","Maximum","Step","InitialValue","Track","Fill","Thumb","Direction"});UISliderComponent v;
+    if(n["Minimum"])v.Minimum=n["Minimum"].as<float>();
+    if(n["Maximum"])v.Maximum=n["Maximum"].as<float>();
+    if(n["Step"])v.Step=n["Step"].as<float>();
+    if(n["InitialValue"])v.InitialValue=n["InitialValue"].as<float>();
+    if(n["Track"])v.Track=n["Track"].as<uint64_t>();
+    if(n["Fill"])v.Fill=n["Fill"].as<uint64_t>();
+    if(n["Thumb"])v.Thumb=n["Thumb"].as<uint64_t>();
+    if(n["Direction"])v.Direction=GameUI::FillDirection(n["Direction"].as<unsigned>());
+    v.Validate();if(!std::isfinite(v.InitialValue)||unsigned(v.Direction)>3)throw std::invalid_argument("Invalid slider value/direction");return v;
+}
+static void Write(YAML::Emitter &out,const UISliderComponent &v){
+    out<<YAML::BeginMap<<YAML::Key<<"Minimum"<<YAML::Value<<v.Minimum<<YAML::Key<<"Maximum"<<YAML::Value<<v.Maximum
+       <<YAML::Key<<"Step"<<YAML::Value<<v.Step<<YAML::Key<<"InitialValue"<<YAML::Value<<v.InitialValue
+       <<YAML::Key<<"Track"<<YAML::Value<<v.Track<<YAML::Key<<"Fill"<<YAML::Value<<v.Fill<<YAML::Key<<"Thumb"<<YAML::Value<<v.Thumb
+       <<YAML::Key<<"Direction"<<YAML::Value<<unsigned(v.Direction)<<YAML::EndMap;
+}
+UITextEntryComponent ReadUITextEntryComponent(const YAML::Node &n){
+    Keys(n,{"Placeholder","MaxBytes","MaxGraphemes","MaxLines","Multiline","ReadOnly","CaretColor","SelectionColor"});UITextEntryComponent c;
+    if(n["Placeholder"])c.Placeholder=n["Placeholder"].as<std::string>();
+    if(n["MaxBytes"])c.MaxBytes=n["MaxBytes"].as<uint32_t>();if(n["MaxGraphemes"])c.MaxGraphemes=n["MaxGraphemes"].as<uint32_t>();if(n["MaxLines"])c.MaxLines=n["MaxLines"].as<uint32_t>();
+    if(n["Multiline"])c.Multiline=n["Multiline"].as<bool>();if(n["ReadOnly"])c.ReadOnly=n["ReadOnly"].as<bool>();
+    if(n["CaretColor"])c.CaretColor=Vector<4>(n["CaretColor"]);if(n["SelectionColor"])c.SelectionColor=Vector<4>(n["SelectionColor"]);
+    Text::EditBuffer::Normalize("",{c.MaxBytes,c.MaxGraphemes,c.MaxLines,c.Multiline,c.ReadOnly});
+    if(c.Placeholder.size()>1024)throw std::invalid_argument("Text placeholder exceeds 1024 bytes");UTF8::Validate(c.Placeholder);
+    for(int i=0;i<4;++i)if(!std::isfinite(c.CaretColor[i])||c.CaretColor[i]<0||c.CaretColor[i]>1||!std::isfinite(c.SelectionColor[i])||c.SelectionColor[i]<0||c.SelectionColor[i]>1)throw std::invalid_argument("Text-entry colors must be finite 0..1");return c;
+}
+static void Write(YAML::Emitter &o,const UITextEntryComponent &c){o<<YAML::BeginMap<<YAML::Key<<"Placeholder"<<YAML::Value<<c.Placeholder<<YAML::Key<<"MaxBytes"<<YAML::Value<<c.MaxBytes<<YAML::Key<<"MaxGraphemes"<<YAML::Value<<c.MaxGraphemes<<YAML::Key<<"MaxLines"<<YAML::Value<<c.MaxLines<<YAML::Key<<"Multiline"<<YAML::Value<<c.Multiline<<YAML::Key<<"ReadOnly"<<YAML::Value<<c.ReadOnly<<YAML::Key<<"CaretColor"<<YAML::Value;Write(o,c.CaretColor);o<<YAML::Key<<"SelectionColor"<<YAML::Value;Write(o,c.SelectionColor);o<<YAML::EndMap;}
+UITabsComponent ReadUITabsComponent(const YAML::Node &n){Keys(n,{"RememberFocus"});UITabsComponent c;if(n["RememberFocus"])c.RememberFocus=n["RememberFocus"].as<bool>();return c;}
+UITabComponent ReadUITabComponent(const YAML::Node &n){Keys(n,{"Page","InitialFocus"});UITabComponent c;if(n["Page"])c.Page=n["Page"].as<uint64_t>();if(n["InitialFocus"])c.InitialFocus=n["InitialFocus"].as<uint64_t>();return c;}
+UITooltipComponent ReadUITooltipComponent(const YAML::Node &n){Keys(n,{"Body","Delay","Gap"});UITooltipComponent c;if(n["Body"])c.Body=n["Body"].as<uint64_t>();if(n["Delay"])c.Delay=n["Delay"].as<float>();if(n["Gap"])c.Gap=n["Gap"].as<float>();if(!std::isfinite(c.Delay)||c.Delay<0||c.Delay>5||!std::isfinite(c.Gap)||c.Gap<0||c.Gap>64)throw std::invalid_argument("Tooltip delay 0..5 seconds and gap 0..64 must be finite");return c;}
+static void Write(YAML::Emitter &o,const UITabsComponent &c){o<<YAML::BeginMap<<YAML::Key<<"RememberFocus"<<YAML::Value<<c.RememberFocus<<YAML::EndMap;}
+static void Write(YAML::Emitter &o,const UITabComponent &c){o<<YAML::BeginMap<<YAML::Key<<"Page"<<YAML::Value<<c.Page<<YAML::Key<<"InitialFocus"<<YAML::Value<<c.InitialFocus<<YAML::EndMap;}
+static void Write(YAML::Emitter &o,const UITooltipComponent &c){o<<YAML::BeginMap<<YAML::Key<<"Body"<<YAML::Value<<c.Body<<YAML::Key<<"Delay"<<YAML::Value<<c.Delay<<YAML::Key<<"Gap"<<YAML::Value<<c.Gap<<YAML::EndMap;}
+UIDropdownComponent ReadUIDropdownComponent(const YAML::Node &n){
+    Keys(n,{"Trigger","Popup","MinimumWidth","MaximumHeight","Gap","Placeholder"});UIDropdownComponent v;
+    if(n["Trigger"])v.Trigger=n["Trigger"].as<uint64_t>();if(n["Popup"])v.Popup=n["Popup"].as<uint64_t>();
+    if(n["MinimumWidth"])v.MinimumWidth=n["MinimumWidth"].as<float>();if(n["MaximumHeight"])v.MaximumHeight=n["MaximumHeight"].as<float>();
+    if(n["Gap"])v.Gap=n["Gap"].as<float>();if(n["Placeholder"])v.Placeholder=n["Placeholder"].as<std::string>();GameUI::Validate(v);return v;
+}
+static void Write(YAML::Emitter &out,const UIDropdownComponent &v){
+    out<<YAML::BeginMap<<YAML::Key<<"Trigger"<<YAML::Value<<v.Trigger<<YAML::Key<<"Popup"<<YAML::Value<<v.Popup
+       <<YAML::Key<<"MinimumWidth"<<YAML::Value<<v.MinimumWidth<<YAML::Key<<"MaximumHeight"<<YAML::Value<<v.MaximumHeight
+       <<YAML::Key<<"Gap"<<YAML::Value<<v.Gap<<YAML::Key<<"Placeholder"<<YAML::Value<<v.Placeholder<<YAML::EndMap;
+}
+UIScrollViewComponent ReadUIScrollViewComponent(const YAML::Node &n){
+    Keys(n,{"Content","Horizontal","Vertical","HorizontalTrack","HorizontalThumb","VerticalTrack","VerticalThumb","PixelsPerUnit","MinimumThumb","RevealMargin"});UIScrollViewComponent v;
+#define READ(field,type) if(n[#field])v.field=n[#field].as<type>()
+    READ(Content,uint64_t);READ(Horizontal,bool);READ(Vertical,bool);READ(HorizontalTrack,uint64_t);READ(HorizontalThumb,uint64_t);READ(VerticalTrack,uint64_t);READ(VerticalThumb,uint64_t);READ(PixelsPerUnit,float);READ(MinimumThumb,float);READ(RevealMargin,float);
+#undef READ
+    GameUI::Validate(v);return v;
+}
+static void Write(YAML::Emitter &out,const UIScrollViewComponent &v){
+    out<<YAML::BeginMap;
+#define WRITE(field) out<<YAML::Key<<#field<<YAML::Value<<v.field
+    WRITE(Content);WRITE(Horizontal);WRITE(Vertical);WRITE(HorizontalTrack);WRITE(HorizontalThumb);WRITE(VerticalTrack);WRITE(VerticalThumb);WRITE(PixelsPerUnit);WRITE(MinimumThumb);WRITE(RevealMargin);
+#undef WRITE
+    out<<YAML::EndMap;
+}
+UIAppearanceComponent ReadUIAppearanceComponent(const YAML::Node& node){
+    Keys(node,{"Styled","Asset","Variant","Overrides","Focus","Selected","Editing"});UIAppearanceComponent c;
+    if(node["Styled"])c.Styled=node["Styled"].as<bool>();
+    if(node["Asset"])c.Selection.Asset=std::filesystem::u8path(node["Asset"].as<std::string>());
+    if(node["Variant"])c.Selection.Variant=node["Variant"].as<std::string>();
+    if(node["Overrides"])c.Overrides=node["Overrides"].as<uint32_t>();
+    if(node["Focus"])c.Focus=Vector<4>(node["Focus"]);if(node["Selected"])c.Selected=Vector<4>(node["Selected"]);if(node["Editing"])c.Editing=Vector<4>(node["Editing"]);
+    c.Selection.Validate();if(c.Overrides&~UIStyleAll)throw std::invalid_argument("Invalid style override mask");
+    UIStyleValues v;v.Focus=c.Focus;v.Selected=c.Selected;v.Editing=c.Editing;v.Validate();return c;
+}
+static void Write(YAML::Emitter& out,const UIAppearanceComponent& c){
+    out<<YAML::BeginMap<<YAML::Key<<"Styled"<<YAML::Value<<c.Styled<<YAML::Key<<"Asset"<<YAML::Value<<c.Selection.Asset.generic_u8string()<<YAML::Key<<"Variant"<<YAML::Value<<c.Selection.Variant<<YAML::Key<<"Overrides"<<YAML::Value<<c.Overrides;
+    out<<YAML::Key<<"Focus"<<YAML::Value;Write(out,c.Focus);out<<YAML::Key<<"Selected"<<YAML::Value;Write(out,c.Selected);out<<YAML::Key<<"Editing"<<YAML::Value;Write(out,c.Editing);out<<YAML::EndMap;
+}
 void ValidateUIConfiguration(const YAML::Node &node)
 {
+    if(auto n=node["UIAppearanceComponent"])ReadUIAppearanceComponent(n);
+    if(node["UINineSliceComponent"] && node["UIRectComponent"] && ReadUIRectComponent(node["UIRectComponent"]).Fit!=GameUI::ImageFit::Stretch)
+        throw std::invalid_argument("Nine-slice owns border fitting and requires Image Fit Stretch");
     if (auto n = node["UICanvasComponent"])
         ReadUICanvasComponent(n);
     if (auto n = node["UIRectComponent"])
@@ -338,11 +504,20 @@ void ValidateUIConfiguration(const YAML::Node &node)
         ReadUITextStyleComponent(n);
     if (auto n = node["UINineSliceComponent"])
         ReadUINineSliceComponent(n);
-    if (auto n = node["UIButtonComponent"])
-        ReadUIButtonComponent(n);
+    if (auto n = node["UIButtonComponent"]) ReadUIButtonComponent(n);
+    if (auto n = node["UIRadioGroupComponent"]) ReadUIRadioGroupComponent(n);
+    if (auto n = node["UIProgressComponent"]) ReadUIProgressComponent(n);
+    if(auto n=node["UISliderComponent"])ReadUISliderComponent(n);
+    if(auto n=node["UIScrollViewComponent"])ReadUIScrollViewComponent(n);
+    if(auto n=node["UITabsComponent"])ReadUITabsComponent(n);
+    if(auto n=node["UITextEntryComponent"])ReadUITextEntryComponent(n);
+    if(auto n=node["UITabComponent"])ReadUITabComponent(n);
+    if(auto n=node["UITooltipComponent"])ReadUITooltipComponent(n);
+    if(auto n=node["UIDropdownComponent"])ReadUIDropdownComponent(n);
 }
 void ReadUIComponents(const YAML::Node &node, Entity entity)
 {
+    if(auto n=node["UIAppearanceComponent"])entity.AddComponent<UIAppearanceComponent>(ReadUIAppearanceComponent(n));
     if (auto n = node["UICanvasComponent"])
         entity.AddComponent<UICanvasComponent>(ReadUICanvasComponent(n));
     if (auto n = node["UIRectComponent"])
@@ -353,11 +528,20 @@ void ReadUIComponents(const YAML::Node &node, Entity entity)
         entity.AddComponent<UITextStyleComponent>(ReadUITextStyleComponent(n));
     if (auto n = node["UINineSliceComponent"])
         entity.AddComponent<UINineSliceComponent>(ReadUINineSliceComponent(n));
-    if (auto n = node["UIButtonComponent"])
-        entity.AddComponent<UIButtonComponent>(ReadUIButtonComponent(n));
+    if (auto n = node["UIButtonComponent"]) entity.AddComponent<UIButtonComponent>(ReadUIButtonComponent(n));
+    if (auto n = node["UIRadioGroupComponent"]) entity.AddComponent<UIRadioGroupComponent>(ReadUIRadioGroupComponent(n));
+    if (auto n = node["UIProgressComponent"]) entity.AddComponent<UIProgressComponent>(ReadUIProgressComponent(n));
+    if(auto n=node["UISliderComponent"])entity.AddComponent<UISliderComponent>(ReadUISliderComponent(n));
+    if(auto n=node["UIScrollViewComponent"])entity.AddComponent<UIScrollViewComponent>(ReadUIScrollViewComponent(n));
+    if(auto n=node["UITabsComponent"])entity.AddComponent<UITabsComponent>(ReadUITabsComponent(n));
+    if(auto n=node["UITextEntryComponent"])entity.AddComponent<UITextEntryComponent>(ReadUITextEntryComponent(n));
+    if(auto n=node["UITabComponent"])entity.AddComponent<UITabComponent>(ReadUITabComponent(n));
+    if(auto n=node["UITooltipComponent"])entity.AddComponent<UITooltipComponent>(ReadUITooltipComponent(n));
+    if(auto n=node["UIDropdownComponent"])entity.AddComponent<UIDropdownComponent>(ReadUIDropdownComponent(n));
 }
 void WriteUIComponents(YAML::Emitter &out, Entity entity)
 {
+    if(entity.HasComponent<UIAppearanceComponent>()){out<<YAML::Key<<"UIAppearanceComponent"<<YAML::Value;Write(out,entity.GetComponent<UIAppearanceComponent>()); }
     if (entity.HasComponent<UICanvasComponent>())
     {
         out << YAML::Key << "UICanvasComponent" << YAML::Value;
@@ -388,12 +572,22 @@ void WriteUIComponents(YAML::Emitter &out, Entity entity)
         out << YAML::Key << "UIButtonComponent" << YAML::Value;
         Write(out, entity.GetComponent<UIButtonComponent>());
     }
+    if(entity.HasComponent<UIRadioGroupComponent>()){out<<YAML::Key<<"UIRadioGroupComponent"<<YAML::Value;Write(out,entity.GetComponent<UIRadioGroupComponent>());}
+    if(entity.HasComponent<UITextEntryComponent>()){out<<YAML::Key<<"UITextEntryComponent"<<YAML::Value;Write(out,entity.GetComponent<UITextEntryComponent>());}
+    if(entity.HasComponent<UITabsComponent>()){out<<YAML::Key<<"UITabsComponent"<<YAML::Value;Write(out,entity.GetComponent<UITabsComponent>());}
+    if(entity.HasComponent<UITabComponent>()){out<<YAML::Key<<"UITabComponent"<<YAML::Value;Write(out,entity.GetComponent<UITabComponent>());}
+    if(entity.HasComponent<UITooltipComponent>()){out<<YAML::Key<<"UITooltipComponent"<<YAML::Value;Write(out,entity.GetComponent<UITooltipComponent>());}
+    if(entity.HasComponent<UIDropdownComponent>()){out<<YAML::Key<<"UIDropdownComponent"<<YAML::Value;Write(out,entity.GetComponent<UIDropdownComponent>());}
+    if(entity.HasComponent<UIScrollViewComponent>()){out<<YAML::Key<<"UIScrollViewComponent"<<YAML::Value;Write(out,entity.GetComponent<UIScrollViewComponent>());}
+    if(entity.HasComponent<UISliderComponent>()){out<<YAML::Key<<"UISliderComponent"<<YAML::Value;Write(out,entity.GetComponent<UISliderComponent>());}
+    if(entity.HasComponent<UIProgressComponent>()){out<<YAML::Key<<"UIProgressComponent"<<YAML::Value;Write(out,entity.GetComponent<UIProgressComponent>());}
+
 }
 std::string UIAuthoredState(Entity entity)
 {
     if (!entity.HasComponent<UICanvasComponent>() && !entity.HasComponent<UIRectComponent>() &&
         !entity.HasComponent<UILayoutComponent>() && !entity.HasComponent<UITextStyleComponent>() &&
-        !entity.HasComponent<UINineSliceComponent>() && !entity.HasComponent<UIButtonComponent>())
+        !entity.HasComponent<UINineSliceComponent>() && !entity.HasComponent<UIButtonComponent>() && !entity.HasComponent<UIRadioGroupComponent>() && !entity.HasComponent<UIProgressComponent>() && !entity.HasComponent<UISliderComponent>() && !entity.HasComponent<UIScrollViewComponent>() && !entity.HasComponent<UITabsComponent>() && !entity.HasComponent<UITabComponent>() && !entity.HasComponent<UITooltipComponent>() && !entity.HasComponent<UITextEntryComponent>() && !entity.HasComponent<UIDropdownComponent>())
         return {};
     YAML::Emitter out;
     out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);

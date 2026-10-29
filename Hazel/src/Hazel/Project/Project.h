@@ -7,6 +7,7 @@
 #include <vector>
 #include <optional>
 #include "Hazel/Renderer/RendererPolicy.h"
+#include "Hazel/UI/UIBindings.h"
 
 #include "Hazel/Core/Base.h"
 #include "Hazel/Core/DocumentLoadReport.h"
@@ -21,6 +22,7 @@ namespace Hazel {
         std::string ScriptProject;
         std::string SaveNamespace; // Optional stable game-owned identity, independent of project location/name.
         std::optional<RuntimeRendererRequests> Rendering;
+        std::optional<GameUI::UIBindings> UIBindings;
         int AuthoringVersion=0; // Existing projects remain unstamped; no template rewrite.
 
 		std::filesystem::path StartScene;
@@ -62,6 +64,7 @@ namespace Hazel {
         void ReleaseAssets() {m_Assets.reset();}
 
         ProjectConfig& GetConfig() { return m_Config; }
+        GameUI::UIBindings GetUIBindings() const {return m_Config.UIBindings.value_or(GameUI::UIBindings::Defaults());}
         RuntimeRendererRequests GetRendererRequests() const { return m_Config.Rendering.value_or(RuntimeRendererRequests{}); }
 
 		static Ref<Project> GetActive() { return s_ActiveProject; }

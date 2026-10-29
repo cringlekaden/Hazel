@@ -1,0 +1,280 @@
+PrefabVersion: 2
+PrefabRoot: 100001
+SceneVersion: 2
+Scene: Tutorial card
+Entities:
+- Entity: 100001
+  TagComponent:
+    Tag: Tutorial card
+  Relationship:
+    Parent: 0
+    Order: 0
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 360
+    - 140
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 16
+    - 16
+    - 16
+    - 16
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  SpriteRendererComponent:
+    Color:
+    - 0.035
+    - 0.055
+    - 0.075
+    - 0.98
+    Source:
+      Type: None
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100002
+  TagComponent:
+    Tag: Card heading
+  Relationship:
+    Parent: 100001
+    Order: 0
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 2
+    FixedSize:
+    - 0
+    - 0
+    Offset:
+    - 0
+    - 0
+    Anchor:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: A reusable journal card
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 24
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1
+- Entity: 100003
+  TagComponent:
+    Tag: Card body
+  Relationship:
+    Parent: 100001
+    Order: 1
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 1
+    HeightMode: 2
+    FixedSize:
+    - 0
+    - 0
+    Offset:
+    - 0
+    - 42
+    Anchor:
+    - 0
+    - 0
+    Pivot:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+  TextComponent:
+    TextString: Detached structure, shared appearance. Edit this copy without changing another instance.
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 0.9
+    - 0.94
+    - 0.96
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UITextStyleComponent:
+    Size: 18
+    Horizontal: 0
+    Vertical: 1
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0
+  UIAppearanceComponent:
+    Styled: true
+    Asset: Styles/Interface.hstyle
+    Variant: Control
+    Overrides: 446
+    Focus:
+    - 1
+    - 0.9
+    - 0.65
+    - 1
+    Selected:
+    - 1
+    - 1
+    - 1
+    - 1
+    Editing:
+    - 0.3
+    - 1
+    - 1
+    - 1

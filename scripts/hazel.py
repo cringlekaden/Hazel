@@ -53,7 +53,7 @@ def diagnose():
     required = ['git'] if SYSTEM == 'windows' else ['git', 'make', 'g++', 'pkg-config', 'ar', 'tar']
     missing = [name for name in required if not shutil.which(name)]
     if missing:
-        raise RuntimeError('Missing prerequisites: ' + ', '.join(missing) + '. See README prerequisite packages; setup never installs system packages.')
+        raise RuntimeError('Missing prerequisites: ' + ', '.join(missing) + '. See docs/getting-started.md prerequisite packages; setup never installs system packages.')
     if SYSTEM == 'windows':
         vs_toolchain()
         framework = Path(os.environ.get('ProgramFiles(x86)', 'C:/Program Files (x86)')) / 'Reference Assemblies/Microsoft/Framework/.NETFramework/v4.7.2/mscorlib.dll'
@@ -62,7 +62,7 @@ def diagnose():
     else:
         for name in ('gtk+-3.0', 'x11', 'xrandr', 'xinerama', 'xcursor', 'xi', 'gl', 'uuid'):
             if subprocess.run(['pkg-config', '--exists', name]).returncode:
-                raise RuntimeError(f'Missing {name} development files. See README Ubuntu/Arch prerequisite commands.')
+                raise RuntimeError(f'Missing {name} development files. See docs/getting-started.md Ubuntu/Arch prerequisite commands.')
 
 
 def premake():
@@ -249,8 +249,8 @@ def script_build(project, configuration):
     if not (scripts / 'premake5.lua').is_file():
         raise RuntimeError('Project needs Assets/Scripts/premake5.lua; see the bundled example')
     from internal.authoring import native_contract
-    native_contract(configuration)
-    generator = premake(); prefix = mono_prefix()
+    prefix = native_contract(configuration)
+    generator = premake()
     env = os.environ.copy()
     env['HAZEL_SCRIPTCORE'] = (binaries(configuration) / 'Hazel-ScriptCore/Hazel-ScriptCore.dll').as_posix()
     identity = hashlib.sha256(str(descriptor).encode('utf-8')).hexdigest()[:16]

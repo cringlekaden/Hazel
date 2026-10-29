@@ -1,5 +1,7 @@
 # Preservation decisions
 
+> **Historical scope — marked 2026-10-28.** Ownership, platform and dependency invariants below remain in force; old branch restrictions and checkpoint instructions are historical. Use the [current guides](../README.md) and [history index](../history.md).
+
 Current authorization (2026-10-02): the completed migration is merged into master
 at `257bd58fcb3ed23e4638967160d5b6eaceffe09b`. The user's explicit instruction
 supersedes the historical migration-only branch restriction below. Keep the

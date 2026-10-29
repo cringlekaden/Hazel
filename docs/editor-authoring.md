@@ -1,5 +1,12 @@
 # Editor authoring milestone
 
+> **Historical scope — marked 2026-10-28.** This record describes its named checkpoints, including features absent or pending then. It is not current setup, support status or a new feature roadmap. Use the [current guides](README.md) and [history index](history.md).
+
+Historical milestone record: commands, counts and download evidence below describe
+its original checkpoint. For current prerequisites, command semantics, Release
+export and snapshot/download selection, use [Getting started](getting-started.md).
+Current runtime UI and tutorial are linked from [the root README](../README.md).
+
 Baseline: feature/example-games, 45cac43. MeadowRun and Skybound run on the user's Windows AMD machine. No new hardware verification is implied.
 
 ## Audit and implementation order
@@ -74,6 +81,11 @@ Renderer requests remain process initialization policy in the existing RendererS
 Local walkthrough captures and logs remain ignored. CI uploads game screenshots and testing evidence separately from production packages. Final CI/artifact links and remaining platform checks are recorded below.
 
 ### Final source, platforms and downloads
+
+The artifact links below are historical snapshots of this authoring milestone,
+before the later runtime UI integration. They require GitHub authentication and
+expire with Actions retention; use [current download guidance](getting-started.md#choose-a-download-or-a-source-checkout)
+when selecting a build. Artifact existence alone is not a whole-run success.
 
 The final implementation checkpoint is **8f07a1ea1e33143da9121540aa82be91dee710f0** on **feature/editor-authoring**, based on **feature/example-games**. Implementation commits are 83e1fe4, b2c3f2b, e45d591, dcecf3c, 0c89f48, 7e77879, ca41f01, e355fc3, 1a22e44, 29521cd and 8f07a1e. The subsequent documentation commit records these immutable results. No merge, force push or release is performed.
 

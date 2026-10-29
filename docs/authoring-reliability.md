@@ -1,8 +1,6 @@
 # Authoring reliability contracts
 
-The completed repairs from `fix/authoring-reliability` were merged into master at
-`b0fb5fc`. These contracts remain obligations of the Nutella milestone. Historical
-migration verification records retain their original context.
+Current reference for ownership and failure behavior, including later prefab/history cleanup. [Editor guide](editor-guide.md), [Scripting](scripting.md), [Settings/resources](settings-and-resources.md) and [Packaging](packaging.md) explain the workflows. Historical verification below describes its named fixtures/checkpoints rather than physical acceptance.
 
 ## Texture references
 
@@ -47,6 +45,31 @@ Hover/selection and legacy borrowed observations are cleared at scene replacemen
 and teardown. Selection checks scene identity before inspecting registry validity;
 `Entity::operator bool` still requires a live owning Scene.
 
+## Authored entity references and detached prefabs
+
+One narrow native visitor enumerates authored cross-entity fields for subtree
+remapping and prefab ownership checks: screen focus/actions/owners; control
+indicators/groups/owners; progress, slider and scroll parts; dropdown trigger/popup;
+tab page **and initial focus**; tooltip body; and stored script Entity fields.
+Hierarchy relationships keep their own graph validation. Runtime state, queued
+events/captures, resources and numeric script fields are not authored references.
+
+Duplicate remaps targets inside its subtree once and retains allowed same-scene
+external targets. Detached extraction/prefabs reject nonzero external references
+before publication; they never clear them or bind them to unrelated destination
+entities. Zero is ownership-neutral; required/optional and component/role rules
+remain in control validation. Native metadata audit owns scene/prefab schema,
+hierarchy and prefab-reference ownership. Python packaging consumes its dependency
+closure and retains package inventory/exclusions, filesystem/deployment checks and
+managed assembly/class closure; it does not carry a parallel UI reference list.
+
+Deletion/history retains repairable incoming references while targets are absent.
+Undo restores the authored UUIDs with fresh lifetimes and preserves surviving
+owners' values. Interleaved property/structural history still uses explicit exact
+snapshots, payloads and native-write guards; the visitor does not serialize history,
+retarget incoming references or weaken conflict detection. Authored formats and
+detached-instance semantics are unchanged.
+
 ## Save behavior
 
 Scene and project saves reserve an exclusive sibling temporary, check writing,
@@ -57,7 +80,7 @@ destination is never deleted first. No fsync/FlushFileBuffers or power-loss
 durability guarantee is implemented. Concurrent edits by another writer are not
 detected; saving is still a single editor command.
 
-## Focused acceptance
+## Verification scope
 
 The existing SceneSmoke, ProjectPhysicsSmoke and actual EditorLayer EditorSmoke
 contain the regressions. EditorSmoke starts with the F5 project argument
@@ -76,6 +99,6 @@ relocate it; change a live script value, reload and Stop/restart; select immedia
 after New/Open/Play/Simulate/Stop; try a missing/corrupt project, scene and assembly;
 and try saving to an inaccessible destination. Prior valid work must remain usable.
 
-Runtime/project deployment is covered by the [Nutella milestone](nutella-runtime.md).
-Custom font persistence, live component synchronization, macOS/ARM64, Metal and
-larger feature systems remain deferred.
+Current runtime/project deployment is covered by [Packaging](packaging.md); the [Nutella milestone](nutella-runtime.md) retains historical evidence.
+Current `.hfont` ownership/reload behavior is documented in [runtime UI resources](runtime-game-ui.md#font-families-and-declared-coverage).
+macOS/ARM64, Metal and larger feature systems remain deferred.

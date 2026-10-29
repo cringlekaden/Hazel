@@ -25,10 +25,11 @@ namespace Hazel {
             auto& window = Application::Get().GetWindow();
             m_Session.Resize(window.GetWidth(), window.GetHeight());
             m_Session.SetInput(Input::GetMousePosition(), window.IsFocused());
-            const auto framebuffer=window.GetFramebufferSize();RenderCommand::SetViewport(0,0,framebuffer.first,framebuffer.second);
+            const auto framebuffer=window.GetFramebufferSize();m_Session.ResizeFramebuffer(framebuffer.first,framebuffer.second);RenderCommand::SetViewport(0,0,framebuffer.first,framebuffer.second);
             RenderCommand::SetClearColor({0.08f, 0.09f, 0.12f, 1.0f});
             RenderCommand::Clear();
             m_Session.Update(timestep);
+            if(m_Session.ConsumeExitRequest())Application::Get().Close();
         }
     private:
         Ref<Project> m_Project;

@@ -2,6 +2,7 @@
 #include "RuntimeStorage.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Core/DocumentSchema.h"
+#include "Hazel/Utils/UTF8.h"
 #include <fstream>
 #include <yaml-cpp/yaml.h>
 
@@ -37,11 +38,13 @@ std::string RuntimeStorage::Read(const std::string& slot) const {
         throw std::runtime_error("Unsupported save version or ownership mismatch");
     auto payload=node["Payload"].as<std::string>();
     if(payload.empty() || payload.size()>MaximumPayload || payload.find('\0')!=std::string::npos)throw std::runtime_error("Invalid save payload");
+    UTF8::Validate(payload);
     return payload;
 }
 void RuntimeStorage::Write(const std::string& slot, const std::string& payload) {
     const auto path=SlotPath(slot);
     if(payload.empty() || payload.size()>MaximumPayload || payload.find('\0')!=std::string::npos)throw std::invalid_argument("Save payload must be 1–65536 UTF-8 bytes without NUL");
+    UTF8::Validate(payload);
     if(m_Persistent) {
         YAML::Emitter out;out<<YAML::BeginMap<<YAML::Key<<"Version"<<YAML::Value<<1
             <<YAML::Key<<"Owner"<<YAML::Value<<m_Owner<<YAML::Key<<"Slot"<<YAML::Value<<slot

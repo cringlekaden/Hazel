@@ -9,7 +9,7 @@ namespace Skybound {
         public float FlapSpeed=5;
         public float GapHalf=1.7f;
         private Flight flight;
-        private Entity bird,ready,restartButton,menuButton;
+        private Entity bird,ready;
         private Entity cameraEntity;
         private CameraComponent camera;
         private readonly Entity[] upper=new Entity[4],lower=new Entity[4];
@@ -28,9 +28,8 @@ namespace Skybound {
             cameraEntity=FindEntityByName("Camera");camera=cameraEntity.GetComponent<CameraComponent>();
             flight.SetBounds(FitCamera.Floor(camera),FitCamera.Ceiling(camera));
             for(int i=0;i<4;i++) SpawnPair(i);
-            restartButton=FindEntityByName("Restart");menuButton=FindEntityByName("Menu");
             overlay=FindEntityByName("Flight result").GetComponent<UICanvasComponent>();
-            overlay.Visible=false;
+            overlay.Close();
             mouseHeld=Input.IsMouseButtonDown(MouseCode.Left);spaceHeld=Input.IsKeyDown(KeyCode.Space);
             restartHeld=Input.IsKeyDown(KeyCode.R);escapeHeld=Input.IsKeyDown(KeyCode.Escape);
             Sync();
@@ -68,9 +67,11 @@ namespace Skybound {
             if(escape&&!escapeHeld) Scene.LoadScene("Scenes/MainMenu.hazel");
             if(flight.Phase==Flight.State.Dead) {
                 // Restart only on a new event after death. A fatal flap never restarts.
-                string action;
-                bool retry=restartButton.GetComponent<UIButtonComponent>().TryConsumeAction(out action);
-                bool menu=menuButton.GetComponent<UIButtonComponent>().TryConsumeAction(out action);
+                bool retry=false,menu=false;UIEvent e;
+                while(GameUI.TryConsumeEvent(out e)) {
+                    if(e.Kind==UIEventKind.Cancel)menu=true;
+                    if(e.Kind==UIEventKind.Activated){retry|=e.Action=="restart";menu|=e.Action=="menu";}
+                }
                 if((restart&&!restartHeld)||retry)Scene.LoadScene("Scenes/Flight.hazel");
                 else if(menu)Scene.LoadScene("Scenes/MainMenu.hazel");
             } else {
@@ -86,7 +87,7 @@ namespace Skybound {
                 if(flight.Score!=previousScore) { previousScore=flight.Score;Console.WriteLine("Skybound: score "+flight.Score); }
                 if(flight.Phase==Flight.State.Dead&&!shown) {
                     shown=true;result.Text="FLIGHT ENDED  /  "+flight.Score;
-                    overlay.Visible=true;
+                    overlay.Open();
                     Console.WriteLine("Skybound: game over");
                 }
             }

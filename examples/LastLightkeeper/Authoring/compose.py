@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Initial authored scene composition, never imported/executed by the game.
-Native HazelProject grid import creates sheets; this writes normal editable scenes.
-Existing scenes require --overwrite explicitly. Subsequent edits belong in Hazelnut.
+"""Historical pre-runtime-UI composition evidence (2026-10).
+Not a current authoring workflow: regenerated output omits later native UI edits.
+Use Hazelnut for maintained content. Reproduction requires a disposable copy.
 """
 import argparse, math, json
 from pathlib import Path
@@ -26,6 +26,18 @@ SAND=[.8,.82,.78,1]
 SEA=[.31,.47,.63,1]
 AMBER=[1,.82,.5,1]
 WHITE=[.91,.94,.91,1]
+
+def historical_arguments():
+    parser=argparse.ArgumentParser(description='Historical composition only; see Authoring/README.md')
+    parser.add_argument('--historical-rebuild',action='store_true',help='acknowledge obsolete output; disposable copies only')
+    parser.add_argument('--write',action='store_true')
+    parser.add_argument('--overwrite',action='store_true')
+    args=parser.parse_args()
+    if not args.historical_rebuild or not args.write:
+        parser.error('Historical output requires --historical-rebuild --write in a disposable copy')
+    if (ROOT.parents[1]/'.git').exists():
+        parser.error('Refusing to regenerate a maintained checkout; copy the project outside it first')
+    return args
 
 class Scene:
     def __init__(self,name):self.name=name;self.entities=[];self.by_name={};self.orders={}
@@ -307,8 +319,7 @@ def reference(scene):
     contact.save(ROOT/'Authoring/Asset-reference.png')
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--write',action='store_true');parser.add_argument('--overwrite',action='store_true');args=parser.parse_args()
-    if not args.write:raise SystemExit('Pass --write for initial composition. Existing scenes are protected.')
+    args=historical_arguments()
     game=island()
     for scene in [menu(),game,menu('Dawn',True)]:scene.save(args.overwrite)
     art_table();reference(game)

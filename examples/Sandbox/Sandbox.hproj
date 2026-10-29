@@ -2,6 +2,7 @@ Project:
   Version: 1
   ScriptProject: Sandbox
   AuthoringVersion: 1
+  SaveNamespace: cringlekaden.HazelSandbox
   Name: Sandbox
   StartScene: Scenes/Start.hazel
   AssetDirectory: Assets
