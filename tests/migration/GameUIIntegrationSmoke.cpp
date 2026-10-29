@@ -20,10 +20,12 @@
 // Profile scope counts ordinary C++ new calls, excluding GL/OS malloc and setup.
 static std::atomic<bool> s_CountAllocations{false};
 static std::atomic<uint64_t> s_Allocations{0};
-static std::atomic<int> s_FailAllocation{-1}; // targeted line-view publication failure
+// Fail the staged line-array payload on its caller thread, not implementation-
+// specific debug-STL proxy allocations inside noexcept container constructors.
+static thread_local size_t s_FailAllocationBytes=0;
 void* operator new(std::size_t bytes)
 {
-    if(s_FailAllocation.load(std::memory_order_relaxed)>=0 && s_FailAllocation.fetch_sub(1)==0){s_FailAllocation=-1;throw std::bad_alloc();}
+    if(s_FailAllocationBytes && bytes==s_FailAllocationBytes){s_FailAllocationBytes=0;throw std::bad_alloc();}
     if(auto p=std::malloc(bytes?bytes:1)) {if(s_CountAllocations.load(std::memory_order_relaxed))s_Allocations.fetch_add(1,std::memory_order_relaxed);return p;}
     throw std::bad_alloc();
 }

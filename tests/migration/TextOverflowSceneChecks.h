@@ -18,10 +18,19 @@ static void TextOverflowSceneChecks(const std::filesystem::path& root) {
     Check(pixels>15,"Ellipsis scene has no pickable text");
     std::vector<Renderer2D::TextLine> view;auto font=text.ResolvedFont;
     Renderer2D::LayoutText("keep",font,-1,false,0,view);auto acceptedView=view.front().Result;
-    auto cached=font->Layout("a\nb",-1,false);bool failed=false;s_FailAllocation=0;
+    auto cached=font->Layout("a\nb",-1,false);
+    Check(cached->Lines.size()==2,"Line-view failure fixture lost its two-line payload");
+    const auto payload=cached->Lines.size()*sizeof(Renderer2D::TextLine);
+    bool failed=false;s_FailAllocationBytes=payload;
+    // Incidental small/proxy allocations must succeed while the payload fault
+    // is armed, including MSVC Debug's noexcept empty-vector construction.
+    std::vector<char> incidental;incidental.reserve(7);
+    Check(s_FailAllocationBytes==payload,"Line-view fault was consumed by incidental allocation");
     try{Renderer2D::LayoutText("a\nb",font,-1,false,0,view);}catch(const std::bad_alloc&){failed=true;}
-    s_FailAllocation=-1;
-    Check(failed && view.size()==1 && view.front().Result==acceptedView,"Failed line-view publication replaced valid cache data");
+    const bool consumed=s_FailAllocationBytes==0;s_FailAllocationBytes=0;
+    Check(failed && consumed && view.size()==1 && view.front().Result==acceptedView && view.front().Text=="keep","Failed line-view publication replaced valid cache data");
+    auto published=Renderer2D::LayoutText("a\nb",font,-1,false,0,view);
+    Check(published==cached && view.size()==2 && view[0].Text=="a" && view[1].Text=="b" && view[0].Result==cached && view[1].Result==cached,"Line-view publication did not recover after staged allocation failure");
     auto generations=Font::Resources().Generations,builds=Font::Resources().LayoutBuilds;paint();
     Check(ui.TextLayout(label.GetUUID())==first && ui.Diagnostics().PreparedReuses==1 && Font::Resources().LayoutBuilds==builds && Font::Resources().Generations==generations,"Warm overflow reshaped or regenerated pages");
     auto generation=ui.Snapshot().Generation;style.MaxLines=2;style.Wrap=true;text.TextString="one two three four five six seven eight";paint();
