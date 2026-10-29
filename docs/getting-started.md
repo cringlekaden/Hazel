@@ -1,6 +1,6 @@
 # Getting started on Windows and Linux
 
-Hazel is the engine library. Hazelnut edits projects; Nutella runs prepared games without the editor. This fork currently builds for **Windows x64 and Linux x86_64**, with **OpenGL 4.1 core**. macOS is not implemented. Linux windows use X11/GLX, including Xwayland; this is not native Wayland support.
+Hazel is the engine library. Hazelnut edits projects; Nutella runs prepared games without the editor. The maintained setup below targets **Windows x64 and Linux x86_64**, with **OpenGL 4.1 core**. Experimental native arm64 macOS 27.0+ Xcode commands and qualification status are in the [macOS port plan](design/macos-port.md). Linux windows use X11/GLX, including Xwayland; this is not native Wayland support.
 
 ## Choose a download or a source checkout
 

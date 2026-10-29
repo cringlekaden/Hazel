@@ -47,7 +47,7 @@ Open **Assets/Scenes/UI Tutorial.hazel** and Play. Its [five pages](examples/San
 
 ## Status and support
 
-Requires **OpenGL 4.1 core**. Windows x64 and Linux x86_64/X11 (including Xwayland) are maintained; official Linux packages target Ubuntu 24.04/glibc 2.39+. Native Wayland and macOS are not implemented. See [platform scope and UI limits](docs/platforms-and-dependencies.md#platform-status).
+Requires **OpenGL 4.1 core**. Windows x64 and Linux x86_64/X11 (including Xwayland) are maintained; official Linux packages target Ubuntu 24.04/glibc 2.39+. Native Wayland is not implemented. Native arm64 macOS 27.0+ has an [experimental Xcode application foundation](docs/design/macos-port.md), with qualification and packaging pending. See [platform scope and UI limits](docs/platforms-and-dependencies.md#platform-status).
 
 [![C/C++ CI — master](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml/badge.svg?branch=master)](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Amaster)
 
