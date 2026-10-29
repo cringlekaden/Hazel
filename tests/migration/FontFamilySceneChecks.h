@@ -45,11 +45,18 @@ static void FontFamilySceneChecks(const std::filesystem::path& root) {
     auto world=scene->CreateEntity("World family text");world.AddComponent<TextComponent>().TextString="World";
     world.GetComponent<TextComponent>().Font={"Text.hfont",FontStyle::Bold};
     Check(ResolveTextFont(world.GetComponent<TextComponent>(),assets)==bold,"World text resolved a different accepted face");
-    const auto replacement=directory/"replacement";std::filesystem::create_directory(replacement);
+    auto replacement=directory/"replacement";std::filesystem::create_directory(replacement);
+    // Exercise an alias on every host; Windows temp roots may also use short
+    // names. Resource ownership is the canonical file, not its lexical spelling.
+    replacement/=".";
     std::filesystem::copy_file("assets/fonts/opensans/OpenSans-Regular.ttf",replacement/"regular.ttf");
     WriteTestFamily(replacement,"Text.hfont","regular.ttf");auto secondAssets=CreateRef<ProjectAssets>(replacement);
     scene->SetAssets(secondAssets);ui.Resolve({128,128});ui.Draw();
-    Check(label.GetComponent<TextComponent>().ResolvedFont!=bold && label.GetComponent<TextComponent>().ResolvedFont->GetPath().parent_path()==replacement,
+    auto replaced=label.GetComponent<TextComponent>().ResolvedFont;
+    Check(replaced && replaced!=bold && replaced==secondAssets->FamilyFont({"Text.hfont",FontStyle::Bold}),
           "Project asset-owner replacement reused old metrics/atlas at an equal epoch");
+    const auto expected=Project::ResolveOwnedAsset(replacement,"regular.ttf");
+    Check(replaced->GetPath()==expected,
+          ("Replacement face resolved a different owned file: "+replaced->GetPath().generic_u8string()+"; expected "+expected.generic_u8string()).c_str());
     scene->OnRuntimeStop();Check(!world.GetComponent<TextComponent>().ResolvedFont,"Stop retained runtime text resource state");
 }
