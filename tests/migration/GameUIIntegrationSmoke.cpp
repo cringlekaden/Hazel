@@ -123,6 +123,8 @@ int main(int argc,char** argv)
 {
     try
     {
+        // Keep completed fixture evidence when a runner terminates a long check.
+        std::cout << std::unitbuf;
         Log::Init();
         ApplicationSpecification spec;
         spec.Name = "Migration Game UI";
