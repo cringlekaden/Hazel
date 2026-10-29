@@ -26,4 +26,6 @@ Rename/reposition existing regions without regenerating their IDs. Deleting a re
 
 Save the sheet and its referencing scene/prefab separately. Sheet asset creation/save is distinct from scene Undo; UI source assignment records the corresponding property edit. Export checks native image/sheet/dependency closure and rejects missing or external resources.
 
+After an invalid external replacement, Edit previews and already running scenes use a magenta fallback and cache the diagnostic. Starting Play and export still reject invalid assets. Repair the file and explicitly refresh/reload; a disk edit alone does not clear the failure. Authored sprite/clip IDs are retained. [Resource ownership](settings-and-resources.md#fonts-styles-and-caches) explains epochs and existing resource pins.
+
 The [sheet format and sampling record](design/sprite-sheet-authoring.md#coordinates-placement-and-atlas-limits) retains exact coordinate/identity details and historical qualification. Current UI images, including fits and nine-slice, are covered in [Runtime UI](runtime-game-ui.md). [Native sheet commands](development.md#native-tools) are optional authoring aids; normal editing uses Hazelnut.

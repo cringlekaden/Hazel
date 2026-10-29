@@ -44,6 +44,7 @@ static Ref<Scene> Make(const char* name, const char* script = nullptr) {
 #include "UITextEntrySessionChecks.h"
 #include "UIStyleSessionChecks.h"
 #include "ManagedStringChecks.h"
+#include "RuntimeFailureChecks.h"
 int main(int argc, char** argv) {
     const auto directory = std::filesystem::temp_directory_path() / std::filesystem::u8path("hazel-runtime space-é-"+std::to_string(std::random_device{}()));
     try {
@@ -63,6 +64,8 @@ int main(int argc, char** argv) {
         std::filesystem::copy_file(Resources::Resolve("UI/Default.hstyle"),resources.Root/"UI/Default.hstyle");
         Resources::Configure(resources);
         ScriptEngine::Init(std::filesystem::u8path(argv[2]));
+        UIFlagFailureChecks(project);
+        TargetStartFailureChecks(project,directory);
         auto source=Make("Source", "Migration.TransitionOnCreate"), target=Make("Target", "Migration.SceneProbe");
         SceneSerializer(target,project->GetAssetRoot()).Serialize((directory/"Assets/Scenes/Target.hazel").generic_u8string());
         RuntimeSession session; session.Resize(800,400);

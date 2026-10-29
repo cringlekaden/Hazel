@@ -323,6 +323,15 @@ namespace Migration {
 namespace Migration {
     public class ScrollOwnerProbe : Hazel.Entity {
         public bool Ready,Revealed;public int Events;
+        public Hazel.Vector2 ObservedNormalized;
+        public Hazel.Vector2 ObservedOffset,ObservedRange;
+        public void ReadSeparateScrollInfo() {
+            var view=FindEntityByName("Scroll root").GetComponent<Hazel.UIScrollViewComponent>();
+            ObservedOffset=view.Offset;ObservedRange=view.Range;
+        }
+        public void ReadNormalized() {
+            ObservedNormalized=FindEntityByName("Scroll root").GetComponent<Hazel.UIScrollViewComponent>().Normalized;
+        }
         void OnCreate(){
             var view=FindEntityByName("Scroll root").GetComponent<Hazel.UIScrollViewComponent>();
             view.Normalized=new Hazel.Vector2(0,.5f);bool half=view.Offset.Y==100&&view.Range.Y==200;
@@ -332,6 +341,57 @@ namespace Migration {
         void OnUpdate(float dt){Hazel.UIEvent e;while(Hazel.GameUI.TryConsumeEvent(out e)){
             ++Events;if(e.Action=="reveal")Revealed=FindEntityByName("Scroll root").GetComponent<Hazel.UIScrollViewComponent>().EnsureVisible(FindEntityByName("Scroll far"),true);
         }}
+    }
+}
+
+namespace Migration {
+    public class UIFlagFailureProbe : Hazel.Entity {
+        public int Property;
+        public bool Rejected;
+        public void ChangeFlag() {
+            Rejected=false;
+            try {
+                var canvas=FindEntityByName("Atomic canvas").GetComponent<Hazel.UICanvasComponent>();
+                var control=FindEntityByName("Atomic button");
+                switch(Property) {
+                    case 0: canvas.Visible=false;break;
+                    case 1: canvas.Enabled=false;break;
+                    case 2: canvas.Modal=true;break;
+                    case 3: control.GetComponent<Hazel.UIButtonComponent>().Interactable=false;break;
+                    case 4: control.GetComponent<Hazel.UIRectComponent>().Visible=false;break;
+                    case 5: control.GetComponent<Hazel.UIRectComponent>().Enabled=false;break;
+                    default: throw new Exception("Unknown flag probe");
+                }
+            } catch(InvalidOperationException) { Rejected=true; }
+        }
+    }
+    public class RecoveryTargetProbe : Hazel.Entity {
+        private static RecoveryTargetProbe retired;
+        private static string clipToRemove;
+        private static int creates,destroys;
+        private static bool bodyReady,cleanupRejected;
+        public static void Configure(string clip) { clipToRemove=clip; }
+        void OnCreate() {
+            retired=this;++creates;
+            bodyReady=GetComponent<Hazel.Rigidbody2DComponent>()!=null;
+            GetComponent<Hazel.Rigidbody2DComponent>().LinearVelocity=new Hazel.Vector2(1,0);
+            Hazel.SaveData.Write("target-side-effect","accepted before native startup failure");
+            Hazel.Game.AudioVolume=.75f;
+            Hazel.Game.Exit();
+            Hazel.Scene.LoadScene("Scenes/RecoveryTrap.hazel");
+            // Remove only the test-owned dependency, after target loading has
+            // accepted it and before the next entity starts its native audio.
+            System.IO.File.Delete(clipToRemove);
+        }
+        void OnDestroy() {
+            ++destroys;
+            Hazel.Scene.LoadScene("Scenes/RecoveryTrap.hazel");
+            try { Hazel.Game.Exit(); } catch(InvalidOperationException) { cleanupRejected=true; }
+        }
+        public static int Report() {
+            return creates+10*destroys+(bodyReady?100:0)+(cleanupRejected?1000:0)+
+                   (retired!=null&&!retired.IsValid?10000:0);
+        }
     }
 }
 

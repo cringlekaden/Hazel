@@ -103,7 +103,14 @@ namespace Hazel {
     public class UIScrollViewComponent : Component {
         public Vector2 Offset {get{Vector2 offset,range,viewport,extent;InternalCalls.UI_ScrollInfo(Entity.CheckedID,out offset,out range,out viewport,out extent);return offset;}set{InternalCalls.UI_ScrollTo(Entity.CheckedID,ref value,false);}}
         public Vector2 Range {get{Vector2 offset,range,viewport,extent;InternalCalls.UI_ScrollInfo(Entity.CheckedID,out offset,out range,out viewport,out extent);return range;}}
-        public Vector2 Normalized {get{var o=Offset;var r=Range;return new Vector2(r.X>0?o.X/r.X:0,r.Y>0?o.Y/r.Y:0);}set{InternalCalls.UI_ScrollTo(Entity.CheckedID,ref value,true);}}
+        public Vector2 Normalized {
+            get {
+                Vector2 offset,range,viewport,extent;
+                InternalCalls.UI_ScrollInfo(Entity.CheckedID,out offset,out range,out viewport,out extent);
+                return new Vector2(range.X>0?offset.X/range.X:0,range.Y>0?offset.Y/range.Y:0);
+            }
+            set{InternalCalls.UI_ScrollTo(Entity.CheckedID,ref value,true);}
+        }
         public bool EnsureVisible(Entity target,bool focus=false)=>InternalCalls.UI_EnsureVisible(Entity.CheckedID,target==null?0:target.CheckedID,focus);
     }
     public class UISliderComponent : Component {

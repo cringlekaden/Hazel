@@ -43,6 +43,10 @@ Use `OnCreate()`, `OnUpdate(float)` and `OnDestroy()` for runtime behavior. Cach
 
 `Scene.LoadScene("Scenes/Level1.hazel")` requests a project-owned scene transition. The first accepted request wins until the next session boundary. Stop cancels pending work. See [SceneTransitions](../examples/SceneTransitions/README.md) and [authoring contracts](authoring-reliability.md).
 
+Loading/validation failure leaves the current runtime intact. A native failure after target startup begins retires that partial target and restarts the previous scene, preserving its scene/session identity but recreating scripts, physics, audio and UI state. Its component values remain on that scene; live managed fields restart from authored values. Reacquire script instances.
+
+Recovery discards failed-target exit/transition requests and retired input. Accepted storage/gain changes and arbitrary script side effects are not rolled back. If restarting the previous scene also fails, the session stops and propagates the error. The host can report `RuntimeSession::GetError()`; recovery is not a transaction over game code.
+
 ## Connect UI, storage and audio
 
 Author UI geometry/styles in Hazelnut. Assign a screen/control's **Event owner** to the controller entity; in its callback drain `GameUI.TryConsumeEvent`. Buttons on ordinary canvases can also use the documented unowned action-polling form. [Runtime UI](runtime-game-ui.md#connect-c-decisions) covers the distinction, silent setters and queued screen/tab requests; [UITutorial.cs](../examples/Sandbox/Assets/Scripts/Source/UITutorial.cs) is a complete example.

@@ -721,7 +721,27 @@ namespace Hazel {
     }
     static void UI_SetValue(uint64_t id,int property,bool value) {
         MonoException* failure=nullptr;
-        try{auto* scene=ScriptEngine::GetSceneContext();if(!scene)throw std::runtime_error("UI requires a runtime scene");scene->CheckThread();auto* target=UI_Value(id,property);if(!target)throw std::runtime_error("UI property needs a live UI component");if(*target!=value){*target=value;for(auto child:scene->GetSubtree(scene->GetEntityByUUID(id)))scene->RetireUI(child);scene->RefreshUI();}}
+        try {
+            auto* scene=ScriptEngine::GetSceneContext();
+            if(!scene)throw std::runtime_error("UI requires a runtime scene");
+            scene->CheckThread();
+            auto* target=UI_Value(id,property);
+            if(!target)throw std::runtime_error("UI property needs a live UI component");
+            if(*target!=value) {
+                const bool before=*target;
+                *target=value;
+                try {
+                    for(auto child:scene->GetSubtree(scene->GetEntityByUUID(id)))scene->RetireUI(child);
+                    scene->RefreshUI();
+                } catch(...) {
+                    *target=before;
+                    // Restore authored state, but never resurrect retired input.
+                    // An invalid host surface stays fail-closed until repaired.
+                    try { scene->RefreshUI(); } catch(...) {}
+                    throw;
+                }
+            }
+        }
         catch(const std::exception& e){failure=mono_get_exception_invalid_operation(e.what());}
         if(failure)mono_raise_exception(failure);
     }

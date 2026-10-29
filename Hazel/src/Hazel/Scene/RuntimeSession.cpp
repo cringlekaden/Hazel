@@ -122,10 +122,22 @@ namespace Hazel {
         m_Scene->SetAudioMasterVolume(m_AudioVolume);
         ScriptEngine::SetRuntimeSession(this);
         try { m_Scene->OnRuntimeStart(); m_Error.clear(); HZ_CORE_INFO("Runtime scene: {}", reference.generic_u8string()); }
-        catch (const std::runtime_error& error) {
-            m_Pending.reset(); m_Scene->OnRuntimeStop(); m_Scene = std::move(previous);
-            m_Scene->OnRuntimeStart();
-            m_Error = "Cannot start target scene: " + std::string(error.what()); HZ_CORE_ERROR("{}", m_Error);
+        catch (const std::exception& error) {
+            // Retire a partially started target just like Stop. Its OnDestroy
+            // callbacks must not submit work into the recovered session.
+            m_Stopping = true;
+            ScriptEngine::SetRuntimeSession(nullptr);
+            m_Scene->OnRuntimeStop();
+            m_Pending.reset();m_ExitRequested=false;
+            m_Scene = std::move(previous);m_Stopping=false;
+            m_Error = "Cannot start target scene: " + std::string(error.what());
+            // This is a restart of the previous scene, not rollback of scripts'
+            // arbitrary side effects (including accepted storage/gain changes).
+            m_Scene->SetAudioMasterVolume(m_AudioVolume);
+            ScriptEngine::SetRuntimeSession(this);
+            try { m_Scene->OnRuntimeStart(); }
+            catch (...) { Stop(); throw; }
+            HZ_CORE_ERROR("{}", m_Error);
         }
     }
     void RuntimeSession::Update(Timestep timestep) {

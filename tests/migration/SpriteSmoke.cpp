@@ -56,7 +56,65 @@ static void Logical(const std::filesystem::path& root) {
     auto deps=AuditSpriteAssets(root,{"sheet.hsprites"});Check(deps.size()==2,"Unloaded export closure incomplete");
     auto relocated=root/"relocated";std::filesystem::create_directory(relocated);std::filesystem::copy_file(root/"sheet.tga",relocated/"sheet.tga");std::filesystem::copy_file(root/"sheet.hsprites",relocated/"sheet.hsprites");Check(AuditSpriteAssets(relocated,{"sheet.hsprites"}).size()==2,"Relocated closure failed");
 }
+static void ReplacementFailure(const std::filesystem::path& root) {
+    const auto accepted=Read(root/"sheet.hsprites");
+    for(bool play:{false,true}) {
+        auto assets=CreateRef<ProjectAssets>(root);
+        auto sheet=assets->Sheet("sheet.hsprites");
+        const auto region=sheet->Regions[0].ID,clip=sheet->Clips[0].ID;
+        auto pinned=assets->Resolve(SpriteReference{"sheet.hsprites",region});
+        auto pinnedClip=assets->Clip({"sheet.hsprites",clip});
+        const auto texture=pinned->Texture->GetRendererID();
+        auto scene=CreateRef<Scene>();scene->SetAssets(assets);scene->OnViewportResize(64,64);
+        auto camera=scene->CreateEntity("Replacement camera");
+        camera.AddComponent<CameraComponent>().Camera.SetOrthographic(2,-10,10);
+        auto entity=scene->CreateEntity("Replacement sprite");
+        auto& sprite=entity.AddComponent<SpriteRendererComponent>();
+        sprite.Source=SpriteReference{"sheet.hsprites",region};
+        auto& animation=entity.AddComponent<SpriteAnimationComponent>();
+        animation.DefaultClip={"sheet.hsprites",clip};
+        const auto before=SceneSerializer(scene).CaptureAuthoredState();
+        FramebufferSpecification spec;spec.Width=spec.Height=64;
+        spec.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER};
+        auto target=Framebuffer::Create(spec);EditorCamera editor(30,1,.1f,1000);
+        editor.SetViewportSize(64,64);
+        if(play)scene->OnRuntimeStart();
+        auto draw=[&](bool fallback) {
+            target->Bind();RenderCommand::SetViewport(0,0,64,64);
+            RenderCommand::SetClearColor({0,0,0,1});RenderCommand::Clear();
+            if(play)scene->OnUpdateRuntime(0);else scene->OnUpdateEditor(0,editor);
+            unsigned char pixel[4]{};glReadBuffer(GL_COLOR_ATTACHMENT0);
+            glReadPixels(32,32,1,1,GL_RGBA,GL_UNSIGNED_BYTE,pixel);target->Unbind();
+            Check(pixel[0]>250&&pixel[1]<5&&(fallback?pixel[2]>250:pixel[2]<5),
+                  "Sprite replacement did not draw accepted art / diagnosed magenta fallback");
+        };
+        draw(false);const auto epoch=assets->Epoch();
+        FileSystem::WriteFileAtomically(root/"sheet.hsprites",[](std::ostream& out){out<<"SpriteSheet: {Version: 999}\n";});
+        Reject([&]{assets->Reload("sheet.hsprites");});
+        Check(assets->Epoch()==epoch+1,"Failed sprite replacement did not advance freshness epoch");
+        draw(true);
+        Check(!sprite.Resolved.Data&&!sprite.Resolved.Error.empty()&&
+              !animation.Resolved&&!animation.Error.empty()&&
+              glIsTexture(texture)&&pinnedClip->Frames[0]==pinned,
+              "Sprite failure lost diagnostics or destroyed explicitly pinned accepted resources");
+        const auto diagnostic=sprite.Resolved.Error;
+        Reject([&]{scene->ValidateSprites();});
+        FileSystem::WriteFileAtomically(root/"sheet.hsprites",[&](std::ostream& out){out<<accepted;});
+        draw(true);Reject([&]{assets->Resolve(SpriteReference{"sheet.hsprites",region});});
+        Check(assets->Epoch()==epoch+1&&sprite.Resolved.Error==diagnostic,
+              "Disk repair silently retried a cached sprite failure");
+        assets->Reload("sheet.hsprites");draw(false);scene->ValidateSprites();
+        Check(sprite.Resolved.Data&&sprite.Resolved.Data!=pinned&&sprite.Resolved.Error.empty()&&
+              animation.Resolved&&animation.Resolved!=pinnedClip&&animation.Error.empty()&&
+              assets->Epoch()==epoch+2&&SceneSerializer(scene).CaptureAuthoredState()==before,
+              "Explicit repaired sprite retry changed authored data or retained stale resolutions");
+        if(play)scene->OnRuntimeStop();
+    }
+    Check(Read(root/"sheet.hsprites")==accepted,"Replacement probe changed accepted fixture bytes");
+    std::cout<<"PASS: Edit/Play sprite invalid replacement, epochs/cached diagnostics, pinned GPU owners, fallback and explicit repaired retry\n";
+}
 static void Runtime(const std::filesystem::path& root,const std::filesystem::path& core,const std::filesystem::path& module) {
+    ReplacementFailure(root);
     auto assets=CreateRef<ProjectAssets>(root);auto sheet=assets->Sheet("sheet.hsprites");const auto region=sheet->Regions[0].ID;const auto clip=sheet->Clips[0].ID;
     auto resolved=assets->Resolve(SpriteReference{"sheet.hsprites",region});Check(assets->Resolve(SpriteReference{"sheet.hsprites",region})==resolved,"Region cache not reused");
     auto whole=assets->Texture("sheet.tga",TextureSpecification::FileDefaults());Check(whole!=resolved->Texture && whole->GetSpecification().GenerateMips,"Sampling identities collided");

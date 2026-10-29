@@ -43,6 +43,30 @@ static void UIScrollSessionChecks(const Ref<Project> &project)
         Check(owner && owner->GetFieldValue<bool>("Ready") &&
                   scene->GetUIScroll(200).Offset == glm::vec2(0),
               "Managed scroll offset/normalized/reveal API failed");
+        auto normalized=[&](float expected) {
+            auto klass=owner->GetScriptClass();
+            const auto checks=scene->GetUIDiagnostics().SourceChecks;
+            klass->InvokeMethod(owner->GetManagedObject(),klass->GetMethod("ReadNormalized",0));
+            Check(owner->GetFieldValue<glm::vec2>("ObservedNormalized")==glm::vec2(0,expected),
+                  "Normalized scroll ignored current offset/range or zero axis");
+            Check(scene->GetUIDiagnostics().SourceChecks==checks+1,
+                  "One normalized scroll read performed redundant source checks");
+            const auto info=scene->GetUIScroll(200);
+            const auto separate=scene->GetUIDiagnostics().SourceChecks;
+            klass->InvokeMethod(owner->GetManagedObject(),klass->GetMethod("ReadSeparateScrollInfo",0));
+            Check(scene->GetUIDiagnostics().SourceChecks==separate+2&&
+                  owner->GetFieldValue<glm::vec2>("ObservedOffset")==info.Offset&&
+                  owner->GetFieldValue<glm::vec2>("ObservedRange")==info.Range,
+                  "Separate scroll query control changed its values/source-check count");
+        };
+        scene->ScrollUITo(200,{0,100});normalized(.5f);
+        // Direct native edits must still be detected by the combined read.
+        scene->GetEntityByUUID(201).GetComponent<UIRectComponent>().FixedSize.y=500;
+        normalized(.25f);
+        scene->GetEntityByUUID(201).GetComponent<UIRectComponent>().FixedSize.y=100;
+        normalized(0);
+        scene->GetEntityByUUID(201).GetComponent<UIRectComponent>().FixedSize.y=300;
+        scene->ScrollUITo(200,{});
         DeviceSample sample;
         sample.Point = {390, 290};
         auto route = [&](bool enabled = true) {
@@ -94,6 +118,6 @@ static void UIScrollSessionChecks(const Ref<Project> &project)
         Check(SceneSerializer(authored).CaptureAuthoredState() == baseline,
               "Runtime scroll entered authored state/history");
     }
-    std::cout << "PASS: managed scroll offsets/normalized/reveal, remapped keyboard/controller "
+    std::cout << "PASS: managed scroll offsets/normalized/reveal, one source check per normalized read with exact native-write/zero-range detection, remapped keyboard/controller "
                  "Scroll and three isolated Play/Stop cycles\n";
 }
