@@ -52,6 +52,12 @@ Both `--name` and `--output` are required. This incrementally builds Release Nut
 
 ## Export from Hazelnut
 
+macOS currently supports source SDK discovery/readiness and script compilation;
+export/package support is explicitly pending. Its readiness result does not
+disable **Project > Build Scripts**. Use the [Mac workflow](design/macos-port.md)
+for current preparation and qualification status. The export instructions below
+describe the maintained Windows/Linux paths.
+
 Save the desired startup scene in **Project > Project Settings…**, then choose **Project > Export Game…**. Set an absolute output folder and a portable name (letters, digits, `_` or `-`, beginning with a letter/digit). **Export Release Game** runs the targeted sequence above. Save/continue or explicitly use saved content when prompted. Follow progress in **View > Console** and use **Open Output Folder** when complete.
 
 ![Hazelnut Export Game](images/hazelnut-export.png)

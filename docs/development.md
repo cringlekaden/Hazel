@@ -95,7 +95,7 @@ Sheet/image/scene arguments are asset-relative; use a disposable project for wri
 | --- | --- |
 | Missing pkg-config module/compiler/targeting pack | Install the named prerequisite from [getting started](getting-started.md#prerequisites-installed-by-you); setup never installs system packages |
 | Script readiness rejects selected Mono | Inspect the explicit prefix/missing-file list; provide compiler + 4.7.2 reference profile, not only a runtime. `HAZEL_MONO_SDK` is authoritative; it is not silently replaced |
-| Editor tools not found | Run `python3 scripts/hazel.py authoring-preflight --operation scripts` or `--operation export`; select the prepared checkout root and interpreter in Preferences |
+| Editor tools not found | Select the source checkout root, not bin/Resources. Build the editor's configuration and run `python3 scripts/hazel.py authoring-preflight --config Debug --operation scripts` (or Release). Mac export remains unsupported independently of script readiness; see the [Mac SDK workflow](design/macos-port.md#source-sdk-integration-repair--2026-10-29) |
 | Project script class/module missing | Build matching project scripts; inspect Console, descriptor ScriptModulePath and typed field/class diagnostics. `run` does not compile |
 | Wrong/missing resource after relocation | Keep the complete archive layout; inspect `LAUNCH.txt`, Resources/mono roots and project-relative references. Do not add a source-tree fallback |
 | GLFW cannot open display | Provide X11/Xwayland or Xvfb; retain `-noreset` for repeated CI client lifecycles |

@@ -96,6 +96,82 @@ and framebuffer/picking acceptance, managed Play/Stop, native-service checks,
 then relocatable bundles and Debug/Release qualification. Existing GLFW, shared
 OpenGL and separate Windows/Linux/macOS adapters remain the architecture.
 
+## Source SDK integration repair — 2026-10-29
+
+The owner confirmed Xcode build/launch. SDK selection then exposed hardcoded
+Linux/x86_64/Debug paths in `HazelSDK.cpp`. These are now replaced by the shared
+target records in `scripts/internal/toolchain.json`: Premake supplies a compiled
+`BuildIdentity`, and Python's target selector reads the same records. Installed
+native consumers never query the host to guess their target or product paths.
+SDK validation distinguishes missing/invalid selections, incompatible metadata,
+compatible checkouts needing preparation, and prepared configuration-specific
+products. Managed/native contract probes and compiler/profile readiness remain
+separate from file discovery. An explicit invalid selection never falls back.
+
+Automatic development discovery recognizes only the bounded executable layout
+`bin/<configuration>-<system>-<architecture>/Hazelnut`, or an explicit application
+metadata locator. It does not use cwd or walk arbitrary ancestors. Source SDK
+means the checkout root containing `premake5.lua` and `scripts/hazel.py`.
+Hazelnut's generated Xcode dependencies include HazelProject, PackageAudit and
+ScriptCore. Build that scheme in the editor's configuration; Release/Dist editors
+use Release tooling, Debug editors use Debug. No Linux path or Debug fallback is
+used for a requested script configuration.
+
+For a fresh source SDK use the dependency/generate/build ladder above. For an
+already prepared checkout, regenerate and build Hazelnut in Xcode, or run
+`python3 scripts/hazel.py build --config Debug` (substitute Release as needed).
+Then open **Project > Build Scripts**: script readiness probes the selected SDK,
+Python, native authoring contract, ScriptCore contract, mcs and 4.7.2 profile.
+Build Scripts publishes/reloads the project's assembly. Mac export readiness
+explicitly reports unimplemented support without blocking script readiness.
+
+Python discovery belongs to `Toolchain`: explicit preferences and SDK-owned
+interpreters retain precedence, then macOS considers stable Homebrew/python.org
+locations and the system interpreter, validating complete executable paths.
+No Terminal PATH is required. Native Xcode selection belongs to the Python
+producer boundary: explicit developer-directory overrides, remembered local
+selection, selected full Xcode, then bounded standard/external Applications
+locations. Generation records Xcode and Mono selections in ignored
+`build/tools/macos-toolchain.json`; GUI phases need not inherit Terminal's
+environment. Script-only operations do not require Xcode discovery at import.
+
+Generated launch arguments are quoted for spaces/Unicode. Regeneration preserves
+existing scheme arguments, environment and launch configuration while refreshing
+generated target IDs. The optional verification scheme uses a private profile
+and a test-only LaunchServices wrapper, not a distributable app package.
+
+Focused verification:
+
+- `python3 tests/macos/sdk_workflow.py`: Windows/Linux/Mac target selection,
+  unsupported combinations, explicit Xcode failure, remembered producer roots
+  and preservation of customized schemes.
+- Generate with `--tests`, build `MacOSSDKIntegration` Debug, then run it with
+  checkout and a fresh private directory followed by `initial`. It tests SDK
+  classification, explicit precedence, missing configuration/foreign target
+  metadata, Unicode paths, missing Python, real editor tool-service readiness,
+  native project creation, script compilation, export rejection and persisted
+  selection after process restart. Run with `PATH=/usr/bin:/bin` and unset
+  developer-directory variables. The service suite passed on this Mac.
+- `python3 tests/macos/sdk_workflow.py --gui-scheme` prepares **Hazelnut SDK
+  Verification** without changing the owner's normal scheme. Actual Xcode GUI
+  verification showed automatic SDK Ready at the checkout, restricted-PATH
+  Python, successful Check Readiness, and Build Scripts: Succeeded with assembly
+  reload, using a disposable Unicode-path project/profile.
+
+The platform review retained existing resource/settings/save ownership,
+validated absolute child tools, explicit OS source selection, and renderer
+capability-based feature selection. Editor shortcuts already accept Control or
+Super; runtime bindings remain separately owned. Logical/framebuffer dimensions
+already have distinct GLFW/common services. No generic window/input replacement
+or new service locator was introduced.
+
+Specific remaining work: full Retina/drag/picking interaction; native watcher
+replacement/coalescing/shutdown stress; complete Debug/Release authoring and
+Windows/Linux runtime qualification; production bundle/native closure/signing;
+full Mac test/package runners. Their current entry points remain explicit about
+unsupported scope. Linux/Windows fixture contracts were updated to use compiled
+identity, but no Windows/Linux runtime result is claimed from these Mac checks.
+
 ## Historical feasibility evidence — 2026-10-29
 
 The initial run used CLT, Apple Clang 17.0.0 and SDK 26.2. Pinned Premake
