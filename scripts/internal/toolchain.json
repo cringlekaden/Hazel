@@ -1,4 +1,9 @@
 {
   "premake": "71f2d33946947e9cf704f00c24200381e360f593",
-  "pyyaml": "6.0.3"
+  "pyyaml": "6.0.3",
+  "targets": {
+    "windows": {"host": "Windows", "premake_system": "windows", "architecture": "x86_64", "premake_architecture": "x64", "executable_suffix": ".exe", "export_supported": true},
+    "linux": {"host": "Linux", "premake_system": "linux", "architecture": "x86_64", "premake_architecture": "x64", "executable_suffix": "", "export_supported": true},
+    "macos": {"host": "Darwin", "premake_system": "macosx", "architecture": "arm64", "premake_architecture": "ARM64", "executable_suffix": "", "deployment_target": "27.0", "export_supported": false}
+  }
 }

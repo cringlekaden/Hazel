@@ -3,7 +3,7 @@
 #include <string>
 namespace Hazel
 {
-enum class SDKState { NotConfigured, Missing, Incompatible, Ready };
+enum class SDKState { NotConfigured, Missing, Incompatible, PreparationRequired, Ready };
 struct SDKSelection
 {
     SDKState State = SDKState::NotConfigured;
@@ -21,7 +21,8 @@ class HazelSDK
     static SDKSelection Discover(const std::filesystem::path &configured,
                                  const std::filesystem::path &executable);
     static SDKSelection Validate(const std::filesystem::path &root,
-                                 const std::string &source = "Explicit override");
+                                 const std::string &source = "Explicit override",
+                                 const std::string &configuration = {});
     static const char *SetupInstructions();
 };
 } // namespace Hazel

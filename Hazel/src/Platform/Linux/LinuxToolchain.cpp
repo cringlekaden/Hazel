@@ -3,6 +3,7 @@
 #include "Hazel/Utils/Toolchain.h"
 namespace Hazel
 {
+std::filesystem::path Toolchain::OwnedPythonExecutable(const std::filesystem::path& sdk) {return sdk/"build/tools/python-runtime/bin/python3";}
 std::vector<std::filesystem::path> Toolchain::PlatformPythonCandidates()
 {
 	std::vector<std::filesystem::path> paths = {"/usr/bin/python3", "/usr/local/bin/python3"};

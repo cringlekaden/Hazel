@@ -56,11 +56,7 @@ PythonSelection Toolchain::DiscoverPython(const std::filesystem::path &configure
 		return ProbePython(configured, "Configured in Editor Preferences");
 	if (!sdk.empty())
 	{
-#ifdef HZ_PLATFORM_WINDOWS
-		const auto owned = sdk / "build/tools/python-runtime/python.exe";
-#else
-		const auto owned = sdk / "build/tools/python-runtime/bin/python3";
-#endif
+        const auto owned = OwnedPythonExecutable(sdk);
 		if (std::filesystem::is_regular_file(owned))
 			return ProbePython(owned, "SDK-owned tooling interpreter");
 	}

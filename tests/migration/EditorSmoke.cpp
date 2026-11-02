@@ -6,6 +6,7 @@
 #include "Hazel/Events/MouseEvent.h"
 #include "UI/PropertyUI.h"
 #include "Hazel/Core/FileSystem.h"
+#include "Hazel/Core/BuildIdentity.h"
 #include "Authoring/EditorPreferences.h"
 #include "Hazel/Core/WindowCaption.h"
 #include "Authoring/RendererLaunch.h"
@@ -617,27 +618,22 @@ private:
     }
     void SDKChecks() {
         const auto folder=m_Directory/std::filesystem::u8path(u8"SDK space é");
-#ifdef HZ_PLATFORM_WINDOWS
-        const std::string platform="windows";const char* premake="build/tools/premake-core/bin/release/premake5.exe";
-#else
-        const std::string platform="linux";const char* premake="build/tools/premake-core/bin/release/premake5";
-#endif
+        const auto identity=BuildIdentity::Current();
+        const std::string platform=identity.System;
+        const auto configuration=identity.ToolConfiguration();
+        const auto premakePath=identity.Premake({}).generic_u8string();const char* premake=premakePath.c_str();
         auto write=[](const auto& path,const std::string& text){std::filesystem::create_directories(path.parent_path());FileSystem::WriteFileAtomically(path,[&](auto& out){out<<text;});};
         for(const char* file:{"premake5.lua","scripts/hazel.py","scripts/internal/authoring.py","scripts/internal/packaging.py",
                               "scripts/internal/child_tools.py","Hazel/Resources/Templates/project.lua", "Hazel/Resources/Templates/Entity.cs",premake})write(folder/file,"fixture");
         const auto pins=folder/"scripts/internal/toolchain.json";
         const auto contract=std::string("{\"premake\":\"")+HAZEL_TOOLCHAIN_PREMAKE+"\",\"pyyaml\":\""+HAZEL_TOOLCHAIN_PYYAML+"\"}";
-        write(pins,contract);
+        auto targetMetadata=YAML::Load(contract);targetMetadata["targets"][identity.System]["architecture"]=identity.Architecture;targetMetadata["targets"][identity.System]["executable_suffix"]=identity.ExecutableSuffix;YAML::Emitter emitter;emitter<<targetMetadata;const std::string targetContract=emitter.c_str();write(pins,targetContract);
         write(folder/"Hazel/Resources/Templates/contract.json","{\"Version\":1,\"Generator\":1,\"ScriptCore\":1,\"Template\":1}");
-        write(folder/"bin"/("Debug-"+platform+"-x86_64")/"PackageAudit/PackageAudit.exe","fixture");
-#ifdef HZ_PLATFORM_WINDOWS
-        write(folder/"bin"/("Debug-"+platform+"-x86_64")/"HazelProject/HazelProject.exe","fixture");
-#else
-        write(folder/"bin"/("Debug-"+platform+"-x86_64")/"HazelProject/HazelProject","fixture");
-#endif
-        const auto core=folder/"bin"/("Debug-"+platform+"-x86_64")/"Hazel-ScriptCore/Hazel-ScriptCore.dll";
-        Check(HazelSDK::Validate(folder).State==SDKState::Missing,"Unprepared SDK was reported ready");write(core,"fixture");
-        const auto exe=folder/"bin"/("Debug-"+platform+"-x86_64")/"Hazelnut/Hazelnut";
+        write(folder/"bin"/(identity.OutputName(configuration))/"PackageAudit/PackageAudit.exe","fixture");
+        write(identity.NativeTool(folder,configuration,"HazelProject"),"fixture");
+        const auto core=folder/"bin"/(identity.OutputName(configuration))/"Hazel-ScriptCore/Hazel-ScriptCore.dll";
+        Check(HazelSDK::Validate(folder).State==SDKState::PreparationRequired,"Unprepared SDK was reported ready");write(core,"fixture");
+        const auto exe=folder/"bin"/(identity.OutputName(configuration))/"Hazelnut/Hazelnut";
         write(exe,"fixture");
         const auto other=m_Directory/"Working directory unrelated to SDK";std::filesystem::create_directory(other);
         const auto original=std::filesystem::current_path();std::filesystem::current_path(other);
@@ -652,9 +648,9 @@ private:
         Check(missing.State==SDKState::Missing&&missing.Source=="Explicit override","Stale explicit SDK silently fell back");
         Check(HazelSDK::Discover("relative",exe).State==SDKState::Incompatible,"Relative SDK used cwd");
         write(pins,"{\"premake\":\"incompatible\",\"pyyaml\":\"0\"}");
-        Check(HazelSDK::Discover(folder,exe).State==SDKState::Incompatible,"Incompatible SDK toolchain pins accepted");write(pins,contract);
+        Check(HazelSDK::Discover(folder,exe).State==SDKState::Incompatible,"Incompatible SDK toolchain pins accepted");write(pins,targetContract);
         const auto metadata=outside.parent_path()/"build.json";
-        write(metadata,"{\"platform\":\""+platform+"\",\"architecture\":\"x86_64\"}");
+        write(metadata,"{\"platform\":\""+platform+"\",\"architecture\":\""+identity.Architecture+"\"}");
         Check(HazelSDK::Discover({},outside).State==SDKState::NotConfigured,"Runtime package pretended to contain SDK");
         write(metadata,"{\"hazel_sdk\":\"../SDK space é\"}");
         Check(HazelSDK::Discover({},outside)&&HazelSDK::Discover({},outside).Root==std::filesystem::weakly_canonical(folder),

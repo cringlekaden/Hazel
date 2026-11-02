@@ -16,28 +16,12 @@ import sys
 import urllib.request
 
 ROOT = Path(__file__).resolve().parent.parent
-_HOST_SYSTEM = platform.system().lower()
-if os.name == 'nt':
-    SYSTEM = 'windows'
-elif _HOST_SYSTEM == 'linux':
-    SYSTEM = 'linux'
-elif _HOST_SYSTEM == 'darwin':
-    SYSTEM = 'macos'
-else:
-    raise RuntimeError('Unsupported host operating system: ' + platform.system())
-ARCHITECTURE = 'arm64' if SYSTEM == 'macos' else 'x86_64'
-MACOS_DEPLOYMENT_TARGET = '27.0'
-if SYSTEM == 'macos':
-    developer = os.environ.get('HAZEL_DEVELOPER_DIR') or os.environ.get('DEVELOPER_DIR')
-    if not developer:
-        candidates = [Path('/Volumes/External/Applications/Xcode.app/Contents/Developer')]
-        candidates += sorted(Path('/Applications').glob('Xcode*.app/Contents/Developer'))
-        developer = next((str(p) for p in candidates if (p / 'usr/bin/xcodebuild').is_file()), None)
-    if not developer or not (Path(developer) / 'usr/bin/xcodebuild').is_file():
-        raise RuntimeError('Select full Xcode with HAZEL_DEVELOPER_DIR=/path/Xcode.app/Contents/Developer')
-    os.environ['DEVELOPER_DIR'] = developer
-    os.environ['MACOSX_DEPLOYMENT_TARGET'] = MACOS_DEPLOYMENT_TARGET
 PINS = json.loads((ROOT / 'scripts/internal/toolchain.json').read_text())
+from internal.target import host_target
+SYSTEM, TARGET = host_target(PINS['targets'])
+ARCHITECTURE = TARGET['architecture']
+EXECUTABLE_SUFFIX = TARGET['executable_suffix']
+MACOS_DEPLOYMENT_TARGET = PINS['targets']['macos']['deployment_target']
 
 
 def run(args, cwd=ROOT, env=None, **kwargs):
@@ -70,7 +54,9 @@ def vs_toolchain(require_cpp=True):
 def macos_toolchain():
     if SYSTEM != 'macos':
         raise RuntimeError('macOS toolchain inspection requested on ' + SYSTEM)
-    selected = Path(output(['xcode-select', '-p']))
+    from internal.macos_toolchain import select
+    selected = select(ROOT)
+    os.environ['MACOSX_DEPLOYMENT_TARGET'] = MACOS_DEPLOYMENT_TARGET
     sdk = Path(output(['xcrun', '--sdk', 'macosx', '--show-sdk-path']))
     compiler = Path(output(['xcrun', '--sdk', 'macosx', '--find', 'clang']))
     return {
@@ -143,6 +129,7 @@ def premake():
             bootstrap.write_text((owned/'Bootstrap.mak').read_text().replace('-j`getconf _NPROCESSORS_ONLN`', '-j2'))
             run(['make', '-f', bootstrap, 'linux', '-j2', 'PREMAKE_OPTS=--curl-src=none'], cwd=owned)
         else:
+            macos_toolchain()
             bootstrap = ROOT / 'build/tools/PremakeBootstrap.mak'
             bootstrap.write_text((owned/'Bootstrap.mak').read_text().replace('-j`getconf _NPROCESSORS_ONLN`', '-j2'))
             env = os.environ.copy()
@@ -161,8 +148,12 @@ def mono_prefix():
         return ROOT / 'Hazel/vendor/mono'
     explicit = os.environ.get('HAZEL_MONO_SDK')
     if SYSTEM == 'macos':
+        selection = ROOT / 'build/tools/macos-toolchain.json'
+        if not explicit and selection.is_file():
+            remembered = json.loads(selection.read_text()).get('mono_sdk')
+            if remembered: explicit = str(ROOT / remembered)
         prefix = Path(explicit).resolve() if explicit else ROOT / 'build/dependencies/mono/macos-arm64/sdk'
-        if not explicit:
+        if prefix == ROOT / 'build/dependencies/mono/macos-arm64/sdk':
             run([sys.executable, ROOT / 'scripts/macos/prepare-mono-sdk.py'])
         required = ['bin/mono', 'include/mono-2.0/mono/jit/jit.h', 'lib/libmonosgen-2.0.dylib',
                     'lib/mono/4.5/mscorlib.dll', 'lib/mono/4.5/mcs.exe',
@@ -211,6 +202,7 @@ def mono_command(prefix):
 
 def dependency_digest():
     digest = hashlib.sha256()
+    digest.update(json.dumps(TARGET, sort_keys=True).encode())
     for name in ('build-shader-tools.py', 'shader-workspace.lua', 'generate-shader-inputs.py',
                  'shader-sources.json', 'shader-tools.json', 'shader-tools-compat.h'):
         digest.update(name.encode()); digest.update((ROOT / 'scripts/dependencies' / name).read_bytes())
@@ -230,7 +222,11 @@ def dependencies(configuration, generator):
                  all((sdk / 'include' / name).is_file() for name in ('shaderc/shaderc.hpp', 'spirv_cross/spirv_glsl.hpp', 'spirv-tools/libspirv.h')))
         if SYSTEM == 'macos':
             toolchain = macos_toolchain()
-            ready = ready and manifest.get('sdk_version') == toolchain['sdk_version'] and manifest.get('deployment_target') == MACOS_DEPLOYMENT_TARGET
+            ready = (ready and manifest.get('sdk_version') == toolchain['sdk_version'] and
+                     manifest.get('deployment_target') == MACOS_DEPLOYMENT_TARGET and
+                     manifest.get('compiler_version') == toolchain['compiler_version'] and
+                     manifest.get('compiler') == output(['xcrun','--sdk','macosx','--find','clang++']) and
+                     manifest.get('sdk') == toolchain['sdk_path'])
     except (OSError, KeyError, ValueError):
         ready = False
     if not ready:
@@ -243,11 +239,13 @@ def dependencies(configuration, generator):
 
 def generate_macos(tests=False):
     diagnose(report=False)
+    from internal.macos_toolchain import remember
     readiness = subprocess.run(['xcodebuild', '-checkFirstLaunchStatus'])
     if readiness.returncode:
         print('Xcode first-launch status is incomplete; generation can proceed, builds may require owner setup.', flush=True)
     generator = premake()
     prefix = mono_prefix()
+    remember(ROOT, Path(os.environ['DEVELOPER_DIR']), prefix)
     os.environ['HAZEL_PYTHON'] = sys.executable
     run([generator, '--mono-root=' + str(prefix), *(['--migration-tests'] if tests else []), 'xcode4'])
     from macos.schemes import generate
@@ -257,6 +255,7 @@ def generate_macos(tests=False):
 def build(configuration, tests=False, database=False, targets=None):
     if SYSTEM == 'macos':
         if database: raise RuntimeError('The Bear database workflow is Linux-only; use Xcode indexing on macOS')
+        macos_toolchain()
         dependencies(configuration, premake())
         generate_macos(tests)
         for target in targets or ('Hazelnut', 'Nutella'):
@@ -275,7 +274,7 @@ def build(configuration, tests=False, database=False, targets=None):
     if SYSTEM == 'windows':
         command = [vs_toolchain()[1], ROOT / 'Hazel.sln', '/m:2', f'/p:Configuration={configuration}', '/p:Platform=x64', '/verbosity:minimal']
     else:
-        command = ['make', f'config={configuration.lower()}', '-j2', 'CSC=' + shlex.join(map(str, mono_command(prefix)))]
+        command = ['make', f'config={configuration.lower()}', '-j2', 'CSC=' + shlex.join(map(str, [*mono_command(prefix), '-sdk:4.7.2']))]
         numbers = tuple(map(int, output(['make', '--version']).splitlines()[0].split()[-1].split('.')[:2]))
         if numbers >= (4, 4): command += ['--jobserver-style=pipe']
     if targets:
@@ -377,7 +376,7 @@ def script_build(project, configuration):
         command = [vs_toolchain(False)[1], scripts / ((config.get('ScriptProject') or config['Name']) + '.sln'), '/m:2', f'/p:Configuration={configuration}', '/p:Platform=x64']
         if rebuild: command += ['/t:Rebuild']
     else:
-        command = ['make', f'config={configuration.lower()}', '-j2', 'CSC=' + shlex.join(map(str, mono_command(prefix)))]
+        command = ['make', f'config={configuration.lower()}', '-j2', 'CSC=' + shlex.join(map(str, [*mono_command(prefix), '-sdk:4.7.2']))]
         # Premake's C# Makefile does not make an external HintPath DLL a target
         # prerequisite. API/build-definition changes must invalidate this output.
         if rebuild: command += ['--always-make']
@@ -464,12 +463,14 @@ def main():
     p = sub.add_parser('script-build'); p.add_argument('project', type=Path); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     p = sub.add_parser('test-packages'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
     p = sub.add_parser('test-games'); p.add_argument('--config', choices=('Debug','Release'), default='Debug'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native'); p.add_argument('--packages', action='store_true'); p.add_argument('--output', type=Path, default=ROOT/'dist/games')
-    p = sub.add_parser('authoring-preflight'); p.add_argument('--operation', choices=('scripts','export'), default='scripts')
+    p = sub.add_parser('authoring-preflight'); p.add_argument('--operation', choices=('scripts','export'), default='scripts'); p.add_argument('--config', choices=('Debug','Release'), default='Debug')
     p = sub.add_parser('new-project'); p.add_argument('--name', required=True); p.add_argument('--identifier', required=True); p.add_argument('--destination', type=Path, required=True); p.add_argument('--build-scripts', action='store_true', help='Compile after native creation; build failure retains editable project')
     p = sub.add_parser('editor-export'); p.add_argument('project', type=Path); p.add_argument('--name', required=True); p.add_argument('--output', type=Path, required=True)
     p = sub.add_parser('package'); p.add_argument('--app', choices=('Hazelnut', 'Nutella', 'all'), default='all'); p.add_argument('--name', help='Archive/directory name for a single application package'); p.add_argument('--project', type=Path, default=ROOT/'examples/SceneTransitions/SceneTransitions.hproj'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--external-assets', choices=('reject',), default='reject', help='External references must be moved into the project and saved before packaging')
     args = parser.parse_args()
-    if SYSTEM == 'macos' and args.action in ('package', 'editor-export', 'test', 'test-games', 'test-packages'):
+    if args.action in ('package', 'editor-export') and not TARGET['export_supported']:
+        raise RuntimeError('Export/package support is not yet implemented for '+SYSTEM+'; script compilation is supported separately')
+    if SYSTEM == 'macos' and args.action in ('test', 'test-games', 'test-packages'):
         raise RuntimeError('This macOS workflow awaits qualification; see docs/design/macos-port.md for the supported focused Xcode checks')
     if args.action == 'diagnose':
         diagnose(); return
@@ -491,7 +492,7 @@ def main():
     if args.action in ('editor-export','script-build','authoring-preflight') or (args.action=='new-project' and args.build_scripts):
         from internal.child_tools import prepare
         exporting = args.action == 'editor-export' or (args.action == 'authoring-preflight' and args.operation == 'export')
-        prepare(['git','cmd'] if SYSTEM=='windows' else (['git','make','clang++','ar','tar','xcrun','xcodebuild'] if SYSTEM=='macos' else (['git','make','g++','ar','pkg-config','tar','ldd'] if exporting else ['git','make'])))
+        prepare(['git','cmd'] if SYSTEM=='windows' else (['git','make','g++','ar','pkg-config','tar','ldd'] if exporting and SYSTEM=='linux' else ['git','make']))
         if SYSTEM=='windows': vs_toolchain(exporting)
     if args.action == 'run':
         with build_lock(): stage(args.config)
@@ -503,7 +504,7 @@ def main():
         return
     if args.action == 'authoring-preflight':
         from internal.authoring import preflight
-        preflight(args.operation)
+        preflight(args.operation, args.config)
         return
     with build_lock():
         if args.action in ('setup', 'build', 'database'):

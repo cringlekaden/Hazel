@@ -24,5 +24,6 @@ class Toolchain
 
   private:
 	static std::vector<std::filesystem::path> PlatformPythonCandidates();
+	static std::filesystem::path OwnedPythonExecutable(const std::filesystem::path& sdk);
 };
 } // namespace Hazel

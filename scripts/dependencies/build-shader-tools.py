@@ -4,7 +4,6 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import platform
 import os
 import shutil
 import subprocess
@@ -59,7 +58,10 @@ def build(configuration, options, sources, system, architecture):
             try:
                 previous = json.loads((prefix / 'shader-tools.json').read_text())
                 same_toolchain = (previous.get('sdk_version') == output('xcrun', '--sdk', 'macosx', '--show-sdk-version') and
-                                  previous.get('deployment_target') == os.environ.get('MACOSX_DEPLOYMENT_TARGET'))
+                                  previous.get('deployment_target') == os.environ.get('MACOSX_DEPLOYMENT_TARGET') and
+                                  previous.get('compiler') == output('xcrun', '--sdk', 'macosx', '--find', 'clang++') and
+                                  previous.get('compiler_version') == output('xcrun', 'clang++', '--version').splitlines()[0] and
+                                  previous.get('sdk') == output('xcrun', '--sdk', 'macosx', '--show-sdk-path'))
             except (OSError, ValueError):
                 same_toolchain = False
             if not same_toolchain: make_arguments.append('--always-make')
@@ -131,6 +133,7 @@ def build(configuration, options, sources, system, architecture):
                     premake=output(options.premake, f'--file={ROOT / "scripts/dependencies/shader-workspace.lua"}', '--version').splitlines()[0],
                     source_manifest_sha256=hashlib.sha256((ROOT / 'scripts/dependencies/shader-sources.json').read_bytes()).hexdigest(),
                     compiler=(output('xcrun', '--sdk', 'macosx', '--find', 'clang++') if system=='macos' else None),
+                    compiler_version=(output('xcrun', 'clang++', '--version').splitlines()[0] if system=='macos' else None),
                     sdk=(output('xcrun', '--sdk', 'macosx', '--show-sdk-path') if system=='macos' else None),
                     sdk_version=(output('xcrun', '--sdk', 'macosx', '--show-sdk-version') if system=='macos' else None),
                     deployment_target=(os.environ.get('MACOSX_DEPLOYMENT_TARGET') if system=='macos' else None),
@@ -147,16 +150,15 @@ def main():
     parser.add_argument('--msbuild', default='msbuild')
     parser.add_argument('--prepare-only', action='store_true', help='Fetch/verify pins and generate inputs/projects without compilation')
     options = parser.parse_args()
-    host = platform.system().lower()
-    system = 'macos' if host == 'darwin' else host
-    machine = platform.machine().lower()
-    if system in ('linux', 'windows') and machine in ('x86_64', 'amd64'):
-        architecture = 'x86_64'
-    elif system == 'macos' and machine in ('arm64', 'aarch64'):
-        architecture = 'arm64'
-        os.environ.setdefault('MACOSX_DEPLOYMENT_TARGET', '27.0')
-    else:
-        parser.error('Supported dependency targets are Windows/Linux x86_64 and native macOS arm64')
+    sys.path.insert(0, str(ROOT / 'scripts'))
+    from internal.target import host_target
+    toolchain = json.loads((ROOT / 'scripts/internal/toolchain.json').read_text())
+    system, target = host_target(toolchain['targets'])
+    architecture = target['architecture']
+    if system == 'macos':
+        from internal.macos_toolchain import select
+        select(ROOT)
+        os.environ.setdefault('MACOSX_DEPLOYMENT_TARGET', target['deployment_target'])
     source_root = ROOT / 'build/dependencies/sources'
     sources = {'shaderc': source_root / 'shaderc', 'spirv-cross': source_root / 'spirv-cross'}
     for name in ('glslang', 'spirv-headers', 'spirv-tools'):

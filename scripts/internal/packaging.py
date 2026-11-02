@@ -182,6 +182,8 @@ def linux_license(source, destination):
 
 
 def native_closure(executable, package):
+    if not hz.TARGET['export_supported']:
+        raise RuntimeError('Native packaging is not yet implemented for '+hz.SYSTEM)
     records = {}
     if hz.SYSTEM == 'linux':
         prefix = hz.mono_prefix()
@@ -240,7 +242,7 @@ def licenses(package):
                 if notice.is_file() and notice.name.lower().startswith(('license', 'licence', 'copying', 'copyright', 'notice')):
                     hz.copy_changed(notice, package/'licenses/vendor'/source.name/notice.relative_to(source))
     for config in ('Release',):
-        path = hz.ROOT/'build/dependencies/install'/f'{config}-{hz.SYSTEM}-x86_64/licenses'
+        path = hz.ROOT/'build/dependencies/install'/f'{config}-{hz.SYSTEM}-{hz.ARCHITECTURE}/licenses'
         hz.copy_tree(path, package/'licenses/shader-tools')
     hz.copy_changed(hz.ROOT/'Hazel/Resources/fonts/opensans/LICENSE.txt', package/'licenses/OpenSans/LICENSE.txt')
     hz.copy_tree(hz.ROOT/'scripts/dependencies/licenses/typography',package/'licenses/typography')
@@ -269,6 +271,8 @@ def copy_project(descriptor, assets, destination):
 
 
 def package(app, project, output, archive_name=None):
+    if not hz.TARGET['export_supported']:
+        raise RuntimeError('Export/package support is not yet implemented for '+hz.SYSTEM)
     if archive_name and (app=='all' or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*',archive_name)):
         raise RuntimeError('--name requires one application and a portable archive name')
     descriptor, config, assets = load_project(project)
@@ -279,7 +283,7 @@ def package(app, project, output, archive_name=None):
     commit = hz.output(['git', '-C', hz.ROOT, 'rev-parse', 'HEAD'])
     names = ('Hazelnut', 'Nutella') if app == 'all' else (app,)
     for name in names:
-        tag = f'{archive_name or name}-{hz.SYSTEM}-x86_64-Release'
+        tag = f'{archive_name or name}-{hz.SYSTEM}-{hz.ARCHITECTURE}-Release'
         with tempfile.TemporaryDirectory(prefix='.package-', dir=output) as temporary:
             path = Path(temporary)/tag; path.mkdir()
             suffix = '.exe' if hz.SYSTEM == 'windows' else ''
@@ -306,9 +310,9 @@ def package(app, project, output, archive_name=None):
             copy_project(descriptor, assets, path if name == 'Nutella' else path/'Example')
             licenses(path)
             closure = native_closure(executable, path)
-            metadata = {'commit': commit, 'configuration': 'Release', 'platform': hz.SYSTEM, 'architecture': 'x86_64', 'project': descriptor.name, 'native_dependencies': closure, 'source_dirty': bool(hz.output(['git', '-C', hz.ROOT, 'status', '--porcelain'])), 'libc': list(platform.libc_ver()) if hz.SYSTEM=='linux' else None, 'shader_tools': json.loads((hz.ROOT/'build/dependencies/install'/f'Release-{hz.SYSTEM}-x86_64/shader-tools.json').read_text())}
+            metadata = {'commit': commit, 'configuration': 'Release', 'platform': hz.SYSTEM, 'architecture': hz.ARCHITECTURE, 'project': descriptor.name, 'native_dependencies': closure, 'source_dirty': bool(hz.output(['git', '-C', hz.ROOT, 'status', '--porcelain'])), 'libc': list(platform.libc_ver()) if hz.SYSTEM=='linux' else None, 'shader_tools': json.loads((hz.ROOT/'build/dependencies/install'/f'Release-{hz.SYSTEM}-{hz.ARCHITECTURE}/shader-tools.json').read_text())}
             (path/'build.json').write_text(json.dumps(metadata, indent=2)+'\n')
-            (path/'LAUNCH.txt').write_text(f'{name} Release x86_64\n'+
+            (path/'LAUNCH.txt').write_text(f'{name} Release {hz.ARCHITECTURE}\n'+
                 ('Run Nutella (Nutella.exe on Windows) from any working directory. It discovers the root .hproj. --help and --list-projects need no graphics/Mono initialization.\n' if name=='Nutella' else 'Run Hazelnut (Hazelnut.exe on Windows). The bundled Example opens automatically; File > Open Project selects other projects.\n')+
                 'OpenGL 4.1 core or newer hardware/driver is required. No bundled software driver.\nWindows: Windows 10 x64 or newer; Release CRT is app-local.\nLinux: compatibility is determined by the build host; official CI archives target Ubuntu 24.04 (glibc 2.39) and newer, X11/GLX display and system OpenGL driver. Local Arch builds require the local glibc baseline.\nPrecompiled scripts need no compiler. To author/compile scripts, install the Hazel source SDK prerequisites and use scripts/hazel.py script-build.\nWritable cache/settings: platform user-data/Hazel/'+name+'. HAZEL_DATA can select a writable directory.\n', encoding='utf-8')
             files = sorted(p for p in path.rglob('*') if p.is_file())

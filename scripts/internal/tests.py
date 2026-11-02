@@ -92,8 +92,8 @@ def sdk_readiness_checks(working):
                 unavailable.clear()
             assert not consulted, 'Incomplete override silently fell back to a default SDK'
         print('PASS: real custom Mono SDK with spaces/Unicode, default candidates unavailable, one readiness resolution, compiled project scripts, missing compiler/profile rejection and independent runtime',flush=True)
-    else:
-        # Windows compilation uses MSBuild/reference assemblies, not Linux mcs.
+    elif hz.SYSTEM == 'windows':
+        # Windows compilation uses MSBuild/reference assemblies, not Mono mcs.
         from internal import authoring
         pack=working/'Targeting SDK space é'
         reference=pack/'Reference Assemblies/Microsoft/Framework/.NETFramework/v4.7.2/mscorlib.dll'
@@ -108,6 +108,8 @@ def sdk_readiness_checks(working):
             except RuntimeError as error:assert '.NET Framework 4.7.2' in str(error)
             else:raise RuntimeError('Missing Windows targeting pack accepted')
         print('PASS: Windows script/export compiler selection and missing managed targeting-pack diagnostics',flush=True)
+    else:
+        raise RuntimeError('Use MacOSSDKIntegration for macOS SDK readiness; this harness currently qualifies Linux/Windows only')
 
 
 def authoring_checks(working):

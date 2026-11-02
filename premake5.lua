@@ -15,6 +15,12 @@
 local workspaceRoot = path.getabsolute(".")
 local imguiDir = workspaceRoot .. "/Hazel/vendor/imgui"
 local glfwDir = workspaceRoot .. "/Hazel/vendor/GLFW"
+local toolchain = json.decode(io.readfile(workspaceRoot .. "/scripts/internal/toolchain.json"))
+local targetName, target
+for name, value in pairs(toolchain.targets) do
+    if value.premake_system == os.target() then targetName, target = name, value end
+end
+assert(target, "Unsupported Hazel target: " .. os.target())
 
 -- Native Linux dialogs are implemented only in Platform/Linux.
 local gtkIncludes = {}
@@ -39,9 +45,12 @@ newoption
 
 workspace "Hazel"
     defines { "GLM_ENABLE_EXPERIMENTAL" }
-    architecture (os.target() == "macosx" and "ARM64" or "x64")
+    architecture (target.premake_architecture)
+    defines { 'HZ_TARGET_SYSTEM="' .. targetName .. '"', 'HZ_TARGET_ARCHITECTURE="' .. target.architecture .. '"',
+        'HZ_TARGET_EXECUTABLE_SUFFIX="' .. target.executable_suffix .. '"', 'HZ_BUILD_CONFIGURATION="%{cfg.buildcfg}"',
+        'HZ_TARGET_EXPORT_SUPPORTED=' .. (target.export_supported and "1" or "0") }
     filter "system:macosx"
-        systemversion "27.0"
+        systemversion (toolchain.targets.macos.deployment_target)
         xcodebuildsettings { ["SDKROOT"] = "macosx", ["ONLY_ACTIVE_ARCH"] = "YES", ["CODE_SIGNING_ALLOWED"] = "NO", ["HEADER_SEARCH_PATHS"] = "$(inherited) $(USER_HEADER_SEARCH_PATHS)" }
     filter {}
     startproject "Hazelnut"
@@ -60,7 +69,7 @@ workspace "Hazel"
 -- Debug-windows-x86_64
 -- Debug-linux-x86_64
 --
-outputdir = os.target() == "macosx" and "%{cfg.buildcfg}-macos-arm64" or "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+outputdir = "%{cfg.buildcfg}-" .. targetName .. "-" .. target.architecture
 
 
 --

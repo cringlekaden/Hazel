@@ -10,15 +10,20 @@ local generated = root .. "/build/dependencies/generated"
 local output = root .. "/build/dependencies/premake"
 local inputs = json.decode(io.readfile(root .. "/scripts/dependencies/shader-sources.json"))
 local macos = os.target() == "macosx"
-local artifactSystem = macos and "macos" or os.target()
-local artifactArchitecture = macos and "arm64" or "x86_64"
+local targets = json.decode(io.readfile(root .. "/scripts/internal/toolchain.json")).targets
+local artifactSystem, target
+for name, value in pairs(targets) do
+    if value.premake_system == os.target() then artifactSystem, target = name, value end
+end
+assert(target, "Unsupported shader producer target: " .. os.target())
+local artifactArchitecture = target.architecture
 
 workspace "HazelShaderTools"
     location (output)
-    architecture (macos and "ARM64" or "x64")
+    architecture (target.premake_architecture)
     configurations { "Debug", "Release" }
     filter "system:macosx"
-        systemversion "27.0"
+        systemversion (targets.macos.deployment_target)
     filter {}
 
 for _, name in ipairs { "shaderc", "glslang", "SPIRV-Tools", "SPIRV-Tools-opt", "spirv-cross-core", "spirv-cross-glsl" } do

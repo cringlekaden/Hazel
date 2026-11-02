@@ -5,6 +5,7 @@
 #include <windows.h>
 namespace Hazel
 {
+std::filesystem::path Toolchain::OwnedPythonExecutable(const std::filesystem::path& sdk) {return sdk/"build/tools/python-runtime/python.exe";}
 static std::wstring RegistryString(HKEY key, const wchar_t *name)
 {
 	DWORD bytes = 0, type = 0;

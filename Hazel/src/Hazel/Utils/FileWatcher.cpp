@@ -3,8 +3,7 @@
 namespace Hazel {
 #ifdef HZ_PLATFORM_MACOS
     Scope<FileWatcher> CreateMacOSFileWatcher(const std::filesystem::path&, FileWatcher::Callback);
-#endif
-#ifdef HZ_PLATFORM_LINUX
+#elif defined(HZ_PLATFORM_LINUX)
     Scope<FileWatcher> CreateLinuxFileWatcher(const std::filesystem::path&, FileWatcher::Callback);
 #elif defined(HZ_PLATFORM_WINDOWS)
     Scope<FileWatcher> CreateWindowsFileWatcher(const std::filesystem::path&, FileWatcher::Callback);
@@ -12,8 +11,7 @@ namespace Hazel {
     Scope<FileWatcher> FileWatcher::Create(const std::filesystem::path& path, Callback callback) {
 #ifdef HZ_PLATFORM_MACOS
         return CreateMacOSFileWatcher(path, std::move(callback));
-#endif
-#ifdef HZ_PLATFORM_LINUX
+#elif defined(HZ_PLATFORM_LINUX)
         return CreateLinuxFileWatcher(path, std::move(callback));
 #elif defined(HZ_PLATFORM_WINDOWS)
         return CreateWindowsFileWatcher(path, std::move(callback));

@@ -2,6 +2,19 @@
 local root = _MAIN_SCRIPT_DIR
 local mono = path.getabsolute(assert(_OPTIONS["mono-root"], "Generate through scripts/hazel.py"))
 if _OPTIONS["migration-tests"] then
+    project "MacOSSDKIntegration"
+        location (root .. "/build/MacOSSDKIntegration")
+        kind "ConsoleApp"
+        language "C++"
+        cppdialect "C++17"
+        targetdir (root .. "/bin/" .. outputdir .. "/%{prj.name}")
+        objdir (root .. "/bin-int/" .. outputdir .. "/%{prj.name}")
+        files { root .. "/tests/macos/SDKIntegration.cpp", root .. "/Hazelnut/src/Authoring/HazelSDK.cpp", root .. "/Hazelnut/src/Authoring/ProjectTools.cpp", root .. "/Hazelnut/src/Authoring/ConsoleModel.cpp", root .. "/Hazelnut/src/Authoring/EditorPreferences.cpp" }
+        includedirs { root .. "/Hazel/src", root .. "/Hazelnut/src", root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/yaml-cpp/include" }
+        local pins = json.decode(io.readfile(root .. "/scripts/internal/toolchain.json"))
+        defines { 'HAZEL_TOOLCHAIN_PREMAKE="' .. pins.premake .. '"', 'HAZEL_TOOLCHAIN_PYYAML="' .. pins.pyyaml .. '"' }
+        links { "Hazel", "yaml-cpp" }
+        dependson { "Hazelnut" }
     project "MacOSPlatformServices"
         location (root .. "/build/MacOSPlatformServices")
         kind "ConsoleApp"
