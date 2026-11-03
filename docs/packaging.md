@@ -53,8 +53,9 @@ Both `--name` and `--output` are required. This incrementally builds Release Nut
 ## Export from Hazelnut
 
 macOS source SDK readiness, script compilation and bundle production are
-implemented. Local ad-hoc bundles have passed isolated native/managed/rendering
-regressions; final product desktop qualification remains [in progress](design/macos-port.md).
+implemented. Local ad-hoc bundles passed isolated native/managed/rendering and
+actual-product startup/shutdown checks; observed editor/runtime interaction and
+outstanding manual/distribution checks are [recorded separately](design/macos-port.md).
 Script readiness and Release export readiness are separate capabilities.
 
 Save the desired startup scene in **Project > Project Settings…**, then choose **Project > Export Game…**. Set an absolute output folder and a portable name (letters, digits, `_` or `-`, beginning with a letter/digit). **Export Release Game** runs the targeted sequence above. Save/continue or explicitly use saved content when prompted. Follow progress in **View > Console** and use **Open Output Folder** when complete.

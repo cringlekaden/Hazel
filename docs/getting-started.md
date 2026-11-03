@@ -1,6 +1,6 @@
 # Getting started
 
-Hazel is the engine library. Hazelnut edits projects; Nutella runs prepared games without the editor. Targets are **Windows x64, Linux x86_64 and native Apple Silicon macOS 27.0+**, with **OpenGL 4.1 core**. Mac integration has working builds and local rendering/package regressions; final desktop and cross-platform qualification remains [in progress](design/macos-port.md). Linux windows use X11/GLX, including Xwayland; this is not native Wayland support.
+Hazel is the engine library. Hazelnut edits projects; Nutella runs prepared games without the editor. Targets are **Windows x64, Linux x86_64 and native Apple Silicon macOS 27.0+**, with **OpenGL 4.1 core**. Mac builds, Apple rendering, relocated ad-hoc packages and cross-platform CI are qualified; [recorded manual/distribution limits](design/macos-port.md) remain. Linux windows use X11/GLX, including Xwayland; this is not native Wayland support.
 
 ## Choose a download or a source checkout
 
@@ -13,7 +13,7 @@ git clone --recurse-submodules https://github.com/cringlekaden/Hazel.git
 cd Hazel
 ```
 
-For an existing checkout missing submodules, use `git submodule update --init --recursive`. Use the committed gitlinks, not `--remote`. Preserve local changes and dependency modifications before setup; do not reset or clean them to fix a build. The default master checkout includes the accepted runtime UI and tutorial. Mac integration is on `feature/macos-support` until its remaining qualification gates pass; inspect the branch and [progress record](design/macos-port.md) before using that workflow.
+For an existing checkout missing submodules, use `git submodule update --init --recursive`. Use the committed gitlinks, not `--remote`. Preserve local changes and dependency modifications before setup; do not reset or clean them to fix a build. Master includes the accepted runtime UI, tutorial and native Mac integration; the [qualification record](design/macos-port.md) identifies exact evidence and outstanding manual checks.
 
 ## Prerequisites installed by you
 

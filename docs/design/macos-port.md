@@ -3,9 +3,12 @@
 ## Qualification continuation — 2026-11-03
 
 Target: native arm64/macOS 27.0+, pinned GLFW/shared OpenGL 4.1,
-Premake/Xcode and classic Mono 6.14.1. Automated qualification passes; merge
-remains gated on the outstanding physical clipboard acceptance. The dated sections below retain historical
-evidence; this is not a completed distribution claim.
+Premake/Xcode and classic Mono 6.14.1. Automated/local qualification and the
+recorded owner Xcode/editor acceptance are complete. The owner explicitly
+confirmed that unexecuted physical clipboard acceptance is not a merge gate.
+Clipboard, physical Retina/mixed-display/controller checks and Developer ID/
+notarization remain outstanding. The dated sections retain historical evidence;
+this is not a completed public-distribution claim.
 
 Current host: Apple M4/arm64, macOS 27.2, full Xcode 27.2 (27B48), SDK 27.2,
 Apple Clang 21.0.0 (`clang-2100.3.34.1`); first-launch readiness passes.
@@ -20,10 +23,11 @@ Command-scoped selection leaves global `xcode-select` on the installed CLT.
 | Desktop | Source Xcode launch rendered a private project; native Open cancellation and spaces/Unicode project selection observed. Relocated Hazelnut rendered text/UI/sprites, Play/Level1/Stop, resize and native minimize/restore. Physical Command+Shift+S opened Save As; saving `Qualification ü.hazel` into the private project succeeded, repeated Save As was cancelled, and Command+Q exited normally. Relocated Nutella rendered MainMenu/Level1, resized, returned to MainMenu and quit normally. Both normal closures passed mapped-native-closure/signature checks. Clipboard user-gesture acceptance remains unexecuted |
 | Hosted CI | [Run 41705072658](https://github.com/cringlekaden/Hazel/actions/runs/41705072658) at `631af3b` passes all three jobs: full Linux and Windows Debug/Release, GL4.1/tutorial authoring, games and extracted packages; Mac Debug/Release CPU/service/managed subset. This supersedes the successful `131b552` baseline for the shared application-loop changes |
 
-Product code is qualified at `631af3b`; subsequent evidence updates are docs only.
-Once the remaining physical clipboard check passes, merge normally into
-master using an isolated worktree to preserve the owner's current checkout,
-then create the separately reviewed 3D audit branch from that exact merged SHA.
+Product code is qualified at `631af3b`; subsequent evidence/status updates are
+docs only. The owner previously built and launched Hazelnut through Xcode and
+completed the recorded editor acceptance. Integration uses a normal merge in an
+isolated worktree, preserving the owner's checkout. The subsequent 3D audit is a
+separate branch from the exact merged master, without 3D implementation.
 
 Computer Use intermittently reports `cgWindowNotFound`, including for Xcode.
 Foregrounding Hazelnut restored access long enough for the observed Play/transition/
@@ -34,8 +38,8 @@ real SDKs, user projects/profiles or unsaved Xcode buffers were changed to work
 around it. Completed observed desktop launches were normal unsandboxed runs;
 source/SDK-denied product acceptance is separately identified below.
 
-Desktop attempts are stopped again at the owner's request while unavailable.
-Do not start another interactive run until the owner is available. `test-packages
+Desktop automation remains stopped at the owner's explicit request. Do not
+resume it or create another automation mechanism. `test-packages
 --interactive --interactive-app Hazelnut` or `Nutella` selects one product and
 explicitly reports the other desktop check unexecuted. Per-attempt logs are kept
 under `build/testing/packages/macos/desktop-*/`. Completed normal runs are
@@ -71,13 +75,10 @@ were changed. Physical user-gesture copy/paste remains a manual acceptance item,
 alongside physical Retina/mixed-display/controller checks. Command+Shift+S and
 Command+Q have actual owner-operated evidence.
 
-Resume only with an available operator: run `test-packages --output
-dist/macos-qualification --interactive --interactive-app Hazelnut`, foreground
-the private editor, enter `Clipboard ü` in Content Browser search and use
-Command+A/C/V. Confirm correct text, clear the search and quit normally. Do not
-read/overwrite the owner's existing clipboard or change pasteboard permissions
-to automate it. Physical Retina/mixed-display/controller checks remain explicit
-hardware limitations and do not independently block integration.
+Physical clipboard copy/paste remains unexecuted, not a failed test and not a
+merge gate. Do not read/overwrite the owner's clipboard or change pasteboard
+permissions to automate it. Physical Retina/mixed-display/controller checks also
+remain explicit hardware limitations and do not independently block integration.
 
 Build/workflow repairs: `open` preserves generated test targets and local schemes;
 Mac game dispatch prepares the shared pinned project reader. Full Mac builds now

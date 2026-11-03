@@ -1,6 +1,6 @@
 # Hazel
 
-A C++ 2D game engine with a scene editor, C# scripting and standalone game export, for **Windows and Linux**.
+A C++ 2D game engine with a scene editor, C# scripting and standalone game export, for **Windows, Linux and Apple Silicon macOS**.
 
 ![Hazelnut editing The Last Lightkeeper](docs/images/hazelnut-lightkeeper.png)
 *The Last Lightkeeper in Hazelnut: menu authoring, hierarchy, properties and shared styles. [Full resolution](docs/images/hazelnut-lightkeeper.png).*
@@ -47,15 +47,15 @@ Open **Assets/Scenes/UI Tutorial.hazel** and Play. Its [five pages](examples/San
 
 ## Status and support
 
-Requires **OpenGL 4.1 core**. Windows x64 and Linux x86_64/X11 (including Xwayland) are maintained; official Linux packages target Ubuntu 24.04/glibc 2.39+. Native Wayland is not implemented. Native arm64 macOS 27.0+ has [Xcode integration and local ad-hoc bundles](docs/getting-started.md#apple-silicon-macos-270), with passing Apple rendering, relocated-product and cross-platform CI checks; final desktop acceptance is [in progress](docs/design/macos-port.md). See [platform scope and UI limits](docs/platforms-and-dependencies.md#platform-status).
+Requires **OpenGL 4.1 core**. Windows x64 and Linux x86_64/X11 (including Xwayland) are maintained; official Linux packages target Ubuntu 24.04/glibc 2.39+. Native Wayland is not implemented. Native arm64 macOS 27.0+ supports [Xcode development and local ad-hoc bundles](docs/getting-started.md#apple-silicon-macos-270), qualified with real Apple rendering, relocated products and cross-platform CI. Outstanding physical clipboard/mixed-display/controller checks and distribution-signing limits are recorded in the [Mac qualification record](docs/design/macos-port.md). See [platform scope and UI limits](docs/platforms-and-dependencies.md#platform-status).
 
 [![C/C++ CI — master](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml/badge.svg?branch=master)](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Amaster)
 
-Integration qualification [`77bea96`](https://github.com/cringlekaden/Hazel/actions/runs/40876819630): [Linux](https://github.com/cringlekaden/Hazel/actions/runs/40876819630/job/123457665523) · [Windows](https://github.com/cringlekaden/Hazel/actions/runs/40876819630/job/123457665758). These completed results cover that source checkpoint; the master badge reports subsequent runs separately.
+Mac integration qualification [`631af3b`](https://github.com/cringlekaden/Hazel/actions/runs/41705072658): all Linux, Windows and Mac jobs passed. These completed results cover that product-code checkpoint; later integration changes are documentation only. The master badge reports subsequent runs separately.
 
-The badge is **workflow-wide**. Open a run for its separate **Windows Debug, Release and extracted binaries** and **Linux Debug, Release and extracted binaries (Ubuntu 24.04)** results. [CI coverage](docs/development.md#canonical-ci) includes software/GL4.1 regressions, editor/tutorial authoring and relocated packages. Master includes the accepted runtime UI and cleanup milestone. There is no published release; [download guidance](docs/packaging.md) identifies snapshot contents and retention.
+The badge is **workflow-wide**. Open a run for its separate Windows/Linux Debug, Release and extracted-binary jobs and the Mac build/CPU/service/managed subset. [CI coverage](docs/development.md#canonical-ci) includes software/GL4.1 regressions, editor/tutorial authoring and relocated packages; Apple GPU qualification is local. There is no published release; [download guidance](docs/packaging.md) identifies snapshot contents and retention.
 
-The owner completed hands-on acceptance and approved integration. The links above identify the exact source checkpoint that passed qualification. Automated/software graphics checks remain distinct from physical-platform and competent-reader typography evidence. macOS compatibility is the next platform milestone, followed by 3D work.
+The owner completed the recorded Xcode/editor acceptance and approved integration. Automated checks remain distinct from unexecuted physical checks, competent-reader typography acceptance and public signed distribution. 3D/PBR/IBL remain planned work.
 
 ## License and attribution
 
