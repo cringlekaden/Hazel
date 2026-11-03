@@ -1,0 +1,19 @@
+[
+  {"name":"TypographySmoke","graphics":false},
+  {"name":"GameUIModelSmoke","graphics":false},
+  {"name":"GameUIIntegrationSmoke","graphics":true},
+  {"name":"ShaderToolsSmoke","graphics":false},
+  {"name":"SpriteSmoke","graphics":true},
+  {"name":"SceneFoundationSmoke","graphics":false},
+  {"name":"ProjectPhysicsSmoke","graphics":false},
+  {"name":"MonoSmoke","graphics":false},
+  {"name":"SceneSmoke","graphics":false},
+  {"name":"CoreSmoke","graphics":true},
+  {"name":"RendererSmoke","graphics":true},
+  {"name":"RendererFeaturesSmoke","graphics":true},
+  {"name":"Renderer2DSmoke","graphics":true},
+  {"name":"FontSmoke","graphics":true},
+  {"name":"SceneGPUSmoke","graphics":true},
+  {"name":"RuntimeSessionSmoke","graphics":true},
+  {"name":"EditorSmoke","graphics":true}
+]

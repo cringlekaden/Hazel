@@ -1,6 +1,45 @@
 # Native Apple Silicon macOS port
 
-## Current owner decisions and Xcode continuation — 2026-10-29
+## Qualification continuation — 2026-11-02
+
+The target remains native arm64/macOS 27.0+, pinned GLFW, shared OpenGL 4.1,
+Premake/Xcode and classic Mono 6.14.1. This checkpoint adds the full native test
+build, canonical runners and local ad-hoc bundle production. Release, relocation
+and desktop acceptance are being qualified; this paragraph is not a completed
+distribution claim. The sections below retain the earlier checkpoint evidence.
+
+`InstallationLayout` now owns loose-product versus bundle resource, Mono,
+project and metadata paths. Nutella discovers `Contents/Resources/Project` in
+a bundle. Hazelnut seeds its bundled example into a versioned private profile
+workspace before editing, preserving signed bundle contents. Source SDK
+discovery remains separate and never falls back to cwd or bundled runtime files.
+
+The canonical test runner accepts `--suite cpu` and repeatable `--only NAME`;
+both explicitly report excluded coverage. The full Mac runner uses the real
+Apple driver and committed disposable tutorial content. Xcode's generated
+`MacOSQualification` target builds all maintained regressions, native services,
+SDK probes and managed fixtures. Linux/Windows defaults retain their full suite.
+The Mac CI job uses GitHub's explicit [`xcode-27` preview image](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md),
+which documents macOS 27.0.1/arm64. Its CPU/service/managed subset makes no GPU
+or interactive-desktop claim; physical Apple rendering stays a local gate.
+
+Concrete repairs: both Renderer2D batching paths bind complete fallback textures
+for unused active samplers; switching back from ordered text restores its sampler.
+Apple's combined shader archive namespaces object members so dsymutil can resolve
+their debug maps. Darwin watchers tolerate stat/enumeration races and distinguish
+atomic replacements by inode. Restricted GUI PATH preparation includes standard
+OS recipe tools. Tests count Darwin descriptors through libproc and compare
+validated Python locations canonically (macOS `/var` aliases `/private/var`).
+
+Bundle production includes runtime profiles/config/native helpers, ScriptCore,
+project content, notices/provenance, Info.plist, metadata and checksums. It audits
+arm64/minimum versions/load commands and signs inside-out after all mutations.
+Relocation tests use a process sandbox denying checkout/Homebrew reads, without
+renaming the owner's SDK or resources; test-only rendering/managed/helper probes
+are distinct from actual product interaction. No Developer ID, notarization,
+Gatekeeper-download acceptance or SDK publication is implied.
+
+## Historical application foundation — 2026-10-29
 
 The current minimum is **macOS 27.0**, native arm64. Full Xcode is the preferred
 development environment, with pinned Premake's `xcode4` application generator.

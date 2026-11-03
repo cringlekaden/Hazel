@@ -42,7 +42,7 @@
 #include <thread>
 #include <random>
 #include <stdexcept>
-#ifdef HZ_PLATFORM_LINUX
+#if defined(HZ_PLATFORM_LINUX) || defined(HZ_PLATFORM_MACOS)
 #include <fcntl.h>
 #include <unistd.h>
 #endif
@@ -845,9 +845,9 @@ private:
         auto olderProbe=probeFolder/(std::string("older-python")+executable.extension().u8string());
         std::filesystem::copy_file(executable,validProbe);std::filesystem::copy_file(executable,olderProbe);
         auto ordered=Toolchain::SelectPythonCandidates({olderProbe,validProbe});
-        Check(bool(ordered)&&ordered.Version=="3.9.1"&&ordered.Executable==olderProbe,"Python installation ordering was nondeterministic");
+        Check(bool(ordered)&&ordered.Version=="3.9.1"&&ordered.Executable==std::filesystem::canonical(olderProbe),"Python installation ordering was nondeterministic");
         ordered=Toolchain::SelectPythonCandidates({m_Directory/"missing",validProbe,olderProbe});
-        Check(bool(ordered)&&ordered.Version=="3.14.1"&&ordered.Executable==validProbe,"Compatible Python candidate selection failed");
+        Check(bool(ordered)&&ordered.Version=="3.14.1"&&ordered.Executable==std::filesystem::canonical(validProbe),"Compatible Python candidate selection failed");
         std::filesystem::remove(validProbe);std::filesystem::remove(olderProbe);
         auto python=Toolchain::DiscoverPython();Check(bool(python)&&python.Executable.is_absolute()&&!python.Version.empty(),"Installed Python discovery failed");
         std::cout<<"AUTHORING PYTHON: "<<python.Executable.generic_u8string()<<"; "<<python.Source<<"; "<<python.Version<<"\n";
@@ -860,7 +860,7 @@ private:
         Check(bool(Toolchain::DiscoverPython(alias/"interpreter")),"Unicode/spaces interpreter probe failed");
         std::filesystem::remove(alias/"interpreter");Check(!Toolchain::DiscoverPython(alias/"interpreter"),"Removed interpreter cache remained valid");
         auto timed=Process::Run("/bin/sleep",{"2"},{},std::chrono::milliseconds(50));Check(timed.TimedOut,"Process timeout did not reap child");
-#ifdef HZ_PLATFORM_LINUX
+#if defined(HZ_PLATFORM_LINUX) || defined(HZ_PLATFORM_MACOS)
         auto descriptor=::open((m_Directory/"AuthoringProject/Authoring.hproj").c_str(),O_RDONLY);
         Check(descriptor>=0,"Cannot open descriptor fixture");
         auto inherited=fcntl(descriptor,F_DUPFD,100);::close(descriptor);
@@ -1400,7 +1400,7 @@ int main(int argc, char** argv) {
     argc = static_cast<int>(pointers.size()); pointers.push_back(nullptr); argv = pointers.data();
 #endif
     using namespace Hazel;
-#ifdef HZ_PLATFORM_LINUX
+#if defined(HZ_PLATFORM_LINUX) || defined(HZ_PLATFORM_MACOS)
     if(argc>=3 && std::string(argv[1])=="--probe-closed-descriptor") {
         bool closed=fcntl(std::stoi(argv[2]),F_GETFD)==-1 && errno==EBADF;
         if(argc==4)std::ofstream(std::filesystem::u8path(argv[3]))<<(closed?"closed":"inherited");

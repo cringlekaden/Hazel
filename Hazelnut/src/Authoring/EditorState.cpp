@@ -2,11 +2,38 @@
 #include "Hazel/Core/DocumentSchema.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Core/Resources.h"
+#include "Hazel/Core/InstallationLayout.h"
+#include "Hazel/Core/FileLease.h"
+#include "Hazel/Core/UUID.h"
+#include "Hazel/Project/Project.h"
 #include <cmath>
 #include <iomanip>
 #include <sstream>
 #include <yaml-cpp/yaml.h>
 namespace Hazel {
+    std::filesystem::path EditorLaunch::DefaultProject() {
+        const auto& layout=InstallationLayout::Current();
+        const auto projects=Project::Discover(layout.EditorProject);
+        if(projects.size()!=1)return {};
+        if(!layout.Bundled)return projects.front();
+        const auto metadata=YAML::LoadFile(layout.Metadata.string());
+        const auto commit=metadata["commit"].as<std::string>();
+        if(commit.size()!=40 || commit.find_first_not_of("0123456789abcdef")!=std::string::npos)
+            throw std::runtime_error("Invalid bundled example source identity");
+        const auto parent=Resources::Get().UserData/"Examples"/commit;
+        std::filesystem::create_directories(parent);
+        auto lease=FileLease::Try(parent/"seed.lock");
+        if(!lease)throw std::runtime_error("Another editor is preparing the bundled example; retry after it opens");
+        const auto destination=parent/projects.front().stem();
+        const auto descriptor=destination/projects.front().filename();
+        if(std::filesystem::is_regular_file(descriptor))return descriptor;
+        if(std::filesystem::exists(destination))throw std::runtime_error("Incomplete local bundled example: "+destination.generic_u8string());
+        const auto temporary=parent/("seed-"+std::to_string(uint64_t(UUID())));
+        struct Cleanup {std::filesystem::path Path;~Cleanup(){std::error_code error;std::filesystem::remove_all(Path,error);}} cleanup{temporary};
+        std::filesystem::copy(layout.EditorProject,temporary,std::filesystem::copy_options::recursive);
+        FileSystem::PublishDirectoryNew(temporary,destination);
+        return descriptor;
+    }
     namespace {
         template <class T> void Field(const YAML::Node &n, const char *key, T &value) {
             if (n[key])
@@ -17,7 +44,7 @@ namespace Hazel {
             if (!n["Version"] || n["Version"].as<int>() != 1)
                 throw std::runtime_error("Unsupported editor state Version (expected 1)");
         }
-        void Text(const std::string &s) {
+        void ValidateStateText(const std::string &s) {
             if (s.size() > 32768 || s.find('\0') != std::string::npos)
                 throw std::runtime_error("Invalid/oversized editor state text");
         }
@@ -29,13 +56,13 @@ namespace Hazel {
                 w.Scale < .25f || w.Scale > 8 || s.Panels > 31 || s.Severities > 0x3f ||
                 s.Sources > 0x7f)
                 throw std::runtime_error("Invalid window/filter settings");
-            Text(s.LastProject);
-            Text(s.ConsoleSearch);
+            ValidateStateText(s.LastProject);
+            ValidateStateText(s.ConsoleSearch);
         }
         void Validate(const ProjectWorkspace &s) {
             for (const auto *text : {&s.Scene, &s.BrowserFolder, &s.BrowserSearch, &s.Sheet,
                                      &s.Prefab, &s.ExportFolder, &s.ExportName})
-                Text(*text);
+                ValidateStateText(*text);
             if (s.BrowserType < 0 || s.BrowserType > 8 || !std::isfinite(s.Thumbnail) ||
                 s.Thumbnail < 32 || s.Thumbnail > 160 || !std::isfinite(s.Pitch) ||
                 !std::isfinite(s.Yaw) || !std::isfinite(s.Distance) || s.Distance < .1f ||
@@ -44,7 +71,7 @@ namespace Hazel {
             if (s.Sections.size() > 16)
                 throw std::runtime_error("Too many component sections");
             for (const auto &section : s.Sections)
-                Text(section.first);
+                ValidateStateText(section.first);
             for (int i = 0; i < 3; ++i)
                 if (!std::isfinite(s.Focus[i]))
                     throw std::runtime_error("Invalid workspace camera focal point");
@@ -217,7 +244,7 @@ namespace Hazel {
                     throw std::runtime_error("Invalid component section settings");
                 for (auto entry : n["Sections"]) {
                     const auto key = entry.first.as<std::string>();
-                    Text(key);
+                    ValidateStateText(key);
                     s.Sections[key] = entry.second.as<bool>();
                 }
             }

@@ -71,6 +71,9 @@ def audit_and_run(layout):
     loaded = [line for line in dynamic.splitlines() if 'dyld' in line and ('dylib' in line or 'framework' in line)]
     if not any('libmonosgen-2.0.1.dylib' in line for line in loaded):
         raise RuntimeError('Dynamic audit did not observe the staged Mono runtime')
+    for helper in ('libMonoPosixHelper.dylib','libmono-native'):
+        if not any(helper in line for line in loaded):
+            raise RuntimeError('Dynamic audit did not exercise '+helper)
     return {'stdout': result.stdout, 'dynamic_library_lines': loaded,
             'otool_dependencies': linked.splitlines(), 'otool_load_commands': loads.splitlines()}
 

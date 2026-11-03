@@ -474,9 +474,10 @@ namespace Hazel {
 			s_Data->QuadVertexBuffer->SetData(s_Data->QuadVertexBufferBase.get(), dataSize);
             s_Data->Stats.UploadedBytes+=dataSize;
 
-			// Bind textures
-			for (uint32_t i = 0; i < s_Data->TextureSlotIndex; i++)
-				s_Data->TextureSlots[i]->Bind(i);
+            // The shader declares the full configured sampler array. Strict
+            // drivers validate even its dynamically unused elements.
+			for (uint32_t i = 0; i < s_Data->TextureSlotLimit; i++)
+                (i < s_Data->TextureSlotIndex ? s_Data->TextureSlots[i] : s_Data->WhiteTexture)->Bind(i);
 
 			s_Data->QuadShader->Bind();
 			RenderCommand::DrawIndexed(s_Data->QuadVertexArray, s_Data->QuadIndexCount);
@@ -515,6 +516,10 @@ namespace Hazel {
 			s_Data->FontAtlasTexture->Bind(0);
 
 			s_Data->TextShader->Bind();
+            if(s_Data->FontSamplerUnit!=0) {
+                s_Data->TextShader->SetInt("u_FontAtlas",0);
+                s_Data->FontSamplerUnit=0;
+            }
             RenderCommand::SetTextCompositing(true);
 			RenderCommand::DrawIndexed(s_Data->TextVertexArray, s_Data->TextIndexCount);
 			s_Data->Stats.DrawCalls++;

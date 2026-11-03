@@ -51,6 +51,12 @@ static std::size_t Pixels(int entity) {
 #include "TypographyRenderProfile.h"
 static void Primitives() {
     Begin(); Renderer2D::DrawQuad(Transform(),{1,0,0,1},42); End();
+    GLint active;glGetIntegerv(GL_ACTIVE_TEXTURE,&active);
+    for(uint32_t unit=0;unit<Renderer::GetSettings().TextureSlots;++unit) {
+        glActiveTexture(GL_TEXTURE0+unit);GLint binding=0;glGetIntegerv(GL_TEXTURE_BINDING_2D,&binding);
+        Check(binding!=0,"Active quad sampler has no complete fallback texture");
+    }
+    glActiveTexture(active);
     Check(ID()==42 && Color()[0]>250 && Color()[1]<5,"Solid quad color/entity mismatch");
     Begin(); Renderer2D::DrawRotatedQuad(glm::vec3(0),{1,1},45,{0,1,0,1}); End();
     Check(Color(96,64)[1]>250 && Color(96,96)[1]<5,"Rotated quad footprint mismatch");

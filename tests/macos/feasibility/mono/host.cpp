@@ -33,9 +33,10 @@ static std::string ExceptionText(MonoObject* exception) {
 int main(int argc, char** argv) try {
     if (argc < 1) throw std::runtime_error("Missing executable path");
     const fs::path root = fs::canonical(fs::path(argv[0])).parent_path().parent_path();
-    const fs::path sdk = root / "sdk";
-    const fs::path fixturePath = root / "managed/MonoEmbeddingFixture.dll";
-    const fs::path scriptCorePath = root / "managed/Hazel-ScriptCore.dll";
+    if(argc!=1 && argc!=4)throw std::runtime_error("Usage: MonoEmbeddingProbe [SDK FIXTURE SCRIPTCORE]");
+    const fs::path sdk = argc==4?fs::path(argv[1]):root/"sdk";
+    const fs::path fixturePath = argc==4?fs::path(argv[2]):root/"managed/MonoEmbeddingFixture.dll";
+    const fs::path scriptCorePath = argc==4?fs::path(argv[3]):root/"managed/Hazel-ScriptCore.dll";
     const fs::path config = sdk / "etc/mono/config";
 
     mono_set_dirs((sdk / "lib").string().c_str(), (sdk / "etc").string().c_str());

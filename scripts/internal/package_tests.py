@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+import zipfile
 import hazel as hz
 from internal.testing.desktop import Desktop
 from internal.tests import software_driver
@@ -79,7 +80,13 @@ def unavailable_sources():
 def extract_verified(archive,working):
     checksum=archive.with_name(archive.name+'.sha256').read_text().split()[0]
     if hashlib.sha256(archive.read_bytes()).hexdigest()!=checksum:raise RuntimeError('Archive checksum mismatch')
-    shutil.unpack_archive(archive,working)
+    if archive.suffix=='.zip':
+        with zipfile.ZipFile(archive) as zipped:
+            zipped.extractall(working)
+            for member in zipped.infolist():
+                mode=(member.external_attr>>16)&0o777
+                if mode: (working/member.filename).chmod(mode)
+    else:shutil.unpack_archive(archive,working)
     suffix='.zip' if archive.name.endswith('.zip') else '.tar.gz'
     path=working/archive.name.removesuffix(suffix)
     for line in (path/'SHA256SUMS').read_text().splitlines():
@@ -97,6 +104,9 @@ def graphics_environment(profile):
     return env
 
 def package_tests(output,profile='native'):
+    if hz.SYSTEM=='macos':
+        from macos.qualification import packages
+        return packages(output,profile)
     suffix='.zip' if hz.SYSTEM=='windows' else '.tar.gz'
     archives=[output/f'{name}-{hz.SYSTEM}-x86_64-Release{suffix}' for name in ('Nutella','Hazelnut')]
     logs=hz.ROOT/'build/testing/packages';logs.mkdir(parents=True,exist_ok=True)

@@ -1,6 +1,7 @@
 #include "hzpch.h"
 #include "Resources.h"
 #include "FileSystem.h"
+#include "InstallationLayout.h"
 #include <cstdlib>
 
 namespace Hazel {
@@ -12,15 +13,9 @@ namespace Hazel {
     ApplicationResourceSpecification Resources::Defaults(const std::string& application,
         ApplicationResourceSpecification specification) {
         if (specification.Root.empty() || specification.MonoRoot.empty()) {
-            auto executable = FileSystem::GetExecutablePath().parent_path();
-#ifdef HZ_PLATFORM_MACOS
-            // One layout authority for development products and future bundles.
-            if (executable.filename() == "MacOS" && executable.parent_path().filename() == "Contents" &&
-                executable.parent_path().parent_path().extension() == ".app")
-                executable = executable.parent_path();
-#endif
-            if (specification.Root.empty()) specification.Root = ConfiguredPath("HAZEL_RESOURCES", executable / "Resources");
-            if (specification.MonoRoot.empty()) specification.MonoRoot = ConfiguredPath("HAZEL_MONO", executable / "mono");
+            const auto& layout=InstallationLayout::Current();
+            if (specification.Root.empty()) specification.Root = ConfiguredPath("HAZEL_RESOURCES", layout.ResourceRoot);
+            if (specification.MonoRoot.empty()) specification.MonoRoot = ConfiguredPath("HAZEL_MONO", layout.MonoRoot);
         }
         if (specification.UserData.empty()) {
             auto data = FileSystem::GetEnvironmentPath("HAZEL_DATA");

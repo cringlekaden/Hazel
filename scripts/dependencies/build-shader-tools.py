@@ -105,9 +105,23 @@ def build(configuration, options, sources, system, architecture):
             subprocess.run(['ar', '-M'], input='\n'.join(commands) + '\n', cwd=temporary, text=True, check=True)
             shutil.copyfile(temporary / 'shaderc_combined.a', destination)
     else:
-        # Apple's ar does not implement GNU MRI mode. libtool merges each
-        # constituent archive without introducing a second build system.
-        run('xcrun', 'libtool', '-static', '-o', destination, *merged)
+        # dsymutil identifies archive objects by member name. Upstream libraries
+        # contain different objects named e.g. disassemble.o; a direct libtool
+        # merge links successfully but makes their debug maps ambiguous.
+        import tempfile
+        with tempfile.TemporaryDirectory(prefix='hazel-shader-archive-') as directory:
+            objects=[]
+            for index,library in enumerate(merged):
+                names=output('ar','-t',library).splitlines()
+                if len(names)!=len(set(names)):
+                    raise RuntimeError('Duplicate members within shader archive: '+str(library))
+                extracted=Path(directory)/str(index);extracted.mkdir()
+                run('ar','-x',library,cwd=extracted)
+                for name in names:
+                    original=extracted/name
+                    unique=extracted/(library.stem+'-'+name)
+                    original.rename(unique);objects.append(unique)
+            run('xcrun','libtool','-static','-o',destination,*objects)
     for name in ('spirv-cross-glsl', 'spirv-cross-core'):
         shutil.copyfile(artifacts / library_name(name), libdir / library_name(name))
     shutil.copytree(sources['shaderc'] / 'libshaderc/include/shaderc', include / 'shaderc', dirs_exist_ok=True)

@@ -1,6 +1,7 @@
 #include <Hazel.h>
 #include <Hazel/Core/EntryPoint.h>
 #include <Hazel/Core/FileSystem.h>
+#include <Hazel/Core/InstallationLayout.h>
 #include <Hazel/Scene/RuntimeSession.h>
 #include <Hazel/Scripting/ScriptEngine.h>
 #include <iostream>
@@ -57,21 +58,21 @@ namespace Hazel {
         if ((help || list) && ((help && list) || !selected.empty())) throw std::runtime_error("Use --help, --list-projects, or --project separately");
         if (help) {
             std::cout << "Nutella — Hazel standalone runtime\n"
-                "  Nutella                        Run the only root-level .hproj beside the executable\n"
+                "  Nutella                        Run the only .hproj in the installed project directory\n"
                 "  Nutella --project <file.hproj>  Run a selected project (relative to invocation directory)\n"
                 "  Nutella --list-projects         List sorted root-level candidates, without graphics/Mono\n"
                 "  Nutella --help                  Show usage, without graphics/Mono\n"
                 "A project descriptor configures StartScene and its asset root. Loose assets cannot start a game.\n"
-                "Resources default to executable-adjacent Resources and mono; writable data uses platform user data.\n"
+                "Resources/Mono/project locations follow the installation layout; writable data uses platform user data.\n"
                 "HAZEL_RESOURCES, HAZEL_MONO and HAZEL_DATA explicitly override those roots.\n";
             return nullptr;
         }
         if (list || selected.empty()) {
-            auto paths = Project::Discover(FileSystem::GetExecutablePath().parent_path());
+            auto paths = Project::Discover(InstallationLayout::Current().RuntimeProject);
             if (list || paths.size() > 1)
                 for (const auto& path : paths) std::cout << path.filename().generic_u8string() << '\n';
             if (list) return nullptr;
-            if (paths.empty()) throw std::runtime_error("No root-level .hproj beside Nutella. Extract a complete project package here or use --project <file.hproj>.");
+            if (paths.empty()) throw std::runtime_error("No root-level .hproj in Nutella's installation project directory. Extract a complete package or use --project <file.hproj>.");
             if (paths.size() != 1) throw std::runtime_error("Multiple projects found. Select one with Nutella --project <file.hproj>.");
             selected = paths.front();
         }

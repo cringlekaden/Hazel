@@ -4,6 +4,7 @@
 #include <cmath>
 #include "Hazel/Core/Buffer.h"
 #include "Hazel/Core/FileSystem.h"
+#include "Hazel/Core/InstallationLayout.h"
 #include "Hazel/Core/Timer.h"
 #include "Hazel/Core/UUID.h"
 #include "Hazel/Math/Math.h"
@@ -33,6 +34,14 @@ private: Counts& m_Counts;
 static void CheckCore()
 {
     using namespace Hazel;
+    const auto bundle=InstallationLayout::FromExecutable(std::filesystem::path("/portable space é/Hazelnut.app/Contents/MacOS/Hazelnut"));
+    Check(bundle.ResourceRoot==std::filesystem::path("/portable space é/Hazelnut.app/Contents/Resources") &&
+          bundle.MonoRoot==bundle.ResourceRoot.parent_path()/"Frameworks/Mono" &&
+          bundle.RuntimeProject==bundle.EditorProject && bundle.Metadata==bundle.ResourceRoot/"build.json",
+          "Bundle installation roots disagree");
+    const auto loose=InstallationLayout::FromExecutable(std::filesystem::path("/portable/Nutella"));
+    Check(loose.ResourceRoot=="/portable/Resources" && loose.MonoRoot=="/portable/mono" &&
+          loose.RuntimeProject=="/portable" && loose.EditorProject=="/portable/Example", "Loose installation contract changed");
     ApplicationResourceSpecification partialResources;
     partialResources.UserData = std::filesystem::temp_directory_path()/"hazel explicit data";
 #ifdef HZ_PLATFORM_LINUX
@@ -143,6 +152,13 @@ int main(int argc,char** argv)
             Check(application->GetWindow().GetWidth()==static_cast<unsigned int>(width) &&
                   application->GetWindow().GetHeight()==static_cast<unsigned int>(height),
                   "Initial window dimensions differ from the native client area");
+            auto* native=static_cast<GLFWwindow*>(application->GetWindow().GetNativeWindow());
+            int pixelsX=0,pixelsY=0;glfwGetFramebufferSize(native,&pixelsX,&pixelsY);
+            const auto pixels=application->GetWindow().GetFramebufferSize();
+            Check(pixels.first==static_cast<unsigned>(pixelsX)&&pixels.second==static_cast<unsigned>(pixelsY),"Framebuffer service lost native pixel dimensions");
+            float scaleX=0,scaleY=0;glfwGetWindowContentScale(native,&scaleX,&scaleY);
+            Check(scaleX>0&&scaleY>0&&pixelsX>0&&pixelsY>0,"Invalid native framebuffer/content scale");
+            std::cout<<"Window: logical "<<width<<'x'<<height<<", framebuffer "<<pixelsX<<'x'<<pixelsY<<", scale "<<scaleX<<'x'<<scaleY<<'\n';
             Check(application->GetSpecification().CommandLineArgs[0]==argv[0],"Application args/specification");
             Check((application->GetImGuiLayer()!=nullptr)==specification.EnableImGui,"Optional ImGui access differs from specification");
             application->PushLayer(Hazel::CreateScope<LifecycleLayer>(counts));

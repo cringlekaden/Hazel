@@ -81,7 +81,7 @@ int main(int argc,char** argv) try {
     Check(!missingCompiler.Success&&missingCompiler.Output.find("mcs.exe")!=std::string::npos,"Missing explicit Mono compiler silently fell back");
     Check(!missingProfile.Success&&missingProfile.Output.find("4.7.2-api")!=std::string::npos,"Missing explicit managed profile accepted");
     auto exporting=ProjectTools::Execute({{},checkout,{}, {"authoring-preflight","--config",config,"--operation","export"},"Export readiness"});
-    Check(!exporting.Success&&exporting.Output.find("not yet implemented")!=std::string::npos,"Export limitation not explicit");
+    Check(exporting.Success==identity.ExportSupported,"Export readiness disagrees with the target contract: "+exporting.Output);
     auto restart=Process::Run(FileSystem::GetExecutablePath(),{checkout.string(),working.string(),"restart"},working,std::chrono::seconds(15));
     Check(restart.ExitCode==0,restart.Output);std::cout<<restart.Output;
     std::cout<<"PASS: SDK discovery/classification/precedence/configuration/target metadata, restricted-PATH Python, editor tool-service readiness, real disposable script compilation and private-profile restart\n";

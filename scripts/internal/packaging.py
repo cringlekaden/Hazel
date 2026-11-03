@@ -73,10 +73,8 @@ def validate_project(descriptor, config, assets):
         inventory = Path(temporary)/'assemblies.txt'
         inventory.write_text(''.join(str(file)+'\n' for file in assembly_files),encoding='utf-8')
         command = [auditor, core, module, inventory, runtime]
-        if hz.SYSTEM == 'linux':
-            prefix = hz.mono_prefix()
-            configuration = (prefix/'../etc/mono/config').resolve() if prefix!=Path('/usr') else Path('/etc/mono/config')
-            command = [prefix/'bin/mono', '--config', configuration, *command]
+        if hz.SYSTEM != 'windows':
+            command = [*hz.mono_command(hz.mono_prefix())[:-1], *command]
         result = subprocess.run(list(map(str,command)), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
     if result.returncode: raise RuntimeError(result.stderr.strip() or 'Managed dependency audit failed')
     known = {line.removeprefix('SCRIPT ') for line in result.stdout.splitlines() if line.startswith('SCRIPT ')}
@@ -275,6 +273,9 @@ def package(app, project, output, archive_name=None):
         raise RuntimeError('Export/package support is not yet implemented for '+hz.SYSTEM)
     if archive_name and (app=='all' or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*',archive_name)):
         raise RuntimeError('--name requires one application and a portable archive name')
+    if hz.SYSTEM=='macos':
+        from macos.packaging import package as macos_package
+        return macos_package(app,project,output,archive_name)
     descriptor, config, assets = load_project(project)
     validate_project(descriptor, config, assets)
     validate_engine_fonts(hz.ROOT/'Hazel/Resources')

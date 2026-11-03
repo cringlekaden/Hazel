@@ -1,6 +1,7 @@
 #include "HazelSDK.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Core/BuildIdentity.h"
+#include "Hazel/Core/InstallationLayout.h"
 #include <fstream>
 #include <stdexcept>
 #include <yaml-cpp/yaml.h>
@@ -148,7 +149,7 @@ SDKSelection HazelSDK::Discover(const std::filesystem::path &configured,
         if (!executable.is_absolute())
             return {SDKState::Incompatible, {}, "Application location", "Application location must be absolute."};
         const auto app = std::filesystem::weakly_canonical(executable).parent_path();
-        const auto metadata = app / "build.json";
+        const auto metadata = InstallationLayout::FromExecutable(std::filesystem::weakly_canonical(executable)).Metadata;
         if (std::filesystem::is_regular_file(metadata))
         {
             const auto data = Metadata(metadata);
@@ -158,7 +159,7 @@ SDKSelection HazelSDK::Discover(const std::filesystem::path &configured,
                 auto root = std::filesystem::u8path(data["hazel_sdk"].as<std::string>());
                 if (root.empty())
                     throw std::runtime_error("Application hazel_sdk locator is empty");
-                if (!root.is_absolute()) root = app / root;
+                if (!root.is_absolute()) root = metadata.parent_path() / root;
                 return Validate(root, "Application build.json locator");
             }
             // A runtime package is not a development checkout, even if placed under bin/.

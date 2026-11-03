@@ -25,6 +25,9 @@
 #ifdef HZ_PLATFORM_WINDOWS
 #define NOMINMAX
 #include <Windows.h>
+#elif defined(HZ_PLATFORM_MACOS)
+#include <libproc.h>
+#include <unistd.h>
 #endif
 using namespace Hazel;
 static void Check(bool value,const char* message) { if (!value) throw std::runtime_error(message); }
@@ -40,6 +43,9 @@ struct Fixture {
 static unsigned ResourceCount() {
 #ifdef HZ_PLATFORM_WINDOWS
     DWORD count=0; Check(GetProcessHandleCount(GetCurrentProcess(),&count),"Cannot count watcher handles"); return count;
+#elif defined(HZ_PLATFORM_MACOS)
+    const int bytes=proc_pidinfo(getpid(),PROC_PIDLISTFDS,0,nullptr,0);
+    Check(bytes>0,"Cannot count watcher descriptors");return bytes/sizeof(proc_fdinfo);
 #else
     unsigned count=0; for (const auto& item:std::filesystem::directory_iterator("/proc/self/fd")) { (void)item; ++count; } return count;
 #endif

@@ -247,7 +247,7 @@ def generate_macos(tests=False):
     prefix = mono_prefix()
     remember(ROOT, Path(os.environ['DEVELOPER_DIR']), prefix)
     os.environ['HAZEL_PYTHON'] = sys.executable
-    run([generator, '--mono-root=' + str(prefix), *(['--migration-tests'] if tests else []), 'xcode4'])
+    run([generator, '--mono-root=' + str(prefix), *(['--migration-tests','--shader-tools'] if tests else []), 'xcode4'])
     from macos.schemes import generate
     generate(ROOT)
 
@@ -258,7 +258,7 @@ def build(configuration, tests=False, database=False, targets=None):
         macos_toolchain()
         dependencies(configuration, premake())
         generate_macos(tests)
-        for target in targets or ('Hazelnut', 'Nutella'):
+        for target in targets or (('MacOSQualification',) if tests else ('Hazelnut', 'Nutella', 'SpriteAssetAudit')):
             run(['xcodebuild', '-workspace', ROOT / 'Hazel.xcworkspace', '-scheme', target, '-configuration', configuration, '-destination', 'generic/platform=macOS', '-jobs', '2', 'build'])
         return
     yaml_tools()
@@ -459,6 +459,8 @@ def main():
         p.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
         if action in ('setup', 'build'): p.add_argument('--tests', action='store_true')
         if action == 'test': p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
+        if action == 'test': p.add_argument('--suite',choices=('all','cpu'),default='all',help='CPU subset explicitly excludes graphics/editor acceptance')
+        if action == 'test': p.add_argument('--only',action='append',choices=[r['name'] for r in json.loads((ROOT/'scripts/internal/testing/native-tests.json').read_text())],help='Run selected maintained regression(s); other tests are not qualified')
     p = sub.add_parser('run'); p.add_argument('app', choices=('Hazelnut', 'Nutella')); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug'); p.add_argument('--project', type=Path)
     p = sub.add_parser('script-build'); p.add_argument('project', type=Path); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     p = sub.add_parser('test-packages'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
@@ -470,8 +472,6 @@ def main():
     args = parser.parse_args()
     if args.action in ('package', 'editor-export') and not TARGET['export_supported']:
         raise RuntimeError('Export/package support is not yet implemented for '+SYSTEM+'; script compilation is supported separately')
-    if SYSTEM == 'macos' and args.action in ('test', 'test-games', 'test-packages'):
-        raise RuntimeError('This macOS workflow awaits qualification; see docs/design/macos-port.md for the supported focused Xcode checks')
     if args.action == 'diagnose':
         diagnose(); return
     if args.action == 'bootstrap-premake':
@@ -506,12 +506,16 @@ def main():
         from internal.authoring import preflight
         preflight(args.operation, args.config)
         return
-    with build_lock():
+    # The macOS SDK integration regression invokes this CLI in child processes. Holding
+    # the SDK mutation lock in their parent would deadlock those operations.
+    with contextlib.nullcontext() if SYSTEM=='macos' and args.action=='test' else build_lock():
         if args.action in ('setup', 'build', 'database'):
             if args.action == 'setup':
                 diagnose(); run(['git', 'submodule', 'update', '--init', '--recursive']); yaml_tools()
             build(args.config, getattr(args, 'tests', False), args.action == 'database')
-            if args.action == 'setup': print('Ready. python scripts/hazel.py run Hazelnut\nHazelnut restores the last project; --project explicitly selects one.\nF5: copy scripts/internal/vscode/' + SYSTEM + '/ templates into .vscode. Use hazel.py --help for all workflows.')
+            if args.action == 'setup':
+                print('Ready. python scripts/hazel.py run Hazelnut\nHazelnut restores the last project; --project explicitly selects one.')
+                print('Use hazel.py open for the generated Xcode workspace.' if SYSTEM=='macos' else 'F5: copy scripts/internal/vscode/'+SYSTEM+'/ templates into .vscode.')
         elif args.action == 'new-project':
             from internal.authoring import create_project
             create_project(args.name, args.identifier, args.destination,args.build_scripts)
@@ -534,7 +538,7 @@ def main():
             game_tests(args.config,args.profile,args.packages,args.output.resolve())
         elif args.action == 'test':
             from internal.tests import test
-            test(args.config, args.profile)
+            test(args.config, args.profile, args.suite, args.only)
 
 
 if __name__ == '__main__':

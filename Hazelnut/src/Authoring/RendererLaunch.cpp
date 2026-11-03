@@ -1,7 +1,6 @@
 #include "RendererLaunch.h"
 #include "EditorPreferences.h"
 #include "EditorState.h"
-#include "Hazel/Core/FileSystem.h"
 #include "Hazel/Project/Project.h"
 namespace Hazel {
     EditorRendererLaunch EditorRendererLaunch::Read(const std::vector<std::string> &arguments) {
@@ -17,10 +16,7 @@ namespace Hazel {
         auto path = launch.ProjectToOpen(preferences.RestoreSession, state.Session.LastProject);
         if (path.empty() && !launch.Explicit && launch.Restore &&
             state.Session.LastProject.empty()) {
-            const auto bundled =
-                Project::Discover(FileSystem::GetExecutablePath().parent_path() / "Example");
-            if (bundled.size() == 1)
-                path = bundled.front();
+            path = EditorLaunch::DefaultProject();
         }
         if (!path.empty()) {
             if (const auto project = Project::LoadCandidate(path)) {

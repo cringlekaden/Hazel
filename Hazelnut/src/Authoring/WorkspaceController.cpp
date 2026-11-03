@@ -1,7 +1,6 @@
 #include "AuthoringPanel.h"
 #include "EditorLayer.h"
 #include "Hazel/Core/Application.h"
-#include "Hazel/Core/FileSystem.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Utils/PlatformUtils.h"
 #include "UI/PropertyUI.h"
@@ -38,9 +37,8 @@ namespace Hazel {
                 return; // Explicit failure must never fall back to remembered/bundled content.
             }
         } else if (!launch.Explicit && launch.Restore && m_State->Session.LastProject.empty()) {
-            const auto bundled =
-                Project::Discover(FileSystem::GetExecutablePath().parent_path() / "Example");
-            if (bundled.size() == 1 && !m_Editor.OpenProject(bundled.front()))
+            const auto bundled = EditorLaunch::DefaultProject();
+            if (!bundled.empty() && !m_Editor.OpenProject(bundled))
                 return;
         }
         if (!launch.Scene.empty()) {
