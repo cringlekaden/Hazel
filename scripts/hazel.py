@@ -255,11 +255,16 @@ def generate_macos(tests=False):
 def build(configuration, tests=False, database=False, targets=None):
     if SYSTEM == 'macos':
         if database: raise RuntimeError('The Bear database workflow is Linux-only; use Xcode indexing on macOS')
+        yaml_tools()
         macos_toolchain()
         dependencies(configuration, premake())
         generate_macos(tests)
         for target in targets or (('MacOSQualification',) if tests else ('Hazelnut', 'Nutella', 'SpriteAssetAudit')):
             run(['xcodebuild', '-workspace', ROOT / 'Hazel.xcworkspace', '-scheme', target, '-configuration', configuration, '-destination', 'generic/platform=macOS', '-jobs', '2', 'build'])
+        # Full setup/build promises a runnable default scheme on every host.
+        # Native Xcode phases build ScriptCore/tools; project scripts remain a
+        # canonical authoring operation, also available in the editor afterward.
+        if not targets: script_build(ROOT/'examples/SceneTransitions/SceneTransitions.hproj',configuration)
         return
     yaml_tools()
     generator = premake()

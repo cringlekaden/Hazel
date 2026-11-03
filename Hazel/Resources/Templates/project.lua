@@ -4,7 +4,9 @@ local core = os.getenv("HAZEL_SCRIPTCORE")
 if not core or not os.isfile(core) then error("Use scripts/hazel.py script-build with a built Hazel SDK") end
 core = path.translate(core, "/") -- Premake C# HintPath detection requires forward slashes.
 workspace "@IDENTIFIER@"
-    -- Managed IL is architecture-independent; native embedding owns the target.
+    -- Preserve the established Windows/Linux script-build configuration. Mac
+    -- uses portable managed IL; its embedding runtime owns native architecture.
+    if os.target() == "windows" or os.target() == "linux" then architecture "x64" end
     configurations { "Debug", "Release" }
 project "@IDENTIFIER@"
     kind "SharedLib"

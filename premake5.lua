@@ -5,6 +5,7 @@
 -- Supported:
 --   Windows x86_64 - Visual Studio / MSVC
 --   Linux   x86_64 - GNU Make / GCC
+--   macOS  arm64  - Xcode / Apple Clang
 --
 -- Projects:
 --   GLFW, Glad, ImGui - static dependencies
@@ -51,7 +52,10 @@ workspace "Hazel"
         'HZ_TARGET_EXPORT_SUPPORTED=' .. (target.export_supported and "1" or "0") }
     filter "system:macosx"
         systemversion (toolchain.targets.macos.deployment_target)
-        xcodebuildsettings { ["SDKROOT"] = "macosx", ["ONLY_ACTIVE_ARCH"] = "YES", ["CODE_SIGNING_ALLOWED"] = "NO", ["HEADER_SEARCH_PATHS"] = "$(inherited) $(USER_HEADER_SEARCH_PATHS)" }
+        -- This pinned Xcode generator otherwise selects NATIVE_ARCH_ACTUAL
+        -- from its platform map, ignoring architecture(). The target contract,
+        -- rather than the machine running Xcode, owns the product architecture.
+        xcodebuildsettings { ["ARCHS"] = target.architecture, ["SDKROOT"] = "macosx", ["ONLY_ACTIVE_ARCH"] = "YES", ["CODE_SIGNING_ALLOWED"] = "NO", ["HEADER_SEARCH_PATHS"] = "$(inherited) $(USER_HEADER_SEARCH_PATHS)" }
     filter {}
     startproject "Hazelnut"
 

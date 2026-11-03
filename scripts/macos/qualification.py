@@ -92,7 +92,7 @@ def isolation_command(command,source_sdk=None):
     return ['/usr/bin/sandbox-exec','-p',profile,*map(str,command)]
 
 
-def product_interaction(name,bundle,working,sdk,logs):
+def product_interaction(name,bundle,working,logs):
     from internal.package_tests import graphics_environment
     env=graphics_environment('native')
     for key in ('DYLD_LIBRARY_PATH','DYLD_FALLBACK_LIBRARY_PATH','HAZEL_FINAL_UI_PROJECT'):env.pop(key,None)
@@ -102,6 +102,7 @@ def product_interaction(name,bundle,working,sdk,logs):
     print('INTERACTIVE:',name,'— normal desktop launch (source isolation is verified by the separate sandboxed fixtures). Resize, exercise prepared content, then close normally (10 minute limit). Private profile:',env['HAZEL_DATA'],flush=True)
     with log.open('w',encoding='utf-8') as stream:
         process=subprocess.Popen([bundle/'Contents/MacOS'/name],cwd=working,env=env,stdout=stream,stderr=subprocess.STDOUT)
+        print('OWNED PRODUCT PID:',process.pid,'LOG:',log,flush=True)
         images=set();deadline=time.monotonic()+600
         try:
             # Read the owned process's mapped native files without debugger
@@ -117,10 +118,12 @@ def product_interaction(name,bundle,working,sdk,logs):
             status=process.returncode
         finally:
             if process.poll() is None:process.kill();process.wait()
+            # Retain useful diagnostics even on timeout; this is evidence of
+            # an attempted launch, never a normal-shutdown acceptance marker.
+            (logs/(name+'-NativeMappings.log')).write_text('\n'.join(sorted(images))+'\n')
     text=log.read_text(errors='replace')
     if status or name+' ready:' not in text or 'Terminating GLFW' not in text:
         raise RuntimeError('Interactive product did not start/close normally: '+str(log)+'\n'+text)
-    (logs/(name+'-NativeMappings.log')).write_text('\n'.join(sorted(images))+'\n')
     shipped=[bundle/'Contents/MacOS'/name,*((bundle/'Contents/Frameworks').glob('*.dylib'))]
     identities={(p.stat().st_dev,p.stat().st_ino) for p in shipped}
     invalid=[]
@@ -154,7 +157,7 @@ def packages(output,profile,interactive=False):
             bundle=root/(name+'.app');contents=bundle/'Contents';native=contents/'Frameworks';mono=contents/'Resources/Mono'
             hz.run(['codesign','--verify','--deep','--strict',bundle])
             for binary in [contents/'MacOS'/name,*native.glob('*.dylib')]:audit_binary(binary,native)
-            if interactive:product_interaction(name,bundle,cwd,sdk,logs)
+            if interactive:product_interaction(name,bundle,cwd,logs)
             env=environment(working/name,contents/'Resources',mono)
             env['DYLD_PRINT_LIBRARIES']='1'
             hz.copy_tree(contents/'Resources',cwd/'assets')

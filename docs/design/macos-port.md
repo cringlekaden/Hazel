@@ -2,51 +2,51 @@
 
 ## Qualification continuation — 2026-11-03
 
-Native committed-example qualification now passes on Apple M4: all five projects,
-UI Tutorial ownership/authoring hooks, Lightkeeper menus/settings/persistent
-journey failure paths, scene transitions and repeated managed lifecycles. The Mac
-game dispatch now prepares the same pinned project reader as other hosts before
-calling project services. `open` preserves existing generated test targets and
-scheme launch choices instead of regenerating a smaller workspace.
+Target: native arm64/macOS 27.0+, pinned GLFW/shared OpenGL 4.1,
+Premake/Xcode and classic Mono 6.14.1. Merge remains gated on successful desktop
+and cross-platform CI acceptance. The dated sections below retain historical
+evidence; this is not a completed distribution claim.
 
-Source Xcode launch visibly rendered the disposable SDK GUI project; native Open
-dialog cancellation and selection of a spaces/Unicode project path were observed.
-Save-dialog completion, physical shortcuts/clipboard and pristine bundle desktop
-interaction remain unverified. Two relocated Hazelnut attempts reached ready on
-Apple M4 but Computer Use reported `cgWindowNotFound`; the owner did not see the
-second window. Both timed out and are failures of desktop acceptance, not passes.
-Sandboxed fixture evidence remains separate from normal unsandboxed desktop
-launches. The cause of the missing visible window is unresolved; no privacy or
-security settings were bypassed. The owner's unsaved Xcode source buffer is left
-untouched; CLI builds use the on-disk sources.
+Current host: Apple M4/arm64, macOS 27.2, full Xcode 27.2 (27B48), SDK 27.2,
+Apple Clang 21.0.0 (`clang-2100.3.34.1`); first-launch readiness passes.
+Command-scoped selection leaves global `xcode-select` on the installed CLT.
 
-Bundle versions now use Apple-compatible development versions `0.1.0`/`1`;
-source identity stays in `build.json`. The previous hash-derived integer exceeded
-Apple's numeric version representation. This corrects metadata without claiming
-that it explains the missing window. The pinned Glad loader also requests legacy
-`glVertexP*`/packed fixed-function symbols absent from Apple's core framework;
-Xcode logs lookup diagnostics. Exercised core rendering succeeds; the calls are
-loader probes, not used draw operations. No diagnostics were suppressed.
+| Gate | Evidence / remaining work |
+| --- | --- |
+| Apple M4 regressions | Final Debug/Release builds and both full 17-test suites pass, including positive native tutorial authoring and 2x framebuffer/picking checks. Full builds also prepare SceneTransitions scripts in both configurations |
+| SDK/native services | Restricted-PATH SDK readiness, actual disposable script compilation, private-profile restart, process bounds/cancellation, leases and watcher replacement/bursts/rename/delete/recreate/shutdown pass |
+| Examples | Five committed disposable projects pass actual scripts/rendering, UI Tutorial, Lightkeeper menu/settings/journey/save failure paths and scene transitions; user LastLightkeeper drafts excluded |
+| Relocation | Both extracted app archives and all five game archives pass signatures/checksums, arm64/closure checks and source/SDK-denied rendering, RuntimeSession and Mono/helper probes. Four-domain Mono tests invoke runtime-loaded helpers and record native images |
+| Desktop | Source Xcode launch visibly rendered a private project; native Open cancellation and spaces/Unicode project selection observed. Save completion, physical shortcuts/clipboard and pristine bundle interaction remain unverified |
+| Hosted CI | [Run 41642593658](https://github.com/cringlekaden/Hazel/actions/runs/41642593658), `2731ac3`: Mac Debug/Release builds and CPU/service/managed subsets pass. Windows native builds/relocated apps pass, then new-project compilation fails MSB4126; Linux still running. The template repair requires replacement CI before merge |
 
-CI at [`3aae0ba`](https://github.com/cringlekaden/Hazel/actions/runs/41559537302)
-passed macOS arm64 Debug/Release builds and CPU/service/managed tests. Windows
-exposed the `interface` COM macro collision in shared shader code; Linux exposed
-wide-line use in a forward-compatible context. Repairs rename the local variable,
-retain Linux/Windows' previous core-context request, and derive usable line width
-from actual context flags. The [OpenGL core specification](https://registry.khronos.org/OpenGL/specs/gl/glspec43.core.pdf)
-removes wide lines from forward-compatible contexts even when a driver advertises
-a wider device range. Apple focused rendering/UI/line-state checks pass; the
-replacement cross-platform CI run remains required before merge.
+Relocated Hazelnut desktop attempts reach ready and the Apple draw/event loop,
+but Computer Use reports `cgWindowNotFound`; input to Xcode also fails. The owner
+did not see one attempted window. Timeouts are failed desktop acceptance, never
+normal-shutdown passes. Cause remains unresolved. No privacy/security settings,
+real SDKs, user projects/profiles or unsaved Xcode buffers were changed to work
+around it. Desktop launches are normal unsandboxed runs; isolated fixture
+evidence is separate.
 
-The target remains native arm64/macOS 27.0+, pinned GLFW, shared OpenGL 4.1,
-Premake/Xcode and classic Mono 6.14.1. This checkpoint adds the full native test
-build, canonical runners and local ad-hoc bundle production. All 17 Release
-regressions passed on Apple M4, including positive tutorial authoring and a 2x
-viewport/picking regression. Extracted Hazelnut/Nutella checksums/signatures,
-rendering, RuntimeSession, four-domain Mono/helper invocation and loaded-image
-closure pass with source and SDK reads denied. Interactive product acceptance
-and final CI are pending; this is not a completed distribution claim. The
-sections below retain earlier checkpoint evidence.
+Build/workflow repairs: `open` preserves generated test targets and local schemes;
+Mac game dispatch prepares the shared pinned project reader. Full Mac builds now
+prepare default SceneTransitions scripts like Windows/Linux. Xcode `ARCHS` comes
+from the existing target contract rather than pinned Premake's
+`NATIVE_ARCH_ACTUAL` fallback. The template retains Windows/Linux x64 solution
+identity (restoring `Debug|x64`/`Release|x64`) and portable managed IL on Mac;
+actual pinned-Premake Windows generation verifies those configurations.
+Vendors/pins remain unchanged.
+
+Earlier [CI at `3aae0ba`](https://github.com/cringlekaden/Hazel/actions/runs/41559537302)
+exposed the Windows `interface` COM macro collision and Linux wide-line use in
+a forward-compatible context. Repairs rename the variable, retain previous
+Linux/Windows core-context requests and derive usable width from actual context
+flags. The [OpenGL core specification](https://registry.khronos.org/OpenGL/specs/gl/glspec43.core.pdf)
+removes wide lines from forward-compatible contexts despite a wider advertised
+device range. Bundle versions use valid development `0.1.0`/`1`; exact identity
+stays in `build.json`. Pinned Glad still probes absent legacy `glVertexP*` packed
+fixed-function symbols in Xcode logs; exercised core draws succeed. No diagnostic
+was suppressed.
 
 `InstallationLayout` now owns loose-product versus bundle resource, Mono,
 project and metadata paths. Nutella discovers `Contents/Resources/Project` in
