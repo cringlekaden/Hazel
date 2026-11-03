@@ -74,6 +74,14 @@ class Contracts(unittest.TestCase):
             game_tests('Release','native',False,ROOT/'dist')
             games.assert_called_once_with('Release','native',False,ROOT/'dist')
 
+    def test_desktop_selection_requires_interactive(self):
+        import hazel
+        with patch.object(sys,'argv',['hazel.py','test-packages','--interactive-app','Nutella']), \
+             patch.object(hazel,'build_lock') as lock:
+            with self.assertRaisesRegex(RuntimeError,'--interactive-app requires --interactive'):
+                hazel.main()
+            lock.assert_not_called()
+
 def gui_fixture():
     parent=ROOT/'build/testing/macos';parent.mkdir(parents=True,exist_ok=True)
     private=Path(tempfile.mkdtemp(prefix='SDK GUI é ',dir=parent))

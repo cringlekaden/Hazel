@@ -17,16 +17,24 @@ Command-scoped selection leaves global `xcode-select` on the installed CLT.
 | SDK/native services | Restricted-PATH SDK readiness, actual disposable script compilation, private-profile restart, process bounds/cancellation, leases and watcher replacement/bursts/rename/delete/recreate/shutdown pass |
 | Examples | Five committed disposable projects pass actual scripts/rendering, UI Tutorial, Lightkeeper menu/settings/journey/save failure paths and scene transitions; user LastLightkeeper drafts excluded |
 | Relocation | Both extracted app archives and all five game archives pass signatures/checksums, arm64/closure checks and source/SDK-denied rendering, RuntimeSession and Mono/helper probes. Four-domain Mono tests invoke runtime-loaded helpers and record native images |
-| Desktop | Source Xcode launch visibly rendered a private project; native Open cancellation and spaces/Unicode project selection observed. Save completion, physical shortcuts/clipboard and pristine bundle interaction remain unverified |
-| Hosted CI | [Run 41642593658](https://github.com/cringlekaden/Hazel/actions/runs/41642593658), `2731ac3`: Mac Debug/Release builds and CPU/service/managed subsets pass. Windows native builds/relocated apps pass, then new-project compilation fails MSB4126; Linux still running. The template repair requires replacement CI before merge |
+| Desktop | Source Xcode launch visibly rendered a private project; native Open cancellation and spaces/Unicode project selection observed. Pristine relocated Hazelnut visibly renders text/UI/sprites; Play, actual scripted transition to Level1 and Stop were observed. Save completion, physical shortcuts/clipboard, window transitions and normal product closure remain pending |
+| Hosted CI | [Run 41642593658](https://github.com/cringlekaden/Hazel/actions/runs/41642593658), `2731ac3`: full Linux job and Mac build/CPU/service/managed job pass. [Run 41650176652](https://github.com/cringlekaden/Hazel/actions/runs/41650176652), `bc9124d`: Linux/Mac jobs pass; Windows advances beyond repaired project compilation, then fails the EditorSmoke interpreter-path assertion. The interpreter fixture and configuration-cache repairs need replacement CI |
 
-Relocated Hazelnut desktop attempts reach ready and the Apple draw/event loop,
-but Computer Use reports `cgWindowNotFound`; input to Xcode also fails. The owner
-did not see one attempted window. Timeouts are failed desktop acceptance, never
-normal-shutdown passes. Cause remains unresolved. No privacy/security settings,
+Computer Use intermittently reports `cgWindowNotFound`, including for Xcode.
+Foregrounding Hazelnut restored access long enough for the observed Play/transition/
+Stop checks above. The owner was away during an earlier attempt and may have
+checked after timeout; that is not evidence of a missing-window defect. Timeouts
+leave normal closure unverified, never a pass. No privacy/security settings,
 real SDKs, user projects/profiles or unsaved Xcode buffers were changed to work
 around it. Desktop launches are normal unsandboxed runs; isolated fixture
 evidence is separate.
+
+Desktop attempts are stopped at the owner's request while unavailable. No test
+products remain running. Resume with an available operator; `test-packages
+--interactive --interactive-app Hazelnut` or `Nutella` selects one product and
+explicitly reports the other desktop check unexecuted. Per-attempt logs are kept
+under `build/testing/packages/macos/desktop-*/`. Full desktop acceptance still
+requires both products; timed-out/killed runs never supply normal-close evidence.
 
 Build/workflow repairs: `open` preserves generated test targets and local schemes;
 Mac game dispatch prepares the shared pinned project reader. Full Mac builds now
@@ -36,6 +44,21 @@ from the existing target contract rather than pinned Premake's
 identity (restoring `Debug|x64`/`Release|x64`) and portable managed IL on Mac;
 actual pinned-Premake Windows generation verifies those configurations.
 Vendors/pins remain unchanged.
+
+The interpreter fixture now emits a resolved path like the real Python probe and
+checks version/order and physical executable identity,
+rather than comparing path spellings from `GetModuleFileName` and `canonical()`.
+Separate diagnostics distinguish failed probes, wrong versions and wrong files;
+the focused Mac editor regression and both CPU-only resolved-path fixture modes
+pass. Windows verification remains required.
+Xcode intermediate paths also restore Apple's [configuration-specific default](https://developer.apple.com/documentation/xcode/build-settings-reference):
+pinned Premake had set `CONFIGURATION_TEMP_DIR=$(OBJROOT)`, making Debug/Release
+object directories identical. The maintained Premake override uses
+`$(PROJECT_TEMP_DIR)/$(CONFIGURATION)`, preserving local DerivedData choices.
+Debug and Release builds each compiled 417 C/C++ files in their new directories;
+returning to Debug compiled zero. This verifies preservation across configuration
+switches without changing global Xcode settings or cleaning existing caches.
+A subsequent one-file interpreter-fixture edit compiled exactly one C++ file.
 
 Earlier [CI at `3aae0ba`](https://github.com/cringlekaden/Hazel/actions/runs/41559537302)
 exposed the Windows `interface` COM macro collision and Linux wide-line use in

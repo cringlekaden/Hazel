@@ -139,13 +139,19 @@ def product_interaction(name,bundle,working,logs):
     print('PASS:',name,'actual relocated product startup/normal shutdown, runtime-loaded closure and unchanged signature; human interaction details remain separately recorded',flush=True)
 
 
-def packages(output,profile,interactive=False):
+def packages(output,profile,interactive=False,interactive_app=None):
     native_profile(profile)
     hz.macos_toolchain()
     sdk=hz.mono_prefix()
     from internal.package_tests import extract_verified
     from macos.packaging import audit_binary,relocate_executable,sign
     logs=hz.ROOT/'build/testing/packages/macos';logs.mkdir(parents=True,exist_ok=True)
+    # Preserve each desktop attempt, including failures, without overwriting a
+    # previous app's diagnostics when qualifying the products separately.
+    desktop_logs=Path(tempfile.mkdtemp(prefix='desktop-',dir=logs)) if interactive else None
+    if interactive_app:
+        other='Nutella' if interactive_app=='Hazelnut' else 'Hazelnut'
+        print('NOT EXECUTED:',other,'desktop acceptance; only',interactive_app,'was selected',flush=True)
     with tempfile.TemporaryDirectory(prefix='Hazel relocated ü space ') as folder:
         working=Path(folder)
         # Prove the restriction before accepting any package evidence.
@@ -157,7 +163,8 @@ def packages(output,profile,interactive=False):
             bundle=root/(name+'.app');contents=bundle/'Contents';native=contents/'Frameworks';mono=contents/'Resources/Mono'
             hz.run(['codesign','--verify','--deep','--strict',bundle])
             for binary in [contents/'MacOS'/name,*native.glob('*.dylib')]:audit_binary(binary,native)
-            if interactive:product_interaction(name,bundle,cwd,logs)
+            if interactive and (interactive_app is None or interactive_app==name):
+                product_interaction(name,bundle,cwd,desktop_logs)
             env=environment(working/name,contents/'Resources',mono)
             env['DYLD_PRINT_LIBRARIES']='1'
             hz.copy_tree(contents/'Resources',cwd/'assets')

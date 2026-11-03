@@ -856,9 +856,18 @@ private:
         auto olderProbe=probeFolder/(std::string("older-python")+executable.extension().u8string());
         std::filesystem::copy_file(executable,validProbe);std::filesystem::copy_file(executable,olderProbe);
         auto ordered=Toolchain::SelectPythonCandidates({olderProbe,validProbe});
-        Check(bool(ordered)&&ordered.Version=="3.9.1"&&ordered.Executable==std::filesystem::canonical(olderProbe),"Python installation ordering was nondeterministic");
+        Check(bool(ordered),("Python ordering probe failed: "+ordered.Error).c_str());
+        Check(ordered.Version=="3.9.1",("Python ordering chose version "+ordered.Version+" instead of first compatible 3.9.1").c_str());
+        // ProbePython returns the interpreter's own spelling. GetModuleFileName
+        // and canonical() need not agree on Windows path spelling; /var aliases
+        // /private/var on macOS. Assert actual file identity and ordering.
+        Check(std::filesystem::equivalent(ordered.Executable,olderProbe),
+              ("Python ordering chose a different executable: "+ordered.Executable.generic_u8string()+"; expected "+olderProbe.generic_u8string()).c_str());
         ordered=Toolchain::SelectPythonCandidates({m_Directory/"missing",validProbe,olderProbe});
-        Check(bool(ordered)&&ordered.Version=="3.14.1"&&ordered.Executable==std::filesystem::canonical(validProbe),"Compatible Python candidate selection failed");
+        Check(bool(ordered),("Compatible Python candidate probe failed: "+ordered.Error).c_str());
+        Check(ordered.Version=="3.14.1",("Python candidate chose version "+ordered.Version+" instead of first compatible 3.14.1").c_str());
+        Check(std::filesystem::equivalent(ordered.Executable,validProbe),
+              ("Python candidate chose a different executable: "+ordered.Executable.generic_u8string()+"; expected "+validProbe.generic_u8string()).c_str());
         std::filesystem::remove(validProbe);std::filesystem::remove(olderProbe);
         auto python=Toolchain::DiscoverPython();Check(bool(python)&&python.Executable.is_absolute()&&!python.Version.empty(),"Installed Python discovery failed");
         std::cout<<"AUTHORING PYTHON: "<<python.Executable.generic_u8string()<<"; "<<python.Source<<"; "<<python.Version<<"\n";
@@ -1424,7 +1433,9 @@ int main(int argc, char** argv) {
     if(argc>1 && std::string(argv[1])=="-I") {
         auto name=std::filesystem::u8path(argv[0]).filename().u8string();
         if(name.find("valid")!=std::string::npos || name.find("older")!=std::string::npos) {
-            std::cout<<"{\"version\":[3,"<<(name.find("older")!=std::string::npos?9:14)<<",1],\"ok\":true,\"executable\":"<<std::quoted(FileSystem::GetExecutablePath().generic_u8string())<<"}\n";return 0;
+            // Match pathlib.Path(sys.executable).resolve() in the real probe,
+            // rather than the OS-specific spelling returned by module lookup.
+            std::cout<<"{\"version\":[3,"<<(name.find("older")!=std::string::npos?9:14)<<",1],\"ok\":true,\"executable\":"<<std::quoted(std::filesystem::canonical(FileSystem::GetExecutablePath()).generic_u8string())<<"}\n";return 0;
         }
         if(name.find("unsupported")!=std::string::npos){std::cout<<"{\"version\":[3,8,0],\"ok\":true,\"executable\":\"/missing\"}\n";return 0;}
         if(name.find("malformed")!=std::string::npos){std::cout<<"malformed probe output\n";return 0;}

@@ -470,12 +470,15 @@ def main():
     p = sub.add_parser('script-build'); p.add_argument('project', type=Path); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     p = sub.add_parser('test-packages'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
     p.add_argument('--interactive',action='store_true',help='macOS: launch pristine relocated products for human interaction and normal close')
+    p.add_argument('--interactive-app',choices=('Hazelnut','Nutella'),help='With --interactive, check only this product desktop; the other remains unexecuted')
     p = sub.add_parser('test-games'); p.add_argument('--config', choices=('Debug','Release'), default='Debug'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native'); p.add_argument('--packages', action='store_true'); p.add_argument('--output', type=Path, default=ROOT/'dist/games')
     p = sub.add_parser('authoring-preflight'); p.add_argument('--operation', choices=('scripts','export'), default='scripts'); p.add_argument('--config', choices=('Debug','Release'), default='Debug')
     p = sub.add_parser('new-project'); p.add_argument('--name', required=True); p.add_argument('--identifier', required=True); p.add_argument('--destination', type=Path, required=True); p.add_argument('--build-scripts', action='store_true', help='Compile after native creation; build failure retains editable project')
     p = sub.add_parser('editor-export'); p.add_argument('project', type=Path); p.add_argument('--name', required=True); p.add_argument('--output', type=Path, required=True)
     p = sub.add_parser('package'); p.add_argument('--app', choices=('Hazelnut', 'Nutella', 'all'), default='all'); p.add_argument('--name', help='Archive/directory name for a single application package'); p.add_argument('--project', type=Path, default=ROOT/'examples/SceneTransitions/SceneTransitions.hproj'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--external-assets', choices=('reject',), default='reject', help='External references must be moved into the project and saved before packaging')
     args = parser.parse_args()
+    if args.action=='test-packages' and args.interactive_app and not args.interactive:
+        raise RuntimeError('--interactive-app requires --interactive')
     if args.action in ('package', 'editor-export') and not TARGET['export_supported']:
         raise RuntimeError('Export/package support is not yet implemented for '+SYSTEM+'; script compilation is supported separately')
     if args.action == 'diagnose':
@@ -542,7 +545,7 @@ def main():
             package(args.app, args.project, args.output, args.name)
         elif args.action == 'test-packages':
             from internal.package_tests import package_tests
-            package_tests(args.output.resolve(), args.profile,args.interactive)
+            package_tests(args.output.resolve(), args.profile,args.interactive,args.interactive_app)
         elif args.action == 'test-games':
             from internal.game_tests import game_tests
             game_tests(args.config,args.profile,args.packages,args.output.resolve())

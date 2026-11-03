@@ -103,10 +103,10 @@ def graphics_environment(profile):
     if profile=='gl41':env.update(MESA_GL_VERSION_OVERRIDE='4.1',MESA_GLSL_VERSION_OVERRIDE='410')
     return env
 
-def package_tests(output,profile='native',interactive=False):
+def package_tests(output,profile='native',interactive=False,interactive_app=None):
     if hz.SYSTEM=='macos':
         from macos.qualification import packages
-        return packages(output,profile,interactive)
+        return packages(output,profile,interactive,interactive_app)
     if interactive:raise RuntimeError('--interactive is the macOS product acceptance path; Windows/Linux use their maintained desktop harness')
     suffix='.zip' if hz.SYSTEM=='windows' else '.tar.gz'
     archives=[output/f'{name}-{hz.SYSTEM}-x86_64-Release{suffix}' for name in ('Nutella','Hazelnut')]
