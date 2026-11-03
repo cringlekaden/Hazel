@@ -137,7 +137,7 @@ public:
             e.m_SceneHierarchyPanel.SetSelectedEntity(player);
             e.m_EditorScenePath = m_Directory / "AuthoringProject/Assets/Scenes" / std::filesystem::u8path(u8"workflow-é-🚀.hazel");
             Check(e.SaveScene(),"Editor scene save reported failure");
-            Project::GetActive()->GetConfig().StartScene=e.m_EditorScenePath.lexically_relative(std::filesystem::absolute(Project::GetAssetDirectory()));
+            Project::GetActive()->GetConfig().StartScene=Project::MakeAssetReference(Project::GetAssetDirectory(),e.m_EditorScenePath);
             Check(e.SaveProject(),"Editor project save reported failure");
             const auto saved=Read(e.m_EditorScenePath);
             Check(saved.find(std::string(u8"Textures/texture é 🚀.png"))!=std::string::npos &&
