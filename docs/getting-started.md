@@ -131,7 +131,8 @@ python3 scripts/hazel.py editor-export examples/Skybound/Skybound.hproj --name S
 | Location | Contents |
 | --- | --- |
 | `bin/<Config>-<OS>-<architecture>/<target>/` | Native executables/libraries and managed SDK products, plus staged runtime resources beside applications; macOS uses arm64, Windows/Linux x86_64 |
-| `bin-int/<Config>-<OS>-<architecture>/` | Native/managed SDK intermediates |
+| `bin-int/<Config>-<OS>-<architecture>/` | Premake native/managed intermediates for the Make/Visual Studio paths |
+| Xcode's selected DerivedData location | macOS native intermediates under `<project>.build/<Config>/<target>.build/`; separate Debug/Release object caches |
 | `build/` | Generated tool/test projects, pinned tools/dependency sources/installs/downloads, project-script compilation workspaces and test evidence |
 | Project `Assets/Scripts/Binaries/` | Example/template deployed script modules; the descriptor's ScriptModulePath is authoritative for other projects |
 | `dist/` | Default application archives/checksums; `--output` selects another destination |

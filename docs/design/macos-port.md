@@ -20,6 +20,13 @@ Command-scoped selection leaves global `xcode-select` on the installed CLT.
 | Desktop | Source Xcode launch visibly rendered a private project; native Open cancellation and spaces/Unicode project selection observed. Pristine relocated Hazelnut visibly renders text/UI/sprites; Play, actual scripted transition to Level1 and Stop were observed. Save completion, physical shortcuts/clipboard, window transitions and normal product closure remain pending |
 | Hosted CI | [Run 41642593658](https://github.com/cringlekaden/Hazel/actions/runs/41642593658), `2731ac3`: full Linux job and Mac build/CPU/service/managed job pass. [Run 41650176652](https://github.com/cringlekaden/Hazel/actions/runs/41650176652), `bc9124d`: Linux/Mac jobs pass; Windows advances beyond repaired project compilation, then fails the EditorSmoke interpreter-path assertion. The interpreter fixture and configuration-cache repairs need replacement CI |
 
+Current replacement: [run 41660986550](https://github.com/cringlekaden/Hazel/actions/runs/41660986550)
+at `131b552` includes the interpreter fixture, configuration-cache and per-app
+desktop-runner repairs. It is pending; do not merge based on the earlier partial
+results. After CI and remaining desktop acceptance pass, merge normally into
+master using an isolated worktree to preserve the owner's current checkout,
+then create the separately reviewed 3D audit branch from that exact merged SHA.
+
 Computer Use intermittently reports `cgWindowNotFound`, including for Xcode.
 Foregrounding Hazelnut restored access long enough for the observed Play/transition/
 Stop checks above. The owner was away during an earlier attempt and may have
