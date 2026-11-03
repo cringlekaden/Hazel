@@ -92,38 +92,54 @@ def isolation_command(command,source_sdk=None):
     return ['/usr/bin/sandbox-exec','-p',profile,*map(str,command)]
 
 
-def product_interaction(name,bundle,working,logs):
+def product_acceptance(name,bundle,working,logs,source_sdk,interactive=False):
     from internal.package_tests import graphics_environment
     env=graphics_environment('native')
     for key in ('DYLD_LIBRARY_PATH','DYLD_FALLBACK_LIBRARY_PATH','HAZEL_FINAL_UI_PROJECT'):env.pop(key,None)
     env.update(HAZEL_DATA=str(working/'profile'),HAZEL_SAVE_ROOT=str(working/'saves'),PATH='/usr/bin:/bin')
     # No resource/Mono overrides: exercise the real product's installation layout.
-    log=logs/(name+'-Desktop.log')
-    print('INTERACTIVE:',name,'— normal desktop launch (source isolation is verified by the separate sandboxed fixtures). Resize, exercise prepared content, then close normally (10 minute limit). Private profile:',env['HAZEL_DATA'],flush=True)
+    mode='Desktop' if interactive else 'Smoke'
+    log=logs/(name+'-'+mode+'.log')
+    if interactive:
+        print('INTERACTIVE:',name,'— source/SDK-isolated desktop launch. Exercise prepared content, then close normally (10 minute limit). Private profile:',env['HAZEL_DATA'],flush=True)
+    else:print('AUTOMATED PRODUCT:',name,'— source/SDK denied; real frames and guarded normal close',flush=True)
+    if not interactive:
+        # Reject unattended launches before application construction if private
+        # storage was omitted. Never fall back to the owner's normal profile.
+        unsafe=env.copy();unsafe.pop('HAZEL_DATA')
+        result=subprocess.run(isolation_command([bundle/'Contents/MacOS'/name,'--smoke-test'],source_sdk),
+                              cwd=working,env=unsafe,capture_output=True,text=True,timeout=20)
+        rejection=result.stdout+result.stderr
+        (logs/(name+'-SmokeGuard.log')).write_text(rejection,encoding='utf-8')
+        if result.returncode!=1 or '--smoke-test requires absolute HAZEL_DATA and HAZEL_SAVE_ROOT' not in rejection or 'Creating window' in rejection:
+            raise RuntimeError('Product did not reject missing private smoke-test storage before window creation')
     with log.open('w',encoding='utf-8') as stream:
-        process=subprocess.Popen([bundle/'Contents/MacOS'/name],cwd=working,env=env,stdout=stream,stderr=subprocess.STDOUT)
+        command=[bundle/'Contents/MacOS'/name,*([] if interactive else ['--smoke-test'])]
+        process=subprocess.Popen(isolation_command(command,source_sdk),cwd=working,env=env,stdout=stream,stderr=subprocess.STDOUT)
         print('OWNED PRODUCT PID:',process.pid,'LOG:',log,flush=True)
-        images=set();deadline=time.monotonic()+600
+        images=set();deadline=time.monotonic()+(600 if interactive else 120)
         try:
             # Read the owned process's mapped native files without debugger
             # entitlements or dyld environment flags. Shared-cache OS images
             # need not have individual vnode mappings; packaged dylibs do.
             while process.poll() is None:
-                if time.monotonic()>=deadline:raise RuntimeError('Interactive product acceptance timed out; no normal-close pass was recorded')
+                if time.monotonic()>=deadline:raise RuntimeError(mode+' product acceptance timed out; no normal-close pass was recorded')
                 mapped=subprocess.run(['/usr/sbin/lsof','-a','-p',str(process.pid),'-d','txt','-Fn'],capture_output=True,text=True,timeout=5)
                 if mapped.returncode and process.poll() is None:raise RuntimeError('Cannot inspect owned product native mappings: '+mapped.stderr)
                 for line in mapped.stdout.splitlines():
                     if line.startswith('n') and (line.endswith('.dylib') or '/Contents/MacOS/' in line):images.add(line[1:])
-                time.sleep(.5)
+                time.sleep(.1)
             status=process.returncode
         finally:
             if process.poll() is None:process.kill();process.wait()
             # Retain useful diagnostics even on timeout; this is evidence of
             # an attempted launch, never a normal-shutdown acceptance marker.
-            (logs/(name+'-NativeMappings.log')).write_text('\n'.join(sorted(images))+'\n')
+            (logs/(name+'-'+mode+'-NativeMappings.log')).write_text('\n'.join(sorted(images))+'\n')
     text=log.read_text(errors='replace')
     if status or name+' ready:' not in text or 'Terminating GLFW' not in text:
-        raise RuntimeError('Interactive product did not start/close normally: '+str(log)+'\n'+text)
+        raise RuntimeError(mode+' product did not start/close normally: '+str(log)+'\n'+text)
+    if not interactive and ('SMOKE: 60 rendered frames' not in text or 'SMOKE PASS: application teardown completed' not in text):
+        raise RuntimeError('Product did not prove rendered frames and completed teardown: '+str(log))
     shipped=[bundle/'Contents/MacOS'/name,*((bundle/'Contents/Frameworks').glob('*.dylib'))]
     identities={(p.stat().st_dev,p.stat().st_ino) for p in shipped}
     invalid=[]
@@ -134,9 +150,9 @@ def product_interaction(name,bundle,working,logs):
         info=Path(path).stat()
         if (info.st_dev,info.st_ino) not in identities:invalid.append(path)
     if not any('libmonosgen' in line for line in images) or invalid:
-        raise RuntimeError('Interactive product native closure failed: '+str(log))
+        raise RuntimeError(mode+' product native closure failed: '+str(log)+'; unexpected images: '+str(invalid))
     hz.run(['codesign','--verify','--deep','--strict',bundle])
-    print('PASS:',name,'actual relocated product startup/normal shutdown, runtime-loaded closure and unchanged signature; human interaction details remain separately recorded',flush=True)
+    print('PASS:',name,mode,'actual relocated product startup/normal shutdown, runtime-loaded closure and unchanged signature; human interaction details remain separately recorded',flush=True)
 
 
 def packages(output,profile,interactive=False,interactive_app=None):
@@ -163,8 +179,9 @@ def packages(output,profile,interactive=False,interactive_app=None):
             bundle=root/(name+'.app');contents=bundle/'Contents';native=contents/'Frameworks';mono=contents/'Resources/Mono'
             hz.run(['codesign','--verify','--deep','--strict',bundle])
             for binary in [contents/'MacOS'/name,*native.glob('*.dylib')]:audit_binary(binary,native)
+            product_acceptance(name,bundle,cwd,logs,sdk)
             if interactive and (interactive_app is None or interactive_app==name):
-                product_interaction(name,bundle,cwd,desktop_logs)
+                product_acceptance(name,bundle,cwd,desktop_logs,sdk,interactive=True)
             env=environment(working/name,contents/'Resources',mono)
             env['DYLD_PRINT_LIBRARIES']='1'
             hz.copy_tree(contents/'Resources',cwd/'assets')
@@ -198,4 +215,4 @@ def packages(output,profile,interactive=False,interactive_app=None):
                 forbidden=[line for line in loads if str(hz.ROOT) in line or '/opt/homebrew/' in line or '/Cellar/' in line]
                 if forbidden or not any('libmonosgen' in line for line in loads):raise RuntimeError('Relocated dynamic closure failed: '+str(forbidden))
             print('PASS:',name,'extracted signature/checksums, arm64/static closure, denied-source Apple rendering/picking and managed RuntimeSession lifecycle',flush=True)
-    if not interactive:print('MANUAL ACCEPTANCE: rerun with --interactive to launch the pristine extracted products and close normally; fixture passes alone do not establish desktop acceptance',flush=True)
+    if not interactive:print('MANUAL ACCEPTANCE: --interactive adds physical dialogs/input/window checks; automated product frames do not establish those interactions',flush=True)

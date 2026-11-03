@@ -74,7 +74,9 @@ python3 scripts/hazel.py test-packages --output dist
 python3 scripts/hazel.py test-packages --output dist --interactive
 ```
 
-The automated runner extracts into a spaces/Unicode path, verifies checksums and signatures, then runs maintained rendering/picking, RuntimeSession and Mono/helper lifecycle probes with source/SDK/Homebrew reads denied. It verifies actual loaded native images as well as static load commands. These are test-only probes in disposable bundle copies, not product desktop acceptance. `--interactive` separately launches pristine products normally with private profiles and no resource/Mono overrides, requires normal closure and verifies mapped native libraries and unchanged signatures. Resize, focus, dialogs and input still require observed interaction; a timeout is a failure, not a skip/pass.
+The automated runner extracts into a spaces/Unicode path, verifies checksums and signatures, then launches each pristine product with private storage, restricted PATH and source/SDK/Homebrew reads denied. Its maintained `--smoke-test` mode requires 60 real application frames, engine draw submissions, an accepted ordinary close request and completed teardown; it never dismisses document guards. Missing private storage fails before application construction. Mapped native libraries and unchanged signatures are checked after execution.
+
+Separate test-only probes in disposable bundle copies verify pixel readback/picking, RuntimeSession and Mono/helper lifecycle, including runtime-loaded native closure. Product frame/submission counts alone are not pixel-correctness evidence. `--interactive` adds observed physical dialogs/input/window checks using the same isolated installation and private storage. A timeout is a failure, not a skip/pass; unattended frames do not establish physical interaction.
 
 Add `--interactive-app Hazelnut` or `--interactive-app Nutella` to qualify desktop behavior separately. The other app is explicitly reported unexecuted; both are required for complete desktop acceptance. Per-attempt desktop logs remain under `build/testing/packages/macos/desktop-*/`.
 

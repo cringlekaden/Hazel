@@ -30,6 +30,13 @@ xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test -
 
 Do not overlap build/test campaigns or modify the user's examples/profile/saves. Existing test runners create private working directories; set isolated application/save roots for manual probes. Automated checks, physical GPU/controller/DPI use and competent-reader typography acceptance remain separate evidence.
 
+Mac package qualification also runs the actual products' bounded `--smoke-test`
+diagnostic: 60 normal frames with engine draw submissions, an accepted ordinary
+close request and complete teardown. It requires explicit absolute `HAZEL_DATA`
+and `HAZEL_SAVE_ROOT`; missing storage or a blocked document guard fails. This
+does not simulate gameplay or prove physical dialogs/clipboard. The separate
+rendering regressions check pixels/picking. See [bundle qualification](packaging.md#macos-bundle-qualification).
+
 ## Tutorial authoring qualification
 
 Build matching Sandbox scripts first. Select a **private tracked copy** of Sandbox for local work; never regenerate the owner's startup scene. For example, on Linux:
