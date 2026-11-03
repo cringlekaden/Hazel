@@ -55,7 +55,16 @@ workspace "Hazel"
         -- This pinned Xcode generator otherwise selects NATIVE_ARCH_ACTUAL
         -- from its platform map, ignoring architecture(). The target contract,
         -- rather than the machine running Xcode, owns the product architecture.
-        xcodebuildsettings { ["ARCHS"] = target.architecture, ["SDKROOT"] = "macosx", ["ONLY_ACTIVE_ARCH"] = "YES", ["CODE_SIGNING_ALLOWED"] = "NO", ["HEADER_SEARCH_PATHS"] = "$(inherited) $(USER_HEADER_SEARCH_PATHS)" }
+        xcodebuildsettings {
+            ["ARCHS"] = target.architecture,
+            ["SDKROOT"] = "macosx",
+            -- Restore Xcode's configuration identity: this pinned generator
+            -- otherwise puts Debug and Release objects in the same directory.
+            ["CONFIGURATION_TEMP_DIR"] = "$(PROJECT_TEMP_DIR)/$(CONFIGURATION)",
+            ["ONLY_ACTIVE_ARCH"] = "YES",
+            ["CODE_SIGNING_ALLOWED"] = "NO",
+            ["HEADER_SEARCH_PATHS"] = "$(inherited) $(USER_HEADER_SEARCH_PATHS)"
+        }
     filter {}
     startproject "Hazelnut"
 

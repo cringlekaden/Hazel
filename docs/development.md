@@ -2,6 +2,11 @@
 
 Use [setup/build](getting-started.md), [settings/resources](settings-and-resources.md) and the [dependency ledger](platforms-and-dependencies.md). Premake is the build system; builds are incremental with **two compiler jobs**. Keep Debug/Release outputs and platform caches separate.
 
+Mac generation preserves the selected DerivedData location and uses Xcode's
+configuration-specific intermediate directories. Switching Debug/Release should
+retain each configuration's native objects. Generated project files remain
+Premake-owned; do not maintain separate manual build-setting fixes in them.
+
 ## Iterate on a change
 
 Build the affected configuration with `python3 scripts/hazel.py build --config Debug --tests` (Windows: `python`). Run a focused existing check for the changed behavior before milestone qualification. `hazel.py test --only Renderer2DSmoke` selects a maintained check; `--only` is repeatable. `--suite cpu` selects the display-free subset. Both report excluded coverage explicitly and do not qualify the full suite.
