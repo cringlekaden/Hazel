@@ -13,12 +13,12 @@ Command-scoped selection leaves global `xcode-select` on the installed CLT.
 
 | Gate | Evidence / remaining work |
 | --- | --- |
-| Apple M4 regressions | Final Debug/Release builds and both full 17-test suites pass, including positive native tutorial authoring and 2x framebuffer/picking checks. Full builds also prepare SceneTransitions scripts in both configurations |
+| Apple M4 regressions | Debug/Release builds and both full 17-test suites pass at `631af3b`, including positive native tutorial authoring, bounded-loop failure cases and 2x framebuffer/picking checks. Full builds also prepare SceneTransitions scripts in both configurations |
 | SDK/native services | Restricted-PATH SDK readiness, actual disposable script compilation, private-profile restart, process bounds/cancellation, leases and watcher replacement/bursts/rename/delete/recreate/shutdown pass |
 | Examples | Five committed disposable projects pass actual scripts/rendering, UI Tutorial, Lightkeeper menu/settings/journey/save failure paths and scene transitions; user LastLightkeeper drafts excluded |
-| Relocation | Both extracted app archives and all five game archives pass signatures/checksums, arm64/closure checks and source/SDK-denied rendering, RuntimeSession and Mono/helper probes. Four-domain Mono tests invoke runtime-loaded helpers and record native images |
+| Relocation | At `631af3b`, both pristine extracted products pass source/SDK/Homebrew-denied startup, 60 rendered frames, ordinary close and full teardown, mapped native closure and unchanged signatures. Both app archives and all five game archives pass signatures/checksums, arm64/closure checks, Apple pixel/picking, RuntimeSession and Mono/helper probes. Four-domain Mono tests invoke runtime-loaded helpers and record native images |
 | Desktop | Source Xcode launch rendered a private project; native Open cancellation and spaces/Unicode project selection observed. Relocated Hazelnut rendered text/UI/sprites, Play/Level1/Stop, resize and native minimize/restore. Physical Command+Shift+S opened Save As; saving `Qualification ü.hazel` into the private project succeeded, repeated Save As was cancelled, and Command+Q exited normally. Relocated Nutella rendered MainMenu/Level1, resized, returned to MainMenu and quit normally. Both normal closures passed mapped-native-closure/signature checks. Clipboard user-gesture acceptance remains unexecuted |
-| Hosted CI | [Run 41660986550](https://github.com/cringlekaden/Hazel/actions/runs/41660986550), `131b552`: full Linux and Windows jobs, and Mac Debug/Release CPU/service/managed job all pass. This proves the interpreter and configuration-cache repairs; subsequent shared application-loop changes require replacement CI |
+| Hosted CI | [Run 41660986550](https://github.com/cringlekaden/Hazel/actions/runs/41660986550), `131b552`: full Linux and Windows jobs, and Mac Debug/Release CPU/service/managed job all pass. Replacement [run 41705072658](https://github.com/cringlekaden/Hazel/actions/runs/41705072658) at `631af3b` is pending for the shared application-loop changes |
 
 After replacement CI and remaining acceptance pass, merge normally into
 master using an isolated worktree to preserve the owner's current checkout,
@@ -49,7 +49,20 @@ bypass or desktop-control service is added. CoreSmoke checks real quad readback,
 normal close dispatch, no-draw failure and blocked-close preservation. Package
 qualification launches both pristine products with source/SDK/Homebrew reads
 denied, checks mapped native closure and verifies signatures before adding
-test-only probes. New package/CI results are pending at this checkpoint.
+test-only probes. Local results pass at `631af3b`: Hazelnut submitted 236 engine
+draws, Nutella 180; both report full teardown and valid final signatures. Separate
+pixel tests supply rendering correctness evidence. Products report
+`Apple / Apple M4 / 4.1 Metal - 91.7`, GLSL 410 and 16 effective texture slots.
+The five example archives were rebuilt from descriptors and LastLightkeeper menu
+bytes verified against committed source, excluding the owner's drafts. Archive
+metadata truthfully records a dirty checkout due to those unrelated files.
+
+Temporary extracted product logs include an OS
+`sandbox_extension_issue_file_to_process ... Operation not permitted` diagnostic
+in both observed normal and restricted launches. Rendering, Unicode native Save
+As, scripting/transitions and normal closure succeeded in their recorded runs;
+the precise OS origin is unresolved. It is retained in logs, not suppressed or
+treated as Developer ID/Gatekeeper evidence.
 
 Clipboard read/restore was not automated: current macOS can ask for permission
 to read the general pasteboard. No clipboard contents or security preferences
