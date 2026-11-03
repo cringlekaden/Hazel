@@ -3,8 +3,8 @@
 ## Qualification continuation — 2026-11-03
 
 Target: native arm64/macOS 27.0+, pinned GLFW/shared OpenGL 4.1,
-Premake/Xcode and classic Mono 6.14.1. Merge remains gated on successful desktop
-and cross-platform CI acceptance. The dated sections below retain historical
+Premake/Xcode and classic Mono 6.14.1. Automated qualification passes; merge
+remains gated on the outstanding physical clipboard acceptance. The dated sections below retain historical
 evidence; this is not a completed distribution claim.
 
 Current host: Apple M4/arm64, macOS 27.2, full Xcode 27.2 (27B48), SDK 27.2,
@@ -18,9 +18,10 @@ Command-scoped selection leaves global `xcode-select` on the installed CLT.
 | Examples | Five committed disposable projects pass actual scripts/rendering, UI Tutorial, Lightkeeper menu/settings/journey/save failure paths and scene transitions; user LastLightkeeper drafts excluded |
 | Relocation | At `631af3b`, both pristine extracted products pass source/SDK/Homebrew-denied startup, 60 rendered frames, ordinary close and full teardown, mapped native closure and unchanged signatures. Both app archives and all five game archives pass signatures/checksums, arm64/closure checks, Apple pixel/picking, RuntimeSession and Mono/helper probes. Four-domain Mono tests invoke runtime-loaded helpers and record native images |
 | Desktop | Source Xcode launch rendered a private project; native Open cancellation and spaces/Unicode project selection observed. Relocated Hazelnut rendered text/UI/sprites, Play/Level1/Stop, resize and native minimize/restore. Physical Command+Shift+S opened Save As; saving `Qualification ü.hazel` into the private project succeeded, repeated Save As was cancelled, and Command+Q exited normally. Relocated Nutella rendered MainMenu/Level1, resized, returned to MainMenu and quit normally. Both normal closures passed mapped-native-closure/signature checks. Clipboard user-gesture acceptance remains unexecuted |
-| Hosted CI | [Run 41660986550](https://github.com/cringlekaden/Hazel/actions/runs/41660986550), `131b552`: full Linux and Windows jobs, and Mac Debug/Release CPU/service/managed job all pass. Replacement [run 41705072658](https://github.com/cringlekaden/Hazel/actions/runs/41705072658) at `631af3b` is pending for the shared application-loop changes |
+| Hosted CI | [Run 41705072658](https://github.com/cringlekaden/Hazel/actions/runs/41705072658) at `631af3b` passes all three jobs: full Linux and Windows Debug/Release, GL4.1/tutorial authoring, games and extracted packages; Mac Debug/Release CPU/service/managed subset. This supersedes the successful `131b552` baseline for the shared application-loop changes |
 
-After replacement CI and remaining acceptance pass, merge normally into
+Product code is qualified at `631af3b`; subsequent evidence updates are docs only.
+Once the remaining physical clipboard check passes, merge normally into
 master using an isolated worktree to preserve the owner's current checkout,
 then create the separately reviewed 3D audit branch from that exact merged SHA.
 
@@ -69,6 +70,14 @@ to read the general pasteboard. No clipboard contents or security preferences
 were changed. Physical user-gesture copy/paste remains a manual acceptance item,
 alongside physical Retina/mixed-display/controller checks. Command+Shift+S and
 Command+Q have actual owner-operated evidence.
+
+Resume only with an available operator: run `test-packages --output
+dist/macos-qualification --interactive --interactive-app Hazelnut`, foreground
+the private editor, enter `Clipboard ü` in Content Browser search and use
+Command+A/C/V. Confirm correct text, clear the search and quit normally. Do not
+read/overwrite the owner's existing clipboard or change pasteboard permissions
+to automate it. Physical Retina/mixed-display/controller checks remain explicit
+hardware limitations and do not independently block integration.
 
 Build/workflow repairs: `open` preserves generated test targets and local schemes;
 Mac game dispatch prepares the shared pinned project reader. Full Mac builds now

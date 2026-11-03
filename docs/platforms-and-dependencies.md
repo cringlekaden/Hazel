@@ -7,7 +7,7 @@
 | Windows x64 | Windows 10 or newer; MSVC 2022 source builds, dynamic CRT, UTF-8 source/paths; Release CRT included in packages |
 | Linux x86_64 | X11/GLX, including Xwayland; GCC/Premake builds. Official Ubuntu 24.04 packages require glibc 2.39+. Native Wayland is not implemented |
 | Graphics | OpenGL **4.1 core** minimum; capability checks select supported resource/shader paths. Later GL features are optional, rather than a higher minimum |
-| macOS | Native arm64/macOS 27.0+ Xcode integration; real Apple OpenGL 4.1, managed/service and isolated ad-hoc bundle regressions implemented. Final desktop/cross-platform qualification pending. [Commands and evidence](design/macos-port.md) |
+| macOS | Native arm64/macOS 27.0+ Xcode integration; Apple OpenGL 4.1, managed/service, isolated ad-hoc bundles and cross-platform CI checks pass. Final desktop acceptance pending. [Commands and evidence](design/macos-port.md) |
 | Other graphics backends | Not implemented; 3D/PBR/IBL follow the macOS milestone |
 
 Linux HD4000 accelerated GL4.2 and forced GL4.1 through Xwayland, software rendering and Windows CI are distinct evidence. A forced Mesa version is not an Apple-driver/macOS test. Windows software CI does not establish physical GPU, controller or monitor/DPI acceptance. The owner reports hands-on acceptance complete and approves integration; this approval does not add independently enumerated hardware or reader-review results to the automated evidence.
