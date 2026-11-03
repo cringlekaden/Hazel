@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import time
 
 import hazel as hz
 from internal.testing.projects import snapshot
@@ -88,9 +89,7 @@ def isolation_command(command,source_sdk=None):
            Path('/Library/Frameworks/Mono.framework'),Path('/usr/local/lib/mono')]
     if source_sdk is not None:roots.append(source_sdk.resolve())
     profile='(version 1)(allow default)'+''.join('(deny file-read* (subpath '+json.dumps(str(p),ensure_ascii=False)+'))' for p in roots)
-    # Set observation-only loader diagnostics at the child exec boundary.
-    # In-process image enumeration also covers restricted/suppressed diagnostics.
-    return ['/usr/bin/sandbox-exec','-p',profile,'/usr/bin/env','DYLD_PRINT_LIBRARIES=1',*map(str,command)]
+    return ['/usr/bin/sandbox-exec','-p',profile,*map(str,command)]
 
 
 def product_interaction(name,bundle,working,sdk,logs):
@@ -103,14 +102,35 @@ def product_interaction(name,bundle,working,sdk,logs):
     print('INTERACTIVE:',name,'— resize, exercise prepared content, then close normally (10 minute limit). Private profile:',env['HAZEL_DATA'],flush=True)
     with log.open('w',encoding='utf-8') as stream:
         process=subprocess.Popen(isolation_command([bundle/'Contents/MacOS'/name],sdk),cwd=working,env=env,stdout=stream,stderr=subprocess.STDOUT)
-        try:status=process.wait(timeout=600)
+        images=set();deadline=time.monotonic()+600
+        try:
+            # Read the owned process's mapped native files without debugger
+            # entitlements or dyld environment flags. Shared-cache OS images
+            # need not have individual vnode mappings; packaged dylibs do.
+            while process.poll() is None:
+                if time.monotonic()>=deadline:raise RuntimeError('Interactive product acceptance timed out; no normal-close pass was recorded')
+                mapped=subprocess.run(['/usr/sbin/lsof','-a','-p',str(process.pid),'-d','txt','-Fn'],capture_output=True,text=True,timeout=5)
+                if mapped.returncode and process.poll() is None:raise RuntimeError('Cannot inspect owned product native mappings: '+mapped.stderr)
+                for line in mapped.stdout.splitlines():
+                    if line.startswith('n') and (line.endswith('.dylib') or '/Contents/MacOS/' in line):images.add(line[1:])
+                time.sleep(.5)
+            status=process.returncode
         finally:
             if process.poll() is None:process.kill();process.wait()
     text=log.read_text(errors='replace')
     if status or name+' ready:' not in text or 'Terminating GLFW' not in text:
         raise RuntimeError('Interactive product did not start/close normally: '+str(log)+'\n'+text)
-    loaded=[line for line in text.splitlines() if line.startswith('dyld[')]
-    if not any('libmonosgen' in line for line in loaded) or any(str(hz.ROOT) in line or '/opt/homebrew/' in line for line in loaded):
+    (logs/(name+'-NativeMappings.log')).write_text('\n'.join(sorted(images))+'\n')
+    shipped=[bundle/'Contents/MacOS'/name,*((bundle/'Contents/Frameworks').glob('*.dylib'))]
+    identities={(p.stat().st_dev,p.stat().st_ino) for p in shipped}
+    invalid=[]
+    for path in images:
+        if path.startswith(('/System/Library/','/usr/lib/','/Library/Apple/System/',
+                            '/System/Volumes/Preboot/Cryptexes/OS/System/Library/',
+                            '/System/Volumes/Preboot/Cryptexes/OS/usr/lib/')):continue
+        info=Path(path).stat()
+        if (info.st_dev,info.st_ino) not in identities:invalid.append(path)
+    if not any('libmonosgen' in line for line in images) or invalid:
         raise RuntimeError('Interactive product native closure failed: '+str(log))
     hz.run(['codesign','--verify','--deep','--strict',bundle])
     print('PASS:',name,'actual relocated product startup/normal shutdown, runtime-loaded closure and unchanged signature; human interaction details remain separately recorded',flush=True)

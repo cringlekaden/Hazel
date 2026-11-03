@@ -2,6 +2,16 @@
 
 ## Qualification continuation — 2026-11-02
 
+CI at [`3aae0ba`](https://github.com/cringlekaden/Hazel/actions/runs/41559537302)
+passed macOS arm64 Debug/Release builds and CPU/service/managed tests. Windows
+exposed the `interface` COM macro collision in shared shader code; Linux exposed
+wide-line use in a forward-compatible context. Repairs rename the local variable,
+retain Linux/Windows' previous core-context request, and derive usable line width
+from actual context flags. The [OpenGL core specification](https://registry.khronos.org/OpenGL/specs/gl/glspec43.core.pdf)
+removes wide lines from forward-compatible contexts even when a driver advertises
+a wider device range. Apple focused rendering/UI/line-state checks pass; the
+replacement cross-platform CI run remains required before merge.
+
 The target remains native arm64/macOS 27.0+, pinned GLFW, shared OpenGL 4.1,
 Premake/Xcode and classic Mono 6.14.1. This checkpoint adds the full native test
 build, canonical runners and local ad-hoc bundle production. All 17 Release

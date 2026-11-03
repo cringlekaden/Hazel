@@ -66,6 +66,11 @@ static void Primitives() {
     Begin(); Renderer2D::DrawCircle(Transform(),{1,1,1,1},.15f,.005f,78); End();
     Check(ID()==-1 && ID(94,64)==78,"Circle ring thickness mismatch");
     Renderer2D::SetLineWidth(2);
+    Check(glGetError()==GL_NO_ERROR,"Requested line width violated the active context contract");
+    if(Renderer::GetCapabilities().ForwardCompatible) {
+        GLfloat width=0;glGetFloatv(GL_LINE_WIDTH,&width);
+        Check(width==1.0f,"Forward-compatible context accepted an unusable wide-line setting");
+    }
     Begin(); Renderer2D::DrawLine({-.5f,0,0},{.5f,0,0},{1,1,0,1},79); End();
     Check(Pixels(79)>60,"Line color/entity output missing");
     Begin(); Renderer2D::DrawRect(Transform(),{1,1,1,1},80); End();

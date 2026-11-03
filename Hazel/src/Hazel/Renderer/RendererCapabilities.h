@@ -12,7 +12,7 @@ namespace Hazel {
         uint32_t MaxColorAttachments = 0, MaxDrawBuffers = 0;
         uint32_t MaxSamples = 0, MaxColorSamples = 0, MaxIntegerSamples = 0, MaxDepthSamples = 0;
         float MinLineWidth = 1.0f, MaxLineWidth = 1.0f;
-        bool ShaderBinaries = false, DebugOutput = false;
+        bool ShaderBinaries = false, DebugOutput = false, ForwardCompatible = false;
     };
     struct RendererSettings
     {

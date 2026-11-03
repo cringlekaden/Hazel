@@ -251,8 +251,8 @@ void OpenGLShader::CompileOrGetOpenGLBinaries()
         // different source names between stages. Canonicalize that interface
         // before Cross emits GLSL, including synthesized struct/block types.
         const auto resources = glslCompiler.get_shader_resources();
-        const auto& interface = stage == GL_VERTEX_SHADER ? resources.stage_outputs : resources.stage_inputs;
-        for (const auto& resource : interface) {
+        const auto& stageInterface = stage == GL_VERTEX_SHADER ? resources.stage_outputs : resources.stage_inputs;
+        for (const auto& resource : stageInterface) {
             if (!glslCompiler.has_decoration(resource.id, spv::DecorationLocation)) continue;
             const auto location = glslCompiler.get_decoration(resource.id, spv::DecorationLocation);
             const auto name = "hz_Varying" + std::to_string(location);
