@@ -8,6 +8,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include "../../LoadedImages.h"
 
 namespace fs = std::filesystem;
 
@@ -73,6 +74,7 @@ int main(int argc, char** argv) try {
 
         if (!mono_domain_set(rootDomain, false))
             throw std::runtime_error("Could not restore root AppDomain");
+        PrintLoadedNativeImages();
         mono_domain_unload(domain);
     }
 

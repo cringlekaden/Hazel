@@ -2,6 +2,7 @@
 
 #include "Hazel/Core/Layer.h"
 #include "Hazel/Core/FileLease.h"
+#include <utility>
 
 namespace Hazel {
 
@@ -17,6 +18,7 @@ namespace Hazel {
 
         void Begin();
         void End();
+        std::pair<float,float> CurrentWindowFramebufferScale() const;
         uint32_t GetActiveWidgetID() const;
         void SetDarkThemeColors();
         void BlockEvents(bool block) { m_BlockEvents = block; }

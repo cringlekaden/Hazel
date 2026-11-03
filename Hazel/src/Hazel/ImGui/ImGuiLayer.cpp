@@ -19,6 +19,22 @@
 #include <GLFW/glfw3.h>
 
 namespace Hazel {
+    namespace {
+        ImVec2 FramebufferScale(ImGuiViewport* viewport) {
+            auto scale=ImGui::GetIO().DisplayFramebufferScale;
+            if(auto* window=static_cast<GLFWwindow*>(viewport->PlatformHandle)) {
+                int width=0,height=0,pixelsX=0,pixelsY=0;
+                glfwGetWindowSize(window,&width,&height);glfwGetFramebufferSize(window,&pixelsX,&pixelsY);
+                if(width>0 && height>0 && pixelsX>0 && pixelsY>0)
+                    scale={float(pixelsX)/width,float(pixelsY)/height};
+            }
+            return scale;
+        }
+    }
+    std::pair<float,float> ImGuiLayer::CurrentWindowFramebufferScale() const {
+        const auto scale=FramebufferScale(ImGui::GetWindowViewport());
+        return {scale.x,scale.y};
+    }
 
     ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
     {
@@ -126,11 +142,17 @@ namespace Hazel {
         HZ_PROFILE_FUNCTION();
         ImGuiIO& io = ImGui::GetIO();
         ImGui::Render();
+        ImGui::GetDrawData()->FramebufferScale=FramebufferScale(ImGui::GetMainViewport());
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         if(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             GLFWwindow* backupCurrentContext = glfwGetCurrentContext();
             ImGui::UpdatePlatformWindows();
+            // The pinned ImGui core inherits the main window's scale for every
+            // draw list. Resolve each native host here, at the GLFW integration
+            // boundary, so detached windows can move between unlike displays.
+            for(auto* viewport:ImGui::GetPlatformIO().Viewports)
+                if(viewport->DrawData)viewport->DrawData->FramebufferScale=FramebufferScale(viewport);
             ImGui::RenderPlatformWindowsDefault();
             glfwMakeContextCurrent(backupCurrentContext);
         }

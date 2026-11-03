@@ -320,10 +320,10 @@ def development_link(target, source):
     target.symlink_to(source, target_is_directory=source.is_dir())
 
 
-def stage(configuration, prefix=None):
+def stage(configuration, prefix=None, targets=None):
     prefix = prefix or mono_prefix()
     base = binaries(configuration)
-    for name in ('Hazelnut', 'Nutella', 'HazelProject'):
+    for name in targets or ('Hazelnut', 'Nutella', 'HazelProject', 'SpriteAssetAudit'):
         if not (base/name).is_dir():continue
         app = base / name
         copy_tree(ROOT / 'Hazel/Resources', app / 'Resources')
@@ -464,6 +464,7 @@ def main():
     p = sub.add_parser('run'); p.add_argument('app', choices=('Hazelnut', 'Nutella')); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug'); p.add_argument('--project', type=Path)
     p = sub.add_parser('script-build'); p.add_argument('project', type=Path); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     p = sub.add_parser('test-packages'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
+    p.add_argument('--interactive',action='store_true',help='macOS: launch pristine relocated products for human interaction and normal close')
     p = sub.add_parser('test-games'); p.add_argument('--config', choices=('Debug','Release'), default='Debug'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native'); p.add_argument('--packages', action='store_true'); p.add_argument('--output', type=Path, default=ROOT/'dist/games')
     p = sub.add_parser('authoring-preflight'); p.add_argument('--operation', choices=('scripts','export'), default='scripts'); p.add_argument('--config', choices=('Debug','Release'), default='Debug')
     p = sub.add_parser('new-project'); p.add_argument('--name', required=True); p.add_argument('--identifier', required=True); p.add_argument('--destination', type=Path, required=True); p.add_argument('--build-scripts', action='store_true', help='Compile after native creation; build failure retains editable project')
@@ -532,7 +533,7 @@ def main():
             package(args.app, args.project, args.output, args.name)
         elif args.action == 'test-packages':
             from internal.package_tests import package_tests
-            package_tests(args.output.resolve(), args.profile)
+            package_tests(args.output.resolve(), args.profile,args.interactive)
         elif args.action == 'test-games':
             from internal.game_tests import game_tests
             game_tests(args.config,args.profile,args.packages,args.output.resolve())

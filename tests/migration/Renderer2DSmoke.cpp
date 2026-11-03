@@ -1,5 +1,6 @@
 // Pixel/readback regression tests for the actual upstream Renderer2D pipelines.
 #include "Hazel.h"
+#include "../macos/LoadedImages.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -244,6 +245,7 @@ int main(int argc,char** argv) {
             Check(glGetError()==GL_NO_ERROR,"Final renderer GL error");
             target->Unbind(); target.reset(); glEnable(GL_DEPTH_TEST);
         }
+        PrintLoadedNativeImages();
         std::cout<<"PASS: default and two-slot/GLSL settings, actual quad/circle/line/text shaders, color/entity picking, rotation/tiling/tint/sprites, UTF-8/atlas switch, all primitive capacity flushes, generic submit and failed-constructor recovery\n";
         return 0;
     } catch(const std::exception& e) { std::cerr<<"FAIL: "<<e.what()<<'\n'; target.reset(); return 1; }

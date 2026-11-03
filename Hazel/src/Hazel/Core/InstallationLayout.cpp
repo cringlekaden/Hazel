@@ -9,7 +9,7 @@ InstallationLayout InstallationLayout::FromExecutable(const std::filesystem::pat
        directory.parent_path().parent_path().extension()==".app") {
         const auto contents=directory.parent_path();
         const auto resources=contents/"Resources";
-        return {directory,resources,contents/"Frameworks/Mono",resources/"Project",resources/"Project",resources/"build.json",true};
+        return {directory,resources,resources/"Mono",resources/"Project",resources/"Project",resources/"build.json",true};
     }
     return {directory,directory/"Resources",directory/"mono",directory,directory/"Example",directory/"build.json"};
 }

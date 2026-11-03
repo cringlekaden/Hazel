@@ -48,6 +48,10 @@ namespace Hazel {
         {
             HZ_CORE_INFO("Initializing GLFW");
             glfwSetErrorCallback(GLFWErrorCallback);
+            // InstallationLayout owns resource resolution. GLFW's Cocoa
+            // default otherwise chdirs into a bundle, violating the process
+            // working-directory contract (including failed-start recovery).
+            glfwInitHint(GLFW_COCOA_CHDIR_RESOURCES,GLFW_FALSE);
             int success = 0;
             {
                 HZ_PROFILE_SCOPE("glfwInit");

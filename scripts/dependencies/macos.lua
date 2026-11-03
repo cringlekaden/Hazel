@@ -37,6 +37,10 @@ for _, name in ipairs(managed) do
         language "C++"
         prebuildcommands { '"' .. assert(os.getenv("HAZEL_PYTHON"), "Generate through scripts/hazel.py") .. '" "' .. root .. '/scripts/macos/managed.py" %{cfg.buildcfg} ' .. name }
 end
+if _OPTIONS["migration-tests"] then
+    project "MigrationManagedFixture"
+        dependson { "Hazel-ScriptCore" }
+end
 project "Hazel"
     xcodebuildsettings { ["GCC_PREFIX_HEADER"] = root .. "/Hazel/src/hzpch.h" }
     removefiles { root .. "/Hazel/src/Platform/Windows/**", root .. "/Hazel/src/Platform/Linux/**" }
@@ -60,9 +64,9 @@ for _, name in ipairs(consumers) do
         libdirs { mono .. "/lib" }
         links { "monosgen-2.0", "z" }
         xcodebuildsettings { ["LD_RUNPATH_SEARCH_PATHS"] = "@executable_path/mono/lib" }
-        if name == "Hazelnut" or name == "Nutella" then
+        if name == "Hazelnut" or name == "Nutella" or name == "HazelProject" or name == "SpriteAssetAudit" then
             dependson { "Hazel-ScriptCore" }
-            postbuildcommands { '"' .. os.getenv("HAZEL_PYTHON") .. '" "' .. root .. '/scripts/macos/stage.py" %{cfg.buildcfg}' }
+            postbuildcommands { '"' .. os.getenv("HAZEL_PYTHON") .. '" "' .. root .. '/scripts/macos/stage.py" %{cfg.buildcfg} ' .. name }
         end
 end
 if _OPTIONS["migration-tests"] then

@@ -3,4 +3,4 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import hazel
-hazel.stage(sys.argv[1])
+hazel.stage(sys.argv[1],targets=sys.argv[2:] or None)

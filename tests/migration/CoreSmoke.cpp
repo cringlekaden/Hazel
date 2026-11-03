@@ -34,9 +34,9 @@ private: Counts& m_Counts;
 static void CheckCore()
 {
     using namespace Hazel;
-    const auto bundle=InstallationLayout::FromExecutable(std::filesystem::path("/portable space é/Hazelnut.app/Contents/MacOS/Hazelnut"));
-    Check(bundle.ResourceRoot==std::filesystem::path("/portable space é/Hazelnut.app/Contents/Resources") &&
-          bundle.MonoRoot==bundle.ResourceRoot.parent_path()/"Frameworks/Mono" &&
+    const auto bundle=InstallationLayout::FromExecutable(std::filesystem::u8path("/portable space é/Hazelnut.app/Contents/MacOS/Hazelnut"));
+    Check(bundle.ResourceRoot==std::filesystem::u8path("/portable space é/Hazelnut.app/Contents/Resources") &&
+          bundle.MonoRoot==bundle.ResourceRoot/"Mono" &&
           bundle.RuntimeProject==bundle.EditorProject && bundle.Metadata==bundle.ResourceRoot/"build.json",
           "Bundle installation roots disagree");
     const auto loose=InstallationLayout::FromExecutable(std::filesystem::path("/portable/Nutella"));

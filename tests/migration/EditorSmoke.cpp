@@ -74,6 +74,17 @@ public:
         switch (++m_Frame) {
         case 3: {
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project/assembly startup failed");
+            {
+                const auto logical=e.m_ViewportSize,scale=e.m_ViewportPixelScale;
+                const auto target=e.m_Framebuffer->GetSpecification();
+                e.m_ViewportSize={128,64};e.m_ViewportPixelScale={2,2};
+                Check(e.ViewportFramebufferExtent()==glm::uvec2(256,128),"Retina target extent used logical units");
+                e.m_Framebuffer->Resize(256,128);e.m_Framebuffer->ClearAttachment(1,901);
+                const auto pixel=e.ViewportFramebufferPoint({32,16});
+                Check(pixel==glm::vec2(64,32)&&e.m_Framebuffer->ReadPixel(1,int(pixel.x),int(pixel.y))==901,"Retina editor picking did not map logical input to integer target pixels");
+                e.m_Framebuffer->Resize(target.Width,target.Height);e.m_ViewportSize=logical;e.m_ViewportPixelScale=scale;
+                std::cout<<"PASS: 2x editor target dimensions and logical-to-pixel integer picking (physical display transitions remain manual)\n";
+            }
             EditorDocumentChecks();
             EditorHistoryChecks();
             EditorStructuralChecks();

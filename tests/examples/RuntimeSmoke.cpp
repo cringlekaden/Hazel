@@ -1,4 +1,5 @@
 #include "Hazel.h"
+#include "../macos/LoadedImages.h"
 #ifdef HZ_PLATFORM_WINDOWS
 #include "Platform/Windows/WindowsCommandLine.h"
 #endif
@@ -388,6 +389,7 @@ int main(int argc,char** argv) {
             std::cout<<"PASS: SceneTransitions declared Canvas owner, synthetic production Accept, typed Play delivery, real scene transition and retired scope\n";
         }
         if(argc>=7)TutorialIntegrationChecks(std::filesystem::u8path(argv[6]),std::filesystem::u8path(argv[3]),framebuffer);
+        PrintLoadedNativeImages();
         ScriptEngine::Shutdown();framebuffer->Unbind();std::filesystem::remove_all(temporary);
         std::cout<<"PASS: real project scripts, collection/completion/checkpoint, repeated lifecycle, authored field isolation, camera fit, bounded prefab spawn/destruction/reload and cross-project class isolation\n";
     }catch(const std::exception& error) {

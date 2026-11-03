@@ -47,7 +47,7 @@ def relocate_executable(executable):
     # Build products use the loose development layout. Only the staged copy is
     # rewritten; generated Xcode settings remain useful for ordinary IDE runs.
     hz.run(['install_name_tool','-rpath','@executable_path/mono/lib',
-            '@executable_path/../Frameworks/Mono/lib',executable])
+            '@executable_path/../Frameworks',executable])
 
 
 def package(app, project, destination, archive_name=None):
@@ -64,7 +64,7 @@ def package(app, project, destination, archive_name=None):
             bundle=root/(name+'.app');contents=bundle/'Contents'
             binary=contents/'MacOS'/name;binary.parent.mkdir(parents=True)
             hz.copy_changed(hz.binaries('Release')/name/name,binary)
-            resources=contents/'Resources';native=contents/'Frameworks/Mono/lib'
+            resources=contents/'Resources';native=contents/'Frameworks';mono=resources/'Mono'
             hz.copy_tree(hz.ROOT/'Hazel/Resources',resources)
             if name=='Hazelnut':
                 hz.copy_tree(hz.ROOT/'Hazelnut/Resources/Icons',resources/'Icons')
@@ -74,8 +74,13 @@ def package(app, project, destination, archive_name=None):
             # embedding headers or native static archives from the source SDK.
             for source in (sdk/'lib/mono').rglob('*'):
                 if source.is_file() and source.suffix.lower() in ('.dll','.config') and not any(p.endswith('-api') for p in source.parts):
-                    hz.copy_changed(source,native/'mono'/source.relative_to(sdk/'lib/mono'))
-            hz.copy_tree(sdk/'etc/mono',native.parent/'etc/mono')
+                    hz.copy_changed(source,mono/'lib/mono'/source.relative_to(sdk/'lib/mono'))
+            hz.copy_tree(sdk/'etc/mono',mono/'etc/mono')
+            # Profiles/config are resources; Frameworks contains native code
+            # only. Mono's dynamic helper mappings use the same audited rpath
+            # as the embedding executable rather than a producer lib directory.
+            config_file=mono/'etc/mono/config'
+            config_file.write_text(config_file.read_text().replace('$mono_libdir/','@rpath/'))
             for source in (sdk/'lib').glob('*.dylib'):
                 hz.copy_changed(source.resolve(),native/source.name)
             relocate_executable(binary)

@@ -4,15 +4,23 @@
 
 The target remains native arm64/macOS 27.0+, pinned GLFW, shared OpenGL 4.1,
 Premake/Xcode and classic Mono 6.14.1. This checkpoint adds the full native test
-build, canonical runners and local ad-hoc bundle production. Release, relocation
-and desktop acceptance are being qualified; this paragraph is not a completed
-distribution claim. The sections below retain the earlier checkpoint evidence.
+build, canonical runners and local ad-hoc bundle production. All 17 Release
+regressions passed on Apple M4, including positive tutorial authoring and a 2x
+viewport/picking regression. Extracted Hazelnut/Nutella checksums/signatures,
+rendering, RuntimeSession, four-domain Mono/helper invocation and loaded-image
+closure pass with source and SDK reads denied. Interactive product acceptance
+and final CI are pending; this is not a completed distribution claim. The
+sections below retain earlier checkpoint evidence.
 
 `InstallationLayout` now owns loose-product versus bundle resource, Mono,
 project and metadata paths. Nutella discovers `Contents/Resources/Project` in
 a bundle. Hazelnut seeds its bundled example into a versioned private profile
 workspace before editing, preserving signed bundle contents. Source SDK
 discovery remains separate and never falls back to cwd or bundled runtime files.
+Native dylibs live in `Contents/Frameworks`; Mono profiles/config live in
+`Contents/Resources/Mono`. Runtime dllmap entries resolve helpers through rpath.
+The macOS GLFW adapter disables Cocoa's default change to the Resources cwd.
+Native SDK tools stage their runtime independently of editor post-build timing.
 
 The canonical test runner accepts `--suite cpu` and repeatable `--only NAME`;
 both explicitly report excluded coverage. The full Mac runner uses the real
@@ -30,6 +38,9 @@ their debug maps. Darwin watchers tolerate stat/enumeration races and distinguis
 atomic replacements by inode. Restricted GUI PATH preparation includes standard
 OS recipe tools. Tests count Darwin descriptors through libproc and compare
 validated Python locations canonically (macOS `/var` aliases `/private/var`).
+Offscreen viewport pixels follow the containing GLFW window's framebuffer scale;
+UI input stays logical and picking converts once. Detached ImGui draw data gets
+its native window scale at the existing integration boundary.
 
 Bundle production includes runtime profiles/config/native helpers, ScriptCore,
 project content, notices/provenance, Info.plist, metadata and checksums. It audits
@@ -38,6 +49,26 @@ Relocation tests use a process sandbox denying checkout/Homebrew reads, without
 renaming the owner's SDK or resources; test-only rendering/managed/helper probes
 are distinct from actual product interaction. No Developer ID, notarization,
 Gatekeeper-download acceptance or SDK publication is implied.
+
+Current qualification commands (build configurations sequentially):
+
+```sh
+python3 scripts/hazel.py build --config Debug --tests
+python3 scripts/hazel.py test --config Debug
+python3 scripts/hazel.py build --config Release --tests
+python3 scripts/hazel.py test --config Release
+python3 scripts/hazel.py test-games --config Release
+python3 scripts/hazel.py package --project /absolute/prepared/Game.hproj --output dist
+python3 scripts/hazel.py test-packages --output dist
+python3 scripts/hazel.py test-packages --output dist --interactive
+```
+
+Interactive mode launches pristine relocated products with private profiles and
+no resource/Mono overrides, waits for normal user closure, and checks the final
+signature. Automated probes alone explicitly leave this acceptance unexecuted.
+Current display evidence is 1x; physical Retina/mixed-display transitions and
+controller acceptance remain manual. Project P/Invoke export remains rejected;
+optional Mono APIs requiring additional native software are not a bundled SDK promise.
 
 ## Historical application foundation — 2026-10-29
 
