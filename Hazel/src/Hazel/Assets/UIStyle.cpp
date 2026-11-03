@@ -123,7 +123,7 @@ void StylePath(const std::filesystem::path &p)
         text.find_first_of(":\\\r\n<>\"|?*") != std::string::npos)
         throw std::invalid_argument("UI style image needs a portable asset-relative path");
     UTF8::Validate(text);
-    for (auto &part : p)
+    for (const auto &part : p)
         if (part == "." || part == "..")
             throw std::invalid_argument("UI style image path contains traversal");
     for (unsigned char c : text)

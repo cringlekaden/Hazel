@@ -39,6 +39,8 @@ namespace Hazel {
 
 		void OnOverlayRender();
         glm::vec2 ViewportMouse() const;
+        glm::vec2 ViewportFramebufferPoint(glm::vec2 logical) const;
+        glm::uvec2 ViewportFramebufferExtent() const;
         bool RuntimeUIWidgetBlocksInput() const;
 
 		bool OpenProject();
@@ -99,6 +101,7 @@ namespace Hazel {
 
 		bool m_ViewportFocused = false, m_ViewportHovered = false;
 		glm::vec2 m_ViewportSize = { 0.0f, 0.0f };
+        glm::vec2 m_ViewportPixelScale{1.0f};
 		glm::vec2 m_ViewportBounds[2] = {};
 
 

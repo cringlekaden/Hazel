@@ -53,7 +53,7 @@ def typography_inputs(working):
     print('PASS: pinned test face/Unicode versions and linked typography notice closure; no fixture font shipped',flush=True)
 
 
-def sdk_readiness_checks(working):
+def sdk_readiness_checks(working, configuration):
     """Production preflight with controlled SDK paths, without changing host SDKs."""
     from unittest.mock import patch
     from internal.authoring import preflight
@@ -92,8 +92,8 @@ def sdk_readiness_checks(working):
                 unavailable.clear()
             assert not consulted, 'Incomplete override silently fell back to a default SDK'
         print('PASS: real custom Mono SDK with spaces/Unicode, default candidates unavailable, one readiness resolution, compiled project scripts, missing compiler/profile rejection and independent runtime',flush=True)
-    else:
-        # Windows compilation uses MSBuild/reference assemblies, not Linux mcs.
+    elif hz.SYSTEM == 'windows':
+        # Windows compilation uses MSBuild/reference assemblies, not Mono mcs.
         from internal import authoring
         pack=working/'Targeting SDK space é'
         reference=pack/'Reference Assemblies/Microsoft/Framework/.NETFramework/v4.7.2/mscorlib.dll'
@@ -108,6 +108,10 @@ def sdk_readiness_checks(working):
             except RuntimeError as error:assert '.NET Framework 4.7.2' in str(error)
             else:raise RuntimeError('Missing Windows targeting pack accepted')
         print('PASS: Windows script/export compiler selection and missing managed targeting-pack diagnostics',flush=True)
+    elif hz.SYSTEM == 'macos':
+        env=os.environ.copy();env['PATH']='/usr/bin:/bin'
+        hz.run([hz.binaries(configuration)/'MacOSSDKIntegration/MacOSSDKIntegration',hz.ROOT,working/'sdk','initial'],env=env)
+        hz.run([hz.binaries(configuration)/'MacOSPlatformServices/MacOSPlatformServices'],env=env)
 
 
 def authoring_checks(working):
@@ -160,13 +164,15 @@ def software_driver():
     return extracted/'x64'
 
 
-def test(configuration, profile='native'):
+def test(configuration, profile='native', suite='all', only=None):
+    if hz.SYSTEM=='macos' and profile!='native':
+        raise RuntimeError('macOS qualification requires the native Apple driver; Mesa profiles are not supported')
     launcher_checks()
     base=hz.binaries(configuration)
     logs=hz.ROOT/'build/testing/logs';logs.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='hazel tests space-é-') as temporary:
         working=Path(temporary)
-        hz.yaml_tools();sdk_readiness_checks(working);authoring_checks(working)
+        hz.yaml_tools();sdk_readiness_checks(working,configuration);authoring_checks(working)
         hz.copy_tree(hz.ROOT/'Hazel/Resources',working/'assets')
         hz.copy_tree(hz.ROOT/'Hazelnut/Resources/Icons',working/'assets/Icons')
         hz.copy_changed(hz.ROOT/'Hazelnut/Resources/imgui.ini',working/'assets/imgui.ini')
@@ -174,6 +180,11 @@ def test(configuration, profile='native'):
         typography_inputs(working)
         hz.copy_tree(hz.ROOT/'tests/fixtures/AuthoringProject',working/'AuthoringProject')
         hz.copy_changed(base/'MigrationManagedFixture/MigrationManagedFixture.dll',working/'AuthoringProject/Assets/Scripts/Binaries/Regression.dll')
+        if hz.SYSTEM=='macos' and suite=='all':
+            # Test the committed tutorial, never an owner's in-progress project.
+            from internal.testing.projects import snapshot
+            tutorial=snapshot('Sandbox',working/'tutorial')
+            hz.script_build(tutorial,configuration)
         env=os.environ.copy()
         for key in ('MESA_GL_VERSION_OVERRIDE','MESA_GLSL_VERSION_OVERRIDE','LIBGL_ALWAYS_SOFTWARE','GALLIUM_DRIVER','LP_NUM_THREADS'):
             env.pop(key,None)
@@ -181,12 +192,18 @@ def test(configuration, profile='native'):
         if profile=='software':env.update(LIBGL_ALWAYS_SOFTWARE='1',GALLIUM_DRIVER='llvmpipe',LP_NUM_THREADS='2')
         env['HAZEL_RESOURCES']=str(working/'assets')
         env['HAZEL_MONO']=str(base/'Nutella/mono')
+        env['HAZEL_SAVE_ROOT']=str(working/'saves')
+        if hz.SYSTEM=='macos':
+            env['DYLD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
+            if suite=='all':env['HAZEL_FINAL_UI_PROJECT']=str(tutorial)
         if hz.SYSTEM=='linux':env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
         private=working/'executables';private.mkdir()
         if hz.SYSTEM=='windows' and profile in ('software','gl41'):
             for dll in software_driver().glob('*.dll'): hz.copy_changed(dll,private/dll.name)
             env.update(GALLIUM_DRIVER='llvmpipe',LP_NUM_THREADS='2',MESA_SHADER_CACHE_DIR=str(working/'mesa-cache'))
-        names=('TypographySmoke','GameUIModelSmoke','GameUIIntegrationSmoke','ShaderToolsSmoke','SpriteSmoke','SceneFoundationSmoke','ProjectPhysicsSmoke','MonoSmoke','SceneSmoke','CoreSmoke','RendererSmoke','RendererFeaturesSmoke','Renderer2DSmoke','FontSmoke','SceneGPUSmoke','RuntimeSessionSmoke','EditorSmoke')
+        records=json.loads((hz.ROOT/'scripts/internal/testing/native-tests.json').read_text())
+        names=[r['name'] for r in records if (suite=='all' or not r['graphics']) and (not only or r['name'] in only)]
+        if not names:raise RuntimeError('Selected tests are absent from the requested suite')
         for name in names:
             target='Migration'+name;suffix='.exe' if hz.SYSTEM=='windows' else ''
             executable=base/target/(target+suffix)
@@ -211,4 +228,6 @@ def test(configuration, profile='native'):
                 tutorial='PASS: native tutorial Inspector, composed creation/duplicate/delete/property undo, prefab instantiate, save/reopen and repeated Play/Stop in a private project'
                 if tutorial not in evidence:raise RuntimeError('Selected tutorial authoring did not execute: '+str(log))
                 print(tutorial,flush=True)
-        print(f'PASS: {configuration} {profile}, {len(names)} sequential regression executables')
+        print(f'PASS: {configuration} {profile} {suite}, {len(names)} sequential regression executables')
+        if suite=='cpu':print('NOT EXECUTED: graphics, native editor authoring and application/package desktop acceptance (CPU subset selected)',flush=True)
+        if only:print('NOT EXECUTED: unselected regression executables (--only selected)',flush=True)

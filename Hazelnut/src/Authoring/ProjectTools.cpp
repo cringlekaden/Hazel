@@ -1,6 +1,7 @@
 #include "ProjectTools.h"
 #include "HazelSDK.h"
 #include "Hazel/Utils/Process.h"
+#include "Hazel/Core/BuildIdentity.h"
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
@@ -185,7 +186,10 @@ ToolReport ProjectTools::Work(const ToolRequest &request, const std::shared_ptr<
             return report;
         }
         stage("Validating SDK");
-        const auto sdk = HazelSDK::Validate(request.SDK);
+        auto configuration = BuildIdentity::Current().ToolConfiguration();
+        for (size_t i = 0; i + 1 < request.Arguments.size(); ++i)
+            if (request.Arguments[i] == "--config") configuration = request.Arguments[i + 1];
+        const auto sdk = HazelSDK::Validate(request.SDK, "Selected SDK", configuration);
         stage("Locating Python");
         report.Python = Toolchain::DiscoverPython(
             request.Python, request.SDK.is_absolute() ? request.SDK : std::filesystem::path{});

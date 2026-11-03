@@ -17,9 +17,11 @@ Project data, editor state and player preferences have separate owners. Copying 
 
 ## Roots and isolation
 
-Default application data: Linux `${XDG_DATA_HOME:-~/.local/share}/Hazel/<app>/`; Windows `%LOCALAPPDATA%/Hazel/<app>/`. Hazelnut and Nutella use distinct application names. `HAZEL_DATA` replaces the **application** profile root. `HAZEL_SAVE_ROOT` separately replaces the **games** root; see [SaveData](runtime-storage-audio.md#durable-progress). Neither changes project Assets.
+Default application data: Linux `${XDG_DATA_HOME:-~/.local/share}/Hazel/<app>/`; Windows `%LOCALAPPDATA%/Hazel/<app>/`; macOS `~/Library/Application Support/Hazel/<app>/`. Hazelnut and Nutella use distinct application names. `HAZEL_DATA` replaces the **application** profile root. `HAZEL_SAVE_ROOT` separately replaces the **games** root; see [SaveData](runtime-storage-audio.md#durable-progress). Neither changes project Assets.
 
-Engine Resources and Mono default beside the executable, independent of cwd. `HAZEL_RESOURCES` and `HAZEL_MONO` explicitly replace those runtime roots. Project assets/module paths resolve from the descriptor. A source SDK is a separate authoring tool location; `HAZEL_MONO_SDK` selects the Linux **compiler SDK prefix**, not the runtime Resources/Mono root.
+Engine Resources and Mono default beside the development executable, independent of cwd. `HAZEL_RESOURCES` and `HAZEL_MONO` explicitly replace those runtime roots. Project assets/module paths resolve from the descriptor. A source SDK is the checkout root, separate from runtime resources. `HAZEL_MONO_SDK` selects the Linux/macOS **compiler SDK prefix**, not the runtime Resources/Mono root. Mac generation remembers its producer selection under ignored `build/tools` for Xcode GUI phases. See the [SDK workflow and verification](design/macos-port.md#source-sdk-integration-repair--2026-10-29).
+
+`InstallationLayout` owns the distinction between loose products and macOS bundles. Bundles use `Contents/MacOS`, `Contents/Resources`, native `Contents/Frameworks` and profile/config `Contents/Resources/Mono`; their project is `Contents/Resources/Project`. Hazelnut seeds that example into its user profile under `Examples/<source-commit>/` before editing, preserving signed bundle bytes and previous edits. The bundle carries no source/compiler SDK. Runtime settings and saves remain outside the application, including on read-only installations.
 
 Use disposable project copies and unique `HAZEL_DATA`/`HAZEL_SAVE_ROOT` for tests or experiments. Do not delete preferences, sessions, layouts, saves, ignored VS Code files or caches as a blanket troubleshooting step.
 

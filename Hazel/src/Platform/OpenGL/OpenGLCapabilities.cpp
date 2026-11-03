@@ -43,6 +43,11 @@ void Initialize() {
     caps.MaxDepthSamples = std::min(caps.MaxSamples, Limit(GL_MAX_DEPTH_TEXTURE_SAMPLES));
     GLfloat widths[2]{1, 1}; glGetFloatv(GL_SMOOTH_LINE_WIDTH_RANGE, widths);
     caps.MinLineWidth = widths[0]; caps.MaxLineWidth = widths[1];
+    caps.ForwardCompatible = (Limit(GL_CONTEXT_FLAGS) & GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT) != 0;
+    // GL's forward-compatible core contract removes wide lines even if the
+    // implementation still reports its device-wide range (e.g. Mesa).
+    // Feature selection must describe usable context state, not just limits.
+    if(caps.ForwardCompatible)caps.MinLineWidth=caps.MaxLineWidth=1.0f;
     // The retained loader exposes core functions. Extension-only contexts use
     // the complete shaderc/Cross pipeline and GLSL 410 program loading.
     caps.ShaderBinaries = GLAD_GL_VERSION_4_6 && glShaderBinary && glSpecializeShader;

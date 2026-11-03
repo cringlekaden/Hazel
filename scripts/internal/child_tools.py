@@ -32,6 +32,11 @@ def prepare(names):
     # resolved tools, rather than inheriting an accidentally complete interactive PATH.
     selected={name:resolve(name) for name in names}
     directories=list(dict.fromkeys(str(path.parent) for path in selected.values()))
-    os.environ['PATH']=os.pathsep.join(directories+[os.environ.get('PATH','')])
+    # Make recipes also execute OS utilities (echo/mkdir/rm). On macOS make
+    # and git are in /usr/bin while several of those live in /bin. A GUI's
+    # empty PATH must not turn a resolved compiler/toolchain into a broken one.
+    directories += ([str(Path(os.environ.get('SystemRoot','C:/Windows'))/'System32')]
+                    if os.name=='nt' else ['/usr/bin','/bin','/usr/sbin','/sbin'])
+    os.environ['PATH']=os.pathsep.join(dict.fromkeys(directories+os.environ.get('PATH','').split(os.pathsep)))
     for name,path in selected.items():print('Tool:',name,'=',path,flush=True)
     return selected

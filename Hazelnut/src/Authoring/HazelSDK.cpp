@@ -1,5 +1,7 @@
 #include "HazelSDK.h"
 #include "Hazel/Core/FileSystem.h"
+#include "Hazel/Core/BuildIdentity.h"
+#include "Hazel/Core/InstallationLayout.h"
 #include <fstream>
 #include <stdexcept>
 #include <yaml-cpp/yaml.h>
@@ -7,13 +9,6 @@ namespace Hazel
 {
 namespace
 {
-#ifdef HZ_PLATFORM_WINDOWS
-constexpr const char *Platform = "windows";
-constexpr const char *Premake = "build/tools/premake-core/bin/release/premake5.exe";
-#else
-constexpr const char *Platform = "linux";
-constexpr const char *Premake = "build/tools/premake-core/bin/release/premake5";
-#endif
 YAML::Node Metadata(const std::filesystem::path &path)
 {
     if (std::filesystem::file_size(path) > 65536)
@@ -38,6 +33,7 @@ const char *SDKSelection::Status() const
     case SDKState::Ready: return "Ready (SDK files checked)";
     case SDKState::Missing: return "Missing";
     case SDKState::Incompatible: return "Incompatible";
+    case SDKState::PreparationRequired: return "Compatible checkout; preparation required";
     default: return "Not configured";
     }
 }
@@ -45,13 +41,13 @@ const char *HazelSDK::SetupInstructions()
 {
     return "Select the Hazel source checkout folder containing premake5.lua and scripts/hazel.py, "
            "not bin/Hazelnut or the application Resources folder. Clone cringlekaden/Hazel with "
-           "--recurse-submodules --branch feature/editor-usability for this editor, install the "
-           "README prerequisites, then run scripts/setup.sh "
-           "(Linux) or scripts/setup.ps1 (Windows) to prepare Debug ScriptCore, native HazelProject, PackageAudit and pinned Premake. "
+           "--recurse-submodules and use a revision compatible with this editor. Install the "
+           "documented prerequisites and canonical dependency setup first, then run python3 scripts/hazel.py build --config Debug "
+           "(or Release for a Release editor) to prepare ScriptCore, native HazelProject, PackageAudit and pinned Premake. "
            "Check Readiness verifies Python and host compilers; export also needs the native "
            "build prerequisites. Native New Project uses bundled application templates and needs no SDK. Runtime application packages do not include this source SDK.";
 }
-SDKSelection HazelSDK::Validate(const std::filesystem::path &root, const std::string &source)
+SDKSelection HazelSDK::Validate(const std::filesystem::path &root, const std::string &source, const std::string &configuration)
 {
     SDKSelection result{SDKState::NotConfigured, root, source, {}};
     if (root.empty())
@@ -95,24 +91,35 @@ SDKSelection HazelSDK::Validate(const std::filesystem::path &root, const std::st
             result.Diagnostic = "SDK pinned Premake/PyYAML contract differs from this editor. Select a compatible checkout and rebuild its tools.";
             return result;
         }
-        result.State = SDKState::Missing;
-        const auto core = result.Root / "bin" / (std::string("Debug-") + Platform + "-x86_64") /
-                          "Hazel-ScriptCore/Hazel-ScriptCore.dll";
-        const auto generator=result.Root/"bin"/(std::string("Debug-")+Platform+"-x86_64")/"HazelProject"/
-#ifdef HZ_PLATFORM_WINDOWS
-            "HazelProject.exe";
-#else
-            "HazelProject";
-#endif
-        const auto audit=result.Root/"bin"/(std::string("Debug-")+Platform+"-x86_64")/"PackageAudit/PackageAudit.exe";
-        for (const auto &file : {result.Root / Premake, core,generator,audit})
+        const auto identity = BuildIdentity::Current();
+        const auto selected = configuration.empty() ? identity.ToolConfiguration() : configuration;
+        if (selected != "Debug" && selected != "Release") throw std::runtime_error("Unsupported SDK tool configuration: " + selected);
+        const auto targets = pins["targets"];
+        if (!targets || !targets.IsMap()) {
+            result.Diagnostic = "SDK lacks the shared target identity contract; select a matching source revision and regenerate/build its tools.";
+            return result;
+        }
+        const auto target = targets[identity.System];
+        if (!target || !target.IsMap() || !target["architecture"].IsScalar() || !target["executable_suffix"].IsScalar() || target["architecture"].as<std::string>() != identity.Architecture ||
+            target["executable_suffix"].as<std::string>() != identity.ExecutableSuffix) {
+            result.Diagnostic = "SDK target identity differs from this editor: " + identity.System + "-" + identity.Architecture;
+            return result;
+        }
+        result.State = SDKState::PreparationRequired;
+        const auto products = identity.Products(result.Root, selected);
+        const auto core = products / "Hazel-ScriptCore/Hazel-ScriptCore.dll";
+        const auto generator = identity.NativeTool(result.Root, selected, "HazelProject");
+        const auto audit = products / "PackageAudit/PackageAudit.exe";
+        for (const auto &file : {identity.Premake(result.Root), core,generator,audit})
             if (!File(file))
             {
-                result.Diagnostic = "SDK needs setup; missing " + file.generic_u8string();
+                result.Diagnostic = "Compatible SDK needs " + selected + " preparation; missing " + file.generic_u8string() +
+                    ". Run scripts/hazel.py build --config " + selected + ".";
                 return result;
             }
         result.State = SDKState::Ready;
-        result.Diagnostic = "Canonical SDK files and pinned tooling match. Check Readiness verifies Python, script compiler/targeting pack, and native export prerequisites.";
+        result.Diagnostic = "Compatible " + identity.OutputName(selected) + " SDK products found. Check script readiness validates the compiler/profile and managed/native contracts.";
+        if (!identity.ExportSupported) result.Diagnostic += " Export/package support is not yet implemented for this target; script compilation is available.";
     }
     catch (const std::exception &error)
     {
@@ -142,7 +149,7 @@ SDKSelection HazelSDK::Discover(const std::filesystem::path &configured,
         if (!executable.is_absolute())
             return {SDKState::Incompatible, {}, "Application location", "Application location must be absolute."};
         const auto app = std::filesystem::weakly_canonical(executable).parent_path();
-        const auto metadata = app / "build.json";
+        const auto metadata = InstallationLayout::FromExecutable(std::filesystem::weakly_canonical(executable)).Metadata;
         if (std::filesystem::is_regular_file(metadata))
         {
             const auto data = Metadata(metadata);
@@ -152,7 +159,7 @@ SDKSelection HazelSDK::Discover(const std::filesystem::path &configured,
                 auto root = std::filesystem::u8path(data["hazel_sdk"].as<std::string>());
                 if (root.empty())
                     throw std::runtime_error("Application hazel_sdk locator is empty");
-                if (!root.is_absolute()) root = app / root;
+                if (!root.is_absolute()) root = metadata.parent_path() / root;
                 return Validate(root, "Application build.json locator");
             }
             // A runtime package is not a development checkout, even if placed under bin/.
@@ -160,9 +167,10 @@ SDKSelection HazelSDK::Discover(const std::filesystem::path &configured,
                     "This package does not advertise a source SDK. Content editing, saving and prepared-project Play remain available."};
         }
         const auto configuration = app.parent_path().filename().u8string();
-        const bool development = configuration == std::string("Debug-") + Platform + "-x86_64" ||
-                                 configuration == std::string("Release-") + Platform + "-x86_64" ||
-                                 configuration == std::string("Dist-") + Platform + "-x86_64";
+        const auto identity = BuildIdentity::Current();
+        const bool development = configuration == identity.OutputName("Debug") ||
+                                 configuration == identity.OutputName("Release") ||
+                                 configuration == identity.OutputName("Dist");
         if (development && app.parent_path().parent_path().filename() == "bin" &&
             (app.filename() == "Hazelnut" || app.filename() == "MigrationEditorSmoke"))
             return Validate(app.parent_path().parent_path().parent_path(), "Development executable layout");

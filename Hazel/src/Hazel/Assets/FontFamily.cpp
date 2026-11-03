@@ -17,7 +17,7 @@ void Path(const std::filesystem::path& path,bool face=false) {
         throw std::runtime_error("Font dependency must be a portable, nonempty asset-relative path");
     UTF8::Validate(text);
     for(unsigned char c:text)if(c<32 || c==127)throw std::runtime_error("Font path contains a control character");
-    for(auto& part:path) {
+    for(const auto& part:path) {
         if(part==".." || part==".")throw std::runtime_error("Font dependency contains a relative traversal");
         auto name=part.generic_u8string();if(name.empty() || name.back()=='.' || name.back()==' ')throw std::runtime_error("Font path has a nonportable trailing dot/space");
         auto stem=part.stem().generic_u8string();for(auto& c:stem)c=char(std::toupper(static_cast<unsigned char>(c)));

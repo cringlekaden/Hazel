@@ -5,6 +5,7 @@
 -- Supported:
 --   Windows x86_64 - Visual Studio / MSVC
 --   Linux   x86_64 - GNU Make / GCC
+--   macOS  arm64  - Xcode / Apple Clang
 --
 -- Projects:
 --   GLFW, Glad, ImGui - static dependencies
@@ -15,6 +16,12 @@
 local workspaceRoot = path.getabsolute(".")
 local imguiDir = workspaceRoot .. "/Hazel/vendor/imgui"
 local glfwDir = workspaceRoot .. "/Hazel/vendor/GLFW"
+local toolchain = json.decode(io.readfile(workspaceRoot .. "/scripts/internal/toolchain.json"))
+local targetName, target
+for name, value in pairs(toolchain.targets) do
+    if value.premake_system == os.target() then targetName, target = name, value end
+end
+assert(target, "Unsupported Hazel target: " .. os.target())
 
 -- Native Linux dialogs are implemented only in Platform/Linux.
 local gtkIncludes = {}
@@ -39,7 +46,26 @@ newoption
 
 workspace "Hazel"
     defines { "GLM_ENABLE_EXPERIMENTAL" }
-    architecture "x64"
+    architecture (target.premake_architecture)
+    defines { 'HZ_TARGET_SYSTEM="' .. targetName .. '"', 'HZ_TARGET_ARCHITECTURE="' .. target.architecture .. '"',
+        'HZ_TARGET_EXECUTABLE_SUFFIX="' .. target.executable_suffix .. '"', 'HZ_BUILD_CONFIGURATION="%{cfg.buildcfg}"',
+        'HZ_TARGET_EXPORT_SUPPORTED=' .. (target.export_supported and "1" or "0") }
+    filter "system:macosx"
+        systemversion (toolchain.targets.macos.deployment_target)
+        -- This pinned Xcode generator otherwise selects NATIVE_ARCH_ACTUAL
+        -- from its platform map, ignoring architecture(). The target contract,
+        -- rather than the machine running Xcode, owns the product architecture.
+        xcodebuildsettings {
+            ["ARCHS"] = target.architecture,
+            ["SDKROOT"] = "macosx",
+            -- Restore Xcode's configuration identity: this pinned generator
+            -- otherwise puts Debug and Release objects in the same directory.
+            ["CONFIGURATION_TEMP_DIR"] = "$(PROJECT_TEMP_DIR)/$(CONFIGURATION)",
+            ["ONLY_ACTIVE_ARCH"] = "YES",
+            ["CODE_SIGNING_ALLOWED"] = "NO",
+            ["HEADER_SEARCH_PATHS"] = "$(inherited) $(USER_HEADER_SEARCH_PATHS)"
+        }
+    filter {}
     startproject "Hazelnut"
 
     configurations
@@ -56,7 +82,7 @@ workspace "Hazel"
 -- Debug-windows-x86_64
 -- Debug-linux-x86_64
 --
-outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+outputdir = "%{cfg.buildcfg}-" .. targetName .. "-" .. target.architecture
 
 
 --
@@ -239,6 +265,7 @@ project "Hazel"
     {
         "Hazel/src/**.h",
         "Hazel/src/**.cpp",
+        "Hazel/src/**.mm",
         "Hazel/vendor/stb_image/**.h",
         "Hazel/vendor/stb_image/**.cpp"
     }
@@ -310,7 +337,8 @@ project "Hazel"
         --
         removefiles
         {
-            "Hazel/src/Platform/Linux/**.cpp"
+            "Hazel/src/Platform/Linux/**.cpp",
+            "Hazel/src/Platform/macOS/**"
         }
 
 
@@ -356,7 +384,8 @@ project "Hazel"
         --
         removefiles
         {
-            "Hazel/src/Platform/Windows/**.cpp"
+            "Hazel/src/Platform/Windows/**.cpp",
+            "Hazel/src/Platform/macOS/**"
         }
 
         
@@ -587,3 +616,4 @@ include "scripts/dependencies/mono.lua"
 
 include "scripts/dependencies/editor.lua"
 include "scripts/dependencies/typography.lua"
+if os.target() == "macosx" then include "scripts/dependencies/macos.lua" end

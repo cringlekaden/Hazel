@@ -1,6 +1,7 @@
 #include "hzpch.h"
 #include "Resources.h"
 #include "FileSystem.h"
+#include "InstallationLayout.h"
 #include <cstdlib>
 
 namespace Hazel {
@@ -12,9 +13,9 @@ namespace Hazel {
     ApplicationResourceSpecification Resources::Defaults(const std::string& application,
         ApplicationResourceSpecification specification) {
         if (specification.Root.empty() || specification.MonoRoot.empty()) {
-            const auto executable = FileSystem::GetExecutablePath().parent_path();
-            if (specification.Root.empty()) specification.Root = ConfiguredPath("HAZEL_RESOURCES", executable / "Resources");
-            if (specification.MonoRoot.empty()) specification.MonoRoot = ConfiguredPath("HAZEL_MONO", executable / "mono");
+            const auto& layout=InstallationLayout::Current();
+            if (specification.Root.empty()) specification.Root = ConfiguredPath("HAZEL_RESOURCES", layout.ResourceRoot);
+            if (specification.MonoRoot.empty()) specification.MonoRoot = ConfiguredPath("HAZEL_MONO", layout.MonoRoot);
         }
         if (specification.UserData.empty()) {
             auto data = FileSystem::GetEnvironmentPath("HAZEL_DATA");

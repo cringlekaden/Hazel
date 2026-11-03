@@ -5,13 +5,11 @@ import subprocess
 import hazel as hz
 
 
-def native_generator():
+def native_generator(configuration=None):
     # Only binaries in this explicitly selected SDK, in a fixed bounded order.
-    suffix = '.exe' if hz.SYSTEM == 'windows' else ''
-    for config in ('Debug', 'Release'):
-        path = hz.binaries(config) / 'HazelProject' / ('HazelProject' + suffix)
-        if path.is_file():
-            return path
+    for selected in ((configuration,) if configuration else ('Debug', 'Release')):
+        path = hz.binaries(selected) / 'HazelProject' / ('HazelProject' + hz.EXECUTABLE_SUFFIX)
+        if path.is_file(): return path
     raise RuntimeError('SDK native HazelProject generator is missing; run SDK setup/build. '
                        'No duplicate Python template fallback is provided.')
 
@@ -21,7 +19,7 @@ def native_contract(configuration='Debug'):
     env = os.environ.copy()
     if hz.SYSTEM == 'linux':
         env['LD_LIBRARY_PATH'] = str(prefix / 'lib')
-    probe = subprocess.run([str(native_generator()), '--contract'], cwd=hz.ROOT, env=env,
+    probe = subprocess.run([str(native_generator(configuration)), '--contract'], cwd=hz.ROOT, env=env,
                            capture_output=True, text=True, encoding='utf-8', timeout=10)
     if probe.returncode or probe.stdout.strip() != 'HAZEL_AUTHORING_CONTRACT=1':
         raise RuntimeError('Incompatible native generator contract; rebuild matching SDK tools')
@@ -60,8 +58,10 @@ def create_project(name, technical, destination, build=False):
     return descriptor
 
 
-def preflight(operation):
-    prefix = native_contract('Debug')
+def preflight(operation, configuration='Debug'):
+    if operation == 'export' and not hz.TARGET['export_supported']:
+        raise RuntimeError('Export/package support is not yet implemented for '+hz.SYSTEM+'; script compilation is supported. Use --operation scripts.')
+    prefix = native_contract(configuration)
     if hz.SYSTEM=='windows':
         hz.vs_toolchain(operation=='export')
         targeting=Path(os.environ.get('ProgramFiles(x86)','C:/Program Files (x86)'))/'Reference Assemblies/Microsoft/Framework/.NETFramework/v4.7.2/mscorlib.dll'
@@ -74,9 +74,9 @@ def preflight(operation):
         if missing:
             raise RuntimeError('Mono compiler SDK incomplete at '+str(prefix)+': missing '+
                                ', '.join(missing)+'. Select a complete HAZEL_MONO_SDK; precompiled Play uses only the runtime.')
-    if not (hz.binaries('Debug')/'Hazel-ScriptCore/Hazel-ScriptCore.dll').is_file():
-        raise RuntimeError('SDK Debug ScriptCore is missing. Build/setup this SDK first; script builds need matching ScriptCore.')
-    premake=hz.ROOT/'build/tools/premake-core/bin/release'/('premake5.exe' if hz.SYSTEM=='windows' else 'premake5')
+    if not (hz.binaries(configuration)/'Hazel-ScriptCore/Hazel-ScriptCore.dll').is_file():
+        raise RuntimeError('SDK '+configuration+' ScriptCore is missing. Build matching SDK products first.')
+    premake=hz.ROOT/'build/tools/premake-core/bin/release'/('premake5'+hz.EXECUTABLE_SUFFIX)
     if not premake.is_file(): raise RuntimeError('SDK Premake is missing. Run SDK setup before editor builds.')
     if operation=='export': hz.diagnose()
     print('READY: Python, configured SDK, Premake and script compiler'+(' and host native compiler' if operation=='export' else '')+' available.',flush=True)

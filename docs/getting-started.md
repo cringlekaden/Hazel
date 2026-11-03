@@ -1,6 +1,6 @@
-# Getting started on Windows and Linux
+# Getting started
 
-Hazel is the engine library. Hazelnut edits projects; Nutella runs prepared games without the editor. This fork currently builds for **Windows x64 and Linux x86_64**, with **OpenGL 4.1 core**. macOS is not implemented. Linux windows use X11/GLX, including Xwayland; this is not native Wayland support.
+Hazel is the engine library. Hazelnut edits projects; Nutella runs prepared games without the editor. Targets are **Windows x64, Linux x86_64 and native Apple Silicon macOS 27.0+**, with **OpenGL 4.1 core**. Mac builds, Apple rendering, relocated ad-hoc packages and cross-platform CI are qualified; [recorded manual/distribution limits](design/macos-port.md) remain. Linux windows use X11/GLX, including Xwayland; this is not native Wayland support.
 
 ## Choose a download or a source checkout
 
@@ -13,11 +13,25 @@ git clone --recurse-submodules https://github.com/cringlekaden/Hazel.git
 cd Hazel
 ```
 
-For an existing checkout missing submodules, use `git submodule update --init --recursive`. Use the committed gitlinks, not `--remote`. Preserve local changes and dependency modifications before setup; do not reset or clean them to fix a build. The default master checkout includes the accepted runtime UI and tutorial. These setup/build instructions support Windows and Linux; macOS implementation remains separate.
+For an existing checkout missing submodules, use `git submodule update --init --recursive`. Use the committed gitlinks, not `--remote`. Preserve local changes and dependency modifications before setup; do not reset or clean them to fix a build. Master includes the accepted runtime UI, tutorial and native Mac integration; the [qualification record](design/macos-port.md) identifies exact evidence and outstanding manual checks.
 
 ## Prerequisites installed by you
 
-Both platforms require Git and Python **3.9+**, with pip available unless the selected interpreter already provides the pinned PyYAML **6.0.3**. Check `python3 --version` / `python3 -m pip --version` on Linux, or `python --version` / `python -m pip --version` on Windows. The CLI uses `python` on Windows; a `py` launcher alone is insufficient for `setup.ps1`. Premake generates the builds; CMake and a Vulkan SDK are not required.
+All platforms require Git and Python **3.9+**, with pip available unless the selected interpreter already provides the pinned PyYAML **6.0.3**. Check `python3 --version` / `python3 -m pip --version` on Linux/macOS, or `python --version` / `python -m pip --version` on Windows. The CLI uses `python` on Windows; a `py` launcher alone is insufficient for `setup.ps1`. Premake generates the builds; CMake and a Vulkan SDK are not required.
+
+### Apple Silicon macOS 27.0+
+
+Install full Xcode with a macOS 27 SDK and complete its license/first-launch setup yourself. Hazel uses pinned Premake's `xcode4` generator and command-scoped developer-tool selection; it does not change global `xcode-select`. `HAZEL_DEVELOPER_DIR=/absolute/Xcode.app/Contents/Developer` explicitly selects a nonstandard installation. Generation remembers the validated choice for Xcode GUI build phases. Homebrew, Rosetta, global Mono and CMake are not required.
+
+```sh
+python3 scripts/hazel.py diagnose
+python3 scripts/hazel.py setup --tests
+python3 scripts/hazel.py open
+```
+
+`Hazel.xcworkspace` provides shared **Hazelnut** and **Nutella** schemes. Build/run normally in Xcode; select Debug or Release in the scheme. Native products use `bin/<Config>-macos-arm64/<target>/` and minimum macOS 27.0. Opening an existing workspace preserves its generated test targets and local scheme choices. Do not run overlapping builds against its DerivedData.
+
+For explicit preparation/generation, use `dependencies`, then `generate --tests`, then `build --config Debug --tests`. Dependencies are checkout-owned: native classic Mono 6.14.1 comes from the checksum-pinned candidate, including mcs and the 4.7.2 profile. Source SDK selection means this checkout root, not its `bin`, `.app` or Resources directory. A prepared runtime alone cannot compile scripts. See [development](development.md) and [packaging](packaging.md) for the separate qualification commands and current limits.
 
 ### Windows
 
@@ -80,7 +94,7 @@ Setup checks prerequisites, initializes pinned submodules, prepares pinned Prema
 | `database --config Debug\|Release` | Rebuild through Bear to capture Linux clangd commands; optional Bear is required |
 | `test --config Debug\|Release --profile native\|software\|gl41` | Run the existing regression suite; build with `--tests` first |
 
-Run these as `python3 scripts/hazel.py <command>` on Linux or `python scripts/hazel.py <command>` on Windows, from the checkout. Each subcommand has `--help`. Only Debug and Release are supported by the public CLI. A compiler, Python and source SDK are build/export requirements, not packaged-game requirements.
+Run these as `python3 scripts/hazel.py <command>` on Linux/macOS or `python scripts/hazel.py <command>` on Windows, from the checkout. Each subcommand has `--help`. Only Debug and Release are supported by the public CLI. A compiler, Python and source SDK are build/export requirements, not packaged-game requirements. Mac tests use `--profile native`; Mesa/software profiles are unavailable there.
 
 ## Open an example and the UI Tutorial
 
@@ -116,8 +130,9 @@ python3 scripts/hazel.py editor-export examples/Skybound/Skybound.hproj --name S
 
 | Location | Contents |
 | --- | --- |
-| `bin/<Config>-<OS>-x86_64/<target>/` | Native executables/libraries and managed SDK products, plus staged runtime resources beside applications |
-| `bin-int/<Config>-<OS>-x86_64/` | Native/managed SDK intermediates |
+| `bin/<Config>-<OS>-<architecture>/<target>/` | Native executables/libraries and managed SDK products, plus staged runtime resources beside applications; macOS uses arm64, Windows/Linux x86_64 |
+| `bin-int/<Config>-<OS>-<architecture>/` | Premake native/managed intermediates for the Make/Visual Studio paths |
+| Xcode's selected DerivedData location | macOS native intermediates under `<project>.build/<Config>/<target>.build/`; separate Debug/Release object caches |
 | `build/` | Generated tool/test projects, pinned tools/dependency sources/installs/downloads, project-script compilation workspaces and test evidence |
 | Project `Assets/Scripts/Binaries/` | Example/template deployed script modules; the descriptor's ScriptModulePath is authoritative for other projects |
 | `dist/` | Default application archives/checksums; `--output` selects another destination |

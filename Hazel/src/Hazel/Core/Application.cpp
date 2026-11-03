@@ -132,11 +132,16 @@ namespace Hazel {
 		}
 	}
 
-	void Application::Run()
+	void Application::Run() { RunLoop(0); }
+    void Application::RunForSmokeTest() { RunLoop(60); }
+
+    void Application::RunLoop(uint32_t smokeFrames)
 	{
 		HZ_PROFILE_FUNCTION();
 
 		m_LastFrameTime = Time::GetTime();
+        uint32_t renderedFrames = 0;
+        const auto initialDraws = RenderCommand::GetDrawSubmissionCount();
 
 		while (m_Running)
 		{
@@ -171,10 +176,20 @@ namespace Hazel {
 				m_ImGuiLayer->End();
                 m_RenderingUI=false;
                 }
+                ++renderedFrames;
 			}
 
 			m_Window->OnUpdate();
+            if (smokeFrames && renderedFrames >= smokeFrames) {
+                const auto draws = RenderCommand::GetDrawSubmissionCount() - initialDraws;
+                if (!draws) throw std::runtime_error("Smoke test rendered no engine draw submissions");
+                m_Window->RequestClose();
+                if (m_Running) throw std::runtime_error("Smoke test close request was deferred or blocked; use a clean private project/profile");
+                HZ_CORE_INFO("SMOKE: {} rendered frames, {} engine draw submissions; normal close accepted", renderedFrames, draws);
+            }
 		}
+        if (smokeFrames && renderedFrames < smokeFrames)
+            throw std::runtime_error("Application exited before completing smoke-test frames");
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent&)

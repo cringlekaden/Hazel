@@ -16,5 +16,18 @@
     "verification": "official Arch sync metadata extra.db, package version 6.12.0.206-1",
     "prefix": "build/dependencies/mono/linux/usr",
     "distribution": "ignored local SDK; native installed Mono development package also supported"
+  },
+  "macos_feasibility": {
+    "status": "local native embedding candidate; not yet a public consumer SDK pin",
+    "version": "6.14.1",
+    "source_url": "https://dl.winehq.org/mono/sources/mono/mono-6.14.1.tar.xz",
+    "source_sha256": "3024c97c0bc8cbcd611c401d5f994528704108ceb31f31b28dea4783004d0820",
+    "formula_revision": "5251e778a43128b71a6223d3d8c39e1ff3d37b04",
+    "bottle_tag": "arm64_golden_gate",
+    "bottle_url": "https://ghcr.io/v2/homebrew/core/mono/blobs/sha256:bb3ced09c44ad6a265f35fbc4538151f340fe44c915042862b7557cd84f9d29d",
+    "bottle_sha256": "bb3ced09c44ad6a265f35fbc4538151f340fe44c915042862b7557cd84f9d29d",
+    "observed_deployment_target": "27.0",
+    "license": "Distribution LICENSE describes MIT/BSD and component-specific terms; retain LICENSE, COPYING.LIB and all shipped notices",
+    "reason": "The official Mono 6.12.0.206 macOS package has no arm64 slice; this classic-Mono successor provides native embedding ABI, compiler and 4.7.2 profile for the bounded feasibility gate"
   }
 }

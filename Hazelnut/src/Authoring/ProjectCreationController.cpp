@@ -2,6 +2,7 @@
 #include "AuthoringReadiness.h"
 #include "EditorLayer.h"
 #include "Hazel/Core/Resources.h"
+#include "Hazel/Core/BuildIdentity.h"
 #include "Hazel/Project/ProjectCreation.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include "UI/PropertyUI.h"
@@ -35,6 +36,7 @@ namespace Hazel {
     }
     void AuthoringPanel::Readiness() {
         AuthoringReadinessInput input;
+        input.ExportSupported = BuildIdentity::Current().ExportSupported;
         input.Project = bool(Project::GetActive());
         input.Saved = !m_Editor.m_ProjectPath.empty();
         input.ToolSDK = bool(m_SDK);

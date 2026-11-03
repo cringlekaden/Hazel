@@ -1,5 +1,6 @@
 // Pixel/readback regression tests for the actual upstream Renderer2D pipelines.
 #include "Hazel.h"
+#include "../macos/LoadedImages.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -51,6 +52,12 @@ static std::size_t Pixels(int entity) {
 #include "TypographyRenderProfile.h"
 static void Primitives() {
     Begin(); Renderer2D::DrawQuad(Transform(),{1,0,0,1},42); End();
+    GLint active;glGetIntegerv(GL_ACTIVE_TEXTURE,&active);
+    for(uint32_t unit=0;unit<Renderer::GetSettings().TextureSlots;++unit) {
+        glActiveTexture(GL_TEXTURE0+unit);GLint binding=0;glGetIntegerv(GL_TEXTURE_BINDING_2D,&binding);
+        Check(binding!=0,"Active quad sampler has no complete fallback texture");
+    }
+    glActiveTexture(active);
     Check(ID()==42 && Color()[0]>250 && Color()[1]<5,"Solid quad color/entity mismatch");
     Begin(); Renderer2D::DrawRotatedQuad(glm::vec3(0),{1,1},45,{0,1,0,1}); End();
     Check(Color(96,64)[1]>250 && Color(96,96)[1]<5,"Rotated quad footprint mismatch");
@@ -59,6 +66,11 @@ static void Primitives() {
     Begin(); Renderer2D::DrawCircle(Transform(),{1,1,1,1},.15f,.005f,78); End();
     Check(ID()==-1 && ID(94,64)==78,"Circle ring thickness mismatch");
     Renderer2D::SetLineWidth(2);
+    Check(glGetError()==GL_NO_ERROR,"Requested line width violated the active context contract");
+    if(Renderer::GetCapabilities().ForwardCompatible) {
+        GLfloat width=0;glGetFloatv(GL_LINE_WIDTH,&width);
+        Check(width==1.0f,"Forward-compatible context accepted an unusable wide-line setting");
+    }
     Begin(); Renderer2D::DrawLine({-.5f,0,0},{.5f,0,0},{1,1,0,1},79); End();
     Check(Pixels(79)>60,"Line color/entity output missing");
     Begin(); Renderer2D::DrawRect(Transform(),{1,1,1,1},80); End();
@@ -238,6 +250,7 @@ int main(int argc,char** argv) {
             Check(glGetError()==GL_NO_ERROR,"Final renderer GL error");
             target->Unbind(); target.reset(); glEnable(GL_DEPTH_TEST);
         }
+        PrintLoadedNativeImages();
         std::cout<<"PASS: default and two-slot/GLSL settings, actual quad/circle/line/text shaders, color/entity picking, rotation/tiling/tint/sprites, UTF-8/atlas switch, all primitive capacity flushes, generic submit and failed-constructor recovery\n";
         return 0;
     } catch(const std::exception& e) { std::cerr<<"FAIL: "<<e.what()<<'\n'; target.reset(); return 1; }

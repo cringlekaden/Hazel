@@ -50,6 +50,9 @@ namespace Hazel {
 	public:
 		Application(const ApplicationSpecification& specification = {});
         void Run();
+        // Maintainer qualification: 60 real frames, renderer submissions and an
+        // accepted ordinary close request. This never dismisses document guards.
+        void RunForSmokeTest();
 		virtual ~Application();
 
 		void OnEvent(Event& e);
@@ -83,6 +86,8 @@ namespace Hazel {
 		bool OnWindowResize(WindowResizeEvent& e);
 
 		void ExecuteMainThreadQueue();
+
+        void RunLoop(uint32_t smokeFrames);
 		void ShutdownResources();
 	private:
 		ApplicationSpecification m_Specification;

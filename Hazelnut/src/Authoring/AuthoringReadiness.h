@@ -4,6 +4,7 @@ namespace Hazel {
     struct AuthoringReadinessInput {
         bool Project = false, Saved = false, ToolSDK = false, ToolsChecked = false,
              AssemblyLoaded = false, AssignedScripts = false, ClassesAvailable = false;
+        bool ExportSupported = true;
     };
     struct AuthoringReadiness {
         bool Editing = false, Scripts = false, Playing = false, Exporting = false;
@@ -27,8 +28,9 @@ namespace Hazel {
                            : !in.ClassesAvailable
                                ? "Assigned script classes unavailable; fix bindings/rebuild"
                                : "Assigned scripts ready; scene/resource validation still runs";
-            r.Exporting = in.Project && in.Saved && in.ToolSDK && in.ToolsChecked;
-            r.ExportReason = !in.Project        ? "Open a project"
+            r.Exporting = in.ExportSupported && in.Project && in.Saved && in.ToolSDK && in.ToolsChecked;
+            r.ExportReason = !in.ExportSupported ? "Export/package support is not yet implemented for this target; scripts can be built separately"
+                             : !in.Project        ? "Open a project"
                              : !in.Saved        ? "Save a descriptor/startup scene first"
                              : !in.ToolSDK      ? "Export needs a compatible source SDK"
                              : !in.ToolsChecked ? "Check export tools; compilation and dependency "

@@ -6,6 +6,7 @@
 #include "Hazel/Project/ProjectCreation.h"
 #include "AuthoringReadiness.h"
 #include "Hazel/Core/Resources.h"
+#include "Hazel/Core/BuildIdentity.h"
 #include "Hazel/Renderer/Renderer.h"
 #include "Hazel/Scene/Prefab.h"
 #include "Hazel/Scene/SceneSerializer.h"
@@ -357,7 +358,7 @@ void AuthoringPanel::Preflight(bool exporting)
 {
     if (!m_Tools.Busy())
         Start("Toolchain readiness",
-              {"authoring-preflight", "--operation", exporting ? "export" : "scripts"});
+              {"authoring-preflight", "--config", BuildIdentity::Current().ToolConfiguration(), "--operation", exporting ? "export" : "scripts"});
 }
 void AuthoringPanel::Notify(const std::string &message, spdlog::level::level_enum level)
 {
@@ -452,6 +453,7 @@ void AuthoringPanel::PollTools()
 }
 bool AuthoringPanel::Ready(bool exporting) const
 {
+    if (exporting && !BuildIdentity::Current().ExportSupported) return false;
     return !m_Tools.Busy() && m_Report.Success && !m_Tools.Request().Arguments.empty() &&
            m_Tools.Request().Arguments[0] == "authoring-preflight" &&
            (!exporting || m_Tools.Request().Arguments.back() == "export") &&
@@ -1202,15 +1204,15 @@ void AuthoringPanel::Scripts()
         ImGui::Begin("Build Scripts", &m_ShowBuild);
         Readiness();
         ToolStatus();
-        ImGui::TextWrapped("Builds the active project's Debug assembly through the "
+        ImGui::TextWrapped("Builds the active project's %s assembly through the "
                            "configured SDK. Stop Play first. "
                            "Successful compilation reloads the assembly; authored "
-                           "fields remain in the scene.");
+                           "fields remain in the scene.", BuildIdentity::Current().ToolConfiguration().c_str());
         ImGui::BeginDisabled(!Ready() || !Availability(EditorAction::StartTool));
         if (ImGui::Button("Build Scripts"))
         {
             auto project = m_Editor.m_ProjectPath;
-            Start("Build Scripts", {"script-build", project.generic_u8string(), "--config", "Debug"},
+            Start("Build Scripts", {"script-build", project.generic_u8string(), "--config", BuildIdentity::Current().ToolConfiguration()},
                   ToolCompletion::ReloadScripts);
         }
         ImGui::EndDisabled();
@@ -1227,11 +1229,9 @@ void AuthoringPanel::Export()
     ImGui::SetNextWindowSize({580, 520}, ImGuiCond_FirstUseEver);
     ImGui::Begin("Export Game", &m_ShowExport);
     ImGui::TextWrapped("Active project: %s", m_Editor.m_ProjectPath.generic_u8string().c_str());
-#ifdef HZ_PLATFORM_WINDOWS
-    ImGui::TextUnformatted("Target: Windows x64 | Release");
-#else
-    ImGui::TextUnformatted("Target: Linux x86_64 | Release");
-#endif
+    const auto identity = BuildIdentity::Current();
+    ImGui::Text("Target: %s %s | Release", identity.System.c_str(), identity.Architecture.c_str());
+    if (!identity.ExportSupported) ImGui::TextWrapped("Export/package support is not yet implemented for this target. Script readiness and Build Scripts remain available.");
     ImGui::TextWrapped("Other targets require building on that platform; "
                        "cross-compilation is unavailable. "
                        "Export builds Release engine/runtime and scripts before "

@@ -16,8 +16,12 @@ import sys
 import urllib.request
 
 ROOT = Path(__file__).resolve().parent.parent
-SYSTEM = 'windows' if os.name == 'nt' else 'linux'
 PINS = json.loads((ROOT / 'scripts/internal/toolchain.json').read_text())
+from internal.target import host_target
+SYSTEM, TARGET = host_target(PINS['targets'])
+ARCHITECTURE = TARGET['architecture']
+EXECUTABLE_SUFFIX = TARGET['executable_suffix']
+MACOS_DEPLOYMENT_TARGET = PINS['targets']['macos']['deployment_target']
 
 
 def run(args, cwd=ROOT, env=None, **kwargs):
@@ -47,10 +51,36 @@ def vs_toolchain(require_cpp=True):
     return install, msbuild
 
 
-def diagnose():
-    if platform.machine().lower() not in ('x86_64', 'amd64'):
-        raise RuntimeError('This milestone supports x86_64 only')
-    required = ['git'] if SYSTEM == 'windows' else ['git', 'make', 'g++', 'pkg-config', 'ar', 'tar']
+def macos_toolchain():
+    if SYSTEM != 'macos':
+        raise RuntimeError('macOS toolchain inspection requested on ' + SYSTEM)
+    from internal.macos_toolchain import select
+    selected = select(ROOT)
+    os.environ['MACOSX_DEPLOYMENT_TARGET'] = MACOS_DEPLOYMENT_TARGET
+    sdk = Path(output(['xcrun', '--sdk', 'macosx', '--show-sdk-path']))
+    compiler = Path(output(['xcrun', '--sdk', 'macosx', '--find', 'clang']))
+    return {
+        'developer_directory': str(selected),
+        'developer_tools': 'full-xcode' if '.app/Contents/Developer' in str(selected) else 'command-line-tools',
+        'sdk_path': str(sdk),
+        'sdk_version': output(['xcrun', '--sdk', 'macosx', '--show-sdk-version']),
+        'compiler': str(compiler),
+        'compiler_version': output([compiler, '--version']).splitlines()[0],
+        'xcode_version': output(['xcodebuild', '-version']),
+        'first_launch_ready': subprocess.run(['xcodebuild', '-checkFirstLaunchStatus'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0,
+    }
+
+
+def diagnose(report=True):
+    host_arch = platform.machine().lower()
+    if SYSTEM == 'macos':
+        if host_arch not in ('arm64', 'aarch64'):
+            raise RuntimeError('Native macOS feasibility requires an arm64 host; Rosetta/x86_64 is not supported')
+        required = ['git', 'make', 'clang', 'clang++', 'ar', 'libtool', 'tar', 'xcrun', 'xcode-select']
+    else:
+        if host_arch not in ('x86_64', 'amd64'):
+            raise RuntimeError('The maintained Windows/Linux targets require x86_64')
+        required = ['git'] if SYSTEM == 'windows' else ['git', 'make', 'g++', 'pkg-config', 'ar', 'tar']
     missing = [name for name in required if not shutil.which(name)]
     if missing:
         raise RuntimeError('Missing prerequisites: ' + ', '.join(missing) + '. See docs/getting-started.md prerequisite packages; setup never installs system packages.')
@@ -59,10 +89,23 @@ def diagnose():
         framework = Path(os.environ.get('ProgramFiles(x86)', 'C:/Program Files (x86)')) / 'Reference Assemblies/Microsoft/Framework/.NETFramework/v4.7.2/mscorlib.dll'
         if not framework.is_file():
             raise RuntimeError('Install .NET Framework 4.7.2 Developer/Targeting Pack')
-    else:
+    elif SYSTEM == 'linux':
         for name in ('gtk+-3.0', 'x11', 'xrandr', 'xinerama', 'xcursor', 'xi', 'gl', 'uuid'):
             if subprocess.run(['pkg-config', '--exists', name]).returncode:
                 raise RuntimeError(f'Missing {name} development files. See docs/getting-started.md Ubuntu/Arch prerequisite commands.')
+    result = {
+        'support_status': 'experimental macOS Xcode application foundation; qualification and packaging pending' if SYSTEM == 'macos' else 'maintained',
+        'host_system': platform.system(),
+        'host_version': platform.mac_ver()[0] if SYSTEM == 'macos' else platform.release(),
+        'host_architecture': host_arch,
+        'target_system': SYSTEM,
+        'target_architecture': ARCHITECTURE,
+        'deployment_target': MACOS_DEPLOYMENT_TARGET if SYSTEM == 'macos' else None,
+        'required_tools': {name: shutil.which(name) for name in required},
+    }
+    if SYSTEM == 'macos': result.update(macos_toolchain())
+    if report: print(json.dumps(result, indent=2, sort_keys=True), flush=True)
+    return result
 
 
 def premake():
@@ -81,10 +124,22 @@ def premake():
             bootstrap = ROOT / 'build/tools/bootstrap-windows.cmd'
             bootstrap.write_text('@echo off\ncall "' + str(install / 'VC/Auxiliary/Build/vcvars64.bat') + '"\nif errorlevel 1 exit /b 1\nnmake -f Bootstrap.mak windows-msbuild PLATFORM=x64 MSDEV=vs2022 PREMAKE_OPTS=--curl-src=none\nexit /b %errorlevel%\n', encoding='utf-8')
             run(['cmd', '/d', '/c', bootstrap], cwd=owned)
-        else:
+        elif SYSTEM == 'linux':
             bootstrap = ROOT / 'build/tools/PremakeBootstrap.mak'
             bootstrap.write_text((owned/'Bootstrap.mak').read_text().replace('-j`getconf _NPROCESSORS_ONLN`', '-j2'))
             run(['make', '-f', bootstrap, 'linux', '-j2', 'PREMAKE_OPTS=--curl-src=none'], cwd=owned)
+        else:
+            macos_toolchain()
+            bootstrap = ROOT / 'build/tools/PremakeBootstrap.mak'
+            bootstrap.write_text((owned/'Bootstrap.mak').read_text().replace('-j`getconf _NPROCESSORS_ONLN`', '-j2'))
+            env = os.environ.copy()
+            env['MACOSX_DEPLOYMENT_TARGET'] = MACOS_DEPLOYMENT_TARGET
+            run(['make', '-f', bootstrap, 'osx', '-j2', 'PLATFORM=AARCH64',
+                 'PREMAKE_OPTS=--curl-src=none'], cwd=owned, env=env)
+    if SYSTEM == 'macos':
+        architectures = output(['lipo', '-archs', executable]).split()
+        if architectures != ['arm64']:
+            raise RuntimeError('Pinned Premake is not a native arm64 executable: ' + ' '.join(architectures))
     return executable
 
 
@@ -92,6 +147,23 @@ def mono_prefix():
     if SYSTEM == 'windows':
         return ROOT / 'Hazel/vendor/mono'
     explicit = os.environ.get('HAZEL_MONO_SDK')
+    if SYSTEM == 'macos':
+        selection = ROOT / 'build/tools/macos-toolchain.json'
+        if not explicit and selection.is_file():
+            remembered = json.loads(selection.read_text()).get('mono_sdk')
+            if remembered: explicit = str(ROOT / remembered)
+        prefix = Path(explicit).resolve() if explicit else ROOT / 'build/dependencies/mono/macos-arm64/sdk'
+        if prefix == ROOT / 'build/dependencies/mono/macos-arm64/sdk':
+            run([sys.executable, ROOT / 'scripts/macos/prepare-mono-sdk.py'])
+        required = ['bin/mono', 'include/mono-2.0/mono/jit/jit.h', 'lib/libmonosgen-2.0.dylib',
+                    'lib/mono/4.5/mscorlib.dll', 'lib/mono/4.5/mcs.exe',
+                    'lib/mono/4.7.2-api/mscorlib.dll', 'etc/mono/config']
+        missing = [name for name in required if not (prefix / name).is_file()]
+        if missing:
+            raise RuntimeError('Native macOS Mono feasibility SDK is incomplete: ' + str(prefix) +
+                               '; missing ' + ', '.join(missing) +
+                               '. Produce the pinned local candidate before application setup.')
+        return prefix
     if explicit:
         prefix = Path(explicit).resolve()
     else:
@@ -124,12 +196,13 @@ def mono_prefix():
 def mono_command(prefix):
     if SYSTEM == 'windows':
         return []
-    config = (prefix / '../etc/mono/config').resolve() if prefix != Path('/usr') else Path('/etc/mono/config')
+    config = prefix / 'etc/mono/config' if SYSTEM == 'macos' else ((prefix / '../etc/mono/config').resolve() if prefix != Path('/usr') else Path('/etc/mono/config'))
     return [prefix / 'bin/mono', '--config', config, prefix / 'lib/mono/4.5/mcs.exe']
 
 
 def dependency_digest():
     digest = hashlib.sha256()
+    digest.update(json.dumps(TARGET, sort_keys=True).encode())
     for name in ('build-shader-tools.py', 'shader-workspace.lua', 'generate-shader-inputs.py',
                  'shader-sources.json', 'shader-tools.json', 'shader-tools-compat.h'):
         digest.update(name.encode()); digest.update((ROOT / 'scripts/dependencies' / name).read_bytes())
@@ -137,16 +210,23 @@ def dependency_digest():
 
 
 def dependencies(configuration, generator):
-    sdk = ROOT / 'build/dependencies/install' / f'{configuration}-{SYSTEM}-x86_64'
+    sdk = ROOT / 'build/dependencies/install' / f'{configuration}-{SYSTEM}-{ARCHITECTURE}'
     try:
         manifest = json.loads((sdk / 'shader-tools.json').read_text())
         pins = json.loads((ROOT / 'scripts/dependencies/shader-tools.json').read_text())
         libraries = [('' if SYSTEM == 'windows' else 'lib') + name + ('.lib' if SYSTEM == 'windows' else '.a') for name in ('shaderc_combined', 'spirv-cross-core', 'spirv-cross-glsl')]
         ready = (manifest['pins'] == pins and manifest['configuration'] == configuration and
-                 manifest['system'] == SYSTEM and manifest['source_status'] == 'clean' and
+                 manifest['system'] == SYSTEM and manifest.get('architecture', 'x86_64') == ARCHITECTURE and manifest['source_status'] == 'clean' and
                  manifest['build_system'] == 'Premake' and manifest.get('build_inputs_sha256') == dependency_digest() and
                  all((sdk / 'lib' / name).is_file() and (sdk / 'lib' / name).stat().st_size > 0 for name in libraries) and
                  all((sdk / 'include' / name).is_file() for name in ('shaderc/shaderc.hpp', 'spirv_cross/spirv_glsl.hpp', 'spirv-tools/libspirv.h')))
+        if SYSTEM == 'macos':
+            toolchain = macos_toolchain()
+            ready = (ready and manifest.get('sdk_version') == toolchain['sdk_version'] and
+                     manifest.get('deployment_target') == MACOS_DEPLOYMENT_TARGET and
+                     manifest.get('compiler_version') == toolchain['compiler_version'] and
+                     manifest.get('compiler') == output(['xcrun','--sdk','macosx','--find','clang++']) and
+                     manifest.get('sdk') == toolchain['sdk_path'])
     except (OSError, KeyError, ValueError):
         ready = False
     if not ready:
@@ -157,7 +237,35 @@ def dependencies(configuration, generator):
         print(f'Using current {configuration} shader dependencies.', flush=True)
 
 
+def generate_macos(tests=False):
+    diagnose(report=False)
+    from internal.macos_toolchain import remember
+    readiness = subprocess.run(['xcodebuild', '-checkFirstLaunchStatus'])
+    if readiness.returncode:
+        print('Xcode first-launch status is incomplete; generation can proceed, builds may require owner setup.', flush=True)
+    generator = premake()
+    prefix = mono_prefix()
+    remember(ROOT, Path(os.environ['DEVELOPER_DIR']), prefix)
+    os.environ['HAZEL_PYTHON'] = sys.executable
+    run([generator, '--mono-root=' + str(prefix), *(['--migration-tests','--shader-tools'] if tests else []), 'xcode4'])
+    from macos.schemes import generate
+    generate(ROOT)
+
+
 def build(configuration, tests=False, database=False, targets=None):
+    if SYSTEM == 'macos':
+        if database: raise RuntimeError('The Bear database workflow is Linux-only; use Xcode indexing on macOS')
+        yaml_tools()
+        macos_toolchain()
+        dependencies(configuration, premake())
+        generate_macos(tests)
+        for target in targets or (('MacOSQualification',) if tests else ('Hazelnut', 'Nutella', 'SpriteAssetAudit')):
+            run(['xcodebuild', '-workspace', ROOT / 'Hazel.xcworkspace', '-scheme', target, '-configuration', configuration, '-destination', 'generic/platform=macOS', '-jobs', '2', 'build'])
+        # Full setup/build promises a runnable default scheme on every host.
+        # Native Xcode phases build ScriptCore/tools; project scripts remain a
+        # canonical authoring operation, also available in the editor afterward.
+        if not targets: script_build(ROOT/'examples/SceneTransitions/SceneTransitions.hproj',configuration)
+        return
     yaml_tools()
     generator = premake()
     prefix = mono_prefix()
@@ -171,7 +279,7 @@ def build(configuration, tests=False, database=False, targets=None):
     if SYSTEM == 'windows':
         command = [vs_toolchain()[1], ROOT / 'Hazel.sln', '/m:2', f'/p:Configuration={configuration}', '/p:Platform=x64', '/verbosity:minimal']
     else:
-        command = ['make', f'config={configuration.lower()}', '-j2', 'CSC=' + shlex.join(map(str, mono_command(prefix)))]
+        command = ['make', f'config={configuration.lower()}', '-j2', 'CSC=' + shlex.join(map(str, [*mono_command(prefix), '-sdk:4.7.2']))]
         numbers = tuple(map(int, output(['make', '--version']).splitlines()[0].split()[-1].split('.')[:2]))
         if numbers >= (4, 4): command += ['--jobserver-style=pipe']
     if targets:
@@ -205,7 +313,7 @@ def copy_tree(source, destination):
 
 
 def binaries(configuration):
-    return ROOT / 'bin' / f'{configuration}-{SYSTEM}-x86_64'
+    return ROOT / 'bin' / f'{configuration}-{SYSTEM}-{ARCHITECTURE}'
 
 
 def development_link(target, source):
@@ -217,10 +325,10 @@ def development_link(target, source):
     target.symlink_to(source, target_is_directory=source.is_dir())
 
 
-def stage(configuration, prefix=None):
+def stage(configuration, prefix=None, targets=None):
     prefix = prefix or mono_prefix()
     base = binaries(configuration)
-    for name in ('Hazelnut', 'Nutella', 'HazelProject'):
+    for name in targets or ('Hazelnut', 'Nutella', 'HazelProject', 'SpriteAssetAudit'):
         if not (base/name).is_dir():continue
         app = base / name
         copy_tree(ROOT / 'Hazel/Resources', app / 'Resources')
@@ -234,7 +342,7 @@ def stage(configuration, prefix=None):
             copy_changed(ROOT / 'scripts/internal/mono-windows.config', app / 'mono/etc/mono/config')
         else:
             mono = app / 'mono'; mono.mkdir(exist_ok=True)
-            for target, source in ((mono / 'lib', prefix / 'lib'), (mono / 'etc', (prefix / '../etc').resolve() if prefix != Path('/usr') else Path('/etc'))):
+            for target, source in ((mono / 'lib', prefix / 'lib'), (mono / 'etc', prefix / 'etc' if SYSTEM == 'macos' else ((prefix / '../etc').resolve() if prefix != Path('/usr') else Path('/etc')))):
                 development_link(target,source)
             lib = app / 'lib'; lib.mkdir(exist_ok=True)
             for source in (prefix / 'lib').glob('libmono*.so*'):
@@ -254,7 +362,7 @@ def script_build(project, configuration):
     env = os.environ.copy()
     env['HAZEL_SCRIPTCORE'] = (binaries(configuration) / 'Hazel-ScriptCore/Hazel-ScriptCore.dll').as_posix()
     identity = hashlib.sha256(str(descriptor).encode('utf-8')).hexdigest()[:16]
-    compiled = ROOT/'build/projects'/identity/f'{configuration}-{SYSTEM}-x86_64'
+    compiled = ROOT/'build/projects'/identity/f'{configuration}-{SYSTEM}-{ARCHITECTURE}'
     compiled.mkdir(parents=True, exist_ok=True)
     # The bundled/native project contract uses this objdir. Premake's pinned
     # gmake C# response-file rule lacks an order-only directory prerequisite;
@@ -273,7 +381,7 @@ def script_build(project, configuration):
         command = [vs_toolchain(False)[1], scripts / ((config.get('ScriptProject') or config['Name']) + '.sln'), '/m:2', f'/p:Configuration={configuration}', '/p:Platform=x64']
         if rebuild: command += ['/t:Rebuild']
     else:
-        command = ['make', f'config={configuration.lower()}', '-j2', 'CSC=' + shlex.join(map(str, mono_command(prefix)))]
+        command = ['make', f'config={configuration.lower()}', '-j2', 'CSC=' + shlex.join(map(str, [*mono_command(prefix), '-sdk:4.7.2']))]
         # Premake's C# Makefile does not make an external HintPath DLL a target
         # prerequisite. API/build-definition changes must invalidate this output.
         if rebuild: command += ['--always-make']
@@ -346,24 +454,58 @@ def yaml_tools():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='action', required=True)
+    sub.add_parser('diagnose', help='Report host/target prerequisites without changing the host')
+    sub.add_parser('bootstrap-premake', help='Prepare and report the checkout-owned pinned Premake executable')
+    sub.add_parser('generate', help='Generate the native macOS Xcode workspace').add_argument('--tests', action='store_true')
+    sub.add_parser('open', help='Open the generated macOS workspace in Xcode')
+    sub.add_parser('dependencies', help='Prepare checkout-owned native macOS dependencies')
     for action in ('setup', 'build', 'database', 'test'):
         p = sub.add_parser(action)
         p.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
         if action in ('setup', 'build'): p.add_argument('--tests', action='store_true')
         if action == 'test': p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
+        if action == 'test': p.add_argument('--suite',choices=('all','cpu'),default='all',help='CPU subset explicitly excludes graphics/editor acceptance')
+        if action == 'test': p.add_argument('--only',action='append',choices=[r['name'] for r in json.loads((ROOT/'scripts/internal/testing/native-tests.json').read_text())],help='Run selected maintained regression(s); other tests are not qualified')
     p = sub.add_parser('run'); p.add_argument('app', choices=('Hazelnut', 'Nutella')); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug'); p.add_argument('--project', type=Path)
     p = sub.add_parser('script-build'); p.add_argument('project', type=Path); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     p = sub.add_parser('test-packages'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
+    p.add_argument('--interactive',action='store_true',help='macOS: launch pristine relocated products for human interaction and normal close')
+    p.add_argument('--interactive-app',choices=('Hazelnut','Nutella'),help='With --interactive, check only this product desktop; the other remains unexecuted')
     p = sub.add_parser('test-games'); p.add_argument('--config', choices=('Debug','Release'), default='Debug'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native'); p.add_argument('--packages', action='store_true'); p.add_argument('--output', type=Path, default=ROOT/'dist/games')
-    p = sub.add_parser('authoring-preflight'); p.add_argument('--operation', choices=('scripts','export'), default='scripts')
+    p = sub.add_parser('authoring-preflight'); p.add_argument('--operation', choices=('scripts','export'), default='scripts'); p.add_argument('--config', choices=('Debug','Release'), default='Debug')
     p = sub.add_parser('new-project'); p.add_argument('--name', required=True); p.add_argument('--identifier', required=True); p.add_argument('--destination', type=Path, required=True); p.add_argument('--build-scripts', action='store_true', help='Compile after native creation; build failure retains editable project')
     p = sub.add_parser('editor-export'); p.add_argument('project', type=Path); p.add_argument('--name', required=True); p.add_argument('--output', type=Path, required=True)
     p = sub.add_parser('package'); p.add_argument('--app', choices=('Hazelnut', 'Nutella', 'all'), default='all'); p.add_argument('--name', help='Archive/directory name for a single application package'); p.add_argument('--project', type=Path, default=ROOT/'examples/SceneTransitions/SceneTransitions.hproj'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--external-assets', choices=('reject',), default='reject', help='External references must be moved into the project and saved before packaging')
     args = parser.parse_args()
+    if args.action=='test-packages' and args.interactive_app and not args.interactive:
+        raise RuntimeError('--interactive-app requires --interactive')
+    if args.action in ('package', 'editor-export') and not TARGET['export_supported']:
+        raise RuntimeError('Export/package support is not yet implemented for '+SYSTEM+'; script compilation is supported separately')
+    if args.action == 'diagnose':
+        diagnose(); return
+    if args.action == 'bootstrap-premake':
+        diagnose(report=False)
+        print(premake())
+        return
+    if args.action in ('generate', 'open', 'dependencies'):
+        if SYSTEM != 'macos': raise RuntimeError('Use setup/build for Windows and Linux')
+        if args.action == 'dependencies':
+            diagnose()
+            generator = premake()
+            mono_prefix()
+            for config in ('Debug', 'Release'): dependencies(config, generator)
+        else:
+            # Opening an existing workspace must preserve its generated target
+            # set (including --tests) and the owner's local scheme choices.
+            if args.action=='generate' or not (ROOT/'Hazel.xcworkspace').is_dir():
+                generate_macos(getattr(args, 'tests', False))
+            else:macos_toolchain()
+            if args.action == 'open': run(['open', '-a', str(Path(os.environ['DEVELOPER_DIR']).parents[1]), ROOT / 'Hazel.xcworkspace'])
+        return
     if args.action in ('editor-export','script-build','authoring-preflight') or (args.action=='new-project' and args.build_scripts):
         from internal.child_tools import prepare
         exporting = args.action == 'editor-export' or (args.action == 'authoring-preflight' and args.operation == 'export')
-        prepare(['git','cmd'] if SYSTEM=='windows' else (['git','make','g++','ar','pkg-config','tar','ldd'] if exporting else ['git','make']))
+        prepare(['git','cmd'] if SYSTEM=='windows' else (['git','make','g++','ar','pkg-config','tar','ldd'] if exporting and SYSTEM=='linux' else ['git','make']))
         if SYSTEM=='windows': vs_toolchain(exporting)
     if args.action == 'run':
         with build_lock(): stage(args.config)
@@ -375,14 +517,18 @@ def main():
         return
     if args.action == 'authoring-preflight':
         from internal.authoring import preflight
-        preflight(args.operation)
+        preflight(args.operation, args.config)
         return
-    with build_lock():
+    # The macOS SDK integration regression invokes this CLI in child processes. Holding
+    # the SDK mutation lock in their parent would deadlock those operations.
+    with contextlib.nullcontext() if SYSTEM=='macos' and args.action=='test' else build_lock():
         if args.action in ('setup', 'build', 'database'):
             if args.action == 'setup':
                 diagnose(); run(['git', 'submodule', 'update', '--init', '--recursive']); yaml_tools()
             build(args.config, getattr(args, 'tests', False), args.action == 'database')
-            if args.action == 'setup': print('Ready. python scripts/hazel.py run Hazelnut\nHazelnut restores the last project; --project explicitly selects one.\nF5: copy scripts/internal/vscode/' + SYSTEM + '/ templates into .vscode. Use hazel.py --help for all workflows.')
+            if args.action == 'setup':
+                print('Ready. python scripts/hazel.py run Hazelnut\nHazelnut restores the last project; --project explicitly selects one.')
+                print('Use hazel.py open for the generated Xcode workspace.' if SYSTEM=='macos' else 'F5: copy scripts/internal/vscode/'+SYSTEM+'/ templates into .vscode.')
         elif args.action == 'new-project':
             from internal.authoring import create_project
             create_project(args.name, args.identifier, args.destination,args.build_scripts)
@@ -399,13 +545,13 @@ def main():
             package(args.app, args.project, args.output, args.name)
         elif args.action == 'test-packages':
             from internal.package_tests import package_tests
-            package_tests(args.output.resolve(), args.profile)
+            package_tests(args.output.resolve(), args.profile,args.interactive,args.interactive_app)
         elif args.action == 'test-games':
             from internal.game_tests import game_tests
             game_tests(args.config,args.profile,args.packages,args.output.resolve())
         elif args.action == 'test':
             from internal.tests import test
-            test(args.config, args.profile)
+            test(args.config, args.profile, args.suite, args.only)
 
 
 if __name__ == '__main__':

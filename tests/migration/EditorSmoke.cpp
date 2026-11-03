@@ -6,6 +6,7 @@
 #include "Hazel/Events/MouseEvent.h"
 #include "UI/PropertyUI.h"
 #include "Hazel/Core/FileSystem.h"
+#include "Hazel/Core/BuildIdentity.h"
 #include "Authoring/EditorPreferences.h"
 #include "Hazel/Core/WindowCaption.h"
 #include "Authoring/RendererLaunch.h"
@@ -41,7 +42,7 @@
 #include <thread>
 #include <random>
 #include <stdexcept>
-#ifdef HZ_PLATFORM_LINUX
+#if defined(HZ_PLATFORM_LINUX) || defined(HZ_PLATFORM_MACOS)
 #include <fcntl.h>
 #include <unistd.h>
 #endif
@@ -73,6 +74,17 @@ public:
         switch (++m_Frame) {
         case 3: {
             Check(e.m_ContentBrowserPanel && ScriptEngine::IsInitialized(), "Editor project/assembly startup failed");
+            {
+                const auto logical=e.m_ViewportSize,scale=e.m_ViewportPixelScale;
+                const auto target=e.m_Framebuffer->GetSpecification();
+                e.m_ViewportSize={128,64};e.m_ViewportPixelScale={2,2};
+                Check(e.ViewportFramebufferExtent()==glm::uvec2(256,128),"Retina target extent used logical units");
+                e.m_Framebuffer->Resize(256,128);e.m_Framebuffer->ClearAttachment(1,901);
+                const auto pixel=e.ViewportFramebufferPoint({32,16});
+                Check(pixel==glm::vec2(64,32)&&e.m_Framebuffer->ReadPixel(1,int(pixel.x),int(pixel.y))==901,"Retina editor picking did not map logical input to integer target pixels");
+                e.m_Framebuffer->Resize(target.Width,target.Height);e.m_ViewportSize=logical;e.m_ViewportPixelScale=scale;
+                std::cout<<"PASS: 2x editor target dimensions and logical-to-pixel integer picking (physical display transitions remain manual)\n";
+            }
             EditorDocumentChecks();
             EditorHistoryChecks();
             EditorStructuralChecks();
@@ -136,7 +148,7 @@ public:
             e.m_SceneHierarchyPanel.SetSelectedEntity(player);
             e.m_EditorScenePath = m_Directory / "AuthoringProject/Assets/Scenes" / std::filesystem::u8path(u8"workflow-é-🚀.hazel");
             Check(e.SaveScene(),"Editor scene save reported failure");
-            Project::GetActive()->GetConfig().StartScene=e.m_EditorScenePath.lexically_relative(std::filesystem::absolute(Project::GetAssetDirectory()));
+            Project::GetActive()->GetConfig().StartScene=Project::MakeAssetReference(Project::GetAssetDirectory(),e.m_EditorScenePath);
             Check(e.SaveProject(),"Editor project save reported failure");
             const auto saved=Read(e.m_EditorScenePath);
             Check(saved.find(std::string(u8"Textures/texture é 🚀.png"))!=std::string::npos &&
@@ -617,27 +629,22 @@ private:
     }
     void SDKChecks() {
         const auto folder=m_Directory/std::filesystem::u8path(u8"SDK space é");
-#ifdef HZ_PLATFORM_WINDOWS
-        const std::string platform="windows";const char* premake="build/tools/premake-core/bin/release/premake5.exe";
-#else
-        const std::string platform="linux";const char* premake="build/tools/premake-core/bin/release/premake5";
-#endif
+        const auto identity=BuildIdentity::Current();
+        const std::string platform=identity.System;
+        const auto configuration=identity.ToolConfiguration();
+        const auto premakePath=identity.Premake({}).generic_u8string();const char* premake=premakePath.c_str();
         auto write=[](const auto& path,const std::string& text){std::filesystem::create_directories(path.parent_path());FileSystem::WriteFileAtomically(path,[&](auto& out){out<<text;});};
         for(const char* file:{"premake5.lua","scripts/hazel.py","scripts/internal/authoring.py","scripts/internal/packaging.py",
                               "scripts/internal/child_tools.py","Hazel/Resources/Templates/project.lua", "Hazel/Resources/Templates/Entity.cs",premake})write(folder/file,"fixture");
         const auto pins=folder/"scripts/internal/toolchain.json";
         const auto contract=std::string("{\"premake\":\"")+HAZEL_TOOLCHAIN_PREMAKE+"\",\"pyyaml\":\""+HAZEL_TOOLCHAIN_PYYAML+"\"}";
-        write(pins,contract);
+        auto targetMetadata=YAML::Load(contract);targetMetadata["targets"][identity.System]["architecture"]=identity.Architecture;targetMetadata["targets"][identity.System]["executable_suffix"]=identity.ExecutableSuffix;YAML::Emitter emitter;emitter<<targetMetadata;const std::string targetContract=emitter.c_str();write(pins,targetContract);
         write(folder/"Hazel/Resources/Templates/contract.json","{\"Version\":1,\"Generator\":1,\"ScriptCore\":1,\"Template\":1}");
-        write(folder/"bin"/("Debug-"+platform+"-x86_64")/"PackageAudit/PackageAudit.exe","fixture");
-#ifdef HZ_PLATFORM_WINDOWS
-        write(folder/"bin"/("Debug-"+platform+"-x86_64")/"HazelProject/HazelProject.exe","fixture");
-#else
-        write(folder/"bin"/("Debug-"+platform+"-x86_64")/"HazelProject/HazelProject","fixture");
-#endif
-        const auto core=folder/"bin"/("Debug-"+platform+"-x86_64")/"Hazel-ScriptCore/Hazel-ScriptCore.dll";
-        Check(HazelSDK::Validate(folder).State==SDKState::Missing,"Unprepared SDK was reported ready");write(core,"fixture");
-        const auto exe=folder/"bin"/("Debug-"+platform+"-x86_64")/"Hazelnut/Hazelnut";
+        write(folder/"bin"/(identity.OutputName(configuration))/"PackageAudit/PackageAudit.exe","fixture");
+        write(identity.NativeTool(folder,configuration,"HazelProject"),"fixture");
+        const auto core=folder/"bin"/(identity.OutputName(configuration))/"Hazel-ScriptCore/Hazel-ScriptCore.dll";
+        Check(HazelSDK::Validate(folder).State==SDKState::PreparationRequired,"Unprepared SDK was reported ready");write(core,"fixture");
+        const auto exe=folder/"bin"/(identity.OutputName(configuration))/"Hazelnut/Hazelnut";
         write(exe,"fixture");
         const auto other=m_Directory/"Working directory unrelated to SDK";std::filesystem::create_directory(other);
         const auto original=std::filesystem::current_path();std::filesystem::current_path(other);
@@ -652,9 +659,9 @@ private:
         Check(missing.State==SDKState::Missing&&missing.Source=="Explicit override","Stale explicit SDK silently fell back");
         Check(HazelSDK::Discover("relative",exe).State==SDKState::Incompatible,"Relative SDK used cwd");
         write(pins,"{\"premake\":\"incompatible\",\"pyyaml\":\"0\"}");
-        Check(HazelSDK::Discover(folder,exe).State==SDKState::Incompatible,"Incompatible SDK toolchain pins accepted");write(pins,contract);
+        Check(HazelSDK::Discover(folder,exe).State==SDKState::Incompatible,"Incompatible SDK toolchain pins accepted");write(pins,targetContract);
         const auto metadata=outside.parent_path()/"build.json";
-        write(metadata,"{\"platform\":\""+platform+"\",\"architecture\":\"x86_64\"}");
+        write(metadata,"{\"platform\":\""+platform+"\",\"architecture\":\""+identity.Architecture+"\"}");
         Check(HazelSDK::Discover({},outside).State==SDKState::NotConfigured,"Runtime package pretended to contain SDK");
         write(metadata,"{\"hazel_sdk\":\"../SDK space é\"}");
         Check(HazelSDK::Discover({},outside)&&HazelSDK::Discover({},outside).Root==std::filesystem::weakly_canonical(folder),
@@ -849,9 +856,18 @@ private:
         auto olderProbe=probeFolder/(std::string("older-python")+executable.extension().u8string());
         std::filesystem::copy_file(executable,validProbe);std::filesystem::copy_file(executable,olderProbe);
         auto ordered=Toolchain::SelectPythonCandidates({olderProbe,validProbe});
-        Check(bool(ordered)&&ordered.Version=="3.9.1"&&ordered.Executable==olderProbe,"Python installation ordering was nondeterministic");
+        Check(bool(ordered),("Python ordering probe failed: "+ordered.Error).c_str());
+        Check(ordered.Version=="3.9.1",("Python ordering chose version "+ordered.Version+" instead of first compatible 3.9.1").c_str());
+        // ProbePython returns the interpreter's own spelling. GetModuleFileName
+        // and canonical() need not agree on Windows path spelling; /var aliases
+        // /private/var on macOS. Assert actual file identity and ordering.
+        Check(std::filesystem::equivalent(ordered.Executable,olderProbe),
+              ("Python ordering chose a different executable: "+ordered.Executable.generic_u8string()+"; expected "+olderProbe.generic_u8string()).c_str());
         ordered=Toolchain::SelectPythonCandidates({m_Directory/"missing",validProbe,olderProbe});
-        Check(bool(ordered)&&ordered.Version=="3.14.1"&&ordered.Executable==validProbe,"Compatible Python candidate selection failed");
+        Check(bool(ordered),("Compatible Python candidate probe failed: "+ordered.Error).c_str());
+        Check(ordered.Version=="3.14.1",("Python candidate chose version "+ordered.Version+" instead of first compatible 3.14.1").c_str());
+        Check(std::filesystem::equivalent(ordered.Executable,validProbe),
+              ("Python candidate chose a different executable: "+ordered.Executable.generic_u8string()+"; expected "+validProbe.generic_u8string()).c_str());
         std::filesystem::remove(validProbe);std::filesystem::remove(olderProbe);
         auto python=Toolchain::DiscoverPython();Check(bool(python)&&python.Executable.is_absolute()&&!python.Version.empty(),"Installed Python discovery failed");
         std::cout<<"AUTHORING PYTHON: "<<python.Executable.generic_u8string()<<"; "<<python.Source<<"; "<<python.Version<<"\n";
@@ -864,7 +880,7 @@ private:
         Check(bool(Toolchain::DiscoverPython(alias/"interpreter")),"Unicode/spaces interpreter probe failed");
         std::filesystem::remove(alias/"interpreter");Check(!Toolchain::DiscoverPython(alias/"interpreter"),"Removed interpreter cache remained valid");
         auto timed=Process::Run("/bin/sleep",{"2"},{},std::chrono::milliseconds(50));Check(timed.TimedOut,"Process timeout did not reap child");
-#ifdef HZ_PLATFORM_LINUX
+#if defined(HZ_PLATFORM_LINUX) || defined(HZ_PLATFORM_MACOS)
         auto descriptor=::open((m_Directory/"AuthoringProject/Authoring.hproj").c_str(),O_RDONLY);
         Check(descriptor>=0,"Cannot open descriptor fixture");
         auto inherited=fcntl(descriptor,F_DUPFD,100);::close(descriptor);
@@ -1404,7 +1420,7 @@ int main(int argc, char** argv) {
     argc = static_cast<int>(pointers.size()); pointers.push_back(nullptr); argv = pointers.data();
 #endif
     using namespace Hazel;
-#ifdef HZ_PLATFORM_LINUX
+#if defined(HZ_PLATFORM_LINUX) || defined(HZ_PLATFORM_MACOS)
     if(argc>=3 && std::string(argv[1])=="--probe-closed-descriptor") {
         bool closed=fcntl(std::stoi(argv[2]),F_GETFD)==-1 && errno==EBADF;
         if(argc==4)std::ofstream(std::filesystem::u8path(argv[3]))<<(closed?"closed":"inherited");
@@ -1417,7 +1433,9 @@ int main(int argc, char** argv) {
     if(argc>1 && std::string(argv[1])=="-I") {
         auto name=std::filesystem::u8path(argv[0]).filename().u8string();
         if(name.find("valid")!=std::string::npos || name.find("older")!=std::string::npos) {
-            std::cout<<"{\"version\":[3,"<<(name.find("older")!=std::string::npos?9:14)<<",1],\"ok\":true,\"executable\":"<<std::quoted(FileSystem::GetExecutablePath().generic_u8string())<<"}\n";return 0;
+            // Match pathlib.Path(sys.executable).resolve() in the real probe,
+            // rather than the OS-specific spelling returned by module lookup.
+            std::cout<<"{\"version\":[3,"<<(name.find("older")!=std::string::npos?9:14)<<",1],\"ok\":true,\"executable\":"<<std::quoted(std::filesystem::canonical(FileSystem::GetExecutablePath()).generic_u8string())<<"}\n";return 0;
         }
         if(name.find("unsupported")!=std::string::npos){std::cout<<"{\"version\":[3,8,0],\"ok\":true,\"executable\":\"/missing\"}\n";return 0;}
         if(name.find("malformed")!=std::string::npos){std::cout<<"malformed probe output\n";return 0;}

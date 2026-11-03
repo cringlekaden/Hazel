@@ -1,7 +1,7 @@
 # Hazel documentation
 
 Build a 2D game with **Hazel**, author it in **Hazelnut**, and run it in **Nutella**.
-These guides describe master, including the accepted runtime UI, tutorial and cleanup milestone. Windows and Linux are maintained; macOS compatibility is the next platform milestone.
+These guides describe the current checkout, including the runtime UI, tutorial and qualified native macOS integration. The [Mac qualification record](design/macos-port.md) distinguishes completed automated/local and owner Xcode/editor acceptance from outstanding manual hardware/input checks and public distribution signing. Download evidence always belongs to its exact source SHA.
 
 ## Start here
 

@@ -1,0 +1,49 @@
+#pragma once
+
+#include "Hazel/Core/Window.h"
+#include "Hazel/Renderer/GraphicsContext.h"
+
+#include <GLFW/glfw3.h>
+#include <memory>
+
+namespace Hazel {
+
+    class MacOSWindow : public Window
+    {
+    public:
+        MacOSWindow(const WindowProps& props);
+        virtual ~MacOSWindow();
+
+        void OnUpdate() override;
+
+        inline unsigned int GetWidth() const override { return m_Data.Width; }
+        inline unsigned int GetHeight() const override { return m_Data.Height; }
+
+        // Window attributes
+        inline void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; }
+        inline void* GetNativeWindow() const override { return m_Window; };
+        void SetVSync(bool enabled) override;
+        void SetTitle(const std::string& title) override;
+        void RequestClose() override;
+        bool IsVSync() const override;
+
+    private:
+        virtual void Init(const WindowProps& props);
+        virtual void Shutdown();
+    private:
+        GLFWwindow* m_Window;
+        Scope<GraphicsContext> m_Context;
+
+        struct WindowData
+        {
+            std::string Title;
+            unsigned int Width, Height;
+            bool VSync;
+
+            EventCallbackFn EventCallback;
+        };
+
+        WindowData m_Data;
+    };
+
+}

@@ -10,6 +10,7 @@ namespace Hazel {
         bool Explicit = false, Restore = true;
         std::string Error;
         static EditorLaunch Parse(const std::vector<std::string> &args);
+        static std::filesystem::path DefaultProject();
         std::filesystem::path ProjectToOpen(bool restorePreference,
                                             const std::string &remembered) const;
     };

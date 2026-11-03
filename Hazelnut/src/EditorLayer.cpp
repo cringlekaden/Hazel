@@ -94,12 +94,12 @@ namespace Hazel {
         if (m_SceneState != SceneState::Play)
             m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 
-		// Resize
+        const auto pixels=ViewportFramebufferExtent();
+		// Camera/UI layout remain logical; only the render target uses pixels.
 		if (FramebufferSpecification spec = m_Framebuffer->GetSpecification();
-			m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f && // zero sized framebuffer is invalid
-			(spec.Width != m_ViewportSize.x || spec.Height != m_ViewportSize.y))
+            pixels.x>0 && pixels.y>0 && (spec.Width!=pixels.x || spec.Height!=pixels.y))
 		{
-			m_Framebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+			m_Framebuffer->Resize(pixels.x,pixels.y);
 			m_CameraController.OnResize(m_ViewportSize.x, m_ViewportSize.y);
 			m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
 		}
@@ -156,7 +156,7 @@ namespace Hazel {
 			}
 		}
 
-        auto pointer=ViewportMouse();float mx=pointer.x,my=pointer.y;
+        auto pointer=ViewportFramebufferPoint(ViewportMouse());float mx=pointer.x,my=pointer.y;
         glm::vec2 viewportSize{m_Framebuffer->GetSpecification().Width,m_Framebuffer->GetSpecification().Height};
         my=viewportSize.y-1-my;
         m_HoveredEntity = {};
@@ -288,6 +288,8 @@ namespace Hazel {
         ImVec2 viewportPanelSize=ImGui::GetContentRegionAvail();
         glm::vec2 available{viewportPanelSize.x,viewportPanelSize.y};
         m_ViewportSize=available;
+        const auto pixelScale=Application::Get().GetImGuiLayer()->CurrentWindowFramebufferScale();
+        m_ViewportPixelScale={pixelScale.first,pixelScale.second};
         const float aspects[]={0,1024.f/600.f,16.f/9.f,4.f/3.f};
         if(m_UIPreview&&available.x>0&&available.y>0){float aspect=aspects[m_UIPreview];if(available.x/available.y>aspect)m_ViewportSize.x=available.y*aspect;else m_ViewportSize.y=available.x/aspect;}
         auto imageOrigin=ImGui::GetCursorScreenPos();imageOrigin.x+=(available.x-m_ViewportSize.x)*.5f;imageOrigin.y+=(available.y-m_ViewportSize.y)*.5f;ImGui::SetCursorScreenPos(imageOrigin);
@@ -374,7 +376,13 @@ namespace Hazel {
     }
 
     glm::vec2 EditorLayer::ViewportMouse() const {
-        auto position=Input::GetMouseScreenPosition()-m_ViewportBounds[0];
+        return Input::GetMouseScreenPosition()-m_ViewportBounds[0];
+    }
+    glm::uvec2 EditorLayer::ViewportFramebufferExtent() const {
+        if(m_ViewportSize.x<=0 || m_ViewportSize.y<=0)return {};
+        return glm::uvec2(glm::ceil(m_ViewportSize*m_ViewportPixelScale));
+    }
+    glm::vec2 EditorLayer::ViewportFramebufferPoint(glm::vec2 position) const {
         if(m_ViewportSize.x<=0||m_ViewportSize.y<=0||!m_Framebuffer)return {-1,-1};
         const auto& specification=m_Framebuffer->GetSpecification();
         return position*glm::vec2(specification.Width,specification.Height)/m_ViewportSize;

@@ -7,6 +7,43 @@ on:
 permissions:
   contents: read
 jobs:
+  macos-build:
+    name: macOS arm64 builds and CPU/service/managed subset
+    # The explicit preview image runs macOS 27; macos-latest currently runs 26.
+    # Hosted VM checks do not qualify physical Apple OpenGL or desktop interaction.
+    runs-on: xcode-27
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: |
+            build/dependencies/install
+            build/tools/premake-core
+          key: hazel-macos27-arm64-${{ hashFiles('scripts/dependencies/**', 'scripts/internal/toolchain.json') }}
+      - name: Native host/toolchain contracts
+        run: |
+          python3 tests/macos/sdk_workflow.py
+          python3 scripts/hazel.py diagnose
+      - name: Prepare and build Debug with pinned checkout-owned inputs
+        run: python3 scripts/hazel.py setup --config Debug --tests
+      - name: Debug CPU/service/managed subset (no GPU claim)
+        run: python3 scripts/hazel.py test --config Debug --suite cpu
+      - name: Build Release
+        run: python3 scripts/hazel.py build --config Release --tests
+      - name: Release CPU/service/managed subset (no GPU claim)
+        run: python3 scripts/hazel.py test --config Release --suite cpu
+      - name: Preserve qualification logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-testing-evidence
+          path: build/testing/logs/
   windows-build:
     name: Windows Debug, Release and extracted binaries
     runs-on: windows-2022

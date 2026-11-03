@@ -43,7 +43,7 @@ def model_tests(configuration):
     else:command=['make',f'config={configuration.lower()}','-j2','CSC='+shlex.join(map(str,hz.mono_command(hz.mono_prefix())))]
     hz.run(command,cwd=projects,env=env)
     command=[destination/'ExampleGameTests.exe']
-    if hz.SYSTEM=='linux':command=hz.mono_command(hz.mono_prefix())[:-1]+command
+    if hz.SYSTEM!='windows':command=hz.mono_command(hz.mono_prefix())[:-1]+command
     hz.run(command)
 
 
@@ -99,9 +99,12 @@ def exercise(desktop,executable,project,app,game,working,env,logs,shots,packaged
 
 
 def game_tests(configuration,profile,packages,output):
+    hz.yaml_tools() # Required by canonical project/build services on every host.
+    if hz.SYSTEM=='macos':
+        from macos.qualification import games
+        return games(configuration,profile,packages,output)
     logs=hz.ROOT/'build/testing/games'/f'{configuration}-{profile}'
     logs.mkdir(parents=True,exist_ok=True);shots=logs/'screenshots';shots.mkdir(exist_ok=True)
-    hz.yaml_tools() # Required by canonical project/build services.
     if not packages:
         for game in GAMES:hz.script_build(PROJECTS[game],configuration)
     if not packages:

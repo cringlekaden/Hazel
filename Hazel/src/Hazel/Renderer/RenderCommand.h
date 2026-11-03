@@ -9,6 +9,7 @@ namespace Hazel {
     public:
         static void Init(const RendererSettings& settings = {})
         {
+            s_DrawSubmissionCount = 0;
             s_RendererAPI->Init(settings);
         }
 
@@ -42,14 +43,20 @@ namespace Hazel {
         static void DrawIndexed(const Ref<VertexArray>& vertexArray, std::uint32_t indexCount = 0, std::uint32_t firstIndex = 0)
         {
             s_RendererAPI->DrawIndexed(vertexArray, indexCount, firstIndex);
+            ++s_DrawSubmissionCount;
         }
         static void DrawLines(const Ref<VertexArray>& vertexArray, std::uint32_t vertexCount, std::uint32_t firstVertex = 0)
         {
             s_RendererAPI->DrawLines(vertexArray, vertexCount, firstVertex);
+            ++s_DrawSubmissionCount;
         }
         static void SetLineWidth(float width) { s_RendererAPI->SetLineWidth(width); }
         static std::uint32_t GetMaxTextureSlots() { return s_RendererAPI->GetMaxTextureSlots(); }
+        // Monotonic within the current renderer lifetime; counts engine API
+        // submissions, independently of Renderer2D's primitive/batch statistics.
+        static std::uint64_t GetDrawSubmissionCount() { return s_DrawSubmissionCount; }
     private:
+        inline static std::uint64_t s_DrawSubmissionCount = 0;
         static Scope<RendererAPI> s_RendererAPI;
     };
 }
