@@ -99,9 +99,9 @@ def product_interaction(name,bundle,working,sdk,logs):
     env.update(HAZEL_DATA=str(working/'profile'),HAZEL_SAVE_ROOT=str(working/'saves'),PATH='/usr/bin:/bin')
     # No resource/Mono overrides: exercise the real product's installation layout.
     log=logs/(name+'-Desktop.log')
-    print('INTERACTIVE:',name,'— resize, exercise prepared content, then close normally (10 minute limit). Private profile:',env['HAZEL_DATA'],flush=True)
+    print('INTERACTIVE:',name,'— normal desktop launch (source isolation is verified by the separate sandboxed fixtures). Resize, exercise prepared content, then close normally (10 minute limit). Private profile:',env['HAZEL_DATA'],flush=True)
     with log.open('w',encoding='utf-8') as stream:
-        process=subprocess.Popen(isolation_command([bundle/'Contents/MacOS'/name],sdk),cwd=working,env=env,stdout=stream,stderr=subprocess.STDOUT)
+        process=subprocess.Popen([bundle/'Contents/MacOS'/name],cwd=working,env=env,stdout=stream,stderr=subprocess.STDOUT)
         images=set();deadline=time.monotonic()+600
         try:
             # Read the owned process's mapped native files without debugger

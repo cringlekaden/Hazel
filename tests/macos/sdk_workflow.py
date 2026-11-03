@@ -52,6 +52,28 @@ class Contracts(unittest.TestCase):
             self.assertEqual(launch.get('buildConfiguration'),'Release')
             self.assertEqual(launch.find('CommandLineArguments')[0].get('argument'),'owner choice é')
 
+    def test_open_preserves_existing_test_workspace(self):
+        import hazel
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);(root/'Hazel.xcworkspace').mkdir()
+            inventory=root/'scripts/internal/testing/native-tests.json';inventory.parent.mkdir(parents=True)
+            inventory.write_bytes((hazel.ROOT/'scripts/internal/testing/native-tests.json').read_bytes())
+            with patch.object(hazel,'ROOT',root),patch.object(hazel,'SYSTEM','macos'), \
+                 patch.object(hazel,'macos_toolchain') as select,patch.object(hazel,'generate_macos') as generate_projects, \
+                 patch.object(hazel,'run') as run,patch.object(sys,'argv',['hazel.py','open']), \
+                 patch.dict(os.environ,{'DEVELOPER_DIR':'/chosen/Xcode.app/Contents/Developer'}):
+                hazel.main();select.assert_called_once();generate_projects.assert_not_called()
+                self.assertEqual(run.call_args.args[0][-1],root/'Hazel.xcworkspace')
+
+    def test_mac_game_runner_prepares_project_reader(self):
+        import hazel
+        from internal.game_tests import game_tests
+        with patch.object(hazel,'SYSTEM','macos'),patch.object(hazel,'yaml_tools') as prepare, \
+             patch('macos.qualification.games') as games:
+            games.side_effect=lambda *args:prepare.assert_called_once()
+            game_tests('Release','native',False,ROOT/'dist')
+            games.assert_called_once_with('Release','native',False,ROOT/'dist')
+
 def gui_fixture():
     parent=ROOT/'build/testing/macos';parent.mkdir(parents=True,exist_ok=True)
     private=Path(tempfile.mkdtemp(prefix='SDK GUI é ',dir=parent))

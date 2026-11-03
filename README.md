@@ -11,7 +11,7 @@ A C++ 2D game engine with a scene editor, C# scripting and standalone game expor
 
 | Try it | Make something | Explore |
 | --- | --- | --- |
-| [Downloads and snapshots](docs/packaging.md#choose-a-snapshot) | [Set up Windows or Linux](docs/getting-started.md) | [Documentation](docs/README.md) |
+| [Downloads and snapshots](docs/packaging.md#choose-a-snapshot) | [Platform setup and Xcode](docs/getting-started.md) | [Documentation](docs/README.md) |
 | [Run an example](docs/README.md#learn-from-an-example) | [Editor guide](docs/editor-guide.md) · [C# scripting](docs/scripting.md) | [Contribute / report a bug](CONTRIBUTING.md) |
 | [Exported-game requirements](docs/platforms-and-dependencies.md#platform-status) | [Sprites](docs/sprite-authoring.md) · [Runtime UI](docs/runtime-game-ui.md) | [Development and CI](docs/development.md) |
 
@@ -47,7 +47,7 @@ Open **Assets/Scenes/UI Tutorial.hazel** and Play. Its [five pages](examples/San
 
 ## Status and support
 
-Requires **OpenGL 4.1 core**. Windows x64 and Linux x86_64/X11 (including Xwayland) are maintained; official Linux packages target Ubuntu 24.04/glibc 2.39+. Native Wayland is not implemented. Native arm64 macOS 27.0+ has an [experimental Xcode application foundation](docs/design/macos-port.md), with qualification and packaging pending. See [platform scope and UI limits](docs/platforms-and-dependencies.md#platform-status).
+Requires **OpenGL 4.1 core**. Windows x64 and Linux x86_64/X11 (including Xwayland) are maintained; official Linux packages target Ubuntu 24.04/glibc 2.39+. Native Wayland is not implemented. Native arm64 macOS 27.0+ has [Xcode integration and local ad-hoc bundles](docs/getting-started.md#apple-silicon-macos-270), with real Apple rendering regressions; final desktop and cross-platform qualification is [in progress](docs/design/macos-port.md). See [platform scope and UI limits](docs/platforms-and-dependencies.md#platform-status).
 
 [![C/C++ CI — master](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml/badge.svg?branch=master)](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Amaster)
 

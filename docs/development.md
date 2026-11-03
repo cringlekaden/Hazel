@@ -4,7 +4,7 @@ Use [setup/build](getting-started.md), [settings/resources](settings-and-resourc
 
 ## Iterate on a change
 
-Build the affected configuration with `python3 scripts/hazel.py build --config Debug --tests` (Windows: `python`). Run a focused existing check for the changed behavior before milestone qualification. `hazel.py test` currently runs the whole general suite; it has no test-name selector.
+Build the affected configuration with `python3 scripts/hazel.py build --config Debug --tests` (Windows: `python`). Run a focused existing check for the changed behavior before milestone qualification. `hazel.py test --only Renderer2DSmoke` selects a maintained check; `--only` is repeatable. `--suite cpu` selects the display-free subset. Both report excluded coverage explicitly and do not qualify the full suite.
 
 Useful targets include `MigrationGameUIModelSmoke` (CPU layout/routing), `MigrationTypographySmoke` (CPU shaping), `MigrationFontSmoke` (font admission/pages), `MigrationSceneSmoke` / `MigrationSceneGPUSmoke` (scene/managed/serialization), `MigrationRuntimeSessionSmoke` (session transitions) and `MigrationEditorSmoke` (actual authoring/history). Direct graphics/managed invocations need the runner's Resources, Mono, private project and fixture arguments; inspect [the runner](../scripts/internal/tests.py) instead of launching with the checkout as writable cwd. The [typography fixture guide](../tests/fixtures/typography/README.md#run-the-cpu-check) gives a complete display-free invocation.
 
@@ -17,7 +17,7 @@ python3 scripts/hazel.py build --config Release --tests
 python3 scripts/hazel.py test --config Release --profile gl41
 ```
 
-`native` uses the current desktop/driver. Linux `gl41` forces Mesa 4.1/GLSL 410; `software` uses llvmpipe with two workers. Windows `software`/`gl41` use an isolated checksum-pinned test driver, never included in game packages. Headless Linux example:
+`native` uses the current desktop/driver. macOS accepts only this profile: run both configurations with `--profile native`, using the real Apple OpenGL driver. The generated `MacOSQualification` aggregate builds applications, service/SDK checks and the maintained regressions. Its runner also prepares a private committed Sandbox tutorial and requires positive authoring evidence. Linux `gl41` forces Mesa 4.1/GLSL 410; `software` uses llvmpipe with two workers. Windows `software`/`gl41` use an isolated checksum-pinned test driver, never included in game packages. Headless Linux example:
 
 ```sh
 xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test --config Debug --profile software
@@ -53,6 +53,7 @@ Linux and Windows remain separate jobs; their existing identities are retained:
 
 - **Windows Debug, Release and extracted binaries** (`windows-build`).
 - **Linux Debug, Release and extracted binaries (Ubuntu 24.04)** (`linux-build`).
+- **macOS arm64 builds and CPU/service/managed subset** (`macos-build`), on the explicit `xcode-27` preview runner. It builds Debug/Release at deployment target 27.0. This does not qualify Apple GPU rendering or interactive desktop behavior; those remain local gates. No self-hosted runner or older deployment floor is substituted.
 
 ### Coverage retained and added
 
@@ -95,7 +96,7 @@ Sheet/image/scene arguments are asset-relative; use a disposable project for wri
 | --- | --- |
 | Missing pkg-config module/compiler/targeting pack | Install the named prerequisite from [getting started](getting-started.md#prerequisites-installed-by-you); setup never installs system packages |
 | Script readiness rejects selected Mono | Inspect the explicit prefix/missing-file list; provide compiler + 4.7.2 reference profile, not only a runtime. `HAZEL_MONO_SDK` is authoritative; it is not silently replaced |
-| Editor tools not found | Select the source checkout root, not bin/Resources. Build the editor's configuration and run `python3 scripts/hazel.py authoring-preflight --config Debug --operation scripts` (or Release). Mac export remains unsupported independently of script readiness; see the [Mac SDK workflow](design/macos-port.md#source-sdk-integration-repair--2026-10-29) |
+| Editor tools not found | Select the source checkout root, not bin/Resources. Build the editor's configuration and run `python3 scripts/hazel.py authoring-preflight --config Debug --operation scripts` (or Release). Export separately needs prepared Release products; see the [Mac SDK workflow](design/macos-port.md#source-sdk-integration-repair--2026-10-29) |
 | Project script class/module missing | Build matching project scripts; inspect Console, descriptor ScriptModulePath and typed field/class diagnostics. `run` does not compile |
 | Wrong/missing resource after relocation | Keep the complete archive layout; inspect `LAUNCH.txt`, Resources/mono roots and project-relative references. Do not add a source-tree fallback |
 | GLFW cannot open display | Provide X11/Xwayland or Xvfb; retain `-noreset` for repeated CI client lifecycles |

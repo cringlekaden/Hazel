@@ -92,8 +92,10 @@ def package(app, project, destination, archive_name=None):
             with (contents/'Info.plist').open('wb') as stream:
                 plistlib.dump({'CFBundleIdentifier':'com.kadencringle.hazel.'+name.lower(),
                     'CFBundleName':name,'CFBundleDisplayName':name,'CFBundleExecutable':name,
-                    'CFBundlePackageType':'APPL','CFBundleShortVersionString':'0.1',
-                    'CFBundleVersion':str(int(commit[:8],16)), 'LSMinimumSystemVersion':'27.0',
+                    'CFBundlePackageType':'APPL','CFBundleShortVersionString':'0.1.0',
+                    # A Git hash is not an Apple bundle version. These are local
+                    # development snapshots; build.json carries exact identity.
+                    'CFBundleVersion':'1', 'LSMinimumSystemVersion':'27.0',
                     'LSArchitecturePriority':['arm64'],'NSHighResolutionCapable':True,
                     'NSPrincipalClass':'NSApplication'},stream)
             closure={str(p.relative_to(contents)):audit_binary(p,native) for p in [binary,*sorted(native.glob('*.dylib'))]}

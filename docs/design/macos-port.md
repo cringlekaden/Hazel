@@ -1,6 +1,32 @@
 # Native Apple Silicon macOS port
 
-## Qualification continuation — 2026-11-02
+## Qualification continuation — 2026-11-03
+
+Native committed-example qualification now passes on Apple M4: all five projects,
+UI Tutorial ownership/authoring hooks, Lightkeeper menus/settings/persistent
+journey failure paths, scene transitions and repeated managed lifecycles. The Mac
+game dispatch now prepares the same pinned project reader as other hosts before
+calling project services. `open` preserves existing generated test targets and
+scheme launch choices instead of regenerating a smaller workspace.
+
+Source Xcode launch visibly rendered the disposable SDK GUI project; native Open
+dialog cancellation and selection of a spaces/Unicode project path were observed.
+Save-dialog completion, physical shortcuts/clipboard and pristine bundle desktop
+interaction remain unverified. Two relocated Hazelnut attempts reached ready on
+Apple M4 but Computer Use reported `cgWindowNotFound`; the owner did not see the
+second window. Both timed out and are failures of desktop acceptance, not passes.
+Sandboxed fixture evidence remains separate from normal unsandboxed desktop
+launches. The cause of the missing visible window is unresolved; no privacy or
+security settings were bypassed. The owner's unsaved Xcode source buffer is left
+untouched; CLI builds use the on-disk sources.
+
+Bundle versions now use Apple-compatible development versions `0.1.0`/`1`;
+source identity stays in `build.json`. The previous hash-derived integer exceeded
+Apple's numeric version representation. This corrects metadata without claiming
+that it explains the missing window. The pinned Glad loader also requests legacy
+`glVertexP*`/packed fixed-function symbols absent from Apple's core framework;
+Xcode logs lookup diagnostics. Exercised core rendering succeeds; the calls are
+loader probes, not used draw operations. No diagnostics were suppressed.
 
 CI at [`3aae0ba`](https://github.com/cringlekaden/Hazel/actions/runs/41559537302)
 passed macOS arm64 Debug/Release builds and CPU/service/managed tests. Windows

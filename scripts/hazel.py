@@ -487,7 +487,11 @@ def main():
             mono_prefix()
             for config in ('Debug', 'Release'): dependencies(config, generator)
         else:
-            generate_macos(getattr(args, 'tests', False))
+            # Opening an existing workspace must preserve its generated target
+            # set (including --tests) and the owner's local scheme choices.
+            if args.action=='generate' or not (ROOT/'Hazel.xcworkspace').is_dir():
+                generate_macos(getattr(args, 'tests', False))
+            else:macos_toolchain()
             if args.action == 'open': run(['open', '-a', str(Path(os.environ['DEVELOPER_DIR']).parents[1]), ROOT / 'Hazel.xcworkspace'])
         return
     if args.action in ('editor-export','script-build','authoring-preflight') or (args.action=='new-project' and args.build_scripts):
