@@ -102,8 +102,8 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
             const auto type = camera["ProjectionType"].as<int>();
             if (type < 0 || type > 1) throw std::runtime_error("Unsupported camera ProjectionType");
             for (auto field : camera) Finite(field.second);
-            const auto fov=camera["PerspectiveFOV"].as<float>(),near=camera["PerspectiveNear"].as<float>(),far=camera["PerspectiveFar"].as<float>();
-            if(fov<=0 || fov>=3.14159265359f || near<=0 || far<=near || camera["OrthographicSize"].as<float>()<=0 || camera["OrthographicFar"].as<float>()<=camera["OrthographicNear"].as<float>())
+            const auto fov=camera["PerspectiveFOV"].as<float>(),perspectiveNear=camera["PerspectiveNear"].as<float>(),perspectiveFar=camera["PerspectiveFar"].as<float>();
+            if(fov<=0 || fov>=3.14159265359f || perspectiveNear<=0 || perspectiveFar<=perspectiveNear || camera["OrthographicSize"].as<float>()<=0 || camera["OrthographicFar"].as<float>()<=camera["OrthographicNear"].as<float>())
                 throw std::runtime_error("Camera requires positive size/FOV, ordered clipping, and positive perspective near");
         }
         if (auto n = entity["ScriptComponent"])

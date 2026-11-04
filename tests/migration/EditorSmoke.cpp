@@ -347,6 +347,7 @@ public:
             Check(glGetError()==GL_NO_ERROR,"Sprite authoring panel OpenGL error");
             e.m_Authoring->m_Sprites.m_Selected=e.m_Authoring->m_Sprites.m_Document->Draft().Regions.front().ID;
             e.m_Authoring->m_Sprites.m_SelectedClip=e.m_Authoring->m_Sprites.m_Document->Draft().Clips.front().ID;
+            m_PreviewBeforeReload=e.m_Authoring->m_Sprites.m_Texture;
             Project::GetActive()->GetAssets()->Reload("Textures/inspector.hsprites");
             break;
         case 17: {
@@ -354,7 +355,10 @@ public:
             // invalidation as scene resolution, even when sampling is unchanged.
             auto* sprite=e.m_EditorScene->RenderedSprite(e.m_EditorScene->GetEntityByUUID(901));
             Check(sprite && sprite->Texture,"Reloaded editor sprite missing");
-            const auto texture=(ImTextureID)(uintptr_t)sprite->Texture->GetRendererID();
+            auto& panel=e.m_Authoring->m_Sprites;const auto& sheet=panel.m_Document->Draft();auto previewSpec=sheet.Sampling;previewSpec.Encoding=TextureEncoding::Linear;
+            const auto preview=Project::GetActive()->GetAssets()->Texture(sheet.Texture,previewSpec);
+            Check(panel.m_Texture==preview && panel.m_Texture!=m_PreviewBeforeReload && panel.m_Texture!=sprite->Texture && sprite->Texture->GetSpecification().Encoding==TextureEncoding::SRGB,"Editor preview reload/encoding identity did not follow its separate ImGui sampling contract");
+            const auto texture=(ImTextureID)(uintptr_t)preview->GetRendererID();
             bool visible=false;auto* draw=ImGui::GetDrawData();
             for(int list=0;draw && list<draw->CmdListsCount;++list)
                 for(const auto& command:draw->CmdLists[list]->CmdBuffer)
@@ -1404,6 +1408,7 @@ private:
     SceneHierarchyPanel m_HierarchyCapturePanel;
     std::filesystem::path m_Directory;
     bool& m_Done;
+    Ref<Texture2D> m_PreviewBeforeReload;
     int m_Frame = 0;
     bool m_Trickle = true;
     std::chrono::steady_clock::time_point m_MinimizedStart;
