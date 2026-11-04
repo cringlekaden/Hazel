@@ -54,3 +54,8 @@ Author UI geometry/styles in Hazelnut. Assign a screen/control's **Event owner**
 [SaveData and audio](runtime-storage-audio.md) documents slot/payload validation, persistence boundaries and `AudioSourceComponent`. Player preferences and saves do not rewrite the project or editor profile.
 
 Prepared games ship their runtime and compiled modules. Players need no compiler, Python or source SDK. Changed scripts and export require the [build toolchain](getting-started.md); [packaging](packaging.md) validates managed dependencies before distribution.
+
+Component, text and emphasis RGB colors are linear; alpha is coverage. Use
+`Hazel.Color.FromSRGB(new Vector4(r, g, b, a))` for a familiar display-color literal.
+`ToSRGB` is the inverse RGB boundary helper; neither transforms alpha. Existing
+linear values and scalar/gameplay vectors require no conversion. See [color](color.md).

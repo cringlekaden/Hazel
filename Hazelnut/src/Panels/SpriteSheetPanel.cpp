@@ -295,6 +295,11 @@ void SpriteSheetPanel::Sampling()
             ImGui::EndCombo();
         }
     };
+    int interpretation=s.Sampling.Encoding==TextureEncoding::SRGB?0:1;
+    if(PropertyUI::Combo("encoding","Interpretation",interpretation,"Color (sRGB)\0Data (linear)\0")) {
+        s.Sampling.Encoding=interpretation==0?TextureEncoding::SRGB:TextureEncoding::Linear;
+        changed=committed=true;
+    }
     filter("min", "Minification", s.Sampling.MinFilter, true);
     filter("mag", "Magnification", s.Sampling.MagFilter, false);
     auto wrap = [&](const char *key, const char *label, TextureWrap &value)
@@ -323,7 +328,7 @@ void SpriteSheetPanel::Sampling()
     if (ImGui::CollapsingHeader("Sampling help"))
         ImGui::TextWrapped("Regions never repeat. Linear filtering needs padding; mipmaps can blend "
                            "neighbors. Nearest / no "
-                           "mipmaps is the pixel-art default. R8 samples red; no sRGB conversion.");
+                           "mipmaps is the pixel-art default. Color RGB decodes sRGB before filtering; alpha and data stay linear. R8 requires Data / linear.");
     if (changed)
         m_Document->Changed();
     if (committed)

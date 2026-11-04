@@ -60,6 +60,7 @@ namespace Hazel {
             ValidateStateText(s.ConsoleSearch);
         }
         void Validate(const ProjectWorkspace &s) {
+            if(s.Navigation!=EditorNavigation::Planar && s.Navigation!=EditorNavigation::Orbit)throw std::runtime_error("Invalid workspace navigation");
             for (const auto *text : {&s.Scene, &s.BrowserFolder, &s.BrowserSearch, &s.Sheet,
                                      &s.Prefab, &s.ExportFolder, &s.ExportName})
                 ValidateStateText(*text);

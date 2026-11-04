@@ -17,6 +17,7 @@
 namespace Hazel {
 
     void EditorCamera::SetNavigation(EditorNavigation mode) {
+        if(mode!=EditorNavigation::Planar && mode!=EditorNavigation::Orbit)throw std::invalid_argument("Unsupported editor navigation");
         m_Navigation=mode;m_InitialMousePosition=Input::GetMousePosition();UpdateProjection();UpdateView();
     }
     void EditorCamera::RestorePlanar(glm::vec2 focus,float size) {
@@ -168,7 +169,7 @@ namespace Hazel {
 
 	glm::quat EditorCamera::GetOrientation() const
 	{
-		return glm::quat(glm::vec3(-m_Pitch, -m_Yaw, 0.0f));
+		return m_Navigation==EditorNavigation::Planar?glm::quat(1.f,0.f,0.f,0.f):glm::quat(glm::vec3(-m_Pitch, -m_Yaw, 0.0f));
 	}
 
 }

@@ -31,8 +31,8 @@ Missing classes and removed fields retain their serialized data.
 Live reload snapshots are separate from authored defaults. Reload restores
 matching runtime fields; Stop clears runtime snapshots and a new Play starts
 from authored fields. Old managed handles and reflected metadata are invalidated
-at domain replacement and shutdown. The public managed API and scene YAML format
-are unchanged.
+at domain replacement and shutdown. Existing managed entity identities and stored field types remain stable. The
+canonical scene/color format is described in [runtime color](color.md).
 
 Project open stages its configuration, start scene, textures, content browser,
 script domain/reflection and watcher before replacing the valid session. Once
@@ -67,8 +67,8 @@ Deletion/history retains repairable incoming references while targets are absent
 Undo restores the authored UUIDs with fresh lifetimes and preserves surviving
 owners' values. Interleaved property/structural history still uses explicit exact
 snapshots, payloads and native-write guards; the visitor does not serialize history,
-retarget incoming references or weaken conflict detection. Authored formats and
-detached-instance semantics are unchanged.
+retarget incoming references or weaken conflict detection. Detached-instance semantics remain unchanged. SceneVersion 3 and PrefabVersion 3
+identify the canonical linear-color format.
 
 ## Save behavior
 
@@ -77,8 +77,21 @@ flushing and closing, then replace the destination with Linux rename or Windows
 `MoveFileExW(MOVEFILE_REPLACE_EXISTING)`. Failures leave the prior destination in
 place and attempt to remove only the temporary owned by that save. The
 destination is never deleted first. No fsync/FlushFileBuffers or power-loss
-durability guarantee is implemented. Concurrent edits by another writer are not
-detected; saving is still a single editor command.
+durability guarantee is implemented. Owned documents compare accepted bytes and reject concurrent changes or missing
+files before replacement. Original recovery copies and explicit conflict handling
+remain document-owned; there is no automatic multi-writer merge.
+
+## Scene foundations
+
+Native New Project and New Scene share a CPU-only content factory. Project defaults
+seed future content and fresh workspaces; existing scene/camera/workspace values
+remain separate. New Scene validates its candidate before retiring the accepted
+document. Scene presentation has an ordinary document command. World transforms,
+camera properties, circle colors and viewport gizmos use the existing bounded
+property history, including exact comparisons and native-write/lifetime guards.
+History stores authored camera parameters rather than projection matrices or GPU
+resources. Workspace navigation, its two poses, grid and tool selection remain
+outside scene dirty state. See [settings](settings-and-resources.md).
 
 ## Verification scope
 

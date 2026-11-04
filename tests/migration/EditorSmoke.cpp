@@ -1137,7 +1137,7 @@ private:
         for(int i=0;i<2;++i){Check(e.OnScenePlay(true)&&e.m_ActiveScene->Presentation()==scene->Presentation(),"Scene settings Play copy lost presentation");e.OnSceneStop();}
         const auto authored=SceneSerializer(scene).CaptureAuthoredState();auto& camera=e.m_EditorCamera;
         camera.RestoreOrbit({2,3,0},.2f,.3f,12);camera.RestorePlanar({-2,1},7);camera.SetNavigation(EditorNavigation::Planar);const auto planar=camera.GetViewProjection();camera.SetNavigation(EditorNavigation::Orbit);camera.SetNavigation(EditorNavigation::Planar);
-        Check(camera.PlanarFocus()==glm::vec2(-2,1)&&camera.PlanarSize()==7&&camera.GetFocalPoint()==glm::vec3(2,3,0)&&camera.GetViewProjection()==planar&&SceneSerializer(scene).CaptureAuthoredState()==authored,"Navigation switching changed poses or authored scene");
+        Check(camera.PlanarFocus()==glm::vec2(-2,1)&&camera.PlanarSize()==7&&camera.GetFocalPoint()==glm::vec3(2,3,0)&&camera.GetViewProjection()==planar&&camera.GetForwardDirection()==glm::vec3(0,0,-1)&&camera.GetUpDirection()==glm::vec3(0,1,0)&&SceneSerializer(scene).CaptureAuthoredState()==authored,"Navigation switching changed poses or authored scene");
         e.m_EditorScene=original;e.m_ActiveScene=active;e.m_SceneFile=std::move(file);e.m_SceneLoad=std::move(report);e.m_EditorScenePath=path;a.m_SceneHistory=std::move(history);a.m_ActiveDocument=document;e.m_SceneHierarchyPanel.SetContext(original);e.m_SceneHierarchyPanel.SetSelectedEntity(original->GetEntityByUUID(selection));
         a.m_ShowSceneSettings=false;a.m_PresentationScene=0;e.m_ActionError.clear();
         std::cout<<"PASS: actual native Scene Settings Apply, document Undo/Redo, Save/reopen, Play/Stop and independent planar/orbit poses\n";

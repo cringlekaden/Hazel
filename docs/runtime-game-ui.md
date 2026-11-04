@@ -1081,7 +1081,7 @@ unsafe grapheme or shaped-cluster boundaries reject with a diagnostic.
 var label = entity.GetComponent<TextComponent>();
 label.SetRichText("Remember the beacon.",
     new TextEmphasis(0, 8, FontStyle.Bold),
-    new TextEmphasis(13, 19, FontStyle.Italic, new Vector4(1, .75f, .3f, .9f)));
+    new TextEmphasis(13, 19, FontStyle.Italic, Hazel.Color.FromSRGB(new Vector4(1, .75f, .3f, .9f))));
 // Ranges use exact C# UTF-16 indices, including a leading BOM if present.
 // Unpaired surrogates, interior graphemes/ligatures and overlaps reject atomically.
 var spans = label.Emphasis;
@@ -1153,3 +1153,8 @@ the tutorial's private-copy authoring sequence in the regular editor suite, set
 before `python scripts/hazel.py test --config Release --profile native`.
 These checks use synthetic input and native editor commands, not physical
 keyboard/controller, clipboard-layout or competent-reader acceptance.
+
+Runtime UI colors use linear RGB and linear alpha. Inspector color pickers display
+sRGB and convert at the editing boundary. State colors are linear gain/opacity
+multipliers; file color images decode sRGB before sampling. World and screen UI
+share one final output encoding. See [runtime color](color.md).

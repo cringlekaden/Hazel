@@ -29,3 +29,9 @@ Save the sheet and its referencing scene/prefab separately. Sheet asset creation
 After an invalid external replacement, Edit previews and already running scenes use a magenta fallback and cache the diagnostic. Starting Play and export still reject invalid assets. Repair the file and explicitly refresh/reload; a disk edit alone does not clear the failure. Authored sprite/clip IDs are retained. [Resource ownership](settings-and-resources.md#fonts-styles-and-caches) explains epochs and existing resource pins.
 
 The [sheet format and sampling record](design/sprite-sheet-authoring.md#coordinates-placement-and-atlas-limits) retains exact coordinate/identity details and historical qualification. Current UI images, including fits and nine-slice, are covered in [Runtime UI](runtime-game-ui.md). [Native sheet commands](development.md#native-tools) are optional authoring aids; normal editing uses Hazelnut.
+
+Sprite Sheet Sampling exposes **Interpretation**: Color (sRGB) or Data (linear).
+Color RGB decodes before filtering; alpha and data remain linear. R8 requires Data.
+The same file with different interpretation/sampling receives separate cached GPU
+resources. Ordinary images use top-left rows; region/UV authoring follows the same
+orientation in the canvas and runtime. See [runtime color](color.md).
