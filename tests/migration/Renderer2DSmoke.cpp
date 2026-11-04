@@ -66,6 +66,7 @@ static void Primitives() {
     Check(ID()==77 && ID(90,90)==-1 && Color()[2]>250,"Circle picking/discard mismatch");
     Begin(); Renderer2D::DrawCircle(Transform(),{1,1,1,1},.15f,.005f,78); End();
     Check(ID()==-1 && ID(94,64)==78,"Circle ring thickness mismatch");
+    Begin();Renderer2D::DrawCircle(Transform(),{1,1,1,0},1,.005f,78);End();Check(ID()==-1,"Zero-opacity circle wrote picking");
     Renderer2D::SetLineWidth(2);
     Check(glGetError()==GL_NO_ERROR,"Requested line width violated the active context contract");
     if(Renderer::GetCapabilities().ForwardCompatible) {

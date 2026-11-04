@@ -1147,6 +1147,9 @@ private:
         const auto workspace=EditorState::Encode(a.m_Workspace);
         a.m_SceneDefaultsDraft=Project::GetActive()->GetConfig().SceneDefaults;a.m_SceneDefaultsDraft.Perspective=true;a.m_SceneDefaultsDraft.Navigation=EditorNavigation::Orbit;a.m_SceneDefaultsDraft.Presentation.Background={.2f,.1f,.05f,1};
         Check(a.SaveNewSceneDefaults() && e.m_EditorScene==firstScene && SceneSerializer(firstScene).CaptureAuthoredState()==initial && EditorState::Encode(a.m_Workspace)==workspace,"Default settings save replaced an existing scene/workspace");
+        auto invalidDefaults=a.m_SceneDefaultsDraft;invalidDefaults.Presentation.Background.a=0;bool invalidRejected=false;
+        try{e.NewScene(invalidDefaults);}catch(const std::exception&){invalidRejected=true;}
+        Check(invalidRejected&&e.m_EditorScene==firstScene&&SceneSerializer(firstScene).CaptureAuthoredState()==initial,"Failed New Scene retired accepted content");
         e.NewScene();Check(e.m_EditorScene->Presentation()==a.m_SceneDefaultsDraft.Presentation && e.m_EditorScene->GetPrimaryCameraEntity().GetComponent<CameraComponent>().Camera.GetProjectionType()==SceneCamera::ProjectionType::Perspective,"Production File New Scene did not use project defaults");
         Check(e.OpenScene(firstPath)&&SceneSerializer(e.m_EditorScene).CaptureAuthoredState()==initial,"New defaults rewrote existing saved scene");
         auto entity=e.m_EditorScene->CreateEntity("Content authoring without tools");entity.AddComponent<SpriteRendererComponent>();

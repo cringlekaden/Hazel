@@ -2,6 +2,7 @@ SceneVersion: 3
 Scene: SeparatorFixture
 Entities:
   - Entity: 1
+    Relationship: {Parent: 0, Order: 0}
     TagComponent: { Tag: Texture fixture }
     TransformComponent:
       Translation: [0, 0, 0]

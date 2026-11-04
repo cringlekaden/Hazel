@@ -664,19 +664,21 @@ namespace Hazel {
 	}
 
 	void EditorLayer::NewScene(std::optional<NewSceneDefaults> overrideDefaults)
-	{
+    {
         if(m_Authoring && !m_Authoring->Require(EditorAction::ReplaceScene))return;
-		if (m_SceneState != SceneState::Edit) OnSceneStop();
-		ClearSceneObservers();
-		m_EditorScene = CreateRef<Scene>();
         const auto defaults=overrideDefaults.value_or(Project::GetActive()?Project::GetActive()->GetConfig().SceneDefaults:NewSceneDefaults{});
-        if(!SceneSerializer(m_EditorScene).DeserializeText(SceneDefaults::CreateDocument("Untitled",defaults)))throw std::runtime_error("Native new-scene factory validation failed");
-        m_ActiveScene = m_EditorScene;
-        if(Project::GetActive())m_EditorScene->SetAssets(Project::GetActive()->GetAssets());
-		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-		m_EditorScenePath.clear(); m_SceneFile={};m_SceneLoad={};m_ActionError.clear();
+        auto candidate=CreateRef<Scene>();
+        if(Project::GetActive())candidate->SetAssets(Project::GetActive()->GetAssets());
+        SceneSerializer loader(candidate);
+        if(!loader.DeserializeText(SceneDefaults::CreateDocument("Untitled",defaults)))
+            throw std::runtime_error("Native new-scene factory: "+loader.Report().Error);
+        // Only a complete validated candidate can retire the accepted document.
+        if(m_SceneState!=SceneState::Edit)OnSceneStop();
+        ClearSceneObservers();m_EditorScene=candidate;m_ActiveScene=candidate;
+        m_SceneHierarchyPanel.SetContext(candidate);
+        m_EditorScenePath.clear();m_SceneFile={};m_SceneLoad={};m_ActionError.clear();
         if(m_Authoring)m_Authoring->MarkSceneSaved();
-	}
+    }
 
 	bool EditorLayer::OpenScene()
 	{

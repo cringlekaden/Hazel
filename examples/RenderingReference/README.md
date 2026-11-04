@@ -25,7 +25,7 @@ The four grayscale patches store linear RGB 0, .21404114, .5 and 1, correspondin
 to sRGB 0, .5, approximately .735357 and 1. Both texture samples reference the same
 8×8 image: Color decodes sRGB; Data keeps numerical channel values. Its asymmetric
 quadrants are top-left red, top-right dark green, bottom-left blue and bottom-right
-pale blue; one corner has alpha 128. The layered red/blue sprites have alpha .5
+light magenta; one corner has alpha 128. The layered red/blue sprites have alpha .5
 and a white backing. Correct linear blending deliberately differs from historical
 encoded-space blending. World text, circle coverage and screen UI share the
 canonical linear RGB/linear alpha contract.
