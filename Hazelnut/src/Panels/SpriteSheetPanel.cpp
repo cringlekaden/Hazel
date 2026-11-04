@@ -763,8 +763,8 @@ void SpriteSheetPanel::Canvas(bool editable)
     auto *draw = ImGui::GetWindowDrawList();
     draw->AddRectFilled(V(origin), V(origin + P(size)), IM_COL32(38, 38, 44, 255));
     draw->AddImage((ImTextureID)(uintptr_t)m_Texture->GetRendererID(), V(top),
-                   V(top + glm::vec2(sheet.Sampling.Width, sheet.Sampling.Height) * m_Zoom), {0, 1},
-                   {1, 0});
+                   V(top + glm::vec2(sheet.Sampling.Width, sheet.Sampling.Height) * m_Zoom), {0, 0},
+                   {1, 1});
     auto pixel = (mouse - top) / m_Zoom;
     const bool insideImage = pixel.x >= 0 && pixel.y >= 0 && pixel.x < sheet.Sampling.Width &&
                              pixel.y < sheet.Sampling.Height;

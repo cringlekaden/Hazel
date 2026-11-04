@@ -2,6 +2,7 @@
 #include "Hazel/Renderer/Framebuffer.h"
 #include <glad/glad.h>
 #include <cstdlib>
+#include <cmath>
 // The saved native project is the fixture. No test-only scene or renderer.
 static void RenderingReferenceChecks() {
     const char* selected=std::getenv("HAZEL_RENDERING_REFERENCE_PROJECT");
@@ -11,13 +12,13 @@ static void RenderingReferenceChecks() {
         const auto descriptor=std::filesystem::u8path(selected);auto project=Project::LoadCandidate(descriptor);Check(bool(project),"Rendering Reference project rejected");
         const auto reference=perspective?"Scenes/Core_v1-Perspective.hazel":"Scenes/Core_v1-Orthographic.hazel";
         auto authored=project->LoadScene(reference);const auto before=SceneSerializer(authored).CaptureAuthoredState();
-        const auto camera=authored->GetEntityByUUID(1);Check(camera && camera.GetName()==(perspective?"Perspective":"Orthographic") && camera.GetComponent<TransformComponent>().Translation==glm::vec3(0,0,10),"Frozen Core_v1 camera identity/pose changed");
+        auto camera=authored->GetEntityByUUID(1);Check(camera && camera.GetName()==(perspective?"Perspective":"Orthographic") && camera.GetComponent<TransformComponent>().Translation==glm::vec3(0,0,10),"Frozen Core_v1 camera identity/pose changed");
         for(unsigned scale:{1u,2u}) {
             const unsigned width=1280*scale,height=720*scale;
             FramebufferSpecification spec;spec.Width=width;spec.Height=height;spec.Attachments={FramebufferTextureFormat::RGBA16F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
             auto composite=Framebuffer::Create(spec);spec.Attachments={FramebufferTextureFormat::RGBA8};auto output=Framebuffer::Create(spec);
             RuntimeSession session;session.Resize(1280,720);session.ResizeFramebuffer(width,height);session.Start(project,authored);session.SetInput({-100,-100},false);
-            composite->Bind();auto raster=prior;raster.DepthTest=true;raster.ClipEnabled=false;RenderCommand::SetRasterState(raster);
+            composite->Bind();auto raster=prior;raster.DepthTest=true;raster.ClipEnabled=false;raster.PickingMask=glm::bvec4(true);RenderCommand::SetRasterState(raster);
             RenderCommand::SetClearColor(authored->Presentation().Background);RenderCommand::Clear();composite->ClearAttachment(1,-1);session.Update(0);
             // Independent frozen projection: z=10, ortho height=10 or 45-degree FOV.
             const double worldHeight=perspective?20*std::tan(3.14159265358979323846/8):10;

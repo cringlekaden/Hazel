@@ -9,6 +9,9 @@ static void CanonicalColorChecks() {
     Check(std::abs(ColorSpace::FromSRGB(.5f)-.21404114048223255)<1e-7,"sRGB .5 transfer vector");
     Check(std::abs(ColorSpace::ToSRGB(.5f)-.7353569830524495)<1e-7,"Linear .5 transfer vector");
     Check(std::abs(ColorSpace::FromSRGB(.04045f)-.00313080495356037)<1e-8,"sRGB lower segment");
+    GLint defaultDraw=0;glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&defaultDraw);glBindFramebuffer(GL_DRAW_FRAMEBUFFER,0);
+    GLint windowEncoding=0;glGetFramebufferAttachmentParameteriv(GL_DRAW_FRAMEBUFFER,GL_BACK_LEFT,GL_FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING,&windowEncoding);glBindFramebuffer(GL_DRAW_FRAMEBUFFER,defaultDraw);
+    std::cout<<"Actual window attachment encoding: "<<(windowEncoding==GL_SRGB?"sRGB":"linear")<<"; final shader encodes with FRAMEBUFFER_SRGB disabled\n";
     const auto converted=ColorSpace::FromSRGB(glm::vec4(.5f,.5f,.5f,.5f));Check(converted.a==.5f,"Color transfer changed alpha");
     FramebufferSpecification spec;spec.Width=spec.Height=32;spec.Attachments={FramebufferTextureFormat::RGBA16F,FramebufferTextureFormat::RED_INTEGER};
     auto linear=Framebuffer::Create(spec);spec.Attachments={FramebufferTextureFormat::RGBA8};auto output=Framebuffer::Create(spec);

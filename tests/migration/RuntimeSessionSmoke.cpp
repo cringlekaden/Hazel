@@ -64,6 +64,7 @@ int main(int argc, char** argv) {
         std::filesystem::copy_file(std::filesystem::u8path(argv[1]),resources.Root/"Scripts/Hazel-ScriptCore.dll");
         std::filesystem::create_directories(resources.Root/"UI");
         std::filesystem::copy_file(Resources::Resolve("UI/Default.hstyle"),resources.Root/"UI/Default.hstyle");
+        std::filesystem::copy(Resources::Resolve("shaders"),resources.Root/"shaders",std::filesystem::copy_options::recursive);
         Resources::Configure(resources);
         ScriptEngine::Init(std::filesystem::u8path(argv[2]));
         UIFlagFailureChecks(project);

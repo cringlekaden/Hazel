@@ -223,7 +223,7 @@ void ContentBrowserPanel::OnImGuiRender()
                                                        : ImVec4{0, 0, 0, 0});
             auto icon = entry->Directory ? m_DirectoryIcon : m_FileIcon;
             if (ImGui::ImageButton("##file", (ImTextureID)(uintptr_t)icon->GetRendererID(), {size, size},
-                                   {0, 1}, {1, 0}))
+                                   {0, 0}, {1, 1}))
                 m_Selected = entry->Path;
             const bool hovered = ImGui::IsItemHovered();
             if (hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
