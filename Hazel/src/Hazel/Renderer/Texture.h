@@ -19,6 +19,7 @@ namespace Hazel {
 		RGBA32F
 	};
 
+	enum class TextureEncoding { Linear, SRGB };
 	enum class TextureFilter { Nearest, Linear, NearestMipmapNearest, LinearMipmapNearest, NearestMipmapLinear, LinearMipmapLinear };
 	enum class TextureWrap { Repeat, ClampToEdge, MirroredRepeat };
 	const char* TextureFilterName(TextureFilter value);
@@ -31,15 +32,18 @@ namespace Hazel {
 		uint32_t Width = 1;
 		uint32_t Height = 1;
 		ImageFormat Format = ImageFormat::RGBA8;
+        TextureEncoding Encoding = TextureEncoding::Linear; // Generated data is already linear.
 		bool GenerateMips = true;
 		TextureFilter MinFilter = TextureFilter::LinearMipmapLinear;
 		TextureFilter MagFilter = TextureFilter::Nearest;
 		TextureWrap WrapS = TextureWrap::Repeat, WrapT = TextureWrap::Repeat;
 		void Validate(bool file = false) const;
-		static TextureSpecification FileDefaults(); // zero dimensions/None format infer decoded values
+		static TextureSpecification ImGuiFile(); // Encoded bytes sampled by ImGui, whose output is unchanged.
+        static TextureSpecification FileDefaults(); // zero dimensions/None format infer decoded values
 	};
 
-	// Shared file decode: top-left rows, linear UNORM bytes. No sRGB conversion.
+	// Shared file decode: top-left rows, unchanged bytes. Interpretation belongs to
+    // TextureSpecification. Ordinary RGB(A) files default to sRGB; data opts into Linear.
 	struct TextureImage {
 		uint32_t Width = 0, Height = 0;
 		ImageFormat Format = ImageFormat::None;

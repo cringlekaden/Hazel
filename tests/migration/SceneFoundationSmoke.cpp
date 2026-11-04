@@ -77,7 +77,7 @@ static void RecoveryContracts()
     const auto root=std::filesystem::temp_directory_path()/std::filesystem::u8path("hazel recovery space-é-"+std::to_string(uint64_t(UUID())));
     std::filesystem::create_directories(root);
     const auto file=root/std::filesystem::u8path(u8"source é.hazel");
-    const std::string original=u8"Scene: Missing é\nEntities:\n  - Entity: 72\n    TagComponent: {Tag: Unresolved}\n    SpriteRendererComponent:\n      Color: [1, 1, 1, 1]\n      TexturePath: Textures/missing é.png\n      TilingFactor: 1\n";
+    const std::string original=u8"SceneVersion: 3\nPresentation: {Mode: DisplayReferred, Background: [0, 0, 0, 1]}\nScene: Missing é\nEntities:\n  - Entity: 72\n    Relationship: {Parent: 0, Order: 0}\n    TagComponent: {Tag: Unresolved}\n    SpriteRendererComponent:\n      Color: [1, 1, 1, 1]\n      TexturePath: Textures/missing é.png\n      TilingFactor: 1\n";
     FileSystem::WriteNewFile(file,original);
     FileDocument owner;owner.Open(file);
     auto scene=CreateRef<Scene>();
@@ -89,7 +89,7 @@ static void RecoveryContracts()
     Check(!report.Migration && report.State==DocumentLoadState::EditableWithProblems && report.Problems.size()==1,
           "Saving migration incorrectly resolved a missing resource or retained obsolete encoding warnings");
     const auto saved=loader.SerializeText();
-    Check(saved.find(u8"Textures/missing é.png")!=std::string::npos && saved.find("SceneVersion: 2")!=std::string::npos,
+    Check(saved.find(u8"Textures/missing é.png")!=std::string::npos && saved.find("SceneVersion: 3")!=std::string::npos,
           "Unresolved texture reference or scene version lost");
     owner.PreserveOriginal();owner.Save(saved,root/"recovery");
     Check(FileDocument::Read(owner.Backup())==original,"First recovery Save lost original bytes");
@@ -129,7 +129,7 @@ static void RecoveryContracts()
     {std::ofstream out(root/"texture.tga",std::ios::binary);out.write(reinterpret_cast<const char*>(image),sizeof(image));}
     // Audit a real whole-texture source through the same UTF-8 file service used
     // by scene Open; narrow YAML::LoadFile paths fail on Windows in this root.
-    FileSystem::WriteNewFile(root/"textured.hazel", "Scene: Closure\nEntities:\n  - Entity: 91\n    TagComponent: {Tag: Textured}\n    SpriteRendererComponent: {Color: [1, 1, 1, 1], TexturePath: texture.tga, TilingFactor: 1}\n");
+    FileSystem::WriteNewFile(root/"textured.hazel", "SceneVersion: 3\nPresentation: {Mode: DisplayReferred, Background: [0, 0, 0, 1]}\nScene: Closure\nEntities:\n  - Entity: 91\n    Relationship: {Parent: 0, Order: 0}\n    TagComponent: {Tag: Textured}\n    SpriteRendererComponent: {Color: [1, 1, 1, 1], TexturePath: texture.tga, TilingFactor: 1}\n");
     const auto closure=AuditSpriteAssets(root,{"textured.hazel"});
     Check(std::find(closure.begin(),closure.end(),std::filesystem::path("texture.tga"))!=closure.end(),"Unicode scene closure omitted whole-texture dependency");
     const std::string sheetText="SpriteSheet: {Version: 1, Texture: texture.tga, TextureSize: [2, 2], Filter: Nearest, Regions: [{ID: '0000000000000001', Name: First, Rect: [0, 0, 2, 2]}]}\n";

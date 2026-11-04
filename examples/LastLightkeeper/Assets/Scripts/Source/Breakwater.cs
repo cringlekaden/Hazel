@@ -154,7 +154,7 @@ namespace LastLightkeeper {
             var phase=Tide.Phase(clock);
             bool atWorks=p.X<-8 && p.Y>1;
             tideLabel.Text=atWorks?"TIDE   "+(phase==TidePhase.Clear?"CLEAR":phase==TidePhase.Warning?"SURGE SOON":"SURGE   HIGH GROUND")+"  "+Math.Ceiling(Tide.Remaining(clock)):"";
-            tideLabel.Color=phase==TidePhase.Clear?new Vector4(.55f,.86f,.92f,1):phase==TidePhase.Warning?new Vector4(1,.78f,.4f,1):new Vector4(1,.4f,.35f,1);
+            tideLabel.Color=phase==TidePhase.Clear?Hazel.Color.FromSRGB(new Vector4(.55f,.86f,.92f,1)):phase==TidePhase.Warning?Hazel.Color.FromSRGB(new Vector4(1,.78f,.4f,1)):Hazel.Color.FromSRGB(new Vector4(1,.4f,.35f,1));
             if(shownPhase!=(int)phase){if(atWorks && phase==TidePhase.Warning)Sound(SoundWarning);shownPhase=(int)phase;foreach(var wave in surges)if(wave!=null)wave.Scale=phase==TidePhase.Surge?new Vector3(1,1,1):new Vector3(.001f,.001f,1);}
             foreach(var board in warningBoards)if(board!=null)board.Scale=phase==TidePhase.Warning?new Vector3(1,.75f+.25f*(float)Math.Sin(clock*10),1):new Vector3(1,1,1);
             if(grace<=0 && Tide.Exposed(p.X,p.Y) && (phase==TidePhase.Surge || !journey.Has(Restoration.Pump))){Checkpoint(true);return;}

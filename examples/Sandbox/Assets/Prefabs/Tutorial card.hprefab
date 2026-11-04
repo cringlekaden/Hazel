@@ -1,6 +1,6 @@
-PrefabVersion: 2
+PrefabVersion: 3
 PrefabRoot: 100001
-SceneVersion: 2
+SceneVersion: 3
 Scene: Tutorial card
 Entities:
 - Entity: 100001
@@ -62,9 +62,9 @@ Entities:
     ClipChildren: true
   SpriteRendererComponent:
     Color:
-    - 0.035
-    - 0.055
-    - 0.075
+    - 0.00270897833
+    - 0.00440084975
+    - 0.00657140362
     - 0.98
     Source:
       Type: None
@@ -75,8 +75,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -84,7 +84,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -150,9 +150,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -170,8 +170,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -179,7 +179,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -245,9 +245,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -265,8 +265,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -274,7 +274,9 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
+
+Presentation: {Mode: DisplayReferred, Background: [0.010022826, 0.010022826, 0.010022826, 1]}

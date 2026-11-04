@@ -1,5 +1,6 @@
 #pragma once
 #include "FontFamily.h"
+#include "Hazel/Renderer/Color.h"
 #include "SpriteSheet.h"
 #include <glm/glm.hpp>
 #include <yaml-cpp/yaml.h>
@@ -55,8 +56,8 @@ struct UIStyleValues
     UIStyleStates States;
     glm::vec4 Padding{};
     UIStyleSlice Slice;
-    glm::vec4 Focus{1, .9f, .65f, 1}, Selected{1}, Editing{.3f, 1, 1, 1}, Caret{1},
-        Selection{.18f, .42f, .8f, .5f};
+    glm::vec4 Focus=ColorSpace::FromSRGB({1,.9f,.65f,1}), Selected{1}, Editing=ColorSpace::FromSRGB({.3f,1,1,1}), Caret{1},
+        Selection=ColorSpace::FromSRGB({.18f,.42f,.8f,.5f});
     void Validate() const;
     bool operator==(const UIStyleValues &b) const;
 };

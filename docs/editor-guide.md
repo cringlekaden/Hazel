@@ -43,3 +43,20 @@ The viewport toolbar or **Scene** menu controls **Play, Simulate, Stop, Pause / 
 **View** restores hidden Hierarchy, Properties, Content Browser, Console and Runtime UI Debugger panels. Open `.hsprites`, `.hstyle` and `.hfont` assets from Content Browser to edit sprites, styles and font families. Follow [Sprite authoring](sprite-authoring.md) or [Runtime UI](runtime-game-ui.md).
 
 Preferences, sessions, project workspaces, docking layouts and resource caches have different owners. Their locations and recovery behavior are in [Settings and resources](settings-and-resources.md); preserve them when diagnosing problems.
+
+## Scene foundations
+
+File > New Project creates the working 2D starter without Python or scripting
+SDK readiness. Enter Name and Location; the technical identifier is suggested
+and editable under Advanced identity. File > New Scene uses the same native
+factory and the project's New scene defaults. The adjacent New Scene with projection
+menu creates an explicit orthographic/perspective unlit override without changing
+project defaults. Perspective unlit cameras are
+supported; this checkpoint does not provide mesh/PBR rendering or a 3D starter.
+
+Use the viewport Planar/Orbit selector to change editor navigation independently
+of runtime cameras. Planar pans with middle drag and zooms with the wheel; Orbit
+uses Alt-left orbit, Alt-middle pan and Alt-right/wheel dolly. Project workspaces
+retain both poses and the grid/tool choice. Scene Settings applies a linear-color
+background through Undo/Redo; the picker displays familiar sRGB values. See
+[settings](settings-and-resources.md) and [color](color.md).

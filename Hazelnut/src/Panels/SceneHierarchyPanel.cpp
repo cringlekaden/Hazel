@@ -513,7 +513,7 @@ void SceneHierarchyPanel::DrawUIComponent(const std::string &name,Entity entity,
     std::function<void(const std::string&)> report)
 {
     if(!m_Context || !entity.BelongsTo(m_Context.get()) || !entity || !m_Context->IsEntityValid(entity.GetUUID()))return;
-    if(!std::is_same_v<T,TextComponent> && !entity.HasComponent<UIRectComponent>()&&!entity.HasComponent<UICanvasComponent>()){
+    if(!std::is_same_v<T,TextComponent> && !std::is_same_v<T,TransformComponent> && !std::is_same_v<T,SpriteRendererComponent> && !std::is_same_v<T,CircleRendererComponent> && !std::is_same_v<T,CameraComponent> && !entity.HasComponent<UIRectComponent>()&&!entity.HasComponent<UICanvasComponent>()){
         DrawComponent<T>(name,entity,sections,restore,ui,report);return;
     }
     DrawComponent<T>(name,entity,sections,restore,[&](auto &component){
@@ -606,14 +606,14 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         ImGui::EndPopup();
     }
 
-    DrawComponent<TransformComponent>(
+    DrawUIComponent<TransformComponent>(
         "Transform",entity,m_Sections,m_RestoreSections,[this,entity](auto& component)mutable {
             const TransformComponent defaults;auto proposed=component;bool changed=false;
             changed|=bool(PropertyUI::Vector("translation","Position",glm::value_ptr(proposed.Translation),3,.1f,glm::value_ptr(defaults.Translation)));
             auto rotation=glm::degrees(proposed.Rotation);
             if(PropertyUI::Vector("rotation","Rotation (deg)",glm::value_ptr(rotation),3,.5f,glm::value_ptr(defaults.Rotation))){proposed.Rotation=glm::radians(rotation);changed=true;}
             changed|=bool(PropertyUI::Vector("scale","Scale",glm::value_ptr(proposed.Scale),3,.1f,glm::value_ptr(defaults.Scale)));
-            if(changed && CanEdit(true))try{m_Context->SetLocalTransform(entity,proposed);m_HierarchyError.clear();}catch(const std::exception& e){HierarchyFailed(e.what());}
+            if(changed && CanEdit(true))component=proposed;
         });
 
     // Named, document-local choices; no cross-document drag payloads or stored pointers.
@@ -970,7 +970,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         if(!m_HierarchyError.empty())PropertyUI::Validation(m_HierarchyError.c_str());
         if(!m_Context->GetUIError().empty())PropertyUI::Validation(m_Context->GetUIError().c_str());
     }
-    DrawComponent<CameraComponent>(
+    DrawUIComponent<CameraComponent>(
         "Camera", entity, m_Sections,m_RestoreSections,
         [](auto &component)
         {
@@ -1342,7 +1342,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                 ImGui::TextColored({1, .4f, .3f, 1}, "%s", component.Error.c_str());
         });
 
-    DrawComponent<CircleRendererComponent>(
+    DrawUIComponent<CircleRendererComponent>(
         "Circle Renderer", entity, m_Sections,m_RestoreSections,
         [](auto &component)
         {

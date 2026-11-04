@@ -1,0 +1,21 @@
+SpriteSheet:
+  Version: 1
+  Texture: Textures/Asymmetric.tga
+  TextureSize: [8, 8]
+  Sampling:
+    MinFilter: Nearest
+    MagFilter: Nearest
+    Encoding: Linear
+    WrapS: ClampToEdge
+    WrapT: ClampToEdge
+    GenerateMips: false
+    Format: RGBA8
+  Regions:
+    - ID: "0000000000000001"
+      Name: Asymmetric top-left image
+      Rect: [0, 0, 8, 8]
+      Pivot: [0.5, 0.5]
+  RetiredRegionIDs: []
+  Clips:
+    []
+  RetiredClipIDs: []

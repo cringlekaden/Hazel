@@ -87,12 +87,8 @@ static void HierarchyChecks() {
     Check(!reader.DeserializeText(out.c_str()) && reader.SerializeAuthoredSnapshot() == retained,
           "Future hierarchy data replaced valid scene");
     auto legacy = CreateRef<Scene>();
-    Check(SceneSerializer(legacy).DeserializeText(
-              "Scene: Legacy\nEntities: [{Entity: 7, TransformComponent: {Translation: [2, 3, 0], "
-              "Rotation: [0, 0, 0], Scale: [1, 1, 1]}}]\n") &&
-              glm::vec3(legacy->GetWorldTransform(legacy->GetEntityByUUID(7))[3]) ==
-                  glm::vec3(2, 3, 0),
-          "Legacy flat scene did not remain a root at original world position");
+    Check(!SceneSerializer(legacy).DeserializeText("Scene: Old ambiguous color\nEntities: []\n"),
+          "Ambiguous historical color semantics were silently accepted");
     auto scaled = scene->CreateEntity("Scaled parent");
     auto descendant = scene->CreateEntity("Descendant camera");
     descendant.AddComponent<CameraComponent>();
@@ -243,7 +239,7 @@ static void SubtreePrefabChecks() {
     Prefab::Save(folder, "Assembly.hprefab", scene, root, true, WriteMode::CreateNew);
     const auto saved = FileDocument::Read(folder / "Assembly.hprefab");
     auto asset = Prefab::Load(folder, "Assembly.hprefab", true, ResourceLoading::MetadataOnly);
-    Check(YAML::Load(saved)["PrefabVersion"].as<int>() == 2 &&
+    Check(YAML::Load(saved)["PrefabVersion"].as<int>() == 3 &&
               asset->GetSubtree(Prefab::GetEntity(asset)).size() == 3,
           "Detached prefab v2 lost connected subtree");
     auto target = CreateRef<Scene>();
@@ -274,10 +270,8 @@ static void SubtreePrefabChecks() {
     YAML::Emitter legacy;
     legacy << old;
     FileSystem::WriteNewFile(folder / "Legacy.hprefab", legacy.c_str());
-    Check(Prefab::Load(folder, "Legacy.hprefab", true, ResourceLoading::MetadataOnly)
-                  ->GetAllEntitiesWith<IDComponent>()
-                  .size() == 1,
-          "Single-entity prefab compatibility lost");
+    rejected=false;try{Prefab::Load(folder,"Legacy.hprefab",true,ResourceLoading::MetadataOnly);}catch(const std::exception&){rejected=true;}
+    Check(rejected,"Ambiguous historical prefab color was silently accepted");
     auto invalid = YAML::Load(saved);
     invalid["PrefabRoot"] = 399;
     YAML::Emitter broken;

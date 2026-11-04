@@ -435,8 +435,9 @@ namespace Hazel {
 		out.SetFloatPrecision(std::numeric_limits<float>::max_digits10);
 		out.SetDoublePrecision(std::numeric_limits<double>::max_digits10);
 		out << YAML::BeginMap;
-        out << YAML::Key << "SceneVersion" << YAML::Value << 2;
+        out << YAML::Key << "SceneVersion" << YAML::Value << 3;
 		out << YAML::Key << "Scene" << YAML::Value << m_Scene->GetName();
+        out << YAML::Key << "Presentation" << YAML::Value << SceneDefaults::Encode(m_Scene->Presentation());
 		out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
         std::vector<UUID> ordered;
         if(only)ordered={only.GetUUID()};
@@ -477,7 +478,6 @@ namespace Hazel {
 		{
             data = OperationProgress::CPU("Parse scene YAML",[&text]{return YAML::Load(text);});
             m_Report.Migration = DocumentSchema::Scene(data,prefabDocument);
-            if (!data["SceneVersion"] || data["SceneVersion"].as<int>()==1) m_Report.Problems.push_back({0,"Encoding","Save upgrades flat data to SceneVersion: 2 with explicit root relationships; original bytes are preserved first",{},true});
             if (!data["Entities"]) m_Report.Problems.push_back({0,"Entities","Known legacy missing entity list becomes an empty list on Save",{},true});
             for (auto node : data["Entities"]) {
                 const auto id=node["Entity"].as<uint64_t>();
@@ -499,6 +499,7 @@ namespace Hazel {
             }
 			auto staged = CreateRef<Scene>();
             staged->SetAssets(m_Scene->GetAssets());
+            staged->Presentation()=SceneDefaults::ReadPresentation(data["Presentation"]);
 			staged->m_ViewportWidth = m_Scene->m_ViewportWidth;
 			staged->m_ViewportHeight = m_Scene->m_ViewportHeight;
 			std::unordered_map<UUID, ScriptFieldMap> stagedScriptFields;
@@ -708,7 +709,7 @@ namespace Hazel {
         // Keep authored references repairable. Runtime Start/Save/export remain strict;
         // Edit previews use the service's safe missing-part/group behavior.
         try{staged->ValidateUIControls();}catch(const std::exception &error){m_Report.Problems.push_back({0,"UI controls",error.what(),{}});}
-        if(prefabDocument && data["PrefabVersion"].as<int>()==2) {
+        if(prefabDocument && data["PrefabVersion"].as<int>()==3) {
             const auto roots=staged->GetChildren();
             if(roots.size()!=1 || uint64_t(roots.front())!=data["PrefabRoot"].as<uint64_t>() || staged->GetSubtree(staged->GetEntityByUUID(roots.front())).size()!=staged->m_EntityMap.size())throw std::runtime_error("PrefabRoot must identify one complete connected subtree");
         }
@@ -784,6 +785,7 @@ namespace Hazel {
         m_Scene->RebuildChildren();
 		m_Scene->m_ScriptFields = std::move(stagedScriptFields);
         m_Scene->SetName(sceneName);
+        m_Scene->Presentation() = staged->Presentation();
         m_Report.State = m_Report.Problems.empty() ? DocumentLoadState::Ready : DocumentLoadState::EditableWithProblems;
 		return true;
 		}

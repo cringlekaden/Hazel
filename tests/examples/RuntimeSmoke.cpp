@@ -33,7 +33,10 @@ static void Teleport(Entity entity,glm::vec3 position) {
     auto* body=static_cast<b2Body*>(entity.GetComponent<Rigidbody2DComponent>().RuntimeBody);
     body->SetTransform({position.x,position.y},0);body->SetLinearVelocity({0,0});
 }
+static Ref<Framebuffer> CaptureSource;
 static void Capture(const std::filesystem::path& path,unsigned width,unsigned height) {
+    FramebufferSpecification spec;spec.Width=width;spec.Height=height;spec.Attachments={FramebufferTextureFormat::RGBA8};
+    auto output=Framebuffer::Create(spec);CaptureSource->EncodeOutput(output);output->Bind();
     std::vector<unsigned char> pixels(width*height*3);
     glReadBuffer(GL_COLOR_ATTACHMENT0);glPixelStorei(GL_PACK_ALIGNMENT,1);
     glReadPixels(0,0,width,height,GL_RGB,GL_UNSIGNED_BYTE,pixels.data());
@@ -42,7 +45,7 @@ static void Capture(const std::filesystem::path& path,unsigned width,unsigned he
         out<<"P6\n"<<width<<' '<<height<<"\n255\n";
         for(unsigned row=height;row>0;--row)out.write(reinterpret_cast<char*>(pixels.data()+(row-1)*width*3),width*3);
     });
-    glPixelStorei(GL_PACK_ALIGNMENT,4);
+    glPixelStorei(GL_PACK_ALIGNMENT,4);CaptureSource->Bind();
 }
 #include "UIIntegrationChecks.h"
 int main(int argc,char** argv) {
@@ -58,9 +61,11 @@ int main(int argc,char** argv) {
         ApplicationSpecification spec;spec.Name="Example regression";spec.EnableImGui=false;Application app(spec);
         glfwHideWindow(static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow()));
         FramebufferSpecification frame;frame.Width=960;frame.Height=720;
-        frame.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::DEPTH24STENCIL8};
-        auto framebuffer=Framebuffer::Create(frame);framebuffer->Bind();
-        auto tick=[&](RuntimeSession& session,float dt=.016f) { RenderCommand::SetClearColor({.1,.1,.1,1});RenderCommand::Clear();session.Update(dt); };
+        frame.Attachments={FramebufferTextureFormat::RGBA16F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::DEPTH24STENCIL8};
+        auto framebuffer=Framebuffer::Create(frame);CaptureSource=framebuffer;
+        struct CaptureCleanup{~CaptureCleanup(){CaptureSource.reset();}} captureCleanup;
+        framebuffer->Bind();
+        auto tick=[&](RuntimeSession& session,float dt=.016f) { RenderCommand::SetClearColor(session.GetScene()->Presentation().Background);RenderCommand::Clear();session.Update(dt); };
         std::filesystem::create_directories(temporary);
         for(int pass=0;pass<3;pass++) {
             const bool meadow=pass!=1;const auto source=std::filesystem::u8path(argv[meadow?1:2]);

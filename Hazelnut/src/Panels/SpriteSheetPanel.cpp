@@ -231,7 +231,8 @@ void SpriteSheetPanel::PreviewTexture()
     {
         auto &s = m_Document->Draft();
         s.Sampling.Validate(true);
-        m_Texture = m_Assets->Texture(s.Texture, s.Sampling);
+        auto preview=s.Sampling;preview.Encoding=TextureEncoding::Linear;
+        m_Texture = m_Assets->Texture(s.Texture, preview);
         m_Error.clear();
     }
     catch (const std::exception &e)

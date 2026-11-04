@@ -23,6 +23,7 @@ namespace Hazel {
     }
     void RuntimeSession::Validate(const Ref<Scene>& scene, bool validateScripts) {
         if (!scene) throw std::runtime_error("No scene to run");
+        scene->Presentation().Validate();
         scene->ValidateSprites();
         scene->ValidateUI();
         scene->ValidateHierarchy(); // Shared roots, planar dimensions, graph/world and physics validation.

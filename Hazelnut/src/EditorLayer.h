@@ -1,4 +1,6 @@
 #pragma once
+#include <optional>
+#include "Authoring/UIInspectorEditing.h"
 
 #include "Hazel.h"
 #include "Hazel/Events/KeyEvent.h"
@@ -53,7 +55,7 @@ namespace Hazel {
         bool OpenProject(const std::filesystem::path& path,const ProjectOpenOptions& options);
 		bool SaveProject();
 
-		void NewScene();
+		void NewScene(std::optional<NewSceneDefaults> overrideDefaults = {});
 		bool OpenScene();
 		bool OpenScene(const std::filesystem::path& path);
 		bool SaveScene();
@@ -80,6 +82,7 @@ namespace Hazel {
 		Hazel::OrthographicCameraController m_CameraController;
 
 		Ref<Framebuffer> m_Framebuffer;
+        Ref<Framebuffer> m_ViewportOutput;
 
 		Ref<Scene> m_ActiveScene;
 		Ref<Scene> m_EditorScene;
@@ -107,6 +110,7 @@ namespace Hazel {
 
 		int m_GizmoType = -1;
         UIRectEditSession m_UIEdit;
+        UIInspectorEditing m_GizmoEdit;
         glm::vec2 m_UIGestureStart{};
         bool m_ShowUIDebugger=false,m_UIBoundsOverlay=false,m_UIClipOverlay=false,m_UIHitOverlay=false;
         void UI_RectEditing();
@@ -117,7 +121,8 @@ namespace Hazel {
         int m_UIPreview=0;
         std::string m_GizmoError;
 
-		bool m_ShowPhysicsColliders = false;
+		bool m_ShowGrid = true;
+        bool m_ShowPhysicsColliders = false;
         bool m_ShowStats = true;
         uint64_t m_EditorSelection = 0;
 

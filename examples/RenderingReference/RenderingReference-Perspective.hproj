@@ -1,0 +1,14 @@
+Project:
+  Version: 1
+  NewSceneDefaults:
+    Projection: Perspective
+    Navigation: Orbit
+    Presentation:
+      Mode: DisplayReferred
+      Background: [0.0100228256, 0.0100228256, 0.0100228256, 1]
+  ScriptProject: RenderingReference
+  AuthoringVersion: 1
+  Name: Rendering Reference
+  StartScene: Scenes/Core_v1-Perspective.hazel
+  AssetDirectory: Assets
+  ScriptModulePath: Scripts/Binaries/RenderingReference.dll

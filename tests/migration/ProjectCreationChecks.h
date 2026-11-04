@@ -5,6 +5,9 @@
 #include "Hazel/Core/UUID.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Project/ProjectCreation.h"
+#include "Hazel/Scene/SceneSerializer.h"
+#include "Hazel/Renderer/Color.h"
+#include "Hazel/Project/ScriptSource.h"
 namespace Hazel {
     static void ProjectCreationChecks() {
         const auto root =
@@ -40,7 +43,7 @@ namespace Hazel {
               "identity");
         auto scene =
             YAML::Load(FileDocument::Read(request.Destination / "Assets/Scenes/Start.hazel"));
-        Check(scene["SceneVersion"].as<int>() == 2 && scene["Entities"].size() == 2 &&
+        Check(scene["SceneVersion"].as<int>() == 3 && scene["Entities"].size() == 5 &&
                   scene["Entities"][0]["CameraComponent"]["Primary"].as<bool>(),
               "Native starter scene lacked primary camera/content");
         Check(FileDocument::Read(request.Destination / "Assets/Scripts/premake5.lua")
@@ -48,6 +51,18 @@ namespace Hazel {
                   FileDocument::Read(request.Destination / "Assets/Scripts/Source/Example.cs")
                           .find("namespace GardenProbe") != std::string::npos,
               "Native shared template substitution failed");
+        auto cpu=CreateRef<Scene>();SceneSerializer codec(cpu);
+        Check(codec.DeserializeText(YAML::Dump(scene),false,ResourceLoading::MetadataOnly),"Native factory metadata-only load");
+        const auto retained=codec.CaptureAuthoredState();auto defaults=candidate->GetConfig().SceneDefaults;
+        defaults.Perspective=true;defaults.Navigation=EditorNavigation::Orbit;defaults.Presentation.Background={.1f,.2f,.3f,1};
+        candidate->GetConfig().SceneDefaults=defaults;
+        Check(codec.CaptureAuthoredState()==retained,"Project defaults rewrote an existing scene");
+        const auto futureScene=SceneDefaults::CreateDocument("Future",defaults);auto next=CreateRef<Scene>();
+        Check(SceneSerializer(next).DeserializeText(futureScene,false,ResourceLoading::MetadataOnly)&&next->Presentation()==defaults.Presentation&&next->GetEntityByUUID(1).GetComponent<CameraComponent>().Camera.GetProjectionType()==SceneCamera::ProjectionType::Perspective,"New Scene defaults lost projection/presentation");
+        auto copy=Scene::Copy(next);Check(SceneSerializer(copy).CaptureAuthoredState()==SceneSerializer(next).CaptureAuthoredState(),"Scene copy lost authored presentation");
+        Check(SceneDefaults::SuggestIdentifier("123 hello!")=="Game123hello" && SceneDefaults::SuggestIdentifier(u8"你好")=="MyGame" && ScriptSource::ValidIdentifier(SceneDefaults::SuggestIdentifier("class")),"Technical identifier suggestion is not deterministic/valid");
+        auto unsupported=YAML::Load(futureScene);unsupported["Presentation"]["Mode"]="SceneReferred";
+        Check(!SceneSerializer(next).DeserializeText(YAML::Dump(unsupported),false,ResourceLoading::MetadataOnly)&&SceneSerializer(next).CaptureAuthoredState()==SceneSerializer(copy).CaptureAuthoredState(),"Unsupported presentation published or changed accepted document");
         const auto before = FileDocument::Read(result.Descriptor);
         bool rejected = false;
         try {

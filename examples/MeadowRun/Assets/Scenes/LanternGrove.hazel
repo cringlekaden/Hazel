@@ -803,9 +803,9 @@ Entities:
   TextComponent:
     TextString: FIND FIVE
     Color: &id001
-    - 0.99
-    - 0.95
-    - 0.82
+    - 0.977401934
+    - 0.890005407
+    - 0.638283215
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -1007,9 +1007,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.14
-    - 0.28
-    - 0.24
+    - 0.0173891024
+    - 0.0637237953
+    - 0.0469642007
     - 1
     TilingFactor: 1
   Relationship:
@@ -1081,8 +1081,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -1090,7 +1090,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -1145,8 +1145,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -1154,7 +1154,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -1177,9 +1177,9 @@ Entities:
   TextComponent:
     TextString: WASD / arrows   |   R restart   |   Esc menu
     Color:
-    - 0.13
-    - 0.25
-    - 0.23
+    - 0.0153252033
+    - 0.0508760882
+    - 0.0432336359
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -1213,8 +1213,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -1222,7 +1222,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -1258,4 +1258,6 @@ Entities:
     Visible: true
     Enabled: true
     Modal: false
-SceneVersion: 2
+SceneVersion: 3
+
+Presentation: {Mode: DisplayReferred, Background: [0.010022826, 0.010022826, 0.010022826, 1]}

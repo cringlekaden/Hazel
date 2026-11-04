@@ -16,6 +16,13 @@
 
 namespace Hazel {
 
+    void EditorCamera::SetNavigation(EditorNavigation mode) {
+        m_Navigation=mode;m_InitialMousePosition=Input::GetMousePosition();UpdateProjection();UpdateView();
+    }
+    void EditorCamera::RestorePlanar(glm::vec2 focus,float size) {
+        if(!std::isfinite(focus.x)||!std::isfinite(focus.y)||!std::isfinite(size)||size<.01f||size>100000)return;
+        m_PlanarFocus=focus;m_PlanarSize=size;UpdateProjection();UpdateView();
+    }
     void EditorCamera::RestoreOrbit(const glm::vec3& focus,float pitch,float yaw,float distance) {
         if(!std::isfinite(pitch)||!std::isfinite(yaw)||!std::isfinite(distance)||distance<.1f||distance>100000)return;
         for(int axis=0;axis<3;++axis)if(!std::isfinite(focus[axis]))return;
@@ -33,12 +40,17 @@ namespace Hazel {
 	void EditorCamera::UpdateProjection()
 	{
 		m_AspectRatio = m_ViewportWidth / m_ViewportHeight;
+		if(m_Navigation==EditorNavigation::Planar) {
+            const float half=m_PlanarSize*.5f;m_Projection=glm::ortho(-half*m_AspectRatio,half*m_AspectRatio,-half,half,.1f,1000.f);return;
+        }
 		m_Projection = glm::perspective(glm::radians(m_FOV), m_AspectRatio, m_NearClip, m_FarClip);
 	}
 
 	void EditorCamera::UpdateView()
 	{
-		// m_Yaw = m_Pitch = 0.0f; // Lock the camera's rotation
+		if(m_Navigation==EditorNavigation::Planar) {
+            m_Position={m_PlanarFocus,10};m_ViewMatrix=glm::translate(glm::mat4(1),-m_Position);return;
+        }
 		m_Position = CalculatePosition();
 
 		glm::quat orientation = GetOrientation();
@@ -73,11 +85,16 @@ namespace Hazel {
 
 	void EditorCamera::OnUpdate(Timestep)
 	{
+        const glm::vec2 mouse{Input::GetMouseX(),Input::GetMouseY()};
+        const auto pixels=mouse-m_InitialMousePosition;m_InitialMousePosition=mouse;
+        if(m_Navigation==EditorNavigation::Planar) {
+            if(Input::IsMouseButtonPressed(Mouse::ButtonMiddle) || (Input::IsKeyPressed(Key::LeftAlt)&&Input::IsMouseButtonPressed(Mouse::ButtonLeft)))
+                m_PlanarFocus+=glm::vec2(-pixels.x,pixels.y)*(m_PlanarSize/m_ViewportHeight);
+            UpdateView();return;
+        }
 		if (Input::IsKeyPressed(Key::LeftAlt))
 		{
-			const glm::vec2& mouse{ Input::GetMouseX(), Input::GetMouseY() };
-			glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
-			m_InitialMousePosition = mouse;
+            glm::vec2 delta=pixels*.003f;
 
 			if (Input::IsMouseButtonPressed(Mouse::ButtonMiddle))
 				MousePan(delta);
@@ -98,7 +115,8 @@ namespace Hazel {
 
 	bool EditorCamera::OnMouseScroll(MouseScrolledEvent& e)
 	{
-		float delta = e.GetYOffset() * 0.1f;
+		if(m_Navigation==EditorNavigation::Planar) {m_PlanarSize=std::clamp(m_PlanarSize*std::exp(-e.GetYOffset()*.15f),.01f,100000.f);UpdateProjection();return false;}
+        float delta = e.GetYOffset() * 0.1f;
 		MouseZoom(delta);
 		UpdateView();
 		return false;

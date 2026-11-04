@@ -1,6 +1,6 @@
-PrefabVersion: 2
+PrefabVersion: 3
 PrefabRoot: 19
-SceneVersion: 2
+SceneVersion: 3
 Scene: Title UI
 Entities:
 - Entity: 19
@@ -61,9 +61,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.17
-    - 0.21
-    - 0.36
+    - 0.0245150137
+    - 0.0363064841
+    - 0.106539224
     - 0.96
     TilingFactor: 1
   Relationship:
@@ -120,9 +120,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.17
-    - 0.21
-    - 0.36
+    - 0.0245150137
+    - 0.0363064841
+    - 0.106539224
     - 0.96
     TilingFactor: 1
   Relationship:
@@ -180,9 +180,9 @@ Entities:
   TextComponent:
     TextString: A LITTLE WIND. A LONG WAY.
     Color:
-    - 0.99
-    - 0.95
-    - 0.82
+    - 0.977401934
+    - 0.890005407
+    - 0.638283215
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -234,8 +234,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -243,7 +243,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -266,9 +266,9 @@ Entities:
   TextComponent:
     TextString: SKYBOUND
     Color:
-    - 0.99
-    - 0.95
-    - 0.82
+    - 0.977401934
+    - 0.890005407
+    - 0.638283215
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -320,8 +320,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -329,7 +329,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -412,9 +412,9 @@ Entities:
   TextComponent:
     TextString: Thread the lantern towers.
     Color:
-    - 0.99
-    - 0.95
-    - 0.82
+    - 0.977401934
+    - 0.890005407
+    - 0.638283215
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -466,8 +466,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -475,7 +475,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -584,8 +584,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -593,7 +593,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -616,9 +616,9 @@ Entities:
   TextComponent:
     TextString: Space or left click to flap
     Color:
-    - 0.99
-    - 0.95
-    - 0.82
+    - 0.977401934
+    - 0.890005407
+    - 0.638283215
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -670,8 +670,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -679,7 +679,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -702,9 +702,9 @@ Entities:
   TextComponent:
     TextString: An original Hazel example
     Color:
-    - 0.99
-    - 0.95
-    - 0.82
+    - 0.977401934
+    - 0.890005407
+    - 0.638283215
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -756,8 +756,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -765,7 +765,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -788,9 +788,9 @@ Entities:
   TextComponent:
     TextString: TAKE FLIGHT
     Color:
-    - 0.99
-    - 0.95
-    - 0.82
+    - 0.977401934
+    - 0.890005407
+    - 0.638283215
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -842,8 +842,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -851,7 +851,9 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
+
+Presentation: {Mode: DisplayReferred, Background: [0.010022826, 0.010022826, 0.010022826, 1]}

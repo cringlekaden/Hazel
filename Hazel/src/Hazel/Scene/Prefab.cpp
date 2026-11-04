@@ -86,7 +86,7 @@ std::string Prefab::Serialize(const std::filesystem::path &root, const Ref<Scene
     auto staged = Scene::ExtractSubtree(entity);
     Validate(root, staged, !allowBroken);
     auto rootEntity = GetEntity(staged);
-    auto text = std::string("PrefabVersion: 2\nPrefabRoot: ") +
+    auto text = std::string("PrefabVersion: 3\nPrefabRoot: ") +
                 std::to_string(uint64_t(rootEntity.GetUUID())) + "\n" +
                 SceneSerializer(staged, root).SerializeText();
     DocumentSchema::Scene(YAML::Load(text), true);

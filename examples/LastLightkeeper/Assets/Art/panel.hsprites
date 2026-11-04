@@ -5,6 +5,7 @@ SpriteSheet:
   - 16
   - 16
   Sampling:
+    Encoding: SRGB
     MinFilter: Nearest
     MagFilter: Nearest
     WrapS: ClampToEdge

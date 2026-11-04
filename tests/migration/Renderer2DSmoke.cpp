@@ -44,6 +44,7 @@ static std::size_t Pixels(int entity) {
     glReadPixels(0,0,128,128,GL_RED_INTEGER,GL_INT,ids.data()); glReadBuffer(GL_COLOR_ATTACHMENT0);
     return std::count(ids.begin(),ids.end(),entity);
 }
+#include "CanonicalColorChecks.h"
 #include "OrderedBatchChecks.h"
 #include "TextCompositingChecks.h"
 #include "GlyphPageChecks.h"
@@ -85,8 +86,8 @@ static void Textures() {
     texture->SetData(texels.data(),texels.size());
     SpriteRendererComponent sprite; sprite.SetTexture(texture,2); sprite.Color={.5f,1,1,1};
     Begin(); Renderer2D::DrawSprite(Transform(),sprite,43); End();
-    Check(ID(40,40)==43 && Color(40,40)[0]>=126 && Color(40,40)[0]<=129 &&
-          Color(56,40)[1]>250 && Color(72,40)[0]>=126,"Sprite texture/tiling/tint mismatch");
+    Check(ID(40,40)==43 && Color(40,56)[0]>=126 && Color(40,56)[0]<=129 &&
+          Color(56,56)[1]>250 && Color(72,56)[0]>=126,"Sprite texture/tiling/tint mismatch");
     sprite.SetTexture(nullptr); sprite.Color={0,1,0,1};
     Begin(); Renderer2D::DrawSprite(Transform(),sprite,44); End();
     Check(ID()==44 && Color()[1]>250,"Untextured sprite mismatch");
@@ -246,7 +247,7 @@ int main(int argc,char** argv) {
             if(argc==2 && std::string(argv[1])=="--profile-typography"){TypographyRenderProfile();return 0;}
             TextCompositingChecks(argc>1 && std::string(argv[1])=="--reproduce-d8");
             if(argc>1)return 0;
-            Primitives(); Textures(); WorldTextChecks(); GlyphPageChecks(); TextOverflowRenderChecks(); TextEmphasisRenderChecks(); PagePressurePixels(); Overflow(); GenericSubmit(); OrderedBatchChecks();
+            CanonicalColorChecks(); Primitives(); Textures(); WorldTextChecks(); GlyphPageChecks(); TextOverflowRenderChecks(); TextEmphasisRenderChecks(); PagePressurePixels(); Overflow(); GenericSubmit(); OrderedBatchChecks();
             Check(glGetError()==GL_NO_ERROR,"Final renderer GL error");
             target->Unbind(); target.reset(); glEnable(GL_DEPTH_TEST);
         }

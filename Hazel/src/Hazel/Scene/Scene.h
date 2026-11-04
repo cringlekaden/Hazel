@@ -1,4 +1,5 @@
 #pragma once
+#include "SceneDefaults.h"
 
 #include "Hazel/Core/Timestep.h"
 #include "Hazel/Core/UUID.h"
@@ -164,6 +165,8 @@ namespace Hazel {
         uint64_t GetAuthoringStructureVersion(UUID id) const;
         uint64_t GetAuthoringLifetime(UUID id) const;
         uint64_t GetAuthoringComponentVersion(UUID id, std::type_index type) const;
+        ScenePresentation& Presentation() { return m_Presentation; }
+        const ScenePresentation& Presentation() const { return m_Presentation; }
         const std::string& GetName() const { return m_Name; }
         void SetName(std::string name) { m_Name=std::move(name); }
         bool IsStopping() const { return m_Stopping; }
@@ -245,6 +248,7 @@ namespace Hazel {
         UUID m_Identity;
 		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
         std::string m_Name = "Untitled";
+        ScenePresentation m_Presentation;
 		bool m_IsRunning = false;
         bool m_Stopping = false;
         std::vector<UUID> m_PendingStart;

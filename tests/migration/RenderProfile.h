@@ -30,7 +30,7 @@ static void ProfileRendering(int maximum=2048)
         {
             if(count>maximum)continue;
             std::ostringstream yaml;
-            yaml << "SceneVersion: 2\nScene: Render profile\nEntities:\n- Entity: 1\n  "
+            yaml << "SceneVersion: 3\nPresentation: {Mode: DisplayReferred, Background: [0, 0, 0, 1]}\nScene: Render profile\nEntities:\n- Entity: 1\n  "
                     "Relationship: {Parent: 0, Order: 0}\n  UICanvasComponent: {ReferenceSize: "
                     "[1280, 720], SafeInsets: [0, 0, 0, 0]}\n";
             for (int i = 0; i < count; ++i)

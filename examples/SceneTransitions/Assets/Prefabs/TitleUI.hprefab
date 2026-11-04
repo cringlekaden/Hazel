@@ -1,6 +1,6 @@
-PrefabVersion: 2
+PrefabVersion: 3
 PrefabRoot: 7
-SceneVersion: 2
+SceneVersion: 3
 Scene: Title UI
 Entities:
 - Entity: 7
@@ -63,9 +63,9 @@ Entities:
   TextComponent:
     TextString: HAZEL
     Color:
-    - 0.96
-    - 0.9
-    - 0.78
+    - 0.9114075
+    - 0.787412289
+    - 0.570481595
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -117,8 +117,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -126,7 +126,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -149,9 +149,9 @@ Entities:
   TextComponent:
     TextString: Scene transitions
     Color:
-    - 0.96
-    - 0.9
-    - 0.78
+    - 0.9114075
+    - 0.787412289
+    - 0.570481595
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -203,8 +203,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -212,7 +212,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -328,8 +328,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -337,7 +337,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -362,9 +362,9 @@ Entities:
 
       UI frame: Kenney (CC0)'
     Color:
-    - 0.96
-    - 0.9
-    - 0.78
+    - 0.9114075
+    - 0.787412289
+    - 0.570481595
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -416,8 +416,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -425,7 +425,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -448,9 +448,9 @@ Entities:
   TextComponent:
     TextString: PLAY
     Color:
-    - 0.96
-    - 0.9
-    - 0.78
+    - 0.9114075
+    - 0.787412289
+    - 0.570481595
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -502,8 +502,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -511,7 +511,9 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
+
+Presentation: {Mode: DisplayReferred, Background: [0.010022826, 0.010022826, 0.010022826, 1]}

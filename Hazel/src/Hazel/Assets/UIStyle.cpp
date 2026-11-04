@@ -297,8 +297,8 @@ UIStyleDefinition ReadUIStyleText(const std::string &text)
     DocumentSchema::Keys(root, {"UIStyle"}, "root");
     auto n = root["UIStyle"];
     DocumentSchema::Keys(n, {"Version", "Name", "Variants"}, "UIStyle");
-    if (n["Version"].as<unsigned>() != 1)
-        throw std::invalid_argument("Unsupported UIStyle.Version");
+    if (n["Version"].as<unsigned>() != 2)
+        throw std::invalid_argument("Canonical linear-color UI styles require UIStyle.Version 2");
     UIStyleDefinition d;
     d.Name = n["Name"].as<std::string>();
     auto variants = n["Variants"];
@@ -331,7 +331,7 @@ std::string WriteUIStyleText(const UIStyleDefinition &d)
     YAML::Emitter o;
     o.SetFloatPrecision(9);
     o << YAML::BeginMap << YAML::Key << "UIStyle" << YAML::Value << YAML::BeginMap << YAML::Key
-      << "Version" << YAML::Value << 1 << YAML::Key << "Name" << YAML::Value << d.Name << YAML::Key
+      << "Version" << YAML::Value << 2 << YAML::Key << "Name" << YAML::Value << d.Name << YAML::Key
       << "Variants" << YAML::Value << YAML::BeginSeq;
     for (auto &v : d.Variants)
     {

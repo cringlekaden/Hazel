@@ -155,15 +155,15 @@ void FontFamilyPanel::Render(bool editable) {
             if(ImGui::Button("Update preview"))UpdatePreview();
             if(m_PreviewFont)ImGui::TextWrapped("%s",m_AtlasCoverage.c_str());
             if(m_PreviewFont)try {
-                if(!m_PreviewTarget){FramebufferSpecification spec;spec.Width=640;spec.Height=96;spec.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};m_PreviewTarget=Framebuffer::Create(spec);}
+                if(!m_PreviewTarget){FramebufferSpecification spec;spec.Width=640;spec.Height=96;spec.Attachments={FramebufferTextureFormat::RGBA16F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};m_PreviewTarget=Framebuffer::Create(spec);spec.Attachments={FramebufferTextureFormat::RGBA8};m_PreviewOutput=Framebuffer::Create(spec);}
                 struct Binding{Ref<Framebuffer> Target;RasterState State;~Binding(){Target->Unbind();RenderCommand::SetRasterState(State);}} binding{m_PreviewTarget,RenderCommand::GetRasterState()};
                 m_PreviewTarget->Bind();auto raster=binding.State;raster.DepthTest=false;raster.ClipEnabled=false;raster.Viewport={0,0,640,96};RenderCommand::SetRasterState(raster);
-                RenderCommand::SetClearColor({.08f,.08f,.08f,1});RenderCommand::Clear();m_PreviewTarget->ClearAttachment(1,-1);
+                RenderCommand::SetClearColor(ColorSpace::FromSRGB({.08f,.08f,.08f,1}));RenderCommand::Clear();m_PreviewTarget->ClearAttachment(1,-1);
                 Camera camera(glm::ortho(0.f,640.f,0.f,96.f));Renderer2D::BeginOrderedScene(camera,glm::mat4(1));
                 struct Submit{~Submit(){Renderer2D::EndScene();}} submit;
                 Renderer2D::DrawString(m_AcceptedPreview,m_PreviewFont,glm::translate(glm::mat4(1),{8,38,0})*glm::scale(glm::mat4(1),{28,28,1}),{{1,1,1,1},0,0},0);
             }catch(const std::exception& error){m_Error=error.what();}
-            if(m_PreviewTarget && m_PreviewFont){auto width=std::min(640.f,ImGui::GetContentRegionAvail().x);ImGui::Image(ImTextureID(uint64_t(m_PreviewTarget->GetColorAttachmentRendererID())),{width,96*width/640},{0,1},{1,0});ImGui::TextWrapped("Actual preview: %s (last accepted Update)",m_PreviewFont->GetPath().filename().generic_u8string().c_str());}
+            if(m_PreviewTarget && m_PreviewFont){m_PreviewTarget->EncodeOutput(m_PreviewOutput);auto width=std::min(640.f,ImGui::GetContentRegionAvail().x);ImGui::Image(ImTextureID(uint64_t(m_PreviewOutput->GetColorAttachmentRendererID())),{width,96*width/640},{0,1},{1,0});ImGui::TextWrapped("Actual preview: %s (last accepted Update)",m_PreviewFont->GetPath().filename().generic_u8string().c_str());}
             ImGui::TreePop();
         }
     }else m_Focused=false;

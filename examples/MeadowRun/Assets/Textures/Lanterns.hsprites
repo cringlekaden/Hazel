@@ -3,6 +3,7 @@ SpriteSheet:
   Texture: Textures/Lanterns.tga
   TextureSize: [192, 128]
   Sampling:
+    Encoding: SRGB
     MinFilter: Nearest
     MagFilter: Nearest
     WrapS: ClampToEdge

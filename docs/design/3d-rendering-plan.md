@@ -1038,3 +1038,14 @@ toolchains, measured bake quality/time and half-float range, quantified IBL
 approximation error, and real older-GPU throughput. The stages above give the
 smallest experiments and acceptance criteria that resolve them. No new library,
 3D render or performance result is claimed by this read-only audit.
+
+## Stage 1 implementation status
+
+Implementation is isolated on `feature/3d-foundations` from the audited merged
+master. The approved design above remains the roadmap. Stage 1 adds native
+new-scene defaults/factory, scene-owned display-referred background, private
+Planar/Orbit navigation, canonical linear RGB and a single final output encoding.
+Only the working 2D starter is exposed. Scene-referred/PBR/IBL, GLB and other later
+stages remain unimplemented. Qualification evidence and any remaining limitations
+are recorded separately in the stage-1 implementation record; proposals above
+must not be read as implemented product capabilities.

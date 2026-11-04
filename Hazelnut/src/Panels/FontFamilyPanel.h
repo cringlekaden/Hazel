@@ -41,6 +41,6 @@ private:
     int m_Style=0;
     std::string m_AcceptedPreview,m_AtlasCoverage;
     Ref<Font> m_PreviewFont;
-    Ref<Framebuffer> m_PreviewTarget;
+    Ref<Framebuffer> m_PreviewTarget, m_PreviewOutput;
 };
 }

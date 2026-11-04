@@ -6,6 +6,7 @@
 #include "UI/PropertyUI.h"
 #include <imgui.h>
 #include <sstream>
+#include "ScenePresentationCommand.h"
 namespace Hazel {
     const std::string &AuthoringPanel::RenderingRestartReason() const {
         m_RenderingRestart.clear();
@@ -54,12 +55,44 @@ namespace Hazel {
             return m_Editor.ActionFailed(e.what());
         }
     }
+    bool AuthoringPanel::SaveNewSceneDefaults() {
+        if(!Require(EditorAction::EditAsset))return false;
+        try {
+            const auto canonical=SceneDefaults::Read(SceneDefaults::Encode(m_SceneDefaultsDraft));
+            auto project=Project::GetActive();auto candidate=CreateRef<Project>();candidate->GetConfig()=project->GetConfig();candidate->GetConfig().SceneDefaults=canonical;
+            auto file=m_Editor.m_ProjectFile;file.Save(ProjectSerializer(candidate).SerializeText(),Resources::Get().UserData/"recovery");
+            project->GetConfig().SceneDefaults=canonical;m_Editor.m_ProjectFile=std::move(file);m_Editor.m_ProjectLoad.Saved();
+            Notify("New-scene defaults saved. Existing scenes and workspaces retain their authored values.");return true;
+        }catch(const std::exception& error){return m_Editor.ActionFailed(error.what());}
+    }
+    void AuthoringPanel::SceneSettings() {
+        if(!m_ShowSceneSettings || !m_Editor.m_EditorScene)return;
+        ImGui::SetNextWindowSize({540,340},ImGuiCond_FirstUseEver);
+        ImGui::Begin("Scene Settings",&m_ShowSceneSettings);
+        auto& scene=*m_Editor.m_EditorScene;
+        if(m_PresentationScene!=scene.GetIdentity()){m_PresentationScene=scene.GetIdentity();m_ScenePresentationDraft=scene.Presentation();}
+        PropertyUI::ReadOnly("presentation-mode","Requested / effective","DisplayReferred → DisplayReferred");
+        PropertyUI::ReadOnly("presentation-source","Source","Authored scene; applies on Apply / Save");
+        ImGui::TextWrapped("Scene-owned linear composition. Perspective and orthographic cameras are supported. Scene-referred lighting is not implemented.");
+        PropertyUI::Color("scene-background","Background",&m_ScenePresentationDraft.Background.x,{},false);
+        const auto can=Availability(EditorAction::EditScene);ImGui::BeginDisabled(!can);
+        if(ImGui::Button("Apply scene settings")) {
+            PrepareSave();m_ActiveDocument=EditorDocument::Scene;
+            if(!m_SceneHistory.Execute(scene,CreateScope<ScenePresentationCommand>(scene,m_ScenePresentationDraft)))m_Editor.ActionFailed(m_SceneHistory.TakeDiagnostic());
+        }
+        ImGui::EndDisabled();ImGui::SameLine();
+        if(ImGui::Button("Revert form"))m_ScenePresentationDraft=scene.Presentation();
+        ImGui::TextWrapped("Picker displays sRGB; scene stores linear RGB. Apply participates in Undo/Redo; Save writes the scene.");
+        ImGui::End();
+    }
     void AuthoringPanel::ProjectRendering() {
-        if (!ImGui::CollapsingHeader("Runtime rendering", ImGuiTreeNodeFlags_DefaultOpen))
+        if (!ImGui::CollapsingHeader("Runtime performance / advanced renderer requests", ImGuiTreeNodeFlags_DefaultOpen))
             return;
         ImGui::PushID("runtime-rendering");
         ImGui::TextWrapped("Portable requests for Play/Simulate and Nutella. GPU policies apply at "
                            "launch; no live renderer recreation.");
+        PropertyUI::ReadOnly("request-source","Request source",Project::GetActive()->GetConfig().Rendering?"Authored project .hproj":"Built-in runtime defaults");
+        PropertyUI::ReadOnly("effective-source","Effective source","Launch policy + detected context; batching/shaders require restart");
         const auto saved = Project::GetActive()->GetRendererRequests();
         const bool dirty = saved.VSync != m_RenderingDraft.VSync ||
                            saved.TextureSlots != m_RenderingDraft.TextureSlots ||

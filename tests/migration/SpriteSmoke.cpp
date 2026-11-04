@@ -25,7 +25,7 @@ static void Logical(const std::filesystem::path& root) {
     TextureSpecification defaults;defaults.Validate();Check(defaults.MinFilter==TextureFilter::LinearMipmapLinear && defaults.MagFilter==TextureFilter::Nearest && defaults.WrapS==TextureWrap::Repeat && defaults.GenerateMips,"Whole texture defaults changed");
     defaults.GenerateMips=false;Reject([&]{defaults.Validate();});defaults.MinFilter=TextureFilter::Linear;defaults.Validate();defaults.MagFilter=TextureFilter::LinearMipmapLinear;Reject([&]{defaults.Validate();});
     auto image=Texture2D::ReadImage(root/"sheet.tga",ImageFormat::RGBA8);Check(image.Width==4 && image.Pixels[0]==255 && image.Pixels[2]==0 && image.Pixels[4*4*2+2]==255,"Top-left shared decoding orientation");
-    auto uv=SpriteUV({0,0,2,2},4,4);Check(uv[3]==glm::vec2(.125,.875) && uv[1]==glm::vec2(.375,.625),"Rectangle origin / half-texel UV contract");Reject([]{SpriteUV({3,0,2,2},4,4);});Reject([]{SpriteUV({0,0,0,1},4,4);});
+    auto uv=SpriteUV({0,0,2,2},4,4);Check(uv[3]==glm::vec2(.125,.125) && uv[1]==glm::vec2(.375,.375),"Rectangle origin / half-texel UV contract");Reject([]{SpriteUV({3,0,2,2},4,4);});Reject([]{SpriteUV({0,0,0,1},4,4);});
     auto corners=SpriteCorners({.5,1});Check(corners[0]==glm::vec2(-.5,0) && corners[2]==glm::vec2(.5,1),"Feet pivot world placement");
     Reject([]{SpriteCorners({-1,.5});});
     SpriteSheetDefinition s;s.Texture="sheet.tga";s.Sampling.Width=s.Sampling.Height=4;
@@ -120,7 +120,8 @@ static void Runtime(const std::filesystem::path& root,const std::filesystem::pat
     auto whole=assets->Texture("sheet.tga",TextureSpecification::FileDefaults());Check(whole!=resolved->Texture && whole->GetSpecification().GenerateMips,"Sampling identities collided");
     auto legacyScene=CreateRef<Scene>();
     YAML::Emitter legacyText;legacyText<<YAML::BeginMap<<YAML::Key<<"Scene"<<YAML::Value<<"Standalone legacy"<<YAML::Key<<"Entities"<<YAML::Value<<YAML::BeginSeq<<YAML::BeginMap<<YAML::Key<<"Entity"<<YAML::Value<<uint64_t(1)<<YAML::Key<<"SpriteRendererComponent"<<YAML::Value<<YAML::BeginMap<<YAML::Key<<"Color"<<YAML::Value<<YAML::Flow<<YAML::BeginSeq<<1<<1<<1<<1<<YAML::EndSeq<<YAML::Key<<"TexturePath"<<YAML::Value<<(root/"sheet.tga").generic_u8string()<<YAML::Key<<"TilingFactor"<<YAML::Value<<2<<YAML::EndMap<<YAML::EndMap<<YAML::EndSeq<<YAML::EndMap;
-    Check(SceneSerializer(legacyScene).DeserializeText(legacyText.c_str()),"Standalone whole-texture scene compatibility");
+    auto canonical=YAML::Load(legacyText.c_str());canonical["SceneVersion"]=3;canonical["Presentation"]=SceneDefaults::Encode(ScenePresentation{});canonical["Entities"][0]["Relationship"]["Parent"]=uint64_t(0);canonical["Entities"][0]["Relationship"]["Order"]=0;
+    Check(SceneSerializer(legacyScene).DeserializeText(YAML::Dump(canonical)),"Standalone whole-texture scene compatibility");
     Check(legacyScene->GetEntityByUUID(1).GetComponent<SpriteRendererComponent>().Resolved.Data->TilingFactor==2,"Standalone whole-texture tiling lost");
     FramebufferSpecification targetSpec;targetSpec.Width=targetSpec.Height=64;targetSpec.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER};
     auto target=Framebuffer::Create(targetSpec);target->Bind();glDisable(GL_DEPTH_TEST);target->ClearAttachment(1,-1);

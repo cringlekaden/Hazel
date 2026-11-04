@@ -1,5 +1,5 @@
 Scene: CliffDawn
-SceneVersion: 2
+SceneVersion: 3
 Entities:
 - Entity: 1
   TagComponent:
@@ -83,9 +83,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color: &id001
-    - 0.3
-    - 0.4
-    - 0.45
+    - 0.0732389559
+    - 0.132868322
+    - 0.170644936
     - 1
     Source:
       Type: Region
@@ -34330,9 +34330,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color: &id002
-    - 0.65
-    - 0.77
-    - 0.83
+    - 0.380056336
+    - 0.55422176
+    - 0.655930683
     - 1
     Source:
       Type: Region
@@ -34734,9 +34734,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.35
-    - 0.48
-    - 0.43
+    - 0.10048151
+    - 0.195994179
+    - 0.154872486
     - 1
     Source:
       Type: Region
@@ -34763,9 +34763,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.35
-    - 0.48
-    - 0.43
+    - 0.10048151
+    - 0.195994179
+    - 0.154872486
     - 1
     Source:
       Type: Region
@@ -34792,9 +34792,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.35
-    - 0.48
-    - 0.43
+    - 0.10048151
+    - 0.195994179
+    - 0.154872486
     - 1
     Source:
       Type: Region
@@ -34821,9 +34821,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.35
-    - 0.48
-    - 0.43
+    - 0.10048151
+    - 0.195994179
+    - 0.154872486
     - 1
     Source:
       Type: Region
@@ -34850,9 +34850,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.35
-    - 0.48
-    - 0.43
+    - 0.10048151
+    - 0.195994179
+    - 0.154872486
     - 1
     Source:
       Type: Region
@@ -34879,9 +34879,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color: &id003
-    - 0.91
-    - 0.94
-    - 0.91
+    - 0.807345909
+    - 0.868899387
+    - 0.807345909
     - 1
     Source:
       Type: Region
@@ -34909,8 +34909,8 @@ Entities:
   SpriteRendererComponent:
     Color:
     - 1
-    - 0.82
-    - 0.5
+    - 0.638283215
+    - 0.21404114
     - 1
     Source:
       Type: Region
@@ -35120,8 +35120,8 @@ Entities:
     TextString: THE BREAKWATER · THE CLIFF CISTERN
     Color:
     - 1
-    - 0.82
-    - 0.5
+    - 0.638283215
+    - 0.21404114
     - 1
     Kerning: 0
     LineSpacing: 0.15
@@ -35152,8 +35152,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -35161,7 +35161,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -35218,8 +35218,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -35227,7 +35227,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -35255,9 +35255,9 @@ Entities:
 
       Orrin is waiting at the landing.'
     Color:
-    - 0.75
-    - 0.83
-    - 0.85
+    - 0.522521554
+    - 0.655930683
+    - 0.692071057
     - 1
     Kerning: 0
     LineSpacing: 0.15
@@ -35288,8 +35288,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -35297,7 +35297,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -35323,9 +35323,9 @@ Entities:
   TextComponent:
     TextString: ''
     Color:
-    - 0.72
-    - 0.8
-    - 0.84
+    - 0.476999785
+    - 0.603827339
+    - 0.673859541
     - 1
     Kerning: 0
     LineSpacing: 0.15
@@ -35356,8 +35356,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -35365,7 +35365,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -35405,9 +35405,9 @@ Entities:
     Anchor: [0, 0]
   SpriteRendererComponent:
     Color: &id004
-    - 0.53
-    - 0.62
-    - 0.7
+    - 0.242866814
+    - 0.34239164
+    - 0.447988412
     - 0.96
     Source: &id005
       Type: Region
@@ -35463,8 +35463,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -35472,7 +35472,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -35527,8 +35527,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -35536,7 +35536,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -35627,8 +35627,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -35636,7 +35636,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -35691,8 +35691,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -35700,7 +35700,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -35791,8 +35791,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -35800,7 +35800,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -35855,8 +35855,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -35864,7 +35864,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -35890,9 +35890,9 @@ Entities:
   TextComponent:
     TextString: 'WASD or arrows: move    E: use    Esc: pause'
     Color:
-    - 0.67
-    - 0.75
-    - 0.79
+    - 0.406448301
+    - 0.522521554
+    - 0.587016351
     - 1
     Kerning: 0
     LineSpacing: 0.15
@@ -35923,8 +35923,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -35932,7 +35932,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -36236,9 +36236,9 @@ Entities:
     ClipChildren: true
   SpriteRendererComponent:
     Color:
-    - 0.035
-    - 0.055
-    - 0.075
+    - 0.00270897833
+    - 0.00440084975
+    - 0.00657140362
     - 0.98
     Source:
       Type: None
@@ -36304,9 +36304,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -36324,8 +36324,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -36333,7 +36333,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -36399,9 +36399,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -36414,9 +36414,9 @@ Entities:
     MaxLines: 0
   SpriteRendererComponent:
     Color:
-    - 0.13
-    - 0.23
-    - 0.28
+    - 0.0153252033
+    - 0.0432336359
+    - 0.0637237953
     - 1
     Source:
       Type: None
@@ -36468,8 +36468,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -36477,7 +36477,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -36674,9 +36674,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.0599999987
-    - 0.0900000036
-    - 0.140000001
+    - 0.00489630995
+    - 0.00854038262
+    - 0.0173891026
     - 1
     Source:
       Type: None
@@ -36748,9 +36748,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.0599999987
-    - 0.0900000036
-    - 0.140000001
+    - 0.00489630995
+    - 0.00854038262
+    - 0.0173891026
     - 1
     Source:
       Type: None
@@ -36822,9 +36822,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.0599999987
-    - 0.0900000036
-    - 0.140000001
+    - 0.00489630995
+    - 0.00854038262
+    - 0.0173891026
     - 1
     Source:
       Type: None
@@ -36896,9 +36896,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.119999997
-    - 0.189999998
-    - 0.270000011
+    - 0.0134117483
+    - 0.0300741036
+    - 0.0592535259
     - 1
     Source:
       Type: None
@@ -37018,8 +37018,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -37027,7 +37027,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -37052,9 +37052,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.119999997
-    - 0.189999998
-    - 0.270000011
+    - 0.0134117483
+    - 0.0300741036
+    - 0.0592535259
     - 1
     Source:
       Type: None
@@ -37174,8 +37174,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -37183,7 +37183,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -37208,9 +37208,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.119999997
-    - 0.189999998
-    - 0.270000011
+    - 0.0134117483
+    - 0.0300741036
+    - 0.0592535259
     - 1
     Source:
       Type: None
@@ -37330,8 +37330,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -37339,7 +37339,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -37468,9 +37468,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -37488,8 +37488,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -37497,7 +37497,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -37522,9 +37522,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.119999997
-    - 0.189999998
-    - 0.270000011
+    - 0.0134117483
+    - 0.0300741036
+    - 0.0592535259
     - 1
     Source:
       Type: None
@@ -37641,8 +37641,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -37650,7 +37650,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -37716,9 +37716,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -37736,8 +37736,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -37745,7 +37745,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -37770,9 +37770,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.0700000003
-    - 0.100000001
-    - 0.150000006
+    - 0.00598105961
+    - 0.0100228257
+    - 0.0196066499
     - 1
     Source:
       Type: None
@@ -37880,8 +37880,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -37889,7 +37889,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -37914,9 +37914,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.219999999
-    - 0.270000011
-    - 0.330000013
+    - 0.0396819091
+    - 0.0592535259
+    - 0.0889815328
     - 1
     Source:
       Type: None
@@ -37988,9 +37988,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.300000012
-    - 0.649999976
-    - 0.800000012
+    - 0.0732389618
+    - 0.380056305
+    - 0.603827359
     - 1
     Source:
       Type: None
@@ -38062,9 +38062,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.949999988
-    - 0.949999988
-    - 0.850000024
+    - 0.890005381
+    - 0.890005381
+    - 0.692071101
     - 1
     Source:
       Type: None
@@ -38240,9 +38240,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -38260,8 +38260,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -38269,7 +38269,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -38398,9 +38398,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.119999997
-    - 0.189999998
-    - 0.270000011
+    - 0.0134117483
+    - 0.0300741036
+    - 0.0592535259
     - 1
     Source:
       Type: None
@@ -38517,8 +38517,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -38526,7 +38526,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -38551,9 +38551,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.119999997
-    - 0.189999998
-    - 0.270000011
+    - 0.0134117483
+    - 0.0300741036
+    - 0.0592535259
     - 1
     Source:
       Type: None
@@ -38670,8 +38670,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -38679,7 +38679,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -38704,9 +38704,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.119999997
-    - 0.189999998
-    - 0.270000011
+    - 0.0134117483
+    - 0.0300741036
+    - 0.0592535259
     - 1
     Source:
       Type: None
@@ -38823,8 +38823,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -38832,7 +38832,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -38935,9 +38935,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.119999997
-    - 0.189999998
-    - 0.270000011
+    - 0.0134117483
+    - 0.0300741036
+    - 0.0592535259
     - 1
     Source:
       Type: None
@@ -39054,8 +39054,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -39063,7 +39063,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -39088,9 +39088,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.0450000018
-    - 0.0649999976
-    - 0.100000001
+    - 0.00350101616
+    - 0.00542286842
+    - 0.0100228257
     - 1
     Source:
       Type: None
@@ -39243,8 +39243,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -39252,7 +39252,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -39376,9 +39376,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.200000003
-    - 0.25
-    - 0.300000012
+    - 0.0331047675
+    - 0.0508760882
+    - 0.0732389618
     - 1
     Source:
       Type: None
@@ -39450,9 +39450,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.699999988
-    - 0.800000012
-    - 0.850000024
+    - 0.447988395
+    - 0.603827359
+    - 0.692071101
     - 1
     Source:
       Type: None
@@ -39524,9 +39524,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.119999997
-    - 0.189999998
-    - 0.270000011
+    - 0.0134117483
+    - 0.0300741036
+    - 0.0592535259
     - 1
     Source:
       Type: None
@@ -39643,8 +39643,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -39652,7 +39652,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -39677,9 +39677,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.119999997
-    - 0.189999998
-    - 0.270000011
+    - 0.0134117483
+    - 0.0300741036
+    - 0.0592535259
     - 1
     Source:
       Type: None
@@ -39796,8 +39796,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -39805,7 +39805,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -39830,9 +39830,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.119999997
-    - 0.189999998
-    - 0.270000011
+    - 0.0134117483
+    - 0.0300741036
+    - 0.0592535259
     - 1
     Source:
       Type: None
@@ -39949,8 +39949,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -39958,7 +39958,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -40024,9 +40024,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -40044,8 +40044,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -40053,7 +40053,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -40119,9 +40119,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -40134,9 +40134,9 @@ Entities:
     MaxLines: 0
   SpriteRendererComponent:
     Color:
-    - 0.13
-    - 0.23
-    - 0.28
+    - 0.0153252033
+    - 0.0432336359
+    - 0.0637237953
     - 1
     Source:
       Type: None
@@ -40188,8 +40188,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -40197,7 +40197,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -40263,9 +40263,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -40283,8 +40283,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -40292,7 +40292,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -40395,9 +40395,9 @@ Entities:
     ClipChildren: true
   SpriteRendererComponent:
     Color:
-    - 0.035
-    - 0.055
-    - 0.075
+    - 0.00270897833
+    - 0.00440084975
+    - 0.00657140362
     - 0.98
     Source:
       Type: None
@@ -40463,9 +40463,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -40483,8 +40483,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -40492,7 +40492,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -40558,9 +40558,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -40578,8 +40578,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -40587,7 +40587,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -40653,9 +40653,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -40668,9 +40668,9 @@ Entities:
     MaxLines: 0
   SpriteRendererComponent:
     Color:
-    - 0.13
-    - 0.23
-    - 0.28
+    - 0.0153252033
+    - 0.0432336359
+    - 0.0637237953
     - 1
     Source:
       Type: None
@@ -40722,8 +40722,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -40731,7 +40731,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -40797,9 +40797,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -40812,9 +40812,9 @@ Entities:
     MaxLines: 0
   SpriteRendererComponent:
     Color:
-    - 0.13
-    - 0.23
-    - 0.28
+    - 0.0153252033
+    - 0.0432336359
+    - 0.0637237953
     - 1
     Source:
       Type: None
@@ -40866,8 +40866,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -40875,7 +40875,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -40941,9 +40941,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -40956,9 +40956,9 @@ Entities:
     MaxLines: 0
   SpriteRendererComponent:
     Color:
-    - 0.13
-    - 0.23
-    - 0.28
+    - 0.0153252033
+    - 0.0432336359
+    - 0.0637237953
     - 1
     Source:
       Type: None
@@ -41010,8 +41010,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -41019,7 +41019,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -41085,9 +41085,9 @@ Entities:
     FontFamily: ''
     FontStyle: 0
     Color:
-    - 0.9
-    - 0.94
-    - 0.96
+    - 0.787412289
+    - 0.868899387
+    - 0.9114075
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -41100,9 +41100,9 @@ Entities:
     MaxLines: 0
   SpriteRendererComponent:
     Color:
-    - 0.13
-    - 0.23
-    - 0.28
+    - 0.0153252033
+    - 0.0432336359
+    - 0.0637237953
     - 1
     Source:
       Type: None
@@ -41154,8 +41154,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -41163,7 +41163,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -41220,9 +41220,9 @@ Entities:
     ClipChildren: true
   SpriteRendererComponent:
     Color:
-    - 0.01
-    - 0.02
-    - 0.03
+    - 0.000773993808
+    - 0.00154798762
+    - 0.00232198142
     - 0.72
     Source:
       Type: None
@@ -41279,9 +41279,11 @@ Entities:
     ClipChildren: true
   SpriteRendererComponent:
     Color:
-    - 0.01
-    - 0.02
-    - 0.03
+    - 0.000773993808
+    - 0.00154798762
+    - 0.00232198142
     - 0.72
     Source:
       Type: None
+
+Presentation: {Mode: DisplayReferred, Background: [0.010022826, 0.010022826, 0.010022826, 1]}

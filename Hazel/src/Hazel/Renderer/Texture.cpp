@@ -28,10 +28,13 @@ TextureWrap ParseTextureWrap(const std::string& text) {
     for(unsigned i=0;i<3;++i) if(text==Wraps[i]) return static_cast<TextureWrap>(i);
     throw std::invalid_argument("Unknown texture wrap: " + text);
 }
+TextureSpecification TextureSpecification::ImGuiFile() {auto s=FileDefaults();s.Encoding=TextureEncoding::Linear;return s;}
 TextureSpecification TextureSpecification::FileDefaults() {
-    TextureSpecification result; result.Width=result.Height=0; result.Format=ImageFormat::None; return result;
+    TextureSpecification result; result.Width=result.Height=0; result.Format=ImageFormat::None; result.Encoding=TextureEncoding::SRGB; return result;
 }
 void TextureSpecification::Validate(bool file) const {
+    if(Encoding!=TextureEncoding::Linear && Encoding!=TextureEncoding::SRGB)throw std::invalid_argument("Unknown texture encoding");
+    if(Encoding==TextureEncoding::SRGB && (Format==ImageFormat::R8 || Format==ImageFormat::RGBA32F))throw std::invalid_argument("sRGB requires RGB8/RGBA8 color pixels; data and float pixels are linear");
     TextureFilterName(MinFilter); TextureFilterName(MagFilter); TextureWrapName(WrapS); TextureWrapName(WrapT);
     if(MagFilter!=TextureFilter::Nearest && MagFilter!=TextureFilter::Linear) throw std::invalid_argument("Magnification cannot use mipmap filters");
     if(!GenerateMips && static_cast<unsigned>(MinFilter)>=2) throw std::invalid_argument("Mipmap minification requires GenerateMips");
@@ -41,12 +44,14 @@ void TextureSpecification::Validate(bool file) const {
     if(file && Format==ImageFormat::RGBA32F) throw std::invalid_argument("RGBA32F requires explicit generated float data, not an 8-bit file");
 }
 TextureImage Texture2D::ReadImage(const std::filesystem::path& path, ImageFormat format) {
-    TextureSpecification spec=TextureSpecification::FileDefaults(); spec.Format=format; spec.Validate(true);
+    TextureSpecification spec=TextureSpecification::FileDefaults(); spec.Format=format; spec.Encoding=TextureEncoding::Linear; spec.Validate(true);
     ScopedBuffer encoded(FileSystem::ReadFileBinary(path));
     if(!encoded || encoded.Size()>static_cast<uint64_t>(std::numeric_limits<int>::max())) throw std::runtime_error("Cannot read texture: "+path.generic_u8string());
     const int requested=format==ImageFormat::R8?1:format==ImageFormat::RGB8?3:format==ImageFormat::RGBA8?4:0;
     std::lock_guard<std::mutex> lock(DecodeMutex);
     stbi_set_flip_vertically_on_load(0); // All shared file decoding has top-left rows.
+    if(stbi_is_hdr_from_memory(encoded.Data(),static_cast<int>(encoded.Size())))
+        throw std::runtime_error("HDR radiance is unsupported by the ordinary 8-bit texture path; use display-referred color/data images at this checkpoint");
     int width=0,height=0,channels=0;
     if(!stbi_info_from_memory(encoded.Data(),static_cast<int>(encoded.Size()),&width,&height,&channels) || width<=0 || height<=0)
         throw std::runtime_error("Cannot inspect texture: "+path.generic_u8string());

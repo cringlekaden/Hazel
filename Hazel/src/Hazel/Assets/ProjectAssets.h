@@ -8,7 +8,7 @@
 namespace Hazel {
 struct ResolvedSprite {
     Ref<Texture2D> Texture;
-    std::array<glm::vec2,4> UV{{{0,0},{1,0},{1,1},{0,1}}};
+    std::array<glm::vec2,4> UV{{{0,1},{1,1},{1,0},{0,0}}};
     std::array<glm::vec2,4> Corners=SpriteCorners({.5f,.5f});
     float TilingFactor=1;
     glm::vec2 SourceSize{}; // authored region pixels, independent of half-texel sample UVs

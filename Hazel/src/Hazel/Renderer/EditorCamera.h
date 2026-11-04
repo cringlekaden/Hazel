@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Camera.h"
+#include "Hazel/Scene/SceneDefaults.h"
 #include "Hazel/Core/Timestep.h"
 #include "Hazel/Events/Event.h"
 #include "Hazel/Events/MouseEvent.h"
@@ -17,6 +18,11 @@ namespace Hazel {
 		EditorCamera(float fov, float aspectRatio, float nearClip, float farClip);
 
 		void OnUpdate(Timestep ts);
+        EditorNavigation Navigation() const { return m_Navigation; }
+        void SetNavigation(EditorNavigation mode);
+        void RestorePlanar(glm::vec2 focus,float size);
+        glm::vec2 PlanarFocus() const { return m_PlanarFocus; }
+        float PlanarSize() const { return m_PlanarSize; }
 		void OnEvent(Event& e);
 
 		inline float GetDistance() const { return m_Distance; }
@@ -53,7 +59,10 @@ namespace Hazel {
 		float RotationSpeed() const;
 		float ZoomSpeed() const;
 	private:
-		float m_FOV = 45.0f, m_AspectRatio = 1.778f, m_NearClip = 0.1f, m_FarClip = 1000.0f;
+		EditorNavigation m_Navigation = EditorNavigation::Orbit;
+        glm::vec2 m_PlanarFocus{0};
+        float m_PlanarSize=10;
+        float m_FOV = 45.0f, m_AspectRatio = 1.778f, m_NearClip = 0.1f, m_FarClip = 1000.0f;
 
 		glm::mat4 m_ViewMatrix = glm::mat4(1.0f);
 		glm::vec3 m_Position = { 0.0f, 0.0f, 0.0f };

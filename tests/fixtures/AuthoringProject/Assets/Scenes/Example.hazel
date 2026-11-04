@@ -1,3 +1,4 @@
+SceneVersion: 3
 Scene: SeparatorFixture
 Entities:
   - Entity: 1
@@ -10,3 +11,5 @@ Entities:
       Color: [1, 1, 1, 1]
       TexturePath: 'Textures\Checkerboard.png'
       TilingFactor: 1
+
+Presentation: {Mode: DisplayReferred, Background: [0.010022826, 0.010022826, 0.010022826, 1]}

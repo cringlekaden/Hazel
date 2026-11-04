@@ -5,3 +5,7 @@ Project:
   StartScene: Scenes/MainMenu.hazel
   AssetDirectory: Assets
   ScriptModulePath: Scripts/Binaries/Skybound.dll
+  NewSceneDefaults:
+    Projection: Orthographic
+    Navigation: Planar
+    Presentation: {Mode: DisplayReferred, Background: [0.010022826, 0.010022826, 0.010022826, 1]}

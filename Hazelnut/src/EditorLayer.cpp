@@ -40,17 +40,18 @@ namespace Hazel {
 		HZ_PROFILE_FUNCTION();
 
 
-		m_IconPlay = Texture2D::Create(Resources::Resolve("Icons/PlayButton.png").generic_u8string());
-		m_IconPause = Texture2D::Create(Resources::Resolve("Icons/PauseButton.png").generic_u8string());
-		m_IconSimulate = Texture2D::Create(Resources::Resolve("Icons/SimulateButton.png").generic_u8string());
-		m_IconStep = Texture2D::Create(Resources::Resolve("Icons/StepButton.png").generic_u8string());
-		m_IconStop = Texture2D::Create(Resources::Resolve("Icons/StopButton.png").generic_u8string());
+		m_IconPlay = Texture2D::Create(Resources::Resolve("Icons/PlayButton.png").generic_u8string(),TextureSpecification::ImGuiFile());
+		m_IconPause = Texture2D::Create(Resources::Resolve("Icons/PauseButton.png").generic_u8string(),TextureSpecification::ImGuiFile());
+		m_IconSimulate = Texture2D::Create(Resources::Resolve("Icons/SimulateButton.png").generic_u8string(),TextureSpecification::ImGuiFile());
+		m_IconStep = Texture2D::Create(Resources::Resolve("Icons/StepButton.png").generic_u8string(),TextureSpecification::ImGuiFile());
+		m_IconStop = Texture2D::Create(Resources::Resolve("Icons/StopButton.png").generic_u8string(),TextureSpecification::ImGuiFile());
 
 		FramebufferSpecification fbSpec;
-		fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
+		fbSpec.Attachments = { FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
 		fbSpec.Width = 1280;
 		fbSpec.Height = 720;
 		m_Framebuffer = Framebuffer::Create(fbSpec);
+        fbSpec.Attachments={FramebufferTextureFormat::RGBA8};m_ViewportOutput=Framebuffer::Create(fbSpec);
 
 		m_EditorScene = CreateRef<Scene>();
 		m_ActiveScene = m_EditorScene;
@@ -83,6 +84,7 @@ namespace Hazel {
         if (m_SceneState != SceneState::Edit) OnSceneStop();
         ClearSceneObservers();
         m_ActiveScene.reset(); m_EditorScene.reset(); m_Font.reset();
+        m_Framebuffer.reset();m_ViewportOutput.reset();
 	}
 
 	void EditorLayer::OnUpdate(Timestep ts)
@@ -94,12 +96,14 @@ namespace Hazel {
         if (m_SceneState != SceneState::Play)
             m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 
+        m_EditorCamera.SetViewportSize(m_ViewportSize.x,m_ViewportSize.y);
         const auto pixels=ViewportFramebufferExtent();
 		// Camera/UI layout remain logical; only the render target uses pixels.
 		if (FramebufferSpecification spec = m_Framebuffer->GetSpecification();
             pixels.x>0 && pixels.y>0 && (spec.Width!=pixels.x || spec.Height!=pixels.y))
 		{
 			m_Framebuffer->Resize(pixels.x,pixels.y);
+            m_ViewportOutput->Resize(pixels.x,pixels.y);
 			m_CameraController.OnResize(m_ViewportSize.x, m_ViewportSize.y);
 			m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
 		}
@@ -110,7 +114,7 @@ namespace Hazel {
         auto extent=m_Framebuffer->GetSpecification();
         m_ActiveScene->SetUIFramebufferSize({extent.Width,extent.Height});
         if(m_SceneState==SceneState::Play)m_RuntimeSession.ResizeFramebuffer(extent.Width,extent.Height);
-		RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
+		RenderCommand::SetClearColor(m_ActiveScene->Presentation().Background);
 		RenderCommand::Clear();
 
 		// Clear our entity ID attachment to -1
@@ -169,6 +173,7 @@ namespace Hazel {
 		OnOverlayRender();
 
 		m_Framebuffer->Unbind();
+        m_Framebuffer->EncodeOutput(m_ViewportOutput);
 	}
 
 	void EditorLayer::OnImGuiRender()
@@ -282,6 +287,11 @@ namespace Hazel {
             ? (!m_ViewportFocused || RuntimeUIWidgetBlocksInput())
             : (!m_ViewportFocused || (!m_ViewportHovered&&!runtimePointer) || io.WantTextInput || ImGui::IsAnyItemActive()));
 
+        if(m_SceneState!=SceneState::Play) {
+            int navigation=int(m_EditorCamera.Navigation());ImGui::SetNextItemWidth(110);
+            if(ImGui::Combo("##Navigation",&navigation,"Planar\0Orbit\0"))m_EditorCamera.SetNavigation(EditorNavigation(navigation));
+            ImGui::SameLine();ImGui::Checkbox("Grid",&m_ShowGrid);ImGui::SameLine();
+        }
         ImGui::SetNextItemWidth(180);
         ImGui::Combo("##UI preview aspect",&m_UIPreview,"Window\0Small 1024 x 600\0Widescreen 16:9\0Classic 4:3\0");
         PropertyUI::Help("Preview and Play use the same screen-space layout. Letterboxing is outside the runtime viewport.");
@@ -295,7 +305,7 @@ namespace Hazel {
         auto imageOrigin=ImGui::GetCursorScreenPos();imageOrigin.x+=(available.x-m_ViewportSize.x)*.5f;imageOrigin.y+=(available.y-m_ViewportSize.y)*.5f;ImGui::SetCursorScreenPos(imageOrigin);
         m_ViewportBounds[0]={imageOrigin.x,imageOrigin.y};m_ViewportBounds[1]=m_ViewportBounds[0]+m_ViewportSize;
 
-		uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
+		uint64_t textureID = m_ViewportOutput->GetColorAttachmentRendererID();
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
         m_ViewportHovered=ImGui::IsItemHovered();
         UI_RectEditing();
@@ -313,11 +323,14 @@ namespace Hazel {
 			ImGui::EndDragDropTarget();
 		}
 
+        m_GizmoEdit.Poll(*m_EditorScene,&m_Authoring->SceneHistory(),
+            m_SceneHierarchyPanel.GetSelectedEntity()?uint64_t(m_SceneHierarchyPanel.GetSelectedEntity().GetUUID()):0,
+            m_SceneState==SceneState::Edit,Application::Get().GetWindow().IsFocused(),ImGui::IsKeyPressed(ImGuiKey_Escape,false),ImGuizmo::IsUsing()?1:0);
 		// Gizmos
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
 		if (selectedEntity && !selectedEntity.HasComponent<UIRectComponent>() && !selectedEntity.HasComponent<UICanvasComponent>() && m_GizmoType != -1 && m_Authoring->Availability(EditorAction::EditScene))
 		{
-			ImGuizmo::SetOrthographic(false);
+			ImGuizmo::SetOrthographic(m_EditorCamera.Navigation()==EditorNavigation::Planar);
 			ImGuizmo::SetDrawlist();
 
 			ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y, m_ViewportBounds[1].x - m_ViewportBounds[0].x, m_ViewportBounds[1].y - m_ViewportBounds[0].y);
@@ -328,6 +341,8 @@ namespace Hazel {
 
 			// Entity transform
 			glm::mat4 transform = m_ActiveScene->GetWorldTransform(selectedEntity);
+            const auto beforeGizmo=transform;
+            const auto beforeValues=UIEditValues::Capture(selectedEntity);
             bool representable=true;
             try {Scene::ExactTRS(transform);}catch(const std::exception& e){representable=false;m_GizmoError=e.what();}
             if(representable) {
@@ -347,7 +362,19 @@ namespace Hazel {
 				nullptr, snap ? snapValues : nullptr);
 
             if(ImGuizmo::IsUsing() && m_Authoring->Availability(EditorAction::EditScene)) {
-                try {m_ActiveScene->SetWorldTransform(selectedEntity,transform);m_GizmoError.clear();}
+                try {
+                    if(m_EditorCamera.Navigation()==EditorNavigation::Planar) {
+                        auto next=Scene::ExactTRS(transform);const auto previous=Scene::ExactTRS(beforeGizmo);
+                        next.Translation.z=previous.Translation.z;next.Rotation.x=previous.Rotation.x;next.Rotation.y=previous.Rotation.y;next.Scale.z=previous.Scale.z;
+                        transform=next.GetTransform();
+                    }
+                    auto proposed=beforeValues;auto parent=m_ActiveScene->GetRelationship(selectedEntity).Parent;
+                    auto local=uint64_t(parent)?glm::inverse(m_ActiveScene->GetWorldTransform(m_ActiveScene->GetEntityByUUID(parent)))*transform:transform;
+                    proposed.Transform=Scene::ExactTRS(local);
+                    PropertyUI::EditActivity activity;activity.Changed=true;activity.Item=1;
+                    if(!m_GizmoEdit.Edit(*m_ActiveScene,&m_Authoring->SceneHistory(),selectedEntity.GetUUID(),"Transform gizmo",beforeValues,proposed,activity,1))throw std::runtime_error(m_GizmoEdit.Error());
+                    m_GizmoError.clear();
+                }
                 catch(const std::exception& error) {
                     if(m_GizmoError!=error.what())ActionFailed(error.what());
                     m_GizmoError=error.what();
@@ -445,6 +472,14 @@ namespace Hazel {
 			Renderer2D::BeginScene(m_EditorCamera);
 		}
 
+        const auto overlayState=RenderCommand::GetRasterState();RenderCommand::SetPickingMask(glm::bvec4(false));
+        if(m_ShowGrid && m_SceneState!=SceneState::Play) {
+            for(int i=-20;i<=20;++i) {
+                const glm::vec4 color=i==0?glm::vec4(.12f,.12f,.12f,1):glm::vec4(.035f,.035f,.035f,1);
+                Renderer2D::DrawLine({float(i),-20,-.01f},{float(i),20,-.01f},color);
+                Renderer2D::DrawLine({-20,float(i),-.01f},{20,float(i),-.01f},color);
+            }
+        }
 		if (m_ShowPhysicsColliders)
 		{
 			// Box Colliders
@@ -493,6 +528,7 @@ namespace Hazel {
 		}
 
 		Renderer2D::EndScene();
+        RenderCommand::SetRasterState(overlayState);
 	}
 
 	bool EditorLayer::ActionFailed(const std::string& message)
@@ -627,12 +663,15 @@ namespace Hazel {
 		m_ActionError.clear(); return true;
 	}
 
-	void EditorLayer::NewScene()
+	void EditorLayer::NewScene(std::optional<NewSceneDefaults> overrideDefaults)
 	{
         if(m_Authoring && !m_Authoring->Require(EditorAction::ReplaceScene))return;
 		if (m_SceneState != SceneState::Edit) OnSceneStop();
 		ClearSceneObservers();
-		m_EditorScene = CreateRef<Scene>(); m_ActiveScene = m_EditorScene;
+		m_EditorScene = CreateRef<Scene>();
+        const auto defaults=overrideDefaults.value_or(Project::GetActive()?Project::GetActive()->GetConfig().SceneDefaults:NewSceneDefaults{});
+        if(!SceneSerializer(m_EditorScene).DeserializeText(SceneDefaults::CreateDocument("Untitled",defaults)))throw std::runtime_error("Native new-scene factory validation failed");
+        m_ActiveScene = m_EditorScene;
         if(Project::GetActive())m_EditorScene->SetAssets(Project::GetActive()->GetAssets());
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 		m_EditorScenePath.clear(); m_SceneFile={};m_SceneLoad={};m_ActionError.clear();

@@ -307,10 +307,11 @@ void UIStylePanel::Render(bool editable)
                     FramebufferSpecification spec;
                     spec.Width = 640;
                     spec.Height = 300;
-                    spec.Attachments = {FramebufferTextureFormat::RGBA8,
+                    spec.Attachments = {FramebufferTextureFormat::RGBA16F,
                                         FramebufferTextureFormat::RED_INTEGER,
                                         FramebufferTextureFormat::Depth};
                     m_Target = Framebuffer::Create(spec);
+            spec.Attachments={FramebufferTextureFormat::RGBA8};m_Output=Framebuffer::Create(spec);
                 }
                 {
                     struct Binding
@@ -324,14 +325,15 @@ void UIStylePanel::Render(bool editable)
                         }
                     } binding{m_Target, RenderCommand::GetRasterState()};
                     m_Target->Bind();
-                    RenderCommand::SetClearColor({.04f, .04f, .04f, 1});
+                    RenderCommand::SetClearColor(ColorSpace::FromSRGB({.04f,.04f,.04f,1}));
                     RenderCommand::Clear();
                     m_Target->ClearAttachment(1, -1);
                     m_Camera.SetViewportSize(640, 300);
                     m_Preview->OnUpdateEditor(0, m_Camera);
                 }
+                m_Target->EncodeOutput(m_Output);
                 float width = std::min(640.f, ImGui::GetContentRegionAvail().x);
-                ImGui::Image(ImTextureID(uint64_t(m_Target->GetColorAttachmentRendererID())),
+                ImGui::Image(ImTextureID(uint64_t(m_Output->GetColorAttachmentRendererID())),
                              {width, width * 300 / 640}, {0, 1}, {1, 0});
                 ImGui::TextDisabled("Last accepted draft preview; cue swatches: focus / selected / "
                                     "editing / caret / selection");

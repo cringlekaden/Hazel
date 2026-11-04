@@ -14,6 +14,7 @@ namespace Hazel {
 
 		// Color
 		RGBA8,
+        RGBA16F,
 		RED_INTEGER,
 
 		// Depth/stencil
@@ -60,6 +61,9 @@ namespace Hazel {
 		virtual void Unbind() = 0;
 
 		virtual void Resize(uint32_t width, uint32_t height) = 0;
+        // Display-linear attachment 0 -> encoded RGBA8 output (or window).
+        // Does not touch entity IDs. ImGui samples the encoded output unchanged.
+        virtual void EncodeOutput(const Ref<Framebuffer>& destination = {}) = 0;
 		virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) = 0;
 
 		virtual void ClearAttachment(uint32_t attachmentIndex, int value) = 0;

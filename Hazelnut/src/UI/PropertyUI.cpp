@@ -1,3 +1,4 @@
+#include "Hazel/Renderer/Color.h"
 #include "PropertyUI.h"
 #include <algorithm>
 #include <cstdio>
@@ -245,10 +246,14 @@ EditResult SliderVector2(const char *key, const char *label, float *value, float
     Row row(key, label, options);
     return row.Result(ImGui::SliderFloat2("##value", value, minimum, maximum));
 }
-EditResult Color(const char *key, const char *label, float *value, Options options)
+EditResult Color(const char *key, const char *label, float *value, Options options, bool alpha)
 {
     Row row(key, label, options);
-    return row.Result(ImGui::ColorEdit4("##value", value));
+    glm::vec4 linear{value[0],value[1],value[2],value[3]};
+    auto display=Hazel::ColorSpace::ToSRGB(linear);
+    const bool changed=ImGui::ColorEdit4("##value", &display.x,alpha?0:ImGuiColorEditFlags_NoAlpha);
+    if(changed){linear=Hazel::ColorSpace::FromSRGB(display);for(int i=0;i<4;++i)value[i]=linear[i];}
+    return row.Result(changed);
 }
 void ReadOnly(const char *key, const char *label, const char *value, Options options)
 {

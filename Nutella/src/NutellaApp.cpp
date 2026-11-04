@@ -5,6 +5,7 @@
 #include <Hazel/Scene/RuntimeSession.h>
 #include <Hazel/Scripting/ScriptEngine.h>
 #include <iostream>
+#include <Hazel/Renderer/Framebuffer.h>
 
 namespace Hazel {
     class RuntimeLayer : public Layer {
@@ -21,20 +22,28 @@ namespace Hazel {
             HZ_CORE_INFO("Nutella ready: {}", m_Project->GetConfig().Name);
         }
         void OnEvent(Event& e) override {m_Session.SubmitUIEvent(e,Input::GetMousePosition(),Application::Get().GetWindow().IsFocused());}
-        void OnDetach() override { m_Session.Stop(); Project::SetActive(nullptr); }
+        void OnDetach() override { m_Session.Stop(); m_Composite.reset(); Project::SetActive(nullptr); }
         void OnUpdate(Timestep timestep) override {
             auto& window = Application::Get().GetWindow();
             m_Session.Resize(window.GetWidth(), window.GetHeight());
             m_Session.SetInput(Input::GetMousePosition(), window.IsFocused());
             const auto framebuffer=window.GetFramebufferSize();m_Session.ResizeFramebuffer(framebuffer.first,framebuffer.second);RenderCommand::SetViewport(0,0,framebuffer.first,framebuffer.second);
-            RenderCommand::SetClearColor({0.08f, 0.09f, 0.12f, 1.0f});
+            if(!framebuffer.first || !framebuffer.second)return;
+            if(!m_Composite) {
+                FramebufferSpecification spec;spec.Width=framebuffer.first;spec.Height=framebuffer.second;
+                spec.Attachments={FramebufferTextureFormat::RGBA16F,FramebufferTextureFormat::Depth};m_Composite=Framebuffer::Create(spec);
+            } else if(m_Composite->GetSpecification().Width!=framebuffer.first || m_Composite->GetSpecification().Height!=framebuffer.second)m_Composite->Resize(framebuffer.first,framebuffer.second);
+            m_Composite->Bind();
+            RenderCommand::SetClearColor(m_Session.GetScene()->Presentation().Background);
             RenderCommand::Clear();
             m_Session.Update(timestep);
+            m_Composite->Unbind();m_Composite->EncodeOutput();
             if(m_Session.ConsumeExitRequest())Application::Get().Close();
         }
     private:
         Ref<Project> m_Project;
         RuntimeSession m_Session;
+        Ref<Framebuffer> m_Composite;
     };
     class Nutella : public Application {
     public:

@@ -443,6 +443,7 @@ private:
             GameUI::Action action;
             Check(scene->GetUISnapshot().Generation==generation&&SceneSerializer(scene,Project::GetAssetDirectory()).CaptureAuthoredState()==before&&!scene->ConsumeUIAction(0,action),"Debugger changed authoring/generation or dispatched actions");
         }
+        if(m_Frame==13)NativeFoundationSettingsUI();
         if(m_Frame!=13&&!(m_Frame==16&&std::getenv("HAZEL_EDITOR_CAPTURE")&&!std::getenv("HAZEL_CONSOLE_CAPTURE")))return;
         if(std::getenv("HAZEL_HIERARCHY_CAPTURE")) {
             m_Editor.m_ActionError.clear();ImGui::ClosePopupsOverWindow(nullptr,false);
@@ -1110,6 +1111,30 @@ private:
         Check(a.SaveRenderingRequests(previous),"Renderer fixture restoration failed");a.m_ProjectName=form;
         std::cout<<"PASS: production renderer-only save, unchanged content/general draft, conflict retention, shared pending/apply-time rejection, Play/Simulate interval and Stop restoration\n";
     }
+    void NativeFoundationSettingsUI() {
+        auto& e=m_Editor;auto& a=*e.m_Authoring;a.PrepareSave();
+        auto original=e.m_EditorScene;auto active=e.m_ActiveScene;auto selected=e.m_SceneHierarchyPanel.GetSelectedEntity();const auto selection=selected?uint64_t(selected.GetUUID()):0;
+        auto history=std::move(a.m_SceneHistory);auto file=e.m_SceneFile;auto report=e.m_SceneLoad;auto path=e.m_EditorScenePath;const auto document=a.m_ActiveDocument;
+        auto scene=CreateRef<Scene>();scene->SetAssets(Project::GetActive()->GetAssets());
+        Check(SceneSerializer(scene).DeserializeText(SceneDefaults::CreateDocument("Settings UI",{})),"Settings UI native factory");
+        e.m_EditorScene=e.m_ActiveScene=scene;e.m_SceneHierarchyPanel.SetContext(scene);a.m_SceneHistory=DocumentHistory{};a.m_SceneHistory.Bind(scene->GetIdentity());a.m_SceneHistory.MarkSaved(SceneSerializer(scene).CaptureAuthoredState());a.m_ActiveDocument=EditorDocument::Scene;
+        e.m_SceneFile={};e.m_SceneLoad={};e.m_EditorScenePath=m_Directory/"native-scene-settings.hazel";
+        const auto before=scene->Presentation();a.m_ShowSceneSettings=true;a.m_PresentationScene=scene->GetIdentity();a.m_ScenePresentationDraft.Background={.21404114f,.03310477f,.07323896f,1};
+        ImGui::SetNextWindowPos({20,40},ImGuiCond_Always);ImGui::SetNextWindowSize({650,460},ImGuiCond_Always);ImGui::SetNextWindowCollapsed(false,ImGuiCond_Always);
+        ImGui::Begin("Scene Settings");const auto button=ImGui::GetID("Apply scene settings");ImGui::End();
+        auto& gui=*ImGui::GetCurrentContext();gui.NavActivateId=gui.NavActivateDownId=button;
+        a.SceneSettings();gui.NavActivateId=gui.NavActivateDownId=0;ImGui::ClearActiveID();
+        Check(scene->Presentation()==a.m_ScenePresentationDraft && a.m_SceneHistory.Operations()==1,"Actual Scene Settings Apply button did not author through history");
+        Check(a.UndoRedo(false)&&scene->Presentation()==before&&a.UndoRedo(true)&&scene->Presentation()==a.m_ScenePresentationDraft,"Scene settings Undo/Redo lost values");
+        Check(e.SaveScene(),"Actual scene settings Save failed");auto reopened=CreateRef<Scene>();Check(SceneSerializer(reopened).Deserialize(e.m_EditorScenePath.generic_u8string())&&reopened->Presentation()==scene->Presentation(),"Scene settings Save/reopen lost authored values");
+        for(int i=0;i<2;++i){Check(e.OnScenePlay(true)&&e.m_ActiveScene->Presentation()==scene->Presentation(),"Scene settings Play copy lost presentation");e.OnSceneStop();}
+        const auto authored=SceneSerializer(scene).CaptureAuthoredState();auto& camera=e.m_EditorCamera;
+        camera.RestoreOrbit({2,3,0},.2f,.3f,12);camera.RestorePlanar({-2,1},7);camera.SetNavigation(EditorNavigation::Planar);const auto planar=camera.GetViewProjection();camera.SetNavigation(EditorNavigation::Orbit);camera.SetNavigation(EditorNavigation::Planar);
+        Check(camera.PlanarFocus()==glm::vec2(-2,1)&&camera.PlanarSize()==7&&camera.GetFocalPoint()==glm::vec3(2,3,0)&&camera.GetViewProjection()==planar&&SceneSerializer(scene).CaptureAuthoredState()==authored,"Navigation switching changed poses or authored scene");
+        e.m_EditorScene=original;e.m_ActiveScene=active;e.m_SceneFile=std::move(file);e.m_SceneLoad=std::move(report);e.m_EditorScenePath=path;a.m_SceneHistory=std::move(history);a.m_ActiveDocument=document;e.m_SceneHierarchyPanel.SetContext(original);e.m_SceneHierarchyPanel.SetSelectedEntity(original->GetEntityByUUID(selection));
+        a.m_ShowSceneSettings=false;a.m_PresentationScene=0;e.m_ActionError.clear();
+        std::cout<<"PASS: actual native Scene Settings Apply, document Undo/Redo, Save/reopen, Play/Stop and independent planar/orbit poses\n";
+    }
     void NativeCreationChecks() {
         auto& e=m_Editor;auto& a=*e.m_Authoring;const auto previousProject=e.m_ProjectPath;
         const auto destination=m_Directory/std::filesystem::u8path("native project é space");
@@ -1118,6 +1143,12 @@ private:
         Check(!a.m_SDK,"Missing SDK fixture reported ready");
         Check(a.CreateProject("Content first é","ContentFirst",destination),"Production native creation required Python/SDK or failed Open");
         Check(Project::GetActive()->GetConfig().ScriptModulePath=="Scripts/Binaries/ContentFirst.dll"&&!ScriptEngine::IsInitialized(),"Fresh project borrowed classes or pretended scripts compiled");
+        const auto firstScene=e.m_EditorScene;const auto initial=SceneSerializer(firstScene).CaptureAuthoredState();const auto firstPath=e.m_EditorScenePath;
+        const auto workspace=EditorState::Encode(a.m_Workspace);
+        a.m_SceneDefaultsDraft=Project::GetActive()->GetConfig().SceneDefaults;a.m_SceneDefaultsDraft.Perspective=true;a.m_SceneDefaultsDraft.Navigation=EditorNavigation::Orbit;a.m_SceneDefaultsDraft.Presentation.Background={.2f,.1f,.05f,1};
+        Check(a.SaveNewSceneDefaults() && e.m_EditorScene==firstScene && SceneSerializer(firstScene).CaptureAuthoredState()==initial && EditorState::Encode(a.m_Workspace)==workspace,"Default settings save replaced an existing scene/workspace");
+        e.NewScene();Check(e.m_EditorScene->Presentation()==a.m_SceneDefaultsDraft.Presentation && e.m_EditorScene->GetPrimaryCameraEntity().GetComponent<CameraComponent>().Camera.GetProjectionType()==SceneCamera::ProjectionType::Perspective,"Production File New Scene did not use project defaults");
+        Check(e.OpenScene(firstPath)&&SceneSerializer(e.m_EditorScene).CaptureAuthoredState()==initial,"New defaults rewrote existing saved scene");
         auto entity=e.m_EditorScene->CreateEntity("Content authoring without tools");entity.AddComponent<SpriteRendererComponent>();
         Check(e.SaveScene()&&e.OnScenePlay(true),"Fresh content could not save/Play without tools");e.OnSceneStop();
         const auto retained=e.m_EditorScene;const auto file=e.m_EditorScenePath;
@@ -1202,7 +1233,7 @@ private:
         Check(a.m_SceneHistory.Identity()==previous->GetIdentity()&&a.m_SceneHistory.Operations()==historyCount,"Failed recovery replacement lost history");
         a.m_Documents.Resolve(GuardChoice::Cancel,a.Documents(),{});
         const auto missing=m_Directory/"recoverable-scene.hazel";
-        const std::string source=u8"Scene: Recovery é\nEntities:\n  - Entity: 42\n    TagComponent: {Tag: Unresolved}\n    SpriteRendererComponent:\n      Color: [1, 1, 1, 1]\n      TexturePath: Textures/no file é.png\n      TilingFactor: 1\n";
+        const std::string source=u8"SceneVersion: 3\nPresentation: {Mode: DisplayReferred, Background: [0, 0, 0, 1]}\nScene: Recovery é\nEntities:\n  - Entity: 42\n    Relationship: {Parent: 0, Order: 0}\n    TagComponent: {Tag: Unresolved}\n    SpriteRendererComponent:\n      Color: [1, 1, 1, 1]\n      TexturePath: Textures/no file é.png\n      TilingFactor: 1\n";
         FileSystem::WriteFileAtomically(missing,[&](auto& out){out<<source;});
         a.Guard(OperationIntent::OpenScene,[&]{return e.OpenScene(missing);});
         Check(a.m_Documents.Pending(),"Recovery Open skipped dirty guard");
@@ -1309,7 +1340,7 @@ private:
             Check(!e.OpenScene(path),"Invalid scene reported success"); preserved();
         }
         const auto missingTexture=projectPath.parent_path()/"missing-texture.hazel";
-        std::ofstream(missingTexture)<<"Scene: Missing texture\nEntities:\n  - Entity: 901\n    SpriteRendererComponent:\n      Color: [1, 1, 1, 1]\n      TexturePath: Textures/missing.png\n      TilingFactor: 1\n";
+        std::ofstream(missingTexture)<<"SceneVersion: 3\nPresentation: {Mode: DisplayReferred, Background: [0, 0, 0, 1]}\nScene: Missing texture\nEntities:\n  - Entity: 901\n    Relationship: {Parent: 0, Order: 0}\n    SpriteRendererComponent:\n      Color: [1, 1, 1, 1]\n      TexturePath: Textures/missing.png\n      TilingFactor: 1\n";
         // Automatic editable recovery is exercised through the guarded Open path in RecoveryChecks.
         auto candidate=CreateRef<Project>(); candidate->GetConfig()=project->GetConfig();
         for(bool corrupt:{false,true}) {

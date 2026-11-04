@@ -67,13 +67,15 @@ class AuthoringPanel
     void ApplyRuntimeVSync();
     void RestoreEditorVSync();
 
-  private:
+private:
     void Preferences();
     void RecoveryControls();
     void SaveConflictControls();
     void WorkspaceControls();
     void CaptureWorkspace();
     void ProjectSettings();
+    void SceneSettings();
+    bool SaveNewSceneDefaults();
     void ProjectRendering();
     void EditorRendering();
     void CopyDeviceReport();
@@ -141,12 +143,16 @@ class AuthoringPanel
     bool m_ExitAfterJob = false;
     std::string m_PreferenceRecovery, m_PrefabReference,
         m_ProjectName, m_ScriptProject, m_SaveNamespace;
+    NewSceneDefaults m_SceneDefaultsDraft;
+    ScenePresentation m_ScenePresentationDraft;
+    uint64_t m_PresentationScene=0;
+    bool m_ShowSceneSettings=false, m_IdentifierEdited=false;
     std::string m_Name = "My Game", m_Identifier = "MyGame", m_Destination, m_Startup, m_AssetDirectory,
                 m_Module;
     std::string m_ScriptName = "NewScript", m_Namespace = "Game",
                 m_PrefabName = "Prefabs/NewPrefab.hprefab", m_ExportPath, m_PackageName = "Game";
     Ref<Scene> m_PrefabScene;
-    Ref<Framebuffer> m_PrefabPreview;
+    Ref<Framebuffer> m_PrefabPreview, m_PrefabOutput;
     EditorCamera m_PrefabCamera{45,1,.1f,10000};
     bool m_PrefabFit=true;
     FileDocument m_PrefabFile;

@@ -1,6 +1,6 @@
 Scene: BeamEnd
-SceneVersion: 2
-PrefabVersion: 2
+SceneVersion: 3
+PrefabVersion: 3
 PrefabRoot: 1
 Entities:
 - Entity: 1
@@ -24,11 +24,13 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.91
-    - 0.94
-    - 0.91
+    - 0.807345909
+    - 0.868899387
+    - 0.807345909
     - 1
     Source:
       Type: Region
       Sheet: Art/tiny-battle.hsprites
       RegionID: a22ccf15d5e66c2c
+
+Presentation: {Mode: DisplayReferred, Background: [0.010022826, 0.010022826, 0.010022826, 1]}

@@ -109,6 +109,7 @@ namespace Hazel {
 
 		newScene->m_ViewportWidth = other->m_ViewportWidth;
         newScene->m_Name = other->m_Name;
+        newScene->m_Presentation = other->m_Presentation;
 		newScene->m_ViewportHeight = other->m_ViewportHeight;
 
 		auto& srcSceneRegistry = other->m_Registry;
@@ -142,6 +143,7 @@ namespace Hazel {
         auto copy = CreateRef<Scene>();
         copy->m_Assets = source->m_Assets;
         copy->m_Name = source->m_Name;
+        copy->m_Presentation = source->m_Presentation;
         copy->m_ViewportWidth = source->m_ViewportWidth;
         copy->m_ViewportHeight = source->m_ViewportHeight;
         if (source->m_Registry.size())
@@ -253,6 +255,7 @@ namespace Hazel {
         // state is retired; it never travels with an authored UUID restoration.
         ResetUI();
         using std::swap;
+        swap(m_Presentation, staged.m_Presentation);
         swap(m_Registry, staged.m_Registry);
         swap(m_EntityMap, staged.m_EntityMap);
         swap(m_Relationships, staged.m_Relationships);

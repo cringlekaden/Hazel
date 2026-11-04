@@ -1,5 +1,5 @@
 Scene: Level1
-SceneVersion: 2
+SceneVersion: 3
 Entities:
 - Entity: 10
   TagComponent:
@@ -49,9 +49,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.3
-    - 0.7
-    - 0.95
+    - 0.0732389559
+    - 0.447988412
+    - 0.890005407
     - 1
     TilingFactor: 1
     TexturePath: Textures/Tile.png
@@ -92,9 +92,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.8
-    - 0.55
-    - 0.3
+    - 0.603827339
+    - 0.263273408
+    - 0.0732389559
     - 1
     TilingFactor: 1
     TexturePath: Textures/Tile.png
@@ -133,9 +133,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.8
-    - 0.6
-    - 0.3
+    - 0.603827339
+    - 0.318546778
+    - 0.0732389559
     - 1
     TilingFactor: 1
     TexturePath: Textures/Tile.png
@@ -250,8 +250,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -259,7 +259,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -282,9 +282,9 @@ Entities:
   TextComponent:
     TextString: MENU
     Color:
-    - 0.96
-    - 0.9
-    - 0.78
+    - 0.9114075
+    - 0.787412289
+    - 0.570481595
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -318,8 +318,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -327,7 +327,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -350,9 +350,9 @@ Entities:
   TextComponent:
     TextString: A/D move   Space jump   Esc menu
     Color:
-    - 0.96
-    - 0.9
-    - 0.78
+    - 0.9114075
+    - 0.787412289
+    - 0.570481595
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -386,8 +386,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -395,7 +395,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -438,3 +438,5 @@ Entities:
       EventOwner: 17
   ScriptComponent:
     ClassName: SceneTransitions.ReturnOwner
+
+Presentation: {Mode: DisplayReferred, Background: [0.010022826, 0.010022826, 0.010022826, 1]}

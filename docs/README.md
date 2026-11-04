@@ -34,3 +34,6 @@ These guides describe the current checkout, including the runtime UI, tutorial a
 - [Contributing](../CONTRIBUTING.md): useful bug reports and scoped changes.
 
 [Historical records](history.md) retain dated designs, migration evidence and completed checkpoint reports. They describe their recorded revisions; use the guides above for current commands and behavior.
+
+- [Runtime color](color.md) — linear RGB, texture interpretation and final output.
+- [Rendering Reference](../examples/RenderingReference/README.md) — permanent Core_v1 unlit cases.

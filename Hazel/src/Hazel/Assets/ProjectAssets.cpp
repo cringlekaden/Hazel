@@ -18,7 +18,7 @@
 namespace Hazel {
 namespace {
 std::string TextureKey(const std::filesystem::path& path,const TextureSpecification& s) {
-    return path.generic_u8string()+"|"+std::to_string(s.Width)+"|"+std::to_string(s.Height)+"|"+std::to_string(static_cast<int>(s.Format))+"|"+TextureFilterName(s.MinFilter)+"|"+TextureFilterName(s.MagFilter)+"|"+TextureWrapName(s.WrapS)+"|"+TextureWrapName(s.WrapT)+(s.GenerateMips?"|mips":"|base");
+    return path.generic_u8string()+"|"+std::to_string(int(s.Encoding))+"|"+std::to_string(s.Width)+"|"+std::to_string(s.Height)+"|"+std::to_string(static_cast<int>(s.Format))+"|"+TextureFilterName(s.MinFilter)+"|"+TextureFilterName(s.MagFilter)+"|"+TextureWrapName(s.WrapS)+"|"+TextureWrapName(s.WrapT)+(s.GenerateMips?"|mips":"|base");
 }
 std::string ReferenceKey(const std::filesystem::path& path,SpriteID id) {return Project::NormalizeAssetPath(path).lexically_normal().generic_u8string()+"|"+SpriteIDText(id);}
 }

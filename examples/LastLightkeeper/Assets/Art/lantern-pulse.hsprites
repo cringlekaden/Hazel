@@ -3,6 +3,7 @@ SpriteSheet:
   Texture: Art/lantern-pulse.png
   TextureSize: [32, 16]
   Sampling:
+    Encoding: SRGB
     MinFilter: Nearest
     MagFilter: Nearest
     WrapS: ClampToEdge

@@ -19,8 +19,15 @@ struct UIImageValue
 };
 // Only authored values. Native SpriteSource resources are stripped on capture
 // and command construction; no font, GPU, registry or managed object is retained.
+struct CameraEditValue {
+    int Projection=1;float FOV=0,Near=0,Far=0,Size=0,OrthoNear=0,OrthoFar=0;
+    bool Primary=true,FixedAspect=false;
+};
 struct UIEditValues
 {
+    std::optional<TransformComponent> Transform;
+    std::optional<CircleRendererComponent> Circle;
+    std::optional<CameraEditValue> Camera;
     std::optional<UICanvasComponent> Canvas;
     std::optional<UIRectComponent> Rect;
     std::optional<UILayoutComponent> Flow;
@@ -45,7 +52,12 @@ struct UIEditValues
     bool Same(const UIEditValues &other) const;
     template <class T> void Set(const T &value)
     {
-        if constexpr (std::is_same_v<T, UICanvasComponent>)
+        if constexpr (std::is_same_v<T,TransformComponent>)Transform=value;
+        else if constexpr (std::is_same_v<T,CircleRendererComponent>)Circle=value;
+        else if constexpr (std::is_same_v<T,CameraComponent>) {
+            const auto& c=value.Camera;Camera=CameraEditValue{int(c.GetProjectionType()),c.GetPerspectiveVerticalFOV(),c.GetPerspectiveNearClip(),c.GetPerspectiveFarClip(),c.GetOrthographicSize(),c.GetOrthographicNearClip(),c.GetOrthographicFarClip(),value.Primary,value.FixedAspectRatio};
+        }
+        else if constexpr (std::is_same_v<T, UICanvasComponent>)
             Canvas = value;
         else if constexpr (std::is_same_v<T, UIRectComponent>)
             Rect = value;
@@ -105,7 +117,7 @@ class UIEditCommand final : public DocumentCommand
                  bool cancelling = false) const;
     uint64_t m_Document, m_Entity;
     std::vector<std::pair<uint64_t, uint64_t>> m_Guards;
-    std::array<uint64_t, 18> m_ComponentVersions{};
+    std::array<uint64_t, 21> m_ComponentVersions{};
     std::string m_Name;
     UIEditValues m_Before, m_After;
 };

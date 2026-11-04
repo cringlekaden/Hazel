@@ -14,7 +14,7 @@ from internal.testing.desktop import Desktop
 from internal.tests import software_driver
 
 # Discover descriptors; preserve the strict three-game probe's argument contract.
-PROJECTS={p.stem:p for p in sorted((hz.ROOT/'examples').rglob('*.hproj'))}
+PROJECTS={p.stem:p for p in sorted((hz.ROOT/'examples').rglob('*.hproj')) if p.parent.name!='RenderingReference'}
 GAMES=tuple(g for g in ('MeadowRun','Skybound','LastLightkeeper') if g in PROJECTS)+tuple(g for g in PROJECTS if g not in ('MeadowRun','Skybound','LastLightkeeper'))
 NATIVE_GAMES=GAMES[:2] # Retain the existing two-game strict native regression contract.
 # Includes all authored Lightkeeper locations and three capture aspect ratios.

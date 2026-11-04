@@ -66,6 +66,7 @@ namespace Hazel {
         ProjectWorkspace workspace;
         workspace.Scene = "Scenes/Last.hazel";
         workspace.Focus = {2, 3, 4};
+        workspace.Navigation=EditorNavigation::Planar;workspace.PlanarFocus={-2,4};workspace.PlanarSize=7;workspace.Gizmo=1;workspace.Grid=false;
         workspace.Entity = 42;
         workspace.Sheet = "Sprites/Lanterns.hsprites";
         workspace.Region = 7;
@@ -75,7 +76,7 @@ namespace Hazel {
         auto loaded = restored.LoadWorkspace(project);
         Check(restored.Session.LastProject == project.generic_u8string() &&
                   loaded.Scene == workspace.Scene && loaded.Entity == 42 &&
-                  loaded.Focus == workspace.Focus,
+                  loaded.Focus == workspace.Focus && loaded.Navigation==EditorNavigation::Planar && loaded.PlanarFocus==workspace.PlanarFocus && loaded.PlanarSize==7 && loaded.Gizmo==1 && !loaded.Grid,
               "Session/workspace DTO round trip failed");
         Check(FileDocument::Read(project) == "fixture",
               "Machine settings leaked into portable project");

@@ -6,6 +6,7 @@
 
 namespace Hazel {
 
+	class Shader;
 	class OpenGLFramebuffer : public Framebuffer
 	{
 	public:
@@ -17,7 +18,8 @@ namespace Hazel {
 		virtual void Bind() override;
 		virtual void Unbind() override;
 
-		virtual void Resize(uint32_t width, uint32_t height) override;
+		virtual void EncodeOutput(const Ref<Framebuffer>& destination = {}) override;
+        virtual void Resize(uint32_t width, uint32_t height) override;
 		virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) override;
 
 		virtual void ClearAttachment(uint32_t attachmentIndex, int value) override;
@@ -26,7 +28,9 @@ namespace Hazel {
 
 		virtual const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
 	private:
-		void Release();
+		Ref<Shader> m_OutputShader;
+        uint32_t m_OutputVAO = 0;
+        void Release();
         void DisableIntegerBlending();
         void RestoreBlending();
         std::vector<std::pair<uint32_t, bool>> m_PreviousBlending;

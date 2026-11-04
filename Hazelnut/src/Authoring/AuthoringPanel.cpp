@@ -316,6 +316,7 @@ void AuthoringPanel::BindProject()
     {
         const auto &config = Project::GetActive()->GetConfig();
         m_ProjectName = config.Name;
+        m_SceneDefaultsDraft=config.SceneDefaults;
         m_ScriptProject = config.ScriptProject;
         m_SaveNamespace = config.SaveNamespace;
         m_Startup = config.StartScene.generic_u8string();
@@ -327,6 +328,7 @@ void AuthoringPanel::BindProject()
     if(!m_MissingProject.empty()){m_PreviousWorkspace=m_MissingProject;m_MissingProject.clear();}
     m_WorkspaceProject=m_Editor.m_ProjectPath;
     m_Workspace=m_State->LoadWorkspace(m_WorkspaceProject);
+    if(!m_Workspace.HasNavigation)m_Workspace.Navigation=Project::GetActive()->GetConfig().SceneDefaults.Navigation;
     if(m_Workspace.Scene.empty() && !m_Editor.m_EditorScenePath.empty())SceneOpened();
     if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->Visible=(m_State->Session.Panels&4)!=0;
     RestoreWorkspace(false);
@@ -587,6 +589,7 @@ void AuthoringPanel::FileMenu()
                         bool(Availability(EditorAction::CreateProject))))
     {
         m_ShowNew = true;
+        if(m_Destination.empty()&&!m_Editor.m_ProjectPath.empty())m_Destination=(m_Editor.m_ProjectPath.parent_path().parent_path()/m_Identifier).generic_u8string();
     }
     if (ImGui::MenuItem("Open Project...", "Ctrl+O", false,
                         bool(Availability(EditorAction::ReplaceProject))))
@@ -653,6 +656,13 @@ void AuthoringPanel::FileMenu()
                   MarkSceneSaved();
                   return true;
               });
+    if(ImGui::BeginMenu("New Scene with projection",bool(Availability(EditorAction::ReplaceScene)))) {
+        for(bool perspective:{false,true})if(ImGui::MenuItem(perspective?"Perspective unlit":"Orthographic unlit")) {
+            auto defaults=Project::GetActive()?Project::GetActive()->GetConfig().SceneDefaults:NewSceneDefaults{};defaults.Perspective=perspective;
+            Guard(OperationIntent::NewScene,[this,defaults]{m_Editor.NewScene(defaults);return true;});
+        }
+        ImGui::EndMenu();
+    }
     if (ImGui::MenuItem("Open Scene...", nullptr, false, bool(Availability(EditorAction::ReplaceScene))))
         Guard(OperationIntent::OpenScene, [this] { return m_Editor.OpenScene(); });
     if (ImGui::MenuItem(
@@ -678,10 +688,14 @@ void AuthoringPanel::Menus()
     {
         if(ImGui::BeginMenu("Authoring readiness")){Readiness();ImGui::EndMenu();}
         bool project = bool(Project::GetActive());
+        if(ImGui::MenuItem("Scene Settings...",nullptr,false,bool(Availability(EditorAction::EditScene)))) {
+            m_ShowSceneSettings=true;m_PresentationScene=0;
+        }
         if (ImGui::MenuItem("Project Settings...", nullptr, false, project))
         {
             auto &config = Project::GetActive()->GetConfig();
             m_ProjectName = config.Name;
+        m_SceneDefaultsDraft=config.SceneDefaults;
             m_ScriptProject = config.ScriptProject;
         m_SaveNamespace = config.SaveNamespace;
             m_Startup = config.StartScene.generic_u8string();
@@ -1029,8 +1043,21 @@ void AuthoringPanel::ProjectSettings()
             ImGui::EndCombo();
         }
     }
+    if(ImGui::CollapsingHeader("New scene defaults",ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::TextWrapped("Seeds future scenes and fresh workspaces. Existing scenes, cameras and editor views keep their own values.");
+        int projection=m_SceneDefaultsDraft.Perspective?1:0;
+        if(PropertyUI::Combo("initial-projection","Camera projection",projection,"Orthographic\0Perspective (unlit)\0"))m_SceneDefaultsDraft.Perspective=projection==1;
+        int navigation=int(m_SceneDefaultsDraft.Navigation);
+        if(PropertyUI::Combo("initial-navigation","Editor navigation",navigation,"Planar\0Orbit\0"))m_SceneDefaultsDraft.Navigation=EditorNavigation(navigation);
+        PropertyUI::ReadOnly("initial-presentation","World presentation","Display-referred unlit");
+        PropertyUI::Color("initial-background","Background",&m_SceneDefaultsDraft.Presentation.Background.x,{},false);
+        ImGui::TextWrapped("Picker displays sRGB; stored linear RGB. New cameras use size 10 or 45 degrees, near .1/far 100 and z=10.");
+        ImGui::BeginDisabled(!Availability(EditorAction::EditAsset));
+        if(ImGui::Button("Save new-scene defaults"))SaveNewSceneDefaults();
+        ImGui::EndDisabled();
+    }
     ProjectRendering();
-    if(ImGui::CollapsingHeader("Runtime UI bindings")){
+    if(ImGui::CollapsingHeader("UI / input")){
         ImGui::TextWrapped("Project defaults for Play and Nutella. Player overrides use project-scoped user data. Ctrl/Alt/Super chords remain editor-owned.");
         m_UIBindings.Draw(bool(Availability(EditorAction::EditAsset)));
         if(ImGui::Button("Revert binding form")){m_UIBindings.Values=Project::GetActive()->GetUIBindings();m_UIBindings.CancelCapture();}
@@ -1047,6 +1074,7 @@ void AuthoringPanel::ProjectSettings()
     {
         auto config = Project::GetActive()->GetConfig();
         if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;
+        config.SceneDefaults=m_SceneDefaultsDraft;
         config.UIBindings=m_UIBindings.Values;
         config.Name = m_ProjectName;
         config.ScriptProject = m_ScriptProject;
@@ -1087,6 +1115,7 @@ void AuthoringPanel::ProjectSettings()
             if(!path.empty() && Require(EditorAction::SaveAsset))try {
                 auto candidate=CreateRef<Project>();auto& config=candidate->GetConfig();
                 config=Project::GetActive()->GetConfig();if(m_RenderingAuthored)config.Rendering=m_RenderingDraft;
+        config.SceneDefaults=m_SceneDefaultsDraft;
         config.UIBindings=m_UIBindings.Values;config.Name=m_ProjectName;config.ScriptProject=m_ScriptProject;config.SaveNamespace=m_SaveNamespace;
                 config.StartScene=Path(m_Startup);config.AssetDirectory=Path(m_AssetDirectory);config.ScriptModulePath=Path(m_Module);
                 const auto text=ProjectSerializer(candidate).SerializeText();
@@ -1108,32 +1137,26 @@ void AuthoringPanel::NewProject()
         ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize({570, 440}, ImGuiCond_FirstUseEver);
     ImGui::Begin("New Project", &m_ShowNew);
-    PropertyUI::Text("Display name", "Display name", m_Name);
-    PropertyUI::Text("Technical identifier", "Technical identifier", m_Identifier);
-    ImGui::TextWrapped("Letters, digits and underscore; start with a letter or "
-                       "underscore. Used for the descriptor, "
-                       "assembly and C# namespace.");
-    PropertyUI::Text("Destination project folder", "Destination project folder", m_Destination);
-    ImGui::PushID("dest");
-    if (ImGui::Button("Browse parent folder"))
-    {
-        auto dir = FileDialogs::SelectFolder();
-        if (!dir.empty())
-            m_Destination = (Path(dir) / m_Identifier).generic_u8string();
+    if(PropertyUI::Text("project-name","Name",m_Name) && !m_IdentifierEdited)m_Identifier=SceneDefaults::SuggestIdentifier(m_Name);
+    PropertyUI::Text("project-location","Location",m_Destination);
+    if(ImGui::Button("Browse parent folder")) {
+        const auto dir=FileDialogs::SelectFolder();if(!dir.empty())m_Destination=(Path(dir)/m_Identifier).generic_u8string();
     }
-    ImGui::PopID();
-    ImGui::TextWrapped("Creates %s.hproj, Assets/Scenes/Start.hazel (primary "
-                       "camera), Scripts/Source/Example.cs, canonical "
-                       "Premake build, Textures and Prefabs. Opens for editing "
-                       "without compiling scripts or locating Python/SDK tools.",
-                       m_Identifier.c_str());
-    ImGui::TextWrapped("Editing is ready immediately. Build Scripts later when you need managed behavior; script-free Play is available.");
-    bool valid = !m_Name.empty() && m_Name.size() <= 480 &&
-                 ScriptSource::ValidIdentifier(m_Identifier) && Path(m_Destination).is_absolute();
-    if (!valid)
-        ImGui::TextWrapped("Enter a valid name/identifier and a new folder beneath "
-                           "an existing parent. "
-                           "Existing destinations are never overwritten.");
+    PropertyUI::ReadOnly("starter","Starter preset","2D — sprite, world text and screen UI");
+    ImGui::TextWrapped("Orthographic camera, one-meter sprite and welcome text. Ready for editing and script-free Play. No Python or scripting SDK needed.");
+    if(ImGui::CollapsingHeader("Advanced identity")) {
+        if(PropertyUI::Text("identifier","Technical identifier",m_Identifier))m_IdentifierEdited=true;
+        if(ImGui::SmallButton("Use suggested identifier")){m_Identifier=SceneDefaults::SuggestIdentifier(m_Name);m_IdentifierEdited=false;}
+        ImGui::TextWrapped("Used for the descriptor, assembly and C# namespace.");
+    }
+    bool valid=true;
+    if(m_Name.empty()||m_Name.size()>480||m_Name.find_first_not_of(" \t\r\n")==std::string::npos){PropertyUI::Validation("Enter a name (up to 480 UTF-8 bytes).");valid=false;}
+    if(!ScriptSource::ValidIdentifier(m_Identifier)){PropertyUI::Validation("Advanced identifier: start with a letter or underscore; avoid reserved C# names.");valid=false;}
+    const auto destination=Path(m_Destination);
+    std::error_code destinationError;
+    if(!destination.is_absolute()||destination.filename().empty()||!std::filesystem::is_directory(destination.parent_path(),destinationError)||std::filesystem::exists(destination,destinationError)) {
+        PropertyUI::Validation("Choose a new project folder beneath an existing parent. Existing folders are preserved.");valid=false;
+    }
     const auto canCreate = Availability(EditorAction::CreateProject);
     ImGui::BeginDisabled(!valid || !canCreate);
     if (ImGui::Button("Create and Open"))
@@ -1526,6 +1549,7 @@ void AuthoringPanel::Render()
     SaveConflictControls();
     Preferences();
     ProjectSettings();
+    SceneSettings();
     NewProject();
     Scripts();
     Export();

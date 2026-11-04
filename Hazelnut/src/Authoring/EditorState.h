@@ -2,6 +2,7 @@
 #include "Hazel/Core/FileDocument.h"
 #include "Hazel/Core/WindowPlacement.h"
 #include <glm/glm.hpp>
+#include "Hazel/Scene/SceneDefaults.h"
 #include <map>
 #include <set>
 namespace Hazel {
@@ -27,6 +28,11 @@ namespace Hazel {
         int BrowserType = 0;
         float Thumbnail = 64, Pitch = 0, Yaw = 0, Distance = 10;
         glm::vec3 Focus{0};
+        EditorNavigation Navigation=EditorNavigation::Orbit;
+        glm::vec2 PlanarFocus{0};
+        float PlanarSize=10;
+        int Gizmo=-1;
+        bool Grid=true, HasNavigation=false;
         bool SheetVisible = false, PrefabVisible = false;
         std::map<std::string, bool> Sections;
     };

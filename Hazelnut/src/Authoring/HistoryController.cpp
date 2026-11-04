@@ -7,6 +7,7 @@ namespace Hazel
 void AuthoringPanel::CancelEdits()
 {
     m_Editor.m_UIEdit.Finish(true);
+    if(m_Editor.m_EditorScene)m_Editor.m_GizmoEdit.Finish(*m_Editor.m_EditorScene,&m_SceneHistory,true);
     m_Editor.m_SceneHierarchyPanel.FinishUIEdit();
     m_PrefabInspector.FinishUIEdit();
     if (m_Editor.m_EditorScene && m_SceneHistory.Active())
@@ -19,6 +20,7 @@ void AuthoringPanel::PrepareSave()
     // Save accepts completed Inspector values; a pointer gesture must be
     // released explicitly and is cancelled before a save/transition boundary.
     m_Editor.m_UIEdit.Finish(true);
+    if(m_Editor.m_EditorScene)m_Editor.m_GizmoEdit.Finish(*m_Editor.m_EditorScene,&m_SceneHistory,true);
     m_Editor.m_SceneHierarchyPanel.FinishUIEdit(false);
     m_PrefabInspector.FinishUIEdit(false);
     if (m_Editor.m_EditorScene && m_SceneHistory.Active())

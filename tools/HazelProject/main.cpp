@@ -7,6 +7,7 @@
 #include "Hazel/Assets/SpriteSheet.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include <chrono>
+#include "RenderingReference.h"
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -17,6 +18,7 @@ namespace {
 constexpr const char* Usage =
     "Usage: HazelProject COMMAND [arguments]\n"
     "  create --name NAME --identifier ID --destination FOLDER --templates FOLDER\n"
+    "  create-rendering-reference FOLDER TEMPLATES  (maintainer Core_v1 recipe)\n"
     "  validate PROJECT.hproj\n"
     "  slice-sheet ASSETS_ROOT SHEET IMAGE TILE_SIZE\n"
     "  add-clip ASSETS_ROOT SHEET NAME DURATION ORDINALS_CSV\n"
@@ -88,6 +90,11 @@ int main(int argc, char **argv) {
             Hazel::AddGridRegions(sheet,Hazel::GenerateGridPreview(sheet,grid));
             Hazel::SaveSpriteSheet(root,reference,sheet,Hazel::WriteMode::CreateNew);
             std::cout<<"Created native editable sheet: "<<reference.generic_u8string()<<" ("<<sheet.Regions.size()<<" regions)\n";return 0;
+        }
+        if(args.size()==4 && args[1]=="create-rendering-reference") {
+            Hazel::Log::Init();const auto templates=std::filesystem::u8path(args[3]);
+            Hazel::Resources::Configure(Hazel::Resources::Defaults("HazelProject",{templates.parent_path(),{}, {}}));
+            CreateRenderingReference(std::filesystem::u8path(args[2]),templates);return 0;
         }
         if (args.size() == 3 && args[1] == "validate") {
             Hazel::Log::Init();

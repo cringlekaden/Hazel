@@ -71,7 +71,7 @@ class UIStylePanel
     Ref<ProjectAssets> m_Assets;
     Scope<UIStyleDocument> m_Document;
     Ref<Scene> m_Preview;
-    Ref<Framebuffer> m_Target;
+    Ref<Framebuffer> m_Target, m_Output;
     EditorCamera m_Camera{30.f, 1.f, .1f, 1000.f};
     StyleWidgetState m_Widgets;
     bool m_Open = false, m_Focused = false, m_Create = false, m_ResumeCreate = false;

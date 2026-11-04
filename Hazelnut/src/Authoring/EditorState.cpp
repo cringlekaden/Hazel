@@ -68,6 +68,9 @@ namespace Hazel {
                 !std::isfinite(s.Yaw) || !std::isfinite(s.Distance) || s.Distance < .1f ||
                 s.Distance > 100000)
                 throw std::runtime_error("Invalid workspace controls/camera");
+            if(s.Gizmo < -1 || s.Gizmo > 3)throw std::runtime_error("Invalid workspace tool");
+            if(!std::isfinite(s.PlanarFocus.x)||!std::isfinite(s.PlanarFocus.y)||!std::isfinite(s.PlanarSize)||s.PlanarSize<.01f||s.PlanarSize>100000)
+                throw std::runtime_error("Invalid planar workspace pose");
             if (s.Sections.size() > 16)
                 throw std::runtime_error("Too many component sections");
             for (const auto &section : s.Sections)
@@ -219,13 +222,14 @@ namespace Hazel {
                     throw std::runtime_error("Empty workspace file");
                 return s;
             }
+            s.HasNavigation=true; // An existing orbit-only workspace retains its navigation.
             auto n = YAML::Load(text);
             Version(n);
             DocumentSchema::Keys(n, {"Version",       "Scene",     "BrowserFolder", "BrowserSearch",
                                      "BrowserType",   "Thumbnail", "Entity",        "Sheet",
                                      "Region",        "Clip",      "SheetVisible",  "Prefab",
                                      "PrefabVisible", "Sections",  "Focus",         "Pitch",
-                                     "Yaw",           "Distance",  "ExportFolder",  "ExportName"},
+                                     "Navigation", "PlanarFocus", "PlanarSize", "Gizmo", "Grid", "Yaw",           "Distance",  "ExportFolder",  "ExportName"},
                                  "Project workspace");
             Field(n, "Scene", s.Scene);
             Field(n, "BrowserFolder", s.BrowserFolder);
@@ -248,6 +252,12 @@ namespace Hazel {
                     s.Sections[key] = entry.second.as<bool>();
                 }
             }
+            if(n["Navigation"]) {
+                const auto mode=n["Navigation"].as<std::string>();if(mode!="Planar"&&mode!="Orbit")throw std::runtime_error("Unknown workspace navigation");
+                s.Navigation=mode=="Planar"?EditorNavigation::Planar:EditorNavigation::Orbit;s.HasNavigation=true;
+            }
+            if(n["PlanarFocus"]) {auto f=n["PlanarFocus"].as<std::vector<float>>();if(f.size()!=2)throw std::runtime_error("Invalid planar focus");s.PlanarFocus={f[0],f[1]};}
+            Field(n,"PlanarSize",s.PlanarSize);Field(n,"Gizmo",s.Gizmo);Field(n,"Grid",s.Grid);
             Field(n, "Pitch", s.Pitch);
             Field(n, "Yaw", s.Yaw);
             Field(n, "Distance", s.Distance);
@@ -306,6 +316,8 @@ namespace Hazel {
         for (const auto &section : s.Sections)
             n["Sections"][section.first] = section.second;
         n["Focus"] = std::vector<float>{s.Focus.x, s.Focus.y, s.Focus.z};
+        n["Navigation"]=s.Navigation==EditorNavigation::Planar?"Planar":"Orbit";
+        n["PlanarFocus"]=std::vector<float>{s.PlanarFocus.x,s.PlanarFocus.y};n["PlanarSize"]=s.PlanarSize;n["Gizmo"]=s.Gizmo;n["Grid"]=s.Grid;
         n["Pitch"] = s.Pitch;
         n["Yaw"] = s.Yaw;
         n["Distance"] = s.Distance;

@@ -271,13 +271,13 @@ namespace Hazel {
         bool Styled=false;
         UIStyleSelection Selection;
         uint32_t Overrides=0; // explicit presence for local component appearance groups
-        glm::vec4 Focus{1,.9f,.65f,1},Selected{1},Editing{.3f,1,1,1};
+        glm::vec4 Focus=ColorSpace::FromSRGB({1,.9f,.65f,1}),Selected{1},Editing=ColorSpace::FromSRGB({.3f,1,1,1});
     };
     struct UITextEntryComponent {
         std::string Placeholder;
         uint32_t MaxBytes=4096,MaxGraphemes=1024,MaxLines=64;
         bool Multiline=false,ReadOnly=false;
-        glm::vec4 CaretColor{1}, SelectionColor{.18f,.42f,.8f,.5f};
+        glm::vec4 CaretColor{1}, SelectionColor=ColorSpace::FromSRGB({.18f,.42f,.8f,.5f});
     };
     struct UITabsComponent { bool RememberFocus=true; }; // required RadioGroup is the single selection authority
     struct UITabComponent { uint64_t Page=0, InitialFocus=0; };

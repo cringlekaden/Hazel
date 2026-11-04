@@ -73,6 +73,9 @@ namespace Hazel {
             }
         }
         if (saved.Scene.empty() || ScenePath(saved.Scene) == m_Editor.m_EditorScenePath) {
+            m_Editor.m_EditorCamera.RestorePlanar(saved.PlanarFocus,saved.PlanarSize);
+            m_Editor.m_EditorCamera.SetNavigation(saved.Navigation);
+            m_Editor.m_GizmoType=saved.Gizmo;m_Editor.m_ShowGrid=saved.Grid;
             m_Editor.m_EditorCamera.RestoreOrbit(saved.Focus, saved.Pitch, saved.Yaw,
                                                  saved.Distance);
             m_Editor.m_SceneHierarchyPanel.SetSelectedEntity(
@@ -142,6 +145,9 @@ namespace Hazel {
         }
         if (sameScene) {
             const auto &camera = m_Editor.m_EditorCamera;
+            m_Workspace.Navigation=camera.Navigation();m_Workspace.HasNavigation=true;
+            m_Workspace.PlanarFocus=camera.PlanarFocus();m_Workspace.PlanarSize=camera.PlanarSize();
+            m_Workspace.Gizmo=m_Editor.m_GizmoType;m_Workspace.Grid=m_Editor.m_ShowGrid;
             m_Workspace.Focus = camera.GetFocalPoint();
             m_Workspace.Pitch = camera.GetPitch();
             m_Workspace.Yaw = camera.GetYaw();

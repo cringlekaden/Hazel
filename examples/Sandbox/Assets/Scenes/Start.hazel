@@ -1,4 +1,4 @@
-SceneVersion: 2
+SceneVersion: 3
 Scene: Start
 Entities:
   - Entity: 1
@@ -48,7 +48,7 @@ Entities:
       Rotation: [0, -0, 0]
       Scale: [0.999999881, 1, 1]
     CircleRendererComponent:
-      Color: [0.775800705, 0.31197682, 0.31197682, 1]
+      Color: [0.563620203, 0.079309793, 0.079309793, 1]
       Thickness: 1
       Fade: 0.00499999989
     CircleCollider2DComponent:
@@ -83,7 +83,7 @@ Entities:
       Rotation: [0, -0, 0]
       Scale: [1.70000005, 1, 1]
     CircleRendererComponent:
-      Color: [0.206114426, 0.55160141, 0.437258661, 1]
+      Color: [0.0350419428, 0.264949006, 0.160493769, 1]
       Thickness: 0.200000003
       Fade: 0.0790000036
   - Entity: 1733057879198694898
@@ -97,7 +97,7 @@ Entities:
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     SpriteRendererComponent:
-      Color: [0.457780361, 0.271779716, 0.516014218, 1]
+      Color: [0.177022886, 0.0600352489, 0.229164167, 1]
       Source:
         Type: None
   - Entity: 4725327554835410179
@@ -128,7 +128,7 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     SpriteRendererComponent:
-      Color: [0.150000006, 0.25, 0.349999994, 1]
+      Color: [0.0196066499, 0.0508760882, 0.100481506, 1]
       Source:
         Type: None
     TextComponent:
@@ -178,3 +178,4 @@ Entities:
             Type: None
         - Source:
             Type: None
+Presentation: {Mode: DisplayReferred, Background: [0.010022826, 0.010022826, 0.010022826, 1]}

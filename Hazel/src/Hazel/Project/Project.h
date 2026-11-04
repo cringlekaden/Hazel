@@ -7,6 +7,7 @@
 #include <vector>
 #include <optional>
 #include "Hazel/Renderer/RendererPolicy.h"
+#include "Hazel/Scene/SceneDefaults.h"
 #include "Hazel/UI/UIBindings.h"
 
 #include "Hazel/Core/Base.h"
@@ -19,6 +20,7 @@ namespace Hazel {
 	struct ProjectConfig
 	{
 		std::string Name = "Untitled";
+        NewSceneDefaults SceneDefaults;
         std::string ScriptProject;
         std::string SaveNamespace; // Optional stable game-owned identity, independent of project location/name.
         std::optional<RuntimeRendererRequests> Rendering;

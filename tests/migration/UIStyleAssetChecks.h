@@ -37,10 +37,10 @@ static void UIStyleAssetChecks()
     Check(loaded.Find("Control") == definition.Find("Control"),
           "Typed style roundtrip changed values");
     reject([&] {
-        ReadUIStyleText("UIStyle: {Version: 1, Name: X, Variants: [{Name: A, Values: {}}, {Name: "
+        ReadUIStyleText("UIStyle: {Version: 2, Name: X, Variants: [{Name: A, Values: {}}, {Name: "
                         "A, Values: {}}]}");
     });
-    reject([&] { ReadUIStyleText("UIStyle: {Version: 1, Name: X, Selectors: [], Variants: []}"); });
+    reject([&] { ReadUIStyleText("UIStyle: {Version: 2, Name: X, Selectors: [], Variants: []}"); });
     reject([&] { UIStyleSelection{"../bad.hstyle"}.Validate(); });
     reject([&] { UIStyleSelection{"C:/bad.hstyle"}.Validate(); });
     reject([&] { ReadUIStyleText(std::string(65537, 'x')); });

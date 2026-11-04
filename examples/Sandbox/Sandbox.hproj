@@ -7,3 +7,8 @@ Project:
   StartScene: Scenes/Start.hazel
   AssetDirectory: Assets
   ScriptModulePath: Scripts/Binaries/Sandbox.dll
+
+  NewSceneDefaults:
+    Projection: Orthographic
+    Navigation: Planar
+    Presentation: {Mode: DisplayReferred, Background: [0.010022826, 0.010022826, 0.010022826, 1]}

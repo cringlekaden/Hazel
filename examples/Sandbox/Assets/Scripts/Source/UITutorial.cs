@@ -38,7 +38,7 @@ namespace Sandbox {
                 else if(e.Kind==UIEventKind.SliderChanged || e.Kind==UIEventKind.SliderCancelled || (e.Kind==UIEventKind.SliderCommitted && e.Interrupted))
                     Amount(e.Interrupted?e.Source.GetComponent<UISliderComponent>().Value:e.Value);
                 else if(e.Kind==UIEventKind.SelectionChanged && e.Source.ID==Palette.ID) {
-                    var color=e.Selection!=null&&e.Selection.ID==Amber.ID?new Vector4(1,.75f,.3f,1):e.Selection!=null&&e.Selection.ID==Cloud.ID?new Vector4(.92f,.95f,1,1):new Vector4(.3f,.9f,.8f,1);
+                    var color=e.Selection!=null&&e.Selection.ID==Amber.ID?Hazel.Color.FromSRGB(new Vector4(1,.75f,.3f,1)):e.Selection!=null&&e.Selection.ID==Cloud.ID?Hazel.Color.FromSRGB(new Vector4(.92f,.95f,1,1)):Hazel.Color.FromSRGB(new Vector4(.3f,.9f,.8f,1));
                     feedback.Color=color;
                 }
                 if(enabled) Show(e.Kind+" · "+e.Action+(e.Kind==UIEventKind.TextChanged?" · "+e.Text: e.Kind==UIEventKind.SliderChanged?" · "+e.Value.ToString("0"):""));

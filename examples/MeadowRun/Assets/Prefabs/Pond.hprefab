@@ -1,4 +1,5 @@
-PrefabVersion: 1
+SceneVersion: 3
+PrefabVersion: 3
 Scene: Pond
 Entities:
 - Entity: 21
@@ -25,3 +26,5 @@ Entities:
     - 1
     TilingFactor: 1
     TexturePath: Textures/Pond.png
+
+Presentation: {Mode: DisplayReferred, Background: [0.010022826, 0.010022826, 0.010022826, 1]}

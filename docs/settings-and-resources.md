@@ -42,3 +42,31 @@ Resource refresh/reload is explicit. A failed font/family/style replacement reta
 Sprite-sheet reload advances the asset epoch and invalidates derived sprite/clip caches even when the replacement fails. Edit previews and running scenes show a magenta diagnostic fallback; starting Play and export still reject invalid assets. Existing resource pins remain alive, but new resolutions report the cached error. Repair the sheet/image, then explicitly reload/refresh to accept it; editing the file alone does not retry each frame. Authored references stay unchanged. See [sprite repair](sprite-authoring.md#edit-safely).
 
 CPU faces/layouts and GPU glyph pages have separate admission/accounting. Active layouts/draws pin accepted resources; pressure can reject new resources until users release pins and retry. GPU resources are created/destroyed on the renderer thread and released before context shutdown. Persistent shader caches are derived files; accepted text/page caches are process-owned, not a second user-data asset store. [Runtime UI's resource reference](runtime-game-ui.md#font-families-and-declared-coverage) records budgets, fallback and notice rules.
+
+## New scenes and presentation
+
+Project Settings exposes **New scene defaults**: runtime camera projection,
+DisplayReferred background and initial Planar/Orbit editor navigation. The native
+factory shared by New Project and New Scene writes explicit scene/camera values:
+orthographic size 10 or perspective FOV 45 degrees, near .1/far 100, camera z=10,
+a one-meter sprite, world text and screen UI. The available creation preset is 2D;
+a usable 3D starter is not offered at this checkpoint.
+
+Defaults seed future scenes/fresh workspaces only. Existing scene presentation,
+camera projection and private workspace poses keep their own values. Scene
+Settings edits the scene-owned background through document Undo/Redo and Save.
+Project defaults never act as runtime scene overrides. The current unlit
+presentation works with both camera projections; unsupported presentation modes
+are rejected. See [runtime color](color.md).
+
+Runtime performance/advanced renderer requests keep the existing project request
+and actual-context capability policy. Requested/effective batch/shader/debug
+values, limitation reasons and restart boundaries remain visible. Editor VSync
+and debug preferences have editor scope; the project's VSync request applies on
+Play and in Nutella. Submitted swap interval is not a measurement of frame pacing.
+
+The viewport's navigation selector changes only the private editor camera.
+Planar uses middle-drag (or Alt-left-drag) pan and wheel zoom; manipulation keeps
+XY translation/scale and Z rotation. Orbit retains Alt-left orbit, Alt-middle pan,
+Alt-right dolly and wheel dolly. Both poses, navigation, grid and selected tool
+persist in the project workspace; none enters scene dirty state or document history.

@@ -78,7 +78,7 @@ OpenGLTexture2D::OpenGLTexture2D(const TextureSpecification& specification)
 {
     HZ_PROFILE_FUNCTION();
     m_Specification.Validate();
-    m_InternalFormat=Utils::HazelImageFormatToGLInternalFormat(specification.Format);
+    m_InternalFormat=specification.Encoding==TextureEncoding::SRGB ? (specification.Format==ImageFormat::RGB8?GL_SRGB8:GL_SRGB8_ALPHA8) : Utils::HazelImageFormatToGLInternalFormat(specification.Format);
     m_DataFormat=Utils::HazelImageFormatToGLDataFormat(specification.Format);
     m_DataType=specification.Format==ImageFormat::RGBA32F ? GL_FLOAT : GL_UNSIGNED_BYTE;
     m_BytesPerPixel=specification.Format==ImageFormat::R8 ? 1u :
@@ -93,16 +93,19 @@ OpenGLTexture2D::OpenGLTexture2D(const std::string& path, const TextureSpecifica
     HZ_PROFILE_FUNCTION();
     specification.Validate(true);
     auto image=Texture2D::ReadImage(std::filesystem::u8path(path),specification.Format);
+    if(image.Format==ImageFormat::R8 && specification.Encoding==TextureEncoding::SRGB && specification.Format==ImageFormat::None) {
+        std::vector<uint8_t> color; color.reserve(image.Pixels.size()*4);
+        for(auto gray:image.Pixels){color.push_back(gray);color.push_back(gray);color.push_back(gray);color.push_back(255);}
+        image.Pixels=std::move(color);image.Format=ImageFormat::RGBA8;
+    }
     if((specification.Width && specification.Width!=image.Width) || (specification.Height && specification.Height!=image.Height))
         throw std::runtime_error("Texture dimensions changed: "+path);
     m_Specification.Width=m_Width=image.Width; m_Specification.Height=m_Height=image.Height;
     m_Specification.Format=image.Format;
-    m_InternalFormat=Utils::HazelImageFormatToGLInternalFormat(image.Format);
+    m_Specification.Validate();
+    m_InternalFormat=m_Specification.Encoding==TextureEncoding::SRGB ? (image.Format==ImageFormat::RGB8?GL_SRGB8:GL_SRGB8_ALPHA8) : Utils::HazelImageFormatToGLInternalFormat(image.Format);
     m_DataFormat=Utils::HazelImageFormatToGLDataFormat(image.Format);
     m_BytesPerPixel=image.Format==ImageFormat::R8?1:image.Format==ImageFormat::RGB8?3:4;
-    const size_t stride=static_cast<size_t>(m_Width)*m_BytesPerPixel;
-    for(uint32_t y=0;y<m_Height/2;++y)
-        std::swap_ranges(image.Pixels.begin()+y*stride,image.Pixels.begin()+(y+1)*stride,image.Pixels.begin()+(m_Height-1-y)*stride);
     AllocateStorage(image.Pixels.data());
 }
 

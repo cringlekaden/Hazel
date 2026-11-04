@@ -62,12 +62,12 @@ static void TextCompositingChecks(bool reproduce = false) {
     expected=over(quantize(over({},bottom,128/255.f)),top,128/255.f);color=Color();
     for(int c=0;c<4;++c)Check(std::abs(int(color[c])-int(std::round(expected[c]*255)))<=2,"Overlapping text analytic mismatch");
     Check(ID()==304,"Overlapping text picking order changed");
-    // A sprite after text must recover its existing stored-alpha convention.
+    // A sprite after text uses the same canonical source-over coverage.
     Begin();Renderer2D::EndScene();Renderer2D::BeginOrderedScene(Camera(glm::mat4(1)),glm::mat4(1));
     Renderer2D::DrawTextGlyphs(glyphs,font,glm::mat4(1),bottom,306);
     Renderer2D::DrawQuad(glm::mat4(1),top,307);End();
     auto textDestination=quantize(over({},bottom,128/255.f));
-    expected=glm::vec4(glm::vec3(top)*top.a+glm::vec3(textDestination)*(1-top.a),top.a*top.a+textDestination.a*(1-top.a));color=Color();
+    expected=glm::vec4(glm::vec3(top)*top.a+glm::vec3(textDestination)*(1-top.a),top.a+textDestination.a*(1-top.a));color=Color();
     for(int c=0;c<4;++c)Check(std::abs(int(color[c])-int(std::round(expected[c]*255)))<=2,"Text compositing changed later sprite semantics");
     // Capture/restore arbitrary target-0 alpha factors/equation, leave target 1
     // and blend enable untouched (integer picking ignores blending).

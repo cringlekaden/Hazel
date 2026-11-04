@@ -19,9 +19,9 @@ Entities:
   TextComponent:
     TextString: WASD / arrows   |   R restart   |   Esc menu
     Color:
-    - 0.129999995
-    - 0.25
-    - 0.230000004
+    - 0.0153252023
+    - 0.0508760882
+    - 0.0432336374
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -55,8 +55,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -64,7 +64,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -87,9 +87,9 @@ Entities:
   TextComponent:
     TextString: Find five lantern seeds. Stay out of the pond.
     Color:
-    - 0.99000001
-    - 0.949999988
-    - 0.819999993
+    - 0.977401956
+    - 0.890005381
+    - 0.638283203
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -123,8 +123,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -132,7 +132,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -155,9 +155,9 @@ Entities:
   TextComponent:
     TextString: Lantern seeds  0 / 5
     Color:
-    - 0.99000001
-    - 0.949999988
-    - 0.819999993
+    - 0.977401956
+    - 0.890005381
+    - 0.638283203
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -191,8 +191,8 @@ Entities:
     Overrides: 446
     Focus:
     - 1
-    - 0.9
-    - 0.65
+    - 0.787412289
+    - 0.380056336
     - 1
     Selected:
     - 1
@@ -200,7 +200,7 @@ Entities:
     - 1
     - 1
     Editing:
-    - 0.3
+    - 0.0732389559
     - 1
     - 1
     - 1
@@ -222,9 +222,9 @@ Entities:
     - 1
   SpriteRendererComponent:
     Color:
-    - 0.140000001
-    - 0.280000001
-    - 0.239999995
+    - 0.0173891026
+    - 0.0637237957
+    - 0.0469641988
     - 1
     TilingFactor: 1
   Relationship:
@@ -441,9 +441,9 @@ Entities:
   TextComponent:
     TextString: FIND FIVE
     Color:
-    - 0.99000001
-    - 0.949999988
-    - 0.819999993
+    - 0.977401956
+    - 0.890005381
+    - 0.638283203
     - 1
     Kerning: 0
     LineSpacing: 0
@@ -1266,4 +1266,6 @@ Entities:
     Visible: true
     Enabled: true
     Modal: false
-SceneVersion: 2
+SceneVersion: 3
+
+Presentation: {Mode: DisplayReferred, Background: [0.010022826, 0.010022826, 0.010022826, 1]}

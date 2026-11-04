@@ -9,7 +9,7 @@ namespace Hazel
 {
 namespace
 {
-const std::array<std::type_index,18> UIHistoryComponents={typeid(UICanvasComponent),typeid(UIRectComponent),typeid(UILayoutComponent),typeid(UITextStyleComponent),typeid(UINineSliceComponent),typeid(UIButtonComponent),typeid(TextComponent),typeid(SpriteRendererComponent),typeid(UIRadioGroupComponent),typeid(UIProgressComponent),typeid(UISliderComponent),typeid(UIScrollViewComponent),typeid(UIDropdownComponent),typeid(UITabsComponent),typeid(UITabComponent),typeid(UITooltipComponent),typeid(UITextEntryComponent),typeid(UIAppearanceComponent)};
+const std::array<std::type_index,21> UIHistoryComponents={typeid(UICanvasComponent),typeid(UIRectComponent),typeid(UILayoutComponent),typeid(UITextStyleComponent),typeid(UINineSliceComponent),typeid(UIButtonComponent),typeid(TextComponent),typeid(SpriteRendererComponent),typeid(UIRadioGroupComponent),typeid(UIProgressComponent),typeid(UISliderComponent),typeid(UIScrollViewComponent),typeid(UIDropdownComponent),typeid(UITabsComponent),typeid(UITabComponent),typeid(UITooltipComponent),typeid(UITextEntryComponent),typeid(UIAppearanceComponent),typeid(TransformComponent),typeid(CircleRendererComponent),typeid(CameraComponent)};
 void Strip(SpriteSource &source)
 {
     if (auto t = std::get_if<TextureSpriteSource>(&source))
@@ -58,6 +58,9 @@ template <class A, class B, class C, class F> void Fields(A &a, B &b, C &c, F f)
         throw std::runtime_error("UI component set changed; cancel/retry the edit");               \
     if (a.member)
 #define FIELD(member, field) f(a.member->field, b.member->field, c.member->field)
+    COMPONENT(Transform) {FIELD(Transform,Translation);FIELD(Transform,Rotation);FIELD(Transform,Scale);}
+    COMPONENT(Circle) {FIELD(Circle,Color);FIELD(Circle,Thickness);FIELD(Circle,Fade);}
+    COMPONENT(Camera) {FIELD(Camera,Projection);FIELD(Camera,FOV);FIELD(Camera,Near);FIELD(Camera,Far);FIELD(Camera,Size);FIELD(Camera,OrthoNear);FIELD(Camera,OrthoFar);FIELD(Camera,Primary);FIELD(Camera,FixedAspect);}
     COMPONENT(Canvas)
     {
         FIELD(Canvas, ReferenceSize);
@@ -220,6 +223,9 @@ void Source(Scene &scene, const SpriteSource &source)
 }
 void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
 {
+    if(v.Transform){Finite(v.Transform->Translation);Finite(v.Transform->Rotation);Finite(v.Transform->Scale);}
+    if(v.Circle){Finite(v.Circle->Color);Positive(v.Circle->Thickness);Positive(v.Circle->Fade);}
+    if(v.Camera){const auto& c=*v.Camera;if(c.Projection<0||c.Projection>1||!std::isfinite(c.FOV)||c.FOV<=0||c.FOV>=3.14159265f||!std::isfinite(c.Near)||!std::isfinite(c.Far)||c.Near<=0||c.Far<=c.Near||!std::isfinite(c.Size)||c.Size<=0||!std::isfinite(c.OrthoNear)||!std::isfinite(c.OrthoFar)||c.OrthoFar<=c.OrthoNear)throw std::invalid_argument("Invalid camera projection/clipping");}
     if(v.Appearance){v.Appearance->Selection.Validate();if(v.Appearance->Overrides&~UIStyleAll)throw std::invalid_argument("Invalid override mask");}
     if (v.Canvas){
         GameUI::FitCanvas({1280, 720}, *v.Canvas);
@@ -336,6 +342,15 @@ void Write(Entity e, const UIEditValues &old, UIEditValues &next)
     {                                                                                              \
         auto &c = e.GetComponent<type>();
 #define FIELD(member, field) change(c.field, old.member->field, next.member->field)
+    COMPONENT(Transform, TransformComponent) FIELD(Transform,Translation);FIELD(Transform,Rotation);FIELD(Transform,Scale);}
+    COMPONENT(Circle, CircleRendererComponent) FIELD(Circle,Color);FIELD(Circle,Thickness);FIELD(Circle,Fade);}
+    if(old.Camera && next.Camera) {
+        auto& live=e.GetComponent<CameraComponent>();auto value=UIEditValues::Capture(e).Camera.value();
+#define CAMERA(field) change(value.field,old.Camera->field,next.Camera->field)
+        CAMERA(Projection);CAMERA(FOV);CAMERA(Near);CAMERA(Far);CAMERA(Size);CAMERA(OrthoNear);CAMERA(OrthoFar);CAMERA(Primary);CAMERA(FixedAspect);
+#undef CAMERA
+        live.Camera.SetPerspective(value.FOV,value.Near,value.Far);live.Camera.SetOrthographic(value.Size,value.OrthoNear,value.OrthoFar);live.Camera.SetProjectionType(SceneCamera::ProjectionType(value.Projection));live.Primary=value.Primary;live.FixedAspectRatio=value.FixedAspect;
+    }
     COMPONENT(Canvas, UICanvasComponent) FIELD(Canvas, ReferenceSize);
     FIELD(Canvas, SafeInsets);
     FIELD(Canvas, SortOrder);
@@ -449,6 +464,9 @@ UIEditValues UIEditValues::Capture(Entity e)
 #define CAPTURE(type, member)                                                                      \
     if (e.HasComponent<type>())                                                                    \
     v.Set(e.GetComponent<type>())
+    CAPTURE(TransformComponent, Transform);
+    CAPTURE(CircleRendererComponent,Circle);
+    CAPTURE(CameraComponent,Camera);
     CAPTURE(UICanvasComponent, Canvas);
     CAPTURE(UIRectComponent, Rect);
     CAPTURE(UILayoutComponent, Flow);
@@ -591,6 +609,8 @@ void UIEditCommand::Publish(Scene &scene, const UIEditValues &current, UIEditVal
             const auto& text=e.GetComponent<TextComponent>();
             scene.SetDisplayText(e.GetUUID(),text.TextString,text.Spans);
         }
+        if(current.Transform && next.Transform && (current.Transform->Translation!=restore.Transform->Translation || current.Transform->Rotation!=restore.Transform->Rotation || current.Transform->Scale!=restore.Transform->Scale))scene.ValidateHierarchy();
+        if(current.Camera && next.Camera)scene.ValidateHierarchy();
         scene.ValidateUILayoutDependencies();scene.ValidateUIControls(e.GetUUID());
         scene.RefreshUI();
     }
@@ -670,6 +690,9 @@ void UIEditCommand::Cancel(Scene &scene)
         after.member.reset();                                                                      \
         subset.member.reset();                                                                     \
     }
+    KEEP(Transform,TransformComponent,18);
+    KEEP(Circle,CircleRendererComponent,19);
+    KEEP(Camera,CameraComponent,20);
     KEEP(Canvas, UICanvasComponent, 0);
     KEEP(Rect, UIRectComponent, 1);
     KEEP(Flow, UILayoutComponent, 2);
@@ -693,6 +716,7 @@ void UIEditCommand::Cancel(Scene &scene)
 #define RESTORE(member)                                                                            \
     if (restored.member)                                                                           \
     next.member = std::move(restored.member)
+    RESTORE(Transform);RESTORE(Circle);RESTORE(Camera);
     RESTORE(Canvas);
     RESTORE(Rect);
     RESTORE(Flow);

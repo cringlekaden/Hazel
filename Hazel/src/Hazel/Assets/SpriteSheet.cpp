@@ -91,7 +91,7 @@ void SpriteSheetDefinition::Validate(bool playable) const {
 }
 std::array<glm::vec2,4> SpriteUV(const PixelRect& r,uint32_t w,uint32_t h) {
     if(!w || !h || !r.Width || !r.Height || uint64_t(r.X)+r.Width>w || uint64_t(r.Y)+r.Height>h) throw std::runtime_error("Invalid UV rectangle");
-    float x0=(r.X+.5f)/w,x1=(r.X+r.Width-.5f)/w,y0=1-(r.Y+r.Height-.5f)/h,y1=1-(r.Y+.5f)/h;
+    float x0=(r.X+.5f)/w,x1=(r.X+r.Width-.5f)/w,y0=(r.Y+r.Height-.5f)/h,y1=(r.Y+.5f)/h;
     return {{{x0,y0},{x1,y0},{x1,y1},{x0,y1}}};
 }
 std::array<glm::vec2,4> SpriteCorners(glm::vec2 p) {
@@ -239,11 +239,15 @@ SpriteSheetDefinition ReadSpriteSheetText(const std::string& text, bool* usesDef
         result.Sampling.Width=Number(size[0]); result.Sampling.Height=Number(size[1]);
         if(n["Filter"]) { if(n["Sampling"]) throw std::runtime_error("Use either legacy Filter or Sampling"); result.Sampling.MinFilter=result.Sampling.MagFilter=ParseTextureFilter(n["Filter"].as<std::string>()); }
         if(auto p=n["Sampling"]) {
-            Keys(p,{"MinFilter","MagFilter","WrapS","WrapT","GenerateMips","Format"});
+            Keys(p,{"MinFilter","MagFilter","WrapS","WrapT","GenerateMips","Format","Encoding"});
             if(p["MinFilter"]) result.Sampling.MinFilter=ParseTextureFilter(p["MinFilter"].as<std::string>());
             if(p["MagFilter"]) result.Sampling.MagFilter=ParseTextureFilter(p["MagFilter"].as<std::string>());
             if(p["WrapS"]) result.Sampling.WrapS=ParseTextureWrap(p["WrapS"].as<std::string>());
             if(p["WrapT"]) result.Sampling.WrapT=ParseTextureWrap(p["WrapT"].as<std::string>());
+            if(p["Encoding"]) {
+                auto e=p["Encoding"].as<std::string>();if(e!="SRGB" && e!="Linear")throw std::runtime_error("Unknown texture Encoding");
+                result.Sampling.Encoding=e=="SRGB"?TextureEncoding::SRGB:TextureEncoding::Linear;
+            }
             if(p["GenerateMips"]) result.Sampling.GenerateMips=p["GenerateMips"].as<bool>();
             if(p["Format"]) {
                 auto f=p["Format"].as<std::string>();
@@ -283,7 +287,7 @@ SpriteSheetDefinition ReadSpriteSheetText(const std::string& text, bool* usesDef
         result.Validate();
         if(usesDefaults) {
             bool defaults=bool(n["Filter"]) || !n["Sampling"];
-            for(const char* key:{"MinFilter","MagFilter","WrapS","WrapT","GenerateMips","Format"})
+            for(const char* key:{"MinFilter","MagFilter","WrapS","WrapT","GenerateMips","Format","Encoding"})
                 defaults=defaults || !n["Sampling"] || !n["Sampling"][key];
             for(const char* key:{"Regions","Clips","RetiredRegionIDs","RetiredClipIDs"})defaults=defaults || !n[key];
             for(auto region:n["Regions"])defaults=defaults || !region["Pivot"];
@@ -299,6 +303,7 @@ std::string WriteSpriteSheetText(const SpriteSheetDefinition& s) {
     out<<YAML::Key<<"Texture"<<YAML::Value<<s.Texture.generic_u8string()<<YAML::Key<<"TextureSize"<<YAML::Value<<YAML::Flow<<YAML::BeginSeq<<s.Sampling.Width<<s.Sampling.Height<<YAML::EndSeq;
     out<<YAML::Key<<"Sampling"<<YAML::Value<<YAML::BeginMap;
     out<<YAML::Key<<"MinFilter"<<YAML::Value<<TextureFilterName(s.Sampling.MinFilter)<<YAML::Key<<"MagFilter"<<YAML::Value<<TextureFilterName(s.Sampling.MagFilter);
+    out<<YAML::Key<<"Encoding"<<YAML::Value<<(s.Sampling.Encoding==TextureEncoding::SRGB?"SRGB":"Linear");
     out<<YAML::Key<<"WrapS"<<YAML::Value<<TextureWrapName(s.Sampling.WrapS)<<YAML::Key<<"WrapT"<<YAML::Value<<TextureWrapName(s.Sampling.WrapT)<<YAML::Key<<"GenerateMips"<<YAML::Value<<s.Sampling.GenerateMips;
     out<<YAML::Key<<"Format"<<YAML::Value<<(s.Sampling.Format==ImageFormat::R8?"R8":s.Sampling.Format==ImageFormat::RGB8?"RGB8":"RGBA8")<<YAML::EndMap;
     out<<YAML::Key<<"Regions"<<YAML::Value<<YAML::BeginSeq;

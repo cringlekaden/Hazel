@@ -67,34 +67,8 @@ namespace Hazel {
         config.AuthoringVersion = 1;
         const auto descriptor = staging / (r.Identifier + ".hproj");
         FileSystem::WriteNewFile(descriptor, ProjectSerializer(project).SerializeText());
-        auto scene = CreateRef<Scene>();
-        scene->SetName("Start");
-        auto camera = scene->CreateEntityWithUUID(1, "Camera");
-        camera.AddComponent<CameraComponent>().Camera.SetOrthographic(10, -1, 1);
-        auto data = YAML::Load(SceneSerializer(scene, staging / "Assets").SerializeText());
-        // Authored text DTO avoids TextComponent's runtime default font/GPU
-        // dependency.
-        YAML::Node welcome;
-        welcome["Entity"] = uint64_t(2);
-        welcome["Relationship"]["Parent"] = uint64_t(0);
-        welcome["Relationship"]["Order"] = 1;
-        welcome["TagComponent"]["Tag"] = "Welcome";
-        auto transform = welcome["TransformComponent"];
-        transform["Translation"] = std::vector<float>{-3, 0, 0};
-        transform["Rotation"] = std::vector<float>{0, 0, 0};
-        transform["Scale"] = std::vector<float>{.5f, .5f, 1};
-        auto text = welcome["TextComponent"];
-        text["TextString"] = r.Name;
-        text["Color"] = std::vector<float>{1, 1, 1, 1};
-        text["Kerning"] = 0.f;
-        text["LineSpacing"] = 0.f;
-        data["Entities"].push_back(welcome);
-        DocumentSchema::Scene(data);
-        YAML::Emitter encoded;
-        encoded << data;
-        if (!encoded.good())
-            throw std::runtime_error(encoded.GetLastError());
-        FileSystem::WriteNewFile(staging / "Assets/Scenes/Start.hazel", encoded.c_str());
+        FileSystem::WriteNewFile(staging / "Assets/Scenes/Start.hazel",
+                                 SceneDefaults::CreateDocument(r.Name, config.SceneDefaults));
         auto build = FileDocument::Read(r.Templates / "project.lua");
         const std::string token = "@IDENTIFIER@";
         for (size_t at = 0; (at = build.find(token, at)) != std::string::npos;

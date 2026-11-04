@@ -16,12 +16,13 @@ void AuthoringPanel::PrefabPreview() {
             FramebufferSpecification specification;
             specification.Width = width;
             specification.Height = height;
-            specification.Attachments = {FramebufferTextureFormat::RGBA8,
+            specification.Attachments = {FramebufferTextureFormat::RGBA16F,
                                          FramebufferTextureFormat::RED_INTEGER,
                                          FramebufferTextureFormat::Depth};
             m_PrefabPreview = Framebuffer::Create(specification);
+            specification.Attachments={FramebufferTextureFormat::RGBA8};m_PrefabOutput=Framebuffer::Create(specification);
         } else if (m_PrefabPreview->GetSpecification().Width != width)
-            m_PrefabPreview->Resize(width, height);
+            {m_PrefabPreview->Resize(width, height);m_PrefabOutput->Resize(width,height);}
         if (ImGui::SmallButton("Fit Subtree"))
             m_PrefabFit = true;
         PropertyUI::Help("Frames transformed sprite bounds (unit bounds for other components). "
@@ -62,13 +63,14 @@ void AuthoringPanel::PrefabPreview() {
                 }
                 ~PreviewBinding() { Buffer->Unbind(); }
             } binding(m_PrefabPreview);
-            RenderCommand::SetClearColor({.08f, .08f, .08f, 1});
+            RenderCommand::SetClearColor(m_PrefabScene->Presentation().Background);
             RenderCommand::Clear();
             m_PrefabPreview->ClearAttachment(1, -1);
             auto selected=m_PrefabInspector.GetSelectedEntity();m_PrefabScene->SetUIPreviewTarget(selected?uint64_t(selected.GetUUID()):0);
             m_PrefabScene->OnUpdateEditor(0, m_PrefabCamera);
         }
-        ImGui::Image(ImTextureID(uint64_t(m_PrefabPreview->GetColorAttachmentRendererID())),
+        m_PrefabPreview->EncodeOutput(m_PrefabOutput);
+        ImGui::Image(ImTextureID(uint64_t(m_PrefabOutput->GetColorAttachmentRendererID())),
                      {float(width), float(height)}, {0, 1}, {1, 0});
         ImGui::TextWrapped("Independent static preview. Fit again after changing local transforms; "
                            "long text may extend beyond unit bounds.");

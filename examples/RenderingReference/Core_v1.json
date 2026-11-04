@@ -1,0 +1,160 @@
+{
+  "CaseVersion": "Core_v1",
+  "Purpose": "Display-referred unlit 2D/color/camera reference",
+  "LogicalExtent": [
+    1280,
+    720
+  ],
+  "PhysicalExtent": [
+    1280,
+    720
+  ],
+  "ClockSeconds": 0,
+  "Seed": 0,
+  "CaptureInput": "Idle, no pointer hover or keyboard focus",
+  "Composite": "RGBA16F linear Rec.709/sRGB-primary",
+  "Output": "RGBA8 piecewise sRGB; one encoding; linear alpha",
+  "NativeRecipe": "tools/HazelProject/RenderingReference.h",
+  "NativeRecipeSHA256": "3b6afa914dbc204e32035ee4080cc7382c763e62ea0d92d2e67f2a3514ca805f",
+  "Cases": [
+    {
+      "Scene": "Assets/Scenes/Core_v1-Orthographic.hazel",
+      "Name": "Core_v1 Orthographic",
+      "CameraUUID": 1,
+      "CameraName": "Orthographic",
+      "Transform": {
+        "Translation": [
+          0,
+          0,
+          10
+        ],
+        "Rotation": [
+          0,
+          0,
+          0
+        ],
+        "Scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "Camera": {
+        "Camera": {
+          "ProjectionType": 1,
+          "PerspectiveFOV": 0.785398185,
+          "PerspectiveNear": 0.00999999978,
+          "PerspectiveFar": 1000,
+          "OrthographicSize": 10,
+          "OrthographicNear": 0.100000001,
+          "OrthographicFar": 100
+        },
+        "Primary": true,
+        "FixedAspectRatio": false
+      },
+      "Presentation": {
+        "Mode": "DisplayReferred",
+        "Background": [
+          0.0179999992,
+          0.0179999992,
+          0.0179999992,
+          1
+        ]
+      },
+      "EntityUUIDs": [
+        1,
+        10,
+        11,
+        12,
+        13,
+        20,
+        30,
+        31,
+        32,
+        40,
+        41,
+        42,
+        50,
+        51,
+        52,
+        100,
+        101,
+        102
+      ]
+    },
+    {
+      "Scene": "Assets/Scenes/Core_v1-Perspective.hazel",
+      "Name": "Core_v1 Perspective",
+      "CameraUUID": 1,
+      "CameraName": "Perspective",
+      "Transform": {
+        "Translation": [
+          0,
+          0,
+          10
+        ],
+        "Rotation": [
+          0,
+          0,
+          0
+        ],
+        "Scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "Camera": {
+        "Camera": {
+          "ProjectionType": 0,
+          "PerspectiveFOV": 0.785398185,
+          "PerspectiveNear": 0.100000001,
+          "PerspectiveFar": 100,
+          "OrthographicSize": 10,
+          "OrthographicNear": -1,
+          "OrthographicFar": 1
+        },
+        "Primary": true,
+        "FixedAspectRatio": false
+      },
+      "Presentation": {
+        "Mode": "DisplayReferred",
+        "Background": [
+          0.0179999992,
+          0.0179999992,
+          0.0179999992,
+          1
+        ]
+      },
+      "EntityUUIDs": [
+        1,
+        10,
+        11,
+        12,
+        13,
+        20,
+        30,
+        31,
+        32,
+        40,
+        41,
+        42,
+        50,
+        51,
+        52,
+        100,
+        101,
+        102
+      ]
+    }
+  ],
+  "ContentSHA256": {
+    "Assets/Scenes/Core_v1-Orthographic.hazel": "d2b631ca4c7e82bcf7a9476c1a8e6a824948c0fe0e7896448a6f93ca889e9045",
+    "Assets/Scenes/Core_v1-Perspective.hazel": "f4df36d50bafd896212bb6f1136b8f0e55993cf7535be387947d94c64990e6da",
+    "Assets/Textures/Asymmetric.tga": "f59fab68fef60dea064523b78a48a12e906bc57d90cd52114b7cb229a48bfd91",
+    "Assets/Textures/AsymmetricColor.hsprites": "4e5e19e1cc6412591123291560b287e6d71259abdd18926eb1c86fb10daa6e16",
+    "Assets/Textures/AsymmetricData.hsprites": "6bfdc446c874ab2800e9563db6e1ef8bd24178b9b3e049a05be8aa4717dd4c12",
+    "RenderingReference-Perspective.hproj": "2ffda0c909209c96d6fdbb049912941844f3d2487df8cda9c6f56877e18d0445",
+    "RenderingReference.hproj": "197b8ad23565f605a6c16dde7df7f602b35d039fb9835f9ef9d79f877df4ec73"
+  }
+}

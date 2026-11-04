@@ -1,0 +1,383 @@
+SceneVersion: 3
+Scene: Core_v1 Orthographic
+Presentation:
+  Mode: DisplayReferred
+  Background: [0.0179999992, 0.0179999992, 0.0179999992, 1]
+Entities:
+  - Entity: 1
+    Relationship:
+      Parent: 0
+      Order: 0
+    TagComponent:
+      Tag: Orthographic
+    TransformComponent:
+      Translation: [0, 0, 10]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 1
+        PerspectiveFOV: 0.785398185
+        PerspectiveNear: 0.00999999978
+        PerspectiveFar: 1000
+        OrthographicSize: 10
+        OrthographicNear: 0.100000001
+        OrthographicFar: 100
+      Primary: true
+      FixedAspectRatio: false
+  - Entity: 10
+    Relationship:
+      Parent: 0
+      Order: 1
+    TagComponent:
+      Tag: Known linear swatch 0
+    TransformComponent:
+      Translation: [-5.5, 1.79999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1.29999995, 1.29999995, 1]
+    SpriteRendererComponent:
+      Color: [0, 0, 0, 1]
+      Source:
+        Type: None
+  - Entity: 11
+    Relationship:
+      Parent: 0
+      Order: 2
+    TagComponent:
+      Tag: Known linear swatch 1
+    TransformComponent:
+      Translation: [-3.9000001, 1.79999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1.29999995, 1.29999995, 1]
+    SpriteRendererComponent:
+      Color: [0.214041144, 0.214041144, 0.214041144, 1]
+      Source:
+        Type: None
+  - Entity: 12
+    Relationship:
+      Parent: 0
+      Order: 3
+    TagComponent:
+      Tag: Known linear swatch 2
+    TransformComponent:
+      Translation: [-2.29999995, 1.79999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1.29999995, 1.29999995, 1]
+    SpriteRendererComponent:
+      Color: [0.5, 0.5, 0.5, 1]
+      Source:
+        Type: None
+  - Entity: 13
+    Relationship:
+      Parent: 0
+      Order: 4
+    TagComponent:
+      Tag: Known linear swatch 3
+    TransformComponent:
+      Translation: [-0.699999928, 1.79999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1.29999995, 1.29999995, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      Source:
+        Type: None
+  - Entity: 20
+    Relationship:
+      Parent: 0
+      Order: 5
+    TagComponent:
+      Tag: Known swatch labels
+    TransformComponent:
+      Translation: [-6.19999981, 2.79999995, 0.100000001]
+      Rotation: [0, 0, 0]
+      Scale: [0.270000011, 0.270000011, 1]
+    TextComponent:
+      TextString: "sRGB: 0         0.5          0.735       1"
+      FontFamily: ""
+      FontStyle: 0
+      Color: [1, 1, 1, 1]
+      Kerning: 0
+      LineSpacing: 0
+  - Entity: 30
+    Relationship:
+      Parent: 0
+      Order: 6
+    TagComponent:
+      Tag: "Color texture: sRGB decode"
+    TransformComponent:
+      Translation: [2.20000005, 1.79999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1.39999998, 1.39999998, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      Source:
+        Type: Region
+        Sheet: Textures/AsymmetricColor.hsprites
+        RegionID: "0000000000000001"
+  - Entity: 31
+    Relationship:
+      Parent: 0
+      Order: 7
+    TagComponent:
+      Tag: "Data texture: unchanged UNORM"
+    TransformComponent:
+      Translation: [4.30000019, 1.79999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1.39999998, 1.39999998, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      Source:
+        Type: Region
+        Sheet: Textures/AsymmetricData.hsprites
+        RegionID: "0000000000000001"
+  - Entity: 32
+    Relationship:
+      Parent: 0
+      Order: 8
+    TagComponent:
+      Tag: Texture labels
+    TransformComponent:
+      Translation: [1.39999998, 2.79999995, 0.100000001]
+      Rotation: [0, 0, 0]
+      Scale: [0.270000011, 0.270000011, 1]
+    TextComponent:
+      TextString: Color           Data
+      FontFamily: ""
+      FontStyle: 0
+      Color: [1, 1, 1, 1]
+      Kerning: 0
+      LineSpacing: 0
+  - Entity: 40
+    Relationship:
+      Parent: 0
+      Order: 9
+    TagComponent:
+      Tag: White backing
+    TransformComponent:
+      Translation: [-3, -1, 0]
+      Rotation: [0, 0, 0]
+      Scale: [3, 2, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      Source:
+        Type: None
+  - Entity: 41
+    Relationship:
+      Parent: 0
+      Order: 10
+    TagComponent:
+      Tag: Half red
+    TransformComponent:
+      Translation: [-3.5, -1, 0.100000001]
+      Rotation: [0, 0, 0]
+      Scale: [2, 1.5, 1]
+    SpriteRendererComponent:
+      Color: [1, 0, 0, 0.5]
+      Source:
+        Type: None
+  - Entity: 42
+    Relationship:
+      Parent: 0
+      Order: 11
+    TagComponent:
+      Tag: Half blue overlapping red
+    TransformComponent:
+      Translation: [-2.5, -1, 0.200000003]
+      Rotation: [0, 0, 0]
+      Scale: [2, 1.5, 1]
+    SpriteRendererComponent:
+      Color: [0, 0, 1, 0.5]
+      Source:
+        Type: None
+  - Entity: 50
+    Relationship:
+      Parent: 0
+      Order: 12
+    TagComponent:
+      Tag: Circle ring
+    TransformComponent:
+      Translation: [0.300000012, -1, 0.300000012]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CircleRendererComponent:
+      Color: [0.0732389688, 0.692071199, 0.318546832, 1]
+      Thickness: 0.180000007
+      Fade: 0.00499999989
+  - Entity: 51
+    Relationship:
+      Parent: 0
+      Order: 13
+    TagComponent:
+      Tag: World typography
+    TransformComponent:
+      Translation: [1.39999998, -0.699999988, 0.300000012]
+      Rotation: [0, 0, 0]
+      Scale: [0.449999988, 0.449999988, 1]
+    TextComponent:
+      TextString: "World text\nLinear RGB"
+      FontFamily: ""
+      FontStyle: 0
+      Color: [1, 1, 1, 1]
+      Kerning: 0
+      LineSpacing: 0
+  - Entity: 52
+    Relationship:
+      Parent: 0
+      Order: 14
+    TagComponent:
+      Tag: Title
+    TransformComponent:
+      Translation: [-6.19999981, 3.5999999, 0.100000001]
+      Rotation: [0, 0, 0]
+      Scale: [0.419999987, 0.419999987, 1]
+    TextComponent:
+      TextString: Rendering Reference / Core_v1
+      FontFamily: ""
+      FontStyle: 0
+      Color: [1, 1, 1, 1]
+      Kerning: 0
+      LineSpacing: 0
+  - Entity: 100
+    Relationship:
+      Parent: 0
+      Order: 15
+    TagComponent:
+      Tag: UI
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    UICanvasComponent:
+      ReferenceSize: [1280, 720]
+      SafeInsets: [16, 16, 16, 16]
+      SortOrder: 0
+      Visible: true
+      Enabled: true
+      Modal: false
+      Screen:
+        Managed: false
+        InitiallyOpen: true
+        Cancel: 1
+        InitialFocus: 0
+        DefaultAction: 0
+        CancelTarget: 0
+        ReturnFocus: 0
+        EventOwner: 0
+  - Entity: 101
+    Relationship:
+      Parent: 100
+      Order: 0
+    TagComponent:
+      Tag: UI footer
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    TextComponent:
+      TextString: Screen UI / select shapes for entity picking / Planar and Orbit affect only the editor
+      FontFamily: ""
+      FontStyle: 0
+      Color: [1, 1, 1, 1]
+      Kerning: 0
+      LineSpacing: 0
+    UIRectComponent:
+      LayoutVersion: 3
+      WidthMode: 0
+      HeightMode: 0
+      FixedSize: [1200, 52]
+      MaximumSize: [0, 0]
+      HasMaximum: [false, false]
+      Anchor: [0, 0]
+      GridRow: -1
+      GridColumn: -1
+      RowSpan: 1
+      ColumnSpan: 1
+      ImageFit: 0
+      ImageAlignment: [0.5, 0.5]
+      Offset: [24, 650]
+      Pivot: [0, 0]
+      MinimumSize: [0, 0]
+      Margin: [0, 0, 0, 0]
+      Padding: [0, 0, 0, 0]
+      Visible: true
+      Enabled: true
+      ClipChildren: true
+      Flex: 0
+    UITextStyleComponent:
+      Size: 22
+      Horizontal: 0
+      Vertical: 0
+      Wrap: true
+      Overflow: Clip
+      MaxLines: 0
+  - Entity: 102
+    Relationship:
+      Parent: 100
+      Order: 1
+    TagComponent:
+      Tag: UI state control
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.0331047624, 0.132868335, 0.318546832, 1]
+      Source:
+        Type: None
+    UIAppearanceComponent:
+      Styled: true
+      Asset: ""
+      Variant: Control
+      Overrides: 0
+      Focus: [1, 0.787412345, 0.380056322, 1]
+      Selected: [1, 1, 1, 1]
+      Editing: [0.0732389688, 1, 1, 1]
+    UIRectComponent:
+      LayoutVersion: 3
+      WidthMode: 0
+      HeightMode: 0
+      FixedSize: [200, 56]
+      MaximumSize: [0, 0]
+      HasMaximum: [false, false]
+      Anchor: [0, 0]
+      GridRow: -1
+      GridColumn: -1
+      RowSpan: 1
+      ColumnSpan: 1
+      ImageFit: 0
+      ImageAlignment: [0.5, 0.5]
+      Offset: [1020, 520]
+      Pivot: [0, 0]
+      MinimumSize: [0, 0]
+      Margin: [0, 0, 0, 0]
+      Padding: [0, 0, 0, 0]
+      Visible: true
+      Enabled: true
+      ClipChildren: true
+      Flex: 0
+    UIButtonComponent:
+      Kind: 0
+      InitiallyChecked: false
+      Indicator: 0
+      Group: 0
+      EventOwner: 0
+      Action: activate
+      TabOrder: 0
+      Interactable: true
+      Colors:
+        - [1, 1, 1, 1]
+        - [1.14999998, 1.14999998, 1.14999998, 1]
+        - [0.75, 0.75, 0.75, 1]
+        - [0.5, 0.5, 0.5, 0.5]
+        - [1.20000005, 1.14999998, 0.800000012, 1]
+      Images:
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None
+        - Source:
+            Type: None

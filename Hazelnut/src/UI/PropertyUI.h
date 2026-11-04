@@ -82,7 +82,7 @@ EditResult Vector(const char *key, const char *label, float *value, int axes, fl
 EditResult ResetAxis(float *value, int axes, int axis, const float *defaults);
 EditResult SliderVector2(const char *key, const char *label, float *value, float minimum, float maximum,
                          Options options = {});
-EditResult Color(const char *key, const char *label, float *value, Options options = {});
+EditResult Color(const char *key, const char *label, float *value, Options options = {}, bool alpha = true);
 void ReadOnly(const char *key, const char *label, const char *value, Options options = {});
 enum class ReferenceAction
 {

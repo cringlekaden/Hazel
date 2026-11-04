@@ -97,6 +97,7 @@ struct State
 std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_info* component) const
 {
     State state;state.Filter=component;
+    if(!only)state.Value(m_Scene->Presentation().Background);
     state.Bytes.reserve((only ? 1 : m_Scene->GetAllEntitiesWith<IDComponent>().size()) * 160);
     if(!component)state.Value(m_Scene->GetName());
     std::vector<uint64_t> ids;

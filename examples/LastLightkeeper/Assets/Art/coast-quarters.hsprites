@@ -3,6 +3,7 @@ SpriteSheet:
   Texture: Art/tiny-battle.png
   TextureSize: [288, 176]
   Sampling:
+    Encoding: SRGB
     MinFilter: Nearest
     MagFilter: Nearest
     WrapS: ClampToEdge

@@ -29,6 +29,7 @@ namespace Hazel {
 			{
 				out << YAML::BeginMap;// Project
 				out << YAML::Key << "Version" << YAML::Value << 1;
+                out << YAML::Key << "NewSceneDefaults" << YAML::Value << SceneDefaults::Encode(config.SceneDefaults);
                 if(config.Rendering)RendererRequestsSerializer::Write(out,*config.Rendering);
                 if(config.UIBindings)out<<YAML::Key<<"UIBindings"<<YAML::Value<<YAML::Load(GameUI::SerializeBindings(*config.UIBindings));
                 out << YAML::Key << "ScriptProject" << YAML::Value << config.ScriptProject;
@@ -70,6 +71,7 @@ namespace Hazel {
                 m_Report.Problems.push_back({0,"Runtime rendering","Known Rendering Version 1 defaults: VSync On, batch 32, automatic shaders. Save writes omitted defaults explicitly; original bytes are preserved first",{},true});
             // Commit only a complete parse; preserve the active config on failure.
 			ProjectConfig config;
+            if(projectNode["NewSceneDefaults"])config.SceneDefaults=SceneDefaults::Read(projectNode["NewSceneDefaults"]);
             if(projectNode["UIBindings"])config.UIBindings=GameUI::ParseBindings(YAML::Dump(projectNode["UIBindings"]));
             if(projectNode["Rendering"])config.Rendering=RendererRequestsSerializer::Read(projectNode["Rendering"]);
 			config.Name = projectNode["Name"].as<std::string>();

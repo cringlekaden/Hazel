@@ -42,9 +42,9 @@ ContentBrowserPanel::ContentBrowserPanel(const std::filesystem::path &assetRoot)
     : m_BaseDirectory(std::filesystem::weakly_canonical(assetRoot)), m_CurrentDirectory(m_BaseDirectory)
 {
     m_DirectoryIcon =
-        Texture2D::Create(Resources::Resolve("Icons/ContentBrowser/DirectoryIcon.png").generic_u8string());
+        Texture2D::Create(Resources::Resolve("Icons/ContentBrowser/DirectoryIcon.png").generic_u8string(),TextureSpecification::ImGuiFile());
     m_FileIcon =
-        Texture2D::Create(Resources::Resolve("Icons/ContentBrowser/FileIcon.png").generic_u8string());
+        Texture2D::Create(Resources::Resolve("Icons/ContentBrowser/FileIcon.png").generic_u8string(),TextureSpecification::ImGuiFile());
     Refresh();
 }
 bool ContentBrowserPanel::Allowed(EditorAction action) const

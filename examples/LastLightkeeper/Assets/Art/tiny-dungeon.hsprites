@@ -3,6 +3,7 @@ SpriteSheet:
   Texture: Art/tiny-dungeon.png
   TextureSize: [192, 176]
   Sampling:
+    Encoding: SRGB
     MinFilter: Nearest
     MagFilter: Nearest
     WrapS: ClampToEdge
