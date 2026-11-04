@@ -1,8 +1,10 @@
 SceneVersion: 3
 PrefabVersion: 3
+PrefabRoot: 24
 Scene: Untitled
 Entities:
   - Entity: 24
+    Relationship: {Parent: 0, Order: 0}
     TagComponent:
       Tag: Lantern seed
     TransformComponent:
