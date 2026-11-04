@@ -185,7 +185,10 @@ def test(configuration, profile='native', suite='all', only=None):
             from internal.testing.projects import snapshot
             tutorial=snapshot('Sandbox',working/'tutorial')
             hz.script_build(tutorial,configuration)
+        from internal.testing.projects import snapshot
+        reference=snapshot('RenderingReference',working/'rendering-reference','RenderingReference.hproj')
         env=os.environ.copy()
+        env['HAZEL_RENDERING_REFERENCE_PROJECT']=str(reference)
         for key in ('MESA_GL_VERSION_OVERRIDE','MESA_GLSL_VERSION_OVERRIDE','LIBGL_ALWAYS_SOFTWARE','GALLIUM_DRIVER','LP_NUM_THREADS'):
             env.pop(key,None)
         if profile=='gl41': env.update(MESA_GL_VERSION_OVERRIDE='4.1',MESA_GLSL_VERSION_OVERRIDE='410')
@@ -224,6 +227,7 @@ def test(configuration, profile='native', suite='all', only=None):
                 print(log.read_text(errors='replace'));raise RuntimeError(f'{name} failed ({result.returncode}); log: {log}')
             evidence=log.read_text(errors='replace')
             if 'PASS:' not in evidence:raise RuntimeError('Missing acceptance evidence: '+str(log))
+            if name=='RuntimeSessionSmoke' and 'PASS: Rendering Reference Core_v1' not in evidence:raise RuntimeError('Rendering Reference check did not execute: '+str(log))
             if name=='EditorSmoke' and env.get('HAZEL_FINAL_UI_PROJECT'):
                 tutorial='PASS: native tutorial Inspector, composed creation/duplicate/delete/property undo, prefab instantiate, save/reopen and repeated Play/Stop in a private project'
                 if tutorial not in evidence:raise RuntimeError('Selected tutorial authoring did not execute: '+str(log))

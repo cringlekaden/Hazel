@@ -118,6 +118,9 @@ public:
             Check(!e.m_HoveredEntity && !e.m_SceneHierarchyPanel.SetSelectedEntity(stale),"NewScene retained borrowed observations");
             oldScene.reset(); // The next selection arrives before another picking update, with a destroyed Scene pointer.
             Check(!e.m_SceneHierarchyPanel.SetSelectedEntity(stale),"Selection dereferenced a destroyed foreign scene");
+            // This calibrated scripted workflow supplies its own camera/content.
+            // New Scene now deliberately includes a working native starter.
+            const auto starter=e.m_EditorScene->GetChildren();for(auto id:starter)e.m_EditorScene->DestroyEntity(e.m_EditorScene->GetEntityByUUID(id));
             auto camera = e.m_EditorScene->CreateEntityWithUUID(900, "Camera");
             camera.AddComponent<CameraComponent>().Camera.SetOrthographic(4, -1, 1);
             camera.AddComponent<ScriptComponent>().ClassName = "Regression.Camera";

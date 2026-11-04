@@ -29,7 +29,8 @@ static void CanonicalColorChecks() {
         glEnable(GL_FRAMEBUFFER_SRGB);linear->EncodeOutput(output);Check(glIsEnabled(GL_FRAMEBUFFER_SRGB),"Output failed to restore framebuffer encoding state");
         output->Bind();unsigned char encoded[4]{};glReadPixels(16,16,1,1,GL_RGBA,GL_UNSIGNED_BYTE,encoded);
         Check(std::abs(int(encoded[0])-(color?128:188))<=1 && std::abs(int(encoded[3])-128)<=1,"Final output did not encode exactly once or changed alpha");
-        output->Unbind();
+        output->Unbind();linear->EncodeOutput();glReadBuffer(GL_BACK);glReadPixels(16,16,1,1,GL_RGBA,GL_UNSIGNED_BYTE,encoded);
+        Check(std::abs(int(encoded[0])-(color?128:188))<=1,"Player window output did not encode exactly once");
     }
     // Linear filtering and mip generation happen after color decode. Alpha/data
     // retain their numerical meaning, including half coverage.

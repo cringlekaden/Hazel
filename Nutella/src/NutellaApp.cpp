@@ -13,7 +13,11 @@ namespace Hazel {
         explicit RuntimeLayer(Ref<Project> project) : Layer("Nutella Runtime"), m_Project(std::move(project)) {}
         void OnAttach() override {
             auto scene = m_Project->LoadScene(m_Project->GetConfig().StartScene);
-            ScriptEngine::Init(Project::ResolveAssetPath(m_Project->GetAssetRoot(), m_Project->GetConfig().ScriptModulePath));
+            const auto module=Project::ResolveAssetPath(m_Project->GetAssetRoot(),m_Project->GetConfig().ScriptModulePath);
+            // Match native editor readiness: content-only scenes need no assembly.
+            // Existing modules still load for later scripted scene transitions;
+            // RuntimeSession validates every assigned class before publication.
+            if(std::filesystem::is_regular_file(module))ScriptEngine::Init(module);
             Project::SetActive(m_Project);
             auto& window = Application::Get().GetWindow();
             m_Session.Resize(window.GetWidth(), window.GetHeight());
