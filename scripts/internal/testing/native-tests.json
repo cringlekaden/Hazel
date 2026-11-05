@@ -3,6 +3,7 @@
   {"name":"GameUIModelSmoke","graphics":false},
   {"name":"GameUIIntegrationSmoke","graphics":true},
   {"name":"ShaderToolsSmoke","graphics":false},
+  {"name":"ImportDependencySmoke","graphics":false},
   {"name":"SpriteSmoke","graphics":true},
   {"name":"SceneFoundationSmoke","graphics":false},
   {"name":"ProjectPhysicsSmoke","graphics":false},

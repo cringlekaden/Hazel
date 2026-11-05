@@ -1,0 +1,35 @@
+{
+  "project": "tinygltf3",
+  "commit": "0d9ce1a9561688c6c6e7471430d15a50a0b15f1a",
+  "version": "3.0.1",
+  "upstream": "https://github.com/syoyo/tinygltf",
+  "files": {
+    "tiny_gltf_v3.c": {
+      "url": "https://raw.githubusercontent.com/syoyo/tinygltf/0d9ce1a9561688c6c6e7471430d15a50a0b15f1a/tiny_gltf_v3.c",
+      "sha256": "e01b1de3ea7dd59a331d67089a73dd49d2e729b634ef15b5950c689fed42023f"
+    },
+    "tiny_gltf_v3.h": {
+      "url": "https://raw.githubusercontent.com/syoyo/tinygltf/0d9ce1a9561688c6c6e7471430d15a50a0b15f1a/tiny_gltf_v3.h",
+      "sha256": "b2d936025ba820470dfef4167d3e6f380ced2672486a67fc3c2edb25e65dbe56"
+    },
+    "tinygltf_json_c.h": {
+      "url": "https://raw.githubusercontent.com/syoyo/tinygltf/0d9ce1a9561688c6c6e7471430d15a50a0b15f1a/tinygltf_json_c.h",
+      "sha256": "5ac243205c038b1436bc8f867acb1a91f1f0cc09f421bb00181f956bd55a68ff"
+    },
+    "README.md": {
+      "url": "https://raw.githubusercontent.com/syoyo/tinygltf/0d9ce1a9561688c6c6e7471430d15a50a0b15f1a/README.md",
+      "sha256": "2ebfda1bf390d196dfa72e2f0e215babaf21ebfa1051fdb6f2bb22bf50045e95"
+    },
+    "LICENSE": {
+      "url": "https://raw.githubusercontent.com/syoyo/tinygltf/0d9ce1a9561688c6c6e7471430d15a50a0b15f1a/LICENSE",
+      "sha256": "2ae461f8c8b78ed77c14e9c3b7e353ba277e44cb3dbfb5a6d380f76f2ae081a2"
+    }
+  },
+  "integration": "Pristine upstream source. Premake producer-only static libraries. Allocation hooks are supplied by engine-owned build wrappers.",
+  "notices": {
+    "LICENSE-Boost-1.0.txt": {
+      "url": "https://www.boost.org/LICENSE_1_0.txt",
+      "sha256": "c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566"
+    }
+  }
+}

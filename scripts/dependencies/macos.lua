@@ -52,7 +52,7 @@ project "Hazelnut"
     dependson { "HazelProject", "PackageAudit" }
 local consumers = { "Nutella", "Hazelnut", "SpriteAssetAudit", "HazelProject" }
 if _OPTIONS["migration-tests"] then
-    for _, test in ipairs(tests) do table.insert(consumers, "Migration" .. test.name) end
+    for _, test in ipairs(tests) do if test.name ~= "ImportDependencySmoke" then table.insert(consumers, "Migration" .. test.name) end end
     table.insert(consumers, "MigrationExampleGamesSmoke")
 end
 for _, name in ipairs(consumers) do
