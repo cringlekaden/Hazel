@@ -1,8 +1,9 @@
 #pragma once
 #include "Hazel/Renderer/Color.h"
 #include "Hazel/Assets/ProjectAssets.h"
+#include "ColorReadbackReference.h"
 // Independent constants are IEC sRGB vectors, not values computed by the
-// production helpers. GPU float error <= 6e-4 accounts for RGBA16F quantization;
+// production helpers. Linear float error <= 6e-4 accounts for RGBA16F quantization;
 // final RGBA8 channels permit one code value of rounding.
 static void CanonicalColorChecks() {
     using namespace Hazel;
@@ -27,14 +28,17 @@ static void CanonicalColorChecks() {
         ts.Encoding=color?TextureEncoding::SRGB:TextureEncoding::Linear;auto texture=Texture2D::Create(ts);texture->SetData(middle,sizeof(middle));draw(texture);
         float pixel[4]{};glReadBuffer(GL_COLOR_ATTACHMENT0);glReadPixels(16,16,1,1,GL_RGBA,GL_FLOAT,pixel);
         const float expected=color?.21586050011389926f:128.f/255;
-        if (!(std::abs(pixel[0]-expected)<.0006f && std::abs(pixel[3]-128.f/255)<.0006f)) {
+        const auto rgbMatches=[&](float value){return color?SRGB8ReadbackMatches(value,128):std::abs(value-expected)<.0006f;};
+        std::cout << "Texture readback " << (color?"sRGB":"linear") << ": RGB " << pixel[0] << "; alpha " << pixel[3] << "; exact IEC/data RGB " << expected << "\n";
+        const bool matches=rgbMatches(pixel[0])&&rgbMatches(pixel[1])&&rgbMatches(pixel[2])&&std::abs(pixel[3]-128.f/255)<.0006f;
+        if (!matches) {
             texture->Bind(); GLint internal=0; glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_INTERNAL_FORMAT,&internal);
             std::cerr << "Color interpretation diagnostic: " << (color?"sRGB":"linear")
                       << "; actual RGBA " << pixel[0] << "," << pixel[1] << "," << pixel[2] << "," << pixel[3]
                       << "; expected RGB " << expected << "; expected alpha " << 128.f/255
                       << "; texture internal format " << internal << "; GL error " << glGetError() << "\n";
         }
-        Check(std::abs(pixel[0]-expected)<.0006f && std::abs(pixel[3]-128.f/255)<.0006f,"GPU color/data/alpha interpretation");
+        Check(matches,"GPU color/data/alpha interpretation");
         Check(linear->ReadPixel(1,16,16)==123,"Linear target lost entity ID");
         glEnable(GL_FRAMEBUFFER_SRGB);linear->EncodeOutput(output);Check(glIsEnabled(GL_FRAMEBUFFER_SRGB),"Output failed to restore framebuffer encoding state");
         output->Bind();unsigned char encoded[4]{};glReadPixels(16,16,1,1,GL_RGBA,GL_UNSIGNED_BYTE,encoded);

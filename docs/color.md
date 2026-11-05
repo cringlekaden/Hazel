@@ -50,3 +50,12 @@ transforms, physics, scalar data and linear control-state gain multipliers remai
 unchanged. The two scripted palettes use explicit sRGB literal conversion.
 Linear blending changes translucent overlaps and edges; palette intent does not
 imply pixel identity with the former encoded-space blending.
+
+CPU authoring/picker helpers and the final output shader use the exact piecewise
+sRGB equation. Hardware SRGB8 sampling has implementation precision: M4 and
+Mesa need not produce identical float bits. Mesa's polynomial decoded byte 128
+to .216553 after half storage in Linux/Windows qualification (exact IEC value
+.2158605). The independent texture readback oracle requires recovery within half
+an sRGB byte; authored linear/data/alpha/compositing checks retain their 6e-4
+half-float bound and final output retains its one-byte bound. This is documented
+sampling error, not a second color path or a change to Core_v1 conditions.

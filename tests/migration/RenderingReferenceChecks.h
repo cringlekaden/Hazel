@@ -1,4 +1,5 @@
 #pragma once
+#include "ColorReadbackReference.h"
 #include "Hazel/Renderer/Framebuffer.h"
 #include <glad/glad.h>
 #include <cstdlib>
@@ -27,7 +28,7 @@ static void RenderingReferenceChecks() {
             const float expected[]{0,.21404114048223255f,.5f,1};
             for(int i=0;i<4;++i){const auto x=-5.5+1.6*i;auto v=sample(x,1.8);Check(std::abs(v.r-expected[i])<.0006f && std::abs(v.g-expected[i])<.0006f && v.a==1,"Core_v1 known linear swatch changed");auto p=point(x,1.8);Check(composite->ReadPixel(1,p.x,p.y)==int(uint32_t(session.GetScene()->GetEntityByUUID(10+i))),"Core_v1 swatch picking/framebuffer scale mismatch");}
             const auto color=sample(2.55,2.15),data=sample(4.65,2.15);
-            Check(std::abs(color.g-.21586050011389926f)<.0006f && std::abs(data.g-128.f/255)<.0006f && color.r==0 && data.r==0,"Core_v1 top-left rows/color-data interpretation changed");
+            Check(SRGB8ReadbackMatches(color.g,128) && std::abs(data.g-128.f/255)<.0006f && color.r==0 && data.r==0,"Core_v1 top-left rows/color-data interpretation changed");
             const auto overlap=sample(-3,-1);Check(std::abs(overlap.r-.5f)<.0006f&&std::abs(overlap.g-.25f)<.0006f&&std::abs(overlap.b-.75f)<.0006f&&overlap.a==1,"Core_v1 linear overlapping layers changed");
             auto center=point(.3,-1);Check(composite->ReadPixel(1,center.x,center.y)==-1,"Core_v1 circle hole wrote picking");
             composite->Unbind();composite->EncodeOutput(output);output->Bind();auto p=point(-3,-1);unsigned char encoded[4]{};glReadPixels(p.x,p.y,1,1,GL_RGBA,GL_UNSIGNED_BYTE,encoded);
