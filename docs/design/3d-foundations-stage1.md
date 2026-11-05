@@ -124,10 +124,53 @@ Packaging inspection also caught reference metadata/notices outside the ordinary
 copy inventory. The unchanged Core_v1 metadata now lives at
 `Assets/Reference/Core_v1.json`, and provenance uses the packager-supported
 `NOTICE.txt` name. Final archives are checked for these files, their exact bytes
-and source content hashes. No rendering condition changed.
+and source content hashes. No rendering condition changed. Final clean-source reference archives identify
+`8340aa7` (documentation/metadata packaging after the same runnable code). Their
+SHA-256 values are `d653a1121458b30c013ef01076927131c6ff1121c91537619f1a50fda11f999f`
+(Hazelnut) and `8e8451fec3c2a977092265bf897e80d711b32b14bfc60429f64edee1a71ae6bd`
+(Nutella). The closing qualification edit is documentation only.
 
-Final canonical CI:
-[41950789249](https://github.com/cringlekaden/Hazel/actions/runs/41950789249), in
-progress. The previously unexplained Windows game-fixture timeout remains a
-follow-up until that campaign is observed. No existing timeouts or retries were
-changed. Skipped graphics checks are never counted as passes.
+Final canonical CI at runnable code `ccf65b9`:
+[41950789249](https://github.com/cringlekaden/Hazel/actions/runs/41950789249).
+Linux passed the full Debug/Release/GL4.1, product and game/archive campaigns.
+Hosted macOS passed its build/CPU/service/managed boundary. Windows passed
+Debug/Release native regressions, GL4.1, both content-only Reference player cases
+and extracted-product checks, then timed out at 480 seconds in the Debug game
+fixture. The overall run is **not green**. Its 53 captures match the earlier
+failure's named set, with no `FAIL` assertion; its final ObservatoryDawn milestone
+was at 475 seconds. Windows Release game execution and game archive acceptance
+were not reached.
+
+The earlier Unicode-fix run
+[41950054892](https://github.com/cringlekaden/Hazel/actions/runs/41950054892) passed
+full Linux and hosted macOS. Windows passed Debug/Release, forced GL4.1 and
+extracted-product checks, then its Debug native game fixture hit the unchanged
+480-second bound. Release game execution and subsequent Windows game archive
+acceptance were not reached and are not passes.
+
+Investigation compared the downloaded native log/captures with the pre-stage-1
+[41720163554](https://github.com/cringlekaden/Hazel/actions/runs/41720163554) failure:
+both produced the same 53 named captures, logged no `FAIL` assertion and continued
+through ObservatoryDawn before termination. Relative to process startup, baseline
+CliffCistern/Observatory milestones were 333/436 seconds; stage 1 reached them at
+316/415 seconds and continued through ObservatoryDawn at 471 seconds. This
+confirms the existing duration failure mode; it does not establish its cause or
+prove performance equivalence. The existing qualified baseline had completed the
+same fixture in 5m43s. No bound, assertion, retry or campaign condition was changed
+to conceal the recurrence. Comparison evidence is retained under
+`build/stage1-evidence/windows-timeout-comparison.json`.
+
+## Remaining limitations
+
+- Windows full gameplay/package acceptance remains limited by the recurring
+  Debug fixture timeout; its cause is still unresolved. It is not a graphics
+  correctness pass or a claim that the timeout was fixed.
+- The existing package auditor still requires the configured compiled module,
+  even for content-only projects. Compile the optional reference stub before
+  packaging as the guide specifies. Normal editor/player viewing requires none.
+- Reconcile the two owner-edited LastLightkeeper files deliberately, and review
+  the five example palettes. Their original bytes remain preserved.
+
+Stage 1 code is runnable and later stages remain unimplemented. The next planned
+work is format-independent GLB import/cooking and native asset authoring; it has
+not begun.
