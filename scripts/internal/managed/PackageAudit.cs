@@ -29,8 +29,6 @@ class PackageAudit {
             }
         }
         foreach (Type type in assembly.GetTypes()) {
-            for (Type parent = type.BaseType; parent != null; parent = parent.BaseType)
-                if (parent.FullName == "Hazel.Entity") { Console.WriteLine("SCRIPT " + type.FullName); break; }
             foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 if ((method.Attributes & MethodAttributes.PinvokeImpl) != 0)
                     throw new InvalidOperationException("Project P/Invoke needs explicit native redistribution support before packaging: " + type.FullName + "." + method.Name);
@@ -45,7 +43,7 @@ class PackageAudit {
                     throw new InvalidOperationException("Incompatible ScriptCore API contract; rebuild matching SDK tools");
                 Console.WriteLine("HAZEL_SCRIPTCORE_CONTRACT=1"); return 0;
             }
-            if (args.Length != 4) throw new ArgumentException("PackageAudit Core.dll Project.dll AssemblyInventory.txt MonoAssembliesRoot");
+            if (args.Length != 4) throw new ArgumentException("PackageAudit Core.dll Project.dll-or-- AssemblyInventory.txt MonoAssembliesRoot");
             foreach (string path in Directory.GetFiles(args[3], "*.dll", SearchOption.AllDirectories)) {
                 if (path.Replace('\\', '/').Split('/').Any(part => part.EndsWith("-api", StringComparison.Ordinal))) continue;
                 RuntimeIdentities.Add(AssemblyName.GetAssemblyName(path).FullName);
@@ -65,7 +63,16 @@ class PackageAudit {
                 string file;
                 return Files.TryGetValue(new AssemblyName(request.Name).Name, out file) ? Assembly.ReflectionOnlyLoadFrom(file) : Assembly.ReflectionOnlyLoad(request.Name);
             };
-            Audit(args[1]);
+            // Every shipped assembly retains dependency/PInvoke validation, even
+            // when native content has no application module. Only classes from
+            // the configured module are runtime-visible through ScriptEngine.
+            foreach (string path in Files.Values) Audit(path);
+            if (args[1] != "-") {
+                Audit(args[1]);
+                foreach (Type type in Assembly.ReflectionOnlyLoadFrom(args[1]).GetTypes())
+                    for (Type parent = type.BaseType; parent != null; parent = parent.BaseType)
+                        if (parent.FullName == "Hazel.Entity") { Console.WriteLine("SCRIPT " + type.FullName); break; }
+            }
             return 0;
         } catch (Exception error) { Console.Error.WriteLine("Package validation failed: " + error.Message); return 1; }
     }

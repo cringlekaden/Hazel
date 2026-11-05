@@ -45,7 +45,9 @@ int main(int argc,char** argv) {
         std::vector<std::filesystem::path> files;std::string line;
         while(std::getline(input,line)){if(!line.empty()&&line.back()=='\r')line.pop_back();if(!line.empty())files.push_back(std::filesystem::u8path(line));}
         if(input.bad())throw std::runtime_error("Cannot read complete asset inventory");
-        for(auto& dependency:Hazel::AuditSpriteAssets(root,files))std::cout<<"DEPENDENCY "<<dependency.generic_u8string()<<'\n';
+        std::set<std::string> scripts;
+        for(auto& dependency:Hazel::AuditSpriteAssets(root,files,&scripts))std::cout<<"DEPENDENCY "<<dependency.generic_u8string()<<'\n';
+        for(const auto& name:scripts)std::cout<<"SCRIPT_REQUIRED "<<name<<'\n';
         std::cout<<"PASS: native sprite/animation/font-family dependency closure\n";return 0;
     }catch(const std::exception& error){std::cerr<<"Sprite asset audit: "<<error.what()<<'\n';return 1;}
 }

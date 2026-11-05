@@ -104,6 +104,9 @@ def graphics_environment(profile):
     return env
 
 def package_tests(output,profile='native',interactive=False,interactive_app=None):
+    if profile!='gl41' and not interactive:
+        from internal.packaging_checks import content_only_contracts
+        content_only_contracts(profile)
     if hz.SYSTEM=='macos':
         from macos.qualification import packages
         return packages(output,profile,interactive,interactive_app)

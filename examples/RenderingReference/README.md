@@ -45,11 +45,9 @@ TEMPLATES`, using a new destination and the matching `Hazel/Resources/Templates`
 It has no GPU, Python, importer or script compiler prerequisite. Checked-in bytes
 and metadata remain authoritative, rather than runtime regeneration.
 
-For a relocated package, build Release, compile the generated optional stub with
-`script-build` (the current package auditor expects a module), then run:
+For a relocated content-only package, build Release, then run:
 
 ```sh
-python3 scripts/hazel.py script-build examples/RenderingReference/RenderingReference.hproj --config Release
 python3 scripts/hazel.py package --app Nutella --project examples/RenderingReference/RenderingReference.hproj --name RenderingReference --output dist/reference
 ```
 

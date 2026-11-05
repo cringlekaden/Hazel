@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <set>
 #include <thread>
 #include <glm/glm.hpp>
 
@@ -24,6 +25,8 @@ namespace Hazel {
         RuntimeSession(const RuntimeSession&) = delete;
         RuntimeSession& operator=(const RuntimeSession&) = delete;
         static void Validate(const Ref<Scene>& scene, bool validateScripts = true);
+        // CPU authored requirements shared by runtime readiness and package audit.
+        static std::set<std::string> RequiredScriptClasses(const Ref<Scene>& scene);
         void Start(const Ref<Project>& project, const Ref<Scene>& authoredScene);
         void Stop();
         // Hosts opt in before Start. Editor default remains isolated memory-only.

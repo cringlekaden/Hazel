@@ -11,6 +11,7 @@
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Scene/Entity.h"
 #include "Hazel/Scene/Prefab.h"
+#include "Hazel/Scene/RuntimeSession.h"
 #include "Hazel/Project/ProjectSerializer.h"
 #include "Hazel/Assets/ProjectAssets.h"
 #include "Hazel/Assets/SpriteSheetDocument.h"
@@ -58,6 +59,20 @@ static void AuthoredComparisonContracts() {
     Check(serializer.CaptureAuthoredState()!=baseline,"Invalid draft was hidden from dirty comparison");
     bool rejected=false;try{serializer.SerializeText();}catch(const std::exception&){rejected=true;}
     Check(rejected,"Fast dirty comparison bypassed save validation");
+}
+static void ScriptRequirementContracts() {
+    using namespace Hazel;
+    auto scene=CreateRef<Scene>();
+    Check(RuntimeSession::RequiredScriptClasses(scene).empty(),"Native content required an assembly");
+    auto entity=scene->CreateEntity("Unassigned script");entity.AddComponent<ScriptComponent>();
+    Check(RuntimeSession::RequiredScriptClasses(scene).empty(),"Empty class assignment required an assembly");
+    entity.GetComponent<ScriptComponent>().ClassName="Unavailable.Required";
+    auto copy=scene->DuplicateEntity(entity);
+    Check(RuntimeSession::RequiredScriptClasses(scene)==std::set<std::string>{"Unavailable.Required"},"Assigned requirements were omitted or duplicated");
+    RuntimeSession::Validate(scene,false);
+    bool rejected=false;try{RuntimeSession::Validate(scene);}catch(const std::exception&){rejected=true;}
+    Check(rejected,"Unavailable assigned script was Play-ready");
+    std::cout<<"PASS: shared native assigned-script requirements and independent content-only/metadata readiness\n";
 }
 #include "EditorDocumentChecks.h"
 #include "EditorStateChecks.h"
@@ -208,7 +223,7 @@ int main()
         CPUFontFamilyDocument();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();
-        Hazel::ProjectCreationChecks();Hazel::RendererPolicyChecks(); Hazel::HierarchyChecks(); Hazel::SubtreePrefabChecks();AuthoredReferenceChecks();
+        ScriptRequirementContracts();Hazel::ProjectCreationChecks();Hazel::RendererPolicyChecks(); Hazel::HierarchyChecks(); Hazel::SubtreePrefabChecks();AuthoredReferenceChecks();
         RecoveryContracts();
         Hazel::SceneCamera camera;
         Finite(camera.GetProjection());

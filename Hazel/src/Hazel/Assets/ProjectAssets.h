@@ -5,6 +5,7 @@
 #include "Hazel/Renderer/Font.h"
 #include <unordered_map>
 #include <atomic>
+#include <set>
 namespace Hazel {
 struct ResolvedSprite {
     Ref<Texture2D> Texture;
@@ -79,6 +80,6 @@ Ref<Font> ResolveTextFont(TextComponent& text,const Ref<ProjectAssets>& assets);
 const FontPalette& ResolveTextFonts(TextComponent& text,const Ref<ProjectAssets>& assets,const std::vector<Text::Span>& spans);
 // CPU-only closure validation shared by export and editor reference scans.
 struct SpriteAssetUse { std::filesystem::path File; std::string Location; SpriteReference Sprite; AnimationReference Animation; };
-std::vector<SpriteAssetUse> FindSpriteAssetUses(const std::filesystem::path& root,const std::vector<std::filesystem::path>& files);
-std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path& root,const std::vector<std::filesystem::path>& files);
+std::vector<SpriteAssetUse> FindSpriteAssetUses(const std::filesystem::path& root,const std::vector<std::filesystem::path>& files,std::set<std::string>* requiredScripts=nullptr);
+std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path& root,const std::vector<std::filesystem::path>& files,std::set<std::string>* requiredScripts=nullptr);
 }

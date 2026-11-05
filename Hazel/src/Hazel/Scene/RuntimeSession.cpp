@@ -21,17 +21,26 @@ namespace Hazel {
     void RuntimeSession::CheckThread() const {
         if (std::this_thread::get_id() != m_Thread) throw std::logic_error("RuntimeSession requires its main thread");
     }
+    std::set<std::string> RuntimeSession::RequiredScriptClasses(const Ref<Scene>& scene) {
+        if(!scene)throw std::runtime_error("No scene to inspect");
+        std::set<std::string> result;
+        for(auto handle:scene->GetAllEntitiesWith<ScriptComponent>()) {
+            const auto& name=Entity(handle,scene.get()).GetComponent<ScriptComponent>().ClassName;
+            if(name.empty())continue;
+            if(name.size()>512 || std::any_of(name.begin(),name.end(),[](unsigned char c){return c<32 || c==127;}))
+                throw std::runtime_error("Assigned script class name contains unsupported control characters or exceeds 512 bytes");
+            result.insert(name);
+        }
+        return result;
+    }
     void RuntimeSession::Validate(const Ref<Scene>& scene, bool validateScripts) {
         if (!scene) throw std::runtime_error("No scene to run");
         scene->Presentation().Validate();
         scene->ValidateSprites();
         scene->ValidateUI();
         scene->ValidateHierarchy(); // Shared roots, planar dimensions, graph/world and physics validation.
-        if (validateScripts) for (auto handle : scene->GetAllEntitiesWith<ScriptComponent>()) {
-            const auto& script = Entity(handle, scene.get()).GetComponent<ScriptComponent>();
-            if (!script.ClassName.empty() && !ScriptEngine::EntityClassExists(script.ClassName))
-                throw std::runtime_error("Runtime script class is unavailable: " + script.ClassName);
-        }
+        if(validateScripts)for(const auto& name:RequiredScriptClasses(scene))
+            if(!ScriptEngine::EntityClassExists(name))throw std::runtime_error("Runtime script class is unavailable: "+name);
     }
     void RuntimeSession::Start(const Ref<Project>& project, const Ref<Scene>& authoredScene) {
         CheckThread();

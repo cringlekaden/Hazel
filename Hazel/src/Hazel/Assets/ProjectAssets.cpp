@@ -15,6 +15,7 @@
 #include <cmath>
 #include <map>
 #include <fstream>
+#include "Hazel/Scene/RuntimeSession.h"
 namespace Hazel {
 namespace {
 std::string TextureKey(const std::filesystem::path& path,const TextureSpecification& s) {
@@ -198,16 +199,19 @@ void ProjectAssets::ImportTexture(const std::filesystem::path& source,const std:
     std::filesystem::create_directories(path.parent_path());
     FileSystem::WriteFileAtomically(path,[&](std::ostream& out){out.write(reinterpret_cast<const char*>(bytes.Data()),static_cast<std::streamsize>(bytes.Size()));},WriteMode::CreateNew);
 }
-std::vector<SpriteAssetUse> FindSpriteAssetUses(const std::filesystem::path& root,const std::vector<std::filesystem::path>& files) {
+std::vector<SpriteAssetUse> FindSpriteAssetUses(const std::filesystem::path& root,const std::vector<std::filesystem::path>& files,std::set<std::string>* requiredScripts) {
     std::vector<SpriteAssetUse> result;
     for(auto file:files) {
         if(file.extension()!=".hazel" && file.extension()!=".hprefab") continue;
         auto path=Project::ResolveOwnedAsset(root,file);auto doc=YAML::Load(FileDocument::Read(path));
-        if(file.extension()==".hprefab")Prefab::Load(root,file,true,ResourceLoading::MetadataOnly);
+        Ref<Scene> authored;
+        if(file.extension()==".hprefab")authored=Prefab::Load(root,file,true,ResourceLoading::MetadataOnly);
         else {
             auto scene=CreateRef<Scene>();SceneSerializer loader(scene,root,true);
             if(!loader.DeserializeText(FileDocument::Read(path),false,ResourceLoading::MetadataOnly))throw std::runtime_error(file.generic_u8string()+": "+loader.Report().Error);
+            authored=scene;
         }
+        if(requiredScripts){const auto names=RuntimeSession::RequiredScriptClasses(authored);requiredScripts->insert(names.begin(),names.end());}
         if(!doc.IsMap() || !doc["Scene"] || (doc["Entities"] && !doc["Entities"].IsSequence())) throw std::runtime_error("Malformed scene/prefab: "+file.generic_u8string());
         for(auto entity:doc["Entities"]) {
             const auto location=file.generic_u8string()+" entity "+entity["Entity"].as<std::string>();
@@ -227,7 +231,7 @@ std::vector<SpriteAssetUse> FindSpriteAssetUses(const std::filesystem::path& roo
         }
     } return result;
 }
-std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path& root,const std::vector<std::filesystem::path>& files) {
+std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path& root,const std::vector<std::filesystem::path>& files,std::set<std::string>* requiredScripts) {
     std::map<std::string,SpriteSheetDefinition> sheets;std::set<std::filesystem::path> dependencies;
     std::set<std::filesystem::path> auditedFamilies;
     auto family=[&](const std::filesystem::path& reference) {
@@ -253,7 +257,7 @@ std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path
         if(file.extension()==".hsprites")get(file);
         if(file.extension()==".hfont")family(file);
     }
-    for(auto use:FindSpriteAssetUses(root,files)) {
+    for(auto use:FindSpriteAssetUses(root,files,requiredScripts)) {
         try { if(use.Sprite.Region) get(use.Sprite.Sheet).Region(use.Sprite.Region);if(use.Animation.Clip) get(use.Animation.Sheet).Clip(use.Animation.Clip); }
         catch(const std::exception& e) {throw std::runtime_error(use.Location+": "+e.what());}
     }

@@ -48,11 +48,14 @@ def resolve_owned(root, reference, exists=True):
 
 
 def validate_project(descriptor, config, assets):
-    import yaml
     files = list(project_files(assets))
-    validate_sprites(assets, files, descriptor)
+    required_scripts = validate_sprites(assets, files, descriptor)
     included = {file.resolve() for file in files}
-    for key in ('StartScene','ScriptModulePath'):
+    module = resolve_owned(assets, config['ScriptModulePath'], exists=False)
+    module_present = module.is_file()
+    if required_scripts and not module_present:
+        raise RuntimeError('Assigned scripts require a compiled module at '+str(module)+': '+', '.join(sorted(required_scripts)))
+    for key in (('StartScene','ScriptModulePath') if module_present else ('StartScene',)):
         if resolve_owned(assets,config[key]) not in included:
             raise RuntimeError(key+' selects excluded compiler output. Move/stage this dependency into project assets before packaging.')
     scenes = [file for file in files if file.suffix in ('.hazel','.hprefab')]
@@ -63,7 +66,6 @@ def validate_project(descriptor, config, assets):
     # hierarchy and authored-reference ownership checks. Its dependency output
     # above is checked against this package's exact inclusion/exclusion inventory.
     core = hz.binaries('Release') / 'Hazel-ScriptCore/Hazel-ScriptCore.dll'
-    module = resolve_owned(assets, config['ScriptModulePath'])
     assembly_files = [file for file in files if file.suffix.lower()=='.dll']
     auditor = hz.binaries('Release') / 'PackageAudit/PackageAudit.exe'
     runtime = hz.ROOT/'Hazelnut/mono/lib/mono' if hz.SYSTEM=='windows' else hz.mono_prefix()/'lib/mono'
@@ -72,17 +74,14 @@ def validate_project(descriptor, config, assets):
     with tempfile.TemporaryDirectory(prefix='hazel-assembly-audit-') as temporary:
         inventory = Path(temporary)/'assemblies.txt'
         inventory.write_text(''.join(str(file)+'\n' for file in assembly_files),encoding='utf-8')
-        command = [auditor, core, module, inventory, runtime]
+        command = [auditor, core, module if module_present else '-', inventory, runtime]
         if hz.SYSTEM != 'windows':
             command = [*hz.mono_command(hz.mono_prefix())[:-1], *command]
         result = subprocess.run(list(map(str,command)), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
     if result.returncode: raise RuntimeError(result.stderr.strip() or 'Managed dependency audit failed')
     known = {line.removeprefix('SCRIPT ') for line in result.stdout.splitlines() if line.startswith('SCRIPT ')}
-    for scene in scenes:
-        content = yaml.safe_load(scene.read_text(encoding='utf-8'))
-        for entity in content.get('Entities', []) or []:
-            name = entity.get('ScriptComponent', {}).get('ClassName')
-            if name and name not in known: raise RuntimeError('Unavailable compiled script class ' + name + ' in ' + str(scene))
+    for name in sorted(required_scripts):
+        if name not in known:raise RuntimeError('Unavailable compiled script class '+name+' in configured project module')
     print(result.stdout, end='')
 
 
@@ -110,6 +109,7 @@ def validate_sprites(assets, files, descriptor=None):
         if line.startswith('DEPENDENCY ') and resolve_owned(assets,line[len('DEPENDENCY '):]) not in included:
             raise RuntimeError('Asset dependency selects excluded compiler output: '+line[len('DEPENDENCY '):])
     print(result.stdout,end='')
+    return {line[len('SCRIPT_REQUIRED '):] for line in result.stdout.splitlines() if line.startswith('SCRIPT_REQUIRED ')}
 
 
 def validate_engine_fonts(resources):
