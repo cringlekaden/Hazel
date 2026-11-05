@@ -228,6 +228,23 @@ def test(configuration, profile='native', suite='all', only=None):
             evidence=log.read_text(errors='replace')
             if 'PASS:' not in evidence:raise RuntimeError('Missing acceptance evidence: '+str(log))
             if name=='RuntimeSessionSmoke' and 'PASS: Rendering Reference Core_v1' not in evidence:raise RuntimeError('Rendering Reference check did not execute: '+str(log))
+            if name=='RuntimeSessionSmoke':
+                # Exercise the real player CLI as well as RuntimeSession. The
+                # committed reference intentionally has no compiled assembly.
+                if (reference.parent/'Assets/Scripts/Binaries/RenderingReference.dll').exists():
+                    raise RuntimeError('Reference product fixture unexpectedly has a script module')
+                player=base/'Nutella'/('Nutella'+suffix)
+                if hz.SYSTEM=='windows':hz.copy_changed(player,private/player.name);player=private/player.name
+                for case in ('Orthographic','Perspective'):
+                    descriptor=reference if case=='Orthographic' else reference.parent/'RenderingReference-Perspective.hproj'
+                    product_env=env.copy();product_env['HAZEL_DATA']=str(working/'data'/('ReferencePlayer-'+case))
+                    product_log=logs/f'{hz.SYSTEM}-{configuration}-{profile}-RenderingReference-{case}-Player.log'
+                    with product_log.open('w',encoding='utf-8') as out:
+                        product=subprocess.run(list(map(str,[player,'--smoke-test','--project',descriptor])),cwd=working,env=product_env,stdout=out,stderr=subprocess.STDOUT,timeout=120)
+                    product_text=product_log.read_text(errors='replace')
+                    if product.returncode or 'SMOKE: 60 rendered frames' not in product_text or 'SMOKE PASS: application teardown completed' not in product_text:
+                        raise RuntimeError('Rendering Reference content-only player failed: '+str(product_log)+'\n'+product_text)
+                print('PASS: actual Nutella Core_v1 orthographic/perspective startup, 60 rendered frames and teardown without a script module',flush=True)
             if name=='EditorSmoke' and env.get('HAZEL_FINAL_UI_PROJECT'):
                 tutorial='PASS: native tutorial Inspector, composed creation/duplicate/delete/property undo, prefab instantiate, save/reopen and repeated Play/Stop in a private project'
                 if tutorial not in evidence:raise RuntimeError('Selected tutorial authoring did not execute: '+str(log))

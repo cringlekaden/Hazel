@@ -98,10 +98,11 @@ namespace Hazel {
             throw std::runtime_error("Project requires Name, a .hazel StartScene, and a .dll ScriptModulePath");
         if (!std::filesystem::is_directory(project->GetAssetRoot()))
             throw std::runtime_error("Missing project asset root: " + project->GetAssetRoot().generic_u8string());
-        for (const auto& reference : { project->GetConfig().StartScene, project->GetConfig().ScriptModulePath }) {
-            const auto path = Project::ResolveAssetPath(project->GetAssetRoot(), reference);
-            if (!std::filesystem::is_regular_file(path)) throw std::runtime_error("Missing project dependency: " + path.generic_u8string());
-        }
+        const auto start=Project::ResolveAssetPath(project->GetAssetRoot(),config.StartScene);
+        if(!std::filesystem::is_regular_file(start))throw std::runtime_error("Missing project dependency: "+start.generic_u8string());
+        // The descriptor retains the eventual script-module location. Its file
+        // is optional for native content; RuntimeSession rejects assigned classes
+        // that are unavailable. Do not impose scripting readiness at CLI launch.
         ApplicationSpecification spec; spec.Name = "Nutella"; spec.CommandLineArgs = args; spec.EnableImGui = false;
         spec.Rendering = RendererPolicy::Settings(project->GetRendererRequests());
         spec.WindowVSync = project->GetRendererRequests().VSync;
