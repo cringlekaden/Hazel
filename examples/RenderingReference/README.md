@@ -30,8 +30,11 @@ and a white backing. Correct linear blending deliberately differs from historica
 encoded-space blending. World text, circle coverage and screen UI share the
 canonical linear RGB/linear alpha contract.
 
-`Core_v1.json` freezes named camera IDs/values, content hashes, idle clock/seed,
-1280×720 logical and physical reference extents and output formats. Interactive
+`Assets/Reference/Core_v1.json` freezes named camera IDs/values, content hashes, idle clock/seed,
+1280×720 logical and physical reference extents and output formats. Hash paths
+are relative to the source project root. A package includes its selected project
+descriptor and both scenes; the second source descriptor is not an installed
+startup choice. Metadata and NOTICE travel through the ordinary package paths. Interactive
 resizing is useful exploration; record the actual extents as an override when
 capturing it. Future stages add named cases. Do not restage Core_v1 to conceal a
 rendering discrepancy. A deliberate correctness revision needs numerical evidence

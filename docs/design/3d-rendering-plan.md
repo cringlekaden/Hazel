@@ -1047,5 +1047,5 @@ new-scene defaults/factory, scene-owned display-referred background, private
 Planar/Orbit navigation, canonical linear RGB and a single final output encoding.
 Only the working 2D starter is exposed. Scene-referred/PBR/IBL, GLB and other later
 stages remain unimplemented. Qualification evidence and any remaining limitations
-are recorded separately in the stage-1 implementation record; proposals above
+are recorded in [the stage-1 implementation record](3d-foundations-stage1.md); proposals above
 must not be read as implemented product capabilities.

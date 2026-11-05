@@ -53,7 +53,7 @@ imply pixel identity with the former encoded-space blending.
 
 CPU authoring/picker helpers and the final output shader use the exact piecewise
 sRGB equation. Hardware SRGB8 sampling has implementation precision: M4 and
-Mesa need not produce identical float bits. Mesa's polynomial decoded byte 128
+Mesa need not produce identical float bits. Mesa's [decoder](https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/src/gallium/auxiliary/gallivm/lp_bld_format_srgb.c) decoded byte 128
 to .216553 after half storage in Linux/Windows qualification (exact IEC value
 .2158605). The independent texture readback oracle requires recovery within half
 an sRGB byte; authored linear/data/alpha/compositing checks retain their 6e-4

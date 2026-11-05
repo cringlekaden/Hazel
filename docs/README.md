@@ -37,3 +37,4 @@ These guides describe the current checkout, including the runtime UI, tutorial a
 
 - [Runtime color](color.md) — linear RGB, texture interpretation and final output.
 - [Rendering Reference](../examples/RenderingReference/README.md) — permanent Core_v1 unlit cases.
+- [Stage 1 implementation and qualification](design/3d-foundations-stage1.md) — settings, color and native 2D foundations.
