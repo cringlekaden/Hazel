@@ -342,6 +342,11 @@ namespace Hazel {
                 <<YAML::Key<<"PlayOnStart"<<YAML::Value<<a.PlayOnStart<<YAML::EndMap;
         }
 
+        if(entity.HasComponent<MeshRendererComponent>()) {
+            out<<YAML::Key<<"MeshRendererComponent"<<YAML::Value;
+            WriteMeshBinding(out,entity.GetComponent<MeshRendererComponent>());
+        }
+
 		if (entity.HasComponent<CircleRendererComponent>())
 		{
 			out << YAML::Key << "CircleRendererComponent";
@@ -647,6 +652,9 @@ namespace Hazel {
                     }
                 }
 
+                if(auto node=entity["MeshRendererComponent"])
+                    static_cast<MeshBinding&>(deserializedEntity.AddComponent<MeshRendererComponent>())=ReadMeshBinding(node);
+
 				auto circleRendererComponent = entity["CircleRendererComponent"];
 				if (circleRendererComponent)
 				{
@@ -751,6 +759,11 @@ namespace Hazel {
                 auto font=assets->FamilyStatus(text.Font);
                 if(!font.Error.empty())m_Report.Problems.push_back({entity.GetUUID(),"Text family",font.Error,m_AssetRoot/text.Font.Family});
             }
+        }
+        for(auto handle:staged->GetAllEntitiesWith<MeshRendererComponent>()) {
+            Entity entity(handle,staged.get());auto& binding=entity.GetComponent<MeshRendererComponent>();
+            if(resources==ResourceLoading::Resolve)try{AuditMeshBinding(m_AssetRoot,binding);}
+            catch(const std::exception& error){if(!m_Repair)throw;m_Report.Problems.push_back({entity.GetUUID(),"Mesh asset",error.what(),m_AssetRoot/binding.Mesh});}
         }
         for (auto handle : staged->GetAllEntitiesWith<SpriteRendererComponent>())
         {

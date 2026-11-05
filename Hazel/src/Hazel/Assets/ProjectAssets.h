@@ -2,6 +2,7 @@
 #include "SpriteSheet.h"
 #include "FontFamily.h"
 #include "UIStyle.h"
+#include "ImportedAsset.h"
 #include "Hazel/Renderer/Font.h"
 #include <unordered_map>
 #include <atomic>
@@ -36,6 +37,10 @@ public:
     ~ProjectAssets();
     const std::filesystem::path& Root() const {return m_Root;}
     uint64_t Epoch() const {return m_Epoch;}
+    struct MeshResolution {Ref<const MeshAsset> Accepted;std::string Error;};
+    struct MaterialResolution {Ref<const MaterialDefinition> Accepted;std::string Error;};
+    MeshResolution Mesh(const std::filesystem::path& reference);
+    MaterialResolution Material(const std::filesystem::path& reference);
     struct StyleResolution {Ref<const UIStyleDefinition> Accepted;std::string Error;};
     StyleResolution Style(const std::filesystem::path& reference);
     size_t StyleBytes() const{return m_StyleBytes;}
@@ -55,6 +60,16 @@ public:
     void Refresh(); // explicit freshness boundary before Play; no per-frame file checks
     void ImportTexture(const std::filesystem::path& source,const std::filesystem::path& destination);
 private:
+    struct AssetBudget {std::atomic<size_t> Bytes{0},Versions{0};};
+    Ref<AssetBudget> m_AssetBudget=CreateRef<AssetBudget>();
+    struct MeshEntry {Ref<const MeshAsset> Accepted;std::string Error;size_t Bytes=0;};
+    struct MaterialEntry {Ref<const MaterialDefinition> Accepted;std::string Error;size_t Bytes=0;};
+    std::unordered_map<std::string,MeshEntry> m_Meshes;
+    std::unordered_map<std::string,MaterialEntry> m_Materials;
+    size_t m_MeshBytes=0,m_MaterialBytes=0;
+    void ReloadMesh(const std::string& key,MeshEntry& entry);
+    void ReloadMaterial(const std::string& key,MaterialEntry& entry);
+    void RefreshMeshes();
     struct StyleBudget {std::atomic<size_t> Bytes{0},Versions{0};};
     Ref<StyleBudget> m_StyleBudget=CreateRef<StyleBudget>();
     struct StyleEntry {Ref<const UIStyleDefinition> Accepted;std::string Error;size_t Bytes=0;};

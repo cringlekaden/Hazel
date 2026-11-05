@@ -1045,7 +1045,15 @@ Implementation is isolated on `feature/3d-foundations` from the audited merged
 master. The approved design above remains the roadmap. Stage 1 adds native
 new-scene defaults/factory, scene-owned display-referred background, private
 Planar/Orbit navigation, canonical linear RGB and a single final output encoding.
-Only the working 2D starter is exposed. Scene-referred/PBR/IBL, GLB and other later
-stages remain unimplemented. Qualification evidence and any remaining limitations
+Only the working 2D starter is exposed. Stage 1 does not implement
+scene-referred/PBR/IBL or import; stage-2 progress is recorded below. Qualification evidence and any remaining limitations
 are recorded in [the stage-1 implementation record](3d-foundations-stage1.md); proposals above
 must not be read as implemented product capabilities.
+
+## Stage 2 implementation status
+
+Stage 2 is in progress: the content-only packaging prerequisite is repaired;
+producer-only GLB/tangent dependencies, engine-owned CPU import/cooking and native
+asset contracts are implemented. Native editor integration and qualification are
+tracked in [the stage-2 record](3d-import-stage2.md). Stage 3 drawing, PBR, IBL and
+other formats remain unimplemented.

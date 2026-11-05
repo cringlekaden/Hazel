@@ -266,8 +266,8 @@ project "Hazel"
         "Hazel/src/**.h",
         "Hazel/src/**.cpp",
         "Hazel/src/**.mm",
-        "Hazel/vendor/stb_image/**.h",
-        "Hazel/vendor/stb_image/**.cpp"
+        "Hazel/vendor/stb_image/**.h"
+        -- ImageDecoder.cpp owns allocation hooks; vendor bytes stay pristine.
     }
 
 
@@ -288,7 +288,7 @@ project "Hazel"
     }
 
     -- stb_image is third-party code. Keep Hazel's warnings enabled.
-    filter "files:Hazel/vendor/stb_image/**.cpp"
+    filter "files:Hazel/src/Hazel/Renderer/ImageDecoder.cpp"
         warnings "Off"
         -- GCC 16 Debug mishandles SSE immediate intrinsics imported through PCH.
         -- Compile the clean vendor wrapper normally; retain SIMD and engine PCH.

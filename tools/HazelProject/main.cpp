@@ -8,8 +8,11 @@
 #include "Hazel/Scene/SceneSerializer.h"
 #include <chrono>
 #include "RenderingReference.h"
+#include "Import.h"
+#include "Hazel/Core/OperationProgress.h"
 #include <iostream>
 #include <map>
+#include <set>
 #include <sstream>
 #ifdef HZ_PLATFORM_WINDOWS
 #include "Platform/Windows/WindowsCommandLine.h"
@@ -19,6 +22,8 @@ constexpr const char* Usage =
     "Usage: HazelProject COMMAND [arguments]\n"
     "  create --name NAME --identifier ID --destination FOLDER --templates FOLDER\n"
     "  create-rendering-reference FOLDER TEMPLATES  (maintainer Core_v1 recipe)\n"
+    "  import-glb PROJECT.hproj SOURCE.glb ASSET_FOLDER [--scene INDEX] [--cancel-file ABSOLUTE]\n"
+    "  reimport-glb PROJECT.hproj ASSET_FOLDER/Import.himport [--cancel-file ABSOLUTE]\n"
     "  validate PROJECT.hproj\n"
     "  slice-sheet ASSETS_ROOT SHEET IMAGE TILE_SIZE\n"
     "  add-clip ASSETS_ROOT SHEET NAME DURATION ORDINALS_CSV\n"
@@ -42,6 +47,20 @@ int main(int argc, char **argv) {
         if (args.size() == 2 && args[1] == "--contract") {
             std::cout << "HAZEL_AUTHORING_CONTRACT=1\n";
             return 0;
+        }
+        if(args.size()==2 && args[1]=="--import-contract"){std::cout<<"HAZEL_ASSET_IMPORT_CONTRACT=1\n";return 0;}
+        if(args.size()>=4 && (args[1]=="import-glb"||args[1]=="reimport-glb")) {
+            const bool reimport=args[1]=="reimport-glb";const size_t required=reimport?4:5;
+            if(args.size()<required||(args.size()-required)%2)throw std::runtime_error(Usage);
+            int scene=-1;std::filesystem::path cancelFile;
+            std::set<std::string> options;
+            for(size_t i=required;i<args.size();i+=2){if(!options.insert(args[i]).second)throw std::runtime_error("Duplicate import option");if(args[i]=="--scene"&&!reimport){size_t used=0;scene=std::stoi(args[i+1],&used);if(used!=args[i+1].size()||scene< -1||scene>=10000)throw std::runtime_error("Scene index must be -1 (default) or 0..9999");}else if(args[i]=="--cancel-file"){cancelFile=std::filesystem::u8path(args[i+1]);if(!cancelFile.is_absolute())throw std::runtime_error("Cancellation marker requires an absolute owned path");}else throw std::runtime_error("Unknown import option: "+args[i]);}
+            Hazel::Log::Init();Hazel::Resources::Configure(Hazel::Resources::Defaults("HazelProject"));auto project=Hazel::Project::LoadCandidate(std::filesystem::u8path(args[2]));if(!project)throw std::runtime_error("Cannot read project descriptor");
+            Hazel::OperationProgress::Scope progress([](const std::string& label,size_t done,size_t total){std::cout<<"[import] "<<label;if(total)std::cout<<" "<<done<<"/"<<total;std::cout<<std::endl;});
+            Hazel::Import::Cancel cancelled=[&]{return !cancelFile.empty()&&std::filesystem::exists(cancelFile);};Hazel::Import::Result result;
+            if(reimport)result=Hazel::Import::ReimportGLB(project->GetAssetRoot(),std::filesystem::u8path(args[3]),cancelled);
+            else result=Hazel::Import::ImportGLB({project->GetAssetRoot(),std::filesystem::absolute(std::filesystem::u8path(args[3])),std::filesystem::u8path(args[4]),scene,cancelled});
+            std::cout<<"IMPORTED "<<result.Manifest.generic_u8string()<<"\nPREFAB "<<result.Prefab.generic_u8string()<<"\nGeneration "<<Hazel::AssetKey(result.Generation)<<(result.Unchanged?" (unchanged)":" (accepted)")<<"\nMesh metadata authoring ready; mesh drawing/Play requires stage 3\n";return 0;
         }
         if(args.size()==4 && args[1]=="measure-scene") {
             Hazel::Log::Init();const auto project=Hazel::Project::LoadCandidate(std::filesystem::u8path(args[2]));

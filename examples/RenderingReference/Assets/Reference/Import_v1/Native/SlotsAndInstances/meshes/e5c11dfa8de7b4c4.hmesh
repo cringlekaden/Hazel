@@ -1,0 +1,12 @@
+Mesh:
+  Version: 1
+  ID: e5c11dfa8de7b4c4
+  Name: Two slots with tangent mirror boundary
+  Import: Reference/Import_v1/Native/SlotsAndInstances/Import.himport
+  Slots:
+    - ID: 007e1de064f39aab
+      Name: Surface 1
+      Material: Reference/Import_v1/Native/SlotsAndInstances/materials/cdb9b8eda778c70e.hmat
+    - ID: fdda0b84341db034
+      Name: Surface 2
+      Material: Reference/Import_v1/Native/SlotsAndInstances/materials/9b7443dc0d097011.hmat

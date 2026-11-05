@@ -121,6 +121,7 @@ namespace Hazel {
         void MoveSibling(Entity entity, int direction); // Edit-only adjacent order, stable IDs
         ParentingResult GetParentingResult(uint64_t request) const;
         void ValidateHierarchy() const;
+        void ValidateMeshes() const;
         void CheckThread() const;
         void ValidateComponentPlacement(Entity entity, bool physics) const;
         Entity InstantiateEntity(Entity source, const TransformComponent& transform);

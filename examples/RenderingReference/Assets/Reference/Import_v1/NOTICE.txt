@@ -1,0 +1,16 @@
+Rendering Reference / Import_v1
+
+Original diagnostic triangles, affine transforms, pixel patterns and malformed
+source fixtures generated for this Hazel fork. Distributed under the repository's
+Apache-2.0 LICENSE (packaged licenses/Hazel/LICENSE). No third-party model, texture
+pack or photographic image is included.
+
+Source generation: examples/RenderingReference/tools/generate_import_fixtures.py
+(Python standard library, source fixtures only). Native assets were authored by
+the normal HazelProject import-glb service. sources.json records exact input bytes;
+outputs.json freezes the accepted native artifacts/identities and metadata cases.
+TinyGLTF and Mikk source pins/notices are recorded in the engine dependency ledger;
+these libraries are producer tools and are not runtime geometry dependencies.
+
+These cases qualify import/cooking/metadata only, without expected rendered images,
+mesh drawing, PBR lighting or IBL acceptance. Core_v1 remains independently frozen.

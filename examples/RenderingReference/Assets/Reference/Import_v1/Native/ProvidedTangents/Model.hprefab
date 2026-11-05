@@ -1,0 +1,33 @@
+PrefabVersion: 3
+PrefabRoot: 2981012911132131638
+SceneVersion: 3
+Scene: Imported model
+Presentation:
+  Mode: DisplayReferred
+  Background: [0.0100228256, 0.0100228256, 0.0100228256, 1]
+Entities:
+  - Entity: 2981012911132131638
+    Relationship:
+      Parent: 0
+      Order: 0
+    TagComponent:
+      Tag: Imported model
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+  - Entity: 11100818025426940283
+    Relationship:
+      Parent: 2981012911132131638
+      Order: 0
+    TagComponent:
+      Tag: Exact reflected affine matrix
+    TransformComponent:
+      Translation: [3, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [-1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Import_v1/Native/ProvidedTangents/meshes/1c9a0a2eac985c32.hmesh
+      Materials:
+        []

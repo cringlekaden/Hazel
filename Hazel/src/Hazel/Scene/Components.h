@@ -13,6 +13,7 @@
 #include "Hazel/Renderer/Texture.h"
 #include "Hazel/Renderer/Font.h"
 #include "Hazel/Assets/ProjectAssets.h"
+#include "Hazel/Assets/ImportedAsset.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -97,6 +98,8 @@ namespace Hazel {
         float Gain=0.5f;
         bool Loop=false, PlayOnStart=false;
     };
+
+    struct MeshRendererComponent : MeshBinding {}; // authored references only; no stage-2 drawing
 
 	struct CircleRendererComponent
 	{
@@ -300,7 +303,7 @@ namespace Hazel {
 	};
 
 	using AllComponents =
-		ComponentGroup<TransformComponent, SpriteRendererComponent, SpriteAnimationComponent, AudioSourceComponent,
+		ComponentGroup<TransformComponent, MeshRendererComponent, SpriteRendererComponent, SpriteAnimationComponent, AudioSourceComponent,
 			CircleRendererComponent, CameraComponent, ScriptComponent,
 			NativeScriptComponent, Rigidbody2DComponent, BoxCollider2DComponent,
 			CircleCollider2DComponent, TextComponent, UICanvasComponent, UIRectComponent, UILayoutComponent, UITextStyleComponent, UINineSliceComponent, UIButtonComponent, UIRadioGroupComponent, UIProgressComponent, UISliderComponent, UIScrollViewComponent, UIDropdownComponent, UITabsComponent, UITabComponent, UITooltipComponent, UITextEntryComponent, UIAppearanceComponent>;

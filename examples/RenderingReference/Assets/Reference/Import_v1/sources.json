@@ -1,0 +1,74 @@
+{
+  "acceptance": "CPU import/cooking/metadata only; no mesh/PBR rendering acceptance",
+  "cases": {
+    "AlphaBlend.glb": {
+      "accepted": false,
+      "diagnostic": "BLEND",
+      "meaning": "AlphaBlend",
+      "sha256": "238b6e55c834a3ea8d332bbc5703d734d40559a1fc90181871fe647221df609f"
+    },
+    "ExcessiveVertexCount.glb": {
+      "accepted": false,
+      "diagnostic": "count",
+      "meaning": "ExcessiveVertexCount",
+      "sha256": "3924506ed6cb7f6fb91723e1e021a95c7f8bbf8a374d50964b5d7fd0f5581833"
+    },
+    "ExternalURI.glb": {
+      "accepted": false,
+      "diagnostic": "uri",
+      "meaning": "ExternalURI",
+      "sha256": "109cae92e61e2144703465f26111f64c9a57cb7ddf925db3987ac271b37dbc9c"
+    },
+    "ExtraUV.glb": {
+      "accepted": false,
+      "diagnostic": "TEXCOORD_1",
+      "meaning": "ExtraUV",
+      "sha256": "f4031bb556f59fdbbf591bc4bd39d7dfd7470b55cb76dcb7f3289977d2f47e1f"
+    },
+    "MaterialExtension.glb": {
+      "accepted": false,
+      "diagnostic": "KHR_materials_transmission",
+      "meaning": "MaterialExtension",
+      "sha256": "cae95d36c3fe4ec4126179140dcfd1268fe6fc27a70c028b558e42dd9d323228"
+    },
+    "OverflowingOffset.glb": {
+      "accepted": false,
+      "diagnostic": "bounded nonnegative integer",
+      "meaning": "OverflowingOffset",
+      "sha256": "504dc8f4db1783ab1279361b84df2c18c9e29680a6b998b2cc3290ea3bbedcdd"
+    },
+    "ProvidedTangents.glb": {
+      "accepted": true,
+      "meaning": "FLOAT normal/tangent/UV/color, U32 indices, default glTF material and exact reflected affine matrix",
+      "sha256": "d32059d7d0dc10a4b28c0be4f0ee35244d2ac6628ee5f601d0671aee65d78f54"
+    },
+    "ShearedNode.glb": {
+      "accepted": false,
+      "diagnostic": "shear",
+      "meaning": "ShearedNode",
+      "sha256": "eb907810631eb4d8dcd42da0bb41260fc5368c5fb4eb48b3b93ac464660e6220"
+    },
+    "SlotsAndInstances.glb": {
+      "accepted": true,
+      "meaning": "Two stable slots, repeated instances, signed nonuniform TRS, normalized UV/color, stride 24, U8/U16 indices, Mikk corner splits, embedded color/data PNG and Mask/Unlit semantics",
+      "sha256": "cbef7d50bbdac992a47c5d29d0cb086f4fccea5fe854d16395211592d629bf8d"
+    },
+    "SparseAccessor.glb": {
+      "accepted": false,
+      "diagnostic": "sparse",
+      "meaning": "SparseAccessor",
+      "sha256": "3a21e8171fd5ae6609e2544c52484efbe7671f952447d39d0d48bd2ce7e2c760"
+    },
+    "Truncated.glb": {
+      "accepted": false,
+      "diagnostic": "complete GLB 2",
+      "meaning": "Truncated chunk framing",
+      "sha256": "9d04abccf102f5d10033a1aa0524edbfc5e1e7dc2a14ae7eb5e11e4130decab7"
+    }
+  },
+  "coordinates": "right handed, +Y up, metres; UV/image rows top-left",
+  "generator": "tools/generate_import_fixtures.py; Python standard library only",
+  "license": "Original generated diagnostic content, Apache-2.0 (repository LICENSE)",
+  "name": "Import_v1",
+  "version": 1
+}

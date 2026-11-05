@@ -33,8 +33,10 @@ namespace Hazel {
         }
         return result;
     }
-    void RuntimeSession::Validate(const Ref<Scene>& scene, bool validateScripts) {
+    void RuntimeSession::Validate(const Ref<Scene>& scene, bool validateScripts, bool requireRendering) {
         if (!scene) throw std::runtime_error("No scene to run");
+        if(requireRendering&&!scene->GetAllEntitiesWith<MeshRendererComponent>().empty())throw std::runtime_error("Mesh rendering is unavailable at this import/metadata checkpoint (stage 3); remove mesh renderers before Play/player use");
+        scene->ValidateMeshes();
         scene->Presentation().Validate();
         scene->ValidateSprites();
         scene->ValidateUI();

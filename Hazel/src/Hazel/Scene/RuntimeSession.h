@@ -24,7 +24,7 @@ namespace Hazel {
         ~RuntimeSession();
         RuntimeSession(const RuntimeSession&) = delete;
         RuntimeSession& operator=(const RuntimeSession&) = delete;
-        static void Validate(const Ref<Scene>& scene, bool validateScripts = true);
+        static void Validate(const Ref<Scene>& scene, bool validateScripts = true, bool requireRendering = true);
         // CPU authored requirements shared by runtime readiness and package audit.
         static std::set<std::string> RequiredScriptClasses(const Ref<Scene>& scene);
         void Start(const Ref<Project>& project, const Ref<Scene>& authoredScene);

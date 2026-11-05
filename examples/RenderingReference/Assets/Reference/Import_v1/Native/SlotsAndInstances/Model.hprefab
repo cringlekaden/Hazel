@@ -1,0 +1,63 @@
+PrefabVersion: 3
+PrefabRoot: 4116480038716591833
+SceneVersion: 3
+Scene: Imported model
+Presentation:
+  Mode: DisplayReferred
+  Background: [0.0100228256, 0.0100228256, 0.0100228256, 1]
+Entities:
+  - Entity: 4116480038716591833
+    Relationship:
+      Parent: 0
+      Order: 0
+    TagComponent:
+      Tag: Imported model
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+  - Entity: 1195873546426669496
+    Relationship:
+      Parent: 4116480038716591833
+      Order: 0
+    TagComponent:
+      Tag: Instance identity
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Import_v1/Native/SlotsAndInstances/meshes/e5c11dfa8de7b4c4.hmesh
+      Materials:
+        []
+  - Entity: 10040833611771697035
+    Relationship:
+      Parent: 4116480038716591833
+      Order: 1
+    TagComponent:
+      Tag: Instance rotated
+    TransformComponent:
+      Translation: [0, 0, 2]
+      Rotation: [0, 0.785398126, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Import_v1/Native/SlotsAndInstances/meshes/e5c11dfa8de7b4c4.hmesh
+      Materials:
+        []
+  - Entity: 5207187280745992065
+    Relationship:
+      Parent: 4116480038716591833
+      Order: 2
+    TagComponent:
+      Tag: Instance mirrored and nonuniform
+    TransformComponent:
+      Translation: [4, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [-1, 2, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Import_v1/Native/SlotsAndInstances/meshes/e5c11dfa8de7b4c4.hmesh
+      Materials:
+        []

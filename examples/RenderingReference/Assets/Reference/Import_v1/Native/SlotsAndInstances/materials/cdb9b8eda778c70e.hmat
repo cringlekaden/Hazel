@@ -1,0 +1,44 @@
+Material:
+  Version: 1
+  Name: Masked color and linear normal
+  Model: MetallicRoughness
+  BaseColor: [1, 1, 1, 1]
+  Emissive: [0, 0, 0]
+  Metallic: 0
+  Roughness: 0.5
+  NormalScale: 1
+  OcclusionStrength: 1
+  Alpha: Mask
+  AlphaCutoff: 0.5
+  DoubleSided: false
+  Textures:
+    BaseColor:
+      Image: Reference/Import_v1/Native/SlotsAndInstances/images/0.tga
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: ClampToEdge
+    MetallicRoughness:
+      Image: ""
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Normal:
+      Image: Reference/Import_v1/Native/SlotsAndInstances/images/1.tga
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: ClampToEdge
+    Occlusion:
+      Image: ""
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Emissive:
+      Image: ""
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat

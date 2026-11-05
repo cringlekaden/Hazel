@@ -80,6 +80,10 @@ static void ScriptRequirementContracts() {
 #include "RendererPolicyChecks.h"
 #include "HierarchyChecks.h"
 #include "AuthoredReferenceChecks.h"
+#include "AssetCookingChecks.h"
+#include "ImportCookingChecks.h"
+#include "Hazel/Core/OperationProgress.h"
+#include "ImportPublicationChecks.h"
 static void Finite(const glm::mat4& projection)
 {
     for (int column=0; column<4; ++column)
@@ -218,8 +222,9 @@ int main()
 {
     try {
         StorageChecks();
+        AssetCookingChecks();ImportCookingChecks();
         Hazel::Log::Init();
-        AuthoredComparisonContracts();
+        AuthoredComparisonContracts();ImportPublicationChecks();
         CPUFontFamilyDocument();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();

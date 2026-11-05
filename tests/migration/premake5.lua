@@ -25,6 +25,7 @@ project ("Migration" .. test)
         repoRoot .. "/Hazel/vendor/GLFW/include"
     }
     defines { "GLFW_INCLUDE_NONE" }
+    if test == "SceneFoundationSmoke" then links {"HazelImport", "TinyGLTF3", "MikkTSpace"} end
     links { "Hazel", "ImGui", "GLFW", "Glad" }
 
     filter "system:linux"

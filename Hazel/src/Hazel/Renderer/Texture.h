@@ -81,6 +81,8 @@ namespace Hazel {
 		static Ref<Texture2D> Create(const std::string& path);
 		static Ref<Texture2D> Create(const std::string& path, const TextureSpecification& specification);
 		static TextureImage ReadImage(const std::filesystem::path& path, ImageFormat format = ImageFormat::None);
+        // CPU import decode; never creates GPU objects. Input and pixel counts are bounded before allocation.
+        static TextureImage ReadImageBytes(const uint8_t* bytes, size_t size, ImageFormat format, uint64_t pixelLimit, bool embeddedPNGJPEG = false);
 	};
 
 }

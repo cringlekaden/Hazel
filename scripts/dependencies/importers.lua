@@ -53,3 +53,43 @@ if _OPTIONS["migration-tests"] then
             optimize "On"
         filter {}
 end
+
+-- Engine-owned producer module. Only native authoring helper and CPU import
+-- qualification link this; Hazel/Nutella retain source/parser-free asset codecs.
+local tinyPin=json.decode(io.readfile(root .. "/Hazel/vendor/tinygltf3/PROVENANCE.json"))
+local mikkPin=json.decode(io.readfile(root .. "/Hazel/vendor/mikktspace/PROVENANCE.json"))
+project "HazelImport"
+    location (root .. "/build/HazelImport")
+    kind "StaticLib"
+    language "C++"
+    defines {'HZ_IMPORT_TINYGLTF_COMMIT="' .. tinyPin.commit .. '"','HZ_IMPORT_MIKK_COMMIT="' .. mikkPin.commit .. '"'}
+    cppdialect "C++17"
+    cdialect "C11"
+    staticruntime "Off"
+    targetdir (root .. "/bin/" .. outputdir .. "/%{prj.name}")
+    objdir (root .. "/bin-int/" .. outputdir .. "/%{prj.name}")
+    files {root .. "/tools/HazelImport/**.cpp",root .. "/tools/HazelImport/Allocation.c",root .. "/tools/HazelImport/**.h"}
+    includedirs {root .. "/Hazel/src",root .. "/tools/HazelImport"}
+    externalincludedirs {root .. "/Hazel/vendor/spdlog/include",root .. "/Hazel/vendor/yaml-cpp/include",root .. "/Hazel/vendor/entt/include",root .. "/Hazel/vendor/imgui",root .. "/Hazel/vendor/glm",root .. "/Hazel/vendor/tinygltf3",root .. "/Hazel/vendor/mikktspace"}
+    filter "system:windows"
+        defines {"HZ_PLATFORM_WINDOWS"}
+        buildoptions {"/utf-8"}
+    filter "system:linux"
+        defines {"HZ_PLATFORM_LINUX"}
+        pic "On"
+    filter "system:macosx"
+        defines {"HZ_PLATFORM_MACOS"}
+    filter "configurations:Debug"
+        runtime "Debug"
+        symbols "On"
+    filter "configurations:Release or Dist"
+        runtime "Release"
+        optimize "On"
+    filter {}
+local importConsumers={"HazelProject"}
+if _OPTIONS["migration-tests"] then table.insert(importConsumers,"MigrationSceneFoundationSmoke") end
+for _, name in ipairs(importConsumers) do
+    project (name)
+        includedirs {root .. "/tools/HazelImport"}
+        filter {}
+end

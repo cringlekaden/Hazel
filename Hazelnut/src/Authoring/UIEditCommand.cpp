@@ -9,7 +9,7 @@ namespace Hazel
 {
 namespace
 {
-const std::array<std::type_index,21> UIHistoryComponents={typeid(UICanvasComponent),typeid(UIRectComponent),typeid(UILayoutComponent),typeid(UITextStyleComponent),typeid(UINineSliceComponent),typeid(UIButtonComponent),typeid(TextComponent),typeid(SpriteRendererComponent),typeid(UIRadioGroupComponent),typeid(UIProgressComponent),typeid(UISliderComponent),typeid(UIScrollViewComponent),typeid(UIDropdownComponent),typeid(UITabsComponent),typeid(UITabComponent),typeid(UITooltipComponent),typeid(UITextEntryComponent),typeid(UIAppearanceComponent),typeid(TransformComponent),typeid(CircleRendererComponent),typeid(CameraComponent)};
+const std::array<std::type_index,22> UIHistoryComponents={typeid(UICanvasComponent),typeid(UIRectComponent),typeid(UILayoutComponent),typeid(UITextStyleComponent),typeid(UINineSliceComponent),typeid(UIButtonComponent),typeid(TextComponent),typeid(SpriteRendererComponent),typeid(UIRadioGroupComponent),typeid(UIProgressComponent),typeid(UISliderComponent),typeid(UIScrollViewComponent),typeid(UIDropdownComponent),typeid(UITabsComponent),typeid(UITabComponent),typeid(UITooltipComponent),typeid(UITextEntryComponent),typeid(UIAppearanceComponent),typeid(TransformComponent),typeid(CircleRendererComponent),typeid(CameraComponent),typeid(MeshRendererComponent)};
 void Strip(SpriteSource &source)
 {
     if (auto t = std::get_if<TextureSpriteSource>(&source))
@@ -59,6 +59,7 @@ template <class A, class B, class C, class F> void Fields(A &a, B &b, C &c, F f)
     if (a.member)
 #define FIELD(member, field) f(a.member->field, b.member->field, c.member->field)
     COMPONENT(Transform) {FIELD(Transform,Translation);FIELD(Transform,Rotation);FIELD(Transform,Scale);}
+    COMPONENT(Mesh) {FIELD(Mesh,Mesh);FIELD(Mesh,Materials);}
     COMPONENT(Circle) {FIELD(Circle,Color);FIELD(Circle,Thickness);FIELD(Circle,Fade);}
     COMPONENT(Camera) {FIELD(Camera,Projection);FIELD(Camera,FOV);FIELD(Camera,Near);FIELD(Camera,Far);FIELD(Camera,Size);FIELD(Camera,OrthoNear);FIELD(Camera,OrthoFar);FIELD(Camera,Primary);FIELD(Camera,FixedAspect);}
     COMPONENT(Canvas)
@@ -177,6 +178,7 @@ size_t Storage(const std::filesystem::path &v)
 {
     return (v.native().capacity() + 1) * sizeof(std::filesystem::path::value_type);
 }
+size_t Storage(const std::map<uint64_t,std::filesystem::path>& v){size_t n=v.size()*80;for(auto& entry:v)n+=Storage(entry.second);return n;}
 size_t Storage(const UIStyleSelection &v){return Storage(v.Asset)+Storage(v.Variant);}
 size_t Storage(const FontSelection &v) {return Storage(v.Family);}
 size_t Storage(const SpriteSource &v)
@@ -223,6 +225,7 @@ void Source(Scene &scene, const SpriteSource &source)
 }
 void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
 {
+    if(v.Mesh){v.Mesh->Validate();if(!v.Mesh->Mesh.empty()&&(!old.Mesh||!(*v.Mesh==*old.Mesh))){if(!scene.GetAssets())throw std::runtime_error("Open a project before assigning mesh assets");AuditMeshBinding(scene.GetAssets()->Root(),*v.Mesh);}}
     if(v.Transform){Finite(v.Transform->Translation);Finite(v.Transform->Rotation);Finite(v.Transform->Scale);}
     if(v.Circle){Finite(v.Circle->Color);Positive(v.Circle->Thickness);Positive(v.Circle->Fade);}
     if(v.Camera){const auto& c=*v.Camera;if(c.Projection<0||c.Projection>1||!std::isfinite(c.FOV)||c.FOV<=0||c.FOV>=3.14159265f||!std::isfinite(c.Near)||!std::isfinite(c.Far)||c.Near<=0||c.Far<=c.Near||!std::isfinite(c.Size)||c.Size<=0||!std::isfinite(c.OrthoNear)||!std::isfinite(c.OrthoFar)||c.OrthoFar<=c.OrthoNear)throw std::invalid_argument("Invalid camera projection/clipping");}
@@ -343,6 +346,7 @@ void Write(Entity e, const UIEditValues &old, UIEditValues &next)
         auto &c = e.GetComponent<type>();
 #define FIELD(member, field) change(c.field, old.member->field, next.member->field)
     COMPONENT(Transform, TransformComponent) FIELD(Transform,Translation);FIELD(Transform,Rotation);FIELD(Transform,Scale);}
+    COMPONENT(Mesh,MeshRendererComponent) FIELD(Mesh,Mesh);FIELD(Mesh,Materials);}
     COMPONENT(Circle, CircleRendererComponent) FIELD(Circle,Color);FIELD(Circle,Thickness);FIELD(Circle,Fade);}
     if(old.Camera && next.Camera) {
         auto& live=e.GetComponent<CameraComponent>();auto value=UIEditValues::Capture(e).Camera.value();
@@ -466,6 +470,7 @@ UIEditValues UIEditValues::Capture(Entity e)
     v.Set(e.GetComponent<type>())
     CAPTURE(TransformComponent, Transform);
     CAPTURE(CircleRendererComponent,Circle);
+    CAPTURE(MeshRendererComponent,Mesh);
     CAPTURE(CameraComponent,Camera);
     CAPTURE(UICanvasComponent, Canvas);
     CAPTURE(UIRectComponent, Rect);
@@ -693,6 +698,7 @@ void UIEditCommand::Cancel(Scene &scene)
     KEEP(Transform,TransformComponent,18);
     KEEP(Circle,CircleRendererComponent,19);
     KEEP(Camera,CameraComponent,20);
+    KEEP(Mesh,MeshRendererComponent,21);
     KEEP(Canvas, UICanvasComponent, 0);
     KEEP(Rect, UIRectComponent, 1);
     KEEP(Flow, UILayoutComponent, 2);
@@ -716,7 +722,7 @@ void UIEditCommand::Cancel(Scene &scene)
 #define RESTORE(member)                                                                            \
     if (restored.member)                                                                           \
     next.member = std::move(restored.member)
-    RESTORE(Transform);RESTORE(Circle);RESTORE(Camera);
+    RESTORE(Transform);RESTORE(Circle);RESTORE(Camera);RESTORE(Mesh);
     RESTORE(Canvas);
     RESTORE(Rect);
     RESTORE(Flow);

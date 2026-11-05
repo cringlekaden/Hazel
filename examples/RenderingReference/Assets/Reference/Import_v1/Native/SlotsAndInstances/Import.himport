@@ -1,0 +1,50 @@
+Import:
+  Version: 1
+  Recipe: StaticMesh_v1
+  Producer: GLB2/TinyGLTF-0d9ce1a9561688c6c6e7471430d15a50a0b15f1a/Mikk-3e895b49d05ea07e4c2133156cfa94369e19e409
+  ID: b6392bf94539fb70
+  Generation: f29cc7c5a02791f6
+  PrefabRoot: 3920acc900b04ed9
+  Source: Reference/Import_v1/Native/SlotsAndInstances/Source.glb
+  SourceHash: cbef7d50bbdac992a47c5d29d0cb086f4fccea5fe854d16395211592d629bf8d
+  Scene: -1
+  Prefab: Reference/Import_v1/Native/SlotsAndInstances/Model.hprefab
+  PrefabSource: 816985d8f1c04bd132de01fe601a31a28f73c2189f609c6f8442941712fa038c
+  PrefabAcceptedHash: 39b9117881a0aafd9ba52cbf43ba77aaff982c9fab1854da1c635eab668766ec
+  Materials:
+    - ID: cdb9b8eda778c70e
+      Source: 867968f71df77df9c6fbd837021d5d341a435852f5b80a05941e48528f374e48
+      Output: Reference/Import_v1/Native/SlotsAndInstances/materials/cdb9b8eda778c70e.hmat
+      AcceptedHash: 620042d96551239f5733d63dc35ce89cf7a1d52b112fca45b970dd00edee0722
+      SourceKey: material:0
+    - ID: 9b7443dc0d097011
+      Source: 197345e4676be39a99167ad7b91924634a1e4bd893e026b87f9a4125286adba1
+      Output: Reference/Import_v1/Native/SlotsAndInstances/materials/9b7443dc0d097011.hmat
+      AcceptedHash: 661d044a9c147f8712d7858e940e49e4aa7b28b6d43e1b80bc8a220eef1605ee
+      SourceKey: material:1
+  Meshes:
+    - ID: e5c11dfa8de7b4c4
+      Source: 115f0f249dbe3ab61c9e2f68dd056d9e9054dc5c8cc06218fda0c2cf155c239d
+      Output: Reference/Import_v1/Native/SlotsAndInstances/meshes/e5c11dfa8de7b4c4.hmesh
+      Geometry: Reference/Import_v1/Native/SlotsAndInstances/generations/f29cc7c5a02791f6/e5c11dfa8de7b4c4.hgeom
+      GeometryHash: 844559e4bc85590d0363cc331c1d793720eb7d1d56401f47b9deb072bd28d9eb
+      SourceKey: mesh:0
+      Slots:
+        - ID: 007e1de064f39aab
+          Source: 19b92b14cf060c5d6b04ce45fc0686f1623a9e6cfb20b0ecb3183718fcf658ae
+          SourceKey: mesh:0/primitive:0
+          Material: Reference/Import_v1/Native/SlotsAndInstances/materials/cdb9b8eda778c70e.hmat
+        - ID: fdda0b84341db034
+          Source: 3bfbfa690adc5e6170f0f0247f75e84e84c77e8a5bfa7e41895d1708c39d7dbd
+          SourceKey: mesh:0/primitive:1
+          Material: Reference/Import_v1/Native/SlotsAndInstances/materials/9b7443dc0d097011.hmat
+  Nodes:
+    - ID: 109898a78b0c59b8
+      Source: b0ef619fd15b3c37385ce7e002dd573e5de834019cc7309e8ca19d2144c88314
+      SourceKey: node:0
+    - ID: 8b5834f8a674578b
+      Source: d3bdf77ade0978c7eb8ebbfa8e63448d6b2dbea85b043aae53636b4dd1aee3f7
+      SourceKey: node:1
+    - ID: 4843a53e33cc0f81
+      Source: 6ccbb4ebbe22e4850fa1827c4a8466a37a09f8525b0ae216a438e9287a718274
+      SourceKey: node:2

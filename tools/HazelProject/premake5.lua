@@ -10,7 +10,7 @@ project "HazelProject"
     files { root .. "/tools/HazelProject/main.cpp" }
     includedirs { root .. "/Hazel/src" }
     externalincludedirs {root .. "/Hazel/vendor/spdlog/include",root .. "/Hazel/vendor/glm",root .. "/Hazel/vendor/imgui"}
-    links {"Hazel", "ImGui", "GLFW", "Glad"}
+    links {"HazelImport", "TinyGLTF3", "MikkTSpace", "Hazel", "ImGui", "GLFW", "Glad"}
     filter "system:linux"
         defines {"HZ_PLATFORM_LINUX"}
         links (MigrationLinuxLinks)

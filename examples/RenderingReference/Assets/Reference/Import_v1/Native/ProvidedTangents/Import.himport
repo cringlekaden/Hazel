@@ -1,0 +1,35 @@
+Import:
+  Version: 1
+  Recipe: StaticMesh_v1
+  Producer: GLB2/TinyGLTF-0d9ce1a9561688c6c6e7471430d15a50a0b15f1a/Mikk-3e895b49d05ea07e4c2133156cfa94369e19e409
+  ID: 853043a34b25561e
+  Generation: e5334b2848544a4e
+  PrefabRoot: 295eaf72d6e24136
+  Source: Reference/Import_v1/Native/ProvidedTangents/Source.glb
+  SourceHash: d32059d7d0dc10a4b28c0be4f0ee35244d2ac6628ee5f601d0671aee65d78f54
+  Scene: -1
+  Prefab: Reference/Import_v1/Native/ProvidedTangents/Model.hprefab
+  PrefabSource: cfc69f29718223ae45dca1b6189596a69d1a0a005d9407dc7b68eb6569093287
+  PrefabAcceptedHash: 64719e6e9533d4f2a5b39958caf7ee048bd8b1b4cb892c0326a59584518c2fda
+  Materials:
+    - ID: b0a22ec1c94e6a22
+      Source: c236cddc2c5ae0edc86fe6e7a1ee72b4ae8af9beac3830c1253f724be5917efe
+      Output: Reference/Import_v1/Native/ProvidedTangents/materials/b0a22ec1c94e6a22.hmat
+      AcceptedHash: 91b0e4f42541ca81ef692cfeb5f6e51f88c9d79eb391bc350e8cad4b94ab794f
+      SourceKey: default
+  Meshes:
+    - ID: 1c9a0a2eac985c32
+      Source: 14891970a86cbac9e5506f876005a706f2a5c98a3af0a773adea394b3e8a8c6a
+      Output: Reference/Import_v1/Native/ProvidedTangents/meshes/1c9a0a2eac985c32.hmesh
+      Geometry: Reference/Import_v1/Native/ProvidedTangents/generations/e5334b2848544a4e/1c9a0a2eac985c32.hgeom
+      GeometryHash: c4be1573a51b5016bd0b874e41f560cac75650d8867b07274d654cf6dc5dec82
+      SourceKey: mesh:0
+      Slots:
+        - ID: 912439cfcc114ce1
+          Source: 779dfbebaf0fefd46a580aa8b07e1aa103e65b1473cb5425ca63eabcd29bad59
+          SourceKey: mesh:0/primitive:0
+          Material: Reference/Import_v1/Native/ProvidedTangents/materials/b0a22ec1c94e6a22.hmat
+  Nodes:
+    - ID: 9a0e072df1d3717b
+      Source: e0c6004d1da0c2dba70d50dce939de067a2ca0c3356b4048731acb7e7d0c2585
+      SourceKey: node:0

@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "Hazel/Assets/ImportedAsset.h"
 #include "Hazel/Text/TextSpanSerialization.h"
 #include "Hazel/UI/RuntimeUIConfig.h"
 #include "DocumentSchema.h"
@@ -76,7 +77,7 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
         if(checked%64==0)OperationProgress::Report("Validate entity schema",checked,entities.size());
         ++checked;
         Keys(entity, {"Entity", "TagComponent", "TransformComponent", "CameraComponent", "ScriptComponent",
-                      "SpriteRendererComponent", "SpriteAnimationComponent", "CircleRendererComponent",
+                      "MeshRendererComponent", "SpriteRendererComponent", "SpriteAnimationComponent", "CircleRendererComponent",
                       "AudioSourceComponent", "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent", "Relationship", "UICanvasComponent", "UIRectComponent", "UILayoutComponent", "UITextStyleComponent", "UINineSliceComponent", "UIButtonComponent", "UIRadioGroupComponent", "UIProgressComponent", "UISliderComponent", "UIScrollViewComponent", "UIDropdownComponent", "UITabsComponent", "UITabComponent", "UITooltipComponent", "UITextEntryComponent", "UIAppearanceComponent"}, "Entity");
         if(hierarchy) {
             auto rel=entity["Relationship"];
@@ -141,6 +142,7 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
             const auto gain=n["Gain"].as<float>();if(!std::isfinite(gain) || gain<0 || gain>1)throw std::runtime_error("Audio gain must be between 0 and 1");
             n["Loop"].as<bool>();n["PlayOnStart"].as<bool>();
         }
+        if(auto n=entity["MeshRendererComponent"])ReadMeshBinding(n);
         if (auto n = entity["CircleRendererComponent"])
         {
             Keys(n, {"Color", "Thickness", "Fade"}, "CircleRendererComponent");

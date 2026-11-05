@@ -4,7 +4,9 @@
 #include "Platform/OpenGL/OpenGLTexture.h"
 #include "Hazel/Core/FileSystem.h"
 #include <stb_image.h>
+#include "ImageDecodeMemory.h"
 #include <mutex>
+#include <cstring>
 #include <limits>
 #include <stdexcept>
 
@@ -47,19 +49,27 @@ TextureImage Texture2D::ReadImage(const std::filesystem::path& path, ImageFormat
     TextureSpecification spec=TextureSpecification::FileDefaults(); spec.Format=format; spec.Encoding=TextureEncoding::Linear; spec.Validate(true);
     ScopedBuffer encoded(FileSystem::ReadFileBinary(path));
     if(!encoded || encoded.Size()>static_cast<uint64_t>(std::numeric_limits<int>::max())) throw std::runtime_error("Cannot read texture: "+path.generic_u8string());
+    return ReadImageBytes(encoded.Data(),size_t(encoded.Size()),format,67108864);
+}
+TextureImage Texture2D::ReadImageBytes(const uint8_t* bytes,size_t size,ImageFormat format,uint64_t pixelLimit,bool embeddedPNGJPEG) {
+    TextureSpecification spec=TextureSpecification::FileDefaults();spec.Format=format;spec.Encoding=TextureEncoding::Linear;spec.Validate(true);
+    if(!bytes || !size || size>uint64_t(std::numeric_limits<int>::max()) || (embeddedPNGJPEG && size>67108864))throw std::runtime_error("Image input exceeds 64 MiB byte limit");
+    if(embeddedPNGJPEG && !((size>=8 && std::memcmp(bytes,"\x89PNG\r\n\x1a\n",8)==0) || (size>=3 && bytes[0]==255 && bytes[1]==216 && bytes[2]==255)))throw std::runtime_error("Embedded image requires PNG or JPEG bytes");
     const int requested=format==ImageFormat::R8?1:format==ImageFormat::RGB8?3:format==ImageFormat::RGBA8?4:0;
     std::lock_guard<std::mutex> lock(DecodeMutex);
+    ImageDecodeBudget budget(embeddedPNGJPEG?96*1024*1024:0);
     stbi_set_flip_vertically_on_load(0); // All shared file decoding has top-left rows.
-    if(stbi_is_hdr_from_memory(encoded.Data(),static_cast<int>(encoded.Size())))
+    if(stbi_is_hdr_from_memory(bytes,static_cast<int>(size)))
         throw std::runtime_error("HDR radiance is unsupported by the ordinary 8-bit texture path; use display-referred color/data images at this checkpoint");
     int width=0,height=0,channels=0;
-    if(!stbi_info_from_memory(encoded.Data(),static_cast<int>(encoded.Size()),&width,&height,&channels) || width<=0 || height<=0)
-        throw std::runtime_error("Cannot inspect texture: "+path.generic_u8string());
+    if(!stbi_info_from_memory(bytes,static_cast<int>(size),&width,&height,&channels) || width<=0 || height<=0)
+        throw std::runtime_error("Cannot inspect image bytes");
     // Bound CPU allocations without needing a graphics context; backend enforces device limits too.
-    if(static_cast<uint64_t>(width)*height>67108864) throw std::runtime_error("Texture exceeds 64 million pixel decode limit");
+    if(!pixelLimit || static_cast<uint64_t>(width)*height>pixelLimit) throw std::runtime_error("Image exceeds remaining pixel decode budget");
+    if(embeddedPNGJPEG && stbi_is_16_bit_from_memory(bytes,static_cast<int>(size)))throw std::runtime_error("Embedded 16-bit PNG is unsupported; export 8-bit PNG/JPEG");
     int output=requested ? requested : channels==2 ? 4 : channels;
-    auto* pixels=stbi_load_from_memory(encoded.Data(),static_cast<int>(encoded.Size()),&width,&height,&channels,output);
-    if(!pixels) throw std::runtime_error("Cannot decode texture '"+path.generic_u8string()+"': "+stbi_failure_reason());
+    auto* pixels=stbi_load_from_memory(bytes,static_cast<int>(size),&width,&height,&channels,output);
+    if(!pixels || budget.Failed()){if(pixels)stbi_image_free(pixels);throw std::runtime_error(budget.Failed()?"Image decoder exceeded its 96 MiB import allocation budget":std::string("Cannot decode image bytes: ")+stbi_failure_reason());}
     TextureImage image;
     try {
         image.Width=static_cast<uint32_t>(width); image.Height=static_cast<uint32_t>(height);

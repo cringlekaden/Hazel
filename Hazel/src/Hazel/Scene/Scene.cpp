@@ -1044,6 +1044,14 @@ namespace Hazel {
         return entity.GetComponent<SpriteRendererComponent>().Resolved.Data.get();
     }
 
+    void Scene::ValidateMeshes() const {
+        for(auto handle:m_Registry.view<const MeshRendererComponent>()) {
+            const auto& binding=m_Registry.get<MeshRendererComponent>(handle);binding.Validate();
+            if(!m_Assets)throw std::runtime_error("Mesh assets require a project asset root");
+            AuditMeshBinding(m_Assets->Root(),binding);
+        }
+    }
+    template<> void Scene::OnComponentAdded<MeshRendererComponent>(Entity,MeshRendererComponent&) {}
     template<> void Scene::OnComponentAdded<UICanvasComponent>(Entity,UICanvasComponent&) {}
     template<> void Scene::OnComponentAdded<UIRectComponent>(Entity,UIRectComponent&) {}
     template<> void Scene::OnComponentAdded<UILayoutComponent>(Entity,UILayoutComponent&) {}

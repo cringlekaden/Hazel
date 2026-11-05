@@ -207,6 +207,9 @@ def test(configuration, profile='native', suite='all', only=None):
         records=json.loads((hz.ROOT/'scripts/internal/testing/native-tests.json').read_text())
         names=[r['name'] for r in records if (suite=='all' or not r['graphics']) and (not only or r['name'] in only)]
         if not names:raise RuntimeError('Selected tests are absent from the requested suite')
+        if 'SceneFoundationSmoke' in names:
+            from internal.import_checks import reference_imports
+            reference_imports(configuration, working, env)
         for name in names:
             target='Migration'+name;suffix='.exe' if hz.SYSTEM=='windows' else ''
             executable=base/target/(target+suffix)
@@ -214,7 +217,10 @@ def test(configuration, profile='native', suite='all', only=None):
             if hz.SYSTEM=='windows': hz.copy_changed(executable,private/executable.name);executable=private/executable.name
             command=[executable]
             if name in ('SpriteSmoke','MonoSmoke','SceneSmoke','SceneGPUSmoke','RuntimeSessionSmoke'):command += [base/'Hazel-ScriptCore/Hazel-ScriptCore.dll',base/'MigrationManagedFixture/MigrationManagedFixture.dll']
-            if name=='EditorSmoke':command += [base/'Hazel-ScriptCore/Hazel-ScriptCore.dll',base/'MigrationManagedFixture/MigrationManagedFixture.dll',working]
+            if name=='EditorSmoke':
+                helper=base/'HazelProject'/('HazelProject'+hz.EXECUTABLE_SUFFIX)
+                hz.copy_changed(helper,executable.parent/helper.name)
+                command += [base/'Hazel-ScriptCore/Hazel-ScriptCore.dll',base/'MigrationManagedFixture/MigrationManagedFixture.dll',working]
             env['HAZEL_DATA']=str(working/'data'/name)
             log=logs/f'{hz.SYSTEM}-{configuration}-{profile}-{name}.log'
             print('TEST',name,flush=True)

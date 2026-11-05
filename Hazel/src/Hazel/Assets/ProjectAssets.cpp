@@ -160,6 +160,10 @@ Ref<const ResolvedClip> ProjectAssets::Clip(const AnimationReference& reference)
     m_Clips.emplace(key,result);return result;
 }
 void ProjectAssets::Reload(const std::filesystem::path& reference) {
+    if(reference.extension()==".hmesh"){(void)Mesh(reference);auto it=m_Meshes.find(reference.generic_u8string());if(it!=m_Meshes.end())ReloadMesh(it->first,it->second);++m_Epoch;return;}
+    if(reference.extension()==".hmat"){(void)Material(reference);auto it=m_Materials.find(reference.generic_u8string());if(it!=m_Materials.end())ReloadMaterial(it->first,it->second);++m_Epoch;return;}
+    if(reference.extension()==".himport"){for(auto& entry:m_Meshes)if(!entry.second.Accepted||entry.second.Accepted->Definition.Import==reference)ReloadMesh(entry.first,entry.second);++m_Epoch;return;}
+
     if(reference.extension()==".hstyle") {auto resolution=Style(reference);auto it=m_Styles.find(reference.generic_u8string());if(it!=m_Styles.end())ReloadStyle(it->first,it->second);++m_Epoch;return;}
     if(reference.empty() || reference.extension()==".hfont") {
         auto* entry=FamilyEntryFor(reference);if(entry)ReloadFamily(reference.generic_u8string(),*entry);
@@ -183,6 +187,7 @@ void ProjectAssets::Reload(const std::filesystem::path& reference) {
     } catch(const std::exception& e) {m_Sheets[key].Error=e.what();throw;}
 }
 void ProjectAssets::Refresh() {
+    RefreshMeshes();
     // Explicit freshness boundary: retire unpinned metadata, then retry live styles.
     for(auto it=m_Styles.begin();it!=m_Styles.end();)if(!it->second.Accepted||it->second.Accepted.use_count()==1){m_StyleBytes-=it->second.Bytes;it=m_Styles.erase(it);}else{ReloadStyle(it->first,it->second);++it;}
     std::vector<std::filesystem::path> paths;for(auto& p:m_Sheets) paths.push_back(std::filesystem::u8path(p.first).lexically_relative(m_Root));
@@ -253,6 +258,9 @@ std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path
         for(auto& dep:AuditUIStyle(root,definition))dependencies.insert(dep);
     };
     for(auto file:files) {
+        if(file.extension()==".hmesh")for(auto& dep:AuditMesh(root,file))dependencies.insert(dep);
+        if(file.extension()==".hmat"){dependencies.insert(file);for(auto& dep:AuditMaterial(root,ReadMaterial(Project::ResolveOwnedAsset(root,file))))dependencies.insert(dep);}
+        if(file.extension()==".himport")for(auto& dep:AuditImport(root,file))dependencies.insert(dep);
         if(file.extension()==".hstyle")style(file);
         if(file.extension()==".hsprites")get(file);
         if(file.extension()==".hfont")family(file);
@@ -266,6 +274,7 @@ std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path
         auto doc=YAML::Load(FileDocument::Read(Project::ResolveOwnedAsset(root,file)));
         DocumentSchema::Scene(doc,file.extension()==".hprefab");
         for(auto e:doc["Entities"]) {
+            if(auto n=e["MeshRendererComponent"])for(auto& dep:AuditMeshBinding(root,ReadMeshBinding(n)))dependencies.insert(dep);
             // Python consumes this same dependency closure for package inventory
             // exclusions; it does not carry a second prefab-reference schema.
             for(auto field:e["ScriptComponent"]["ScriptFields"]) {

@@ -27,6 +27,7 @@ struct UIEditValues
 {
     std::optional<TransformComponent> Transform;
     std::optional<CircleRendererComponent> Circle;
+    std::optional<MeshBinding> Mesh;
     std::optional<CameraEditValue> Camera;
     std::optional<UICanvasComponent> Canvas;
     std::optional<UIRectComponent> Rect;
@@ -53,6 +54,7 @@ struct UIEditValues
     template <class T> void Set(const T &value)
     {
         if constexpr (std::is_same_v<T,TransformComponent>)Transform=value;
+        else if constexpr (std::is_same_v<T,MeshRendererComponent>)Mesh=static_cast<const MeshBinding&>(value);
         else if constexpr (std::is_same_v<T,CircleRendererComponent>)Circle=value;
         else if constexpr (std::is_same_v<T,CameraComponent>) {
             const auto& c=value.Camera;Camera=CameraEditValue{int(c.GetProjectionType()),c.GetPerspectiveVerticalFOV(),c.GetPerspectiveNearClip(),c.GetPerspectiveFarClip(),c.GetOrthographicSize(),c.GetOrthographicNearClip(),c.GetOrthographicFarClip(),value.Primary,value.FixedAspectRatio};
@@ -117,7 +119,7 @@ class UIEditCommand final : public DocumentCommand
                  bool cancelling = false) const;
     uint64_t m_Document, m_Entity;
     std::vector<std::pair<uint64_t, uint64_t>> m_Guards;
-    std::array<uint64_t, 21> m_ComponentVersions{};
+    std::array<uint64_t, 22> m_ComponentVersions{};
     std::string m_Name;
     UIEditValues m_Before, m_After;
 };

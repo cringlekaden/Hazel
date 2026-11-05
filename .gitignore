@@ -51,3 +51,6 @@ compile_commands.json
 
 # Optional clangd index beside the compilation database
 /.cache/clangd/
+
+# Native import jobs retain private staging/leases outside packaged content.
+/examples/*/Assets/Intermediates/

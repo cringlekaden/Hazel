@@ -163,6 +163,7 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
             state.Value(c.Loop);
             state.Value(c.PlayOnStart);
         });
+        state.Component<MeshRendererComponent>(e,[&](auto& c){state.Value(c.Mesh);state.Value(uint64_t(c.Materials.size()));for(auto& m:c.Materials){state.Value(m.first);state.Value(m.second);}});
         state.Component<CircleRendererComponent>(e, [&](auto &c) {
             state.Value(c.Color);
             state.Value(c.Thickness);

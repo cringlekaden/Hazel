@@ -1,0 +1,56 @@
+{
+  "cases": {
+    "ProvidedTangents": {
+      "geometry": [
+        {
+          "artifact": "Native/ProvidedTangents/generations/e5334b2848544a4e/1c9a0a2eac985c32.hgeom",
+          "indices": 3,
+          "primitives": 1,
+          "tangent_signs": [
+            1.0
+          ],
+          "vertices": 3
+        }
+      ],
+      "manifest": "Native/ProvidedTangents/Import.himport",
+      "prefab": "Native/ProvidedTangents/Model.hprefab"
+    },
+    "SlotsAndInstances": {
+      "geometry": [
+        {
+          "artifact": "Native/SlotsAndInstances/generations/f29cc7c5a02791f6/e5c11dfa8de7b4c4.hgeom",
+          "indices": 9,
+          "primitives": 2,
+          "tangent_signs": [
+            -1.0,
+            1.0
+          ],
+          "vertices": 9
+        }
+      ],
+      "manifest": "Native/SlotsAndInstances/Import.himport",
+      "prefab": "Native/SlotsAndInstances/Model.hprefab"
+    }
+  },
+  "conditions": "Native CPU geometry/material/prefab metadata; no rendered camera/output or lighting acceptance",
+  "files": {
+    "Native/ProvidedTangents/Import.himport": "df7236fb0fbe08e6f9ad0bea5b8adc71482a720ef1817dba7428e84a26c50dce",
+    "Native/ProvidedTangents/Model.hprefab": "64719e6e9533d4f2a5b39958caf7ee048bd8b1b4cb892c0326a59584518c2fda",
+    "Native/ProvidedTangents/Source.glb": "d32059d7d0dc10a4b28c0be4f0ee35244d2ac6628ee5f601d0671aee65d78f54",
+    "Native/ProvidedTangents/generations/e5334b2848544a4e/1c9a0a2eac985c32.hgeom": "c4be1573a51b5016bd0b874e41f560cac75650d8867b07274d654cf6dc5dec82",
+    "Native/ProvidedTangents/materials/b0a22ec1c94e6a22.hmat": "91b0e4f42541ca81ef692cfeb5f6e51f88c9d79eb391bc350e8cad4b94ab794f",
+    "Native/ProvidedTangents/meshes/1c9a0a2eac985c32.hmesh": "7548a5e8cfcc789c9d082496b1993a3568e63d9b904af0a3745d86d6305d34aa",
+    "Native/SlotsAndInstances/Import.himport": "de87a07ee1d90f20bbe218e3b7de2abff4d55bd2f668b9ae11ece5b95a079b19",
+    "Native/SlotsAndInstances/Model.hprefab": "39b9117881a0aafd9ba52cbf43ba77aaff982c9fab1854da1c635eab668766ec",
+    "Native/SlotsAndInstances/Source.glb": "cbef7d50bbdac992a47c5d29d0cb086f4fccea5fe854d16395211592d629bf8d",
+    "Native/SlotsAndInstances/generations/f29cc7c5a02791f6/e5c11dfa8de7b4c4.hgeom": "844559e4bc85590d0363cc331c1d793720eb7d1d56401f47b9deb072bd28d9eb",
+    "Native/SlotsAndInstances/images/0.tga": "d2727ad08766894ab58beba9061f65be34ff3efc2445c08e173d1a8a01c54b8b",
+    "Native/SlotsAndInstances/images/1.tga": "b37f1caa8b852a6f78c1ad24445a9960a5915c5872b8360dcc78120a6b0a88a7",
+    "Native/SlotsAndInstances/materials/9b7443dc0d097011.hmat": "661d044a9c147f8712d7858e940e49e4aa7b28b6d43e1b80bc8a220eef1605ee",
+    "Native/SlotsAndInstances/materials/cdb9b8eda778c70e.hmat": "620042d96551239f5733d63dc35ce89cf7a1d52b112fca45b970dd00edee0722",
+    "Native/SlotsAndInstances/meshes/e5c11dfa8de7b4c4.hmesh": "f9f87289734dd0a5bfbf0b47ff90832c0d1d81e988aa5b1816fcc874fab51b77"
+  },
+  "name": "Import_v1",
+  "recipe": "StaticMesh_v1",
+  "version": 1
+}
