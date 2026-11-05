@@ -2,15 +2,15 @@
 #include "ColorReadbackReference.h"
 #include "Hazel/Renderer/Framebuffer.h"
 #include <glad/glad.h>
-#include <cstdlib>
+#include "Hazel/Core/FileSystem.h"
 #include <cmath>
 // The saved native project is the fixture. No test-only scene or renderer.
 static void RenderingReferenceChecks() {
-    const char* selected=std::getenv("HAZEL_RENDERING_REFERENCE_PROJECT");
-    if(!selected){std::cout<<"NOT EXECUTED: Rendering Reference (no explicit project selector)\n";return;}
+    const auto selected=FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT");
+    if(selected.empty()){std::cout<<"NOT EXECUTED: Rendering Reference (no explicit project selector)\n";return;}
     const auto prior=RenderCommand::GetRasterState();GLint draw=0,read=0;glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&draw);glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&read);
     for(bool perspective:{false,true}) {
-        const auto descriptor=std::filesystem::u8path(selected);auto project=Project::LoadCandidate(descriptor);Check(bool(project),"Rendering Reference project rejected");
+        const auto descriptor=selected;auto project=Project::LoadCandidate(descriptor);Check(bool(project),"Rendering Reference project rejected");
         const auto reference=perspective?"Scenes/Core_v1-Perspective.hazel":"Scenes/Core_v1-Orthographic.hazel";
         auto authored=project->LoadScene(reference);const auto before=SceneSerializer(authored).CaptureAuthoredState();
         auto camera=authored->GetEntityByUUID(1);Check(camera && camera.GetName()==(perspective?"Perspective":"Orthographic") && camera.GetComponent<TransformComponent>().Translation==glm::vec3(0,0,10),"Frozen Core_v1 camera identity/pose changed");
