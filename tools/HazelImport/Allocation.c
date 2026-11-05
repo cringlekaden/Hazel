@@ -8,7 +8,13 @@
 #else
 #define HZ_IMPORT_THREAD _Thread_local
 #endif
+#if defined(_MSC_VER)
+/* MSVC's C standard library does not expose C11 max_align_t. Its supported
+   x64 malloc contract is 16-byte alignment; preserve it across our header. */
+typedef __declspec(align(16)) union hz_import_block { size_t size; double alignment; void *pointer; } hz_import_block;
+#else
 typedef union hz_import_block { size_t size; max_align_t alignment; } hz_import_block;
+#endif
 static HZ_IMPORT_THREAD size_t limit_bytes, live_bytes, peak_bytes;
 static HZ_IMPORT_THREAD int allocation_failed;
 void hz_import_memory_begin(size_t limit) {

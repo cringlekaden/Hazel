@@ -25,6 +25,8 @@ The same corpus passes ASan + UBSan with stack-use-after-return detection under 
 selected full Xcode toolchain. LeakSanitizer is unavailable on this macOS host;
 the wrapper's live-allocation assertions run in all configurations. MSVC/GCC
 qualification uses the canonical CI inventory; results must be recorded separately.
+The first MSVC build exposed its missing C `max_align_t`; the engine allocation
+wrapper now preserves MSVC x64 malloc alignment explicitly, without vendor edits.
 
 The parser is not the engine validator. The inspected implementation does not
 fully enforce its strictness option or fixed-vector field shapes. The adapter must
