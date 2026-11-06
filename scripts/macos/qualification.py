@@ -125,7 +125,12 @@ def product_acceptance(name,bundle,working,logs,source_sdk,interactive=False):
             while process.poll() is None:
                 if time.monotonic()>=deadline:raise RuntimeError(mode+' product acceptance timed out; no normal-close pass was recorded')
                 mapped=subprocess.run(['/usr/sbin/lsof','-a','-p',str(process.pid),'-d','txt','-Fn'],capture_output=True,text=True,timeout=5)
-                if mapped.returncode and process.poll() is None:raise RuntimeError('Cannot inspect owned product native mappings: '+mapped.stderr)
+                if mapped.returncode and process.poll() is None:
+                    # A completed teardown can drop txt mappings just before
+                    # waitpid observes exit. Earlier positive mappings and all
+                    # final lifecycle/closure/signature gates remain mandatory.
+                    completed=not interactive and images and 'SMOKE PASS: application teardown completed' in log.read_text(errors='replace')
+                    if not completed:raise RuntimeError('Cannot inspect owned product native mappings: '+mapped.stderr)
                 for line in mapped.stdout.splitlines():
                     if line.startswith('n') and (line.endswith('.dylib') or '/Contents/MacOS/' in line):images.add(line[1:])
                 time.sleep(.1)
