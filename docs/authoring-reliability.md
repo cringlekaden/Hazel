@@ -20,6 +20,21 @@ replacement is needed; no drive mapping is guessed. Previously broken
 references containing an extra project/asset-directory prefix need that prefix
 removed explicitly; there is no ambiguous cwd fallback.
 
+## Native mesh and material assets
+
+Native mesh/material/import references use portable project-owned paths. A
+`MeshRendererComponent` stores a mesh path and stable-slot material overrides;
+scene copies, detached prefabs, exact dirty comparisons and shared property/
+structural history retain those authored values. CPU accepted resources and GPU
+objects never enter authored history. Materials use independent FileDocument
+save/conflict and value-history ownership.
+
+The accepted import manifest selects immutable cooked geometry. Reimport preserves
+edited materials, mesh defaults and detached prefabs, and rejects ambiguous source
+mappings instead of guessing by name/index. Native package audit requires the
+cooked dependency closure, not the original GLB or parser. See [import contracts](design/3d-import-stage2.md).
+Mesh components are metadata authoring only until stage 3; Play rejects them.
+
 ## Authored fields and script replacement
 
 Each Scene owns authored script fields by entity UUID. Scene copies and entity
