@@ -26,6 +26,10 @@ project "Hazelnut"
         links { "opengl32", "Comdlg32", "Shell32", "Ole32", "Advapi32", "Shell32" }
     filter { "system:windows", "action:vs*" }
         buildoptions { "/utf-8" }
+    -- The typed native inspector instantiates the authored-component/history inventory.
+    -- MSVC Debug now exceeds standard COFF section counts in this translation unit.
+    filter { "system:windows", "action:vs*", "files:**/SceneHierarchyPanel.cpp" }
+        buildoptions { "/bigobj" }
     filter "configurations:Debug"
         defines { "HZ_DEBUG" }
         runtime "Debug"
