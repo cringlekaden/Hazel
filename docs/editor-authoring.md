@@ -48,6 +48,10 @@ Priority: explicit Preferences path (invalid means error); intentional SDK tooli
 - **Tool ownership**: workers carry immutable argv/path/generation data, own their process tree and never call ImGui or editor closures. Main-thread completion validates project and session generation before reload/open and continues while minimized, without advancing scene/runtime/render updates. Linux closes unrelated descriptors; Windows inherits only stdin/stdout/stderr. Only one job per editor; canonical SDK CLI locking is unchanged. Normal close waits for completion and offers Keep editor open. Internal teardown cancels, terminates owned descendants and joins without applying editor actions; there is no interactive force-stop button. Python probe timeout remains five seconds and tools sixty minutes. Fair bounded stdout/stderr draining keeps cancellation/deadline checks responsive under floods.
 - **Logging lifetime**: the engine's stable distribution sink keeps stdout/other sinks usable in Nutella/tests with no editor observer. Hazelnut attaches a data-only scoped receiver before Application initialization and detaches after tool/script/watcher/renderer shutdown. Existing NativeLog and managed exception records are tagged Managed; general C# Console.Out/Error is not redirected. Compiler file/line navigation and an optional rotating native file sink remain later refinements.
 
+Metadata views pin accepted CPU resources. A rejected replacement reports its
+error while retaining that view; **Refresh metadata** is the explicit retry
+boundary. Reading a broken file does not recur every frame.
+
 Source copyright/attribution supplied by a GLB is retained in its accepted native
 manifest and inspectable under **Source copyright / attribution**. Keep separate
 model license files alongside the project assets.

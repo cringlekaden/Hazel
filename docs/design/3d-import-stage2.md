@@ -1,9 +1,9 @@
 # Stage 2: native static asset import
 
-Implementation continues on `feature/3d-foundations`; stage-3 drawing is excluded.
-Native editor integration is implemented; final package and Debug/Release
-qualification are recorded below as they complete. The frozen Rendering Reference
-Core_v1 is unchanged.
+Stage-2 code and native authoring are implemented on `feature/3d-foundations`.
+Local Debug/Release and relocated-package qualification passed. Current canonical
+CI status and remaining platform limits are recorded below. Core_v1 remains
+byte-for-byte unchanged. Mesh drawing, PBR, IBL, Metal and other adapters are excluded.
 
 ## Boundaries and documents
 
@@ -77,22 +77,80 @@ compression, extra UV sets, alpha Blend, cameras/lights and material extensions
 other than explicitly translated `KHR_materials_unlit` reject. Optional extensions
 cannot silently alter material meaning.
 
-## Current evidence
+## Qualification
 
-- Content-only packaging repair: actual relocated Reference Nutella, source/SDK
-  denied, 60 frames and normal teardown; assigned module/class, managed closure,
-  corrupt/missing dependencies and accepted archive preservation checks pass.
-- Apple Clang 21 dependency Debug/Release and ASan/UBSan corpus pass. Initial
-  canonical MSVC admission exposed the engine wrapper's missing C `max_align_t`;
-  the wrapper now explicitly preserves MSVC x64 malloc alignment. No vendor edit.
-- Focused Release CPU tests exercise portable decoding, strict schemas, identities,
-  reimport conflicts/cancellation/source changes, retained accepted versions,
-  source-free runtime reads and explicit unsupported Play.
-- Focused native editor checks pass actual ImGui import, material create/property/
-  named texture assignment/save/duplicate, independent material history, detached
-  prefab instantiation, shared mesh-slot/transform history, save/reopen and
-  native reimport/conflict feedback with Python/SDK deliberately unavailable.
-- Additive Import_v1 has eleven bounded valid/rejected diagnostic sources and
-  frozen native outputs. CLI import and source-free native closure checks pass.
-- Final Debug/Release/relocated-package and updated canonical CI qualification
-  are pending; no skipped gate is counted as passed.
+Implementation checkpoints: `32f0164` (content-only packaging), `7040fc8`/`aacce9c`
+(pinned C dependencies/MSVC alignment), `ed17cc6` (owned pipeline/codecs/reference),
+`49ddbad` (native authoring), `e579e9c` (attribution/retained metadata), `623b90b`
+(Windows manifest/diagnostics) and `ffe3904` (completed-teardown observation).
+
+- Apple M4, Apple OpenGL 4.1: maintained Debug and Release builds and **all 18**
+  sequential regressions passed at `e579e9c`. Both configurations ran the actual
+  Core_v1 orthographic/perspective player for 60 frames without a project module.
+  Native editor tests exercised import with unavailable Python/SDK, actual ImGui
+  material create/property/texture selection/save/duplicate, independent history,
+  mesh-slot/transform history interleaving, detached instantiation/save/reopen,
+  explicit unsupported Play, reimport conflict and retained metadata reload.
+- Apple Clang 21 dependency corpus and full C++ CPU foundation pass ASan/UBSan,
+  including stack-use-after-return detection. The CPU invocation first lacked the
+  runner's staged font assets; supplying those assets let the same instrumented
+  binary finish. LeakSanitizer is unavailable here; counted live C allocations
+  are asserted. No skipped graphics check is counted as passed.
+- Reimport checks preserve edited material, prefab bytes, mesh names/slot labels/
+  default assignments and detached scene edits. Unique primitive reorders keep
+  stable slots; ambiguous/removal conflicts, cancellation before/after immutable
+  publication, source changes, failed destinations and retry retain acceptance.
+- Relocated Hazelnut/Nutella pass checksums/signatures, native/managed closure,
+  actual frames/normal teardown and rendering/picking/session regressions under
+  source/SDK denial. The shipped native helper creates/imports/reimports without
+  GPU initialization or project compilation. Content-only Reference packaging
+  tests required module/class, managed closure, missing/corrupt geometry/images
+  and accepted archive/checksum preservation.
+- A separate native-created cooked-only package omits **all GLBs and its project
+  assembly**. Its extracted parser-free native auditor validates mesh/material/
+  prefab/artifact closure and retained source attribution under source/SDK denial;
+  its ordinary 2D startup completes 60 frames. `nm` also confirms parser/tangent
+  symbols are absent from Hazelnut, Nutella and the native runtime auditor.
+- Import_v1 has eleven valid/rejected diagnostic sources, exact provenance and
+  frozen native outputs. CLI import and source-free closure checks pass. All eight
+  pre-stage-2 Reference assets compare unchanged with `ab033b7`.
+
+Evidence is retained in ignored `build/stage2-evidence`, `build/testing/logs` and
+`build/testing/packages`. The normal Reference archive is under
+`build/stage2-evidence/packages/reference`; the cooked-only variant has separate
+qualification metadata and deliberately cannot reimport without restoring source.
+
+## CI and remaining limits
+
+[Canonical run at `623b90b`](https://github.com/cringlekaden/Hazel/actions/runs/42158669043)
+is pending. [Earlier authoring run](https://github.com/cringlekaden/Hazel/actions/runs/42155455368)
+passed hosted macOS CPU/service/managed checks; Linux completed Debug/Release
+compilation and both software regression suites and was running the GL4.1/tutorial
+checks at this record's update. Windows compiled
+both configurations, passed content-only archive contracts, then failed relocated
+native import with an ANSI filesystem error that its test decoder lost. Nested
+owned stage paths exceed the legacy Windows path length; native executables now
+merge the [standard long-path manifest opt-in](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation)
+without changing DPI policy. Native filesystem errors retain UTF-8 paths/numeric
+codes, and the test retains undecodable error bytes. Runtime confirmation of this
+Windows repair remains pending. The superseded `e579e9c` CI run was cancelled once
+this inherited failure was identified, rather than repeating its full campaign.
+
+The macOS product probe also observed an exit race after the 60-frame teardown
+marker and earlier positive native mappings. It now accepts disappearance of
+mappings only in that completed state; exit, frames, native closure and signature
+checks remain mandatory. Relocated checks passed after this focused repair.
+
+The historical Windows Debug game timeout remains unresolved; these Windows
+attempts have not reached that fixture, so no recurrence or full Windows gameplay
+qualification is claimed. Bounds, retries and reference conditions are unchanged.
+Physical OS dialogs/desktop input remain separate acceptance: this session could
+not attach to the private app's native window; real ImGui authoring was exercised
+by the maintained native editor regression.
+
+The original checkout's two LastLightkeeper drafts and two Finder files retain
+their recorded hashes. Preferences/saves/layouts and original Xcode customizations
+were not used for tests. Conflicting owner drafts remain unreconciled alongside
+the stage-1 committed counterparts. No master merge or release was performed.
+The next implementation stage is shared scene submission and direct PBR drawing,
+followed by HDR/IBL; none was begun here.

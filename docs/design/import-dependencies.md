@@ -35,3 +35,8 @@ must check the copied data. Allocation exhaustion is rejected even if upstream
 returns success. Upstream error formatting can retain an invalid message pointer
 when its arena is exhausted: consumers read numeric codes/offsets only and supply
 owned diagnostics, without dereferencing upstream messages or JSON-path pointers.
+
+The full owned C++ import/cook/publication CPU foundation also passes Apple Clang
+21 ASan/UBSan. Source hashes remain pristine. Cross-platform compile/execution
+and current CI limits are recorded in [stage-2 qualification](3d-import-stage2.md#ci-and-remaining-limits);
+Windows compilation alone is not claimed as full corpus/runtime qualification.

@@ -1052,8 +1052,9 @@ must not be read as implemented product capabilities.
 
 ## Stage 2 implementation status
 
-Stage 2 is in progress: the content-only packaging prerequisite is repaired;
-producer-only GLB/tangent dependencies, engine-owned CPU import/cooking and native
-asset contracts are implemented. Native editor integration and qualification are
-tracked in [the stage-2 record](3d-import-stage2.md). Stage 3 drawing, PBR, IBL and
-other formats remain unimplemented.
+Stage 2 implements content-only packaging, pinned producer-only GLB/Mikk
+dependencies, format-independent CPU cooking/publication, native asset codecs and
+Hazelnut material/import/prefab authoring. Local Debug/Release and relocated
+package qualification passed; canonical CI and remaining Windows limits are
+tracked in [the stage-2 record](3d-import-stage2.md). Stage 3 drawing, PBR, IBL,
+Metal and other formats remain unimplemented.
