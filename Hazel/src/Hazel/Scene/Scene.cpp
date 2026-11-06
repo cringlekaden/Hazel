@@ -635,8 +635,9 @@ namespace Hazel {
                 camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic};
             DrawView(cameraView, renderView, display);
         }
-        else
+        else if(m_Presentation.SceneReferred)
         {
+            if(!display)throw std::runtime_error("Scene-referred runtime output requires an explicit host view target");
             SceneRenderView local;
             SceneSubmission frame;
             frame.Presentation = m_Presentation;
@@ -644,6 +645,7 @@ namespace Hazel {
             SceneRenderer::Render(
                 frame, renderView ? *renderView : local, display, [] {}, [this] { RenderUI(); });
         }
+        else RenderUI(); // CPU-only updates and lightweight UI need no graphics pass.
     }
 
     void Scene::OnUpdateSimulation(Timestep ts, EditorCamera &camera, SceneRenderView *view,
