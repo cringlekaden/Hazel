@@ -103,10 +103,14 @@ def native_import_helper(executable,resources,working,env,source,command_prefix=
     fixture=private/'fixture.glb';fixture.write_bytes(source)
     def run(arguments):
         result=subprocess.run([*command_prefix,str(executable),*map(str,arguments)],cwd=working,env=env,
-                              text=True,encoding='utf-8',capture_output=True,timeout=60)
-        if result.returncode:raise RuntimeError('Relocated native import failed: '+result.stdout+result.stderr)
-        if 'Creating window' in result.stdout+result.stderr:raise RuntimeError('Native producer initialized a GPU')
-        return result.stdout.strip()
+                              capture_output=True,timeout=60)
+        # Keep even a platform-library error's original bytes reviewable. A
+        # decode failure must not discard stderr or hide the producer failure.
+        stdout=result.stdout.decode('utf-8',errors='backslashreplace')
+        stderr=result.stderr.decode('utf-8',errors='backslashreplace')
+        if result.returncode:raise RuntimeError('Relocated native import failed: '+stdout+stderr)
+        if 'Creating window' in stdout+stderr:raise RuntimeError('Native producer initialized a GPU')
+        return stdout.strip()
     if run(['--import-contract'])!='HAZEL_ASSET_IMPORT_CONTRACT=1':raise RuntimeError('Shipped native importer contract mismatch')
     project=private/'Project'
     run(['create','--name','Relocated native import','--identifier','RelocatedImport','--destination',project,

@@ -66,6 +66,11 @@ workspace "Hazel"
             ["HEADER_SEARCH_PATHS"] = "$(inherited) $(USER_HEADER_SEARCH_PATHS)"
         }
     filter {}
+    -- Native asset cohorts have nested owned stages and immutable generations.
+    -- Merge only long-path awareness; GLFW retains its existing DPI contract.
+    filter { "system:windows", "kind:ConsoleApp or WindowedApp", "language:C or C++" }
+        files { workspaceRoot .. "/Hazel/src/Platform/Windows/NativeAssets.manifest" }
+    filter {}
     startproject "Hazelnut"
 
     configurations

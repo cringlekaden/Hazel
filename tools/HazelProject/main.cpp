@@ -141,6 +141,14 @@ int main(int argc, char **argv) {
         std::cout << "Created project: " << result.Descriptor.generic_u8string()
                   << "\nEditing ready; scripts intentionally not compiled\n";
         return 0;
+    } catch (const std::filesystem::filesystem_error &e) {
+        // filesystem_error::what() uses a native code page on MSVC. Preserve
+        // paths as UTF-8 and the actual error code instead of emitting ANSI.
+        std::cerr << "HazelProject: native filesystem operation failed (" << e.code().category().name()
+                  << " error " << e.code().value() << "): " << e.path1().generic_u8string();
+        if (!e.path2().empty()) std::cerr << " -> " << e.path2().generic_u8string();
+        std::cerr << '\n';
+        return 1;
     } catch (const std::exception &e) {
         std::cerr << "HazelProject: " << e.what() << '\n';
         return 1;
