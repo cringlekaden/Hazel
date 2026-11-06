@@ -2,6 +2,7 @@
 #include "Hazel/Assets/NativeStarter.h"
 #include "Hazel/Assets/ProjectAssets.h"
 #include "Hazel/Renderer/SceneRenderer.h"
+#include "Hazel/Scene/RuntimeSession.h"
 #include <cmath>
 static glm::dvec3 OracleBRDF(glm::dvec3 base, double metal, double rough, glm::dvec3 n,
                              glm::dvec3 v, glm::dvec3 l)
@@ -494,6 +495,22 @@ static void DirectPBRChecks()
     glFrontFace(GL_CCW);
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LESS);
+    display->Unbind();
+    // Scene-owned presentation still applies when a UI-only runtime has no world camera.
+    auto uiOnly = CreateRef<Scene>();
+    uiOnly->Presentation().SceneReferred = true;
+    uiOnly->Presentation().Exposure = 2;
+    uiOnly->Presentation().Background = {.1f, .2f, .3f, 1};
+    RuntimeSession uiSession;
+    uiSession.Resize(128, 128);
+    uiSession.SetRenderTarget(display);
+    uiSession.Start({}, uiOnly);
+    display->Bind();
+    uiSession.Update(0);
+    NearRGB(display->ReadColorPixel(0, 64, 64), OracleNeutral(glm::dvec3(.1, .2, .3) * 4.), .001,
+            "No-camera scene bypassed world presentation");
+    Check(display->ReadPixel(1, 64, 64) == -1, "No-camera background wrote picking");
+    uiSession.Stop();
     display->Unbind();
     for (auto v : {glm::dvec3(0, 0, 1), glm::normalize(glm::dvec3(.8, 0, .2))})
     {

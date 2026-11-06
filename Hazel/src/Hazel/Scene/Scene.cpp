@@ -636,7 +636,14 @@ namespace Hazel {
             DrawView(cameraView, renderView, display);
         }
         else
-            RenderUI();
+        {
+            SceneRenderView local;
+            SceneSubmission frame;
+            frame.Presentation = m_Presentation;
+            frame.Presentation.Validate();
+            SceneRenderer::Render(
+                frame, renderView ? *renderView : local, display, [] {}, [this] { RenderUI(); });
+        }
     }
 
     void Scene::OnUpdateSimulation(Timestep ts, EditorCamera &camera, SceneRenderView *view,

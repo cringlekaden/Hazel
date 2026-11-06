@@ -270,6 +270,7 @@ namespace Hazel {
 		HZ_PROFILE_FUNCTION();
 
 		s_Data->CameraBuffer.ViewProjection = camera.GetViewProjectionMatrix();
+		s_Data->CameraUniformBuffer->Bind();
 		s_Data->CameraUniformBuffer->SetData(&s_Data->CameraBuffer, sizeof(Renderer2DData::CameraData));
 
 		StartBatch();
@@ -281,6 +282,7 @@ namespace Hazel {
 		HZ_PROFILE_FUNCTION();
 
 		s_Data->CameraBuffer.ViewProjection = camera.GetProjection() * glm::inverse(transform);
+		s_Data->CameraUniformBuffer->Bind();
 		s_Data->CameraUniformBuffer->SetData(&s_Data->CameraBuffer, sizeof(Renderer2DData::CameraData));
 
 		StartBatch();
@@ -292,6 +294,7 @@ namespace Hazel {
 		HZ_PROFILE_FUNCTION();
 
 		s_Data->CameraBuffer.ViewProjection = camera.GetViewProjection();
+		s_Data->CameraUniformBuffer->Bind();
 		s_Data->CameraUniformBuffer->SetData(&s_Data->CameraBuffer, sizeof(Renderer2DData::CameraData));
 
 		StartBatch();
