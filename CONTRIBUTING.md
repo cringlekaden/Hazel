@@ -1,6 +1,6 @@
 # Contributing to Hazel
 
-Start with [getting started](docs/getting-started.md), the [documentation index](docs/README.md) and [development/testing](docs/development.md). Current cleanup work targets `feature/runtime-ui-hardening`; master integration follows final qualification and acceptance.
+Start with [getting started](docs/getting-started.md), the [documentation index](docs/README.md) and [development/testing](docs/development.md). Active 2D/3D development uses `feature/3d-foundations` in the permanent checkout `/Volumes/External/kadencringle/Projects/Hazel`. Open `Hazel.xcworkspace` there. Small intentional content changes should be committed separately before branch switches; do not create another long-lived worktree to preserve them. Historical worktree paths in qualification records describe their dated runs. Master integration follows final qualification and acceptance.
 
 ## Report a useful issue
 

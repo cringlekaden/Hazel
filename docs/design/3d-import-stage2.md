@@ -123,18 +123,15 @@ qualification metadata and deliberately cannot reimport without restoring source
 ## CI and remaining limits
 
 [Canonical run at `623b90b`](https://github.com/cringlekaden/Hazel/actions/runs/42158669043)
-is pending. [Earlier authoring run](https://github.com/cringlekaden/Hazel/actions/runs/42155455368)
-passed hosted macOS CPU/service/managed checks; Linux completed Debug/Release
-compilation and both software regression suites and was running the GL4.1/tutorial
-checks at this record's update. Windows compiled
-both configurations, passed content-only archive contracts, then failed relocated
-native import with an ANSI filesystem error that its test decoder lost. Nested
-owned stage paths exceed the legacy Windows path length; native executables now
-merge the [standard long-path manifest opt-in](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation)
-without changing DPI policy. Native filesystem errors retain UTF-8 paths/numeric
-codes, and the test retains undecodable error bytes. Runtime confirmation of this
-Windows repair remains pending. The superseded `e579e9c` CI run was cancelled once
-this inherited failure was identified, rather than repeating its full campaign.
+completed: Linux full qualification and hosted macOS CPU/service/managed checks
+passed. Windows built Debug/Release and passed both extracted-archive profiles,
+including relocated native helper import/reimport and content-only contracts.
+The path/UTF-8 repair therefore ran successfully. Windows then failed before the
+native Debug regressions because checkout CRLF conversion changed frozen
+`Native/ProvidedTangents/Import.himport` bytes. The consolidation checkpoint adds
+explicit byte-preservation attributes for accepted native assets and Reference.
+This is separate from the historical gameplay timeout; that fixture was not reached.
+No fixture hash, tolerance or timeout is changed.
 
 The macOS product probe also observed an exit race after the 60-frame teardown
 marker and earlier positive native mappings. It now accepts disappearance of
