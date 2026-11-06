@@ -1,6 +1,6 @@
 # Downloads and standalone games
 
-A prepared game includes **Nutella**, compiled scripts, project assets and its runtime dependencies. Players need an OpenGL 4.1 driver and the [deployment baseline](platforms-and-dependencies.md#platform-status), without Python, a compiler or the Hazel source SDK.
+A prepared game includes **Nutella**, project assets, required compiled scripts and its runtime dependencies. Players need an OpenGL 4.1 driver and the [deployment baseline](platforms-and-dependencies.md#platform-status), without Python, a compiler or the Hazel source SDK.
 
 ## Choose a snapshot
 
@@ -48,7 +48,7 @@ The targeted build/export alternative is:
 python3 scripts/hazel.py editor-export examples/Skybound/Skybound.hproj --name Skybound --output dist/games
 ```
 
-Both `--name` and `--output` are required. This incrementally builds Release Nutella, ScriptCore and audit tools, compiles the project's Release scripts and packages. It uses Premake and two compiler jobs. Plain `package` without app/project arguments builds neither: it packages both applications using SceneTransitions.
+Both `--name` and `--output` are required. This incrementally builds Release Nutella, ScriptCore and audit tools, compiles the project's Release scripts when native asset inspection finds assigned script classes, then packages. It uses Premake and two compiler jobs. Plain `package` without app/project arguments builds neither: it packages both applications using SceneTransitions.
 
 ## Export from Hazelnut
 
@@ -88,3 +88,22 @@ Bundles are locally **ad-hoc signed** only. Developer ID, notarization and fresh
 Exports carry the descriptor and eligible project Assets, Resources/fonts/shaders/ScriptCore, bundled Mono profile/config, native dependency closure, `LAUNCH.txt`, `build.json`, file/archive checksums and licenses. Project README/NOTICE/LICENSE files are copied when present. Intermediate script projects, build outputs and debugging symbols are excluded according to the maintained inventory rules; assets are not pruned merely because a scene does not currently reference them.
 
 Native audit validates scene/prefab ownership, sprites, styles, font families/faces/notices and audio. Python retains package inventory, deployment and managed dependency/class closure checks. Missing/external resources fail export; source SDK paths are not a deployment fallback. [Licensing and provenance](platforms-and-dependencies.md#licensing-and-provenance) lists authoritative notices. Keep project asset notices alongside their assets and verify the relocated package before sharing it.
+
+## Content-only projects and imported assets
+
+Unassigned script stubs need no compiled project module. Native scene/prefab
+inspection supplies actual required class names; assigned scripts require the
+configured valid module/class and managed dependency closure. Present assemblies
+are audited even when unused. Validation failure preserves the accepted archive.
+
+Mesh/material/import documents use the same native dependency authority: accepted
+geometry artifacts, material images, mesh references and detached prefabs must be
+in the package inventory. Original GLB bytes/parser are not runtime dependencies.
+A content-only Rendering Reference package includes both frozen Core_v1 and
+additive Import_v1 metadata; its 2D startup runs normally. Mesh components cannot
+run before stage-3 rendering exists.
+
+Packaged Hazelnut carries its matching native `HazelProject` sibling helper, so
+GLB import and native material authoring require no Python or scripting SDK.
+Script builds/export retain their existing source-SDK requirements. On macOS the
+helper shares the app's audited Frameworks closure and inside-out signing.

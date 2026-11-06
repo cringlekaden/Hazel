@@ -308,6 +308,11 @@ namespace Hazel {
 		uint64_t textureID = m_ViewportOutput->GetColorAttachmentRendererID();
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
         m_ViewportHovered=ImGui::IsItemHovered();
+        if(m_ActiveScene&&!m_ActiveScene->GetAllEntitiesWith<MeshRendererComponent>().empty()) {
+            const ImVec2 at{imageOrigin.x+8,imageOrigin.y+8};const char* text="Mesh metadata present — drawing / picking requires stage 3";
+            const auto extent=ImGui::CalcTextSize(text);ImGui::GetWindowDrawList()->AddRectFilled({at.x-4,at.y-3},{at.x+extent.x+4,at.y+extent.y+3},IM_COL32(25,25,25,235));ImGui::GetWindowDrawList()->AddText(at,IM_COL32(255,220,130,255),text);
+        }
+
         UI_RectEditing();
         UI_DebugOverlay();
 

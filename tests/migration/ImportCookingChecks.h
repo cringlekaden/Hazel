@@ -22,6 +22,16 @@ inline void ImportCookingChecks()
           "Common mesh cook lost stable slots/generated flat normals");
     Check(data.Meshes[0].Primitives[0].Vertices[1].UV.x == 1,
           "Normalized unsigned UV accessor was not decoded");
+    auto numericJSON = json;
+    auto numericAt = numericJSON.find("\"count\":3");
+    numericJSON.replace(numericAt, std::strlen("\"count\":3"), "\"count\":3.0");
+    Check(ReadGLB(ImportGLB(numericJSON, bin), -1).Meshes.size() == 1,
+          "Integral JSON real spelling was rejected");
+    auto emptyName = json;
+    auto nameAt = emptyName.find("Dielectric");
+    emptyName.replace(nameAt, std::strlen("Dielectric"), "");
+    Check(ReadGLB(ImportGLB(emptyName, bin), -1).Materials[0].Values.Name == "Material 1",
+          "Empty optional glTF name did not receive a native display fallback");
     auto rejects = [](auto f) {
         bool rejected = false;
         try

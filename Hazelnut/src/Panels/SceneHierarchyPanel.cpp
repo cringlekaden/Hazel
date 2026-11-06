@@ -47,7 +47,7 @@ void SceneHierarchyPanel::SetContext(const Ref<Scene> &context)
     FinishUIEdit();
     m_SelectionContext = {};
     m_HierarchyError.clear();m_Matches.clear();m_Reveal.clear();m_DeleteWanted=false;m_DeleteScene=m_DeleteEntity=0;m_DragHover=0;m_DragHoverSince=0;
-    m_Pickers.clear();m_UIStatePickers={};m_UIFontInitialized=false;
+    m_Pickers.clear();m_AssetPickers.clear();m_UIStatePickers={};m_UIFontInitialized=false;
     m_PrefabChoices.clear();
     m_PrefabChoicesReady = false;
     m_Context = context;
@@ -266,7 +266,7 @@ void SceneHierarchyPanel::DrawAssetProperties(Entity entity)
     if (entity != m_SelectionContext)
     {
         FinishUIEdit();
-        m_Pickers.clear();m_UIStatePickers={};m_UIFontInitialized=false;
+        m_Pickers.clear();m_AssetPickers.clear();m_UIStatePickers={};m_UIFontInitialized=false;
         m_SelectionContext = entity;
     }
     DrawComponents(entity);
@@ -315,7 +315,7 @@ bool SceneHierarchyPanel::SetSelectedEntity(Entity entity)
         m_SelectionContext = {};
         return false;
     }
-    if (m_SelectionContext != entity) {m_Pickers.clear();m_UIStatePickers={};m_UIFontInitialized=false;m_HierarchyError.clear();}
+    if (m_SelectionContext != entity) {m_Pickers.clear();m_AssetPickers.clear();m_UIStatePickers={};m_UIFontInitialized=false;m_HierarchyError.clear();}
     m_SelectionContext = entity;
     RevealSelected();
     return true;
@@ -409,7 +409,7 @@ void SceneHierarchyPanel::DrawComponent(const std::string &name, Entity entity,
 void SceneHierarchyPanel::RestoreHistorySelection(uint64_t id)
 {
     m_SelectionContext = {};
-    m_Pickers.clear();
+    m_Pickers.clear();m_AssetPickers.clear();
     m_UIStatePickers = {};
     m_UIFontInitialized = false;
     m_SectionEntity = 0;
@@ -482,7 +482,7 @@ bool SceneHierarchyPanel::Structural(const std::string &name,
         if (!history)
             owner->Bind(document->GetIdentity());
         m_SelectionContext = {};
-        m_Pickers.clear();
+        m_Pickers.clear();m_AssetPickers.clear();
         m_UIStatePickers = {};
         if (!owner->Execute(*document, std::move(command)))
         {
@@ -513,7 +513,7 @@ void SceneHierarchyPanel::DrawUIComponent(const std::string &name,Entity entity,
     std::function<void(const std::string&)> report)
 {
     if(!m_Context || !entity.BelongsTo(m_Context.get()) || !entity || !m_Context->IsEntityValid(entity.GetUUID()))return;
-    if(!std::is_same_v<T,TextComponent> && !std::is_same_v<T,TransformComponent> && !std::is_same_v<T,SpriteRendererComponent> && !std::is_same_v<T,CircleRendererComponent> && !std::is_same_v<T,CameraComponent> && !entity.HasComponent<UIRectComponent>()&&!entity.HasComponent<UICanvasComponent>()){
+    if(!std::is_same_v<T,TextComponent> && !std::is_same_v<T,TransformComponent> && !std::is_same_v<T,SpriteRendererComponent> && !std::is_same_v<T,CircleRendererComponent> && !std::is_same_v<T,CameraComponent> && !std::is_same_v<T,MeshRendererComponent> && !entity.HasComponent<UIRectComponent>()&&!entity.HasComponent<UICanvasComponent>()){
         DrawComponent<T>(name,entity,sections,restore,ui,report);return;
     }
     DrawComponent<T>(name,entity,sections,restore,[&](auto &component){
@@ -579,6 +579,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         if (entity.HasComponent<SpriteRendererComponent>())
             DisplayAddComponentEntry<SpriteAnimationComponent>("Sprite Animation");
         DisplayAddComponentEntry<CircleRendererComponent>("Circle Renderer");
+        DisplayAddComponentEntry<MeshRendererComponent>("Mesh Renderer (metadata)");
         DisplayAddComponentEntry<Rigidbody2DComponent>("Rigidbody 2D");
         DisplayAddComponentEntry<BoxCollider2DComponent>("Box Collider 2D");
         DisplayAddComponentEntry<CircleCollider2DComponent>("Circle Collider 2D");
@@ -1316,6 +1317,15 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             }
         });
 
+    DrawUIComponent<MeshRendererComponent>("Mesh Renderer",entity,m_Sections,m_RestoreSections,[&,entity](auto& c)mutable{
+        ImGui::TextWrapped("Mesh metadata only. Stage-3 rendering is required before Play; select imported instances through Hierarchy.");auto assets=m_Context->GetAssets();auto before=c.Mesh;
+        if(AssetPicker("mesh","Mesh",c.Mesh,".hmesh",assets,m_AssetPickers[ImGui::GetID("mesh-picker")],OpenAsset)&&before!=c.Mesh)c.Materials.clear();
+        if(c.Mesh.empty()||!assets)return;auto resolution=assets->Mesh(c.Mesh);PropertyUI::Validation(resolution.Error.c_str());if(!resolution.Accepted)return;auto& mesh=*resolution.Accepted;
+        ImGui::Text("%zu vertices | %zu primitives",mesh.Geometry.Vertices.size(),mesh.Geometry.Primitives.size());
+        for(auto& slot:mesh.Definition.Slots){ImGui::PushID(AssetKey(slot.ID).c_str());auto found=c.Materials.find(slot.ID);auto value=found==c.Materials.end()?std::filesystem::path{}:found->second;auto accepted=assets->Material(slot.Material);ImGui::TextWrapped("%s — default: %s",slot.Name.c_str(),accepted.Accepted?accepted.Accepted->Name.c_str():slot.Material.generic_u8string().c_str());
+            if(AssetPicker("material","Slot override",value,".hmat",assets,m_AssetPickers[ImGui::GetID("slot-picker")],OpenAsset)){if(value.empty())c.Materials.erase(slot.ID);else c.Materials[slot.ID]=value;}
+            ImGui::PopID();}
+    });
     DrawUIComponent<SpriteRendererComponent>(
         "Sprite Renderer", entity, m_Sections,m_RestoreSections,
         [this](auto &component)

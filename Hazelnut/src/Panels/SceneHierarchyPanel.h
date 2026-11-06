@@ -5,6 +5,7 @@
 #include "Hazel/Scene/Entity.h"
 #include "Hazel/Scene/Scene.h"
 #include "SpriteWidgets.h"
+#include "UI/AssetPicker.h"
 #include "Authoring/UIInspectorEditing.h"
 #include <functional>
 #include <unordered_map>
@@ -107,6 +108,7 @@ class SceneHierarchyPanel
     std::map<std::string,bool> m_Sections;
     std::set<std::string> m_RestoreSections;
     std::unordered_map<uint32_t, SpritePickerState> m_Pickers;
+    std::unordered_map<uint32_t,AssetPickerState> m_AssetPickers;
     std::array<SpritePickerState,5> m_UIStatePickers;
     std::string m_UIEmphasisNotice;
     std::string m_UIFontDraft;

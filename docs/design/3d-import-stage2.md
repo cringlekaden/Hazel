@@ -1,8 +1,9 @@
 # Stage 2: native static asset import
 
 Implementation continues on `feature/3d-foundations`; stage-3 drawing is excluded.
-This record is in progress until editor/package and Debug/Release qualification
-are recorded below. The frozen Rendering Reference Core_v1 is unchanged.
+Native editor integration is implemented; final package and Debug/Release
+qualification are recorded below as they complete. The frozen Rendering Reference
+Core_v1 is unchanged.
 
 ## Boundaries and documents
 
@@ -82,5 +83,11 @@ cannot silently alter material meaning.
 - Focused Release CPU tests exercise portable decoding, strict schemas, identities,
   reimport conflicts/cancellation/source changes, retained accepted versions,
   source-free runtime reads and explicit unsupported Play.
-- Native editor interaction, additive reference fixtures, relocated imported-asset
-  closure and final Debug/Release/CI qualification remain to be completed.
+- Focused native editor checks pass actual ImGui import, material create/property/
+  named texture assignment/save/duplicate, independent material history, detached
+  prefab instantiation, shared mesh-slot/transform history, save/reopen and
+  native reimport/conflict feedback with Python/SDK deliberately unavailable.
+- Additive Import_v1 has eleven bounded valid/rejected diagnostic sources and
+  frozen native outputs. CLI import and source-free native closure checks pass.
+- Final Debug/Release/relocated-package and updated canonical CI qualification
+  are pending; no skipped gate is counted as passed.

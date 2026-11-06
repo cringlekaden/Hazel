@@ -96,6 +96,33 @@ def extract_verified(archive,working):
     return path
 
 
+
+def native_import_helper(executable,resources,working,env,source,command_prefix=()):
+    """Exercise the shipped producer from an unrelated cwd without an SDK."""
+    private=working/'Native import ü';private.mkdir()
+    fixture=private/'fixture.glb';fixture.write_bytes(source)
+    def run(arguments):
+        result=subprocess.run([*command_prefix,str(executable),*map(str,arguments)],cwd=working,env=env,
+                              text=True,encoding='utf-8',capture_output=True,timeout=60)
+        if result.returncode:raise RuntimeError('Relocated native import failed: '+result.stdout+result.stderr)
+        if 'Creating window' in result.stdout+result.stderr:raise RuntimeError('Native producer initialized a GPU')
+        return result.stdout.strip()
+    if run(['--import-contract'])!='HAZEL_ASSET_IMPORT_CONTRACT=1':raise RuntimeError('Shipped native importer contract mismatch')
+    project=private/'Project'
+    run(['create','--name','Relocated native import','--identifier','RelocatedImport','--destination',project,
+         '--templates',resources/'Templates'])
+    descriptor=project/'RelocatedImport.hproj'
+    run(['import-glb',descriptor,fixture,'Imported/Diagnostic'])
+    manifest=project/'Assets/Imported/Diagnostic/Import.himport'
+    if not manifest.is_file() or not list(project.rglob('*.hgeom')) or not list(project.rglob('*.hmat')):
+        raise RuntimeError('Shipped producer omitted native assets')
+    accepted=manifest.read_bytes()
+    run(['reimport-glb',descriptor,'Imported/Diagnostic/Import.himport'])
+    if manifest.read_bytes()!=accepted:raise RuntimeError('Unchanged relocated reimport rewrote accepted generation')
+    if list(project.rglob('*.dll')):raise RuntimeError('Native asset authoring compiled an unused script stub')
+    print('PASS: relocated native helper create/import/unchanged reimport, native artifacts, no GPU or script compilation',flush=True)
+
+
 def graphics_environment(profile):
     env=os.environ.copy()
     for key in ('HAZEL_RESOURCES','HAZEL_MONO','MONO_PATH','MONO_CFG_DIR','LD_LIBRARY_PATH','LD_PRELOAD','MESA_GL_VERSION_OVERRIDE','MESA_GLSL_VERSION_OVERRIDE','LIBGL_ALWAYS_SOFTWARE','GALLIUM_DRIVER','LP_NUM_THREADS'):env.pop(key,None)
@@ -124,6 +151,7 @@ def package_tests(output,profile='native',interactive=False,interactive_app=None
                 for dll in driver.glob('*.dll'):hz.copy_changed(dll,path/dll.name)
             packages.append(path)
         env=graphics_environment(profile)
+        import_source=(hz.ROOT/'examples/RenderingReference/Assets/Reference/Import_v1/Sources/SlotsAndInstances.glb').read_bytes()
         desktop=Desktop()
         try:
             with unavailable_sources():
@@ -131,6 +159,7 @@ def package_tests(output,profile='native',interactive=False,interactive_app=None
                     name=path.name.split('-')[0];executable=path/(name+('.exe' if hz.SYSTEM=='windows' else ''))
                     env['HAZEL_DATA']=str(working/'data'/name)
                     if name=='Nutella':cli(executable,unrelated,env)
+                    else:native_import_helper(path/('HazelProject'+hz.EXECUTABLE_SUFFIX),path/'Resources',working,env,import_source)
                     log=logs/(name+'-'+profile+'.log')
                     with log.open('w',encoding='utf-8') as stream:
                         process=subprocess.Popen([str(executable)],cwd=unrelated,env=env,stdout=stream,stderr=subprocess.STDOUT)

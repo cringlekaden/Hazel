@@ -174,6 +174,15 @@ void AuthoringPanel::BindProject()
     m_Fonts.ReplaceDocument=[this](std::function<bool()> action){Guard(OperationIntent::OpenFontFamily,std::move(action));};
     m_Fonts.RequestClose=[this]{Guard(OperationIntent::CloseFontFamily,[this]{m_Fonts.Close();if(m_ActiveDocument==EditorDocument::FontFamily)m_ActiveDocument=EditorDocument::Scene;return true;});};
     if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->CreateFontFamily=[this](const auto& folder){if(Require(EditorAction::EditAsset))m_Fonts.BeginCreate(folder);};
+    m_Materials.Bind(Project::GetActive()?Project::GetActive()->GetAssets():nullptr);
+    m_Materials.Availability=availability;
+    m_Materials.GuardPending=[this]{return m_Documents.Pending();};
+    m_Materials.ReportError=[this](const std::string& error){m_Editor.ActionFailed(error);if(m_Materials.HasDocument()&&error.find("changed on disk")!=std::string::npos){m_ShowSaveConflict=true;m_ConflictDocument=EditorDocument::Material;m_ConflictIdentity=m_Materials.Identity();}};
+    m_Materials.AssetsChanged=[this]{if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->Refresh();};
+    m_Materials.ReplaceDocument=[this](std::function<bool()> action){Guard(OperationIntent::OpenMaterial,std::move(action));};
+    m_Materials.RequestClose=[this]{Guard(OperationIntent::CloseMaterial,[this]{m_Materials.Close();if(m_ActiveDocument==EditorDocument::Material)m_ActiveDocument=EditorDocument::Scene;return true;});};
+    m_ShowImport=m_ShowMesh=false;m_MeshReference.clear();m_ImportError.clear();m_Metadata.reset();m_MetadataReference.clear();m_MetadataEpoch=0;
+    if(m_Editor.m_ContentBrowserPanel){m_Editor.m_ContentBrowserPanel->CreateMaterial=[this](const auto& folder){if(Require(EditorAction::EditAsset))m_Materials.BeginCreate(folder);};m_Editor.m_ContentBrowserPanel->ImportGLB=[this](const auto& folder){BeginImport(folder);};}
     m_Styles.Bind(Project::GetActive()?Project::GetActive()->GetAssets():nullptr);
     m_Styles.Availability=availability;
     m_Styles.GuardPending=[this]{return m_Documents.Pending();};
@@ -429,6 +438,11 @@ void AuthoringPanel::PollTools()
                 if(!Require(EditorAction::ReloadScripts))throw std::runtime_error("Assembly follow-up is unavailable; previous domain retained");
                 ScriptEngine::Init(Project::GetAssetFileSystemPath(Project::GetActive()->GetConfig().ScriptModulePath));
             }
+            else if(m_Report.Request.Completion==ToolCompletion::RefreshImportedAssets){
+                if(Project::GetActive())Project::GetActive()->GetAssets()->Refresh();
+                if(m_Editor.m_ContentBrowserPanel){m_Editor.m_ContentBrowserPanel->Refresh();m_Editor.m_ContentBrowserPanel->Reveal(m_Report.Request.Artifact);}
+                m_ImportError.clear();m_ShowImport=false;
+            }
             else if (m_Report.Request.Completion == ToolCompletion::OpenCreatedProject)
             {
                 m_ShowNew = false;
@@ -447,6 +461,7 @@ void AuthoringPanel::PollTools()
             m_Editor.ActionFailed(error.what());
         }
     }
+    if(!m_Report.Request.NativeExecutable.empty()&&!m_Report.Success)m_ImportError=m_Report.Output;
     if (m_ExitAfterJob)
     {
         m_ExitAfterJob = false;
@@ -777,6 +792,8 @@ void AuthoringPanel::Menus()
         if(m_Editor.m_ContentBrowserPanel)ImGui::MenuItem("Content Browser",nullptr,&m_Editor.m_ContentBrowserPanel->Visible);
         ImGui::MenuItem("Statistics",nullptr,&m_Editor.m_ShowStats);
         ImGui::MenuItem("Runtime UI Debugger",nullptr,&m_Editor.m_ShowUIDebugger);
+        if(ImGui::MenuItem("Material",nullptr,m_Materials.Visible(),m_Materials.HasDocument()))m_Materials.Show();
+        if(ImGui::MenuItem("Mesh metadata",nullptr,m_ShowMesh,!m_MeshReference.empty()))m_ShowMesh=true;
         if(ImGui::MenuItem("UI Style",nullptr,m_Styles.Visible(),m_Styles.HasDocument()))m_Styles.Show();
         if(ImGui::MenuItem("Font Family",nullptr,m_Fonts.Visible(),m_Fonts.HasDocument()))m_Fonts.Show();
         if (ImGui::MenuItem("Sprite Sheet", nullptr, m_Sprites.Visible(), m_Sprites.HasDocument()))
@@ -1318,6 +1335,10 @@ void AuthoringPanel::SelectAsset(const std::filesystem::path &path)
     if(path.extension()==".ttf" || path.extension()==".otf") {
         if(Require(EditorAction::EditAsset))m_Fonts.BeginCreate(path);return;
     }
+    if(path.extension()==".glb"){BeginImport(path.parent_path().lexically_relative(Project::GetAssetDirectory()),path);return;}
+    if(path.extension()==".himport"){m_MeshReference=Project::MakeAssetReference(Project::GetAssetDirectory(),path);m_ShowMesh=true;return;}
+    if(path.extension()==".hmesh"){m_MeshReference=Project::MakeAssetReference(Project::GetAssetDirectory(),path);m_ShowMesh=true;return;}
+    if(path.extension()==".hmat"){Guard(OperationIntent::OpenMaterial,[this,path]{if(!m_Materials.Open(path))return false;m_ActiveDocument=EditorDocument::Material;return true;});return;}
     if(path.extension()==".hstyle") {Guard(OperationIntent::OpenUIStyle,[this,path]{if(!m_Styles.Open(path))return false;m_ActiveDocument=EditorDocument::UIStyle;return true;});return;}
     if(path.extension()==".hfont") {
         Guard(OperationIntent::OpenFontFamily,[this,path]{if(!m_Fonts.Open(path))return false;m_ActiveDocument=EditorDocument::FontFamily;return true;});return;
@@ -1554,6 +1575,9 @@ void AuthoringPanel::Render()
     Scripts();
     Export();
     Prefabs();
+    ImportAssets();
+    m_Materials.Render(bool(Availability(EditorAction::EditAsset)));
+    if(m_Materials.Focused()){if(m_ActiveDocument!=EditorDocument::Material)CancelEdits();m_ActiveDocument=EditorDocument::Material;}
     m_Styles.Render(bool(Availability(EditorAction::EditAsset)));
     if(m_Styles.Focused()){if(m_ActiveDocument!=EditorDocument::UIStyle)CancelEdits();m_ActiveDocument=EditorDocument::UIStyle;}
     m_Fonts.Render(bool(Availability(EditorAction::EditAsset)));

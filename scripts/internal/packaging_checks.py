@@ -13,6 +13,7 @@ def content_only_contracts(profile):
     from internal.testing.projects import snapshot
     from internal.authoring import create_project
     from internal.package_tests import extract_verified
+    hz.yaml_tools() # Reuse the checkout-owned pin in this fresh test-packages process.
     import yaml
     with tempfile.TemporaryDirectory(prefix='Hazel package contracts é ') as temp:
         working=Path(temp)
@@ -38,6 +39,20 @@ def content_only_contracts(profile):
             else:raise RuntimeError('Invalid required module/class/dependency was packaged')
             assert hashlib.sha256(archive.read_bytes()).digest()==accepted
             assert archive.with_name(archive.name+'.sha256').read_bytes()==checksum
+
+        # Imported CPU resources are required even when their scene is not the
+        # runtime start scene. Rejected replacements must preserve the archive.
+        geometry=next(assets.rglob('*.hgeom'))
+        saved_geometry=geometry.read_bytes()
+        try:
+            geometry.unlink();reject('')
+            geometry.write_bytes(b'corrupt cooked geometry');reject('')
+        finally:geometry.write_bytes(saved_geometry)
+        image=next((assets/'Reference/Import_v1/Native').rglob('*.tga'))
+        saved_image=image.read_bytes()
+        try:
+            image.unlink();reject('')
+        finally:image.write_bytes(saved_image)
 
         assign('DependencyProbe.Behavior')
         reject('Assigned scripts require')

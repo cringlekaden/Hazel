@@ -29,6 +29,7 @@ std::vector<DocumentInfo> AuthoringPanel::Documents() const
     if (m_Sprites.HasDocument())
         docs.push_back({EditorDocument::Sheet, m_Sprites.Identity(), m_Sprites.Name(), m_Sprites.Dirty(),
                         canSaveAsset ? "" : canSaveAsset.Reason});
+    if(m_Materials.HasDocument())docs.push_back({EditorDocument::Material,m_Materials.Identity(),m_Materials.Name(),m_Materials.Dirty(),canSaveAsset?"":canSaveAsset.Reason});
     if(m_Styles.HasDocument())docs.push_back({EditorDocument::UIStyle,m_Styles.Identity(),m_Styles.Name(),m_Styles.Dirty(),canSaveAsset?"":canSaveAsset.Reason});
     if(m_Fonts.HasDocument())docs.push_back({EditorDocument::FontFamily,m_Fonts.Identity(),m_Fonts.Name(),m_Fonts.Dirty(),canSaveAsset?"":canSaveAsset.Reason});
     return docs;
@@ -56,6 +57,9 @@ DocumentSaveResult AuthoringPanel::SaveDocument(const DocumentInfo &document)
             break;
         case EditorDocument::Sheet:
             saved = m_Sprites.Save();
+            break;
+        case EditorDocument::Material:
+            saved=m_Materials.Save();
             break;
         case EditorDocument::UIStyle:
             saved=m_Styles.Save();
@@ -170,7 +174,7 @@ bool AuthoringPanel::SaveActive(bool saveAs)
     auto found = std::find_if(docs.begin(), docs.end(),
                               [&](const auto &doc) { return doc.Kind == m_ActiveDocument; });
     if (found == docs.end())
-        return m_Editor.ActionFailed("Focus a scene, prefab, sprite sheet or font family first");
+        return m_Editor.ActionFailed("Focus an authored scene or asset document first");
     if (saveAs)
     {
         if (m_ActiveDocument != EditorDocument::Scene)

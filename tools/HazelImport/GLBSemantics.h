@@ -31,9 +31,16 @@ inline std::string Text(const JSON &n)
 }
 inline uint64_t Integer(const JSON &n, uint64_t max = UINT32_MAX)
 {
-    Require(n.type == TG3JSON_INT && n.u.integer >= 0 && uint64_t(n.u.integer) <= max,
+    if (n.type == TG3JSON_INT)
+    {
+        Require(n.u.integer >= 0 && uint64_t(n.u.integer) <= max,
+                "expected a bounded nonnegative integer");
+        return uint64_t(n.u.integer);
+    }
+    Require(n.type == TG3JSON_REAL && std::isfinite(n.u.real) && n.u.real >= 0 &&
+                n.u.real <= double(max) && std::floor(n.u.real) == n.u.real,
             "expected a bounded nonnegative integer");
-    return uint64_t(n.u.integer);
+    return uint64_t(n.u.real);
 }
 inline double Number(const JSON &n)
 {
@@ -64,7 +71,11 @@ inline void Object(const JSON &n, std::initializer_list<const char *> keys)
                 "unsupported field '" + key + "'; remove unsupported content before importing");
     }
     if (auto name = Get(n, "name"))
-        AssetName(Text(*name));
+    {
+        auto value = Text(*name);
+        if (!value.empty())
+            AssetName(value);
+    }
 }
 inline void Vector(const JSON &n, size_t count)
 {
@@ -198,7 +209,7 @@ inline void Preflight(const JSON &root)
                        : type == "VEC4" ? 4
                                         : 0;
         Require(shape, "matrix accessors are outside the static mesh subset");
-        Require(shape==1||count<=1000000,"accessor vector count exceeds 1 million vertices");
+        Require(shape == 1 || count <= 1000000, "accessor vector count exceeds 1 million vertices");
         auto component = Integer(Need(n, "componentType"));
         Require(component == 5120 || component == 5121 || component == 5122 || component == 5123 ||
                     component == 5125 || component == 5126,

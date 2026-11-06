@@ -183,6 +183,11 @@ def packages(output,profile,interactive=False,interactive_app=None):
             if interactive and (interactive_app is None or interactive_app==name):
                 product_acceptance(name,bundle,cwd,desktop_logs,sdk,interactive=True)
             env=environment(working/name,contents/'Resources',mono)
+            if name=='Hazelnut':
+                from internal.package_tests import native_import_helper
+                source=(hz.ROOT/'examples/RenderingReference/Assets/Reference/Import_v1/Sources/SlotsAndInstances.glb').read_bytes()
+                native_import_helper(contents/'MacOS/HazelProject',contents/'Resources',cwd,env,source,
+                                     isolation_command([],sdk))
             env['DYLD_PRINT_LIBRARIES']='1'
             hz.copy_tree(contents/'Resources',cwd/'assets')
             hz.copy_tree(hz.ROOT/'tests/fixtures/typography',cwd/'typography')

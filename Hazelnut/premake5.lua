@@ -2,6 +2,7 @@
 local root = _MAIN_SCRIPT_DIR
 project "Hazelnut"
     location (root .. "/build/Hazelnut")
+    dependson { "HazelProject" }
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++17"

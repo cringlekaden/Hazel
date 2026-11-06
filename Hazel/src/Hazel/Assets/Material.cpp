@@ -22,6 +22,19 @@ TextureEncoding MaterialTextureEncoding(MaterialTexture s)
                ? TextureEncoding::SRGB
                : TextureEncoding::Linear;
 }
+TextureSpecification MaterialTextureSpecification(MaterialTexture slot, const MaterialImage &image)
+{
+    auto spec = TextureSpecification::FileDefaults();
+    spec.Format = ImageFormat::RGBA8;
+    spec.Encoding = MaterialTextureEncoding(slot);
+    spec.MinFilter = image.Min;
+    spec.MagFilter = image.Mag;
+    spec.WrapS = image.S;
+    spec.WrapT = image.T;
+    spec.GenerateMips = unsigned(image.Min) >= 2;
+    spec.Validate(true);
+    return spec;
+}
 void MaterialDefinition::Validate() const
 {
     AssetName(Name);
@@ -181,10 +194,11 @@ std::vector<std::filesystem::path> AuditMaterial(const std::filesystem::path &ro
 {
     d.Validate();
     std::set<std::filesystem::path> deps;
-    for (auto &t : d.Textures)
-        if (!t.Image.empty())
+    for (unsigned i = 0; i < d.Textures.size(); ++i)
+        if (const auto &t = d.Textures[i]; !t.Image.empty())
         {
-            Texture2D::ReadImage(Project::ResolveOwnedAsset(root, t.Image));
+            auto spec = MaterialTextureSpecification(MaterialTexture(i), t);
+            Texture2D::ReadImage(Project::ResolveOwnedAsset(root, t.Image), spec.Format);
             deps.insert(t.Image);
         }
     return {deps.begin(), deps.end()};

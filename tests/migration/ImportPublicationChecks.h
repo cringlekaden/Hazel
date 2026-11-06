@@ -78,13 +78,66 @@ inline void ImportPublicationChecks()
           "Reimport overwrote authored material/prefab");
     Check(ReadAssetBytes(assets / manifest.Meshes[0].Geometry, GeometryByteLimit) == oldGeometry,
           "Reimport removed old immutable geometry");
-    const std::string first=R"({"attributes":{"POSITION":0,"TEXCOORD_0":1},"indices":2,"material":0})";
-    const std::string second=R"({"attributes":{"POSITION":0,"TEXCOORD_0":1},"indices":2,"material":1})";
-    auto reordered=json;auto primitiveAt=reordered.find(first+","+second);Check(primitiveAt!=std::string::npos,"Reorder fixture missing");reordered.replace(primitiveAt,first.size()+second.size()+1,second+","+first);write(sourceOwned,ImportGLB(reordered,changed));ReimportGLB(assets,imported.Manifest);auto reorderedManifest=ReadImport(assets/imported.Manifest);
-    Check(reorderedManifest.Meshes[0].Slots[0].ID==next.Meshes[0].Slots[1].ID&&reorderedManifest.Meshes[0].Slots[1].ID==next.Meshes[0].Slots[0].ID,"Primitive reorder redirected stable material slots by array index");
-    Check(reorderedManifest.Nodes[0].ID==next.Nodes[0].ID&&reorderedManifest.Nodes[1].ID==next.Nodes[1].ID,"Geometry-only reorder changed recorded source-node IDs");
-    json=std::move(reordered);next=std::move(reorderedManifest);
+    const std::string first =
+        R"({"attributes":{"POSITION":0,"TEXCOORD_0":1},"indices":2,"material":0})";
+    const std::string second =
+        R"({"attributes":{"POSITION":0,"TEXCOORD_0":1},"indices":2,"material":1})";
+    auto reordered = json;
+    auto primitiveAt = reordered.find(first + "," + second);
+    Check(primitiveAt != std::string::npos, "Reorder fixture missing");
+    reordered.replace(primitiveAt, first.size() + second.size() + 1, second + "," + first);
+    write(sourceOwned, ImportGLB(reordered, changed));
+    ReimportGLB(assets, imported.Manifest);
+    auto reorderedManifest = ReadImport(assets / imported.Manifest);
+    Check(reorderedManifest.Meshes[0].Slots[0].ID == next.Meshes[0].Slots[1].ID &&
+              reorderedManifest.Meshes[0].Slots[1].ID == next.Meshes[0].Slots[0].ID,
+          "Primitive reorder redirected stable material slots by array index");
+    Check(reorderedManifest.Nodes[0].ID == next.Nodes[0].ID &&
+              reorderedManifest.Nodes[1].ID == next.Nodes[1].ID,
+          "Geometry-only reorder changed recorded source-node IDs");
+    json = std::move(reordered);
+    next = std::move(reorderedManifest);
     auto acceptedBytes = ReadAssetBytes(assets / imported.Manifest, 4 * 1024 * 1024);
+    auto extra = json;
+    extra.insert(extra.size() - 1, ",\"extras\":{\"publicationProbe\":1}");
+    write(sourceOwned, ImportGLB(extra, changed));
+    auto generations = assets / imported.Manifest.parent_path() / "generations";
+    auto countGenerations = [&] {
+        return std::distance(std::filesystem::directory_iterator(generations),
+                             std::filesystem::directory_iterator{});
+    };
+    const auto generationCount = countGenerations();
+    bool cancelledAfterPublish = false;
+    rejects([&] {
+        ReimportGLB(assets, imported.Manifest, [&] {
+            if (countGenerations() > generationCount)
+            {
+                cancelledAfterPublish = true;
+                return true;
+            }
+            return false;
+        });
+    });
+    Check(cancelledAfterPublish &&
+              ReadAssetBytes(assets / imported.Manifest, 4 * 1024 * 1024) == acceptedBytes,
+          "Cancellation after immutable publication changed accepted generation");
+    ReimportGLB(assets, imported.Manifest);
+    Check(ReadImport(assets / imported.Manifest).Generation != next.Generation,
+          "Retry after partial producer publication failed");
+    next = ReadImport(assets / imported.Manifest);
+    acceptedBytes = ReadAssetBytes(assets / imported.Manifest, 4 * 1024 * 1024);
+    // Raw owned values, rather than parser objects, drive the common publisher.
+    auto owned = ReadGLB(ImportGLB(json, changed), -1);
+    owned.Adapter = "engine-owned-boundary-test";
+    auto ownedSource = root / "owned.input";
+    std::string ownedBytes = "independent source provenance";
+    write(ownedSource, ownedBytes);
+    auto neutral = Publish({assets, ownedSource, "Imported/Owned", -1, {}}, std::move(owned),
+                           ownedBytes, false);
+    auto neutralManifest = ReadImport(assets / neutral.Manifest);
+    Check(neutralManifest.Source.extension() == ".input" &&
+              ReadMeshAsset(assets, neutralManifest.Meshes[0].Output).Geometry.Vertices.size() > 0,
+          "Common publication required a GLB source or parser object");
     auto conflicting = json;
     auto where = conflicting.find("\"metallicFactor\":0");
     conflicting.replace(where, std::strlen("\"metallicFactor\":0"), "\"metallicFactor\":0.5");

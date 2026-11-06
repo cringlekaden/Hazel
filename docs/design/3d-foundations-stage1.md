@@ -165,12 +165,12 @@ to conceal the recurrence. Comparison evidence is retained under
 - Windows full gameplay/package acceptance remains limited by the recurring
   Debug fixture timeout; its cause is still unresolved. It is not a graphics
   correctness pass or a claim that the timeout was fixed.
-- The existing package auditor still requires the configured compiled module,
-  even for content-only projects. Compile the optional reference stub before
-  packaging as the guide specifies. Normal editor/player viewing requires none.
+- The content-only compiled-module limitation recorded at stage 1 is repaired
+  by [stage 2](3d-import-stage2.md). Packaging now uses native assigned-script
+  requirements; the reference needs no unused compiled stub.
 - Reconcile the two owner-edited LastLightkeeper files deliberately, and review
   the five example palettes. Their original bytes remain preserved.
 
-Stage 1 code is runnable and later stages remain unimplemented. The next planned
-work is format-independent GLB import/cooking and native asset authoring; it has
-not begun.
+This record describes the stage-1 checkpoint. Subsequent format-independent GLB
+import/cooking and native asset authoring are tracked in [stage 2](3d-import-stage2.md);
+mesh drawing, PBR and IBL remain later stages.

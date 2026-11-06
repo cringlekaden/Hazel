@@ -57,6 +57,7 @@ inline void AssetCookingChecks()
     Check(MaterialTextureEncoding(MaterialTexture::BaseColor) == TextureEncoding::SRGB &&
               MaterialTextureEncoding(MaterialTexture::Normal) == TextureEncoding::Linear,
           "Shared image interpretation was aliased");
+    auto colorSpec=MaterialTextureSpecification(MaterialTexture::BaseColor,material.Textures[0]);auto dataSpec=MaterialTextureSpecification(MaterialTexture::Normal,material.Textures[2]);Check(colorSpec.Format==ImageFormat::RGBA8&&dataSpec.Format==ImageFormat::RGBA8&&colorSpec.Encoding==TextureEncoding::SRGB&&dataSpec.Encoding==TextureEncoding::Linear,"Material file interpretation does not specify canonical color/data realizations");
     auto future = YAML::Load(WriteMaterialText(material));
     future["Material"]["Version"] = 2;
     YAML::Emitter out;

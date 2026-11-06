@@ -178,6 +178,7 @@ void CheckMappings(const std::filesystem::path &root, const std::filesystem::pat
 } // namespace
 Result ImportGLB(const Request &r)
 {
+    Require(r.Source.extension() == ".glb", "GLB import requires a .glb source file");
     auto bytes = ReadAssetBytes(r.Source, 67108864);
     auto data = ReadGLB(bytes, r.Scene, r.Cancelled);
     return Publish(r, std::move(data), bytes, false);
@@ -193,6 +194,7 @@ Result ReimportGLB(const std::filesystem::path &assets, const std::filesystem::p
     Request r{assets, Project::ResolveOwnedAsset(assets, m.Source), reference.parent_path(),
               m.Scene, cancel};
     auto bytes = ReadAssetBytes(r.Source, 67108864);
+    Require(r.Source.extension() == ".glb", "This reimport command accepts GLB sources only");
     auto data = ReadGLB(bytes, r.Scene, cancel);
     return Publish(r, std::move(data), bytes, true);
 }
@@ -205,6 +207,9 @@ Result Publish(const Request &r, ImportedSceneData d, const std::string &sourceB
     AssetPath(r.Destination);
     Require(!r.Destination.empty() && r.Destination.begin()->generic_u8string() != "Intermediates",
             "Choose a content destination outside Intermediates");
+    auto sourceName = std::filesystem::u8path("Source" + r.Source.extension().generic_u8string());
+    AssetPath(sourceName);
+    Require(!r.Source.extension().empty(), "An adapter must provide a named source extension");
     auto destination = Project::ResolveOwnedAsset(r.Assets, r.Destination);
     auto manifestPath = r.Destination / "Import.himport";
     Require(reimport ? std::filesystem::is_directory(destination)
@@ -237,7 +242,7 @@ Result Publish(const Request &r, ImportedSceneData d, const std::string &sourceB
         Require(old.Producer == d.Adapter + "/Mikk-" HZ_IMPORT_MIKK_COMMIT,
                 "Import producer revision changed; import into a new folder to inspect/reconcile "
                 "the new recipe");
-        Require(old.Source == r.Destination / "Source.glb" && old.Scene == r.Scene,
+        Require(old.Source == r.Destination / sourceName && old.Scene == r.Scene,
                 "Import source/options conflict; import into a new destination");
         for (auto &material : old.Materials)
         {
@@ -280,7 +285,7 @@ Result Publish(const Request &r, ImportedSceneData d, const std::string &sourceB
     m.ID = reimport ? old.ID : NewID(ids);
     m.PrefabRoot = reimport ? old.PrefabRoot : NewID(ids);
     m.Generation = NewID(ids);
-    m.Source = r.Destination / "Source.glb";
+    m.Source = r.Destination / sourceName;
     m.SourceHash = AssetHash(sourceBytes);
     m.Producer = d.Adapter + "/Mikk-" HZ_IMPORT_MIKK_COMMIT;
     m.Scene = r.Scene;

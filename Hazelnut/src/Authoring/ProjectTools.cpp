@@ -2,6 +2,7 @@
 #include "HazelSDK.h"
 #include "Hazel/Utils/Process.h"
 #include "Hazel/Core/BuildIdentity.h"
+#include "Hazel/Core/FileSystem.h"
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
@@ -56,7 +57,7 @@ bool ProjectTools::Start(ToolRequest request)
         for (const auto &arg : m_Request.Arguments)
             arguments << std::quoted(arg) << ' ';
         op.Command = arguments.str(); // Display argv boundaries; execution never parses this string.
-        op.Stage = "Locating Python";
+        op.Stage = m_Request.NativeExecutable.empty()?"Locating Python":"Locating native importer";
         op.Start = std::chrono::system_clock::now();
         op.ClockStart = std::chrono::steady_clock::now();
         m_Console->Begin(std::move(op));
@@ -99,7 +100,7 @@ bool ProjectTools::Poll(ToolReport &report, const ToolOwner *owner)
     report = m_Job.get();
     const bool projectBound =
         !report.Request.Arguments.empty() &&
-        (report.Request.Arguments[0] == "script-build" || report.Request.Arguments[0] == "editor-export" ||
+        (!report.Request.NativeExecutable.empty() || report.Request.Arguments[0] == "script-build" || report.Request.Arguments[0] == "editor-export" ||
          report.Request.Arguments[0] == "new-project");
     if (owner && projectBound &&
         (owner->Generation != report.Request.Generation || owner->Project != report.Request.Project))
@@ -123,6 +124,7 @@ void ProjectTools::Shutdown()
     Finish(report);
     m_State.reset();
 }
+std::filesystem::path ProjectTools::ImportTool(){return FileSystem::GetExecutablePath().parent_path()/("HazelProject"+BuildIdentity::Current().ExecutableSuffix);}
 ToolReport ProjectTools::Execute(const ToolRequest &request,
                                  const std::function<void(const std::string &)> &output)
 {
@@ -150,6 +152,7 @@ ToolReport ProjectTools::Work(const ToolRequest &request, const std::shared_ptr<
             text.pop_back();
         if (text.empty())
             return;
+        if(text.rfind("[import] ",0)==0)stage(text.substr(9,480));
         if (text.rfind("+ ", 0) == 0)
             stage("Command: " +
                   text.substr(2, 480)); // Real canonical CLI child command, never guessed percentages.
@@ -183,6 +186,21 @@ ToolReport ProjectTools::Work(const ToolRequest &request, const std::shared_ptr<
         {
             report.Outcome = ToolOutcome::Cancelled;
             report.Output = "Cancelled before launch";
+            return report;
+        }
+        if(!request.NativeExecutable.empty()) {
+            stage("Validating native importer");
+            if(!request.NativeExecutable.is_absolute()||!std::filesystem::is_regular_file(request.NativeExecutable))throw std::runtime_error("Native importer is missing beside Hazelnut; rebuild/stage matching editor tools");
+            auto contract=Process::Run(request.NativeExecutable,{"--import-contract"},request.NativeExecutable.parent_path(),std::chrono::seconds(10));
+            while(!contract.Output.empty()&&(contract.Output.back()=='\n'||contract.Output.back()=='\r'))contract.Output.pop_back();
+            if(contract.ExitCode!=0||contract.Output!="HAZEL_ASSET_IMPORT_CONTRACT=1")throw std::runtime_error("Incompatible native importer; rebuild/stage matching editor tools");
+            if(request.Arguments.empty())throw std::runtime_error("Native import requires arguments");
+            stage("Running "+request.Arguments.front());auto result=Process::RunStreams(request.NativeExecutable,request.Arguments,request.NativeExecutable.parent_path(),std::chrono::minutes(10),{chunks,cancelled});
+            for(int stream=0;stream<2;++stream)if(!pending[stream].empty())line(stream,std::move(pending[stream]));
+            report.ExitCode=result.ExitCode;report.Success=result.ExitCode==0&&!result.TimedOut&&!result.Cancelled;
+            report.Outcome=result.Cancelled?ToolOutcome::Cancelled:result.TimedOut?ToolOutcome::TimedOut:report.Success?ToolOutcome::Succeeded:ToolOutcome::Failed;report.Output=result.Output;
+            if(result.Cancelled)report.Output+="\nImport process cancelled; accepted generations retained. Owned temporary stages are cleaned on retry.";
+            if(result.TimedOut)report.Output+="\nImport exceeded its 10 minute bound; owned process terminated and accepted generation retained.";
             return report;
         }
         stage("Validating SDK");

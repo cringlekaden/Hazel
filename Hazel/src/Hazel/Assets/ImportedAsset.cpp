@@ -65,7 +65,7 @@ void ImportManifest::Validate() const
     Key(ID);
     Key(Generation);
     Key(PrefabRoot);
-    AssetPath(Source, ".glb");
+    AssetPath(Source); // Producer provenance; runtime does not interpret a source format.
     AssetPath(Prefab, ".hprefab");
     Hash(SourceHash);
     Hash(PrefabSource);

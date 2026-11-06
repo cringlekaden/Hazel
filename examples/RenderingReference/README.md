@@ -54,3 +54,32 @@ python3 scripts/hazel.py package --app Nutella --project examples/RenderingRefer
 Keep the complete archive layout, resources and notices. The player needs no
 source checkout or compiler SDK. Use private `HAZEL_DATA` and `HAZEL_SAVE_ROOT`
 for experiments. See [runtime color](../../docs/color.md).
+
+## Import_v1: native geometry metadata
+
+Core_v1 startup/cameras and source assets are unchanged. Additive
+`Assets/Reference/Import_v1` cases qualify import/cooking/metadata, with no rendered
+mesh/PBR acceptance or expected lighting images.
+
+Open the usual project in Hazelnut. In Content Browser, open
+`Reference/Import_v1/Native/SlotsAndInstances/Import.himport` for mesh/primitive/slot
+and local-bounds metadata. **Open detached prefab** exposes the native nodes;
+**Instantiate prefab** copies independent authored nodes into the scene. Mesh
+components explicitly prevent Play until stage 3. Keep the Core_v1 scene unsaved
+when exploring; use a disposable project for edits.
+
+- `SlotsAndInstances`: two independent material slots; one shared mesh in three
+  instances; normalized UV/color, interleaved attributes and U8/U16 indices;
+  mirrored tangent boundary requiring corner splits; signed nonuniform transforms;
+  embedded asymmetric sRGB color and linear normal data; Mask and explicit Unlit.
+- `ProvidedTangents`: provided FLOAT normal/tangent/UV/color, U32 indices, default
+  glTF material and exact reflected affine matrix.
+- `Sources`: named malformed/unsupported inputs, each with an expected diagnostic
+  in `sources.json`. Import into a new disposable destination; rejection must leave
+  no accepted output folder.
+
+`outputs.json` freezes native file hashes/identities and completed geometry
+metadata. `sources.json` records licensed source hashes and exact meanings. The
+small standard-library generator recreates **source fixtures only**. Normal native
+import owns validation/cooking/publication; replacing accepted reference artifacts
+requires a deliberate case revision. See [native import](../../docs/design/3d-import-stage2.md).

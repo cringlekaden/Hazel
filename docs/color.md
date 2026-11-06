@@ -17,6 +17,14 @@ are rejected with an actionable diagnostic; loading never rewrites source colors
 | Data textures, masks, generated glyph/MSDF atlases and float textures | Linear data; no transfer function |
 | Texture cache | Path, format, dimensions, encoding, sampling and mip policy all participate in identity |
 
+Native `.hmat` base-color/emissive bindings interpret images as sRGB; normal,
+metallic/roughness and occlusion bindings interpret linear data. glTF factors and
+vertex colors are already linear and are copied without another transfer. Native
+material pickers use the same sRGB display boundary. Imported PNG/JPEG channel
+and alpha bytes survive cooking unchanged; slot usage supplies interpretation,
+with no conflicting encoding field on the shared image. Mesh material values are
+metadata at stage 2 and do not imply implemented mesh/PBR rendering.
+
 `TextureSpecification::Encoding` distinguishes `SRGB` from `Linear`. Generated
 textures default to Linear; ordinary RGB(A) file textures default to SRGB.
 Sprite-sheet Sampling can explicitly request either interpretation. A shared file

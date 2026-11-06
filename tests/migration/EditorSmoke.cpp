@@ -64,12 +64,14 @@ static std::string Read(const std::filesystem::path& file) {
 #include "EditorStructuralChecks.h"
 #include "EditorLayoutChecks.h"
 #include "EditorConsoleChecks.h"
+#include "ImportFixture.h"
 namespace Hazel {
 class EditorWorkflowSmoke : public Layer {
 public:
     EditorWorkflowSmoke(EditorLayer& editor, std::filesystem::path directory, bool& done)
         : m_Editor(editor), m_Directory(std::move(directory)), m_Done(done) {}
     void OnUpdate(Timestep) override {
+        if(m_ImportPhase){ImportWorkflowUpdate();return;}
         auto& e = m_Editor;
         switch (++m_Frame) {
         case 3: {
@@ -394,7 +396,7 @@ public:
                 Check(bool(image),"Editor screenshot write failed");
             }
             Check(visible,"Sprite preview retained a stale texture after asset reload");
-            m_Done = true; Application::Get().Close();break;
+            m_ImportPhase=1;break;
         }
         }
     }
@@ -419,6 +421,7 @@ private:
         std::cout<<"PASS: main-thread Console/tool polling continues while minimized without advancing scene/render frames\n";
     }
     void OnImGuiRender() override {
+        if(m_ImportPhase){DrawImportWorkflow();return;}
         if(m_Frame==7) {
             auto& editor=m_Editor;auto* viewport=ImGui::FindWindowByName("Viewport");
             Check(viewport&&(viewport->Flags&ImGuiWindowFlags_NoNavInputs),"Play viewport let ImGui compete for UI navigation keys");
@@ -909,6 +912,7 @@ private:
 #endif
         std::cout<<"PASS: prefab identity/independence/self/external references/malformed assets, script creation, preferences recovery/scopes, absolute Python discovery\n";
     }
+    #include "EditorImportWorkflowChecks.h"
     #include "EditorHistoryWorkflowChecks.h"
     #include "EditorContainerWorkflowChecks.h"
     #include "EditorFontFamilyWorkflowChecks.h"
@@ -1409,6 +1413,12 @@ private:
     std::filesystem::path m_Directory;
     bool& m_Done;
     Ref<Texture2D> m_PreviewBeforeReload;
+    int m_ImportPhase=0,m_ImportWait=0;
+    EditorPreferences m_ImportPreferences;
+    std::chrono::steady_clock::time_point m_ImportStarted;
+    std::filesystem::path m_NativeImportManifest;
+    uint64_t m_NativeImportGeneration=0;
+    std::string m_NativeImportJSON,m_NativeImportBin,m_NativeImportAuthored,m_NativeAcceptedManifest;
     int m_Frame = 0;
     bool m_Trickle = true;
     std::chrono::steady_clock::time_point m_MinimizedStart;

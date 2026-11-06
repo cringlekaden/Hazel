@@ -36,6 +36,7 @@ struct MaterialImage
         return Image == b.Image && Min == b.Min && Mag == b.Mag && S == b.S && T == b.T;
     }
 };
+TextureSpecification MaterialTextureSpecification(MaterialTexture slot, const MaterialImage &image);
 struct MaterialDefinition
 {
     std::string Name = "New material";

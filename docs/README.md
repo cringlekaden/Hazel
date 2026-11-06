@@ -10,6 +10,7 @@ These guides describe the current checkout, including the runtime UI, tutorial a
 | Try a download or build the source | [Getting started](getting-started.md) |
 | Create a project, edit a scene, save and Play | [Editor guide](editor-guide.md) |
 | Add C# behavior | [Scripting](scripting.md) |
+| Import static GLB / author native materials | [Native import](design/3d-import-stage2.md) |
 | Slice sprites and animate them | [Sprite authoring](sprite-authoring.md) |
 | Build a menu or HUD | [Runtime UI](runtime-game-ui.md) · [five-page tutorial](../examples/Sandbox/README.md) |
 | Export a standalone game | [Packaging and downloads](packaging.md) |

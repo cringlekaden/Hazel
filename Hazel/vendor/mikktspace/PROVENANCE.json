@@ -17,5 +17,11 @@
       "sha256": "295d4e37ac1980e1f811c340f618ffa68fc10bf906b34bc93a64c6960351bdfc"
     }
   },
-  "integration": "Pristine upstream source. Premake producer-only static libraries. Allocation hooks are supplied by engine-owned build wrappers."
+  "integration": "Pristine upstream source. Premake producer-only static libraries. Allocation hooks are supplied by engine-owned build wrappers.",
+  "notices": {
+    "NOTICE.txt": {
+      "origin": "Verbatim original leading license from pinned mikktspace.h",
+      "sha256": "c9a98410d164213e1bc9ec7d7a722ab880fa3d38bb137586a9e4bf2669f0dfe0"
+    }
+  }
 }

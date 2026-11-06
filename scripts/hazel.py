@@ -335,6 +335,9 @@ def stage(configuration, prefix=None, targets=None):
         if name == 'Hazelnut':
             copy_tree(ROOT / 'Hazelnut/Resources/Icons', app / 'Resources/Icons')
             copy_changed(ROOT / 'Hazelnut/Resources/imgui.ini', app / 'Resources/imgui.ini')
+            helper=base/'HazelProject'/('HazelProject'+EXECUTABLE_SUFFIX)
+            if not helper.is_file(): raise RuntimeError('Build HazelProject before staging native Hazelnut import tools')
+            copy_changed(helper,app/helper.name)
         copy_changed(base / 'Hazel-ScriptCore/Hazel-ScriptCore.dll', app / 'Resources/Scripts/Hazel-ScriptCore.dll')
         # Development runtime is staged with the same roots as distribution.
         if SYSTEM == 'windows':
@@ -534,8 +537,11 @@ def main():
             create_project(args.name, args.identifier, args.destination,args.build_scripts)
         elif args.action == 'editor-export':
             yaml_tools()
-            from internal.packaging import package
-            build('Release',targets=('Nutella','Hazel-ScriptCore','PackageAudit','SpriteAssetAudit','HazelProject')); script_build(args.project, 'Release')
+            from internal.packaging import package,load_project,project_files,validate_sprites
+            build('Release',targets=('Nutella','Hazel-ScriptCore','PackageAudit','SpriteAssetAudit','HazelProject'))
+            descriptor,config,assets=load_project(args.project)
+            if validate_sprites(assets,list(project_files(assets)),descriptor):script_build(descriptor,'Release')
+            else:print('No assigned script classes; exporting content without project script compilation',flush=True)
             package('Nutella', args.project, args.output, args.name)
         elif args.action == 'script-build':
             yaml_tools(); script_build(args.project, args.config)

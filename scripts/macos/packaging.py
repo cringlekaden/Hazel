@@ -83,6 +83,11 @@ def package(app, project, destination, archive_name=None):
             config_file.write_text(config_file.read_text().replace('$mono_libdir/','@rpath/'))
             for source in (sdk/'lib').glob('*.dylib'):
                 hz.copy_changed(source.resolve(),native/source.name)
+            native_tools=[]
+            if name=='Hazelnut':
+                helper=contents/'MacOS/HazelProject'
+                hz.copy_changed(hz.binaries('Release')/'HazelProject/HazelProject',helper)
+                relocate_executable(helper);native_tools.append(helper)
             relocate_executable(binary)
             copy_project(descriptor,assets,resources/'Project')
             licenses(resources)
@@ -98,7 +103,7 @@ def package(app, project, destination, archive_name=None):
                     'CFBundleVersion':'1', 'LSMinimumSystemVersion':'27.0',
                     'LSArchitecturePriority':['arm64'],'NSHighResolutionCapable':True,
                     'NSPrincipalClass':'NSApplication'},stream)
-            closure={str(p.relative_to(contents)):audit_binary(p,native) for p in [binary,*sorted(native.glob('*.dylib'))]}
+            closure={str(p.relative_to(contents)):audit_binary(p,native) for p in [binary,*native_tools,*sorted(native.glob('*.dylib'))]}
             metadata={'commit':commit,'configuration':'Release','platform':'macos','architecture':'arm64',
                       'minimum_macos':'27.0','project':descriptor.name,'signing':'local ad-hoc',
                       'native_dependencies':closure,'mono_source':provenance['source'],
@@ -113,6 +118,7 @@ def package(app, project, destination, archive_name=None):
                 'Locally ad-hoc signed; no Developer ID, notarization or fresh-download Gatekeeper acceptance is claimed.\n',encoding='utf-8')
             # Every binary mutation and resource write precedes inside-out signing.
             for library in sorted(native.glob('*.dylib')):sign(library)
+            for helper in native_tools:sign(helper)
             sign(binary);sign(bundle)
             hz.run(['codesign','--verify','--deep','--strict',bundle])
             (root/'SHA256SUMS').write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.relative_to(root).as_posix()+'\n' for p in sorted(root.rglob('*')) if p.is_file()))

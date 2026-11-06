@@ -110,3 +110,25 @@ Preferences are stored in preferences.yaml under $XDG_DATA_HOME/Hazel/Hazelnut (
 Remaining manual checks are physical Windows AMD gameplay with the new binaries, Windows high-DPI/monitor transitions and human usability and keyboard-navigation acceptance. Windows CI verifies software-rendered UI/gameplay and UTF-8 paths; it does not establish AMD hardware behavior. Local OS input is automated, not human acceptance. macOS/backend work, hierarchy/linked prefab variants, compiler-job cancellation, build-identifier migration, per-project renderer reinitialization policy and persistent multi-target export profiles remain explicitly deferred for the architectural reasons above. No placeholder interface advertises these features.
 
 Final review checked scene/domain ownership, reference rejection, shared CLI/editor services, tool process lifetime, portable paths, fresh Release assemblies, editor exposure and removed fixed-entity workarounds. The working tree is clean after the evidence commit. Recursive vendor working trees and all gitlinks match the starting branch; the existing stash, local .vscode settings and saved user layout are preserved. Test-owned windows are closed. No production logs/captures/builds were added.
+
+## Native GLB and materials
+
+Use **Content Browser > Import GLB…**, choose the source, a new asset folder and
+the default/selected scene. Console reports native progress/diagnostics; Cancel
+terminates the owned import. Editing/import requires no Python or scripting SDK.
+Unsupported content rejects before acceptance.
+
+Open `Import.himport` or `.hmesh` for primitive/slot/local-bounds metadata and
+explicit reimport. Open/instantiate the detached prefab through the normal prefab
+workflow. Mesh Inspector chooses a named mesh and whole-material slot overrides;
+these authored changes use scene/prefab history. Mesh drawing/picking and Play
+remain unavailable until stage 3, with explicit diagnostics.
+
+**New Material…** creates a neutral dielectric `.hmat`. Its panel provides typed
+values, usage-correct texture choices, source image previews, Duplicate, Save and
+independent Undo/Redo. Save, reopen, close and project/runtime transitions use the
+shared document guard. Reimport preserves edited materials/prefabs and rejects
+ambiguous mappings or changed source material/node semantics.
+
+See [import contracts and qualification](design/3d-import-stage2.md) and
+[Rendering Reference](../examples/RenderingReference/README.md#import_v1-native-geometry-metadata).

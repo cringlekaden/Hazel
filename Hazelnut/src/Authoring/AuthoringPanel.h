@@ -7,6 +7,7 @@
 #include "Panels/SpriteSheetPanel.h"
 #include "Panels/FontFamilyPanel.h"
 #include "Panels/UIStylePanel.h"
+#include "Panels/MaterialPanel.h"
 #include "ProjectTools.h"
 #include "Panels/ConsolePanel.h"
 #include "Hazel/Core/FileDocument.h"
@@ -81,6 +82,9 @@ private:
     void CopyDeviceReport();
     bool SaveRenderingRequests(const RuntimeRendererRequests& requests);
     void NewProject();
+    void ImportAssets();
+    void BeginImport(const std::filesystem::path& folder,const std::filesystem::path& source={});
+    bool StartImport(bool reimport,const std::filesystem::path& manifest={});
     void Scripts();
     void Readiness();
     bool CreateProject(const std::string& name,const std::string& identifier,const std::filesystem::path& destination);
@@ -164,6 +168,14 @@ private:
     SpriteSheetPanel m_Sprites;
     FontFamilyPanel m_Fonts;
     UIStylePanel m_Styles;
+    MaterialPanel m_Materials;
+    std::string m_ImportSource,m_ImportDestination,m_ImportError;
+    int m_ImportScene=-1;
+    bool m_ShowImport=false,m_ShowMesh=false;
+    std::filesystem::path m_MeshReference,m_MetadataReference,m_MetadataImport;
+    std::optional<ImportManifest> m_Metadata;
+    uint64_t m_MetadataEpoch=0;
+    int m_MetadataMesh=0;
     TransformComponent m_InitialTransform;
     bool m_ShowPreferences = false, m_ShowProject = false, m_ShowNew = false, m_ShowScripts = false,
          m_ShowBuild = false, m_ShowExport = false, m_ShowPrefab = false, m_CreatePrefab = false;

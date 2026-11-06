@@ -103,6 +103,9 @@ void ValidateImported(const ImportedSceneData &d)
         Require(materialKeys.insert(material.SourceKey).second,
                 "Duplicate adapter material source key");
         material.Values.Validate();
+        for (auto &texture : material.Values.Textures)
+            Require(texture.Image.empty(), "Imported material images must use owned image indices, "
+                                           "not native/source file paths");
         for (auto i : material.Images)
             Require(i >= -1 && (i < 0 || size_t(i) < d.Images.size()),
                     "Imported image reference is invalid");

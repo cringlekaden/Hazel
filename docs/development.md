@@ -81,7 +81,7 @@ Linux and Windows remain separate jobs; their existing identities are retained:
 | Relocated applications, checksums/notices/native and managed closure | Main software + GL4.1 | Retained |
 | Five relocated game packages, source/SDK/GAC-hidden runtime | Main software + GL4.1 | Retained; all five downloadable after gates |
 
-The general runner currently executes 17 sequential executables; managed models and native example-game checks are additional layers. Counts in dated milestone records describe their revisions. Product artifacts upload **after all qualification steps in their platform job**; testing evidence uploads on failure too. Select successful whole runs for downloads. A skipped downstream gate is not a pass, and one successful platform job is not success for the other.
+The general runner currently executes 18 sequential executables; managed models and native example-game checks are additional layers. Counts in dated milestone records describe their revisions. Product artifacts upload **after all qualification steps in their platform job**; testing evidence uploads on failure too. Select successful whole runs for downloads. A skipped downstream gate is not a pass, and one successful platform job is not success for the other.
 
 `editor-usability.yml` is retired. Its old check names were **Linux Debug / Release, bounded editor checks** and **Windows Debug / Release, bounded editor checks**. A read-only API inspection on 2026-10-28 found master and `feature/runtime-ui-hardening` unprotected and no repository rulesets; no settings were changed. Administrators using an external/other-branch policy that requires either retired check must replace it with the corresponding retained job above. Generation of VS projects is local configuration evidence, not Windows compilation.
 
@@ -92,13 +92,15 @@ Run `bin/Debug-linux-x86_64/HazelProject/HazelProject --help` after building (Wi
 ```text
 create --name NAME --identifier ID --destination FOLDER --templates FOLDER
 validate PROJECT.hproj
+import-glb PROJECT.hproj SOURCE.glb ASSET_FOLDER [--scene INDEX]
+reimport-glb PROJECT.hproj ASSET_FOLDER/Import.himport
 slice-sheet ASSETS_ROOT SHEET IMAGE TILE_SIZE
 add-clip ASSETS_ROOT SHEET NAME DURATION ORDINALS_CSV
 set-region ASSETS_ROOT SHEET REGION_ID X Y WIDTH HEIGHT NAME
 measure-scene PROJECT.hproj SCENE_ASSET
 ```
 
-Sheet/image/scene arguments are asset-relative; use a disposable project for write commands. `slice-sheet` refuses existing files; normal edits should preserve region IDs in Hazelnut. `measure-scene` is a **maintainer CPU diagnostic**: metadata parse, ten YAML dirty snapshots and one hundred exact authored snapshots. It does not measure GPU rendering, whole frames or interactive editor-open latency. `--contract` is the internal authoring readiness handshake.
+Sheet/image/scene arguments are asset-relative; use a disposable project for write commands. `slice-sheet` refuses existing files; normal edits should preserve region IDs in Hazelnut. `measure-scene` is a **maintainer CPU diagnostic**: metadata parse, ten YAML dirty snapshots and one hundred exact authored snapshots. It does not measure GPU rendering, whole frames or interactive editor-open latency. `--contract` is the internal creation readiness handshake; `--import-contract` identifies the matching native asset importer. [Native import](design/3d-import-stage2.md) records supported semantics and acceptance rules.
 
 `SpriteAssetAudit` is the native package metadata/dependency authority, invoked by packaging; it is not an alternative authoring path. Historical Lightkeeper generators and migration comparison tools are described in [history](history.md#historical-tools), not required by setup/build/export.
 

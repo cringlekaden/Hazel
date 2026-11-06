@@ -311,6 +311,11 @@ def package(app, project, output, archive_name=None):
             copy_project(descriptor, assets, path if name == 'Nutella' else path/'Example')
             licenses(path)
             closure = native_closure(executable, path)
+            if name == 'Hazelnut':
+                helper=hz.binaries('Release')/'HazelProject'/('HazelProject'+hz.EXECUTABLE_SUFFIX)
+                if not helper.is_file():raise RuntimeError('Build/stage matching HazelProject for native import authoring')
+                hz.copy_changed(helper,path/helper.name)
+                closure.update(native_closure(helper,path))
             metadata = {'commit': commit, 'configuration': 'Release', 'platform': hz.SYSTEM, 'architecture': hz.ARCHITECTURE, 'project': descriptor.name, 'native_dependencies': closure, 'source_dirty': bool(hz.output(['git', '-C', hz.ROOT, 'status', '--porcelain'])), 'libc': list(platform.libc_ver()) if hz.SYSTEM=='linux' else None, 'shader_tools': json.loads((hz.ROOT/'build/dependencies/install'/f'Release-{hz.SYSTEM}-{hz.ARCHITECTURE}/shader-tools.json').read_text())}
             (path/'build.json').write_text(json.dumps(metadata, indent=2)+'\n')
             (path/'LAUNCH.txt').write_text(f'{name} Release {hz.ARCHITECTURE}\n'+

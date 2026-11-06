@@ -9,7 +9,8 @@ enum class ToolCompletion
 {
     None,
     ReloadScripts,
-    OpenCreatedProject
+    OpenCreatedProject,
+    RefreshImportedAssets
 };
 struct ToolRequest
 {
@@ -19,6 +20,7 @@ struct ToolRequest
     uint64_t Generation = 0;
     ToolCompletion Completion = ToolCompletion::None;
     std::filesystem::path Target{}, Artifact{};
+    std::filesystem::path NativeExecutable{}; // direct structured native argv; no scripting SDK/Python discovery
 };
 struct ToolOwner
 {
@@ -56,6 +58,7 @@ class ProjectTools
     {
         return m_Request;
     }
+    static std::filesystem::path ImportTool(); // staged sibling, same canonical product layout
     static ToolReport Execute(const ToolRequest &request,
                               const std::function<void(const std::string &)> &output = {});
 
