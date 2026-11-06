@@ -35,11 +35,12 @@ namespace Hazel {
             if(!framebuffer.first || !framebuffer.second)return;
             if(!m_Composite) {
                 FramebufferSpecification spec;spec.Width=framebuffer.first;spec.Height=framebuffer.second;
-                spec.Attachments={FramebufferTextureFormat::RGBA16F,FramebufferTextureFormat::Depth};m_Composite=Framebuffer::Create(spec);
+                spec.Attachments={FramebufferTextureFormat::RGBA16F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};m_Composite=Framebuffer::Create(spec);
             } else if(m_Composite->GetSpecification().Width!=framebuffer.first || m_Composite->GetSpecification().Height!=framebuffer.second)m_Composite->Resize(framebuffer.first,framebuffer.second);
             m_Composite->Bind();
             RenderCommand::SetClearColor(m_Session.GetScene()->Presentation().Background);
             RenderCommand::Clear();
+            m_Composite->ClearAttachment(1,-1);m_Session.SetRenderTarget(m_Composite);
             m_Session.Update(timestep);
             m_Composite->Unbind();m_Composite->EncodeOutput();
             if(m_Session.ConsumeExitRequest())Application::Get().Close();

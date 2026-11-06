@@ -94,7 +94,7 @@ void AuthoringPanel::ImportAssets()
         {
             ImGui::TextWrapped("Static triangles, UV0 and embedded 8-bit PNG/JPEG. Unsupported "
                                "content is rejected with diagnostics. Produces native meshes, "
-                               "materials and a detached prefab; mesh drawing arrives in stage 3.");
+                               "materials and a detached prefab. Lit materials use scene-referred presentation.");
             ImGui::BeginDisabled(m_Tools.Busy() || !Availability(EditorAction::EditAsset));
             PropertyUI::ReadOnly("source", "Source", m_ImportSource.c_str());
             PropertyUI::Text("destination", "New asset folder", m_ImportDestination);
@@ -175,8 +175,7 @@ void AuthoringPanel::ImportAssets()
                 ImGui::TextWrapped("%s", manifest.SourceNotice.c_str());
                 ImGui::TreePop();
             }
-            ImGui::TextWrapped("Geometry metadata only. Instances share mesh resources. Mesh "
-                               "drawing and picking arrive in stage 3.");
+            ImGui::TextWrapped("Instances share accepted geometry resources. Slot bindings are independent of source array order.");
             ImGui::BeginDisabled(!Availability(EditorAction::StartTool) || m_Tools.Busy() ||
                                  !m_MetadataError.empty());
             if (ImGui::Button("Reimport owned source"))

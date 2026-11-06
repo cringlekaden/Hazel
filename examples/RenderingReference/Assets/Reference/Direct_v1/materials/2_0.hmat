@@ -1,0 +1,44 @@
+Material:
+  Version: 1
+  Name: r=0.000000 m=1.000000
+  Model: MetallicRoughness
+  BaseColor: [0.5, 0.180000007, 0.0549999997, 1]
+  Emissive: [0, 0, 0]
+  Metallic: 1
+  Roughness: 0
+  NormalScale: 1
+  OcclusionStrength: 1
+  Alpha: Opaque
+  AlphaCutoff: 0.5
+  DoubleSided: false
+  Textures:
+    BaseColor:
+      Image: ""
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    MetallicRoughness:
+      Image: ""
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Normal:
+      Image: ""
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Occlusion:
+      Image: ""
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Emissive:
+      Image: ""
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat

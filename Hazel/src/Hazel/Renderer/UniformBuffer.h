@@ -10,7 +10,8 @@ namespace Hazel {
 	{
 	public:
 		virtual ~UniformBuffer() {}
-		virtual void SetData(const void* data, std::uint32_t size, std::uint32_t offset = 0) = 0;
+		virtual void Bind() const = 0;
+        virtual void SetData(const void* data, std::uint32_t size, std::uint32_t offset = 0) = 0;
 
 		static Ref<UniformBuffer> Create(std::uint32_t size, std::uint32_t binding);
 	};

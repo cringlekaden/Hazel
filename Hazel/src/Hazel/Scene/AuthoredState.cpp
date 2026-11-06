@@ -97,7 +97,7 @@ struct State
 std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_info* component) const
 {
     State state;state.Filter=component;
-    if(!only)state.Value(m_Scene->Presentation().Background);
+    if(!only){state.Value(m_Scene->Presentation().Background);state.Value(m_Scene->Presentation().SceneReferred);state.Value(m_Scene->Presentation().Exposure);}
     state.Bytes.reserve((only ? 1 : m_Scene->GetAllEntitiesWith<IDComponent>().size()) * 160);
     if(!component)state.Value(m_Scene->GetName());
     std::vector<uint64_t> ids;
@@ -163,6 +163,7 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
             state.Value(c.Loop);
             state.Value(c.PlayOnStart);
         });
+        state.Component<DirectionalLightComponent>(e,[&](auto& c){state.Value(c.Color);state.Value(c.Intensity);state.Value(c.Enabled);});
         state.Component<MeshRendererComponent>(e,[&](auto& c){state.Value(c.Mesh);state.Value(uint64_t(c.Materials.size()));for(auto& m:c.Materials){state.Value(m.first);state.Value(m.second);}});
         state.Component<CircleRendererComponent>(e, [&](auto &c) {
             state.Value(c.Color);

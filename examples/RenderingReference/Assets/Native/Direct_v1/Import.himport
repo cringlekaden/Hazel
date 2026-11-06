@@ -1,0 +1,36 @@
+Import:
+  Version: 1
+  Recipe: StaticMesh_v1
+  Producer: Hazel.Native.Direct_v1
+  SourceNotice: Original engine-authored diagnostic geometry; Apache-2.0 (Hazel LICENSE)
+  ID: 0000000000000001
+  Generation: 0000000000000002
+  PrefabRoot: 0000000000000005
+  Source: Native/Direct_v1/Source.generated
+  SourceHash: e7d60ef899a51ae89a41d70bf1020e2faace2d028572b6898e8f9eb12d56e48e
+  Scene: -1
+  Prefab: Native/Direct_v1/UnitCube.hprefab
+  PrefabSource: 78346b79c0692161499b826e38c9f5c6bdc79707802d4f980278830cd0666e55
+  PrefabAcceptedHash: d612e0c2d02e5f0d65f67a94b91c8d0850242fddbd1a70662309df9a9058bbb8
+  Materials:
+    - ID: 0000000000000003
+      Source: 284dc6817b8d8f4c258d45a062c9b5cd491d0a9e23c27a87db19efec652fedcc
+      Output: Native/Direct_v1/Surface.hmat
+      AcceptedHash: 284dc6817b8d8f4c258d45a062c9b5cd491d0a9e23c27a87db19efec652fedcc
+      SourceKey: native/surface
+  Meshes:
+    - ID: 0000000000000004
+      Source: a16ef6f76711821386609af35a492bf1b680af802063786c9b8dd6f28b05a613
+      Output: Native/Direct_v1/UnitCube.hmesh
+      Geometry: Native/Direct_v1/generations/0000000000000002/UnitCube.hgeom
+      GeometryHash: a16ef6f76711821386609af35a492bf1b680af802063786c9b8dd6f28b05a613
+      SourceKey: native/cube
+      Slots:
+        - ID: 0000000000000007
+          Source: f419985cfc2efb2144274b517c795c5a24d4c8ff3ce36caa1830a758f8ec54df
+          SourceKey: native/surface
+          Material: Native/Direct_v1/Surface.hmat
+  Nodes:
+    - ID: 0000000000000006
+      Source: 78eb1a58c12cbc3ee21cb0b8bed5a779f95e3aa332aeef2ed9b7c01118046fe9
+      SourceKey: native/cube

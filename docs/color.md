@@ -22,8 +22,7 @@ metallic/roughness and occlusion bindings interpret linear data. glTF factors an
 vertex colors are already linear and are copied without another transfer. Native
 material pickers use the same sRGB display boundary. Imported PNG/JPEG channel
 and alpha bytes survive cooking unchanged; slot usage supplies interpretation,
-with no conflicting encoding field on the shared image. Mesh material values are
-metadata at stage 2 and do not imply implemented mesh/PBR rendering.
+with no conflicting encoding field on the shared image. Static meshes use the direct metallic/roughness renderer; there is no ambient/IBL term.
 
 `TextureSpecification::Encoding` distinguishes `SRGB` from `Linear`. Generated
 textures default to Linear; ordinary RGB(A) file textures default to SRGB.
@@ -36,14 +35,19 @@ bottom vertices with the larger V coordinate. Generated glyph pages retain their
 own explicit atlas UVs. Runtime UI fit, crop and nine-slice use those same sprite
 UVs. Texture bytes, alpha, geometry and glyph distance data are not gamma corrected.
 
-The supported world presentation is **DisplayReferred** unlit, independent of
-camera projection and editor navigation. The display canvas has an opaque scene background; transparent scene output is
-currently rejected, so ImGui never composites a partly transparent encoded viewport.
-World sprites/circles/text and ordered
-screen UI compose into one RGBA16F linear target with ordinary world depth and
-separate integer picking. This needs no light evaluation, HDR world lighting
-target, environment resources or tone-map pass. Scene-referred presentation is
-rejected until its renderer exists.
+World presentation is independent of camera projection and editor navigation.
+**DisplayReferred** composes unlit world sprites/circles/text, unlit meshes and
+ordered screen UI into one RGBA16F linear target with depth and integer picking.
+It needs no lighting target or tone-map pass.
+
+**SceneReferred** renders world radiance into RGBA32F, applies `2^Exposure` and
+fixed Khronos PBR Neutral tone mapping into the display-linear RGBA16F composite,
+then composes screen UI independently. Exposure is [-16,16] stops; no automatic
+exposure or selectable tone curves. Lit metallic/roughness meshes require this
+mode. Unlit world content receives the same world exposure/presentation. Both
+orthographic and perspective cameras work in either supported presentation.
+The opaque linear background follows world presentation; transparent scene output
+is rejected. See [direct rendering](design/3d-direct-stage3.md).
 
 A final pass applies the piecewise sRGB transfer into RGBA8, or into Nutella's
 window with `GL_FRAMEBUFFER_SRGB` disabled. Alpha is copied. The editor's output

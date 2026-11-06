@@ -6,7 +6,7 @@
 
 namespace Hazel {
 
-	OpenGLUniformBuffer::OpenGLUniformBuffer(std::uint32_t size, std::uint32_t binding)
+	OpenGLUniformBuffer::OpenGLUniformBuffer(std::uint32_t size, std::uint32_t binding) : m_Binding(binding)
 	{
 		// Named buffer operations require newer OpenGL. Preserve the generic
 		// binding while establishing the requested indexed UBO binding on 4.2.
@@ -25,6 +25,7 @@ namespace Hazel {
 	}
 
 
+    void OpenGLUniformBuffer::Bind() const {glBindBufferBase(GL_UNIFORM_BUFFER,m_Binding,m_RendererID);}
 	void OpenGLUniformBuffer::SetData(const void* data, std::uint32_t size, std::uint32_t offset)
 	{
 		GLint previousBinding = 0;

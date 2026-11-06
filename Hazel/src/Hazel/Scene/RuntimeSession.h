@@ -1,4 +1,5 @@
 #pragma once
+#include "Hazel/Renderer/SceneRenderer.h"
 #include "Hazel/Core/Base.h"
 #include "Hazel/UI/UIActions.h"
 #include "Hazel/Events/Event.h"
@@ -32,6 +33,7 @@ namespace Hazel {
         // Hosts opt in before Start. Editor default remains isolated memory-only.
         void SetPersistentStorage(bool enabled) { CheckThread(); if(m_Scene)throw std::logic_error("Configure storage before Start");m_PersistentStorage=enabled; }
         RuntimeStorage& Storage() { CheckThread();if(!m_Scene)throw std::logic_error("Storage needs an active session");return m_Storage; }
+        void SetRenderTarget(const Ref<Framebuffer>& target){m_Display=target;}
         void Update(Timestep timestep);
         bool RequestSceneLoad(const std::filesystem::path& assetReference);
         const Ref<Scene>& GetScene() const { return m_Scene; }
@@ -67,6 +69,7 @@ namespace Hazel {
     private:
         void CheckThread() const;
         void CommitPendingTransition();
+        SceneRenderView m_View;Ref<Framebuffer> m_Display;
         Ref<Project> m_Project;
         Ref<Scene> m_Scene;
         std::optional<std::filesystem::path> m_Pending;

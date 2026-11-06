@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "Hazel/Renderer/MeshGeometry.h"
 #include "ProjectAssets.h"
 #include "Hazel/Project/Project.h"
 namespace Hazel
@@ -22,6 +23,13 @@ Ref<const T> Admit(T value, size_t bytes, const Ref<Budget> &budget)
     });
 }
 } // namespace
+Ref<MeshGeometry> ProjectAssets::RealizeMesh(const Ref<const MeshAsset>& mesh){
+    if(!mesh)throw std::runtime_error("No accepted geometry to realize");
+    const auto key=AssetKey(mesh->Definition.ID)+AssetKey(mesh->Generation);auto found=m_GPU.find(key);if(found!=m_GPU.end())return found->second.Resource;
+    size_t bytes=mesh->Geometry.Vertices.size()*64+mesh->Geometry.Indices.size()*4;
+    while(m_GPU.size()>=64||m_GPUBytes+bytes>128*1024*1024){auto victim=std::find_if(m_GPU.begin(),m_GPU.end(),[](auto& p){return p.second.Resource.use_count()==1;});if(victim==m_GPU.end())throw std::runtime_error("Mesh GPU cache exceeds 64 resources / 128 MiB");m_GPUBytes-=victim->second.Bytes;m_GPU.erase(victim);}
+    auto resource=CreateRef<MeshGeometry>(mesh->Geometry);m_GPU.emplace(key,GPUEntry{resource,bytes});m_GPUBytes+=bytes;return resource;
+}
 void ProjectAssets::ReloadMesh(const std::string &key, MeshEntry &entry)
 {
     try

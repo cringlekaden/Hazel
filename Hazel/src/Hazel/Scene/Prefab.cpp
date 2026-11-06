@@ -104,7 +104,6 @@ Entity Prefab::Instantiate(const std::filesystem::path &root,
     if (target.GetAssets() && target.GetAssets()->Root() != std::filesystem::weakly_canonical(root))
         throw std::runtime_error("Prefab assets must belong to the destination scene's project");
     auto staged = Load(root, reference);
-    if(target.IsRunning()&&!staged->GetAllEntitiesWith<MeshRendererComponent>().empty())throw std::runtime_error("Imported mesh prefabs require stage-3 rendering before runtime instantiation");
     auto source = GetEntity(staged);
     return target.InstantiateEntity(source, source.GetComponent<TransformComponent>());
 }
@@ -114,7 +113,6 @@ Entity Prefab::Instantiate(const std::filesystem::path &root,
     if (target.GetAssets() && target.GetAssets()->Root() != std::filesystem::weakly_canonical(root))
         throw std::runtime_error("Prefab assets must belong to the destination scene's project");
     auto staged = Load(root, reference);
-    if(target.IsRunning()&&!staged->GetAllEntitiesWith<MeshRendererComponent>().empty())throw std::runtime_error("Imported mesh prefabs require stage-3 rendering before runtime instantiation");
     auto source = GetEntity(staged);
     auto initial = source.GetComponent<TransformComponent>();
     if (replaceRotationAndScale)

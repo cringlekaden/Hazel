@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <initializer_list>
 #include <vector>
+#include <glm/glm.hpp>
 
 namespace Hazel {
 
@@ -15,6 +16,7 @@ namespace Hazel {
 		// Color
 		RGBA8,
         RGBA16F,
+        RGBA32F,
 		RED_INTEGER,
 
 		// Depth/stencil
@@ -64,6 +66,8 @@ namespace Hazel {
         // Display-linear attachment 0 -> encoded RGBA8 output (or window).
         // Does not touch entity IDs. ImGui samples the encoded output unchanged.
         virtual void EncodeOutput(const Ref<Framebuffer>& destination = {}) = 0;
+        virtual void CompositeWorldTo(const Ref<Framebuffer>& destination,float exposure) = 0;
+        virtual glm::vec4 ReadColorPixel(uint32_t attachment,int x,int y) = 0;
 		virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) = 0;
 
 		virtual void ClearAttachment(uint32_t attachmentIndex, int value) = 0;

@@ -1,0 +1,36 @@
+Import:
+  Version: 1
+  Recipe: StaticMesh_v1
+  Producer: Hazel.Native.Direct_v1
+  SourceNotice: Original Hazel diagnostic geometry and materials; Apache-2.0 (repository LICENSE)
+  ID: 000000000000000a
+  Generation: 000000000000000d
+  PrefabRoot: 000000000000000c
+  Source: Reference/Direct_v1/Source.generated
+  SourceHash: f3c7358b863f5f32eec273451f39344b8ebd8f728d70202c5da7c97cbbb4d825
+  Scene: -1
+  Prefab: Reference/Direct_v1/Sphere.hprefab
+  PrefabSource: 32f5ebd0723b96ee998377442a315c68d8368cb4a23311b3607e9d8b1fc9974f
+  PrefabAcceptedHash: bed05be7d8ec31d4575d5acd90418de6e84f17d7c63659de396a201fb4806d29
+  Materials:
+    - ID: 000000000000000f
+      Source: eda47d84c4bf018ed02ad3b39bbe9482b80b9e3b615822da1def8ecb0e7c675f
+      Output: Reference/Direct_v1/Neutral.hmat
+      AcceptedHash: eda47d84c4bf018ed02ad3b39bbe9482b80b9e3b615822da1def8ecb0e7c675f
+      SourceKey: native/neutral
+  Meshes:
+    - ID: 000000000000000b
+      Source: 457dde02256dbfa72c40ecdd4a08c670a72d41084e53bc8912a5bfad6bcac8f9
+      Output: Reference/Direct_v1/Sphere.hmesh
+      Geometry: Reference/Direct_v1/geometry/Sphere.hgeom
+      GeometryHash: 457dde02256dbfa72c40ecdd4a08c670a72d41084e53bc8912a5bfad6bcac8f9
+      SourceKey: native/sphere
+      Slots:
+        - ID: 000000000000000e
+          Source: b0aa025e2496b79d55fe9d9aed0b600126f4139d700d833204c29a3a732e128a
+          SourceKey: native/surface
+          Material: Reference/Direct_v1/Neutral.hmat
+  Nodes:
+    - ID: 0000000000000010
+      Source: 5c5ee4ccdc9d5737633a353eecb0985b4e182193a32bef25f1a53f544aa23af6
+      SourceKey: native/sphere

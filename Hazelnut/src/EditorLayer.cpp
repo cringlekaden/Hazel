@@ -4,6 +4,7 @@
 #include "Authoring/LoadingUI.h"
 #include "Hazel/Core/OperationProgress.h"
 #include "EditorLayer.h"
+#include "Hazel/Assets/NativeStarter.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Events/ApplicationEvent.h"
@@ -84,7 +85,7 @@ namespace Hazel {
         if (m_SceneState != SceneState::Edit) OnSceneStop();
         ClearSceneObservers();
         m_ActiveScene.reset(); m_EditorScene.reset(); m_Font.reset();
-        m_Framebuffer.reset();m_ViewportOutput.reset();
+        m_RenderView.Reset();m_Framebuffer.reset();m_ViewportOutput.reset();
 	}
 
 	void EditorLayer::OnUpdate(Timestep ts)
@@ -131,14 +132,14 @@ namespace Hazel {
 
                 auto selected=m_SceneHierarchyPanel.GetSelectedEntity();
                 m_ActiveScene->SetUIPreviewTarget(selected&&selected.BelongsTo(m_ActiveScene.get())?uint64_t(selected.GetUUID()):0);
-				m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
+				m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera,&m_RenderView,m_Framebuffer);
 				break;
 			}
 			case SceneState::Simulate:
 			{
 				if(m_ViewportFocused && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_EditorCamera.OnUpdate(ts);
 
-				m_ActiveScene->OnUpdateSimulation(ts, m_EditorCamera);
+				m_ActiveScene->OnUpdateSimulation(ts, m_EditorCamera,&m_RenderView,m_Framebuffer);
 				break;
 			}
 			case SceneState::Play:
@@ -147,6 +148,7 @@ namespace Hazel {
                 const bool uiInput=m_ViewportFocused && Application::Get().GetWindow().IsFocused() && !RuntimeUIWidgetBlocksInput();
                 m_RuntimeSession.SetInput(ViewportMouse(),uiInput);
                 m_RuntimeSession.SetGameplayInputEnabled(uiInput&&m_ViewportHovered);
+                m_RuntimeSession.SetRenderTarget(m_Framebuffer);
                 m_RuntimeSession.Update(ts);
                 if(m_RuntimeSession.ConsumeExitRequest()){OnSceneStop();break;}
                 if (m_ActiveScene != m_RuntimeSession.GetScene()) {
@@ -308,8 +310,8 @@ namespace Hazel {
 		uint64_t textureID = m_ViewportOutput->GetColorAttachmentRendererID();
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
         m_ViewportHovered=ImGui::IsItemHovered();
-        if(m_ActiveScene&&!m_ActiveScene->GetAllEntitiesWith<MeshRendererComponent>().empty()) {
-            const ImVec2 at{imageOrigin.x+8,imageOrigin.y+8};const char* text="Mesh metadata present — drawing / picking requires stage 3";
+        if(m_ActiveScene&&!m_ActiveScene->RenderError().empty()) {
+            const ImVec2 at{imageOrigin.x+8,imageOrigin.y+8};const char* text=m_ActiveScene->RenderError().c_str();
             const auto extent=ImGui::CalcTextSize(text);ImGui::GetWindowDrawList()->AddRectFilled({at.x-4,at.y-3},{at.x+extent.x+4,at.y+extent.y+3},IM_COL32(25,25,25,235));ImGui::GetWindowDrawList()->AddText(at,IM_COL32(255,220,130,255),text);
         }
 
@@ -675,6 +677,7 @@ namespace Hazel {
         auto candidate=CreateRef<Scene>();
         if(Project::GetActive())candidate->SetAssets(Project::GetActive()->GetAssets());
         SceneSerializer loader(candidate);
+        if(defaults.DirectStarter)NativeStarter::Ensure(Resources::Resolve("Templates"),Project::GetAssetDirectory());
         if(!loader.DeserializeText(SceneDefaults::CreateDocument("Untitled",defaults)))
             throw std::runtime_error("Native new-scene factory: "+loader.Report().Error);
         // Only a complete validated candidate can retire the accepted document.

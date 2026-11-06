@@ -45,19 +45,22 @@ CPU faces/layouts and GPU glyph pages have separate admission/accounting. Active
 
 ## New scenes and presentation
 
-Project Settings exposes **New scene defaults**: runtime camera projection,
-DisplayReferred background and initial Planar/Orbit editor navigation. The native
-factory shared by New Project and New Scene writes explicit scene/camera values:
-orthographic size 10 or perspective FOV 45 degrees, near .1/far 100, camera z=10,
-a one-meter sprite, world text and screen UI. The available creation preset is 2D;
-a usable 3D starter is not offered at this checkpoint.
+Project Settings exposes **New scene defaults**: content seed, runtime camera
+projection, world presentation/background/exposure and initial Planar/Orbit
+navigation. New Project offers working **2D** and **Direct PBR** presets. The
+shared native scene factory writes camera FOV 45 degrees or orthographic size 10,
+near .1/far 100, world text and screen UI. The 2D preset starts with a one-metre
+sprite and camera z=10. Direct PBR starts with prepared native cube/material
+assets, a directional key, scene-referred presentation, camera z=3 and Orbit.
+Creation copies cooked native assets; it runs no importer/baker/GPU/script SDK.
 
 Defaults seed future scenes/fresh workspaces only. Existing scene presentation,
-camera projection and private workspace poses keep their own values. Scene
-Settings edits the scene-owned background through document Undo/Redo and Save.
-Project defaults never act as runtime scene overrides. The current unlit
-presentation works with both camera projections; unsupported presentation modes
-are rejected. See [runtime color](color.md).
+camera projection and private workspace poses retain their values. Scene Settings
+edits mode, exposure and background through document Undo/Redo and Save. Project
+defaults never act as runtime scene overrides. Display-referred accepts unlit
+world content. Scene-referred supports direct PBR and unlit world content with
+fixed Neutral presentation, followed by exposure-independent screen UI. An
+incompatible lit/display combination reports its status. See [runtime color](color.md).
 
 Runtime performance/advanced renderer requests keep the existing project request
 and actual-context capability policy. Requested/effective batch/shader/debug
@@ -70,3 +73,6 @@ Planar uses middle-drag (or Alt-left-drag) pan and wheel zoom; manipulation keep
 XY translation/scale and Z rotation. Orbit retains Alt-left orbit, Alt-middle pan,
 Alt-right dolly and wheel dolly. Both poses, navigation, grid and selected tool
 persist in the project workspace; none enters scene dirty state or document history.
+
+**F** frames selected geometry and subtree bounds at the current viewport aspect,
+including negative/nonuniform world transforms. Framing changes only workspace poses.

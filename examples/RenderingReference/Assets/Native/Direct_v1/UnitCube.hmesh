@@ -1,0 +1,9 @@
+Mesh:
+  Version: 1
+  ID: 0000000000000004
+  Name: One metre cube
+  Import: Native/Direct_v1/Import.himport
+  Slots:
+    - ID: 0000000000000007
+      Name: Surface
+      Material: Native/Direct_v1/Surface.hmat

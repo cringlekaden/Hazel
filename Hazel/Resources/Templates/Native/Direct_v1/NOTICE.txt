@@ -1,0 +1,2 @@
+Original engine-authored diagnostic geometry; Apache-2.0 (Hazel LICENSE)
+No external model, importer or lighting data.

@@ -1,0 +1,11 @@
+{
+  "Version": 1, "Case": "Direct_v1", "BRDFRecipe": "GGX_SmithCorrelated_Schlick_Lambert_SingleScattering_v1",
+  "RoughnessFloor": 0.045, "Resolution": [1280,720], "Exposure": 0, "Tone": "KhronosPBRNeutral", "MSAA": 1, "Environment": "None",
+  "Cameras": {"Position":[0,0,10],"Near":0.1,"Far":100,"PerspectiveFOVDegrees":45,"OrthographicSize":10},
+  "DirectionalTravelEuler":[-0.45,0.6,0], "DirectionalRGB":[1,1,1], "Intensity":3,
+  "Scenes": {
+    "Scenes/Direct_v1-PerspectivePBR.hazel": "67e2e86694032609dd5693548b8673641deb241fa48c0b997020d29809306f31",
+    "Scenes/Direct_v1-OrthographicPBR.hazel": "8efad316aca9d83808310bfdc0b4709260a548cbb5dbe128463fd0cb845e9f63",
+    "Scenes/Direct_v1-PerspectiveUnlit.hazel": "75455c977999c12bac4015985d46a3588bc48131d02f59b3f7c4d0093ed9cacc"
+  }
+}

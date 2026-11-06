@@ -18,6 +18,7 @@ namespace Hazel {
         static const RendererResolution& GetResolution() { return s_RendererAPI->GetResolution(); }
         static const RendererSettings& GetSettings() { return s_RendererAPI->GetSettings(); }
 
+        class StateScope {public:StateScope(){s_RendererAPI->PushState();}~StateScope(){s_RendererAPI->PopState();}StateScope(const StateScope&)=delete;};
         static void SetPickingMask(glm::bvec4 mask){s_RendererAPI->SetPickingMask(mask);}
         static RasterState GetRasterState() {return s_RendererAPI->GetRasterState();}
         static void SetRasterState(const RasterState& state) {s_RendererAPI->SetRasterState(state);}

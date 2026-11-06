@@ -1,4 +1,6 @@
 #pragma once
+#include <vector>
+#include <functional>
 
 #include "Hazel/Renderer/RendererAPI.h"
 
@@ -12,6 +14,8 @@ namespace Hazel {
         const RendererCapabilities& GetCapabilities() const override;
         const RendererSettings& GetSettings() const override;
         const RendererResolution& GetResolution() const override;
+        void PushState() override;
+        void PopState() override;
         void SetPickingMask(glm::bvec4 mask) override;
         RasterState GetRasterState() const override;
         void SetRasterState(const RasterState& state) override;
@@ -26,6 +30,7 @@ namespace Hazel {
         void SetLineWidth(float width) override;
         std::uint32_t GetMaxTextureSlots() const override;
     private:
+        std::vector<std::function<void()>> m_SavedStates;
         struct {int SourceRGB=0,DestinationRGB=0,SourceAlpha=0,DestinationAlpha=0,EquationRGB=0,EquationAlpha=0;
             bool Active=false,Text=false;} m_TextBlend;
     };

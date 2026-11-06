@@ -1,4 +1,5 @@
 #include "hzpch.h"
+#include "Hazel/Renderer/SceneRenderer.h"
 #include "AuthoredEntityReferences.h"
 #include "Hazel/UI/RuntimeUI.h"
 #include "Hazel/UI/RuntimeUIConfig.h"
@@ -418,7 +419,12 @@ namespace Hazel {
         const auto root=remap.at(source.GetUUID());
         if(placement)staged->GetEntityByUUID(root).GetComponent<TransformComponent>()=*placement;
         staged->RebuildChildren();staged->ValidateHierarchy();
-        if(m_IsRunning)RuntimeSession::Validate(staged);
+        if(m_IsRunning){
+            staged->m_Presentation=m_Presentation;RuntimeSession::Validate(staged);
+            unsigned lights=0;for(auto h:m_Registry.view<const DirectionalLightComponent>())lights+=m_Registry.get<DirectionalLightComponent>(h).Enabled?1:0;
+            for(auto h:staged->m_Registry.view<const DirectionalLightComponent>())lights+=staged->m_Registry.get<DirectionalLightComponent>(h).Enabled?1:0;
+            if(lights>1)throw std::runtime_error("Prefab would exceed one enabled directional light");
+        }
         const auto accepted=m_Relationships;
         std::vector<UUID> inserted;
         try {
@@ -448,7 +454,7 @@ namespace Hazel {
         }
     }
     Entity Scene::InstantiateEntity(Entity source,const TransformComponent& transform) {
-        for(int i=0;i<3;++i)if(!std::isfinite(transform.Translation[i]) || !std::isfinite(transform.Rotation[i]) || !std::isfinite(transform.Scale[i]) || transform.Scale[i]<=0)throw std::runtime_error("Initial prefab transform must be finite with positive scale");
+        for(int i=0;i<3;++i)if(!std::isfinite(transform.Translation[i]) || !std::isfinite(transform.Rotation[i]) || !std::isfinite(transform.Scale[i]) || std::abs(transform.Scale[i])<1e-6f)throw std::runtime_error("Initial prefab transform must be finite with nonzero scale");
         return CloneSubtree(source,&transform,false,false,false);
     }
     Ref<Scene> Scene::ExtractSubtree(Entity root) {
@@ -547,7 +553,7 @@ namespace Hazel {
         for(auto e:m_Registry.view<SpriteAnimationComponent>()) m_Registry.get<SpriteAnimationComponent>(e).ResetRuntime();
 	}
 
-	void Scene::OnUpdateRuntime(Timestep ts)
+	void Scene::OnUpdateRuntime(Timestep ts,SceneRenderView* renderView,const Ref<Framebuffer>& display)
 	{
         FlushLifecycle(); // Administrative work commits even while simulation is paused.
 		if (!m_IsPaused || m_StepFrames > 0)
@@ -608,75 +614,11 @@ namespace Hazel {
         CommitUIScreens(); // Requests from script callbacks commit after all callbacks have returned.
         m_UI->Advance(ts.GetSeconds());
         PrepareSprites();
-		// Render 2D
-		Camera* mainCamera = nullptr;
-		glm::mat4 cameraTransform;
-		{
-			auto view = m_Registry.view<TransformComponent, CameraComponent>();
-			for (auto entity : view)
-			{
-				auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
-                if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
+        auto entity=GetPrimaryCameraEntity();
+        if(entity){auto& camera=entity.GetComponent<CameraComponent>().Camera;auto world=GetWorldTransform(entity);SceneCameraView cameraView{camera.GetProjection()*glm::inverse(world),glm::vec3(world[3]),glm::normalize(glm::vec3(world*glm::vec4(0,0,1,0))),camera.GetProjectionType()==SceneCamera::ProjectionType::Orthographic};DrawView(cameraView,renderView,display);}else RenderUI();
+    }
 
-				if (camera.Primary && IsEntityValid(m_Registry.get<IDComponent>(entity).ID))
-				{
-					mainCamera = &camera.Camera;
-					cameraTransform = GetWorldTransform({entity,this});
-					break;
-				}
-			}
-		}
-
-		if (mainCamera)
-		{
-			Renderer2D::BeginScene(*mainCamera, cameraTransform);
-
-			// Draw sprites
-			{
-				auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
-				for (auto entity : group)
-				{
-					auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
-                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
-
-                    auto* draw=RenderedSprite(Entity(entity,this));
-                    if(draw) Renderer2D::DrawSprite(GetWorldTransform({entity,this}),*draw,sprite.Color,(int)entity);
-                    else Renderer2D::DrawQuad(GetWorldTransform({entity,this}),glm::vec4(1,0,1,1),(int)entity);
-				}
-			}
-
-			// Draw circles
-			{
-				auto view = m_Registry.view<TransformComponent, CircleRendererComponent>();
-				for (auto entity : view)
-				{
-					auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
-                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
-
-					Renderer2D::DrawCircle(GetWorldTransform({entity,this}), circle.Color, circle.Thickness, circle.Fade, (int)entity);
-				}
-			}
-
-			// Draw text
-			{
-				auto view = m_Registry.view<TransformComponent, TextComponent>();
-				for (auto entity : view)
-				{
-					auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
-                    if(!IsEntityValid(m_Registry.get<IDComponent>(entity).ID) || m_Registry.has<UIRectComponent>(entity))continue;
-
-					ResolveTextFonts(text,m_Assets,text.Spans);
-                    Renderer2D::DrawString(text.TextString, GetWorldTransform({entity,this}), text, (int)entity);
-				}
-			}
-
-			Renderer2D::EndScene();
-		}
-
-        RenderUI();
-	}
-
-	void Scene::OnUpdateSimulation(Timestep ts, EditorCamera& camera)
+	void Scene::OnUpdateSimulation(Timestep ts, EditorCamera& camera,SceneRenderView* view,const Ref<Framebuffer>& display)
 	{
 		if (!m_IsPaused || m_StepFrames > 0)
 		{
@@ -708,13 +650,13 @@ namespace Hazel {
 		}
 
 		// Render
-		RenderScene(camera);
+		RenderScene(camera,view,display);
 	}
 
-	void Scene::OnUpdateEditor(Timestep ts, EditorCamera& camera)
+	void Scene::OnUpdateEditor(Timestep ts, EditorCamera& camera,SceneRenderView* view,const Ref<Framebuffer>& display)
 	{
 		// Render
-		RenderScene(camera);
+		RenderScene(camera,view,display);
 	}
 
 	void Scene::OnViewportResize(uint32_t width, uint32_t height)
@@ -894,10 +836,19 @@ namespace Hazel {
 		m_PhysicsWorld.reset();
 	}
 
-	void Scene::RenderScene(EditorCamera& camera)
-	{
-        PrepareSprites();
-		Renderer2D::BeginScene(camera);
+	void Scene::RenderScene(EditorCamera& camera,SceneRenderView* view,const Ref<Framebuffer>& display)
+    {
+        m_RenderError.clear();
+        try {DrawView({camera.GetViewProjection(),camera.GetPosition(),-camera.GetForwardDirection(),camera.Navigation()==EditorNavigation::Planar},view,display);}
+        catch(const std::exception& e){m_RenderError=e.what();RenderUI();}
+    }
+    void Scene::DrawView(const SceneCameraView& camera,SceneRenderView* view,const Ref<Framebuffer>& display){
+        PrepareSprites();SceneRenderView local;auto frame=SceneRenderer::Collect(*this,camera);
+        SceneRenderer::Render(frame,view?*view:local,display,[this,camera]{DrawWorld2D(camera.ViewProjection);},[this]{RenderUI();});
+    }
+    void Scene::DrawWorld2D(const glm::mat4& matrix)
+    {
+        Renderer2D::BeginScene(matrix);
 
 		// Draw sprites
 		{
@@ -939,7 +890,7 @@ namespace Hazel {
 		}
 
 		Renderer2D::EndScene();
-        RenderUI();
+
 	}
 
     void Scene::PrepareSprites(bool strict)
@@ -1051,6 +1002,14 @@ namespace Hazel {
             AuditMeshBinding(m_Assets->Root(),binding);
         }
     }
+    void Scene::ValidateRendering() const {
+        unsigned lights=0;for(auto h:m_Registry.view<const DirectionalLightComponent>()){auto& l=m_Registry.get<DirectionalLightComponent>(h);l.Validate();lights+=l.Enabled?1:0;}if(lights>1)throw std::runtime_error("Only one enabled directional light is supported");
+        for(auto h:m_Registry.view<const MeshRendererComponent>()){
+            auto& binding=m_Registry.get<MeshRendererComponent>(h);if(binding.Mesh.empty())continue;auto mesh=ReadMeshAsset(m_Assets->Root(),binding.Mesh);
+            for(auto& slot:mesh.Definition.Slots){auto override=binding.Materials.find(slot.ID);auto material=ReadMaterial(Project::ResolveOwnedAsset(m_Assets->Root(),override==binding.Materials.end()?slot.Material:override->second));if(material.Model==MaterialModel::MetallicRoughness&&!m_Presentation.SceneReferred)throw std::runtime_error("Lit materials require Scene-referred presentation in Scene Settings");}
+        }
+    }
+    template<> void Scene::OnComponentAdded<DirectionalLightComponent>(Entity,DirectionalLightComponent&) {}
     template<> void Scene::OnComponentAdded<MeshRendererComponent>(Entity,MeshRendererComponent&) {}
     template<> void Scene::OnComponentAdded<UICanvasComponent>(Entity,UICanvasComponent&) {}
     template<> void Scene::OnComponentAdded<UIRectComponent>(Entity,UIRectComponent&) {}

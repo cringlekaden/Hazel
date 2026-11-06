@@ -45,6 +45,7 @@ static std::size_t Pixels(int entity) {
     return std::count(ids.begin(),ids.end(),entity);
 }
 #include "CanonicalColorChecks.h"
+#include "DirectPBRChecks.h"
 #include "OrderedBatchChecks.h"
 #include "TextCompositingChecks.h"
 #include "GlyphPageChecks.h"
@@ -248,7 +249,7 @@ int main(int argc,char** argv) {
             if(argc==2 && std::string(argv[1])=="--profile-typography"){TypographyRenderProfile();return 0;}
             TextCompositingChecks(argc>1 && std::string(argv[1])=="--reproduce-d8");
             if(argc>1)return 0;
-            CanonicalColorChecks(); Primitives(); Textures(); WorldTextChecks(); GlyphPageChecks(); TextOverflowRenderChecks(); TextEmphasisRenderChecks(); PagePressurePixels(); Overflow(); GenericSubmit(); OrderedBatchChecks();
+            DirectPBRChecks(); CanonicalColorChecks(); Primitives(); Textures(); WorldTextChecks(); GlyphPageChecks(); TextOverflowRenderChecks(); TextEmphasisRenderChecks(); PagePressurePixels(); Overflow(); GenericSubmit(); OrderedBatchChecks();
             Check(glGetError()==GL_NO_ERROR,"Final renderer GL error");
             target->Unbind(); target.reset(); glEnable(GL_DEPTH_TEST);
         }

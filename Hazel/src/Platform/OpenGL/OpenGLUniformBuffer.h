@@ -11,8 +11,9 @@ namespace Hazel {
 		OpenGLUniformBuffer(std::uint32_t size, std::uint32_t binding);
 		virtual ~OpenGLUniformBuffer();
 
-		virtual void SetData(const void* data, std::uint32_t size, std::uint32_t offset = 0) override;
+		virtual void Bind() const override;
+        virtual void SetData(const void* data, std::uint32_t size, std::uint32_t offset = 0) override;
 	private:
-		std::uint32_t m_RendererID = 0;
+		std::uint32_t m_RendererID = 0, m_Binding = 0;
 	};
 }

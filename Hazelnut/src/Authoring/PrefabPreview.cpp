@@ -9,7 +9,7 @@ namespace Hazel {
 void AuthoringPanel::PrefabPreview() {
     if (!m_PrefabScene || !ImGui::CollapsingHeader("Subtree preview"))
         return;
-    if(!m_PrefabScene->GetAllEntitiesWith<MeshRendererComponent>().empty()){ImGui::TextWrapped("This prefab contains mesh metadata. Mesh preview/drawing is unavailable until stage 3; inspect nodes, slots and bounds in the native asset panels.");return;}
+    if(!m_PrefabScene->GetAllEntitiesWith<MeshRendererComponent>().empty()){ImGui::TextWrapped("This detached prefab has no scene lighting. Instantiate it into a scene-referred scene with a directional light to inspect direct PBR; mesh, material and bounds metadata remain editable here.");return;}
     try {
         const auto width = uint32_t(std::clamp(ImGui::GetContentRegionAvail().x, 96.f, 1024.f));
         const uint32_t height = 180;

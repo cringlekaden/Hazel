@@ -83,3 +83,32 @@ metadata. `sources.json` records licensed source hashes and exact meanings. The
 small standard-library generator recreates **source fixtures only**. Normal native
 import owns validation/cooking/publication; replacing accepted reference artifacts
 requires a deliberate case revision. See [native import](../../docs/design/3d-import-stage2.md).
+
+
+## Direct_v1 — direct rendering
+
+Open `RenderingReference-Direct-PerspectivePBR.hproj` in Hazelnut or select it with
+Nutella's `--project`. `RenderingReference-Direct-OrthographicPBR.hproj` and
+`RenderingReference-Direct-PerspectiveUnlit.hproj` exercise the independent camera
+and shading choices. The same saved content feeds both hosts. Direct lighting has
+no ambient/IBL; rough metals can remain dark under this single-scattering model.
+
+The 18 repeated analytic spheres cover roughness 0/.1/.25/.5/.75/1 and metallic
+0/.5/1; the mirrored nonuniform cube, world sprite/circle/text and screen UI share
+the view. Scene Settings exposes world exposure; the footer stays independent.
+Use Orbit and **F** on a selected instance. Material overrides use stable slots.
+Camera/output/light conditions and scene hashes are frozen in
+`Assets/Reference/Direct_v1/outputs.json`. Geometry/material provenance is in its
+NOTICE and Source.generated. No external photographic or lighting assets are used.
+Core_v1 and Import_v1 bytes/conditions remain unchanged.
+
+From the canonical checkout:
+
+```sh
+python3 scripts/hazel.py run Hazelnut --config Release --project examples/RenderingReference/RenderingReference-Direct-PerspectivePBR.hproj
+python3 scripts/hazel.py run Nutella --config Release --project examples/RenderingReference/RenderingReference-Direct-PerspectivePBR.hproj
+```
+
+The maintained renderer regression compares direct GPU radiance to a separate
+FP64 BRDF oracle. Runtime regression checks saved Direct_v1 through editor/player
+submission and 1x/2x picking. These are direct-only cases, not IBL acceptance.

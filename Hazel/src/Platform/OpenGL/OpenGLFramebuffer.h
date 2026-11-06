@@ -3,6 +3,7 @@
 
 #include "Hazel/Renderer/Framebuffer.h"
 #include <utility>
+#include "Hazel/Renderer/UniformBuffer.h"
 
 namespace Hazel {
 
@@ -20,6 +21,8 @@ namespace Hazel {
 
 		virtual void EncodeOutput(const Ref<Framebuffer>& destination = {}) override;
         virtual void Resize(uint32_t width, uint32_t height) override;
+        virtual void CompositeWorldTo(const Ref<Framebuffer>& destination,float exposure) override;
+        virtual glm::vec4 ReadColorPixel(uint32_t attachment,int x,int y) override;
 		virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) override;
 
 		virtual void ClearAttachment(uint32_t attachmentIndex, int value) override;
@@ -28,7 +31,8 @@ namespace Hazel {
 
 		virtual const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
 	private:
-		Ref<Shader> m_OutputShader;
+		Ref<Shader> m_OutputShader,m_ToneShader;
+        Ref<UniformBuffer> m_ToneParameters;
         uint32_t m_OutputVAO = 0;
         void Release();
         void DisableIntegerBlending();

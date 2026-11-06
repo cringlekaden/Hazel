@@ -24,6 +24,12 @@ namespace Hazel {
         if(!std::isfinite(focus.x)||!std::isfinite(focus.y)||!std::isfinite(size)||size<.01f||size>100000)return;
         m_PlanarFocus=focus;m_PlanarSize=size;UpdateProjection();UpdateView();
     }
+    void EditorCamera::FrameBounds(const glm::vec3& minimum,const glm::vec3& maximum) {
+        for(int i=0;i<3;++i)if(!std::isfinite(minimum[i])||!std::isfinite(maximum[i])||minimum[i]>maximum[i])throw std::invalid_argument("Invalid framing bounds");
+        auto center=(minimum+maximum)*.5f;auto span=maximum-minimum;
+        if(m_Navigation==EditorNavigation::Planar)RestorePlanar(glm::vec2(center),std::clamp(std::max(span.y,span.x/m_AspectRatio)*1.2f,.01f,100000.f));
+        else {float radius=std::max(.05f,glm::length(span)*.5f);float half=std::atan(std::tan(glm::radians(m_FOV)*.5f)*std::min(1.f,m_AspectRatio));RestoreOrbit(center,m_Pitch,m_Yaw,std::clamp(radius/std::sin(half)*1.15f,.1f,100000.f));}
+    }
     void EditorCamera::RestoreOrbit(const glm::vec3& focus,float pitch,float yaw,float distance) {
         if(!std::isfinite(pitch)||!std::isfinite(yaw)||!std::isfinite(distance)||distance<.1f||distance>100000)return;
         for(int axis=0;axis<3;++axis)if(!std::isfinite(focus[axis]))return;

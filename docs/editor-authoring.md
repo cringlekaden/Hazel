@@ -129,8 +129,9 @@ Unsupported content rejects before acceptance.
 Open `Import.himport` or `.hmesh` for primitive/slot/local-bounds metadata and
 explicit reimport. Open/instantiate the detached prefab through the normal prefab
 workflow. Mesh Inspector chooses a named mesh and whole-material slot overrides;
-these authored changes use scene/prefab history. Mesh drawing/picking and Play
-remain unavailable until stage 3, with explicit diagnostics.
+these authored changes use scene/prefab history. Static mesh drawing/picking and
+Play use the same direct renderer. Lit materials require scene-referred presentation;
+unlit materials also work in display-referred scenes.
 
 **New Material…** creates a neutral dielectric `.hmat`. Its panel provides typed
 values, usage-correct texture choices, source image previews, Duplicate, Save and
@@ -140,3 +141,12 @@ ambiguous mappings or changed source material/node semantics.
 
 See [import contracts and qualification](design/3d-import-stage2.md) and
 [Rendering Reference](../examples/RenderingReference/README.md#import_v1-native-geometry-metadata).
+
+
+Direct static meshes use the existing native material/mesh-slot inspectors. Add
+**Directional Light** through Properties, aim local -Z with its transform, and use
+**Scene Settings → Scene-referred (Neutral)** for lit materials. Apply, Undo/Redo,
+Save/reopen and Play/Stop retain authored light/presentation values. New Project's
+**Direct PBR** preset creates a working direct-only scene; **2D** remains available.
+Orbit and **F** frame transformed mesh/subtree bounds without changing runtime
+cameras. See [Stage 3 contracts and reference cases](design/3d-direct-stage3.md).

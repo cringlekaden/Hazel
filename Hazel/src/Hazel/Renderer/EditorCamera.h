@@ -43,6 +43,7 @@ namespace Hazel {
 		float GetYaw() const { return m_Yaw; }
         const glm::vec3& GetFocalPoint() const {return m_FocalPoint;}
         void RestoreOrbit(const glm::vec3& focus,float pitch,float yaw,float distance);
+        void FrameBounds(const glm::vec3& minimum,const glm::vec3& maximum);
 	private:
 		void UpdateProjection();
 		void UpdateView();

@@ -35,8 +35,8 @@ namespace Hazel {
     }
     void RuntimeSession::Validate(const Ref<Scene>& scene, bool validateScripts, bool requireRendering) {
         if (!scene) throw std::runtime_error("No scene to run");
-        if(requireRendering&&!scene->GetAllEntitiesWith<MeshRendererComponent>().empty())throw std::runtime_error("Mesh rendering is unavailable at this import/metadata checkpoint (stage 3); remove mesh renderers before Play/player use");
         scene->ValidateMeshes();
+        if(requireRendering)scene->ValidateRendering();
         scene->Presentation().Validate();
         scene->ValidateSprites();
         scene->ValidateUI();
@@ -83,6 +83,7 @@ namespace Hazel {
     void RuntimeSession::RequestExit() {CheckThread();if(m_Scene&&!m_Stopping)m_ExitRequested=true;}
     bool RuntimeSession::ConsumeExitRequest() {CheckThread();bool requested=m_ExitRequested;m_ExitRequested=false;return requested;}
     void RuntimeSession::Stop() {
+        m_View.Reset();
         CheckThread();
         if (m_Stopping) return;
         if (m_Updating) throw std::logic_error("Cannot stop a scene inside its callback; request a transition instead");
@@ -164,7 +165,7 @@ namespace Hazel {
             for(auto key:{Key::LeftShift,Key::RightShift,Key::LeftControl,Key::RightControl,Key::LeftAlt,Key::RightAlt,Key::LeftSuper,Key::RightSuper})sample.Keys[key]=Input::IsKeyPressed(key);
             sample.Mouse[size_t(m_UIAdapter.Bindings().PointerButton)]=Input::IsMouseButtonPressed(MouseCode(m_UIAdapter.Bindings().PointerButton));
             RouteUIInput(sample,timestep.GetSeconds(),m_InputEnabled);
-            m_Scene->OnUpdateRuntime(timestep); m_Updating = false;
+            m_Scene->OnUpdateRuntime(timestep,&m_View,m_Display); m_Updating = false;
         }
         catch (...) { m_Updating = false; throw; }
     }

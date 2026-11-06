@@ -9,7 +9,15 @@
 
 namespace Hazel {
 
-    struct RasterState { bool DepthTest=true, ClipEnabled=false; glm::ivec4 ClipRect{}, Viewport{}; float LineWidth=1; glm::bvec4 PickingMask{true}; };
+    enum class DepthCompare {Less,LessEqual,Always};
+    enum class CullFace {None,Back,Front};
+    struct RasterState {
+        bool DepthTest=true,DepthWrite=true,Blend=true,SRGB=false,Clockwise=false,ClipEnabled=false;
+        DepthCompare Compare=DepthCompare::Less;CullFace Cull=CullFace::None;
+        glm::ivec4 ClipRect{},Viewport{};float LineWidth=1;
+        glm::bvec4 PickingMask{true},ColorMask{true};
+    };
+
 
     class RendererAPI
     {
@@ -27,6 +35,8 @@ namespace Hazel {
         virtual const RendererCapabilities& GetCapabilities() const = 0;
         virtual const RendererSettings& GetSettings() const = 0;
         virtual const RendererResolution& GetResolution() const = 0;
+        virtual void PushState() = 0;
+        virtual void PopState() = 0;
         virtual void SetPickingMask(glm::bvec4 mask) = 0;
         virtual RasterState GetRasterState() const = 0;
         virtual void SetRasterState(const RasterState& state) = 0;

@@ -228,7 +228,7 @@ void MaterialPanel::Render(bool editable)
         PropertyUI::Text("destination", "Project .hmat", m_Destination);
         PropertyUI::Text("name", "Name", m_CreateValues.Name);
         ImGui::TextWrapped(
-            "Creates an editable native material. Mesh rendering arrives in stage 3.");
+            "Creates an editable native material. Metallic/roughness uses direct lighting and scene-referred presentation.");
         if (ImGui::Button("Create"))
         {
             auto path = std::filesystem::u8path(m_Destination);
@@ -260,7 +260,7 @@ void MaterialPanel::Render(bool editable)
     if (contents)
     {
         ImGui::TextWrapped(
-            "Native material metadata. No mesh preview or mesh rendering at this checkpoint.");
+            "Native material document. Inspect on a mesh in the scene viewport; direct lighting has no ambient/IBL.");
         ImGui::BeginDisabled(!editable || (GuardPending && GuardPending()));
         if (ImGui::Button("Save"))
             Save();

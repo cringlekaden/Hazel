@@ -7,6 +7,7 @@ namespace Hazel {
         std::string Name, Identifier;
         std::filesystem::path Destination, Templates;
         int TemplateVersion = 1;
+        bool DirectPBR = false;
     };
     struct ProjectCreateResult {
         std::filesystem::path Descriptor;

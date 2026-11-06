@@ -37,6 +37,7 @@ static Ref<Scene> Make(const char* name, const char* script = nullptr) {
     return scene;
 }
 #include "RenderingReferenceChecks.h"
+#include "DirectReferenceChecks.h"
 #include "UIActionSessionChecks.h"
 #include "UIScreenSessionChecks.h"
 #include "UIValueSessionChecks.h"
@@ -183,7 +184,7 @@ int main(int argc, char** argv) {
         UIActionSessionChecks(project,directory);
         UIScreenSessionChecks(project);
         UIValueSessionChecks(project);UIScrollSessionChecks(project);UIDropdownSessionChecks(project);UICompositionSessionChecks(project);UITextEntrySessionChecks(project);UIStyleSessionChecks(project);
-        RenderingReferenceChecks();
+        RenderingReferenceChecks();DirectReferenceChecks();
         PrintLoadedNativeImages();
         ScriptEngine::Shutdown(); Check(!session.GetScene() && !ScriptEngine::GetRuntimeSession(),"Domain shutdown retained runtime session");
         std::cout<<"PASS: shared runtime OnCreate/OnUpdate transitions, failure recovery, first request wins, cancellation, authored copy, retained domain, retired observations/physics, repeated transitions and viewport input\n";

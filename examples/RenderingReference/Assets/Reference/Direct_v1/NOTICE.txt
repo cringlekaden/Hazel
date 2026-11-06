@@ -1,0 +1,2 @@
+Original Hazel diagnostic geometry and materials; Apache-2.0 (repository LICENSE)
+Generated diagnostic geometry; no external model, lighting data or reference render. Source metadata records the exact construction.

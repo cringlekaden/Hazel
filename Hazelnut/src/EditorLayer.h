@@ -1,4 +1,5 @@
 #pragma once
+#include "Hazel/Renderer/SceneRenderer.h"
 #include <optional>
 #include "Authoring/UIInspectorEditing.h"
 
@@ -81,7 +82,8 @@ namespace Hazel {
 	private:
 		Hazel::OrthographicCameraController m_CameraController;
 
-		Ref<Framebuffer> m_Framebuffer;
+		SceneRenderView m_RenderView;
+        Ref<Framebuffer> m_Framebuffer;
         Ref<Framebuffer> m_ViewportOutput;
 
 		Ref<Scene> m_ActiveScene;

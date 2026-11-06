@@ -254,6 +254,7 @@ namespace Hazel {
 		Font::Shutdown();
 	}
 
+    void Renderer2D::BeginScene(const glm::mat4& matrix){s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);s_Data->CameraBuffer.ViewProjection=matrix;s_Data->CameraUniformBuffer->Bind();s_Data->CameraUniformBuffer->SetData(&s_Data->CameraBuffer,sizeof(Renderer2DData::CameraData));StartBatch();}
 	void Renderer2D::BeginScene(const OrthographicCamera& camera)
 	{
         s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);

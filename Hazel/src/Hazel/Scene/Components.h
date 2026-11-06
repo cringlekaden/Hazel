@@ -1,4 +1,5 @@
 #pragma once
+#include "Hazel/Renderer/Lighting.h"
 #include "Hazel/UI/Slider.h"
 #include "Hazel/UI/ScrollView.h"
 #include "Hazel/UI/Dropdown.h"
@@ -99,6 +100,7 @@ namespace Hazel {
         bool Loop=false, PlayOnStart=false;
     };
 
+    struct DirectionalLightComponent : DirectionalLight {};
     struct MeshRendererComponent : MeshBinding {}; // authored references only; no stage-2 drawing
 
 	struct CircleRendererComponent
@@ -303,7 +305,7 @@ namespace Hazel {
 	};
 
 	using AllComponents =
-		ComponentGroup<TransformComponent, MeshRendererComponent, SpriteRendererComponent, SpriteAnimationComponent, AudioSourceComponent,
+		ComponentGroup<TransformComponent, DirectionalLightComponent, MeshRendererComponent, SpriteRendererComponent, SpriteAnimationComponent, AudioSourceComponent,
 			CircleRendererComponent, CameraComponent, ScriptComponent,
 			NativeScriptComponent, Rigidbody2DComponent, BoxCollider2DComponent,
 			CircleCollider2DComponent, TextComponent, UICanvasComponent, UIRectComponent, UILayoutComponent, UITextStyleComponent, UINineSliceComponent, UIButtonComponent, UIRadioGroupComponent, UIProgressComponent, UISliderComponent, UIScrollViewComponent, UIDropdownComponent, UITabsComponent, UITabComponent, UITooltipComponent, UITextEntryComponent, UIAppearanceComponent>;
