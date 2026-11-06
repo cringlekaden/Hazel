@@ -35125,6 +35125,8 @@ Entities:
     - 1
     Kerning: 0
     LineSpacing: 0.15
+    FontFamily: ''
+    FontStyle: 0
   UIRectComponent:
     Offset: [32, 24]
     Pivot: [0, 0]
@@ -35140,11 +35142,21 @@ Entities:
     HeightMode: 0
     FixedSize: [700, 32]
     Anchor: [0, 0]
+    MaximumSize: [0, 0]
+    HasMaximum: [false, false]
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
   UITextStyleComponent:
     Size: 22
     Horizontal: 0
     Vertical: 0
     Wrap: true
+    Overflow: Clip
+    MaxLines: 0
   UIAppearanceComponent:
     Styled: true
     Asset: Styles/Interface.hstyle
@@ -35191,6 +35203,8 @@ Entities:
     Color: *id003
     Kerning: 0
     LineSpacing: 0.15
+    FontFamily: ''
+    FontStyle: 0
   UIRectComponent:
     Offset: [32, 82]
     Pivot: [0, 0]
@@ -35206,11 +35220,21 @@ Entities:
     HeightMode: 0
     FixedSize: [670, 180]
     Anchor: [0, 0]
+    MaximumSize: [0, 0]
+    HasMaximum: [false, false]
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
   UITextStyleComponent:
     Size: 76
     Horizontal: 0
     Vertical: 0
     Wrap: true
+    Overflow: Clip
+    MaxLines: 0
   UIAppearanceComponent:
     Styled: true
     Asset: Styles/Interface.hstyle
@@ -35261,6 +35285,8 @@ Entities:
     - 1
     Kerning: 0
     LineSpacing: 0.15
+    FontFamily: ''
+    FontStyle: 0
   UIRectComponent:
     Offset: [32, 276]
     Pivot: [0, 0]
@@ -35276,11 +35302,21 @@ Entities:
     HeightMode: 0
     FixedSize: [650, 80]
     Anchor: [0, 0]
+    MaximumSize: [0, 0]
+    HasMaximum: [false, false]
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
   UITextStyleComponent:
     Size: 26
     Horizontal: 0
     Vertical: 0
     Wrap: true
+    Overflow: Clip
+    MaxLines: 0
   UIAppearanceComponent:
     Styled: true
     Asset: Styles/Interface.hstyle
@@ -35329,6 +35365,8 @@ Entities:
     - 1
     Kerning: 0
     LineSpacing: 0.15
+    FontFamily: ''
+    FontStyle: 0
   UIRectComponent:
     Offset: [32, 369]
     Pivot: [0, 0]
@@ -35344,11 +35382,21 @@ Entities:
     HeightMode: 0
     FixedSize: [660, 80]
     Anchor: [0, 0]
+    MaximumSize: [0, 0]
+    HasMaximum: [false, false]
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
   UITextStyleComponent:
     Size: 24
     Horizontal: 0
     Vertical: 0
     Wrap: true
+    Overflow: Clip
+    MaxLines: 0
   UIAppearanceComponent:
     Styled: true
     Asset: Styles/Interface.hstyle
@@ -35403,6 +35451,14 @@ Entities:
     HeightMode: 0
     FixedSize: [420, 54]
     Anchor: [0, 0]
+    MaximumSize: [0, 0]
+    HasMaximum: [false, false]
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
   SpriteRendererComponent:
     Color: &id004
     - 0.242866814
@@ -35456,6 +35512,11 @@ Entities:
         Type: None
     - Source:
         Type: None
+    Kind: 0
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 0
+    EventOwner: 0
   UIAppearanceComponent:
     Styled: true
     Asset: Styles/Interface.hstyle
@@ -35500,6 +35561,8 @@ Entities:
     Color: *id003
     Kerning: 0
     LineSpacing: 0.15
+    FontFamily: ''
+    FontStyle: 0
   UIRectComponent:
     Offset: [0, 0]
     Pivot: [0, 0]
@@ -35515,11 +35578,21 @@ Entities:
     HeightMode: 0
     FixedSize: [0, 54]
     Anchor: [0, 0]
+    MaximumSize: [0, 0]
+    HasMaximum: [false, false]
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
   UITextStyleComponent:
     Size: 27
     Horizontal: 0
     Vertical: 1
     Wrap: true
+    Overflow: Clip
+    MaxLines: 0
   UIAppearanceComponent:
     Styled: true
     Asset: Styles/Interface.hstyle
@@ -35574,6 +35647,14 @@ Entities:
     HeightMode: 0
     FixedSize: [420, 54]
     Anchor: [0, 0]
+    MaximumSize: [0, 0]
+    HasMaximum: [false, false]
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
   SpriteRendererComponent:
     Color: *id004
     Source: *id005
@@ -35620,6 +35701,11 @@ Entities:
         Type: None
     - Source:
         Type: None
+    Kind: 0
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 0
+    EventOwner: 0
   UIAppearanceComponent:
     Styled: true
     Asset: Styles/Interface.hstyle
@@ -35664,6 +35750,8 @@ Entities:
     Color: *id003
     Kerning: 0
     LineSpacing: 0.15
+    FontFamily: ''
+    FontStyle: 0
   UIRectComponent:
     Offset: [0, 0]
     Pivot: [0, 0]
@@ -35679,11 +35767,21 @@ Entities:
     HeightMode: 0
     FixedSize: [0, 54]
     Anchor: [0, 0]
+    MaximumSize: [0, 0]
+    HasMaximum: [false, false]
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
   UITextStyleComponent:
     Size: 27
     Horizontal: 0
     Vertical: 1
     Wrap: true
+    Overflow: Clip
+    MaxLines: 0
   UIAppearanceComponent:
     Styled: true
     Asset: Styles/Interface.hstyle
@@ -35738,6 +35836,14 @@ Entities:
     HeightMode: 0
     FixedSize: [420, 54]
     Anchor: [0, 0]
+    MaximumSize: [0, 0]
+    HasMaximum: [false, false]
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
   SpriteRendererComponent:
     Color: *id004
     Source: *id005
@@ -35784,6 +35890,11 @@ Entities:
         Type: None
     - Source:
         Type: None
+    Kind: 0
+    InitiallyChecked: false
+    Indicator: 0
+    Group: 0
+    EventOwner: 0
   UIAppearanceComponent:
     Styled: true
     Asset: Styles/Interface.hstyle
@@ -35828,6 +35939,8 @@ Entities:
     Color: *id003
     Kerning: 0
     LineSpacing: 0.15
+    FontFamily: ''
+    FontStyle: 0
   UIRectComponent:
     Offset: [0, 0]
     Pivot: [0, 0]
@@ -35843,11 +35956,21 @@ Entities:
     HeightMode: 0
     FixedSize: [0, 54]
     Anchor: [0, 0]
+    MaximumSize: [0, 0]
+    HasMaximum: [false, false]
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
   UITextStyleComponent:
     Size: 27
     Horizontal: 0
     Vertical: 1
     Wrap: true
+    Overflow: Clip
+    MaxLines: 0
   UIAppearanceComponent:
     Styled: true
     Asset: Styles/Interface.hstyle
@@ -35896,6 +36019,8 @@ Entities:
     - 1
     Kerning: 0
     LineSpacing: 0.15
+    FontFamily: ''
+    FontStyle: 0
   UIRectComponent:
     Offset: [0, -10]
     Pivot: [0, 1]
@@ -35911,11 +36036,21 @@ Entities:
     HeightMode: 0
     FixedSize: [0, 28]
     Anchor: [0, 1]
+    MaximumSize: [0, 0]
+    HasMaximum: [false, false]
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
   UITextStyleComponent:
     Size: 22
     Horizontal: 0
     Vertical: 0
     Wrap: true
+    Overflow: Clip
+    MaxLines: 0
   UIAppearanceComponent:
     Styled: true
     Asset: Styles/Interface.hstyle
@@ -36036,6 +36171,9 @@ Entities:
       Cancel: 2
       InitialFocus: 1388
       EventOwner: 1422
+      DefaultAction: 0
+      CancelTarget: 0
+      ReturnFocus: 0
 - Entity: 1424
   TagComponent:
     Tag: Menu actions
@@ -36070,12 +36208,29 @@ Entities:
     HeightMode: 0
     FixedSize: [420, 186]
     Anchor: [0, 0]
+    MaximumSize: [0, 0]
+    HasMaximum: [false, false]
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
   UILayoutComponent:
     Direction: 1
     Main: 0
     Cross: 0
     Gap: 12
     Kind: 0
+    LineGap: 12
+    LineAlign: 0
+    GridGap: [12, 12]
+    Columns:
+    - {Mode: 0, Value: 96, Minimum: 0, Maximum: 0, HasMaximum: false}
+    - {Mode: 0, Value: 96, Minimum: 0, Maximum: 0, HasMaximum: false}
+    - {Mode: 0, Value: 96, Minimum: 0, Maximum: 0, HasMaximum: false}
+    Rows:
+    - {Mode: 0, Value: 96, Minimum: 0, Maximum: 0, HasMaximum: false}
 - Entity: 100001
   TagComponent:
     Tag: Settings screen
@@ -36116,6 +36271,7 @@ Entities:
       InitialFocus: 0
       DefaultAction: 0
       ReturnFocus: 0
+      CancelTarget: 0
   ScriptComponent:
     ClassName: LastLightkeeper.Settings
     ScriptFields:
@@ -36209,6 +36365,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   SpriteRendererComponent:
     Color:
     - 0.00270897833
@@ -36274,6 +36437,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   TextComponent:
     TextString: SETTINGS
     FontFamily: ''
@@ -36369,6 +36539,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   TextComponent:
     TextString: Back
     FontFamily: ''
@@ -37375,12 +37552,28 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   UILayoutComponent:
     Kind: 0
     Direction: 1
     Gap: 12
     Main: 0
     Cross: 0
+    LineGap: 12
+    LineAlign: 0
+    GridGap: [12, 12]
+    Columns:
+    - {Mode: 0, Value: 96, Minimum: 0, Maximum: 0, HasMaximum: false}
+    - {Mode: 0, Value: 96, Minimum: 0, Maximum: 0, HasMaximum: false}
+    - {Mode: 0, Value: 96, Minimum: 0, Maximum: 0, HasMaximum: false}
+    Rows:
+    - {Mode: 0, Value: 96, Minimum: 0, Maximum: 0, HasMaximum: false}
 - Entity: 100059
   TagComponent:
     Tag: Sound help
@@ -37438,6 +37631,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   TextComponent:
     TextString: Changes apply now. Completed sound edits are saved; Back does not roll them back. Your journey is untouched.
     FontFamily: ''
@@ -37686,6 +37886,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   TextComponent:
     TextString: Master volume · Accept to edit; Adjust changes; Cancel restores the starting volume.
     FontFamily: ''
@@ -38147,12 +38354,28 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   UILayoutComponent:
     Kind: 0
     Direction: 1
     Gap: 12
     Main: 0
     Cross: 0
+    LineGap: 12
+    LineAlign: 0
+    GridGap: [12, 12]
+    Columns:
+    - {Mode: 0, Value: 96, Minimum: 0, Maximum: 0, HasMaximum: false}
+    - {Mode: 0, Value: 96, Minimum: 0, Maximum: 0, HasMaximum: false}
+    - {Mode: 0, Value: 96, Minimum: 0, Maximum: 0, HasMaximum: false}
+    Rows:
+    - {Mode: 0, Value: 96, Minimum: 0, Maximum: 0, HasMaximum: false}
 - Entity: 100067
   TagComponent:
     Tag: Navigation help
@@ -38210,6 +38433,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   TextComponent:
     TextString: These are your UI input overrides. Game movement controls are unchanged.
     FontFamily: ''
@@ -39994,6 +40224,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   TextComponent:
     TextString: 'Pointer: click or drag. Keyboard: Tab / Shift+Tab, arrows, Accept and Cancel. Sliders use an explicit edit mode. Gamepad: D-pad/stick, confirm/cancel; bumpers scroll. Bindings remain remappable in Hazelnut Project UI Input; player navigation overrides here use that same service. No graphics or display options are advertised.'
     FontFamily: ''
@@ -40089,6 +40326,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   TextComponent:
     TextString: Reset settings
     FontFamily: ''
@@ -40233,6 +40477,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   TextComponent:
     TextString: Immediate changes · stored separately from journey
     FontFamily: ''
@@ -40311,6 +40562,7 @@ Entities:
       InitialFocus: 100096
       DefaultAction: 0
       ReturnFocus: 0
+      CancelTarget: 0
 - Entity: 100092
   TagComponent:
     Tag: New game confirmation frame
@@ -40368,6 +40620,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   SpriteRendererComponent:
     Color:
     - 0.00270897833
@@ -40433,6 +40692,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   TextComponent:
     TextString: PLEASE CONFIRM
     FontFamily: ''
@@ -40528,6 +40794,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   TextComponent:
     TextString: Replace the current journey? Your existing save is kept until you confirm and the new save succeeds.
     FontFamily: ''
@@ -40623,6 +40896,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   TextComponent:
     TextString: Confirm
     FontFamily: ''
@@ -40767,6 +41047,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   TextComponent:
     TextString: Keep playing
     FontFamily: ''
@@ -40911,6 +41198,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   TextComponent:
     TextString: Settings
     FontFamily: ''
@@ -41055,6 +41349,13 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   TextComponent:
     TextString: Quit
     FontFamily: ''
@@ -41193,6 +41494,15 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    MaximumSize: [0, 0]
+    HasMaximum: [false, false]
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   SpriteRendererComponent:
     Color:
     - 0.000773993808
@@ -41252,6 +41562,15 @@ Entities:
     Visible: true
     Enabled: true
     ClipChildren: true
+    MaximumSize: [0, 0]
+    HasMaximum: [false, false]
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment: [0.5, 0.5]
+    Flex: 0
   SpriteRendererComponent:
     Color:
     - 0.000773993808
