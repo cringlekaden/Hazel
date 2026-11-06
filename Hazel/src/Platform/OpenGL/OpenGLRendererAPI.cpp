@@ -73,6 +73,7 @@ namespace Hazel {
     {
         if (m_SavedStates.size() >= 16)
             throw std::logic_error("Render state nesting exceeded");
+        const bool integerBlend=glIsEnabledi(GL_BLEND,1);
         GLfloat clear[4];
         glGetFloatv(GL_COLOR_CLEAR_VALUE, clear);
         GLint polygon[2];
@@ -116,6 +117,7 @@ namespace Hazel {
             glGetIntegeri_v(fields[i], 0, &blend[i]);
         m_SavedStates.emplace_back([=] {
             SetRasterState(raster);
+            if(integerBlend)glEnablei(GL_BLEND,1);else glDisablei(GL_BLEND,1);
             glClearColor(clear[0], clear[1], clear[2], clear[3]);
             glPolygonMode(GL_FRONT_AND_BACK, polygon[0]);
             glDepthFunc(depthFunc);

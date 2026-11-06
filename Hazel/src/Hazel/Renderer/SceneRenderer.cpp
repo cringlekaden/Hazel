@@ -179,6 +179,23 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
     raster.Blend = true;
     raster.ColorMask = raster.PickingMask = glm::bvec4(true);
     RenderCommand::SetRasterState(raster);
+    struct WorldBinding
+    {
+        Ref<Framebuffer> Pending;
+        ~WorldBinding()
+        {
+            if (Pending)
+                Pending->Unbind();
+        }
+        void Finish()
+        {
+            if (Pending)
+            {
+                Pending->Unbind();
+                Pending.reset();
+            }
+        }
+    } worldBinding;
     const bool hdr = frame.Presentation.SceneReferred && frame.Debug == SurfaceView::Shaded;
     if (hdr)
     {
@@ -196,6 +213,7 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
             view.Radiance = Framebuffer::Create(size);
         }
         view.Radiance->Bind();
+        worldBinding.Pending = view.Radiance;
         RenderCommand::SetClearColor(frame.Presentation.Background);
         RenderCommand::Clear();
         view.Radiance->ClearAttachment(1, -1);
@@ -270,7 +288,7 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
     world2D();
     if (hdr)
     {
-        view.Radiance->Unbind();
+        worldBinding.Finish();
         display->Bind();
         view.Radiance->CompositeWorldTo(display, frame.Presentation.Exposure);
     }

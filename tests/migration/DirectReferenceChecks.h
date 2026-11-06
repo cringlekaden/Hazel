@@ -2,6 +2,7 @@
 #include <glad/glad.h>
 #include <algorithm>
 #include "Hazel/Assets/AssetData.h"
+#include "Hazel/Assets/Geometry.h"
 #include "Hazel/Core/FileDocument.h"
 // Both native camera paths consume the same saved, frozen Direct_v1 content.
 static void DirectReferenceChecks()
@@ -15,6 +16,17 @@ static void DirectReferenceChecks()
     RenderCommand::StateScope scope;
     auto project = Project::LoadCandidate(descriptor);
     auto root = project->GetAssetRoot();
+    const auto conditions =
+        YAML::Load(FileDocument::Read(root / "Reference/Direct_v1/conditions.json"));
+    Check(conditions["Version"].as<int>() == 1 && conditions["Root"].as<std::string>() == "Assets",
+          "Direct condition contract changed");
+    for (auto file : conditions["Files"])
+    {
+        const auto reference = std::filesystem::u8path(file.first.as<std::string>());
+        Check(AssetHash(ReadAssetBytes(Project::ResolveOwnedAsset(root, reference),
+                                       GeometryByteLimit)) == file.second.as<std::string>(),
+              "Frozen Direct_v1 geometry/material/image/reference condition changed");
+    }
     auto metadata = YAML::Load(FileDocument::Read(root / "Reference/Direct_v1/outputs.json"));
     for (auto name : {"PerspectivePBR", "OrthographicPBR", "PerspectiveUnlit"})
     {

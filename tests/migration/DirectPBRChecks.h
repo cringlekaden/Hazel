@@ -349,10 +349,18 @@ static void DirectPBRChecks()
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
     glActiveTexture(GL_TEXTURE4);
+    glEnablei(GL_BLEND, 1);
+    glReadBuffer(GL_COLOR_ATTACHMENT1);
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
     GLint beforeProgram;
     glGetIntegerv(GL_CURRENT_PROGRAM, &beforeProgram);
     auto checkState = [&] {
         GLint value;
+        Check(glIsEnabledi(GL_BLEND, 1), "Integer blend enable not restored");
+        glGetIntegerv(GL_READ_BUFFER, &value);
+        Check(value == GL_COLOR_ATTACHMENT1, "Read attachment not restored");
+        glGetIntegerv(GL_DRAW_BUFFER1, &value);
+        Check(value == GL_NONE, "Draw attachments not restored");
         glGetIntegerv(GL_DEPTH_FUNC, &value);
         Check(value == GL_GEQUAL && !RenderCommand::GetRasterState().DepthWrite,
               "Depth state not restored");
@@ -376,6 +384,32 @@ static void DirectPBRChecks()
     }
     Check(failed, "HDR missing host target silently accepted");
     checkState();
+    for (bool duringWorld : {false, true})
+    {
+        failed = false;
+        try
+        {
+            SceneRenderer::Render(
+                frame, view, display,
+                [&] {
+                    if (duringWorld)
+                        throw std::runtime_error("world producer failure");
+                },
+                [&] {
+                    if (!duringWorld)
+                        throw std::runtime_error("screen producer failure");
+                });
+        }
+        catch (const std::exception &)
+        {
+            failed = true;
+        }
+        Check(failed, "Injected render producer failure was ignored");
+        checkState();
+    }
+    SceneRenderer::Render(frame, view, display, [] {}, [] {});
+    checkState(); // Retry retains a valid binding owner.
+
     glDisable(GL_SCISSOR_TEST);
     glDisable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
