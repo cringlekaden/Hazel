@@ -255,6 +255,85 @@ static void DirectPBRChecks()
     frame.Meshes[0].World = glm::mat4(1);
     material->DoubleSided = false;
     material->Model = MaterialModel::Unlit;
+    // Tilted authored normals distinguish inverse transpose from the model matrix.
+    auto tilted = CreateRef<MeshAsset>(*plane);
+    tilted->Definition.ID = tilted->Geometry.Mesh = 40;
+    tilted->Generation = 41;
+    const glm::dvec3 authoredNormal(.3, .4, std::sqrt(.75));
+    const auto authoredTangent = glm::normalize(glm::dvec3(authoredNormal.z, 0, -authoredNormal.x));
+    for (auto &vertex : tilted->Geometry.Vertices)
+    {
+        vertex.Normal = glm::vec3(authoredNormal);
+        vertex.Tangent = glm::vec4(glm::vec3(authoredTangent), -1);
+        vertex.Color = {.5f, .25f, .125f, .8f};
+    }
+    frame.Meshes[0].Geometry = tilted;
+    material->Model = MaterialModel::MetallicRoughness;
+    material->Textures[2].Image = "Normal.tga";
+    const auto rotation = glm::rotate(glm::mat4(1), .25f, glm::vec3(0, 1, 0));
+    for (double sx : {.7, -.7})
+    {
+        frame.Meshes[0].World = rotation * glm::scale(glm::mat4(1), glm::vec3(sx, 1.3, 2));
+        render();
+        auto rotate = [](glm::dvec3 v) {
+            const double c = std::cos(.25), s = std::sin(.25);
+            return glm::dvec3(c * v.x + s * v.z, v.y, -s * v.x + c * v.z);
+        };
+        auto n = glm::normalize(
+            rotate({authoredNormal.x / sx, authoredNormal.y / 1.3, authoredNormal.z / 2}));
+        auto tangent =
+            rotate({authoredTangent.x * sx, authoredTangent.y * 1.3, authoredTangent.z * 2});
+        tangent = glm::normalize(tangent - n * glm::dot(n, tangent));
+        auto bitangent = glm::cross(n, tangent) * (sx < 0 ? 1. : -1.);
+        auto mapped = glm::normalize(tangent * (2. * 128 / 255 - 1) + bitangent + n);
+        auto base = glm::dvec3(material->BaseColor) * glm::dvec3(.5, .25, .125);
+        NearRGB(view.Radiance->ReadColorPixel(0, 64, 64),
+                OracleBRDF(base, 0, .5, mapped, {0, 0, 1}, glm::dvec3(frame.Light->ToLight)) * 2.,
+                .002, "Independent tilted normal / nonuniform signed TBN / linear COLOR0");
+    }
+    frame.Meshes[0].Geometry = mesh.Accepted;
+    frame.Meshes[0].World = glm::mat4(1);
+    material->Textures[2].Image.clear();
+    material->Model = MaterialModel::Unlit;
+    // Independent primitive ranges must change both indexed offset and material.
+    auto ranges = CreateRef<MeshAsset>(*mesh.Accepted);
+    ranges->Definition.ID = ranges->Geometry.Mesh = 50;
+    ranges->Generation = 51;
+    ranges->Geometry.Vertices.clear();
+    ranges->Geometry.Indices.clear();
+    ranges->Geometry.Primitives.clear();
+    for (int side = 0; side < 2; ++side)
+    {
+        for (int i = 0; i < 4; ++i)
+        {
+            auto vertex = mesh.Accepted->Geometry.Vertices[i];
+            vertex.Position.x = vertex.Position.x * .8f + (side ? .5f : -.5f);
+            vertex.Position.y *= .8f;
+            ranges->Geometry.Vertices.push_back(vertex);
+        }
+        for (auto index : {0, 2, 1, 0, 3, 2})
+            ranges->Geometry.Indices.push_back(side * 4 + index);
+        ranges->Geometry.Primitives.push_back(
+            {uint64_t(side ? 17 : 7), uint32_t(side * 6), 6, 1, {}});
+    }
+    ranges->Geometry.UpdateBounds();
+    ranges->Definition.Slots.push_back(
+        {17, "Independent second slot", "Native/Direct_v1/Surface.hmat"});
+    auto red = CreateRef<MaterialDefinition>(), blue = CreateRef<MaterialDefinition>();
+    red->Model = blue->Model = MaterialModel::Unlit;
+    red->BaseColor = {.5f, 0, 0, 1};
+    blue->BaseColor = {0, 0, .5f, 1};
+    frame.Meshes[0].Geometry = ranges;
+    frame.Meshes[0].Materials = {red, blue};
+    render();
+    NearRGB(view.Radiance->ReadColorPixel(0, 32, 64), {.5, 0, 0}, 1e-6,
+            "First material primitive range");
+    NearRGB(view.Radiance->ReadColorPixel(0, 96, 64), {0, 0, .5}, 1e-6,
+            "Nonzero indexed offset / second material primitive range");
+    Check(display->ReadPixel(1, 32, 64) == 123 && display->ReadPixel(1, 96, 64) == 123,
+          "Primitive ranges lost shared entity identity");
+    frame.Meshes[0].Geometry = mesh.Accepted;
+    frame.Meshes[0].Materials = {material};
     // Real indexed depth: mask discard reveals a separately identified rear instance.
     auto rearMaterial = CreateRef<MaterialDefinition>();
     rearMaterial->Model = MaterialModel::Unlit;
