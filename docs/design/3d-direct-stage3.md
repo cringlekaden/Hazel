@@ -7,7 +7,7 @@ workspace are `/Volumes/External/kadencringle/Projects/Hazel` and
 ## Contracts
 
 `SceneRenderer::Collect` produces common semantic camera, accepted mesh/material,
-world transform, stable-slot, entity-picking and directional-light inputs. Both
+world/normal transforms and handedness, stable-slot, entity-picking and directional-light inputs. Both
 Scene camera paths consume that submission. CPU documents and import code know
 nothing about GL programs or texture units. `ProjectAssets` realizes accepted
 immutable geometry lazily through typed indexed vertex/index resources (64-entry,
@@ -37,7 +37,9 @@ exposure multiplies all world radiance by `2^EV`, followed by fixed
 [Khronos PBR Neutral](https://modelviewer.dev/examples/tone-mapping/) into the
 linear display composite. FP32 preserves sharp conductor highlights beyond the
 65504 half-float limit. Screen UI composes afterward, independent of exposure.
-Depth and picking copy at equal pixel extent with nearest semantics. Existing
+Depth copies at equal pixel extent with nearest semantics; integer picking uses
+exact texel fetches in the presentation pass. M4 rejected the matching R32I blit,
+so no filtered/converted color path is used for IDs. Existing
 final sRGB encoding runs once; ImGui's own contract is unchanged.
 
 Presentation mode/exposure/background and light values are authored and included
@@ -69,3 +71,34 @@ codecs, repeated by all grid instances; native cube diagnoses mirrored/nonunifor
 scale. No expected lighting image substitutes for an unimplemented environment.
 
 Qualification and completion status will be filled from actual results.
+
+
+Viewport base/normal/tangent/material-channel inspection and SDR-clamped raw
+radiance are private workspace tools. Inspection bypasses tone mapping/exposure;
+normal player presentation remains unchanged. The additive SurfaceConventions
+case includes mapped +Y normals, mirrored/nonuniform instances, asymmetric
+mask/double-sided material, rear geometry and a frozen Stage-2 COLOR0/tangent mesh.
+Its conditions are in a separate Surfaces/outputs.json.
+
+## Checkout consolidation and Stage 2 closure
+
+The sole worktree is the original Hazel directory on feature/3d-foundations.
+Temporary and nested retired worktrees were inspected and removed normally.
+Useful prior logs/archives are retained under ignored build/historical-evidence;
+clean retired submodule Git repositories remain under .git for recovery. No build
+cache was copied into the canonical checkout. Pins/vendors remain unchanged.
+
+The owner's exact LastLightkeeper drafts are recoverable at local commit bfbce81
+on preserve/lastlightkeeper-owner-20261106. Commit 310a4d3 reconciles the scene's
+307 explicit default fields with Stage-1 schema/linear RGB. The project draft had
+no semantic value delta; its current Stage-1 defaults remain. Existing converted
+colors were retained byte-for-byte. Native project/scene validation passed. Finder
+files remain untracked; personal saves/preferences/layouts and Xcode schemes were
+retained. Tests use disposable profiles/projects.
+
+Completed CI 42158669043 at 623b90b passed Linux and hosted macOS checks. Windows
+built both configurations and passed both extracted-archive profiles, including
+the path/UTF-8 repair, native import/reimport and content-only package contracts.
+Its later frozen-artifact CRLF failure is repaired by 6d7c478 byte-preservation
+attributes. The historical Windows Debug gameplay timeout was not reached there;
+it is separate unresolved debt. No timeout or retry policy was changed.

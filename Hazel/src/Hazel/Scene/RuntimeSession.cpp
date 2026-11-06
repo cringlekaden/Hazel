@@ -36,7 +36,8 @@ namespace Hazel {
     void RuntimeSession::Validate(const Ref<Scene>& scene, bool validateScripts, bool requireRendering) {
         if (!scene) throw std::runtime_error("No scene to run");
         scene->ValidateMeshes();
-        if(requireRendering)scene->ValidateRendering();
+        if (requireRendering)
+            scene->ValidateRendering();
         scene->Presentation().Validate();
         scene->ValidateSprites();
         scene->ValidateUI();
@@ -165,7 +166,8 @@ namespace Hazel {
             for(auto key:{Key::LeftShift,Key::RightShift,Key::LeftControl,Key::RightControl,Key::LeftAlt,Key::RightAlt,Key::LeftSuper,Key::RightSuper})sample.Keys[key]=Input::IsKeyPressed(key);
             sample.Mouse[size_t(m_UIAdapter.Bindings().PointerButton)]=Input::IsMouseButtonPressed(MouseCode(m_UIAdapter.Bindings().PointerButton));
             RouteUIInput(sample,timestep.GetSeconds(),m_InputEnabled);
-            m_Scene->OnUpdateRuntime(timestep,&m_View,m_Display); m_Updating = false;
+            m_Scene->OnUpdateRuntime(timestep, &m_View, m_Display);
+            m_Updating = false;
         }
         catch (...) { m_Updating = false; throw; }
     }

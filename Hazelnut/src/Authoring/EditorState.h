@@ -31,7 +31,7 @@ namespace Hazel {
         EditorNavigation Navigation=EditorNavigation::Orbit;
         glm::vec2 PlanarFocus{0};
         float PlanarSize=10;
-        int Gizmo=-1;
+        int Gizmo = -1, SurfaceView = 0;
         bool Grid=true, HasNavigation=false;
         bool SheetVisible = false, PrefabVisible = false;
         std::map<std::string, bool> Sections;

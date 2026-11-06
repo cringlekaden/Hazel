@@ -1,17 +1,17 @@
+#include "DirectRenderingReference.h"
+#include "Hazel/Assets/NativeStarter.h"
+#include "Hazel/Assets/SpriteSheet.h"
+#include "Hazel/Core/FileDocument.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Core/Log.h"
+#include "Hazel/Core/OperationProgress.h"
 #include "Hazel/Core/Resources.h"
-#include "Hazel/Core/FileDocument.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Project/ProjectCreation.h"
-#include "Hazel/Assets/SpriteSheet.h"
 #include "Hazel/Scene/SceneSerializer.h"
-#include <chrono>
-#include "RenderingReference.h"
-#include "DirectRenderingReference.h"
 #include "Import.h"
-#include "Hazel/Assets/NativeStarter.h"
-#include "Hazel/Core/OperationProgress.h"
+#include "RenderingReference.h"
+#include <chrono>
 #include <iostream>
 #include <map>
 #include <set>
@@ -62,7 +62,13 @@ int main(int argc, char **argv) {
             Hazel::Import::Cancel cancelled=[&]{return !cancelFile.empty()&&std::filesystem::exists(cancelFile);};Hazel::Import::Result result;
             if(reimport)result=Hazel::Import::ReimportGLB(project->GetAssetRoot(),std::filesystem::u8path(args[3]),cancelled);
             else result=Hazel::Import::ImportGLB({project->GetAssetRoot(),std::filesystem::absolute(std::filesystem::u8path(args[3])),std::filesystem::u8path(args[4]),scene,cancelled});
-            std::cout<<"IMPORTED "<<result.Manifest.generic_u8string()<<"\nPREFAB "<<result.Prefab.generic_u8string()<<"\nGeneration "<<Hazel::AssetKey(result.Generation)<<(result.Unchanged?" (unchanged)":" (accepted)")<<"\nNative authoring ready; lit meshes require scene-referred presentation and a directional light\n";return 0;
+            std::cout << "IMPORTED " << result.Manifest.generic_u8string() << "\nPREFAB "
+                      << result.Prefab.generic_u8string() << "\nGeneration "
+                      << Hazel::AssetKey(result.Generation)
+                      << (result.Unchanged ? " (unchanged)" : " (accepted)")
+                      << "\nNative authoring ready; lit meshes require scene-referred presentation "
+                         "and a directional light\n";
+            return 0;
         }
         if(args.size()==4 && args[1]=="measure-scene") {
             Hazel::Log::Init();const auto project=Hazel::Project::LoadCandidate(std::filesystem::u8path(args[2]));
@@ -112,8 +118,25 @@ int main(int argc, char **argv) {
             Hazel::SaveSpriteSheet(root,reference,sheet,Hazel::WriteMode::CreateNew);
             std::cout<<"Created native editable sheet: "<<reference.generic_u8string()<<" ("<<sheet.Regions.size()<<" regions)\n";return 0;
         }
-        if(args.size()==4&&args[1]=="add-direct-reference"){Hazel::Log::Init();AddDirectRenderingReference(std::filesystem::u8path(args[2]),std::filesystem::u8path(args[3]));return 0;}
-        if(args.size()==3&&args[1]=="generate-native-starter"){Hazel::Log::Init();Hazel::NativeStarter::Generate(std::filesystem::u8path(args[2]));return 0;}
+        if (args.size() == 3 && args[1] == "add-direct-surfaces")
+        {
+            Hazel::Log::Init();
+            AddDirectSurfaceReference(std::filesystem::u8path(args[2]));
+            return 0;
+        }
+        if (args.size() == 4 && args[1] == "add-direct-reference")
+        {
+            Hazel::Log::Init();
+            AddDirectRenderingReference(std::filesystem::u8path(args[2]),
+                                        std::filesystem::u8path(args[3]));
+            return 0;
+        }
+        if (args.size() == 3 && args[1] == "generate-native-starter")
+        {
+            Hazel::Log::Init();
+            Hazel::NativeStarter::Generate(std::filesystem::u8path(args[2]));
+            return 0;
+        }
         if(args.size()==4 && args[1]=="create-rendering-reference") {
             Hazel::Log::Init();const auto templates=std::filesystem::u8path(args[3]);
             Hazel::Resources::Configure(Hazel::Resources::Defaults("HazelProject",{templates.parent_path(),{}, {}}));
@@ -127,7 +150,12 @@ int main(int argc, char **argv) {
             std::cout << "Validated native project schema\n";
             return 0;
         }
-        bool direct=false;if(args.size()==12&&args[10]=="--preset"&&args[11]=="direct-pbr"){direct=true;args.resize(10);}
+        bool direct = false;
+        if (args.size() == 12 && args[10] == "--preset" && args[11] == "direct-pbr")
+        {
+            direct = true;
+            args.resize(10);
+        }
         if (args.size() != 10 || args[1] != "create")
             throw std::runtime_error(Usage);
         std::map<std::string, std::string> values;
@@ -142,7 +170,7 @@ int main(int argc, char **argv) {
         Hazel::ProjectCreateRequest request{values["--name"], values["--identifier"],
                                             std::filesystem::u8path(values["--destination"]),
                                             std::filesystem::u8path(values["--templates"])};
-        request.DirectPBR=direct;
+        request.DirectPBR = direct;
         const auto result = Hazel::ProjectCreation::Create(request);
         std::cout << "Created project: " << result.Descriptor.generic_u8string()
                   << "\nEditing ready; scripts intentionally not compiled\n";

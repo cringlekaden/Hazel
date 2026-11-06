@@ -513,7 +513,13 @@ void SceneHierarchyPanel::DrawUIComponent(const std::string &name,Entity entity,
     std::function<void(const std::string&)> report)
 {
     if(!m_Context || !entity.BelongsTo(m_Context.get()) || !entity || !m_Context->IsEntityValid(entity.GetUUID()))return;
-    if(!std::is_same_v<T,TextComponent> && !std::is_same_v<T,TransformComponent> && !std::is_same_v<T,SpriteRendererComponent> && !std::is_same_v<T,CircleRendererComponent> && !std::is_same_v<T,CameraComponent> && !std::is_same_v<T,MeshRendererComponent> && !std::is_same_v<T,DirectionalLightComponent> && !entity.HasComponent<UIRectComponent>()&&!entity.HasComponent<UICanvasComponent>()){
+    if (!std::is_same_v<T, TextComponent> && !std::is_same_v<T, TransformComponent> &&
+        !std::is_same_v<T, SpriteRendererComponent> &&
+        !std::is_same_v<T, CircleRendererComponent> && !std::is_same_v<T, CameraComponent> &&
+        !std::is_same_v<T, MeshRendererComponent> &&
+        !std::is_same_v<T, DirectionalLightComponent> && !entity.HasComponent<UIRectComponent>() &&
+        !entity.HasComponent<UICanvasComponent>())
+    {
         DrawComponent<T>(name,entity,sections,restore,ui,report);return;
     }
     DrawComponent<T>(name,entity,sections,restore,[&](auto &component){
@@ -1318,21 +1324,55 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             }
         });
 
-    DrawUIComponent<DirectionalLightComponent>("Directional Light",entity,m_Sections,m_RestoreSections,[&](auto& light){
-        PropertyUI::Checkbox("enabled","Enabled",light.Enabled);
-        glm::vec4 color(light.Color,1);if(PropertyUI::Color("light-color","Color",&color.x,{},false))light.Color=glm::vec3(color);
-        PropertyUI::SliderFloat("intensity","Intensity",light.Intensity,0,1000);
-        ImGui::TextWrapped("Linear RGB irradiance, relative units. Local -Z points along light travel. One enabled directional light; no ambient/IBL.");
-    });
-    DrawUIComponent<MeshRendererComponent>("Mesh Renderer",entity,m_Sections,m_RestoreSections,[&,entity](auto& c)mutable{
-        ImGui::TextWrapped("Indexed static geometry. Lit materials require scene-referred presentation; slot overrides preserve stable identities.");auto assets=m_Context->GetAssets();auto before=c.Mesh;
-        if(AssetPicker("mesh","Mesh",c.Mesh,".hmesh",assets,m_AssetPickers[ImGui::GetID("mesh-picker")],OpenAsset)&&before!=c.Mesh)c.Materials.clear();
-        if(c.Mesh.empty()||!assets)return;auto resolution=assets->Mesh(c.Mesh);PropertyUI::Validation(resolution.Error.c_str());if(!resolution.Accepted)return;auto& mesh=*resolution.Accepted;
-        ImGui::Text("%zu vertices | %zu primitives",mesh.Geometry.Vertices.size(),mesh.Geometry.Primitives.size());
-        for(auto& slot:mesh.Definition.Slots){ImGui::PushID(AssetKey(slot.ID).c_str());auto found=c.Materials.find(slot.ID);auto value=found==c.Materials.end()?std::filesystem::path{}:found->second;auto accepted=assets->Material(slot.Material);ImGui::TextWrapped("%s — default: %s",slot.Name.c_str(),accepted.Accepted?accepted.Accepted->Name.c_str():slot.Material.generic_u8string().c_str());
-            if(AssetPicker("material","Slot override",value,".hmat",assets,m_AssetPickers[ImGui::GetID("slot-picker")],OpenAsset)){if(value.empty())c.Materials.erase(slot.ID);else c.Materials[slot.ID]=value;}
-            ImGui::PopID();}
-    });
+    DrawUIComponent<DirectionalLightComponent>(
+        "Directional Light", entity, m_Sections, m_RestoreSections, [&](auto &light) {
+            PropertyUI::Checkbox("enabled", "Enabled", light.Enabled);
+            glm::vec4 color(light.Color, 1);
+            if (PropertyUI::Color("light-color", "Color", &color.x, {}, false))
+                light.Color = glm::vec3(color);
+            PropertyUI::SliderFloat("intensity", "Intensity", light.Intensity, 0, 1000);
+            ImGui::TextWrapped("Linear RGB irradiance, relative units. Local -Z points along light "
+                               "travel. One enabled directional light; no ambient/IBL.");
+        });
+    DrawUIComponent<MeshRendererComponent>(
+        "Mesh Renderer", entity, m_Sections, m_RestoreSections, [&, entity](auto &c) mutable {
+            ImGui::TextWrapped("Indexed static geometry. Lit materials require scene-referred "
+                               "presentation; slot overrides preserve stable identities.");
+            auto assets = m_Context->GetAssets();
+            auto before = c.Mesh;
+            if (AssetPicker("mesh", "Mesh", c.Mesh, ".hmesh", assets,
+                            m_AssetPickers[ImGui::GetID("mesh-picker")], OpenAsset) &&
+                before != c.Mesh)
+                c.Materials.clear();
+            if (c.Mesh.empty() || !assets)
+                return;
+            auto resolution = assets->Mesh(c.Mesh);
+            PropertyUI::Validation(resolution.Error.c_str());
+            if (!resolution.Accepted)
+                return;
+            auto &mesh = *resolution.Accepted;
+            ImGui::Text("%zu vertices | %zu primitives", mesh.Geometry.Vertices.size(),
+                        mesh.Geometry.Primitives.size());
+            for (auto &slot : mesh.Definition.Slots)
+            {
+                ImGui::PushID(AssetKey(slot.ID).c_str());
+                auto found = c.Materials.find(slot.ID);
+                auto value = found == c.Materials.end() ? std::filesystem::path{} : found->second;
+                auto accepted = assets->Material(slot.Material);
+                ImGui::TextWrapped("%s — default: %s", slot.Name.c_str(),
+                                   accepted.Accepted ? accepted.Accepted->Name.c_str()
+                                                     : slot.Material.generic_u8string().c_str());
+                if (AssetPicker("material", "Slot override", value, ".hmat", assets,
+                                m_AssetPickers[ImGui::GetID("slot-picker")], OpenAsset))
+                {
+                    if (value.empty())
+                        c.Materials.erase(slot.ID);
+                    else
+                        c.Materials[slot.ID] = value;
+                }
+                ImGui::PopID();
+            }
+        });
     DrawUIComponent<SpriteRendererComponent>(
         "Sprite Renderer", entity, m_Sections,m_RestoreSections,
         [this](auto &component)

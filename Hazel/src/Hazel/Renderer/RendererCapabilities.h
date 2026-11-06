@@ -10,7 +10,7 @@ namespace Hazel {
         std::string Vendor, Device, Driver;
         uint32_t MaxTextureSlots = 0, MaxTextureBindings = 0, MaxTextureSize = 0;
         uint32_t MaxColorAttachments = 0, MaxDrawBuffers = 0;
-        uint32_t MaxUniformBindings=0,MaxUniformBlockBytes=0,MaxVertexAttributes=0;
+        uint32_t MaxUniformBindings = 0, MaxUniformBlockBytes = 0, MaxVertexAttributes = 0;
         uint32_t MaxSamples = 0, MaxColorSamples = 0, MaxIntegerSamples = 0, MaxDepthSamples = 0;
         float MinLineWidth = 1.0f, MaxLineWidth = 1.0f;
         bool ShaderBinaries = false, DebugOutput = false, ForwardCompatible = false;

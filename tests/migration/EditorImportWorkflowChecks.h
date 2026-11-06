@@ -187,31 +187,57 @@ void ImportWorkflowUpdate()
         Check(!m_Editor.OnScenePlay(true) &&
                   m_Editor.m_ActionError.find("Scene-referred") != std::string::npos,
               "Lit imported scene bypassed scene-referred validation");
-        owner.m_ShowSceneSettings=true;owner.m_PresentationScene=0;
-        m_ImportPhase=130;m_ImportWait=2;return;
+        owner.m_ShowSceneSettings = true;
+        owner.m_PresentationScene = 0;
+        m_ImportPhase = 130;
+        m_ImportWait = 2;
+        return;
     }
-    if(m_ImportPhase==130){
-        owner.m_ScenePresentationDraft.SceneReferred=true;owner.m_ScenePresentationDraft.Exposure=0;
-        m_ImportPhase=131;return;
+    if (m_ImportPhase == 130)
+    {
+        owner.m_ScenePresentationDraft.SceneReferred = true;
+        owner.m_ScenePresentationDraft.Exposure = 0;
+        m_ImportPhase = 131;
+        return;
     }
-    if(m_ImportPhase==132){
-        auto scene=m_Editor.m_EditorScene;
-        Check(scene->Presentation().SceneReferred,"Native Scene Settings did not apply scene-referred presentation");
-        Check(owner.UndoRedo(false)&&!scene->Presentation().SceneReferred&&owner.UndoRedo(true)&&scene->Presentation().SceneReferred,"Scene presentation Undo/Redo failed");
-        auto& panel=m_Editor.m_SceneHierarchyPanel;
-        Check(panel.AddEntity("Native directional key"),"Native light entity creation failed");auto light=panel.GetSelectedEntity();
-        Check(panel.AddAuthoredComponent<DirectionalLightComponent>(light.GetUUID()),"Native light structural history failed");light=panel.GetSelectedEntity();
-        auto before=UIEditValues::Capture(light),proposed=before;proposed.Light->Intensity=3;
-        UIInspectorEditing inspector;PropertyUI::EditActivity edit;edit.Changed=edit.Committed=true;
-        Check(inspector.Edit(*scene,&owner.m_SceneHistory,light.GetUUID(),"Directional intensity",before,proposed,edit,0),"Native light property history failed");
-        Check(owner.UndoRedo(false)&&light.GetComponent<DirectionalLightComponent>().Intensity==1&&owner.UndoRedo(true)&&light.GetComponent<DirectionalLightComponent>().Intensity==3,"Light property Undo/Redo failed");
-        auto state=SceneSerializer(scene).CaptureAuthoredState();
-        Check(m_Editor.SaveScene()&&m_Editor.OpenScene(m_Editor.m_EditorScenePath)&&SceneSerializer(m_Editor.m_EditorScene).CaptureAuthoredState()==state,"Native direct settings save/reopen failed");
-        Check(m_Editor.OnScenePlay(true),"Direct imported content failed Play readiness");m_Editor.OnSceneStop();
-        Check(SceneSerializer(m_Editor.m_EditorScene).CaptureAuthoredState()==state,"Direct Play/Stop changed authored content");
-        owner.m_ShowSceneSettings=false;
+    if (m_ImportPhase == 132)
+    {
+        auto scene = m_Editor.m_EditorScene;
+        Check(scene->Presentation().SceneReferred,
+              "Native Scene Settings did not apply scene-referred presentation");
+        Check(owner.UndoRedo(false) && !scene->Presentation().SceneReferred &&
+                  owner.UndoRedo(true) && scene->Presentation().SceneReferred,
+              "Scene presentation Undo/Redo failed");
+        auto &panel = m_Editor.m_SceneHierarchyPanel;
+        Check(panel.AddEntity("Native directional key"), "Native light entity creation failed");
+        auto light = panel.GetSelectedEntity();
+        Check(panel.AddAuthoredComponent<DirectionalLightComponent>(light.GetUUID()),
+              "Native light structural history failed");
+        light = panel.GetSelectedEntity();
+        auto before = UIEditValues::Capture(light), proposed = before;
+        proposed.Light->Intensity = 3;
+        UIInspectorEditing inspector;
+        PropertyUI::EditActivity edit;
+        edit.Changed = edit.Committed = true;
+        Check(inspector.Edit(*scene, &owner.m_SceneHistory, light.GetUUID(),
+                             "Directional intensity", before, proposed, edit, 0),
+              "Native light property history failed");
+        Check(owner.UndoRedo(false) &&
+                  light.GetComponent<DirectionalLightComponent>().Intensity == 1 &&
+                  owner.UndoRedo(true) &&
+                  light.GetComponent<DirectionalLightComponent>().Intensity == 3,
+              "Light property Undo/Redo failed");
+        auto state = SceneSerializer(scene).CaptureAuthoredState();
+        Check(m_Editor.SaveScene() && m_Editor.OpenScene(m_Editor.m_EditorScenePath) &&
+                  SceneSerializer(m_Editor.m_EditorScene).CaptureAuthoredState() == state,
+              "Native direct settings save/reopen failed");
+        Check(m_Editor.OnScenePlay(true), "Direct imported content failed Play readiness");
+        m_Editor.OnSceneStop();
+        Check(SceneSerializer(m_Editor.m_EditorScene).CaptureAuthoredState() == state,
+              "Direct Play/Stop changed authored content");
+        owner.m_ShowSceneSettings = false;
         m_NativeImportAuthored = SceneSerializer(m_Editor.m_EditorScene).CaptureAuthoredState();
-        auto manifest=ReadImport(assets->Root()/m_NativeImportManifest);
+        auto manifest = ReadImport(assets->Root() / m_NativeImportManifest);
         float two = 2;
         uint32_t bits;
         std::memcpy(&bits, &two, 4);
@@ -298,7 +324,9 @@ void ImportWorkflowUpdate()
             << "PASS: native editor GLB form/job without Python/SDK, ImGui material "
                "create/property/texture assignment/save/duplicate, independent material history, "
                "mesh-slot/transform history interleaving, prefab instantiate/save/reopen, "
-               "explicit presentation readiness, native Scene Settings Apply, light/history/save/reopen/Play, native reimport/conflict feedback and retained metadata "
+               "explicit presentation readiness, native Scene Settings Apply, "
+               "light/history/save/reopen/Play, native reimport/conflict feedback and retained "
+               "metadata "
                "reload\n";
         m_Done = true;
         Application::Get().Close();
@@ -318,7 +346,11 @@ void DrawImportWorkflow()
         m_ImportWait = 2;
         return true;
     };
-    if(m_ImportPhase==131){if(activate("Scene Settings","Apply scene settings"))m_ImportPhase=132;}
+    if (m_ImportPhase == 131)
+    {
+        if (activate("Scene Settings", "Apply scene settings"))
+            m_ImportPhase = 132;
+    }
     else if (m_ImportPhase == 100)
     {
         if (activate("Document changed externally", "Cancel"))

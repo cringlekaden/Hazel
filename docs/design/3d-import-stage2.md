@@ -151,3 +151,10 @@ were not used for tests. Conflicting owner drafts remain unreconciled alongside
 the stage-1 committed counterparts. No master merge or release was performed.
 The next implementation stage is shared scene submission and direct PBR drawing,
 followed by HDR/IBL; none was begun here.
+
+
+Subsequent consolidation reconciled the owner drafts in 310a4d3 and returned
+active development to the original Hazel checkout. The preservation statements
+above describe the Stage-2 closeout, not a remaining reconciliation task. Current
+checkout, direct-rendering progress and qualification are in
+[the Stage-3 record](3d-direct-stage3.md).

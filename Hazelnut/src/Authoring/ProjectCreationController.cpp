@@ -13,8 +13,9 @@ namespace Hazel {
         if (!Require(EditorAction::CreateProject))
             return false;
         try {
-            const auto result = ProjectCreation::Create(
-                {name, identifier, destination, Resources::Resolve("Templates"),1,m_NewStarter==1});
+            const auto result =
+                ProjectCreation::Create({name, identifier, destination,
+                                         Resources::Resolve("Templates"), 1, m_NewStarter == 1});
             m_CreatedProject = result.Descriptor;
             Notify("Created native project: " + result.Descriptor.generic_u8string() +
                    ". Editing ready; scripts intentionally uncompiled.");

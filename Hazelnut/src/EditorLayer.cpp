@@ -1,19 +1,19 @@
-#include "ContentBrowserPayload.h"
-#include "UI/PropertyUI.h"
+#include "EditorLayer.h"
 #include "Authoring/AuthoringPanel.h"
 #include "Authoring/LoadingUI.h"
-#include "Hazel/Core/OperationProgress.h"
-#include "EditorLayer.h"
+#include "ContentBrowserPayload.h"
 #include "Hazel/Assets/NativeStarter.h"
-#include "Hazel/Core/Resources.h"
 #include "Hazel/Core/FileSystem.h"
+#include "Hazel/Core/OperationProgress.h"
+#include "Hazel/Core/Resources.h"
 #include "Hazel/Events/ApplicationEvent.h"
-#include "Hazel/Scene/SceneSerializer.h"
-#include "Hazel/Project/ProjectSerializer.h"
-#include "Hazel/Utils/PlatformUtils.h"
 #include "Hazel/Math/Math.h"
-#include "Hazel/Scripting/ScriptEngine.h"
+#include "Hazel/Project/ProjectSerializer.h"
 #include "Hazel/Renderer/Font.h"
+#include "Hazel/Scene/SceneSerializer.h"
+#include "Hazel/Scripting/ScriptEngine.h"
+#include "Hazel/Utils/PlatformUtils.h"
+#include "UI/PropertyUI.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -85,8 +85,10 @@ namespace Hazel {
         if (m_SceneState != SceneState::Edit) OnSceneStop();
         ClearSceneObservers();
         m_ActiveScene.reset(); m_EditorScene.reset(); m_Font.reset();
-        m_RenderView.Reset();m_Framebuffer.reset();m_ViewportOutput.reset();
-	}
+        m_RenderView.Reset();
+        m_Framebuffer.reset();
+        m_ViewportOutput.reset();
+    }
 
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
@@ -132,15 +134,15 @@ namespace Hazel {
 
                 auto selected=m_SceneHierarchyPanel.GetSelectedEntity();
                 m_ActiveScene->SetUIPreviewTarget(selected&&selected.BelongsTo(m_ActiveScene.get())?uint64_t(selected.GetUUID()):0);
-				m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera,&m_RenderView,m_Framebuffer);
-				break;
+                m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera, &m_RenderView, m_Framebuffer);
+                break;
 			}
 			case SceneState::Simulate:
 			{
 				if(m_ViewportFocused && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_EditorCamera.OnUpdate(ts);
 
-				m_ActiveScene->OnUpdateSimulation(ts, m_EditorCamera,&m_RenderView,m_Framebuffer);
-				break;
+                m_ActiveScene->OnUpdateSimulation(ts, m_EditorCamera, &m_RenderView, m_Framebuffer);
+                break;
 			}
 			case SceneState::Play:
 			{
@@ -292,6 +294,13 @@ namespace Hazel {
         if(m_SceneState!=SceneState::Play) {
             int navigation=int(m_EditorCamera.Navigation());ImGui::SetNextItemWidth(110);
             if(ImGui::Combo("##Navigation",&navigation,"Planar\0Orbit\0"))m_EditorCamera.SetNavigation(EditorNavigation(navigation));
+            ImGui::SameLine();
+            int inspect = int(m_RenderView.Debug);
+            ImGui::SetNextItemWidth(145);
+            if (ImGui::Combo("##Surface view", &inspect,
+                             "Shaded\0Base color\0World normal\0World tangent\0Metal / rough / "
+                             "AO\0Raw radiance (SDR clamp)\0"))
+                m_RenderView.Debug = SurfaceView(inspect);
             ImGui::SameLine();ImGui::Checkbox("Grid",&m_ShowGrid);ImGui::SameLine();
         }
         ImGui::SetNextItemWidth(180);
@@ -310,8 +319,10 @@ namespace Hazel {
 		uint64_t textureID = m_ViewportOutput->GetColorAttachmentRendererID();
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
         m_ViewportHovered=ImGui::IsItemHovered();
-        if(m_ActiveScene&&!m_ActiveScene->RenderError().empty()) {
-            const ImVec2 at{imageOrigin.x+8,imageOrigin.y+8};const char* text=m_ActiveScene->RenderError().c_str();
+        if (m_ActiveScene && !m_ActiveScene->RenderError().empty())
+        {
+            const ImVec2 at{imageOrigin.x + 8, imageOrigin.y + 8};
+            const char *text = m_ActiveScene->RenderError().c_str();
             const auto extent=ImGui::CalcTextSize(text);ImGui::GetWindowDrawList()->AddRectFilled({at.x-4,at.y-3},{at.x+extent.x+4,at.y+extent.y+3},IM_COL32(25,25,25,235));ImGui::GetWindowDrawList()->AddText(at,IM_COL32(255,220,130,255),text);
         }
 
@@ -677,7 +688,9 @@ namespace Hazel {
         auto candidate=CreateRef<Scene>();
         if(Project::GetActive())candidate->SetAssets(Project::GetActive()->GetAssets());
         SceneSerializer loader(candidate);
-        if(defaults.DirectStarter)NativeStarter::Ensure(Resources::Resolve("Templates"),Project::GetAssetDirectory());
+        SceneDefaults::Encode(defaults);
+        if (defaults.DirectStarter)
+            NativeStarter::Ensure(Resources::Resolve("Templates"), Project::GetAssetDirectory());
         if(!loader.DeserializeText(SceneDefaults::CreateDocument("Untitled",defaults)))
             throw std::runtime_error("Native new-scene factory: "+loader.Report().Error);
         // Only a complete validated candidate can retire the accepted document.

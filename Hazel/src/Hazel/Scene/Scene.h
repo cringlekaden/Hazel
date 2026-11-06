@@ -31,8 +31,10 @@ namespace Hazel {
     enum class ParentingState { Pending, Applied, Rejected, Expired };
     struct ParentingResult { ParentingState State = ParentingState::Expired; std::string Reason; };
 
-	class SceneRenderView;class Framebuffer;struct SceneCameraView;
-	class Scene
+    class SceneRenderView;
+    class Framebuffer;
+    struct SceneCameraView;
+    class Scene
 	{
 	public:
 		Scene();
@@ -124,7 +126,10 @@ namespace Hazel {
         void ValidateHierarchy() const;
         void ValidateMeshes() const;
         void ValidateRendering() const;
-        const std::string& RenderError() const {return m_RenderError;}
+        const std::string &RenderError() const
+        {
+            return m_RenderError;
+        }
         void CheckThread() const;
         void ValidateComponentPlacement(Entity entity, bool physics) const;
         Entity InstantiateEntity(Entity source, const TransformComponent& transform);
@@ -145,10 +150,13 @@ namespace Hazel {
 		void OnSimulationStart();
 		void OnSimulationStop();
 
-		void OnUpdateRuntime(Timestep ts,SceneRenderView* view=nullptr,const Ref<Framebuffer>& display={});
-		void OnUpdateSimulation(Timestep ts, EditorCamera& camera,SceneRenderView* view=nullptr,const Ref<Framebuffer>& display={});
-		void OnUpdateEditor(Timestep ts, EditorCamera& camera,SceneRenderView* view=nullptr,const Ref<Framebuffer>& display={});
-		void OnViewportResize(uint32_t width, uint32_t height);
+        void OnUpdateRuntime(Timestep ts, SceneRenderView *view = nullptr,
+                             const Ref<Framebuffer> &display = {});
+        void OnUpdateSimulation(Timestep ts, EditorCamera &camera, SceneRenderView *view = nullptr,
+                                const Ref<Framebuffer> &display = {});
+        void OnUpdateEditor(Timestep ts, EditorCamera &camera, SceneRenderView *view = nullptr,
+                            const Ref<Framebuffer> &display = {});
+        void OnViewportResize(uint32_t width, uint32_t height);
 
 		Entity DuplicateEntity(Entity entity);
 
@@ -236,10 +244,12 @@ namespace Hazel {
 		void OnPhysics2DStop();
 		void SynchronizePhysics2D();
 
-		void RenderScene(EditorCamera& camera,SceneRenderView* view,const Ref<Framebuffer>& display);
-        void DrawView(const SceneCameraView& camera,SceneRenderView* view,const Ref<Framebuffer>& display);
-        void DrawWorld2D(const glm::mat4& viewProjection);
-		void AdvanceAnimations(double timestep);
+        void RenderScene(EditorCamera &camera, SceneRenderView *view,
+                         const Ref<Framebuffer> &display);
+        void DrawView(const SceneCameraView &camera, SceneRenderView *view,
+                      const Ref<Framebuffer> &display);
+        void DrawWorld2D(const glm::mat4 &viewProjection);
+        void AdvanceAnimations(double timestep);
 	private:
         std::thread::id m_Thread=std::this_thread::get_id();
         Relationships m_Relationships;
@@ -256,7 +266,7 @@ namespace Hazel {
         std::string m_Name = "Untitled";
         ScenePresentation m_Presentation;
         std::string m_RenderError;
-		bool m_IsRunning = false;
+        bool m_IsRunning = false;
         bool m_Stopping = false;
         std::vector<UUID> m_PendingStart;
         std::unordered_set<UUID> m_PendingDestroy, m_Destroying;

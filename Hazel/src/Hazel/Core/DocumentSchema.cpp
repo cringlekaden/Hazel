@@ -1,17 +1,17 @@
 #include "hzpch.h"
-#include "Hazel/Renderer/Lighting.h"
-#include "Hazel/Assets/ImportedAsset.h"
-#include "Hazel/Text/TextSpanSerialization.h"
-#include "Hazel/UI/RuntimeUIConfig.h"
 #include "DocumentSchema.h"
 #include "Hazel/Assets/FontFamily.h"
+#include "Hazel/Assets/ImportedAsset.h"
 #include "Hazel/Core/OperationProgress.h"
-#include "Hazel/Project/RendererRequestsSerializer.h"
-#include "Hazel/Scripting/ScriptEngine.h"
-#include "Hazel/Project/RuntimeStorage.h"
 #include "Hazel/Project/Project.h"
-#include <set>
+#include "Hazel/Project/RendererRequestsSerializer.h"
+#include "Hazel/Project/RuntimeStorage.h"
+#include "Hazel/Renderer/Lighting.h"
+#include "Hazel/Scripting/ScriptEngine.h"
+#include "Hazel/Text/TextSpanSerialization.h"
+#include "Hazel/UI/RuntimeUIConfig.h"
 #include <cmath>
+#include <set>
 
 namespace Hazel::DocumentSchema
 {
@@ -77,9 +77,40 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
     {
         if(checked%64==0)OperationProgress::Report("Validate entity schema",checked,entities.size());
         ++checked;
-        Keys(entity, {"Entity", "TagComponent", "TransformComponent", "CameraComponent", "ScriptComponent",
-                      "DirectionalLightComponent", "MeshRendererComponent", "SpriteRendererComponent", "SpriteAnimationComponent", "CircleRendererComponent",
-                      "AudioSourceComponent", "Rigidbody2DComponent", "BoxCollider2DComponent", "CircleCollider2DComponent", "TextComponent", "Relationship", "UICanvasComponent", "UIRectComponent", "UILayoutComponent", "UITextStyleComponent", "UINineSliceComponent", "UIButtonComponent", "UIRadioGroupComponent", "UIProgressComponent", "UISliderComponent", "UIScrollViewComponent", "UIDropdownComponent", "UITabsComponent", "UITabComponent", "UITooltipComponent", "UITextEntryComponent", "UIAppearanceComponent"}, "Entity");
+        Keys(entity,
+             {"Entity",
+              "TagComponent",
+              "TransformComponent",
+              "CameraComponent",
+              "ScriptComponent",
+              "DirectionalLightComponent",
+              "MeshRendererComponent",
+              "SpriteRendererComponent",
+              "SpriteAnimationComponent",
+              "CircleRendererComponent",
+              "AudioSourceComponent",
+              "Rigidbody2DComponent",
+              "BoxCollider2DComponent",
+              "CircleCollider2DComponent",
+              "TextComponent",
+              "Relationship",
+              "UICanvasComponent",
+              "UIRectComponent",
+              "UILayoutComponent",
+              "UITextStyleComponent",
+              "UINineSliceComponent",
+              "UIButtonComponent",
+              "UIRadioGroupComponent",
+              "UIProgressComponent",
+              "UISliderComponent",
+              "UIScrollViewComponent",
+              "UIDropdownComponent",
+              "UITabsComponent",
+              "UITabComponent",
+              "UITooltipComponent",
+              "UITextEntryComponent",
+              "UIAppearanceComponent"},
+             "Entity");
         if(hierarchy) {
             auto rel=entity["Relationship"];
             Keys(rel,{"Parent","Order"},"Relationship");rel["Parent"].as<uint64_t>();rel["Order"].as<uint32_t>();
@@ -143,7 +174,18 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
             const auto gain=n["Gain"].as<float>();if(!std::isfinite(gain) || gain<0 || gain>1)throw std::runtime_error("Audio gain must be between 0 and 1");
             n["Loop"].as<bool>();n["PlayOnStart"].as<bool>();
         }
-        if(auto n=entity["DirectionalLightComponent"]){Keys(n,{"Color","Intensity","Enabled"},"DirectionalLightComponent");if(!n["Color"].IsSequence()||n["Color"].size()!=3)throw std::runtime_error("Directional color requires three linear values");DirectionalLight l;for(int i=0;i<3;++i)l.Color[i]=n["Color"][i].as<float>();l.Intensity=n["Intensity"].as<float>();l.Enabled=n["Enabled"].as<bool>();l.Validate();}
+        if (auto n = entity["DirectionalLightComponent"])
+        {
+            Keys(n, {"Color", "Intensity", "Enabled"}, "DirectionalLightComponent");
+            if (!n["Color"].IsSequence() || n["Color"].size() != 3)
+                throw std::runtime_error("Directional color requires three linear values");
+            DirectionalLight l;
+            for (int i = 0; i < 3; ++i)
+                l.Color[i] = n["Color"][i].as<float>();
+            l.Intensity = n["Intensity"].as<float>();
+            l.Enabled = n["Enabled"].as<bool>();
+            l.Validate();
+        }
         if(auto n=entity["MeshRendererComponent"])ReadMeshBinding(n);
         if (auto n = entity["CircleRendererComponent"])
         {

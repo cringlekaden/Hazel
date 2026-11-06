@@ -19,7 +19,13 @@ static void RenderingReferenceChecks() {
             FramebufferSpecification spec;spec.Width=width;spec.Height=height;spec.Attachments={FramebufferTextureFormat::RGBA16F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
             auto composite=Framebuffer::Create(spec);spec.Attachments={FramebufferTextureFormat::RGBA8};auto output=Framebuffer::Create(spec);
             RuntimeSession session;session.Resize(1280,720);session.ResizeFramebuffer(width,height);session.Start(project,authored);session.SetInput({-100,-100},false);
-            composite->Bind();auto raster=prior;raster.Viewport={0,0,width,height};raster.DepthTest=true;raster.ClipEnabled=false;raster.PickingMask=glm::bvec4(true);RenderCommand::SetRasterState(raster);
+            composite->Bind();
+            auto raster = prior;
+            raster.Viewport = {0, 0, width, height};
+            raster.DepthTest = true;
+            raster.ClipEnabled = false;
+            raster.PickingMask = glm::bvec4(true);
+            RenderCommand::SetRasterState(raster);
             RenderCommand::SetClearColor(authored->Presentation().Background);RenderCommand::Clear();composite->ClearAttachment(1,-1);session.Update(0);
             // Independent frozen projection: z=10, ortho height=10 or 45-degree FOV.
             const double worldHeight=perspective?20*std::tan(3.14159265358979323846/8):10;

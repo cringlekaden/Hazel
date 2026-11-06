@@ -239,7 +239,8 @@ inline void ImportPublicationChecks()
           "Source-free native assets lost original attribution");
     prefab->SetAssets(cache);
     RuntimeSession::Validate(prefab, false, false);
-    RuntimeSession::Validate(prefab,false); // Authored slot defaults here are genuinely unlit; Stage 3 renders them.
+    RuntimeSession::Validate(
+        prefab, false); // Authored slot defaults here are genuinely unlit; Stage 3 renders them.
     auto copy = Scene::Copy(prefab);
     Check(copy->GetAllEntitiesWith<MeshRendererComponent>().size() == 2,
           "Scene copy omitted authored mesh references");

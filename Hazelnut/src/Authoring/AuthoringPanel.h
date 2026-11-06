@@ -148,7 +148,7 @@ private:
     std::string m_PreferenceRecovery, m_PrefabReference,
         m_ProjectName, m_ScriptProject, m_SaveNamespace;
     NewSceneDefaults m_SceneDefaultsDraft;
-    int m_NewStarter=0;
+    int m_NewStarter = 0;
     ScenePresentation m_ScenePresentationDraft;
     uint64_t m_PresentationScene=0;
     bool m_ShowSceneSettings=false, m_IdentifierEdited=false;

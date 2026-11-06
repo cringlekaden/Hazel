@@ -1,0 +1,1 @@
+Original Hazel 8x8 diagnostic pixels, native authored materials and scene; Apache-2.0 (Hazel LICENSE). Normal data is +Y linear UNORM; asymmetric color/mask is sRGB with unchanged alpha. Reuses native Direct_v1 and frozen Import_v1 cooked geometry.

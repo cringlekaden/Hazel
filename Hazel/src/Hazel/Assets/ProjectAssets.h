@@ -34,8 +34,11 @@ struct FamilyResolution {
 class MeshGeometry;
 class ProjectAssets {
 public:
-    Ref<MeshGeometry> RealizeMesh(const Ref<const MeshAsset>& mesh);
-    explicit ProjectAssets(std::filesystem::path root):m_Root(std::filesystem::weakly_canonical(root)) {}
+  Ref<MeshGeometry> RealizeMesh(const Ref<const MeshAsset> &mesh);
+  explicit ProjectAssets(std::filesystem::path root)
+      : m_Root(std::filesystem::weakly_canonical(root))
+  {
+  }
     ~ProjectAssets();
     const std::filesystem::path& Root() const {return m_Root;}
     uint64_t Epoch() const {return m_Epoch;}
@@ -62,9 +65,17 @@ public:
     void Refresh(); // explicit freshness boundary before Play; no per-frame file checks
     void ImportTexture(const std::filesystem::path& source,const std::filesystem::path& destination);
 private:
-    struct GPUEntry {Ref<MeshGeometry> Resource;size_t Bytes;};
-    std::unordered_map<std::string,GPUEntry> m_GPU;size_t m_GPUBytes=0;
-    struct AssetBudget {std::atomic<size_t> Bytes{0},Versions{0};};
+  struct GPUEntry
+  {
+      Ref<MeshGeometry> Resource;
+      size_t Bytes;
+  };
+  std::unordered_map<std::string, GPUEntry> m_GPU;
+  size_t m_GPUBytes = 0;
+  struct AssetBudget
+  {
+      std::atomic<size_t> Bytes{0}, Versions{0};
+  };
     Ref<AssetBudget> m_AssetBudget=CreateRef<AssetBudget>();
     struct MeshEntry {Ref<const MeshAsset> Accepted;std::string Error;size_t Bytes=0;};
     struct MaterialEntry {Ref<const MaterialDefinition> Accepted;std::string Error;size_t Bytes=0;};

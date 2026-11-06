@@ -1,28 +1,28 @@
 #include "AuthoringPanel.h"
-#include <limits>
-#include "Hazel/Assets/ProjectAssets.h"
-#include "LoadingUI.h"
+#include "AuthoringReadiness.h"
 #include "EditorLayer.h"
+#include "Hazel/Assets/ProjectAssets.h"
+#include "Hazel/Core/BuildIdentity.h"
+#include "Hazel/Core/Resources.h"
+#include "Hazel/Project/ProjectCreation.h"
 #include "Hazel/Project/ProjectSerializer.h"
 #include "Hazel/Project/ScriptSource.h"
-#include "Hazel/Project/ProjectCreation.h"
-#include "AuthoringReadiness.h"
-#include "Hazel/Core/Resources.h"
-#include "Hazel/Core/BuildIdentity.h"
 #include "Hazel/Renderer/Renderer.h"
 #include "Hazel/Scene/Prefab.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include "Hazel/Utils/PlatformUtils.h"
 #include "Hazel/Utils/Process.h"
+#include "LoadingUI.h"
 #include "UI/PropertyUI.h"
 #include <ImGuizmo.h>
 #include <algorithm>
-#include <cmath>
 #include <cctype>
+#include <cmath>
 #include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <limits>
 #include <misc/cpp/imgui_stdlib.h>
 namespace Hazel
 {
@@ -593,17 +593,33 @@ void AuthoringPanel::Shortcuts()
         auto selected=m_Editor.m_SceneHierarchyPanel.GetSelectedEntity();
         if(selected) {
             m_Editor.m_SceneHierarchyPanel.RevealSelected();
-            glm::vec3 minimum(std::numeric_limits<float>::max()),maximum(std::numeric_limits<float>::lowest());
-            for(auto id:m_Editor.m_ActiveScene->GetSubtree(selected)) {
-                auto entity=m_Editor.m_ActiveScene->GetEntityByUUID(id);auto world=m_Editor.m_ActiveScene->GetWorldTransform(entity);
-                glm::vec3 lo(-.5f),hi(.5f);
-                if(entity.HasComponent<MeshRendererComponent>())if(auto assets=m_Editor.m_ActiveScene->GetAssets()) {
-                    auto mesh=assets->Mesh(entity.GetComponent<MeshRendererComponent>().Mesh);
-                    if(mesh.Accepted){lo=mesh.Accepted->Geometry.Bounds.Min;hi=mesh.Accepted->Geometry.Bounds.Max;}
+            glm::vec3 minimum(std::numeric_limits<float>::max()),
+                maximum(std::numeric_limits<float>::lowest());
+            for (auto id : m_Editor.m_ActiveScene->GetSubtree(selected))
+            {
+                auto entity = m_Editor.m_ActiveScene->GetEntityByUUID(id);
+                auto world = m_Editor.m_ActiveScene->GetWorldTransform(entity);
+                glm::vec3 lo(-.5f), hi(.5f);
+                if (entity.HasComponent<MeshRendererComponent>())
+                    if (auto assets = m_Editor.m_ActiveScene->GetAssets())
+                    {
+                        auto mesh = assets->Mesh(entity.GetComponent<MeshRendererComponent>().Mesh);
+                        if (mesh.Accepted)
+                        {
+                            lo = mesh.Accepted->Geometry.Bounds.Min;
+                            hi = mesh.Accepted->Geometry.Bounds.Max;
+                        }
+                    }
+                for (int i = 0; i < 8; ++i)
+                {
+                    auto point =
+                        glm::vec3(world * glm::vec4((i & 1) ? hi.x : lo.x, (i & 2) ? hi.y : lo.y,
+                                                    (i & 4) ? hi.z : lo.z, 1));
+                    minimum = glm::min(minimum, point);
+                    maximum = glm::max(maximum, point);
                 }
-                for(int i=0;i<8;++i){auto point=glm::vec3(world*glm::vec4((i&1)?hi.x:lo.x,(i&2)?hi.y:lo.y,(i&4)?hi.z:lo.z,1));minimum=glm::min(minimum,point);maximum=glm::max(maximum,point);}
             }
-            m_Editor.m_EditorCamera.FrameBounds(minimum,maximum);
+            m_Editor.m_EditorCamera.FrameBounds(minimum, maximum);
         }
     }
     if ((viewportFocused || sceneFocused) && ImGui::IsKeyPressed(ImGuiKey_Delete, false))
@@ -683,7 +699,7 @@ void AuthoringPanel::FileMenu()
                   return true;
               });
     if(ImGui::BeginMenu("New Scene with projection",bool(Availability(EditorAction::ReplaceScene)))) {
-        for(bool perspective:{false,true})if(ImGui::MenuItem(perspective?"Perspective unlit":"Orthographic unlit")) {
+        for(bool perspective:{false,true})if(ImGui::MenuItem(perspective?"Perspective":"Orthographic")) {
             auto defaults=Project::GetActive()?Project::GetActive()->GetConfig().SceneDefaults:NewSceneDefaults{};defaults.Perspective=perspective;
             Guard(OperationIntent::NewScene,[this,defaults]{m_Editor.NewScene(defaults);return true;});
         }
@@ -1074,12 +1090,29 @@ void AuthoringPanel::ProjectSettings()
     if(ImGui::CollapsingHeader("New scene defaults",ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::TextWrapped("Seeds future scenes and fresh workspaces. Existing scenes, cameras and editor views keep their own values.");
         int projection=m_SceneDefaultsDraft.Perspective?1:0;
-        if(PropertyUI::Combo("initial-projection","Camera projection",projection,"Orthographic\0Perspective\0"))m_SceneDefaultsDraft.Perspective=projection==1;
+        if (PropertyUI::Combo("initial-projection", "Camera projection", projection,
+                              "Orthographic\0Perspective\0"))
+            m_SceneDefaultsDraft.Perspective = projection == 1;
         int navigation=int(m_SceneDefaultsDraft.Navigation);
         if(PropertyUI::Combo("initial-navigation","Editor navigation",navigation,"Planar\0Orbit\0"))m_SceneDefaultsDraft.Navigation=EditorNavigation(navigation);
-        int content=m_SceneDefaultsDraft.DirectStarter?1:0;if(PropertyUI::Combo("initial-content","Starter content",content,"Unlit 2D\0Native direct PBR cube\0")){m_SceneDefaultsDraft.DirectStarter=content==1;if(content==1)m_SceneDefaultsDraft.Presentation.SceneReferred=true;}
-        int mode=m_SceneDefaultsDraft.Presentation.SceneReferred?1:0;if(PropertyUI::Combo("initial-presentation","World presentation",mode,"Display-referred\0Scene-referred (Neutral)\0")){m_SceneDefaultsDraft.Presentation.SceneReferred=mode==1;m_SceneDefaultsDraft.Presentation.Exposure=0;}
-        if(mode)PropertyUI::SliderFloat("initial-exposure","Exposure (stops)",m_SceneDefaultsDraft.Presentation.Exposure,-16,16);
+        int content = m_SceneDefaultsDraft.DirectStarter ? 1 : 0;
+        if (PropertyUI::Combo("initial-content", "Starter content", content,
+                              "Unlit 2D\0Native direct PBR cube\0"))
+        {
+            m_SceneDefaultsDraft.DirectStarter = content == 1;
+            if (content == 1)
+                m_SceneDefaultsDraft.Presentation.SceneReferred = true;
+        }
+        int mode = m_SceneDefaultsDraft.Presentation.SceneReferred ? 1 : 0;
+        if (PropertyUI::Combo("initial-presentation", "World presentation", mode,
+                              "Display-referred\0Scene-referred (Neutral)\0"))
+        {
+            m_SceneDefaultsDraft.Presentation.SceneReferred = mode == 1;
+            m_SceneDefaultsDraft.Presentation.Exposure = 0;
+        }
+        if (mode)
+            PropertyUI::SliderFloat("initial-exposure", "Exposure (stops)",
+                                    m_SceneDefaultsDraft.Presentation.Exposure, -16, 16);
         PropertyUI::Color("initial-background","Background",&m_SceneDefaultsDraft.Presentation.Background.x,{},false);
         ImGui::TextWrapped("Picker displays sRGB; stored linear RGB. New cameras use size 10 or 45 degrees, near .1/far 100 and z=10.");
         ImGui::BeginDisabled(!Availability(EditorAction::EditAsset));
@@ -1172,8 +1205,12 @@ void AuthoringPanel::NewProject()
     if(ImGui::Button("Browse parent folder")) {
         const auto dir=FileDialogs::SelectFolder();if(!dir.empty())m_Destination=(Path(dir)/m_Identifier).generic_u8string();
     }
-    PropertyUI::Combo("starter","Starter preset",m_NewStarter,"2D — sprite, world text and UI\0Direct PBR — native cube, directional light and UI\0");
-    ImGui::TextWrapped("Both starters are native content and support script-free Play. Direct PBR uses one directional key, HDR/exposure and Neutral tone mapping; no IBL. No Python, importer, baker or script SDK is needed.");
+    PropertyUI::Combo(
+        "starter", "Starter preset", m_NewStarter,
+        "2D — sprite, world text and UI\0Direct PBR — native cube, directional light and UI\0");
+    ImGui::TextWrapped("Both starters are native content and support script-free Play. Direct PBR "
+                       "uses one directional key, HDR/exposure and Neutral tone mapping; no IBL. "
+                       "No Python, importer, baker or script SDK is needed.");
     if(ImGui::CollapsingHeader("Advanced identity")) {
         if(PropertyUI::Text("identifier","Technical identifier",m_Identifier))m_IdentifierEdited=true;
         if(ImGui::SmallButton("Use suggested identifier")){m_Identifier=SceneDefaults::SuggestIdentifier(m_Name);m_IdentifierEdited=false;}

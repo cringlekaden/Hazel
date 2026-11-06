@@ -3,8 +3,8 @@
 A maintained diagnostic project, independent of showcase art direction. It uses
 native-authored scenes, the normal project asset service and the ordinary editor
 and RuntimeSession paths. No scripts need to be compiled for viewing or Play.
-This checkpoint demonstrates unlit 2D with orthographic and perspective cameras;
-it does not demonstrate mesh import, PBR or environment lighting.
+Core_v1 demonstrates unlit 2D with orthographic and perspective cameras. Additive
+Import_v1 and Direct_v1 cover native assets and direct PBR; there is no environment lighting.
 
 After building the selected configuration:
 
@@ -65,7 +65,8 @@ Open the usual project in Hazelnut. In Content Browser, open
 `Reference/Import_v1/Native/SlotsAndInstances/Import.himport` for mesh/primitive/slot
 and local-bounds metadata. **Open detached prefab** exposes the native nodes;
 **Instantiate prefab** copies independent authored nodes into the scene. Mesh
-components explicitly prevent Play until stage 3. Keep the Core_v1 scene unsaved
+instances now render with their authored materials. Lit materials need scene-referred
+presentation; select a directional key for direct lighting. Keep the Core_v1 scene unsaved
 when exploring; use a disposable project for edits.
 
 - `SlotsAndInstances`: two independent material slots; one shared mesh in three
@@ -112,3 +113,12 @@ python3 scripts/hazel.py run Nutella --config Release --project examples/Renderi
 The maintained renderer regression compares direct GPU radiance to a separate
 FP64 BRDF oracle. Runtime regression checks saved Direct_v1 through editor/player
 submission and 1x/2x picking. These are direct-only cases, not IBL acceptance.
+
+
+`RenderingReference-Direct-SurfaceConventions.hproj` adds mapped +Y normals,
+mirrored/nonuniform transforms, asymmetric masked/double-sided material, rear
+geometry and the frozen Stage-2 supplied tangent/COLOR0 mesh. Its separate
+`Surfaces/outputs.json` freezes conditions without changing the original grid.
+Viewport inspection offers base color, world normal/tangent, metallic/roughness/AO
+and SDR-clamped pre-exposure radiance. These private tools bypass world tone
+mapping and never change the authored scene or player presentation.

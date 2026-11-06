@@ -19,8 +19,8 @@ namespace Hazel {
 		static void Init();
 		static void Shutdown();
 
-		static void BeginScene(const glm::mat4& viewProjection);
-		static void BeginScene(const Camera& camera, const glm::mat4& transform);
+        static void BeginScene(const glm::mat4 &viewProjection);
+        static void BeginScene(const Camera& camera, const glm::mat4& transform);
 		static void BeginScene(const EditorCamera& camera);
 		static void BeginScene(const OrthographicCamera& camera); // TODO: Remove
 		// Ordered runs are internal rendering policy, not an author-facing option.

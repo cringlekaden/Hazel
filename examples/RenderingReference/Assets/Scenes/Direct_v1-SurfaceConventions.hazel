@@ -1,0 +1,225 @@
+SceneVersion: 3
+Scene: Direct_v1 / SurfaceConventions
+Presentation:
+  Mode: SceneReferred
+  Exposure: 0
+  Background: [0.00999999978, 0.00999999978, 0.00999999978, 1]
+Entities:
+  - Entity: 1
+    Relationship:
+      Parent: 0
+      Order: 0
+    TagComponent:
+      Tag: Frozen surface camera
+    TransformComponent:
+      Translation: [0, 0, 10]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 0.785398185
+        PerspectiveNear: 0.100000001
+        PerspectiveFar: 100
+        OrthographicSize: 10
+        OrthographicNear: -1
+        OrthographicFar: 1
+      Primary: true
+      FixedAspectRatio: false
+  - Entity: 2
+    Relationship:
+      Parent: 0
+      Order: 1
+    TagComponent:
+      Tag: Frozen direct key
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [-0.449999988, 0.600000024, 0]
+      Scale: [1, 1, 1]
+    DirectionalLightComponent:
+      Color: [1, 1, 1]
+      Intensity: 3
+      Enabled: true
+  - Entity: 10
+    Relationship:
+      Parent: 0
+      Order: 2
+    TagComponent:
+      Tag: Geometric normal
+    TransformComponent:
+      Translation: [-3, 1.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1.79999995, 1.79999995, 1.79999995]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        []
+  - Entity: 11
+    Relationship:
+      Parent: 0
+      Order: 3
+    TagComponent:
+      Tag: Mapped +Y
+    TransformComponent:
+      Translation: [0, 1.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1.79999995, 1.79999995, 1.79999995]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/Surfaces/Mapped.hmat
+  - Entity: 12
+    Relationship:
+      Parent: 0
+      Order: 4
+    TagComponent:
+      Tag: Mirrored mapped
+    TransformComponent:
+      Translation: [3, 1.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [-1.79999995, 1.79999995, 1.79999995]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/Surfaces/Mapped.hmat
+  - Entity: 13
+    Relationship:
+      Parent: 0
+      Order: 5
+    TagComponent:
+      Tag: Nonuniform mapped
+    TransformComponent:
+      Translation: [-3, -1.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [2.4000001, 1.20000005, 0.699999988]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/Surfaces/Mapped.hmat
+  - Entity: 14
+    Relationship:
+      Parent: 0
+      Order: 6
+    TagComponent:
+      Tag: Masked / double sided
+    TransformComponent:
+      Translation: [0, -1.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1.79999995, 1.79999995, 1.79999995]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials:
+        - Slot: 0000000000000007
+          Material: Reference/Direct_v1/Surfaces/Mask.hmat
+  - Entity: 15
+    Relationship:
+      Parent: 0
+      Order: 7
+    TagComponent:
+      Tag: Rear geometry through masked holes
+    TransformComponent:
+      Translation: [0, -1.5, -2]
+      Rotation: [0, 0, 0]
+      Scale: [2.4000001, 2.4000001, 2.4000001]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials:
+        - Slot: 0000000000000007
+          Material: Reference/Direct_v1/Surfaces/Mapped.hmat
+  - Entity: 40
+    Relationship:
+      Parent: 0
+      Order: 8
+    TagComponent:
+      Tag: Stage-2 supplied tangents and COLOR0
+    TransformComponent:
+      Translation: [3, -1.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Import_v1/Native/ProvidedTangents/meshes/1c9a0a2eac985c32.hmesh
+      Materials:
+        []
+  - Entity: 70
+    Relationship:
+      Parent: 0
+      Order: 9
+    TagComponent:
+      Tag: Screen UI
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    UICanvasComponent:
+      ReferenceSize: [1280, 720]
+      SafeInsets: [16, 16, 16, 16]
+      SortOrder: 0
+      Visible: true
+      Enabled: true
+      Modal: false
+      Screen:
+        Managed: false
+        InitiallyOpen: true
+        Cancel: 1
+        InitialFocus: 0
+        DefaultAction: 0
+        CancelTarget: 0
+        ReturnFocus: 0
+        EventOwner: 0
+  - Entity: 71
+    Relationship:
+      Parent: 70
+      Order: 0
+    TagComponent:
+      Tag: Surface labels
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    TextComponent:
+      TextString: "Direct_v1 / geometric - mapped +Y - mirrored / nonuniform - asymmetric mask - Stage-2 COLOR0\nUse viewport Normal / Tangent / Metal-Rough-AO inspection; scene stays unchanged."
+      FontFamily: ""
+      FontStyle: 0
+      Color: [1, 1, 1, 1]
+      Kerning: 0
+      LineSpacing: 0
+    UIRectComponent:
+      LayoutVersion: 3
+      WidthMode: 0
+      HeightMode: 0
+      FixedSize: [1230, 80]
+      MaximumSize: [0, 0]
+      HasMaximum: [false, false]
+      Anchor: [0, 0]
+      GridRow: -1
+      GridColumn: -1
+      RowSpan: 1
+      ColumnSpan: 1
+      ImageFit: 0
+      ImageAlignment: [0.5, 0.5]
+      Offset: [24, 24]
+      Pivot: [0, 0]
+      MinimumSize: [0, 0]
+      Margin: [0, 0, 0, 0]
+      Padding: [0, 0, 0, 0]
+      Visible: true
+      Enabled: true
+      ClipChildren: true
+      Flex: 0
+    UITextStyleComponent:
+      Size: 20
+      Horizontal: 0
+      Vertical: 0
+      Wrap: true
+      Overflow: Clip
+      MaxLines: 0

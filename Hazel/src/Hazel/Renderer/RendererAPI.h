@@ -9,15 +9,28 @@
 
 namespace Hazel {
 
-    enum class DepthCompare {Less,LessEqual,Always};
-    enum class CullFace {None,Back,Front};
-    struct RasterState {
-        bool DepthTest=true,DepthWrite=true,Blend=true,SRGB=false,Clockwise=false,ClipEnabled=false;
-        DepthCompare Compare=DepthCompare::Less;CullFace Cull=CullFace::None;
-        glm::ivec4 ClipRect{},Viewport{};float LineWidth=1;
-        glm::bvec4 PickingMask{true},ColorMask{true};
-    };
-
+enum class DepthCompare
+{
+    Less,
+    LessEqual,
+    Always
+};
+enum class CullFace
+{
+    None,
+    Back,
+    Front
+};
+struct RasterState
+{
+    bool DepthTest = true, DepthWrite = true, Blend = true, SRGB = false, Clockwise = false,
+         ClipEnabled = false;
+    DepthCompare Compare = DepthCompare::Less;
+    CullFace Cull = CullFace::None;
+    glm::ivec4 ClipRect{}, Viewport{};
+    float LineWidth = 1;
+    glm::bvec4 PickingMask{true}, ColorMask{true};
+};
 
     class RendererAPI
     {

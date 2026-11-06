@@ -55,7 +55,7 @@ Mac integration qualification [`631af3b`](https://github.com/cringlekaden/Hazel/
 
 The badge is **workflow-wide**. Open a run for its separate Windows/Linux Debug, Release and extracted-binary jobs and the Mac build/CPU/service/managed subset. [CI coverage](docs/development.md#canonical-ci) includes software/GL4.1 regressions, editor/tutorial authoring and relocated packages; Apple GPU qualification is local. There is no published release; [download guidance](docs/packaging.md) identifies snapshot contents and retention.
 
-The owner completed the recorded Xcode/editor acceptance and approved integration. Automated checks remain distinct from unexecuted physical checks, competent-reader typography acceptance and public signed distribution. 3D/PBR/IBL remain planned work.
+The owner completed the recorded Xcode/editor acceptance and approved integration. Automated checks remain distinct from unexecuted physical checks, competent-reader typography acceptance and public signed distribution. Native static-mesh direct PBR is available on the implementation branch; HDR environment preparation and IBL remain planned. See [Stage 3](docs/design/3d-direct-stage3.md).
 
 ## License and attribution
 

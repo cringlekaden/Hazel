@@ -1,6 +1,6 @@
 #pragma once
-#include <vector>
 #include <functional>
+#include <vector>
 
 #include "Hazel/Renderer/RendererAPI.h"
 
@@ -30,8 +30,12 @@ namespace Hazel {
         void SetLineWidth(float width) override;
         std::uint32_t GetMaxTextureSlots() const override;
     private:
-        std::vector<std::function<void()>> m_SavedStates;
-        struct {int SourceRGB=0,DestinationRGB=0,SourceAlpha=0,DestinationAlpha=0,EquationRGB=0,EquationAlpha=0;
-            bool Active=false,Text=false;} m_TextBlend;
+      std::vector<std::function<void()>> m_SavedStates;
+      struct
+      {
+          int SourceRGB = 0, DestinationRGB = 0, SourceAlpha = 0, DestinationAlpha = 0,
+              EquationRGB = 0, EquationAlpha = 0;
+          bool Active = false, Text = false;
+      } m_TextBlend;
     };
 }

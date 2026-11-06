@@ -71,11 +71,21 @@ namespace Hazel {
         ImGui::Begin("Scene Settings",&m_ShowSceneSettings);
         auto& scene=*m_Editor.m_EditorScene;
         if(m_PresentationScene!=scene.GetIdentity()){m_PresentationScene=scene.GetIdentity();m_ScenePresentationDraft=scene.Presentation();}
-        int mode=m_ScenePresentationDraft.SceneReferred?1:0;
-        if(PropertyUI::Combo("presentation-mode","World presentation",mode,"Display-referred\0Scene-referred (Neutral)\0")){m_ScenePresentationDraft.SceneReferred=mode==1;m_ScenePresentationDraft.Exposure=0;}
-        if(mode)PropertyUI::SliderFloat("scene-exposure","Exposure (stops)",m_ScenePresentationDraft.Exposure,-16,16);
+        int mode = m_ScenePresentationDraft.SceneReferred ? 1 : 0;
+        if (PropertyUI::Combo("presentation-mode", "World presentation", mode,
+                              "Display-referred\0Scene-referred (Neutral)\0"))
+        {
+            m_ScenePresentationDraft.SceneReferred = mode == 1;
+            m_ScenePresentationDraft.Exposure = 0;
+        }
+        if (mode)
+            PropertyUI::SliderFloat("scene-exposure", "Exposure (stops)",
+                                    m_ScenePresentationDraft.Exposure, -16, 16);
         PropertyUI::ReadOnly("presentation-source","Source","Authored scene; applies on Apply / Save");
-        ImGui::TextWrapped("Scene-referred world surfaces use exposure and fixed Neutral tone mapping. Screen UI stays display-linear and independent of exposure. Both camera projections are supported; direct lighting has no ambient/IBL.");
+        ImGui::TextWrapped(
+            "Scene-referred world surfaces use exposure and fixed Neutral tone mapping. Screen UI "
+            "stays display-linear and independent of exposure. Both camera projections are "
+            "supported; direct lighting has no ambient/IBL.");
         PropertyUI::Color("scene-background","Background",&m_ScenePresentationDraft.Background.x,{},false);
         const auto can=Availability(EditorAction::EditScene);ImGui::BeginDisabled(!can);
         if(ImGui::Button("Apply scene settings")) {

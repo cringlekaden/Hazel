@@ -54,9 +54,9 @@ static void AuthoredComparisonContracts() {
     changed(e.GetComponent<CircleCollider2DComponent>().Radius,.7f);
     changed(e.GetComponent<TextComponent>().TextString,std::string("Different prose"));
     changed(e.GetComponent<CircleRendererComponent>().Thickness,.5f);
-    changed(e.GetComponent<DirectionalLightComponent>().Color,glm::vec3(.2f,.4f,.6f));
-    changed(e.GetComponent<DirectionalLightComponent>().Intensity,3.f);
-    changed(e.GetComponent<DirectionalLightComponent>().Enabled,false);
+    changed(e.GetComponent<DirectionalLightComponent>().Color, glm::vec3(.2f, .4f, .6f));
+    changed(e.GetComponent<DirectionalLightComponent>().Intensity, 3.f);
+    changed(e.GetComponent<DirectionalLightComponent>().Enabled, false);
     auto& animation=e.GetComponent<SpriteAnimationComponent>();animation.Error="Preview failure";animation.Initialized=true;
     Check(serializer.CaptureAuthoredState()==baseline,"Transient preview state dirtied authored content");
     e.GetComponent<TransformComponent>().Scale.x=0;

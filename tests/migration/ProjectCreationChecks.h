@@ -1,16 +1,16 @@
 #pragma once
 #include "Authoring/AuthoringReadiness.h"
+#include "Hazel/Assets/NativeStarter.h"
+#include "Hazel/Assets/ProjectAssets.h"
 #include "Hazel/Core/FileDocument.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Core/UUID.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Project/ProjectCreation.h"
-#include "Hazel/Scene/SceneSerializer.h"
-#include "Hazel/Renderer/Color.h"
 #include "Hazel/Project/ScriptSource.h"
-#include "Hazel/Assets/NativeStarter.h"
-#include "Hazel/Assets/ProjectAssets.h"
+#include "Hazel/Renderer/Color.h"
 #include "Hazel/Scene/RuntimeSession.h"
+#include "Hazel/Scene/SceneSerializer.h"
 namespace Hazel {
     static void ProjectCreationChecks() {
         const auto root =
@@ -65,20 +65,63 @@ namespace Hazel {
         auto copy=Scene::Copy(next);Check(SceneSerializer(copy).CaptureAuthoredState()==SceneSerializer(next).CaptureAuthoredState(),"Scene copy lost authored presentation");
         Check(SceneDefaults::SuggestIdentifier("123 hello!")=="Game123hello" && SceneDefaults::SuggestIdentifier(u8"你好")=="MyGame" && ScriptSource::ValidIdentifier(SceneDefaults::SuggestIdentifier("class")),"Technical identifier suggestion is not deterministic/valid");
         auto unsupported=YAML::Load(futureScene);unsupported["Presentation"]["Mode"]="SceneReferred";
-        Check(!SceneSerializer(next).DeserializeText(YAML::Dump(unsupported),false,ResourceLoading::MetadataOnly)&&SceneSerializer(next).CaptureAuthoredState()==SceneSerializer(copy).CaptureAuthoredState(),"Incomplete scene-referred presentation published or changed accepted document");
-        NativeStarter::Generate(root/"templates");
-        auto directRequest=request;directRequest.DirectPBR=true;directRequest.Destination=root/"direct content";
-        const auto directResult=ProjectCreation::Create(directRequest);auto directProject=Project::LoadCandidate(directResult.Descriptor);
-        Check(directProject&&directProject->GetConfig().SceneDefaults.DirectStarter&&directProject->GetConfig().SceneDefaults.Presentation.SceneReferred,"Direct preset lost independent defaults");
-        auto directScene=CreateRef<Scene>();auto directAssets=CreateRef<ProjectAssets>(directProject->GetAssetRoot());
-        SceneSerializer directCodec(directScene,directProject->GetAssetRoot(),false,directAssets);
-        Check(directCodec.DeserializeText(FileDocument::Read(directProject->GetAssetRoot()/"Scenes/Start.hazel"),false,ResourceLoading::MetadataOnly),"Native direct starter metadata load");
-        RuntimeSession::Validate(directScene,false);auto directState=directCodec.CaptureAuthoredState();auto light=directScene->GetEntityByUUID(6);
-        light.GetComponent<DirectionalLightComponent>().Intensity=4;Check(directCodec.CaptureAuthoredState()!=directState,"Directional edit was omitted from exact authored state");light.GetComponent<DirectionalLightComponent>().Intensity=3;
-        auto directCopy=Scene::Copy(directScene);Check(SceneSerializer(directCopy).CaptureAuthoredState()==directState,"Copy lost direct light/presentation");
-        auto futureLight=YAML::Load(directCodec.SerializeText());futureLight["Entities"][5]["AlienLight"]=true;Check(!directCodec.DeserializeText(YAML::Dump(futureLight),false,ResourceLoading::MetadataOnly)&&directCodec.CaptureAuthoredState()==directState,"Future light data published partially");
-        directScene->Presentation().Exposure=1;auto exposure=directCodec.SerializeText();auto restored=CreateRef<Scene>();Check(SceneSerializer(restored,directProject->GetAssetRoot(),false,directAssets).DeserializeText(exposure,false,ResourceLoading::MetadataOnly)&&restored->Presentation().Exposure==1,"Scene-referred exposure round trip");
-        directScene->Presentation().SceneReferred=false;directScene->Presentation().Exposure=0;bool unsupportedDirect=false;try{RuntimeSession::Validate(directScene,false);}catch(const std::exception&){unsupportedDirect=true;}Check(unsupportedDirect,"Lit display-referred content silently accepted");
+        Check(!SceneSerializer(next).DeserializeText(YAML::Dump(unsupported), false,
+                                                     ResourceLoading::MetadataOnly) &&
+                  SceneSerializer(next).CaptureAuthoredState() ==
+                      SceneSerializer(copy).CaptureAuthoredState(),
+              "Incomplete scene-referred presentation published or changed accepted document");
+        NativeStarter::Generate(root / "templates");
+        auto directRequest = request;
+        directRequest.DirectPBR = true;
+        directRequest.Destination = root / "direct content";
+        const auto directResult = ProjectCreation::Create(directRequest);
+        auto directProject = Project::LoadCandidate(directResult.Descriptor);
+        Check(directProject && directProject->GetConfig().SceneDefaults.DirectStarter &&
+                  directProject->GetConfig().SceneDefaults.Presentation.SceneReferred,
+              "Direct preset lost independent defaults");
+        auto directScene = CreateRef<Scene>();
+        auto directAssets = CreateRef<ProjectAssets>(directProject->GetAssetRoot());
+        SceneSerializer directCodec(directScene, directProject->GetAssetRoot(), false,
+                                    directAssets);
+        Check(directCodec.DeserializeText(
+                  FileDocument::Read(directProject->GetAssetRoot() / "Scenes/Start.hazel"), false,
+                  ResourceLoading::MetadataOnly),
+              "Native direct starter metadata load");
+        RuntimeSession::Validate(directScene, false);
+        auto directState = directCodec.CaptureAuthoredState();
+        auto light = directScene->GetEntityByUUID(6);
+        light.GetComponent<DirectionalLightComponent>().Intensity = 4;
+        Check(directCodec.CaptureAuthoredState() != directState,
+              "Directional edit was omitted from exact authored state");
+        light.GetComponent<DirectionalLightComponent>().Intensity = 3;
+        auto directCopy = Scene::Copy(directScene);
+        Check(SceneSerializer(directCopy).CaptureAuthoredState() == directState,
+              "Copy lost direct light/presentation");
+        auto futureLight = YAML::Load(directCodec.SerializeText());
+        futureLight["Entities"][5]["AlienLight"] = true;
+        Check(!directCodec.DeserializeText(YAML::Dump(futureLight), false,
+                                           ResourceLoading::MetadataOnly) &&
+                  directCodec.CaptureAuthoredState() == directState,
+              "Future light data published partially");
+        directScene->Presentation().Exposure = 1;
+        auto exposure = directCodec.SerializeText();
+        auto restored = CreateRef<Scene>();
+        Check(SceneSerializer(restored, directProject->GetAssetRoot(), false, directAssets)
+                      .DeserializeText(exposure, false, ResourceLoading::MetadataOnly) &&
+                  restored->Presentation().Exposure == 1,
+              "Scene-referred exposure round trip");
+        directScene->Presentation().SceneReferred = false;
+        directScene->Presentation().Exposure = 0;
+        bool unsupportedDirect = false;
+        try
+        {
+            RuntimeSession::Validate(directScene, false);
+        }
+        catch (const std::exception &)
+        {
+            unsupportedDirect = true;
+        }
+        Check(unsupportedDirect, "Lit display-referred content silently accepted");
         const auto before = FileDocument::Read(result.Descriptor);
         bool rejected = false;
         try {

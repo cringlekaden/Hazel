@@ -1056,5 +1056,17 @@ Stage 2 implements content-only packaging, pinned producer-only GLB/Mikk
 dependencies, format-independent CPU cooking/publication, native asset codecs and
 Hazelnut material/import/prefab authoring. Local Debug/Release and relocated
 package qualification passed; canonical CI and remaining Windows limits are
-tracked in [the stage-2 record](3d-import-stage2.md). Stage 3 drawing, PBR, IBL,
-Metal and other formats remain unimplemented.
+tracked in [the stage-2 record](3d-import-stage2.md). The subsequent direct-rendering
+checkpoint is recorded below; IBL, Metal and other formats remain unimplemented.
+
+
+## Stage 3 implementation status
+
+The original Hazel checkout is canonical. Stage 3 adds shared scene/view inputs,
+accepted indexed static meshes, direct single-scattering GGX, one directional key,
+HDR exposure/fixed Neutral presentation and independent screen UI. Native creation
+has prepared direct PBR and 2D starters; native light/material/camera/scene tools,
+history and bounds framing share existing ownership. Additive Direct_v1 cases and
+independent CPU/GPU checks are recorded in [the Stage 3 record](3d-direct-stage3.md).
+Qualification status there distinguishes actual M4/CI results from pending work.
+Stage 4 environment preparation/IBL has not begun.

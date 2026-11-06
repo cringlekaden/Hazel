@@ -1,14 +1,14 @@
-// Adapted upstream framebuffer: binding-based 4.1 allocation, clearing and MSAA resolve.
 #include "hzpch.h"
+// Adapted upstream framebuffer: binding-based 4.1 allocation, clearing and MSAA resolve.
 #include "Platform/OpenGL/OpenGLFramebuffer.h"
+#include "Hazel/Core/Resources.h"
+#include "Hazel/Renderer/RenderCommand.h"
+#include "Hazel/Renderer/Shader.h"
 #include "Platform/OpenGL/OpenGLCapabilities.h"
-#include <glad/glad.h>
 #include <algorithm>
 #include <cmath>
-#include "Hazel/Renderer/Shader.h"
-#include "Hazel/Core/Resources.h"
+#include <glad/glad.h>
 #include <stdexcept>
-#include "Hazel/Renderer/RenderCommand.h"
 
 namespace Hazel {
 static const uint32_t s_MaxFramebufferSize=8192;
@@ -39,7 +39,12 @@ static void AttachColorTexture(uint32_t id,int samples,GLenum internalFormat,GLe
     BindTexture(multisampled,id);
     if (multisampled) glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,samples,internalFormat,width,height,GL_FALSE);
     else {
-        glTexImage2D(GL_TEXTURE_2D,0,internalFormat,width,height,0,format,format==GL_RED_INTEGER ? GL_INT : (internalFormat==GL_RGBA16F||internalFormat==GL_RGBA32F) ? GL_FLOAT : GL_UNSIGNED_BYTE,nullptr);
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format,
+                     format == GL_RED_INTEGER ? GL_INT
+                     : (internalFormat == GL_RGBA16F || internalFormat == GL_RGBA32F)
+                         ? GL_FLOAT
+                         : GL_UNSIGNED_BYTE,
+                     nullptr);
         const GLint filter=format==GL_RED_INTEGER ? GL_NEAREST : GL_LINEAR;
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,filter);
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,filter);
@@ -80,7 +85,10 @@ OpenGLFramebuffer::OpenGLFramebuffer(const FramebufferSpecification& spec):m_Spe
                 throw std::invalid_argument("Framebuffer has multiple depth attachments");
             m_DepthAttachmentSpecification=attachment;
         } else {
-            if (attachment.TextureFormat!=FramebufferTextureFormat::RGBA32F && attachment.TextureFormat!=FramebufferTextureFormat::RGBA16F && attachment.TextureFormat!=FramebufferTextureFormat::RGBA8 && attachment.TextureFormat!=FramebufferTextureFormat::RED_INTEGER)
+            if (attachment.TextureFormat != FramebufferTextureFormat::RGBA32F &&
+                attachment.TextureFormat != FramebufferTextureFormat::RGBA16F &&
+                attachment.TextureFormat != FramebufferTextureFormat::RGBA8 &&
+                attachment.TextureFormat != FramebufferTextureFormat::RED_INTEGER)
                 throw std::invalid_argument("Unsupported framebuffer color attachment");
             m_ColorAttachmentSpecifications.emplace_back(attachment);
         }
@@ -138,8 +146,17 @@ void OpenGLFramebuffer::Invalidate()
         Utils::CreateTextures(multisampled,m_ColorAttachments.data(),static_cast<uint32_t>(m_ColorAttachments.size()));
         for (std::size_t i=0;i<m_ColorAttachments.size();++i) {
             const bool integer=m_ColorAttachmentSpecifications[i].TextureFormat==FramebufferTextureFormat::RED_INTEGER;
-            Utils::AttachColorTexture(m_ColorAttachments[i],m_Specification.Samples,integer ? GL_R32I : m_ColorAttachmentSpecifications[i].TextureFormat==FramebufferTextureFormat::RGBA32F ? GL_RGBA32F : m_ColorAttachmentSpecifications[i].TextureFormat==FramebufferTextureFormat::RGBA16F ? GL_RGBA16F : GL_RGBA8,
-                                     integer ? GL_RED_INTEGER : GL_RGBA,m_Specification.Width,m_Specification.Height,static_cast<int>(i));
+            Utils::AttachColorTexture(m_ColorAttachments[i], m_Specification.Samples,
+                                      integer ? GL_R32I
+                                      : m_ColorAttachmentSpecifications[i].TextureFormat ==
+                                              FramebufferTextureFormat::RGBA32F
+                                          ? GL_RGBA32F
+                                      : m_ColorAttachmentSpecifications[i].TextureFormat ==
+                                              FramebufferTextureFormat::RGBA16F
+                                          ? GL_RGBA16F
+                                          : GL_RGBA8,
+                                      integer ? GL_RED_INTEGER : GL_RGBA, m_Specification.Width,
+                                      m_Specification.Height, static_cast<int>(i));
         }
         if (m_DepthAttachmentSpecification.TextureFormat!=FramebufferTextureFormat::None) {
             Utils::CreateTextures(multisampled,&m_DepthAttachment,1);
@@ -157,8 +174,17 @@ void OpenGLFramebuffer::Invalidate()
             Utils::CreateTextures(false,m_ResolveColorAttachments.data(),static_cast<uint32_t>(m_ResolveColorAttachments.size()));
             for (std::size_t i=0;i<m_ResolveColorAttachments.size();++i) {
                 const bool integer=m_ColorAttachmentSpecifications[i].TextureFormat==FramebufferTextureFormat::RED_INTEGER;
-                Utils::AttachColorTexture(m_ResolveColorAttachments[i],1,integer ? GL_R32I : m_ColorAttachmentSpecifications[i].TextureFormat==FramebufferTextureFormat::RGBA32F ? GL_RGBA32F : m_ColorAttachmentSpecifications[i].TextureFormat==FramebufferTextureFormat::RGBA16F ? GL_RGBA16F : GL_RGBA8,
-                                         integer ? GL_RED_INTEGER : GL_RGBA,m_Specification.Width,m_Specification.Height,static_cast<int>(i));
+                Utils::AttachColorTexture(m_ResolveColorAttachments[i], 1,
+                                          integer ? GL_R32I
+                                          : m_ColorAttachmentSpecifications[i].TextureFormat ==
+                                                  FramebufferTextureFormat::RGBA32F
+                                              ? GL_RGBA32F
+                                          : m_ColorAttachmentSpecifications[i].TextureFormat ==
+                                                  FramebufferTextureFormat::RGBA16F
+                                              ? GL_RGBA16F
+                                              : GL_RGBA8,
+                                          integer ? GL_RED_INTEGER : GL_RGBA, m_Specification.Width,
+                                          m_Specification.Height, static_cast<int>(i));
             }
             Utils::SetDrawBuffers(m_ResolveColorAttachments.size());
             if (glCheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE)
@@ -204,26 +230,101 @@ void OpenGLFramebuffer::EncodeOutput(const Ref<Framebuffer>& destination)
     if(!m_OutputVAO)glGenVertexArrays(1,&m_OutputVAO);glBindVertexArray(m_OutputVAO);glDrawArrays(GL_TRIANGLES,0,3);
 }
 
-glm::vec4 OpenGLFramebuffer::ReadColorPixel(uint32_t attachment,int x,int y){
-    if(attachment>=m_ColorAttachments.size()||m_ColorAttachmentSpecifications[attachment].TextureFormat==FramebufferTextureFormat::RED_INTEGER||x<0||y<0||x>=int(m_Specification.Width)||y>=int(m_Specification.Height))throw std::runtime_error("Invalid float color readback");
-    Resolve();Utils::FramebufferState state;GLint pack,alignment,oldRead,rowLength,skipRows,skipPixels;glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING,&pack);glGetIntegerv(GL_PACK_ALIGNMENT,&alignment);glGetIntegerv(GL_PACK_ROW_LENGTH,&rowLength);glGetIntegerv(GL_PACK_SKIP_ROWS,&skipRows);glGetIntegerv(GL_PACK_SKIP_PIXELS,&skipPixels);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER,m_ResolveRendererID?m_ResolveRendererID:m_RendererID);glGetIntegerv(GL_READ_BUFFER,&oldRead);glBindBuffer(GL_PIXEL_PACK_BUFFER,0);glPixelStorei(GL_PACK_ALIGNMENT,1);glPixelStorei(GL_PACK_ROW_LENGTH,0);glPixelStorei(GL_PACK_SKIP_ROWS,0);glPixelStorei(GL_PACK_SKIP_PIXELS,0);glReadBuffer(GL_COLOR_ATTACHMENT0+attachment);glm::vec4 color;glReadPixels(x,y,1,1,GL_RGBA,GL_FLOAT,&color.x);glReadBuffer(oldRead);glPixelStorei(GL_PACK_ALIGNMENT,alignment);glPixelStorei(GL_PACK_ROW_LENGTH,rowLength);glPixelStorei(GL_PACK_SKIP_ROWS,skipRows);glPixelStorei(GL_PACK_SKIP_PIXELS,skipPixels);glBindBuffer(GL_PIXEL_PACK_BUFFER,pack);return color;
+glm::vec4 OpenGLFramebuffer::ReadColorPixel(uint32_t attachment, int x, int y)
+{
+    if (attachment >= m_ColorAttachments.size() ||
+        m_ColorAttachmentSpecifications[attachment].TextureFormat ==
+            FramebufferTextureFormat::RED_INTEGER ||
+        x < 0 || y < 0 || x >= int(m_Specification.Width) || y >= int(m_Specification.Height))
+        throw std::runtime_error("Invalid float color readback");
+    Resolve();
+    Utils::FramebufferState state;
+    GLint pack, alignment, oldRead, rowLength, skipRows, skipPixels;
+    glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING, &pack);
+    glGetIntegerv(GL_PACK_ALIGNMENT, &alignment);
+    glGetIntegerv(GL_PACK_ROW_LENGTH, &rowLength);
+    glGetIntegerv(GL_PACK_SKIP_ROWS, &skipRows);
+    glGetIntegerv(GL_PACK_SKIP_PIXELS, &skipPixels);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER,
+                      m_ResolveRendererID ? m_ResolveRendererID : m_RendererID);
+    glGetIntegerv(GL_READ_BUFFER, &oldRead);
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+    glPixelStorei(GL_PACK_SKIP_ROWS, 0);
+    glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
+    glReadBuffer(GL_COLOR_ATTACHMENT0 + attachment);
+    glm::vec4 color;
+    glReadPixels(x, y, 1, 1, GL_RGBA, GL_FLOAT, &color.x);
+    glReadBuffer(oldRead);
+    glPixelStorei(GL_PACK_ALIGNMENT, alignment);
+    glPixelStorei(GL_PACK_ROW_LENGTH, rowLength);
+    glPixelStorei(GL_PACK_SKIP_ROWS, skipRows);
+    glPixelStorei(GL_PACK_SKIP_PIXELS, skipPixels);
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, pack);
+    return color;
 }
-void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination,float exposure){
-    auto target=std::dynamic_pointer_cast<OpenGLFramebuffer>(destination);
-    if(!std::isfinite(exposure)||exposure< -16||exposure>16||!target||target.get()==this||m_Specification.Samples!=1||target->m_Specification.Samples!=1||m_Specification.Width!=target->m_Specification.Width||m_Specification.Height!=target->m_Specification.Height||m_ColorAttachmentSpecifications.size()!=2||target->m_ColorAttachmentSpecifications.size()!=2||m_ColorAttachmentSpecifications[0].TextureFormat!=FramebufferTextureFormat::RGBA32F||m_ColorAttachmentSpecifications[1].TextureFormat!=FramebufferTextureFormat::RED_INTEGER||target->m_ColorAttachmentSpecifications[1].TextureFormat!=FramebufferTextureFormat::RED_INTEGER||target->m_ColorAttachmentSpecifications[0].TextureFormat!=FramebufferTextureFormat::RGBA16F||!m_DepthAttachment||!target->m_DepthAttachment)throw std::runtime_error("World presentation needs matching single-sample HDR/display color, integer ID and depth targets and exposure [-16,16]");
+void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure)
+{
+    auto target = std::dynamic_pointer_cast<OpenGLFramebuffer>(destination);
+    if (!std::isfinite(exposure) || exposure < -16 || exposure > 16 || !target ||
+        target.get() == this || m_Specification.Samples != 1 ||
+        target->m_Specification.Samples != 1 ||
+        m_Specification.Width != target->m_Specification.Width ||
+        m_Specification.Height != target->m_Specification.Height ||
+        m_ColorAttachmentSpecifications.size() != 2 ||
+        target->m_ColorAttachmentSpecifications.size() != 2 ||
+        m_ColorAttachmentSpecifications[0].TextureFormat != FramebufferTextureFormat::RGBA32F ||
+        m_ColorAttachmentSpecifications[1].TextureFormat != FramebufferTextureFormat::RED_INTEGER ||
+        target->m_ColorAttachmentSpecifications[1].TextureFormat !=
+            FramebufferTextureFormat::RED_INTEGER ||
+        target->m_ColorAttachmentSpecifications[0].TextureFormat !=
+            FramebufferTextureFormat::RGBA16F ||
+        !m_DepthAttachment || !target->m_DepthAttachment)
+        throw std::runtime_error("World presentation needs matching single-sample HDR/display "
+                                 "color, integer ID and depth targets and exposure [-16,16]");
     RenderCommand::StateScope state;
-    auto raster=RenderCommand::GetRasterState();raster.DepthTest=false;raster.DepthWrite=false;raster.Blend=false;raster.Cull=CullFace::None;raster.ClipEnabled=false;raster.SRGB=false;raster.ColorMask=glm::bvec4(true);raster.PickingMask=glm::bvec4(true);raster.Viewport={0,0,m_Specification.Width,m_Specification.Height};RenderCommand::SetRasterState(raster);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER,target->m_RendererID);const GLenum outputs[]{GL_COLOR_ATTACHMENT0,GL_COLOR_ATTACHMENT1};glDrawBuffers(2,outputs);
-    if(!m_ToneShader)m_ToneShader=Shader::Create((Resources::Get().Root/"shaders/WorldPresentation.glsl").generic_u8string());
-    if(!m_ToneParameters)m_ToneParameters=UniformBuffer::Create(16,5);glm::vec4 parameters(exposure,0,0,0);m_ToneParameters->Bind();m_ToneParameters->SetData(&parameters,16);
-    m_ToneShader->Bind();m_ToneShader->SetInt("u_World",0);m_ToneShader->SetInt("u_Picking",1);
-    glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,m_ColorAttachments[0]);glBindSampler(0,0);
-    glActiveTexture(GL_TEXTURE1);glBindTexture(GL_TEXTURE_2D,m_ColorAttachments[1]);glBindSampler(1,0);
-    if(!m_OutputVAO)glGenVertexArrays(1,&m_OutputVAO);glBindVertexArray(m_OutputVAO);glDrawArrays(GL_TRIANGLES,0,3);
+    auto raster = RenderCommand::GetRasterState();
+    raster.DepthTest = false;
+    raster.DepthWrite = false;
+    raster.Blend = false;
+    raster.Cull = CullFace::None;
+    raster.ClipEnabled = false;
+    raster.SRGB = false;
+    raster.ColorMask = glm::bvec4(true);
+    raster.PickingMask = glm::bvec4(true);
+    raster.Viewport = {0, 0, m_Specification.Width, m_Specification.Height};
+    RenderCommand::SetRasterState(raster);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->m_RendererID);
+    const GLenum outputs[]{GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    glDrawBuffers(2, outputs);
+    if (!m_ToneShader)
+        m_ToneShader = Shader::Create(
+            (Resources::Get().Root / "shaders/WorldPresentation.glsl").generic_u8string());
+    if (!m_ToneParameters)
+        m_ToneParameters = UniformBuffer::Create(16, 5);
+    glm::vec4 parameters(exposure, 0, 0, 0);
+    m_ToneParameters->Bind();
+    m_ToneParameters->SetData(&parameters, 16);
+    m_ToneShader->Bind();
+    m_ToneShader->SetInt("u_World", 0);
+    m_ToneShader->SetInt("u_Picking", 1);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_ColorAttachments[0]);
+    glBindSampler(0, 0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_ColorAttachments[1]);
+    glBindSampler(1, 0);
+    if (!m_OutputVAO)
+        glGenVertexArrays(1, &m_OutputVAO);
+    glBindVertexArray(m_OutputVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
     // IDs copy via integer texelFetch in the same pass, without filtering or conversion.
     // Native M4 rejects an otherwise matching R32I color blit; depth blits remain valid.
-    glBindFramebuffer(GL_READ_FRAMEBUFFER,m_RendererID);glBlitFramebuffer(0,0,m_Specification.Width,m_Specification.Height,0,0,m_Specification.Width,m_Specification.Height,GL_DEPTH_BUFFER_BIT,GL_NEAREST);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_RendererID);
+    glBlitFramebuffer(0, 0, m_Specification.Width, m_Specification.Height, 0, 0,
+                      m_Specification.Width, m_Specification.Height, GL_DEPTH_BUFFER_BIT,
+                      GL_NEAREST);
 }
 
 void OpenGLFramebuffer::Bind()

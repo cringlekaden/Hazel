@@ -1,5 +1,5 @@
-// Actual upstream Renderer2D adapted for owned state, complete capacity guards and backend limits.
 #include "hzpch.h"
+// Actual upstream Renderer2D adapted for owned state, complete capacity guards and backend limits.
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/Renderer2D.h"
 
@@ -254,8 +254,17 @@ namespace Hazel {
 		Font::Shutdown();
 	}
 
-    void Renderer2D::BeginScene(const glm::mat4& matrix){s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);s_Data->CameraBuffer.ViewProjection=matrix;s_Data->CameraUniformBuffer->Bind();s_Data->CameraUniformBuffer->SetData(&s_Data->CameraBuffer,sizeof(Renderer2DData::CameraData));StartBatch();}
-	void Renderer2D::BeginScene(const OrthographicCamera& camera)
+    void Renderer2D::BeginScene(const glm::mat4 &matrix)
+    {
+        s_Data->Ordered = false;
+        s_Data->ClipRect = glm::vec4(-1);
+        s_Data->CameraBuffer.ViewProjection = matrix;
+        s_Data->CameraUniformBuffer->Bind();
+        s_Data->CameraUniformBuffer->SetData(&s_Data->CameraBuffer,
+                                             sizeof(Renderer2DData::CameraData));
+        StartBatch();
+    }
+    void Renderer2D::BeginScene(const OrthographicCamera& camera)
 	{
         s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);
 		HZ_PROFILE_FUNCTION();

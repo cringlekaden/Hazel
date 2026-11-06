@@ -1,0 +1,44 @@
+Material:
+  Version: 1
+  Name: Asymmetric sRGB / mask / double-sided
+  Model: MetallicRoughness
+  BaseColor: [0.180000007, 0.400000006, 0.699999988, 1]
+  Emissive: [0, 0, 0]
+  Metallic: 0
+  Roughness: 0.5
+  NormalScale: 1
+  OcclusionStrength: 1
+  Alpha: Mask
+  AlphaCutoff: 0.5
+  DoubleSided: true
+  Textures:
+    BaseColor:
+      Image: Reference/Direct_v1/Surfaces/AsymmetricMask.tga
+      Min: Nearest
+      Mag: Nearest
+      S: Repeat
+      T: Repeat
+    MetallicRoughness:
+      Image: ""
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Normal:
+      Image: Reference/Direct_v1/Surfaces/NormalPlusY.tga
+      Min: Nearest
+      Mag: Nearest
+      S: Repeat
+      T: Repeat
+    Occlusion:
+      Image: ""
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Emissive:
+      Image: ""
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat

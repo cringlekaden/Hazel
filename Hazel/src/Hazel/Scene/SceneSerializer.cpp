@@ -342,9 +342,14 @@ namespace Hazel {
                 <<YAML::Key<<"PlayOnStart"<<YAML::Value<<a.PlayOnStart<<YAML::EndMap;
         }
 
-        if(entity.HasComponent<DirectionalLightComponent>()){
-            const auto& light=entity.GetComponent<DirectionalLightComponent>();light.Validate();
-            out<<YAML::Key<<"DirectionalLightComponent"<<YAML::Value<<YAML::BeginMap<<YAML::Key<<"Color"<<YAML::Value<<light.Color<<YAML::Key<<"Intensity"<<YAML::Value<<light.Intensity<<YAML::Key<<"Enabled"<<YAML::Value<<light.Enabled<<YAML::EndMap;
+        if (entity.HasComponent<DirectionalLightComponent>())
+        {
+            const auto &light = entity.GetComponent<DirectionalLightComponent>();
+            light.Validate();
+            out << YAML::Key << "DirectionalLightComponent" << YAML::Value << YAML::BeginMap
+                << YAML::Key << "Color" << YAML::Value << light.Color << YAML::Key << "Intensity"
+                << YAML::Value << light.Intensity << YAML::Key << "Enabled" << YAML::Value
+                << light.Enabled << YAML::EndMap;
         }
         if(entity.HasComponent<MeshRendererComponent>()) {
             out<<YAML::Key<<"MeshRendererComponent"<<YAML::Value;
@@ -656,7 +661,14 @@ namespace Hazel {
                     }
                 }
 
-                if(auto node=entity["DirectionalLightComponent"]){auto& light=deserializedEntity.AddComponent<DirectionalLightComponent>();light.Color=node["Color"].as<glm::vec3>();light.Intensity=node["Intensity"].as<float>();light.Enabled=node["Enabled"].as<bool>();light.Validate();}
+                if (auto node = entity["DirectionalLightComponent"])
+                {
+                    auto &light = deserializedEntity.AddComponent<DirectionalLightComponent>();
+                    light.Color = node["Color"].as<glm::vec3>();
+                    light.Intensity = node["Intensity"].as<float>();
+                    light.Enabled = node["Enabled"].as<bool>();
+                    light.Validate();
+                }
                 if(auto node=entity["MeshRendererComponent"])
                     static_cast<MeshBinding&>(deserializedEntity.AddComponent<MeshRendererComponent>())=ReadMeshBinding(node);
 

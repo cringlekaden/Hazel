@@ -55,7 +55,8 @@ struct UIEditValues
     template <class T> void Set(const T &value)
     {
         if constexpr (std::is_same_v<T,TransformComponent>)Transform=value;
-        else if constexpr (std::is_same_v<T,DirectionalLightComponent>)Light=static_cast<const DirectionalLight&>(value);
+        else if constexpr (std::is_same_v<T, DirectionalLightComponent>)
+            Light = static_cast<const DirectionalLight &>(value);
         else if constexpr (std::is_same_v<T,MeshRendererComponent>)Mesh=static_cast<const MeshBinding&>(value);
         else if constexpr (std::is_same_v<T,CircleRendererComponent>)Circle=value;
         else if constexpr (std::is_same_v<T,CameraComponent>) {

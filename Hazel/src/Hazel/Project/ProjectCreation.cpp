@@ -1,6 +1,6 @@
 #include "hzpch.h"
-#include "Hazel/Assets/NativeStarter.h"
 #include "ProjectCreation.h"
+#include "Hazel/Assets/NativeStarter.h"
 #include "Hazel/Core/DocumentSchema.h"
 #include "Hazel/Core/FileDocument.h"
 #include "Hazel/Core/FileSystem.h"
@@ -59,7 +59,11 @@ namespace Hazel {
             std::filesystem::create_directories(staging / "Assets" / directory);
         auto project = CreateRef<Project>();
         auto &config = project->GetConfig();
-        if(r.DirectPBR){config.SceneDefaults=SceneDefaults::DirectDefaults();NativeStarter::Ensure(r.Templates,staging/"Assets");}
+        if (r.DirectPBR)
+        {
+            config.SceneDefaults = SceneDefaults::DirectDefaults();
+            NativeStarter::Ensure(r.Templates, staging / "Assets");
+        }
         config.Name = r.Name;
         config.ScriptProject = r.Identifier;
         config.AssetDirectory = "Assets";
