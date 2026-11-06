@@ -231,16 +231,51 @@ void ImportWorkflowUpdate()
                   owner.m_ImportError.find("Reimport conflict") != std::string::npos &&
                   Read(assets->Root() / m_NativeImportManifest) == m_NativeAcceptedManifest,
               "Native conflict feedback lost accepted generation");
+        Check(owner.m_Metadata && owner.m_MetadataAccepted,
+              "Native metadata view did not pin accepted CPU resources");
+        FileSystem::WriteFileAtomically(assets->Root() / m_NativeImportManifest,
+                                        [&](auto &out) { out << "corrupt candidate manifest"; });
+        assets->Reload(m_NativeImportManifest);
+        m_ImportPhase = 16;
+        m_ImportWait = 2;
+        return;
+    }
+    if (m_ImportPhase == 16)
+    {
+        Check(!owner.m_MetadataError.empty() && owner.m_Metadata && owner.m_MetadataAccepted &&
+                  owner.m_MetadataAccepted->Generation == owner.m_Metadata->Generation,
+              "Corrupt metadata candidate retired the accepted native view");
+        FileSystem::WriteFileAtomically(assets->Root() / m_NativeImportManifest,
+                                        [&](auto &out) { out << m_NativeAcceptedManifest; });
+        m_ImportPhase = 17;
+        m_ImportWait = 2;
+        return;
+    }
+    if (m_ImportPhase == 17)
+    {
+        Check(!owner.m_MetadataError.empty(),
+              "Metadata retried filesystem reads without an explicit epoch boundary");
+        assets->Reload(m_NativeImportManifest);
+        m_ImportPhase = 18;
+        m_ImportWait = 2;
+        return;
+    }
+    if (m_ImportPhase == 18)
+    {
+        Check(owner.m_MetadataError.empty() && owner.m_MetadataAccepted,
+              "Explicit metadata reload did not accept the repaired file");
         owner.m_ShowImport = owner.m_ShowMesh = false;
         owner.m_ImportError.clear();
         owner.m_Preferences = m_ImportPreferences;
         owner.RefreshSDK();
         m_Editor.m_ActionError.clear();
         Check(glGetError() == GL_NO_ERROR, "Native import/material UI produced OpenGL errors");
-        std::cout << "PASS: native editor GLB form/job without Python/SDK, ImGui material "
-                     "create/property/texture assignment/save/duplicate, independent material history, "
-                     "mesh-slot/transform history interleaving, prefab instantiate/save/reopen, "
-                     "explicit unsupported Play and native reimport/conflict feedback\n";
+        std::cout
+            << "PASS: native editor GLB form/job without Python/SDK, ImGui material "
+               "create/property/texture assignment/save/duplicate, independent material history, "
+               "mesh-slot/transform history interleaving, prefab instantiate/save/reopen, "
+               "explicit unsupported Play, native reimport/conflict feedback and retained metadata "
+               "reload\n";
         m_Done = true;
         Application::Get().Close();
     }

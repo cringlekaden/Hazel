@@ -174,6 +174,8 @@ private:
     bool m_ShowImport=false,m_ShowMesh=false;
     std::filesystem::path m_MeshReference,m_MetadataReference,m_MetadataImport;
     std::optional<ImportManifest> m_Metadata;
+    Ref<const MeshAsset> m_MetadataAccepted;
+    std::string m_MetadataError;
     uint64_t m_MetadataEpoch=0;
     int m_MetadataMesh=0;
     TransformComponent m_InitialTransform;

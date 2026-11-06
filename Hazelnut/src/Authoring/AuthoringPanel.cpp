@@ -181,7 +181,7 @@ void AuthoringPanel::BindProject()
     m_Materials.AssetsChanged=[this]{if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->Refresh();};
     m_Materials.ReplaceDocument=[this](std::function<bool()> action){Guard(OperationIntent::OpenMaterial,std::move(action));};
     m_Materials.RequestClose=[this]{Guard(OperationIntent::CloseMaterial,[this]{m_Materials.Close();if(m_ActiveDocument==EditorDocument::Material)m_ActiveDocument=EditorDocument::Scene;return true;});};
-    m_ShowImport=m_ShowMesh=false;m_MeshReference.clear();m_ImportError.clear();m_Metadata.reset();m_MetadataReference.clear();m_MetadataEpoch=0;
+    m_ShowImport=m_ShowMesh=false;m_MeshReference.clear();m_ImportError.clear();m_Metadata.reset();m_MetadataAccepted.reset();m_MetadataError.clear();m_MetadataReference.clear();m_MetadataEpoch=0;
     if(m_Editor.m_ContentBrowserPanel){m_Editor.m_ContentBrowserPanel->CreateMaterial=[this](const auto& folder){if(Require(EditorAction::EditAsset))m_Materials.BeginCreate(folder);};m_Editor.m_ContentBrowserPanel->ImportGLB=[this](const auto& folder){BeginImport(folder);};}
     m_Styles.Bind(Project::GetActive()?Project::GetActive()->GetAssets():nullptr);
     m_Styles.Availability=availability;

@@ -287,6 +287,7 @@ Result Publish(const Request &r, ImportedSceneData d, const std::string &sourceB
     m.Generation = NewID(ids);
     m.Source = r.Destination / sourceName;
     m.SourceHash = AssetHash(sourceBytes);
+    m.SourceNotice = d.SourceNotice;
     m.Producer = d.Adapter + "/Mikk-" HZ_IMPORT_MIKK_COMMIT;
     m.Scene = r.Scene;
     m.Prefab = r.Destination / "Model.hprefab";

@@ -28,6 +28,9 @@ inline void ImportPublicationChecks()
     auto assets = root / "Assets";
     auto imported = Hazel::Import::ImportGLB({assets, source, "Imported/Diagnostic", -1, {}});
     auto manifest = ReadImport(assets / imported.Manifest);
+    Check(manifest.SourceNotice == "Original diagnostic fixture (Apache-2.0)\nHazel maintainers" &&
+              ReadImportText(WriteImportText(manifest)).SourceNotice == manifest.SourceNotice,
+          "Native import lost original attribution or multiline round trip");
     Check(manifest.Meshes.size() == 1 && manifest.Materials.size() == 2,
           "Native publication omitted outputs");
     auto original = ReadAssetBytes(assets / imported.Manifest, 4 * 1024 * 1024);
@@ -37,6 +40,15 @@ inline void ImportPublicationChecks()
     auto prefab = Prefab::Load(assets, imported.Prefab, false, ResourceLoading::MetadataOnly);
     Check(prefab->GetAllEntitiesWith<MeshRendererComponent>().size() == 2,
           "Detached imported prefab lost repeated mesh nodes");
+    Prefab::GetEntity(prefab).GetComponent<TagComponent>().Tag = "Authored prefab override";
+    write(assets / manifest.Prefab,
+          Prefab::Serialize(assets, prefab, Prefab::GetEntity(prefab), true));
+    auto authoredMesh = mesh.Definition;
+    authoredMesh.Name = "Authored mesh name";
+    authoredMesh.Slots[0].Name = "Authored slot label";
+    authoredMesh.Slots[0].Material = authoredMesh.Slots[1].Material;
+    auto meshBytes = WriteMeshText(authoredMesh);
+    write(assets / manifest.Meshes[0].Output, meshBytes);
     auto authored = ReadAssetBytes(assets / manifest.Prefab, 64 * 1024 * 1024);
     auto edited = ReadMaterial(assets / manifest.Materials[0].Output);
     edited.Roughness = .37f;
@@ -76,6 +88,8 @@ inline void ImportPublicationChecks()
     Check(ReadAssetBytes(assets / manifest.Materials[0].Output, 65536) == materialBytes &&
               ReadAssetBytes(assets / manifest.Prefab, 64 * 1024 * 1024) == authored,
           "Reimport overwrote authored material/prefab");
+    Check(ReadAssetBytes(assets / manifest.Meshes[0].Output, 4 * 1024 * 1024) == meshBytes,
+          "Reimport overwrote authored mesh name/slot label/default material");
     Check(ReadAssetBytes(assets / manifest.Meshes[0].Geometry, GeometryByteLimit) == oldGeometry,
           "Reimport removed old immutable geometry");
     const std::string first =
@@ -98,6 +112,20 @@ inline void ImportPublicationChecks()
     json = std::move(reordered);
     next = std::move(reorderedManifest);
     auto acceptedBytes = ReadAssetBytes(assets / imported.Manifest, 4 * 1024 * 1024);
+    auto removed = json;
+    auto removedAt = removed.find("," + first);
+    Check(removedAt != std::string::npos, "Slot removal fixture missing");
+    removed.erase(removedAt, first.size() + 1);
+    write(sourceOwned, ImportGLB(removed, changed));
+    rejects([&] { ReimportGLB(assets, imported.Manifest); });
+    auto ambiguous = json;
+    auto ambiguousAt = ambiguous.find("\"material\":0");
+    ambiguous.replace(ambiguousAt, std::strlen("\"material\":0"), "\"material\":1");
+    write(sourceOwned, ImportGLB(ambiguous, changed));
+    rejects([&] { ReimportGLB(assets, imported.Manifest); });
+    Check(ReadAssetBytes(assets / imported.Manifest, 4 * 1024 * 1024) == acceptedBytes &&
+              ReadAssetBytes(assets / manifest.Meshes[0].Output, 4 * 1024 * 1024) == meshBytes,
+          "Ambiguous/removal reimport changed accepted slots or authored mesh defaults");
     auto extra = json;
     extra.insert(extra.size() - 1, ",\"extras\":{\"publicationProbe\":1}");
     write(sourceOwned, ImportGLB(extra, changed));
@@ -207,6 +235,8 @@ inline void ImportPublicationChecks()
     Check(ReadMeshAsset(assets, next.Meshes[0].Output).Generation == next.Generation,
           "Runtime mesh decoding required original GLB/source access");
     AuditMesh(assets, next.Meshes[0].Output);
+    Check(ReadImport(assets / imported.Manifest).SourceNotice == manifest.SourceNotice,
+          "Source-free native assets lost original attribution");
     prefab->SetAssets(cache);
     RuntimeSession::Validate(prefab, false, false);
     rejects([&] { RuntimeSession::Validate(prefab, false); });

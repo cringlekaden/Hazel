@@ -24,6 +24,11 @@ alpha is unchanged. Sampler state belongs to each binding.
 
 `.hgeom` version 1 encodes little-endian IEEE754 scalar fields, checked contiguous
 offsets/counts/stride, mesh/slot IDs, local bounds and SHA256 payload integrity.
+Original source copyright/attribution, when present, is bounded UTF-8
+`SourceNotice` in the accepted manifest and visible in native import metadata;
+it travels with cooked assets without the original source. Separate source
+license files belong with the project asset notices.
+
 No native structs, pointers or GL identities are serialized. Mesh slots have
 independent persistent IDs. `.hmat` version 1 is a fixed typed metallic/roughness
 or explicit unlit vocabulary with Opaque/Mask alpha. These are authored material

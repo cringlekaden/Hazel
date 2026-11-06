@@ -121,33 +121,64 @@ void AuthoringPanel::ImportAssets()
         try
         {
             auto assets = Project::GetActive()->GetAssets();
-            if (!m_Metadata || m_MetadataReference != m_MeshReference ||
-                m_MetadataEpoch != assets->Epoch())
+            if (m_MetadataReference != m_MeshReference || m_MetadataEpoch != assets->Epoch())
             {
-                auto reference = m_MeshReference;
-                auto import =
-                    reference.extension() == ".himport"
-                        ? reference
-                        : ReadMesh(Project::ResolveOwnedAsset(assets->Root(), reference)).Import;
-                auto candidate = ReadImport(Project::ResolveOwnedAsset(assets->Root(), import));
-                m_MetadataMesh = 0;
-                for (size_t i = 0; i < candidate.Meshes.size(); ++i)
-                    if (candidate.Meshes[i].Output == reference)
-                        m_MetadataMesh = int(i);
-                m_Metadata = std::move(candidate);
-                m_MetadataReference = reference;
-                m_MetadataImport = import;
+                const bool different = m_MetadataReference != m_MeshReference;
+                uint64_t selected =
+                    !different && m_Metadata ? m_Metadata->Meshes[size_t(m_MetadataMesh)].ID : 0;
+                if (different)
+                {
+                    m_Metadata.reset();
+                    m_MetadataAccepted.reset();
+                    m_MetadataImport.clear();
+                }
+                m_MetadataReference = m_MeshReference;
                 m_MetadataEpoch = assets->Epoch();
+                m_MetadataError.clear();
+                try
+                {
+                    auto reference = m_MeshReference;
+                    auto import =
+                        reference.extension() == ".himport"
+                            ? reference
+                            : ReadMesh(Project::ResolveOwnedAsset(assets->Root(), reference))
+                                  .Import;
+                    auto candidate = ReadImport(Project::ResolveOwnedAsset(assets->Root(), import));
+                    int choice = 0;
+                    for (size_t i = 0; i < candidate.Meshes.size(); ++i)
+                        if (candidate.Meshes[i].Output == reference ||
+                            candidate.Meshes[i].ID == selected)
+                            choice = int(i);
+                    m_Metadata = std::move(candidate);
+                    m_MetadataImport = import;
+                    m_MetadataMesh = choice;
+                }
+                catch (const std::exception &e)
+                {
+                    m_MetadataError = std::string(e.what()).substr(0, 1024);
+                }
             }
+            if (ImGui::Button("Refresh metadata"))
+                assets->Refresh();
+            PropertyUI::Validation(m_MetadataError.c_str());
+            if (!m_Metadata)
+                throw std::runtime_error(
+                    "No accepted import metadata; correct the reported file and Refresh metadata");
             auto &manifest = *m_Metadata;
             PropertyUI::ReadOnly("manifest", "Import", m_MetadataImport.generic_u8string().c_str());
             PropertyUI::ReadOnly("source", "Owned source",
                                  manifest.Source.generic_u8string().c_str());
             PropertyUI::ReadOnly("generation", "Accepted generation",
                                  AssetKey(manifest.Generation).c_str());
+            if (!manifest.SourceNotice.empty() && ImGui::TreeNode("Source copyright / attribution"))
+            {
+                ImGui::TextWrapped("%s", manifest.SourceNotice.c_str());
+                ImGui::TreePop();
+            }
             ImGui::TextWrapped("Geometry metadata only. Instances share mesh resources. Mesh "
                                "drawing and picking arrive in stage 3.");
-            ImGui::BeginDisabled(!Availability(EditorAction::StartTool) || m_Tools.Busy());
+            ImGui::BeginDisabled(!Availability(EditorAction::StartTool) || m_Tools.Busy() ||
+                                 !m_MetadataError.empty());
             if (ImGui::Button("Reimport owned source"))
                 StartImport(true, m_MetadataImport);
             ImGui::EndDisabled();
@@ -176,6 +207,7 @@ void AuthoringPanel::ImportAssets()
             }
             auto &output = manifest.Meshes[size_t(m_MetadataMesh)];
             auto resolution = assets->Mesh(output.Output);
+            m_MetadataAccepted = resolution.Accepted;
             PropertyUI::Validation(resolution.Error.c_str());
             if (resolution.Accepted)
             {

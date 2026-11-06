@@ -62,6 +62,7 @@ struct ImportManifest
     uint64_t ID = 0, Generation = 0, PrefabRoot = 0;
     std::filesystem::path Source, Prefab;
     std::string SourceHash, PrefabSource, PrefabAcceptedHash, Producer;
+    std::string SourceNotice; // Original attribution travels without source/parser access.
     int Scene = -1;
     std::vector<ImportMesh> Meshes;
     std::vector<ImportMaterial> Materials;

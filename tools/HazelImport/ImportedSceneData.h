@@ -38,7 +38,8 @@ struct ImportedNodeData
 };
 struct ImportedSceneData
 {
-    std::string Adapter; // actual parser/adapter revision, producer provenance only
+    std::string Adapter;      // actual parser/adapter revision, producer provenance only
+    std::string SourceNotice; // Owned original copyright/attribution, not a parser view.
     std::vector<ImportedImageData> Images;
     std::vector<ImportedMaterialData> Materials;
     std::vector<ImportedMeshData> Meshes;

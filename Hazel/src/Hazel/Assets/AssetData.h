@@ -16,6 +16,7 @@ std::string ReadAssetBytes(const std::filesystem::path &path, size_t limit);
 void AssetPath(const std::filesystem::path &path, const char *extension = nullptr,
                bool optional = false);
 void AssetName(const std::string &name);
+void AssetNotice(const std::string &notice); // UTF-8 attribution, up to 64 KiB; preserves lines.
 std::string AssetKey(uint64_t key);
 uint64_t ReadAssetKey(const std::string &text);
 } // namespace Hazel

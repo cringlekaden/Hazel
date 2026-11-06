@@ -82,6 +82,7 @@ void CheckCancelled(const Cancel &cancel)
 void ValidateImported(const ImportedSceneData &d)
 {
     AssetName(d.Adapter);
+    AssetNotice(d.SourceNotice);
     Require(!d.Meshes.empty() && d.Meshes.size() <= 1024 && d.Materials.size() <= 4096 &&
                 d.Images.size() <= 1024 && d.Nodes.size() <= 9999 && !d.Roots.empty(),
             "Imported scene exceeds supported counts or has no geometry/roots");

@@ -173,6 +173,15 @@ void AssetName(const std::string &name)
         if (uint8_t(c) < 32 || uint8_t(c) == 127)
             throw std::runtime_error("Asset name contains a control character");
 }
+void AssetNotice(const std::string &notice)
+{
+    if (notice.size() > 65536)
+        throw std::runtime_error("Source notice exceeds the 64 KiB attribution limit");
+    UTF8::Validate(notice);
+    for (auto c : notice)
+        if ((uint8_t(c) < 32 && c != '\n' && c != '\r' && c != '\t') || uint8_t(c) == 127)
+            throw std::runtime_error("Source notice contains a non-text control character");
+}
 std::string AssetKey(uint64_t key)
 {
     if (!key)

@@ -9,6 +9,8 @@ inline void ImportCookingChecks()
     auto [json, bin] = ImportFixture();
     auto bytes = ImportGLB(json, bin);
     auto data = ReadGLB(bytes, -1);
+    Check(data.SourceNotice == "Original diagnostic fixture (Apache-2.0)\nHazel maintainers",
+          "GLB copyright did not cross the owned adapter boundary");
     Check(data.Meshes.size() == 1 && data.Meshes[0].Primitives.size() == 2 &&
               data.Nodes.size() == 2 && data.Nodes[0].Mesh == data.Nodes[1].Mesh &&
               data.Nodes[1].Scale.x == -1,

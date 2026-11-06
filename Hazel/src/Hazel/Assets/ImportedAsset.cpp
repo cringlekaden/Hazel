@@ -62,6 +62,7 @@ void MeshDefinition::Validate() const
 void ImportManifest::Validate() const
 {
     AssetName(Producer);
+    AssetNotice(SourceNotice);
     Key(ID);
     Key(Generation);
     Key(PrefabRoot);
@@ -170,11 +171,13 @@ ImportManifest ReadImportText(const std::string &bytes)
     DocumentSchema::Keys(n,
                          {"Version", "Recipe", "ID", "Generation", "Source", "SourceHash", "Scene",
                           "Prefab", "PrefabSource", "PrefabAcceptedHash", "Meshes", "Materials",
-                          "PrefabRoot", "Nodes", "Producer"},
+                          "PrefabRoot", "Nodes", "Producer", "SourceNotice"},
                          "Import");
     Check(n["Recipe"].as<std::string>() == "StaticMesh_v1", "Unsupported import cooking recipe");
     ImportManifest d;
     d.Producer = n["Producer"].as<std::string>();
+    if (n["SourceNotice"])
+        d.SourceNotice = n["SourceNotice"].as<std::string>();
     d.ID = ReadAssetKey(n["ID"].as<std::string>());
     d.PrefabRoot = ReadAssetKey(n["PrefabRoot"].as<std::string>());
     d.Generation = ReadAssetKey(n["Generation"].as<std::string>());
@@ -240,6 +243,8 @@ std::string WriteImportText(const ImportManifest &d)
     Field(o, "Version") << 1;
     Field(o, "Recipe") << "StaticMesh_v1";
     Field(o, "Producer") << d.Producer;
+    if (!d.SourceNotice.empty())
+        Field(o, "SourceNotice") << d.SourceNotice;
     Field(o, "ID") << AssetKey(d.ID);
     Field(o, "Generation") << AssetKey(d.Generation);
     Field(o, "PrefabRoot") << AssetKey(d.PrefabRoot);

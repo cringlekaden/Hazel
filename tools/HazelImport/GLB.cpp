@@ -20,16 +20,25 @@ uint32_t U32(std::string_view b, size_t at)
     return uint32_t(uint8_t(b[at])) | (uint32_t(uint8_t(b[at + 1])) << 8) |
            (uint32_t(uint8_t(b[at + 2])) << 16) | (uint32_t(uint8_t(b[at + 3])) << 24);
 }
-const char* ParserReason(tg3_error_code code)
+const char *ParserReason(tg3_error_code code)
 {
-    switch(code){
-    case TG3_ERR_INVALID_INDEX:return "out-of-range source index; inspect node/accessor/material references";
-    case TG3_ERR_INVALID_ACCESSOR:return "invalid accessor shape/count/offset/stride or byte range";
-    case TG3_ERR_INVALID_BUFFER:case TG3_ERR_BUFFER_SIZE_MISMATCH:return "embedded buffer byte length/range mismatch";
-    case TG3_ERR_INVALID_BUFFER_VIEW:return "invalid bufferView offset/length/stride";
-    case TG3_ERR_INVALID_IMAGE:return "invalid embedded image bufferView/MIME";
-    case TG3_ERR_OUT_OF_MEMORY:return "parser allocation budget exceeded";
-    default:return "invalid source schema; check required fields, types and declared ranges";
+    switch (code)
+    {
+    case TG3_ERR_INVALID_INDEX:
+        return "out-of-range source index; inspect node/accessor/material references";
+    case TG3_ERR_INVALID_ACCESSOR:
+        return "invalid accessor shape/count/offset/stride or byte range";
+    case TG3_ERR_INVALID_BUFFER:
+    case TG3_ERR_BUFFER_SIZE_MISMATCH:
+        return "embedded buffer byte length/range mismatch";
+    case TG3_ERR_INVALID_BUFFER_VIEW:
+        return "invalid bufferView offset/length/stride";
+    case TG3_ERR_INVALID_IMAGE:
+        return "invalid embedded image bufferView/MIME";
+    case TG3_ERR_OUT_OF_MEMORY:
+        return "parser allocation budget exceeded";
+    default:
+        return "invalid source schema; check required fields, types and declared ranges";
     }
 }
 struct Framing
@@ -349,7 +358,9 @@ ImportedSceneData ReadGLB(std::string_view bytes, int scene, const Cancel &cance
                       bytes.size(), nullptr, 0, &options);
     // Never read upstream message/json_path pointers (including under arena exhaustion).
     Require(code == TG3_OK && !owner.Errors.has_error && !hz_import_memory_failed(),
-            std::string(hz_import_memory_failed()?"parser allocation budget exceeded":ParserReason(code))+" (code "+std::to_string(unsigned(code))+")");
+            std::string(hz_import_memory_failed() ? "parser allocation budget exceeded"
+                                                  : ParserReason(code)) +
+                " (code " + std::to_string(unsigned(code)) + ")");
     const auto &m = owner.Model;
     Require(m.buffers_count == 1 && m.buffers[0].byte_length <= frame.Bin.size() &&
                 frame.Bin.size() - m.buffers[0].byte_length <= 3,
@@ -372,6 +383,8 @@ ImportedSceneData ReadGLB(std::string_view bytes, int scene, const Cancel &cance
     auto &selected = At(m.scenes, m.scenes_count, scene, "selected scene");
     ImportedSceneData d;
     d.Adapter = "GLB2/TinyGLTF-" HZ_IMPORT_TINYGLTF_COMMIT;
+    d.SourceNotice = String(m.asset.copyright);
+    AssetNotice(d.SourceNotice);
     size_t imageBytes = 0, vertexCount = 0, indexCount = 0;
     for (uint32_t i = 0; i < m.images_count; ++i)
     {

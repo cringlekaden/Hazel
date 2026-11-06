@@ -98,7 +98,8 @@ are audited even when unused. Validation failure preserves the accepted archive.
 
 Mesh/material/import documents use the same native dependency authority: accepted
 geometry artifacts, material images, mesh references and detached prefabs must be
-in the package inventory. Original GLB bytes/parser are not runtime dependencies.
+in the package inventory. Original GLB bytes/parser are not runtime dependencies. Source copyright text
+is retained in the accepted manifest; keep separate model license files with assets.
 A content-only Rendering Reference package includes both frozen Core_v1 and
 additive Import_v1 metadata; its 2D startup runs normally. Mesh components cannot
 run before stage-3 rendering exists.
