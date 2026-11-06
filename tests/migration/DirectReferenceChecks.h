@@ -1,5 +1,6 @@
 #pragma once
 #include "Hazel/Assets/AssetData.h"
+#include "Hazel/Core/FileDocument.h"
 // Both native camera paths consume the same saved, frozen Direct_v1 content.
 static void DirectReferenceChecks(){
     auto descriptor=FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT");if(descriptor.empty()){std::cout<<"NOT EXECUTED: Direct_v1 (no project selector)\n";return;}

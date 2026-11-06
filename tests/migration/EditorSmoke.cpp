@@ -1142,6 +1142,7 @@ private:
         const auto authored=SceneSerializer(scene).CaptureAuthoredState();auto& camera=e.m_EditorCamera;
         camera.RestoreOrbit({2,3,0},.2f,.3f,12);camera.RestorePlanar({-2,1},7);camera.SetNavigation(EditorNavigation::Planar);const auto planar=camera.GetViewProjection();camera.SetNavigation(EditorNavigation::Orbit);camera.SetNavigation(EditorNavigation::Planar);
         Check(camera.PlanarFocus()==glm::vec2(-2,1)&&camera.PlanarSize()==7&&camera.GetFocalPoint()==glm::vec3(2,3,0)&&camera.GetViewProjection()==planar&&camera.GetForwardDirection()==glm::vec3(0,0,-1)&&camera.GetUpDirection()==glm::vec3(0,1,0)&&SceneSerializer(scene).CaptureAuthoredState()==authored,"Navigation switching changed poses or authored scene");
+        camera.FrameBounds({-2,-1,-1},{2,1,1});Check(camera.PlanarFocus()==glm::vec2(0)&&camera.PlanarSize()>=2,"Planar bounds framing failed");camera.SetNavigation(EditorNavigation::Orbit);camera.FrameBounds({-2,-1,-1},{2,1,1});Check(camera.GetFocalPoint()==glm::vec3(0)&&camera.GetDistance()>2&&SceneSerializer(scene).CaptureAuthoredState()==authored,"Orbit bounds framing changed authored state or missed extent");
         e.m_EditorScene=original;e.m_ActiveScene=active;e.m_SceneFile=std::move(file);e.m_SceneLoad=std::move(report);e.m_EditorScenePath=path;a.m_SceneHistory=std::move(history);a.m_ActiveDocument=document;e.m_SceneHierarchyPanel.SetContext(original);e.m_SceneHierarchyPanel.SetSelectedEntity(original->GetEntityByUUID(selection));
         a.m_ShowSceneSettings=false;a.m_PresentationScene=0;e.m_ActionError.clear();
         std::cout<<"PASS: actual native Scene Settings Apply, document Undo/Redo, Save/reopen, Play/Stop and independent planar/orbit poses\n";
@@ -1176,6 +1177,16 @@ private:
         FileSystem::WriteFileAtomically(assembly,[](auto& out){out<<"invalid assembly";});
         Check(!e.ReloadScripts()&&ScriptEngine::GetEntityClass("Migration.SceneProbe")==acceptedClass,"Failed staged reload retired valid assembly/session");
         FileSystem::WriteFileAtomically(assembly,[&](auto& out){out<<good;});
+        a.m_NewStarter=1;
+        Check(a.CreateProject("Direct native content","DirectContent",m_Directory/"native direct content"),"Native direct creation required unavailable SDK/Python");
+        auto direct=e.m_EditorScene;auto directState=SceneSerializer(direct).CaptureAuthoredState();
+        Check(direct->Presentation().SceneReferred&&direct->GetAllEntitiesWith<DirectionalLightComponent>().size()==1&&direct->GetAllEntitiesWith<MeshRendererComponent>().size()==1&&!ScriptEngine::IsInitialized(),"Native direct preset did not create working light/mesh/presentation content");
+        e.NewScene();Check(e.m_EditorScene->Presentation().SceneReferred&&e.m_EditorScene->GetAllEntitiesWith<MeshRendererComponent>().size()==1,"Native File New Scene ignored direct project defaults");
+        Check(e.OpenScene(Project::GetAssetDirectory()/"Scenes/Start.hazel"),"Native direct reopen failed");
+        e.m_Framebuffer->Bind();e.m_EditorScene->OnUpdateEditor(0,e.m_EditorCamera,&e.m_RenderView,e.m_Framebuffer);e.m_Framebuffer->Unbind();
+        Check(e.m_EditorScene->RenderError().empty()&&e.OnScenePlay(true),"Native direct viewport/Play failed");e.OnSceneStop();
+        Check(SceneSerializer(e.m_EditorScene).CaptureAuthoredState()==directState,"Native direct Play/Stop changed authored inputs");
+        a.m_NewStarter=0;
         a.m_Preferences=preferences;a.RefreshSDK();Check(e.OpenProject(previousProject),"Native creation fixture restore failed");e.m_ActionError.clear();
         std::cout<<"PASS: production native create/Open without Python/SDK, content save/script-free Play, failed creation retention, later staged reload and prepared scripted Play/failed reload preservation\n";
     }
