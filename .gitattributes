@@ -13,3 +13,12 @@ Hazel/vendor/mono/README.md conflict-marker-size=32
 tests/fixtures/typography/DejaVuSans.ttf binary
 tests/fixtures/typography/LICENSE-DejaVu.txt -text -whitespace
 scripts/dependencies/licenses/typography/LICENSE-Unicode.txt -text
+
+# Native accepted generations and frozen reference fixtures have byte identities.
+*.himport -text
+*.hmesh -text
+*.hmat -text
+*.hprefab -text
+*.hgeom binary
+*.glb binary
+examples/RenderingReference/Assets/** -text
