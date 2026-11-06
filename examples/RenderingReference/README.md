@@ -122,3 +122,8 @@ geometry and the frozen Stage-2 supplied tangent/COLOR0 mesh. Its separate
 Viewport inspection offers base color, world normal/tangent, metallic/roughness/AO
 and SDR-clamped pre-exposure radiance. These private tools bypass world tone
 mapping and never change the authored scene or player presentation.
+
+`Reference/Direct_v1/conditions.json` additionally freezes the completed materials,
+images, geometry, native documents and scenes by asset-relative SHA-256. The
+maintained native reference check verifies this inventory before rendering. Add
+new cases rather than changing these conditions to accommodate a discrepancy.

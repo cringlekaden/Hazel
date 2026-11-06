@@ -1,6 +1,6 @@
 # Direct rendering — Stage 3
 
-Work in progress on `feature/3d-foundations`. The canonical checkout and Xcode
+Implemented and locally qualified on `feature/3d-foundations`. The canonical checkout and Xcode
 workspace are `/Volumes/External/kadencringle/Projects/Hazel` and
 `Hazel.xcworkspace`. Stage 4 environment preparation and IBL are excluded.
 
@@ -102,3 +102,72 @@ the path/UTF-8 repair, native import/reimport and content-only package contracts
 Its later frozen-artifact CRLF failure is repaired by 6d7c478 byte-preservation
 attributes. The historical Windows Debug gameplay timeout was not reached there;
 it is separate unresolved debt. No timeout or retry policy was changed.
+
+## Launch from the canonical checkout
+
+Open `Hazel.xcworkspace` in the original Hazel directory. The native launch
+commands are:
+
+```sh
+cd /Volumes/External/kadencringle/Projects/Hazel
+python3 scripts/hazel.py open
+python3 scripts/hazel.py run Hazelnut --config Release --project examples/RenderingReference/RenderingReference-Direct-PerspectivePBR.hproj
+python3 scripts/hazel.py run Nutella --config Release --project examples/RenderingReference/RenderingReference-Direct-PerspectivePBR.hproj
+```
+
+The editor navigation camera remains private. Play uses the frozen authored
+camera, as does Nutella. The orthographic, perspective-unlit and surface-convention
+selectors are adjacent project descriptors. `conditions.json` freezes the completed
+Direct_v1 materials, images, cooked geometry and scene bytes; future cases are
+additive. Captures are inspection evidence, not expected images for absent IBL.
+
+
+## Checkpoint qualification
+
+At code checkpoint `acad603`, native Apple M4 OpenGL 4.1 passed the maintained
+Debug and Release suites: **18 sequential regression executables each**, with
+actual graphics checks. The final build uses the owner's selected Xcode 27.3 beta;
+older Xcode 27.2 evidence remains historical. No graphics skip is counted as a pass.
+
+The direct checks compare GPU radiance against an independent FP64 evaluator
+(2e-3 ordinary-point bound), including the roughness/metallic grid and grazing
+inputs. Separate hemisphere quadrature checks convergence, energy and analytic
+`1-ln(2)` rough-conductor single-scattering loss. Readbacks cover FP32 highlight
+range, nonuniform/signed tilted normals and tangents, linear COLOR0, separate
+indexed primitive/material ranges, color/data sampling and UV orientation,
+mask/depth/ID transfer, exposure/Neutral/UI independence, surface inspection and
+producer-failure/retry state restoration. Camera-free HDR output and CPU-only
+physics/script updates have separate positive cases.
+
+Native ImGui/production-command checks passed import/material/texture/slot
+operations, light and scene history, save/reopen, Play/Stop, defaults isolation,
+bounds framing and direct creation without Python/SDK readiness. Original-path
+Core_v1/editor and all four direct player selectors completed 60 real frames and
+normal teardown. The same saved direct content passed editor/runtime comparisons
+and 1x/2x picking. All five examples passed their maintained native gameplay,
+render/UI/save/transition checks; representative frames were inspected for palette,
+readability and clipping. This does not assert historical pixel identity.
+
+Both direct Reference bundles were exported without **any GLB or project assembly**,
+then relocated and run with source/SDK access denied. Native dependency closure,
+signatures, actual direct readbacks and normal shutdown passed. Missing/invalid
+required module/class and managed closure checks still reject. Corrupt geometry
+rejects before publication and preserves accepted archives/checksums. Runtime
+binaries contain no TinyGLTF/Mikk producer symbols. Evidence and archives are under
+ignored `build/stage3-evidence`; no test output is committed.
+
+Canonical [run 42231113856](https://github.com/cringlekaden/Hazel/actions/runs/42231113856)
+passed Linux full and hosted macOS CPU/service/managed checks. Its Windows build
+hit MSVC C1128 in the expanded inspector; `8355605` adds file-scoped `/bigobj`.
+The subsequent run built Windows Debug/Release and passed both extracted-archive
+profiles, including the GL4.1 path. Its separate CPU no-camera regression was
+reproduced locally and repaired in `acad603`, with focused and full local passes.
+[Run 42273886851](https://github.com/cringlekaden/Hazel/actions/runs/42273886851)
+qualifies the final code; results pending at this documentation checkpoint.
+Windows is not claimed fully qualified. The historical Windows Debug gameplay
+timeout remains separate unresolved debt; no timeout or retry was increased.
+
+Physical OS dialogs/window/input interaction remains separate acceptance from
+native ImGui authoring and automated product frames. This checkpoint supports
+static opaque/masked meshes and one direct key; mesh blending, shadows,
+environment preparation and IBL are absent. Stage 4 has not begun.
