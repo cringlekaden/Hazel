@@ -23,9 +23,12 @@ static void DirectReferenceChecks()
     for (auto file : conditions["Files"])
     {
         const auto reference = std::filesystem::u8path(file.first.as<std::string>());
-        Check(AssetHash(ReadAssetBytes(Project::ResolveOwnedAsset(root, reference),
-                                       GeometryByteLimit)) == file.second.as<std::string>(),
-              "Frozen Direct_v1 geometry/material/image/reference condition changed");
+        const auto actual = AssetHash(ReadAssetBytes(Project::ResolveOwnedAsset(root, reference),
+                                                     GeometryByteLimit));
+        if (actual != file.second.as<std::string>())
+            throw std::runtime_error("Frozen Direct_v1 condition changed: " +
+                reference.generic_u8string() + "; actual " + actual +
+                "; expected " + file.second.as<std::string>());
     }
     auto metadata = YAML::Load(FileDocument::Read(root / "Reference/Direct_v1/outputs.json"));
     for (auto name : {"PerspectivePBR", "OrthographicPBR", "PerspectiveUnlit"})

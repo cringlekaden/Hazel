@@ -171,3 +171,17 @@ Physical OS dialogs/window/input interaction remains separate acceptance from
 native ImGui authoring and automated product frames. This checkpoint supports
 static opaque/masked meshes and one direct key; mesh blending, shadows,
 environment preparation and IBL are absent. Stage 4 has not begun.
+
+Stage-4 entry diagnosis of that completed run: Linux and hosted macOS passed.
+Windows built both configurations and passed extracted archives and packaged
+GL4.1, then first failed `RuntimeSessionSmoke` at `Frozen Direct_v1
+geometry/material/image/reference condition changed`; gameplay was not reached.
+Authenticated job and uploaded executable logs agree. Reproducing `git archive
+HEAD:examples/RenderingReference` with `core.autocrlf=true` changes the first
+inventoried file, `Native/Direct_v1/Import.himport`, from SHA-256 `481ddad7…` to
+`c930d069…`. Subtree archives omit the root `.gitattributes`. Fixture snapshots now
+archive the full-tree path and strip its prefix after validation; all 61 frozen
+Direct files retain their exact hashes under autocrlf. The native assertion also
+reports the affected path and both digests. No frozen bytes, tolerances, driver
+settings or timeouts changed. Windows rerun remains required; this was a fixture
+extraction defect, separate from the historical gameplay timeout.
