@@ -935,6 +935,9 @@ private:
         Check(!e.RuntimeUIWidgetBlocksInput(),"ImGui viewport MoveId canceled runtime mouse gesture");
         Check(!e.NavigationBlocked(),"ImGui viewport MoveId still blocks editor camera");
         CameraNavigationChecks();
+        ImGui::SetActiveID(viewport->GetID("Camera blocking widget"),viewport);
+        Check(e.NavigationBlocked(),"Real widget did not retain navigation ownership");
+        ImGui::StartMouseMovingWindow(viewport);
         e.m_ViewportHovered=false;Check(e.RuntimeUIWidgetBlocksInput(),"Viewport title/background drag bypassed input guard");
         e.m_ViewportHovered=true;// OnUpdate is outside Begin/End; cold loading may compact this
         // inactive window's transient ID stack. Its retained window ID is the seed.
@@ -1148,6 +1151,21 @@ private:
         const auto authored=SceneSerializer(scene).CaptureAuthoredState();auto& camera=e.m_NavigationCamera;
         camera.RestoreOrbit({2,3,0},.2f,.3f,12);camera.RestorePlanar({-2,1},7);camera.SetNavigation(EditorNavigation::Planar);const auto planar=camera.GetViewProjection();camera.SetNavigation(EditorNavigation::Orbit);camera.SetNavigation(EditorNavigation::Planar);
         Check(camera.PlanarFocus()==glm::vec2(-2,1)&&camera.PlanarSize()==7&&camera.GetFocalPoint()==glm::vec3(2,3,0)&&camera.GetViewProjection()==planar&&camera.GetForwardDirection()==glm::vec3(0,0,-1)&&camera.GetUpDirection()==glm::vec3(0,1,0)&&SceneSerializer(scene).CaptureAuthoredState()==authored,"Navigation switching changed poses or authored scene");
+        {
+            const auto state=e.m_SceneState;const bool focused=e.m_ViewportFocused,hovered=e.m_ViewportHovered;
+            e.m_ViewportFocused=e.m_ViewportHovered=true;ImGui::ClearActiveID();
+            for(auto mode:{EditorLayer::SceneState::Edit,EditorLayer::SceneState::Simulate}){
+                e.m_SceneState=mode;float size=camera.PlanarSize();
+                Check(!e.RouteNavigationScroll(1,false)&&camera.PlanarSize()==size,"Unfocused camera consumed scroll");
+                Check(e.RouteNavigationScroll(1,true)&&camera.PlanarSize()<size,"Edit/Simulate scroll policy diverged");
+                if(!Application::Get().GetWindow().IsFocused()){
+                    size=camera.PlanarSize();MouseScrolledEvent scroll(0,1);e.OnEvent(scroll);Check(camera.PlanarSize()==size&&!scroll.Handled,"Hidden native window stole scroll");
+                }
+            }
+            e.m_SceneState=EditorLayer::SceneState::Play;float size=camera.PlanarSize();
+            Check(!e.RouteNavigationScroll(1,true)&&camera.PlanarSize()==size,"Play scroll reached private editor camera");e.m_SceneState=state;e.m_ViewportFocused=focused;e.m_ViewportHovered=hovered;
+            std::cout<<"PASS: shared Edit/Simulate scroll policy, native unfocused-window rejection and Play camera isolation\n";
+        }
         camera.FrameBounds({-2, -1, -1}, {2, 1, 1});
         Check(camera.PlanarFocus() == glm::vec2(0) && camera.PlanarSize() >= 2,
               "Planar bounds framing failed");

@@ -119,6 +119,8 @@ static void CheckCore()
     glm::vec3 t,r,s; Check(Math::DecomposeTransform(transform,t,r,s),"Transform decomposition failed");
     Check(glm::length(t-glm::vec3(2,3,4))<0.001f && glm::length(s-glm::vec3(2,3,4))<0.001f,"Transform decomposition values");
     NavigationCamera camera(45,16.0f/9.0f,0.1f,1000);
+    SceneCamera authoredProjection;authoredProjection.SetViewportSize(1600,900);authoredProjection.SetPerspective(glm::radians(45.f),.1f,1000.f);
+    Check(camera.GetProjection()==authoredProjection.GetProjection(),"Authored/transient perspective math diverged");
     camera.Scroll(1);
     Check(camera.GetDistance()<10 && std::isfinite(camera.GetViewProjection()[0][0]),"Editor camera zoom/projection");
 }

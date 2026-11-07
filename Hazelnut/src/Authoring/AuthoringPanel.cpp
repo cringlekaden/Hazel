@@ -557,6 +557,8 @@ void AuthoringPanel::Shortcuts()
         ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId))
         return;
     const bool viewportFocused = FocusedPanel("Viewport");
+    if(viewportFocused && (io.MouseDown[1]||io.MouseDown[2]||
+       (io.MouseDown[0]&&(io.KeyAlt||io.KeyShift||Input::IsKeyPressed(Key::Space)))))return;
     const bool sceneFocused = FocusedPanel("Scene Hierarchy") || FocusedPanel("Properties");
     const bool prefabFocused=FocusedPanel("Prefab Inspector") && bool(m_PrefabScene);
     if (io.KeyCtrl || io.KeySuper)
@@ -604,33 +606,7 @@ void AuthoringPanel::Shortcuts()
         auto selected=m_Editor.m_SceneHierarchyPanel.GetSelectedEntity();
         if(selected) {
             m_Editor.m_SceneHierarchyPanel.RevealSelected();
-            glm::vec3 minimum(std::numeric_limits<float>::max()),
-                maximum(std::numeric_limits<float>::lowest());
-            for (auto id : m_Editor.m_ActiveScene->GetSubtree(selected))
-            {
-                auto entity = m_Editor.m_ActiveScene->GetEntityByUUID(id);
-                auto world = m_Editor.m_ActiveScene->GetWorldTransform(entity);
-                glm::vec3 lo(-.5f), hi(.5f);
-                if (entity.HasComponent<MeshRendererComponent>())
-                    if (auto assets = m_Editor.m_ActiveScene->GetAssets())
-                    {
-                        auto mesh = assets->Mesh(entity.GetComponent<MeshRendererComponent>().Mesh);
-                        if (mesh.Accepted)
-                        {
-                            lo = mesh.Accepted->Geometry.Bounds.Min;
-                            hi = mesh.Accepted->Geometry.Bounds.Max;
-                        }
-                    }
-                for (int i = 0; i < 8; ++i)
-                {
-                    auto point =
-                        glm::vec3(world * glm::vec4((i & 1) ? hi.x : lo.x, (i & 2) ? hi.y : lo.y,
-                                                    (i & 4) ? hi.z : lo.z, 1));
-                    minimum = glm::min(minimum, point);
-                    maximum = glm::max(maximum, point);
-                }
-            }
-            m_Editor.m_NavigationCamera.FrameBounds(minimum, maximum);
+            m_Editor.FrameSelection();
         }
     }
     if ((viewportFocused || sceneFocused) && ImGui::IsKeyPressed(ImGuiKey_Delete, false))

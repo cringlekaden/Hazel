@@ -5,6 +5,7 @@
 
 #include "Hazel.h"
 #include "Hazel/Events/KeyEvent.h"
+#include "Hazel/Events/MouseEvent.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/ContentBrowserPanel.h"
 #include "Authoring/UIRectEditing.h"
@@ -43,7 +44,9 @@ namespace Hazel {
 
 		void OnOverlayRender();
         void UpdateNavigation(Timestep ts);
+        void FrameSelection();
         bool NavigationBlocked() const;
+        bool RouteNavigationScroll(float steps,bool focused);
         glm::vec2 ViewportMouse() const;
         glm::vec2 ViewportFramebufferPoint(glm::vec2 logical) const;
         glm::uvec2 ViewportFramebufferExtent() const;

@@ -30,7 +30,8 @@ Projection math lives in `Renderer/Cameras/PerspectiveProjection.h` and
 `NavigationCamera` use it. SceneCamera owns serialized projection settings, while
 entity world transforms supply runtime pose. `PerspectiveCameraController` owns
 reusable orbit/pan/dolly/fly pose math with supplied point deltas and seconds.
-`OrthographicCameraController` retains the simple standalone 2D sample path.
+`PlanarCameraController` owns the simple 2D pan/zoom policy used by navigation.
+The unused input-polling OrthographicCameraController was removed.
 `NavigationCamera` combines transient planar/perspective view poses; it has no
 ImGui, GLFW or input bindings.
 

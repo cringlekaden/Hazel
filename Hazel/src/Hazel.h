@@ -35,7 +35,7 @@
 #include "Hazel/Renderer/Resources/Texture.h"
 #include "Hazel/Renderer/Resources/VertexArray.h"
 #include "Hazel/Renderer/Cameras/OrthographicCamera.h"
-#include "Hazel/Renderer/Cameras/OrthographicCameraController.h"
+#include "Hazel/Renderer/Cameras/PlanarCameraController.h"
 
 #include "Hazel/Project/Project.h"
 
