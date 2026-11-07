@@ -76,7 +76,7 @@ static void ReplacementFailure(const std::filesystem::path& root) {
         const auto before=SceneSerializer(scene).CaptureAuthoredState();
         FramebufferSpecification spec;spec.Width=spec.Height=64;
         spec.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER};
-        auto target=Framebuffer::Create(spec);EditorCamera editor(30,1,.1f,1000);
+        auto target=Framebuffer::Create(spec);NavigationCamera editor(30,1,.1f,1000);
         editor.SetViewportSize(64,64);
         if(play)scene->OnRuntimeStart();
         auto draw=[&](bool fallback) {

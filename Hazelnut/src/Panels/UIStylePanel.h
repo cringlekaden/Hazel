@@ -1,7 +1,7 @@
 #pragma once
 #include "Authoring/EditorActions.h"
 #include "Hazel/Assets/UIStyleDocument.h"
-#include "Hazel/Renderer/Cameras/EditorCamera.h"
+#include "Hazel/Renderer/Cameras/NavigationCamera.h"
 #include "Hazel/Renderer/Resources/Framebuffer.h"
 #include "UI/StyleWidgets.h"
 namespace Hazel
@@ -72,7 +72,7 @@ class UIStylePanel
     Scope<UIStyleDocument> m_Document;
     Ref<Scene> m_Preview;
     Ref<Framebuffer> m_Target, m_Output;
-    EditorCamera m_Camera{30.f, 1.f, .1f, 1000.f};
+    NavigationCamera m_Camera{30.f, 1.f, .1f, 1000.f};
     StyleWidgetState m_Widgets;
     bool m_Open = false, m_Focused = false, m_Create = false, m_ResumeCreate = false;
     size_t m_Variant = 0;

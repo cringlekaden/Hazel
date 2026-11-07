@@ -88,7 +88,7 @@ static void IBLReferenceChecks()
                 std::ofstream file(capture,std::ios::binary);Check(bool(file),"Cannot open IBL inspection capture");file<<"P6\n"<<spec.Width<<' '<<spec.Height<<"\n255\n";for(int y=int(spec.Height)-1;y>=0;--y)file.write(reinterpret_cast<const char*>(rgb.data()+size_t(y)*spec.Width*3),spec.Width*3);Check(bool(file),"Cannot write IBL inspection capture");output->Unbind();
             }
             runtime.Stop();
-            EditorCamera camera(45, float(spec.Width) / spec.Height, .1f, 100);
+            NavigationCamera camera(45, float(spec.Width) / spec.Height, .1f, 100);
             camera.SetViewportSize(spec.Width, spec.Height);
             camera.RestoreOrbit({0, 0, 0}, 0, 0, 10);
             authored->OnViewportResize(1280, 720);

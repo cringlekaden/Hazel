@@ -29,7 +29,7 @@
 #include "Hazel/Scene/Scene.h"
 #include "Hazel/Scene/Entity.h"
 #include "Hazel/Scene/ScriptableEntity.h"
-#include "Hazel/Renderer/Cameras/EditorCamera.h"
+#include "Hazel/Renderer/Cameras/NavigationCamera.h"
 #include "Hazel/Renderer/Resources/UniformBuffer.h"
 #include "Hazel/Renderer/Resources/Shader.h"
 #include "Hazel/Renderer/Resources/Texture.h"

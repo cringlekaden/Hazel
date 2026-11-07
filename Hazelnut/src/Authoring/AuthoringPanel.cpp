@@ -551,6 +551,7 @@ static bool FocusedPanel(const char *name)
 }
 void AuthoringPanel::Shortcuts()
 {
+    if(m_Editor.m_Navigation.Active())return;
     const auto &io = ImGui::GetIO();
     if (io.WantTextInput || ImGui::IsAnyItemActive() || m_Documents.Pending() ||
         ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId))
@@ -629,7 +630,7 @@ void AuthoringPanel::Shortcuts()
                     maximum = glm::max(maximum, point);
                 }
             }
-            m_Editor.m_EditorCamera.FrameBounds(minimum, maximum);
+            m_Editor.m_NavigationCamera.FrameBounds(minimum, maximum);
         }
     }
     if ((viewportFocused || sceneFocused) && ImGui::IsKeyPressed(ImGuiKey_Delete, false))

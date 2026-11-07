@@ -118,8 +118,8 @@ static void CheckCore()
     auto transform=glm::translate(glm::mat4(1),glm::vec3(2,3,4))*glm::scale(glm::mat4(1),glm::vec3(2,3,4));
     glm::vec3 t,r,s; Check(Math::DecomposeTransform(transform,t,r,s),"Transform decomposition failed");
     Check(glm::length(t-glm::vec3(2,3,4))<0.001f && glm::length(s-glm::vec3(2,3,4))<0.001f,"Transform decomposition values");
-    EditorCamera camera(45,16.0f/9.0f,0.1f,1000);
-    MouseScrolledEvent scroll(0,1); camera.OnEvent(scroll);
+    NavigationCamera camera(45,16.0f/9.0f,0.1f,1000);
+    camera.Scroll(1);
     Check(camera.GetDistance()<10 && std::isfinite(camera.GetViewProjection()[0][0]),"Editor camera zoom/projection");
 }
 struct PendingCapture {

@@ -22,3 +22,31 @@ Update current guides alongside code/tool/workflow changes. Put dated investigat
 Submit a pull request with the problem, resulting behavior, tests run and any outstanding platform/manual checks. CI runs on PRs; topic-branch maintainers can dispatch the canonical workflow explicitly. Do not clean another developer's ignored files, rewrite example drafts, publish a release or change repository protection settings as incidental cleanup.
 
 Retain [upstream attribution and third-party notices](docs/platforms-and-dependencies.md#licensing-and-provenance). Screenshots must come from the implemented application and use disposable projects/profiles; capture notes live in [docs/images](docs/images/README.md).
+
+## Camera and viewport ownership
+
+Projection math lives in `Renderer/Cameras/PerspectiveProjection.h` and
+`OrthographicProjection.h`; both authored `Scene/SceneCamera` and transient
+`NavigationCamera` use it. SceneCamera owns serialized projection settings, while
+entity world transforms supply runtime pose. `PerspectiveCameraController` owns
+reusable orbit/pan/dolly/fly pose math with supplied point deltas and seconds.
+`OrthographicCameraController` retains the simple standalone 2D sample path.
+`NavigationCamera` combines transient planar/perspective view poses; it has no
+ImGui, GLFW or input bindings.
+
+Change editor gesture ownership in `Hazelnut/src/Camera/ViewportNavigation`,
+not in projection math or SceneRenderer. The editor owns workspace persistence,
+focus/widget/gizmo arbitration and gesture cancellation. Runtime inspection is
+explicit and transient; normal game cameras remain scene/script owned. Keep
+navigation separate from document history and preserve both workspace poses.
+
+## Use MetalCup as a reference
+
+The local `~/Projects/MetalCupWorkspace` is a useful **read-only** reference for
+features and past experiments. Evaluate each implementation on its own merits;
+do not transplant its Metal passes or camera architecture into Hazel. Preserve
+Hazel's improved high-roughness IBL. MetalCup's root motion and SSAO have known
+quality problems; its bloom is a working comparison point. When those features
+are scoped, define a better result, compare approaches, and verify the chosen
+implementation in motion. This guidance does not authorize those features,
+Metal work, or changes to the MetalCup checkout.

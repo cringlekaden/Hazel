@@ -73,7 +73,7 @@ static void GlyphPageChecks() {
     scene->OnViewportResize(128,128);auto canvas=scene->CreateEntity("Corpus canvas");auto& c=canvas.AddComponent<UICanvasComponent>();c.ReferenceSize={128,128};c.SafeInsets={};
     auto label=scene->CreateEntity("Corpus label");scene->Reparent(label,canvas,TransformPolicy::KeepLocal);
     auto& rect=label.AddComponent<UIRectComponent>();rect.FixedSize={120,120};auto& text=label.AddComponent<TextComponent>();text.Font.Family="paged.hfont";text.TextString=u8"مرحبا Hazel 123\nשלום café";
-    label.AddComponent<UITextStyleComponent>().Size=14;EditorCamera camera(45,1,.1f,1000);
+    label.AddComponent<UITextStyleComponent>().Size=14;NavigationCamera camera(45,1,.1f,1000);
     Begin();Renderer2D::EndScene();scene->OnUpdateEditor(0,camera);Check(Pixels(int(uint32_t(label)))>30,"Scene UI did not paint shaped corpus");
     auto before=Hazel::Font::Resources();Begin();Renderer2D::EndScene();scene->OnUpdateEditor(0,camera);auto after=Hazel::Font::Resources();
     Check(after.LayoutBuilds==before.LayoutBuilds && after.Generations==before.Generations,"Warm UI reshaped or regenerated pages");

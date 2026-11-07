@@ -151,7 +151,7 @@ int main(int argc,char** argv) {
             Check(loaded->GetEntityByUUID(11).GetComponent<SpriteRendererComponent>().Resolved.Data->Texture->IsLoaded(),"Serialized UTF-8 texture not loaded");
             const auto& text=loaded->GetEntityByUUID(13).GetComponent<TextComponent>();
             Check(text.TextString==u8"Hazel é" && text.Kerning==0.1f && text.LineSpacing==0.2f && text.Color==glm::vec4(0,1,0,1),"Text component serialization failed");
-            EditorCamera editor(45,1,0.1f,100); editor.SetViewportSize(256,256);
+            NavigationCamera editor(45,1,0.1f,100); editor.SetViewportSize(256,256);
             Begin(framebuffer); loaded->OnUpdateEditor(0,editor); CheckScenePixels(loaded);
             auto runtime=Scene::Copy(loaded); runtime->OnRuntimeStart(); Begin(framebuffer); runtime->OnUpdateRuntime(1.0f/60); CheckScenePixels(runtime);
             const auto camera=runtime->GetEntityByUUID(10).GetComponent<CameraComponent>().Camera.GetProjection();

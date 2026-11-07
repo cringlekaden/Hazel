@@ -109,7 +109,7 @@ static void DirectReferenceChecks()
             }
             runtime.Stop();
             authored->OnViewportResize(1280, 720);
-            EditorCamera camera(45, float(width) / height, .1f, 100);
+            NavigationCamera camera(45, float(width) / height, .1f, 100);
             camera.SetViewportSize(width, height);
             camera.RestoreOrbit({0, 0, 0}, 0, 0, 10);
             if (ortho)

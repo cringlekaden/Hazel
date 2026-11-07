@@ -54,6 +54,8 @@ namespace Hazel {
         void Minimize();
         void ToggleMaximize();
         bool IsFocused() const;
+        void SetPointerCaptured(bool captured);
+        bool IsPointerCaptured() const;
         CaptionHit GetCaptionPointerHit() const;
         virtual void RequestClose()=0;
         static Scope<Window> Create(const WindowProps& props = WindowProps());

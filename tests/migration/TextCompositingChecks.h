@@ -92,7 +92,7 @@ static void TextCompositingChecks(bool reproduce = false) {
         auto label=scene->CreateEntity("Analytic label");scene->Reparent(label,canvas,TransformPolicy::KeepLocal);
         label.AddComponent<UIRectComponent>().FixedSize={64,64};auto& text=label.AddComponent<TextComponent>();text.TextString="M";text.Color=tint;
         auto& style=label.AddComponent<UITextStyleComponent>();style.Size=8;WriteTestFamily(assets->Root(),"test.hfont","analytic-face.ttf");label.GetComponent<TextComponent>().Font.Family="test.hfont";
-        Begin();Renderer2D::EndScene();EditorCamera camera(45,1,.1f,1000);scene->OnUpdateEditor(0,camera);
+        Begin();Renderer2D::EndScene();NavigationCamera camera(45,1,.1f,1000);scene->OnUpdateEditor(0,camera);
         std::vector<int> ids(128*128);glReadBuffer(GL_COLOR_ATTACHMENT1);glReadPixels(0,0,128,128,GL_RED_INTEGER,GL_INT,ids.data());
         auto found=std::find(ids.begin(),ids.end(),int(uint32_t(label)));Check(found!=ids.end(),"Runtime analytic text did not pick");
         auto index=size_t(found-ids.begin());color=Color(int(index%128),int(index/128));expected=over({},tint,128/255.f);

@@ -58,6 +58,7 @@ static std::string Read(const std::filesystem::path& file) {
 }
 }
 #include "UI/TextEmphasisUI.h"
+#include "CameraNavigationChecks.h"
 #include "EditorStateChecks.h"
 #include "EditorDocumentChecks.h"
 #include "EditorHistoryChecks.h"
@@ -929,7 +930,11 @@ private:
         auto* viewport=ImGui::FindWindowByName("Viewport");Check(viewport,"UI input check lacks actual viewport");
         auto* previousFocus=ImGui::GetCurrentContext()->NavWindow;const bool wasHovered=e.m_ViewportHovered;
         ImGui::StartMouseMovingWindow(viewport);e.m_ViewportHovered=true;
+        Check(ImGui::IsAnyItemActive(),"Baseline viewport press did not acquire ImGui MoveId");
+        std::cout<<"REPRO: scene-image press owns viewport MoveId; old camera IsAnyItemActive gate stops held drag after first update\n";
         Check(!e.RuntimeUIWidgetBlocksInput(),"ImGui viewport MoveId canceled runtime mouse gesture");
+        Check(!e.NavigationBlocked(),"ImGui viewport MoveId still blocks editor camera");
+        CameraNavigationChecks();
         e.m_ViewportHovered=false;Check(e.RuntimeUIWidgetBlocksInput(),"Viewport title/background drag bypassed input guard");
         e.m_ViewportHovered=true;// OnUpdate is outside Begin/End; cold loading may compact this
         // inactive window's transient ID stack. Its retained window ID is the seed.
@@ -942,7 +947,7 @@ private:
         Check(uiPanel.HasComponent<UIRectComponent>()&&uiPanel.HasComponent<SpriteRendererComponent>()&&scene->GetRelationship(uiPanel).Parent==canvas.GetUUID(),"Panel preset hierarchy/appearance incorrect");
         Check(panel.AddUI(2),"Text preset failed");auto uiText=panel.GetSelectedEntity();Check(uiText.HasComponent<UITextStyleComponent>()&&uiText.HasComponent<TextComponent>(),"Text preset lacks style/text");
         panel.SetSelectedEntity(uiPanel);Check(panel.AddUI(3),"Button preset failed");auto uiButton=panel.GetSelectedEntity();Check(uiButton.HasComponent<UIButtonComponent>(),"Button preset lacks action component");
-        scene->OnViewportResize(640,480);scene->OnUpdateEditor(0,e.m_EditorCamera);GameUI::Rect resolved;Check(scene->GetUIBounds(uiButton.GetUUID(),resolved)&&resolved.Size.x>0,"Editor UI preset preview lacks bounds");GameUI::Action action;Check(!scene->ConsumeUIAction(0,action),"Edit preview activated a game button");
+        scene->OnViewportResize(640,480);scene->OnUpdateEditor(0,e.m_NavigationCamera);GameUI::Rect resolved;Check(scene->GetUIBounds(uiButton.GetUUID(),resolved)&&resolved.Size.x>0,"Editor UI preset preview lacks bounds");GameUI::Action action;Check(!scene->ConsumeUIAction(0,action),"Edit preview activated a game button");
         // D6 uses the same reversible controller called by viewport handles.
         // Preserve the established v1 stretch/minimum regression independently
         // of the now-measured creation presets checked above.
@@ -1140,7 +1145,7 @@ private:
         Check(a.UndoRedo(false)&&scene->Presentation()==before&&a.UndoRedo(true)&&scene->Presentation()==a.m_ScenePresentationDraft,"Scene settings Undo/Redo lost values");
         Check(e.SaveScene(),"Actual scene settings Save failed");auto reopened=CreateRef<Scene>();Check(SceneSerializer(reopened).Deserialize(e.m_EditorScenePath.generic_u8string())&&reopened->Presentation()==scene->Presentation(),"Scene settings Save/reopen lost authored values");
         for(int i=0;i<2;++i){Check(e.OnScenePlay(true)&&e.m_ActiveScene->Presentation()==scene->Presentation(),"Scene settings Play copy lost presentation");e.OnSceneStop();}
-        const auto authored=SceneSerializer(scene).CaptureAuthoredState();auto& camera=e.m_EditorCamera;
+        const auto authored=SceneSerializer(scene).CaptureAuthoredState();auto& camera=e.m_NavigationCamera;
         camera.RestoreOrbit({2,3,0},.2f,.3f,12);camera.RestorePlanar({-2,1},7);camera.SetNavigation(EditorNavigation::Planar);const auto planar=camera.GetViewProjection();camera.SetNavigation(EditorNavigation::Orbit);camera.SetNavigation(EditorNavigation::Planar);
         Check(camera.PlanarFocus()==glm::vec2(-2,1)&&camera.PlanarSize()==7&&camera.GetFocalPoint()==glm::vec3(2,3,0)&&camera.GetViewProjection()==planar&&camera.GetForwardDirection()==glm::vec3(0,0,-1)&&camera.GetUpDirection()==glm::vec3(0,1,0)&&SceneSerializer(scene).CaptureAuthoredState()==authored,"Navigation switching changed poses or authored scene");
         camera.FrameBounds({-2, -1, -1}, {2, 1, 1});
@@ -1203,7 +1208,7 @@ private:
         Check(e.OpenScene(Project::GetAssetDirectory() / "Scenes/Start.hazel"),
               "Native direct reopen failed");
         e.m_Framebuffer->Bind();
-        e.m_EditorScene->OnUpdateEditor(0, e.m_EditorCamera, &e.m_RenderView, e.m_Framebuffer);
+        e.m_EditorScene->OnUpdateEditor(0, e.m_NavigationCamera, &e.m_RenderView, e.m_Framebuffer);
         e.m_Framebuffer->Unbind();
         Check(e.m_EditorScene->RenderError().empty() && e.OnScenePlay(true),
               "Native direct viewport/Play failed");
@@ -1226,7 +1231,7 @@ private:
         a.m_State->SaveWorkspace(project,a.m_Workspace);a.m_State->Session.LastProject=project.generic_u8string();a.m_State->SaveSession();
         a.Startup({"EditorSmoke"});
         Check(e.m_EditorScenePath==path && e.m_EditorScene->GetName()=="Remembered workspace scene" &&
-              e.m_SceneHierarchyPanel.GetSelectedEntity().GetUUID()==112233 && e.m_EditorCamera.GetDistance()==13,
+              e.m_SceneHierarchyPanel.GetSelectedEntity().GetUUID()==112233 && e.m_NavigationCamera.GetDistance()==13,
               "Production startup did not restore accepted scene/camera/selection");
         // F5 without a project must restore the last successful selection, not the launch example.
         const auto selected=project.parent_path()/std::filesystem::u8path("selected project é.hproj");

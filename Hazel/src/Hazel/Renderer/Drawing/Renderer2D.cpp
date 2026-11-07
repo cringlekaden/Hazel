@@ -288,7 +288,7 @@ namespace Hazel {
 		StartBatch();
 	}
 
-	void Renderer2D::BeginScene(const EditorCamera& camera)
+	void Renderer2D::BeginScene(const NavigationCamera& camera)
 	{
         s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);
 		HZ_PROFILE_FUNCTION();

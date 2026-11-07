@@ -1,5 +1,7 @@
 #include "hzpch.h"
 #include "SceneCamera.h"
+#include "Hazel/Renderer/Cameras/PerspectiveProjection.h"
+#include "Hazel/Renderer/Cameras/OrthographicProjection.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -41,7 +43,7 @@ namespace Hazel {
 	{
 		if (m_ProjectionType == ProjectionType::Perspective)
 		{
-			m_Projection = glm::perspective(m_PerspectiveFOV, m_AspectRatio, m_PerspectiveNear, m_PerspectiveFar);
+			m_Projection = PerspectiveProjection::Matrix(m_PerspectiveFOV, m_AspectRatio, m_PerspectiveNear, m_PerspectiveFar);
 		}
 		else
 		{
@@ -50,7 +52,7 @@ namespace Hazel {
 			float orthoBottom = -m_OrthographicSize * 0.5f;
 			float orthoTop = m_OrthographicSize * 0.5f;
 
-			m_Projection = glm::ortho(orthoLeft, orthoRight,
+			m_Projection = OrthographicProjection::Matrix(orthoLeft, orthoRight,
 				orthoBottom, orthoTop, m_OrthographicNear, m_OrthographicFar);
 		}
 

@@ -160,7 +160,7 @@ private:
                 m_PrefabName = "Prefabs/NewPrefab.hprefab", m_ExportPath, m_PackageName = "Game";
     Ref<Scene> m_PrefabScene;
     Ref<Framebuffer> m_PrefabPreview, m_PrefabOutput;
-    EditorCamera m_PrefabCamera{45,1,.1f,10000};
+    NavigationCamera m_PrefabCamera{45,1,.1f,10000};
     bool m_PrefabFit=true;
     FileDocument m_PrefabFile;
     bool m_ShowSaveConflict=false;

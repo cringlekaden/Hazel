@@ -1,4 +1,5 @@
 #include "Hazel/Core/TextInput.h"
+#include "Hazel/Core/Input.h"
 #include "EditorLayer.h"
 #include "Authoring/AuthoringPanel.h"
 #include <imgui.h>
@@ -97,7 +98,7 @@ void EditorLayer::UI_RectEditing()
     // Handles and an active gesture retain selection; normal clicks still use
     // renderer picking. Invisible layout groups can be dragged after tree selection.
     if (m_SceneState != SceneState::Play && ImGui::IsItemClicked(ImGuiMouseButton_Left) &&
-        !ImGuizmo::IsOver() && !io.KeyAlt && !m_UIEdit.Active() && !selectedHandle)
+        !ImGuizmo::IsOver() && !m_Navigation.Active() && !io.KeyShift && !Input::IsKeyPressed(Key::Space) && !io.KeyAlt && !m_UIEdit.Active() && !selectedHandle)
     {
         bool emptyRect = n && n->LayoutResolved && !n->IsCanvas &&
                          !selected.HasComponent<SpriteRendererComponent>() &&
@@ -110,7 +111,7 @@ void EditorLayer::UI_RectEditing()
         selected = m_SceneHierarchyPanel.GetSelectedEntity();
         n = selected ? snapshot.Find(selected.GetUUID()) : nullptr;
     }
-    if (canEdit && ImGui::IsMouseClicked(0) && !io.KeyAlt && n && n->LayoutResolved &&
+    if (canEdit && !m_Navigation.Active() && !io.KeyShift && !Input::IsKeyPressed(Key::Space) && ImGui::IsMouseClicked(0) && !io.KeyAlt && n && n->LayoutResolved &&
         !n->IsCanvas && (selectedHandle || m_ViewportHovered))
     {
         GameUI::Rect display{m_ViewportBounds[0] + n->PixelBounds.Position * displayScale,

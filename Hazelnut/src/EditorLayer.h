@@ -10,7 +10,8 @@
 #include "Authoring/UIRectEditing.h"
 #include "UI/UIBindingEditor.h"
 
-#include "Hazel/Renderer/Cameras/EditorCamera.h"
+#include "Hazel/Renderer/Cameras/NavigationCamera.h"
+#include "Camera/ViewportNavigation.h"
 #include "Hazel/Scene/RuntimeSession.h"
 #include "Hazel/Core/FileDocument.h"
 #include "Hazel/Core/DocumentLoadReport.h"
@@ -41,6 +42,8 @@ namespace Hazel {
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 
 		void OnOverlayRender();
+        void UpdateNavigation(Timestep ts);
+        bool NavigationBlocked() const;
         glm::vec2 ViewportMouse() const;
         glm::vec2 ViewportFramebufferPoint(glm::vec2 logical) const;
         glm::uvec2 ViewportFramebufferExtent() const;
@@ -80,7 +83,7 @@ namespace Hazel {
 		// UI Panels
 		void UI_Toolbar();
 	private:
-		Hazel::OrthographicCameraController m_CameraController;
+
 
         SceneRenderView m_RenderView;
         Ref<Framebuffer> m_Framebuffer;
@@ -101,7 +104,8 @@ namespace Hazel {
 		Entity m_HoveredEntity;
 
 
-		EditorCamera m_EditorCamera;
+		NavigationCamera m_NavigationCamera;
+        ViewportNavigation m_Navigation;
 
 
 		bool m_ViewportFocused = false, m_ViewportHovered = false;

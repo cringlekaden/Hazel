@@ -27,7 +27,7 @@ namespace Hazel {
 
 
 	EditorLayer::EditorLayer(std::shared_ptr<ConsoleModel> console)
-		: Layer("EditorLayer"), m_CameraController(1280.0f / 720.0f)
+		: Layer("EditorLayer")
 	{
         if(!console){m_ConsoleSession=std::make_unique<ConsoleSession>();console=m_ConsoleSession->Model;}
         m_Console=std::move(console);
@@ -56,7 +56,7 @@ namespace Hazel {
 
 		m_EditorScene = CreateRef<Scene>();
 		m_ActiveScene = m_EditorScene;
-        m_EditorCamera = EditorCamera(30.0f,1.778f,.1f,1000.f);
+        m_NavigationCamera = NavigationCamera(30.0f,1.778f,.1f,1000.f);
         m_Authoring=CreateScope<AuthoringPanel>(*this);
         m_Loading=CreateScope<LoadingUI>();
         m_Authoring->MarkSceneSaved();
@@ -99,7 +99,7 @@ namespace Hazel {
         if (m_SceneState != SceneState::Play)
             m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 
-        m_EditorCamera.SetViewportSize(m_ViewportSize.x,m_ViewportSize.y);
+        m_NavigationCamera.SetViewportSize(m_ViewportSize.x,m_ViewportSize.y);
         const auto pixels=ViewportFramebufferExtent();
 		// Camera/UI layout remain logical; only the render target uses pixels.
 		if (FramebufferSpecification spec = m_Framebuffer->GetSpecification();
@@ -107,11 +107,12 @@ namespace Hazel {
 		{
 			m_Framebuffer->Resize(pixels.x,pixels.y);
             m_ViewportOutput->Resize(pixels.x,pixels.y);
-			m_CameraController.OnResize(m_ViewportSize.x, m_ViewportSize.y);
-			m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+
+			m_NavigationCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
 		}
 
 		// Render
+        UpdateNavigation(ts);
 		Renderer2D::ResetStats();
 		m_Framebuffer->Bind();
         auto extent=m_Framebuffer->GetSpecification();
@@ -127,21 +128,14 @@ namespace Hazel {
 		{
 			case SceneState::Edit:
 			{
-				if (m_ViewportFocused && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))
-					m_CameraController.OnUpdate(ts);
-
-				if(m_ViewportFocused && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_EditorCamera.OnUpdate(ts);
-
                 auto selected=m_SceneHierarchyPanel.GetSelectedEntity();
                 m_ActiveScene->SetUIPreviewTarget(selected&&selected.BelongsTo(m_ActiveScene.get())?uint64_t(selected.GetUUID()):0);
-                m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera, &m_RenderView, m_Framebuffer);
+                m_ActiveScene->OnUpdateEditor(ts, m_NavigationCamera, &m_RenderView, m_Framebuffer);
                 break;
 			}
 			case SceneState::Simulate:
 			{
-				if(m_ViewportFocused && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_EditorCamera.OnUpdate(ts);
-
-                m_ActiveScene->OnUpdateSimulation(ts, m_EditorCamera, &m_RenderView, m_Framebuffer);
+                m_ActiveScene->OnUpdateSimulation(ts, m_NavigationCamera, &m_RenderView, m_Framebuffer);
                 break;
 			}
 			case SceneState::Play:
@@ -292,8 +286,8 @@ namespace Hazel {
             : (!m_ViewportFocused || (!m_ViewportHovered&&!runtimePointer) || io.WantTextInput || ImGui::IsAnyItemActive()));
 
         if(m_SceneState!=SceneState::Play) {
-            int navigation=int(m_EditorCamera.Navigation());ImGui::SetNextItemWidth(110);
-            if(ImGui::Combo("##Navigation",&navigation,"Planar\0Orbit\0"))m_EditorCamera.SetNavigation(EditorNavigation(navigation));
+            int navigation=int(m_NavigationCamera.Navigation());ImGui::SetNextItemWidth(110);
+            if(ImGui::Combo("##Navigation",&navigation,"Planar\0Orbit\0")){m_Navigation.Cancel();m_NavigationCamera.SetNavigation(EditorNavigation(navigation));}
             ImGui::SameLine();
             int inspect = int(m_RenderView.Debug);
             ImGui::SetNextItemWidth(145);
@@ -326,6 +320,13 @@ namespace Hazel {
             const auto extent=ImGui::CalcTextSize(text);ImGui::GetWindowDrawList()->AddRectFilled({at.x-4,at.y-3},{at.x+extent.x+4,at.y+extent.y+3},IM_COL32(25,25,25,235));ImGui::GetWindowDrawList()->AddText(at,IM_COL32(255,220,130,255),text);
         }
 
+        if(m_SceneState!=SceneState::Play) {
+            const char* hint=m_NavigationCamera.Navigation()==EditorNavigation::Planar?
+                "Pan: MMB / Shift-drag / RMB | Zoom: scroll | F: frame | Home: reset":
+                "Orbit: Option/Alt or Space + drag | Pan: Shift-drag / MMB | Fly: RMB + WASD Q/E | Shift: fast Ctrl: slow | F: frame Home: reset Esc: release";
+            ImGui::GetWindowDrawList()->AddText({imageOrigin.x+8,imageOrigin.y+m_ViewportSize.y-22},IM_COL32(230,230,230,255),hint);
+            if(m_ViewportFocused&&!NavigationBlocked()&&!m_Navigation.Active()&&ImGui::IsKeyPressed(ImGuiKey_Home,false))m_NavigationCamera.Reset();
+        }
         UI_RectEditing();
         UI_DebugOverlay();
 
@@ -346,16 +347,16 @@ namespace Hazel {
             m_SceneState==SceneState::Edit,Application::Get().GetWindow().IsFocused(),ImGui::IsKeyPressed(ImGuiKey_Escape,false),ImGuizmo::IsUsing()?1:0);
 		// Gizmos
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-		if (selectedEntity && !selectedEntity.HasComponent<UIRectComponent>() && !selectedEntity.HasComponent<UICanvasComponent>() && m_GizmoType != -1 && m_Authoring->Availability(EditorAction::EditScene))
+		if (selectedEntity && !m_Navigation.Active() && !ImGui::GetIO().KeyAlt && !ImGui::GetIO().KeyShift && !Input::IsKeyPressed(Key::Space) && !selectedEntity.HasComponent<UIRectComponent>() && !selectedEntity.HasComponent<UICanvasComponent>() && m_GizmoType != -1 && m_Authoring->Availability(EditorAction::EditScene))
 		{
-			ImGuizmo::SetOrthographic(m_EditorCamera.Navigation()==EditorNavigation::Planar);
+			ImGuizmo::SetOrthographic(m_NavigationCamera.Navigation()==EditorNavigation::Planar);
 			ImGuizmo::SetDrawlist();
 
 			ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y, m_ViewportBounds[1].x - m_ViewportBounds[0].x, m_ViewportBounds[1].y - m_ViewportBounds[0].y);
 
 			// Editor camera
-			const glm::mat4& cameraProjection = m_EditorCamera.GetProjection();
-			glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
+			const glm::mat4& cameraProjection = m_NavigationCamera.GetProjection();
+			glm::mat4 cameraView = m_NavigationCamera.GetViewMatrix();
 
 			// Entity transform
 			glm::mat4 transform = m_ActiveScene->GetWorldTransform(selectedEntity);
@@ -381,7 +382,7 @@ namespace Hazel {
 
             if(ImGuizmo::IsUsing() && m_Authoring->Availability(EditorAction::EditScene)) {
                 try {
-                    if(m_EditorCamera.Navigation()==EditorNavigation::Planar) {
+                    if(m_NavigationCamera.Navigation()==EditorNavigation::Planar) {
                         auto next=Scene::ExactTRS(transform);const auto previous=Scene::ExactTRS(beforeGizmo);
                         next.Translation.z=previous.Translation.z;next.Rotation.x=previous.Rotation.x;next.Rotation.y=previous.Rotation.y;next.Scale.z=previous.Scale.z;
                         transform=next.GetTransform();
@@ -461,11 +462,12 @@ namespace Hazel {
             }
         }
         if(m_SceneState==SceneState::Play)m_RuntimeSession.SubmitUIEvent(e,ViewportMouse(),m_ViewportFocused && !RuntimeUIWidgetBlocksInput());
-		if(m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))m_CameraController.OnEvent(e);
-		if (m_SceneState == SceneState::Edit && m_ViewportFocused && m_ViewportHovered && !ImGui::GetIO().WantTextInput && !ImGui::IsAnyItemActive() && !ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId))
-		{
-			m_EditorCamera.OnEvent(e);
-		}
+        if(e.GetEventType()==EventType::WindowLostFocus || e.GetEventType()==EventType::WindowResize)
+            {m_Navigation.Cancel();Application::Get().GetWindow().SetPointerCaptured(false);}
+        if(m_SceneState!=SceneState::Play && e.GetEventType()==EventType::MouseScrolled &&
+           m_ViewportHovered && !NavigationBlocked() && Application::Get().GetWindow().IsFocused()) {
+            m_NavigationCamera.Scroll(static_cast<MouseScrolledEvent&>(e).GetYOffset());e.Handled=true;
+        }
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(HZ_BIND_EVENT_FN(EditorLayer::OnKeyPressed));
@@ -487,7 +489,7 @@ namespace Hazel {
 		}
 		else
 		{
-			Renderer2D::BeginScene(m_EditorCamera);
+			Renderer2D::BeginScene(m_NavigationCamera);
 		}
 
         const auto overlayState=RenderCommand::GetRasterState();RenderCommand::SetPickingMask(glm::bvec4(false));
@@ -854,6 +856,7 @@ namespace Hazel {
 
 	void EditorLayer::OnSceneStop()
 	{
+        m_Navigation.Cancel();Application::Get().GetWindow().SetPointerCaptured(false);
         if(m_SceneState==SceneState::Edit)return;
         if(m_Authoring && !m_Authoring->Require(EditorAction::RuntimeControl))return;
 		HZ_CORE_ASSERT(m_SceneState == SceneState::Play || m_SceneState == SceneState::Simulate);

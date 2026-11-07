@@ -3,7 +3,7 @@
 
 #include "Hazel/Core/Timestep.h"
 #include "Hazel/Core/UUID.h"
-#include "Hazel/Renderer/Cameras/EditorCamera.h"
+#include "Hazel/Renderer/Cameras/NavigationCamera.h"
 #include "Hazel/Scripting/ScriptField.h"
 #include "Hazel/UI/RuntimeUISnapshot.h"
 
@@ -152,9 +152,9 @@ namespace Hazel {
 
         void OnUpdateRuntime(Timestep ts, SceneRenderView *view = nullptr,
                              const Ref<Framebuffer> &display = {});
-        void OnUpdateSimulation(Timestep ts, EditorCamera &camera, SceneRenderView *view = nullptr,
+        void OnUpdateSimulation(Timestep ts, NavigationCamera &camera, SceneRenderView *view = nullptr,
                                 const Ref<Framebuffer> &display = {});
-        void OnUpdateEditor(Timestep ts, EditorCamera &camera, SceneRenderView *view = nullptr,
+        void OnUpdateEditor(Timestep ts, NavigationCamera &camera, SceneRenderView *view = nullptr,
                             const Ref<Framebuffer> &display = {});
         void OnViewportResize(uint32_t width, uint32_t height);
 
@@ -244,7 +244,7 @@ namespace Hazel {
 		void OnPhysics2DStop();
 		void SynchronizePhysics2D();
 
-        void RenderScene(EditorCamera &camera, SceneRenderView *view,
+        void RenderScene(NavigationCamera &camera, SceneRenderView *view,
                          const Ref<Framebuffer> &display);
         void DrawView(const SceneCameraView &camera, SceneRenderView *view,
                       const Ref<Framebuffer> &display);

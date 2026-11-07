@@ -6,7 +6,7 @@
 #include "Hazel/Renderer/Resources/Texture.h"
 
 #include "Hazel/Renderer/Cameras/Camera.h"
-#include "Hazel/Renderer/Cameras/EditorCamera.h"
+#include "Hazel/Renderer/Cameras/NavigationCamera.h"
 #include "Hazel/Renderer/Text/Font.h"
 
 #include "Hazel/Scene/Components.h"
@@ -21,7 +21,7 @@ namespace Hazel {
 
         static void BeginScene(const glm::mat4 &viewProjection);
         static void BeginScene(const Camera& camera, const glm::mat4& transform);
-		static void BeginScene(const EditorCamera& camera);
+		static void BeginScene(const NavigationCamera& camera);
 		static void BeginScene(const OrthographicCamera& camera); // TODO: Remove
 		// Ordered runs are internal rendering policy, not an author-facing option.
         // Clip is absolute framebuffer x/y/width/height (bottom-left), captured

@@ -225,7 +225,7 @@ static void RuntimeUIPaintChecks(const std::filesystem::path &root)
     framebuffer->Resize(128, 128);
     framebuffer->Bind();
     clear();
-    EditorCamera editorCamera(45, 1, .1f, 1000);
+    NavigationCamera editorCamera(45, 1, .1f, 1000);
     for (int i = 0; i < 3; ++i)
     {
         auto replacement = Scene::Copy(scene);

@@ -648,7 +648,7 @@ namespace Hazel {
         else RenderUI(); // CPU-only updates and lightweight UI need no graphics pass.
     }
 
-    void Scene::OnUpdateSimulation(Timestep ts, EditorCamera &camera, SceneRenderView *view,
+    void Scene::OnUpdateSimulation(Timestep ts, NavigationCamera &camera, SceneRenderView *view,
                                    const Ref<Framebuffer> &display)
     {
 		if (!m_IsPaused || m_StepFrames > 0)
@@ -684,7 +684,7 @@ namespace Hazel {
         RenderScene(camera, view, display);
     }
 
-    void Scene::OnUpdateEditor(Timestep ts, EditorCamera &camera, SceneRenderView *view,
+    void Scene::OnUpdateEditor(Timestep ts, NavigationCamera &camera, SceneRenderView *view,
                                const Ref<Framebuffer> &display)
     {
 		// Render
@@ -868,7 +868,7 @@ namespace Hazel {
 		m_PhysicsWorld.reset();
 	}
 
-    void Scene::RenderScene(EditorCamera &camera, SceneRenderView *view,
+    void Scene::RenderScene(NavigationCamera &camera, SceneRenderView *view,
                             const Ref<Framebuffer> &display)
     {
         m_RenderError.clear();
