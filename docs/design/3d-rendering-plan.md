@@ -1088,4 +1088,5 @@ A source-aware, versioned offline MIS preparation recipe, explicit angular-tail
 mips and FP32 roughness interpolation address measured diffuse/specular artifacts.
 Additive IBLQuality_v2 and a separate licensed-material showcase preserve all prior
 conditions. [The quality record](ibl-quality-pass.md) distinguishes measured
-numerical/M4 evidence and remaining qualification. Stage 5 has not begun.
+numerical/M4 evidence, qualification and remaining model/platform limits. Stage 5
+has not begun.

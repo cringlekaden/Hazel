@@ -1,6 +1,7 @@
 # Renderer organization and IBL quality pass
 
-Implementation in progress on `feature/3d-foundations`; Stage 5 has not begun.
+Implemented on `feature/3d-foundations` in the canonical Hazel checkout.
+Stage 5 has not begun.
 
 Pre-tuning criteria (2026-11-06, ddeb1ef/bb1fdf7 baseline)
 
@@ -34,7 +35,7 @@ The original float tiny-emitter prototype had 49.7% RMS / 183.2% maximum error;
 the exact archived RGBE/default-profile reproduction below was worse.
 These are bake-data errors before GPU sampling or tone mapping. Independent
 FP64 source-cell quadrature uses the bilinear radiance field and exact cell solid
-angles; convergence and all roughness levels are being qualified separately.
+angles; convergence and roughness-level results are reported separately below.
 
 The organization-only checkpoint is `bb1fdf7`, with portable includes corrected
 in `32d5ecd`. Existing focused 2D/direct/IBL checks passed before and after the
@@ -167,7 +168,11 @@ seconds**, **174.22 MiB**, **42.41 MiB**; measured CPU time was 449.76 user + 1.
 system seconds while other checkpoint work could run. This deliberately spends
 offline time/memory on quality. It is not a promise for other CPUs. Higher
 roughness budgets and source-aware integration, rather than an ordinary generated
-mipmap chain, produce every convolved level.
+mipmap chain, produce every convolved level. High reduces Photo diffuse RMS/max
+from Production's .133%/.340% to .0223%/.0545% against the same source integral;
+its roughest specular level shares the 65,536-sample cap and is unchanged. The
+extra cost principally improves diffuse and sharper/intermediate convolutions,
+not a different BRDF or exposure.
 
 ## Open the diagnostic and showcase
 
@@ -188,6 +193,88 @@ and exact licensed material/HDR provenance. Its art direction never changes the
 diagnostic controls. No shadows, bloom, local reflections, dynamic skies, Metal
 or alternate rendering path was added.
 
-Full Debug/Release checkpoint qualification, product launches, relocated v2
-package and current CI results are pending at this implementation checkpoint.
+## Checkpoint qualification
+
+Apple M4 OpenGL **4.1 Metal - 91.7**, matching Apple Clang Debug/Release builds:
+all **18 native regression executables passed in each configuration**. Release's
+first full campaign passed 17 and exposed an editor test still expecting the old
+16-to-1 specular chain. The corrected assertion checks the exact declared v2
+16-to-4 chain, preparation recipe and clean authored history; its focused rerun
+passed. Debug's subsequent full campaign passed all 18 sequentially. No graphics
+check was counted from a skip, and no numeric gate or timeout was relaxed.
+
+The complete suites retain 2D/color/text, direct lighting, exposure-independent
+UI, picking, native authoring/history/save/reopen/Play/Stop, failed/cancelled
+preparation and accepted-resource lifetime checks. Runtime checks cover all three
+saved showcase views and the controlled diagnostic rotations. Logs, captures,
+independent integrations and costs live under ignored `build/ibl-quality-evidence`.
+They are local investigation artifacts, not a new screenshot or test framework.
+
+Actual Release Hazelnut and Nutella launched a disposable source-free showcase
+from the canonical directory; Nutella opened Gallery, RoughnessSweep and
+SurfaceDetail. Every launch rendered 60 frames and completed normal teardown,
+using private profiles/saves and no project script module. The player symbol
+inventory contains no environment baker, TinyGLTF or MikkTSpace producer symbols.
+
+The first package attempt correctly rejected a missing detached-prefab dependency
+in the new showcase copy helper. The helper now copies the native import closure,
+including its prefabs; existing runtime/package validation was not weakened.
+Focused Debug/Release runtime checks validate that closure and the saved views.
+A Release content-only v2 showcase package then passed outside the checkout in
+a path containing spaces/Unicode. The existing sandbox denied the source checkout
+and SDK/system-Mono fallbacks. No HDR, GLB or project DLL was present: accepted
+lighting and native dependency closure sufficed. Nutella rendered 60 frames,
+closed normally, and retained its code signature and native loaded closure.
+Corrupting the private candidate specular artifact was rejected by its hash check;
+the accepted ZIP and checksum remained byte-identical. Archive SHA-256:
+`d1ef925a96d05dba8861fc53764ea2a124f16f9dbe3138f962e03874b13bd4d2`.
+
+Canonical [run 42343499034](https://github.com/cringlekaden/Hazel/actions/runs/42343499034)
+found a Linux test compile failure: Xlib's global `None` macro expanded the new
+probes' `CullFace::None`. `a75969a` isolates that macro immediately after the
+Xlib include; no renderer behavior or gate changed. The showcase closure repair
+is `1a3681d`, qualified by focused Debug/Release RuntimeSessionSmoke reruns.
+Replacement [run 42344369137](https://github.com/cringlekaden/Hazel/actions/runs/42344369137)
+covers both repairs and is **pending** on Linux, Windows and hosted macOS at this
+record's close. The earlier run's Windows/macOS jobs were also still running.
+No complete current Windows/Linux qualification is claimed. The separately
+confirmed historical Windows gameplay timeout is described above.
+
+All 261 inventoried old content/reference/Finder files remain byte-for-byte
+unchanged; the existing Reference README is intentionally extended. LastLightkeeper
+and the original owner recovery branch remain intact. Vendor pins, personal data
+and local Xcode preferences were not committed. There is one canonical worktree.
 Stage 5's broader mixed-scene/runtime/export campaign has not begun.
+
+## Model and representation limits
+
+Estimator error is not the entire lighting error. A separate FP64 Photo check at
+NoV=1, roughness=1 and +Z reflection measures **6.29%** difference between the
+ideal split-sum reconstruction and full single-scattering BRDF integration.
+Sampling the stored 4×4 tail adds **3.50%** spatial interpolation error there;
+the combined difference is **9.56%** before tone mapping. This does not contradict
+the much smaller estimator error at stored texel centers. The lobe probes above
+bound spatial peak/shape error separately rather than folding it into a bake
+average or loosening its gate.
+
+Tiny intense emitters expose the split-sum model's grazing/reflection-hemisphere
+boundaries and finite cube interpolation. These can remain visible even when the
+Monte Carlo splotching is gone. Continuous roughness between the finite stored
+levels is also an approximation. This pass does not establish a complete
+high-frequency/grazing reference-image bound or eliminate subpixel background/
+normal-map aliasing. It preserves the approved single-scattering recipe; rough
+metal energy loss is not hidden with ambient gain or altered exposure. Temporal
+antialiasing, multiple scattering and a different lighting representation require
+their own measured changes, not a claim that this checkpoint has AAA parity.
+
+## Review checkpoints
+
+- `bb1fdf7`, `32d5ecd`: organization-only split and portable includes.
+- `9a3af2d`: preparation recipe, quality policies, explicit mips and numerical/GPU probes.
+- `228b555`, `d02cce7`: role-based ForwardPBR naming and public Renderer3D entry point.
+- `a971c28`: licensed showcase, saved views and accepted-resource lifetime checks.
+- `f4b512d`: exact v2 native editor assertion.
+- `1a3681d`, `a75969a`: showcase package closure and Linux Xlib test boundary repairs.
+
+The canonical workspace remains `/Volumes/External/kadencringle/Projects/Hazel/Hazel.xcworkspace`.
+No master merge or release was made.
