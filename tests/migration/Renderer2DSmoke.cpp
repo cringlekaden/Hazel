@@ -49,6 +49,7 @@ static std::size_t Pixels(int entity) {
 #include "CanonicalColorChecks.h"
 #include "DirectPBRChecks.h"
 #include "IBLRenderingChecks.h"
+#include "SelectionOutlineChecks.h"
 #include "GlyphPageChecks.h"
 #include "OrderedBatchChecks.h"
 #include "TextCompositingChecks.h"
@@ -252,7 +253,7 @@ int main(int argc,char** argv) {
             if(argc==2 && std::string(argv[1])=="--profile-typography"){TypographyRenderProfile();return 0;}
             TextCompositingChecks(argc>1 && std::string(argv[1])=="--reproduce-d8");
             if(argc>1)return 0;
-            DirectPBRChecks();
+            DirectPBRChecks();SelectionOutlineChecks();
             IBLRenderingChecks();
             CanonicalColorChecks();
             Primitives();

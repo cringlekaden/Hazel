@@ -230,6 +230,48 @@ void OpenGLFramebuffer::EncodeOutput(const Ref<Framebuffer>& destination)
     if(!m_OutputVAO)glGenVertexArrays(1,&m_OutputVAO);glBindVertexArray(m_OutputVAO);glDrawArrays(GL_TRIANGLES,0,3);
 }
 
+void OpenGLFramebuffer::DrawEntityOutlineTo(const Ref<Framebuffer> &destination, int entity,
+                                            int radius, glm::vec4 encodedColor)
+{
+    auto target = std::dynamic_pointer_cast<OpenGLFramebuffer>(destination);
+    if (!target || target.get() == this || m_Specification.Samples != 1 ||
+        target->m_Specification.Samples != 1 ||
+        m_Specification.Width != target->m_Specification.Width ||
+        m_Specification.Height != target->m_Specification.Height ||
+        m_ColorAttachmentSpecifications.size() < 2 ||
+        m_ColorAttachmentSpecifications[1].TextureFormat != FramebufferTextureFormat::RED_INTEGER ||
+        target->m_ColorAttachmentSpecifications.size() != 1 ||
+        target->m_ColorAttachmentSpecifications[0].TextureFormat !=
+            FramebufferTextureFormat::RGBA8 ||
+        radius < 1 || radius > 8)
+        throw std::invalid_argument("Selection outline needs matching single-sample ID and "
+                                    "separate encoded viewport targets; radius 1..8 pixels");
+    RenderCommand::StateScope scope;
+    auto raster = RenderCommand::GetRasterState();
+    raster.DepthTest = raster.DepthWrite = raster.Blend = raster.SRGB = raster.ClipEnabled = false;
+    raster.Cull = CullFace::None;
+    raster.ColorMask = glm::bvec4(true);
+    RenderCommand::SetRasterState(raster);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->m_RendererID);
+    glViewport(0, 0, m_Specification.Width, m_Specification.Height);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    if (!m_OutlineShader)
+        m_OutlineShader = Shader::Create(
+            (Resources::Get().Root / "shaders/EntityOutline.glsl").generic_u8string());
+    m_OutlineShader->Bind();
+    m_OutlineShader->SetInt("u_Entities", 0);
+    m_OutlineShader->SetInt("u_Selected", entity);
+    m_OutlineShader->SetInt("u_Radius", radius);
+    m_OutlineShader->SetFloat4("u_EncodedColor", encodedColor);
+    glActiveTexture(GL_TEXTURE0);
+    glBindSampler(0, 0);
+    glBindTexture(GL_TEXTURE_2D, GetColorAttachmentRendererID(1));
+    if (!m_OutputVAO)
+        glGenVertexArrays(1, &m_OutputVAO);
+    glBindVertexArray(m_OutputVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+}
+
 glm::vec4 OpenGLFramebuffer::ReadColorPixel(uint32_t attachment, int x, int y)
 {
     if (attachment >= m_ColorAttachments.size() ||
