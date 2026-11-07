@@ -1,0 +1,33 @@
+PrefabVersion: 3
+PrefabRoot: 12
+SceneVersion: 3
+Scene: Direct_v1 sphere
+Presentation:
+  Mode: DisplayReferred
+  Background: [0.0100228256, 0.0100228256, 0.0100228256, 1]
+Entities:
+  - Entity: 12
+    Relationship:
+      Parent: 0
+      Order: 0
+    TagComponent:
+      Tag: Direct_v1 sphere
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+  - Entity: 16
+    Relationship:
+      Parent: 12
+      Order: 0
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        []

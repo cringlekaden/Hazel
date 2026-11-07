@@ -17,7 +17,7 @@ inline void Create(const std::filesystem::path &referenceDescriptor,
     std::filesystem::create_directories(root/"Materials");
     auto copy=[&](const std::filesystem::path &asset){auto source=Project::ResolveOwnedAsset(reference->GetAssetRoot(),asset);auto target=root/asset;std::filesystem::create_directories(target.parent_path());if(!std::filesystem::exists(target))FileSystem::WriteNewFile(target,ReadAssetBytes(source,64*1024*1024));};
     for(auto mesh:{"Reference/Direct_v1/Sphere.hmesh","Native/Direct_v1/UnitCube.hmesh"})
-        for(auto &dependency:AuditMesh(reference->GetAssetRoot(),mesh))copy(dependency);
+        for(auto &dependency:AuditImport(reference->GetAssetRoot(),ReadMeshAsset(reference->GetAssetRoot(),mesh).Definition.Import))copy(dependency);
     YAML::Node provenance;
     provenance["License"]="CC0-1.0";provenance["LicenseURL"]="https://polyhaven.com/license";
     for(auto name:{"wood_table_001","leather_red_02"})

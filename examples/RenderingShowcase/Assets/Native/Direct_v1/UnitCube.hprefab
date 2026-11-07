@@ -1,0 +1,33 @@
+PrefabVersion: 3
+PrefabRoot: 5
+SceneVersion: 3
+Scene: Native cube
+Presentation:
+  Mode: DisplayReferred
+  Background: [0.0100228256, 0.0100228256, 0.0100228256, 1]
+Entities:
+  - Entity: 5
+    Relationship:
+      Parent: 0
+      Order: 0
+    TagComponent:
+      Tag: Native cube
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+  - Entity: 6
+    Relationship:
+      Parent: 5
+      Order: 0
+    TagComponent:
+      Tag: One metre cube
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials:
+        []

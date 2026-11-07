@@ -5,6 +5,9 @@ static void RenderingShowcaseChecks()
     const auto selected=FileSystem::GetEnvironmentPath("HAZEL_RENDERING_SHOWCASE_PROJECT");
     Check(!selected.empty(),"Showcase checks require a disposable committed project");
     auto base=Project::LoadCandidate(selected);Check(bool(base),"Cannot load showcase selector");
+    // Imported manifests remain authorable/packageable, including their detached prefabs.
+    for(auto mesh:{"Reference/Direct_v1/Sphere.hmesh","Native/Direct_v1/UnitCube.hmesh"})
+        AuditImport(base->GetAssetRoot(),ReadMeshAsset(base->GetAssetRoot(),mesh).Definition.Import);
     const auto metadata=YAML::Load(FileDocument::Read(base->GetAssetRoot()/"views.yaml"));
     RenderCommand::StateScope state;
     FramebufferSpecification spec;spec.Width=1280;spec.Height=720;
