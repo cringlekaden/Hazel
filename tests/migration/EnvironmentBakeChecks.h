@@ -5,12 +5,14 @@
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Project/Project.h"
 #include "IBLReferenceMath.h"
+#include "IBLQualityBakeChecks.h"
 #include <glm/gtc/constants.hpp>
 // Independent checks use analytic integrals and uniform FP64 spherical
 // quadrature, never the producer's low-discrepancy sequence or GGX helpers.
 static void EnvironmentBakeChecks()
 {
     using namespace Hazel;
+    IBLQualityBakeChecks();
     const double pi = std::acos(-1.);
     auto rejected = [](auto work) {
         bool bad = false;
@@ -252,7 +254,7 @@ static void EnvironmentBakeChecks()
     auto accepted = ReadPreparedEnvironment(root, "Test.henv");
     assets->Reload("Test.henv");
     auto pinned = assets->Environment("Test.henv");
-    auto future=YAML::Load(acceptance);future["Version"]=2;auto futureBytes=YAML::Dump(future);put("Test.henv.accepted",futureBytes);
+    auto future=YAML::Load(acceptance);future["Version"]=3;auto futureBytes=YAML::Dump(future);put("Test.henv.accepted",futureBytes);
     rejected([&]{EnvironmentBake::PrepareImage(root,"Test.henv");});Check(ReadAssetBytes(root/"Test.henv.accepted",65536)==futureBytes,"Older producer overwrote future acceptance metadata");put("Test.henv.accepted",acceptance);
     Check(bool(pinned.Accepted), "Accepted lighting resolution");
     std::filesystem::rename(root / "Source.hdr", root / "source-unavailable");

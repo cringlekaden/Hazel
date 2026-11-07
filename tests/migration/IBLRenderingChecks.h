@@ -1,9 +1,13 @@
 #pragma once
 #include "Hazel/Renderer/Resources/EnvironmentResources.h"
 #include "IBLReferenceMath.h"
+#include "IBLMipChecks.h"
+#include "IBLQualityLobeChecks.h"
 #include <glm/gtc/constants.hpp>
 static void IBLRenderingChecks()
 {
+    auto diagnosticMips = IBLMipChecks();
+    IBLQualityLobeChecks();
     RenderCommand::StateScope testState;
     GLint originalSwap = 0;
     glGetIntegerv(GL_UNPACK_SWAP_BYTES, &originalSwap);
@@ -356,6 +360,33 @@ static void IBLRenderingChecks()
     render();
     NearRGB(view.Radiance->ReadColorPixel(0, 64, 64), {}, 1e-7,
             "Absent environment synthesized ambient or retained stale bindings");
+    // Now prove the actual PBR shader's roughness-to-LOD mapping and floor.
+    auto diagnostic = CreateRef<PreparedEnvironment>(*constant);
+    diagnostic->Identity = "explicit-level-diagnostic";
+    diagnostic->Generation = UUID();
+    diagnostic->Specular = diagnosticMips;
+    for (auto &v : diagnostic->Irradiance.Mips[0]) v=0;
+    for (size_t i=0;i<diagnostic->BRDF.Mips[0].size();i+=2)
+    { diagnostic->BRDF.Mips[0][i]=1;diagnostic->BRDF.Mips[0][i+1]=0; }
+    frame.Environment=diagnostic;
+    frame.Presentation.Environment.Lighting=true;
+    frame.Presentation.Environment.Background=false;
+    frame.Presentation.Environment.Gain=1;
+    frame.Presentation.Environment.Yaw=0;
+    frame.Debug=SurfaceView::Shaded;
+    material->BaseColor={1,1,1,1};material->Metallic=1;material->Textures={};
+    draw.World=glm::mat4(1);frame.Meshes={draw};
+    camera({0,0,1});
+    for (float r : {0.f,.045f,.25f,.5f,.9f,1.f})
+    {
+        material->Roughness=r;
+        render();
+        double level=std::max(.045f,r)*3;
+        glm::dvec3 expected(.25*(level+1)+.03125*4);
+        expected.y+=.00390625;expected.z+=.0078125;
+        NearRGB(view.Radiance->ReadColorPixel(0,64,64),expected,.0001,
+            "Actual PBR roughness/floor/fractional explicit mip selection");
+    }
     display->Unbind();
     std::cout << "PASS: IBL_v1 actual GL readbacks, independent FP64 furnace/reconstruction, "
                  "direct+IBL, AO, sky/diffuse/mirror faces/yaw, gain/exposure/UI/picking and "

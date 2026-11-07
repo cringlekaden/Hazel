@@ -1,4 +1,5 @@
 #include "EnvironmentBake.h"
+#include "RadianceSampler.h"
 #include "Hazel/Core/BuildIdentity.h"
 #include "Hazel/Core/FileDocument.h"
 #include "Hazel/Core/FileLease.h"
@@ -32,21 +33,6 @@ double Radical(uint32_t b)
     b = ((b & 0x00ff00ff) << 8) | ((b & 0xff00ff00) >> 8);
     return double(b) * 2.3283064365386962890625e-10;
 }
-glm::dvec3 Sample(const RadianceImage &in, glm::dvec3 d)
-{
-    double u = .5 + std::atan2(d.z, d.x) / (2 * Pi), v = std::acos(std::clamp(d.y, -1., 1.)) / Pi;
-    double x = u * in.Width - .5, y = v * in.Height - .5;
-    int ix = int(std::floor(x)), iy = int(std::floor(y));
-    double fx = x - ix, fy = y - iy;
-    auto at = [&](int xx, int yy) {
-        xx = (xx % int(in.Width) + int(in.Width)) % int(in.Width);
-        yy = std::clamp(yy, 0, int(in.Height) - 1);
-        size_t p = (size_t(yy) * in.Width + xx) * 3;
-        return glm::dvec3(in.RGB[p], in.RGB[p + 1], in.RGB[p + 2]);
-    };
-    return glm::mix(glm::mix(at(ix, iy), at(ix + 1, iy), fx),
-                    glm::mix(at(ix, iy + 1), at(ix + 1, iy + 1), fx), fy);
-}
 glm::dvec3 ToWorld(glm::dvec3 local, glm::dvec3 N)
 {
     auto up = std::abs(N.z) < .999 ? glm::dvec3(0, 0, 1) : glm::dvec3(1, 0, 0);
@@ -72,22 +58,34 @@ void Store(std::vector<float> &out, glm::dvec3 v)
     for (int c = 0; c < 3; ++c)
         out.push_back(float(v[c]));
 }
-LightingImage Cube(const RadianceImage &in, LightingImageKind kind, unsigned side, unsigned count,
+LightingImage Cube(const RadianceSampler &source, LightingImageKind kind, unsigned side, unsigned count,
                    const Cancel &cancel)
 {
     LightingImage result;
     result.Kind = kind;
     result.Side = side;
+    if (kind == LightingImageKind::Specular && side >= 4) result.EncodingVersion = 2;
     unsigned levels = 1;
     if (kind == LightingImageKind::Specular)
-        for (auto s = side; s > 1; s /= 2)
+        for (auto s = side; s > (result.EncodingVersion == 2 ? 4u : 1u); s /= 2)
             ++levels;
     for (unsigned mip = 0; mip < levels; ++mip)
     {
         auto &out = result.Mips.emplace_back();
         out.reserve(size_t(side) * side * 18);
         double rough = levels > 1 ? double(mip) / (levels - 1) : 0;
-        auto sequence = Samples(count, rough, kind == LightingImageKind::Irradiance);
+        // Global radiance proposals capture small HDR emitters coherently. The
+        // GGX proposals retain narrow directional lobes; balance MIS combines
+        // them without clipping radiance or blurring the source.
+        const unsigned budget = kind == LightingImageKind::Irradiance
+            ? std::max(16384u, count * 4)
+            : std::min(65536u, count * (1u << (mip ? mip - 1 : 0)));
+        auto sequence = Samples(budget, rough, false);
+        auto environment = (mip || kind == LightingImageKind::Irradiance) && !source.Constant()
+            ? source.Samples(budget) : std::vector<RadianceSampler::Sample>{};
+        const double a2 = std::pow(std::max(rough, .045), 4);
+        const double normalization = std::abs(1-a2) < 1e-6 ? .25
+            : (1-a2+2*a2*std::log(2*a2/(1+a2)))/((1-a2)*(1-a2));
         for (unsigned f = 0; f < 6; ++f)
             for (unsigned y = 0; y < side; ++y)
             {
@@ -102,32 +100,44 @@ LightingImage Cube(const RadianceImage &in, LightingImageKind kind, unsigned sid
                 {
                     auto N = CubeDirection(f, (x + .5) / side, (y + .5) / side);
                     glm::dvec3 sum(0);
-                    double weight = 0;
-                    if (kind == LightingImageKind::Background ||
-                        (kind == LightingImageKind::Specular && mip == 0))
-                        sum = Sample(in, N);
-                    else
-                        for (auto local : sequence)
-                        {
-                            auto d = ToWorld(local, N);
-                            if (kind == LightingImageKind::Irradiance)
-                                sum += Sample(in, d) * (Pi / count);
-                            else
-                            {
-                                auto L = 2 * glm::dot(N, d) * d - N;
-                                double nl = glm::dot(N, L);
-                                if (nl > 0)
-                                {
-                                    sum += Sample(in, L) * nl;
-                                    weight += nl;
-                                }
-                            }
-                        }
-                    if (kind == LightingImageKind::Specular && mip > 0)
+                    if (source.Constant())
+                        sum = source.ConstantValue() * (kind == LightingImageKind::Irradiance ? Pi : 1.);
+                    else if (kind == LightingImageKind::Background ||
+                             (kind == LightingImageKind::Specular && mip == 0))
+                        sum = source.Evaluate(N);
+                    else if (kind == LightingImageKind::Irradiance)
                     {
-                        if (weight <= 0)
-                            throw std::runtime_error("GGX prefilter has no valid samples");
-                        sum /= weight;
+                        for (const auto &sample : environment)
+                            sum += sample.Radiance * (std::max(0., glm::dot(N, sample.Direction)) /
+                                                       (sample.PDF * budget));
+                    }
+                    else
+                    {
+                        auto ggxPDF = [&](double nl) {
+                            double den = (1+a2)+(a2-1)*nl;
+                            return a2 / (Pi * den * den); // D(H)/4 for V=N
+                        };
+                        for (auto H : sequence)
+                        {
+                            auto d = ToWorld(H, N);
+                            auto L = 2 * glm::dot(N, d) * d - N;
+                            double nl = glm::dot(N, L);
+                            if (nl <= 0) continue;
+                            double pdf = ggxPDF(nl);
+                            sum += source.Evaluate(L) * (nl * pdf /
+                                (budget * (pdf + source.PDF(L))));
+                        }
+                        for (const auto &sample : environment)
+                        {
+                            double nl = glm::dot(N, sample.Direction);
+                            if (nl <= 0) continue;
+                            double pdf = ggxPDF(nl);
+                            sum += sample.Radiance * (nl * pdf /
+                                (budget * (pdf + sample.PDF)));
+                        }
+                        // Exact integral of NoL*D(H)/4 on the upper hemisphere.
+                        // Normalizing a noisy denominator would bias HDR energy.
+                        sum /= normalization;
                     }
                     Store(out, sum);
                 }
@@ -172,10 +182,11 @@ LightingSet Prepare(const RadianceImage &source, const EnvironmentProfile &p, co
     source.Validate();
     p.Validate();
     Check(cancel);
+    RadianceSampler sampler(source, cancel);
     LightingSet set;
-    set.Background = Cube(source, LightingImageKind::Background, p.Background, p.Samples, cancel);
-    set.Irradiance = Cube(source, LightingImageKind::Irradiance, p.Irradiance, p.Samples, cancel);
-    set.Specular = Cube(source, LightingImageKind::Specular, p.Specular, p.Samples, cancel);
+    set.Background = Cube(sampler, LightingImageKind::Background, p.Background, p.Samples, cancel);
+    set.Irradiance = Cube(sampler, LightingImageKind::Irradiance, p.Irradiance, p.Samples, cancel);
+    set.Specular = Cube(sampler, LightingImageKind::Specular, p.Specular, p.Samples, cancel);
     return set;
 }
 LightingImage IntegrateBRDF(const Cancel &cancel)
@@ -233,8 +244,7 @@ void PrepareImage(const std::filesystem::path &assets, const std::filesystem::pa
     auto source = Project::ResolveOwnedAsset(root, d.Image);
     auto sourceBytes = ReadAssetBytes(source, 64 * 1024 * 1024);
     auto sourceHash = AssetHash(sourceBytes), intent = EnvironmentIntent(d), lutKey = LUTKey();
-    auto identity = AssetHash(sourceHash + intent + Producer() + RadianceEvaluation +
-                              "/RGB32F-Hammersley-normalized-v1/" + lutKey);
+    auto identity = EnvironmentCacheIdentity(sourceHash, intent, Producer(), lutKey, EnvironmentPreparationRecipe);
     auto acceptedRef = EnvironmentAcceptance(reference);
     auto acceptedPath = Project::ResolveOwnedAsset(root, acceptedRef);
     FileDocument accepted;
@@ -321,7 +331,8 @@ void PrepareImage(const std::filesystem::path &assets, const std::filesystem::pa
     const uint64_t generationID = UUID();
     auto generation = prepared / AssetKey(generationID);
     YAML::Node n;
-    n["Version"] = 1;
+    n["Version"] = 2;
+    n["PreparationRecipe"] = EnvironmentPreparationRecipe;
     n["Recipe"] = IBLRecipe;
     n["Identity"] = identity;
     n["Generation"] = AssetKey(generationID);
@@ -422,7 +433,7 @@ void PrepareImage(const std::filesystem::path &assets, const std::filesystem::pa
             acceptedPath, [&](auto &o) { o << bytes; }, WriteMode::CreateNew);
     std::cout << "PREPARED " << reference.generic_u8string() << "\nIdentity " << identity
               << "\nLUT " << lutKey << "\nBake " << seconds << " s; peak resident " << peak
-              << " bytes; RGB32F cubes, RG32F LUT; " << d.Profile.Samples << " convolution / "
+              << " bytes; RGB32F cubes, RG32F LUT; " << d.Profile.Samples << " base MIS samples per proposal, doubled per mip to 65536; diffuse max(16384,4*base) / "
               << LUTSamples << " LUT samples\n";
 }
 } // namespace Hazel::EnvironmentBake

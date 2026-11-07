@@ -10,6 +10,11 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
 {
     if (unsigned(frame.Debug) > 8)
         throw std::runtime_error("Unsupported surface inspection");
+    if (frame.LinearLightingInspection && (frame.Debug < SurfaceView::Direct || frame.Debug > SurfaceView::SpecularIBL))
+        throw std::runtime_error("Linear lighting inspection requires a lighting-term view and a float target");
+    if (frame.LinearLightingInspection && (!display || display->GetSpecification().Attachments.Attachments.empty() ||
+        display->GetSpecification().Attachments.Attachments[0].TextureFormat != FramebufferTextureFormat::RGBA32F))
+        throw std::runtime_error("Linear lighting inspection requires an explicit FP32 color target");
     RenderCommand::StateScope scope;
     auto raster = RenderCommand::GetRasterState();
     raster.ClipEnabled = false;

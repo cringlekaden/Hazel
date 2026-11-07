@@ -144,7 +144,9 @@ void EnvironmentPanel::Inspect()
                    std::to_string(e.Specular.Mips.size()) + " explicit mips; LUT " +
                    std::to_string(e.BRDF.Side) + "\nLUT identity " + e.LUTIdentity + "\n" +
                    std::to_string(e.Seconds) + " s; peak resident " + std::to_string(e.PeakBytes) +
-                   " bytes\nRGB32F cubes / RG32F LUT; " + e.Producer;
+                   " bytes\nRGB32F cubes / RG32F LUT; " + e.Producer + "\nPreparation " + e.PreparationRecipe;
+        if (e.PreparationRecipe != EnvironmentPreparationRecipe)
+            m_Status += "\nEarlier quality revision: retained compatible evidence. Prepare publishes the current recipe.";
     }
     if (!resolution.Error.empty())
         m_Status += "\nPreparation required: " + resolution.Error;
@@ -190,21 +192,33 @@ void EnvironmentPanel::Properties()
                        "is needed only to prepare, not to run accepted lighting.");
     if (ImGui::TreeNode("Preparation quality"))
     {
+        {
+            PropertyUI::Row row("quality", "Quality");
+            const EnvironmentProfile profiles[]={EnvironmentProfile::Preview(),EnvironmentProfile::Production(),EnvironmentProfile::High()};
+            const char *labels[]={"Preview", "Production", "High"};
+            const char *current="Custom";
+            for(unsigned i=0;i<3;++i)if(value.Profile==profiles[i])current=labels[i];
+            if(ImGui::BeginCombo("##value",current)) {
+                for(unsigned i=0;i<3;++i)if(ImGui::Selectable(labels[i],value.Profile==profiles[i]))value.Profile=profiles[i];
+                ImGui::EndCombo();
+            }
+        }
         Resolution("background", "Background face", value.Profile.Background, 512);
-        Resolution("specular", "Specular face", value.Profile.Specular, 256);
+        Resolution("specular", "Specular face", value.Profile.Specular, 512);
         Resolution("irradiance", "Irradiance face", value.Profile.Irradiance, 64);
         {
-            PropertyUI::Row row("samples", "Convolution samples");
+            PropertyUI::Row row("samples", "Base MIS samples");
             if (ImGui::BeginCombo("##value", std::to_string(value.Profile.Samples).c_str()))
             {
-                for (unsigned n = 64; n <= 4096; n *= 2)
+                for (unsigned n = 64; n <= 65536; n *= 2)
                     if (ImGui::Selectable(std::to_string(n).c_str(), n == value.Profile.Samples))
                         value.Profile.Samples = n;
                 ImGui::EndCombo();
             }
         }
         ImGui::TextWrapped(
-            "Explicit GGX mip chain; shared 128-square BRDF LUT uses 4096 samples. Changes require "
+            "Radiance + GGX proposals; sample budget doubles per roughness level up to 65536. "
+            "Diffuse uses at least 16384 proposals. Explicit mips end at 4x4; shared LUT uses 4096 samples. Changes require "
             "Prepare. Yaw, gain and exposure belong to Scene Settings.");
         ImGui::TreePop();
     }

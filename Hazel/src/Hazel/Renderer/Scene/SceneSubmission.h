@@ -43,6 +43,7 @@ struct SceneSubmission
     SceneCameraView Camera;
     ScenePresentation Presentation;
     SurfaceView Debug = SurfaceView::Shaded;
+    bool LinearLightingInspection = false; // Scoped FP32 diagnostic readback, not authored.
     Ref<ProjectAssets> Assets;
     std::vector<SubmittedMesh> Meshes;
     std::optional<SubmittedDirectional> Light;

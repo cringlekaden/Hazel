@@ -1,0 +1,14 @@
+Environment:
+  Version: 1
+  Name: IBLQuality_v2 Photo
+  Notice: "Diagnostic IBLQuality_v2, original Hazel Apache-2.0. Tiny HDR: 256x128, RGBE .01 background, one RGBE 10000 pixel at (139,50), no clipping or editing of highlights.\nPhoto input: unchanged Studio Small 09 1k by Sergej Majboroda / Poly Haven, CC0-1.0. https://polyhaven.com/a/studio_small_09 ; https://polyhaven.com/license\nOriginal SHA256 e7cfda5f4e98e623db12b8bfd0184e048488e4855d9c83e2751fb44a32e80c45.\n"
+  Source:
+    Kind: RadianceHDR
+    Image: Reference/IBL_v1/Sources/Photo.hdr
+    Interpretation: LinearRec709D65TopDown
+  Preparation:
+    Recipe: Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top
+    Background: 256
+    Specular: 512
+    Irradiance: 64
+    Samples: 4096

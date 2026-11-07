@@ -46,10 +46,16 @@ YAML::Node ParseAcceptance(const std::string &bytes)
     DocumentSchema::Keys(n,
                          {"Version", "Recipe", "Generation", "Identity", "IntentHash", "SourceHash",
                           "Producer", "LUTIdentity", "Seconds", "PeakBytes", "Evaluation",
-                          "Outputs"},
+                          "Outputs", "PreparationRecipe"},
                          "accepted environment");
-    Need(n["Version"].as<unsigned>() == 1 && n["Recipe"].as<std::string>() == IBLRecipe,
+    auto version = n["Version"].as<unsigned>();
+    Need((version == 1 || version == 2) && n["Recipe"].as<std::string>() == IBLRecipe,
          "Incompatible accepted lighting recipe; Prepare with matching producer");
+    if (version == 2)
+        Need(n["PreparationRecipe"].as<std::string>() == EnvironmentPreparationRecipe,
+             "Unsupported environment preparation revision; use a matching producer");
+    else
+        Need(!n["PreparationRecipe"], "Version 1 acceptance cannot contain future preparation data");
     Need(n["Evaluation"].as<std::string>()==RadianceEvaluation,"Unsupported HDR source evaluation identity");
     auto outputs=n["Outputs"];
     DocumentSchema::Keys(outputs,{"Background","Irradiance","Specular","BRDF"},"lighting outputs");
@@ -70,10 +76,10 @@ void RadianceImage::Validate() const
 void EnvironmentProfile::Validate() const
 {
     Need(Power(Background) && Background >= 4 && Background <= 512 && Power(Specular) &&
-             Specular >= 4 && Specular <= 256 && Power(Irradiance) && Irradiance >= 4 &&
-             Irradiance <= 64 && Power(Samples) && Samples >= 64 && Samples <= 4096,
-         "Preparation requires power-of-two background 4..512, specular 4..256, irradiance 4..64 "
-         "and samples 64..4096");
+             Specular >= 4 && Specular <= 512 && Power(Irradiance) && Irradiance >= 4 &&
+             Irradiance <= 64 && Power(Samples) && Samples >= 64 && Samples <= 65536,
+         "Preparation requires power-of-two background 4..512, specular 4..512, irradiance 4..64 "
+         "and samples 64..65536");
 }
 void EnvironmentDefinition::Validate() const
 {
@@ -85,8 +91,7 @@ void EnvironmentDefinition::Validate() const
 bool EnvironmentDefinition::operator==(const EnvironmentDefinition &b) const
 {
     return Name == b.Name && Notice == b.Notice && Image == b.Image &&
-           Profile.Background == b.Profile.Background && Profile.Specular == b.Profile.Specular &&
-           Profile.Irradiance == b.Profile.Irradiance && Profile.Samples == b.Profile.Samples;
+           Profile == b.Profile;
 }
 EnvironmentDefinition ReadEnvironmentText(const std::string &bytes)
 {
@@ -146,6 +151,17 @@ std::string EnvironmentIntent(const EnvironmentDefinition &value)
     semantic.Notice.clear();
     return AssetHash(WriteEnvironmentText(semantic));
 }
+std::string EnvironmentCacheIdentity(const std::string &source, const std::string &intent,
+    const std::string &producer, const std::string &lut, const std::string &preparation)
+{
+    // Decode the frozen v1 identity; the old producer/renderer is not retained.
+    const auto algorithm = preparation == EnvironmentPreparationRecipe
+        ? std::string("/RGB32F/") + preparation + "/"
+        : std::string("/RGB32F-Hammersley-normalized-v1/");
+    Need(preparation == EnvironmentPreparationRecipe || preparation == "Hazel.EnvPrepare_v1.PointHammersley.FullTail1",
+         "Unsupported preparation identity");
+    return AssetHash(source + intent + producer + RadianceEvaluation + algorithm + lut);
+}
 EnvironmentDefinition ReadEnvironment(const std::filesystem::path &path)
 {
     return ReadEnvironmentText(ReadAssetBytes(path, 65536));
@@ -162,8 +178,11 @@ void LightingImage::Validate() const
     Need(unsigned(Kind) >= 1 && unsigned(Kind) <= 4 && Power(Side) && Side <= 512,
          "Invalid prepared lighting kind/size");
     uint32_t count = 1;
+    Need(EncodingVersion == 1 || EncodingVersion == 2, "Unsupported lighting encoding version");
+    if (EncodingVersion == 2)
+        Need(Kind == LightingImageKind::Specular && Side >= 4, "Version 2 requires specular tail-four data");
     if (Kind == LightingImageKind::Specular)
-        for (auto n = Side; n > 1; n /= 2)
+        for (auto n = Side; n > (EncodingVersion == 2 ? 4u : 1u); n /= 2)
             ++count;
     Need(Mips.size() == count, "Lighting artifact requires its complete explicit mip chain");
     Need(Bytes() <= 32 * 1024 * 1024, "Prepared lighting exceeds 32 MiB per artifact");
@@ -195,7 +214,7 @@ std::string EncodeLightingImage(const LightingImage &d)
             U32(payload, n);
         }
     std::string b = "HZLIGHT1";
-    U32(b, 1);
+    U32(b, d.EncodingVersion);
     U32(b, unsigned(d.Kind));
     U32(b, d.Side);
     U32(b, uint32_t(d.Mips.size()));
@@ -216,8 +235,10 @@ LightingImage DecodeLightingImage(const std::string &bytes)
              bytes.substr(0, 8) == "HZLIGHT1",
          "Invalid/oversized lighting artifact");
     size_t at = 8;
-    Need(Get(bytes, at) == 1, "Unsupported lighting artifact version");
+    auto version = Get(bytes, at);
+    Need(version == 1 || version == 2, "Unsupported lighting artifact version");
     LightingImage d;
+    d.EncodingVersion = version;
     d.Kind = LightingImageKind(Get(bytes, at));
     d.Side = Get(bytes, at);
     auto levels = Get(bytes, at), channels = Get(bytes, at), faces = Get(bytes, at),
@@ -228,7 +249,7 @@ LightingImage DecodeLightingImage(const std::string &bytes)
          "Invalid lighting layout");
     unsigned expected = 1;
     if (d.Kind == LightingImageKind::Specular)
-        for (auto s = d.Side; s > 1; s /= 2)
+        for (auto s = d.Side; s > (version == 2 ? 4u : 1u); s /= 2)
             ++expected;
     Need(levels == expected, "Incomplete/extra lighting mips");
     Need(length == bytes.size() - 72, "Lighting payload length mismatch");
@@ -277,6 +298,8 @@ PreparedEnvironment ReadPreparedEnvironmentCandidate(const std::filesystem::path
     e.SourceHash = n["SourceHash"].as<std::string>();
     e.LUTIdentity = n["LUTIdentity"].as<std::string>();
     e.Producer = n["Producer"].as<std::string>();
+    e.PreparationRecipe = n["Version"].as<unsigned>() == 2 ? n["PreparationRecipe"].as<std::string>()
+        : "Hazel.EnvPrepare_v1.PointHammersley.FullTail1";
 
     ReadDigest(e.Identity);
     ReadDigest(e.IntentHash);
@@ -293,8 +316,7 @@ PreparedEnvironment ReadPreparedEnvironmentCandidate(const std::filesystem::path
     Need(e.LUTIdentity ==
              AssetHash(std::string(IBLRecipe) + "/LUT128-RG32F-Hammersley4096-v1/" + e.Producer),
          "LUT identity does not match the BRDF recipe/producer");
-    Need(e.Identity == AssetHash(e.SourceHash + e.IntentHash + e.Producer + RadianceEvaluation +
-                                 "/RGB32F-Hammersley-normalized-v1/" + e.LUTIdentity),
+    Need(e.Identity == EnvironmentCacheIdentity(e.SourceHash,e.IntentHash,e.Producer,e.LUTIdentity,e.PreparationRecipe),
          "Environment identity does not match source, preparation and producer");
     e.Dependencies = {reference, accepted};
     auto outputs = n["Outputs"];

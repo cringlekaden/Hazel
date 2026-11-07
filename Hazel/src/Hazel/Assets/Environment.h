@@ -19,10 +19,18 @@ inline constexpr const char *RadianceEvaluation =
     "HDR-framing1-linearRec709D65-top";
 inline constexpr const char *IBLRecipe =
     "Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top";
+inline constexpr const char *EnvironmentPreparationRecipe =
+    "Hazel.EnvPrepare_v2.SolidAngleBalancedMIS.BilinearSource.Tail4";
 struct EnvironmentProfile
 {
-    uint32_t Background = 256, Specular = 128, Irradiance = 32, Samples = 1024;
+    uint32_t Background = 256, Specular = 512, Irradiance = 64, Samples = 4096;
     void Validate() const;
+    bool operator==(const EnvironmentProfile &other) const {
+        return Background==other.Background && Specular==other.Specular && Irradiance==other.Irradiance && Samples==other.Samples;
+    }
+    static EnvironmentProfile Preview() { return {128,128,32,1024}; }
+    static EnvironmentProfile Production() { return {}; }
+    static EnvironmentProfile High() { auto p=Production();p.Background=512;p.Samples=16384;return p; }
 };
 struct EnvironmentDefinition
 {
@@ -33,6 +41,8 @@ struct EnvironmentDefinition
     bool operator==(const EnvironmentDefinition &other) const;
 };
 std::string EnvironmentIntent(const EnvironmentDefinition &value);
+std::string EnvironmentCacheIdentity(const std::string &source, const std::string &intent,
+    const std::string &producer, const std::string &lut, const std::string &preparation);
 EnvironmentDefinition ReadEnvironmentText(const std::string &bytes);
 std::string WriteEnvironmentText(const EnvironmentDefinition &value);
 EnvironmentDefinition ReadEnvironment(const std::filesystem::path &path);
@@ -48,6 +58,7 @@ enum class LightingImageKind : uint32_t
 };
 struct LightingImage
 {
+    uint32_t EncodingVersion = 1; // v2 specular chains end at a 4x4 angular floor.
     LightingImageKind Kind = LightingImageKind::Background;
     uint32_t Side = 0;
     std::vector<std::vector<float>> Mips;
@@ -66,7 +77,7 @@ std::string EncodeLightingImage(const LightingImage &image);
 LightingImage DecodeLightingImage(const std::string &bytes);
 struct PreparedEnvironment
 {
-    std::string Identity, IntentHash, SourceHash, Producer, LUTIdentity, Artifacts;
+    std::string Identity, IntentHash, SourceHash, Producer, LUTIdentity, Artifacts, PreparationRecipe;
     LightingImage Background, Irradiance, Specular, BRDF;
     std::vector<std::filesystem::path> Dependencies;
     uint64_t Generation = 0;

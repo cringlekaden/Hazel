@@ -12,6 +12,8 @@
 #include "Import.h"
 #include "Environment/EnvironmentBake.h"
 #include "EnvironmentRenderingReference.h"
+#include "Reference/IBLQualityReference.h"
+#include "Reference/RenderingShowcase.h"
 #include "RenderingReference.h"
 #include <chrono>
 #include <iostream>
@@ -147,6 +149,9 @@ int main(int argc, char **argv) {
         }
         if(args.size()==3 && args[1]=="finish-environment-reference-labels"){Hazel::Log::Init();FinishEnvironmentReferenceLabels(std::filesystem::u8path(args[2]));return 0;}
         if(args.size()==3 && args[1]=="generate-environment-starter"){Hazel::Log::Init();GenerateEnvironmentStarter(std::filesystem::u8path(args[2]));return 0;}
+        if(args.size()==5 && args[1]=="create-rendering-showcase") {Hazel::Log::Init();RenderingShowcase::Create(std::filesystem::u8path(args[2]),std::filesystem::u8path(args[3]),std::filesystem::u8path(args[4]));return 0;}
+        if(args.size()==3 && args[1]=="create-ibl-quality-reference") {Hazel::Log::Init();IBLQualityReference::Create(std::filesystem::u8path(args[2]));return 0;}
+        if(args.size()==3 && args[1]=="freeze-ibl-quality-reference") {Hazel::Log::Init();IBLQualityReference::Freeze(std::filesystem::u8path(args[2]));return 0;}
         if(args.size()==4 && args[1]=="add-environment-reference"){Hazel::Log::Init();AddEnvironmentRenderingReference(std::filesystem::u8path(args[2]),std::filesystem::u8path(args[3]));return 0;}
         if (args.size() == 3 && args[1] == "generate-native-starter")
         {

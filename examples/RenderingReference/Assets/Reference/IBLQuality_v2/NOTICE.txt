@@ -1,0 +1,3 @@
+Diagnostic IBLQuality_v2, original Hazel Apache-2.0. Tiny HDR: 256x128, RGBE .01 background, one RGBE 10000 pixel at (139,50), no clipping or editing of highlights.
+Photo input: unchanged Studio Small 09 1k by Sergej Majboroda / Poly Haven, CC0-1.0. https://polyhaven.com/a/studio_small_09 ; https://polyhaven.com/license
+Original SHA256 e7cfda5f4e98e623db12b8bfd0184e048488e4855d9c83e2751fb44a32e80c45.

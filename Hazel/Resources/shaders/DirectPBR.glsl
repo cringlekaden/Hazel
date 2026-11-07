@@ -63,19 +63,25 @@ void main(){
             float ao=mix(1,texture(u_Occlusion,v_UV).r,u_Surface.w);
             diffuseTerm=texture(u_Irradiance,environmentDirection(N)).rgb*base.rgb*(1-metal)*(1-fview)/PI;
             vec2 ab=texture(u_BRDF,vec2(nv,r)).rg;
-            specularTerm=textureLod(u_Specular,environmentDirection(reflect(-V,N)),r*u_EnvRotationGain.w).rgb*(f0*ab.x+ab.y);
+            // Interpolate roughness levels in FP32: Apple's GL4.1 sampler quantizes
+            // fractional mip LOD even when textureLod receives an exact float.
+            float lod=r*u_EnvRotationGain.w,level=floor(lod);
+            vec3 reflection=environmentDirection(reflect(-V,N));
+            vec3 prefiltered=mix(textureLod(u_Specular,reflection,level).rgb,
+                textureLod(u_Specular,reflection,min(level+1,u_EnvRotationGain.w)).rgb,fract(lod));
+            specularTerm=prefiltered*(f0*ab.x+ab.y);
             diffuseTerm*=ao*u_EnvRotationGain.z;specularTerm*=ao*u_EnvRotationGain.z;
         }
         result=directTerm+diffuseTerm+specularTerm+u_EmissionCutoff.rgb*texture(u_Emissive,v_UV).rgb;
     }
-    int inspect=int(u_ToCamera.w);
+    int diagnostic=int(u_ToCamera.w);int inspect=diagnostic&15;bool linearInspection=(diagnostic&16)!=0;
     if(inspect==1)result=base.rgb;
     if(inspect==2)result=N*.5+.5;
     if(inspect==3)result=T*.5+.5;
     if(inspect==4)result=vec3(metal,rough,mix(1,texture(u_Occlusion,v_UV).r,u_Surface.w));
     if(inspect==5)result=clamp(result,0,1); // SDR inspection of pre-exposure radiance; numeric HDR remains FP32.
-    if(inspect==6)result=clamp(directTerm,0,1);
-    if(inspect==7)result=clamp(diffuseTerm,0,1);
-    if(inspect==8)result=clamp(specularTerm,0,1);
+    if(inspect==6)result=linearInspection?directTerm:clamp(directTerm,0,1);
+    if(inspect==7)result=linearInspection?diffuseTerm:clamp(diffuseTerm,0,1);
+    if(inspect==8)result=linearInspection?specularTerm:clamp(specularTerm,0,1);
     o_Color=vec4(result,1);o_Entity=u_Identity.x;
 }

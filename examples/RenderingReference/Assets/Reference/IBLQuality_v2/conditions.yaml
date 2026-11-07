@@ -1,0 +1,85 @@
+Version: 2
+BRDFRecipe: Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top
+PreparationRecipe: Hazel.EnvPrepare_v2.SolidAngleBalancedMIS.BilinearSource.Tail4
+Exposure: 0
+Yaw: 0
+Gain: 1
+CameraID: 1
+Output:
+  - 1280
+  - 720
+BaseLinearRGB:
+  - 0.180000007
+  - 0.400000006
+  - 0.699999988
+Metallic:
+  - 0
+  - 0.5
+  - 1
+Roughness:
+  - 0
+  - 0.100000001
+  - 0.25
+  - 0.5
+  - 0.75
+  - 1
+Normals: geometric, no normal map
+AO: 1
+DirectLight: false
+Cases:
+  Photo:
+    Scene: Scenes/IBLQuality_v2-Photo.hazel
+    Environment: Reference/IBLQuality_v2/Photo.henv
+    SourceHash: e7cfda5f4e98e623db12b8bfd0184e048488e4855d9c83e2751fb44a32e80c45
+    Generation: 374569549e4c45ab
+    LUTIdentity: 8916c405c4da491ac3abaccd5f4da974be8b228135e47a81ac41ff1856d5ce94
+  TinyEmitter:
+    Scene: Scenes/IBLQuality_v2-TinyEmitter.hazel
+    Environment: Reference/IBLQuality_v2/TinyEmitter.henv
+    SourceHash: 669e88bf76c08da9340eb8b0276dd7cdbad614c0afbccdf400ac152eefcb4e22
+    Generation: 3afebca2d2eb9889
+    LUTIdentity: 8916c405c4da491ac3abaccd5f4da974be8b228135e47a81ac41ff1856d5ce94
+  Constant:
+    Scene: Scenes/IBLQuality_v2-Constant.hazel
+    Environment: Reference/IBLQuality_v2/Constant.henv
+    SourceHash: 0eccd5c421c49feb47687d054e48d891cab334f353187df98ec2bc9645bc9350
+    Generation: 99e9a8eb7e232de4
+    LUTIdentity: 8916c405c4da491ac3abaccd5f4da974be8b228135e47a81ac41ff1856d5ce94
+Files:
+  Reference/IBLQuality_v2/Photo.henv: 09b92cde01e4c130201552c6698ed16330e8da3ce6856ebf2dfcbe830cd9f27d
+  Reference/IBLQuality_v2/Photo.henv.accepted: bf66d7268c88ef35d4c2ea4dd1d26b9b7a1a4f1b4386aef043cf0cf413ff33b4
+  Reference/IBLQuality_v2/Photo.henv.prepared/374569549e4c45ab/Background.hlight: 5b646c96e06e9f38091b7b1b7e449af820219839ddf2d7381eca2e810ee13d6a
+  Reference/IBLQuality_v2/Photo.henv.prepared/374569549e4c45ab/Irradiance.hlight: f406720ed1932a6f597852e312982ed1c2384e709cfbb281a9235de327c7db85
+  Reference/IBLQuality_v2/Photo.henv.prepared/374569549e4c45ab/Specular.hlight: e7a59b4ae7cfaef6569ddc212db602697017b4d1ad96c391d6f1f913c6a7e51a
+  Prepared/BRDF/8916c405c4da491ac3abaccd5f4da974be8b228135e47a81ac41ff1856d5ce94/bb4673afa8c745fb.hlight: e992f5f8905d6d607e391bcfba71ac8e08abc83530322cf48988a1b254de0242
+  Scenes/IBLQuality_v2-Photo.hazel: 75fb6921099200f080976446f5fe43bfb1cc6af115c26d319572817d74759b97
+  Reference/IBLQuality_v2/TinyEmitter.henv: 61271bcc05d1d30a246e7b10f66f726434b195a2ed5d0c97dc15f4fcc1f40ea4
+  Reference/IBLQuality_v2/TinyEmitter.henv.accepted: 29b850c6aa882370e5a1a992b78da2ebefef61eed1ec79e8ca42ab472c8fc2b0
+  Reference/IBLQuality_v2/TinyEmitter.henv.prepared/3afebca2d2eb9889/Background.hlight: 6bf511bff65a799d184188a105d68b44c0bac3f0de6887a77164b75c02fdc85f
+  Reference/IBLQuality_v2/TinyEmitter.henv.prepared/3afebca2d2eb9889/Irradiance.hlight: 4a543631dd87b74ac48d6ca0e43d3b80b314adb9552c200cab2025dfcc6395d8
+  Reference/IBLQuality_v2/TinyEmitter.henv.prepared/3afebca2d2eb9889/Specular.hlight: f9b6e49b460c723c088df568efadba514b152bb3442e21c40004ad2467b5d65c
+  Scenes/IBLQuality_v2-TinyEmitter.hazel: c9c15e9b782e764524d2824e5235beaf6c480a3648ae7e2f170782ecea7b8466
+  Reference/IBLQuality_v2/Constant.henv: 004d9dafe13b1a8fbe118f83c527ecc41221d96436c19e2b991518f042a0639a
+  Reference/IBLQuality_v2/Constant.henv.accepted: c7bffb3084282d8cdba969909431c3332f93c1ec41214e560f62bcbf99c97757
+  Reference/IBLQuality_v2/Constant.henv.prepared/99e9a8eb7e232de4/Background.hlight: de83b7343a96b0959bf416927d0f5e42007dcc2799be4a5a04945909968e974b
+  Reference/IBLQuality_v2/Constant.henv.prepared/99e9a8eb7e232de4/Irradiance.hlight: 78a5e7518095d9f38a26e8c4060e9d34742bb865cd4e594831c5e22da48aa70f
+  Reference/IBLQuality_v2/Constant.henv.prepared/99e9a8eb7e232de4/Specular.hlight: c0c17f2ff664b6c9c6c386d93b324be740b770bcbd4b5a7b50f0170d2d062c79
+  Scenes/IBLQuality_v2-Constant.hazel: 171c2e886225397359f69316e346d8de51d2dfc663102cee9d6a73f5a2a53bfd
+  Reference/IBLQuality_v2/Materials/M1R2.hmat: e0766875fe49915f55dcd29c3fda49f9560ab69b3910fc36790c33154102d964
+  Reference/IBLQuality_v2/Materials/M1R3.hmat: 1da80f355d3b021b03cc2837873aae514f6b8dd01640ce218eae952975bea660
+  Reference/IBLQuality_v2/Materials/M2R1.hmat: 8953b13dca34cc0851fb22766120b60f9159505abba964e7b654d71be7316384
+  Reference/IBLQuality_v2/Materials/M1R4.hmat: 371bbc5191002242dd2d490c1a4b8189225ff0c866cc6c6295413a56e2a97deb
+  Reference/IBLQuality_v2/Materials/M0R0.hmat: 6f67d309152a8a86545a9daaa441669b944dd88a45a586ffa599a102fd8e8df6
+  Reference/IBLQuality_v2/Materials/M0R1.hmat: c11d2e5298cf6c16c3cc076408353a299979fbbf843e07750f979da92981975b
+  Reference/IBLQuality_v2/Materials/M1R5.hmat: 4f290a3943e8b2f3b034b7e95f6e843b8cc572b43f47f90be29498eeb25a8a60
+  Reference/IBLQuality_v2/Materials/M2R0.hmat: 3f3f78a0720124e1e40821bae33eb81a5d36fe5b439ea3d95ae305b315a1832c
+  Reference/IBLQuality_v2/Materials/M0R2.hmat: 947f533237df0f487123c5c62fa36f941039ddcfd06b974993410d1cc308e5be
+  Reference/IBLQuality_v2/Materials/M2R3.hmat: e3f6f997c52abb5d0d11627c1bbfee1db2c53383ed8c86766cdef1b0104d8090
+  Reference/IBLQuality_v2/Materials/M2R2.hmat: b0efaaf7003abece58d9689dc684fea70c610d156fd0553c585bb9f2d5f80431
+  Reference/IBLQuality_v2/Materials/M0R3.hmat: da104e331b0cb02bdc17d215903903d0463b69b464ed4613936950145ebb6623
+  Reference/IBLQuality_v2/Materials/M0R4.hmat: ff020e7e79e23097c625fd6bb25fa687a6893bf0195450a22dca20f015e7391f
+  Reference/IBLQuality_v2/Materials/M1R0.hmat: 6ce2df9b14c83e0594ea988a4e42eb31296100738f76e02f0d56e771d241a82e
+  Reference/IBLQuality_v2/Materials/M2R5.hmat: ad9360eedf5ee4910f604d1dc62f0c4df0c7375186388f694060e08957c831d2
+  Reference/IBLQuality_v2/Materials/M2R4.hmat: 5393ce6b8f22d8352f1bc5fbe7e1c8b6b835798911c5db922a3ebe096101e341
+  Reference/IBLQuality_v2/Materials/M1R1.hmat: 9ac10744e737fe71fec738c8b9c47c19c1750ca0a0ee2453972f87b468c6fe27
+  Reference/IBLQuality_v2/Materials/M0R5.hmat: 91eecfea4772512c0762635a3748000b3e731ab72b69a9806c8a040f9d8fdd4f

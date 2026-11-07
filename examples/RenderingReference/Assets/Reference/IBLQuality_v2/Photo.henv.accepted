@@ -1,0 +1,25 @@
+Version: 2
+PreparationRecipe: Hazel.EnvPrepare_v2.SolidAngleBalancedMIS.BilinearSource.Tail4
+Recipe: Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top
+Identity: 2261cf99594a710b39dd10149c7faccf35d1fa72deb8a8170fc2cdcca0ec23f8
+Generation: 374569549e4c45ab
+IntentHash: fe2f1f8d50487dd43ad46c43dfd402e652b69583cec1ac16dad881321ccd48ac
+SourceHash: e7cfda5f4e98e623db12b8bfd0184e048488e4855d9c83e2751fb44a32e80c45
+Evaluation: stb_image-2.23-29b5d519a3eae19a0cf30a79e35e456a067b2f0279d27a5a9b3015c1d25b74d8/HDR-framing1-linearRec709D65-top
+Producer: macos/arm64/Release/Apple LLVM 21.0.0 (clang-2100.4.1.1)/IEEE754-precise-FP64-v1
+LUTIdentity: 8916c405c4da491ac3abaccd5f4da974be8b228135e47a81ac41ff1856d5ce94
+Outputs:
+  Background:
+    Path: Reference/IBLQuality_v2/Photo.henv.prepared/374569549e4c45ab/Background.hlight
+    Hash: 5b646c96e06e9f38091b7b1b7e449af820219839ddf2d7381eca2e810ee13d6a
+  Irradiance:
+    Path: Reference/IBLQuality_v2/Photo.henv.prepared/374569549e4c45ab/Irradiance.hlight
+    Hash: f406720ed1932a6f597852e312982ed1c2384e709cfbb281a9235de327c7db85
+  Specular:
+    Path: Reference/IBLQuality_v2/Photo.henv.prepared/374569549e4c45ab/Specular.hlight
+    Hash: e7a59b4ae7cfaef6569ddc212db602697017b4d1ad96c391d6f1f913c6a7e51a
+  BRDF:
+    Path: Prepared/BRDF/8916c405c4da491ac3abaccd5f4da974be8b228135e47a81ac41ff1856d5ce94/bb4673afa8c745fb.hlight
+    Hash: e992f5f8905d6d607e391bcfba71ac8e08abc83530322cf48988a1b254de0242
+Seconds: 119.0894705
+PeakBytes: 140623872
