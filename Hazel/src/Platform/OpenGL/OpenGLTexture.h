@@ -1,7 +1,7 @@
 // Adapted from TheCherno/Hazel 1feb705 for OpenGL 4.1/4.2 and preserved ownership/error handling.
 #pragma once
 
-#include "Hazel/Renderer/Texture.h"
+#include "Hazel/Renderer/Resources/Texture.h"
 
 #include <glad/glad.h>
 

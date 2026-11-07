@@ -293,7 +293,7 @@ project "Hazel"
     }
 
     -- stb_image is third-party code. Keep Hazel's warnings enabled.
-    filter "files:Hazel/src/Hazel/Renderer/ImageDecoder.cpp"
+    filter "files:Hazel/src/Hazel/Renderer/Resources/ImageDecoder.cpp"
         warnings "Off"
         -- GCC 16 Debug mishandles SSE immediate intrinsics imported through PCH.
         -- Compile the clean vendor wrapper normally; retain SIMD and engine PCH.

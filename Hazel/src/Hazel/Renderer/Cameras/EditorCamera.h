@@ -1,7 +1,7 @@
 // Adapted from TheCherno/Hazel 1feb705 for local ownership and native Linux/Windows portability.
 #pragma once
 
-#include "Camera.h"
+#include "Hazel/Renderer/Cameras/Camera.h"
 #include "Hazel/Scene/SceneDefaults.h"
 #include "Hazel/Core/Timestep.h"
 #include "Hazel/Events/Event.h"

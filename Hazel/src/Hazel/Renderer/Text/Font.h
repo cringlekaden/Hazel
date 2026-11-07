@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include "Hazel/Core/Base.h"
-#include "Hazel/Renderer/Texture.h"
+#include "Hazel/Renderer/Resources/Texture.h"
 #include "Hazel/Text/TextLayout.h"
 #include <glm/glm.hpp>
 

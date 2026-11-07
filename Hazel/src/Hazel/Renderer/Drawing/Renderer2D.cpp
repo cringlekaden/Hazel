@@ -1,11 +1,11 @@
 #include "hzpch.h"
 // Actual upstream Renderer2D adapted for owned state, complete capacity guards and backend limits.
 #include "Hazel/Core/Resources.h"
-#include "Hazel/Renderer/Renderer2D.h"
+#include "Hazel/Renderer/Drawing/Renderer2D.h"
 
-#include "Hazel/Renderer/VertexArray.h"
-#include "Hazel/Renderer/Shader.h"
-#include "Hazel/Renderer/UniformBuffer.h"
+#include "Hazel/Renderer/Resources/VertexArray.h"
+#include "Hazel/Renderer/Resources/Shader.h"
+#include "Hazel/Renderer/Resources/UniformBuffer.h"
 #include "Hazel/Renderer/RenderCommand.h"
 
 #include <glm/gtc/matrix_transform.hpp>

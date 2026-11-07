@@ -15,6 +15,8 @@ These guides describe the current checkout, including the runtime UI, tutorial a
 | Build a menu or HUD | [Runtime UI](runtime-game-ui.md) · [five-page tutorial](../examples/Sandbox/README.md) |
 | Export a standalone game | [Packaging and downloads](packaging.md) |
 
+Read [Follow a frame](follow-a-frame.md) to navigate the shared 2D/3D renderer, resources and shutdown.
+
 ## Learn from an example
 
 | Project | What to explore |

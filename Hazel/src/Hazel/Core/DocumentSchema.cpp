@@ -6,7 +6,7 @@
 #include "Hazel/Project/Project.h"
 #include "Hazel/Project/RendererRequestsSerializer.h"
 #include "Hazel/Project/RuntimeStorage.h"
-#include "Hazel/Renderer/Lighting.h"
+#include "Hazel/Renderer/Scene/Lighting.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include "Hazel/Text/TextSpanSerialization.h"
 #include "Hazel/UI/RuntimeUIConfig.h"

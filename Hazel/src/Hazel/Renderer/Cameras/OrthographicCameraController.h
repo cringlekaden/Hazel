@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Hazel/Core/Timestep.h"
-#include "Hazel/Renderer/OrthographicCamera.h"
+#include "Hazel/Renderer/Cameras/OrthographicCamera.h"
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Events/MouseEvent.h"
 

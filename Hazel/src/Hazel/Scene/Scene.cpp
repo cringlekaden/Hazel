@@ -6,7 +6,7 @@
 #include "Hazel/Core/Application.h"
 #include "Hazel/Core/OperationProgress.h"
 #include "Hazel/Project/Project.h"
-#include "Hazel/Renderer/SceneRenderer.h"
+#include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include "Hazel/UI/RuntimeUI.h"
 #include "Hazel/UI/RuntimeUIConfig.h"
 #include "RuntimeSession.h"
@@ -15,7 +15,7 @@
 #include "Components.h"
 #include "ScriptableEntity.h"
 #include "Hazel/Scripting/ScriptEngine.h"
-#include "Hazel/Renderer/Renderer2D.h"
+#include "Hazel/Renderer/Drawing/Renderer2D.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Physics/Physics2D.h"
 

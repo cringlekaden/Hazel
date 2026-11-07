@@ -1,5 +1,5 @@
 #include "hzpch.h"
-#include "EnvironmentResources.h"
+#include "Hazel/Renderer/Resources/EnvironmentResources.h"
 #include "Platform/OpenGL/OpenGLTextureCube.h"
 #include "Renderer.h"
 namespace Hazel

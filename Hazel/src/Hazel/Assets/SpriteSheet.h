@@ -1,7 +1,7 @@
 #pragma once
 #include "Hazel/Core/Base.h"
 #include "Hazel/Core/FileSystem.h"
-#include "Hazel/Renderer/Texture.h"
+#include "Hazel/Renderer/Resources/Texture.h"
 #include <glm/glm.hpp>
 #include <array>
 #include <variant>

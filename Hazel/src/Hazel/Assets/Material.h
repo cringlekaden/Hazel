@@ -1,6 +1,6 @@
 #pragma once
 #include "AssetData.h"
-#include "Hazel/Renderer/Texture.h"
+#include "Hazel/Renderer/Resources/Texture.h"
 #include <glm/glm.hpp>
 #include <array>
 namespace Hazel

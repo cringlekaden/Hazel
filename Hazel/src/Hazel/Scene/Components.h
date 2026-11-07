@@ -1,5 +1,5 @@
 #pragma once
-#include "Hazel/Renderer/Lighting.h"
+#include "Hazel/Renderer/Scene/Lighting.h"
 #include "Hazel/UI/Dropdown.h"
 #include "Hazel/UI/ScrollView.h"
 #include "Hazel/UI/Slider.h"
@@ -11,8 +11,8 @@
 #include "SceneCamera.h"
 #include "Hazel/UI/RuntimeUIModel.h"
 #include "Hazel/Core/UUID.h"
-#include "Hazel/Renderer/Texture.h"
-#include "Hazel/Renderer/Font.h"
+#include "Hazel/Renderer/Resources/Texture.h"
+#include "Hazel/Renderer/Text/Font.h"
 #include "Hazel/Assets/ProjectAssets.h"
 #include "Hazel/Assets/ImportedAsset.h"
 

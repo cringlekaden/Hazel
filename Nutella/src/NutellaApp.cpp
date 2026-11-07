@@ -5,7 +5,7 @@
 #include <Hazel/Scene/RuntimeSession.h>
 #include <Hazel/Scripting/ScriptEngine.h>
 #include <iostream>
-#include <Hazel/Renderer/Framebuffer.h>
+#include <Hazel/Renderer/Resources/Framebuffer.h>
 
 namespace Hazel {
     class RuntimeLayer : public Layer {

@@ -1,5 +1,5 @@
 #include "hzpch.h"
-#include "Hazel/Renderer/EnvironmentResources.h"
+#include "Hazel/Renderer/Resources/EnvironmentResources.h"
 #include "ProjectAssets.h"
 namespace Hazel
 {

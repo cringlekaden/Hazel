@@ -1,14 +1,10 @@
 #pragma once
 #include "Hazel/Assets/ImportedAsset.h"
 #include "Hazel/Assets/Environment.h"
-#include "Hazel/Renderer/Framebuffer.h"
-#include "Hazel/Renderer/Lighting.h"
 #include "Hazel/Scene/SceneDefaults.h"
-#include <functional>
 #include <optional>
 namespace Hazel
 {
-class Scene;
 class ProjectAssets;
 enum class SurfaceView
 {
@@ -51,26 +47,5 @@ struct SceneSubmission
     std::vector<SubmittedMesh> Meshes;
     std::optional<SubmittedDirectional> Light;
     Ref<const PreparedEnvironment> Environment;
-};
-class SceneRenderView
-{
-  public:
-    SurfaceView Debug = SurfaceView::Shaded; // Private view inspection; never scene/history.
-    Ref<Framebuffer> Radiance; // Optional per-view world target, never authored/history.
-    void Reset()
-    {
-        Radiance.reset();
-    }
-};
-class SceneRenderer
-{
-  public:
-    static void Shutdown();
-    static void ValidateMaterial(const MaterialDefinition &material,
-                                 const ScenePresentation &presentation);
-    static SceneSubmission Collect(Scene &scene, const SceneCameraView &camera);
-    static void Render(const SceneSubmission &frame, SceneRenderView &view,
-                       const Ref<Framebuffer> &display, const std::function<void()> &world2D,
-                       const std::function<void()> &screenUI);
 };
 } // namespace Hazel

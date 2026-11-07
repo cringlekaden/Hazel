@@ -1,7 +1,7 @@
 // Adapted target pipeline: SPIR-V reflection/cache plus portable GLSL program loading.
 #pragma once
 
-#include "Hazel/Renderer/Shader.h"
+#include "Hazel/Renderer/Resources/Shader.h"
 #include <glm/glm.hpp>
 #include <cstdint>
 #include <string>

@@ -1,13 +1,13 @@
 #pragma once
-#include "Hazel/Renderer/Shader.h"
+#include "Hazel/Renderer/Resources/Shader.h"
 
-#include "Hazel/Renderer/OrthographicCamera.h"
+#include "Hazel/Renderer/Cameras/OrthographicCamera.h"
 
-#include "Hazel/Renderer/Texture.h"
+#include "Hazel/Renderer/Resources/Texture.h"
 
-#include "Hazel/Renderer/Camera.h"
-#include "Hazel/Renderer/EditorCamera.h"
-#include "Hazel/Renderer/Font.h"
+#include "Hazel/Renderer/Cameras/Camera.h"
+#include "Hazel/Renderer/Cameras/EditorCamera.h"
+#include "Hazel/Renderer/Text/Font.h"
 
 #include "Hazel/Scene/Components.h"
 

@@ -1,6 +1,6 @@
 #pragma once
 #include "Hazel/Assets/Geometry.h"
-#include "Hazel/Renderer/VertexArray.h"
+#include "Hazel/Renderer/Resources/VertexArray.h"
 namespace Hazel
 {
 // Renderer realization of one accepted CPU mesh. No importer or authored state.

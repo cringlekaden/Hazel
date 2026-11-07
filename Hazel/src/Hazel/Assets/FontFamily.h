@@ -1,6 +1,6 @@
 #pragma once
 #include "Hazel/Core/Base.h"
-#include "Hazel/Renderer/Font.h"
+#include "Hazel/Renderer/Text/Font.h"
 #include <array>
 #include <filesystem>
 #include <string>

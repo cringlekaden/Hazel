@@ -1,8 +1,8 @@
 #pragma once
 #include "Authoring/EditorActions.h"
 #include "Hazel/Assets/UIStyleDocument.h"
-#include "Hazel/Renderer/EditorCamera.h"
-#include "Hazel/Renderer/Framebuffer.h"
+#include "Hazel/Renderer/Cameras/EditorCamera.h"
+#include "Hazel/Renderer/Resources/Framebuffer.h"
 #include "UI/StyleWidgets.h"
 namespace Hazel
 {

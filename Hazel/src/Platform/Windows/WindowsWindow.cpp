@@ -6,7 +6,7 @@
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Events/MouseEvent.h"
 #include "Hazel/Events/KeyEvent.h"
-#include "Hazel/Renderer/GraphicsContext.h"
+#include "Hazel/Renderer/Resources/GraphicsContext.h"
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>

@@ -1,5 +1,5 @@
 #pragma once
-#include "Hazel/Renderer/EnvironmentResources.h"
+#include "Hazel/Renderer/Resources/EnvironmentResources.h"
 #include "IBLReferenceMath.h"
 #include <glm/gtc/constants.hpp>
 static void IBLRenderingChecks()

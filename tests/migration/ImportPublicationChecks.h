@@ -1,7 +1,7 @@
 #pragma once
 #include "Import.h"
 #include "Hazel/Assets/MaterialDocument.h"
-#include "Hazel/Renderer/ImageDecodeMemory.h"
+#include "Hazel/Renderer/Resources/ImageDecodeMemory.h"
 inline void ImportPublicationChecks()
 {
     using namespace Hazel;

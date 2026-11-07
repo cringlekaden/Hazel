@@ -1,6 +1,6 @@
 #pragma once
 #include "ColorReadbackReference.h"
-#include "Hazel/Renderer/Framebuffer.h"
+#include "Hazel/Renderer/Resources/Framebuffer.h"
 #include <glad/glad.h>
 #include "Hazel/Core/FileSystem.h"
 #include <cmath>

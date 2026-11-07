@@ -3,7 +3,7 @@
 #include "Hazel/Core/Timestep.h"
 #include "Hazel/Events/Event.h"
 #include "Hazel/Project/RuntimeStorage.h"
-#include "Hazel/Renderer/SceneRenderer.h"
+#include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include "Hazel/UI/UIActions.h"
 #include <filesystem>
 #include <glm/glm.hpp>

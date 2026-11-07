@@ -1,5 +1,5 @@
 #include "hzpch.h"
-#include "GPUTimer.h"
+#include "Hazel/Renderer/Resources/GPUTimer.h"
 #include "Platform/OpenGL/OpenGLGPUTimer.h"
 #include "RendererAPI.h"
 namespace Hazel

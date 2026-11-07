@@ -9,7 +9,7 @@
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Math/Math.h"
 #include "Hazel/Project/ProjectSerializer.h"
-#include "Hazel/Renderer/Font.h"
+#include "Hazel/Renderer/Text/Font.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include "Hazel/Utils/PlatformUtils.h"

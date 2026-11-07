@@ -4,7 +4,7 @@
 #include "UIStyle.h"
 #include "ImportedAsset.h"
 #include "Environment.h"
-#include "Hazel/Renderer/Font.h"
+#include "Hazel/Renderer/Text/Font.h"
 #include <unordered_map>
 #include <atomic>
 #include <set>

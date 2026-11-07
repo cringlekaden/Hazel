@@ -1,6 +1,6 @@
 #pragma once
 #include "Hazel/Assets/Environment.h"
-#include "Texture.h"
+#include "Hazel/Renderer/Resources/Texture.h"
 namespace Hazel
 {
 // Render-thread realization; accepted CPU definitions have no backend identities.

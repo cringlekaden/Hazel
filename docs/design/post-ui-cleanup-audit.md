@@ -111,7 +111,7 @@ Priority A = correctness/CI blockers; B = material ownership simplification; C =
 Evidence: [current completed run](https://github.com/cringlekaden/Hazel/actions/runs/40617455266), Windows job `122583179751`, step **Setup and build Debug (two jobs)**. Initial errors include `RuntimeUIControls.cpp(7): C2871 'GameUI': a namespace with this name does not exist`, missing `RuntimeUI`, `GPUTimer`, `RendererAPI`, `OpenGLGPUTimer`, followed by cascading syntax/member errors. Source includes precede the configured `hzpch.h` in precisely these engine TUs:
 
 - `Hazel/src/Hazel/UI/RuntimeUIControls.cpp:1–2`.
-- `Hazel/src/Hazel/Renderer/GPUTimer.cpp:1–4`.
+- `Hazel/src/Hazel/Renderer/Resources/GPUTimer.cpp:1–4`.
 - `Hazel/src/Platform/OpenGL/OpenGLGPUTimer.cpp:1–2`.
 
 The project declares `pchheader "hzpch.h"` in `premake5.lua:231`. MSVC's PCH boundary skips declarations before that header; the observed missing declarations match those misplaced includes. Linux does not exercise the same PCH semantics. This is a source/build portability defect, not an unreliable UI test. MSVC was not rerun locally.

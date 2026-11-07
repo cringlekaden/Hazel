@@ -1,8 +1,8 @@
 #include "hzpch.h"
 
 #include "Hazel/Renderer/Renderer.h"
-#include "Hazel/Renderer/Renderer2D.h"
-#include "SceneRenderer.h"
+#include "Hazel/Renderer/Drawing/Renderer2D.h"
+#include "Hazel/Renderer/Drawing/Renderer3D.h"
 
 namespace Hazel {
 
@@ -17,7 +17,7 @@ namespace Hazel {
 
     void Renderer::Shutdown()
     {
-        SceneRenderer::Shutdown();
+        Renderer3D::Shutdown();
         Renderer2D::Shutdown();
         RenderCommand::Shutdown();
     }

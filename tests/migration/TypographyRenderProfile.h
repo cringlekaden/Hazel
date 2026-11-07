@@ -1,4 +1,4 @@
-#include "Hazel/Renderer/GPUTimer.h"
+#include "Hazel/Renderer/Resources/GPUTimer.h"
 #include <sstream>
 #include <iomanip>
 // Optional, same maintained font/corpus as the correctness fixtures. No waits,

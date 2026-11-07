@@ -1,7 +1,7 @@
 #include "hzpch.h"
 // Adapted from TheCherno/Hazel 1feb705 for local ownership and native Linux/Windows portability.
 #include <cmath>
-#include "EditorCamera.h"
+#include "Hazel/Renderer/Cameras/EditorCamera.h"
 
 #include "Hazel/Core/Input.h"
 #include "Hazel/Core/KeyCodes.h"

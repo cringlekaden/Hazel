@@ -1,5 +1,5 @@
 #pragma once
-#include "Hazel/Renderer/GPUTimer.h"
+#include "Hazel/Renderer/Resources/GPUTimer.h"
 #include <array>
 namespace Hazel
 {

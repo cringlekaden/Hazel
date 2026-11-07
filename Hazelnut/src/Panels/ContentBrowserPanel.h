@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Hazel/Renderer/Texture.h"
+#include "Hazel/Renderer/Resources/Texture.h"
 
 #include "Authoring/EditorActions.h"
 #include <filesystem>

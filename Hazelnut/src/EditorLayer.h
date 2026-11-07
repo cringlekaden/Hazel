@@ -1,6 +1,6 @@
 #pragma once
 #include "Authoring/UIInspectorEditing.h"
-#include "Hazel/Renderer/SceneRenderer.h"
+#include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include <optional>
 
 #include "Hazel.h"
@@ -10,7 +10,7 @@
 #include "Authoring/UIRectEditing.h"
 #include "UI/UIBindingEditor.h"
 
-#include "Hazel/Renderer/EditorCamera.h"
+#include "Hazel/Renderer/Cameras/EditorCamera.h"
 #include "Hazel/Scene/RuntimeSession.h"
 #include "Hazel/Core/FileDocument.h"
 #include "Hazel/Core/DocumentLoadReport.h"

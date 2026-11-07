@@ -1,10 +1,10 @@
 #include "hzpch.h"
-#include "Hazel/Renderer/Texture.h"
+#include "Hazel/Renderer/Resources/Texture.h"
 #include "Hazel/Renderer/Renderer.h"
 #include "Platform/OpenGL/OpenGLTexture.h"
 #include "Hazel/Core/FileSystem.h"
 #include <stb_image.h>
-#include "ImageDecodeMemory.h"
+#include "Hazel/Renderer/Resources/ImageDecodeMemory.h"
 #include "Hazel/Assets/Environment.h"
 #include <mutex>
 #include <cstring>

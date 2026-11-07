@@ -1,7 +1,7 @@
 #include "AuthoringPanel.h"
 #include "UI/PropertyUI.h"
 #include "Hazel/Renderer/Renderer.h"
-#include "Hazel/Renderer/Framebuffer.h"
+#include "Hazel/Renderer/Resources/Framebuffer.h"
 #include <imgui.h>
 #include <algorithm>
 #include <limits>

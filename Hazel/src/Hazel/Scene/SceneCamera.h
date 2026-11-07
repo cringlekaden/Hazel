@@ -3,7 +3,7 @@
 // Actual upstream SceneCamera; finite default projection and minimized-viewport guard.
 #include <cstdint>
 
-#include "Hazel/Renderer/Camera.h"
+#include "Hazel/Renderer/Cameras/Camera.h"
 
 namespace Hazel {
 

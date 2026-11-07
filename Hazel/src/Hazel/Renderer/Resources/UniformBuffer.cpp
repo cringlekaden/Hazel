@@ -1,6 +1,6 @@
 // Adapted from TheCherno/Hazel 1feb705: local headers/ownership and OpenGL 4.2 compatibility.
 #include "hzpch.h"
-#include "UniformBuffer.h"
+#include "Hazel/Renderer/Resources/UniformBuffer.h"
 
 #include "Hazel/Renderer/Renderer.h"
 #include "Platform/OpenGL/OpenGLUniformBuffer.h"

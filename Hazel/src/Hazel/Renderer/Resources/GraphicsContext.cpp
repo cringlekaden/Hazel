@@ -1,7 +1,7 @@
 // Adapted from TheCherno/Hazel 1feb705 for local ownership and native Linux/Windows portability.
 #include "hzpch.h"
 #include <stdexcept>
-#include "Hazel/Renderer/GraphicsContext.h"
+#include "Hazel/Renderer/Resources/GraphicsContext.h"
 
 #include "Hazel/Renderer/Renderer.h"
 #include "Platform/OpenGL/OpenGLContext.h"

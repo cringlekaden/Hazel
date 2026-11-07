@@ -1,7 +1,7 @@
 // Adapted from TheCherno/Hazel 1feb705: local headers/ownership and OpenGL 4.2 compatibility.
 #pragma once
 
-#include "Hazel/Renderer/UniformBuffer.h"
+#include "Hazel/Renderer/Resources/UniformBuffer.h"
 
 namespace Hazel {
 

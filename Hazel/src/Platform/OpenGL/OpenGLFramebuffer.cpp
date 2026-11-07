@@ -3,7 +3,7 @@
 #include "Platform/OpenGL/OpenGLFramebuffer.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/RenderCommand.h"
-#include "Hazel/Renderer/Shader.h"
+#include "Hazel/Renderer/Resources/Shader.h"
 #include "Platform/OpenGL/OpenGLCapabilities.h"
 #include <algorithm>
 #include <cmath>

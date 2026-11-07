@@ -2,7 +2,7 @@
 #include "EditorLayer.h"
 #include "Hazel/Project/ProjectSerializer.h"
 #include "Hazel/Renderer/Renderer.h"
-#include "Hazel/Renderer/Renderer2D.h"
+#include "Hazel/Renderer/Drawing/Renderer2D.h"
 #include "UI/PropertyUI.h"
 #include <imgui.h>
 #include <sstream>

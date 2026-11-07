@@ -1,6 +1,6 @@
 #include "hzpch.h"
 
-#include "Hazel/Renderer/OrthographicCameraController.h"
+#include "Hazel/Renderer/Cameras/OrthographicCameraController.h"
 #include "Hazel/Core/Input.h"
 #include "Hazel/Core/KeyCodes.h"
 

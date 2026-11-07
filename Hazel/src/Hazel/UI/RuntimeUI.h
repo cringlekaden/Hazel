@@ -1,6 +1,6 @@
 #pragma once
-#include "Hazel/Renderer/Renderer2D.h"
-#include "Hazel/Renderer/GPUTimer.h"
+#include "Hazel/Renderer/Drawing/Renderer2D.h"
+#include "Hazel/Renderer/Resources/GPUTimer.h"
 #include "Hazel/Scene/Entity.h"
 #include "Hazel/UI/RuntimeUISnapshot.h"
 #include "Hazel/UI/MeasuredLayout.h"

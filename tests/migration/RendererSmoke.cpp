@@ -1,10 +1,10 @@
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Core/Log.h"
-#include "Hazel/Renderer/Buffer.h"
-#include "Hazel/Renderer/Camera.h"
-#include "Hazel/Renderer/Shader.h"
-#include "Hazel/Renderer/UniformBuffer.h"
-#include "Hazel/Renderer/VertexArray.h"
+#include "Hazel/Renderer/Resources/Buffer.h"
+#include "Hazel/Renderer/Cameras/Camera.h"
+#include "Hazel/Renderer/Resources/Shader.h"
+#include "Hazel/Renderer/Resources/UniformBuffer.h"
+#include "Hazel/Renderer/Resources/VertexArray.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>

@@ -3,7 +3,7 @@
 
 #include "Hazel/Core/Timestep.h"
 #include "Hazel/Core/UUID.h"
-#include "Hazel/Renderer/EditorCamera.h"
+#include "Hazel/Renderer/Cameras/EditorCamera.h"
 #include "Hazel/Scripting/ScriptField.h"
 #include "Hazel/UI/RuntimeUISnapshot.h"
 

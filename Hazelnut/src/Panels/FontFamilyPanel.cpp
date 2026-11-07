@@ -5,7 +5,7 @@
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Utils/PlatformUtils.h"
 #include "Hazel/Utils/UTF8.h"
-#include "Hazel/Renderer/Renderer2D.h"
+#include "Hazel/Renderer/Drawing/Renderer2D.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include <imgui.h>
 #include <glm/gtc/matrix_transform.hpp>

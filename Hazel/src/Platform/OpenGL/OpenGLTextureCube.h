@@ -1,5 +1,5 @@
 #pragma once
-#include "Hazel/Renderer/EnvironmentResources.h"
+#include "Hazel/Renderer/Resources/EnvironmentResources.h"
 namespace Hazel
 {
 class OpenGLTextureCube final : public TextureCube

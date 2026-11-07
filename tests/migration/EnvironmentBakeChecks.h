@@ -1,5 +1,5 @@
 #pragma once
-#include "EnvironmentBake.h"
+#include "Environment/EnvironmentBake.h"
 #include "Hazel/Assets/Environment.h"
 #include "Hazel/Assets/EnvironmentDocument.h"
 #include "Hazel/Core/FileSystem.h"

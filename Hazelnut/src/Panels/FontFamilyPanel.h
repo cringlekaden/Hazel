@@ -1,6 +1,6 @@
 #pragma once
 #include "Hazel/Assets/FontFamilyDocument.h"
-#include "Hazel/Renderer/Framebuffer.h"
+#include "Hazel/Renderer/Resources/Framebuffer.h"
 #include "Authoring/EditorActions.h"
 #include <functional>
 namespace Hazel {

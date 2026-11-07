@@ -1,8 +1,8 @@
 #include "hzpch.h"
-#include "Font.h"
+#include "Hazel/Renderer/Text/Font.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/RenderCommand.h"
-#include "MSDFData.h"
+#include "Hazel/Renderer/Text/MSDFData.h"
 #include "Hazel/Utils/UTF8.h"
 #include <map>
 #include <sstream>

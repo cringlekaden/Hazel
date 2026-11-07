@@ -1,6 +1,6 @@
 #include "hzpch.h"
 #include "Hazel/Project/Project.h"
-#include "Hazel/Renderer/MeshGeometry.h"
+#include "Hazel/Renderer/Drawing/MeshGeometry.h"
 #include "ProjectAssets.h"
 namespace Hazel
 {

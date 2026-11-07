@@ -10,7 +10,7 @@
 #include "Hazel/Project/ProjectCreation.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Import.h"
-#include "EnvironmentBake.h"
+#include "Environment/EnvironmentBake.h"
 #include "EnvironmentRenderingReference.h"
 #include "RenderingReference.h"
 #include <chrono>

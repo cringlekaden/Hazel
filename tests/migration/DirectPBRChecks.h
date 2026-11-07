@@ -1,7 +1,7 @@
 // Direct_v1 GPU contract. FP64 oracle below is independent of shader helpers.
 #include "Hazel/Assets/NativeStarter.h"
 #include "Hazel/Assets/ProjectAssets.h"
-#include "Hazel/Renderer/SceneRenderer.h"
+#include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include "Hazel/Scene/RuntimeSession.h"
 #include <cmath>
 static glm::dvec3 OracleBRDF(glm::dvec3 base, double metal, double rough, glm::dvec3 n,

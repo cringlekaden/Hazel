@@ -1,5 +1,5 @@
 #include "hzpch.h"
-#include "ImageDecodeMemory.h"
+#include "Hazel/Renderer/Resources/ImageDecodeMemory.h"
 #include <cstdlib>
 #include <cstring>
 #include <limits>

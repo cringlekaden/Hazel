@@ -1,5 +1,5 @@
 #include "hzpch.h"
-#include "MeshGeometry.h"
+#include "Hazel/Renderer/Drawing/MeshGeometry.h"
 namespace Hazel
 {
 MeshGeometry::MeshGeometry(const GeometryData &data)
