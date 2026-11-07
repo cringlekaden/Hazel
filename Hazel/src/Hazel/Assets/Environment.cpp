@@ -1,7 +1,7 @@
+#include "hzpch.h"
 #include "Environment.h"
 #include "Hazel/Core/DocumentSchema.h"
 #include "Hazel/Project/Project.h"
-#include "hzpch.h"
 #include <cmath>
 #include <cstring>
 #include <limits>

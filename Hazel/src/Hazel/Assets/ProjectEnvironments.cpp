@@ -1,6 +1,6 @@
+#include "hzpch.h"
 #include "Hazel/Renderer/EnvironmentResources.h"
 #include "ProjectAssets.h"
-#include "hzpch.h"
 namespace Hazel
 {
 namespace

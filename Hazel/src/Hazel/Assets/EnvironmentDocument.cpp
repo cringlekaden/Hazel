@@ -1,7 +1,7 @@
+#include "hzpch.h"
 #include "EnvironmentDocument.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Project/Project.h"
-#include "hzpch.h"
 namespace Hazel
 {
 void EnvironmentDocument::Validate(const EnvironmentDefinition &value) const

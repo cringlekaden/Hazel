@@ -1,6 +1,6 @@
+#include "hzpch.h"
 #include "OpenGLTextureCube.h"
 #include "OpenGLCapabilities.h"
-#include "hzpch.h"
 #include <glad/glad.h>
 namespace Hazel
 {

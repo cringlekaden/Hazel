@@ -1,7 +1,7 @@
+#include "hzpch.h"
 #include "EnvironmentResources.h"
 #include "Platform/OpenGL/OpenGLTextureCube.h"
 #include "Renderer.h"
-#include "hzpch.h"
 namespace Hazel
 {
 Ref<TextureCube> TextureCube::Create(const LightingImage &d)
