@@ -40,7 +40,24 @@ YAML::Node Parse(const std::string &bytes)
     DocumentSchema::Structure(n);
     return n;
 }
+YAML::Node ParseAcceptance(const std::string &bytes)
+{
+    auto n=Parse(bytes);
+    DocumentSchema::Keys(n,
+                         {"Version", "Recipe", "Generation", "Identity", "IntentHash", "SourceHash",
+                          "Producer", "LUTIdentity", "Seconds", "PeakBytes", "Evaluation",
+                          "Outputs"},
+                         "accepted environment");
+    Need(n["Version"].as<unsigned>() == 1 && n["Recipe"].as<std::string>() == IBLRecipe,
+         "Incompatible accepted lighting recipe; Prepare with matching producer");
+    Need(n["Evaluation"].as<std::string>()==RadianceEvaluation,"Unsupported HDR source evaluation identity");
+    auto outputs=n["Outputs"];
+    DocumentSchema::Keys(outputs,{"Background","Irradiance","Specular","BRDF"},"lighting outputs");
+    for(auto name:{"Background","Irradiance","Specular","BRDF"})DocumentSchema::Keys(outputs[name],{"Path","Hash"},"lighting output");
+    return n;
+}
 } // namespace
+void ValidateEnvironmentAcceptanceSchema(const std::string &bytes){(void)ParseAcceptance(bytes);}
 void RadianceImage::Validate() const
 {
     Need(Width >= 2 && Height >= 1 && Width <= 8192 && Height <= 4096 &&
@@ -252,14 +269,7 @@ PreparedEnvironment ReadPreparedEnvironmentCandidate(const std::filesystem::path
 {
     auto d = ReadEnvironment(Project::ResolveOwnedAsset(root, reference));
     auto accepted = EnvironmentAcceptance(reference);
-    auto n = Parse(acceptedBytes);
-    DocumentSchema::Keys(n,
-                         {"Version", "Recipe", "Generation", "Identity", "IntentHash", "SourceHash",
-                          "Producer", "LUTIdentity", "Seconds", "PeakBytes", "Evaluation",
-                          "Outputs"},
-                         "accepted environment");
-    Need(n["Version"].as<unsigned>() == 1 && n["Recipe"].as<std::string>() == IBLRecipe,
-         "Incompatible accepted lighting recipe; Prepare with matching producer");
+    auto n=ParseAcceptance(acceptedBytes);
     PreparedEnvironment e;
     e.Generation = ReadAssetKey(n["Generation"].as<std::string>());
     e.Identity = n["Identity"].as<std::string>();
@@ -267,8 +277,7 @@ PreparedEnvironment ReadPreparedEnvironmentCandidate(const std::filesystem::path
     e.SourceHash = n["SourceHash"].as<std::string>();
     e.LUTIdentity = n["LUTIdentity"].as<std::string>();
     e.Producer = n["Producer"].as<std::string>();
-    Need(n["Evaluation"].as<std::string>() == RadianceEvaluation,
-         "Unsupported HDR source evaluation identity");
+
     ReadDigest(e.Identity);
     ReadDigest(e.IntentHash);
     ReadDigest(e.SourceHash);
@@ -289,14 +298,13 @@ PreparedEnvironment ReadPreparedEnvironmentCandidate(const std::filesystem::path
          "Environment identity does not match source, preparation and producer");
     e.Dependencies = {reference, accepted};
     auto outputs = n["Outputs"];
-    DocumentSchema::Keys(outputs, {"Background", "Irradiance", "Specular", "BRDF"},
-                         "lighting outputs");
+
     unsigned i = 0;
     for (auto target : {&e.Background, &e.Irradiance, &e.Specular, &e.BRDF})
     {
         const char *names[] = {"Background", "Irradiance", "Specular", "BRDF"};
         auto item = outputs[names[i]];
-        DocumentSchema::Keys(item, {"Path", "Hash"}, "lighting output");
+
         auto p = std::filesystem::u8path(item["Path"].as<std::string>());
         AssetPath(p, ".hlight");
         auto expected = i == 3

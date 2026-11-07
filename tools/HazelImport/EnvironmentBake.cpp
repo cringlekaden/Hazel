@@ -239,8 +239,10 @@ void PrepareImage(const std::filesystem::path &assets, const std::filesystem::pa
     auto acceptedPath = Project::ResolveOwnedAsset(root, acceptedRef);
     FileDocument accepted;
     bool replacing = std::filesystem::exists(acceptedPath);
-    if (replacing)
+    if (replacing){
         accepted.Open(acceptedPath);
+        ValidateEnvironmentAcceptanceSchema(accepted.Original());
+    }
     auto prepared = reference;
     prepared += ".prepared";
     auto parent = Project::ResolveOwnedAsset(root, prepared);
@@ -308,7 +310,7 @@ void PrepareImage(const std::filesystem::path &assets, const std::filesystem::pa
         catch (const std::exception &)
         {
             OperationProgress::Report(
-                "Corrupt shared LUT candidate retained; preparing a fresh immutable artifact");
+                "Unusable shared LUT candidate retained; preparing a fresh immutable artifact");
         }
     if (lutBytes.empty())
     {

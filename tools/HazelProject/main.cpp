@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
                       << Hazel::AssetKey(result.Generation)
                       << (result.Unchanged ? " (unchanged)" : " (accepted)")
                       << "\nNative authoring ready; lit meshes require scene-referred presentation "
-                         "and a directional light\n";
+                         "and direct or prepared image lighting\n";
             return 0;
         }
         if(args.size()==4 && args[1]=="measure-scene") {
@@ -145,6 +145,7 @@ int main(int argc, char **argv) {
                                         std::filesystem::u8path(args[3]));
             return 0;
         }
+        if(args.size()==3 && args[1]=="finish-environment-reference-labels"){Hazel::Log::Init();FinishEnvironmentReferenceLabels(std::filesystem::u8path(args[2]));return 0;}
         if(args.size()==3 && args[1]=="generate-environment-starter"){Hazel::Log::Init();GenerateEnvironmentStarter(std::filesystem::u8path(args[2]));return 0;}
         if(args.size()==4 && args[1]=="add-environment-reference"){Hazel::Log::Init();AddEnvironmentRenderingReference(std::filesystem::u8path(args[2]),std::filesystem::u8path(args[3]));return 0;}
         if (args.size() == 3 && args[1] == "generate-native-starter")

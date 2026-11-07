@@ -57,7 +57,7 @@ bool ProjectTools::Start(ToolRequest request)
         for (const auto &arg : m_Request.Arguments)
             arguments << std::quoted(arg) << ' ';
         op.Command = arguments.str(); // Display argv boundaries; execution never parses this string.
-        op.Stage = m_Request.NativeExecutable.empty()?"Locating Python":"Locating native importer";
+        op.Stage = m_Request.NativeExecutable.empty()?"Locating Python":"Locating native asset producer";
         op.Start = std::chrono::system_clock::now();
         op.ClockStart = std::chrono::steady_clock::now();
         m_Console->Begin(std::move(op));
@@ -189,19 +189,19 @@ ToolReport ProjectTools::Work(const ToolRequest &request, const std::shared_ptr<
             return report;
         }
         if(!request.NativeExecutable.empty()) {
-            stage("Validating native importer");
-            if(!request.NativeExecutable.is_absolute()||!std::filesystem::is_regular_file(request.NativeExecutable))throw std::runtime_error("Native importer is missing beside Hazelnut; rebuild/stage matching editor tools");
+            stage("Validating native asset producer");
+            if(!request.NativeExecutable.is_absolute()||!std::filesystem::is_regular_file(request.NativeExecutable))throw std::runtime_error("Native asset producer is missing beside Hazelnut; rebuild/stage matching editor tools");
             const bool environment=!request.Arguments.empty()&&request.Arguments[0]=="prepare-environment";
             auto contract=Process::Run(request.NativeExecutable,{environment?"--environment-contract":"--import-contract"},request.NativeExecutable.parent_path(),std::chrono::seconds(10));
             while(!contract.Output.empty()&&(contract.Output.back()=='\n'||contract.Output.back()=='\r'))contract.Output.pop_back();
-            if(contract.ExitCode!=0||contract.Output!=(environment?"HAZEL_ENVIRONMENT_PREPARE_CONTRACT=1":"HAZEL_ASSET_IMPORT_CONTRACT=1"))throw std::runtime_error("Incompatible native importer; rebuild/stage matching editor tools");
-            if(request.Arguments.empty())throw std::runtime_error("Native import requires arguments");
+            if(contract.ExitCode!=0||contract.Output!=(environment?"HAZEL_ENVIRONMENT_PREPARE_CONTRACT=1":"HAZEL_ASSET_IMPORT_CONTRACT=1"))throw std::runtime_error("Incompatible native asset producer; rebuild/stage matching editor tools");
+            if(request.Arguments.empty())throw std::runtime_error("Native asset operation requires arguments");
             stage("Running "+request.Arguments.front());auto result=Process::RunStreams(request.NativeExecutable,request.Arguments,request.NativeExecutable.parent_path(),std::chrono::minutes(10),{chunks,cancelled});
             for(int stream=0;stream<2;++stream)if(!pending[stream].empty())line(stream,std::move(pending[stream]));
             report.ExitCode=result.ExitCode;report.Success=result.ExitCode==0&&!result.TimedOut&&!result.Cancelled;
             report.Outcome=result.Cancelled?ToolOutcome::Cancelled:result.TimedOut?ToolOutcome::TimedOut:report.Success?ToolOutcome::Succeeded:ToolOutcome::Failed;report.Output=result.Output;
-            if(result.Cancelled)report.Output+="\nImport process cancelled; accepted generations retained. Owned temporary stages are cleaned on retry.";
-            if(result.TimedOut)report.Output+="\nImport exceeded its 10 minute bound; owned process terminated and accepted generation retained.";
+            if(result.Cancelled)report.Output+="\nAsset process cancelled; accepted generations retained. Owned temporary stages are cleaned on retry.";
+            if(result.TimedOut)report.Output+="\nAsset preparation/import exceeded its 10 minute bound; owned process terminated and accepted generation retained.";
             return report;
         }
         stage("Validating SDK");

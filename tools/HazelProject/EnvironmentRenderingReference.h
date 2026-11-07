@@ -56,6 +56,24 @@ static void GenerateEnvironmentStarter(const std::filesystem::path &root)
                              d.Notice + "\nNative creation copies accepted portable data. No "
                                         "baker, parser, GPU or SDK needed.\n");
 }
+static void AddEnvironmentLabels(const Hazel::Ref<Hazel::Scene> &scene)
+{
+    using namespace Hazel;
+    if(scene->GetEntityByUUID(72)||scene->GetEntityByUUID(73))throw std::runtime_error("IBL label entities already exist; retain reference conditions");
+    auto world=scene->CreateEntityWithUUID(73,"World label backing");
+    auto &transform=world.GetComponent<TransformComponent>();transform.Translation={-1.5f,3.15f,-.02f};transform.Scale={6.2f,.6f,1};world.AddComponent<SpriteRendererComponent>().Color={.005f,.005f,.005f,1};
+    auto plate=scene->CreateEntityWithUUID(72,"Screen label backing");scene->Reparent(plate,scene->GetEntityByUUID(70),TransformPolicy::KeepLocal);scene->MoveSibling(plate,-1);
+    auto &rect=plate.AddComponent<UIRectComponent>();rect.Offset={12,648};rect.FixedSize={1224,56};plate.AddComponent<SpriteRendererComponent>().Color={.005f,.005f,.005f,.9f};
+}
+// One pre-qualification readability correction, through ordinary native scene
+// authoring. Camera, lighting, exposure, materials and all prior cases stay fixed.
+static void FinishEnvironmentReferenceLabels(const std::filesystem::path &descriptor)
+{
+    using namespace Hazel;auto project=Project::LoadCandidate(descriptor);if(!project)throw std::runtime_error("Open the Rendering Reference project");auto root=project->GetAssetRoot();auto path=root/"Reference/IBL_v1/conditions.yaml";auto metadata=YAML::Load(FileDocument::Read(path));
+    std::vector<std::pair<std::filesystem::path,std::string>> candidates;
+    for(auto entry:metadata["Cases"]){auto reference=std::filesystem::u8path(entry.second["Scene"].as<std::string>());auto original=FileDocument::Read(root/reference);if(AssetHash(original)!=entry.second["SceneHash"].as<std::string>())throw std::runtime_error("IBL scene changed before readability correction");auto scene=CreateRef<Scene>();SceneSerializer codec(scene,root,true,project->GetAssets());if(!codec.DeserializeText(original,false,ResourceLoading::MetadataOnly))throw std::runtime_error(codec.Report().Error);AddEnvironmentLabels(scene);auto bytes=codec.SerializeText();entry.second["SceneHash"]=AssetHash(bytes);candidates.emplace_back(root/reference,std::move(bytes));}
+    for(auto &candidate:candidates)FileSystem::WriteFileAtomically(candidate.first,[&](auto &o){o<<candidate.second;});YAML::Emitter out;out.SetFloatPrecision(9);out<<metadata;FileSystem::WriteFileAtomically(path,[&](auto &o){o<<out.c_str()<<"\n";});
+}
 static void AddEnvironmentRenderingReference(const std::filesystem::path &projectFolder,
                                              const std::filesystem::path &photo)
 {
@@ -141,6 +159,7 @@ static void AddEnvironmentRenderingReference(const std::filesystem::path &projec
             e.GetComponent<DirectionalLightComponent>().Enabled =
                 std::string(name) == "DirectOnly" || std::string(name) == "Combined";
         }
+        AddEnvironmentLabels(scene);
         auto ref = std::filesystem::path("Scenes") / (std::string("IBL_v1-") + name + ".hazel");
         FileSystem::WriteNewFile(root / ref, SceneSerializer(scene).SerializeText());
         auto config = project->GetConfig();

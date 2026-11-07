@@ -80,6 +80,13 @@ static void IBLReferenceChecks()
                         "IBL saved grid picking/framebuffer scale");
                     samples.push_back(target->ReadColorPixel(0, p.x, p.y));
                 }
+            auto capture=FileSystem::GetEnvironmentPath("HAZEL_IBL_CAPTURE");
+            if(scale==1 && std::string(name)=="Photo" && !capture.empty()) {
+                auto outputSpec=spec;outputSpec.Attachments={FramebufferTextureFormat::RGBA8};auto output=Framebuffer::Create(outputSpec);target->EncodeOutput(output);output->Bind();
+                GLint alignment=0;glGetIntegerv(GL_PACK_ALIGNMENT,&alignment);glPixelStorei(GL_PACK_ALIGNMENT,1);
+                std::vector<unsigned char> rgb(size_t(spec.Width)*spec.Height*3);glReadBuffer(GL_COLOR_ATTACHMENT0);glReadPixels(0,0,spec.Width,spec.Height,GL_RGB,GL_UNSIGNED_BYTE,rgb.data());glPixelStorei(GL_PACK_ALIGNMENT,alignment);
+                std::ofstream file(capture,std::ios::binary);Check(bool(file),"Cannot open IBL inspection capture");file<<"P6\n"<<spec.Width<<' '<<spec.Height<<"\n255\n";for(int y=int(spec.Height)-1;y>=0;--y)file.write(reinterpret_cast<const char*>(rgb.data()+size_t(y)*spec.Width*3),spec.Width*3);Check(bool(file),"Cannot write IBL inspection capture");output->Unbind();
+            }
             runtime.Stop();
             EditorCamera camera(45, float(spec.Width) / spec.Height, .1f, 100);
             camera.SetViewportSize(spec.Width, spec.Height);

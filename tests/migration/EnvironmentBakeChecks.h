@@ -252,6 +252,8 @@ static void EnvironmentBakeChecks()
     auto accepted = ReadPreparedEnvironment(root, "Test.henv");
     assets->Reload("Test.henv");
     auto pinned = assets->Environment("Test.henv");
+    auto future=YAML::Load(acceptance);future["Version"]=2;auto futureBytes=YAML::Dump(future);put("Test.henv.accepted",futureBytes);
+    rejected([&]{EnvironmentBake::PrepareImage(root,"Test.henv");});Check(ReadAssetBytes(root/"Test.henv.accepted",65536)==futureBytes,"Older producer overwrote future acceptance metadata");put("Test.henv.accepted",acceptance);
     Check(bool(pinned.Accepted), "Accepted lighting resolution");
     std::filesystem::rename(root / "Source.hdr", root / "source-unavailable");
     Check(AuditEnvironment(root, "Test.henv").size() == 6,

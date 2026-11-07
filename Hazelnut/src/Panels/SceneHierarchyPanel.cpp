@@ -1332,7 +1332,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                 light.Color = glm::vec3(color);
             PropertyUI::SliderFloat("intensity", "Intensity", light.Intensity, 0, 1000);
             ImGui::TextWrapped("Linear RGB irradiance, relative units. Local -Z points along light "
-                               "travel. One enabled directional light; no ambient/IBL.");
+                               "travel. One enabled directional key; image lighting is selected in Scene Settings.");
         });
     DrawUIComponent<MeshRendererComponent>(
         "Mesh Renderer", entity, m_Sections, m_RestoreSections, [&, entity](auto &c) mutable {

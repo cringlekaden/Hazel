@@ -15,7 +15,7 @@ Scope: IBL_v1; additive to frozen Core_v1, Import_v1, Direct_v1
 Cases:
   DirectOnly:
     Scene: Scenes/IBL_v1-DirectOnly.hazel
-    SceneHash: 9f17e6364307761669ca3e13cce353869c749bc1bd2dcc76de7bd645bb6b8fd0
+    SceneHash: 07047ece06852a5e2a35553f0199928ce211bf7e34289fe6bc921b4945556b8b
     Environment: Reference/IBL_v1/Constant.henv
     Yaw: 0
     Gain: 1
@@ -24,7 +24,7 @@ Cases:
     SunEnabled: true
   IBLOnly:
     Scene: Scenes/IBL_v1-IBLOnly.hazel
-    SceneHash: 07981461e72c4728e2a5de0ee217482ef7a2bc9f36941fad8cb1e2ec4b30f0d1
+    SceneHash: bfe979f023a8dc303f4c9e9ed257ee8ed8ecca07b60492dc089c5a4d8114a031
     Environment: Reference/IBL_v1/Constant.henv
     Yaw: 0
     Gain: 1
@@ -33,7 +33,7 @@ Cases:
     SunEnabled: false
   Combined:
     Scene: Scenes/IBL_v1-Combined.hazel
-    SceneHash: fbbad6870660204699e8ca7ffba81f5679c6c6c0acc4626da1c0f95c6235c79c
+    SceneHash: 2236e7aa54df279d7e52950fa5510ba02f21772ecc254feeda2174c74309b2ee
     Environment: Reference/IBL_v1/AsymmetricAxes.henv
     Yaw: 0
     Gain: 1
@@ -42,7 +42,7 @@ Cases:
     SunEnabled: true
   Photo:
     Scene: Scenes/IBL_v1-Photo.hazel
-    SceneHash: 57715e87265196d4c069a5e29875ac5de279b47f4787d2414764f74cd3f3e45b
+    SceneHash: ebae6b4b8aab8da7edf83272807c62424053d5faf7e11d7232afa4617a4c11b9
     Environment: Reference/IBL_v1/Photo.henv
     Yaw: 0
     Gain: 1
@@ -51,7 +51,7 @@ Cases:
     SunEnabled: false
   AxesYaw90:
     Scene: Scenes/IBL_v1-AxesYaw90.hazel
-    SceneHash: 98035314fb5e24ba4697bf4382e2acc0b16ad16be98a82ee6ad0d0e5f23cfc4b
+    SceneHash: b75216446508e7d32bde8cb7e713728f2773e2faf133bdb8ad9a2e09f859a748
     Environment: Reference/IBL_v1/AsymmetricAxes.henv
     Yaw: 1.57079637
     Gain: 1

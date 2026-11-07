@@ -34,7 +34,7 @@ layout(binding=4) uniform sampler2D u_Emissive;
 layout(binding=5) uniform samplerCube u_Irradiance;
 layout(binding=6) uniform samplerCube u_Specular;
 layout(binding=7) uniform sampler2D u_BRDF;
-layout(std140,binding=6) uniform Environment {mat4 u_InverseVP;vec4 u_EnvEye;vec4 u_EnvRotationGain;vec4 u_EnvOptions;};
+layout(std140,binding=6) uniform Environment {mat4 u_InverseVP;vec4 u_EnvRotationGain;vec4 u_EnvOptions;};
 vec3 environmentDirection(vec3 d){float c=u_EnvRotationGain.x,s=u_EnvRotationGain.y;return vec3(c*d.x-s*d.z,d.y,s*d.x+c*d.z);}
 const float PI=3.141592653589793;
 vec3 direct(vec3 base,float metal,float rough,vec3 N,vec3 V,vec3 L){

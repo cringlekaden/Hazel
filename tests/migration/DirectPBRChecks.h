@@ -80,7 +80,7 @@ static void DirectEnergyChecks()
                           "Single-scattering rough conductor analytic loss");
             }
     std::cout << "PASS: independent FP64 hemisphere quadrature convergence, ordinary white-furnace "
-                 "energy and analytic 1-ln(2) rough-conductor loss (no IBL implementation)\n";
+                 "energy and analytic 1-ln(2) rough-conductor direct-model loss\n";
 }
 static void DirectPBRChecks()
 {

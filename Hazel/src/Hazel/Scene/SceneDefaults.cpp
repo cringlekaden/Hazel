@@ -77,7 +77,7 @@ ScenePresentation ReadPresentation(const YAML::Node& n) {
 }
 YAML::Node Encode(const NewSceneDefaults& value) {
     if (value.DirectStarter && !value.Presentation.SceneReferred)
-        throw std::runtime_error("Direct PBR starter content requires scene-referred presentation; "
+        throw std::runtime_error("Native PBR starter content requires scene-referred presentation; "
                                  "projection and navigation remain independent");
     if(value.Navigation!=EditorNavigation::Planar && value.Navigation!=EditorNavigation::Orbit)throw std::runtime_error("Unsupported navigation seed");
     YAML::Node n;n["Projection"]=value.Perspective?"Perspective":"Orthographic";
@@ -103,7 +103,7 @@ NewSceneDefaults Read(const YAML::Node& n) {
     result.Perspective=p=="Perspective";result.Navigation=v=="Planar"?EditorNavigation::Planar:EditorNavigation::Orbit;
     result.Presentation = ReadPresentation(n["Presentation"]);
     if (result.DirectStarter && !result.Presentation.SceneReferred)
-        throw std::runtime_error("Direct PBR starter requires scene-referred presentation");
+        throw std::runtime_error("Native PBR starter requires scene-referred presentation");
     return result;
 }
 std::string SuggestIdentifier(const std::string& name) {

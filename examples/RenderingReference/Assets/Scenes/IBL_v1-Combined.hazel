@@ -420,10 +420,47 @@ Entities:
         CancelTarget: 0
         ReturnFocus: 0
         EventOwner: 0
-  - Entity: 71
+  - Entity: 72
     Relationship:
       Parent: 70
       Order: 0
+    TagComponent:
+      Tag: Screen label backing
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.00499999989, 0.00499999989, 0.00499999989, 0.899999976]
+      Source:
+        Type: None
+    UIRectComponent:
+      LayoutVersion: 3
+      WidthMode: 0
+      HeightMode: 0
+      FixedSize: [1224, 56]
+      MaximumSize: [0, 0]
+      HasMaximum: [false, false]
+      Anchor: [0, 0]
+      GridRow: -1
+      GridColumn: -1
+      RowSpan: 1
+      ColumnSpan: 1
+      ImageFit: 0
+      ImageAlignment: [0.5, 0.5]
+      Offset: [12, 648]
+      Pivot: [0, 0]
+      MinimumSize: [0, 0]
+      Margin: [0, 0, 0, 0]
+      Padding: [0, 0, 0, 0]
+      Visible: true
+      Enabled: true
+      ClipChildren: true
+      Flex: 0
+  - Entity: 71
+    Relationship:
+      Parent: 70
+      Order: 1
     TagComponent:
       Tag: UI case label
     TransformComponent:
@@ -467,3 +504,17 @@ Entities:
       Wrap: true
       Overflow: Clip
       MaxLines: 0
+  - Entity: 73
+    Relationship:
+      Parent: 0
+      Order: 25
+    TagComponent:
+      Tag: World label backing
+    TransformComponent:
+      Translation: [-1.5, 3.1500001, -0.0199999996]
+      Rotation: [0, 0, 0]
+      Scale: [6.19999981, 0.600000024, 1]
+    SpriteRendererComponent:
+      Color: [0.00499999989, 0.00499999989, 0.00499999989, 1]
+      Source:
+        Type: None

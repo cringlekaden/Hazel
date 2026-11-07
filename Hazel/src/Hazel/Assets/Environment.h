@@ -75,6 +75,7 @@ struct PreparedEnvironment
 };
 // Does not open producer inputs. Stale intent or invalid artifacts reject a new
 // candidate; ProjectAssets retains its previous accepted immutable version.
+void ValidateEnvironmentAcceptanceSchema(const std::string &acceptedBytes);
 PreparedEnvironment ReadPreparedEnvironmentCandidate(const std::filesystem::path &root,
                                                      const std::filesystem::path &reference,
                                                      const std::string &acceptedBytes);

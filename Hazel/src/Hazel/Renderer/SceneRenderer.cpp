@@ -30,8 +30,8 @@ struct alignas(16) MaterialData
 };
 static_assert(sizeof(ViewData) == 128 && sizeof(ObjectData) == 144 && sizeof(MaterialData) == 64,
               "std140 direct forward layout");
-struct alignas(16) EnvironmentData {glm::mat4 InverseVP;glm::vec4 Eye,RotationGain,Options;};
-static_assert(sizeof(EnvironmentData)==112,"std140 environment layout");
+struct alignas(16) EnvironmentData {glm::mat4 InverseVP;glm::vec4 RotationGain,Options;};
+static_assert(sizeof(EnvironmentData)==96,"std140 environment layout");
 Ref<Shader> shader, skyShader;
 Ref<UniformBuffer> environmentBuffer;
 Ref<VertexArray> skyTriangle;
@@ -144,7 +144,7 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
             continue;
         if (frame.Light)
             throw std::runtime_error(
-                "This direct-light checkpoint supports one enabled directional light");
+                "Only one enabled directional light is supported");
         frame.Light = SubmittedDirectional{-DirectionalTravel(scene.GetWorldTransform(e)),
                                            light.Color * light.Intensity};
     }
@@ -247,7 +247,7 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
         lighting=frame.Environment?frame.Assets->RealizeEnvironment(frame.Environment):emptyEnvironment;
         auto &instance=frame.Presentation.Environment;
         auto inverse=glm::inverse(frame.Camera.ViewProjection);
-        EnvironmentData env{inverse,glm::vec4(frame.Camera.Position,0),
+        EnvironmentData env{inverse,
             {std::cos(instance.Yaw),std::sin(instance.Yaw),frame.Environment?instance.Gain:0,
              frame.Environment?float(frame.Environment->Specular.Mips.size()-1):0},
             {frame.Environment&&instance.Lighting?1.f:0.f,0,0,0}};

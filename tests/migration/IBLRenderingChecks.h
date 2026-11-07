@@ -229,6 +229,12 @@ static void IBLRenderingChecks()
     render();
     NearRGB(view.Radiance->ReadColorPixel(0, 64, 64), gained / 2., .00001,
             "Environment gain must scale radiance without rebake");
+    // Indirect lighting consumes the same mapped, mirrored/nonuniform TBN as
+    // the qualified direct path. A linear +Y data normal must tilt irradiance.
+    std::string normalPixels(18,'\0');normalPixels[2]=2;normalPixels[12]=normalPixels[14]=1;normalPixels[16]=32;normalPixels[17]=0x28;normalPixels+=char(255);normalPixels+=char(180);normalPixels+=char(220);normalPixels+=char(255);FileSystem::WriteNewFile(fixture.Directory/"Normal.tga",normalPixels);
+    camera({0,0,1});frame.Presentation.Environment.Yaw=0;frame.Presentation.Environment.Gain=1;frame.Debug=SurfaceView::DiffuseIBL;material->BaseColor=glm::vec4(.18f,.18f,.18f,1);material->Metallic=0;material->Textures[2].Image="Normal.tga";
+    for(float mirror:{1.f,-1.f}){draw.World=glm::scale(glm::mat4(1),{mirror,.5f,2});frame.Meshes={draw};render();auto N=glm::normalize(glm::dvec3(mirror*(2.*220/255-1),-(2.*180/255-1),1));double f=.04+.96*std::pow(1-N.z,5);NearRGB(display->ReadColorPixel(0,64,64),(1.+N*(2./3))*.18*(1-f),.003,"Indirect mapped normal / signed nonuniform TBN");}
+    material->Textures[2].Image.clear();frame.Debug=SurfaceView::Shaded;
     // A photographic high-frequency source supplies an independent irradiance
     // and rough-conductor integral, separate from split-sum approximation error.
     auto photo = CreateRef<PreparedEnvironment>(

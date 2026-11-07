@@ -108,4 +108,24 @@ portable decoding, independent LUT/furnace integration and native document/publi
 checks. Maximum sampled LUT error was .00435928 with quadrature delta .000526171.
 The recorded Fview diffuse furnace deficit at grazing reached .719418 for a unit
 white dielectric; this is the specified approximation, not a tolerance adjustment
-or compensated energy. Actual GPU/editor and full Debug/Release remain pending.
+or compensated energy. Focused M4 OpenGL 4.1 renderer/runtime/editor checks also passed. GPU readbacks
+cover direct/indirect/combined output, constant furnaces, axes/yaw/seams,
+mask/depth/picking, AO, gain/exposure/UI and failure restoration including foreign
+samplers/unpack state. The photographic endpoint's independent FP64 quadrature
+converged to relative .000103329; normalized roughest-prefilter error was .017962
+against a predeclared .02 budget. Split-sum versus the full rough-conductor
+integral differed by .0647609 before presentation; that is separately reported
+model approximation, not a widened shader tolerance.
+
+Native ImGui checks passed source selection, environment create/quality/save,
+file history, SDK-free preparation, scene selection/Apply/history/save/reopen,
+Play with the HDR unavailable and failed/cancelled job retention. Saved IBL cases
+passed common editor/player comparison, 2x picking and source-free CPU closure.
+The initial Photo capture showed poor label contrast; pre-qualification unlit/UI
+backplates improve labels without changing camera, lighting, exposure or material
+conditions. Full Debug/Release and Stage-4 canonical CI remain pending.
+
+New IBL source exposed state retained by the pinned SPIRV-Cross emitter between
+410 and 450 compilations: the second output duplicated a hoisted temporary.
+Fresh emitters per target repair the existing pipeline, with shader-cache recipe
+v5; both toolchain validations remain enabled and dependency pins are unchanged.
