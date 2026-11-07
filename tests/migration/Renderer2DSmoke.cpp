@@ -8,6 +8,8 @@
 #include <atomic>
 #ifdef HZ_PLATFORM_LINUX
 #include <X11/Xlib.h>
+// Xlib's global macro collides with the typed raster-state enum in IBL probes.
+#undef None
 #endif
 #include <array>
 #include <filesystem>
