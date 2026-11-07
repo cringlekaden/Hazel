@@ -49,7 +49,7 @@ void EnsureResources()
         throw std::runtime_error("PBR/IBL needs eight texture inputs, five vertex attributes, seven "
                                  "uniform bindings and a 144-byte uniform block");
     auto candidate = Shader::Create(
-        (Hazel::Resources::Get().Root / "shaders/DirectPBR.glsl").generic_u8string());
+        (Hazel::Resources::Get().Root / "shaders/ForwardPBR.glsl").generic_u8string());
     auto c = UniformBuffer::Create(sizeof(ViewData), 2),
          o = UniformBuffer::Create(sizeof(ObjectData), 3),
          m = UniformBuffer::Create(sizeof(MaterialData), 4);
