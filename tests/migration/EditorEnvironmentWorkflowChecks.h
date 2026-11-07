@@ -69,7 +69,10 @@ void EnvironmentWorkflowUpdate()
               "Native environment preparation failed or used Python: " + a.m_Report.Output);
         auto accepted = ReadPreparedEnvironment(assets->Root(), panel.Name());
         m_NativeEnvironmentAcceptance = Read(assets->Root() / EnvironmentAcceptance(panel.Name()));
-        Check(accepted.Specular.Mips.size() == 5 && !panel.Dirty(),
+        Check(accepted.Specular.Side == 16 && accepted.Specular.EncodingVersion == 2 &&
+                  accepted.Specular.Mips.size() == 3 &&
+                  accepted.Specular.Side >> (accepted.Specular.Mips.size()-1) == 4 &&
+                  accepted.PreparationRecipe == EnvironmentPreparationRecipe && !panel.Dirty(),
               "Preparation failed complete mips or dirtied authored history");
         ImGui::SetWindowPos("Scene Settings", {20, 20}, ImGuiCond_Always);
         ImGui::SetWindowSize("Scene Settings", {760, 650}, ImGuiCond_Always);
