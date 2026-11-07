@@ -3,6 +3,11 @@
 Implemented on `feature/3d-foundations` in the canonical Hazel checkout.
 Stage 5 has not begun.
 
+The [native silhouette correction](silhouette-normal-fix.md) fixes the later
+shading-normal visibility cutoff using geometric surface authority. Native
+AA-off pixel/neighbor readbacks distinguish those holes from valid bright
+reflections and background coverage; the broader split-sum limits remain separate.
+
 The subsequent [Studio surface investigation](ibl-surface-investigation.md)
 separates terminal-mip reconstruction and an invalid shading-horizon reflection
 from residual split-sum error at actual rendered directions. Its acceptance

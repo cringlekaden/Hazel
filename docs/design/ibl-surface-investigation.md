@@ -1,5 +1,11 @@
 # Studio surface investigation (2026-11-07)
 
+**Correction:** the subsequent [native silhouette investigation](silhouette-normal-fix.md)
+shows that rejecting negative shading N·V blacked out visible geometric samples.
+The zero-radiance sliver described below was not an acceptable visibility repair.
+The native fix resolves shading normals against geometric visibility; this record
+retains the earlier measurements and the separate split-sum model limitations.
+
 Baseline: `d4c4330`, Apple M4, OpenGL 4.1 Metal–91.7. Stage 5 has not begun.
 **The implementation defects below are repaired; the requested full-BRDF visual
 acceptance is not established.** The remaining rough-copper dark patch needs a
@@ -104,13 +110,17 @@ changes the mean edge reflection. A constant environment retains the neutral
 grazing response: dielectric F0=.04 approaches neutral F90=1, while diffuse
 falls at grazing angles. This part of the pale rim is expected.
 
-There was also a real defect: smooth/interpolated normals, even without a normal
+At this checkpoint, smooth/interpolated normals, even without a normal
 map, cross N·V=0 at some silhouette samples. Clamping the LUT coordinate to zero
-still emitted reflection for **negative** N·V. ForwardPBR now rejects that
-reflection, matching the direct BRDF's domain. It does not suppress valid Fresnel.
-At the close view 23 wood pixels and 27 rough-copper pixels were affected;
-their specular output is now exactly zero. Wood edge mean specular luminance
-changes .318495 → .303384. Geometry/IDs and positive-N·V wood values are unchanged.
+still emitted reflection for **negative** shading N·V. The checkpoint rejected
+that reflection without first repairing the shading frame. Native geometric
+readbacks later proved that this created black foreground pixels; the correction
+linked above supersedes that interpretation and implementation.
+At that checkpoint's close view 23 wood pixels and 27 rough-copper pixels were
+affected; their specular output was forced to zero. Wood edge mean specular
+luminance changed .318495 → .303384. Geometry/IDs and positive-N·V wood values
+were unchanged. Those black foreground samples are repaired by the subsequent
+geometric-normal correction, not retained as valid zero-radiance samples.
 
 Representative raw wood pixels (top-down coordinates):
 
