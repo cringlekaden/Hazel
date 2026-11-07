@@ -1,3 +1,4 @@
+#include "Hazel/Renderer/Color.h"
 #include "EditorLayer.h"
 #include "Authoring/AuthoringPanel.h"
 #include "Authoring/LoadingUI.h"
@@ -144,6 +145,7 @@ namespace Hazel {
                 const bool uiInput=m_ViewportFocused && Application::Get().GetWindow().IsFocused() && !RuntimeUIWidgetBlocksInput();
                 m_RuntimeSession.SetInput(ViewportMouse(),uiInput);
                 m_RuntimeSession.SetGameplayInputEnabled(uiInput&&m_ViewportHovered);
+                m_RuntimeSession.UpdateCameraInspection(ts,uiInput,m_ViewportHovered);
                 m_RuntimeSession.SetRenderTarget(m_Framebuffer);
                 m_RuntimeSession.Update(ts);
                 if(m_RuntimeSession.ConsumeExitRequest()){OnSceneStop();break;}
@@ -172,6 +174,11 @@ namespace Hazel {
 
 		m_Framebuffer->Unbind();
         m_Framebuffer->EncodeOutput(m_ViewportOutput);
+        if(m_SceneState!=SceneState::Play){
+            auto selected=m_SceneHierarchyPanel.GetSelectedEntity();
+            if(selected&&selected.BelongsTo(m_ActiveScene.get())&&selected.HasComponent<MeshRendererComponent>())
+                m_Framebuffer->DrawEntityOutlineTo(m_ViewportOutput,int(entt::entity(selected)),std::clamp(int(std::ceil(2*std::max(m_ViewportPixelScale.x,m_ViewportPixelScale.y))),1,8),ColorSpace::ToSRGB(glm::vec4(1,.5f,0,1)));
+        }
 	}
 
 	void EditorLayer::OnImGuiRender()
@@ -283,7 +290,7 @@ namespace Hazel {
 		const bool runtimePointer=m_SceneState==SceneState::Play&&m_ActiveScene->IsUICapturingPointer();
         Application::Get().GetImGuiLayer()->BlockEvents(m_SceneState==SceneState::Play
             ? (!m_ViewportFocused || RuntimeUIWidgetBlocksInput())
-            : (!m_ViewportFocused || (!m_ViewportHovered&&!runtimePointer) || io.WantTextInput || ImGui::IsAnyItemActive()));
+            : (!m_ViewportFocused || (!m_ViewportHovered&&!runtimePointer&&!m_Navigation.Active()) || io.WantTextInput || ImGui::IsAnyItemActive()));
 
         if(m_SceneState!=SceneState::Play) {
             int navigation=int(m_NavigationCamera.Navigation());ImGui::SetNextItemWidth(110);
@@ -296,6 +303,12 @@ namespace Hazel {
                              "AO\0Raw radiance (SDR clamp)\0Direct (SDR clamp)\0Diffuse IBL (SDR clamp)\0Specular IBL (SDR clamp)\0"))
                 m_RenderView.Debug = SurfaceView(inspect);
             ImGui::SameLine();ImGui::Checkbox("Grid",&m_ShowGrid);ImGui::SameLine();
+        }
+        if(m_SceneState==SceneState::Play){
+            bool inspect=m_RuntimeSession.IsCameraInspectionEnabled();
+            if(ImGui::Checkbox("Inspect camera",&inspect))try{m_RuntimeSession.SetCameraInspection(inspect);}catch(const std::exception& e){ActionFailed(e.what());}
+            if(inspect){ImGui::SameLine();if(ImGui::Button("Restore authored view"))m_RuntimeSession.ResetCameraInspection();}
+            ImGui::SameLine();
         }
         ImGui::SetNextItemWidth(180);
         ImGui::Combo("##UI preview aspect",&m_UIPreview,"Window\0Small 1024 x 600\0Widescreen 16:9\0Classic 4:3\0");
@@ -324,9 +337,11 @@ namespace Hazel {
             const char* hint=m_NavigationCamera.Navigation()==EditorNavigation::Planar?
                 "Pan: MMB / Shift-drag / RMB | Zoom: scroll | F: frame | Home: reset":
                 "Orbit: Option/Alt or Space + drag | Pan: Shift-drag / MMB | Fly: RMB + WASD Q/E | Shift: fast Ctrl: slow | F: frame Home: reset Esc: release";
-            ImGui::GetWindowDrawList()->AddText({imageOrigin.x+8,imageOrigin.y+m_ViewportSize.y-22},IM_COL32(230,230,230,255),hint);
+            ImGui::GetWindowDrawList()->AddText(nullptr,0,{imageOrigin.x+8,imageOrigin.y+m_ViewportSize.y-44},IM_COL32(230,230,230,255),hint,nullptr,std::max(1.f,m_ViewportSize.x-16));
             if(m_ViewportFocused&&!NavigationBlocked()&&!m_Navigation.Active()&&ImGui::IsKeyPressed(ImGuiKey_Home,false))m_NavigationCamera.Reset();
         }
+        if(m_SceneState==SceneState::Play&&m_RuntimeSession.IsCameraInspectionEnabled())
+            ImGui::GetWindowDrawList()->AddText(nullptr,0,{imageOrigin.x+8,imageOrigin.y+m_ViewportSize.y-44},IM_COL32(230,230,230,255),"INSPECT: Alt/Space drag orbit | Shift drag pan | RMB + WASD Q/E fly | Shift fast Ctrl slow | Home authored view | Esc release",nullptr,std::max(1.f,m_ViewportSize.x-16));
         UI_RectEditing();
         UI_DebugOverlay();
 
@@ -441,7 +456,7 @@ namespace Hazel {
         // Admit only that gesture; actual widgets, text fields and popups keep
         // ownership. Existing runtime capture continues outside the image.
         const bool viewportGesture=viewport&&context.ActiveId==viewport->MoveId&&
-            (m_ViewportHovered||(m_ActiveScene&&m_ActiveScene->IsUICapturingPointer()));
+            (m_ViewportHovered||m_RuntimeSession.CameraInspectionGestureActive()||(m_ActiveScene&&m_ActiveScene->IsUICapturingPointer()));
         return m_UIOverride.Capturing()||(m_Authoring&&m_Authoring->CapturingUIBinding())||context.IO.WantTextInput||ImGui::IsPopupOpen(nullptr,ImGuiPopupFlags_AnyPopupId)||
             (ImGui::IsAnyItemActive()&&!viewportGesture);
     }
@@ -451,6 +466,10 @@ namespace Hazel {
            (e.GetEventType()==EventType::WindowResize &&
             (!static_cast<WindowResizeEvent&>(e).GetWidth() || !static_cast<WindowResizeEvent&>(e).GetHeight())))
             {if(m_Authoring)m_Authoring->CancelEdits();else m_UIEdit.Finish(true);}
+        if(e.GetEventType()==EventType::WindowLostFocus){m_Navigation.Cancel();m_RuntimeSession.CancelCameraInspectionGesture();Application::Get().GetWindow().SetPointerCaptured(false);}
+        if(e.GetEventType()==EventType::MouseButtonReleased&&m_Navigation.UsesButton(static_cast<MouseButtonReleasedEvent&>(e).GetMouseButton())){
+            m_Navigation.Cancel();Application::Get().GetWindow().SetPointerCaptured(false);
+        }
         if(m_Loading && m_Loading->Busy())return;
         // Events arrive before the next ImGui frame. Retire viewport ownership
         // immediately on an outside press, rather than trusting last frame's
@@ -463,11 +482,8 @@ namespace Hazel {
         }
         if(m_SceneState==SceneState::Play)m_RuntimeSession.SubmitUIEvent(e,ViewportMouse(),m_ViewportFocused && !RuntimeUIWidgetBlocksInput());
         if(e.GetEventType()==EventType::WindowLostFocus || e.GetEventType()==EventType::WindowResize)
-            {m_Navigation.Cancel();Application::Get().GetWindow().SetPointerCaptured(false);}
-        if(m_SceneState!=SceneState::Play && e.GetEventType()==EventType::MouseScrolled &&
-           m_ViewportHovered && !NavigationBlocked() && Application::Get().GetWindow().IsFocused()) {
-            m_NavigationCamera.Scroll(static_cast<MouseScrolledEvent&>(e).GetYOffset());e.Handled=true;
-        }
+            {m_Navigation.Cancel();m_RuntimeSession.CancelCameraInspectionGesture();Application::Get().GetWindow().SetPointerCaptured(false);}
+        if(e.GetEventType()==EventType::MouseScrolled && RouteNavigationScroll(static_cast<MouseScrolledEvent&>(e).GetYOffset(),Application::Get().GetWindow().IsFocused()))e.Handled=true;
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(HZ_BIND_EVENT_FN(EditorLayer::OnKeyPressed));
@@ -539,7 +555,7 @@ namespace Hazel {
 		}
 
 		// Draw selected entity outline
-		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity(); selectedEntity && !selectedEntity.HasComponent<UIRectComponent>() && !selectedEntity.HasComponent<UICanvasComponent>())
+		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity(); selectedEntity && !selectedEntity.HasComponent<MeshRendererComponent>() && !selectedEntity.HasComponent<UIRectComponent>() && !selectedEntity.HasComponent<UICanvasComponent>())
 		{
 			const auto transform = m_ActiveScene->GetWorldTransform(selectedEntity);
             if(auto* sprite=m_ActiveScene->RenderedSprite(selectedEntity)) {
@@ -812,6 +828,7 @@ namespace Hazel {
 
 	bool EditorLayer::OnScenePlay(bool useSavedAssets)
 	{
+        m_Navigation.Cancel();Application::Get().GetWindow().SetPointerCaptured(false);
         if(m_Authoring && !m_Authoring->Require(EditorAction::Play))return false;
         if(m_Authoring && !useSavedAssets){m_Authoring->GuardPlay(false);return m_SceneState==SceneState::Play;}
 		if (m_SceneState == SceneState::Play) return true;
@@ -832,6 +849,7 @@ namespace Hazel {
 
 	bool EditorLayer::OnSceneSimulate(bool useSavedAssets)
 	{
+        m_Navigation.Cancel();Application::Get().GetWindow().SetPointerCaptured(false);
         if(m_Authoring)m_Authoring->CancelEdits();
         if(m_Authoring && !m_Authoring->Require(EditorAction::Simulate))return false;
         if(m_Authoring && !useSavedAssets){m_Authoring->GuardPlay(true);return m_SceneState==SceneState::Simulate;}

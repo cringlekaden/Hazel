@@ -4,6 +4,7 @@
 #include "Hazel/Events/Event.h"
 #include "Hazel/Project/RuntimeStorage.h"
 #include "Hazel/Renderer/Scene/SceneRenderer.h"
+#include "Hazel/Renderer/Cameras/NavigationCamera.h"
 #include "Hazel/UI/UIActions.h"
 #include <filesystem>
 #include <glm/glm.hpp>
@@ -37,6 +38,14 @@ namespace Hazel {
         {
             m_Display = target;
         }
+        // Explicit host opt-in; overrides only the submitted view, never authored cameras.
+        void SetCameraInspection(bool enabled);
+        bool IsCameraInspectionEnabled() const {return bool(m_Inspection);}
+        NavigationCamera* GetInspectionCamera(){return m_Inspection?&*m_Inspection:nullptr;}
+        void ResetCameraInspection();
+        void CancelCameraInspectionGesture();
+        void UpdateCameraInspection(Timestep timestep,bool focused,bool overImage);
+        bool CameraInspectionGestureActive()const{return m_InspectionGesture!=InspectionGesture::Idle;}
         void Update(Timestep timestep);
         bool RequestSceneLoad(const std::filesystem::path& assetReference);
         const Ref<Scene>& GetScene() const { return m_Scene; }
@@ -73,6 +82,13 @@ namespace Hazel {
         void CheckThread() const;
         void CommitPendingTransition();
         SceneRenderView m_View;
+        std::optional<NavigationCamera> m_Inspection;
+        NavigationCamera m_InspectionSeed;
+        glm::vec2 m_InspectionPointer{};
+        enum class InspectionGesture { Idle,Orbit,Pan,Dolly,Fly };
+        InspectionGesture m_InspectionGesture=InspectionGesture::Idle;
+        int m_InspectionButton=0;
+        bool m_InspectionLatch=false,m_InspectionSeedPointer=true;
         Ref<Framebuffer> m_Display;
         Ref<Project> m_Project;
         Ref<Scene> m_Scene;

@@ -563,7 +563,7 @@ namespace Hazel {
 	}
 
     void Scene::OnUpdateRuntime(Timestep ts, SceneRenderView *renderView,
-                                const Ref<Framebuffer> &display)
+                                const Ref<Framebuffer> &display, const SceneCameraView* inspection)
     {
         FlushLifecycle(); // Administrative work commits even while simulation is paused.
 		if (!m_IsPaused || m_StepFrames > 0)
@@ -633,7 +633,7 @@ namespace Hazel {
                 camera.GetProjection() * glm::inverse(world), glm::vec3(world[3]),
                 glm::normalize(glm::vec3(world * glm::vec4(0, 0, 1, 0))),
                 camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic};
-            DrawView(cameraView, renderView, display);
+            DrawView(inspection?*inspection:cameraView, renderView, display);
         }
         else if(m_Presentation.SceneReferred)
         {

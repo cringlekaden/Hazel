@@ -602,7 +602,7 @@ void AuthoringPanel::Shortcuts()
             m_Editor.m_GizmoType = ImGuizmo::SCALE;
     }
     if(prefabFocused && ImGui::IsKeyPressed(ImGuiKey_Delete,false))m_PrefabInspector.RequestDelete();
-    if((viewportFocused || sceneFocused) && ImGui::IsKeyPressed(ImGuiKey_F,false)) {
+    if(m_Editor.m_SceneState!=EditorLayer::SceneState::Play && (viewportFocused || sceneFocused) && ImGui::IsKeyPressed(ImGuiKey_F,false)) {
         auto selected=m_Editor.m_SceneHierarchyPanel.GetSelectedEntity();
         if(selected) {
             m_Editor.m_SceneHierarchyPanel.RevealSelected();

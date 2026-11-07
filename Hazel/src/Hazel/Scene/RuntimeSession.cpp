@@ -87,6 +87,7 @@ namespace Hazel {
     void RuntimeSession::RequestExit() {CheckThread();if(m_Scene&&!m_Stopping)m_ExitRequested=true;}
     bool RuntimeSession::ConsumeExitRequest() {CheckThread();bool requested=m_ExitRequested;m_ExitRequested=false;return requested;}
     void RuntimeSession::Stop() {
+        CancelCameraInspectionGesture();m_Inspection.reset();
         m_View.Reset();
         CheckThread();
         if (m_Stopping) return;
@@ -136,6 +137,7 @@ namespace Hazel {
         m_Scene->OnRuntimeStop();
         auto previous = std::move(m_Scene);
         m_Scene = std::move(candidate); m_Stopping = false;
+        CancelCameraInspectionGesture();m_Inspection.reset();
         m_Scene->SetAudioMasterVolume(m_AudioVolume);
         ScriptEngine::SetRuntimeSession(this);
         try { m_Scene->OnRuntimeStart(); m_Error.clear(); HZ_CORE_INFO("Runtime scene: {}", reference.generic_u8string()); }
@@ -168,14 +170,17 @@ namespace Hazel {
             for(auto b:m_UIAdapter.Bindings().Actions)for(int key:{b.Key,b.Alternate})if(key>=0)sample.Keys[size_t(key)]=Input::IsKeyPressed(KeyCode(key));
             for(auto key:{Key::LeftShift,Key::RightShift,Key::LeftControl,Key::RightControl,Key::LeftAlt,Key::RightAlt,Key::LeftSuper,Key::RightSuper})sample.Keys[key]=Input::IsKeyPressed(key);
             sample.Mouse[size_t(m_UIAdapter.Bindings().PointerButton)]=Input::IsMouseButtonPressed(MouseCode(m_UIAdapter.Bindings().PointerButton));
-            RouteUIInput(sample,timestep.GetSeconds(),m_InputEnabled);
-            m_Scene->OnUpdateRuntime(timestep, &m_View, m_Display);
+            RouteUIInput(sample,timestep.GetSeconds(),m_InputEnabled&&!m_Inspection);
+            SceneCameraView inspection;
+            if(m_Inspection)inspection={m_Inspection->GetViewProjection(),m_Inspection->GetPosition(),-m_Inspection->GetForwardDirection(),false};
+            m_Scene->OnUpdateRuntime(timestep, &m_View, m_Display,m_Inspection?&inspection:nullptr);
             m_Updating = false;
         }
         catch (...) { m_Updating = false; throw; }
     }
     void RuntimeSession::Resize(uint32_t width, uint32_t height) {
         CheckThread(); m_Width = width; m_Height = height;
+        if(m_Inspection){m_Inspection->SetViewportSize(width,height);m_InspectionSeed.SetViewportSize(width,height);}
         if (m_Scene) m_Scene->OnViewportResize(width, height);
         if(!width||!height)SetInput(m_Mouse,false);
     }
@@ -184,9 +189,15 @@ namespace Hazel {
         if(m_Scene)m_Scene->SetUIFramebufferSize(m_FramebufferSize);
         if(!width||!height)SetInput(m_Mouse,false);
     }
-    bool RuntimeSession::IsGameplayInputEnabled() const {return m_InputEnabled&&m_GameplayEnabled&&!m_UINeutralLatch&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0))&&(!m_Scene||!m_Scene->IsGameplayInputBlocked());}
-    bool RuntimeSession::IsGameplayMouseEnabled() const {return m_InputEnabled&&m_GameplayEnabled&&!m_UINeutralLatch&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0))&&(!m_Scene||!m_Scene->IsGameplayPointerBlocked());}
+    bool RuntimeSession::IsGameplayInputEnabled() const {return !m_Inspection&&m_InputEnabled&&m_GameplayEnabled&&!m_UINeutralLatch&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0))&&(!m_Scene||!m_Scene->IsGameplayInputBlocked());}
+    bool RuntimeSession::IsGameplayMouseEnabled() const {return !m_Inspection&&m_InputEnabled&&m_GameplayEnabled&&!m_UINeutralLatch&&m_Width&&m_Height&&(!m_FramebufferExplicit||(m_FramebufferSize.x>0&&m_FramebufferSize.y>0))&&(!m_Scene||!m_Scene->IsGameplayPointerBlocked());}
     void RuntimeSession::SubmitUIEvent(Event& event,glm::vec2 mouse,bool enabled) {
+        if(m_Inspection){
+            if(event.GetEventType()==EventType::WindowLostFocus||event.GetEventType()==EventType::WindowResize||
+               (event.GetEventType()==EventType::MouseButtonReleased&&static_cast<MouseButtonReleasedEvent&>(event).GetMouseButton()==m_InspectionButton))CancelCameraInspectionGesture();
+            if(enabled&&(CameraInspectionGestureActive()||(mouse.x>=0&&mouse.y>=0&&mouse.x<m_Width&&mouse.y<m_Height))&&event.GetEventType()==EventType::MouseScrolled)m_Inspection->Scroll(static_cast<MouseScrolledEvent&>(event).GetYOffset());
+            return;
+        }
         if(event.GetEventType()==EventType::WindowLostFocus || (event.GetEventType()==EventType::WindowResize&&(!static_cast<WindowResizeEvent&>(event).GetWidth()||!static_cast<WindowResizeEvent&>(event).GetHeight()))){SetInput(mouse,false);return;}
         if(!enabled||!m_Scene)return;
         if(m_UIEdgeScene!=m_Scene->GetIdentity()){m_UIAdapter.Cancel();m_UIEdgeScene=m_Scene->GetIdentity();}

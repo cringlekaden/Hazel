@@ -6,11 +6,12 @@
 #include <Hazel/Scripting/ScriptEngine.h>
 #include <iostream>
 #include <Hazel/Renderer/Resources/Framebuffer.h>
+#include <Hazel/Renderer/Cameras/OrthographicProjection.h>
 
 namespace Hazel {
     class RuntimeLayer : public Layer {
     public:
-        explicit RuntimeLayer(Ref<Project> project) : Layer("Nutella Runtime"), m_Project(std::move(project)) {}
+        explicit RuntimeLayer(Ref<Project> project,bool inspect) : Layer("Nutella Runtime"), m_Project(std::move(project)),m_Inspect(inspect) {}
         void OnAttach() override {
             auto scene = m_Project->LoadScene(m_Project->GetConfig().StartScene);
             const auto module=Project::ResolveAssetPath(m_Project->GetAssetRoot(),m_Project->GetConfig().ScriptModulePath);
@@ -23,6 +24,7 @@ namespace Hazel {
             m_Session.Resize(window.GetWidth(), window.GetHeight());
             m_Session.SetPersistentStorage(true);
             m_Session.Start(m_Project, scene);
+            if(m_Inspect)m_Session.SetCameraInspection(true);
             HZ_CORE_INFO("Nutella ready: {}", m_Project->GetConfig().Name);
         }
         void OnEvent(Event& e) override {m_Session.SubmitUIEvent(e,Input::GetMousePosition(),Application::Get().GetWindow().IsFocused());}
@@ -31,6 +33,7 @@ namespace Hazel {
             auto& window = Application::Get().GetWindow();
             m_Session.Resize(window.GetWidth(), window.GetHeight());
             m_Session.SetInput(Input::GetMousePosition(), window.IsFocused());
+            m_Session.UpdateCameraInspection(timestep,window.IsFocused(),true);
             const auto framebuffer=window.GetFramebufferSize();m_Session.ResizeFramebuffer(framebuffer.first,framebuffer.second);RenderCommand::SetViewport(0,0,framebuffer.first,framebuffer.second);
             if(!framebuffer.first || !framebuffer.second)return;
             if(!m_Composite) {
@@ -46,26 +49,36 @@ namespace Hazel {
             m_Composite->ClearAttachment(1, -1);
             m_Session.SetRenderTarget(m_Composite);
             m_Session.Update(timestep);
+            if(m_Session.IsCameraInspectionEnabled()){
+                RenderCommand::StateScope scope;auto state=RenderCommand::GetRasterState();state.DepthTest=state.DepthWrite=false;state.PickingMask=glm::bvec4(false);RenderCommand::SetRasterState(state);
+                Camera overlay(OrthographicProjection::Matrix(0,float(window.GetWidth()),0,float(window.GetHeight()),-1,1));
+                Renderer2D::BeginScene(overlay,glm::mat4(1));
+                Renderer2D::DrawQuad(glm::vec3(window.GetWidth()*.5f,window.GetHeight()-14.f,0),glm::vec2(window.GetWidth(),28),{.025f,.025f,.025f,1});
+                Renderer2D::DrawString("INSPECT: Alt/Space drag orbit | Shift drag pan | RMB + WASD Q/E | Shift fast Ctrl slow | Home reset | Esc release",Font::GetDefault(),glm::translate(glm::mat4(1),{8,window.GetHeight()-19.f,0})*glm::scale(glm::mat4(1),glm::vec3(13)),Renderer2D::TextParams{});
+                Renderer2D::EndScene();
+            }
             m_Composite->Unbind();m_Composite->EncodeOutput();
             if(m_Session.ConsumeExitRequest())Application::Get().Close();
         }
     private:
+        bool m_Inspect=false;
         Ref<Project> m_Project;
         RuntimeSession m_Session;
         Ref<Framebuffer> m_Composite;
     };
     class Nutella : public Application {
     public:
-        Nutella(const ApplicationSpecification& spec, const Ref<Project>& project) : Application(spec) {
-            PushLayer(CreateScope<RuntimeLayer>(project));
+        Nutella(const ApplicationSpecification& spec, const Ref<Project>& project,bool inspect) : Application(spec) {
+            PushLayer(CreateScope<RuntimeLayer>(project,inspect));
         }
     };
     Scope<Application> CreateApplication(ApplicationCommandLineArgs args) {
-        bool help = false, list = false;
+        bool help = false, list = false,inspect=false;
         std::filesystem::path selected;
         for (int i = 1; i < args.Count; ++i) {
             const std::string argument(args[i]);
-            if (argument == "--help") { if (help) throw std::runtime_error("Duplicate --help"); help = true; }
+            if(argument=="--inspect-camera"){if(inspect)throw std::runtime_error("Duplicate --inspect-camera");inspect=true;}
+            else if (argument == "--help") { if (help) throw std::runtime_error("Duplicate --help"); help = true; }
             else if (argument == "--list-projects") { if (list) throw std::runtime_error("Duplicate --list-projects"); list = true; }
             else if (argument == "--project") {
                 if (!selected.empty()) throw std::runtime_error("Specify --project only once");
@@ -73,11 +86,12 @@ namespace Hazel {
                 selected = std::filesystem::absolute(std::filesystem::u8path(args[i]));
             } else throw std::runtime_error("Unknown argument '" + argument + "'. Use Nutella --help.");
         }
-        if ((help || list) && ((help && list) || !selected.empty())) throw std::runtime_error("Use --help, --list-projects, or --project separately");
+        if ((help || list) && ((help && list) || !selected.empty() || inspect)) throw std::runtime_error("Use --help, --list-projects, or --project separately");
         if (help) {
             std::cout << "Nutella — Hazel standalone runtime\n"
                 "  Nutella                        Run the only .hproj in the installed project directory\n"
                 "  Nutella --project <file.hproj>  Run a selected project (relative to invocation directory)\n"
+                "  Nutella --inspect-camera        Opt in to transient perspective inspection; Home restores the authored view\n"
                 "  Nutella --list-projects         List sorted root-level candidates, without graphics/Mono\n"
                 "  Nutella --help                  Show usage, without graphics/Mono\n"
                 "A project descriptor configures StartScene and its asset root. Loose assets cannot start a game.\n"
@@ -111,6 +125,6 @@ namespace Hazel {
         ApplicationSpecification spec; spec.Name = "Nutella"; spec.CommandLineArgs = args; spec.EnableImGui = false;
         spec.Rendering = RendererPolicy::Settings(project->GetRendererRequests());
         spec.WindowVSync = project->GetRendererRequests().VSync;
-        return CreateScope<Nutella>(spec, project);
+        return CreateScope<Nutella>(spec, project,inspect);
     }
 }

@@ -54,3 +54,25 @@ semantics are in `Assets/NOTICE.yaml`. Base color is sRGB; ARM is linear
 R=occlusion/G=roughness/B=metallic, and normals are linear +Y tangent data.
 Copper factors and the native sphere/cube are original Hazel content under the
 repository Apache-2.0 license. The showcase adds no importer or runtime source dependency.
+
+## Inspect in motion
+
+The fixed named views remain the default. In Hazelnut **Play**, opt in with the
+viewport's **Inspect camera** checkbox; **Restore authored view** resets exactly.
+Nutella uses the same transient view and reusable perspective movement policy:
+
+```sh
+python3 scripts/hazel.py run Nutella --config Release --project examples/RenderingShowcase/RenderingShowcase.hproj --inspect-camera
+```
+
+Start at Gallery, then use Option/Alt + left drag (or Space + left drag) to orbit
+around the spheres. Shift + left drag or middle drag pans. Hold right mouse to
+look and use WASD plus Q/E to move; release right mouse or press Escape to release
+the pointer. Shift boosts speed; Ctrl gives slow close-up movement for the wood
+and leather. Scroll dollies; Home restores the exact authored view. The on-screen
+inspection hint appears only when inspection is enabled.
+
+Inspection changes the submitted view, not scene entities, saved camera poses,
+materials, exposure or prepared IBL. It needs no script module or SDK and remains
+content-only. Omit `--inspect-camera` for fixed captures. In Hazelnut Edit, F frames
+the selected mesh/subtree; private planar and orbit workspace poses remain separate.

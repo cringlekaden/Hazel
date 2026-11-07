@@ -151,7 +151,7 @@ namespace Hazel {
 		void OnSimulationStop();
 
         void OnUpdateRuntime(Timestep ts, SceneRenderView *view = nullptr,
-                             const Ref<Framebuffer> &display = {});
+                             const Ref<Framebuffer> &display = {}, const SceneCameraView* inspection = nullptr);
         void OnUpdateSimulation(Timestep ts, NavigationCamera &camera, SceneRenderView *view = nullptr,
                                 const Ref<Framebuffer> &display = {});
         void OnUpdateEditor(Timestep ts, NavigationCamera &camera, SceneRenderView *view = nullptr,

@@ -469,7 +469,7 @@ def main():
         if action == 'test': p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
         if action == 'test': p.add_argument('--suite',choices=('all','cpu'),default='all',help='CPU subset explicitly excludes graphics/editor acceptance')
         if action == 'test': p.add_argument('--only',action='append',choices=[r['name'] for r in json.loads((ROOT/'scripts/internal/testing/native-tests.json').read_text())],help='Run selected maintained regression(s); other tests are not qualified')
-    p = sub.add_parser('run'); p.add_argument('app', choices=('Hazelnut', 'Nutella')); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug'); p.add_argument('--project', type=Path)
+    p = sub.add_parser('run'); p.add_argument('app', choices=('Hazelnut', 'Nutella')); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug'); p.add_argument('--project', type=Path); p.add_argument('--inspect-camera', action='store_true', help='Nutella transient perspective inspection')
     p = sub.add_parser('script-build'); p.add_argument('project', type=Path); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     p = sub.add_parser('test-packages'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
     p.add_argument('--interactive',action='store_true',help='macOS: launch pristine relocated products for human interaction and normal close')
@@ -514,6 +514,9 @@ def main():
         with build_lock(): stage(args.config)
         exe = binaries(args.config) / args.app / (args.app + ('.exe' if SYSTEM == 'windows' else ''))
         command = [exe]
+        if args.inspect_camera:
+            if args.app!='Nutella':raise RuntimeError('Use the Inspect camera checkbox during Hazelnut Play')
+            command += ['--inspect-camera']
         if args.project: command += (['--project'] if args.app == 'Nutella' else []) + [args.project.resolve()]
         elif args.app == 'Nutella': command += ['--project', ROOT/'examples/SceneTransitions/SceneTransitions.hproj']
         run(command, cwd=Path.cwd())

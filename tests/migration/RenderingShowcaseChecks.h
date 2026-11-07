@@ -33,6 +33,26 @@ static void RenderingShowcaseChecks()
             std::ofstream file(capture/(std::string("showcase-")+name+".ppm"),std::ios::binary);file<<"P6\n1280 720\n255\n";
             for(int y=719;y>=0;--y)for(int x=0;x<1280;++x)file.write(reinterpret_cast<const char*>(rgb.data()+(size_t(y)*1280+x)*4),3);Check(bool(file),"Cannot save focused showcase inspection frame");output->Unbind();target->Bind();
         }
+        if(std::string(name)=="Gallery"){
+            auto primary=runtime.GetScene()->GetPrimaryCameraEntity();auto originalWorld=runtime.GetScene()->GetWorldTransform(primary);
+            runtime.SetCameraInspection(true);auto* camera=runtime.GetInspectionCamera();auto seed=*camera;
+            auto exact=primary.GetComponent<CameraComponent>().Camera.GetProjection()*glm::inverse(originalWorld);
+            for(int c=0;c<4;++c)Check(glm::length(camera->GetViewProjection()[c]-exact[c])<.0001f,"Inspection did not start at exact authored camera");
+            for(int step=0;step<5;++step){camera->Orbit({80,0});runtime.Update(0);}
+            Check(camera->GetYaw()>seed.GetYaw()+1.9f,"Gallery continuous orbit did not exceed 90 degrees");
+            for(uint64_t study:{120,121}){
+                auto entity=runtime.GetScene()->GetEntityByUUID(study);auto world=runtime.GetScene()->GetWorldTransform(entity);
+                auto geometry=base->GetAssets()->Mesh(entity.GetComponent<MeshRendererComponent>().Mesh).Accepted;
+                glm::vec3 lo(1e20f),hi(-1e20f);for(int corner=0;corner<8;++corner){auto p=glm::vec3(world*glm::vec4((corner&1)?geometry->Geometry.Bounds.Max.x:geometry->Geometry.Bounds.Min.x,(corner&2)?geometry->Geometry.Bounds.Max.y:geometry->Geometry.Bounds.Min.y,(corner&4)?geometry->Geometry.Bounds.Max.z:geometry->Geometry.Bounds.Min.z,1));lo=glm::min(lo,p);hi=glm::max(hi,p);}
+                runtime.ResetCameraInspection();camera=runtime.GetInspectionCamera();camera->FrameBounds(lo,hi);auto eye=camera->GetPosition();camera->Fly({8,0},{0,0,1},.25f,.2f);runtime.Update(0);
+                Check(glm::length(camera->GetPosition()-eye)>.049f,"Close-up inspection fly did not advance");
+                target->Bind();glReadBuffer(GL_COLOR_ATTACHMENT1);glReadPixels(0,0,1280,720,GL_RED_INTEGER,GL_INT,ids.data());
+                Check(std::find(ids.begin(),ids.end(),int(entt::entity(entity)))!=ids.end(),"Approached wood/leather study is not actually visible");
+            }
+            runtime.ResetCameraInspection();camera=runtime.GetInspectionCamera();for(int c=0;c<4;++c)Check(camera->GetViewProjection()[c]==seed.GetViewProjection()[c],"Inspection reset failed exact authored view");
+            Check(runtime.GetScene()->GetWorldTransform(primary)==originalWorld,"Inspection changed runtime camera transform");runtime.SetCameraInspection(false);runtime.Update(0);
+            std::cout<<"PASS: opt-in Gallery authored view, >90 degree sphere orbit, visible slow wood/leather approaches and exact reset without camera/document changes\n";
+        }
         runtime.Stop();Check(SceneSerializer(scene).CaptureAuthoredState()==authored,"Showcase Play/Stop modified authored data");
     }
     target->Unbind();Check(glGetError()==GL_NO_ERROR,"Showcase OpenGL error");
