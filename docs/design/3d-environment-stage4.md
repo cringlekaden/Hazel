@@ -1,8 +1,9 @@
 # Stage 4 — offline HDR environments and image-based lighting
 
 Implementation branch: `feature/3d-foundations`, canonical checkout
-`/Volumes/External/kadencringle/Projects/Hazel`. This record is under qualification;
-it does not close Stage 4 or claim Stage 5 runtime/export qualification yet.
+`/Volumes/External/kadencringle/Projects/Hazel`. Stage-4 implementation is complete
+at `22e0209`, with the local qualification below. Canonical CI remains pending;
+this does not claim full Windows qualification or Stage-5 runtime/export acceptance.
 
 The Windows Stage-3 entry failure was frozen fixture extraction, repaired in
 `8666bcb`. [Run 42291096669](https://github.com/cringlekaden/Hazel/actions/runs/42291096669)
@@ -54,7 +55,7 @@ meaning needs no high spatial resolution. Native project creation copies and
 CPU-validates bundled prepared data without a baker, importer, GPU or script SDK.
 
 `.hlight` encodes explicit little-endian IEEE754 fields, version/kind/dimensions/
-channels/faces/mip count/payload length and SHA-256. The decoder checks lengths,
+channels/faces/mip count/orientation/payload length and SHA-256. The decoder checks lengths,
 complete chains, finite representable values and bounds before accepting data.
 A `.henv.accepted` descriptor atomically selects one coherent immutable generation.
 Generation UUIDs are distinct from source/recipe cache identities, so preparation
@@ -86,8 +87,8 @@ Additive `IBL_v1` Reference scenes cover DirectOnly, IBLOnly, Combined, Photo an
 yaw +90 degrees. Existing Core_v1, Import_v1 and Direct_v1 bytes/conditions remain
 frozen. Photo uses original Studio Small 09 1k HDR, Sergej Majboroda / Poly Haven,
 CC0-1.0; the source URL/hash/notice are recorded with the assets. Diagnostic inputs
-are engine-authored. Numerical, actual GPU, editor and CI qualification results
-will be recorded here when completed; added tests are not themselves pass evidence.
+are engine-authored. Numerical, actual GPU, editor and package results below are
+executed evidence; pending CI and unexecuted physical checks remain separate.
 
 From the canonical checkout (matching build configuration):
 
@@ -123,9 +124,76 @@ Play with the HDR unavailable and failed/cancelled job retention. Saved IBL case
 passed common editor/player comparison, 2x picking and source-free CPU closure.
 The initial Photo capture showed poor label contrast; pre-qualification unlit/UI
 backplates improve labels without changing camera, lighting, exposure or material
-conditions. Full Debug/Release and Stage-4 canonical CI remain pending.
+conditions. The maintained complete native suites passed **18/18 Release and
+18/18 Debug** on Apple M4 OpenGL **4.1 Metal - 91.7**, without graphics skips.
+Those suites cover code checkpoint `1de68bc`; both configurations were rebuilt
+for the include-order-only `22e0209` repair before the final product checks.
+Native ImGui activation is automated in-process; physical OS file-dialog interaction
+and other Apple GPU models were not qualified.
 
 New IBL source exposed state retained by the pinned SPIRV-Cross emitter between
 410 and 450 compilations: the second output duplicated a hoisted temporary.
 Fresh emitters per target repair the existing pipeline, with shader-cache recipe
 v5; both toolchain validations remain enabled and dependency pins are unchanged.
+
+
+## Final preparation and product evidence
+
+The final Release producer measured the unchanged 1k photographic source and the
+default 256/128/32, 1024-sample profile in a disposable project:
+
+| Shared LUT state | Preparation including candidate validation | Peak resident memory |
+| --- | --- | --- |
+| Cold (4096-sample LUT produced) | 1.332 s | 44.89 MiB |
+| Cached LUT | 0.934 s | 44.64 MiB |
+
+These are M4 measurements, not performance promises for other hardware. Together
+with the .017962 photographic prefilter error, they support the bounded default
+profile; higher quality remains an explicit offline choice. The accepted resources
+occupy about 6.2 MiB, including the shared LUT. Bake time/RSS are generated metadata,
+not authored history.
+
+Matching Release Hazelnut and Nutella from the original checkout each opened the
+saved Photo case and completed 60 rendered frames and normal teardown in private
+profiles, after removing all 16 HDR/GLB producer inputs and with no compiled project
+module. The editor correctly reports that optional scripts are unbuilt; script-free
+content editing/Play and the prepared environment remain usable.
+
+A content-only Nutella archive was built through the existing native package audit,
+then extracted outside the checkout and launched from an unrelated directory with
+the source checkout, source Mono SDK and system SDK fallbacks denied. It passed
+60 frames, normal teardown, loaded-native dependency closure and unchanged ad-hoc
+signature checks. The package contains ten lighting artifacts and no HDR, GLB or
+RenderingReference.dll. Corrupting a required lighting artifact rejected replacement
+with an output-hash diagnostic and preserved both accepted archive and checksum.
+Archive SHA-256: `e3235a292b579d2f531426dd537435e13fcb2f4584f965f0a447f3bb3bee4013`.
+Nutella's symbol inventory contains no environment baker, TinyGLTF or Mikk producer
+symbols. This is the required prepared-environment closure proof; the broader
+mixed-scene/export campaign remains Stage 5.
+
+Reproduce the maintained checks with `python3 scripts/hazel.py test --config Release`
+and `--config Debug` after matching test builds. Detailed local logs, source-free
+launch commands/binary hashes, bake measurements and preservation checks are retained
+under ignored `build/stage4-evidence/`. The canonical Xcode workspace is
+`/Volumes/External/kadencringle/Projects/Hazel/Hazel.xcworkspace`.
+
+## CI and remaining limits
+
+[Run 42317633748](https://github.com/cringlekaden/Hazel/actions/runs/42317633748)
+found a new Windows compile issue before tests: `Environment.cpp` could not see
+`DocumentSchema` because its declarations preceded the configured MSVC precompiled
+header. `22e0209` puts `hzpch.h` first in all five new engine translation units.
+This does not change assertions, frozen assets, numerical budgets or timeouts.
+[Run 42318229171](https://github.com/cringlekaden/Hazel/actions/runs/42318229171)
+covers that repair; Windows/Linux/hosted-macOS jobs are pending at this record's
+publication. Hosted macOS's CPU/service/managed subset makes no GPU claim.
+
+The separate historical Windows Debug gameplay timeout remains unresolved, as
+recorded above; the completed earlier repair run passed all three Windows native
+profiles before reaching it. No full Windows or cross-platform Stage-4 pass is
+claimed while the current run is pending. Stage 5, dynamic environments/weather,
+local probes, shadows, EXR, Metal and additional render paths have not begun.
+
+All 99 preexisting Reference asset files, reconciled LastLightkeeper documents,
+recovery commit `bfbce8119c25fce2aaf1e95226afe362f7098b32`, Finder files and vendor
+pins remain unchanged. Only the canonical original checkout is registered.

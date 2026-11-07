@@ -1057,7 +1057,8 @@ dependencies, format-independent CPU cooking/publication, native asset codecs an
 Hazelnut material/import/prefab authoring. Local Debug/Release and relocated
 package qualification passed; canonical CI and remaining Windows limits are
 tracked in [the stage-2 record](3d-import-stage2.md). The subsequent direct-rendering
-checkpoint is recorded below; IBL, Metal and other formats remain unimplemented.
+checkpoint is recorded below. Stage 2 did not implement rendering or IBL; Metal
+and additional import formats remain outside these checkpoints.
 
 
 ## Stage 3 implementation status
@@ -1069,5 +1070,12 @@ has prepared direct PBR and 2D starters; native light/material/camera/scene tool
 history and bounds framing share existing ownership. Additive Direct_v1 cases and
 independent CPU/GPU checks are recorded in [the Stage 3 record](3d-direct-stage3.md).
 Qualification status there distinguishes actual M4/CI results from pending work.
-Stage 4 implementation and its qualification status are tracked in
+
+## Stage 4 implementation status
+
+Stage 4 adds bounded native HDR preparation, portable accepted lighting generations,
+GGX-prefiltered cubemaps and a shared BRDF LUT, common editor/player IBL and
+environment background, native environment documents/history/jobs and a bundled
+complete PBR starter. Additive IBL_v1 reference cases preserve prior frozen bytes.
+Actual numerical, M4, native authoring/package and CI evidence is tracked in
 [the environment record](3d-environment-stage4.md). Stage 5 has not begun.

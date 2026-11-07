@@ -51,8 +51,9 @@ SDK readiness. Enter Name and Location; the technical identifier is suggested
 and editable under Advanced identity. File > New Scene uses the same native
 factory and the project's New scene defaults. The adjacent New Scene with projection
 menu overrides only projection, retaining the selected content/presentation defaults.
-Orthographic PBR and perspective unlit are supported; direct lighting uses one
-directional key, prepared image-based lighting and scene-referred exposure/Neutral presentation.
+Orthographic PBR and perspective unlit are supported. Lighting supports one
+directional key and prepared image-based lighting, with scene-referred
+exposure/Neutral presentation.
 
 Use the viewport Planar/Orbit selector to change editor navigation independently
 of runtime cameras. Planar pans with middle drag and zooms with the wheel; Orbit
