@@ -1090,3 +1090,10 @@ Additive IBLQuality_v2 and a separate licensed-material showcase preserve all pr
 conditions. [The quality record](ibl-quality-pass.md) distinguishes measured
 numerical/M4 evidence, qualification and remaining model/platform limits. Stage 5
 has not begun.
+
+## Focused camera/navigation/selection checkpoint
+
+Before Stage 5, [the camera checkpoint](camera-navigation-selection.md) separates
+shared projection and movement from editor gesture ownership, adds opt-in native
+showcase inspection, and uses real visible picking coverage for editor mesh edges.
+No IBL preparation or frozen reference condition changes are part of this work.

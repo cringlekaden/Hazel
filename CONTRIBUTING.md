@@ -40,6 +40,10 @@ not in projection math or SceneRenderer. The editor owns workspace persistence,
 focus/widget/gizmo arbitration and gesture cancellation. Runtime inspection is
 explicit and transient; normal game cameras remain scene/script owned. Keep
 navigation separate from document history and preserve both workspace poses.
+Runtime view selection/lifecycle lives in `Scene::OnUpdateRuntime` and
+`Scene/RuntimeSession`; opt-in movement routing is in
+`Scene/RuntimeCameraInspection.cpp`, with host UI/launch choices in Hazelnut and
+Nutella. Game-specific authored camera motion remains in game scripts.
 
 ## Use MetalCup as a reference
 

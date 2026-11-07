@@ -70,3 +70,31 @@ scene history. Source/quality changes need preparation; yaw/gain/exposure do not
 Preparation quality offers Preview, Production and High, with explicit offline
 costs and an earlier-revision diagnostic. Accepted lighting loads without the original HDR. See the
 [environment contract and qualification](design/3d-environment-stage4.md).
+
+## Navigate the viewport
+
+The navigation selector changes only the private editor view, in both Edit and
+Simulate. Planar: pan with middle/right drag, Shift + left drag or Option/Alt +
+left drag; scroll zooms. Orbit: Option/Alt + left drag or Space + left drag orbits;
+Shift + left drag and middle drag pan; Option/Alt + right drag and scroll dolly.
+Hold right mouse for temporary look and WASD movement, Q/E down/up; Shift boosts
+speed and Ctrl slows it for close-up inspection. Release right mouse or Escape to
+release the pointer. A gesture begun over the image continues outside it.
+
+F frames selected world bounds; Home resets the current navigation mode. Empty
+selection does nothing. Camera movement never dirties a scene or changes its
+runtime camera. Text fields, menus, popups and active gizmos retain input. Focus
+loss, mode changes and viewport closure cancel gestures.
+
+Play uses game input. For a primary perspective camera with unit world scale,
+explicitly enable **Inspect camera**
+to explore its runtime copy without changing scene camera transforms; **Restore
+authored view** or Home restores its starting view. Stop releases inspection.
+The [Rendering Showcase](../examples/RenderingShowcase/README.md#inspect-in-motion)
+has the same optional native controller in Nutella. Fixed views remain available.
+
+Selected mesh entities use the visible, depth-resolved entity-ID silhouette in
+Hazelnut's output. Alpha cutouts and occlusion match picking; fully hidden meshes
+have no edge. The edge stays inside selected coverage, at about two logical points
+(rounded to framebuffer pixels). Sprite, UI and non-mesh cues retain their existing
+behavior. The current silhouette operation requires matching single-sample targets.

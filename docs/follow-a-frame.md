@@ -36,7 +36,9 @@ with the implementation milestone records.
    state/draws to RendererAPI. Allocation, GL bindings, cube face/mip upload and
    attachment copies live under [Platform/OpenGL](../Hazel/src/Platform/OpenGL).
 6. **Output.** Hosts call Framebuffer::EncodeOutput once. Hazelnut displays the
-   encoded RGBA8 viewport through ImGui; Nutella encodes to the window. UI has
+   encoded RGBA8 viewport through ImGui, with an optional mesh-selection edge
+   composited from its existing ID target into that editor output. Nutella encodes
+   to the window without this selection operation. UI has
    already composited in display-linear space independently of world exposure.
 
 Cameras, Drawing, Scene, Resources and Text are shallow reading groups under
@@ -61,3 +63,6 @@ before destroying the GLFW context/window. See
 [Application::~Application](../Hazel/src/Hazel/Core/Application.cpp) and
 [Renderer::Shutdown](../Hazel/src/Hazel/Renderer/Renderer.cpp). History contains no
 GPU resources. Frame scopes restore state, including exceptional paths.
+
+Projection, movement and editor input owners are listed in the
+[contributor camera convention](../CONTRIBUTING.md#camera-and-viewport-ownership).
