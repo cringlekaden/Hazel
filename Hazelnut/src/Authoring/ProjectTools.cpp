@@ -1,3 +1,4 @@
+#include "Hazel/Assets/Environment.h"
 #include "ProjectTools.h"
 #include "HazelSDK.h"
 #include "Hazel/Utils/Process.h"
@@ -194,7 +195,7 @@ ToolReport ProjectTools::Work(const ToolRequest &request, const std::shared_ptr<
             const bool environment=!request.Arguments.empty()&&request.Arguments[0]=="prepare-environment";
             auto contract=Process::Run(request.NativeExecutable,{environment?"--environment-contract":"--import-contract"},request.NativeExecutable.parent_path(),std::chrono::seconds(10));
             while(!contract.Output.empty()&&(contract.Output.back()=='\n'||contract.Output.back()=='\r'))contract.Output.pop_back();
-            if(contract.ExitCode!=0||contract.Output!=(environment?"HAZEL_ENVIRONMENT_PREPARE_CONTRACT=1":"HAZEL_ASSET_IMPORT_CONTRACT=1"))throw std::runtime_error("Incompatible native asset producer; rebuild/stage matching editor tools");
+            if(contract.ExitCode!=0||contract.Output!=(environment?std::string("HAZEL_ENVIRONMENT_PREPARE_CONTRACT=")+std::to_string(EnvironmentProducerContract):std::string("HAZEL_ASSET_IMPORT_CONTRACT=1")))throw std::runtime_error("Incompatible native asset producer; rebuild/stage matching editor tools");
             if(request.Arguments.empty())throw std::runtime_error("Native asset operation requires arguments");
             stage("Running "+request.Arguments.front());auto result=Process::RunStreams(request.NativeExecutable,request.Arguments,request.NativeExecutable.parent_path(),std::chrono::minutes(10),{chunks,cancelled});
             for(int stream=0;stream<2;++stream)if(!pending[stream].empty())line(stream,std::move(pending[stream]));

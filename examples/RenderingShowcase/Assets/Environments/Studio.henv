@@ -1,0 +1,14 @@
+Environment:
+  Version: 1
+  Name: Studio Small 09 / high quality
+  Notice: Studio Small 09 by Sergej Majboroda / Poly Haven, CC0-1.0. https://polyhaven.com/a/studio_small_09 ; https://polyhaven.com/license ; unchanged 1k HDR.
+  Source:
+    Kind: RadianceHDR
+    Image: Environments/Studio.hdr
+    Interpretation: LinearRec709D65TopDown
+  Preparation:
+    Recipe: Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top
+    Background: 512
+    Specular: 512
+    Irradiance: 64
+    Samples: 16384

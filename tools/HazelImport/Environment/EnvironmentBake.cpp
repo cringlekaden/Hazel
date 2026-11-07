@@ -64,7 +64,7 @@ LightingImage Cube(const RadianceSampler &source, LightingImageKind kind, unsign
     LightingImage result;
     result.Kind = kind;
     result.Side = side;
-    if (kind == LightingImageKind::Specular && side >= 4) result.EncodingVersion = 2;
+    if (kind == LightingImageKind::Specular && side >= 8) result.EncodingVersion = 2;
     unsigned levels = 1;
     if (kind == LightingImageKind::Specular)
         for (auto s = side; s > (result.EncodingVersion == 2 ? 4u : 1u); s /= 2)
@@ -396,7 +396,12 @@ void PrepareImage(const std::filesystem::path &assets, const std::filesystem::pa
         throw std::runtime_error("Shared LUT changed during preparation");
     auto final = Project::ResolveOwnedAsset(root, generation);
     if (!std::filesystem::exists(final))
+    {
         FileSystem::PublishDirectoryNew(stage.Path, final);
+        // Retain the recovery marker through publication, then omit it from the
+        // newly owned runtime generation. Never edit an existing generation.
+        std::filesystem::remove(final / "owner");
+    }
     else
         for (auto item : n["Outputs"])
         {

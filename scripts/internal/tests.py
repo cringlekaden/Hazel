@@ -210,6 +210,9 @@ def test(configuration, profile='native', suite='all', only=None):
         if 'SceneFoundationSmoke' in names:
             from internal.import_checks import reference_imports
             reference_imports(configuration, working, env)
+        if 'RuntimeSessionSmoke' in names:
+            showcase=snapshot('RenderingShowcase',working/'rendering-showcase','RenderingShowcase.hproj')
+            env['HAZEL_RENDERING_SHOWCASE_PROJECT']=str(showcase)
         for name in names:
             target='Migration'+name;suffix='.exe' if hz.SYSTEM=='windows' else ''
             executable=base/target/(target+suffix)

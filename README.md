@@ -57,6 +57,9 @@ The badge is **workflow-wide**. Open a run for its separate Windows/Linux Debug,
 
 The owner completed the recorded Xcode/editor acceptance and approved integration. Automated checks remain distinct from unexecuted physical checks, competent-reader typography acceptance and public signed distribution. Native static-mesh direct PBR, offline HDR preparation and image-based lighting are available on the implementation branch. See [Stage 4](docs/design/3d-environment-stage4.md) for supported authoring, reference cases and actual qualification limits.
 
+For engine code navigation, start with [Follow a frame](docs/follow-a-frame.md).
+The [Rendering Showcase](examples/RenderingShowcase/README.md) demonstrates prepared IBL and material surfaces separately from diagnostic references.
+
 ## License and attribution
 
 [Apache-2.0](LICENSE), retaining upstream attribution. Dependencies, fonts and project art/audio have their own [licenses and provenance](docs/platforms-and-dependencies.md#licensing-and-provenance). Lightkeeper uses Kenney CC0 assets; MeadowRun and Skybound include original example art. [Historical records](docs/history.md) preserve the project's migration/design evidence.

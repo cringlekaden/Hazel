@@ -1079,3 +1079,13 @@ environment background, native environment documents/history/jobs and a bundled
 complete PBR starter. Additive IBL_v1 reference cases preserve prior frozen bytes.
 Actual numerical, M4, native authoring/package and CI evidence is tracked in
 [the environment record](3d-environment-stage4.md). Stage 5 has not begun.
+
+## Focused pre-Stage-5 quality pass
+
+The shared frame now has an explicit Renderer3D draw owner and shallow Renderer
+groups; [Follow a frame](../follow-a-frame.md) is the code navigation entry point.
+A source-aware, versioned offline MIS preparation recipe, explicit angular-tail
+mips and FP32 roughness interpolation address measured diffuse/specular artifacts.
+Additive IBLQuality_v2 and a separate licensed-material showcase preserve all prior
+conditions. [The quality record](ibl-quality-pass.md) distinguishes measured
+numerical/M4 evidence and remaining qualification. Stage 5 has not begun.

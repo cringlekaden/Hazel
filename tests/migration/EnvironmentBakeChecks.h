@@ -32,6 +32,9 @@ static void EnvironmentBakeChecks()
     for (int i = 0; i < 128; ++i)
         constant.RGB.insert(constant.RGB.end(), {.125f, .5f, 2.f});
     EnvironmentProfile profile{16, 16, 8, 1024};
+    auto minimum = EnvironmentBake::Prepare(constant, {4,4,4,64});
+    Check(minimum.Specular.EncodingVersion==1 && minimum.Specular.Mips.size()==3,
+        "Minimum custom specular resolution lost its roughness levels");
     auto set = EnvironmentBake::Prepare(constant, profile);
     for (auto image : {&set.Background, &set.Irradiance, &set.Specular})
     {

@@ -1,5 +1,9 @@
 # Stage 4 — offline HDR environments and image-based lighting
 
+This records the original checkpoint. The later [focused quality pass](ibl-quality-pass.md)
+supersedes preparation defaults/quality and organizes the renderer; prior evidence
+and frozen IBL_v1 assets remain historical.
+
 Implementation branch: `feature/3d-foundations`, canonical checkout
 `/Volumes/External/kadencringle/Projects/Hazel`. Stage-4 implementation is complete
 at `22e0209`, with the local qualification below. Canonical CI remains pending;

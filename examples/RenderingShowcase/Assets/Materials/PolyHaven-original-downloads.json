@@ -1,0 +1,60 @@
+{
+  "license": "CC0-1.0",
+  "license_url": "https://polyhaven.com/license",
+  "assets": {
+    "wood_table_001": {
+      "page": "https://polyhaven.com/a/wood_table_001",
+      "files": {
+        "Diffuse": {
+          "size": 215573,
+          "md5": "56652a7339b16a76afad20d3585f66ea",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_001/wood_table_001_diff_1k.jpg",
+          "file": "wood_table_001-Diffuse.jpg",
+          "sha256": "460dd08d240f4a1f02982415048c3c5c200f385db212da18dc7e2df68bf4d0be"
+        },
+        "arm": {
+          "size": 214520,
+          "md5": "b39a1587c9b99e3104baedae8d5dfa48",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_001/wood_table_001_arm_1k.jpg",
+          "file": "wood_table_001-arm.jpg",
+          "sha256": "29d3f34a7c2c213e21b320365495fad673d3c8a3ce885b879fc0a77a187dd828"
+        },
+        "nor_gl": {
+          "size": 51927,
+          "md5": "6360e09967add8baecaa5ecc55fb5e03",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_table_001/wood_table_001_nor_gl_1k.jpg",
+          "file": "wood_table_001-nor_gl.jpg",
+          "sha256": "9bf7ddf5721e225c20290f1772ae37f9bdfd49658f6d458259eb794e2149d3cf"
+        }
+      },
+      "authors": "Dimitrios Savva (photography); Rico Cilliers (processing)"
+    },
+    "leather_red_02": {
+      "page": "https://polyhaven.com/a/leather_red_02",
+      "files": {
+        "coll1": {
+          "size": 1002834,
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leather_red_02/leather_red_02_coll1_1k.jpg",
+          "md5": "a91110dd3cea1bfb5d8f34b5c3c6536d",
+          "file": "leather_red_02-coll1.jpg",
+          "sha256": "8b4f967175754b7224c98cfb3f048105dbf3dd7b265c6954f7729ef0f2691112"
+        },
+        "arm": {
+          "size": 1016986,
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leather_red_02/leather_red_02_arm_1k.jpg",
+          "md5": "7b96f52d9557658ae9545473d74cda12",
+          "file": "leather_red_02-arm.jpg",
+          "sha256": "8282d57922e067bc9524caadade58baea1cddc2b901a299d7a0aa9398888e123"
+        },
+        "nor_gl": {
+          "size": 1033319,
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leather_red_02/leather_red_02_nor_gl_1k.jpg",
+          "md5": "6edef21f3d06f4acff1f567d9908f42d",
+          "file": "leather_red_02-nor_gl.jpg",
+          "sha256": "d0057cdbee5be6223b35f0a463441404144fcdae699f69ff610eec4d86d48970"
+        }
+      },
+      "authors": "Rob Tuytel"
+    }
+  }
+}

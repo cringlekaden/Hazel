@@ -1,0 +1,22 @@
+Project:
+  Version: 1
+  NewSceneDefaults:
+    Projection: Perspective
+    Navigation: Orbit
+    Presentation:
+      Mode: SceneReferred
+      Exposure: 0
+      Background: [0.0100228256, 0.0100228256, 0.0100228256, 1]
+      Environment:
+        Asset: Environments/Studio.henv
+        Yaw: 0.349999994
+        Gain: 1
+        Lighting: true
+        Background: true
+    Content: DirectPBR
+  ScriptProject: RenderingShowcase
+  AuthoringVersion: 1
+  Name: Rendering Showcase
+  StartScene: Scenes/Gallery.hazel
+  AssetDirectory: Assets
+  ScriptModulePath: Scripts/Binaries/RenderingShowcase.dll

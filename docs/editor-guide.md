@@ -67,5 +67,6 @@ HDR or use **Import HDR source…**, Create, Save, then **Prepare accepted light
 Progress/cancellation and failures appear in Console. Scene Settings selects the
 asset and applies yaw, radiance gain, lighting and image-background choices through
 scene history. Source/quality changes need preparation; yaw/gain/exposure do not.
-Accepted lighting loads without the original HDR. See the
+Preparation quality offers Preview, Production and High, with explicit offline
+costs and an earlier-revision diagnostic. Accepted lighting loads without the original HDR. See the
 [environment contract and qualification](design/3d-environment-stage4.md).

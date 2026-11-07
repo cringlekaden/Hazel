@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
             std::cout << "HAZEL_AUTHORING_CONTRACT=1\n";
             return 0;
         }
-        if(args.size()==2 && args[1]=="--environment-contract"){std::cout<<"HAZEL_ENVIRONMENT_PREPARE_CONTRACT=1\n";return 0;}
+        if(args.size()==2 && args[1]=="--environment-contract"){std::cout<<"HAZEL_ENVIRONMENT_PREPARE_CONTRACT="<<Hazel::EnvironmentProducerContract<<"\n";return 0;}
         if(args.size()==2 && args[1]=="--import-contract"){std::cout<<"HAZEL_ASSET_IMPORT_CONTRACT=1\n";return 0;}
         if ((args.size()==4 || args.size()==6) && args[1]=="prepare-environment") {
             std::filesystem::path cancel;

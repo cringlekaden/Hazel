@@ -10,6 +10,8 @@ static void IBLQualityRenderingChecks()
     Check(metadata["Version"].as<unsigned>()==2 && metadata["PreparationRecipe"].as<std::string>()==EnvironmentPreparationRecipe,"IBL quality conditions changed");
     for(auto entry:metadata["Files"])
         Check(AssetHash(ReadAssetBytes(root/std::filesystem::u8path(entry.first.as<std::string>()),LightingArtifactByteLimit))==entry.second.as<std::string>(),"Frozen IBLQuality_v2 bytes changed");
+    auto requireGL=[](const std::string &where){auto error=glGetError();if(error!=GL_NO_ERROR)throw std::runtime_error(where+": GL error "+std::to_string(error));};
+    requireGL("Before IBL quality checks");
     RenderCommand::StateScope stateScope;
     auto captures=FileSystem::GetEnvironmentPath("HAZEL_IBL_QUALITY_CAPTURE");
     if(!captures.empty()){Check(captures.is_absolute(),"Quality capture requires an owned absolute output path");std::filesystem::create_directories(captures);}
@@ -53,6 +55,8 @@ static void IBLQualityRenderingChecks()
         auto current=frame.Environment;
         // CPU decoded artifact -> all actual uploaded GPU faces and mip levels.
         auto resources=frame.Assets->RealizeEnvironment(current);
+        auto verifyGPUData=[&] {
+        RenderCommand::StateScope uploadState;
         for(auto pair:{std::make_pair(&current->Irradiance,resources->Irradiance),std::make_pair(&current->Specular,resources->Specular)})
         {
             pair.second->Bind(6);unsigned side=pair.first->Side;
@@ -62,7 +66,9 @@ static void IBLQualityRenderingChecks()
                 Check(std::equal(pixels.begin(),pixels.end(),pair.first->Mips[level].begin()+size_t(face)*side*side*3),"Prepared IBL data changed during actual GPU face/mip upload");
             }
         }
-        resources.reset();
+        };
+        verifyGPUData();
+        requireGL(std::string(name)+" explicit cube readback");
         for(bool baseline:{true,false})
         {
             if(baseline && std::string(name)=="TinyEmitter")continue; // CPU baseline is separately inventoried research data.
@@ -79,6 +85,7 @@ static void IBLQualityRenderingChecks()
                     destination->Bind();RenderCommand::SetClearColor({0,0,0,1});RenderCommand::Clear();destination->ClearAttachment(1,-1);
                     frame.Debug=mode;frame.LinearLightingInspection=mode!=SurfaceView::Shaded;
                     SceneRenderer::Render(frame,view,destination,[]{},[]{});
+                    requireGL(std::string(name)+" lighting draw");
                     auto output=mode==SurfaceView::Shaded?view.Radiance:target;output->Bind();
                     auto pixels=read();
                     for(auto &p:pixels)Check(std::isfinite(p.r)&&std::isfinite(p.g)&&std::isfinite(p.b)&&std::min({p.r,p.g,p.b})>=0,"Nonfinite/negative IBL radiance");
@@ -94,10 +101,13 @@ static void IBLQualityRenderingChecks()
                     if(mode==SurfaceView::DiffuseIBL){diffuse=std::move(pixels);std::vector<int> ids(size_t(spec.Width)*spec.Height);glReadBuffer(GL_COLOR_ATTACHMENT1);glReadPixels(0,0,spec.Width,spec.Height,GL_RED_INTEGER,GL_INT,ids.data());for(size_t i=0;i<ids.size();++i)if(std::find(metallicIDs.begin(),metallicIDs.end(),ids[i])!=metallicIDs.end())Check(glm::length(glm::vec3(diffuse[i]))<1e-6,"Fully metallic spheres have nonzero diffuse IBL");}
                     else if(mode==SurfaceView::SpecularIBL)specular=std::move(pixels);
                     else {for(size_t i=0;i<pixels.size();++i)for(int c=0;c<3;++c)Check(std::abs(pixels[i][c]-diffuse[i][c]-specular[i][c])<1e-5f*std::max(1.f,pixels[i][c]),"Combined IBL differs from independently captured diffuse+specular");}
+                    requireGL(std::string(name)+" term capture/readback");
                     target->Bind();
                 }
             }
         }
+        verifyGPUData(); // No draw/presentation pass may regenerate or overwrite the chain.
+        resources.reset();
         Check(SceneSerializer(authored).CaptureAuthoredState()==authoredState,"Quality inspection changed authored content");
     }
     target->Unbind();Check(glGetError()==GL_NO_ERROR,"IBL quality readback OpenGL error");

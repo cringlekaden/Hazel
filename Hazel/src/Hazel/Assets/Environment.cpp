@@ -180,7 +180,7 @@ void LightingImage::Validate() const
     uint32_t count = 1;
     Need(EncodingVersion == 1 || EncodingVersion == 2, "Unsupported lighting encoding version");
     if (EncodingVersion == 2)
-        Need(Kind == LightingImageKind::Specular && Side >= 4, "Version 2 requires specular tail-four data");
+        Need(Kind == LightingImageKind::Specular && Side >= 8, "Version 2 requires specular base >=8 and a four-texel tail");
     if (Kind == LightingImageKind::Specular)
         for (auto n = Side; n > (EncodingVersion == 2 ? 4u : 1u); n /= 2)
             ++count;
@@ -354,6 +354,8 @@ PreparedEnvironment ReadPreparedEnvironmentCandidate(const std::filesystem::path
     Need(e.Background.Side == d.Profile.Background && e.Irradiance.Side == d.Profile.Irradiance &&
              e.Specular.Side == d.Profile.Specular && e.BRDF.Side == 128,
          "Prepared quality does not match authored preparation");
+    Need(e.Specular.EncodingVersion == (n["Version"].as<unsigned>() == 2 && e.Specular.Side >= 8 ? 2u : 1u),
+         "Specular storage does not match the accepted preparation revision");
     return e;
 }
 PreparedEnvironment ReadPreparedEnvironment(const std::filesystem::path &root,

@@ -1,0 +1,44 @@
+Material:
+  Version: 1
+  Name: Varnished oak / Poly Haven
+  Model: MetallicRoughness
+  BaseColor: [1, 1, 1, 1]
+  Emissive: [0, 0, 0]
+  Metallic: 0
+  Roughness: 1
+  NormalScale: 0.5
+  OcclusionStrength: 1
+  Alpha: Opaque
+  AlphaCutoff: 0.5
+  DoubleSided: false
+  Textures:
+    BaseColor:
+      Image: Materials/wood_table_001/Diffuse.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    MetallicRoughness:
+      Image: Materials/wood_table_001/arm.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Normal:
+      Image: Materials/wood_table_001/nor_gl.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Occlusion:
+      Image: Materials/wood_table_001/arm.jpg
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Emissive:
+      Image: ""
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat

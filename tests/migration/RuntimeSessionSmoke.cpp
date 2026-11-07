@@ -40,6 +40,7 @@ static Ref<Scene> Make(const char* name, const char* script = nullptr) {
 #include "DirectReferenceChecks.h"
 #include "IBLReferenceChecks.h"
 #include "IBLQualityRenderingChecks.h"
+#include "RenderingShowcaseChecks.h"
 #include "UIActionSessionChecks.h"
 #include "UIScreenSessionChecks.h"
 #include "UIValueSessionChecks.h"
@@ -190,6 +191,7 @@ int main(int argc, char** argv) {
         DirectReferenceChecks();
         IBLReferenceChecks();
         IBLQualityRenderingChecks();
+        RenderingShowcaseChecks();
         PrintLoadedNativeImages();
         ScriptEngine::Shutdown(); Check(!session.GetScene() && !ScriptEngine::GetRuntimeSession(),"Domain shutdown retained runtime session");
         std::cout<<"PASS: shared runtime OnCreate/OnUpdate transitions, failure recovery, first request wins, cancellation, authored copy, retained domain, retired observations/physics, repeated transitions and viewport input\n";

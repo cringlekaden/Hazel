@@ -1,0 +1,27 @@
+Exposure: 0
+Yaw: 0.349999994
+Gain: 1
+Environment: Environments/Studio.henv
+PreparationRecipe: Hazel.EnvPrepare_v2.SolidAngleBalancedMIS.BilinearSource.Tail4
+Views:
+  Gallery:
+    Scene: Scenes/Gallery.hazel
+    SceneSHA256: 76c002685c471e581ed938967634a53d3b0d03923381bd5eaddc7f8017d25520
+    CameraPosition:
+      - 6
+      - 4
+      - 9
+  RoughnessSweep:
+    Scene: Scenes/RoughnessSweep.hazel
+    SceneSHA256: cb804b61dc7f3c1f3de9a28c59ca256c781d009a351a385e53ab571c871c8d1a
+    CameraPosition:
+      - 0
+      - 2.29999995
+      - 10
+  SurfaceDetail:
+    Scene: Scenes/SurfaceDetail.hazel
+    SceneSHA256: e57df205ae263c135cf64f3957bf81ed05229d82a2e99687c9267c132385e0c3
+    CameraPosition:
+      - 3.79999995
+      - 2.29999995
+      - 5.5

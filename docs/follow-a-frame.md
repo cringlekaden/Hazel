@@ -22,7 +22,8 @@ with the implementation milestone records.
    uses the lightweight composite directly.
 4. **Draw owners.** [Renderer3D::Render](../Hazel/src/Hazel/Renderer/Drawing/Renderer3D.cpp)
    owns the forward mesh/material/light bindings, culling state, indexed ranges
-   and environment background draw. Background goes first without depth or ID
+   and environment background draw, using
+   [ForwardPBR](../Hazel/Resources/shaders/ForwardPBR.glsl). Background goes first without depth or ID
    writes. [Renderer2D](../Hazel/src/Hazel/Renderer/Drawing/Renderer2D.cpp) retains
    its established sprite/circle/text batches. Scene's world-2D callback uses it;
    [SceneUI](../Hazel/src/Hazel/Scene/SceneUI.cpp) uses the ordered runtime UI path.
@@ -49,10 +50,14 @@ moves are deferred.
 Environment ownership has three boundaries: authored `.henv` intent; immutable
 accepted CPU `.hlight` data; and runtime EnvironmentResources. The native
 EnvironmentBake producer owns decoding/filtering/publication, never the player.
+Its [radiance sampler](../tools/HazelImport/Environment/RadianceSampler.cpp) owns
+solid-angle proposals; the renderer consumes only accepted data. See the
+[quality contract](design/ibl-quality-pass.md) for recipes and measured limits.
 
-**Shutdown:** Scene/RuntimeSession release per-view targets; Application releases
-project realizations, renderer-owned font resources and shared Renderer3D/Renderer2D
-resources before RenderCommand and the GLFW context/window. See
+**Shutdown:** Layers stop Scene/RuntimeSession and release per-view targets while
+Mono is alive. Application stops ScriptEngine, releases project realizations, then
+Renderer shuts down Renderer3D, Renderer2D batches/font resources and RenderCommand
+before destroying the GLFW context/window. See
 [Application::~Application](../Hazel/src/Hazel/Core/Application.cpp) and
 [Renderer::Shutdown](../Hazel/src/Hazel/Renderer/Renderer.cpp). History contains no
 GPU resources. Frame scopes restore state, including exceptional paths.

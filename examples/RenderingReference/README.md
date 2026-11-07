@@ -160,3 +160,22 @@ player startup: the PBR starter bundles a small exact constant environment.
 Runtime closure excludes the HDR source and baker. Stage 4's focused closure
 checks do not replace Stage 5's broader mixed-scene/export qualification. See
 [the Stage-4 record](../../docs/design/3d-environment-stage4.md) for actual evidence.
+
+## IBLQuality_v2 — controlled quality diagnosis
+
+`RenderingReference-IBLQuality-Photo.hproj`, `-TinyEmitter.hproj` and `-Constant.hproj`
+are additive fixed-camera cases with identical base RGB, geometric normals, AO=1,
+metallic 0/.5/1 and roughness 0/.1/.25/.5/.75/1. Direct light is disabled. They use
+the versioned solid-angle radiance/GGX MIS recipe and explicit angular-tail mips.
+Existing IBL_v1 remains evidence of the original bake, with its bytes unchanged.
+
+```sh
+python3 scripts/hazel.py run Hazelnut --config Release --project examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj
+python3 scripts/hazel.py run Nutella --config Release --project examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj
+```
+
+Play uses the fixed camera. The editor's diffuse/specular inspection views help
+separate the low-metallic diffuse grain from high-roughness specular errors;
+Scene Settings yaw exposes stability without rebaking. The numerical FP32 captures
+use the same pipeline before presentation. See [quality evidence and recipes](../../docs/design/ibl-quality-pass.md).
+For aesthetics and real material textures, use the separate [Rendering Showcase](../RenderingShowcase/README.md).
