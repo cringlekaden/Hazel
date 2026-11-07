@@ -3,6 +3,12 @@
 Implemented on `feature/3d-foundations` in the canonical Hazel checkout.
 Stage 5 has not begun.
 
+The subsequent [Studio surface investigation](ibl-surface-investigation.md)
+separates terminal-mip reconstruction and an invalid shading-horizon reflection
+from residual split-sum error at actual rendered directions. Its acceptance
+limitations supersede any inference that the texel-center bake metrics below
+establish full-BRDF image accuracy. Frozen content and preparation recipes remain unchanged.
+
 Pre-tuning criteria (2026-11-06, ddeb1ef/bb1fdf7 baseline)
 
 All errors are linear HDR, same base RGB (.18,.4,.7), metallic 0/.5/1,

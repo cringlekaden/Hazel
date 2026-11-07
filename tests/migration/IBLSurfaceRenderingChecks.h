@@ -95,8 +95,7 @@ static void IBLSurfaceRenderingChecks(SceneSubmission frame, SubmittedMesh draw,
         std::cout << "Surface endpoint " << i << " expected " << expected.x << "," << expected.y
                   << "," << expected.z << " actual " << actual.x << "," << actual.y << ","
                   << actual.z << " relative " << error << '\n';
-        Check(error < .006, "Rough endpoint reconstruction is coarse, "
-                            "mirror-directed or discontinuous at a cube seam");
+        Check(error < .006, "Rough endpoint reconstruction is coarse or discontinuous at a cube seam");
         maxReconstruction = std::max(maxReconstruction, error);
         maxModel = std::max(maxModel, glm::length(actual - fine[i].Spec));
     }
