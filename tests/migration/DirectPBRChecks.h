@@ -3,6 +3,7 @@
 #include "Hazel/Assets/ProjectAssets.h"
 #include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include "Hazel/Scene/RuntimeSession.h"
+#include "GeometricNormalReference.h"
 #include <cmath>
 static glm::dvec3 OracleBRDF(glm::dvec3 base, double metal, double rough, glm::dvec3 n,
                              glm::dvec3 v, glm::dvec3 l)
@@ -287,9 +288,17 @@ static void DirectPBRChecks()
         tangent = glm::normalize(tangent - n * glm::dot(n, tangent));
         auto bitangent = glm::cross(n, tangent) * (sx < 0 ? 1. : -1.);
         auto mapped = glm::normalize(tangent * (2. * 128 / 255 - 1) + bitangent + n);
+        auto geometric=rotate({0,0,1});
+        auto resolved=GeometricNormalReference(mapped,geometric,{0,0,1});
+        // Keep the signed/nonuniform raw TBN check independent of the new
+        // geometric constraint, then evaluate the BRDF on the resolved normal.
+        frame.Debug=SurfaceView::NormalHorizon;render();
+        NearRGB(display->ReadColorPixel(0,64,64),{mapped.z,geometric.z,resolved.z},.002,
+                "Independent raw signed TBN / geometric / resolved normal");
+        frame.Debug=SurfaceView::Shaded;render();
         auto base = glm::dvec3(material->BaseColor) * glm::dvec3(.5, .25, .125);
         NearRGB(view.Radiance->ReadColorPixel(0, 64, 64),
-                OracleBRDF(base, 0, .5, mapped, {0, 0, 1}, glm::dvec3(frame.Light->ToLight)) * 2.,
+                OracleBRDF(base, 0, .5, resolved, {0, 0, 1}, glm::dvec3(frame.Light->ToLight)) * 2.,
                 .002, "Independent tilted normal / nonuniform signed TBN / linear COLOR0");
     }
     frame.Meshes[0].Geometry = mesh.Accepted;

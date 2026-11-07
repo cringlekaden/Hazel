@@ -100,7 +100,7 @@ static void IBLSurfaceChecks()
                   SurfaceView::DiffuseIBL, SurfaceView::SpecularIBL, SurfaceView::Normal,
                   SurfaceView::PrefilteredIBL, SurfaceView::BRDFLUT, SurfaceView::SurfaceParameters,
                   SurfaceView::WorldPosition, SurfaceView::GeometricNormal,
-                  SurfaceView::BaseNormal})
+                  SurfaceView::BaseNormal,SurfaceView::NormalHorizon})
             {
                 if (step != 0 && (!dark ? mode != SurfaceView::Shaded
                                         : step % 3 != 0 || mode == SurfaceView::Shaded))
@@ -244,7 +244,7 @@ static void IBLSurfaceChecks()
         for (auto mode :
              {SurfaceView::Shaded, SurfaceView::BaseColor, SurfaceView::MetalRoughAO,
               SurfaceView::DiffuseIBL, SurfaceView::SpecularIBL, SurfaceView::Normal,
-              SurfaceView::PrefilteredIBL, SurfaceView::BRDFLUT, SurfaceView::SurfaceParameters})
+              SurfaceView::PrefilteredIBL, SurfaceView::BRDFLUT, SurfaceView::SurfaceParameters,SurfaceView::NormalHorizon})
         {
             frame.Debug = mode;
             frame.LinearLightingInspection = int(mode) >= 6;

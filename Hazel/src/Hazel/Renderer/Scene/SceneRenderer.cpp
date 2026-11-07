@@ -8,9 +8,9 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
                            const Ref<Framebuffer> &display, const std::function<void()> &world2D,
                            const std::function<void()> &screenUI)
 {
-    if (unsigned(frame.Debug) > unsigned(SurfaceView::BaseNormal))
+    if (unsigned(frame.Debug) > unsigned(SurfaceView::NormalHorizon))
         throw std::runtime_error("Unsupported surface inspection");
-    if (frame.LinearLightingInspection && (frame.Debug < SurfaceView::Direct || frame.Debug > SurfaceView::BaseNormal))
+    if (frame.LinearLightingInspection && (frame.Debug < SurfaceView::Direct || frame.Debug > SurfaceView::NormalHorizon))
         throw std::runtime_error("Linear lighting inspection requires a lighting-term view and a float target");
     if (frame.LinearLightingInspection && (!display || display->GetSpecification().Attachments.Attachments.empty() ||
         display->GetSpecification().Attachments.Attachments[0].TextureFormat != FramebufferTextureFormat::RGBA32F))

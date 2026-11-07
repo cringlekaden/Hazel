@@ -45,6 +45,24 @@ vec3 specularLevel(vec3 direction,float level){
     if(level>=u_EnvRotationGain.w)return textureLod(u_Irradiance,direction,0).rgb/PI;
     return textureLod(u_Specular,direction,level).rgb;
 }
+vec3 resolveShadingNormal(vec3 N,vec3 Ng,vec3 V){
+    // Raster coverage belongs to the geometric surface. Interpolated/mapped
+    // normals must not turn a visible sample into a back-facing BRDF or send
+    // its mirror direction beneath that surface. Rotate only as far toward Ng
+    // as the geometric reflection horizon requires, in the original N/Ng plane.
+    float a=dot(Ng,V),c=dot(N,Ng);
+    if(a<=0||(c>0&&dot(reflect(-V,N),Ng)>=0))return N;
+    vec3 tangent=N-Ng*c;
+    if(dot(tangent,tangent)<1e-12)return Ng;
+    tangent=normalize(tangent);
+    // For N(theta)=Ng*cos(theta)+T*sin(theta), R.Ng =
+    // a*cos(2*theta)+b*sin(2*theta). Solve its first zero with stable
+    // half angles (including b=0 and grazing a); no atan-axis ambiguity.
+    float b=dot(tangent,V),h=length(vec2(a,b)),co,si;
+    if(b<=0){co=sqrt(.5*(1-b/h));si=a/(2*h*co);}
+    else{si=sqrt(.5*(1+b/h));co=a/(2*h*si);}
+    return normalize(Ng*co+tangent*si);
+}
 vec3 direct(vec3 base,float metal,float rough,vec3 N,vec3 V,vec3 L){
     float nl=clamp(dot(N,L),0,1),nv=clamp(dot(N,V),0,1);if(nl<=0||nv<=0)return vec3(0);
     vec3 sum=V+L;if(dot(sum,sum)<1e-12)return vec3(0);vec3 H=normalize(sum);
@@ -55,19 +73,27 @@ vec3 direct(vec3 base,float metal,float rough,vec3 N,vec3 V,vec3 L){
     return ((1-metal)*(1-F)*base/PI+D*visibility*F)*nl;
 }
 void main(){
+    // Evaluate geometric derivatives before a potentially nonuniform mask discard.
+    vec3 geometricNormal=normalize(cross(dFdx(v_Position),dFdy(v_Position)));
     int maps=int(u_Options.z);vec4 base=u_BaseFactor*v_Color*texture(u_Base,v_UV);
     if(u_Options.y>.5&&base.a<u_EmissionCutoff.a)discard;
     vec3 result=base.rgb,directTerm=vec3(0),diffuseTerm=vec3(0),specularTerm=vec3(0);vec3 N=normalize(v_Normal);
-    vec3 baseNormal=N, geometricNormal=normalize(cross(dFdx(v_Position),dFdy(v_Position)));
+    vec3 baseNormal=N;
     vec3 prefilteredProbe=vec3(0),brdfProbe=vec3(0),surfaceProbe=vec3(0);
+    vec3 view=u_Eye.w>.5?u_ToCamera.xyz:u_Eye.xyz-v_Position;vec3 V=dot(view,view)>1e-12?normalize(view):N;
+    vec3 horizonProbe=vec3(dot(N,V),dot(geometricNormal,V),dot(N,V));
     vec3 T=normalize(v_Tangent.xyz-N*dot(v_Tangent.xyz,N));vec3 B=cross(N,T)*v_Tangent.w;
     float metal=clamp(u_Surface.x*texture(u_MetalRough,v_UV).b,0,1),rough=clamp(u_Surface.y*texture(u_MetalRough,v_UV).g,0,1);
     if(u_Options.x<.5){
         if((maps&4)!=0){vec3 sampleN=texture(u_Normal,v_UV).xyz*2-1;sampleN.xy*=u_Surface.z;if(dot(sampleN,sampleN)>1e-12)N=normalize(mat3(T,B,N)*normalize(sampleN));}
         if(u_Options.w>.5&&!gl_FrontFacing)N=-N;
-        vec3 view=u_Eye.w>.5?u_ToCamera.xyz:u_Eye.xyz-v_Position;vec3 V=dot(view,view)>1e-12?normalize(view):N;
-        directTerm=direct(base.rgb,metal,rough,N,V,normalize(u_Light.xyz))*u_Incident.rgb;
-        if(u_EnvOptions.x>.5){
+        horizonProbe=vec3(dot(N,V),dot(geometricNormal,V),dot(N,V));
+        N=resolveShadingNormal(N,geometricNormal,V);
+        horizonProbe.z=dot(N,V);
+        vec3 L=normalize(u_Light.xyz);
+        if(dot(geometricNormal,V)>0&&dot(geometricNormal,L)>0)
+            directTerm=direct(base.rgb,metal,rough,N,V,L)*u_Incident.rgb;
+        if(u_EnvOptions.x>.5&&dot(geometricNormal,V)>0){
             float nv=clamp(dot(N,V),0,1),r=max(rough,.045);
             vec3 f0=mix(vec3(.04),base.rgb,metal),fview=f0+(1-f0)*pow(1-nv,5);
             float ao=mix(1,texture(u_Occlusion,v_UV).r,u_Surface.w);
@@ -80,9 +106,8 @@ void main(){
             vec3 prefiltered=mix(specularLevel(reflection,level),
                 specularLevel(reflection,min(level+1,u_EnvRotationGain.w)),fract(lod));
             prefilteredProbe=prefiltered;brdfProbe=vec3(ab,nv);surfaceProbe=vec3(dot(N,V),rough,metal);
-            // The reflection BRDF is defined only on the viewer's shading
-            // hemisphere. Smooth/mapped normals can cross it at silhouettes;
-            // the clamped LUT coordinate must not manufacture reflection there.
+            // Retain the BRDF domain check after resolving the shading normal
+            // against visible geometry; it is not a raster visibility cutoff.
             specularTerm=dot(N,V)>0?prefiltered*(f0*ab.x+ab.y):vec3(0);
             diffuseTerm*=ao*u_EnvRotationGain.z;specularTerm*=ao*u_EnvRotationGain.z;
         }
@@ -103,5 +128,6 @@ void main(){
     if(inspect==12)result=v_Position;
     if(inspect==13)result=geometricNormal;
     if(inspect==14)result=baseNormal;
+    if(inspect==15)result=horizonProbe;
     o_Color=vec4(result,1);o_Entity=u_Identity.x;
 }

@@ -24,7 +24,8 @@ enum class SurfaceView
     SurfaceParameters,
     WorldPosition,
     GeometricNormal,
-    BaseNormal
+    BaseNormal,
+    NormalHorizon // Raw shading N.V, geometric N.V, effective shading N.V.
 };
 struct SceneCameraView
 {

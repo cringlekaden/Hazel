@@ -50,6 +50,7 @@ static std::size_t Pixels(int entity) {
 #include "DirectPBRChecks.h"
 #include "IBLRenderingChecks.h"
 #include "IBLSurfaceReferenceCLI.h"
+#include "GeometricNormalChecks.h"
 #include "SelectionOutlineChecks.h"
 #include "GlyphPageChecks.h"
 #include "OrderedBatchChecks.h"
@@ -251,12 +252,14 @@ int main(int argc,char** argv) {
             target=Framebuffer::Create(framebuffer);
             Check(Renderer::GetSettings().TextureSlots==(reduced ? 2u : std::min(32u,Renderer::GetCapabilities().MaxTextureSlots)),"Application renderer settings mismatch");
             RenderingControls(application,requests);
+            if(argc==2 && std::string(argv[1])=="--geometric-edges"){GeometricNormalChecks();std::cout<<"NOT EXECUTED: other graphics regressions (focused geometric-edge mode)\n";return 0;}
             if(argc==2 && std::string(argv[1])=="--profile-overflow"){TextOverflowProfile();return 0;}
             if(argc==2 && std::string(argv[1])=="--profile-typography"){TypographyRenderProfile();return 0;}
             TextCompositingChecks(argc>1 && std::string(argv[1])=="--reproduce-d8");
             if(argc>1)return 0;
             DirectPBRChecks();SelectionOutlineChecks();
             IBLRenderingChecks();
+            GeometricNormalChecks();
             CanonicalColorChecks();
             Primitives();
             Textures();
