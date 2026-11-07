@@ -1,7 +1,7 @@
 #include "hzpch.h"
 #include "Hazel/Renderer/Resources/GPUTimer.h"
 #include "Platform/OpenGL/OpenGLGPUTimer.h"
-#include "RendererAPI.h"
+#include "Hazel/Renderer/RendererAPI.h"
 namespace Hazel
 {
 Scope<GPUTimer> GPUTimer::Create()
