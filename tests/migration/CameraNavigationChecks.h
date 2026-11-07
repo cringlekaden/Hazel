@@ -59,6 +59,17 @@ static void CameraNavigationChecks()
     Check(boostRoute.Current() == ViewportNavigation::Gesture::Fly &&
               std::abs(glm::length(boosted.GetPosition() - eye) - 15.f) < .0001f,
           "Shift held before RMB must boost fly, not start pan");
+    PerspectiveCameraController restored;
+    restored.Pitch = 2;
+    auto restoredEye = restored.Position();
+    restored.Orbit({0, 0});
+    Check(glm::length(restored.Position() - restoredEye) < .0001f,
+          "Restored workspace pose snapped on gesture entry");
+    auto rolled = glm::quat(glm::vec3(.2f, .4f, .3f));
+    restored.SetPose({1, 2, 3}, rolled);
+    Check(std::abs(glm::dot(rolled, restored.Orientation())) > .99999f &&
+              glm::length(restored.Position() - glm::vec3(1, 2, 3)) < .0001f,
+          "Authored camera roll/eye lost on inspection entry");
     PerspectiveCameraController a, b;
     a.SetPose({1, 2, 3}, glm::quat(1, 0, 0, 0));
     b = a;

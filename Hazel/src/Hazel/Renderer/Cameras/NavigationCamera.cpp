@@ -75,7 +75,10 @@ void NavigationCamera::Reset()
     if (m_Navigation == EditorNavigation::Planar)
         RestorePlanar({0, 0}, 10);
     else
+    {
+        m_Perspective.Roll = 0;
         RestoreOrbit({0, 0, 0}, 0, 0, 10);
+    }
 }
 void NavigationCamera::Pan(glm::vec2 points)
 {

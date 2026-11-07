@@ -7,7 +7,7 @@ namespace Hazel
 {
 glm::quat PerspectiveCameraController::Orientation() const
 {
-    return glm::quat(glm::vec3(-Pitch, -Yaw, 0));
+    return glm::quat(glm::vec3(-Pitch, -Yaw, Roll));
 }
 glm::vec3 PerspectiveCameraController::Forward() const
 {
@@ -27,8 +27,11 @@ glm::vec3 PerspectiveCameraController::Position() const
 }
 void PerspectiveCameraController::Orbit(glm::vec2 points)
 {
-    Yaw += points.x * .005f;
-    Pitch = std::clamp(Pitch + points.y * .005f, -1.55334f, 1.55334f);
+    Yaw += (Up().y < 0 ? -1.f : 1.f) * points.x * .005f;
+    // Respect a restored pose outside the upright range. A zero/first delta
+    // must not snap existing workspace orientations to a different view.
+    auto next = Pitch + points.y * .005f;
+    Pitch = std::abs(Pitch) <= 1.55334f ? std::clamp(next, -1.55334f, 1.55334f) : next;
 }
 void PerspectiveCameraController::Pan(glm::vec2 points, float verticalFOV, float height)
 {
@@ -54,9 +57,10 @@ void PerspectiveCameraController::Fly(glm::vec2 look, glm::vec3 movement, float 
 }
 void PerspectiveCameraController::SetPose(glm::vec3 position, glm::quat orientation, float distance)
 {
-    auto forward = glm::normalize(orientation * glm::vec3(0, 0, -1));
-    Pitch = std::asin(std::clamp(-forward.y, -1.f, 1.f));
-    Yaw = std::atan2(forward.x, -forward.z);
+    auto angles = glm::eulerAngles(glm::normalize(orientation));
+    Pitch = -angles.x;
+    Yaw = -angles.y;
+    Roll = angles.z;
     Distance = std::clamp(distance, .1f, 100000.f);
     Focus = position + Forward() * Distance;
 }

@@ -31,6 +31,9 @@ void RuntimeSession::SetCameraInspection(bool enabled)
     glm::vec3 position, rotation, scale;
     if (!Math::DecomposeTransform(m_Scene->GetWorldTransform(entity), position, rotation, scale))
         throw std::runtime_error("Camera inspection cannot resolve the camera world pose");
+    if (glm::length(scale - glm::vec3(1)) > .0001f)
+        throw std::runtime_error("Camera inspection requires unit camera/parent scale; the fixed "
+                                 "authored view remains available");
     camera.RestoreWorldPose(position, glm::quat(rotation));
     m_InspectionSeed = camera;
     m_Inspection = camera;

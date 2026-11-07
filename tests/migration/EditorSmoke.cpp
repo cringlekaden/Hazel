@@ -935,8 +935,8 @@ private:
         Check(!e.RuntimeUIWidgetBlocksInput(),"ImGui viewport MoveId canceled runtime mouse gesture");
         Check(!e.NavigationBlocked(),"ImGui viewport MoveId still blocks editor camera");
         CameraNavigationChecks();
-        ImGui::SetActiveID(viewport->GetID("Camera blocking widget"),viewport);
-        Check(e.NavigationBlocked(),"Real widget did not retain navigation ownership");
+        ImGui::SetActiveID(ImHashStr("Camera blocking widget",0,viewport->ID),viewport);
+        Check(e.NavigationBlocked(),"Another widget active ID did not retain navigation ownership");
         ImGui::StartMouseMovingWindow(viewport);
         e.m_ViewportHovered=false;Check(e.RuntimeUIWidgetBlocksInput(),"Viewport title/background drag bypassed input guard");
         e.m_ViewportHovered=true;// OnUpdate is outside Begin/End; cold loading may compact this

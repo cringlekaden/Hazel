@@ -9,7 +9,7 @@ class PerspectiveCameraController
 {
   public:
     glm::vec3 Focus{0};
-    float Pitch = 0, Yaw = 0, Distance = 10;
+    float Pitch = 0, Yaw = 0, Distance = 10, Roll = 0;
     glm::quat Orientation() const;
     glm::vec3 Forward() const;
     glm::vec3 Right() const;
