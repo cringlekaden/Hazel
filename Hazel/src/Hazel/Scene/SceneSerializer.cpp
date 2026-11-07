@@ -777,6 +777,9 @@ namespace Hazel {
                 if(!font.Error.empty())m_Report.Problems.push_back({entity.GetUUID(),"Text family",font.Error,m_AssetRoot/text.Font.Family});
             }
         }
+        if(resources==ResourceLoading::Resolve && !staged->Presentation().Environment.Asset.empty())try{
+            AuditEnvironment(m_AssetRoot,staged->Presentation().Environment.Asset);
+        }catch(const std::exception &error){if(!m_Repair)throw;m_Report.Problems.push_back({0,"Environment",error.what(),m_AssetRoot/staged->Presentation().Environment.Asset});}
         for(auto handle:staged->GetAllEntitiesWith<MeshRendererComponent>()) {
             Entity entity(handle,staged.get());auto& binding=entity.GetComponent<MeshRendererComponent>();
             if(resources==ResourceLoading::Resolve)try{AuditMeshBinding(m_AssetRoot,binding);}

@@ -54,3 +54,7 @@ compile_commands.json
 
 # Native import jobs retain private staging/leases outside packaged content.
 /examples/*/Assets/Intermediates/
+
+# Native environment preparation owns leases and unaccepted temporary stages.
+*.henv.prepare.lock
+**/*.henv.prepared/.stage-*/

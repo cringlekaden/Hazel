@@ -8,6 +8,7 @@
 #include "Panels/FontFamilyPanel.h"
 #include "Panels/UIStylePanel.h"
 #include "Panels/MaterialPanel.h"
+#include "Panels/EnvironmentPanel.h"
 #include "ProjectTools.h"
 #include "Panels/ConsolePanel.h"
 #include "Hazel/Core/FileDocument.h"
@@ -83,6 +84,7 @@ private:
     bool SaveRenderingRequests(const RuntimeRendererRequests& requests);
     void NewProject();
     void ImportAssets();
+    void PrepareEnvironment(const std::filesystem::path &reference);
     void BeginImport(const std::filesystem::path& folder,const std::filesystem::path& source={});
     bool StartImport(bool reimport,const std::filesystem::path& manifest={});
     void Scripts();
@@ -170,6 +172,8 @@ private:
     FontFamilyPanel m_Fonts;
     UIStylePanel m_Styles;
     MaterialPanel m_Materials;
+    EnvironmentPanel m_Environments;
+    AssetPickerState m_EnvironmentPicker,m_DefaultEnvironmentPicker;
     std::string m_ImportSource,m_ImportDestination,m_ImportError;
     int m_ImportScene=-1;
     bool m_ShowImport=false,m_ShowMesh=false;

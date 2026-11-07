@@ -23,6 +23,7 @@ const char *Type(const std::filesystem::path &path)
     if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".bmp" ||
         extension == ".tga")
         return "Texture";
+    if (extension == ".henv" || extension == ".hdr")return "Environment";
     if (extension == ".hmat")return "Material";
     if (extension == ".hmesh")return "Mesh";
     if (extension == ".himport"||extension==".glb")return "Model Import";
@@ -140,6 +141,8 @@ void ContentBrowserPanel::OnImGuiRender()
         ImportTexture();
     PropertyUI::WrapButton("Import GLB...");
     if(ImGui::Button("Import GLB...")&&ImportGLB&&Allowed(EditorAction::EditAsset))ImportGLB(Folder());
+    PropertyUI::WrapButton("New Environment...");
+    if(ImGui::Button("New Environment...")&&CreateEnvironment&&Allowed(EditorAction::EditAsset))CreateEnvironment(Folder());
     PropertyUI::WrapButton("New Material...");
     if(ImGui::Button("New Material...")&&CreateMaterial&&Allowed(EditorAction::EditAsset))CreateMaterial(Folder());
     PropertyUI::WrapButton("New UI Style...");
@@ -183,7 +186,7 @@ void ContentBrowserPanel::OnImGuiRender()
     if (ImGui::Button("X##clear-search"))
         m_Search.clear();
     PropertyUI::Help("Clear search");
-    PropertyUI::Combo("type", "Type", m_Type, "All\0Texture\0Sprite Sheet\0Prefab\0Scene\0Script\0Other\0Font Family\0Font Face\0UI Style\0Material\0Mesh\0Model Import\0");
+    PropertyUI::Combo("type", "Type", m_Type, "All\0Texture\0Sprite Sheet\0Prefab\0Scene\0Script\0Other\0Font Family\0Font Face\0UI Style\0Material\0Mesh\0Model Import\0Environment\0");
     if ((!m_Search.empty() || m_Type) && ImGui::SmallButton("Reset filters"))
     {
         m_Search.clear();
@@ -192,7 +195,7 @@ void ContentBrowserPanel::OnImGuiRender()
     if (!m_Search.empty() || m_Type)
         ImGui::TextDisabled("Searching all Assets");
     PropertyUI::Validation(m_Error.c_str());
-    const char *types[] = {"All", "Texture", "Sprite Sheet", "Prefab", "Scene", "Script", "Other", "Font Family", "Font Face", "UI Style", "Material", "Mesh", "Model Import"};
+    const char *types[] = {"All", "Texture", "Sprite Sheet", "Prefab", "Scene", "Script", "Other", "Font Family", "Font Face", "UI Style", "Material", "Mesh", "Model Import", "Environment"};
     std::vector<const Entry *> visible;
     const auto query = Lower(m_Search);
     for (const auto &entry : m_Entries)

@@ -8,7 +8,7 @@ class ScenePresentationCommand final : public DocumentCommand {
 public:
     ScenePresentationCommand(Scene& scene,ScenePresentation after):m_Document(scene.GetIdentity()),m_Before(scene.Presentation()),m_After(after){m_After.Validate();}
     const std::string& Name() const override{return m_Name;}
-    size_t Bytes() const override{return sizeof(*this);}
+    size_t Bytes() const override{return sizeof(*this)+(m_Before.Environment.Asset.native().size()+m_After.Environment.Asset.native().size())*sizeof(std::filesystem::path::value_type);}
     bool Changed() const override{return m_Before!=m_After;}
     void Check(Scene& scene) const override {
         if(scene.GetIdentity()!=m_Document || scene.Presentation()!=(m_Applied?m_After:m_Before))

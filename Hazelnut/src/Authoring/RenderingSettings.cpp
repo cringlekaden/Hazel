@@ -85,9 +85,30 @@ namespace Hazel {
         ImGui::TextWrapped(
             "Scene-referred world surfaces use exposure and fixed Neutral tone mapping. Screen UI "
             "stays display-linear and independent of exposure. Both camera projections are "
-            "supported; direct lighting has no ambient/IBL.");
+            "supported. Prepared image lighting is separate from the directional key.");
         PropertyUI::Color("scene-background","Background",&m_ScenePresentationDraft.Background.x,{},false);
-        const auto can=Availability(EditorAction::EditScene);ImGui::BeginDisabled(!can);
+        if(mode && Project::GetActive()) {
+            ImGui::SeparatorText("Environment instance");
+            auto &environment=m_ScenePresentationDraft.Environment;
+            auto previous=environment.Asset;
+            AssetPicker("environment","Environment asset",environment.Asset,".henv",Project::GetActive()->GetAssets(),m_EnvironmentPicker,[this](const auto &path){SelectAsset(path);});
+            if(environment.Asset.empty() && !previous.empty())environment=SceneEnvironment{};
+            if(!environment.Asset.empty()) {
+                float degrees=glm::degrees(environment.Yaw);
+                if(PropertyUI::SliderFloat("environment-yaw","Yaw (degrees)",degrees,-360,360))environment.Yaw=glm::radians(degrees);
+                PropertyUI::DragFloat("environment-gain","Radiance gain",environment.Gain,.01f,0,1000);
+                PropertyUI::Checkbox("environment-lighting","Image-based lighting",environment.Lighting);
+                PropertyUI::Checkbox("environment-sky","Image background",environment.Background);
+                auto status=Project::GetActive()->GetAssets()->Environment(environment.Asset);
+                PropertyUI::ReadOnly("environment-effective","Effective generation",status.Accepted?(AssetKey(status.Accepted->Generation)+" / "+status.Accepted->Identity).c_str():"None; prepare the environment asset");
+                PropertyUI::Validation(status.Error.c_str());
+            }
+            if(ImGui::Button("New environment..."))m_Environments.BeginCreate("Environments");
+            ImGui::TextWrapped("Background and lighting share orientation/gain. Hiding the image background keeps the authored solid background. Yaw/gain need no rebake; source/quality edits do.");
+        }
+        if(!mode&&!m_ScenePresentationDraft.Environment.Asset.empty()&&ImGui::Button("Clear scene environment"))m_ScenePresentationDraft.Environment={};
+        bool valid=true;try{m_ScenePresentationDraft.Validate();}catch(const std::exception &e){PropertyUI::Validation(e.what());valid=false;}
+        const auto can=Availability(EditorAction::EditScene);ImGui::BeginDisabled(!can||!valid);
         if(ImGui::Button("Apply scene settings")) {
             PrepareSave();m_ActiveDocument=EditorDocument::Scene;
             if(!m_SceneHistory.Execute(scene,CreateScope<ScenePresentationCommand>(scene,m_ScenePresentationDraft)))m_Editor.ActionFailed(m_SceneHistory.TakeDiagnostic());

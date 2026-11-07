@@ -39,6 +39,9 @@ namespace Hazel {
         if (requireRendering)
             scene->ValidateRendering();
         scene->Presentation().Validate();
+        if(requireRendering && !scene->Presentation().Environment.Asset.empty() &&
+            scene->Presentation().Environment.Background && !scene->GetPrimaryCameraEntity())
+            throw std::runtime_error("Image environment background requires a primary world camera; add a camera or disable Image background in Scene Settings");
         scene->ValidateSprites();
         scene->ValidateUI();
         scene->ValidateHierarchy(); // Shared roots, planar dimensions, graph/world and physics validation.

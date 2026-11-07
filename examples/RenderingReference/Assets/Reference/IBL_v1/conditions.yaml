@@ -1,0 +1,84 @@
+Version: 1
+Recipe: Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top
+LogicalExtent:
+  - 1280
+  - 720
+PixelExtent:
+  - 1280
+  - 720
+Exposure: 0
+ToneMapping: Neutral
+Clock: 0
+Seed: 0
+Camera: 1
+Scope: IBL_v1; additive to frozen Core_v1, Import_v1, Direct_v1
+Cases:
+  DirectOnly:
+    Scene: Scenes/IBL_v1-DirectOnly.hazel
+    SceneHash: 9f17e6364307761669ca3e13cce353869c749bc1bd2dcc76de7bd645bb6b8fd0
+    Environment: Reference/IBL_v1/Constant.henv
+    Yaw: 0
+    Gain: 1
+    Lighting: false
+    Background: false
+    SunEnabled: true
+  IBLOnly:
+    Scene: Scenes/IBL_v1-IBLOnly.hazel
+    SceneHash: 07981461e72c4728e2a5de0ee217482ef7a2bc9f36941fad8cb1e2ec4b30f0d1
+    Environment: Reference/IBL_v1/Constant.henv
+    Yaw: 0
+    Gain: 1
+    Lighting: true
+    Background: true
+    SunEnabled: false
+  Combined:
+    Scene: Scenes/IBL_v1-Combined.hazel
+    SceneHash: fbbad6870660204699e8ca7ffba81f5679c6c6c0acc4626da1c0f95c6235c79c
+    Environment: Reference/IBL_v1/AsymmetricAxes.henv
+    Yaw: 0
+    Gain: 1
+    Lighting: true
+    Background: true
+    SunEnabled: true
+  Photo:
+    Scene: Scenes/IBL_v1-Photo.hazel
+    SceneHash: 57715e87265196d4c069a5e29875ac5de279b47f4787d2414764f74cd3f3e45b
+    Environment: Reference/IBL_v1/Photo.henv
+    Yaw: 0
+    Gain: 1
+    Lighting: true
+    Background: true
+    SunEnabled: false
+  AxesYaw90:
+    Scene: Scenes/IBL_v1-AxesYaw90.hazel
+    SceneHash: 98035314fb5e24ba4697bf4382e2acc0b16ad16be98a82ee6ad0d0e5f23cfc4b
+    Environment: Reference/IBL_v1/AsymmetricAxes.henv
+    Yaw: 1.57079637
+    Gain: 1
+    Lighting: true
+    Background: true
+    SunEnabled: false
+Files:
+  Reference/IBL_v1/Constant.henv: 79954c8f65006fc2c4bf8a2b7863d129bd5f858b3a1bee1210404ecb694a1709
+  Reference/IBL_v1/Photo.henv.accepted: 5e866725a98fd9e6a4261784892bbaffc0997a259813e3b4c0893631ba560e2c
+  Reference/IBL_v1/AsymmetricAxes.henv.accepted: f026fc86b1e961278fcdce6a39523d52898e9db261ee7efa682fee1eedae8380
+  Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/owner: 7fe853365d88cad3732c0756b7437e96a452511a3f4c8459bef57e2cd2026e9c
+  Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/Background.hlight: 5b646c96e06e9f38091b7b1b7e449af820219839ddf2d7381eca2e810ee13d6a
+  Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/Specular.hlight: b0f1bcb878ec9f89ff98dee2e804c5408b5c2f3e792e8fdada195b45802a3588
+  Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/Irradiance.hlight: b1a4300271430dcaad7eeeb1b0dd61654c67df85d51366a22271f96a3ad3ff26
+  Reference/IBL_v1/AsymmetricAxes.henv: 11e35d690311f9c3cae8a1c41e07c5093813d2338c425b313cdcb8c67b02479c
+  Reference/IBL_v1/Photo.henv: 23ec202336c78a6a8c2f7cc3c515b3121bd26ef2342fe6a83647cdb88bfc3e02
+  Reference/IBL_v1/AsymmetricAxes.henv.prepared/50daf6c2142c3b93/owner: 7fe853365d88cad3732c0756b7437e96a452511a3f4c8459bef57e2cd2026e9c
+  Reference/IBL_v1/AsymmetricAxes.henv.prepared/50daf6c2142c3b93/Background.hlight: 4f4f70586f107966744e5b80be720548fe2596d2c1bb61046125b1c8c98c0c1e
+  Reference/IBL_v1/AsymmetricAxes.henv.prepared/50daf6c2142c3b93/Specular.hlight: 7b5fa7d213e0a7c71754a94495f5f2dfac4fce164fd9302d4674931954abcfd3
+  Reference/IBL_v1/AsymmetricAxes.henv.prepared/50daf6c2142c3b93/Irradiance.hlight: 2142d452a8cee0a7844ed4e04c642e82f807c823fb04ed0586c24293e6f498fe
+  Reference/IBL_v1/NOTICE.txt: 3ce57e257e5ce1ca03aa727bac2b1ca19d5181b99c5ec806ef21c722438b105f
+  Reference/IBL_v1/Constant.henv.prepared/cbac07521733625b/owner: 7fe853365d88cad3732c0756b7437e96a452511a3f4c8459bef57e2cd2026e9c
+  Reference/IBL_v1/Constant.henv.prepared/cbac07521733625b/Background.hlight: ce3bb94e5f5f195b3ab814eb79f64e3b246243a55845701dfaa6c7143308428d
+  Reference/IBL_v1/Constant.henv.prepared/cbac07521733625b/Specular.hlight: 80420352ce082bb9e568ca64ec5fbd32ffc161527feff021c490c553bd6092ac
+  Reference/IBL_v1/Constant.henv.prepared/cbac07521733625b/Irradiance.hlight: 810d8c7870f84e823f2b61ca2d9abf8921c866fa0002f5e6b79ae4f7980235a8
+  Reference/IBL_v1/Sources/Constant.hdr: 0eccd5c421c49feb47687d054e48d891cab334f353187df98ec2bc9645bc9350
+  Reference/IBL_v1/Sources/Photo.hdr: e7cfda5f4e98e623db12b8bfd0184e048488e4855d9c83e2751fb44a32e80c45
+  Reference/IBL_v1/Sources/AsymmetricAxes.hdr: 6a8867493bbcf4d72e50b29a104a5947b968d3905ca6c94e8d7d08735ab964c1
+  Reference/IBL_v1/Constant.henv.accepted: 6d100b3891a0fbf57230794e24994e3c94dbbf8575c11679b4059de705bf3fb2
+  Prepared/BRDF/8916c405c4da491ac3abaccd5f4da974be8b228135e47a81ac41ff1856d5ce94/bb4673afa8c745fb.hlight: e992f5f8905d6d607e391bcfba71ac8e08abc83530322cf48988a1b254de0242

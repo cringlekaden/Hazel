@@ -6,6 +6,7 @@ namespace Hazel
 {
 void AuthoringPanel::CancelEdits()
 {
+    m_Environments.Finish(true);
     m_Materials.Finish(true);
     m_Editor.m_UIEdit.Finish(true);
     if(m_Editor.m_EditorScene)m_Editor.m_GizmoEdit.Finish(*m_Editor.m_EditorScene,&m_SceneHistory,true);
@@ -18,6 +19,7 @@ void AuthoringPanel::CancelEdits()
 }
 void AuthoringPanel::PrepareSave()
 {
+    m_Environments.Finish(false);
     m_Materials.Finish(false);
     // Save accepts completed Inspector values; a pointer gesture must be
     // released explicitly and is cancelled before a save/transition boundary.
@@ -52,6 +54,7 @@ void AuthoringPanel::HistoryFeedback(DocumentHistory &history)
 }
 bool AuthoringPanel::UndoRedo(bool redo)
 {
+    if(m_ActiveDocument==EditorDocument::Environment){if(!Require(EditorAction::EditAsset))return false;return m_Environments.UndoRedo(redo);}
     if(m_ActiveDocument==EditorDocument::Material){if(!Require(EditorAction::EditAsset))return false;return m_Materials.UndoRedo(redo);}
     auto history = ActiveHistory();
     auto scene = ActiveHistoryScene();
@@ -74,6 +77,7 @@ bool AuthoringPanel::UndoRedo(bool redo)
 }
 void AuthoringPanel::HistoryMenu()
 {
+    if(m_ActiveDocument==EditorDocument::Environment){bool edit=bool(Availability(EditorAction::EditAsset))&&!ImGui::GetIO().WantTextInput;if(ImGui::MenuItem("Undo environment edit","Ctrl+Z",false,edit&&m_Environments.CanUndo()))UndoRedo(false);if(ImGui::MenuItem("Redo environment edit","Ctrl+Shift+Z / Ctrl+Y",false,edit&&m_Environments.CanRedo()))UndoRedo(true);ImGui::Separator();return;}
     if(m_ActiveDocument==EditorDocument::Material){bool edit=bool(Availability(EditorAction::EditAsset))&&!ImGui::GetIO().WantTextInput;if(ImGui::MenuItem("Undo material edit","Ctrl+Z",false,edit&&m_Materials.CanUndo()))UndoRedo(false);if(ImGui::MenuItem("Redo material edit","Ctrl+Shift+Z / Ctrl+Y",false,edit&&m_Materials.CanRedo()))UndoRedo(true);ImGui::Separator();return;}
 
     auto history = ActiveHistory();

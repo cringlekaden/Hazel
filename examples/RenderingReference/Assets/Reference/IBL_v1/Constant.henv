@@ -1,0 +1,14 @@
+Environment:
+  Version: 1
+  Name: Constant
+  Notice: Original Hazel IBL_v1 diagnostic source, Apache-2.0 (Hazel LICENSE). Constant RGB .25; axes RGB=1+(x,y,z), right handed +Y up. RGBE quantization is recorded by the actual source hash.
+  Source:
+    Kind: RadianceHDR
+    Image: Reference/IBL_v1/Sources/Constant.hdr
+    Interpretation: LinearRec709D65TopDown
+  Preparation:
+    Recipe: Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top
+    Background: 256
+    Specular: 128
+    Irradiance: 32
+    Samples: 1024

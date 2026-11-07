@@ -299,7 +299,7 @@ namespace Hazel {
             ImGui::SetNextItemWidth(145);
             if (ImGui::Combo("##Surface view", &inspect,
                              "Shaded\0Base color\0World normal\0World tangent\0Metal / rough / "
-                             "AO\0Raw radiance (SDR clamp)\0"))
+                             "AO\0Raw radiance (SDR clamp)\0Direct (SDR clamp)\0Diffuse IBL (SDR clamp)\0Specular IBL (SDR clamp)\0"))
                 m_RenderView.Debug = SurfaceView(inspect);
             ImGui::SameLine();ImGui::Checkbox("Grid",&m_ShowGrid);ImGui::SameLine();
         }

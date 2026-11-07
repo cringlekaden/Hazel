@@ -1,0 +1,14 @@
+Environment:
+  Version: 1
+  Name: Neutral constant radiance
+  Notice: Original Hazel diagnostic source; Apache-2.0 (Hazel LICENSE). Exact RGB .25; no external image.
+  Source:
+    Kind: RadianceHDR
+    Image: Native/Environment_v1/Neutral.hdr
+    Interpretation: LinearRec709D65TopDown
+  Preparation:
+    Recipe: Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top
+    Background: 16
+    Specular: 16
+    Irradiance: 8
+    Samples: 1024

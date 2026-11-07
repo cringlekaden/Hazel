@@ -1,5 +1,6 @@
 #pragma once
 #include "Hazel/Assets/ImportedAsset.h"
+#include "Hazel/Assets/Environment.h"
 #include "Hazel/Renderer/Framebuffer.h"
 #include "Hazel/Renderer/Lighting.h"
 #include "Hazel/Scene/SceneDefaults.h"
@@ -16,7 +17,10 @@ enum class SurfaceView
     Normal,
     Tangent,
     MetalRoughAO,
-    Radiance
+    Radiance,
+    Direct,
+    DiffuseIBL,
+    SpecularIBL
 };
 struct SceneCameraView
 {
@@ -46,6 +50,7 @@ struct SceneSubmission
     Ref<ProjectAssets> Assets;
     std::vector<SubmittedMesh> Meshes;
     std::optional<SubmittedDirectional> Light;
+    Ref<const PreparedEnvironment> Environment;
 };
 class SceneRenderView
 {

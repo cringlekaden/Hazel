@@ -257,3 +257,18 @@ void AuthoringPanel::ImportAssets()
     ImGui::End();
 }
 } // namespace Hazel
+
+namespace Hazel
+{
+void AuthoringPanel::PrepareEnvironment(const std::filesystem::path &reference)
+{
+    if(!Require(EditorAction::StartTool)||!Require(EditorAction::EditAsset)||!Project::GetActive())return;
+    try {
+        m_Editor.m_ProjectFile.Check();AssetPath(reference,".henv");
+        ToolRequest request;request.NativeExecutable=ProjectTools::ImportTool();request.Project=m_Editor.m_ProjectPath;
+        request.Generation=m_ProjectGeneration;request.Completion=ToolCompletion::RefreshImportedAssets;
+        request.Label="Prepare HDR / IBL";request.Arguments={"prepare-environment",request.Project.generic_u8string(),reference.generic_u8string()};request.Artifact=Project::GetAssetDirectory()/reference;
+        if(!m_Tools.Start(std::move(request)))throw std::runtime_error("A tool operation is already running");ShowConsole();
+    }catch(const std::exception &e){m_Editor.ActionFailed(e.what());}
+}
+}

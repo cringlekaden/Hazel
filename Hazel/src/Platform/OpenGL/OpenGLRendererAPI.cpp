@@ -15,6 +15,7 @@ namespace Hazel {
         state.DepthWrite = depthWrite;
         state.Blend = glIsEnabledi(GL_BLEND, 0);
         state.SRGB = glIsEnabled(GL_FRAMEBUFFER_SRGB);
+        state.SeamlessCubes = glIsEnabled(GL_TEXTURE_CUBE_MAP_SEAMLESS);
         GLint compare, cull, face;
         glGetIntegerv(GL_DEPTH_FUNC, &compare);
         glGetIntegerv(GL_CULL_FACE_MODE, &cull);
@@ -36,6 +37,7 @@ namespace Hazel {
         glGetIntegerv(GL_SCISSOR_BOX,&state.ClipRect.x);glGetIntegerv(GL_VIEWPORT,&state.Viewport.x);return state;
     }
     void OpenGLRendererAPI::SetRasterState(const RasterState& state) {
+        if(state.SeamlessCubes)glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);else glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
         glDepthMask(state.DepthWrite);
         glDepthFunc(state.Compare == DepthCompare::Less        ? GL_LESS
                     : state.Compare == DepthCompare::LessEqual ? GL_LEQUAL
@@ -99,17 +101,19 @@ namespace Hazel {
         glGetIntegerv(GL_DEPTH_FUNC, &depthFunc);
         glGetIntegerv(GL_CULL_FACE_MODE, &cull);
         glGetIntegerv(GL_FRONT_FACE, &front);
-        std::array<GLint, 32> textures{}, samplers{};
+        std::array<GLint, 32> textures{}, cubes{}, samplers{};
         const auto textureCount = std::min(32u, GetCapabilities().MaxTextureSlots);
-        std::array<GLint, 6> ubos{}, blend{};
+        std::array<GLint, 7> ubos{};
+        std::array<GLint, 6> blend{};
         for (unsigned i = 0; i < textureCount; ++i)
         {
             glActiveTexture(GL_TEXTURE0 + i);
             glGetIntegerv(GL_TEXTURE_BINDING_2D, &textures[i]);
+            glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP, &cubes[i]);
             glGetIntegerv(GL_SAMPLER_BINDING, &samplers[i]);
         }
         glActiveTexture(active);
-        for (unsigned i = 0; i < 6; ++i)
+        for (unsigned i = 0; i < 7; ++i)
             glGetIntegeri_v(GL_UNIFORM_BUFFER_BINDING, i, &ubos[i]);
         const GLenum fields[]{GL_BLEND_SRC_RGB,   GL_BLEND_DST_RGB,      GL_BLEND_SRC_ALPHA,
                               GL_BLEND_DST_ALPHA, GL_BLEND_EQUATION_RGB, GL_BLEND_EQUATION_ALPHA};
@@ -128,13 +132,14 @@ namespace Hazel {
             glUseProgram(program);
             glBindVertexArray(vao);
             glBindBuffer(GL_ARRAY_BUFFER, array);
-            for (unsigned i = 0; i < 6; ++i)
+            for (unsigned i = 0; i < 7; ++i)
                 glBindBufferBase(GL_UNIFORM_BUFFER, i, ubos[i]);
             glBindBuffer(GL_UNIFORM_BUFFER, uniform);
             for (unsigned i = 0; i < textureCount; ++i)
             {
                 glActiveTexture(GL_TEXTURE0 + i);
                 glBindTexture(GL_TEXTURE_2D, textures[i]);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, cubes[i]);
                 glBindSampler(i, samplers[i]);
             }
             glActiveTexture(active);

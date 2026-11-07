@@ -36,6 +36,7 @@ void Initialize() {
     caps.MaxTextureSlots = std::min(Limit(GL_MAX_TEXTURE_IMAGE_UNITS), caps.MaxTextureBindings);
     if (caps.MaxTextureSlots < 2) throw std::runtime_error("Insufficient OpenGL texture units for textured batching");
     caps.MaxTextureSize = Limit(GL_MAX_TEXTURE_SIZE);
+    caps.MaxCubeSize = Limit(GL_MAX_CUBE_MAP_TEXTURE_SIZE);
     caps.MaxUniformBindings = Limit(GL_MAX_UNIFORM_BUFFER_BINDINGS);
     caps.MaxUniformBlockBytes = Limit(GL_MAX_UNIFORM_BLOCK_SIZE);
     caps.MaxVertexAttributes = Limit(GL_MAX_VERTEX_ATTRIBS);

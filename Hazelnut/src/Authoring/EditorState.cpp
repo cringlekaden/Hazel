@@ -64,12 +64,12 @@ namespace Hazel {
             for (const auto *text : {&s.Scene, &s.BrowserFolder, &s.BrowserSearch, &s.Sheet,
                                      &s.Prefab, &s.ExportFolder, &s.ExportName})
                 ValidateStateText(*text);
-            if (s.BrowserType < 0 || s.BrowserType > 12 || !std::isfinite(s.Thumbnail) ||
+            if (s.BrowserType < 0 || s.BrowserType > 13 || !std::isfinite(s.Thumbnail) ||
                 s.Thumbnail < 32 || s.Thumbnail > 160 || !std::isfinite(s.Pitch) ||
                 !std::isfinite(s.Yaw) || !std::isfinite(s.Distance) || s.Distance < .1f ||
                 s.Distance > 100000)
                 throw std::runtime_error("Invalid workspace controls/camera");
-            if (s.SurfaceView < 0 || s.SurfaceView > 5)
+            if (s.SurfaceView < 0 || s.SurfaceView > 8)
                 throw std::runtime_error("Invalid workspace surface inspection");
             if(s.Gizmo < -1 || s.Gizmo > 3)throw std::runtime_error("Invalid workspace tool");
             if(!std::isfinite(s.PlanarFocus.x)||!std::isfinite(s.PlanarFocus.y)||!std::isfinite(s.PlanarSize)||s.PlanarSize<.01f||s.PlanarSize>100000)

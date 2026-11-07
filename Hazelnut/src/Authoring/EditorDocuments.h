@@ -13,7 +13,8 @@ enum class EditorDocument
     Sheet,
     FontFamily,
     UIStyle,
-    Material
+    Material,
+    Environment
 };
 enum class OperationIntent
 {
@@ -26,11 +27,13 @@ enum class OperationIntent
     OpenFontFamily,
     OpenUIStyle,
     OpenMaterial,
+    OpenEnvironment,
     ClosePrefab,
     CloseSheet,
     CloseFontFamily,
     CloseUIStyle,
     CloseMaterial,
+    CloseEnvironment,
     CloseEditor,
     Play,
     Simulate,

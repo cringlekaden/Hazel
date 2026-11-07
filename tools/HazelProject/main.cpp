@@ -10,6 +10,8 @@
 #include "Hazel/Project/ProjectCreation.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "Import.h"
+#include "EnvironmentBake.h"
+#include "EnvironmentRenderingReference.h"
 #include "RenderingReference.h"
 #include <chrono>
 #include <iostream>
@@ -26,6 +28,7 @@ constexpr const char* Usage =
     "  create-rendering-reference FOLDER TEMPLATES  (maintainer Core_v1 recipe)\n"
     "  import-glb PROJECT.hproj SOURCE.glb ASSET_FOLDER [--scene INDEX] [--cancel-file ABSOLUTE]\n"
     "  reimport-glb PROJECT.hproj ASSET_FOLDER/Import.himport [--cancel-file ABSOLUTE]\n"
+    "  prepare-environment PROJECT.hproj ASSET.henv [--cancel-file ABSOLUTE]\n"
     "  validate PROJECT.hproj\n"
     "  slice-sheet ASSETS_ROOT SHEET IMAGE TILE_SIZE\n"
     "  add-clip ASSETS_ROOT SHEET NAME DURATION ORDINALS_CSV\n"
@@ -50,7 +53,18 @@ int main(int argc, char **argv) {
             std::cout << "HAZEL_AUTHORING_CONTRACT=1\n";
             return 0;
         }
+        if(args.size()==2 && args[1]=="--environment-contract"){std::cout<<"HAZEL_ENVIRONMENT_PREPARE_CONTRACT=1\n";return 0;}
         if(args.size()==2 && args[1]=="--import-contract"){std::cout<<"HAZEL_ASSET_IMPORT_CONTRACT=1\n";return 0;}
+        if ((args.size()==4 || args.size()==6) && args[1]=="prepare-environment") {
+            std::filesystem::path cancel;
+            if(args.size()==6){if(args[4]!="--cancel-file")throw std::runtime_error(Usage);cancel=std::filesystem::u8path(args[5]);if(!cancel.is_absolute())throw std::runtime_error("Cancellation marker requires an absolute owned path");}
+            Hazel::Log::Init();auto project=Hazel::Project::LoadCandidate(std::filesystem::u8path(args[2]));if(!project)throw std::runtime_error("Cannot read project");
+            // Throttle progress at the source: useful native console feedback,
+            // bounded even for large face/sample counts.
+            std::string previous;size_t last=SIZE_MAX;
+            Hazel::OperationProgress::Scope progress([&](const std::string &label,size_t done,size_t total){auto bucket=total?done*20/total:0;if(label!=previous||bucket!=last){std::cout<<"[prepare] "<<label<<' '<<done<<'/'<<total<<std::endl;previous=label;last=bucket;}});
+            Hazel::EnvironmentBake::PrepareImage(project->GetAssetRoot(),std::filesystem::u8path(args[3]),[&]{return !cancel.empty()&&std::filesystem::exists(cancel);});return 0;
+        }
         if(args.size()>=4 && (args[1]=="import-glb"||args[1]=="reimport-glb")) {
             const bool reimport=args[1]=="reimport-glb";const size_t required=reimport?4:5;
             if(args.size()<required||(args.size()-required)%2)throw std::runtime_error(Usage);
@@ -131,6 +145,8 @@ int main(int argc, char **argv) {
                                         std::filesystem::u8path(args[3]));
             return 0;
         }
+        if(args.size()==3 && args[1]=="generate-environment-starter"){Hazel::Log::Init();GenerateEnvironmentStarter(std::filesystem::u8path(args[2]));return 0;}
+        if(args.size()==4 && args[1]=="add-environment-reference"){Hazel::Log::Init();AddEnvironmentRenderingReference(std::filesystem::u8path(args[2]),std::filesystem::u8path(args[3]));return 0;}
         if (args.size() == 3 && args[1] == "generate-native-starter")
         {
             Hazel::Log::Init();

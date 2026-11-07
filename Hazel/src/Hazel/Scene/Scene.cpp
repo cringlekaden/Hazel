@@ -1054,6 +1054,11 @@ namespace Hazel {
     }
     void Scene::ValidateRendering() const
     {
+        m_Presentation.Validate();
+        if(!m_Presentation.Environment.Asset.empty()) {
+            if(!m_Assets)throw std::runtime_error("Environment requires project-owned prepared assets");
+            AuditEnvironment(m_Assets->Root(),m_Presentation.Environment.Asset);
+        }
         unsigned lights = 0;
         for (auto h : m_Registry.view<const DirectionalLightComponent>())
         {

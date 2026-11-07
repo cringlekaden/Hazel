@@ -208,19 +208,19 @@ void OpenGLFramebuffer::EncodeOutput(const Ref<Framebuffer>& destination)
         target->m_ColorAttachmentSpecifications[0].TextureFormat!=FramebufferTextureFormat::RGBA8 || target->m_Specification.Samples!=1))
         throw std::invalid_argument("Output encoding destination must be a separate single RGBA8 target");
     Utils::FramebufferState framebuffers;
-    GLint program=0,vao=0,active=0,texture=0,viewport[4],polygon[2];GLboolean mask[4];
+    GLint program=0,vao=0,active=0,texture=0,sampler=0,viewport[4],polygon[2];GLboolean mask[4];
     glGetIntegerv(GL_CURRENT_PROGRAM,&program);glGetIntegerv(GL_VERTEX_ARRAY_BINDING,&vao);
-    glGetIntegerv(GL_ACTIVE_TEXTURE,&active);glActiveTexture(GL_TEXTURE0);glGetIntegerv(GL_TEXTURE_BINDING_2D,&texture);
+    glGetIntegerv(GL_ACTIVE_TEXTURE,&active);glActiveTexture(GL_TEXTURE0);glGetIntegerv(GL_TEXTURE_BINDING_2D,&texture);glGetIntegerv(GL_SAMPLER_BINDING,&sampler);glBindSampler(0,0);
     glGetIntegerv(GL_VIEWPORT,viewport);glGetIntegerv(GL_POLYGON_MODE,polygon);glGetBooleani_v(GL_COLOR_WRITEMASK,0,mask);
     const GLenum states[]{GL_DEPTH_TEST,GL_CULL_FACE,GL_SCISSOR_TEST,GL_FRAMEBUFFER_SRGB};
     const GLboolean blend0=glIsEnabledi(GL_BLEND,0);glDisablei(GL_BLEND,0);
     GLboolean enabled[4];for(int i=0;i<4;++i){enabled[i]=glIsEnabled(states[i]);glDisable(states[i]);}
     struct Restore {
-        GLint Program,VAO,Active,Texture;GLint* Viewport;GLint* Polygon;GLboolean* Mask;const GLenum* States;GLboolean* Enabled;GLboolean Blend0;
-        ~Restore(){glUseProgram(Program);glBindVertexArray(VAO);glBindTexture(GL_TEXTURE_2D,Texture);glActiveTexture(Active);
+        GLint Program,VAO,Active,Texture,Sampler;GLint* Viewport;GLint* Polygon;GLboolean* Mask;const GLenum* States;GLboolean* Enabled;GLboolean Blend0;
+        ~Restore(){glUseProgram(Program);glBindVertexArray(VAO);glBindTexture(GL_TEXTURE_2D,Texture);glBindSampler(0,Sampler);glActiveTexture(Active);
             glViewport(Viewport[0],Viewport[1],Viewport[2],Viewport[3]);glPolygonMode(GL_FRONT_AND_BACK,Polygon[0]);
             glColorMaski(0,Mask[0],Mask[1],Mask[2],Mask[3]);if(Blend0)glEnablei(GL_BLEND,0);else glDisablei(GL_BLEND,0);for(int i=0;i<4;++i)if(Enabled[i])glEnable(States[i]);else glDisable(States[i]);}
-    } restore{program,vao,active,texture,viewport,polygon,mask,states,enabled,blend0};
+    } restore{program,vao,active,texture,sampler,viewport,polygon,mask,states,enabled,blend0};
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER,target?target->m_RendererID:0);
     if(target)glViewport(0,0,target->m_Specification.Width,target->m_Specification.Height);
     glColorMaski(0,GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);

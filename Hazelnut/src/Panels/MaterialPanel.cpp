@@ -260,7 +260,7 @@ void MaterialPanel::Render(bool editable)
     if (contents)
     {
         ImGui::TextWrapped("Native material document. Inspect on a mesh in the scene viewport; "
-                           "direct lighting has no ambient/IBL.");
+                           "lighting follows the scene directional key and prepared environment.");
         ImGui::BeginDisabled(!editable || (GuardPending && GuardPending()));
         if (ImGui::Button("Save"))
             Save();

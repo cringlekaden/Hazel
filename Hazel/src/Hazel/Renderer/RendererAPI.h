@@ -23,6 +23,7 @@ enum class CullFace
 };
 struct RasterState
 {
+    bool SeamlessCubes = false;
     bool DepthTest = true, DepthWrite = true, Blend = true, SRGB = false, Clockwise = false,
          ClipEnabled = false;
     DepthCompare Compare = DepthCompare::Less;

@@ -18,6 +18,7 @@ std::string Name(const std::filesystem::path &root, const std::filesystem::path 
 {
     try
     {
+        if (path.extension() == ".henv")return ReadEnvironment(root/path).Name;
         if (path.extension() == ".hmat")
             return ReadMaterial(root / path).Name;
         if (path.extension() == ".hmesh")

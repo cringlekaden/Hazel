@@ -102,6 +102,9 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
         state.Value(m_Scene->Presentation().Background);
         state.Value(m_Scene->Presentation().SceneReferred);
         state.Value(m_Scene->Presentation().Exposure);
+        const auto &environment=m_Scene->Presentation().Environment;
+        state.Value(environment.Asset);state.Value(environment.Yaw);state.Value(environment.Gain);
+        state.Value(environment.Lighting);state.Value(environment.Background);
     }
     state.Bytes.reserve((only ? 1 : m_Scene->GetAllEntitiesWith<IDComponent>().size()) * 160);
     if(!component)state.Value(m_Scene->GetName());

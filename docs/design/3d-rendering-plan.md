@@ -1069,4 +1069,5 @@ has prepared direct PBR and 2D starters; native light/material/camera/scene tool
 history and bounds framing share existing ownership. Additive Direct_v1 cases and
 independent CPU/GPU checks are recorded in [the Stage 3 record](3d-direct-stage3.md).
 Qualification status there distinguishes actual M4/CI results from pending work.
-Stage 4 environment preparation/IBL has not begun.
+Stage 4 implementation and its qualification status are tracked in
+[the environment record](3d-environment-stage4.md). Stage 5 has not begun.

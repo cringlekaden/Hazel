@@ -1,0 +1,2 @@
+Original Hazel diagnostic source; Apache-2.0 (Hazel LICENSE). Exact RGB .25; no external image.
+Native creation copies accepted portable data. No baker, parser, GPU or SDK needed.

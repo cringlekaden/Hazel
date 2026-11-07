@@ -30,6 +30,7 @@ static GLenum HazelImageFormatToGLDataFormat(ImageFormat format)
 {
     switch (format) {
         case ImageFormat::R8: return GL_RED;
+        case ImageFormat::RG32F: return GL_RG;
         case ImageFormat::RGB8: return GL_RGB;
         case ImageFormat::RGBA8: case ImageFormat::RGBA32F: return GL_RGBA;
         default: throw std::invalid_argument("Unsupported texture image format");
@@ -39,6 +40,7 @@ static GLenum HazelImageFormatToGLInternalFormat(ImageFormat format)
 {
     switch (format) {
         case ImageFormat::R8: return GL_R8;
+        case ImageFormat::RG32F: return GL_RG32F;
         case ImageFormat::RGB8: return GL_RGB8;
         case ImageFormat::RGBA8: return GL_RGBA8;
         case ImageFormat::RGBA32F: return GL_RGBA32F;
@@ -47,7 +49,7 @@ static GLenum HazelImageFormatToGLInternalFormat(ImageFormat format)
 }
 // Named-operation equivalent: preserve the caller's active-unit binding and packing state.
 struct TextureUploadState {
-    GLint Texture=0, Alignment=0, RowLength=0, SkipRows=0, SkipPixels=0, Buffer=0;
+    GLint Texture=0, Alignment=0, RowLength=0, SkipRows=0, SkipPixels=0, Buffer=0, Swap=0;
     explicit TextureUploadState(GLuint texture) {
         glGetIntegerv(GL_TEXTURE_BINDING_2D,&Texture);
         glGetIntegerv(GL_UNPACK_ALIGNMENT,&Alignment);
@@ -55,12 +57,14 @@ struct TextureUploadState {
         glGetIntegerv(GL_UNPACK_SKIP_ROWS,&SkipRows);
         glGetIntegerv(GL_UNPACK_SKIP_PIXELS,&SkipPixels);
         glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING,&Buffer);
+        glGetIntegerv(GL_UNPACK_SWAP_BYTES,&Swap);
         glBindTexture(GL_TEXTURE_2D,texture);
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
         glPixelStorei(GL_UNPACK_ALIGNMENT,1);
         glPixelStorei(GL_UNPACK_ROW_LENGTH,0);
         glPixelStorei(GL_UNPACK_SKIP_ROWS,0);
         glPixelStorei(GL_UNPACK_SKIP_PIXELS,0);
+        glPixelStorei(GL_UNPACK_SWAP_BYTES,GL_FALSE);
     }
     ~TextureUploadState() {
         glBindTexture(GL_TEXTURE_2D,Texture);
@@ -69,6 +73,7 @@ struct TextureUploadState {
         glPixelStorei(GL_UNPACK_ROW_LENGTH,RowLength);
         glPixelStorei(GL_UNPACK_SKIP_ROWS,SkipRows);
         glPixelStorei(GL_UNPACK_SKIP_PIXELS,SkipPixels);
+        glPixelStorei(GL_UNPACK_SWAP_BYTES,Swap);
     }
 };
 }
@@ -80,10 +85,10 @@ OpenGLTexture2D::OpenGLTexture2D(const TextureSpecification& specification)
     m_Specification.Validate();
     m_InternalFormat=specification.Encoding==TextureEncoding::SRGB ? (specification.Format==ImageFormat::RGB8?GL_SRGB8:GL_SRGB8_ALPHA8) : Utils::HazelImageFormatToGLInternalFormat(specification.Format);
     m_DataFormat=Utils::HazelImageFormatToGLDataFormat(specification.Format);
-    m_DataType=specification.Format==ImageFormat::RGBA32F ? GL_FLOAT : GL_UNSIGNED_BYTE;
+    m_DataType=(specification.Format==ImageFormat::RGBA32F || specification.Format==ImageFormat::RG32F) ? GL_FLOAT : GL_UNSIGNED_BYTE;
     m_BytesPerPixel=specification.Format==ImageFormat::R8 ? 1u :
                     specification.Format==ImageFormat::RGB8 ? 3u :
-                    specification.Format==ImageFormat::RGBA8 ? 4u : 16u;
+                    specification.Format==ImageFormat::RGBA8 ? 4u : specification.Format==ImageFormat::RG32F ? 8u : 16u;
     AllocateStorage(nullptr);
 }
 
@@ -158,5 +163,6 @@ void OpenGLTexture2D::Bind(uint32_t slot) const
     if (slot>=static_cast<uint32_t>(maximum)) throw std::out_of_range("Texture slot exceeds hardware limit");
     glActiveTexture(GL_TEXTURE0+slot);
     glBindTexture(GL_TEXTURE_2D,m_RendererID);
+    glBindSampler(slot,0); // TextureSpecification owns sampling; outer pass restores caller state.
 }
 }

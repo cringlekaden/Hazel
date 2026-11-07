@@ -31,6 +31,11 @@ layout(binding=1) uniform sampler2D u_MetalRough;
 layout(binding=2) uniform sampler2D u_Normal;
 layout(binding=3) uniform sampler2D u_Occlusion;
 layout(binding=4) uniform sampler2D u_Emissive;
+layout(binding=5) uniform samplerCube u_Irradiance;
+layout(binding=6) uniform samplerCube u_Specular;
+layout(binding=7) uniform sampler2D u_BRDF;
+layout(std140,binding=6) uniform Environment {mat4 u_InverseVP;vec4 u_EnvEye;vec4 u_EnvRotationGain;vec4 u_EnvOptions;};
+vec3 environmentDirection(vec3 d){float c=u_EnvRotationGain.x,s=u_EnvRotationGain.y;return vec3(c*d.x-s*d.z,d.y,s*d.x+c*d.z);}
 const float PI=3.141592653589793;
 vec3 direct(vec3 base,float metal,float rough,vec3 N,vec3 V,vec3 L){
     float nl=clamp(dot(N,L),0,1),nv=clamp(dot(N,V),0,1);if(nl<=0||nv<=0)return vec3(0);
@@ -44,15 +49,24 @@ vec3 direct(vec3 base,float metal,float rough,vec3 N,vec3 V,vec3 L){
 void main(){
     int maps=int(u_Options.z);vec4 base=u_BaseFactor*v_Color*texture(u_Base,v_UV);
     if(u_Options.y>.5&&base.a<u_EmissionCutoff.a)discard;
-    vec3 result=base.rgb;vec3 N=normalize(v_Normal);
+    vec3 result=base.rgb,directTerm=vec3(0),diffuseTerm=vec3(0),specularTerm=vec3(0);vec3 N=normalize(v_Normal);
     vec3 T=normalize(v_Tangent.xyz-N*dot(v_Tangent.xyz,N));vec3 B=cross(N,T)*v_Tangent.w;
     float metal=clamp(u_Surface.x*texture(u_MetalRough,v_UV).b,0,1),rough=clamp(u_Surface.y*texture(u_MetalRough,v_UV).g,0,1);
     if(u_Options.x<.5){
         if((maps&4)!=0){vec3 sampleN=texture(u_Normal,v_UV).xyz*2-1;sampleN.xy*=u_Surface.z;if(dot(sampleN,sampleN)>1e-12)N=normalize(mat3(T,B,N)*normalize(sampleN));}
         if(u_Options.w>.5&&!gl_FrontFacing)N=-N;
         vec3 view=u_Eye.w>.5?u_ToCamera.xyz:u_Eye.xyz-v_Position;vec3 V=dot(view,view)>1e-12?normalize(view):N;
-        result=direct(base.rgb,metal,rough,N,V,normalize(u_Light.xyz))*u_Incident.rgb+u_EmissionCutoff.rgb*texture(u_Emissive,v_UV).rgb;
-        // AO affects indirect illumination only. This checkpoint has no indirect term.
+        directTerm=direct(base.rgb,metal,rough,N,V,normalize(u_Light.xyz))*u_Incident.rgb;
+        if(u_EnvOptions.x>.5){
+            float nv=clamp(dot(N,V),0,1),r=max(rough,.045);
+            vec3 f0=mix(vec3(.04),base.rgb,metal),fview=f0+(1-f0)*pow(1-nv,5);
+            float ao=mix(1,texture(u_Occlusion,v_UV).r,u_Surface.w);
+            diffuseTerm=texture(u_Irradiance,environmentDirection(N)).rgb*base.rgb*(1-metal)*(1-fview)/PI;
+            vec2 ab=texture(u_BRDF,vec2(nv,r)).rg;
+            specularTerm=textureLod(u_Specular,environmentDirection(reflect(-V,N)),r*u_EnvRotationGain.w).rgb*(f0*ab.x+ab.y);
+            diffuseTerm*=ao*u_EnvRotationGain.z;specularTerm*=ao*u_EnvRotationGain.z;
+        }
+        result=directTerm+diffuseTerm+specularTerm+u_EmissionCutoff.rgb*texture(u_Emissive,v_UV).rgb;
     }
     int inspect=int(u_ToCamera.w);
     if(inspect==1)result=base.rgb;
@@ -60,5 +74,8 @@ void main(){
     if(inspect==3)result=T*.5+.5;
     if(inspect==4)result=vec3(metal,rough,mix(1,texture(u_Occlusion,v_UV).r,u_Surface.w));
     if(inspect==5)result=clamp(result,0,1); // SDR inspection of pre-exposure radiance; numeric HDR remains FP32.
+    if(inspect==6)result=clamp(directTerm,0,1);
+    if(inspect==7)result=clamp(diffuseTerm,0,1);
+    if(inspect==8)result=clamp(specularTerm,0,1);
     o_Color=vec4(result,1);o_Entity=u_Identity.x;
 }

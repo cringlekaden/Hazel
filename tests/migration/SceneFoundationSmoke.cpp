@@ -88,6 +88,7 @@ static void ScriptRequirementContracts() {
 #include "ImportCookingChecks.h"
 #include "Hazel/Core/OperationProgress.h"
 #include "ImportPublicationChecks.h"
+#include "EnvironmentBakeChecks.h"
 static void Finite(const glm::mat4& projection)
 {
     for (int column=0; column<4; ++column)
@@ -225,6 +226,7 @@ static void CPUFontFamilyDocument() {
 int main()
 {
     try {
+        EnvironmentBakeChecks();
         StorageChecks();
         AssetCookingChecks();ImportCookingChecks();
         Hazel::Log::Init();

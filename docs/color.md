@@ -22,12 +22,12 @@ metallic/roughness and occlusion bindings interpret linear data. glTF factors an
 vertex colors are already linear and are copied without another transfer. Native
 material pickers use the same sRGB display boundary. Imported PNG/JPEG channel
 and alpha bytes survive cooking unchanged; slot usage supplies interpretation,
-with no conflicting encoding field on the shared image. Static meshes use the direct metallic/roughness renderer; there is no ambient/IBL term.
+with no conflicting encoding field on the shared image. Static meshes use direct metallic/roughness shading and optional prepared image-based lighting. AO affects indirect terms only; no ambient multiplier is added.
 
 `TextureSpecification::Encoding` distinguishes `SRGB` from `Linear`. Generated
 textures default to Linear; ordinary RGB(A) file textures default to SRGB.
 Sprite-sheet Sampling can explicitly request either interpretation. A shared file
-used for color and data receives distinct GPU resources. R8 and RGBA32F require
+used for color and data receives distinct GPU resources. R8, RG32F and RGBA32F require
 Linear. Float pixels are never passed through an LDR transfer function.
 
 Ordinary image rows and file texture uploads are top-left. Sprite UVs pair the
@@ -47,7 +47,11 @@ exposure or selectable tone curves. Lit metallic/roughness meshes require this
 mode. Unlit world content receives the same world exposure/presentation. Both
 orthographic and perspective cameras work in either supported presentation.
 The opaque linear background follows world presentation; transparent scene output
-is rejected. See [direct rendering](design/3d-direct-stage3.md).
+is rejected. Prepared Radiance HDR environments remain linear Rec.709/D65 float data;
+background, diffuse and specular lookups share inverse yaw and radiance gain.
+Cubemaps have explicit prepared mips; the BRDF LUT is linear A/B data. No source
+image, sRGB transfer or convolution runs during runtime loading. See
+[environment preparation](design/3d-environment-stage4.md).
 
 A final pass applies the piecewise sRGB transfer into RGBA8, or into Nutella's
 window with `GL_FRAMEBUFFER_SRGB` disabled. Alpha is copied. The editor's output

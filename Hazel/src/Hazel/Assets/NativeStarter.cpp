@@ -7,6 +7,7 @@
 #include "Hazel/Scene/Prefab.h"
 #include "Hazel/Scene/Scene.h"
 #include "ImportedAsset.h"
+#include "Environment.h"
 #include "ProjectAssets.h"
 namespace Hazel::NativeStarter
 {
@@ -99,8 +100,9 @@ void Ensure(const std::filesystem::path &templates, const std::filesystem::path 
     if (std::filesystem::exists(destination))
     {
         AuditMesh(root, Folder / "UnitCube.hmesh");
-        return;
     }
+    else
+    {
     auto source = templates / Folder;
     AuditImport(templates, Folder / "Import.himport");
     auto temporary = root / (".native-starter-" + std::to_string(uint64_t(UUID())));
@@ -117,5 +119,22 @@ void Ensure(const std::filesystem::path &templates, const std::filesystem::path 
     std::filesystem::copy(source, temporary / "content", std::filesystem::copy_options::recursive);
     std::filesystem::create_directories(destination.parent_path());
     FileSystem::PublishDirectoryNew(temporary / "content", destination);
+    }
+    const std::filesystem::path environment="Native/Environment_v1/Neutral.henv";
+    auto environmentFolder=environment.parent_path();
+    auto target=Project::ResolveOwnedAsset(root,environmentFolder);
+    if(std::filesystem::exists(target)){AuditEnvironment(root,environment);return;}
+    auto dependencies=AuditEnvironment(templates,environment);
+    // Shared LUT is immutable and published before its referring environment.
+    for(auto &p:dependencies)if(p.lexically_relative(environmentFolder).generic_u8string().rfind("..",0)==0){
+        auto bytes=ReadAssetBytes(Project::ResolveOwnedAsset(templates,p),LightingArtifactByteLimit);
+        auto to=Project::ResolveOwnedAsset(root,p);std::filesystem::create_directories(to.parent_path());
+        if(std::filesystem::exists(to)){if(ReadAssetBytes(to,LightingArtifactByteLimit)!=bytes)throw std::runtime_error("Native starter prepared dependency conflicts with project content");}
+        else FileSystem::WriteFileAtomically(to,[&](auto &o){o.write(bytes.data(),std::streamsize(bytes.size()));},WriteMode::CreateNew);
+    }
+    auto staging=root/(".native-environment-"+AssetKey(UUID()));std::filesystem::create_directory(staging);
+    struct CleanupEnvironment{std::filesystem::path Path;~CleanupEnvironment(){std::error_code ec;std::filesystem::remove_all(Path,ec);}} cleanupEnvironment{staging};
+    std::filesystem::copy(templates/environmentFolder,staging/"content",std::filesystem::copy_options::recursive);
+    std::filesystem::create_directories(target.parent_path());FileSystem::PublishDirectoryNew(staging/"content",target);
 }
 } // namespace Hazel::NativeStarter

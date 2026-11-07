@@ -29,6 +29,7 @@ std::vector<DocumentInfo> AuthoringPanel::Documents() const
     if (m_Sprites.HasDocument())
         docs.push_back({EditorDocument::Sheet, m_Sprites.Identity(), m_Sprites.Name(), m_Sprites.Dirty(),
                         canSaveAsset ? "" : canSaveAsset.Reason});
+    if(m_Environments.HasDocument())docs.push_back({EditorDocument::Environment,m_Environments.Identity(),m_Environments.Name(),m_Environments.Dirty(),canSaveAsset?"":canSaveAsset.Reason});
     if(m_Materials.HasDocument())docs.push_back({EditorDocument::Material,m_Materials.Identity(),m_Materials.Name(),m_Materials.Dirty(),canSaveAsset?"":canSaveAsset.Reason});
     if(m_Styles.HasDocument())docs.push_back({EditorDocument::UIStyle,m_Styles.Identity(),m_Styles.Name(),m_Styles.Dirty(),canSaveAsset?"":canSaveAsset.Reason});
     if(m_Fonts.HasDocument())docs.push_back({EditorDocument::FontFamily,m_Fonts.Identity(),m_Fonts.Name(),m_Fonts.Dirty(),canSaveAsset?"":canSaveAsset.Reason});
@@ -57,6 +58,9 @@ DocumentSaveResult AuthoringPanel::SaveDocument(const DocumentInfo &document)
             break;
         case EditorDocument::Sheet:
             saved = m_Sprites.Save();
+            break;
+        case EditorDocument::Environment:
+            saved=m_Environments.Save();
             break;
         case EditorDocument::Material:
             saved=m_Materials.Save();

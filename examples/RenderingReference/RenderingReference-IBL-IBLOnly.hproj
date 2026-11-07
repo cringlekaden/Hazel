@@ -1,0 +1,14 @@
+Project:
+  Version: 1
+  NewSceneDefaults:
+    Projection: Orthographic
+    Navigation: Planar
+    Presentation:
+      Mode: DisplayReferred
+      Background: [0.0100228256, 0.0100228256, 0.0100228256, 1]
+  ScriptProject: RenderingReference
+  AuthoringVersion: 1
+  Name: Rendering Reference
+  StartScene: Scenes/IBL_v1-IBLOnly.hazel
+  AssetDirectory: Assets
+  ScriptModulePath: Scripts/Binaries/RenderingReference.dll

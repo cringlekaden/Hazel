@@ -3,9 +3,20 @@
 #include "SceneSerializer.h"
 #include "Hazel/Core/DocumentSchema.h"
 #include "Hazel/Project/ScriptSource.h"
+#include "Hazel/Assets/AssetData.h"
 #include <cmath>
 namespace Hazel {
+void SceneEnvironment::Validate() const {
+    AssetPath(Asset,".henv",true);
+    if(!std::isfinite(Yaw)||std::abs(Yaw)>6.283185307179586f || !std::isfinite(Gain)||Gain<0||Gain>1000)
+        throw std::runtime_error("Environment yaw requires [-2pi,2pi] radians; gain requires [0,1000]");
+    if(Asset.empty() && !(*this==SceneEnvironment{}))
+        throw std::runtime_error("Environment instance values require an environment asset");
+}
 void ScenePresentation::Validate() const {
+    Environment.Validate();
+    if(!Environment.Asset.empty() && !SceneReferred)
+        throw std::runtime_error("Prepared image environments require scene-referred presentation; unlit 2D remains independent");
     if (!std::isfinite(Exposure) || Exposure < -16 || Exposure > 16 ||
         (!SceneReferred && Exposure != 0))
         throw std::runtime_error(
@@ -22,6 +33,7 @@ NewSceneDefaults DirectDefaults()
     d.Perspective = true;
     d.Navigation = EditorNavigation::Orbit;
     d.Presentation.SceneReferred = true;
+    d.Presentation.Environment.Asset="Native/Environment_v1/Neutral.henv";
     return d;
 }
 YAML::Node Encode(const ScenePresentation& value) {
@@ -31,10 +43,16 @@ YAML::Node Encode(const ScenePresentation& value) {
     if (value.SceneReferred)
         n["Exposure"] = value.Exposure;
     n["Background"]=std::vector<float>{value.Background.r,value.Background.g,value.Background.b,value.Background.a};
-    n["Background"].SetStyle(YAML::EmitterStyle::Flow); return n;
+    n["Background"].SetStyle(YAML::EmitterStyle::Flow);
+    if(!value.Environment.Asset.empty()) {
+        auto e=n["Environment"];e["Asset"]=value.Environment.Asset.generic_u8string();
+        e["Yaw"]=value.Environment.Yaw;e["Gain"]=value.Environment.Gain;
+        e["Lighting"]=value.Environment.Lighting;e["Background"]=value.Environment.Background;
+    }
+    return n;
 }
 ScenePresentation ReadPresentation(const YAML::Node& n) {
-    DocumentSchema::Keys(n, {"Mode", "Background", "Exposure"}, "Presentation");
+    DocumentSchema::Keys(n, {"Mode", "Background", "Exposure", "Environment"}, "Presentation");
     const auto mode = n["Mode"].as<std::string>();
     if (mode != "DisplayReferred" && mode != "SceneReferred")
         throw std::runtime_error("Unknown world presentation");
@@ -47,6 +65,13 @@ ScenePresentation ReadPresentation(const YAML::Node& n) {
         result.Exposure = n["Exposure"].as<float>();
     for (int i = 0; i < 4; ++i)
         result.Background[i] = c[i].as<float>();
+    if(auto e=n["Environment"]) {
+        DocumentSchema::Keys(e,{"Asset","Yaw","Gain","Lighting","Background"},"scene environment");
+        result.Environment.Asset=std::filesystem::u8path(e["Asset"].as<std::string>());
+        if(result.Environment.Asset.empty())throw std::runtime_error("Omit absent scene environment instead of an empty reference");
+        result.Environment.Yaw=e["Yaw"].as<float>();result.Environment.Gain=e["Gain"].as<float>();
+        result.Environment.Lighting=e["Lighting"].as<bool>();result.Environment.Background=e["Background"].as<bool>();
+    }
     result.Validate();
     return result;
 }

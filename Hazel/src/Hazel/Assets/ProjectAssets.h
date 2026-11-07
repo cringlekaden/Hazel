@@ -3,6 +3,7 @@
 #include "FontFamily.h"
 #include "UIStyle.h"
 #include "ImportedAsset.h"
+#include "Environment.h"
 #include "Hazel/Renderer/Font.h"
 #include <unordered_map>
 #include <atomic>
@@ -32,8 +33,12 @@ struct FamilyResolution {
     bool StyleFallback=false, DefaultFallback=false;
 };
 class MeshGeometry;
+class EnvironmentResources;
 class ProjectAssets {
 public:
+  struct EnvironmentResolution {Ref<const PreparedEnvironment> Accepted;std::string Error;};
+  EnvironmentResolution Environment(const std::filesystem::path &reference);
+  Ref<EnvironmentResources> RealizeEnvironment(const Ref<const PreparedEnvironment> &environment);
   Ref<MeshGeometry> RealizeMesh(const Ref<const MeshAsset> &mesh);
   explicit ProjectAssets(std::filesystem::path root)
       : m_Root(std::filesystem::weakly_canonical(root))
@@ -65,6 +70,11 @@ public:
     void Refresh(); // explicit freshness boundary before Play; no per-frame file checks
     void ImportTexture(const std::filesystem::path& source,const std::filesystem::path& destination);
 private:
+  struct EnvironmentEntry {Ref<const PreparedEnvironment> Accepted;std::string Error;};
+  std::unordered_map<std::string,EnvironmentEntry> m_Environments;
+  std::unordered_map<std::string,Ref<EnvironmentResources>> m_EnvironmentGPU;
+  void ReloadEnvironment(const std::string &key,EnvironmentEntry &entry);
+  void RefreshEnvironments();
   struct GPUEntry
   {
       Ref<MeshGeometry> Resource;

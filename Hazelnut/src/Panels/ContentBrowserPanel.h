@@ -23,7 +23,7 @@ class ContentBrowserPanel
     int TypeFilter() const {return m_Type;}
     float Thumbnail() const {return m_ThumbnailSize;}
     bool Restore(const std::filesystem::path& folder,const std::string& search,int type,float thumbnail) {
-        if(type<0 || type>12 || !Navigate(m_BaseDirectory/folder))return false;
+        if(type<0 || type>13 || !Navigate(m_BaseDirectory/folder))return false;
         m_Search=search;m_Type=type;m_ThumbnailSize=thumbnail;return true;
     }
     void Refresh();
@@ -32,7 +32,7 @@ class ContentBrowserPanel
     std::function<void(const std::filesystem::path &)> SelectAsset;
     std::function<void(const std::filesystem::path &)> CreateSpriteSheet;
     std::function<void()> ImportTexture;
-    std::function<void(const std::filesystem::path&)> CreateFontFamily,CreateUIStyle,CreateMaterial,ImportGLB;
+    std::function<void(const std::filesystem::path&)> CreateFontFamily,CreateUIStyle,CreateMaterial,CreateEnvironment,ImportGLB;
 
   private:
     struct Entry

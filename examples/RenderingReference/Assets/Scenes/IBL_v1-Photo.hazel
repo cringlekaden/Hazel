@@ -1,0 +1,469 @@
+SceneVersion: 3
+Scene: IBL_v1 Photo
+Presentation:
+  Mode: SceneReferred
+  Exposure: 0
+  Background: [0.00999999978, 0.00999999978, 0.00999999978, 1]
+  Environment:
+    Asset: Reference/IBL_v1/Photo.henv
+    Yaw: 0
+    Gain: 1
+    Lighting: true
+    Background: true
+Entities:
+  - Entity: 1
+    Relationship:
+      Parent: 0
+      Order: 0
+    TagComponent:
+      Tag: Frozen PerspectivePBR camera
+    TransformComponent:
+      Translation: [0, 0, 10]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 0.785398185
+        PerspectiveNear: 0.100000001
+        PerspectiveFar: 100
+        OrthographicSize: 10
+        OrthographicNear: -1
+        OrthographicFar: 1
+      Primary: true
+      FixedAspectRatio: false
+  - Entity: 2
+    Relationship:
+      Parent: 0
+      Order: 1
+    TagComponent:
+      Tag: Direct only key / no environment
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [-0.449999988, 0.600000024, 0]
+      Scale: [1, 1, 1]
+    DirectionalLightComponent:
+      Color: [1, 1, 1]
+      Intensity: 3
+      Enabled: false
+  - Entity: 10
+    Relationship:
+      Parent: 0
+      Order: 2
+    TagComponent:
+      Tag: r=0.000000 m=0.000000
+    TransformComponent:
+      Translation: [-3.75, 1.70000005, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/0_0.hmat
+  - Entity: 11
+    Relationship:
+      Parent: 0
+      Order: 3
+    TagComponent:
+      Tag: r=0.100000 m=0.000000
+    TransformComponent:
+      Translation: [-2.25, 1.70000005, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/0_1.hmat
+  - Entity: 12
+    Relationship:
+      Parent: 0
+      Order: 4
+    TagComponent:
+      Tag: r=0.250000 m=0.000000
+    TransformComponent:
+      Translation: [-0.75, 1.70000005, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/0_2.hmat
+  - Entity: 13
+    Relationship:
+      Parent: 0
+      Order: 5
+    TagComponent:
+      Tag: r=0.500000 m=0.000000
+    TransformComponent:
+      Translation: [0.75, 1.70000005, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/0_3.hmat
+  - Entity: 14
+    Relationship:
+      Parent: 0
+      Order: 6
+    TagComponent:
+      Tag: r=0.750000 m=0.000000
+    TransformComponent:
+      Translation: [2.25, 1.70000005, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/0_4.hmat
+  - Entity: 15
+    Relationship:
+      Parent: 0
+      Order: 7
+    TagComponent:
+      Tag: r=1.000000 m=0.000000
+    TransformComponent:
+      Translation: [3.75, 1.70000005, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/0_5.hmat
+  - Entity: 16
+    Relationship:
+      Parent: 0
+      Order: 8
+    TagComponent:
+      Tag: r=0.000000 m=0.500000
+    TransformComponent:
+      Translation: [-3.75, 0.200000048, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/1_0.hmat
+  - Entity: 17
+    Relationship:
+      Parent: 0
+      Order: 9
+    TagComponent:
+      Tag: r=0.100000 m=0.500000
+    TransformComponent:
+      Translation: [-2.25, 0.200000048, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/1_1.hmat
+  - Entity: 18
+    Relationship:
+      Parent: 0
+      Order: 10
+    TagComponent:
+      Tag: r=0.250000 m=0.500000
+    TransformComponent:
+      Translation: [-0.75, 0.200000048, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/1_2.hmat
+  - Entity: 19
+    Relationship:
+      Parent: 0
+      Order: 11
+    TagComponent:
+      Tag: r=0.500000 m=0.500000
+    TransformComponent:
+      Translation: [0.75, 0.200000048, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/1_3.hmat
+  - Entity: 20
+    Relationship:
+      Parent: 0
+      Order: 12
+    TagComponent:
+      Tag: r=0.750000 m=0.500000
+    TransformComponent:
+      Translation: [2.25, 0.200000048, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/1_4.hmat
+  - Entity: 21
+    Relationship:
+      Parent: 0
+      Order: 13
+    TagComponent:
+      Tag: r=1.000000 m=0.500000
+    TransformComponent:
+      Translation: [3.75, 0.200000048, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/1_5.hmat
+  - Entity: 22
+    Relationship:
+      Parent: 0
+      Order: 14
+    TagComponent:
+      Tag: r=0.000000 m=1.000000
+    TransformComponent:
+      Translation: [-3.75, -1.29999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/2_0.hmat
+  - Entity: 23
+    Relationship:
+      Parent: 0
+      Order: 15
+    TagComponent:
+      Tag: r=0.100000 m=1.000000
+    TransformComponent:
+      Translation: [-2.25, -1.29999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/2_1.hmat
+  - Entity: 24
+    Relationship:
+      Parent: 0
+      Order: 16
+    TagComponent:
+      Tag: r=0.250000 m=1.000000
+    TransformComponent:
+      Translation: [-0.75, -1.29999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/2_2.hmat
+  - Entity: 25
+    Relationship:
+      Parent: 0
+      Order: 17
+    TagComponent:
+      Tag: r=0.500000 m=1.000000
+    TransformComponent:
+      Translation: [0.75, -1.29999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/2_3.hmat
+  - Entity: 26
+    Relationship:
+      Parent: 0
+      Order: 18
+    TagComponent:
+      Tag: r=0.750000 m=1.000000
+    TransformComponent:
+      Translation: [2.25, -1.29999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/2_4.hmat
+  - Entity: 27
+    Relationship:
+      Parent: 0
+      Order: 19
+    TagComponent:
+      Tag: r=1.000000 m=1.000000
+    TransformComponent:
+      Translation: [3.75, -1.29999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/2_5.hmat
+  - Entity: 50
+    Relationship:
+      Parent: 0
+      Order: 20
+    TagComponent:
+      Tag: Negative nonuniform cube
+    TransformComponent:
+      Translation: [5, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [-0.800000012, 1.5, 0.800000012]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials:
+        []
+  - Entity: 60
+    Relationship:
+      Parent: 0
+      Order: 21
+    TagComponent:
+      Tag: World text
+    TransformComponent:
+      Translation: [-4.5, 3, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.349999994, 0.349999994, 1]
+    TextComponent:
+      TextString: IBL_v1 / Photo / fixed scene exposure 0
+      FontFamily: ""
+      FontStyle: 0
+      Color: [1, 1, 1, 1]
+      Kerning: 0
+      LineSpacing: 0
+  - Entity: 61
+    Relationship:
+      Parent: 0
+      Order: 22
+    TagComponent:
+      Tag: World sprite
+    TransformComponent:
+      Translation: [-5, -2.79999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.214041144, 0.5, 1, 0.5]
+      Source:
+        Type: None
+  - Entity: 62
+    Relationship:
+      Parent: 0
+      Order: 23
+    TagComponent:
+      Tag: World circle
+    TransformComponent:
+      Translation: [-3.79999995, -2.79999995, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CircleRendererComponent:
+      Color: [1, 1, 1, 1]
+      Thickness: 0.200000003
+      Fade: 0.00499999989
+  - Entity: 70
+    Relationship:
+      Parent: 0
+      Order: 24
+    TagComponent:
+      Tag: Exposure independent UI
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    UICanvasComponent:
+      ReferenceSize: [1280, 720]
+      SafeInsets: [16, 16, 16, 16]
+      SortOrder: 0
+      Visible: true
+      Enabled: true
+      Modal: false
+      Screen:
+        Managed: false
+        InitiallyOpen: true
+        Cancel: 1
+        InitialFocus: 0
+        DefaultAction: 0
+        CancelTarget: 0
+        ReturnFocus: 0
+        EventOwner: 0
+  - Entity: 71
+    Relationship:
+      Parent: 70
+      Order: 0
+    TagComponent:
+      Tag: UI case label
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    TextComponent:
+      TextString: IBL_v1 / roughness 0 .1 .25 .5 .75 1 / metallic 0 .5 1 / UI unaffected by exposure
+      FontFamily: ""
+      FontStyle: 0
+      Color: [1, 1, 1, 1]
+      Kerning: 0
+      LineSpacing: 0
+    UIRectComponent:
+      LayoutVersion: 3
+      WidthMode: 0
+      HeightMode: 0
+      FixedSize: [1200, 40]
+      MaximumSize: [0, 0]
+      HasMaximum: [false, false]
+      Anchor: [0, 0]
+      GridRow: -1
+      GridColumn: -1
+      RowSpan: 1
+      ColumnSpan: 1
+      ImageFit: 0
+      ImageAlignment: [0.5, 0.5]
+      Offset: [24, 660]
+      Pivot: [0, 0]
+      MinimumSize: [0, 0]
+      Margin: [0, 0, 0, 0]
+      Padding: [0, 0, 0, 0]
+      Visible: true
+      Enabled: true
+      ClipChildren: true
+      Flex: 0
+    UITextStyleComponent:
+      Size: 20
+      Horizontal: 0
+      Vertical: 0
+      Wrap: true
+      Overflow: Clip
+      MaxLines: 0

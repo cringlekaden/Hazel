@@ -2,6 +2,7 @@
 // profiles belong to the existing private editor fixture; no production hooks.
 void ImportWorkflowUpdate()
 {
+    if(m_ImportPhase>=200){EnvironmentWorkflowUpdate();return;}
     auto &owner = *m_Editor.m_Authoring;
     auto assets = Project::GetActive()->GetAssets();
     if (m_ImportPhase == 101)
@@ -328,12 +329,12 @@ void ImportWorkflowUpdate()
                "light/history/save/reopen/Play, native reimport/conflict feedback and retained "
                "metadata "
                "reload\n";
-        m_Done = true;
-        Application::Get().Close();
+        m_ImportPhase=200;
     }
 }
 void DrawImportWorkflow()
 {
+    if(m_ImportPhase>=200){DrawEnvironmentWorkflow();return;}
     auto &owner = *m_Editor.m_Authoring;
     auto activate = [&](const char *windowName, const char *button) {
         auto window = ImGui::FindWindowByName(windowName);

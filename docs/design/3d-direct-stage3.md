@@ -185,3 +185,12 @@ Direct files retain their exact hashes under autocrlf. The native assertion also
 reports the affected path and both digests. No frozen bytes, tolerances, driver
 settings or timeouts changed. Windows rerun remains required; this was a fixture
 extraction defect, separate from the historical gameplay timeout.
+
+The repair is now exercised by [run 42291096669](https://github.com/cringlekaden/Hazel/actions/runs/42291096669):
+Linux and hosted macOS passed. Windows passed all 18 native executables in Debug
+software, Release software and Release GL4.1, including frozen Direct_v1 and native
+editor authoring. Its Debug gameplay campaign then reached LastLightkeeper's
+Observatory at 21:34:21 UTC and hit the unchanged 480-second limit at 21:34:25;
+no failing assertion appears in the uploaded game log. Release gameplay was not
+reached. This is an observed recurrence of the separate duration debt, not the
+previous frozen-byte regression. Full Windows qualification remains incomplete.

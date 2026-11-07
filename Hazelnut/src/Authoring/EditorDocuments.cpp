@@ -17,6 +17,9 @@ bool EditorDocuments::Affects(OperationIntent intent, EditorDocument kind)
     case OperationIntent::OpenSheet:
     case OperationIntent::CloseSheet:
         return kind == EditorDocument::Sheet;
+    case OperationIntent::OpenEnvironment:
+    case OperationIntent::CloseEnvironment:
+        return kind==EditorDocument::Environment;
     case OperationIntent::OpenMaterial:
     case OperationIntent::CloseMaterial:
         return kind==EditorDocument::Material;
@@ -62,6 +65,10 @@ const char *EditorDocuments::Description(OperationIntent intent)
         return "Close prefab document";
     case OperationIntent::CloseSheet:
         return "Close sheet document";
+    case OperationIntent::OpenEnvironment:
+        return "Open / replace environment draft";
+    case OperationIntent::CloseEnvironment:
+        return "Close environment document";
     case OperationIntent::OpenMaterial:
         return "Open / replace material draft";
     case OperationIntent::CloseMaterial:

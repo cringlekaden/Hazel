@@ -5,6 +5,7 @@
 #include "Hazel/Core/FileDocument.h"
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Core/UUID.h"
+#include "Hazel/Core/Resources.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Project/ProjectCreation.h"
 #include "Hazel/Project/ScriptSource.h"
@@ -71,6 +72,10 @@ namespace Hazel {
                       SceneSerializer(copy).CaptureAuthoredState(),
               "Incomplete scene-referred presentation published or changed accepted document");
         NativeStarter::Generate(root / "templates");
+        auto bundled=Resources::Resolve("Templates");
+        auto prepared=AuditEnvironment(bundled,"Native/Environment_v1/Neutral.henv");
+        for(auto &path:prepared){std::filesystem::create_directories((root/"templates"/path).parent_path());std::filesystem::copy_file(bundled/path,root/"templates"/path);}
+
         auto directRequest = request;
         directRequest.DirectPBR = true;
         directRequest.Destination = root / "direct content";
@@ -88,6 +93,8 @@ namespace Hazel {
                   ResourceLoading::MetadataOnly),
               "Native direct starter metadata load");
         RuntimeSession::Validate(directScene, false);
+        Check(!directScene->Presentation().Environment.Asset.empty(),"PBR starter omitted accepted neutral lighting");
+        (void)ReadPreparedEnvironment(directProject->GetAssetRoot(),directScene->Presentation().Environment.Asset);
         auto directState = directCodec.CaptureAuthoredState();
         auto light = directScene->GetEntityByUUID(6);
         light.GetComponent<DirectionalLightComponent>().Intensity = 4;
@@ -116,6 +123,8 @@ namespace Hazel {
         try
         {
             RuntimeSession::Validate(directScene, false);
+        Check(!directScene->Presentation().Environment.Asset.empty(),"PBR starter omitted accepted neutral lighting");
+        (void)ReadPreparedEnvironment(directProject->GetAssetRoot(),directScene->Presentation().Environment.Asset);
         }
         catch (const std::exception &)
         {

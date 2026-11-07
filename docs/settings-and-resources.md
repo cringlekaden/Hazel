@@ -47,18 +47,18 @@ CPU faces/layouts and GPU glyph pages have separate admission/accounting. Active
 
 Project Settings exposes **New scene defaults**: content seed, runtime camera
 projection, world presentation/background/exposure and initial Planar/Orbit
-navigation. New Project offers working **2D** and **Direct PBR** presets. The
+navigation. New Project offers working **2D** and **PBR** presets. The
 shared native scene factory writes camera FOV 45 degrees or orthographic size 10,
 near .1/far 100, world text and screen UI. The 2D preset starts with a one-metre
-sprite and camera z=10. Direct PBR starts with prepared native cube/material
-assets, a directional key, scene-referred presentation, camera z=3 and Orbit.
+sprite and camera z=10. PBR starts with prepared native cube/material
+assets, a prepared neutral environment, a directional key, scene-referred presentation, camera z=3 and Orbit.
 Creation copies cooked native assets; it runs no importer/baker/GPU/script SDK.
 
 Defaults seed future scenes/fresh workspaces only. Existing scene presentation,
 camera projection and private workspace poses retain their values. Scene Settings
 edits mode, exposure and background through document Undo/Redo and Save. Project
 defaults never act as runtime scene overrides. Display-referred accepts unlit
-world content. Scene-referred supports direct PBR and unlit world content with
+world content. Scene-referred supports direct PBR, prepared IBL and unlit world content with
 fixed Neutral presentation, followed by exposure-independent screen UI. An
 incompatible lit/display combination reports its status. See [runtime color](color.md).
 
@@ -76,3 +76,12 @@ persist in the project workspace; none enters scene dirty state or document hist
 
 **F** frames selected geometry and subtree bounds at the current viewport aspect,
 including negative/nonuniform world transforms. Framing changes only workspace poses.
+
+A scene environment instance selects an accepted `.henv` and owns yaw, linear
+radiance gain and linked-source lighting/background enablement. The `.henv` owns
+HDR source/preparation intent; its separate atomic `.henv.accepted` descriptor
+selects portable cube/LUT resources. Source bytes are producer provenance, not
+runtime dependencies. Preparation changes cannot be resolved by runtime capability
+clamping: Prepare must publish compatible data. Missing/stale/failed candidates
+retain already accepted viewing resources and report an error; new Play validates
+current authored intent. Generated resources never enter authored history.

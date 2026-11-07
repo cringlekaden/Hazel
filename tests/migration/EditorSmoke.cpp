@@ -913,6 +913,7 @@ private:
         std::cout<<"PASS: prefab identity/independence/self/external references/malformed assets, script creation, preferences recovery/scopes, absolute Python discovery\n";
     }
     #include "EditorImportWorkflowChecks.h"
+    #include "EditorEnvironmentWorkflowChecks.h"
     #include "EditorHistoryWorkflowChecks.h"
     #include "EditorContainerWorkflowChecks.h"
     #include "EditorFontFamilyWorkflowChecks.h"
@@ -1447,6 +1448,7 @@ private:
     std::filesystem::path m_Directory;
     bool& m_Done;
     Ref<Texture2D> m_PreviewBeforeReload;
+    std::string m_NativeEnvironmentAcceptance;
     int m_ImportPhase=0,m_ImportWait=0;
     EditorPreferences m_ImportPreferences;
     std::chrono::steady_clock::time_point m_ImportStarted;

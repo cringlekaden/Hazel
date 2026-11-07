@@ -1,0 +1,14 @@
+Environment:
+  Version: 1
+  Name: Photo
+  Notice: Studio Small 09, Sergej Majboroda / Poly Haven, CC0-1.0. Original unchanged 1k HDR. https://polyhaven.com/a/studio_small_09 ; https://polyhaven.com/license ; https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_09_1k.hdr ; SHA256 e7cfda5f4e98e623db12b8bfd0184e048488e4855d9c83e2751fb44a32e80c45
+  Source:
+    Kind: RadianceHDR
+    Image: Reference/IBL_v1/Sources/Photo.hdr
+    Interpretation: LinearRec709D65TopDown
+  Preparation:
+    Recipe: Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top
+    Background: 256
+    Specular: 128
+    Irradiance: 32
+    Samples: 1024

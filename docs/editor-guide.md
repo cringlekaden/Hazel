@@ -46,13 +46,13 @@ Preferences, sessions, project workspaces, docking layouts and resource caches h
 
 ## Scene foundations
 
-File > New Project creates a working 2D or direct PBR starter without Python or scripting
+File > New Project creates a working 2D or PBR starter without Python or scripting
 SDK readiness. Enter Name and Location; the technical identifier is suggested
 and editable under Advanced identity. File > New Scene uses the same native
 factory and the project's New scene defaults. The adjacent New Scene with projection
 menu overrides only projection, retaining the selected content/presentation defaults.
 Orthographic PBR and perspective unlit are supported; direct lighting uses one
-directional key and scene-referred exposure/Neutral presentation. IBL is not implemented.
+directional key, prepared image-based lighting and scene-referred exposure/Neutral presentation.
 
 Use the viewport Planar/Orbit selector to change editor navigation independently
 of runtime cameras. Planar pans with middle drag and zooms with the wheel; Orbit
@@ -60,3 +60,11 @@ uses Alt-left orbit, Alt-middle pan and Alt-right/wheel dolly. Project workspace
 retain both poses and the grid/tool choice. Scene Settings applies a linear-color
 background through Undo/Redo; the picker displays familiar sRGB values. See
 [settings](settings-and-resources.md) and [color](color.md).
+
+Environment authoring uses **Content Browser → New Environment**. Choose a project
+HDR or use **Import HDR source…**, Create, Save, then **Prepare accepted lighting**.
+Progress/cancellation and failures appear in Console. Scene Settings selects the
+asset and applies yaw, radiance gain, lighting and image-background choices through
+scene history. Source/quality changes need preparation; yaw/gain/exposure do not.
+Accepted lighting loads without the original HDR. See the
+[environment contract and qualification](design/3d-environment-stage4.md).

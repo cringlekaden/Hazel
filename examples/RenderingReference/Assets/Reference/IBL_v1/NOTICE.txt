@@ -1,0 +1,6 @@
+IBL_v1 is numerical/reference content, not a showcase. Diagnostic HDRs are original Hazel Apache-2.0.
+Photo: Studio Small 09 by Sergej Majboroda, Poly Haven; CC0-1.0.
+Source: https://polyhaven.com/a/studio_small_09 ; license: https://polyhaven.com/license
+Original 1k HDR: https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_09_1k.hdr
+Original SHA256: e7cfda5f4e98e623db12b8bfd0184e048488e4855d9c83e2751fb44a32e80c45
+No source pixels were edited. Prepared cubes/LUT use Hazel's recorded IBL_v1 recipe.

@@ -147,6 +147,31 @@ Direct static meshes use the existing native material/mesh-slot inspectors. Add
 **Directional Light** through Properties, aim local -Z with its transform, and use
 **Scene Settings → Scene-referred (Neutral)** for lit materials. Apply, Undo/Redo,
 Save/reopen and Play/Stop retain authored light/presentation values. New Project's
-**Direct PBR** preset creates a working direct-only scene; **2D** remains available.
+**PBR** preset copies a native cube, directional key and prepared neutral environment; **2D** remains available.
 Orbit and **F** frame transformed mesh/subtree bounds without changing runtime
 cameras. See [Stage 3 contracts and reference cases](design/3d-direct-stage3.md).
+
+## Native environment documents
+
+Use Content Browser **New Environment**, select a project `.hdr`, or import one
+through the form's native file dialog and explicit asset destination. Save the
+`.henv`, then **Prepare accepted lighting**. The native helper works without a
+GPU, Python or script SDK. Console reports progress, cancellation and diagnostics;
+the panel shows accepted generation/quality, bake cost and stale source/settings.
+Save/Reopen, document Undo/Redo and unsaved-document guards match material files.
+
+Select the environment in **Scene Settings → Scene-referred**. Yaw (degrees in
+the UI), gain, image background and image-based lighting use scene Apply/history.
+Disabling image background uses the authored solid color; lighting can remain on.
+A primary world camera is required for runtime image backgrounds. The directional
+key remains explicit; no sun is extracted from an HDR. Prepared resources work
+without the original source, while rebuilding requires it. There is no startup
+bake. The viewport's direct/diffuse-IBL/specular-IBL inspections are private view
+controls and do not change authored lighting.
+
+```sh
+bin/Release-macos-arm64/HazelProject/HazelProject prepare-environment /absolute/project/Game.hproj Environments/Studio.henv
+```
+
+See [Stage 4](design/3d-environment-stage4.md) for recipes, bounds and actual
+qualification; broader mixed-scene/runtime export acceptance belongs to Stage 5.

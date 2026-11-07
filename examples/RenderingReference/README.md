@@ -4,7 +4,7 @@ A maintained diagnostic project, independent of showcase art direction. It uses
 native-authored scenes, the normal project asset service and the ordinary editor
 and RuntimeSession paths. No scripts need to be compiled for viewing or Play.
 Core_v1 demonstrates unlit 2D with orthographic and perspective cameras. Additive
-Import_v1 and Direct_v1 cover native assets and direct PBR; there is no environment lighting.
+Import_v1 and Direct_v1 cover native assets and direct PBR. Additive IBL_v1 cases cover prepared image-based lighting.
 
 After building the selected configuration:
 
@@ -127,3 +127,36 @@ mapping and never change the authored scene or player presentation.
 images, geometry, native documents and scenes by asset-relative SHA-256. The
 maintained native reference check verifies this inventory before rendering. Add
 new cases rather than changing these conditions to accommodate a discrepancy.
+
+
+## IBL_v1 — prepared image lighting
+
+From `/Volumes/External/kadencringle/Projects/Hazel`:
+
+```sh
+python3 scripts/hazel.py run Hazelnut --config Release --project examples/RenderingReference/RenderingReference-IBL-Combined.hproj
+python3 scripts/hazel.py run Nutella --config Release --project examples/RenderingReference/RenderingReference-IBL-Photo.hproj
+```
+
+Adjacent `-IBL-DirectOnly`, `-IBL-IBLOnly` and `-IBL-AxesYaw90` descriptors choose
+the other saved cases. DirectOnly disables both uses of its image environment;
+IBLOnly disables the sun and uses constant RGB .25. Combined uses the asymmetric
+axis environment and explicit directional key. Photo uses original Studio Small
+09 by Sergej Majboroda / Poly Haven (CC0-1.0), with the sun disabled. Yaw90 rotates
+the axis environment +90 degrees. Exposure is 0 and presentation is fixed Neutral.
+No automatic exposure, extracted sun or ambient compensation is involved.
+
+`Assets/Reference/IBL_v1/conditions.yaml` freezes saved scenes, cameras, source/
+resource/recipe hashes, orientation, gain and output conditions. Source provenance
+is in each `.henv` and NOTICE. Default cubes are 256/128/32 background/specular/
+irradiance faces with explicit GGX mips and 1024 convolution samples; the shared
+128-square A/B LUT uses 4096 samples. These are portable FP32 resources. Existing
+Core_v1, Import_v1 and Direct_v1 bytes remain unchanged.
+
+In a disposable copy, open a `.henv` in Content Browser for accepted versus stale
+status, Save and native Prepare/Cancel. Scene Settings owns runtime yaw/gain and
+background/lighting flags. Prepare is never required by native New Project or
+player startup: the PBR starter bundles a small exact constant environment.
+Runtime closure excludes the HDR source and baker. Stage 4's focused closure
+checks do not replace Stage 5's broader mixed-scene/export qualification. See
+[the Stage-4 record](../../docs/design/3d-environment-stage4.md) for actual evidence.

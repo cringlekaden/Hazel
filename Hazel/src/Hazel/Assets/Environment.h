@@ -1,0 +1,87 @@
+#pragma once
+#include "AssetData.h"
+#include "Hazel/Core/Base.h"
+#include <glm/glm.hpp>
+#include <vector>
+namespace Hazel
+{
+// Normalized source boundary: linear Rec.709/D65 RGB, top-down equirectangular
+// rows. No source format, parser, transfer function or graphics handle survives.
+struct RadianceImage
+{
+    uint32_t Width = 0, Height = 0;
+    std::vector<float> RGB;
+    void Validate() const;
+};
+RadianceImage DecodeRadianceHDR(const std::string &bytes);
+inline constexpr const char *RadianceEvaluation =
+    "stb_image-2.23-29b5d519a3eae19a0cf30a79e35e456a067b2f0279d27a5a9b3015c1d25b74d8/"
+    "HDR-framing1-linearRec709D65-top";
+inline constexpr const char *IBLRecipe =
+    "Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top";
+struct EnvironmentProfile
+{
+    uint32_t Background = 256, Specular = 128, Irradiance = 32, Samples = 1024;
+    void Validate() const;
+};
+struct EnvironmentDefinition
+{
+    std::string Name = "Image environment", Notice;
+    std::filesystem::path Image;
+    EnvironmentProfile Profile;
+    void Validate() const;
+    bool operator==(const EnvironmentDefinition &other) const;
+};
+std::string EnvironmentIntent(const EnvironmentDefinition &value);
+EnvironmentDefinition ReadEnvironmentText(const std::string &bytes);
+std::string WriteEnvironmentText(const EnvironmentDefinition &value);
+EnvironmentDefinition ReadEnvironment(const std::filesystem::path &path);
+// Portable IEEE754 little-endian artifacts. Each mip stores +X,-X,+Y,-Y,+Z,-Z,
+// then rows in the documented cube t direction. LUT rows increase roughness.
+inline constexpr size_t LightingArtifactByteLimit = 32 * 1024 * 1024 + 72;
+enum class LightingImageKind : uint32_t
+{
+    Background = 1,
+    Irradiance = 2,
+    Specular = 3,
+    BRDF = 4
+};
+struct LightingImage
+{
+    LightingImageKind Kind = LightingImageKind::Background;
+    uint32_t Side = 0;
+    std::vector<std::vector<float>> Mips;
+    uint32_t Channels() const
+    {
+        return Kind == LightingImageKind::BRDF ? 2 : 3;
+    }
+    uint32_t Faces() const
+    {
+        return Kind == LightingImageKind::BRDF ? 1 : 6;
+    }
+    void Validate() const;
+    size_t Bytes() const;
+};
+std::string EncodeLightingImage(const LightingImage &image);
+LightingImage DecodeLightingImage(const std::string &bytes);
+struct PreparedEnvironment
+{
+    std::string Identity, IntentHash, SourceHash, Producer, LUTIdentity, Artifacts;
+    LightingImage Background, Irradiance, Specular, BRDF;
+    std::vector<std::filesystem::path> Dependencies;
+    uint64_t Generation = 0;
+    double Seconds = 0;
+    uint64_t PeakBytes = 0;
+};
+// Does not open producer inputs. Stale intent or invalid artifacts reject a new
+// candidate; ProjectAssets retains its previous accepted immutable version.
+PreparedEnvironment ReadPreparedEnvironmentCandidate(const std::filesystem::path &root,
+                                                     const std::filesystem::path &reference,
+                                                     const std::string &acceptedBytes);
+PreparedEnvironment ReadPreparedEnvironment(const std::filesystem::path &root,
+                                            const std::filesystem::path &reference);
+std::vector<std::filesystem::path> AuditEnvironment(const std::filesystem::path &root,
+                                                    const std::filesystem::path &reference);
+std::filesystem::path EnvironmentAcceptance(const std::filesystem::path &reference);
+glm::dvec3 CubeDirection(unsigned face, double s, double t);
+} // namespace Hazel

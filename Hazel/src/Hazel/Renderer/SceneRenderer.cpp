@@ -3,6 +3,7 @@
 #include "Hazel/Assets/ProjectAssets.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/MeshGeometry.h"
+#include "Hazel/Renderer/EnvironmentResources.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include "Hazel/Renderer/Shader.h"
 #include "Hazel/Renderer/UniformBuffer.h"
@@ -29,7 +30,12 @@ struct alignas(16) MaterialData
 };
 static_assert(sizeof(ViewData) == 128 && sizeof(ObjectData) == 144 && sizeof(MaterialData) == 64,
               "std140 direct forward layout");
-Ref<Shader> shader;
+struct alignas(16) EnvironmentData {glm::mat4 InverseVP;glm::vec4 Eye,RotationGain,Options;};
+static_assert(sizeof(EnvironmentData)==112,"std140 environment layout");
+Ref<Shader> shader, skyShader;
+Ref<UniformBuffer> environmentBuffer;
+Ref<VertexArray> skyTriangle;
+Ref<EnvironmentResources> emptyEnvironment;
 Ref<UniformBuffer> cameraBuffer, objectBuffer, materialBuffer;
 Ref<Texture2D> white;
 bool Visible(const MeshBounds &bounds, const glm::mat4 &clip)
@@ -55,9 +61,9 @@ void EnsureResources()
     if (shader)
         return;
     const auto &caps = RenderCommand::GetCapabilities();
-    if (caps.MaxTextureSlots < 5 || caps.MaxUniformBindings < 6 ||
+    if (caps.MaxTextureSlots < 8 || caps.MaxUniformBindings < 7 ||
         caps.MaxUniformBlockBytes < 144 || caps.MaxVertexAttributes < 5)
-        throw std::runtime_error("Direct PBR needs five texture inputs/vertex attributes, six "
+        throw std::runtime_error("PBR/IBL needs eight texture inputs, five vertex attributes, seven "
                                  "uniform bindings and a 144-byte uniform block");
     auto candidate = Shader::Create(
         (Hazel::Resources::Get().Root / "shaders/DirectPBR.glsl").generic_u8string());
@@ -73,6 +79,13 @@ void EnsureResources()
     auto w = Texture2D::Create(spec);
     uint32_t pixel = 0xffffffff;
     w->SetData(&pixel, 4);
+    auto sky=Shader::Create((Resources::Get().Root/"shaders/EnvironmentSky.glsl").generic_u8string());
+    auto env=UniformBuffer::Create(sizeof(EnvironmentData),6);
+    auto triangle=VertexArray::Create();uint32_t indices[]={0,1,2};triangle->SetIndexBuffer(IndexBuffer::Create(indices,3));
+    PreparedEnvironment defaults;
+    unsigned kind=0;for(auto image:{&defaults.Background,&defaults.Irradiance,&defaults.Specular,&defaults.BRDF}){image->Kind=LightingImageKind(++kind);image->Side=1;image->Mips={std::vector<float>(image->Channels()*image->Faces(),0)};}
+    auto complete=CreateRef<EnvironmentResources>(defaults);
+    skyShader=std::move(sky);environmentBuffer=std::move(env);skyTriangle=std::move(triangle);emptyEnvironment=std::move(complete);
     shader = std::move(candidate);
     cameraBuffer = std::move(c);
     objectBuffer = std::move(o);
@@ -102,6 +115,7 @@ void SceneRenderer::ValidateMaterial(const MaterialDefinition &material,
 }
 void SceneRenderer::Shutdown()
 {
+    emptyEnvironment.reset();skyTriangle.reset();environmentBuffer.reset();skyShader.reset();
     white.reset();
     materialBuffer.reset();
     objectBuffer.reset();
@@ -115,6 +129,12 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
     frame.Presentation = scene.Presentation();
     frame.Presentation.Validate();
     frame.Assets = scene.GetAssets();
+    if(!frame.Presentation.Environment.Asset.empty()) {
+        if(!frame.Assets)throw std::runtime_error("Image environment requires project assets");
+        auto environment=frame.Assets->Environment(frame.Presentation.Environment.Asset);
+        if(!environment.Accepted)throw std::runtime_error(environment.Error);
+        frame.Environment=environment.Accepted;
+    }
     for (auto h : scene.GetAllEntitiesWith<DirectionalLightComponent>())
     {
         Entity e(h, &scene);
@@ -165,12 +185,13 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
                            const Ref<Framebuffer> &display, const std::function<void()> &world2D,
                            const std::function<void()> &screenUI)
 {
-    if (unsigned(frame.Debug) > 5)
+    if (unsigned(frame.Debug) > 8)
         throw std::runtime_error("Unsupported surface inspection");
     RenderCommand::StateScope scope;
     auto raster = RenderCommand::GetRasterState();
     raster.ClipEnabled = false;
     raster.SRGB = false;
+    raster.SeamlessCubes = true;
     raster.DepthTest = true;
     raster.DepthWrite = true;
     raster.Compare = DepthCompare::Less;
@@ -220,9 +241,26 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
     }
     else
         view.Radiance.reset();
+    Ref<EnvironmentResources> lighting;
+    if(!frame.Meshes.empty() || frame.Environment) {
+        EnsureResources();
+        lighting=frame.Environment?frame.Assets->RealizeEnvironment(frame.Environment):emptyEnvironment;
+        auto &instance=frame.Presentation.Environment;
+        auto inverse=glm::inverse(frame.Camera.ViewProjection);
+        EnvironmentData env{inverse,glm::vec4(frame.Camera.Position,0),
+            {std::cos(instance.Yaw),std::sin(instance.Yaw),frame.Environment?instance.Gain:0,
+             frame.Environment?float(frame.Environment->Specular.Mips.size()-1):0},
+            {frame.Environment&&instance.Lighting?1.f:0.f,0,0,0}};
+        environmentBuffer->Bind();environmentBuffer->SetData(&env,sizeof(env));
+        if(hdr && frame.Environment && instance.Background) {
+            auto skyState=RenderCommand::GetRasterState();skyState.DepthTest=false;skyState.DepthWrite=false;skyState.Blend=false;skyState.Cull=CullFace::None;skyState.PickingMask=glm::bvec4(false);RenderCommand::SetRasterState(skyState);
+            lighting->Background->Bind(5);skyShader->Bind();skyShader->SetInt("u_Sky",5);RenderCommand::DrawIndexed(skyTriangle,3);
+            RenderCommand::SetRasterState(raster);
+        }
+        lighting->Irradiance->Bind(5);lighting->Specular->Bind(6);lighting->BRDF->Bind(7);
+    }
     if (!frame.Meshes.empty())
     {
-        EnsureResources();
         cameraBuffer->Bind();
         objectBuffer->Bind();
         materialBuffer->Bind();
@@ -236,6 +274,7 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
         const char *names[]{"u_Base", "u_MetalRough", "u_Normal", "u_Occlusion", "u_Emissive"};
         for (int i = 0; i < 5; ++i)
             shader->SetInt(names[i], i);
+        shader->SetInt("u_Irradiance",5);shader->SetInt("u_Specular",6);shader->SetInt("u_BRDF",7);
         for (auto &draw : frame.Meshes)
         {
             auto geometry = frame.Assets->RealizeMesh(draw.Geometry);

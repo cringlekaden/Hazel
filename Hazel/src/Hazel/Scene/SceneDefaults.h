@@ -2,15 +2,27 @@
 #include <glm/glm.hpp>
 #include <string>
 #include <cstring>
+#include <filesystem>
 #include <yaml-cpp/yaml.h>
 namespace Hazel {
     enum class EditorNavigation { Planar, Orbit };
+    struct SceneEnvironment {
+        std::filesystem::path Asset;
+        float Yaw=0, Gain=1; // radians; linear radiance multiplier, independent of exposure
+        bool Lighting=true, Background=true; // linked source, explicit uses
+        bool operator==(const SceneEnvironment &b) const {
+            return Asset==b.Asset && std::memcmp(&Yaw,&b.Yaw,4)==0 &&
+                std::memcmp(&Gain,&b.Gain,4)==0 && Lighting==b.Lighting && Background==b.Background;
+        }
+        void Validate() const;
+    };
     // Authored linear Rec.709 RGB. Display-referred bypasses exposure/tone;
     // scene-referred applies fixed Neutral presentation before independent UI.
     struct ScenePresentation {
         bool SceneReferred = false;
         float Exposure = 0; // stops; fixed Khronos PBR Neutral presentation
         glm::vec4 Background{0.010022826f, 0.010022826f, 0.010022826f, 1};
+        SceneEnvironment Environment;
         bool operator==(const ScenePresentation &b) const
         {
             if (SceneReferred != b.SceneReferred ||
@@ -19,7 +31,7 @@ namespace Hazel {
             for (int i = 0; i < 4; ++i)
                 if (std::memcmp(&Background[i], &b.Background[i], sizeof(float)))
                     return false;
-            return true;
+            return Environment==b.Environment;
         }
         bool operator!=(const ScenePresentation& b) const { return !(*this==b); }
         void Validate() const;

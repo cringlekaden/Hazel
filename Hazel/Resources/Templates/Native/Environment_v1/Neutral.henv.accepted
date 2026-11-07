@@ -1,0 +1,24 @@
+Version: 1
+Recipe: Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top
+Identity: 1b97ab552ec13902c3e52b8e3295c1de5ebbb115ea84c92d3ccf2a7028a25155
+Generation: 7224e6db93c21a8b
+IntentHash: 2db1aea1d815e4304246bf0ef69f765d9cb44b59fd256709ff6ebd488d392200
+SourceHash: 786a14c2253e19138fe693305216ea3b7e7040a3ee08b83cee250ac258323de7
+Evaluation: stb_image-2.23-29b5d519a3eae19a0cf30a79e35e456a067b2f0279d27a5a9b3015c1d25b74d8/HDR-framing1-linearRec709D65-top
+Producer: macos/arm64/Release/Apple LLVM 21.0.0 (clang-2100.4.1.1)/IEEE754-precise-FP64-v1
+LUTIdentity: 8916c405c4da491ac3abaccd5f4da974be8b228135e47a81ac41ff1856d5ce94
+Outputs:
+  Background:
+    Path: Native/Environment_v1/Neutral.henv.prepared/7224e6db93c21a8b/Background.hlight
+    Hash: de83b7343a96b0959bf416927d0f5e42007dcc2799be4a5a04945909968e974b
+  Irradiance:
+    Path: Native/Environment_v1/Neutral.henv.prepared/7224e6db93c21a8b/Irradiance.hlight
+    Hash: c12638764d8561d44671bee44de4adf6142c291aa2c972bc459c525bb8b43ae7
+  Specular:
+    Path: Native/Environment_v1/Neutral.henv.prepared/7224e6db93c21a8b/Specular.hlight
+    Hash: 80bc6849b5b2dc6df8bff55267446f6242abb55e3c78b3022e1603bdd6034123
+  BRDF:
+    Path: Prepared/BRDF/8916c405c4da491ac3abaccd5f4da974be8b228135e47a81ac41ff1856d5ce94/f92d5430e841f1a7.hlight
+    Hash: e992f5f8905d6d607e391bcfba71ac8e08abc83530322cf48988a1b254de0242
+Seconds: 0.41418962500000001
+PeakBytes: 10289152

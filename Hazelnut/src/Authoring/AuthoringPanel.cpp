@@ -183,8 +183,18 @@ void AuthoringPanel::BindProject()
     m_Materials.AssetsChanged=[this]{if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->Refresh();};
     m_Materials.ReplaceDocument=[this](std::function<bool()> action){Guard(OperationIntent::OpenMaterial,std::move(action));};
     m_Materials.RequestClose=[this]{Guard(OperationIntent::CloseMaterial,[this]{m_Materials.Close();if(m_ActiveDocument==EditorDocument::Material)m_ActiveDocument=EditorDocument::Scene;return true;});};
+    m_Environments.Bind(Project::GetActive()?Project::GetActive()->GetAssets():nullptr);
+    m_Environments.Availability=availability;
+    m_Environments.GuardPending=[this]{return m_Documents.Pending();};
+    m_Environments.ReportError=[this](const std::string& error){m_Editor.ActionFailed(error);if(m_Environments.HasDocument()&&error.find("changed on disk")!=std::string::npos){m_ShowSaveConflict=true;m_ConflictDocument=EditorDocument::Environment;m_ConflictIdentity=m_Environments.Identity();}};
+    m_Environments.AssetsChanged=[this]{if(m_Editor.m_ContentBrowserPanel)m_Editor.m_ContentBrowserPanel->Refresh();};
+    m_Environments.ReplaceDocument=[this](std::function<bool()> action){Guard(OperationIntent::OpenEnvironment,std::move(action));};
+    m_Environments.RequestClose=[this]{Guard(OperationIntent::CloseEnvironment,[this]{m_Environments.Close();if(m_ActiveDocument==EditorDocument::Environment)m_ActiveDocument=EditorDocument::Scene;return true;});};
+    m_Environments.Prepare=[this](const auto &r){PrepareEnvironment(r);};
+    m_Environments.Busy=[this]{return m_Tools.Busy();};m_Environments.Cancel=[this]{m_Tools.Cancel();};
+
     m_ShowImport=m_ShowMesh=false;m_MeshReference.clear();m_ImportError.clear();m_Metadata.reset();m_MetadataAccepted.reset();m_MetadataError.clear();m_MetadataReference.clear();m_MetadataEpoch=0;
-    if(m_Editor.m_ContentBrowserPanel){m_Editor.m_ContentBrowserPanel->CreateMaterial=[this](const auto& folder){if(Require(EditorAction::EditAsset))m_Materials.BeginCreate(folder);};m_Editor.m_ContentBrowserPanel->ImportGLB=[this](const auto& folder){BeginImport(folder);};}
+    if(m_Editor.m_ContentBrowserPanel){m_Editor.m_ContentBrowserPanel->CreateEnvironment=[this](const auto& folder){if(Require(EditorAction::EditAsset))m_Environments.BeginCreate(folder);};m_Editor.m_ContentBrowserPanel->CreateMaterial=[this](const auto& folder){if(Require(EditorAction::EditAsset))m_Materials.BeginCreate(folder);};m_Editor.m_ContentBrowserPanel->ImportGLB=[this](const auto& folder){BeginImport(folder);};}
     m_Styles.Bind(Project::GetActive()?Project::GetActive()->GetAssets():nullptr);
     m_Styles.Availability=availability;
     m_Styles.GuardPending=[this]{return m_Documents.Pending();};
@@ -819,6 +829,7 @@ void AuthoringPanel::Menus()
         if(m_Editor.m_ContentBrowserPanel)ImGui::MenuItem("Content Browser",nullptr,&m_Editor.m_ContentBrowserPanel->Visible);
         ImGui::MenuItem("Statistics",nullptr,&m_Editor.m_ShowStats);
         ImGui::MenuItem("Runtime UI Debugger",nullptr,&m_Editor.m_ShowUIDebugger);
+        if(ImGui::MenuItem("Environment",nullptr,m_Environments.Visible(),m_Environments.HasDocument()))m_Environments.Show();
         if(ImGui::MenuItem("Material",nullptr,m_Materials.Visible(),m_Materials.HasDocument()))m_Materials.Show();
         if(ImGui::MenuItem("Mesh metadata",nullptr,m_ShowMesh,!m_MeshReference.empty()))m_ShowMesh=true;
         if(ImGui::MenuItem("UI Style",nullptr,m_Styles.Visible(),m_Styles.HasDocument()))m_Styles.Show();
@@ -1097,11 +1108,13 @@ void AuthoringPanel::ProjectSettings()
         if(PropertyUI::Combo("initial-navigation","Editor navigation",navigation,"Planar\0Orbit\0"))m_SceneDefaultsDraft.Navigation=EditorNavigation(navigation);
         int content = m_SceneDefaultsDraft.DirectStarter ? 1 : 0;
         if (PropertyUI::Combo("initial-content", "Starter content", content,
-                              "Unlit 2D\0Native direct PBR cube\0"))
+                              "Unlit 2D\0Native PBR cube + neutral environment\0"))
         {
             m_SceneDefaultsDraft.DirectStarter = content == 1;
-            if (content == 1)
+            if (content == 1) {
                 m_SceneDefaultsDraft.Presentation.SceneReferred = true;
+                if(m_SceneDefaultsDraft.Presentation.Environment.Asset.empty())m_SceneDefaultsDraft.Presentation.Environment.Asset="Native/Environment_v1/Neutral.henv";
+            }
         }
         int mode = m_SceneDefaultsDraft.Presentation.SceneReferred ? 1 : 0;
         if (PropertyUI::Combo("initial-presentation", "World presentation", mode,
@@ -1113,8 +1126,13 @@ void AuthoringPanel::ProjectSettings()
         if (mode)
             PropertyUI::SliderFloat("initial-exposure", "Exposure (stops)",
                                     m_SceneDefaultsDraft.Presentation.Exposure, -16, 16);
+        if(mode){auto &environment=m_SceneDefaultsDraft.Presentation.Environment;auto prior=environment.Asset;
+            AssetPicker("initial-environment","Initial environment",environment.Asset,".henv",Project::GetActive()->GetAssets(),m_DefaultEnvironmentPicker);
+            if(environment.Asset.empty()&&!prior.empty())environment=SceneEnvironment{};
+            ImGui::TextWrapped("The bundled neutral environment is copied when creating native PBR content. Existing scenes retain their own environment.");}
+        if(!mode&&!m_SceneDefaultsDraft.Presentation.Environment.Asset.empty()&&ImGui::Button("Clear initial environment"))m_SceneDefaultsDraft.Presentation.Environment={};
         PropertyUI::Color("initial-background","Background",&m_SceneDefaultsDraft.Presentation.Background.x,{},false);
-        ImGui::TextWrapped("Picker displays sRGB; stored linear RGB. New cameras use size 10 or 45 degrees, near .1/far 100 and z=10.");
+        ImGui::TextWrapped("Picker displays sRGB; stored linear RGB. New cameras use size 10 or 45 degrees and near .1/far 100. Native cube content is framed at z=3; 2D uses z=10.");
         ImGui::BeginDisabled(!Availability(EditorAction::EditAsset));
         if(ImGui::Button("Save new-scene defaults"))SaveNewSceneDefaults();
         ImGui::EndDisabled();
@@ -1207,9 +1225,9 @@ void AuthoringPanel::NewProject()
     }
     PropertyUI::Combo(
         "starter", "Starter preset", m_NewStarter,
-        "2D — sprite, world text and UI\0Direct PBR — native cube, directional light and UI\0");
-    ImGui::TextWrapped("Both starters are native content and support script-free Play. Direct PBR "
-                       "uses one directional key, HDR/exposure and Neutral tone mapping; no IBL. "
+        "2D — sprite, world text and UI\03D — PBR cube, light, neutral environment and UI\0");
+    ImGui::TextWrapped("Both starters are native content and support script-free Play. PBR "
+                       "uses a directional key, prepared neutral IBL, HDR/exposure and Neutral tone mapping. "
                        "No Python, importer, baker or script SDK is needed.");
     if(ImGui::CollapsingHeader("Advanced identity")) {
         if(PropertyUI::Text("identifier","Technical identifier",m_Identifier))m_IdentifierEdited=true;
@@ -1388,6 +1406,8 @@ void AuthoringPanel::SelectAsset(const std::filesystem::path &path)
     if(path.extension()==".glb"){BeginImport(path.parent_path().lexically_relative(Project::GetAssetDirectory()),path);return;}
     if(path.extension()==".himport"){m_MeshReference=Project::MakeAssetReference(Project::GetAssetDirectory(),path);m_ShowMesh=true;return;}
     if(path.extension()==".hmesh"){m_MeshReference=Project::MakeAssetReference(Project::GetAssetDirectory(),path);m_ShowMesh=true;return;}
+    if(path.extension()==".hdr"){if(Require(EditorAction::EditAsset))m_Environments.BeginCreate(path.parent_path().lexically_relative(Project::GetAssetDirectory()),false,Project::MakeAssetReference(Project::GetAssetDirectory(),path));return;}
+    if(path.extension()==".henv"){Guard(OperationIntent::OpenEnvironment,[this,path]{if(!m_Environments.Open(path))return false;m_ActiveDocument=EditorDocument::Environment;return true;});return;}
     if(path.extension()==".hmat"){Guard(OperationIntent::OpenMaterial,[this,path]{if(!m_Materials.Open(path))return false;m_ActiveDocument=EditorDocument::Material;return true;});return;}
     if(path.extension()==".hstyle") {Guard(OperationIntent::OpenUIStyle,[this,path]{if(!m_Styles.Open(path))return false;m_ActiveDocument=EditorDocument::UIStyle;return true;});return;}
     if(path.extension()==".hfont") {
@@ -1626,6 +1646,8 @@ void AuthoringPanel::Render()
     Export();
     Prefabs();
     ImportAssets();
+    m_Environments.Render(bool(Availability(EditorAction::EditAsset)));
+    if(m_Environments.Focused()){if(m_ActiveDocument!=EditorDocument::Environment)CancelEdits();m_ActiveDocument=EditorDocument::Environment;}
     m_Materials.Render(bool(Availability(EditorAction::EditAsset)));
     if(m_Materials.Focused()){if(m_ActiveDocument!=EditorDocument::Material)CancelEdits();m_ActiveDocument=EditorDocument::Material;}
     m_Styles.Render(bool(Availability(EditorAction::EditAsset)));
