@@ -3,6 +3,7 @@
 #include "IBLReferenceMath.h"
 #include "IBLMipChecks.h"
 #include "IBLQualityLobeChecks.h"
+#include "IBLSurfaceRenderingChecks.h"
 #include <glm/gtc/constants.hpp>
 static void IBLRenderingChecks()
 {
@@ -365,7 +366,12 @@ static void IBLRenderingChecks()
     diagnostic->Identity = "explicit-level-diagnostic";
     diagnostic->Generation = UUID();
     diagnostic->Specular = diagnosticMips;
-    for (auto &v : diagnostic->Irradiance.Mips[0]) v=0;
+    // The terminal GGX kernel is E/pi. Supply matching dense cosine data;
+    // keep every deliberately distinct level and the original .0001 LOD gate.
+    diagnostic->Irradiance.Side=32;
+    diagnostic->Irradiance.Mips={std::vector<float>(32*32*18)};
+    for(unsigned face=0;face<6;++face)for(unsigned i=0;i<32*32;++i)for(unsigned c=0;c<3;++c)
+        diagnostic->Irradiance.Mips[0][(face*32*32+i)*3+c]=float(glm::pi<double>()*(1+.03125*face+.00390625*c));
     for (size_t i=0;i<diagnostic->BRDF.Mips[0].size();i+=2)
     { diagnostic->BRDF.Mips[0][i]=1;diagnostic->BRDF.Mips[0][i+1]=0; }
     frame.Environment=diagnostic;
@@ -387,6 +393,7 @@ static void IBLRenderingChecks()
         NearRGB(view.Radiance->ReadColorPixel(0,64,64),expected,.0001,
             "Actual PBR roughness/floor/fractional explicit mip selection");
     }
+    IBLSurfaceRenderingChecks(frame,draw,display);
     display->Unbind();
     std::cout << "PASS: IBL_v1 actual GL readbacks, independent FP64 furnace/reconstruction, "
                  "direct+IBL, AO, sky/diffuse/mirror faces/yaw, gain/exposure/UI/picking and "

@@ -37,6 +37,14 @@ layout(binding=7) uniform sampler2D u_BRDF;
 layout(std140,binding=6) uniform Environment {mat4 u_InverseVP;vec4 u_EnvRotationGain;vec4 u_EnvOptions;};
 vec3 environmentDirection(vec3 d){float c=u_EnvRotationGain.x,s=u_EnvRotationGain.y;return vec3(c*d.x-s*d.z,d.y,s*d.x+c*d.z);}
 const float PI=3.141592653589793;
+vec3 specularLevel(vec3 direction,float level){
+    // At r=1, normalized GGX with V=N is exactly the cosine kernel E/pi.
+    // Reconstruct that signal from its dense irradiance representation instead
+    // of the 4x4 specular tail. Preserve the existing split-sum lookup direction,
+    // lobe, HDR energy and LUT; no new bake, extra blur or lighting model.
+    if(level>=u_EnvRotationGain.w)return textureLod(u_Irradiance,direction,0).rgb/PI;
+    return textureLod(u_Specular,direction,level).rgb;
+}
 vec3 direct(vec3 base,float metal,float rough,vec3 N,vec3 V,vec3 L){
     float nl=clamp(dot(N,L),0,1),nv=clamp(dot(N,V),0,1);if(nl<=0||nv<=0)return vec3(0);
     vec3 sum=V+L;if(dot(sum,sum)<1e-12)return vec3(0);vec3 H=normalize(sum);
@@ -50,6 +58,8 @@ void main(){
     int maps=int(u_Options.z);vec4 base=u_BaseFactor*v_Color*texture(u_Base,v_UV);
     if(u_Options.y>.5&&base.a<u_EmissionCutoff.a)discard;
     vec3 result=base.rgb,directTerm=vec3(0),diffuseTerm=vec3(0),specularTerm=vec3(0);vec3 N=normalize(v_Normal);
+    vec3 baseNormal=N, geometricNormal=normalize(cross(dFdx(v_Position),dFdy(v_Position)));
+    vec3 prefilteredProbe=vec3(0),brdfProbe=vec3(0),surfaceProbe=vec3(0);
     vec3 T=normalize(v_Tangent.xyz-N*dot(v_Tangent.xyz,N));vec3 B=cross(N,T)*v_Tangent.w;
     float metal=clamp(u_Surface.x*texture(u_MetalRough,v_UV).b,0,1),rough=clamp(u_Surface.y*texture(u_MetalRough,v_UV).g,0,1);
     if(u_Options.x<.5){
@@ -67,9 +77,13 @@ void main(){
             // fractional mip LOD even when textureLod receives an exact float.
             float lod=r*u_EnvRotationGain.w,level=floor(lod);
             vec3 reflection=environmentDirection(reflect(-V,N));
-            vec3 prefiltered=mix(textureLod(u_Specular,reflection,level).rgb,
-                textureLod(u_Specular,reflection,min(level+1,u_EnvRotationGain.w)).rgb,fract(lod));
-            specularTerm=prefiltered*(f0*ab.x+ab.y);
+            vec3 prefiltered=mix(specularLevel(reflection,level),
+                specularLevel(reflection,min(level+1,u_EnvRotationGain.w)),fract(lod));
+            prefilteredProbe=prefiltered;brdfProbe=vec3(ab,nv);surfaceProbe=vec3(dot(N,V),rough,metal);
+            // The reflection BRDF is defined only on the viewer's shading
+            // hemisphere. Smooth/mapped normals can cross it at silhouettes;
+            // the clamped LUT coordinate must not manufacture reflection there.
+            specularTerm=dot(N,V)>0?prefiltered*(f0*ab.x+ab.y):vec3(0);
             diffuseTerm*=ao*u_EnvRotationGain.z;specularTerm*=ao*u_EnvRotationGain.z;
         }
         result=directTerm+diffuseTerm+specularTerm+u_EmissionCutoff.rgb*texture(u_Emissive,v_UV).rgb;
@@ -83,5 +97,11 @@ void main(){
     if(inspect==6)result=linearInspection?directTerm:clamp(directTerm,0,1);
     if(inspect==7)result=linearInspection?diffuseTerm:clamp(diffuseTerm,0,1);
     if(inspect==8)result=linearInspection?specularTerm:clamp(specularTerm,0,1);
+    if(inspect==9)result=prefilteredProbe;
+    if(inspect==10)result=brdfProbe;
+    if(inspect==11)result=surfaceProbe;
+    if(inspect==12)result=v_Position;
+    if(inspect==13)result=geometricNormal;
+    if(inspect==14)result=baseNormal;
     o_Color=vec4(result,1);o_Entity=u_Identity.x;
 }

@@ -51,10 +51,12 @@ static Ref<Scene> Make(const char* name, const char* script = nullptr) {
 #include "UIStyleSessionChecks.h"
 #include "ManagedStringChecks.h"
 #include "RuntimeFailureChecks.h"
+#include "Hazel/Math/Math.h"
+#include "IBLSurfaceChecks.h"
 int main(int argc, char** argv) {
     const auto directory = std::filesystem::temp_directory_path() / std::filesystem::u8path("hazel-runtime space-é-"+std::to_string(std::random_device{}()));
     try {
-        Log::Init(); Check(argc==3, "Usage: RuntimeSessionSmoke Core.dll Fixture.dll");
+        Log::Init(); Check(argc==3||(argc==4&&std::string(argv[3])=="--ibl-surface"), "Usage: RuntimeSessionSmoke Core.dll Fixture.dll [--ibl-surface]");
         std::filesystem::create_directories(directory/"Assets/Scenes");
         ApplicationSpecification spec; spec.Name="Runtime regression"; spec.EnableImGui=false;
         Application app(spec);
@@ -70,6 +72,7 @@ int main(int argc, char** argv) {
         std::filesystem::copy_file(Resources::Resolve("UI/Default.hstyle"),resources.Root/"UI/Default.hstyle");
         std::filesystem::copy(Resources::Resolve("shaders"),resources.Root/"shaders",std::filesystem::copy_options::recursive);
         Resources::Configure(resources);
+        if(argc==4){IBLSurfaceChecks();std::filesystem::remove_all(directory);return 0;}
         ScriptEngine::Init(std::filesystem::u8path(argv[2]));
         UIFlagFailureChecks(project);
         TargetStartFailureChecks(project,directory);

@@ -49,6 +49,7 @@ static std::size_t Pixels(int entity) {
 #include "CanonicalColorChecks.h"
 #include "DirectPBRChecks.h"
 #include "IBLRenderingChecks.h"
+#include "IBLSurfaceReferenceCLI.h"
 #include "SelectionOutlineChecks.h"
 #include "GlyphPageChecks.h"
 #include "OrderedBatchChecks.h"
@@ -230,6 +231,7 @@ static void RenderingControls(Application& application, const RuntimeRendererReq
 }
 int main(int argc,char** argv) {
     try {
+        if(argc>1&&std::string(argv[1])=="--ibl-reference")return IBLSurfaceReferenceCLI(argc,argv);
         Log::Init(); Fixture fixture; const auto cwd=std::filesystem::current_path();
         ApplicationSpecification invalid; invalid.Name="Migration Missing Shader"; invalid.Resources.Root=fixture.Directory/"missing-resources";
         bool rejected=false; try { Application failed(invalid); } catch(const std::exception&) { rejected=true; }

@@ -16,7 +16,15 @@ enum class SurfaceView
     Radiance,
     Direct,
     DiffuseIBL,
-    SpecularIBL
+    SpecularIBL,
+    // Transient FP32 probes for numeric surface inspection. These are not
+    // artistic settings or persisted editor inspection choices.
+    PrefilteredIBL,
+    BRDFLUT,
+    SurfaceParameters,
+    WorldPosition,
+    GeometricNormal,
+    BaseNormal
 };
 struct SceneCameraView
 {
