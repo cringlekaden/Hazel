@@ -58,3 +58,5 @@ compile_commands.json
 # Native environment preparation owns leases and unaccepted temporary stages.
 *.henv.prepare.lock
 **/*.henv.prepared/.stage-*/
+
+.hermes-run/

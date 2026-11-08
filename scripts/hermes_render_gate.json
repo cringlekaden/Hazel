@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "branch_prefix": "agent/",
+  "max_total_seconds": 265,
+  "required_paths": [
+    "docs/agent/render-reference-inventory.md"
+  ],
+  "commands": [
+    {
+      "name": "3d-renderer-smoke-build",
+      "role": "build",
+      "argv": [
+        "xcodebuild",
+        "-workspace",
+        "Hazel.xcworkspace",
+        "-scheme",
+        "MigrationRendererSmoke",
+        "-configuration",
+        "Debug",
+        "-destination",
+        "generic/platform=macOS",
+        "-jobs",
+        "2",
+        "build"
+      ],
+      "timeout_seconds": 60
+    },
+    {
+      "name": "3d-renderer-smoke-test",
+      "role": "test",
+      "argv": [
+        "/bin/bash",
+        "-c",
+        "DYLD_LIBRARY_PATH=build/dependencies/mono/macos-arm64/sdk/lib ./bin/Debug-macos-arm64/MigrationRendererSmoke/MigrationRendererSmoke"
+      ],
+      "timeout_seconds": 30
+    }
+  ]
+}
