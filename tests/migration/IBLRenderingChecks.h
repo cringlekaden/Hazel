@@ -7,6 +7,7 @@
 #include <glm/gtc/constants.hpp>
 static void IBLRenderingChecks()
 {
+    SurfaceReferenceChecks();
     auto diagnosticMips = IBLMipChecks();
     IBLQualityLobeChecks();
     RenderCommand::StateScope testState;

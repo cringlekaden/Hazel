@@ -6,12 +6,14 @@
 // absent from Hazel/Nutella; no producer, GL sampling or bake estimator is used.
 static int IBLSurfaceReferenceCLI(int argc, char **argv)
 {
-    Check(argc == 6,
-          "Usage: Renderer2DSmoke --ibl-reference source.hdr inputs.txt subdivision output.txt");
+    Check(argc == 6, "Usage: --ibl-reference source.hdr inputs.txt subdivision output.txt, or "
+                     "--ibl-reference-ndf source.hdr inputs.txt order output.txt");
+    const bool ndf = std::string(argv[1]) == "--ibl-reference-ndf";
     size_t consumed = 0;
     auto requested = std::stoul(argv[4], &consumed);
-    Check(consumed == std::string(argv[4]).size() && requested >= 1 && requested <= 4,
-          "Reference subdivisions must be 1..4");
+    Check(consumed == std::string(argv[4]).size() && requested >= (ndf ? 32u : 1u) &&
+              requested <= (ndf ? 2048u : 16u),
+          "Reference subdivisions must be 1..16, or NDF order 32..2048");
     unsigned subdivision = unsigned(requested);
     auto source =
         DecodeRadianceHDR(ReadAssetBytes(std::filesystem::u8path(argv[2]), 64 * 1024 * 1024));
@@ -47,24 +49,29 @@ static int IBLSurfaceReferenceCLI(int argc, char **argv)
         s.Ng = glm::normalize(s.Ng);
         samples.push_back(s);
     }
-    Check(!samples.empty() &&
-              uint64_t(source.Width) * source.Height * subdivision * subdivision * samples.size() <=
-                  5000000000ull,
+    Check(!samples.empty() && (ndf ? 4ull : uint64_t(source.Width) * source.Height) * subdivision *
+                                      subdivision * samples.size() <=
+                                  5000000000ull,
           "Source quadrature exceeds five billion sample evaluations; split the input rows");
     auto output = std::filesystem::absolute(std::filesystem::u8path(argv[5]));
     Check(!std::filesystem::exists(output),
           "Reference output already exists; retain earlier evidence");
-    auto results = IntegrateSurfaceReference(source, samples, subdivision);
+    auto results = ndf ? IntegrateSurfaceNDFReference(source, samples, subdivision)
+                       : IntegrateSurfaceReference(source, samples, subdivision);
     std::ostringstream text;
     text << std::setprecision(12);
     for (const auto &r : results)
     {
-        for (auto v : {r.Spec, r.HorizonSpec, r.Prefilter, r.Diffuse, r.NormalCosine})
+        for (auto v : {r.Spec, r.HorizonSpec})
             text << v.x << ' ' << v.y << ' ' << v.z << ' ';
+        if (!ndf)
+            for (auto v : {r.Prefilter, r.Diffuse, r.NormalCosine})
+                text << v.x << ' ' << v.y << ' ' << v.z << ' ';
         text << '\n';
     }
     FileSystem::WriteNewFile(output, text.str());
-    std::cout << "PASS: independent FP64 source quadrature for " << samples.size()
+    std::cout << "PASS: independent FP64 " << (ndf ? "NDF" : "source") << " quadrature for "
+              << samples.size()
               << " surfaces; graphics regressions not executed in reference-only mode\n";
     return 0;
 }

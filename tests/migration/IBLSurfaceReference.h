@@ -1,5 +1,6 @@
 #pragma once
 #include "Hazel/Assets/Environment.h"
+#include "IBLReferenceMath.h"
 #include <algorithm>
 #include <cmath>
 // Streaming FP64 source quadrature, independent of the producer's QMC, CDF,
@@ -105,4 +106,118 @@ IntegrateSurfaceReference(const Hazel::RadianceImage &source,
         }
     }
     return out;
+}
+
+// Independent microfacet-CDF tensor quadrature for sharp lobes that source-cell
+// quadrature cannot resolve. Gauss-Legendre in the GGX NDF CDF and midpoint
+// azimuth; no production visible-normal sampler, LUT or radiance proposal.
+static std::vector<SurfaceReferenceOutput>
+IntegrateSurfaceNDFReference(const Hazel::RadianceImage &source,
+                             const std::vector<SurfaceReferenceInput> &samples, unsigned order)
+{
+    const double pi = std::acos(-1.);
+    const auto nodes = IBLReferenceNodes(order);
+    auto radiance = [&](glm::dvec3 l)
+    {
+        double x = (.5 + std::atan2(l.z, l.x) / (2 * pi)) * source.Width - .5;
+        double y = std::acos(std::clamp(l.y, -1., 1.)) / pi * source.Height - .5;
+        int ix = int(std::floor(x)), iy = int(std::floor(y));
+        auto at = [&](int xx, int yy)
+        {
+            xx = (xx % int(source.Width) + int(source.Width)) % int(source.Width);
+            yy = std::clamp(yy, 0, int(source.Height) - 1);
+            auto p = (size_t(yy) * source.Width + xx) * 3;
+            return glm::dvec3(source.RGB[p], source.RGB[p + 1], source.RGB[p + 2]);
+        };
+        return glm::mix(glm::mix(at(ix, iy), at(ix + 1, iy), x - ix),
+                        glm::mix(at(ix, iy + 1), at(ix + 1, iy + 1), x - ix), y - iy);
+    };
+    std::vector<SurfaceReferenceOutput> out(samples.size());
+    for (size_t i = 0; i < samples.size(); ++i)
+    {
+        const auto &s = samples[i];
+        double nv = glm::dot(s.N, s.V), a2 = std::pow(std::max(.045, s.Rough), 4);
+        if (nv <= 0)
+            continue;
+        auto X = glm::normalize(
+                 glm::cross(std::abs(s.N.z) < .9 ? glm::dvec3(0, 0, 1) : glm::dvec3(1, 0, 0), s.N)),
+             Y = glm::cross(s.N, X);
+        auto f0 = glm::mix(glm::dvec3(.04), s.Base, s.Metal);
+        for (auto q : nodes)
+        {
+            double u = q.x, w = q.y;
+            double nh = std::sqrt((1 - u) / (1 + (a2 - 1) * u)),
+                   sh = std::sqrt(std::max(0., 1 - nh * nh));
+            for (unsigned j = 0; j < 4 * order; ++j)
+            {
+                double phi = 2 * pi * (j + .5) / (4 * order);
+                auto H = X * (sh * std::cos(phi)) + Y * (sh * std::sin(phi)) + s.N * nh;
+                double vh = glm::dot(s.V, H);
+                if (vh <= 0)
+                    continue;
+                auto L = 2 * vh * H - s.V;
+                double nl = glm::dot(s.N, L);
+                if (nl <= 0)
+                    continue;
+                double vis = .5 / (nl * std::sqrt(nv * nv * (1 - a2) + a2) +
+                                   nv * std::sqrt(nl * nl * (1 - a2) + a2));
+                double fc = std::pow(1 - std::clamp(vh, 0., 1.), 5);
+                auto value = radiance(L) * (f0 + (1. - f0) * fc) *
+                             (4 * nl * vis * vh / nh * s.AO * w / (4 * order));
+                out[i].Spec += value;
+                if (glm::dot(s.Ng, L) > 0)
+                    out[i].HorizonSpec += value;
+            }
+        }
+    }
+    return out;
+}
+
+// Guard the reference's Jacobian, visibility algebra, color and AO independently
+// of any candidate. A constant field has known BRDF moments; a geometric
+// incoming horizon can only remove positive radiance.
+static void SurfaceReferenceChecks()
+{
+    Hazel::RadianceImage constant;
+    constant.Width = 256;
+    constant.Height = 128;
+    const glm::dvec3 color(.25, .5, 1.);
+    for (unsigned i = 0; i < constant.Width * constant.Height; ++i)
+        for (int c = 0; c < 3; ++c)
+            constant.RGB.push_back(float(color[c]));
+    std::vector<SurfaceReferenceInput> inputs;
+    for (double nv : {.05, .5})
+        for (double r : {.05, .5, 1.})
+            for (double m : {0., 1.})
+                inputs.push_back({{0, 0, 1},
+                                  {std::sqrt(1 - nv * nv), 0, nv},
+                                  {0, 0, 1},
+                                  {.955, .638, .538},
+                                  r,
+                                  m,
+                                  .6});
+    auto results = IntegrateSurfaceNDFReference(constant, inputs, 256);
+    for (size_t i = 0; i < inputs.size(); ++i)
+    {
+        const auto &s = inputs[i];
+        auto ab = IBLReferenceIntegral(s.V.z, s.Rough);
+        auto f0 = glm::mix(glm::dvec3(.04), s.Base, s.Metal);
+        auto expected = color * (f0 * ab.x + ab.y) * s.AO;
+        for (int c = 0; c < 3; ++c)
+        {
+            if (std::abs(results[i].Spec[c] - expected[c]) > 1e-10 ||
+                std::abs(results[i].HorizonSpec[c] - expected[c]) > 1e-10)
+                throw std::runtime_error(
+                    "FP64 NDF reference disagrees with independent furnace moments");
+        }
+    }
+    auto input = inputs.back();
+    input.Ng = glm::normalize(glm::dvec3(.8, 0, .2));
+    auto horizon = IntegrateSurfaceNDFReference(constant, {input}, 256).front();
+    if (!(horizon.HorizonSpec.x > 0 && horizon.HorizonSpec.x < horizon.Spec.x - .001))
+        throw std::runtime_error("Reference did not distinguish incoming geometric horizon");
+    auto broad = IntegrateSurfaceReference(constant, {inputs.back()}, 4).front();
+    for (int c = 0; c < 3; ++c)
+        if (std::abs(broad.Spec[c] - results.back().Spec[c]) > 2e-5)
+            throw std::runtime_error("Independent source/NDF furnace quadratures disagree");
 }

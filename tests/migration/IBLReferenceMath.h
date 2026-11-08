@@ -5,7 +5,7 @@
 #include <vector>
 // Independent FP64 tensor quadrature. No producer/shader helpers or source
 // cache data. GGX CDF coordinates resolve floor-roughness/grazing lobes.
-static glm::dvec2 IBLReferenceIntegral(double nv, double rough, unsigned count = 256)
+static std::vector<glm::dvec2> IBLReferenceNodes(unsigned count)
 {
     const double pi = std::acos(-1.);
     std::vector<glm::dvec2> points;
@@ -27,6 +27,12 @@ static glm::dvec2 IBLReferenceIntegral(double nv, double rough, unsigned count =
         } while (std::abs(z - old) > 1e-14);
         points.emplace_back((z + 1) / 2, 1 / ((1 - z * z) * derivative * derivative));
     }
+    return points;
+}
+static glm::dvec2 IBLReferenceIntegral(double nv, double rough, unsigned count = 256)
+{
+    const double pi = std::acos(-1.);
+    const auto points = IBLReferenceNodes(count);
     double a2 = std::pow(std::max(.045, rough), 4);
     glm::dvec3 V(std::sqrt(1 - nv * nv), 0, nv);
     glm::dvec2 sum(0);
