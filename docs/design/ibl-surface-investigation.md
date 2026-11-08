@@ -248,3 +248,11 @@ copper's remaining full-BRDF discrepancy and positive-grazing split-sum errors
 need a separate coherent view-dependent IBL model checkpoint. More bake samples,
 lower exposure, an arbitrary edge tint or the rejected direction correction
 would not close that gate. Stage 5, Metal and new rendering paths were not begun.
+
+## Post-silhouette model follow-up
+
+[The view-dependent investigation](ibl-view-dependent-investigation.md) records a
+fresh baseline after the geometric-normal repair, independent sharp-reference
+convergence, full-BRDF GPU experiments and their M4 runtime rejection. No candidate
+replaces production lighting. The model-error visual gate remains open before
+Stage 5; historical bake and screenshot improvements do not close it.

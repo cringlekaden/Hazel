@@ -1097,3 +1097,12 @@ Before Stage 5, [the camera checkpoint](camera-navigation-selection.md) separate
 shared projection and movement from editor gesture ownership, adds opt-in native
 showcase inspection, and uses real visible picking coverage for editor mesh edges.
 No IBL preparation or frozen reference condition changes are part of this work.
+
+## View-dependent IBL acceptance gate
+
+The post-silhouette [view-dependent investigation](ibl-view-dependent-investigation.md)
+reproduces rough-copper and positive-grazing model error with matched shading
+frames. A bounded full-BRDF GPU experiment improves accuracy but fails the M4
+frame budget. No production model, bake contract or frozen content changed; the
+AA-off silhouette repair remains green. The visual gate remains open and Stage 5
+has not begun.

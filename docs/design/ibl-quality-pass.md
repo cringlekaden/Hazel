@@ -289,3 +289,11 @@ their own measured changes, not a claim that this checkpoint has AAA parity.
 
 The canonical workspace remains `/Volumes/External/kadencringle/Projects/Hazel/Hazel.xcworkspace`.
 No master merge or release was made.
+
+## Post-silhouette model follow-up
+
+[The view-dependent investigation](ibl-view-dependent-investigation.md) records a
+fresh baseline after the geometric-normal repair, independent sharp-reference
+convergence, full-BRDF GPU experiments and their M4 runtime rejection. No candidate
+replaces production lighting. The model-error visual gate remains open before
+Stage 5; historical bake and screenshot improvements do not close it.
