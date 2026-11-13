@@ -1,5 +1,10 @@
 # Bounded A/B compression handoff — 2026-11-13
 
+Executed follow-up: [bounded angular compression experiment](ibl-ab-compression-experiment.md).
+Ranks 8/16/32 were screened with converged references and rejected offline;
+no production/GPU candidate ships and the visual gate remains open. The handoff
+below retains its original starting-state and authorization record.
+
 This handoff authorizes the **next session** to implement and run the experiment
 below. Preparing this document ran no experiment, build, bake or graphics test.
 Stage 5 remains separate. Read `CONTRIBUTING.md`, this handoff,

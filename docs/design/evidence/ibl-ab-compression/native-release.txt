@@ -1,0 +1,54 @@
+Command: python3 scripts/hazel.py test --config Release --profile native --only Renderer2DSmoke --only RuntimeSessionSmoke
+Apple / Apple M4 / 4.1 Metal - 91.7
+
+Renderer2DSmoke:
+PASS: independent FP64 hemisphere quadrature convergence, ordinary white-furnace energy and analytic 1-ln(2) rough-conductor direct-model loss
+PASS: Direct_v1 FP64/GPU roughness-metal grid, finite FP32 highlights, light scaling/no ambient, Neutral/exposure/UI independence, masks, transforms, picking and exception state restoration
+PASS: transformed nonrectangular mesh silhouette, partial/full occlusion, alpha cutout, exact unchanged ID/interior coverage and 1x/2x thickness
+PASS: portable tail-four specular data, all actual GPU faces/mips and distinct integer/fractional textureLod levels
+PASS: actual GPU tiny-emitter level peaks/half-width/shape; max peak 0.0178133 half-width delta 0.413704 degrees off-lobe 0.0409451
+PASS: production rough endpoint FP64 off-center/seam reconstruction, max relative 0.00127053; full-BRDF maximum absolute RGB length difference 0.0817818 (split-sum model limit); negative/positive shading-horizon reflection and picking; independent constrained-normal direction and grazing furnace
+PASS: IBL_v1 actual GL readbacks, independent FP64 furnace/reconstruction, direct+IBL, AO, sky/diffuse/mirror faces/yaw, gain/exposure/UI/picking and cube-state failure restoration
+PASS: native 1280x720 single-sample overlapping unlit coverage/presentation and 13-view lit orbit, 724 visible shading-horizon samples; exact depth/IDs and unchanged authored content
+PASS: canonical color CPU vectors, GPU color/data/alpha, linear filtering/mips, alpha overlap, single final encoding and state restoration
+PASS: 12 rendered corpus rows, shared layout/geometry, ligature/accents/offsets, multiple pages/capacity, accepted bytes after failed reload, real UI and warm reuse; cold page preparation 644.433 ms (CPU, no language-reader certification)
+PASS: rendered accents/ligatures/Arabic/mixed bidi ellipsis, physical alignment, contextual positions, translucent painter order/clips/picking
+PASS: rich real-face pages/world draw, wrapping, immutable pins, color-only reuse; independent linear RGBA8 span opacity/coverage and zero-opacity picking
+PASS: painter ordered reference RGBA/IDs, adversarial clips, compatible batching, fonts/textures and all geometry/run rollover
+PASS: Direct_v1 FP64/GPU roughness-metal grid, finite FP32 highlights, light scaling/no ambient, Neutral/exposure/UI independence, masks, transforms, picking and exception state restoration
+PASS: transformed nonrectangular mesh silhouette, partial/full occlusion, alpha cutout, exact unchanged ID/interior coverage and 1x/2x thickness
+PASS: portable tail-four specular data, all actual GPU faces/mips and distinct integer/fractional textureLod levels
+PASS: actual GPU tiny-emitter level peaks/half-width/shape; max peak 0.0178133 half-width delta 0.413704 degrees off-lobe 0.0409451
+PASS: production rough endpoint FP64 off-center/seam reconstruction, max relative 0.00127053; full-BRDF maximum absolute RGB length difference 0.0817818 (split-sum model limit); negative/positive shading-horizon reflection and picking; independent constrained-normal direction and grazing furnace
+PASS: IBL_v1 actual GL readbacks, independent FP64 furnace/reconstruction, direct+IBL, AO, sky/diffuse/mirror faces/yaw, gain/exposure/UI/picking and cube-state failure restoration
+PASS: native 1280x720 single-sample overlapping unlit coverage/presentation and 13-view lit orbit, 724 visible shading-horizon samples; exact depth/IDs and unchanged authored content
+PASS: canonical color CPU vectors, GPU color/data/alpha, linear filtering/mips, alpha overlap, single final encoding and state restoration
+PASS: 12 rendered corpus rows, shared layout/geometry, ligature/accents/offsets, multiple pages/capacity, accepted bytes after failed reload, real UI and warm reuse; cold page preparation 649.736 ms (CPU, no language-reader certification)
+PASS: rendered accents/ligatures/Arabic/mixed bidi ellipsis, physical alignment, contextual positions, translucent painter order/clips/picking
+PASS: rich real-face pages/world draw, wrapping, immutable pins, color-only reuse; independent linear RGBA8 span opacity/coverage and zero-opacity picking
+PASS: painter ordered reference RGBA/IDs, adversarial clips, compatible batching, fonts/textures and all geometry/run rollover
+PASS: default and two-slot/GLSL settings, actual quad/circle/line/text shaders, color/entity picking, rotation/tiling/tint/sprites, UTF-8/atlas switch, all primitive capacity flushes, generic submit and failed-constructor recovery
+RuntimeSessionSmoke:
+PASS: six managed UI flags, post-write refresh rejection, unchanged authored data, fail-closed geometry and irreversible input retirement
+PASS: native target-start failure, restarted scene identity/scripts/physics, retired requests/input, storage side effects, gain, repaired retry and failed-fallback cleanup
+PASS: complete managed UTF-16, isolated save byte limits/unchanged failures, Unicode paths, rejected requests/instances and atomic snapshot rejection
+PASS: production UI actions, spatial pad routing, scoped Cancel, native retirement, managed bindings and persistent/corrupt/reset/failed overrides
+PASS: managed declared-owner delivery, callback screen boundary, held gate, Cancel, reload and three Play/Stop cycles
+PASS: native/managed control API, typed value ABI and synthetic keyboard/gamepad once-only events across three Play/Stop cycles
+PASS: managed scroll offsets/normalized/reveal, one source check per normalized read with exact native-write/zero-range detection, remapped keyboard/controller Scroll and three isolated Play/Stop cycles
+PASS: managed Dropdown values/open/close and once-only parent-owner selection in three isolated Play/Stop cycles
+PASS: managed composition references/selection, production key/pad actions, silent page changes and three isolated Play/Stop cycles
+PASS: production committed-text/key adapters, AltGr separation, synthetic key/pad entry, managed owner payloads/replacement and three Play/Stop cycles
+PASS: managed typed style assignment/get/reset, silent state isolation and three Play/Stop cycles
+PASS: Rendering Reference Core_v1 orthographic/perspective, linear swatches/color-data/alpha, final output, picking and explicit 2x framebuffer override through normal RuntimeSession
+PASS: frozen Direct_v1 saved orthographic PBR/perspective PBR/unlit, same editor/player submissions, sphere grid, mapped/mirrored/masked/COLOR0 surface cases and 2x picking
+PASS: frozen IBL_v1 DirectOnly/IBLOnly/Combined/Photo/yaw saved content, editor/player equivalence, 2x picking and HDR/parser-free native dependency closure
+PASS: IBLQuality_v2 controlled metallic/roughness grid, zero metallic diffuse, separated FP32 terms/combined, yaw motion and all actual GPU faces/mips; same pipeline for retained v1 data
+PASS: opt-in Gallery authored view, >90 degree sphere orbit, visible slow wood/leather approaches and exact reset without camera/document changes
+PASS: saved Gallery/RoughnessSweep/SurfaceDetail, licensed color/data materials, native shared runtime and Play/Stop without a script stub
+PASS: shared runtime OnCreate/OnUpdate transitions, failure recovery, first request wins, cancellation, authored copy, retained domain, retired observations/physics, repeated transitions and viewport input
+
+PASS: actual Nutella Core_v1 orthographic/perspective startup, 60 rendered frames and teardown without a script module
+PASS: Release native all, 2 sequential regression executables
+NOT EXECUTED: unselected regression executables (--only selected)
+No Debug, candidate GPU, candidate native motion, candidate host parity or candidate package qualification is claimed.

@@ -1,5 +1,10 @@
 # View-dependent IBL investigation
 
+The subsequent [bounded A/B compression experiment](ibl-ab-compression-experiment.md)
+executed ranks 8/16/32, converged the required reference rows and rejected the
+tested harmonic representation. No production/GPU promotion or visual-gate
+closure follows from that result.
+
 For the next bounded offline A/B compression experiment, start with the
 [repo-only handoff](ibl-ab-compression-handoff.md). It records the verified Git
 state, separate agent work, reproduction inputs and accuracy-first stop rules.

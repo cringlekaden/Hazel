@@ -1,0 +1,24 @@
+{
+  "reference": {
+    "seconds": 247.7234190830014,
+    "peak_rss_bytes": 92585984,
+    "child_peak_rss_bytes": 23298048,
+    "targeted_cross_check_seconds": 6.2540000000000004,
+    "tiny_regeneration_seconds": 13.087466417000542
+  },
+  "fit": {
+    "seconds": 20.489380833001633,
+    "peak_rss_bytes": 105119744,
+    "order": 512
+  },
+  "screen": {
+    "seconds": 13.804634374999296,
+    "peak_rss_bytes": 121880576,
+    "order": 512,
+    "lighting_projection_seconds": {
+      "studio": 7.558549124998535,
+      "axes": 0.6225543750006182,
+      "tiny": 0.6249759160018584
+    }
+  }
+}

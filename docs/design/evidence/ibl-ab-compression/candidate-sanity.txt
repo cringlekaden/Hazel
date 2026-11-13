@@ -1,0 +1,3 @@
+MEASURED: independent FP64 NDF quadrature for 4 surfaces; graphics regressions not executed in reference-only mode
+constant-field candidate vs independent NDF4096 max floor-relative 1.9574303401621775e-05
+rotation reconstruction max 1.942890293094024e-15

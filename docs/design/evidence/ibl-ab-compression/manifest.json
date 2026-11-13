@@ -1,0 +1,10 @@
+{
+  "sources": {
+    "studio": "e7cfda5f4e98e623db12b8bfd0184e048488e4855d9c83e2751fb44a32e80c45",
+    "axes": "6a8867493bbcf4d72e50b29a104a5947b968d3905ca6c94e8d7d08735ab964c1",
+    "tiny": "669e88bf76c08da9340eb8b0276dd7cdbad614c0afbccdf400ac152eefcb4e22"
+  },
+  "capture": "build/ibl-view-evidence/baseline",
+  "history": "None",
+  "input_sha256": "e2bba19b7de34a53b40641717755f4966f130c23068c8a51dc42d0ed61fac7f3"
+}

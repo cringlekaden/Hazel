@@ -1,0 +1,1 @@
+PASS: independent FP64 reference self-checks; graphics regressions not executed

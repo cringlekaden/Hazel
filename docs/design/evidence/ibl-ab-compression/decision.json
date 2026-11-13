@@ -1,0 +1,26 @@
+{
+  "8": {
+    "environment_bytes": 192,
+    "shared_bytes": 6996,
+    "explicit_texture_fetches": 32,
+    "offline_qualified": false,
+    "gpu_attempted": false,
+    "visual_gate_resolved": false
+  },
+  "16": {
+    "environment_bytes": 432,
+    "shared_bytes": 13908,
+    "explicit_texture_fetches": 68,
+    "offline_qualified": false,
+    "gpu_attempted": false,
+    "visual_gate_resolved": false
+  },
+  "32": {
+    "environment_bytes": 768,
+    "shared_bytes": 27732,
+    "explicit_texture_fetches": 128,
+    "offline_qualified": false,
+    "gpu_attempted": false,
+    "visual_gate_resolved": false
+  }
+}
