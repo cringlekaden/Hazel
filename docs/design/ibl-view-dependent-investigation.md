@@ -1,5 +1,9 @@
 # View-dependent IBL investigation
 
+For the next bounded offline A/B compression experiment, start with the
+[repo-only handoff](ibl-ab-compression-handoff.md). It records the verified Git
+state, separate agent work, reproduction inputs and accuracy-first stop rules.
+
 Starting renderer: `1bf4f50`, including `bb0d43d`'s silhouette repair.
 Diagnostic tooling checkpoint: `93cd059`.
 **The visual gate remains open. No production IBL model change ships.** The
