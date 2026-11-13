@@ -7,13 +7,15 @@
 static int IBLSurfaceReferenceCLI(int argc, char **argv)
 {
     Check(argc == 6, "Usage: --ibl-reference source.hdr inputs.txt subdivision output.txt, or "
-                     "--ibl-reference-ndf source.hdr inputs.txt order output.txt");
+                     "--ibl-reference-ndf source.hdr inputs.txt order output.txt, or "
+                     "--ibl-reference-sparse source.hdr inputs.txt order output.txt");
     const bool ndf = std::string(argv[1]) == "--ibl-reference-ndf";
+    const bool sparse = std::string(argv[1]) == "--ibl-reference-sparse";
     size_t consumed = 0;
     auto requested = std::stoul(argv[4], &consumed);
-    Check(consumed == std::string(argv[4]).size() && requested >= (ndf ? 32u : 1u) &&
-              requested <= (ndf ? 2048u : 16u),
-          "Reference subdivisions must be 1..16, or NDF order 32..2048");
+    Check(consumed == std::string(argv[4]).size() && requested >= (sparse ? 8u : ndf ? 32u : 1u) &&
+              requested <= (sparse ? 128u : ndf ? 4096u : 16u),
+          "Reference subdivisions 1..16, NDF order 32..4096, sparse order 8..128");
     unsigned subdivision = unsigned(requested);
     auto source =
         DecodeRadianceHDR(ReadAssetBytes(std::filesystem::u8path(argv[2]), 64 * 1024 * 1024));
@@ -49,28 +51,35 @@ static int IBLSurfaceReferenceCLI(int argc, char **argv)
         s.Ng = glm::normalize(s.Ng);
         samples.push_back(s);
     }
-    Check(!samples.empty() && (ndf ? 4ull : uint64_t(source.Width) * source.Height) * subdivision *
+    Check(!samples.empty() && (sparse ? 260ull : ndf ? 4ull : uint64_t(source.Width) * source.Height) * subdivision *
                                       subdivision * samples.size() <=
                                   5000000000ull,
           "Source quadrature exceeds five billion sample evaluations; split the input rows");
     auto output = std::filesystem::absolute(std::filesystem::u8path(argv[5]));
     Check(!std::filesystem::exists(output),
           "Reference output already exists; retain earlier evidence");
-    auto results = ndf ? IntegrateSurfaceNDFReference(source, samples, subdivision)
+    auto results = sparse ? IntegrateSurfaceSparseReference(source, samples, subdivision)
+                       : ndf ? IntegrateSurfaceNDFReference(source, samples, subdivision)
                        : IntegrateSurfaceReference(source, samples, subdivision);
     std::ostringstream text;
     text << std::setprecision(12);
     for (const auto &r : results)
     {
+        for (auto v : {r.Spec,r.HorizonSpec,r.Prefilter,r.Diffuse,r.NormalCosine})
+            for (int c=0;c<3;++c)
+                Check(std::isfinite(v[c]),"Nonfinite reference result; no evidence output written");
         for (auto v : {r.Spec, r.HorizonSpec})
+        {
             text << v.x << ' ' << v.y << ' ' << v.z << ' ';
-        if (!ndf)
+            if (sparse) break;
+        }
+        if (!ndf && !sparse)
             for (auto v : {r.Prefilter, r.Diffuse, r.NormalCosine})
                 text << v.x << ' ' << v.y << ' ' << v.z << ' ';
         text << '\n';
     }
     FileSystem::WriteNewFile(output, text.str());
-    std::cout << "PASS: independent FP64 " << (ndf ? "NDF" : "source") << " quadrature for "
+    std::cout << "MEASURED: independent FP64 " << (sparse ? "sparse-source (primary RGB only)" : ndf ? "NDF" : "source") << " quadrature for "
               << samples.size()
               << " surfaces; graphics regressions not executed in reference-only mode\n";
     return 0;

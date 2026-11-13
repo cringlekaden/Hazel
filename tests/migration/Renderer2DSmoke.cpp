@@ -233,7 +233,12 @@ static void RenderingControls(Application& application, const RuntimeRendererReq
 }
 int main(int argc,char** argv) {
     try {
-        if(argc>1&&(std::string(argv[1])=="--ibl-reference"||std::string(argv[1])=="--ibl-reference-ndf"))return IBLSurfaceReferenceCLI(argc,argv);
+        if(argc==2&&std::string(argv[1])=="--ibl-reference-self-check") {
+            SurfaceReferenceChecks();
+            std::cout<<"PASS: independent FP64 reference self-checks; graphics regressions not executed\n";
+            return 0;
+        }
+        if(argc>1&&(std::string(argv[1])=="--ibl-reference"||std::string(argv[1])=="--ibl-reference-ndf"||std::string(argv[1])=="--ibl-reference-sparse"))return IBLSurfaceReferenceCLI(argc,argv);
         Log::Init(); Fixture fixture; const auto cwd=std::filesystem::current_path();
         ApplicationSpecification invalid; invalid.Name="Migration Missing Shader"; invalid.Resources.Root=fixture.Directory/"missing-resources";
         bool rejected=false; try { Application failed(invalid); } catch(const std::exception&) { rejected=true; }

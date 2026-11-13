@@ -173,6 +173,64 @@ IntegrateSurfaceNDFReference(const Hazel::RadianceImage &source,
     return out;
 }
 
+// Localized FP64 source-space quadrature for a uniform field plus ONE isolated
+// interior emitter pixel. Split at every bilinear tent knot; no candidate SH,
+// radiance proposal, or NDF sampling of the emitter. The uniform field uses the
+// independent furnace integral. Reject other images rather than approximating
+// their support. Source order and furnace order both grow on refinement.
+static std::vector<SurfaceReferenceOutput>
+IntegrateSurfaceSparseReference(const Hazel::RadianceImage &source,
+                               const std::vector<SurfaceReferenceInput> &samples, unsigned order)
+{
+    const double pi = std::acos(-1.);
+    const glm::dvec3 background(source.RGB[0], source.RGB[1], source.RGB[2]);
+    size_t emitter = 0, count = 0;
+    for (size_t p = 0; p < size_t(source.Width) * source.Height; ++p)
+        if (glm::dvec3(source.RGB[3*p], source.RGB[3*p+1], source.RGB[3*p+2]) != background)
+        { emitter = p; ++count; }
+    unsigned ex = unsigned(emitter % source.Width), ey = unsigned(emitter / source.Width);
+    if (count != 1 || ex == 0 || ex+1 >= source.Width || ey == 0 || ey+1 >= source.Height)
+        throw std::runtime_error("Sparse reference requires one interior pixel on a uniform field");
+    const glm::dvec3 excess = glm::dvec3(source.RGB[3*emitter], source.RGB[3*emitter+1],
+                                       source.RGB[3*emitter+2]) - background;
+    if (glm::any(glm::lessThan(excess, glm::dvec3(0))))
+        throw std::runtime_error("Sparse reference requires a positive emitter");
+    auto nodes = IBLReferenceNodes(order);
+    std::vector<SurfaceReferenceOutput> out(samples.size());
+    for (size_t i=0; i<samples.size(); ++i)
+    {
+        const auto &s=samples[i];
+        double nv=std::clamp(glm::dot(s.N,s.V),-1.,1.), a2=std::pow(std::max(.045,s.Rough),4);
+        if (nv<=0) continue;
+        auto f0=glm::mix(glm::dvec3(.04),s.Base,s.Metal);
+        auto moments=IBLReferenceIntegral(nv,s.Rough,8*order);
+        out[i].Spec=background*(f0*moments.x+moments.y)*s.AO;
+        // HorizonSpec is deliberately not supplied: the furnace term above has
+        // the primary shading hemisphere convention, not geometric truncation.
+        for (int dy : {-1,0}) for (int dx : {-1,0})
+            for (auto qy:nodes) for (auto qx:nodes)
+            {
+                double x=ex+dx+qx.x, y=ey+dy+qy.x;
+                double phi=2*pi*((x+.5)/source.Width-.5), theta=pi*(y+.5)/source.Height;
+                glm::dvec3 L(std::sin(theta)*std::cos(phi),std::cos(theta),
+                             std::sin(theta)*std::sin(phi));
+                double nl=glm::dot(s.N,L);
+                if(nl<=0) continue;
+                auto H=glm::normalize(s.V+L);
+                double nh=glm::dot(s.N,H),vh=glm::dot(s.V,H);
+                double den=1-nh*nh+a2*nh*nh;
+                double D=a2/(pi*den*den);
+                double vis=.5/(nl*std::sqrt(nv*nv*(1-a2)+a2)+
+                                nv*std::sqrt(nl*nl*(1-a2)+a2));
+                double fc=std::pow(1-std::clamp(vh,0.,1.),5);
+                double area=2*pi*pi/(source.Width*source.Height)*std::sin(theta)*qx.y*qy.y;
+                double tent=(1-std::abs(x-ex))*(1-std::abs(y-ey));
+                out[i].Spec+=excess*(f0+(1.-f0)*fc)*(D*vis*nl*area*tent*s.AO);
+            }
+    }
+    return out;
+}
+
 // Guard the reference's Jacobian, visibility algebra, color and AO independently
 // of any candidate. A constant field has known BRDF moments; a geometric
 // incoming horizon can only remove positive radiance.
@@ -220,4 +278,26 @@ static void SurfaceReferenceChecks()
     for (int c = 0; c < 3; ++c)
         if (std::abs(broad.Spec[c] - results.back().Spec[c]) > 2e-5)
             throw std::runtime_error("Independent source/NDF furnace quadratures disagree");
+    // Exercise localized source integration against the original full-image
+    // quadrature, using a broad lobe so both independent methods converge.
+    auto sparseSource = constant;
+    size_t emitter = (size_t(50) * sparseSource.Width + 139) * 3;
+    for (int c = 0; c < 3; ++c) sparseSource.RGB[emitter+c] += 100;
+    auto localized = IntegrateSurfaceSparseReference(sparseSource, {inputs.back()}, 32).front();
+    auto localizedFine = IntegrateSurfaceSparseReference(sparseSource, {inputs.back()}, 64).front();
+    auto normalInput=inputs.back();
+    normalInput.N=normalInput.V=normalInput.Ng=glm::normalize(glm::dvec3(1));
+    auto atNormal=IntegrateSurfaceSparseReference(sparseSource, {normalInput}, 32).front();
+    for (int c=0;c<3;++c)
+        if (!std::isfinite(atNormal.Spec[c]))
+            throw std::runtime_error("Sparse oracle normal-incidence roundoff produced nonfinite radiance");
+    auto fullSource = IntegrateSurfaceReference(sparseSource, {inputs.back()}, 8).front();
+    for (int c=0; c<3; ++c)
+        if (std::abs(localized.Spec[c]-localizedFine.Spec[c])>2e-5 ||
+            std::abs(localizedFine.Spec[c]-fullSource.Spec[c])>2e-5)
+            throw std::runtime_error("Localized/full-source emitter quadratures disagree");
+    bool rejected = false;
+    try { IntegrateSurfaceSparseReference(constant, {inputs.back()}, 16); }
+    catch (const std::runtime_error &) { rejected = true; }
+    if (!rejected) throw std::runtime_error("Sparse oracle accepted a non-emitter fixture");
 }
