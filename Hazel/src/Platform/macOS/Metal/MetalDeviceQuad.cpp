@@ -1,5 +1,6 @@
 #include "MetalDevice.h"
 #include "MetalQuadFrame.h"
+#include "MetalFramebuffer.h"
 #include "MetalShader.h"
 #include <algorithm>
 #include <cstring>
@@ -15,7 +16,7 @@ void Check(bool value, const char* message) { if (!value) throw std::runtime_err
 uint64_t MetalQuadFrame::ResourceBytes() const
 {
     std::set<const MTL::Allocation*> allocations;
-    for (const auto& target : Targets) allocations.insert(target.get());
+    for (const auto& target : Attachments->Targets) allocations.insert(target.get());
     for (const auto& buffer : Buffers) allocations.insert(buffer.get());
     for (const auto& draw : Draws) for (const auto& texture : draw.Textures) allocations.insert(texture->Texture.get());
     uint64_t bytes = 0;
@@ -39,7 +40,7 @@ void MetalQuadFrame::Complete()
     result.Color = std::move(CompletedColor); result.Entity = std::move(CompletedEntity); result.Depth = std::move(CompletedDepth);
     result.Completed = true;
 }
-std::shared_ptr<const MetalQuadReadback> MetalDevice::SubmitQuadFrame(const std::shared_ptr<MetalQuadFrame>& quad)
+std::shared_ptr<const FramebufferReadback> MetalDevice::SubmitQuadFrame(const std::shared_ptr<MetalQuadFrame>& quad)
 {
     Check(!m_Stopped, "Metal device is stopped");
     Check(quad && quad->Width && quad->Height && quad->Width <= 32 && quad->Height <= 32 &&
@@ -53,20 +54,16 @@ std::shared_ptr<const MetalQuadReadback> MetalDevice::SubmitQuadFrame(const std:
     if (slot.Pending) { std::lock_guard<std::mutex> lock(m_Observer->Mutex); ++m_Observer->Value.SkippedBusy; return {}; }
     Check(!quad->Result, "Cannot resubmit an already encoded quad frame");
     NS::Error* error = nullptr;
-    auto descriptor = NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
-    descriptor->setTextureType(MTL::TextureType2D); descriptor->setWidth(quad->Width); descriptor->setHeight(quad->Height);
-    descriptor->setStorageMode(MTL::StorageModePrivate); descriptor->setUsage(MTL::TextureUsageRenderTarget);
-    const MTL::PixelFormat formats[] = {MTL::PixelFormatRGBA32Float, MTL::PixelFormatR32Sint, MTL::PixelFormatDepth32Float};
+    Check(quad->Attachments && quad->Attachments->Width == quad->Width && quad->Attachments->Height == quad->Height,
+        "Framebuffer generation does not match submitted extent");
     auto residency = NS::TransferPtr(MTL::ResidencySetDescriptor::alloc()->init());
     residency->setInitialCapacity(32);
     quad->Residency = NS::TransferPtr(m_Device->newResidencySet(residency.get(), &error));
     Check(bool(quad->Residency), "Cannot allocate quad residency set");
-    for (size_t i = 0; i < quad->Targets.size(); ++i)
+    for (const auto& target : quad->Attachments->Targets)
     {
-        descriptor->setPixelFormat(formats[i]);
-        quad->Targets[i] = NS::TransferPtr(m_Device->newTexture(descriptor.get()));
-        Check(bool(quad->Targets[i]), "Cannot allocate explicit quad attachment profile");
-        quad->Residency->addAllocation(quad->Targets[i].get());
+        Check(target && target->device() == m_Device.get(), "Framebuffer attachment belongs to a different device");
+        quad->Residency->addAllocation(target.get());
     }
     const auto colorRow = ColorRow(quad->Width), idBase = colorRow * quad->Height, depthBase = idBase + ScalarRow * quad->Height;
     quad->Buffers.push_back(NS::TransferPtr(m_Device->newBuffer(depthBase + ScalarRow * quad->Height, MTL::ResourceStorageModeShared)));
@@ -110,7 +107,7 @@ std::shared_ptr<const MetalQuadReadback> MetalDevice::SubmitQuadFrame(const std:
     quad->DepthState = NS::TransferPtr(m_Device->newDepthStencilState(depth.get()));
     Check(bool(quad->DepthState), "Cannot create quad depth state");
     const auto serial = m_Serial + 1;
-    auto result = std::make_shared<MetalQuadReadback>();
+    auto result = std::make_shared<FramebufferReadback>();
     result->Serial = serial; result->Width = quad->Width; result->Height = quad->Height;
     quad->CompletedColor.resize(quad->Width * quad->Height); quad->CompletedEntity.resize(quad->CompletedColor.size()); quad->CompletedDepth.resize(quad->CompletedColor.size());
     auto options = NS::TransferPtr(MTL4::CommitOptions::alloc()->init());
@@ -130,11 +127,11 @@ std::shared_ptr<const MetalQuadReadback> MetalDevice::SubmitQuadFrame(const std:
     for (size_t i = 0; i < 2; ++i)
     {
         auto* attachment = pass->colorAttachments()->object(i);
-        attachment->setTexture(quad->Targets[i].get()); attachment->setLoadAction(MTL::LoadActionClear);
+        attachment->setTexture(quad->Attachments->Targets[i].get()); attachment->setLoadAction(MTL::LoadActionClear);
         attachment->setStoreAction(MTL::StoreActionStore);
-        attachment->setClearColor(i == 0 ? MTL::ClearColor{quad->Clear.r, quad->Clear.g, quad->Clear.b, quad->Clear.a} : MTL::ClearColor{-1, 0, 0, 0});
+        attachment->setClearColor(i == 0 ? MTL::ClearColor{quad->Clear.r, quad->Clear.g, quad->Clear.b, quad->Clear.a} : MTL::ClearColor{double(quad->ClearEntity), 0, 0, 0});
     }
-    pass->depthAttachment()->setTexture(quad->Targets[2].get()); pass->depthAttachment()->setLoadAction(MTL::LoadActionClear);
+    pass->depthAttachment()->setTexture(quad->Attachments->Targets[2].get()); pass->depthAttachment()->setLoadAction(MTL::LoadActionClear);
     pass->depthAttachment()->setStoreAction(MTL::StoreActionStore); pass->depthAttachment()->setClearDepth(1);
     auto* render = m_Commands->renderCommandEncoder(pass.get());
     if (!render) { m_Commands->endCommandBuffer(); throw std::runtime_error("Cannot create quad encoder"); }
@@ -154,7 +151,7 @@ std::shared_ptr<const MetalQuadReadback> MetalDevice::SubmitQuadFrame(const std:
     if (!copy) { m_Commands->endCommandBuffer(); throw std::runtime_error("Cannot create quad readback encoder"); }
     copy->barrierAfterQueueStages(MTL::StageAll, MTL::StageBlit, MTL4::VisibilityOptionDevice);
     for (size_t i = 0; i < 3; ++i)
-        copy->copyFromTexture(quad->Targets[i].get(), 0, 0, {0, 0, 0}, {quad->Width, quad->Height, 1}, quad->Buffers[0].get(),
+        copy->copyFromTexture(quad->Attachments->Targets[i].get(), 0, 0, {0, 0, 0}, {quad->Width, quad->Height, 1}, quad->Buffers[0].get(),
             i == 0 ? 0 : i == 1 ? idBase : depthBase, i == 0 ? colorRow : ScalarRow, 0);
     copy->endEncoding(); m_Commands->endCommandBuffer();
     quad->Result = result; slot.Quad = quad;

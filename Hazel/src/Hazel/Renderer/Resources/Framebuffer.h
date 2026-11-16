@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <initializer_list>
 #include <vector>
+#include <string>
 
 namespace Hazel {
 
@@ -21,6 +22,7 @@ namespace Hazel {
 
 		// Depth/stencil
 		DEPTH24STENCIL8,
+        DEPTH32F,
 
 		// Defaults
 		Depth = DEPTH24STENCIL8
@@ -54,6 +56,19 @@ namespace Hazel {
 		bool SwapChainTarget = false;
 	};
 
+    // Render-thread polling publishes CPU-owned data only after GPU completion.
+    // Handles remain valid independently of framebuffer resize/destruction.
+    struct FramebufferReadback
+    {
+        uint64_t Serial = 0;
+        uint32_t Width = 0, Height = 0;
+        bool Completed = false;
+        std::string Error;
+        std::vector<glm::vec4> Color;
+        std::vector<int32_t> Entity;
+        std::vector<float> Depth;
+    };
+
 	class Framebuffer
 	{
 	public:
@@ -63,6 +78,13 @@ namespace Hazel {
 		virtual void Unbind() = 0;
 
 		virtual void Resize(uint32_t width, uint32_t height) = 0;
+        // Explicit asynchronous offscreen pass boundary. Unsupported backends throw.
+        // Bind starts a clear/store pass; EndScene then Unbind precede Submit.
+        virtual void Clear(glm::vec4 color);
+        virtual Ref<const FramebufferReadback> Submit(); // null: busy; retry unchanged packet
+        virtual void Poll(); // nonblocking; readback fields publish on the render thread
+        virtual void Cancel(); // discard unsubmitted work; submitted work is never aborted
+        virtual float ReadDepthPixel(int x, int y);
         // Display-linear attachment 0 -> encoded RGBA8 output (or window).
         // Does not touch entity IDs. ImGui samples the encoded output unchanged.
         virtual void EncodeOutput(const Ref<Framebuffer>& destination = {}) = 0;

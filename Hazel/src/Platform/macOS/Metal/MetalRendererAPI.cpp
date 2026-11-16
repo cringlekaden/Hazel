@@ -42,9 +42,18 @@ void MetalRendererAPI::SetRasterState(const RasterState&) { Unavailable(); }
 void MetalRendererAPI::BeginTextCompositing() { Unavailable(); }
 void MetalRendererAPI::SetTextCompositing(bool) { Unavailable(); }
 void MetalRendererAPI::EndTextCompositing() { Unavailable(); }
-void MetalRendererAPI::SetViewport(uint32_t,uint32_t,uint32_t,uint32_t) { /* Surface uses physical GLFW extent, not logical resize events. */ }
-void MetalRendererAPI::SetClearColor(const glm::vec4& color) { m_Device->SetClear(color); }
-void MetalRendererAPI::Clear() { /* Explicit Metal 4 load-action clear occurs at presentation. */ }
+void MetalRendererAPI::SetViewport(uint32_t,uint32_t,uint32_t,uint32_t) {
+    if (!m_QuadFrame.expired()) throw std::logic_error("Metal framebuffer viewport is fixed by its attachment extent");
+    // Surface uses physical GLFW extent, not logical resize events.
+}
+void MetalRendererAPI::SetClearColor(const glm::vec4& color) {
+    if (!m_QuadFrame.expired()) throw std::logic_error("Use Framebuffer::Clear for an explicit Metal offscreen pass");
+    m_Device->SetClear(color);
+}
+void MetalRendererAPI::Clear() {
+    if (!m_QuadFrame.expired()) throw std::logic_error("Use Framebuffer::Clear for an explicit Metal offscreen pass");
+    // Explicit Metal 4 load-action clear occurs at presentation.
+}
 void MetalRendererAPI::DrawIndexed(const Ref<VertexArray>&,uint32_t,uint32_t) { Unavailable(); }
 void MetalRendererAPI::DrawLines(const Ref<VertexArray>&,uint32_t,uint32_t) { Unavailable(); }
 void MetalRendererAPI::SetLineWidth(float) { Unavailable(); }

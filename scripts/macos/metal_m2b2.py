@@ -42,12 +42,30 @@ def main():
     a = [(1,0,0,1), (0,1,0,1), (0,0,1,1), (1,1,1,1)]
     b = [(0,1,1,1), (1,0,1,1), (1,1,0,1), (0,0,0,1)]
     measurements = {}
-    for fixture in ('nearest-camera-versions', 'linear', 'repeat', 'ordered-run', 'capacity-run'):
+    for fixture in ('nearest-camera-versions', 'linear', 'repeat', 'ordered-run', 'capacity-run', 'resize-a', 'resize-b', 'destroyed-clear', 'busy-retry'):
         data = (output / (fixture + '.bin')).read_bytes()
         max_color = max_depth = 0.0; samples = 0
-        for y in range(32):
-            for x in range(32):
-                if fixture == 'capacity-run':
+        width, height = {'resize-a': (32,16), 'resize-b': (16,32), 'destroyed-clear': (8,8), 'busy-retry': (8,8)}.get(fixture, (32,32))
+        if len(data) != width*height*24:
+            raise RuntimeError(f'{fixture} readback size mismatch')
+        for y in range(height):
+            for x in range(width):
+                if fixture == 'busy-retry':
+                    color, entity, depth = (.5,.25,.125,1), -1900000001, 1
+                elif fixture == 'destroyed-clear':
+                    if 2 <= x < 6 and 2 <= y < 6:
+                        color, entity, depth = a[int(y < 4)*2+int(x >= 4)], 2002, .5
+                    else:
+                        color, entity, depth = (.125,.25,.5,1), -2147483648, 1
+                elif fixture in ('resize-a','resize-b'):
+                    first = fixture == 'resize-a'
+                    if width//4 <= x < width*3//4 and height//4 <= y < height*3//4:
+                        color = (a if first else b)[int(y < height//2)*2 + int(x >= width//2)]
+                        entity, depth = (-2147483647 if first else 2147483647), .5
+                    else:
+                        color = (.25,.5,2,1) if first else (2,.5,.25,1)
+                        entity, depth = (-2000000003 if first else 2000000003), 1
+                elif fixture == 'capacity-run':
                     if 8 <= y < 24:
                         q = x//4
                         color = a[int(y < 16)*2 + int(x%4 >= 2)]
@@ -81,7 +99,7 @@ def main():
                     depth = .5
                 else:
                     color, entity, depth = (0,0,0,0), -1, 1
-                values = struct.unpack_from('<4fif', data, (y*32+x)*24)
+                values = struct.unpack_from('<4fif', data, (y*width+x)*24)
                 if values[4] != entity:
                     raise RuntimeError(f'{fixture} signed ID mismatch at {x},{y}')
                 max_color = max(max_color,max(abs(c-v) for c,v in zip(color,values[:4])))

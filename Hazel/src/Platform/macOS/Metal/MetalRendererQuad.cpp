@@ -1,5 +1,6 @@
 #include "MetalRendererAPI.h"
 #include "MetalQuadFrame.h"
+#include "MetalFramebuffer.h"
 #include "MetalDevice.h"
 #include "MetalShader.h"
 #include <cmath>
@@ -14,33 +15,49 @@ bool Finite(const float* values, size_t count)
     return true;
 }
 }
+std::shared_ptr<Framebuffer> MetalRendererAPI::CreateFramebuffer(const FramebufferSpecification& specification)
+{
+    std::lock_guard<std::mutex> lock(m_ShaderMutex);
+    Check(!m_Stopped, "Cannot create framebuffers after Metal backend shutdown");
+    return std::make_shared<MetalFramebuffer>(m_Device, specification);
+}
 std::shared_ptr<Texture2D> MetalRendererAPI::CreateTexture(const TextureSpecification& specification)
 {
     std::lock_guard<std::mutex> lock(m_ShaderMutex);
     Check(!m_Stopped, "Cannot create textures after Metal backend shutdown");
     return std::make_shared<MetalTexture2D>(m_Device, specification);
 }
-void MetalRendererAPI::BeginOffscreenQuadFrame(uint32_t width, uint32_t height, glm::vec4 clear)
+void MetalRendererAPI::BindFramebuffer(const std::shared_ptr<MetalQuadFrame>& frame)
 {
-    Check(!m_Stopped && !m_QuadFrame, "Offscreen quad frame already active or backend stopped");
-    Check(width && height && width <= 32 && height <= 32 && Finite(&clear[0], 4), "Offscreen profile requires finite clear and 1..32 extents");
-    auto shader = std::static_pointer_cast<MetalShader>(LoadShader("Renderer2D_Quad"));
-    auto frame = std::make_shared<MetalQuadFrame>();
-    frame->Width = width; frame->Height = height; frame->Clear = clear; frame->Shader = std::move(shader);
-    m_QuadFrame = std::move(frame);
+    Check(!m_Stopped && m_QuadFrame.expired(), "Unbind the current Metal framebuffer before binding another");
+    m_QuadFrame = frame; m_QuadScene = false;
+}
+bool MetalRendererAPI::IsFramebufferBound(const std::shared_ptr<MetalQuadFrame>& frame) const
+{
+    return frame && m_QuadFrame.lock() == frame;
+}
+void MetalRendererAPI::UnbindFramebuffer(const std::shared_ptr<MetalQuadFrame>& frame)
+{
+    Check(IsFramebufferBound(frame) && !m_QuadScene, "End Renderer2D scene before unbinding/cancelling its framebuffer");
+    m_QuadFrame.reset();
+}
+void MetalRendererAPI::CheckFramebufferClear(const std::shared_ptr<MetalQuadFrame>& frame) const
+{
+    Check(IsFramebufferBound(frame) && !m_QuadScene && frame->Draws.empty(), "Clear requires a bound framebuffer before scene submission");
 }
 void MetalRendererAPI::BeginQuadScene(const glm::mat4& camera)
 {
-    Check(!m_Stopped && m_QuadFrame && !m_QuadScene, "Begin a bounded offscreen frame before Renderer2D::BeginScene");
+    Check(!m_Stopped && !m_QuadFrame.expired() && !m_QuadScene, "Bind a qualified framebuffer before Renderer2D::BeginScene");
     Check(Finite(&camera[0][0], 16), "Quad camera must be finite");
     m_QuadCamera = camera; m_QuadScene = true;
 }
 void MetalRendererAPI::EnqueueQuadRun(const QuadVertex* vertices, uint32_t vertexCount, uint32_t first, uint32_t count,
     const std::array<std::shared_ptr<const MetalTextureVersion>, 32>& textures, uint32_t textureCount)
 {
-    Check(!m_Stopped && m_QuadFrame && m_QuadScene, "Quad run requires an active Renderer2D scene/offscreen frame");
+    auto frame = m_QuadFrame.lock();
+    Check(!m_Stopped && frame && m_QuadScene, "Quad run requires an active Renderer2D scene/offscreen frame");
     uint32_t used = 0;
-    for (const auto& draw : m_QuadFrame->Draws) used += draw.Count / 6;
+    for (const auto& draw : frame->Draws) used += draw.Count / 6;
     Check(vertices && count && count <= 48 && first <= 48 && vertexCount % 4 == 0 && first % 6 == 0 && count % 6 == 0 && vertexCount <= 32 &&
         (first + count) / 6 * 4 <= vertexCount && used + count / 6 <= 8,
         "Offscreen profile supports at most eight quads per frame and valid run offsets");
@@ -58,33 +75,11 @@ void MetalRendererAPI::EnqueueQuadRun(const QuadVertex* vertices, uint32_t verte
             std::isfinite(vertex.TilingFactor) && std::isfinite(vertex.TexIndex) && vertex.TexIndex >= 0 &&
             vertex.TexIndex < textureCount && std::floor(vertex.TexIndex) == vertex.TexIndex && vertex.Color.a == 1 &&
             vertex.ClipRect == glm::vec4(-1), "Quad run requires finite opaque vertices, valid slots and no clipping");
-    m_QuadFrame->Draws.push_back(std::move(draw)); // publish only after all validation/snapshots succeed
+    frame->Draws.push_back(std::move(draw)); // publish only after all validation/snapshots succeed
 }
 void MetalRendererAPI::EndQuadScene()
 {
-    Check(m_QuadFrame && m_QuadScene, "No offscreen quad scene to end");
+    Check(m_QuadScene, "No offscreen quad scene to end");
     m_QuadScene = false;
-}
-std::shared_ptr<const MetalQuadReadback> MetalRendererAPI::SubmitOffscreenQuadFrame()
-{
-    Check(!m_Stopped && m_QuadFrame && !m_QuadScene, "End Renderer2D scene before submitting offscreen quad frame");
-    try
-    {
-        auto result = m_Device->SubmitQuadFrame(m_QuadFrame);
-        if (result) m_QuadFrame.reset();
-        return result;
-    }
-    catch (...) { m_QuadFrame.reset(); throw; }
-}
-void MetalRendererAPI::CancelOffscreenQuadFrame()
-{
-    Check(bool(m_QuadFrame), "No unsubmitted quad frame to cancel");
-    m_QuadFrame.reset(); m_QuadScene = false;
-}
-void MetalRendererAPI::PollOffscreenQuads()
-{
-    m_Device->Poll();
-    const auto proof = m_Device->Observer()->Snapshot();
-    if (proof.Errors) throw std::runtime_error(proof.Error);
 }
 }
