@@ -32,3 +32,6 @@
 [submodule "Hazel/vendor/harfbuzz"]
 	path = Hazel/vendor/harfbuzz
 	url = https://github.com/harfbuzz/harfbuzz.git
+[submodule "Hazel/vendor/metal-cpp"]
+	path = Hazel/vendor/metal-cpp
+	url = https://github.com/apple/metal-cpp.git

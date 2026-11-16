@@ -9,6 +9,8 @@
 
 #include <cstdlib>
 #include <pthread.h>
+#include "Hazel/Renderer/Renderer.h"
+#include "Platform/macOS/Metal/MetalContext.h"
 
 namespace Hazel {
 
@@ -27,7 +29,7 @@ namespace Hazel {
     MacOSWindow::MacOSWindow(const WindowProps& props)
     {
         HZ_PROFILE_FUNCTION();
-        Init(props);
+        try { Init(props); } catch (...) { Shutdown(); throw; }
     }
 
     MacOSWindow::~MacOSWindow()
@@ -63,6 +65,7 @@ namespace Hazel {
                 HZ_CORE_ERROR("Could not initialize GLFW...");
                 std::abort();
             }
+            m_InitializedGLFW = true;
             glfwSetErrorCallback(GLFWErrorCallback);
         }
         GraphicsContext::ConfigureWindowHints();
@@ -86,6 +89,7 @@ namespace Hazel {
         m_Data.Width = static_cast<unsigned int>(width);
         m_Data.Height = static_cast<unsigned int>(height);
         ++s_GLFWWindowCount;
+        m_Counted = true;
         m_Context = GraphicsContext::Create(m_Window);
         m_Context->Init();
         glfwSetWindowUserPointer(m_Window, &m_Data);
@@ -96,14 +100,14 @@ namespace Hazel {
             data.Width = width;
             data.Height = height;
             WindowResizeEvent event(width, height);
-            data.EventCallback(event);
+            if (data.EventCallback) data.EventCallback(event);
         });
-        glfwSetWindowFocusCallback(m_Window, [](GLFWwindow* window, int focused) {if(!focused){auto& data=*(WindowData*)glfwGetWindowUserPointer(window);WindowLostFocusEvent event;data.EventCallback(event);}});
+        glfwSetWindowFocusCallback(m_Window, [](GLFWwindow* window, int focused) {if(!focused){auto& data=*(WindowData*)glfwGetWindowUserPointer(window);WindowLostFocusEvent event;if (data.EventCallback) data.EventCallback(event);}});
         glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window)
         {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
             WindowCloseEvent event;
-            data.EventCallback(event);
+            if (data.EventCallback) data.EventCallback(event);
         });
         glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int /*scancode*/, int action, int mods)
         {
@@ -114,20 +118,20 @@ namespace Hazel {
                 {
                     KeyPressedEvent event(static_cast<KeyCode>(key), false,
                         ((mods&GLFW_MOD_SHIFT)?1:0)|((mods&GLFW_MOD_CONTROL)?2:0)|((mods&GLFW_MOD_ALT)?4:0)|((mods&GLFW_MOD_SUPER)?8:0));
-                    data.EventCallback(event);
+                    if (data.EventCallback) data.EventCallback(event);
                     break;
                 }
                 case GLFW_RELEASE:
                 {
                     KeyReleasedEvent event(static_cast<KeyCode>(key));
-                    data.EventCallback(event);
+                    if (data.EventCallback) data.EventCallback(event);
                     break;
                 }
                 case GLFW_REPEAT:
                 {
                     KeyPressedEvent event(static_cast<KeyCode>(key), true,
                         ((mods&GLFW_MOD_SHIFT)?1:0)|((mods&GLFW_MOD_CONTROL)?2:0)|((mods&GLFW_MOD_ALT)?4:0)|((mods&GLFW_MOD_SUPER)?8:0));
-                    data.EventCallback(event);
+                    if (data.EventCallback) data.EventCallback(event);
                     break;
                 }
             }
@@ -136,7 +140,7 @@ namespace Hazel {
         {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
             KeyTypedEvent event(keycode);
-            data.EventCallback(event);
+            if (data.EventCallback) data.EventCallback(event);
         });
         glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* window, int button, int action, int /*mods*/)
         {
@@ -146,13 +150,13 @@ namespace Hazel {
                 case GLFW_PRESS:
                 {
                     MouseButtonPressedEvent event(button);
-                    data.EventCallback(event);
+                    if (data.EventCallback) data.EventCallback(event);
                     break;
                 }
                 case GLFW_RELEASE:
                 {
                     MouseButtonReleasedEvent event(button);
-                    data.EventCallback(event);
+                    if (data.EventCallback) data.EventCallback(event);
                     break;
                 }
             }
@@ -161,13 +165,13 @@ namespace Hazel {
         {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
             MouseScrolledEvent event((float)xOffset, (float)yOffset);
-            data.EventCallback(event);
+            if (data.EventCallback) data.EventCallback(event);
         });
         glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos)
         {
             WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
             MouseMovedEvent event((float)xPos, (float)yPos);
-            data.EventCallback(event);
+            if (data.EventCallback) data.EventCallback(event);
         });
     }
 
@@ -175,12 +179,14 @@ namespace Hazel {
     {
         HZ_PROFILE_FUNCTION();
         m_Context.reset();
-        glfwDestroyWindow(m_Window);
-        if (--s_GLFWWindowCount == 0)
+        if (m_Window) glfwDestroyWindow(m_Window);
+        m_Window = nullptr;
+        if ((m_Counted && --s_GLFWWindowCount == 0) || (!m_Counted && m_InitializedGLFW && s_GLFWWindowCount == 0))
         {
             HZ_CORE_INFO("Terminating GLFW");
             glfwTerminate();
         }
+        m_Counted = m_InitializedGLFW = false;
     }
 
     void MacOSWindow::OnUpdate()
@@ -201,6 +207,11 @@ namespace Hazel {
     void MacOSWindow::SetVSync(bool enabled)
     {
         HZ_PROFILE_FUNCTION();
+        if (Renderer::GetAPI() == RendererAPI::API::Metal) {
+            static_cast<MetalContext&>(*m_Context).SetVSync(enabled);
+            m_Data.VSync = enabled;
+            return;
+        }
         auto* previous = glfwGetCurrentContext();
         if (previous != m_Window) glfwMakeContextCurrent(m_Window);
         if (glfwGetCurrentContext() != m_Window) {

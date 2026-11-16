@@ -6,10 +6,12 @@
 
 namespace Hazel {
 
+    enum class RendererInitialization { Drawing, PresentationOnly };
+
     class Renderer
     {
     public:
-        static void Init(const RendererSettings& settings = {});
+        static void Init(const RendererSettings& settings = {}, RendererInitialization initialization = RendererInitialization::Drawing);
         static const RendererCapabilities& GetCapabilities() { return RenderCommand::GetCapabilities(); }
         static const RendererResolution& GetResolution() { return RenderCommand::GetResolution(); }
         static const RendererSettings& GetSettings() { return RenderCommand::GetSettings(); }

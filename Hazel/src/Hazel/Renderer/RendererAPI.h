@@ -39,7 +39,8 @@ struct RasterState
         enum class API
         {
             None = 0,
-            OpenGL = 1
+            OpenGL = 1,
+            Metal = 2
         };
 
         virtual ~RendererAPI() = default;
@@ -70,6 +71,8 @@ struct RasterState
         static API GetAPI() { return s_API; }
         static Scope<RendererAPI> Create();
     private:
+        friend class RenderCommand;
+        static void Select(API api) { s_API = api; }
         static API s_API;
     };
 }

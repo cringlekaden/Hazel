@@ -31,7 +31,8 @@ namespace Hazel {
         virtual void Init(const WindowProps& props);
         virtual void Shutdown();
     private:
-        GLFWwindow* m_Window;
+        GLFWwindow* m_Window = nullptr;
+        bool m_Counted = false, m_InitializedGLFW = false;
         Scope<GraphicsContext> m_Context;
 
         struct WindowData

@@ -22,9 +22,13 @@ namespace Hazel {
 		HZ_PROFILE_FUNCTION();
 
 		if (s_Instance) throw std::logic_error("Application already exists");
+        if (RenderCommand::IsConfigured()) throw std::logic_error("An existing graphics backend must finish shutdown before Application startup");
 
 		s_Instance = this;
 		try {
+            RenderCommand::Configure(m_Specification.GraphicsAPI);
+            if (m_Specification.RendererMode == RendererInitialization::PresentationOnly && m_Specification.EnableImGui)
+                throw std::invalid_argument("Presentation-only startup does not initialize ImGui drawing services");
             m_Specification.Resources = Resources::Defaults(m_Specification.Name, m_Specification.Resources);
             Resources::Configure(m_Specification.Resources);
 
@@ -33,7 +37,7 @@ namespace Hazel {
             m_Window->SetVSync(m_Specification.WindowVSync);
             HZ_CORE_INFO("Main-window requested swap interval: {} (submitted; driver/compositor timing unmeasured)",m_Specification.WindowVSync?1:0);
 
-			Renderer::Init(m_Specification.Rendering);
+			Renderer::Init(m_Specification.Rendering, m_Specification.RendererMode);
 
 			if (m_Specification.EnableImGui) {
                 auto overlay = CreateScope<ImGuiLayer>();
@@ -80,6 +84,7 @@ namespace Hazel {
         Project::SetActive(nullptr);
 		Renderer::Shutdown();
         m_Window.reset();
+        RenderCommand::Release();
         s_Instance = nullptr;
 	}
 

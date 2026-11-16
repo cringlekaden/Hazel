@@ -1,0 +1,492 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M1 only, native Metal 4 device/presentation/lifetime proof",
+  "verdict": "PASS",
+  "date": "2026-11-15",
+  "branch": "feature/3d-foundations",
+  "preImplementationHEAD": "099545f45432a8ebf718986f6967dfd054fe43ca",
+  "host": {
+    "hardware": "Apple M4 Mac mini",
+    "memoryGiB": 16,
+    "macOS": "27.3",
+    "osBuild": "26C5035r",
+    "Xcode": "27.3",
+    "XcodeBuild": "27C5020n",
+    "SDK": "27.3",
+    "deploymentFloor": "macOS 27.0 arm64",
+    "display": "VG272U V3 @180 Hz"
+  },
+  "metalCppCommit": "8cdde68ae36a636c84cbb48ebcbc8f3b60251ea0",
+  "presentationBoundary": "Positive MTLDrawable.presentedTime correlated by frame ID with ordered shared-event GPU completion and deterministic transfer verification; zero timestamps excluded.",
+  "consoleFinding": {
+    "originalLocked": {
+      "gpuCompletedPerConfig": 1,
+      "positivelyPresentedPerConfig": 0
+    },
+    "unmodifiedUnlockedDebug": {
+      "completed": 339,
+      "completedPositivePresented": 324
+    },
+    "unmodifiedUnlockedRelease": {
+      "completed": 338,
+      "completedPositivePresented": 325
+    },
+    "resolvedWithoutRendererFix": true,
+    "relockedRunRejectedBeforeSubmission": true,
+    "finalActiveUID": 501,
+    "finalAuditSession": 100002,
+    "IOConsoleLocked": false,
+    "CGSSessionScreenIsLocked": "absent"
+  },
+  "nativeRuns": [
+    {
+      "configuration": "Debug",
+      "nativeScale": 1,
+      "artifactDirectory": "build/metal-m1-evidence/unlocked-20261115/debug-qualified-final",
+      "finalCounters": {
+        "submitted": 338,
+        "completed": 338,
+        "verified": 338,
+        "presented": 324,
+        "completed_presented": 324,
+        "feedbacks": 338,
+        "inflight": 0,
+        "peak_inflight": 3,
+        "reuse": 335,
+        "bytes": 0,
+        "peak_bytes": 29184,
+        "allocator_bytes": 0,
+        "peak_allocator_bytes": 7745064,
+        "aborted": 1,
+        "zero": 1,
+        "unavailable": 1,
+        "hidden": 7,
+        "pending_shutdown": 3,
+        "shutdown_complete": 1,
+        "surface_detached": 1,
+        "device_released": 1,
+        "residency_allocations": 0,
+        "present_callbacks": 338,
+        "zero_present_time": 14,
+        "backing_scale": 1,
+        "vsync": 1,
+        "errors": 0
+      },
+      "completedVerifiedPositivePresented": 324,
+      "positiveTimestampRange": [
+        113502.918087375,
+        113505.99989025
+      ],
+      "frameProofSHA256": "88892183de61affbf044d05435a8c81bb35f6112f18c127850985487aedcc894",
+      "validationLogSHA256": "361ad7171b2d7aedce98e7ea2266c5a1f517ed1012f9cb5d9b77ebf65294d113",
+      "initialLogicalExtent": [
+        1280,
+        720
+      ],
+      "initialFramebufferExtent": [
+        1280,
+        720
+      ],
+      "glfwScale": [
+        1,
+        1
+      ],
+      "cocoaScale": 1,
+      "baseline1280x720": {
+        "samples": 60,
+        "cpuMeanMs": 2.889631883333333,
+        "gpuMeanMs": 0.047966001147869974
+      },
+      "captureBytes": 42948898,
+      "captureMetadataFrames": 1,
+      "captureCommandBuffers": 4,
+      "captureManifestSHA256": "805f919ac9b6eb6e842d53c90d4b79ded59eab20236c59ab617e46904e4e31bf"
+    },
+    {
+      "configuration": "Release",
+      "nativeScale": 1,
+      "artifactDirectory": "build/metal-m1-evidence/unlocked-20261115/release-final-unlocked",
+      "finalCounters": {
+        "submitted": 339,
+        "completed": 339,
+        "verified": 339,
+        "presented": 325,
+        "completed_presented": 325,
+        "feedbacks": 339,
+        "inflight": 0,
+        "peak_inflight": 3,
+        "reuse": 336,
+        "bytes": 0,
+        "peak_bytes": 29184,
+        "allocator_bytes": 0,
+        "peak_allocator_bytes": 7745064,
+        "aborted": 1,
+        "zero": 1,
+        "unavailable": 1,
+        "hidden": 7,
+        "pending_shutdown": 3,
+        "shutdown_complete": 1,
+        "surface_detached": 1,
+        "device_released": 1,
+        "residency_allocations": 0,
+        "present_callbacks": 339,
+        "zero_present_time": 14,
+        "backing_scale": 1,
+        "vsync": 1,
+        "errors": 0
+      },
+      "completedVerifiedPositivePresented": 325,
+      "positiveTimestampRange": [
+        113466.24207975,
+        113469.574593625
+      ],
+      "frameProofSHA256": "acf5c1be465dd2413af684a1a296b3afaa5cd05e6166d8db72d61bf4d3e37a0f",
+      "validationLogSHA256": "3c8a6b4dfb378702dd1603b4c2a58847dd5c6c910ecf76e7b0040194c3d0d983",
+      "initialLogicalExtent": [
+        1280,
+        720
+      ],
+      "initialFramebufferExtent": [
+        1280,
+        720
+      ],
+      "glfwScale": [
+        1,
+        1
+      ],
+      "cocoaScale": 1,
+      "baseline1280x720": {
+        "samples": 60,
+        "cpuMeanMs": 2.9453875166666665,
+        "gpuMeanMs": 0.04856246669078246
+      },
+      "captureBytes": 42944077,
+      "captureMetadataFrames": 1,
+      "captureCommandBuffers": 4,
+      "captureManifestSHA256": "1e262fa64f057a69d4d2a5d6b39cb27f31bb675429d9a0da6048bf7796fa0116"
+    },
+    {
+      "configuration": "Debug",
+      "nativeScale": 2,
+      "artifactDirectory": "build/metal-m1-evidence/unlocked-20261115/debug-native2x-qualified",
+      "finalCounters": {
+        "submitted": 333,
+        "completed": 333,
+        "verified": 333,
+        "presented": 325,
+        "completed_presented": 325,
+        "feedbacks": 333,
+        "inflight": 0,
+        "peak_inflight": 3,
+        "reuse": 330,
+        "bytes": 0,
+        "peak_bytes": 29184,
+        "allocator_bytes": 0,
+        "peak_allocator_bytes": 7745064,
+        "aborted": 1,
+        "zero": 1,
+        "unavailable": 1,
+        "hidden": 7,
+        "pending_shutdown": 3,
+        "shutdown_complete": 1,
+        "surface_detached": 1,
+        "device_released": 1,
+        "residency_allocations": 0,
+        "present_callbacks": 333,
+        "zero_present_time": 8,
+        "backing_scale": 2,
+        "vsync": 1,
+        "errors": 0
+      },
+      "completedVerifiedPositivePresented": 325,
+      "positiveTimestampRange": [
+        113424.631724542,
+        113428.022914083
+      ],
+      "frameProofSHA256": "dd9450deb51cab20206209bb7770b1b5c6a5bbaee10412a6b4c7664960c75c2b",
+      "validationLogSHA256": "37844ff046540355a7edb7ec0601e2534913fd0ab64fdea7179b27f9ecb32e23",
+      "initialLogicalExtent": [
+        1280,
+        563
+      ],
+      "initialFramebufferExtent": [
+        2560,
+        1126
+      ],
+      "glfwScale": [
+        2,
+        2
+      ],
+      "cocoaScale": 2,
+      "baseline1280x720": {
+        "samples": 0,
+        "cpuMeanMs": null,
+        "gpuMeanMs": null
+      },
+      "captureBytes": 111333461,
+      "captureMetadataFrames": 1,
+      "captureCommandBuffers": 4,
+      "captureManifestSHA256": "64fecfc775de65563513cc224997de59098b47f118a6c1dda8690b6b2a6e01c7",
+      "displayMode": {
+        "display": 1,
+        "before": {
+          "width": 2560,
+          "height": 1440,
+          "pixelWidth": 2560,
+          "pixelHeight": 1440,
+          "id": 112,
+          "refreshHz": 180.0
+        },
+        "restored": true,
+        "selected": {
+          "width": 1280,
+          "height": 720,
+          "pixelWidth": 2560,
+          "pixelHeight": 1440,
+          "id": 50,
+          "refreshHz": 180.0
+        },
+        "active": {
+          "width": 1280,
+          "height": 720,
+          "pixelWidth": 2560,
+          "pixelHeight": 1440,
+          "id": 50,
+          "refreshHz": 180.0
+        },
+        "after": {
+          "width": 2560,
+          "height": 1440,
+          "pixelWidth": 2560,
+          "pixelHeight": 1440,
+          "id": 112,
+          "refreshHz": 180.0
+        },
+        "restoreError": 0
+      }
+    },
+    {
+      "configuration": "Release",
+      "nativeScale": 2,
+      "artifactDirectory": "build/metal-m1-evidence/unlocked-20261115/release-native2x-qualified",
+      "finalCounters": {
+        "submitted": 336,
+        "completed": 336,
+        "verified": 336,
+        "presented": 324,
+        "completed_presented": 324,
+        "feedbacks": 336,
+        "inflight": 0,
+        "peak_inflight": 3,
+        "reuse": 333,
+        "bytes": 0,
+        "peak_bytes": 29184,
+        "allocator_bytes": 0,
+        "peak_allocator_bytes": 7745064,
+        "aborted": 1,
+        "zero": 1,
+        "unavailable": 1,
+        "hidden": 12,
+        "pending_shutdown": 3,
+        "shutdown_complete": 1,
+        "surface_detached": 1,
+        "device_released": 1,
+        "residency_allocations": 0,
+        "present_callbacks": 336,
+        "zero_present_time": 12,
+        "backing_scale": 2,
+        "vsync": 1,
+        "errors": 0
+      },
+      "completedVerifiedPositivePresented": 324,
+      "positiveTimestampRange": [
+        113478.851508417,
+        113481.942493917
+      ],
+      "frameProofSHA256": "6068ae7b2b6d36445995e34cbb5daf500ea54c1f7f050273f3081ca5d3dad284",
+      "validationLogSHA256": "0ebc6514bbab1cea18de35718584e3a961056283817721d111b6ec6791fdf077",
+      "initialLogicalExtent": [
+        1280,
+        563
+      ],
+      "initialFramebufferExtent": [
+        2560,
+        1126
+      ],
+      "glfwScale": [
+        2,
+        2
+      ],
+      "cocoaScale": 2,
+      "baseline1280x720": {
+        "samples": 0,
+        "cpuMeanMs": null,
+        "gpuMeanMs": null
+      },
+      "captureBytes": 111333046,
+      "captureMetadataFrames": 1,
+      "captureCommandBuffers": 4,
+      "captureManifestSHA256": "045b907c442a20d564e7d9b5c95bf28ff62a92c84ea41200229341902c122012",
+      "displayMode": {
+        "display": 1,
+        "before": {
+          "width": 2560,
+          "height": 1440,
+          "pixelWidth": 2560,
+          "pixelHeight": 1440,
+          "id": 112,
+          "refreshHz": 180.0
+        },
+        "restored": true,
+        "selected": {
+          "width": 1280,
+          "height": 720,
+          "pixelWidth": 2560,
+          "pixelHeight": 1440,
+          "id": 50,
+          "refreshHz": 180.0
+        },
+        "active": {
+          "width": 1280,
+          "height": 720,
+          "pixelWidth": 2560,
+          "pixelHeight": 1440,
+          "id": 50,
+          "refreshHz": 180.0
+        },
+        "after": {
+          "width": 2560,
+          "height": 1440,
+          "pixelWidth": 2560,
+          "pixelHeight": 1440,
+          "id": 112,
+          "refreshHz": 180.0
+        },
+        "restoreError": 0
+      }
+    }
+  ],
+  "acceptance": {
+    "deviceAndNativeMTL4Queue": true,
+    "nativeCAMetalLayerPresentation": true,
+    "atLeast300CompletedPositivePresentedPerBuild": true,
+    "twoBufferAndTextureVersionsPerFrame": true,
+    "threeSlotCompletionGatedReuse": true,
+    "shutdownWithThreePending": true,
+    "resizeMinimizeRestore": true,
+    "injectedZeroAndUnavailableRecovery": true,
+    "nativeTwoTimesBackingScale": true,
+    "originalDisplayModeRestored": true,
+    "threeStartupFailuresThenRecovery": true,
+    "zeroMetalValidationErrors": true,
+    "boundedOwnedResourcesAndZeroAfterTeardown": true,
+    "nativeMTL4CaptureInspected": true,
+    "productionOpenGLDefaultRetained": true
+  },
+  "resourceAccounting": {
+    "slots": 3,
+    "diagnosticAllocations": 12,
+    "resourceLimitBytes": 1048576,
+    "allocatorLimitBytes": 16777216,
+    "peakResourceBytes": 29184,
+    "peakAllocatorBytes": 7745064,
+    "excludes": "OS drawable pool, driver internals and allocator implementation internals not exposed by allocatedSize"
+  },
+  "nativeInterfacesExercised": [
+    "MTLDevice",
+    "MTL4CommandQueue",
+    "MTL4CommandBuffer",
+    "MTL4CommandAllocator",
+    "MTL4RenderPassDescriptor",
+    "MTL4RenderCommandEncoder",
+    "MTL4ComputeCommandEncoder native copy operations",
+    "MTL4ArgumentTable",
+    "MTL4CommitOptions/CommitFeedback",
+    "MTLResidencySet",
+    "MTLSharedEvent",
+    "CAMetalLayer/CAMetalDrawable"
+  ],
+  "captureInspection": {
+    "artifact": "build/metal-m1-evidence/unlocked-20261115/capture-inspection.txt",
+    "XcodeReplay": "PASS, Debug 1x",
+    "commandBuffers": 4,
+    "renderEncoders": 4,
+    "computeEncoders": 4,
+    "drawCalls": 0,
+    "dispatchCalls": 0,
+    "issueNavigator": "empty",
+    "insights": "Unused diagnostic readback resources from GPU-consumer analysis; CPU verifies these after completion.",
+    "optionalMetalToolchainInstalled": "Available at final discovery; initially prompted in Xcode; no shader qualification executed"
+  },
+  "openGL": {
+    "Debug": {
+      "verdict": "PASS",
+      "executables": [
+        "TypographySmoke",
+        "GameUIModelSmoke",
+        "GameUIIntegrationSmoke",
+        "ShaderToolsSmoke",
+        "ImportDependencySmoke",
+        "SpriteSmoke",
+        "SceneFoundationSmoke",
+        "ProjectPhysicsSmoke",
+        "MonoSmoke",
+        "SceneSmoke",
+        "CoreSmoke",
+        "RendererSmoke",
+        "RendererFeaturesSmoke",
+        "Renderer2DSmoke",
+        "FontSmoke",
+        "SceneGPUSmoke",
+        "RuntimeSessionSmoke",
+        "EditorSmoke"
+      ],
+      "count": 18
+    },
+    "Release": {
+      "verdict": "PASS",
+      "executables": [
+        "TypographySmoke",
+        "GameUIModelSmoke",
+        "GameUIIntegrationSmoke",
+        "ShaderToolsSmoke",
+        "ImportDependencySmoke",
+        "SpriteSmoke",
+        "SceneFoundationSmoke",
+        "ProjectPhysicsSmoke",
+        "MonoSmoke",
+        "SceneSmoke",
+        "CoreSmoke",
+        "RendererSmoke",
+        "RendererFeaturesSmoke",
+        "Renderer2DSmoke",
+        "FontSmoke",
+        "SceneGPUSmoke",
+        "RuntimeSessionSmoke",
+        "EditorSmoke"
+      ],
+      "count": 18
+    },
+    "emptyMonitorAssertionResolvedWithoutImGuiChange": true,
+    "perExecutableLogs": "build/metal-m1-evidence/unlocked-20261115/opengl-logs"
+  },
+  "portability": {
+    "macOSSDKWorkflowTests": {
+      "passed": 7
+    },
+    "Linux": "NOT EXECUTED; local Docker daemon unavailable",
+    "Windows": "NOT EXECUTED; no Windows host/toolchain",
+    "physicalIntelHD4000": "NOT EXECUTED; hardware unavailable",
+    "inspection": "macOS-only native sources/includes/frameworks; existing Windows/Linux source exclusions retained"
+  },
+  "performanceScope": "Validation/capture-enabled clear and diagnostic transfer baseline only; CPU includes drawable acquisition. No scene parity, throughput or OpenGL improvement claim.",
+  "limitations": [
+    "Metal geometry/shader/ImGui integration is outside M1; production apps remain OpenGL.",
+    "Device-loss recovery is not implemented; drain timeout aborts rather than freeing in-use resources.",
+    "Zero extent and unavailable drawable use explicit fault injection; native minimize/restore and scale are real.",
+    "Physical Retina monitor unavailable; real native 2x mode on attached monitor qualified.",
+    "Dear ImGui pin predates official Metal 4 backend; core+docking/backend update or maintained backport requires separate M5 review.",
+    "Metal compiler tools resolve at final discovery but shader compilation/layout/runtime qualification remains unexecuted in M1."
+  ],
+  "firstM2Checkpoint": "Separately authorize shared GLSL-to-SPIR-V-to-MSL shader qualification and a minimal native Metal 4 pipeline/layout/depth/orientation/integer-target proof; first verify optional Metal Toolchain/compiler availability. No M2 work started."
+}

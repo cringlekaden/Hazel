@@ -27,6 +27,29 @@ if _OPTIONS["migration-tests"] then
         includedirs { root .. "/Hazel/src", root .. "/Hazel/vendor/spdlog/include" }
         links { "Hazel" }
 end
+if _OPTIONS["migration-tests"] then
+    project "MetalM1Smoke"
+        location (root .. "/build/MetalM1Smoke")
+        kind "ConsoleApp"
+        language "C++"
+        cppdialect "C++17"
+        warnings "Extra"
+        targetdir (root .. "/bin/" .. outputdir .. "/%{prj.name}")
+        objdir (root .. "/bin-int/" .. outputdir .. "/%{prj.name}")
+        files { root .. "/tests/macos/MetalM1Smoke.cpp", root .. "/tests/macos/MetalM1Environment.mm" }
+        links { "ApplicationServices.framework" }
+        includedirs { root .. "/Hazel/src" }
+        externalincludedirs { root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/imgui", root .. "/Hazel/vendor/GLFW/include", root .. "/Hazel/vendor/Glad/include" }
+        libdirs { ShaderToolsRoot .. "/lib" }
+        links { "Hazel" }
+        links (ShaderToolsLinks)
+        defines { "GLFW_INCLUDE_NONE" }
+        filter "configurations:Debug"
+            symbols "On"
+        filter "configurations:Release"
+            optimize "On"
+        filter {}
+end
 project "freetype"
     defines { "FT_CONFIG_OPTION_SYSTEM_ZLIB" }
 local managed = { "Hazel-ScriptCore", "PackageAudit" }
@@ -45,6 +68,8 @@ project "Hazel"
     xcodebuildsettings { ["GCC_PREFIX_HEADER"] = root .. "/Hazel/src/hzpch.h" }
     removefiles { root .. "/Hazel/src/Platform/Windows/**", root .. "/Hazel/src/Platform/Linux/**" }
     defines { "HZ_PLATFORM_MACOS", "GL_SILENCE_DEPRECATION" }
+    externalincludedirs { root .. "/Hazel/vendor/metal-cpp" }
+    buildoptions { "-fblocks" } -- Metal-cpp completion/presentation callbacks
     filter "files:**.mm"
         enablepch "Off"
     filter {}
@@ -54,12 +79,13 @@ local consumers = { "Nutella", "Hazelnut", "SpriteAssetAudit", "HazelProject" }
 if _OPTIONS["migration-tests"] then
     for _, test in ipairs(tests) do if test.name ~= "ImportDependencySmoke" then table.insert(consumers, "Migration" .. test.name) end end
     table.insert(consumers, "MigrationExampleGamesSmoke")
+    table.insert(consumers, "MetalM1Smoke")
 end
 for _, name in ipairs(consumers) do
     project (name)
         externalincludedirs { mono .. "/include/mono-2.0" }
         links { "ImGui", "GLFW", "Glad", "ImGuizmo", "yaml-cpp", "Box2D", "msdf-atlas-gen", "msdfgen", "freetype", "HarfBuzz", "UniBreak", "SheenBidi" }
-        links { "Cocoa.framework", "IOKit.framework", "CoreFoundation.framework", "OpenGL.framework", "CoreAudio.framework", "AudioToolbox.framework" }
+        links { "Metal.framework", "QuartzCore.framework", "Foundation.framework", "Cocoa.framework", "IOKit.framework", "CoreFoundation.framework", "OpenGL.framework", "CoreAudio.framework", "AudioToolbox.framework" }
         defines { "HZ_PLATFORM_MACOS", "GL_SILENCE_DEPRECATION" }
         libdirs { mono .. "/lib" }
         links { "monosgen-2.0", "z" }
@@ -74,7 +100,7 @@ if _OPTIONS["migration-tests"] then
         location (root .. "/build/MacOSQualification")
         kind "Utility"
         language "C++"
-        local required = { "Hazelnut", "Nutella", "SpriteAssetAudit", "MigrationManagedFixture", "MigrationExampleGamesSmoke", "MacOSSDKIntegration", "MacOSPlatformServices" }
+        local required = { "Hazelnut", "Nutella", "SpriteAssetAudit", "MigrationManagedFixture", "MigrationExampleGamesSmoke", "MacOSSDKIntegration", "MacOSPlatformServices", "MetalM1Smoke" }
         for _, test in ipairs(tests) do table.insert(required, "Migration" .. test.name) end
         dependson (required)
 end

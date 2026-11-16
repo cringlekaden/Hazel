@@ -10,7 +10,7 @@
 
 #include "Hazel/Core/Window.h"
 #include "Hazel/Core/Resources.h"
-#include "Hazel/Renderer/RendererCapabilities.h"
+#include "Hazel/Renderer/Renderer.h"
 #include "Hazel/Core/LayerStack.h"
 #include "Hazel/Events/Event.h"
 #include "Hazel/Events/ApplicationEvent.h"
@@ -43,6 +43,8 @@ namespace Hazel {
         ApplicationResourceSpecification Resources;
 		ApplicationCommandLineArgs CommandLineArgs;
         RendererSettings Rendering;
+        RendererAPI::API GraphicsAPI = RendererAPI::API::OpenGL;
+        RendererInitialization RendererMode = RendererInitialization::Drawing;
 	};
 
 	class Application

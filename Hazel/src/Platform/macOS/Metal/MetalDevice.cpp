@@ -1,0 +1,257 @@
+#include "MetalDevice.h"
+#include "Hazel/Core/Log.h"
+#include <algorithm>
+#include <chrono>
+#include <cstring>
+#include <cstdio>
+#include <stdexcept>
+
+namespace Hazel {
+namespace {
+MetalStartupFailure s_Failure=MetalStartupFailure::None;
+constexpr size_t WordBytes=256, Side=8, RowBytes=256, ImageBytes=Side*RowBytes;
+constexpr size_t TextureBase=2*WordBytes, ProofBytes=TextureBase+2*ImageBytes;
+constexpr uint64_t ResourceLimit=1024*1024, AllocatorLimit=16*1024*1024;
+NS::String* Label(const char* text) { return NS::String::string(text,NS::UTF8StringEncoding); }
+uint32_t Pattern(uint64_t serial,unsigned version,size_t word) {
+    return uint32_t(serial*2654435761ULL) ^ (0x9e3779b9u*(version+1)) ^ uint32_t(word*0x45d9f3bu);
+}
+void Require(bool value,const char* message) { if(!value) throw std::runtime_error(message); }
+}
+void MetalDevice::FailNextStartup(MetalStartupFailure point) { s_Failure=point; }
+void MetalDevice::CheckStartupFailure(MetalStartupFailure point) {
+    if(s_Failure==point) { s_Failure=MetalStartupFailure::None; throw std::runtime_error("Injected Metal startup failure"); }
+}
+MetalDevice::MetalDevice() {
+    auto pool=NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
+    m_Device=NS::TransferPtr(MTL::CreateSystemDefaultDevice());
+    Require(bool(m_Device),"Metal device unavailable");
+    Require(m_Device->supportsFamily(MTL::GPUFamilyMetal4),"Metal 4 is required; no classic Metal fallback");
+    CheckStartupFailure(MetalStartupFailure::AfterDevice);
+    m_Queue=NS::TransferPtr(m_Device->newMTL4CommandQueue());
+    Require(bool(m_Queue),"Cannot create Metal 4 command queue");
+    CheckStartupFailure(MetalStartupFailure::AfterQueue);
+    m_Commands=NS::TransferPtr(m_Device->newCommandBuffer());
+    m_Completed=NS::TransferPtr(m_Device->newSharedEvent());
+    auto descriptor=NS::TransferPtr(MTL::ResidencySetDescriptor::alloc()->init());
+    descriptor->setLabel(Label("Hazel M1 owned allocations")); descriptor->setInitialCapacity(12);
+    NS::Error* error=nullptr;
+    m_Residency=NS::TransferPtr(m_Device->newResidencySet(descriptor.get(),&error));
+    Require(bool(m_Commands)&&bool(m_Completed)&&bool(m_Residency),"Cannot create Metal 4 frame infrastructure");
+    m_Queue->addResidencySet(m_Residency.get());
+    auto args=NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
+    args->setMaxBufferBindCount(2); args->setMaxTextureBindCount(1); args->setMaxSamplerStateBindCount(0);
+    args->setInitializeBindings(true);
+    for(auto& frame:m_Frames) {
+        frame.Allocator=NS::TransferPtr(m_Device->newCommandAllocator());
+        frame.Arguments=NS::TransferPtr(m_Device->newArgumentTable(args.get(),&error));
+        Require(bool(frame.Allocator)&&bool(frame.Arguments),"Cannot allocate Metal 4 frame slot");
+    }
+    HZ_CORE_INFO("Metal 4 device: {}; one MTL4CommandQueue, three allocators; OpenGL not initialized",m_Device->name()->utf8String());
+}
+MetalDevice::~MetalDevice() {
+    // Application drains while the surface and all resource owners are alive.
+    // Also covers context-construction failures before Renderer::Init.
+    Drain();
+    m_Queue->removeResidencySet(m_Residency.get());
+    m_Residency->removeAllAllocations(); m_Residency->commit();
+    for(auto& f:m_Frames) { f=Frame{}; }
+    m_Gate.reset(); m_Completed.reset(); m_Commands.reset(); m_Residency.reset(); m_Queue.reset(); m_Device.reset();
+    std::lock_guard<std::mutex> lock(m_Observer->Mutex);
+    m_Observer->Value.ResourceBytes=0; m_Observer->Value.AllocatorBytes=0;
+    m_Observer->Value.ResidencyAllocations=0; m_Observer->Value.DeviceReleased=true;
+}
+void MetalDevice::SetClear(const glm::vec4& color) { m_Clear={color.r,color.g,color.b,color.a}; }
+void MetalDevice::EnableTransferProof() {
+    Require(!m_Serial&&!m_Transfers,"Enable transfer proof once before submitting frames");
+    auto pool=NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
+    auto desc=NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
+    desc->setTextureType(MTL::TextureType2D); desc->setPixelFormat(MTL::PixelFormatRGBA8Uint);
+    desc->setWidth(Side); desc->setHeight(Side); desc->setStorageMode(MTL::StorageModePrivate);
+    desc->setUsage(MTL::TextureUsageShaderRead); // blit access does not require shader-write usage
+    for(auto& f:m_Frames) {
+        f.Upload=NS::TransferPtr(m_Device->newBuffer(ProofBytes,MTL::ResourceStorageModeShared));
+        f.Readback=NS::TransferPtr(m_Device->newBuffer(ProofBytes,MTL::ResourceStorageModeShared));
+        f.Private=NS::TransferPtr(m_Device->newBuffer(WordBytes,MTL::ResourceStorageModePrivate));
+        f.Texture=NS::TransferPtr(m_Device->newTexture(desc.get()));
+        Require(bool(f.Upload)&&bool(f.Readback)&&bool(f.Private)&&bool(f.Texture),"M1 diagnostic allocation failed");
+        f.Upload->setLabel(Label("M1 two immutable upload versions"));
+        f.Private->setLabel(Label("M1 explicitly ordered private storage"));
+        f.Readback->setLabel(Label("M1 completion-gated readback"));
+        f.Texture->setLabel(Label("M1 frame-tagged offscreen texture"));
+        for(auto* b:{f.Upload.get(),f.Private.get(),f.Readback.get()}) m_Residency->addAllocation(b);
+        m_Residency->addAllocation(f.Texture.get());
+        // Native Metal 4 namespaces: buffer 0 upload, buffer 1 readback, texture 0 diagnostic.
+        // Per-slot table ownership; no global mutable table or classic encoder bindings.
+        f.Arguments->setAddress(f.Upload->gpuAddress(),0);
+        f.Arguments->setAddress(f.Readback->gpuAddress(),1);
+        f.Arguments->setTexture(f.Texture->gpuResourceID(),0);
+    }
+    m_Residency->commit(); m_Transfers=true; Account();
+}
+void MetalDevice::Account() {
+    uint64_t resources=0,allocators=0;
+    for(auto& f:m_Frames) {
+        for(auto* b:{f.Upload.get(),f.Private.get(),f.Readback.get()}) if(b) resources+=b->allocatedSize();
+        if(f.Texture) resources+=f.Texture->allocatedSize();
+        if(f.Allocator) allocators+=f.Allocator->allocatedSize();
+    }
+    Require(resources<=ResourceLimit&&allocators<=AllocatorLimit,"M1 bounded GPU storage limit exceeded");
+    std::lock_guard<std::mutex> lock(m_Observer->Mutex); auto& s=m_Observer->Value;
+    s.ResourceBytes=resources; s.AllocatorBytes=allocators; s.ResidencyAllocations=m_Residency->allocationCount();
+    s.PeakResourceBytes=std::max(s.PeakResourceBytes,resources); s.PeakAllocatorBytes=std::max(s.PeakAllocatorBytes,allocators);
+}
+void MetalDevice::EncodeTransfers(Frame& f,uint64_t serial) {
+    auto* words=static_cast<uint32_t*>(f.Upload->contents());
+    std::memset(words,0,ProofBytes); std::memset(f.Readback->contents(),0xcd,ProofBytes);
+    auto* encoder=m_Commands->computeCommandEncoder();
+    Require(encoder!=nullptr,"Metal 4 transfer encoder unavailable");
+    encoder->setLabel(Label("M1 Metal 4 transfer: write / barrier / read, twice"));
+    encoder->setArgumentTable(f.Arguments.get());
+    for(unsigned version=0;version<2;++version) {
+        // The second CPU update occurs after encoding consumption of the first.
+        // Separate slices preserve both values until the GPU completes this frame.
+        for(size_t i=0;i<WordBytes/4;++i) words[version*WordBytes/4+i]=Pattern(serial,version,i);
+        auto texOffset=TextureBase+version*ImageBytes;
+        for(size_t y=0;y<Side;++y) for(size_t x=0;x<Side;++x)
+            words[(texOffset+y*RowBytes)/4+x]=Pattern(serial,version,100+y*Side+x);
+        encoder->copyFromBuffer(f.Upload.get(),version*WordBytes,f.Private.get(),0,WordBytes);
+        encoder->copyFromBuffer(f.Upload.get(),texOffset,RowBytes,0,MTL::Size{Side,Side,1},f.Texture.get(),0,0,MTL::Origin{0,0,0});
+        encoder->barrierAfterEncoderStages(MTL::StageBlit,MTL::StageBlit,MTL4::VisibilityOptionDevice);
+        encoder->copyFromBuffer(f.Private.get(),0,f.Readback.get(),version*WordBytes,WordBytes);
+        encoder->copyFromTexture(f.Texture.get(),0,0,MTL::Origin{0,0,0},MTL::Size{Side,Side,1},f.Readback.get(),texOffset,RowBytes,0);
+        // Also covers previous-version reads before overwriting the same private storage.
+        encoder->barrierAfterEncoderStages(MTL::StageBlit,MTL::StageBlit,MTL4::VisibilityOptionDevice);
+    }
+    encoder->endEncoding();
+}
+void MetalDevice::Verify(Frame& f) {
+    bool valid=true;
+    if(m_Transfers) {
+        const auto* words=static_cast<const uint32_t*>(f.Readback->contents());
+        for(unsigned v=0;v<2;++v) {
+            for(size_t i=0;i<WordBytes/4;++i) valid &= words[v*WordBytes/4+i]==Pattern(f.Serial,v,i);
+            for(size_t y=0;y<Side;++y) for(size_t x=0;x<Side;++x)
+                valid &= words[(TextureBase+v*ImageBytes+y*RowBytes)/4+x]==Pattern(f.Serial,v,100+y*Side+x);
+        }
+    }
+    std::lock_guard<std::mutex> lock(m_Observer->Mutex); auto& s=m_Observer->Value;
+    ++s.Completed; --s.InFlight;
+    if(m_Transfers&&valid) ++s.Verified;
+    if(!valid) { ++s.Errors; s.Error="Frame-tagged Metal 4 transfer mismatch at frame "+std::to_string(f.Serial); }
+    f.Completion->GPU=true; if(f.Completion->Presented) ++s.CompletedPresented;
+    if(m_Transfers) std::printf("M1_GPU frame=%llu verified=%d\n",static_cast<unsigned long long>(f.Serial),int(valid));
+}
+void MetalDevice::Poll() {
+    // Queue signalEvent is ordered AFTER all work in the corresponding commit.
+    // Neither feedback delivery nor drawable acquisition alone permits CPU access.
+    const uint64_t completed=m_Completed->signaledValue();
+    for(auto& f:m_Frames) if(f.Pending&&completed>=f.Serial) { Verify(f); f.Pending=false; }
+}
+void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t lw,uint32_t lh,double scale,bool visible) {
+    if(m_Stopped) return;
+    const auto cpuStart=std::chrono::steady_clock::now();
+    auto pool=NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
+    Poll();
+    if(m_Override) { w=m_Width; h=m_Height; m_Override=false; layer->setDrawableSize(CGSize{double(w),double(h)}); }
+    {
+        std::lock_guard<std::mutex> lock(m_Observer->Mutex); auto& s=m_Observer->Value;
+        s.PixelWidth=w; s.PixelHeight=h; s.LogicalWidth=lw; s.LogicalHeight=lh; s.BackingScale=scale;
+        s.VSync=layer->displaySyncEnabled();
+        if(s.Errors) throw std::runtime_error(s.Error);
+        if(!w||!h) { ++s.SkippedZero; return; }
+        if(!visible && m_Serial) { ++s.SkippedHidden; return; } // Submit the first frame before relying on Cocoa occlusion.
+        if(m_Frames[m_Next].Pending) { ++s.SkippedBusy; return; } // no global CPU wait in normal frames
+        ++s.Reservations;
+    }
+    auto drawable=NS::RetainPtr(m_SkipDrawable?nullptr:layer->nextDrawable()); m_SkipDrawable=false;
+    if(!drawable) { std::lock_guard<std::mutex> lock(m_Observer->Mutex); ++m_Observer->Value.SkippedUnavailable; ++m_Observer->Value.AbortedReservations; return; }
+    Require(drawable->texture()->width()==w&&drawable->texture()->height()==h,"CAMetalLayer drawable extent differs from framebuffer pixels");
+    auto& f=m_Frames[m_Next];
+    f.Allocator->reset(); // Poll proved the previous submission no longer uses this allocator/storage.
+    const auto serial=m_Serial+1;
+    m_Commands->beginCommandBuffer(f.Allocator.get());
+    const auto label="Hazel Metal 4 frame "+std::to_string(serial);
+    m_Commands->setLabel(Label(label.c_str()));
+    if(m_Transfers) EncodeTransfers(f,serial);
+    auto pass=NS::TransferPtr(MTL4::RenderPassDescriptor::alloc()->init());
+    auto* color=pass->colorAttachments()->object(0);
+    color->setTexture(drawable->texture()); color->setLoadAction(MTL::LoadActionClear);
+    color->setStoreAction(MTL::StoreActionStore); color->setClearColor(m_Clear);
+    auto* render=m_Commands->renderCommandEncoder(pass.get());
+    Require(render!=nullptr,"Metal 4 presentation encoder unavailable");
+    render->setLabel(Label("M1 native CAMetalLayer clear/present")); render->endEncoding();
+    m_Commands->endCommandBuffer();
+    auto observer=m_Observer; auto receipt=std::make_shared<Receipt>();
+    const bool proof=m_Transfers;
+    drawable->addPresentedHandler(MTL::DrawablePresentedHandlerFunction([observer,receipt,serial,proof](MTL::Drawable* d) {
+        const double time=d->presentedTime();
+        std::lock_guard<std::mutex> lock(observer->Mutex); auto& s=observer->Value;
+        ++s.PresentationCallbacks;
+        if(time>0) { ++s.Presented; s.LastPresentedTime=time; receipt->Presented=true; if(receipt->GPU) ++s.CompletedPresented; }
+        else ++s.ZeroPresentationTime;
+        if(proof) std::printf("M1_PRESENT frame=%llu timestamp=%.9f\n",static_cast<unsigned long long>(serial),time);
+    }));
+    auto options=NS::TransferPtr(MTL4::CommitOptions::alloc()->init());
+    options->addFeedbackHandler(MTL4::CommitFeedbackHandlerFunction([observer,serial,proof](MTL4::CommitFeedback* feedback) {
+        std::lock_guard<std::mutex> lock(observer->Mutex); ++observer->Value.Feedbacks;
+        if(auto* error=feedback->error()) { ++observer->Value.Errors; observer->Value.Error=error->localizedDescription()->utf8String(); }
+        if(proof) std::printf("M1_FEEDBACK frame=%llu gpu_start=%.9f gpu_end=%.9f\n",static_cast<unsigned long long>(serial),feedback->GPUStartTime(),feedback->GPUEndTime());
+        observer->Changed.notify_all();
+    }));
+    // Layer residency is supplied by MetalContext. Drawable synchronization is explicit in Metal 4.
+    m_Queue->wait(drawable.get());
+    const MTL4::CommandBuffer* buffers[]={m_Commands.get()};
+    m_Queue->commit(buffers,1,options.get());
+    m_Queue->signalDrawable(drawable.get());
+    drawable->present();
+    m_Queue->signalEvent(m_Completed.get(),serial);
+    f.Completion=std::move(receipt); f.Pending=true;
+    {
+        std::lock_guard<std::mutex> lock(m_Observer->Mutex); auto& s=m_Observer->Value;
+        ++s.Submitted; ++s.InFlight; s.PeakInFlight=std::max(s.PeakInFlight,s.InFlight);
+        if(f.Serial) ++s.SlotReuses;
+    }
+    f.Serial=serial; m_Serial=serial; m_Next=(m_Next+1)%m_Frames.size(); Account();
+    if(proof) std::printf("M1_SUBMIT frame=%llu pixels=%ux%u cpu_ms=%.6f\n",static_cast<unsigned long long>(serial),w,h,
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-cpuStart).count());
+}
+void MetalDevice::Drain() {
+    if(m_Stopped) return;
+    auto pool=NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
+    { std::lock_guard<std::mutex> lock(m_Observer->Mutex); m_Observer->Value.PendingAtShutdown=m_Observer->Value.InFlight; }
+    // A global drain is restricted to shutdown. Timeouts never authorize reuse.
+    const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(10);
+    if(m_Serial) while(!m_Completed->waitUntilSignaledValue(m_Serial,10)) {
+        if(std::chrono::steady_clock::now()>=deadline) {
+            HZ_CORE_CRITICAL("Metal 4 shutdown did not reach GPU completion; refusing to release in-use resources");
+            std::abort();
+        }
+    }
+    Poll(); StopCapture(); m_Stopped=true;
+    std::unique_lock<std::mutex> lock(m_Observer->Mutex);
+    if(!m_Observer->Changed.wait_for(lock,std::chrono::seconds(5),[&] { return m_Observer->Value.Feedbacks==m_Observer->Value.Submitted; })) {
+        ++m_Observer->Value.Errors; m_Observer->Value.Error="Metal 4 commit feedback did not retire during shutdown";
+    }
+    m_Observer->Value.ShutdownComplete=true;
+}
+std::function<void()> MetalDevice::GateQueue() {
+    Require(!m_Gate,"M1 queue gate is single-use");
+    auto pool=NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
+    m_Gate=NS::TransferPtr(m_Device->newSharedEvent()); Require(bool(m_Gate),"Cannot allocate diagnostic queue gate");
+    m_Queue->wait(m_Gate.get(),1);
+    auto gate=m_Gate; return [gate] { gate->setSignaledValue(1); };
+}
+void MetalDevice::StartCapture(const std::filesystem::path& path) {
+    auto pool=NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
+    auto* manager=MTL::CaptureManager::sharedCaptureManager();
+    Require(manager->supportsDestination(MTL::CaptureDestinationGPUTraceDocument),"GPU trace capture unsupported; set MTL_CAPTURE_ENABLED=1 before launch");
+    auto desc=NS::TransferPtr(MTL::CaptureDescriptor::alloc()->init());
+    desc->setCaptureObject(m_Queue.get()); desc->setDestination(MTL::CaptureDestinationGPUTraceDocument);
+    desc->setOutputURL(NS::URL::fileURLWithPath(Label(path.c_str())));
+    NS::Error* error=nullptr;
+    if(!manager->startCapture(desc.get(),&error)) throw std::runtime_error(error?error->localizedDescription()->utf8String():"Cannot start GPU capture");
+    m_Capturing=true;
+}
+void MetalDevice::StopCapture() { if(m_Capturing) { MTL::CaptureManager::sharedCaptureManager()->stopCapture(); m_Capturing=false; } }
+}

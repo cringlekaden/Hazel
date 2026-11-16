@@ -7,13 +7,12 @@ namespace Hazel {
     class RenderCommand
     {
     public:
-        static void Init(const RendererSettings& settings = {})
-        {
-            s_DrawSubmissionCount = 0;
-            s_RendererAPI->Init(settings);
-        }
-
-        static void Shutdown() { s_RendererAPI->Shutdown(); }
+        // Configure before Window::Create; immutable until its context is destroyed.
+        static void Configure(RendererAPI::API api);
+        static bool IsConfigured() { return bool(s_RendererAPI); }
+        static RendererAPI& Backend();
+        static void Init(const RendererSettings& settings = {});
+        static void Shutdown();
         static const RendererCapabilities& GetCapabilities() { return s_RendererAPI->GetCapabilities(); }
         static const RendererResolution& GetResolution() { return s_RendererAPI->GetResolution(); }
         static const RendererSettings& GetSettings() { return s_RendererAPI->GetSettings(); }
@@ -69,6 +68,8 @@ namespace Hazel {
         // submissions, independently of Renderer2D's primitive/batch statistics.
         static std::uint64_t GetDrawSubmissionCount() { return s_DrawSubmissionCount; }
     private:
+        friend class Application;
+        static void Release(); // only Application, after window/context destruction
         inline static std::uint64_t s_DrawSubmissionCount = 0;
         static Scope<RendererAPI> s_RendererAPI;
     };
