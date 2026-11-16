@@ -11,6 +11,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <thread>
 
 namespace {
@@ -78,6 +79,8 @@ int main(int argc, char** argv)
         auto& backend = static_cast<Hazel::MetalRendererAPI&>(Hazel::RenderCommand::Backend());
         auto observer = backend.Observe();
         Reject("full Renderer2D initialization", [] { Hazel::Renderer2D::Init(); });
+        Hazel::Renderer2D::InitQuads();
+        Reject("duplicate quad initialization", [] { Hazel::Renderer2D::InitQuads(); });
         Reject("unsupported default mip texture", [] { Hazel::Texture2D::Create(2, 2); });
         Reject("unsupported attachment extent", [&] { backend.BeginOffscreenQuadFrame(33, 32); });
         Reject("scene without target", [] { Hazel::Renderer2D::BeginScene(glm::mat4(1)); });
@@ -127,6 +130,92 @@ int main(int argc, char** argv)
         Check(oldA.expired() && oldB.expired(), "Completed draw versions were not retired");
         Save(*numeric, output / "nearest-camera-versions.bin");
         std::cout << "PASS nearest/camera/version/depth: 1024 pixels, two cameras and texture versions, exact signed IDs, HDR, far/near rejection\n";
+
+        // Empty flush/end must not manufacture draws. Empty submission proves attachment clears.
+        Hazel::Renderer2D::ResetStats();
+        Hazel::Renderer2D::Flush();
+        backend.BeginOffscreenQuadFrame(32, 32, clear);
+        Hazel::Renderer2D::BeginScene(glm::mat4(1));
+        Hazel::Renderer2D::Flush(); Hazel::Renderer2D::EndScene();
+        auto empty = backend.SubmitOffscreenQuadFrame(); Wait(backend, empty);
+        for (size_t y = 0; y < 32; ++y) for (size_t x = 0; x < 32; ++x) Pixel(*empty, x, y, clear, -1, 1);
+        Check(Hazel::Renderer2D::GetStats().DrawCalls == 0 && Hazel::Renderer2D::GetStats().UploadedBytes == 0,
+            "Empty flush changed draw/upload statistics");
+
+        auto second = Hazel::Texture2D::Create(Specification()); second->SetData(imageB.data(), sizeof(imageB));
+        backend.BeginOffscreenQuadFrame(32, 32);
+        Hazel::Renderer2D::BeginOrderedScene(Hazel::Camera{}, glm::mat4(1));
+        Reject("nested scene", [] { Hazel::Renderer2D::BeginScene(glm::mat4(1)); });
+        Reject("circle", [] { Hazel::Renderer2D::DrawCircle(glm::mat4(1), glm::vec4(1)); });
+        Reject("line", [] { Hazel::Renderer2D::DrawLine({}, {}, glm::vec4(1)); });
+        Reject("clip", [] { Hazel::Renderer2D::SetPrimitiveClip({0,0,1,1}); });
+        auto invalid = glm::mat4(1); invalid[0][0] = std::numeric_limits<float>::quiet_NaN();
+        Hazel::Renderer2D::DrawQuad(invalid, texture);
+        Reject("invalid chunk flush", [] { Hazel::Renderer2D::Flush(); });
+        Hazel::Renderer2D::ResetStats();
+        Hazel::Renderer2D::DrawQuad(Transform(-.5f, 0, 1, 1), texture, 1, glm::vec4(1), -2000000001);
+        texture->SetData(imageB.data(), sizeof(imageB));
+        Hazel::Renderer2D::DrawQuad(Transform(.5f, 0, 1, 1), texture, 1, glm::vec4(1), 2000000001);
+        texture->SetData(imageA.data(), sizeof(imageA)); // both pending versions must survive until flush/completion
+        // Equal-depth overlap: first submitted quad wins with LESS. Texture slot one is reused.
+        Hazel::Renderer2D::DrawQuad(Transform(-.5f, 0, 1, 1), texture, 1, glm::vec4(.5f,.5f,.5f,1), 99);
+        Hazel::Renderer2D::Flush(); Hazel::Renderer2D::Flush();
+        auto stats = Hazel::Renderer2D::GetStats();
+        Check(stats.QuadCount == 3 && stats.GeometryCount == 3 && stats.DrawCalls == 1 && stats.UploadedBytes == 768 &&
+            stats.Flushes[size_t(Hazel::Renderer2D::FlushReason::External)] == 1,
+            "Shared quad run did not coalesce, consume once, or account correctly");
+        // A second run in the same scene must keep the earlier immutable vertex/camera/descriptor data.
+        second->SetData(imageA.data(), sizeof(imageA)); // earlier right-hand run must still sample B
+        Hazel::Renderer2D::DrawQuad(Transform(-.5f, .5f, 1, 1), second, 1, glm::vec4(1), 98);
+        Hazel::Renderer2D::EndScene();
+        stats = Hazel::Renderer2D::GetStats();
+        Check(stats.QuadCount == 4 && stats.DrawCalls == 2 && stats.UploadedBytes == 1024 &&
+            stats.Flushes[size_t(Hazel::Renderer2D::FlushReason::End)] == 1, "Second shared flush statistics mismatch");
+        auto ordered = backend.SubmitOffscreenQuadFrame(); Wait(backend, ordered);
+        for (size_t y = 0; y < 32; ++y) for (size_t x = 0; x < 32; ++x)
+        {
+            if (y >= 8 && y < 24)
+            {
+                const bool left = x < 16;
+                const size_t col = (x % 16) < 8 ? 0 : 1, row = y < 16 ? 1 : 0;
+                Pixel(*ordered, x, y, (left ? colorsA : colorsB)[row * 2 + col], left ? -2000000001 : 2000000001, .5f);
+            }
+            else Pixel(*ordered, x, y, glm::vec4(0), -1, 1);
+        }
+        Save(*ordered, output / "ordered-run.bin");
+        std::cout << "PASS shared ordered runs: four quads, two draws/flushes, 1024 vertex bytes, two textures/slots, equal-depth ordering; empty clears and rejected chunk recovery\n";
+        // CPU shutdown discards unflushed work; reinitialization needs no font service.
+        backend.BeginOffscreenQuadFrame(32, 32);
+        Hazel::Renderer2D::BeginScene(glm::mat4(1));
+        Hazel::Renderer2D::DrawQuad(glm::mat4(1), texture);
+        Hazel::Renderer2D::Shutdown(); backend.CancelOffscreenQuadFrame();
+        Reject("draw after shutdown", [&] { Hazel::Renderer2D::DrawQuad(glm::mat4(1), texture); });
+        Hazel::Renderer2D::InitQuads();
+
+        // Full bounded chunk: automatic capacity flush uses all 32 vertices / 48 indices.
+        Hazel::Renderer2D::ResetStats();
+        backend.BeginOffscreenQuadFrame(32, 32);
+        Hazel::Renderer2D::BeginScene(glm::mat4(1));
+        for (int q = 0; q < 8; ++q)
+            Hazel::Renderer2D::DrawQuad(Transform(-.875f + q * .25f, 0, .25f, 1), texture, 1, glm::vec4(1), q % 2 ? -100-q : 100+q);
+        Hazel::Renderer2D::DrawQuad(glm::mat4(1), texture); // drains the full chunk, then admits one excess quad
+        Reject("ninth quad at flush", [] { Hazel::Renderer2D::EndScene(); });
+        Hazel::Renderer2D::EndScene(); // rejected chunk was discarded; prior eight remain valid
+        const auto capacityStats = Hazel::Renderer2D::GetStats();
+        Check(capacityStats.DrawCalls == 1 && capacityStats.QuadCount == 9 && capacityStats.UploadedBytes == 2048 &&
+            capacityStats.Flushes[size_t(Hazel::Renderer2D::FlushReason::Capacity)] == 1, "Capacity flush/recovery statistics mismatch");
+        auto capacity = backend.SubmitOffscreenQuadFrame(); Wait(backend, capacity);
+        for (size_t y = 0; y < 32; ++y) for (size_t x = 0; x < 32; ++x)
+        {
+            if (y >= 8 && y < 24)
+            {
+                const int q = int(x / 4);
+                Pixel(*capacity, x, y, colorsA[(y < 16 ? 2 : 0) + (x % 4 >= 2 ? 1 : 0)], q % 2 ? -100-q : 100+q, .5f);
+            }
+            else Pixel(*capacity, x, y, glm::vec4(0), -1, 1);
+        }
+        Save(*capacity, output / "capacity-run.bin");
+        std::cout << "PASS full capacity run: eight quads, one draw, 2048 vertex bytes; ninth-quad rejection preserves prior run\n";
 
         // Nonconstant 2x2 texture with linear filtering: CPU bilinear oracle at pixel centers.
         auto linearSpec = Specification(true); linearSpec.Format = Hazel::ImageFormat::RGBA32F;
@@ -189,6 +278,7 @@ int main(int argc, char** argv)
         backend.CancelOffscreenQuadFrame();
         auto shader = backend.LoadShader("Renderer2D_Quad"); std::weak_ptr<Hazel::Shader> shaderLifetime = shader; shader.reset();
         std::thread unblock([release] { std::this_thread::sleep_for(std::chrono::milliseconds(30)); release(); });
+        Hazel::Renderer2D::Shutdown();
         Hazel::RenderCommand::Shutdown(); unblock.join();
         for (size_t i = 0; i < pending.size(); ++i)
         {
@@ -197,14 +287,15 @@ int main(int argc, char** argv)
         }
         Check(shaderLifetime.expired(), "Shader outlived completed backend cache shutdown");
         const auto final = observer->Snapshot();
-        Check(final.Errors == 0 && final.InFlight == 0 && final.Submitted == 18 && final.Completed == 18 && final.PendingAtShutdown == 3 &&
-            final.SlotReuses >= 15 && final.ResourceBytes == 0 && final.PeakResourceBytes <= 1024 * 1024 && final.PeakAllocatorBytes <= 16 * 1024 * 1024,
+        Check(final.Errors == 0 && final.InFlight == 0 && final.Submitted == 21 && final.Completed == 21 && final.PendingAtShutdown == 3 &&
+            final.SlotReuses >= 18 && final.ResourceBytes == 0 && final.PeakResourceBytes <= 1024 * 1024 && final.PeakAllocatorBytes <= 16 * 1024 * 1024,
             "Frame retirement/reuse/accounting failed");
         std::ofstream metrics(output / "metrics.json");
         metrics << "{\"submitted\":" << final.Submitted << ",\"completed\":" << final.Completed << ",\"slotReuses\":" << final.SlotReuses
+            << ",\"orderedQuads\":" << stats.QuadCount << ",\"orderedDraws\":" << stats.DrawCalls << ",\"orderedVertexBytes\":" << stats.UploadedBytes
             << ",\"peakInFlight\":" << final.PeakInFlight << ",\"pendingShutdown\":" << final.PendingAtShutdown << ",\"frameBytes\":" << final.ResourceBytes
             << ",\"peakFrameBytes\":" << final.PeakResourceBytes << ",\"peakAllocatorBytes\":" << final.PeakAllocatorBytes << ",\"errors\":" << final.Errors << "}\n";
-        std::cout << "PASS: production Renderer2D quad seam, 18 completed frames, 12 successive submissions, three pending shutdown, busy-slot rejection and exact CPU readback\n";
+        std::cout << "PASS: initialized shared Renderer2D quad flush, 21 completed frames, 12 successive submissions, three pending shutdown, busy-slot rejection and exact CPU readback\n";
         return 0;
     }
     catch (const std::exception& error) { std::cerr << "FAIL: " << error.what() << '\n'; return 1; }

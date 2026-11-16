@@ -42,12 +42,26 @@ def main():
     a = [(1,0,0,1), (0,1,0,1), (0,0,1,1), (1,1,1,1)]
     b = [(0,1,1,1), (1,0,1,1), (1,1,0,1), (0,0,0,1)]
     measurements = {}
-    for fixture in ('nearest-camera-versions', 'linear', 'repeat'):
+    for fixture in ('nearest-camera-versions', 'linear', 'repeat', 'ordered-run', 'capacity-run'):
         data = (output / (fixture + '.bin')).read_bytes()
         max_color = max_depth = 0.0; samples = 0
         for y in range(32):
             for x in range(32):
-                if fixture == 'nearest-camera-versions':
+                if fixture == 'capacity-run':
+                    if 8 <= y < 24:
+                        q = x//4
+                        color = a[int(y < 16)*2 + int(x%4 >= 2)]
+                        entity, depth = (-100-q if q%2 else 100+q), .5
+                    else:
+                        color, entity, depth = (0,0,0,0), -1, 1
+                elif fixture == 'ordered-run':
+                    if 8 <= y < 24:
+                        left = x < 16
+                        color = (a if left else b)[int(y < 16)*2 + int(x%16 >= 8)]
+                        entity, depth = (-2000000001 if left else 2000000001), .5
+                    else:
+                        color, entity, depth = (0,0,0,0), -1, 1
+                elif fixture == 'nearest-camera-versions':
                     if 4 <= y < 28 and (2 <= x < 14 or 18 <= x < 30):
                         left = x < 14; col = int((x - (2 if left else 18)) >= 6); row = int(y < 16)
                         tint = (2,.5,.25,1) if left else (.5,1,2,1)

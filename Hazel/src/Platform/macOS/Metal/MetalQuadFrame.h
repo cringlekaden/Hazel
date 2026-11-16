@@ -11,9 +11,10 @@ namespace Hazel {
 class MetalShader;
 struct MetalQuadDraw
 {
-    std::array<QuadVertex, 4> Vertices;
+    std::vector<QuadVertex> Vertices;
+    uint32_t First = 0, Count = 0;
     glm::mat4 Camera;
-    std::shared_ptr<const MetalTextureVersion> Texture;
+    std::array<std::shared_ptr<const MetalTextureVersion>, 32> Textures;
 };
 struct MetalQuadReadback
 {

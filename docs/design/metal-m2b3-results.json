@@ -1,0 +1,298 @@
+{
+  "schemaVersion": 1,
+  "milestone": "Metal 4 M2-B3 quad-only Renderer2D initialization and ordered flush",
+  "verdict": "PASS",
+  "date": "2026-11-16T10:10:55.521903-05:00",
+  "branch": "feature/3d-foundations",
+  "baselineHEAD": "b250c8c53e08154388b52e3578a52d892917898e",
+  "filesChanged": [
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer2D.cpp",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer2D.h",
+    "Hazel/src/Platform/macOS/Metal/MetalDeviceQuad.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalQuadFrame.h",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererAPI.h",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererQuad.cpp",
+    "docs/design/metal-m2b3-results.json",
+    "docs/design/metal-m2b3.md",
+    "docs/development.md",
+    "scripts/macos/metal_m2b2.py",
+    "tests/macos/MetalRenderer2DQuadSmoke.cpp"
+  ],
+  "qualifiedSourceSHA256": {
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer2D.cpp": "51b2180b9183e5713e0991b314bf4361567ff747277a3fe6168313511e5f1dab",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer2D.h": "c92f950a544da49ca1b8f4db04db3d977955b9d6458ee6c1c9449bfa85fc7556",
+    "Hazel/src/Platform/macOS/Metal/MetalDeviceQuad.cpp": "13868711ee281dae437ff20fde3f59c59a08673357f7c72e6f08f82f8ccb9268",
+    "Hazel/src/Platform/macOS/Metal/MetalQuadFrame.h": "ab8163dd9c2033eb385e32c46ead96f2ebbd4ed2aa4f69fb486889730eaf5992",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererAPI.h": "c7bcc4a5df85778522e69084066971cd10654478255006e93f51a1c919fc58bc",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererQuad.cpp": "ec03159a31f7b61563e996f8fcf771e20365f139eb68bfd8772dbde4ccb1a0ef",
+    "scripts/macos/metal_m2b2.py": "9968c3308cab8a39d4aecf6f5775a8c5b6c57fa0ce28119575d33ec884e73973",
+    "tests/macos/MetalRenderer2DQuadSmoke.cpp": "c4fdec7c27302c4cd964af655f252b749699a5a940cffc5756458b0c271ba59d",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer2DQuad.h": "e217bc09744b32d6b4e4aefa64676ff7754cd5f374c9ebe2ea8c5a25fa91904a",
+    "Hazel/src/Platform/macOS/Metal/MetalTexture.cpp": "fd8033debf4fc12d584e7d2b731e38cb0dfcc4909493151a9197beda43556a27",
+    "Hazel/src/Platform/macOS/Metal/MetalTexture.h": "d332b8ef1375661afed1c74eee6cb686ef96645d8b6506f1b70bb6d41ad5ab33",
+    "Hazel/src/Platform/macOS/Metal/MetalDevice.cpp": "7ba9c5bd842b5afe23f22ee9a6824bd9b47c83154e115e4f456da532f1ad2a39",
+    "Hazel/src/Platform/macOS/Metal/MetalDevice.h": "41b7cdb3b4ddde71bfdd04b3d76fbd31c195bc7eea5f4b847d6287668e038786",
+    "premake5.lua": "ca6895b3546878f3ab9a14b7c93f8c90f0e7299fd1955a68a192f2856d5cab15",
+    "scripts/dependencies/macos.lua": "8c9decd6d68f9175a8a82d7ce6880269a80d0a2cf0755b411850e2af2e21d070"
+  },
+  "platform": {
+    "architecture": "arm64",
+    "GPU": "Apple M4",
+    "OS": "macOS 27.3 (26C5035r)",
+    "Xcode": "27.3 (27C5020n)"
+  },
+  "native": {
+    "Debug": {
+      "verdict": "PASS",
+      "metrics": {
+        "submitted": 21,
+        "completed": 21,
+        "slotReuses": 18,
+        "orderedQuads": 4,
+        "orderedDraws": 2,
+        "orderedVertexBytes": 1024,
+        "peakInFlight": 3,
+        "pendingShutdown": 3,
+        "frameBytes": 0,
+        "peakFrameBytes": 226368,
+        "peakAllocatorBytes": 7745064,
+        "errors": 0
+      },
+      "measurements": {
+        "nearest-camera-versions": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "linear": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "repeat": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "ordered-run": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "capacity-run": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        }
+      },
+      "readbackSHA256": {
+        "nearest-after-reuse.bin": "73bad5078f0fcd1789189c2de5773685629cf505d2039f85fcf06055b88c1e13",
+        "repeat.bin": "118f7063a6210a13d19bd41b7bc29b81234b9ec6d980752b9d01e82cff198f38",
+        "linear.bin": "2912d14fa2a92209ff2c6f41114686f80ffb8385ff2e400ece4c54806f40468f",
+        "capacity-run.bin": "228a0c3f7ae7808ca29f2a9a38a9be30aaeef774de8f88a91fa3d76c05fa3d95",
+        "nearest-camera-versions.bin": "73bad5078f0fcd1789189c2de5773685629cf505d2039f85fcf06055b88c1e13",
+        "ordered-run.bin": "e6e416169abc7690715386a6590d0b9dd6902e393aadd40e07d070356ab760e6"
+      },
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-m2b2-evidence/Resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-m2b3-evidence/debug-final"
+      ],
+      "environment": {
+        "PATH": "/nonexistent",
+        "DEVELOPER_DIR": "/nonexistent",
+        "MTL_DEBUG_LAYER": "1",
+        "MTL_SHADER_VALIDATION": "1"
+      },
+      "evidence": "build/metal-m2b3-evidence/debug-final"
+    },
+    "Release": {
+      "verdict": "PASS",
+      "metrics": {
+        "submitted": 21,
+        "completed": 21,
+        "slotReuses": 18,
+        "orderedQuads": 4,
+        "orderedDraws": 2,
+        "orderedVertexBytes": 1024,
+        "peakInFlight": 3,
+        "pendingShutdown": 3,
+        "frameBytes": 0,
+        "peakFrameBytes": 226368,
+        "peakAllocatorBytes": 7745064,
+        "errors": 0
+      },
+      "measurements": {
+        "nearest-camera-versions": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "linear": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "repeat": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "ordered-run": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "capacity-run": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        }
+      },
+      "readbackSHA256": {
+        "nearest-after-reuse.bin": "73bad5078f0fcd1789189c2de5773685629cf505d2039f85fcf06055b88c1e13",
+        "repeat.bin": "118f7063a6210a13d19bd41b7bc29b81234b9ec6d980752b9d01e82cff198f38",
+        "linear.bin": "2912d14fa2a92209ff2c6f41114686f80ffb8385ff2e400ece4c54806f40468f",
+        "capacity-run.bin": "228a0c3f7ae7808ca29f2a9a38a9be30aaeef774de8f88a91fa3d76c05fa3d95",
+        "nearest-camera-versions.bin": "73bad5078f0fcd1789189c2de5773685629cf505d2039f85fcf06055b88c1e13",
+        "ordered-run.bin": "e6e416169abc7690715386a6590d0b9dd6902e393aadd40e07d070356ab760e6"
+      },
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-m2b2-evidence/Resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-m2b3-evidence/release-final"
+      ],
+      "environment": {
+        "PATH": "/nonexistent",
+        "DEVELOPER_DIR": "/nonexistent",
+        "MTL_DEBUG_LAYER": "1",
+        "MTL_SHADER_VALIDATION": "1"
+      },
+      "evidence": "build/metal-m2b3-evidence/release-final"
+    }
+  },
+  "debugReleaseReadbacksIdentical": true,
+  "shaderArtifacts": {
+    "ForwardPBR.hzmetal": "1f494139306252fc2c5b246f3847711a2fa8dd6e06c209792e712cc08d283564",
+    "EntityOutline.hzmetal": "8f8b5ae26060da301e347503af9a889342a0fd2b2e3c29d432755d1e53ef50ff",
+    "Renderer2D_Line.hzmetal": "94b381919cc668e48b36a3f85e5f0a17622be9982a6801fd3207c7c553f99df3",
+    "Renderer2D_Quad-16.hzmetal": "d6dc77ec51274a448be3751ea6940339b8e567e7baada72b405f52358319ecf0",
+    "Renderer2D_Quad-32.hzmetal": "9b27836ce452e162809395fd22dbf07e424f79d1ecbd7b4ab4c2fd4ef8747a78",
+    "WorldPresentation.hzmetal": "72e07feca5e7805a549dda5d84d4cf3a819ece9511bac827d3e31a13a556adba",
+    "EnvironmentSky.hzmetal": "fc802eb67f0d2f4cd2d3ef9194c21a8f8a8655507da0ed485dfa687f138331a2",
+    "Renderer2D_Circle.hzmetal": "b3c0513cc894c3cf61288ad6625081a53f7c260ac9b2344153b75850448acfda",
+    "Renderer2D_Text.hzmetal": "8d0ab56d1c6a18415ef295c1c0601a6f6cc5c4a28735e8b2740cc9b93983f85d",
+    "DisplayOutput.hzmetal": "39fe8aa46d2fc8c2a54c6d787882827179e3b277492d5991a6f4bc74ba92f278"
+  },
+  "bindingLayout": {
+    "vertexBytes": 64,
+    "entityOffset": 44,
+    "clipOffset": 48,
+    "cameraBinding": 0,
+    "vertexBinding": 16,
+    "fragmentBinding": 0,
+    "textureSlots": 32,
+    "descriptorBytes": 512,
+    "cameraOffset": 0,
+    "vertexOffset": 256,
+    "descriptorAlignment": 256,
+    "indexCountMaximum": 48,
+    "verticesMaximum": 32,
+    "runFirst": "Honored by native index byte offset; shared quad-only coalesced run starts at zero; mixed/nonzero starts unqualified"
+  },
+  "statistics": {
+    "orderedFixture": {
+      "admittedQuads": 4,
+      "drawCalls": 2,
+      "successfulFlushes": 2,
+      "vertexBytes": 1024
+    },
+    "capacityFixture": {
+      "admittedQuads": 9,
+      "renderedQuads": 8,
+      "drawCalls": 1,
+      "capacityFlushes": 1,
+      "vertexBytes": 2048,
+      "ninthQuad": "Rejected chunk discarded; prior run preserved"
+    },
+    "scope": "Geometry counts admissions; draw/flush counters count successful run enqueue; bytes count vertex data; CPU enqueue timing is not GPU time"
+  },
+  "regressions": {
+    "Debug": {
+      "verdict": "PASS",
+      "profile": "native Apple OpenGL (ShaderToolsSmoke CPU)",
+      "tests": [
+        "ShaderToolsSmoke",
+        "RendererSmoke",
+        "RendererFeaturesSmoke",
+        "Renderer2DSmoke",
+        "SceneGPUSmoke",
+        "SpriteSmoke"
+      ],
+      "shaderCache": "PASS: MetalShaderSmoke",
+      "evidence": "build/metal-m2b3-evidence/debug-opengl.log",
+      "shaderEvidence": "build/metal-m2b3-evidence/debug-shader.log"
+    },
+    "Release": {
+      "verdict": "PASS",
+      "profile": "native Apple OpenGL (ShaderToolsSmoke CPU)",
+      "tests": [
+        "ShaderToolsSmoke",
+        "RendererSmoke",
+        "RendererFeaturesSmoke",
+        "Renderer2DSmoke",
+        "SceneGPUSmoke",
+        "SpriteSmoke"
+      ],
+      "shaderCache": "PASS: MetalShaderSmoke",
+      "evidence": "build/metal-m2b3-evidence/release-opengl.log",
+      "shaderEvidence": "build/metal-m2b3-evidence/release-shader.log"
+    }
+  },
+  "warnings": {
+    "changedFileWarnings": [],
+    "inventory": "build/metal-m2b3-evidence/warnings.json",
+    "policy": "Pre-existing warnings retained; no suppressions or unrelated cleanup"
+  },
+  "headerCheck": {
+    "verdict": "PASS",
+    "flags": "C++17 -fblocks -Wall -Wextra direct includes, no PCH",
+    "evidence": "build/metal-m2b3-evidence/header-check.log"
+  },
+  "SDKWorkflow": {
+    "verdict": "PASS",
+    "tests": 7,
+    "evidence": "build/metal-m2b3-evidence/sdk-workflow.log"
+  },
+  "publicDocs": {
+    "verdict": "PASS",
+    "updated": "docs/development.md",
+    "evidence": "build/metal-m2b3-evidence/public-docs.log"
+  },
+  "notRun": {
+    "Windows": "No host/toolchain",
+    "Linux": "Local Docker daemon unavailable",
+    "IntelGPU": "Hardware unavailable",
+    "presentation": "Out of scope; offscreen only",
+    "CI": "Not dispatched; master-only push trigger",
+    "editorPlayerIntegration": "Out of scope"
+  },
+  "remainingRisks": [
+    "Fixed 1..32 RGBA32Float/R32Sint/Depth32Float offscreen profile; eight total opaque textured quads per frame",
+    "Other primitives, blending, picking masks, clips, generalized factories/passes and normal scene rendering unavailable",
+    "Mixed primitive/nonzero run starts unqualified",
+    "B2 RGBA8 bilinear precision limitation unchanged; strict linear fixture uses RGBA32F",
+    "M1 unsignaled completion timeout/device-loss recovery unchanged; timeout aborts rather than freeing live work"
+  ],
+  "recommendedNextSlice": "Integrate bounded offscreen attachment/frame lifetime through existing Framebuffer ownership with unchanged profile and quad-only flush"
+}

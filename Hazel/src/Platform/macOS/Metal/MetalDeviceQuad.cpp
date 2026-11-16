@@ -17,7 +17,7 @@ uint64_t MetalQuadFrame::ResourceBytes() const
     std::set<const MTL::Allocation*> allocations;
     for (const auto& target : Targets) allocations.insert(target.get());
     for (const auto& buffer : Buffers) allocations.insert(buffer.get());
-    for (const auto& draw : Draws) allocations.insert(draw.Texture->Texture.get());
+    for (const auto& draw : Draws) for (const auto& texture : draw.Textures) allocations.insert(texture->Texture.get());
     uint64_t bytes = 0;
     for (const auto* allocation : allocations) bytes += allocation->allocatedSize();
     return bytes;
@@ -70,29 +70,37 @@ std::shared_ptr<const MetalQuadReadback> MetalDevice::SubmitQuadFrame(const std:
     }
     const auto colorRow = ColorRow(quad->Width), idBase = colorRow * quad->Height, depthBase = idBase + ScalarRow * quad->Height;
     quad->Buffers.push_back(NS::TransferPtr(m_Device->newBuffer(depthBase + ScalarRow * quad->Height, MTL::ResourceStorageModeShared)));
-    quad->Buffers.push_back(NS::TransferPtr(m_Device->newBuffer(Renderer2DQuadIndices.data(), sizeof(Renderer2DQuadIndices), MTL::ResourceStorageModeShared)));
+    std::array<uint32_t, 48> indices;
+    for (uint32_t q = 0; q < 8; ++q) for (uint32_t i = 0; i < 6; ++i)
+        indices[q * 6 + i] = q * 4 + Renderer2DQuadIndices[i];
+    quad->Buffers.push_back(NS::TransferPtr(m_Device->newBuffer(indices.data(), sizeof(indices), MTL::ResourceStorageModeShared)));
     auto args = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
     args->setInitializeBindings(true); args->setMaxBufferBindCount(17);
     std::set<MTL::Texture*> textures;
     for (const auto& draw : quad->Draws)
     {
-        Check(draw.Texture && draw.Texture->Texture->device() == m_Device.get(), "Quad texture belongs to a different device");
-        std::array<uint8_t, 1024> upload{}; // 256-byte-aligned camera, vertices and descriptor slices.
+        const auto descriptorOffset = (256 + draw.Vertices.size() * sizeof(QuadVertex) + 255) & ~size_t(255);
+        std::vector<uint8_t> upload(descriptorOffset + 512); // aligned immutable camera, vertex and descriptor slices
         std::memcpy(upload.data(), &draw.Camera, sizeof(draw.Camera));
-        std::memcpy(upload.data() + 256, draw.Vertices.data(), sizeof(draw.Vertices));
+        std::memcpy(upload.data() + 256, draw.Vertices.data(), draw.Vertices.size() * sizeof(QuadVertex));
         std::array<MTL::ResourceID, 64> handles;
-        for (size_t i = 0; i < 32; ++i) { handles[i] = draw.Texture->Texture->gpuResourceID(); handles[32 + i] = draw.Texture->Sampler->gpuResourceID(); }
+        for (size_t i = 0; i < 32; ++i)
+        {
+            const auto& texture = draw.Textures[i];
+            Check(texture && texture->Texture->device() == m_Device.get(), "Quad texture belongs to a different device");
+            handles[i] = texture->Texture->gpuResourceID(); handles[32 + i] = texture->Sampler->gpuResourceID();
+            if (textures.insert(texture->Texture.get()).second) quad->Residency->addAllocation(texture->Texture.get());
+        }
         static_assert(sizeof(handles) == 512, "Qualified tier-2 descriptor ABI");
-        std::memcpy(upload.data() + 512, handles.data(), sizeof(handles));
+        std::memcpy(upload.data() + descriptorOffset, handles.data(), sizeof(handles));
         auto buffer = NS::TransferPtr(m_Device->newBuffer(upload.data(), upload.size(), MTL::ResourceStorageModeShared));
         auto vertex = NS::TransferPtr(m_Device->newArgumentTable(args.get(), &error));
         auto fragment = NS::TransferPtr(m_Device->newArgumentTable(args.get(), &error));
         Check(bool(buffer) && bool(vertex) && bool(fragment), "Cannot allocate immutable quad draw version");
         vertex->setAddress(buffer->gpuAddress(), 0); vertex->setAddress(buffer->gpuAddress() + 256, 16);
-        fragment->setAddress(buffer->gpuAddress() + 512, 0);
+        fragment->setAddress(buffer->gpuAddress() + descriptorOffset, 0);
         quad->Buffers.push_back(std::move(buffer));
         quad->Arguments.push_back(std::move(vertex)); quad->Arguments.push_back(std::move(fragment));
-        if (textures.insert(draw.Texture->Texture.get()).second) quad->Residency->addAllocation(draw.Texture->Texture.get());
     }
     for (const auto& buffer : quad->Buffers) { Check(bool(buffer), "Cannot allocate quad buffer"); quad->Residency->addAllocation(buffer.get()); }
     quad->Residency->commit();
@@ -137,7 +145,9 @@ std::shared_ptr<const MetalQuadReadback> MetalDevice::SubmitQuadFrame(const std:
     {
         render->setArgumentTable(quad->Arguments[i * 2].get(), MTL::RenderStageVertex);
         render->setArgumentTable(quad->Arguments[i * 2 + 1].get(), MTL::RenderStageFragment);
-        render->drawIndexedPrimitives(MTL::PrimitiveTypeTriangle, 6, MTL::IndexTypeUInt32, quad->Buffers[1]->gpuAddress(), quad->Buffers[1]->length());
+        const auto offset = quad->Draws[i].First * sizeof(uint32_t);
+        render->drawIndexedPrimitives(MTL::PrimitiveTypeTriangle, quad->Draws[i].Count, MTL::IndexTypeUInt32,
+            quad->Buffers[1]->gpuAddress() + offset, quad->Buffers[1]->length() - offset);
     }
     render->endEncoding();
     auto* copy = m_Commands->computeCommandEncoder();

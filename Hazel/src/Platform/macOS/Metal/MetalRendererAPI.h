@@ -14,6 +14,7 @@ class Texture2D;
 struct TextureSpecification;
 struct MetalQuadFrame;
 struct MetalQuadReadback;
+struct MetalTextureVersion;
 // Only presentation is implemented in M1. Drawing calls fail, never enter OpenGL.
 class MetalRendererAPI final : public RendererAPI {
 public:
@@ -42,7 +43,8 @@ public:
     // Explicit bounded offscreen profile; these calls do not enable scene drawing.
     void BeginOffscreenQuadFrame(uint32_t width, uint32_t height, glm::vec4 clear = glm::vec4(0));
     void BeginQuadScene(const glm::mat4& camera);
-    void EnqueueQuad(const std::array<QuadVertex, 4>& vertices, const std::shared_ptr<Texture2D>& texture);
+    void EnqueueQuadRun(const QuadVertex* vertices, uint32_t vertexCount, uint32_t first, uint32_t count,
+        const std::array<std::shared_ptr<const MetalTextureVersion>, 32>& textures, uint32_t textureCount);
     void EndQuadScene();
     std::shared_ptr<const MetalQuadReadback> SubmitOffscreenQuadFrame(); // null means all slots busy; retry unchanged frame
     void CancelOffscreenQuadFrame();

@@ -17,6 +17,8 @@ namespace Hazel {
 	{
 	public:
 		static void Init();
+        // Experimental bounded Metal offscreen profile; no font or other primitive services.
+        static void InitQuads();
 		static void Shutdown();
 
         static void BeginScene(const glm::mat4 &viewProjection);

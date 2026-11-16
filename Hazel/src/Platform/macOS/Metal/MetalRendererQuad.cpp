@@ -35,16 +35,30 @@ void MetalRendererAPI::BeginQuadScene(const glm::mat4& camera)
     Check(Finite(&camera[0][0], 16), "Quad camera must be finite");
     m_QuadCamera = camera; m_QuadScene = true;
 }
-void MetalRendererAPI::EnqueueQuad(const std::array<QuadVertex, 4>& vertices, const std::shared_ptr<Texture2D>& texture)
+void MetalRendererAPI::EnqueueQuadRun(const QuadVertex* vertices, uint32_t vertexCount, uint32_t first, uint32_t count,
+    const std::array<std::shared_ptr<const MetalTextureVersion>, 32>& textures, uint32_t textureCount)
 {
-    Check(!m_Stopped && m_QuadFrame && m_QuadScene, "Quad requires an active Renderer2D scene/offscreen frame");
-    Check(m_QuadFrame->Draws.size() < 8, "Offscreen quad profile supports at most eight independent draws");
-    auto native = std::dynamic_pointer_cast<MetalTexture2D>(texture);
-    Check(bool(native), "Offscreen quad requires a production Metal Texture2D");
-    for (const auto& vertex : vertices)
+    Check(!m_Stopped && m_QuadFrame && m_QuadScene, "Quad run requires an active Renderer2D scene/offscreen frame");
+    uint32_t used = 0;
+    for (const auto& draw : m_QuadFrame->Draws) used += draw.Count / 6;
+    Check(vertices && count && count <= 48 && first <= 48 && vertexCount % 4 == 0 && first % 6 == 0 && count % 6 == 0 && vertexCount <= 32 &&
+        (first + count) / 6 * 4 <= vertexCount && used + count / 6 <= 8,
+        "Offscreen profile supports at most eight quads per frame and valid run offsets");
+    Check(textureCount && textureCount <= 32, "Invalid quad texture slot count");
+    MetalQuadDraw draw;
+    draw.First = first; draw.Count = count; draw.Camera = m_QuadCamera;
+    draw.Vertices.assign(vertices, vertices + vertexCount);
+    for (uint32_t i = 0; i < 32; ++i)
+    {
+        draw.Textures[i] = textures[i < textureCount ? i : 0];
+        Check(bool(draw.Textures[i]), "Quad run requires captured Metal texture versions");
+    }
+    for (const auto& vertex : draw.Vertices)
         Check(Finite(&vertex.Position[0], 3) && Finite(&vertex.Color[0], 4) && Finite(&vertex.TexCoord[0], 2) &&
-            std::isfinite(vertex.TilingFactor) && vertex.TexIndex == 0 && vertex.Color.a == 1, "Offscreen quad requires finite vertices and opaque tint (blending unavailable)");
-    m_QuadFrame->Draws.push_back({vertices, m_QuadCamera, native->Snapshot()});
+            std::isfinite(vertex.TilingFactor) && std::isfinite(vertex.TexIndex) && vertex.TexIndex >= 0 &&
+            vertex.TexIndex < textureCount && std::floor(vertex.TexIndex) == vertex.TexIndex && vertex.Color.a == 1 &&
+            vertex.ClipRect == glm::vec4(-1), "Quad run requires finite opaque vertices, valid slots and no clipping");
+    m_QuadFrame->Draws.push_back(std::move(draw)); // publish only after all validation/snapshots succeed
 }
 void MetalRendererAPI::EndQuadScene()
 {

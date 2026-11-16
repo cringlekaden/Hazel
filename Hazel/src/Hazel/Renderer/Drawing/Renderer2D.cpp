@@ -5,6 +5,7 @@
 #include "Renderer2DQuad.h"
 #ifdef HZ_PLATFORM_MACOS
 #include "Platform/macOS/Metal/MetalRendererAPI.h"
+#include "Platform/macOS/Metal/MetalTexture.h"
 #endif
 
 #include "Hazel/Renderer/Resources/VertexArray.h"
@@ -66,6 +67,7 @@ namespace Hazel {
 		static constexpr uint32_t MaxTextureSlots = 32;
 		uint32_t TextureSlotLimit = 0;
         bool Ordered=false,Picking=true,HasPassiveRuns=false;
+        bool QuadOnly=false, SceneActive=false;
         glm::vec4 ClipRect{-1};
         struct Run {int Kind;uint32_t First,Count;Ref<Texture2D> Font;float LineWidth;bool Picking=true;};
         std::vector<Run> Runs; // at most 8192, reused between chunks/frames
@@ -109,6 +111,9 @@ namespace Hazel {
 		float LineWidth = 2.0f;
 
 		std::array<Ref<Texture2D>, MaxTextureSlots> TextureSlots;
+#ifdef HZ_PLATFORM_MACOS
+        std::array<std::shared_ptr<const MetalTextureVersion>, MaxTextureSlots> TextureVersions;
+#endif
 		uint32_t TextureSlotIndex = 1; // 0 = white texture
 
 		Ref<Texture2D> FontAtlasTexture;
@@ -134,7 +139,7 @@ namespace Hazel {
 
 #ifdef HZ_PLATFORM_MACOS
         if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
-            throw std::logic_error("Full Renderer2D initialization is unavailable; use the bounded offscreen quad seam");
+            throw std::logic_error("Full Renderer2D initialization is unavailable; use InitQuads");
 #endif
 		Font::Initialize();
         s_Data = CreateScope<Renderer2DData>();
@@ -237,18 +242,63 @@ namespace Hazel {
         Font::GetDefault(); // reserve the context-owned fallback before any custom admission
 	}
 
+    void Renderer2D::InitQuads()
+    {
+#ifdef HZ_PLATFORM_MACOS
+        if (RendererAPI::GetAPI() != RendererAPI::API::Metal || s_Data)
+            throw std::logic_error("InitQuads requires an uninitialized Metal Renderer2D");
+        // Publish only a fully initialized state; missing artifacts remain recoverable.
+        auto data = CreateScope<Renderer2DData>();
+        data->QuadOnly = true;
+        data->TextureSlotLimit = 32;
+        data->QuadShader = static_cast<MetalRendererAPI&>(RenderCommand::Backend()).LoadShader("Renderer2D_Quad");
+        data->QuadVertexBufferBase = CreateScope<QuadVertex[]>(32); // eight quads, same qualified profile
+        TextureSpecification specification;
+        specification.GenerateMips = false;
+        specification.MinFilter = specification.MagFilter = TextureFilter::Nearest;
+        data->WhiteTexture = Texture2D::Create(specification);
+        uint32_t white = 0xffffffff;
+        data->WhiteTexture->SetData(&white, sizeof(white));
+        data->TextureSlots[0] = data->WhiteTexture;
+        data->TextureVersions[0] = std::static_pointer_cast<MetalTexture2D>(data->WhiteTexture)->Snapshot();
+        s_Data = std::move(data);
+        StartBatch();
+#else
+        throw std::logic_error("InitQuads requires native Metal 4");
+#endif
+    }
+
 	void Renderer2D::Shutdown()
 	{
 		HZ_PROFILE_FUNCTION();
 
-		s_Data.reset();
-		Font::Shutdown();
+		if (s_Data && s_Data->QuadOnly)
+        {
+#ifdef HZ_PLATFORM_MACOS
+            if (s_Data->SceneActive)
+                static_cast<MetalRendererAPI&>(RenderCommand::Backend()).EndQuadScene();
+#endif
+            s_Data.reset(); // discard unflushed CPU work; submitted frames retain their versions
+            return;
+        }
+        s_Data.reset();
+        Font::Shutdown();
 	}
 
     void Renderer2D::BeginScene(const glm::mat4 &matrix)
     {
 #ifdef HZ_PLATFORM_MACOS
-        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { static_cast<MetalRendererAPI&>(RenderCommand::Backend()).BeginQuadScene(matrix); return; }
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
+        {
+            if (!s_Data || !s_Data->QuadOnly || s_Data->SceneActive)
+                throw std::logic_error("Metal scene requires InitQuads and no active scene");
+            static_cast<MetalRendererAPI&>(RenderCommand::Backend()).BeginQuadScene(matrix);
+            s_Data->SceneActive = true;
+            s_Data->Ordered = true;
+            s_Data->CameraBuffer.ViewProjection = matrix;
+            StartBatch();
+            return;
+        }
 #endif
 
         s_Data->Ordered = false;
@@ -310,7 +360,12 @@ namespace Hazel {
     void Renderer2D::BeginOrderedScene(const Camera &camera, const glm::mat4 &transform)
     {
 #ifdef HZ_PLATFORM_MACOS
-        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { throw std::logic_error("Ordered Renderer2D scenes are outside the offscreen quad profile"); }
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
+        {
+            if (s_Data && s_Data->SceneActive) EndScene();
+            BeginScene(camera, transform);
+            return;
+        }
 #endif
 
         // Drain the previous pass before updating its camera or raster state.
@@ -337,7 +392,14 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
     void Renderer2D::EndScene()
     {
 #ifdef HZ_PLATFORM_MACOS
-        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { static_cast<MetalRendererAPI&>(RenderCommand::Backend()).EndQuadScene(); return; }
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
+        {
+            if (!s_Data || !s_Data->SceneActive) throw std::logic_error("No Renderer2D quad scene to end");
+            Flush(FlushReason::End);
+            static_cast<MetalRendererAPI&>(RenderCommand::Backend()).EndQuadScene();
+            s_Data->SceneActive = false;
+            return;
+        }
 #endif
 
         HZ_PROFILE_FUNCTION();
@@ -356,10 +418,8 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
     }
     void Renderer2D::EnsureRunSpace()
     {
-#ifdef HZ_PLATFORM_MACOS
-        if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
-            throw std::logic_error("This Renderer2D primitive is outside the offscreen quad profile");
-#endif
+        if (!s_Data || (s_Data->QuadOnly && !s_Data->SceneActive))
+            throw std::logic_error("Renderer2D draw requires initialized scene state");
         if (s_Data->Ordered && s_Data->Runs.size() >= 8192)
             NextBatch(FlushReason::Capacity);
     }
@@ -395,6 +455,20 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
     }
     void Renderer2D::FlushOrdered()
     {
+#ifdef HZ_PLATFORM_MACOS
+        if (s_Data->QuadOnly)
+        {
+            auto& backend = static_cast<MetalRendererAPI&>(RenderCommand::Backend());
+            for (const auto& run : s_Data->Runs)
+            {
+                backend.EnqueueQuadRun(s_Data->QuadVertexBufferBase.get(), s_Data->QuadIndexCount / 6 * 4,
+                    run.First, run.Count, s_Data->TextureVersions, s_Data->TextureSlotIndex);
+                ++s_Data->Stats.DrawCalls;
+            }
+            s_Data->Stats.UploadedBytes += s_Data->QuadIndexCount / 6 * 4 * sizeof(QuadVertex);
+            return;
+        }
+#endif
         struct PickingScope {bool Active;glm::bvec4 Saved{true};explicit PickingScope(bool active):Active(active){if(Active)Saved=RenderCommand::GetRasterState().PickingMask;}~PickingScope(){if(Active)RenderCommand::SetPickingMask(Saved);}} picking(s_Data->HasPassiveRuns);
         auto upload = [](auto &buffer, auto &base, auto end) {
             uint32_t bytes = uint32_t(reinterpret_cast<uint8_t *>(end) -
@@ -488,17 +562,31 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
 		s_Data->TextIndexCount = 0;
 		s_Data->TextVertexBufferPtr = s_Data->TextVertexBufferBase.get();
 
-		for(uint32_t i=1;i<s_Data->TextureSlotIndex;++i)s_Data->TextureSlots[i].reset();
+		for (uint32_t i = 1; i < s_Data->TextureSlotIndex; ++i)
+        {
+            s_Data->TextureSlots[i].reset();
+#ifdef HZ_PLATFORM_MACOS
+            s_Data->TextureVersions[i].reset();
+#endif
+        }
         s_Data->TextureSlotIndex = 1;
         s_Data->Runs.clear();s_Data->HasPassiveRuns=false;
 	}
 
 	void Renderer2D::Flush(FlushReason reason)
 	{
-#ifdef HZ_PLATFORM_MACOS
-        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { throw std::logic_error("Metal offscreen quads are individual draws, not batches"); }
-#endif
-
+        if (!s_Data) throw std::logic_error("Renderer2D is not initialized");
+        if (s_Data->QuadOnly)
+        {
+            if (!s_Data->QuadIndexCount) return;
+            const auto start = std::chrono::steady_clock::now();
+            try { FlushOrdered(); }
+            catch (...) { StartBatch(); throw; } // reject the chunk atomically, keep the scene usable
+            ++s_Data->Stats.Flushes[size_t(reason)];
+            s_Data->Stats.SubmitMilliseconds += std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
+            StartBatch(); // an explicit flush consumes the run exactly once
+            return;
+        }
         if(!(s_Data->QuadIndexCount||s_Data->CircleIndexCount||s_Data->TextIndexCount||s_Data->LineVertexCount))return;
         const auto start=std::chrono::steady_clock::now();
         struct TextCompositingScope {
@@ -621,7 +709,7 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
 		constexpr glm::vec2 textureCoords[] = { { 0.0f, 1.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 0.0f, 0.0f } };
 		const float tilingFactor = 1.0f;
 
-		if (s_Data->QuadIndexCount >= Renderer2DData::MaxIndices)
+		if (s_Data->QuadIndexCount >= (s_Data->QuadOnly ? 48u : Renderer2DData::MaxIndices))
 			NextBatch();
 
 		for (size_t i = 0; i < quadVertexCount; i++)
@@ -651,28 +739,32 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
 
     void Renderer2D::DrawSprite(const glm::mat4& transform, const ResolvedSprite& sprite, const glm::vec4& tintColor, int entityID)
 	{
-#ifdef HZ_PLATFORM_MACOS
-        if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
-        {
-            const auto vertices = BuildRenderer2DQuad(transform, sprite.Corners, sprite.UV, tintColor,
-                sprite.TilingFactor, 0, entityID, glm::vec4(-1));
-            static_cast<MetalRendererAPI&>(RenderCommand::Backend()).EnqueueQuad(vertices, sprite.Texture);
-            return;
-        }
-#endif
-
         EnsureRunSpace();
 		HZ_PROFILE_FUNCTION();
         const auto& texture=sprite.Texture;
+        if (s_Data->QuadOnly && tintColor.a != 1)
+            throw std::logic_error("Quad-only Renderer2D requires opaque tint");
+#ifdef HZ_PLATFORM_MACOS
+        std::shared_ptr<const MetalTextureVersion> version;
+        if (s_Data->QuadOnly && texture)
+        {
+            auto native = std::dynamic_pointer_cast<MetalTexture2D>(texture);
+            if (!native) throw std::logic_error("Quad requires a production Metal texture");
+            version = native->Snapshot();
+        }
+#endif
 
-
-		if (s_Data->QuadIndexCount >= Renderer2DData::MaxIndices)
+		if (s_Data->QuadIndexCount >= (s_Data->QuadOnly ? 48u : Renderer2DData::MaxIndices))
 			NextBatch();
 
 		float textureIndex = 0.0f;
 		for (uint32_t i = 1; texture && i < s_Data->TextureSlotIndex; i++)
 		{
-			if (*s_Data->TextureSlots[i] == *texture)
+			if (*s_Data->TextureSlots[i] == *texture
+#ifdef HZ_PLATFORM_MACOS
+                && (!s_Data->QuadOnly || s_Data->TextureVersions[i] == version)
+#endif
+            )
 			{
 				textureIndex = (float)i;
 				break;
@@ -686,6 +778,9 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
 
 			textureIndex = (float)s_Data->TextureSlotIndex;
 			s_Data->TextureSlots[s_Data->TextureSlotIndex] = texture;
+#ifdef HZ_PLATFORM_MACOS
+            s_Data->TextureVersions[s_Data->TextureSlotIndex] = version;
+#endif
 			s_Data->TextureSlotIndex++;
 		}
 
@@ -735,6 +830,8 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
 
 	void Renderer2D::DrawCircle(const glm::mat4& transform, const glm::vec4& color, float thickness /*= 1.0f*/, float fade /*= 0.005f*/, int entityID /*= -1*/)
 	{
+        if (s_Data && s_Data->QuadOnly) throw std::logic_error("Primitive unavailable in quad-only Renderer2D");
+
         EnsureRunSpace();
 		HZ_PROFILE_FUNCTION();
 
@@ -762,6 +859,8 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
 
 	void Renderer2D::DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color, int entityID)
 	{
+        if (s_Data && s_Data->QuadOnly) throw std::logic_error("Primitive unavailable in quad-only Renderer2D");
+
         EnsureRunSpace();
 		if (s_Data->LineVertexCount + 2 > Renderer2DData::MaxVertices)
 			NextBatch();
@@ -876,6 +975,8 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
                                     const glm::mat4 &transform, const glm::vec4 &color,
                                     int entityID,const std::vector<Text::Span>& spans,glm::vec4 interaction)
     {
+        if (s_Data && s_Data->QuadOnly) throw std::logic_error("Primitive unavailable in quad-only Renderer2D");
+
         if (glyphs.empty() || color.a==0 || interaction.a==0)
             return;
         if (!font)throw std::invalid_argument("Text requires a usable font");
@@ -910,6 +1011,8 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
     void Renderer2D::DrawString(const std::string &string, Ref<Font> font,
                                 const glm::mat4 &transform, const TextParams &params, int entityID)
     {
+        if (s_Data && s_Data->QuadOnly) throw std::logic_error("Text unavailable in quad-only Renderer2D");
+
         thread_local std::vector<TextGlyph> glyphs;
         glyphs.clear();
         try {
@@ -922,6 +1025,8 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
 
     void Renderer2D::DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID)
 	{
+        if (s_Data && s_Data->QuadOnly) throw std::logic_error("Text unavailable in quad-only Renderer2D");
+
         if(!component.Spans.empty()&&string!=component.TextString)throw std::invalid_argument("Rich component draws require its canonical source; replace source and spans atomically");
         if(!component.ResolvedFont || component.ResolvedSelection!=component.Font)
             throw std::invalid_argument("Resolve the text family before component drawing; standalone draws take an explicit Font face");
