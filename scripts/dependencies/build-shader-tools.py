@@ -127,6 +127,7 @@ def build(configuration, options, sources, system, architecture):
     shutil.copytree(sources['shaderc'] / 'libshaderc/include/shaderc', include / 'shaderc', dirs_exist_ok=True)
     shutil.copytree(sources['spirv-tools'] / 'include/spirv-tools', include / 'spirv-tools', dirs_exist_ok=True)
     shutil.copytree(sources['spirv-headers'] / 'include/spirv', include / 'spirv', dirs_exist_ok=True)
+    (include / 'hazel_shader_toolchain.h').write_text('#pragma once\n#define HAZEL_SHADER_PINS_SHA256 \"' + hashlib.sha256(PINS_FILE.read_bytes()).hexdigest() + '\"\n')
     cross_headers = include / 'spirv_cross'
     cross_headers.mkdir(exist_ok=True)
     for header in (*sources['spirv-cross'].glob('*.hpp'), *sources['spirv-cross'].glob('*.h')):

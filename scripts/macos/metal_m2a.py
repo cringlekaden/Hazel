@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import shutil
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import hazel as hz
 
@@ -27,15 +28,15 @@ def main():
     commands = []
     os.environ["DYLD_LIBRARY_PATH"] = str(hz.mono_prefix() / "lib")
 
-    def run(command, log, env=None):
+    def run(command, log, env=None, cwd=None):
         commands.append(list(map(str, command)))
         with (output / log).open('w') as stream:
-            result = subprocess.run(list(map(str, command)), stdout=stream, stderr=subprocess.STDOUT, env=env)
+            result = subprocess.run(list(map(str, command)), stdout=stream, stderr=subprocess.STDOUT, env=env, cwd=cwd)
         return result.returncode
 
     if args.build:
         # Keep the established producer setup and Premake generation; target only this proof.
-        code = 'import sys; sys.path.insert(0,"scripts"); import hazel; hazel.build("' + args.config + '",tests=True,targets=["MetalM2ASmoke"])'
+        code = 'import sys; sys.path.insert(0,"scripts"); import hazel; hazel.build("' + args.config + '",tests=True,targets=["MetalShaderTools", "MetalM2ASmoke"])'
         if run([sys.executable, '-c', code], 'producer.log'):
             raise RuntimeError('Build failed; see producer.log')
     executable = hz.ROOT / f'bin/{args.config}-macos-arm64/MetalM2ASmoke/MetalM2ASmoke'
@@ -45,14 +46,26 @@ def main():
     for source in sorted(artifacts.glob('*.metal')):
         air = source.with_suffix('.air')
         library = source.with_suffix('.metallib')
-        status = run(['xcrun', '-sdk', 'macosx', 'metal', '-std=metal3.0', '-fno-fast-math', '-c', source, '-o', air], source.name + '.compile.log')
+        status = run(['xcrun', '-sdk', 'macosx', 'metal', '-std=metal3.0', '-fno-fast-math', '-mmacosx-version-min=27.0', '-c', source.name, '-o', air.name], source.name + '.compile.log', cwd=artifacts)
         if not status:
-            status = run(['xcrun', '-sdk', 'macosx', 'metallib', air, '-o', library], source.name + '.link.log')
+            status = run(['xcrun', '-sdk', 'macosx', 'metallib', air.name, '-o', library.name], source.name + '.link.log', cwd=artifacts)
         if 'warning:' in (output / (source.name + '.compile.log')).read_text():
             status = 1
         offline[source.name] = 'PASS' if not status else 'FAIL'
+    if translation == 0 and all(v == 'PASS' for v in offline.values()):
+        producer = '\n'.join(hz.output(['xcrun', 'metal', '--version']).splitlines()[:2]) + '\nSDK=' + hz.output(['xcrun', '--sdk', 'macosx', '--show-sdk-version']) + '\nmetal3.0 -fno-fast-math -mmacosx-version-min=27.0'
+        (artifacts / 'producer.txt').write_text(producer)
+        packaged = artifacts / 'Resources/shaders/metal'
+        packaged.mkdir(parents=True)
+        tool = hz.binaries(args.config) / 'MetalShaderTools/MetalShaderTools'
+        for source in sorted((hz.ROOT / 'Hazel/Resources/shaders').glob('*.glsl')):
+            for slots in ([16, 32] if source.stem == 'Renderer2D_Quad' else [32]):
+                variant = source.stem + (f'-{slots}' if source.stem == 'Renderer2D_Quad' else '')
+                if run([tool, '--pack', source.stem, slots, source, artifacts], variant + '.pack.log'):
+                    raise RuntimeError('Artifact packing failed: ' + variant)
+                shutil.copyfile(artifacts / (variant + '.hzmetal'), packaged / (variant + '.hzmetal'))
     environment = os.environ.copy()
-    environment.update(MTL_DEBUG_LAYER='1', MTL_DEBUG_LAYER_ERROR_MODE='assert', MTL_DEBUG_LAYER_WARNING_MODE='nslog', MTL_SHADER_VALIDATION='1')
+    environment.update(PATH='/nonexistent', DEVELOPER_DIR='/nonexistent', MTL_DEBUG_LAYER='1', MTL_DEBUG_LAYER_ERROR_MODE='assert', MTL_DEBUG_LAYER_WARNING_MODE='nslog', MTL_SHADER_VALIDATION='1')
     native = run([executable, '--native', artifacts], 'native.log', environment) if translation == 0 and all(v == 'PASS' for v in offline.values()) else None
     native_text = (output / 'native.log').read_text() if native is not None else ''
     validation_diagnostics = [line for line in native_text.splitlines()

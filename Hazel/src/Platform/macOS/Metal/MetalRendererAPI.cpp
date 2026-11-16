@@ -1,19 +1,37 @@
 #include "MetalRendererAPI.h"
 #include "MetalDevice.h"
+#include "MetalShader.h"
 #include <stdexcept>
 namespace Hazel {
-namespace { [[noreturn]] void Unavailable() { throw std::logic_error("Metal 4 drawing services are not implemented in M1"); } }
+namespace { [[noreturn]] void Unavailable() { throw std::logic_error("Metal 4 drawing services are not implemented"); } }
 MetalRendererAPI::MetalRendererAPI():m_Device(std::make_shared<MetalDevice>()) {
     m_Caps.Vendor="Apple"; m_Caps.Device=m_Device->NativeDevice()->name()->utf8String(); m_Caps.Driver="Metal 4";
 }
-MetalRendererAPI::~MetalRendererAPI() = default;
+MetalRendererAPI::~MetalRendererAPI() { Shutdown(); }
 void MetalRendererAPI::Init(const RendererSettings& settings) {
     m_Resolution.Requested=settings; m_Resolution.Effective=settings;
     m_Resolution.Effective.TextureSlots=0; m_Resolution.Effective.PreferShaderBinaries=false;
     m_Resolution.TextureReason="M1 presentation only; drawing resources unavailable";
-    m_Resolution.ShaderReason="M2 shader qualification has not begun";
+    m_Resolution.ShaderReason="Offline Metal shader resources available; drawing services are not implemented";
 }
-void MetalRendererAPI::Shutdown() { m_Device->Drain(); }
+void MetalRendererAPI::Shutdown() {
+    std::lock_guard<std::mutex> lock(m_ShaderMutex);
+    if(m_Stopped) return;
+    m_Device->Drain();
+    m_Shaders.clear();
+    m_Stopped=true;
+}
+std::shared_ptr<Shader> MetalRendererAPI::LoadShader(const std::string& name, uint32_t slots) {
+    MetalShaderArtifact::ValidateName(name, slots);
+    std::lock_guard<std::mutex> lock(m_ShaderMutex);
+    if(m_Stopped) throw std::logic_error("Cannot load Metal shaders after backend shutdown");
+    const auto key=name+"-"+std::to_string(slots);
+    auto found=m_Shaders.find(key);
+    if(found!=m_Shaders.end()) return found->second;
+    auto shader=std::make_shared<MetalShader>(m_Device,name,slots);
+    m_Shaders.emplace(key,shader); // Publish only after library/pipeline/reflection validation.
+    return shader;
+}
 void MetalRendererAPI::PushState() { Unavailable(); }
 void MetalRendererAPI::PopState() { Unavailable(); }
 void MetalRendererAPI::SetPickingMask(glm::bvec4) { Unavailable(); }

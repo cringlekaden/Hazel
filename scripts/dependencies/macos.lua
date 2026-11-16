@@ -73,6 +73,54 @@ if _OPTIONS["migration-tests"] then
         filter "configurations:Release"
             optimize "On"
         filter {}
+    project "MetalShaderTools"
+        location (root .. "/build/MetalShaderTools")
+        kind "ConsoleApp"
+        language "C++"
+        cppdialect "C++17"
+        warnings "Extra"
+        targetdir (root .. "/bin/" .. outputdir .. "/%{prj.name}")
+        objdir (root .. "/bin-int/" .. outputdir .. "/%{prj.name}")
+        files { root .. "/tools/MetalShaderTools/MetalShaderTools.cpp" }
+        links { "ApplicationServices.framework" }
+        includedirs { root .. "/Hazel/src" }
+        externalincludedirs { ShaderToolsIncludes, root .. "/Hazel/vendor/metal-cpp" }
+        buildoptions { "-fblocks" }
+        links { "spirv-cross-msl" }
+        externalincludedirs { root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/imgui", root .. "/Hazel/vendor/GLFW/include", root .. "/Hazel/vendor/Glad/include" }
+        libdirs { ShaderToolsRoot .. "/lib" }
+        links { "Hazel" }
+        links (ShaderToolsLinks)
+        defines { "GLFW_INCLUDE_NONE" }
+        filter "configurations:Debug"
+            symbols "On"
+        filter "configurations:Release"
+            optimize "On"
+        filter {}
+    project "MetalShaderSmoke"
+        location (root .. "/build/MetalShaderSmoke")
+        kind "ConsoleApp"
+        language "C++"
+        cppdialect "C++17"
+        warnings "Extra"
+        targetdir (root .. "/bin/" .. outputdir .. "/%{prj.name}")
+        objdir (root .. "/bin-int/" .. outputdir .. "/%{prj.name}")
+        files { root .. "/tests/macos/MetalShaderSmoke.cpp" }
+        links { "ApplicationServices.framework" }
+        includedirs { root .. "/Hazel/src" }
+        externalincludedirs { ShaderToolsIncludes, root .. "/Hazel/vendor/metal-cpp" }
+        buildoptions { "-fblocks" }
+        links { "spirv-cross-msl" }
+        externalincludedirs { root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/imgui", root .. "/Hazel/vendor/GLFW/include", root .. "/Hazel/vendor/Glad/include" }
+        libdirs { ShaderToolsRoot .. "/lib" }
+        links { "Hazel" }
+        links (ShaderToolsLinks)
+        defines { "GLFW_INCLUDE_NONE" }
+        filter "configurations:Debug"
+            symbols "On"
+        filter "configurations:Release"
+            optimize "On"
+        filter {}
 end
 project "freetype"
     defines { "FT_CONFIG_OPTION_SYSTEM_ZLIB" }
@@ -105,9 +153,12 @@ if _OPTIONS["migration-tests"] then
     table.insert(consumers, "MigrationExampleGamesSmoke")
     table.insert(consumers, "MetalM1Smoke")
     table.insert(consumers, "MetalM2ASmoke")
+    table.insert(consumers, "MetalShaderTools")
+    table.insert(consumers, "MetalShaderSmoke")
 end
 for _, name in ipairs(consumers) do
     project (name)
+        links { "spirv-cross-msl" }
         externalincludedirs { mono .. "/include/mono-2.0" }
         links { "ImGui", "GLFW", "Glad", "ImGuizmo", "yaml-cpp", "Box2D", "msdf-atlas-gen", "msdfgen", "freetype", "HarfBuzz", "UniBreak", "SheenBidi" }
         links { "Metal.framework", "QuartzCore.framework", "Foundation.framework", "Cocoa.framework", "IOKit.framework", "CoreFoundation.framework", "OpenGL.framework", "CoreAudio.framework", "AudioToolbox.framework" }

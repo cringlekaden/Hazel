@@ -3,6 +3,11 @@
 #include "Hazel/Renderer/Resources/Shader.h"
 #include "Hazel/Renderer/Renderer.h"
 #include "Platform/OpenGL/OpenGLShader.h"
+#ifdef HZ_PLATFORM_MACOS
+#include "Platform/macOS/Metal/MetalRendererAPI.h"
+#include "Hazel/Core/Resources.h"
+#include "Hazel/Renderer/RenderCommand.h"
+#endif
 
 namespace Hazel {
 
@@ -14,6 +19,16 @@ namespace Hazel {
                 HZ_CORE_ASSERT(false, "RendererAPI::None is invalid...");
                 return nullptr;
 
+#ifdef HZ_PLATFORM_MACOS
+            case RendererAPI::API::Metal:
+            {
+                const auto source = std::filesystem::absolute(std::filesystem::u8path(filepath)).lexically_normal();
+                const auto name = source.stem().u8string();
+                if (source != Resources::Resolve("shaders/" + name + ".glsl").lexically_normal())
+                    throw std::invalid_argument("Metal shaders require canonical engine GLSL resource references");
+                return static_cast<MetalRendererAPI&>(RenderCommand::Backend()).LoadShader(name);
+            }
+#endif
             case RendererAPI::API::OpenGL:
                 return CreateRef<OpenGLShader>(filepath);
         }
@@ -31,6 +46,10 @@ namespace Hazel {
                     "RendererAPI::None is invalid...");
                 return nullptr;
 
+#ifdef HZ_PLATFORM_MACOS
+            case RendererAPI::API::Metal:
+                throw std::runtime_error("Metal shaders require offline .hzmetal resources; inline source compilation is unavailable");
+#endif
             case RendererAPI::API::OpenGL:
                 return CreateRef<OpenGLShader>(name, vertexSource, fragmentSource);
         }

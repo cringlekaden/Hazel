@@ -3,9 +3,12 @@
 #include "MetalProof.h"
 #include <filesystem>
 #include <functional>
+#include <mutex>
+#include <unordered_map>
 
 namespace Hazel {
 class MetalDevice;
+class Shader;
 // Only presentation is implemented in M1. Drawing calls fail, never enter OpenGL.
 class MetalRendererAPI final : public RendererAPI {
 public:
@@ -31,6 +34,7 @@ public:
     void DrawLines(const Ref<VertexArray>&, uint32_t, uint32_t) override;
     void SetLineWidth(float) override;
     uint32_t GetMaxTextureSlots() const override { return 0; }
+    std::shared_ptr<Shader> LoadShader(const std::string& name, uint32_t slots = 32);
     std::shared_ptr<MetalDevice> Device() const { return m_Device; }
     std::shared_ptr<MetalProofObserver> Observe() const;
     // Explicit native diagnostics; no production application/CLI enables these.
@@ -43,6 +47,9 @@ public:
     static void FailNextStartupForTesting(MetalStartupFailure point);
 private:
     std::shared_ptr<MetalDevice> m_Device;
+    std::mutex m_ShaderMutex;
+    bool m_Stopped = false;
+    std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;
     RendererCapabilities m_Caps;
     RendererResolution m_Resolution;
 };

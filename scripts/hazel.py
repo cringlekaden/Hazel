@@ -219,7 +219,7 @@ def dependencies(configuration, generator):
                  manifest['system'] == SYSTEM and manifest.get('architecture', 'x86_64') == ARCHITECTURE and manifest['source_status'] == 'clean' and
                  manifest['build_system'] == 'Premake' and manifest.get('build_inputs_sha256') == dependency_digest() and
                  all((sdk / 'lib' / name).is_file() and (sdk / 'lib' / name).stat().st_size > 0 for name in libraries) and
-                 all((sdk / 'include' / name).is_file() for name in ('shaderc/shaderc.hpp', 'spirv_cross/spirv_glsl.hpp', 'spirv-tools/libspirv.h')))
+                 all((sdk / 'include' / name).is_file() for name in ('shaderc/shaderc.hpp', 'spirv_cross/spirv_glsl.hpp', 'spirv_cross/spirv_msl.hpp', 'spirv-tools/libspirv.h', 'hazel_shader_toolchain.h')))
         if SYSTEM == 'macos':
             toolchain = macos_toolchain()
             ready = (ready and manifest.get('sdk_version') == toolchain['sdk_version'] and

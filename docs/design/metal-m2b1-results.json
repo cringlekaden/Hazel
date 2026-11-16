@@ -1,0 +1,356 @@
+{
+  "schemaVersion": 1,
+  "milestone": "Metal 4 M2-B1 production shader/cache integration only",
+  "verdict": "PASS",
+  "date": "2026-11-16T00:26:15.071133-05:00",
+  "branch": "feature/3d-foundations",
+  "baselineHEAD": "119678a00361e53c483d55a454a8886b64fcafa9",
+  "qualifiedSourceSHA256": {
+    "Hazel/src/Hazel/Renderer/Resources/Shader.cpp": "a2b814365662a75a2ff349849d459fbaddcd366946b5bc3e05a483c89a56edd5",
+    "Hazel/src/Hazel/Renderer/Resources/Shader.h": "5062078934e6ada07eca0acf868a64f4cb7b1664e909f5d0273fd9dabff60b6f",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererAPI.cpp": "7a6d0817ba2d94ac168ac23789d8374b7308ceb5f066f11bb7ee6dabe0283ffc",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererAPI.h": "22fce11652f079f48dcc6f1ee882d2408ecdd88dee257dc32b7be56944609fcd",
+    "Hazel/src/Platform/macOS/Metal/MetalShader.cpp": "47683c9ab19688b0612e61bb556de002f69396e0f5d99ac05782d5e4a86fa42a",
+    "Hazel/src/Platform/macOS/Metal/MetalShader.h": "e0ebce2c9fbef7174b6b07807b0da8504037dcbc034f77767586b556729f32d9",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderArtifact.cpp": "d5355d5f254c1b602383a0fb14c878bf9b4fe1f1f1e91966f2509bc6a10af0a0",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderArtifact.h": "39834c24ad9556db734acb8977b4deada47454ad93839ad05e9ee581eded52b5",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderCompiler.cpp": "3e503daa931c2e130440d1ebf303d5a467a8bcd577982587d19f7eecf9fed054",
+    "scripts/dependencies/build-shader-tools.py": "a9c07e075baa05663c20637d913db1c8bf7151eea1329c60383f71bba6e1afec",
+    "scripts/dependencies/macos.lua": "5249298ebe3abeb4094c53b7186efda1d1d9a6f4f24cb324c03901ae953df8f8",
+    "scripts/hazel.py": "1c8426dfc236346fd9a65129dc30ef2ebaeb77b25d2e4e873ce351b43d555ea7",
+    "scripts/macos/metal_m2a.py": "6a2eed694d98c4c3538611cfb79d6aebf7fc8286c241031b9aac107874f20f1c",
+    "scripts/macos/metal_m2b1.py": "6b1cd4e2b23d8318e3b10e3e73e31a6cd910311fb787c0ad385ec694bd8156cb",
+    "scripts/macos/metal_shaders.py": "3a0572088ada92ab399e39df7b25f02720d52b1a35b24920b7a7519427d8065e",
+    "tests/macos/MetalM2AShaders.cpp": "237669a8d978b0039514291904e93f976c04c1645814d0352c6e3403f7257700",
+    "tests/macos/MetalM2ASmoke.cpp": "63fd46f3997581fadce2ad33fc682cba8a520dd75a3b5fa1cc8fdb5f2271cd23",
+    "tests/macos/MetalShaderSmoke.cpp": "0c9122ee2f270fdb4e06b0d2ca45a529cf4abf8c4c03143e5183f27b7a100e16",
+    "tools/MetalShaderTools/MetalShaderTools.cpp": "157924ff3b931c77faf6d9d71aac9f3782f76b2120917c2efb9e42a0b76ec1d8"
+  },
+  "filesChanged": [
+    "Hazel/src/Hazel/Renderer/Resources/Shader.cpp",
+    "Hazel/src/Hazel/Renderer/Resources/Shader.h",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererAPI.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererAPI.h",
+    "Hazel/src/Platform/macOS/Metal/MetalShader.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalShader.h",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderArtifact.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderArtifact.h",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderCompiler.cpp",
+    "docs/agents/ARCHITECTURE.md",
+    "docs/design/metal-m2b1-results.json",
+    "docs/design/metal-m2b1.md",
+    "docs/development.md",
+    "scripts/dependencies/build-shader-tools.py",
+    "scripts/dependencies/macos.lua",
+    "scripts/hazel.py",
+    "scripts/macos/metal_m2a.py",
+    "scripts/macos/metal_m2b1.py",
+    "scripts/macos/metal_shaders.py",
+    "tests/macos/MetalM2AShaders.cpp",
+    "tests/macos/MetalM2ASmoke.cpp",
+    "tests/macos/MetalShaderSmoke.cpp",
+    "tools/MetalShaderTools/MetalShaderTools.cpp"
+  ],
+  "configurationResults": {
+    "Debug": {
+      "verdict": "PASS",
+      "gates": {
+        "shader-qualification": "PASS",
+        "cold-production": "PASS",
+        "deterministic-relocated-production": "PASS",
+        "warm-production": "PASS",
+        "warm-no-rewrite": "PASS",
+        "forced-production": "PASS",
+        "corrupt-production-recovery": "PASS",
+        "profile-recovery": "PASS",
+        "producer-invalidation": "PASS",
+        "source-invalidation": "PASS",
+        "unchanged-variant-reuse": "PASS",
+        "canonical-source-restored": "PASS",
+        "source-free-package": "PASS",
+        "production-loading": "PASS",
+        "native-validation": "PASS"
+      },
+      "artifactSHA256": {
+        "DisplayOutput.hzmetal": "39fe8aa46d2fc8c2a54c6d787882827179e3b277492d5991a6f4bc74ba92f278",
+        "EntityOutline.hzmetal": "8f8b5ae26060da301e347503af9a889342a0fd2b2e3c29d432755d1e53ef50ff",
+        "EnvironmentSky.hzmetal": "fc802eb67f0d2f4cd2d3ef9194c21a8f8a8655507da0ed485dfa687f138331a2",
+        "ForwardPBR.hzmetal": "1f494139306252fc2c5b246f3847711a2fa8dd6e06c209792e712cc08d283564",
+        "Renderer2D_Circle.hzmetal": "b3c0513cc894c3cf61288ad6625081a53f7c260ac9b2344153b75850448acfda",
+        "Renderer2D_Line.hzmetal": "94b381919cc668e48b36a3f85e5f0a17622be9982a6801fd3207c7c553f99df3",
+        "Renderer2D_Quad-16.hzmetal": "d6dc77ec51274a448be3751ea6940339b8e567e7baada72b405f52358319ecf0",
+        "Renderer2D_Quad-32.hzmetal": "9b27836ce452e162809395fd22dbf07e424f79d1ecbd7b4ab4c2fd4ef8747a78",
+        "Renderer2D_Text.hzmetal": "8d0ab56d1c6a18415ef295c1c0601a6f6cc5c4a28735e8b2740cc9b93983f85d",
+        "WorldPresentation.hzmetal": "72e07feca5e7805a549dda5d84d4cf3a819ece9511bac827d3e31a13a556adba"
+      },
+      "qualification": {
+        "DisplayOutput.fragment.metal": "PASS",
+        "DisplayOutput.vertex.metal": "PASS",
+        "EntityOutline.fragment.metal": "PASS",
+        "EntityOutline.vertex.metal": "PASS",
+        "EnvironmentSky.fragment.metal": "PASS",
+        "EnvironmentSky.vertex.metal": "PASS",
+        "ForwardPBR.fragment.metal": "PASS",
+        "ForwardPBR.vertex.metal": "PASS",
+        "Renderer2D_Circle.fragment.metal": "PASS",
+        "Renderer2D_Circle.vertex.metal": "PASS",
+        "Renderer2D_Line.fragment.metal": "PASS",
+        "Renderer2D_Line.vertex.metal": "PASS",
+        "Renderer2D_Quad-16.fragment.metal": "PASS",
+        "Renderer2D_Quad-16.vertex.metal": "PASS",
+        "Renderer2D_Quad-32.fragment.metal": "PASS",
+        "Renderer2D_Quad-32.vertex.metal": "PASS",
+        "Renderer2D_Text.fragment.metal": "PASS",
+        "Renderer2D_Text.vertex.metal": "PASS",
+        "WorldPresentation.fragment.metal": "PASS",
+        "WorldPresentation.vertex.metal": "PASS"
+      },
+      "native": "PASS",
+      "evidence": "build/metal-m2b1-evidence/debug-qualified",
+      "productionRejections": 17
+    },
+    "Release": {
+      "verdict": "PASS",
+      "gates": {
+        "shader-qualification": "PASS",
+        "cold-production": "PASS",
+        "deterministic-relocated-production": "PASS",
+        "warm-production": "PASS",
+        "warm-no-rewrite": "PASS",
+        "forced-production": "PASS",
+        "corrupt-production-recovery": "PASS",
+        "profile-recovery": "PASS",
+        "producer-invalidation": "PASS",
+        "source-invalidation": "PASS",
+        "unchanged-variant-reuse": "PASS",
+        "canonical-source-restored": "PASS",
+        "source-free-package": "PASS",
+        "production-loading": "PASS",
+        "native-validation": "PASS"
+      },
+      "artifactSHA256": {
+        "DisplayOutput.hzmetal": "39fe8aa46d2fc8c2a54c6d787882827179e3b277492d5991a6f4bc74ba92f278",
+        "EntityOutline.hzmetal": "8f8b5ae26060da301e347503af9a889342a0fd2b2e3c29d432755d1e53ef50ff",
+        "EnvironmentSky.hzmetal": "fc802eb67f0d2f4cd2d3ef9194c21a8f8a8655507da0ed485dfa687f138331a2",
+        "ForwardPBR.hzmetal": "1f494139306252fc2c5b246f3847711a2fa8dd6e06c209792e712cc08d283564",
+        "Renderer2D_Circle.hzmetal": "b3c0513cc894c3cf61288ad6625081a53f7c260ac9b2344153b75850448acfda",
+        "Renderer2D_Line.hzmetal": "94b381919cc668e48b36a3f85e5f0a17622be9982a6801fd3207c7c553f99df3",
+        "Renderer2D_Quad-16.hzmetal": "d6dc77ec51274a448be3751ea6940339b8e567e7baada72b405f52358319ecf0",
+        "Renderer2D_Quad-32.hzmetal": "9b27836ce452e162809395fd22dbf07e424f79d1ecbd7b4ab4c2fd4ef8747a78",
+        "Renderer2D_Text.hzmetal": "8d0ab56d1c6a18415ef295c1c0601a6f6cc5c4a28735e8b2740cc9b93983f85d",
+        "WorldPresentation.hzmetal": "72e07feca5e7805a549dda5d84d4cf3a819ece9511bac827d3e31a13a556adba"
+      },
+      "qualification": {
+        "DisplayOutput.fragment.metal": "PASS",
+        "DisplayOutput.vertex.metal": "PASS",
+        "EntityOutline.fragment.metal": "PASS",
+        "EntityOutline.vertex.metal": "PASS",
+        "EnvironmentSky.fragment.metal": "PASS",
+        "EnvironmentSky.vertex.metal": "PASS",
+        "ForwardPBR.fragment.metal": "PASS",
+        "ForwardPBR.vertex.metal": "PASS",
+        "Renderer2D_Circle.fragment.metal": "PASS",
+        "Renderer2D_Circle.vertex.metal": "PASS",
+        "Renderer2D_Line.fragment.metal": "PASS",
+        "Renderer2D_Line.vertex.metal": "PASS",
+        "Renderer2D_Quad-16.fragment.metal": "PASS",
+        "Renderer2D_Quad-16.vertex.metal": "PASS",
+        "Renderer2D_Quad-32.fragment.metal": "PASS",
+        "Renderer2D_Quad-32.vertex.metal": "PASS",
+        "Renderer2D_Text.fragment.metal": "PASS",
+        "Renderer2D_Text.vertex.metal": "PASS",
+        "WorldPresentation.fragment.metal": "PASS",
+        "WorldPresentation.vertex.metal": "PASS"
+      },
+      "native": "PASS",
+      "evidence": "build/metal-m2b1-evidence/release-qualified",
+      "productionRejections": 17
+    }
+  },
+  "debugFinalNative": "build/metal-m2b1-evidence/debug-native-final.log",
+  "debugFinalProduction": "build/metal-m2b1-evidence/debug-production-final.log",
+  "crossConfigurationArtifactsIdentical": true,
+  "readbacks": {
+    "Debug-line-ortho": {
+      "interior": 210,
+      "exterior": 618,
+      "maxColorError": 0.0,
+      "maxDepthError": 0.0,
+      "signedID": -123456789,
+      "clearID": -1,
+      "sha256": "3a57e281b38979a55bf40955483029d0f3ba3997a5672fb067dca2efa49d4931"
+    },
+    "Debug-line-perspective": {
+      "interior": 210,
+      "exterior": 618,
+      "maxColorError": 0.0,
+      "maxDepthError": 0.0,
+      "signedID": -123456789,
+      "clearID": -1,
+      "sha256": "153ddb5de2bffbabd7bcdd9c1c31b41f18d98dcfead4d7aa0716df957b845f51"
+    },
+    "Debug-quad32": {
+      "interior": 210,
+      "exterior": 618,
+      "maxColorError": 0.0,
+      "maxDepthError": 0.0,
+      "signedID": -123456789,
+      "clearID": -1,
+      "sha256": "3a57e281b38979a55bf40955483029d0f3ba3997a5672fb067dca2efa49d4931"
+    },
+    "Release-line-ortho": {
+      "interior": 210,
+      "exterior": 618,
+      "maxColorError": 0.0,
+      "maxDepthError": 0.0,
+      "signedID": -123456789,
+      "clearID": -1,
+      "sha256": "3a57e281b38979a55bf40955483029d0f3ba3997a5672fb067dca2efa49d4931"
+    },
+    "Release-line-perspective": {
+      "interior": 210,
+      "exterior": 618,
+      "maxColorError": 0.0,
+      "maxDepthError": 0.0,
+      "signedID": -123456789,
+      "clearID": -1,
+      "sha256": "153ddb5de2bffbabd7bcdd9c1c31b41f18d98dcfead4d7aa0716df957b845f51"
+    },
+    "Release-quad32": {
+      "interior": 210,
+      "exterior": 618,
+      "maxColorError": 0.0,
+      "maxDepthError": 0.0,
+      "signedID": -123456789,
+      "clearID": -1,
+      "sha256": "3a57e281b38979a55bf40955483029d0f3ba3997a5672fb067dca2efa49d4931"
+    }
+  },
+  "compilerWarnings": {
+    "debug-build-initial.log": {
+      "warningOccurrences": 121,
+      "changedFileWarnings": [],
+      "errors": 0
+    },
+    "debug-production-build.log": {
+      "warningOccurrences": 0,
+      "changedFileWarnings": [],
+      "errors": 0
+    },
+    "debug-build-final.log": {
+      "warningOccurrences": 1,
+      "changedFileWarnings": [],
+      "errors": 0
+    },
+    "release-build.log": {
+      "warningOccurrences": 121,
+      "changedFileWarnings": [],
+      "errors": 0
+    },
+    "checkpoint-builds.log": {
+      "warningOccurrences": 42,
+      "changedFileWarnings": [],
+      "errors": 0
+    },
+    "shader-pool-builds.log": {
+      "warningOccurrences": 6,
+      "changedFileWarnings": [],
+      "errors": 0
+    },
+    "factory-builds.log": {
+      "warningOccurrences": 6,
+      "changedFileWarnings": [],
+      "errors": 0
+    }
+  },
+  "openGL": {
+    "Debug": {
+      "verdict": "PASS",
+      "profile": "Native Apple OpenGL",
+      "tests": [
+        "ShaderToolsSmoke",
+        "RendererSmoke",
+        "RendererFeaturesSmoke",
+        "Renderer2DSmoke",
+        "SceneGPUSmoke"
+      ],
+      "evidence": "build/metal-m2b1-evidence/debug-opengl.log"
+    },
+    "Release": {
+      "verdict": "PASS",
+      "profile": "Native Apple OpenGL",
+      "tests": [
+        "ShaderToolsSmoke",
+        "RendererSmoke",
+        "RendererFeaturesSmoke",
+        "Renderer2DSmoke",
+        "SceneGPUSmoke"
+      ],
+      "evidence": "build/metal-m2b1-evidence/release-opengl.log"
+    }
+  },
+  "headerCheck": {
+    "verdict": "PASS",
+    "mode": "Direct include, C++17, Wall/Wextra, no PCH",
+    "evidence": "build/metal-m2b1-evidence/header-check.log"
+  },
+  "SDKWorkflow": {
+    "verdict": "PASS",
+    "tests": 7
+  },
+  "additionalPresentationRegression": {
+    "verdict": "BLOCKED before submission",
+    "reason": "Intended GUI session was locked",
+    "evidence": "build/metal-m2b1-evidence/m1-debug/console-before.json",
+    "scope": "Additional presentation coverage, not a predeclared M2-B1 shader/artifact acceptance gate; Release not attempted after same prerequisite failure"
+  },
+  "portability": {
+    "macOS": "PASS native M4 Debug/Release",
+    "Linux": "NOT RUN: Docker daemon unavailable",
+    "Windows": "NOT RUN: no host/toolchain",
+    "physicalIntelHD4000": "NOT RUN: hardware unavailable",
+    "inspection": "macOS-only implementation/tool targets and framework links; portable Shader header enum addition only"
+  },
+  "publicDocs": {
+    "verdict": "PASS",
+    "guide": "docs/development.md",
+    "scope": "Experimental offline resources only; no end-user Metal support",
+    "CI": "NOT RUN for this checkpoint",
+    "files": 67,
+    "links": 574,
+    "findings": 0
+  },
+  "limitations": [
+    "No drawing or loose-uniform commands; no renderer parity, render-pass redesign, Renderer3D, ImGui or M2-B2",
+    "Fixed single-sample RGBA32Float and optional R32Sint pipeline profile",
+    "No hot reload, cache garbage collection or native GPU binary disk archive",
+    "Source-free test covers shader package/runtime dependency relocation, not a complete game export",
+    "Scene UV/derivative/color-space/PBR/IBL visual and numerical parity remain separately scoped"
+  ],
+  "recommendedM2B2": "One offscreen quad through the existing submission owner with completion-retained shader, per-frame vertex/argument-buffer versions and explicit residency; exact color/ID readback before broader batching or composition",
+  "debugRuntimeRefresh": {
+    "commands": [
+      [
+        "bin/Debug-macos-arm64/MetalM2ASmoke/MetalM2ASmoke",
+        "--native",
+        "build/metal-m2b1-evidence/debug-qualified/qualification/shaders"
+      ],
+      [
+        "build/metal-m2b1-evidence/debug-qualified/relocated package space \u00e9/MetalShaderSmoke",
+        "build/metal-m2b1-evidence/debug-qualified/relocated package space \u00e9/Resources",
+        "build/metal-m2b1-evidence/debug-qualified/relocated package space \u00e9/user"
+      ]
+    ],
+    "environment": {
+      "PATH": "/nonexistent",
+      "DEVELOPER_DIR": "/nonexistent",
+      "MTL_DEBUG_LAYER": "1",
+      "MTL_DEBUG_LAYER_ERROR_MODE": "assert",
+      "MTL_SHADER_VALIDATION": "1",
+      "DYLD_LIBRARY_PATH": "Prepared Mono lib for qualification; relocated package/lib for source-free test"
+    },
+    "nativeLog": "build/metal-m2b1-evidence/debug-native-final.log",
+    "productionLog": "build/metal-m2b1-evidence/debug-production-final.log",
+    "readbackComparison": "All three SHA-256 values unchanged after final runtime ownership/factory fixes"
+  }
+}

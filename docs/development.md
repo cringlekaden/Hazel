@@ -104,6 +104,28 @@ Sheet/image/scene arguments are asset-relative; use a disposable project for wri
 
 `SpriteAssetAudit` is the native package metadata/dependency authority, invoked by packaging; it is not an alternative authoring path. Historical Lightkeeper generators and migration comparison tools are described in [history](history.md#historical-tools), not required by setup/build/export.
 
+## Experimental Metal shader resources
+
+The `feature/3d-foundations` branch has an offline Metal 4 shader resource path.
+Hazelnut/Nutella still use OpenGL; this does not enable end-user Metal rendering.
+On native arm64 macOS 27+ with the optional Apple Metal Toolchain installed:
+
+```sh
+python3 scripts/macos/metal_shaders.py --config Debug --build --output build/metal-shader-resources/shaders/metal
+```
+
+The producer reuses valid packages and rebuilds stale/corrupt ones from the
+existing GLSL. Generated `.hzmetal` packages contain validated shader artifacts;
+runtime loading needs no GLSL/MSL files or developer compiler. Packages belong
+under the configured resource root's `shaders/metal` directory. Ordinary OpenGL
+application staging/export is unchanged and does not automatically produce or
+select these experimental resources. Missing or invalid shipped Metal packages
+require offline regeneration (`--force` also rebuilds a checksum-valid package
+that fails native loading); the user cache can be repaired from a valid package.
+
+The [M2-B1 qualification record](design/metal-m2b1.md) describes artifact identities,
+bindings, source-free relocation checks, limitations and reproduction commands.
+
 ## Troubleshooting
 
 | Symptom | Action |

@@ -1,6 +1,8 @@
 #include "MetalM2A.h"
 #include "Hazel/Core/Log.h"
 #include "Platform/macOS/Metal/MetalDevice.h"
+#include "Platform/macOS/Metal/MetalShader.h"
+#include "Hazel/Core/Resources.h"
 #include <spirv_cross/spirv_cross.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <array>
@@ -15,164 +17,20 @@
 
 namespace {
 using MetalM2A::Check;
-NS::String* Label(const std::string& text) { return NS::String::string(text.c_str(), NS::UTF8StringEncoding); }
 std::string Error(NS::Error* error) { return error ? error->localizedDescription()->utf8String() : "no compiler diagnostic"; }
 struct Pipeline
 {
-    NS::SharedPtr<MTL::RenderPipelineState> State;
-    NS::SharedPtr<MTL::VertexDescriptor> Vertices;
+    std::shared_ptr<Hazel::MetalShader> Shader;
     size_t Stride = 0;
 };
-void ValidateReflection(MTL::RenderPipelineState* pipeline, const std::filesystem::path& directory, const std::string& name)
+Pipeline Compile(const std::shared_ptr<Hazel::MetalDevice>& device, const std::filesystem::path& directory, const std::string& variant)
 {
-    auto* reflection = pipeline->reflection();
-    Check(reflection != nullptr, "Native pipeline reflection missing");
-    std::ofstream output(directory / (name + ".native-reflection.txt"));
-    for (const std::string stage : {"vertex", "fragment"})
-    {
-        const auto* bindings = stage == "vertex" ? reflection->vertexBindings() : reflection->fragmentBindings();
-        Check(bindings != nullptr, "Native stage bindings missing");
-        spirv_cross::Compiler source(MetalM2A::Words(directory / (name + "." + stage + ".spv")));
-        std::map<uint32_t, MTL::BufferBinding*> buffers;
-        for (size_t i = 0; i < bindings->count(); ++i)
-        {
-            auto* binding = bindings->object<MTL::Binding>(i);
-            output << stage << " name=" << binding->name()->utf8String() << " type=" << binding->type()
-                << " index=" << binding->index() << " used=" << binding->isUsed();
-            if (binding->type() == MTL::BindingTypeBuffer)
-            {
-                auto* buffer = static_cast<MTL::BufferBinding*>(binding);
-                buffers.emplace(static_cast<uint32_t>(binding->index()), buffer);
-                output << " bytes=" << buffer->bufferDataSize() << " alignment=" << buffer->bufferAlignment();
-                if (auto* type = buffer->bufferStructType())
-                    for (size_t j = 0; j < type->members()->count(); ++j)
-                    {
-                        auto* member = type->members()->object<MTL::StructMember>(j);
-                        output << "\n  member=" << member->name()->utf8String() << " offset=" << member->offset();
-                        if (auto* array = member->arrayType())
-                            output << " count=" << array->arrayLength() << " stride=" << array->stride()
-                                << " argument_id=" << member->argumentIndex() << " argument_stride=" << array->argumentIndexStride();
-                    }
-            }
-            if (binding->type() == MTL::BindingTypeTexture)
-            {
-                auto* texture = static_cast<MTL::TextureBinding*>(binding);
-                output << " count=" << texture->arrayLength() << " dimension=" << texture->textureType()
-                    << " sample_type=" << texture->textureDataType();
-            }
-            output << '\n';
-        }
-        for (const auto& resource : source.get_shader_resources().uniform_buffers)
-        {
-            const auto index = source.get_decoration(resource.id, spv::DecorationBinding);
-            Check(buffers.count(index) != 0, "Native uniform buffer binding missing");
-            auto* native = buffers.at(index);
-            const auto& type = source.get_type(resource.base_type_id);
-            Check(native->bufferDataSize() == source.get_declared_struct_size(type), "Native/SPIR-V block size differs");
-            auto* members = native->bufferStructType();
-            Check(members != nullptr, "Native block member reflection missing");
-            for (uint32_t j = 0; j < type.member_types.size(); ++j)
-            {
-                auto* member = members->memberByName(Label(source.get_member_name(resource.base_type_id, j)));
-                Check(member && member->offset() == source.type_struct_member_offset(type, j), "Native/SPIR-V member offset differs");
-            }
-        }
-        for (const auto& resource : source.get_shader_resources().sampled_images)
-        {
-            if (name == "Renderer2D_Quad-32" && stage == "fragment") continue;
-            const auto index = source.get_decoration(resource.id, spv::DecorationBinding);
-            const auto& type = source.get_type(resource.type_id);
-            bool found = false, samplerFound = false;
-            for (size_t i = 0; i < bindings->count(); ++i)
-            {
-                auto* binding = bindings->object<MTL::Binding>(i);
-                if (binding->index() != index) continue;
-                if (binding->type() == MTL::BindingTypeSampler) samplerFound = true;
-                if (binding->type() != MTL::BindingTypeTexture) continue;
-                auto* texture = static_cast<MTL::TextureBinding*>(binding);
-                const auto count = type.array.empty() ? 1 : type.array[0];
-                Check(texture->arrayLength() == count, "Native texture array extent differs");
-                Check(texture->textureType() == (type.image.dim == spv::DimCube ? MTL::TextureTypeCube : MTL::TextureType2D), "Native texture dimension differs");
-                Check(texture->textureDataType() == (source.get_type(type.image.type).basetype == spirv_cross::SPIRType::Int ? MTL::DataTypeInt : MTL::DataTypeFloat), "Native texture scalar type differs");
-                found = true;
-            }
-            Check(found, "Native texture binding missing");
-            // Integer texelFetch needs no sampler. Float sampled images use a paired sampler.
-            if (source.get_type(type.image.type).basetype == spirv_cross::SPIRType::Float)
-                Check(samplerFound, "Native sampler binding missing");
-        }
-        if (name == "Renderer2D_Quad-32" && stage == "fragment")
-        {
-            Check(buffers.count(0) != 0, "Tier2 argument buffer missing");
-            auto* buffer = buffers.at(0);
-            Check(buffer->bufferDataSize() == 512 && buffer->bufferAlignment() == 8, "Tier2 CPU descriptor-buffer ABI differs");
-            auto* type = buffer->bufferStructType();
-            Check(type != nullptr && type->members()->count() == 2, "Tier2 descriptor members differ");
-            for (size_t i = 0; i < 2; ++i)
-            {
-                auto* member = type->members()->object<MTL::StructMember>(i);
-                auto* array = member->arrayType();
-                Check(array && array->arrayLength() == 32 && array->argumentIndexStride() == 1 &&
-                    member->offset() == i * 256 && member->argumentIndex() == i * 32, "Tier2 texture/sampler array layout differs");
-            }
-        }
-    }
-    Check(bool(output), "Cannot write native reflection");
-}
-Pipeline Compile(MTL::Device* device, MTL4::Compiler* compiler, const std::filesystem::path& directory, const std::string& name)
-{
-    NS::Error* error = nullptr;
-    auto vertex = NS::TransferPtr(device->newLibrary(Label((directory / (name + ".vertex.metallib")).string()), &error));
-    Check(bool(vertex), "Vertex library " + name + ": " + Error(error));
-    auto fragment = NS::TransferPtr(device->newLibrary(Label((directory / (name + ".fragment.metallib")).string()), &error));
-    Check(bool(fragment), "Fragment library " + name + ": " + Error(error));
-    auto vs = NS::TransferPtr(MTL4::LibraryFunctionDescriptor::alloc()->init());
-    vs->setLibrary(vertex.get()); vs->setName(Label("main0"));
-    auto fs = NS::TransferPtr(MTL4::LibraryFunctionDescriptor::alloc()->init());
-    fs->setLibrary(fragment.get()); fs->setName(Label("main0"));
-    auto descriptor = NS::TransferPtr(MTL4::RenderPipelineDescriptor::alloc()->init());
-    descriptor->setLabel(Label("M2-A " + name));
-    descriptor->setVertexFunctionDescriptor(vs.get()); descriptor->setFragmentFunctionDescriptor(fs.get());
-    descriptor->setRasterSampleCount(1);
-    auto pipelineOptions = NS::TransferPtr(MTL4::PipelineOptions::alloc()->init());
-    pipelineOptions->setShaderReflection(MTL4::ShaderReflectionBindingInfo | MTL4::ShaderReflectionBufferTypeInfo);
-    descriptor->setOptions(pipelineOptions.get());
-    descriptor->colorAttachments()->object(0)->setPixelFormat(MTL::PixelFormatRGBA32Float);
-    spirv_cross::Compiler reflection(MetalM2A::Words(directory / (name + ".fragment.spv")));
-    for (const auto& resource : reflection.get_shader_resources().stage_outputs)
-        if (reflection.get_decoration(resource.id, spv::DecorationLocation) == 1)
-        {
-            const auto& type = reflection.get_type(resource.type_id);
-            Check(type.basetype == spirv_cross::SPIRType::Int && type.vecsize == 1 && type.width == 32, "Picking output must be signed int32");
-            descriptor->colorAttachments()->object(1)->setPixelFormat(MTL::PixelFormatR32Sint);
-        }
-    Pipeline result;
-    result.Vertices = NS::TransferPtr(MTL::VertexDescriptor::alloc()->init());
-    spirv_cross::Compiler inputs(MetalM2A::Words(directory / (name + ".vertex.spv")));
-    std::map<uint32_t, spirv_cross::Resource> attributes;
-    for (const auto& resource : inputs.get_shader_resources().stage_inputs)
-        attributes.emplace(inputs.get_decoration(resource.id, spv::DecorationLocation), resource);
-    for (const auto& [location, resource] : attributes)
-    {
-        const auto& type = inputs.get_type(resource.type_id);
-        Check(location < 16 && type.columns == 1 && type.width == 32 && type.array.empty(), "Unqualified vertex attribute");
-        const auto format = type.basetype == spirv_cross::SPIRType::Float ? MTL::VertexFormatFloat : MTL::VertexFormatInt;
-        Check(type.basetype == spirv_cross::SPIRType::Float || type.basetype == spirv_cross::SPIRType::Int, "Unqualified vertex scalar type");
-        auto* attribute = result.Vertices->attributes()->object(location);
-        attribute->setBufferIndex(16); attribute->setOffset(result.Stride);
-        attribute->setFormat(static_cast<MTL::VertexFormat>(format + type.vecsize - 1));
-        result.Stride += type.vecsize * 4;
-    }
-    result.Vertices->layouts()->object(16)->setStride(result.Stride);
-    const std::map<std::string, size_t> strides = {{"ForwardPBR", 64}, {"Renderer2D_Line", 48},
-        {"Renderer2D_Quad-16", 64}, {"Renderer2D_Quad-32", 64}, {"Renderer2D_Circle", 68}, {"Renderer2D_Text", 56}};
-    Check(result.Stride == (strides.count(name) ? strides.at(name) : 0), "Reflected CPU vertex stream size differs");
-    descriptor->setVertexDescriptor(result.Vertices.get());
-    result.State = NS::TransferPtr(compiler->newRenderPipelineState(descriptor.get(), nullptr, &error));
-    Check(bool(result.State), "Native MTL4 pipeline " + name + ": " + Error(error));
-    ValidateReflection(result.State.get(), directory, name);
-    std::cout << "PASS native_pipeline " << name << " stride=" << result.Stride << '\n';
-    return result;
+    const auto name = variant.substr(0, variant.find('-'));
+    const uint32_t slots = variant == "Renderer2D_Quad-16" ? 16 : 32;
+    auto shader = std::make_shared<Hazel::MetalShader>(device, name, slots);
+    Hazel::WriteMetalShaderFile(directory / (variant + ".native-reflection.txt"), shader->NativeReflection());
+    std::cout << "PASS native_pipeline " << variant << " stride=" << shader->VertexStride() << '\n';
+    return {shader, shader->VertexStride()};
 }
 // Exact CPU stream used by Renderer2D::LineVertex, packed as its BufferLayout.
 struct LineVertex
@@ -306,7 +164,7 @@ void DrawProof(Hazel::MetalDevice& owner, const Pipeline& pipeline, const std::f
     pass->depthAttachment()->setClearDepth(1);
     auto* render = commands->renderCommandEncoder(pass.get());
     Check(render != nullptr, "Proof render encoder unavailable");
-    render->setRenderPipelineState(pipeline.State.get());
+    render->setRenderPipelineState(pipeline.Shader->Pipeline());
     render->setArgumentTable(arguments.get(), MTL::RenderStageVertex);
     render->setArgumentTable(quad ? fragmentArguments.get() : arguments.get(), MTL::RenderStageFragment);
     render->setViewport({0, 0, side, side, 0, 1});
@@ -383,19 +241,16 @@ int main(int argc, char** argv)
         Check(std::string(argv[1]) == "--native", "Unknown mode");
         auto pool = NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
         Hazel::Log::Init();
-        Hazel::MetalDevice owner;
-        auto* device = owner.NativeDevice();
-        NS::Error* error = nullptr;
-        auto descriptor = NS::TransferPtr(MTL4::CompilerDescriptor::alloc()->init());
-        auto compiler = NS::TransferPtr(device->newCompiler(descriptor.get(), &error));
-        Check(bool(compiler), "MTL4 compiler unavailable: " + Error(error));
+        auto owner = std::make_shared<Hazel::MetalDevice>();
+        const auto artifacts = std::filesystem::absolute(argv[2]);
+        Hazel::Resources::Configure({artifacts / "Resources", artifacts, artifacts / "user-data"});
         for (const auto& name : {"DisplayOutput", "EntityOutline", "EnvironmentSky", "ForwardPBR", "Renderer2D_Circle", "Renderer2D_Line", "Renderer2D_Quad-16", "Renderer2D_Quad-32", "Renderer2D_Text", "WorldPresentation"})
-            Compile(device, compiler.get(), argv[2], name);
-        const auto line = Compile(device, compiler.get(), argv[2], "Renderer2D_Line");
-        DrawProof(owner, line, argv[2], false);
-        DrawProof(owner, line, argv[2], true);
-        const auto quad = Compile(device, compiler.get(), argv[2], "Renderer2D_Quad-32");
-        DrawProof(owner, quad, argv[2], false, true);
+            Compile(owner, argv[2], name);
+        const auto line = Compile(owner, argv[2], "Renderer2D_Line");
+        DrawProof(*owner, line, argv[2], false);
+        DrawProof(*owner, line, argv[2], true);
+        const auto quad = Compile(owner, argv[2], "Renderer2D_Quad-32");
+        DrawProof(*owner, quad, argv[2], false, true);
         return 0;
     }
     catch (const std::exception& error)
