@@ -17,6 +17,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', choices=['Debug', 'Release'], default='Debug')
     parser.add_argument('--build', action='store_true')
+    parser.add_argument('--texture-slots',type=int,choices=(2,4),default=4)
     parser.add_argument('--resources', type=Path, required=True, help='Resource root containing prebuilt shaders/metal/*.hzmetal')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
@@ -29,7 +30,7 @@ def main():
     env = os.environ.copy()
     env.update(PATH='/nonexistent', DEVELOPER_DIR='/nonexistent', DYLD_LIBRARY_PATH=str(hz.mono_prefix() / 'lib'),
                MTL_DEBUG_LAYER='1', MTL_DEBUG_LAYER_ERROR_MODE='assert', MTL_SHADER_VALIDATION='1')
-    command = [hz.binaries(args.config) / 'MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke', args.resources.resolve(), output]
+    command = [hz.binaries(args.config) / 'MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke', args.resources.resolve(), output, str(args.texture_slots)]
     with (output / 'native.log').open('w') as log:
         run = subprocess.run(list(map(str, command)), stdout=log, stderr=subprocess.STDOUT, env=env, timeout=120)
     text = (output / 'native.log').read_text()

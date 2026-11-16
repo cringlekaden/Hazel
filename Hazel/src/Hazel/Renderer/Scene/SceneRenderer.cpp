@@ -1,6 +1,7 @@
 #include "hzpch.h"
 #include "SceneRenderer.h"
 #include "Hazel/Renderer/Drawing/Renderer3D.h"
+#include "Hazel/Renderer/Drawing/Renderer2D.h"
 #include "Hazel/Renderer/RenderCommand.h"
 namespace Hazel
 {
@@ -19,22 +20,40 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
     {
         if (!display || !frame.Meshes.empty() || frame.Light || frame.Environment || frame.Debug != SurfaceView::Shaded || frame.LinearLightingInspection)
             throw std::runtime_error("Metal quad scene requires an explicit target, shaded view, no meshes/lights/environment");
-        if (frame.Presentation.SceneReferred)
+        RenderCommand::StateScope scope;
+        auto raster = RenderCommand::GetRasterState();
+        raster.DepthTest = raster.DepthWrite = raster.Blend = true;
+        raster.Compare = DepthCompare::Less;
+        raster.ColorMask = raster.PickingMask = glm::bvec4(true);
+        raster.ClipEnabled = false;
+        RenderCommand::SetRasterState(raster);
+        try
         {
-            auto size = display->GetSpecification();
-            if (!view.Radiance) view.Radiance = Framebuffer::Create(size);
-            else if (view.Radiance->GetSpecification().Width != size.Width || view.Radiance->GetSpecification().Height != size.Height)
-                view.Radiance->Resize(size.Width, size.Height);
-            display->Cancel();
-            view.Radiance->Bind();
-            view.Radiance->Clear(frame.Presentation.Background);
-            world2D();
-            view.Radiance->Unbind();
-            display->Bind();
-            view.Radiance->CompositeWorldTo(display, frame.Presentation.Exposure);
+            if (frame.Presentation.SceneReferred)
+            {
+                auto size = display->GetSpecification();
+                if (!view.Radiance) view.Radiance = Framebuffer::Create(size);
+                else if (view.Radiance->GetSpecification().Width != size.Width || view.Radiance->GetSpecification().Height != size.Height)
+                    view.Radiance->Resize(size.Width, size.Height);
+                display->Cancel();
+                view.Radiance->Bind();
+                view.Radiance->Clear(frame.Presentation.Background);
+                world2D();
+                view.Radiance->Unbind();
+                display->Bind();
+                view.Radiance->CompositeWorldTo(display, frame.Presentation.Exposure);
+            }
+            else { view.Radiance.reset(); world2D(); }
+            screenUI();
         }
-        else { view.Radiance.reset(); world2D(); }
-        return; // Scene admission rejects screen UI before submission.
+        catch (...)
+        {
+            Renderer2D::CancelScene();
+            if (view.Radiance) view.Radiance->Cancel();
+            display->Cancel();
+            throw;
+        }
+        return;
     }
     RenderCommand::StateScope scope;
     auto raster = RenderCommand::GetRasterState();

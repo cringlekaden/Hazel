@@ -27,6 +27,8 @@ namespace Hazel {
 		s_Instance = this;
 		try {
             RenderCommand::Configure(m_Specification.GraphicsAPI);
+            if (m_Specification.GraphicsAPI == RendererAPI::API::Metal && m_Specification.EnableImGui)
+                throw std::invalid_argument("Metal Renderer2D runtime does not support the OpenGL ImGui layer");
             if (m_Specification.RendererMode != RendererInitialization::Drawing && m_Specification.EnableImGui)
                 throw std::invalid_argument("Presentation-only startup does not initialize ImGui drawing services");
             m_Specification.Resources = Resources::Defaults(m_Specification.Name, m_Specification.Resources);

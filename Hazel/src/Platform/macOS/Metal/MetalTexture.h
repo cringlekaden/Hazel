@@ -9,6 +9,7 @@ class MetalDevice;
 struct MetalTextureVersion
 {
     NS::SharedPtr<MTL::Texture> Texture;
+    mutable bool MipsSubmitted = false; // renderer-thread publication after queue commit
     NS::SharedPtr<MTL::SamplerState> Sampler;
 };
 class MetalTexture2D final : public Texture2D

@@ -11,7 +11,7 @@
 namespace Hazel {
     class RuntimeLayer : public Layer {
     public:
-        explicit RuntimeLayer(Ref<Project> project,bool inspect) : Layer("Nutella Runtime"), m_Project(std::move(project)),m_Inspect(inspect) {}
+        explicit RuntimeLayer(Ref<Project> project,bool inspect) : Layer("Nutella Runtime"), m_Inspect(inspect),m_Project(std::move(project)) {}
         void OnAttach() override {
             auto scene = m_Project->LoadScene(m_Project->GetConfig().StartScene);
             const auto module=Project::ResolveAssetPath(m_Project->GetAssetRoot(),m_Project->GetConfig().ScriptModulePath);
@@ -50,7 +50,7 @@ namespace Hazel {
             m_Composite->ClearAttachment(1, -1);
             m_Session.SetRenderTarget(m_Composite);
             m_Session.Update(timestep);
-            if(m_Session.IsCameraInspectionEnabled() && Renderer::GetAPI() != RendererAPI::API::Metal){
+            if(m_Session.IsCameraInspectionEnabled()){
                 RenderCommand::StateScope scope;auto state=RenderCommand::GetRasterState();state.DepthTest=state.DepthWrite=false;state.PickingMask=glm::bvec4(false);RenderCommand::SetRasterState(state);
                 Camera overlay(OrthographicProjection::Matrix(0,float(window.GetWidth()),0,float(window.GetHeight()),-1,1));
                 Renderer2D::BeginScene(overlay,glm::mat4(1));
@@ -78,7 +78,7 @@ namespace Hazel {
         std::filesystem::path selected;
         for (int i = 1; i < args.Count; ++i) {
             const std::string argument(args[i]);
-            if(argument=="--metal-quads") { if(metal)throw std::runtime_error("Duplicate --metal-quads");metal=true; }
+            if(argument=="--metal-renderer2d") { if(metal)throw std::runtime_error("Duplicate --metal-renderer2d");metal=true; }
             else if(argument=="--inspect-camera"){if(inspect)throw std::runtime_error("Duplicate --inspect-camera");inspect=true;}
             else if (argument == "--help") { if (help) throw std::runtime_error("Duplicate --help"); help = true; }
             else if (argument == "--list-projects") { if (list) throw std::runtime_error("Duplicate --list-projects"); list = true; }
@@ -91,7 +91,7 @@ namespace Hazel {
         if ((help || list) && ((help && list) || !selected.empty() || inspect || metal)) throw std::runtime_error("Use --help, --list-projects, or --project separately");
         if (help) {
             std::cout << "Nutella — Hazel standalone runtime\n"
-                "  Nutella --metal-quads          Opt-in Metal 4 opaque quad scene (no UI/3D)\n"
+                "  Nutella --metal-renderer2d          Opt-in Metal 4 Renderer2D runtime (no 3D/ImGui)\n"
                 "  Nutella                        Run the only .hproj in the installed project directory\n"
                 "  Nutella --project <file.hproj>  Run a selected project (relative to invocation directory)\n"
                 "  Nutella --inspect-camera        Opt in to transient perspective inspection; Home restores the authored view\n"
@@ -126,7 +126,7 @@ namespace Hazel {
         // is optional for native content; RuntimeSession rejects assigned classes
         // that are unavailable. Do not impose scripting readiness at CLI launch.
         ApplicationSpecification spec; spec.Name = "Nutella"; spec.CommandLineArgs = args; spec.EnableImGui = false;
-        if (metal) { spec.GraphicsAPI = RendererAPI::API::Metal; spec.RendererMode = RendererInitialization::Quads; }
+        if (metal) { spec.GraphicsAPI = RendererAPI::API::Metal; spec.RendererMode = RendererInitialization::Drawing; }
         spec.Rendering = RendererPolicy::Settings(project->GetRendererRequests());
         spec.WindowVSync = project->GetRendererRequests().VSync;
         return CreateScope<Nutella>(spec, project,inspect);

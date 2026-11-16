@@ -93,3 +93,15 @@ not promise a new line break.
 checkerboard fixture and ordinary sprite-region animation. It also runs on
 OpenGL. For the experimental macOS Metal 4 opt-in, artifact preparation, camera
 controls and limitations, follow [the development guide](../../docs/development.md#experimental-metal-shader-resources).
+
+## Metal Renderer2D runtime example
+
+`Sandbox-Renderer2D.hproj` selects `Assets/Scenes/Renderer2D.hazel`: the same
+animated sprite fixture with translucent tint, a circle, Unicode world text and
+a screen-space button. It also runs on OpenGL. The new scene uses ordinary
+SceneRenderer and RuntimeSession ownership; no separate UI renderer is involved.
+
+Follow [artifact preparation and launch commands](../../docs/development.md#experimental-metal-shader-resources).
+Metal M3 acceptance remains **INCOMPLETE**; the
+[qualification record](../../docs/design/metal-m3.md) lists measured gates and
+the smoothed-line coverage/picking failure and remaining visible/input checks. The earlier opaque-quad screenshot is historical.

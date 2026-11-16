@@ -1,5 +1,8 @@
 // Pixel/readback regression tests for the actual upstream Renderer2D pipelines.
 #include "Hazel.h"
+#include "../macos/Renderer2DParity.h"
+#include <fstream>
+#include "Hazel/Scene/RuntimeSession.h"
 #include "../macos/LoadedImages.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -246,6 +249,7 @@ int main(int argc,char** argv) {
         for (bool reduced : {false, true}) {
             ApplicationSpecification specification; specification.Name="Migration Renderer2D";
             RuntimeRendererRequests requests;
+            if((argc==3 || argc==4) && std::string(argv[1])=="--metal-parity")requests.TextureSlots=4;
             if(reduced){requests.TextureSlots=2;requests.ShaderLoading=ShaderLoadingRequest::GLSLCompatibility;requests.VSync=false;}
             specification.Rendering=RendererPolicy::Settings(requests,reduced?DebugOutputRequest::Disabled:DebugOutputRequest::Enabled);
             specification.WindowVSync=requests.VSync;
@@ -256,7 +260,63 @@ int main(int argc,char** argv) {
             FramebufferSpecification framebuffer; framebuffer.Width=128; framebuffer.Height=128;
             framebuffer.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
             target=Framebuffer::Create(framebuffer);
-            Check(Renderer::GetSettings().TextureSlots==(reduced ? 2u : std::min(32u,Renderer::GetCapabilities().MaxTextureSlots)),"Application renderer settings mismatch");
+            Check(Renderer::GetSettings().TextureSlots==(requests.TextureSlots == 4 ? 4u : reduced ? 2u : std::min(32u,Renderer::GetCapabilities().MaxTextureSlots)),"Application renderer settings mismatch");
+            if((argc==3 || argc==4) && std::string(argv[1])=="--metal-parity") {
+                if(argc==4) {
+                    Check(std::string(argv[3])=="--diagnostic-aliased-lines","Unknown parity diagnostic");
+                    glDisable(GL_LINE_SMOOTH);
+                    std::cout<<"DIAGNOSTIC ONLY: OpenGL line smoothing disabled; this cannot qualify M3 parity\n";
+                }
+                const auto output=std::filesystem::absolute(argv[2]);std::filesystem::create_directories(output);
+                FramebufferSpecification spec;spec.Width=spec.Height=128;
+                spec.Attachments={FramebufferTextureFormat::RGBA32F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
+                auto parity=Framebuffer::Create(spec);
+                for(unsigned phase=0;phase<4;++phase) {
+                    parity->Bind();RenderCommand::SetClearColor(glm::vec4(0));RenderCommand::Clear();parity->ClearAttachment(1,-1);
+                    DrawRenderer2DParity(phase);
+                    std::vector<glm::vec4> colors(128*128);std::vector<int32_t> ids(colors.size());std::vector<float> depths(colors.size());
+                    glReadBuffer(GL_COLOR_ATTACHMENT0);glReadPixels(0,0,128,128,GL_RGBA,GL_FLOAT,colors.data());
+                    glReadBuffer(GL_COLOR_ATTACHMENT1);glReadPixels(0,0,128,128,GL_RED_INTEGER,GL_INT,ids.data());
+                    glReadPixels(0,0,128,128,GL_DEPTH_COMPONENT,GL_FLOAT,depths.data());
+                    Check(glGetError()==GL_NO_ERROR,"Native GL parity readback failed");
+                    std::ofstream file(output/("mixed-opengl-"+std::to_string(phase)+".bin"),std::ios::binary);
+                    for(size_t i=0;i<colors.size();++i) {
+                        file.write(reinterpret_cast<const char*>(&colors[i]),16);
+                        file.write(reinterpret_cast<const char*>(&ids[i]),4);
+                        file.write(reinterpret_cast<const char*>(&depths[i]),4);
+                    }
+                    Check(bool(file),"Cannot save native GL parity fixture");parity->Unbind();
+                }
+                auto project=Project::LoadCandidate(std::filesystem::absolute("examples/Sandbox/Sandbox-Renderer2D.hproj"));
+                project->GetConfig().Rendering=requests; // private candidate matches this reduced-slot host
+                RuntimeSession session;session.Start(project,project->LoadScene(project->GetConfig().StartScene));
+                SceneRenderView runtimeView;
+                spec.Attachments={FramebufferTextureFormat::RGBA16F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
+                for(const auto extent : {glm::uvec2(1280,720),glm::uvec2(1920,1080)}) {
+                    spec.Width=extent.x;spec.Height=extent.y;
+                    auto display=Framebuffer::Create(spec);
+                    session.Resize(extent.x,extent.y);session.ResizeFramebuffer(extent.x,extent.y);
+                    session.SetRenderTarget(display);session.SetInput({-1,-1},false);
+                    for(unsigned frame=0;frame<80;++frame) {
+                        display->Bind();RenderCommand::SetClearColor(session.GetScene()->Presentation().Background);
+                        RenderCommand::Clear();display->ClearAttachment(1,-1);
+                        session.RouteUIInput(GameUI::DeviceSample{},1.f/60,false);
+                        session.GetScene()->OnUpdateRuntime(Timestep(1.f/60),&runtimeView,display);
+                    }
+                    std::vector<glm::vec4> colors(size_t(extent.x)*extent.y);std::vector<int32_t> ids(colors.size());std::vector<float> depths(colors.size());
+                    glReadBuffer(GL_COLOR_ATTACHMENT0);glReadPixels(0,0,extent.x,extent.y,GL_RGBA,GL_FLOAT,colors.data());
+                    glReadBuffer(GL_COLOR_ATTACHMENT1);glReadPixels(0,0,extent.x,extent.y,GL_RED_INTEGER,GL_INT,ids.data());
+                    glReadPixels(0,0,extent.x,extent.y,GL_DEPTH_COMPONENT,GL_FLOAT,depths.data());
+                    Check(glGetError()==GL_NO_ERROR,"Native GL runtime readback failed");
+                    std::ofstream file(output/("runtime-"+std::to_string(extent.x)+"x"+std::to_string(extent.y)+".bin"),std::ios::binary);
+                    for(size_t i=0;i<colors.size();++i) {
+                        file.write(reinterpret_cast<const char*>(&colors[i]),16);file.write(reinterpret_cast<const char*>(&ids[i]),4);file.write(reinterpret_cast<const char*>(&depths[i]),4);
+                    }
+                    Check(bool(file),"Cannot save GL runtime fixture");display->Unbind();session.SetRenderTarget({});
+                }
+                session.Stop();
+                std::cout<<"PASS native OpenGL shared M3 and authored world/UI fixtures\n";return 0;
+            }
             RenderingControls(application,requests);
             if(argc>1 && std::string(argv[1])=="--ibl-integration-probe")return IBLIntegrationProbe(argc,argv);
             if(argc==2 && std::string(argv[1])=="--geometric-edges"){GeometricNormalChecks();std::cout<<"NOT EXECUTED: other graphics regressions (focused geometric-edge mode)\n";return 0;}

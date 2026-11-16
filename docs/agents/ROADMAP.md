@@ -6,7 +6,7 @@
 
 - **M1 — PASS, pushed:** Metal 4 device/queue, native presentation, frame/resource lifetime, compute/render/transfer smoke, regression evidence. See `docs/design/metal-m1.md`. Production still OpenGL.
 - **M2 — Proposed, not automatically authorized:** shader portability and explicit pass contracts. First bound checkpoint: pinned GLSL → SPIR-V → generated MSL, `MTL4Compiler` pipeline, reflected layout/bindings, orientation/depth, signed integer targets and packaged shader feasibility. Prove representative engine shaders before committing to a universal translation assumption.
-- **M3 — Planned:** Renderer2D and Nutella parity, including text/UI, batching, texture/sampler access and display output.
+- **M3 — INCOMPLETE:** Renderer2D runtime implementation and native world/UI numerical evidence are in `docs/design/metal-m3.md`. Smoothed-line coverage/picking parity fails; visible/input acceptance is blocked by the locked console. M4 remains unstarted.
 - **M4 — Planned:** Renderer3D, cooked GLB/materials, depth/selection, PBR/IBL, environment prep and frozen visual/numerical parity.
 - **M5 — Planned:** full Hazelnut ImGui docking/detached viewports, previews/outlines, GPU-consumer lifetime, native compute dependency proof.
 - **M6 — Planned:** full platform/package validation, native metrics and conscious choice of macOS default; OpenGL stays a supported option.

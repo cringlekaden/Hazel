@@ -4,12 +4,13 @@
 #include <Metal/Metal.hpp>
 #include <QuartzCore/QuartzCore.hpp>
 #include <array>
+#include <cstddef>
 #include <filesystem>
 #include <functional>
 #include <vector>
 
 namespace Hazel {
-struct MetalQuadFrame;
+struct MetalRenderer2DFrame;
 class MetalShader;
 struct FramebufferReadback;
 struct MetalFramebufferAttachments;
@@ -37,12 +38,13 @@ private:
     friend class MetalRendererAPI;
     friend class MetalFramebuffer;
     void Poll();
-    void PrepareQuadFrame(const std::shared_ptr<MetalQuadFrame>& frame);
-    void EncodeQuadFrame(const std::shared_ptr<MetalQuadFrame>& frame);
-    std::shared_ptr<MetalQuadFrame> m_PresentFrame;
+    NS::SharedPtr<MTL::Buffer> AcquireRenderer2DBuffer(size_t bytes, const void* data = nullptr);
+    void PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& frame);
+    void EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& frame);
+    std::shared_ptr<MetalRenderer2DFrame> m_PresentFrame;
     std::shared_ptr<MetalShader> m_OutputShader;
     std::vector<std::weak_ptr<const MetalFramebufferAttachments>> m_AttachmentGenerations;
-    std::shared_ptr<const FramebufferReadback> SubmitQuadFrame(const std::shared_ptr<MetalQuadFrame>& frame);
+    std::shared_ptr<const FramebufferReadback> SubmitRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     struct Receipt { bool GPU=false, Presented=false; };
     struct Frame {
         NS::SharedPtr<MTL4::CommandAllocator> Allocator;
@@ -52,7 +54,9 @@ private:
         std::shared_ptr<Receipt> Completion;
         uint64_t Serial=0;
         bool Pending=false;
-        std::shared_ptr<MetalQuadFrame> Quad;
+        std::shared_ptr<MetalRenderer2DFrame> Quad;
+        std::vector<NS::SharedPtr<MTL::Buffer>> Renderer2DBuffers;
+        size_t Renderer2DCursor = 0;
     };
     void Verify(Frame& frame);
     void EncodeTransfers(Frame& frame, uint64_t serial);

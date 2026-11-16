@@ -1,6 +1,9 @@
 #pragma once
-#include "Hazel/Renderer/Drawing/Renderer2DQuad.h"
+#include <glm/glm.hpp>
+#include <array>
+#include <cstdint>
 #include "MetalTexture.h"
+#include "Hazel/Renderer/RendererAPI.h"
 #include "Hazel/Renderer/Resources/Framebuffer.h"
 #include <Metal/Metal.hpp>
 #include <memory>
@@ -11,27 +14,31 @@
 namespace Hazel {
 class MetalShader;
 struct MetalFramebufferAttachments;
-struct MetalQuadDraw
+struct MetalRenderer2DDraw
 {
-    std::vector<QuadVertex> Vertices;
-    uint32_t First = 0, Count = 0;
+    std::vector<uint8_t> Vertices;
+    std::shared_ptr<MetalShader> Shader;
+    RasterState Raster;
+    NS::SharedPtr<MTL::DepthStencilState> DepthState;
+    bool Lines = false;
+    uint32_t Count = 0;
     glm::mat4 Camera;
     std::array<std::shared_ptr<const MetalTextureVersion>, 32> Textures;
 };
-struct MetalQuadFrame
+struct MetalRenderer2DFrame
 {
     uint32_t Width = 0, Height = 0;
     glm::vec4 Clear{0};
     int32_t ClearEntity = -1;
-    std::shared_ptr<MetalShader> Shader, OutputShader;
+    std::shared_ptr<MetalShader> OutputShader;
     NS::SharedPtr<MTL::SamplerState> OutputSampler;
     NS::SharedPtr<MTL4::ArgumentTable> OutputArguments;
     bool Readback = true;
-    std::shared_ptr<MetalQuadFrame> World;
+    std::shared_ptr<MetalRenderer2DFrame> World;
     std::shared_ptr<MetalShader> PresentationShader;
     NS::SharedPtr<MTL4::ArgumentTable> PresentationArguments;
     float Exposure = 0;
-    std::vector<MetalQuadDraw> Draws;
+    std::vector<MetalRenderer2DDraw> Draws;
     std::shared_ptr<FramebufferReadback> Result;
     std::vector<glm::vec4> CompletedColor;
     std::vector<int32_t> CompletedEntity;
@@ -42,8 +49,8 @@ struct MetalQuadFrame
     std::vector<NS::SharedPtr<MTL::Buffer>> Buffers;
     std::vector<NS::SharedPtr<MTL4::ArgumentTable>> Arguments;
     NS::SharedPtr<MTL::ResidencySet> Residency;
-    NS::SharedPtr<MTL::DepthStencilState> DepthState;
     void Complete();
+    void MarkMipmapsSubmitted() const;
     uint64_t ResourceBytes() const;
 };
 }

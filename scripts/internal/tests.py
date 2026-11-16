@@ -183,7 +183,7 @@ def test(configuration, profile='native', suite='all', only=None):
         if hz.SYSTEM=='macos' and suite=='all':
             # Test the committed tutorial, never an owner's in-progress project.
             from internal.testing.projects import snapshot
-            tutorial=snapshot('Sandbox',working/'tutorial')
+            tutorial=snapshot('Sandbox',working/'tutorial','Sandbox.hproj')
             hz.script_build(tutorial,configuration)
         from internal.testing.projects import snapshot
         reference=snapshot('RenderingReference',working/'rendering-reference','RenderingReference.hproj')

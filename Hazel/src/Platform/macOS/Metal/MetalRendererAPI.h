@@ -1,11 +1,13 @@
 #pragma once
 #include "Hazel/Renderer/RendererAPI.h"
 #include "MetalProof.h"
-#include "Hazel/Renderer/Drawing/Renderer2DQuad.h"
 #include <filesystem>
 #include <functional>
 #include <mutex>
 #include <unordered_map>
+#include <vector>
+#include <array>
+#include <memory>
 
 namespace Hazel {
 class MetalDevice;
@@ -14,9 +16,18 @@ class Texture2D;
 struct TextureSpecification;
 struct FramebufferSpecification;
 class Framebuffer;
-struct MetalQuadFrame;
+struct MetalRenderer2DFrame;
 struct FramebufferReadback;
 struct MetalTextureVersion;
+struct MetalRenderer2DRun
+{
+    std::shared_ptr<Shader> Shader;
+    const void* Vertices = nullptr;
+    uint32_t First = 0, Count = 0;
+    std::shared_ptr<Texture2D> Font;
+    bool Picking = true;
+    float LineWidth = 1;
+};
 // Native Metal 4; only explicitly qualified drawing/resource profiles are available.
 class MetalRendererAPI final : public RendererAPI {
 public:
@@ -42,11 +53,11 @@ public:
     void DrawLines(const Ref<VertexArray>&, uint32_t, uint32_t) override;
     void SetLineWidth(float) override;
     uint32_t GetMaxTextureSlots() const override { return 32; }
-    // Explicit opaque quad submission shared by offscreen and SceneRenderer paths.
-    void BeginQuadScene(const glm::mat4& camera);
-    void EnqueueQuadRun(const QuadVertex* vertices, uint32_t vertexCount, uint32_t first, uint32_t count,
+    // Renderer2D owns packing/batching; native immutable runs own GPU versions.
+    void BeginRenderer2DScene(const glm::mat4& camera);
+    void EnqueueRenderer2DBatch(const std::vector<MetalRenderer2DRun>& runs,
         const std::array<std::shared_ptr<const MetalTextureVersion>, 32>& textures, uint32_t textureCount);
-    void EndQuadScene();
+    void EndRenderer2DScene();
     std::shared_ptr<Framebuffer> CreateFramebuffer(const FramebufferSpecification& specification);
     std::shared_ptr<Texture2D> CreateTexture(const TextureSpecification& specification, const std::string& path = {});
     std::shared_ptr<Shader> LoadShader(const std::string& name, uint32_t slots = 32);
@@ -62,16 +73,18 @@ public:
     static void FailNextStartupForTesting(MetalStartupFailure point);
 private:
     friend class MetalFramebuffer;
-    void BindFramebuffer(const std::shared_ptr<MetalQuadFrame>& frame);
-    void UnbindFramebuffer(const std::shared_ptr<MetalQuadFrame>& frame);
-    bool IsFramebufferBound(const std::shared_ptr<MetalQuadFrame>& frame) const;
-    void CheckFramebufferClear(const std::shared_ptr<MetalQuadFrame>& frame) const;
+    void BindFramebuffer(const std::shared_ptr<MetalRenderer2DFrame>& frame);
+    void UnbindFramebuffer(const std::shared_ptr<MetalRenderer2DFrame>& frame);
+    bool IsFramebufferBound(const std::shared_ptr<MetalRenderer2DFrame>& frame) const;
+    void CheckFramebufferClear(const std::shared_ptr<MetalRenderer2DFrame>& frame) const;
     std::shared_ptr<MetalDevice> m_Device;
     std::mutex m_ShaderMutex;
-    bool m_Stopped = false, m_QuadScene = false;
-    glm::mat4 m_QuadCamera{1};
-    std::weak_ptr<MetalQuadFrame> m_QuadFrame;
+    bool m_Stopped = false, m_Renderer2DScene = false;
+    glm::mat4 m_Renderer2DCamera{1};
+    std::weak_ptr<MetalRenderer2DFrame> m_Renderer2DFrame;
     std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;
+    RasterState m_Raster;
+    std::vector<RasterState> m_StateStack;
     RendererCapabilities m_Caps;
     RendererResolution m_Resolution;
 };

@@ -110,7 +110,7 @@ std::string ValidateReflection(MTL::RenderPipelineState* pipeline, const MetalSh
     return output.str();
 }
 }
-MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::string& shaderName, uint32_t slots, bool drawableOutput)
+MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::string& shaderName, uint32_t slots, bool drawableOutput, const RasterState* raster)
     : m_Device(std::move(deviceOwner))
 {
     auto pool = NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
@@ -177,6 +177,22 @@ MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::st
                 Check(type.basetype == spirv_cross::SPIRType::Int && type.vecsize == 1 && type.width == 32, "Picking output must be signed int32");
                 descriptor->colorAttachments()->object(1)->setPixelFormat(MTL::PixelFormatR32Sint);
             }
+        if (raster)
+        {
+            auto* color = descriptor->colorAttachments()->object(0);
+            color->setBlendingState(raster->Blend ? MTL4::BlendStateEnabled : MTL4::BlendStateDisabled);
+            color->setSourceRGBBlendFactor(MTL::BlendFactorSourceAlpha);
+            color->setDestinationRGBBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
+            color->setSourceAlphaBlendFactor(MTL::BlendFactorOne);
+            color->setDestinationAlphaBlendFactor(MTL::BlendFactorOneMinusSourceAlpha);
+            const auto mask = [](glm::bvec4 value) {
+                return MTL::ColorWriteMask((value.r ? MTL::ColorWriteMaskRed : 0) |
+                    (value.g ? MTL::ColorWriteMaskGreen : 0) | (value.b ? MTL::ColorWriteMaskBlue : 0) |
+                    (value.a ? MTL::ColorWriteMaskAlpha : 0));
+            };
+            color->setWriteMask(mask(raster->ColorMask));
+            descriptor->colorAttachments()->object(1)->setWriteMask(mask(raster->PickingMask));
+        }
         auto vertices = NS::TransferPtr(MTL::VertexDescriptor::alloc()->init());
         spirv_cross::Compiler inputs(m_Artifact.Stages[0].Spirv);
         const std::map<std::string, std::vector<MTL::VertexFormat>> formats = {

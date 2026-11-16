@@ -7,7 +7,7 @@
 namespace Hazel {
 class MetalDevice;
 class MetalRendererAPI;
-struct MetalQuadFrame;
+struct MetalRenderer2DFrame;
 // Immutable attachment identity. Each submitted generation is completion-retained.
 struct MetalFramebufferAttachments
 {
@@ -46,7 +46,7 @@ private:
     std::shared_ptr<MetalDevice> m_Device;
     FramebufferSpecification m_Specification;
     std::shared_ptr<const MetalFramebufferAttachments> m_Attachments;
-    std::shared_ptr<MetalQuadFrame> m_Frame;
+    std::shared_ptr<MetalRenderer2DFrame> m_Frame;
     Ref<const FramebufferReadback> m_Readback;
     bool m_SubmittedGeneration = false;
     std::vector<std::shared_ptr<const MetalFramebufferAttachments>> m_Available;

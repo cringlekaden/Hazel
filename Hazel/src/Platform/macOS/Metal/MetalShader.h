@@ -1,6 +1,7 @@
 #pragma once
 #include "Hazel/Renderer/Resources/Shader.h"
 #include "MetalShaderArtifact.h"
+#include "Hazel/Renderer/RendererAPI.h"
 #include <Metal/Metal.hpp>
 #include <memory>
 
@@ -11,7 +12,7 @@ class MetalDevice;
 class MetalShader final : public Shader
 {
 public:
-    MetalShader(std::shared_ptr<MetalDevice> device, const std::string& name, uint32_t slots = 32, bool drawableOutput = false);
+    MetalShader(std::shared_ptr<MetalDevice> device, const std::string& name, uint32_t slots = 32, bool drawableOutput = false, const RasterState* raster = nullptr);
     const std::string& GetName() const override { return m_Artifact.Name; }
     ProgramLoadingPath GetProgramLoadingPath() const override { return ProgramLoadingPath::MetalLibrary; }
     const MetalShaderArtifact& Artifact() const { return m_Artifact; }

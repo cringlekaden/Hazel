@@ -45,13 +45,15 @@ Open **Assets/Scenes/UI Tutorial.hazel** and Play. Its [five pages](examples/San
 
 [SceneTransitions](examples/SceneTransitions/README.md) is the smallest runtime/scripting example. Every project has source launch and export instructions. Prepared game packages need **no compiler, Python or source SDK**; changing scripts and exporting requires the authoring toolchain.
 
+The development branch also has an experimental [Metal 4 Renderer2D runtime](docs/development.md#experimental-metal-shader-resources). M3 qualification is incomplete; OpenGL remains the default.
+
 ## Status and support
 
 Requires **OpenGL 4.1 core**. Windows x64 and Linux x86_64/X11 (including Xwayland) are maintained; official Linux packages target Ubuntu 24.04/glibc 2.39+. Native Wayland is not implemented. Native arm64 macOS 27.0+ supports [Xcode development and local ad-hoc bundles](docs/getting-started.md#apple-silicon-macos-270), qualified with real Apple rendering, relocated products and cross-platform CI. Outstanding physical clipboard/mixed-display/controller checks and distribution-signing limits are recorded in the [Mac qualification record](docs/design/macos-port.md). See [platform scope and UI limits](docs/platforms-and-dependencies.md#platform-status).
 
 [![C/C++ CI — master](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml/badge.svg?branch=master)](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Amaster)
 
-Mac integration qualification [`631af3b`](https://github.com/cringlekaden/Hazel/actions/runs/41705072658): all Linux, Windows and Mac jobs passed. These completed results cover that product-code checkpoint; later integration changes are documentation only. The master badge reports subsequent runs separately.
+Mac integration qualification [`631af3b`](https://github.com/cringlekaden/Hazel/actions/runs/41705072658): all Linux, Windows and Mac jobs passed. These completed results cover that historical checkpoint. The development branch’s Metal changes have separate local qualification records and do not inherit that CI verdict. The master badge reports subsequent runs separately.
 
 The badge is **workflow-wide**. Open a run for its separate Windows/Linux Debug, Release and extracted-binary jobs and the Mac build/CPU/service/managed subset. [CI coverage](docs/development.md#canonical-ci) includes software/GL4.1 regressions, editor/tutorial authoring and relocated packages; Apple GPU qualification is local. There is no published release; [download guidance](docs/packaging.md) identifies snapshot contents and retention.
 

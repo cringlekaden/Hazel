@@ -106,49 +106,57 @@ Sheet/image/scene arguments are asset-relative; use a disposable project for wri
 
 ## Experimental Metal shader resources
 
-![Native Metal 4 Nutella opaque quad scene](images/metal-quads.jpg)
+![Native Metal Renderer2D world and screen UI offscreen readback](images/metal-renderer2d-readback.png)
 
-Actual Apple M4 Debug capture of the opt-in scene; this does not show full backend parity.
+Native Apple M4 offscreen rendering of the example. Window presentation and
+physical input are separate [M3 qualification gates](design/metal-m3.md).
+The historical M2-C window capture remains in its integration record.
 
-The `feature/3d-foundations` branch has an opt-in Metal 4 opaque quad scene
-path in Nutella. Hazelnut and ordinary Nutella launches default to OpenGL.
-This is **not full Metal backend parity**. It requires Apple Silicon supporting
-Metal 4, native arm64 macOS 27+, Xcode and the optional Apple Metal Toolchain.
-Follow the normal [build prerequisites](getting-started.md) on this branch first.
+On `feature/3d-foundations`, Nutella can opt into the Metal 4 Renderer2D runtime.
+**M3 acceptance is INCOMPLETE**: smoothed-line coverage/picking parity fails,
+and visible/input gates remain blocked. Hazelnut and ordinary Nutella launches still default to OpenGL.
+Requires Metal 4 Apple Silicon, native arm64 macOS 27+, Xcode and the optional
+Apple Metal Toolchain. Follow [build prerequisites](getting-started.md) first.
+To check out this development branch, use
+`git clone --branch feature/3d-foundations --recurse-submodules https://github.com/cringlekaden/Hazel.git`.
 
-Build the player and produce the existing GLSL shader artifacts offline:
+Build the player and produce artifacts from the canonical GLSL offline:
 
 ```sh
 python3 scripts/hazel.py build --config Debug
 python3 scripts/macos/metal_shaders.py --config Debug --build --output Hazel/Resources/shaders/metal
-HAZEL_RESOURCES="$PWD/Hazel/Resources" python3 scripts/hazel.py run Nutella --config Debug --metal-quads --inspect-camera --project examples/Sandbox/Sandbox-Quads.hproj
+HAZEL_RESOURCES="$PWD/Hazel/Resources" python3 scripts/hazel.py run Nutella --config Debug --metal-renderer2d --project examples/Sandbox/Sandbox-Renderer2D.hproj
 ```
 
-Use `Release` for both build commands and the launch configuration to run Release.
-The scene has three opaque textured quads. Its left quad alternates between
-sprite regions every 0.7 seconds through ordinary runtime sprite animation.
-With inspection enabled, hold RMB and use WASD/Q/E to move the camera; Home
-restores the authored pose, Escape releases the pointer. No inspection text
-is drawn in the Metal window. Close the window normally to drain GPU work.
-`HAZEL_METAL_TRACE=1` optionally prints completion, positive/zero presentation
-timestamps, native CPU/GPU timing and shutdown memory counters. A completed
-command or zero presentation timestamp does not prove visible output.
+Use `Release` consistently for Release. The content-only example includes
+animated textured sprites, translucent overlaps, a circle, Unicode MSDF world
+text and a screen-space button. Click the button or use Tab to inspect focus.
+Add `--inspect-camera` for RMB + WASD/Q/E movement, Home reset and Escape release;
+the inspector uses the same Renderer2D text path. Close normally to drain work.
+`--metal-renderer2d` replaces the temporary `--metal-quads` launch flag.
+`HAZEL_METAL_TRACE=1` prints completion, presentation, timing and memory counters.
+A completed command or zero presentation timestamp does not prove visible output.
 
-[M2-C's integration record](design/metal-m2c.md) describes production ownership,
-qualification and current limits: at most eight opaque sprites, one sample,
-RGBA32F color / signed R32Sint IDs / Depth32Float world targets; 1..4096 pixels
-per axis and at most 8,388,608 pixels total, within bounded owner/in-flight memory.
-Scene-referred output uses existing Neutral/exposure conversion, followed by sRGB
-encoding to the native BGRA8 drawable. Display-referred output bypasses exposure.
-Framebuffer generations recycle after completion/feedback; full-frame readback
-is requested by offscreen `Submit`, and is omitted from normal window output.
+| Capability | Metal runtime status |
+| --- | --- |
+| Normal 20,000-quad batches, texture-slot flushes, ordered mixed runs | Implemented; native offscreen gates |
+| Tinted/textured sprites, circles, MSDF font/atlas pages | Implemented; native numerical comparisons |
+| Lines | Native aliased lines implemented; OpenGL smoothed-line coverage/picking parity **FAIL** |
+| Source-over RGB/alpha, clipping, passive picking, signed IDs | Native numerical and OpenGL comparisons |
+| World HDR/Neutral/exposure, screen UI, display conversion | Implemented; end-to-end acceptance incomplete |
+| Meshes, lights, environments, Renderer3D/PBR/IBL | Unsupported; rejected |
+| Hazelnut Metal ImGui, general Metal game export | Not implemented / not qualified |
 
-Meshes, lights, environments, circles, text, UI/ImGui, blending, mipmaps,
-additional attachment profiles and editor Metal rendering are unsupported and
-reject explicitly. File sprite sheets must specify supported nearest/linear,
-repeat/clamp sampling with no mipmaps and opaque RGBA8 (sRGB/linear), or generated
-linear RGBA32F data. Whole-file default mipmap sampling remains unsupported;
-use a sprite-sheet sampling specification as in the quad example.
+Targets remain single-sample RGBA32F / R32Sint / Depth32Float, 1..4096 per axis,
+at most 8,388,608 pixels. Submitted attachment generations retire after GPU
+completion and feedback. Window output omits full-frame CPU readback.
+RGB8 font atlases expand to native RGBA8; RGBA8 linear/sRGB and generated RGBA32F
+textures support alpha. Ordinary nearest/linear/mipmap sampling and repeat,
+clamp or mirrored-repeat use immutable texture versions. Mips generate on the
+native queue before first sampling. Native line width is one pixel, matching
+the maintained Apple OpenGL 4.1 width limit. OpenGL also enables line smoothing;
+Metal's native line coverage differs. The acceptance runner preserves this failure
+rather than disabling OpenGL smoothing. See the M3 record for evidence.
 
 The producer reuses valid packages and rebuilds stale/corrupt ones. Generated
 `.hzmetal` packages contain validated libraries; runtime needs no developer
@@ -162,9 +170,9 @@ The existing offscreen and native window runners reuse M2-B4 fixtures and M1's
 window/lifetime tests (use fresh output directories):
 
 ```sh
-python3 scripts/macos/metal_m2b2.py --config Debug --build --resources Hazel/Resources --output build/metal-m2c-offscreen-debug
-python3 scripts/macos/metal_m1.py --config Debug --build --quads Hazel/Resources --output build/metal-m2c-window-debug
-python3 scripts/macos/metal_m1.py --config Debug --quads Hazel/Resources --hidpi --output build/metal-m2c-window-debug-2x
+python3 scripts/macos/metal_m3.py --config Debug --build --resources Hazel/Resources --output build/metal-m3-offscreen-debug
+python3 scripts/macos/metal_m1.py --config Debug --build --renderer2d Hazel/Resources --output build/metal-m3-window-debug
+python3 scripts/macos/metal_m1.py --config Debug --renderer2d Hazel/Resources --hidpi --output build/metal-m3-window-debug-2x
 ```
 
 The native runner requires an unlocked console. `--hidpi` temporarily selects an

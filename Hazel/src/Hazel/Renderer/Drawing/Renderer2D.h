@@ -17,8 +17,6 @@ namespace Hazel {
 	{
 	public:
 		static void Init();
-        // Experimental bounded Metal offscreen profile; no font or other primitive services.
-        static void InitQuads();
 		static void Shutdown();
 
         static void BeginScene(const glm::mat4 &viewProjection);
@@ -32,6 +30,7 @@ namespace Hazel {
         static void SetPickingEnabled(bool enabled); // ordered-run state; preserves underlying picking attachment
         static void SetPrimitiveClip(glm::ivec4 clip);
         static void EndScene();
+        static void CancelScene(); // discard unsent CPU work after a failed pass
 		enum class FlushReason { End, Primitive, Font, Textures, Capacity, External, Count };
         static void Flush(FlushReason reason = FlushReason::External);
 

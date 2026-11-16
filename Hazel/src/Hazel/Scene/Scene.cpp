@@ -1058,15 +1058,8 @@ namespace Hazel {
         m_Presentation.Validate();
         if (RendererAPI::GetAPI() == RendererAPI::API::Metal) {
             if (!m_Registry.view<const MeshRendererComponent>().empty() || !m_Registry.view<const DirectionalLightComponent>().empty() ||
-                !m_Registry.view<const CircleRendererComponent>().empty() || !m_Registry.view<const TextComponent>().empty() ||
-                !m_Registry.view<const UIRectComponent>().empty() || !m_Registry.view<const UICanvasComponent>().empty() ||
                 !m_Presentation.Environment.Asset.empty())
-                throw std::runtime_error("Metal quad scenes do not support meshes, lights, environment, circles, text or screen UI");
-            if (m_Registry.view<const SpriteRendererComponent>().size() > 8)
-                throw std::runtime_error("Metal quad scenes currently support at most eight opaque sprites");
-            for (auto h : m_Registry.view<const SpriteRendererComponent>())
-                if (m_Registry.get<SpriteRendererComponent>(h).Color.a != 1)
-                    throw std::runtime_error("Metal quad scenes require opaque sprite colors");
+                throw std::runtime_error("Metal Renderer2D scenes do not support meshes, lights or environments");
         }
         if(!m_Presentation.Environment.Asset.empty()) {
             if(!m_Assets)throw std::runtime_error("Environment requires project-owned prepared assets");

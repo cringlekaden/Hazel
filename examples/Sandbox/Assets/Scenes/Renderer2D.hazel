@@ -1,0 +1,332 @@
+SceneVersion: 3
+Scene: Renderer2D runtime parity
+Presentation:
+  Mode: SceneReferred
+  Exposure: 0
+  Background:
+  - 0.025
+  - 0.05
+  - 0.1
+  - 1
+Entities:
+- Entity: 1
+  Relationship:
+    Parent: 0
+    Order: 0
+  TagComponent:
+    Tag: Camera
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 7
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  CameraComponent:
+    Camera:
+      ProjectionType: 0
+      PerspectiveFOV: 0.785398185
+      PerspectiveNear: 0.01
+      PerspectiveFar: 1000
+      OrthographicSize: 5
+      OrthographicNear: -1
+      OrthographicFar: 1
+    Primary: true
+    FixedAspectRatio: false
+- Entity: 2
+  Relationship:
+    Parent: 0
+    Order: 1
+  TagComponent:
+    Tag: Quad 1
+  TransformComponent:
+    Translation:
+    - -1.5
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 2
+    - 2
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 1
+    - 0.4
+    - 0.2
+    - 0.65
+    Source:
+      Type: Region
+      Sheet: Textures/Quads.hsprites
+      RegionID: '0000000000000001'
+  SpriteAnimationComponent:
+    DefaultClip:
+      Sheet: Textures/Quads.hsprites
+      ClipID: '0000000000000001'
+    Autoplay: true
+    Speed: 1
+- Entity: 3
+  Relationship:
+    Parent: 0
+    Order: 2
+  TagComponent:
+    Tag: Quad 2
+  TransformComponent:
+    Translation:
+    - 1.5
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 2
+    - 2
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.2
+    - 0.6
+    - 1
+    - 0.75
+    Source:
+      Type: Region
+      Sheet: Textures/Quads.hsprites
+      RegionID: '0000000000000001'
+- Entity: 4
+  Relationship:
+    Parent: 0
+    Order: 3
+  TagComponent:
+    Tag: Quad 3
+  TransformComponent:
+    Translation:
+    - 0
+    - -1
+    - 0.3
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 2
+    - 2
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.3
+    - 1
+    - 0.3
+    - 1
+    Source:
+      Type: Region
+      Sheet: Textures/Quads.hsprites
+      RegionID: '0000000000000001'
+- Entity: 10
+  TagComponent:
+    Tag: Translucent circle
+  Relationship:
+    Parent: 0
+    Order: 4
+  TransformComponent:
+    Translation:
+    - 0
+    - 0.4
+    - 0.5
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 2
+    - 2
+    - 1
+  CircleRendererComponent:
+    Color:
+    - 0.25
+    - 0.7
+    - 1
+    - 0.6
+    Thickness: 0.18
+    Fade: 0.005
+- Entity: 11
+  TagComponent:
+    Tag: World MSDF text
+  Relationship:
+    Parent: 0
+    Order: 5
+  TransformComponent:
+    Translation:
+    - -2.7
+    - 1.6
+    - 0.6
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.32
+    - 0.32
+    - 1
+  TextComponent:
+    TextString: Hazel · Renderer2D · é Ω Ж
+    Color:
+    - 1
+    - 0.85
+    - 0.6
+    - 0.9
+    Kerning: 0
+    LineSpacing: 0
+- Entity: 4725327554835410179
+  Relationship:
+    Parent: 0
+    Order: 6
+  TagComponent:
+    Tag: UI Canvas
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UICanvasComponent:
+    ReferenceSize:
+    - 1280
+    - 720
+    SafeInsets:
+    - 16
+    - 16
+    - 16
+    - 16
+    SortOrder: 0
+    Visible: true
+    Enabled: true
+    Modal: false
+- Entity: 1233722617798641945
+  Relationship:
+    Parent: 4725327554835410179
+    Order: 0
+  TagComponent:
+    Tag: UI Button
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.03
+    - 0.08
+    - 0.15
+    - 0.85
+    Source:
+      Type: None
+  TextComponent:
+    TextString: Native Metal 4 · click or Tab
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UIRectComponent:
+    Offset:
+    - 24
+    - 24
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 8
+    - 8
+    - 8
+    - 8
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 420
+    - 80
+    Anchor:
+    - 0
+    - 0
+  UITextStyleComponent:
+    FontPath: ''
+    Size: 24
+    Horizontal: 1
+    Vertical: 1
+    Wrap: true
+  UIButtonComponent:
+    Action: activate
+    TabOrder: 0
+    Interactable: true
+    Colors:
+    - - 1
+      - 1
+      - 1
+      - 1
+    - - 1.14999998
+      - 1.14999998
+      - 1.14999998
+      - 1
+    - - 0.75
+      - 0.75
+      - 0.75
+      - 1
+    - - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+    - - 1.20000005
+      - 1.14999998
+      - 0.800000012
+      - 1
+    Images:
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None
+    - Source:
+        Type: None

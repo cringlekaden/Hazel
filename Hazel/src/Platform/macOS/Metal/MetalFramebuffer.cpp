@@ -1,7 +1,7 @@
 #include "MetalFramebuffer.h"
 #include "MetalRendererAPI.h"
 #include "MetalDevice.h"
-#include "MetalQuadFrame.h"
+#include "MetalRenderer2DFrame.h"
 #include "MetalShader.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include <cmath>
@@ -12,7 +12,7 @@
 namespace Hazel {
 namespace {
 void Check(bool value, const char* message) { if (!value) throw std::logic_error(message); }
-[[noreturn]] void Unsupported() { throw std::logic_error("Operation unavailable on the Metal opaque quad framebuffer profile"); }
+[[noreturn]] void Unsupported() { throw std::logic_error("Operation unavailable on the Metal Renderer2D framebuffer profile"); }
 }
 void MetalFramebuffer::Validate(const FramebufferSpecification& specification)
 {
@@ -69,7 +69,7 @@ void MetalFramebuffer::Bind()
 {
     Check(!m_Frame, "Submit or cancel the prior framebuffer packet before binding again");
     auto& backend = Backend();
-    auto shader = std::static_pointer_cast<MetalShader>(backend.LoadShader("Renderer2D_Quad"));
+    Check(!backend.m_Stopped, "Cannot bind framebuffer after Metal backend shutdown");
     m_Device->Poll();
     if (m_SubmittedGeneration) {
         m_Available.push_back(std::move(m_Attachments));
@@ -87,9 +87,9 @@ void MetalFramebuffer::Bind()
             generation = Allocate(m_Specification.Width, m_Specification.Height);
         }
     }
-    auto frame = std::make_shared<MetalQuadFrame>();
+    auto frame = std::make_shared<MetalRenderer2DFrame>();
     frame->Width = generation->Width; frame->Height = generation->Height;
-    frame->Shader = std::move(shader); frame->Attachments = generation;
+    frame->Attachments = generation;
     backend.BindFramebuffer(frame);
     m_Frame = std::move(frame); m_Attachments = std::move(generation); m_SubmittedGeneration = false;
     m_Readback.reset(); // this pass must not expose an older generation as current pixels
@@ -113,7 +113,7 @@ Ref<const FramebufferReadback> MetalFramebuffer::Submit()
     // Busy leaves this exact CPU packet/generation available for retry or cancellation.
     try
     {
-        auto result = m_Device->SubmitQuadFrame(m_Frame);
+        auto result = m_Device->SubmitRenderer2DFrame(m_Frame);
         if (result) { m_Readback = result; m_Frame.reset(); m_SubmittedGeneration = true; }
         return result;
     }
@@ -176,7 +176,7 @@ void MetalFramebuffer::DrawEntityOutlineTo(const Ref<Framebuffer>&, int, int, gl
 void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure)
 {
     auto target = std::dynamic_pointer_cast<MetalFramebuffer>(destination);
-    Check(target && target.get() != this && target->m_Device == m_Device && std::isfinite(exposure), "Invalid Metal world destination/exposure");
+    Check(target && target.get() != this && target->m_Device == m_Device && std::isfinite(exposure) && exposure >= -16 && exposure <= 16, "Invalid Metal world destination/exposure");
     Check(m_Frame && !m_Frame->World && !Backend().IsFramebufferBound(m_Frame) && target->m_Frame &&
         Backend().IsFramebufferBound(target->m_Frame) && target->m_Frame->Draws.empty() && !target->m_Frame->World &&
         m_Frame->Width == target->m_Frame->Width && m_Frame->Height == target->m_Frame->Height,

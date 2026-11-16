@@ -1,5 +1,6 @@
 #include "Hazel/Core/Application.h"
 #include "Hazel/Core/Log.h"
+#include "Hazel/Core/Input.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Scene/RuntimeSession.h"
 #include "Hazel/Scene/Scene.h"
@@ -44,6 +45,7 @@ public:
         auto& window=Application::Get().GetWindow(); auto size=window.GetFramebufferSize();
         if (!size.first || !size.second) return;
         Session.Resize(window.GetWidth(),window.GetHeight()); Session.ResizeFramebuffer(size.first,size.second);
+        Session.SetInput(Input::GetMousePosition(),window.IsFocused());
         if (!Display) {
             FramebufferSpecification spec; spec.Width=size.first;spec.Height=size.second;
             spec.Attachments={FramebufferTextureFormat::RGBA32F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::DEPTH32F};
@@ -55,7 +57,8 @@ public:
         Session.SetRenderTarget(Display);Session.Update(dt);
         Display->Unbind();Display->EncodeOutput();
     }
-    void OnEvent(Event& event) override { if(event.GetEventType()==EventType::WindowResize) ++Resizes; }
+    void OnEvent(Event& event) override { if(event.GetEventType()==EventType::WindowResize) ++Resizes;
+        if(QuadProject)Session.SubmitUIEvent(event,Input::GetMousePosition(),Application::Get().GetWindow().IsFocused()); }
 };
 static void Print(const char* name,const MetalProofSnapshot& s) {
     std::cout<<name<<" submitted="<<s.Submitted<<" completed="<<s.Completed<<" verified="<<s.Verified
@@ -72,11 +75,12 @@ static void Print(const char* name,const MetalProofSnapshot& s) {
 }
 int main(int argc,char** argv) {
     try {
-        const bool quads=argc==4 && std::string(argv[2])=="--quads";
+        const bool runtime=argc==4 && std::string(argv[2])=="--renderer2d";
+        const bool quads=runtime || (argc==4 && std::string(argv[2])=="--quads");
         Check(argc==2||argc==3||quads,"Usage: MetalM1Smoke <private-output-directory> [capture.gputrace]");
         Log::Init(); auto output=std::filesystem::absolute(argv[1]); std::filesystem::create_directories(output);
         auto spec=Specification(output);
-        if (quads) { spec.RendererMode=RendererInitialization::Quads; spec.Resources.Root=std::filesystem::absolute(argv[3]); }
+        if (quads) { spec.RendererMode=RendererInitialization::Drawing; spec.Resources.Root=std::filesystem::absolute(argv[3]); }
         Check(!RenderCommand::IsConfigured()&&glad_glGetString==nullptr,"Implicit OpenGL initialization before Metal startup");
         for(auto point:{MetalStartupFailure::AfterDevice,MetalStartupFailure::AfterQueue,MetalStartupFailure::AfterSurface}) {
             MetalRendererAPI::FailNextStartupForTesting(point);
@@ -87,9 +91,6 @@ int main(int argc,char** argv) {
             Check(observer->Snapshot().DeviceReleased&&observer->Snapshot().SurfaceDetached,"Recovery startup did not retire native owners");
         }
         std::cout<<"PASS: device/queue/attached-surface startup failures each followed by successful Application recovery\n";
-        { auto full=spec; full.RendererMode=RendererInitialization::Drawing; bool failed=false;
-          try { Application rejected(full); } catch(const std::runtime_error& e) { failed=std::string(e.what()).find("drawing services")!=std::string::npos; }
-          Check(failed&&!RenderCommand::IsConfigured(),"Incomplete Metal drawing mode was accepted"); }
         std::shared_ptr<MetalProofObserver> observer;
         std::thread releaseGate;
         bool minimized=false,restored=false,skip=false,zero=false,scaled=false,scaleRecovered=false,vsyncOff=false,vsyncOn=false;
@@ -104,7 +105,7 @@ int main(int argc,char** argv) {
             Check(glfwGetWindowAttrib(window,GLFW_CLIENT_API)==GLFW_NO_API&&glfwGetCurrentContext()==nullptr&&glad_glGetString==nullptr,
                   "Metal startup created or loaded OpenGL");
             auto eventLayer=CreateScope<EventProof>(); auto* eventProof=eventLayer.get();
-            if(quads) eventLayer->QuadProject=Project::LoadCandidate(std::filesystem::absolute("examples/Sandbox/Sandbox-Quads.hproj"));
+            if(quads) eventLayer->QuadProject=Project::LoadCandidate(std::filesystem::absolute(runtime ? "examples/Sandbox/Sandbox-Renderer2D.hproj" : "examples/Sandbox/Sandbox-Quads.hproj"));
             application.PushLayer(std::move(eventLayer));
             bool immutable=false; try { RenderCommand::Configure(RendererAPI::API::OpenGL); } catch(const std::logic_error&) { immutable=true; }
             Check(immutable&&Renderer::GetAPI()==RendererAPI::API::Metal,"Backend changed during a live graphics lifetime");

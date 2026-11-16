@@ -78,6 +78,7 @@ def main():
     parser.add_argument('--config',choices=('Debug','Release'),required=True)
     parser.add_argument('--build',action='store_true')
     parser.add_argument('--quads', type=Path, help='Run the existing integrated quad scene with this Metal shader resource root')
+    parser.add_argument('--renderer2d', type=Path, help='Run the production mixed world and screen UI example')
     parser.add_argument('--capture',action='store_true')
     parser.add_argument('--hidpi',action='store_true',help='Temporarily select and verify an advertised native 2x display mode, then restore it')
     parser.add_argument('--build-only',action='store_true',help='Build without requiring an unlocked desktop')
@@ -97,8 +98,9 @@ def main():
             raise RuntimeError('Stop native qualification: intended GUI console is locked or unavailable')
         environment=os.environ.copy(); environment['DYLD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib'); environment.update(MTL_DEBUG_LAYER='1',MTL_DEBUG_LAYER_ERROR_MODE='assert',MTL_DEBUG_LAYER_WARNING_MODE='nslog',MTL_SHADER_VALIDATION='1',MTL_CAPTURE_ENABLED='1')
         command=[hz.binaries(args.config)/'MetalM1Smoke/MetalM1Smoke',output]
-        if args.quads and args.capture: raise RuntimeError('Use either --quads or --capture')
+        if (args.quads or args.renderer2d) and args.capture: raise RuntimeError('Use either --quads or --capture')
         if args.quads: command += ['--quads', args.quads.resolve()]; environment['HAZEL_METAL_TRACE']='1'
+        if args.renderer2d: command += ['--renderer2d', args.renderer2d.resolve()]; environment['HAZEL_METAL_TRACE']='1'
         if args.capture: command.append(output/'metal4.gputrace')
         # Capture both output streams, preserving the full native validation diagnostics.
         def run():
@@ -121,7 +123,7 @@ def main():
         # Join positive presentation timestamps to completed GPU work. The original
         # transfer mode also verifies readback; scene numerical checks run separately.
         gpu={int(frame) for frame,ok in re.findall(r'M1_GPU frame=(\d+) verified=(\d+)',log) if ok=='1'}
-        if args.quads: gpu={int(frame) for frame in re.findall(r'M2C_GPU frame=(\d+) completed=1',log)}
+        if args.quads or args.renderer2d: gpu={int(frame) for frame in re.findall(r'M2C_GPU frame=(\d+) completed=1',log)}
         presented={int(frame):float(stamp) for frame,stamp in re.findall(r'M1_PRESENT frame=(\d+) timestamp=([\d.]+)',log) if float(stamp)>0}
         qualified=sorted(gpu & presented.keys())
         timings={int(frame):(int(w),int(h),float(ms)) for frame,w,h,ms in re.findall(r'M1_SUBMIT frame=(\d+) pixels=(\d+)x(\d+) cpu_ms=([\d.]+)',log)}
@@ -129,11 +131,11 @@ def main():
         baseline=[frame for frame,entry in timings.items() if entry[:2]==(1280,720)]
         proof={'completedVerified':len(gpu),'positivePresented':len(presented),'completedVerifiedPositivePresented':len(qualified),
                'frames':[{'frame':frame,'presentedTime':presented[frame]} for frame in qualified],
-               'timingScope':('Validation-enabled integrated scene, world/output conversion and presentation; numeric fixtures qualified separately.' if args.quads else 'Validation-enabled clear + diagnostic transfers. Not scene-rendering performance.'),
+               'timingScope':('Validation-enabled integrated scene, world/output conversion and presentation; numeric fixtures qualified separately.' if (args.quads or args.renderer2d) else 'Validation-enabled clear + diagnostic transfers. Not scene-rendering performance.'),
                'baseline1280x720':{'samples':len(baseline),
                    'cpuMeanMs':statistics.mean(timings[f][2] for f in baseline) if baseline else None,
                    'gpuMeanMs':statistics.mean(gpu_times[f] for f in baseline if f in gpu_times) if any(f in gpu_times for f in baseline) else None}}
-        if args.quads:
+        if args.quads or args.renderer2d:
             proof['completed']=proof.pop('completedVerified')
             proof['completedPositivePresented']=proof.pop('completedVerifiedPositivePresented')
             proof['verification']='GPU completion and positive presentation; numerical fixture results are separate'

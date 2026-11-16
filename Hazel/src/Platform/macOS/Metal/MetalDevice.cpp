@@ -1,5 +1,5 @@
 #include "MetalDevice.h"
-#include "MetalQuadFrame.h"
+#include "MetalRenderer2DFrame.h"
 #include "MetalShader.h"
 #include "MetalFramebuffer.h"
 #include "Hazel/Core/Log.h"
@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <stdexcept>
+#include <set>
 
 namespace Hazel {
 namespace {
@@ -96,12 +97,23 @@ void MetalDevice::EnableTransferProof() {
 }
 void MetalDevice::Account() {
     uint64_t resources=0,allocators=0,quadAllocations=0;
+    std::set<const MTL::Allocation*> allocations;
+    std::vector<const MetalRenderer2DFrame*> scenes;
     for(auto& f:m_Frames) {
-        for(auto* b:{f.Upload.get(),f.Private.get(),f.Readback.get()}) if(b) resources+=b->allocatedSize();
-        if(f.Texture) resources+=f.Texture->allocatedSize();
+        for(auto* buffer:{f.Upload.get(),f.Private.get(),f.Readback.get()}) if(buffer) allocations.insert(buffer);
+        for(const auto& buffer:f.Renderer2DBuffers) if(buffer) allocations.insert(buffer.get());
+        if(f.Texture) allocations.insert(f.Texture.get());
         if(f.Allocator) allocators+=f.Allocator->allocatedSize();
-        if(f.Quad) { resources+=f.Quad->ResourceBytes(); quadAllocations+=f.Quad->Residency->allocationCount(); }
+        if(f.Quad) { scenes.push_back(f.Quad.get()); quadAllocations+=f.Quad->Residency->allocationCount(); }
     }
+    while(!scenes.empty()) {
+        const auto* scene=scenes.back();scenes.pop_back();
+        for(const auto& target:scene->Attachments->Targets) allocations.insert(target.get());
+        for(const auto& buffer:scene->Buffers) if(buffer) allocations.insert(buffer.get());
+        for(const auto& draw:scene->Draws) for(const auto& texture:draw.Textures) allocations.insert(texture->Texture.get());
+        if(scene->World)scenes.push_back(scene->World.get());
+    }
+    for(const auto* allocation:allocations) resources+=allocation->allocatedSize();
     Require(resources<=ResourceLimit&&allocators<=AllocatorLimit,"M1 bounded GPU storage limit exceeded");
     uint64_t attachmentBytes = 0, generations = 0;
     for (const auto& weak : m_AttachmentGenerations) if (auto generation = weak.lock()) {
@@ -196,7 +208,12 @@ void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t l
     if (scene && (scene->Width != w || scene->Height != h)) {
         std::lock_guard<std::mutex> lock(m_Observer->Mutex); ++m_Observer->Value.AbortedReservations; return;
     }
-    if (scene) PrepareQuadFrame(scene);
+    if (scene) {
+        auto& slot=m_Frames[m_Next];
+        slot.Renderer2DCursor=0;
+        try { PrepareRenderer2DFrame(scene); slot.Renderer2DBuffers.resize(slot.Renderer2DCursor); }
+        catch (...) { slot.Renderer2DBuffers.clear(); Account(); throw; }
+    }
     auto& f=m_Frames[m_Next];
     f.Allocator->reset(); // Poll proved the previous submission no longer uses this allocator/storage.
     const auto serial=m_Serial+1;
@@ -206,7 +223,7 @@ void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t l
     if(m_Transfers) EncodeTransfers(f,serial);
     if (scene) {
         m_Commands->useResidencySet(scene->Residency.get());
-        EncodeQuadFrame(scene);
+        EncodeRenderer2DFrame(scene);
     }
     auto pass=NS::TransferPtr(MTL4::RenderPassDescriptor::alloc()->init());
     auto* color=pass->colorAttachments()->object(0);
@@ -247,6 +264,7 @@ void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t l
     m_Queue->wait(drawable.get());
     const MTL4::CommandBuffer* buffers[]={m_Commands.get()};
     m_Queue->commit(buffers,1,options.get());
+    if (scene) scene->MarkMipmapsSubmitted();
     m_Queue->signalDrawable(drawable.get());
     drawable->present();
     m_Queue->signalEvent(m_Completed.get(),serial);
@@ -277,7 +295,9 @@ void MetalDevice::Drain() {
     if(!m_Observer->Changed.wait_for(lock,std::chrono::seconds(5),[&] { return m_Observer->Value.Feedbacks==m_Observer->Value.Submitted; })) {
         ++m_Observer->Value.Errors; m_Observer->Value.Error="Metal 4 commit feedback did not retire during shutdown";
     }
-    lock.unlock(); Poll(); lock.lock();
+    lock.unlock(); Poll();
+    for(auto& frame:m_Frames) frame.Renderer2DBuffers.clear();
+    Account(); lock.lock();
     m_Observer->Value.ShutdownComplete=true;
     if (m_Trace) {
         const auto& s = m_Observer->Value;
