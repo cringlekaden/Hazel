@@ -122,7 +122,7 @@ def build(configuration, options, sources, system, architecture):
                     unique=extracted/(library.stem+'-'+name)
                     original.rename(unique);objects.append(unique)
             run('xcrun','libtool','-static','-o',destination,*objects)
-    for name in ('spirv-cross-glsl', 'spirv-cross-core'):
+    for name in ('spirv-cross-msl', 'spirv-cross-glsl', 'spirv-cross-core'):
         shutil.copyfile(artifacts / library_name(name), libdir / library_name(name))
     shutil.copytree(sources['shaderc'] / 'libshaderc/include/shaderc', include / 'shaderc', dirs_exist_ok=True)
     shutil.copytree(sources['spirv-tools'] / 'include/spirv-tools', include / 'spirv-tools', dirs_exist_ok=True)

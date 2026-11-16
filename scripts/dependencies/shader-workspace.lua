@@ -26,7 +26,7 @@ workspace "HazelShaderTools"
         systemversion (targets.macos.deployment_target)
     filter {}
 
-for _, name in ipairs { "shaderc", "glslang", "SPIRV-Tools", "SPIRV-Tools-opt", "spirv-cross-core", "spirv-cross-glsl" } do
+for _, name in ipairs { "shaderc", "glslang", "SPIRV-Tools", "SPIRV-Tools-opt", "spirv-cross-core", "spirv-cross-glsl", "spirv-cross-msl" } do
     project (name)
         location (output .. "/" .. name)
         kind "StaticLib"

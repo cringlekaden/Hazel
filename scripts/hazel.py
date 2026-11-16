@@ -214,7 +214,7 @@ def dependencies(configuration, generator):
     try:
         manifest = json.loads((sdk / 'shader-tools.json').read_text())
         pins = json.loads((ROOT / 'scripts/dependencies/shader-tools.json').read_text())
-        libraries = [('' if SYSTEM == 'windows' else 'lib') + name + ('.lib' if SYSTEM == 'windows' else '.a') for name in ('shaderc_combined', 'spirv-cross-core', 'spirv-cross-glsl')]
+        libraries = [('' if SYSTEM == 'windows' else 'lib') + name + ('.lib' if SYSTEM == 'windows' else '.a') for name in ('shaderc_combined', 'spirv-cross-core', 'spirv-cross-glsl', 'spirv-cross-msl')]
         ready = (manifest['pins'] == pins and manifest['configuration'] == configuration and
                  manifest['system'] == SYSTEM and manifest.get('architecture', 'x86_64') == ARCHITECTURE and manifest['source_status'] == 'clean' and
                  manifest['build_system'] == 'Premake' and manifest.get('build_inputs_sha256') == dependency_digest() and

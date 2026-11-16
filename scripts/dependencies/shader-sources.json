@@ -260,5 +260,8 @@
     "shaderc/libshaderc_util/src/shader_stage.cc",
     "shaderc/libshaderc_util/src/spirv_tools_wrapper.cc",
     "shaderc/libshaderc_util/src/version_profile.cc"
+  ],
+  "spirv-cross-msl": [
+    "spirv-cross/spirv_msl.cpp"
   ]
 }

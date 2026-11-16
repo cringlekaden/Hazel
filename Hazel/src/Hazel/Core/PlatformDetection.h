@@ -5,7 +5,9 @@
 #define HZ_PLATFORM_WINDOWS
 #endif
 #elif defined(__APPLE__) && defined(__aarch64__)
+#ifndef HZ_PLATFORM_MACOS
 #define HZ_PLATFORM_MACOS
+#endif
 #elif defined(__linux__) && !defined(__ANDROID__)
 #ifndef HZ_PLATFORM_LINUX
 #define HZ_PLATFORM_LINUX

@@ -49,6 +49,30 @@ if _OPTIONS["migration-tests"] then
         filter "configurations:Release"
             optimize "On"
         filter {}
+    project "MetalM2ASmoke"
+        location (root .. "/build/MetalM2ASmoke")
+        kind "ConsoleApp"
+        language "C++"
+        cppdialect "C++17"
+        warnings "Extra"
+        targetdir (root .. "/bin/" .. outputdir .. "/%{prj.name}")
+        objdir (root .. "/bin-int/" .. outputdir .. "/%{prj.name}")
+        files { root .. "/tests/macos/MetalM2ASmoke.cpp", root .. "/tests/macos/MetalM2AShaders.cpp" }
+        links { "ApplicationServices.framework" }
+        includedirs { root .. "/Hazel/src" }
+        externalincludedirs { ShaderToolsIncludes, root .. "/Hazel/vendor/metal-cpp" }
+        buildoptions { "-fblocks" }
+        links { "spirv-cross-msl" }
+        externalincludedirs { root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/imgui", root .. "/Hazel/vendor/GLFW/include", root .. "/Hazel/vendor/Glad/include" }
+        libdirs { ShaderToolsRoot .. "/lib" }
+        links { "Hazel" }
+        links (ShaderToolsLinks)
+        defines { "GLFW_INCLUDE_NONE" }
+        filter "configurations:Debug"
+            symbols "On"
+        filter "configurations:Release"
+            optimize "On"
+        filter {}
 end
 project "freetype"
     defines { "FT_CONFIG_OPTION_SYSTEM_ZLIB" }
@@ -80,6 +104,7 @@ if _OPTIONS["migration-tests"] then
     for _, test in ipairs(tests) do if test.name ~= "ImportDependencySmoke" then table.insert(consumers, "Migration" .. test.name) end end
     table.insert(consumers, "MigrationExampleGamesSmoke")
     table.insert(consumers, "MetalM1Smoke")
+    table.insert(consumers, "MetalM2ASmoke")
 end
 for _, name in ipairs(consumers) do
     project (name)

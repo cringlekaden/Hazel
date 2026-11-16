@@ -1,5 +1,6 @@
 #include "hzpch.h"
 #include "Renderer3D.h"
+#include "Renderer3DUniforms.h"
 #include "Hazel/Assets/ProjectAssets.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/Drawing/MeshGeometry.h"
@@ -11,28 +12,7 @@ namespace Hazel
 {
 namespace
 {
-struct alignas(16) ViewData
-{
-    glm::mat4 VP;
-    glm::vec4 Eye, ToCamera, LightDirection, Incident;
-};
-struct alignas(16) ObjectData
-{
-    glm::mat4 Model, Normal;
-    glm::ivec4 Identity;
-};
-struct alignas(16) MaterialData
-{
-    glm::vec4 Base, Emissive, Surface, Options;
-};
-static_assert(sizeof(ViewData) == 128 && sizeof(ObjectData) == 144 && sizeof(MaterialData) == 64,
-              "std140 direct forward layout");
-struct alignas(16) EnvironmentData
-{
-    glm::mat4 InverseVP;
-    glm::vec4 RotationGain, Options;
-};
-static_assert(sizeof(EnvironmentData) == 96, "std140 environment layout");
+using namespace Renderer3DUniforms;
 Ref<Shader> shader, skyShader;
 Ref<UniformBuffer> environmentBuffer;
 Ref<VertexArray> skyTriangle;

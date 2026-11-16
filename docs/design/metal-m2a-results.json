@@ -1,0 +1,321 @@
+{
+  "schemaVersion": 1,
+  "milestone": "Metal 4 M2-A shader qualification checkpoint",
+  "verdict": "PASS",
+  "timestamp": "2026-11-15T23:52:42.637202-05:00",
+  "branch": "feature/3d-foundations",
+  "baselineHEAD": "79ee83e1d8dd2ecac7e8fdb48f43073e79eeb330",
+  "commitStatus": "Qualified implementation source hashes below; scoped checkpoint authorized for commit and push to feature/3d-foundations",
+  "sourceSHA256": {
+    "Hazel/src/Hazel/Core/PlatformDetection.h": "48844d4c695e14123782c5d0f2f662f4727f5eae370dbb7086a3d24450811317",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer3D.cpp": "496e2be90fdb09c88fd350ea65ea88c6760ee4167cfb3acf6d4d69f4cf553b09",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer3DUniforms.h": "f433dee4c55463bf4abc03e9d4ceb9588ddac11975434c91ad773f3b26d7c284",
+    "scripts/dependencies/build-shader-tools.py": "437fd8c290d789eefd80976750c6a7c6d58726584de198d71b70804a2bb8795b",
+    "scripts/dependencies/macos.lua": "7526d6ca4adc10d633a0fd408159cdee5dab70bea249585a423f720ad1587e8c",
+    "scripts/dependencies/shader-sources.json": "105645e47421ddec15c76a7705908be54e0c57879d721cc5d41272053f6eb5d7",
+    "scripts/dependencies/shader-workspace.lua": "409e87b0cb46d26679e162b69520566174fd1c77cf6edef10d08733349bf301a",
+    "scripts/hazel.py": "f2ab1a9cea1dd1f5e116b9649ca21569c9843b471d31efe17855555905274960",
+    "scripts/macos/metal_m2a.py": "b5fb78f4d1acdad95fdc350b41b16dc33c847d97b8b6ae3a474483b40ab0cac8",
+    "tests/macos/MetalM2A.h": "945a3b365e17db0497beb2b0d1b0397dc8f050dd8ea56e51c5b00b01c4a488ea",
+    "tests/macos/MetalM2AShaders.cpp": "c56f93a22510a2475414d06c553b427e9d25cb1a51cfc702e1ac67608fa648fb",
+    "tests/macos/MetalM2ASmoke.cpp": "ae03fab0355c325db8029a75454a06f5df47ecd0194965ae71072ecfc9a066ab"
+  },
+  "filesChanged": [
+    "Hazel/src/Hazel/Core/PlatformDetection.h",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer3D.cpp",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer3DUniforms.h",
+    "scripts/dependencies/build-shader-tools.py",
+    "scripts/dependencies/macos.lua",
+    "scripts/dependencies/shader-sources.json",
+    "scripts/dependencies/shader-workspace.lua",
+    "scripts/hazel.py",
+    "scripts/macos/metal_m2a.py",
+    "tests/macos/MetalM2A.h",
+    "tests/macos/MetalM2AShaders.cpp",
+    "tests/macos/MetalM2ASmoke.cpp",
+    "docs/design/metal-m2a.md",
+    "docs/design/metal-m2a-results.json"
+  ],
+  "runs": [
+    {
+      "configuration": "Debug",
+      "translation": "PASS",
+      "offline": {
+        "DisplayOutput.fragment.metal": "PASS",
+        "DisplayOutput.vertex.metal": "PASS",
+        "EntityOutline.fragment.metal": "PASS",
+        "EntityOutline.vertex.metal": "PASS",
+        "EnvironmentSky.fragment.metal": "PASS",
+        "EnvironmentSky.vertex.metal": "PASS",
+        "ForwardPBR.fragment.metal": "PASS",
+        "ForwardPBR.vertex.metal": "PASS",
+        "Renderer2D_Circle.fragment.metal": "PASS",
+        "Renderer2D_Circle.vertex.metal": "PASS",
+        "Renderer2D_Line.fragment.metal": "PASS",
+        "Renderer2D_Line.vertex.metal": "PASS",
+        "Renderer2D_Quad-16.fragment.metal": "PASS",
+        "Renderer2D_Quad-16.vertex.metal": "PASS",
+        "Renderer2D_Quad-32.fragment.metal": "PASS",
+        "Renderer2D_Quad-32.vertex.metal": "PASS",
+        "Renderer2D_Text.fragment.metal": "PASS",
+        "Renderer2D_Text.vertex.metal": "PASS",
+        "WorldPresentation.fragment.metal": "PASS",
+        "WorldPresentation.vertex.metal": "PASS"
+      },
+      "native": "PASS",
+      "nativeDraws": [
+        "shader=Line projection=identity-ortho interior=210 clear=618 id=-123456789 clear_id=-1 depth=0.25 HDR=2,0.25,0.5,1 completion=1 feedback_errors=0",
+        "shader=Line projection=perspective interior=210 clear=618 id=-123456789 clear_id=-1 depth=0.5 HDR=2,0.25,0.5,1 completion=1 feedback_errors=0",
+        "shader=Quad-32-slot31 projection=identity-ortho interior=210 clear=618 id=-123456789 clear_id=-1 depth=0.25 HDR=2,0.25,0.5,1 completion=1 feedback_errors=0"
+      ],
+      "validationDiagnostics": [],
+      "compiler": "Apple metal version 32023.925 (metalfe-32023.925.6)\nTarget: air64-apple-darwin27.3.0\nThread model: posix\nInstalledDir: /private/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.3.5020.11.k26za6/Metal.xctoolchain/usr/metal/current/bin",
+      "rawEvidence": "build/metal-m2a-evidence/debug-final",
+      "resultsSHA256": "13f99b4fb6454b922e7854ac9c2146cc61e8658a5bc2c4ba1a553586b32b44c2"
+    },
+    {
+      "configuration": "Release",
+      "translation": "PASS",
+      "offline": {
+        "DisplayOutput.fragment.metal": "PASS",
+        "DisplayOutput.vertex.metal": "PASS",
+        "EntityOutline.fragment.metal": "PASS",
+        "EntityOutline.vertex.metal": "PASS",
+        "EnvironmentSky.fragment.metal": "PASS",
+        "EnvironmentSky.vertex.metal": "PASS",
+        "ForwardPBR.fragment.metal": "PASS",
+        "ForwardPBR.vertex.metal": "PASS",
+        "Renderer2D_Circle.fragment.metal": "PASS",
+        "Renderer2D_Circle.vertex.metal": "PASS",
+        "Renderer2D_Line.fragment.metal": "PASS",
+        "Renderer2D_Line.vertex.metal": "PASS",
+        "Renderer2D_Quad-16.fragment.metal": "PASS",
+        "Renderer2D_Quad-16.vertex.metal": "PASS",
+        "Renderer2D_Quad-32.fragment.metal": "PASS",
+        "Renderer2D_Quad-32.vertex.metal": "PASS",
+        "Renderer2D_Text.fragment.metal": "PASS",
+        "Renderer2D_Text.vertex.metal": "PASS",
+        "WorldPresentation.fragment.metal": "PASS",
+        "WorldPresentation.vertex.metal": "PASS"
+      },
+      "native": "PASS",
+      "nativeDraws": [
+        "shader=Line projection=identity-ortho interior=210 clear=618 id=-123456789 clear_id=-1 depth=0.25 HDR=2,0.25,0.5,1 completion=1 feedback_errors=0",
+        "shader=Line projection=perspective interior=210 clear=618 id=-123456789 clear_id=-1 depth=0.5 HDR=2,0.25,0.5,1 completion=1 feedback_errors=0",
+        "shader=Quad-32-slot31 projection=identity-ortho interior=210 clear=618 id=-123456789 clear_id=-1 depth=0.25 HDR=2,0.25,0.5,1 completion=1 feedback_errors=0"
+      ],
+      "validationDiagnostics": [],
+      "compiler": "Apple metal version 32023.925 (metalfe-32023.925.6)\nTarget: air64-apple-darwin27.3.0\nThread model: posix\nInstalledDir: /private/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.3.5020.11.k26za6/Metal.xctoolchain/usr/metal/current/bin",
+      "rawEvidence": "build/metal-m2a-evidence/release-final",
+      "resultsSHA256": "c62f84dcbf08ed182ea30eda8e32079d33229fecd83f140f2255dd87508e69ac"
+    }
+  ],
+  "readback": {
+    "debug-line-ortho": {
+      "interior": 210,
+      "exterior": 618,
+      "signedIDs": [
+        -123456789
+      ],
+      "maxColorError": 0.0,
+      "maxDepthError": 0.0,
+      "clearPass": true,
+      "sha256": "3a57e281b38979a55bf40955483029d0f3ba3997a5672fb067dca2efa49d4931"
+    },
+    "debug-line-perspective": {
+      "interior": 210,
+      "exterior": 618,
+      "signedIDs": [
+        -123456789
+      ],
+      "maxColorError": 0.0,
+      "maxDepthError": 0.0,
+      "clearPass": true,
+      "sha256": "153ddb5de2bffbabd7bcdd9c1c31b41f18d98dcfead4d7aa0716df957b845f51"
+    },
+    "debug-quad32": {
+      "interior": 210,
+      "exterior": 618,
+      "signedIDs": [
+        -123456789
+      ],
+      "maxColorError": 0.0,
+      "maxDepthError": 0.0,
+      "clearPass": true,
+      "sha256": "3a57e281b38979a55bf40955483029d0f3ba3997a5672fb067dca2efa49d4931"
+    },
+    "release-line-ortho": {
+      "interior": 210,
+      "exterior": 618,
+      "signedIDs": [
+        -123456789
+      ],
+      "maxColorError": 0.0,
+      "maxDepthError": 0.0,
+      "clearPass": true,
+      "sha256": "3a57e281b38979a55bf40955483029d0f3ba3997a5672fb067dca2efa49d4931"
+    },
+    "release-line-perspective": {
+      "interior": 210,
+      "exterior": 618,
+      "signedIDs": [
+        -123456789
+      ],
+      "maxColorError": 0.0,
+      "maxDepthError": 0.0,
+      "clearPass": true,
+      "sha256": "153ddb5de2bffbabd7bcdd9c1c31b41f18d98dcfead4d7aa0716df957b845f51"
+    },
+    "release-quad32": {
+      "interior": 210,
+      "exterior": 618,
+      "signedIDs": [
+        -123456789
+      ],
+      "maxColorError": 0.0,
+      "maxDepthError": 0.0,
+      "clearPass": true,
+      "sha256": "3a57e281b38979a55bf40955483029d0f3ba3997a5672fb067dca2efa49d4931"
+    }
+  },
+  "warnings": {
+    "releaseTotalWarningOccurrences": 565,
+    "firstPartyOccurrences": 209,
+    "firstPartyMessageKinds": 22,
+    "firstPartyMessageKindsFoundInM1": 22,
+    "changedFileWarningOccurrences": 0,
+    "debugFinalWarningOccurrences": 0
+  },
+  "openGL": {
+    "Debug": {
+      "verdict": "PASS",
+      "profile": "native Apple OpenGL",
+      "executables": [
+        "ShaderToolsSmoke",
+        "RendererSmoke",
+        "RendererFeaturesSmoke",
+        "Renderer2DSmoke",
+        "SceneGPUSmoke"
+      ],
+      "runnerLog": "build/metal-m2a-evidence/debug-regressions.log"
+    },
+    "Release": {
+      "verdict": "PASS",
+      "profile": "native Apple OpenGL",
+      "executables": [
+        "ShaderToolsSmoke",
+        "RendererSmoke",
+        "RendererFeaturesSmoke",
+        "Renderer2DSmoke",
+        "SceneGPUSmoke"
+      ],
+      "runnerLog": "build/metal-m2a-evidence/release-regressions.log"
+    }
+  },
+  "M1Regression": {
+    "Debug": {
+      "verdict": "PASS",
+      "completedVerified": 340,
+      "completedVerifiedPositivePresented": 325,
+      "finalCounters": {
+        "submitted": "340",
+        "completed": "340",
+        "verified": "340",
+        "presented": "325",
+        "completed_presented": "325",
+        "feedbacks": "340",
+        "inflight": "0",
+        "peak_inflight": "3",
+        "reuse": "337",
+        "bytes": "0",
+        "peak_bytes": "29184",
+        "allocator_bytes": "0",
+        "peak_allocator_bytes": "7745064",
+        "aborted": "1",
+        "zero": "1",
+        "unavailable": "1",
+        "hidden": "14",
+        "pending_shutdown": "3",
+        "shutdown_complete": "1",
+        "surface_detached": "1",
+        "device_released": "1",
+        "residency_allocations": "0",
+        "present_callbacks": "340",
+        "zero_present_time": "15",
+        "pixels": "960x540",
+        "logical": "960x540",
+        "backing_scale": "1",
+        "vsync": "1",
+        "errors": "0"
+      },
+      "evidence": "build/metal-m2a-evidence/m1-debug-unlocked",
+      "frameProofSHA256": "f36687d4a2ac064956d98f7835ec04962ea3d466af62a06f67a5a7c0b9340201",
+      "validationLogSHA256": "de61f2de9787445178f0db029fb6eac4088654277c390c7d5502eb7a9138e7fa"
+    },
+    "Release": {
+      "verdict": "PASS",
+      "completedVerified": 338,
+      "completedVerifiedPositivePresented": 325,
+      "finalCounters": {
+        "submitted": "338",
+        "completed": "338",
+        "verified": "338",
+        "presented": "325",
+        "completed_presented": "325",
+        "feedbacks": "338",
+        "inflight": "0",
+        "peak_inflight": "3",
+        "reuse": "335",
+        "bytes": "0",
+        "peak_bytes": "29184",
+        "allocator_bytes": "0",
+        "peak_allocator_bytes": "7745064",
+        "aborted": "1",
+        "zero": "1",
+        "unavailable": "1",
+        "hidden": "8",
+        "pending_shutdown": "3",
+        "shutdown_complete": "1",
+        "surface_detached": "1",
+        "device_released": "1",
+        "residency_allocations": "0",
+        "present_callbacks": "338",
+        "zero_present_time": "13",
+        "pixels": "960x540",
+        "logical": "960x540",
+        "backing_scale": "1",
+        "vsync": "1",
+        "errors": "0"
+      },
+      "evidence": "build/metal-m2a-evidence/m1-release-unlocked",
+      "frameProofSHA256": "3008867895b2e5bea7a29f5dbfb485799e6200b66722aa53d7712d8458e01fde",
+      "validationLogSHA256": "1f5726176be34650c617989fb14f1837a1bdc497ae7ac9da979808c960ab6bea"
+    }
+  },
+  "SDKWorkflow": {
+    "verdict": "PASS",
+    "tests": 7
+  },
+  "publicDocs": {
+    "verdict": "PASS",
+    "files": 66,
+    "links": 572,
+    "findings": 0,
+    "publicBehaviorChanged": false,
+    "CI": "NOT RUN for this checkpoint"
+  },
+  "notRun": [
+    "Windows native build/GPU",
+    "Linux native build/GPU",
+    "physical Intel HD4000",
+    "2x presentation",
+    "full scene PBR/IBL numerical/visual parity",
+    "Metal source-free packaging/relocation"
+  ],
+  "remainingDependencies": [
+    "Production GLSL adapter and shader artifact/cache identity",
+    "Tier-2 descriptor-buffer ownership/residency/versioning in production path",
+    "Display composition orientation and CPU clip/UV/derivative conventions",
+    "Incremental Renderer2D integration; full PBR and ImGui remain separately scoped"
+  ]
+}
