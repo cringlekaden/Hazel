@@ -1,4 +1,5 @@
 #include "MetalDevice.h"
+#include "MetalQuadFrame.h"
 #include "Hazel/Core/Log.h"
 #include <algorithm>
 #include <chrono>
@@ -90,15 +91,16 @@ void MetalDevice::EnableTransferProof() {
     m_Residency->commit(); m_Transfers=true; Account();
 }
 void MetalDevice::Account() {
-    uint64_t resources=0,allocators=0;
+    uint64_t resources=0,allocators=0,quadAllocations=0;
     for(auto& f:m_Frames) {
         for(auto* b:{f.Upload.get(),f.Private.get(),f.Readback.get()}) if(b) resources+=b->allocatedSize();
         if(f.Texture) resources+=f.Texture->allocatedSize();
         if(f.Allocator) allocators+=f.Allocator->allocatedSize();
+        if(f.Quad) { resources+=f.Quad->ResourceBytes(); quadAllocations+=f.Quad->Residency->allocationCount(); }
     }
     Require(resources<=ResourceLimit&&allocators<=AllocatorLimit,"M1 bounded GPU storage limit exceeded");
     std::lock_guard<std::mutex> lock(m_Observer->Mutex); auto& s=m_Observer->Value;
-    s.ResourceBytes=resources; s.AllocatorBytes=allocators; s.ResidencyAllocations=m_Residency->allocationCount();
+    s.ResourceBytes=resources; s.AllocatorBytes=allocators; s.ResidencyAllocations=m_Residency->allocationCount()+quadAllocations;
     s.PeakResourceBytes=std::max(s.PeakResourceBytes,resources); s.PeakAllocatorBytes=std::max(s.PeakAllocatorBytes,allocators);
 }
 void MetalDevice::EncodeTransfers(Frame& f,uint64_t serial) {
@@ -146,7 +148,17 @@ void MetalDevice::Poll() {
     // Queue signalEvent is ordered AFTER all work in the corresponding commit.
     // Neither feedback delivery nor drawable acquisition alone permits CPU access.
     const uint64_t completed=m_Completed->signaledValue();
-    for(auto& f:m_Frames) if(f.Pending&&completed>=f.Serial) { Verify(f); f.Pending=false; }
+    for(auto& f:m_Frames) if(f.Pending&&completed>=f.Serial) {
+        if(f.Quad) {
+            if(!f.Quad->Feedback->load()) continue;
+            f.Quad->Complete();
+            f.Quad.reset(); // Only completed work releases shaders, versions and frame allocations.
+            std::lock_guard<std::mutex> lock(m_Observer->Mutex);
+            ++m_Observer->Value.Completed; --m_Observer->Value.InFlight;
+        } else Verify(f);
+        f.Pending=false;
+    }
+    Account();
 }
 void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t lw,uint32_t lh,double scale,bool visible) {
     if(m_Stopped) return;
@@ -233,6 +245,7 @@ void MetalDevice::Drain() {
     if(!m_Observer->Changed.wait_for(lock,std::chrono::seconds(5),[&] { return m_Observer->Value.Feedbacks==m_Observer->Value.Submitted; })) {
         ++m_Observer->Value.Errors; m_Observer->Value.Error="Metal 4 commit feedback did not retire during shutdown";
     }
+    lock.unlock(); Poll(); lock.lock();
     m_Observer->Value.ShutdownComplete=true;
 }
 std::function<void()> MetalDevice::GateQueue() {

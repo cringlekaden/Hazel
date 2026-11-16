@@ -121,6 +121,30 @@ if _OPTIONS["migration-tests"] then
         filter "configurations:Release"
             optimize "On"
         filter {}
+    project "MetalRenderer2DQuadSmoke"
+        location (root .. "/build/MetalRenderer2DQuadSmoke")
+        kind "ConsoleApp"
+        language "C++"
+        cppdialect "C++17"
+        warnings "Extra"
+        targetdir (root .. "/bin/" .. outputdir .. "/%{prj.name}")
+        objdir (root .. "/bin-int/" .. outputdir .. "/%{prj.name}")
+        files { root .. "/tests/macos/MetalRenderer2DQuadSmoke.cpp" }
+        links { "ApplicationServices.framework" }
+        includedirs { root .. "/Hazel/src" }
+        externalincludedirs { root .. "/Hazel/vendor/yaml-cpp/include", ShaderToolsIncludes, root .. "/Hazel/vendor/metal-cpp" }
+        buildoptions { "-fblocks" }
+        links { "spirv-cross-msl" }
+        externalincludedirs { root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/imgui", root .. "/Hazel/vendor/GLFW/include", root .. "/Hazel/vendor/Glad/include" }
+        libdirs { ShaderToolsRoot .. "/lib" }
+        links { "Hazel" }
+        links (ShaderToolsLinks)
+        defines { "GLFW_INCLUDE_NONE" }
+        filter "configurations:Debug"
+            symbols "On"
+        filter "configurations:Release"
+            optimize "On"
+        filter {}
 end
 project "freetype"
     defines { "FT_CONFIG_OPTION_SYSTEM_ZLIB" }
@@ -155,6 +179,7 @@ if _OPTIONS["migration-tests"] then
     table.insert(consumers, "MetalM2ASmoke")
     table.insert(consumers, "MetalShaderTools")
     table.insert(consumers, "MetalShaderSmoke")
+    table.insert(consumers, "MetalRenderer2DQuadSmoke")
 end
 for _, name in ipairs(consumers) do
     project (name)

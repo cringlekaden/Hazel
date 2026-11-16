@@ -126,6 +126,17 @@ that fails native loading); the user cache can be repaired from a valid package.
 The [M2-B1 qualification record](design/metal-m2b1.md) describes artifact identities,
 bindings, source-free relocation checks, limitations and reproduction commands.
 
+A bounded [offscreen Renderer2D quad checkpoint](design/metal-m2b2.md) uses these
+resources through the existing quad entry points. It supports an explicit opaque,
+unblended color/ID/depth profile, not normal scene/editor rendering or presentation.
+Full batching, other primitives, file textures and general resource factories
+remain unavailable. The qualification runner requires prebuilt shader resources:
+
+```sh
+python3 scripts/macos/metal_m2b2.py --config Debug --build --resources build/metal-shader-resources --output build/metal-m2b2-evidence/debug
+```
+
+
 ## Troubleshooting
 
 | Symptom | Action |

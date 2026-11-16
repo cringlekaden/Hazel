@@ -8,6 +8,8 @@
 #include <functional>
 
 namespace Hazel {
+struct MetalQuadFrame;
+struct MetalQuadReadback;
 // All native execution and resource ownership stays here. Metal 4 command buffers
 // retain neither referenced resources nor their allocator: slots own both explicitly.
 class MetalDevice final {
@@ -29,6 +31,9 @@ public:
     static void FailNextStartup(MetalStartupFailure point);
     static void CheckStartupFailure(MetalStartupFailure point);
 private:
+    friend class MetalRendererAPI;
+    void Poll();
+    std::shared_ptr<const MetalQuadReadback> SubmitQuadFrame(const std::shared_ptr<MetalQuadFrame>& frame);
     struct Receipt { bool GPU=false, Presented=false; };
     struct Frame {
         NS::SharedPtr<MTL4::CommandAllocator> Allocator;
@@ -38,8 +43,8 @@ private:
         std::shared_ptr<Receipt> Completion;
         uint64_t Serial=0;
         bool Pending=false;
+        std::shared_ptr<MetalQuadFrame> Quad;
     };
-    void Poll();
     void Verify(Frame& frame);
     void EncodeTransfers(Frame& frame, uint64_t serial);
     void Account();

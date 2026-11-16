@@ -12,6 +12,10 @@
 #include <stdexcept>
 #include <sstream>
 
+#ifdef HZ_PLATFORM_MACOS
+#include "Platform/macOS/Metal/MetalRendererAPI.h"
+#include "Hazel/Renderer/RenderCommand.h"
+#endif
 namespace Hazel {
 namespace {
 const char* Filters[] = {"Nearest", "Linear", "NearestMipmapNearest", "LinearMipmapNearest", "NearestMipmapLinear", "LinearMipmapLinear"};
@@ -145,6 +149,10 @@ RadianceImage DecodeRadianceHDR(const std::string &bytes) {
 }
 Ref<Texture2D> Texture2D::Create(const TextureSpecification& specification) {
     specification.Validate();
+#ifdef HZ_PLATFORM_MACOS
+    if(Renderer::GetAPI()==RendererAPI::API::Metal)
+        return static_cast<MetalRendererAPI&>(RenderCommand::Backend()).CreateTexture(specification);
+#endif
     if(Renderer::GetAPI()!=RendererAPI::API::OpenGL) throw std::runtime_error("Texture backend unavailable");
     return CreateRef<OpenGLTexture2D>(specification);
 }

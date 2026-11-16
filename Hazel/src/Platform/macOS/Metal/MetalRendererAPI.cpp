@@ -1,4 +1,5 @@
 #include "MetalRendererAPI.h"
+#include "MetalQuadFrame.h"
 #include "MetalDevice.h"
 #include "MetalShader.h"
 #include <stdexcept>
@@ -17,6 +18,7 @@ void MetalRendererAPI::Init(const RendererSettings& settings) {
 void MetalRendererAPI::Shutdown() {
     std::lock_guard<std::mutex> lock(m_ShaderMutex);
     if(m_Stopped) return;
+    m_QuadFrame.reset(); m_QuadScene=false;
     m_Device->Drain();
     m_Shaders.clear();
     m_Stopped=true;

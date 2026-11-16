@@ -1,6 +1,7 @@
 #pragma once
 #include "Hazel/Renderer/RendererAPI.h"
 #include "MetalProof.h"
+#include "Hazel/Renderer/Drawing/Renderer2DQuad.h"
 #include <filesystem>
 #include <functional>
 #include <mutex>
@@ -9,6 +10,10 @@
 namespace Hazel {
 class MetalDevice;
 class Shader;
+class Texture2D;
+struct TextureSpecification;
+struct MetalQuadFrame;
+struct MetalQuadReadback;
 // Only presentation is implemented in M1. Drawing calls fail, never enter OpenGL.
 class MetalRendererAPI final : public RendererAPI {
 public:
@@ -34,6 +39,15 @@ public:
     void DrawLines(const Ref<VertexArray>&, uint32_t, uint32_t) override;
     void SetLineWidth(float) override;
     uint32_t GetMaxTextureSlots() const override { return 0; }
+    // Explicit bounded offscreen profile; these calls do not enable scene drawing.
+    void BeginOffscreenQuadFrame(uint32_t width, uint32_t height, glm::vec4 clear = glm::vec4(0));
+    void BeginQuadScene(const glm::mat4& camera);
+    void EnqueueQuad(const std::array<QuadVertex, 4>& vertices, const std::shared_ptr<Texture2D>& texture);
+    void EndQuadScene();
+    std::shared_ptr<const MetalQuadReadback> SubmitOffscreenQuadFrame(); // null means all slots busy; retry unchanged frame
+    void CancelOffscreenQuadFrame();
+    void PollOffscreenQuads();
+    std::shared_ptr<Texture2D> CreateTexture(const TextureSpecification& specification);
     std::shared_ptr<Shader> LoadShader(const std::string& name, uint32_t slots = 32);
     std::shared_ptr<MetalDevice> Device() const { return m_Device; }
     std::shared_ptr<MetalProofObserver> Observe() const;
@@ -48,7 +62,9 @@ public:
 private:
     std::shared_ptr<MetalDevice> m_Device;
     std::mutex m_ShaderMutex;
-    bool m_Stopped = false;
+    bool m_Stopped = false, m_QuadScene = false;
+    glm::mat4 m_QuadCamera{1};
+    std::shared_ptr<MetalQuadFrame> m_QuadFrame;
     std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;
     RendererCapabilities m_Caps;
     RendererResolution m_Resolution;

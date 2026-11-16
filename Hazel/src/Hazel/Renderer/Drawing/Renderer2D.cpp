@@ -2,6 +2,10 @@
 // Actual upstream Renderer2D adapted for owned state, complete capacity guards and backend limits.
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/Drawing/Renderer2D.h"
+#include "Renderer2DQuad.h"
+#ifdef HZ_PLATFORM_MACOS
+#include "Platform/macOS/Metal/MetalRendererAPI.h"
+#endif
 
 #include "Hazel/Renderer/Resources/VertexArray.h"
 #include "Hazel/Renderer/Resources/Shader.h"
@@ -17,18 +21,6 @@
 
 namespace Hazel {
 
-	struct QuadVertex
-	{
-		glm::vec3 Position;
-		glm::vec4 Color;
-		glm::vec2 TexCoord;
-		float TexIndex;
-		float TilingFactor;
-
-		// Editor-only
-		int EntityID;
-        glm::vec4 ClipRect;
-	};
 
 	struct CircleVertex
 	{
@@ -140,6 +132,10 @@ namespace Hazel {
 	{
 		HZ_PROFILE_FUNCTION();
 
+#ifdef HZ_PLATFORM_MACOS
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
+            throw std::logic_error("Full Renderer2D initialization is unavailable; use the bounded offscreen quad seam");
+#endif
 		Font::Initialize();
         s_Data = CreateScope<Renderer2DData>();
 		s_Data->TextureSlotLimit = RenderCommand::GetSettings().TextureSlots;
@@ -165,13 +161,8 @@ namespace Hazel {
 		uint32_t offset = 0;
 		for (uint32_t i = 0; i < s_Data->MaxIndices; i += 6)
 		{
-			quadIndices[i + 0] = offset + 0;
-			quadIndices[i + 1] = offset + 1;
-			quadIndices[i + 2] = offset + 2;
-
-			quadIndices[i + 3] = offset + 2;
-			quadIndices[i + 4] = offset + 3;
-			quadIndices[i + 5] = offset + 0;
+            for (size_t j = 0; j < Renderer2DQuadIndices.size(); ++j)
+                quadIndices[i + j] = offset + Renderer2DQuadIndices[j];
 
 			offset += 4;
 		}
@@ -256,6 +247,10 @@ namespace Hazel {
 
     void Renderer2D::BeginScene(const glm::mat4 &matrix)
     {
+#ifdef HZ_PLATFORM_MACOS
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { static_cast<MetalRendererAPI&>(RenderCommand::Backend()).BeginQuadScene(matrix); return; }
+#endif
+
         s_Data->Ordered = false;
         s_Data->ClipRect = glm::vec4(-1);
         s_Data->CameraBuffer.ViewProjection = matrix;
@@ -266,6 +261,10 @@ namespace Hazel {
     }
     void Renderer2D::BeginScene(const OrthographicCamera& camera)
 	{
+#ifdef HZ_PLATFORM_MACOS
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { BeginScene(camera.GetViewProjectionMatrix()); return; }
+#endif
+
         s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);
 		HZ_PROFILE_FUNCTION();
 
@@ -278,6 +277,10 @@ namespace Hazel {
 
 	void Renderer2D::BeginScene(const Camera& camera, const glm::mat4& transform)
 	{
+#ifdef HZ_PLATFORM_MACOS
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { BeginScene(camera.GetProjection() * glm::inverse(transform)); return; }
+#endif
+
         s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);
 		HZ_PROFILE_FUNCTION();
 
@@ -290,6 +293,10 @@ namespace Hazel {
 
 	void Renderer2D::BeginScene(const NavigationCamera& camera)
 	{
+#ifdef HZ_PLATFORM_MACOS
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { BeginScene(camera.GetViewProjection()); return; }
+#endif
+
         s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);
 		HZ_PROFILE_FUNCTION();
 
@@ -302,14 +309,25 @@ namespace Hazel {
 
     void Renderer2D::BeginOrderedScene(const Camera &camera, const glm::mat4 &transform)
     {
+#ifdef HZ_PLATFORM_MACOS
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { throw std::logic_error("Ordered Renderer2D scenes are outside the offscreen quad profile"); }
+#endif
+
         // Drain the previous pass before updating its camera or raster state.
         EndScene();
         BeginScene(camera, transform);
         s_Data->Ordered = true;s_Data->Picking=true;
     }
-    void Renderer2D::SetPickingEnabled(bool enabled){if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered submission");s_Data->Picking=enabled;}
+    void Renderer2D::SetPickingEnabled(bool enabled){
+#ifdef HZ_PLATFORM_MACOS
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) throw std::logic_error("Picking masks are outside the offscreen quad profile");
+#endif
+if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered submission");s_Data->Picking=enabled;}
     void Renderer2D::SetPrimitiveClip(glm::ivec4 clip)
     {
+#ifdef HZ_PLATFORM_MACOS
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) throw std::logic_error("Primitive clipping is outside the offscreen quad profile");
+#endif
         if (!s_Data->Ordered)
             throw std::logic_error("Primitive clip requires an ordered pass");
         if (s_Data->ClipRect != glm::vec4(clip))
@@ -318,6 +336,10 @@ namespace Hazel {
     }
     void Renderer2D::EndScene()
     {
+#ifdef HZ_PLATFORM_MACOS
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { static_cast<MetalRendererAPI&>(RenderCommand::Backend()).EndQuadScene(); return; }
+#endif
+
         HZ_PROFILE_FUNCTION();
         Flush(FlushReason::End);
         StartBatch();
@@ -334,6 +356,10 @@ namespace Hazel {
     }
     void Renderer2D::EnsureRunSpace()
     {
+#ifdef HZ_PLATFORM_MACOS
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
+            throw std::logic_error("This Renderer2D primitive is outside the offscreen quad profile");
+#endif
         if (s_Data->Ordered && s_Data->Runs.size() >= 8192)
             NextBatch(FlushReason::Capacity);
     }
@@ -469,6 +495,10 @@ namespace Hazel {
 
 	void Renderer2D::Flush(FlushReason reason)
 	{
+#ifdef HZ_PLATFORM_MACOS
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { throw std::logic_error("Metal offscreen quads are individual draws, not batches"); }
+#endif
+
         if(!(s_Data->QuadIndexCount||s_Data->CircleIndexCount||s_Data->TextIndexCount||s_Data->LineVertexCount))return;
         const auto start=std::chrono::steady_clock::now();
         struct TextCompositingScope {
@@ -579,6 +609,10 @@ namespace Hazel {
 
 	void Renderer2D::DrawQuad(const glm::mat4& transform, const glm::vec4& color, int entityID)
 	{
+#ifdef HZ_PLATFORM_MACOS
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { throw std::logic_error("Offscreen quad profile requires an explicit texture"); }
+#endif
+
         EnsureRunSpace();
 		HZ_PROFILE_FUNCTION();
 
@@ -617,11 +651,20 @@ namespace Hazel {
 
     void Renderer2D::DrawSprite(const glm::mat4& transform, const ResolvedSprite& sprite, const glm::vec4& tintColor, int entityID)
 	{
+#ifdef HZ_PLATFORM_MACOS
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
+        {
+            const auto vertices = BuildRenderer2DQuad(transform, sprite.Corners, sprite.UV, tintColor,
+                sprite.TilingFactor, 0, entityID, glm::vec4(-1));
+            static_cast<MetalRendererAPI&>(RenderCommand::Backend()).EnqueueQuad(vertices, sprite.Texture);
+            return;
+        }
+#endif
+
         EnsureRunSpace();
 		HZ_PROFILE_FUNCTION();
         const auto& texture=sprite.Texture;
 
-		constexpr size_t quadVertexCount = 4;
 
 		if (s_Data->QuadIndexCount >= Renderer2DData::MaxIndices)
 			NextBatch();
@@ -646,17 +689,10 @@ namespace Hazel {
 			s_Data->TextureSlotIndex++;
 		}
 
-		for (size_t i = 0; i < quadVertexCount; i++)
-		{
-			s_Data->QuadVertexBufferPtr->Position = transform * glm::vec4(sprite.Corners[i],0,1);
-			s_Data->QuadVertexBufferPtr->Color = tintColor;
-			s_Data->QuadVertexBufferPtr->TexCoord = sprite.UV[i];
-			s_Data->QuadVertexBufferPtr->TexIndex = textureIndex;
-			s_Data->QuadVertexBufferPtr->TilingFactor = sprite.TilingFactor;
-			s_Data->QuadVertexBufferPtr->EntityID = entityID;
-            s_Data->QuadVertexBufferPtr->ClipRect=s_Data->ClipRect;
-			s_Data->QuadVertexBufferPtr++;
-		}
+        const auto vertices = BuildRenderer2DQuad(transform, sprite.Corners, sprite.UV, tintColor,
+            sprite.TilingFactor, textureIndex, entityID, s_Data->ClipRect);
+        std::copy(vertices.begin(), vertices.end(), s_Data->QuadVertexBufferPtr);
+        s_Data->QuadVertexBufferPtr += vertices.size();
 
 		QueueRun(Primitive::Quad,6);
         s_Data->QuadIndexCount += 6;
