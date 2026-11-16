@@ -14,7 +14,7 @@ struct MetalTextureVersion
 class MetalTexture2D final : public Texture2D
 {
 public:
-    MetalTexture2D(std::shared_ptr<MetalDevice> device, const TextureSpecification& specification);
+    MetalTexture2D(std::shared_ptr<MetalDevice> device, const TextureSpecification& specification, std::string path = {});
     const TextureSpecification& GetSpecification() const override { return m_Specification; }
     uint32_t GetWidth() const override { return m_Specification.Width; }
     uint32_t GetHeight() const override { return m_Specification.Height; }

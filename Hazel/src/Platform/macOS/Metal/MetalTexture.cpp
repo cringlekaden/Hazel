@@ -5,18 +5,18 @@
 #include <cstring>
 
 namespace Hazel {
-MetalTexture2D::MetalTexture2D(std::shared_ptr<MetalDevice> device, const TextureSpecification& specification)
-    : m_Device(std::move(device)), m_Specification(specification)
+MetalTexture2D::MetalTexture2D(std::shared_ptr<MetalDevice> device, const TextureSpecification& specification, std::string path)
+    : m_Device(std::move(device)), m_Specification(specification), m_Path(std::move(path))
 {
     specification.Validate();
-    if (!m_Device || specification.Width > 32 || specification.Height > 32 ||
-        (specification.Format != ImageFormat::RGBA8 && specification.Format != ImageFormat::RGBA32F) || specification.Encoding != TextureEncoding::Linear ||
+    if (!m_Device || specification.Width > 4096 || specification.Height > 4096 ||
+        (specification.Format != ImageFormat::RGBA8 && specification.Format != ImageFormat::RGBA32F) || (specification.Encoding == TextureEncoding::SRGB && specification.Format != ImageFormat::RGBA8) ||
         specification.GenerateMips ||
         (specification.MinFilter != TextureFilter::Nearest && specification.MinFilter != TextureFilter::Linear) ||
         (specification.MagFilter != TextureFilter::Nearest && specification.MagFilter != TextureFilter::Linear) ||
         (specification.WrapS != TextureWrap::Repeat && specification.WrapS != TextureWrap::ClampToEdge) ||
         (specification.WrapT != TextureWrap::Repeat && specification.WrapT != TextureWrap::ClampToEdge))
-        throw std::invalid_argument("Metal offscreen quad textures require <=32x32 RGBA8/RGBA32F linear, no mips, nearest/linear and repeat/clamp sampling");
+        throw std::invalid_argument("Metal offscreen quad textures require <=4096x4096 opaque RGBA8 (linear/sRGB) or linear RGBA32F, no mips, nearest/linear and repeat/clamp sampling");
     if (specification.Format == ImageFormat::RGBA32F &&
         (specification.MinFilter == TextureFilter::Linear || specification.MagFilter == TextureFilter::Linear) &&
         !m_Device->NativeDevice()->supports32BitFloatFiltering())
@@ -38,7 +38,7 @@ void MetalTexture2D::SetData(const void* data, uint32_t size)
     auto pool = NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
     auto version = std::make_shared<MetalTextureVersion>();
     auto descriptor = NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
-    descriptor->setTextureType(MTL::TextureType2D); descriptor->setPixelFormat(m_Specification.Format == ImageFormat::RGBA8 ? MTL::PixelFormatRGBA8Unorm : MTL::PixelFormatRGBA32Float);
+    descriptor->setTextureType(MTL::TextureType2D); descriptor->setPixelFormat(m_Specification.Format == ImageFormat::RGBA8 ? (m_Specification.Encoding == TextureEncoding::SRGB ? MTL::PixelFormatRGBA8Unorm_sRGB : MTL::PixelFormatRGBA8Unorm) : MTL::PixelFormatRGBA32Float);
     descriptor->setWidth(GetWidth()); descriptor->setHeight(GetHeight());
     descriptor->setStorageMode(MTL::StorageModeShared); descriptor->setUsage(MTL::TextureUsageShaderRead);
     version->Texture = NS::TransferPtr(m_Device->NativeDevice()->newTexture(descriptor.get()));

@@ -38,18 +38,19 @@ namespace Hazel {
             if(!framebuffer.first || !framebuffer.second)return;
             if(!m_Composite) {
                 FramebufferSpecification spec;spec.Width=framebuffer.first;spec.Height=framebuffer.second;
-                spec.Attachments = {FramebufferTextureFormat::RGBA16F,
+                const bool metal = Renderer::GetAPI() == RendererAPI::API::Metal;
+                spec.Attachments = {metal ? FramebufferTextureFormat::RGBA32F : FramebufferTextureFormat::RGBA16F,
                                     FramebufferTextureFormat::RED_INTEGER,
-                                    FramebufferTextureFormat::Depth};
+                                    metal ? FramebufferTextureFormat::DEPTH32F : FramebufferTextureFormat::Depth};
                 m_Composite = Framebuffer::Create(spec);
             } else if(m_Composite->GetSpecification().Width!=framebuffer.first || m_Composite->GetSpecification().Height!=framebuffer.second)m_Composite->Resize(framebuffer.first,framebuffer.second);
             m_Composite->Bind();
-            RenderCommand::SetClearColor(m_Session.GetScene()->Presentation().Background);
-            RenderCommand::Clear();
+            if (Renderer::GetAPI() == RendererAPI::API::Metal) m_Composite->Clear(m_Session.GetScene()->Presentation().Background);
+            else { RenderCommand::SetClearColor(m_Session.GetScene()->Presentation().Background); RenderCommand::Clear(); }
             m_Composite->ClearAttachment(1, -1);
             m_Session.SetRenderTarget(m_Composite);
             m_Session.Update(timestep);
-            if(m_Session.IsCameraInspectionEnabled()){
+            if(m_Session.IsCameraInspectionEnabled() && Renderer::GetAPI() != RendererAPI::API::Metal){
                 RenderCommand::StateScope scope;auto state=RenderCommand::GetRasterState();state.DepthTest=state.DepthWrite=false;state.PickingMask=glm::bvec4(false);RenderCommand::SetRasterState(state);
                 Camera overlay(OrthographicProjection::Matrix(0,float(window.GetWidth()),0,float(window.GetHeight()),-1,1));
                 Renderer2D::BeginScene(overlay,glm::mat4(1));
@@ -73,11 +74,12 @@ namespace Hazel {
         }
     };
     Scope<Application> CreateApplication(ApplicationCommandLineArgs args) {
-        bool help = false, list = false,inspect=false;
+        bool help = false, list = false,inspect=false,metal=false;
         std::filesystem::path selected;
         for (int i = 1; i < args.Count; ++i) {
             const std::string argument(args[i]);
-            if(argument=="--inspect-camera"){if(inspect)throw std::runtime_error("Duplicate --inspect-camera");inspect=true;}
+            if(argument=="--metal-quads") { if(metal)throw std::runtime_error("Duplicate --metal-quads");metal=true; }
+            else if(argument=="--inspect-camera"){if(inspect)throw std::runtime_error("Duplicate --inspect-camera");inspect=true;}
             else if (argument == "--help") { if (help) throw std::runtime_error("Duplicate --help"); help = true; }
             else if (argument == "--list-projects") { if (list) throw std::runtime_error("Duplicate --list-projects"); list = true; }
             else if (argument == "--project") {
@@ -86,9 +88,10 @@ namespace Hazel {
                 selected = std::filesystem::absolute(std::filesystem::u8path(args[i]));
             } else throw std::runtime_error("Unknown argument '" + argument + "'. Use Nutella --help.");
         }
-        if ((help || list) && ((help && list) || !selected.empty() || inspect)) throw std::runtime_error("Use --help, --list-projects, or --project separately");
+        if ((help || list) && ((help && list) || !selected.empty() || inspect || metal)) throw std::runtime_error("Use --help, --list-projects, or --project separately");
         if (help) {
             std::cout << "Nutella — Hazel standalone runtime\n"
+                "  Nutella --metal-quads          Opt-in Metal 4 opaque quad scene (no UI/3D)\n"
                 "  Nutella                        Run the only .hproj in the installed project directory\n"
                 "  Nutella --project <file.hproj>  Run a selected project (relative to invocation directory)\n"
                 "  Nutella --inspect-camera        Opt in to transient perspective inspection; Home restores the authored view\n"
@@ -123,6 +126,7 @@ namespace Hazel {
         // is optional for native content; RuntimeSession rejects assigned classes
         // that are unavailable. Do not impose scripting readiness at CLI launch.
         ApplicationSpecification spec; spec.Name = "Nutella"; spec.CommandLineArgs = args; spec.EnableImGui = false;
+        if (metal) { spec.GraphicsAPI = RendererAPI::API::Metal; spec.RendererMode = RendererInitialization::Quads; }
         spec.Rendering = RendererPolicy::Settings(project->GetRendererRequests());
         spec.WindowVSync = project->GetRendererRequests().VSync;
         return CreateScope<Nutella>(spec, project,inspect);

@@ -23,7 +23,14 @@ struct MetalQuadFrame
     uint32_t Width = 0, Height = 0;
     glm::vec4 Clear{0};
     int32_t ClearEntity = -1;
-    std::shared_ptr<MetalShader> Shader;
+    std::shared_ptr<MetalShader> Shader, OutputShader;
+    NS::SharedPtr<MTL::SamplerState> OutputSampler;
+    NS::SharedPtr<MTL4::ArgumentTable> OutputArguments;
+    bool Readback = true;
+    std::shared_ptr<MetalQuadFrame> World;
+    std::shared_ptr<MetalShader> PresentationShader;
+    NS::SharedPtr<MTL4::ArgumentTable> PresentationArguments;
+    float Exposure = 0;
     std::vector<MetalQuadDraw> Draws;
     std::shared_ptr<FramebufferReadback> Result;
     std::vector<glm::vec4> CompletedColor;

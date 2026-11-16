@@ -49,5 +49,6 @@ private:
     std::shared_ptr<MetalQuadFrame> m_Frame;
     Ref<const FramebufferReadback> m_Readback;
     bool m_SubmittedGeneration = false;
+    std::vector<std::shared_ptr<const MetalFramebufferAttachments>> m_Available;
 };
 }

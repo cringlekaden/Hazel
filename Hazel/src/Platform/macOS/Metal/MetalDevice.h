@@ -6,10 +6,13 @@
 #include <array>
 #include <filesystem>
 #include <functional>
+#include <vector>
 
 namespace Hazel {
 struct MetalQuadFrame;
+class MetalShader;
 struct FramebufferReadback;
+struct MetalFramebufferAttachments;
 // All native execution and resource ownership stays here. Metal 4 command buffers
 // retain neither referenced resources nor their allocator: slots own both explicitly.
 class MetalDevice final {
@@ -34,6 +37,11 @@ private:
     friend class MetalRendererAPI;
     friend class MetalFramebuffer;
     void Poll();
+    void PrepareQuadFrame(const std::shared_ptr<MetalQuadFrame>& frame);
+    void EncodeQuadFrame(const std::shared_ptr<MetalQuadFrame>& frame);
+    std::shared_ptr<MetalQuadFrame> m_PresentFrame;
+    std::shared_ptr<MetalShader> m_OutputShader;
+    std::vector<std::weak_ptr<const MetalFramebufferAttachments>> m_AttachmentGenerations;
     std::shared_ptr<const FramebufferReadback> SubmitQuadFrame(const std::shared_ptr<MetalQuadFrame>& frame);
     struct Receipt { bool GPU=false, Presented=false; };
     struct Frame {
@@ -59,6 +67,7 @@ private:
     uint64_t m_Serial=0;
     size_t m_Next=0;
     MTL::ClearColor m_Clear{0.08,0.18,0.3,1};
+    bool m_Trace=false;
     bool m_Transfers=false, m_Stopped=false, m_Capturing=false, m_SkipDrawable=false, m_Override=false;
     uint32_t m_Width=0,m_Height=0;
 };

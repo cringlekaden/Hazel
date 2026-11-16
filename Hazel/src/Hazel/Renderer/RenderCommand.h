@@ -66,6 +66,7 @@ namespace Hazel {
         static std::uint32_t GetMaxTextureSlots() { return s_RendererAPI->GetMaxTextureSlots(); }
         // Monotonic within the current renderer lifetime; counts engine API
         // submissions, independently of Renderer2D's primitive/batch statistics.
+        static void RecordDrawSubmission() { ++s_DrawSubmissionCount; }
         static std::uint64_t GetDrawSubmissionCount() { return s_DrawSubmissionCount; }
     private:
         friend class Application;

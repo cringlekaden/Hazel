@@ -41,14 +41,14 @@ public:
     void DrawIndexed(const Ref<VertexArray>&, uint32_t, uint32_t) override;
     void DrawLines(const Ref<VertexArray>&, uint32_t, uint32_t) override;
     void SetLineWidth(float) override;
-    uint32_t GetMaxTextureSlots() const override { return 0; }
-    // Explicit bounded offscreen profile; these calls do not enable scene drawing.
+    uint32_t GetMaxTextureSlots() const override { return 32; }
+    // Explicit opaque quad submission shared by offscreen and SceneRenderer paths.
     void BeginQuadScene(const glm::mat4& camera);
     void EnqueueQuadRun(const QuadVertex* vertices, uint32_t vertexCount, uint32_t first, uint32_t count,
         const std::array<std::shared_ptr<const MetalTextureVersion>, 32>& textures, uint32_t textureCount);
     void EndQuadScene();
     std::shared_ptr<Framebuffer> CreateFramebuffer(const FramebufferSpecification& specification);
-    std::shared_ptr<Texture2D> CreateTexture(const TextureSpecification& specification);
+    std::shared_ptr<Texture2D> CreateTexture(const TextureSpecification& specification, const std::string& path = {});
     std::shared_ptr<Shader> LoadShader(const std::string& name, uint32_t slots = 32);
     std::shared_ptr<MetalDevice> Device() const { return m_Device; }
     std::shared_ptr<MetalProofObserver> Observe() const;

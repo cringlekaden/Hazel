@@ -110,7 +110,7 @@ std::string ValidateReflection(MTL::RenderPipelineState* pipeline, const MetalSh
     return output.str();
 }
 }
-MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::string& shaderName, uint32_t slots)
+MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::string& shaderName, uint32_t slots, bool drawableOutput)
     : m_Device(std::move(deviceOwner))
 {
     auto pool = NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
@@ -167,7 +167,8 @@ MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::st
         auto pipelineOptions = NS::TransferPtr(MTL4::PipelineOptions::alloc()->init());
         pipelineOptions->setShaderReflection(MTL4::ShaderReflectionBindingInfo | MTL4::ShaderReflectionBufferTypeInfo);
         descriptor->setOptions(pipelineOptions.get());
-        descriptor->colorAttachments()->object(0)->setPixelFormat(MTL::PixelFormatRGBA32Float);
+        Check(!drawableOutput || shaderName == "DisplayOutput", "Only DisplayOutput supports BGRA8 drawable format");
+        descriptor->colorAttachments()->object(0)->setPixelFormat(drawableOutput ? MTL::PixelFormatBGRA8Unorm : MTL::PixelFormatRGBA32Float);
         spirv_cross::Compiler reflection(m_Artifact.Stages[1].Spirv);
         for (const auto& resource : reflection.get_shader_resources().stage_outputs)
             if (reflection.get_decoration(resource.id, spv::DecorationLocation) == 1)

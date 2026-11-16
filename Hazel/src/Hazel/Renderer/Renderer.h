@@ -6,7 +6,7 @@
 
 namespace Hazel {
 
-    enum class RendererInitialization { Drawing, PresentationOnly };
+    enum class RendererInitialization { Drawing, PresentationOnly, Quads };
 
     class Renderer
     {

@@ -15,6 +15,7 @@ struct MetalProofSnapshot {
     uint64_t SkippedZero=0, SkippedUnavailable=0, SkippedHidden=0, SkippedBusy=0;
     uint64_t ResourceBytes=0, PeakResourceBytes=0, AllocatorBytes=0, PeakAllocatorBytes=0;
     uint64_t ResidencyAllocations=0, PendingAtShutdown=0;
+    uint64_t AttachmentBytes=0, PeakAttachmentBytes=0, AttachmentGenerations=0, AttachmentAllocations=0, AttachmentReuses=0;
     uint32_t PixelWidth=0, PixelHeight=0, LogicalWidth=0, LogicalHeight=0;
     double BackingScale=0, LastPresentedTime=0;
     bool VSync=true, ShutdownComplete=false, SurfaceDetached=false, DeviceReleased=false;
@@ -26,6 +27,7 @@ public:
 private:
     friend class MetalDevice;
     friend class MetalContext;
+    friend class MetalFramebuffer;
     mutable std::mutex Mutex;
     MetalProofSnapshot Value;
     std::condition_variable Changed;

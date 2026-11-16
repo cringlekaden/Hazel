@@ -171,7 +171,9 @@ MetalShaderArtifact CompileMetalShader(const std::string& name, const std::strin
             cross.set_msl_options(mslOptions);
             auto common = cross.get_common_options();
             common.vertex.fixup_clipspace = true; // OpenGL [-w,w] -> Metal [0,w].
-            common.vertex.flip_vert_y = true;     // OpenGL lower-left geometry -> Metal top-left rows.
+            // Offscreen attachments retain OpenGL lower-left rows. Final window output
+            // samples those rows in reverse exactly once; intermediate passes preserve them.
+            common.vertex.flip_vert_y = name != "DisplayOutput";
             cross.set_common_options(common);
             std::ostringstream reflection;
             Reflect(cross, reflection);

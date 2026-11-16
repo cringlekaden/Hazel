@@ -36,7 +36,7 @@ std::string Take(const std::string& bytes, size_t& offset)
 }
 std::string MetalShaderArtifact::Profile()
 {
-    return "hazel-metal4-artifact-v1-vulkan12-opt-debug-msl30-flipy-clipfix-std140-tier2-macos27-" HAZEL_SHADER_PINS_SHA256;
+    return "hazel-metal4-artifact-v1-vulkan12-opt-debug-msl30-flipy-finaloutput-v2-clipfix-std140-tier2-macos27-" HAZEL_SHADER_PINS_SHA256;
 }
 std::string MetalShaderArtifact::Digest(const std::string& bytes)
 {

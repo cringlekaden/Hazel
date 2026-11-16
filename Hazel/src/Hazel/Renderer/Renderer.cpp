@@ -15,8 +15,15 @@ namespace Hazel {
         HZ_PROFILE_FUNCTION();
         RenderCommand::Init(settings);
         if (initialization == RendererInitialization::PresentationOnly) return;
+        if (initialization == RendererInitialization::Quads) {
+            if (GetAPI() != RendererAPI::API::Metal)
+                throw std::runtime_error("Quad-only initialization requires Metal");
+            s_DrawingStarted = true;
+            Renderer2D::InitQuads();
+            return;
+        }
         if (GetAPI() != RendererAPI::API::OpenGL)
-            throw std::runtime_error("Metal drawing services are unavailable in M1; use PresentationOnly without ImGui");
+            throw std::runtime_error("Full Metal drawing services are unavailable; use Quads or PresentationOnly without ImGui");
         s_DrawingStarted = true; // also clean up a partially initialized Renderer2D
         Renderer2D::Init();
     }

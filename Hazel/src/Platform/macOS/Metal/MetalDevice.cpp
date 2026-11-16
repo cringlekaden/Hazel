@@ -1,10 +1,13 @@
 #include "MetalDevice.h"
 #include "MetalQuadFrame.h"
+#include "MetalShader.h"
+#include "MetalFramebuffer.h"
 #include "Hazel/Core/Log.h"
 #include <algorithm>
 #include <chrono>
 #include <cstring>
 #include <cstdio>
+#include <cstdlib>
 #include <stdexcept>
 
 namespace Hazel {
@@ -12,7 +15,7 @@ namespace {
 MetalStartupFailure s_Failure=MetalStartupFailure::None;
 constexpr size_t WordBytes=256, Side=8, RowBytes=256, ImageBytes=Side*RowBytes;
 constexpr size_t TextureBase=2*WordBytes, ProofBytes=TextureBase+2*ImageBytes;
-constexpr uint64_t ResourceLimit=1024*1024, AllocatorLimit=16*1024*1024;
+constexpr uint64_t ResourceLimit=1024ULL*1024*1024, AllocatorLimit=64*1024*1024;
 NS::String* Label(const char* text) { return NS::String::string(text,NS::UTF8StringEncoding); }
 uint32_t Pattern(uint64_t serial,unsigned version,size_t word) {
     return uint32_t(serial*2654435761ULL) ^ (0x9e3779b9u*(version+1)) ^ uint32_t(word*0x45d9f3bu);
@@ -24,6 +27,7 @@ void MetalDevice::CheckStartupFailure(MetalStartupFailure point) {
     if(s_Failure==point) { s_Failure=MetalStartupFailure::None; throw std::runtime_error("Injected Metal startup failure"); }
 }
 MetalDevice::MetalDevice() {
+    m_Trace = std::getenv("HAZEL_METAL_TRACE") != nullptr;
     auto pool=NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
     m_Device=NS::TransferPtr(MTL::CreateSystemDefaultDevice());
     Require(bool(m_Device),"Metal device unavailable");
@@ -99,7 +103,14 @@ void MetalDevice::Account() {
         if(f.Quad) { resources+=f.Quad->ResourceBytes(); quadAllocations+=f.Quad->Residency->allocationCount(); }
     }
     Require(resources<=ResourceLimit&&allocators<=AllocatorLimit,"M1 bounded GPU storage limit exceeded");
+    uint64_t attachmentBytes = 0, generations = 0;
+    for (const auto& weak : m_AttachmentGenerations) if (auto generation = weak.lock()) {
+        ++generations;
+        for (const auto& target : generation->Targets) attachmentBytes += target->allocatedSize();
+    }
     std::lock_guard<std::mutex> lock(m_Observer->Mutex); auto& s=m_Observer->Value;
+    s.AttachmentBytes=attachmentBytes; s.AttachmentGenerations=generations;
+    s.PeakAttachmentBytes=std::max(s.PeakAttachmentBytes,attachmentBytes);
     s.ResourceBytes=resources; s.AllocatorBytes=allocators; s.ResidencyAllocations=m_Residency->allocationCount()+quadAllocations;
     s.PeakResourceBytes=std::max(s.PeakResourceBytes,resources); s.PeakAllocatorBytes=std::max(s.PeakAllocatorBytes,allocators);
 }
@@ -152,9 +163,11 @@ void MetalDevice::Poll() {
         if(f.Quad) {
             if(!f.Quad->Feedback->load()) continue;
             f.Quad->Complete();
+            if (m_Trace) std::printf("M2C_GPU frame=%llu completed=1\n", (unsigned long long)f.Serial);
             f.Quad.reset(); // Only completed work releases shaders, versions and frame allocations.
             std::lock_guard<std::mutex> lock(m_Observer->Mutex);
             ++m_Observer->Value.Completed; --m_Observer->Value.InFlight;
+            if (f.Completion) { f.Completion->GPU = true; if (f.Completion->Presented) ++m_Observer->Value.CompletedPresented; }
         } else Verify(f);
         f.Pending=false;
     }
@@ -165,6 +178,7 @@ void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t l
     const auto cpuStart=std::chrono::steady_clock::now();
     auto pool=NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
     Poll();
+    auto scene = std::move(m_PresentFrame);
     if(m_Override) { w=m_Width; h=m_Height; m_Override=false; layer->setDrawableSize(CGSize{double(w),double(h)}); }
     {
         std::lock_guard<std::mutex> lock(m_Observer->Mutex); auto& s=m_Observer->Value;
@@ -179,6 +193,10 @@ void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t l
     auto drawable=NS::RetainPtr(m_SkipDrawable?nullptr:layer->nextDrawable()); m_SkipDrawable=false;
     if(!drawable) { std::lock_guard<std::mutex> lock(m_Observer->Mutex); ++m_Observer->Value.SkippedUnavailable; ++m_Observer->Value.AbortedReservations; return; }
     Require(drawable->texture()->width()==w&&drawable->texture()->height()==h,"CAMetalLayer drawable extent differs from framebuffer pixels");
+    if (scene && (scene->Width != w || scene->Height != h)) {
+        std::lock_guard<std::mutex> lock(m_Observer->Mutex); ++m_Observer->Value.AbortedReservations; return;
+    }
+    if (scene) PrepareQuadFrame(scene);
     auto& f=m_Frames[m_Next];
     f.Allocator->reset(); // Poll proved the previous submission no longer uses this allocator/storage.
     const auto serial=m_Serial+1;
@@ -186,16 +204,29 @@ void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t l
     const auto label="Hazel Metal 4 frame "+std::to_string(serial);
     m_Commands->setLabel(Label(label.c_str()));
     if(m_Transfers) EncodeTransfers(f,serial);
+    if (scene) {
+        m_Commands->useResidencySet(scene->Residency.get());
+        EncodeQuadFrame(scene);
+    }
     auto pass=NS::TransferPtr(MTL4::RenderPassDescriptor::alloc()->init());
     auto* color=pass->colorAttachments()->object(0);
     color->setTexture(drawable->texture()); color->setLoadAction(MTL::LoadActionClear);
     color->setStoreAction(MTL::StoreActionStore); color->setClearColor(m_Clear);
     auto* render=m_Commands->renderCommandEncoder(pass.get());
     Require(render!=nullptr,"Metal 4 presentation encoder unavailable");
-    render->setLabel(Label("M1 native CAMetalLayer clear/present")); render->endEncoding();
+    render->setLabel(Label(scene ? "Hazel DisplayOutput to BGRA8 drawable" : "M1 native CAMetalLayer clear/present"));
+    if (scene) {
+        render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
+        render->setRenderPipelineState(scene->OutputShader->Pipeline());
+        render->setViewport({0,0,double(w),double(h),0,1});
+        render->setCullMode(MTL::CullModeNone);
+        render->setArgumentTable(scene->OutputArguments.get(), MTL::RenderStageFragment);
+        render->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(3));
+    }
+    render->endEncoding();
     m_Commands->endCommandBuffer();
     auto observer=m_Observer; auto receipt=std::make_shared<Receipt>();
-    const bool proof=m_Transfers;
+    const bool proof=m_Transfers || m_Trace;
     drawable->addPresentedHandler(MTL::DrawablePresentedHandlerFunction([observer,receipt,serial,proof](MTL::Drawable* d) {
         const double time=d->presentedTime();
         std::lock_guard<std::mutex> lock(observer->Mutex); auto& s=observer->Value;
@@ -205,9 +236,10 @@ void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t l
         if(proof) std::printf("M1_PRESENT frame=%llu timestamp=%.9f\n",static_cast<unsigned long long>(serial),time);
     }));
     auto options=NS::TransferPtr(MTL4::CommitOptions::alloc()->init());
-    options->addFeedbackHandler(MTL4::CommitFeedbackHandlerFunction([observer,serial,proof](MTL4::CommitFeedback* feedback) {
+    options->addFeedbackHandler(MTL4::CommitFeedbackHandlerFunction([observer,serial,proof,scene](MTL4::CommitFeedback* feedback) {
         std::lock_guard<std::mutex> lock(observer->Mutex); ++observer->Value.Feedbacks;
         if(auto* error=feedback->error()) { ++observer->Value.Errors; observer->Value.Error=error->localizedDescription()->utf8String(); }
+        if (scene) scene->Feedback->store(true);
         if(proof) std::printf("M1_FEEDBACK frame=%llu gpu_start=%.9f gpu_end=%.9f\n",static_cast<unsigned long long>(serial),feedback->GPUStartTime(),feedback->GPUEndTime());
         observer->Changed.notify_all();
     }));
@@ -218,7 +250,7 @@ void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t l
     m_Queue->signalDrawable(drawable.get());
     drawable->present();
     m_Queue->signalEvent(m_Completed.get(),serial);
-    f.Completion=std::move(receipt); f.Pending=true;
+    f.Completion=std::move(receipt); f.Quad=scene; f.Pending=true;
     {
         std::lock_guard<std::mutex> lock(m_Observer->Mutex); auto& s=m_Observer->Value;
         ++s.Submitted; ++s.InFlight; s.PeakInFlight=std::max(s.PeakInFlight,s.InFlight);
@@ -240,13 +272,21 @@ void MetalDevice::Drain() {
             std::abort();
         }
     }
-    Poll(); StopCapture(); m_Stopped=true;
+    Poll(); StopCapture(); m_PresentFrame.reset(); m_OutputShader.reset(); m_Stopped=true;
     std::unique_lock<std::mutex> lock(m_Observer->Mutex);
     if(!m_Observer->Changed.wait_for(lock,std::chrono::seconds(5),[&] { return m_Observer->Value.Feedbacks==m_Observer->Value.Submitted; })) {
         ++m_Observer->Value.Errors; m_Observer->Value.Error="Metal 4 commit feedback did not retire during shutdown";
     }
     lock.unlock(); Poll(); lock.lock();
     m_Observer->Value.ShutdownComplete=true;
+    if (m_Trace) {
+        const auto& s = m_Observer->Value;
+        std::printf("METAL_FINAL submitted=%llu completed=%llu presented=%llu completed_presented=%llu errors=%llu peak_frame_bytes=%llu peak_attachment_bytes=%llu peak_allocator_bytes=%llu live_attachment_generations=%llu pending_bytes=%llu\n",
+            (unsigned long long)s.Submitted, (unsigned long long)s.Completed, (unsigned long long)s.Presented,
+            (unsigned long long)s.CompletedPresented, (unsigned long long)s.Errors, (unsigned long long)s.PeakResourceBytes,
+            (unsigned long long)s.PeakAttachmentBytes, (unsigned long long)s.PeakAllocatorBytes,
+            (unsigned long long)s.AttachmentGenerations, (unsigned long long)s.ResourceBytes);
+    }
 }
 std::function<void()> MetalDevice::GateQueue() {
     Require(!m_Gate,"M1 queue gate is single-use");

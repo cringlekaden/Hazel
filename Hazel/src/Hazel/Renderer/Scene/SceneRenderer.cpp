@@ -15,6 +15,27 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
     if (frame.LinearLightingInspection && (!display || display->GetSpecification().Attachments.Attachments.empty() ||
         display->GetSpecification().Attachments.Attachments[0].TextureFormat != FramebufferTextureFormat::RGBA32F))
         throw std::runtime_error("Linear lighting inspection requires an explicit FP32 color target");
+    if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
+    {
+        if (!display || !frame.Meshes.empty() || frame.Light || frame.Environment || frame.Debug != SurfaceView::Shaded || frame.LinearLightingInspection)
+            throw std::runtime_error("Metal quad scene requires an explicit target, shaded view, no meshes/lights/environment");
+        if (frame.Presentation.SceneReferred)
+        {
+            auto size = display->GetSpecification();
+            if (!view.Radiance) view.Radiance = Framebuffer::Create(size);
+            else if (view.Radiance->GetSpecification().Width != size.Width || view.Radiance->GetSpecification().Height != size.Height)
+                view.Radiance->Resize(size.Width, size.Height);
+            display->Cancel();
+            view.Radiance->Bind();
+            view.Radiance->Clear(frame.Presentation.Background);
+            world2D();
+            view.Radiance->Unbind();
+            display->Bind();
+            view.Radiance->CompositeWorldTo(display, frame.Presentation.Exposure);
+        }
+        else { view.Radiance.reset(); world2D(); }
+        return; // Scene admission rejects screen UI before submission.
+    }
     RenderCommand::StateScope scope;
     auto raster = RenderCommand::GetRasterState();
     raster.ClipEnabled = false;

@@ -86,3 +86,10 @@ not promise a new line break.
 
 
 [Runtime UI reference](../../docs/runtime-game-ui.md) · [Styles/fonts and resources](../../docs/settings-and-resources.md#fonts-styles-and-caches) · [Packaging](../../docs/packaging.md)
+
+## Opaque quad scene
+
+`Sandbox-Quads.hproj` selects a content-only, three-quad scene using the existing
+checkerboard fixture and ordinary sprite-region animation. It also runs on
+OpenGL. For the experimental macOS Metal 4 opt-in, artifact preparation, camera
+controls and limitations, follow [the development guide](../../docs/development.md#experimental-metal-shader-resources).

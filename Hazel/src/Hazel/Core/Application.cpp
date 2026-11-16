@@ -27,7 +27,7 @@ namespace Hazel {
 		s_Instance = this;
 		try {
             RenderCommand::Configure(m_Specification.GraphicsAPI);
-            if (m_Specification.RendererMode == RendererInitialization::PresentationOnly && m_Specification.EnableImGui)
+            if (m_Specification.RendererMode != RendererInitialization::Drawing && m_Specification.EnableImGui)
                 throw std::invalid_argument("Presentation-only startup does not initialize ImGui drawing services");
             m_Specification.Resources = Resources::Defaults(m_Specification.Name, m_Specification.Resources);
             Resources::Configure(m_Specification.Resources);

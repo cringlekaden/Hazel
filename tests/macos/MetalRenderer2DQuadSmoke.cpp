@@ -1,6 +1,9 @@
 #include "Hazel/Core/Log.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/RenderCommand.h"
+#include "Hazel/Scene/Scene.h"
+#include "Hazel/Scene/Entity.h"
+#include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include "Hazel/Renderer/Drawing/Renderer2D.h"
 #include "Platform/macOS/Metal/MetalRendererAPI.h"
 #include "Hazel/Renderer/Resources/Framebuffer.h"
@@ -104,7 +107,7 @@ int main(int argc, char** argv)
         Hazel::Renderer2D::InitQuads();
         Reject("duplicate quad initialization", [] { Hazel::Renderer2D::InitQuads(); });
         Reject("unsupported default mip texture", [] { Hazel::Texture2D::Create(2, 2); });
-        Reject("unsupported attachment extent", [&] { Hazel::Framebuffer::Create(TargetSpecification(33, 32)); });
+        Reject("unsupported attachment extent", [&] { Hazel::Framebuffer::Create(TargetSpecification(4097, 32)); });
         auto badProfile = TargetSpecification(); badProfile.Samples = 2;
         Reject("multisample framebuffer", [&] { Hazel::Framebuffer::Create(badProfile); });
         badProfile = TargetSpecification(); badProfile.SwapChainTarget = true;
@@ -297,6 +300,58 @@ int main(int argc, char** argv)
             Pixel(*result, 0, 0, glm::vec4(0), -1, 1);
         }
         Save(*numeric, output / "nearest-after-reuse.bin");
+        // Production Scene -> SceneRenderer -> Renderer2D, using the same framebuffer factory.
+        // Large asymmetric target crosses the old 32-pixel scalar-row limit.
+        {
+            auto scene = Hazel::CreateRef<Hazel::Scene>();
+            scene->OnViewportResize(96, 64);
+            auto camera = scene->CreateEntity("Integrated camera");
+            camera.AddComponent<Hazel::CameraComponent>().Camera.SetOrthographic(2, -1, 1);
+            auto entity = scene->CreateEntity("Integrated quad");
+            auto& sprite = entity.AddComponent<Hazel::SpriteRendererComponent>();
+            sprite.Source = Hazel::TextureSpriteSource{{}, 1, texture};
+            texture->SetData(imageA.data(), sizeof(imageA));
+            auto display = Hazel::Framebuffer::Create(TargetSpecification(96, 64));
+            Hazel::SceneRenderView view;
+            scene->OnRuntimeStart();
+            auto renderScene = [&] {
+                display->Bind(); display->Clear({.125f,.25f,.5f,1});
+                scene->OnUpdateRuntime(0, &view, display);
+                if (scene->Presentation().SceneReferred)
+                    Reject("draw after world conversion", [] { Hazel::Renderer2D::BeginScene(glm::mat4(1)); });
+                auto result = Submit(display); Wait(*display, result); return result;
+            };
+            auto first = renderScene();
+            Check(first->Entity[32 * 96 + 48] == int(entity), "Integrated Scene lost signed entity identity");
+            Check(first->Depth[32 * 96 + 48] == .5f, "Integrated Scene depth differs");
+            camera.GetComponent<Hazel::TransformComponent>().Translation.x = .5f;
+            texture->SetData(imageB.data(), sizeof(imageB));
+            auto changed = renderScene();
+            Check(first->Color != changed->Color && first->Entity != changed->Entity,
+                "Camera/texture changes failed to reach Scene submission");
+            scene->Presentation().SceneReferred = true;
+            scene->Presentation().Exposure = 1;
+            auto hdr = renderScene();
+            const auto center = 32 * 96 + 32;
+            Check(hdr->Entity[center] == int(entity) && hdr->Depth[center] == 1,
+                "World presentation must copy exact IDs and leave destination depth cleared");
+            // At this coordinate image B is yellow; exposure doubles linear radiance.
+            auto neutral = [](glm::vec3 value) {
+                float minimum = std::min(value.x, std::min(value.y, value.z));
+                value -= minimum < .08f ? minimum - 6.25f * minimum * minimum : .04f;
+                float maximum = std::max(value.x, std::max(value.y, value.z));
+                if (maximum < .76f) return value;
+                float compressed = 1 - .0576f / (maximum - .52f);
+                return glm::mix(value * (compressed / maximum), glm::vec3(compressed), 1 - 1 / (1 + .15f * (maximum - compressed)));
+            };
+            const auto expected = neutral(glm::vec3(changed->Color[center]) * 2.f);
+            for (int c = 0; c < 3; ++c) Check(std::abs(hdr->Color[center][c] - expected[c]) <= 1e-6f, "Integrated Neutral/exposure conversion differs");
+            entity.AddComponent<Hazel::CircleRendererComponent>();
+            Reject("unsupported integrated scene", [&] { scene->ValidateRendering(); });
+            scene->OnRuntimeStop();
+            std::cout << "PASS production Scene: camera/texture changes, 96x64, signed IDs, depth, Neutral exposure, unsupported content rejection\n";
+        }
+        texture->SetData(imageA.data(), sizeof(imageA));
         auto lifecycleGate = backend.GateQueueForTesting();
         std::array<std::weak_ptr<const Hazel::MetalTextureVersion>, 3> lifecycleVersions;
         lifecycleVersions[0] = native->Snapshot();
@@ -414,15 +469,15 @@ int main(int argc, char** argv)
         std::cout << "PASS factory framebuffer generations: gated resize/replacement/destruction/cancel, busy retry packet, asymmetric extents and signed clears\n";
 
         const auto final = observer->Snapshot();
-        Check(final.Errors == 0 && final.InFlight == 0 && final.Submitted == 22 && final.Completed == 22 && final.PendingAtShutdown == 1 &&
-            final.SlotReuses >= 19 && final.ResourceBytes == 0 && final.PeakResourceBytes <= 1024 * 1024 && final.PeakAllocatorBytes <= 16 * 1024 * 1024,
+        Check(final.Errors == 0 && final.InFlight == 0 && final.Submitted == 25 && final.Completed == 25 && final.PendingAtShutdown == 1 &&
+            final.SlotReuses >= 22 && final.ResourceBytes == 0 && final.PeakResourceBytes <= 1024 * 1024 && final.PeakAllocatorBytes <= 16 * 1024 * 1024,
             "Frame retirement/reuse/accounting failed");
         std::ofstream metrics(output / "metrics.json");
         metrics << "{\"submitted\":" << final.Submitted << ",\"completed\":" << final.Completed << ",\"slotReuses\":" << final.SlotReuses
             << ",\"orderedQuads\":" << stats.QuadCount << ",\"orderedDraws\":" << stats.DrawCalls << ",\"orderedVertexBytes\":" << stats.UploadedBytes
             << ",\"peakInFlight\":" << final.PeakInFlight << ",\"pendingShutdown\":" << final.PendingAtShutdown << ",\"frameBytes\":" << final.ResourceBytes
             << ",\"peakFrameBytes\":" << final.PeakResourceBytes << ",\"peakAllocatorBytes\":" << final.PeakAllocatorBytes << ",\"errors\":" << final.Errors << "}\n";
-        std::cout << "PASS: initialized shared Renderer2D quad flush, 22 completed frames, 12 successive submissions, one unretired shutdown and three gated lifecycle submissions, busy-slot rejection and exact CPU readback\n";
+        std::cout << "PASS: initialized shared Renderer2D quad flush, 25 completed frames, 12 successive submissions, one unretired shutdown and three gated lifecycle submissions, busy-slot rejection and exact CPU readback\n";
         return 0;
     }
     catch (const std::exception& error) { std::cerr << "FAIL: " << error.what() << '\n'; return 1; }

@@ -3,6 +3,7 @@
 #include "MetalFramebuffer.h"
 #include "MetalDevice.h"
 #include "MetalShader.h"
+#include "Hazel/Renderer/RenderCommand.h"
 #include <cmath>
 #include <stdexcept>
 
@@ -21,11 +22,11 @@ std::shared_ptr<Framebuffer> MetalRendererAPI::CreateFramebuffer(const Framebuff
     Check(!m_Stopped, "Cannot create framebuffers after Metal backend shutdown");
     return std::make_shared<MetalFramebuffer>(m_Device, specification);
 }
-std::shared_ptr<Texture2D> MetalRendererAPI::CreateTexture(const TextureSpecification& specification)
+std::shared_ptr<Texture2D> MetalRendererAPI::CreateTexture(const TextureSpecification& specification, const std::string& path)
 {
     std::lock_guard<std::mutex> lock(m_ShaderMutex);
     Check(!m_Stopped, "Cannot create textures after Metal backend shutdown");
-    return std::make_shared<MetalTexture2D>(m_Device, specification);
+    return std::make_shared<MetalTexture2D>(m_Device, specification, path);
 }
 void MetalRendererAPI::BindFramebuffer(const std::shared_ptr<MetalQuadFrame>& frame)
 {
@@ -48,6 +49,7 @@ void MetalRendererAPI::CheckFramebufferClear(const std::shared_ptr<MetalQuadFram
 void MetalRendererAPI::BeginQuadScene(const glm::mat4& camera)
 {
     Check(!m_Stopped && !m_QuadFrame.expired() && !m_QuadScene, "Bind a qualified framebuffer before Renderer2D::BeginScene");
+    Check(!m_QuadFrame.lock()->World, "World conversion destination cannot accept additional quad scenes");
     Check(Finite(&camera[0][0], 16), "Quad camera must be finite");
     m_QuadCamera = camera; m_QuadScene = true;
 }
@@ -76,6 +78,7 @@ void MetalRendererAPI::EnqueueQuadRun(const QuadVertex* vertices, uint32_t verte
             vertex.TexIndex < textureCount && std::floor(vertex.TexIndex) == vertex.TexIndex && vertex.Color.a == 1 &&
             vertex.ClipRect == glm::vec4(-1), "Quad run requires finite opaque vertices, valid slots and no clipping");
     frame->Draws.push_back(std::move(draw)); // publish only after all validation/snapshots succeed
+    RenderCommand::RecordDrawSubmission();
 }
 void MetalRendererAPI::EndQuadScene()
 {

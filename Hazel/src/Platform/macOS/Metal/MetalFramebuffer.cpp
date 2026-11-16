@@ -5,23 +5,24 @@
 #include "MetalShader.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include <cmath>
+#include <algorithm>
 #include <stdexcept>
 #include <utility>
 
 namespace Hazel {
 namespace {
 void Check(bool value, const char* message) { if (!value) throw std::logic_error(message); }
-[[noreturn]] void Unsupported() { throw std::logic_error("Operation unavailable on the qualified Metal offscreen framebuffer profile"); }
+[[noreturn]] void Unsupported() { throw std::logic_error("Operation unavailable on the Metal opaque quad framebuffer profile"); }
 }
 void MetalFramebuffer::Validate(const FramebufferSpecification& specification)
 {
     const auto& attachments = specification.Attachments.Attachments;
-    Check(specification.Width && specification.Height && specification.Width <= 32 && specification.Height <= 32 &&
+    Check(specification.Width && specification.Height && specification.Width <= 4096 && specification.Height <= 4096 && uint64_t(specification.Width) * specification.Height <= 8388608 &&
         specification.Samples == 1 && !specification.SwapChainTarget && attachments.size() == 3 &&
         attachments[0].TextureFormat == FramebufferTextureFormat::RGBA32F &&
         attachments[1].TextureFormat == FramebufferTextureFormat::RED_INTEGER &&
         attachments[2].TextureFormat == FramebufferTextureFormat::DEPTH32F,
-        "Metal framebuffer requires 1..32 extent, one sample, ordered RGBA32F/R32Sint/Depth32F attachments and no swapchain target");
+        "Metal framebuffer requires 1..4096 extent / at most 8M pixels, one sample, ordered RGBA32F/R32Sint/Depth32F attachments and no swapchain target");
 }
 MetalFramebuffer::MetalFramebuffer(std::shared_ptr<MetalDevice> device, const FramebufferSpecification& specification)
     : m_Device(std::move(device)), m_Specification(specification)
@@ -38,7 +39,7 @@ std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(ui
     generation->Width = width; generation->Height = height;
     auto descriptor = NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
     descriptor->setTextureType(MTL::TextureType2D); descriptor->setWidth(width); descriptor->setHeight(height);
-    descriptor->setStorageMode(MTL::StorageModePrivate); descriptor->setUsage(MTL::TextureUsageRenderTarget);
+    descriptor->setStorageMode(MTL::StorageModePrivate); descriptor->setUsage(MTL::TextureUsageRenderTarget | MTL::TextureUsageShaderRead);
     const MTL::PixelFormat formats[] = {MTL::PixelFormatRGBA32Float, MTL::PixelFormatR32Sint, MTL::PixelFormatDepth32Float};
     for (size_t i = 0; i < generation->Targets.size(); ++i)
     {
@@ -46,6 +47,16 @@ std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(ui
         generation->Targets[i] = NS::TransferPtr(m_Device->NativeDevice()->newTexture(descriptor.get()));
         if (!generation->Targets[i]) throw std::runtime_error("Cannot allocate Metal framebuffer attachment generation");
     }
+    uint64_t bytes = 0;
+    auto& live = m_Device->m_AttachmentGenerations;
+    live.erase(std::remove_if(live.begin(), live.end(), [](const auto& weak) { return weak.expired(); }), live.end());
+    for (const auto& weak : live) if (auto current = weak.lock())
+        for (const auto& target : current->Targets) bytes += target->allocatedSize();
+    for (const auto& target : generation->Targets) bytes += target->allocatedSize();
+    Check(bytes <= 1024ULL * 1024 * 1024, "Metal framebuffer owner/in-flight attachment budget exceeds 1 GiB");
+    live.push_back(generation);
+    { std::lock_guard<std::mutex> lock(m_Device->m_Observer->Mutex); ++m_Device->m_Observer->Value.AttachmentAllocations; }
+    m_Device->Account();
     return generation;
 }
 MetalRendererAPI& MetalFramebuffer::Backend() const
@@ -59,7 +70,23 @@ void MetalFramebuffer::Bind()
     Check(!m_Frame, "Submit or cancel the prior framebuffer packet before binding again");
     auto& backend = Backend();
     auto shader = std::static_pointer_cast<MetalShader>(backend.LoadShader("Renderer2D_Quad"));
-    auto generation = m_SubmittedGeneration ? Allocate(m_Specification.Width, m_Specification.Height) : m_Attachments;
+    m_Device->Poll();
+    if (m_SubmittedGeneration) {
+        m_Available.push_back(std::move(m_Attachments));
+        m_SubmittedGeneration = false;
+    }
+    std::shared_ptr<const MetalFramebufferAttachments> generation = m_Attachments;
+    if (!generation) {
+        auto free = std::find_if(m_Available.begin(), m_Available.end(), [](const auto& value) { return value.use_count() == 1; });
+        if (free != m_Available.end()) {
+            generation = std::move(*free); m_Available.erase(free);
+            std::lock_guard<std::mutex> lock(m_Device->m_Observer->Mutex); ++m_Device->m_Observer->Value.AttachmentReuses;
+        }
+        else {
+            Check(m_Available.size() < 4, "All bounded Metal framebuffer generations are still in use");
+            generation = Allocate(m_Specification.Width, m_Specification.Height);
+        }
+    }
     auto frame = std::make_shared<MetalQuadFrame>();
     frame->Width = generation->Width; frame->Height = generation->Height;
     frame->Shader = std::move(shader); frame->Attachments = generation;
@@ -111,6 +138,7 @@ void MetalFramebuffer::Resize(uint32_t width, uint32_t height)
     Validate(specification);
     if (width == m_Specification.Width && height == m_Specification.Height) return;
     auto generation = Allocate(width, height); // publish only on complete allocation success
+    m_Available.clear();
     m_Attachments = std::move(generation); m_Specification = specification;
     m_SubmittedGeneration = false; m_Readback.reset();
 }
@@ -132,8 +160,32 @@ int MetalFramebuffer::ReadPixel(uint32_t attachment, int x, int y)
     const auto index = ReadIndex(x, y); return m_Readback->Entity[index];
 }
 float MetalFramebuffer::ReadDepthPixel(int x, int y) { const auto index = ReadIndex(x, y); return m_Readback->Depth[index]; }
-void MetalFramebuffer::EncodeOutput(const Ref<Framebuffer>&) { Unsupported(); }
+void MetalFramebuffer::EncodeOutput(const Ref<Framebuffer>& destination)
+{
+    Check(!destination, "Metal output currently targets only the native window");
+    Check(m_Frame && !Backend().IsFramebufferBound(m_Frame), "Unbind the completed scene before encoding output");
+    Check(!m_Device->m_PresentFrame, "Only one window output is allowed per frame");
+    if (!m_Device->m_OutputShader)
+        m_Device->m_OutputShader = std::make_shared<MetalShader>(m_Device, "DisplayOutput", 32, true);
+    m_Frame->OutputShader = m_Device->m_OutputShader;
+    m_Frame->Readback = false;
+    m_Device->m_PresentFrame = std::move(m_Frame);
+    m_SubmittedGeneration = true;
+}
 void MetalFramebuffer::DrawEntityOutlineTo(const Ref<Framebuffer>&, int, int, glm::vec4) { Unsupported(); }
-void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>&, float) { Unsupported(); }
+void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure)
+{
+    auto target = std::dynamic_pointer_cast<MetalFramebuffer>(destination);
+    Check(target && target.get() != this && target->m_Device == m_Device && std::isfinite(exposure), "Invalid Metal world destination/exposure");
+    Check(m_Frame && !m_Frame->World && !Backend().IsFramebufferBound(m_Frame) && target->m_Frame &&
+        Backend().IsFramebufferBound(target->m_Frame) && target->m_Frame->Draws.empty() && !target->m_Frame->World &&
+        m_Frame->Width == target->m_Frame->Width && m_Frame->Height == target->m_Frame->Height,
+        "World conversion requires an unbound world and a bound empty destination of equal extent");
+    target->m_Frame->PresentationShader = std::static_pointer_cast<MetalShader>(Backend().LoadShader("WorldPresentation"));
+    m_Frame->Readback = false;
+    target->m_Frame->Exposure = exposure;
+    target->m_Frame->World = std::move(m_Frame);
+    m_SubmittedGeneration = true;
+}
 uint32_t MetalFramebuffer::GetColorAttachmentRendererID(uint32_t) const { Unsupported(); }
 }

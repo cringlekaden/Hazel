@@ -1,0 +1,15 @@
+SpriteSheet:
+  Version: 1
+  Texture: Textures/Checkerboard.png
+  TextureSize: [32, 32]
+  Sampling: {Encoding: SRGB, MinFilter: Nearest, MagFilter: Nearest, WrapS: Repeat, WrapT: Repeat, GenerateMips: false, Format: RGBA8}
+  Regions:
+    - {ID: "0000000000000001", Name: Full, Rect: [0, 0, 32, 32], Pivot: [0.5, 0.5]}
+    - {ID: "0000000000000002", Name: Corner, Rect: [0, 0, 8, 8], Pivot: [0.5, 0.5]}
+  Clips:
+    - ID: "0000000000000001"
+      Name: Texture changes
+      Loop: true
+      Frames:
+        - {RegionID: "0000000000000001", Duration: 0.7}
+        - {RegionID: "0000000000000002", Duration: 0.7}

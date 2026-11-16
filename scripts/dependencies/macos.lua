@@ -39,7 +39,7 @@ if _OPTIONS["migration-tests"] then
         files { root .. "/tests/macos/MetalM1Smoke.cpp", root .. "/tests/macos/MetalM1Environment.mm" }
         links { "ApplicationServices.framework" }
         includedirs { root .. "/Hazel/src" }
-        externalincludedirs { root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/imgui", root .. "/Hazel/vendor/GLFW/include", root .. "/Hazel/vendor/Glad/include" }
+        externalincludedirs { root .. "/Hazel/vendor/entt/include", root .. "/Hazel/vendor/yaml-cpp/include", root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/imgui", root .. "/Hazel/vendor/GLFW/include", root .. "/Hazel/vendor/Glad/include" }
         libdirs { ShaderToolsRoot .. "/lib" }
         links { "Hazel" }
         links (ShaderToolsLinks)
@@ -135,7 +135,7 @@ if _OPTIONS["migration-tests"] then
         externalincludedirs { root .. "/Hazel/vendor/yaml-cpp/include", ShaderToolsIncludes, root .. "/Hazel/vendor/metal-cpp" }
         buildoptions { "-fblocks" }
         links { "spirv-cross-msl" }
-        externalincludedirs { root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/imgui", root .. "/Hazel/vendor/GLFW/include", root .. "/Hazel/vendor/Glad/include" }
+        externalincludedirs { root .. "/Hazel/vendor/entt/include", root .. "/Hazel/vendor/yaml-cpp/include", root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/imgui", root .. "/Hazel/vendor/GLFW/include", root .. "/Hazel/vendor/Glad/include" }
         libdirs { ShaderToolsRoot .. "/lib" }
         links { "Hazel" }
         links (ShaderToolsLinks)

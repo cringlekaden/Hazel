@@ -698,7 +698,7 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
 	void Renderer2D::DrawQuad(const glm::mat4& transform, const glm::vec4& color, int entityID)
 	{
 #ifdef HZ_PLATFORM_MACOS
-        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { throw std::logic_error("Offscreen quad profile requires an explicit texture"); }
+        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { DrawQuad(transform, s_Data->WhiteTexture, 1, color, entityID); return; }
 #endif
 
         EnsureRunSpace();

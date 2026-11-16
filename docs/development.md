@@ -106,49 +106,74 @@ Sheet/image/scene arguments are asset-relative; use a disposable project for wri
 
 ## Experimental Metal shader resources
 
-The `feature/3d-foundations` branch has an offline Metal 4 shader resource path.
-Hazelnut/Nutella still use OpenGL; this does not enable end-user Metal rendering.
-On native arm64 macOS 27+ with the optional Apple Metal Toolchain installed:
+![Native Metal 4 Nutella opaque quad scene](images/metal-quads.jpg)
+
+Actual Apple M4 Debug capture of the opt-in scene; this does not show full backend parity.
+
+The `feature/3d-foundations` branch has an opt-in Metal 4 opaque quad scene
+path in Nutella. Hazelnut and ordinary Nutella launches default to OpenGL.
+This is **not full Metal backend parity**. It requires Apple Silicon supporting
+Metal 4, native arm64 macOS 27+, Xcode and the optional Apple Metal Toolchain.
+Follow the normal [build prerequisites](getting-started.md) on this branch first.
+
+Build the player and produce the existing GLSL shader artifacts offline:
 
 ```sh
-python3 scripts/macos/metal_shaders.py --config Debug --build --output build/metal-shader-resources/shaders/metal
+python3 scripts/hazel.py build --config Debug
+python3 scripts/macos/metal_shaders.py --config Debug --build --output Hazel/Resources/shaders/metal
+HAZEL_RESOURCES="$PWD/Hazel/Resources" python3 scripts/hazel.py run Nutella --config Debug --metal-quads --inspect-camera --project examples/Sandbox/Sandbox-Quads.hproj
 ```
 
-The producer reuses valid packages and rebuilds stale/corrupt ones from the
-existing GLSL. Generated `.hzmetal` packages contain validated shader artifacts;
-runtime loading needs no GLSL/MSL files or developer compiler. Packages belong
-under the configured resource root's `shaders/metal` directory. Ordinary OpenGL
-application staging/export is unchanged and does not automatically produce or
-select these experimental resources. Missing or invalid shipped Metal packages
-require offline regeneration (`--force` also rebuilds a checksum-valid package
-that fails native loading); the user cache can be repaired from a valid package.
+Use `Release` for both build commands and the launch configuration to run Release.
+The scene has three opaque textured quads. Its left quad alternates between
+sprite regions every 0.7 seconds through ordinary runtime sprite animation.
+With inspection enabled, hold RMB and use WASD/Q/E to move the camera; Home
+restores the authored pose, Escape releases the pointer. No inspection text
+is drawn in the Metal window. Close the window normally to drain GPU work.
+`HAZEL_METAL_TRACE=1` optionally prints completion, positive/zero presentation
+timestamps, native CPU/GPU timing and shutdown memory counters. A completed
+command or zero presentation timestamp does not prove visible output.
 
-The [M2-B1 qualification record](design/metal-m2b1.md) describes artifact identities,
-bindings, source-free relocation checks, limitations and reproduction commands.
+[M2-C's integration record](design/metal-m2c.md) describes production ownership,
+qualification and current limits: at most eight opaque sprites, one sample,
+RGBA32F color / signed R32Sint IDs / Depth32Float world targets; 1..4096 pixels
+per axis and at most 8,388,608 pixels total, within bounded owner/in-flight memory.
+Scene-referred output uses existing Neutral/exposure conversion, followed by sRGB
+encoding to the native BGRA8 drawable. Display-referred output bypasses exposure.
+Framebuffer generations recycle after completion/feedback; full-frame readback
+is requested by offscreen `Submit`, and is omitted from normal window output.
 
-The bounded [production framebuffer checkpoint](design/metal-m2b4.md) uses
-these resources through `Renderer2D::InitQuads`, existing quad packing, texture
-slots and ordered flush ownership. The native test creates the target through
-`Framebuffer::Create`, calls
-`Bind`/`Clear`, submits existing Renderer2D scenes, then calls `Unbind`,
-nonblocking `Submit` and `Poll` for color/signed-ID/depth readback. Submitted
-attachment generations survive resize, replacement and resource destruction.
-It supports only
-the opaque, unblended RGBA32Float/R32Sint/Depth32Float profile, extents up to 32×32
-and eight total quads per frame. This is experimental offscreen qualification;
-normal scene/editor rendering, presentation, other primitives, file textures and
-general resource factories remain unavailable. Applications still default to
-OpenGL. The existing qualification runner requires prebuilt shader resources:
+Meshes, lights, environments, circles, text, UI/ImGui, blending, mipmaps,
+additional attachment profiles and editor Metal rendering are unsupported and
+reject explicitly. File sprite sheets must specify supported nearest/linear,
+repeat/clamp sampling with no mipmaps and opaque RGBA8 (sRGB/linear), or generated
+linear RGBA32F data. Whole-file default mipmap sampling remains unsupported;
+use a sprite-sheet sampling specification as in the quad example.
+
+The producer reuses valid packages and rebuilds stale/corrupt ones. Generated
+`.hzmetal` packages contain validated libraries; runtime needs no developer
+compiler or GLSL/MSL source. Place them under the configured resource root's
+`shaders/metal` directory. M2-C versions the artifact profile to reject stale
+final-output orientation in source-free packages. Regenerate older packages.
+OpenGL staging/export does not automatically produce Metal artifacts or select
+Metal. General Metal game packaging is not qualified by this milestone.
+
+The existing offscreen and native window runners reuse M2-B4 fixtures and M1's
+window/lifetime tests (use fresh output directories):
 
 ```sh
-python3 scripts/macos/metal_m2b2.py --config Debug --build --resources build/metal-shader-resources --output build/metal-m2b4-evidence/debug
+python3 scripts/macos/metal_m2b2.py --config Debug --build --resources Hazel/Resources --output build/metal-m2c-offscreen-debug
+python3 scripts/macos/metal_m1.py --config Debug --build --quads Hazel/Resources --output build/metal-m2c-window-debug
+python3 scripts/macos/metal_m1.py --config Debug --quads Hazel/Resources --hidpi --output build/metal-m2c-window-debug-2x
 ```
 
-The runner includes framebuffer resize/cancellation/retry/lifetime checks,
-[shared ordered flushes](design/metal-m2b3.md) and the
-[B2 sampling fixtures](design/metal-m2b2.md). Only the explicit Metal offscreen
-profile implements the new asynchronous framebuffer operations; existing OpenGL
-framebuffer workflows are unchanged.
+The native runner requires an unlocked console. `--hidpi` temporarily selects an
+advertised native 2× display mode and restores the original mode. Only the
+explicit Metal framebuffer profile implements asynchronous readback operations;
+existing OpenGL framebuffer workflows are unchanged. Historical
+[B1 artifacts](design/metal-m2b1.md), [B2 sampling](design/metal-m2b2.md),
+[B3 ordered flushes](design/metal-m2b3.md) and [B4 ownership](design/metal-m2b4.md)
+records describe those earlier qualified revisions.
 
 
 ## Troubleshooting

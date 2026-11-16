@@ -1,0 +1,798 @@
+{
+  "schemaVersion": 1,
+  "milestone": "Metal 4 M2-C: first integrated visible 2D scene",
+  "verdict": "PASS",
+  "date": "2026-11-16",
+  "branch": "feature/3d-foundations",
+  "baselineHEAD": "f15815ad736cbd9b70e30cbe4b0f444ac5421181",
+  "filesChanged": [
+    "Hazel/src/Hazel/Core/Application.cpp",
+    "Hazel/src/Hazel/Core/UUID.h",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer2D.cpp",
+    "Hazel/src/Hazel/Renderer/RenderCommand.h",
+    "Hazel/src/Hazel/Renderer/Renderer.cpp",
+    "Hazel/src/Hazel/Renderer/Renderer.h",
+    "Hazel/src/Hazel/Renderer/Resources/Texture.cpp",
+    "Hazel/src/Hazel/Renderer/Scene/SceneRenderer.cpp",
+    "Hazel/src/Hazel/Scene/Components.h",
+    "Hazel/src/Hazel/Scene/Scene.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalDevice.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalDevice.h",
+    "Hazel/src/Platform/macOS/Metal/MetalDeviceQuad.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalFramebuffer.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalFramebuffer.h",
+    "Hazel/src/Platform/macOS/Metal/MetalProof.h",
+    "Hazel/src/Platform/macOS/Metal/MetalQuadFrame.h",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererAPI.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererAPI.h",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererQuad.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalShader.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalShader.h",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderArtifact.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderCompiler.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalTexture.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalTexture.h",
+    "Nutella/src/NutellaApp.cpp",
+    "docs/design/metal-m2c-results.json",
+    "docs/design/metal-m2c.md",
+    "docs/development.md",
+    "docs/images/metal-quads.jpg",
+    "examples/Sandbox/Assets/Scenes/Quads.hazel",
+    "examples/Sandbox/Assets/Textures/Checkerboard.png",
+    "examples/Sandbox/Assets/Textures/Quads.hsprites",
+    "examples/Sandbox/README.md",
+    "examples/Sandbox/Sandbox-Quads.hproj",
+    "scripts/dependencies/macos.lua",
+    "scripts/hazel.py",
+    "scripts/macos/metal_m1.py",
+    "tests/macos/MetalM1Smoke.cpp",
+    "tests/macos/MetalRenderer2DQuadSmoke.cpp"
+  ],
+  "qualifiedSourceSHA256": {
+    "Hazel/src/Hazel/Core/Application.cpp": "fe544f8a16d0befd53ffb1e7353691564b003abb0cc8e3a100071808d78712b7",
+    "Hazel/src/Hazel/Core/UUID.h": "1f3130eb8dba2b1ec9451ee82914170dae651a0fb70cee07a9bf8279e57964a7",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer2D.cpp": "7cc44f0513dbddfe281fd21528474733cf3d4282aa30dad98dd6734856f6c6a0",
+    "Hazel/src/Hazel/Renderer/RenderCommand.h": "8ff7fea16962b4255f2a7da26eb7e00a7ae7ae713c51ce01ba6487dae2517c99",
+    "Hazel/src/Hazel/Renderer/Renderer.cpp": "b60becc44c15331a7cb5af240ef95601772a760f74c4305e4cef3339a691af84",
+    "Hazel/src/Hazel/Renderer/Renderer.h": "287f782bcd1e9e940a213efc0832fb0e16a479de6a5b9539f681ef285b0de608",
+    "Hazel/src/Hazel/Renderer/Resources/Texture.cpp": "7ec19fe7b6c66714862e2f3600082629d6f12c31a7eac5908342aefe74b76bce",
+    "Hazel/src/Hazel/Renderer/Scene/SceneRenderer.cpp": "76435c33986dab92a1d5865eae50ed567294964200a6eb6b786cb0dba00cf038",
+    "Hazel/src/Hazel/Scene/Components.h": "cf2298ba75053201c33298d1076440640a46654c48a94bafb50cc8449ac60a08",
+    "Hazel/src/Hazel/Scene/Scene.cpp": "f6c66570fb320314f0babbc109571b62f1776fa52534c8ac5498a540975df266",
+    "Hazel/src/Platform/macOS/Metal/MetalDevice.cpp": "740353162ffd5c376ed19107bc785113275ea0c454b3ddadfd66c55e96891cf6",
+    "Hazel/src/Platform/macOS/Metal/MetalDevice.h": "b559de1183810df60d41a8a46139eacf389148a1b006a397c4ad3b81566cbeed",
+    "Hazel/src/Platform/macOS/Metal/MetalDeviceQuad.cpp": "8d509daba8fe0464c346fc93bb5abebbba256f94499ebdf1e13ab7a76b5bba76",
+    "Hazel/src/Platform/macOS/Metal/MetalFramebuffer.cpp": "8da02e28d82eea5c2e363911cc4fe0594f73258b79ee74be567b72a67ab6e93e",
+    "Hazel/src/Platform/macOS/Metal/MetalFramebuffer.h": "bf6345e58184b3ba730cc30007e336926bb9567ac06dba94a568d66ce79f33ec",
+    "Hazel/src/Platform/macOS/Metal/MetalProof.h": "0aa3afbef2f584685350c25eeb2e6098490095b14d25c454456a0ad9a28566e7",
+    "Hazel/src/Platform/macOS/Metal/MetalQuadFrame.h": "aa6ef0e47feb4f044cf7d8e01d6f1b4b106388cdf7771cda4c37bc9b5a0c849a",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererAPI.cpp": "693ea93417ae92cb5797bbac33c3504fc97df186b63f44ac25ea6043519e87c5",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererAPI.h": "2cfc8d2694df2333a1a14d9dd1c81ea1f348456f7116b2b7668ec7d317f1f181",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererQuad.cpp": "20a0cc7113a684b2c33e3a4d506588f3861d22293db45be6de51f9b9d5ff3c12",
+    "Hazel/src/Platform/macOS/Metal/MetalShader.cpp": "f80dcad975495c6eb62f146265247cf219b62251efeed08d41b79fa25ab14069",
+    "Hazel/src/Platform/macOS/Metal/MetalShader.h": "0e03185005d3972a207a8797af5f98a483f3eaa87b3922dad1f9853f13ad441f",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderArtifact.cpp": "4d18bf0645d8d9b13ba98009f01d5894d5ddcf62a2995b785a428b7c165a993b",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderCompiler.cpp": "52d8d78b87ecfba765b09c6c3be40e9a891b1fb9116cb871dfce977f7e54f482",
+    "Hazel/src/Platform/macOS/Metal/MetalTexture.cpp": "3b76b9c57c0fa007854d991152c25a61f78c804743a6e8873498d4463751e31b",
+    "Hazel/src/Platform/macOS/Metal/MetalTexture.h": "d2ed0d268bb5bedffda59b1f7cd5158ee8dbb0ff6130c353cec0ebfa2223007a",
+    "Nutella/src/NutellaApp.cpp": "c851d7e232818bdb2583b6e2d89a7b3081320c511ad63703ce920f5c9e5a2801",
+    "examples/Sandbox/Assets/Scenes/Quads.hazel": "ec43a9fa3b2490451352d5494231d643b7c39dc28f207057a2a48647d5717133",
+    "examples/Sandbox/Assets/Textures/Checkerboard.png": "41685c3cfae65b8241240c8a50129d0e4ee14250c1b6d1bfeedc67d61e8f73f3",
+    "examples/Sandbox/Assets/Textures/Quads.hsprites": "063a7c0041ce5548dfdd33034fa7f220997126fbef6a564803e499f6214d79ad",
+    "examples/Sandbox/Sandbox-Quads.hproj": "d5146a5ecad31ae70e7fd874f24707abf45a6e91d0b3b94ae905257a41a5340c",
+    "scripts/dependencies/macos.lua": "86bfc5e8a323ad49054a83dfff7f6e3ab255fd18d7006b3315827b6e284cdfe5",
+    "scripts/hazel.py": "9e47f19037d0fa0b0b59b180deee28cb0c1dda299f495ad32ffcfd1f60270f62",
+    "scripts/macos/metal_m1.py": "0250af1b44bdc906b35b6bc5d1360245459ce84c4d7b01e2391cb3855d917d5e",
+    "tests/macos/MetalM1Smoke.cpp": "43ee3de654d95a07ea353a3bfad3613a0acc646828e55594f60e19dce99eb63d",
+    "tests/macos/MetalRenderer2DQuadSmoke.cpp": "332a5cd198b9817829c9b5513e28829f9f3abd5ff1daac5a42b5a385809e033c"
+  },
+  "documentationSHA256": {
+    "docs/design/metal-m2c.md": "c3c67c634e758fec2d2ace918285e345c3a8b49e82b85d774c21371114850e97",
+    "docs/development.md": "1c478d1dada796e587630ef4903252aa21defb3ac53d2fc5bc196cb822bb6b6d",
+    "docs/images/metal-quads.jpg": "0d4bc5672e2b271fcfed6ba2a78f849786a22a0326634ec9d3aa89b378f30c8f",
+    "examples/Sandbox/README.md": "e1762d1046b0eda82e446aa9149fc3eb9b01e3e99c224eaf83a3208a12200e99"
+  },
+  "platform": {
+    "hardware": "Apple M4 arm64",
+    "macOS": "27.3 (26C5035r)",
+    "Xcode": "27.3 (27C5020n)"
+  },
+  "productionIntegration": {
+    "application": "Nutella --metal-quads",
+    "initialization": "RendererInitialization::Quads",
+    "submission": "RuntimeSession -> Scene -> SceneRenderer -> existing DrawWorld2D -> existing ordered Renderer2D flush -> MetalFramebuffer -> shared MetalDevice quad encoder -> M1 native drawable presentation",
+    "passes": [
+      "world RGBA32F + signed R32Sint + Depth32Float LESS/write",
+      "optional existing WorldPresentation Neutral/exposure into display-linear RGBA32F + exact IDs, destination depth clear one",
+      "existing DisplayOutput sRGB encoding into BGRA8Unorm drawable"
+    ],
+    "readback": "Offscreen Submit requests CPU color/ID/depth; normal EncodeOutput omits full-frame readback",
+    "orientation": "Offscreen lower-left row convention preserved; generated DisplayOutput vertex disables Y inversion to reverse rows once for native window"
+  },
+  "native": {
+    "debug-native": {
+      "status": "PASS",
+      "evidence": "build/metal-m2c-evidence/debug-validated-native",
+      "summary": {
+        "submitted": 332,
+        "completed": 332,
+        "verified": 0,
+        "presented": 326,
+        "completed_presented": 326,
+        "peak_inflight": 3,
+        "slot_reuses": 329,
+        "peak_resource_bytes": 77285808,
+        "peak_allocator_bytes": 7204392,
+        "peak_attachment_bytes": 105414656,
+        "attachment_allocations": 11,
+        "attachment_reuses": 672,
+        "pending_at_shutdown": 3,
+        "resize_events": 1,
+        "errors": 0
+      },
+      "proof": {
+        "positivePresented": 326,
+        "timingScope": "Validation-enabled integrated scene, world/output conversion and presentation; numeric fixtures qualified separately.",
+        "baseline1280x720": {
+          "samples": 61,
+          "cpuMeanMs": 2.664226098360656,
+          "gpuMeanMs": 0.6444091277891678
+        },
+        "completed": 332,
+        "completedPositivePresented": 326,
+        "verification": "GPU completion and positive presentation; numerical fixture results are separate",
+        "steadySceneTiming": {
+          "warmup": "first 130 submissions and final 10 excluded",
+          "cpuScope": "Present polling, drawable acquisition, immutable GPU preparation, encoding and commit; excludes Scene/RuntimeSession CPU work",
+          "dimensions": [
+            [
+              960,
+              540
+            ]
+          ],
+          "cpu": {
+            "samples": 193,
+            "medianMs": 2.457458,
+            "p95Ms": 2.951417
+          },
+          "gpu": {
+            "samples": 193,
+            "medianMs": 0.4038750194013119,
+            "p95Ms": 0.42433300404809415
+          }
+        }
+      },
+      "environment": {
+        "logicalWidth": 1280,
+        "logicalHeight": 720,
+        "framebufferWidth": 1280,
+        "framebufferHeight": 720,
+        "cocoaBackingScale": 1,
+        "glfwScaleX": 1,
+        "glfwScaleY": 1
+      },
+      "validation": {
+        "MTL_DEBUG_LAYER": "1",
+        "MTL_SHADER_VALIDATION": "1"
+      }
+    },
+    "debug-native-2x": {
+      "status": "PASS",
+      "evidence": "build/metal-m2c-evidence/debug-validated-native-2x",
+      "summary": {
+        "submitted": 332,
+        "completed": 332,
+        "verified": 0,
+        "presented": 324,
+        "completed_presented": 324,
+        "peak_inflight": 3,
+        "slot_reuses": 329,
+        "peak_resource_bytes": 303188400,
+        "peak_allocator_bytes": 7204392,
+        "peak_attachment_bytes": 336789504,
+        "attachment_allocations": 11,
+        "attachment_reuses": 678,
+        "pending_at_shutdown": 3,
+        "resize_events": 1,
+        "errors": 0
+      },
+      "proof": {
+        "positivePresented": 324,
+        "timingScope": "Validation-enabled integrated scene, world/output conversion and presentation; numeric fixtures qualified separately.",
+        "baseline1280x720": {
+          "samples": 0,
+          "cpuMeanMs": null,
+          "gpuMeanMs": null
+        },
+        "completed": 332,
+        "completedPositivePresented": 324,
+        "verification": "GPU completion and positive presentation; numerical fixture results are separate",
+        "steadySceneTiming": {
+          "warmup": "first 130 submissions and final 10 excluded",
+          "cpuScope": "Present polling, drawable acquisition, immutable GPU preparation, encoding and commit; excludes Scene/RuntimeSession CPU work",
+          "dimensions": [
+            [
+              1920,
+              1080
+            ]
+          ],
+          "cpu": {
+            "samples": 193,
+            "medianMs": 2.525292,
+            "p95Ms": 3.175458
+          },
+          "gpu": {
+            "samples": 193,
+            "medianMs": 1.2328750162851065,
+            "p95Ms": 1.4523749996442348
+          }
+        }
+      },
+      "environment": {
+        "logicalWidth": 1280,
+        "logicalHeight": 563,
+        "framebufferWidth": 2560,
+        "framebufferHeight": 1126,
+        "cocoaBackingScale": 2,
+        "glfwScaleX": 2,
+        "glfwScaleY": 2
+      },
+      "validation": {
+        "MTL_DEBUG_LAYER": "1",
+        "MTL_SHADER_VALIDATION": "1"
+      }
+    },
+    "release-native": {
+      "status": "PASS",
+      "evidence": "build/metal-m2c-evidence/release-validated-native",
+      "summary": {
+        "submitted": 331,
+        "completed": 331,
+        "verified": 0,
+        "presented": 325,
+        "completed_presented": 325,
+        "peak_inflight": 3,
+        "slot_reuses": 328,
+        "peak_resource_bytes": 77285808,
+        "peak_allocator_bytes": 7204392,
+        "peak_attachment_bytes": 105414656,
+        "attachment_allocations": 11,
+        "attachment_reuses": 672,
+        "pending_at_shutdown": 3,
+        "resize_events": 1,
+        "errors": 0
+      },
+      "proof": {
+        "positivePresented": 326,
+        "timingScope": "Validation-enabled integrated scene, world/output conversion and presentation; numeric fixtures qualified separately.",
+        "baseline1280x720": {
+          "samples": 61,
+          "cpuMeanMs": 2.683332655737705,
+          "gpuMeanMs": 0.6910887986734571
+        },
+        "completed": 331,
+        "completedPositivePresented": 326,
+        "verification": "GPU completion and positive presentation; numerical fixture results are separate",
+        "steadySceneTiming": {
+          "warmup": "first 130 submissions and final 10 excluded",
+          "cpuScope": "Present polling, drawable acquisition, immutable GPU preparation, encoding and commit; excludes Scene/RuntimeSession CPU work",
+          "dimensions": [
+            [
+              960,
+              540
+            ]
+          ],
+          "cpu": {
+            "samples": 192,
+            "medianMs": 2.815,
+            "p95Ms": 3.4285
+          },
+          "gpu": {
+            "samples": 192,
+            "medianMs": 0.3928334917873144,
+            "p95Ms": 0.4257500113453716
+          }
+        }
+      },
+      "environment": {
+        "logicalWidth": 1280,
+        "logicalHeight": 720,
+        "framebufferWidth": 1280,
+        "framebufferHeight": 720,
+        "cocoaBackingScale": 1,
+        "glfwScaleX": 1,
+        "glfwScaleY": 1
+      },
+      "validation": {
+        "MTL_DEBUG_LAYER": "1",
+        "MTL_SHADER_VALIDATION": "1"
+      }
+    },
+    "release-native-2x": {
+      "status": "PASS",
+      "evidence": "build/metal-m2c-evidence/release-validated-native-2x",
+      "summary": {
+        "submitted": 333,
+        "completed": 333,
+        "verified": 0,
+        "presented": 324,
+        "completed_presented": 324,
+        "peak_inflight": 3,
+        "slot_reuses": 330,
+        "peak_resource_bytes": 303188400,
+        "peak_allocator_bytes": 7204392,
+        "peak_attachment_bytes": 336789504,
+        "attachment_allocations": 11,
+        "attachment_reuses": 668,
+        "pending_at_shutdown": 3,
+        "resize_events": 1,
+        "errors": 0
+      },
+      "proof": {
+        "positivePresented": 324,
+        "timingScope": "Validation-enabled integrated scene, world/output conversion and presentation; numeric fixtures qualified separately.",
+        "baseline1280x720": {
+          "samples": 0,
+          "cpuMeanMs": null,
+          "gpuMeanMs": null
+        },
+        "completed": 333,
+        "completedPositivePresented": 324,
+        "verification": "GPU completion and positive presentation; numerical fixture results are separate",
+        "steadySceneTiming": {
+          "warmup": "first 130 submissions and final 10 excluded",
+          "cpuScope": "Present polling, drawable acquisition, immutable GPU preparation, encoding and commit; excludes Scene/RuntimeSession CPU work",
+          "dimensions": [
+            [
+              1920,
+              1080
+            ]
+          ],
+          "cpu": {
+            "samples": 194,
+            "medianMs": 2.8300834999999998,
+            "p95Ms": 3.672125
+          },
+          "gpu": {
+            "samples": 194,
+            "medianMs": 1.244625003891997,
+            "p95Ms": 1.4570830098818988
+          }
+        }
+      },
+      "environment": {
+        "logicalWidth": 1280,
+        "logicalHeight": 563,
+        "framebufferWidth": 2560,
+        "framebufferHeight": 1126,
+        "cocoaBackingScale": 2,
+        "glfwScaleX": 2,
+        "glfwScaleY": 2
+      },
+      "validation": {
+        "MTL_DEBUG_LAYER": "1",
+        "MTL_SHADER_VALIDATION": "1"
+      }
+    }
+  },
+  "offscreen": {
+    "debug": {
+      "verdict": "PASS",
+      "configuration": "Debug",
+      "metrics": {
+        "submitted": 25,
+        "completed": 25,
+        "slotReuses": 22,
+        "orderedQuads": 4,
+        "orderedDraws": 2,
+        "orderedVertexBytes": 1024,
+        "peakInFlight": 3,
+        "pendingShutdown": 1,
+        "frameBytes": 0,
+        "peakFrameBytes": 591504,
+        "peakAllocatorBytes": 7745064,
+        "errors": 0
+      },
+      "measurements": {
+        "nearest-camera-versions": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "linear": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "repeat": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "ordered-run": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "capacity-run": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "resize-a": {
+          "samples": 512,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "resize-b": {
+          "samples": 512,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "destroyed-clear": {
+          "samples": 64,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "busy-retry": {
+          "samples": 64,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        }
+      },
+      "sha256": {
+        "nearest-after-reuse.bin": "73bad5078f0fcd1789189c2de5773685629cf505d2039f85fcf06055b88c1e13",
+        "repeat.bin": "118f7063a6210a13d19bd41b7bc29b81234b9ec6d980752b9d01e82cff198f38",
+        "busy-retry.bin": "bc561efbd4019e6b75ac0367516b5f1e8d647becd20c46fb2e3f06b44b76085c",
+        "resize-a.bin": "619dde26f087a72482bfe91fa060e58246d3a25669ae3a514c4025ddbe5d1b1b",
+        "resize-b.bin": "cfedbf59ab3df2a6608bdd622b6a73c8eab5217c097177a04c24bb69cb59a9e8",
+        "linear.bin": "2912d14fa2a92209ff2c6f41114686f80ffb8385ff2e400ece4c54806f40468f",
+        "capacity-run.bin": "228a0c3f7ae7808ca29f2a9a38a9be30aaeef774de8f88a91fa3d76c05fa3d95",
+        "destroyed-clear.bin": "0b98c524db85e7632a7dd611c8884b3a5c2c6426e8ba4dd254af996f9cc0117c",
+        "nearest-camera-versions.bin": "73bad5078f0fcd1789189c2de5773685629cf505d2039f85fcf06055b88c1e13",
+        "ordered-run.bin": "e6e416169abc7690715386a6590d0b9dd6902e393aadd40e07d070356ab760e6"
+      },
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-m2c-evidence/Resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-m2c-evidence/debug-qualified-offscreen"
+      ],
+      "environment": {
+        "PATH": "/nonexistent",
+        "DEVELOPER_DIR": "/nonexistent",
+        "MTL_DEBUG_LAYER": "1",
+        "MTL_SHADER_VALIDATION": "1"
+      },
+      "artifacts": {
+        "ForwardPBR.hzmetal": "b0d98cd54b65dd1d839c0e22dceb927edee5a29bb0e393e8cfbef1378301bbce",
+        "EntityOutline.hzmetal": "ecf8e9a22c1e7c7e6eac737da7fbe961a2f692bbcda92c25c413ac77c7820611",
+        "Renderer2D_Line.hzmetal": "b4d06a752dfc7fc4e80535c58a5249e3498b6f43b183b819e6175c40cfae8120",
+        "Renderer2D_Quad-16.hzmetal": "d802c513d982d40d227d3c0073d4f6154cc799f4f73b5dcca205da6d97dfd8db",
+        "Renderer2D_Quad-32.hzmetal": "c2508ca618a29821c30221245efec8c5ab9094d0afeaf1eb1ae58d272c540986",
+        "WorldPresentation.hzmetal": "bdaf1d89d3d94de69b7ed36266f25746c59ac40b535a34313ebdb7c35e984263",
+        "EnvironmentSky.hzmetal": "0387b8ed213f5ade74e2c48ead69d766425d60979821fde76590066d6f3588a5",
+        "Renderer2D_Circle.hzmetal": "b5cec218a9c0e39b1e60617c128608cd851287a8f8303f82dfab5cbe82b5a843",
+        "Renderer2D_Text.hzmetal": "18c031068582a603d08bd1884a7c94c563cdc8de6e53fb511076e4a03127a94d",
+        "DisplayOutput.hzmetal": "0394ccaed4c014bed70876470c417a8947b89542b29b885a9679c482f389ab08"
+      },
+      "presentation": "NOT RUN: offscreen only",
+      "baselineReadbacksIdentical": true
+    },
+    "release": {
+      "verdict": "PASS",
+      "configuration": "Release",
+      "metrics": {
+        "submitted": 25,
+        "completed": 25,
+        "slotReuses": 22,
+        "orderedQuads": 4,
+        "orderedDraws": 2,
+        "orderedVertexBytes": 1024,
+        "peakInFlight": 3,
+        "pendingShutdown": 1,
+        "frameBytes": 0,
+        "peakFrameBytes": 591504,
+        "peakAllocatorBytes": 7745064,
+        "errors": 0
+      },
+      "measurements": {
+        "nearest-camera-versions": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "linear": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "repeat": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "ordered-run": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "capacity-run": {
+          "samples": 1024,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "resize-a": {
+          "samples": 512,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "resize-b": {
+          "samples": 512,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "destroyed-clear": {
+          "samples": 64,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        },
+        "busy-retry": {
+          "samples": 64,
+          "maxColorError": 0.0,
+          "maxDepthError": 0.0,
+          "signedIDs": "exact"
+        }
+      },
+      "sha256": {
+        "nearest-after-reuse.bin": "73bad5078f0fcd1789189c2de5773685629cf505d2039f85fcf06055b88c1e13",
+        "repeat.bin": "118f7063a6210a13d19bd41b7bc29b81234b9ec6d980752b9d01e82cff198f38",
+        "busy-retry.bin": "bc561efbd4019e6b75ac0367516b5f1e8d647becd20c46fb2e3f06b44b76085c",
+        "resize-a.bin": "619dde26f087a72482bfe91fa060e58246d3a25669ae3a514c4025ddbe5d1b1b",
+        "resize-b.bin": "cfedbf59ab3df2a6608bdd622b6a73c8eab5217c097177a04c24bb69cb59a9e8",
+        "linear.bin": "2912d14fa2a92209ff2c6f41114686f80ffb8385ff2e400ece4c54806f40468f",
+        "capacity-run.bin": "228a0c3f7ae7808ca29f2a9a38a9be30aaeef774de8f88a91fa3d76c05fa3d95",
+        "destroyed-clear.bin": "0b98c524db85e7632a7dd611c8884b3a5c2c6426e8ba4dd254af996f9cc0117c",
+        "nearest-camera-versions.bin": "73bad5078f0fcd1789189c2de5773685629cf505d2039f85fcf06055b88c1e13",
+        "ordered-run.bin": "e6e416169abc7690715386a6590d0b9dd6902e393aadd40e07d070356ab760e6"
+      },
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-m2c-evidence/Resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-m2c-evidence/release-qualified-offscreen"
+      ],
+      "environment": {
+        "PATH": "/nonexistent",
+        "DEVELOPER_DIR": "/nonexistent",
+        "MTL_DEBUG_LAYER": "1",
+        "MTL_SHADER_VALIDATION": "1"
+      },
+      "artifacts": {
+        "ForwardPBR.hzmetal": "b0d98cd54b65dd1d839c0e22dceb927edee5a29bb0e393e8cfbef1378301bbce",
+        "EntityOutline.hzmetal": "ecf8e9a22c1e7c7e6eac737da7fbe961a2f692bbcda92c25c413ac77c7820611",
+        "Renderer2D_Line.hzmetal": "b4d06a752dfc7fc4e80535c58a5249e3498b6f43b183b819e6175c40cfae8120",
+        "Renderer2D_Quad-16.hzmetal": "d802c513d982d40d227d3c0073d4f6154cc799f4f73b5dcca205da6d97dfd8db",
+        "Renderer2D_Quad-32.hzmetal": "c2508ca618a29821c30221245efec8c5ab9094d0afeaf1eb1ae58d272c540986",
+        "WorldPresentation.hzmetal": "bdaf1d89d3d94de69b7ed36266f25746c59ac40b535a34313ebdb7c35e984263",
+        "EnvironmentSky.hzmetal": "0387b8ed213f5ade74e2c48ead69d766425d60979821fde76590066d6f3588a5",
+        "Renderer2D_Circle.hzmetal": "b5cec218a9c0e39b1e60617c128608cd851287a8f8303f82dfab5cbe82b5a843",
+        "Renderer2D_Text.hzmetal": "18c031068582a603d08bd1884a7c94c563cdc8de6e53fb511076e4a03127a94d",
+        "DisplayOutput.hzmetal": "0394ccaed4c014bed70876470c417a8947b89542b29b885a9679c482f389ab08"
+      },
+      "presentation": "NOT RUN: offscreen only",
+      "baselineReadbacksIdentical": true
+    }
+  },
+  "captures": {
+    "debug-capture-final": {
+      "images": {
+        "build/metal-m2c-evidence/debug-capture-final/moved.jpg": "61c1115f9f8033a31b99b2bba2811bcc350847875c254dc85f7fb5181fdf18d3",
+        "build/metal-m2c-evidence/debug-capture-final/reset-held.jpg": "bd1507e7a3202099e720c33fcfd870c24d225ba920a810557b02345acead082d",
+        "build/metal-m2c-evidence/debug-capture-final/reset.jpg": "44e767d35e1412a12a05ebf25ab753576d6d25350239a425afdc005719e312ec",
+        "build/metal-m2c-evidence/debug-capture-final/visible-a.jpg": "0d4bc5672e2b271fcfed6ba2a78f849786a22a0326634ec9d3aa89b378f30c8f"
+      },
+      "log": "build/metal-m2c-evidence/debug-capture-final/run.log"
+    },
+    "release-capture-2x": {
+      "images": {
+        "build/metal-m2c-evidence/release-capture-2x/moved.jpg": "0a2d656929321853e124d6aee8bdb336d0e0d05feec635346c2dc8ae90805cac",
+        "build/metal-m2c-evidence/release-capture-2x/reset.jpg": "91ac28da777c4ca5b161fa09be6d00fa4c6f02d8527d81d3c9a3304fa5b18d96",
+        "build/metal-m2c-evidence/release-capture-2x/visible.jpg": "c5ab33412ae49400d6f7146821464084b10ae4777e974e6f0ed00fb5d2a775c0"
+      },
+      "log": "build/metal-m2c-evidence/release-capture-2x/run.log"
+    },
+    "observations": "Native production Nutella: correct negative-Y foreground placement; RMB+W camera movement; held Home reset; checkerboard/corner animation. Debug 1x and Release native 2x captures; no CPU display copy."
+  },
+  "shaderArtifacts": {
+    "DisplayOutput.hzmetal": {
+      "sha256": "0394ccaed4c014bed70876470c417a8947b89542b29b885a9679c482f389ab08",
+      "vertexLibraryIdenticalToB4": false,
+      "fragmentLibraryIdenticalToB4": true
+    },
+    "EntityOutline.hzmetal": {
+      "sha256": "ecf8e9a22c1e7c7e6eac737da7fbe961a2f692bbcda92c25c413ac77c7820611",
+      "vertexLibraryIdenticalToB4": true,
+      "fragmentLibraryIdenticalToB4": true
+    },
+    "EnvironmentSky.hzmetal": {
+      "sha256": "0387b8ed213f5ade74e2c48ead69d766425d60979821fde76590066d6f3588a5",
+      "vertexLibraryIdenticalToB4": true,
+      "fragmentLibraryIdenticalToB4": true
+    },
+    "ForwardPBR.hzmetal": {
+      "sha256": "b0d98cd54b65dd1d839c0e22dceb927edee5a29bb0e393e8cfbef1378301bbce",
+      "vertexLibraryIdenticalToB4": true,
+      "fragmentLibraryIdenticalToB4": true
+    },
+    "Renderer2D_Circle.hzmetal": {
+      "sha256": "b5cec218a9c0e39b1e60617c128608cd851287a8f8303f82dfab5cbe82b5a843",
+      "vertexLibraryIdenticalToB4": true,
+      "fragmentLibraryIdenticalToB4": true
+    },
+    "Renderer2D_Line.hzmetal": {
+      "sha256": "b4d06a752dfc7fc4e80535c58a5249e3498b6f43b183b819e6175c40cfae8120",
+      "vertexLibraryIdenticalToB4": true,
+      "fragmentLibraryIdenticalToB4": true
+    },
+    "Renderer2D_Quad-16.hzmetal": {
+      "sha256": "d802c513d982d40d227d3c0073d4f6154cc799f4f73b5dcca205da6d97dfd8db",
+      "vertexLibraryIdenticalToB4": true,
+      "fragmentLibraryIdenticalToB4": true
+    },
+    "Renderer2D_Quad-32.hzmetal": {
+      "sha256": "c2508ca618a29821c30221245efec8c5ab9094d0afeaf1eb1ae58d272c540986",
+      "vertexLibraryIdenticalToB4": true,
+      "fragmentLibraryIdenticalToB4": true
+    },
+    "Renderer2D_Text.hzmetal": {
+      "sha256": "18c031068582a603d08bd1884a7c94c563cdc8de6e53fb511076e4a03127a94d",
+      "vertexLibraryIdenticalToB4": true,
+      "fragmentLibraryIdenticalToB4": true
+    },
+    "WorldPresentation.hzmetal": {
+      "sha256": "bdaf1d89d3d94de69b7ed36266f25746c59ac40b535a34313ebdb7c35e984263",
+      "vertexLibraryIdenticalToB4": true,
+      "fragmentLibraryIdenticalToB4": true
+    }
+  },
+  "resourceAccounting": {
+    "attachmentBudgetBytes": 1073741824,
+    "pendingFrameBudgetBytes": 1073741824,
+    "allocatorBudgetBytes": 67108864,
+    "perFramebufferCurrentExtentGenerationBound": 4,
+    "measuredFinalPeakAttachmentBytes": 336789504,
+    "otherAcceptedIntegrationPeakAttachmentBytes": 479920128,
+    "ownershipNotes": "Owner and frame counters overlap; do not sum. Bounds include owner pools and pending resize generations. Driver/library/argument-table implementation storage and external asset caches are not totalled."
+  },
+  "regressions": {
+    "Debug": "PASS: six selected native Apple OpenGL tests",
+    "Release": "PASS: six selected native Apple OpenGL tests",
+    "names": [
+      "ShaderToolsSmoke",
+      "RendererSmoke",
+      "RendererFeaturesSmoke",
+      "Renderer2DSmoke",
+      "SceneGPUSmoke",
+      "SpriteSmoke"
+    ],
+    "clearOnly": {
+      "debug": {
+        "status": "PASS",
+        "summary": {
+          "submitted": 336,
+          "completed": 336,
+          "verified": 336,
+          "presented": 324,
+          "completed_presented": 324,
+          "peak_inflight": 3,
+          "slot_reuses": 333,
+          "peak_resource_bytes": 29184,
+          "peak_allocator_bytes": 7745064,
+          "peak_attachment_bytes": 0,
+          "attachment_allocations": 0,
+          "attachment_reuses": 0,
+          "pending_at_shutdown": 3,
+          "resize_events": 1,
+          "errors": 0
+        },
+        "evidence": "build/metal-m2c-evidence/debug-clear-only"
+      },
+      "release": {
+        "status": "PASS",
+        "summary": {
+          "submitted": 337,
+          "completed": 337,
+          "verified": 337,
+          "presented": 325,
+          "completed_presented": 325,
+          "peak_inflight": 3,
+          "slot_reuses": 334,
+          "peak_resource_bytes": 29184,
+          "peak_allocator_bytes": 7745064,
+          "peak_attachment_bytes": 0,
+          "attachment_allocations": 0,
+          "attachment_reuses": 0,
+          "pending_at_shutdown": 3,
+          "resize_events": 1,
+          "errors": 0
+        },
+        "evidence": "build/metal-m2c-evidence/release-clear-only"
+      }
+    },
+    "shaderLoading": {
+      "Debug": "PASS",
+      "Release": "PASS"
+    },
+    "sdkWorkflow": "PASS: seven tests",
+    "directHeaders": "PASS: C++17 -fblocks -Wall/-Wextra without PCH",
+    "publicDocs": "PASS: zero findings; README-linked development/example instructions and real screenshot"
+  },
+  "warnings": {
+    "newUnresolvedFirstParty": 0,
+    "finalFocusedBuildCXXWarnings": 0,
+    "metalValidationErrors": 0,
+    "retained": "Complete checkpoint rebuild includes pre-existing deprecated-copy, unused-parameter and unhandled-Metal factory-switch diagnostics at unchanged sites, plus archive/Xcode build-phase warnings; see build/metal-m2c-evidence/warnings.txt. No blanket suppression added.",
+    "fixed": "Explicit default copy assignments for UUID and six components used by the new production Scene tests."
+  },
+  "limitations": [
+    "Eight opaque sprites; fixed single-sample attachment profile and <=4096 per axis / <=8388608 pixels within memory bounds",
+    "No blending, circles, lines, text/font atlas, screen UI, ImGui, Renderer3D, environment, mipmaps or general editor Metal renderer",
+    "General Metal export/relocation not qualified",
+    "Only native Apple M4 macOS execution; Windows/Linux, Intel GPU and CI execution NOT RUN"
+  ],
+  "nextRecommendedMilestone": "Production ordered Renderer2D world-and-screen-UI parity: normal batching capacities, quad/circle/line/text streams, alpha/clipping and IDs using the same ownership path; no next-stage implementation authorized",
+  "evidenceSHA256": {
+    "build/metal-m2c-evidence/debug-validated-native/run.log": "1ea5329f3ff64ae91d956bab9b9ee74742113eb175516026678f1cbaad3dbe31",
+    "build/metal-m2c-evidence/debug-validated-native/summary.txt": "98bad109ced454ecb25b760bf5c8e72a81fa714c8f4133604a5739e73d6bf84a",
+    "build/metal-m2c-evidence/debug-validated-native/frame-proof.json": "a0a1d5f8a2684c2fee994e5e3a81c0cfe66b65bbaa2a348edbe5c64ce6544477",
+    "build/metal-m2c-evidence/debug-validated-native/environment.json": "d5a269ac83580b1004aa0d4d882354edcef50f74a376be8fd3b6c2cb9da2b696",
+    "build/metal-m2c-evidence/debug-validated-native/console-before.json": "c2b8ceb358bbba56503ae6418cb059677856df558c01cbb342b8a3b8379cc479",
+    "build/metal-m2c-evidence/debug-validated-native-2x/run.log": "d1340ac42ab9aafe6ee9a9a5dd7cadbc0e5fe32f7b1e1de5a89c67c56e60d808",
+    "build/metal-m2c-evidence/debug-validated-native-2x/summary.txt": "44cb7d89b059074863e5ac83ad1f34c77de6629c30d6fc5e0dee3ca250b6ff6a",
+    "build/metal-m2c-evidence/debug-validated-native-2x/frame-proof.json": "005378da4355ee06027e1199841a8316921ac357badb2bb97cc77b7f6202cef8",
+    "build/metal-m2c-evidence/debug-validated-native-2x/environment.json": "ec5f812b1b6c1138e47d39c8130a0bc4ddc6c356fe576efbaaefe030de01e31c",
+    "build/metal-m2c-evidence/debug-validated-native-2x/console-before.json": "c2b8ceb358bbba56503ae6418cb059677856df558c01cbb342b8a3b8379cc479",
+    "build/metal-m2c-evidence/release-validated-native/run.log": "f46b6432e6c4e88d8da8710c77c6d5d98b9a0342952f63768bfd86bfd7f73368",
+    "build/metal-m2c-evidence/release-validated-native/summary.txt": "2237a59af4c8cad311fa9fb8feba8f85911a3825210812eaf617d2809b30d90d",
+    "build/metal-m2c-evidence/release-validated-native/frame-proof.json": "bc4fae634ae8fa75f8bf8bd1247670d3dff45878516ee572715df8e12521c6c8",
+    "build/metal-m2c-evidence/release-validated-native/environment.json": "9a178ff7adeb2a7842143dfacdf12fb0a91fd45eb191dd8aa1faed71e4349804",
+    "build/metal-m2c-evidence/release-validated-native/console-before.json": "c2b8ceb358bbba56503ae6418cb059677856df558c01cbb342b8a3b8379cc479",
+    "build/metal-m2c-evidence/release-validated-native-2x/run.log": "1d526e5f3cb312b1f91efd05a31b4381315143722fffd74258cf147080e18746",
+    "build/metal-m2c-evidence/release-validated-native-2x/summary.txt": "5fc5ea869a48d45371579988241694cf9eb6e7dfea3554b0cbd58a0974cd9096",
+    "build/metal-m2c-evidence/release-validated-native-2x/frame-proof.json": "1cb3faa12d22408b956d46fcee55333694a8d5355d0749886511aa9782a9ee59",
+    "build/metal-m2c-evidence/release-validated-native-2x/environment.json": "4f1516462c3a82b8726cae8dc10d4644708076c08a3ac93e317c13f9379a860f",
+    "build/metal-m2c-evidence/release-validated-native-2x/console-before.json": "c2b8ceb358bbba56503ae6418cb059677856df558c01cbb342b8a3b8379cc479",
+    "build/metal-m2c-evidence/debug-capture-final/moved.jpg": "61c1115f9f8033a31b99b2bba2811bcc350847875c254dc85f7fb5181fdf18d3",
+    "build/metal-m2c-evidence/debug-capture-final/reset-held.jpg": "bd1507e7a3202099e720c33fcfd870c24d225ba920a810557b02345acead082d",
+    "build/metal-m2c-evidence/debug-capture-final/reset.jpg": "44e767d35e1412a12a05ebf25ab753576d6d25350239a425afdc005719e312ec",
+    "build/metal-m2c-evidence/debug-capture-final/visible-a.jpg": "0d4bc5672e2b271fcfed6ba2a78f849786a22a0326634ec9d3aa89b378f30c8f",
+    "build/metal-m2c-evidence/release-capture-2x/moved.jpg": "0a2d656929321853e124d6aee8bdb336d0e0d05feec635346c2dc8ae90805cac",
+    "build/metal-m2c-evidence/release-capture-2x/reset.jpg": "91ac28da777c4ca5b161fa09be6d00fa4c6f02d8527d81d3c9a3304fa5b18d96",
+    "build/metal-m2c-evidence/release-capture-2x/visible.jpg": "c5ab33412ae49400d6f7146821464084b10ae4777e974e6f0ed00fb5d2a775c0",
+    "build/metal-m2c-evidence/build-checkpoint.log": "0d0528f4357713e6ab31e4fadd3cc65d1dc67a5c83f74fd8aea4a4dff0ae4771",
+    "build/metal-m2c-evidence/build-final-source.log": "1b34de3552946a452a89d04deb0ac2283ffde9d270819fa942822c5035b50f9b",
+    "build/metal-m2c-evidence/direct-headers-qualified.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/metal-m2c-evidence/public-docs-qualified.log": "8ceeb676740a0d574168b723482f5b37d6c709eb01ad76f4ca00f3effae7ec2a",
+    "build/metal-m2c-evidence/debug-opengl-regressions.log": "1af20ef08cde2d1c2cffe9e938ee6d50d133e273cc4554a5fde46f74d1daa72b",
+    "build/metal-m2c-evidence/release-opengl-regressions.log": "7b6f6c4e92cad2a28799cd9d6eb45751c4a97fb55c205752981b5427039702ec",
+    "build/metal-m2c-evidence/debug-shader.log": "fd0cf49e5c0a67e2ca150897530bdbaedf18b79ef18df96e49d81d8ab515a396",
+    "build/metal-m2c-evidence/release-shader.log": "7532af0fbd8efa8b78417bf39ce6729f476ea0ab8f0fc24aa8a9560d40e77b33",
+    "build/metal-m2c-evidence/sdk-workflow.log": "bba69393211f4e9c0af4bc3ed09a15509753129438f4a83e1fe47a01ef65333e"
+  }
+}

@@ -32,6 +32,7 @@ namespace Hazel {
 
 		IDComponent() = default;
 		IDComponent(const IDComponent&) = default;
+		IDComponent& operator=(const IDComponent&) = default;
 	};
 
 	struct TagComponent
@@ -40,6 +41,7 @@ namespace Hazel {
 
 		TagComponent() = default;
 		TagComponent(const TagComponent&) = default;
+		TagComponent& operator=(const TagComponent&) = default;
 		TagComponent(const std::string& tag)
 			: Tag(tag) {}
 	};
@@ -52,6 +54,7 @@ namespace Hazel {
 
 		TransformComponent() = default;
 		TransformComponent(const TransformComponent&) = default;
+		TransformComponent& operator=(const TransformComponent&) = default;
 		TransformComponent(const glm::vec3& translation)
 			: Translation(translation) {}
 
@@ -80,6 +83,7 @@ namespace Hazel {
 
 		SpriteRendererComponent() = default;
 		SpriteRendererComponent(const SpriteRendererComponent&) = default;
+		SpriteRendererComponent& operator=(const SpriteRendererComponent&) = default;
 		SpriteRendererComponent(const glm::vec4& color)
 			: Color(color) {}
 	};
@@ -113,6 +117,7 @@ namespace Hazel {
 
 		CircleRendererComponent() = default;
 		CircleRendererComponent(const CircleRendererComponent&) = default;
+		CircleRendererComponent& operator=(const CircleRendererComponent&) = default;
 	};
 
 	struct CameraComponent
@@ -123,6 +128,7 @@ namespace Hazel {
 
 		CameraComponent() = default;
 		CameraComponent(const CameraComponent&) = default;
+		CameraComponent& operator=(const CameraComponent&) = default;
 	};
 
 	struct ScriptComponent

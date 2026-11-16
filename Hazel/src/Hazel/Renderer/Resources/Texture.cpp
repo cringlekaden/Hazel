@@ -162,6 +162,22 @@ Ref<Texture2D> Texture2D::Create(uint32_t width,uint32_t height) {
 Ref<Texture2D> Texture2D::Create(const std::string& path) { return Create(path,TextureSpecification::FileDefaults()); }
 Ref<Texture2D> Texture2D::Create(const std::string& path,const TextureSpecification& specification) {
     specification.Validate(true);
+    if(Renderer::GetAPI()==RendererAPI::API::Metal) {
+        if (specification.Format != ImageFormat::None && specification.Format != ImageFormat::RGBA8)
+            throw std::invalid_argument("Metal file textures require inferred or explicit RGBA8 pixels");
+        auto image = ReadImage(std::filesystem::u8path(path), ImageFormat::RGBA8);
+        auto spec = specification;
+        if ((spec.Width && spec.Width != image.Width) || (spec.Height && spec.Height != image.Height))
+            throw std::runtime_error("Texture file dimensions differ from specification");
+        spec.Width = image.Width; spec.Height = image.Height; spec.Format = image.Format;
+#ifdef HZ_PLATFORM_MACOS
+        auto texture = static_cast<MetalRendererAPI&>(RenderCommand::Backend()).CreateTexture(spec, path);
+#else
+        auto texture = Create(spec); // unsupported platforms reject in Create; keep native types behind their guard
+#endif
+        texture->SetData(image.Pixels.data(), static_cast<uint32_t>(image.Pixels.size()));
+        return texture;
+    }
     if(Renderer::GetAPI()!=RendererAPI::API::OpenGL) throw std::runtime_error("Texture backend unavailable");
     return CreateRef<OpenGLTexture2D>(path,specification);
 }

@@ -4,16 +4,16 @@
 #include "MetalShader.h"
 #include <stdexcept>
 namespace Hazel {
-namespace { [[noreturn]] void Unavailable() { throw std::logic_error("Metal 4 drawing services are not implemented"); } }
+namespace { [[noreturn]] void Unavailable() { throw std::logic_error("Operation unavailable in the Metal 4 opaque quad profile"); } }
 MetalRendererAPI::MetalRendererAPI():m_Device(std::make_shared<MetalDevice>()) {
-    m_Caps.Vendor="Apple"; m_Caps.Device=m_Device->NativeDevice()->name()->utf8String(); m_Caps.Driver="Metal 4";
+    m_Caps.MaxTextureSlots=32; m_Caps.Vendor="Apple"; m_Caps.Device=m_Device->NativeDevice()->name()->utf8String(); m_Caps.Driver="Metal 4";
 }
 MetalRendererAPI::~MetalRendererAPI() { Shutdown(); }
 void MetalRendererAPI::Init(const RendererSettings& settings) {
     m_Resolution.Requested=settings; m_Resolution.Effective=settings;
-    m_Resolution.Effective.TextureSlots=0; m_Resolution.Effective.PreferShaderBinaries=false;
-    m_Resolution.TextureReason="M1 presentation only; drawing resources unavailable";
-    m_Resolution.ShaderReason="Offline Metal shader resources available; drawing services are not implemented";
+    m_Resolution.Effective.TextureSlots=32; m_Resolution.Effective.PreferShaderBinaries=false;
+    m_Resolution.TextureReason="Metal opaque quad profile: 32 texture slots, eight sprites";
+    m_Resolution.ShaderReason="Offline Metal 4 shader artifacts; quad/world/output passes only";
 }
 void MetalRendererAPI::Shutdown() {
     std::lock_guard<std::mutex> lock(m_ShaderMutex);
