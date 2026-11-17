@@ -18,6 +18,7 @@
 
 #include "Hazel/Utils/UTF8.h"
 #include <algorithm>
+#include <cmath>
 #include <stdexcept>
 
 namespace Hazel {
@@ -28,12 +29,14 @@ namespace Hazel {
 		static constexpr uint32_t MaxQuads = 20000;
 		static constexpr uint32_t MaxVertices = MaxQuads * 4;
 		static constexpr uint32_t MaxIndices = MaxQuads * 6;
+        static constexpr uint32_t MaxLineIndices = 40000 * 6;
+        static constexpr uint32_t MaxLineVertices = 40000 * 4;
 		static constexpr uint32_t MaxTextureSlots = 32;
 		uint32_t TextureSlotLimit = 0;
         bool Ordered=false,Picking=true,HasPassiveRuns=false;
         bool SceneActive=false;
         glm::vec4 ClipRect{-1};
-        struct Run {int Kind;uint32_t First,Count;Ref<Texture2D> Font;float LineWidth;bool Picking=true;};
+        struct Run {int Kind;uint32_t First,Count;Ref<Texture2D> Font;bool Picking=true;};
         std::vector<Run> Runs; // at most 8192, reused between chunks/frames
         Ref<const Text::Layout> LineLayout;
         std::vector<Ref<const FontPage>> LinePages; // one pass-local preparation, never CPU-owned
@@ -64,7 +67,7 @@ namespace Hazel {
 		Scope<CircleVertex[]> CircleVertexBufferBase;
 		CircleVertex* CircleVertexBufferPtr = nullptr;
 
-		uint32_t LineVertexCount = 0;
+		uint32_t LineIndexCount = 0;
 		Scope<LineVertex[]> LineVertexBufferBase;
 		LineVertex* LineVertexBufferPtr = nullptr;
 
@@ -73,6 +76,7 @@ namespace Hazel {
 		TextVertex* TextVertexBufferPtr = nullptr;
 
 		float LineWidth = 2.0f;
+        glm::ivec4 Viewport{};
 
 		std::array<Ref<Texture2D>, MaxTextureSlots> TextureSlots;
 #ifdef HZ_PLATFORM_MACOS
@@ -108,7 +112,7 @@ namespace Hazel {
             s_Data = CreateScope<Renderer2DData>();
             s_Data->QuadVertexBufferBase = CreateScope<QuadVertex[]>(Renderer2DData::MaxVertices);
             s_Data->CircleVertexBufferBase = CreateScope<CircleVertex[]>(Renderer2DData::MaxVertices);
-            s_Data->LineVertexBufferBase = CreateScope<LineVertex[]>(Renderer2DData::MaxVertices);
+            s_Data->LineVertexBufferBase = CreateScope<LineVertex[]>(Renderer2DData::MaxLineVertices);
             s_Data->TextVertexBufferBase = CreateScope<TextVertex[]>(Renderer2DData::MaxVertices);
             s_Data->TextureSlotLimit = RenderCommand::GetSettings().TextureSlots;
             HZ_CORE_INFO("Renderer2D texture slots: {}", s_Data->TextureSlotLimit);
@@ -130,10 +134,10 @@ namespace Hazel {
 
 
 
-                auto quadIndices = CreateScope<uint32_t[]>(s_Data->MaxIndices);
+                auto quadIndices = CreateScope<uint32_t[]>(s_Data->MaxLineIndices);
 
                 uint32_t offset = 0;
-                for (uint32_t i = 0; i < s_Data->MaxIndices; i += 6)
+                for (uint32_t i = 0; i < s_Data->MaxLineIndices; i += 6)
                 {
                     for (size_t j = 0; j < Renderer2DQuadIndices.size(); ++j)
                         quadIndices[i + j] = offset + Renderer2DQuadIndices[j];
@@ -141,7 +145,7 @@ namespace Hazel {
                     offset += 4;
                 }
 
-                Ref<IndexBuffer> quadIB = IndexBuffer::Create(quadIndices.get(), s_Data->MaxIndices);
+                Ref<IndexBuffer> quadIB = IndexBuffer::Create(quadIndices.get(), s_Data->MaxLineIndices);
                 s_Data->QuadVertexArray->SetIndexBuffer(quadIB);
                 quadIndices.reset();
 
@@ -165,14 +169,17 @@ namespace Hazel {
                 // Lines
                 s_Data->LineVertexArray = VertexArray::Create();
 
-                s_Data->LineVertexBuffer = VertexBuffer::Create(s_Data->MaxVertices * sizeof(LineVertex));
+                s_Data->LineVertexBuffer = VertexBuffer::Create(s_Data->MaxLineVertices * sizeof(LineVertex));
                 s_Data->LineVertexBuffer->SetLayout({
                     { ShaderDataType::Float3, "a_Position" },
                     { ShaderDataType::Float4, "a_Color"    },
+                    { ShaderDataType::Float4, "a_Shape" },
+                    { ShaderDataType::Float4, "a_Extent" },
                     { ShaderDataType::Int, "a_EntityID" },
                     { ShaderDataType::Float4, "a_ClipRect" }
                 });
                 s_Data->LineVertexArray->AddVertexBuffer(s_Data->LineVertexBuffer);
+                s_Data->LineVertexArray->SetIndexBuffer(quadIB);
 
 
                 // Text
@@ -231,6 +238,8 @@ namespace Hazel {
 
     void Renderer2D::BeginScene(const glm::mat4 &matrix)
     {
+        if (!s_Data) throw std::logic_error("Renderer2D is not initialized");
+        s_Data->Viewport = RenderCommand::GetRasterState().Viewport;
 #ifdef HZ_PLATFORM_MACOS
         if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
         {
@@ -256,52 +265,19 @@ namespace Hazel {
         StartBatch();
     }
     void Renderer2D::BeginScene(const OrthographicCamera& camera)
-	{
-#ifdef HZ_PLATFORM_MACOS
-        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { BeginScene(camera.GetViewProjectionMatrix()); return; }
-#endif
+    {
+        BeginScene(camera.GetViewProjectionMatrix());
+    }
 
-        s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);
-		HZ_PROFILE_FUNCTION();
+    void Renderer2D::BeginScene(const Camera& camera, const glm::mat4& transform)
+    {
+        BeginScene(camera.GetProjection() * glm::inverse(transform));
+    }
 
-		s_Data->CameraBuffer.ViewProjection = camera.GetViewProjectionMatrix();
-		s_Data->CameraUniformBuffer->Bind();
-		s_Data->CameraUniformBuffer->SetData(&s_Data->CameraBuffer, sizeof(Renderer2DData::CameraData));
-
-		StartBatch();
-	}
-
-	void Renderer2D::BeginScene(const Camera& camera, const glm::mat4& transform)
-	{
-#ifdef HZ_PLATFORM_MACOS
-        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { BeginScene(camera.GetProjection() * glm::inverse(transform)); return; }
-#endif
-
-        s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);
-		HZ_PROFILE_FUNCTION();
-
-		s_Data->CameraBuffer.ViewProjection = camera.GetProjection() * glm::inverse(transform);
-		s_Data->CameraUniformBuffer->Bind();
-		s_Data->CameraUniformBuffer->SetData(&s_Data->CameraBuffer, sizeof(Renderer2DData::CameraData));
-
-		StartBatch();
-	}
-
-	void Renderer2D::BeginScene(const NavigationCamera& camera)
-	{
-#ifdef HZ_PLATFORM_MACOS
-        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) { BeginScene(camera.GetViewProjection()); return; }
-#endif
-
-        s_Data->Ordered=false;s_Data->ClipRect=glm::vec4(-1);
-		HZ_PROFILE_FUNCTION();
-
-		s_Data->CameraBuffer.ViewProjection = camera.GetViewProjection();
-		s_Data->CameraUniformBuffer->Bind();
-		s_Data->CameraUniformBuffer->SetData(&s_Data->CameraBuffer, sizeof(Renderer2DData::CameraData));
-
-		StartBatch();
-	}
+    void Renderer2D::BeginScene(const NavigationCamera& camera)
+    {
+        BeginScene(camera.GetViewProjection());
+    }
 
     void Renderer2D::BeginOrderedScene(const Camera &camera, const glm::mat4 &transform)
     {
@@ -395,8 +371,7 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
         {
             auto &last = runs.back();
             if (last.Kind == type && last.Picking==s_Data->Picking &&
-                (kind != Primitive::Text || last.Font == s_Data->FontAtlasTexture) &&
-                (kind != Primitive::Line || last.LineWidth == s_Data->LineWidth))
+                (kind != Primitive::Text || last.Font == s_Data->FontAtlasTexture))
             {
                 last.Count += count;
                 return;
@@ -409,10 +384,10 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
         uint32_t first = kind == Primitive::Quad     ? s_Data->QuadIndexCount
                          : kind == Primitive::Text   ? s_Data->TextIndexCount
                          : kind == Primitive::Circle ? s_Data->CircleIndexCount
-                                                     : s_Data->LineVertexCount;
+                                                     : s_Data->LineIndexCount;
         runs.push_back({type, first, count,
                         kind == Primitive::Text ? s_Data->FontAtlasTexture : Ref<Texture2D>{},
-                        s_Data->LineWidth,s_Data->Picking});
+                        s_Data->Picking});
     }
     void Renderer2D::FlushOrdered()
     {
@@ -433,24 +408,24 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
                 case Primitive::Line: vertices = s_Data->LineVertexBufferBase.get(); shader = s_Data->LineShader; break;
                 case Primitive::Text: vertices = s_Data->TextVertexBufferBase.get(); shader = s_Data->TextShader; break;
                 }
-                nativeRuns.push_back({shader, vertices, run.First, run.Count, run.Font, run.Picking, run.LineWidth});
+                nativeRuns.push_back({shader, vertices, run.First, run.Count, run.Font, run.Picking});
             };
             if (s_Data->Ordered)
                 for (const auto& run : s_Data->Runs) append(run);
             else
             {
                 // Match the established nonordered OpenGL primitive grouping.
-                append({int(Primitive::Quad),0,s_Data->QuadIndexCount,{},s_Data->LineWidth,true});
-                append({int(Primitive::Circle),0,s_Data->CircleIndexCount,{},s_Data->LineWidth,true});
-                append({int(Primitive::Line),0,s_Data->LineVertexCount,{},s_Data->LineWidth,true});
-                append({int(Primitive::Text),0,s_Data->TextIndexCount,s_Data->FontAtlasTexture,s_Data->LineWidth,true});
+                append({int(Primitive::Quad),0,s_Data->QuadIndexCount,{},true});
+                append({int(Primitive::Circle),0,s_Data->CircleIndexCount,{},true});
+                append({int(Primitive::Line),0,s_Data->LineIndexCount,{},true});
+                append({int(Primitive::Text),0,s_Data->TextIndexCount,s_Data->FontAtlasTexture,true});
             }
             backend.EnqueueRenderer2DBatch(nativeRuns, s_Data->TextureVersions, s_Data->TextureSlotIndex);
             s_Data->Stats.DrawCalls += uint32_t(nativeRuns.size());
             s_Data->Stats.UploadedBytes += s_Data->QuadIndexCount / 6 * 4 * sizeof(QuadVertex)
                 + s_Data->CircleIndexCount / 6 * 4 * sizeof(CircleVertex)
                 + s_Data->TextIndexCount / 6 * 4 * sizeof(TextVertex)
-                + s_Data->LineVertexCount * sizeof(LineVertex);
+                + s_Data->LineIndexCount / 6 * 4 * sizeof(LineVertex);
             return;
         }
 #endif
@@ -525,8 +500,7 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
                 break;
             case Primitive::Line:
                 s_Data->LineShader->Bind();
-                RenderCommand::SetLineWidth(run.LineWidth);
-                RenderCommand::DrawLines(s_Data->LineVertexArray, run.Count, run.First);
+                RenderCommand::DrawIndexed(s_Data->LineVertexArray, run.Count, run.First);
                 break;
             }
             ++s_Data->Stats.DrawCalls;
@@ -541,7 +515,7 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
 		s_Data->CircleIndexCount = 0;
 		s_Data->CircleVertexBufferPtr = s_Data->CircleVertexBufferBase.get();
 
-		s_Data->LineVertexCount = 0;
+		s_Data->LineIndexCount = 0;
 		s_Data->LineVertexBufferPtr = s_Data->LineVertexBufferBase.get();
 
 		s_Data->TextIndexCount = 0;
@@ -563,7 +537,7 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
         if (!s_Data) throw std::logic_error("Renderer2D is not initialized");
         if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
         {
-            if (!(s_Data->QuadIndexCount || s_Data->CircleIndexCount || s_Data->LineVertexCount || s_Data->TextIndexCount)) return;
+            if (!(s_Data->QuadIndexCount || s_Data->CircleIndexCount || s_Data->LineIndexCount || s_Data->TextIndexCount)) return;
             const auto start = std::chrono::steady_clock::now();
             try { FlushOrdered(); }
             catch (...) { StartBatch(); throw; } // reject the chunk atomically, keep the scene usable
@@ -572,7 +546,7 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
             StartBatch(); // an explicit flush consumes the run exactly once
             return;
         }
-        if(!(s_Data->QuadIndexCount||s_Data->CircleIndexCount||s_Data->TextIndexCount||s_Data->LineVertexCount))return;
+        if(!(s_Data->QuadIndexCount||s_Data->CircleIndexCount||s_Data->TextIndexCount||s_Data->LineIndexCount))return;
         const auto start=std::chrono::steady_clock::now();
         struct TextCompositingScope {
             bool Active;
@@ -580,7 +554,7 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
             void Finish(){if(Active){RenderCommand::EndTextCompositing();Active=false;}}
             ~TextCompositingScope(){Finish();}
         } textScope(s_Data->TextIndexCount!=0);
-        if(s_Data->QuadIndexCount||s_Data->CircleIndexCount||s_Data->TextIndexCount||s_Data->LineVertexCount)++s_Data->Stats.Flushes[size_t(reason)];
+        if(s_Data->QuadIndexCount||s_Data->CircleIndexCount||s_Data->TextIndexCount||s_Data->LineIndexCount)++s_Data->Stats.Flushes[size_t(reason)];
         if(s_Data->Ordered){
             FlushOrdered();textScope.Finish();s_Data->Stats.SubmitMilliseconds+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();return;
         }
@@ -611,15 +585,14 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
 			s_Data->Stats.DrawCalls++;
 		}
 
-		if (s_Data->LineVertexCount)
+		if (s_Data->LineIndexCount)
 		{
 			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data->LineVertexBufferPtr - (uint8_t*)s_Data->LineVertexBufferBase.get());
 			s_Data->LineVertexBuffer->SetData(s_Data->LineVertexBufferBase.get(), dataSize);
             s_Data->Stats.UploadedBytes+=dataSize;
 
 			s_Data->LineShader->Bind();
-			RenderCommand::SetLineWidth(s_Data->LineWidth);
-			RenderCommand::DrawLines(s_Data->LineVertexArray, s_Data->LineVertexCount);
+			RenderCommand::DrawIndexed(s_Data->LineVertexArray, s_Data->LineIndexCount);
 			s_Data->Stats.DrawCalls++;
 		}
 
@@ -836,28 +809,68 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
         ++s_Data->Stats.GeometryCount;
 	}
 
-	void Renderer2D::DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color, int entityID)
-	{
-
-        EnsureRunSpace();
-		if (s_Data->LineVertexCount + 2 > Renderer2DData::MaxVertices)
-			NextBatch();
-		s_Data->LineVertexBufferPtr->Position = p0;
-		s_Data->LineVertexBufferPtr->Color = color;
-		s_Data->LineVertexBufferPtr->EntityID = entityID;
-            s_Data->LineVertexBufferPtr->ClipRect=s_Data->ClipRect;
-		s_Data->LineVertexBufferPtr++;
-
-		s_Data->LineVertexBufferPtr->Position = p1;
-		s_Data->LineVertexBufferPtr->Color = color;
-		s_Data->LineVertexBufferPtr->EntityID = entityID;
-            s_Data->LineVertexBufferPtr->ClipRect=s_Data->ClipRect;
-		s_Data->LineVertexBufferPtr++;
-
-		QueueRun(Primitive::Line,2);
-        s_Data->LineVertexCount += 2;
+    void Renderer2D::DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color, int entityID)
+    {
+        if (!s_Data) throw std::logic_error("Renderer2D is not initialized");
+        // Clip the centerline in homogeneous space before dividing by w. X/Y
+        // clipping belongs to the expanded triangles, so wide offscreen lines
+        // can still cover the viewport. Degenerate segments have no butt area.
+        glm::vec4 a = s_Data->CameraBuffer.ViewProjection * glm::vec4(p0, 1);
+        glm::vec4 b = s_Data->CameraBuffer.ViewProjection * glm::vec4(p1, 1);
+        for (const auto& value : {a, b, color})
+            for (int i = 0; i < 4; ++i)
+                if (!std::isfinite(value[i])) throw std::invalid_argument("Line coordinates/color must be finite");
         ++s_Data->Stats.GeometryCount;
-	}
+        float first = 0, last = 1, firstDepth = 0, lastDepth = 0;
+        for (float sign : {-1.f, 1.f})
+        {
+            const float x = a.w + sign * a.z, y = b.w + sign * b.z;
+            if (x < 0 && y < 0) return;
+            if (x < 0 && x / (x - y) > first) { first = x / (x - y); firstDepth = -sign; }
+            if (y < 0 && x / (x - y) < last) { last = x / (x - y); lastDepth = -sign; }
+        }
+        if (first > last) return;
+        const auto end = glm::mix(a, b, last);
+        a = glm::mix(a, b, first); b = end;
+        // The clipping plane is exact, including strict depth-test ownership.
+        if (first > 0) a.z = firstDepth * a.w;
+        if (last < 1) b.z = lastDepth * b.w;
+        if (a.w <= 0 || b.w <= 0) return;
+        a /= a.w; b /= b.w;
+        const auto viewport = s_Data->Viewport;
+        if (viewport.z <= 0 || viewport.w <= 0) return;
+        const glm::vec2 size(viewport.z, viewport.w), origin(viewport.x, viewport.y);
+        const glm::vec2 start = origin + (glm::vec2(a) + 1.f) * size * .5f;
+        const glm::vec2 finish = origin + (glm::vec2(b) + 1.f) * size * .5f;
+        const glm::vec2 delta = finish - start;
+        const float length = glm::length(delta);
+        if (!std::isfinite(length)) throw std::invalid_argument("Line projection must be finite");
+        if (length == 0 || color.a <= 0) return;
+        const glm::vec2 tangent = delta / length;
+        const glm::vec2 midpoint = (start + finish) * .5f;
+        const glm::vec2 radius = glm::abs(delta) * .5f +
+            glm::abs(glm::vec2(-tangent.y, tangent.x)) * (s_Data->LineWidth * .5f) + 1.f;
+        // Half a pixel of filter support plus a half-pixel rasterization guard:
+        // hardware subpixel rounding must not crop positive analytical coverage.
+        const glm::vec2 lo = midpoint - radius;
+        const glm::vec2 hi = midpoint + radius;
+        if (lo.x >= hi.x || lo.y >= hi.y) return;
+        EnsureRunSpace();
+        if (s_Data->LineIndexCount + 6 > Renderer2DData::MaxLineIndices) NextBatch();
+        const glm::vec2 corners[] = {{lo.x,lo.y},{hi.x,lo.y},{hi.x,hi.y},{lo.x,hi.y}};
+        for (const auto& corner : corners)
+        {
+            auto& vertex = *s_Data->LineVertexBufferPtr++;
+            vertex.Position = glm::vec3((corner - origin) / size * 2.f - 1.f, 0);
+            vertex.Color = color;
+            vertex.Shape = {midpoint.x, midpoint.y, tangent.x, tangent.y};
+            vertex.Extent = {length, s_Data->LineWidth, a.z * .5f + .5f, b.z * .5f + .5f};
+            vertex.EntityID = entityID;
+            vertex.ClipRect = s_Data->ClipRect;
+        }
+        QueueRun(Primitive::Line, 6);
+        s_Data->LineIndexCount += 6;
+    }
 
 	void Renderer2D::DrawRect(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color, int entityID)
 	{
@@ -1028,7 +1041,7 @@ if(!s_Data->Ordered)throw std::logic_error("Picking run state requires ordered s
 
 	void Renderer2D::SetLineWidth(float width)
 	{
-		if (!(width > 0)) throw std::invalid_argument("Line width must be positive");
+		if (!(width > 0) || !std::isfinite(width)) throw std::invalid_argument("Line width must be positive");
 		s_Data->LineWidth = width;
 	}
 

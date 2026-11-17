@@ -62,6 +62,7 @@ static std::size_t Pixels(int entity) {
 #include "TextEmphasisRenderChecks.h"
 #include "TextOverflowRenderChecks.h"
 #include "TypographyRenderProfile.h"
+#include "LineCoverageProbe.h"
 static void Primitives() {
     Begin(); Renderer2D::DrawQuad(Transform(),{1,0,0,1},42); End();
     GLint active;glGetIntegerv(GL_ACTIVE_TEXTURE,&active);
@@ -79,13 +80,9 @@ static void Primitives() {
     Check(ID()==-1 && ID(94,64)==78,"Circle ring thickness mismatch");
     Begin();Renderer2D::DrawCircle(Transform(),{1,1,1,0},1,.005f,78);End();Check(ID()==-1,"Zero-opacity circle wrote picking");
     Renderer2D::SetLineWidth(2);
-    Check(glGetError()==GL_NO_ERROR,"Requested line width violated the active context contract");
-    if(Renderer::GetCapabilities().ForwardCompatible) {
-        GLfloat width=0;glGetFloatv(GL_LINE_WIDTH,&width);
-        Check(width==1.0f,"Forward-compatible context accepted an unusable wide-line setting");
-    }
     Begin(); Renderer2D::DrawLine({-.5f,0,0},{.5f,0,0},{1,1,0,1},79); End();
-    Check(Pixels(79)>60,"Line color/entity output missing");
+    Check(Pixels(79)==128 && ID(64,63)==79 && ID(64,62)==-1,
+        "Two-pixel deterministic line color/entity footprint differs");
     Begin(); Renderer2D::DrawRect(Transform(),{1,1,1,1},80); End();
     Check(ID()==-1 && Pixels(80)>120,"Transformed rectangle footprint mismatch");
     Begin(); Renderer2D::DrawRect({0,0,0},{1,1},{1,1,1,1},81); End();
@@ -262,11 +259,8 @@ int main(int argc,char** argv) {
             target=Framebuffer::Create(framebuffer);
             Check(Renderer::GetSettings().TextureSlots==(requests.TextureSlots == 4 ? 4u : reduced ? 2u : std::min(32u,Renderer::GetCapabilities().MaxTextureSlots)),"Application renderer settings mismatch");
             if((argc==3 || argc==4) && std::string(argv[1])=="--metal-parity") {
-                if(argc==4) {
-                    Check(std::string(argv[3])=="--diagnostic-aliased-lines","Unknown parity diagnostic");
-                    glDisable(GL_LINE_SMOOTH);
-                    std::cout<<"DIAGNOSTIC ONLY: OpenGL line smoothing disabled; this cannot qualify M3 parity\n";
-                }
+                const auto runtimeFrames=argc==4?std::stoul(argv[3]):80UL;
+                Check(runtimeFrames>=80 && runtimeFrames<=6000,"Runtime frame count must be 80..6000");
                 const auto output=std::filesystem::absolute(argv[2]);std::filesystem::create_directories(output);
                 FramebufferSpecification spec;spec.Width=spec.Height=128;
                 spec.Attachments={FramebufferTextureFormat::RGBA32F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
@@ -297,26 +291,35 @@ int main(int argc,char** argv) {
                     auto display=Framebuffer::Create(spec);
                     session.Resize(extent.x,extent.y);session.ResizeFramebuffer(extent.x,extent.y);
                     session.SetRenderTarget(display);session.SetInput({-1,-1},false);
-                    for(unsigned frame=0;frame<80;++frame) {
+                    for(unsigned frame=0;frame<runtimeFrames;++frame) {
                         display->Bind();RenderCommand::SetClearColor(session.GetScene()->Presentation().Background);
                         RenderCommand::Clear();display->ClearAttachment(1,-1);
                         session.RouteUIInput(GameUI::DeviceSample{},1.f/60,false);
                         session.GetScene()->OnUpdateRuntime(Timestep(1.f/60),&runtimeView,display);
                     }
+                    const auto save=[&](const std::string& name) {
                     std::vector<glm::vec4> colors(size_t(extent.x)*extent.y);std::vector<int32_t> ids(colors.size());std::vector<float> depths(colors.size());
                     glReadBuffer(GL_COLOR_ATTACHMENT0);glReadPixels(0,0,extent.x,extent.y,GL_RGBA,GL_FLOAT,colors.data());
                     glReadBuffer(GL_COLOR_ATTACHMENT1);glReadPixels(0,0,extent.x,extent.y,GL_RED_INTEGER,GL_INT,ids.data());
                     glReadPixels(0,0,extent.x,extent.y,GL_DEPTH_COMPONENT,GL_FLOAT,depths.data());
                     Check(glGetError()==GL_NO_ERROR,"Native GL runtime readback failed");
-                    std::ofstream file(output/("runtime-"+std::to_string(extent.x)+"x"+std::to_string(extent.y)+".bin"),std::ios::binary);
+                    std::ofstream file(output/(name+std::to_string(extent.x)+"x"+std::to_string(extent.y)+".bin"),std::ios::binary);
                     for(size_t i=0;i<colors.size();++i) {
                         file.write(reinterpret_cast<const char*>(&colors[i]),16);file.write(reinterpret_cast<const char*>(&ids[i]),4);file.write(reinterpret_cast<const char*>(&depths[i]),4);
                     }
-                    Check(bool(file),"Cannot save GL runtime fixture");display->Unbind();session.SetRenderTarget({});
+                    Check(bool(file),"Cannot save GL runtime fixture");
+                    };
+                    save("runtime-");
+                    FocusRenderer2DRuntimeUI(session);
+                    display->Bind();RenderCommand::SetClearColor(session.GetScene()->Presentation().Background);RenderCommand::Clear();display->ClearAttachment(1,-1);
+                    session.GetScene()->OnUpdateRuntime(Timestep(0),&runtimeView,display);save("runtime-focus-");
+                    display->Unbind();session.CancelUIGestures();session.SetInput({-1,-1},false);session.SetRenderTarget({});
                 }
                 session.Stop();
+                LineCoverageProbe(output/"lines");
                 std::cout<<"PASS native OpenGL shared M3 and authored world/UI fixtures\n";return 0;
             }
+            if(argc==3 && std::string(argv[1])=="--line-coverage-probe"){LineCoverageProbe(std::filesystem::absolute(argv[2]));return 0;}
             RenderingControls(application,requests);
             if(argc>1 && std::string(argv[1])=="--ibl-integration-probe")return IBLIntegrationProbe(argc,argv);
             if(argc==2 && std::string(argv[1])=="--geometric-edges"){GeometricNormalChecks();std::cout<<"NOT EXECUTED: other graphics regressions (focused geometric-edge mode)\n";return 0;}

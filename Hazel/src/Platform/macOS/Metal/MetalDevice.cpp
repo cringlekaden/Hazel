@@ -277,6 +277,14 @@ void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t l
     f.Serial=serial; m_Serial=serial; m_Next=(m_Next+1)%m_Frames.size(); Account();
     if(proof) std::printf("M1_SUBMIT frame=%llu pixels=%ux%u cpu_ms=%.6f\n",static_cast<unsigned long long>(serial),w,h,
         std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-cpuStart).count());
+    if(m_Trace && serial%120==0) {
+        const auto state=m_Observer->Snapshot();
+        std::printf("M3_RESOURCES frame=%llu frame_bytes=%llu attachment_bytes=%llu generations=%llu attachment_allocations=%llu attachment_reuses=%llu buffer_allocations=%llu buffer_reuses=%llu allocator_bytes=%llu inflight=%llu\n",
+            (unsigned long long)serial,(unsigned long long)state.ResourceBytes,(unsigned long long)state.AttachmentBytes,
+            (unsigned long long)state.AttachmentGenerations,(unsigned long long)state.AttachmentAllocations,
+            (unsigned long long)state.AttachmentReuses,(unsigned long long)state.BufferAllocations,
+            (unsigned long long)state.BufferReuses,(unsigned long long)state.AllocatorBytes,(unsigned long long)state.InFlight);
+    }
 }
 void MetalDevice::Drain() {
     if(m_Stopped) return;

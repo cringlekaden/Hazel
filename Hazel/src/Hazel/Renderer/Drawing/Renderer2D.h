@@ -76,6 +76,8 @@ namespace Hazel {
 		static void DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const TextParams& textParams, int entityID = -1);
 		static void DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID = -1);
 
+        // Physical framebuffer pixels, independent of camera/UI scale. Butt caps;
+        // DrawRect connects four independent segments with normal source-over overlap.
 		static float GetLineWidth();
 		static void SetLineWidth(float width);
 

@@ -1,5 +1,6 @@
 #include "Hazel/Core/Log.h"
 #include "Renderer2DParity.h"
+#include "Renderer2DLines.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include "Hazel/Scene/Scene.h"
@@ -94,7 +95,7 @@ int main(int argc, char** argv)
 {
     try
     {
-        Check(argc == 3 || argc == 4, "Usage: MetalRenderer2DQuadSmoke resource-root evidence-directory [texture-slots]");
+        Check(argc >= 3 && argc <= 5, "Usage: MetalRenderer2DQuadSmoke resource-root evidence-directory [texture-slots] [runtime-frames]");
         const auto output = std::filesystem::absolute(std::filesystem::u8path(argv[2]));
         std::filesystem::create_directories(output);
         auto pool = NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
@@ -102,8 +103,10 @@ int main(int argc, char** argv)
         const auto root = std::filesystem::absolute(std::filesystem::u8path(argv[1]));
         Hazel::Resources::Configure({root, root, output / "user-data"});
         Hazel::RenderCommand::Configure(Hazel::RendererAPI::API::Metal);
-        Hazel::RendererSettings settings; settings.TextureSlots = argc == 4 ? uint32_t(std::stoul(argv[3])) : 4;
+        Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 ? uint32_t(std::stoul(argv[3])) : 4;
         Check(settings.TextureSlots == 2 || settings.TextureSlots == 4,"Fixture supports two or four texture slots");
+        const auto runtimeFrames=argc==5?std::stoul(argv[4]):80UL;
+        Check(runtimeFrames>=80 && runtimeFrames<=6000,"Runtime frame count must be 80..6000");
         const uint32_t firstDraws=settings.TextureSlots == 2 ? 3 : 1;
         Hazel::RenderCommand::Init(settings);
         auto& backend = static_cast<Hazel::MetalRendererAPI&>(Hazel::RenderCommand::Backend());
@@ -375,6 +378,18 @@ int main(int argc, char** argv)
             if (phase == 2) Check(measured.Flushes[size_t(Hazel::Renderer2D::FlushReason::Textures)] >= 2,
                 "Reduced texture slots did not flush");
         }
+        {
+            const auto cases=Renderer2DLineCases();
+            std::ofstream metadata(output/"line-cases.json");WriteRenderer2DLineCases(metadata,cases);
+            Check(bool(metadata),"Cannot save native line metadata");
+            for(size_t index=0;index<cases.size();++index) {
+                const auto& c=cases[index];Begin(parityTarget,c.Extent,c.Extent);
+                DrawRenderer2DLineCase(c);
+                auto result=Submit(parityTarget);Wait(*parityTarget,result);
+                Save(*result,output/("line-"+std::to_string(index)+".bin"));
+            }
+            std::cout<<"PASS native deterministic line captures: "<<cases.size()<<" (oracle is separate)\n";
+        }
         parityTarget.reset();
         {
             auto project=Hazel::Project::LoadCandidate(std::filesystem::absolute("examples/Sandbox/Sandbox-Renderer2D.hproj"));
@@ -382,12 +397,12 @@ int main(int argc, char** argv)
             session.Start(project,project->LoadScene(project->GetConfig().StartScene));
             Hazel::SceneRenderView runtimeView;
             std::ofstream timings(output/"runtime-cpu.csv");
-            timings<<"width,height,frame,runtime_ms,submit_ms,draws,batches,geometry,upload_bytes,attachment_allocations,attachment_reuses,attachment_bytes,buffer_allocations,buffer_reuses,retained_buffer_bytes\n";
+            timings<<"width,height,frame,runtime_ms,submit_ms,draws,batches,geometry,upload_bytes,attachment_allocations,attachment_reuses,attachment_bytes,buffer_allocations,buffer_reuses,retained_buffer_bytes,serial\n";
             for(const auto extent : {glm::uvec2(1280,720),glm::uvec2(1920,1080)}) {
                 auto display=Hazel::Framebuffer::Create(TargetSpecification(extent.x,extent.y));
                 session.Resize(extent.x,extent.y);session.ResizeFramebuffer(extent.x,extent.y);
                 session.SetRenderTarget(display);session.SetInput({-1,-1},false);
-                for(unsigned frame=0;frame<80;++frame) {
+                for(unsigned frame=0;frame<runtimeFrames;++frame) {
                     display->Bind();display->Clear(session.GetScene()->Presentation().Background);
                     Hazel::Renderer2D::ResetStats();
                     const auto start=std::chrono::steady_clock::now();
@@ -406,9 +421,15 @@ int main(int argc, char** argv)
                         <<std::chrono::duration<double,std::milli>(submitted-encoded).count()<<','
                         <<counts.DrawCalls<<','<<batches<<','<<counts.GeometryCount<<','<<counts.UploadedBytes<<','
                         <<resources.AttachmentAllocations<<','<<resources.AttachmentReuses<<','<<resources.AttachmentBytes<<','
-                        <<resources.BufferAllocations<<','<<resources.BufferReuses<<','<<resources.ResourceBytes<<'\n';
-                    if(frame==79)Save(*result,output/("runtime-"+std::to_string(extent.x)+"x"+std::to_string(extent.y)+".bin"));
+                        <<resources.BufferAllocations<<','<<resources.BufferReuses<<','<<resources.ResourceBytes<<','<<result->Serial<<'\n';
+                    if(frame+1==runtimeFrames)Save(*result,output/("runtime-"+std::to_string(extent.x)+"x"+std::to_string(extent.y)+".bin"));
                 }
+                FocusRenderer2DRuntimeUI(session);
+                display->Bind();display->Clear(session.GetScene()->Presentation().Background);
+                session.GetScene()->OnUpdateRuntime(Hazel::Timestep(0),&runtimeView,display);
+                auto focused=Submit(display);Wait(*display,focused);
+                Save(*focused,output/("runtime-focus-"+std::to_string(extent.x)+"x"+std::to_string(extent.y)+".bin"));
+                session.CancelUIGestures();session.SetInput({-1,-1},false);
                 session.SetRenderTarget({});
             }
             session.Stop();
@@ -552,7 +573,7 @@ int main(int argc, char** argv)
         std::cout << "PASS factory framebuffer generations: gated resize/replacement/destruction/cancel, busy retry packet, asymmetric extents and signed clears\n";
 
         const auto final = observer->Snapshot();
-        Check(final.BufferReuses > 100 && final.Errors == 0 && final.InFlight == 0 && final.Submitted == 190 && final.Completed == 190 && final.PendingAtShutdown == 1 &&
+        Check(final.BufferReuses > 100 && final.Errors == 0 && final.InFlight == 0 && final.Submitted == 32 + Renderer2DLineCases().size() + 2 * runtimeFrames && final.Completed == final.Submitted && final.PendingAtShutdown == 1 &&
             final.SlotReuses >= 22 && final.ResourceBytes == 0 && final.PeakResourceBytes <= 320 * 1024 * 1024 && final.PeakAllocatorBytes <= 16 * 1024 * 1024,
             "Frame retirement/reuse/accounting failed");
         std::ofstream metrics(output / "metrics.json");
@@ -561,7 +582,7 @@ int main(int argc, char** argv)
             << ",\"peakInFlight\":" << final.PeakInFlight << ",\"pendingShutdown\":" << final.PendingAtShutdown << ",\"frameBytes\":" << final.ResourceBytes
             << ",\"peakFrameBytes\":" << final.PeakResourceBytes << ",\"bufferAllocations\":" << final.BufferAllocations << ",\"bufferReuses\":" << final.BufferReuses
             << ",\"peakAllocatorBytes\":" << final.PeakAllocatorBytes << ",\"errors\":" << final.Errors << "}\n";
-        std::cout << "PASS: initialized shared Renderer2D quad flush, 190 completed frames including authored world/UI and failure recovery, 12 successive submissions, one unretired shutdown and three gated lifecycle submissions, busy-slot rejection and exact CPU readback\n";
+        std::cout << "PASS: initialized shared Renderer2D quad flush, completed frames including independent line cases and authored world/UI and failure recovery, 12 successive submissions, one unretired shutdown and three gated lifecycle submissions, busy-slot rejection and exact CPU readback\n";
         return 0;
     }
     catch (const std::exception& error) { std::cerr << "FAIL: " << error.what() << '\n'; return 1; }

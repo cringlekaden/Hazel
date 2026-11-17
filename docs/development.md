@@ -113,8 +113,13 @@ physical input are separate [M3 qualification gates](design/metal-m3.md).
 The historical M2-C window capture remains in its integration record.
 
 On `feature/3d-foundations`, Nutella can opt into the Metal 4 Renderer2D runtime.
-**M3 acceptance is INCOMPLETE**: smoothed-line coverage/picking parity fails,
-and visible/input gates remain blocked. Hazelnut and ordinary Nutella launches still default to OpenGL.
+**M3 is locally qualified on Apple M4**, including independent coverage/IDs,
+cross-backend comparisons, Debug/Release native 1×/2× lifecycle, real Nutella OS
+input/camera and an extended visible session. Windows/Linux/Intel execution is
+not established by these results. The approved
+[shared line contract and evidence](design/metal-m3-deterministic-lines.md)
+intentionally replace legacy OpenGL smoothed-line output.
+Hazelnut and ordinary Nutella launches still default to OpenGL.
 Requires Metal 4 Apple Silicon, native arm64 macOS 27+, Xcode and the optional
 Apple Metal Toolchain. Follow [build prerequisites](getting-started.md) first.
 To check out this development branch, use
@@ -141,7 +146,7 @@ A completed command or zero presentation timestamp does not prove visible output
 | --- | --- |
 | Normal 20,000-quad batches, texture-slot flushes, ordered mixed runs | Implemented; native offscreen gates |
 | Tinted/textured sprites, circles, MSDF font/atlas pages | Implemented; native numerical comparisons |
-| Lines | Native aliased lines implemented; OpenGL smoothed-line coverage/picking parity **FAIL** |
+| Lines | Shared expanded triangles, analytical pixel-area AA, physical-pixel widths, exact signed picking; independent/native offscreen gates |
 | Source-over RGB/alpha, clipping, passive picking, signed IDs | Native numerical and OpenGL comparisons |
 | World HDR/Neutral/exposure, screen UI, display conversion | Implemented; end-to-end acceptance incomplete |
 | Meshes, lights, environments, Renderer3D/PBR/IBL | Unsupported; rejected |
@@ -153,10 +158,15 @@ completion and feedback. Window output omits full-frame CPU readback.
 RGB8 font atlases expand to native RGBA8; RGBA8 linear/sRGB and generated RGBA32F
 textures support alpha. Ordinary nearest/linear/mipmap sampling and repeat,
 clamp or mirrored-repeat use immutable texture versions. Mips generate on the
-native queue before first sampling. Native line width is one pixel, matching
-the maintained Apple OpenGL 4.1 width limit. OpenGL also enables line smoothing;
-Metal's native line coverage differs. The acceptance runner preserves this failure
-rather than disabling OpenGL smoothing. See the M3 record for evidence.
+native queue before first sampling. Renderer2D line widths are physical framebuffer
+pixels (default 2), including fractional and wide strokes; the raw backend native
+line-width limit does not constrain them. Lines have butt caps and no implicit
+joins. Rectangles are four independent segments, with source-over corner overlap.
+Transparent/numerically zero-coverage fragments claim no IDs; passive masks keep
+the earlier ID. UI logical scaling changes endpoint positions, so callers wanting
+a logical-pixel width explicitly multiply by the backing ratio. This intentional
+OpenGL output change preserves the existing acceptance thresholds and legacy
+captures. Native 1×/2× presentation and lifecycle are qualified on the recorded Apple M4 host.
 
 The producer reuses valid packages and rebuilds stale/corrupt ones. Generated
 `.hzmetal` packages contain validated libraries; runtime needs no developer

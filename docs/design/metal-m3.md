@@ -2,7 +2,19 @@
 
 Baseline: `3b22ada5e8f43a5b67b8210bf98dafeca24bec71`, branch
 `feature/3d-foundations`. Acceptance is the user's complete M3 request.
-Work in progress; **INCOMPLETE until all required gates pass**.
+**M3 PASS on the available Apple M4 host; see the current continuation below.**
+
+## Current continuation from 808e31d
+
+The approved [shared deterministic line implementation](metal-m3-deterministic-lines.md)
+replaces Renderer2D's native line rasterization on both APIs. **M3 PASS on the
+available Apple M4 host:** independent/frozen/cross-backend line gates and
+Debug/Release native 1×/2× lifecycle, Nutella input/camera and extended-session
+qualification pass. [Current results](metal-m3-deterministic-results.json)
+distinguish this evidence from the historical INCOMPLETE record below.
+Windows/Linux/Intel execution is NOT RUN. The earlier locked attempt and
+[legacy investigation](metal-m3-lines.md) remain preserved. OpenGL remains the
+default; no M4 implementation or merge is included.
 
 ## Acceptance gates
 
@@ -41,7 +53,7 @@ Renderer3D, PBR/IBL, Hazelnut Metal ImGui, defaults and M4 are out of scope.
 
 Raw commands/logs are retained under `build/metal-m3-evidence/`.
 
-## Verdict — INCOMPLETE
+## Historical verdict at 808e31d — INCOMPLETE
 
 Implementation stopped at a measured smoothed-line coverage/picking blocker.
 The normal acceptance runner **fails** in both configurations. No reference,

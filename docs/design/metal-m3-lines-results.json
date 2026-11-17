@@ -1,0 +1,153 @@
+{
+  "verdict": "INCOMPLETE",
+  "head": "808e31d5eecbd3cc51d3efcae5d46aa5e3afe798",
+  "branch": "feature/3d-foundations",
+  "scope": "Uncommitted line coverage investigation; no production renderer or shader changes",
+  "architectureBlocker": "No tested maintainable analytical expansion reproduces existing smoothed OpenGL coverage and picking. Shared deterministic representation requires authorized OpenGL behavior change.",
+  "productionOpenGLChanged": false,
+  "referencesOrThresholdsChanged": false,
+  "committedOrPushed": false,
+  "diagnostics": {
+    "Debug": {
+      "capture": "PASS",
+      "cases": 50,
+      "referenceDirectory": "build/metal-m3-evidence/line-investigation/final-debug/reference",
+      "referenceDirectorySHA256": "5dfff57ba725a35cc9e6383db0038db4be45ce7fba6ebdcab3615591aa703378",
+      "analysis": "build/metal-m3-evidence/line-investigation/final-debug/analysis.json",
+      "models": {
+        "pixelArea": {
+          "maxColorError": 0.5418449424865059,
+          "idMismatches": 1298,
+          "failingCases": 46
+        },
+        "distanceRamp": {
+          "maxColorError": 0.5,
+          "idMismatches": 797,
+          "failingCases": 46
+        },
+        "majorAxisRamp": {
+          "maxColorError": 0.003046038720029287,
+          "idMismatches": 293,
+          "failingCases": 26
+        }
+      },
+      "limits": {
+        "renderer": "Apple M4",
+        "version": "4.1 Metal - 91.7",
+        "aliasedRange": [
+          1,
+          1
+        ],
+        "smoothRange": [
+          1,
+          1
+        ],
+        "granularity": 9.999999747e-05
+      }
+    },
+    "Release": {
+      "capture": "PASS",
+      "cases": 50,
+      "referenceDirectory": "build/metal-m3-evidence/line-investigation/final-release/reference",
+      "referenceDirectorySHA256": "5dfff57ba725a35cc9e6383db0038db4be45ce7fba6ebdcab3615591aa703378",
+      "analysis": "build/metal-m3-evidence/line-investigation/final-release/analysis.json",
+      "models": {
+        "pixelArea": {
+          "maxColorError": 0.5418449424865059,
+          "idMismatches": 1298,
+          "failingCases": 46
+        },
+        "distanceRamp": {
+          "maxColorError": 0.5,
+          "idMismatches": 797,
+          "failingCases": 46
+        },
+        "majorAxisRamp": {
+          "maxColorError": 0.003046038720029287,
+          "idMismatches": 293,
+          "failingCases": 26
+        }
+      },
+      "limits": {
+        "renderer": "Apple M4",
+        "version": "4.1 Metal - 91.7",
+        "aliasedRange": [
+          1,
+          1
+        ],
+        "smoothRange": [
+          1,
+          1
+        ],
+        "granularity": 9.999999747e-05
+      }
+    }
+  },
+  "debugReleaseCapturesByteIdentical": true,
+  "sourceSHA256": {
+    "scripts/macos/metal_m3_lines.py": "cbfc932d6c4e9b1f2b4d186d44fada9967c72f314f923e36cc6b9a2ed66b5e36",
+    "tests/migration/LineCoverageProbe.h": "c1563ebd45bdff1de77c46d3038a8e20fa0e3a94b8171dbfc10dbdd7c37149f2",
+    "tests/migration/Renderer2DSmoke.cpp": "ec653d4da5e5b8a258eeaf6666800f9b354602bd18aa2030b81d5d06e1755cd8"
+  },
+  "regressions": {
+    "ReleaseRenderer2DSmoke": {
+      "status": "PASS",
+      "command": "python3 scripts/hazel.py test --config Release --profile native --only Renderer2DSmoke",
+      "log": "build/metal-m3-evidence/line-investigation/regression-release-runner.log",
+      "detailLog": "build/metal-m3-evidence/line-investigation/regression-release-detail.log",
+      "detailLogSHA256": "ab033bda0f16d724240b10d63f1caaf29de876e0066857d2cbe9023109de4f0b"
+    },
+    "DebugRenderer2DSmoke": {
+      "status": "PASS",
+      "command": "python3 scripts/hazel.py test --config Debug --profile native --only Renderer2DSmoke",
+      "log": "build/metal-m3-evidence/line-investigation/regression-debug-runner.log",
+      "detailLog": "build/metal-m3-evidence/line-investigation/regression-debug-detail.log",
+      "detailLogSHA256": "1ff8a882d55e0f517ef90608dcaefe9ef71b8ae72eea607ca6296017729b2945"
+    },
+    "initialDirectInvocation": {
+      "status": "INVALID INVOCATION",
+      "reason": "Missing disposable assets; rerun with maintained fixture runner.",
+      "log": "build/metal-m3-evidence/line-investigation/regression-release.log"
+    },
+    "nativeMetalFullAcceptance": "NOT RUN in this continuation; original normal-line failure remains unresolved",
+    "WindowsLinuxIntel": "NOT RUN; unavailable execution hosts"
+  },
+  "warnings": {
+    "newFirstParty": 0,
+    "existing": [
+      "ScriptableEntity.h unused parameter ts",
+      "TextCompositingChecks.h missing BaseFace initializer"
+    ]
+  },
+  "livePresentation": {
+    "status": "NOT RUN: architecture stop condition",
+    "consoleEvidence": "build/metal-m3-evidence/line-investigation/console.json",
+    "consoleLockedAtCheck": false,
+    "positivePresentationCount": null,
+    "nativeDPI": "NOT RUN; synthetic 2x framebuffer case is not live qualification",
+    "inputCameraResizeMinimizeRestoreExtendedSession": "NOT RUN"
+  },
+  "performanceAndMemory": {
+    "status": "NOT MEASURED in this continuation",
+    "historicalEvidence": "docs/design/metal-m3.md",
+    "sourceReview": [
+      "Retired frame-slot reuse only",
+      "Trim unused pool entries and replace allocations over four times requested size",
+      "Window output omits full-frame readback",
+      "Drain waits GPU completion and feedback before clearing retained pools"
+    ]
+  },
+  "decision": "Recommend shared deterministic expanded triangles and analytical coverage through existing Renderer2D/GLSL pipeline, with explicit authorization for OpenGL edge/picking changes. Otherwise retain current output and INCOMPLETE status.",
+  "checks": {
+    "analyticalModelSelfChecks": "PASS",
+    "pythonCompilation": "PASS",
+    "publicDocsLinks": {
+      "status": "PASS",
+      "markdownFiles": 72,
+      "localLinksImages": 591,
+      "findings": 0,
+      "log": "build/metal-m3-evidence/line-investigation/public-docs.log"
+    },
+    "gitDiffCheck": "PASS"
+  }
+}

@@ -20,7 +20,6 @@ struct MetalRenderer2DDraw
     std::shared_ptr<MetalShader> Shader;
     RasterState Raster;
     NS::SharedPtr<MTL::DepthStencilState> DepthState;
-    bool Lines = false;
     uint32_t Count = 0;
     glm::mat4 Camera;
     std::array<std::shared_ptr<const MetalTextureVersion>, 32> Textures;

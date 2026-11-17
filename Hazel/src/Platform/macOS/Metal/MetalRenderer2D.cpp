@@ -66,7 +66,6 @@ void MetalRendererAPI::EnqueueRenderer2DBatch(const std::vector<MetalRenderer2DR
         const void* vertices=run.Vertices;
         const uint32_t first=run.First, count=run.Count;
         const bool picking=run.Picking;
-        const float lineWidth=run.LineWidth;
         const auto& font=run.Font;
         auto frame = m_Renderer2DFrame.lock();
         Check(!m_Stopped && frame && m_Renderer2DScene && vertices && shader, "Renderer2D run requires an active scene and stream");
@@ -75,7 +74,8 @@ void MetalRendererAPI::EnqueueRenderer2DBatch(const std::vector<MetalRenderer2DR
         const auto& name = native->Artifact().Name;
         const bool lines = name == "Renderer2D_Line";
         Check(lines || name == "Renderer2D_Quad" || name == "Renderer2D_Circle" || name == "Renderer2D_Text", "Invalid Renderer2D shader");
-        Check(count && first <= 120000 && count <= 120000 - first && first % (lines ? 2 : 6) == 0 && count % (lines ? 2 : 6) == 0,
+        const uint32_t limit = lines ? 240000 : 120000;
+        Check(count && first <= limit && count <= limit - first && first % 6 == 0 && count % 6 == 0,
             "Invalid Renderer2D run range");
         Check(textureCount && textureCount <= 32, "Invalid Renderer2D texture slots");
         MetalRenderer2DDraw draw;
@@ -95,9 +95,9 @@ void MetalRendererAPI::EnqueueRenderer2DBatch(const std::vector<MetalRenderer2DR
                 found = m_Shaders.emplace(key, std::make_shared<MetalShader>(m_Device, name, 32, false, &draw.Raster)).first;
             draw.Shader = std::static_pointer_cast<MetalShader>(found->second);
         }
-        draw.Count = count; draw.Camera = m_Renderer2DCamera; draw.Lines = lines;
-        const size_t vertexFirst = lines ? first : first / 6 * 4;
-        const size_t vertexCount = lines ? count : count / 6 * 4;
+        draw.Count = count; draw.Camera = m_Renderer2DCamera;
+        const size_t vertexFirst = first / 6 * 4;
+        const size_t vertexCount = count / 6 * 4;
         const auto* bytes = static_cast<const uint8_t*>(vertices);
         draw.Vertices.assign(bytes + vertexFirst * native->VertexStride(), bytes + (vertexFirst + vertexCount) * native->VertexStride());
         const size_t idOffset = (name == "Renderer2D_Quad" ? offsetof(QuadVertex,EntityID) : name == "Renderer2D_Circle" ? offsetof(CircleVertex,EntityID) :
@@ -113,9 +113,6 @@ void MetalRendererAPI::EnqueueRenderer2DBatch(const std::vector<MetalRenderer2DR
                 Check(slot >= 0 && slot < textureCount && std::floor(slot) == slot, "Invalid quad texture index");
             }
         }
-        Check(std::isfinite(lineWidth) && lineWidth > 0, "Invalid Renderer2D line width");
-        // Native Metal lines and the maintained Apple GL 4.1 context both
-        // expose a one-pixel maximum. Honor that capability without repacking.
         for (uint32_t i = 0; i < 32; ++i)
         {
             draw.Textures[i] = textures[i < textureCount ? i : 0];

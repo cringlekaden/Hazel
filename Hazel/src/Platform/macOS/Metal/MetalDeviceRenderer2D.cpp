@@ -14,6 +14,11 @@ namespace {
 size_t ColorRow(uint32_t width) { return (width * 16 + 255) & ~size_t(255); }
 size_t ScalarRow(uint32_t width) { return (size_t(width) * 4 + 255) & ~size_t(255); }
 void Check(bool value, const char* message) { if (!value) throw std::runtime_error(message); }
+MTL::CompareFunction DepthFunction(const RasterState& raster)
+{
+    return !raster.DepthTest || raster.Compare == DepthCompare::Always ? MTL::CompareFunctionAlways :
+        raster.Compare == DepthCompare::Less ? MTL::CompareFunctionLess : MTL::CompareFunctionLessEqual;
+}
 }
 uint64_t MetalRenderer2DFrame::ResourceBytes() const
 {
@@ -130,7 +135,7 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     const auto colorRow = ColorRow(quad->Width), idBase = colorRow * quad->Height, depthBase = idBase + ScalarRow(quad->Width) * quad->Height;
     quad->Buffers.push_back(quad->Readback ? AcquireRenderer2DBuffer(depthBase + ScalarRow(quad->Width) * quad->Height) : NS::SharedPtr<MTL::Buffer>{});
     uint32_t indexCount = 6;
-    for (const auto& draw : quad->Draws) if (!draw.Lines) indexCount = std::max(indexCount, draw.Count);
+    for (const auto& draw : quad->Draws) indexCount = std::max(indexCount, draw.Count);
     std::vector<uint32_t> indices(indexCount);
     for (uint32_t q = 0; q < indexCount / 6; ++q) for (uint32_t i = 0; i < 6; ++i)
         indices[q * 6 + i] = q * 4 + Renderer2DQuadIndices[i];
@@ -167,8 +172,7 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
             fragment->setSamplerState(draw.Textures[0]->Sampler->gpuResourceID(), 0);
         }
         auto depth = NS::TransferPtr(MTL::DepthStencilDescriptor::alloc()->init());
-        depth->setDepthCompareFunction(!draw.Raster.DepthTest || draw.Raster.Compare == DepthCompare::Always ? MTL::CompareFunctionAlways :
-            draw.Raster.Compare == DepthCompare::Less ? MTL::CompareFunctionLess : MTL::CompareFunctionLessEqual);
+        depth->setDepthCompareFunction(DepthFunction(draw.Raster));
         depth->setDepthWriteEnabled(draw.Raster.DepthTest && draw.Raster.DepthWrite);
         draw.DepthState = NS::TransferPtr(m_Device->newDepthStencilState(depth.get()));
         Check(bool(draw.DepthState), "Cannot allocate Renderer2D depth state");
@@ -245,9 +249,15 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
     auto* render = m_Commands->renderCommandEncoder(pass.get());
     if (!render) { m_Commands->endCommandBuffer(); throw std::runtime_error("Cannot create quad encoder"); }
     if (quad->World || !mipmaps.empty()) render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
-    if (quad->World) render->setRenderPipelineState(quad->PresentationShader->Pipeline());
-    render->setViewport({0, 0, double(quad->Width), double(quad->Height), 0, 1});
-    render->setCullMode(MTL::CullModeNone); render->setFrontFacingWinding(MTL::WindingClockwise);
+    auto* boundPipeline = quad->World ? quad->PresentationShader->Pipeline() : nullptr;
+    if (boundPipeline) render->setRenderPipelineState(boundPipeline);
+    // Metal starts each encoder with full-target viewport/scissor, no culling,
+    // clockwise winding and disabled depth writes. Cache only within this pass.
+    glm::ivec4 boundViewport{0,0,quad->Width,quad->Height}, boundClip=boundViewport;
+    auto boundCull=MTL::CullModeNone;
+    auto boundWinding=MTL::WindingClockwise;
+    auto boundDepth=MTL::CompareFunctionAlways;
+    bool boundDepthWrite=false;
     if (quad->World) {
         render->setArgumentTable(quad->PresentationArguments.get(), MTL::RenderStageFragment);
         render->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(3));
@@ -255,26 +265,39 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
     for (size_t i = 0; i < quad->Draws.size(); ++i)
     {
         const auto& draw = quad->Draws[i];
-        render->setRenderPipelineState(draw.Shader->Pipeline());
-        render->setDepthStencilState(draw.DepthState.get());
+        if(draw.Shader->Pipeline()!=boundPipeline) {
+            boundPipeline=draw.Shader->Pipeline();render->setRenderPipelineState(boundPipeline);
+        }
+        const auto depth=DepthFunction(draw.Raster);
+        const bool depthWrite=draw.Raster.DepthTest && draw.Raster.DepthWrite;
+        if(depth!=boundDepth || depthWrite!=boundDepthWrite) {
+            render->setDepthStencilState(draw.DepthState.get());
+            boundDepth=depth;boundDepthWrite=depthWrite;
+        }
         const auto& viewport = draw.Raster.Viewport;
-        render->setViewport({double(viewport.x),double(viewport.y),double(viewport.z),double(viewport.w),0,1});
-        render->setCullMode(draw.Raster.Cull == CullFace::None ? MTL::CullModeNone :
-            draw.Raster.Cull == CullFace::Back ? MTL::CullModeBack : MTL::CullModeFront);
-        render->setFrontFacingWinding(draw.Raster.Clockwise ? MTL::WindingCounterClockwise : MTL::WindingClockwise);
+        if(viewport!=boundViewport) {
+            render->setViewport({double(viewport.x),double(viewport.y),double(viewport.z),double(viewport.w),0,1});
+            boundViewport=viewport;
+        }
+        const auto cull=draw.Raster.Cull == CullFace::None ? MTL::CullModeNone :
+            draw.Raster.Cull == CullFace::Back ? MTL::CullModeBack : MTL::CullModeFront;
+        if(cull!=boundCull) { render->setCullMode(cull);boundCull=cull; }
+        const auto winding=draw.Raster.Clockwise ? MTL::WindingCounterClockwise : MTL::WindingClockwise;
+        if(winding!=boundWinding) { render->setFrontFacingWinding(winding);boundWinding=winding; }
         auto clip = draw.Raster.ClipEnabled ? draw.Raster.ClipRect : glm::ivec4(0,0,quad->Width,quad->Height);
         const int left=std::clamp(clip.x,0,int(quad->Width)), bottom=std::clamp(clip.y,0,int(quad->Height));
         const int right=int(std::clamp<int64_t>(int64_t(clip.x)+std::max(clip.z,0),left,int(quad->Width)));
         const int top=int(std::clamp<int64_t>(int64_t(clip.y)+std::max(clip.w,0),bottom,int(quad->Height)));
         if (right == left || top == bottom || viewport.z <= 0 || viewport.w <= 0) continue;
-        render->setScissorRect({size_t(left),size_t(bottom),size_t(right-left),size_t(top-bottom)});
+        const glm::ivec4 clipped{left,bottom,right-left,top-bottom};
+        if(clipped!=boundClip) {
+            render->setScissorRect({size_t(left),size_t(bottom),size_t(right-left),size_t(top-bottom)});
+            boundClip=clipped;
+        }
         render->setArgumentTable(quad->Arguments[i * 2].get(), MTL::RenderStageVertex);
         render->setArgumentTable(quad->Arguments[i * 2 + 1].get(), MTL::RenderStageFragment);
-        if (draw.Lines)
-            render->drawPrimitives(MTL::PrimitiveTypeLine, NS::UInteger(0), NS::UInteger(draw.Count));
-        else
-            render->drawIndexedPrimitives(MTL::PrimitiveTypeTriangle, draw.Count, MTL::IndexTypeUInt32,
-                quad->Buffers[1]->gpuAddress(), quad->Buffers[1]->length());
+        render->drawIndexedPrimitives(MTL::PrimitiveTypeTriangle, draw.Count, MTL::IndexTypeUInt32,
+            quad->Buffers[1]->gpuAddress(), quad->Buffers[1]->length());
     }
     render->endEncoding();
     if (!quad->Readback) return;

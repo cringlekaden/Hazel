@@ -61,6 +61,7 @@ def distribution(values):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
+    parser.add_argument('--runtime-frames',type=int,default=80)
     parser.add_argument('--resources', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--build', action='store_true')
@@ -77,15 +78,18 @@ def main():
                HAZEL_DATA=str(output/'gl-profile'), DYLD_LIBRARY_PATH=str(hz.mono_prefix()/'lib'))
     commands = [
         [sys.executable, hz.ROOT/'scripts/macos/metal_m2b2.py', '--config', args.config,
-         '--resources', args.resources.resolve(), '--output', output/'metal', '--texture-slots', str(args.texture_slots)],
+         '--resources', args.resources.resolve(), '--output', output/'metal', '--texture-slots', str(args.texture_slots), '--runtime-frames', str(args.runtime_frames)],
         [hz.binaries(args.config)/'MigrationRenderer2DSmoke/MigrationRenderer2DSmoke',
-         '--metal-parity', output/'opengl']]
+         '--metal-parity', output/'opengl', str(args.runtime_frames)]]
     for name, command in zip(('metal', 'opengl'), commands):
         with (output/(name+'.log')).open('w') as log:
             run = subprocess.run(list(map(str, command)), cwd=hz.ROOT, env=env,
-                                 stdout=log, stderr=subprocess.STDOUT, timeout=240)
+                                 stdout=log, stderr=subprocess.STDOUT, timeout=max(240,args.runtime_frames//5+120))
         if run.returncode:
             raise RuntimeError(name+' gate failed; see '+str(output/(name+'.log')))
+    from macos.metal_m3_lines import qualify
+    lines=qualify(output/'metal',output/'opengl/lines')
+    (output/'lines-results.json').write_text(json.dumps(lines,indent=2)+'\n')
     measurements = {}
     for phase in range(4):
         measurements['mixed-'+str(phase)] = compare(output/'metal'/f'mixed-metal-{phase}.bin',
@@ -93,6 +97,9 @@ def main():
     for extent in ('1280x720', '1920x1080'):
         measurements['runtime-'+extent] = compare(output/'metal'/f'runtime-{extent}.bin',
                                                   output/'opengl'/f'runtime-{extent}.bin', half_display=True)
+    for extent in ('1280x720','1920x1080'):
+        measurements['runtime-focus-'+extent]=compare(output/'metal'/f'runtime-focus-{extent}.bin',
+                                                       output/'opengl'/f'runtime-focus-{extent}.bin',half_display=True)
     with (output/'metal/runtime-cpu.csv').open() as file:
         samples = list(csv.DictReader(file))
     log = (output/'metal/native.log').read_text()
@@ -100,13 +107,13 @@ def main():
            re.findall(r'M3_OFFSCREEN_FEEDBACK frame=(\d+) gpu_start=([\d.]+) gpu_end=([\d.]+)', log)
            if float(start)>0 and float(end)>=float(start)}
     timings = {}
-    # Runtime scene submissions follow the 25 preserved/basic mixed fixtures.
+    # Match feedback by submission serial; additional fixtures cannot shift timing attribution.
     for width in ('1280', '1920'):
-        rows = [(i, r) for i, r in enumerate(samples) if r['width']==width and 10 <= int(r['frame']) < 70]
+        rows = [(i, r) for i, r in enumerate(samples) if r['width']==width and 10 <= int(r['frame']) < args.runtime_frames-10]
         timings[width] = dict(warmupFrames=10, tailExcluded=10,
             sceneCPU=distribution([float(r['runtime_ms']) for _,r in rows]),
             submitCPU=distribution([float(r['submit_ms']) for _,r in rows]),
-            gpu=distribution([gpu[26+i] for i,_ in rows if 26+i in gpu]),
+            gpu=distribution([gpu[int(r['serial'])] for _,r in rows if int(r['serial']) in gpu]),
             drawCounts=sorted({int(r['draws']) for _,r in rows}),
             batchCounts=sorted({int(r['batches']) for _,r in rows}),
             geometryCounts=sorted({int(r['geometry']) for _,r in rows}),
@@ -116,8 +123,11 @@ def main():
             bufferAllocations=sorted({int(r['buffer_allocations']) for _,r in rows}),
             bufferReuses=[int(rows[0][1]['buffer_reuses']),int(rows[-1][1]['buffer_reuses'])],
             retainedBufferBytes=sorted({int(r['retained_buffer_bytes']) for _,r in rows}))
-    result = dict(verdict='PASS' if all(m['verdict']=='PASS' for m in measurements.values()) else 'FAIL',
-        scope='Offscreen native Apple GPU only; full M3 acceptance remains separate', configuration=args.config,
+    stability=all(len(t['attachmentAllocations'])==1 and len(t['bufferAllocations'])==1 and
+                  len(t['retainedBufferBytes'])==1 and t['gpu'] and
+                  t['gpu']['samples']==args.runtime_frames-20 for t in timings.values())
+    result = dict(verdict='PASS' if stability and lines['verdict']=='PASS' and all(m['verdict']=='PASS' for m in measurements.values()) else 'FAIL',
+        scope='Offscreen native Apple GPU only; full M3 acceptance remains separate', configuration=args.config,lineQualification=lines['verdict'],resourceStability='PASS' if stability else 'FAIL',runtimeFramesPerExtent=args.runtime_frames,
         commands=[list(map(str,c)) for c in commands], measurements=measurements, timings=timings,
         timingScope='Validation-enabled Scene/RuntimeUI CPU, Submit CPU, GPU world/Neutral/UI/readback; no presentation or device polling',
         colorTolerance=2e-5, depthTolerance=1e-6, signedIDs='exact',

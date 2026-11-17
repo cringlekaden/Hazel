@@ -1,3 +1,4 @@
+#include "Hazel/Renderer/Drawing/Renderer2DQuad.h"
 #include "MetalM2A.h"
 #include "Hazel/Core/Log.h"
 #include "Platform/macOS/Metal/MetalDevice.h"
@@ -32,18 +33,7 @@ Pipeline Compile(const std::shared_ptr<Hazel::MetalDevice>& device, const std::f
     std::cout << "PASS native_pipeline " << variant << " stride=" << shader->VertexStride() << '\n';
     return {shader, shader->VertexStride()};
 }
-// Exact CPU stream used by Renderer2D::LineVertex, packed as its BufferLayout.
-struct LineVertex
-{
-    glm::vec3 Position;
-    glm::vec4 Color;
-    int32_t Entity;
-    glm::vec4 Clip;
-};
-static_assert(sizeof(LineVertex) == 48 && offsetof(LineVertex, Color) == 12 &&
-    offsetof(LineVertex, Entity) == 28 && offsetof(LineVertex, Clip) == 32, "Line stream ABI");
-
-void DrawProof(Hazel::MetalDevice& owner, const Pipeline& pipeline, const std::filesystem::path& directory, bool perspective, bool quad = false)
+void DrawProof(Hazel::MetalDevice& owner, const Pipeline& pipeline, const std::filesystem::path& directory, bool perspective)
 {
     constexpr size_t side = 32, colorRow = 512, scalarRow = 256;
     constexpr size_t idBase = colorRow * side, depthBase = idBase + scalarRow * side;
@@ -64,37 +54,27 @@ void DrawProof(Hazel::MetalDevice& owner, const Pipeline& pipeline, const std::f
         Check(bool(targets[i]), "Offscreen attachment unavailable");
     }
     const glm::mat4 camera = perspective ? glm::perspective(glm::radians(90.f), 1.f, 1.f, 3.f) : glm::mat4(1.f);
-    std::vector<LineVertex> vertices;
+    std::vector<Hazel::QuadVertex> vertices;
     const auto triangle = [&](float distance, glm::vec4 color, int32_t entity)
     {
         const float scale = perspective ? -distance : 1.f;
         for (const auto& p : {glm::vec2(-.75f, -.75f), glm::vec2(.75f, -.75f), glm::vec2(-.75f, .75f)})
-            vertices.push_back({{p.x * scale, p.y * scale, distance}, color, entity, {0, 0, -1, -1}});
+            vertices.push_back({{p.x * scale, p.y * scale, distance}, color, {.5f,.5f}, 31, 1, entity, {0,0,-1,-1}});
     };
     triangle(perspective ? -1.5f : -.5f, {2.f, .25f, .5f, 1.f}, -123456789);
     triangle(perspective ? -2.5f : .5f, {0, 1, 0, 1}, 987654321); // Must fail depth after the first.
     triangle(perspective ? -.5f : -2.f, {0, 0, 1, 1}, 42);       // Must be clipped before the near plane.
-    struct QuadVertex
-    {
-        glm::vec3 Position; glm::vec4 Color; glm::vec2 UV;
-        float Texture, Tiling; int32_t Entity; glm::vec4 Clip;
-    };
-    static_assert(sizeof(QuadVertex) == 64 && offsetof(QuadVertex, Entity) == 44 && offsetof(QuadVertex, Clip) == 48, "Quad CPU stream ABI");
-    std::vector<QuadVertex> quads;
-    for (const auto& vertex : vertices)
-        quads.push_back({vertex.Position, vertex.Color, {.5f, .5f}, 31, 1, vertex.Entity, vertex.Clip});
-    auto stream = NS::TransferPtr(device->newBuffer(quad ? static_cast<const void*>(quads.data()) : vertices.data(),
-        vertices.size() * (quad ? sizeof(QuadVertex) : sizeof(LineVertex)), MTL::ResourceStorageModeShared));
+    auto stream = NS::TransferPtr(device->newBuffer(vertices.data(),
+        vertices.size() * sizeof(Hazel::QuadVertex), MTL::ResourceStorageModeShared));
     auto uniform = NS::TransferPtr(device->newBuffer(&camera, sizeof(camera), MTL::ResourceStorageModeShared));
     auto readback = NS::TransferPtr(device->newBuffer(depthBase + scalarRow * side, MTL::ResourceStorageModeShared));
     Check(bool(stream) && bool(uniform) && bool(readback), "Proof buffers unavailable");
-    Check(pipeline.Stride == (quad ? sizeof(QuadVertex) : sizeof(LineVertex)), "Reflected line stream stride differs from CPU ABI");
+    Check(pipeline.Stride == sizeof(Hazel::QuadVertex), "Reflected quad stream stride differs from CPU ABI");
     // MSL tier-2 uses opaque 64-bit resource handles. Native reflection checks
     // offsets 0/256 and 32 entries; execution through slot 31 validates the ABI.
     std::array<NS::SharedPtr<MTL::Texture>, 32> sampled;
     NS::SharedPtr<MTL::SamplerState> sampler;
     NS::SharedPtr<MTL::Buffer> descriptors;
-    if (quad)
     {
         std::array<MTL::ResourceID, 64> handles{};
         auto samplerDescriptor = NS::TransferPtr(MTL::SamplerDescriptor::alloc()->init());
@@ -123,7 +103,6 @@ void DrawProof(Hazel::MetalDevice& owner, const Pipeline& pipeline, const std::f
     Check(bool(residency), "Proof residency unavailable: " + Error(error));
     for (auto& target : targets) residency->addAllocation(target.get());
     for (auto* buffer : {stream.get(), uniform.get(), readback.get()}) residency->addAllocation(buffer);
-    if (quad)
     {
         for (auto& texture : sampled) residency->addAllocation(texture.get());
         residency->addAllocation(descriptors.get());
@@ -141,7 +120,7 @@ void DrawProof(Hazel::MetalDevice& owner, const Pipeline& pipeline, const std::f
     Check(bool(arguments) && bool(fragmentArguments) && bool(allocator) && bool(commands) && bool(completed), "Proof command infrastructure unavailable");
     arguments->setAddress(uniform->gpuAddress(), 0);
     arguments->setAddress(stream->gpuAddress(), 16);
-    if (quad) fragmentArguments->setAddress(descriptors->gpuAddress(), 0);
+    fragmentArguments->setAddress(descriptors->gpuAddress(), 0);
     auto depthDescriptor = NS::TransferPtr(MTL::DepthStencilDescriptor::alloc()->init());
     depthDescriptor->setDepthCompareFunction(MTL::CompareFunctionLess);
     depthDescriptor->setDepthWriteEnabled(true);
@@ -166,7 +145,7 @@ void DrawProof(Hazel::MetalDevice& owner, const Pipeline& pipeline, const std::f
     Check(render != nullptr, "Proof render encoder unavailable");
     render->setRenderPipelineState(pipeline.Shader->Pipeline());
     render->setArgumentTable(arguments.get(), MTL::RenderStageVertex);
-    render->setArgumentTable(quad ? fragmentArguments.get() : arguments.get(), MTL::RenderStageFragment);
+    render->setArgumentTable(fragmentArguments.get(), MTL::RenderStageFragment);
     render->setViewport({0, 0, side, side, 0, 1});
     render->setDepthStencilState(depthState.get());
     render->setCullMode(MTL::CullModeBack);
@@ -203,7 +182,7 @@ void DrawProof(Hazel::MetalDevice& owner, const Pipeline& pipeline, const std::f
     Check(feedback->Error.empty(), "GPU commit feedback: " + feedback->Error);
     // No read, reset, table mutation or resource release until the queue event completes.
     const auto* bytes = static_cast<const unsigned char*>(readback->contents());
-    std::ofstream raw(directory / (quad ? "quad32.readback.bin" : perspective ? "line-perspective.readback.bin" : "line-ortho.readback.bin"), std::ios::binary);
+    std::ofstream raw(directory / (perspective ? "quad32-perspective.readback.bin" : "quad32.readback.bin"), std::ios::binary);
     raw.write(reinterpret_cast<const char*>(bytes), depthBase + scalarRow * side);
     Check(bool(raw), "Cannot retain deterministic readback");
     size_t interiors = 0, clear = 0;
@@ -227,7 +206,7 @@ void DrawProof(Hazel::MetalDevice& owner, const Pipeline& pipeline, const std::f
             Check(id == -1 && depth == 1 && color[0] == 0 && color[3] == 0, "Clear/near clipping/orientation mismatch");
         }
     }
-    std::cout << "PASS native_draw shader=" << (quad ? "Quad-32-slot31" : "Line") << " projection=" << (perspective ? "perspective" : "identity-ortho")
+    std::cout << "PASS native_draw shader=" << "Quad-32-slot31" << " projection=" << (perspective ? "perspective" : "identity-ortho")
         << " interior=" << interiors << " clear=" << clear << " id=-123456789 clear_id=-1 depth=" << expectedDepth
         << " HDR=2,0.25,0.5,1 completion=1 feedback_errors=0\n";
 }
@@ -246,11 +225,12 @@ int main(int argc, char** argv)
         Hazel::Resources::Configure({artifacts / "Resources", artifacts, artifacts / "user-data"});
         for (const auto& name : {"DisplayOutput", "EntityOutline", "EnvironmentSky", "ForwardPBR", "Renderer2D_Circle", "Renderer2D_Line", "Renderer2D_Quad-16", "Renderer2D_Quad-32", "Renderer2D_Text", "WorldPresentation"})
             Compile(owner, argv[2], name);
-        const auto line = Compile(owner, argv[2], "Renderer2D_Line");
-        DrawProof(*owner, line, argv[2], false);
-        DrawProof(*owner, line, argv[2], true);
+        // The former line shader was a generic triangle passthrough proof.
+        // Preserve its depth/clip assertions with the authoritative quad stream;
+        // analytical lines are qualified through production Renderer2D in M3.
         const auto quad = Compile(owner, argv[2], "Renderer2D_Quad-32");
-        DrawProof(*owner, quad, argv[2], false, true);
+        DrawProof(*owner, quad, argv[2], false);
+        DrawProof(*owner, quad, argv[2], true);
         return 0;
     }
     catch (const std::exception& error)

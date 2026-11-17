@@ -26,7 +26,6 @@ struct MetalRenderer2DRun
     uint32_t First = 0, Count = 0;
     std::shared_ptr<Texture2D> Font;
     bool Picking = true;
-    float LineWidth = 1;
 };
 // Native Metal 4; only explicitly qualified drawing/resource profiles are available.
 class MetalRendererAPI final : public RendererAPI {

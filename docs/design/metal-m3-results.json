@@ -586,5 +586,11 @@
     "Hazel/src/Platform/macOS/Metal/MetalDeviceQuad.cpp",
     "Hazel/src/Platform/macOS/Metal/MetalQuadFrame.h",
     "Hazel/src/Platform/macOS/Metal/MetalRendererQuad.cpp"
-  ]
+  ],
+  "currentContinuation": {
+    "sourceBaseline": "808e31d5eecbd3cc51d3efcae5d46aa5e3afe798",
+    "record": "metal-m3-deterministic-results.json",
+    "verdict": "PASS",
+    "status": "Shared deterministic line and remaining native live-window/input/DPI/extended-session gates pass. Measurements elsewhere in this file remain historical; current evidence is in the continuation record."
+  }
 }

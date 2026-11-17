@@ -2,6 +2,9 @@
 // Identical shared Renderer2D workload for native Metal and OpenGL readbacks.
 #include "Hazel/Renderer/Drawing/Renderer2D.h"
 #include "Hazel/Renderer/RenderCommand.h"
+#include "Hazel/Scene/RuntimeSession.h"
+#include "Hazel/Scene/Scene.h"
+#include <stdexcept>
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <array>
@@ -63,4 +66,24 @@ inline void DrawRenderer2DParity(unsigned phase)
         }
     }
     Renderer2D::EndScene();
+}
+
+// Exercise RuntimeSession's real input router and focus-outline ownership without
+// claiming physical device input or presentation. Both backends use this helper.
+inline void FocusRenderer2DRuntimeUI(Hazel::RuntimeSession& session)
+{
+    using namespace Hazel;
+    Renderer2D::SetLineWidth(2);
+    GameUI::DeviceSample sample;sample.Point={-1,-1};
+    session.SetInput(sample.Point,true);
+    session.RouteUIInput(sample,1.f/60,true);
+    session.RouteUIInput(sample,1.f/60,true);
+    sample.Keys[Key::Tab]=true;session.RouteUIInput(sample,1.f/60,true);
+    sample.Keys[Key::Tab]=false;session.RouteUIInput(sample,1.f/60,true);
+    sample.Keys[Key::Enter]=true;session.RouteUIInput(sample,1.f/60,true);
+    auto scene=session.GetScene();GameUI::Action action;
+    if(!scene->GetUIDiagnostics().Focus || !scene->ConsumeUIAction(0,action) ||
+        action.Entity!=scene->GetUIDiagnostics().Focus || scene->ConsumeUIAction(0,action))
+        throw std::runtime_error("Runtime UI Tab/Accept focus/activation was lost or duplicated");
+    sample.Keys[Key::Enter]=false;session.RouteUIInput(sample,1.f/60,true);
 }

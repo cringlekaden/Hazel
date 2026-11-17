@@ -102,6 +102,11 @@ a screen-space button. It also runs on OpenGL. The new scene uses ordinary
 SceneRenderer and RuntimeSession ownership; no separate UI renderer is involved.
 
 Follow [artifact preparation and launch commands](../../docs/development.md#experimental-metal-shader-resources).
-Metal M3 acceptance remains **INCOMPLETE**; the
-[qualification record](../../docs/design/metal-m3.md) lists measured gates and
-the smoothed-line coverage/picking failure and remaining visible/input checks. The earlier opaque-quad screenshot is historical.
+Metal M3 is locally qualified on Apple M4; the
+[qualification record](../../docs/design/metal-m3.md) covers numerical parity,
+native 1×/2× presentation, player UI/camera input and the extended session.
+See the [line contract](../../docs/design/metal-m3-deterministic-lines.md) for
+physical-pixel widths and intentionally changed OpenGL edge/picking behavior.
+The earlier opaque-quad screenshot remains historical.
+
+![Native Metal Nutella with keyboard focus](../../docs/images/metal-renderer2d-window.png)
