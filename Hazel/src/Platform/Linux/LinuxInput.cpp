@@ -34,21 +34,21 @@ namespace Hazel {
 
 	bool Input::IsKeyPressed(const KeyCode key)
 	{
-		auto* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+		auto* window = static_cast<GLFWwindow*>(Input::NativeWindow());
 		auto state = glfwGetKey(window, static_cast<int32_t>(key));
 		return state == GLFW_PRESS;
 	}
 
 	bool Input::IsMouseButtonPressed(const MouseCode button)
 	{
-		auto* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+		auto* window = static_cast<GLFWwindow*>(Input::NativeWindow());
 		auto state = glfwGetMouseButton(window, static_cast<int32_t>(button));
 		return state == GLFW_PRESS;
 	}
 
 	glm::vec2 Input::GetMousePosition()
 	{
-		auto* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+		auto* window = static_cast<GLFWwindow*>(Input::NativeWindow());
 		double xpos, ypos;
 		glfwGetCursorPos(window, &xpos, &ypos);
 
@@ -56,7 +56,7 @@ namespace Hazel {
 	}
 
     glm::vec2 Input::GetMouseScreenPosition() {
-        auto* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+        auto* window = static_cast<GLFWwindow*>(Input::NativeWindow());
         int x = 0, y = 0; glfwGetWindowPos(window, &x, &y);
         return GetMousePosition() + glm::vec2(x, y);
     }
@@ -77,7 +77,7 @@ namespace Hazel {
 TextInputCapabilities GetTextInputCapabilities(){TextInputCapabilities result;result.Backend="Linux / GLFW: committed characters and UTF-8 clipboard; no preedit/candidate positioning";return result;}
 bool NativeTextClipboard::Read(std::string& value,size_t limit,std::string& error){
     if(!Application::TryGet()){error="Clipboard needs an application window";return false;}
-    auto window=static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+    auto window=static_cast<GLFWwindow*>(Input::NativeWindow());
     const auto data=glfwGetClipboardString(window);
     if(!data){error="Native UTF-8 clipboard unavailable";return false;}
     size_t length=0;while(length<=limit&&data[length])++length;
@@ -88,7 +88,7 @@ bool NativeTextClipboard::Write(const std::string& value,std::string& error){
     if(!Application::TryGet()){error="Clipboard needs an application window";return false;}
     if(value.size()>Text::EditBuffer::MaxBytes){error="Clipboard copy exceeds 16384 bytes";return false;}
     try{UTF8::Validate(value);}catch(const std::exception& e){error=e.what();return false;}
-    glfwGetError(nullptr);glfwSetClipboardString(static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow()),value.c_str());
+    glfwGetError(nullptr);glfwSetClipboardString(static_cast<GLFWwindow*>(Input::NativeWindow()),value.c_str());
     const char* message=nullptr;auto status=glfwGetError(&message);if(status!=GLFW_NO_ERROR){error=message?message:"Native clipboard write failed";return false;}return true;
 }
 }

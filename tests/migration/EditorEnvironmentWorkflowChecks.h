@@ -158,11 +158,12 @@ void EnvironmentWorkflowUpdate()
         a.m_Preferences = m_ImportPreferences;
         a.RefreshSDK();
         m_Editor.m_ActionError.clear();
-        Check(glGetError() == GL_NO_ERROR, "Environment native UI OpenGL errors");
+        Check(EditorGraphicsValid(), "Environment native UI graphics errors");
         std::cout
             << "PASS: native environment ImGui create/HDR selector/quality/save, file undo/redo, "
                "SDK-free prepare job, scene named selection/Apply/history/save/reopen/Play with "
                "HDR unavailable, failure/cancel retention\n";
+        if(BeginNativeCapture())return;
         m_Done = true;
         Application::Get().Close();
     }

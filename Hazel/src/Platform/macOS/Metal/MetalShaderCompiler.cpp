@@ -27,7 +27,7 @@ Layout CPUContract(const std::string& name)
     if (name == "Environment") return {sizeof(EnvironmentData), {offsetof(EnvironmentData, InverseVP), offsetof(EnvironmentData, RotationGain), offsetof(EnvironmentData, Options)}};
     if (name == "Camera") return {sizeof(glm::mat4), {0}};
     if (name == "Presentation") return {sizeof(glm::vec4), {0}};
-    if (name == "Outline") return {32, {0, 4, 16}}; // Explicit declaration-only legacy adaptation.
+    if (name == "Outline") return {32, {0, 4, 8, 16}}; // Explicit declaration-only legacy adaptation.
     throw std::runtime_error("Unqualified CPU block: " + name);
 }
 void Reflect(spirv_cross::CompilerMSL& cross, std::ostream& output)
@@ -146,8 +146,8 @@ MetalShaderArtifact CompileMetalShader(const std::string& name, const std::strin
                 if (stage == "fragment")
                 {
                     Replace(source, "uniform isampler2D u_Entities;", "layout(binding=0) uniform isampler2D u_Entities;");
-                    Replace(source, "uniform int u_Selected;\nuniform int u_Radius;\nuniform vec4 u_EncodedColor;",
-                        "layout(std140,binding=7) uniform Outline { int u_Selected; int u_Radius; vec4 u_EncodedColor; };");
+                    Replace(source, "uniform int u_Selected;\nuniform int u_Radius;\nuniform int u_FlipY;\nuniform vec4 u_EncodedColor;",
+                        "layout(std140,binding=7) uniform Outline { int u_Selected; int u_Radius; int u_FlipY; vec4 u_EncodedColor; };");
                 }
             }
             shaderc::CompileOptions options;

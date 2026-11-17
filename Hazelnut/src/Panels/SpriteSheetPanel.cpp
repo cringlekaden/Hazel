@@ -1,3 +1,4 @@
+#include "Hazel/ImGui/ImGuiLayer.h"
 #include "SpriteSheetPanel.h"
 #include "Hazel/Core/Resources.h"
 #include "ContentBrowserPayload.h"
@@ -465,7 +466,7 @@ void SpriteSheetPanel::Regions(bool editable)
         auto anchor = P(ImGui::GetCursorScreenPos()) + glm::vec2(84, 84);
         auto top = anchor - r.Pivot * 100.f;
         auto *draw = ImGui::GetWindowDrawList();
-        draw->AddImage((ImTextureID)(uintptr_t)m_Texture->GetRendererID(), V(top),
+        draw->AddImage(ImGuiLayer::Texture(m_Texture->GetEditorTexture()), V(top),
                        V(top + glm::vec2(100)), V(uv[3]), V(uv[1]));
         draw->AddLine(V(anchor - glm::vec2(7, 0)), V(anchor + glm::vec2(7, 0)),
                       IM_COL32(255, 190, 0, 255), 2);
@@ -708,7 +709,7 @@ void SpriteSheetPanel::Clips(bool editable)
         const auto &r = s.Region(clip.Frames.at(m_Playback.Frame).Region);
         auto uv = SpriteUV(r.Rect, s.Sampling.Width, s.Sampling.Height);
         if (m_Texture)
-            ImGui::Image((ImTextureID)(uintptr_t)m_Texture->GetRendererID(), {128, 128}, V(uv[3]),
+            ImGui::Image(ImGuiLayer::Texture(m_Texture->GetEditorTexture()), {128, 128}, V(uv[3]),
                          V(uv[1]));
     }
     catch (const std::exception &e)
@@ -767,7 +768,7 @@ void SpriteSheetPanel::Canvas(bool editable)
     const auto top = origin + m_Pan;
     auto *draw = ImGui::GetWindowDrawList();
     draw->AddRectFilled(V(origin), V(origin + P(size)), IM_COL32(38, 38, 44, 255));
-    draw->AddImage((ImTextureID)(uintptr_t)m_Texture->GetRendererID(), V(top),
+    draw->AddImage(ImGuiLayer::Texture(m_Texture->GetEditorTexture()), V(top),
                    V(top + glm::vec2(sheet.Sampling.Width, sheet.Sampling.Height) * m_Zoom), {0, 0},
                    {1, 1});
     auto pixel = (mouse - top) / m_Zoom;

@@ -23,6 +23,26 @@ def launcher_checks():
             raise RuntimeError(platform + ' Nutella development example launch changed')
     print('PASS: Linux/Windows F5 leaves editor project selection to session restore; runtime example remains explicit', flush=True)
 
+    from contextlib import nullcontext
+    from unittest.mock import patch
+    import sys
+    def command(arguments, system='macos'):
+        with patch.object(hz,'SYSTEM',system), patch.object(sys,'argv',['hazel.py','run',*arguments]), patch.object(hz,'build_lock',return_value=nullcontext()), patch.object(hz,'stage'), patch.object(hz,'run') as execute:
+            hz.main()
+            return list(map(str,execute.call_args.args[0]))
+    project=hz.ROOT/'examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj'
+    editor=command(['Hazelnut','--metal','--no-restore','--project',str(project)])
+    if editor[1:] != ['--metal','--no-restore',str(project.resolve())]:
+        raise RuntimeError('Editor backend/restore arguments were not forwarded before startup')
+    if '--metal' not in command(['Nutella','--metal']):raise RuntimeError('Runtime Metal selector was not forwarded')
+    if '--metal' in command(['Hazelnut']):raise RuntimeError('Default editor backend changed')
+    for system in ('windows','linux'):
+        try:command(['Hazelnut','--metal'],system)
+        except RuntimeError as error:
+            if 'requires' not in str(error):raise
+        else:raise RuntimeError('Metal launch silently accepted on '+system)
+    print('PASS: launcher forwards explicit Metal/editor restoration policy, preserves default and rejects foreign-platform Metal (mocked command policy; not native platform execution)',flush=True)
+
 
 def typography_inputs(working):
     """Pinned CPU-only fixtures never become application/game resources."""
@@ -230,7 +250,7 @@ def test(configuration, profile='native', suite='all', only=None):
             with log.open('w',encoding='utf-8') as out:
                 # Full native structural/presentation authoring is bounded work;
                 # its unoptimized Debug run on Grandpa exceeds the old 240s cap.
-                limit=600 if name=='EditorSmoke' and configuration=='Debug' else 240
+                limit=600 if name=='EditorSmoke' and (configuration=='Debug' or env.get('HAZEL_TEST_METAL_EDITOR')) else 240
                 result=subprocess.run(list(map(str,command)),cwd=working,env=env,stdout=out,stderr=subprocess.STDOUT,timeout=limit)
             if result.returncode:
                 print(log.read_text(errors='replace'));raise RuntimeError(f'{name} failed ({result.returncode}); log: {log}')

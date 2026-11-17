@@ -469,7 +469,7 @@ def main():
         if action == 'test': p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
         if action == 'test': p.add_argument('--suite',choices=('all','cpu'),default='all',help='CPU subset explicitly excludes graphics/editor acceptance')
         if action == 'test': p.add_argument('--only',action='append',choices=[r['name'] for r in json.loads((ROOT/'scripts/internal/testing/native-tests.json').read_text())],help='Run selected maintained regression(s); other tests are not qualified')
-    p = sub.add_parser('run'); p.add_argument('app', choices=('Hazelnut', 'Nutella')); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug'); p.add_argument('--project', type=Path); p.add_argument('--inspect-camera', action='store_true', help='Nutella transient perspective inspection'); p.add_argument('--metal-renderer2d', action='store_true', help='Nutella opt-in Metal 4 Renderer2D runtime')
+    p = sub.add_parser('run'); p.add_argument('app', choices=('Hazelnut', 'Nutella')); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug'); p.add_argument('--project', type=Path); p.add_argument('--inspect-camera', action='store_true', help='Nutella transient perspective inspection'); p.add_argument('--metal-renderer2d', action='store_true', help='Nutella legacy opt-in Metal 4 runtime alias'); p.add_argument('--metal', action='store_true', help='macOS: explicitly select Metal 4 before window creation'); p.add_argument('--no-restore', action='store_true', help='Hazelnut: skip remembered workspace restoration')
     p = sub.add_parser('script-build'); p.add_argument('project', type=Path); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     p = sub.add_parser('test-packages'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
     p.add_argument('--interactive',action='store_true',help='macOS: launch pristine relocated products for human interaction and normal close')
@@ -511,9 +511,14 @@ def main():
         prepare(['git','cmd'] if SYSTEM=='windows' else (['git','make','g++','ar','pkg-config','tar','ldd'] if exporting and SYSTEM=='linux' else ['git','make']))
         if SYSTEM=='windows': vs_toolchain(exporting)
     if args.action == 'run':
+        if args.metal and SYSTEM != 'macos': raise RuntimeError('--metal requires native Apple Silicon macOS')
+        if args.no_restore and args.app != 'Hazelnut': raise RuntimeError('--no-restore requires Hazelnut')
+        if args.metal and args.metal_renderer2d: raise RuntimeError('Select --metal or its legacy runtime alias, not both')
         with build_lock(): stage(args.config)
         exe = binaries(args.config) / args.app / (args.app + ('.exe' if SYSTEM == 'windows' else ''))
         command = [exe]
+        if args.metal: command += ['--metal']
+        if args.no_restore: command += ['--no-restore']
         if args.metal_renderer2d:
             if args.app != 'Nutella': raise RuntimeError('--metal-renderer2d requires Nutella')
             command += ['--metal-renderer2d']

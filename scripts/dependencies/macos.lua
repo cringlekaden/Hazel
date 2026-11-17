@@ -39,7 +39,7 @@ if _OPTIONS["migration-tests"] then
         files { root .. "/tests/macos/MetalM1Smoke.cpp", root .. "/tests/macos/MetalM1Environment.mm" }
         links { "ApplicationServices.framework" }
         includedirs { root .. "/Hazel/src" }
-        externalincludedirs { root .. "/Hazel/vendor/entt/include", root .. "/Hazel/vendor/yaml-cpp/include", root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/imgui", root .. "/Hazel/vendor/GLFW/include", root .. "/Hazel/vendor/Glad/include" }
+        externalincludedirs { root .. "/Hazel/vendor/metal-cpp", root .. "/Hazel/vendor/entt/include", root .. "/Hazel/vendor/yaml-cpp/include", root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/imgui", root .. "/Hazel/vendor/GLFW/include", root .. "/Hazel/vendor/Glad/include" }
         libdirs { ShaderToolsRoot .. "/lib" }
         links { "Hazel" }
         links (ShaderToolsLinks)
@@ -161,7 +161,9 @@ if _OPTIONS["migration-tests"] then
         dependson { "Hazel-ScriptCore" }
 end
 project "Hazel"
-    xcodebuildsettings { ["GCC_PREFIX_HEADER"] = root .. "/Hazel/src/hzpch.h" }
+    -- The pinned Xcode generator omits file-filtered buildoptions. Use the
+    -- native target setting so every Objective-C++ bridge has explicit ARC.
+    xcodebuildsettings { ["GCC_PREFIX_HEADER"] = root .. "/Hazel/src/hzpch.h", ["CLANG_ENABLE_OBJC_ARC"] = "YES" }
     removefiles { root .. "/Hazel/src/Platform/Windows/**", root .. "/Hazel/src/Platform/Linux/**" }
     defines { "HZ_PLATFORM_MACOS", "GL_SILENCE_DEPRECATION" }
     externalincludedirs { root .. "/Hazel/vendor/metal-cpp" }

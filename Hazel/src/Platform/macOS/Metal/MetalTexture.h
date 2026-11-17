@@ -30,6 +30,7 @@ public:
     uint32_t GetWidth() const override { return m_Specification.Width; }
     uint32_t GetHeight() const override { return m_Specification.Height; }
     uint32_t GetRendererID() const override;
+    EditorTexture GetEditorTexture() const override { auto version = Snapshot(); return {reinterpret_cast<uintptr_t>(version->Texture.get()), version, false, reinterpret_cast<uintptr_t>(version->Sampler.get())}; }
     const std::string& GetPath() const override { return m_Path; }
     void SetData(const void* data, uint32_t size) override;
     void Bind(uint32_t slot) const override;

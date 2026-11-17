@@ -25,7 +25,8 @@ CA::MetalLayer* AttachMetalLayer(GLFWwindow* window, MTL::Device* device) {
         layer.colorspace=color; CGColorSpaceRelease(color);
         native.contentView.wantsLayer=YES;
         native.contentView.layer=layer;
-        return (CA::MetalLayer*)[layer retain]; // +1 transferred to NS::SharedPtr in MetalContext
+        // Transfer exactly one retain to MetalContext's C++ SharedPtr.
+        return reinterpret_cast<CA::MetalLayer*>((__bridge_retained void*)layer);
     }
 }
 void DetachMetalLayer(GLFWwindow* window, CA::MetalLayer* layer) {

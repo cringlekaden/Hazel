@@ -1,3 +1,4 @@
+#include "Hazel/ImGui/ImGuiLayer.h"
 #include "AuthoringPanel.h"
 #include "UI/PropertyUI.h"
 #include "Hazel/Renderer/Renderer.h"
@@ -26,8 +27,8 @@ void AuthoringPanel::PrefabPreview() {
             specification.Attachments = {FramebufferTextureFormat::RGBA16F,
                                          FramebufferTextureFormat::RED_INTEGER,
                                          FramebufferTextureFormat::Depth};
-            m_PrefabPreview = Framebuffer::Create(specification);
-            specification.Attachments={FramebufferTextureFormat::RGBA8};m_PrefabOutput=Framebuffer::Create(specification);
+            m_PrefabPreview = Framebuffer::CreateEditor(specification);
+            specification.Attachments={FramebufferTextureFormat::RGBA8};m_PrefabOutput=Framebuffer::CreateEditor(specification);
         } else if (m_PrefabPreview->GetSpecification().Width != width)
             {m_PrefabPreview->Resize(width, height);m_PrefabOutput->Resize(width,height);}
         if (ImGui::SmallButton("Fit Subtree"))
@@ -70,15 +71,13 @@ void AuthoringPanel::PrefabPreview() {
                 }
                 ~PreviewBinding() { Buffer->Unbind(); }
             } binding(m_PrefabPreview);
-            RenderCommand::SetClearColor(m_PrefabScene->Presentation().Background);
-            RenderCommand::Clear();
+            m_PrefabPreview->ClearEditor(m_PrefabScene->Presentation().Background);
             m_PrefabPreview->ClearAttachment(1, -1);
             auto selected=m_PrefabInspector.GetSelectedEntity();m_PrefabScene->SetUIPreviewTarget(selected?uint64_t(selected.GetUUID()):0);
-            m_PrefabScene->OnUpdateEditor(0, m_PrefabCamera);
+            m_PrefabScene->OnUpdateEditor(0, m_PrefabCamera, nullptr, m_PrefabPreview);
         }
         m_PrefabPreview->EncodeOutput(m_PrefabOutput);
-        ImGui::Image(ImTextureID(uint64_t(m_PrefabOutput->GetColorAttachmentRendererID())),
-                     {float(width), float(height)}, {0, 1}, {1, 0});
+        ImGuiLayer::Image(m_PrefabOutput->GetEditorTexture(), float(width),  float(height));
         ImGui::TextWrapped("Independent static preview. Fit again after changing local transforms; "
                            "long text may extend beyond unit bounds.");
     } catch (const std::exception &error) {

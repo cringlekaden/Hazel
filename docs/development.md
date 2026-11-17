@@ -154,7 +154,22 @@ A completed command or zero presentation timestamp does not prove visible output
 | Source-over RGB/alpha, clipping, passive picking, signed IDs | Native numerical and OpenGL comparisons |
 | World HDR/Neutral/exposure, screen UI, display conversion | Locally qualified M4 shared 3D/world 2D/screen UI path |
 | Cooked static meshes/submeshes, material maps, one direct key, prepared PBR/IBL | M4 locally qualified: numerical/visual parity, Debug/Release native windows ([record](design/metal-m4.md)) |
-| Hazelnut Metal ImGui, general Metal game export | Not implemented / not qualified |
+| Hazelnut Metal editor / ImGui | M5 **PASS — Apple M4 local qualification**, Debug/Release, multiple detached windows on one display ([gates and evidence](design/metal-m5.md)) |
+| Production native color compute pass | Focused render→compute→render/readback and lifetime gates pass; no new rendering effect or generalized scheduler |
+| General Metal game export | Not qualified |
+
+For explicitly selected Hazelnut Metal integration on this branch, produce the shaders above,
+then launch the staged editor (its staged resources include the editor icons):
+
+```sh
+python3 scripts/hazel.py run Hazelnut --config Debug --metal --no-restore --project examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj
+```
+
+OpenGL remains the default. The pinned ImGui core/GLFW/OpenGL backends are unchanged;
+M5 backports the official Metal 4 renderer with Hazel-owned queue/slot/consumer
+retirement. This branch has local M5 qualification on Apple M4; it is not a release.
+See the [M5 record](design/metal-m5.md) for tested configurations, failed attempts
+and the explicit platform/execution limits. General Metal export remains separate.
 
 Targets remain single-sample RGBA32F / R32Sint / Depth32Float, 1..4096 per axis,
 at most 8,388,608 pixels. Submitted attachment generations retire after GPU

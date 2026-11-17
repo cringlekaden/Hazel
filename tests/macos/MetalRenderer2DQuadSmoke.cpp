@@ -14,6 +14,8 @@
 #include "Hazel/Renderer/Drawing/Renderer2D.h"
 #include "Platform/macOS/Metal/MetalRendererAPI.h"
 #include "Hazel/Renderer/Resources/Framebuffer.h"
+#include "Hazel/Renderer/Resources/ComputePipeline.h"
+#include <cstring>
 #include "Platform/macOS/Metal/MetalFramebuffer.h"
 #include "Platform/macOS/Metal/MetalTexture.h"
 #include "Platform/macOS/Metal/MetalShader.h"
@@ -95,6 +97,68 @@ void Save(const Hazel::FramebufferReadback& result, const std::filesystem::path&
 }
 }
 namespace {
+void ComputeDependencies(Hazel::MetalRendererAPI& backend, const std::filesystem::path& output)
+{
+    using namespace Hazel;
+    auto pipeline = ComputePipeline::Create(output / "ColorDependency.metallib", "ColorDependency");
+    Reject("missing compute entry", [&] { ComputePipeline::Create(output / "ColorDependency.metallib", "MissingEntry"); });
+    auto source = Framebuffer::Create(TargetSpecification(31, 19));
+    auto computed = Framebuffer::Create(TargetSpecification(31, 19));
+    Reject("compute without producer", [&] { source->DispatchColorTo(computed, pipeline, std::vector<uint8_t>(16)); });
+    auto gate = backend.GateQueueForTesting();
+    std::array<Ref<const FramebufferReadback>,3> results;
+    std::array<std::weak_ptr<const MetalFramebufferAttachments>,3> generations;
+    for (size_t frame = 0; frame < 3; ++frame) {
+        Begin(source, 31, 19, {.125f,.25f,.5f,1});
+        source->ClearAttachment(1, -2000000003);
+        Renderer2D::BeginScene(glm::mat4(1));
+        Renderer2D::DrawQuad(Transform(0,0,1,1), glm::vec4(.25f,.375f,.625f,1), 2000000003);
+        Renderer2D::EndScene(); source->Unbind();
+        glm::vec4 parameters(frame == 0 ? 4.f : 1.f, float(frame+1)/64,0,0);
+        std::vector<uint8_t> bytes(sizeof(parameters)); std::memcpy(bytes.data(), &parameters, bytes.size());
+        Reject("in-place compute", [&] { source->DispatchColorTo(source,pipeline,bytes); });
+        Reject("compute parameter ABI size", [&] { source->DispatchColorTo(computed,pipeline,std::vector<uint8_t>(8)); });
+        source->DispatchColorTo(computed,pipeline,bytes);
+        std::fill(bytes.begin(),bytes.end(),0xff); // CPU mutation must not change captured parameters
+        if (frame == 1) {
+            auto display = Framebuffer::Create(TargetSpecification(31,19));
+            Begin(display,31,19); computed->CompositeWorldTo(display,0);
+            results[frame] = Submit(display);
+            generations[frame] = std::dynamic_pointer_cast<MetalFramebuffer>(display)->Snapshot();
+        } else {
+            results[frame] = computed->Submit();
+            generations[frame] = std::dynamic_pointer_cast<MetalFramebuffer>(computed)->Snapshot();
+        }
+        Check(bool(results[frame]) && !results[frame]->Completed, "Compute dependency was not retained behind queue gate");
+    }
+    std::weak_ptr<ComputePipeline> pipelineOwner = pipeline;
+    source.reset(); computed.reset(); pipeline.reset();
+    Check(!pipelineOwner.expired(), "Pending compute pipeline released early");
+    for (const auto& generation : generations) Check(!generation.expired(), "Pending compute generation released early");
+    Check(backend.Observe()->Snapshot().InFlight == 3, "Compute dependencies did not use all three production slots");
+    gate();
+    auto poller = Framebuffer::Create(TargetSpecification(1,1));
+    for (size_t frame = 0; frame < 3; ++frame) {
+        Wait(*poller,results[frame]);
+        const auto& result = *results[frame];
+        for (uint32_t y=0; y<19; ++y) for (uint32_t x=0; x<31; ++x) {
+            const auto pixel = size_t(y)*31+x;
+            // Independent pixel-center coverage oracle at an odd extent.
+            const bool covered = x >= 8 && x <= 22 && y >= 5 && y <= 13;
+            Check(result.Entity[pixel] == (covered ? 2000000003 : -2000000003), "Compute changed signed ID or coverage");
+            glm::vec4 expected = covered ? glm::vec4(.25f,.375f,.625f,1) : glm::vec4(.125f,.25f,.5f,1);
+            if (frame == 0) expected *= glm::vec4(4,4,4,1); // HDR must survive the native storage write/readback.
+            expected += glm::vec4(glm::vec3(float(frame+1)/64),0);
+            if (frame == 1) expected -= glm::vec4(.04f,.04f,.04f,0); // independent low-range Neutral branch
+            Pixel(result,x,y,expected,result.Entity[pixel],covered ? .5f : 1.f);
+        }
+        Save(result, output / ("compute-"+std::to_string(frame)+".bin"));
+    }
+    Check(pipelineOwner.expired(), "Completed compute pipeline did not retire");
+    for (const auto& generation : generations) Check(generation.expired(), "Completed compute generation did not retire");
+    Check(backend.Observe()->Snapshot().Errors == 0, "Native compute validation failed");
+    std::cout << "PASS production render-compute-readback and render-compute-render-readback: three gated slots, immutable constants, signed IDs/depth, odd extent, pending destruction and retirement\n";
+}
 void MeshLifetime(Hazel::MetalRendererAPI& backend)
 {
     using namespace Hazel;
@@ -152,8 +216,9 @@ int main(int argc, char** argv)
         const auto root = std::filesystem::absolute(std::filesystem::u8path(argv[1]));
         Hazel::Resources::Configure({root, root, output / "user-data"});
         Hazel::RenderCommand::Configure(Hazel::RendererAPI::API::Metal);
+        const bool compute = argc == 4 && std::string(argv[3]) == "--compute";
         const bool renderer3D = argc == 4 && std::string(argv[3]) == "--renderer3d-parity";
-        Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !renderer3D ? uint32_t(std::stoul(argv[3])) : 4;
+        Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !renderer3D && !compute ? uint32_t(std::stoul(argv[3])) : 4;
         Check(settings.TextureSlots == 2 || settings.TextureSlots == 4,"Fixture supports two or four texture slots");
         const auto runtimeFrames=argc==5?std::stoul(argv[4]):80UL;
         Check(runtimeFrames>=80 && runtimeFrames<=6000,"Runtime frame count must be 80..6000");
@@ -164,6 +229,13 @@ int main(int argc, char** argv)
         auto framebuffer = Hazel::Framebuffer::Create(TargetSpecification());
         Check(bool(std::dynamic_pointer_cast<Hazel::MetalFramebuffer>(framebuffer)), "Factory did not return a production Metal framebuffer");
         Hazel::Renderer2D::Init();
+        if (compute) {
+            ComputeDependencies(backend, output);
+            framebuffer.reset(); Hazel::Renderer2D::Shutdown(); Hazel::RenderCommand::Shutdown();
+            const auto state = observer->Snapshot();
+            Check(state.Submitted == 3 && state.Completed == 3 && state.ResourceBytes == 0 && state.Errors == 0 && state.AttachmentGenerations == 0, "Compute shutdown did not retire production resources");
+            return 0;
+        }
         if (renderer3D) {
             Renderer3DParity(output, [&](const auto& target) {
                 auto result = Submit(target); Check(bool(result), "3D submit busy"); Wait(*target, result); return result;

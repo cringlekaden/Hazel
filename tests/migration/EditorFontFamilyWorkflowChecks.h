@@ -76,16 +76,16 @@ void FontFamilyWorkflowChecks() {
     Prefab::Save(assets->Root(),"Prefabs/overflow-native.hprefab",scene,scene->FindEntityByName("UI Canvas"),true);
     owner.SelectAsset(assets->Root()/"Prefabs/overflow-native.hprefab");Check(bool(owner.m_PrefabScene),"Overflow prefab editor failed");owner.ClosePrefab();
     auto overflowAuthored=owner.SceneText();
-    FramebufferSpecification specification;specification.Width=640;specification.Height=480;specification.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};auto overflowTarget=Framebuffer::Create(specification);auto overflowViewport=RenderCommand::GetRasterState().Viewport;
+    FramebufferSpecification specification;specification.Width=640;specification.Height=480;specification.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};auto overflowTarget=EditorTestTarget(specification);auto overflowViewport=RenderCommand::GetRasterState().Viewport;
     for(int iteration=0;iteration<3;++iteration) {
-        Check(editor.OnScenePlay(true),"Overflow Play failed");auto running=editor.m_ActiveScene;running->OnViewportResize(640,480);running->SetUIFramebufferSize({640,480});overflowTarget->Bind();RenderCommand::Clear();running->OnUpdateRuntime(0);running->OnUpdateRuntime(0);
+        Check(editor.OnScenePlay(true),"Overflow Play failed");auto running=editor.m_ActiveScene;running->OnViewportResize(640,480);running->SetUIFramebufferSize({640,480});overflowTarget->Bind();overflowTarget->ClearEditor({0,0,0,1});running->OnUpdateRuntime(0,nullptr,overflowTarget);running->OnUpdateRuntime(0,nullptr,overflowTarget);
         Check(running->GetUIDiagnostics().PreparedReuses>=3,"Overflow runtime did not reuse prepared text");
         auto wrapped=running->GetUITextLayout(overflowIDs[1]);
         Check(wrapped && wrapped->Omitted && wrapped->Lines.size()==2 && wrapped->Lines.back().Ellipsized && running->GetUISnapshot().Find(overflowIDs[1])->Bounds.Size.x==300,"Native paragraph did not demonstrate constrained wrapped ellipsis");
         auto narrow=running->GetUITextLayout(overflowIDs.front());Check(narrow && narrow->Omitted,"Native constrained label did not truncate");
-        running->OnViewportResize(960,480);running->SetUIFramebufferSize({640,480});running->OnUpdateRuntime(0);
+        running->OnViewportResize(960,480);running->SetUIFramebufferSize({640,480});running->OnUpdateRuntime(0,nullptr,overflowTarget);
         auto wide=running->GetUITextLayout(overflowIDs.front());Check(wide && wide->Lines[0].End>narrow->Lines[0].End,"Native overflow preview/Play resize did not restore more source");
-        overflowTarget->Unbind();editor.OnSceneStop();Check(owner.SceneText()==overflowAuthored,"Overflow Play/Stop changed full authored source/history");
+        overflowTarget->Unbind();CompleteEditorTarget(overflowTarget);editor.OnSceneStop();Check(owner.SceneText()==overflowAuthored,"Overflow Play/Stop changed full authored source/history");
     }
     RenderCommand::SetViewport(overflowViewport.x,overflowViewport.y,overflowViewport.z,overflowViewport.w);
     m_OverflowFixture=scene;m_OverflowTarget=overflowIDs.front();m_OverflowFixturePanel.SetContext(scene);m_OverflowFixturePanel.SetSelectedEntity(scene->GetEntityByUUID(m_OverflowTarget));m_OverflowFixturePanel.RestoreSections({{"UI Text Style",true}});
@@ -131,9 +131,12 @@ void DrawFontFamilyFixture() {
     auto* previousFocus=ImGui::GetCurrentContext()->NavWindow;panel.Render(false);ImGui::FocusWindow(previousFocus);
     Check(bool(panel.m_PreviewTarget) && panel.CopyDraftText()==before && !panel.Dirty() && Font::Resources().Generations==generations,
           "Real family ImGui/preview mutated draft or generated fonts while inspecting");
+    if(MetalEditorTest())m_NativeFontPreview=panel.m_PreviewTarget;
+    else {
     const auto raster=RenderCommand::GetRasterState();panel.m_PreviewTarget->Bind();
     std::vector<int> ids(640*96);glReadBuffer(GL_COLOR_ATTACHMENT1);glReadPixels(0,0,640,96,GL_RED_INTEGER,GL_INT,ids.data());
     panel.m_PreviewTarget->Unbind();RenderCommand::SetRasterState(raster);
     Check(std::find(ids.begin(),ids.end(),0)!=ids.end(),"Native family preview framebuffer contains no actual glyphs");
+    }
     std::cout<<"PASS: actual native font-family asset properties and face framebuffer preview, no authored/atlas-generation side effects\n";
 }

@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Hazel/Core/Base.h"
+#include "EditorTexture.h"
 
 #include <string>
 #include <cstdint>
@@ -55,6 +56,8 @@ namespace Hazel {
 	{
 	public:
 		virtual ~Texture() = default;
+
+        virtual EditorTexture GetEditorTexture() const { return {uintptr_t(GetRendererID()), {}}; }
 
 		virtual const TextureSpecification& GetSpecification() const = 0;
 

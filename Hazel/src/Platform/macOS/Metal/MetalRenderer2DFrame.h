@@ -14,6 +14,7 @@
 
 namespace Hazel {
 class MetalShader;
+class MetalComputePipeline;
 struct MetalFramebufferAttachments;
 struct MetalRenderer2DDraw
 {
@@ -38,12 +39,21 @@ struct MetalRenderer2DFrame
     std::shared_ptr<MetalShader> OutputShader;
     NS::SharedPtr<MTL::SamplerState> OutputSampler;
     NS::SharedPtr<MTL4::ArgumentTable> OutputArguments;
-    bool Readback = true;
+    bool Readback = true, EditorPicking = false;
     uint64_t PacketBytes = 0;
     std::shared_ptr<MetalRenderer2DFrame> World;
     std::shared_ptr<MetalShader> PresentationShader;
     NS::SharedPtr<MTL4::ArgumentTable> PresentationArguments;
     float Exposure = 0;
+    std::shared_ptr<MetalRenderer2DFrame> ComputeSource;
+    std::shared_ptr<MetalComputePipeline> Compute;
+    std::vector<uint8_t> ComputeParameters;
+    NS::SharedPtr<MTL4::ArgumentTable> ComputeArguments;
+    std::shared_ptr<MetalRenderer2DFrame> DisplaySource;
+    std::shared_ptr<MetalShader> OutlineShader;
+    int OutlineEntity = -1, OutlineRadius = 0;
+    glm::vec4 OutlineColor{0};
+    NS::SharedPtr<MTL4::ArgumentTable> OutlineArguments;
     std::vector<MetalRenderer2DDraw> Draws;
     std::vector<std::shared_ptr<void>> ResourceOwners;
     std::shared_ptr<FramebufferReadback> Result;

@@ -1,3 +1,4 @@
+#include "Hazel/ImGui/ImGuiLayer.h"
 #include "AuthoringPanel.h"
 #include "EditorLayer.h"
 #include "Hazel/Scripting/ScriptEngine.h"
@@ -61,7 +62,7 @@ void AuthoringPanel::Toolbar()
     {
         const auto available = RuntimeAvailability(action);
         ImGui::BeginDisabled(!available);
-        const bool clicked = ImGui::ImageButton(id, (ImTextureID)(uintptr_t)icon->GetRendererID(),
+        const bool clicked = ImGui::ImageButton(id, ImGuiLayer::Texture(icon->GetEditorTexture()),
                                                 {size, size});
         ImGui::EndDisabled();
         PropertyUI::Help(available.Reason ? available.Reason : help);

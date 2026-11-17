@@ -1,3 +1,4 @@
+#include "Hazel/ImGui/ImGuiLayer.h"
 #include "Hazel/Renderer/Color.h"
 #include "EditorLayer.h"
 #include "Authoring/AuthoringPanel.h"
@@ -52,8 +53,8 @@ namespace Hazel {
 		fbSpec.Attachments = { FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
 		fbSpec.Width = 1280;
 		fbSpec.Height = 720;
-		m_Framebuffer = Framebuffer::Create(fbSpec);
-        fbSpec.Attachments={FramebufferTextureFormat::RGBA8};m_ViewportOutput=Framebuffer::Create(fbSpec);
+		m_Framebuffer = Framebuffer::CreateEditor(fbSpec);
+        fbSpec.Attachments={FramebufferTextureFormat::RGBA8};m_ViewportOutput=Framebuffer::CreateEditor(fbSpec);
 
 		m_EditorScene = CreateRef<Scene>();
 		m_ActiveScene = m_EditorScene;
@@ -119,8 +120,7 @@ namespace Hazel {
         auto extent=m_Framebuffer->GetSpecification();
         m_ActiveScene->SetUIFramebufferSize({extent.Width,extent.Height});
         if(m_SceneState==SceneState::Play)m_RuntimeSession.ResizeFramebuffer(extent.Width,extent.Height);
-		RenderCommand::SetClearColor(m_ActiveScene->Presentation().Background);
-		RenderCommand::Clear();
+		m_Framebuffer->ClearEditor(m_ActiveScene->Presentation().Background);
 
 		// Clear our entity ID attachment to -1
 		m_Framebuffer->ClearAttachment(1, -1);
@@ -142,7 +142,7 @@ namespace Hazel {
 			case SceneState::Play:
 			{
                 m_RuntimeSession.Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-                const bool uiInput=m_ViewportFocused && Application::Get().GetWindow().IsFocused() && !RuntimeUIWidgetBlocksInput();
+                const bool uiInput=m_ViewportFocused && Input::IsFocused() && !RuntimeUIWidgetBlocksInput();
                 m_RuntimeSession.SetInput(ViewportMouse(),uiInput);
                 m_RuntimeSession.SetGameplayInputEnabled(uiInput&&m_ViewportHovered);
                 m_RuntimeSession.UpdateCameraInspection(ts,uiInput,m_ViewportHovered);
@@ -166,7 +166,7 @@ namespace Hazel {
         m_HoveredEntity = {};
         if (mx >= 0 && my >= 0 && mx < viewportSize.x && my < viewportSize.y)
         {
-            const int pixelData = m_Framebuffer->ReadPixel(1, static_cast<int>(mx), static_cast<int>(my));
+            const int pixelData = m_Framebuffer->ReadEditorEntity(static_cast<int>(mx), static_cast<int>(my));
             if (pixelData != -1) m_HoveredEntity = Entity(static_cast<entt::entity>(pixelData), m_ActiveScene.get());
         }
 
@@ -323,8 +323,7 @@ namespace Hazel {
         auto imageOrigin=ImGui::GetCursorScreenPos();imageOrigin.x+=(available.x-m_ViewportSize.x)*.5f;imageOrigin.y+=(available.y-m_ViewportSize.y)*.5f;ImGui::SetCursorScreenPos(imageOrigin);
         m_ViewportBounds[0]={imageOrigin.x,imageOrigin.y};m_ViewportBounds[1]=m_ViewportBounds[0]+m_ViewportSize;
 
-		uint64_t textureID = m_ViewportOutput->GetColorAttachmentRendererID();
-		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImGuiLayer::Image(m_ViewportOutput->GetEditorTexture(), m_ViewportSize.x, m_ViewportSize.y);
         m_ViewportHovered=ImGui::IsItemHovered();
         if (m_ActiveScene && !m_ActiveScene->RenderError().empty())
         {
@@ -359,7 +358,7 @@ namespace Hazel {
 
         m_GizmoEdit.Poll(*m_EditorScene,&m_Authoring->SceneHistory(),
             m_SceneHierarchyPanel.GetSelectedEntity()?uint64_t(m_SceneHierarchyPanel.GetSelectedEntity().GetUUID()):0,
-            m_SceneState==SceneState::Edit,Application::Get().GetWindow().IsFocused(),ImGui::IsKeyPressed(ImGuiKey_Escape,false),ImGuizmo::IsUsing()?1:0);
+            m_SceneState==SceneState::Edit,Input::IsFocused(),ImGui::IsKeyPressed(ImGuiKey_Escape,false),ImGuizmo::IsUsing()?1:0);
 		// Gizmos
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
 		if (selectedEntity && !m_Navigation.Active() && !ImGui::GetIO().KeyAlt && !ImGui::GetIO().KeyShift && !Input::IsKeyPressed(Key::Space) && !selectedEntity.HasComponent<UIRectComponent>() && !selectedEntity.HasComponent<UICanvasComponent>() && m_GizmoType != -1 && m_Authoring->Availability(EditorAction::EditScene))
@@ -466,9 +465,9 @@ namespace Hazel {
            (e.GetEventType()==EventType::WindowResize &&
             (!static_cast<WindowResizeEvent&>(e).GetWidth() || !static_cast<WindowResizeEvent&>(e).GetHeight())))
             {if(m_Authoring)m_Authoring->CancelEdits();else m_UIEdit.Finish(true);}
-        if(e.GetEventType()==EventType::WindowLostFocus){m_Navigation.Cancel();m_RuntimeSession.CancelCameraInspectionGesture();Application::Get().GetWindow().SetPointerCaptured(false);}
+        if(e.GetEventType()==EventType::WindowLostFocus){m_Navigation.Cancel();m_RuntimeSession.CancelCameraInspectionGesture();Input::SetPointerCaptured(false);}
         if(e.GetEventType()==EventType::MouseButtonReleased&&m_Navigation.UsesButton(static_cast<MouseButtonReleasedEvent&>(e).GetMouseButton())){
-            m_Navigation.Cancel();Application::Get().GetWindow().SetPointerCaptured(false);
+            m_Navigation.Cancel();Input::SetPointerCaptured(false);
         }
         if(m_Loading && m_Loading->Busy())return;
         // Events arrive before the next ImGui frame. Retire viewport ownership
@@ -482,8 +481,8 @@ namespace Hazel {
         }
         if(m_SceneState==SceneState::Play)m_RuntimeSession.SubmitUIEvent(e,ViewportMouse(),m_ViewportFocused && !RuntimeUIWidgetBlocksInput());
         if(e.GetEventType()==EventType::WindowLostFocus || e.GetEventType()==EventType::WindowResize)
-            {m_Navigation.Cancel();m_RuntimeSession.CancelCameraInspectionGesture();Application::Get().GetWindow().SetPointerCaptured(false);}
-        if(e.GetEventType()==EventType::MouseScrolled && RouteNavigationScroll(static_cast<MouseScrolledEvent&>(e).GetYOffset(),Application::Get().GetWindow().IsFocused()))e.Handled=true;
+            {m_Navigation.Cancel();m_RuntimeSession.CancelCameraInspectionGesture();Input::SetPointerCaptured(false);}
+        if(e.GetEventType()==EventType::MouseScrolled && RouteNavigationScroll(static_cast<MouseScrolledEvent&>(e).GetYOffset(),Input::IsFocused()))e.Handled=true;
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(HZ_BIND_EVENT_FN(EditorLayer::OnKeyPressed));
@@ -576,6 +575,7 @@ namespace Hazel {
 
 	void EditorLayer::ClearSceneObservers()
 	{
+        if (m_Framebuffer) m_Framebuffer->ResetEditorReadback();
         if(m_Authoring)m_Authoring->CancelEdits();
         m_UIEdit.Finish(true);
 		m_HoveredEntity = {};
@@ -828,7 +828,7 @@ namespace Hazel {
 
 	bool EditorLayer::OnScenePlay(bool useSavedAssets)
 	{
-        m_Navigation.Cancel();Application::Get().GetWindow().SetPointerCaptured(false);
+        m_Navigation.Cancel();Input::SetPointerCaptured(false);
         if(m_Authoring && !m_Authoring->Require(EditorAction::Play))return false;
         if(m_Authoring && !useSavedAssets){m_Authoring->GuardPlay(false);return m_SceneState==SceneState::Play;}
 		if (m_SceneState == SceneState::Play) return true;
@@ -849,7 +849,7 @@ namespace Hazel {
 
 	bool EditorLayer::OnSceneSimulate(bool useSavedAssets)
 	{
-        m_Navigation.Cancel();Application::Get().GetWindow().SetPointerCaptured(false);
+        m_Navigation.Cancel();Input::SetPointerCaptured(false);
         if(m_Authoring)m_Authoring->CancelEdits();
         if(m_Authoring && !m_Authoring->Require(EditorAction::Simulate))return false;
         if(m_Authoring && !useSavedAssets){m_Authoring->GuardPlay(true);return m_SceneState==SceneState::Simulate;}
@@ -874,7 +874,7 @@ namespace Hazel {
 
 	void EditorLayer::OnSceneStop()
 	{
-        m_Navigation.Cancel();Application::Get().GetWindow().SetPointerCaptured(false);
+        m_Navigation.Cancel();Input::SetPointerCaptured(false);
         if(m_SceneState==SceneState::Edit)return;
         if(m_Authoring && !m_Authoring->Require(EditorAction::RuntimeControl))return;
 		HZ_CORE_ASSERT(m_SceneState == SceneState::Play || m_SceneState == SceneState::Simulate);

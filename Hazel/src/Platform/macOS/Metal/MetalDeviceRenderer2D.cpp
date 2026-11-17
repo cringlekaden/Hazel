@@ -2,6 +2,7 @@
 #include "MetalRenderer2DFrame.h"
 #include "MetalFramebuffer.h"
 #include "MetalShader.h"
+#include "MetalComputePipeline.h"
 #include "Hazel/Renderer/Drawing/Renderer2DQuad.h"
 #include <algorithm>
 #include <cstring>
@@ -22,18 +23,22 @@ MTL::CompareFunction DepthFunction(const RasterState& raster)
 }
 void MetalRenderer2DFrame::CollectAllocations(std::set<const MTL::Allocation*>& allocations) const
 {
-    for (const auto& target : Attachments->Targets) allocations.insert(target.get());
+    for (const auto& target : Attachments->Targets) if (target) allocations.insert(target.get());
     for (const auto& buffer : Buffers) if (buffer) allocations.insert(buffer.get());
     for (const auto& draw : Draws) {
         if (draw.MeshVertices) allocations.insert(draw.MeshVertices.get());
         if (draw.MeshIndices) allocations.insert(draw.MeshIndices.get());
         for (const auto& texture : draw.Textures) if (texture) allocations.insert(texture->Texture.get());
     }
+    if (ComputeSource) ComputeSource->CollectAllocations(allocations);
     if (World) World->CollectAllocations(allocations);
+    if (DisplaySource) DisplaySource->CollectAllocations(allocations);
 }
 void MetalRenderer2DFrame::MarkMipmapsSubmitted() const
 {
+    if (ComputeSource) ComputeSource->MarkMipmapsSubmitted();
     if (World) World->MarkMipmapsSubmitted();
+    if (DisplaySource) DisplaySource->MarkMipmapsSubmitted();
     for (const auto& draw : Draws) for (const auto& texture : draw.Textures) if (texture) texture->MipsSubmitted = true;
 }
 void MetalRenderer2DFrame::Complete()
@@ -44,6 +49,10 @@ void MetalRenderer2DFrame::Complete()
     const auto row = ColorRow(Width), idBase = row * Height, depthBase = idBase + ScalarRow(Width) * Height;
     auto& result = *Result;
     if (!FeedbackError->empty()) { result.Error = *FeedbackError; result.Completed = true; return; }
+    if (EditorPicking) {
+        for (size_t y = 0; y < Height; ++y) std::memcpy(CompletedEntity.data() + y * Width, bytes + y * ScalarRow(Width), size_t(Width) * 4);
+        result.Entity = std::move(CompletedEntity); result.Completed = true; return;
+    }
     for (size_t y = 0; y < Height; ++y) for (size_t x = 0; x < Width; ++x)
     {
         const auto pixel = y * Width + x;
@@ -120,7 +129,9 @@ NS::SharedPtr<MTL::Buffer> MetalDevice::AcquireRenderer2DBuffer(size_t bytes, co
 }
 void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& quad)
 {
+    if (quad->ComputeSource) PrepareRenderer2DFrame(quad->ComputeSource);
     if (quad->World) PrepareRenderer2DFrame(quad->World);
+    if (quad->DisplaySource) PrepareRenderer2DFrame(quad->DisplaySource);
     NS::Error* error = nullptr;
     Check(quad->Attachments && quad->Attachments->Width == quad->Width && quad->Attachments->Height == quad->Height,
         "Framebuffer generation does not match submitted extent");
@@ -130,11 +141,12 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     Check(bool(quad->Residency), "Cannot allocate quad residency set");
     for (const auto& target : quad->Attachments->Targets)
     {
+        if (!target) continue;
         Check(target && target->device() == m_Device.get(), "Framebuffer attachment belongs to a different device");
         quad->Residency->addAllocation(target.get());
     }
     const auto colorRow = ColorRow(quad->Width), idBase = colorRow * quad->Height, depthBase = idBase + ScalarRow(quad->Width) * quad->Height;
-    quad->Buffers.push_back(quad->Readback ? AcquireRenderer2DBuffer(depthBase + ScalarRow(quad->Width) * quad->Height) : NS::SharedPtr<MTL::Buffer>{});
+    quad->Buffers.push_back(quad->Readback ? AcquireRenderer2DBuffer(quad->EditorPicking ? ScalarRow(quad->Width) * quad->Height : depthBase + ScalarRow(quad->Width) * quad->Height) : NS::SharedPtr<MTL::Buffer>{});
     uint32_t indexCount = 6;
     for (const auto& draw : quad->Draws) if (!draw.IndexedMesh) indexCount = std::max(indexCount, draw.Count);
     std::vector<uint32_t> indices(indexCount);
@@ -230,7 +242,7 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
         table->setInitializeBindings(true); table->setMaxTextureBindCount(1); table->setMaxSamplerStateBindCount(1);
         quad->OutputArguments = NS::TransferPtr(m_Device->newArgumentTable(table.get(), &error));
         Check(bool(quad->OutputSampler) && bool(quad->OutputArguments), "Cannot allocate output pass arguments");
-        quad->OutputArguments->setTexture(quad->Attachments->Targets[0]->gpuResourceID(), 0);
+        quad->OutputArguments->setTexture((quad->DisplaySource ? quad->DisplaySource : quad)->Attachments->Targets[0]->gpuResourceID(), 0);
         quad->OutputArguments->setSamplerState(quad->OutputSampler->gpuResourceID(), 0);
     }
     if (quad->World) {
@@ -250,11 +262,67 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
         quad->PresentationArguments->setSamplerState(quad->OutputSampler->gpuResourceID(), 0);
         quad->Residency->addAllocation(uniform.get()); quad->Buffers.push_back(std::move(uniform));
     }
+    if (quad->OutlineShader) {
+        auto table = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
+        table->setInitializeBindings(true); table->setMaxBufferBindCount(8); table->setMaxTextureBindCount(1);
+        quad->OutlineArguments = NS::TransferPtr(m_Device->newArgumentTable(table.get(), &error));
+        struct alignas(16) Parameters { int32_t Entity, Radius, FlipY, Padding; glm::vec4 Color; };
+        const Parameters values{quad->OutlineEntity, quad->OutlineRadius, 1, 0, quad->OutlineColor};
+        auto buffer = AcquireRenderer2DBuffer(sizeof(values), &values);
+        Check(bool(quad->OutlineArguments), "Cannot allocate outline argument table");
+        quad->OutlineArguments->setAddress(buffer->gpuAddress(), 7);
+        quad->OutlineArguments->setTexture(quad->DisplaySource->Attachments->Targets[1]->gpuResourceID(), 0);
+        quad->Residency->addAllocation(buffer.get()); quad->Buffers.push_back(std::move(buffer));
+    }
+    if (quad->Compute) {
+        auto table = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
+        table->setInitializeBindings(true); table->setMaxBufferBindCount(1); table->setMaxTextureBindCount(2);
+        quad->ComputeArguments = NS::TransferPtr(m_Device->newArgumentTable(table.get(), &error));
+        auto buffer = AcquireRenderer2DBuffer(quad->ComputeParameters.size(), quad->ComputeParameters.data());
+        Check(bool(quad->ComputeArguments), "Cannot allocate color compute arguments");
+        quad->ComputeArguments->setAddress(buffer->gpuAddress(), 0);
+        quad->ComputeArguments->setTexture(quad->ComputeSource->Attachments->Targets[0]->gpuResourceID(), 0);
+        quad->ComputeArguments->setTexture(quad->Attachments->Targets[0]->gpuResourceID(), 1);
+        quad->Residency->addAllocation(buffer.get()); quad->Buffers.push_back(std::move(buffer));
+    }
     quad->Residency->commit();
 
 }
 void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& quad)
 {
+    if (quad->ComputeSource) {
+        m_Commands->useResidencySet(quad->ComputeSource->Residency.get());
+        EncodeRenderer2DFrame(quad->ComputeSource);
+        auto* compute = m_Commands->computeCommandEncoder();
+        Check(compute != nullptr, "Cannot encode native color compute pass");
+        compute->barrierAfterQueueStages(MTL::StageAll, MTL::StageDispatch | MTL::StageBlit, MTL4::VisibilityOptionDevice);
+        compute->setComputePipelineState(quad->Compute->Native());
+        compute->setArgumentTable(quad->ComputeArguments.get());
+        compute->dispatchThreads({quad->Width, quad->Height, 1}, {8,8,1});
+        for (size_t i = 1; i < 3; ++i) compute->copyFromTexture(quad->ComputeSource->Attachments->Targets[i].get(), quad->Attachments->Targets[i].get());
+        compute->barrierAfterStages(MTL::StageDispatch | MTL::StageBlit, MTL::StageAll, MTL4::VisibilityOptionDevice);
+        compute->endEncoding();
+    }
+    if (quad->DisplaySource) {
+        m_Commands->useResidencySet(quad->DisplaySource->Residency.get());
+        EncodeRenderer2DFrame(quad->DisplaySource);
+        auto pass = NS::TransferPtr(MTL4::RenderPassDescriptor::alloc()->init());
+        auto* color = pass->colorAttachments()->object(0);
+        color->setTexture(quad->Attachments->Targets[0].get()); color->setLoadAction(MTL::LoadActionDontCare); color->setStoreAction(MTL::StoreActionStore);
+        auto* render = m_Commands->renderCommandEncoder(pass.get());
+        Check(render != nullptr, "Cannot encode editor display output");
+        render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
+        render->setRenderPipelineState(quad->OutputShader->Pipeline());
+        render->setArgumentTable(quad->OutputArguments.get(), MTL::RenderStageFragment);
+        render->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(3));
+        if (quad->OutlineShader) {
+            render->setRenderPipelineState(quad->OutlineShader->Pipeline());
+            render->setArgumentTable(quad->OutlineArguments.get(), MTL::RenderStageFragment);
+            render->drawPrimitives(MTL::PrimitiveTypeTriangle, NS::UInteger(0), NS::UInteger(3));
+        }
+        render->endEncoding();
+        return;
+    }
     if (quad->World) {
         m_Commands->useResidencySet(quad->World->Residency.get());
         EncodeRenderer2DFrame(quad->World);
@@ -265,6 +333,7 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
         copy->barrierAfterStages(MTL::StageBlit, MTL::StageAll, MTL4::VisibilityOptionDevice);
         copy->endEncoding();
     }
+    if (!quad->ComputeSource) {
     std::set<MTL::Texture*> mipmaps;
     for (const auto& draw : quad->Draws) for (const auto& texture : draw.Textures)
         if (texture && !texture->MipsSubmitted && texture->Texture->mipmapLevelCount() > 1) mipmaps.insert(texture->Texture.get());
@@ -340,12 +409,15 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
             indices->gpuAddress() + offset, indices->length() - offset);
     }
     render->endEncoding();
+    }
     if (!quad->Readback) return;
     const auto colorRow = ColorRow(quad->Width), idBase = colorRow * quad->Height, depthBase = idBase + ScalarRow(quad->Width) * quad->Height;
     auto* copy = m_Commands->computeCommandEncoder();
     if (!copy) { m_Commands->endCommandBuffer(); throw std::runtime_error("Cannot create quad readback encoder"); }
     copy->barrierAfterQueueStages(MTL::StageAll, MTL::StageBlit, MTL4::VisibilityOptionDevice);
-    for (size_t i = 0; i < 3; ++i)
+    if (quad->EditorPicking) {
+        copy->copyFromTexture(quad->Attachments->Targets[1].get(), 0, 0, {0,0,0}, {quad->Width,quad->Height,1}, quad->Buffers[0].get(), 0, ScalarRow(quad->Width), 0);
+    } else for (size_t i = 0; i < 3; ++i)
         copy->copyFromTexture(quad->Attachments->Targets[i].get(), 0, 0, {0, 0, 0}, {quad->Width, quad->Height, 1}, quad->Buffers[0].get(),
             i == 0 ? 0 : i == 1 ? idBase : depthBase, i == 0 ? colorRow : ScalarRow(quad->Width), 0);
     copy->endEncoding();

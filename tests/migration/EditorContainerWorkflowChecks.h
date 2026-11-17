@@ -52,14 +52,14 @@ void ContainerWorkflowChecks()
     owner.SelectAsset(Project::GetAssetDirectory()/"Prefabs/container-workflow.hprefab");Check(owner.m_PrefabScene&&owner.m_PrefabScene->FindEntityByName("UI Grid").GetComponent<UILayoutComponent>().Columns.size()==3,"Container prefab editing lost tracks");owner.ClosePrefab();
     panel.SetSelectedEntity(scene->FindEntityByName("UI Grid"));auto authored=owner.SceneText();
     FramebufferSpecification paint;paint.Width=640;paint.Height=480;paint.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
-    auto target=Framebuffer::Create(paint);auto viewport=RenderCommand::GetRasterState().Viewport;
+    auto target=EditorTestTarget(paint);auto viewport=RenderCommand::GetRasterState().Viewport;
     for(int i=0;i<3;++i){
         Check(editor.OnScenePlay(true),"Container fixture Play failed");
         auto running=editor.m_ActiveScene;running->OnViewportResize(640,480);running->SetUIFramebufferSize({640,480});
-        target->Bind();RenderCommand::Clear();target->ClearAttachment(1,-1);running->OnUpdateRuntime(0);
+        target->Bind();target->ClearEditor({0,0,0,1});target->ClearAttachment(1,-1);running->OnUpdateRuntime(0,nullptr,target);
         Check(running->GetUIDiagnostics().DrawCalls>0&&running->GetUIDiagnostics().PreparedRebuilds>0,"Editor Play omitted the real UI pass/preparation");
-        running->OnUpdateRuntime(0);Check(running->GetUIDiagnostics().PreparedReuses>0,"Editor Play rebuilt unchanged glyph data");
-        target->Unbind();editor.OnSceneStop();Check(owner.SceneText()==authored,"Container fixture Stop imported runtime paint/history state");
+        running->OnUpdateRuntime(0,nullptr,target);Check(running->GetUIDiagnostics().PreparedReuses>0,"Editor Play rebuilt unchanged glyph data");
+        target->Unbind();CompleteEditorTarget(target);editor.OnSceneStop();Check(owner.SceneText()==authored,"Container fixture Stop imported runtime paint/history state");
     }
     RenderCommand::SetViewport(viewport.x,viewport.y,viewport.z,viewport.w);
     m_ContainerFixture=scene;m_ContainerFixturePanel.SetContext(scene);m_ContainerFixturePanel.SetSelectedEntity(scene->FindEntityByName("UI Grid"));m_ContainerIcon=icons.front();
@@ -79,9 +79,10 @@ void DrawContainerFixture()
     ImGui::GetStateStorage()->SetInt(ImGui::GetID("Subtree preview"),1);a.PrefabPreview();
     Check(bool(a.m_PrefabPreview)&&m_ContainerFixture->GetUIError().empty(),"Actual native container preview failed");
     auto node=m_ContainerFixture->GetUISnapshot().Find(m_ContainerIcon);Check(node&&node->LayoutResolved,"Preview did not arrange the authored icon grid");
-    auto point=node->PixelBounds.Position+node->PixelBounds.Size*.5f;auto spec=a.m_PrefabPreview->GetSpecification();a.m_PrefabPreview->Bind();
+    auto point=node->PixelBounds.Position+node->PixelBounds.Size*.5f;auto spec=a.m_PrefabPreview->GetSpecification();
     auto entity=m_ContainerFixture->GetEntityByUUID(m_ContainerIcon);
-    Check(a.m_PrefabPreview->ReadPixel(1,int(point.x),int(spec.Height-point.y))==int(uint32_t(entity)),"Actual native preview picking disagreed with grid geometry");a.m_PrefabPreview->Unbind();
+    if(MetalEditorTest())m_EditorPicks.push_back({a.m_PrefabPreview,int(point.x),int(spec.Height-1-point.y),int(uint32_t(entity))});
+    else {a.m_PrefabPreview->Bind();Check(a.m_PrefabPreview->ReadPixel(1,int(point.x),int(spec.Height-point.y))==int(uint32_t(entity)),"Actual native preview picking disagreed with grid geometry");a.m_PrefabPreview->Unbind();}
     m_ContainerPreview=a.m_PrefabPreview;a.m_PrefabScene=scene;a.m_PrefabPreview=buffer;a.m_PrefabCamera=camera;a.m_PrefabFit=fit;
     m_ContainerFixturePanel.DrawAssetProperties(m_ContainerFixturePanel.GetSelectedEntity());ImGui::End();
     // Reproduce F5 workspace restoration with a selected, expanded button. The

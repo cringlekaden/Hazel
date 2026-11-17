@@ -71,6 +71,8 @@ public:
     }
     std::shared_ptr<MetalProofObserver> Observe() const;
     // Explicit native diagnostics; no production application/CLI enables these.
+    void EnableEditorReadbackForTesting();
+    std::shared_ptr<MetalEditorCapture> CaptureEditorFrameForTesting();
     void EnableTransferProof();
     void SkipNextDrawableForTesting();
     void OverrideNextExtentForTesting(uint32_t width, uint32_t height);

@@ -320,7 +320,7 @@ void ImportWorkflowUpdate()
         owner.m_Preferences = m_ImportPreferences;
         owner.RefreshSDK();
         m_Editor.m_ActionError.clear();
-        Check(glGetError() == GL_NO_ERROR, "Native import/material UI produced OpenGL errors");
+        Check(EditorGraphicsValid(), "Native import/material UI produced OpenGL errors");
         std::cout
             << "PASS: native editor GLB form/job without Python/SDK, ImGui material "
                "create/property/texture assignment/save/duplicate, independent material history, "

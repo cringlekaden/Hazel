@@ -96,6 +96,7 @@ namespace Hazel {
 		Scope<Window> m_Window;
 		ImGuiLayer* m_ImGuiLayer = nullptr;
 		bool m_Running = true;
+        bool m_ShuttingDown = false;
         std::function<void()> m_CloseRequest, m_BackgroundTick;
 		bool m_Minimized = false;
         bool m_RenderingUI=false;

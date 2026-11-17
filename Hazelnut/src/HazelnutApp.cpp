@@ -33,6 +33,8 @@ namespace Hazel {
         std::vector<std::string> arguments;
         for (int i = 0; i < args.Count; ++i)
             arguments.emplace_back(args[i]);
+        for (const auto& argument : arguments)
+            if (argument == "--metal") spec.GraphicsAPI = RendererAPI::API::Metal;
         const auto rendering = EditorRendererLaunch::Read(arguments);
         spec.Rendering = rendering.Settings;
         spec.WindowVSync = rendering.VSync;

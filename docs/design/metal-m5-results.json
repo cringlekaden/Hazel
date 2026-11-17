@@ -1,0 +1,503 @@
+{
+  "verdict": "M5 PASS — Apple M4 local qualification",
+  "baseline": "3f58ae56b51e15dcff756d80bbfcb1a4e6612636",
+  "branch": "feature/3d-foundations",
+  "date": "2026-11-17",
+  "hardware": "Apple M4, macOS 27.3, Xcode 27.3, native arm64, one VG272U V3 display",
+  "scope": "Existing editor integration and production compute dependencies; OpenGL remains default.",
+  "notRun": [
+    "Windows/Linux execution",
+    "Intel HD 4000 execution",
+    "new branch CI execution",
+    "general Metal game export qualification"
+  ],
+  "ownerRemovedRequirements": [
+    "physical multi-monitor support and cross-monitor movement (no M6 obligation)",
+    "six-minute sustained-session/performance testing"
+  ],
+  "nativeLifecycle": {
+    "debug-1x": {
+      "evidence": "build/metal-m5-evidence/final-lifecycle-debug",
+      "status": "PASS",
+      "submitted": 882,
+      "completed": 882,
+      "positivePresentationsAtSnapshot": 869,
+      "nativeBackingScale": 1,
+      "perHostPositivePresentations": {
+        "2876130032": 866,
+        "845615946": 868,
+        "3697898086": 791,
+        "286331153": 869
+      },
+      "retirement": {
+        "submitted": 882,
+        "completed": 882,
+        "presented": 869,
+        "completed_presented": 869,
+        "errors": 0,
+        "peak_frame_bytes": 15078768,
+        "peak_attachment_bytes": 1130496,
+        "peak_allocator_bytes": 8531496,
+        "live_attachment_generations": 0,
+        "pending_bytes": 0
+      },
+      "sampleChecks": 80
+    },
+    "debug-2x": {
+      "evidence": "build/metal-m5-evidence/final-lifecycle-debug-2x",
+      "status": "PASS",
+      "submitted": 890,
+      "completed": 890,
+      "positivePresentationsAtSnapshot": 878,
+      "nativeBackingScale": 2,
+      "perHostPositivePresentations": {
+        "3697898086": 799,
+        "286331153": 878,
+        "2876130032": 877,
+        "845615946": 881
+      },
+      "retirement": {
+        "submitted": 890,
+        "completed": 890,
+        "presented": 878,
+        "completed_presented": 878,
+        "errors": 0,
+        "peak_frame_bytes": 40883440,
+        "peak_attachment_bytes": 1523712,
+        "peak_allocator_bytes": 8580648,
+        "live_attachment_generations": 0,
+        "pending_bytes": 0
+      },
+      "sampleChecks": 80
+    },
+    "release-1x": {
+      "evidence": "build/metal-m5-evidence/final-lifecycle-release",
+      "status": "PASS",
+      "submitted": 877,
+      "completed": 877,
+      "positivePresentationsAtSnapshot": 865,
+      "nativeBackingScale": 1,
+      "perHostPositivePresentations": {
+        "3697898086": 784,
+        "845615946": 859,
+        "2876130032": 857,
+        "286331153": 866
+      },
+      "retirement": {
+        "submitted": 877,
+        "completed": 877,
+        "presented": 865,
+        "completed_presented": 865,
+        "errors": 0,
+        "peak_frame_bytes": 15078768,
+        "peak_attachment_bytes": 1523712,
+        "peak_allocator_bytes": 8580648,
+        "live_attachment_generations": 0,
+        "pending_bytes": 0
+      },
+      "sampleChecks": 80
+    },
+    "release-2x": {
+      "evidence": "build/metal-m5-evidence/final-lifecycle-release-2x",
+      "status": "PASS",
+      "submitted": 887,
+      "completed": 887,
+      "positivePresentationsAtSnapshot": 874,
+      "nativeBackingScale": 2,
+      "perHostPositivePresentations": {
+        "286331153": 874,
+        "3697898086": 797,
+        "2876130032": 869,
+        "845615946": 874
+      },
+      "retirement": {
+        "submitted": 887,
+        "completed": 887,
+        "presented": 874,
+        "completed_presented": 874,
+        "errors": 0,
+        "peak_frame_bytes": 40637808,
+        "peak_attachment_bytes": 1523712,
+        "peak_allocator_bytes": 8580648,
+        "live_attachment_generations": 0,
+        "pending_bytes": 0
+      },
+      "sampleChecks": 80
+    }
+  },
+  "workflows": {
+    "Debug": {
+      "evidence": "build/metal-m5-evidence/acceptance-m5-debug/workflow",
+      "status": "PASS",
+      "submitted": 1536,
+      "completed": 1536,
+      "positivePresentationsAtSnapshot": 1409,
+      "stabilitySecondsRequested": 0,
+      "retirement": {
+        "submitted": 1536,
+        "completed": 1536,
+        "presented": 1409,
+        "completed_presented": 1409,
+        "errors": 0,
+        "peak_frame_bytes": 64403492,
+        "peak_attachment_bytes": 50200576,
+        "peak_allocator_bytes": 9252392,
+        "live_attachment_generations": 0,
+        "pending_bytes": 0
+      },
+      "input": "real controller/widget paths with synthetic keys; actual native GPU drawables"
+    },
+    "Release": {
+      "evidence": "build/metal-m5-evidence/acceptance-short-workflow-release/workflow",
+      "status": "PASS",
+      "submitted": 1097,
+      "completed": 1097,
+      "positivePresentationsAtSnapshot": 985,
+      "retirement": {
+        "submitted": 1097,
+        "completed": 1097,
+        "presented": 985,
+        "completed_presented": 985,
+        "errors": 0,
+        "peak_frame_bytes": 90273828,
+        "peak_attachment_bytes": 56967168,
+        "peak_allocator_bytes": 9252392,
+        "live_attachment_generations": 0,
+        "pending_bytes": 0
+      },
+      "input": "real controller/widget paths with synthetic keys; actual native GPU drawables"
+    }
+  },
+  "pendingShutdown": {
+    "Debug": {
+      "evidence": "build/metal-m5-evidence/acceptance-m5-debug/shutdown",
+      "status": "PASS",
+      "submitted": 32,
+      "completed": 32,
+      "positivePresentationsAtSnapshot": 29,
+      "retirement": {
+        "submitted": 32,
+        "completed": 32,
+        "presented": 29,
+        "completed_presented": 29,
+        "errors": 0,
+        "peak_frame_bytes": 15078768,
+        "peak_attachment_bytes": 738816,
+        "peak_allocator_bytes": 8531496,
+        "live_attachment_generations": 0,
+        "pending_bytes": 0
+      },
+      "pendingAtClose": 3
+    },
+    "Release": {
+      "evidence": "build/metal-m5-evidence/acceptance-m5-release/shutdown",
+      "status": "PASS",
+      "submitted": 32,
+      "completed": 32,
+      "positivePresentationsAtSnapshot": 26,
+      "retirement": {
+        "submitted": 32,
+        "completed": 32,
+        "presented": 26,
+        "completed_presented": 26,
+        "errors": 0,
+        "peak_frame_bytes": 15078768,
+        "peak_attachment_bytes": 738816,
+        "peak_allocator_bytes": 8531496,
+        "live_attachment_generations": 0,
+        "pending_bytes": 0
+      },
+      "pendingAtClose": 3
+    }
+  },
+  "compute": {
+    "Debug": {
+      "status": "PASS",
+      "evidence": "build/metal-m5-evidence/acceptance-m5-debug/compute",
+      "submissions": 3,
+      "contract": "render → compute → readback; render → compute → render → readback; exact IDs/depth and HDR, rejection and pending lifetime checks"
+    },
+    "Release": {
+      "status": "PASS",
+      "evidence": "build/metal-m5-evidence/acceptance-m5-release/compute",
+      "submissions": 3,
+      "contract": "render → compute → readback; render → compute → render → readback; exact IDs/depth and HDR, rejection and pending lifetime checks"
+    }
+  },
+  "abort": {
+    "Debug": {
+      "status": "PASS",
+      "evidence": "build/metal-m5-evidence/acceptance-m5-debug/abort",
+      "submitted": 0
+    },
+    "Release": {
+      "status": "PASS",
+      "evidence": "build/metal-m5-evidence/acceptance-m5-release/abort",
+      "submitted": 0
+    }
+  },
+  "authoredStartup": {
+    "Debug": {
+      "authored-2d": {
+        "status": "PASS",
+        "submitted": 73,
+        "completed": 73,
+        "positivePresentationsAtSnapshot": 64
+      },
+      "authored-3d": {
+        "status": "PASS",
+        "submitted": 73,
+        "completed": 73,
+        "positivePresentationsAtSnapshot": 68
+      },
+      "authored-pbr": {
+        "status": "PASS",
+        "submitted": 73,
+        "completed": 73,
+        "positivePresentationsAtSnapshot": 64
+      }
+    },
+    "Release": {
+      "authored-2d": {
+        "status": "PASS",
+        "submitted": 73,
+        "completed": 73,
+        "positivePresentationsAtSnapshot": 67
+      },
+      "authored-3d": {
+        "status": "PASS",
+        "submitted": 73,
+        "completed": 73,
+        "positivePresentationsAtSnapshot": 67
+      },
+      "authored-pbr": {
+        "status": "PASS",
+        "submitted": 73,
+        "completed": 73,
+        "positivePresentationsAtSnapshot": 66
+      }
+    }
+  },
+  "regressions": {
+    "OpenGL-debug": {
+      "status": "PASS",
+      "executables": 18,
+      "evidence": "build/metal-m5-evidence/acceptance-opengl-debug.log"
+    },
+    "M3-M4-debug": {
+      "status": "PASS",
+      "captures": 135,
+      "idMismatches": 0,
+      "maximumDepthError": 1.7881393432617188e-07,
+      "evidence": "build/metal-m5-evidence/acceptance-m4-debug"
+    },
+    "OpenGL-release": {
+      "status": "PASS",
+      "executables": 18,
+      "evidence": "build/metal-m5-evidence/acceptance-opengl-release.log"
+    },
+    "M3-M4-release": {
+      "status": "PASS",
+      "captures": 135,
+      "idMismatches": 0,
+      "maximumDepthError": 1.7881393432617188e-07,
+      "evidence": "build/metal-m5-evidence/acceptance-m4-release"
+    },
+    "shader-cache-source-free": {
+      "status": "PASS",
+      "rejections": 17,
+      "gates": {
+        "shader-qualification": "PASS",
+        "cold-production": "PASS",
+        "deterministic-relocated-production": "PASS",
+        "warm-production": "PASS",
+        "warm-no-rewrite": "PASS",
+        "forced-production": "PASS",
+        "corrupt-production-recovery": "PASS",
+        "profile-recovery": "PASS",
+        "producer-invalidation": "PASS",
+        "source-invalidation": "PASS",
+        "unchanged-variant-reuse": "PASS",
+        "canonical-source-restored": "PASS",
+        "source-free-package": "PASS",
+        "production-loading": "PASS",
+        "native-validation": "PASS"
+      },
+      "evidence": "build/metal-m5-evidence/acceptance-cache-full"
+    }
+  },
+  "review": {
+    "verdict": "No unresolved production correctness finding in the reviewed scope",
+    "corrections": [
+      "Metal file identity normalized like OpenGL for save/relocation",
+      "completed consumer slots retire during minimized idle",
+      "editor counter reads exclude offscreen submissions",
+      "native allocation failures checked before encoding/Cocoa insertion",
+      "unused non-ARC/C++ backport compatibility paths removed",
+      "new portable C++ sources include the required PCH header"
+    ],
+    "newFirstPartyWarnings": 0,
+    "warningEvidence": "build/metal-m5-evidence/final-warning-review.json",
+    "publicDocsAudit": {
+      "markdownFiles": 76,
+      "localLinksAndImages": 620,
+      "findings": 0
+    }
+  },
+  "timings": {
+    "evidence": "build/metal-m5-evidence/acceptance-timing-release",
+    "validation": false,
+    "wholeSubmissionGPU": {
+      "samples": 739,
+      "medianMs": 2.8179579821880907,
+      "p95Ms": 3.8425829843617976
+    },
+    "sceneGPUCompletionInterval": {
+      "samples": 739,
+      "medianMs": 0.186125,
+      "p95Ms": 2.897291666666667
+    },
+    "imguiGPUCompletionInterval": {
+      "samples": 739,
+      "medianMs": 0.19866666666666666,
+      "p95Ms": 3.558
+    },
+    "counterRejectedSamples": 0,
+    "gpuEndToPresentation": {
+      "samples": 739,
+      "medianMs": 17.802457994548604,
+      "p95Ms": 20.802666986128315
+    },
+    "presentationLagRejectedSamples": 0,
+    "cpu": {
+      "samples": 749,
+      "medianMs": 4.015417,
+      "p95Ms": 4.281875
+    },
+    "acquire": {
+      "samples": 749,
+      "medianMs": 3.851291,
+      "p95Ms": 4.128292
+    },
+    "prepare": {
+      "samples": 749,
+      "medianMs": 0.031875,
+      "p95Ms": 0.050792
+    },
+    "render_encode": {
+      "samples": 749,
+      "medianMs": 0.017166,
+      "p95Ms": 0.028667
+    },
+    "imgui_encode": {
+      "samples": 749,
+      "medianMs": 0.04325,
+      "p95Ms": 0.061958
+    },
+    "submit_present": {
+      "samples": 749,
+      "medianMs": 0.058708,
+      "p95Ms": 0.075042
+    },
+    "queue_commit": {
+      "samples": 749,
+      "medianMs": 0.040459,
+      "p95Ms": 0.051792
+    },
+    "present_request": {
+      "samples": 749,
+      "medianMs": 0.012,
+      "p95Ms": 0.018625
+    },
+    "retire": {
+      "samples": 749,
+      "medianMs": 0.005208,
+      "p95Ms": 0.021959
+    },
+    "application_render": {
+      "samples": 759,
+      "medianMs": 0.022875,
+      "p95Ms": 0.041084
+    },
+    "application_imgui": {
+      "samples": 759,
+      "medianMs": 1.419916,
+      "p95Ms": 1.925917
+    },
+    "boundary": "GPU phases are nonexclusive completion intervals; presentation lag is host time. No sustained-performance or exclusive-pass-cost claim."
+  },
+  "excludedRuns": [
+    {
+      "evidence": "build/metal-m5-evidence/acceptance-m5-release/workflow",
+      "classification": "Cancelled long hold after owner removed that requirement; not a correctness failure or sustained-session PASS. Normal shutdown retired 16190 submissions with zero pending GPU/ImGui resources."
+    }
+  ],
+  "sourceScopeSHA256": "2e8055a16b75de7075fd5f42b8b7bb76466cfc0f19c6650264c1ca74cba49d3c",
+  "sourceFiles": [
+    "Hazel/Resources/shaders/EntityOutline.glsl",
+    "Hazel/src/Hazel/Core/Application.cpp",
+    "Hazel/src/Hazel/Core/Application.h",
+    "Hazel/src/Hazel/Core/Input.cpp",
+    "Hazel/src/Hazel/Core/Input.h",
+    "Hazel/src/Hazel/ImGui/Backends/imgui_impl_metal4.h",
+    "Hazel/src/Hazel/ImGui/Backends/imgui_impl_metal4.mm",
+    "Hazel/src/Hazel/ImGui/ImGuiLayer.cpp",
+    "Hazel/src/Hazel/ImGui/ImGuiLayer.h",
+    "Hazel/src/Hazel/Renderer/Resources/ComputePipeline.cpp",
+    "Hazel/src/Hazel/Renderer/Resources/ComputePipeline.h",
+    "Hazel/src/Hazel/Renderer/Resources/EditorTexture.h",
+    "Hazel/src/Hazel/Renderer/Resources/Framebuffer.cpp",
+    "Hazel/src/Hazel/Renderer/Resources/Framebuffer.h",
+    "Hazel/src/Hazel/Renderer/Resources/Texture.h",
+    "Hazel/src/Hazel/Scene/RuntimeCameraInspection.cpp",
+    "Hazel/src/Platform/Linux/LinuxInput.cpp",
+    "Hazel/src/Platform/OpenGL/OpenGLFramebuffer.cpp",
+    "Hazel/src/Platform/Windows/WindowsInput.cpp",
+    "Hazel/src/Platform/macOS/MacOSInput.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalComputePipeline.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalComputePipeline.h",
+    "Hazel/src/Platform/macOS/Metal/MetalDevice.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalDevice.h",
+    "Hazel/src/Platform/macOS/Metal/MetalDeviceRenderer2D.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalEditor.mm",
+    "Hazel/src/Platform/macOS/Metal/MetalFramebuffer.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalFramebuffer.h",
+    "Hazel/src/Platform/macOS/Metal/MetalProof.h",
+    "Hazel/src/Platform/macOS/Metal/MetalRenderer2DFrame.h",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererAPI.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererAPI.h",
+    "Hazel/src/Platform/macOS/Metal/MetalShader.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderCompiler.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalSurface.mm",
+    "Hazel/src/Platform/macOS/Metal/MetalTexture.cpp",
+    "Hazel/src/Platform/macOS/Metal/MetalTexture.h",
+    "Hazelnut/src/Authoring/EditorShell.cpp",
+    "Hazelnut/src/Authoring/EditorState.cpp",
+    "Hazelnut/src/Authoring/PrefabPreview.cpp",
+    "Hazelnut/src/Camera/ViewportNavigation.cpp",
+    "Hazelnut/src/EditorLayer.cpp",
+    "Hazelnut/src/HazelnutApp.cpp",
+    "Hazelnut/src/Panels/ContentBrowserPanel.cpp",
+    "Hazelnut/src/Panels/FontFamilyPanel.cpp",
+    "Hazelnut/src/Panels/MaterialPanel.cpp",
+    "Hazelnut/src/Panels/SpriteSheetPanel.cpp",
+    "Hazelnut/src/Panels/UIStylePanel.cpp",
+    "premake5.lua",
+    "scripts/dependencies/macos.lua",
+    "scripts/hazel.py",
+    "scripts/internal/tests.py",
+    "scripts/macos/metal_m5.py",
+    "tests/fixtures/metal/ColorDependency.metal",
+    "tests/macos/MetalEditorConsumers.h",
+    "tests/macos/MetalM1Environment.mm",
+    "tests/macos/MetalM1Smoke.cpp",
+    "tests/macos/MetalRenderer2DQuadSmoke.cpp",
+    "tests/migration/EditorContainerWorkflowChecks.h",
+    "tests/migration/EditorEnvironmentWorkflowChecks.h",
+    "tests/migration/EditorFontFamilyWorkflowChecks.h",
+    "tests/migration/EditorImportWorkflowChecks.h",
+    "tests/migration/EditorSmoke.cpp",
+    "tests/migration/EditorUIScreenWorkflowChecks.h"
+  ],
+  "sourceDigestFormat": "Sorted sourceFiles: UTF-8 path, NUL, raw file bytes, NUL; concatenated SHA-256."
+}

@@ -1,3 +1,4 @@
+#include "Hazel/ImGui/ImGuiLayer.h"
 #include "UIStylePanel.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Project/Project.h"
@@ -310,8 +311,8 @@ void UIStylePanel::Render(bool editable)
                     spec.Attachments = {FramebufferTextureFormat::RGBA16F,
                                         FramebufferTextureFormat::RED_INTEGER,
                                         FramebufferTextureFormat::Depth};
-                    m_Target = Framebuffer::Create(spec);
-            spec.Attachments={FramebufferTextureFormat::RGBA8};m_Output=Framebuffer::Create(spec);
+                    m_Target = Framebuffer::CreateEditor(spec);
+            spec.Attachments={FramebufferTextureFormat::RGBA8};m_Output=Framebuffer::CreateEditor(spec);
                 }
                 {
                     struct Binding
@@ -325,16 +326,14 @@ void UIStylePanel::Render(bool editable)
                         }
                     } binding{m_Target, RenderCommand::GetRasterState()};
                     m_Target->Bind();
-                    RenderCommand::SetClearColor(ColorSpace::FromSRGB({.04f,.04f,.04f,1}));
-                    RenderCommand::Clear();
+                    m_Target->ClearEditor(ColorSpace::FromSRGB({.04f,.04f,.04f,1}));
                     m_Target->ClearAttachment(1, -1);
                     m_Camera.SetViewportSize(640, 300);
-                    m_Preview->OnUpdateEditor(0, m_Camera);
+                    m_Preview->OnUpdateEditor(0, m_Camera, nullptr, m_Target);
                 }
                 m_Target->EncodeOutput(m_Output);
                 float width = std::min(640.f, ImGui::GetContentRegionAvail().x);
-                ImGui::Image(ImTextureID(uint64_t(m_Output->GetColorAttachmentRendererID())),
-                             {width, width * 300 / 640}, {0, 1}, {1, 0});
+                ImGuiLayer::Image(m_Output->GetEditorTexture(), width,  width * 300 / 640);
                 ImGui::TextDisabled("Last accepted draft preview; cue swatches: focus / selected / "
                                     "editing / caret / selection");
             }

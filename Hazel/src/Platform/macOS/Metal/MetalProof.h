@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #include <cstdint>
 #include <condition_variable>
 #include <memory>
@@ -8,7 +9,17 @@
 namespace Hazel {
 // M1 observations: GPU completion and actual drawable presentation are different boundaries.
 // This observer owns no GPU objects and may outlive Application shutdown.
+// Optional native qualification readback of the actual UI drawable. This only
+// adds a completion-owned blit; it never substitutes another rendering path.
+struct MetalEditorCapture {
+    struct Image { uint32_t Viewport=0, Width=0, Height=0; std::vector<uint8_t> BGRA; };
+    uint64_t Serial=0;
+    bool Completed=false;
+    std::vector<Image> Images;
+};
 struct MetalProofSnapshot {
+    uint32_t EditorHosts=0, PeakEditorHosts=0;
+    uint64_t ImGuiResourceBytes=0, PeakImGuiResourceBytes=0;
     uint64_t Submitted=0, Completed=0, Verified=0, Presented=0, CompletedPresented=0;
     uint64_t PresentationCallbacks=0, ZeroPresentationTime=0, Feedbacks=0, Errors=0;
     uint64_t InFlight=0, PeakInFlight=0, Reservations=0, AbortedReservations=0, SlotReuses=0;

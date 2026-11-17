@@ -5,6 +5,22 @@
 ![Hazelnut editing The Last Lightkeeper](images/hazelnut-lightkeeper.png)
 *The title menu is scene content: select a button in Hierarchy, edit its Rect in Properties and open shared styles from Content Browser. [Full resolution](images/hazelnut-lightkeeper.png). Linux capture.*
 
+## Experimental Metal editor
+
+OpenGL is the default on every platform. On `feature/3d-foundations`, Apple Silicon
+macOS builds can explicitly select the experimental Metal 4 editor with `--metal`
+before window creation. Build and stage the offline shader packages using the
+[Metal development instructions](development.md#experimental-metal-shader-resources).
+The editor integration has **M5 PASS — Apple M4 local qualification** in Debug and
+Release. The [acceptance record](design/metal-m5.md) covers native window lifecycle,
+editor workflows, compute and resource retirement. Windows/Linux, Intel HD 4000
+and new branch CI execution remain untested for M5. Existing screenshots on this page retain their
+stated platform attribution.
+
+![Metal 4 Hazelnut editor on Apple M4](images/metal-m5-editor.png)
+*Native Metal 4 drawable captured after workflow qualification. The retained console
+history includes deliberately tested failure and cancellation cases.*
+
 ## Create and open content
 
 **File > New Project…** asks for a name, build identifier and destination. Creation produces editable content immediately; a compiler is needed when you build scripts, rather than to create the project. An existing destination is rejected. A later failed script build keeps the created project and source files available for repair.

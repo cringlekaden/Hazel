@@ -1,4 +1,4 @@
-// Read-only environment evidence from inside the actual smoke process.
+// Native environment and input qualification inside the actual smoke process.
 #define GLFW_EXPOSE_NATIVE_COCOA
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
@@ -6,6 +6,34 @@
 #import <ApplicationServices/ApplicationServices.h>
 #include <unistd.h>
 #include <stdexcept>
+#include "Hazel/Core/TextInput.h"
+
+bool MetalM1ClipboardRoundTrip() {
+    @autoreleasepool {
+        NSPasteboard* board=[NSPasteboard generalPasteboard];
+        NSMutableArray* saved=[NSMutableArray array];
+        for(NSPasteboardItem* item in board.pasteboardItems) {
+            NSPasteboardItem* copy=[[[NSPasteboardItem alloc] init] autorelease];
+            for(NSString* type in item.types) {
+                NSData* data=[item dataForType:type];
+                if(!data)throw std::runtime_error("Cannot preserve the native clipboard representation");
+                [copy setData:data forType:type];
+            }
+            [saved addObject:copy];
+        }
+        struct Restore {
+            NSPasteboard* Board; NSArray* Items;
+            bool Applied=false;
+            bool Apply(){[Board clearContents];Applied=true;return !Items.count || [Board writeObjects:Items];}
+            ~Restore(){if(!Applied)Apply();}
+        } restore{board,saved};
+        Hazel::NativeTextClipboard clipboard;
+        std::string actual,error;
+        const std::string expected="Hazel M5 native clipboard é";
+        const bool result=clipboard.Write(expected,error) && clipboard.Read(actual,16384,error) && actual==expected;
+        return restore.Apply() && result;
+    }
+}
 
 void MetalM1Environment(GLFWwindow* window, const char* output) {
     @autoreleasepool {
@@ -44,7 +72,7 @@ void MetalM1Environment(GLFWwindow* window, const char* output) {
         bool owned=[NSApp.windows containsObject:native];
         if(!owned) { CFRelease(raw); throw std::runtime_error("Smoke window is not owned by this interactive process"); }
         NSDictionary* report=@{@"pid":@(getpid()),@"uid":@(getuid()),@"session":session,@"interactive":@YES,@"windowOwnedByNSApplication":@(owned),@"windowServerListsOwnerPID":@(listed),
-            @"windowNumber":@(native.windowNumber),@"logicalWidth":@(lw),@"logicalHeight":@(lh),@"framebufferWidth":@(pw),@"framebufferHeight":@(ph),
+            @"appHidden":@(NSApp.hidden),@"windowVisible":@(native.visible),@"windowMiniaturized":@(native.miniaturized),@"windowOcclusionState":@(native.occlusionState),@"windowNumber":@(native.windowNumber),@"logicalWidth":@(lw),@"logicalHeight":@(lh),@"framebufferWidth":@(pw),@"framebufferHeight":@(ph),
             @"glfwScaleX":@(sx),@"glfwScaleY":@(sy),@"cocoaBackingScale":@(native.backingScaleFactor),@"glfwMonitors":glfw,@"cocoaScreens":cocoa};
         NSError* error=nil;
         NSData* bytes=[NSJSONSerialization dataWithJSONObject:report options:NSJSONWritingPrettyPrinted error:&error];

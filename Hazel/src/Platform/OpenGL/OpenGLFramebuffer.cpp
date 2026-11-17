@@ -262,6 +262,7 @@ void OpenGLFramebuffer::DrawEntityOutlineTo(const Ref<Framebuffer> &destination,
     m_OutlineShader->SetInt("u_Entities", 0);
     m_OutlineShader->SetInt("u_Selected", entity);
     m_OutlineShader->SetInt("u_Radius", radius);
+    m_OutlineShader->SetInt("u_FlipY", 0);
     m_OutlineShader->SetFloat4("u_EncodedColor", encodedColor);
     glActiveTexture(GL_TEXTURE0);
     glBindSampler(0, 0);

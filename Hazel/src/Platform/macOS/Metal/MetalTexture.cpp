@@ -4,6 +4,7 @@
 #include "MetalRendererAPI.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include <stdexcept>
+#include <filesystem>
 #include <cstring>
 #include <algorithm>
 
@@ -18,7 +19,8 @@ void BindVersion(const std::shared_ptr<MetalDevice>& device, uint32_t slot,
 }
 }
 MetalTexture2D::MetalTexture2D(std::shared_ptr<MetalDevice> device, const TextureSpecification& specification, std::string path)
-    : m_Device(std::move(device)), m_Specification(specification), m_Path(std::move(path))
+    : m_Device(std::move(device)), m_Specification(specification),
+      m_Path(path.empty() ? std::string{} : std::filesystem::absolute(std::filesystem::u8path(path)).lexically_normal().generic_u8string())
 {
     specification.Validate();
     if (!m_Device || specification.Width > 16384 || specification.Height > 16384 ||

@@ -12,6 +12,12 @@ namespace Hazel {
 	class Input
 	{
 	public:
+        // Editor input follows the focused/captured native viewport. Player input
+        // remains on its application window. All calls are main-thread only.
+        static void* NativeWindow();
+        static bool IsFocused();
+        static bool IsPointerCaptured();
+        static void SetPointerCaptured(bool captured);
 		static bool IsKeyPressed(KeyCode key);
         static GamepadSample GetGamepad(); // Main thread; first standardized connected device.
 

@@ -1,6 +1,9 @@
 #include "hzpch.h"
 #include "Hazel/Core/Core.h"
 #include "Hazel/Events/Event.h"
+#include "Hazel/Events/KeyEvent.h"
+#include "Hazel/Events/MouseEvent.h"
+#include "Hazel/Events/ApplicationEvent.h"
 
 #include "Hazel/ImGui/ImGuiLayer.h"
 #include "Hazel/Core/Application.h"
@@ -17,9 +20,53 @@
 #include <imgui_impl_opengl3.h>
 
 #include <GLFW/glfw3.h>
+#include "Hazel/Renderer/Renderer.h"
+#ifdef HZ_PLATFORM_MACOS
+#include "Platform/macOS/Metal/MetalRendererAPI.h"
+#include "Platform/macOS/Metal/MetalDevice.h"
+#include "Hazel/Renderer/RenderCommand.h"
+#endif
 
 namespace Hazel {
     namespace {
+        void (*s_CreatePlatformWindow)(ImGuiViewport*) = nullptr;
+        void (*s_DestroyPlatformWindow)(ImGuiViewport*) = nullptr;
+        void ForwardPlatformEvents() {
+            auto& platform = ImGui::GetPlatformIO();
+            s_CreatePlatformWindow = platform.Platform_CreateWindow;
+            s_DestroyPlatformWindow = platform.Platform_DestroyWindow;
+            platform.Platform_CreateWindow = [](ImGuiViewport* viewport) {
+                s_CreatePlatformWindow(viewport);
+                auto* window = static_cast<GLFWwindow*>(viewport->PlatformHandle);
+                // The official backend owns these GLFW windows. Forward input
+                // explicitly; its main-window callback cannot read their user pointer.
+                glfwSetKeyCallback(window, [](GLFWwindow* w, int key, int scan, int action, int mods) {
+                    ImGui_ImplGlfw_KeyCallback(w,key,scan,action,mods);
+                    const int modifiers = ((mods&GLFW_MOD_SHIFT)?1:0)|((mods&GLFW_MOD_CONTROL)?2:0)|((mods&GLFW_MOD_ALT)?4:0)|((mods&GLFW_MOD_SUPER)?8:0);
+                    if (action == GLFW_RELEASE) { KeyReleasedEvent event(static_cast<KeyCode>(key)); Application::Get().OnEvent(event); }
+                    else { KeyPressedEvent event(static_cast<KeyCode>(key),action==GLFW_REPEAT,modifiers); Application::Get().OnEvent(event); }
+                });
+                glfwSetCharCallback(window, [](GLFWwindow* w,unsigned int code) {
+                    ImGui_ImplGlfw_CharCallback(w,code); KeyTypedEvent event(code); Application::Get().OnEvent(event);
+                });
+                glfwSetMouseButtonCallback(window, [](GLFWwindow* w,int button,int action,int mods) {
+                    ImGui_ImplGlfw_MouseButtonCallback(w,button,action,mods);
+                    if (action == GLFW_PRESS) { MouseButtonPressedEvent event(static_cast<MouseCode>(button)); Application::Get().OnEvent(event); }
+                    else { MouseButtonReleasedEvent event(static_cast<MouseCode>(button)); Application::Get().OnEvent(event); }
+                });
+                glfwSetScrollCallback(window, [](GLFWwindow* w,double x,double y) {
+                    ImGui_ImplGlfw_ScrollCallback(w,x,y); MouseScrolledEvent event{float(x),float(y)}; Application::Get().OnEvent(event);
+                });
+                glfwSetWindowFocusCallback(window, [](GLFWwindow* w,int focused) {
+                    ImGui_ImplGlfw_WindowFocusCallback(w,focused);
+                    if (!focused) { WindowLostFocusEvent event; Application::Get().OnEvent(event); }
+                });
+            };
+            platform.Platform_DestroyWindow = [](ImGuiViewport* viewport) {
+                if (auto* ui = Application::Get().GetImGuiLayer()) ui->ReleasePlatformWindow(viewport->PlatformHandle);
+                s_DestroyPlatformWindow(viewport);
+            };
+        }
         ImVec2 FramebufferScale(ImGuiViewport* viewport) {
             auto scale=ImGui::GetIO().DisplayFramebufferScale;
             if(auto* window=static_cast<GLFWwindow*>(viewport->PlatformHandle)) {
@@ -34,6 +81,34 @@ namespace Hazel {
     std::pair<float,float> ImGuiLayer::CurrentWindowFramebufferScale() const {
         const auto scale=FramebufferScale(ImGui::GetWindowViewport());
         return {scale.x,scale.y};
+    }
+
+    void* ImGuiLayer::InputWindow() const {
+        if (m_PointerWindow) return m_PointerWindow;
+        for (auto* viewport : ImGui::GetPlatformIO().Viewports)
+            if (auto* window = static_cast<GLFWwindow*>(viewport->PlatformHandle))
+                if (glfwGetWindowAttrib(window, GLFW_FOCUSED)) return window;
+        return Application::Get().GetWindow().GetNativeWindow();
+    }
+    bool ImGuiLayer::InputFocused() const { return glfwGetWindowAttrib(static_cast<GLFWwindow*>(InputWindow()), GLFW_FOCUSED) != 0; }
+    void ImGuiLayer::CapturePointer(bool captured) {
+        if (!captured) {
+            if (m_PointerWindow) glfwSetInputMode(static_cast<GLFWwindow*>(m_PointerWindow), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            m_PointerWindow = nullptr;
+        } else if (!m_PointerWindow) {
+            m_PointerWindow = InputWindow();
+            glfwSetInputMode(static_cast<GLFWwindow*>(m_PointerWindow), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+    }
+    void ImGuiLayer::ReleasePlatformWindow(void* native) { if (m_PointerWindow == native) CapturePointer(false); }
+    void ImGuiLayer::Image(const EditorTexture& texture, float width, float height) {
+        ImGui::Image(Texture(texture), {width,height}, {0,texture.FlipY ? 1.f : 0.f}, {1,texture.FlipY ? 0.f : 1.f});
+    }
+    void* ImGuiLayer::Texture(const EditorTexture& texture) {
+        auto* layer = Application::Get().GetImGuiLayer();
+        if (!layer || !texture.Handle) return nullptr;
+        layer->m_Textures.push_back(texture);
+        return reinterpret_cast<void*>(texture.Handle);
     }
 
     ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
@@ -96,8 +171,18 @@ namespace Hazel {
         }
         Application& app = Application::Get();
         GLFWwindow* window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
+#ifdef HZ_PLATFORM_MACOS
+        if (Renderer::GetAPI() == RendererAPI::API::Metal) {
+            m_GLFWInitialized = ImGui_ImplGlfw_InitForOther(window, true);
+            if (!m_GLFWInitialized) throw std::runtime_error("Failed to initialize ImGui GLFW backend");
+            ForwardPlatformEvents();
+            static_cast<MetalRendererAPI&>(RenderCommand::Backend()).Device()->InitEditor();
+            return;
+        }
+#endif
         m_GLFWInitialized = ImGui_ImplGlfw_InitForOpenGL(window, true);
         if (!m_GLFWInitialized) throw std::runtime_error("Failed to initialize ImGui GLFW backend");
+        ForwardPlatformEvents();
         m_OpenGLInitialized = ImGui_ImplOpenGL3_Init("#version 410 core");
         if (!m_OpenGLInitialized) throw std::runtime_error("Failed to initialize ImGui OpenGL backend");
     }
@@ -106,7 +191,8 @@ namespace Hazel {
     {
         HZ_PROFILE_FUNCTION();
         if (ImGui::GetCurrentContext()) {
-            if (m_OpenGLInitialized && m_GLFWInitialized) {
+            CapturePointer(false);
+            if (m_GLFWInitialized && ImGui::GetIO().BackendRendererUserData) {
                 size_t size = 0;
                 const auto* ini = ImGui::SaveIniSettingsToMemory(&size);
                 try {
@@ -122,6 +208,10 @@ namespace Hazel {
                 }
                 catch (const std::runtime_error& error) { HZ_CORE_ERROR("Save editor settings: {}", error.what()); }
             }
+#ifdef HZ_PLATFORM_MACOS
+            if (Renderer::GetAPI() == RendererAPI::API::Metal)
+                static_cast<MetalRendererAPI&>(RenderCommand::Backend()).Device()->ShutdownEditor();
+#endif
             if (m_OpenGLInitialized) ImGui_ImplOpenGL3_Shutdown();
             if (m_GLFWInitialized) ImGui_ImplGlfw_Shutdown();
             ImGui::DestroyContext();
@@ -132,7 +222,8 @@ namespace Hazel {
     void ImGuiLayer::Begin()
     {
         HZ_PROFILE_FUNCTION();
-        ImGui_ImplOpenGL3_NewFrame();
+        m_Textures.clear();
+        if (m_OpenGLInitialized) ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
     }
@@ -143,7 +234,7 @@ namespace Hazel {
         ImGuiIO& io = ImGui::GetIO();
         ImGui::Render();
         ImGui::GetDrawData()->FramebufferScale=FramebufferScale(ImGui::GetMainViewport());
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        if (m_OpenGLInitialized) ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         if(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             GLFWwindow* backupCurrentContext = glfwGetCurrentContext();
@@ -153,9 +244,15 @@ namespace Hazel {
             // boundary, so detached windows can move between unlike displays.
             for(auto* viewport:ImGui::GetPlatformIO().Viewports)
                 if(viewport->DrawData)viewport->DrawData->FramebufferScale=FramebufferScale(viewport);
-            ImGui::RenderPlatformWindowsDefault();
-            glfwMakeContextCurrent(backupCurrentContext);
+            if (m_OpenGLInitialized) {
+                ImGui::RenderPlatformWindowsDefault();
+                glfwMakeContextCurrent(backupCurrentContext);
+            }
         }
+#ifdef HZ_PLATFORM_MACOS
+        if (Renderer::GetAPI() == RendererAPI::API::Metal)
+            static_cast<MetalRendererAPI&>(RenderCommand::Backend()).Device()->QueueEditorTextures(std::move(m_Textures));
+#endif
     }
 
     void ImGuiLayer::OnEvent(Event& e)

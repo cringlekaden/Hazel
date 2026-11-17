@@ -11,6 +11,9 @@
 #include "Hazel/Core/Input.h"
 #include "Hazel/Utils/PlatformUtils.h"
 #include <stdexcept>
+#include <chrono>
+#include <cstdio>
+#include <cstdlib>
 
 namespace Hazel {
 
@@ -27,8 +30,6 @@ namespace Hazel {
 		s_Instance = this;
 		try {
             RenderCommand::Configure(m_Specification.GraphicsAPI);
-            if (m_Specification.GraphicsAPI == RendererAPI::API::Metal && m_Specification.EnableImGui)
-                throw std::invalid_argument("Metal Renderer2D runtime does not support the OpenGL ImGui layer");
             if (m_Specification.RendererMode != RendererInitialization::Drawing && m_Specification.EnableImGui)
                 throw std::invalid_argument("Presentation-only startup does not initialize ImGui drawing services");
             m_Specification.Resources = Resources::Defaults(m_Specification.Name, m_Specification.Resources);
@@ -63,6 +64,7 @@ namespace Hazel {
 
 	void Application::ShutdownResources()
 	{
+        m_ShuttingDown = true;
         m_BackgroundTick={};m_CloseRequest={};
         // Cancel pending captures while their renderer/context resources remain valid.
         std::vector<std::function<void()>> cancelled;
@@ -125,6 +127,7 @@ namespace Hazel {
 
 	void Application::OnEvent(Event& e)
 	{
+        if (m_ShuttingDown) return;
 		HZ_PROFILE_FUNCTION();
 
 		EventDispatcher dispatcher(e);
@@ -148,6 +151,7 @@ namespace Hazel {
 
 		m_LastFrameTime = Time::GetTime();
         uint32_t renderedFrames = 0;
+        const bool editorTrace = m_ImGuiLayer && m_Specification.GraphicsAPI == RendererAPI::API::Metal && std::getenv("HAZEL_METAL_TRACE");
         const auto initialDraws = RenderCommand::GetDrawSubmissionCount();
 
 		while (m_Running)
@@ -164,6 +168,7 @@ namespace Hazel {
 
 			if (!m_Minimized)
 			{
+                const auto renderStart = std::chrono::steady_clock::now();
 				{
 					HZ_PROFILE_SCOPE("LayerStack OnUpdate");
 
@@ -171,6 +176,7 @@ namespace Hazel {
 						layer->OnUpdate(timestep);
 				}
 
+                const auto uiStart = std::chrono::steady_clock::now();
 				if (m_ImGuiLayer) {
                 m_RenderingUI=true;
                 m_ImGuiLayer->Begin();
@@ -183,6 +189,9 @@ namespace Hazel {
 				m_ImGuiLayer->End();
                 m_RenderingUI=false;
                 }
+                if (editorTrace) std::printf("M5_EDITOR_CPU frame=%u render_ms=%.6f imgui_ms=%.6f\n", renderedFrames+1,
+                    std::chrono::duration<double,std::milli>(uiStart-renderStart).count(),
+                    std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-uiStart).count());
                 ++renderedFrames;
 			}
 

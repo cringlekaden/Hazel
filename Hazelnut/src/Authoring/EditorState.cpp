@@ -96,6 +96,7 @@ namespace Hazel {
         try {
             for (size_t i = 1; i < args.size(); ++i) {
                 const auto &arg = args[i];
+                if (arg == "--metal") continue; // Renderer selected before window creation.
                 if (arg == "--no-restore") {
                     result.Restore = false;
                     continue;

@@ -1,3 +1,4 @@
+#include "Hazel/ImGui/ImGuiLayer.h"
 #include "MaterialPanel.h"
 #include "UI/PropertyUI.h"
 #include "Hazel/Project/Project.h"
@@ -183,7 +184,7 @@ void MaterialPanel::Properties()
                             TextureSpecification::ImGuiFile());
                     auto &image = m_Previews[i];
                     float width = std::min(180.f, ImGui::GetContentRegionAvail().x);
-                    ImGui::Image((ImTextureID)(uintptr_t)image->GetRendererID(),
+                    ImGui::Image(ImGuiLayer::Texture(image->GetEditorTexture()),
                                  {width, width * image->GetHeight() / image->GetWidth()}, {0, 0},
                                  {1, 1});
                 }

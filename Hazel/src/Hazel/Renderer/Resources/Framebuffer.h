@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Hazel/Core/Base.h"
+#include "EditorTexture.h"
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <initializer_list>
@@ -69,6 +70,7 @@ namespace Hazel {
         std::vector<float> Depth;
     };
 
+    class ComputePipeline;
 	class Framebuffer
 	{
 	public:
@@ -81,6 +83,10 @@ namespace Hazel {
         // Explicit asynchronous offscreen pass boundary. Unsupported backends throw.
         // Bind starts a clear/store pass; EndScene then Unbind precede Submit.
         virtual void Clear(glm::vec4 color);
+        virtual void ClearEditor(glm::vec4 color);
+        // Captures an unbound producer into an empty, equal-size FP32 destination.
+        // IDs/depth are preserved; a later render pass or Submit consumes the result.
+        virtual void DispatchColorTo(const Ref<Framebuffer>& destination, const Ref<ComputePipeline>& pipeline, const std::vector<uint8_t>& parameters);
         virtual Ref<const FramebufferReadback> Submit(); // null: busy; retry unchanged packet
         virtual void Poll(); // nonblocking; readback fields publish on the render thread
         virtual void Cancel(); // discard unsubmitted work; submitted work is never aborted
@@ -93,14 +99,19 @@ namespace Hazel {
         virtual void DrawEntityOutlineTo(const Ref<Framebuffer>& destination,int entity,int radius,glm::vec4 encodedColor) = 0;
         virtual void CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure) = 0;
         virtual glm::vec4 ReadColorPixel(uint32_t attachment, int x, int y) = 0;
+        virtual void ResetEditorReadback() {}
+        virtual int ReadEditorEntity(int x, int y) { return ReadPixel(1, x, y); }
         virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) = 0;
 
 		virtual void ClearAttachment(uint32_t attachmentIndex, int value) = 0;
 
 		virtual uint32_t GetColorAttachmentRendererID(uint32_t index = 0) const = 0;
 
+        virtual EditorTexture GetEditorTexture() const { return {uintptr_t(GetColorAttachmentRendererID()), {}, true}; }
+
 		virtual const FramebufferSpecification& GetSpecification() const = 0;
 
+        static Ref<Framebuffer> CreateEditor(const FramebufferSpecification& spec);
 		static Ref<Framebuffer> Create(const FramebufferSpecification& spec);
 	};
 

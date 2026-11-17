@@ -24,6 +24,8 @@ public:
     void Bind() override;
     void Unbind() override;
     void Resize(uint32_t width, uint32_t height) override;
+    void DispatchColorTo(const Ref<Framebuffer>& destination, const Ref<ComputePipeline>& pipeline, const std::vector<uint8_t>& parameters) override;
+    void ClearEditor(glm::vec4 color) override { Clear(color); }
     void Clear(glm::vec4 color) override;
     Ref<const FramebufferReadback> Submit() override;
     void Poll() override;
@@ -35,6 +37,9 @@ public:
     void EncodeOutput(const Ref<Framebuffer>& destination = {}) override;
     void DrawEntityOutlineTo(const Ref<Framebuffer>& destination, int entity, int radius, glm::vec4 color) override;
     void CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure) override;
+    EditorTexture GetEditorTexture() const override;
+    void ResetEditorReadback() override { m_EditorReadback.reset(); m_EditorPendingReadbacks.clear(); }
+    int ReadEditorEntity(int x, int y) override;
     uint32_t GetColorAttachmentRendererID(uint32_t index = 0) const override;
     const FramebufferSpecification& GetSpecification() const override { return m_Specification; }
     std::shared_ptr<const MetalFramebufferAttachments> Snapshot() const { return m_Attachments; }
@@ -47,7 +52,8 @@ private:
     FramebufferSpecification m_Specification;
     std::shared_ptr<const MetalFramebufferAttachments> m_Attachments;
     std::shared_ptr<MetalRenderer2DFrame> m_Frame;
-    Ref<const FramebufferReadback> m_Readback;
+    Ref<const FramebufferReadback> m_Readback, m_EditorReadback;
+    std::vector<Ref<const FramebufferReadback>> m_EditorPendingReadbacks;
     bool m_SubmittedGeneration = false;
     std::vector<std::shared_ptr<const MetalFramebufferAttachments>> m_Available;
 };

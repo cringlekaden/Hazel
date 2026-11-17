@@ -45,7 +45,7 @@ Open **Assets/Scenes/UI Tutorial.hazel** and Play. Its [five pages](examples/San
 
 [SceneTransitions](examples/SceneTransitions/README.md) is the smallest runtime/scripting example. Every project has source launch and export instructions. Prepared game packages need **no compiler, Python or source SDK**; changing scripts and exporting requires the authoring toolchain.
 
-The development branch also has an experimental [Metal 4 Renderer2D runtime](docs/development.md#experimental-metal-shader-resources). M3 is locally qualified on Apple M4, including native 1×/2× presentation and player input. [M4 Renderer3D/PBR/IBL](docs/design/metal-m4.md) is locally qualified on Apple M4, including Debug/Release native windows and numerical parity; OpenGL remains the default.
+The development branch also has an experimental [Metal 4 Renderer2D runtime](docs/development.md#experimental-metal-shader-resources). M3 is locally qualified on Apple M4, including native 1×/2× presentation and player input. [M4 Renderer3D/PBR/IBL](docs/design/metal-m4.md) is locally qualified on Apple M4, including Debug/Release native windows and numerical parity; OpenGL remains the default. [M5 editor/compute integration](docs/design/metal-m5.md) is locally qualified on Apple M4 in Debug/Release, including detached-window lifecycle and native compute dependencies. Windows/Linux, Intel HD 4000 and new branch CI execution remain untested for M5.
 
 ## Status and support
 

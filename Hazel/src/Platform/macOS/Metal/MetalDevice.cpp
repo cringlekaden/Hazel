@@ -1,4 +1,5 @@
 #include "MetalDevice.h"
+#include "Hazel/ImGui/Backends/imgui_impl_metal4.h"
 #include "MetalRenderer2DFrame.h"
 #include "MetalShader.h"
 #include "MetalFramebuffer.h"
@@ -104,6 +105,9 @@ void MetalDevice::Account(const MetalRenderer2DFrame* preparing) {
         for(const auto& buffer:f.Renderer2DBuffers) if(buffer) allocations.insert(buffer.get());
         if(f.Texture) allocations.insert(f.Texture.get());
         if(f.Allocator) allocators+=f.Allocator->allocatedSize();
+        for (const auto& drawable : f.EditorDrawables) if (drawable) allocations.insert(drawable->texture());
+        for (const auto& image : f.EditorTextures) if (image.Handle) allocations.insert(reinterpret_cast<MTL::Texture*>(image.Handle));
+        for (const auto& editor : f.EditorFrames) scenes.push_back(editor.get());
         if(f.Quad) { scenes.push_back(f.Quad.get()); quadAllocations+=f.Quad->Residency->allocationCount(); }
     }
     if(preparing) scenes.push_back(preparing);
@@ -112,13 +116,15 @@ void MetalDevice::Account(const MetalRenderer2DFrame* preparing) {
         scene->CollectAllocations(allocations);
     }
     for(const auto* allocation:allocations) resources+=allocation->allocatedSize();
-    Require(resources<=ResourceLimit&&allocators<=AllocatorLimit,"M1 bounded GPU storage limit exceeded");
+    const uint64_t uiBytes = m_Editor ? ImGui_ImplMetal4_ResourceBytes() : 0;
+    Require(resources+uiBytes<=ResourceLimit&&allocators<=AllocatorLimit,"M1 bounded GPU storage limit exceeded");
     uint64_t attachmentBytes = 0, generations = 0;
     for (const auto& weak : m_AttachmentGenerations) if (auto generation = weak.lock()) {
         ++generations;
-        for (const auto& target : generation->Targets) attachmentBytes += target->allocatedSize();
+        for (const auto& target : generation->Targets) if (target) attachmentBytes += target->allocatedSize();
     }
     std::lock_guard<std::mutex> lock(m_Observer->Mutex); auto& s=m_Observer->Value;
+    s.ImGuiResourceBytes=uiBytes; s.PeakImGuiResourceBytes=std::max(s.PeakImGuiResourceBytes,uiBytes);
     s.AttachmentBytes=attachmentBytes; s.AttachmentGenerations=generations;
     s.PeakAttachmentBytes=std::max(s.PeakAttachmentBytes,attachmentBytes);
     s.ResourceBytes=resources; s.AllocatorBytes=allocators; s.ResidencyAllocations=m_Residency->allocationCount()+quadAllocations;
@@ -170,6 +176,20 @@ void MetalDevice::Poll() {
     // Neither feedback delivery nor drawable acquisition alone permits CPU access.
     const uint64_t completed=m_Completed->signaledValue();
     for(auto& f:m_Frames) if(f.Pending&&completed>=f.Serial) {
+        if (f.EditorFeedback && !f.EditorFeedback->load()) continue;
+        if (f.EditorFeedback && f.EditorCounters && m_EditorTimestampFrequency) {
+            auto pool = NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
+            // The slot completion event precedes all CPU counter access. Metal's
+            // boundary timestamps may include later overlapping work; these are
+            // completion intervals, never exclusive pass costs.
+            auto counters = NS::RetainPtr(f.EditorCounters->resolveCounterRange(NS::Range{0,3}));
+            if (counters && counters->length() == 3*sizeof(MTL4::TimestampHeapEntry)) {
+                MTL4::TimestampHeapEntry entries[3]; std::memcpy(entries,counters->bytes(),sizeof(entries));
+                std::printf("M5_EDITOR_GPU_PHASE frame=%llu frequency=%llu start=%llu scene_complete=%llu imgui_complete=%llu\n",
+                    (unsigned long long)f.Serial,(unsigned long long)m_EditorTimestampFrequency,(unsigned long long)entries[0].timestamp,
+                    (unsigned long long)entries[1].timestamp,(unsigned long long)entries[2].timestamp);
+            }
+        }
         if(f.Quad) {
             if(!f.Quad->Feedback->load()) continue;
             f.Quad->Complete();
@@ -179,12 +199,34 @@ void MetalDevice::Poll() {
             ++m_Observer->Value.Completed; --m_Observer->Value.InFlight;
             if (f.Completion) { f.Completion->GPU = true; if (f.Completion->Presented) ++m_Observer->Value.CompletedPresented; }
         } else Verify(f);
+        for (const auto& editor : f.EditorFrames) if (editor->DisplaySource) editor->DisplaySource->Complete();
+        if (f.EditorCapture) {
+            for (size_t image = 0; image < f.EditorCapture->Images.size(); ++image) {
+                auto& result = f.EditorCapture->Images[image];
+                const size_t row = (size_t(result.Width)*4+255)&~size_t(255);
+                const auto* bytes = static_cast<const uint8_t*>(f.EditorCaptureBuffers[image]->contents());
+                for (size_t y=0; y<result.Height; ++y) std::memcpy(result.BGRA.data()+y*result.Width*4,bytes+y*row,size_t(result.Width)*4);
+            }
+            f.EditorCapture->Completed = true;
+        }
+        f.EditorCapture.reset(); f.EditorCaptureBuffers.clear();
+        f.EditorFrames.clear(); f.EditorTextures.clear(); f.EditorDrawables.clear(); f.EditorLayers.clear(); f.EditorResidency.reset(); f.EditorFeedback.reset();
         f.Pending=false;
     }
     Account();
 }
 void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t lw,uint32_t lh,double scale,bool visible) {
     if(m_Stopped) return;
+    if (m_Editor) {
+        if (m_Override) { w=m_Width; h=m_Height; m_Override=false; layer->setDrawableSize(CGSize{double(w),double(h)}); }
+        {
+            std::lock_guard<std::mutex> lock(m_Observer->Mutex); auto& state=m_Observer->Value;
+            state.PixelWidth=w; state.PixelHeight=h; state.LogicalWidth=lw; state.LogicalHeight=lh; state.BackingScale=scale; state.VSync=layer->displaySyncEnabled();
+            if (!visible && m_Serial) ++state.SkippedHidden;
+            if (state.Errors) throw std::runtime_error(state.Error);
+        }
+        PresentEditor(layer, visible); return;
+    }
     const auto cpuStart=std::chrono::steady_clock::now();
     auto pool=NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
     Poll();
@@ -296,7 +338,7 @@ void MetalDevice::Drain() {
             std::abort();
         }
     }
-    Poll(); StopCapture(); m_PresentFrame.reset(); m_OutputShader.reset(); m_Stopped=true;
+    Poll(); StopCapture(); m_PresentFrame.reset(); m_OutputShader.reset(); m_OutlineShader.reset(); m_Stopped=true;
     std::unique_lock<std::mutex> lock(m_Observer->Mutex);
     if(!m_Observer->Changed.wait_for(lock,std::chrono::seconds(5),[&] { return m_Observer->Value.Feedbacks==m_Observer->Value.Submitted; })) {
         ++m_Observer->Value.Errors; m_Observer->Value.Error="Metal 4 commit feedback did not retire during shutdown";

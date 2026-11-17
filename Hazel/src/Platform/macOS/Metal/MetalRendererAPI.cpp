@@ -38,6 +38,8 @@ std::shared_ptr<Shader> MetalRendererAPI::LoadShader(const std::string& name, ui
     m_Shaders.emplace(key,shader); // Publish only after library/pipeline/reflection validation.
     return shader;
 }
+void MetalRendererAPI::EnableEditorReadbackForTesting() { m_Device->EnableEditorReadback(); }
+std::shared_ptr<MetalEditorCapture> MetalRendererAPI::CaptureEditorFrameForTesting() { return m_Device->CaptureEditorFrame(); }
 void MetalRendererAPI::PushState() { m_StateStack.push_back(m_Raster); }
 void MetalRendererAPI::PopState() { if(m_StateStack.empty())throw std::logic_error("Metal raster state stack underflow"); m_Raster=m_StateStack.back(); m_StateStack.pop_back(); }
 void MetalRendererAPI::SetPickingMask(glm::bvec4 mask) { m_Raster.PickingMask=mask; }

@@ -28,6 +28,10 @@
 #include <backends/imgui_impl_opengl3.h>
 #include <ImGuizmo.h>
 #include <glad/glad.h>
+#include "Hazel/Renderer/Renderer.h"
+#ifdef HZ_PLATFORM_MACOS
+#include "Platform/macOS/Metal/MetalRendererAPI.h"
+#endif
 #include <GLFW/glfw3.h>
 #ifdef HZ_PLATFORM_WINDOWS
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -40,6 +44,8 @@
 #include <iostream>
 #include <iomanip>
 #include <thread>
+#include <chrono>
+#include <algorithm>
 #include <random>
 #include <stdexcept>
 #if defined(HZ_PLATFORM_LINUX) || defined(HZ_PLATFORM_MACOS)
@@ -67,12 +73,57 @@ static std::string Read(const std::filesystem::path& file) {
 #include "EditorConsoleChecks.h"
 #include "ImportFixture.h"
 namespace Hazel {
+static bool MetalEditorTest() { return Renderer::GetAPI()==RendererAPI::API::Metal; }
+static bool EditorGraphicsValid() {
+#ifdef HZ_PLATFORM_MACOS
+    if(MetalEditorTest())return static_cast<MetalRendererAPI&>(RenderCommand::Backend()).Observe()->Snapshot().Errors==0;
+#endif
+    return glGetError()==GL_NO_ERROR;
+}
+static Ref<Framebuffer> EditorTestTarget(FramebufferSpecification spec) {
+    if(MetalEditorTest()) { spec.Attachments.Attachments[0].TextureFormat=FramebufferTextureFormat::RGBA16F; return Framebuffer::CreateEditor(spec); }
+    return Framebuffer::Create(spec);
+}
+static void CompleteEditorTarget(const Ref<Framebuffer>& target) {
+    if(!MetalEditorTest())return;
+    const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(10);
+    Ref<const FramebufferReadback> result;
+    while(!result || !result->Completed) {
+        target->Poll();if(!result)result=target->Submit();
+        Check(std::chrono::steady_clock::now()<deadline,"Editor native readback timed out");
+        std::this_thread::yield();
+    }
+    Check(result->Error.empty(),result->Error);
+}
 class EditorWorkflowSmoke : public Layer {
 public:
     EditorWorkflowSmoke(EditorLayer& editor, std::filesystem::path directory, bool& done)
         : m_Editor(editor), m_Directory(std::move(directory)), m_Done(done) {}
+    void SaveNativeCapture() {
+#ifdef HZ_PLATFORM_MACOS
+        if(const char* path=std::getenv("HAZEL_EDITOR_CAPTURE"); path && MetalEditorTest()) {
+            Check(m_NativeCapture && m_NativeCapture->Completed,"Actual native editor drawable capture did not complete");
+            auto image=std::find_if(m_NativeCapture->Images.begin(),m_NativeCapture->Images.end(),[](const auto& value){return value.Viewport==ImGui::GetMainViewport()->ID;});
+            Check(image!=m_NativeCapture->Images.end(),"Main editor drawable was not captured");
+            std::ofstream out(std::filesystem::u8path(path),std::ios::binary);out<<"P6\n"<<image->Width<<' '<<image->Height<<"\n255\n";
+            for(size_t pixel=0;pixel<image->BGRA.size();pixel+=4){const char rgb[]={char(image->BGRA[pixel+2]),char(image->BGRA[pixel+1]),char(image->BGRA[pixel])};out.write(rgb,3);}Check(bool(out),"Native editor capture write failed");
+        }
+#endif
+    }
     void OnUpdate(Timestep) override {
+        if(m_CaptureTicks) {
+            ++m_CaptureTicks;
+#ifdef HZ_PLATFORM_MACOS
+            Check(m_CaptureTicks<300,"Native authored PBR capture did not complete");
+            if(m_CaptureTicks>12 && m_NativeCapture && m_NativeCapture->Completed) {
+                Check(SceneSerializer(m_Editor.m_EditorScene).SerializeText()==m_CaptureAuthored,"Native editor capture changed authored PBR inputs");
+                m_Done=true;Application::Get().Close();
+            }
+#endif
+            return;
+        }
         if(m_ImportPhase){ImportWorkflowUpdate();return;}
+        VerifyEditorPicks();
         auto& e = m_Editor;
         switch (++m_Frame) {
         case 3: {
@@ -82,7 +133,8 @@ public:
                 const auto target=e.m_Framebuffer->GetSpecification();
                 e.m_ViewportSize={128,64};e.m_ViewportPixelScale={2,2};
                 Check(e.ViewportFramebufferExtent()==glm::uvec2(256,128),"Retina target extent used logical units");
-                e.m_Framebuffer->Resize(256,128);e.m_Framebuffer->ClearAttachment(1,901);
+                e.m_Framebuffer->Resize(256,128);if(MetalEditorTest()){e.m_Framebuffer->Bind();e.m_Framebuffer->ClearEditor({0,0,0,1});}e.m_Framebuffer->ClearAttachment(1,901);
+                if(MetalEditorTest()){e.m_Framebuffer->Unbind();CompleteEditorTarget(e.m_Framebuffer);}
                 const auto pixel=e.ViewportFramebufferPoint({32,16});
                 Check(pixel==glm::vec2(64,32)&&e.m_Framebuffer->ReadPixel(1,int(pixel.x),int(pixel.y))==901,"Retina editor picking did not map logical input to integer target pixels");
                 e.m_Framebuffer->Resize(target.Width,target.Height);e.m_ViewportSize=logical;e.m_ViewportPixelScale=scale;
@@ -297,7 +349,7 @@ public:
             }
             break;
         case 10:
-            Check(glGetError() == GL_NO_ERROR, "Editor/gizmo/panels OpenGL error");
+            Check(EditorGraphicsValid(), "Editor/gizmo/panels OpenGL error");
             e.m_Authoring->SelectAsset(Project::GetAssetDirectory()/std::filesystem::u8path(u8"Prefabs/é independent.hprefab"));
             break;
         case 11: {
@@ -308,6 +360,7 @@ public:
             break;
         }
         case 14: {
+
             Check(!ImGui::FindWindowByName("Prefab Inspector")->Active,"Clean prefab Close did not release its inspector safely");
             const auto root=Project::GetAssetDirectory();
             SpriteSheetDocument document(Project::GetActive()->GetAssets());
@@ -347,7 +400,7 @@ public:
         }
         case 16:
             Check(e.m_EditorScene->GetEntityByUUID(901).HasComponent<SpriteAnimationComponent>() && e.m_EditorScene->RenderedSprite(e.m_EditorScene->GetEntityByUUID(901)),"Sheet assignment did not resolve scene animation");
-            Check(glGetError()==GL_NO_ERROR,"Sprite authoring panel OpenGL error");
+            Check(EditorGraphicsValid(),"Sprite authoring panel OpenGL error");
             e.m_Authoring->m_Sprites.m_Selected=e.m_Authoring->m_Sprites.m_Document->Draft().Regions.front().ID;
             e.m_Authoring->m_Sprites.m_SelectedClip=e.m_Authoring->m_Sprites.m_Document->Draft().Clips.front().ID;
             m_PreviewBeforeReload=e.m_Authoring->m_Sprites.m_Texture;
@@ -361,13 +414,13 @@ public:
             auto& panel=e.m_Authoring->m_Sprites;const auto& sheet=panel.m_Document->Draft();auto previewSpec=sheet.Sampling;previewSpec.Encoding=TextureEncoding::Linear;
             const auto preview=Project::GetActive()->GetAssets()->Texture(sheet.Texture,previewSpec);
             Check(panel.m_Texture==preview && panel.m_Texture!=m_PreviewBeforeReload && panel.m_Texture!=sprite->Texture && sprite->Texture->GetSpecification().Encoding==TextureEncoding::SRGB,"Editor preview reload/encoding identity did not follow its separate ImGui sampling contract");
-            const auto texture=(ImTextureID)(uintptr_t)preview->GetRendererID();
+            const auto texture=reinterpret_cast<ImTextureID>(preview->GetEditorTexture().Handle);
             bool visible=false;auto* draw=ImGui::GetDrawData();
             for(int list=0;draw && list<draw->CmdListsCount;++list)
                 for(const auto& command:draw->CmdLists[list]->CmdBuffer)
                     if(command.TextureId==texture)visible=true;
             // Optional evidence from this bounded render smoke; no clicks or image assertions.
-            if (const auto* capture=std::getenv("HAZEL_EDITOR_CAPTURE")) {
+            if (const auto* capture=std::getenv("HAZEL_EDITOR_CAPTURE"); capture && !MetalEditorTest()) {
                 auto* window=static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
                 int width=0,height=0;glfwGetFramebufferSize(window,&width,&height);
                 std::vector<unsigned char> pixels(static_cast<size_t>(width)*height*3);
@@ -402,6 +455,54 @@ public:
         }
     }
 private:
+#ifdef HZ_PLATFORM_MACOS
+    std::shared_ptr<MetalEditorCapture> m_NativeCapture;
+#endif
+    unsigned m_CaptureTicks=0;
+    std::string m_CaptureAuthored;
+    bool BeginNativeCapture() {
+#ifdef HZ_PLATFORM_MACOS
+        if(MetalEditorTest() && std::getenv("HAZEL_EDITOR_CAPTURE")) {
+            const char* reference=std::getenv("HAZEL_RENDERING_REFERENCE_PROJECT");Check(reference,"Native capture requires the existing committed reference snapshot");
+            m_Editor.m_Console->Clear();
+            Check(m_Editor.OpenProject(std::filesystem::u8path(reference).parent_path()/"RenderingReference-IBLQuality-Photo.hproj"),"Native authored PBR capture project transition failed");
+            m_Editor.m_Authoring->m_Console.Visible=false;m_Editor.m_Authoring->m_ShowSceneSettings=false;
+            auto meshes=m_Editor.m_EditorScene->GetAllEntitiesWith<MeshRendererComponent>();
+            if(!meshes.empty())m_Editor.m_SceneHierarchyPanel.SetSelectedEntity({*meshes.begin(),m_Editor.m_EditorScene.get()});
+            m_Editor.m_GizmoType=ImGuizmo::TRANSLATE;
+            m_CaptureAuthored=SceneSerializer(m_Editor.m_EditorScene).SerializeText();m_CaptureTicks=1;
+            return true;
+        }
+#endif
+        return false;
+    }
+    Ref<Framebuffer> m_NativeFontPreview;
+    struct EditorPick { Ref<Framebuffer> Target; int X,Y,ID; };
+    std::vector<EditorPick> m_EditorPicks;
+    void VerifyEditorPicks() {
+        for(const auto& pick:m_EditorPicks) {
+            const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(10);
+            while(pick.Target->ReadEditorEntity(pick.X,pick.Y)!=pick.ID) {
+                if(std::chrono::steady_clock::now()>=deadline) {
+                    std::cerr<<"Preview ID expected="<<pick.ID<<" actual="<<pick.Target->ReadEditorEntity(pick.X,pick.Y)<<" flipped="<<pick.Target->ReadEditorEntity(pick.X,int(pick.Target->GetSpecification().Height)-1-pick.Y)<<" xy="<<pick.X<<','<<pick.Y<<'\n';
+                    throw std::runtime_error("Native completed preview IDs disagree with authored geometry");
+                }
+                std::this_thread::yield();
+            }
+        }
+        m_EditorPicks.clear();
+        if(m_NativeFontPreview){bool glyph=false;const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(10);while(!glyph&&std::chrono::steady_clock::now()<deadline)for(int y=0;y<96&&!glyph;y+=2)for(int x=0;x<160&&!glyph;x+=2)glyph=m_NativeFontPreview->ReadEditorEntity(x,y)==0;Check(glyph,"Native Metal family preview contains no actual glyph IDs");m_NativeFontPreview.reset();}
+    }
+    void RuntimePaint(const Ref<Scene>& scene,float ts) {
+        if(!MetalEditorTest()){scene->OnUpdateRuntime(ts);return;}
+        FramebufferSpecification spec;spec.Width=640;spec.Height=480;spec.Attachments={FramebufferTextureFormat::RGBA16F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
+        auto target=EditorTestTarget(spec);target->Bind();target->ClearEditor({0,0,0,1});scene->OnUpdateRuntime(ts,nullptr,target);target->Unbind();CompleteEditorTarget(target);
+    }
+    void EditorPaint(const Ref<Scene>& scene,NavigationCamera& camera) {
+        if(!MetalEditorTest()){scene->OnUpdateEditor(0,camera);return;}
+        FramebufferSpecification spec;spec.Width=640;spec.Height=480;spec.Attachments={FramebufferTextureFormat::RGBA16F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
+        auto target=EditorTestTarget(spec);target->Bind();target->ClearEditor({0,0,0,1});scene->OnUpdateEditor(0,camera,nullptr,target);target->Unbind();CompleteEditorTarget(target);
+    }
     void CheckMinimizedCompletion() {
         if(m_MinimizedStart==std::chrono::steady_clock::time_point{})m_MinimizedStart=std::chrono::steady_clock::now();
         Check(m_Frame==3,"Editor rendering/scene updates continued while minimized");
@@ -422,6 +523,11 @@ private:
         std::cout<<"PASS: main-thread Console/tool polling continues while minimized without advancing scene/render frames\n";
     }
     void OnImGuiRender() override {
+#ifdef HZ_PLATFORM_MACOS
+        if(m_CaptureTicks==10 && std::getenv("HAZEL_EDITOR_CAPTURE") && MetalEditorTest() && !m_NativeCapture)
+            m_NativeCapture=static_cast<MetalRendererAPI&>(RenderCommand::Backend()).CaptureEditorFrameForTesting();
+#endif
+        if(m_CaptureTicks)return;
         if(m_ImportPhase){DrawImportWorkflow();return;}
         if(m_Frame==7) {
             auto& editor=m_Editor;auto* viewport=ImGui::FindWindowByName("Viewport");
@@ -476,10 +582,11 @@ private:
             auto& a=*m_Editor.m_Authoring;const auto priorScene=a.m_PrefabScene;const auto priorFramebuffer=a.m_PrefabPreview;const auto priorCamera=a.m_PrefabCamera;const auto priorFit=a.m_PrefabFit;
             a.m_PrefabScene=m_HierarchyCapture;a.m_PrefabFit=true;a.m_PrefabPreview=m_HierarchyPreviewCapture;
             ImGui::GetStateStorage()->SetInt(ImGui::GetID("Subtree preview"),1);a.PrefabPreview();
-            Check(a.m_PrefabPreview && glIsTexture(a.m_PrefabPreview->GetColorAttachmentRendererID()) && glGetError()==GL_NO_ERROR,"Actual detached subtree preview failed");
+            Check(a.m_PrefabPreview && (MetalEditorTest()?bool(a.m_PrefabPreview->GetEditorTexture().Owner):bool(glIsTexture(a.m_PrefabPreview->GetColorAttachmentRendererID()))) && EditorGraphicsValid(),"Actual detached subtree preview failed");
             auto selected=m_HierarchyCapturePanel.GetSelectedEntity();auto projected=a.m_PrefabCamera.GetViewProjection()*m_HierarchyCapture->GetWorldTransform(selected)*glm::vec4(0,0,0,1);projected/=projected.w;
-            const auto spec=a.m_PrefabPreview->GetSpecification();a.m_PrefabPreview->Bind();
-            Check(a.m_PrefabPreview->ReadPixel(1,int((projected.x+1)*.5f*spec.Width),int((projected.y+1)*.5f*spec.Height))==int(uint32_t(selected)),"Detached preview did not pick nested visual at world position");a.m_PrefabPreview->Unbind();
+            const auto spec=a.m_PrefabPreview->GetSpecification();
+            if(MetalEditorTest())m_EditorPicks.push_back({a.m_PrefabPreview,int((projected.x+1)*.5f*spec.Width),int((projected.y+1)*.5f*spec.Height),int(uint32_t(selected))});
+            else {a.m_PrefabPreview->Bind();Check(a.m_PrefabPreview->ReadPixel(1,int((projected.x+1)*.5f*spec.Width),int((projected.y+1)*.5f*spec.Height))==int(uint32_t(selected)),"Detached preview did not pick nested visual at world position");a.m_PrefabPreview->Unbind();}
             m_HierarchyPreviewCapture=a.m_PrefabPreview; // Retain texture until ImGui consumes this frame.
             a.m_PrefabScene=priorScene;a.m_PrefabPreview=priorFramebuffer;a.m_PrefabCamera=priorCamera;a.m_PrefabFit=priorFit;
             ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());ImGui::End();
@@ -950,7 +1057,7 @@ private:
         Check(uiPanel.HasComponent<UIRectComponent>()&&uiPanel.HasComponent<SpriteRendererComponent>()&&scene->GetRelationship(uiPanel).Parent==canvas.GetUUID(),"Panel preset hierarchy/appearance incorrect");
         Check(panel.AddUI(2),"Text preset failed");auto uiText=panel.GetSelectedEntity();Check(uiText.HasComponent<UITextStyleComponent>()&&uiText.HasComponent<TextComponent>(),"Text preset lacks style/text");
         panel.SetSelectedEntity(uiPanel);Check(panel.AddUI(3),"Button preset failed");auto uiButton=panel.GetSelectedEntity();Check(uiButton.HasComponent<UIButtonComponent>(),"Button preset lacks action component");
-        scene->OnViewportResize(640,480);scene->OnUpdateEditor(0,e.m_NavigationCamera);GameUI::Rect resolved;Check(scene->GetUIBounds(uiButton.GetUUID(),resolved)&&resolved.Size.x>0,"Editor UI preset preview lacks bounds");GameUI::Action action;Check(!scene->ConsumeUIAction(0,action),"Edit preview activated a game button");
+        scene->OnViewportResize(640,480);EditorPaint(scene,e.m_NavigationCamera);GameUI::Rect resolved;Check(scene->GetUIBounds(uiButton.GetUUID(),resolved)&&resolved.Size.x>0,"Editor UI preset preview lacks bounds");GameUI::Action action;Check(!scene->ConsumeUIAction(0,action),"Edit preview activated a game button");
         // D6 uses the same reversible controller called by viewport handles.
         // Preserve the established v1 stretch/minimum regression independently
         // of the now-measured creation presets checked above.
@@ -1227,7 +1334,7 @@ private:
               "Native direct reopen failed");
         e.m_Framebuffer->Bind();
         e.m_EditorScene->OnUpdateEditor(0, e.m_NavigationCamera, &e.m_RenderView, e.m_Framebuffer);
-        e.m_Framebuffer->Unbind();
+        e.m_Framebuffer->Unbind();CompleteEditorTarget(e.m_Framebuffer);
         Check(e.m_EditorScene->RenderError().empty() && e.OnScenePlay(true),
               "Native direct viewport/Play failed");
         e.OnSceneStop();
@@ -1578,16 +1685,21 @@ int main(int argc, char** argv) {
         ConsoleSession console;
         {
             ApplicationSpecification spec; spec.Name = "Migration Editor";
+            if(std::getenv("HAZEL_TEST_METAL_EDITOR"))spec.GraphicsAPI=RendererAPI::API::Metal;
             spec.Resources.Root = directory / "assets"; std::filesystem::current_path(directory); spec.CommandLineArgs = { 2, arguments };
             Application application(spec);
+#ifdef HZ_PLATFORM_MACOS
+            if(MetalEditorTest() && std::getenv("HAZEL_EDITOR_CAPTURE"))static_cast<MetalRendererAPI&>(RenderCommand::Backend()).EnableEditorReadbackForTesting();
+#endif
             if(std::getenv("HAZEL_EDITOR_CAPTURE"))
                 glfwSetWindowSize(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()),1024,640);
-            glfwHideWindow(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()));
-            std::cout << "Renderer: " << glGetString(GL_RENDERER) << "; Version: " << glGetString(GL_VERSION) << '\n';
+            if(!MetalEditorTest()){glfwHideWindow(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()));
+            std::cout << "Renderer: " << glGetString(GL_RENDERER) << "; Version: " << glGetString(GL_VERSION) << '\n';}
             auto editor = CreateScope<EditorLayer>(console.Model); auto* observer = editor.get();
             application.PushLayer(std::move(editor));
-            application.PushLayer(CreateScope<EditorWorkflowSmoke>(*observer, directory, done));
-            application.Run();
+            auto workflow=CreateScope<EditorWorkflowSmoke>(*observer,directory,done);auto* workflowObserver=workflow.get();
+            application.PushLayer(std::move(workflow));
+            application.Run();workflowObserver->SaveNativeCapture();
         }
         console.Model->Pump();
         Check(!console.Model->Entries().empty(),"Application logging was disconnected during its lifetime");

@@ -31,12 +31,12 @@ void EditorLayer::UpdateNavigation(Timestep ts)
     if (m_ViewportSize.x <= 0 || m_ViewportSize.y <= 0)
     {
         m_Navigation.Cancel();
-        Application::Get().GetWindow().SetPointerCaptured(false);
+        Input::SetPointerCaptured(false);
         return;
     }
     auto &io = ImGui::GetIO();
     NavigationInput s;
-    s.Pointer = Application::Get().GetWindow().IsPointerCaptured()
+    s.Pointer = Input::IsPointerCaptured()
                     ? Input::GetMouseScreenPosition()
                     : glm::vec2(io.MousePos.x, io.MousePos.y);
     s.Left = io.MouseDown[0];
@@ -50,7 +50,7 @@ void EditorLayer::UpdateNavigation(Timestep ts)
                   float(Input::IsKeyPressed(Key::W)) - float(Input::IsKeyPressed(Key::S))};
     if (io.KeyCtrl)
         s.Speed *= .2f;
-    s.Focused = Application::Get().GetWindow().IsFocused();
+    s.Focused = Input::IsFocused();
     s.Blocked = NavigationBlocked();
     s.Escape = Input::IsKeyPressed(Key::Escape);
     s.OverImage = m_ViewportHovered && s.Pointer.x >= m_ViewportBounds[0].x &&
@@ -68,11 +68,10 @@ void EditorLayer::UpdateNavigation(Timestep ts)
             context.MovingWindow = nullptr;
         }
     }
-    auto &window = Application::Get().GetWindow();
     const bool capture = m_Navigation.Current() == ViewportNavigation::Gesture::Fly;
-    if (window.IsPointerCaptured() != capture)
+    if (Input::IsPointerCaptured() != capture)
     {
-        window.SetPointerCaptured(capture);
+        Input::SetPointerCaptured(capture);
         m_Navigation.SeedPointer();
     }
 }

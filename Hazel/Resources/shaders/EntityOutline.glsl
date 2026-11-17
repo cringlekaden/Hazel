@@ -7,9 +7,11 @@ layout(location=0) out vec4 o_Color;
 uniform isampler2D u_Entities;
 uniform int u_Selected;
 uniform int u_Radius;
+uniform int u_FlipY;
 uniform vec4 u_EncodedColor;
 void main(){
     ivec2 pixel=ivec2(gl_FragCoord.xy),size=textureSize(u_Entities,0);
+    if(u_FlipY!=0)pixel.y=size.y-1-pixel.y;
     // Inner edge stays on visible selected coverage, never on an occluding wall.
     if(texelFetch(u_Entities,pixel,0).r!=u_Selected)discard;
     for(int y=-8;y<=8;++y)for(int x=-8;x<=8;++x){

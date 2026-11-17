@@ -50,7 +50,7 @@ void RuntimeSession::ResetCameraInspection()
 void RuntimeSession::CancelCameraInspectionGesture()
 {
     if (m_InspectionGesture == InspectionGesture::Fly)
-        Application::Get().GetWindow().SetPointerCaptured(false);
+        Input::SetPointerCaptured(false);
     m_InspectionGesture = InspectionGesture::Idle;
     m_InspectionLatch = true;
     m_InspectionSeedPointer = true;
@@ -60,7 +60,6 @@ void RuntimeSession::UpdateCameraInspection(Timestep ts, bool focused, bool over
     CheckThread();
     if (!m_Inspection)
         return;
-    auto &window = Application::Get().GetWindow();
     bool left = Input::IsMouseButtonPressed(Mouse::ButtonLeft),
          right = Input::IsMouseButtonPressed(Mouse::ButtonRight),
          middle = Input::IsMouseButtonPressed(Mouse::ButtonMiddle);
@@ -68,7 +67,7 @@ void RuntimeSession::UpdateCameraInspection(Timestep ts, bool focused, bool over
          alt = Input::IsKeyPressed(Key::LeftAlt) || Input::IsKeyPressed(Key::RightAlt),
          shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift),
          space = Input::IsKeyPressed(Key::Space);
-    if (!focused || !window.IsFocused() || Input::IsKeyPressed(Key::Escape))
+    if (!focused || !Input::IsFocused() || Input::IsKeyPressed(Key::Escape))
     {
         CancelCameraInspectionGesture();
         return;
@@ -103,7 +102,7 @@ void RuntimeSession::UpdateCameraInspection(Timestep ts, bool focused, bool over
                 m_InspectionGesture = shift ? InspectionGesture::Pan : InspectionGesture::Orbit;
             m_InspectionSeedPointer = true;
             if (m_InspectionGesture == InspectionGesture::Fly)
-                window.SetPointerCaptured(true);
+                Input::SetPointerCaptured(true);
         }
     }
     auto pointer = Input::GetMouseScreenPosition();

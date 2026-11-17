@@ -1,9 +1,11 @@
 #pragma once
 #include "MetalProof.h"
+#include "Hazel/Renderer/Resources/EditorTexture.h"
 #include <glm/glm.hpp>
 #include <Metal/Metal.hpp>
 #include <QuartzCore/QuartzCore.hpp>
 #include <array>
+#include <atomic>
 #include <cstddef>
 #include <filesystem>
 #include <functional>
@@ -14,6 +16,7 @@ struct MetalRenderer2DFrame;
 class MetalShader;
 struct FramebufferReadback;
 struct MetalFramebufferAttachments;
+struct EditorTexture;
 // All native execution and resource ownership stays here. Metal 4 command buffers
 // retain neither referenced resources nor their allocator: slots own both explicitly.
 class MetalDevice final {
@@ -24,6 +27,11 @@ public:
     MTL4::CommandQueue* Queue() const { return m_Queue.get(); }
     std::shared_ptr<MetalProofObserver> Observer() const { return m_Observer; }
     void Present(CA::MetalLayer* layer, uint32_t width, uint32_t height, uint32_t logicalWidth, uint32_t logicalHeight, double scale, bool visible);
+    void EnableEditorReadback();
+    std::shared_ptr<MetalEditorCapture> CaptureEditorFrame();
+    void InitEditor();
+    void ShutdownEditor();
+    void QueueEditorTextures(std::vector<EditorTexture> textures);
     void Drain();
     void SetClear(const glm::vec4& color);
     void EnableTransferProof();
@@ -37,12 +45,19 @@ public:
 private:
     friend class MetalRendererAPI;
     friend class MetalFramebuffer;
+    void PresentEditor(CA::MetalLayer* layer, bool visible);
+    std::shared_ptr<MetalEditorCapture> m_EditorCapture;
+    bool m_EditorReadbackEnabled = false;
+    bool m_Editor = false, m_EditorQueued = false;
+    uint64_t m_EditorTimestampFrequency = 0;
+    std::vector<std::shared_ptr<MetalRenderer2DFrame>> m_EditorFrames;
+    std::vector<EditorTexture> m_EditorTextures;
     void Poll();
     NS::SharedPtr<MTL::Buffer> AcquireRenderer2DBuffer(size_t bytes, const void* data = nullptr);
     void PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     void EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     std::shared_ptr<MetalRenderer2DFrame> m_PresentFrame;
-    std::shared_ptr<MetalShader> m_OutputShader;
+    std::shared_ptr<MetalShader> m_OutputShader, m_OutlineShader;
     std::vector<std::weak_ptr<const MetalFramebufferAttachments>> m_AttachmentGenerations;
     std::shared_ptr<const FramebufferReadback> SubmitRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     struct Receipt { bool GPU=false, Presented=false; };
@@ -55,6 +70,15 @@ private:
         uint64_t Serial=0;
         bool Pending=false;
         std::shared_ptr<MetalRenderer2DFrame> Quad;
+        std::vector<std::shared_ptr<MetalRenderer2DFrame>> EditorFrames;
+        std::vector<EditorTexture> EditorTextures;
+        std::shared_ptr<MetalEditorCapture> EditorCapture;
+        std::vector<NS::SharedPtr<MTL::Buffer>> EditorCaptureBuffers;
+        std::shared_ptr<std::atomic<bool>> EditorFeedback;
+        NS::SharedPtr<MTL4::CounterHeap> EditorCounters;
+        std::vector<NS::SharedPtr<CA::MetalDrawable>> EditorDrawables;
+        std::vector<NS::SharedPtr<CA::MetalLayer>> EditorLayers;
+        NS::SharedPtr<MTL::ResidencySet> EditorResidency;
         std::vector<NS::SharedPtr<MTL::Buffer>> Renderer2DBuffers;
         size_t Renderer2DCursor = 0;
     };

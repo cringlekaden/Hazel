@@ -20,6 +20,7 @@
 using namespace Hazel;
 using Clock=std::chrono::steady_clock;
 void MetalM1Environment(GLFWwindow* window,const char* output);
+bool MetalM1ClipboardRoundTrip();
 static void Check(bool value,const char* text) { if(!value) throw std::runtime_error(text); }
 static MetalRendererAPI& Backend() { return static_cast<MetalRendererAPI&>(RenderCommand::Backend()); }
 static ApplicationSpecification Specification(const std::filesystem::path& output) {
@@ -28,6 +29,7 @@ static ApplicationSpecification Specification(const std::filesystem::path& outpu
     s.Resources.Root=std::filesystem::absolute("Hazel/Resources"); s.Resources.UserData=output/"profile";
     return s;
 }
+#include "MetalEditorConsumers.h"
 class EventProof final : public Layer {
 public:
     unsigned Resizes=0;
@@ -152,6 +154,10 @@ static int Benchmark(const std::filesystem::path& output,const std::filesystem::
 }
 int main(int argc,char** argv) {
     try {
+        if (argc == 4 && std::string(argv[2]) == "--editor-consumers-quick") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),100);
+        if (argc == 4 && std::string(argv[2]) == "--editor-consumers") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]));
+        if (argc == 4 && std::string(argv[2]) == "--editor-pending-shutdown") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),900,true);
+        if (argc == 4 && std::string(argv[2]) == "--editor-encode-abort") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),900,false,true);
         if(argc==4 && (std::string(argv[2])=="--benchmark-metal" || std::string(argv[2])=="--benchmark-opengl"))
             return Benchmark(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),std::string(argv[2])=="--benchmark-metal");
         const bool renderer3D=argc==4 && std::string(argv[2])=="--renderer3d";

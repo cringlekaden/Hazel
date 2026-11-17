@@ -3,6 +3,7 @@
 #include "MetalDevice.h"
 #include "MetalRenderer2DFrame.h"
 #include "MetalShader.h"
+#include "MetalComputePipeline.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include <cmath>
 #include <algorithm>
@@ -18,10 +19,10 @@ void MetalFramebuffer::Validate(const FramebufferSpecification& specification)
 {
     const auto& attachments = specification.Attachments.Attachments;
     Check(specification.Width && specification.Height && specification.Width <= 4096 && specification.Height <= 4096 && uint64_t(specification.Width) * specification.Height <= 8388608 &&
-        specification.Samples == 1 && !specification.SwapChainTarget && attachments.size() == 3 &&
+        specification.Samples == 1 && !specification.SwapChainTarget && ((attachments.size() == 1 && attachments[0].TextureFormat == FramebufferTextureFormat::RGBA8) || (attachments.size() == 3 &&
         attachments[0].TextureFormat == FramebufferTextureFormat::RGBA32F &&
         attachments[1].TextureFormat == FramebufferTextureFormat::RED_INTEGER &&
-        attachments[2].TextureFormat == FramebufferTextureFormat::DEPTH32F,
+        attachments[2].TextureFormat == FramebufferTextureFormat::DEPTH32F)),
         "Metal framebuffer requires 1..4096 extent / at most 8M pixels, one sample, ordered RGBA32F/R32Sint/Depth32F attachments and no swapchain target");
 }
 MetalFramebuffer::MetalFramebuffer(std::shared_ptr<MetalDevice> device, const FramebufferSpecification& specification)
@@ -41,9 +42,10 @@ std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(ui
     descriptor->setTextureType(MTL::TextureType2D); descriptor->setWidth(width); descriptor->setHeight(height);
     descriptor->setStorageMode(MTL::StorageModePrivate); descriptor->setUsage(MTL::TextureUsageRenderTarget | MTL::TextureUsageShaderRead);
     const MTL::PixelFormat formats[] = {MTL::PixelFormatRGBA32Float, MTL::PixelFormatR32Sint, MTL::PixelFormatDepth32Float};
-    for (size_t i = 0; i < generation->Targets.size(); ++i)
+    for (size_t i = 0; i < (m_Specification.Attachments.Attachments.size() == 1 ? 1u : 3u); ++i)
     {
-        descriptor->setPixelFormat(formats[i]);
+        descriptor->setUsage(MTL::TextureUsageRenderTarget | MTL::TextureUsageShaderRead | (i == 0 && m_Specification.Attachments.Attachments.size() == 3 ? MTL::TextureUsageShaderWrite : 0));
+        descriptor->setPixelFormat(m_Specification.Attachments.Attachments.size() == 1 ? MTL::PixelFormatBGRA8Unorm : formats[i]);
         generation->Targets[i] = NS::TransferPtr(m_Device->NativeDevice()->newTexture(descriptor.get()));
         if (!generation->Targets[i]) throw std::runtime_error("Cannot allocate Metal framebuffer attachment generation");
     }
@@ -51,8 +53,8 @@ std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(ui
     auto& live = m_Device->m_AttachmentGenerations;
     live.erase(std::remove_if(live.begin(), live.end(), [](const auto& weak) { return weak.expired(); }), live.end());
     for (const auto& weak : live) if (auto current = weak.lock())
-        for (const auto& target : current->Targets) bytes += target->allocatedSize();
-    for (const auto& target : generation->Targets) bytes += target->allocatedSize();
+        for (const auto& target : current->Targets) if (target) bytes += target->allocatedSize();
+    for (const auto& target : generation->Targets) if (target) bytes += target->allocatedSize();
     Check(bytes <= 1024ULL * 1024 * 1024, "Metal framebuffer owner/in-flight attachment budget exceeds 1 GiB");
     live.push_back(generation);
     { std::lock_guard<std::mutex> lock(m_Device->m_Observer->Mutex); ++m_Device->m_Observer->Value.AttachmentAllocations; }
@@ -122,6 +124,9 @@ Ref<const FramebufferReadback> MetalFramebuffer::Submit()
 void MetalFramebuffer::Poll()
 {
     m_Device->Poll();
+    for (const auto& pending : m_EditorPendingReadbacks) if (pending->Completed && pending->Error.empty() &&
+        (!m_EditorReadback || pending->Serial > m_EditorReadback->Serial)) m_EditorReadback = pending;
+    m_EditorPendingReadbacks.erase(std::remove_if(m_EditorPendingReadbacks.begin(), m_EditorPendingReadbacks.end(), [](const auto& pending) { return pending->Completed; }), m_EditorPendingReadbacks.end());
     const auto proof = m_Device->Observer()->Snapshot();
     if (proof.Errors) throw std::runtime_error(proof.Error);
 }
@@ -140,7 +145,7 @@ void MetalFramebuffer::Resize(uint32_t width, uint32_t height)
     auto generation = Allocate(width, height); // publish only on complete allocation success
     m_Available.clear();
     m_Attachments = std::move(generation); m_Specification = specification;
-    m_SubmittedGeneration = false; m_Readback.reset();
+    m_SubmittedGeneration = false; m_Readback.reset(); ResetEditorReadback();
 }
 size_t MetalFramebuffer::ReadIndex(int x, int y)
 {
@@ -162,7 +167,29 @@ int MetalFramebuffer::ReadPixel(uint32_t attachment, int x, int y)
 float MetalFramebuffer::ReadDepthPixel(int x, int y) { const auto index = ReadIndex(x, y); return m_Readback->Depth[index]; }
 void MetalFramebuffer::EncodeOutput(const Ref<Framebuffer>& destination)
 {
-    Check(!destination, "Metal output currently targets only the native window");
+    if (destination) {
+        Poll();
+        auto target = std::dynamic_pointer_cast<MetalFramebuffer>(destination);
+        Check(target && target.get() != this && target->m_Device == m_Device && target->m_Specification.Attachments.Attachments.size() == 1,
+            "Editor output requires a separate encoded color target on the same device");
+        Check(m_Frame && !Backend().IsFramebufferBound(m_Frame), "Unbind editor scene before display encoding");
+        Check(target->m_Specification.Width == m_Frame->Width && target->m_Specification.Height == m_Frame->Height, "Editor output extent mismatch");
+        target->Bind(); target->Unbind();
+        if (!m_Device->m_OutputShader) m_Device->m_OutputShader = std::make_shared<MetalShader>(m_Device, "DisplayOutput", 32, true);
+        target->m_Frame->OutputShader = m_Device->m_OutputShader;
+        target->m_Frame->DisplaySource = std::move(m_Frame);
+        target->m_Frame->Readback = false;
+        auto& source = target->m_Frame->DisplaySource;
+        source->Result = std::make_shared<FramebufferReadback>();
+        source->Result->Width = source->Width; source->Result->Height = source->Height;
+        source->EditorPicking = true;
+        source->CompletedEntity.resize(size_t(source->Width) * source->Height);
+        m_EditorPendingReadbacks.push_back(source->Result);
+        m_Device->m_EditorFrames.push_back(target->m_Frame);
+        target->m_Frame.reset(); target->m_SubmittedGeneration = true;
+        m_SubmittedGeneration = true;
+        return;
+    }
     Check(m_Frame && !Backend().IsFramebufferBound(m_Frame), "Unbind the completed scene before encoding output");
     Check(!m_Device->m_PresentFrame, "Only one window output is allowed per frame");
     if (!m_Device->m_OutputShader)
@@ -172,7 +199,40 @@ void MetalFramebuffer::EncodeOutput(const Ref<Framebuffer>& destination)
     m_Device->m_PresentFrame = std::move(m_Frame);
     m_SubmittedGeneration = true;
 }
-void MetalFramebuffer::DrawEntityOutlineTo(const Ref<Framebuffer>&, int, int, glm::vec4) { Unsupported(); }
+void MetalFramebuffer::DrawEntityOutlineTo(const Ref<Framebuffer>& destination, int entity, int radius, glm::vec4 color) {
+    auto target = std::dynamic_pointer_cast<MetalFramebuffer>(destination);
+    Check(target && target->m_Device == m_Device && radius >= 1 && radius <= 8 && !m_Device->m_EditorFrames.empty(), "Invalid editor outline destination/radius");
+    auto frame = m_Device->m_EditorFrames.back();
+    Check(frame->Attachments == target->m_Attachments && frame->DisplaySource && frame->DisplaySource->Attachments == m_Attachments, "Outline requires current display source");
+    if (!m_Device->m_OutlineShader) m_Device->m_OutlineShader = std::make_shared<MetalShader>(m_Device, "EntityOutline", 32, true);
+    frame->OutlineShader = m_Device->m_OutlineShader;
+    frame->OutlineEntity = entity; frame->OutlineRadius = radius; frame->OutlineColor = color;
+}
+EditorTexture MetalFramebuffer::GetEditorTexture() const {
+    Check(m_Specification.Attachments.Attachments.size() == 1, "Only encoded editor output is an ImGui image");
+    return {reinterpret_cast<uintptr_t>(m_Attachments->Targets[0].get()), m_Attachments};
+}
+int MetalFramebuffer::ReadEditorEntity(int x, int y) {
+    Poll();
+    const auto& readback = m_EditorReadback;
+    if (!readback || !readback->Completed || !readback->Error.empty() || readback->Width != m_Specification.Width || readback->Height != m_Specification.Height || x < 0 || y < 0 || uint32_t(x) >= readback->Width || uint32_t(y) >= readback->Height) return -1;
+    return readback->Entity[size_t(y) * readback->Width + uint32_t(x)];
+}
+void MetalFramebuffer::DispatchColorTo(const Ref<Framebuffer>& destination, const Ref<ComputePipeline>& pipeline, const std::vector<uint8_t>& parameters) {
+    auto target = std::dynamic_pointer_cast<MetalFramebuffer>(destination);
+    auto compute = std::dynamic_pointer_cast<MetalComputePipeline>(pipeline);
+    Check(target && target.get() != this && target->m_Device == m_Device && compute && compute->Device() == m_Device && parameters.size() == compute->ParameterBytes(),
+        "Color compute requires distinct same-device targets/pipeline and 1..256 immutable parameter bytes");
+    Check(m_Frame && !m_Frame->ComputeSource && !m_Frame->DisplaySource && !Backend().IsFramebufferBound(m_Frame) && !target->m_Frame && target->m_Specification.Attachments.Attachments.size() == 3 &&
+        m_Frame->Width == target->m_Specification.Width && m_Frame->Height == target->m_Specification.Height,
+        "Color compute requires an unbound producer and empty equal-size FP32 destination");
+    target->Bind(); target->Unbind();
+    target->m_Frame->ComputeSource = std::move(m_Frame);
+    target->m_Frame->ComputeSource->Readback = false;
+    target->m_Frame->Compute = std::move(compute);
+    target->m_Frame->ComputeParameters = parameters;
+    m_SubmittedGeneration = true;
+}
 void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure)
 {
     auto target = std::dynamic_pointer_cast<MetalFramebuffer>(destination);

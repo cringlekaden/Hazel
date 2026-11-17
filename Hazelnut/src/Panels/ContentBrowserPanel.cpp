@@ -1,3 +1,4 @@
+#include "Hazel/ImGui/ImGuiLayer.h"
 #include "ContentBrowserPanel.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Project/Project.h"
@@ -233,7 +234,7 @@ void ContentBrowserPanel::OnImGuiRender()
                                                        ? ImGui::GetStyleColorVec4(ImGuiCol_HeaderActive)
                                                        : ImVec4{0, 0, 0, 0});
             auto icon = entry->Directory ? m_DirectoryIcon : m_FileIcon;
-            if (ImGui::ImageButton("##file", (ImTextureID)(uintptr_t)icon->GetRendererID(), {size, size},
+            if (ImGui::ImageButton("##file", ImGuiLayer::Texture(icon->GetEditorTexture()), {size, size},
                                    {0, 0}, {1, 1}))
                 m_Selected = entry->Path;
             const bool hovered = ImGui::IsItemHovered();
