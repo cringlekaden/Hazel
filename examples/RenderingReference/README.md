@@ -179,3 +179,19 @@ separate the low-metallic diffuse grain from high-roughness specular errors;
 Scene Settings yaw exposes stability without rebaking. The numerical FP32 captures
 use the same pipeline before presentation. See [quality evidence and recipes](../../docs/design/ibl-quality-pass.md).
 For aesthetics and real material textures, use the separate [Rendering Showcase](../RenderingShowcase/README.md).
+
+## Experimental Metal 4 M4
+
+The feature branch implements native cooked meshes/materials and prepared PBR/IBL
+through the shared scene path. M4 is **locally qualified on Apple M4**; see the
+[acceptance record](../../docs/design/metal-m4.md). OpenGL remains default. After
+following the [Metal artifact build instructions](../../docs/development.md#experimental-metal-shader-resources),
+the photographic surface selector can be launched with:
+
+```sh
+HAZEL_RESOURCES="$PWD/Hazel/Resources" python3 scripts/hazel.py run Nutella --config Debug --metal --project examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj
+```
+
+Add `--inspect-camera` for the existing transient navigation controls. This
+experimental run does not qualify Hazelnut Metal ImGui or general Metal export.
+The packaging commands above retain their established OpenGL scope.

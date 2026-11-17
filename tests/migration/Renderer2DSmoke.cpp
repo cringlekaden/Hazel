@@ -1,6 +1,7 @@
 // Pixel/readback regression tests for the actual upstream Renderer2D pipelines.
 #include "Hazel.h"
 #include "../macos/Renderer2DParity.h"
+#include "../macos/Renderer3DParity.h"
 #include <fstream>
 #include "Hazel/Scene/RuntimeSession.h"
 #include "../macos/LoadedImages.h"
@@ -246,7 +247,7 @@ int main(int argc,char** argv) {
         for (bool reduced : {false, true}) {
             ApplicationSpecification specification; specification.Name="Migration Renderer2D";
             RuntimeRendererRequests requests;
-            if((argc==3 || argc==4) && std::string(argv[1])=="--metal-parity")requests.TextureSlots=4;
+            if((argc==3 || argc==4) && (std::string(argv[1])=="--metal-parity" || std::string(argv[1])=="--renderer3d-parity"))requests.TextureSlots=4;
             if(reduced){requests.TextureSlots=2;requests.ShaderLoading=ShaderLoadingRequest::GLSLCompatibility;requests.VSync=false;}
             specification.Rendering=RendererPolicy::Settings(requests,reduced?DebugOutputRequest::Disabled:DebugOutputRequest::Enabled);
             specification.WindowVSync=requests.VSync;
@@ -258,6 +259,19 @@ int main(int argc,char** argv) {
             framebuffer.Attachments={FramebufferTextureFormat::RGBA8,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
             target=Framebuffer::Create(framebuffer);
             Check(Renderer::GetSettings().TextureSlots==(requests.TextureSlots == 4 ? 4u : reduced ? 2u : std::min(32u,Renderer::GetCapabilities().MaxTextureSlots)),"Application renderer settings mismatch");
+            if(argc==3 && std::string(argv[1])=="--renderer3d-parity") {
+                Renderer3DParity(std::filesystem::absolute(argv[2]), [](const Ref<Framebuffer>& framebuffer) {
+                    const auto& spec = framebuffer->GetSpecification();
+                    auto result = CreateRef<FramebufferReadback>(); result->Width=spec.Width; result->Height=spec.Height;
+                    result->Color.resize(size_t(spec.Width)*spec.Height);result->Entity.resize(result->Color.size());result->Depth.resize(result->Color.size());
+                    glReadBuffer(GL_COLOR_ATTACHMENT0);glReadPixels(0,0,spec.Width,spec.Height,GL_RGBA,GL_FLOAT,result->Color.data());
+                    glReadBuffer(GL_COLOR_ATTACHMENT1);glReadPixels(0,0,spec.Width,spec.Height,GL_RED_INTEGER,GL_INT,result->Entity.data());
+                    glReadPixels(0,0,spec.Width,spec.Height,GL_DEPTH_COMPONENT,GL_FLOAT,result->Depth.data());
+                    Check(glGetError()==GL_NO_ERROR,"3D parity GL readback failed");
+                    framebuffer->Unbind(); result->Completed=true; return result;
+                });
+                return 0;
+            }
             if((argc==3 || argc==4) && std::string(argv[1])=="--metal-parity") {
                 const auto runtimeFrames=argc==4?std::stoul(argv[3]):80UL;
                 Check(runtimeFrames>=80 && runtimeFrames<=6000,"Runtime frame count must be 80..6000");

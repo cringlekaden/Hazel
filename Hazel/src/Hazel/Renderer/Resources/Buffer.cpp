@@ -5,12 +5,22 @@
 #include "Hazel/Core/Log.h"
 #include "Platform/OpenGL/OpenGLBuffer.h"
 
+#ifdef HZ_PLATFORM_MACOS
+#include "Platform/macOS/Metal/MetalBuffer.h"
+#endif
+
 namespace Hazel {
 
     Ref<VertexBuffer> VertexBuffer::Create(std::uint32_t size)
     {
         switch (Renderer::GetAPI())
         {
+#ifdef HZ_PLATFORM_MACOS
+            case RendererAPI::API::Metal: return CreateRef<MetalVertexBuffer>(size);
+#else
+            case RendererAPI::API::Metal: throw std::runtime_error("Metal requires macOS");
+#endif
+
             case RendererAPI::API::None:
                 HZ_CORE_ASSERT(false, "RendererAPI::None is invalid...");
                 return nullptr;
@@ -26,6 +36,12 @@ namespace Hazel {
     {
         switch (Renderer::GetAPI())
         {
+#ifdef HZ_PLATFORM_MACOS
+            case RendererAPI::API::Metal: return CreateRef<MetalVertexBuffer>(size, vertices);
+#else
+            case RendererAPI::API::Metal: throw std::runtime_error("Metal requires macOS");
+#endif
+
             case RendererAPI::API::None:
                 HZ_CORE_ASSERT(false, "RendererAPI::None is currently not supported!");
                 return nullptr;
@@ -41,6 +57,12 @@ namespace Hazel {
     {
         switch (Renderer::GetAPI())
         {
+#ifdef HZ_PLATFORM_MACOS
+            case RendererAPI::API::Metal: return CreateRef<MetalIndexBuffer>(indices, count);
+#else
+            case RendererAPI::API::Metal: throw std::runtime_error("Metal requires macOS");
+#endif
+
             case RendererAPI::API::None:
                 HZ_CORE_ASSERT(false, "RendererAPI::None is currently not supported!");
                 return nullptr;

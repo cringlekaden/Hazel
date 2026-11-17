@@ -1,5 +1,7 @@
 #include "hzpch.h"
 #include "MetalShader.h"
+#include "MetalRendererAPI.h"
+#include "Hazel/Renderer/RenderCommand.h"
 #include "MetalDevice.h"
 #include "Hazel/Core/Resources.h"
 #include <spirv_cross/spirv_cross.hpp>
@@ -177,6 +179,11 @@ MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::st
                 Check(type.basetype == spirv_cross::SPIRType::Int && type.vecsize == 1 && type.width == 32, "Picking output must be signed int32");
                 descriptor->colorAttachments()->object(1)->setPixelFormat(MTL::PixelFormatR32Sint);
             }
+        if (shaderName == "EnvironmentSky")
+        {
+            descriptor->colorAttachments()->object(1)->setPixelFormat(MTL::PixelFormatR32Sint);
+            descriptor->colorAttachments()->object(1)->setWriteMask(MTL::ColorWriteMaskNone);
+        }
         if (raster)
         {
             auto* color = descriptor->colorAttachments()->object(0);
@@ -240,9 +247,20 @@ MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::st
     }
 }
 namespace { [[noreturn]] void NoDrawing() { throw std::logic_error("Metal shader drawing/uniform commands require a separately qualified drawing backend"); } }
-void MetalShader::Bind() const { NoDrawing(); }
-void MetalShader::Unbind() const { NoDrawing(); }
-void MetalShader::SetInt(const std::string&, int) { NoDrawing(); }
+void MetalShader::Bind() const
+{
+    auto* backend = dynamic_cast<MetalRendererAPI*>(&RenderCommand::Backend());
+    if (!backend || backend->Device() != m_Device) throw std::logic_error("Metal shader drawing requires its owning backend");
+    backend->BindShader(m_Artifact.Name);
+}
+void MetalShader::Unbind() const {}
+void MetalShader::SetInt(const std::string& name, int value)
+{
+    static const std::map<std::string, int> bindings = {{"u_Base",0},{"u_MetalRough",1},{"u_Normal",2},{"u_Occlusion",3},
+        {"u_Emissive",4},{"u_Irradiance",5},{"u_Specular",6},{"u_BRDF",7},{"u_Sky",5}};
+    auto found = bindings.find(name);
+    if (found == bindings.end() || found->second != value) throw std::invalid_argument("Metal loose uniform unavailable or sampler differs from reflected GLSL binding");
+}
 void MetalShader::SetIntArray(const std::string&, const int*, uint32_t) { NoDrawing(); }
 void MetalShader::SetFloat(const std::string&, float) { NoDrawing(); }
 void MetalShader::SetFloat2(const std::string&, const glm::vec2&) { NoDrawing(); }

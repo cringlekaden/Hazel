@@ -188,7 +188,7 @@ for _, name in ipairs(consumers) do
         links { "ImGui", "GLFW", "Glad", "ImGuizmo", "yaml-cpp", "Box2D", "msdf-atlas-gen", "msdfgen", "freetype", "HarfBuzz", "UniBreak", "SheenBidi" }
         links { "Metal.framework", "QuartzCore.framework", "Foundation.framework", "Cocoa.framework", "IOKit.framework", "CoreFoundation.framework", "OpenGL.framework", "CoreAudio.framework", "AudioToolbox.framework" }
         defines { "HZ_PLATFORM_MACOS", "GL_SILENCE_DEPRECATION" }
-        libdirs { mono .. "/lib" }
+        libdirs { ShaderToolsRoot .. "/lib", mono .. "/lib" }
         links { "monosgen-2.0", "z" }
         xcodebuildsettings { ["LD_RUNPATH_SEARCH_PATHS"] = "@executable_path/mono/lib" }
         if name == "Hazelnut" or name == "Nutella" or name == "HazelProject" or name == "SpriteAssetAudit" then

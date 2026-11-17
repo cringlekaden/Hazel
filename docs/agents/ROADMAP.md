@@ -5,9 +5,9 @@
 ## Current prioritized track: Metal 4 backend
 
 - **M1 — PASS, pushed:** Metal 4 device/queue, native presentation, frame/resource lifetime, compute/render/transfer smoke, regression evidence. See `docs/design/metal-m1.md`. Production still OpenGL.
-- **M2 — Proposed, not automatically authorized:** shader portability and explicit pass contracts. First bound checkpoint: pinned GLSL → SPIR-V → generated MSL, `MTL4Compiler` pipeline, reflected layout/bindings, orientation/depth, signed integer targets and packaged shader feasibility. Prove representative engine shaders before committing to a universal translation assumption.
-- **M3 — PASS (local Apple M4):** Shared deterministic Renderer2D lines, independent/frozen/cross-backend qualification and native Debug/Release 1×/2× player lifecycle/input/extended-session evidence are in `docs/design/metal-m3.md`. Windows/Linux/Intel execution is NOT RUN. OpenGL remains default; M4 remains unstarted.
-- **M4 — Planned:** Renderer3D, cooked GLB/materials, depth/selection, PBR/IBL, environment prep and frozen visual/numerical parity.
+- **M2 — PASS (local Apple M4):** shader portability and explicit pass contracts progressed through M2-A/B1–B4/C. Native generated shaders, resource/pass contracts, source-free shader relocation and integrated quad presentation are recorded in `docs/design/metal-m2c.md` and its linked evidence. This supersedes the old proposal summary; it does not certify Windows/Linux or full 3D parity.
+- **M3 — PASS (local Apple M4):** Shared deterministic Renderer2D lines, independent/frozen/cross-backend qualification and native Debug/Release 1×/2× player lifecycle/input/extended-session evidence are in `docs/design/metal-m3.md`. Windows/Linux/Intel execution is NOT RUN. OpenGL remains default.
+- **M4 — PASS (local Apple M4):** production Renderer3D, cooked GLB/materials, depth/selection and prepared PBR/IBL parity; native Debug/Release 1×/2× lifecycle, actual mixed player input, extended visible stability and matched runtime timings are recorded in `docs/design/metal-m4.md`. Windows/Linux/physical Intel/new CI remain NOT RUN. No M5, default change, merge or release.
 - **M5 — Planned:** full Hazelnut ImGui docking/detached viewports, previews/outlines, GPU-consumer lifetime, native compute dependency proof.
 - **M6 — Planned:** full platform/package validation, native metrics and conscious choice of macOS default; OpenGL stays a supported option.
 

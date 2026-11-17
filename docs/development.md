@@ -119,6 +119,7 @@ input/camera and an extended visible session. Windows/Linux/Intel execution is
 not established by these results. The approved
 [shared line contract and evidence](design/metal-m3-deterministic-lines.md)
 intentionally replace legacy OpenGL smoothed-line output.
+**M4 is locally qualified on Apple M4** for cooked meshes/materials and prepared PBR/IBL through the existing Renderer3D path. See [M4 numerical, native runtime and timing evidence](design/metal-m4.md).
 Hazelnut and ordinary Nutella launches still default to OpenGL.
 Requires Metal 4 Apple Silicon, native arm64 macOS 27+, Xcode and the optional
 Apple Metal Toolchain. Follow [build prerequisites](getting-started.md) first.
@@ -138,7 +139,10 @@ animated textured sprites, translucent overlaps, a circle, Unicode MSDF world
 text and a screen-space button. Click the button or use Tab to inspect focus.
 Add `--inspect-camera` for RMB + WASD/Q/E movement, Home reset and Escape release;
 the inspector uses the same Renderer2D text path. Close normally to drain work.
-`--metal-renderer2d` replaces the temporary `--metal-quads` launch flag.
+`--metal` selects the native backend; `--metal-renderer2d` remains an alias for existing commands. The older temporary `--metal-quads` flag is removed.
+For the qualified 3D example, use the same command with `--metal --project examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj`.
+
+![Native Metal Nutella PBR/IBL with mixed world 2D and screen UI](images/metal-m4-player.png)
 `HAZEL_METAL_TRACE=1` prints completion, presentation, timing and memory counters.
 A completed command or zero presentation timestamp does not prove visible output.
 
@@ -148,15 +152,15 @@ A completed command or zero presentation timestamp does not prove visible output
 | Tinted/textured sprites, circles, MSDF font/atlas pages | Implemented; native numerical comparisons |
 | Lines | Shared expanded triangles, analytical pixel-area AA, physical-pixel widths, exact signed picking; independent/native offscreen gates |
 | Source-over RGB/alpha, clipping, passive picking, signed IDs | Native numerical and OpenGL comparisons |
-| World HDR/Neutral/exposure, screen UI, display conversion | Implemented; end-to-end acceptance incomplete |
-| Meshes, lights, environments, Renderer3D/PBR/IBL | Unsupported; rejected |
+| World HDR/Neutral/exposure, screen UI, display conversion | Locally qualified M4 shared 3D/world 2D/screen UI path |
+| Cooked static meshes/submeshes, material maps, one direct key, prepared PBR/IBL | M4 locally qualified: numerical/visual parity, Debug/Release native windows ([record](design/metal-m4.md)) |
 | Hazelnut Metal ImGui, general Metal game export | Not implemented / not qualified |
 
 Targets remain single-sample RGBA32F / R32Sint / Depth32Float, 1..4096 per axis,
 at most 8,388,608 pixels. Submitted attachment generations retire after GPU
 completion and feedback. Window output omits full-frame CPU readback.
 RGB8 font atlases expand to native RGBA8; RGBA8 linear/sRGB and generated RGBA32F
-textures support alpha. Ordinary nearest/linear/mipmap sampling and repeat,
+textures support alpha; prepared BRDF inputs use RG32F and accepted RGB cubes expand to RGBA32F without reducing radiance precision. Every prepared cube mip uploads explicitly. Ordinary nearest/linear/mipmap sampling and repeat,
 clamp or mirrored-repeat use immutable texture versions. Mips generate on the
 native queue before first sampling. Renderer2D line widths are physical framebuffer
 pixels (default 2), including fractional and wide strokes; the raw backend native

@@ -2,27 +2,29 @@
 #include "MetalRenderer2DFrame.h"
 #include "MetalDevice.h"
 #include "MetalShader.h"
+#include "MetalBuffer.h"
 #include <stdexcept>
 #include <algorithm>
 #include <cmath>
 namespace Hazel {
 namespace { [[noreturn]] void Unavailable() { throw std::logic_error("Operation unavailable in the Metal 4 Renderer2D runtime"); } }
 MetalRendererAPI::MetalRendererAPI():m_Device(std::make_shared<MetalDevice>()) {
-    m_Caps.MaxTextureSlots=32; m_Caps.MaxTextureSize=4096; m_Caps.MaxColorAttachments=2; m_Caps.MaxDrawBuffers=2; m_Caps.Vendor="Apple"; m_Caps.Device=m_Device->NativeDevice()->name()->utf8String(); m_Caps.Driver="Metal 4";
+    m_Caps.MaxUniformBindings=8; m_Caps.MaxUniformBlockBytes=16384; m_Caps.MaxVertexAttributes=16; m_Caps.MaxTextureBindings=32; m_Caps.MaxCubeSize=16384;
+    m_Caps.MaxTextureSlots=32; m_Caps.MaxTextureSize=16384; m_Caps.MaxColorAttachments=2; m_Caps.MaxDrawBuffers=2; m_Caps.Vendor="Apple"; m_Caps.Device=m_Device->NativeDevice()->name()->utf8String(); m_Caps.Driver="Metal 4";
 }
 MetalRendererAPI::~MetalRendererAPI() { Shutdown(); }
 void MetalRendererAPI::Init(const RendererSettings& settings) {
     m_Resolution.Requested=settings; m_Resolution.Effective=settings;
     m_Resolution.Effective.TextureSlots=std::max(2u, std::min(settings.TextureSlots, 32u)); m_Resolution.Effective.PreferShaderBinaries=false;
     m_Resolution.TextureReason="Metal Renderer2D: tier-2 texture table; requested batch slot limit";
-    m_Resolution.ShaderReason="Offline Metal 4 shader artifacts; Renderer2D/world/output passes";
+    m_Resolution.ShaderReason="Offline Metal 4 shader artifacts; Renderer2D/Renderer3D/world/output passes";
 }
 void MetalRendererAPI::Shutdown() {
     std::lock_guard<std::mutex> lock(m_ShaderMutex);
     if(m_Stopped) return;
     m_Renderer2DFrame.reset(); m_Renderer2DScene=false;
     m_Device->Drain();
-    m_Shaders.clear();
+    m_Shaders.clear(); m_Textures = {}; m_Uniforms = {}; m_BoundShader.clear();
     m_Stopped=true;
 }
 std::shared_ptr<Shader> MetalRendererAPI::LoadShader(const std::string& name, uint32_t slots) {
@@ -56,7 +58,70 @@ void MetalRendererAPI::Clear() {
     if (!m_Renderer2DFrame.expired()) throw std::logic_error("Use Framebuffer::Clear for an explicit Metal offscreen pass");
     // Explicit Metal 4 load-action clear occurs at presentation.
 }
-void MetalRendererAPI::DrawIndexed(const Ref<VertexArray>&,uint32_t,uint32_t) { Unavailable(); }
+void MetalRendererAPI::RetainResource(std::shared_ptr<void> resource)
+{
+    auto frame = m_Renderer2DFrame.lock();
+    if (!frame || !resource) throw std::logic_error("Resource retention requires a bound Metal frame");
+    if (std::find(frame->ResourceOwners.begin(), frame->ResourceOwners.end(), resource) == frame->ResourceOwners.end())
+        frame->ResourceOwners.push_back(std::move(resource));
+}
+void MetalRendererAPI::BindUniform(uint32_t binding, const std::shared_ptr<const std::vector<uint8_t>>& bytes)
+{
+    if (binding >= m_Uniforms.size() || m_Stopped) throw std::logic_error("Invalid Metal uniform binding");
+    m_Uniforms[binding] = bytes;
+}
+void MetalRendererAPI::BindTexture(uint32_t slot, std::shared_ptr<const MetalTextureVersion> texture)
+{
+    if (slot >= m_Textures.size() || !texture || m_Stopped) throw std::logic_error("Invalid Metal material texture binding");
+    m_Textures[slot] = std::move(texture);
+}
+void MetalRendererAPI::BindShader(const std::string& name)
+{
+    if (m_Stopped) throw std::logic_error("Cannot bind Metal shader after backend shutdown");
+    if (name != "ForwardPBR" && name != "EnvironmentSky") throw std::logic_error("Metal indexed drawing does not support this shader");
+    m_BoundShader = name;
+}
+void MetalRendererAPI::DrawIndexed(const Ref<VertexArray>& array, uint32_t count, uint32_t first)
+{
+    auto frame = m_Renderer2DFrame.lock();
+    if (m_Stopped || !frame || m_Renderer2DScene || m_BoundShader.empty() || !array)
+        throw std::logic_error("Metal indexed draw requires a bound framebuffer and production shader");
+    auto indices = std::dynamic_pointer_cast<MetalIndexBuffer>(array->GetIndexBuffer());
+    if (!indices || first > indices->GetCount()) throw std::invalid_argument("Invalid native index range");
+    if (!count) count = indices->GetCount() - first;
+    if (!count || count > indices->GetCount() - first) throw std::invalid_argument("Native index range exceeds geometry");
+    MetalRenderer2DDraw draw;
+    draw.IndexedMesh = true; draw.Count = count; draw.FirstIndex = first;
+    draw.MeshIndices = indices->Snapshot(); draw.Raster = m_Raster;
+    for (size_t i = 0; i < m_Uniforms.size(); ++i)
+        if (auto bytes = m_Uniforms[i].lock()) draw.Uniforms[i] = *bytes;
+    for (size_t i = 0; i < m_Textures.size(); ++i) draw.Textures[i] = m_Textures[i];
+    if (m_BoundShader == "ForwardPBR") {
+        if (array->GetVertexBuffers().size() != 1) throw std::invalid_argument("PBR requires one native vertex stream");
+        auto vertices = std::dynamic_pointer_cast<MetalVertexBuffer>(array->GetVertexBuffers()[0]);
+        if (!vertices || vertices->GetLayout().GetStride() != 64) throw std::invalid_argument("Invalid PBR vertex layout");
+        draw.MeshVertices = vertices->Snapshot();
+    }
+    uint32_t state = draw.Raster.Blend ? 1 : 0;
+    for (int i = 0; i < 4; ++i) {
+        if (draw.Raster.ColorMask[i]) state |= 1u << (i + 1);
+        if (draw.Raster.PickingMask[i]) state |= 1u << (i + 5);
+    }
+    const auto key = m_BoundShader + "/raster/" + std::to_string(state);
+    {
+        std::lock_guard<std::mutex> lock(m_ShaderMutex);
+        auto found = m_Shaders.find(key);
+        if (found == m_Shaders.end())
+            found = m_Shaders.emplace(key, std::make_shared<MetalShader>(m_Device, m_BoundShader, 32, false, &draw.Raster)).first;
+        draw.Shader = std::static_pointer_cast<MetalShader>(found->second);
+    }
+    if (frame->Draws.size() >= 65536) throw std::runtime_error("Metal frame exceeds 65536 draws");
+    uint64_t bytes = sizeof(draw);
+    for (const auto& uniform : draw.Uniforms) bytes += uniform.size();
+    if (bytes > 256ULL * 1024 * 1024 - frame->PacketBytes) throw std::runtime_error("Metal frame packet exceeds 256 MiB");
+    frame->Draws.push_back(std::move(draw));
+    frame->PacketBytes += bytes;
+}
 void MetalRendererAPI::DrawLines(const Ref<VertexArray>&,uint32_t,uint32_t) { Unavailable(); }
 void MetalRendererAPI::SetLineWidth(float width) {
     if(!std::isfinite(width)||width<=0)throw std::invalid_argument("Line width must be finite and positive");

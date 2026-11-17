@@ -1,27 +1,38 @@
 #include "hzpch.h"
 #include "MetalTexture.h"
 #include "MetalDevice.h"
+#include "MetalRendererAPI.h"
+#include "Hazel/Renderer/RenderCommand.h"
 #include <stdexcept>
 #include <cstring>
 #include <algorithm>
 
 namespace Hazel {
+namespace {
+void BindVersion(const std::shared_ptr<MetalDevice>& device, uint32_t slot,
+                 const std::shared_ptr<const MetalTextureVersion>& version)
+{
+    auto* backend = dynamic_cast<MetalRendererAPI*>(&RenderCommand::Backend());
+    if (!backend || backend->Device() != device) throw std::logic_error("Metal texture binding requires its owning backend");
+    backend->BindTexture(slot, version);
+}
+}
 MetalTexture2D::MetalTexture2D(std::shared_ptr<MetalDevice> device, const TextureSpecification& specification, std::string path)
     : m_Device(std::move(device)), m_Specification(specification), m_Path(std::move(path))
 {
     specification.Validate();
-    if (!m_Device || specification.Width > 4096 || specification.Height > 4096 ||
-        (specification.Format != ImageFormat::RGB8 && specification.Format != ImageFormat::RGBA8 && specification.Format != ImageFormat::RGBA32F))
-        throw std::invalid_argument("Metal Renderer2D textures require <=4096x4096 RGB8/RGBA8 or RGBA32F");
-    if (specification.Format == ImageFormat::RGBA32F &&
+    if (!m_Device || specification.Width > 16384 || specification.Height > 16384 ||
+        (specification.Format != ImageFormat::RGB8 && specification.Format != ImageFormat::RGBA8 && specification.Format != ImageFormat::RGBA32F && specification.Format != ImageFormat::RG32F))
+        throw std::invalid_argument("Metal textures require <=16384x16384 RGB8/RGBA8, RG32F or RGBA32F");
+    if ((specification.Format == ImageFormat::RGBA32F || specification.Format == ImageFormat::RG32F) &&
         (specification.MinFilter == TextureFilter::Linear || specification.MagFilter == TextureFilter::Linear) &&
         !m_Device->NativeDevice()->supports32BitFloatFiltering())
         throw std::runtime_error("Metal device does not support filtered RGBA32F inputs");
 }
 void MetalTexture2D::SetData(const void* data, uint32_t size)
 {
-    const uint32_t pixelBytes = m_Specification.Format == ImageFormat::RGB8 ? 3 : m_Specification.Format == ImageFormat::RGBA8 ? 4 : 16;
-    if (!data || size != GetWidth() * GetHeight() * pixelBytes)
+    const uint32_t pixelBytes = m_Specification.Format == ImageFormat::RGB8 ? 3 : m_Specification.Format == ImageFormat::RGBA8 ? 4 : m_Specification.Format == ImageFormat::RG32F ? 8 : 16;
+    if (!data || uint64_t(size) != uint64_t(GetWidth()) * GetHeight() * pixelBytes)
         throw std::invalid_argument("Metal texture upload requires the complete specified image");
     std::vector<uint8_t> expanded;
     if (pixelBytes == 3) {
@@ -36,7 +47,7 @@ void MetalTexture2D::SetData(const void* data, uint32_t size)
     auto pool = NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
     auto version = std::make_shared<MetalTextureVersion>();
     auto descriptor = NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
-    descriptor->setTextureType(MTL::TextureType2D); descriptor->setPixelFormat(m_Specification.Format != ImageFormat::RGBA32F ? (m_Specification.Encoding == TextureEncoding::SRGB ? MTL::PixelFormatRGBA8Unorm_sRGB : MTL::PixelFormatRGBA8Unorm) : MTL::PixelFormatRGBA32Float);
+    descriptor->setTextureType(MTL::TextureType2D); descriptor->setPixelFormat(m_Specification.Format == ImageFormat::RG32F ? MTL::PixelFormatRG32Float : m_Specification.Format != ImageFormat::RGBA32F ? (m_Specification.Encoding == TextureEncoding::SRGB ? MTL::PixelFormatRGBA8Unorm_sRGB : MTL::PixelFormatRGBA8Unorm) : MTL::PixelFormatRGBA32Float);
     descriptor->setWidth(GetWidth()); descriptor->setHeight(GetHeight());
     if (m_Specification.GenerateMips) {
         uint32_t levels = 1;
@@ -68,5 +79,48 @@ std::shared_ptr<const MetalTextureVersion> MetalTexture2D::Snapshot() const
 }
 bool MetalTexture2D::IsLoaded() const { std::lock_guard<std::mutex> lock(m_Mutex); return bool(m_Version); }
 uint32_t MetalTexture2D::GetRendererID() const { throw std::logic_error("Metal textures have no OpenGL renderer ID"); }
-void MetalTexture2D::Bind(uint32_t) const { throw std::logic_error("Metal textures require explicit quad argument tables"); }
+void MetalTexture2D::Bind(uint32_t slot) const
+{
+    BindVersion(m_Device, slot, Snapshot());
+}
+MetalTextureCube::MetalTextureCube(std::shared_ptr<MetalDevice> device, const LightingImage& image)
+    : m_Device(device)
+{
+    image.Validate();
+    if (!device || image.Faces() != 6 || image.Side > 16384) throw std::invalid_argument("Invalid Metal prepared cubemap");
+    if (!device->NativeDevice()->supports32BitFloatFiltering()) throw std::runtime_error("Metal prepared IBL requires FP32 filtering");
+    auto version = std::make_shared<MetalTextureVersion>();
+    auto descriptor = NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
+    descriptor->setTextureType(MTL::TextureTypeCube); descriptor->setPixelFormat(MTL::PixelFormatRGBA32Float);
+    descriptor->setWidth(image.Side); descriptor->setHeight(image.Side); descriptor->setMipmapLevelCount(image.Mips.size());
+    descriptor->setStorageMode(MTL::StorageModeShared); descriptor->setUsage(MTL::TextureUsageShaderRead);
+    version->Texture = NS::TransferPtr(device->NativeDevice()->newTexture(descriptor.get()));
+    auto sampler = NS::TransferPtr(MTL::SamplerDescriptor::alloc()->init());
+    sampler->setSupportArgumentBuffers(true);
+    sampler->setMinFilter(MTL::SamplerMinMagFilterLinear); sampler->setMagFilter(MTL::SamplerMinMagFilterLinear);
+    sampler->setMipFilter(image.Mips.size() > 1 ? MTL::SamplerMipFilterLinear : MTL::SamplerMipFilterNotMipmapped);
+    sampler->setSAddressMode(MTL::SamplerAddressModeClampToEdge); sampler->setTAddressMode(MTL::SamplerAddressModeClampToEdge);
+    sampler->setRAddressMode(MTL::SamplerAddressModeClampToEdge);
+    version->Sampler = NS::TransferPtr(device->NativeDevice()->newSamplerState(sampler.get()));
+    if (!version->Texture || !version->Sampler) throw std::runtime_error("Cannot allocate prepared Metal cube");
+    uint32_t side = image.Side;
+    for (size_t mip = 0; mip < image.Mips.size(); ++mip) {
+        std::vector<float> rgba(size_t(side) * side * 4);
+        for (size_t face = 0; face < 6; ++face) {
+            const auto* rgb = image.Mips[mip].data() + face * size_t(side) * side * 3;
+            for (size_t pixel = 0; pixel < size_t(side) * side; ++pixel) {
+                for (size_t c = 0; c < 3; ++c) rgba[pixel * 4 + c] = rgb[pixel * 3 + c];
+                rgba[pixel * 4 + 3] = 1;
+            }
+            version->Texture->replaceRegion(MTL::Region(0, 0, side, side), mip, face, rgba.data(), size_t(side) * 16, size_t(side) * side * 16);
+        }
+        side = std::max(1u, side / 2);
+    }
+    version->MipsSubmitted = true; // Complete prepared levels: never generate or reconstruct them.
+    m_Version = std::move(version);
+}
+void MetalTextureCube::Bind(uint32_t slot) const
+{
+    BindVersion(m_Device, slot, m_Version);
+}
 }

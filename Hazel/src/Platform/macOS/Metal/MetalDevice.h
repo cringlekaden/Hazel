@@ -60,7 +60,7 @@ private:
     };
     void Verify(Frame& frame);
     void EncodeTransfers(Frame& frame, uint64_t serial);
-    void Account();
+    void Account(const MetalRenderer2DFrame* preparing = nullptr);
     NS::SharedPtr<MTL::Device> m_Device;
     NS::SharedPtr<MTL4::CommandQueue> m_Queue;
     NS::SharedPtr<MTL4::CommandBuffer> m_Commands;

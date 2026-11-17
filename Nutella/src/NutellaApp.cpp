@@ -78,7 +78,7 @@ namespace Hazel {
         std::filesystem::path selected;
         for (int i = 1; i < args.Count; ++i) {
             const std::string argument(args[i]);
-            if(argument=="--metal-renderer2d") { if(metal)throw std::runtime_error("Duplicate --metal-renderer2d");metal=true; }
+            if(argument=="--metal" || argument=="--metal-renderer2d") { if(metal)throw std::runtime_error("Duplicate Metal backend selection");metal=true; }
             else if(argument=="--inspect-camera"){if(inspect)throw std::runtime_error("Duplicate --inspect-camera");inspect=true;}
             else if (argument == "--help") { if (help) throw std::runtime_error("Duplicate --help"); help = true; }
             else if (argument == "--list-projects") { if (list) throw std::runtime_error("Duplicate --list-projects"); list = true; }
@@ -91,7 +91,7 @@ namespace Hazel {
         if ((help || list) && ((help && list) || !selected.empty() || inspect || metal)) throw std::runtime_error("Use --help, --list-projects, or --project separately");
         if (help) {
             std::cout << "Nutella — Hazel standalone runtime\n"
-                "  Nutella --metal-renderer2d          Opt-in Metal 4 Renderer2D runtime (no 3D/ImGui)\n"
+                "  Nutella --metal                     Opt-in Metal 4 Renderer2D/Renderer3D runtime (no ImGui)\n"
                 "  Nutella                        Run the only .hproj in the installed project directory\n"
                 "  Nutella --project <file.hproj>  Run a selected project (relative to invocation directory)\n"
                 "  Nutella --inspect-camera        Opt in to transient perspective inspection; Home restores the authored view\n"

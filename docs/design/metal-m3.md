@@ -217,8 +217,8 @@ master CI badge remains labelled master, with no claim of CI for this work.
 The canonical Sandbox snapshot test now selects `Sandbox.hproj` explicitly,
 so multiple shipped sample descriptors do not break the regression runner.
 
-Finish smoothed-line parity, then the real player/UI/DPI/long-session gates before
-considering M3 complete. Only after M3 passes, the recommended M4 entry is a
+The remaining work at this historical checkpoint was to finish smoothed-line parity, then the real player/UI/DPI/long-session gates before
+considering M3 complete. Those M3 gates subsequently passed in the current continuation above. The historical recommended M4 entry was a
 bounded unlit cooked-GLB vertex/index/material submission with depth and signed
 IDs, through existing SceneRenderer ownership. No M4 implementation, merge,
-backend-default change, Renderer3D or PBR/IBL work was started.
+backend-default change, Renderer3D or PBR/IBL work was started at that checkpoint. Current M4 work is tracked separately in [the M4 record](metal-m4.md).

@@ -9,6 +9,7 @@
 #include <memory>
 #include <atomic>
 #include <vector>
+#include <set>
 #include <string>
 
 namespace Hazel {
@@ -17,6 +18,11 @@ struct MetalFramebufferAttachments;
 struct MetalRenderer2DDraw
 {
     std::vector<uint8_t> Vertices;
+    // Indexed production draws retain native geometry and immutable UBO values.
+    NS::SharedPtr<MTL::Buffer> MeshVertices, MeshIndices;
+    std::array<std::vector<uint8_t>, 8> Uniforms;
+    uint32_t FirstIndex = 0;
+    bool IndexedMesh = false;
     std::shared_ptr<MetalShader> Shader;
     RasterState Raster;
     NS::SharedPtr<MTL::DepthStencilState> DepthState;
@@ -33,11 +39,13 @@ struct MetalRenderer2DFrame
     NS::SharedPtr<MTL::SamplerState> OutputSampler;
     NS::SharedPtr<MTL4::ArgumentTable> OutputArguments;
     bool Readback = true;
+    uint64_t PacketBytes = 0;
     std::shared_ptr<MetalRenderer2DFrame> World;
     std::shared_ptr<MetalShader> PresentationShader;
     NS::SharedPtr<MTL4::ArgumentTable> PresentationArguments;
     float Exposure = 0;
     std::vector<MetalRenderer2DDraw> Draws;
+    std::vector<std::shared_ptr<void>> ResourceOwners;
     std::shared_ptr<FramebufferReadback> Result;
     std::vector<glm::vec4> CompletedColor;
     std::vector<int32_t> CompletedEntity;
@@ -50,6 +58,6 @@ struct MetalRenderer2DFrame
     NS::SharedPtr<MTL::ResidencySet> Residency;
     void Complete();
     void MarkMipmapsSubmitted() const;
-    uint64_t ResourceBytes() const;
+    void CollectAllocations(std::set<const MTL::Allocation*>& allocations) const;
 };
 }

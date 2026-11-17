@@ -6,6 +6,8 @@
 #include "Hazel/Scene/Scene.h"
 #include "Hazel/Scene/Entity.h"
 #include <cmath>
+#include <cstdio>
+#include <array>
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Platform/macOS/Metal/MetalRendererAPI.h"
 #include <GLFW/glfw3.h>
@@ -33,29 +35,69 @@ public:
     RuntimeSession Session;
     Ref<Framebuffer> Display, Retirement;
     uint64_t Frames=0;
+    bool Benchmark=false;
+    struct Query {uint32_t ID=0;uint64_t Frame=0;bool Pending=false;};
+    std::array<Query,16> Queries{};
+    size_t NextQuery=0;
+    bool QueryActive=false;
     void OnAttach() override {
         if (!QuadProject) return;
         Project::SetActive(QuadProject);
         Session.Resize(1280,720);
         Session.Start(QuadProject, QuadProject->LoadScene(QuadProject->GetConfig().StartScene));
+        if(Benchmark && Renderer::GetAPI()==RendererAPI::API::OpenGL) {
+            GLint bits=0;glGetQueryiv(GL_TIME_ELAPSED,GL_QUERY_COUNTER_BITS,&bits);
+            Check(bits>0,"OpenGL elapsed GPU timing unavailable");
+            for(auto& query:Queries)glGenQueries(1,&query.ID);
+        }
     }
-    void OnDetach() override { Session.Stop(); Display.reset(); Retirement.reset(); if(QuadProject) Project::SetActive(nullptr); }
+    void OnDetach() override { for(auto& q:Queries)if(q.ID)glDeleteQueries(1,&q.ID); Session.Stop(); Display.reset(); Retirement.reset(); if(QuadProject) Project::SetActive(nullptr); }
     void OnUpdate(Timestep dt) override {
         if (!QuadProject) return;
         auto& window=Application::Get().GetWindow(); auto size=window.GetFramebufferSize();
         if (!size.first || !size.second) return;
         Session.Resize(window.GetWidth(),window.GetHeight()); Session.ResizeFramebuffer(size.first,size.second);
-        Session.SetInput(Input::GetMousePosition(),window.IsFocused());
+        Session.SetInput(Benchmark ? glm::vec2(-1,-1) : Input::GetMousePosition(),!Benchmark && window.IsFocused());
+        const auto begin=Clock::now();
+        const bool metal=Renderer::GetAPI()==RendererAPI::API::Metal;
+        const auto serial=Frames+1;
+        if(Benchmark && !metal) {
+            for(auto& query:Queries)if(query.Pending) {
+                GLint ready=0;glGetQueryObjectiv(query.ID,GL_QUERY_RESULT_AVAILABLE,&ready);
+                if(ready){GLuint64 elapsed=0;glGetQueryObjectui64v(query.ID,GL_QUERY_RESULT,&elapsed);
+                    std::printf("M4_BENCH_GPU frame=%llu ms=%.6f\n",(unsigned long long)query.Frame,double(elapsed)/1e6);query.Pending=false;}
+            }
+            auto& query=Queries[NextQuery];QueryActive=!query.Pending;
+            if(QueryActive){query.Frame=serial;glBeginQuery(GL_TIME_ELAPSED,query.ID);}
+        }
         if (!Display) {
             FramebufferSpecification spec; spec.Width=size.first;spec.Height=size.second;
-            spec.Attachments={FramebufferTextureFormat::RGBA32F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::DEPTH32F};
+            spec.Attachments={metal ? FramebufferTextureFormat::RGBA32F : FramebufferTextureFormat::RGBA16F,
+                FramebufferTextureFormat::RED_INTEGER,metal ? FramebufferTextureFormat::DEPTH32F : FramebufferTextureFormat::Depth};
             Display=Framebuffer::Create(spec);
         } else Display->Resize(size.first,size.second);
         auto camera=Session.GetScene()->GetPrimaryCameraEntity();
-        camera.GetComponent<TransformComponent>().Translation.x=.35f*std::sin(float(Frames++)*.03f);
-        Display->Bind();Display->Clear(Session.GetScene()->Presentation().Background);
+        if(!Benchmark) camera.GetComponent<TransformComponent>().Translation.x=.35f*std::sin(float(Frames)*.03f);
+        ++Frames;
+        Display->Bind();
+        if(metal) Display->Clear(Session.GetScene()->Presentation().Background);
+        else {RenderCommand::SetClearColor(Session.GetScene()->Presentation().Background);RenderCommand::Clear();}
+        Display->ClearAttachment(1,-1);
+        const auto draws=RenderCommand::GetDrawSubmissionCount();
+        const auto sceneStart=Clock::now();
         Session.SetRenderTarget(Display);Session.Update(dt);
+        const auto sceneEnd=Clock::now();
+        Check(Session.GetScene()->RenderError().empty(),"Production benchmark scene failed");
         Display->Unbind();Display->EncodeOutput();
+        if(QueryActive) {glEndQuery(GL_TIME_ELAPSED);Queries[NextQuery].Pending=true;NextQuery=(NextQuery+1)%Queries.size();QueryActive=false;}
+        if(Benchmark) {
+            std::printf("M4_BENCH_CPU frame=%llu pixels=%ux%u scene_ms=%.6f layer_ms=%.6f draws=%llu\n",
+                (unsigned long long)serial,size.first,size.second,
+                std::chrono::duration<double,std::milli>(sceneEnd-sceneStart).count(),
+                std::chrono::duration<double,std::milli>(Clock::now()-begin).count(),
+                (unsigned long long)(RenderCommand::GetDrawSubmissionCount()-draws));
+
+        }
     }
     void OnEvent(Event& event) override { if(event.GetEventType()==EventType::WindowResize) ++Resizes;
         if(QuadProject)Session.SubmitUIEvent(event,Input::GetMousePosition(),Application::Get().GetWindow().IsFocused()); }
@@ -73,9 +115,47 @@ static void Print(const char* name,const MetalProofSnapshot& s) {
       <<" zero_present_time="<<s.ZeroPresentationTime<<" pixels="<<s.PixelWidth<<'x'<<s.PixelHeight<<" logical="<<s.LogicalWidth<<'x'<<s.LogicalHeight
       <<" backing_scale="<<s.BackingScale<<" vsync="<<s.VSync<<" errors="<<s.Errors<<std::endl;
 }
+static int Benchmark(const std::filesystem::path& output,const std::filesystem::path& resources,bool metal)
+{
+    Log::Init();std::filesystem::create_directories(output);
+    auto spec=Specification(output);spec.Name=metal?"M4 Metal benchmark":"M4 OpenGL benchmark";
+    spec.GraphicsAPI=metal?RendererAPI::API::Metal:RendererAPI::API::OpenGL;
+    spec.RendererMode=RendererInitialization::Drawing;spec.Resources.Root=resources;
+    spec.Rendering.TextureSlots=4;spec.WindowVSync=false;
+    std::shared_ptr<MetalProofObserver> observer;
+    {
+        Application app(spec);if(metal)observer=Backend().Observe();
+        auto* window=static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
+        MetalM1Environment(window,(output/"environment.json").c_str());
+        auto layer=CreateScope<EventProof>();auto* proof=layer.get();layer->Benchmark=true;
+        layer->QuadProject=Project::LoadCandidate(std::filesystem::absolute("examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj"));
+        auto requests=layer->QuadProject->GetRendererRequests();requests.TextureSlots=4;requests.VSync=false;
+        layer->QuadProject->GetConfig().Rendering=requests;
+        app.PushLayer(std::move(layer));
+        uint64_t phaseStart=0,lastSubmitted=0;unsigned phase=0;auto start=Clock::now();
+        app.SetBackgroundTick([&]{
+            Check(Clock::now()-start<std::chrono::seconds(90),"Production window benchmark timed out");
+            if(observer && proof->Frames) {auto done=observer->Snapshot();if(done.Submitted>lastSubmitted) {
+                lastSubmitted=done.Submitted;std::printf("M4_BENCH_JOIN cpu_frame=%llu submission=%llu\n",
+                    (unsigned long long)proof->Frames,(unsigned long long)done.Submitted);
+            }}
+            if(proof->Frames-phaseStart>=720) {
+                if(!phase){phase=1;phaseStart=proof->Frames;glfwSetWindowSize(window,1920,1080);}
+                else app.GetWindow().RequestClose();
+            }
+        });
+        app.Run();
+    }
+    if(observer) {auto done=observer->Snapshot();Check(done.Errors==0 && done.InFlight==0 && done.ResourceBytes==0 && done.AttachmentGenerations==0,"Production benchmark shutdown/lifetime failed");}
+    std::cout<<"PASS production window benchmark, authored camera/assets, four texture slots, VSync-off request, 720 frames per extent\n";
+    return 0;
+}
 int main(int argc,char** argv) {
     try {
-        const bool runtime=argc==4 && std::string(argv[2])=="--renderer2d";
+        if(argc==4 && (std::string(argv[2])=="--benchmark-metal" || std::string(argv[2])=="--benchmark-opengl"))
+            return Benchmark(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),std::string(argv[2])=="--benchmark-metal");
+        const bool renderer3D=argc==4 && std::string(argv[2])=="--renderer3d";
+        const bool runtime=renderer3D || (argc==4 && std::string(argv[2])=="--renderer2d");
         const bool quads=runtime || (argc==4 && std::string(argv[2])=="--quads");
         Check(argc==2||argc==3||quads,"Usage: MetalM1Smoke <private-output-directory> [capture.gputrace]");
         Log::Init(); auto output=std::filesystem::absolute(argv[1]); std::filesystem::create_directories(output);
@@ -105,7 +185,7 @@ int main(int argc,char** argv) {
             Check(glfwGetWindowAttrib(window,GLFW_CLIENT_API)==GLFW_NO_API&&glfwGetCurrentContext()==nullptr&&glad_glGetString==nullptr,
                   "Metal startup created or loaded OpenGL");
             auto eventLayer=CreateScope<EventProof>(); auto* eventProof=eventLayer.get();
-            if(quads) eventLayer->QuadProject=Project::LoadCandidate(std::filesystem::absolute(runtime ? "examples/Sandbox/Sandbox-Renderer2D.hproj" : "examples/Sandbox/Sandbox-Quads.hproj"));
+            if(quads) eventLayer->QuadProject=Project::LoadCandidate(std::filesystem::absolute(renderer3D ? "examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj" : runtime ? "examples/Sandbox/Sandbox-Renderer2D.hproj" : "examples/Sandbox/Sandbox-Quads.hproj"));
             application.PushLayer(std::move(eventLayer));
             bool immutable=false; try { RenderCommand::Configure(RendererAPI::API::OpenGL); } catch(const std::logic_error&) { immutable=true; }
             Check(immutable&&Renderer::GetAPI()==RendererAPI::API::Metal,"Backend changed during a live graphics lifetime");

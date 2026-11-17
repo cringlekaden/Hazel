@@ -20,20 +20,21 @@ MTL::CompareFunction DepthFunction(const RasterState& raster)
         raster.Compare == DepthCompare::Less ? MTL::CompareFunctionLess : MTL::CompareFunctionLessEqual;
 }
 }
-uint64_t MetalRenderer2DFrame::ResourceBytes() const
+void MetalRenderer2DFrame::CollectAllocations(std::set<const MTL::Allocation*>& allocations) const
 {
-    std::set<const MTL::Allocation*> allocations;
     for (const auto& target : Attachments->Targets) allocations.insert(target.get());
     for (const auto& buffer : Buffers) if (buffer) allocations.insert(buffer.get());
-    for (const auto& draw : Draws) for (const auto& texture : draw.Textures) allocations.insert(texture->Texture.get());
-    uint64_t bytes = 0;
-    for (const auto* allocation : allocations) bytes += allocation->allocatedSize();
-    return bytes + (World ? World->ResourceBytes() : 0);
+    for (const auto& draw : Draws) {
+        if (draw.MeshVertices) allocations.insert(draw.MeshVertices.get());
+        if (draw.MeshIndices) allocations.insert(draw.MeshIndices.get());
+        for (const auto& texture : draw.Textures) if (texture) allocations.insert(texture->Texture.get());
+    }
+    if (World) World->CollectAllocations(allocations);
 }
 void MetalRenderer2DFrame::MarkMipmapsSubmitted() const
 {
     if (World) World->MarkMipmapsSubmitted();
-    for (const auto& draw : Draws) for (const auto& texture : draw.Textures) texture->MipsSubmitted = true;
+    for (const auto& draw : Draws) for (const auto& texture : draw.Textures) if (texture) texture->MipsSubmitted = true;
 }
 void MetalRenderer2DFrame::Complete()
 {
@@ -66,7 +67,7 @@ std::shared_ptr<const FramebufferReadback> MetalDevice::SubmitRenderer2DFrame(co
     if (slot.Pending) { std::lock_guard<std::mutex> lock(m_Observer->Mutex); ++m_Observer->Value.SkippedBusy; return {}; }
     Check(!quad->Result, "Cannot resubmit an already encoded quad frame");
     slot.Renderer2DCursor = 0;
-    try { PrepareRenderer2DFrame(quad); slot.Renderer2DBuffers.resize(slot.Renderer2DCursor); }
+    try { PrepareRenderer2DFrame(quad); slot.Renderer2DBuffers.resize(slot.Renderer2DCursor); Account(quad.get()); }
     catch (...) { slot.Renderer2DBuffers.clear(); Account(); throw; }
     const auto serial = m_Serial + 1;
     auto result = std::make_shared<FramebufferReadback>();
@@ -135,17 +136,55 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     const auto colorRow = ColorRow(quad->Width), idBase = colorRow * quad->Height, depthBase = idBase + ScalarRow(quad->Width) * quad->Height;
     quad->Buffers.push_back(quad->Readback ? AcquireRenderer2DBuffer(depthBase + ScalarRow(quad->Width) * quad->Height) : NS::SharedPtr<MTL::Buffer>{});
     uint32_t indexCount = 6;
-    for (const auto& draw : quad->Draws) indexCount = std::max(indexCount, draw.Count);
+    for (const auto& draw : quad->Draws) if (!draw.IndexedMesh) indexCount = std::max(indexCount, draw.Count);
     std::vector<uint32_t> indices(indexCount);
     for (uint32_t q = 0; q < indexCount / 6; ++q) for (uint32_t i = 0; i < 6; ++i)
         indices[q * 6 + i] = q * 4 + Renderer2DQuadIndices[i];
     quad->Buffers.push_back(AcquireRenderer2DBuffer(indices.size() * sizeof(uint32_t), indices.data()));
     auto args = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
     args->setInitializeBindings(true); args->setMaxBufferBindCount(17);
-    args->setMaxTextureBindCount(1); args->setMaxSamplerStateBindCount(1);
+    args->setMaxTextureBindCount(8); args->setMaxSamplerStateBindCount(8);
     std::set<MTL::Texture*> textures;
     for (auto& draw : quad->Draws)
     {
+        if (draw.IndexedMesh)
+        {
+            auto vertex = NS::TransferPtr(m_Device->newArgumentTable(args.get(), &error));
+            auto fragment = NS::TransferPtr(m_Device->newArgumentTable(args.get(), &error));
+            Check(bool(vertex) && bool(fragment), "Cannot allocate indexed draw argument tables");
+            std::vector<uint8_t> upload;
+            std::array<size_t, 8> offsets{};
+            for (size_t binding = 0; binding < draw.Uniforms.size(); ++binding) if (!draw.Uniforms[binding].empty()) {
+                offsets[binding] = upload.size();
+                upload.insert(upload.end(), draw.Uniforms[binding].begin(), draw.Uniforms[binding].end());
+                upload.resize((upload.size() + 255) & ~size_t(255));
+            }
+            Check(!upload.empty(), "Indexed draw has no captured uniforms");
+            auto buffer = AcquireRenderer2DBuffer(upload.size(), upload.data());
+            for (size_t binding = 0; binding < draw.Uniforms.size(); ++binding) if (!draw.Uniforms[binding].empty()) {
+                vertex->setAddress(buffer->gpuAddress() + offsets[binding], binding);
+                fragment->setAddress(buffer->gpuAddress() + offsets[binding], binding);
+            }
+            for (auto resource : {draw.MeshVertices, draw.MeshIndices}) if (resource) {
+                Check(resource->device() == m_Device.get(), "Mesh buffer belongs to another device");
+                quad->Residency->addAllocation(resource.get());
+            }
+            if (draw.MeshVertices) vertex->setAddress(draw.MeshVertices->gpuAddress(), 16);
+            for (size_t binding = 0; binding < 8; ++binding) if (auto texture = draw.Textures[binding]) {
+                Check(texture->Texture->device() == m_Device.get(), "Material texture belongs to another device");
+                fragment->setTexture(texture->Texture->gpuResourceID(), binding);
+                fragment->setSamplerState(texture->Sampler->gpuResourceID(), binding);
+                if (textures.insert(texture->Texture.get()).second) quad->Residency->addAllocation(texture->Texture.get());
+            }
+            auto depth = NS::TransferPtr(MTL::DepthStencilDescriptor::alloc()->init());
+            depth->setDepthCompareFunction(DepthFunction(draw.Raster));
+            depth->setDepthWriteEnabled(draw.Raster.DepthTest && draw.Raster.DepthWrite);
+            draw.DepthState = NS::TransferPtr(m_Device->newDepthStencilState(depth.get()));
+            Check(bool(draw.DepthState), "Cannot allocate indexed draw depth state");
+            quad->Buffers.push_back(std::move(buffer));
+            quad->Arguments.push_back(std::move(vertex)); quad->Arguments.push_back(std::move(fragment));
+            continue;
+        }
         const auto descriptorOffset = (256 + draw.Vertices.size() + 255) & ~size_t(255);
         std::vector<uint8_t> upload(descriptorOffset + 512); // aligned immutable camera, vertex and descriptor slices
         std::memcpy(upload.data(), &draw.Camera, sizeof(draw.Camera));
@@ -212,7 +251,6 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
         quad->Residency->addAllocation(uniform.get()); quad->Buffers.push_back(std::move(uniform));
     }
     quad->Residency->commit();
-    Check(quad->ResourceBytes() + m_Observer->Snapshot().ResourceBytes <= 1024ULL * 1024 * 1024, "Quad frame exceeds M1 owned resource budget");
 
 }
 void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& quad)
@@ -229,7 +267,7 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
     }
     std::set<MTL::Texture*> mipmaps;
     for (const auto& draw : quad->Draws) for (const auto& texture : draw.Textures)
-        if (!texture->MipsSubmitted && texture->Texture->mipmapLevelCount() > 1) mipmaps.insert(texture->Texture.get());
+        if (texture && !texture->MipsSubmitted && texture->Texture->mipmapLevelCount() > 1) mipmaps.insert(texture->Texture.get());
     if (!mipmaps.empty()) {
         auto* compute = m_Commands->computeCommandEncoder();
         if (!compute) { m_Commands->endCommandBuffer(); throw std::runtime_error("Cannot encode texture mipmap generation"); }
@@ -296,8 +334,10 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
         }
         render->setArgumentTable(quad->Arguments[i * 2].get(), MTL::RenderStageVertex);
         render->setArgumentTable(quad->Arguments[i * 2 + 1].get(), MTL::RenderStageFragment);
+        const auto& indices = draw.IndexedMesh ? draw.MeshIndices : quad->Buffers[1];
+        const size_t offset = size_t(draw.FirstIndex) * 4;
         render->drawIndexedPrimitives(MTL::PrimitiveTypeTriangle, draw.Count, MTL::IndexTypeUInt32,
-            quad->Buffers[1]->gpuAddress(), quad->Buffers[1]->length());
+            indices->gpuAddress() + offset, indices->length() - offset);
     }
     render->endEncoding();
     if (!quad->Readback) return;

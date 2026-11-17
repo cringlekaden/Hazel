@@ -1,5 +1,8 @@
 #include "Hazel/Core/Log.h"
 #include "Renderer2DParity.h"
+#include "Renderer3DParity.h"
+#include "Hazel/Renderer/Drawing/MeshGeometry.h"
+#include "Hazel/Renderer/Resources/UniformBuffer.h"
 #include "Renderer2DLines.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/RenderCommand.h"
@@ -91,6 +94,52 @@ void Save(const Hazel::FramebufferReadback& result, const std::filesystem::path&
     Check(bool(output), "Cannot save quad readback");
 }
 }
+namespace {
+void MeshLifetime(Hazel::MetalRendererAPI& backend)
+{
+    using namespace Hazel;
+    auto wideSpec=Specification();wideSpec.Width=8192;wideSpec.Height=1;
+    auto wide=Texture2D::Create(wideSpec);std::vector<uint32_t> widePixels(8192,0xffffffff);
+    wide->SetData(widePixels.data(),uint32_t(widePixels.size()*4));
+    Check(std::dynamic_pointer_cast<MetalTexture2D>(wide)->Snapshot()->Texture->width()==8192,"Production sampled-texture extent was restricted to the old proof limit");
+    auto project=Project::LoadCandidate(std::filesystem::absolute(
+        "examples/RenderingReference/RenderingReference-Direct-PerspectivePBR.hproj"));
+    auto assets=CreateRef<ProjectAssets>(project->GetAssetRoot());
+    auto mesh=assets->Mesh("Native/Direct_v1/UnitCube.hmesh");Check(bool(mesh.Accepted),mesh.Error);
+    std::weak_ptr<MeshGeometry> generation=assets->RealizeMesh(mesh.Accepted);
+    auto material=CreateRef<MaterialDefinition>();material->Model=MaterialModel::Unlit;
+    auto second=CreateRef<MaterialDefinition>(*material);second->BaseColor={0,0,1,1};
+    SceneSubmission frame;frame.Assets=assets;frame.Camera.Orthographic=true;
+    frame.Camera.Position={0,0,3};frame.Camera.ViewProjection=glm::ortho(-1.f,1.f,-1.f,1.f,-1.f,1.f);
+    SubmittedMesh draw;draw.Geometry=mesh.Accepted;draw.Materials={material};draw.Picking=-2000000003;
+    draw.SetWorld(glm::translate(glm::mat4(1),{-.5f,0,0})*glm::scale(glm::mat4(1),{.5f,1,1}));
+    frame.Meshes={draw};draw.Materials={second};draw.Picking=2000000003;
+    draw.SetWorld(glm::translate(glm::mat4(1),{.5f,0,0})*glm::scale(glm::mat4(1),{.5f,1,1}));frame.Meshes.push_back(draw);
+    auto target=Framebuffer::Create(TargetSpecification());SceneRenderView view;
+    std::array<Ref<const FramebufferReadback>,3> results;
+    struct QueueRelease { std::function<void()> Release; ~QueueRelease(){if(Release)Release();} } gate{backend.GateQueueForTesting()};
+    for(size_t i=0;i<results.size();++i) {
+        material->BaseColor={i==0?1.f:0.f,i==1?1.f:0.f,i==2?1.f:0.f,1};
+        Begin(target,32,32);
+        const auto before=RenderCommand::GetDrawSubmissionCount();
+        SceneRenderer::Render(frame,view,target,[]{},[]{});
+        Check(RenderCommand::GetDrawSubmissionCount()==before+2,"Indexed draw submissions were counted more than once");
+        results[i]=Submit(target);Check(bool(results[i]),"Gated mesh submit unexpectedly busy");
+    }
+    frame.Meshes.clear();frame.Assets.reset();assets.reset();project.reset();mesh.Accepted.reset();
+    Check(!generation.expired(),"Pending mesh generation escaped cache admission accounting");
+    Renderer3D::Shutdown(); // Native draws own all shader/texture/uniform versions already captured.
+    Check(backend.Observe()->Snapshot().InFlight==3,"Three mesh frames were not held by completion gate");
+    gate.Release();gate.Release={};
+    for(size_t i=0;i<results.size();++i) {
+        Wait(*target,results[i]);
+        Pixel(*results[i],8,16,{i==0?1.f:0.f,i==1?1.f:0.f,i==2?1.f:0.f,1},-2000000003,.25f);
+        Pixel(*results[i],24,16,{0,0,1,1},2000000003,.25f);
+    }
+    Check(generation.expired(),"Completed mesh cache owner did not retire");
+    std::cout<<"PASS gated mesh/material/object versions, three pending frames, cache-owner retention and retirement\n";
+}
+}
 int main(int argc, char** argv)
 {
     try
@@ -103,7 +152,8 @@ int main(int argc, char** argv)
         const auto root = std::filesystem::absolute(std::filesystem::u8path(argv[1]));
         Hazel::Resources::Configure({root, root, output / "user-data"});
         Hazel::RenderCommand::Configure(Hazel::RendererAPI::API::Metal);
-        Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 ? uint32_t(std::stoul(argv[3])) : 4;
+        const bool renderer3D = argc == 4 && std::string(argv[3]) == "--renderer3d-parity";
+        Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !renderer3D ? uint32_t(std::stoul(argv[3])) : 4;
         Check(settings.TextureSlots == 2 || settings.TextureSlots == 4,"Fixture supports two or four texture slots");
         const auto runtimeFrames=argc==5?std::stoul(argv[4]):80UL;
         Check(runtimeFrames>=80 && runtimeFrames<=6000,"Runtime frame count must be 80..6000");
@@ -114,6 +164,24 @@ int main(int argc, char** argv)
         auto framebuffer = Hazel::Framebuffer::Create(TargetSpecification());
         Check(bool(std::dynamic_pointer_cast<Hazel::MetalFramebuffer>(framebuffer)), "Factory did not return a production Metal framebuffer");
         Hazel::Renderer2D::Init();
+        if (renderer3D) {
+            Renderer3DParity(output, [&](const auto& target) {
+                auto result = Submit(target); Check(bool(result), "3D submit busy"); Wait(*target, result); return result;
+            });
+            MeshLifetime(backend);
+            framebuffer.reset();
+            auto stoppedShader=backend.LoadShader("ForwardPBR");
+            Hazel::Renderer2D::Shutdown(); Hazel::RenderCommand::Shutdown();
+            Reject("shader binding after shutdown",[&]{stoppedShader->Bind();});stoppedShader.reset();
+            Reject("vertex factory after shutdown",[]{Hazel::VertexBuffer::Create(64);});
+            uint32_t index=0;
+            Reject("index factory after shutdown",[&]{Hazel::IndexBuffer::Create(&index,1);});
+            Reject("uniform factory after shutdown",[]{Hazel::UniformBuffer::Create(16,2);});
+            Hazel::LightingImage cube;cube.Kind=Hazel::LightingImageKind::Background;cube.Side=1;cube.Mips={std::vector<float>(18,0)};
+            Reject("cube factory after shutdown",[&]{Hazel::TextureCube::Create(cube);});
+            Check(observer->Snapshot().Errors == 0 && observer->Snapshot().ResourceBytes == 0 && observer->Snapshot().AttachmentGenerations == 0, "3D retirement failed");
+            std::cout << "PASS production Renderer3D captures, completion and retirement\n"; return 0;
+        }
         Reject("duplicate quad initialization", [] { Hazel::Renderer2D::Init(); });
         Reject("unsupported attachment extent", [&] { Hazel::Framebuffer::Create(TargetSpecification(4097, 32)); });
         auto badProfile = TargetSpecification(); badProfile.Samples = 2;
@@ -353,9 +421,9 @@ int main(int argc, char** argv)
             const auto expected = neutral(glm::vec3(changed->Color[center]) * 2.f);
             for (int c = 0; c < 3; ++c) Check(std::abs(hdr->Color[center][c] - expected[c]) <= 1e-6f, "Integrated Neutral/exposure conversion differs");
             entity.AddComponent<Hazel::MeshRendererComponent>();
-            Reject("unsupported integrated scene", [&] { scene->ValidateRendering(); });
+            scene->ValidateRendering(); // Empty optional mesh follows the shared scene contract.
             scene->OnRuntimeStop();
-            std::cout << "PASS production Scene: camera/texture changes, 96x64, signed IDs, depth, Neutral exposure, unsupported content rejection\n";
+            std::cout << "PASS production Scene: camera/texture changes, 96x64, signed IDs, depth, Neutral exposure, shared optional mesh admission\n";
         }
         std::vector<Hazel::FramebufferReadback> metalParity;
         auto parityTarget = Hazel::Framebuffer::Create(TargetSpecification(128,128));

@@ -95,7 +95,7 @@ void MetalDevice::EnableTransferProof() {
     }
     m_Residency->commit(); m_Transfers=true; Account();
 }
-void MetalDevice::Account() {
+void MetalDevice::Account(const MetalRenderer2DFrame* preparing) {
     uint64_t resources=0,allocators=0,quadAllocations=0;
     std::set<const MTL::Allocation*> allocations;
     std::vector<const MetalRenderer2DFrame*> scenes;
@@ -106,12 +106,10 @@ void MetalDevice::Account() {
         if(f.Allocator) allocators+=f.Allocator->allocatedSize();
         if(f.Quad) { scenes.push_back(f.Quad.get()); quadAllocations+=f.Quad->Residency->allocationCount(); }
     }
+    if(preparing) scenes.push_back(preparing);
     while(!scenes.empty()) {
         const auto* scene=scenes.back();scenes.pop_back();
-        for(const auto& target:scene->Attachments->Targets) allocations.insert(target.get());
-        for(const auto& buffer:scene->Buffers) if(buffer) allocations.insert(buffer.get());
-        for(const auto& draw:scene->Draws) for(const auto& texture:draw.Textures) allocations.insert(texture->Texture.get());
-        if(scene->World)scenes.push_back(scene->World.get());
+        scene->CollectAllocations(allocations);
     }
     for(const auto* allocation:allocations) resources+=allocation->allocatedSize();
     Require(resources<=ResourceLimit&&allocators<=AllocatorLimit,"M1 bounded GPU storage limit exceeded");
@@ -211,7 +209,7 @@ void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t l
     if (scene) {
         auto& slot=m_Frames[m_Next];
         slot.Renderer2DCursor=0;
-        try { PrepareRenderer2DFrame(scene); slot.Renderer2DBuffers.resize(slot.Renderer2DCursor); }
+        try { PrepareRenderer2DFrame(scene); slot.Renderer2DBuffers.resize(slot.Renderer2DCursor); Account(scene.get()); }
         catch (...) { slot.Renderer2DBuffers.clear(); Account(); throw; }
     }
     auto& f=m_Frames[m_Next];

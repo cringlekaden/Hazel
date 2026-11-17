@@ -18,18 +18,18 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
         throw std::runtime_error("Linear lighting inspection requires an explicit FP32 color target");
     if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
     {
-        if (!display || !frame.Meshes.empty() || frame.Light || frame.Environment || frame.Debug != SurfaceView::Shaded || frame.LinearLightingInspection)
-            throw std::runtime_error("Metal quad scene requires an explicit target, shaded view, no meshes/lights/environment");
+        if (!display)
+            throw std::runtime_error("Metal scene requires an explicit view target");
         RenderCommand::StateScope scope;
         auto raster = RenderCommand::GetRasterState();
         raster.DepthTest = raster.DepthWrite = raster.Blend = true;
         raster.Compare = DepthCompare::Less;
         raster.ColorMask = raster.PickingMask = glm::bvec4(true);
-        raster.ClipEnabled = false;
+        raster.ClipEnabled = false; raster.Cull = CullFace::None; raster.Clockwise = false;
         RenderCommand::SetRasterState(raster);
         try
         {
-            if (frame.Presentation.SceneReferred)
+            if (frame.Presentation.SceneReferred && frame.Debug == SurfaceView::Shaded)
             {
                 auto size = display->GetSpecification();
                 if (!view.Radiance) view.Radiance = Framebuffer::Create(size);
@@ -38,12 +38,20 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
                 display->Cancel();
                 view.Radiance->Bind();
                 view.Radiance->Clear(frame.Presentation.Background);
+                Renderer3D::Render(frame, true);
+                auto worldState = raster;
+                RenderCommand::SetRasterState(worldState);
                 world2D();
                 view.Radiance->Unbind();
                 display->Bind();
                 view.Radiance->CompositeWorldTo(display, frame.Presentation.Exposure);
             }
-            else { view.Radiance.reset(); world2D(); }
+            else {
+                view.Radiance.reset();
+                Renderer3D::Render(frame, false);
+                RenderCommand::SetRasterState(raster);
+                world2D();
+            }
             screenUI();
         }
         catch (...)

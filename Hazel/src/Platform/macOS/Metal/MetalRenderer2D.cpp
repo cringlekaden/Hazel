@@ -126,11 +126,12 @@ void MetalRendererAPI::EnqueueRenderer2DBatch(const std::vector<MetalRenderer2DR
         captured.push_back(std::move(draw));
     }
     auto frame=m_Renderer2DFrame.lock();
-    uint64_t bytes=0;
-    for (const auto& draw : frame->Draws) bytes+=draw.Vertices.size();
-    for (const auto& draw : captured) bytes+=draw.Vertices.size();
+    uint64_t bytes=frame->PacketBytes;
+    for (const auto& draw : captured) bytes+=sizeof(draw)+draw.Vertices.size();
+    Check(frame->Draws.size()+captured.size() <= 65536, "Metal frame exceeds 65536 draws");
     Check(bytes <= 256ULL * 1024 * 1024, "Metal Renderer2D CPU packet exceeds 256 MiB");
     frame->Draws.reserve(frame->Draws.size()+captured.size());
+    frame->PacketBytes = bytes;
     for (auto& draw : captured) {
         frame->Draws.push_back(std::move(draw));
         RenderCommand::RecordDrawSubmission();

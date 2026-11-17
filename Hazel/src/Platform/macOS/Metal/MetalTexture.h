@@ -1,5 +1,6 @@
 #pragma once
 #include "Hazel/Renderer/Resources/Texture.h"
+#include "Hazel/Renderer/Resources/EnvironmentResources.h"
 #include <Metal/Metal.hpp>
 #include <memory>
 #include <mutex>
@@ -11,6 +12,15 @@ struct MetalTextureVersion
     NS::SharedPtr<MTL::Texture> Texture;
     mutable bool MipsSubmitted = false; // renderer-thread publication after queue commit
     NS::SharedPtr<MTL::SamplerState> Sampler;
+};
+class MetalTextureCube final : public TextureCube
+{
+public:
+    MetalTextureCube(std::shared_ptr<MetalDevice> device, const LightingImage& image);
+    void Bind(uint32_t slot) const override;
+private:
+    std::shared_ptr<MetalDevice> m_Device;
+    std::shared_ptr<const MetalTextureVersion> m_Version;
 };
 class MetalTexture2D final : public Texture2D
 {

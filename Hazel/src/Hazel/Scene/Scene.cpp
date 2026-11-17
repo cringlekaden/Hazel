@@ -888,7 +888,6 @@ namespace Hazel {
     void Scene::DrawView(const SceneCameraView &camera, SceneRenderView *view,
                          const Ref<Framebuffer> &display)
     {
-        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) ValidateRendering();
         PrepareSprites();
         SceneRenderView local;
         auto frame = SceneRenderer::Collect(*this, camera);
@@ -1056,11 +1055,6 @@ namespace Hazel {
     void Scene::ValidateRendering() const
     {
         m_Presentation.Validate();
-        if (RendererAPI::GetAPI() == RendererAPI::API::Metal) {
-            if (!m_Registry.view<const MeshRendererComponent>().empty() || !m_Registry.view<const DirectionalLightComponent>().empty() ||
-                !m_Presentation.Environment.Asset.empty())
-                throw std::runtime_error("Metal Renderer2D scenes do not support meshes, lights or environments");
-        }
         if(!m_Presentation.Environment.Asset.empty()) {
             if(!m_Assets)throw std::runtime_error("Environment requires project-owned prepared assets");
             AuditEnvironment(m_Assets->Root(),m_Presentation.Environment.Asset);

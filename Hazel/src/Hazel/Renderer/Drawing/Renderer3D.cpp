@@ -8,6 +8,9 @@
 #include "Hazel/Renderer/RenderCommand.h"
 #include "Hazel/Renderer/Resources/Shader.h"
 #include "Hazel/Renderer/Resources/UniformBuffer.h"
+#ifdef HZ_PLATFORM_MACOS
+#include "Platform/macOS/Metal/MetalRendererAPI.h"
+#endif
 namespace Hazel
 {
 namespace
@@ -19,6 +22,15 @@ Ref<VertexArray> skyTriangle;
 Ref<EnvironmentResources> emptyEnvironment;
 Ref<UniformBuffer> cameraBuffer, objectBuffer, materialBuffer;
 Ref<Texture2D> white;
+void Retain(const std::shared_ptr<void>& resource)
+{
+#ifdef HZ_PLATFORM_MACOS
+    if (RendererAPI::GetAPI() == RendererAPI::API::Metal)
+        static_cast<MetalRendererAPI&>(RenderCommand::Backend()).RetainResource(resource);
+#else
+    (void)resource;
+#endif
+}
 void EnsureResources()
 {
     if (shader)
@@ -87,6 +99,7 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground)
     {
         EnsureResources();
         lighting = frame.Environment ? frame.Assets->RealizeEnvironment(frame.Environment) : emptyEnvironment;
+        Retain(lighting);
         const auto &instance = frame.Presentation.Environment;
         EnvironmentData env{glm::inverse(frame.Camera.ViewProjection),
             {std::cos(instance.Yaw), std::sin(instance.Yaw), frame.Environment ? instance.Gain : 0,
@@ -134,6 +147,7 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground)
         for (auto &draw : frame.Meshes)
         {
             auto geometry = frame.Assets->RealizeMesh(draw.Geometry);
+            Retain(geometry);
             ObjectData object{draw.World, draw.Normal, {draw.Picking, draw.Handedness, 0, 0}};
             objectBuffer->SetData(&object, sizeof(object));
             for (size_t i = 0; i < draw.Geometry->Geometry.Primitives.size(); ++i)
@@ -151,6 +165,7 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground)
                             MaterialTextureSpecification(MaterialTexture(role), image));
                         maps |= 1 << role;
                     }
+                    Retain(texture);
                     texture->Bind(role);
                 }
                 MaterialData values{material.BaseColor,

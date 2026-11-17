@@ -8,6 +8,7 @@
 #include <vector>
 #include <array>
 #include <memory>
+#include <stdexcept>
 
 namespace Hazel {
 class MetalDevice;
@@ -60,7 +61,14 @@ public:
     std::shared_ptr<Framebuffer> CreateFramebuffer(const FramebufferSpecification& specification);
     std::shared_ptr<Texture2D> CreateTexture(const TextureSpecification& specification, const std::string& path = {});
     std::shared_ptr<Shader> LoadShader(const std::string& name, uint32_t slots = 32);
-    std::shared_ptr<MetalDevice> Device() const { return m_Device; }
+    void BindUniform(uint32_t binding, const std::shared_ptr<const std::vector<uint8_t>>& bytes);
+    void BindTexture(uint32_t slot, std::shared_ptr<const MetalTextureVersion> texture);
+    void BindShader(const std::string& name);
+    void RetainResource(std::shared_ptr<void> resource);
+    std::shared_ptr<MetalDevice> Device() const {
+        if (m_Stopped) throw std::logic_error("Cannot access Metal resources after backend shutdown");
+        return m_Device;
+    }
     std::shared_ptr<MetalProofObserver> Observe() const;
     // Explicit native diagnostics; no production application/CLI enables these.
     void EnableTransferProof();
@@ -82,6 +90,9 @@ private:
     glm::mat4 m_Renderer2DCamera{1};
     std::weak_ptr<MetalRenderer2DFrame> m_Renderer2DFrame;
     std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;
+    std::array<std::weak_ptr<const std::vector<uint8_t>>, 8> m_Uniforms;
+    std::array<std::shared_ptr<const MetalTextureVersion>, 8> m_Textures;
+    std::string m_BoundShader;
     RasterState m_Raster;
     std::vector<RasterState> m_StateStack;
     RendererCapabilities m_Caps;
