@@ -26,7 +26,7 @@ void EnvironmentWorkflowUpdate()
         return;
     }
     Check(std::chrono::steady_clock::now() - m_ImportStarted < std::chrono::seconds(30),
-          "Native environment authoring workflow exceeded its bound");
+          "Native environment authoring workflow exceeded its bound at phase "+std::to_string(m_ImportPhase));
     if (m_ImportWait)
     {
         --m_ImportWait;
@@ -65,6 +65,7 @@ void EnvironmentWorkflowUpdate()
     {
         if (a.m_Tools.Busy())
             return;
+        if(a.m_Report.Operation<=m_ActivatedToolReport) {m_ImportPhase=211;return;}
         Check(a.m_Report.Success && !a.m_Report.Python,
               "Native environment preparation failed or used Python: " + a.m_Report.Output);
         auto accepted = ReadPreparedEnvironment(assets->Root(), panel.Name());
@@ -125,6 +126,7 @@ void EnvironmentWorkflowUpdate()
     {
         if (a.m_Tools.Busy())
             return;
+        if(a.m_Report.Operation<=m_ActivatedToolReport) {m_ImportPhase=218;return;}
         Check(!a.m_Report.Success && a.m_Report.Output.find("Radiance") != std::string::npos &&
                   Read(assets->Root() / EnvironmentAcceptance(panel.Name())) ==
                       m_NativeEnvironmentAcceptance,
@@ -175,12 +177,7 @@ void DrawEnvironmentWorkflow()
         auto w = ImGui::FindWindowByName(windowName);
         Check(w && w->Active, std::string("Environment UI owner missing at phase ") +
                                   std::to_string(m_ImportPhase) + ": " + windowName);
-        if (w->Hidden || w->SkipItems)
-            return false;
-        ImGui::FocusWindow(w);
-        ImGui::ActivateItem(w->GetID(button));
-        m_ImportWait = 2;
-        return true;
+        return ActivateWorkflowItem(w,w->GetID(button));
     };
     auto picker = [&](const char *windowName, const char *key) {
         auto w = ImGui::FindWindowByName(windowName);
@@ -188,10 +185,7 @@ void DrawEnvironmentWorkflow()
         if (w->Hidden || w->SkipItems)
             return false;
         auto row = ImHashStr(key, 0, w->ID), table = ImHashStr("##property", 0, row);
-        ImGui::FocusWindow(w);
-        ImGui::ActivateItem(ImHashStr("##value", 0, table));
-        m_ImportWait = 2;
-        return true;
+        return ActivateWorkflowProperty(w,table);
     };
     auto select = [&](const std::vector<AssetPickerState::Choice> &choices,
                       const std::filesystem::path &path) {
@@ -204,7 +198,7 @@ void DrawEnvironmentWorkflow()
             std::find_if(choices.begin(), choices.end(), [&](auto &c) { return c.Path == path; });
         Check(it != choices.end(), "Environment selector omitted owned asset");
         auto seed = ImHashStr(it->Path.generic_u8string().c_str(), 0, w->ID);
-        ImGui::FocusWindow(w);
+        if(!FocusWorkflowWindow(w))return false;
         ImGui::ActivateItem(ImHashStr(it->Label.c_str(), 0, seed));
         m_ImportWait = 2;
         return true;
@@ -235,10 +229,7 @@ void DrawEnvironmentWorkflow()
         auto w = ImGui::FindWindowByName(window);
         auto tree = ImHashStr("Preparation quality", 0, w->ID), row = ImHashStr("samples", 0, tree),
              table = ImHashStr("##property", 0, row);
-        ImGui::FocusWindow(w);
-        ImGui::ActivateItem(ImHashStr("##value", 0, table));
-        m_ImportWait = 2;
-        m_ImportPhase = 207;
+        if(ActivateWorkflowProperty(w,table))m_ImportPhase = 207;
     }
     else if (m_ImportPhase == 207 && !m_ImportWait)
     {
@@ -247,7 +238,7 @@ void DrawEnvironmentWorkflow()
         auto w = stack.back().Window;
         if (!w->Hidden && !w->SkipItems)
         {
-            ImGui::FocusWindow(w);
+            if(!FocusWorkflowWindow(w))return;
             ImGui::ActivateItem(w->GetID("256"));
             m_ImportWait = 2;
             m_ImportPhase = 208;

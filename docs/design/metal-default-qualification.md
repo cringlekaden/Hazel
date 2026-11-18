@@ -192,3 +192,42 @@ the Import button, native-producer execution and exact import assertions remain
 mandatory. The candidate retains OpenGL as the default until native completion.
 A branch CI dispatch is for cross-platform correctness and first-mismatch data,
 not a claim of readiness or a badge-only run. All unfinished gates remain INCOMPLETE.
+
+
+### Exact packed-depth correction and fixture stabilization
+
+Candidate `f3340c8d6bcf39d1a521601098b54830c0746ab3` was pushed and dispatched as
+run `44289135829`, with its head SHA verified. Windows reports ID `8 -> 8` at
+pixel `(518,166)` but depth `0x1.f6b882p-1 -> 0x1.f6b884p-1`: one float32 ULP.
+The unmodified exact-depth assertion therefore correctly fails. Raw completed-job
+log: `candidate-windows-job.log`. The initial candidate workflow also incorrectly
+placed the Linux graphics command in macOS; that ordering-edit error is corrected
+and platform-local CPU/graphics/build ordering is validated before redispatch.
+No macOS PASS is claimed for the erroneous workflow run.
+
+The official Mesa 26.2.3 source archive was inspected read-only, without installing
+or changing a dependency: <https://archive.mesa3d.org/mesa-26.2.3.tar.xz>, SHA256
+`1628058a8d2c0615975de5a15ab7bbb9638c50000b5bed9456ff423ea034a81f`.
+`lp_surface.c:lp_blit` first tries `util_try_blit_via_copy_region`;
+`u_surface.c:util_can_blit_via_copy_region` requires all components of the packed
+format to be copied. Hazel requested only depth from D24S8, making that direct
+copy ineligible. The existing transfer now copies the complete matching depth/
+stencil attachment. Color/ID shaders, PBR/IBL math, source references and exact
+assertions are unchanged. A new high-depth seed matching the recorded failure
+checks exact packed depth **and stencil** bits; independent FP32 Neutral/IEC color
+and integer-ID checks remain. Current Debug Renderer2D, M3 and M4 PASS after this
+change. CI confirmation remains required.
+
+2x fixture diagnosis also established two test-harness assumptions: the preview
+can belong to a detached viewport, and a queued navigation activation is not an
+accepted job. Tests now inspect the preview's own viewport, focus the intended
+real widget for keyboard navigation, reveal actual property-row bounds and require
+a newer tool-operation report. They retain actual widget dispatch, native producer
+execution, document-history checks, failure/cancel acceptance-byte retention and
+the original 30-second bounds. The full focused Debug 2x workflow now PASSes
+(`workflow-nav-2x/results.json`). All unsuccessful diagnostic attempts remain.
+
+A local autorelease pool now also encloses the added Metal OS/driver string query;
+its temporary Foundation objects do not depend on GLFW having created an outer
+pool. Native availability queries already have scoped pools. No global queue wait,
+resource budget or shader-loading rejection was relaxed.

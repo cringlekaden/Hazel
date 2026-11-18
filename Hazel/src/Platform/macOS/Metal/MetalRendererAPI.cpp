@@ -9,6 +9,7 @@
 namespace Hazel {
 namespace { [[noreturn]] void Unavailable() { throw std::logic_error("Operation unavailable in the Metal 4 Renderer2D runtime"); } }
 MetalRendererAPI::MetalRendererAPI():m_Device(std::make_shared<MetalDevice>()) {
+    auto pool=NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
     m_Caps.Metal=true; m_Caps.Compute=true;
     m_Caps.LimitsSource="Metal 4 family guarantees capped by Hazel binding/attachment contracts; sample count queried on active device";
     m_Caps.ShaderLoading="Offline Metal libraries (required); no runtime developer shader compiler";

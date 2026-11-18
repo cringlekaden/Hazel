@@ -71,8 +71,20 @@ static void CanonicalColorChecks() {
           std::abs(int(fp32Pixel[2])-99)<=1 && fp32Pixel[3]==255,"FP32 display source lost independent IEC output vector");
     output->Unbind();
     auto fp32Display=Framebuffer::Create(spec);
-    fp32->Bind();fp32->ClearAttachment(1,321);fp32->Unbind();
+    GLdouble depthClear=1;GLint stencilClear=0,frontMask=0,backMask=0;GLboolean depthMask=GL_TRUE;
+    glGetDoublev(GL_DEPTH_CLEAR_VALUE,&depthClear);glGetIntegerv(GL_STENCIL_CLEAR_VALUE,&stencilClear);
+    glGetIntegerv(GL_STENCIL_WRITEMASK,&frontMask);glGetIntegerv(GL_STENCIL_BACK_WRITEMASK,&backMask);glGetBooleanv(GL_DEPTH_WRITEMASK,&depthMask);
+    glDepthMask(GL_TRUE);glStencilMask(0xff);
+    fp32->Bind();fp32->ClearAttachment(1,321);
+    glClearBufferfi(GL_DEPTH_STENCIL,0,std::ldexp(float(0x1f6b882u),-25),0x5a);
+    uint32_t packedSource=0,packedDisplay=0;
+    glReadPixels(16,16,1,1,GL_DEPTH_STENCIL,GL_UNSIGNED_INT_24_8,&packedSource);
+    fp32Display->Bind();glClearBufferfi(GL_DEPTH_STENCIL,0,.25f,0x35);
     fp32->CompositeWorldTo(fp32Display,0);fp32Display->Bind();
+    glReadPixels(16,16,1,1,GL_DEPTH_STENCIL,GL_UNSIGNED_INT_24_8,&packedDisplay);
+    Check(packedDisplay==packedSource && (packedSource&0xff)==0x5a,"World presentation did not preserve exact packed depth/stencil bits");
+    glDepthMask(depthMask);glStencilMaskSeparate(GL_FRONT,frontMask);glStencilMaskSeparate(GL_BACK,backMask);
+    glClearDepth(depthClear);glClearStencil(stencilClear);
     float neutralPixel[4]{};glReadBuffer(GL_COLOR_ATTACHMENT0);glReadPixels(16,16,1,1,GL_RGBA,GL_FLOAT,neutralPixel);
     // Independent low-radiance Neutral branch: min=.125 >= .08, subtract .04,
     // max=.46 < .76, so no highlight compression or desaturation applies.

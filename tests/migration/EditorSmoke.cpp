@@ -46,8 +46,10 @@
 #include <thread>
 #include <chrono>
 #include <algorithm>
+#include <cmath>
 #include <random>
 #include <stdexcept>
+#include <string_view>
 #if defined(HZ_PLATFORM_LINUX) || defined(HZ_PLATFORM_MACOS)
 #include <fcntl.h>
 #include <unistd.h>
@@ -537,6 +539,30 @@ private:
         WindowResizeEvent restored(Application::Get().GetWindow().GetWidth(),Application::Get().GetWindow().GetHeight());
         Application::Get().OnEvent(restored);
         std::cout<<"PASS: main-thread Console/tool polling continues while minimized without advancing scene/render frames\n";
+    }
+    bool FocusWorkflowWindow(ImGuiWindow* window) {
+        if(ImGui::GetCurrentContext()->NavWindow==window)return true;
+        ImGui::FocusWindow(window);
+        return false; // Allow the detached viewport/focus transition before activation.
+    }
+    bool ActivateWorkflowItem(ImGuiWindow* window, ImGuiID id) {
+        if(window->Hidden || window->SkipItems)return false;
+        // Explicit keyboard-navigation focus keeps the requested real widget alive
+        // through clipping and detached-window focus changes until its activation frame.
+        ImGui::FocusWindow(window);
+        auto& context=*ImGui::GetCurrentContext();
+        context.NavInitRequest=false;context.NavInitResultId=0;
+        ImGui::SetNavID(id,ImGuiNavLayer_Main,window->NavRootFocusScopeId,ImRect(0,0,0,0));
+        m_ActivatedToolReport=m_Editor.m_Authoring->m_Report.Operation;
+        ImGui::ActivateItem(id);m_ImportWait=2;
+        return true;
+    }
+    bool ActivateWorkflowProperty(ImGuiWindow* window, ImGuiID tableID) {
+        auto* table=ImGui::TableFindByID(tableID);
+        Check(table && table->LastFrameActive==ImGui::GetFrameCount(),"Native property row was not laid out");
+        const auto scroll=ImGui::ScrollToRectEx(window,table->OuterRect,ImGuiScrollFlags_KeepVisibleEdgeY);
+        if(std::abs(scroll.y)>1.0f)return false;
+        return ActivateWorkflowItem(window,ImHashStr("##value",0,tableID));
     }
     bool DrawBackendSettingsCapture() {
         const char* mode=std::getenv("HAZEL_BACKEND_CAPTURE");
@@ -1615,6 +1641,7 @@ private:
     Ref<Texture2D> m_PreviewBeforeReload;
     std::string m_NativeEnvironmentAcceptance;
     int m_ImportPhase=0,m_ImportWait=0;
+    uint64_t m_ActivatedToolReport=0;
     EditorPreferences m_ImportPreferences;
     std::chrono::steady_clock::time_point m_ImportStarted;
     std::filesystem::path m_NativeImportManifest;

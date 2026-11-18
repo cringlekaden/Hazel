@@ -364,11 +364,13 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
     glBindVertexArray(m_OutputVAO);
     glDrawArrays(GL_TRIANGLES, 0, 3);
     // IDs copy via integer texelFetch in the same pass, without filtering or conversion.
-    // Native M4 rejects an otherwise matching R32I color blit; depth blits remain valid.
+    // Native M4 rejects an otherwise matching R32I color blit. Copy the complete
+    // D24S8 attachment: a masked depth-only blit can round through float on Mesa,
+    // whereas the full matching packed format is eligible for a bit-preserving copy.
     glBindFramebuffer(GL_READ_FRAMEBUFFER, m_RendererID);
     glBlitFramebuffer(0, 0, m_Specification.Width, m_Specification.Height, 0, 0,
-                      m_Specification.Width, m_Specification.Height, GL_DEPTH_BUFFER_BIT,
-                      GL_NEAREST);
+                      m_Specification.Width, m_Specification.Height,
+                      GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 }
 
 void OpenGLFramebuffer::Bind()

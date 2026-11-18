@@ -66,6 +66,10 @@ void ImportWorkflowUpdate()
                               <<" skip="<<window->SkipItems<<" viewport="<<window->Viewport->ID;
             std::cerr<<'\n';
         }
+        if(owner.m_Report.Operation<=m_ActivatedToolReport) {
+            m_ImportPhase=2; // Queued UI activation is not an accepted native-job receipt.
+            return;
+        }
         Check(owner.m_Report.Success && !owner.m_Report.Request.NativeExecutable.empty(),
               "Native import form failed: " + owner.m_Report.Output);
         Check(!owner.m_Report.Python, "Native import incorrectly required Python");
@@ -351,12 +355,7 @@ void DrawImportWorkflow()
         auto window = ImGui::FindWindowByName(windowName);
         Check(window && window->Active, std::string("Native authoring window missing at phase ") +
                                             std::to_string(m_ImportPhase) + ": " + windowName);
-        if (window->Hidden || window->SkipItems)
-            return false;
-        ImGui::FocusWindow(window);
-        ImGui::ActivateItem(window->GetID(button));
-        m_ImportWait = 2;
-        return true;
+        return ActivateWorkflowItem(window,window->GetID(button));
     };
     if (m_ImportPhase == 131)
     {
@@ -383,12 +382,9 @@ void DrawImportWorkflow()
         auto window =
             ImGui::FindWindowByName("Material: Native/Materials/NewMaterial.hmat###Material");
         Check(window && window->Active, "Native material panel missing");
-        ImGui::FocusWindow(window);
         auto row = ImHashStr("sided", 0, window->ID);
         auto table = ImHashStr("##property", 0, row);
-        ImGui::ActivateItem(ImHashStr("##value", 0, table));
-        m_ImportWait = 2;
-        m_ImportPhase = 7;
+        if(ActivateWorkflowProperty(window,table))m_ImportPhase = 7;
     }
     else if (m_ImportPhase == 8)
     {
@@ -400,14 +396,11 @@ void DrawImportWorkflow()
         auto *window =
             ImGui::FindWindowByName("Material: Native/Materials/NewMaterial.hmat###Material");
         Check(window && window->Active, "Native material selector owner missing");
-        ImGui::FocusWindow(window);
         int slot = 0;
         auto seed = ImHashData(&slot, sizeof(slot), window->ID);
         auto row = ImHashStr("image", 0, seed);
         auto table = ImHashStr("##property", 0, row);
-        ImGui::ActivateItem(ImHashStr("##value", 0, table));
-        m_ImportWait = 2;
-        m_ImportPhase = 92;
+        if(ActivateWorkflowProperty(window,table))m_ImportPhase = 92;
     }
     else if (m_ImportPhase == 92 && !m_ImportWait)
     {
@@ -420,7 +413,7 @@ void DrawImportWorkflow()
             return;
         const auto &choice = choices.front();
         auto seed = ImHashStr(choice.Path.generic_u8string().c_str(), 0, window->ID);
-        ImGui::FocusWindow(window);
+        if(!FocusWorkflowWindow(window))return;
         ImGui::ActivateItem(ImHashStr(choice.Label.c_str(), 0, seed));
         m_ImportWait = 2;
         m_ImportPhase = 93;
