@@ -67,7 +67,9 @@ M6 baseline feature-branch run [`819ac353`](https://github.com/cringlekaden/Haze
 passed hosted macOS compilation/CPU checks and failed Windows/Linux Debug builds
 because a Metal-only source was selected there. The local correction and remaining
 qualification limits are tracked in [M6](docs/design/metal-m6.md); that run does
-not qualify the M6 candidate; its own branch run is pending.
+not qualify the M6 candidate. [Candidate run 44212291235](https://github.com/cringlekaden/Hazel/actions/runs/44212291235)
+tests `35e4f4116cba7bc57a12e4451bdf293acc2c5cf3` and is in progress at the M6
+handoff; no passing result is claimed.
 
 The badge is **workflow-wide**. Open a run for its separate Windows/Linux Debug, Release and extracted-binary jobs and the Mac build/CPU/service/managed subset. [CI coverage](docs/development.md#canonical-ci) includes software/GL4.1 regressions, editor/tutorial authoring and relocated packages; Apple GPU qualification is local. There is no published release; [download guidance](docs/packaging.md) identifies snapshot contents and retention.
 

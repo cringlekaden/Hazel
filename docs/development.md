@@ -226,6 +226,9 @@ separate native Apple M4 Debug/Release, extracted dual-backend app packages,
 clean-source onboarding, hosted CPU/build CI, Windows/Linux software checks and
 unavailable physical Intel HD 4000. Its feature-branch baseline Actions run is
 [44168056768](https://github.com/cringlekaden/Hazel/actions/runs/44168056768).
+[M6 candidate run 44212291235](https://github.com/cringlekaden/Hazel/actions/runs/44212291235)
+tests `35e4f4116cba7bc57a12e4451bdf293acc2c5cf3` and is in progress at handoff.
+The owner requested no wait for CI; its results remain unverified.
 Master's badge and master push/PR/manual workflow policy are unchanged.
 
 The existing matched runtime benchmark also records process-to-scene-ready startup,

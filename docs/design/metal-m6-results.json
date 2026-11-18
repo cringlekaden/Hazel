@@ -1,9 +1,9 @@
 {
   "milestone": "M6",
-  "verdict": "M6 INCOMPLETE \u2014 available local Apple M4 gates PASS; patched Windows/Linux branch CI and physical/deployment coverage remain unqualified",
+  "verdict": "M6 INCOMPLETE \u2014 all available local gates PASS; candidate hosted CI IN PROGRESS, not awaited at owner request",
   "baseline": "819ac353879ea9e8f048054b580e5ae614085a6d",
   "branch": "feature/3d-foundations",
-  "tree": "M6 candidate implementation; baseline and implementation-scope digest recorded separately; candidate CI pending",
+  "tree": "M6 implementation candidate 35e4f4116cba7bc57a12e4451bdf293acc2c5cf3; subsequent documentation-only evidence update preserves the implementation-scope digest",
   "evidenceRoot": "build/metal-m6-evidence",
   "ci": {
     "run": "https://github.com/cringlekaden/Hazel/actions/runs/44168056768",
@@ -29,8 +29,19 @@
       }
     },
     "patchedTree": {
-      "status": "PENDING",
-      "reason": "Candidate commit/push and dispatch now explicitly authorized."
+      "status": "IN PROGRESS",
+      "sha": "35e4f4116cba7bc57a12e4451bdf293acc2c5cf3",
+      "branch": "feature/3d-foundations",
+      "event": "workflow_dispatch",
+      "url": "https://github.com/cringlekaden/Hazel/actions/runs/44212291235",
+      "platforms": {
+        "macOS": "IN PROGRESS \u2014 hosted build/CPU subset",
+        "Windows": "IN PROGRESS",
+        "Linux": "IN PROGRESS"
+      },
+      "verification": "GitHub run metadata headSha/headBranch/event verified against the pushed candidate.",
+      "evidence": "build/metal-m6-evidence/ci-candidate-35e4f41.json",
+      "ownerHandoff": "Owner explicitly requested reporting immediately after push/dispatch rather than waiting for CI."
     }
   },
   "physicalIntelHD4000": {
@@ -41,7 +52,7 @@
     "status": "NOT RUN",
     "reason": "Developer ID, notarization and fresh-download Gatekeeper are not available in local ad-hoc qualification"
   },
-  "updatedUTC": "2026-11-18T00:31:25.256041+00:00",
+  "updatedUTC": "2026-11-18T01:00:44.267482+00:00",
   "hardware": {
     "chip": "Apple M4",
     "host": "native arm64 macOS 27.3",
@@ -819,26 +830,31 @@
     "hostedMacOSBuildCPUAtBaseline": "PASS",
     "WindowsBaselineDebugBuild": "FAIL",
     "LinuxBaselineDebugBuild": "FAIL",
-    "WindowsPatchedTreeBuildTestsPackages": "NOT RUN",
-    "LinuxPatchedTreeBuildTestsPackages": "NOT RUN",
+    "WindowsPatchedTreeBuildTestsPackages": "IN PROGRESS \u2014 no result claimed",
+    "LinuxPatchedTreeBuildTestsPackages": "IN PROGRESS \u2014 no result claimed",
     "hostedMacOSGPUAndPackages": "NOT RUN",
     "physicalIntelHD4000": "NOT RUN",
     "macOS27MinimumOSLaunch": "NOT RUN",
     "otherAppleSiliconHardware": "NOT RUN",
-    "DeveloperIDNotarizationFreshDownloadGatekeeper": "NOT RUN"
+    "DeveloperIDNotarizationFreshDownloadGatekeeper": "NOT RUN",
+    "hostedMacOSCandidateBuildCPU": "IN PROGRESS \u2014 no result claimed"
   },
-  "defaultBackendRecommendation": "Keep OpenGL as the default while M6 is incomplete. Reconsider only after patched branch CI and remaining deployment/hardware gates; no default change applied.",
+  "defaultBackendRecommendation": "Keep OpenGL as the default pending candidate CI and remaining deployment/hardware evidence. Metal is locally qualified on the tested M4; no default change applied.",
   "commitPush": {
-    "status": "AUTHORIZED \u2014 candidate pending",
+    "status": "PUSHED",
+    "candidate": "35e4f4116cba7bc57a12e4451bdf293acc2c5cf3",
     "branch": "feature/3d-foundations",
-    "scope": "Owner explicitly authorized M6 candidate and minimal attributable CI corrections; normal push, workflow_dispatch, no merge/release/default change."
+    "mode": "normal push",
+    "scope": "Scoped M6 candidate; no merge/release/default change."
   },
   "remainingGates": [
     {
-      "status": "PENDING",
+      "status": "IN PROGRESS",
       "required": true,
-      "gate": "CI on the patched M6 candidate",
-      "reason": "Candidate push and workflow_dispatch explicitly authorized by the owner."
+      "gate": "CI on the M6 candidate",
+      "sha": "35e4f4116cba7bc57a12e4451bdf293acc2c5cf3",
+      "url": "https://github.com/cringlekaden/Hazel/actions/runs/44212291235",
+      "reason": "Dispatched and verified; owner requested no wait for completion."
     },
     {
       "status": "NOT RUN",
@@ -864,5 +880,6 @@
       "reason": "Local ad-hoc packaging only; no public distribution claim.",
       "requiredForTestedPlatformVerdict": false
     }
-  ]
+  ],
+  "candidateCommit": "35e4f4116cba7bc57a12e4451bdf293acc2c5cf3"
 }

@@ -159,12 +159,11 @@ existing owners, queue and pending guard, with no new renderer or scheduler.
 ## Executed local outcome
 
 All available local Apple M4 gates below pass. **M6 remains INCOMPLETE** because
-baseline CI fails on Windows/Linux and the corrected candidate has not been
-compiled there. HEAD remains `819ac353879ea9e8f048054b580e5ae614085a6d`;
-The M6 implementation is identified by the implementation-scope digest in the
-results JSON. The owner authorized a candidate commit/push and workflow dispatch
-after the local gates passed. Candidate CI is pending; no merge, release or
-default change is authorized.
+baseline CI fails on Windows/Linux and candidate CI is still in progress.
+The implementation candidate is `35e4f4116cba7bc57a12e4451bdf293acc2c5cf3`;
+its source-scope digest matches the locally qualified implementation. This
+evidence update is documentation-only. No merge, release or default change is
+authorized.
 
 | Gate | Outcome | Evidence under `build/metal-m6-evidence/` |
 | --- | --- | --- |
@@ -258,14 +257,19 @@ subsequent tests and package jobs did not execute. The local Premake correction
 has MSVC project-generation proof, not a successful Windows/Linux compiler run.
 Master's workflow bytes, triggers and badge are unchanged.
 
-Patched branch CI is pending. The owner explicitly authorized the scoped M6
-candidate commit/push and workflow dispatch after review of local qualification.
-Actual candidate SHAs and run outcomes will be recorded here. Physical Intel HD 4000,
+Candidate `35e4f4116cba7bc57a12e4451bdf293acc2c5cf3` was committed and pushed
+normally to `feature/3d-foundations`. [Candidate run 44212291235](https://github.com/cringlekaden/Hazel/actions/runs/44212291235)
+was started through `workflow_dispatch`; its `headSha`, branch and event were
+verified against that candidate. All three jobs were IN PROGRESS at handoff.
+The owner explicitly requested reporting after push/dispatch without waiting
+for CI completion. No hosted candidate success is claimed, and the baseline run
+is not substituted for candidate evidence. Physical Intel HD 4000,
 other Apple Silicon GPUs, actual minimum macOS 27.0 execution, Developer ID,
 notarization and fresh-download Gatekeeper remain NOT RUN. Native M4, hosted
 compilation, software GL and physical Intel are separate evidence categories.
 
-**M6 INCOMPLETE.** Retain OpenGL as the macOS default while the outstanding CI
+**M6 INCOMPLETE — candidate CI in progress, not awaited at owner request.** All
+available local gates passed. Retain OpenGL as the macOS default while the outstanding CI
 and deployment/hardware gates remain. Metal remains an explicitly selected,
 locally qualified path on the tested M4. No default change is applied. Existing
 single-sample/target/resource limits and the accepted frozen split-sum IBL
