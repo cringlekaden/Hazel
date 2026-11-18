@@ -45,7 +45,15 @@ Open **Assets/Scenes/UI Tutorial.hazel** and Play. Its [five pages](examples/San
 
 [SceneTransitions](examples/SceneTransitions/README.md) is the smallest runtime/scripting example. Every project has source launch and export instructions. Prepared game packages need **no compiler, Python or source SDK**; changing scripts and exporting requires the authoring toolchain.
 
-The development branch also has an experimental [Metal 4 Renderer2D runtime](docs/development.md#experimental-metal-shader-resources). M3 is locally qualified on Apple M4, including native 1×/2× presentation and player input. [M4 Renderer3D/PBR/IBL](docs/design/metal-m4.md) is locally qualified on Apple M4, including Debug/Release native windows and numerical parity; OpenGL remains the default. [M5 editor/compute integration](docs/design/metal-m5.md) is locally qualified on Apple M4 in Debug/Release, including detached-window lifecycle and native compute dependencies. Windows/Linux, Intel HD 4000 and new branch CI execution remain untested for M5.
+The `feature/3d-foundations` branch adds shared static 3D/PBR/prepared IBL and
+opt-in Metal 4 for Apple Silicon/macOS 27+. Use the
+[branch-specific clone instructions](docs/getting-started.md#test-the-3d--metal-development-branch)
+and [Metal shader/build commands](docs/development.md#experimental-metal-shader-resources).
+[M3](docs/design/metal-m3.md), [M4](docs/design/metal-m4.md) and
+[M5](docs/design/metal-m5.md) have local Apple M4 qualification. The
+[M6 production-readiness record](docs/design/metal-m6.md) separately tracks
+clean-source, application packaging, platform CI and matched measurements.
+M6 is **INCOMPLETE** until its required gates pass. OpenGL remains the default.
 
 ## Status and support
 
@@ -54,6 +62,12 @@ Requires **OpenGL 4.1 core**. Windows x64 and Linux x86_64/X11 (including Xwayla
 [![C/C++ CI — master](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml/badge.svg?branch=master)](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Amaster)
 
 Mac integration qualification [`631af3b`](https://github.com/cringlekaden/Hazel/actions/runs/41705072658): all Linux, Windows and Mac jobs passed. These completed results cover that historical checkpoint. The development branch’s Metal changes have separate local qualification records and do not inherit that CI verdict. The master badge reports subsequent runs separately.
+
+M6 baseline feature-branch run [`819ac353`](https://github.com/cringlekaden/Hazel/actions/runs/44168056768)
+passed hosted macOS compilation/CPU checks and failed Windows/Linux Debug builds
+because a Metal-only source was selected there. The local correction and remaining
+qualification limits are tracked in [M6](docs/design/metal-m6.md); that run does
+not qualify the M6 candidate; its own branch run is pending.
 
 The badge is **workflow-wide**. Open a run for its separate Windows/Linux Debug, Release and extracted-binary jobs and the Mac build/CPU/service/managed subset. [CI coverage](docs/development.md#canonical-ci) includes software/GL4.1 regressions, editor/tutorial authoring and relocated packages; Apple GPU qualification is local. There is no published release; [download guidance](docs/packaging.md) identifies snapshot contents and retention.
 

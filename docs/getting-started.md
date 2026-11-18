@@ -1,6 +1,6 @@
 # Getting started
 
-Hazel is the engine library. Hazelnut edits projects; Nutella runs prepared games without the editor. Targets are **Windows x64, Linux x86_64 and native Apple Silicon macOS 27.0+**, with **OpenGL 4.1 core**. Mac builds, Apple rendering, relocated ad-hoc packages and cross-platform CI are qualified; [recorded manual/distribution limits](design/macos-port.md) remain. Linux windows use X11/GLX, including Xwayland; this is not native Wayland support.
+Hazel is the engine library. Hazelnut edits projects; Nutella runs prepared games without the editor. Targets are **Windows x64, Linux x86_64 and native Apple Silicon macOS 27.0+**, with **OpenGL 4.1 core**. Master Mac integration has build, native rendering, relocated ad-hoc package and CI evidence; the [development branch M6 status](design/metal-m6.md) is separate; [recorded manual/distribution limits](design/macos-port.md) remain. Linux windows use X11/GLX, including Xwayland; this is not native Wayland support.
 
 ## Choose a download or a source checkout
 
@@ -14,6 +14,22 @@ cd Hazel
 ```
 
 For an existing checkout missing submodules, use `git submodule update --init --recursive`. Use the committed gitlinks, not `--remote`. Preserve local changes and dependency modifications before setup; do not reset or clean them to fix a build. Master includes the accepted runtime UI, tutorial and native Mac integration; the [qualification record](design/macos-port.md) identifies exact evidence and outstanding manual checks.
+
+### Test the 3D / Metal development branch
+
+Master and the development branch have separate evidence. To reproduce this
+branch's 3D/PBR/IBL and opt-in Metal work in a new directory:
+
+```sh
+git clone --branch feature/3d-foundations --recurse-submodules https://github.com/cringlekaden/Hazel.git Hazel-3D
+cd Hazel-3D
+python3 scripts/hazel.py setup --config Debug --tests
+```
+
+Use the platform-specific Python/setup spelling below on Windows. See
+[Metal commands](development.md#experimental-metal-shader-resources) and the
+[M6 qualification record](design/metal-m6.md) before treating this branch as
+production qualified. The master badge does not certify it.
 
 ## Prerequisites installed by you
 
@@ -29,7 +45,9 @@ python3 scripts/hazel.py setup --tests
 python3 scripts/hazel.py open
 ```
 
-`Hazel.xcworkspace` provides shared **Hazelnut** and **Nutella** schemes. Build/run normally in Xcode; select Debug or Release in the scheme. Native products use `bin/<Config>-macos-arm64/<target>/` and minimum macOS 27.0. Opening an existing workspace preserves its generated test targets and local scheme choices. Do not run overlapping builds against its DerivedData.
+`Hazel.xcworkspace` provides shared **Hazelnut** and **Nutella** schemes. Build/run normally in Xcode; select Debug or Release in the scheme. Native products use `bin/<Config>-macos-arm64/<target>/` and minimum macOS 27.0. Opening an existing workspace preserves its generated test targets and local scheme choices. CLI builds isolate intermediates in `build/DerivedData` within this checkout.
+Xcode GUI builds use the IDE-selected DerivedData location; keep it distinct
+from other checkouts and avoid overlapping builds against the same outputs.
 
 For explicit preparation/generation, use `dependencies`, then `generate --tests`, then `build --config Debug --tests`. Dependencies are checkout-owned: native classic Mono 6.14.1 comes from the checksum-pinned candidate, including mcs and the 4.7.2 profile. Source SDK selection means this checkout root, not its `bin`, `.app` or Resources directory. A prepared runtime alone cannot compile scripts. See [development](development.md) and [packaging](packaging.md) for the separate qualification commands and current limits.
 
@@ -132,7 +150,7 @@ python3 scripts/hazel.py editor-export examples/Skybound/Skybound.hproj --name S
 | --- | --- |
 | `bin/<Config>-<OS>-<architecture>/<target>/` | Native executables/libraries and managed SDK products, plus staged runtime resources beside applications; macOS uses arm64, Windows/Linux x86_64 |
 | `bin-int/<Config>-<OS>-<architecture>/` | Premake native/managed intermediates for the Make/Visual Studio paths |
-| Xcode's selected DerivedData location | macOS native intermediates under `<project>.build/<Config>/<target>.build/`; separate Debug/Release object caches |
+| `build/DerivedData` (CLI), or Xcode's selected location (IDE) | macOS native intermediates under `<project>.build/<Config>/<target>.build/`; separate Debug/Release object caches |
 | `build/` | Generated tool/test projects, pinned tools/dependency sources/installs/downloads, project-script compilation workspaces and test evidence |
 | Project `Assets/Scripts/Binaries/` | Example/template deployed script modules; the descriptor's ScriptModulePath is authoritative for other projects |
 | `dist/` | Default application archives/checksums; `--output` selects another destination |

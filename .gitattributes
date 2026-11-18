@@ -22,6 +22,7 @@ scripts/dependencies/licenses/typography/LICENSE-Unicode.txt -text
 *.hgeom binary
 *.glb binary
 examples/RenderingReference/Assets/** -text
+examples/RenderingShowcase/Assets/** -text
 
 # Prepared lighting artifacts and acceptance descriptors retain exact identities.
 *.henv -text

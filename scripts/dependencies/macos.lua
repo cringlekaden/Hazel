@@ -2,6 +2,30 @@
 local root = _MAIN_SCRIPT_DIR
 local mono = path.getabsolute(assert(_OPTIONS["mono-root"], "Generate through scripts/hazel.py"))
 local tests = json.decode(io.readfile(root .. "/scripts/internal/testing/native-tests.json"))
+project "MetalShaderTools"
+    location (root .. "/build/MetalShaderTools")
+    kind "ConsoleApp"
+    language "C++"
+    cppdialect "C++17"
+    warnings "Extra"
+    targetdir (root .. "/bin/" .. outputdir .. "/%{prj.name}")
+    objdir (root .. "/bin-int/" .. outputdir .. "/%{prj.name}")
+    files { root .. "/tools/MetalShaderTools/MetalShaderTools.cpp" }
+    links { "ApplicationServices.framework" }
+    includedirs { root .. "/Hazel/src" }
+    externalincludedirs { ShaderToolsIncludes, root .. "/Hazel/vendor/metal-cpp" }
+    buildoptions { "-fblocks" }
+    links { "spirv-cross-msl" }
+    externalincludedirs { root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/imgui", root .. "/Hazel/vendor/GLFW/include", root .. "/Hazel/vendor/Glad/include" }
+    libdirs { ShaderToolsRoot .. "/lib" }
+    links { "Hazel" }
+    links (ShaderToolsLinks)
+    defines { "GLFW_INCLUDE_NONE" }
+    filter "configurations:Debug"
+        symbols "On"
+    filter "configurations:Release"
+        optimize "On"
+    filter {}
 if _OPTIONS["migration-tests"] then
     project "MacOSSDKIntegration"
         location (root .. "/build/MacOSSDKIntegration")
@@ -58,30 +82,6 @@ if _OPTIONS["migration-tests"] then
         targetdir (root .. "/bin/" .. outputdir .. "/%{prj.name}")
         objdir (root .. "/bin-int/" .. outputdir .. "/%{prj.name}")
         files { root .. "/tests/macos/MetalM2ASmoke.cpp", root .. "/tests/macos/MetalM2AShaders.cpp" }
-        links { "ApplicationServices.framework" }
-        includedirs { root .. "/Hazel/src" }
-        externalincludedirs { ShaderToolsIncludes, root .. "/Hazel/vendor/metal-cpp" }
-        buildoptions { "-fblocks" }
-        links { "spirv-cross-msl" }
-        externalincludedirs { root .. "/Hazel/vendor/spdlog/include", root .. "/Hazel/vendor/glm", root .. "/Hazel/vendor/imgui", root .. "/Hazel/vendor/GLFW/include", root .. "/Hazel/vendor/Glad/include" }
-        libdirs { ShaderToolsRoot .. "/lib" }
-        links { "Hazel" }
-        links (ShaderToolsLinks)
-        defines { "GLFW_INCLUDE_NONE" }
-        filter "configurations:Debug"
-            symbols "On"
-        filter "configurations:Release"
-            optimize "On"
-        filter {}
-    project "MetalShaderTools"
-        location (root .. "/build/MetalShaderTools")
-        kind "ConsoleApp"
-        language "C++"
-        cppdialect "C++17"
-        warnings "Extra"
-        targetdir (root .. "/bin/" .. outputdir .. "/%{prj.name}")
-        objdir (root .. "/bin-int/" .. outputdir .. "/%{prj.name}")
-        files { root .. "/tools/MetalShaderTools/MetalShaderTools.cpp" }
         links { "ApplicationServices.framework" }
         includedirs { root .. "/Hazel/src" }
         externalincludedirs { ShaderToolsIncludes, root .. "/Hazel/vendor/metal-cpp" }
@@ -172,14 +172,15 @@ project "Hazel"
         enablepch "Off"
     filter {}
 project "Hazelnut"
-    dependson { "HazelProject", "PackageAudit" }
-local consumers = { "Nutella", "Hazelnut", "SpriteAssetAudit", "HazelProject" }
+    dependson { "HazelProject", "PackageAudit", "MetalShaderTools" }
+project "Nutella"
+    dependson { "MetalShaderTools" }
+local consumers = { "Nutella", "Hazelnut", "SpriteAssetAudit", "HazelProject", "MetalShaderTools" }
 if _OPTIONS["migration-tests"] then
     for _, test in ipairs(tests) do if test.name ~= "ImportDependencySmoke" then table.insert(consumers, "Migration" .. test.name) end end
     table.insert(consumers, "MigrationExampleGamesSmoke")
     table.insert(consumers, "MetalM1Smoke")
     table.insert(consumers, "MetalM2ASmoke")
-    table.insert(consumers, "MetalShaderTools")
     table.insert(consumers, "MetalShaderSmoke")
     table.insert(consumers, "MetalRenderer2DQuadSmoke")
 end
@@ -203,7 +204,7 @@ if _OPTIONS["migration-tests"] then
         location (root .. "/build/MacOSQualification")
         kind "Utility"
         language "C++"
-        local required = { "Hazelnut", "Nutella", "SpriteAssetAudit", "MigrationManagedFixture", "MigrationExampleGamesSmoke", "MacOSSDKIntegration", "MacOSPlatformServices", "MetalM1Smoke" }
+        local required = { "Hazelnut", "Nutella", "SpriteAssetAudit", "MigrationManagedFixture", "MigrationExampleGamesSmoke", "MacOSSDKIntegration", "MacOSPlatformServices", "MetalM1Smoke", "MetalM2ASmoke", "MetalShaderSmoke", "MetalRenderer2DQuadSmoke" }
         for _, test in ipairs(tests) do table.insert(required, "Migration" .. test.name) end
         dependson (required)
 end

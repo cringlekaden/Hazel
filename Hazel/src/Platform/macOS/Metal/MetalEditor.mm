@@ -243,7 +243,15 @@ void MetalDevice::PresentEditor(CA::MetalLayer* mainLayer, bool visible) {
         auto* render = m_Commands->renderCommandEncoder(pass.get());
         Check(render != nullptr, "Cannot encode editor consumer");
         render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
-        ImGui_ImplMetal4_RenderDrawData(view.Draw, (__bridge id<MTL4CommandBuffer>)m_Commands.get(), (__bridge id<MTL4RenderCommandEncoder>)render);
+        try {
+            ImGui_ImplMetal4_RenderDrawData(view.Draw, (__bridge id<MTL4CommandBuffer>)m_Commands.get(), (__bridge id<MTL4RenderCommandEncoder>)render);
+        } catch (...) {
+            // No commit occurred. Close native encoding before Pending releases
+            // its resources so a later frame can reuse this command buffer.
+            render->endEncoding();
+            m_Commands->endCommandBuffer();
+            throw;
+        }
         render->endEncoding();
     }
     if (slot.EditorCounters) m_Commands->writeTimestampIntoHeap(slot.EditorCounters.get(),2);

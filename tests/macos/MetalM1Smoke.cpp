@@ -125,6 +125,7 @@ static int Benchmark(const std::filesystem::path& output,const std::filesystem::
     spec.RendererMode=RendererInitialization::Drawing;spec.Resources.Root=resources;
     spec.Rendering.TextureSlots=4;spec.WindowVSync=false;
     std::shared_ptr<MetalProofObserver> observer;
+    const auto startup=Clock::now();
     {
         Application app(spec);if(metal)observer=Backend().Observe();
         auto* window=static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
@@ -134,9 +135,19 @@ static int Benchmark(const std::filesystem::path& output,const std::filesystem::
         auto requests=layer->QuadProject->GetRendererRequests();requests.TextureSlots=4;requests.VSync=false;
         layer->QuadProject->GetConfig().Rendering=requests;
         app.PushLayer(std::move(layer));
+        std::printf("M6_BENCH_STARTUP ms=%.6f\n",std::chrono::duration<double,std::milli>(Clock::now()-startup).count());
         uint64_t phaseStart=0,lastSubmitted=0;unsigned phase=0;auto start=Clock::now();
+        auto previousTick=start;
         app.SetBackgroundTick([&]{
-            Check(Clock::now()-start<std::chrono::seconds(90),"Production window benchmark timed out");
+            const auto now=Clock::now();
+            if(proof->Frames) {
+                const auto pixels=app.GetWindow().GetFramebufferSize();
+                std::printf("M6_BENCH_PACING frame=%llu pixels=%ux%u ms=%.6f\n",
+                    (unsigned long long)proof->Frames,pixels.first,pixels.second,
+                    std::chrono::duration<double,std::milli>(now-previousTick).count());
+            }
+            previousTick=now;
+            Check(now-start<std::chrono::seconds(90),"Production window benchmark timed out");
             if(observer && proof->Frames) {auto done=observer->Snapshot();if(done.Submitted>lastSubmitted) {
                 lastSubmitted=done.Submitted;std::printf("M4_BENCH_JOIN cpu_frame=%llu submission=%llu\n",
                     (unsigned long long)proof->Frames,(unsigned long long)done.Submitted);
@@ -157,6 +168,7 @@ int main(int argc,char** argv) {
         if (argc == 4 && std::string(argv[2]) == "--editor-consumers-quick") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),100);
         if (argc == 4 && std::string(argv[2]) == "--editor-consumers") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]));
         if (argc == 4 && std::string(argv[2]) == "--editor-pending-shutdown") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),900,true);
+        if (argc == 4 && std::string(argv[2]) == "--editor-encode-recovery") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),900,false,true,true);
         if (argc == 4 && std::string(argv[2]) == "--editor-encode-abort") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),900,false,true);
         if(argc==4 && (std::string(argv[2])=="--benchmark-metal" || std::string(argv[2])=="--benchmark-opengl"))
             return Benchmark(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),std::string(argv[2])=="--benchmark-metal");

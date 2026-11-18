@@ -13,9 +13,10 @@ from internal.package_tests import wait_for,unavailable_sources,extract_verified
 from internal.testing.desktop import Desktop
 from internal.tests import software_driver
 
-# Discover descriptors; preserve the strict three-game probe's argument contract.
-PROJECTS={p.stem:p for p in sorted((hz.ROOT/'examples').rglob('*.hproj')) if p.parent.name!='RenderingReference'}
-GAMES=tuple(g for g in ('MeadowRun','Skybound','LastLightkeeper') if g in PROJECTS)+tuple(g for g in PROJECTS if g not in ('MeadowRun','Skybound','LastLightkeeper'))
+# This is the five-game contract packaged by the CI workflow. Rendering studies
+# and alternate backend selectors share assets but are not additional script games.
+GAMES=('MeadowRun','Skybound','LastLightkeeper','SceneTransitions','Sandbox')
+PROJECTS={name:hz.ROOT/'examples'/name/(name+'.hproj') for name in GAMES}
 NATIVE_GAMES=GAMES[:2] # Retain the existing two-game strict native regression contract.
 # Includes all authored Lightkeeper locations and three capture aspect ratios.
 # Grandpa's Debug suite takes several minutes; bound the expanded work rather

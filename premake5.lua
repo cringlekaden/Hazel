@@ -625,6 +625,6 @@ include "scripts/dependencies/typography.lua"
 if os.target() == "macosx" then include "scripts/dependencies/macos.lua" end
 
 project "Hazel"
-    filter { "system:not macosx", "files:**/imgui_impl_metal4.mm" }
+    filter "system:not macosx"
         removefiles { "Hazel/src/Hazel/ImGui/Backends/**.mm" }
     filter {}

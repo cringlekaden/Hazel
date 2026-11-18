@@ -34,6 +34,7 @@
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
 #include "imgui_impl_metal4.h"
+#include "Hazel/Core/Resources.h"
 #import <time.h>
 #import <Metal/Metal.h>
 
@@ -623,50 +624,13 @@ void ImGui_ImplMetal4_Shutdown()
     return [[Metal4Buffer alloc] initWithBuffer:backing];
 }
 
-const char* shaderCode = R"(
-#include <metal_stdlib>
-using namespace metal;
-
-struct Uniforms {
-    float4x4 projectionMatrix;
-};
-
-struct VertexIn {
-    float2 position  [[attribute(0)]];
-    float2 texCoords [[attribute(1)]];
-    uchar4 color     [[attribute(2)]];
-};
-
-struct VertexOut {
-    float4 position [[position]];
-    float2 texCoords;
-    float4 color;
-};
-
-vertex VertexOut vertex_main(VertexIn in                 [[stage_in]],
-                             constant Uniforms &uniforms [[buffer(1)]])
-{
-    VertexOut out;
-    out.position = uniforms.projectionMatrix * float4(in.position, 0, 1);
-    out.texCoords = in.texCoords;
-    out.color = float4(in.color) / float4(255.0);
-    return out;
-}
-
-fragment half4 fragment_main(VertexOut in [[stage_in]],
-                             texture2d<half, access::sample> texture [[texture(0)]],
-                             sampler textureSampler [[sampler(0)]])
-{
-    half4 texColor = texture.sample(textureSampler, in.texCoords);
-    return half4(in.color) * texColor;
-}
-)";
 
 - (id<MTLRenderPipelineState>)renderPipelineStateForFramebufferDescriptor:(Metal4FramebufferDescriptor*)descriptor device:(id<MTLDevice>)device
 {
     NSError* error = nil;
 
-    id<MTLLibrary> library = [device newLibraryWithSource:[NSString stringWithUTF8String:shaderCode] options:nil error:&error];
+    const auto path = Hazel::Resources::Resolve("shaders/metal/ImGui.metallib").u8string();
+    id<MTLLibrary> library = [device newLibraryWithURL:[NSURL fileURLWithPath:[NSString stringWithUTF8String:path.c_str()]] error:&error];
     if (library == nil)
     {
         NSLog(@"Error: failed to create Metal library: %@", error);

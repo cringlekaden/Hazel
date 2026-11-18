@@ -46,5 +46,10 @@ The unused Metal-C++/manual-autorelease wrapper, empty teardown and dead display
 state were removed; Hazel calls only the ARC Objective-C++ bridge. Native allocation
 failures return failure or throw before nil resources enter arrays/encoding.
 
-Qualification and platform disclosures belong in `docs/design/metal-m5.md`. Upstream
+The unchanged upstream MSL now lives in `Hazel/Resources/shaders/ImGui.metal`.
+The offline producer builds `ImGui.metallib`; runtime loads that library without
+shader source compilation. Package notices retain the original ImGui MIT license.
+
+Qualification and platform disclosures belong in `docs/design/metal-m5.md` and
+`docs/design/metal-m6.md`. Upstream
 fixes are necessary evidence, not proof that Hazel's integration passes.

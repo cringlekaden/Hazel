@@ -1,6 +1,6 @@
 # Downloads and standalone games
 
-A prepared game includes **Nutella**, project assets, required compiled scripts and its runtime dependencies. Players need an OpenGL 4.1 driver and the [deployment baseline](platforms-and-dependencies.md#platform-status), without Python, a compiler or the Hazel source SDK.
+A prepared game includes **Nutella**, project assets, required compiled scripts and its runtime dependencies. Players need an OpenGL 4.1 driver (the default backend) and the [deployment baseline](platforms-and-dependencies.md#platform-status), without Python, a compiler or the Hazel source SDK.
 
 ## Choose a snapshot
 
@@ -65,6 +65,30 @@ Save the desired startup scene in **Project > Project Settings…**, then choose
 
 A packaged editor can edit/save and play prepared content without a source SDK. Script compilation/export additionally needs Python, a compatible prepared checkout and the relevant compiler tools. Select that checkout root in **Edit > Editor Preferences…** if discovery fails. An executable or Resources directory is not an SDK. Cross-compilation is unavailable; export each target on its own OS.
 
+## Development-branch Metal packages
+
+On `feature/3d-foundations`, macOS `package` additionally produces the ten engine
+shader artifacts and the Dear ImGui native library from authoritative sources.
+Build Release first; the ordinary macOS app targets also build `MetalShaderTools`.
+Packaging requires the full Xcode shader toolchain; running the bundle does not.
+OpenGL GLSL remains included for the default backend. The ImGui MSL source and
+producer tools are excluded from the bundle.
+
+Select Metal explicitly from any working directory:
+
+```sh
+/path/to/Nutella.app/Contents/MacOS/Nutella --metal
+/path/to/Hazelnut.app/Contents/MacOS/Hazelnut --metal
+```
+
+`test-packages --profile native` checks pristine macOS products on **both**
+backends, denying source/SDK/Homebrew access. Metal launches additionally deny
+external Metal-source reads and developer shader compilers, using private
+storage and precompiled libraries. This is actual application packaging, distinct
+from shader-only relocation. [M6](design/metal-m6.md) records the exercised
+projects, exact tree, failures and outstanding deployment modes. It does not
+certify signed public distribution or every supported Mac GPU.
+
 ## macOS bundle qualification
 
 Bundle layout is `Contents/MacOS/<app>`, native dylibs in `Contents/Frameworks`, resources/project in `Contents/Resources` and Mono profiles/config in `Contents/Resources/Mono`. SDK headers, mcs and reference packs are excluded. Packaging checks native arm64 architecture, minimum versions, install names/rpaths and signs inside-out after all modifications. `build.json` carries exact source/provenance; `Info.plist` uses ordinary development bundle version `0.1.0`/`1` rather than encoding Git hashes as Apple version numbers.
@@ -101,8 +125,8 @@ geometry artifacts, material images, mesh references and detached prefabs must b
 in the package inventory. Original GLB bytes/parser are not runtime dependencies. Source copyright text
 is retained in the accepted manifest; keep separate model license files with assets.
 A content-only Rendering Reference package includes both frozen Core_v1 and
-additive Import_v1 metadata; its 2D startup runs normally. Mesh components cannot
-run before stage-3 rendering exists.
+additive Import_v1 metadata; its 2D startup runs normally. Mesh components run on this implementation branch through the shared 3D scene
+renderer; historical master snapshots may predate that capability.
 
 Packaged Hazelnut carries its matching native `HazelProject` sibling helper, so
 GLB import and native material authoring require no Python or scripting SDK.

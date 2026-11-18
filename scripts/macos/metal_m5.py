@@ -54,11 +54,11 @@ def timings(text):
     return result
 
 
-def native_result(text, minimum=50):
+def native_result(text, minimum=50, imgui=True):
     matches = re.findall(r'METAL_FINAL submitted=(\d+) completed=(\d+) presented=(\d+) completed_presented=(\d+) errors=(\d+)[^\n]*live_attachment_generations=(\d+) pending_bytes=(\d+)', text)
     if not matches: raise RuntimeError('Native retirement evidence missing')
     submitted, completed, presented, _, errors, generations, pending = map(int, matches[-1])
-    if submitted < minimum or completed != submitted or presented < minimum or errors or generations or pending or 'M5_IMGUI_FINAL bytes=0 ' not in text:
+    if submitted < minimum or completed != submitted or presented < minimum or errors or generations or pending or (imgui and 'M5_IMGUI_FINAL bytes=0 ' not in text):
         raise RuntimeError('Native completion/presentation/retirement gate failed')
     return {'status': 'PASS', 'submitted': submitted, 'completed': completed, 'positivePresentationsAtSnapshot': presented}
 
@@ -68,7 +68,7 @@ def main():
     parser.add_argument('--config', choices=('Debug', 'Release'), required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--build', action='store_true')
-    parser.add_argument('--only', choices=('compute', 'consumers', 'editor', 'workflow', 'shutdown', 'abort'))
+    parser.add_argument('--only', choices=('compute', 'consumers', 'editor', 'workflow', 'shutdown', 'abort', 'recovery'))
     parser.add_argument('--native-2x', action='store_true', help='Temporarily select the existing advertised native 2x display mode and restore it')
     parser.add_argument('--timing', action='store_true', help='Disable GPU validation; these observations are not validation results')
     args = parser.parse_args()
@@ -148,6 +148,8 @@ def main():
                 report['gates']['shutdown'] = result
             if args.only in (None, 'abort'):
                 run([binaries/'MetalM1Smoke/MetalM1Smoke', output/'abort', '--editor-encode-abort', binaries/'Hazelnut/Resources'], output/'abort', 'PASS native editor UI encoder abort')
+            if args.only in (None, 'recovery'):
+                run([binaries/'MetalM1Smoke/MetalM1Smoke', output/'recovery', '--editor-encode-recovery', binaries/'Hazelnut/Resources'], output/'recovery', 'PASS native editor UI encoder recovery', native=True)
             if args.only in (None, 'workflow'):
                 env['HAZEL_EDITOR_CAPTURE'] = str(output/'workflow/editor.ppm')
                 saved = env.get('HAZEL_TEST_METAL_EDITOR')

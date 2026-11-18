@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Produce experimental Metal shader packages offline; runtime needs no compiler."""
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -51,6 +52,29 @@ def produce(configuration, destination, sources=None, force=False):
             results[variant] = 'REBUILT'
     if len(results) != 10:
         raise RuntimeError('Expected nine raster shaders and both quad variants')
+    # Dear ImGui uses its upstream MSL directly; no shader source is compiled at runtime.
+    source = hz.ROOT / 'Hazel/Resources/shaders/ImGui.metal'
+    identity = hashlib.sha256(source.read_bytes() + producer.encode()).hexdigest()
+    library = destination / 'ImGui.metallib'
+    stamp = destination / 'ImGui.json'
+    try:
+        cached = json.loads(stamp.read_text())
+    except (OSError, ValueError):
+        cached = None
+    if not force and library.is_file() and cached == {
+            'sourceProducer': identity, 'library': hashlib.sha256(library.read_bytes()).hexdigest()}:
+        results['ImGui'] = 'HIT'
+    else:
+        with tempfile.TemporaryDirectory(prefix='.imgui-shader-', dir=destination) as temporary:
+            work = Path(temporary)
+            (work / 'ImGui.metal').write_bytes(source.read_bytes())
+            hz.run(['xcrun', '-sdk', 'macosx', 'metal', '-std=metal3.0', '-fno-fast-math',
+                    '-mmacosx-version-min=27.0', '-c', 'ImGui.metal', '-o', 'ImGui.air'], cwd=work)
+            hz.run(['xcrun', '-sdk', 'macosx', 'metallib', 'ImGui.air', '-o', 'ImGui.metallib'], cwd=work)
+            (work / 'ImGui.metallib').replace(library)
+        stamp.write_text(json.dumps({'sourceProducer': identity,
+                                    'library': hashlib.sha256(library.read_bytes()).hexdigest()}) + '\n')
+        results['ImGui'] = 'REBUILT'
     return results
 
 

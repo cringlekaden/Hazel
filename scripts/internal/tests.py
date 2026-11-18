@@ -194,6 +194,8 @@ def test(configuration, profile='native', suite='all', only=None):
         working=Path(temporary)
         hz.yaml_tools();sdk_readiness_checks(working,configuration);authoring_checks(working)
         hz.copy_tree(hz.ROOT/'Hazel/Resources',working/'assets')
+        if os.environ.get('HAZEL_TEST_METAL_EDITOR'):
+            hz.copy_tree(base/'Hazelnut/Resources/shaders/metal',working/'assets/shaders/metal')
         hz.copy_tree(hz.ROOT/'Hazelnut/Resources/Icons',working/'assets/Icons')
         hz.copy_changed(hz.ROOT/'Hazelnut/Resources/imgui.ini',working/'assets/imgui.ini')
         hz.copy_tree(hz.ROOT/'tests/fixtures/assets',working/'assets')

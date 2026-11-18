@@ -57,6 +57,10 @@ def package(app, project, destination, archive_name=None):
     destination=destination.resolve();destination.mkdir(parents=True,exist_ok=True)
     sdk=hz.mono_prefix();commit=hz.output(['git','-C',hz.ROOT,'rev-parse','HEAD'])
     provenance=json.loads((sdk.parent/'candidate-manifest.json').read_text())
+    from macos.metal_shaders import produce
+    shaders = hz.ROOT/'build/metal-shaders/Release'
+    produced = produce('Release', shaders)
+    artifacts = [shaders/(name+('.metallib' if name=='ImGui' else '.hzmetal')) for name in produced]
     for name in (('Hazelnut','Nutella') if app=='all' else (app,)):
         tag=f'{archive_name or name}-macos-arm64-Release'
         with tempfile.TemporaryDirectory(prefix='.package-',dir=destination) as temporary:
@@ -66,6 +70,12 @@ def package(app, project, destination, archive_name=None):
             hz.copy_changed(hz.binaries('Release')/name/name,binary)
             resources=contents/'Resources';native=contents/'Frameworks';mono=resources/'Mono'
             hz.copy_tree(hz.ROOT/'Hazel/Resources',resources)
+            # Never ship untracked/stale developer artifacts copied from Resources.
+            shutil.rmtree(resources/'shaders/metal', ignore_errors=True)
+            for shader in artifacts:
+                hz.copy_changed(shader,resources/'shaders/metal'/shader.name)
+            (resources/'shaders/ImGui.metal').unlink()
+
             if name=='Hazelnut':
                 hz.copy_tree(hz.ROOT/'Hazelnut/Resources/Icons',resources/'Icons')
                 hz.copy_changed(hz.ROOT/'Hazelnut/Resources/imgui.ini',resources/'imgui.ini')
@@ -108,12 +118,16 @@ def package(app, project, destination, archive_name=None):
                       'minimum_macos':'27.0','project':descriptor.name,'signing':'local ad-hoc',
                       'native_dependencies':closure,'mono_source':provenance['source'],
                       'mono_producer':provenance['producer'],
+                      'metal_shaders': {p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(artifacts)},
+                      'metal_shader_producer': {'fingerprint':(shaders/'producer.txt').read_text(),
+                                                'imgui':json.loads((shaders/'ImGui.json').read_text())},
                       'source_dirty':bool(hz.output(['git','-C',hz.ROOT,'status','--porcelain'])),
                       'shader_tools':json.loads((hz.ROOT/'build/dependencies/install/Release-macos-arm64/shader-tools.json').read_text())}
             (resources/'build.json').write_text(json.dumps(metadata,indent=2)+'\n')
-            (root/'LAUNCH.txt').write_text(f'{name}: macOS 27.0+, Apple Silicon, real OpenGL 4.1.\n'
+            (root/'LAUNCH.txt').write_text(f'{name}: macOS 27.0+, Apple Silicon, OpenGL 4.1 (default) or Metal 4 (--metal).\n'
                 f'Open {name}.app in Finder, or run its Contents/MacOS/{name} executable from any working directory.\n'
                 'Prepared project and Mono runtime are included. Script authoring/export requires a separately prepared source SDK.\n'
+                f'For Metal run {name}.app/Contents/MacOS/{name} --metal; offline shader libraries are included.\n'
                 'Settings/cache/save data use writable platform user locations outside the bundle.\n'
                 'Locally ad-hoc signed; no Developer ID, notarization or fresh-download Gatekeeper acceptance is claimed.\n',encoding='utf-8')
             # Every binary mutation and resource write precedes inside-out signing.

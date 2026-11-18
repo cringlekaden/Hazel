@@ -1,0 +1,868 @@
+{
+  "milestone": "M6",
+  "verdict": "M6 INCOMPLETE \u2014 available local Apple M4 gates PASS; patched Windows/Linux branch CI and physical/deployment coverage remain unqualified",
+  "baseline": "819ac353879ea9e8f048054b580e5ae614085a6d",
+  "branch": "feature/3d-foundations",
+  "tree": "M6 candidate implementation; baseline and implementation-scope digest recorded separately; candidate CI pending",
+  "evidenceRoot": "build/metal-m6-evidence",
+  "ci": {
+    "run": "https://github.com/cringlekaden/Hazel/actions/runs/44168056768",
+    "sha": "819ac353879ea9e8f048054b580e5ae614085a6d",
+    "status": "FAIL",
+    "platforms": {
+      "windows": {
+        "status": "FAIL",
+        "stage": "Debug build",
+        "finding": "Metal-only ImGui Objective-C++ file selected for MSVC; error C1010",
+        "log": "build/metal-m6-evidence/ci-windows-baseline.log"
+      },
+      "linux": {
+        "status": "FAIL",
+        "stage": "Debug build",
+        "finding": "Metal-only ImGui Objective-C++ file selected for GCC; cc1objplus unavailable",
+        "log": "build/metal-m6-evidence/ci-linux-baseline.log"
+      },
+      "hostedMacOS": {
+        "status": "PASS",
+        "scope": "Hosted compilation and CPU/service/managed subset, Debug and Release; no native GPU claim",
+        "log": "build/metal-m6-evidence/ci-macos-baseline.log"
+      }
+    },
+    "patchedTree": {
+      "status": "PENDING",
+      "reason": "Candidate commit/push and dispatch now explicitly authorized."
+    }
+  },
+  "physicalIntelHD4000": {
+    "status": "NOT RUN",
+    "reason": "Physical target is not available on the Apple M4 host"
+  },
+  "publicDistribution": {
+    "status": "NOT RUN",
+    "reason": "Developer ID, notarization and fresh-download Gatekeeper are not available in local ad-hoc qualification"
+  },
+  "updatedUTC": "2026-11-18T00:31:25.256041+00:00",
+  "hardware": {
+    "chip": "Apple M4",
+    "host": "native arm64 macOS 27.3",
+    "xcode": "27.3",
+    "displayScope": "one display; native 1x/2x; multi-monitor is excluded"
+  },
+  "sourceScopeSHA256": "1dc266aca9c087b9056b9e1c79146951157996700e494f4f41e2e82d8dc0c5f2",
+  "sourceFiles": [
+    ".gitattributes",
+    "Hazel/Resources/shaders/ImGui.metal",
+    "Hazel/src/Hazel/ImGui/Backends/imgui_impl_metal4.mm",
+    "Hazel/src/Platform/macOS/Metal/MetalEditor.mm",
+    "premake5.lua",
+    "scripts/dependencies/macos.lua",
+    "scripts/hazel.py",
+    "scripts/internal/game_tests.py",
+    "scripts/internal/tests.py",
+    "scripts/macos/metal_m4_runtime.py",
+    "scripts/macos/metal_m5.py",
+    "scripts/macos/metal_m6.py",
+    "scripts/macos/metal_shaders.py",
+    "scripts/macos/packaging.py",
+    "scripts/macos/qualification.py",
+    "tests/macos/MetalEditorConsumers.h",
+    "tests/macos/MetalM1Smoke.cpp"
+  ],
+  "sourceDigestFormat": "Sorted UTF-8 path, NUL, raw bytes, NUL; concatenated SHA-256",
+  "architecture": "Existing SceneRenderer/Renderer2D, one Metal 4 queue and three slots retained. Offline ImGui library; precommit editor encoder cleanup; maintained packaging/onboarding/CI tests extended. No backend-default or rendering-feature change.",
+  "builds": {
+    "status": "PASS",
+    "configurations": [
+      "Debug",
+      "Release"
+    ],
+    "evidence": [
+      "build/metal-m6-evidence/recovery-build-debug.log",
+      "build/metal-m6-evidence/recovery-build-release.log"
+    ],
+    "warnings": "build/metal-m6-evidence/final-warning-review.json"
+  },
+  "cleanSource": {
+    "acquisition": "PASS",
+    "baseline": "819ac353879ea9e8f048054b580e5ae614085a6d",
+    "recursivePinnedSubmodules": "PASS",
+    "candidateOverlayBuilds": "PASS",
+    "buildEvidence": [
+      "build/metal-m6-evidence/clean-recovery-build-debug.log",
+      "build/metal-m6-evidence/clean-recovery-build-release.log"
+    ],
+    "launchesWithCanonicalSourceDenied": "PASS",
+    "reason": "Independent Debug/Release products passed with the canonical checkout denied. Preparation output was captured through pipes: Clang rejects a log descriptor inside the denied root, as proved in clean-clang-descriptor-proof.json.",
+    "cloneLog": "build/metal-m6-evidence/clean-clone.log",
+    "pins": "build/metal-m6-evidence/clean-submodules.txt",
+    "sourceModel": "Independent remote clone and independently acquired dependencies; M6 working-tree overlay applied explicitly; checkout-local DerivedData. This does not claim the unmodified remote baseline contains M6.",
+    "launchCombinations": 24,
+    "launchEvidence": "build/metal-m6-evidence/clean-source-pipe-gates.json",
+    "shaderReproducibility": {
+      "status": "PASS",
+      "librariesPerConfiguration": 11,
+      "byteIdenticalAcrossCheckouts": true,
+      "evidence": "build/metal-m6-evidence/independent-shader-reproducibility.json"
+    },
+    "status": "PASS"
+  },
+  "actualSourceProducts": {
+    "status": "PASS",
+    "combinations": 24,
+    "apps": [
+      "Hazelnut",
+      "Nutella"
+    ],
+    "configurations": [
+      "Debug",
+      "Release"
+    ],
+    "backends": [
+      "OpenGL",
+      "Metal"
+    ],
+    "projects": [
+      "authored Renderer2D",
+      "Direct-PerspectiveUnlit",
+      "IBLQuality-Photo"
+    ],
+    "evidence": [
+      "build/metal-m6-evidence/final-products-debug/results.json",
+      "build/metal-m6-evidence/final-products-release/results.json"
+    ]
+  },
+  "packages": {
+    "status": "PASS",
+    "mode": "local ad-hoc Release application bundles",
+    "bundles": 6,
+    "pristineProductBackendLaunches": 12,
+    "scenes": [
+      "2d",
+      "3d",
+      "pbr"
+    ],
+    "evidence": "build/metal-m6-evidence/final-packages/results.json",
+    "inventory": "build/metal-m6-evidence/package-inventory.json",
+    "isolation": "Original source/SDK/Homebrew denied, restricted PATH, invalid DEVELOPER_DIR; Metal developer compiler execution and external .metal reads denied. Shipped GLSL remains available for OpenGL and source/artifact identity validation.",
+    "shadersPerBundle": 11,
+    "probeScope": "OpenGL pixel/picking and Mono/runtime/helper closure on disposable bundle copies after pristine OpenGL/Metal app acceptance. Native Metal numerical correctness is a separate retained gate.",
+    "sourceFreeShaderOnlyIsNotAppPackaging": true,
+    "interactiveDesktop": {
+      "status": "NOT RUN",
+      "reason": "Automated frames/normal close do not establish physical dialogs/controller interaction"
+    }
+  },
+  "nativeRegressions": {
+    "OpenGL": {
+      "debug": {
+        "status": "PASS",
+        "executables": 18,
+        "evidence": "build/metal-m6-evidence/opengl-debug.log"
+      },
+      "release": {
+        "status": "PASS",
+        "executables": 18,
+        "evidence": "build/metal-m6-evidence/opengl-release.log"
+      }
+    },
+    "M3": {
+      "debug": {
+        "status": "PASS",
+        "evidence": "build/metal-m6-evidence/m3-debug/results.json"
+      },
+      "release": {
+        "status": "PASS",
+        "evidence": "build/metal-m6-evidence/m3-release/results.json"
+      }
+    },
+    "M4": {
+      "debug": {
+        "status": "PASS",
+        "captures": 135,
+        "idMismatches": 0,
+        "maximumDepthError": 1.7881393432617188e-07,
+        "evidence": "build/metal-m6-evidence/m4-debug/results.json"
+      },
+      "release": {
+        "status": "PASS",
+        "captures": 135,
+        "idMismatches": 0,
+        "maximumDepthError": 1.7881393432617188e-07,
+        "evidence": "build/metal-m6-evidence/m4-release/results.json"
+      }
+    },
+    "M5": {
+      "debug-1x": {
+        "status": "PASS",
+        "gates": {
+          "compute": {
+            "status": "PASS"
+          },
+          "consumers": {
+            "status": "PASS",
+            "submitted": 881,
+            "completed": 881,
+            "positivePresentationsAtSnapshot": 870,
+            "nativeBackingScale": 1,
+            "perHostPositivePresentations": {
+              "3697898086": 787,
+              "845615946": 863,
+              "2876130032": 861,
+              "286331153": 870
+            }
+          },
+          "shutdown": {
+            "status": "PASS",
+            "submitted": 32,
+            "completed": 32,
+            "positivePresentationsAtSnapshot": 28
+          },
+          "abort": {
+            "status": "PASS"
+          },
+          "recovery": {
+            "status": "PASS",
+            "submitted": 880,
+            "completed": 880,
+            "positivePresentationsAtSnapshot": 869
+          },
+          "workflow": {
+            "status": "PASS",
+            "submitted": 1543,
+            "completed": 1543,
+            "positivePresentationsAtSnapshot": 1416
+          },
+          "authored-2d": {
+            "status": "PASS",
+            "submitted": 73,
+            "completed": 73,
+            "positivePresentationsAtSnapshot": 65
+          },
+          "authored-3d": {
+            "status": "PASS",
+            "submitted": 73,
+            "completed": 73,
+            "positivePresentationsAtSnapshot": 66
+          },
+          "authored-pbr": {
+            "status": "PASS",
+            "submitted": 73,
+            "completed": 73,
+            "positivePresentationsAtSnapshot": 64
+          }
+        },
+        "evidence": "build/metal-m6-evidence/final-m5-debug/results.json"
+      },
+      "debug-2x": {
+        "status": "PASS",
+        "gates": {
+          "consumers": {
+            "status": "PASS",
+            "submitted": 892,
+            "completed": 892,
+            "positivePresentationsAtSnapshot": 881,
+            "nativeBackingScale": 2,
+            "perHostPositivePresentations": {
+              "3697898086": 803,
+              "2876130032": 878,
+              "845615946": 881,
+              "286331153": 881
+            }
+          }
+        },
+        "evidence": "build/metal-m6-evidence/final-m5-debug-2x/results.json"
+      },
+      "release-1x": {
+        "status": "PASS",
+        "gates": {
+          "compute": {
+            "status": "PASS"
+          },
+          "consumers": {
+            "status": "PASS",
+            "submitted": 872,
+            "completed": 872,
+            "positivePresentationsAtSnapshot": 859,
+            "nativeBackingScale": 1,
+            "perHostPositivePresentations": {
+              "3697898086": 784,
+              "2876130032": 857,
+              "286331153": 859,
+              "845615946": 860
+            }
+          },
+          "shutdown": {
+            "status": "PASS",
+            "submitted": 32,
+            "completed": 32,
+            "positivePresentationsAtSnapshot": 27
+          },
+          "abort": {
+            "status": "PASS"
+          },
+          "recovery": {
+            "status": "PASS",
+            "submitted": 871,
+            "completed": 871,
+            "positivePresentationsAtSnapshot": 858
+          },
+          "workflow": {
+            "status": "PASS",
+            "submitted": 1128,
+            "completed": 1128,
+            "positivePresentationsAtSnapshot": 1013
+          },
+          "authored-2d": {
+            "status": "PASS",
+            "submitted": 73,
+            "completed": 73,
+            "positivePresentationsAtSnapshot": 66
+          },
+          "authored-3d": {
+            "status": "PASS",
+            "submitted": 73,
+            "completed": 73,
+            "positivePresentationsAtSnapshot": 68
+          },
+          "authored-pbr": {
+            "status": "PASS",
+            "submitted": 73,
+            "completed": 73,
+            "positivePresentationsAtSnapshot": 66
+          }
+        },
+        "evidence": "build/metal-m6-evidence/final-m5-release/results.json"
+      },
+      "release-2x": {
+        "status": "PASS",
+        "gates": {
+          "consumers": {
+            "status": "PASS",
+            "submitted": 896,
+            "completed": 896,
+            "positivePresentationsAtSnapshot": 883,
+            "nativeBackingScale": 2,
+            "perHostPositivePresentations": {
+              "286331153": 883,
+              "3697898086": 802,
+              "2876130032": 875,
+              "845615946": 877
+            }
+          }
+        },
+        "evidence": "build/metal-m6-evidence/final-m5-release-2x/results.json"
+      }
+    },
+    "M1Native3D": {
+      "debug-1x": {
+        "status": "PASS",
+        "counters": {
+          "submitted": 330,
+          "completed": 330,
+          "verified": 0,
+          "presented": 325,
+          "completed_presented": 325,
+          "peak_inflight": 3,
+          "slot_reuses": 327,
+          "peak_resource_bytes": 119309596,
+          "peak_allocator_bytes": 7908904,
+          "peak_attachment_bytes": 105119744,
+          "attachment_allocations": 11,
+          "attachment_reuses": 664,
+          "pending_at_shutdown": 3,
+          "resize_events": 1,
+          "errors": 0
+        },
+        "evidence": "build/metal-m6-evidence/m1-3d-debug-1x/summary.txt"
+      },
+      "debug-2x": {
+        "status": "PASS",
+        "counters": {
+          "submitted": 327,
+          "completed": 327,
+          "verified": 0,
+          "presented": 323,
+          "completed_presented": 323,
+          "peak_inflight": 3,
+          "slot_reuses": 324,
+          "peak_resource_bytes": 344622364,
+          "peak_allocator_bytes": 7908904,
+          "peak_attachment_bytes": 335609856,
+          "attachment_allocations": 11,
+          "attachment_reuses": 670,
+          "pending_at_shutdown": 3,
+          "resize_events": 1,
+          "errors": 0
+        },
+        "evidence": "build/metal-m6-evidence/m1-3d-debug-2x/summary.txt"
+      },
+      "release-1x": {
+        "status": "PASS",
+        "counters": {
+          "submitted": 331,
+          "completed": 331,
+          "verified": 0,
+          "presented": 324,
+          "completed_presented": 324,
+          "peak_inflight": 3,
+          "slot_reuses": 328,
+          "peak_resource_bytes": 134513948,
+          "peak_allocator_bytes": 7908904,
+          "peak_attachment_bytes": 105119744,
+          "attachment_allocations": 11,
+          "attachment_reuses": 662,
+          "pending_at_shutdown": 3,
+          "resize_events": 1,
+          "errors": 0
+        },
+        "evidence": "build/metal-m6-evidence/m1-3d-release-1x/summary.txt"
+      },
+      "release-2x": {
+        "status": "PASS",
+        "counters": {
+          "submitted": 332,
+          "completed": 332,
+          "verified": 0,
+          "presented": 324,
+          "completed_presented": 324,
+          "peak_inflight": 3,
+          "slot_reuses": 329,
+          "peak_resource_bytes": 470058268,
+          "peak_allocator_bytes": 7908904,
+          "peak_attachment_bytes": 478216192,
+          "attachment_allocations": 13,
+          "attachment_reuses": 662,
+          "pending_at_shutdown": 3,
+          "resize_events": 1,
+          "errors": 0
+        },
+        "evidence": "build/metal-m6-evidence/m1-3d-release-2x/summary.txt"
+      }
+    },
+    "shaderCache": {
+      "debug": {
+        "status": "PASS",
+        "rejections": 17,
+        "evidence": "build/metal-m6-evidence/cache-debug/results.json"
+      },
+      "release": {
+        "status": "PASS",
+        "rejections": 17,
+        "evidence": "build/metal-m6-evidence/cache-release/results.json"
+      }
+    },
+    "scopeNote": "OpenGL and M3/M4/3D lifecycle runs precede the later editor-only precommit cleanup. Their exercised renderer paths and authoritative GLSL bytes are unchanged. Final M5/product/package runs include the cleanup."
+  },
+  "imguiProducerCache": {
+    "status": "PASS",
+    "cases": [
+      "warm hit",
+      "malformed stamp recovery",
+      "corrupt library recovery",
+      "deterministic bytes"
+    ],
+    "evidence": "build/metal-m6-evidence/imgui-cache.log"
+  },
+  "performance": {
+    "status": "PASS \u2014 measured observations; no speedup qualification",
+    "speedupClaim": false,
+    "validationEnabled": false,
+    "scene": "RenderingReference-IBLQuality-Photo.hproj",
+    "settings": "Same authored camera/assets, four texture slots, VSync-off request, one sample, 1280x720 and 1920x1080 physical pixels. Production formats remain OpenGL RGBA16F and Metal RGBA32F.",
+    "boundaries": "Scene/layer CPU exclude Metal native submission; submission reported separately. CPU loop interval includes window update/polling/submission. GL elapsed query covers scene/output GPU commands; Metal commit feedback can include drawable synchronization. GPU scopes and HDR formats prevent a backend speedup claim.",
+    "resourceScope": "RSS is process resident memory, not GPU memory. Tracked Metal resource counters overlap. OpenGL driver allocation and physical display timestamps are unavailable in the maintained GL4.1 interface.",
+    "startupScope": "One constructor+scene-load observation per process, before Run/first presentation. Private profiles are fresh; OS and driver caches are uncontrolled.",
+    "configurations": {
+      "debug": {
+        "evidence": "build/metal-m6-evidence/final-benchmark-debug/results.json",
+        "backends": {
+          "opengl": {
+            "metalResourcePeaks": {},
+            "resourceAccounting": "Metal counters overlap; OpenGL driver allocations unavailable. RSS is sampled process resident memory, not GPU memory.",
+            "extents": {
+              "1280x720": {
+                "warmup": 120,
+                "tailExcluded": 20,
+                "sceneCPU": {
+                  "samples": 580,
+                  "medianMs": 2.810604,
+                  "p95Ms": 3.686416
+                },
+                "layerCPU": {
+                  "samples": 580,
+                  "medianMs": 2.926792,
+                  "p95Ms": 3.8095
+                },
+                "gpu": {
+                  "samples": 580,
+                  "medianMs": 3.1775625,
+                  "p95Ms": 3.375334
+                },
+                "draws": [
+                  27
+                ],
+                "loopPacingCPU": {
+                  "samples": 580,
+                  "medianMs": 5.5486875,
+                  "p95Ms": 6.064625
+                }
+              },
+              "1920x1080": {
+                "warmup": 120,
+                "tailExcluded": 20,
+                "sceneCPU": {
+                  "samples": 580,
+                  "medianMs": 5.003583,
+                  "p95Ms": 5.328583
+                },
+                "layerCPU": {
+                  "samples": 580,
+                  "medianMs": 5.0971875,
+                  "p95Ms": 5.442625
+                },
+                "gpu": {
+                  "samples": 580,
+                  "medianMs": 4.778645,
+                  "p95Ms": 5.013751
+                },
+                "draws": [
+                  27
+                ],
+                "loopPacingCPU": {
+                  "samples": 580,
+                  "medianMs": 6.9082495,
+                  "p95Ms": 8.582417
+                }
+              }
+            },
+            "rssPeakKiB": 308320,
+            "rssSamples": 87,
+            "startupToSceneReadyMs": 5542.606125
+          },
+          "metal": {
+            "metalResourcePeaks": {
+              "frame_bytes": 243827996,
+              "attachment_bytes": 302383104,
+              "allocator_bytes": 7745064,
+              "inflight": 2
+            },
+            "resourceAccounting": "Metal counters overlap; OpenGL driver allocations unavailable. RSS is sampled process resident memory, not GPU memory.",
+            "extents": {
+              "1280x720": {
+                "warmup": 120,
+                "tailExcluded": 20,
+                "sceneCPU": {
+                  "samples": 580,
+                  "medianMs": 1.0240420000000001,
+                  "p95Ms": 1.117208
+                },
+                "layerCPU": {
+                  "samples": 580,
+                  "medianMs": 1.146229,
+                  "p95Ms": 1.261833
+                },
+                "gpu": {
+                  "samples": 557,
+                  "medianMs": 0.9567500092089176,
+                  "p95Ms": 0.9948750084731728
+                },
+                "draws": [
+                  27
+                ],
+                "loopPacingCPU": {
+                  "samples": 580,
+                  "medianMs": 1.9421665,
+                  "p95Ms": 5.253041
+                },
+                "positivePresentationPacing": {
+                  "samples": 556,
+                  "medianMs": 1.9363329920452088,
+                  "p95Ms": 5.564583989325911
+                },
+                "nativeSubmitCPU": {
+                  "samples": 580,
+                  "medianMs": 0.785042,
+                  "p95Ms": 4.111291
+                }
+              },
+              "1920x1080": {
+                "warmup": 120,
+                "tailExcluded": 20,
+                "sceneCPU": {
+                  "samples": 580,
+                  "medianMs": 1.0475205,
+                  "p95Ms": 1.158208
+                },
+                "layerCPU": {
+                  "samples": 580,
+                  "medianMs": 1.206542,
+                  "p95Ms": 1.306916
+                },
+                "gpu": {
+                  "samples": 567,
+                  "medianMs": 1.9355420081410557,
+                  "p95Ms": 2.0543329883366823
+                },
+                "draws": [
+                  27
+                ],
+                "loopPacingCPU": {
+                  "samples": 580,
+                  "medianMs": 3.0792289999999998,
+                  "p95Ms": 5.743375
+                },
+                "positivePresentationPacing": {
+                  "samples": 566,
+                  "medianMs": 3.029229017556645,
+                  "p95Ms": 7.11287499871105
+                },
+                "nativeSubmitCPU": {
+                  "samples": 580,
+                  "medianMs": 1.8110415,
+                  "p95Ms": 4.590333
+                }
+              }
+            },
+            "rssPeakKiB": 250992,
+            "rssSamples": 45,
+            "startupToSceneReadyMs": 3815.520458
+          }
+        }
+      },
+      "release": {
+        "evidence": "build/metal-m6-evidence/final-benchmark-release/results.json",
+        "backends": {
+          "opengl": {
+            "metalResourcePeaks": {},
+            "resourceAccounting": "Metal counters overlap; OpenGL driver allocations unavailable. RSS is sampled process resident memory, not GPU memory.",
+            "extents": {
+              "1280x720": {
+                "warmup": 120,
+                "tailExcluded": 20,
+                "sceneCPU": {
+                  "samples": 580,
+                  "medianMs": 2.287688,
+                  "p95Ms": 3.166417
+                },
+                "layerCPU": {
+                  "samples": 580,
+                  "medianMs": 2.3914585,
+                  "p95Ms": 3.376875
+                },
+                "gpu": {
+                  "samples": 580,
+                  "medianMs": 3.1934370000000003,
+                  "p95Ms": 3.436792
+                },
+                "draws": [
+                  27
+                ],
+                "loopPacingCPU": {
+                  "samples": 580,
+                  "medianMs": 5.455875,
+                  "p95Ms": 6.149708
+                }
+              },
+              "1920x1080": {
+                "warmup": 120,
+                "tailExcluded": 20,
+                "sceneCPU": {
+                  "samples": 580,
+                  "medianMs": 4.4893955000000005,
+                  "p95Ms": 4.757917
+                },
+                "layerCPU": {
+                  "samples": 580,
+                  "medianMs": 4.5701875,
+                  "p95Ms": 4.845
+                },
+                "gpu": {
+                  "samples": 580,
+                  "medianMs": 4.7305209999999995,
+                  "p95Ms": 5.025083
+                },
+                "draws": [
+                  27
+                ],
+                "loopPacingCPU": {
+                  "samples": 580,
+                  "medianMs": 6.5608125,
+                  "p95Ms": 8.357916
+                }
+              }
+            },
+            "rssPeakKiB": 275392,
+            "rssSamples": 50,
+            "startupToSceneReadyMs": 940.16275
+          },
+          "metal": {
+            "metalResourcePeaks": {
+              "frame_bytes": 243827996,
+              "attachment_bytes": 302383104,
+              "allocator_bytes": 7745064,
+              "inflight": 2
+            },
+            "resourceAccounting": "Metal counters overlap; OpenGL driver allocations unavailable. RSS is sampled process resident memory, not GPU memory.",
+            "extents": {
+              "1280x720": {
+                "warmup": 120,
+                "tailExcluded": 20,
+                "sceneCPU": {
+                  "samples": 580,
+                  "medianMs": 0.07127049999999999,
+                  "p95Ms": 0.111625
+                },
+                "layerCPU": {
+                  "samples": 580,
+                  "medianMs": 0.088125,
+                  "p95Ms": 0.136958
+                },
+                "gpu": {
+                  "samples": 559,
+                  "medianMs": 0.9654999885242432,
+                  "p95Ms": 1.0192079935222864
+                },
+                "draws": [
+                  27
+                ],
+                "loopPacingCPU": {
+                  "samples": 580,
+                  "medianMs": 1.680125,
+                  "p95Ms": 4.88675
+                },
+                "positivePresentationPacing": {
+                  "samples": 558,
+                  "medianMs": 1.694290986051783,
+                  "p95Ms": 5.359708011383191
+                },
+                "nativeSubmitCPU": {
+                  "samples": 580,
+                  "medianMs": 1.5744164999999999,
+                  "p95Ms": 4.789167
+                }
+              },
+              "1920x1080": {
+                "warmup": 120,
+                "tailExcluded": 20,
+                "sceneCPU": {
+                  "samples": 580,
+                  "medianMs": 0.18685400000000002,
+                  "p95Ms": 0.349458
+                },
+                "layerCPU": {
+                  "samples": 580,
+                  "medianMs": 0.2357505,
+                  "p95Ms": 0.431333
+                },
+                "gpu": {
+                  "samples": 562,
+                  "medianMs": 1.9542914960766211,
+                  "p95Ms": 2.079333004076034
+                },
+                "draws": [
+                  27
+                ],
+                "loopPacingCPU": {
+                  "samples": 580,
+                  "medianMs": 2.7862080000000002,
+                  "p95Ms": 4.973542
+                },
+                "positivePresentationPacing": {
+                  "samples": 561,
+                  "medianMs": 2.6662500167731196,
+                  "p95Ms": 6.870832992717624
+                },
+                "nativeSubmitCPU": {
+                  "samples": 580,
+                  "medianMs": 2.480083,
+                  "p95Ms": 4.633625
+                }
+              }
+            },
+            "rssPeakKiB": 234736,
+            "rssSamples": 24,
+            "startupToSceneReadyMs": 685.614583
+          }
+        }
+      }
+    }
+  },
+  "review": {
+    "newFirstPartyWarningsInChangedNativeFiles": 0,
+    "warningEvidence": "build/metal-m6-evidence/final-warning-review.json",
+    "shaderMathematicsUnchanged": "build/metal-m6-evidence/shader-source-integrity.json",
+    "productionFixes": [
+      "Offline ImGui library packaged instead of runtime MSL source compilation",
+      "Close unsubmitted editor render encoder and command buffer after C++ UI exception; same-device retry verified",
+      "Exclude Metal-only Objective-C++ from non-macOS Premake projects"
+    ],
+    "qualificationFixes": [
+      "Checkout-local CLI DerivedData",
+      "All maintained Metal targets included by --tests",
+      "Stage offline ImGui library for private Metal-editor workflow resources",
+      "Frozen probe fixture projects supplied only after pristine package acceptance",
+      "Five-game contract matches CI archives; showcase exact-byte attributes preserved"
+    ],
+    "unresolvedProductionFinding": "No unresolved demonstrated finding in the reviewed scope; unsupported/resource boundaries remain explicit.",
+    "verdict": "No unresolved demonstrated production finding in reviewed scope; final same-device abort recovery, native workflows and packages passed. Whole-platform qualification remains incomplete."
+  },
+  "publicDocs": {
+    "status": "PASS \u2014 local documentation/link/workflow audit; platform claims remain explicitly limited",
+    "audit": "77 Markdown files, 637 local links/images, zero findings",
+    "evidence": "build/metal-m6-evidence/public-docs-final.log",
+    "masterWorkflowAndBadge": "unchanged",
+    "screenshots": "Existing real M4/M5 captures remain correctly scoped; no UI/layout change or synthetic replacement."
+  },
+  "deploymentModes": {
+    "nativeAppleM4Source": "PASS",
+    "localAdHocMacOSBundles": "PASS",
+    "hostedMacOSBuildCPUAtBaseline": "PASS",
+    "WindowsBaselineDebugBuild": "FAIL",
+    "LinuxBaselineDebugBuild": "FAIL",
+    "WindowsPatchedTreeBuildTestsPackages": "NOT RUN",
+    "LinuxPatchedTreeBuildTestsPackages": "NOT RUN",
+    "hostedMacOSGPUAndPackages": "NOT RUN",
+    "physicalIntelHD4000": "NOT RUN",
+    "macOS27MinimumOSLaunch": "NOT RUN",
+    "otherAppleSiliconHardware": "NOT RUN",
+    "DeveloperIDNotarizationFreshDownloadGatekeeper": "NOT RUN"
+  },
+  "defaultBackendRecommendation": "Keep OpenGL as the default while M6 is incomplete. Reconsider only after patched branch CI and remaining deployment/hardware gates; no default change applied.",
+  "commitPush": {
+    "status": "AUTHORIZED \u2014 candidate pending",
+    "branch": "feature/3d-foundations",
+    "scope": "Owner explicitly authorized M6 candidate and minimal attributable CI corrections; normal push, workflow_dispatch, no merge/release/default change."
+  },
+  "remainingGates": [
+    {
+      "status": "PENDING",
+      "required": true,
+      "gate": "CI on the patched M6 candidate",
+      "reason": "Candidate push and workflow_dispatch explicitly authorized by the owner."
+    },
+    {
+      "status": "NOT RUN",
+      "gate": "Physical Intel HD 4000",
+      "reason": "Hardware unavailable; hosted/software GL is a separate category.",
+      "requiredForTestedPlatformVerdict": false
+    },
+    {
+      "status": "NOT RUN",
+      "gate": "Windows/Linux native hardware and packages for patched tree",
+      "reason": "Baseline CI stopped at compilation. Local project-generation proof is not target compilation.",
+      "requiredForTestedPlatformVerdict": false
+    },
+    {
+      "status": "NOT RUN",
+      "gate": "macOS 27.0 minimum-OS runtime and other Apple Silicon GPUs",
+      "reason": "Executed host is Apple M4/macOS 27.3 only; binary minimum-version audits passed.",
+      "requiredForTestedPlatformVerdict": false
+    },
+    {
+      "status": "NOT RUN",
+      "gate": "Developer ID, notarization and fresh-download Gatekeeper",
+      "reason": "Local ad-hoc packaging only; no public distribution claim.",
+      "requiredForTestedPlatformVerdict": false
+    }
+  ]
+}

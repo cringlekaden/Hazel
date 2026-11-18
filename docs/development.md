@@ -2,8 +2,10 @@
 
 Use [setup/build](getting-started.md), [settings/resources](settings-and-resources.md) and the [dependency ledger](platforms-and-dependencies.md). Premake is the build system; builds are incremental with **two compiler jobs**. Keep Debug/Release outputs and platform caches separate.
 
-Mac generation preserves the selected DerivedData location and uses Xcode's
-configuration-specific intermediate directories. Switching Debug/Release should
+Mac CLI builds use checkout-local `build/DerivedData`, isolating disposable
+qualification checkouts from the canonical workspace and global IDE settings.
+Xcode GUI builds use the IDE-selected location. Both use configuration-specific
+intermediate directories. Switching Debug/Release should
 retain each configuration's native objects. Generated project files remain
 Premake-owned; do not maintain separate manual build-setting fixes in them.
 
@@ -156,7 +158,7 @@ A completed command or zero presentation timestamp does not prove visible output
 | Cooked static meshes/submeshes, material maps, one direct key, prepared PBR/IBL | M4 locally qualified: numerical/visual parity, Debug/Release native windows ([record](design/metal-m4.md)) |
 | Hazelnut Metal editor / ImGui | M5 **PASS — Apple M4 local qualification**, Debug/Release, multiple detached windows on one display ([gates and evidence](design/metal-m5.md)) |
 | Production native color compute pass | Focused render→compute→render/readback and lifetime gates pass; no new rendering effect or generalized scheduler |
-| General Metal game export | Not qualified |
+| Metal application/game packaging | M6 implementation and qualification in progress; [exact gates and results](design/metal-m6.md) |
 
 For explicitly selected Hazelnut Metal integration on this branch, produce the shaders above,
 then launch the staged editor (its staged resources include the editor icons):
@@ -169,7 +171,8 @@ OpenGL remains the default. The pinned ImGui core/GLFW/OpenGL backends are uncha
 M5 backports the official Metal 4 renderer with Hazel-owned queue/slot/consumer
 retirement. This branch has local M5 qualification on Apple M4; it is not a release.
 See the [M5 record](design/metal-m5.md) for tested configurations, failed attempts
-and the explicit platform/execution limits. General Metal export remains separate.
+and the explicit platform/execution limits. [M6](design/metal-m6.md) separately
+tracks application packaging and platform readiness.
 
 Targets remain single-sample RGBA32F / R32Sint / Depth32Float, 1..4096 per axis,
 at most 8,388,608 pixels. Submitted attachment generations retire after GPU
@@ -192,8 +195,11 @@ The producer reuses valid packages and rebuilds stale/corrupt ones. Generated
 compiler or GLSL/MSL source. Place them under the configured resource root's
 `shaders/metal` directory. M2-C versions the artifact profile to reject stale
 final-output orientation in source-free packages. Regenerate older packages.
-OpenGL staging/export does not automatically produce Metal artifacts or select
-Metal. General Metal game packaging is not qualified by this milestone.
+On this branch macOS packaging produces and validates the ten engine artifacts
+and `ImGui.metallib` offline, then includes them in both bundles. It does not
+select Metal by default. Source launches still require the production command
+above and staging its output under `Resources/shaders/metal`. Application
+packaging acceptance is tracked separately in [M6](design/metal-m6.md).
 
 The existing offscreen and native window runners reuse M2-B4 fixtures and M1's
 window/lifetime tests (use fresh output directories):
@@ -212,6 +218,21 @@ existing OpenGL framebuffer workflows are unchanged. Historical
 [B3 ordered flushes](design/metal-m2b3.md) and [B4 ownership](design/metal-m2b4.md)
 records describe those earlier qualified revisions.
 
+
+## M6 production-readiness checkpoint
+
+The [M6 record](design/metal-m6.md) and [machine-readable matrix](design/metal-m6-results.json)
+separate native Apple M4 Debug/Release, extracted dual-backend app packages,
+clean-source onboarding, hosted CPU/build CI, Windows/Linux software checks and
+unavailable physical Intel HD 4000. Its feature-branch baseline Actions run is
+[44168056768](https://github.com/cringlekaden/Hazel/actions/runs/44168056768).
+Master's badge and master push/PR/manual workflow policy are unchanged.
+
+The existing matched runtime benchmark also records process-to-scene-ready startup,
+CPU loop pacing and resource/RSS observations. GPU timer-query and Metal feedback
+intervals have different presentation-synchronization boundaries; production HDR
+formats also differ. Compare the recorded scopes and sample counts before drawing
+performance conclusions; no backend speedup is established by these observations.
 
 ## Troubleshooting
 

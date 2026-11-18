@@ -263,7 +263,7 @@ public:
         Source.reset(); Output.reset(); Nearest.reset(); Mipped.reset();
     }
 };
-static int EditorConsumerProof(const std::filesystem::path& output, const std::filesystem::path& resources, unsigned frames = 900, bool pendingShutdown = false, bool abortUI = false) {
+static int EditorConsumerProof(const std::filesystem::path& output, const std::filesystem::path& resources, unsigned frames = 900, bool pendingShutdown = false, bool abortUI = false, bool recoverUI = false) {
     using namespace Hazel;
     Log::Init();
     auto specification = Specification(output);
@@ -279,10 +279,16 @@ static int EditorConsumerProof(const std::filesystem::path& output, const std::f
         application.SetBackgroundTick([lifecycle]{lifecycle->NativeTick();});
         try { application.Run(); }
         catch(const std::runtime_error& error){if(!abortUI || std::string(error.what())!="M5 injected UI encoder abort")throw;aborted=true;}
+        if(recoverUI) {
+            Check(aborted && observer->Snapshot().Submitted==0,"Recovery must follow an unsubmitted encoder abort");
+            lifecycle->AbortUI=false;
+            application.Run();
+        }
     }
     const auto final = observer->Snapshot();
     Check(final.Errors == 0 && final.InFlight == 0 && final.Completed == final.Submitted && final.ResourceBytes == 0 && final.ImGuiResourceBytes == 0 && final.AttachmentGenerations == 0,
         "Editor consumers did not retire on shutdown");
+    if(recoverUI){Check(final.Submitted>=50 && final.Presented>=50,"Recovered editor did not present genuine frames");std::cout<<"PASS native editor UI encoder recovery: same device/command buffer after unsubmitted abort\n";return 0;}
     if(abortUI){Check(aborted && !final.Submitted,"UI encoder abort unexpectedly committed work");std::cout<<"PASS native editor UI encoder abort: unsubmitted resources retired\n";return 0;}
     if(pendingShutdown){Check(final.Submitted>=3 && final.PeakInFlight==3,"Pending shutdown did not exercise three slots");std::cout<<"PASS native editor pending shutdown: three gated production slots, all consumers/resources retired\n";return 0;}
     if (frames == 100) { std::cout << "PASS quick actual drawable pixel diagnostic (100 frames); extended lifecycle gates excluded\n"; return 0; }

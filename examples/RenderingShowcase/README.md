@@ -5,7 +5,7 @@ It uses the original Studio Small 09 HDR, photographed wood and leather material
 and a copper roughness sweep. All rendering uses Hazel's ordinary saved scene,
 cooked mesh/material/environment assets and shared editor/player pipeline.
 
-From `/Volumes/External/kadencringle/Projects/Hazel`, after matching builds:
+From the `feature/3d-foundations` checkout root, after matching builds:
 
 ```sh
 python3 scripts/hazel.py run Hazelnut --config Release --project examples/RenderingShowcase/RenderingShowcase.hproj

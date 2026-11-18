@@ -260,7 +260,7 @@ def build(configuration, tests=False, database=False, targets=None):
         dependencies(configuration, premake())
         generate_macos(tests)
         for target in targets or (('MacOSQualification',) if tests else ('Hazelnut', 'Nutella', 'SpriteAssetAudit')):
-            run(['xcodebuild', '-workspace', ROOT / 'Hazel.xcworkspace', '-scheme', target, '-configuration', configuration, '-destination', 'generic/platform=macOS', '-jobs', '2', 'build'])
+            run(['xcodebuild', '-workspace', ROOT / 'Hazel.xcworkspace', '-derivedDataPath', ROOT / 'build/DerivedData', '-scheme', target, '-configuration', configuration, '-destination', 'generic/platform=macOS', '-jobs', '2', 'build'])
         # Full setup/build promises a runnable default scheme on every host.
         # Native Xcode phases build ScriptCore/tools; project scripts remain a
         # canonical authoring operation, also available in the editor afterward.
