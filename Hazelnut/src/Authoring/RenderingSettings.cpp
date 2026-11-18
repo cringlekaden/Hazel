@@ -139,8 +139,6 @@ namespace Hazel {
             m_RenderingDraft.Backend = RendererBackend(backend);
             m_RenderingAuthored = true;
         }
-        if (DefaultRendererBackend == RendererBackend::OpenGL)
-            ImGui::TextWrapped("The default request remains OpenGL pending native qualification. Select Automatic explicitly to request the new platform policy.");
         const auto& launch = Application::Get().GetSpecification();
         PropertyUI::ReadOnly("backend-requested", "Launch request", RendererPolicy::BackendName(launch.RequestedBackend));
         PropertyUI::ReadOnly("backend-active", "Active backend", Renderer::GetAPI()==RendererAPI::API::Metal ? "Metal 4" : "OpenGL");

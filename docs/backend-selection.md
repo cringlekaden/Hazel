@@ -8,11 +8,11 @@ Selection precedence is:
 
 1. CLI override: `--metal`, `--opengl` or `--automatic` (choose one).
 2. The project's `Rendering.Backend`: `Metal`, `OpenGL` or `Automatic`.
-3. Missing settings, including legacy projects, retain `OpenGL` while the new
-   platform-default activation is awaiting native qualification. This hold is
-   centralized in `DefaultRendererBackend`; no default change is qualified yet.
+3. Missing settings, including legacy projects, use `Automatic`. Existing explicit
+   backend choices and all other serialized renderer settings are retained. The
+   default is centralized in `DefaultRendererBackend`.
 
-An explicit Automatic request prefers Metal 4 on native Apple Silicon/macOS 27+ when the system's
+Automatic prefers Metal 4 on native Apple Silicon/macOS 27+ when the system's
 native device reports Metal 4 family support. Otherwise it selects OpenGL, whose
 actual 4.1 context support is checked during startup. Windows/Linux select OpenGL.
 The prelaunch Metal probe creates no queue, window or renderer. A supported family

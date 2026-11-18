@@ -127,7 +127,7 @@ namespace Hazel {
         old << legacy;
         FileSystem::WriteNewFile(root / "Legacy.hproj", old.c_str());
         const auto legacyProject = Project::LoadCandidate(root / "Legacy.hproj");
-        Check(legacyProject && legacyProject->GetRendererRequests().Backend == RendererBackend::OpenGL && !legacyProject->GetConfig().Rendering &&
+        Check(legacyProject && legacyProject->GetRendererRequests().Backend == RendererBackend::Automatic && !legacyProject->GetConfig().Rendering &&
                   legacyProject->GetRendererRequests().TextureSlots == 32 &&
                   ProjectSerializer(legacyProject).SerializeText().find("Rendering") ==
                       std::string::npos,
@@ -170,7 +170,7 @@ namespace Hazel {
         Check(!RendererPolicy::RestartReason(backendChange, selected, caps, RendererBackend::OpenGL).empty(),
               "Backend request change did not require restart");
         const auto legacyRequests = RendererRequestsSerializer::Read(YAML::Load("{Version: 1, TextureSlots: 4}"));
-        Check(legacyRequests.Backend == RendererBackend::OpenGL && legacyRequests.TextureSlots == 4,
+        Check(legacyRequests.Backend == RendererBackend::Automatic && legacyRequests.TextureSlots == 4,
               "Legacy Rendering block lost defaults");
         const auto nutella = RendererPolicy::Settings(loaded->GetRendererRequests());
         Check(nutella.TextureSlots == explicitPolicy.Settings.TextureSlots &&

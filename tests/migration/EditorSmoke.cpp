@@ -1291,9 +1291,9 @@ private:
         e.OnSceneStop();Check(window.IsVSync()==a.m_Preferences.VSync && e.m_EditorScene==scene && a.SceneText()==text,"Stop did not restore editor interval/authored content");
         Check(e.OnSceneSimulate(true) && !window.IsVSync(),"Simulate did not use runtime interval");e.OnSceneStop();
         Check(window.IsVSync()==a.m_Preferences.VSync,"Simulation Stop lost editor interval");
-        auto backendRequest=runtime;backendRequest.Backend=RendererBackend::Automatic;
+        auto backendRequest=runtime;backendRequest.Backend=runtime.Backend==RendererBackend::OpenGL ? RendererBackend::Automatic : RendererBackend::OpenGL;
         const auto activeAPI=Renderer::GetAPI();
-        Check(a.SaveRenderingRequests(backendRequest) && Project::LoadCandidate(e.m_ProjectPath)->GetRendererRequests().Backend==RendererBackend::Automatic &&
+        Check(a.SaveRenderingRequests(backendRequest) && Project::LoadCandidate(e.m_ProjectPath)->GetRendererRequests().Backend==backendRequest.Backend &&
               !a.RenderingRestartReason().empty() && Renderer::GetAPI()==activeAPI,
               "Backend request did not save/reload with restart pending and the original device retained");
         Check(a.SaveRenderingRequests(previous),"Renderer fixture restoration failed");a.m_ProjectName=form;

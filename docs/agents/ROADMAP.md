@@ -4,11 +4,11 @@
 
 ## Current prioritized track: Metal 4 backend
 
-- **Following M6 — INCOMPLETE:** backend requests/precedence, settings/capability UI,
-  production cleanup and measured test/performance work are implemented. Native
-  continuation is blocked by a locked GUI session; OpenGL remains the centralized
-  default. Explicit Automatic is available. M6 candidate CI now reports hosted
-  macOS PASS / Windows exact picking-depth regression FAIL / Linux exact unlit picking/depth FAIL. See
+- **Following M6 — INCOMPLETE pending candidate CI:** backend selection/settings,
+  cleanup and measured optimization are implemented. Native Apple M4/macOS 27.3
+  gates and source-free packages pass; Automatic defaults compile and pass policy/save checks; native no-flag launches
+  and screenshots are blocked by a newly locked GUI session. M6 Windows/Linux exact depth FAIL led
+  to a packed-depth copy correction; run 44297371674 checks a6f22f23 and now reports Windows unlit HDR color FAIL. Current evidence:
   `docs/design/metal-default-qualification.md`. Do not start XeGTAO, merge or release.
 
 
@@ -17,7 +17,7 @@
 - **M3 — PASS (local Apple M4):** Shared deterministic Renderer2D lines, independent/frozen/cross-backend qualification and native Debug/Release 1×/2× player lifecycle/input/extended-session evidence are in `docs/design/metal-m3.md`. Windows/Linux/Intel execution is NOT RUN. OpenGL remains default.
 - **M4 — PASS (local Apple M4):** production Renderer3D, cooked GLB/materials, depth/selection and prepared PBR/IBL parity; native Debug/Release 1×/2× lifecycle, actual mixed player input, extended visible stability and matched runtime timings are recorded in `docs/design/metal-m4.md`. Windows/Linux/physical Intel/new CI remain NOT RUN. M5 evidence is tracked separately; no default change, merge or release.
 - **M5 — PASS (Apple M4 local qualification):** native Debug/Release Hazelnut workflows, single-display detached-window lifecycle at 1×/2×, unified three-slot retirement, production compute dependencies, GPU/CPU timing and regression evidence. See `docs/design/metal-m5.md`. Windows/Linux/Intel/new CI remain NOT RUN; general Metal export remains unqualified. OpenGL stays default. M6 qualification is tracked separately; no merge or release.
-- **M6 — INCOMPLETE, candidate CI in progress:** local production/package/source onboarding and native metrics pass; candidate `35e4f4116cba7bc57a12e4451bdf293acc2c5cf3` is pushed with Actions run `44212291235` in progress (owner requested no wait). Evidence and public documentation are tracked in `docs/design/metal-m6.md` and `metal-m6-results.json`. OpenGL remains default; no merge/release or next stage is authorized.
+- **M6 — INCOMPLETE, historical candidate CI failed:** local production/package/source onboarding and native metrics pass; candidate `35e4f4116cba7bc57a12e4451bdf293acc2c5cf3` is pushed with completed Actions run `44212291235`: macOS PASS, Windows/Linux exact depth FAIL. Evidence and public documentation are tracked in `docs/design/metal-m6.md` and `metal-m6-results.json`. OpenGL remains default; no merge/release or next stage is authorized.
 
 Do not automatically advance to the next milestone, change default backend, merge or ship. Explicit authorization is required. Record PASS only against measured, reproducible acceptance gates. Fixed reference cases must not be adjusted to fit a new renderer.
 

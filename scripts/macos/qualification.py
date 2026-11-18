@@ -113,15 +113,15 @@ def isolation_command(command,source_sdk=None,metal=False):
     return ['/usr/bin/sandbox-exec','-p',profile,*map(str,command)]
 
 
-def product_acceptance(name,bundle,working,logs,source_sdk,interactive=False,metal=False,automatic=False):
+def product_acceptance(name,bundle,working,logs,source_sdk,interactive=False,metal=False,automatic=False,default=False):
     from internal.package_tests import graphics_environment
     env=graphics_environment('native')
     for key in list(env):
         if key.startswith(('HAZEL_', 'DYLD_', 'MTL_')):env.pop(key,None)
     env.update(DEVELOPER_DIR='/nonexistent',HAZEL_DATA=str(working/'profile'),HAZEL_SAVE_ROOT=str(working/'saves'),PATH='/usr/bin:/bin')
     # No resource/Mono overrides: exercise the real product's installation layout.
-    mode=('Desktop' if interactive else 'Smoke')+('-Automatic' if automatic else '-Metal' if metal else '-OpenGL')
-    backend=['--automatic'] if automatic else ['--metal'] if metal else ['--opengl']
+    mode=('Desktop' if interactive else 'Smoke')+('-Default' if default else '-Automatic' if automatic else '-Metal' if metal else '-OpenGL')
+    backend=[] if default else ['--automatic'] if automatic else ['--metal'] if metal else ['--opengl']
     if metal:env.update(HAZEL_METAL_TRACE='1',MTL_DEBUG_LAYER='1',MTL_SHADER_VALIDATION='1')
     log=logs/(name+'-'+mode+'.log')
     native_console(logs/(name+'-'+mode+'-console.json'))
@@ -170,8 +170,10 @@ def product_acceptance(name,bundle,working,logs,source_sdk,interactive=False,met
         raise RuntimeError(mode+' product did not start/close normally: '+str(log)+'\n'+text)
     if not interactive and ('SMOKE: 60 rendered frames' not in text or 'SMOKE PASS: application teardown completed' not in text):
         raise RuntimeError('Product did not prove rendered frames and completed teardown: '+str(log))
-    if automatic and 'active Metal 4 (selected before window initialization)' not in text:
+    if (automatic or (default and metal)) and 'active Metal 4 (selected before window initialization)' not in text:
         raise RuntimeError('Packaged Automatic did not resolve native Metal before window initialization: '+str(log))
+    if default and not metal and 'active OpenGL (selected before window initialization)' not in text:
+        raise RuntimeError('Packaged default ignored the saved OpenGL request: '+str(log))
     if metal:
         from macos.metal_m5 import native_result
         native_result(text,imgui=name=='Hazelnut')
@@ -249,6 +251,10 @@ def packages(output,profile,interactive=False,interactive_app=None,logs=None):
             for metal in (False,True):
                 product_acceptance(name,bundle,cwd,logs,sdk,metal=metal)
             product_acceptance(name,bundle,cwd,logs,sdk,metal=True,automatic=True)
+            from internal.packaging import load_project
+            _,config,_=load_project(next((contents/'Resources/Project').glob('*.hproj')))
+            default_metal=config.get('Rendering',{}).get('Backend','Automatic')!='OpenGL'
+            product_acceptance(name,bundle,cwd,logs,sdk,metal=default_metal,default=True)
             if name=='Hazelnut':missing_editor_shader(bundle,cwd,logs,sdk)
             if interactive and (interactive_app is None or interactive_app==name):
                 product_acceptance(name,bundle,cwd,desktop_logs,sdk,interactive=True)

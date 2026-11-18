@@ -1,0 +1,367 @@
+{
+  "status": "INCOMPLETE",
+  "branch": "feature/3d-foundations",
+  "baseline": "93d39bd6d71b090a3a931f1a457a9df27347c91c",
+  "default": "Automatic; native Metal 4 availability probe, otherwise OpenGL; CLI > project > default",
+  "automaticNativeRendererPolicy": "PASS Apple M4/macOS27.3 via explicit Automatic; no-flag activation launches BLOCKED by locked console",
+  "fullProductionQualification": "INCOMPLETE: current activation/native captures and exact candidate CI remain required",
+  "m6CI": {
+    "run": 44212291235,
+    "sha": "35e4f4116cba7bc57a12e4451bdf293acc2c5cf3",
+    "macOS": "PASS CPU/build only",
+    "Windows": "FAIL exact depth",
+    "Linux": "FAIL exact depth"
+  },
+  "correctionCI": {
+    "run": 44297371674,
+    "sha": "a6f22f23cca10acd29058dd7625a025b497c0647",
+    "status": "IN_PROGRESS overall; Windows failed; predates Automatic activation",
+    "Windows": "FAIL unchanged unlit HDR color assertion: 0.799994 vs 0.8 at 1e-6; later exact packed-depth test NOT REACHED",
+    "Linux": "IN_PROGRESS",
+    "macOS": "IN_PROGRESS"
+  },
+  "nativeStableGates": {
+    "build-Debug": {
+      "status": "PASS",
+      "seconds": 207.51118891703663,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/hazel.py",
+        "build",
+        "--config",
+        "Debug",
+        "--tests"
+      ]
+    },
+    "renderer-Debug": {
+      "status": "PASS",
+      "seconds": 92.29191100003663,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/hazel.py",
+        "test",
+        "--config",
+        "Debug",
+        "--only",
+        "Renderer2DSmoke"
+      ]
+    },
+    "metal_m3-Debug": {
+      "status": "PASS",
+      "seconds": 26.831270083028357,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m3.py",
+        "--config",
+        "Debug",
+        "--resources",
+        "bin/Debug-macos-arm64/Hazelnut/Resources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/metal_m3-Debug"
+      ]
+    },
+    "metal_m4-Debug": {
+      "status": "PASS",
+      "seconds": 60.325039832969196,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m4.py",
+        "--config",
+        "Debug",
+        "--resources",
+        "bin/Debug-macos-arm64/Hazelnut/Resources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/metal_m4-Debug"
+      ]
+    },
+    "m5-Debug-2x-editor": {
+      "status": "PASS",
+      "seconds": 10.319799499993678,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m5.py",
+        "--config",
+        "Debug",
+        "--only",
+        "editor",
+        "--native-2x",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/m5-Debug-2x-editor"
+      ]
+    },
+    "lifecycle-Debug-2x": {
+      "status": "PASS",
+      "seconds": 13.608707207953557,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m1.py",
+        "--config",
+        "Debug",
+        "--renderer3d",
+        "bin/Debug-macos-arm64/Hazelnut/Resources",
+        "--hidpi",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/lifecycle-Debug-2x"
+      ]
+    },
+    "products-Debug": {
+      "status": "PASS",
+      "seconds": 76.28315487498185,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m6.py",
+        "--config",
+        "Debug",
+        "--only",
+        "products",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/products-Debug"
+      ]
+    },
+    "build-Release": {
+      "status": "PASS",
+      "seconds": 147.02749308303464,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/hazel.py",
+        "build",
+        "--config",
+        "Release",
+        "--tests"
+      ]
+    },
+    "renderer-Release": {
+      "status": "PASS",
+      "seconds": 12.181208707974292,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/hazel.py",
+        "test",
+        "--config",
+        "Release",
+        "--only",
+        "Renderer2DSmoke"
+      ]
+    },
+    "metal_m3-Release": {
+      "status": "PASS",
+      "seconds": 16.1552823340171,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m3.py",
+        "--config",
+        "Release",
+        "--resources",
+        "bin/Release-macos-arm64/Hazelnut/Resources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/metal_m3-Release"
+      ]
+    },
+    "metal_m4-Release": {
+      "status": "PASS",
+      "seconds": 20.12799820798682,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m4.py",
+        "--config",
+        "Release",
+        "--resources",
+        "bin/Release-macos-arm64/Hazelnut/Resources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/metal_m4-Release"
+      ]
+    },
+    "m5-Release-1x": {
+      "status": "PASS",
+      "seconds": 44.93183595803566,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m5.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/m5-Release-1x"
+      ]
+    },
+    "lifecycle-Release-1x": {
+      "status": "PASS",
+      "seconds": 5.539333583030384,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m1.py",
+        "--config",
+        "Release",
+        "--renderer3d",
+        "bin/Release-macos-arm64/Hazelnut/Resources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/lifecycle-Release-1x"
+      ]
+    },
+    "m5-Release-2x": {
+      "status": "PASS",
+      "seconds": 46.526444332965184,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m5.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/m5-Release-2x",
+        "--native-2x"
+      ]
+    },
+    "lifecycle-Release-2x": {
+      "status": "PASS",
+      "seconds": 6.982939874986187,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m1.py",
+        "--config",
+        "Release",
+        "--renderer3d",
+        "bin/Release-macos-arm64/Hazelnut/Resources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/lifecycle-Release-2x",
+        "--hidpi"
+      ]
+    },
+    "products-Release": {
+      "status": "PASS",
+      "seconds": 22.75136479100911,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m6.py",
+        "--config",
+        "Release",
+        "--only",
+        "products",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/products-Release"
+      ]
+    },
+    "packages": {
+      "status": "PASS",
+      "seconds": 237.13526070897933,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m6.py",
+        "--config",
+        "Release",
+        "--only",
+        "packages",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/packages"
+      ]
+    },
+    "benchmark-production": {
+      "status": "PASS",
+      "seconds": 16.0823427910218,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m4_runtime.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/benchmark-production",
+        "--resources",
+        "bin/Release-macos-arm64/Hazelnut/Resources"
+      ]
+    },
+    "benchmark-fp32": {
+      "status": "PASS",
+      "seconds": 16.881930582982022,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m4_runtime.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/benchmark-fp32",
+        "--resources",
+        "bin/Release-macos-arm64/Hazelnut/Resources",
+        "--matched-formats"
+      ]
+    },
+    "editor-timing": {
+      "status": "PASS",
+      "seconds": 7.70381700003054,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "scripts/macos/metal_m5.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/metal-default-evidence/stable/editor-timing",
+        "--only",
+        "consumers",
+        "--timing"
+      ]
+    }
+  },
+  "activationGates": {
+    "Debug": {
+      "build": "PASS 127.011s",
+      "policy": "PASS 23.043s",
+      "editor": "PASS 88.692s",
+      "defaultProducts": "BLOCKED before launch: locked native console"
+    },
+    "Release": {
+      "build-Release": {
+        "status": "PASS",
+        "seconds": 146.38047208299395,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/hazel.py",
+          "build",
+          "--tests",
+          "--config",
+          "Release",
+          "--target",
+          "Hazelnut",
+          "--target",
+          "Nutella",
+          "--target",
+          "MigrationSceneFoundationSmoke",
+          "--target",
+          "MigrationEditorSmoke"
+        ]
+      },
+      "policy-Release": {
+        "status": "PASS",
+        "seconds": 2.639042375027202,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/hazel.py",
+          "test",
+          "--config",
+          "Release",
+          "--only",
+          "SceneFoundationSmoke"
+        ]
+      }
+    },
+    "screenshots": "BLOCKED pending native console",
+    "preparedReleaseBundles": "PASS packaging/signatures for both apps, 2D/direct3D/PBR; new-default source-free EXECUTION NOT RUN"
+  },
+  "efficiencySeconds": {
+    "focusedPolicy": {
+      "before": 6.06,
+      "after": 2.639042375027202
+    },
+    "fourRetainedCPUComparisons": {
+      "serial": 17.7011065420229,
+      "twoWorkers": 8.98292570799822,
+      "identicalCompleteResults": true
+    },
+    "checkedShaderPreparation": {
+      "cold": 2.056,
+      "reuse": 0.33,
+      "identicalArtifactHashes": 11
+    }
+  },
+  "warnings": "No new changed-native warning sites; baseline first-party and generated Xcode warnings remain.",
+  "nextMilestone": "XeGTAO not started; requires exact depth correction CI, final default/capture gates and acceptance of remaining hardware/deployment limitations.",
+  "remainingHardware": "Physical Windows/Linux/Intel HD4000 and macOS27.0 NOT RUN; hosted/software GL differs from native hardware.",
+  "release": "No merge or public release; ad-hoc signing only, not Developer ID/notarization/Gatekeeper qualification.",
+  "nativeStableGatesScope": "Executed before Automatic default activation; exact source digest in local stable-source-digest.json. Later changed default metadata has separate activation gates."
+}

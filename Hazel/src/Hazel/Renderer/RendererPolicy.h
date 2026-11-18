@@ -4,10 +4,8 @@
 
 namespace Hazel {
     enum class RendererBackend { Automatic, OpenGL, Metal };
-    // Hold the published default until the native default-backend acceptance
-    // gates in docs/design/metal-default-qualification.md pass. Explicit
-    // Automatic still exercises the portable selection policy.
-    inline constexpr RendererBackend DefaultRendererBackend = RendererBackend::OpenGL;
+    // Resolved before window creation: native Metal 4 where available, otherwise OpenGL.
+    inline constexpr RendererBackend DefaultRendererBackend = RendererBackend::Automatic;
     struct BackendAvailability {
         bool Metal = false;
         std::string MetalReason;

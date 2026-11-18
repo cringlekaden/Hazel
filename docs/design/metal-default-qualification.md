@@ -2,7 +2,11 @@
 
 Starting tree: `93d39bd6d71b090a3a931f1a457a9df27347c91c`,
 `feature/3d-foundations`. This checkpoint follows [M6](metal-m6.md).
-Status: **INCOMPLETE — implementation and native qualification in progress**.
+Status: **INCOMPLETE — default launches/captures blocked; Windows CI color gate failed**.
+Current checkpoint: stable native renderer/package gates PASS on Apple M4/macOS 27.3.
+Automatic is now the default request. Debug/Release compilation and policy plus
+Debug save/restart checks PASS; native no-flag/capture continuation requires unlock.
+Sections below retain chronological failed attempts and superseded holds.
 No merge, release, XeGTAO or new lighting features are included.
 
 ## Acceptance declared before final execution
@@ -24,6 +28,8 @@ No merge, release, XeGTAO or new lighting features are included.
 - Full relevant Windows/Linux/hosted macOS CI for the committed candidate; no hosted
   GPU claim. If unavailable, full production qualification remains INCOMPLETE.
 - Public docs/link/commands, warning and adversarial success/failure path review.
+
+Machine-readable checkpoint: [metal-default-results.json](metal-default-results.json).
 
 Raw logs and timing data: `build/metal-default-evidence/`. Existing unrelated
 material edits and untracked developer shader artifacts are excluded from commits.
@@ -129,7 +135,7 @@ in addition to RGBA16F. No shader math or ordinary application format changes.
 A new independent IEC output vector verifies the additional source. The explicit
 FP32-display benchmark permits controlled color formats without lowering accepted
 Metal quality; depth and GPU timing boundaries still differ and are reported.
-Its final isolated run is NOT RUN while the console is locked.
+Its final isolated run subsequently PASSes; see the stable timing update below.
 
 
 ## M6 CI follow-up
@@ -153,7 +159,7 @@ advancing to XeGTAO. Automatic Metal activation additionally requires the blocke
 native presentation/editor/package gates to complete.
 
 
-## Default activation hold
+## Historical default activation hold (superseded by native completion)
 
 The unlocked-console gate is still unavailable after independent work, so the
 conditional authorization to activate a new platform default is **not satisfied**.
@@ -231,3 +237,164 @@ A local autorelease pool now also encloses the added Metal OS/driver string quer
 its temporary Foundation objects do not depend on GLFW having created an outer
 pool. Native availability queries already have scoped pools. No global queue wait,
 resource budget or shader-loading rejection was relaxed.
+
+
+### Stable candidate review
+
+`a6f22f23cca10acd29058dd7625a025b497c0647` is pushed on the requested branch.
+Run [44297371674](https://github.com/cringlekaden/Hazel/actions/runs/44297371674)
+is verified against that SHA; its jobs remain in progress at dispatch, not PASS.
+The corrected workflow preserves platform-local CPU/graphics ordering.
+
+Source review traced CLI/project selection through both application factories before
+Application/window construction, explicit unsupported-request exceptions, transactional
+project-save failure/conflict retention, restart guards, immutable cached depth-state
+ownership through frame packets, completion-gated drain and cache/device release.
+No additional correctness finding remains from that review. This is source review,
+not execution on another GPU or an independent reviewer. Existing first-party
+warnings (deprecated implicit copies, unused parameters and related baseline code)
+and generated Xcode build-phase warnings remain; no blanket suppression is added.
+The changed native implementation compiled without new first-party warning sites.
+
+Profiling distinguishes incremental build orchestration (5.09 s, not clean compiler
+time), focused test setup/execution, shader production/validation, CPU numerical
+comparisons and process launches. The stable matrix records build, GPU capture-plus-
+comparison suites, product and package wall times separately in `stable/results.json`;
+product logs record process-spawn-to-ready observations with 20 ms polling, not
+first presentation. Capture suites include readback and independent in-executable
+oracles; their total must not be called isolated GPU pass time. Polling sleeps and
+endurance frame counts are unchanged. No isolated clean-compiler or exclusive GPU
+pass timing baseline is claimed. Resource feedback covers whole submissions; it
+does not resolve individual world/Neutral/UI GPU passes.
+
+
+### Stable native completion and measured timing update
+
+`stable/results.json` records every gate PASS: Debug build 207.511 s, Renderer2D
+92.292 s, M3 26.831 s, M4 60.325 s, remaining Debug 2x product/editor 10.320 s,
+2x lifecycle 13.609 s and all eighteen explicit-backend/Automatic product launches
+76.283 s; Release build 147.027 s, Renderer2D 12.181 s, M3 16.155 s, M4 20.128 s,
+M5 1x/2x 44.932/46.526 s, lifecycle 5.539/6.983 s and eighteen product launches
+22.751 s. The three complete source-free package sets PASS in 237.135 s. Earlier
+CPU/full OpenGL/cache and focused Debug 2x workflow evidence remains applicable;
+unchanged assertions are not rerun simply to change a default request constant.
+This is native Apple M4 on macOS 27.3 (26C5035r), not physical Windows/Linux,
+Intel or minimum macOS 27.0 hardware qualification.
+
+The conditional native default-activation prerequisite is satisfied. The central
+default is changed to Automatic, the temporary production qualification-hold UI
+is removed, legacy missing keys now resolve the portable default, and save/restart
+tests choose a different request independently of that default. Explicit serialized
+OpenGL/Metal choices and CLI precedence remain unchanged. The maintained product/
+package matrix now includes launches with **no backend CLI flag**. Focused activation
+builds, policy/editor tests and new default launches are recorded separately in
+`activation/`; previous explicit-backend and independent numerical gates remain.
+
+An idle retained-capture CPU comparison repeat measures **17.701 s serial versus
+8.983 s with two workers**, with identical complete result dictionaries. Initial
+18.169/9.380 s measurements remain above; this later measurement supersedes them
+for an isolated comparison claim. It excludes compilation and capture.
+
+The final validation-disabled editor consumer repeat (`stable/editor-timing/`)
+retains 749 warmed CPU and 740 positive-presentation GPU samples. Median/p95 ms:
+
+| Scope | Before | Final after |
+| --- | ---: | ---: |
+| Packet preparation | 0.033583 / 0.067208 | 0.032667 / 0.059000 |
+| Whole submit CPU | 4.179542 / 4.414208 | 4.142084 / 4.379417 |
+| Drawable acquisition CPU | 4.018167 / 4.256167 | 3.988333 / 4.200833 |
+| Render encode CPU | 0.017292 / 0.036541 | 0.016667 / 0.032750 |
+| ImGui encode CPU | 0.045250 / 0.065167 | 0.046000 / 0.069916 |
+| Application ImGui CPU (759 samples) | 1.249709 / 1.699167 | 1.289167 / 1.676459 |
+| Whole-commit GPU | 2.785792 / 3.714333 | 1.603396 / 3.817583 |
+
+The smaller preparation gain in the final repeat and varying whole-commit GPU
+median demonstrate pacing/noise limits. The cache conclusively removes repeated
+native state creation (one state in 900 consumer frames; bounded by six), but does
+not establish a GPU/frame-rate win. CPU binding/encoding, queue submission and
+retirement remain much smaller than acquisition and editor UI work. Existing
+pipeline caching and upload/retirement pools are retained; no added global waits
+or lower-quality attachments are justified. Completion counter scene/ImGui
+intervals are available in the raw result, but may include overlapping later work
+and are not exclusive pass costs. No speculative optimization follows from them.
+
+Production and FP32-display diagnostic timing both PASS in 16.082 / 16.882 s.
+All authored input hashes match the original benchmark, including the owner's
+unchanged material draft; the input manifest records that exact scope. At 1080p,
+production GL CPU-loop median/p95 is 6.778646/8.473583 ms and Metal is
+2.827459/5.494916 ms. FP32-display GL is 7.830063/8.860416 ms and Metal is
+2.995417/6.269875 ms. These common CPU-loop boundaries include native output and
+event polling, not physical scanout; GL D24S8 versus Metal D32F and differing GPU
+intervals still prevent a GPU backend-speedup claim. Each extent has 580 warmed
+CPU samples; only positive-presentation Metal feedback contributes GPU samples.
+
+Production RSS peak GL/Metal is 276368/235056 KiB, versus the initial overlapping
+baseline 276096/235120 KiB; this is not a memory improvement claim. Metal tracked
+peak frame/attachment/allocator bytes are 243827996/302383104/7745064, max two
+in flight in this observation (initial 344622364/302383104/7745064, max three).
+Those categories overlap and exclude driver-owned depth-state memory. The FP32
+observation reaches three in flight and 403177472 attachment bytes; ordinary
+Metal formats are unchanged. Lifetime/endurance tests retain completion-gated
+retirement and zero tracked shutdown allocations. Neither reduced instantaneous
+in-flight count nor RSS noise is attributed to caching.
+
+### Activation continuation: console locked again
+
+After the Automatic change, the focused Debug build PASSes (127.011 s), policy
+PASSes (23.043 s), and actual editor save/restart regression PASSes (88.692 s).
+The next default product matrix stops **before process launch** at the native
+console gate: `CGSSessionScreenIsLocked=true` although global `IOConsoleLocked`
+is false (`activation/default-products-Debug/Hazelnut-2d-default/console-before.json`).
+This attempt is retained as BLOCKED environmental admission, not a renderer failure
+or successful default-launch qualification. The owner was asked to unlock; Release
+compilation/CPU checks continue independently. Default product launches, new-default
+source-free launches and representative Project Settings captures remain INCOMPLETE
+until the native console is available. Earlier stable renderer/explicit-Automatic
+native/package PASS results are unaffected; no gate is bypassed.
+
+
+### Correction candidate CI: Windows color gate fails
+
+Run 44297371674 at `a6f22f23cca10acd29058dd7625a025b497c0647` now reports
+Windows **FAIL** after a successful Debug build and all eight CPU/policy checks.
+The graphics job fails the unchanged `GeometricNormalChecks` unlit HDR color
+assertion: channel 0 actual `0.799994`, expected `0.8`, tolerance `1e-6`.
+It does not report the former first-depth mismatch, but this is **not** proof that
+the entire exact-depth loop passes: color and depth assertions are interleaved,
+and the later independent `CanonicalColorChecks` packed-depth test is not reached.
+All later Windows Release/package/game gates are skipped, not PASS.
+Raw completed-job log: `candidate2-windows-job.log`.
+
+The fragment input includes perspective-interpolated vertex color and a white
+texture multiplied by the uniform base factor (`ForwardPBR.glsl`); the small error
+is an observation, not an established compiler/driver cause. No tolerance increase,
+reference update, forced compatibility path or shader-mathematics change is made.
+Focused Windows/software-GL reproduction and an exact contract-preserving fix or
+a genuine architectural decision are required before that gate can be qualified.
+Linux and hosted macOS remain in progress at this poll. This run predates the
+later Automatic-default constant; it cannot qualify the final containing commit.
+
+
+### Pushed checkpoint scope and outstanding acceptance
+
+The Automatic activation affects only the portable default and corresponding
+legacy/save-restart expectations; affected Debug/Release builds and policy tests
+PASS. Release focused policy takes 2.639 s versus baseline 6.06 s, with identical
+selected coverage. Updated Release bundles for both products and all three scenes
+are prepared and signature-verified (`default-packages-ready/`); **new-default
+source-free execution is NOT RUN** while the GUI console is locked. The earlier
+complete explicit OpenGL/Metal/Automatic source-free matrix remains PASS.
+
+Project Settings screenshot capture is implemented using the actual production
+widget and native editor capture path, but representative final captures are
+**BLOCKED**, not synthesized or substituted with another UI. Release editor
+save/restart and no-flag Debug/Release launches remain to complete after unlock.
+No merge, public release or XeGTAO is performed. The next milestone requires
+resolving the unchanged Windows color assertion, final-candidate platform CI and
+the outstanding default/capture gates; additional physical GPU/platform and
+Developer ID/notarization coverage remains explicitly outside local evidence.
+
+Final qualification-helper review also ensures a no-flag packaged launch expects
+OpenGL when the packaged project explicitly saves OpenGL. It must not confuse
+Automatic's native preference with permission to override an authored request.
+The explicit-Automatic package case remains separate and expects native Metal.

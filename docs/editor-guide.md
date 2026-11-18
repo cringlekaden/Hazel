@@ -9,7 +9,7 @@
 
 Use [Project Settings backend selection](backend-selection.md) to save a request, inspect active capabilities and see restart requirements. Native and CI qualification are reported separately.
 
-OpenGL remains the default until the current native qualification completes. An explicit Automatic request selects OpenGL on Windows/Linux and available native Metal 4 on supported Apple Silicon/macOS configurations. On `feature/3d-foundations`, Apple Silicon
+The default Automatic request selects OpenGL on Windows/Linux and available native Metal 4 on supported Apple Silicon/macOS configurations. On `feature/3d-foundations`, Apple Silicon
 macOS builds can request available native Metal 4 through Automatic; `--metal` and `--opengl` explicitly override the project request
 before window creation. Build and stage the offline shader packages using the
 [Metal development instructions](development.md#experimental-metal-shader-resources).

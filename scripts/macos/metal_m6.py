@@ -24,7 +24,8 @@ SCENES = {
 }
 
 
-def products(configuration, output):
+def products(configuration, output, backends=('opengl', 'metal', 'automatic', 'default')):
+    import yaml
     from macos.metal_shaders import produce
     shaders = output/'shaders'
     # Reuse build artifacts only through the producer's source/toolchain/hash checks.
@@ -38,8 +39,9 @@ def products(configuration, output):
     results = {}
     for scene, (example, descriptor) in SCENES.items():
         project = snapshot(example, output/'projects'/scene, descriptor)
+        saved_backend=yaml.safe_load(project.read_text())['Project'].get('Rendering',{}).get('Backend','Automatic')
         for app in ('Hazelnut', 'Nutella'):
-            for backend in ('opengl', 'metal', 'automatic'):
+            for backend in backends:
                 key = f'{app}-{scene}-{backend}'
                 folder = output/key;folder.mkdir()
                 native_console(folder/'console-before.json')
@@ -50,7 +52,8 @@ def products(configuration, output):
                            HAZEL_METAL_TRACE='1', MTL_DEBUG_LAYER='1', MTL_SHADER_VALIDATION='1')
                 command = [hz.binaries(configuration)/app/app, '--smoke-test', '--project', project]
                 if app == 'Hazelnut':command += ['--no-restore']
-                command += ['--automatic' if backend == 'automatic' else '--metal' if backend == 'metal' else '--opengl']
+                if backend != 'default':
+                    command += ['--'+backend]
                 (folder/'command.json').write_text(json.dumps(list(map(str, command)), indent=2))
                 with (folder/'run.log').open('w') as log:
                     start = time.monotonic()
@@ -67,9 +70,12 @@ def products(configuration, output):
                 text = (folder/'run.log').read_text(errors='replace')
                 if process.returncode or 'SMOKE PASS: application teardown completed' not in text:
                     raise RuntimeError('Product failed: '+str(folder/'run.log'))
-                result = native_result(text, imgui=app=='Hazelnut') if backend!='opengl' else {'status': 'PASS'}
-                if backend == 'automatic' and 'active Metal 4 (selected before window initialization)' not in text:
+                metal=backend in ('metal','automatic') or (backend=='default' and saved_backend!='OpenGL')
+                result = native_result(text, imgui=app=='Hazelnut') if metal else {'status': 'PASS'}
+                if backend in ('automatic', 'default') and metal and 'active Metal 4 (selected before window initialization)' not in text:
                     raise RuntimeError('Automatic did not resolve native Metal before window initialization: '+key)
+                if backend=='default' and not metal and 'active OpenGL (selected before window initialization)' not in text:
+                    raise RuntimeError('Default ignored the saved OpenGL request: '+key)
                 result.update(wallSeconds=time.monotonic()-start, readyObservedSeconds=ready,
                               startupBoundary='Process spawn to ready log observed at 20ms polling; not first presentation')
                 results[key] = result
@@ -90,7 +96,7 @@ def packages(output):
         package('all', project, folder)
         # Qualify the unchanged, signed actual products before disposable probes.
         qualify(folder, 'native', logs=folder/'qualification')
-        results[scene] = {'status': 'PASS', 'backends': ['opengl', 'metal'],
+        results[scene] = {'status': 'PASS', 'backends': ['opengl', 'metal', 'automatic', 'default'],
                           'products': ['Hazelnut', 'Nutella']}
         (output/'results.json').write_text(json.dumps(results, indent=2)+'\n')
 
@@ -99,14 +105,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', choices=('Debug', 'Release'), default='Release')
     parser.add_argument('--only', choices=('products', 'packages'), required=True)
+    parser.add_argument('--backend', choices=('opengl', 'metal', 'automatic', 'default'), action='append', help='Focused product selection; omitted runs the complete matrix')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     if any(output.iterdir()):raise RuntimeError('Use a fresh evidence directory')
     if args.only == 'packages' and args.config != 'Release':raise RuntimeError('Deployment bundles are Release only')
+    if args.only == 'packages' and args.backend:raise RuntimeError('--backend selects products only; packages retain their complete matrix')
     hz.yaml_tools()
-    if args.only == 'products':products(args.config, output)
+    if args.only == 'products':products(args.config, output, tuple(dict.fromkeys(args.backend)) if args.backend else ('opengl', 'metal', 'automatic', 'default'))
     else:packages(output)
     print('PASS M6 '+args.only+' subset; other M6 gates remain separate')
 

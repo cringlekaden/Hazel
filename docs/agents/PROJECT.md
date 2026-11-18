@@ -39,8 +39,11 @@ The 2D/editor base includes scene authoring, C# scripting, physics, asset/export
 The default-backend milestone starts at `93d39bd6d71b090a3a931f1a457a9df27347c91c`.
 See `docs/design/metal-default-qualification.md` for current source/evidence, rather
 than treating the M1 snapshot above as current integration status. Backend
-selection/settings/capability and measured cleanup work are implemented, but native
-presentation/package continuation requires an unlocked GUI session. OpenGL remains
-`DefaultRendererBackend`; explicit Automatic/Metal/OpenGL requests are supported.
-M6 candidate CI has hosted macOS PASS, Windows exact unlit picking/depth FAIL and
-Linux exact unlit picking/depth FAIL. No automatic-default qualification, merge, release or XeGTAO follows.
+selection/settings/capability and measured cleanup work are implemented. The unlocked
+Apple M4/macOS 27.3 native matrix and source-free packages pass. Automatic is now
+the default request after those gates; Debug/Release builds and policy checks plus Debug save/restart PASS. Native
+no-flag launch/capture continuation is blocked by a newly locked GUI session. M6 candidate CI completed with hosted macOS PASS and
+Windows/Linux exact depth FAIL. The packed D24S8 correction is under new candidate
+CI run 44297371674 at a6f22f23; Windows now FAILs unlit HDR color (0.799994 vs 0.8 at 1e-6);
+no final-platform PASS is inferred. No merge, release
+or XeGTAO follows. See the qualification record for current candidate updates.
