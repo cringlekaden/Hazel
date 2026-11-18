@@ -28,6 +28,18 @@ void MetalDevice::FailNextStartup(MetalStartupFailure point) { s_Failure=point; 
 void MetalDevice::CheckStartupFailure(MetalStartupFailure point) {
     if(s_Failure==point) { s_Failure=MetalStartupFailure::None; throw std::runtime_error("Injected Metal startup failure"); }
 }
+std::string MetalDevice::AvailabilityReason() {
+#if defined(__arm64__) || defined(__aarch64__)
+    if (__builtin_available(macOS 27.0, *)) {} else return "Requires macOS 27 or newer";
+    auto pool = NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
+    auto device = NS::TransferPtr(MTL::CreateSystemDefaultDevice());
+    if (!device) return "No native Metal device found";
+    if (!device->supportsFamily(MTL::GPUFamilyMetal4)) return "Device does not support Metal 4";
+    return {};
+#else
+    return "Requires Apple Silicon";
+#endif
+}
 MetalDevice::MetalDevice() {
     m_Trace = std::getenv("HAZEL_METAL_TRACE") != nullptr;
     auto pool=NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
@@ -63,6 +75,7 @@ MetalDevice::~MetalDevice() {
     m_Queue->removeResidencySet(m_Residency.get());
     m_Residency->removeAllAllocations(); m_Residency->commit();
     for(auto& f:m_Frames) { f=Frame{}; }
+    m_DepthStates = {};
     m_Gate.reset(); m_Completed.reset(); m_Commands.reset(); m_Residency.reset(); m_Queue.reset(); m_Device.reset();
     std::lock_guard<std::mutex> lock(m_Observer->Mutex);
     m_Observer->Value.ResourceBytes=0; m_Observer->Value.AllocatorBytes=0;

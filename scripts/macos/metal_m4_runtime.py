@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--config',choices=('Debug','Release'),required=True)
     parser.add_argument('--resources',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--matched-formats',action='store_true',help='Diagnostic FP32 display targets on both backends; ordinary application formats unchanged')
     args=parser.parse_args()
     output=args.output.resolve();output.mkdir(parents=True,exist_ok=True)
     if any(output.iterdir()):raise RuntimeError('Use a fresh evidence directory')
@@ -46,9 +47,11 @@ def main():
         'startupCachePolicy':'New application-private profile per backend; OS filesystem and driver caches are uncontrolled. One startup observation per process.',
         'inputSHA256':{str(p.relative_to(hz.ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((hz.ROOT/'examples/RenderingReference').rglob('*')) if p.is_file() and 'Intermediates' not in p.parts and 'Binaries' not in p.parts},
         'backends':{}}
+    result['displayFormat'] = 'RGBA32F both backends (diagnostic)' if args.matched_formats else 'RGBA16F OpenGL / RGBA32F Metal (production)'
+    result['depthFormat'] = 'OpenGL Depth24Stencil8 / Metal Depth32F; GPU timing boundaries still differ'
     for backend in ('opengl','metal'):
         folder=output/backend;folder.mkdir()
-        command=[hz.binaries(args.config)/'MetalM1Smoke/MetalM1Smoke',folder,'--benchmark-'+backend,args.resources.resolve()]
+        command=[hz.binaries(args.config)/'MetalM1Smoke/MetalM1Smoke',folder,'--benchmark-'+backend+('-fp32' if args.matched_formats and backend=='opengl' else ''),args.resources.resolve()]
         (folder/'command.json').write_text(json.dumps(list(map(str,command)),indent=2))
         rss=[]
         with (folder/'run.log').open('w') as log:

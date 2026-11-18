@@ -5,10 +5,12 @@
 ![Hazelnut editing The Last Lightkeeper](images/hazelnut-lightkeeper.png)
 *The title menu is scene content: select a button in Hierarchy, edit its Rect in Properties and open shared styles from Content Browser. [Full resolution](images/hazelnut-lightkeeper.png). Linux capture.*
 
-## Experimental Metal editor
+## Metal editor and backend selection
 
-OpenGL is the default on every platform. On `feature/3d-foundations`, Apple Silicon
-macOS builds can explicitly select the experimental Metal 4 editor with `--metal`
+Use [Project Settings backend selection](backend-selection.md) to save a request, inspect active capabilities and see restart requirements. Native and CI qualification are reported separately.
+
+OpenGL remains the default until the current native qualification completes. An explicit Automatic request selects OpenGL on Windows/Linux and available native Metal 4 on supported Apple Silicon/macOS configurations. On `feature/3d-foundations`, Apple Silicon
+macOS builds can request available native Metal 4 through Automatic; `--metal` and `--opengl` explicitly override the project request
 before window creation. Build and stage the offline shader packages using the
 [Metal development instructions](development.md#experimental-metal-shader-resources).
 The editor integration has **M5 PASS — Apple M4 local qualification** in Debug and

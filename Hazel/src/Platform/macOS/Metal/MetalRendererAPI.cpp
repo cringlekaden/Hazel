@@ -9,15 +9,19 @@
 namespace Hazel {
 namespace { [[noreturn]] void Unavailable() { throw std::logic_error("Operation unavailable in the Metal 4 Renderer2D runtime"); } }
 MetalRendererAPI::MetalRendererAPI():m_Device(std::make_shared<MetalDevice>()) {
+    m_Caps.Metal=true; m_Caps.Compute=true;
+    m_Caps.LimitsSource="Metal 4 family guarantees capped by Hazel binding/attachment contracts; sample count queried on active device";
+    m_Caps.ShaderLoading="Offline Metal libraries (required); no runtime developer shader compiler";
+    m_Caps.TargetFormats="RGBA32F HDR / R32Sint ID / Depth32F; one sample, <=4096 per axis / <=8M pixels";
+    for (uint32_t samples : {1u, 2u, 4u, 8u, 16u})
+        if (m_Device->NativeDevice()->supportsTextureSampleCount(samples)) m_Caps.MaxSamples=samples;
+    m_Caps.MaxColorSamples=m_Caps.MaxIntegerSamples=m_Caps.MaxDepthSamples=1;
     m_Caps.MaxUniformBindings=8; m_Caps.MaxUniformBlockBytes=16384; m_Caps.MaxVertexAttributes=16; m_Caps.MaxTextureBindings=32; m_Caps.MaxCubeSize=16384;
-    m_Caps.MaxTextureSlots=32; m_Caps.MaxTextureSize=16384; m_Caps.MaxColorAttachments=2; m_Caps.MaxDrawBuffers=2; m_Caps.Vendor="Apple"; m_Caps.Device=m_Device->NativeDevice()->name()->utf8String(); m_Caps.Driver="Metal 4";
+    m_Caps.MaxTextureSlots=32; m_Caps.MaxTextureSize=16384; m_Caps.MaxColorAttachments=2; m_Caps.MaxDrawBuffers=2; m_Caps.Vendor="Apple"; m_Caps.Device=m_Device->NativeDevice()->name()->utf8String(); m_Caps.Driver=std::string("Metal 4 / ")+NS::ProcessInfo::processInfo()->operatingSystemVersionString()->utf8String();
 }
 MetalRendererAPI::~MetalRendererAPI() { Shutdown(); }
 void MetalRendererAPI::Init(const RendererSettings& settings) {
-    m_Resolution.Requested=settings; m_Resolution.Effective=settings;
-    m_Resolution.Effective.TextureSlots=std::max(2u, std::min(settings.TextureSlots, 32u)); m_Resolution.Effective.PreferShaderBinaries=false;
-    m_Resolution.TextureReason="Metal Renderer2D: tier-2 texture table; requested batch slot limit";
-    m_Resolution.ShaderReason="Offline Metal 4 shader artifacts; Renderer2D/Renderer3D/world/output passes";
+    m_Resolution=RendererPolicy::Resolve(settings,m_Caps);
 }
 void MetalRendererAPI::Shutdown() {
     std::lock_guard<std::mutex> lock(m_ShaderMutex);

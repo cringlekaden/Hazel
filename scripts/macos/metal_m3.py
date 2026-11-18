@@ -4,6 +4,7 @@
 This offscreen gate does not qualify visible presentation or physical UI input.
 """
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 import csv
 import hashlib
 import json
@@ -65,6 +66,7 @@ def main():
     parser.add_argument('--resources', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--build', action='store_true')
+    parser.add_argument('--comparison-workers', type=int, choices=(1,2), default=2, help='Independent CPU comparisons; assertions and fixtures unchanged')
     parser.add_argument('--texture-slots',type=int,choices=(2,4),default=4)
     args = parser.parse_args()
     os.chdir(hz.ROOT)
@@ -90,16 +92,15 @@ def main():
     from macos.metal_m3_lines import qualify
     lines=qualify(output/'metal',output/'opengl/lines')
     (output/'lines-results.json').write_text(json.dumps(lines,indent=2)+'\n')
-    measurements = {}
-    for phase in range(4):
-        measurements['mixed-'+str(phase)] = compare(output/'metal'/f'mixed-metal-{phase}.bin',
-                                                   output/'opengl'/f'mixed-opengl-{phase}.bin')
-    for extent in ('1280x720', '1920x1080'):
-        measurements['runtime-'+extent] = compare(output/'metal'/f'runtime-{extent}.bin',
-                                                  output/'opengl'/f'runtime-{extent}.bin', half_display=True)
-    for extent in ('1280x720','1920x1080'):
-        measurements['runtime-focus-'+extent]=compare(output/'metal'/f'runtime-focus-{extent}.bin',
-                                                       output/'opengl'/f'runtime-focus-{extent}.bin',half_display=True)
+    jobs = [(f'mixed-{phase}', output/'metal'/f'mixed-metal-{phase}.bin',
+             output/'opengl'/f'mixed-opengl-{phase}.bin', False) for phase in range(4)]
+    jobs += [(f'{prefix}-{extent}', output/'metal'/f'{prefix}-{extent}.bin',
+              output/'opengl'/f'{prefix}-{extent}.bin', True)
+             for extent in ('1280x720', '1920x1080') for prefix in ('runtime', 'runtime-focus')]
+    # GPU launches remain serial. Only independent read-only numerical comparisons overlap.
+    with ProcessPoolExecutor(max_workers=args.comparison_workers) as pool:
+        futures = {name: pool.submit(compare, native, gl, half) for name, native, gl, half in jobs}
+        measurements = {name: future.result() for name, future in futures.items()}
     with (output/'metal/runtime-cpu.csv').open() as file:
         samples = list(csv.DictReader(file))
     log = (output/'metal/native.log').read_text()

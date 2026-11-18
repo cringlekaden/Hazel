@@ -415,7 +415,11 @@ public:
             const auto preview=Project::GetActive()->GetAssets()->Texture(sheet.Texture,previewSpec);
             Check(panel.m_Texture==preview && panel.m_Texture!=m_PreviewBeforeReload && panel.m_Texture!=sprite->Texture && sprite->Texture->GetSpecification().Encoding==TextureEncoding::SRGB,"Editor preview reload/encoding identity did not follow its separate ImGui sampling contract");
             const auto texture=reinterpret_cast<ImTextureID>(preview->GetEditorTexture().Handle);
-            bool visible=false;auto* draw=ImGui::GetDrawData();
+            // A supported detached sprite panel owns separate finalized draw data.
+            // Its texture must be visible in that panel's viewport, not necessarily main.
+            auto* previewWindow=ImGui::FindWindowByName("Sprite Sheet: inspector.hsprites###Sprite Sheet");
+            Check(previewWindow && previewWindow->Active,"Reloaded sprite panel is not active");
+            bool visible=false;auto* draw=previewWindow->Viewport->DrawData;
             for(int list=0;draw && list<draw->CmdListsCount;++list)
                 for(const auto& command:draw->CmdLists[list]->CmdBuffer)
                     if(command.TextureId==texture)visible=true;
@@ -448,6 +452,18 @@ public:
                 image<<"P6\n"<<width<<" "<<height<<"\n255\n";
                 for(int y=height-1;y>=0;--y)image.write(reinterpret_cast<const char*>(pixels.data()+static_cast<size_t>(y)*width*3),width*3);
                 Check(bool(image),"Editor screenshot write failed");
+            }
+            if(!visible) {
+                const auto* window=ImGui::FindWindowByName("Sprite Sheet: inspector.hsprites###Sprite Sheet");
+                std::cerr<<"Sprite preview draw evidence: expected texture="<<texture<<" main="<<ImGui::GetMainViewport()->ID;
+                if(window)std::cerr<<" panel viewport="<<window->Viewport->ID<<" pos="<<window->Pos.x<<','<<window->Pos.y<<" size="<<window->Size.x<<','<<window->Size.y<<" hidden="<<window->Hidden<<" collapsed="<<window->Collapsed;
+                std::cerr<<'\n';
+                for(const auto* viewport:ImGui::GetPlatformIO().Viewports) {
+                    const auto* data=viewport->DrawData;bool found=false;
+                    for(int list=0;data && list<data->CmdListsCount;++list)
+                        for(const auto& command:data->CmdLists[list]->CmdBuffer)found|=command.TextureId==texture;
+                    std::cerr<<"Viewport "<<viewport->ID<<" draw lists="<<(data?data->CmdListsCount:0)<<" expected texture present="<<found<<'\n';
+                }
             }
             Check(visible,"Sprite preview retained a stale texture after asset reload");
             m_ImportPhase=1;break;
@@ -522,12 +538,25 @@ private:
         Application::Get().OnEvent(restored);
         std::cout<<"PASS: main-thread Console/tool polling continues while minimized without advancing scene/render frames\n";
     }
+    bool DrawBackendSettingsCapture() {
+        const char* mode=std::getenv("HAZEL_BACKEND_CAPTURE");
+        if(!mode)return false;
+        m_Editor.m_ActionError.clear();ImGui::ClosePopupsOverWindow(nullptr,false);
+        const auto origin=ImGui::GetMainViewport()->Pos;
+        ImGui::SetNextWindowPos({origin.x+10,origin.y+40});ImGui::SetNextWindowSize({1260,1050});
+        ImGui::Begin("Project Settings - Rendering",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking);
+        ImGui::GetStateStorage()->SetInt(ImGui::GetID("Runtime rendering"),1);
+        if(std::string(mode)=="restart")
+            m_Editor.m_Authoring->m_RenderingDraft.Backend=DefaultRendererBackend==RendererBackend::OpenGL ? RendererBackend::Automatic : RendererBackend::OpenGL;
+        m_Editor.m_Authoring->ProjectRendering();ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());ImGui::End();
+        return true;
+    }
     void OnImGuiRender() override {
 #ifdef HZ_PLATFORM_MACOS
         if(m_CaptureTicks==10 && std::getenv("HAZEL_EDITOR_CAPTURE") && MetalEditorTest() && !m_NativeCapture)
             m_NativeCapture=static_cast<MetalRendererAPI&>(RenderCommand::Backend()).CaptureEditorFrameForTesting();
 #endif
-        if(m_CaptureTicks)return;
+        if(m_CaptureTicks) { DrawBackendSettingsCapture(); return; }
         if(m_ImportPhase){DrawImportWorkflow();return;}
         if(m_Frame==7) {
             auto& editor=m_Editor;auto* viewport=ImGui::FindWindowByName("Viewport");
@@ -562,6 +591,7 @@ private:
         }
         if(m_Frame==13)NativeFoundationSettingsUI();
         if(m_Frame!=13&&!(m_Frame==16&&std::getenv("HAZEL_EDITOR_CAPTURE")&&!std::getenv("HAZEL_CONSOLE_CAPTURE")))return;
+        if(DrawBackendSettingsCapture())return;
         if(std::getenv("HAZEL_HIERARCHY_CAPTURE")) {
             m_Editor.m_ActionError.clear();ImGui::ClosePopupsOverWindow(nullptr,false);
             if(!m_HierarchyCapture) {
@@ -1235,6 +1265,11 @@ private:
         e.OnSceneStop();Check(window.IsVSync()==a.m_Preferences.VSync && e.m_EditorScene==scene && a.SceneText()==text,"Stop did not restore editor interval/authored content");
         Check(e.OnSceneSimulate(true) && !window.IsVSync(),"Simulate did not use runtime interval");e.OnSceneStop();
         Check(window.IsVSync()==a.m_Preferences.VSync,"Simulation Stop lost editor interval");
+        auto backendRequest=runtime;backendRequest.Backend=RendererBackend::Automatic;
+        const auto activeAPI=Renderer::GetAPI();
+        Check(a.SaveRenderingRequests(backendRequest) && Project::LoadCandidate(e.m_ProjectPath)->GetRendererRequests().Backend==RendererBackend::Automatic &&
+              !a.RenderingRestartReason().empty() && Renderer::GetAPI()==activeAPI,
+              "Backend request did not save/reload with restart pending and the original device retained");
         Check(a.SaveRenderingRequests(previous),"Renderer fixture restoration failed");a.m_ProjectName=form;
         std::cout<<"PASS: production renderer-only save, unchanged content/general draft, conflict retention, shared pending/apply-time rejection, Play/Simulate interval and Stop restoration\n";
     }
@@ -1692,7 +1727,8 @@ int main(int argc, char** argv) {
             if(MetalEditorTest() && std::getenv("HAZEL_EDITOR_CAPTURE"))static_cast<MetalRendererAPI&>(RenderCommand::Backend()).EnableEditorReadbackForTesting();
 #endif
             if(std::getenv("HAZEL_EDITOR_CAPTURE"))
-                glfwSetWindowSize(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()),1024,640);
+                glfwSetWindowSize(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()),
+                                  std::getenv("HAZEL_BACKEND_CAPTURE")?1280:1024,std::getenv("HAZEL_BACKEND_CAPTURE")?1100:640);
             if(!MetalEditorTest()){glfwHideWindow(static_cast<GLFWwindow*>(application.GetWindow().GetNativeWindow()));
             std::cout << "Renderer: " << glGetString(GL_RENDERER) << "; Version: " << glGetString(GL_VERSION) << '\n';}
             auto editor = CreateScope<EditorLayer>(console.Model); auto* observer = editor.get();

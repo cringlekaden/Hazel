@@ -932,10 +932,11 @@ void AuthoringPanel::Preferences()
     EditorRendering();
     auto &caps = Renderer::GetCapabilities();
     if (ImGui::CollapsingHeader("Detected renderer (read-only)",ImGuiTreeNodeFlags_DefaultOpen)) {
-        PropertyUI::ReadOnly("api","Graphics API",Renderer::GetAPI()==RendererAPI::API::OpenGL?"OpenGL":"Unavailable");
+        PropertyUI::ReadOnly("api","Graphics API",Renderer::GetAPI()==RendererAPI::API::OpenGL?"OpenGL":"Metal 4");
         PropertyUI::ReadOnly("driver","API version / driver",caps.Driver.c_str());
         PropertyUI::ReadOnly("vendor", "Vendor", caps.Vendor.c_str());
         PropertyUI::ReadOnly("device", "Device", caps.Device.c_str());
+        ImGui::TextWrapped("Limits source: %s", caps.LimitsSource.c_str());
         PropertyUI::ReadOnly("slots", "Texture slots", std::to_string(caps.MaxTextureSlots).c_str());
         PropertyUI::ReadOnly("texture-size", "Maximum texture size",
                              std::to_string(caps.MaxTextureSize).c_str());
@@ -943,8 +944,8 @@ void AuthoringPanel::Preferences()
         PropertyUI::ReadOnly("color-attachments","Color attachments",std::to_string(caps.MaxColorAttachments).c_str());
         PropertyUI::ReadOnly("draw-buffers","Draw buffers",std::to_string(caps.MaxDrawBuffers).c_str());
         PropertyUI::ReadOnly("samples","Device sample limit",std::to_string(caps.MaxSamples).c_str());
-        PropertyUI::ReadOnly("shader-binaries","Shader binaries",caps.ShaderBinaries?"Supported":"Unavailable");
-        PropertyUI::ReadOnly("debug-output","Debug output",caps.DebugOutput?"Supported":"Unavailable");
+        PropertyUI::ReadOnly("shader-binaries","GL SPIR-V specialization",caps.ShaderBinaries?"Supported":"Unavailable");
+        PropertyUI::ReadOnly("debug-output","GL debug callback",caps.DebugOutput?"Supported":"Unavailable");
         PropertyUI::ReadOnly("line-range","Line width range",(std::to_string(caps.MinLineWidth)+" to "+std::to_string(caps.MaxLineWidth)).c_str());
         if(ImGui::Button("Copy device report"))CopyDeviceReport();
         ImGui::TextWrapped("Device facts do not enable MSAA or change project settings. This editor's target remains single-sampled.");

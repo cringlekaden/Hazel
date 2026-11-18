@@ -34,6 +34,8 @@ jobs:
         run: python3 scripts/hazel.py setup --config Debug --tests
       - name: Debug CPU/service/managed subset (no GPU claim)
         run: python3 scripts/hazel.py test --config Debug --suite cpu
+      - name: Linux remaining Debug graphics regressions
+        run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test --config Debug --profile software --suite graphics
       - name: Build Release
         run: python3 scripts/hazel.py build --config Release --tests
       - name: Release CPU/service/managed subset (no GPU claim)
@@ -63,6 +65,10 @@ jobs:
           key: nutella-windows2022-${{ hashFiles('scripts/dependencies/build-shader-tools.py', 'scripts/dependencies/shader-workspace.lua', 'scripts/dependencies/generate-shader-inputs.py', 'scripts/dependencies/shader-sources.json', 'scripts/dependencies/shader-tools.json', 'scripts/dependencies/shader-tools-compat.h', 'scripts/internal/toolchain.json') }}
       - name: Setup and build Debug (two jobs)
         run: ./scripts/setup.ps1 --tests
+      - name: Windows fast Debug CPU/policy feedback before Release and packaging
+        run: python scripts/hazel.py test --config Debug --suite cpu
+      - name: Windows remaining Debug graphics, authoring and runtime regressions
+        run: python scripts/hazel.py test --config Debug --profile software --suite graphics
       - name: Build Release (two jobs, after Debug)
         run: python scripts/hazel.py build --config Release --tests
       - name: Cache completed pinned SDKs independently of application tests
@@ -87,8 +93,6 @@ jobs:
         run: python scripts/hazel.py test-packages --profile software
       - name: Verify packaged OpenGL 4.1 path
         run: python scripts/hazel.py test-packages --profile gl41
-      - name: Windows Debug ownership, authoring, rendering and runtime regressions
-        run: python scripts/hazel.py test --config Debug --profile software
       - name: Windows Release regressions
         run: python scripts/hazel.py test --config Release --profile software
       - name: Windows Release OpenGL 4.1 and tutorial authoring
@@ -164,6 +168,8 @@ jobs:
           key: nutella-ubuntu24-gcc13-${{ hashFiles('scripts/dependencies/build-shader-tools.py', 'scripts/dependencies/shader-workspace.lua', 'scripts/dependencies/generate-shader-inputs.py', 'scripts/dependencies/shader-sources.json', 'scripts/dependencies/shader-tools.json', 'scripts/dependencies/shader-tools-compat.h', 'scripts/internal/toolchain.json') }}
       - name: Setup and build Debug (two jobs)
         run: scripts/setup.sh --tests
+      - name: Linux fast Debug CPU/policy feedback before Release and packaging
+        run: python3 scripts/hazel.py test --config Debug --suite cpu
       - name: Build Release (two jobs, after Debug)
         run: python3 scripts/hazel.py build --config Release --tests
       - name: Cache completed pinned SDKs independently of application tests
@@ -181,8 +187,6 @@ jobs:
               python3 scripts/hazel.py script-build "examples/$game/$game.hproj" --config "$configuration"
             done
           done
-      - name: Linux Debug regressions
-        run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test --config Debug --profile software
       - name: Linux Release regressions
         run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test --config Release --profile software
       - name: Linux Release OpenGL 4.1 and tutorial authoring

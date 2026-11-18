@@ -5,11 +5,23 @@
 #include <stdexcept>
 #ifdef HZ_PLATFORM_MACOS
 #include "Platform/macOS/Metal/MetalRendererAPI.h"
+#include "Platform/macOS/Metal/MetalDevice.h"
 #endif
 
 namespace Hazel {
 
     RendererAPI::API RendererAPI::s_API = RendererAPI::API::OpenGL;
+
+    BackendAvailability RendererAPI::GetBackendAvailability() {
+        BackendAvailability result;
+#ifdef HZ_PLATFORM_MACOS
+        result.MetalReason = MetalDevice::AvailabilityReason();
+        result.Metal = result.MetalReason.empty();
+#else
+        result.MetalReason = "Requires native Apple Silicon and macOS 27 or newer";
+#endif
+        return result;
+    }
 
     // Actual upstream factory, retaining Scope and release-mode diagnostics.
     Scope<RendererAPI> RendererAPI::Create()

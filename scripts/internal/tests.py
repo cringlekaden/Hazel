@@ -6,6 +6,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import time
 import urllib.request
 import hazel as hz
 
@@ -36,6 +37,14 @@ def launcher_checks():
         raise RuntimeError('Editor backend/restore arguments were not forwarded before startup')
     if '--metal' not in command(['Nutella','--metal']):raise RuntimeError('Runtime Metal selector was not forwarded')
     if '--metal' in command(['Hazelnut']):raise RuntimeError('Default editor backend changed')
+    for option in ('--opengl', '--automatic'):
+        for system in ('macos','windows','linux'):
+            if option not in command(['Hazelnut',option],system):raise RuntimeError('Backend override was not forwarded: '+option)
+    for options in (['--metal','--opengl'],['--opengl','--automatic'],['--metal','--metal-renderer2d']):
+        try:command(['Nutella',*options])
+        except RuntimeError as error:
+            if 'one backend' not in str(error):raise
+        else:raise RuntimeError('Conflicting backend overrides were accepted')
     for system in ('windows','linux'):
         try:command(['Hazelnut','--metal'],system)
         except RuntimeError as error:
@@ -187,12 +196,21 @@ def software_driver():
 def test(configuration, profile='native', suite='all', only=None):
     if hz.SYSTEM=='macos' and profile!='native':
         raise RuntimeError('macOS qualification requires the native Apple driver; Mesa profiles are not supported')
-    launcher_checks()
+    started = time.monotonic()
+    records=json.loads((hz.ROOT/'scripts/internal/testing/native-tests.json').read_text())
+    names=[r['name'] for r in records if (suite=='all' or (suite=='cpu' and not r['graphics']) or (suite=='graphics' and r['graphics'])) and (not only or r['name'] in only)]
+    if not names:raise RuntimeError('Selected tests are absent from the requested suite')
+    timings = {'configuration': configuration, 'suite': suite, 'selected': names, 'tests': {}, 'products': {}}
+    global_checks = not only and suite != 'graphics'
+    if global_checks:launcher_checks()
+    else:print('NOT EXECUTED: global launcher/SDK/authoring acceptance (focused or graphics partition); full and CPU suites retain these checks', flush=True)
     base=hz.binaries(configuration)
     logs=hz.ROOT/'build/testing/logs';logs.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='hazel tests space-é-') as temporary:
         working=Path(temporary)
-        hz.yaml_tools();sdk_readiness_checks(working,configuration);authoring_checks(working)
+        hz.yaml_tools()
+        if global_checks:
+            sdk_readiness_checks(working,configuration);authoring_checks(working)
         hz.copy_tree(hz.ROOT/'Hazel/Resources',working/'assets')
         if os.environ.get('HAZEL_TEST_METAL_EDITOR'):
             hz.copy_tree(base/'Hazelnut/Resources/shaders/metal',working/'assets/shaders/metal')
@@ -202,7 +220,7 @@ def test(configuration, profile='native', suite='all', only=None):
         typography_inputs(working)
         hz.copy_tree(hz.ROOT/'tests/fixtures/AuthoringProject',working/'AuthoringProject')
         hz.copy_changed(base/'MigrationManagedFixture/MigrationManagedFixture.dll',working/'AuthoringProject/Assets/Scripts/Binaries/Regression.dll')
-        if hz.SYSTEM=='macos' and suite=='all':
+        if hz.SYSTEM=='macos' and 'EditorSmoke' in names:
             # Test the committed tutorial, never an owner's in-progress project.
             from internal.testing.projects import snapshot
             tutorial=snapshot('Sandbox',working/'tutorial','Sandbox.hproj')
@@ -220,22 +238,21 @@ def test(configuration, profile='native', suite='all', only=None):
         env['HAZEL_SAVE_ROOT']=str(working/'saves')
         if hz.SYSTEM=='macos':
             env['DYLD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
-            if suite=='all':env['HAZEL_FINAL_UI_PROJECT']=str(tutorial)
+            if 'EditorSmoke' in names:env['HAZEL_FINAL_UI_PROJECT']=str(tutorial)
         if hz.SYSTEM=='linux':env['LD_LIBRARY_PATH']=str(hz.mono_prefix()/'lib')
         private=working/'executables';private.mkdir()
-        if hz.SYSTEM=='windows' and profile in ('software','gl41'):
+        if hz.SYSTEM=='windows' and profile in ('software','gl41') and any(r['graphics'] and r['name'] in names for r in records):
             for dll in software_driver().glob('*.dll'): hz.copy_changed(dll,private/dll.name)
             env.update(GALLIUM_DRIVER='llvmpipe',LP_NUM_THREADS='2',MESA_SHADER_CACHE_DIR=str(working/'mesa-cache'))
-        records=json.loads((hz.ROOT/'scripts/internal/testing/native-tests.json').read_text())
-        names=[r['name'] for r in records if (suite=='all' or not r['graphics']) and (not only or r['name'] in only)]
-        if not names:raise RuntimeError('Selected tests are absent from the requested suite')
         if 'SceneFoundationSmoke' in names:
             from internal.import_checks import reference_imports
             reference_imports(configuration, working, env)
         if 'RuntimeSessionSmoke' in names or 'Renderer2DSmoke' in names:
             showcase=snapshot('RenderingShowcase',working/'rendering-showcase','RenderingShowcase.hproj')
             env['HAZEL_RENDERING_SHOWCASE_PROJECT']=str(showcase)
+        timings['setupSeconds'] = time.monotonic()-started
         for name in names:
+            test_started = time.monotonic()
             target='Migration'+name;suffix='.exe' if hz.SYSTEM=='windows' else ''
             executable=base/target/(target+suffix)
             if not executable.is_file():raise RuntimeError('Missing '+target+'; run build --tests first')
@@ -254,6 +271,9 @@ def test(configuration, profile='native', suite='all', only=None):
                 # its unoptimized Debug run on Grandpa exceeds the old 240s cap.
                 limit=600 if name=='EditorSmoke' and (configuration=='Debug' or env.get('HAZEL_TEST_METAL_EDITOR')) else 240
                 result=subprocess.run(list(map(str,command)),cwd=working,env=env,stdout=out,stderr=subprocess.STDOUT,timeout=limit)
+            timings['tests'][name] = {'seconds': time.monotonic()-test_started, 'returncode': result.returncode}
+            timings['wallSeconds'] = time.monotonic()-started
+            (logs/f'{hz.SYSTEM}-{configuration}-{profile}-timings.json').write_text(json.dumps(timings, indent=2)+'\n')
             if result.returncode:
                 print(log.read_text(errors='replace'));raise RuntimeError(f'{name} failed ({result.returncode}); log: {log}')
             evidence=log.read_text(errors='replace')
@@ -270,8 +290,10 @@ def test(configuration, profile='native', suite='all', only=None):
                     descriptor=reference if case=='Orthographic' else reference.parent/'RenderingReference-Perspective.hproj'
                     product_env=env.copy();product_env['HAZEL_DATA']=str(working/'data'/('ReferencePlayer-'+case))
                     product_log=logs/f'{hz.SYSTEM}-{configuration}-{profile}-RenderingReference-{case}-Player.log'
+                    product_started=time.monotonic()
                     with product_log.open('w',encoding='utf-8') as out:
-                        product=subprocess.run(list(map(str,[player,'--smoke-test','--project',descriptor])),cwd=working,env=product_env,stdout=out,stderr=subprocess.STDOUT,timeout=120)
+                        product=subprocess.run(list(map(str,[player,'--smoke-test','--opengl','--project',descriptor])),cwd=working,env=product_env,stdout=out,stderr=subprocess.STDOUT,timeout=120)
+                    timings['products'][case]={'seconds':time.monotonic()-product_started,'returncode':product.returncode}
                     product_text=product_log.read_text(errors='replace')
                     if product.returncode or 'SMOKE: 60 rendered frames' not in product_text or 'SMOKE PASS: application teardown completed' not in product_text:
                         raise RuntimeError('Rendering Reference content-only player failed: '+str(product_log)+'\n'+product_text)
@@ -280,6 +302,8 @@ def test(configuration, profile='native', suite='all', only=None):
                 tutorial='PASS: native tutorial Inspector, composed creation/duplicate/delete/property undo, prefab instantiate, save/reopen and repeated Play/Stop in a private project'
                 if tutorial not in evidence:raise RuntimeError('Selected tutorial authoring did not execute: '+str(log))
                 print(tutorial,flush=True)
+        timings['wallSeconds']=time.monotonic()-started
+        (logs/f'{hz.SYSTEM}-{configuration}-{profile}-timings.json').write_text(json.dumps(timings, indent=2)+'\n')
         print(f'PASS: {configuration} {profile} {suite}, {len(names)} sequential regression executables')
         if suite=='cpu':print('NOT EXECUTED: graphics, native editor authoring and application/package desktop acceptance (CPU subset selected)',flush=True)
         if only:print('NOT EXECUTED: unselected regression executables (--only selected)',flush=True)

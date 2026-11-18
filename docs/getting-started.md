@@ -18,7 +18,7 @@ For an existing checkout missing submodules, use `git submodule update --init --
 ### Test the 3D / Metal development branch
 
 Master and the development branch have separate evidence. To reproduce this
-branch's 3D/PBR/IBL and opt-in Metal work in a new directory:
+branch's 3D/PBR/IBL and Metal work in a new directory:
 
 ```sh
 git clone --branch feature/3d-foundations --recurse-submodules https://github.com/cringlekaden/Hazel.git Hazel-3D
@@ -28,7 +28,7 @@ python3 scripts/hazel.py setup --config Debug --tests
 
 Use the platform-specific Python/setup spelling below on Windows. See
 [Metal commands](development.md#experimental-metal-shader-resources) and the
-[M6 qualification record](design/metal-m6.md) before treating this branch as
+[current backend selection and qualification](backend-selection.md) before treating this branch as
 production qualified. The master badge does not certify it.
 
 ## Prerequisites installed by you

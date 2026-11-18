@@ -1,11 +1,24 @@
 #pragma once
 #include "RendererCapabilities.h"
+#include <optional>
 
 namespace Hazel {
+    enum class RendererBackend { Automatic, OpenGL, Metal };
+    // Hold the published default until the native default-backend acceptance
+    // gates in docs/design/metal-default-qualification.md pass. Explicit
+    // Automatic still exercises the portable selection policy.
+    inline constexpr RendererBackend DefaultRendererBackend = RendererBackend::OpenGL;
+    struct BackendAvailability {
+        bool Metal = false;
+        std::string MetalReason;
+        // OpenGL needs a current context to query actual device support.
+        std::string OpenGLReason = "Built for OpenGL 4.1; device support checked at startup";
+    };
     enum class ShaderLoadingRequest { Automatic, GLSLCompatibility };
     enum class DebugOutputRequest { Automatic, Disabled, Enabled };
     // Portable game requests only. Device facts and editor diagnostics never travel here.
     struct RuntimeRendererRequests {
+        RendererBackend Backend = DefaultRendererBackend;
         bool VSync = true;
         uint32_t TextureSlots = 32; // Includes the white slot.
         ShaderLoadingRequest ShaderLoading = ShaderLoadingRequest::Automatic;
@@ -15,6 +28,10 @@ namespace Hazel {
         std::string TextureReason, ShaderReason, DebugReason;
     };
     namespace RendererPolicy {
+        const char* BackendName(RendererBackend backend);
+        RendererBackend ParseBackend(const std::string& value);
+        RendererBackend SelectBackend(RendererBackend project, const std::optional<RendererBackend>& cli,
+                                      const BackendAvailability& availability);
         void Validate(const RuntimeRendererRequests &requests);
         RendererSettings Settings(const RuntimeRendererRequests &requests,
                                   DebugOutputRequest debug = DebugOutputRequest::Automatic);
@@ -23,7 +40,8 @@ namespace Hazel {
                                    const RendererCapabilities &caps);
         std::string RestartReason(const RuntimeRendererRequests &requests,
                                   const RendererResolution &current,
-                                  const RendererCapabilities &caps);
+                                  const RendererCapabilities &caps,
+                                  RendererBackend launched = DefaultRendererBackend);
         const char *ShaderPath(bool binaries);
         const char *DebugName(DebugOutputRequest request);
         DebugOutputRequest ParseDebug(const std::string &value);

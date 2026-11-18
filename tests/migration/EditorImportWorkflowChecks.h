@@ -55,6 +55,17 @@ void ImportWorkflowUpdate()
     {
         if (owner.m_Tools.Busy())
             return;
+        if(!owner.m_Report.Success || owner.m_Report.Request.NativeExecutable.empty()) {
+            const auto* window=ImGui::FindWindowByName("Import GLB");
+            std::cerr<<"Native import activation evidence: report="<<owner.m_Report.Request.Label
+                     <<" request="<<owner.m_Tools.Request().Label<<" import error="<<owner.m_ImportError
+                     <<" action error="<<m_Editor.m_ActionError<<" edit available="<<bool(owner.Availability(EditorAction::EditAsset))
+                     <<" start available="<<bool(owner.Availability(EditorAction::StartTool));
+            if(window)std::cerr<<" window="<<window->Pos.x<<','<<window->Pos.y<<'/'<<window->Size.x<<','<<window->Size.y
+                              <<" scroll="<<window->Scroll.y<<'/'<<window->ScrollMax.y<<" hidden="<<window->Hidden
+                              <<" skip="<<window->SkipItems<<" viewport="<<window->Viewport->ID;
+            std::cerr<<'\n';
+        }
         Check(owner.m_Report.Success && !owner.m_Report.Request.NativeExecutable.empty(),
               "Native import form failed: " + owner.m_Report.Output);
         Check(!owner.m_Report.Python, "Native import incorrectly required Python");

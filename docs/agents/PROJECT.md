@@ -32,3 +32,15 @@ The 2D/editor base includes scene authoring, C# scripting, physics, asset/export
 ## Sources to read next (only as relevant)
 
 `README.md`, `docs/design/metal-m1.md`, `docs/design/macos-port.md`, `docs/design/ibl-view-dependent-investigation.md`, `docs/design/ibl-ab-compression-experiment.md`, and targeted `tests/migration/` fixtures. Do **not** reread the full project history for routine changes.
+
+
+## Current follow-up to M6
+
+The default-backend milestone starts at `93d39bd6d71b090a3a931f1a457a9df27347c91c`.
+See `docs/design/metal-default-qualification.md` for current source/evidence, rather
+than treating the M1 snapshot above as current integration status. Backend
+selection/settings/capability and measured cleanup work are implemented, but native
+presentation/package continuation requires an unlocked GUI session. OpenGL remains
+`DefaultRendererBackend`; explicit Automatic/Metal/OpenGL requests are supported.
+M6 candidate CI has hosted macOS PASS, Windows exact unlit picking/depth FAIL and
+Linux exact unlit picking/depth FAIL. No automatic-default qualification, merge, release or XeGTAO follows.

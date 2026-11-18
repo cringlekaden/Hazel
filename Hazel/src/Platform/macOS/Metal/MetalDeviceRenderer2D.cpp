@@ -127,6 +127,24 @@ NS::SharedPtr<MTL::Buffer> MetalDevice::AcquireRenderer2DBuffer(size_t bytes, co
       if (reuse) ++m_Observer->Value.BufferReuses; else ++m_Observer->Value.BufferAllocations; }
     return buffer;
 }
+NS::SharedPtr<MTL::DepthStencilState> MetalDevice::GetDepthState(const RasterState& raster)
+{
+    const auto compare = DepthFunction(raster);
+    const bool write = raster.DepthTest && raster.DepthWrite;
+    const size_t key = (compare == MTL::CompareFunctionLess ? 0 :
+                        compare == MTL::CompareFunctionLessEqual ? 2 : 4) + size_t(write);
+    auto& state = m_DepthStates[key];
+    if (!state) {
+        auto descriptor = NS::TransferPtr(MTL::DepthStencilDescriptor::alloc()->init());
+        descriptor->setDepthCompareFunction(compare);
+        descriptor->setDepthWriteEnabled(write);
+        auto candidate = NS::TransferPtr(m_Device->newDepthStencilState(descriptor.get()));
+        Check(bool(candidate), "Cannot allocate Metal depth state");
+        state = std::move(candidate);
+        if (m_Trace) std::printf("METAL_DEPTH_STATE created=%zu\n", key);
+    }
+    return state;
+}
 void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& quad)
 {
     if (quad->ComputeSource) PrepareRenderer2DFrame(quad->ComputeSource);
@@ -188,11 +206,7 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
                 fragment->setSamplerState(texture->Sampler->gpuResourceID(), binding);
                 if (textures.insert(texture->Texture.get()).second) quad->Residency->addAllocation(texture->Texture.get());
             }
-            auto depth = NS::TransferPtr(MTL::DepthStencilDescriptor::alloc()->init());
-            depth->setDepthCompareFunction(DepthFunction(draw.Raster));
-            depth->setDepthWriteEnabled(draw.Raster.DepthTest && draw.Raster.DepthWrite);
-            draw.DepthState = NS::TransferPtr(m_Device->newDepthStencilState(depth.get()));
-            Check(bool(draw.DepthState), "Cannot allocate indexed draw depth state");
+            draw.DepthState = GetDepthState(draw.Raster);
             quad->Buffers.push_back(std::move(buffer));
             quad->Arguments.push_back(std::move(vertex)); quad->Arguments.push_back(std::move(fragment));
             continue;
@@ -222,11 +236,7 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
             fragment->setTexture(draw.Textures[0]->Texture->gpuResourceID(), 0);
             fragment->setSamplerState(draw.Textures[0]->Sampler->gpuResourceID(), 0);
         }
-        auto depth = NS::TransferPtr(MTL::DepthStencilDescriptor::alloc()->init());
-        depth->setDepthCompareFunction(DepthFunction(draw.Raster));
-        depth->setDepthWriteEnabled(draw.Raster.DepthTest && draw.Raster.DepthWrite);
-        draw.DepthState = NS::TransferPtr(m_Device->newDepthStencilState(depth.get()));
-        Check(bool(draw.DepthState), "Cannot allocate Renderer2D depth state");
+        draw.DepthState = GetDepthState(draw.Raster);
         quad->Buffers.push_back(std::move(buffer));
         quad->Arguments.push_back(std::move(vertex)); quad->Arguments.push_back(std::move(fragment));
     }

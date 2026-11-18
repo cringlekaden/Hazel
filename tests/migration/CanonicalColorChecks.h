@@ -60,7 +60,26 @@ static void CanonicalColorChecks() {
     RenderCommand::SetClearColor({0,0,0,0});RenderCommand::Clear();
     Renderer2D::BeginScene(Camera(glm::mat4(1)),glm::mat4(1));Renderer2D::DrawQuad(glm::mat4(1),{1,0,0,.5f},125);Renderer2D::DrawQuad(glm::mat4(1),{0,0,1,.5f},126);Renderer2D::EndScene();
     glReadPixels(16,16,1,1,GL_RGBA,GL_FLOAT,sample);Check(std::abs(sample[0]-.25f)<.0006f&&std::abs(sample[2]-.5f)<.0006f&&std::abs(sample[3]-.75f)<.0006f,"Linear RGB/coverage source-over vector");
-    linear->Unbind();RenderCommand::SetRasterState(prior);RenderCommand::SetViewport(prior.Viewport.x,prior.Viewport.y,prior.Viewport.z,prior.Viewport.w);
+    linear->Unbind();
+    spec.Attachments={FramebufferTextureFormat::RGBA32F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
+    auto fp32=Framebuffer::Create(spec);fp32->Bind();
+    glDisable(GL_FRAMEBUFFER_SRGB);glDisablei(GL_BLEND,0);
+    RenderCommand::SetClearColor({.5f,.25f,.125f,1});RenderCommand::Clear();fp32->Unbind();
+    fp32->EncodeOutput(output);output->Bind();
+    unsigned char fp32Pixel[4]{};glReadBuffer(GL_COLOR_ATTACHMENT0);glReadPixels(16,16,1,1,GL_RGBA,GL_UNSIGNED_BYTE,fp32Pixel);
+    Check(std::abs(int(fp32Pixel[0])-188)<=1 && std::abs(int(fp32Pixel[1])-137)<=1 &&
+          std::abs(int(fp32Pixel[2])-99)<=1 && fp32Pixel[3]==255,"FP32 display source lost independent IEC output vector");
+    output->Unbind();
+    auto fp32Display=Framebuffer::Create(spec);
+    fp32->Bind();fp32->ClearAttachment(1,321);fp32->Unbind();
+    fp32->CompositeWorldTo(fp32Display,0);fp32Display->Bind();
+    float neutralPixel[4]{};glReadBuffer(GL_COLOR_ATTACHMENT0);glReadPixels(16,16,1,1,GL_RGBA,GL_FLOAT,neutralPixel);
+    // Independent low-radiance Neutral branch: min=.125 >= .08, subtract .04,
+    // max=.46 < .76, so no highlight compression or desaturation applies.
+    Check(std::abs(neutralPixel[0]-.46f)<1e-6f && std::abs(neutralPixel[1]-.21f)<1e-6f &&
+          std::abs(neutralPixel[2]-.085f)<1e-6f && fp32Display->ReadPixel(1,16,16)==321,
+          "FP32 display lost independent Neutral vector or exact integer picking");
+    fp32Display->Unbind();RenderCommand::SetRasterState(prior);RenderCommand::SetViewport(prior.Viewport.x,prior.Viewport.y,prior.Viewport.z,prior.Viewport.w);
     if(priorBlend)glEnablei(GL_BLEND,0);else glDisablei(GL_BLEND,0);if(priorSRGB)glEnable(GL_FRAMEBUFFER_SRGB);else glDisable(GL_FRAMEBUFFER_SRGB);
     std::cout<<"PASS: canonical color CPU vectors, GPU color/data/alpha, linear filtering/mips, alpha overlap, single final encoding and state restoration\n";
 }

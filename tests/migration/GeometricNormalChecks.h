@@ -1,5 +1,6 @@
 #pragma once
 #include "GeometricNormalReference.h"
+#include <iostream>
 #include "Hazel/Math/Math.h"
 #include "Hazel/Scene/SceneSerializer.h"
 static void GeometricNormalChecks()
@@ -124,6 +125,11 @@ static void GeometricNormalChecks()
         NearRGB(flatOutput.Color[i],
                 {transfer(presented.r), transfer(presented.g), transfer(presented.b)}, 2. / 255,
                 "Final encoding introduced an unlit silhouette fringe");
+        if (flatDisplay.IDs[i] != id || flatDisplay.Depth[i] != flatHDR.Depth[i])
+            std::cerr << "Unlit presentation mismatch at " << i % width << ',' << i / width
+                      << ": ID " << id << " -> " << flatDisplay.IDs[i]
+                      << "; depth " << std::hexfloat << flatHDR.Depth[i] << " -> "
+                      << flatDisplay.Depth[i] << std::defaultfloat << '\n';
         Check(flatDisplay.IDs[i] == id && flatDisplay.Depth[i] == flatHDR.Depth[i],
               "Presentation changed unlit picking/depth");
         if (id == occluder && i > width && i + width + 1 < flatHDR.IDs.size())

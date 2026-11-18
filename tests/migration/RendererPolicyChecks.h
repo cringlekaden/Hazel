@@ -7,6 +7,26 @@
 #include "Hazel/Project/RendererRequestsSerializer.h"
 namespace Hazel {
     static void RendererPolicyChecks() {
+        BackendAvailability available;
+        available.Metal = true;
+        BackendAvailability unavailable;
+        unavailable.MetalReason = "Test platform lacks Metal 4";
+        for (const auto& support : {available, unavailable}) {
+            Check(RendererPolicy::SelectBackend(RendererBackend::Automatic, {}, support) ==
+                      (support.Metal ? RendererBackend::Metal : RendererBackend::OpenGL),
+                  "Automatic did not honor platform/device availability");
+            Check(RendererPolicy::SelectBackend(RendererBackend::Metal, RendererBackend::OpenGL, support) == RendererBackend::OpenGL,
+                  "CLI OpenGL did not override project Metal request");
+            Check(RendererPolicy::SelectBackend(RendererBackend::OpenGL, RendererBackend::Automatic, support) ==
+                      (support.Metal ? RendererBackend::Metal : RendererBackend::OpenGL),
+                  "CLI Automatic did not override project OpenGL");
+        }
+        Check(RendererPolicy::SelectBackend(RendererBackend::OpenGL, RendererBackend::Metal, available) == RendererBackend::Metal,
+              "CLI Metal did not override project OpenGL");
+        bool unsupported = false;
+        try { RendererPolicy::SelectBackend(RendererBackend::Metal, {}, unavailable); }
+        catch (const std::exception& e) { unsupported = std::string(e.what()).find("--opengl") != std::string::npos; }
+        Check(unsupported, "Unsupported explicit Metal request silently fell back or lacked a remedy");
         RendererCapabilities caps;
         caps.MaxTextureSlots = 16;
         const auto selected = RendererPolicy::Resolve(
@@ -19,6 +39,7 @@ namespace Hazel {
                   !selected.DebugReason.empty(),
               "4.1/HD4000 policy lost requests, fallback or limitation reasons");
         RuntimeRendererRequests small;
+        small.Backend = RendererBackend::OpenGL;
         small.TextureSlots = 2;
         small.VSync = false;
         small.ShaderLoading = ShaderLoadingRequest::GLSLCompatibility;
@@ -26,7 +47,7 @@ namespace Hazel {
               "Different batch policy did not require restart");
         auto same = small;
         same.TextureSlots = 16;
-        Check(RendererPolicy::RestartReason(same, selected, caps).empty(),
+        Check(RendererPolicy::RestartReason(same, selected, caps, RendererBackend::OpenGL).empty(),
               "Equivalent effective GPU policies required unnecessary recreation");
         caps.MaxTextureSlots = 32;
         caps.ShaderBinaries = true;
@@ -92,7 +113,7 @@ namespace Hazel {
         const auto text = ProjectSerializer(project).SerializeText();
         FileSystem::WriteNewFile(path, text);
         auto loaded = Project::LoadCandidate(path);
-        Check(loaded && loaded->GetRendererRequests().TextureSlots == 2 &&
+        Check(loaded && loaded->GetRendererRequests().Backend == RendererBackend::OpenGL && loaded->GetRendererRequests().TextureSlots == 2 &&
                   !loaded->GetRendererRequests().VSync &&
                   loaded->GetRendererRequests().ShaderLoading ==
                       ShaderLoadingRequest::GLSLCompatibility &&
@@ -106,13 +127,13 @@ namespace Hazel {
         old << legacy;
         FileSystem::WriteNewFile(root / "Legacy.hproj", old.c_str());
         const auto legacyProject = Project::LoadCandidate(root / "Legacy.hproj");
-        Check(legacyProject && !legacyProject->GetConfig().Rendering &&
+        Check(legacyProject && legacyProject->GetRendererRequests().Backend == RendererBackend::OpenGL && !legacyProject->GetConfig().Rendering &&
                   legacyProject->GetRendererRequests().TextureSlots == 32 &&
                   ProjectSerializer(legacyProject).SerializeText().find("Rendering") ==
                       std::string::npos,
               "Reading/saving an unstamped rendering policy invented portable settings");
         for (const auto &broken :
-             {"{Version: 2}", "{Version: 1, HDR: true}", "{Version: 1, TextureSlots: 1}",
+             {"{Version: 1, Backend: Vulkan}", "{Version: 2}", "{Version: 1, HDR: true}", "{Version: 1, TextureSlots: 1}",
               "{Version: 1, TextureSlots: -1}", "{Version: 1, ShaderLoading: Vulkan}"}) {
             auto future = YAML::Load(text);
             future["Project"]["Rendering"] = YAML::Load(broken);
@@ -138,10 +159,19 @@ namespace Hazel {
         const auto sessionBytes = FileDocument::Read(Resources::Get().UserData / "session.yaml");
         const auto explicitPolicy =
             EditorRendererLaunch::Read({"Hazelnut", "--project", path.generic_u8string()});
-        Check(explicitPolicy.Project == path && explicitPolicy.Settings.TextureSlots == 2 &&
+        Check(explicitPolicy.Project == path && explicitPolicy.Backend == RendererBackend::OpenGL && explicitPolicy.Settings.TextureSlots == 2 &&
                   !explicitPolicy.Settings.PreferShaderBinaries &&
                   !explicitPolicy.Settings.EnableDebugOutput && explicitPolicy.VSync,
               "Editor prelaunch ignored explicit project or duplicated runtime/editor VSync scope");
+        const auto explicitGL = EditorRendererLaunch::Read({"Hazelnut", "--opengl", "--project", path.generic_u8string()});
+        Check(explicitGL.Project == path, "Backend selector prevented project prelaunch parsing");
+        auto backendChange = small;
+        backendChange.Backend = RendererBackend::Metal;
+        Check(!RendererPolicy::RestartReason(backendChange, selected, caps, RendererBackend::OpenGL).empty(),
+              "Backend request change did not require restart");
+        const auto legacyRequests = RendererRequestsSerializer::Read(YAML::Load("{Version: 1, TextureSlots: 4}"));
+        Check(legacyRequests.Backend == RendererBackend::OpenGL && legacyRequests.TextureSlots == 4,
+              "Legacy Rendering block lost defaults");
         const auto nutella = RendererPolicy::Settings(loaded->GetRendererRequests());
         Check(nutella.TextureSlots == explicitPolicy.Settings.TextureSlots &&
                   nutella.PreferShaderBinaries == explicitPolicy.Settings.PreferShaderBinaries,

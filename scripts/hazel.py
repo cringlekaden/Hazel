@@ -298,7 +298,9 @@ def build(configuration, tests=False, database=False, targets=None):
                 raise RuntimeError('Bear did not capture compiler commands for ' + source_root)
         print('Refreshed clangd database: ' + str(len(commands)) + ' compiler commands.', flush=True)
     if not targets: script_build(ROOT/'examples/SceneTransitions/SceneTransitions.hproj', configuration)
-    stage(configuration, prefix)
+    apps = [name for name in (targets or ('Hazelnut', 'Nutella', 'HazelProject', 'SpriteAssetAudit'))
+            if name in ('Hazelnut', 'Nutella', 'HazelProject', 'SpriteAssetAudit')]
+    if apps:stage(configuration, prefix, apps)
 
 
 def copy_changed(source, destination):
@@ -465,11 +467,12 @@ def main():
     for action in ('setup', 'build', 'database', 'test'):
         p = sub.add_parser(action)
         p.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
-        if action in ('setup', 'build'): p.add_argument('--tests', action='store_true')
+        if action in ('setup', 'build'):p.add_argument('--tests', action='store_true')
+        if action == 'build':p.add_argument('--target', action='append', help='Build only named Premake targets and dependencies; repeat for multiple targets')
         if action == 'test': p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
-        if action == 'test': p.add_argument('--suite',choices=('all','cpu'),default='all',help='CPU subset explicitly excludes graphics/editor acceptance')
+        if action == 'test': p.add_argument('--suite',choices=('all','cpu','graphics'),default='all',help='CPU and graphics partitions together cover all maintained executables; neither alone qualifies all tests')
         if action == 'test': p.add_argument('--only',action='append',choices=[r['name'] for r in json.loads((ROOT/'scripts/internal/testing/native-tests.json').read_text())],help='Run selected maintained regression(s); other tests are not qualified')
-    p = sub.add_parser('run'); p.add_argument('app', choices=('Hazelnut', 'Nutella')); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug'); p.add_argument('--project', type=Path); p.add_argument('--inspect-camera', action='store_true', help='Nutella transient perspective inspection'); p.add_argument('--metal-renderer2d', action='store_true', help='Nutella legacy opt-in Metal 4 runtime alias'); p.add_argument('--metal', action='store_true', help='macOS: explicitly select Metal 4 before window creation'); p.add_argument('--no-restore', action='store_true', help='Hazelnut: skip remembered workspace restoration')
+    p = sub.add_parser('run'); p.add_argument('app', choices=('Hazelnut', 'Nutella')); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug'); p.add_argument('--project', type=Path); p.add_argument('--inspect-camera', action='store_true', help='Nutella transient perspective inspection'); p.add_argument('--metal-renderer2d', action='store_true', help='Nutella legacy opt-in Metal 4 runtime alias'); p.add_argument('--metal', action='store_true', help='macOS: explicitly select Metal 4 before window creation'); p.add_argument('--opengl', action='store_true', help='Explicit OpenGL override before window creation'); p.add_argument('--automatic', action='store_true', help='Override project backend with platform Automatic policy'); p.add_argument('--no-restore', action='store_true', help='Hazelnut: skip remembered workspace restoration')
     p = sub.add_parser('script-build'); p.add_argument('project', type=Path); p.add_argument('--config', choices=('Debug', 'Release'), default='Debug')
     p = sub.add_parser('test-packages'); p.add_argument('--output', type=Path, default=ROOT/'dist'); p.add_argument('--profile', choices=('native','gl41','software'), default='software' if SYSTEM=='windows' else 'native')
     p.add_argument('--interactive',action='store_true',help='macOS: launch pristine relocated products for human interaction and normal close')
@@ -513,11 +516,13 @@ def main():
     if args.action == 'run':
         if args.metal and SYSTEM != 'macos': raise RuntimeError('--metal requires native Apple Silicon macOS')
         if args.no_restore and args.app != 'Hazelnut': raise RuntimeError('--no-restore requires Hazelnut')
-        if args.metal and args.metal_renderer2d: raise RuntimeError('Select --metal or its legacy runtime alias, not both')
+        if sum((args.metal, args.metal_renderer2d, args.opengl, args.automatic)) > 1: raise RuntimeError('Select one backend override: --metal, --opengl or --automatic')
         with build_lock(): stage(args.config)
         exe = binaries(args.config) / args.app / (args.app + ('.exe' if SYSTEM == 'windows' else ''))
         command = [exe]
         if args.metal: command += ['--metal']
+        if args.opengl: command += ['--opengl']
+        if args.automatic: command += ['--automatic']
         if args.no_restore: command += ['--no-restore']
         if args.metal_renderer2d:
             if args.app != 'Nutella': raise RuntimeError('--metal-renderer2d requires Nutella')
@@ -539,7 +544,7 @@ def main():
         if args.action in ('setup', 'build', 'database'):
             if args.action == 'setup':
                 diagnose(); run(['git', 'submodule', 'update', '--init', '--recursive']); yaml_tools()
-            build(args.config, getattr(args, 'tests', False), args.action == 'database')
+            build(args.config, getattr(args, 'tests', False), args.action == 'database', getattr(args, 'target', None))
             if args.action == 'setup':
                 print('Ready. python scripts/hazel.py run Hazelnut\nHazelnut restores the last project; --project explicitly selects one.')
                 print('Use hazel.py open for the generated Xcode workspace.' if SYSTEM=='macos' else 'F5: copy scripts/internal/vscode/'+SYSTEM+'/ templates into .vscode.')

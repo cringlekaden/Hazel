@@ -274,3 +274,13 @@ and deployment/hardware gates remain. Metal remains an explicitly selected,
 locally qualified path on the tested M4. No default change is applied. Existing
 single-sample/target/resource limits and the accepted frozen split-sum IBL
 approximation remain; no new rendering features are implemented.
+
+
+### Subsequent default-backend checkpoint
+
+The [following qualification record](metal-default-qualification.md) resumes from
+actual HEAD `93d39bd6d71b090a3a931f1a457a9df27347c91c`. A subsequent poll of
+candidate run `44212291235` reports hosted macOS PASS, Windows FAIL in the exact
+unlit picking/depth regression on llvmpipe, and Linux FAIL at the same exact invariant. The new
+record retains the completed job log and diagnostic follow-up. The M6 verdict
+therefore remains INCOMPLETE; the historical local evidence above is preserved.

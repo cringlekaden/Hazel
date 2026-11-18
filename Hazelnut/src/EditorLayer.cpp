@@ -858,7 +858,7 @@ namespace Hazel {
 		auto scene = Scene::Copy(m_EditorScene);
         RuntimeSession::Validate(scene, false);
         if(Project::GetActive()) {
-            const auto reason=RendererPolicy::RestartReason(Project::GetActive()->GetRendererRequests(),Renderer::GetResolution(),Renderer::GetCapabilities());
+            const auto reason=RendererPolicy::RestartReason(Project::GetActive()->GetRendererRequests(),Renderer::GetResolution(),Renderer::GetCapabilities(),Application::Get().GetSpecification().ProjectBackend);
             if(!reason.empty())throw std::runtime_error(reason);
         }
         m_EditorSelection=uint64_t(m_SceneHierarchyPanel.GetSelectedEntity()?m_SceneHierarchyPanel.GetSelectedEntity().GetUUID():UUID(0));

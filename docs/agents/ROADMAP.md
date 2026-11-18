@@ -4,6 +4,14 @@
 
 ## Current prioritized track: Metal 4 backend
 
+- **Following M6 — INCOMPLETE:** backend requests/precedence, settings/capability UI,
+  production cleanup and measured test/performance work are implemented. Native
+  continuation is blocked by a locked GUI session; OpenGL remains the centralized
+  default. Explicit Automatic is available. M6 candidate CI now reports hosted
+  macOS PASS / Windows exact picking-depth regression FAIL / Linux exact unlit picking/depth FAIL. See
+  `docs/design/metal-default-qualification.md`. Do not start XeGTAO, merge or release.
+
+
 - **M1 — PASS, pushed:** Metal 4 device/queue, native presentation, frame/resource lifetime, compute/render/transfer smoke, regression evidence. See `docs/design/metal-m1.md`. Production still OpenGL.
 - **M2 — PASS (local Apple M4):** shader portability and explicit pass contracts progressed through M2-A/B1–B4/C. Native generated shaders, resource/pass contracts, source-free shader relocation and integrated quad presentation are recorded in `docs/design/metal-m2c.md` and its linked evidence. This supersedes the old proposal summary; it does not certify Windows/Linux or full 3D parity.
 - **M3 — PASS (local Apple M4):** Shared deterministic Renderer2D lines, independent/frozen/cross-backend qualification and native Debug/Release 1×/2× player lifecycle/input/extended-session evidence are in `docs/design/metal-m3.md`. Windows/Linux/Intel execution is NOT RUN. OpenGL remains default.

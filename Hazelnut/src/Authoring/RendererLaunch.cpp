@@ -21,6 +21,7 @@ namespace Hazel {
         if (!path.empty()) {
             if (const auto project = Project::LoadCandidate(path)) {
                 result.Project = path;
+                result.Backend = project->GetRendererRequests().Backend;
                 result.Settings = RendererPolicy::Settings(project->GetRendererRequests(),
                                                            preferences.DebugOutput);
             }

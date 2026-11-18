@@ -27,14 +27,19 @@ SCENES = {
 def products(configuration, output):
     from macos.metal_shaders import produce
     shaders = output/'shaders'
-    produce(configuration, shaders)
+    # Reuse build artifacts only through the producer's source/toolchain/hash checks.
+    # Cold/corrupt producer coverage remains in metal_m2b1.py.
+    hz.copy_tree(hz.binaries(configuration)/'Hazelnut/Resources/shaders/metal', shaders)
+    shader_start=time.monotonic()
+    produced=produce(configuration, shaders)
+    (output/'shader-preparation.json').write_text(json.dumps({'seconds':time.monotonic()-shader_start,'artifacts':produced},indent=2)+'\n')
     for app in ('Hazelnut', 'Nutella'):
         hz.copy_tree(shaders, hz.binaries(configuration)/app/'Resources/shaders/metal')
     results = {}
     for scene, (example, descriptor) in SCENES.items():
         project = snapshot(example, output/'projects'/scene, descriptor)
         for app in ('Hazelnut', 'Nutella'):
-            for backend in ('opengl', 'metal'):
+            for backend in ('opengl', 'metal', 'automatic'):
                 key = f'{app}-{scene}-{backend}'
                 folder = output/key;folder.mkdir()
                 native_console(folder/'console-before.json')
@@ -45,7 +50,7 @@ def products(configuration, output):
                            HAZEL_METAL_TRACE='1', MTL_DEBUG_LAYER='1', MTL_SHADER_VALIDATION='1')
                 command = [hz.binaries(configuration)/app/app, '--smoke-test', '--project', project]
                 if app == 'Hazelnut':command += ['--no-restore']
-                if backend == 'metal':command += ['--metal']
+                command += ['--automatic' if backend == 'automatic' else '--metal' if backend == 'metal' else '--opengl']
                 (folder/'command.json').write_text(json.dumps(list(map(str, command)), indent=2))
                 with (folder/'run.log').open('w') as log:
                     start = time.monotonic()
@@ -62,7 +67,9 @@ def products(configuration, output):
                 text = (folder/'run.log').read_text(errors='replace')
                 if process.returncode or 'SMOKE PASS: application teardown completed' not in text:
                     raise RuntimeError('Product failed: '+str(folder/'run.log'))
-                result = native_result(text, imgui=app=='Hazelnut') if backend=='metal' else {'status': 'PASS'}
+                result = native_result(text, imgui=app=='Hazelnut') if backend!='opengl' else {'status': 'PASS'}
+                if backend == 'automatic' and 'active Metal 4 (selected before window initialization)' not in text:
+                    raise RuntimeError('Automatic did not resolve native Metal before window initialization: '+key)
                 result.update(wallSeconds=time.monotonic()-start, readyObservedSeconds=ready,
                               startupBoundary='Process spawn to ready log observed at 20ms polling; not first presentation')
                 results[key] = result

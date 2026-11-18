@@ -29,6 +29,10 @@ namespace Hazel {
 
 		s_Instance = this;
 		try {
+            HZ_CORE_INFO("Renderer launch: requested {}{}, active {} (selected before window initialization)",
+                         RendererPolicy::BackendName(m_Specification.RequestedBackend),
+                         m_Specification.BackendCLIOverride ? " (CLI override)" : "",
+                         m_Specification.GraphicsAPI == RendererAPI::API::Metal ? "Metal 4" : "OpenGL");
             RenderCommand::Configure(m_Specification.GraphicsAPI);
             if (m_Specification.RendererMode != RendererInitialization::Drawing && m_Specification.EnableImGui)
                 throw std::invalid_argument("Presentation-only startup does not initialize ImGui drawing services");

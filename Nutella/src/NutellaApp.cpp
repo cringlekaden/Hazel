@@ -74,11 +74,15 @@ namespace Hazel {
         }
     };
     Scope<Application> CreateApplication(ApplicationCommandLineArgs args) {
-        bool help = false, list = false,inspect=false,metal=false;
+        bool help = false, list = false,inspect=false;
+        std::optional<RendererBackend> backend;
         std::filesystem::path selected;
         for (int i = 1; i < args.Count; ++i) {
             const std::string argument(args[i]);
-            if(argument=="--metal" || argument=="--metal-renderer2d") { if(metal)throw std::runtime_error("Duplicate Metal backend selection");metal=true; }
+            if(argument=="--metal" || argument=="--metal-renderer2d" || argument=="--opengl" || argument=="--automatic") {
+                if(backend) throw std::runtime_error("Specify only one backend override: --metal, --opengl or --automatic");
+                backend = argument=="--opengl" ? RendererBackend::OpenGL : argument=="--automatic" ? RendererBackend::Automatic : RendererBackend::Metal;
+            }
             else if(argument=="--inspect-camera"){if(inspect)throw std::runtime_error("Duplicate --inspect-camera");inspect=true;}
             else if (argument == "--help") { if (help) throw std::runtime_error("Duplicate --help"); help = true; }
             else if (argument == "--list-projects") { if (list) throw std::runtime_error("Duplicate --list-projects"); list = true; }
@@ -88,10 +92,10 @@ namespace Hazel {
                 selected = std::filesystem::absolute(std::filesystem::u8path(args[i]));
             } else throw std::runtime_error("Unknown argument '" + argument + "'. Use Nutella --help.");
         }
-        if ((help || list) && ((help && list) || !selected.empty() || inspect || metal)) throw std::runtime_error("Use --help, --list-projects, or --project separately");
+        if ((help || list) && ((help && list) || !selected.empty() || inspect || backend)) throw std::runtime_error("Use --help, --list-projects, or --project separately");
         if (help) {
             std::cout << "Nutella — Hazel standalone runtime\n"
-                "  Nutella --metal                     Opt-in Metal 4 Renderer2D/Renderer3D runtime (no ImGui)\n"
+                "  Nutella --metal                     Select Metal 4 (--opengl or --automatic also available)\n"
                 "  Nutella                        Run the only .hproj in the installed project directory\n"
                 "  Nutella --project <file.hproj>  Run a selected project (relative to invocation directory)\n"
                 "  Nutella --inspect-camera        Opt in to transient perspective inspection; Home restores the authored view\n"
@@ -126,7 +130,10 @@ namespace Hazel {
         // is optional for native content; RuntimeSession rejects assigned classes
         // that are unavailable. Do not impose scripting readiness at CLI launch.
         ApplicationSpecification spec; spec.Name = "Nutella"; spec.CommandLineArgs = args; spec.EnableImGui = false;
-        if (metal) { spec.GraphicsAPI = RendererAPI::API::Metal; spec.RendererMode = RendererInitialization::Drawing; }
+        spec.ProjectBackend = project->GetRendererRequests().Backend;
+        spec.RequestedBackend = backend.value_or(spec.ProjectBackend);
+        spec.BackendCLIOverride = backend.has_value();
+        spec.GraphicsAPI = RendererPolicy::SelectBackend(spec.ProjectBackend, backend, RendererAPI::GetBackendAvailability()) == RendererBackend::Metal ? RendererAPI::API::Metal : RendererAPI::API::OpenGL;
         spec.Rendering = RendererPolicy::Settings(project->GetRendererRequests());
         spec.WindowVSync = project->GetRendererRequests().VSync;
         return CreateScope<Nutella>(spec, project,inspect);

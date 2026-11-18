@@ -1,6 +1,6 @@
 # Downloads and standalone games
 
-A prepared game includes **Nutella**, project assets, required compiled scripts and its runtime dependencies. Players need an OpenGL 4.1 driver (the default backend) and the [deployment baseline](platforms-and-dependencies.md#platform-status), without Python, a compiler or the Hazel source SDK.
+A prepared game includes **Nutella**, project assets, required compiled scripts and its runtime dependencies. Players need a supported [selected backend](backend-selection.md) (OpenGL 4.1 or native Metal 4 on supported Apple Silicon/macOS) and the [deployment baseline](platforms-and-dependencies.md#platform-status), without Python, a compiler or the Hazel source SDK.
 
 ## Choose a snapshot
 
@@ -71,7 +71,7 @@ On `feature/3d-foundations`, macOS `package` additionally produces the ten engin
 shader artifacts and the Dear ImGui native library from authoritative sources.
 Build Release first; the ordinary macOS app targets also build `MetalShaderTools`.
 Packaging requires the full Xcode shader toolchain; running the bundle does not.
-OpenGL GLSL remains included for the default backend. The ImGui MSL source and
+OpenGL GLSL remains included for explicit OpenGL selection and Automatic on platforms without native Metal 4. The ImGui MSL source and
 producer tools are excluded from the bundle.
 
 Select Metal explicitly from any working directory:

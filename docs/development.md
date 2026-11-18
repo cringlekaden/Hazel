@@ -114,7 +114,7 @@ Native Apple M4 offscreen rendering of the example. Window presentation and
 physical input are separate [M3 qualification gates](design/metal-m3.md).
 The historical M2-C window capture remains in its integration record.
 
-On `feature/3d-foundations`, Nutella can opt into the Metal 4 Renderer2D runtime.
+On `feature/3d-foundations`, Nutella can explicitly request Metal 4 through Automatic when available; explicit backend overrides remain supported.
 **M3 is locally qualified on Apple M4**, including independent coverage/IDs,
 cross-backend comparisons, Debug/Release native 1×/2× lifecycle, real Nutella OS
 input/camera and an extended visible session. Windows/Linux/Intel execution is
@@ -167,7 +167,7 @@ then launch the staged editor (its staged resources include the editor icons):
 python3 scripts/hazel.py run Hazelnut --config Debug --metal --no-restore --project examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj
 ```
 
-OpenGL remains the default. The pinned ImGui core/GLFW/OpenGL backends are unchanged;
+An explicit Automatic request selects an available native Metal 4 device on supported Apple Silicon/macOS; OpenGL remains the default pending native qualification. The pinned ImGui core/GLFW/OpenGL backends are unchanged;
 M5 backports the official Metal 4 renderer with Hazel-owned queue/slot/consumer
 retirement. This branch has local M5 qualification on Apple M4; it is not a release.
 See the [M5 record](design/metal-m5.md) for tested configurations, failed attempts
@@ -251,3 +251,57 @@ performance conclusions; no backend speedup is established by these observations
 | Save/open/asset replacement rejected | Preserve original bytes/draft; use the operation's diagnostic and explicit repair/reload workflow. Do not delete profile or save directories |
 
 Compiler/test logs are in the invoking terminal and `build/testing/logs/`; game/package evidence uses `build/testing/games/` and `build/testing/packages/`. Check the **first failing CI step** before diagnosing skipped later gates. Report a minimal reproduction using [Contributing](../CONTRIBUTING.md).
+
+
+## Renderer verification tiers
+
+Use the [backend policy guide](backend-selection.md) and
+[current checkpoint](design/metal-default-qualification.md). Ordinary iteration
+can build affected Premake targets and select maintained tests:
+
+```sh
+python3 scripts/hazel.py build --config Release --tests --target MigrationSceneFoundationSmoke
+python3 scripts/hazel.py test --config Release --only SceneFoundationSmoke
+```
+
+Explicit `--only` reports that global launcher/SDK/authoring acceptance checks are
+not executed. Full and CPU suites retain them. The `graphics` partition runs the ten maintained graphics executables; it must be paired with the eight CPU executables for full coverage. No selected executable loses its
+assertions, independent oracles or fixtures. Test setup/per-executable wall times
+are saved under `build/testing/logs/*-timings.json`; package/product launches have
+separate logs. Use fresh evidence directories.
+
+On an unlocked native Apple Silicon desktop:
+
+```sh
+python3 scripts/macos/qualify_renderer.py --tier fast --config Release --output build/renderer-fast
+python3 scripts/macos/qualify_renderer.py --tier integration --config Release --output build/renderer-integration
+python3 scripts/macos/qualify_renderer.py --tier full --output build/renderer-full
+```
+
+Fast builds the policy regression and both applications. Integration builds once,
+then runs maintained OpenGL, M3/M4 numerical, shader/cache/source-free, M5 editor/
+compute/lifetime and both-backend/Automatic product checks. Full defaults to both
+Debug and Release, adds native 2x, extended 3D lifecycle and complete relocated
+Release packages. Exhaustive GPU/lifecycle work is explicitly selected with Full;
+it is not required for every edit. Clean source acquisition and Windows/Linux/
+hosted macOS CI remain separate full qualification requirements. Windows/Linux CI runs Debug CPU/policy checks immediately after the Debug build, then the graphics partition, before Release and packaging. Release still runs the full suite. This preserves all 18 executables without repeating the Debug CPU partition. Hosted macOS keeps its CPU subset. These local tiers do not
+claim unexecuted CI jobs or unavailable hardware.
+
+The runners keep native GPU launches serial. Independent read-only comparisons
+use two worker processes (`--comparison-workers 1` restores serial comparison),
+with unchanged numerical calculations, exact ID checks, frozen references and
+all capture cases. Corruption, cold-producer and source-free tests intentionally
+retain their independent setup rather than borrowing artifacts that would mask
+those failures. GPU traces remain explicitly selectable with `metal_m1.py --capture`.
+No fixed endurance wait was shortened.
+
+For diagnostic timing with FP32 display attachments on both backends:
+
+```sh
+python3 scripts/macos/metal_m4_runtime.py --config Release --resources bin/Release-macos-arm64/Hazelnut/Resources --matched-formats --output build/renderer-fp32-timing
+```
+
+This uses the same authored photographic scene/camera/quality and common CPU-loop
+boundary. Depth formats and GL elapsed-query versus Metal whole-commit timing
+boundaries still differ: do not label those GPU observations a backend speedup.
+Ordinary application target formats remain unchanged.

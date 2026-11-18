@@ -14,7 +14,7 @@ namespace Hazel {
             try {
                 m_RenderingRestart = RendererPolicy::RestartReason(project->GetRendererRequests(),
                                                                    Renderer::GetResolution(),
-                                                                   Renderer::GetCapabilities());
+                                                                   Renderer::GetCapabilities(), Application::Get().GetSpecification().ProjectBackend);
             } catch (const std::exception &e) {
                 m_RenderingRestart = e.what();
             }
@@ -127,12 +127,42 @@ namespace Hazel {
         PropertyUI::ReadOnly("request-source","Request source",Project::GetActive()->GetConfig().Rendering?"Authored project .hproj":"Built-in runtime defaults");
         PropertyUI::ReadOnly("effective-source","Effective source","Launch policy + detected context; batching/shaders require restart");
         const auto saved = Project::GetActive()->GetRendererRequests();
-        const bool dirty = saved.VSync != m_RenderingDraft.VSync ||
+        const bool dirty = saved.Backend != m_RenderingDraft.Backend || saved.VSync != m_RenderingDraft.VSync ||
                            saved.TextureSlots != m_RenderingDraft.TextureSlots ||
                            saved.ShaderLoading != m_RenderingDraft.ShaderLoading;
         ImGui::TextDisabled(dirty ? "Unsaved rendering draft"
                                   : "Saved project requests (or engine defaults)");
         const auto can = Availability(EditorAction::EditAsset);
+        int backend = int(m_RenderingDraft.Backend);
+        if (PropertyUI::Combo("backend", "Backend request", backend, "Automatic\0OpenGL\0Metal 4\0",
+                              {"CLI override > saved project > Automatic platform policy. Applies after restart.", nullptr, can.Reason})) {
+            m_RenderingDraft.Backend = RendererBackend(backend);
+            m_RenderingAuthored = true;
+        }
+        if (DefaultRendererBackend == RendererBackend::OpenGL)
+            ImGui::TextWrapped("The default request remains OpenGL pending native qualification. Select Automatic explicitly to request the new platform policy.");
+        const auto& launch = Application::Get().GetSpecification();
+        PropertyUI::ReadOnly("backend-requested", "Launch request", RendererPolicy::BackendName(launch.RequestedBackend));
+        PropertyUI::ReadOnly("backend-active", "Active backend", Renderer::GetAPI()==RendererAPI::API::Metal ? "Metal 4" : "OpenGL");
+        ImGui::TextWrapped("%s", launch.BackendCLIOverride ? "CLI override active; remove it to honor the saved project request." : "Launch uses saved project request or Automatic platform policy.");
+        // Availability is probed once, without opening an inactive context/queue.
+        static const auto availability = RendererAPI::GetBackendAvailability();
+        ImGui::TextWrapped("Metal 4 availability: %s", availability.Metal ? "Native device family checked; Apple Silicon / macOS 27+" : availability.MetalReason.c_str());
+        ImGui::TextWrapped("OpenGL availability: %s. Inactive backend limits are not queried.", availability.OpenGLReason.c_str());
+        if (m_RenderingDraft.Backend == RendererBackend::Metal && !availability.Metal)
+            ImGui::TextWrapped("Explicit Metal request is unsupported here: %s. It can be saved for another machine; launch here with --opengl.", availability.MetalReason.c_str());
+        const auto& device = Renderer::GetCapabilities();
+        ImGui::SeparatorText("Active renderer capabilities");
+        PropertyUI::ReadOnly("active-device", "GPU", device.Device.c_str());
+        PropertyUI::ReadOnly("active-vendor", "Vendor", device.Vendor.c_str());
+        PropertyUI::ReadOnly("active-driver", "API / driver", device.Driver.c_str());
+        ImGui::TextWrapped("Limits source: %s", device.LimitsSource.c_str());
+        ImGui::TextWrapped("Texture slots / bindings / 2D / cube: %u / %u / %u / %u", device.MaxTextureSlots, device.MaxTextureBindings, device.MaxTextureSize, device.MaxCubeSize);
+        ImGui::TextWrapped("Uniform bindings / bytes / attributes: %u / %u / %u; color attachments / draw buffers: %u / %u", device.MaxUniformBindings, device.MaxUniformBlockBytes, device.MaxVertexAttributes, device.MaxColorAttachments, device.MaxDrawBuffers);
+        ImGui::TextWrapped("Device sample ceiling: %u; engine targets: 1 sample. Compute: %s", device.MaxSamples, device.Compute ? "Available" : "Unavailable in Hazel OpenGL 4.1 backend");
+        ImGui::TextWrapped("Targets: %s", device.TargetFormats.c_str());
+        ImGui::TextWrapped("Features: %s. HDR attachments and tone mapping; SDR display output.", device.Features.c_str());
+        ImGui::TextWrapped("Shader loading: %s", device.ShaderLoading.c_str());
         const bool resetVSync = true;
         if (PropertyUI::Checkbox(
                 "vsync", "Runtime VSync", m_RenderingDraft.VSync, &resetVSync,
@@ -157,10 +187,10 @@ namespace Hazel {
         const auto &caps = Renderer::GetCapabilities();
         const auto &current = Renderer::GetResolution();
         PropertyUI::ReadOnly("shader-available", "Available paths",
-                             caps.ShaderBinaries ? "SPIR-V / GLSL 410" : "GLSL 410");
+                             caps.ShaderLoading.c_str());
         const auto loaded = Renderer2D::GetQuadShaderLoadingPath();
         PropertyUI::ReadOnly("shader-effective", "Effective 2D program",
-                             loaded == Shader::ProgramLoadingPath::SPIRV ? "SPIR-V specialization"
+                             caps.Metal ? "Offline Metal library" : loaded == Shader::ProgramLoadingPath::SPIRV ? "SPIR-V specialization"
                              : loaded == Shader::ProgramLoadingPath::GeneratedGLSL
                                  ? "Generated GLSL 410"
                                  : "Legacy GLSL");
@@ -186,7 +216,7 @@ namespace Hazel {
                 ImGui::TextWrapped("%s; launch limit %u. Authored request retained.",
                                    desired.TextureReason.c_str(), desired.Effective.TextureSlots);
             ImGui::TextWrapped("%s", desired.ShaderReason.c_str());
-            const auto pending = RendererPolicy::RestartReason(m_RenderingDraft, current, caps);
+            const auto pending = RendererPolicy::RestartReason(m_RenderingDraft, current, caps, launch.ProjectBackend);
             if (!pending.empty())
                 ImGui::TextWrapped("%s. Save requests, save wanted documents, close normally, and "
                                    "launch this project again.",
@@ -248,14 +278,16 @@ namespace Hazel {
     void AuthoringPanel::CopyDeviceReport() {
         const auto &c = Renderer::GetCapabilities();
         std::ostringstream out;
-        out << "OpenGL | " << c.Vendor << " | " << c.Device << " | " << c.Driver
+        out << (c.Metal ? "Metal 4 | " : "OpenGL | ") << c.Vendor << " | " << c.Device << " | " << c.Driver
+            << "\nLimits source: " << c.LimitsSource << "\nTargets: " << c.TargetFormats << "\nShaders: " << c.ShaderLoading
+            << "\nCompute: " << c.Compute << "\nFeatures: " << c.Features
             << "\nTexture slots/bindings/size: " << c.MaxTextureSlots << '/' << c.MaxTextureBindings
             << '/' << c.MaxTextureSize
             << "\nColor attachments/draw buffers: " << c.MaxColorAttachments << '/'
             << c.MaxDrawBuffers << "\nSample limits all/color/integer/depth: " << c.MaxSamples
             << '/' << c.MaxColorSamples << '/' << c.MaxIntegerSamples << '/' << c.MaxDepthSamples
             << "\nLine widths: " << c.MinLineWidth << "–" << c.MaxLineWidth
-            << "\nShader binaries/debug functions: " << c.ShaderBinaries << '/' << c.DebugOutput
+            << "\nGL SPIR-V/debug functions: " << c.ShaderBinaries << '/' << c.DebugOutput
             << '\n'
             << RendererPolicy::Describe(Renderer::GetResolution())
             << "\nMain-window submitted swap interval: " << Application::Get().GetWindow().IsVSync()

@@ -201,8 +201,9 @@ void OpenGLFramebuffer::Invalidate()
 
 void OpenGLFramebuffer::EncodeOutput(const Ref<Framebuffer>& destination)
 {
-    if(m_ColorAttachmentSpecifications.empty() || m_ColorAttachmentSpecifications[0].TextureFormat!=FramebufferTextureFormat::RGBA16F)
-        throw std::invalid_argument("Output encoding requires a display-linear RGBA16F source");
+    if(m_ColorAttachmentSpecifications.empty() || (m_ColorAttachmentSpecifications[0].TextureFormat!=FramebufferTextureFormat::RGBA16F &&
+        m_ColorAttachmentSpecifications[0].TextureFormat!=FramebufferTextureFormat::RGBA32F))
+        throw std::invalid_argument("Output encoding requires a display-linear RGBA16F or RGBA32F source");
     auto target=std::dynamic_pointer_cast<OpenGLFramebuffer>(destination);
     if(destination && (!target || target.get()==this || target->m_ColorAttachmentSpecifications.size()!=1 ||
         target->m_ColorAttachmentSpecifications[0].TextureFormat!=FramebufferTextureFormat::RGBA8 || target->m_Specification.Samples!=1))
@@ -321,8 +322,8 @@ void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, fl
         m_ColorAttachmentSpecifications[1].TextureFormat != FramebufferTextureFormat::RED_INTEGER ||
         target->m_ColorAttachmentSpecifications[1].TextureFormat !=
             FramebufferTextureFormat::RED_INTEGER ||
-        target->m_ColorAttachmentSpecifications[0].TextureFormat !=
-            FramebufferTextureFormat::RGBA16F ||
+        (target->m_ColorAttachmentSpecifications[0].TextureFormat != FramebufferTextureFormat::RGBA16F &&
+         target->m_ColorAttachmentSpecifications[0].TextureFormat != FramebufferTextureFormat::RGBA32F) ||
         !m_DepthAttachment || !target->m_DepthAttachment)
         throw std::runtime_error("World presentation needs matching single-sample HDR/display "
                                  "color, integer ID and depth targets and exposure [-16,16]");

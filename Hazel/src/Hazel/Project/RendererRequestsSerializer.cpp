@@ -4,12 +4,13 @@
 namespace Hazel::RendererRequestsSerializer {
     RuntimeRendererRequests Read(const YAML::Node &node) {
         DocumentSchema::Structure(node);
-        DocumentSchema::Keys(node, {"Version", "VSync", "TextureSlots", "ShaderLoading"},
+        DocumentSchema::Keys(node, {"Version", "VSync", "TextureSlots", "ShaderLoading", "Backend"},
                              "Rendering");
         if (node["Version"].as<int>() != 1)
             throw std::runtime_error(
                 "Unsupported Rendering Version; use a compatible editor/runtime");
         RuntimeRendererRequests r;
+        if (node["Backend"]) r.Backend = RendererPolicy::ParseBackend(node["Backend"].as<std::string>());
         if (node["VSync"])
             r.VSync = node["VSync"].as<bool>();
         if (node["TextureSlots"])
@@ -29,7 +30,9 @@ namespace Hazel::RendererRequestsSerializer {
     void Write(YAML::Emitter &out, const RuntimeRendererRequests &r) {
         RendererPolicy::Validate(r);
         out << YAML::Key << "Rendering" << YAML::Value << YAML::BeginMap << YAML::Key << "Version"
-            << YAML::Value << 1 << YAML::Key << "VSync" << YAML::Value << r.VSync << YAML::Key
+            << YAML::Value << 1 << YAML::Key << "Backend" << YAML::Value
+            << (r.Backend == RendererBackend::Metal ? "Metal" : RendererPolicy::BackendName(r.Backend))
+            << YAML::Key << "VSync" << YAML::Value << r.VSync << YAML::Key
             << "TextureSlots" << YAML::Value << r.TextureSlots << YAML::Key << "ShaderLoading"
             << YAML::Value
             << (r.ShaderLoading == ShaderLoadingRequest::Automatic ? "Automatic"

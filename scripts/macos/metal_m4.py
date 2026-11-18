@@ -5,6 +5,7 @@ This focused offscreen check never declares the complete M4 milestone qualified.
 Real-window, extended lifetime and performance gates remain separate.
 """
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 import hashlib
 import json
 import math
@@ -43,6 +44,7 @@ def main():
     parser.add_argument('--config', choices=('Debug','Release'), required=True)
     parser.add_argument('--resources', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--comparison-workers', type=int, choices=(1,2), default=2)
     args = parser.parse_args()
     output=args.output.resolve();output.mkdir(parents=True,exist_ok=True)
     if any(output.iterdir()): raise RuntimeError('Use a fresh evidence directory')
@@ -58,12 +60,14 @@ def main():
         with (output/(name+'.log')).open('w') as log:
             run=subprocess.run(list(map(str,command)),env=env,stdout=log,stderr=subprocess.STDOUT,timeout=300)
         if run.returncode:raise RuntimeError(name+' failed; inspect '+str(output/(name+'.log')))
-    results={}
-    for path in sorted((output/'metal').glob('*.bin')):
-        other=output/'opengl'/path.name
-        if '-linear-' in path.name or path.stem=='independent-hdr':
-            results[path.stem]=probes(path,other)
-        else:results[path.stem]=compare(path,other,half_display=path.stem!='Direct-PerspectiveUnlit')
+    with ProcessPoolExecutor(max_workers=args.comparison_workers) as pool:
+        futures = {}
+        for path in sorted((output/'metal').glob('*.bin')):
+            other=output/'opengl'/path.name
+            if '-linear-' in path.name or path.stem=='independent-hdr':
+                futures[path.stem]=pool.submit(probes,path,other)
+            else:futures[path.stem]=pool.submit(compare,path,other,path.stem!='Direct-PerspectiveUnlit')
+        results={name:future.result() for name,future in futures.items()}
     if len(results)!=135: raise RuntimeError('Incomplete production fixture inventory')
     result=dict(configuration=args.config,head=hz.output(['git','rev-parse','HEAD']),captures=results,
                 independentOracles='PASS in both native executables',

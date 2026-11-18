@@ -881,5 +881,15 @@
       "requiredForTestedPlatformVerdict": false
     }
   ],
-  "candidateCommit": "35e4f4116cba7bc57a12e4451bdf293acc2c5cf3"
+  "candidateCommit": "35e4f4116cba7bc57a12e4451bdf293acc2c5cf3",
+  "followUp": {
+    "record": "metal-default-qualification.md",
+    "candidateRun": 44212291235,
+    "sha": "35e4f4116cba7bc57a12e4451bdf293acc2c5cf3",
+    "hostedMacOS": "PASS",
+    "windows": "FAIL: Debug software Renderer2DSmoke exact unlit picking/depth invariant",
+    "linux": "FAIL: Debug software Renderer2DSmoke exact unlit picking/depth invariant",
+    "evidence": "build/metal-default-evidence/m6-windows-job.log",
+    "status": "COMPLETED / FAILURE"
+  }
 }

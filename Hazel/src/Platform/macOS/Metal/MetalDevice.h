@@ -10,8 +10,10 @@
 #include <filesystem>
 #include <functional>
 #include <vector>
+#include <string>
 
 namespace Hazel {
+struct RasterState;
 struct MetalRenderer2DFrame;
 class MetalShader;
 struct FramebufferReadback;
@@ -21,6 +23,7 @@ struct EditorTexture;
 // retain neither referenced resources nor their allocator: slots own both explicitly.
 class MetalDevice final {
 public:
+    static std::string AvailabilityReason();
     MetalDevice();
     ~MetalDevice();
     MTL::Device* NativeDevice() const { return m_Device.get(); }
@@ -54,6 +57,8 @@ private:
     std::vector<EditorTexture> m_EditorTextures;
     void Poll();
     NS::SharedPtr<MTL::Buffer> AcquireRenderer2DBuffer(size_t bytes, const void* data = nullptr);
+    NS::SharedPtr<MTL::DepthStencilState> GetDepthState(const RasterState& raster);
+    std::array<NS::SharedPtr<MTL::DepthStencilState>, 6> m_DepthStates;
     void PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     void EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     std::shared_ptr<MetalRenderer2DFrame> m_PresentFrame;

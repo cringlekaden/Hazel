@@ -33,9 +33,17 @@ namespace Hazel {
         std::vector<std::string> arguments;
         for (int i = 0; i < args.Count; ++i)
             arguments.emplace_back(args[i]);
-        for (const auto& argument : arguments)
-            if (argument == "--metal") spec.GraphicsAPI = RendererAPI::API::Metal;
+        std::optional<RendererBackend> backend;
+        for (const auto& argument : arguments) {
+            if (argument != "--metal" && argument != "--opengl" && argument != "--automatic") continue;
+            if (backend) throw std::invalid_argument("Specify only one backend override: --metal, --opengl or --automatic");
+            backend = argument == "--metal" ? RendererBackend::Metal : argument == "--opengl" ? RendererBackend::OpenGL : RendererBackend::Automatic;
+        }
         const auto rendering = EditorRendererLaunch::Read(arguments);
+        spec.ProjectBackend = rendering.Backend;
+        spec.RequestedBackend = backend.value_or(rendering.Backend);
+        spec.BackendCLIOverride = backend.has_value();
+        spec.GraphicsAPI = RendererPolicy::SelectBackend(rendering.Backend, backend, RendererAPI::GetBackendAvailability()) == RendererBackend::Metal ? RendererAPI::API::Metal : RendererAPI::API::OpenGL;
         spec.Rendering = rendering.Settings;
         spec.WindowVSync = rendering.VSync;
         HZ_CORE_INFO("Editor renderer launch policy: {}",

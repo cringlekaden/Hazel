@@ -46,18 +46,18 @@ Open **Assets/Scenes/UI Tutorial.hazel** and Play. Its [five pages](examples/San
 [SceneTransitions](examples/SceneTransitions/README.md) is the smallest runtime/scripting example. Every project has source launch and export instructions. Prepared game packages need **no compiler, Python or source SDK**; changing scripts and exporting requires the authoring toolchain.
 
 The `feature/3d-foundations` branch adds shared static 3D/PBR/prepared IBL and
-opt-in Metal 4 for Apple Silicon/macOS 27+. Use the
+Metal 4 for Apple Silicon/macOS 27+, explicitly selectable with the new backend settings. Automatic selection is implemented, but OpenGL remains the default pending native qualification. See [backend selection and Project Settings](docs/backend-selection.md). Use the
 [branch-specific clone instructions](docs/getting-started.md#test-the-3d--metal-development-branch)
 and [Metal shader/build commands](docs/development.md#experimental-metal-shader-resources).
 [M3](docs/design/metal-m3.md), [M4](docs/design/metal-m4.md) and
 [M5](docs/design/metal-m5.md) have local Apple M4 qualification. The
 [M6 production-readiness record](docs/design/metal-m6.md) separately tracks
 clean-source, application packaging, platform CI and matched measurements.
-M6 is **INCOMPLETE** until its required gates pass. OpenGL remains the default.
+M6 is a revision-specific qualification record. The [next default-backend checkpoint](docs/design/metal-default-qualification.md) tracks Automatic selection, renderer cleanup and measured verification/performance work; full production qualification requires candidate CI.
 
 ## Status and support
 
-Requires **OpenGL 4.1 core**. Windows x64 and Linux x86_64/X11 (including Xwayland) are maintained; official Linux packages target Ubuntu 24.04/glibc 2.39+. Native Wayland is not implemented. Native arm64 macOS 27.0+ supports [Xcode development and local ad-hoc bundles](docs/getting-started.md#apple-silicon-macos-270), qualified with real Apple rendering, relocated products and cross-platform CI. Outstanding physical clipboard/mixed-display/controller checks and distribution-signing limits are recorded in the [Mac qualification record](docs/design/macos-port.md). See [platform scope and UI limits](docs/platforms-and-dependencies.md#platform-status).
+Windows/Linux require **OpenGL 4.1 core**; macOS uses the [selected backend](docs/backend-selection.md). Windows x64 and Linux x86_64/X11 (including Xwayland) are maintained; official Linux packages target Ubuntu 24.04/glibc 2.39+. Native Wayland is not implemented. Native arm64 macOS 27.0+ supports [Xcode development and local ad-hoc bundles](docs/getting-started.md#apple-silicon-macos-270), qualified with real Apple rendering, relocated products and cross-platform CI. Outstanding physical clipboard/mixed-display/controller checks and distribution-signing limits are recorded in the [Mac qualification record](docs/design/macos-port.md). See [platform scope and UI limits](docs/platforms-and-dependencies.md#platform-status).
 
 [![C/C++ CI — master](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml/badge.svg?branch=master)](https://github.com/cringlekaden/Hazel/actions/workflows/c-cpp.yml?query=branch%3Amaster)
 
@@ -68,8 +68,9 @@ passed hosted macOS compilation/CPU checks and failed Windows/Linux Debug builds
 because a Metal-only source was selected there. The local correction and remaining
 qualification limits are tracked in [M6](docs/design/metal-m6.md); that run does
 not qualify the M6 candidate. [Candidate run 44212291235](https://github.com/cringlekaden/Hazel/actions/runs/44212291235)
-tests `35e4f4116cba7bc57a12e4451bdf293acc2c5cf3` and is in progress at the M6
-handoff; no passing result is claimed.
+tests `35e4f4116cba7bc57a12e4451bdf293acc2c5cf3`: hosted macOS passed, while
+Windows/Linux software rendering failed the exact unlit picking/depth invariant.
+See the [current checkpoint](docs/design/metal-default-qualification.md) for diagnostics and subsequent candidate evidence.
 
 The badge is **workflow-wide**. Open a run for its separate Windows/Linux Debug, Release and extracted-binary jobs and the Mac build/CPU/service/managed subset. [CI coverage](docs/development.md#canonical-ci) includes software/GL4.1 regressions, editor/tutorial authoring and relocated packages; Apple GPU qualification is local. There is no published release; [download guidance](docs/packaging.md) identifies snapshot contents and retention.
 

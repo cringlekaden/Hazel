@@ -43,6 +43,10 @@ namespace Hazel {
         ApplicationResourceSpecification Resources;
 		ApplicationCommandLineArgs CommandLineArgs;
         RendererSettings Rendering;
+        // Editor/player prelaunch results; GraphicsAPI is already resolved before construction.
+        RendererBackend ProjectBackend = DefaultRendererBackend;
+        RendererBackend RequestedBackend = DefaultRendererBackend;
+        bool BackendCLIOverride = false;
         RendererAPI::API GraphicsAPI = RendererAPI::API::OpenGL;
         RendererInitialization RendererMode = RendererInitialization::Drawing;
 	};

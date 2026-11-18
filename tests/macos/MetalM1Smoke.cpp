@@ -37,7 +37,7 @@ public:
     RuntimeSession Session;
     Ref<Framebuffer> Display, Retirement;
     uint64_t Frames=0;
-    bool Benchmark=false;
+    bool Benchmark=false, FP32Display=false;
     struct Query {uint32_t ID=0;uint64_t Frame=0;bool Pending=false;};
     std::array<Query,16> Queries{};
     size_t NextQuery=0;
@@ -74,7 +74,7 @@ public:
         }
         if (!Display) {
             FramebufferSpecification spec; spec.Width=size.first;spec.Height=size.second;
-            spec.Attachments={metal ? FramebufferTextureFormat::RGBA32F : FramebufferTextureFormat::RGBA16F,
+            spec.Attachments={(metal || FP32Display) ? FramebufferTextureFormat::RGBA32F : FramebufferTextureFormat::RGBA16F,
                 FramebufferTextureFormat::RED_INTEGER,metal ? FramebufferTextureFormat::DEPTH32F : FramebufferTextureFormat::Depth};
             Display=Framebuffer::Create(spec);
         } else Display->Resize(size.first,size.second);
@@ -117,7 +117,7 @@ static void Print(const char* name,const MetalProofSnapshot& s) {
       <<" zero_present_time="<<s.ZeroPresentationTime<<" pixels="<<s.PixelWidth<<'x'<<s.PixelHeight<<" logical="<<s.LogicalWidth<<'x'<<s.LogicalHeight
       <<" backing_scale="<<s.BackingScale<<" vsync="<<s.VSync<<" errors="<<s.Errors<<std::endl;
 }
-static int Benchmark(const std::filesystem::path& output,const std::filesystem::path& resources,bool metal)
+static int Benchmark(const std::filesystem::path& output,const std::filesystem::path& resources,bool metal,bool fp32=false)
 {
     Log::Init();std::filesystem::create_directories(output);
     auto spec=Specification(output);spec.Name=metal?"M4 Metal benchmark":"M4 OpenGL benchmark";
@@ -130,7 +130,7 @@ static int Benchmark(const std::filesystem::path& output,const std::filesystem::
         Application app(spec);if(metal)observer=Backend().Observe();
         auto* window=static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
         MetalM1Environment(window,(output/"environment.json").c_str());
-        auto layer=CreateScope<EventProof>();auto* proof=layer.get();layer->Benchmark=true;
+        auto layer=CreateScope<EventProof>();auto* proof=layer.get();layer->Benchmark=true;layer->FP32Display=fp32;
         layer->QuadProject=Project::LoadCandidate(std::filesystem::absolute("examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj"));
         auto requests=layer->QuadProject->GetRendererRequests();requests.TextureSlots=4;requests.VSync=false;
         layer->QuadProject->GetConfig().Rendering=requests;
@@ -170,8 +170,8 @@ int main(int argc,char** argv) {
         if (argc == 4 && std::string(argv[2]) == "--editor-pending-shutdown") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),900,true);
         if (argc == 4 && std::string(argv[2]) == "--editor-encode-recovery") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),900,false,true,true);
         if (argc == 4 && std::string(argv[2]) == "--editor-encode-abort") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),900,false,true);
-        if(argc==4 && (std::string(argv[2])=="--benchmark-metal" || std::string(argv[2])=="--benchmark-opengl"))
-            return Benchmark(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),std::string(argv[2])=="--benchmark-metal");
+        if(argc==4 && (std::string(argv[2])=="--benchmark-metal" || std::string(argv[2])=="--benchmark-opengl" || std::string(argv[2])=="--benchmark-opengl-fp32"))
+            return Benchmark(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),std::string(argv[2])=="--benchmark-metal",std::string(argv[2])=="--benchmark-opengl-fp32");
         const bool renderer3D=argc==4 && std::string(argv[2])=="--renderer3d";
         const bool runtime=renderer3D || (argc==4 && std::string(argv[2])=="--renderer2d");
         const bool quads=runtime || (argc==4 && std::string(argv[2])=="--quads");

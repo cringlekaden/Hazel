@@ -2,9 +2,37 @@
 #include "RendererPolicy.h"
 #include <algorithm>
 #include <stdexcept>
+#include <sstream>
 
 namespace Hazel::RendererPolicy {
+    const char* BackendName(RendererBackend backend) {
+        switch (backend) {
+        case RendererBackend::Automatic: return "Automatic";
+        case RendererBackend::OpenGL: return "OpenGL";
+        case RendererBackend::Metal: return "Metal 4";
+        }
+        throw std::invalid_argument("Unsupported renderer backend request");
+    }
+    RendererBackend ParseBackend(const std::string& value) {
+        if (value == "Automatic") return RendererBackend::Automatic;
+        if (value == "OpenGL") return RendererBackend::OpenGL;
+        if (value == "Metal") return RendererBackend::Metal;
+        throw std::invalid_argument("Backend must be Automatic, OpenGL or Metal");
+    }
+    RendererBackend SelectBackend(RendererBackend project, const std::optional<RendererBackend>& cli,
+                                  const BackendAvailability& availability) {
+        BackendName(project);
+        const auto request = cli.value_or(project);
+        BackendName(request);
+        if (request == RendererBackend::Metal && !availability.Metal)
+            throw std::runtime_error("Metal 4 requested but unavailable: " + availability.MetalReason +
+                                     ". Select OpenGL in Project Settings or launch with --opengl.");
+        if (request == RendererBackend::Automatic)
+            return availability.Metal ? RendererBackend::Metal : RendererBackend::OpenGL;
+        return request;
+    }
     void Validate(const RuntimeRendererRequests &r) {
+        BackendName(r.Backend);
         if (r.TextureSlots < 2 || r.TextureSlots > 32)
             throw std::invalid_argument("Texture batch slots must be 2–32, including white");
         if (r.ShaderLoading != ShaderLoadingRequest::Automatic &&
@@ -48,12 +76,16 @@ namespace Hazel::RendererPolicy {
                               : !caps.ShaderBinaries
                                   ? "SPIR-V specialization unavailable; Auto uses GLSL 410"
                                   : "Auto uses available SPIR-V specialization";
+        if (caps.Metal)
+            result.ShaderReason = "Offline Metal libraries (required); GLSL compatibility applies only to OpenGL";
         if (r.EnableDebugOutput && !caps.DebugOutput)
-            result.DebugReason = "Core 4.3 debug functions unavailable; request retained";
+            result.DebugReason = caps.Metal ? "GL debug callback does not apply; use native Metal validation" : "Core 4.3 debug functions unavailable; request retained";
         return result;
     }
     std::string RestartReason(const RuntimeRendererRequests &r, const RendererResolution &current,
-                              const RendererCapabilities &caps) {
+                              const RendererCapabilities &caps, RendererBackend launched) {
+        if (r.Backend != launched)
+            return "Restart required: save requests, close normally and reopen this project to apply the backend request. CLI overrides still take precedence";
         const auto desired = Resolve(Settings(r), caps);
         const bool slots = desired.Effective.TextureSlots != current.Effective.TextureSlots;
         const bool shaders =
@@ -97,8 +129,7 @@ namespace Hazel::RendererPolicy {
             out << " (" << r.TextureReason << ')';
         out << "\nShader loading: requested "
             << (r.Requested.PreferShaderBinaries ? "Automatic" : "GLSL compatibility")
-            << ", effective " << ShaderPath(r.Effective.PreferShaderBinaries) << " ("
-            << r.ShaderReason << ')' << "\nGL debug output: requested "
+            << ", resolution: " << r.ShaderReason << "\nGL debug output: requested "
             << (r.Requested.EnableDebugOutput ? "On" : "Off") << ", effective "
             << (r.Effective.EnableDebugOutput ? "On" : "Off");
         if (!r.DebugReason.empty())
