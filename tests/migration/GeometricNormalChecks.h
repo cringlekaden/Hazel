@@ -73,7 +73,7 @@ static void GeometricNormalChecks()
         RenderCommand::Clear();
         if (surface->GetSpecification().Attachments.Attachments.size() > 1)
             surface->ClearAttachment(1, -1);
-        SceneRenderer::Render(frame, view, target, [] {}, [] {});
+        SceneRenderer::Render(frame, view, surface, [] {}, [] {});
     };
     auto make = [&](const NavigationCamera &camera)
     {
