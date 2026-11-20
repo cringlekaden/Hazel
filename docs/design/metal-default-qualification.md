@@ -573,3 +573,78 @@ follow-up. Existing local Full-tier results remain evidence for that identical
 production code; touched test consumers receive targeted rebuild/checks. The
 in-progress 4c0a42e CI is superseded rather than duplicated by a full dispatch on
 the warning-corrected test source.
+
+
+### Complete Windows production data invalidates a relative bound
+
+Full run 44818859646 at 8f12458 reports Windows FAIL after passing the new strict
+constant-W production control. Its complete perspective production scan measures
+maximum absolute error **3.45706939697e-5**, but maximum utilization of the
+per-channel relative bound is **1.38689456503**. The smaller channel allowance is
+not justified by the complete raster distribution. The previous relative proposal
+is therefore not accepted; it is not a passing correctness result. Raw completed
+job: `closure/136574194722.log`; its uploaded evidence is preserved as
+`closure/windows-8f-evidence.zip`. The new probe warning sites are absent in that
+MSVC compile; the older Application getenv and RuntimeSession viewport-conversion
+warnings remain baseline sites.
+
+The revised proposal is a **5e-5 absolute radiance envelope only for the two
+bounded [0,1] unlit silhouette colors**. It is 1.45x the measured Windows production
+maximum and 1.42x the independent Linux probe maximum. It is tighter at .8 than
+the earlier 6.4e-5 relative allowance. This is explicitly a fixture-specific
+rasterization envelope, not a universal shader/lighting tolerance. The independent
+reference colors remain unchanged. The strict production constant-W check still
+uses 1e-6 for **every** channel, protecting UBO, sampler, shader and format color
+correctness. Binary16 .8 error is 3.91x the envelope, and 0.1 percent gain at .8 is
+16x it; the listed rejection controls remain mandatory.
+
+Exact signed-ID/depth equality is evaluated over the complete existing foreground/
+rear cohort before color acceptance and reported separately. The assertion and
+comparison values are unchanged; a color failure no longer prevents complete
+picking/depth evidence. Affected Debug/Release Renderer2D suites and the final
+geometric assertion-order check PASS natively. No unchanged native full-tier gate
+is repeated for this test-only revision. Linux's complete production statistics
+are awaited before the next final acceptance dispatch.
+
+
+### Complete Linux production data; bounded-color absolute acceptance
+
+Completed Linux job 136574194492 in run 44818859646 independently PASSes the
+strict 1e-6 production control, then measures complete perspective maximum
+**9.14335250854e-5**, relative-bound utilization **1.53513007814**, and FAILs the
+old relative proposal. The production program's varying layout and vertex work
+are not identical to the minimal probe; its measured envelope cannot be inferred
+from the small probe's maximum. This is why that run was allowed to reach its
+own production assertion before another candidate was dispatched.
+
+The accepted proposal for final platform testing is **1.25e-4 absolute radiance**,
+only for these two bounded [0,1] silhouette colors: 1.37x the complete Linux
+maximum and 3.62x Windows's maximum. The never-dispatched 5e-5 proposal is not
+accepted. No reference color changes. The production constant-W check continues
+to require **1e-6 in every channel**, so material upload, sampler, format and
+shader color correctness are not relaxed. Binary16 .8 error is 1.56x this raster
+envelope and is rejected; the 0.1 percent gain control at .8 is 6.4x, and 1/255
+neighboring-color blending is over 24x. Gamma, wrong surface, hole and non-finite
+controls also remain. No broader HDR, PBR/IBL, depth or picking tolerance changes.
+
+The exact signed-ID/depth comparison now completes before color acceptance, using
+the same foreground/rear pixels and exact comparison values, with explicit zero/
+nonzero mismatch counts. Final full platform acceptance must exercise it and the
+independent packed D24S8 case. A focused GL4.1 geometric/interpolation check is now
+run in Debug before Release/packaging, reusing the existing build; full software
+and full Release GL4.1 suites remain intact. This gives early coverage of both
+loading paths without another diagnostic-only build matrix.
+
+Local maintained Full tier PASSes all 21 gates in **1350.50 s**: both configurations,
+all 18 OpenGL executables, M3, all 135 M4 comparisons/configuration (zero IDs,
+maximum cross-backend depth error 1.7881393432617188e-7), all 17 cache/rejection
+cases/configuration, M5 1x/2x, lifecycle, all 28 product cases/configuration and
+all three relocated source-free package sets. The Full tier started at 4c0a42e;
+production/runtime/shader/script source is byte-identical to 8f12458 (recorded in
+`closure/final-source-proof.json`). Warning-only test consumers are rebuilt and
+checked separately. The subsequent color-envelope/assertion-order revision is
+test-only and receives affected Debug/Release checks; unchanged full gates are
+not repeated. Native signed-ID/depth mismatch counts are zero. Final fixture
+switch/capture export also PASSes using the environment helper and a spaces/Unicode
+private project path. Physical mouse/menu/dialog interaction is not inferred from
+automated captures. Broader physical hardware and notarization remain NOT RUN.

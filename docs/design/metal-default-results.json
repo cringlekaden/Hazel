@@ -389,9 +389,25 @@
         "flatError": 0
       }
     },
-    "colorContract": "Only perspective unlit silhouette: max(8e-5*abs(expected),4*FLT_EPSILON); strict 1e-6 production constant-W control; rejection controls; no shader/reference changes",
+    "colorContract": "Only bounded perspective unlit silhouette: 1.25e-4 absolute radiance; strict 1e-6 production constant-W control and negative controls; no shader/reference/ID/depth changes",
     "saveRestart": "PASS native save while retaining Metal, normal close, actual no-flag OpenGL relaunch in Hazelnut and Nutella after RuntimeSession launch-snapshot correction",
     "smoke": "Strengthened: await 60 correlated completed positive Metal presentations; timeout30s, no early-close acceptance; native_result also checks correlated minimum",
-    "finalAcceptance": "PENDING once-stable full local and exact corrected-commit CI"
+    "finalAcceptance": "PENDING once-stable full local and exact corrected-commit CI",
+    "relativeAcceptanceCI": {
+      "run": 44818859646,
+      "sha": "8f12458f400070a3728bf1efa52c9af89c672699",
+      "macOS": "PASS Debug/Release CPU/build",
+      "Windows": "FAIL production raster absolute max3.45706939697e-5, relative utilization1.38689456503",
+      "Linux": "FAIL independently measured absolute max9.14335250854e-5, relative utilization1.53513007814",
+      "strictProductionColorControl": "PASS 1e-6 both platforms"
+    },
+    "localFull": {
+      "status": "PASS available local tier",
+      "gates": 21,
+      "seconds": 1350.5,
+      "raw": "build/metal-default-evidence/closure/full/results.json",
+      "productionSourceUnchanged": "4c0a42e..8f12458",
+      "subsequentTestOnlyChecks": "PASS affected Renderer2D and geometric checks; final 1.25e-4 platform acceptance pending"
+    }
   }
 }

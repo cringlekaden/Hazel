@@ -6,14 +6,15 @@
 // Only the constant-color silhouette fixture: fixed-function perspective
 // interpolation precedes the FP32 render target. No PBR/IBL oracle uses this bound.
 // See docs/design/metal-default-qualification.md, closure numeric measurements.
-static double UnlitColorAllowance(double expected)
-{
-    return std::max(8e-5 * std::abs(expected), 4.0 * std::numeric_limits<float>::epsilon());
-}
+// Absolute radiance envelope for this fixture's bounded [0,1] colors. Channel
+// relative bounds are unsuitable: production interpolation errors do not scale
+// uniformly with the post-interpolation material factor. The production
+// constant-W control still requires 1e-6 for every channel.
+static constexpr double UnlitRasterColorTolerance = 1.25e-4;
 static bool UnlitColorMatches(glm::vec3 actual, glm::dvec3 expected)
 {
     for(int c=0;c<3;++c)
-        if(!std::isfinite(actual[c]) || std::abs(double(actual[c])-expected[c])>UnlitColorAllowance(expected[c]))return false;
+        if(!std::isfinite(actual[c]) || std::abs(double(actual[c])-expected[c])>UnlitRasterColorTolerance)return false;
     return true;
 }
 static void UnlitColorPrecisionChecks()

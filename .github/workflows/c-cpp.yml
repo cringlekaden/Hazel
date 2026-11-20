@@ -75,6 +75,10 @@ jobs:
         run: python scripts/hazel.py test --config Debug --suite cpu
       - name: Windows remaining Debug graphics, authoring and runtime regressions
         run: python scripts/hazel.py test --config Debug --profile software --suite graphics
+      - name: Windows focused Debug GL4.1 interpolation contract before Release
+        env:
+          HAZEL_UNLIT_INTERPOLATION_PROBE: '1'
+        run: python scripts/hazel.py test --config Debug --profile gl41 --only Renderer2DSmoke
       - name: Build Release (two jobs, after Debug)
         run: python scripts/hazel.py build --config Release --tests
       - name: Cache completed pinned SDKs independently of application tests
@@ -179,6 +183,10 @@ jobs:
         run: python3 scripts/hazel.py test --config Debug --suite cpu
       - name: Linux remaining Debug graphics regressions
         run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test --config Debug --profile software --suite graphics
+      - name: Linux focused Debug GL4.1 interpolation contract before Release
+        env:
+          HAZEL_UNLIT_INTERPOLATION_PROBE: '1'
+        run: xvfb-run -a -s '-screen 0 1600x1000x24 -noreset' python3 scripts/hazel.py test --config Debug --profile gl41 --only Renderer2DSmoke
       - name: Build Release (two jobs, after Debug)
         run: python3 scripts/hazel.py build --config Release --tests
       - name: Cache completed pinned SDKs independently of application tests

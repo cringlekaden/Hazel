@@ -132,15 +132,20 @@ static void GeometricNormalChecks()
         Check(redPixels>100 && bluePixels>100,"Strict unlit control did not cover both materials");
         std::cout<<"PASS: strict 1e-6 constant-W production unlit control, red="<<redPixels<<" blue="<<bluePixels<<'\n';
     }
-    double maxUnlitError=0,maxUnlitFraction=0;size_t unlitPixels=0;
+    double maxUnlitError=0,maxUnlitFraction=0;size_t unlitPixels=0,idMismatches=0,depthMismatches=0;
     for(size_t i=0;i<flatHDR.IDs.size();++i)if(flatHDR.IDs[i]==occluder || flatHDR.IDs[i]==back) {
         ++unlitPixels;const auto base=glm::dvec3(flatHDR.IDs[i]==occluder ? red : blue);
+        if(flatDisplay.IDs[i]!=flatHDR.IDs[i])++idMismatches;
+        if(flatDisplay.Depth[i]!=flatHDR.Depth[i])++depthMismatches;
+        if((flatDisplay.IDs[i]!=flatHDR.IDs[i] || flatDisplay.Depth[i]!=flatHDR.Depth[i]) && idMismatches+depthMismatches<=2)
+            std::cerr<<"Unlit presentation mismatch at "<<i%width<<','<<i/width<<": ID "<<flatHDR.IDs[i]<<" -> "<<flatDisplay.IDs[i]<<"; depth "<<std::hexfloat<<flatHDR.Depth[i]<<" -> "<<flatDisplay.Depth[i]<<std::defaultfloat<<'\n';
         for(int c=0;c<3;++c) {
             const double error=std::isfinite(flatHDR.Color[i][c]) ? std::abs(double(flatHDR.Color[i][c])-base[c]) : std::numeric_limits<double>::infinity();
-            maxUnlitError=std::max(maxUnlitError,error);maxUnlitFraction=std::max(maxUnlitFraction,error/UnlitColorAllowance(base[c]));
+            maxUnlitError=std::max(maxUnlitError,error);maxUnlitFraction=std::max(maxUnlitFraction,error/UnlitRasterColorTolerance);
         }
     }
-    std::cout<<"UNLIT_PRODUCTION pixels="<<unlitPixels<<" max_abs="<<std::setprecision(12)<<maxUnlitError<<" allowance_fraction="<<maxUnlitFraction<<'\n';
+    std::cout<<"UNLIT_PRODUCTION pixels="<<unlitPixels<<" max_abs="<<std::setprecision(12)<<maxUnlitError<<" allowance_fraction="<<maxUnlitFraction<<" exact_id_mismatches="<<idMismatches<<" exact_depth_mismatches="<<depthMismatches<<'\n';
+    Check(!idMismatches && !depthMismatches,"Presentation changed unlit picking/depth");
     unsigned interfacePixels = 0;
     for (size_t i = 0; i < flatHDR.IDs.size(); ++i)
     {
@@ -148,7 +153,10 @@ static void GeometricNormalChecks()
         if (id != occluder && id != back)
             continue;
         auto base = glm::dvec3(id == occluder ? red : blue);
-        Check(UnlitColorMatches(flatHDR.Color[i],base),
+        const bool matches=UnlitColorMatches(flatHDR.Color[i],base);
+        if(!matches)
+            std::cerr<<"Unlit mismatch pixel="<<i%width<<','<<i/width<<" id="<<id<<" actual="<<flatHDR.Color[i].r<<','<<flatHDR.Color[i].g<<','<<flatHDR.Color[i].b<<" expected="<<base.r<<','<<base.g<<','<<base.b<<" absolute_bound="<<UnlitRasterColorTolerance<<'\n';
+        Check(matches,
               "Unlit mesh has a coverage/color hole before HDR presentation");
         auto presented = OracleNeutral(base);
         NearRGB(flatDisplay.Color[i], presented, .001,
@@ -158,13 +166,6 @@ static void GeometricNormalChecks()
         NearRGB(flatOutput.Color[i],
                 {transfer(presented.r), transfer(presented.g), transfer(presented.b)}, 2. / 255,
                 "Final encoding introduced an unlit silhouette fringe");
-        if (flatDisplay.IDs[i] != id || flatDisplay.Depth[i] != flatHDR.Depth[i])
-            std::cerr << "Unlit presentation mismatch at " << i % width << ',' << i / width
-                      << ": ID " << id << " -> " << flatDisplay.IDs[i]
-                      << "; depth " << std::hexfloat << flatHDR.Depth[i] << " -> "
-                      << flatDisplay.Depth[i] << std::defaultfloat << '\n';
-        Check(flatDisplay.IDs[i] == id && flatDisplay.Depth[i] == flatHDR.Depth[i],
-              "Presentation changed unlit picking/depth");
         if (id == occluder && i > width && i + width + 1 < flatHDR.IDs.size())
             for (auto j : {i - 1, i + 1, i - width, i + width})
                 if (flatHDR.IDs[j] == back)
