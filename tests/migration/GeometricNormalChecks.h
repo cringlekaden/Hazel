@@ -3,6 +3,7 @@
 #include <iostream>
 #include "Hazel/Math/Math.h"
 #include "Hazel/Scene/SceneSerializer.h"
+#include "UnlitInterpolationProbe.h"
 static void GeometricNormalChecks()
 {
     RenderCommand::StateScope scope;
@@ -102,6 +103,7 @@ static void GeometricNormalChecks()
         mat->BaseColor = glm::vec4(mesh.Picking == occluder ? red : blue, 1);
         mesh.Materials = {mat};
     }
+    UnlitInterpolationProbe(flat,width,height);
     SceneRenderView flatView;
     render(flat, flatView, display);
     auto flatHDR = read(flatView.Radiance, true);
