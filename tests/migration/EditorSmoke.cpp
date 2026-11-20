@@ -567,13 +567,30 @@ private:
     bool DrawBackendSettingsCapture() {
         const char* mode=std::getenv("HAZEL_BACKEND_CAPTURE");
         if(!mode)return false;
+        static bool sized=false;
+        if(!sized){glfwSetWindowSize(static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow()),1280,1100);sized=true;return true;}
         m_Editor.m_ActionError.clear();ImGui::ClosePopupsOverWindow(nullptr,false);
+        ImGui::GetIO().FontGlobalScale=1.0f;
         const auto origin=ImGui::GetMainViewport()->Pos;
+        ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
         ImGui::SetNextWindowPos({origin.x+10,origin.y+40});ImGui::SetNextWindowSize({1260,1050});
         ImGui::Begin("Project Settings - Rendering",nullptr,ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoDocking);
         ImGui::GetStateStorage()->SetInt(ImGui::GetID("Runtime rendering"),1);
-        if(std::string(mode)=="restart")
+        if(std::string(mode)=="restart") {
             m_Editor.m_Authoring->m_RenderingDraft.Backend=DefaultRendererBackend==RendererBackend::OpenGL ? RendererBackend::Automatic : RendererBackend::OpenGL;
+            static bool saved=false;
+            if(!saved && m_CaptureTicks) {
+                const auto active=Renderer::GetAPI();
+                Check(m_Editor.m_Authoring->SaveRenderingRequests(m_Editor.m_Authoring->m_RenderingDraft) && Renderer::GetAPI()==active && !m_Editor.m_Authoring->RenderingRestartReason().empty(),"Native backend capture did not save a restart request while retaining the active GPU");
+                if(const char* output=std::getenv("HAZEL_BACKEND_RESTART_EXPORT")) {
+                    const auto destination=std::filesystem::u8path(output);
+                    Check(!std::filesystem::exists(destination),"Use a fresh native restart evidence project");
+                    std::filesystem::copy(m_Editor.m_ProjectPath.parent_path(),destination,std::filesystem::copy_options::recursive);
+                    std::cout<<"PASS: native saved backend restart project "<<(destination/m_Editor.m_ProjectPath.filename()).generic_u8string()<<'\n';
+                }
+                saved=true;
+            }
+        }
         m_Editor.m_Authoring->ProjectRendering();ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());ImGui::End();
         return true;
     }

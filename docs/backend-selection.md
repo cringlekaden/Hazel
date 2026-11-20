@@ -76,3 +76,18 @@ and software GL remain distinct in qualification reports.
 
 No XeGTAO, bloom, Forward+, new lights, SSR or reflection probes are introduced.
 Frozen PBR/IBL references and the accepted split-sum approximation remain unchanged.
+
+
+## Native Project Settings captures
+
+These are native Apple M4/macOS 27.3 captures of the production Project Settings
+widget in the maintained editor regression fixture. The first shows Automatic
+resolved to Metal 4, with queried sample support separated from Metal-family and
+engine limits. The second follows an actual saved OpenGL request: the active
+Metal device remains intact until restart. They are automated fixture captures,
+not a claim of physical mouse/menu interaction. Deliberately rejected authoring
+operations in that fixture may remain in the background Console.
+
+![Automatic request with active Metal 4 and capability provenance](images/backend-settings/automatic-metal.png)
+
+![Saved OpenGL request with Metal still active and restart required](images/backend-settings/saved-opengl-restart.png)

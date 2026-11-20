@@ -57,10 +57,10 @@ def timings(text):
 def native_result(text, minimum=50, imgui=True):
     matches = re.findall(r'METAL_FINAL submitted=(\d+) completed=(\d+) presented=(\d+) completed_presented=(\d+) errors=(\d+)[^\n]*live_attachment_generations=(\d+) pending_bytes=(\d+)', text)
     if not matches: raise RuntimeError('Native retirement evidence missing')
-    submitted, completed, presented, _, errors, generations, pending = map(int, matches[-1])
-    if submitted < minimum or completed != submitted or presented < minimum or errors or generations or pending or (imgui and 'M5_IMGUI_FINAL bytes=0 ' not in text):
+    submitted, completed, presented, completed_presented, errors, generations, pending = map(int, matches[-1])
+    if submitted < minimum or completed != submitted or presented < minimum or completed_presented < minimum or errors or generations or pending or (imgui and 'M5_IMGUI_FINAL bytes=0 ' not in text):
         raise RuntimeError('Native completion/presentation/retirement gate failed')
-    return {'status': 'PASS', 'submitted': submitted, 'completed': completed, 'positivePresentationsAtSnapshot': presented}
+    return {'status': 'PASS', 'submitted': submitted, 'completed': completed, 'positivePresentationsAtSnapshot': presented, 'completedPositivePresentationsAtSnapshot': completed_presented}
 
 
 def main():

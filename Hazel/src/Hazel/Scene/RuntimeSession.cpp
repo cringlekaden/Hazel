@@ -55,7 +55,7 @@ namespace Hazel {
             GameUI::Validate(project->GetUIBindings());
             RendererPolicy::Validate(project->GetRendererRequests());
             if(Application::TryGet()) {
-                const auto reason=RendererPolicy::RestartReason(project->GetRendererRequests(),Renderer::GetResolution(),Renderer::GetCapabilities());
+                const auto reason=RendererPolicy::RestartReason(project->GetRendererRequests(),Renderer::GetResolution(),Renderer::GetCapabilities(),Application::Get().GetSpecification().ProjectBackend);
                 if(!reason.empty())throw std::runtime_error(reason);
             }
         }

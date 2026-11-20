@@ -43,7 +43,7 @@ namespace Hazel {
         small.TextureSlots = 2;
         small.VSync = false;
         small.ShaderLoading = ShaderLoadingRequest::GLSLCompatibility;
-        Check(!RendererPolicy::RestartReason(small, selected, caps).empty(),
+        Check(!RendererPolicy::RestartReason(small, selected, caps, RendererBackend::OpenGL).empty(),
               "Different batch policy did not require restart");
         auto same = small;
         same.TextureSlots = 16;
@@ -54,7 +54,7 @@ namespace Hazel {
         caps.DebugOutput = true;
         const auto binary = RendererPolicy::Resolve(RendererPolicy::Settings({}), caps);
         Check(binary.Effective.PreferShaderBinaries &&
-                  !RendererPolicy::RestartReason(same, binary, caps).empty(),
+                  !RendererPolicy::RestartReason(same, binary, caps, RendererBackend::OpenGL).empty(),
               "Forced compatibility did not distinguish loaded binary policy");
         for (auto slots : {0u, 1u, 33u, UINT32_MAX}) {
             auto bad = small;

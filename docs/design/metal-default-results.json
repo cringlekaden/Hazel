@@ -1,10 +1,10 @@
 {
-  "status": "INCOMPLETE",
+  "status": "INCOMPLETE: corrected candidate awaiting final local and platform acceptance",
   "branch": "feature/3d-foundations",
   "baseline": "93d39bd6d71b090a3a931f1a457a9df27347c91c",
   "default": "Automatic; native Metal 4 availability probe, otherwise OpenGL; CLI > project > default",
-  "automaticNativeRendererPolicy": "PASS Apple M4/macOS27.3 via explicit Automatic; no-flag activation launches BLOCKED by locked console",
-  "fullProductionQualification": "INCOMPLETE: current activation/native captures and exact candidate CI remain required",
+  "automaticNativeRendererPolicy": "PASS native Apple M4/macOS27.3 no-flag selection; final refreshed smoke/package gates pending",
+  "fullProductionQualification": "INCOMPLETE until final available gates pass; prior blockers diagnosed independently",
   "m6CI": {
     "run": 44212291235,
     "sha": "35e4f4116cba7bc57a12e4451bdf293acc2c5cf3",
@@ -340,7 +340,7 @@
         ]
       }
     },
-    "screenshots": "BLOCKED pending native console",
+    "screenshots": "PASS inspected native production widget captures: docs/images/backend-settings/automatic-metal.png and saved-opengl-restart.png",
     "preparedReleaseBundles": "PASS packaging/signatures for both apps, 2D/direct3D/PBR; new-default source-free EXECUTION NOT RUN"
   },
   "efficiencySeconds": {
@@ -363,5 +363,35 @@
   "nextMilestone": "XeGTAO not started; requires exact depth correction CI, final default/capture gates and acceptance of remaining hardware/deployment limitations.",
   "remainingHardware": "Physical Windows/Linux/Intel HD4000 and macOS27.0 NOT RUN; hosted/software GL differs from native hardware.",
   "release": "No merge or public release; ad-hoc signing only, not Developer ID/notarization/Gatekeeper qualification.",
-  "nativeStableGatesScope": "Executed before Automatic default activation; exact source digest in local stable-source-digest.json. Later changed default metadata has separate activation gates."
+  "nativeStableGatesScope": "Executed before Automatic default activation; exact source digest in local stable-source-digest.json. Later changed default metadata has separate activation gates.",
+  "closure": {
+    "baseline": "1a06c9cdedb5d9d4749772d3cd97b52f8d5e21e6",
+    "originalCI": {
+      "run": 44300482954,
+      "macOS": "PASS CPU/build subset",
+      "Windows": "FAIL unlit HDR 0.799994 vs 0.8",
+      "Linux": "FAIL independently inspected: unlit HDR 0.799992 vs 0.8"
+    },
+    "diagnosticCI": {
+      "run": 44814375306,
+      "sha": "b14cced478480f99da5921e2940c405ad3db6455",
+      "scope": "Focused diagnosis; both intentionally retain original failing 1e-6 assertion; not acceptance",
+      "Windows": {
+        "smoothMaxAbsolute": 1.9371509552e-05,
+        "above1e6": 93,
+        "covered": 82729,
+        "flatError": 0
+      },
+      "Linux": {
+        "smoothMaxAbsolute": 3.5285949707e-05,
+        "above1e6": 106,
+        "covered": 82729,
+        "flatError": 0
+      }
+    },
+    "colorContract": "Only perspective unlit silhouette: max(8e-5*abs(expected),4*FLT_EPSILON); strict 1e-6 production constant-W control; rejection controls; no shader/reference changes",
+    "saveRestart": "PASS native save while retaining Metal, normal close, actual no-flag OpenGL relaunch in Hazelnut and Nutella after RuntimeSession launch-snapshot correction",
+    "smoke": "Strengthened: await 60 correlated completed positive Metal presentations; timeout30s, no early-close acceptance; native_result also checks correlated minimum",
+    "finalAcceptance": "PENDING once-stable full local and exact corrected-commit CI"
+  }
 }

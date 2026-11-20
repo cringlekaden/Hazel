@@ -51,6 +51,7 @@ static void UnlitInterpolationProbe(const SceneSubmission& frame, unsigned width
         }
         std::cout<<"UNLIT_INTERPOLATION qualifier="<<qualifier<<" output_bits="<<bits<<" white_vertex_colors=1 sampler=none pixels="<<pixels<<" above_1e-6="<<failures<<" max_abs="<<std::setprecision(12)<<maximum<<" first="<<firstIndex%width<<','<<firstIndex/width<<" actual="<<first.x<<','<<first.y<<','<<first.z<<" expected="<<expected.x<<','<<expected.y<<','<<expected.z<<'\n';
         Check(pixels>100,"Interpolation probe had no meaningful coverage");Check(glGetError()==GL_NO_ERROR,"Interpolation probe GL error");
+        if(std::string(qualifier)=="flat")Check(maximum<=1e-6,"Flat interpolation control lost constant-color precision");
         glUseProgram(0);target->Unbind();
     }
 }

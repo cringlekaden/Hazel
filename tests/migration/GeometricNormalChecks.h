@@ -4,6 +4,7 @@
 #include "Hazel/Math/Math.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include "UnlitInterpolationProbe.h"
+#include "UnlitColorPrecision.h"
 static void GeometricNormalChecks()
 {
     RenderCommand::StateScope scope;
@@ -96,6 +97,7 @@ static void GeometricNormalChecks()
                                      [&](auto &m) { return m.Picking == front; }),
                       flat.Meshes.end());
     const glm::vec3 red(.8, .025, .015), blue(.015, .3, .8);
+    UnlitColorPrecisionChecks();
     for (auto &mesh : flat.Meshes)
     {
         auto mat = CreateRef<MaterialDefinition>();
@@ -110,6 +112,35 @@ static void GeometricNormalChecks()
     auto flatDisplay = read(display, true);
     display->EncodeOutput(encoded);
     auto flatOutput = read(encoded, false);
+    {
+        // Retain the original strict production color check with constant clip W.
+        // This uses the same materials, uniform uploads, white sampler and shader;
+        // only perspective division of the interpolants is removed. A uniform,
+        // sampling, encoding or attachment regression must not hide in the bound.
+        auto control=flat;
+        control.Camera.ViewProjection=glm::ortho(-8.f,8.f,-4.5f,4.5f,.1f,100.f)*seed.GetViewMatrix();
+        control.Camera.Orthographic=true;
+        SceneRenderView controlView;render(control,controlView,display);
+        const auto pixels=read(controlView.Radiance,true);
+        size_t redPixels=0,bluePixels=0;
+        for(size_t i=0;i<pixels.IDs.size();++i)if(pixels.IDs[i]==occluder || pixels.IDs[i]==back) {
+            const bool foreground=pixels.IDs[i]==occluder;
+            foreground ? ++redPixels : ++bluePixels;
+            NearRGB(pixels.Color[i],glm::dvec3(foreground ? red : blue),1e-6,
+                    "Constant-W production unlit color lost uniform/sampler/FP32 precision");
+        }
+        Check(redPixels>100 && bluePixels>100,"Strict unlit control did not cover both materials");
+        std::cout<<"PASS: strict 1e-6 constant-W production unlit control, red="<<redPixels<<" blue="<<bluePixels<<'\n';
+    }
+    double maxUnlitError=0,maxUnlitFraction=0;size_t unlitPixels=0;
+    for(size_t i=0;i<flatHDR.IDs.size();++i)if(flatHDR.IDs[i]==occluder || flatHDR.IDs[i]==back) {
+        ++unlitPixels;const auto base=glm::dvec3(flatHDR.IDs[i]==occluder ? red : blue);
+        for(int c=0;c<3;++c) {
+            const double error=std::isfinite(flatHDR.Color[i][c]) ? std::abs(double(flatHDR.Color[i][c])-base[c]) : std::numeric_limits<double>::infinity();
+            maxUnlitError=std::max(maxUnlitError,error);maxUnlitFraction=std::max(maxUnlitFraction,error/UnlitColorAllowance(base[c]));
+        }
+    }
+    std::cout<<"UNLIT_PRODUCTION pixels="<<unlitPixels<<" max_abs="<<std::setprecision(12)<<maxUnlitError<<" allowance_fraction="<<maxUnlitFraction<<'\n';
     unsigned interfacePixels = 0;
     for (size_t i = 0; i < flatHDR.IDs.size(); ++i)
     {
@@ -117,8 +148,8 @@ static void GeometricNormalChecks()
         if (id != occluder && id != back)
             continue;
         auto base = glm::dvec3(id == occluder ? red : blue);
-        NearRGB(flatHDR.Color[i], base, 1e-6,
-                "Unlit mesh has a coverage/color hole before HDR presentation");
+        Check(UnlitColorMatches(flatHDR.Color[i],base),
+              "Unlit mesh has a coverage/color hole before HDR presentation");
         auto presented = OracleNeutral(base);
         NearRGB(flatDisplay.Color[i], presented, .001,
                 "Flat-color HDR presentation mixed neighboring coverage");

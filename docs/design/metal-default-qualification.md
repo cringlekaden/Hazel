@@ -2,10 +2,11 @@
 
 Starting tree: `93d39bd6d71b090a3a931f1a457a9df27347c91c`,
 `feature/3d-foundations`. This checkpoint follows [M6](metal-m6.md).
-Status: **INCOMPLETE — default launches/captures blocked; Windows CI color gate failed**.
+Status: **INCOMPLETE — prior blockers diagnosed; corrected candidate awaiting final acceptance**.
 Current checkpoint: stable native renderer/package gates PASS on Apple M4/macOS 27.3.
 Automatic is now the default request. Debug/Release compilation and policy plus
-Debug save/restart checks PASS; native no-flag/capture continuation requires unlock.
+Debug save/restart checks PASS. Native no-flag/capture and actual saved OpenGL
+restart continuation now PASS; the latest closure section tracks final refreshed gates.
 Sections below retain chronological failed attempts and superseded holds.
 No merge, release, XeGTAO or new lighting features are included.
 
@@ -398,3 +399,163 @@ Final qualification-helper review also ensures a no-flag packaged launch expects
 OpenGL when the packaged project explicitly saves OpenGL. It must not confuse
 Automatic's native preference with permission to override an authored request.
 The explicit-Automatic package case remains separate and expects native Metal.
+
+
+## Closure from 1a06c9c — 2026-11-20
+
+Starting HEAD is exactly `1a06c9cdedb5d9d4749772d3cd97b52f8d5e21e6`, on the
+requested branch, with the owner's material edit and untracked files preserved.
+Completed run [44300482954](https://github.com/cringlekaden/Hazel/actions/runs/44300482954)
+was inspected job by job. Hosted macOS PASSes its Debug/Release CPU/build subset.
+Windows job 134788620928 FAILs unlit HDR color, actual 0.799994 versus 0.8 at 1e-6,
+on Mesa 26.2.3 / LLVM 23.1.2 / GL4.6. Independently, Linux job 134788620775 FAILs
+that named assertion with actual **0.799992**, on Mesa 25.2.8 / LLVM 20.1.2 /
+GL4.5. Later Release/packages/games are skipped in both. These are two inspected
+observations, not an inferred common root cause. Raw full logs and the exact
+metadata are under `build/metal-default-evidence/closure/`.
+
+The unlit production path is `u_BaseFactor * v_Color * texture(u_Base, v_UV)`.
+MeshGeometry packs FP32 colors; missing source colors default to white. Submitted
+unlit materials use linear factors (.8,.025,.015) or (.015,.3,.8), no texture
+assignments, and Renderer3D binds its RGBA8 all-white fallback. SceneRenderer's
+radiance target is RGBA32F, read as GL_FLOAT before Neutral/SDR presentation.
+A float output format does not make preceding interpolation exact. The independent
+FP64 reference converts the original FP32 factors to double; it does not include
+raster interpolation error. Production shaders and frozen references remain intact.
+
+A standalone GLSL 410 diagnostic checks every actual source vertex color is white,
+queries actual FP32 attachment precision, removes the texture sampler and compares
+smooth with flat color interpolation over the same mesh inputs. It is outside
+production architecture and never supplies a replacement color oracle. Apple GL
+reports zero error in both modes across 82,729 covered pixels. Focused dispatch
+[numeric run 44814375306](https://github.com/cringlekaden/Hazel/actions/runs/44814375306)
+at `b14cced478480f99da5921e2940c405ad3db6455` runs this separately on Windows and
+Linux in ordinary software GL and forced GLSL/GL4.1 modes. Full acceptance remains
+the default workflow dispatch; no full assertion is removed.
+
+The [OpenGL 4.1 specification](https://registry.khronos.org/OpenGL/specs/gl/glspec41.core.pdf)
+section 2.1.1 permits roughly 1e-5 individual fixed-function FP operation accuracy;
+section 3.6.1 defines perspective interpolation. This is not itself a total error
+bound or justification for a blanket tolerance. Mesa's inspected setup computes
+FP32 planes for perspective-weighted varyings and reciprocal W; fragment evaluation
+divides them. `lp_build_rcp` uses LLVM floating division, with its approximate RCPPS
+branch disabled. An approximate-reciprocal-instruction explanation is therefore
+not established. Platform probe measurements are required before a test revision.
+
+### Native continuation and genuine startup findings
+
+The desktop is unlocked. Initial no-flag Debug/Release product cases PASS; Release
+editor save/restart regression PASSes. The first settings capture was not accepted
+as a settings screenshot because the capture window belonged to another viewport.
+The fixture now pins that actual widget to the main native capture viewport and
+uses a readable window extent; [native captures](../backend-selection.md#native-project-settings-captures)
+are inspected, not synthesized.
+
+Five source-free default launches PASSed; PBR Nutella then revealed that 60 CPU
+layer ticks could close after only four Metal submissions (one positive presentation
+at the shutdown snapshot). The minimum-50 completed/presented qualification gate
+correctly FAILed. The smoke path now waits for **60 correlated completed positive
+presentations**, with a 30-second bound and a 1 ms yield while waiting; normal Run
+is unchanged. Early user/window exit cannot produce smoke acceptance. No device,
+queue, synchronization or production rendering architecture is changed. All six
+Release no-flag product cases subsequently PASS with 60–68 positive presentations,
+65–73 submissions, equal completions, no errors and zero tracked retirement.
+
+The restart capture saves the OpenGL request through native SaveRenderingRequests,
+asserts the active GPU remains Metal and exports only its disposable project after
+all authoring assertions complete. An initial attempt saved before those assertions
+and correctly failed a later validation; it is retained and not counted. The final
+save/capture passes. Actual no-flag relaunch of the exported project selects OpenGL
+in Hazelnut, but Nutella exposed a real stale-default call: RuntimeSession passed no
+launch request to RestartReason, implicitly comparing the saved OpenGL request with
+Automatic and refusing Play. It now passes ApplicationSpecification.ProjectBackend,
+as the editor already does. The implicit API default is removed so every caller
+must supply the launch snapshot. Focused policy tests keep explicit launch values.
+The saved-project player relaunch is being requalified after this correction.
+
+
+### Windows isolated result and proposed narrow precision contract
+
+Windows focused job 136558775274 reproduces the failure in both software GL4.6 /
+SPIR-V and forced GL4.1 / GLSL paths. The independent sampler-free smooth probe
+has **93 / 82,729** covered pixels above 1e-6 and maximum absolute channel error
+**1.9371509552e-5**. The flat probe has **zero** error in all covered pixels. This
+isolates sufficient error in fixed-function smooth interpolation without material
+UBO packing, texture sampling, PBR, tone mapping or output quantization. The actual
+production check still FAILs at its original threshold in this diagnostic run; it
+is not a passing acceptance run. Raw log: `closure/136558775274.log`.
+
+Only the two unlit silhouette reference colors use the proposed allowance
+`max(4e-5 * abs(expected channel), 4 * FLT_EPSILON)`. At .8 this is 3.2e-5,
+1.65 times the independent Windows maximum (relative error 2.42144e-5). At .025
+it remains 1e-6; at .015 it tightens to 6e-7. The floor is approximately 4.77e-7.
+This fixture-specific contract measures flat coverage, not the accuracy of a
+lighting approximation. It does not assert a universal bound for arbitrary
+interpolation geometry, nor change shader arithmetic or reference expectations.
+Linux's independent result is still required; full production readback maxima and
+exact ID/depth assertions must pass on both platforms before acceptance.
+
+New independent negative controls reject explicit binary16 radiance rounding,
+zero/neighbor colors, 1/255 neighboring-surface blending, 0.1 percent radiance gain,
+sRGB encoding, NaN and infinity. At .8, binary16 rounding changes the value by
+1.95324e-4 (over six times the allowance); 0.1 percent gain is 25 times the relative
+allowance. The probe's flat-control threshold remains 1e-6. All PBR/IBL, Neutral,
+encoded output, exact signed-ID and depth assertions and frozen reference cases
+remain unchanged. Production per-pixel maximum error and allowance utilization
+are printed before assertions; a non-finite value still fails. Native Apple GL
+passes this fixture and all 13 orbit views with zero unlit error.
+
+The exported native restart project now launches in **both Hazelnut and Nutella**
+without a backend flag and reports requested/active OpenGL before window creation,
+then renders and closes normally (`closure/restart-launch-final/`). This completes
+the actual save → retain Metal → close → new OpenGL device sequence; it does not
+replace a live device. C++ interface/warning and public-doc audits are applied to
+these scoped changes. Initial checked changed-native warning sites are empty;
+baseline engine/vendor/generated warnings remain.
+
+### Independent Linux result; final proposed bound
+
+Linux focused job 136558775638 reproduces smooth-only error independently on its
+Mesa 25.2.8 / LLVM 20.1.2 stack: **106 / 82,729** covered pixels above 1e-6,
+maximum absolute error **3.5285949707e-5**. Its flat control is exact, and both
+software GL4.5 and GL4.1/GLSL modes produce those same probe statistics. First
+reported raw-probe failure is at (616,172), distinct from Windows (490,172).
+The original production assertion independently reports 0.799992 at the old
+threshold. Linux thus supplies its own measured interpolation diagnosis, not an
+assumption based on the Windows failure. Raw log: `closure/136558775638.log`.
+
+This larger result disproves the provisional 4e-5 relative allowance as a common
+bound **before** full acceptance was launched. The final proposed fixture bound
+is **8e-5 relative**, with the same 4*FLT_EPSILON floor: 6.4e-5 at .8, 2.4e-5 at
+.3, 2e-6 at .025, 1.2e-6 at .015. The relative Linux maximum is 4.41074e-5, giving
+1.81x headroom; Windows is 2.42144e-5. This is a common fixture contract, not a
+platform-name exception. Binary16 .8 radiance remains over three times the bound;
+0.1 percent gain is 12.5 times the relative bound. All listed negative controls
+remain required.
+
+In addition, a new **production SceneRenderer** control uses the same geometry,
+materials, UBO uploads, fallback sampler and fragment shader with orthographic
+constant clip W, removing only perspective interpolation division. It retains the
+original **1e-6** color tolerance for both materials, with required nontrivial
+coverage; Apple GL covers 9,818 red and 20,160 blue pixels. This ensures that
+uniform, texture, output precision or color-encoding regressions cannot simply
+hide inside a larger perspective-interpolation allowance. The existing perspective
+silhouette/ID/depth/13-view tests remain in place, and no shader source, lighting
+mathematics or frozen numeric reference is changed. Both production readback
+maxima and exact invariants must still pass final Windows/Linux acceptance.
+
+
+### Corrected candidate acceptance checkpoint
+
+The scoped corrections are stable under focused native Debug/Release policy and
+geometric checks. The final bound awaits the comprehensive cross-platform run;
+passing the smaller native bound on Apple is not cross-platform acceptance. The
+maintained product matrix now adds saved OpenGL/Metal no-flag requests on PBR,
+catching the actual RuntimeSession launch-snapshot regression without multiplying
+every scene/backend combination. `native_result` explicitly requires the minimum
+correlated completed-positive presentations as well as complete retirement.
+
+Next: one final maintained local Full tier on this corrected source, including
+refreshed Debug/Release products and source-free bundles, and normal full C/C++ CI
+against the exact corrected commit. Focused numeric dispatches are deliberately
+not full acceptance. No previously unexecuted job or physical GPU is counted.

@@ -39,7 +39,7 @@ namespace Hazel {
         std::string RestartReason(const RuntimeRendererRequests &requests,
                                   const RendererResolution &current,
                                   const RendererCapabilities &caps,
-                                  RendererBackend launched = DefaultRendererBackend);
+                                  RendererBackend launched);
         const char *ShaderPath(bool binaries);
         const char *DebugName(DebugOutputRequest request);
         DebugOutputRequest ParseDebug(const std::string &value);

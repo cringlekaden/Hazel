@@ -24,7 +24,7 @@ SCENES = {
 }
 
 
-def products(configuration, output, backends=('opengl', 'metal', 'automatic', 'default')):
+def products(configuration, output, backends=None):
     import yaml
     from macos.metal_shaders import produce
     shaders = output/'shaders'
@@ -41,7 +41,16 @@ def products(configuration, output, backends=('opengl', 'metal', 'automatic', 'd
         project = snapshot(example, output/'projects'/scene, descriptor)
         saved_backend=yaml.safe_load(project.read_text())['Project'].get('Rendering',{}).get('Backend','Automatic')
         for app in ('Hazelnut', 'Nutella'):
-            for backend in backends:
+            # Saved requests exercise a different startup path from CLI overrides.
+            # One PBR project covers that policy without multiplying the scene matrix.
+            modes=backends or (('opengl','metal','automatic','default') + (('project-opengl','project-metal') if scene=='pbr' else ()))
+            for backend in modes:
+                selected_project=project
+                if backend.startswith('project-'):
+                    data=yaml.safe_load(project.read_text());rendering=data['Project'].setdefault('Rendering',{'Version':1})
+                    rendering['Backend']='OpenGL' if backend=='project-opengl' else 'Metal'
+                    selected_project=project.with_name(project.stem+'-'+backend+'.hproj')
+                    selected_project.write_text(yaml.safe_dump(data,sort_keys=False))
                 key = f'{app}-{scene}-{backend}'
                 folder = output/key;folder.mkdir()
                 native_console(folder/'console-before.json')
@@ -50,9 +59,9 @@ def products(configuration, output, backends=('opengl', 'metal', 'automatic', 'd
                     if name.startswith(('HAZEL_', 'DYLD_', 'MTL_')):env.pop(name, None)
                 env.update(HAZEL_DATA=str(folder/'profile'), HAZEL_SAVE_ROOT=str(folder/'saves'),
                            HAZEL_METAL_TRACE='1', MTL_DEBUG_LAYER='1', MTL_SHADER_VALIDATION='1')
-                command = [hz.binaries(configuration)/app/app, '--smoke-test', '--project', project]
+                command = [hz.binaries(configuration)/app/app, '--smoke-test', '--project', selected_project]
                 if app == 'Hazelnut':command += ['--no-restore']
-                if backend != 'default':
+                if backend in ('opengl','metal','automatic'):
                     command += ['--'+backend]
                 (folder/'command.json').write_text(json.dumps(list(map(str, command)), indent=2))
                 with (folder/'run.log').open('w') as log:
@@ -70,12 +79,16 @@ def products(configuration, output, backends=('opengl', 'metal', 'automatic', 'd
                 text = (folder/'run.log').read_text(errors='replace')
                 if process.returncode or 'SMOKE PASS: application teardown completed' not in text:
                     raise RuntimeError('Product failed: '+str(folder/'run.log'))
-                metal=backend in ('metal','automatic') or (backend=='default' and saved_backend!='OpenGL')
+                metal=backend in ('metal','automatic','project-metal') or (backend=='default' and saved_backend!='OpenGL')
                 result = native_result(text, imgui=app=='Hazelnut') if metal else {'status': 'PASS'}
                 if backend in ('automatic', 'default') and metal and 'active Metal 4 (selected before window initialization)' not in text:
                     raise RuntimeError('Automatic did not resolve native Metal before window initialization: '+key)
                 if backend=='default' and not metal and 'active OpenGL (selected before window initialization)' not in text:
                     raise RuntimeError('Default ignored the saved OpenGL request: '+key)
+                if backend.startswith('project-'):
+                    expected='Metal 4' if metal else 'OpenGL'
+                    if f'requested {expected}, active {expected} (selected before window initialization)' not in text:
+                        raise RuntimeError('Saved backend was not honored without a CLI override: '+key)
                 result.update(wallSeconds=time.monotonic()-start, readyObservedSeconds=ready,
                               startupBoundary='Process spawn to ready log observed at 20ms polling; not first presentation')
                 results[key] = result
@@ -105,7 +118,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', choices=('Debug', 'Release'), default='Release')
     parser.add_argument('--only', choices=('products', 'packages'), required=True)
-    parser.add_argument('--backend', choices=('opengl', 'metal', 'automatic', 'default'), action='append', help='Focused product selection; omitted runs the complete matrix')
+    parser.add_argument('--backend', choices=('opengl', 'metal', 'automatic', 'default','project-opengl','project-metal'), action='append', help='Focused product selection; omitted runs the complete matrix including saved requests on PBR')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     output = args.output.resolve()
@@ -114,7 +127,7 @@ def main():
     if args.only == 'packages' and args.config != 'Release':raise RuntimeError('Deployment bundles are Release only')
     if args.only == 'packages' and args.backend:raise RuntimeError('--backend selects products only; packages retain their complete matrix')
     hz.yaml_tools()
-    if args.only == 'products':products(args.config, output, tuple(dict.fromkeys(args.backend)) if args.backend else ('opengl', 'metal', 'automatic', 'default'))
+    if args.only == 'products':products(args.config, output, tuple(dict.fromkeys(args.backend)) if args.backend else None)
     else:packages(output)
     print('PASS M6 '+args.only+' subset; other M6 gates remain separate')
 

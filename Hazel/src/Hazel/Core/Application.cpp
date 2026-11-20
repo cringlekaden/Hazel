@@ -14,6 +14,11 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <thread>
+#ifdef HZ_PLATFORM_MACOS
+#include "Platform/macOS/Metal/MetalRendererAPI.h"
+#include "Platform/macOS/Metal/MetalProof.h"
+#endif
 
 namespace Hazel {
 
@@ -155,8 +160,12 @@ namespace Hazel {
 
 		m_LastFrameTime = Time::GetTime();
         uint32_t renderedFrames = 0;
+        bool smokeAccepted = false;
         const bool editorTrace = m_ImGuiLayer && m_Specification.GraphicsAPI == RendererAPI::API::Metal && std::getenv("HAZEL_METAL_TRACE");
         const auto initialDraws = RenderCommand::GetDrawSubmissionCount();
+#ifdef HZ_PLATFORM_MACOS
+        const auto smokeStart = std::chrono::steady_clock::now();
+#endif
 
 		while (m_Running)
 		{
@@ -201,15 +210,32 @@ namespace Hazel {
 
 			m_Window->OnUpdate();
             if (smokeFrames && renderedFrames >= smokeFrames) {
+#ifdef HZ_PLATFORM_MACOS
+                if (m_Specification.GraphicsAPI == RendererAPI::API::Metal) {
+                    const auto proof = static_cast<MetalRendererAPI&>(RenderCommand::Backend()).Observe()->Snapshot();
+                    if (proof.Errors) throw std::runtime_error("Metal smoke presentation failed: " + proof.Error);
+                    // CPU layer ticks can outrun drawable admission. A smoke close
+                    // must follow completed, positively presented GPU work.
+                    if (proof.CompletedPresented < smokeFrames) {
+                        if (std::chrono::steady_clock::now() - smokeStart > std::chrono::seconds(30))
+                            throw std::runtime_error("Metal smoke timed out waiting for completed positive presentations; keep the native desktop unlocked and visible");
+                        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                        continue;
+                    }
+                }
+#endif
                 const auto draws = RenderCommand::GetDrawSubmissionCount() - initialDraws;
                 if (!draws) throw std::runtime_error("Smoke test rendered no engine draw submissions");
                 m_Window->RequestClose();
                 if (m_Running) throw std::runtime_error("Smoke test close request was deferred or blocked; use a clean private project/profile");
-                HZ_CORE_INFO("SMOKE: {} rendered frames, {} engine draw submissions; normal close accepted", renderedFrames, draws);
+                smokeAccepted = true;
+                HZ_CORE_INFO("SMOKE: {} rendered frames minimum met; {} CPU layer ticks, {} engine draw submissions; normal close accepted", smokeFrames, renderedFrames, draws);
             }
 		}
         if (smokeFrames && renderedFrames < smokeFrames)
             throw std::runtime_error("Application exited before completing smoke-test frames");
+        if (smokeFrames && !smokeAccepted)
+            throw std::runtime_error("Application exited before smoke-test completion/presentation acceptance");
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent&)
