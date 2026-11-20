@@ -1,17 +1,18 @@
 #pragma once
 #include "Hazel/Renderer/Drawing/MeshGeometry.h"
+#include "Hazel/Core/FileSystem.h"
 #include <iomanip>
 #include <utility>
 // Diagnostic only: independent GLSL 410 isolates raster interpolation from the
 // production material, sampler and lighting path. Never used as a color oracle.
 static void UnlitInterpolationProbe(const SceneSubmission& frame, unsigned width, unsigned height)
 {
-    const bool diagnostic=std::getenv("HAZEL_UNLIT_INTERPOLATION_PROBE")!=nullptr;
+    const bool diagnostic=!FileSystem::GetEnvironmentPath("HAZEL_UNLIT_INTERPOLATION_PROBE").empty();
     if(!diagnostic)return;
     RenderCommand::StateScope state;
     FramebufferSpecification spec;spec.Width=width;spec.Height=height;
     spec.Attachments={FramebufferTextureFormat::RGBA32F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::Depth};
-    auto target=Framebuffer::Create(spec);
+    auto probeTarget=Framebuffer::Create(spec);
     for(const char* qualifier : {"smooth", "flat"}) {
         const std::string varying=std::string(qualifier)+" ";
         const std::string vertex="#version 410 core\nlayout(location=0) in vec3 a_Position;layout(location=4) in vec4 a_Color;uniform mat4 u_MVP;"+varying+"out vec4 v_Color;void main(){gl_Position=u_MVP*vec4(a_Position,1);v_Color=a_Color;}";
@@ -24,7 +25,7 @@ static void UnlitInterpolationProbe(const SceneSubmission& frame, unsigned width
             GLint okay=0;glGetShaderiv(entry.first,GL_COMPILE_STATUS,&okay);Check(okay,"Interpolation probe shader compile failed");glAttachShader(program,entry.first);
         }
         glLinkProgram(program);GLint linked=0;glGetProgramiv(program,GL_LINK_STATUS,&linked);Check(linked,"Interpolation probe link failed");
-        target->Bind();RenderCommand::SetClearColor({0,0,0,1});RenderCommand::Clear();target->ClearAttachment(1,-1);
+        probeTarget->Bind();RenderCommand::SetClearColor({0,0,0,1});RenderCommand::Clear();probeTarget->ClearAttachment(1,-1);
         GLint bits=0,type=0;glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_FRAMEBUFFER_ATTACHMENT_RED_SIZE,&bits);glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE,&type);
         Check(bits==32 && type==GL_FLOAT,"Interpolation probe requires actual FP32 output");
         auto raster=RenderCommand::GetRasterState();raster.DepthTest=true;raster.DepthWrite=true;raster.Compare=DepthCompare::Less;raster.Blend=false;raster.Cull=CullFace::None;RenderCommand::SetRasterState(raster);
@@ -52,6 +53,6 @@ static void UnlitInterpolationProbe(const SceneSubmission& frame, unsigned width
         std::cout<<"UNLIT_INTERPOLATION qualifier="<<qualifier<<" output_bits="<<bits<<" white_vertex_colors=1 sampler=none pixels="<<pixels<<" above_1e-6="<<failures<<" max_abs="<<std::setprecision(12)<<maximum<<" first="<<firstIndex%width<<','<<firstIndex/width<<" actual="<<first.x<<','<<first.y<<','<<first.z<<" expected="<<expected.x<<','<<expected.y<<','<<expected.z<<'\n';
         Check(pixels>100,"Interpolation probe had no meaningful coverage");Check(glGetError()==GL_NO_ERROR,"Interpolation probe GL error");
         if(std::string(qualifier)=="flat")Check(maximum<=1e-6,"Flat interpolation control lost constant-color precision");
-        glUseProgram(0);target->Unbind();
+        glUseProgram(0);probeTarget->Unbind();
     }
 }

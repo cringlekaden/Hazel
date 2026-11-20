@@ -47,9 +47,9 @@ static void GeometricNormalChecks()
         std::vector<int> IDs;
         std::vector<float> Depth;
     };
-    auto read = [&](const Ref<Framebuffer> &target, bool coverage)
+    auto read = [&](const Ref<Framebuffer> &surface, bool coverage)
     {
-        target->Bind();
+        surface->Bind();
         Pixels out;
         out.Color.resize(size_t(width) * height);
         glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -62,17 +62,17 @@ static void GeometricNormalChecks()
             glReadPixels(0, 0, width, height, GL_RED_INTEGER, GL_INT, out.IDs.data());
             glReadPixels(0, 0, width, height, GL_DEPTH_COMPONENT, GL_FLOAT, out.Depth.data());
         }
-        target->Unbind();
+        surface->Unbind();
         return out;
     };
     auto render =
-        [&](const SceneSubmission &frame, SceneRenderView &view, const Ref<Framebuffer> &target)
+        [&](const SceneSubmission &frame, SceneRenderView &view, const Ref<Framebuffer> &surface)
     {
-        target->Bind();
+        surface->Bind();
         RenderCommand::SetClearColor(frame.Presentation.Background);
         RenderCommand::Clear();
-        if (target->GetSpecification().Attachments.Attachments.size() > 1)
-            target->ClearAttachment(1, -1);
+        if (surface->GetSpecification().Attachments.Attachments.size() > 1)
+            surface->ClearAttachment(1, -1);
         SceneRenderer::Render(frame, view, target, [] {}, [] {});
     };
     auto make = [&](const NavigationCamera &camera)

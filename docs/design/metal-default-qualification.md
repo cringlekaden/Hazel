@@ -559,3 +559,17 @@ Next: one final maintained local Full tier on this corrected source, including
 refreshed Debug/Release products and source-free bundles, and normal full C/C++ CI
 against the exact corrected commit. Focused numeric dispatches are deliberately
 not full acceptance. No previously unexecuted job or physical GPU is counted.
+
+### Warning-only test follow-up
+
+Completed MSVC diagnostic logs also identify new probe warning sites: C4459 for a
+local `target` shadowing the older test's global target, and C4996 for direct
+`getenv`. These are fixed at their cause: the probe uses `probeTarget`, and new
+environment switches/capture export use Hazel's existing FileSystem environment
+helper. The two pre-existing shadowing lambda parameter names in the touched
+geometric fixture are also clarified. No suppression is added. Renderer/application
+source, shader math, all assertion values and case selection are unchanged by this
+follow-up. Existing local Full-tier results remain evidence for that identical
+production code; touched test consumers receive targeted rebuild/checks. The
+in-progress 4c0a42e CI is superseded rather than duplicated by a full dispatch on
+the warning-corrected test source.
