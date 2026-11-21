@@ -36,14 +36,15 @@ The 2D/editor base includes scene authoring, C# scripting, physics, asset/export
 
 ## Current follow-up to M6
 
-The default-backend milestone starts at `93d39bd6d71b090a3a931f1a457a9df27347c91c`.
-See `docs/design/metal-default-qualification.md` for current source/evidence, rather
-than treating the M1 snapshot above as current integration status. Backend
-selection/settings/capability and measured cleanup work are implemented. The unlocked
-Apple M4/macOS 27.3 native matrix and source-free packages pass. Automatic is now
-the default request after those gates; Debug/Release builds and policy checks plus Debug save/restart PASS. Native
-no-flag launch/capture continuation is blocked by a newly locked GUI session. M6 candidate CI completed with hosted macOS PASS and
-Windows/Linux exact depth FAIL. The packed D24S8 correction is under new candidate
-CI run 44297371674 at a6f22f23; Windows now FAILs unlit HDR color (0.799994 vs 0.8 at 1e-6);
-no final-platform PASS is inferred. No merge, release
-or XeGTAO follows. See the qualification record for current candidate updates.
+Milestone COMPLETE for the owner-accepted scope at renderer/test candidate
+`e2ce4c96cd0340304da1881f3653c602201d62b7`. Native Apple M4/macOS 27.3 Full-tier,
+Automatic no-flag/default/source-free, actual save/restart and captures PASS.
+Run 44824148613: Linux full job PASS, hosted macOS Debug/Release CPU/build PASS,
+Windows FAIL at the Debug software Renderer2D 240-second timeout during its second
+configuration. Windows color, exact picking/depth and canonical checks pass in the
+first configuration; later Windows gates are skipped. Full Windows qualification
+is INCOMPLETE and explicitly deferred by the owner. Do not call the overall CI run
+successful. Rendering/shader math and frozen references are unchanged; only the
+bounded silhouette interpolation envelope is revised, with strict production
+controls. Current evidence: `docs/design/metal-default-qualification.md` and
+`metal-default-results.json`. No merge/release or automatic XeGTAO follows.

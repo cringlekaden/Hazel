@@ -1,6 +1,6 @@
 {
   "milestone": "M6",
-  "verdict": "M6 INCOMPLETE \u2014 all available local gates PASS; candidate hosted CI IN PROGRESS, not awaited at owner request",
+  "verdict": "Historical M6 candidate incomplete (completed CI failed); current follow-up complete for owner-accepted scope, Windows full qualification deferred",
   "baseline": "819ac353879ea9e8f048054b580e5ae614085a6d",
   "branch": "feature/3d-foundations",
   "tree": "M6 implementation candidate 35e4f4116cba7bc57a12e4451bdf293acc2c5cf3; subsequent documentation-only evidence update preserves the implementation-scope digest",
@@ -891,5 +891,12 @@
     "linux": "FAIL: Debug software Renderer2DSmoke exact unlit picking/depth invariant",
     "evidence": "build/metal-default-evidence/m6-windows-job.log",
     "status": "COMPLETED / FAILURE"
+  },
+  "snapshotVerdictAtOriginalHandoff": "M6 INCOMPLETE \u2014 all available local gates PASS; candidate hosted CI IN PROGRESS, not awaited at owner request",
+  "currentFollowup": {
+    "record": "metal-default-results.json",
+    "sha": "e2ce4c96cd0340304da1881f3653c602201d62b7",
+    "ci": "https://github.com/cringlekaden/Hazel/actions/runs/44824148613",
+    "scope": "Native Apple M4 and Linux full qualification PASS; hosted macOS CPU/build PASS; Windows full CI INCOMPLETE/deferred at owner request"
   }
 }

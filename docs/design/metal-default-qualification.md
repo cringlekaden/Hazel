@@ -2,12 +2,14 @@
 
 Starting tree: `93d39bd6d71b090a3a931f1a457a9df27347c91c`,
 `feature/3d-foundations`. This checkpoint follows [M6](metal-m6.md).
-Status: **INCOMPLETE — prior blockers diagnosed; corrected candidate awaiting final acceptance**.
-Current checkpoint: stable native renderer/package gates PASS on Apple M4/macOS 27.3.
-Automatic is now the default request. Debug/Release compilation and policy plus
-Debug save/restart checks PASS. Native no-flag/capture and actual saved OpenGL
-restart continuation now PASS; the latest closure section tracks final refreshed gates.
-Sections below retain chronological failed attempts and superseded holds.
+Status: **COMPLETE for the owner-accepted scope; Windows full qualification deferred**.
+Qualified renderer/test candidate: `e2ce4c96cd0340304da1881f3653c602201d62b7`.
+Native Apple M4/macOS 27.3 full acceptance and Linux full CI PASS. Hosted macOS
+Debug/Release build and CPU/service/managed CI PASS. Windows full CI is **not PASS**:
+its Debug software Renderer2D process exceeds the existing 240-second limit.
+The owner explicitly accepted closure with that follow-up deferred. Full Windows
+production readiness remains INCOMPLETE. Automatic Metal is qualified on the tested
+Apple M4; other physical devices are not inferred. Historical attempts follow below.
 No merge, release, XeGTAO or new lighting features are included.
 
 ## Acceptance declared before final execution
@@ -648,3 +650,48 @@ not repeated. Native signed-ID/depth mismatch counts are zero. Final fixture
 switch/capture export also PASSes using the environment helper and a spaces/Unicode
 private project path. Physical mouse/menu/dialog interaction is not inferred from
 automated captures. Broader physical hardware and notarization remain NOT RUN.
+
+
+## Final owner-accepted handoff — Windows follow-up deferred
+
+The owner instructed completion without waiting for or fixing the remaining Windows
+CI details. No timeout, assertion, driver or renderer change is made in response to
+that instruction. No further CI run is dispatched.
+
+Verified candidate: `e2ce4c96cd0340304da1881f3653c602201d62b7`.
+Completed [run 44824148613](https://github.com/cringlekaden/Hazel/actions/runs/44824148613):
+
+| Gate | Result | Scope |
+| --- | --- | --- |
+| Native Apple M4/macOS 27.3 | PASS | 21 Full-tier gates, Debug/Release, OpenGL/Metal, 1x/2x, numerical/reference/lifetime, 28 product cases/configuration and all source-free bundles |
+| Linux job 136592319361 | PASS | Debug/Release, software GL and GL4.1, editor/runtime, applications/games, extracted packages and source-free checks |
+| Hosted macOS job 136592319147 | PASS | Debug/Release compilation and CPU/service/managed subset; no hosted native-GPU claim |
+| Windows job 136592319461 | INCOMPLETE / deferred | Compilation and CPU/policy PASS; Debug software Renderer2D exceeds 240 s before the full job can finish |
+| Actual save/restart and captures | PASS | Metal retained after native save, no-flag OpenGL relaunch in both apps; inspected production-widget captures |
+
+Linux's artifact confirms the strict 1e-6 production control and complete unlit
+color envelope in Debug software/GL4.1 and Release software/GL4.1, with maximum
+9.14335250854e-5 (73.15 percent of the 1.25e-4 envelope), zero exact ID mismatches
+and zero exact depth mismatches. Both default and two-slot/GLSL configurations
+finish their full maintained suite. The native independent/frozen cases, shader
+math and signed-ID/depth requirements remain intact.
+
+Windows's retained partial log (`closure/windows-e2-renderer.log`) confirms the
+strict 1e-6 control, maximum 3.45706939697e-5 (27.66 percent utilization), zero
+exact ID/depth mismatches, the geometric/orbit checks and canonical color/packed
+D24S8 transfer checks. The first configuration proceeds through typography and
+batch rollover. The second configuration starts at 22:08:06, after the process
+began at 22:05:20, and progresses through its independent PBR/IBL references before
+Python kills it at 240 seconds. This is observed forward progress, not proof of a
+hang or of full Windows correctness. Later Windows gates are skipped, not PASS.
+The narrow follow-up is to measure/allow the complete Debug software Renderer2D
+workload with a bounded appropriate deadline, retain all assertions, then rerun
+Windows acceptance. That change is deliberately **not implemented** at handoff.
+
+Raw complete job logs, Linux/Windows artifacts, native timings and exact commands
+are retained in `build/metal-default-evidence/closure/`. `final-ci-complete.json`
+records the actual overall GitHub conclusion **failure**, despite the accepted
+milestone scope being complete. Documentation-only handoff updates do not change
+the tested renderer/test candidate; no expensive unchanged gates are rerun for prose.
+The temporary sleep assertion is removed. The owner's material edit and untracked
+files remain untouched. No merge, release or XeGTAO implementation follows.

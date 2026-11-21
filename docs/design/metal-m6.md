@@ -1,5 +1,7 @@
 # Metal 4 M6 — production readiness qualification
 
+Historical M6 record at its stated revisions. The [current closure](metal-default-qualification.md#final-owner-accepted-handoff--windows-follow-up-deferred) completes the owner-accepted scope with native Apple M4/Linux/hosted macOS passes and Windows full qualification explicitly deferred. Historical OpenGL-default and pending-CI statements below are revision-specific.
+
 Baseline: `819ac353879ea9e8f048054b580e5ae614085a6d`,
 `feature/3d-foundations`. M6 qualification is **INCOMPLETE** until every required available
 gate below has executed successfully. OpenGL remains the default. No merge,

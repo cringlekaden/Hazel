@@ -4,12 +4,17 @@
 
 ## Current prioritized track: Metal 4 backend
 
-- **Following M6 — INCOMPLETE pending candidate CI:** backend selection/settings,
-  cleanup and measured optimization are implemented. Native Apple M4/macOS 27.3
-  gates and source-free packages pass; Automatic defaults compile and pass policy/save checks; native no-flag launches
-  and screenshots are blocked by a newly locked GUI session. M6 Windows/Linux exact depth FAIL led
-  to a packed-depth copy correction; run 44297371674 checks a6f22f23 and now reports Windows unlit HDR color FAIL. Current evidence:
-  `docs/design/metal-default-qualification.md`. Do not start XeGTAO, merge or release.
+- **Following M6 — COMPLETE, Windows follow-up deferred by owner:** Automatic
+  Metal is qualified on native Apple M4/macOS 27.3. Native Full-tier, no-flag products,
+  actual save/restart/captures and source-free bundles PASS. Candidate e2ce4c9 / run
+  44824148613 has Linux full CI PASS and hosted macOS CPU/build PASS. Windows full
+  acceptance is INCOMPLETE: Debug software Renderer2D exceeds 240 s during its second
+  configuration after first-configuration color/ID/depth/canonical checks pass.
+  Do not report that job or overall CI as PASS. See the current qualification record.
+  No merge, release or automatic XeGTAO work.
+
+The M1–M6 entries below describe their historical acceptance trees. Current status
+is the follow-up above.
 
 
 - **M1 — PASS, pushed:** Metal 4 device/queue, native presentation, frame/resource lifetime, compute/render/transfer smoke, regression evidence. See `docs/design/metal-m1.md`. Production still OpenGL.

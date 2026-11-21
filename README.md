@@ -46,14 +46,14 @@ Open **Assets/Scenes/UI Tutorial.hazel** and Play. Its [five pages](examples/San
 [SceneTransitions](examples/SceneTransitions/README.md) is the smallest runtime/scripting example. Every project has source launch and export instructions. Prepared game packages need **no compiler, Python or source SDK**; changing scripts and exporting requires the authoring toolchain.
 
 The `feature/3d-foundations` branch adds shared static 3D/PBR/prepared IBL and
-Metal 4 for supported Apple Silicon/macOS 27+ configurations. Automatic now prefers available native Metal 4 there and OpenGL elsewhere; both remain explicitly selectable. Native qualification is distinct from pending platform CI. See [backend selection and Project Settings](docs/backend-selection.md). Use the
+Metal 4 for supported Apple Silicon/macOS 27+ configurations. Automatic now prefers available native Metal 4 there and OpenGL elsewhere; both remain explicitly selectable. Native Apple M4 and Linux software-GL qualification pass; full Windows CI is deferred. See [backend selection and Project Settings](docs/backend-selection.md). Use the
 [branch-specific clone instructions](docs/getting-started.md#test-the-3d--metal-development-branch)
 and [Metal shader/build commands](docs/development.md#experimental-metal-shader-resources).
 [M3](docs/design/metal-m3.md), [M4](docs/design/metal-m4.md) and
 [M5](docs/design/metal-m5.md) have local Apple M4 qualification. The
 [M6 production-readiness record](docs/design/metal-m6.md) separately tracks
 clean-source, application packaging, platform CI and matched measurements.
-M6 is a revision-specific qualification record. The [next default-backend checkpoint](docs/design/metal-default-qualification.md) tracks Automatic selection, renderer cleanup and measured verification/performance work; full production qualification requires candidate CI.
+M6 is a revision-specific qualification record. The [next default-backend checkpoint](docs/design/metal-default-qualification.md) tracks Automatic selection, renderer cleanup and measured verification/performance work; the accepted checkpoint keeps the remaining Windows full-suite timeout explicitly deferred.
 
 ## Status and support
 

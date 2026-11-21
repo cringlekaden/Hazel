@@ -1,10 +1,10 @@
 {
-  "status": "INCOMPLETE: corrected candidate awaiting final local and platform acceptance",
+  "status": "COMPLETE owner-accepted scope; Windows full qualification INCOMPLETE/deferred",
   "branch": "feature/3d-foundations",
   "baseline": "93d39bd6d71b090a3a931f1a457a9df27347c91c",
   "default": "Automatic; native Metal 4 availability probe, otherwise OpenGL; CLI > project > default",
-  "automaticNativeRendererPolicy": "PASS native Apple M4/macOS27.3 no-flag selection; final refreshed smoke/package gates pending",
-  "fullProductionQualification": "INCOMPLETE until final available gates pass; prior blockers diagnosed independently",
+  "automaticNativeRendererPolicy": "PASS on native Apple M4/macOS27.3; no-flag startup, actual saved restart, Debug/Release1x2x and source-free packages verified",
+  "fullProductionQualification": "Windows full acceptance INCOMPLETE, explicitly deferred by owner; no merge/release",
   "m6CI": {
     "run": 44212291235,
     "sha": "35e4f4116cba7bc57a12e4451bdf293acc2c5cf3",
@@ -299,6 +299,94 @@
     }
   },
   "activationGates": {
+    "Debug": "PASS no-flag actual products and saved GL/Metal requests in final native matrix",
+    "Release": "PASS no-flag actual products, saved GL/Metal requests and actual save->close->new-device restart",
+    "screenshots": "PASS native production-widget captures linked from backend-selection.md",
+    "sourceFreeDefaultBundles": "PASS both apps, all three scenes, explicit GL/Metal/Automatic and no-flag default, denied source/SDK/compiler access, signatures/retirement verified"
+  },
+  "efficiencySeconds": {
+    "focusedPolicy": {
+      "before": 6.06,
+      "after": 2.639042375027202
+    },
+    "fourRetainedCPUComparisons": {
+      "serial": 17.7011065420229,
+      "twoWorkers": 8.98292570799822,
+      "identicalCompleteResults": true
+    },
+    "checkedShaderPreparation": {
+      "cold": 2.056,
+      "reuse": 0.33,
+      "identicalArtifactHashes": 11
+    }
+  },
+  "warnings": "No new changed-native warning sites; baseline first-party and generated Xcode warnings remain.",
+  "nextMilestone": "No automatic XeGTAO work. Windows full acceptance remains a deferred production-readiness follow-up; further work requires explicit scope.",
+  "remainingHardware": "Physical Windows/Linux/Intel HD4000 and macOS27.0 NOT RUN; hosted/software GL differs from native hardware.",
+  "release": "No merge or public release; ad-hoc signing only, not Developer ID/notarization/Gatekeeper qualification.",
+  "nativeStableGatesScope": "Executed before Automatic default activation; exact source digest in local stable-source-digest.json. Later changed default metadata has separate activation gates.",
+  "closure": {
+    "baseline": "1a06c9cdedb5d9d4749772d3cd97b52f8d5e21e6",
+    "originalCI": {
+      "run": 44300482954,
+      "macOS": "PASS CPU/build subset",
+      "Windows": "FAIL unlit HDR 0.799994 vs 0.8",
+      "Linux": "FAIL independently inspected: unlit HDR 0.799992 vs 0.8"
+    },
+    "diagnosticCI": {
+      "run": 44814375306,
+      "sha": "b14cced478480f99da5921e2940c405ad3db6455",
+      "scope": "Focused diagnosis; both intentionally retain original failing 1e-6 assertion; not acceptance",
+      "Windows": {
+        "smoothMaxAbsolute": 1.9371509552e-05,
+        "above1e6": 93,
+        "covered": 82729,
+        "flatError": 0
+      },
+      "Linux": {
+        "smoothMaxAbsolute": 3.5285949707e-05,
+        "above1e6": 106,
+        "covered": 82729,
+        "flatError": 0
+      }
+    },
+    "colorContract": "Only bounded perspective unlit silhouette: 1.25e-4 absolute radiance, with strict1e-6 production constant-W control and rejection controls; all references, shader math, signed IDs and depth unchanged",
+    "saveRestart": "PASS native save while retaining Metal, normal close, actual no-flag OpenGL relaunch in Hazelnut and Nutella after RuntimeSession launch-snapshot correction",
+    "smoke": "Strengthened: await 60 correlated completed positive Metal presentations; timeout30s, no early-close acceptance; native_result also checks correlated minimum",
+    "finalAcceptance": "COMPLETE agreed scope: native Full-tier PASS, Linux full CI PASS, hosted macOS PASS; Windows timeout deferred by owner",
+    "relativeAcceptanceCI": {
+      "run": 44818859646,
+      "sha": "8f12458f400070a3728bf1efa52c9af89c672699",
+      "macOS": "PASS Debug/Release CPU/build",
+      "Windows": "FAIL production raster absolute max3.45706939697e-5, relative utilization1.38689456503",
+      "Linux": "FAIL independently measured absolute max9.14335250854e-5, relative utilization1.53513007814",
+      "strictProductionColorControl": "PASS 1e-6 both platforms"
+    },
+    "localFull": {
+      "status": "PASS available local tier",
+      "gates": 21,
+      "seconds": 1350.5,
+      "raw": "build/metal-default-evidence/closure/full/results.json",
+      "productionSourceUnchanged": "4c0a42e..8f12458",
+      "subsequentTestOnlyChecks": "PASS affected Debug/Release Renderer2D/geometric checks with final envelope and complete exact-ID/depth checks"
+    },
+    "productionColorResults": {
+      "Linux": {
+        "maxAbsolute": 9.14335250854e-05,
+        "idMismatches": 0,
+        "depthMismatches": 0,
+        "completeConfigurations": "Debug/Release software and GL4.1 PASS"
+      },
+      "Windows": {
+        "maxAbsolute": 3.45706939697e-05,
+        "idMismatches": 0,
+        "depthMismatches": 0,
+        "scope": "First configuration color/depth/canonical checks PASS; second configuration timeout; not whole-suite PASS"
+      }
+    }
+  },
+  "qualifiedCandidate": "e2ce4c96cd0340304da1881f3653c602201d62b7",
+  "historicalActivationAttempts": {
     "Debug": {
       "build": "PASS 127.011s",
       "policy": "PASS 23.043s",
@@ -343,71 +431,14 @@
     "screenshots": "PASS inspected native production widget captures: docs/images/backend-settings/automatic-metal.png and saved-opengl-restart.png",
     "preparedReleaseBundles": "PASS packaging/signatures for both apps, 2D/direct3D/PBR; new-default source-free EXECUTION NOT RUN"
   },
-  "efficiencySeconds": {
-    "focusedPolicy": {
-      "before": 6.06,
-      "after": 2.639042375027202
-    },
-    "fourRetainedCPUComparisons": {
-      "serial": 17.7011065420229,
-      "twoWorkers": 8.98292570799822,
-      "identicalCompleteResults": true
-    },
-    "checkedShaderPreparation": {
-      "cold": 2.056,
-      "reuse": 0.33,
-      "identicalArtifactHashes": 11
-    }
-  },
-  "warnings": "No new changed-native warning sites; baseline first-party and generated Xcode warnings remain.",
-  "nextMilestone": "XeGTAO not started; requires exact depth correction CI, final default/capture gates and acceptance of remaining hardware/deployment limitations.",
-  "remainingHardware": "Physical Windows/Linux/Intel HD4000 and macOS27.0 NOT RUN; hosted/software GL differs from native hardware.",
-  "release": "No merge or public release; ad-hoc signing only, not Developer ID/notarization/Gatekeeper qualification.",
-  "nativeStableGatesScope": "Executed before Automatic default activation; exact source digest in local stable-source-digest.json. Later changed default metadata has separate activation gates.",
-  "closure": {
-    "baseline": "1a06c9cdedb5d9d4749772d3cd97b52f8d5e21e6",
-    "originalCI": {
-      "run": 44300482954,
-      "macOS": "PASS CPU/build subset",
-      "Windows": "FAIL unlit HDR 0.799994 vs 0.8",
-      "Linux": "FAIL independently inspected: unlit HDR 0.799992 vs 0.8"
-    },
-    "diagnosticCI": {
-      "run": 44814375306,
-      "sha": "b14cced478480f99da5921e2940c405ad3db6455",
-      "scope": "Focused diagnosis; both intentionally retain original failing 1e-6 assertion; not acceptance",
-      "Windows": {
-        "smoothMaxAbsolute": 1.9371509552e-05,
-        "above1e6": 93,
-        "covered": 82729,
-        "flatError": 0
-      },
-      "Linux": {
-        "smoothMaxAbsolute": 3.5285949707e-05,
-        "above1e6": 106,
-        "covered": 82729,
-        "flatError": 0
-      }
-    },
-    "colorContract": "Only bounded perspective unlit silhouette: 1.25e-4 absolute radiance; strict 1e-6 production constant-W control and negative controls; no shader/reference/ID/depth changes",
-    "saveRestart": "PASS native save while retaining Metal, normal close, actual no-flag OpenGL relaunch in Hazelnut and Nutella after RuntimeSession launch-snapshot correction",
-    "smoke": "Strengthened: await 60 correlated completed positive Metal presentations; timeout30s, no early-close acceptance; native_result also checks correlated minimum",
-    "finalAcceptance": "PENDING once-stable full local and exact corrected-commit CI",
-    "relativeAcceptanceCI": {
-      "run": 44818859646,
-      "sha": "8f12458f400070a3728bf1efa52c9af89c672699",
-      "macOS": "PASS Debug/Release CPU/build",
-      "Windows": "FAIL production raster absolute max3.45706939697e-5, relative utilization1.38689456503",
-      "Linux": "FAIL independently measured absolute max9.14335250854e-5, relative utilization1.53513007814",
-      "strictProductionColorControl": "PASS 1e-6 both platforms"
-    },
-    "localFull": {
-      "status": "PASS available local tier",
-      "gates": 21,
-      "seconds": 1350.5,
-      "raw": "build/metal-default-evidence/closure/full/results.json",
-      "productionSourceUnchanged": "4c0a42e..8f12458",
-      "subsequentTestOnlyChecks": "PASS affected Renderer2D and geometric checks; final 1.25e-4 platform acceptance pending"
-    }
+  "finalCI": {
+    "run": 44824148613,
+    "url": "https://github.com/cringlekaden/Hazel/actions/runs/44824148613",
+    "sha": "e2ce4c96cd0340304da1881f3653c602201d62b7",
+    "actualOverallConclusion": "failure",
+    "Linux": "PASS full maintained job, software GL/GL4.1 and packaging/games",
+    "macOS": "PASS Debug/Release CPU/build subset, not native GPU",
+    "Windows": "INCOMPLETE: Debug software Renderer2DSmoke times out at240s during second configuration; later gates skipped",
+    "ownerDeferral": "Owner explicitly accepted milestone completion without waiting for or fixing remaining Windows CI details"
   }
 }
