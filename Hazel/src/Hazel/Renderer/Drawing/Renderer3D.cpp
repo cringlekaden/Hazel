@@ -16,7 +16,7 @@ namespace Hazel
 namespace
 {
 using namespace Renderer3DUniforms;
-Ref<Shader> shader, skyShader;
+Ref<Shader> shader, skyShader, depthShader;
 Ref<UniformBuffer> environmentBuffer;
 Ref<VertexArray> skyTriangle;
 Ref<EnvironmentResources> emptyEnvironment;
@@ -90,21 +90,26 @@ void Renderer3D::Shutdown()
     objectBuffer.reset();
     cameraBuffer.reset();
     shader.reset();
+    depthShader.reset();
 }
-void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground)
+void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground, bool depthOnly)
 {
     auto raster = RenderCommand::GetRasterState();
+    if(depthOnly && !depthShader)
+        depthShader=Shader::Create((Resources::Get().Root / "shaders/DepthPBR.glsl").generic_u8string());
     Ref<EnvironmentResources> lighting;
-    if (!frame.Meshes.empty() || frame.Environment)
+    if (!frame.Meshes.empty() || frame.Environment) EnsureResources();
+    if (!depthOnly && (!frame.Meshes.empty() || frame.Environment))
     {
-        EnsureResources();
         lighting = frame.Environment ? frame.Assets->RealizeEnvironment(frame.Environment) : emptyEnvironment;
         Retain(lighting);
         const auto &instance = frame.Presentation.Environment;
         EnvironmentData env{glm::inverse(frame.Camera.ViewProjection),
             {std::cos(instance.Yaw), std::sin(instance.Yaw), frame.Environment ? instance.Gain : 0,
              frame.Environment ? float(frame.Environment->Specular.Mips.size() - 1) : 0},
-            {frame.Environment && instance.Lighting ? 1.f : 0.f, 0, 0, 0}};
+            {frame.Environment && instance.Lighting ? 1.f : 0.f,
+             !depthOnly && RendererAPI::GetAPI()==RendererAPI::API::Metal && frame.Presentation.AmbientOcclusion.Enabled ? frame.Presentation.AmbientOcclusion.Strength : 0.f,
+             !depthOnly && frame.Presentation.AmbientOcclusion.Enabled ? float(frame.AmbientOcclusionView) : 0.f, 0}};
         environmentBuffer->Bind();
         environmentBuffer->SetData(&env, sizeof(env));
         if (drawBackground && frame.Environment && instance.Background)
@@ -137,13 +142,16 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground)
                         glm::vec4(frame.Light ? frame.Light->ToLight : glm::vec3(0, 0, 1), 0),
                         glm::vec4(frame.Light ? frame.Light->Incident : glm::vec3(0), 0)};
         cameraBuffer->SetData(&camera, sizeof(camera));
-        shader->Bind();
+        auto activeShader=depthOnly?depthShader:shader;
+        activeShader->Bind();
         const char *names[]{"u_Base", "u_MetalRough", "u_Normal", "u_Occlusion", "u_Emissive"};
         for (int i = 0; i < 5; ++i)
-            shader->SetInt(names[i], i);
-        shader->SetInt("u_Irradiance", 5);
-        shader->SetInt("u_Specular", 6);
-        shader->SetInt("u_BRDF", 7);
+            if(!depthOnly || i==0) activeShader->SetInt(names[i], i);
+        if(!depthOnly) {
+            shader->SetInt("u_Irradiance", 5);
+            shader->SetInt("u_Specular", 6);
+            shader->SetInt("u_BRDF", 7);
+        }
         for (auto &draw : frame.Meshes)
         {
             auto geometry = frame.Assets->RealizeMesh(draw.Geometry);
@@ -154,7 +162,7 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground)
             {
                 auto &material = *draw.Materials[i];
                 int maps = 0;
-                for (unsigned role = 0; role < 5; ++role)
+                for (unsigned role = 0; role < (depthOnly ? 1u : 5u); ++role)
                 {
                     auto &image = material.Textures[role];
                     auto texture = white;

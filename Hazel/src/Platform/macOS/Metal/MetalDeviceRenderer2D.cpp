@@ -3,6 +3,7 @@
 #include "MetalFramebuffer.h"
 #include "MetalShader.h"
 #include "MetalComputePipeline.h"
+#include "MetalAmbientOcclusion.h"
 #include "Hazel/Renderer/Drawing/Renderer2DQuad.h"
 #include <algorithm>
 #include <cstring>
@@ -30,19 +31,30 @@ void MetalRenderer2DFrame::CollectAllocations(std::set<const MTL::Allocation*>& 
         if (draw.MeshIndices) allocations.insert(draw.MeshIndices.get());
         for (const auto& texture : draw.Textures) if (texture) allocations.insert(texture->Texture.get());
     }
+    if (AOSource) AOSource->CollectAllocations(allocations);
+    if (AO) {const auto& r=*AO->Resources;for(auto texture:{r.Depth,r.Raw,r.Edges,r.Scratch,r.Visibility})allocations.insert(texture.get());}
     if (ComputeSource) ComputeSource->CollectAllocations(allocations);
     if (World) World->CollectAllocations(allocations);
     if (DisplaySource) DisplaySource->CollectAllocations(allocations);
 }
 void MetalRenderer2DFrame::MarkMipmapsSubmitted() const
 {
+    if (AOSource) AOSource->MarkMipmapsSubmitted();
     if (ComputeSource) ComputeSource->MarkMipmapsSubmitted();
     if (World) World->MarkMipmapsSubmitted();
     if (DisplaySource) DisplaySource->MarkMipmapsSubmitted();
     for (const auto& draw : Draws) for (const auto& texture : draw.Textures) if (texture) texture->MipsSubmitted = true;
 }
+void MetalRenderer2DFrame::ResolveAmbientOcclusionTimings()
+{
+    if(AO)AO->ResolveTimings();
+    if(World)World->ResolveAmbientOcclusionTimings();
+    if(DisplaySource)DisplaySource->ResolveAmbientOcclusionTimings();
+    if(ComputeSource)ComputeSource->ResolveAmbientOcclusionTimings();
+}
 void MetalRenderer2DFrame::Complete()
 {
+    ResolveAmbientOcclusionTimings();
     if (!Readback) return;
     // MetalDevice's ordered shared event has completed this submission.
     const auto* bytes = static_cast<const uint8_t*>(Buffers[0]->contents());
@@ -147,6 +159,7 @@ NS::SharedPtr<MTL::DepthStencilState> MetalDevice::GetDepthState(const RasterSta
 }
 void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& quad)
 {
+    if (quad->AOSource) PrepareRenderer2DFrame(quad->AOSource);
     if (quad->ComputeSource) PrepareRenderer2DFrame(quad->ComputeSource);
     if (quad->World) PrepareRenderer2DFrame(quad->World);
     if (quad->DisplaySource) PrepareRenderer2DFrame(quad->DisplaySource);
@@ -173,7 +186,7 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     quad->Buffers.push_back(AcquireRenderer2DBuffer(indices.size() * sizeof(uint32_t), indices.data()));
     auto args = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
     args->setInitializeBindings(true); args->setMaxBufferBindCount(17);
-    args->setMaxTextureBindCount(8); args->setMaxSamplerStateBindCount(8);
+    args->setMaxTextureBindCount(9); args->setMaxSamplerStateBindCount(9);
     std::set<MTL::Texture*> textures;
     for (auto& draw : quad->Draws)
     {
@@ -205,6 +218,16 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
                 fragment->setTexture(texture->Texture->gpuResourceID(), binding);
                 fragment->setSamplerState(texture->Sampler->gpuResourceID(), binding);
                 if (textures.insert(texture->Texture.get()).second) quad->Residency->addAllocation(texture->Texture.get());
+            }
+            if(draw.MeshVertices && draw.Textures[0]) {
+                auto aoTexture=draw.Textures[0]->Texture;
+                if(quad->AO) {
+                    const auto& r=*quad->AO->Resources;
+                    const auto debug=quad->AO->DebugView;
+                    aoTexture=debug==2?r.Raw:debug==3?r.Edges:debug==4?r.Depth:r.Visibility;
+                }
+                fragment->setTexture(aoTexture->gpuResourceID(),8);
+                fragment->setSamplerState(draw.Textures[0]->Sampler->gpuResourceID(),8);
             }
             draw.DepthState = GetDepthState(draw.Raster);
             quad->Buffers.push_back(std::move(buffer));
@@ -295,11 +318,13 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
         quad->ComputeArguments->setTexture(quad->Attachments->Targets[0]->gpuResourceID(), 1);
         quad->Residency->addAllocation(buffer.get()); quad->Buffers.push_back(std::move(buffer));
     }
+    if(quad->AO) PrepareAmbientOcclusion(quad);
     quad->Residency->commit();
 
 }
 void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& quad)
 {
+    if(quad->AO) EncodeAmbientOcclusion(quad);
     if (quad->ComputeSource) {
         m_Commands->useResidencySet(quad->ComputeSource->Residency.get());
         EncodeRenderer2DFrame(quad->ComputeSource);
@@ -365,7 +390,7 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
     pass->depthAttachment()->setStoreAction(MTL::StoreActionStore); pass->depthAttachment()->setClearDepth(1);
     auto* render = m_Commands->renderCommandEncoder(pass.get());
     if (!render) { m_Commands->endCommandBuffer(); throw std::runtime_error("Cannot create quad encoder"); }
-    if (quad->World || !mipmaps.empty()) render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
+    if (quad->AO || quad->World || !mipmaps.empty()) render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
     auto* boundPipeline = quad->World ? quad->PresentationShader->Pipeline() : nullptr;
     if (boundPipeline) render->setRenderPipelineState(boundPipeline);
     // Metal starts each encoder with full-target viewport/scissor, no culling,
@@ -418,6 +443,7 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
         render->drawIndexedPrimitives(MTL::PrimitiveTypeTriangle, draw.Count, MTL::IndexTypeUInt32,
             indices->gpuAddress() + offset, indices->length() - offset);
     }
+    if(quad->AO && quad->AO->Counters)render->writeTimestamp(MTL4::TimestampGranularityPrecise,MTL::RenderStageFragment,quad->AO->Counters.get(),5);
     render->endEncoding();
     }
     if (!quad->Readback) return;

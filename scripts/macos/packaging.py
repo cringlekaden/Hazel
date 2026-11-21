@@ -60,7 +60,7 @@ def package(app, project, destination, archive_name=None):
     from macos.metal_shaders import produce
     shaders = hz.ROOT/'build/metal-shaders/Release'
     produced = produce('Release', shaders)
-    artifacts = [shaders/(name+('.metallib' if name=='ImGui' else '.hzmetal')) for name in produced]
+    artifacts = [shaders/(name+('.metallib' if name in ('ImGui','XeGTAO') else '.hzmetal')) for name in produced]
     for name in (('Hazelnut','Nutella') if app=='all' else (app,)):
         tag=f'{archive_name or name}-macos-arm64-Release'
         with tempfile.TemporaryDirectory(prefix='.package-',dir=destination) as temporary:

@@ -233,6 +233,7 @@ def licenses(package):
     if not (hz.ROOT/'scripts/dependencies/licenses/typography/LICENSE-Unicode.txt').is_file():
         raise RuntimeError('Missing Unicode data notice for linked typography dependencies')
     hz.copy_changed(hz.ROOT/'LICENSE', package/'licenses/Hazel/LICENSE')
+    hz.copy_changed(hz.ROOT/'Hazel/Resources/shaders/XeGTAO/LICENSE', package/'licenses/XeGTAO/LICENSE')
     hz.copy_changed(hz.ROOT/'Hazel/vendor/mono/LICENSE', package/'licenses/Mono/LICENSE')
     for source in (hz.ROOT/'Hazel/vendor').iterdir():
         if source.is_dir():

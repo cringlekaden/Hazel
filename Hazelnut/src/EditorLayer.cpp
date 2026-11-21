@@ -302,6 +302,21 @@ namespace Hazel {
                              "Shaded\0Base color\0World normal\0World tangent\0Metal / rough / "
                              "AO\0Raw radiance (SDR clamp)\0Direct (SDR clamp)\0Diffuse IBL (SDR clamp)\0Specular IBL (SDR clamp)\0"))
                 m_RenderView.Debug = SurfaceView(inspect);
+            ImGui::SameLine();
+            if(ImGui::Button("AO..."))ImGui::OpenPopup("Ambient occlusion inspection");
+            if(ImGui::BeginPopup("Ambient occlusion inspection")) {
+                int aoInspect=int(m_RenderView.AmbientOcclusionView);
+                if(ImGui::Combo("View",&aoInspect,"Shaded\0Visibility\0Raw visibility\0Edges\0View depth\0"))
+                    m_RenderView.AmbientOcclusionView=unsigned(aoInspect);
+                if(m_RenderView.AmbientTiming->Valid) {
+                    const auto& timing=*m_RenderView.AmbientTiming;
+                    ImGui::Text("GPU ms: depth %.3f / prefilter %.3f",timing.Milliseconds[0],timing.Milliseconds[1]);
+                    ImGui::Text("Main %.3f / denoise %.3f",timing.Milliseconds[2],timing.Milliseconds[3]);
+                    ImGui::Text("Forward/world %.3f ms; AO textures %.2f MiB",timing.Milliseconds[4],double(timing.WorkingBytes)/(1024*1024));
+                } else ImGui::TextUnformatted("No completed AO timing sample.");
+                ImGui::TextUnformatted("Enable XeGTAO in Scene Settings. Metal 4 only.");
+                ImGui::EndPopup();
+            }
             ImGui::SameLine();ImGui::Checkbox("Grid",&m_ShowGrid);ImGui::SameLine();
         }
         if(m_SceneState==SceneState::Play){

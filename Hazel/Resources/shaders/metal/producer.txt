@@ -1,0 +1,4 @@
+Apple metal version 32023.925 (metalfe-32023.925.6)
+Target: air64-apple-darwin27.3.0
+SDK=27.3
+metal3.0 -fno-fast-math -mmacosx-version-min=27.0

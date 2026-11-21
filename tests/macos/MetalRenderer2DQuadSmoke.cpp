@@ -1,6 +1,7 @@
 #include "Hazel/Core/Log.h"
 #include "Renderer2DParity.h"
 #include "Renderer3DParity.h"
+#include "XeGTAOQualification.h"
 #include "Hazel/Renderer/Drawing/MeshGeometry.h"
 #include "Hazel/Renderer/Resources/UniformBuffer.h"
 #include "Renderer2DLines.h"
@@ -216,9 +217,10 @@ int main(int argc, char** argv)
         const auto root = std::filesystem::absolute(std::filesystem::u8path(argv[1]));
         Hazel::Resources::Configure({root, root, output / "user-data"});
         Hazel::RenderCommand::Configure(Hazel::RendererAPI::API::Metal);
+        const bool ao = argc == 4 && std::string(argv[3]) == "--xegtao";
         const bool compute = argc == 4 && std::string(argv[3]) == "--compute";
         const bool renderer3D = argc == 4 && std::string(argv[3]) == "--renderer3d-parity";
-        Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !renderer3D && !compute ? uint32_t(std::stoul(argv[3])) : 4;
+        Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !renderer3D && !compute && !ao ? uint32_t(std::stoul(argv[3])) : 4;
         Check(settings.TextureSlots == 2 || settings.TextureSlots == 4,"Fixture supports two or four texture slots");
         const auto runtimeFrames=argc==5?std::stoul(argv[4]):80UL;
         Check(runtimeFrames>=80 && runtimeFrames<=6000,"Runtime frame count must be 80..6000");
@@ -229,6 +231,14 @@ int main(int argc, char** argv)
         auto framebuffer = Hazel::Framebuffer::Create(TargetSpecification());
         Check(bool(std::dynamic_pointer_cast<Hazel::MetalFramebuffer>(framebuffer)), "Factory did not return a production Metal framebuffer");
         Hazel::Renderer2D::Init();
+        if(ao) {
+            XeGTAOQualification(output,[&](const auto& target) {
+                auto result=Submit(target);Check(bool(result),"AO submit busy");Wait(*target,result);return result;
+            });
+            framebuffer.reset();Hazel::Renderer2D::Shutdown();Hazel::RenderCommand::Shutdown();
+            Check(observer->Snapshot().Errors==0 && observer->Snapshot().ResourceBytes==0 && observer->Snapshot().AttachmentGenerations==0,"AO retirement failed");
+            std::cout << "PASS XeGTAO plane/contact/determinism/direct/ID/depth and retirement\n";return 0;
+        }
         if (compute) {
             ComputeDependencies(backend, output);
             framebuffer.reset(); Hazel::Renderer2D::Shutdown(); Hazel::RenderCommand::Shutdown();

@@ -3,6 +3,9 @@
 #include "Hazel/Renderer/Drawing/Renderer3D.h"
 #include "Hazel/Renderer/Drawing/Renderer2D.h"
 #include "Hazel/Renderer/RenderCommand.h"
+#ifdef HZ_PLATFORM_MACOS
+#include "Platform/macOS/Metal/MetalFramebuffer.h"
+#endif
 namespace Hazel
 {
 void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
@@ -29,7 +32,23 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
         RenderCommand::SetRasterState(raster);
         try
         {
-            if (frame.Presentation.SceneReferred && frame.Debug == SurfaceView::Shaded)
+            const bool ao=frame.Presentation.AmbientOcclusion.Enabled && !frame.Meshes.empty();
+            if(ao) {
+                const auto size=display->GetSpecification();
+                if(!view.AmbientDepth)view.AmbientDepth=Framebuffer::Create(size);
+                else if(view.AmbientDepth->GetSpecification().Width!=size.Width || view.AmbientDepth->GetSpecification().Height!=size.Height)
+                    view.AmbientDepth->Resize(size.Width,size.Height);
+                display->Cancel();view.AmbientDepth->Bind();view.AmbientDepth->Clear(glm::vec4(0));
+                Renderer3D::Render(frame,false,true);view.AmbientDepth->Unbind();
+            } else view.AmbientDepth.reset();
+            auto prepareAO=[&](const Ref<Framebuffer>& target) {
+#ifdef HZ_PLATFORM_MACOS
+                if(ao) std::static_pointer_cast<MetalFramebuffer>(target)->PrepareAmbientOcclusion(view.AmbientDepth,frame.Camera,frame.Presentation.AmbientOcclusion,frame.AmbientOcclusionView,view.AmbientTiming);
+#else
+                (void)target;
+#endif
+            };
+            if (frame.Presentation.SceneReferred && frame.Debug == SurfaceView::Shaded && frame.AmbientOcclusionView==0)
             {
                 auto size = display->GetSpecification();
                 if (!view.Radiance) view.Radiance = Framebuffer::Create(size);
@@ -38,6 +57,7 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
                 display->Cancel();
                 view.Radiance->Bind();
                 view.Radiance->Clear(frame.Presentation.Background);
+                prepareAO(view.Radiance);
                 Renderer3D::Render(frame, true);
                 auto worldState = raster;
                 RenderCommand::SetRasterState(worldState);
@@ -48,6 +68,8 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
             }
             else {
                 view.Radiance.reset();
+                if(ao) {display->Bind();display->Clear(frame.Presentation.Background);}
+                prepareAO(display);
                 Renderer3D::Render(frame, false);
                 RenderCommand::SetRasterState(raster);
                 world2D();
@@ -57,11 +79,16 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
         catch (...)
         {
             Renderer2D::CancelScene();
+            if (view.AmbientDepth) view.AmbientDepth->Cancel();
             if (view.Radiance) view.Radiance->Cancel();
             display->Cancel();
             throw;
         }
         return;
+    }
+    if(frame.Presentation.AmbientOcclusion.Enabled && !view.WarnedUnsupportedAO) {
+        HZ_CORE_WARN("XeGTAO request inactive: OpenGL has no ambient-occlusion compute implementation");
+        view.WarnedUnsupportedAO=true;
     }
     RenderCommand::StateScope scope;
     auto raster = RenderCommand::GetRasterState();

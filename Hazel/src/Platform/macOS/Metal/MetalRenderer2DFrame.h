@@ -15,6 +15,7 @@
 namespace Hazel {
 class MetalShader;
 class MetalComputePipeline;
+struct MetalAOPass;
 struct MetalFramebufferAttachments;
 struct MetalRenderer2DDraw
 {
@@ -45,6 +46,8 @@ struct MetalRenderer2DFrame
     std::shared_ptr<MetalShader> PresentationShader;
     NS::SharedPtr<MTL4::ArgumentTable> PresentationArguments;
     float Exposure = 0;
+    std::shared_ptr<MetalRenderer2DFrame> AOSource;
+    std::shared_ptr<MetalAOPass> AO;
     std::shared_ptr<MetalRenderer2DFrame> ComputeSource;
     std::shared_ptr<MetalComputePipeline> Compute;
     std::vector<uint8_t> ComputeParameters;
@@ -67,6 +70,7 @@ struct MetalRenderer2DFrame
     std::vector<NS::SharedPtr<MTL4::ArgumentTable>> Arguments;
     NS::SharedPtr<MTL::ResidencySet> Residency;
     void Complete();
+    void ResolveAmbientOcclusionTimings();
     void MarkMipmapsSubmitted() const;
     void CollectAllocations(std::set<const MTL::Allocation*>& allocations) const;
 };

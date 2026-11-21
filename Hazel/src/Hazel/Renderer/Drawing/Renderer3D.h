@@ -7,7 +7,7 @@ namespace Hazel
 class Renderer3D
 {
   public:
-    static void Render(const SceneSubmission &frame, bool drawBackground);
+    static void Render(const SceneSubmission &frame, bool drawBackground, bool depthOnly = false);
     static void Shutdown();
 };
 }

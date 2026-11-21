@@ -51,6 +51,7 @@ struct SceneSubmission
 {
     SceneCameraView Camera;
     ScenePresentation Presentation;
+    unsigned AmbientOcclusionView = 0; // 0 shaded, 1 visibility, 2 raw, 3 edges, 4 view depth.
     SurfaceView Debug = SurfaceView::Shaded;
     bool LinearLightingInspection = false; // Scoped FP32 diagnostic readback, not authored.
     Ref<ProjectAssets> Assets;

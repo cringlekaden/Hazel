@@ -18,6 +18,7 @@ struct MetalRenderer2DFrame;
 class MetalShader;
 struct FramebufferReadback;
 struct MetalFramebufferAttachments;
+struct MetalAOResources;
 struct EditorTexture;
 // All native execution and resource ownership stays here. Metal 4 command buffers
 // retain neither referenced resources nor their allocator: slots own both explicitly.
@@ -59,6 +60,8 @@ private:
     NS::SharedPtr<MTL::Buffer> AcquireRenderer2DBuffer(size_t bytes, const void* data = nullptr);
     NS::SharedPtr<MTL::DepthStencilState> GetDepthState(const RasterState& raster);
     std::array<NS::SharedPtr<MTL::DepthStencilState>, 6> m_DepthStates;
+    void PrepareAmbientOcclusion(const std::shared_ptr<MetalRenderer2DFrame>& frame);
+    void EncodeAmbientOcclusion(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     void PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     void EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     std::shared_ptr<MetalRenderer2DFrame> m_PresentFrame;
@@ -89,6 +92,7 @@ private:
     };
     void Verify(Frame& frame);
     void EncodeTransfers(Frame& frame, uint64_t serial);
+    std::vector<std::weak_ptr<MetalAOResources>> m_AOGenerations;
     void Account(const MetalRenderer2DFrame* preparing = nullptr);
     NS::SharedPtr<MTL::Device> m_Device;
     NS::SharedPtr<MTL4::CommandQueue> m_Queue;

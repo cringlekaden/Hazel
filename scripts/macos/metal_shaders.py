@@ -50,8 +50,8 @@ def produce(configuration, destination, sources=None, force=False):
                 # second same-filesystem rename publishes the completed package.
                 (work / (variant + '.hzmetal')).replace(destination / (variant + '.hzmetal'))
             results[variant] = 'REBUILT'
-    if len(results) != 10:
-        raise RuntimeError('Expected nine raster shaders and both quad variants')
+    if len(results) != 11:
+        raise RuntimeError('Expected ten raster shaders and both quad variants')
     # Dear ImGui uses its upstream MSL directly; no shader source is compiled at runtime.
     source = hz.ROOT / 'Hazel/Resources/shaders/ImGui.metal'
     identity = hashlib.sha256(source.read_bytes() + producer.encode()).hexdigest()
@@ -75,6 +75,31 @@ def produce(configuration, destination, sources=None, force=False):
         stamp.write_text(json.dumps({'sourceProducer': identity,
                                     'library': hashlib.sha256(library.read_bytes()).hexdigest()}) + '\n')
         results['ImGui'] = 'REBUILT'
+    # XeGTAO is a narrow native compute library; it has no runtime compiler dependency.
+    source = sources / 'XeGTAO/XeGTAO.metal'
+    identity = hashlib.sha256(source.read_bytes() + producer.encode()).hexdigest()
+    library = destination / 'XeGTAO.metallib'
+    stamp = destination / 'XeGTAO.json'
+    try:
+        cached = json.loads(stamp.read_text())
+    except (OSError, ValueError):
+        cached = None
+    if not force and library.is_file() and cached == {
+            'sourceProducer': identity, 'library': hashlib.sha256(library.read_bytes()).hexdigest()}:
+        results['XeGTAO'] = 'HIT'
+    else:
+        with tempfile.TemporaryDirectory(prefix='.xegtao-shader-', dir=destination) as temporary:
+            work = Path(temporary)
+            (work / 'XeGTAO.metal').write_bytes(source.read_bytes())
+            compiled = subprocess.run(['xcrun', '-sdk', 'macosx', 'metal', '-std=metal3.0', '-fno-fast-math',
+                    '-mmacosx-version-min=27.0', '-c', 'XeGTAO.metal', '-o', 'XeGTAO.air'], cwd=work, capture_output=True, text=True)
+            if compiled.returncode or 'warning:' in compiled.stderr:
+                raise RuntimeError(f'XeGTAO: {compiled.stdout}{compiled.stderr}')
+            hz.run(['xcrun', '-sdk', 'macosx', 'metallib', 'XeGTAO.air', '-o', 'XeGTAO.metallib'], cwd=work)
+            (work / 'XeGTAO.metallib').replace(library)
+        stamp.write_text(json.dumps({'sourceProducer': identity,
+                                    'library': hashlib.sha256(library.read_bytes()).hexdigest()}) + '\n')
+        results['XeGTAO'] = 'REBUILT'
     return results
 
 

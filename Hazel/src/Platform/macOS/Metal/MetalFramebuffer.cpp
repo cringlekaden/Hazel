@@ -4,6 +4,7 @@
 #include "MetalRenderer2DFrame.h"
 #include "MetalShader.h"
 #include "MetalComputePipeline.h"
+#include "MetalAmbientOcclusion.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include <cmath>
 #include <algorithm>
@@ -66,6 +67,32 @@ MetalRendererAPI& MetalFramebuffer::Backend() const
     auto* backend = dynamic_cast<MetalRendererAPI*>(&RenderCommand::Backend());
     Check(backend && backend->Device() == m_Device, "Framebuffer belongs to a different or released Metal backend");
     return *backend;
+}
+void MetalFramebuffer::PrepareAmbientOcclusion(const Ref<Framebuffer>& depth, const SceneCameraView& camera, const AmbientOcclusionSettings& settings, unsigned debugView, const std::shared_ptr<AmbientOcclusionTiming>& timing)
+{
+    auto source=std::dynamic_pointer_cast<MetalFramebuffer>(depth);
+    Check(source && source.get()!=this && source->m_Device==m_Device && source->m_Frame && m_Frame &&
+        !Backend().IsFramebufferBound(source->m_Frame) && Backend().IsFramebufferBound(m_Frame) &&
+        source->m_Frame->Width==m_Frame->Width && source->m_Frame->Height==m_Frame->Height,
+        "XeGTAO requires an unbound depth producer and bound equal-size lighting target");
+    auto constants=AmbientOcclusionConstants(camera,settings,m_Frame->Width,m_Frame->Height);
+    if(!m_AOPipelines)m_AOPipelines=std::make_shared<MetalAOPipelines>(*m_Device);
+    std::shared_ptr<MetalAOResources> resources;
+    for(auto& candidate:m_AOResources)
+        if(candidate.use_count()==1 && candidate->Width==m_Frame->Width && candidate->Height==m_Frame->Height) {resources=candidate;break;}
+    m_AOResources.erase(std::remove_if(m_AOResources.begin(),m_AOResources.end(),[&](const auto& candidate){
+        return candidate.use_count()==1 && (candidate->Width!=m_Frame->Width || candidate->Height!=m_Frame->Height);
+    }),m_AOResources.end());
+    if(!resources) {
+        Check(m_AOResources.size()<4,"XeGTAO exceeds bounded view generations");
+        resources=std::make_shared<MetalAOResources>(*m_Device,m_AOPipelines,m_Frame->Width,m_Frame->Height);
+        m_Device->m_AOGenerations.push_back(resources);
+        m_Device->Account(); // Includes retained idle and in-flight AO generations.
+        m_AOResources.push_back(resources);
+    }
+    auto pass=std::make_shared<MetalAOPass>();pass->DebugView=debugView;pass->Timing=timing;pass->Resources=std::move(resources);pass->Constants=constants;
+    m_Frame->AO=std::move(pass);m_Frame->AOSource=std::move(source->m_Frame);
+    m_Frame->AOSource->Readback=false;source->m_SubmittedGeneration=true;
 }
 void MetalFramebuffer::Bind()
 {

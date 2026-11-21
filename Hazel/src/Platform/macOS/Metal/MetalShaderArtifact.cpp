@@ -36,7 +36,7 @@ std::string Take(const std::string& bytes, size_t& offset)
 }
 std::string MetalShaderArtifact::Profile()
 {
-    return "hazel-metal4-artifact-v1-vulkan12-opt-debug-msl30-flipy-finaloutput-v2-clipfix-std140-tier2-macos27-" HAZEL_SHADER_PINS_SHA256;
+    return "hazel-metal4-artifact-v1-vulkan12-opt-debug-msl30-flipy-finaloutput-v2-clipfix-std140-tier2-hzmetal-macos27-" HAZEL_SHADER_PINS_SHA256;
 }
 std::string MetalShaderArtifact::Digest(const std::string& bytes)
 {
@@ -49,7 +49,7 @@ std::string MetalShaderArtifact::Digest(const std::string& bytes)
 }
 void MetalShaderArtifact::ValidateName(const std::string& name, uint32_t slots)
 {
-    const std::set<std::string> names = {"DisplayOutput", "EntityOutline", "EnvironmentSky", "ForwardPBR",
+    const std::set<std::string> names = {"DisplayOutput", "EntityOutline", "EnvironmentSky", "ForwardPBR", "DepthPBR",
         "Renderer2D_Circle", "Renderer2D_Line", "Renderer2D_Quad", "Renderer2D_Text", "WorldPresentation"};
     Check(names.count(name) == 1 && (slots == 32 || (name == "Renderer2D_Quad" && slots == 16)), "unsupported shader/variant " + name);
 }

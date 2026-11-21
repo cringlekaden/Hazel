@@ -81,6 +81,15 @@ namespace Hazel {
         if (mode)
             PropertyUI::SliderFloat("scene-exposure", "Exposure (stops)",
                                     m_ScenePresentationDraft.Exposure, -16, 16);
+        ImGui::SeparatorText("Screen-space ambient occlusion");
+        auto& ao=m_ScenePresentationDraft.AmbientOcclusion;
+        PropertyUI::Checkbox("ao-enable","XeGTAO (Metal 4)",ao.Enabled);
+        int quality=int(ao.Quality);
+        if(PropertyUI::Combo("ao-quality","Quality",quality,"Low\0Medium\0High\0Ultra\0"))ao.Quality=unsigned(quality);
+        PropertyUI::DragFloat("ao-radius","Radius (world units)",ao.Radius,.01f,.001f,100);
+        PropertyUI::SliderFloat("ao-strength","Strength",ao.Strength,0,1);
+        PropertyUI::SliderFloat("ao-falloff","Falloff fraction",ao.Falloff,.05f,1);
+        if(Renderer::GetAPI()!=RendererAPI::API::Metal)ImGui::TextWrapped("XeGTAO is unavailable on OpenGL; the saved request is inactive.");
         PropertyUI::ReadOnly("presentation-source","Source","Authored scene; applies on Apply / Save");
         ImGui::TextWrapped(
             "Scene-referred world surfaces use exposure and fixed Neutral tone mapping. Screen UI "

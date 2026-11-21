@@ -1,4 +1,5 @@
 #include "MetalDevice.h"
+#include "MetalAmbientOcclusion.h"
 #include "Hazel/ImGui/Backends/imgui_impl_metal4.h"
 #include "MetalRenderer2DFrame.h"
 #include "MetalShader.h"
@@ -128,6 +129,9 @@ void MetalDevice::Account(const MetalRenderer2DFrame* preparing) {
         const auto* scene=scenes.back();scenes.pop_back();
         scene->CollectAllocations(allocations);
     }
+    m_AOGenerations.erase(std::remove_if(m_AOGenerations.begin(),m_AOGenerations.end(),[](const auto& weak){return weak.expired();}),m_AOGenerations.end());
+    for(const auto& weak:m_AOGenerations)if(auto r=weak.lock())
+        for(auto texture:{r->Depth,r->Raw,r->Edges,r->Scratch,r->Visibility})allocations.insert(texture.get());
     for(const auto* allocation:allocations) resources+=allocation->allocatedSize();
     const uint64_t uiBytes = m_Editor ? ImGui_ImplMetal4_ResourceBytes() : 0;
     Require(resources+uiBytes<=ResourceLimit&&allocators<=AllocatorLimit,"M1 bounded GPU storage limit exceeded");
@@ -212,6 +216,7 @@ void MetalDevice::Poll() {
             ++m_Observer->Value.Completed; --m_Observer->Value.InFlight;
             if (f.Completion) { f.Completion->GPU = true; if (f.Completion->Presented) ++m_Observer->Value.CompletedPresented; }
         } else Verify(f);
+        for (const auto& editor : f.EditorFrames) editor->ResolveAmbientOcclusionTimings();
         for (const auto& editor : f.EditorFrames) if (editor->DisplaySource) editor->DisplaySource->Complete();
         if (f.EditorCapture) {
             for (size_t image = 0; image < f.EditorCapture->Images.size(); ++image) {

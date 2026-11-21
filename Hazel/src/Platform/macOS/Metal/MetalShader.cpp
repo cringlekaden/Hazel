@@ -203,6 +203,7 @@ MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::st
         auto vertices = NS::TransferPtr(MTL::VertexDescriptor::alloc()->init());
         spirv_cross::Compiler inputs(m_Artifact.Stages[0].Spirv);
         const std::map<std::string, std::vector<MTL::VertexFormat>> formats = {
+            {"DepthPBR", {MTL::VertexFormatFloat3, MTL::VertexFormatFloat3, MTL::VertexFormatFloat4, MTL::VertexFormatFloat2, MTL::VertexFormatFloat4}},
             {"ForwardPBR", {MTL::VertexFormatFloat3, MTL::VertexFormatFloat3, MTL::VertexFormatFloat4, MTL::VertexFormatFloat2, MTL::VertexFormatFloat4}},
             {"Renderer2D_Line", {MTL::VertexFormatFloat3, MTL::VertexFormatFloat4, MTL::VertexFormatFloat4, MTL::VertexFormatFloat4, MTL::VertexFormatInt, MTL::VertexFormatFloat4}},
             {"Renderer2D_Circle", {MTL::VertexFormatFloat3, MTL::VertexFormatFloat3, MTL::VertexFormatFloat4, MTL::VertexFormatFloat, MTL::VertexFormatFloat, MTL::VertexFormatInt, MTL::VertexFormatFloat4}},
@@ -228,7 +229,7 @@ MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::st
             m_Stride += type.vecsize * 4;
         }
         vertices->layouts()->object(16)->setStride(m_Stride);
-        const std::map<std::string, size_t> strides = {{"ForwardPBR", 64}, {"Renderer2D_Line", 80},
+        const std::map<std::string, size_t> strides = {{"DepthPBR", 64}, {"ForwardPBR", 64}, {"Renderer2D_Line", 80},
             {"Renderer2D_Quad-16", 64}, {"Renderer2D_Quad-32", 64}, {"Renderer2D_Circle", 68}, {"Renderer2D_Text", 56}};
         Check(m_Stride == (strides.count(name) ? strides.at(name) : 0), "Reflected CPU vertex stream size differs");
         descriptor->setVertexDescriptor(vertices.get());

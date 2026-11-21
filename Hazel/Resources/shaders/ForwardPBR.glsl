@@ -34,6 +34,9 @@ layout(binding=4) uniform sampler2D u_Emissive;
 layout(binding=5) uniform samplerCube u_Irradiance;
 layout(binding=6) uniform samplerCube u_Specular;
 layout(binding=7) uniform sampler2D u_BRDF;
+#ifdef HZ_METAL
+layout(binding=8) uniform sampler2D u_ScreenAO;
+#endif
 layout(std140,binding=6) uniform Environment {mat4 u_InverseVP;vec4 u_EnvRotationGain;vec4 u_EnvOptions;};
 vec3 environmentDirection(vec3 d){float c=u_EnvRotationGain.x,s=u_EnvRotationGain.y;return vec3(c*d.x-s*d.z,d.y,s*d.x+c*d.z);}
 const float PI=3.141592653589793;
@@ -109,7 +112,11 @@ void main(){
             // Retain the BRDF domain check after resolving the shading normal
             // against visible geometry; it is not a raster visibility cutoff.
             specularTerm=dot(N,V)>0?prefiltered*(f0*ab.x+ab.y):vec3(0);
-            diffuseTerm*=ao*u_EnvRotationGain.z;specularTerm*=ao*u_EnvRotationGain.z;
+            float diffuseAO=ao;
+#ifdef HZ_METAL
+            if(u_EnvOptions.y>0) diffuseAO=min(ao,mix(1,texelFetch(u_ScreenAO,ivec2(gl_FragCoord.xy),0).r,u_EnvOptions.y));
+#endif
+            diffuseTerm*=diffuseAO*u_EnvRotationGain.z;specularTerm*=ao*u_EnvRotationGain.z;
         }
         result=directTerm+diffuseTerm+specularTerm+u_EmissionCutoff.rgb*texture(u_Emissive,v_UV).rgb;
     }
@@ -129,5 +136,11 @@ void main(){
     if(inspect==13)result=geometricNormal;
     if(inspect==14)result=baseNormal;
     if(inspect==15)result=horizonProbe;
+#ifdef HZ_METAL
+    if(u_EnvOptions.z>0) {
+        vec4 aoDebug=texelFetch(u_ScreenAO,ivec2(gl_FragCoord.xy),0);
+        result=u_EnvOptions.z==3?aoDebug.rgb:vec3(u_EnvOptions.z==4?aoDebug.r/(1+aoDebug.r):aoDebug.r);
+    }
+#endif
     o_Color=vec4(result,1);o_Entity=u_Identity.x;
 }

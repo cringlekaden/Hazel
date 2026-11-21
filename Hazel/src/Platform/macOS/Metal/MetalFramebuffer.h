@@ -6,6 +6,11 @@
 
 namespace Hazel {
 class MetalDevice;
+struct SceneCameraView;
+struct AmbientOcclusionTiming;
+struct AmbientOcclusionSettings;
+struct MetalAOPipelines;
+struct MetalAOResources;
 class MetalRendererAPI;
 struct MetalRenderer2DFrame;
 // Immutable attachment identity. Each submitted generation is completion-retained.
@@ -21,6 +26,7 @@ public:
     ~MetalFramebuffer() override = default;
     MetalFramebuffer(const MetalFramebuffer&) = delete;
     MetalFramebuffer& operator=(const MetalFramebuffer&) = delete;
+    void PrepareAmbientOcclusion(const Ref<Framebuffer>& depth, const SceneCameraView& camera, const AmbientOcclusionSettings& settings, unsigned debugView, const std::shared_ptr<AmbientOcclusionTiming>& timing);
     void Bind() override;
     void Unbind() override;
     void Resize(uint32_t width, uint32_t height) override;
@@ -54,6 +60,8 @@ private:
     std::shared_ptr<MetalRenderer2DFrame> m_Frame;
     Ref<const FramebufferReadback> m_Readback, m_EditorReadback;
     std::vector<Ref<const FramebufferReadback>> m_EditorPendingReadbacks;
+    std::shared_ptr<MetalAOPipelines> m_AOPipelines;
+    std::vector<std::shared_ptr<MetalAOResources>> m_AOResources;
     bool m_SubmittedGeneration = false;
     std::vector<std::shared_ptr<const MetalFramebufferAttachments>> m_Available;
 };

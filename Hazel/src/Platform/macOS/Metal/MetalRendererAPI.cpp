@@ -85,7 +85,7 @@ void MetalRendererAPI::BindTexture(uint32_t slot, std::shared_ptr<const MetalTex
 void MetalRendererAPI::BindShader(const std::string& name)
 {
     if (m_Stopped) throw std::logic_error("Cannot bind Metal shader after backend shutdown");
-    if (name != "ForwardPBR" && name != "EnvironmentSky") throw std::logic_error("Metal indexed drawing does not support this shader");
+    if (name != "ForwardPBR" && name != "DepthPBR" && name != "EnvironmentSky") throw std::logic_error("Metal indexed drawing does not support this shader");
     m_BoundShader = name;
 }
 void MetalRendererAPI::DrawIndexed(const Ref<VertexArray>& array, uint32_t count, uint32_t first)
@@ -103,7 +103,11 @@ void MetalRendererAPI::DrawIndexed(const Ref<VertexArray>& array, uint32_t count
     for (size_t i = 0; i < m_Uniforms.size(); ++i)
         if (auto bytes = m_Uniforms[i].lock()) draw.Uniforms[i] = *bytes;
     for (size_t i = 0; i < m_Textures.size(); ++i) draw.Textures[i] = m_Textures[i];
-    if (m_BoundShader == "ForwardPBR") {
+    if(m_BoundShader=="DepthPBR") {
+        for(size_t i=0;i<draw.Uniforms.size();++i)if(i<2 || i>4)draw.Uniforms[i].clear();
+        for(size_t i=1;i<draw.Textures.size();++i)draw.Textures[i].reset();
+    }
+    if ((m_BoundShader == "ForwardPBR" || m_BoundShader == "DepthPBR")) {
         if (array->GetVertexBuffers().size() != 1) throw std::invalid_argument("PBR requires one native vertex stream");
         auto vertices = std::dynamic_pointer_cast<MetalVertexBuffer>(array->GetVertexBuffers()[0]);
         if (!vertices || vertices->GetLayout().GetStride() != 64) throw std::invalid_argument("Invalid PBR vertex layout");

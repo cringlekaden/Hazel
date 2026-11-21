@@ -891,8 +891,10 @@ namespace Hazel {
         PrepareSprites();
         SceneRenderView local;
         auto frame = SceneRenderer::Collect(*this, camera);
-        if (view)
+        if (view) {
             frame.Debug = view->Debug;
+            frame.AmbientOcclusionView = view->AmbientOcclusionView;
+        }
         SceneRenderer::Render(
             frame, view ? *view : local, display,
             [this, camera] { DrawWorld2D(camera.ViewProjection); }, [this] { RenderUI(); });

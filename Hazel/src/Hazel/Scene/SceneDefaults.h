@@ -16,6 +16,15 @@ namespace Hazel {
         }
         void Validate() const;
     };
+    struct AmbientOcclusionSettings {
+        bool Enabled = false;
+        unsigned Quality = 2; // low, medium, high, ultra
+        float Radius = .5f, Strength = 1, Falloff = .615f;
+        bool operator==(const AmbientOcclusionSettings& b) const {
+            return Enabled==b.Enabled && Quality==b.Quality && Radius==b.Radius && Strength==b.Strength && Falloff==b.Falloff;
+        }
+        void Validate() const;
+    };
     // Authored linear Rec.709 RGB. Display-referred bypasses exposure/tone;
     // scene-referred applies fixed Neutral presentation before independent UI.
     struct ScenePresentation {
@@ -23,6 +32,7 @@ namespace Hazel {
         float Exposure = 0; // stops; fixed Khronos PBR Neutral presentation
         glm::vec4 Background{0.010022826f, 0.010022826f, 0.010022826f, 1};
         SceneEnvironment Environment;
+        AmbientOcclusionSettings AmbientOcclusion;
         bool operator==(const ScenePresentation &b) const
         {
             if (SceneReferred != b.SceneReferred ||
@@ -31,7 +41,7 @@ namespace Hazel {
             for (int i = 0; i < 4; ++i)
                 if (std::memcmp(&Background[i], &b.Background[i], sizeof(float)))
                     return false;
-            return Environment==b.Environment;
+            return Environment==b.Environment && AmbientOcclusion==b.AmbientOcclusion;
         }
         bool operator!=(const ScenePresentation& b) const { return !(*this==b); }
         void Validate() const;

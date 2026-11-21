@@ -13,7 +13,14 @@ void SceneEnvironment::Validate() const {
     if(Asset.empty() && !(*this==SceneEnvironment{}))
         throw std::runtime_error("Environment instance values require an environment asset");
 }
+void AmbientOcclusionSettings::Validate() const {
+    if(Quality>3 || !std::isfinite(Radius) || Radius<.001f || Radius>100 ||
+       !std::isfinite(Strength) || Strength<0 || Strength>1 ||
+       !std::isfinite(Falloff) || Falloff<.05f || Falloff>1)
+        throw std::runtime_error("AO requires quality 0..3, radius .001..100, strength 0..1 and falloff .05..1");
+}
 void ScenePresentation::Validate() const {
+    AmbientOcclusion.Validate();
     Environment.Validate();
     if(!Environment.Asset.empty() && !SceneReferred)
         throw std::runtime_error("Prepared image environments require scene-referred presentation; unlit 2D remains independent");
@@ -49,10 +56,15 @@ YAML::Node Encode(const ScenePresentation& value) {
         e["Yaw"]=value.Environment.Yaw;e["Gain"]=value.Environment.Gain;
         e["Lighting"]=value.Environment.Lighting;e["Background"]=value.Environment.Background;
     }
+    if (!(value.AmbientOcclusion==AmbientOcclusionSettings{})) {
+        auto a=n["AmbientOcclusion"];const auto& v=value.AmbientOcclusion;
+        a["Enabled"]=v.Enabled;a["Quality"]=v.Quality;a["Radius"]=v.Radius;
+        a["Strength"]=v.Strength;a["Falloff"]=v.Falloff;
+    }
     return n;
 }
 ScenePresentation ReadPresentation(const YAML::Node& n) {
-    DocumentSchema::Keys(n, {"Mode", "Background", "Exposure", "Environment"}, "Presentation");
+    DocumentSchema::Keys(n, {"Mode", "Background", "Exposure", "Environment", "AmbientOcclusion"}, "Presentation");
     const auto mode = n["Mode"].as<std::string>();
     if (mode != "DisplayReferred" && mode != "SceneReferred")
         throw std::runtime_error("Unknown world presentation");
@@ -71,6 +83,11 @@ ScenePresentation ReadPresentation(const YAML::Node& n) {
         if(result.Environment.Asset.empty())throw std::runtime_error("Omit absent scene environment instead of an empty reference");
         result.Environment.Yaw=e["Yaw"].as<float>();result.Environment.Gain=e["Gain"].as<float>();
         result.Environment.Lighting=e["Lighting"].as<bool>();result.Environment.Background=e["Background"].as<bool>();
+    }
+    if(auto a=n["AmbientOcclusion"]) {
+        DocumentSchema::Keys(a,{"Enabled","Quality","Radius","Strength","Falloff"},"ambient occlusion");
+        auto& v=result.AmbientOcclusion;v.Enabled=a["Enabled"].as<bool>();v.Quality=a["Quality"].as<unsigned>();
+        v.Radius=a["Radius"].as<float>();v.Strength=a["Strength"].as<float>();v.Falloff=a["Falloff"].as<float>();
     }
     result.Validate();
     return result;
