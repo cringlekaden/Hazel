@@ -67,4 +67,80 @@ pacing. No timing result can substitute for a missing pass measurement. Windows
 historical full-suite timeout is separately deferred. New platform execution is
 reported separately from static portability review.
 
-Status: **INCOMPLETE — implementation in progress; no acceptance gates executed.**
+Status: **INCOMPLETE — focused gates executed; see continuation checkpoint below.**
+
+## Continuation checkpoint (2026-11-21)
+
+Actual resumed HEAD is `4e01c5c1d361110fc8fcff4e8b9b755e3be23581`
+(`Start of XeGTAO integration`), with a clean initial tree. That owner-created
+commit contains the initial work and the unrelated material/Finder/generated
+artifact changes. They are preserved. New work is a diff on this checkpoint.
+
+### Adaptation details and discriminating experiments
+
+- Upstream's finite slice integral exhibits a small view-dependent constant
+  visibility bias on an isolated plane. The initial strict >=.97 plane gate
+  failed. Hazel normalizes the sampled integral by the same analytic integral
+  over the unobstructed tangent hemisphere before the upstream final power.
+  Horizon sampling/integration, radius/falloff, R1 jitter, Hilbert/R2 pattern and
+  edge-path filter remain XeGTAO. This normalization is an explicit adaptation,
+  not an upstream-equivalent byte port. The gate is unchanged.
+- The first implementation used a queue producer barrier between dispatches in
+  one encoder. Native captures exposed zero-valued tiles. This was corrected to
+  `barrierAfterEncoderStages`; render/compute boundaries retain queue barriers.
+  Metal API/GPU validation alone had not caught the missing dependency.
+- The first MSL compile had three syntax errors; the first box-contact fixture
+  placed the sampled front face outside the AO radius. Both failed attempts
+  remain in `build/xegtao-evidence/`. The reference ray test initially compared a
+  hidden floor point to a visible box pixel near the silhouette. It now traces
+  the nearest primary surface and evaluates the same 3x3 pixel footprint.
+- Initial matched high-preset main-pass medians were 2.784 ms (720p) and
+  6.192 ms (1080p), Debug/native M4, 579 samples per extent after warmup/tail.
+  This exposed repeated inverse-matrix reconstruction per horizon sample. The
+  current constant block supplies the equivalent per-view UV-to-view mapping.
+  One subsequent exploratory benchmark overlapped a validation fixture at its
+  tail and is excluded from final performance claims.
+- The mesh preparation framebuffer now allocates/stores **depth only**. It
+  neither allocates nor writes color/picking attachments. The final forward pass
+  still owns authoritative depth and IDs. The per-view depth framebuffer owns a
+  completion-safe AO resource pool shared by shaded/inspection consumers.
+  Counter heaps are reused with each retired generation; idle and in-flight AO
+  textures participate in the existing 1 GiB native resource admission budget.
+- Low/medium/high/ultra use 4/8/18/54 horizon samples per pixel at full physical
+  resolution. Low/medium use two edge-aware passes; high/ultra use three to
+  support spatial stability without TAA. Constants/math/depth are FP32; scalar
+  working visibility is R16F and edge weights are RGBA8. Bent normals and
+  screen-space specular occlusion are not implemented. Material specular AO
+  remains unchanged; diffuse combines material and GTAO visibility by minimum.
+
+### Focused executed evidence
+
+`build/xegtao-evidence/depth-only-debug/` passes native API/GPU-validated plane,
+contact, fixed-frame determinism, perspective/orthographic, masked geometry,
+camera/object motion, exact direct/ID/depth preservation, diffuse/specular IBL
+separation, singular-camera rejection/recovery, odd/one-pixel resize, three gated
+pending frames, view destruction before GPU completion, and final retirement.
+The independent physical-radius cosine hemisphere reference uses 16,384 rays per
+pixel in eight 3x3 probes. RMS visibility error is .0541 against the predeclared
+.15 bound. This is a contact fixture, not a general ray-traced ground-truth pass.
+
+The later maintained fixture additionally checks depth-only API rejection,
+reprojected contact variation during camera orbit/translation/dolly (range <=.15),
+and exact screen UI preservation. These later additions require their own fresh
+runs; the earlier focused result does not cover them.
+
+### Frozen inputs and qualification provenance
+
+The owner's checkpoint changed `IBLQuality_v2/Materials/M0R3.hmat` relative to the
+requested baseline. Tests must not reset that file or bless its new bytes as a
+frozen reference. `HAZEL_TEST_EXAMPLE_REVISION=86c581c13fd5c944c2a06d720314a753d7607d8f`
+selects explicitly logged private example snapshots for frozen regression tests.
+`Renderer3DParity` honors the existing `HAZEL_RENDERING_REFERENCE_PROJECT`
+selector so Metal and OpenGL consume that same private snapshot. No second source
+checkout is created. The new AO demonstration uses the current authored study,
+not a changed frozen scene or reference generation.
+
+**INCOMPLETE:** broader Debug/Release/native product, temporal, 1x/2x, shader/cache,
+AO-off frozen, OpenGL, relocated export, warning and performance gates are still
+being executed. Windows historical full-suite timeout remains separately deferred.
+No completion commit/push or full feature PASS is claimed at this checkpoint.

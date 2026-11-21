@@ -223,7 +223,7 @@ int main(int argc, char** argv)
         auto owner = std::make_shared<Hazel::MetalDevice>();
         const auto artifacts = std::filesystem::absolute(argv[2]);
         Hazel::Resources::Configure({artifacts / "Resources", artifacts, artifacts / "user-data"});
-        for (const auto& name : {"DisplayOutput", "EntityOutline", "EnvironmentSky", "ForwardPBR", "Renderer2D_Circle", "Renderer2D_Line", "Renderer2D_Quad-16", "Renderer2D_Quad-32", "Renderer2D_Text", "WorldPresentation"})
+        for (const auto& name : {"DisplayOutput", "EntityOutline", "EnvironmentSky", "ForwardPBR", "DepthPBR", "Renderer2D_Circle", "Renderer2D_Line", "Renderer2D_Quad-16", "Renderer2D_Quad-32", "Renderer2D_Text", "WorldPresentation"})
             Compile(owner, argv[2], name);
         // The former line shader was a generic triangle passthrough proof.
         // Preserve its depth/clip assertions with the authoritative quad stream;

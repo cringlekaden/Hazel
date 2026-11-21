@@ -305,3 +305,29 @@ This uses the same authored photographic scene/camera/quality and common CPU-loo
 boundary. Depth formats and GL elapsed-query versus Metal whole-commit timing
 boundaries still differ: do not label those GPU observations a backend speedup.
 Ordinary application target formats remain unchanged.
+
+
+### XeGTAO qualification
+
+The native Metal 4 XeGTAO implementation, controls and separate demonstration
+scene are described in the [contact study](../examples/RenderingReference/README.md#xegtao-contact-study-metal-4).
+The [implementation record](design/xegtao.md) distinguishes focused native checks
+from complete feature acceptance. Offline shader production also emits
+`DepthPBR.hzmetal` and `XeGTAO.metallib`; exported Metal applications load those
+artifacts without developer shader compilers. The Intel MIT notice ships with
+the shader resources and distribution licenses.
+
+Focused native checks (after building the maintained test targets and artifacts):
+
+```sh
+python3 scripts/macos/xegtao.py --config Debug --resources Hazel/Resources --output build/xegtao-debug-fresh
+python3 scripts/macos/xegtao_benchmark.py --config Release --resources Hazel/Resources --project examples/RenderingReference/RenderingReference-XeGTAO.hproj --output build/xegtao-benchmark-fresh
+```
+
+The benchmark serializes AO off and all four presets at 720p/1080p, excludes
+warmup/tail samples, and requires positive presentation timestamps for GPU data.
+Do not run other native qualification or change display modes concurrently.
+`HAZEL_TEST_EXAMPLE_REVISION=<commit>` optionally selects an explicitly logged
+private example snapshot for regressions; it never changes the working examples.
+Use it only when reproducing a declared input baseline, and record the selected
+commit separately from the tested engine tree.

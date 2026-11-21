@@ -170,7 +170,7 @@ MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::st
         pipelineOptions->setShaderReflection(MTL4::ShaderReflectionBindingInfo | MTL4::ShaderReflectionBufferTypeInfo);
         descriptor->setOptions(pipelineOptions.get());
         Check(!drawableOutput || (shaderName == "DisplayOutput" || shaderName == "EntityOutline"), "Only DisplayOutput supports BGRA8 drawable format");
-        descriptor->colorAttachments()->object(0)->setPixelFormat(drawableOutput ? MTL::PixelFormatBGRA8Unorm : MTL::PixelFormatRGBA32Float);
+        if(shaderName!="DepthPBR")descriptor->colorAttachments()->object(0)->setPixelFormat(drawableOutput ? MTL::PixelFormatBGRA8Unorm : MTL::PixelFormatRGBA32Float);
         spirv_cross::Compiler reflection(m_Artifact.Stages[1].Spirv);
         for (const auto& resource : reflection.get_shader_resources().stage_outputs)
             if (reflection.get_decoration(resource.id, spv::DecorationLocation) == 1)
@@ -184,7 +184,7 @@ MetalShader::MetalShader(std::shared_ptr<MetalDevice> deviceOwner, const std::st
             descriptor->colorAttachments()->object(1)->setPixelFormat(MTL::PixelFormatR32Sint);
             descriptor->colorAttachments()->object(1)->setWriteMask(MTL::ColorWriteMaskNone);
         }
-        if (raster)
+        if (raster && shaderName!="DepthPBR")
         {
             auto* color = descriptor->colorAttachments()->object(0);
             color->setBlendingState(raster->Blend ? MTL4::BlendStateEnabled : MTL4::BlendStateDisabled);

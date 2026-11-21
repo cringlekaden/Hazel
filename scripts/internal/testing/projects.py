@@ -1,5 +1,6 @@
 """Disposable committed example inputs; never compile or edit the owner's drafts."""
 import io
+import os
 from pathlib import Path
 import subprocess
 import tarfile
@@ -11,7 +12,10 @@ def snapshot(name, destination, descriptor=None):
     # Keep root .gitattributes in scope: subtree archives lose its exact-byte
     # rules and core.autocrlf can rewrite accepted assets on Windows.
     prefix='examples/'+name+'/'
-    data=subprocess.check_output(['git','-C',str(hz.ROOT),'archive','HEAD',prefix[:-1]])
+    revision=os.environ.get('HAZEL_TEST_EXAMPLE_REVISION','HEAD')
+    commit=subprocess.check_output(['git','-C',str(hz.ROOT),'rev-parse','--verify',revision+'^{commit}'],text=True).strip()
+    print('Example snapshot:',name,commit,flush=True)
+    data=subprocess.check_output(['git','-C',str(hz.ROOT),'archive',commit,prefix[:-1]])
     with tarfile.open(fileobj=io.BytesIO(data)) as archive:
         members=[]
         for member in archive.getmembers():

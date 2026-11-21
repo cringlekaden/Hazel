@@ -1,0 +1,51 @@
+Material:
+  Version: 1
+  Name: XeGTAO dark rough metal
+  Model: MetallicRoughness
+  BaseColor:
+  - 0.06
+  - 0.055
+  - 0.05
+  - 1
+  Emissive:
+  - 0
+  - 0
+  - 0
+  Metallic: 1
+  Roughness: 0.8
+  NormalScale: 1
+  OcclusionStrength: 1
+  Alpha: Opaque
+  AlphaCutoff: 0.5
+  DoubleSided: false
+  Textures:
+    BaseColor:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    MetallicRoughness:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Normal:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Occlusion:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat
+    Emissive:
+      Image: ''
+      Min: LinearMipmapLinear
+      Mag: Linear
+      S: Repeat
+      T: Repeat

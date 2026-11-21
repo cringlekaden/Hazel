@@ -18,13 +18,10 @@ void main(){vec4 world=u_Model*vec4(a_Position,1);v_Position=world.xyz;v_Normal=
 #version 450 core
 layout(location=3) in vec2 v_UV;
 layout(location=4) in vec4 v_Color;
-layout(location=0) out vec4 o_Color;
-layout(location=1) out int o_Entity;
 layout(std140,binding=3) uniform Object {mat4 u_Model;mat4 u_NormalMatrix;ivec4 u_Identity;};
 layout(std140,binding=4) uniform Material {vec4 u_BaseFactor;vec4 u_EmissionCutoff;vec4 u_Surface;vec4 u_Options;};
 layout(binding=0) uniform sampler2D u_Base;
 void main(){
     vec4 base=u_BaseFactor*v_Color*texture(u_Base,v_UV);
     if(u_Options.y>.5&&base.a<u_EmissionCutoff.a)discard;
-    o_Color=vec4(0);o_Entity=u_Identity.x;
 }

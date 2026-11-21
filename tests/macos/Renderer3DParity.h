@@ -1,5 +1,6 @@
 #pragma once
 #include "Hazel/Assets/ProjectAssets.h"
+#include "Hazel/Core/FileSystem.h"
 #include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include "Hazel/Renderer/Drawing/Renderer3D.h"
 #include "Hazel/Scene/RuntimeSession.h"
@@ -22,6 +23,8 @@ inline void Renderer3DParity(const std::filesystem::path& output,
 {
     using namespace Hazel;
     std::filesystem::create_directories(output);
+    const auto selected=FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT");
+    const auto projectRoot=selected.empty()?std::filesystem::absolute("examples/RenderingReference"):selected.parent_path();
     const bool metal = RendererAPI::GetAPI() == RendererAPI::API::Metal;
     FramebufferSpecification spec;
     spec.Width = 320; spec.Height = 180;
@@ -41,8 +44,7 @@ inline void Renderer3DParity(const std::filesystem::path& output,
     // Independent fixed-camera cube tests use the same production factories,
     // SceneRenderer and direct FP64 reference as the accepted OpenGL suite.
     {
-        auto project = Project::LoadCandidate(std::filesystem::absolute(
-            "examples/RenderingReference/RenderingReference-Direct-PerspectivePBR.hproj"));
+        auto project = Project::LoadCandidate((projectRoot/"RenderingReference-Direct-PerspectivePBR.hproj"));
         auto assets = CreateRef<ProjectAssets>(project->GetAssetRoot());
         auto mesh = assets->Mesh("Native/Direct_v1/UnitCube.hmesh");
         if (!mesh.Accepted) throw std::runtime_error(mesh.Error);
@@ -205,7 +207,7 @@ inline void Renderer3DParity(const std::filesystem::path& output,
     for (const std::string name : {"Direct-PerspectiveUnlit", "Direct-PerspectivePBR", "Direct-OrthographicPBR",
         "Direct-SurfaceConventions", "IBL-DirectOnly", "IBL-IBLOnly", "IBL-Combined", "IBL-Photo", "IBL-AxesYaw90", "IBLQuality-Constant", "IBLQuality-TinyEmitter", "IBLQuality-Photo"})
     {
-        const auto path = std::filesystem::absolute("examples/RenderingReference/RenderingReference-" + name + ".hproj");
+        const auto path = projectRoot/("RenderingReference-" + name + ".hproj");
         if (!std::filesystem::exists(path)) throw std::runtime_error("Missing production 3D fixture: " + path.string());
         auto project = Project::LoadCandidate(path);
         auto requests = project->GetConfig().Rendering.value_or(RuntimeRendererRequests{});

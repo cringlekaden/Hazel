@@ -9,6 +9,7 @@ struct AOConstants
     float4x4 inverseVP;
     float4x4 worldToView;
     float4 extentRadius; // width, height, world radius, falloff fraction
+    float4 positionScaleBias; // UV to view XY, scaled by Z for perspective
     uint4 quality;       // slices, steps per side, orthographic, source mip
 };
 constant float pi = 3.14159265358979323846f;
@@ -20,9 +21,8 @@ float3 worldPosition(float2 uv, float depth, constant AOConstants& c)
 }
 float3 viewPosition(float2 uv, float z, constant AOConstants& c)
 {
-    float3 a = (c.worldToView * float4(worldPosition(uv, 0, c), 1)).xyz;
-    float3 b = (c.worldToView * float4(worldPosition(uv, .5f, c), 1)).xyz;
-    return a + (b - a) * ((z - a.z) / (b.z - a.z));
+    float2 xy=uv*c.positionScaleBias.xy+c.positionScaleBias.zw;
+    return float3(c.quality.z?xy:xy*z,z);
 }
 uint2 bounded(int2 p, uint2 size) { return uint2(clamp(p, int2(0), int2(size) - 1)); }
 float4 edges(float z, float l, float r, float t, float b)
@@ -76,9 +76,9 @@ kernel void aoMip(constant AOConstants& c [[buffer(0)]],
     float4 w = saturate((radius - (max(max(d.x,d.y),max(d.z,d.w))-d)) / (radius*c.extentRadius.w));
     target.write(float4(dot(w,d)/dot(w,float4(1))),p);
 }
-kernel void aoMain(constant AOConstants& c [[buffer(0)]],
-    texture2d<float> depth [[texture(0)]], texture2d<float, access::write> output [[texture(1)]],
-    texture2d<float, access::write> outputEdges [[texture(2)]], uint2 p [[thread_position_in_grid]])
+inline void gtaoMain(constant AOConstants& c,
+    texture2d<float> depth, texture2d<float, access::write> output,
+    texture2d<float, access::write> outputEdges, uint2 p, uint sliceCount, uint stepCount)
 {
     uint2 size(depth.get_width(),depth.get_height());
     if (any(p >= size)) return;
@@ -104,10 +104,11 @@ kernel void aoMain(constant AOConstants& c [[buffer(0)]],
     float pixelSize=length(viewPosition(uv+float2(texel.x,0),z,c)-viewPosition(uv,z,c));
     float screenRadius=radius/max(pixelSize,1e-8f);
     float visibility=saturate((10-screenRadius)/100)*.5f;
+    float unoccludedIntegral=0;
     float2 noise=fract(.5f+float(hilbert(p))*float2(.75487766624669276f,.56984029099805326f));
-    for (uint slice=0;slice<c.quality.x;++slice)
+    for (uint slice=0;slice<sliceCount;++slice)
     {
-        float phi=(float(slice)+noise.x)/float(c.quality.x)*pi;
+        float phi=(float(slice)+noise.x)/float(sliceCount)*pi;
         float3 direction(cos(phi),sin(phi),0);
         float3 ortho=direction-dot(direction,view)*view;
         float3 axis=normalize(cross(ortho,view));
@@ -116,10 +117,10 @@ kernel void aoMain(constant AOConstants& c [[buffer(0)]],
         float cosNorm=saturate(dot(projected,view)/max(projectedLength,1e-8f));
         float n=sign(dot(ortho,projected))*fastACos(cosNorm);
         float2 low=cos(n+float2(pi*.5f,-pi*.5f)), horizon=low;
-        for (uint step=0;step<c.quality.y;++step)
+        for (uint step=0;step<stepCount;++step)
         {
-            float jitter=fract(noise.y+float(slice+step*c.quality.y)*.6180339887498948482f);
-            float s=(float(step)+jitter)/float(c.quality.y);
+            float jitter=fract(noise.y+float(slice+step*stepCount)*.6180339887498948482f);
+            float s=(float(step)+jitter)/float(stepCount);
             s=s*s+1.3f/screenRadius;
             float2 offset=s*direction.xy*screenRadius;
             float mip=clamp(log2(max(length(offset),1e-8f))-3.30f,0.0f,float(depth.get_num_mip_levels()-1));
@@ -141,11 +142,30 @@ kernel void aoMain(constant AOConstants& c [[buffer(0)]],
         float2 h=float2(-fastACos(clamp(horizon.y,-1.0f,1.0f)),fastACos(clamp(horizon.x,-1.0f,1.0f)));
         float2 integral=(cosNorm+2*h*sin(n)-cos(2*h-n))*.25f;
         visibility+=projectedLength*(integral.x+integral.y);
+        // Finite angular quadrature has a view/slope-dependent DC bias, even
+        // for an isolated plane. Evaluate the same analytic XeGTAO integral
+        // over its unobstructed tangent hemisphere to preserve unit visibility.
+        // This changes normalization only; sampled horizons still own occlusion.
+        float2 openH=float2(-fastACos(clamp(low.y,-1.0f,1.0f)),fastACos(clamp(low.x,-1.0f,1.0f)));
+        float2 openIntegral=(cosNorm+2*openH*sin(n)-cos(2*openH-n))*.25f;
+        unoccludedIntegral+=projectedLength*(openIntegral.x+openIntegral.y);
     }
     // Keep overshoot until denoising, as upstream's 1.5-scaled working UNORM does.
-    visibility=max(.03f,pow(max(visibility/float(c.quality.x),0.0f),2.2f));
+    visibility=max(.03f,pow(max(visibility/max(unoccludedIntegral,1e-6f),0.0f),2.2f));
     output.write(float4(min(visibility,1.5f)),p);
 }
+// Match upstream's four constant-quality entry points so the Metal compiler can
+// specialize the horizon loops, while retaining one implementation of the math.
+#define AO_MAIN_KERNEL(name, slices, steps) \
+    kernel void name(constant AOConstants& c [[buffer(0)]], \
+        texture2d<float> depth [[texture(0)]], texture2d<float, access::write> output [[texture(1)]], \
+        texture2d<float, access::write> outputEdges [[texture(2)]], uint2 p [[thread_position_in_grid]]) \
+    { gtaoMain(c,depth,output,outputEdges,p,slices,steps); }
+AO_MAIN_KERNEL(aoMainLow,1,2)
+AO_MAIN_KERNEL(aoMainMedium,2,2)
+AO_MAIN_KERNEL(aoMainHigh,3,3)
+AO_MAIN_KERNEL(aoMainUltra,9,3)
+#undef AO_MAIN_KERNEL
 kernel void aoDenoise(constant AOConstants& c [[buffer(0)]],
     texture2d<float,access::read> source [[texture(0)]], texture2d<float,access::write> target [[texture(1)]],
     texture2d<float,access::read> edgeTexture [[texture(2)]], uint2 p [[thread_position_in_grid]])

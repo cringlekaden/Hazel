@@ -116,3 +116,17 @@ Hazelnut's output. Alpha cutouts and occlusion match picking; fully hidden meshe
 have no edge. The edge stays inside selected coverage, at about two logical points
 (rounded to framebuffer pixels). Sprite, UI and non-mesh cues retain their existing
 behavior. The current silhouette operation requires matching single-sample targets.
+
+
+### Metal ambient occlusion inspection
+
+The [XeGTAO contact study](../examples/RenderingReference/README.md#xegtao-contact-study-metal-4)
+demonstrates the current Metal-only AO implementation. Scene Settings authors
+its enable, quality, world radius, strength and falloff. Apply/Undo/Redo and Save
+use the ordinary scene presentation settings. The viewport **AO...** popup shows
+visibility/intermediate views and the last completed native GPU timing sample.
+These inspection choices are private to the view. Timing intervals include GPU
+synchronization; forward/world time also includes world 2D. They are not exclusive
+pass costs. OpenGL displays an explicit inactive-request message.
+
+Qualification status and limitations are recorded in [XeGTAO](design/xegtao.md).

@@ -1,0 +1,392 @@
+SceneVersion: 3
+Scene: XeGTAO contact and crevice study
+Presentation:
+  Mode: SceneReferred
+  Exposure: 0
+  Background:
+  - 0.00999999978
+  - 0.00999999978
+  - 0.00999999978
+  - 1
+  Environment:
+    Asset: Reference/IBL_v1/Photo.henv
+    Yaw: 0
+    Gain: 1
+    Lighting: true
+    Background: true
+  AmbientOcclusion:
+    Enabled: true
+    Quality: 2
+    Radius: 0.5
+    Strength: 0.8
+    Falloff: 0.615
+Entities:
+- Entity: 1
+  Relationship:
+    Parent: 0
+    Order: 0
+  TagComponent:
+    Tag: AO inspection camera
+  TransformComponent:
+    Translation:
+    - 0
+    - 2.3
+    - 5.5
+    Rotation:
+    - -0.32
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  CameraComponent:
+    Camera:
+      ProjectionType: 0
+      PerspectiveFOV: 0.785398185
+      PerspectiveNear: 0.100000001
+      PerspectiveFar: 100
+      OrthographicSize: 10
+      OrthographicNear: -1
+      OrthographicFar: 1
+    Primary: true
+    FixedAspectRatio: false
+- Entity: 10
+  Relationship:
+    Parent: 0
+    Order: 1
+  TagComponent:
+    Tag: Ground
+  TransformComponent:
+    Translation:
+    - 0
+    - -0.6
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 7
+    - 0.2
+    - 6
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Native/Direct_v1/UnitCube.hmesh
+    Materials: []
+- Entity: 11
+  Relationship:
+    Parent: 0
+    Order: 2
+  TagComponent:
+    Tag: Left contact
+  TransformComponent:
+    Translation:
+    - -1.2
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Native/Direct_v1/UnitCube.hmesh
+    Materials: []
+- Entity: 12
+  Relationship:
+    Parent: 0
+    Order: 3
+  TagComponent:
+    Tag: Close neighbor
+  TransformComponent:
+    Translation:
+    - -0.08
+    - -0.1
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 0.8
+    - 1
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Native/Direct_v1/UnitCube.hmesh
+    Materials: []
+- Entity: 13
+  Relationship:
+    Parent: 0
+    Order: 4
+  TagComponent:
+    Tag: Thin slab
+  TransformComponent:
+    Translation:
+    - 1.35
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.08
+    - 1
+    - 1.5
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Native/Direct_v1/UnitCube.hmesh
+    Materials: []
+- Entity: 14
+  Relationship:
+    Parent: 0
+    Order: 5
+  TagComponent:
+    Tag: Corner back wall
+  TransformComponent:
+    Translation:
+    - 0
+    - 0.45
+    - -1.65
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 5
+    - 2
+    - 0.15
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Native/Direct_v1/UnitCube.hmesh
+    Materials: []
+- Entity: 15
+  Relationship:
+    Parent: 0
+    Order: 6
+  TagComponent:
+    Tag: Raised object
+  TransformComponent:
+    Translation:
+    - 1.8
+    - 0.05
+    - 0.95
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 0.65
+    - 0.65
+    - 0.65
+  MeshRendererComponent:
+    Version: 1
+    Mesh: Native/Direct_v1/UnitCube.hmesh
+    Materials:
+    - Slot: '0000000000000007'
+      Material: Studies/XeGTAO/DarkMetal.hmat
+- Entity: 70
+  Relationship:
+    Parent: 0
+    Order: 7
+  TagComponent:
+    Tag: Exposure independent UI
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  UICanvasComponent:
+    ReferenceSize:
+    - 1280
+    - 720
+    SafeInsets:
+    - 16
+    - 16
+    - 16
+    - 16
+    SortOrder: 0
+    Visible: true
+    Enabled: true
+    Modal: false
+    Screen:
+      Managed: false
+      InitiallyOpen: true
+      Cancel: 1
+      InitialFocus: 0
+      DefaultAction: 0
+      CancelTarget: 0
+      ReturnFocus: 0
+      EventOwner: 0
+- Entity: 72
+  Relationship:
+    Parent: 70
+    Order: 0
+  TagComponent:
+    Tag: Screen label backing
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  SpriteRendererComponent:
+    Color:
+    - 0.00499999989
+    - 0.00499999989
+    - 0.00499999989
+    - 1
+    Source:
+      Type: None
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 1232
+    - 56
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 12
+    - 12
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+- Entity: 71
+  Relationship:
+    Parent: 70
+    Order: 1
+  TagComponent:
+    Tag: UI case label
+  TransformComponent:
+    Translation:
+    - 0
+    - 0
+    - 0
+    Rotation:
+    - 0
+    - 0
+    - 0
+    Scale:
+    - 1
+    - 1
+    - 1
+  TextComponent:
+    TextString: XeGTAO contact study / screen UI stays independent
+    FontFamily: ''
+    FontStyle: 0
+    Color:
+    - 1
+    - 1
+    - 1
+    - 1
+    Kerning: 0
+    LineSpacing: 0
+  UIRectComponent:
+    LayoutVersion: 3
+    WidthMode: 0
+    HeightMode: 0
+    FixedSize:
+    - 1200
+    - 32
+    MaximumSize:
+    - 0
+    - 0
+    HasMaximum:
+    - false
+    - false
+    Anchor:
+    - 0
+    - 0
+    GridRow: -1
+    GridColumn: -1
+    RowSpan: 1
+    ColumnSpan: 1
+    ImageFit: 0
+    ImageAlignment:
+    - 0.5
+    - 0.5
+    Offset:
+    - 24
+    - 24
+    Pivot:
+    - 0
+    - 0
+    MinimumSize:
+    - 0
+    - 0
+    Margin:
+    - 0
+    - 0
+    - 0
+    - 0
+    Padding:
+    - 0
+    - 0
+    - 0
+    - 0
+    Visible: true
+    Enabled: true
+    ClipChildren: true
+    Flex: 0
+  UITextStyleComponent:
+    Size: 20
+    Horizontal: 0
+    Vertical: 0
+    Wrap: true
+    Overflow: Clip
+    MaxLines: 0

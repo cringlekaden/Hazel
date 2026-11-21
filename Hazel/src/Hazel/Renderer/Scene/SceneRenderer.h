@@ -3,6 +3,8 @@
 #include "Hazel/Renderer/Resources/Framebuffer.h"
 #include <functional>
 #include <array>
+#include <cstdint>
+#include <memory>
 namespace Hazel
 {
 class Scene;
@@ -25,6 +27,8 @@ class SceneRenderView
     {
         Radiance.reset();
         AmbientDepth.reset();
+        AmbientTiming=std::make_shared<AmbientOcclusionTiming>();
+        WarnedUnsupportedAO=false;
     }
 };
 class SceneRenderer

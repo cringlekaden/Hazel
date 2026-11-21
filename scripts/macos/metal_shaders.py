@@ -15,6 +15,12 @@ import hazel as hz
 def produce(configuration, destination, sources=None, force=False):
     hz.macos_toolchain()
     sources = sources or hz.ROOT / 'Hazel/Resources/shaders'
+    # The narrow preparation path must rasterize the same positions as forward PBR.
+    # Keep this concrete source contract explicit until shader includes are supported.
+    forward_vertex = (sources / 'ForwardPBR.glsl').read_text().split('#type fragment', 1)[0]
+    depth_vertex = (sources / 'DepthPBR.glsl').read_text().split('#type fragment', 1)[0]
+    if depth_vertex != forward_vertex:
+        raise RuntimeError('DepthPBR vertex stage differs from ForwardPBR; update the shared position contract')
     tool = hz.binaries(configuration) / 'MetalShaderTools/MetalShaderTools'
     destination.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()

@@ -42,7 +42,7 @@ def main():
         gate(name, completed.returncode == 0)
 
     def hashes(directory):
-        return {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(directory.glob('*.hzmetal'))}
+        return {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(directory.iterdir()) if p.suffix in ('.hzmetal','.metallib')}
 
     def production(directory, sources=None, force=False):
         # Preserve exact producer commands/diagnostics without chat output volume.
@@ -57,9 +57,9 @@ def main():
         expected = hashes(first)
         production(second)
         gate('deterministic-relocated-production', hashes(second) == expected)
-        times = {p.name: p.stat().st_mtime_ns for p in first.glob('*.hzmetal')}
+        times = {name: (first/name).stat().st_mtime_ns for name in hashes(first)}
         gate('warm-production', all(v == 'HIT' for v in production(first).values()))
-        gate('warm-no-rewrite', times == {p.name: p.stat().st_mtime_ns for p in first.glob('*.hzmetal')})
+        gate('warm-no-rewrite', times == {name: (first/name).stat().st_mtime_ns for name in hashes(first)})
         gate('forced-production', all(v == 'REBUILT' for v in production(first, force=True).values()) and hashes(first) == expected)
         target = first / 'Renderer2D_Line.hzmetal'
         target.write_bytes(b'truncated')
@@ -84,6 +84,7 @@ def main():
         sources.mkdir()
         for path in (hz.ROOT / 'Hazel/Resources/shaders').glob('*.glsl'):
             shutil.copyfile(path, sources / path.name)
+        shutil.copytree(hz.ROOT/'Hazel/Resources/shaders/XeGTAO',sources/'XeGTAO')
         source = sources / 'Renderer2D_Line.glsl'
         source.write_text(source.read_text() + '\n// Identity invalidation fixture\n')
         changed = production(first, sources)

@@ -4,6 +4,7 @@
 #include "MetalFramebuffer.h"
 #include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include <cstring>
+#include <cstdio>
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Core/FileSystem.h"
 #include <dispatch/dispatch.h>
@@ -27,7 +28,7 @@ MetalAOPipelines::MetalAOPipelines(MetalDevice& device)
     auto descriptor=NS::TransferPtr(MTL4::CompilerDescriptor::alloc()->init());
     auto compiler=NS::TransferPtr(device.NativeDevice()->newCompiler(descriptor.get(),&error));
     Check(bool(compiler),"Cannot create XeGTAO Metal 4 compiler");
-    const char* names[]={"aoDepth","aoMip","aoMain","aoDenoise"};
+    const char* names[]={"aoDepth","aoMip","aoMainLow","aoMainMedium","aoMainHigh","aoMainUltra","aoDenoise"};
     for(size_t i=0;i<States.size();++i) {
         auto function=NS::TransferPtr(MTL4::LibraryFunctionDescriptor::alloc()->init());
         function->setLibrary(Library.get());function->setName(NS::String::string(names[i],NS::UTF8StringEncoding));
@@ -52,7 +53,7 @@ MetalAOPipelines::MetalAOPipelines(MetalDevice& device)
                 const auto* texture=static_cast<const MTL::TextureBinding*>(binding);
                 const auto index=texture->index();
                 Check(index<(i<2?2u:3u) && texture->textureType()==MTL::TextureType2D && texture->textureDataType()==MTL::DataTypeFloat && texture->arrayLength()==1 &&
-                    texture->access()==((index==1 || (i==2 && index==2))?MTL::BindingAccessWriteOnly:MTL::BindingAccessReadOnly),"XeGTAO texture ABI differs");
+                    texture->access()==((index==1 || (i>=2 && i<=5 && index==2))?MTL::BindingAccessWriteOnly:MTL::BindingAccessReadOnly),"XeGTAO texture ABI differs");
                 ++textures;
             } else throw std::runtime_error("Unexpected XeGTAO binding");
         }
@@ -81,6 +82,11 @@ MetalAOResources::MetalAOResources(MetalDevice& device,std::shared_ptr<MetalAOPi
     }
     descriptor->setPixelFormat(MTL::PixelFormatRGBA8Unorm);
     Edges=NS::TransferPtr(device.NativeDevice()->newTexture(descriptor.get()));Check(bool(Edges),"Cannot allocate XeGTAO edges");
+    TimestampFrequency=device.NativeDevice()->queryTimestampFrequency();
+    auto counters=NS::TransferPtr(MTL4::CounterHeapDescriptor::alloc()->init());
+    counters->setType(MTL4::CounterHeapTypeTimestamp);counters->setCount(6);
+    NS::Error* error=nullptr;Counters=NS::TransferPtr(device.NativeDevice()->newCounterHeap(counters.get(),&error));
+    if(!Counters || !TimestampFrequency)Counters.reset();
 }
 MetalAOConstants AmbientOcclusionConstants(const SceneCameraView& camera,const AmbientOcclusionSettings& settings,uint32_t width,uint32_t height)
 {
@@ -99,6 +105,11 @@ MetalAOConstants AmbientOcclusionConstants(const SceneCameraView& camera,const A
     for(int i=0;i<3;++i) {c.WorldToView[i][0]=right[i];c.WorldToView[i][1]=up[i];c.WorldToView[i][2]=forward[i];}
     const auto eye=camera.Orthographic?origin-forward*.001f:camera.Position;
     c.WorldToView[3]=glm::vec4(-glm::dot(right,eye),-glm::dot(up,eye),-glm::dot(forward,eye),1);
+    const auto bottomLeft=glm::vec3(c.WorldToView*glm::vec4(point({-1,-1,-1}),1));
+    const auto topRight=glm::vec3(c.WorldToView*glm::vec4(point({1,1,-1}),1));
+    const float projectionScale=camera.Orthographic?1.f:bottomLeft.z;
+    Check(std::isfinite(projectionScale) && projectionScale>0,"XeGTAO requires positive finite near depth");
+    c.PositionScaleBias=glm::vec4((glm::vec2(topRight)-glm::vec2(bottomLeft))/projectionScale,glm::vec2(bottomLeft)/projectionScale);
     c.ExtentRadius={float(width),float(height),settings.Radius,settings.Falloff};
     constexpr unsigned slices[]={1,2,3,9},steps[]={2,2,3,3};
     c.Quality={slices[settings.Quality],steps[settings.Quality],camera.Orthographic?1u:0u,0};
@@ -107,11 +118,9 @@ MetalAOConstants AmbientOcclusionConstants(const SceneCameraView& camera,const A
 void MetalDevice::PrepareAmbientOcclusion(const std::shared_ptr<MetalRenderer2DFrame>& frame)
 {
     auto& pass=*frame->AO;auto& r=*pass.Resources;
-    pass.TimestampFrequency=m_Device->queryTimestampFrequency();
-    auto counterDescriptor=NS::TransferPtr(MTL4::CounterHeapDescriptor::alloc()->init());
-    counterDescriptor->setType(MTL4::CounterHeapTypeTimestamp);counterDescriptor->setCount(6);
-    NS::Error* error=nullptr;pass.Counters=NS::TransferPtr(m_Device->newCounterHeap(counterDescriptor.get(),&error));
-    if(!pass.Counters || !pass.TimestampFrequency)pass.Counters.reset();
+    pass.TimestampFrequency=r.TimestampFrequency;pass.Counters=r.Counters;
+    pass.Trace=m_Trace;pass.Serial=m_Serial+1;
+    if(pass.Counters)pass.Counters->invalidateCounterRange(NS::Range::Make(0,6));
     for(auto texture:{r.Depth,r.Raw,r.Edges,r.Scratch,r.Visibility})frame->Residency->addAllocation(texture.get());
     auto table=NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
     table->setInitializeBindings(true);table->setMaxBufferBindCount(1);table->setMaxTextureBindCount(3);
@@ -138,13 +147,16 @@ void MetalDevice::EncodeAmbientOcclusion(const std::shared_ptr<MetalRenderer2DFr
     auto& pass=*frame->AO;auto& r=*pass.Resources;
     if(pass.Counters)m_Commands->writeTimestampIntoHeap(pass.Counters.get(),0);
     m_Commands->useResidencySet(frame->AOSource->Residency.get());EncodeRenderer2DFrame(frame->AOSource);
-    auto* compute=m_Commands->computeCommandEncoder();Check(compute!=nullptr,"Cannot encode XeGTAO");
+    auto* compute=m_Commands->computeCommandEncoder();
+    if(!compute) {m_Commands->endCommandBuffer();throw std::runtime_error("Cannot encode XeGTAO");}
     compute->barrierAfterQueueStages(MTL::StageAll,MTL::StageDispatch,MTL4::VisibilityOptionDevice);
     if(pass.Counters)compute->writeTimestamp(MTL4::TimestampGranularityPrecise,pass.Counters.get(),1);
     for(size_t i=0;i<pass.Arguments.size();++i) {
         if(pass.Counters && (i==r.DepthMips.size() || i==r.DepthMips.size()+1))
             compute->writeTimestamp(MTL4::TimestampGranularityPrecise,pass.Counters.get(),i==r.DepthMips.size()?2:3);
-        size_t kind=i==0?0:i<r.DepthMips.size()?1:i==r.DepthMips.size()?2:3;
+        const auto slices=pass.Constants.Quality.x;
+        const size_t preset=slices==1?0:slices==2?1:slices==3?2:3;
+        const size_t kind=i==0?0:i<r.DepthMips.size()?1:i==r.DepthMips.size()?2+preset:6;
         compute->setComputePipelineState(r.Pipelines->States[kind].get());compute->setArgumentTable(pass.Arguments[i].get());
         uint32_t width=r.Width,height=r.Height;
         if(i<r.DepthMips.size()){width=uint32_t(r.DepthMips[i]->width());height=uint32_t(r.DepthMips[i]->height());}
@@ -158,6 +170,7 @@ void MetalAOPass::ResolveTimings()
 {
     if(TimingsResolved || !Counters || !Timing)return;
     TimingsResolved=true;
+    auto pool=NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
     auto values=NS::RetainPtr(Counters->resolveCounterRange(NS::Range::Make(0,6)));
     if(!values || values->length()!=6*sizeof(MTL4::TimestampHeapEntry))return;
     MTL4::TimestampHeapEntry entries[6];std::memcpy(entries,values->bytes(),sizeof(entries));
@@ -166,5 +179,8 @@ void MetalAOPass::ResolveTimings()
     Timing->WorkingBytes=0;const auto& r=*Resources;
     for(auto texture:{r.Depth,r.Raw,r.Edges,r.Scratch,r.Visibility})Timing->WorkingBytes+=texture->allocatedSize();
     Timing->Valid=true;
+    if(Trace)std::printf("XEGTAO_GPU frame=%llu pixels=%ux%u depth_ms=%.6f prefilter_ms=%.6f main_ms=%.6f denoise_ms=%.6f forward_world_ms=%.6f working_bytes=%llu\n",
+        (unsigned long long)Serial,r.Width,r.Height,Timing->Milliseconds[0],Timing->Milliseconds[1],Timing->Milliseconds[2],
+        Timing->Milliseconds[3],Timing->Milliseconds[4],(unsigned long long)Timing->WorkingBytes);
 }
 }

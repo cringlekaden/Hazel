@@ -1,0 +1,20 @@
+Project:
+  Version: 1
+  NewSceneDefaults:
+    Projection: Perspective
+    Navigation: Orbit
+    Presentation:
+      Mode: SceneReferred
+      Exposure: 0
+      Background:
+      - 0.0100228256
+      - 0.0100228256
+      - 0.0100228256
+      - 1
+    Content: DirectPBR
+  ScriptProject: RenderingReference
+  AuthoringVersion: 1
+  Name: XeGTAO contact study
+  StartScene: Scenes/XeGTAO-Contact.hazel
+  AssetDirectory: Assets
+  ScriptModulePath: Scripts/Binaries/RenderingReference.dll

@@ -381,6 +381,7 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
     auto pass = NS::TransferPtr(MTL4::RenderPassDescriptor::alloc()->init());
     for (size_t i = 0; i < 2; ++i)
     {
+        if(!quad->Attachments->Targets[i])continue;
         auto* attachment = pass->colorAttachments()->object(i);
         attachment->setTexture(quad->Attachments->Targets[i].get()); attachment->setLoadAction(MTL::LoadActionClear);
         attachment->setStoreAction(MTL::StoreActionStore);

@@ -12,6 +12,8 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
                            const Ref<Framebuffer> &display, const std::function<void()> &world2D,
                            const std::function<void()> &screenUI)
 {
+    if(frame.AmbientOcclusionView>4)throw std::runtime_error("Unsupported ambient-occlusion inspection");
+    if(!frame.Presentation.AmbientOcclusion.Enabled)view.AmbientTiming->Valid=false;
     if (unsigned(frame.Debug) > unsigned(SurfaceView::NormalHorizon))
         throw std::runtime_error("Unsupported surface inspection");
     if (frame.LinearLightingInspection && (frame.Debug < SurfaceView::Direct || frame.Debug > SurfaceView::NormalHorizon))
@@ -34,7 +36,8 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
         {
             const bool ao=frame.Presentation.AmbientOcclusion.Enabled && !frame.Meshes.empty();
             if(ao) {
-                const auto size=display->GetSpecification();
+                auto size=display->GetSpecification();
+                size.Attachments={FramebufferTextureFormat::DEPTH32F};
                 if(!view.AmbientDepth)view.AmbientDepth=Framebuffer::Create(size);
                 else if(view.AmbientDepth->GetSpecification().Width!=size.Width || view.AmbientDepth->GetSpecification().Height!=size.Height)
                     view.AmbientDepth->Resize(size.Width,size.Height);
@@ -48,7 +51,7 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
                 (void)target;
 #endif
             };
-            if (frame.Presentation.SceneReferred && frame.Debug == SurfaceView::Shaded && frame.AmbientOcclusionView==0)
+            if (frame.Presentation.SceneReferred && frame.Debug == SurfaceView::Shaded && (!ao || frame.AmbientOcclusionView==0))
             {
                 auto size = display->GetSpecification();
                 if (!view.Radiance) view.Radiance = Framebuffer::Create(size);
@@ -68,7 +71,11 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
             }
             else {
                 view.Radiance.reset();
-                if(ao) {display->Bind();display->Clear(frame.Presentation.Background);}
+                if(ao) {
+                    display->Bind();
+                    const auto background=frame.AmbientOcclusionView?glm::vec4(frame.AmbientOcclusionView==3?0.f:1.f):frame.Presentation.Background;
+                    display->Clear(background);
+                }
                 prepareAO(display);
                 Renderer3D::Render(frame, false);
                 RenderCommand::SetRasterState(raster);

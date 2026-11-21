@@ -160,7 +160,7 @@ void ComputeDependencies(Hazel::MetalRendererAPI& backend, const std::filesystem
     Check(backend.Observe()->Snapshot().Errors == 0, "Native compute validation failed");
     std::cout << "PASS production render-compute-readback and render-compute-render-readback: three gated slots, immutable constants, signed IDs/depth, odd extent, pending destruction and retirement\n";
 }
-void MeshLifetime(Hazel::MetalRendererAPI& backend)
+void MeshLifetime(Hazel::MetalRendererAPI& backend, bool ambientOcclusion=false)
 {
     using namespace Hazel;
     auto wideSpec=Specification();wideSpec.Width=8192;wideSpec.Height=1;
@@ -175,6 +175,7 @@ void MeshLifetime(Hazel::MetalRendererAPI& backend)
     auto material=CreateRef<MaterialDefinition>();material->Model=MaterialModel::Unlit;
     auto second=CreateRef<MaterialDefinition>(*material);second->BaseColor={0,0,1,1};
     SceneSubmission frame;frame.Assets=assets;frame.Camera.Orthographic=true;
+    frame.Presentation.AmbientOcclusion.Enabled=ambientOcclusion;
     frame.Camera.Position={0,0,3};frame.Camera.ViewProjection=glm::ortho(-1.f,1.f,-1.f,1.f,-1.f,1.f);
     SubmittedMesh draw;draw.Geometry=mesh.Accepted;draw.Materials={material};draw.Picking=-2000000003;
     draw.SetWorld(glm::translate(glm::mat4(1),{-.5f,0,0})*glm::scale(glm::mat4(1),{.5f,1,1}));
@@ -188,11 +189,12 @@ void MeshLifetime(Hazel::MetalRendererAPI& backend)
         Begin(target,32,32);
         const auto before=RenderCommand::GetDrawSubmissionCount();
         SceneRenderer::Render(frame,view,target,[]{},[]{});
-        Check(RenderCommand::GetDrawSubmissionCount()==before+2,"Indexed draw submissions were counted more than once");
+        Check(RenderCommand::GetDrawSubmissionCount()==before+(ambientOcclusion?4:2),"Indexed/prepass draw submissions were counted incorrectly");
         results[i]=Submit(target);Check(bool(results[i]),"Gated mesh submit unexpectedly busy");
     }
     frame.Meshes.clear();frame.Assets.reset();assets.reset();project.reset();mesh.Accepted.reset();
     Check(!generation.expired(),"Pending mesh generation escaped cache admission accounting");
+    if(ambientOcclusion)view.Reset(); // Pending frames retain AO generations after view destruction.
     Renderer3D::Shutdown(); // Native draws own all shader/texture/uniform versions already captured.
     Check(backend.Observe()->Snapshot().InFlight==3,"Three mesh frames were not held by completion gate");
     gate.Release();gate.Release={};
@@ -217,10 +219,11 @@ int main(int argc, char** argv)
         const auto root = std::filesystem::absolute(std::filesystem::u8path(argv[1]));
         Hazel::Resources::Configure({root, root, output / "user-data"});
         Hazel::RenderCommand::Configure(Hazel::RendererAPI::API::Metal);
+        const bool offscreenBenchmark = argc == 4 && std::string(argv[3]) == "--xegtao-offscreen-benchmark";
         const bool ao = argc == 4 && std::string(argv[3]) == "--xegtao";
         const bool compute = argc == 4 && std::string(argv[3]) == "--compute";
         const bool renderer3D = argc == 4 && std::string(argv[3]) == "--renderer3d-parity";
-        Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !renderer3D && !compute && !ao ? uint32_t(std::stoul(argv[3])) : 4;
+        Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !renderer3D && !compute && !ao && !offscreenBenchmark ? uint32_t(std::stoul(argv[3])) : 4;
         Check(settings.TextureSlots == 2 || settings.TextureSlots == 4,"Fixture supports two or four texture slots");
         const auto runtimeFrames=argc==5?std::stoul(argv[4]):80UL;
         Check(runtimeFrames>=80 && runtimeFrames<=6000,"Runtime frame count must be 80..6000");
@@ -231,10 +234,12 @@ int main(int argc, char** argv)
         auto framebuffer = Hazel::Framebuffer::Create(TargetSpecification());
         Check(bool(std::dynamic_pointer_cast<Hazel::MetalFramebuffer>(framebuffer)), "Factory did not return a production Metal framebuffer");
         Hazel::Renderer2D::Init();
-        if(ao) {
-            XeGTAOQualification(output,[&](const auto& target) {
+        if(ao || offscreenBenchmark) {
+            const auto check=offscreenBenchmark?XeGTAOOffscreenBenchmark:XeGTAOQualification;
+            check(output,[&](const auto& target) {
                 auto result=Submit(target);Check(bool(result),"AO submit busy");Wait(*target,result);return result;
             });
+            MeshLifetime(backend,true);
             framebuffer.reset();Hazel::Renderer2D::Shutdown();Hazel::RenderCommand::Shutdown();
             Check(observer->Snapshot().Errors==0 && observer->Snapshot().ResourceBytes==0 && observer->Snapshot().AttachmentGenerations==0,"AO retirement failed");
             std::cout << "PASS XeGTAO plane/contact/determinism/direct/ID/depth and retirement\n";return 0;

@@ -195,3 +195,32 @@ HAZEL_RESOURCES="$PWD/Hazel/Resources" python3 scripts/hazel.py run Nutella --co
 Add `--inspect-camera` for the existing transient navigation controls. This
 experimental run does not qualify Hazelnut Metal ImGui or general Metal export.
 The packaging commands above retain their established OpenGL scope.
+
+
+## XeGTAO contact study (Metal 4)
+
+`RenderingReference-XeGTAO.hproj` opens a separate contact/crevice study with a
+photographic environment, closely spaced boxes, a thin slab, a wall and a dark
+rough metal. Its authored AO is enabled; existing reference scenes keep AO off.
+The implementation is undergoing qualification; see the [XeGTAO record](../../docs/design/xegtao.md)
+for executed gates and outstanding checks.
+
+On the implementation branch, build the applications and offline shader artifacts
+as described in [development](../../docs/development.md#experimental-metal-shader-resources), then run:
+
+```sh
+python3 scripts/hazel.py run Hazelnut --config Debug --metal --no-restore --project examples/RenderingReference/RenderingReference-XeGTAO.hproj
+python3 scripts/hazel.py run Nutella --config Debug --metal --inspect-camera --project examples/RenderingReference/RenderingReference-XeGTAO.hproj
+```
+
+Scene Settings provides enable, low/medium/high/ultra quality, radius in world
+units, strength and falloff. Apply participates in Undo/Redo; Save persists the
+scene. The viewport **AO...** popup provides visibility, raw visibility, edges,
+view depth and completed GPU phase timing. Inspection is transient. Nutella's
+inspection camera uses RMB + WASD/Q/E, with Home restoring the authored view.
+
+AO affects diffuse image-based lighting. Material occlusion and GTAO combine by
+minimum visibility; direct lighting, emission, specular IBL, sky and screen UI
+retain their existing behavior. No temporal history or TAA is required. Very thin,
+hidden or offscreen geometry remains subject to screen-space limitations. OpenGL
+keeps the authored request but reports it inactive; it has no AO fallback.
