@@ -35,8 +35,8 @@ inline void XeGTAOQualification(const std::filesystem::path& output,
     bool planeFailure=false;
     std::ofstream metrics(output/"geometry-metrics.csv");
     metrics<<"projection,quality,min_plane,min_contact,max_contact,working_bytes\n";
-    auto render=[&] {
-        display->Bind();display->Clear({0,0,0,1});display->ClearAttachment(1,-1);
+    auto render=[&](int clearEntity=-1) {
+        display->Bind();display->Clear({0,0,0,1});display->ClearAttachment(1,clearEntity);
         SceneRenderer::Render(frame,view,display,[]{},[]{});
         auto result=capture(display);
         if(!result || !result->Completed || !result->Error.empty())throw std::runtime_error("XeGTAO capture incomplete");
@@ -90,10 +90,17 @@ inline void XeGTAOQualification(const std::filesystem::path& output,
         auto masked=render();for(auto id:masked->Entity)if(id!=-1)throw std::runtime_error("XeGTAO masked geometry wrote IDs");
         material->BaseColor.a=1;
         material->Textures[0].Image="Reference/Direct_v1/Surfaces/AsymmetricMask.tga";
-        frame.AmbientOcclusionView=0;frame.Presentation.AmbientOcclusion.Enabled=true;auto partialOn=render();
-        frame.Presentation.AmbientOcclusion.Enabled=false;auto partialOff=render();
+        frame.AmbientOcclusionView=0;frame.Presentation.AmbientOcclusion.Enabled=true;auto partialOn=render(-77777);
+        frame.Presentation.AmbientOcclusion.Enabled=false;auto partialOff=render(-77777);
+        if(std::find(partialOn->Entity.begin(),partialOn->Entity.end(),-77777)==partialOn->Entity.end())
+            throw std::runtime_error("Partial-mask fixture has no caller-cleared background coverage");
+        save("partial-mask-on",partialOn);save("partial-mask-off",partialOff);
         if(partialOn->Color!=partialOff->Color || partialOn->Entity!=partialOff->Entity || partialOn->Depth!=partialOff->Depth)
             throw std::runtime_error("XeGTAO changed partial alpha-mask color, depth or exact IDs");
+        frame.Presentation.AmbientOcclusion.Enabled=true;frame.AmbientOcclusionView=1;auto partialInspection=render(-77777);
+        if(partialInspection->Entity!=partialOff->Entity || partialInspection->Depth!=partialOff->Depth)
+            throw std::runtime_error("XeGTAO inspection changed masked picking or depth clears");
+        frame.AmbientOcclusionView=0;
         material->Alpha=MaterialAlpha::Opaque;material->Textures[0].Image.clear();
         material->DoubleSided=true;frame.Meshes[1].SetWorld(glm::scale(box.World,{-1.f,1.f,1.f}));
         frame.Presentation.AmbientOcclusion.Enabled=true;auto sidedOn=render();
@@ -190,6 +197,9 @@ inline void XeGTAOQualification(const std::filesystem::path& output,
         frame.Debug=SurfaceView::Direct;frame.Light.reset();
         frame.AmbientOcclusionView=1;frame.Presentation.AmbientOcclusion.Enabled=true;
     }
+    auto geometry=frame.Meshes;frame.Meshes.clear();render();
+    if(view.AmbientTiming->Valid)throw std::runtime_error("Empty geometry retained stale AO GPU timing");
+    frame.Meshes=std::move(geometry);
     auto validCamera=frame.Camera;frame.Camera.ViewProjection=glm::mat4(0);
     bool rejected=false;try{render();}catch(const std::runtime_error&){rejected=true;}
     if(!rejected)throw std::runtime_error("XeGTAO accepted singular camera projection");

@@ -52,6 +52,9 @@ def summarize(text):
                                                 if ex == extent and int(f) in frames]))
         for index, name in enumerate(('depthPreparation', 'depthPrefilter', 'main', 'denoise', 'forwardWorld'), 1):
             row[name + 'GPUCompletionInterval'] = distribution([phases[f][index] for f in submitted if f in gpu and f in phases and phases[f][0] == extent])
+        phase_valid=sum(f in gpu and f in phases and phases[f][0]==extent for f in submitted)
+        phase_candidates=sum(f in gpu for f in submitted) if phases else 0
+        row['phaseCounterSamples']={'positivelyPresentedCandidates':phase_candidates,'validOrderedRecords':phase_valid,'rejectedOrMissingRecords':phase_candidates-phase_valid}
         row['AOTextureBytesPerGeneration'] = max((phases[f][-1] for f in submitted if f in phases), default=0)
         stamps = sorted(gpu[f][1] for f in submitted if f in gpu)
         row['GPUCompletionSpacing'] = distribution([(b - a) * 1000 for a, b in zip(stamps, stamps[1:])])
@@ -85,11 +88,16 @@ def main():
     for name in ('MTL_DEBUG_LAYER','MTL_SHADER_VALIDATION','MTL_CAPTURE_ENABLED'):
         env.pop(name, None)
     env.update(DYLD_LIBRARY_PATH=str(hz.mono_prefix() / 'lib'), HAZEL_METAL_TRACE='1')
+    asset_root=args.project.parent/'Assets'
+    inputs=[args.project,asset_root/'Scenes/XeGTAO-Contact.hazel',asset_root/'Studies/XeGTAO/DarkMetal.hmat',
+            asset_root/'Reference/IBL_v1/Photo.henv',asset_root/'Reference/IBL_v1/Photo.henv.accepted']
+    inputs += [p for folder in (asset_root/'Native/Direct_v1',asset_root/'Reference/IBL_v1/Photo.henv.prepared',args.resources/'shaders/metal') for p in folder.rglob('*') if p.is_file()]
     report = dict(configuration=args.config, head=hz.output(['git', 'rev-parse', 'HEAD']),
                   worktree=hz.output(['git', 'status', '--short']), warmup=120, tail=20, framesPerExtent=720,
                   scopes='Scene CPU, native submission CPU, tick interval, whole commit feedback, and precise GPU phase completion intervals. Phase intervals include synchronization and are not exclusive/additive. No backend speedup claim.',
                   memory='AO texture bytes are per generation; tracked frame/attachment/allocator peaks overlap and must not be added. RSS includes CPU/driver process storage.',
-                  inputs={str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in (args.project, args.project.parent / 'Assets/Scenes/XeGTAO-Contact.hazel')}, runs={})
+                  inputs={str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs},
+                  worktreeDiffSHA256=hashlib.sha256(subprocess.check_output(['git','diff','HEAD'],cwd=hz.ROOT)).hexdigest(),runs={})
     try:
         for quality, name in enumerate(('off','low','medium','high','ultra'), -1):
             folder = output / name; folder.mkdir()

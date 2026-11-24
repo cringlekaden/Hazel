@@ -127,6 +127,19 @@ void MetalFramebuffer::Bind()
     m_Readback.reset(); // this pass must not expose an older generation as current pixels
 }
 void MetalFramebuffer::Unbind() { Backend().UnbindFramebuffer(m_Frame); }
+void MetalFramebuffer::Resume()
+{
+    Check(m_Frame && !m_Frame->Result && !Backend().IsFramebufferBound(m_Frame),
+        "Resume requires an unbound, unsubmitted framebuffer packet");
+    Backend().BindFramebuffer(m_Frame);
+}
+void MetalFramebuffer::Resume(glm::vec4 clearColor)
+{
+    Check(m_Frame && m_Frame->Draws.empty(), "Inspection clear requires an empty pending framebuffer packet");
+    for(int i=0;i<4;++i)Check(std::isfinite(clearColor[i]), "Framebuffer clear color must be finite");
+    Resume();
+    m_Frame->Clear=clearColor;
+}
 void MetalFramebuffer::Clear(glm::vec4 color)
 {
     Backend().CheckFramebufferClear(m_Frame);

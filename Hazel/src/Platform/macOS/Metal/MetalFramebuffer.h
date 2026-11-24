@@ -29,6 +29,9 @@ public:
     void PrepareAmbientOcclusion(const Ref<Framebuffer>& depth, const SceneCameraView& camera, const AmbientOcclusionSettings& settings, unsigned debugView, const std::shared_ptr<AmbientOcclusionTiming>& timing);
     void Bind() override;
     void Unbind() override;
+    // Resume an unsubmitted CPU packet after a narrow producer pass.
+    void Resume();
+    void Resume(glm::vec4 clearColor); // Inspection color override preserves picking/depth clears.
     void Resize(uint32_t width, uint32_t height) override;
     void DispatchColorTo(const Ref<Framebuffer>& destination, const Ref<ComputePipeline>& pipeline, const std::vector<uint8_t>& parameters) override;
     void ClearEditor(glm::vec4 color) override { Clear(color); }

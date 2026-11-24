@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import hazel as hz
 from internal.package_tests import extract_verified
 from macos.qualification import isolation_command
+from macos.packaging import relocate_executable, sign
 
 
 def main():
@@ -48,7 +49,10 @@ def main():
         # The helper consumes the exported resources and project; canonical source,
         # SDK, Homebrew, developer compilers and MSL authoring sources are denied.
         source = hz.binaries('Release') / 'MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke'
-        helper = working / 'XeGTAOProbe'; shutil.copy2(source, helper)
+        helper = working / 'probe/MacOS/XeGTAOProbe'; helper.parent.mkdir(parents=True)
+        shutil.copy2(source, helper)
+        shutil.copytree(bundles['Nutella'] / 'Contents/Frameworks', working / 'probe/Frameworks')
+        relocate_executable(helper);sign(helper)
         project = working / 'examples/RenderingReference'
         shutil.copytree(bundles['Nutella'] / 'Contents/Resources/Project', project)
         # Focused independent geometry also opens this existing descriptor.
@@ -56,8 +60,7 @@ def main():
             shutil.copy2(hz.ROOT / 'examples/RenderingReference' / descriptor, project / descriptor)
         resources = bundles['Nutella'] / 'Contents/Resources'
         env = {k:v for k,v in os.environ.items() if not k.startswith(('HAZEL_','DYLD_','MTL_'))}
-        env.update(PATH='/nonexistent', DEVELOPER_DIR='/nonexistent',
-                   DYLD_LIBRARY_PATH=str(bundles['Nutella'] / 'Contents/Frameworks'), MTL_DEBUG_LAYER='1', MTL_SHADER_VALIDATION='1')
+        env.update(PATH='/nonexistent', DEVELOPER_DIR='/nonexistent', MTL_DEBUG_LAYER='1', MTL_SHADER_VALIDATION='1')
         sdk = hz.mono_prefix()
         command = isolation_command([helper, resources, working / 'probe-results', '--xegtao'], sdk, metal=True)
         with (output / 'probe.log').open('w') as log:

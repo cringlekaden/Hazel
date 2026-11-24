@@ -76,6 +76,11 @@ The badge is **workflow-wide**. Open a run for its separate Windows/Linux Debug,
 
 The owner completed the recorded Xcode/editor acceptance and approved integration. Automated checks remain distinct from unexecuted physical checks, competent-reader typography acceptance and public signed distribution. Native static-mesh direct PBR, offline HDR preparation and image-based lighting are available on the implementation branch. See [Stage 4](docs/design/3d-environment-stage4.md) for supported authoring, reference cases and actual qualification limits.
 
+The development branch also includes [Metal XeGTAO ambient occlusion](docs/design/xegtao.md)
+for diffuse IBL, with editor controls and a separate contact-study scene. Functional
+and correctness gates pass locally on Apple M4; visible noise and motion shimmer
+remain, including on Ultra. Final visual-quality qualification is incomplete.
+
 For engine code navigation, start with [Follow a frame](docs/follow-a-frame.md).
 The [Rendering Showcase](examples/RenderingShowcase/README.md) demonstrates prepared IBL and material surfaces separately from diagnostic references.
 

@@ -1,0 +1,705 @@
+{
+  "scope": "Functional/correctness acceptance PASS under owner-amended 2026-11-24 scope; final visual-quality qualification INCOMPLETE",
+  "baseline": "86c581c13fd5c944c2a06d720314a753d7607d8f",
+  "parentHEAD": "880975d09584c8502340ea2d4472b38d13ac976c",
+  "branch": "feature/3d-foundations",
+  "visualLimitation": "Owner observes noticeable noise and motion shimmer even on Ultra. No final visual-quality or motion-stability PASS. Motion-aware HDR TAA and subsequent AO tuning are separate future milestones.",
+  "samplingAudit": {
+    "frameVaryingSampling": false,
+    "source": "Hazel/Resources/shaders/XeGTAO/XeGTAO.metal:108",
+    "inputs": "integer pixel coordinates only; no frame/time/noise phase in AO constants",
+    "localizedReview": "No clear localized correctness defect found in reconstruction, sampling or spatial denoiser; no shader tuning applied in final review."
+  },
+  "staticDeterminism": {
+    "status": "PASS",
+    "scope": "16 exact full color/signed-ID/depth captures across separate processes; same camera, geometry and resolution. In-process per-pixel color repeat checks also run for all 8 preset/projection combinations per configuration. Not a moving-camera stability verdict.",
+    "comparisons": [
+      {
+        "configuration": "debug",
+        "capture": "perspective-q0.bin",
+        "sha256": "54cc8231c00ef8c78cab0b5337c462df86d8dfec8efd9a6033e1864d8ba3d302",
+        "previousProcessSHA256": "54cc8231c00ef8c78cab0b5337c462df86d8dfec8efd9a6033e1864d8ba3d302",
+        "identical": true
+      },
+      {
+        "configuration": "debug",
+        "capture": "perspective-q1.bin",
+        "sha256": "d3380d8395299aa576b370d16280437b88caf96dfae9862465de0241e08505ce",
+        "previousProcessSHA256": "d3380d8395299aa576b370d16280437b88caf96dfae9862465de0241e08505ce",
+        "identical": true
+      },
+      {
+        "configuration": "debug",
+        "capture": "perspective-q2.bin",
+        "sha256": "594e4000b947cd349cd193b8c74bf336108f0bb3e5f95fa446014af296ad0f17",
+        "previousProcessSHA256": "594e4000b947cd349cd193b8c74bf336108f0bb3e5f95fa446014af296ad0f17",
+        "identical": true
+      },
+      {
+        "configuration": "debug",
+        "capture": "perspective-q3.bin",
+        "sha256": "669de53ddbab705e0839593ca9b51df1746684392b1c57815317674313e99142",
+        "previousProcessSHA256": "669de53ddbab705e0839593ca9b51df1746684392b1c57815317674313e99142",
+        "identical": true
+      },
+      {
+        "configuration": "debug",
+        "capture": "ortho-q0.bin",
+        "sha256": "9390562e8ddf450642a9117fc8d8b4f1255266db7731b0b1f69ffafa536b5226",
+        "previousProcessSHA256": "9390562e8ddf450642a9117fc8d8b4f1255266db7731b0b1f69ffafa536b5226",
+        "identical": true
+      },
+      {
+        "configuration": "debug",
+        "capture": "ortho-q1.bin",
+        "sha256": "23926bfb9600a2b8ed135a6605702bb7842f1d3832b080850c395bbd01bf19c0",
+        "previousProcessSHA256": "23926bfb9600a2b8ed135a6605702bb7842f1d3832b080850c395bbd01bf19c0",
+        "identical": true
+      },
+      {
+        "configuration": "debug",
+        "capture": "ortho-q2.bin",
+        "sha256": "6b22e39cead8733a918a3c0e3cf7f700ec267a0b700735fb8bc26dc2d264c712",
+        "previousProcessSHA256": "6b22e39cead8733a918a3c0e3cf7f700ec267a0b700735fb8bc26dc2d264c712",
+        "identical": true
+      },
+      {
+        "configuration": "debug",
+        "capture": "ortho-q3.bin",
+        "sha256": "e3ba2e236fceb36a0fa9fd0331c5a8c94975c31279409b98fa1fc60f88655c4f",
+        "previousProcessSHA256": "e3ba2e236fceb36a0fa9fd0331c5a8c94975c31279409b98fa1fc60f88655c4f",
+        "identical": true
+      },
+      {
+        "configuration": "release",
+        "capture": "perspective-q0.bin",
+        "sha256": "54cc8231c00ef8c78cab0b5337c462df86d8dfec8efd9a6033e1864d8ba3d302",
+        "previousProcessSHA256": "54cc8231c00ef8c78cab0b5337c462df86d8dfec8efd9a6033e1864d8ba3d302",
+        "identical": true
+      },
+      {
+        "configuration": "release",
+        "capture": "perspective-q1.bin",
+        "sha256": "d3380d8395299aa576b370d16280437b88caf96dfae9862465de0241e08505ce",
+        "previousProcessSHA256": "d3380d8395299aa576b370d16280437b88caf96dfae9862465de0241e08505ce",
+        "identical": true
+      },
+      {
+        "configuration": "release",
+        "capture": "perspective-q2.bin",
+        "sha256": "594e4000b947cd349cd193b8c74bf336108f0bb3e5f95fa446014af296ad0f17",
+        "previousProcessSHA256": "594e4000b947cd349cd193b8c74bf336108f0bb3e5f95fa446014af296ad0f17",
+        "identical": true
+      },
+      {
+        "configuration": "release",
+        "capture": "perspective-q3.bin",
+        "sha256": "669de53ddbab705e0839593ca9b51df1746684392b1c57815317674313e99142",
+        "previousProcessSHA256": "669de53ddbab705e0839593ca9b51df1746684392b1c57815317674313e99142",
+        "identical": true
+      },
+      {
+        "configuration": "release",
+        "capture": "ortho-q0.bin",
+        "sha256": "9390562e8ddf450642a9117fc8d8b4f1255266db7731b0b1f69ffafa536b5226",
+        "previousProcessSHA256": "9390562e8ddf450642a9117fc8d8b4f1255266db7731b0b1f69ffafa536b5226",
+        "identical": true
+      },
+      {
+        "configuration": "release",
+        "capture": "ortho-q1.bin",
+        "sha256": "23926bfb9600a2b8ed135a6605702bb7842f1d3832b080850c395bbd01bf19c0",
+        "previousProcessSHA256": "23926bfb9600a2b8ed135a6605702bb7842f1d3832b080850c395bbd01bf19c0",
+        "identical": true
+      },
+      {
+        "configuration": "release",
+        "capture": "ortho-q2.bin",
+        "sha256": "6b22e39cead8733a918a3c0e3cf7f700ec267a0b700735fb8bc26dc2d264c712",
+        "previousProcessSHA256": "6b22e39cead8733a918a3c0e3cf7f700ec267a0b700735fb8bc26dc2d264c712",
+        "identical": true
+      },
+      {
+        "configuration": "release",
+        "capture": "ortho-q3.bin",
+        "sha256": "e3ba2e236fceb36a0fa9fd0331c5a8c94975c31279409b98fa1fc60f88655c4f",
+        "previousProcessSHA256": "e3ba2e236fceb36a0fa9fd0331c5a8c94975c31279409b98fa1fc60f88655c4f",
+        "identical": true
+      }
+    ]
+  },
+  "focused": {
+    "debug": {
+      "nativeStatus": "PASS",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/xegtao-evidence/nov24-temporal-check-debug/captures",
+        "--xegtao"
+      ],
+      "shaderHashes": {
+        "ForwardPBR.hzmetal": "494708bd6c3fb9611277f047d0713aa5cff7cde4bedf9c55465ad410b33d7c3d",
+        "producer.txt": "3adf77fe1deff3d0d6cd64e5d94093697067bf3661383af61af35e853b87f53f",
+        "EntityOutline.hzmetal": "01ef441c3b77ab67b9d02aa739f1a7028df2b38b9d23fa1d9c85a87b70f1da56",
+        "Renderer2D_Line.hzmetal": "0649cd9aa45d63604c35ca5def33e3e7bc1ab98f5c8f2325f56cf73ec0e2b154",
+        "Renderer2D_Quad-16.hzmetal": "39eea29c143507c211f13271cb3c4a77759910546ffce882a258502216fb35df",
+        "ImGui.json": "d36612bb5f238ec1c4bab9b2e85fc77d3c63c860debd011c0596d9da253cc280",
+        "XeGTAO.metallib": "019b77e169ba84745e6672ff629dcd8447a136b8a76125d6b5e5c348b1d3c04b",
+        "Renderer2D_Quad-32.hzmetal": "909978450633564664d3f6f5356aa80c497644ffb0fddeec85bacf9a975695eb",
+        "WorldPresentation.hzmetal": "6cf0ea9c2ca49ecd7f264e5a4df9e5f174c2c51e6b50543d5b8d7ebb2acfb164",
+        "XeGTAO.json": "e7ec8ed4aa04365f227cebeb44105b67761f8c547ded9c2dd5f61faaf894d2da",
+        "EnvironmentSky.hzmetal": "ba159aa84517a9b3626851f37b7f6b5314a1ae2250dfd5d58e051d22d2c9c14a",
+        "ImGui.metallib": "ebd096577ba66f98f3d2ae9dc32a607ca23e7e5e3aa8243defe15a238c7ce167",
+        "Renderer2D_Circle.hzmetal": "4e51b4ef362be908924d84287eb1c92535cd080b03386d906e968a352251fce3",
+        "DepthPBR.hzmetal": "1d70d04368e5b48056bb672c1588d7e57a4abbd8f2199bc09357b06bb29f098f",
+        "Renderer2D_Text.hzmetal": "f76ae76d70633ab911155803737fb8a76f14be5c0be12ff57c6ca10c21889ba5",
+        "DisplayOutput.hzmetal": "8673d03228a2883189838f0d47ba8b25b51024e2eeac91c3bc5bd2445b2fcead"
+      },
+      "geometricReference": {
+        "samplesPerProbe": 16384,
+        "probes": [
+          {
+            "pixel": [
+              174,
+              90
+            ],
+            "world": [
+              0.2636009087213223,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.8569783519068666,
+            "measured": 0.8202582465277778,
+            "error": -0.03672010537908876
+          },
+          {
+            "pixel": [
+              175,
+              90
+            ],
+            "world": [
+              0.2817802817365862,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.7272139136091922,
+            "measured": 0.6518825954861112,
+            "error": -0.07533131812308103
+          },
+          {
+            "pixel": [
+              176,
+              90
+            ],
+            "world": [
+              0.29995965475184944,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.6103352650780894,
+            "measured": 0.5056694878472222,
+            "error": -0.10466577723086723
+          },
+          {
+            "pixel": [
+              178,
+              90
+            ],
+            "world": [
+              0.3363184007823772,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.6862540979368954,
+            "measured": 0.6310221354166666,
+            "error": -0.05523196252022877
+          },
+          {
+            "pixel": [
+              180,
+              90
+            ],
+            "world": [
+              0.3726771468129043,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.7557121541496424,
+            "measured": 0.7555881076388888,
+            "error": -0.00012404651075359485
+          },
+          {
+            "pixel": [
+              184,
+              90
+            ],
+            "world": [
+              0.4453946388739585,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.8693648782970124,
+            "measured": 0.9091796875,
+            "error": 0.03981480920298763
+          },
+          {
+            "pixel": [
+              188,
+              90
+            ],
+            "world": [
+              0.5181121309350134,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.9392135093999302,
+            "measured": 0.9651692708333334,
+            "error": 0.02595576143340317
+          },
+          {
+            "pixel": [
+              192,
+              90
+            ],
+            "world": [
+              0.5908296229960676,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.9762733037777749,
+            "measured": 0.9861111111111112,
+            "error": 0.00983780733333628
+          }
+        ],
+        "rms": 0.05406522294936046,
+        "limit": 0.15,
+        "status": "PASS",
+        "scope": "Independent physical-radius cosine hemisphere visibility; screen-space approximation, high quality only"
+      },
+      "rawEvidence": "build/xegtao-evidence/nov24-temporal-check-debug/results.json"
+    },
+    "release": {
+      "nativeStatus": "PASS",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/xegtao-evidence/nov24-temporal-check-release/captures",
+        "--xegtao"
+      ],
+      "shaderHashes": {
+        "ForwardPBR.hzmetal": "494708bd6c3fb9611277f047d0713aa5cff7cde4bedf9c55465ad410b33d7c3d",
+        "producer.txt": "3adf77fe1deff3d0d6cd64e5d94093697067bf3661383af61af35e853b87f53f",
+        "EntityOutline.hzmetal": "01ef441c3b77ab67b9d02aa739f1a7028df2b38b9d23fa1d9c85a87b70f1da56",
+        "Renderer2D_Line.hzmetal": "0649cd9aa45d63604c35ca5def33e3e7bc1ab98f5c8f2325f56cf73ec0e2b154",
+        "Renderer2D_Quad-16.hzmetal": "39eea29c143507c211f13271cb3c4a77759910546ffce882a258502216fb35df",
+        "ImGui.json": "d36612bb5f238ec1c4bab9b2e85fc77d3c63c860debd011c0596d9da253cc280",
+        "XeGTAO.metallib": "019b77e169ba84745e6672ff629dcd8447a136b8a76125d6b5e5c348b1d3c04b",
+        "Renderer2D_Quad-32.hzmetal": "909978450633564664d3f6f5356aa80c497644ffb0fddeec85bacf9a975695eb",
+        "WorldPresentation.hzmetal": "6cf0ea9c2ca49ecd7f264e5a4df9e5f174c2c51e6b50543d5b8d7ebb2acfb164",
+        "XeGTAO.json": "e7ec8ed4aa04365f227cebeb44105b67761f8c547ded9c2dd5f61faaf894d2da",
+        "EnvironmentSky.hzmetal": "ba159aa84517a9b3626851f37b7f6b5314a1ae2250dfd5d58e051d22d2c9c14a",
+        "ImGui.metallib": "ebd096577ba66f98f3d2ae9dc32a607ca23e7e5e3aa8243defe15a238c7ce167",
+        "Renderer2D_Circle.hzmetal": "4e51b4ef362be908924d84287eb1c92535cd080b03386d906e968a352251fce3",
+        "DepthPBR.hzmetal": "1d70d04368e5b48056bb672c1588d7e57a4abbd8f2199bc09357b06bb29f098f",
+        "Renderer2D_Text.hzmetal": "f76ae76d70633ab911155803737fb8a76f14be5c0be12ff57c6ca10c21889ba5",
+        "DisplayOutput.hzmetal": "8673d03228a2883189838f0d47ba8b25b51024e2eeac91c3bc5bd2445b2fcead"
+      },
+      "geometricReference": {
+        "samplesPerProbe": 16384,
+        "probes": [
+          {
+            "pixel": [
+              174,
+              90
+            ],
+            "world": [
+              0.2636009087213223,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.8569783519068666,
+            "measured": 0.8202582465277778,
+            "error": -0.03672010537908876
+          },
+          {
+            "pixel": [
+              175,
+              90
+            ],
+            "world": [
+              0.2817802817365862,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.7272139136091922,
+            "measured": 0.6518825954861112,
+            "error": -0.07533131812308103
+          },
+          {
+            "pixel": [
+              176,
+              90
+            ],
+            "world": [
+              0.29995965475184944,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.6103352650780894,
+            "measured": 0.5056694878472222,
+            "error": -0.10466577723086723
+          },
+          {
+            "pixel": [
+              178,
+              90
+            ],
+            "world": [
+              0.3363184007823772,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.6862540979368954,
+            "measured": 0.6310221354166666,
+            "error": -0.05523196252022877
+          },
+          {
+            "pixel": [
+              180,
+              90
+            ],
+            "world": [
+              0.3726771468129043,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.7557121541496424,
+            "measured": 0.7555881076388888,
+            "error": -0.00012404651075359485
+          },
+          {
+            "pixel": [
+              184,
+              90
+            ],
+            "world": [
+              0.4453946388739585,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.8693648782970124,
+            "measured": 0.9091796875,
+            "error": 0.03981480920298763
+          },
+          {
+            "pixel": [
+              188,
+              90
+            ],
+            "world": [
+              0.5181121309350134,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.9392135093999302,
+            "measured": 0.9651692708333334,
+            "error": 0.02595576143340317
+          },
+          {
+            "pixel": [
+              192,
+              90
+            ],
+            "world": [
+              0.5908296229960676,
+              0.009089686507631776,
+              0.05
+            ],
+            "expected": 0.9762733037777749,
+            "measured": 0.9861111111111112,
+            "error": 0.00983780733333628
+          }
+        ],
+        "rms": 0.05406522294936046,
+        "limit": 0.15,
+        "status": "PASS",
+        "scope": "Independent physical-radius cosine hemisphere visibility; screen-space approximation, high quality only"
+      },
+      "rawEvidence": "build/xegtao-evidence/nov24-temporal-check-release/results.json"
+    }
+  },
+  "lifecycle": {
+    "build-release": {
+      "status": "PASS",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+        "scripts/hazel.py",
+        "build",
+        "--config",
+        "Release",
+        "--tests",
+        "--target",
+        "MetalM1Smoke"
+      ],
+      "seconds": 8.396979083001497,
+      "returncode": 0
+    },
+    "debug-1x": {
+      "status": "PASS",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+        "scripts/macos/metal_m1.py",
+        "--config",
+        "Debug",
+        "--xegtao",
+        "Hazel/Resources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/xegtao-evidence/nov24-native-final/debug-1x"
+      ],
+      "seconds": 8.130686584001523,
+      "returncode": 0
+    },
+    "debug-2x": {
+      "status": "PASS",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+        "scripts/macos/metal_m1.py",
+        "--config",
+        "Debug",
+        "--xegtao",
+        "Hazel/Resources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/xegtao-evidence/nov24-native-final/debug-2x",
+        "--hidpi"
+      ],
+      "seconds": 10.47670141600247,
+      "returncode": 0
+    },
+    "release-1x": {
+      "status": "PASS",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+        "scripts/macos/metal_m1.py",
+        "--config",
+        "Release",
+        "--xegtao",
+        "Hazel/Resources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/xegtao-evidence/nov24-native-final/release-1x"
+      ],
+      "seconds": 5.244775208004285,
+      "returncode": 0
+    },
+    "release-2x": {
+      "status": "PASS",
+      "command": [
+        "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3",
+        "scripts/macos/metal_m1.py",
+        "--config",
+        "Release",
+        "--xegtao",
+        "Hazel/Resources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/xegtao-evidence/nov24-native-final/release-2x",
+        "--hidpi"
+      ],
+      "seconds": 7.905318792007165,
+      "returncode": 0
+    }
+  },
+  "priorRegressions": {
+    "debug": {
+      "m4": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/metal_m4.py",
+          "--config",
+          "Debug",
+          "--resources",
+          "Hazel/Resources",
+          "--output",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/xegtao-evidence/regressions-debug/m4"
+        ],
+        "returncode": 0,
+        "seconds": 63.86991654200028,
+        "status": "PASS"
+      },
+      "m3": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/metal_m3.py",
+          "--config",
+          "Debug",
+          "--resources",
+          "Hazel/Resources",
+          "--output",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/xegtao-evidence/regressions-debug/m3"
+        ],
+        "returncode": 0,
+        "seconds": 27.194450041999517,
+        "status": "PASS"
+      },
+      "cache": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/metal_m2b1.py",
+          "--config",
+          "Debug",
+          "--output",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/xegtao-evidence/regressions-debug/cache"
+        ],
+        "returncode": 0,
+        "seconds": 38.57222600000023,
+        "status": "PASS"
+      }
+    },
+    "release": {
+      "m4": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/metal_m4.py",
+          "--config",
+          "Release",
+          "--resources",
+          "Hazel/Resources",
+          "--output",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/xegtao-evidence/regressions-release/m4"
+        ],
+        "returncode": 0,
+        "seconds": 20.70745829200314,
+        "status": "PASS"
+      },
+      "m3": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/metal_m3.py",
+          "--config",
+          "Release",
+          "--resources",
+          "Hazel/Resources",
+          "--output",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/xegtao-evidence/regressions-release/m3"
+        ],
+        "returncode": 0,
+        "seconds": 15.6758434580006,
+        "status": "PASS"
+      },
+      "cache": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/metal_m2b1.py",
+          "--config",
+          "Release",
+          "--output",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/xegtao-evidence/regressions-release/cache"
+        ],
+        "returncode": 0,
+        "seconds": 13.50217587500083,
+        "status": "PASS"
+      }
+    }
+  },
+  "exportedResourceProbe": {
+    "working": "/var/folders/z5/k8bw5zp574z03zqbsx8f0mb80000gn/T/Hazel XeGTAO relocated \u00fc c_cuc9w5",
+    "gates": {
+      "Nutella-inventory-signature": {
+        "status": "PASS",
+        "artifacts": {
+          "DepthPBR.hzmetal": "1d70d04368e5b48056bb672c1588d7e57a4abbd8f2199bc09357b06bb29f098f",
+          "DisplayOutput.hzmetal": "8673d03228a2883189838f0d47ba8b25b51024e2eeac91c3bc5bd2445b2fcead",
+          "EntityOutline.hzmetal": "01ef441c3b77ab67b9d02aa739f1a7028df2b38b9d23fa1d9c85a87b70f1da56",
+          "EnvironmentSky.hzmetal": "ba159aa84517a9b3626851f37b7f6b5314a1ae2250dfd5d58e051d22d2c9c14a",
+          "ForwardPBR.hzmetal": "494708bd6c3fb9611277f047d0713aa5cff7cde4bedf9c55465ad410b33d7c3d",
+          "ImGui.metallib": "ebd096577ba66f98f3d2ae9dc32a607ca23e7e5e3aa8243defe15a238c7ce167",
+          "Renderer2D_Circle.hzmetal": "4e51b4ef362be908924d84287eb1c92535cd080b03386d906e968a352251fce3",
+          "Renderer2D_Line.hzmetal": "0649cd9aa45d63604c35ca5def33e3e7bc1ab98f5c8f2325f56cf73ec0e2b154",
+          "Renderer2D_Quad-16.hzmetal": "39eea29c143507c211f13271cb3c4a77759910546ffce882a258502216fb35df",
+          "Renderer2D_Quad-32.hzmetal": "909978450633564664d3f6f5356aa80c497644ffb0fddeec85bacf9a975695eb",
+          "Renderer2D_Text.hzmetal": "f76ae76d70633ab911155803737fb8a76f14be5c0be12ff57c6ca10c21889ba5",
+          "WorldPresentation.hzmetal": "6cf0ea9c2ca49ecd7f264e5a4df9e5f174c2c51e6b50543d5b8d7ebb2acfb164",
+          "XeGTAO.metallib": "019b77e169ba84745e6672ff629dcd8447a136b8a76125d6b5e5c348b1d3c04b"
+        },
+        "sourceDirty": true
+      },
+      "Hazelnut-inventory-signature": {
+        "status": "PASS",
+        "artifacts": {
+          "DepthPBR.hzmetal": "1d70d04368e5b48056bb672c1588d7e57a4abbd8f2199bc09357b06bb29f098f",
+          "DisplayOutput.hzmetal": "8673d03228a2883189838f0d47ba8b25b51024e2eeac91c3bc5bd2445b2fcead",
+          "EntityOutline.hzmetal": "01ef441c3b77ab67b9d02aa739f1a7028df2b38b9d23fa1d9c85a87b70f1da56",
+          "EnvironmentSky.hzmetal": "ba159aa84517a9b3626851f37b7f6b5314a1ae2250dfd5d58e051d22d2c9c14a",
+          "ForwardPBR.hzmetal": "494708bd6c3fb9611277f047d0713aa5cff7cde4bedf9c55465ad410b33d7c3d",
+          "ImGui.metallib": "ebd096577ba66f98f3d2ae9dc32a607ca23e7e5e3aa8243defe15a238c7ce167",
+          "Renderer2D_Circle.hzmetal": "4e51b4ef362be908924d84287eb1c92535cd080b03386d906e968a352251fce3",
+          "Renderer2D_Line.hzmetal": "0649cd9aa45d63604c35ca5def33e3e7bc1ab98f5c8f2325f56cf73ec0e2b154",
+          "Renderer2D_Quad-16.hzmetal": "39eea29c143507c211f13271cb3c4a77759910546ffce882a258502216fb35df",
+          "Renderer2D_Quad-32.hzmetal": "909978450633564664d3f6f5356aa80c497644ffb0fddeec85bacf9a975695eb",
+          "Renderer2D_Text.hzmetal": "f76ae76d70633ab911155803737fb8a76f14be5c0be12ff57c6ca10c21889ba5",
+          "WorldPresentation.hzmetal": "6cf0ea9c2ca49ecd7f264e5a4df9e5f174c2c51e6b50543d5b8d7ebb2acfb164",
+          "XeGTAO.metallib": "019b77e169ba84745e6672ff629dcd8447a136b8a76125d6b5e5c348b1d3c04b"
+        },
+        "sourceDirty": true
+      },
+      "isolated-exported-AO-probe": {
+        "status": "PASS",
+        "command": [
+          "/usr/bin/sandbox-exec",
+          "-p",
+          "(version 1)(allow default)(deny file-read* (subpath \"/Volumes/External/kadencringle/Projects/Hazel\"))(deny file-read* (subpath \"/opt/homebrew\"))(deny file-read* (subpath \"/usr/local/Cellar\"))(deny file-read* (subpath \"/Library/Frameworks/Mono.framework\"))(deny file-read* (subpath \"/usr/local/lib/mono\"))(deny file-read* (subpath \"/Volumes/External/kadencringle/Projects/Hazel/build/dependencies/mono/macos-arm64/sdk\"))(deny process-exec (literal \"/usr/bin/xcrun\") (regex #\"/(metal|metallib)$\"))(deny file-read* (regex #\"\\.metal$\"))",
+          "/var/folders/z5/k8bw5zp574z03zqbsx8f0mb80000gn/T/Hazel XeGTAO relocated \u00fc c_cuc9w5/probe/MacOS/XeGTAOProbe",
+          "/var/folders/z5/k8bw5zp574z03zqbsx8f0mb80000gn/T/Hazel XeGTAO relocated \u00fc c_cuc9w5/Nutella/Nutella-macos-arm64-Release/Nutella.app/Contents/Resources",
+          "/var/folders/z5/k8bw5zp574z03zqbsx8f0mb80000gn/T/Hazel XeGTAO relocated \u00fc c_cuc9w5/probe-results",
+          "--xegtao"
+        ],
+        "helperSHA256": "973f44695b6c879284b2d04ecc98a4c71294ecb727da950e6e55af5c766e9266",
+        "scope": "Offscreen production AO/lighting/UI/ID/depth/lifetime checks, not a pristine product presentation"
+      },
+      "missing-library-rejection": {
+        "status": "PASS",
+        "scope": "Process-level rejection; no same-device recovery claim"
+      }
+    },
+    "productPresentation": "NOT RUN: separate unlocked native product gate",
+    "status": "PASS focused exported inventory/relocation probe; actual product acceptance remains separate"
+  },
+  "M5ReleaseWorkflow": {
+    "configuration": "Release",
+    "validationEnabled": true,
+    "milestone": "INCOMPLETE: focused gates only",
+    "gates": {
+      "workflow": {
+        "status": "PASS",
+        "submitted": 1121,
+        "completed": 1121,
+        "positivePresentationsAtSnapshot": 1007,
+        "completedPositivePresentationsAtSnapshot": 1007
+      }
+    },
+    "timingScope": "CPU acquisition, packet preparation, render encoding, ImGui encoding and submit/present are separate. GPU is the entire submission, positively presented samples only. Consumer drawables allow readback from first presentation. GPU counter completion intervals can include later overlapping work; presentation lag uses host timestamps. No exclusive pass-cost or speedup claim."
+  },
+  "manualFunctional": "PASS owner-reported Release editor AO controls/effect; visibly improves scene",
+  "manualEditorRetirement": {
+    "submitted": 87667,
+    "completed": 87667,
+    "positivelyPresentedAtSnapshot": 87659,
+    "gpuErrors": 0,
+    "liveAttachmentGenerations": 0,
+    "pendingBytes": 0,
+    "imguiBytes": 0,
+    "rawEvidence": "build/xegtao-evidence/nov24-interactive/release-editor-manual.log"
+  },
+  "sourceFreeReleaseProducts": {
+    "status": "PASS",
+    "scope": "pristine Nutella and Hazelnut, explicit Metal, guarded private profiles, rendered/completed/positive-presented frames, source/SDK/compiler denial, native loaded-library closure, signatures and normal retirement",
+    "rawEvidence": "build/xegtao-evidence/nov24-packaged-products.log"
+  },
+  "newWindowsLinuxExecution": "NOT RUN; historical Windows full-suite timeout deferred",
+  "warnings": "No new first-party diagnostics in final targeted Debug/Release builds; existing libtool/Xcode phase warnings retained",
+  "usage": "Exact token telemetry unavailable; approximately 1.5\u20132 hours active work across sessions, excluding waits. Mixed runtime model instructions prevent a controlled pure Astra Low vs Sol Medium comparison.",
+  "preservedReferences": {
+    "docs/design/images/xegtao-demo-off.png": "12710b2dac27f7452a4efab4d04a066c7275bd98d46ff7d6ebeb9ad77b4deb7d",
+    "docs/design/images/xegtao-demo-on.png": "b7bd2987a1c98ac01c2875f79e376a7b6b4c174273cb7b2d9d7e2987c12ab0b7",
+    "docs/design/images/xegtao-demo-visibility.png": "ce9dc9aeecbd3fb2196fc13f8e4f0bca84e5a712d9f853fe318b78d9d8ff19d3",
+    "docs/design/images/xegtao-player-release.png": "f8607e3d92defeb626bd4e49c7310390dbb4f7e3f581aa86e529912f72661756"
+  }
+}

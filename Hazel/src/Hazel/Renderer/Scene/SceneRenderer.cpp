@@ -13,7 +13,7 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
                            const std::function<void()> &screenUI)
 {
     if(frame.AmbientOcclusionView>4)throw std::runtime_error("Unsupported ambient-occlusion inspection");
-    if(!frame.Presentation.AmbientOcclusion.Enabled)view.AmbientTiming->Valid=false;
+    if(!frame.Presentation.AmbientOcclusion.Enabled || frame.Meshes.empty())view.AmbientTiming->Valid=false;
     if (unsigned(frame.Debug) > unsigned(SurfaceView::NormalHorizon))
         throw std::runtime_error("Unsupported surface inspection");
     if (frame.LinearLightingInspection && (frame.Debug < SurfaceView::Direct || frame.Debug > SurfaceView::NormalHorizon))
@@ -41,7 +41,7 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
                 if(!view.AmbientDepth)view.AmbientDepth=Framebuffer::Create(size);
                 else if(view.AmbientDepth->GetSpecification().Width!=size.Width || view.AmbientDepth->GetSpecification().Height!=size.Height)
                     view.AmbientDepth->Resize(size.Width,size.Height);
-                display->Cancel();view.AmbientDepth->Bind();view.AmbientDepth->Clear(glm::vec4(0));
+                display->Unbind();view.AmbientDepth->Bind();view.AmbientDepth->Clear(glm::vec4(0));
                 Renderer3D::Render(frame,false,true);view.AmbientDepth->Unbind();
             } else view.AmbientDepth.reset();
             auto prepareAO=[&](const Ref<Framebuffer>& target) {
@@ -72,9 +72,11 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
             else {
                 view.Radiance.reset();
                 if(ao) {
-                    display->Bind();
-                    const auto background=frame.AmbientOcclusionView?glm::vec4(frame.AmbientOcclusionView==3?0.f:1.f):frame.Presentation.Background;
-                    display->Clear(background);
+#ifdef HZ_PLATFORM_MACOS
+                    auto target=std::static_pointer_cast<MetalFramebuffer>(display);
+                    if(frame.AmbientOcclusionView)target->Resume(glm::vec4(frame.AmbientOcclusionView==3?0.f:1.f));
+                    else target->Resume();
+#endif
                 }
                 prepareAO(display);
                 Renderer3D::Render(frame, false);

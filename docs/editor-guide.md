@@ -129,4 +129,7 @@ These inspection choices are private to the view. Timing intervals include GPU
 synchronization; forward/world time also includes world 2D. They are not exclusive
 pass costs. OpenGL displays an explicit inactive-request message.
 
-Qualification status and limitations are recorded in [XeGTAO](design/xegtao.md).
+Sampling is fixed across frames, but noticeable spatial noise and motion shimmer
+remain even on Ultra. Static determinism does not imply motion stability.
+Functional/correctness acceptance and the incomplete final visual-quality
+qualification are recorded in [XeGTAO](design/xegtao.md).

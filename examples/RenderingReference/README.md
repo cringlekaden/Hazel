@@ -202,8 +202,10 @@ The packaging commands above retain their established OpenGL scope.
 `RenderingReference-XeGTAO.hproj` opens a separate contact/crevice study with a
 photographic environment, closely spaced boxes, a thin slab, a wall and a dark
 rough metal. Its authored AO is enabled; existing reference scenes keep AO off.
-The implementation is undergoing qualification; see the [XeGTAO record](../../docs/design/xegtao.md)
-for executed gates and outstanding checks.
+Functional/correctness acceptance passes locally on Apple M4. Noticeable noise
+and motion shimmer remain, even on Ultra; final visual-quality qualification is
+incomplete. See the [XeGTAO record](../../docs/design/xegtao.md) for evidence and
+limitations.
 
 On the implementation branch, build the applications and offline shader artifacts
 as described in [development](../../docs/development.md#experimental-metal-shader-resources), then run:
@@ -221,6 +223,8 @@ inspection camera uses RMB + WASD/Q/E, with Home restoring the authored view.
 
 AO affects diffuse image-based lighting. Material occlusion and GTAO combine by
 minimum visibility; direct lighting, emission, specular IBL, sky and screen UI
-retain their existing behavior. No temporal history or TAA is required. Very thin,
+retain their existing behavior. Sampling is fixed and static-camera output is
+deterministic; there is no temporal history or TAA. Spatial filtering alone does
+not eliminate visible noise or motion shimmer. Very thin,
 hidden or offscreen geometry remains subject to screen-space limitations. OpenGL
 keeps the authored request but reports it inactive; it has no AO fallback.

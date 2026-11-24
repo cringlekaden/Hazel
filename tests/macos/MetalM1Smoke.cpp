@@ -8,6 +8,8 @@
 #include <cmath>
 #include <cstdio>
 #include <array>
+#include <set>
+#include <utility>
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Platform/macOS/Metal/MetalRendererAPI.h"
 #include <GLFW/glfw3.h>
@@ -59,11 +61,13 @@ public:
             for(auto& query:Queries)glGenQueries(1,&query.ID);
         }
     }
+    std::set<std::pair<unsigned,unsigned>> FramebufferExtents;
     void OnDetach() override { for(auto& q:Queries)if(q.ID)glDeleteQueries(1,&q.ID); Session.Stop(); Display.reset(); Retirement.reset(); if(QuadProject) Project::SetActive(nullptr); }
     void OnUpdate(Timestep dt) override {
         if (!QuadProject) return;
         auto& window=Application::Get().GetWindow(); auto size=window.GetFramebufferSize();
         if (!size.first || !size.second) return;
+        FramebufferExtents.insert(size);
         Session.Resize(window.GetWidth(),window.GetHeight()); Session.ResizeFramebuffer(size.first,size.second);
         Session.SetInput(Benchmark ? glm::vec2(-1,-1) : Input::GetMousePosition(),!Benchmark && window.IsFocused());
         const auto begin=Clock::now();
@@ -182,7 +186,8 @@ int main(int argc,char** argv) {
         }
         if(argc==4 && (std::string(argv[2])=="--benchmark-metal" || std::string(argv[2])=="--benchmark-opengl" || std::string(argv[2])=="--benchmark-opengl-fp32"))
             return Benchmark(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),std::string(argv[2])=="--benchmark-metal",std::string(argv[2])=="--benchmark-opengl-fp32");
-        const bool renderer3D=argc==4 && std::string(argv[2])=="--renderer3d";
+        const bool xegtao=argc==4 && std::string(argv[2])=="--xegtao";
+        const bool renderer3D=xegtao || (argc==4 && std::string(argv[2])=="--renderer3d");
         const bool runtime=renderer3D || (argc==4 && std::string(argv[2])=="--renderer2d");
         const bool quads=runtime || (argc==4 && std::string(argv[2])=="--quads");
         Check(argc==2||argc==3||quads,"Usage: MetalM1Smoke <private-output-directory> [capture.gputrace]");
@@ -202,7 +207,7 @@ int main(int argc,char** argv) {
         std::shared_ptr<MetalProofObserver> observer;
         std::thread releaseGate;
         bool minimized=false,restored=false,skip=false,zero=false,scaled=false,scaleRecovered=false,vsyncOff=false,vsyncOn=false;
-        unsigned events=0; uint64_t heldSubmission=0,scaledSubmission=0; bool gated=false,captureStarted=false,captureStopped=false;
+        unsigned events=0, framebufferExtents=0; uint64_t heldSubmission=0,scaledSubmission=0; bool gated=false,captureStarted=false,captureStopped=false;
         auto start=Clock::now(), phase=start, lastReport=start;
         try {
             Application application(spec); observer=Backend().Observe(); if(!quads) Backend().EnableTransferProof();
@@ -213,7 +218,7 @@ int main(int argc,char** argv) {
             Check(glfwGetWindowAttrib(window,GLFW_CLIENT_API)==GLFW_NO_API&&glfwGetCurrentContext()==nullptr&&glad_glGetString==nullptr,
                   "Metal startup created or loaded OpenGL");
             auto eventLayer=CreateScope<EventProof>(); auto* eventProof=eventLayer.get();
-            if(quads) eventLayer->QuadProject=Project::LoadCandidate(std::filesystem::absolute(renderer3D ? "examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj" : runtime ? "examples/Sandbox/Sandbox-Renderer2D.hproj" : "examples/Sandbox/Sandbox-Quads.hproj"));
+            if(quads) eventLayer->QuadProject=Project::LoadCandidate(std::filesystem::absolute(xegtao ? "examples/RenderingReference/RenderingReference-XeGTAO.hproj" : renderer3D ? "examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj" : runtime ? "examples/Sandbox/Sandbox-Renderer2D.hproj" : "examples/Sandbox/Sandbox-Quads.hproj"));
             application.PushLayer(std::move(eventLayer));
             bool immutable=false; try { RenderCommand::Configure(RendererAPI::API::OpenGL); } catch(const std::logic_error&) { immutable=true; }
             Check(immutable&&Renderer::GetAPI()==RendererAPI::API::Metal,"Backend changed during a live graphics lifetime");
@@ -262,7 +267,7 @@ int main(int argc,char** argv) {
                     Check(bool(accepted) || observer->Snapshot().InFlight==3, "Third shared M1 slot is neither busy nor accepted");
                     if (!accepted) eventProof->Retirement->Cancel();
                     Check(observer->Snapshot().InFlight==3,"Three gated scene/offscreen slots were not retained");
-                    events=eventProof->Resizes;application.GetWindow().RequestClose();
+                    events=eventProof->Resizes;framebufferExtents=unsigned(eventProof->FramebufferExtents.size());application.GetWindow().RequestClose();
                 }
                 if(!quads&&gated&&s.Submitted>=heldSubmission+3) { Check(s.InFlight==3,"Three pending frame slots were not held behind the diagnostic event"); events=eventProof->Resizes; application.GetWindow().RequestClose(); }
                 std::this_thread::sleep_for(std::chrono::milliseconds(2));
@@ -280,7 +285,11 @@ int main(int argc,char** argv) {
               "GPU resources or native owners survived Application shutdown");
         Check(events>0&&!Application::TryGet()&&!RenderCommand::IsConfigured(),"GLFW events or application ownership contract failed");
         Check(argc!=3||(captureStarted&&captureStopped&&std::filesystem::exists(argv[2])),"GPU capture missing");
-        if (quads) Check(final.AttachmentGenerations==0 && final.AttachmentBytes==0 && final.PeakAttachmentBytes>0 && final.AttachmentReuses>300 && final.AttachmentAllocations<=16,
+        // AO adds one depth-only framebuffer: three targets x four bounded
+        // generations per observed extent, plus the 8x8 retirement target. Count
+        // actual extents because the native window manager may clamp sizes.
+        std::cout<<"M1_ATTACHMENTS extents="<<framebufferExtents<<" allocations="<<final.AttachmentAllocations<<" reuses="<<final.AttachmentReuses<<" live="<<final.AttachmentGenerations<<" bytes="<<final.AttachmentBytes<<std::endl;
+        if (quads) Check(final.AttachmentGenerations==0 && final.AttachmentBytes==0 && final.PeakAttachmentBytes>0 && final.AttachmentReuses>300 && final.AttachmentAllocations<=(xegtao?12u*framebufferExtents+1u:16u),
                          "Scene framebuffer generations survived shutdown");
         // The same process must return to the default production OpenGL path after Metal.
         { ApplicationSpecification gl; gl.Name="M1 OpenGL recovery"; gl.EnableImGui=false;
