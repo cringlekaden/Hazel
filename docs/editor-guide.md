@@ -143,13 +143,15 @@ OpenGL keeps its ordinary rendering and reports the saved TAA request inactive.
 
 The viewport **TAA...** popup shows rigid-mesh motion, projection jitter, history
 acceptance/rejection, history contribution and resolved HDR clamped for display,
+and raw jittered input (which isolates projection sampling),
 plus completed resolve timing and retained HDR/depth/ID history memory/reuse counts.
 World 2D and screen UI remain unjittered. Skinning, morphs and vertex deformation
 have no temporal correspondence support. AO inspection stays available through
 **AO...** and bypasses TAA. Pre-exposure HDR history keeps exposure changes
 responsive. No sharpening control is exposed.
 
-TAA is under qualification; **owner visual acceptance is pending**. Consult the
+TAA is under qualification; **owner visual re-review is pending** after a
+[geometric-edge correction](design/taa-edge-investigation.md). Consult the
 [implementation/evidence record](design/taa.md) and
 [manual moving-scene procedure](design/taa-manual.md) before approving sharpness,
 ghosting or AO stability. History memory excludes the separate private radiance/motion targets,

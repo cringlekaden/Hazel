@@ -306,7 +306,7 @@ namespace Hazel {
             if(ImGui::Button("TAA..."))ImGui::OpenPopup("Temporal inspection");
             if(ImGui::BeginPopup("Temporal inspection")) {
                 int temporal=int(m_RenderView.TemporalDebug);
-                if(ImGui::Combo("View",&temporal,"Resolved\0Motion (pixels / 32)\0Jitter\0History accepted / rejected\0History contribution\0Resolved HDR (SDR clamp)\0"))m_RenderView.TemporalDebug=unsigned(temporal);
+                if(ImGui::Combo("View",&temporal,"Resolved\0Motion (pixels / 32)\0Jitter\0History accepted / rejected\0History contribution\0Resolved HDR (SDR clamp)\0Jittered input (no resolve)\0"))m_RenderView.TemporalDebug=unsigned(temporal);
                 const auto& timing=*m_RenderView.TemporalMetrics;
                 if(timing.Valid)ImGui::Text("Shading %.3f / motion %.3f ms",timing.ShadingMilliseconds,timing.MotionMilliseconds);
                 if(timing.Valid)ImGui::Text("Resolve %.3f ms; history %.2f MiB",timing.ResolveMilliseconds,double(timing.HistoryBytes)/(1024*1024));

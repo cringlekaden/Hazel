@@ -1,5 +1,9 @@
 # TAA v1 — implementation and qualification
 
+Owner subsequently **rejected geometric-edge quality at `4c25138`**. The initial
+records below describe that checkpoint; they do not establish visual acceptance.
+See the [focused investigation and correction](taa-edge-investigation.md).
+
 Baseline: `3a0f71cb13728a6802ad1c9eaadf6ed384d8e4a0`, clean
 `feature/3d-foundations`, Apple M4 / macOS 27.3. Status: INCOMPLETE.
 Owner manual visual acceptance is required and has not occurred.

@@ -5,6 +5,7 @@
 #include "Hazel/Renderer/RenderCommand.h"
 #include <map>
 #include <cmath>
+#include <limits>
 #ifdef HZ_PLATFORM_MACOS
 #include "Platform/macOS/Metal/MetalFramebuffer.h"
 #include "Platform/macOS/Metal/MetalRendererAPI.h"
@@ -20,11 +21,38 @@ bool ValidCamera(const glm::mat4& matrix) {
     for(unsigned c=0;c<4;++c)for(unsigned r=0;r<4;++r)if(!std::isfinite(matrix[c][r]))return false;
     return std::isfinite(glm::determinant(matrix))&&std::abs(glm::determinant(matrix))>1e-12f;
 }
-bool CameraCut(const SceneCameraView& current,const SceneCameraView& previous) {
+bool CameraCut(const SceneSubmission& frame,const SceneCameraView& previous) {
+    const auto& current=frame.Camera;
     if(current.Orthographic!=previous.Orthographic)return true;
-    auto mapping=previous.ViewProjection*glm::inverse(current.ViewProjection);
-    for(float z:{-1.f,0.f,.9f})for(float x:{-.8f,.8f})for(float y:{-.8f,.8f}) {
-        auto p=mapping*glm::vec4(x,y,z,1);
+    // Near-plane displacement exaggerates ordinary camera motion, especially
+    // with a small near clip or a long orthographic depth range. Compare rays
+    // at submitted mesh depth instead; disocclusion remains a per-pixel test.
+    const auto forward=-glm::normalize(current.ToCamera);
+    float referenceDepth=std::numeric_limits<float>::max(),fallbackDepth=referenceDepth;
+    for(const auto& draw:frame.Meshes)if(draw.Geometry) {
+        const auto& bounds=draw.Geometry->Geometry.Bounds;
+        auto centre=glm::vec3(draw.World*glm::vec4(bounds.Min*.5f+bounds.Max*.5f,1));
+        float depth=glm::dot(centre-current.Position,forward);
+        if(std::isfinite(depth)&&depth>0)referenceDepth=std::min(referenceDepth,depth);
+        else {
+            float radius=glm::length(glm::vec3(draw.World*glm::vec4(bounds.Max*.5f-bounds.Min*.5f,0)));
+            if(std::isfinite(radius)&&radius>0)fallbackDepth=std::min(fallbackDepth,radius);
+        }
+    }
+    if(referenceDepth==std::numeric_limits<float>::max())referenceDepth=fallbackDepth==referenceDepth?1.f:fallbackDepth;
+    const auto inverse=glm::inverse(current.ViewProjection);
+    auto nearPoint=inverse*glm::vec4(0,0,-1,1);
+    if(!std::isfinite(nearPoint.w)||nearPoint.w==0)return true;
+    float nearDepth=glm::dot(glm::vec3(nearPoint)/nearPoint.w-current.Position,forward);
+    if(std::isfinite(nearDepth))referenceDepth=std::max(referenceDepth,nearDepth);
+    for(float x:{-.8f,.8f})for(float y:{-.8f,.8f}) {
+        auto sample=inverse*glm::vec4(x,y,current.Orthographic?-1.f:0.f,1);
+        if(!std::isfinite(sample.w)||sample.w==0)return true;
+        auto ray=glm::vec3(sample)/sample.w-current.Position;
+        float depth=glm::dot(ray,forward);
+        if(!std::isfinite(depth)||(!current.Orthographic&&depth<=0))return true;
+        auto point=current.Orthographic?current.Position+ray+forward*(referenceDepth-depth):current.Position+ray*(referenceDepth/depth);
+        auto p=previous.ViewProjection*glm::vec4(point,1);
         if(!std::isfinite(p.w)||p.w<=0||glm::length(glm::vec2(p)/p.w-glm::vec2(x,y))>.5f)return true;
     }
     return false;
@@ -59,7 +87,7 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
         const auto& extent=display->GetSpecification();auto& state=view.Temporal;
         historyValid=state.Submitted && state.Submitted->load() && state.Width==extent.Width && state.Height==extent.Height &&
             state.Previous.SceneIdentity==frame.SceneIdentity && state.Previous.Assets==frame.Assets &&
-            state.Previous.Presentation==frame.Presentation && !CameraCut(frame.Camera,state.Previous.Camera);
+            state.Previous.Presentation==frame.Presentation && !CameraCut(frame,state.Previous.Camera);
         if(!historyValid)state.Phase=0;
         jitter={Halton(state.Phase%64+1,2)-.5f,Halton(state.Phase%64+1,3)-.5f};
         glm::mat4 offset(1);offset[3][0]=2*jitter.x/float(extent.Width);offset[3][1]=2*jitter.y/float(extent.Height);

@@ -6,7 +6,9 @@ inline void TemporalAAQualification(const std::filesystem::path& output,
     const std::function<Hazel::Ref<const Hazel::FramebufferReadback>(const Hazel::Ref<Hazel::Framebuffer>&)>& capture)
 {
     using namespace Hazel;
-    auto project=Project::LoadCandidate(std::filesystem::absolute("examples/RenderingReference/RenderingReference-Direct-PerspectivePBR.hproj"));
+    const auto selected=FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT");
+    const auto projectRoot=selected.empty()?std::filesystem::absolute("examples/RenderingReference"):selected.parent_path();
+    auto project=Project::LoadCandidate(projectRoot/"RenderingReference-Direct-PerspectivePBR.hproj");
     auto assets=CreateRef<ProjectAssets>(project->GetAssetRoot());
     auto mesh=assets->Mesh("Native/Direct_v1/UnitCube.hmesh");if(!mesh.Accepted)throw std::runtime_error(mesh.Error);
     FramebufferSpecification spec;spec.Width=320;spec.Height=180;
@@ -137,7 +139,7 @@ inline void TemporalAAQualification(const std::filesystem::path& output,
         boxMaterial->BaseColor={3,.1f,.01f,1};frame.Presentation.Exposure=0;
     }
     {
-        auto demo=Project::LoadCandidate(std::filesystem::absolute("examples/RenderingReference/RenderingReference-XeGTAO.hproj"));
+        auto demo=Project::LoadCandidate(projectRoot/"RenderingReference-XeGTAO.hproj");
         auto requests=demo->GetRendererRequests();requests.TextureSlots=RenderCommand::GetSettings().TextureSlots;demo->GetConfig().Rendering=requests;
         RuntimeSession session;session.Start(demo,demo->LoadScene(demo->GetConfig().StartScene));
         session.Resize(320,180);session.ResizeFramebuffer(320,180);

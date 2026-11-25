@@ -1,6 +1,7 @@
 #include "Hazel/Core/Application.h"
 #include "Hazel/Core/Log.h"
 #include "Hazel/Core/Input.h"
+#include "Hazel/Core/FileSystem.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Scene/RuntimeSession.h"
 #include "Hazel/Scene/Scene.h"
@@ -222,7 +223,12 @@ int main(int argc,char** argv) {
             Check(glfwGetWindowAttrib(window,GLFW_CLIENT_API)==GLFW_NO_API&&glfwGetCurrentContext()==nullptr&&glad_glGetString==nullptr,
                   "Metal startup created or loaded OpenGL");
             auto eventLayer=CreateScope<EventProof>(); auto* eventProof=eventLayer.get();eventLayer->TemporalAA=temporalScene;
-            if(quads) eventLayer->QuadProject=Project::LoadCandidate(std::filesystem::absolute(xegtao ? "examples/RenderingReference/RenderingReference-XeGTAO.hproj" : renderer3D ? "examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj" : runtime ? "examples/Sandbox/Sandbox-Renderer2D.hproj" : "examples/Sandbox/Sandbox-Quads.hproj"));
+            if(quads) {
+                const auto selected=FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT");
+                auto projectPath=std::filesystem::absolute(xegtao ? "examples/RenderingReference/RenderingReference-XeGTAO.hproj" : renderer3D ? "examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj" : runtime ? "examples/Sandbox/Sandbox-Renderer2D.hproj" : "examples/Sandbox/Sandbox-Quads.hproj");
+                if(renderer3D && !selected.empty())projectPath=selected.parent_path()/projectPath.filename();
+                eventLayer->QuadProject=Project::LoadCandidate(projectPath);
+            }
             application.PushLayer(std::move(eventLayer));
             bool immutable=false; try { RenderCommand::Configure(RendererAPI::API::OpenGL); } catch(const std::logic_error&) { immutable=true; }
             Check(immutable&&Renderer::GetAPI()==RendererAPI::API::Metal,"Backend changed during a live graphics lifetime");

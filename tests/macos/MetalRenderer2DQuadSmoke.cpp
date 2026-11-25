@@ -3,6 +3,7 @@
 #include "Renderer3DParity.h"
 #include "XeGTAOQualification.h"
 #include "TemporalAAQualification.h"
+#include "TemporalEdgeQualification.h"
 #include "Hazel/Renderer/Drawing/MeshGeometry.h"
 #include "Hazel/Renderer/Resources/UniformBuffer.h"
 #include "Renderer2DLines.h"
@@ -172,14 +173,26 @@ void TemporalLifetime(Hazel::MetalRendererAPI& backend) {
     SubmittedMesh draw;draw.Geometry=mesh.Accepted;draw.Materials={material};draw.Identity=1;draw.Picking=-2000000003;
     frame.Meshes={draw};frame.Camera.Orthographic=true;frame.Camera.Position={0,0,3};
     frame.Camera.ViewProjection=glm::ortho(-1.f,1.f,-1.f,1.f,.1f,10.f)*glm::lookAt(frame.Camera.Position,glm::vec3(0),glm::vec3(0,1,0));
-    // Warm history first: three pending successors also retain predecessor depth.
+    // Compare complete moving diagonal-edge results with serialized submissions.
+    // This catches history phase/read-write hazards hidden by flat interiors.
+    auto pose=[&](unsigned index){
+        material->BaseColor={.1f+float(index)*.2f,.2f,.3f,1};
+        frame.Meshes[0].SetWorld(glm::translate(glm::mat4(1),{float(index)*.01f,0,0})*
+            glm::rotate(glm::mat4(1),.37f,{0,0,1})*glm::scale(glm::mat4(1),{1.3f,.6f,.1f}));
+    };
+    auto referenceTarget=Framebuffer::Create(TargetSpecification());SceneRenderView referenceView;
+    std::array<Ref<const FramebufferReadback>,3> expectedFrames;
+    pose(0);Begin(referenceTarget,32,32);SceneRenderer::Render(frame,referenceView,referenceTarget,[]{},[]{});
+    auto initial=Submit(referenceTarget);Wait(*referenceTarget,initial);
+    for(unsigned i=0;i<3;++i){pose(i);Begin(referenceTarget,32,32);SceneRenderer::Render(frame,referenceView,referenceTarget,[]{},[]{});expectedFrames[i]=Submit(referenceTarget);Wait(*referenceTarget,expectedFrames[i]);}
+    referenceView.Reset();referenceTarget.reset();pose(0);
+    // Warm history first, then gate three pending successors.
     Begin(target,32,32);SceneRenderer::Render(frame,view,target,[]{},[]{});auto warmup=Submit(target);Check(bool(warmup),"Temporal warmup busy");Wait(*target,warmup);
     std::array<Ref<const FramebufferReadback>,3> results;
     struct Release {std::function<void()> Call;~Release(){if(Call)Call();}} gate{backend.GateQueueForTesting()};
     unsigned motionFrame=0;
     for(auto& result:results) {
-        material->BaseColor={.1f+float(motionFrame)*.2f,.2f,.3f,1};
-        frame.Meshes[0].SetWorld(glm::translate(glm::mat4(1),{float(motionFrame++)*.01f,0,0}));
+        pose(motionFrame++);
         Begin(target,32,32);SceneRenderer::Render(frame,view,target,[]{},[]{});
         result=Submit(target);Check(bool(result),"Temporal dependency unexpectedly busy");
         Check(view.Temporal.Submitted->load(),"Temporal commit did not publish history");
@@ -192,11 +205,14 @@ void TemporalLifetime(Hazel::MetalRendererAPI& backend) {
     auto poller=Framebuffer::Create(TargetSpecification(1,1));
     for(unsigned i=0;i<results.size();++i) {
         Wait(*poller,results[i]);const auto& image=*results[i];const size_t pixel=16*32+16;
+        const auto& serial=*expectedFrames[i];
+        Check(image.Entity==serial.Entity && image.Depth==serial.Depth,"Pending edge history changed IDs/depth");
+        for(size_t p=0;p<image.Color.size();++p)Check(glm::length(image.Color[p]-serial.Color[p])<1e-6f,"Three pending edge histories differ from serialized phase/order");
         auto expected=glm::vec3(OracleNeutral({.1+double(i)*.2,.2,.3}));
         Check(image.Entity[pixel]==-2000000003&&glm::length(glm::vec3(image.Color[pixel])-expected)<1e-4f,"Queue-ordered TAA scratch/history overwrote an earlier frame");
     }
     Check(backend.Observe()->Snapshot().Errors==0,"Temporal pending retirement failed");
-    std::cout<<"PASS temporal three-slot dependencies, busy cancellation and view destruction before completion\n";
+    std::cout<<"PASS temporal three-slot dependencies and serialized diagonal-edge equivalence, busy cancellation and view destruction before completion\n";
 }
 
 void MeshLifetime(Hazel::MetalRendererAPI& backend, bool ambientOcclusion=false)
@@ -260,11 +276,12 @@ int main(int argc, char** argv)
         Hazel::RenderCommand::Configure(Hazel::RendererAPI::API::Metal);
         const bool offscreenBenchmark = argc == 4 && std::string(argv[3]) == "--xegtao-offscreen-benchmark";
         const bool temporalBenchmark = argc == 4 && std::string(argv[3]) == "--taa-offscreen-benchmark";
+        const bool edges = argc == 4 && std::string(argv[3]) == "--taa-edges";
         const bool temporal = argc == 4 && std::string(argv[3]) == "--taa";
         const bool ao = argc == 4 && std::string(argv[3]) == "--xegtao";
         const bool compute = argc == 4 && std::string(argv[3]) == "--compute";
         const bool renderer3D = argc == 4 && std::string(argv[3]) == "--renderer3d-parity";
-        Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !renderer3D && !compute && !ao && !temporal && !temporalBenchmark && !offscreenBenchmark ? uint32_t(std::stoul(argv[3])) : 4;
+        Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !renderer3D && !compute && !ao && !temporal && !edges && !temporalBenchmark && !offscreenBenchmark ? uint32_t(std::stoul(argv[3])) : 4;
         Check(settings.TextureSlots == 2 || settings.TextureSlots == 4,"Fixture supports two or four texture slots");
         const auto runtimeFrames=argc==5?std::stoul(argv[4]):80UL;
         Check(runtimeFrames>=80 && runtimeFrames<=6000,"Runtime frame count must be 80..6000");
@@ -275,12 +292,12 @@ int main(int argc, char** argv)
         auto framebuffer = Hazel::Framebuffer::Create(TargetSpecification());
         Check(bool(std::dynamic_pointer_cast<Hazel::MetalFramebuffer>(framebuffer)), "Factory did not return a production Metal framebuffer");
         Hazel::Renderer2D::Init();
-        if(ao || temporal || temporalBenchmark || offscreenBenchmark) {
-            const auto check=temporalBenchmark?TemporalAAOffscreenBenchmark:temporal?TemporalAAQualification:offscreenBenchmark?XeGTAOOffscreenBenchmark:XeGTAOQualification;
+        if(ao || temporal || edges || temporalBenchmark || offscreenBenchmark) {
+            const auto check=edges?TemporalEdgeQualification:temporalBenchmark?TemporalAAOffscreenBenchmark:temporal?TemporalAAQualification:offscreenBenchmark?XeGTAOOffscreenBenchmark:XeGTAOQualification;
             check(output,[&](const auto& target) {
                 auto result=Submit(target);Check(bool(result),"AO submit busy");Wait(*target,result);return result;
             });
-            if(temporal)TemporalLifetime(backend);
+            if(temporal || edges)TemporalLifetime(backend);
             else MeshLifetime(backend,true);
             framebuffer.reset();Hazel::Renderer2D::Shutdown();Hazel::RenderCommand::Shutdown();
             Check(observer->Snapshot().Errors==0 && observer->Snapshot().ResourceBytes==0 && observer->Snapshot().AttachmentGenerations==0,"AO retirement failed");

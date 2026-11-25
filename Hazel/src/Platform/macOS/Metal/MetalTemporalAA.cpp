@@ -71,7 +71,7 @@ void MetalFramebuffer::ResolveTemporal(const Ref<Framebuffer>& radiance,const Re
         !Backend().IsFramebufferBound(source->m_Frame)&&!Backend().IsFramebufferBound(vectors->m_Frame)&&m_Frame->Draws.empty()&&
         !m_TemporalProducer&&m_Specification.Attachments.Attachments.size()==3&&
         m_Frame->Width==source->m_Frame->Width&&m_Frame->Height==source->m_Frame->Height&&
-        m_Frame->Width==vectors->m_Frame->Width&&m_Frame->Height==vectors->m_Frame->Height&&submitted&&timing&&debug<=5&&skyMode<=2&&std::isfinite(jitter.x)&&std::isfinite(jitter.y)&&std::abs(jitter.x)<=.5f&&std::abs(jitter.y)<=.5f,
+        m_Frame->Width==vectors->m_Frame->Width&&m_Frame->Height==vectors->m_Frame->Height&&submitted&&timing&&debug<=6&&skyMode<=2&&std::isfinite(jitter.x)&&std::isfinite(jitter.y)&&std::abs(jitter.x)<=.5f&&std::abs(jitter.y)<=.5f,
         "Temporal resolve requires private equal-size unbound producers and empty bound destination");
     if(!m_TemporalPipeline)m_TemporalPipeline=std::make_shared<MetalTemporalPipeline>(*m_Device);
     if(m_TemporalPrevious&&(!m_TemporalPrevious->Submitted->load()||m_TemporalPrevious->Color->Width!=m_Frame->Width||m_TemporalPrevious->Color->Height!=m_Frame->Height))m_TemporalPrevious.reset();

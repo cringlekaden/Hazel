@@ -65,8 +65,28 @@ kernel void temporalResolve(constant TemporalConstants& c [[buffer(0)]],
         float3 sigma=sqrt(max(moment*inverseCount-mean*mean,0.f));
         lo=max(lo,mean-1.25f*sigma);hi=min(hi,mean+1.25f*sigma);
     } else lo=hi=currentColor;
-    float4 previous=motion.read(p);
-    bool sky=d>=1;
+    // A reconstructed silhouette pixel contains foreground coverage even when
+    // its unjittered centre hits the background. Follow the closest surface's
+    // motion on both sides of that edge. These proxy IDs/depth belong only to
+    // history; presentation/picking retain the original unfiltered attachments.
+    uint2 velocityPixel=p;float historyDepth=d;
+    for(int y=-1;y<=1;++y)for(int x=-1;x<=1;++x) {
+        uint2 q=boundPixel(int2(p)+int2(x,y),size);float z=depth.read(q).x;
+        if(z<historyDepth){historyDepth=z;velocityPixel=q;}
+    }
+    int historyID=ids.read(velocityPixel).x;
+    // A neighboring history tap lies at a different depth on a sloped face.
+    // Bound that expected variation using only the same current surface ID;
+    // background/other objects must not inflate the disocclusion tolerance.
+    float depthSpan=0;
+    for(int y=-1;y<=1;++y)for(int x=-1;x<=1;++x) {
+        uint2 q=boundPixel(int2(velocityPixel)+int2(x,y),size);float z=depth.read(q).x;
+        if(z<1 && ids.read(q).x==historyID)depthSpan=max(depthSpan,abs(z-historyDepth));
+    }
+    depthSpan*=2; // Cubic history support reaches two pixels from its anchor.
+    float4 previous=motion.read(velocityPixel);
+    previous.xy+=uv-(float2(velocityPixel)+.5f)/float2(size);
+    bool sky=historyDepth>=1;
     if(sky) {
         float4 h=c.skyMotion*float4(uv*2-1,1,1);
         previous=float4(h.xy/max(h.w,1e-10f)*.5f+.5f,1,c.options.z==1 && h.w>0?1.f:0.f);
@@ -76,26 +96,31 @@ kernel void temporalResolve(constant TemporalConstants& c [[buffer(0)]],
     bool valid=c.options.x && previous.w>.5f && previous.z>=0 && (sky || previous.z<1) &&
         all(oldUV>=0) && all(oldUV<1) && count>0;
     float3 past=0;
-    float accepted=0;
+    float accepted=0,historyWeight=0;
     if(valid) {
         float2 oldPosition=oldUV*float2(size)-.5f;
         int2 b=int2(floor(oldPosition));float2 f=fract(oldPosition);
-        // Validate all bilinear taps, not just the nearest one. A rejected tap
-        // cannot leak an old occluder into newly visible geometry.
-        for(int y=0;y<2;++y)for(int x=0;x<2;++x) {
+        float4 hx=float4(cubic(f.x+1),cubic(f.x),cubic(f.x-1),cubic(f.x-2));
+        float4 hy=float4(cubic(f.y+1),cubic(f.y),cubic(f.y-1),cubic(f.y-2));
+        // Repeated bilinear history interpolation diffuses a moving edge every
+        // frame. Reconstruct it with the same bounded cubic kernel as current
+        // radiance, retaining per-tap disocclusion tests. Central bilinear
+        // support still determines validity, independently of signed weights.
+        for(int y=-1;y<=2;++y)for(int x=-1;x<=2;++x) {
             int2 q=b+int2(x,y);if(any(q<0)||any(q>=int2(size)))continue;
             float4 sample=history.read(uint2(q));float z=sample.a;
-            if(oldIDs.read(uint2(q)).x!=id || abs(z-previous.z)>max(2e-5f,.002f*(1-previous.z)))continue;
-            float w=(x?f.x:1-f.x)*(y?f.y:1-f.y);
+            if(oldIDs.read(uint2(q)).x!=historyID || abs(z-previous.z)>max(max(2e-5f,.002f*(1-previous.z)),depthSpan))continue;
+            float w=hx[x+1]*hy[y+1];
             float3 h=sample.rgb;
             if(!all(isfinite(h)))continue;
-            past+=h*w;accepted+=w;
+            past+=h*w;historyWeight+=w;
+            if(x>=0&&x<=1&&y>=0&&y<=1)accepted+=(x?f.x:1-f.x)*(y?f.y:1-f.y);
         }
     }
-    valid=valid && accepted>.5f;
+    valid=valid && accepted>.5f && historyWeight>.5f;
     float contribution=0;
     if(valid) {
-        past*=1.f/accepted;
+        past*=1.f/historyWeight;
         float3 h=toYCoCg(compressHDR(past));
         // Clip toward the variance-box centre, preserving chroma direction.
         float3 centre=(lo+hi)*.5f,extent=max((hi-lo)*.5f,1e-5f),delta=h-centre;
@@ -105,10 +130,18 @@ kernel void temporalResolve(constant TemporalConstants& c [[buffer(0)]],
         float speed=length((uv-oldUV)*float2(size));
         float luminance=dot(now,float3(.2126f,.7152f,.0722f));
         float oldLuminance=dot(past,float3(.2126f,.7152f,.0722f));
-        float change=max(abs(h.x-currentColor.x)/max(max(h.x,currentColor.x),.05f),
-            abs(luminance-oldLuminance)/max(max(luminance,oldLuminance),.05f));
+        // Coverage changes across a sampled silhouette are the signal TAA must
+        // integrate, not a lighting discontinuity. React only to changes beyond
+        // the current neighbourhood's contrast; flat HDR changes remain reactive.
+        float change=max(max(abs(h.x-currentColor.x)-(hi.x-lo.x),0.f)/max(max(h.x,currentColor.x),.05f),
+            max(abs(luminance-oldLuminance)-dot(maximumRGB-minimumRGB,float3(.2126f,.7152f,.0722f)),0.f)/max(max(luminance,oldLuminance),.05f));
         float coverage=surfaceWeight/max(totalWeight,1e-5f);
-        contribution=clamp(.92f-speed*.025f,.65f,.92f)*accepted*(1-saturate(change*2))*mix(.7f,1.f,coverage);
+        // Stationary subpixel coverage needs the full accumulation weight.
+        // Fade in the moving-edge response over 1/16 pixel per frame.
+        float edgeResponse=mix(1.f,mix(.7f,1.f,coverage),saturate(speed*16));
+        // Shorten feedback with pixel motion so recursive reconstruction does
+        // not widen moving edges after valid sloped history is restored.
+        contribution=clamp(.92f-speed*.1f,.65f,.92f)*accepted*(1-saturate(change*2))*edgeResponse;
         // Accumulate original scene-linear HDR. Compressed coordinates guide
         // clipping/response only; avoid imposing the inverse transform's finite
         // precision ceiling on current radiance or an already in-range history.
@@ -119,13 +152,14 @@ kernel void temporalResolve(constant TemporalConstants& c [[buffer(0)]],
         resolved=mix(now,clipped,contribution);
     }
     if(!all(isfinite(resolved)))resolved=now;
-    result.write(float4(resolved,d),p);
-    resultIDs.write(int4(id),p);
+    result.write(float4(resolved,historyDepth),p);
+    resultIDs.write(int4(historyID),p);
     float3 debug=resolved;
     if(c.options.y==1)debug=float3(.5f+(uv-oldUV)*float2(size)/32,0);
     if(c.options.y==2)debug=float3(c.extentJitter.zw+.5f,0);
     if(c.options.y==3)debug=valid?float3(0,1,0):float3(1,0,0);
     if(c.options.y==4)debug=float3(contribution);
     if(c.options.y==5)debug=min(resolved,1.f);
+    if(c.options.y==6)debug=current.read(p).rgb;
     display.write(float4(debug,alpha),p);
 }

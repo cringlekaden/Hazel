@@ -1,5 +1,9 @@
 # TAA v1 qualification record
 
+Owner subsequently **rejected geometric-edge quality at `4c25138`**. The initial
+records below describe that checkpoint; they do not establish visual acceptance.
+See the [focused investigation and correction](taa-edge-investigation.md).
+
 Baseline HEAD `3a0f71cb13728a6802ad1c9eaadf6ed384d8e4a0` on
 `feature/3d-foundations`; implementation was qualified as a dirty tree. The commit
 containing this record identifies the delivered source. Apple M4, macOS 27.3,
