@@ -9,7 +9,7 @@ namespace Hazel
 {
 namespace
 {
-const std::array<std::type_index, 23> UIHistoryComponents = {
+const std::array<std::type_index, 25> UIHistoryComponents = {
     typeid(UICanvasComponent),     typeid(UIRectComponent),          typeid(UILayoutComponent),
     typeid(UITextStyleComponent),  typeid(UINineSliceComponent),     typeid(UIButtonComponent),
     typeid(TextComponent),         typeid(SpriteRendererComponent),  typeid(UIRadioGroupComponent),
@@ -17,7 +17,8 @@ const std::array<std::type_index, 23> UIHistoryComponents = {
     typeid(UIDropdownComponent),   typeid(UITabsComponent),          typeid(UITabComponent),
     typeid(UITooltipComponent),    typeid(UITextEntryComponent),     typeid(UIAppearanceComponent),
     typeid(TransformComponent),    typeid(CircleRendererComponent),  typeid(CameraComponent),
-    typeid(MeshRendererComponent), typeid(DirectionalLightComponent)};
+    typeid(MeshRendererComponent), typeid(DirectionalLightComponent),
+    typeid(PointLightComponent), typeid(SpotLightComponent)};
 void Strip(SpriteSource &source)
 {
     if (auto t = std::get_if<TextureSpriteSource>(&source))
@@ -73,6 +74,8 @@ template <class A, class B, class C, class F> void Fields(A &a, B &b, C &c, F f)
         FIELD(Light, Intensity);
         FIELD(Light, Enabled);
     }
+    COMPONENT(Point) {FIELD(Point,Color);FIELD(Point,Intensity);FIELD(Point,Enabled);FIELD(Point,Range);}
+    COMPONENT(Spot) {FIELD(Spot,Color);FIELD(Spot,Intensity);FIELD(Spot,Enabled);FIELD(Spot,Range);FIELD(Spot,InnerCone);FIELD(Spot,OuterCone);}
     COMPONENT(Mesh) {FIELD(Mesh,Mesh);FIELD(Mesh,Materials);}
     COMPONENT(Circle) {FIELD(Circle,Color);FIELD(Circle,Thickness);FIELD(Circle,Fade);}
     COMPONENT(Camera) {FIELD(Camera,Projection);FIELD(Camera,FOV);FIELD(Camera,Near);FIELD(Camera,Far);FIELD(Camera,Size);FIELD(Camera,OrthoNear);FIELD(Camera,OrthoFar);FIELD(Camera,Primary);FIELD(Camera,FixedAspect);}
@@ -241,6 +244,8 @@ void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
 {
     if (v.Light)
         v.Light->Validate();
+    if(v.Point)v.Point->Validate();
+    if(v.Spot)v.Spot->Validate();
     if(v.Mesh){v.Mesh->Validate();if(!v.Mesh->Mesh.empty()&&(!old.Mesh||!(*v.Mesh==*old.Mesh))){if(!scene.GetAssets())throw std::runtime_error("Open a project before assigning mesh assets");AuditMeshBinding(scene.GetAssets()->Root(),*v.Mesh);}}
     if(v.Transform){Finite(v.Transform->Translation);Finite(v.Transform->Rotation);Finite(v.Transform->Scale);}
     if(v.Circle){Finite(v.Circle->Color);Positive(v.Circle->Thickness);Positive(v.Circle->Fade);}
@@ -366,6 +371,8 @@ COMPONENT(Light, DirectionalLightComponent) FIELD(Light, Color);
 FIELD(Light, Intensity);
 FIELD(Light, Enabled);
 }
+    COMPONENT(Point,PointLightComponent) FIELD(Point,Color);FIELD(Point,Intensity);FIELD(Point,Enabled);FIELD(Point,Range);}
+    COMPONENT(Spot,SpotLightComponent) FIELD(Spot,Color);FIELD(Spot,Intensity);FIELD(Spot,Enabled);FIELD(Spot,Range);FIELD(Spot,InnerCone);FIELD(Spot,OuterCone);}
     COMPONENT(Mesh,MeshRendererComponent) FIELD(Mesh,Mesh);FIELD(Mesh,Materials);}
     COMPONENT(Circle, CircleRendererComponent) FIELD(Circle,Color);FIELD(Circle,Thickness);FIELD(Circle,Fade);}
     if(old.Camera && next.Camera) {
@@ -492,6 +499,8 @@ UIEditValues UIEditValues::Capture(Entity e)
     CAPTURE(CircleRendererComponent,Circle);
     CAPTURE(MeshRendererComponent,Mesh);
     CAPTURE(DirectionalLightComponent, Light);
+    CAPTURE(PointLightComponent, Point);
+    CAPTURE(SpotLightComponent, Spot);
     CAPTURE(CameraComponent,Camera);
     CAPTURE(UICanvasComponent, Canvas);
     CAPTURE(UIRectComponent, Rect);
@@ -721,6 +730,8 @@ void UIEditCommand::Cancel(Scene &scene)
     KEEP(Camera,CameraComponent,20);
     KEEP(Mesh,MeshRendererComponent,21);
     KEEP(Light, DirectionalLightComponent, 22);
+    KEEP(Point, PointLightComponent, 23);
+    KEEP(Spot, SpotLightComponent, 24);
     KEEP(Canvas, UICanvasComponent, 0);
     KEEP(Rect, UIRectComponent, 1);
     KEEP(Flow, UILayoutComponent, 2);
@@ -749,6 +760,8 @@ void UIEditCommand::Cancel(Scene &scene)
     RESTORE(Camera);
     RESTORE(Mesh);
     RESTORE(Light);
+    RESTORE(Point);
+    RESTORE(Spot);
     RESTORE(Canvas);
     RESTORE(Rect);
     RESTORE(Flow);

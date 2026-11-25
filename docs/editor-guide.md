@@ -163,3 +163,17 @@ TAA is under qualification; **owner visual re-review is pending** after a
 [manual moving-scene procedure](design/taa-manual.md) before approving sharpness,
 ghosting or AO stability. History memory excludes the separate private radiance/motion targets,
 final framebuffer generations and timing heaps.
+
+### Point and spot lights
+
+Use **Scene → Add Point Light / Add Spot Light** and edit the light component in
+Properties. Transform controls position and local -Z spot direction. Range is a
+world-unit distance independent of scale; spot controls use half angles in degrees.
+Intensity is renderer-relative linear incident radiance, not candela or lumens.
+Light gizmos support viewport picking; selection shows the influence sphere or
+inner/outer cones. **Lights...** in the viewport opens transient radiance,
+occupancy/overflow and timing inspection. Metal uses Forward+; OpenGL 4.1 evaluates
+the same lighting with a bounded loop. The shared limit is 320 enabled local lights;
+excess submission reports an error. Lights do not cast shadows in this milestone.
+See [the local-light gallery](../examples/RenderingReference/README.md#locallights_v1-authored-point-and-spot-gallery)
+for a reproducible scene and launch commands, and its linked qualification status.

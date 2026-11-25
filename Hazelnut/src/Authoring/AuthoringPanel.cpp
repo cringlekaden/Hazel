@@ -764,6 +764,10 @@ void AuthoringPanel::Menus()
     {
         if (ImGui::MenuItem("Add Entity", nullptr, false, bool(Availability(EditorAction::EditScene))))
             m_Editor.m_SceneHierarchyPanel.AddEntity();
+        if (ImGui::MenuItem("Add Point Light",nullptr,false,bool(Availability(EditorAction::EditScene))))
+            m_Editor.m_SceneHierarchyPanel.AddLocalLight(false);
+        if (ImGui::MenuItem("Add Spot Light",nullptr,false,bool(Availability(EditorAction::EditScene))))
+            m_Editor.m_SceneHierarchyPanel.AddLocalLight(true);
         if (ImGui::MenuItem("Duplicate Selected Subtree", "Ctrl+D", false,
                             bool(Availability(EditorAction::EditScene)) &&
                                 bool(m_Editor.m_SceneHierarchyPanel.GetSelectedEntity())))

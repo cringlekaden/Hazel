@@ -1,5 +1,6 @@
 // CPU checks for exact target ECS/YAML dependencies and portable camera state.
 #include "Hazel/Scene/SceneCamera.h"
+#include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include "Hazel/Project/RuntimeStorage.h"
 #include "Hazel/Core/FileSystem.h"
 #include <fstream>
@@ -21,6 +22,7 @@
 #include <entt.hpp>
 #include <yaml-cpp/yaml.h>
 #include <cmath>
+#include <limits>
 #include <cstdint>
 #include <iostream>
 #include <stdexcept>
@@ -30,13 +32,50 @@ static void Check(bool condition, const char* message)
 {
     if (!condition) throw std::runtime_error(message);
 }
+static void LocalLightContracts() {
+    using namespace Hazel;
+    auto scene=CreateRef<Scene>();auto e=scene->CreateEntityWithUUID(4242,"Point and spot");
+    e.GetComponent<TransformComponent>().Translation={2,3,4};e.GetComponent<TransformComponent>().Rotation={.2f,.4f,.1f};
+    e.GetComponent<TransformComponent>().Scale={2,3,4};
+    auto &point=e.AddComponent<PointLightComponent>();point.Range=17;point.Intensity=23;point.Color={.2f,.4f,.6f};
+    auto &spot=e.AddComponent<SpotLightComponent>();spot.Range=31;spot.InnerCone=.2f;spot.OuterCone=.8f;spot.Enabled=false;
+    const auto text=SceneSerializer(scene).SerializeText();auto loaded=CreateRef<Scene>();
+    Check(SceneSerializer(loaded).DeserializeText(text),"Local light round trip rejected");
+    auto assertLights=[&](Entity candidate) {
+        Check(candidate.HasComponent<PointLightComponent>() && candidate.HasComponent<SpotLightComponent>(),"Local components lost");
+        Check(candidate.GetComponent<PointLightComponent>().Range==17 && candidate.GetComponent<PointLightComponent>().Intensity==23 &&
+            candidate.GetComponent<SpotLightComponent>().Range==31 && candidate.GetComponent<SpotLightComponent>().InnerCone==.2f &&
+            !candidate.GetComponent<SpotLightComponent>().Enabled,"Local authored values lost");
+    };
+    assertLights(loaded->GetEntityByUUID(4242));auto copy=Scene::Copy(scene);assertLights(copy->GetEntityByUUID(4242));
+    auto duplicate=scene->DuplicateEntity(e);assertLights(duplicate);Check(duplicate.GetUUID()!=e.GetUUID(),"Duplicated light identity reused");
+    auto prefab=CreateRef<Scene>();
+    Check(SceneSerializer(prefab).DeserializeText(Prefab::Serialize({},scene,e,true),true),"Local prefab round trip rejected");
+    assertLights(Prefab::GetEntity(prefab));
+    const auto position=LightPosition(scene->GetWorldTransform(e)),travel=DirectionalTravel(scene->GetWorldTransform(e));
+    Check(glm::length(position-glm::vec3(2,3,4))<1e-6f && std::abs(glm::length(travel)-1)<1e-6f,"Local transform convention failed");
+    for(float range:{0.f,-1.f,std::numeric_limits<float>::infinity(),std::numeric_limits<float>::quiet_NaN()}) {
+        PointLight bad;bad.Range=range;bool rejected=false;try{bad.Validate();}catch(const std::exception&){rejected=true;}
+        Check(rejected,"Invalid local range accepted");
+    }
+    SpotLight bad;bad.InnerCone=bad.OuterCone;bool rejected=false;try{bad.Validate();}catch(const std::exception&){rejected=true;}
+    Check(rejected,"Degenerate spot penumbra accepted");
+    auto many=CreateRef<Scene>();
+    for(uint64_t i=320;i>0;--i)many->CreateEntityWithUUID(i,"Local capacity").AddComponent<PointLightComponent>();
+    const auto collected=SceneRenderer::Collect(*many,SceneCameraView{});
+    Check(collected.LocalLights.size()==320 && collected.LocalLights.front().Identity==1 && collected.LocalLights.back().Identity==320,"Local collection bound/order failed");
+    many->CreateEntityWithUUID(321,"Over capacity").AddComponent<PointLightComponent>();rejected=false;
+    try{SceneRenderer::Collect(*many,SceneCameraView{});}catch(const std::exception&){rejected=true;}
+    Check(rejected,"Local capacity silently truncated lights");
+    std::cout<<"PASS: point/spot schema, round trip, copy, duplicate, prefab, transforms and validation\n";
+}
 static void AuthoredComparisonContracts() {
     using namespace Hazel;
     auto scene=CreateRef<Scene>();auto e=scene->CreateEntity("Authored comparison");
     e.AddComponent<SpriteRendererComponent>();e.AddComponent<SpriteAnimationComponent>();
     e.AddComponent<AudioSourceComponent>();e.AddComponent<CameraComponent>();e.AddComponent<ScriptComponent>();
     e.AddComponent<Rigidbody2DComponent>();e.AddComponent<BoxCollider2DComponent>();e.AddComponent<CircleCollider2DComponent>();
-    e.AddComponent<DirectionalLightComponent>();
+    e.AddComponent<DirectionalLightComponent>();e.AddComponent<PointLightComponent>();e.AddComponent<SpotLightComponent>();
     e.AddComponent<TextComponent>(TextComponent{});e.AddComponent<CircleRendererComponent>();
     SceneSerializer serializer(scene);const auto baseline=serializer.CaptureAuthoredState();
     auto changed=[&](auto& field,auto value){const auto old=field;field=value;Check(serializer.CaptureAuthoredState()!=baseline,"Persisted edit did not dirty exact authored state");field=old;Check(serializer.CaptureAuthoredState()==baseline,"Revert did not restore exact authored state");};
@@ -54,6 +93,13 @@ static void AuthoredComparisonContracts() {
     changed(e.GetComponent<CircleCollider2DComponent>().Radius,.7f);
     changed(e.GetComponent<TextComponent>().TextString,std::string("Different prose"));
     changed(e.GetComponent<CircleRendererComponent>().Thickness,.5f);
+    changed(e.GetComponent<PointLightComponent>().Color,glm::vec3(.2f,.3f,.4f));
+    changed(e.GetComponent<PointLightComponent>().Intensity,12.f);
+    changed(e.GetComponent<PointLightComponent>().Range,7.f);
+    changed(e.GetComponent<PointLightComponent>().Enabled,false);
+    changed(e.GetComponent<SpotLightComponent>().InnerCone,.2f);
+    changed(e.GetComponent<SpotLightComponent>().OuterCone,.7f);
+    changed(e.GetComponent<SpotLightComponent>().Range,8.f);
     changed(e.GetComponent<DirectionalLightComponent>().Color, glm::vec3(.2f, .4f, .6f));
     changed(e.GetComponent<DirectionalLightComponent>().Intensity, 3.f);
     changed(e.GetComponent<DirectionalLightComponent>().Enabled, false);
@@ -230,7 +276,7 @@ int main()
         StorageChecks();
         AssetCookingChecks();ImportCookingChecks();
         Hazel::Log::Init();
-        AuthoredComparisonContracts();ImportPublicationChecks();
+        LocalLightContracts();AuthoredComparisonContracts();ImportPublicationChecks();
         CPUFontFamilyDocument();
         Hazel::EditorDocumentChecks();
         Hazel::EditorStateChecks();

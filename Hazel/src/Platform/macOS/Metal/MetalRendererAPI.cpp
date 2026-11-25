@@ -3,6 +3,10 @@
 #include "MetalDevice.h"
 #include "MetalShader.h"
 #include "MetalBuffer.h"
+#include "MetalComputePipeline.h"
+#include "Hazel/Core/Resources.h"
+#include "Hazel/Renderer/Drawing/Renderer3DUniforms.h"
+#include <cstring>
 #include <stdexcept>
 #include <algorithm>
 #include <cmath>
@@ -30,6 +34,7 @@ void MetalRendererAPI::Shutdown() {
     if(m_Stopped) return;
     m_Renderer2DFrame.reset(); m_Renderer2DScene=false;
     m_Device->Drain();
+    m_LocalLightCull.reset();m_LocalMetrics.reset();m_LocalLights.reset();
     m_Shaders.clear(); m_Textures = {}; m_Uniforms = {}; m_BoundShader.clear();
     m_Stopped=true;
 }
@@ -78,6 +83,16 @@ void MetalRendererAPI::BindUniform(uint32_t binding, const std::shared_ptr<const
     if (binding >= m_Uniforms.size() || m_Stopped) throw std::logic_error("Invalid Metal uniform binding");
     m_Uniforms[binding] = bytes;
 }
+void MetalRendererAPI::CaptureLocalLights(const std::shared_ptr<LocalLightingMetrics>& metrics)
+{
+    auto bytes=m_Uniforms[7].lock();
+    if(!bytes || bytes->size()!=sizeof(Renderer3DUniforms::LocalLightData))
+        throw std::logic_error("Missing local light uniform block");
+    // UniformBuffer::SetData mutates its CPU allocation. Freeze it once per
+    // submission, before another view or queued frame can overwrite that data.
+    m_LocalLights=std::make_shared<const std::vector<uint8_t>>(*bytes);
+    m_LocalMetrics=metrics;
+}
 void MetalRendererAPI::BindTexture(uint32_t slot, std::shared_ptr<const MetalTextureVersion> texture)
 {
     if (slot >= m_Textures.size() || !texture || m_Stopped) throw std::logic_error("Invalid Metal material texture binding");
@@ -102,8 +117,30 @@ void MetalRendererAPI::DrawIndexed(const Ref<VertexArray>& array, uint32_t count
     draw.IndexedMesh = true; draw.Count = count; draw.FirstIndex = first;
     draw.MeshIndices = indices->Snapshot(); draw.Raster = m_Raster;
     for (size_t i = 0; i < m_Uniforms.size(); ++i)
-        if (auto bytes = m_Uniforms[i].lock()) draw.Uniforms[i] = *bytes;
+        if (i!=7) if (auto bytes = m_Uniforms[i].lock()) draw.Uniforms[i] = *bytes;
     for (size_t i = 0; i < m_Textures.size(); ++i) draw.Textures[i] = m_Textures[i];
+    if (m_BoundShader=="ForwardPBR") {
+        auto bytes=m_LocalLights;
+        if (!bytes || bytes->size()!=sizeof(Renderer3DUniforms::LocalLightData))
+            throw std::logic_error("Missing local light uniform block");
+        for (auto &pass:frame->LocalLights) if(pass->Lights==bytes && pass->Viewport==draw.Raster.Viewport) draw.LocalLights=pass;
+        if (!draw.LocalLights) {
+            auto pass=std::make_shared<MetalLocalLightPass>();pass->Lights=bytes;pass->Camera=draw.Uniforms[2];pass->Viewport=draw.Raster.Viewport;pass->Timing=m_LocalMetrics;
+            float count;std::memcpy(&count,bytes->data(),sizeof(count));pass->Count=unsigned(count);
+            float fullLoop;std::memcpy(&fullLoop,bytes->data()+8,sizeof(fullLoop));
+            pass->Tiled=(pass->Count>8 || fullLoop<0) && fullLoop<.5f;
+            float tileSize;std::memcpy(&tileSize,bytes->data()+12,sizeof(tileSize));pass->TileSize=unsigned(tileSize);
+            if (pass->Tiled) {
+                if (!m_LocalLightCull) m_LocalLightCull=std::make_shared<MetalComputePipeline>(m_Device,
+                    Resources::Resolve("shaders/metal/LocalLightCull.metallib"),"cullLocalLights");
+                pass->Pipeline=m_LocalLightCull;
+            }
+            if(bytes->size()>256ULL*1024*1024-frame->PacketBytes)
+                throw std::runtime_error("Metal local light packet exceeds 256 MiB");
+            draw.LocalLights=pass;frame->LocalLights.push_back(std::move(pass));
+            frame->PacketBytes+=bytes->size();
+        }
+    }
     if(m_BoundShader=="DepthPBR") {
         for(size_t i=0;i<draw.Uniforms.size();++i)if(i<2 || i>4)draw.Uniforms[i].clear();
         for(size_t i=1;i<draw.Textures.size();++i)draw.Textures[i].reset();

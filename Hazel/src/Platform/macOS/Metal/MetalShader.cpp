@@ -85,7 +85,7 @@ std::string ValidateReflection(MTL::RenderPipelineState* pipeline, const MetalSh
                 const auto count = type.array.empty() ? 1 : type.array[0];
                 Check(texture->arrayLength() == count, "Native texture array extent differs");
                 Check(texture->textureType() == (type.image.dim == spv::DimCube ? MTL::TextureTypeCube : MTL::TextureType2D), "Native texture dimension differs");
-                Check(texture->textureDataType() == (source.get_type(type.image.type).basetype == spirv_cross::SPIRType::Int ? MTL::DataTypeInt : MTL::DataTypeFloat), "Native texture scalar type differs");
+                Check(texture->textureDataType() == (source.get_type(type.image.type).basetype == spirv_cross::SPIRType::Int ? MTL::DataTypeInt : source.get_type(type.image.type).basetype == spirv_cross::SPIRType::UInt ? MTL::DataTypeUInt : MTL::DataTypeFloat), "Native texture scalar type differs");
                 found = true;
             }
             Check(found, "Native texture binding missing");

@@ -29,6 +29,8 @@ struct UIEditValues
     std::optional<CircleRendererComponent> Circle;
     std::optional<MeshBinding> Mesh;
     std::optional<DirectionalLight> Light;
+    std::optional<PointLight> Point;
+    std::optional<SpotLight> Spot;
     std::optional<CameraEditValue> Camera;
     std::optional<UICanvasComponent> Canvas;
     std::optional<UIRectComponent> Rect;
@@ -55,6 +57,10 @@ struct UIEditValues
     template <class T> void Set(const T &value)
     {
         if constexpr (std::is_same_v<T,TransformComponent>)Transform=value;
+        else if constexpr (std::is_same_v<T, PointLightComponent>)
+            Point = static_cast<const PointLight &>(value);
+        else if constexpr (std::is_same_v<T, SpotLightComponent>)
+            Spot = static_cast<const SpotLight &>(value);
         else if constexpr (std::is_same_v<T, DirectionalLightComponent>)
             Light = static_cast<const DirectionalLight &>(value);
         else if constexpr (std::is_same_v<T,MeshRendererComponent>)Mesh=static_cast<const MeshBinding&>(value);
@@ -122,7 +128,7 @@ class UIEditCommand final : public DocumentCommand
                  bool cancelling = false) const;
     uint64_t m_Document, m_Entity;
     std::vector<std::pair<uint64_t, uint64_t>> m_Guards;
-    std::array<uint64_t, 23> m_ComponentVersions{};
+    std::array<uint64_t, 25> m_ComponentVersions{};
     std::string m_Name;
     UIEditValues m_Before, m_After;
 };

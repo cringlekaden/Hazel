@@ -52,6 +52,7 @@ class SceneHierarchyPanel
         return m_Focused;
     }
     Ref<Scene> AuthoringScene() const {return m_Context;}
+    bool AddLocalLight(bool spot);
     bool AddEntity(const std::string &name = "Empty Entity");
     bool AddUI(int kind);
     void UIAddMenu();

@@ -29,6 +29,24 @@ struct HistoryFixture
 static void EditorHistoryChecks()
 {
     {
+        HistoryFixture f;DocumentHistory history;history.Bind(f.World->GetIdentity());
+        auto light=f.World->CreateEntity("Local property history");
+        light.AddComponent<PointLightComponent>();light.AddComponent<SpotLightComponent>();
+        const auto original=f.State();auto before=UIEditValues::Capture(light),proposed=before;
+        proposed.Point->Range=7;proposed.Point->Intensity=12;proposed.Point->Color={.2f,.4f,.6f};
+        proposed.Spot->InnerCone=.2f;proposed.Spot->OuterCone=.8f;proposed.Spot->Enabled=false;
+        std::string error;
+        Check(history.Begin(*f.World,CreateScope<UIEditCommand>(*f.World,light.GetUUID(),"Local lights",before)),"Local history begin failed");
+        Check(dynamic_cast<UIEditCommand*>(history.Transaction())->Preview(*f.World,proposed,error)&&history.Commit(*f.World),error.c_str());
+        const auto changed=f.State();Check(changed!=original && light.GetComponent<PointLightComponent>().Range==7,"Local property preview did not publish");
+        Check(history.Undo(*f.World)&&f.State()==original&&history.Redo(*f.World)&&f.State()==changed,"Local light Undo/Redo lost authored values");
+        before=UIEditValues::Capture(light);proposed=before;proposed.Spot->InnerCone=proposed.Spot->OuterCone;
+        UIEditCommand invalid(*f.World,light.GetUUID(),"Invalid cone",before);
+        Check(!invalid.Preview(*f.World,proposed,error)&&f.State()==changed,"Invalid local cone published through Inspector");
+        std::cout<<"PASS point/spot Inspector history, exact Undo/Redo and invalid-cone atomic rejection\n";
+    }
+
+    {
         HistoryFixture f,g;DocumentHistory history,prefab;
         history.Bind(f.World->GetIdentity());prefab.Bind(g.World->GetIdentity());
         const auto saved=f.State();history.MarkSaved(saved);prefab.MarkSaved(g.State());

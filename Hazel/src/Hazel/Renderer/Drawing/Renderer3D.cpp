@@ -1,6 +1,7 @@
 #include "hzpch.h"
 #include "Renderer3D.h"
 #include "Renderer3DUniforms.h"
+#include <chrono>
 #include "Hazel/Assets/ProjectAssets.h"
 #include "Hazel/Core/Resources.h"
 #include "Hazel/Renderer/Drawing/MeshGeometry.h"
@@ -21,7 +22,7 @@ Ref<UniformBuffer> motionBuffer;
 Ref<UniformBuffer> environmentBuffer;
 Ref<VertexArray> skyTriangle;
 Ref<EnvironmentResources> emptyEnvironment;
-Ref<UniformBuffer> cameraBuffer, objectBuffer, materialBuffer;
+Ref<UniformBuffer> cameraBuffer, objectBuffer, materialBuffer, localLightBuffer;
 Ref<Texture2D> white;
 void Retain(const std::shared_ptr<void>& resource)
 {
@@ -37,15 +38,16 @@ void EnsureResources()
     if (shader)
         return;
     const auto &caps = RenderCommand::GetCapabilities();
-    if (caps.MaxTextureSlots < 8 || caps.MaxUniformBindings < 7 ||
-        caps.MaxUniformBlockBytes < 144 || caps.MaxVertexAttributes < 5)
-        throw std::runtime_error("PBR/IBL needs eight texture inputs, five vertex attributes, seven "
-                                 "uniform bindings and a 144-byte uniform block");
+    if (caps.MaxTextureSlots < 8 || caps.MaxUniformBindings < 8 ||
+        caps.MaxUniformBlockBytes < sizeof(LocalLightData) || caps.MaxVertexAttributes < 5)
+        throw std::runtime_error("PBR/IBL needs eight texture inputs, five vertex attributes, eight "
+                                 "uniform bindings and a 15376-byte uniform block");
     auto candidate = Shader::Create(
         (Hazel::Resources::Get().Root / "shaders/ForwardPBR.glsl").generic_u8string());
     auto c = UniformBuffer::Create(sizeof(ViewData), 2),
          o = UniformBuffer::Create(sizeof(ObjectData), 3),
-         m = UniformBuffer::Create(sizeof(MaterialData), 4);
+         m = UniformBuffer::Create(sizeof(MaterialData), 4),
+         locals = UniformBuffer::Create(sizeof(LocalLightData), 7);
     auto spec = TextureSpecification::FileDefaults();
     spec.Width = spec.Height = 1;
     spec.Format = ImageFormat::RGBA8;
@@ -79,6 +81,7 @@ void EnsureResources()
     objectBuffer = std::move(o);
     materialBuffer = std::move(m);
     white = std::move(w);
+    localLightBuffer = std::move(locals);
 }
 } // namespace
 void Renderer3D::Shutdown()
@@ -89,6 +92,7 @@ void Renderer3D::Shutdown()
     skyShader.reset();
     white.reset();
     materialBuffer.reset();
+    localLightBuffer.reset();
     objectBuffer.reset();
     cameraBuffer.reset();
     shader.reset();
@@ -150,6 +154,43 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground, bool 
                         glm::vec4(frame.Light ? frame.Light->ToLight : glm::vec3(0, 0, 1), 0),
                         glm::vec4(frame.Light ? frame.Light->Incident : glm::vec3(0), 0)};
         cameraBuffer->SetData(&camera, sizeof(camera));
+        if (!depthOnly && !motionOnly) {
+            if (frame.LocalLights.size() > MaxLocalLights)
+                throw std::runtime_error("Submission exceeds 320 local lights; no lights were truncated");
+            const auto uploadStart=std::chrono::steady_clock::now();
+            LocalLightData locals;
+            locals.Meta.x = float(frame.LocalLights.size());
+            locals.Meta.y = float(frame.LocalLightingView);
+            if(frame.LocalLightTileSize!=16 && frame.LocalLightTileSize!=32)throw std::runtime_error("Local light tile size requires 16 or 32");
+            locals.Meta.z = !frame.LocalLightCulling?1.f:frame.ForceLocalLightCulling?-1.f:0.f;
+            locals.Meta.w = float(frame.LocalLightTileSize);
+            for (size_t i=0;i<frame.LocalLights.size();++i) {
+                const auto &light=frame.LocalLights[i];
+                PointLight validation;validation.Range=light.Range;validation.Validate();
+                for (int axis=0;axis<3;++axis)
+                    if (!std::isfinite(light.Position[axis]) || !std::isfinite(light.Incident[axis]) ||
+                        light.Incident[axis]<0 || light.Incident[axis]>1000)
+                        throw std::runtime_error("Invalid submitted local light position/radiance");
+                if (!std::isfinite(light.InnerCos) || !std::isfinite(light.OuterCos) ||
+                    light.InnerCos>1 || light.OuterCos < -1 ||
+                    (light.OuterCos!=-1 && (light.OuterCos<0 || light.InnerCos<=light.OuterCos ||
+                    !std::isfinite(glm::length(light.Direction)) || std::abs(glm::length(light.Direction)-1)>1e-4f)))
+                    throw std::runtime_error("Invalid submitted spotlight direction/cones");
+                locals.Lights[i*3]=glm::vec4(light.Position,light.Range);
+                locals.Lights[i*3+1]=glm::vec4(light.Incident,light.InnerCos);
+                locals.Lights[i*3+2]=glm::vec4(light.Direction,light.OuterCos);
+            }
+            localLightBuffer->Bind();localLightBuffer->SetData(&locals,sizeof(locals));
+#ifdef HZ_PLATFORM_MACOS
+            if(RendererAPI::GetAPI()==RendererAPI::API::Metal)
+                static_cast<MetalRendererAPI&>(RenderCommand::Backend()).CaptureLocalLights(frame.LocalMetrics);
+#endif
+            if(frame.LocalMetrics) {
+                frame.LocalMetrics->CollectionMilliseconds=frame.LightCollectionMilliseconds;
+                frame.LocalMetrics->UploadMilliseconds=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-uploadStart).count();
+                frame.LocalMetrics->Count=unsigned(frame.LocalLights.size());frame.LocalMetrics->LightBytes=sizeof(locals);
+            }
+        }
         auto activeShader=motionOnly?motionShader:depthOnly?depthShader:shader;
         activeShader->Bind();
         const char *names[]{"u_Base", "u_MetalRough", "u_Normal", "u_Occlusion", "u_Emissive"};

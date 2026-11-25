@@ -43,11 +43,14 @@ class SceneRenderView
     std::shared_ptr<TemporalTiming> TemporalMetrics=std::make_shared<TemporalTiming>();
     Ref<Framebuffer> Jittered, Motion;
     unsigned AmbientOcclusionView = 0; // Transient, never authored.
+    unsigned LocalLightingView = 0;
+    std::shared_ptr<LocalLightingMetrics> LocalMetrics=std::make_shared<LocalLightingMetrics>();
     SurfaceView Debug = SurfaceView::Shaded; // Private view inspection; never scene/history.
     Ref<Framebuffer> AmbientDepth; // Per-view masked mesh depth preparation.
     Ref<Framebuffer> Radiance; // Optional per-view world target, never authored/history.
     void Reset()
     {
+        LocalMetrics=std::make_shared<LocalLightingMetrics>();
         Radiance.reset();
         Jittered.reset();Motion.reset();Temporal={};
         TemporalMetrics=std::make_shared<TemporalTiming>();

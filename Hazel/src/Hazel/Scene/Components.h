@@ -107,6 +107,8 @@ namespace Hazel {
     struct DirectionalLightComponent : DirectionalLight
     {
     };
+    struct PointLightComponent : PointLight {};
+    struct SpotLightComponent : SpotLight {};
     struct MeshRendererComponent : MeshBinding {}; // authored references only; no stage-2 drawing
 
 	struct CircleRendererComponent
@@ -313,7 +315,7 @@ namespace Hazel {
 	};
 
     using AllComponents = ComponentGroup<
-        TransformComponent, DirectionalLightComponent, MeshRendererComponent,
+        TransformComponent, DirectionalLightComponent, PointLightComponent, SpotLightComponent, MeshRendererComponent,
         SpriteRendererComponent, SpriteAnimationComponent, AudioSourceComponent,
         CircleRendererComponent, CameraComponent, ScriptComponent, NativeScriptComponent,
         Rigidbody2DComponent, BoxCollider2DComponent, CircleCollider2DComponent, TextComponent,

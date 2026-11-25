@@ -5,8 +5,10 @@
 #include "MetalComputePipeline.h"
 #include "MetalAmbientOcclusion.h"
 #include "MetalTemporalAA.h"
+#include "Hazel/Renderer/Scene/SceneSubmission.h"
 #include "Hazel/Renderer/Drawing/Renderer2DQuad.h"
 #include <algorithm>
+#include <chrono>
 #include <cstring>
 #include <set>
 #include <stdexcept>
@@ -27,6 +29,9 @@ void MetalRenderer2DFrame::CollectAllocations(std::set<const MTL::Allocation*>& 
 {
     for (const auto& target : Attachments->Targets) if (target) allocations.insert(target.get());
     for (const auto& buffer : Buffers) if (buffer) allocations.insert(buffer.get());
+    for (const auto &pass : LocalLights) {
+        if(pass->Tiles) allocations.insert(pass->Tiles.get());
+    }
     for (const auto& draw : Draws) {
         if (draw.MeshVertices) allocations.insert(draw.MeshVertices.get());
         if (draw.MeshIndices) allocations.insert(draw.MeshIndices.get());
@@ -57,6 +62,7 @@ void MetalRenderer2DFrame::MarkMipmapsSubmitted() const
 }
 void MetalRenderer2DFrame::ResolveAmbientOcclusionTimings()
 {
+    for(auto &pass:LocalLights)pass->Resolve();
     if(AO)AO->ResolveTimings();
     if(Temporal)Temporal->ResolveTimings();
     if(TemporalSource)TemporalSource->ResolveAmbientOcclusionTimings();
@@ -64,6 +70,26 @@ void MetalRenderer2DFrame::ResolveAmbientOcclusionTimings()
     if(World)World->ResolveAmbientOcclusionTimings();
     if(DisplaySource)DisplaySource->ResolveAmbientOcclusionTimings();
     if(ComputeSource)ComputeSource->ResolveAmbientOcclusionTimings();
+}
+void MetalLocalLightPass::Resolve()
+{
+    if(Resolved || !Timing || !Counters || !Frequency)return;
+    Resolved=true;
+    auto values=NS::RetainPtr(Counters->resolveCounterRange(NS::Range::Make(0,4)));
+    if(!values || values->length()!=4*sizeof(MTL4::TimestampHeapEntry))return;
+    MTL4::TimestampHeapEntry entries[4];std::memcpy(entries,values->bytes(),sizeof(entries));
+    if(!entries[2].timestamp || entries[3].timestamp<entries[2].timestamp)return;
+    Timing->ForwardMilliseconds=double(entries[3].timestamp-entries[2].timestamp)*1000/double(Frequency);
+    Timing->CullMilliseconds=0;Timing->OverflowTiles=0;Timing->Candidates=0;Timing->Tiles=0;
+    if(Tiled) {
+        if(!entries[0].timestamp || entries[1].timestamp<entries[0].timestamp)return;
+        Timing->CullMilliseconds=double(entries[1].timestamp-entries[0].timestamp)*1000/double(Frequency);
+        for(size_t y=0;y<Tiles->height();++y)for(size_t x=0;x<Tiles->width()/17;++x) {
+            uint32_t count;std::memcpy(&count,static_cast<const uint8_t*>(TileStorage->contents())+y*RowBytes+x*17*16,4);
+            Timing->Candidates+=count;Timing->OverflowTiles+=count>64?1:0;++Timing->Tiles;
+        }
+    }
+    Timing->LightBytes=Buffer->length();Timing->TileBytes=TileStorage->length();Timing->Valid=true;
 }
 void MetalRenderer2DFrame::Complete()
 {
@@ -100,7 +126,7 @@ std::shared_ptr<const FramebufferReadback> MetalDevice::SubmitRenderer2DFrame(co
     auto& slot = m_Frames[m_Next];
     if (slot.Pending) { std::lock_guard<std::mutex> lock(m_Observer->Mutex); ++m_Observer->Value.SkippedBusy; return {}; }
     Check(!quad->Result, "Cannot resubmit an already encoded quad frame");
-    slot.Renderer2DCursor = 0;
+    slot.Renderer2DCursor = 0;slot.LocalLightCursor=0;
     try { PrepareRenderer2DFrame(quad); slot.Renderer2DBuffers.resize(slot.Renderer2DCursor); Account(quad.get()); }
     catch (...) { slot.Renderer2DBuffers.clear(); Account(); throw; }
     const auto serial = m_Serial + 1;
@@ -201,7 +227,49 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     quad->Buffers.push_back(AcquireRenderer2DBuffer(indices.size() * sizeof(uint32_t), indices.data()));
     auto args = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
     args->setInitializeBindings(true); args->setMaxBufferBindCount(17);
-    args->setMaxTextureBindCount(9); args->setMaxSamplerStateBindCount(9);
+    args->setMaxTextureBindCount(10); args->setMaxSamplerStateBindCount(10);
+    for (auto &pass:quad->LocalLights) {
+        const auto lightStart=std::chrono::steady_clock::now();
+        pass->Buffer=AcquireRenderer2DBuffer(pass->Lights->size(),pass->Lights->data());
+        quad->Buffers.push_back(pass->Buffer);quad->Residency->addAllocation(pass->Buffer.get());
+        const unsigned tx=(quad->Width+pass->TileSize-1)/pass->TileSize,ty=(quad->Height+pass->TileSize-1)/pass->TileSize;
+        auto descriptor=NS::TransferPtr(MTL::TextureDescriptor::alloc()->init());
+        descriptor->setTextureType(MTL::TextureType2D);descriptor->setPixelFormat(MTL::PixelFormatRGBA32Uint);
+        descriptor->setWidth(pass->Tiled?tx*17:1);descriptor->setHeight(pass->Tiled?ty:1);
+        descriptor->setStorageMode(MTL::StorageModeShared);descriptor->setUsage(MTL::TextureUsageShaderRead|MTL::TextureUsageShaderWrite);
+        const size_t alignment=m_Device->minimumLinearTextureAlignmentForPixelFormat(MTL::PixelFormatRGBA32Uint);
+        const size_t row=(descriptor->width()*16+alignment-1)/alignment*alignment;
+        auto storage=AcquireRenderer2DBuffer(row*descriptor->height());
+        pass->TileStorage=storage;pass->RowBytes=row;
+        pass->Tiles=NS::TransferPtr(storage->newTexture(descriptor.get(),0,row));
+        Check(bool(pass->Tiles),"Cannot allocate local light tile storage");
+        quad->Buffers.push_back(storage);quad->Residency->addAllocation(storage.get());quad->Residency->addAllocation(pass->Tiles.get());
+        if(pass->Timing) {
+            auto &slot=m_Frames[m_Next];
+            if(slot.LocalLightCursor==slot.LocalLightCounters.size()) {
+                auto counters=NS::TransferPtr(MTL4::CounterHeapDescriptor::alloc()->init());
+                counters->setType(MTL4::CounterHeapTypeTimestamp);counters->setCount(4);
+                slot.LocalLightCounters.push_back(NS::TransferPtr(m_Device->newCounterHeap(counters.get(),&error)));
+            }
+            pass->Counters=slot.LocalLightCounters[slot.LocalLightCursor++];
+            Check(bool(pass->Counters),"Cannot allocate local lighting timestamps");
+            pass->Counters->invalidateCounterRange(NS::Range::Make(0,4));pass->Frequency=m_Device->queryTimestampFrequency();
+        }
+        if(pass->Tiled) {
+            auto table=NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
+            table->setInitializeBindings(true);table->setMaxBufferBindCount(3);table->setMaxTextureBindCount(1);
+            pass->Arguments=NS::TransferPtr(m_Device->newArgumentTable(table.get(),&error));
+            Check(bool(pass->Arguments),"Cannot allocate local light culling arguments");
+            auto camera=AcquireRenderer2DBuffer(pass->Camera.size(),pass->Camera.data());
+            struct {glm::uvec4 Size;glm::vec4 Viewport;} extent{{quad->Width,quad->Height,tx,ty},glm::vec4(pass->Viewport)};
+            auto constants=AcquireRenderer2DBuffer(sizeof(extent),&extent);
+            pass->Arguments->setAddress(pass->Buffer->gpuAddress(),0);
+            pass->Arguments->setAddress(camera->gpuAddress(),1);pass->Arguments->setAddress(constants->gpuAddress(),2);
+            pass->Arguments->setTexture(pass->Tiles->gpuResourceID(),0);
+            for(auto buffer:{camera,constants}){quad->Residency->addAllocation(buffer.get());quad->Buffers.push_back(buffer);}
+        }
+        if(pass->Timing)pass->Timing->UploadMilliseconds+=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-lightStart).count();
+    }
     std::set<MTL::Texture*> textures;
     for (auto& draw : quad->Draws)
     {
@@ -226,6 +294,10 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
             for (auto resource : {draw.MeshVertices, draw.MeshIndices}) if (resource) {
                 Check(resource->device() == m_Device.get(), "Mesh buffer belongs to another device");
                 quad->Residency->addAllocation(resource.get());
+            }
+            if (draw.LocalLights) {
+                fragment->setAddress(draw.LocalLights->Buffer->gpuAddress(),7);
+                fragment->setTexture(draw.LocalLights->Tiles->gpuResourceID(),9);
             }
             if (draw.MeshVertices) vertex->setAddress(draw.MeshVertices->gpuAddress(), 16);
             for (size_t binding = 0; binding < 8; ++binding) if (auto texture = draw.Textures[binding]) {
@@ -342,6 +414,17 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
 {
     if(quad->AO) EncodeAmbientOcclusion(quad);
     if(quad->Temporal)EncodeTemporal(quad);
+    for (const auto &pass:quad->LocalLights) if(pass->Tiled) {
+        auto* compute=m_Commands->computeCommandEncoder();
+        if(!compute){m_Commands->endCommandBuffer();throw std::runtime_error("Cannot encode local light culling");}
+        compute->barrierAfterQueueStages(MTL::StageAll,MTL::StageDispatch,MTL4::VisibilityOptionDevice);
+        if(pass->Counters)compute->writeTimestamp(MTL4::TimestampGranularityPrecise,pass->Counters.get(),0);
+        compute->setComputePipelineState(pass->Pipeline->Native());compute->setArgumentTable(pass->Arguments.get());
+        compute->dispatchThreads({(quad->Width+pass->TileSize-1)/pass->TileSize,(quad->Height+pass->TileSize-1)/pass->TileSize,1},{8,8,1});
+        if(pass->Counters)compute->writeTimestamp(MTL4::TimestampGranularityPrecise,pass->Counters.get(),1);
+        compute->barrierAfterStages(MTL::StageDispatch,MTL::StageFragment,MTL4::VisibilityOptionDevice);
+        compute->endEncoding();
+    }
     if (quad->ComputeSource) {
         m_Commands->useResidencySet(quad->ComputeSource->Residency.get());
         EncodeRenderer2DFrame(quad->ComputeSource);
@@ -406,10 +489,11 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
     }
     pass->depthAttachment()->setTexture(quad->Attachments->Targets[2].get()); pass->depthAttachment()->setLoadAction((quad->World || quad->Temporal) ? MTL::LoadActionLoad : MTL::LoadActionClear);
     pass->depthAttachment()->setStoreAction(MTL::StoreActionStore); pass->depthAttachment()->setClearDepth(1);
+    for(const auto &local:quad->LocalLights)if(local->Counters)m_Commands->writeTimestampIntoHeap(local->Counters.get(),2);
     auto* render = m_Commands->renderCommandEncoder(pass.get());
     if (!render) { m_Commands->endCommandBuffer(); throw std::runtime_error("Cannot create quad encoder"); }
     if(quad->QueueOrderedTemporalProducer)render->barrierAfterQueueStages(MTL::StageAll,MTL::StageAll,MTL4::VisibilityOptionDevice);
-    if (quad->AO || quad->World || quad->Temporal || !mipmaps.empty()) render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
+    if (!quad->LocalLights.empty() || quad->AO || quad->World || quad->Temporal || !mipmaps.empty()) render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
     auto* boundPipeline = quad->World ? quad->PresentationShader->Pipeline() : nullptr;
     if (boundPipeline) render->setRenderPipelineState(boundPipeline);
     // Metal starts each encoder with full-target viewport/scissor, no culling,
@@ -464,6 +548,7 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
     }
     if(quad->AO && quad->AO->Counters)render->writeTimestamp(MTL4::TimestampGranularityPrecise,MTL::RenderStageFragment,quad->AO->Counters.get(),5);
     render->endEncoding();
+    for(const auto &local:quad->LocalLights)if(local->Counters)m_Commands->writeTimestampIntoHeap(local->Counters.get(),3);
     }
     if (!quad->Readback) return;
     const auto colorRow = ColorRow(quad->Width), idBase = colorRow * quad->Height, depthBase = idBase + ScalarRow(quad->Width) * quad->Height;

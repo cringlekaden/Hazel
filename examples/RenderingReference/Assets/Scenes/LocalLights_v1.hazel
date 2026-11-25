@@ -1,0 +1,315 @@
+SceneVersion: 3
+Scene: LocalLights_v1 / chromatic material gallery
+Presentation:
+  Mode: SceneReferred
+  Exposure: 0
+  Background: [0.008, 0.008, 0.012, 1]
+Entities:
+  - Entity: 1
+    Relationship:
+      Parent: 0
+      Order: 0
+    TagComponent:
+      Tag: Local lights / material gallery
+    TransformComponent:
+      Translation: [0, 0, 12]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 0.785398185
+        PerspectiveNear: 0.100000001
+        PerspectiveFar: 100
+        OrthographicSize: 10
+        OrthographicNear: -1
+        OrthographicFar: 1
+      Primary: true
+      FixedAspectRatio: false
+  - Entity: 10
+    Relationship:
+      Parent: 0
+      Order: 1
+    TagComponent:
+      Tag: r=0.000000 m=0.000000
+    TransformComponent:
+      Translation: [-3.75, 1.70000005, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/0_0.hmat
+  - Entity: 11
+    Relationship:
+      Parent: 0
+      Order: 2
+    TagComponent:
+      Tag: r=0.100000 m=0.000000
+    TransformComponent:
+      Translation: [-2.25, 1.70000005, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/0_1.hmat
+  - Entity: 12
+    Relationship:
+      Parent: 0
+      Order: 3
+    TagComponent:
+      Tag: r=0.250000 m=0.000000
+    TransformComponent:
+      Translation: [-0.75, 1.70000005, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/0_2.hmat
+  - Entity: 13
+    Relationship:
+      Parent: 0
+      Order: 4
+    TagComponent:
+      Tag: r=0.500000 m=0.000000
+    TransformComponent:
+      Translation: [0.75, 1.70000005, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/0_3.hmat
+  - Entity: 14
+    Relationship:
+      Parent: 0
+      Order: 5
+    TagComponent:
+      Tag: r=0.750000 m=0.000000
+    TransformComponent:
+      Translation: [2.25, 1.70000005, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/0_4.hmat
+  - Entity: 15
+    Relationship:
+      Parent: 0
+      Order: 6
+    TagComponent:
+      Tag: r=1.000000 m=0.000000
+    TransformComponent:
+      Translation: [3.75, 1.70000005, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/0_5.hmat
+  - Entity: 16
+    Relationship:
+      Parent: 0
+      Order: 7
+    TagComponent:
+      Tag: r=0.000000 m=0.500000
+    TransformComponent:
+      Translation: [-3.75, 0.200000048, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/1_0.hmat
+  - Entity: 17
+    Relationship:
+      Parent: 0
+      Order: 8
+    TagComponent:
+      Tag: r=0.100000 m=0.500000
+    TransformComponent:
+      Translation: [-2.25, 0.200000048, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/1_1.hmat
+  - Entity: 18
+    Relationship:
+      Parent: 0
+      Order: 9
+    TagComponent:
+      Tag: r=0.250000 m=0.500000
+    TransformComponent:
+      Translation: [-0.75, 0.200000048, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/1_2.hmat
+  - Entity: 19
+    Relationship:
+      Parent: 0
+      Order: 10
+    TagComponent:
+      Tag: r=0.500000 m=0.500000
+    TransformComponent:
+      Translation: [0.75, 0.200000048, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/1_3.hmat
+  - Entity: 20
+    Relationship:
+      Parent: 0
+      Order: 11
+    TagComponent:
+      Tag: r=0.750000 m=0.500000
+    TransformComponent:
+      Translation: [2.25, 0.200000048, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/1_4.hmat
+  - Entity: 21
+    Relationship:
+      Parent: 0
+      Order: 12
+    TagComponent:
+      Tag: r=1.000000 m=0.500000
+    TransformComponent:
+      Translation: [3.75, 0.200000048, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials:
+        - Slot: 000000000000000e
+          Material: Reference/Direct_v1/materials/1_5.hmat
+  - Entity: 200
+    Relationship:
+      Parent: 0
+      Order: 13
+    TagComponent:
+      Tag: Moving warm key
+    TransformComponent:
+      Translation: [-3, 1, 2]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [1, 0.12, 0.04]
+      Intensity: 18
+      Enabled: true
+      Range: 6
+    ScriptComponent:
+      ClassName: RenderingReference.LocalLightMotion
+  - Entity: 201
+    Relationship:
+      Parent: 0
+      Order: 14
+    TagComponent:
+      Tag: Cool overlapping fill
+    TransformComponent:
+      Translation: [3, -0.6, 2]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [0.05, 0.25, 1]
+      Intensity: 22
+      Enabled: true
+      Range: 6
+  - Entity: 202
+    Relationship:
+      Parent: 0
+      Order: 15
+    TagComponent:
+      Tag: Emerald rim
+    TransformComponent:
+      Translation: [0, 3, 1.5]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [0.2, 1, 0.45]
+      Intensity: 10
+      Enabled: true
+      Range: 6
+  - Entity: 210
+    Relationship:
+      Parent: 0
+      Order: 16
+    TagComponent:
+      Tag: Narrow spot
+    TransformComponent:
+      Translation: [-2, 2.5, 4]
+      Rotation: [-0.45, 0, 0]
+      Scale: [1, 1, 1]
+    SpotLightComponent:
+      Color: [1, 0.7, 0.3]
+      Intensity: 45
+      Enabled: true
+      Range: 9
+      InnerCone: 0.18
+      OuterCone: 0.34
+  - Entity: 211
+    Relationship:
+      Parent: 0
+      Order: 17
+    TagComponent:
+      Tag: Broad spot
+    TransformComponent:
+      Translation: [2, 2.5, 4]
+      Rotation: [-0.45, 0, 0]
+      Scale: [1, 1, 1]
+    SpotLightComponent:
+      Color: [0.4, 0.65, 1]
+      Intensity: 45
+      Enabled: true
+      Range: 9
+      InnerCone: 0.5
+      OuterCone: 0.85
+  - Entity: 220
+    Relationship:
+      Parent: 0
+      Order: 18
+    TagComponent:
+      Tag: Neutral gallery backdrop
+    TransformComponent:
+      Translation: [0, 0, -1.1]
+      Rotation: [0, 0, 0]
+      Scale: [12, 7, 0.2]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials: []

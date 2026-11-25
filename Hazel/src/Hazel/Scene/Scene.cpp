@@ -422,6 +422,15 @@ namespace Hazel {
         {
             staged->m_Presentation = m_Presentation;
             RuntimeSession::Validate(staged);
+            unsigned localCount = 0;
+            auto countLocal = [&](const auto &registry) {
+                for (auto h : registry.template view<const PointLightComponent>())
+                    localCount += registry.template get<PointLightComponent>(h).Enabled ? 1 : 0;
+                for (auto h : registry.template view<const SpotLightComponent>())
+                    localCount += registry.template get<SpotLightComponent>(h).Enabled ? 1 : 0;
+            };
+            countLocal(m_Registry);countLocal(staged->m_Registry);
+            if(localCount > MaxLocalLights) throw std::runtime_error("Prefab would exceed 320 enabled local lights");
             unsigned lights = 0;
             for (auto h : m_Registry.view<const DirectionalLightComponent>())
                 lights += m_Registry.get<DirectionalLightComponent>(h).Enabled ? 1 : 0;
@@ -893,6 +902,8 @@ namespace Hazel {
         auto frame = SceneRenderer::Collect(*this, camera,display?glm::uvec2(display->GetSpecification().Width,display->GetSpecification().Height):glm::uvec2(0));
         if (view) {
             frame.Debug = view->Debug;
+            frame.LocalLightingView = view->LocalLightingView;
+            frame.LocalMetrics = view->LocalMetrics;
             frame.AmbientOcclusionView = view->AmbientOcclusionView;
         }
         SceneRenderer::Render(
@@ -1061,6 +1072,21 @@ namespace Hazel {
             if(!m_Assets)throw std::runtime_error("Environment requires project-owned prepared assets");
             AuditEnvironment(m_Assets->Root(),m_Presentation.Environment.Asset);
         }
+        unsigned localCount = 0;
+        auto validateLocal = [&](auto component) {
+            using T = decltype(component);
+            for (auto h : m_Registry.view<const T>()) {
+                const auto &light = m_Registry.get<T>(h);
+                light.Validate();
+                if (!light.Enabled) continue;
+                ++localCount;
+                const auto world = GetWorldTransform(Entity(h,const_cast<Scene*>(this)));
+                LightPosition(world);
+                if constexpr (std::is_same_v<T,SpotLightComponent>) DirectionalTravel(world);
+            }
+        };
+        validateLocal(PointLightComponent{});validateLocal(SpotLightComponent{});
+        if (localCount > MaxLocalLights) throw std::runtime_error("Scene exceeds 320 enabled local lights");
         unsigned lights = 0;
         for (auto h : m_Registry.view<const DirectionalLightComponent>())
         {
@@ -1092,6 +1118,8 @@ namespace Hazel {
     void Scene::OnComponentAdded<DirectionalLightComponent>(Entity, DirectionalLightComponent &)
     {
     }
+    template<> void Scene::OnComponentAdded<PointLightComponent>(Entity,PointLightComponent&) {}
+    template<> void Scene::OnComponentAdded<SpotLightComponent>(Entity,SpotLightComponent&) {}
     template<> void Scene::OnComponentAdded<MeshRendererComponent>(Entity,MeshRendererComponent&) {}
     template<> void Scene::OnComponentAdded<UICanvasComponent>(Entity,UICanvasComponent&) {}
     template<> void Scene::OnComponentAdded<UIRectComponent>(Entity,UIRectComponent&) {}

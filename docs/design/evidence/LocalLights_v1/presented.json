@@ -1,0 +1,679 @@
+{
+  "head": "3a4647c8f0ad7f2b6cba9dd6534fb491d530796f",
+  "scope": "Native VSync-off request; actual positive presentations only; 30 warmup presentations per physical extent; AO/TAA off.",
+  "cases": {
+    "0-dense": {
+      "1280x720": {
+        "positiveFrames": 93,
+        "gpuWholeFrameMs": {
+          "samples": 93,
+          "median": 0.7462080102413893,
+          "p95": 0.8502500131726265
+        },
+        "sceneCPUms": {
+          "samples": 93,
+          "median": 0.023583,
+          "p95": 0.064125
+        },
+        "layerCPUms": {
+          "samples": 93,
+          "median": 0.03975,
+          "p95": 0.105
+        },
+        "presentedIntervalMs": {
+          "samples": 92,
+          "median": 1.8152920092688873,
+          "p95": 11.14137499826029
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 89,
+        "gpuWholeFrameMs": {
+          "samples": 89,
+          "median": 1.7068750166799873,
+          "p95": 1.9109170243609697
+        },
+        "sceneCPUms": {
+          "samples": 89,
+          "median": 0.036041,
+          "p95": 0.073291
+        },
+        "layerCPUms": {
+          "samples": 89,
+          "median": 0.064042,
+          "p95": 0.118458
+        },
+        "presentedIntervalMs": {
+          "samples": 88,
+          "median": 2.313708493602462,
+          "p95": 6.870832992717624
+        }
+      }
+    },
+    "0-sparse": {
+      "1280x720": {
+        "positiveFrames": 93,
+        "gpuWholeFrameMs": {
+          "samples": 93,
+          "median": 0.7266669999808073,
+          "p95": 0.7818749872967601
+        },
+        "sceneCPUms": {
+          "samples": 93,
+          "median": 0.024459,
+          "p95": 0.044
+        },
+        "layerCPUms": {
+          "samples": 93,
+          "median": 0.042,
+          "p95": 0.074458
+        },
+        "presentedIntervalMs": {
+          "samples": 92,
+          "median": 1.754812998115085,
+          "p95": 11.14137499826029
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 89,
+        "gpuWholeFrameMs": {
+          "samples": 89,
+          "median": 1.6373749822378159,
+          "p95": 1.8750829913187772
+        },
+        "sceneCPUms": {
+          "samples": 89,
+          "median": 0.047542,
+          "p95": 0.093666
+        },
+        "layerCPUms": {
+          "samples": 89,
+          "median": 0.073208,
+          "p95": 0.139125
+        },
+        "presentedIntervalMs": {
+          "samples": 88,
+          "median": 2.2993335005594417,
+          "p95": 5.359708011383191
+        }
+      }
+    },
+    "1-dense": {
+      "1280x720": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 0.8827499987091869,
+          "p95": 0.9487500065006316
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 0.02675,
+          "p95": 0.064166
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 0.044417,
+          "p95": 0.1015
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 1.8153335113311186,
+          "p95": 11.14137499826029
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 2.0192920055706054,
+          "p95": 2.519083005608991
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 0.066833,
+          "p95": 0.115709
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 0.10825,
+          "p95": 0.170417
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 3.1461040052818134,
+          "p95": 8.08112500817515
+        }
+      }
+    },
+    "1-sparse": {
+      "1280x720": {
+        "positiveFrames": 93,
+        "gpuWholeFrameMs": {
+          "samples": 93,
+          "median": 0.8768330153543502,
+          "p95": 0.9366250014863908
+        },
+        "sceneCPUms": {
+          "samples": 93,
+          "median": 0.024959,
+          "p95": 0.043792
+        },
+        "layerCPUms": {
+          "samples": 93,
+          "median": 0.04225,
+          "p95": 0.071708
+        },
+        "presentedIntervalMs": {
+          "samples": 92,
+          "median": 1.6942910006036982,
+          "p95": 11.141416005557403
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 1.9717499963007867,
+          "p95": 2.486999990651384
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 0.013709,
+          "p95": 0.01875
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 0.023583,
+          "p95": 0.033084
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 2.420354008791037,
+          "p95": 9.412291983608156
+        }
+      }
+    },
+    "8-dense": {
+      "1280x720": {
+        "positiveFrames": 92,
+        "gpuWholeFrameMs": {
+          "samples": 92,
+          "median": 1.8919375143013895,
+          "p95": 2.0998750114813447
+        },
+        "sceneCPUms": {
+          "samples": 92,
+          "median": 0.034062499999999996,
+          "p95": 0.077375
+        },
+        "layerCPUms": {
+          "samples": 92,
+          "median": 0.0520835,
+          "p95": 0.123125
+        },
+        "presentedIntervalMs": {
+          "samples": 91,
+          "median": 2.7834579814225435,
+          "p95": 11.14137499826029
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 5.025999998906627,
+          "p95": 5.241292004939169
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 0.016792,
+          "p95": 0.021875
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 0.028625,
+          "p95": 0.037875
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 4.18952050677035,
+          "p95": 5.898917006561533
+        }
+      }
+    },
+    "8-sparse": {
+      "1280x720": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 1.0912079887930304,
+          "p95": 1.1472500045783818
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 0.035333,
+          "p95": 0.074084
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 0.056,
+          "p95": 0.119292
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 1.9650205067591742,
+          "p95": 11.14137499826029
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 2.490957995178178,
+          "p95": 3.212999989045784
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 0.074375,
+          "p95": 0.1455
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 0.120041,
+          "p95": 0.2215
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 3.1608335120836273,
+          "p95": 8.807207981590182
+        }
+      }
+    },
+    "32-dense": {
+      "1280x720": {
+        "positiveFrames": 93,
+        "gpuWholeFrameMs": {
+          "samples": 93,
+          "median": 10.76937498874031,
+          "p95": 11.05837500654161
+        },
+        "sceneCPUms": {
+          "samples": 93,
+          "median": 0.024916,
+          "p95": 0.050917
+        },
+        "layerCPUms": {
+          "samples": 93,
+          "median": 0.101959,
+          "p95": 0.211583
+        },
+        "presentedIntervalMs": {
+          "samples": 92,
+          "median": 5.570667010033503,
+          "p95": 13.68270898819901
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 90,
+        "gpuWholeFrameMs": {
+          "samples": 90,
+          "median": 23.455833492334932,
+          "p95": 23.63529201829806
+        },
+        "sceneCPUms": {
+          "samples": 90,
+          "median": 0.017854000000000002,
+          "p95": 0.026959
+        },
+        "layerCPUms": {
+          "samples": 90,
+          "median": 0.170542,
+          "p95": 0.437083
+        },
+        "presentedIntervalMs": {
+          "samples": 89,
+          "median": 11.625500017544255,
+          "p95": 20.58470799238421
+        }
+      }
+    },
+    "32-sparse": {
+      "1280x720": {
+        "positiveFrames": 92,
+        "gpuWholeFrameMs": {
+          "samples": 92,
+          "median": 1.174812510726042,
+          "p95": 1.267541985725984
+        },
+        "sceneCPUms": {
+          "samples": 92,
+          "median": 0.0440835,
+          "p95": 0.090916
+        },
+        "layerCPUms": {
+          "samples": 92,
+          "median": 0.145167,
+          "p95": 0.286083
+        },
+        "presentedIntervalMs": {
+          "samples": 91,
+          "median": 2.0573750080075115,
+          "p95": 11.14137499826029
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 90,
+        "gpuWholeFrameMs": {
+          "samples": 90,
+          "median": 2.6472500030649826,
+          "p95": 5.3168330050539225
+        },
+        "sceneCPUms": {
+          "samples": 90,
+          "median": 0.096667,
+          "p95": 0.17325
+        },
+        "layerCPUms": {
+          "samples": 90,
+          "median": 0.476333,
+          "p95": 0.955792
+        },
+        "presentedIntervalMs": {
+          "samples": 89,
+          "median": 3.146542003378272,
+          "p95": 9.17029200354591
+        }
+      }
+    },
+    "128-dense": {
+      "1280x720": {
+        "positiveFrames": 93,
+        "gpuWholeFrameMs": {
+          "samples": 93,
+          "median": 38.44079200644046,
+          "p95": 40.9816250030417
+        },
+        "sceneCPUms": {
+          "samples": 93,
+          "median": 0.039125,
+          "p95": 0.04925
+        },
+        "layerCPUms": {
+          "samples": 93,
+          "median": 0.115708,
+          "p95": 0.132291
+        },
+        "presentedIntervalMs": {
+          "samples": 92,
+          "median": 19.436916496488266,
+          "p95": 33.635125000728294
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 90,
+        "gpuWholeFrameMs": {
+          "samples": 90,
+          "median": 58.568187479977496,
+          "p95": 84.33037501526996
+        },
+        "sceneCPUms": {
+          "samples": 90,
+          "median": 0.0419585,
+          "p95": 0.054417
+        },
+        "layerCPUms": {
+          "samples": 90,
+          "median": 0.1986245,
+          "p95": 0.219291
+        },
+        "presentedIntervalMs": {
+          "samples": 89,
+          "median": 41.89941700315103,
+          "p95": 55.917958001373336
+        }
+      }
+    },
+    "128-sparse": {
+      "1280x720": {
+        "positiveFrames": 92,
+        "gpuWholeFrameMs": {
+          "samples": 92,
+          "median": 2.093187504215166,
+          "p95": 2.8513330034911633
+        },
+        "sceneCPUms": {
+          "samples": 92,
+          "median": 0.0969165,
+          "p95": 0.21475
+        },
+        "layerCPUms": {
+          "samples": 92,
+          "median": 0.1974795,
+          "p95": 0.503334
+        },
+        "presentedIntervalMs": {
+          "samples": 91,
+          "median": 2.908249996835366,
+          "p95": 11.14137499826029
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 90,
+        "gpuWholeFrameMs": {
+          "samples": 90,
+          "median": 5.564458493608981,
+          "p95": 8.673875010572374
+        },
+        "sceneCPUms": {
+          "samples": 90,
+          "median": 0.238313,
+          "p95": 0.795375
+        },
+        "layerCPUms": {
+          "samples": 90,
+          "median": 0.861667,
+          "p95": 1.409417
+        },
+        "presentedIntervalMs": {
+          "samples": 89,
+          "median": 4.602458007866517,
+          "p95": 11.135124979773536
+        }
+      }
+    },
+    "256-dense": {
+      "1280x720": {
+        "positiveFrames": 93,
+        "gpuWholeFrameMs": {
+          "samples": 93,
+          "median": 67.38758299616165,
+          "p95": 82.48499999172054
+        },
+        "sceneCPUms": {
+          "samples": 93,
+          "median": 0.064167,
+          "p95": 0.075
+        },
+        "layerCPUms": {
+          "samples": 93,
+          "median": 0.142708,
+          "p95": 0.162584
+        },
+        "presentedIntervalMs": {
+          "samples": 92,
+          "median": 38.994833012111485,
+          "p95": 55.9179590200074
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 90,
+        "gpuWholeFrameMs": {
+          "samples": 90,
+          "median": 95.81616650393698,
+          "p95": 164.49933301191777
+        },
+        "sceneCPUms": {
+          "samples": 90,
+          "median": 0.0757085,
+          "p95": 0.089417
+        },
+        "layerCPUms": {
+          "samples": 90,
+          "median": 0.239646,
+          "p95": 0.257875
+        },
+        "presentedIntervalMs": {
+          "samples": 89,
+          "median": 83.56045800610445,
+          "p95": 94.7018750011921
+        }
+      }
+    },
+    "256-sparse": {
+      "1280x720": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 3.2488750002812594,
+          "p95": 6.0360000061336905
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 0.16975,
+          "p95": 0.417083
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 0.308583,
+          "p95": 0.751625
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 3.908229002263397,
+          "p95": 12.320583016844466
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 92,
+        "gpuWholeFrameMs": {
+          "samples": 92,
+          "median": 7.646104510058649,
+          "p95": 12.715457996819168
+        },
+        "sceneCPUms": {
+          "samples": 92,
+          "median": 0.390958,
+          "p95": 0.448708
+        },
+        "layerCPUms": {
+          "samples": 92,
+          "median": 0.8828545,
+          "p95": 1.414125
+        },
+        "presentedIntervalMs": {
+          "samples": 91,
+          "median": 6.4178750035353005,
+          "p95": 12.199541000882164
+        }
+      }
+    },
+    "320-dense": {
+      "1280x720": {
+        "positiveFrames": 93,
+        "gpuWholeFrameMs": {
+          "samples": 93,
+          "median": 50.37929199170321,
+          "p95": 54.58850000286475
+        },
+        "sceneCPUms": {
+          "samples": 93,
+          "median": 0.0785,
+          "p95": 0.093
+        },
+        "layerCPUms": {
+          "samples": 93,
+          "median": 0.158625,
+          "p95": 0.17475
+        },
+        "presentedIntervalMs": {
+          "samples": 92,
+          "median": 50.13629200402647,
+          "p95": 72.41908300784416
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 90,
+        "gpuWholeFrameMs": {
+          "samples": 90,
+          "median": 107.9590625158744,
+          "p95": 112.47479199664667
+        },
+        "sceneCPUms": {
+          "samples": 90,
+          "median": 0.091542,
+          "p95": 0.098458
+        },
+        "layerCPUms": {
+          "samples": 90,
+          "median": 0.25877150000000004,
+          "p95": 0.268625
+        },
+        "presentedIntervalMs": {
+          "samples": 89,
+          "median": 105.8433750004042,
+          "p95": 122.76654099696316
+        }
+      }
+    },
+    "320-sparse": {
+      "1280x720": {
+        "positiveFrames": 92,
+        "gpuWholeFrameMs": {
+          "samples": 92,
+          "median": 3.975104002165608,
+          "p95": 6.858832988655195
+        },
+        "sceneCPUms": {
+          "samples": 92,
+          "median": 0.098333,
+          "p95": 0.171542
+        },
+        "layerCPUms": {
+          "samples": 92,
+          "median": 0.1993125,
+          "p95": 0.341417
+        },
+        "presentedIntervalMs": {
+          "samples": 91,
+          "median": 3.7553749862127006,
+          "p95": 11.141458002384752
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 90,
+        "gpuWholeFrameMs": {
+          "samples": 90,
+          "median": 14.53972898889333,
+          "p95": 14.744917018106207
+        },
+        "sceneCPUms": {
+          "samples": 90,
+          "median": 0.07,
+          "p95": 0.08675
+        },
+        "layerCPUms": {
+          "samples": 90,
+          "median": 0.218479,
+          "p95": 0.391
+        },
+        "presentedIntervalMs": {
+          "samples": 89,
+          "median": 7.599499978823587,
+          "p95": 16.50112500647083
+        }
+      }
+    }
+  },
+  "status": "PASS matched native positive-presentation pacing"
+}

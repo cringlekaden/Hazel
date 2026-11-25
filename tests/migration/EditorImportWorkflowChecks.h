@@ -243,6 +243,17 @@ void ImportWorkflowUpdate()
                   owner.UndoRedo(true) &&
                   light.GetComponent<DirectionalLightComponent>().Intensity == 3,
               "Light property Undo/Redo failed");
+        Check(panel.AddLocalLight(false),"Native point light creation failed");
+        auto point=panel.GetSelectedEntity();before=UIEditValues::Capture(point);proposed=before;
+        proposed.Point->Range=7;proposed.Point->Intensity=5;proposed.Transform->Translation={-1,2,3};
+        Check(inspector.Edit(*scene,&owner.m_SceneHistory,point.GetUUID(),"Point light",before,proposed,edit,0),"Point light Inspector edit failed");
+        Check(owner.UndoRedo(false)&&point.GetComponent<PointLightComponent>().Range==10&&owner.UndoRedo(true)&&point.GetComponent<PointLightComponent>().Range==7,"Point property Undo/Redo failed");
+        Check(panel.AddLocalLight(true),"Native spot light creation failed");
+        auto spot=panel.GetSelectedEntity();before=UIEditValues::Capture(spot);proposed=before;
+        proposed.Spot->InnerCone=.2f;proposed.Spot->OuterCone=.8f;proposed.Transform->Translation={1,2,3};
+        Check(inspector.Edit(*scene,&owner.m_SceneHistory,spot.GetUUID(),"Spot light",before,proposed,edit,0),"Spot light Inspector edit failed");
+        Check(owner.UndoRedo(false)&&spot.GetComponent<SpotLightComponent>().OuterCone!=.8f&&owner.UndoRedo(true)&&spot.GetComponent<SpotLightComponent>().OuterCone==.8f,"Spot property Undo/Redo failed");
+        std::cout<<"PASS native point/spot creation, Inspector controls, exact property Undo/Redo\n";
         auto state = SceneSerializer(scene).CaptureAuthoredState();
         Check(m_Editor.SaveScene() && m_Editor.OpenScene(m_Editor.m_EditorScenePath) &&
                   SceneSerializer(m_Editor.m_EditorScene).CaptureAuthoredState() == state,

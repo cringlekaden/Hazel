@@ -351,6 +351,22 @@ namespace Hazel {
                 << YAML::Value << light.Intensity << YAML::Key << "Enabled" << YAML::Value
                 << light.Enabled << YAML::EndMap;
         }
+        auto writeLocal = [&](auto component, const char *name) {
+            using T = decltype(component);
+            if (!entity.HasComponent<T>()) return;
+            const auto &light = entity.GetComponent<T>();light.Validate();
+            out << YAML::Key << name << YAML::Value << YAML::BeginMap
+                << YAML::Key << "Color" << YAML::Value << light.Color
+                << YAML::Key << "Intensity" << YAML::Value << light.Intensity
+                << YAML::Key << "Enabled" << YAML::Value << light.Enabled
+                << YAML::Key << "Range" << YAML::Value << light.Range;
+            if constexpr (std::is_same_v<T,SpotLightComponent>)
+                out << YAML::Key << "InnerCone" << YAML::Value << light.InnerCone
+                    << YAML::Key << "OuterCone" << YAML::Value << light.OuterCone;
+            out << YAML::EndMap;
+        };
+        writeLocal(PointLightComponent{}, "PointLightComponent");
+        writeLocal(SpotLightComponent{}, "SpotLightComponent");
         if(entity.HasComponent<MeshRendererComponent>()) {
             out<<YAML::Key<<"MeshRendererComponent"<<YAML::Value;
             WriteMeshBinding(out,entity.GetComponent<MeshRendererComponent>());
@@ -669,6 +685,23 @@ namespace Hazel {
                     light.Enabled = node["Enabled"].as<bool>();
                     light.Validate();
                 }
+                auto readLocal = [&](auto component, const char *name) {
+                    using T = decltype(component);
+                    if (auto node = entity[name]) {
+                        auto &light = deserializedEntity.AddComponent<T>();
+                        light.Color = node["Color"].template as<glm::vec3>();
+                        light.Intensity = node["Intensity"].template as<float>();
+                        light.Enabled = node["Enabled"].template as<bool>();
+                        light.Range = node["Range"].template as<float>();
+                        if constexpr (std::is_same_v<T,SpotLightComponent>) {
+                            light.InnerCone = node["InnerCone"].template as<float>();
+                            light.OuterCone = node["OuterCone"].template as<float>();
+                        }
+                        light.Validate();
+                    }
+                };
+                readLocal(PointLightComponent{}, "PointLightComponent");
+                readLocal(SpotLightComponent{}, "SpotLightComponent");
                 if(auto node=entity["MeshRendererComponent"])
                     static_cast<MeshBinding&>(deserializedEntity.AddComponent<MeshRendererComponent>())=ReadMeshBinding(node);
 

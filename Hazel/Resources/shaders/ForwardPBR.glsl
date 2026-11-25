@@ -26,6 +26,10 @@ layout(location=1) out int o_Entity;
 layout(std140,binding=2) uniform View {mat4 u_VP;vec4 u_Eye;vec4 u_ToCamera;vec4 u_Light;vec4 u_Incident;};
 layout(std140,binding=3) uniform Object {mat4 u_Model;mat4 u_NormalMatrix;ivec4 u_Identity;};
 layout(std140,binding=4) uniform Material {vec4 u_BaseFactor;vec4 u_EmissionCutoff;vec4 u_Surface;vec4 u_Options;};
+layout(std140,binding=7) uniform LocalLights {vec4 u_LocalMeta;vec4 u_LocalLights[960];};
+#ifdef HZ_METAL
+layout(binding=9) uniform usampler2D u_LightTiles;
+#endif
 layout(binding=0) uniform sampler2D u_Base;
 layout(binding=1) uniform sampler2D u_MetalRough;
 layout(binding=2) uniform sampler2D u_Normal;
@@ -131,7 +135,7 @@ void main(){
     if(u_Options.y>.5&&base.a<u_EmissionCutoff.a)discard;
     vec3 result=base.rgb,directTerm=vec3(0),diffuseTerm=vec3(0),specularTerm=vec3(0);vec3 N=normalize(v_Normal);
     vec3 baseNormal=N;
-    vec3 prefilteredProbe=vec3(0),brdfProbe=vec3(0),surfaceProbe=vec3(0);
+    vec3 prefilteredProbe=vec3(0),brdfProbe=vec3(0),surfaceProbe=vec3(0),localProbe=vec3(0);
     vec3 view=u_Eye.w>.5?u_ToCamera.xyz:u_Eye.xyz-v_Position;vec3 V=dot(view,view)>1e-12?normalize(view):N;
     vec3 horizonProbe=vec3(dot(N,V),dot(geometricNormal,V),dot(N,V));
     vec3 T=normalize(v_Tangent.xyz-N*dot(v_Tangent.xyz,N));vec3 B=cross(N,T)*v_Tangent.w;
@@ -148,6 +152,45 @@ void main(){
         vec3 L=normalize(u_Light.xyz);
         if(dot(geometricNormal,V)>0&&dot(geometricNormal,L)>0)
             directTerm=direct(base.rgb,metal,rough,N,V,L,energy)*u_Incident.rgb;
+        vec3 directionalTerm=directTerm;
+        int localCount=int(u_LocalMeta.x),listCount=localCount;
+#ifdef HZ_METAL
+        ivec2 tile=ivec2(gl_FragCoord.xy)/int(u_LocalMeta.w);
+        // 17 uint4 texels: count followed by up to 64 indices. Overflow uses all lights.
+        bool useTiles=(localCount>8||u_LocalMeta.z<0)&&u_LocalMeta.z<.5;
+        uint tileCount=useTiles?texelFetch(u_LightTiles,ivec2(tile.x*17,tile.y),0).x:0u;
+        bool tiled=useTiles && tileCount<=64u;
+        if(tiled)listCount=int(tileCount);
+#endif
+        if(dot(geometricNormal,V)>0)for(int entry=0;entry<listCount;++entry){
+            int index=entry;
+#ifdef HZ_METAL
+            if(tiled){int word=entry+1;uvec4 packed=texelFetch(u_LightTiles,ivec2(tile.x*17+word/4,tile.y),0);index=int(packed[word%4]);}
+#endif
+            vec4 positionRange=u_LocalLights[index*3],incidentInner=u_LocalLights[index*3+1],directionOuter=u_LocalLights[index*3+2];
+            vec3 delta=positionRange.xyz-v_Position;
+            float distanceSquared=dot(delta,delta),rangeSquared=positionRange.w*positionRange.w;
+            if(distanceSquared>=rangeSquared || distanceSquared==0)continue;
+            vec3 localL=delta*inversesqrt(distanceSquared);
+            if(dot(geometricNormal,localL)<=0)continue;
+            // Smooth finite range and smooth finite source core (one centimetre).
+            // No max-distance brightness step; the undefined direction at exact coincidence
+            // is assigned zero, with a continuous zero-energy limit inside the source core.
+            float window=max(1-pow(distanceSquared/rangeSquared,2),0);
+            float core=distanceSquared/(distanceSquared+1e-4);
+            float attenuation=window*window*core*core/(distanceSquared+1e-4);
+            if(directionOuter.w>=0){
+                float cone=clamp((dot(-localL,directionOuter.xyz)-directionOuter.w)/(incidentInner.w-directionOuter.w),0,1);
+                attenuation*=cone*cone*(3-2*cone);
+            }
+            if(attenuation<=0)continue;
+            directTerm+=direct(base.rgb,metal,rough,N,V,localL,energy)*incidentInner.rgb*attenuation;
+        }
+        localProbe=directTerm-directionalTerm;
+#ifdef HZ_METAL
+        if(u_LocalMeta.y==2)localProbe=vec3(float(useTiles?tileCount:uint(localCount))/64,0.1,0);
+        if(u_LocalMeta.y==3)localProbe=useTiles&&tileCount>64u?vec3(1,0,1):vec3(0);
+#endif
         if(u_EnvOptions.x>.5&&dot(geometricNormal,V)>0){
             float ao=mix(1,texture(u_Occlusion,v_UV).r,u_Surface.w);
             vec3 irradiance=texture(u_Irradiance,environmentDirection(N)).rgb/PI;
@@ -194,5 +237,6 @@ void main(){
         result=u_EnvOptions.z==3?aoDebug.rgb:vec3(u_EnvOptions.z==4?aoDebug.r/(1+aoDebug.r):aoDebug.r);
     }
 #endif
+    if(u_LocalMeta.y>0)result=localProbe;
     o_Color=vec4(result,1);o_Entity=u_Identity.x;
 }

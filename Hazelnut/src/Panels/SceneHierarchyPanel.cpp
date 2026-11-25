@@ -72,6 +72,14 @@ bool SceneHierarchyPanel::AddEntity(const std::string &name)
     try {m_HierarchyError.clear();return SetSelectedEntity(m_Context->CreateEntity(name));}
     catch(const std::exception& error){return HierarchyFailed(error.what());}
 }
+bool SceneHierarchyPanel::AddLocalLight(bool spot) {
+    if(!m_Context || !CanEdit(true))return false;
+    if(!m_Structuring)return Structural("Create local light",[&]{return AddLocalLight(spot);});
+    if(!AddEntity(spot?"Spot Light":"Point Light"))return false;
+    auto entity=GetSelectedEntity();
+    if(spot)entity.AddComponent<SpotLightComponent>();else entity.AddComponent<PointLightComponent>();
+    return true;
+}
 bool SceneHierarchyPanel::AddUI(int kind) {
     if(!m_Context||!CanEdit(true))return false;
     if(!m_Structuring)return Structural("Create UI composition",[&]{return AddUI(kind);});
@@ -517,7 +525,7 @@ void SceneHierarchyPanel::DrawUIComponent(const std::string &name,Entity entity,
         !std::is_same_v<T, SpriteRendererComponent> &&
         !std::is_same_v<T, CircleRendererComponent> && !std::is_same_v<T, CameraComponent> &&
         !std::is_same_v<T, MeshRendererComponent> &&
-        !std::is_same_v<T, DirectionalLightComponent> && !entity.HasComponent<UIRectComponent>() &&
+        !std::is_same_v<T, DirectionalLightComponent> && !std::is_same_v<T, PointLightComponent> && !std::is_same_v<T, SpotLightComponent> && !entity.HasComponent<UIRectComponent>() &&
         !entity.HasComponent<UICanvasComponent>())
     {
         DrawComponent<T>(name,entity,sections,restore,ui,report);return;
@@ -587,6 +595,8 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         DisplayAddComponentEntry<CircleRendererComponent>("Circle Renderer");
         DisplayAddComponentEntry<MeshRendererComponent>("Mesh Renderer");
         DisplayAddComponentEntry<DirectionalLightComponent>("Directional Light");
+        DisplayAddComponentEntry<PointLightComponent>("Point Light");
+        DisplayAddComponentEntry<SpotLightComponent>("Spot Light");
         DisplayAddComponentEntry<Rigidbody2DComponent>("Rigidbody 2D");
         DisplayAddComponentEntry<BoxCollider2DComponent>("Box Collider 2D");
         DisplayAddComponentEntry<CircleCollider2DComponent>("Circle Collider 2D");
@@ -1334,6 +1344,26 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             ImGui::TextWrapped("Linear RGB irradiance, relative units. Local -Z points along light "
                                "travel. One enabled directional key; image lighting is selected in Scene Settings.");
         });
+    auto localControls = [&](auto &light) {
+        PropertyUI::Checkbox("enabled", "Enabled", light.Enabled);
+        glm::vec4 color(light.Color,1);
+        if (PropertyUI::Color("light-color", "Color", &color.x, {}, false)) light.Color=glm::vec3(color);
+        PropertyUI::DragFloat("intensity", "Intensity", light.Intensity, .1f, 0, 1000);
+        PropertyUI::DragFloat("range", "Range", light.Range, .1f, .01f, 10000);
+        ImGui::TextWrapped("Linear RGB, renderer-relative intensity at unit distance. Range is in world units and ignores transform scale.");
+    };
+    DrawUIComponent<PointLightComponent>("Point Light", entity, m_Sections, m_RestoreSections, localControls);
+    DrawUIComponent<SpotLightComponent>("Spot Light", entity, m_Sections, m_RestoreSections, [&](auto &light) {
+        localControls(light);
+        float inner=glm::degrees(light.InnerCone),outer=glm::degrees(light.OuterCone);
+        if (PropertyUI::SliderFloat("outer", "Outer half angle", outer, .1f, 89)) {
+            light.OuterCone=glm::radians(outer);
+            light.InnerCone=std::min(light.InnerCone,light.OuterCone-.0011f);
+        }
+        if (PropertyUI::SliderFloat("inner", "Inner half angle", inner, 0, glm::degrees(light.OuterCone-.0011f)))
+            light.InnerCone=glm::radians(inner);
+        ImGui::TextWrapped("Local -Z is the cone direction. Angles are half angles in degrees.");
+    });
     DrawUIComponent<MeshRendererComponent>(
         "Mesh Renderer", entity, m_Sections, m_RestoreSections, [&, entity](auto &c) mutable {
             ImGui::TextWrapped("Indexed static geometry. Lit materials require scene-referred "

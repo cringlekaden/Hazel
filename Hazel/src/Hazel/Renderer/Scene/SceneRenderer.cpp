@@ -70,7 +70,7 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
     } else if(!view.NativeDevice.expired()){view.Reset();view.NativeDevice.reset();}
 #endif
     const bool temporal=frame.Presentation.TemporalAA && RendererAPI::GetAPI()==RendererAPI::API::Metal &&
-        frame.Presentation.SceneReferred && frame.Debug==SurfaceView::Shaded && frame.AmbientOcclusionView==0;
+        frame.Presentation.SceneReferred && frame.Debug==SurfaceView::Shaded && frame.AmbientOcclusionView==0 && frame.LocalLightingView==0;
     if(!temporal) {if(view.Temporal.Submitted)view.Radiance.reset();view.Temporal={};view.Jittered.reset();view.Motion.reset();view.TemporalMetrics->Valid=false;}
     if(frame.Presentation.TemporalAA && RendererAPI::GetAPI()!=RendererAPI::API::Metal && !view.WarnedUnsupportedTAA) {
         HZ_CORE_WARN("TAA request inactive: full-resolution temporal resolve requires Metal 4");view.WarnedUnsupportedTAA=true;
@@ -105,6 +105,9 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
         }
         submitted=std::make_shared<std::atomic<bool>>(false);
     }
+    if(frame.LocalLightingView>3)throw std::runtime_error("Unsupported local-light inspection");
+    if(frame.LocalLightingView>1 && RendererAPI::GetAPI()!=RendererAPI::API::Metal)
+        throw std::runtime_error("Tile inspection requires Metal 4; OpenGL evaluates the complete light loop");
     if(frame.AmbientOcclusionView>4)throw std::runtime_error("Unsupported ambient-occlusion inspection");
     if(!frame.Presentation.AmbientOcclusion.Enabled || frame.Meshes.empty())view.AmbientTiming->Valid=false;
     if (unsigned(frame.Debug) > unsigned(SurfaceView::NormalHorizon))

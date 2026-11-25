@@ -32,6 +32,26 @@ MetalComputePipeline::MetalComputePipeline(std::shared_ptr<MetalDevice> device, 
     if (!m_Pipeline) throw std::runtime_error(error ? error->localizedDescription()->utf8String() : "Cannot compile native Metal 4 compute pipeline");
     const auto* reflection = m_Pipeline->reflection();
     if (!reflection || !reflection->bindings()) throw std::runtime_error("Compute reflection is unavailable");
+    if (entry=="cullLocalLights") {
+        unsigned mask=0;
+        for (size_t i=0;i<reflection->bindings()->count();++i) {
+            auto* b=reflection->bindings()->object<MTL::Binding>(i);
+            if (!b->isUsed()) continue;
+            if(b->type()==MTL::BindingTypeBuffer && b->index()<3 && b->access()==MTL::BindingAccessReadOnly) {
+                const size_t sizes[]={15376,128,32};
+                if(static_cast<MTL::BufferBinding*>(b)->bufferDataSize()!=sizes[b->index()])
+                    throw std::runtime_error("Local culling buffer ABI differs");
+                mask|=1u<<b->index();
+            } else if(b->type()==MTL::BindingTypeTexture && b->index()==0) {
+                auto* t=static_cast<MTL::TextureBinding*>(b);
+                if(t->textureType()!=MTL::TextureType2D || t->textureDataType()!=MTL::DataTypeUInt || t->access()!=MTL::BindingAccessWriteOnly)
+                    throw std::runtime_error("Local culling tile texture ABI differs");
+                mask|=8;
+            } else throw std::runtime_error("Unexpected local culling resource");
+        }
+        if(mask!=15)throw std::runtime_error("Incomplete local culling reflection");
+        return;
+    }
     unsigned textures = 0, buffers = 0;
     for (size_t i = 0; i < reflection->bindings()->count(); ++i) {
         const auto* binding = reflection->bindings()->object<MTL::Binding>(i);

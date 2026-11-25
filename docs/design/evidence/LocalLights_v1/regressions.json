@@ -1,0 +1,80 @@
+{
+  "Debug-ggx": {
+    "exit": 0,
+    "command": [
+      "/opt/homebrew/opt/python@3.15/bin/python3.15",
+      "scripts/macos/ggx_multiscattering.py",
+      "--config",
+      "Debug",
+      "--project",
+      "examples/RenderingReference/RenderingReference.hproj",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/local-lighting/regressions/Debug-ggx"
+    ]
+  },
+  "Debug-ao": {
+    "exit": 0,
+    "command": [
+      "/opt/homebrew/opt/python@3.15/bin/python3.15",
+      "scripts/macos/xegtao.py",
+      "--config",
+      "Debug",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/local-lighting/regressions/Debug-ao"
+    ]
+  },
+  "Debug-taa": {
+    "exit": 0,
+    "command": [
+      "/opt/homebrew/opt/python@3.15/bin/python3.15",
+      "scripts/macos/taa.py",
+      "--config",
+      "Debug",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/local-lighting/regressions/Debug-taa"
+    ]
+  },
+  "Release-ggx": {
+    "exit": 0,
+    "command": [
+      "/opt/homebrew/opt/python@3.15/bin/python3.15",
+      "scripts/macos/ggx_multiscattering.py",
+      "--config",
+      "Release",
+      "--project",
+      "examples/RenderingReference/RenderingReference.hproj",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/local-lighting/regressions/Release-ggx"
+    ]
+  },
+  "Release-ao": {
+    "exit": 0,
+    "command": [
+      "/opt/homebrew/opt/python@3.15/bin/python3.15",
+      "scripts/macos/xegtao.py",
+      "--config",
+      "Release",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/local-lighting/regressions/Release-ao"
+    ]
+  },
+  "Release-taa": {
+    "exit": 0,
+    "command": [
+      "/opt/homebrew/opt/python@3.15/bin/python3.15",
+      "scripts/macos/taa.py",
+      "--config",
+      "Release",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/local-lighting/regressions/Release-taa"
+    ]
+  }
+}

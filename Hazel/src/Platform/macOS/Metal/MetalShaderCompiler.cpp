@@ -27,6 +27,7 @@ Layout CPUContract(const std::string& name)
     if (name == "Material") return {sizeof(MaterialData), {offsetof(MaterialData, Base), offsetof(MaterialData, Emissive), offsetof(MaterialData, Surface), offsetof(MaterialData, Options)}};
     if (name == "Environment") return {sizeof(EnvironmentData), {offsetof(EnvironmentData, InverseVP), offsetof(EnvironmentData, RotationGain), offsetof(EnvironmentData, Options)}};
     if (name == "Camera") return {sizeof(glm::mat4), {0}};
+    if (name == "LocalLights") return {sizeof(Renderer3DUniforms::LocalLightData), {0, 16}};
     if (name == "Presentation") return {sizeof(glm::vec4), {0}};
     if (name == "Outline") return {32, {0, 4, 8, 16}}; // Explicit declaration-only legacy adaptation.
     throw std::runtime_error("Unqualified CPU block: " + name);
@@ -75,7 +76,7 @@ void Reflect(spirv_cross::CompilerMSL& cross, std::ostream& output)
         const auto& type = cross.get_type(resource.type_id);
         Check(!type.image.arrayed && (type.image.dim == spv::Dim2D || type.image.dim == spv::DimCube), "Unqualified sampled-image dimension");
         const auto scalar = cross.get_type(type.image.type).basetype;
-        Check(scalar == spirv_cross::SPIRType::Float || scalar == spirv_cross::SPIRType::Int, "Unqualified image scalar type");
+        Check(scalar == spirv_cross::SPIRType::Float || scalar == spirv_cross::SPIRType::Int || scalar == spirv_cross::SPIRType::UInt, "Unqualified image scalar type");
         uint32_t count = 1;
         for (size_t i = 0; i < type.array.size(); ++i)
         {

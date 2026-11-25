@@ -315,6 +315,24 @@ namespace Hazel {
                 ImGui::EndPopup();
             }
             ImGui::SameLine();
+            if(ImGui::Button("Lights..."))ImGui::OpenPopup("Local lighting inspection");
+            if(ImGui::BeginPopup("Local lighting inspection")) {
+                const bool tiled=RendererAPI::GetAPI()==RendererAPI::API::Metal;
+                if(!tiled && m_RenderView.LocalLightingView>1)m_RenderView.LocalLightingView=0;
+                int lights=int(m_RenderView.LocalLightingView);
+                if(ImGui::Combo("View",&lights,tiled?"Shaded\0Local radiance\0Tile occupancy\0Tile overflow\0":"Shaded\0Local radiance\0"))m_RenderView.LocalLightingView=unsigned(lights);
+                if(!tiled)ImGui::TextUnformatted("OpenGL uses the complete loop; tile views and culling GPU timestamps require Metal 4.");
+                const auto &metrics=*m_RenderView.LocalMetrics;
+                ImGui::Text("%u lights; collect %.3f / light prep %.3f CPU ms",metrics.Count,metrics.CollectionMilliseconds,metrics.UploadMilliseconds);
+                if(metrics.Valid){
+                    ImGui::Text("Cull %.3f / forward %.3f GPU ms",metrics.CullMilliseconds,metrics.ForwardMilliseconds);
+                    ImGui::Text("%u tiles / %llu candidates / %llu overflow",metrics.Tiles,(unsigned long long)metrics.Candidates,(unsigned long long)metrics.OverflowTiles);
+                    ImGui::Text("Lights %.1f KiB / lists %.2f MiB",double(metrics.LightBytes)/1024,double(metrics.TileBytes)/(1024*1024));
+                }
+                ImGui::TextUnformatted("320 enabled lights maximum; 64 entries per tile. Overflow evaluates the complete light loop.");
+                ImGui::EndPopup();
+            }
+            ImGui::SameLine();
             if(ImGui::Button("AO..."))ImGui::OpenPopup("Ambient occlusion inspection");
             if(ImGui::BeginPopup("Ambient occlusion inspection")) {
                 int aoInspect=int(m_RenderView.AmbientOcclusionView);
@@ -521,18 +539,14 @@ namespace Hazel {
 
 	void EditorLayer::OnOverlayRender()
 	{
-		if (m_SceneState == SceneState::Play)
-		{
-			Entity camera = m_ActiveScene->GetPrimaryCameraEntity();
-			if (!camera)
-				return;
-
-			Renderer2D::BeginScene(camera.GetComponent<CameraComponent>().Camera, m_ActiveScene->GetWorldTransform(camera));
-		}
-		else
-		{
-			Renderer2D::BeginScene(m_NavigationCamera);
-		}
+        auto beginOverlay=[&]() {
+            if(m_SceneState==SceneState::Play) {
+                Entity camera=m_ActiveScene->GetPrimaryCameraEntity();if(!camera)return false;
+                Renderer2D::BeginScene(camera.GetComponent<CameraComponent>().Camera,m_ActiveScene->GetWorldTransform(camera));
+            } else Renderer2D::BeginScene(m_NavigationCamera);
+            return true;
+        };
+        if(!beginOverlay())return;
 
         const auto overlayState=RenderCommand::GetRasterState();RenderCommand::SetPickingMask(glm::bvec4(false));
         if(m_ShowGrid && m_SceneState!=SceneState::Play) {
@@ -580,8 +594,54 @@ namespace Hazel {
 			}
 		}
 
+        if(m_SceneState!=SceneState::Play &&
+            (!m_ActiveScene->GetAllEntitiesWith<PointLightComponent>().empty() || !m_ActiveScene->GetAllEntitiesWith<SpotLightComponent>().empty())) {
+        Renderer2D::EndScene(); // Finish passive overlays before enabling ID writes.
+        RenderCommand::SetPickingMask(glm::bvec4(true));beginOverlay();
+        // Scene-owned light gizmos write their entity ID for normal viewport selection.
+        auto lightGizmos=[&](auto component) {
+            using T=decltype(component);
+            for(auto h:m_ActiveScene->GetAllEntitiesWith<T>()) {
+                Entity e(h,m_ActiveScene.get());const auto &light=e.GetComponent<T>();
+                const auto world=m_ActiveScene->GetWorldTransform(e);
+                // Scene rendering owns validation diagnostics. Keep its invalid draft
+                // editable instead of throwing again while drawing an overlay.
+                try{light.Validate();LightPosition(world);}catch(const std::exception&){continue;}
+                glm::vec3 p(world[3]);
+                const bool selected=e==m_SceneHierarchyPanel.GetSelectedEntity();
+                glm::vec4 color(selected?glm::vec3(1,.5f,0):glm::mix(glm::vec3(.4f),light.Color,.75f),light.Enabled?1.f:.35f);
+                const float marker=.12f;
+                for(int axis=0;axis<3;++axis){glm::vec3 d(0);d[axis]=marker;Renderer2D::DrawLine(p-d,p+d,color,int(h));}
+                if(!selected)continue;
+                constexpr unsigned segments=64;
+                if constexpr(std::is_same_v<T,PointLightComponent>) {
+                    for(int axis=0;axis<3;++axis)for(unsigned i=0;i<segments;++i) {
+                        float a=6.2831853f*float(i)/segments,b=6.2831853f*float(i+1)/segments;
+                        glm::vec3 u(0),v(0);u[(axis+1)%3]=std::cos(a)*light.Range;u[(axis+2)%3]=std::sin(a)*light.Range;
+                        v[(axis+1)%3]=std::cos(b)*light.Range;v[(axis+2)%3]=std::sin(b)*light.Range;
+                        Renderer2D::DrawLine(p+u,p+v,color,int(h));
+                    }
+                } else {
+                    glm::vec3 direction;try{direction=DirectionalTravel(world);}catch(const std::exception&){continue;}
+                    const auto right=glm::normalize(glm::cross(direction,std::abs(direction.y)<.99f?glm::vec3(0,1,0):glm::vec3(1,0,0)));
+                    const auto up=glm::cross(right,direction);
+                    for(float angle:{light.InnerCone,light.OuterCone}) {
+                        const auto center=p+direction*(light.Range*std::cos(angle));const float radius=light.Range*std::sin(angle);
+                        for(unsigned i=0;i<segments;++i){float a=6.2831853f*float(i)/segments,b=6.2831853f*float(i+1)/segments;
+                            auto q=center+radius*(right*std::cos(a)+up*std::sin(a));
+                            Renderer2D::DrawLine(q,center+radius*(right*std::cos(b)+up*std::sin(b)),color,int(h));
+                            if(i%16==0)Renderer2D::DrawLine(p,q,color,int(h));
+                        }
+                    }
+                    Renderer2D::DrawLine(p,p+direction*light.Range,color,int(h));
+                }
+            }
+        };
+        lightGizmos(PointLightComponent{});lightGizmos(SpotLightComponent{});
+        Renderer2D::EndScene();RenderCommand::SetPickingMask(glm::bvec4(false));beginOverlay();
+        }
 		// Draw selected entity outline
-		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity(); selectedEntity && !selectedEntity.HasComponent<MeshRendererComponent>() && !selectedEntity.HasComponent<UIRectComponent>() && !selectedEntity.HasComponent<UICanvasComponent>())
+		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity(); selectedEntity && !selectedEntity.HasComponent<PointLightComponent>() && !selectedEntity.HasComponent<SpotLightComponent>() && !selectedEntity.HasComponent<MeshRendererComponent>() && !selectedEntity.HasComponent<UIRectComponent>() && !selectedEntity.HasComponent<UICanvasComponent>())
 		{
 			const auto transform = m_ActiveScene->GetWorldTransform(selectedEntity);
             if(auto* sprite=m_ActiveScene->RenderedSprite(selectedEntity)) {

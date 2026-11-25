@@ -1,0 +1,31 @@
+{
+  "head-shader": {
+    "1280": {
+      "forwardGPUms": 0.3322708333335,
+      "serializedFrameMs": 6.149770999999999,
+      "encodeCPUms": 0.01025,
+      "lightPrepCPUms": 0.010083
+    },
+    "1920": {
+      "forwardGPUms": 0.8244374999999999,
+      "serializedFrameMs": 9.554667,
+      "encodeCPUms": 0.010896,
+      "lightPrepCPUms": 0.010062
+    }
+  },
+  "local-shader": {
+    "1280": {
+      "forwardGPUms": 0.3294791666665,
+      "serializedFrameMs": 6.082437499999999,
+      "encodeCPUms": 0.009375,
+      "lightPrepCPUms": 0.0099375
+    },
+    "1920": {
+      "forwardGPUms": 0.813375,
+      "serializedFrameMs": 9.522104,
+      "encodeCPUms": 0.010166999999999999,
+      "lightPrepCPUms": 0.010333
+    }
+  },
+  "scope": "Shader-only accepted HEAD versus local shader at zero locals, identical current engine and GGX table; not a whole-HEAD CPU benchmark."
+}

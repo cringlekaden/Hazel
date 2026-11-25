@@ -184,7 +184,7 @@ void MetalDevice::PresentEditor(CA::MetalLayer* mainLayer, bool visible) {
     }
     residency->commit();
     pending.Slot = &slot;
-    slot.Renderer2DCursor = 0;
+    slot.Renderer2DCursor = 0;slot.LocalLightCursor=0;
     for (const auto& scene : scenes) PrepareRenderer2DFrame(scene);
     if (m_EditorCapture) {
         for (const auto& view : views) {

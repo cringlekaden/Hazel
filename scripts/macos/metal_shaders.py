@@ -81,7 +81,7 @@ def produce(configuration, destination, sources=None, force=False):
         stamp.write_text(json.dumps({'sourceProducer': identity,
                                     'library': hashlib.sha256(library.read_bytes()).hexdigest()}) + '\n')
         results['ImGui'] = 'REBUILT'
-    for name, relative in (('XeGTAO','XeGTAO/XeGTAO.metal'),('TemporalAA','TemporalAA.metal')):
+    for name, relative in (('XeGTAO','XeGTAO/XeGTAO.metal'),('TemporalAA','TemporalAA.metal'),('LocalLightCull','LocalLightCull.metal')):
         # Narrow native compute libraries have no runtime compiler dependency.
         source = sources / relative
         identity = hashlib.sha256(source.read_bytes() + producer.encode()).hexdigest()

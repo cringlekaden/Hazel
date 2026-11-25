@@ -228,3 +228,49 @@ deterministic; there is no temporal history or TAA. Spatial filtering alone does
 not eliminate visible noise or motion shimmer. Very thin,
 hidden or offscreen geometry remains subject to screen-space limitations. OpenGL
 keeps the authored request but reports it inactive; it has no AO fallback.
+
+## LocalLights_v1: authored point and spot gallery
+
+The separate `RenderingReference-LocalLights.hproj` selects
+`Assets/Scenes/LocalLights_v1.hazel`. This new output has no frozen-image baseline.
+It contains dielectric and metallic roughness sweeps, overlapping warm/cool point
+lights and narrow/broad spot cones against a neutral backdrop. Build scripts to
+animate the warm light; the other lights and all geometry remain independent.
+
+```sh
+python3 scripts/hazel.py script-build --config Debug examples/RenderingReference/RenderingReference-LocalLights.hproj
+python3 scripts/hazel.py run Hazelnut --config Debug --project examples/RenderingReference/RenderingReference-LocalLights.hproj --no-restore
+python3 scripts/hazel.py run Nutella --config Debug --project examples/RenderingReference/RenderingReference-LocalLights.hproj
+```
+
+Use Scene → Add Point Light / Add Spot Light, or add either component in Properties.
+Transform sets position; local -Z sets spot travel. Range uses world units and
+ignores transform scale. Cone controls are **half angles in degrees** (scene files
+store radians). Colors are linear RGB. Intensity is renderer-relative incident
+radiance at unit distance in the inverse-square far field, before smooth range
+and cone factors; it is not calibrated candela/lumens. A smooth centimetre-scale
+source core removes the point singularity; this is not an area-light model.
+
+Light crosses are selectable in the editor; selected point lights show influence
+spheres and spots show inner/outer cones. The viewport **Lights...** inspection
+provides local radiance, tile occupancy and magenta overflow (Metal), along with
+completed culling/forward GPU timings, CPU collection/light preparation and list memory.
+Diagnostics are transient view state. Direct light remains independent of material
+AO and XeGTAO; existing GGX multiscattering, emissive and IBL are retained.
+
+Both backends support **320 enabled local lights**. Exceeding the limit reports an
+error and never truncates the submitted lights. Metal uses tiled compute culling;
+a tile with more than 64 candidates evaluates the complete loop, preserving all
+contributions at higher shading cost. OpenGL 4.1 uses the bounded complete loop
+with the same GLSL BRDF/attenuation. Neither backend has local-light shadows yet.
+
+Maintainers can regenerate only this additive scene/project with
+`python3 tools/assets/generate_local_lighting.py`. See the
+[architecture and qualification record](../../docs/design/local-lighting.md) for
+current acceptance status and measured limits. Existing Core/Direct/IBL/AO/TAA
+frozen fixtures must not be regenerated to accept this new scene.
+
+![Native Metal authored-camera local-light gallery; dielectrics above metals](../../docs/design/images/local-lighting/gallery.png)
+
+This is an actual native Metal capture of the static authored camera, before the
+warm light's script motion. Owner visual acceptance remains a separate gate.

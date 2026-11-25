@@ -91,6 +91,8 @@ private:
         NS::SharedPtr<MTL::ResidencySet> EditorResidency;
         std::vector<NS::SharedPtr<MTL::Buffer>> Renderer2DBuffers;
         size_t Renderer2DCursor = 0;
+        std::vector<NS::SharedPtr<MTL4::CounterHeap>> LocalLightCounters;
+        size_t LocalLightCursor=0;
     };
     void Verify(Frame& frame);
     void EncodeTransfers(Frame& frame, uint64_t serial);

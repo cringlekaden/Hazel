@@ -2,6 +2,7 @@
 #include "Renderer2DParity.h"
 #include "Renderer3DParity.h"
 #include "MultiscatteringQualification.h"
+#include "LocalLightingQualification.h"
 #include "XeGTAOQualification.h"
 #include "TemporalAAQualification.h"
 #include "TemporalEdgeQualification.h"
@@ -241,6 +242,8 @@ void MeshLifetime(Hazel::MetalRendererAPI& backend, bool ambientOcclusion=false)
     std::array<Ref<const FramebufferReadback>,3> results;
     struct QueueRelease { std::function<void()> Release; ~QueueRelease(){if(Release)Release();} } gate{backend.GateQueueForTesting()};
     for(size_t i=0;i<results.size();++i) {
+        frame.LocalLights.resize(32*(i+1));
+        for(size_t l=0;l<frame.LocalLights.size();++l){frame.LocalLights[l].Identity=l+1;frame.LocalLights[l].Incident=glm::vec3(float(i+1));}
         material->BaseColor={i==0?1.f:0.f,i==1?1.f:0.f,i==2?1.f:0.f,1};
         Begin(target,32,32);
         const auto before=RenderCommand::GetDrawSubmissionCount();
@@ -281,7 +284,8 @@ int main(int argc, char** argv)
         const bool temporal = argc == 4 && std::string(argv[3]) == "--taa";
         const bool ao = argc == 4 && std::string(argv[3]) == "--xegtao";
         const bool compute = argc == 4 && std::string(argv[3]) == "--compute";
-        const bool multiscattering = argc == 4 && std::string(argv[3]) == "--ggx-ms";
+        const bool localLights = argc == 4 && std::string(argv[3]) == "--local-lights";
+        const bool multiscattering = localLights || (argc == 4 && std::string(argv[3]) == "--ggx-ms");
         const bool renderer3D = argc == 4 && std::string(argv[3]) == "--renderer3d-parity";
         Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !multiscattering && !renderer3D && !compute && !ao && !temporal && !edges && !temporalBenchmark && !offscreenBenchmark ? uint32_t(std::stoul(argv[3])) : 4;
         Check(settings.TextureSlots == 2 || settings.TextureSlots == 4,"Fixture supports two or four texture slots");
@@ -313,7 +317,7 @@ int main(int argc, char** argv)
             return 0;
         }
         if (multiscattering) {
-            MultiscatteringQualification(output, [&](const auto& target) {
+            (localLights?LocalLightingQualification:MultiscatteringQualification)(output, [&](const auto& target) {
                 auto result=Submit(target);Check(bool(result),"GGX submit busy");Wait(*target,result);return result;
             });
             MeshLifetime(backend,true);

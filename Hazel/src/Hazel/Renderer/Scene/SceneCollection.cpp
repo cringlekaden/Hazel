@@ -5,6 +5,8 @@
 #include "Hazel/Scene/Entity.h"
 #include "Hazel/Scene/Scene.h"
 #include <glm/gtc/matrix_inverse.hpp>
+#include <chrono>
+#include <type_traits>
 namespace Hazel
 {
 namespace
@@ -78,6 +80,36 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
         frame.Light = SubmittedDirectional{-DirectionalTravel(scene.GetWorldTransform(e)),
                                            light.Color * light.Intensity};
     }
+    const auto localStart=std::chrono::steady_clock::now();
+    auto collectLocal = [&](auto component) {
+        using T = decltype(component);
+        for (auto h : scene.GetAllEntitiesWith<T>()) {
+            Entity e(h, &scene);
+            const auto &light = e.GetComponent<T>();
+            light.Validate();
+            if (!light.Enabled) continue;
+            const auto world = scene.GetWorldTransform(e);
+            SubmittedLocalLight submitted;
+            submitted.Identity = uint64_t(e.GetUUID());
+            submitted.Position = LightPosition(world);
+            submitted.Incident = light.Color * light.Intensity;
+            submitted.Range = light.Range;
+            if constexpr (std::is_same_v<T, SpotLightComponent>) {
+                submitted.Direction = DirectionalTravel(world);
+                submitted.InnerCos = std::cos(light.InnerCone);
+                submitted.OuterCos = std::cos(light.OuterCone);
+            }
+            frame.LocalLights.push_back(submitted);
+        }
+    };
+    collectLocal(PointLightComponent{});
+    collectLocal(SpotLightComponent{});
+    if (frame.LocalLights.size() > MaxLocalLights)
+        throw std::runtime_error("Scene exceeds 320 enabled local lights; no lights were truncated");
+    std::sort(frame.LocalLights.begin(), frame.LocalLights.end(), [](const auto &a, const auto &b) {
+        return a.Identity!=b.Identity?a.Identity<b.Identity:a.OuterCos<b.OuterCos;
+    });
+    frame.LightCollectionMilliseconds=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-localStart).count();
     for (auto h : scene.GetAllEntitiesWith<MeshRendererComponent>())
     {
         Entity e(h, &scene);

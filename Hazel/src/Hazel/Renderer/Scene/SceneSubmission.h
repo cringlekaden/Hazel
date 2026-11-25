@@ -4,6 +4,7 @@
 #include "Hazel/Scene/SceneDefaults.h"
 #include <optional>
 #include <cstdint>
+#include <memory>
 namespace Hazel
 {
 class ProjectAssets;
@@ -51,6 +52,19 @@ struct SubmittedDirectional
 {
     glm::vec3 ToLight{}, Incident{};
 };
+struct LocalLightingMetrics
+{
+    double CollectionMilliseconds=0, UploadMilliseconds=0, CullMilliseconds=0, ForwardMilliseconds=0;
+    uint64_t LightBytes=0, TileBytes=0, Candidates=0, OverflowTiles=0;
+    unsigned Count=0, Tiles=0;
+    bool Valid=false;
+};
+struct SubmittedLocalLight
+{
+    uint64_t Identity = 0;
+    glm::vec3 Position{}, Incident{}, Direction{0,0,-1};
+    float Range = 10, InnerCos = 1, OuterCos = -1; // OuterCos=-1 denotes a point.
+};
 // Accepted semantic CPU inputs, independent of the forward backend and importers.
 struct SceneSubmission
 {
@@ -60,11 +74,18 @@ struct SceneSubmission
     unsigned TemporalPhase = 0; // Zero preserves fixed AO noise; 1..64 temporal sequence.
     ScenePresentation Presentation;
     unsigned AmbientOcclusionView = 0; // 0 shaded, 1 visibility, 2 raw, 3 edges, 4 view depth.
+    unsigned LocalLightTileSize = 16; // Qualification compares 16/32-pixel tiles.
+    bool ForceLocalLightCulling = false; // Qualification of the small-light crossover.
+    bool LocalLightCulling = true; // Transient full-loop comparison/profiling control.
+    unsigned LocalLightingView = 0; // 1 local radiance, 2 tile occupancy, 3 overflow.
     SurfaceView Debug = SurfaceView::Shaded;
     bool LinearLightingInspection = false; // Scoped FP32 diagnostic readback, not authored.
     Ref<ProjectAssets> Assets;
     std::vector<SubmittedMesh> Meshes;
     std::optional<SubmittedDirectional> Light;
+    std::vector<SubmittedLocalLight> LocalLights;
+    double LightCollectionMilliseconds=0;
+    std::shared_ptr<LocalLightingMetrics> LocalMetrics;
     Ref<const PreparedEnvironment> Environment;
 };
 } // namespace Hazel

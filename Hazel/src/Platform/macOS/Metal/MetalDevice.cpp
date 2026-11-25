@@ -274,7 +274,7 @@ void MetalDevice::Present(CA::MetalLayer* layer,uint32_t w,uint32_t h,uint32_t l
     }
     if (scene) {
         auto& slot=m_Frames[m_Next];
-        slot.Renderer2DCursor=0;
+        slot.Renderer2DCursor=0;slot.LocalLightCursor=0;
         try { PrepareRenderer2DFrame(scene); slot.Renderer2DBuffers.resize(slot.Renderer2DCursor); Account(scene.get()); }
         catch (...) { slot.Renderer2DBuffers.clear(); Account(); throw; }
     }
@@ -368,7 +368,7 @@ void MetalDevice::Drain() {
         ++m_Observer->Value.Errors; m_Observer->Value.Error="Metal 4 commit feedback did not retire during shutdown";
     }
     lock.unlock(); Poll();
-    for(auto& frame:m_Frames) frame.Renderer2DBuffers.clear();
+    for(auto& frame:m_Frames) {frame.Renderer2DBuffers.clear();frame.LocalLightCounters.clear();frame.LocalLightCursor=0;}
     Account(); lock.lock();
     m_Observer->Value.ShutdownComplete=true;
     if (m_Trace) {

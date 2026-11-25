@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <array>
 #include <cstdint>
+#include <cstddef>
 #include "MetalTexture.h"
 #include "Hazel/Renderer/RendererAPI.h"
 #include "Hazel/Renderer/Resources/Framebuffer.h"
@@ -18,9 +19,29 @@ class MetalComputePipeline;
 struct MetalAOPass;
 struct MetalTemporalPass;
 struct MetalFramebufferAttachments;
+struct LocalLightingMetrics;
+struct MetalLocalLightPass
+{
+    std::shared_ptr<const std::vector<uint8_t>> Lights;
+    std::vector<uint8_t> Camera;
+    std::shared_ptr<MetalComputePipeline> Pipeline;
+    NS::SharedPtr<MTL::Buffer> Buffer;
+    NS::SharedPtr<MTL::Texture> Tiles;
+    NS::SharedPtr<MTL4::ArgumentTable> Arguments;
+    unsigned Count = 0, TileSize=16;
+    glm::ivec4 Viewport{0};
+    NS::SharedPtr<MTL::Buffer> TileStorage;
+    NS::SharedPtr<MTL4::CounterHeap> Counters;
+    std::shared_ptr<LocalLightingMetrics> Timing;
+    uint64_t Frequency=0;
+    size_t RowBytes=0;
+    bool Resolved=false, Tiled=false;
+    void Resolve();
+};
 struct MetalRenderer2DDraw
 {
     std::vector<uint8_t> Vertices;
+    std::shared_ptr<MetalLocalLightPass> LocalLights;
     // Indexed production draws retain native geometry and immutable UBO values.
     NS::SharedPtr<MTL::Buffer> MeshVertices, MeshIndices;
     std::array<std::vector<uint8_t>, 8> Uniforms;
@@ -61,6 +82,7 @@ struct MetalRenderer2DFrame
     glm::vec4 OutlineColor{0};
     NS::SharedPtr<MTL4::ArgumentTable> OutlineArguments;
     std::vector<MetalRenderer2DDraw> Draws;
+    std::vector<std::shared_ptr<MetalLocalLightPass>> LocalLights;
     std::vector<std::shared_ptr<void>> ResourceOwners;
     std::shared_ptr<FramebufferReadback> Result;
     std::vector<glm::vec4> CompletedColor;

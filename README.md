@@ -76,6 +76,12 @@ The badge is **workflow-wide**. Open a run for its separate Windows/Linux Debug,
 
 The owner completed the recorded Xcode/editor acceptance and approved integration. Automated checks remain distinct from unexecuted physical checks, competent-reader typography acceptance and public signed distribution. Native static-mesh direct PBR, offline HDR preparation and image-based lighting are available on the implementation branch. See [Stage 4](docs/design/3d-environment-stage4.md) for supported authoring, reference cases and actual qualification limits.
 
+Authored point and spot lights share the accepted multiscattering GGX material
+response, with Metal tiled Forward+ and a bounded OpenGL 4.1 fallback. See the
+[local-light gallery](examples/RenderingReference/README.md#locallights_v1-authored-point-and-spot-gallery)
+and [qualification status](docs/design/local-lighting.md). Local-light shadows
+are reserved for the next milestone; owner visual approval remains separate.
+
 The development branch also includes [Metal XeGTAO ambient occlusion](docs/design/xegtao.md)
 for diffuse IBL, with editor controls and a separate contact-study scene. Functional
 and correctness gates pass locally on Apple M4; visible noise and motion shimmer

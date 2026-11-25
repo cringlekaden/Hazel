@@ -1,0 +1,3552 @@
+{
+  "head": "3a4647c8f0ad7f2b6cba9dd6534fb491d530796f",
+  "configuration": "Release",
+  "benchmark": true,
+  "sourceSHA256": "786f616246c7c35ebe22a28299a42621c47b6133777d13737ec083beb8fbd478",
+  "commands": {
+    "metal": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/local-lighting/accepted-performance/metal",
+      "--local-lights"
+    ]
+  },
+  "backends": {
+    "metal": {
+      "samplesPerCase": 20,
+      "warmup": 5,
+      "cases": {
+        "1280/720/0/0/0/16": {
+          "collectionCPUms": {
+            "median": 6.25e-05,
+            "p95": 0.000125
+          },
+          "encodeCPUms": {
+            "median": 0.010896,
+            "p95": 0.014125
+          },
+          "lightPrepCPUms": {
+            "median": 0.0106045,
+            "p95": 0.013916
+          },
+          "serializedFrameMs": {
+            "median": 5.245,
+            "p95": 5.496583
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 0.3061458333335,
+            "p95": 0.445708333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/0/0/1/16": {
+          "collectionCPUms": {
+            "median": 8.3e-05,
+            "p95": 0.000292
+          },
+          "encodeCPUms": {
+            "median": 0.009895999999999999,
+            "p95": 0.014833
+          },
+          "lightPrepCPUms": {
+            "median": 0.01175,
+            "p95": 0.021333
+          },
+          "serializedFrameMs": {
+            "median": 6.2069165,
+            "p95": 7.414041
+          },
+          "cullGPUms": {
+            "median": 0.0195625,
+            "p95": 0.024875
+          },
+          "forwardGPUms": {
+            "median": 0.39875,
+            "p95": 0.50825
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/0/0/1/32": {
+          "collectionCPUms": {
+            "median": 6.25e-05,
+            "p95": 0.000166
+          },
+          "encodeCPUms": {
+            "median": 0.008042,
+            "p95": 0.011125
+          },
+          "lightPrepCPUms": {
+            "median": 0.011521,
+            "p95": 0.015666
+          },
+          "serializedFrameMs": {
+            "median": 6.979604500000001,
+            "p95": 8.099042
+          },
+          "cullGPUms": {
+            "median": 0.0114375,
+            "p95": 0.0139166666667
+          },
+          "forwardGPUms": {
+            "median": 0.334375,
+            "p95": 0.483875
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/0/1/0/16": {
+          "collectionCPUms": {
+            "median": 0.00010449999999999999,
+            "p95": 0.00025
+          },
+          "encodeCPUms": {
+            "median": 0.0091455,
+            "p95": 0.011541
+          },
+          "lightPrepCPUms": {
+            "median": 0.010646,
+            "p95": 0.015749
+          },
+          "serializedFrameMs": {
+            "median": 7.108750000000001,
+            "p95": 7.389
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 0.3865833333335,
+            "p95": 0.490583333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/0/1/1/16": {
+          "collectionCPUms": {
+            "median": 8.3e-05,
+            "p95": 0.000291
+          },
+          "encodeCPUms": {
+            "median": 0.009021,
+            "p95": 0.012667
+          },
+          "lightPrepCPUms": {
+            "median": 0.011875,
+            "p95": 0.018791
+          },
+          "serializedFrameMs": {
+            "median": 6.328792,
+            "p95": 7.007292
+          },
+          "cullGPUms": {
+            "median": 0.022125,
+            "p95": 0.0264166666667
+          },
+          "forwardGPUms": {
+            "median": 0.48722916666649996,
+            "p95": 0.531416666667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/0/1/1/32": {
+          "collectionCPUms": {
+            "median": 8.3e-05,
+            "p95": 0.000416
+          },
+          "encodeCPUms": {
+            "median": 0.007917,
+            "p95": 0.010334
+          },
+          "lightPrepCPUms": {
+            "median": 0.01125,
+            "p95": 0.013416
+          },
+          "serializedFrameMs": {
+            "median": 7.1412705,
+            "p95": 8.437
+          },
+          "cullGPUms": {
+            "median": 0.01127083333335,
+            "p95": 0.021625
+          },
+          "forwardGPUms": {
+            "median": 0.3664583333335,
+            "p95": 0.506916666667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/1/0/0/16": {
+          "collectionCPUms": {
+            "median": 0.0019165,
+            "p95": 0.002375
+          },
+          "encodeCPUms": {
+            "median": 0.0081455,
+            "p95": 0.010375
+          },
+          "lightPrepCPUms": {
+            "median": 0.01,
+            "p95": 0.012209
+          },
+          "serializedFrameMs": {
+            "median": 7.5473545,
+            "p95": 8.821958
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 0.6786875,
+            "p95": 0.812875
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/1/0/1/16": {
+          "collectionCPUms": {
+            "median": 0.002229,
+            "p95": 0.003084
+          },
+          "encodeCPUms": {
+            "median": 0.00825,
+            "p95": 0.013042
+          },
+          "lightPrepCPUms": {
+            "median": 0.011917,
+            "p95": 0.0175
+          },
+          "serializedFrameMs": {
+            "median": 6.368438,
+            "p95": 8.204583
+          },
+          "cullGPUms": {
+            "median": 0.023125,
+            "p95": 0.0307083333333
+          },
+          "forwardGPUms": {
+            "median": 0.6668958333335,
+            "p95": 0.813166666667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 3600.0,
+            "p95": 3600.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/1/0/1/32": {
+          "collectionCPUms": {
+            "median": 0.001666,
+            "p95": 0.002958
+          },
+          "encodeCPUms": {
+            "median": 0.008937,
+            "p95": 0.013792
+          },
+          "lightPrepCPUms": {
+            "median": 0.010499999999999999,
+            "p95": 0.018083
+          },
+          "serializedFrameMs": {
+            "median": 7.352042,
+            "p95": 8.888042
+          },
+          "cullGPUms": {
+            "median": 0.01577083333335,
+            "p95": 0.0201666666667
+          },
+          "forwardGPUms": {
+            "median": 0.683,
+            "p95": 0.856
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 920.0,
+            "p95": 920.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/1/1/0/16": {
+          "collectionCPUms": {
+            "median": 0.0016454999999999998,
+            "p95": 0.002041
+          },
+          "encodeCPUms": {
+            "median": 0.0074164999999999995,
+            "p95": 0.010417
+          },
+          "lightPrepCPUms": {
+            "median": 0.0100835,
+            "p95": 0.014
+          },
+          "serializedFrameMs": {
+            "median": 6.742229,
+            "p95": 7.968708
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 0.6071666666665,
+            "p95": 0.778791666667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/1/1/1/16": {
+          "collectionCPUms": {
+            "median": 0.001854,
+            "p95": 0.002792
+          },
+          "encodeCPUms": {
+            "median": 0.008354,
+            "p95": 0.010792
+          },
+          "lightPrepCPUms": {
+            "median": 0.011353499999999999,
+            "p95": 0.015291
+          },
+          "serializedFrameMs": {
+            "median": 6.9743125,
+            "p95": 8.723459
+          },
+          "cullGPUms": {
+            "median": 0.0256875,
+            "p95": 0.031625
+          },
+          "forwardGPUms": {
+            "median": 0.705479166667,
+            "p95": 0.814958333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 3600.0,
+            "p95": 3600.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/1/1/1/32": {
+          "collectionCPUms": {
+            "median": 0.001625,
+            "p95": 0.002
+          },
+          "encodeCPUms": {
+            "median": 0.008042,
+            "p95": 0.011125
+          },
+          "lightPrepCPUms": {
+            "median": 0.0101875,
+            "p95": 0.013875
+          },
+          "serializedFrameMs": {
+            "median": 7.116020499999999,
+            "p95": 8.626625
+          },
+          "cullGPUms": {
+            "median": 0.0169583333333,
+            "p95": 0.0242916666667
+          },
+          "forwardGPUms": {
+            "median": 0.642770833333,
+            "p95": 0.821875
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 920.0,
+            "p95": 920.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/8/0/0/16": {
+          "collectionCPUms": {
+            "median": 0.0066455,
+            "p95": 0.007458
+          },
+          "encodeCPUms": {
+            "median": 0.006729000000000001,
+            "p95": 0.009959
+          },
+          "lightPrepCPUms": {
+            "median": 0.00975,
+            "p95": 0.012917
+          },
+          "serializedFrameMs": {
+            "median": 10.283395500000001,
+            "p95": 11.403125
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 2.673791666665,
+            "p95": 3.21920833333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/8/0/1/16": {
+          "collectionCPUms": {
+            "median": 0.0067705000000000005,
+            "p95": 0.010166
+          },
+          "encodeCPUms": {
+            "median": 0.0086665,
+            "p95": 0.014709
+          },
+          "lightPrepCPUms": {
+            "median": 0.012437,
+            "p95": 0.019792
+          },
+          "serializedFrameMs": {
+            "median": 10.596416999999999,
+            "p95": 12.013834
+          },
+          "cullGPUms": {
+            "median": 0.0306875,
+            "p95": 0.036125
+          },
+          "forwardGPUms": {
+            "median": 2.800875,
+            "p95": 3.07483333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 28800.0,
+            "p95": 28800.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/8/0/1/32": {
+          "collectionCPUms": {
+            "median": 0.006187,
+            "p95": 0.007041
+          },
+          "encodeCPUms": {
+            "median": 0.007208,
+            "p95": 0.009375
+          },
+          "lightPrepCPUms": {
+            "median": 0.011041,
+            "p95": 0.017458
+          },
+          "serializedFrameMs": {
+            "median": 10.2598335,
+            "p95": 11.759792
+          },
+          "cullGPUms": {
+            "median": 0.02364583333335,
+            "p95": 0.0274166666667
+          },
+          "forwardGPUms": {
+            "median": 2.834854166665,
+            "p95": 3.28829166667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 7360.0,
+            "p95": 7360.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/8/1/0/16": {
+          "collectionCPUms": {
+            "median": 0.0063335,
+            "p95": 0.0075
+          },
+          "encodeCPUms": {
+            "median": 0.007458,
+            "p95": 0.010834
+          },
+          "lightPrepCPUms": {
+            "median": 0.0101255,
+            "p95": 0.013
+          },
+          "serializedFrameMs": {
+            "median": 8.6139165,
+            "p95": 8.894333
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 1.1154375,
+            "p95": 1.28504166667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/8/1/1/16": {
+          "collectionCPUms": {
+            "median": 0.0068535,
+            "p95": 0.007125
+          },
+          "encodeCPUms": {
+            "median": 0.0077505000000000004,
+            "p95": 0.010459
+          },
+          "lightPrepCPUms": {
+            "median": 0.010832999999999999,
+            "p95": 0.016333
+          },
+          "serializedFrameMs": {
+            "median": 8.5969585,
+            "p95": 8.922916
+          },
+          "cullGPUms": {
+            "median": 0.0265,
+            "p95": 0.0383333333333
+          },
+          "forwardGPUms": {
+            "median": 1.018958333335,
+            "p95": 1.275375
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 10890.0,
+            "p95": 10890.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/8/1/1/32": {
+          "collectionCPUms": {
+            "median": 0.0069165,
+            "p95": 0.007625
+          },
+          "encodeCPUms": {
+            "median": 0.0074375,
+            "p95": 0.009792
+          },
+          "lightPrepCPUms": {
+            "median": 0.0110835,
+            "p95": 0.014792
+          },
+          "serializedFrameMs": {
+            "median": 8.504333500000001,
+            "p95": 8.819083
+          },
+          "cullGPUms": {
+            "median": 0.024125,
+            "p95": 0.0262083333333
+          },
+          "forwardGPUms": {
+            "median": 1.157041666665,
+            "p95": 1.335375
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 2783.0,
+            "p95": 2783.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/32/0/0/16": {
+          "collectionCPUms": {
+            "median": 0.013354,
+            "p95": 0.024791
+          },
+          "encodeCPUms": {
+            "median": 0.009166500000000001,
+            "p95": 0.014541
+          },
+          "lightPrepCPUms": {
+            "median": 0.0123955,
+            "p95": 0.017875
+          },
+          "serializedFrameMs": {
+            "median": 13.779979,
+            "p95": 14.61325
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 5.9393125,
+            "p95": 6.392625
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/32/0/1/16": {
+          "collectionCPUms": {
+            "median": 0.020854,
+            "p95": 0.032959
+          },
+          "encodeCPUms": {
+            "median": 0.021104499999999998,
+            "p95": 0.035917
+          },
+          "lightPrepCPUms": {
+            "median": 0.031333,
+            "p95": 0.052792
+          },
+          "serializedFrameMs": {
+            "median": 14.809125,
+            "p95": 15.157292
+          },
+          "cullGPUms": {
+            "median": 0.031416666666649995,
+            "p95": 0.0400833333333
+          },
+          "forwardGPUms": {
+            "median": 6.0171875,
+            "p95": 6.47658333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 115200.0,
+            "p95": 115200.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/32/0/1/32": {
+          "collectionCPUms": {
+            "median": 0.029478999999999998,
+            "p95": 0.04025
+          },
+          "encodeCPUms": {
+            "median": 0.0300005,
+            "p95": 0.040166
+          },
+          "lightPrepCPUms": {
+            "median": 0.039167,
+            "p95": 0.059167
+          },
+          "serializedFrameMs": {
+            "median": 15.321166999999999,
+            "p95": 16.859333
+          },
+          "cullGPUms": {
+            "median": 0.026291666666649997,
+            "p95": 0.0364166666667
+          },
+          "forwardGPUms": {
+            "median": 6.069958333335,
+            "p95": 6.50791666667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 29440.0,
+            "p95": 29440.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/32/1/0/16": {
+          "collectionCPUms": {
+            "median": 0.017208,
+            "p95": 0.02325
+          },
+          "encodeCPUms": {
+            "median": 0.010062499999999999,
+            "p95": 0.01975
+          },
+          "lightPrepCPUms": {
+            "median": 0.012040499999999999,
+            "p95": 0.027501
+          },
+          "serializedFrameMs": {
+            "median": 7.791437999999999,
+            "p95": 8.379542
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 0.8793124999999999,
+            "p95": 0.925666666667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/32/1/1/16": {
+          "collectionCPUms": {
+            "median": 0.015021,
+            "p95": 0.020208
+          },
+          "encodeCPUms": {
+            "median": 0.0071875,
+            "p95": 0.012291
+          },
+          "lightPrepCPUms": {
+            "median": 0.0109795,
+            "p95": 0.026708
+          },
+          "serializedFrameMs": {
+            "median": 6.931417,
+            "p95": 7.490125
+          },
+          "cullGPUms": {
+            "median": 0.03389583333335,
+            "p95": 0.041875
+          },
+          "forwardGPUms": {
+            "median": 0.738666666667,
+            "p95": 0.780333333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 14882.0,
+            "p95": 14882.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/32/1/1/32": {
+          "collectionCPUms": {
+            "median": 0.0132295,
+            "p95": 0.019666
+          },
+          "encodeCPUms": {
+            "median": 0.0076454999999999995,
+            "p95": 0.012375
+          },
+          "lightPrepCPUms": {
+            "median": 0.0120625,
+            "p95": 0.01725
+          },
+          "serializedFrameMs": {
+            "median": 8.836208500000001,
+            "p95": 9.239625
+          },
+          "cullGPUms": {
+            "median": 0.03725,
+            "p95": 0.042375
+          },
+          "forwardGPUms": {
+            "median": 1.0708125,
+            "p95": 1.400125
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 3874.0,
+            "p95": 3874.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/128/0/0/16": {
+          "collectionCPUms": {
+            "median": 0.0447915,
+            "p95": 0.059541
+          },
+          "encodeCPUms": {
+            "median": 0.006333500000000001,
+            "p95": 0.012916
+          },
+          "lightPrepCPUms": {
+            "median": 0.008416,
+            "p95": 0.015291
+          },
+          "serializedFrameMs": {
+            "median": 29.819875500000002,
+            "p95": 31.485542
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 23.198416666649997,
+            "p95": 24.5592083333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/128/0/1/16": {
+          "collectionCPUms": {
+            "median": 0.0434585,
+            "p95": 0.062833
+          },
+          "encodeCPUms": {
+            "median": 0.005938000000000001,
+            "p95": 0.016334
+          },
+          "lightPrepCPUms": {
+            "median": 0.0089375,
+            "p95": 0.019375
+          },
+          "serializedFrameMs": {
+            "median": 29.428145999999998,
+            "p95": 30.736708
+          },
+          "cullGPUms": {
+            "median": 0.08831249999999999,
+            "p95": 0.0970833333333
+          },
+          "forwardGPUms": {
+            "median": 25.0180625,
+            "p95": 26.298375
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 460800.0,
+            "p95": 460800.0
+          },
+          "overflowTiles": {
+            "median": 3600.0,
+            "p95": 3600.0
+          }
+        },
+        "1280/720/128/0/1/32": {
+          "collectionCPUms": {
+            "median": 0.0339585,
+            "p95": 0.054459
+          },
+          "encodeCPUms": {
+            "median": 0.006313,
+            "p95": 0.008791
+          },
+          "lightPrepCPUms": {
+            "median": 0.008396,
+            "p95": 0.010417
+          },
+          "serializedFrameMs": {
+            "median": 29.377417,
+            "p95": 30.55775
+          },
+          "cullGPUms": {
+            "median": 0.06435416666669999,
+            "p95": 0.0800416666667
+          },
+          "forwardGPUms": {
+            "median": 25.379687500000003,
+            "p95": 26.2875833333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 117760.0,
+            "p95": 117760.0
+          },
+          "overflowTiles": {
+            "median": 920.0,
+            "p95": 920.0
+          }
+        },
+        "1280/720/128/1/0/16": {
+          "collectionCPUms": {
+            "median": 0.0442915,
+            "p95": 0.050875
+          },
+          "encodeCPUms": {
+            "median": 0.0059585,
+            "p95": 0.018916
+          },
+          "lightPrepCPUms": {
+            "median": 0.007417,
+            "p95": 0.020042
+          },
+          "serializedFrameMs": {
+            "median": 6.470021,
+            "p95": 7.830042
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 2.2685208333349998,
+            "p95": 2.47470833333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/128/1/1/16": {
+          "collectionCPUms": {
+            "median": 0.0500835,
+            "p95": 0.072833
+          },
+          "encodeCPUms": {
+            "median": 0.02175,
+            "p95": 0.04075
+          },
+          "lightPrepCPUms": {
+            "median": 0.0249375,
+            "p95": 0.055459
+          },
+          "serializedFrameMs": {
+            "median": 8.277687499999999,
+            "p95": 10.170459
+          },
+          "cullGPUms": {
+            "median": 0.08737500000000001,
+            "p95": 0.0952916666667
+          },
+          "forwardGPUms": {
+            "median": 1.849770833335,
+            "p95": 1.885875
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 61104.0,
+            "p95": 61104.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/128/1/1/32": {
+          "collectionCPUms": {
+            "median": 0.0353335,
+            "p95": 0.057583
+          },
+          "encodeCPUms": {
+            "median": 0.008542,
+            "p95": 0.013917
+          },
+          "lightPrepCPUms": {
+            "median": 0.012250500000000001,
+            "p95": 0.019167
+          },
+          "serializedFrameMs": {
+            "median": 8.924354000000001,
+            "p95": 9.923334
+          },
+          "cullGPUms": {
+            "median": 0.06877083333335,
+            "p95": 0.0845
+          },
+          "forwardGPUms": {
+            "median": 1.85439583333,
+            "p95": 1.93608333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 15795.0,
+            "p95": 15795.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/256/0/0/16": {
+          "collectionCPUms": {
+            "median": 0.048167,
+            "p95": 0.07025
+          },
+          "encodeCPUms": {
+            "median": 0.008604500000000001,
+            "p95": 0.011333
+          },
+          "lightPrepCPUms": {
+            "median": 0.0095,
+            "p95": 0.01125
+          },
+          "serializedFrameMs": {
+            "median": 56.053375,
+            "p95": 59.930875
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 47.00814583335,
+            "p95": 52.1429166667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/256/0/1/16": {
+          "collectionCPUms": {
+            "median": 0.049875,
+            "p95": 0.06825
+          },
+          "encodeCPUms": {
+            "median": 0.009125,
+            "p95": 0.016375
+          },
+          "lightPrepCPUms": {
+            "median": 0.012187,
+            "p95": 0.024292
+          },
+          "serializedFrameMs": {
+            "median": 54.895542,
+            "p95": 57.274875
+          },
+          "cullGPUms": {
+            "median": 0.1673125,
+            "p95": 0.169666666667
+          },
+          "forwardGPUms": {
+            "median": 50.300375,
+            "p95": 52.3513333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 921600.0,
+            "p95": 921600.0
+          },
+          "overflowTiles": {
+            "median": 3600.0,
+            "p95": 3600.0
+          }
+        },
+        "1280/720/256/0/1/32": {
+          "collectionCPUms": {
+            "median": 0.0480625,
+            "p95": 0.061458
+          },
+          "encodeCPUms": {
+            "median": 0.0099995,
+            "p95": 0.013709
+          },
+          "lightPrepCPUms": {
+            "median": 0.012625,
+            "p95": 0.016041
+          },
+          "serializedFrameMs": {
+            "median": 56.2877915,
+            "p95": 59.393
+          },
+          "cullGPUms": {
+            "median": 0.118145833333,
+            "p95": 0.134708333333
+          },
+          "forwardGPUms": {
+            "median": 51.3085625,
+            "p95": 55.2355833333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 235520.0,
+            "p95": 235520.0
+          },
+          "overflowTiles": {
+            "median": 920.0,
+            "p95": 920.0
+          }
+        },
+        "1280/720/256/1/0/16": {
+          "collectionCPUms": {
+            "median": 0.063354,
+            "p95": 0.094708
+          },
+          "encodeCPUms": {
+            "median": 0.005353999999999999,
+            "p95": 0.006834
+          },
+          "lightPrepCPUms": {
+            "median": 0.007229,
+            "p95": 0.010376
+          },
+          "serializedFrameMs": {
+            "median": 9.068979500000001,
+            "p95": 9.224458
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 3.91589583333,
+            "p95": 4.138
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/256/1/1/16": {
+          "collectionCPUms": {
+            "median": 0.059375,
+            "p95": 0.068792
+          },
+          "encodeCPUms": {
+            "median": 0.007167,
+            "p95": 0.008541
+          },
+          "lightPrepCPUms": {
+            "median": 0.010375,
+            "p95": 0.013917
+          },
+          "serializedFrameMs": {
+            "median": 9.184521,
+            "p95": 10.059167
+          },
+          "cullGPUms": {
+            "median": 0.1632708333335,
+            "p95": 0.165708333333
+          },
+          "forwardGPUms": {
+            "median": 2.979270833335,
+            "p95": 3.13820833333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 106590.0,
+            "p95": 106590.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/256/1/1/32": {
+          "collectionCPUms": {
+            "median": 0.06718750000000001,
+            "p95": 0.076708
+          },
+          "encodeCPUms": {
+            "median": 0.0111665,
+            "p95": 0.013042
+          },
+          "lightPrepCPUms": {
+            "median": 0.016209,
+            "p95": 0.019666
+          },
+          "serializedFrameMs": {
+            "median": 10.601896,
+            "p95": 11.093792
+          },
+          "cullGPUms": {
+            "median": 0.1175208333335,
+            "p95": 0.144375
+          },
+          "forwardGPUms": {
+            "median": 2.9995625,
+            "p95": 3.24066666667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 27508.0,
+            "p95": 27508.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/320/0/0/16": {
+          "collectionCPUms": {
+            "median": 0.056562,
+            "p95": 0.066958
+          },
+          "encodeCPUms": {
+            "median": 0.010417,
+            "p95": 0.015042
+          },
+          "lightPrepCPUms": {
+            "median": 0.0114995,
+            "p95": 0.016999
+          },
+          "serializedFrameMs": {
+            "median": 68.001875,
+            "p95": 72.402084
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 58.48297916665,
+            "p95": 62.8284166667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/320/0/1/16": {
+          "collectionCPUms": {
+            "median": 0.050187499999999996,
+            "p95": 0.067292
+          },
+          "encodeCPUms": {
+            "median": 0.0110625,
+            "p95": 0.013958
+          },
+          "lightPrepCPUms": {
+            "median": 0.0126455,
+            "p95": 0.014458
+          },
+          "serializedFrameMs": {
+            "median": 68.391375,
+            "p95": 72.411375
+          },
+          "cullGPUms": {
+            "median": 0.2035208333335,
+            "p95": 0.206666666667
+          },
+          "forwardGPUms": {
+            "median": 63.73339583335,
+            "p95": 68.027875
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 1152000.0,
+            "p95": 1152000.0
+          },
+          "overflowTiles": {
+            "median": 3600.0,
+            "p95": 3600.0
+          }
+        },
+        "1280/720/320/0/1/32": {
+          "collectionCPUms": {
+            "median": 0.0541255,
+            "p95": 0.066083
+          },
+          "encodeCPUms": {
+            "median": 0.010291999999999999,
+            "p95": 0.014
+          },
+          "lightPrepCPUms": {
+            "median": 0.0125625,
+            "p95": 0.015667
+          },
+          "serializedFrameMs": {
+            "median": 69.360604,
+            "p95": 72.766334
+          },
+          "cullGPUms": {
+            "median": 0.146375,
+            "p95": 0.163791666667
+          },
+          "forwardGPUms": {
+            "median": 64.8486458333,
+            "p95": 67.7342083333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 294400.0,
+            "p95": 294400.0
+          },
+          "overflowTiles": {
+            "median": 920.0,
+            "p95": 920.0
+          }
+        },
+        "1280/720/320/1/0/16": {
+          "collectionCPUms": {
+            "median": 0.0739585,
+            "p95": 0.08425
+          },
+          "encodeCPUms": {
+            "median": 0.0056665,
+            "p95": 0.006583
+          },
+          "lightPrepCPUms": {
+            "median": 0.0075005,
+            "p95": 0.008582
+          },
+          "serializedFrameMs": {
+            "median": 9.0590415,
+            "p95": 10.259708
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 4.698083333335,
+            "p95": 5.06945833333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/320/1/1/16": {
+          "collectionCPUms": {
+            "median": 0.0750625,
+            "p95": 0.079583
+          },
+          "encodeCPUms": {
+            "median": 0.0068335,
+            "p95": 0.00875
+          },
+          "lightPrepCPUms": {
+            "median": 0.009250000000000001,
+            "p95": 0.014042
+          },
+          "serializedFrameMs": {
+            "median": 8.188125,
+            "p95": 9.821167
+          },
+          "cullGPUms": {
+            "median": 0.1986666666665,
+            "p95": 0.207791666667
+          },
+          "forwardGPUms": {
+            "median": 3.5572083333349998,
+            "p95": 3.681
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 133546.0,
+            "p95": 133546.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1280/720/320/1/1/32": {
+          "collectionCPUms": {
+            "median": 0.07881250000000001,
+            "p95": 0.086416
+          },
+          "encodeCPUms": {
+            "median": 0.0099795,
+            "p95": 0.0125
+          },
+          "lightPrepCPUms": {
+            "median": 0.0141245,
+            "p95": 0.022667
+          },
+          "serializedFrameMs": {
+            "median": 10.1954165,
+            "p95": 11.875417
+          },
+          "cullGPUms": {
+            "median": 0.13989583333299999,
+            "p95": 0.160958333333
+          },
+          "forwardGPUms": {
+            "median": 3.5882083333350003,
+            "p95": 3.66966666667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 979200.0,
+            "p95": 979200.0
+          },
+          "candidates": {
+            "median": 34437.0,
+            "p95": 34437.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/0/0/0/16": {
+          "collectionCPUms": {
+            "median": 8.3e-05,
+            "p95": 0.00025
+          },
+          "encodeCPUms": {
+            "median": 0.0099165,
+            "p95": 0.01375
+          },
+          "lightPrepCPUms": {
+            "median": 0.013375,
+            "p95": 0.020874
+          },
+          "serializedFrameMs": {
+            "median": 8.603416500000002,
+            "p95": 10.268792
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 0.6648541666665,
+            "p95": 1.1425
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/0/0/1/16": {
+          "collectionCPUms": {
+            "median": 8.3e-05,
+            "p95": 0.000458
+          },
+          "encodeCPUms": {
+            "median": 0.010853999999999999,
+            "p95": 0.014083
+          },
+          "lightPrepCPUms": {
+            "median": 0.010458499999999999,
+            "p95": 0.018458
+          },
+          "serializedFrameMs": {
+            "median": 10.2457505,
+            "p95": 10.454917
+          },
+          "cullGPUms": {
+            "median": 0.03220833333335,
+            "p95": 0.04275
+          },
+          "forwardGPUms": {
+            "median": 0.842354166667,
+            "p95": 1.21995833333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/0/0/1/32": {
+          "collectionCPUms": {
+            "median": 8.35e-05,
+            "p95": 0.000208
+          },
+          "encodeCPUms": {
+            "median": 0.0114795,
+            "p95": 0.013834
+          },
+          "lightPrepCPUms": {
+            "median": 0.014541499999999999,
+            "p95": 0.019167
+          },
+          "serializedFrameMs": {
+            "median": 10.1103125,
+            "p95": 10.299083
+          },
+          "cullGPUms": {
+            "median": 0.0127916666667,
+            "p95": 0.0177916666667
+          },
+          "forwardGPUms": {
+            "median": 0.7926666666665,
+            "p95": 1.1915
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/0/1/0/16": {
+          "collectionCPUms": {
+            "median": 8.3e-05,
+            "p95": 0.00025
+          },
+          "encodeCPUms": {
+            "median": 0.0108335,
+            "p95": 0.013792
+          },
+          "lightPrepCPUms": {
+            "median": 0.012063,
+            "p95": 0.017
+          },
+          "serializedFrameMs": {
+            "median": 9.922062,
+            "p95": 10.182292
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 0.801875,
+            "p95": 1.182125
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/0/1/1/16": {
+          "collectionCPUms": {
+            "median": 8.4e-05,
+            "p95": 0.00025
+          },
+          "encodeCPUms": {
+            "median": 0.0111665,
+            "p95": 0.01525
+          },
+          "lightPrepCPUms": {
+            "median": 0.012208,
+            "p95": 0.016833
+          },
+          "serializedFrameMs": {
+            "median": 10.242708,
+            "p95": 10.396334
+          },
+          "cullGPUms": {
+            "median": 0.035708333333349995,
+            "p95": 0.0428333333333
+          },
+          "forwardGPUms": {
+            "median": 0.9151666666664999,
+            "p95": 1.21258333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/0/1/1/32": {
+          "collectionCPUms": {
+            "median": 8.3e-05,
+            "p95": 0.000292
+          },
+          "encodeCPUms": {
+            "median": 0.010709,
+            "p95": 0.012375
+          },
+          "lightPrepCPUms": {
+            "median": 0.0131245,
+            "p95": 0.018875
+          },
+          "serializedFrameMs": {
+            "median": 10.1671875,
+            "p95": 10.319625
+          },
+          "cullGPUms": {
+            "median": 0.01333333333335,
+            "p95": 0.0175
+          },
+          "forwardGPUms": {
+            "median": 0.844708333333,
+            "p95": 1.147
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/1/0/0/16": {
+          "collectionCPUms": {
+            "median": 0.0016245,
+            "p95": 0.003083
+          },
+          "encodeCPUms": {
+            "median": 0.0111245,
+            "p95": 0.013625
+          },
+          "lightPrepCPUms": {
+            "median": 0.010728999999999999,
+            "p95": 0.016333
+          },
+          "serializedFrameMs": {
+            "median": 10.068312,
+            "p95": 11.186875
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 1.4021875,
+            "p95": 1.70191666667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/1/0/1/16": {
+          "collectionCPUms": {
+            "median": 0.00175,
+            "p95": 0.003792
+          },
+          "encodeCPUms": {
+            "median": 0.010604,
+            "p95": 0.013667
+          },
+          "lightPrepCPUms": {
+            "median": 0.012666,
+            "p95": 0.01925
+          },
+          "serializedFrameMs": {
+            "median": 10.339499499999999,
+            "p95": 11.743375
+          },
+          "cullGPUms": {
+            "median": 0.03964583333335,
+            "p95": 0.0477083333333
+          },
+          "forwardGPUms": {
+            "median": 1.606479166665,
+            "p95": 1.92195833333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 8160.0,
+            "p95": 8160.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/1/0/1/32": {
+          "collectionCPUms": {
+            "median": 0.0017085,
+            "p95": 0.002916
+          },
+          "encodeCPUms": {
+            "median": 0.010104499999999999,
+            "p95": 0.012458
+          },
+          "lightPrepCPUms": {
+            "median": 0.0107505,
+            "p95": 0.016875
+          },
+          "serializedFrameMs": {
+            "median": 10.1886665,
+            "p95": 11.499042
+          },
+          "cullGPUms": {
+            "median": 0.01745833333335,
+            "p95": 0.024625
+          },
+          "forwardGPUms": {
+            "median": 1.3530625,
+            "p95": 1.88479166667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 2040.0,
+            "p95": 2040.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/1/1/0/16": {
+          "collectionCPUms": {
+            "median": 0.0016665,
+            "p95": 0.003333
+          },
+          "encodeCPUms": {
+            "median": 0.0104375,
+            "p95": 0.015959
+          },
+          "lightPrepCPUms": {
+            "median": 0.011646,
+            "p95": 0.015834
+          },
+          "serializedFrameMs": {
+            "median": 10.768,
+            "p95": 11.552792
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 1.8535208333350002,
+            "p95": 1.97133333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/1/1/1/16": {
+          "collectionCPUms": {
+            "median": 0.002146,
+            "p95": 0.004
+          },
+          "encodeCPUms": {
+            "median": 0.012021,
+            "p95": 0.016375
+          },
+          "lightPrepCPUms": {
+            "median": 0.011269999999999999,
+            "p95": 0.017459
+          },
+          "serializedFrameMs": {
+            "median": 10.3714795,
+            "p95": 11.674042
+          },
+          "cullGPUms": {
+            "median": 0.03975,
+            "p95": 0.0474166666667
+          },
+          "forwardGPUms": {
+            "median": 1.61525,
+            "p95": 1.91779166667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 8160.0,
+            "p95": 8160.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/1/1/1/32": {
+          "collectionCPUms": {
+            "median": 0.0015625,
+            "p95": 0.002833
+          },
+          "encodeCPUms": {
+            "median": 0.008667000000000001,
+            "p95": 0.013417
+          },
+          "lightPrepCPUms": {
+            "median": 0.010353999999999999,
+            "p95": 0.018042
+          },
+          "serializedFrameMs": {
+            "median": 10.1458125,
+            "p95": 11.47375
+          },
+          "cullGPUms": {
+            "median": 0.01791666666665,
+            "p95": 0.0285
+          },
+          "forwardGPUms": {
+            "median": 1.437895833335,
+            "p95": 1.89070833333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 2040.0,
+            "p95": 2040.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/8/0/0/16": {
+          "collectionCPUms": {
+            "median": 0.0070415,
+            "p95": 0.008125
+          },
+          "encodeCPUms": {
+            "median": 0.009625,
+            "p95": 0.012584
+          },
+          "lightPrepCPUms": {
+            "median": 0.0106665,
+            "p95": 0.016584
+          },
+          "serializedFrameMs": {
+            "median": 12.820708499999999,
+            "p95": 13.080834
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 3.6966875000000003,
+            "p95": 3.74370833333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/8/0/1/16": {
+          "collectionCPUms": {
+            "median": 0.006458,
+            "p95": 0.007208
+          },
+          "encodeCPUms": {
+            "median": 0.0084165,
+            "p95": 0.011417
+          },
+          "lightPrepCPUms": {
+            "median": 0.0140625,
+            "p95": 0.02875
+          },
+          "serializedFrameMs": {
+            "median": 12.1416665,
+            "p95": 12.374042
+          },
+          "cullGPUms": {
+            "median": 0.0303125,
+            "p95": 0.0409583333333
+          },
+          "forwardGPUms": {
+            "median": 3.762479166665,
+            "p95": 3.89108333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 65280.0,
+            "p95": 65280.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/8/0/1/32": {
+          "collectionCPUms": {
+            "median": 0.007167,
+            "p95": 0.007834
+          },
+          "encodeCPUms": {
+            "median": 0.0086665,
+            "p95": 0.019667
+          },
+          "lightPrepCPUms": {
+            "median": 0.012250500000000001,
+            "p95": 0.027167
+          },
+          "serializedFrameMs": {
+            "median": 12.100583499999999,
+            "p95": 12.608542
+          },
+          "cullGPUms": {
+            "median": 0.015666666666650002,
+            "p95": 0.0225833333333
+          },
+          "forwardGPUms": {
+            "median": 3.7649999999999997,
+            "p95": 3.83566666667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 16320.0,
+            "p95": 16320.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/8/1/0/16": {
+          "collectionCPUms": {
+            "median": 0.0066665000000000006,
+            "p95": 0.007709
+          },
+          "encodeCPUms": {
+            "median": 0.0083335,
+            "p95": 0.01125
+          },
+          "lightPrepCPUms": {
+            "median": 0.0110835,
+            "p95": 0.01525
+          },
+          "serializedFrameMs": {
+            "median": 9.222583499999999,
+            "p95": 9.367542
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 1.45752083333,
+            "p95": 1.50916666667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/8/1/1/16": {
+          "collectionCPUms": {
+            "median": 0.007042,
+            "p95": 0.008417
+          },
+          "encodeCPUms": {
+            "median": 0.009104,
+            "p95": 0.013708
+          },
+          "lightPrepCPUms": {
+            "median": 0.0119165,
+            "p95": 0.016167
+          },
+          "serializedFrameMs": {
+            "median": 11.367479500000002,
+            "p95": 11.859584
+          },
+          "cullGPUms": {
+            "median": 0.0418125,
+            "p95": 0.0530833333333
+          },
+          "forwardGPUms": {
+            "median": 2.086791666665,
+            "p95": 2.80491666667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 24548.0,
+            "p95": 24548.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/8/1/1/32": {
+          "collectionCPUms": {
+            "median": 0.006812,
+            "p95": 0.008459
+          },
+          "encodeCPUms": {
+            "median": 0.0095,
+            "p95": 0.011916
+          },
+          "lightPrepCPUms": {
+            "median": 0.010083,
+            "p95": 0.016459
+          },
+          "serializedFrameMs": {
+            "median": 11.558042,
+            "p95": 11.892834
+          },
+          "cullGPUms": {
+            "median": 0.023020833333349998,
+            "p95": 0.02875
+          },
+          "forwardGPUms": {
+            "median": 2.31595833333,
+            "p95": 2.86995833333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 6154.0,
+            "p95": 6154.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/32/0/0/16": {
+          "collectionCPUms": {
+            "median": 0.012021,
+            "p95": 0.020167
+          },
+          "encodeCPUms": {
+            "median": 0.0093125,
+            "p95": 0.012416
+          },
+          "lightPrepCPUms": {
+            "median": 0.0122495,
+            "p95": 0.017167
+          },
+          "serializedFrameMs": {
+            "median": 22.3983335,
+            "p95": 24.203
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 13.23370833335,
+            "p95": 13.5877083333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/32/0/1/16": {
+          "collectionCPUms": {
+            "median": 0.0132085,
+            "p95": 0.020625
+          },
+          "encodeCPUms": {
+            "median": 0.0092085,
+            "p95": 0.022167
+          },
+          "lightPrepCPUms": {
+            "median": 0.013479000000000001,
+            "p95": 0.029416
+          },
+          "serializedFrameMs": {
+            "median": 22.273187999999998,
+            "p95": 22.882458
+          },
+          "cullGPUms": {
+            "median": 0.05210416666665,
+            "p95": 0.057
+          },
+          "forwardGPUms": {
+            "median": 13.749041666650001,
+            "p95": 14.3992916667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 261120.0,
+            "p95": 261120.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/32/0/1/32": {
+          "collectionCPUms": {
+            "median": 0.0123955,
+            "p95": 0.021583
+          },
+          "encodeCPUms": {
+            "median": 0.009708,
+            "p95": 0.020291
+          },
+          "lightPrepCPUms": {
+            "median": 0.014688,
+            "p95": 0.025
+          },
+          "serializedFrameMs": {
+            "median": 22.4586455,
+            "p95": 23.345666
+          },
+          "cullGPUms": {
+            "median": 0.0283958333333,
+            "p95": 0.0335833333333
+          },
+          "forwardGPUms": {
+            "median": 13.5144166667,
+            "p95": 13.9214583333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 65280.0,
+            "p95": 65280.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/32/1/0/16": {
+          "collectionCPUms": {
+            "median": 0.017083,
+            "p95": 0.021166
+          },
+          "encodeCPUms": {
+            "median": 0.0079165,
+            "p95": 0.010375
+          },
+          "lightPrepCPUms": {
+            "median": 0.010562499999999999,
+            "p95": 0.026459
+          },
+          "serializedFrameMs": {
+            "median": 9.625375,
+            "p95": 9.858625
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 1.8848958333299999,
+            "p95": 1.93295833333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/32/1/1/16": {
+          "collectionCPUms": {
+            "median": 0.01725,
+            "p95": 0.020666
+          },
+          "encodeCPUms": {
+            "median": 0.0078125,
+            "p95": 0.010958
+          },
+          "lightPrepCPUms": {
+            "median": 0.012208,
+            "p95": 0.026958
+          },
+          "serializedFrameMs": {
+            "median": 9.230021,
+            "p95": 9.399209
+          },
+          "cullGPUms": {
+            "median": 0.0499166666667,
+            "p95": 0.0542083333333
+          },
+          "forwardGPUms": {
+            "median": 1.66029166667,
+            "p95": 1.70533333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 33632.0,
+            "p95": 33632.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/32/1/1/32": {
+          "collectionCPUms": {
+            "median": 0.018000000000000002,
+            "p95": 0.020417
+          },
+          "encodeCPUms": {
+            "median": 0.0082085,
+            "p95": 0.018291
+          },
+          "lightPrepCPUms": {
+            "median": 0.0132505,
+            "p95": 0.02175
+          },
+          "serializedFrameMs": {
+            "median": 10.443521,
+            "p95": 11.757834
+          },
+          "cullGPUms": {
+            "median": 0.0355208333333,
+            "p95": 0.0470833333333
+          },
+          "forwardGPUms": {
+            "median": 2.17070833333,
+            "p95": 2.78858333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 8425.0,
+            "p95": 8425.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/128/0/0/16": {
+          "collectionCPUms": {
+            "median": 0.039667,
+            "p95": 0.052875
+          },
+          "encodeCPUms": {
+            "median": 0.0085415,
+            "p95": 0.01375
+          },
+          "lightPrepCPUms": {
+            "median": 0.0104995,
+            "p95": 0.017501
+          },
+          "serializedFrameMs": {
+            "median": 60.043958,
+            "p95": 62.814459
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 52.7066666667,
+            "p95": 54.953875
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/128/0/1/16": {
+          "collectionCPUms": {
+            "median": 0.0291665,
+            "p95": 0.043541
+          },
+          "encodeCPUms": {
+            "median": 0.009334,
+            "p95": 0.016875
+          },
+          "lightPrepCPUms": {
+            "median": 0.0119175,
+            "p95": 0.016417
+          },
+          "serializedFrameMs": {
+            "median": 60.295312499999994,
+            "p95": 62.016625
+          },
+          "cullGPUms": {
+            "median": 0.179375,
+            "p95": 0.185416666667
+          },
+          "forwardGPUms": {
+            "median": 53.3213958333,
+            "p95": 55.422375
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 1044480.0,
+            "p95": 1044480.0
+          },
+          "overflowTiles": {
+            "median": 8160.0,
+            "p95": 8160.0
+          }
+        },
+        "1920/1080/128/0/1/32": {
+          "collectionCPUms": {
+            "median": 0.0334795,
+            "p95": 0.043583
+          },
+          "encodeCPUms": {
+            "median": 0.009709,
+            "p95": 0.012709
+          },
+          "lightPrepCPUms": {
+            "median": 0.0118125,
+            "p95": 0.016042
+          },
+          "serializedFrameMs": {
+            "median": 60.211292,
+            "p95": 64.264209
+          },
+          "cullGPUms": {
+            "median": 0.06708333333335001,
+            "p95": 0.0820833333333
+          },
+          "forwardGPUms": {
+            "median": 53.7916875,
+            "p95": 57.3088333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 261120.0,
+            "p95": 261120.0
+          },
+          "overflowTiles": {
+            "median": 2040.0,
+            "p95": 2040.0
+          }
+        },
+        "1920/1080/128/1/0/16": {
+          "collectionCPUms": {
+            "median": 0.041937,
+            "p95": 0.049917
+          },
+          "encodeCPUms": {
+            "median": 0.0085415,
+            "p95": 0.018125
+          },
+          "lightPrepCPUms": {
+            "median": 0.008979000000000001,
+            "p95": 0.020041
+          },
+          "serializedFrameMs": {
+            "median": 11.931979,
+            "p95": 12.147084
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 4.9866875,
+            "p95": 5.11020833333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/128/1/1/16": {
+          "collectionCPUms": {
+            "median": 0.033583,
+            "p95": 0.040041
+          },
+          "encodeCPUms": {
+            "median": 0.0076454999999999995,
+            "p95": 0.021708
+          },
+          "lightPrepCPUms": {
+            "median": 0.010853999999999999,
+            "p95": 0.025625
+          },
+          "serializedFrameMs": {
+            "median": 11.7800835,
+            "p95": 12.18825
+          },
+          "cullGPUms": {
+            "median": 0.1761458333335,
+            "p95": 0.17925
+          },
+          "forwardGPUms": {
+            "median": 3.8793541666699998,
+            "p95": 4.01429166667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 137402.0,
+            "p95": 137402.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/128/1/1/32": {
+          "collectionCPUms": {
+            "median": 0.0374795,
+            "p95": 0.048625
+          },
+          "encodeCPUms": {
+            "median": 0.0098535,
+            "p95": 0.020375
+          },
+          "lightPrepCPUms": {
+            "median": 0.014146,
+            "p95": 0.024333
+          },
+          "serializedFrameMs": {
+            "median": 13.473082999999999,
+            "p95": 16.386292
+          },
+          "cullGPUms": {
+            "median": 0.07016666666665,
+            "p95": 0.0802916666667
+          },
+          "forwardGPUms": {
+            "median": 3.898395833335,
+            "p95": 4.02325
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 34613.0,
+            "p95": 34613.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/256/0/0/16": {
+          "collectionCPUms": {
+            "median": 0.040771,
+            "p95": 0.055375
+          },
+          "encodeCPUms": {
+            "median": 0.013416500000000001,
+            "p95": 0.015083
+          },
+          "lightPrepCPUms": {
+            "median": 0.0131045,
+            "p95": 0.015833
+          },
+          "serializedFrameMs": {
+            "median": 115.3966875,
+            "p95": 119.731667
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 107.0828125,
+            "p95": 110.278
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/256/0/1/16": {
+          "collectionCPUms": {
+            "median": 0.037,
+            "p95": 0.050667
+          },
+          "encodeCPUms": {
+            "median": 0.013166500000000001,
+            "p95": 0.015667
+          },
+          "lightPrepCPUms": {
+            "median": 0.01625,
+            "p95": 0.0195
+          },
+          "serializedFrameMs": {
+            "median": 116.476125,
+            "p95": 126.201125
+          },
+          "cullGPUms": {
+            "median": 0.34868750000000004,
+            "p95": 0.353916666667
+          },
+          "forwardGPUms": {
+            "median": 109.154604167,
+            "p95": 119.096291667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 2088960.0,
+            "p95": 2088960.0
+          },
+          "overflowTiles": {
+            "median": 8160.0,
+            "p95": 8160.0
+          }
+        },
+        "1920/1080/256/0/1/32": {
+          "collectionCPUms": {
+            "median": 0.0360205,
+            "p95": 0.055042
+          },
+          "encodeCPUms": {
+            "median": 0.012979000000000001,
+            "p95": 0.015875
+          },
+          "lightPrepCPUms": {
+            "median": 0.014749499999999999,
+            "p95": 0.017708
+          },
+          "serializedFrameMs": {
+            "median": 114.028396,
+            "p95": 122.858041
+          },
+          "cullGPUms": {
+            "median": 0.1193125,
+            "p95": 0.140333333333
+          },
+          "forwardGPUms": {
+            "median": 107.464958333,
+            "p95": 116.175416667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 522240.0,
+            "p95": 522240.0
+          },
+          "overflowTiles": {
+            "median": 2040.0,
+            "p95": 2040.0
+          }
+        },
+        "1920/1080/256/1/0/16": {
+          "collectionCPUms": {
+            "median": 0.063625,
+            "p95": 0.078583
+          },
+          "encodeCPUms": {
+            "median": 0.0061875,
+            "p95": 0.010167
+          },
+          "lightPrepCPUms": {
+            "median": 0.0082915,
+            "p95": 0.014792
+          },
+          "serializedFrameMs": {
+            "median": 15.717604,
+            "p95": 16.145542
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 8.60897916667,
+            "p95": 8.84054166667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/256/1/1/16": {
+          "collectionCPUms": {
+            "median": 0.0567505,
+            "p95": 0.077917
+          },
+          "encodeCPUms": {
+            "median": 0.0073335,
+            "p95": 0.009041
+          },
+          "lightPrepCPUms": {
+            "median": 0.0106045,
+            "p95": 0.017042
+          },
+          "serializedFrameMs": {
+            "median": 14.251229,
+            "p95": 14.699333
+          },
+          "cullGPUms": {
+            "median": 0.34181249999999996,
+            "p95": 0.348291666667
+          },
+          "forwardGPUms": {
+            "median": 6.274395833335,
+            "p95": 6.35258333333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 239516.0,
+            "p95": 239516.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/256/1/1/32": {
+          "collectionCPUms": {
+            "median": 0.0679795,
+            "p95": 0.083292
+          },
+          "encodeCPUms": {
+            "median": 0.009854,
+            "p95": 0.01725
+          },
+          "lightPrepCPUms": {
+            "median": 0.013979,
+            "p95": 0.022834
+          },
+          "serializedFrameMs": {
+            "median": 16.179042,
+            "p95": 19.241917
+          },
+          "cullGPUms": {
+            "median": 0.12222916666700001,
+            "p95": 0.136083333333
+          },
+          "forwardGPUms": {
+            "median": 6.307,
+            "p95": 6.37579166667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 60369.0,
+            "p95": 60369.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/320/0/0/16": {
+          "collectionCPUms": {
+            "median": 0.0452085,
+            "p95": 0.070125
+          },
+          "encodeCPUms": {
+            "median": 0.0146455,
+            "p95": 0.01775
+          },
+          "lightPrepCPUms": {
+            "median": 0.014083499999999999,
+            "p95": 0.022916
+          },
+          "serializedFrameMs": {
+            "median": 143.7543545,
+            "p95": 152.339833
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 131.7213125,
+            "p95": 141.996875
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/320/0/1/16": {
+          "collectionCPUms": {
+            "median": 0.0446255,
+            "p95": 0.060917
+          },
+          "encodeCPUms": {
+            "median": 0.014417,
+            "p95": 0.021208
+          },
+          "lightPrepCPUms": {
+            "median": 0.017416,
+            "p95": 0.021333
+          },
+          "serializedFrameMs": {
+            "median": 144.0508125,
+            "p95": 150.483375
+          },
+          "cullGPUms": {
+            "median": 0.432395833333,
+            "p95": 0.435541666667
+          },
+          "forwardGPUms": {
+            "median": 136.0895625,
+            "p95": 143.075666667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 2611200.0,
+            "p95": 2611200.0
+          },
+          "overflowTiles": {
+            "median": 8160.0,
+            "p95": 8160.0
+          }
+        },
+        "1920/1080/320/0/1/32": {
+          "collectionCPUms": {
+            "median": 0.043937,
+            "p95": 0.064958
+          },
+          "encodeCPUms": {
+            "median": 0.014854,
+            "p95": 0.016542
+          },
+          "lightPrepCPUms": {
+            "median": 0.016375,
+            "p95": 0.020042
+          },
+          "serializedFrameMs": {
+            "median": 146.5321455,
+            "p95": 152.601208
+          },
+          "cullGPUms": {
+            "median": 0.14875,
+            "p95": 0.16425
+          },
+          "forwardGPUms": {
+            "median": 139.463979167,
+            "p95": 145.744458333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 652800.0,
+            "p95": 652800.0
+          },
+          "overflowTiles": {
+            "median": 2040.0,
+            "p95": 2040.0
+          }
+        },
+        "1920/1080/320/1/0/16": {
+          "collectionCPUms": {
+            "median": 0.0593335,
+            "p95": 0.082041
+          },
+          "encodeCPUms": {
+            "median": 0.0063335,
+            "p95": 0.009042
+          },
+          "lightPrepCPUms": {
+            "median": 0.008916,
+            "p95": 0.021542
+          },
+          "serializedFrameMs": {
+            "median": 16.829667,
+            "p95": 17.073792
+          },
+          "cullGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 10.37277083335,
+            "p95": 10.486625
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 16.0,
+            "p95": 16.0
+          },
+          "candidates": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/320/1/1/16": {
+          "collectionCPUms": {
+            "median": 0.069,
+            "p95": 0.072916
+          },
+          "encodeCPUms": {
+            "median": 0.007457999999999999,
+            "p95": 0.009083
+          },
+          "lightPrepCPUms": {
+            "median": 0.010957999999999999,
+            "p95": 0.012417
+          },
+          "serializedFrameMs": {
+            "median": 15.108979000000001,
+            "p95": 15.448417
+          },
+          "cullGPUms": {
+            "median": 0.42481250000000004,
+            "p95": 0.429333333333
+          },
+          "forwardGPUms": {
+            "median": 7.4565,
+            "p95": 7.59441666667
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 299867.0,
+            "p95": 299867.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        },
+        "1920/1080/320/1/1/32": {
+          "collectionCPUms": {
+            "median": 0.073917,
+            "p95": 0.084958
+          },
+          "encodeCPUms": {
+            "median": 0.010125,
+            "p95": 0.0145
+          },
+          "lightPrepCPUms": {
+            "median": 0.015688,
+            "p95": 0.022167
+          },
+          "serializedFrameMs": {
+            "median": 16.490271,
+            "p95": 17.942292
+          },
+          "cullGPUms": {
+            "median": 0.145625,
+            "p95": 0.163833333333
+          },
+          "forwardGPUms": {
+            "median": 7.4878125,
+            "p95": 7.70120833333
+          },
+          "lightBytes": {
+            "median": 15376.0,
+            "p95": 15376.0
+          },
+          "tileBytes": {
+            "median": 2219520.0,
+            "p95": 2219520.0
+          },
+          "candidates": {
+            "median": 75633.0,
+            "p95": 75633.0
+          },
+          "overflowTiles": {
+            "median": 0.0,
+            "p95": 0.0
+          }
+        }
+      },
+      "scope": "Alternating point/spot lights, one contributing central point in sparse scenes. Serialized offscreen render + completion + readback. Not presented frame pacing; GPU counters bound culling and forward/world execution. CPU light preparation overlaps recording and includes deferred native resources; intervals are not additive."
+    }
+  },
+  "status": "PASS scoped benchmark"
+}

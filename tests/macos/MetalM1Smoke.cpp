@@ -138,10 +138,14 @@ static int Benchmark(const std::filesystem::path& output,const std::filesystem::
     spec.RendererMode=RendererInitialization::Drawing;spec.Resources.Root=resources;
     spec.Rendering.TextureSlots=4;spec.WindowVSync=false;
     std::shared_ptr<MetalProofObserver> observer;
+    const bool localBenchmark=!FileSystem::GetEnvironmentPath("HAZEL_LOCAL_PRESENT_BENCHMARK").empty();
     const auto startup=Clock::now();
     {
         Application app(spec);if(metal)observer=Backend().Observe();
         auto* window=static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
+        const auto initialPixels=app.GetWindow().GetFramebufferSize();
+        const double physicalScale=double(initialPixels.first)/app.GetWindow().GetWidth();
+        if(localBenchmark)glfwSetWindowSize(window,int(1280/physicalScale),int(720/physicalScale));
         MetalM1Environment(window,(output/"environment.json").c_str());
         auto layer=CreateScope<EventProof>();auto* proof=layer.get();layer->Benchmark=true;layer->FP32Display=fp32;layer->AOQuality=aoQuality;layer->TemporalAA=temporal;
         layer->QuadProject=Project::LoadCandidate(project.empty()?std::filesystem::absolute("examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj"):project);
@@ -165,19 +169,21 @@ static int Benchmark(const std::filesystem::path& output,const std::filesystem::
                 lastSubmitted=done.Submitted;std::printf("M4_BENCH_JOIN cpu_frame=%llu submission=%llu\n",
                     (unsigned long long)proof->Frames,(unsigned long long)done.Submitted);
             }}
-            if(proof->Frames-phaseStart>=720) {
-                if(!phase){phase=1;phaseStart=proof->Frames;glfwSetWindowSize(window,1920,1080);}
+            const auto completed=localBenchmark&&observer?observer->Snapshot().CompletedPresented:proof->Frames;
+            if(completed-phaseStart>=(localBenchmark?120u:720u)) {
+                if(!phase){phase=1;phaseStart=completed;glfwSetWindowSize(window,int(1920/(localBenchmark?physicalScale:1)),int(1080/(localBenchmark?physicalScale:1)));}
                 else app.GetWindow().RequestClose();
             }
         });
         app.Run();
     }
     if(observer) {auto done=observer->Snapshot();Check(done.Errors==0 && done.InFlight==0 && done.ResourceBytes==0 && done.AttachmentGenerations==0,"Production benchmark shutdown/lifetime failed");}
-    std::cout<<"PASS production window benchmark, authored camera/assets, four texture slots, VSync-off request, 720 frames per extent\n";
+    std::cout<<"PASS production window benchmark, authored camera/assets, four texture slots, VSync-off request, "<<(localBenchmark?"120 positive presentations":"720 CPU frames")<<" per extent\n";
     return 0;
 }
 int main(int argc,char** argv) {
     try {
+        if(argc==4 && std::string(argv[2])=="--local-light-views")return TemporalViewProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),true);
         if(argc==4 && std::string(argv[2])=="--taa-views")return TemporalViewProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]));
         if (argc == 4 && std::string(argv[2]) == "--editor-consumers-quick") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),100);
         if (argc == 4 && std::string(argv[2]) == "--editor-consumers") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]));

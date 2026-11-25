@@ -29,6 +29,8 @@ struct MetalRenderer2DRun
     bool Picking = true;
 };
 // Native Metal 4; only explicitly qualified drawing/resource profiles are available.
+struct LocalLightingMetrics;
+class MetalComputePipeline;
 class MetalRendererAPI final : public RendererAPI {
 public:
     MetalRendererAPI();
@@ -61,6 +63,7 @@ public:
     std::shared_ptr<Framebuffer> CreateFramebuffer(const FramebufferSpecification& specification);
     std::shared_ptr<Texture2D> CreateTexture(const TextureSpecification& specification, const std::string& path = {});
     std::shared_ptr<Shader> LoadShader(const std::string& name, uint32_t slots = 32);
+    void CaptureLocalLights(const std::shared_ptr<LocalLightingMetrics>& metrics);
     void BindUniform(uint32_t binding, const std::shared_ptr<const std::vector<uint8_t>>& bytes);
     void BindTexture(uint32_t slot, std::shared_ptr<const MetalTextureVersion> texture);
     void BindShader(const std::string& name);
@@ -87,6 +90,9 @@ private:
     bool IsFramebufferBound(const std::shared_ptr<MetalRenderer2DFrame>& frame) const;
     void CheckFramebufferClear(const std::shared_ptr<MetalRenderer2DFrame>& frame) const;
     std::shared_ptr<MetalDevice> m_Device;
+    std::shared_ptr<MetalComputePipeline> m_LocalLightCull;
+    std::shared_ptr<LocalLightingMetrics> m_LocalMetrics;
+    std::shared_ptr<const std::vector<uint8_t>> m_LocalLights;
     std::mutex m_ShaderMutex;
     bool m_Stopped = false, m_Renderer2DScene = false;
     glm::mat4 m_Renderer2DCamera{1};

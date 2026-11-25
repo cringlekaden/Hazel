@@ -1,0 +1,20 @@
+{
+  "Debug": {
+    "exit": 0,
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/local-lighting/views/Debug",
+      "--local-light-views",
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/Hazelnut/Resources"
+    ]
+  },
+  "Release": {
+    "exit": 0,
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/local-lighting/views/Release",
+      "--local-light-views",
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/Hazelnut/Resources"
+    ]
+  }
+}
