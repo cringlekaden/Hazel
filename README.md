@@ -80,6 +80,10 @@ The development branch also includes [Metal XeGTAO ambient occlusion](docs/desig
 for diffuse IBL, with editor controls and a separate contact-study scene. Functional
 and correctness gates pass locally on Apple M4; visible noise and motion shimmer
 remain, including on Ultra. Final visual-quality qualification is incomplete.
+[Full-resolution HDR TAA](docs/design/taa.md) is under qualification on Metal 4;
+see the [native qualification evidence](docs/design/taa-qualification.md) and
+[manual review procedure](docs/design/taa-manual.md). Owner visual acceptance
+remains pending.
 
 For engine code navigation, start with [Follow a frame](docs/follow-a-frame.md).
 The [Rendering Showcase](examples/RenderingShowcase/README.md) demonstrates prepared IBL and material surfaces separately from diagnostic references.

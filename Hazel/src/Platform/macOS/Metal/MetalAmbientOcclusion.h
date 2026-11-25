@@ -45,5 +45,5 @@ struct MetalAOPass {
     void ResolveTimings();
     std::vector<NS::SharedPtr<MTL4::ArgumentTable>> Arguments;
 };
-MetalAOConstants AmbientOcclusionConstants(const SceneCameraView& camera, const AmbientOcclusionSettings& settings, uint32_t width, uint32_t height);
+MetalAOConstants AmbientOcclusionConstants(const SceneCameraView& camera, const AmbientOcclusionSettings& settings, uint32_t width, uint32_t height, unsigned temporalPhase = 0);
 }

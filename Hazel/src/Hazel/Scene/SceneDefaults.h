@@ -29,13 +29,14 @@ namespace Hazel {
     // scene-referred applies fixed Neutral presentation before independent UI.
     struct ScenePresentation {
         bool SceneReferred = false;
+        bool TemporalAA = false; // Metal 4, scene-referred rigid meshes.
         float Exposure = 0; // stops; fixed Khronos PBR Neutral presentation
         glm::vec4 Background{0.010022826f, 0.010022826f, 0.010022826f, 1};
         SceneEnvironment Environment;
         AmbientOcclusionSettings AmbientOcclusion;
         bool operator==(const ScenePresentation &b) const
         {
-            if (SceneReferred != b.SceneReferred ||
+            if (SceneReferred != b.SceneReferred || TemporalAA != b.TemporalAA ||
                 std::memcmp(&Exposure, &b.Exposure, sizeof(float)))
                 return false;
             for (int i = 0; i < 4; ++i)

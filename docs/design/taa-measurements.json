@@ -1,0 +1,3997 @@
+{
+  "status": "MEASURED; owner visual acceptance pending",
+  "baseline": "3a0f71cb13728a6802ad1c9eaadf6ed384d8e4a0",
+  "historicalBaseline": "xegtao-measurements.json (retained unchanged)",
+  "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t27.3\nBuildVersion:\t\t26C5047e",
+  "hardware": "Apple M4",
+  "method": "Sequential native presented Release runs; no concurrent Hazel builds/tests. 720 CPU frames per extent; exclude 120 warmup/20 tail. Only positive presentation feedback for whole GPU samples. CPU submission includes backpressure. GPU phase completion intervals may overlap and must not be summed. Raw logs remain build/taa-evidence/benchmark-taa-off and benchmark-alpha-taa-on/evidence.",
+  "taaOff": {
+    "configuration": "Release",
+    "temporalAA": false,
+    "head": "3a0f71cb13728a6802ad1c9eaadf6ed384d8e4a0",
+    "warmup": 120,
+    "tail": 20,
+    "framesPerExtent": 720,
+    "scopes": "Scene CPU, native submission CPU, tick interval, whole commit feedback, and precise GPU phase completion intervals. Phase intervals include synchronization and are not exclusive/additive. No backend speedup claim.",
+    "memory": "AO texture bytes are per generation; tracked frame/attachment/allocator peaks overlap and must not be added. RSS includes CPU/driver process storage.",
+    "inputs": {
+      "examples/RenderingReference/RenderingReference-XeGTAO.hproj": "45ac90edce86dbd574383416f805d6c36f7ed7f3964108a121e8291fbaf3bb6c",
+      "examples/RenderingReference/Assets/Scenes/XeGTAO-Contact.hazel": "17700605d8c8038968b056065a0d93c60560c898b3ee8e34270b689e85972844",
+      "examples/RenderingReference/Assets/Studies/XeGTAO/DarkMetal.hmat": "a588e84880d529c9c859eb162a45a3efe7606bbcab569016481ae31f9d8ff518",
+      "examples/RenderingReference/Assets/Reference/IBL_v1/Photo.henv": "23ec202336c78a6a8c2f7cc3c515b3121bd26ef2342fe6a83647cdb88bfc3e02",
+      "examples/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.accepted": "5e866725a98fd9e6a4261784892bbaffc0997a259813e3b4c0893631ba560e2c",
+      "examples/RenderingReference/Assets/Native/Direct_v1/UnitCube.hprefab": "d612e0c2d02e5f0d65f67a94b91c8d0850242fddbd1a70662309df9a9058bbb8",
+      "examples/RenderingReference/Assets/Native/Direct_v1/Surface.hmat": "284dc6817b8d8f4c258d45a062c9b5cd491d0a9e23c27a87db19efec652fedcc",
+      "examples/RenderingReference/Assets/Native/Direct_v1/Source.generated": "e7d60ef899a51ae89a41d70bf1020e2faace2d028572b6898e8f9eb12d56e48e",
+      "examples/RenderingReference/Assets/Native/Direct_v1/NOTICE.txt": "1564100a2a8bb63a07362f11c2fb0d279b729f8feadcca7850082213085db4c8",
+      "examples/RenderingReference/Assets/Native/Direct_v1/UnitCube.hmesh": "269c99eefb87b56ad7d8483870f4a3e9c0dd777404cf637c068111b39ceb8bfb",
+      "examples/RenderingReference/Assets/Native/Direct_v1/Import.himport": "481ddad7d922a15490807b62165bb36d6dafd59d85ed50370a1864a75ba379a8",
+      "examples/RenderingReference/Assets/Native/Direct_v1/generations/0000000000000002/UnitCube.hgeom": "a16ef6f76711821386609af35a492bf1b680af802063786c9b8dd6f28b05a613",
+      "examples/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/owner": "7fe853365d88cad3732c0756b7437e96a452511a3f4c8459bef57e2cd2026e9c",
+      "examples/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/Background.hlight": "5b646c96e06e9f38091b7b1b7e449af820219839ddf2d7381eca2e810ee13d6a",
+      "examples/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/Specular.hlight": "b0f1bcb878ec9f89ff98dee2e804c5408b5c2f3e792e8fdada195b45802a3588",
+      "examples/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/Irradiance.hlight": "b1a4300271430dcaad7eeeb1b0dd61654c67df85d51366a22271f96a3ad3ff26",
+      "Hazel/Resources/shaders/metal/ForwardPBR.hzmetal": "494708bd6c3fb9611277f047d0713aa5cff7cde4bedf9c55465ad410b33d7c3d",
+      "Hazel/Resources/shaders/metal/producer.txt": "3adf77fe1deff3d0d6cd64e5d94093697067bf3661383af61af35e853b87f53f",
+      "Hazel/Resources/shaders/metal/EntityOutline.hzmetal": "01ef441c3b77ab67b9d02aa739f1a7028df2b38b9d23fa1d9c85a87b70f1da56",
+      "Hazel/Resources/shaders/metal/Renderer2D_Line.hzmetal": "0649cd9aa45d63604c35ca5def33e3e7bc1ab98f5c8f2325f56cf73ec0e2b154",
+      "Hazel/Resources/shaders/metal/Renderer2D_Quad-16.hzmetal": "39eea29c143507c211f13271cb3c4a77759910546ffce882a258502216fb35df",
+      "Hazel/Resources/shaders/metal/ImGui.json": "d36612bb5f238ec1c4bab9b2e85fc77d3c63c860debd011c0596d9da253cc280",
+      "Hazel/Resources/shaders/metal/XeGTAO.metallib": "524ef4611573fa9ee363915fab117e495dbae3e419e07ddba4269c74b0208368",
+      "Hazel/Resources/shaders/metal/MotionPBR.hzmetal": "45613286d38f7d974713f96718e2a6dbb527836150573f389735c324a01dbb19",
+      "Hazel/Resources/shaders/metal/Renderer2D_Quad-32.hzmetal": "909978450633564664d3f6f5356aa80c497644ffb0fddeec85bacf9a975695eb",
+      "Hazel/Resources/shaders/metal/WorldPresentation.hzmetal": "6cf0ea9c2ca49ecd7f264e5a4df9e5f174c2c51e6b50543d5b8d7ebb2acfb164",
+      "Hazel/Resources/shaders/metal/XeGTAO.json": "a7ce46cda7d523f9eb4a968317e967f638e83ea70b3d329b9c4b62b2e7d8b20d",
+      "Hazel/Resources/shaders/metal/EnvironmentSky.hzmetal": "ba159aa84517a9b3626851f37b7f6b5314a1ae2250dfd5d58e051d22d2c9c14a",
+      "Hazel/Resources/shaders/metal/ImGui.metallib": "ebd096577ba66f98f3d2ae9dc32a607ca23e7e5e3aa8243defe15a238c7ce167",
+      "Hazel/Resources/shaders/metal/Renderer2D_Circle.hzmetal": "4e51b4ef362be908924d84287eb1c92535cd080b03386d906e968a352251fce3",
+      "Hazel/Resources/shaders/metal/DepthPBR.hzmetal": "1d70d04368e5b48056bb672c1588d7e57a4abbd8f2199bc09357b06bb29f098f",
+      "Hazel/Resources/shaders/metal/Renderer2D_Text.hzmetal": "f76ae76d70633ab911155803737fb8a76f14be5c0be12ff57c6ca10c21889ba5",
+      "Hazel/Resources/shaders/metal/TemporalAA.metallib": "1fbefb487cdd9debfe85610abac2d03a02ad7a06651aa411f6035db99a34620d",
+      "Hazel/Resources/shaders/metal/DisplayOutput.hzmetal": "8673d03228a2883189838f0d47ba8b25b51024e2eeac91c3bc5bd2445b2fcead",
+      "Hazel/Resources/shaders/metal/TemporalAA.json": "5a88fbc26afdb3688f18b3d2956aadfc30c51b6ae061f3bac0325120dcb066ec"
+    },
+    "worktreeDiffSHA256": "86ac73fa5ded9a226d38ff7bd4a20cbf829d8776bec9bd27dd321e09ca92c926",
+    "runs": {
+      "off": {
+        "command": [
+          "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/taa-evidence/benchmark-taa-off/off",
+          "--benchmark-metal",
+          "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+          "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "-1"
+        ],
+        "seconds": 4.045123958989279,
+        "peakRSSKiB": 157216,
+        "extents": {
+          "1280x720": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.0448955,
+              "p95Ms": 0.07925
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.061875,
+              "p95Ms": 0.107125
+            },
+            "wholeSubmissionGPU": {
+              "samples": 533,
+              "medianMs": 0.7428750104736537,
+              "p95Ms": 0.7968749850988388
+            },
+            "submitCPU": {
+              "samples": 556,
+              "medianMs": 1.5115210000000001,
+              "p95Ms": 7.304042
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 1.5961875,
+              "p95Ms": 7.131709
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 0
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 0
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 0
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 0
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 0
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 0
+            },
+            "temporalHistoryPeakBytes": 0,
+            "temporalHistoryAllocations": 0,
+            "temporalHistoryReuses": 0,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 0,
+              "validOrderedRecords": 0,
+              "rejectedOrMissingRecords": 0
+            },
+            "AOTextureBytesPerGeneration": 0,
+            "GPUCompletionSpacing": {
+              "samples": 532,
+              "medianMs": 1.6208125016419217,
+              "p95Ms": 7.281500002136454
+            },
+            "positivePresentationSpacing": {
+              "samples": 532,
+              "medianMs": 1.6018750029616058,
+              "p95Ms": 11.141249997308478
+            }
+          },
+          "1920x1080": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.032958,
+              "p95Ms": 0.040584
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.044021,
+              "p95Ms": 0.056292
+            },
+            "wholeSubmissionGPU": {
+              "samples": 571,
+              "medianMs": 1.636750006582588,
+              "p95Ms": 1.7465419950895011
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 2.222229,
+              "p95Ms": 5.145166
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 2.274083,
+              "p95Ms": 5.214208
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 0
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 0
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 0
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 0
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 0
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 0
+            },
+            "temporalHistoryPeakBytes": 0,
+            "temporalHistoryAllocations": 0,
+            "temporalHistoryReuses": 0,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 0,
+              "validOrderedRecords": 0,
+              "rejectedOrMissingRecords": 0
+            },
+            "AOTextureBytesPerGeneration": 0,
+            "GPUCompletionSpacing": {
+              "samples": 570,
+              "medianMs": 2.2551875008502975,
+              "p95Ms": 5.407041986472905
+            },
+            "positivePresentationSpacing": {
+              "samples": 570,
+              "medianMs": 2.2993329912424088,
+              "p95Ms": 5.35975000821054
+            }
+          }
+        },
+        "resourceSamples": [
+          {
+            "frame": 120,
+            "frameBytes": 101363500,
+            "attachmentBytes": 184549376,
+            "generations": 8,
+            "attachmentAllocations": 8,
+            "attachmentReuses": 504,
+            "bufferAllocations": 36,
+            "bufferReuses": 1404,
+            "allocatorBytes": 7745064,
+            "inflight": 2
+          },
+          {
+            "frame": 240,
+            "frameBytes": 101363500,
+            "attachmentBytes": 184549376,
+            "generations": 8,
+            "attachmentAllocations": 8,
+            "attachmentReuses": 744,
+            "bufferAllocations": 36,
+            "bufferReuses": 2844,
+            "allocatorBytes": 7745064,
+            "inflight": 2
+          },
+          {
+            "frame": 360,
+            "frameBytes": 101363500,
+            "attachmentBytes": 184549376,
+            "generations": 8,
+            "attachmentAllocations": 8,
+            "attachmentReuses": 984,
+            "bufferAllocations": 36,
+            "bufferReuses": 4284,
+            "allocatorBytes": 7745064,
+            "inflight": 2
+          },
+          {
+            "frame": 480,
+            "frameBytes": 101363500,
+            "attachmentBytes": 184549376,
+            "generations": 8,
+            "attachmentAllocations": 8,
+            "attachmentReuses": 1224,
+            "bufferAllocations": 36,
+            "bufferReuses": 5724,
+            "allocatorBytes": 7745064,
+            "inflight": 2
+          },
+          {
+            "frame": 600,
+            "frameBytes": 210677548,
+            "attachmentBytes": 302383104,
+            "generations": 6,
+            "attachmentAllocations": 14,
+            "attachmentReuses": 1458,
+            "bufferAllocations": 36,
+            "bufferReuses": 7164,
+            "allocatorBytes": 7745064,
+            "inflight": 2
+          },
+          {
+            "frame": 720,
+            "frameBytes": 210677548,
+            "attachmentBytes": 302383104,
+            "generations": 6,
+            "attachmentAllocations": 14,
+            "attachmentReuses": 1698,
+            "bufferAllocations": 36,
+            "bufferReuses": 8604,
+            "allocatorBytes": 7745064,
+            "inflight": 2
+          },
+          {
+            "frame": 840,
+            "frameBytes": 210677548,
+            "attachmentBytes": 302383104,
+            "generations": 6,
+            "attachmentAllocations": 14,
+            "attachmentReuses": 1938,
+            "bufferAllocations": 36,
+            "bufferReuses": 10044,
+            "allocatorBytes": 7745064,
+            "inflight": 2
+          },
+          {
+            "frame": 960,
+            "frameBytes": 311471916,
+            "attachmentBytes": 302383104,
+            "generations": 6,
+            "attachmentAllocations": 14,
+            "attachmentReuses": 2178,
+            "bufferAllocations": 36,
+            "bufferReuses": 11484,
+            "allocatorBytes": 7745064,
+            "inflight": 3
+          },
+          {
+            "frame": 1080,
+            "frameBytes": 210677548,
+            "attachmentBytes": 302383104,
+            "generations": 6,
+            "attachmentAllocations": 14,
+            "attachmentReuses": 2418,
+            "bufferAllocations": 36,
+            "bufferReuses": 12924,
+            "allocatorBytes": 7745064,
+            "inflight": 2
+          },
+          {
+            "frame": 1200,
+            "frameBytes": 311471916,
+            "attachmentBytes": 302383104,
+            "generations": 6,
+            "attachmentAllocations": 14,
+            "attachmentReuses": 2658,
+            "bufferAllocations": 36,
+            "bufferReuses": 14364,
+            "allocatorBytes": 7745064,
+            "inflight": 3
+          }
+        ],
+        "final": {
+          "submitted": 1304,
+          "completed": 1304,
+          "presented": 1261,
+          "completedPresented": 1261,
+          "errors": 0,
+          "peakFrameBytes": 311471916,
+          "peakAttachmentBytes": 302383104,
+          "peakAllocatorBytes": 7745064,
+          "liveAttachmentGenerations": 0,
+          "pendingBytes": 0
+        }
+      },
+      "low": {
+        "command": [
+          "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/taa-evidence/benchmark-taa-off/low",
+          "--benchmark-metal",
+          "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+          "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "0"
+        ],
+        "seconds": 6.20444599998882,
+        "peakRSSKiB": 158864,
+        "extents": {
+          "1280x720": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.1571665,
+              "p95Ms": 0.261083
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.2300415,
+              "p95Ms": 0.374208
+            },
+            "wholeSubmissionGPU": {
+              "samples": 567,
+              "medianMs": 1.819625002099201,
+              "p95Ms": 1.9888750102836639
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 2.44125,
+              "p95Ms": 5.881958
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 2.725313,
+              "p95Ms": 6.266166
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 567,
+              "medianMs": 0.023833,
+              "p95Ms": 0.17125
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 567,
+              "medianMs": 0.089917,
+              "p95Ms": 0.097917
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 567,
+              "medianMs": 0.563375,
+              "p95Ms": 0.650792
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 567,
+              "medianMs": 0.263625,
+              "p95Ms": 0.273542
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 567,
+              "medianMs": 0.239083,
+              "p95Ms": 0.244875
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 0
+            },
+            "temporalHistoryPeakBytes": 0,
+            "temporalHistoryAllocations": 0,
+            "temporalHistoryReuses": 0,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 567,
+              "validOrderedRecords": 567,
+              "rejectedOrMissingRecords": 0
+            },
+            "AOTextureBytesPerGeneration": 15155200,
+            "GPUCompletionSpacing": {
+              "samples": 566,
+              "medianMs": 2.639187514432706,
+              "p95Ms": 6.67283299844712
+            },
+            "positivePresentationSpacing": {
+              "samples": 566,
+              "medianMs": 2.6624165038811043,
+              "p95Ms": 8.20204199408181
+            }
+          },
+          "1920x1080": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.044458,
+              "p95Ms": 0.056625
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.0690835,
+              "p95Ms": 0.089791
+            },
+            "wholeSubmissionGPU": {
+              "samples": 568,
+              "medianMs": 4.439104508492164,
+              "p95Ms": 4.9875830009114
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 3.979292,
+              "p95Ms": 7.076167
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 4.0632915,
+              "p95Ms": 7.159375
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 499,
+              "medianMs": 0.01625,
+              "p95Ms": 0.025958
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 499,
+              "medianMs": 0.27275,
+              "p95Ms": 0.285958
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 499,
+              "medianMs": 1.256833,
+              "p95Ms": 1.26075
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 499,
+              "medianMs": 0.6065,
+              "p95Ms": 0.619042
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 499,
+              "medianMs": 0.557083,
+              "p95Ms": 0.573083
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 0
+            },
+            "temporalHistoryPeakBytes": 0,
+            "temporalHistoryAllocations": 0,
+            "temporalHistoryReuses": 0,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 568,
+              "validOrderedRecords": 499,
+              "rejectedOrMissingRecords": 69
+            },
+            "AOTextureBytesPerGeneration": 32587776,
+            "GPUCompletionSpacing": {
+              "samples": 567,
+              "medianMs": 3.943666990380734,
+              "p95Ms": 8.053124998696148
+            },
+            "positivePresentationSpacing": {
+              "samples": 567,
+              "medianMs": 3.99745799950324,
+              "p95Ms": 11.135208973428234
+            }
+          }
+        },
+        "resourceSamples": [
+          {
+            "frame": 120,
+            "frameBytes": 204977652,
+            "attachmentBytes": 150405120,
+            "generations": 9,
+            "attachmentAllocations": 9,
+            "attachmentReuses": 351,
+            "bufferAllocations": 81,
+            "bufferReuses": 3159,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 240,
+            "frameBytes": 154842612,
+            "attachmentBytes": 150405120,
+            "generations": 9,
+            "attachmentAllocations": 9,
+            "attachmentReuses": 711,
+            "bufferAllocations": 81,
+            "bufferReuses": 6399,
+            "allocatorBytes": 8187432,
+            "inflight": 2
+          },
+          {
+            "frame": 360,
+            "frameBytes": 154842612,
+            "attachmentBytes": 150405120,
+            "generations": 9,
+            "attachmentAllocations": 9,
+            "attachmentReuses": 1071,
+            "bufferAllocations": 81,
+            "bufferReuses": 9639,
+            "allocatorBytes": 8187432,
+            "inflight": 2
+          },
+          {
+            "frame": 480,
+            "frameBytes": 154842612,
+            "attachmentBytes": 150405120,
+            "generations": 9,
+            "attachmentAllocations": 9,
+            "attachmentReuses": 1431,
+            "bufferAllocations": 81,
+            "bufferReuses": 12879,
+            "allocatorBytes": 8187432,
+            "inflight": 2
+          },
+          {
+            "frame": 600,
+            "frameBytes": 154842612,
+            "attachmentBytes": 150405120,
+            "generations": 9,
+            "attachmentAllocations": 9,
+            "attachmentReuses": 1791,
+            "bufferAllocations": 81,
+            "bufferReuses": 16119,
+            "allocatorBytes": 8187432,
+            "inflight": 2
+          },
+          {
+            "frame": 720,
+            "frameBytes": 204977652,
+            "attachmentBytes": 150405120,
+            "generations": 9,
+            "attachmentAllocations": 9,
+            "attachmentReuses": 2151,
+            "bufferAllocations": 81,
+            "bufferReuses": 19359,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 840,
+            "frameBytes": 325432820,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 18,
+            "attachmentReuses": 2502,
+            "bufferAllocations": 81,
+            "bufferReuses": 22599,
+            "allocatorBytes": 8187432,
+            "inflight": 2
+          },
+          {
+            "frame": 960,
+            "frameBytes": 434714100,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 18,
+            "attachmentReuses": 2862,
+            "bufferAllocations": 81,
+            "bufferReuses": 25839,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 1080,
+            "frameBytes": 434714100,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 18,
+            "attachmentReuses": 3222,
+            "bufferAllocations": 81,
+            "bufferReuses": 29079,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 1200,
+            "frameBytes": 434714100,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 18,
+            "attachmentReuses": 3582,
+            "bufferAllocations": 81,
+            "bufferReuses": 32319,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 1320,
+            "frameBytes": 434714100,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 18,
+            "attachmentReuses": 3942,
+            "bufferAllocations": 81,
+            "bufferReuses": 35559,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 1440,
+            "frameBytes": 325432820,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 18,
+            "attachmentReuses": 4302,
+            "bufferAllocations": 81,
+            "bufferReuses": 38799,
+            "allocatorBytes": 8187432,
+            "inflight": 2
+          }
+        ],
+        "final": {
+          "submitted": 1440,
+          "completed": 1440,
+          "presented": 1406,
+          "completedPresented": 1406,
+          "errors": 0,
+          "peakFrameBytes": 434714100,
+          "peakAttachmentBytes": 327843840,
+          "peakAllocatorBytes": 8187432,
+          "liveAttachmentGenerations": 0,
+          "pendingBytes": 0
+        }
+      },
+      "medium": {
+        "command": [
+          "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/taa-evidence/benchmark-taa-off/medium",
+          "--benchmark-metal",
+          "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+          "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "1"
+        ],
+        "seconds": 6.633367750007892,
+        "peakRSSKiB": 158912,
+        "extents": {
+          "1280x720": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.179792,
+              "p95Ms": 0.27675
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.258937,
+              "p95Ms": 0.390792
+            },
+            "wholeSubmissionGPU": {
+              "samples": 565,
+              "medianMs": 2.14266698458232,
+              "p95Ms": 2.301874978002161
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 2.5682285,
+              "p95Ms": 5.234209
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 2.8770625,
+              "p95Ms": 5.518875
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 560,
+              "medianMs": 0.026104,
+              "p95Ms": 0.18575
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 560,
+              "medianMs": 0.08975,
+              "p95Ms": 0.099458
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 560,
+              "medianMs": 0.8786039999999999,
+              "p95Ms": 0.962708
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 560,
+              "medianMs": 0.264375,
+              "p95Ms": 0.279083
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 560,
+              "medianMs": 0.240125,
+              "p95Ms": 0.248208
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 0
+            },
+            "temporalHistoryPeakBytes": 0,
+            "temporalHistoryAllocations": 0,
+            "temporalHistoryReuses": 0,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 565,
+              "validOrderedRecords": 560,
+              "rejectedOrMissingRecords": 5
+            },
+            "AOTextureBytesPerGeneration": 15155200,
+            "GPUCompletionSpacing": {
+              "samples": 564,
+              "medianMs": 2.8365415055304766,
+              "p95Ms": 6.10854200203903
+            },
+            "positivePresentationSpacing": {
+              "samples": 564,
+              "medianMs": 2.79966599191539,
+              "p95Ms": 6.01991600706242
+            }
+          },
+          "1920x1080": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.044334,
+              "p95Ms": 0.051125
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.06768750000000001,
+              "p95Ms": 0.081334
+            },
+            "wholeSubmissionGPU": {
+              "samples": 579,
+              "medianMs": 5.674708023434505,
+              "p95Ms": 5.726375005906448
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 4.676125,
+              "p95Ms": 11.22925
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 4.752708,
+              "p95Ms": 11.318583
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 228,
+              "medianMs": 0.016604,
+              "p95Ms": 0.031583
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 228,
+              "medianMs": 0.2698125,
+              "p95Ms": 0.312833
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 228,
+              "medianMs": 1.957729,
+              "p95Ms": 2.007833
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 228,
+              "medianMs": 0.6047294999999999,
+              "p95Ms": 0.613458
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 228,
+              "medianMs": 0.557417,
+              "p95Ms": 0.565625
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 0
+            },
+            "temporalHistoryPeakBytes": 0,
+            "temporalHistoryAllocations": 0,
+            "temporalHistoryReuses": 0,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 579,
+              "validOrderedRecords": 228,
+              "rejectedOrMissingRecords": 351
+            },
+            "AOTextureBytesPerGeneration": 32587776,
+            "GPUCompletionSpacing": {
+              "samples": 578,
+              "medianMs": 4.638999991584569,
+              "p95Ms": 10.686166991945356
+            },
+            "positivePresentationSpacing": {
+              "samples": 578,
+              "medianMs": 4.7235410020221025,
+              "p95Ms": 12.351541983662173
+            }
+          }
+        },
+        "resourceSamples": [
+          {
+            "frame": 120,
+            "frameBytes": 169997812,
+            "attachmentBytes": 200540160,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 534,
+            "bufferAllocations": 81,
+            "bufferReuses": 3159,
+            "allocatorBytes": 8187432,
+            "inflight": 2
+          },
+          {
+            "frame": 240,
+            "frameBytes": 220132852,
+            "attachmentBytes": 200540160,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 894,
+            "bufferAllocations": 81,
+            "bufferReuses": 6399,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 360,
+            "frameBytes": 169997812,
+            "attachmentBytes": 200540160,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 1254,
+            "bufferAllocations": 81,
+            "bufferReuses": 9639,
+            "allocatorBytes": 8187432,
+            "inflight": 2
+          },
+          {
+            "frame": 480,
+            "frameBytes": 169997812,
+            "attachmentBytes": 200540160,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 1614,
+            "bufferAllocations": 81,
+            "bufferReuses": 12879,
+            "allocatorBytes": 8187432,
+            "inflight": 2
+          },
+          {
+            "frame": 600,
+            "frameBytes": 220132852,
+            "attachmentBytes": 200540160,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 1974,
+            "bufferAllocations": 81,
+            "bufferReuses": 16119,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 720,
+            "frameBytes": 434714100,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 21,
+            "attachmentReuses": 2325,
+            "bufferAllocations": 81,
+            "bufferReuses": 19359,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 840,
+            "frameBytes": 434714100,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 21,
+            "attachmentReuses": 2685,
+            "bufferAllocations": 81,
+            "bufferReuses": 22599,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 960,
+            "frameBytes": 434714100,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 21,
+            "attachmentReuses": 3045,
+            "bufferAllocations": 81,
+            "bufferReuses": 25839,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 1080,
+            "frameBytes": 434714100,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 21,
+            "attachmentReuses": 3405,
+            "bufferAllocations": 81,
+            "bufferReuses": 29079,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 1200,
+            "frameBytes": 434714100,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 21,
+            "attachmentReuses": 3765,
+            "bufferAllocations": 81,
+            "bufferReuses": 32319,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 1320,
+            "frameBytes": 434714100,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 21,
+            "attachmentReuses": 4125,
+            "bufferAllocations": 81,
+            "bufferReuses": 35559,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          }
+        ],
+        "final": {
+          "submitted": 1378,
+          "completed": 1378,
+          "presented": 1355,
+          "completedPresented": 1355,
+          "errors": 0,
+          "peakFrameBytes": 434714100,
+          "peakAttachmentBytes": 327843840,
+          "peakAllocatorBytes": 8187432,
+          "liveAttachmentGenerations": 0,
+          "pendingBytes": 0
+        }
+      },
+      "high": {
+        "command": [
+          "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/taa-evidence/benchmark-taa-off/high",
+          "--benchmark-metal",
+          "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+          "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "2"
+        ],
+        "seconds": 8.215367500000866,
+        "peakRSSKiB": 158544,
+        "extents": {
+          "1280x720": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.22091650000000002,
+              "p95Ms": 0.351375
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.303146,
+              "p95Ms": 0.484875
+            },
+            "wholeSubmissionGPU": {
+              "samples": 561,
+              "medianMs": 2.9397500038612634,
+              "p95Ms": 3.354499989654869
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 3.1035,
+              "p95Ms": 6.665
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 3.4569795,
+              "p95Ms": 7.100125
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 536,
+              "medianMs": 0.1288125,
+              "p95Ms": 0.193292
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 536,
+              "medianMs": 0.091417,
+              "p95Ms": 0.101458
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 536,
+              "medianMs": 1.52275,
+              "p95Ms": 1.561708
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 536,
+              "medianMs": 0.39183349999999995,
+              "p95Ms": 0.40925
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 536,
+              "medianMs": 0.242521,
+              "p95Ms": 0.247333
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 0
+            },
+            "temporalHistoryPeakBytes": 0,
+            "temporalHistoryAllocations": 0,
+            "temporalHistoryReuses": 0,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 561,
+              "validOrderedRecords": 536,
+              "rejectedOrMissingRecords": 25
+            },
+            "AOTextureBytesPerGeneration": 15155200,
+            "GPUCompletionSpacing": {
+              "samples": 560,
+              "medianMs": 3.4427289938321337,
+              "p95Ms": 7.951250008773059
+            },
+            "positivePresentationSpacing": {
+              "samples": 560,
+              "medianMs": 3.4969374974025413,
+              "p95Ms": 10.930374992312863
+            }
+          },
+          "1920x1080": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.25470899999999996,
+              "p95Ms": 0.370709
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.366979,
+              "p95Ms": 0.522667
+            },
+            "wholeSubmissionGPU": {
+              "samples": 580,
+              "medianMs": 7.404396004858427,
+              "p95Ms": 7.488667004508898
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 5.895583,
+              "p95Ms": 10.64575
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 6.388396,
+              "p95Ms": 11.110583
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 267,
+              "medianMs": 0.018542,
+              "p95Ms": 0.174125
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 267,
+              "medianMs": 0.273583,
+              "p95Ms": 0.3095
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 267,
+              "medianMs": 3.387,
+              "p95Ms": 3.399375
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 267,
+              "medianMs": 0.9005,
+              "p95Ms": 0.924375
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 267,
+              "medianMs": 0.562083,
+              "p95Ms": 0.574458
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 0
+            },
+            "temporalHistoryPeakBytes": 0,
+            "temporalHistoryAllocations": 0,
+            "temporalHistoryReuses": 0,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 580,
+              "validOrderedRecords": 267,
+              "rejectedOrMissingRecords": 313
+            },
+            "AOTextureBytesPerGeneration": 32587776,
+            "GPUCompletionSpacing": {
+              "samples": 579,
+              "medianMs": 6.374124990543351,
+              "p95Ms": 9.912042005453259
+            },
+            "positivePresentationSpacing": {
+              "samples": 579,
+              "medianMs": 6.296832987572998,
+              "p95Ms": 12.074707978172228
+            }
+          }
+        },
+        "resourceSamples": [
+          {
+            "frame": 120,
+            "frameBytes": 169998340,
+            "attachmentBytes": 200540160,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 537,
+            "bufferAllocations": 84,
+            "bufferReuses": 3276,
+            "allocatorBytes": 8187432,
+            "inflight": 2
+          },
+          {
+            "frame": 240,
+            "frameBytes": 169998340,
+            "attachmentBytes": 200540160,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 897,
+            "bufferAllocations": 84,
+            "bufferReuses": 6636,
+            "allocatorBytes": 8187432,
+            "inflight": 2
+          },
+          {
+            "frame": 360,
+            "frameBytes": 220133380,
+            "attachmentBytes": 200540160,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 1257,
+            "bufferAllocations": 84,
+            "bufferReuses": 9996,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 480,
+            "frameBytes": 169998340,
+            "attachmentBytes": 200540160,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 1617,
+            "bufferAllocations": 84,
+            "bufferReuses": 13356,
+            "allocatorBytes": 8187432,
+            "inflight": 2
+          },
+          {
+            "frame": 600,
+            "frameBytes": 169998340,
+            "attachmentBytes": 200540160,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 1977,
+            "bufferAllocations": 84,
+            "bufferReuses": 16716,
+            "allocatorBytes": 8187432,
+            "inflight": 2
+          },
+          {
+            "frame": 720,
+            "frameBytes": 434714628,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 21,
+            "attachmentReuses": 2328,
+            "bufferAllocations": 84,
+            "bufferReuses": 20076,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 840,
+            "frameBytes": 434714628,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 21,
+            "attachmentReuses": 2688,
+            "bufferAllocations": 84,
+            "bufferReuses": 23436,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 960,
+            "frameBytes": 434714628,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 21,
+            "attachmentReuses": 3048,
+            "bufferAllocations": 84,
+            "bufferReuses": 26796,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 1080,
+            "frameBytes": 434714628,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 21,
+            "attachmentReuses": 3408,
+            "bufferAllocations": 84,
+            "bufferReuses": 30156,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 1200,
+            "frameBytes": 434714628,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 21,
+            "attachmentReuses": 3768,
+            "bufferAllocations": 84,
+            "bufferReuses": 33516,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 1320,
+            "frameBytes": 325433348,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 21,
+            "attachmentReuses": 4128,
+            "bufferAllocations": 84,
+            "bufferReuses": 36876,
+            "allocatorBytes": 8187432,
+            "inflight": 2
+          }
+        ],
+        "final": {
+          "submitted": 1377,
+          "completed": 1377,
+          "presented": 1354,
+          "completedPresented": 1354,
+          "errors": 0,
+          "peakFrameBytes": 434714628,
+          "peakAttachmentBytes": 327843840,
+          "peakAllocatorBytes": 8187432,
+          "liveAttachmentGenerations": 0,
+          "pendingBytes": 0
+        }
+      },
+      "ultra": {
+        "command": [
+          "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/taa-evidence/benchmark-taa-off/ultra",
+          "--benchmark-metal",
+          "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+          "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "3"
+        ],
+        "seconds": 13.380947541998466,
+        "peakRSSKiB": 158288,
+        "extents": {
+          "1280x720": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.044417,
+              "p95Ms": 0.050583
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.067417,
+              "p95Ms": 0.079167
+            },
+            "wholeSubmissionGPU": {
+              "samples": 580,
+              "medianMs": 5.869541491847485,
+              "p95Ms": 5.899332987610251
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 5.3877915000000005,
+              "p95Ms": 10.089208
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 5.466125,
+              "p95Ms": 10.187084
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 299,
+              "medianMs": 0.009,
+              "p95Ms": 0.029583
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 299,
+              "medianMs": 0.089417,
+              "p95Ms": 0.095417
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 299,
+              "medianMs": 4.029167,
+              "p95Ms": 4.047
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 299,
+              "medianMs": 0.395833,
+              "p95Ms": 0.404667
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 299,
+              "medianMs": 0.242417,
+              "p95Ms": 0.246417
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 0
+            },
+            "temporalHistoryPeakBytes": 0,
+            "temporalHistoryAllocations": 0,
+            "temporalHistoryReuses": 0,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 580,
+              "validOrderedRecords": 299,
+              "rejectedOrMissingRecords": 281
+            },
+            "AOTextureBytesPerGeneration": 15155200,
+            "GPUCompletionSpacing": {
+              "samples": 579,
+              "medianMs": 5.392874998506159,
+              "p95Ms": 10.580249974736944
+            },
+            "positivePresentationSpacing": {
+              "samples": 579,
+              "medianMs": 5.449666001368314,
+              "p95Ms": 11.135250009829178
+            }
+          },
+          "1920x1080": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.044708,
+              "p95Ms": 0.054375
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.069834,
+              "p95Ms": 0.085958
+            },
+            "wholeSubmissionGPU": {
+              "samples": 580,
+              "medianMs": 12.988103975658305,
+              "p95Ms": 13.088792009511963
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 11.791457999999999,
+              "p95Ms": 20.215458
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 11.8712915,
+              "p95Ms": 20.291208
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 513,
+              "medianMs": 0.016,
+              "p95Ms": 0.016958
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 513,
+              "medianMs": 0.270208,
+              "p95Ms": 0.277792
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 513,
+              "medianMs": 8.958,
+              "p95Ms": 8.990667
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 513,
+              "medianMs": 0.908833,
+              "p95Ms": 0.922875
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 513,
+              "medianMs": 0.559208,
+              "p95Ms": 0.571583
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 0
+            },
+            "temporalHistoryPeakBytes": 0,
+            "temporalHistoryAllocations": 0,
+            "temporalHistoryReuses": 0,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 580,
+              "validOrderedRecords": 513,
+              "rejectedOrMissingRecords": 67
+            },
+            "AOTextureBytesPerGeneration": 32587776,
+            "GPUCompletionSpacing": {
+              "samples": 579,
+              "medianMs": 11.947916995268315,
+              "p95Ms": 12.037041975418106
+            },
+            "positivePresentationSpacing": {
+              "samples": 579,
+              "medianMs": 11.867459019413218,
+              "p95Ms": 20.19058301812038
+            }
+          }
+        },
+        "resourceSamples": [
+          {
+            "frame": 120,
+            "frameBytes": 204978180,
+            "attachmentBytes": 150405120,
+            "generations": 9,
+            "attachmentAllocations": 9,
+            "attachmentReuses": 351,
+            "bufferAllocations": 84,
+            "bufferReuses": 3276,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 240,
+            "frameBytes": 204978180,
+            "attachmentBytes": 150405120,
+            "generations": 9,
+            "attachmentAllocations": 9,
+            "attachmentReuses": 711,
+            "bufferAllocations": 84,
+            "bufferReuses": 6636,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 360,
+            "frameBytes": 204978180,
+            "attachmentBytes": 150405120,
+            "generations": 9,
+            "attachmentAllocations": 9,
+            "attachmentReuses": 1071,
+            "bufferAllocations": 84,
+            "bufferReuses": 9996,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 480,
+            "frameBytes": 204978180,
+            "attachmentBytes": 150405120,
+            "generations": 9,
+            "attachmentAllocations": 9,
+            "attachmentReuses": 1431,
+            "bufferAllocations": 84,
+            "bufferReuses": 13356,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 600,
+            "frameBytes": 204978180,
+            "attachmentBytes": 150405120,
+            "generations": 9,
+            "attachmentAllocations": 9,
+            "attachmentReuses": 1791,
+            "bufferAllocations": 84,
+            "bufferReuses": 16716,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 720,
+            "frameBytes": 204978180,
+            "attachmentBytes": 150405120,
+            "generations": 9,
+            "attachmentAllocations": 9,
+            "attachmentReuses": 2151,
+            "bufferAllocations": 84,
+            "bufferReuses": 20076,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 840,
+            "frameBytes": 434714628,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 18,
+            "attachmentReuses": 2502,
+            "bufferAllocations": 84,
+            "bufferReuses": 23436,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 960,
+            "frameBytes": 434714628,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 18,
+            "attachmentReuses": 2862,
+            "bufferAllocations": 84,
+            "bufferReuses": 26796,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 1080,
+            "frameBytes": 434714628,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 18,
+            "attachmentReuses": 3222,
+            "bufferAllocations": 84,
+            "bufferReuses": 30156,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 1200,
+            "frameBytes": 434714628,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 18,
+            "attachmentReuses": 3582,
+            "bufferAllocations": 84,
+            "bufferReuses": 33516,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 1320,
+            "frameBytes": 434714628,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 18,
+            "attachmentReuses": 3942,
+            "bufferAllocations": 84,
+            "bufferReuses": 36876,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          },
+          {
+            "frame": 1440,
+            "frameBytes": 434714628,
+            "attachmentBytes": 327843840,
+            "generations": 9,
+            "attachmentAllocations": 18,
+            "attachmentReuses": 4302,
+            "bufferAllocations": 84,
+            "bufferReuses": 40236,
+            "allocatorBytes": 8187432,
+            "inflight": 3
+          }
+        ],
+        "final": {
+          "submitted": 1440,
+          "completed": 1440,
+          "presented": 1429,
+          "completedPresented": 1429,
+          "errors": 0,
+          "peakFrameBytes": 434714628,
+          "peakAttachmentBytes": 327843840,
+          "peakAllocatorBytes": 8187432,
+          "liveAttachmentGenerations": 0,
+          "pendingBytes": 0
+        }
+      }
+    },
+    "status": "PASS: measured matrix; complete feature qualification remains separate"
+  },
+  "taaOn": {
+    "configuration": "Release",
+    "temporalAA": true,
+    "head": "3a0f71cb13728a6802ad1c9eaadf6ed384d8e4a0",
+    "warmup": 120,
+    "tail": 20,
+    "framesPerExtent": 720,
+    "scopes": "Scene CPU, native submission CPU, tick interval, whole commit feedback, and precise GPU phase completion intervals. Phase intervals include synchronization and are not exclusive/additive. No backend speedup claim.",
+    "memory": "AO texture bytes are per generation; tracked frame/attachment/allocator peaks overlap and must not be added. RSS includes CPU/driver process storage.",
+    "inputs": {
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/RenderingReference-XeGTAO.hproj": "45ac90edce86dbd574383416f805d6c36f7ed7f3964108a121e8291fbaf3bb6c",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Scenes/XeGTAO-Contact.hazel": "17700605d8c8038968b056065a0d93c60560c898b3ee8e34270b689e85972844",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Studies/XeGTAO/DarkMetal.hmat": "a588e84880d529c9c859eb162a45a3efe7606bbcab569016481ae31f9d8ff518",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Reference/IBL_v1/Photo.henv": "23ec202336c78a6a8c2f7cc3c515b3121bd26ef2342fe6a83647cdb88bfc3e02",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.accepted": "5e866725a98fd9e6a4261784892bbaffc0997a259813e3b4c0893631ba560e2c",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Native/Direct_v1/UnitCube.hprefab": "d612e0c2d02e5f0d65f67a94b91c8d0850242fddbd1a70662309df9a9058bbb8",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Native/Direct_v1/Surface.hmat": "284dc6817b8d8f4c258d45a062c9b5cd491d0a9e23c27a87db19efec652fedcc",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Native/Direct_v1/Source.generated": "e7d60ef899a51ae89a41d70bf1020e2faace2d028572b6898e8f9eb12d56e48e",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Native/Direct_v1/NOTICE.txt": "1564100a2a8bb63a07362f11c2fb0d279b729f8feadcca7850082213085db4c8",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Native/Direct_v1/UnitCube.hmesh": "269c99eefb87b56ad7d8483870f4a3e9c0dd777404cf637c068111b39ceb8bfb",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Native/Direct_v1/Import.himport": "481ddad7d922a15490807b62165bb36d6dafd59d85ed50370a1864a75ba379a8",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Native/Direct_v1/generations/0000000000000002/UnitCube.hgeom": "a16ef6f76711821386609af35a492bf1b680af802063786c9b8dd6f28b05a613",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/owner": "7fe853365d88cad3732c0756b7437e96a452511a3f4c8459bef57e2cd2026e9c",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/Background.hlight": "5b646c96e06e9f38091b7b1b7e449af820219839ddf2d7381eca2e810ee13d6a",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/Specular.hlight": "b0f1bcb878ec9f89ff98dee2e804c5408b5c2f3e792e8fdada195b45802a3588",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/Irradiance.hlight": "b1a4300271430dcaad7eeeb1b0dd61654c67df85d51366a22271f96a3ad3ff26",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/ForwardPBR.hzmetal": "494708bd6c3fb9611277f047d0713aa5cff7cde4bedf9c55465ad410b33d7c3d",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/producer.txt": "3adf77fe1deff3d0d6cd64e5d94093697067bf3661383af61af35e853b87f53f",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/EntityOutline.hzmetal": "01ef441c3b77ab67b9d02aa739f1a7028df2b38b9d23fa1d9c85a87b70f1da56",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/Renderer2D_Line.hzmetal": "0649cd9aa45d63604c35ca5def33e3e7bc1ab98f5c8f2325f56cf73ec0e2b154",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/Renderer2D_Quad-16.hzmetal": "39eea29c143507c211f13271cb3c4a77759910546ffce882a258502216fb35df",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/ImGui.json": "d36612bb5f238ec1c4bab9b2e85fc77d3c63c860debd011c0596d9da253cc280",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/XeGTAO.metallib": "524ef4611573fa9ee363915fab117e495dbae3e419e07ddba4269c74b0208368",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/MotionPBR.hzmetal": "45613286d38f7d974713f96718e2a6dbb527836150573f389735c324a01dbb19",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/Renderer2D_Quad-32.hzmetal": "909978450633564664d3f6f5356aa80c497644ffb0fddeec85bacf9a975695eb",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/WorldPresentation.hzmetal": "6cf0ea9c2ca49ecd7f264e5a4df9e5f174c2c51e6b50543d5b8d7ebb2acfb164",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/XeGTAO.json": "a7ce46cda7d523f9eb4a968317e967f638e83ea70b3d329b9c4b62b2e7d8b20d",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/EnvironmentSky.hzmetal": "ba159aa84517a9b3626851f37b7f6b5314a1ae2250dfd5d58e051d22d2c9c14a",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/ImGui.metallib": "ebd096577ba66f98f3d2ae9dc32a607ca23e7e5e3aa8243defe15a238c7ce167",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/Renderer2D_Circle.hzmetal": "4e51b4ef362be908924d84287eb1c92535cd080b03386d906e968a352251fce3",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/DepthPBR.hzmetal": "1d70d04368e5b48056bb672c1588d7e57a4abbd8f2199bc09357b06bb29f098f",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/Renderer2D_Text.hzmetal": "f76ae76d70633ab911155803737fb8a76f14be5c0be12ff57c6ca10c21889ba5",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/TemporalAA.metallib": "f35ceb326bb1e3a85fd0ee4e268492cc6879bf011ec32c3c731b1c6ca2cc3aca",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/DisplayOutput.hzmetal": "8673d03228a2883189838f0d47ba8b25b51024e2eeac91c3bc5bd2445b2fcead",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources/shaders/metal/TemporalAA.json": "0f72d77f7437560912c3fb93361e1bf04c658e7ff7bba6a022c81e12a95a0a3b"
+    },
+    "worktreeDiffSHA256": "ac7a780100f0168cad93abd28f4be9d0b30a5c201222412b64c9601854075f2c",
+    "runs": {
+      "off": {
+        "command": [
+          "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/taa-evidence/benchmark-alpha-taa-on/evidence/off",
+          "--benchmark-metal",
+          "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+          "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "-1",
+          "--taa"
+        ],
+        "seconds": 8.301705374993617,
+        "peakRSSKiB": 158576,
+        "extents": {
+          "1280x720": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.232896,
+              "p95Ms": 0.360375
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.309667,
+              "p95Ms": 0.491375
+            },
+            "wholeSubmissionGPU": {
+              "samples": 552,
+              "medianMs": 2.7538335125427693,
+              "p95Ms": 2.872832992579788
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 3.2316665,
+              "p95Ms": 6.261833
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 3.5763545,
+              "p95Ms": 6.564833
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 0
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 0
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 0
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 0
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 0
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 552,
+              "medianMs": 1.7440625,
+              "p95Ms": 1.77825
+            },
+            "temporalHistoryPeakBytes": 38010880,
+            "temporalHistoryAllocations": 2,
+            "temporalHistoryReuses": 700,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 0,
+              "validOrderedRecords": 0,
+              "rejectedOrMissingRecords": 0
+            },
+            "AOTextureBytesPerGeneration": 0,
+            "GPUCompletionSpacing": {
+              "samples": 551,
+              "medianMs": 3.5112500190734863,
+              "p95Ms": 7.277625001734123
+            },
+            "positivePresentationSpacing": {
+              "samples": 551,
+              "medianMs": 3.509542002575472,
+              "p95Ms": 10.930375021416694
+            }
+          },
+          "1920x1080": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.047792,
+              "p95Ms": 0.059542
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.070917,
+              "p95Ms": 0.086125
+            },
+            "wholeSubmissionGPU": {
+              "samples": 580,
+              "medianMs": 6.204687510035001,
+              "p95Ms": 6.293499987805262
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 6.1527080000000005,
+              "p95Ms": 10.444292
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 6.24125,
+              "p95Ms": 10.529084
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 0
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 0
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 0
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 0
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 0
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 580,
+              "medianMs": 4.0450415,
+              "p95Ms": 4.106167
+            },
+            "temporalHistoryPeakBytes": 83558400,
+            "temporalHistoryAllocations": 4,
+            "temporalHistoryReuses": 1418,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 0,
+              "validOrderedRecords": 0,
+              "rejectedOrMissingRecords": 0
+            },
+            "AOTextureBytesPerGeneration": 0,
+            "GPUCompletionSpacing": {
+              "samples": 579,
+              "medianMs": 6.237833003979176,
+              "p95Ms": 10.13387501006946
+            },
+            "positivePresentationSpacing": {
+              "samples": 579,
+              "medianMs": 6.175749993417412,
+              "p95Ms": 12.562583026010543
+            }
+          }
+        },
+        "resourceSamples": [
+          {
+            "frame": 120,
+            "frameBytes": 185535964,
+            "attachmentBytes": 268697600,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 714,
+            "bufferAllocations": 70,
+            "bufferReuses": 2450,
+            "allocatorBytes": 8433192,
+            "inflight": 2
+          },
+          {
+            "frame": 240,
+            "frameBytes": 231673308,
+            "attachmentBytes": 268697600,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 1194,
+            "bufferAllocations": 70,
+            "bufferReuses": 4970,
+            "allocatorBytes": 8433192,
+            "inflight": 3
+          },
+          {
+            "frame": 360,
+            "frameBytes": 231673308,
+            "attachmentBytes": 268697600,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 1674,
+            "bufferAllocations": 70,
+            "bufferReuses": 7490,
+            "allocatorBytes": 8433192,
+            "inflight": 3
+          },
+          {
+            "frame": 480,
+            "frameBytes": 185535964,
+            "attachmentBytes": 268697600,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 2154,
+            "bufferAllocations": 70,
+            "bufferReuses": 10010,
+            "allocatorBytes": 8433192,
+            "inflight": 2
+          },
+          {
+            "frame": 600,
+            "frameBytes": 185535964,
+            "attachmentBytes": 268697600,
+            "generations": 12,
+            "attachmentAllocations": 12,
+            "attachmentReuses": 2634,
+            "bufferAllocations": 70,
+            "bufferReuses": 12530,
+            "allocatorBytes": 8433192,
+            "inflight": 2
+          },
+          {
+            "frame": 720,
+            "frameBytes": 495848924,
+            "attachmentBytes": 486735872,
+            "generations": 10,
+            "attachmentAllocations": 22,
+            "attachmentReuses": 3106,
+            "bufferAllocations": 70,
+            "bufferReuses": 15050,
+            "allocatorBytes": 8433192,
+            "inflight": 3
+          },
+          {
+            "frame": 840,
+            "frameBytes": 495848924,
+            "attachmentBytes": 486735872,
+            "generations": 10,
+            "attachmentAllocations": 22,
+            "attachmentReuses": 3586,
+            "bufferAllocations": 70,
+            "bufferReuses": 17570,
+            "allocatorBytes": 8433192,
+            "inflight": 3
+          },
+          {
+            "frame": 960,
+            "frameBytes": 495848924,
+            "attachmentBytes": 486735872,
+            "generations": 10,
+            "attachmentAllocations": 22,
+            "attachmentReuses": 4066,
+            "bufferAllocations": 70,
+            "bufferReuses": 20090,
+            "allocatorBytes": 8433192,
+            "inflight": 3
+          },
+          {
+            "frame": 1080,
+            "frameBytes": 495848924,
+            "attachmentBytes": 486735872,
+            "generations": 10,
+            "attachmentAllocations": 22,
+            "attachmentReuses": 4546,
+            "bufferAllocations": 70,
+            "bufferReuses": 22610,
+            "allocatorBytes": 8433192,
+            "inflight": 3
+          },
+          {
+            "frame": 1200,
+            "frameBytes": 495848924,
+            "attachmentBytes": 486735872,
+            "generations": 10,
+            "attachmentAllocations": 22,
+            "attachmentReuses": 5026,
+            "bufferAllocations": 70,
+            "bufferReuses": 25130,
+            "allocatorBytes": 8433192,
+            "inflight": 3
+          },
+          {
+            "frame": 1320,
+            "frameBytes": 495848924,
+            "attachmentBytes": 486735872,
+            "generations": 10,
+            "attachmentAllocations": 22,
+            "attachmentReuses": 5506,
+            "bufferAllocations": 70,
+            "bufferReuses": 27650,
+            "allocatorBytes": 8433192,
+            "inflight": 3
+          }
+        ],
+        "final": {
+          "submitted": 1379,
+          "completed": 1379,
+          "presented": 1344,
+          "completedPresented": 1344,
+          "errors": 0,
+          "peakFrameBytes": 495848924,
+          "peakAttachmentBytes": 486735872,
+          "peakAllocatorBytes": 8433192,
+          "liveAttachmentGenerations": 0,
+          "pendingBytes": 0
+        }
+      },
+      "low": {
+        "command": [
+          "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/taa-evidence/benchmark-alpha-taa-on/evidence/low",
+          "--benchmark-metal",
+          "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+          "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "0",
+          "--taa"
+        ],
+        "seconds": 9.817388916999334,
+        "peakRSSKiB": 159600,
+        "extents": {
+          "1280x720": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.0722295,
+              "p95Ms": 0.094625
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.1054585,
+              "p95Ms": 0.137791
+            },
+            "wholeSubmissionGPU": {
+              "samples": 572,
+              "medianMs": 4.195771005470306,
+              "p95Ms": 4.275500017683953
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 3.776729,
+              "p95Ms": 6.723792
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 3.8935835,
+              "p95Ms": 6.840292
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 158,
+              "medianMs": 0.0229165,
+              "p95Ms": 0.028458
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 158,
+              "medianMs": 0.090042,
+              "p95Ms": 0.119542
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 158,
+              "medianMs": 0.5654165,
+              "p95Ms": 0.595583
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 158,
+              "medianMs": 0.2648955,
+              "p95Ms": 0.2715
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 158,
+              "medianMs": 0.245375,
+              "p95Ms": 0.251042
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 562,
+              "medianMs": 1.7586249999999999,
+              "p95Ms": 1.793083
+            },
+            "temporalHistoryPeakBytes": 38010880,
+            "temporalHistoryAllocations": 2,
+            "temporalHistoryReuses": 700,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 572,
+              "validOrderedRecords": 158,
+              "rejectedOrMissingRecords": 414
+            },
+            "AOTextureBytesPerGeneration": 15155200,
+            "GPUCompletionSpacing": {
+              "samples": 571,
+              "medianMs": 3.769500006455928,
+              "p95Ms": 7.584375009173527
+            },
+            "positivePresentationSpacing": {
+              "samples": 571,
+              "medianMs": 3.8764170021750033,
+              "p95Ms": 8.686207991559058
+            }
+          },
+          "1920x1080": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.07202049999999999,
+              "p95Ms": 0.090292
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.108375,
+              "p95Ms": 0.145791
+            },
+            "wholeSubmissionGPU": {
+              "samples": 580,
+              "medianMs": 9.475500002736226,
+              "p95Ms": 9.577125019859523
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 8.270813,
+              "p95Ms": 14.080583
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 8.395729500000002,
+              "p95Ms": 14.202708
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 78,
+              "medianMs": 0.016875,
+              "p95Ms": 0.049208
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 78,
+              "medianMs": 0.26572949999999995,
+              "p95Ms": 0.294625
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 78,
+              "medianMs": 1.2597915,
+              "p95Ms": 1.268625
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 78,
+              "medianMs": 0.604125,
+              "p95Ms": 0.610583
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 78,
+              "medianMs": 0.5671459999999999,
+              "p95Ms": 0.57375
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 580,
+              "medianMs": 4.0489999999999995,
+              "p95Ms": 4.118625
+            },
+            "temporalHistoryPeakBytes": 83558400,
+            "temporalHistoryAllocations": 4,
+            "temporalHistoryReuses": 1418,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 580,
+              "validOrderedRecords": 78,
+              "rejectedOrMissingRecords": 502
+            },
+            "AOTextureBytesPerGeneration": 32587776,
+            "GPUCompletionSpacing": {
+              "samples": 579,
+              "medianMs": 8.47137501114048,
+              "p95Ms": 9.20804199995473
+            },
+            "positivePresentationSpacing": {
+              "samples": 579,
+              "medianMs": 8.358042017789558,
+              "p95Ms": 14.498915988951921
+            }
+          }
+        },
+        "resourceSamples": [
+          {
+            "frame": 120,
+            "frameBytes": 304305316,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 766,
+            "bufferAllocations": 115,
+            "bufferReuses": 4205,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 240,
+            "frameBytes": 304305316,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 1366,
+            "bufferAllocations": 115,
+            "bufferReuses": 8525,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 360,
+            "frameBytes": 304305316,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 1966,
+            "bufferAllocations": 115,
+            "bufferReuses": 12845,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 480,
+            "frameBytes": 304305316,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 2566,
+            "bufferAllocations": 115,
+            "bufferReuses": 17165,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 600,
+            "frameBytes": 254170276,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 3166,
+            "bufferAllocations": 115,
+            "bufferReuses": 21485,
+            "allocatorBytes": 8826408,
+            "inflight": 2
+          },
+          {
+            "frame": 720,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 3755,
+            "bufferAllocations": 115,
+            "bufferReuses": 25805,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 840,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 4355,
+            "bufferAllocations": 115,
+            "bufferReuses": 30125,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 960,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 4955,
+            "bufferAllocations": 115,
+            "bufferReuses": 34445,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1080,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 5555,
+            "bufferAllocations": 115,
+            "bufferReuses": 38765,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1200,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 6155,
+            "bufferAllocations": 115,
+            "bufferReuses": 43085,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1320,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 6755,
+            "bufferAllocations": 115,
+            "bufferReuses": 47405,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          }
+        ],
+        "final": {
+          "submitted": 1404,
+          "completed": 1404,
+          "presented": 1393,
+          "completedPresented": 1393,
+          "errors": 0,
+          "peakFrameBytes": 626660516,
+          "peakAttachmentBytes": 537198592,
+          "peakAllocatorBytes": 8826408,
+          "liveAttachmentGenerations": 0,
+          "pendingBytes": 0
+        }
+      },
+      "medium": {
+        "command": [
+          "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/taa-evidence/benchmark-alpha-taa-on/evidence/medium",
+          "--benchmark-metal",
+          "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+          "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "1",
+          "--taa"
+        ],
+        "seconds": 10.630888708983548,
+        "peakRSSKiB": 159616,
+        "extents": {
+          "1280x720": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.074208,
+              "p95Ms": 0.098667
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.107292,
+              "p95Ms": 0.136458
+            },
+            "wholeSubmissionGPU": {
+              "samples": 566,
+              "medianMs": 4.535583488177508,
+              "p95Ms": 4.597042017849162
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 4.1549375,
+              "p95Ms": 7.819167
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 4.271104,
+              "p95Ms": 7.949417
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 147,
+              "medianMs": 0.022375,
+              "p95Ms": 0.027667
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 147,
+              "medianMs": 0.08975,
+              "p95Ms": 0.09775
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 147,
+              "medianMs": 0.879417,
+              "p95Ms": 0.905375
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 147,
+              "medianMs": 0.265083,
+              "p95Ms": 0.27
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 147,
+              "medianMs": 0.24575,
+              "p95Ms": 0.252375
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 525,
+              "medianMs": 1.762583,
+              "p95Ms": 1.797125
+            },
+            "temporalHistoryPeakBytes": 38010880,
+            "temporalHistoryAllocations": 2,
+            "temporalHistoryReuses": 700,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 566,
+              "validOrderedRecords": 147,
+              "rejectedOrMissingRecords": 419
+            },
+            "AOTextureBytesPerGeneration": 15155200,
+            "GPUCompletionSpacing": {
+              "samples": 565,
+              "medianMs": 4.101124999579042,
+              "p95Ms": 8.221041993238032
+            },
+            "positivePresentationSpacing": {
+              "samples": 565,
+              "medianMs": 4.239417001372203,
+              "p95Ms": 11.135207983897999
+            }
+          },
+          "1920x1080": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.0712915,
+              "p95Ms": 0.119459
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.10647899999999999,
+              "p95Ms": 0.171958
+            },
+            "wholeSubmissionGPU": {
+              "samples": 580,
+              "medianMs": 10.154145988053642,
+              "p95Ms": 10.254541994072497
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 9.097688,
+              "p95Ms": 16.198583
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 9.218812499999999,
+              "p95Ms": 16.357708
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 74,
+              "medianMs": 0.0220415,
+              "p95Ms": 0.030125
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 74,
+              "medianMs": 0.268625,
+              "p95Ms": 0.329333
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 74,
+              "medianMs": 1.958083,
+              "p95Ms": 1.977875
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 74,
+              "medianMs": 0.6061875,
+              "p95Ms": 0.615083
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 74,
+              "medianMs": 0.567,
+              "p95Ms": 0.570917
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 580,
+              "medianMs": 4.0425,
+              "p95Ms": 4.119875
+            },
+            "temporalHistoryPeakBytes": 83558400,
+            "temporalHistoryAllocations": 4,
+            "temporalHistoryReuses": 1417,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 580,
+              "validOrderedRecords": 74,
+              "rejectedOrMissingRecords": 506
+            },
+            "AOTextureBytesPerGeneration": 32587776,
+            "GPUCompletionSpacing": {
+              "samples": 579,
+              "medianMs": 9.15362499654293,
+              "p95Ms": 12.020124995615333
+            },
+            "positivePresentationSpacing": {
+              "samples": 579,
+              "medianMs": 9.20133400359191,
+              "p95Ms": 18.406290997518227
+            }
+          }
+        },
+        "resourceSamples": [
+          {
+            "frame": 120,
+            "frameBytes": 304305316,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 751,
+            "bufferAllocations": 115,
+            "bufferReuses": 4205,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 240,
+            "frameBytes": 304305316,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 1351,
+            "bufferAllocations": 115,
+            "bufferReuses": 8525,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 360,
+            "frameBytes": 254170276,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 1951,
+            "bufferAllocations": 115,
+            "bufferReuses": 12845,
+            "allocatorBytes": 8826408,
+            "inflight": 2
+          },
+          {
+            "frame": 480,
+            "frameBytes": 254170276,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 2551,
+            "bufferAllocations": 115,
+            "bufferReuses": 17165,
+            "allocatorBytes": 8826408,
+            "inflight": 2
+          },
+          {
+            "frame": 600,
+            "frameBytes": 304305316,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 3151,
+            "bufferAllocations": 115,
+            "bufferReuses": 21485,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 720,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 3740,
+            "bufferAllocations": 115,
+            "bufferReuses": 25805,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 840,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 4340,
+            "bufferAllocations": 115,
+            "bufferReuses": 30125,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 960,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 4940,
+            "bufferAllocations": 115,
+            "bufferReuses": 34445,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1080,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 5540,
+            "bufferAllocations": 115,
+            "bufferReuses": 38765,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1200,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 6140,
+            "bufferAllocations": 115,
+            "bufferReuses": 43085,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1320,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 6740,
+            "bufferAllocations": 115,
+            "bufferReuses": 47405,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          }
+        ],
+        "final": {
+          "submitted": 1407,
+          "completed": 1407,
+          "presented": 1387,
+          "completedPresented": 1387,
+          "errors": 0,
+          "peakFrameBytes": 626660516,
+          "peakAttachmentBytes": 537198592,
+          "peakAllocatorBytes": 8826408,
+          "liveAttachmentGenerations": 0,
+          "pendingBytes": 0
+        }
+      },
+      "high": {
+        "command": [
+          "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/taa-evidence/benchmark-alpha-taa-on/evidence/high",
+          "--benchmark-metal",
+          "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+          "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "2",
+          "--taa"
+        ],
+        "seconds": 12.353815124981338,
+        "peakRSSKiB": 159392,
+        "extents": {
+          "1280x720": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.071959,
+              "p95Ms": 0.089625
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.1055835,
+              "p95Ms": 0.127708
+            },
+            "wholeSubmissionGPU": {
+              "samples": 578,
+              "medianMs": 5.3225834999466315,
+              "p95Ms": 5.382957984693348
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 4.9792085,
+              "p95Ms": 10.751083
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 5.0968955000000005,
+              "p95Ms": 10.890583
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 100,
+              "medianMs": 0.0220835,
+              "p95Ms": 0.029875
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 100,
+              "medianMs": 0.09047949999999999,
+              "p95Ms": 0.153208
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 100,
+              "medianMs": 1.524854,
+              "p95Ms": 1.540875
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 100,
+              "medianMs": 0.391333,
+              "p95Ms": 0.400333
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 100,
+              "medianMs": 0.245417,
+              "p95Ms": 0.250708
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 566,
+              "medianMs": 1.763625,
+              "p95Ms": 1.797583
+            },
+            "temporalHistoryPeakBytes": 38010880,
+            "temporalHistoryAllocations": 2,
+            "temporalHistoryReuses": 700,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 578,
+              "validOrderedRecords": 100,
+              "rejectedOrMissingRecords": 478
+            },
+            "AOTextureBytesPerGeneration": 15155200,
+            "GPUCompletionSpacing": {
+              "samples": 577,
+              "medianMs": 4.872000019531697,
+              "p95Ms": 11.073250003391877
+            },
+            "positivePresentationSpacing": {
+              "samples": 577,
+              "medianMs": 4.9656670016702265,
+              "p95Ms": 12.56266699056141
+            }
+          },
+          "1920x1080": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.0701045,
+              "p95Ms": 0.090959
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.10352049999999999,
+              "p95Ms": 0.13775
+            },
+            "wholeSubmissionGPU": {
+              "samples": 580,
+              "medianMs": 11.883896004292183,
+              "p95Ms": 12.007624987745658
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 10.7862915,
+              "p95Ms": 19.590125
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 10.901271,
+              "p95Ms": 19.712125
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 77,
+              "medianMs": 0.015417,
+              "p95Ms": 0.043917
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 77,
+              "medianMs": 0.266667,
+              "p95Ms": 0.287042
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 77,
+              "medianMs": 3.384083,
+              "p95Ms": 3.39575
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 77,
+              "medianMs": 0.921583,
+              "p95Ms": 0.929458
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 77,
+              "medianMs": 0.565833,
+              "p95Ms": 0.577167
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 580,
+              "medianMs": 4.026666499999999,
+              "p95Ms": 4.099333
+            },
+            "temporalHistoryPeakBytes": 83558400,
+            "temporalHistoryAllocations": 4,
+            "temporalHistoryReuses": 1417,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 580,
+              "validOrderedRecords": 77,
+              "rejectedOrMissingRecords": 503
+            },
+            "AOTextureBytesPerGeneration": 32587776,
+            "GPUCompletionSpacing": {
+              "samples": 579,
+              "medianMs": 10.876249987632036,
+              "p95Ms": 11.756374995457008
+            },
+            "positivePresentationSpacing": {
+              "samples": 579,
+              "medianMs": 10.899374989094213,
+              "p95Ms": 20.100625028135255
+            }
+          }
+        },
+        "resourceSamples": [
+          {
+            "frame": 120,
+            "frameBytes": 254170804,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 646,
+            "bufferAllocations": 118,
+            "bufferReuses": 4322,
+            "allocatorBytes": 8826408,
+            "inflight": 2
+          },
+          {
+            "frame": 240,
+            "frameBytes": 304305844,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 1246,
+            "bufferAllocations": 118,
+            "bufferReuses": 8762,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 360,
+            "frameBytes": 304305844,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 1846,
+            "bufferAllocations": 118,
+            "bufferReuses": 13202,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 480,
+            "frameBytes": 304305844,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 2446,
+            "bufferAllocations": 118,
+            "bufferReuses": 17642,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 600,
+            "frameBytes": 254170804,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 3046,
+            "bufferAllocations": 118,
+            "bufferReuses": 22082,
+            "allocatorBytes": 8826408,
+            "inflight": 2
+          },
+          {
+            "frame": 720,
+            "frameBytes": 619091636,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 3635,
+            "bufferAllocations": 118,
+            "bufferReuses": 26522,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 840,
+            "frameBytes": 619091636,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 4235,
+            "bufferAllocations": 118,
+            "bufferReuses": 30962,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 960,
+            "frameBytes": 619091636,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 4835,
+            "bufferAllocations": 118,
+            "bufferReuses": 35402,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1080,
+            "frameBytes": 619091636,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 5435,
+            "bufferAllocations": 118,
+            "bufferReuses": 39842,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1200,
+            "frameBytes": 509810356,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 6035,
+            "bufferAllocations": 118,
+            "bufferReuses": 44282,
+            "allocatorBytes": 8826408,
+            "inflight": 2
+          },
+          {
+            "frame": 1320,
+            "frameBytes": 619091636,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 6635,
+            "bufferAllocations": 118,
+            "bufferReuses": 48722,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          }
+        ],
+        "final": {
+          "submitted": 1428,
+          "completed": 1428,
+          "presented": 1405,
+          "completedPresented": 1405,
+          "errors": 0,
+          "peakFrameBytes": 626661044,
+          "peakAttachmentBytes": 537198592,
+          "peakAllocatorBytes": 8826408,
+          "liveAttachmentGenerations": 0,
+          "pendingBytes": 0
+        }
+      },
+      "ultra": {
+        "command": [
+          "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/taa-evidence/benchmark-alpha-taa-on/evidence/ultra",
+          "--benchmark-metal",
+          "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+          "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "3",
+          "--taa"
+        ],
+        "seconds": 17.868723874998977,
+        "peakRSSKiB": 158960,
+        "extents": {
+          "1280x720": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.07,
+              "p95Ms": 0.083709
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.1023125,
+              "p95Ms": 0.121667
+            },
+            "wholeSubmissionGPU": {
+              "samples": 580,
+              "medianMs": 7.838749996153638,
+              "p95Ms": 7.894375012256205
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 7.2567085,
+              "p95Ms": 12.850959
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 7.3668335,
+              "p95Ms": 12.967542
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 78,
+              "medianMs": 0.0220625,
+              "p95Ms": 0.03125
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 78,
+              "medianMs": 0.0921665,
+              "p95Ms": 0.173625
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 78,
+              "medianMs": 4.030521,
+              "p95Ms": 4.064458
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 78,
+              "medianMs": 0.394521,
+              "p95Ms": 0.405583
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 78,
+              "medianMs": 0.24733349999999998,
+              "p95Ms": 0.25125
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 572,
+              "medianMs": 1.7620624999999999,
+              "p95Ms": 1.797958
+            },
+            "temporalHistoryPeakBytes": 38010880,
+            "temporalHistoryAllocations": 2,
+            "temporalHistoryReuses": 700,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 580,
+              "validOrderedRecords": 78,
+              "rejectedOrMissingRecords": 502
+            },
+            "AOTextureBytesPerGeneration": 15155200,
+            "GPUCompletionSpacing": {
+              "samples": 579,
+              "medianMs": 7.376749999821186,
+              "p95Ms": 10.221625008853152
+            },
+            "positivePresentationSpacing": {
+              "samples": 579,
+              "medianMs": 7.385959004750475,
+              "p95Ms": 13.893791998270899
+            }
+          },
+          "1920x1080": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.070792,
+              "p95Ms": 0.089708
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.10614599999999999,
+              "p95Ms": 0.13075
+            },
+            "wholeSubmissionGPU": {
+              "samples": 580,
+              "medianMs": 17.464021002524532,
+              "p95Ms": 17.572666984051466
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 16.341833,
+              "p95Ms": 24.684958
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 16.462729,
+              "p95Ms": 24.798166
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 4,
+              "medianMs": 0.0194375,
+              "p95Ms": 0.021875
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 4,
+              "medianMs": 0.2643125,
+              "p95Ms": 0.265333
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 4,
+              "medianMs": 8.9658125,
+              "p95Ms": 8.971458
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 4,
+              "medianMs": 0.9112290000000001,
+              "p95Ms": 0.916833
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 4,
+              "medianMs": 0.5682294999999999,
+              "p95Ms": 0.569042
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 580,
+              "medianMs": 4.029208000000001,
+              "p95Ms": 4.098208
+            },
+            "temporalHistoryPeakBytes": 83558400,
+            "temporalHistoryAllocations": 4,
+            "temporalHistoryReuses": 1418,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 580,
+              "validOrderedRecords": 4,
+              "rejectedOrMissingRecords": 576
+            },
+            "AOTextureBytesPerGeneration": 32587776,
+            "GPUCompletionSpacing": {
+              "samples": 579,
+              "medianMs": 16.433332988526672,
+              "p95Ms": 16.530291992239654
+            },
+            "positivePresentationSpacing": {
+              "samples": 579,
+              "medianMs": 16.47012500325218,
+              "p95Ms": 24.582292011473328
+            }
+          }
+        },
+        "resourceSamples": [
+          {
+            "frame": 120,
+            "frameBytes": 289150644,
+            "attachmentBytes": 234553344,
+            "generations": 13,
+            "attachmentAllocations": 13,
+            "attachmentReuses": 589,
+            "bufferAllocations": 118,
+            "bufferReuses": 4322,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 240,
+            "frameBytes": 289150644,
+            "attachmentBytes": 234553344,
+            "generations": 13,
+            "attachmentAllocations": 13,
+            "attachmentReuses": 1189,
+            "bufferAllocations": 118,
+            "bufferReuses": 8762,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 360,
+            "frameBytes": 239015604,
+            "attachmentBytes": 234553344,
+            "generations": 13,
+            "attachmentAllocations": 13,
+            "attachmentReuses": 1789,
+            "bufferAllocations": 118,
+            "bufferReuses": 13202,
+            "allocatorBytes": 8826408,
+            "inflight": 2
+          },
+          {
+            "frame": 480,
+            "frameBytes": 289150644,
+            "attachmentBytes": 234553344,
+            "generations": 13,
+            "attachmentAllocations": 13,
+            "attachmentReuses": 2389,
+            "bufferAllocations": 118,
+            "bufferReuses": 17642,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 600,
+            "frameBytes": 289150644,
+            "attachmentBytes": 234553344,
+            "generations": 13,
+            "attachmentAllocations": 13,
+            "attachmentReuses": 2989,
+            "bufferAllocations": 118,
+            "bufferReuses": 22082,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 720,
+            "frameBytes": 289150644,
+            "attachmentBytes": 234553344,
+            "generations": 13,
+            "attachmentAllocations": 13,
+            "attachmentReuses": 3589,
+            "bufferAllocations": 118,
+            "bufferReuses": 26522,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 840,
+            "frameBytes": 619091636,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 26,
+            "attachmentReuses": 4178,
+            "bufferAllocations": 118,
+            "bufferReuses": 30962,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 960,
+            "frameBytes": 619091636,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 26,
+            "attachmentReuses": 4778,
+            "bufferAllocations": 118,
+            "bufferReuses": 35402,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1080,
+            "frameBytes": 619091636,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 26,
+            "attachmentReuses": 5378,
+            "bufferAllocations": 118,
+            "bufferReuses": 39842,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1200,
+            "frameBytes": 619091636,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 26,
+            "attachmentReuses": 5978,
+            "bufferAllocations": 118,
+            "bufferReuses": 44282,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1320,
+            "frameBytes": 619091636,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 26,
+            "attachmentReuses": 6578,
+            "bufferAllocations": 118,
+            "bufferReuses": 48722,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1440,
+            "frameBytes": 619091636,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 26,
+            "attachmentReuses": 7178,
+            "bufferAllocations": 118,
+            "bufferReuses": 53162,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          }
+        ],
+        "final": {
+          "submitted": 1440,
+          "completed": 1440,
+          "presented": 1435,
+          "completedPresented": 1435,
+          "errors": 0,
+          "peakFrameBytes": 619091636,
+          "peakAttachmentBytes": 512196608,
+          "peakAllocatorBytes": 8826408,
+          "liveAttachmentGenerations": 0,
+          "pendingBytes": 0
+        }
+      }
+    },
+    "status": "PASS: measured matrix; complete feature qualification remains separate"
+  },
+  "motion": {
+    "scope": "Registered floor differences for the fixed TAA native AO motion fixture.\n\nThis measures residual changes, including physically changing occlusion. It is\nnot ground truth or owner visual acceptance. Pairs are four scene steps apart.\n",
+    "status": "MEASURED; owner acceptance pending",
+    "rows": [
+      {
+        "quality": -1,
+        "taa": false,
+        "samples": 170575,
+        "registeredFloorRMS": 0.00026436004006188957,
+        "meanSignedChange": 2.9733327211406162e-05,
+        "pairs": [
+          {
+            "frame": 20,
+            "samples": 15387,
+            "rms": 0.00026389154631503736
+          },
+          {
+            "frame": 24,
+            "samples": 15397,
+            "rms": 0.0002645448548549427
+          },
+          {
+            "frame": 28,
+            "samples": 15412,
+            "rms": 0.00026440091266739373
+          },
+          {
+            "frame": 32,
+            "samples": 15413,
+            "rms": 0.00026473832554172583
+          },
+          {
+            "frame": 36,
+            "samples": 15404,
+            "rms": 0.00026503553085698446
+          },
+          {
+            "frame": 40,
+            "samples": 15603,
+            "rms": 0.00026343999307550965
+          },
+          {
+            "frame": 44,
+            "samples": 15751,
+            "rms": 0.00026260845723197174
+          },
+          {
+            "frame": 48,
+            "samples": 15763,
+            "rms": 0.00026281455232784817
+          },
+          {
+            "frame": 52,
+            "samples": 15685,
+            "rms": 0.0002634895417866983
+          },
+          {
+            "frame": 56,
+            "samples": 15486,
+            "rms": 0.00026533622507156064
+          },
+          {
+            "frame": 60,
+            "samples": 15274,
+            "rms": 0.00026774787131425467
+          }
+        ],
+        "segments": {
+          "cameraOnly": {
+            "samples": 61609,
+            "rms": 0.0002643942686452525
+          },
+          "movingOccluder": {
+            "samples": 108966,
+            "rms": 0.0002643406853777133
+          }
+        }
+      },
+      {
+        "quality": -1,
+        "taa": true,
+        "samples": 170575,
+        "registeredFloorRMS": 0.00024992396953852226,
+        "meanSignedChange": 1.588648634730166e-05,
+        "pairs": [
+          {
+            "frame": 20,
+            "samples": 15387,
+            "rms": 9.190744053262711e-05
+          },
+          {
+            "frame": 24,
+            "samples": 15397,
+            "rms": 0.0002492784504576951
+          },
+          {
+            "frame": 28,
+            "samples": 15412,
+            "rms": 0.0002543141610545991
+          },
+          {
+            "frame": 32,
+            "samples": 15413,
+            "rms": 0.00023057268371537835
+          },
+          {
+            "frame": 36,
+            "samples": 15404,
+            "rms": 0.0002865216370981354
+          },
+          {
+            "frame": 40,
+            "samples": 15603,
+            "rms": 0.000270023121972548
+          },
+          {
+            "frame": 44,
+            "samples": 15751,
+            "rms": 0.00023094911397860733
+          },
+          {
+            "frame": 48,
+            "samples": 15763,
+            "rms": 0.0002624858171980588
+          },
+          {
+            "frame": 52,
+            "samples": 15685,
+            "rms": 0.0002802420147165859
+          },
+          {
+            "frame": 56,
+            "samples": 15486,
+            "rms": 0.000254565110393379
+          },
+          {
+            "frame": 60,
+            "samples": 15274,
+            "rms": 0.0002788580154646064
+          }
+        ],
+        "segments": {
+          "cameraOnly": {
+            "samples": 61609,
+            "rms": 0.0002170683538800231
+          },
+          "movingOccluder": {
+            "samples": 108966,
+            "rms": 0.0002667152992306603
+          }
+        }
+      },
+      {
+        "quality": 0,
+        "taa": false,
+        "samples": 170575,
+        "registeredFloorRMS": 0.0014246736630858542,
+        "meanSignedChange": 2.9553415521316394e-05,
+        "pairs": [
+          {
+            "frame": 20,
+            "samples": 15387,
+            "rms": 0.0012341813095248812
+          },
+          {
+            "frame": 24,
+            "samples": 15397,
+            "rms": 0.001262765681898258
+          },
+          {
+            "frame": 28,
+            "samples": 15412,
+            "rms": 0.001256793430819142
+          },
+          {
+            "frame": 32,
+            "samples": 15413,
+            "rms": 0.001217517552733721
+          },
+          {
+            "frame": 36,
+            "samples": 15404,
+            "rms": 0.001703404702402371
+          },
+          {
+            "frame": 40,
+            "samples": 15603,
+            "rms": 0.0015215754973825722
+          },
+          {
+            "frame": 44,
+            "samples": 15751,
+            "rms": 0.001292587916388229
+          },
+          {
+            "frame": 48,
+            "samples": 15763,
+            "rms": 0.0012146178788661945
+          },
+          {
+            "frame": 52,
+            "samples": 15685,
+            "rms": 0.0013516118076668262
+          },
+          {
+            "frame": 56,
+            "samples": 15486,
+            "rms": 0.0016576848622293508
+          },
+          {
+            "frame": 60,
+            "samples": 15274,
+            "rms": 0.001799035566292404
+          }
+        ],
+        "segments": {
+          "cameraOnly": {
+            "samples": 61609,
+            "rms": 0.0012429443073018163
+          },
+          "movingOccluder": {
+            "samples": 108966,
+            "rms": 0.0015178242735282845
+          }
+        }
+      },
+      {
+        "quality": 0,
+        "taa": true,
+        "samples": 170575,
+        "registeredFloorRMS": 0.001183117539567036,
+        "meanSignedChange": 3.288609633872197e-05,
+        "pairs": [
+          {
+            "frame": 20,
+            "samples": 15387,
+            "rms": 0.0009987412267593355
+          },
+          {
+            "frame": 24,
+            "samples": 15397,
+            "rms": 0.0011319926270567258
+          },
+          {
+            "frame": 28,
+            "samples": 15412,
+            "rms": 0.0010651742250235056
+          },
+          {
+            "frame": 32,
+            "samples": 15413,
+            "rms": 0.0009879445549354265
+          },
+          {
+            "frame": 36,
+            "samples": 15404,
+            "rms": 0.0013188779691533075
+          },
+          {
+            "frame": 40,
+            "samples": 15603,
+            "rms": 0.0013313511562807066
+          },
+          {
+            "frame": 44,
+            "samples": 15751,
+            "rms": 0.0012048607258270017
+          },
+          {
+            "frame": 48,
+            "samples": 15763,
+            "rms": 0.0010241157696268082
+          },
+          {
+            "frame": 52,
+            "samples": 15685,
+            "rms": 0.0012020714821798168
+          },
+          {
+            "frame": 56,
+            "samples": 15486,
+            "rms": 0.0014126326495516055
+          },
+          {
+            "frame": 60,
+            "samples": 15274,
+            "rms": 0.0012467407444431598
+          }
+        ],
+        "segments": {
+          "cameraOnly": {
+            "samples": 61609,
+            "rms": 0.0010475563189742436
+          },
+          "movingOccluder": {
+            "samples": 108966,
+            "rms": 0.0012532912658863578
+          }
+        }
+      },
+      {
+        "quality": 1,
+        "taa": false,
+        "samples": 170575,
+        "registeredFloorRMS": 0.001289826692537278,
+        "meanSignedChange": 2.6696728891934165e-05,
+        "pairs": [
+          {
+            "frame": 20,
+            "samples": 15387,
+            "rms": 0.0010213463427234495
+          },
+          {
+            "frame": 24,
+            "samples": 15397,
+            "rms": 0.0009977108797179586
+          },
+          {
+            "frame": 28,
+            "samples": 15412,
+            "rms": 0.0010899924934697307
+          },
+          {
+            "frame": 32,
+            "samples": 15413,
+            "rms": 0.0010538233704820306
+          },
+          {
+            "frame": 36,
+            "samples": 15404,
+            "rms": 0.001414729728446516
+          },
+          {
+            "frame": 40,
+            "samples": 15603,
+            "rms": 0.001442054831797254
+          },
+          {
+            "frame": 44,
+            "samples": 15751,
+            "rms": 0.0011761579455941793
+          },
+          {
+            "frame": 48,
+            "samples": 15763,
+            "rms": 0.0011312878609343114
+          },
+          {
+            "frame": 52,
+            "samples": 15685,
+            "rms": 0.0013234901118761556
+          },
+          {
+            "frame": 56,
+            "samples": 15486,
+            "rms": 0.0016997499869696238
+          },
+          {
+            "frame": 60,
+            "samples": 15274,
+            "rms": 0.0016084762388976176
+          }
+        ],
+        "segments": {
+          "cameraOnly": {
+            "samples": 61609,
+            "rms": 0.0010413162026628115
+          },
+          "movingOccluder": {
+            "samples": 108966,
+            "rms": 0.0014110969943852993
+          }
+        }
+      },
+      {
+        "quality": 1,
+        "taa": true,
+        "samples": 170575,
+        "registeredFloorRMS": 0.0010385715430494612,
+        "meanSignedChange": 2.9179920976801495e-05,
+        "pairs": [
+          {
+            "frame": 20,
+            "samples": 15387,
+            "rms": 0.000773981480890675
+          },
+          {
+            "frame": 24,
+            "samples": 15397,
+            "rms": 0.0008122223603051907
+          },
+          {
+            "frame": 28,
+            "samples": 15412,
+            "rms": 0.0007767657992274471
+          },
+          {
+            "frame": 32,
+            "samples": 15413,
+            "rms": 0.0007892085459752992
+          },
+          {
+            "frame": 36,
+            "samples": 15404,
+            "rms": 0.0012608300053580084
+          },
+          {
+            "frame": 40,
+            "samples": 15603,
+            "rms": 0.001444928108564745
+          },
+          {
+            "frame": 44,
+            "samples": 15751,
+            "rms": 0.0010513832210506306
+          },
+          {
+            "frame": 48,
+            "samples": 15763,
+            "rms": 0.0007779729065491481
+          },
+          {
+            "frame": 52,
+            "samples": 15685,
+            "rms": 0.0009203515732981052
+          },
+          {
+            "frame": 56,
+            "samples": 15486,
+            "rms": 0.0012968248941734684
+          },
+          {
+            "frame": 60,
+            "samples": 15274,
+            "rms": 0.0012101518260205276
+          }
+        ],
+        "segments": {
+          "cameraOnly": {
+            "samples": 61609,
+            "rms": 0.0007881888101628865
+          },
+          "movingOccluder": {
+            "samples": 108966,
+            "rms": 0.001156389705844193
+          }
+        }
+      },
+      {
+        "quality": 2,
+        "taa": false,
+        "samples": 170575,
+        "registeredFloorRMS": 0.0013997043095280632,
+        "meanSignedChange": 2.8561869231642563e-05,
+        "pairs": [
+          {
+            "frame": 20,
+            "samples": 15387,
+            "rms": 0.0006741156033871077
+          },
+          {
+            "frame": 24,
+            "samples": 15397,
+            "rms": 0.0007171418131563196
+          },
+          {
+            "frame": 28,
+            "samples": 15412,
+            "rms": 0.0006788633949209997
+          },
+          {
+            "frame": 32,
+            "samples": 15413,
+            "rms": 0.0007848663898952979
+          },
+          {
+            "frame": 36,
+            "samples": 15404,
+            "rms": 0.0019331288352190327
+          },
+          {
+            "frame": 40,
+            "samples": 15603,
+            "rms": 0.0016887165881244923
+          },
+          {
+            "frame": 44,
+            "samples": 15751,
+            "rms": 0.0012550319775751497
+          },
+          {
+            "frame": 48,
+            "samples": 15763,
+            "rms": 0.0007872479524005639
+          },
+          {
+            "frame": 52,
+            "samples": 15685,
+            "rms": 0.001394080092583148
+          },
+          {
+            "frame": 56,
+            "samples": 15486,
+            "rms": 0.002283353522920393
+          },
+          {
+            "frame": 60,
+            "samples": 15274,
+            "rms": 0.001894417532044918
+          }
+        ],
+        "segments": {
+          "cameraOnly": {
+            "samples": 61609,
+            "rms": 0.0007151383476828541
+          },
+          "movingOccluder": {
+            "samples": 108966,
+            "rms": 0.0016666507150975745
+          }
+        }
+      },
+      {
+        "quality": 2,
+        "taa": true,
+        "samples": 170575,
+        "registeredFloorRMS": 0.001234465899541299,
+        "meanSignedChange": 3.673278889310977e-05,
+        "pairs": [
+          {
+            "frame": 20,
+            "samples": 15387,
+            "rms": 0.00040072733475810576
+          },
+          {
+            "frame": 24,
+            "samples": 15397,
+            "rms": 0.0005649169934150633
+          },
+          {
+            "frame": 28,
+            "samples": 15412,
+            "rms": 0.0005223507687707162
+          },
+          {
+            "frame": 32,
+            "samples": 15413,
+            "rms": 0.0007124317792330415
+          },
+          {
+            "frame": 36,
+            "samples": 15404,
+            "rms": 0.0018102728289308306
+          },
+          {
+            "frame": 40,
+            "samples": 15603,
+            "rms": 0.0018533220259962092
+          },
+          {
+            "frame": 44,
+            "samples": 15751,
+            "rms": 0.0014055184855377891
+          },
+          {
+            "frame": 48,
+            "samples": 15763,
+            "rms": 0.0005718790402190143
+          },
+          {
+            "frame": 52,
+            "samples": 15685,
+            "rms": 0.0010135679640324103
+          },
+          {
+            "frame": 56,
+            "samples": 15486,
+            "rms": 0.0017134156604122134
+          },
+          {
+            "frame": 60,
+            "samples": 15274,
+            "rms": 0.0015898275199839817
+          }
+        ],
+        "segments": {
+          "cameraOnly": {
+            "samples": 61609,
+            "rms": 0.0005613337175445367
+          },
+          "movingOccluder": {
+            "samples": 108966,
+            "rms": 0.0014857198075508594
+          }
+        }
+      },
+      {
+        "quality": 3,
+        "taa": false,
+        "samples": 170575,
+        "registeredFloorRMS": 0.001329337332695954,
+        "meanSignedChange": 2.805462614402171e-05,
+        "pairs": [
+          {
+            "frame": 20,
+            "samples": 15387,
+            "rms": 0.00044415660925152756
+          },
+          {
+            "frame": 24,
+            "samples": 15397,
+            "rms": 0.00042902920325054827
+          },
+          {
+            "frame": 28,
+            "samples": 15412,
+            "rms": 0.00042693084497903656
+          },
+          {
+            "frame": 32,
+            "samples": 15413,
+            "rms": 0.0004830180655157524
+          },
+          {
+            "frame": 36,
+            "samples": 15404,
+            "rms": 0.0018945992180675107
+          },
+          {
+            "frame": 40,
+            "samples": 15603,
+            "rms": 0.0017597564458214478
+          },
+          {
+            "frame": 44,
+            "samples": 15751,
+            "rms": 0.00109903762287427
+          },
+          {
+            "frame": 48,
+            "samples": 15763,
+            "rms": 0.000584449266749178
+          },
+          {
+            "frame": 52,
+            "samples": 15685,
+            "rms": 0.0013501133803040942
+          },
+          {
+            "frame": 56,
+            "samples": 15486,
+            "rms": 0.0021946165510030205
+          },
+          {
+            "frame": 60,
+            "samples": 15274,
+            "rms": 0.0019479503834967595
+          }
+        ],
+        "segments": {
+          "cameraOnly": {
+            "samples": 61609,
+            "rms": 0.0004463568361402952
+          },
+          "movingOccluder": {
+            "samples": 108966,
+            "rms": 0.001628995047454667
+          }
+        }
+      },
+      {
+        "quality": 3,
+        "taa": true,
+        "samples": 170575,
+        "registeredFloorRMS": 0.0012106504528894505,
+        "meanSignedChange": 3.670981127802765e-05,
+        "pairs": [
+          {
+            "frame": 20,
+            "samples": 15387,
+            "rms": 0.00025745390186971356
+          },
+          {
+            "frame": 24,
+            "samples": 15397,
+            "rms": 0.00043049942839496586
+          },
+          {
+            "frame": 28,
+            "samples": 15412,
+            "rms": 0.0003593331659997267
+          },
+          {
+            "frame": 32,
+            "samples": 15413,
+            "rms": 0.0005251434047606482
+          },
+          {
+            "frame": 36,
+            "samples": 15404,
+            "rms": 0.0018001648815379556
+          },
+          {
+            "frame": 40,
+            "samples": 15603,
+            "rms": 0.0019704145977224607
+          },
+          {
+            "frame": 44,
+            "samples": 15751,
+            "rms": 0.001270952532938688
+          },
+          {
+            "frame": 48,
+            "samples": 15763,
+            "rms": 0.0004021109970051073
+          },
+          {
+            "frame": 52,
+            "samples": 15685,
+            "rms": 0.0010044800098785722
+          },
+          {
+            "frame": 56,
+            "samples": 15486,
+            "rms": 0.0016908379873694266
+          },
+          {
+            "frame": 60,
+            "samples": 15274,
+            "rms": 0.001644470839207984
+          }
+        ],
+        "segments": {
+          "cameraOnly": {
+            "samples": 61609,
+            "rms": 0.0004051708295239576
+          },
+          "movingOccluder": {
+            "samples": 108966,
+            "rms": 0.0014837602263825767
+          }
+        }
+      }
+    ],
+    "comparisons": [
+      {
+        "quality": -1,
+        "off": 0.00026436004006188957,
+        "on": 0.00024992396953852226,
+        "ratio": 0.9453923878964927,
+        "segmentRatios": {
+          "cameraOnly": 0.8210024937086351,
+          "movingOccluder": 1.0089831569043333
+        }
+      },
+      {
+        "quality": 0,
+        "off": 0.0014246736630858542,
+        "on": 0.001183117539567036,
+        "ratio": 0.8304481020617692,
+        "segmentRatios": {
+          "cameraOnly": 0.8428022983976482,
+          "movingOccluder": 0.8257156561167638
+        }
+      },
+      {
+        "quality": 1,
+        "off": 0.001289826692537278,
+        "on": 0.0010385715430494612,
+        "ratio": 0.8052023958400479,
+        "segmentRatios": {
+          "cameraOnly": 0.7569159186684719,
+          "movingOccluder": 0.8194969661514575
+        }
+      },
+      {
+        "quality": 2,
+        "off": 0.0013997043095280632,
+        "on": 0.001234465899541299,
+        "ratio": 0.8819476307517568,
+        "segmentRatios": {
+          "cameraOnly": 0.7849302437260351,
+          "movingOccluder": 0.8914404164545524
+        }
+      },
+      {
+        "quality": 3,
+        "off": 0.001329337332695954,
+        "on": 0.0012106504528894505,
+        "ratio": 0.9107172597298525,
+        "segmentRatios": {
+          "cameraOnly": 0.9077285183476111,
+          "movingOccluder": 0.9108439149038408
+        }
+      }
+    ]
+  }
+}

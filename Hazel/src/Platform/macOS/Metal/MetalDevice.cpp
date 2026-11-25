@@ -133,8 +133,14 @@ void MetalDevice::Account(const MetalRenderer2DFrame* preparing) {
     for(const auto& weak:m_AOGenerations)if(auto r=weak.lock())
         for(auto texture:{r->Depth,r->Raw,r->Edges,r->Scratch,r->Visibility})allocations.insert(texture.get());
     for(const auto* allocation:allocations) resources+=allocation->allocatedSize();
+    // Admission also includes idle view pools. Keep ResourceBytes' established
+    // active-frame scope; AttachmentBytes below reports all live view storage.
+    auto ownedAllocations=allocations;
+    for(const auto& weak:m_AttachmentGenerations)if(auto generation=weak.lock())
+        for(const auto& target:generation->Targets)if(target)ownedAllocations.insert(target.get());
+    uint64_t ownedBytes=0;for(const auto* allocation:ownedAllocations)ownedBytes+=allocation->allocatedSize();
     const uint64_t uiBytes = m_Editor ? ImGui_ImplMetal4_ResourceBytes() : 0;
-    Require(resources+uiBytes<=ResourceLimit&&allocators<=AllocatorLimit,"M1 bounded GPU storage limit exceeded");
+    Require(ownedBytes+uiBytes<=ResourceLimit&&allocators<=AllocatorLimit,"M1 bounded GPU storage limit exceeded");
     uint64_t attachmentBytes = 0, generations = 0;
     for (const auto& weak : m_AttachmentGenerations) if (auto generation = weak.lock()) {
         ++generations;

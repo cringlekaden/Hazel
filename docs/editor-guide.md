@@ -133,3 +133,24 @@ Sampling is fixed across frames, but noticeable spatial noise and motion shimmer
 remain even on Ultra. Static determinism does not imply motion stability.
 Functional/correctness acceptance and the incomplete final visual-quality
 qualification are recorded in [XeGTAO](design/xegtao.md).
+
+### HDR temporal antialiasing (development branch)
+
+Scene Settings offers **HDR TAA (Metal 4)** for scene-referred presentation.
+Apply participates in Undo/Redo; Save persists the request. Project Settings >
+new-scene defaults can seed the same setting. Existing scenes default to off.
+OpenGL keeps its ordinary rendering and reports the saved TAA request inactive.
+
+The viewport **TAA...** popup shows rigid-mesh motion, projection jitter, history
+acceptance/rejection, history contribution and resolved HDR clamped for display,
+plus completed resolve timing and retained HDR/depth/ID history memory/reuse counts.
+World 2D and screen UI remain unjittered. Skinning, morphs and vertex deformation
+have no temporal correspondence support. AO inspection stays available through
+**AO...** and bypasses TAA. Pre-exposure HDR history keeps exposure changes
+responsive. No sharpening control is exposed.
+
+TAA is under qualification; **owner visual acceptance is pending**. Consult the
+[implementation/evidence record](design/taa.md) and
+[manual moving-scene procedure](design/taa-manual.md) before approving sharpness,
+ghosting or AO stability. History memory excludes the separate private radiance/motion targets,
+final framebuffer generations and timing heaps.

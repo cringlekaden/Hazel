@@ -4,6 +4,7 @@
 #include "MetalShader.h"
 #include "MetalComputePipeline.h"
 #include "MetalAmbientOcclusion.h"
+#include "MetalTemporalAA.h"
 #include "Hazel/Renderer/Drawing/Renderer2DQuad.h"
 #include <algorithm>
 #include <cstring>
@@ -33,6 +34,12 @@ void MetalRenderer2DFrame::CollectAllocations(std::set<const MTL::Allocation*>& 
     }
     if (AOSource) AOSource->CollectAllocations(allocations);
     if (AO) {const auto& r=*AO->Resources;for(auto texture:{r.Depth,r.Raw,r.Edges,r.Scratch,r.Visibility})allocations.insert(texture.get());}
+    if(Temporal) {
+        for(auto history:{Temporal->Current,Temporal->Previous})if(history)
+            for(auto target:history->Color->Targets)if(target)allocations.insert(target.get());
+    }
+    if(TemporalSource)TemporalSource->CollectAllocations(allocations);
+    if(MotionSource)MotionSource->CollectAllocations(allocations);
     if (ComputeSource) ComputeSource->CollectAllocations(allocations);
     if (World) World->CollectAllocations(allocations);
     if (DisplaySource) DisplaySource->CollectAllocations(allocations);
@@ -40,6 +47,9 @@ void MetalRenderer2DFrame::CollectAllocations(std::set<const MTL::Allocation*>& 
 void MetalRenderer2DFrame::MarkMipmapsSubmitted() const
 {
     if (AOSource) AOSource->MarkMipmapsSubmitted();
+    if(Temporal)Temporal->Current->Submitted->store(true);
+    if(TemporalSource)TemporalSource->MarkMipmapsSubmitted();
+    if(MotionSource)MotionSource->MarkMipmapsSubmitted();
     if (ComputeSource) ComputeSource->MarkMipmapsSubmitted();
     if (World) World->MarkMipmapsSubmitted();
     if (DisplaySource) DisplaySource->MarkMipmapsSubmitted();
@@ -48,6 +58,9 @@ void MetalRenderer2DFrame::MarkMipmapsSubmitted() const
 void MetalRenderer2DFrame::ResolveAmbientOcclusionTimings()
 {
     if(AO)AO->ResolveTimings();
+    if(Temporal)Temporal->ResolveTimings();
+    if(TemporalSource)TemporalSource->ResolveAmbientOcclusionTimings();
+    if(MotionSource)MotionSource->ResolveAmbientOcclusionTimings();
     if(World)World->ResolveAmbientOcclusionTimings();
     if(DisplaySource)DisplaySource->ResolveAmbientOcclusionTimings();
     if(ComputeSource)ComputeSource->ResolveAmbientOcclusionTimings();
@@ -159,6 +172,8 @@ NS::SharedPtr<MTL::DepthStencilState> MetalDevice::GetDepthState(const RasterSta
 }
 void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& quad)
 {
+    if(quad->TemporalSource)PrepareRenderer2DFrame(quad->TemporalSource);
+    if(quad->MotionSource)PrepareRenderer2DFrame(quad->MotionSource);
     if (quad->AOSource) PrepareRenderer2DFrame(quad->AOSource);
     if (quad->ComputeSource) PrepareRenderer2DFrame(quad->ComputeSource);
     if (quad->World) PrepareRenderer2DFrame(quad->World);
@@ -319,12 +334,14 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
         quad->Residency->addAllocation(buffer.get()); quad->Buffers.push_back(std::move(buffer));
     }
     if(quad->AO) PrepareAmbientOcclusion(quad);
+    if(quad->Temporal)PrepareTemporal(quad);
     quad->Residency->commit();
 
 }
 void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& quad)
 {
     if(quad->AO) EncodeAmbientOcclusion(quad);
+    if(quad->Temporal)EncodeTemporal(quad);
     if (quad->ComputeSource) {
         m_Commands->useResidencySet(quad->ComputeSource->Residency.get());
         EncodeRenderer2DFrame(quad->ComputeSource);
@@ -383,15 +400,16 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
     {
         if(!quad->Attachments->Targets[i])continue;
         auto* attachment = pass->colorAttachments()->object(i);
-        attachment->setTexture(quad->Attachments->Targets[i].get()); attachment->setLoadAction(MTL::LoadActionClear);
+        attachment->setTexture(quad->Attachments->Targets[i].get()); attachment->setLoadAction(quad->Temporal?MTL::LoadActionLoad:MTL::LoadActionClear);
         attachment->setStoreAction(MTL::StoreActionStore);
         attachment->setClearColor(i == 0 ? MTL::ClearColor{quad->Clear.r, quad->Clear.g, quad->Clear.b, quad->Clear.a} : MTL::ClearColor{double(quad->ClearEntity), 0, 0, 0});
     }
-    pass->depthAttachment()->setTexture(quad->Attachments->Targets[2].get()); pass->depthAttachment()->setLoadAction(quad->World ? MTL::LoadActionLoad : MTL::LoadActionClear);
+    pass->depthAttachment()->setTexture(quad->Attachments->Targets[2].get()); pass->depthAttachment()->setLoadAction((quad->World || quad->Temporal) ? MTL::LoadActionLoad : MTL::LoadActionClear);
     pass->depthAttachment()->setStoreAction(MTL::StoreActionStore); pass->depthAttachment()->setClearDepth(1);
     auto* render = m_Commands->renderCommandEncoder(pass.get());
     if (!render) { m_Commands->endCommandBuffer(); throw std::runtime_error("Cannot create quad encoder"); }
-    if (quad->AO || quad->World || !mipmaps.empty()) render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
+    if(quad->QueueOrderedTemporalProducer)render->barrierAfterQueueStages(MTL::StageAll,MTL::StageAll,MTL4::VisibilityOptionDevice);
+    if (quad->AO || quad->World || quad->Temporal || !mipmaps.empty()) render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
     auto* boundPipeline = quad->World ? quad->PresentationShader->Pipeline() : nullptr;
     if (boundPipeline) render->setRenderPipelineState(boundPipeline);
     // Metal starts each encoder with full-target viewport/scissor, no culling,

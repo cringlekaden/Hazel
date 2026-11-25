@@ -633,6 +633,7 @@ namespace Hazel {
                 camera.GetProjection() * glm::inverse(world), glm::vec3(world[3]),
                 glm::normalize(glm::vec3(world * glm::vec4(0, 0, 1, 0))),
                 camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic};
+            cameraView.View=glm::inverse(world);cameraView.Projection=camera.GetProjection();
             DrawView(inspection?*inspection:cameraView, renderView, display);
         }
         else if(m_Presentation.SceneReferred)
@@ -874,10 +875,9 @@ namespace Hazel {
         m_RenderError.clear();
         try
         {
-            DrawView({camera.GetViewProjection(), camera.GetPosition(),
-                      -camera.GetForwardDirection(),
-                      camera.Navigation() == EditorNavigation::Planar},
-                     view, display);
+            SceneCameraView cameraView{camera.GetViewProjection(),camera.GetPosition(),-camera.GetForwardDirection(),camera.Navigation()==EditorNavigation::Planar};
+            cameraView.View=camera.GetViewMatrix();cameraView.Projection=camera.GetProjection();
+            DrawView(cameraView,view,display);
         }
         catch (const std::exception &e)
         {
@@ -890,7 +890,7 @@ namespace Hazel {
     {
         PrepareSprites();
         SceneRenderView local;
-        auto frame = SceneRenderer::Collect(*this, camera);
+        auto frame = SceneRenderer::Collect(*this, camera,display?glm::uvec2(display->GetSpecification().Width,display->GetSpecification().Height):glm::uvec2(0));
         if (view) {
             frame.Debug = view->Debug;
             frame.AmbientOcclusionView = view->AmbientOcclusionView;

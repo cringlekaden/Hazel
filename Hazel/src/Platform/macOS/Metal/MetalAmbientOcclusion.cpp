@@ -88,7 +88,7 @@ MetalAOResources::MetalAOResources(MetalDevice& device,std::shared_ptr<MetalAOPi
     NS::Error* error=nullptr;Counters=NS::TransferPtr(device.NativeDevice()->newCounterHeap(counters.get(),&error));
     if(!Counters || !TimestampFrequency)Counters.reset();
 }
-MetalAOConstants AmbientOcclusionConstants(const SceneCameraView& camera,const AmbientOcclusionSettings& settings,uint32_t width,uint32_t height)
+MetalAOConstants AmbientOcclusionConstants(const SceneCameraView& camera,const AmbientOcclusionSettings& settings,uint32_t width,uint32_t height,unsigned temporalPhase)
 {
     settings.Validate();
     MetalAOConstants c;c.InverseVP=glm::inverse(camera.ViewProjection);
@@ -96,7 +96,7 @@ MetalAOConstants AmbientOcclusionConstants(const SceneCameraView& camera,const A
     const auto origin=point({0,0,-1});
     const auto right=glm::normalize(point({1,0,-1})-origin);
     const auto up=glm::normalize(point({0,1,-1})-origin);
-    const auto forward=glm::normalize(point({0,0,0})-origin);
+    const auto forward=temporalPhase?-glm::normalize(camera.ToCamera):glm::normalize(point({0,0,0})-origin);
     Check(std::isfinite(glm::dot(forward,forward)) && std::abs(glm::dot(right,up))<1e-4f &&
         std::abs(glm::dot(right,forward))<1e-4f && std::abs(glm::dot(up,forward))<1e-4f,
         "XeGTAO requires a finite symmetric perspective or orthographic camera");
@@ -125,7 +125,7 @@ void MetalDevice::PrepareAmbientOcclusion(const std::shared_ptr<MetalRenderer2DF
     auto table=NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
     table->setInitializeBindings(true);table->setMaxBufferBindCount(1);table->setMaxTextureBindCount(3);
     auto add=[&](MTL::Texture* input,MTL::Texture* output,MTL::Texture* edges,bool final) {
-        auto constants=pass.Constants;constants.Quality.w=final?1u:0u;
+        auto constants=pass.Constants;if(final || (edges==r.Edges.get() && output!=r.Raw.get()))constants.Quality.w=final?1u:0u;
         auto buffer=AcquireRenderer2DBuffer(sizeof(constants),&constants);
         NS::Error* error=nullptr;auto args=NS::TransferPtr(m_Device->newArgumentTable(table.get(),&error));
         Check(bool(args),"Cannot allocate XeGTAO arguments");args->setAddress(buffer->gpuAddress(),0);

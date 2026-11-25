@@ -105,7 +105,7 @@ inline void gtaoMain(constant AOConstants& c,
     float screenRadius=radius/max(pixelSize,1e-8f);
     float visibility=saturate((10-screenRadius)/100)*.5f;
     float unoccludedIntegral=0;
-    float2 noise=fract(.5f+float(hilbert(p))*float2(.75487766624669276f,.56984029099805326f));
+    float2 noise=fract(.5f+float(hilbert(p)+c.quality.w)*float2(.75487766624669276f,.56984029099805326f));
     for (uint slice=0;slice<sliceCount;++slice)
     {
         float phi=(float(slice)+noise.x)/float(sliceCount)*pi;

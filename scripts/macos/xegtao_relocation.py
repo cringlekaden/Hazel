@@ -21,6 +21,7 @@ from macos.packaging import relocate_executable, sign
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--taa',action='store_true',help='Exercise exported TAA motion/history instead of the AO-only probe')
     parser.add_argument('--archives', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
@@ -56,27 +57,28 @@ def main():
         project = working / 'examples/RenderingReference'
         shutil.copytree(bundles['Nutella'] / 'Contents/Resources/Project', project)
         # Focused independent geometry also opens this existing descriptor.
-        for descriptor in ('RenderingReference-Direct-PerspectivePBR.hproj',):
+        for descriptor in ('RenderingReference-Direct-PerspectivePBR.hproj','RenderingReference-XeGTAO.hproj'):
             shutil.copy2(hz.ROOT / 'examples/RenderingReference' / descriptor, project / descriptor)
         resources = bundles['Nutella'] / 'Contents/Resources'
         env = {k:v for k,v in os.environ.items() if not k.startswith(('HAZEL_','DYLD_','MTL_'))}
         env.update(PATH='/nonexistent', DEVELOPER_DIR='/nonexistent', MTL_DEBUG_LAYER='1', MTL_SHADER_VALIDATION='1')
         sdk = hz.mono_prefix()
-        command = isolation_command([helper, resources, working / 'probe-results', '--xegtao'], sdk, metal=True)
+        command = isolation_command([helper, resources, working / 'probe-results', '--taa' if args.taa else '--xegtao'], sdk, metal=True)
         with (output / 'probe.log').open('w') as log:
             result = subprocess.run(command, cwd=working, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=120)
         if result.returncode:
             raise RuntimeError('Isolated exported AO probe failed; inspect probe.log')
-        report['gates']['isolated-exported-AO-probe'] = dict(status='PASS', command=list(map(str,command)), helperSHA256=hashlib.sha256(source.read_bytes()).hexdigest(), scope='Offscreen production AO/lighting/UI/ID/depth/lifetime checks, not a pristine product presentation')
-        library = resources / 'shaders/metal/XeGTAO.metallib'
+        report['gates']['isolated-exported-temporal-probe' if args.taa else 'isolated-exported-AO-probe'] = dict(status='PASS', command=list(map(str,command)), helperSHA256=hashlib.sha256(source.read_bytes()).hexdigest(), scope='Offscreen production AO/lighting/UI/ID/depth/lifetime checks, not a pristine product presentation')
+        libraryName='TemporalAA' if args.taa else 'XeGTAO'
+        library = resources / ('shaders/metal/'+libraryName+'.metallib')
         saved = library.with_suffix('.absent')
         library.rename(saved)
         try:
-            command = isolation_command([helper, resources, working / 'missing-results', '--xegtao'], sdk, metal=True)
+            command = isolation_command([helper, resources, working / 'missing-results', '--taa' if args.taa else '--xegtao'], sdk, metal=True)
             result = subprocess.run(command, cwd=working, env=env, capture_output=True, text=True, timeout=60)
             text = result.stdout + result.stderr
             (output / 'missing-library.log').write_text(text)
-            if result.returncode != 1 or 'Missing/oversized XeGTAO metallib' not in text:
+            if result.returncode != 1 or ('Missing/oversized '+libraryName+' metallib') not in text:
                 raise RuntimeError('Missing XeGTAO library did not reject explicitly')
             report['gates']['missing-library-rejection'] = dict(status='PASS', scope='Process-level rejection; no same-device recovery claim')
         finally:

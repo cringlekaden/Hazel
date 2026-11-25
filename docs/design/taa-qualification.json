@@ -1,0 +1,548 @@
+{
+  "baseline": "3a0f71cb13728a6802ad1c9eaadf6ed384d8e4a0",
+  "branch": "feature/3d-foundations",
+  "verdict": "INCOMPLETE: owner manual visual review pending",
+  "automatedFeatureGates": "PASS with immutable frozen fixtures; baseline HEAD frozen-byte mismatch retained",
+  "platform": "Apple M4 / macOS 27.3; native Metal 4 and Apple OpenGL",
+  "sourceDigestSHA256": "0c196230f3066b764603875f026bd94d5d43a73ca531976cca4c1bcef3f7f6e0",
+  "sourceDigestScope": "All changed production, test, shader artifact and script files; excludes documentation to avoid self-reference",
+  "sourceFiles": {
+    "Hazel/Resources/shaders/MotionPBR.glsl": "9910f91d2100aefc9bc55f8ac70d10e0126062e72b55597a090927cfb6346459",
+    "Hazel/Resources/shaders/TemporalAA.metal": "837e5b2f9398f38c02372e8ebae48738278d4359f9cd41c38ab307248795647d",
+    "Hazel/Resources/shaders/XeGTAO/XeGTAO.metal": "54d889c4d2e293fe88d7dc9fbbe1f1320028a5b80325c968ee662388c2665d68",
+    "Hazel/Resources/shaders/metal/MotionPBR.hzmetal": "45613286d38f7d974713f96718e2a6dbb527836150573f389735c324a01dbb19",
+    "Hazel/Resources/shaders/metal/TemporalAA.json": "0f72d77f7437560912c3fb93361e1bf04c658e7ff7bba6a022c81e12a95a0a3b",
+    "Hazel/Resources/shaders/metal/TemporalAA.metallib": "f35ceb326bb1e3a85fd0ee4e268492cc6879bf011ec32c3c731b1c6ca2cc3aca",
+    "Hazel/Resources/shaders/metal/XeGTAO.json": "a7ce46cda7d523f9eb4a968317e967f638e83ea70b3d329b9c4b62b2e7d8b20d",
+    "Hazel/Resources/shaders/metal/XeGTAO.metallib": "524ef4611573fa9ee363915fab117e495dbae3e419e07ddba4269c74b0208368",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer3D.cpp": "2cf0cdb41a1e10aadb241a432fa03b6081f9a01edb7a9548639d02591752772d",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer3D.h": "492cc048114b3dabe16ae3b722af84b895a2783aa1b5a47dd030f86b560f9d40",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer3DUniforms.h": "41d9ccb47c34d00f69c8dceee82b8799cef5f6fdfb9f71f8aeab6d09c9ad3df9",
+    "Hazel/src/Hazel/Renderer/RendererCapabilities.h": "86f2be6e7ebca18d99ad8e2c0009a422ae614ed97d02b6e9bcc5c161da078aac",
+    "Hazel/src/Hazel/Renderer/Scene/SceneCollection.cpp": "42d29f27f0dbf4c6444a3aa93d73515b02c819e3a7594bc08576b889677f6bd9",
+    "Hazel/src/Hazel/Renderer/Scene/SceneRenderer.cpp": "47afabef1ac14d8d755f62b1680c8d72540e7a77f64eb109adbe23ce51240a6f",
+    "Hazel/src/Hazel/Renderer/Scene/SceneRenderer.h": "e519e625fb11127f7973b86c89cfee9839f6b7d2fe07712455ad1aa1e3a5c681",
+    "Hazel/src/Hazel/Renderer/Scene/SceneSubmission.h": "8cb5caa80ea9726f36ab13f3b1b2f9ecb28c5a61ac61089d167f1ad9bb1dd317",
+    "Hazel/src/Hazel/Scene/RuntimeSession.cpp": "a8e83d1eb37912ddb6321f1da6dbb6ee4dc30e43a52de1a28413d2bcab1eeef2",
+    "Hazel/src/Hazel/Scene/Scene.cpp": "229696ab4e56ee0a2f4e432b8c7180c25dd05470c0f421d4d742b2d1c48e8f5a",
+    "Hazel/src/Hazel/Scene/SceneDefaults.cpp": "a960078218f85fd871d968eee6e80743e0614f2647482aca60bd4193b0416d96",
+    "Hazel/src/Hazel/Scene/SceneDefaults.h": "e3ce8b45b882907eb760bf908e6d2c16a30d0833faf8d536751883dae278ad7e",
+    "Hazel/src/Platform/macOS/Metal/MetalAmbientOcclusion.cpp": "82f3a14b33ba80ae46ab585d6f2d4b615d72cfa226977193990e721c67d9984a",
+    "Hazel/src/Platform/macOS/Metal/MetalAmbientOcclusion.h": "f14d3de7193992709e82688650e47d47089b9c04233d8346a72cb21f7e86cc1d",
+    "Hazel/src/Platform/macOS/Metal/MetalDevice.cpp": "ba7cce8e4e304395167610b61d6575d8d7dc20167fa22cf201786d2d310faabb",
+    "Hazel/src/Platform/macOS/Metal/MetalDevice.h": "61843c04055f001f309df53f95d3f4b9d5bc3a9147b6743410698a0d72193d4d",
+    "Hazel/src/Platform/macOS/Metal/MetalDeviceRenderer2D.cpp": "3937f3c95394bc09667c82d38bd6847a99a5a9135cf70271ae0f4799c271ed4b",
+    "Hazel/src/Platform/macOS/Metal/MetalFramebuffer.cpp": "25bc89d7ad05b6f1cee77b0896476b09fa7410a8b50a6c806ee74472b182c6ba",
+    "Hazel/src/Platform/macOS/Metal/MetalFramebuffer.h": "78ab20f7fe58cbe27e340bc92a1365cc7bd54dd40eb9a5cd7a99d9220e9097c6",
+    "Hazel/src/Platform/macOS/Metal/MetalRenderer2DFrame.h": "d305529d4f23151d5d447660dafd2a6ed0d359c7b820e12c32e8bbc3fe6391ff",
+    "Hazel/src/Platform/macOS/Metal/MetalRendererAPI.cpp": "324e196bc80e060edfdcf34bceb17e545d8518a836b06c6f3826fecc10ffce05",
+    "Hazel/src/Platform/macOS/Metal/MetalShader.cpp": "63083ff7236ec990578a87c3fc468b7d5c79ca19ed67e18bf7d3be413b7ee911",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderArtifact.cpp": "259fc3cf0f1192908f99d067bca258218110bebc4c99a4ba0195be5b25a1baae",
+    "Hazel/src/Platform/macOS/Metal/MetalShaderCompiler.cpp": "2091e739a46c9486bf8e15e2bf0987d7979c2c43f86d82e459c8ba82afa4783e",
+    "Hazel/src/Platform/macOS/Metal/MetalTemporalAA.cpp": "15195f1eb6e06af4d16e961fe45f3151c9e43e8bd1b25726eced1f709e39b1eb",
+    "Hazel/src/Platform/macOS/Metal/MetalTemporalAA.h": "617867cf0e0bd5e9e7370f7f6c35303a728fa1a406a264016ce51035351a43aa",
+    "Hazelnut/src/Authoring/AuthoringPanel.cpp": "7292a50cdeb61ca1f0fbdac73380a035bbe849b84a51e4719549c4c7a49537a5",
+    "Hazelnut/src/Authoring/RenderingSettings.cpp": "e3a62972db81e76041c6f0f62af8b96c7aab5cbb72afa7ded3783edea4b8bcc5",
+    "Hazelnut/src/EditorLayer.cpp": "b0d5ad2191d43a4fd4a1edc629cbf01ec51d3d30432b2ea7f4be25f311f78e0a",
+    "scripts/macos/metal_m1.py": "121d60a458ce736786db814d5f537cce59c1d026b05f9ff84f7b99426b7441be",
+    "scripts/macos/metal_m2b1.py": "5339f839fc4090c80f3eb7ad7d52f6e8c2aeac0056bfb4f79874a76878edefd3",
+    "scripts/macos/metal_shaders.py": "8047762d7b58356365a646bfa9453bfba906e1fd7d76447353fb49f92f7ff76f",
+    "scripts/macos/packaging.py": "6935373c983e19dcc09add7427bc5468a2c93e6988fd82951ba03845d9467e67",
+    "scripts/macos/taa.py": "cc935721d9fd247ebb1fb5658d8b1344cc6a84eda01fcf6601ee3a076901b4ae",
+    "scripts/macos/taa_compare.py": "4544175a0e33c066f75d73541d2d0d3a505bf52be19e6d02c2e5f049d0fb8b14",
+    "scripts/macos/taa_offscreen_benchmark.py": "924d33502f4c307efd6f4691210bebc5e2da7c7530bcd4ef4468fa0620b19ec7",
+    "scripts/macos/xegtao_benchmark.py": "ec91771ff5d5dd3f8fcc68a5f3d7cf578a8b32130a0e6513d361f7522bd84ece",
+    "scripts/macos/xegtao_relocation.py": "57ab925aa2ea91a8a95fd8e6c4e8fec7376231592e278199918881683ba2b58b",
+    "tests/macos/MetalM1Smoke.cpp": "d7e36aab1848168096ed08c7eff639da3908e4f680240889aa117dead5e73f1a",
+    "tests/macos/MetalM2AShaders.cpp": "2a64a93701659f5281b3bfd4471ff6885eb17545ee341bd477a7e89e70d34046",
+    "tests/macos/MetalRenderer2DQuadSmoke.cpp": "f0419fc88082d2ac753f4c52dc603312de1d66498ba0a02078351f056fcc9f20",
+    "tests/macos/MetalShaderSmoke.cpp": "5e76b0465faffbb971c491f00882b95a51375a87a69a02abf2b134e766b38cc9",
+    "tests/macos/TemporalAAQualification.h": "99a54cedd95850fc5e16a09b698592e51c648a7d5603489661bc42ee0801026d",
+    "tests/macos/TemporalEditorViews.h": "98fb92a2976b9b9cacd7965361afdfb6fa3c48ccaf21bdaffedc03cd5d0ace86",
+    "tests/macos/XeGTAOQualification.h": "13b956e969f188b12c8765dad82f50b466c41300a3995f5e89439ecdf33c7218",
+    "tests/migration/EditorEnvironmentWorkflowChecks.h": "e46ff23d07cc5a2a75100d8a09190818477edb74fcd263f25b0c7bbc237b9a9c",
+    "tests/migration/EditorSmoke.cpp": "571348a90ab75ed30b4b2f67ae387e8da75df48d81fe4c6e8beb1a7b0cd1a84f"
+  },
+  "broadAcceptance": {
+    "head": "3a0f71cb13728a6802ad1c9eaadf6ed384d8e4a0",
+    "gates": {
+      "final-build-m1-release": {
+        "command": [
+          "xcodebuild",
+          "-workspace",
+          "Hazel.xcworkspace",
+          "-derivedDataPath",
+          "build/DerivedData",
+          "-scheme",
+          "MetalM1Smoke",
+          "-configuration",
+          "Release",
+          "-destination",
+          "generic/platform=macOS",
+          "-jobs",
+          "2",
+          "build"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 7.229572375013959
+      },
+      "optimized-native-release": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/taa.py",
+          "--config",
+          "Release",
+          "--output",
+          "${ROOT}/build/taa-evidence/optimized-native-release/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 15.22735925001325
+      },
+      "final-lifecycle-Release-1x": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/metal_m1.py",
+          "--config",
+          "Release",
+          "--taa",
+          "${ROOT}/Hazel/Resources",
+          "--output",
+          "${ROOT}/build/taa-evidence/final-lifecycle-Release-1x/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 5.293077292008093
+      },
+      "final-lifecycle-Release-2x": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/metal_m1.py",
+          "--config",
+          "Release",
+          "--taa",
+          "${ROOT}/Hazel/Resources",
+          "--output",
+          "${ROOT}/build/taa-evidence/final-lifecycle-Release-2x/evidence",
+          "--hidpi"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 9.780337791977217
+      },
+      "final-two-views-Debug-2x": {
+        "command": [
+          "${ROOT}/bin/Debug-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "${ROOT}/build/taa-evidence/final-two-views-Debug-2x/capture",
+          "--taa-views",
+          "${ROOT}/Hazel/Resources"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 3.0596226250054315
+      },
+      "final-two-views-Release-1x": {
+        "command": [
+          "${ROOT}/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "${ROOT}/build/taa-evidence/final-two-views-Release-1x/capture",
+          "--taa-views",
+          "${ROOT}/Hazel/Resources"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 1.5527016670093872
+      },
+      "final-two-views-Release-2x": {
+        "command": [
+          "${ROOT}/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "${ROOT}/build/taa-evidence/final-two-views-Release-2x/capture",
+          "--taa-views",
+          "${ROOT}/Hazel/Resources"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 2.786472292005783
+      },
+      "final-m5-Debug": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/metal_m5.py",
+          "--config",
+          "Debug",
+          "--output",
+          "${ROOT}/build/taa-evidence/final-m5-Debug/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 116.5599691249954
+      },
+      "final-m5-Release": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/metal_m5.py",
+          "--config",
+          "Release",
+          "--output",
+          "${ROOT}/build/taa-evidence/final-m5-Release/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 43.540315040998394
+      },
+      "final-products-Debug": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/metal_m6.py",
+          "--config",
+          "Debug",
+          "--only",
+          "products",
+          "--output",
+          "${ROOT}/build/taa-evidence/final-products-Debug/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 120.80421083400142
+      },
+      "final-products-Release": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/metal_m6.py",
+          "--config",
+          "Release",
+          "--only",
+          "products",
+          "--output",
+          "${ROOT}/build/taa-evidence/final-products-Release/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 33.8986210830044
+      },
+      "final-m3-debug": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/metal_m3.py",
+          "--config",
+          "Debug",
+          "--resources",
+          "${ROOT}/Hazel/Resources",
+          "--output",
+          "${ROOT}/build/taa-evidence/final-m3-debug/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 26.860364749998553
+      },
+      "final-xegtao-release": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/xegtao.py",
+          "--config",
+          "Release",
+          "--resources",
+          "${ROOT}/Hazel/Resources",
+          "--output",
+          "${ROOT}/build/taa-evidence/final-xegtao-release/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 3.9670571669994388
+      },
+      "final-packages": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/hazel.py",
+          "package",
+          "--app",
+          "all",
+          "--project",
+          "${ROOT}/build/taa-evidence/export-input/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "--output",
+          "${ROOT}/build/taa-evidence/final-packages/archives"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 21.41416700000991
+      },
+      "final-relocation": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/xegtao_relocation.py",
+          "--archives",
+          "${ROOT}/build/taa-evidence/final-packages/archives",
+          "--taa",
+          "--output",
+          "${ROOT}/build/taa-evidence/final-relocation/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 9.757990042009624
+      },
+      "final-pristine-products": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/hazel.py",
+          "test-packages",
+          "--output",
+          "${ROOT}/build/taa-evidence/final-packages/archives",
+          "--profile",
+          "native"
+        ],
+        "status": "FAIL",
+        "returncode": 1,
+        "seconds": 57.572998207993805,
+        "error": "Failed gate final-pristine-products"
+      }
+    }
+  },
+  "cleanupAcceptance": {
+    "baseline": "3a0f71cb13728a6802ad1c9eaadf6ed384d8e4a0",
+    "scope": "Final encoder-creation failure cleanup; successful path and shader bytes unchanged.",
+    "gates": {
+      "cleanup-build-Debug": {
+        "command": [
+          "xcodebuild",
+          "-workspace",
+          "Hazel.xcworkspace",
+          "-derivedDataPath",
+          "build/DerivedData",
+          "-scheme",
+          "MacOSQualification",
+          "-configuration",
+          "Debug",
+          "-destination",
+          "generic/platform=macOS",
+          "-jobs",
+          "2",
+          "build"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 186.8180795829976
+      },
+      "cleanup-native-Debug": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/taa.py",
+          "--config",
+          "Debug",
+          "--output",
+          "${ROOT}/build/taa-evidence/cleanup-native-Debug/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 20.713233999995282
+      },
+      "cleanup-build-Release": {
+        "command": [
+          "xcodebuild",
+          "-workspace",
+          "Hazel.xcworkspace",
+          "-derivedDataPath",
+          "build/DerivedData",
+          "-scheme",
+          "MacOSQualification",
+          "-configuration",
+          "Release",
+          "-destination",
+          "generic/platform=macOS",
+          "-jobs",
+          "2",
+          "build"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 97.35881441700622
+      },
+      "cleanup-native-Release": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/taa.py",
+          "--config",
+          "Release",
+          "--output",
+          "${ROOT}/build/taa-evidence/cleanup-native-Release/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 15.355871916981414
+      },
+      "cleanup-packages": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/hazel.py",
+          "package",
+          "--app",
+          "all",
+          "--project",
+          "${ROOT}/build/taa-evidence/export-input/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "--output",
+          "${ROOT}/build/taa-evidence/cleanup-packages/archives"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 22.490525083994726
+      },
+      "cleanup-relocation": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/xegtao_relocation.py",
+          "--archives",
+          "${ROOT}/build/taa-evidence/cleanup-packages/archives",
+          "--taa",
+          "--output",
+          "${ROOT}/build/taa-evidence/cleanup-relocation/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 9.752718958014157
+      },
+      "cleanup-pristine-products": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/hazel.py",
+          "test-packages",
+          "--output",
+          "${ROOT}/build/taa-evidence/cleanup-packages/archives",
+          "--profile",
+          "native"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 92.63157841700013
+      }
+    },
+    "status": "PASS final cleanup automated checks; owner visual acceptance INCOMPLETE"
+  },
+  "finalShaderAcceptance": {
+    "scope": "Final current-alpha resolve; full C++/managed/source-free suite passed before this shader-only change.",
+    "gates": {
+      "alpha-native-Release": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/taa.py",
+          "--config",
+          "Release",
+          "--output",
+          "${ROOT}/build/taa-evidence/alpha-native-Release/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 14.67347445798805
+      },
+      "benchmark-alpha-taa-on": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/xegtao_benchmark.py",
+          "--config",
+          "Release",
+          "--taa",
+          "--resources",
+          "${ROOT}/Hazel/Resources",
+          "--project",
+          "${ROOT}/examples/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "--output",
+          "${ROOT}/build/taa-evidence/benchmark-alpha-taa-on/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 59.48403862499981
+      },
+      "alpha-packages": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/hazel.py",
+          "package",
+          "--app",
+          "all",
+          "--project",
+          "${ROOT}/build/taa-evidence/export-input/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "--output",
+          "${ROOT}/build/taa-evidence/alpha-packages/archives"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 22.91442583297612
+      },
+      "alpha-relocation": {
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "scripts/macos/xegtao_relocation.py",
+          "--archives",
+          "${ROOT}/build/taa-evidence/alpha-packages/archives",
+          "--taa",
+          "--output",
+          "${ROOT}/build/taa-evidence/alpha-relocation/evidence"
+        ],
+        "status": "PASS",
+        "returncode": 0,
+        "seconds": 9.838558124989504
+      },
+      "alpha-pristine-Hazelnut": {
+        "command": "qualification.product_acceptance(Hazelnut, metal=True); source/SDK/MSL/compiler-denied",
+        "status": "PASS",
+        "seconds": 2.181561667006463
+      },
+      "alpha-pristine-Nutella": {
+        "command": "qualification.product_acceptance(Nutella, metal=True); source/SDK/MSL/compiler-denied",
+        "status": "PASS",
+        "seconds": 2.2252182910160627
+      }
+    },
+    "status": "PASS final automated checks; owner visual acceptance INCOMPLETE"
+  },
+  "otherGates": {
+    "native135CaseParityDebugRelease": "PASS; m4-debug and m4-release",
+    "nativeShaderCacheDebugRelease": "PASS; shader-cache-debug and shader-cache-release",
+    "OpenGLDebug": "PASS 18/18 collectively, EditorSmoke corrected rerun; opengl-debug.log and editor-scroll-owner-debug.log",
+    "OpenGLRelease": "PASS full 18/18; opengl-release.log",
+    "publicDocs": "PASS 83 Markdown files, 689 local links/images, 0 findings",
+    "WindowsLinuxExecution": "NOT RUN on this macOS host; historical Windows full-suite timeout deferred",
+    "ownerReview": "NOT REVIEWED"
+  },
+  "rawEvidenceRoot": "build/taa-evidence",
+  "finalAlphaDebug": {
+    "configuration": "Debug",
+    "head": "3a0f71cb13728a6802ad1c9eaadf6ed384d8e4a0",
+    "command": [
+      "${ROOT}/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "${ROOT}/Hazel/Resources",
+      "${ROOT}/build/taa-evidence/alpha-native-Debug/captures",
+      "--taa"
+    ],
+    "status": "PASS",
+    "scope": "Offscreen rigid camera/object motion, exact IDs/depth, cancellation, views and resize. Owner visual acceptance pending.",
+    "shaders": {
+      "ForwardPBR.hzmetal": "494708bd6c3fb9611277f047d0713aa5cff7cde4bedf9c55465ad410b33d7c3d",
+      "producer.txt": "3adf77fe1deff3d0d6cd64e5d94093697067bf3661383af61af35e853b87f53f",
+      "EntityOutline.hzmetal": "01ef441c3b77ab67b9d02aa739f1a7028df2b38b9d23fa1d9c85a87b70f1da56",
+      "Renderer2D_Line.hzmetal": "0649cd9aa45d63604c35ca5def33e3e7bc1ab98f5c8f2325f56cf73ec0e2b154",
+      "Renderer2D_Quad-16.hzmetal": "39eea29c143507c211f13271cb3c4a77759910546ffce882a258502216fb35df",
+      "ImGui.json": "d36612bb5f238ec1c4bab9b2e85fc77d3c63c860debd011c0596d9da253cc280",
+      "XeGTAO.metallib": "524ef4611573fa9ee363915fab117e495dbae3e419e07ddba4269c74b0208368",
+      "MotionPBR.hzmetal": "45613286d38f7d974713f96718e2a6dbb527836150573f389735c324a01dbb19",
+      "Renderer2D_Quad-32.hzmetal": "909978450633564664d3f6f5356aa80c497644ffb0fddeec85bacf9a975695eb",
+      "WorldPresentation.hzmetal": "6cf0ea9c2ca49ecd7f264e5a4df9e5f174c2c51e6b50543d5b8d7ebb2acfb164",
+      "XeGTAO.json": "a7ce46cda7d523f9eb4a968317e967f638e83ea70b3d329b9c4b62b2e7d8b20d",
+      "EnvironmentSky.hzmetal": "ba159aa84517a9b3626851f37b7f6b5314a1ae2250dfd5d58e051d22d2c9c14a",
+      "ImGui.metallib": "ebd096577ba66f98f3d2ae9dc32a607ca23e7e5e3aa8243defe15a238c7ce167",
+      "Renderer2D_Circle.hzmetal": "4e51b4ef362be908924d84287eb1c92535cd080b03386d906e968a352251fce3",
+      "DepthPBR.hzmetal": "1d70d04368e5b48056bb672c1588d7e57a4abbd8f2199bc09357b06bb29f098f",
+      "Renderer2D_Text.hzmetal": "f76ae76d70633ab911155803737fb8a76f14be5c0be12ff57c6ca10c21889ba5",
+      "TemporalAA.metallib": "f35ceb326bb1e3a85fd0ee4e268492cc6879bf011ec32c3c731b1c6ca2cc3aca",
+      "DisplayOutput.hzmetal": "8673d03228a2883189838f0d47ba8b25b51024e2eeac91c3bc5bd2445b2fcead",
+      "TemporalAA.json": "0f72d77f7437560912c3fb93361e1bf04c658e7ff7bba6a022c81e12a95a0a3b"
+    }
+  },
+  "retainedOpaqueReferences": {
+    "byteIdenticalToFinalRelease": true,
+    "captures": 123,
+    "scope": "120 native study frames plus three native fine-detail/reference readbacks; compares optimized-native-release/evidence/captures with alpha-native-Release/evidence/captures"
+  },
+  "finalAlphaProbeBuilds": {
+    "Debug": "PASS MetalRenderer2DQuadSmoke; alpha-test-build.log",
+    "Release": "PASS MetalRenderer2DQuadSmoke; alpha-test-build-Release.log"
+  }
+}

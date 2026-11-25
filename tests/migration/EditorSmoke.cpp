@@ -559,7 +559,7 @@ private:
     }
     bool ActivateWorkflowProperty(ImGuiWindow* window, ImGuiID tableID) {
         auto* table=ImGui::TableFindByID(tableID);
-        Check(table && table->LastFrameActive==ImGui::GetFrameCount(),"Native property row was not laid out");
+        Check(table && table->LastFrameActive==ImGui::GetFrameCount(),"Native property row was not laid out: phase="+std::to_string(m_ImportPhase)+" window="+window->Name);
         const auto scroll=ImGui::ScrollToRectEx(window,table->OuterRect,ImGuiScrollFlags_KeepVisibleEdgeY);
         if(std::abs(scroll.y)>1.0f)return false;
         return ActivateWorkflowItem(window,ImHashStr("##value",0,tableID));
@@ -1324,6 +1324,7 @@ private:
         e.m_EditorScene=e.m_ActiveScene=scene;e.m_SceneHierarchyPanel.SetContext(scene);a.m_SceneHistory=DocumentHistory{};a.m_SceneHistory.Bind(scene->GetIdentity());a.m_SceneHistory.MarkSaved(SceneSerializer(scene).CaptureAuthoredState());a.m_ActiveDocument=EditorDocument::Scene;
         e.m_SceneFile={};e.m_SceneLoad={};e.m_EditorScenePath=m_Directory/"native-scene-settings.hazel";
         const auto before=scene->Presentation();a.m_ShowSceneSettings=true;a.m_PresentationScene=scene->GetIdentity();a.m_ScenePresentationDraft.Background={.21404114f,.03310477f,.07323896f,1};
+        a.m_ScenePresentationDraft.SceneReferred=true;a.m_ScenePresentationDraft.TemporalAA=true;
         ImGui::SetNextWindowPos({20,40},ImGuiCond_Always);ImGui::SetNextWindowSize({650,460},ImGuiCond_Always);ImGui::SetNextWindowCollapsed(false,ImGuiCond_Always);
         ImGui::Begin("Scene Settings");const auto button=ImGui::GetID("Apply scene settings");ImGui::End();
         auto& gui=*ImGui::GetCurrentContext();gui.NavActivateId=gui.NavActivateDownId=button;

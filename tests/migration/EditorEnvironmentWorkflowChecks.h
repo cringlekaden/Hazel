@@ -182,6 +182,11 @@ void DrawEnvironmentWorkflow()
     auto picker = [&](const char *windowName, const char *key) {
         auto w = ImGui::FindWindowByName(windowName);
         Check(w && w->Active, "Environment named selector owner missing");
+        if(std::string(windowName)=="Scene Settings") {
+            const auto childID=w->GetID("Scene settings fields");ImGuiWindow* fields=nullptr;
+            for(auto* child:w->DC.ChildWindows)if(child->ChildId==childID)fields=child;
+            Check(fields&&fields->Active,"Scene Settings scrolling field owner missing");w=fields;
+        }
         if (w->Hidden || w->SkipItems)
             return false;
         auto row = ImHashStr(key, 0, w->ID), table = ImHashStr("##property", 0, row);

@@ -303,6 +303,18 @@ namespace Hazel {
                              "AO\0Raw radiance (SDR clamp)\0Direct (SDR clamp)\0Diffuse IBL (SDR clamp)\0Specular IBL (SDR clamp)\0"))
                 m_RenderView.Debug = SurfaceView(inspect);
             ImGui::SameLine();
+            if(ImGui::Button("TAA..."))ImGui::OpenPopup("Temporal inspection");
+            if(ImGui::BeginPopup("Temporal inspection")) {
+                int temporal=int(m_RenderView.TemporalDebug);
+                if(ImGui::Combo("View",&temporal,"Resolved\0Motion (pixels / 32)\0Jitter\0History accepted / rejected\0History contribution\0Resolved HDR (SDR clamp)\0"))m_RenderView.TemporalDebug=unsigned(temporal);
+                const auto& timing=*m_RenderView.TemporalMetrics;
+                if(timing.Valid)ImGui::Text("Shading %.3f / motion %.3f ms",timing.ShadingMilliseconds,timing.MotionMilliseconds);
+                if(timing.Valid)ImGui::Text("Resolve %.3f ms; history %.2f MiB",timing.ResolveMilliseconds,double(timing.HistoryBytes)/(1024*1024));
+                ImGui::Text("History allocations %llu / reuses %llu",(unsigned long long)timing.Allocations,(unsigned long long)timing.Reuses);
+                ImGui::TextUnformatted("Enable HDR TAA in Scene Settings. Metal 4 only.");
+                ImGui::EndPopup();
+            }
+            ImGui::SameLine();
             if(ImGui::Button("AO..."))ImGui::OpenPopup("Ambient occlusion inspection");
             if(ImGui::BeginPopup("Ambient occlusion inspection")) {
                 int aoInspect=int(m_RenderView.AmbientOcclusionView);

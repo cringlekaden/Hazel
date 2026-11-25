@@ -95,7 +95,7 @@ int main(int argc, char** argv)
         first.join(); second.join();
         for (auto& error : errors) if (error) std::rethrow_exception(error);
         Check(concurrent[0] == concurrent[1] && concurrent[0], "Concurrent loads published duplicate resources");
-        for (const auto& name : {"DisplayOutput", "EntityOutline", "EnvironmentSky", "ForwardPBR", "DepthPBR", "Renderer2D_Circle", "Renderer2D_Text", "WorldPresentation"})
+        for (const auto& name : {"DisplayOutput", "EntityOutline", "EnvironmentSky", "ForwardPBR", "DepthPBR", "MotionPBR", "Renderer2D_Circle", "Renderer2D_Text", "WorldPresentation"})
             Check(bool(Hazel::Shader::Create((root / (std::string("shaders/") + name + ".glsl")).u8string())), "Production corpus loading failed");
         Check(bool(backend.LoadShader("Renderer2D_Quad", 16)), "16-slot variant unavailable");
         std::weak_ptr<Hazel::Shader> retained = line;

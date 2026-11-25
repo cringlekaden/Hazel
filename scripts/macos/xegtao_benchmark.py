@@ -40,6 +40,8 @@ def summarize(text):
     for frame, extent, depth, prefilter, main, denoise, forward, memory in re.findall(
             r'XEGTAO_GPU frame=(\d+) pixels=(\d+x\d+) depth_ms=([\d.]+) prefilter_ms=([\d.]+) main_ms=([\d.]+) denoise_ms=([\d.]+) forward_world_ms=([\d.]+) working_bytes=(\d+)', text):
         phases[int(frame)] = (extent, *map(float, (depth, prefilter, main, denoise, forward)), int(memory))
+    temporal={int(f):(extent,float(ms),int(memory),int(allocations),int(reuses)) for f,extent,ms,memory,allocations,reuses in re.findall(
+        r'TAA_GPU frame=(\d+) pixels=(\d+x\d+) resolve_ms=([\d.]+) history_bytes=(\d+) allocations=(\d+) reuses=(\d+)',text)}
     result = {}
     for extent in ('1280x720', '1920x1080'):
         frames = [f for f, row in cpu.items() if row[0] == extent and accepted(f)]
@@ -52,6 +54,10 @@ def summarize(text):
                                                 if ex == extent and int(f) in frames]))
         for index, name in enumerate(('depthPreparation', 'depthPrefilter', 'main', 'denoise', 'forwardWorld'), 1):
             row[name + 'GPUCompletionInterval'] = distribution([phases[f][index] for f in submitted if f in gpu and f in phases and phases[f][0] == extent])
+        row['temporalResolveGPUCompletionInterval']=distribution([temporal[f][1] for f in submitted if f in gpu and f in temporal and temporal[f][0]==extent])
+        row['temporalHistoryPeakBytes']=max((temporal[f][2] for f in submitted if f in temporal),default=0)
+        row['temporalHistoryAllocations']=max((temporal[f][3] for f in submitted if f in temporal),default=0)
+        row['temporalHistoryReuses']=max((temporal[f][4] for f in submitted if f in temporal),default=0)
         phase_valid=sum(f in gpu and f in phases and phases[f][0]==extent for f in submitted)
         phase_candidates=sum(f in gpu for f in submitted) if phases else 0
         row['phaseCounterSamples']={'positivelyPresentedCandidates':phase_candidates,'validOrderedRecords':phase_valid,'rejectedOrMissingRecords':phase_candidates-phase_valid}
@@ -75,6 +81,7 @@ def summarize(text):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--taa', action='store_true', help='Enable full-resolution temporal resolve for every preset')
     parser.add_argument('--config', choices=('Debug', 'Release'), required=True)
     parser.add_argument('--resources', type=Path, required=True)
     parser.add_argument('--project', type=Path, required=True)
@@ -92,7 +99,7 @@ def main():
     inputs=[args.project,asset_root/'Scenes/XeGTAO-Contact.hazel',asset_root/'Studies/XeGTAO/DarkMetal.hmat',
             asset_root/'Reference/IBL_v1/Photo.henv',asset_root/'Reference/IBL_v1/Photo.henv.accepted']
     inputs += [p for folder in (asset_root/'Native/Direct_v1',asset_root/'Reference/IBL_v1/Photo.henv.prepared',args.resources/'shaders/metal') for p in folder.rglob('*') if p.is_file()]
-    report = dict(configuration=args.config, head=hz.output(['git', 'rev-parse', 'HEAD']),
+    report = dict(configuration=args.config, temporalAA=args.taa, head=hz.output(['git', 'rev-parse', 'HEAD']),
                   worktree=hz.output(['git', 'status', '--short']), warmup=120, tail=20, framesPerExtent=720,
                   scopes='Scene CPU, native submission CPU, tick interval, whole commit feedback, and precise GPU phase completion intervals. Phase intervals include synchronization and are not exclusive/additive. No backend speedup claim.',
                   memory='AO texture bytes are per generation; tracked frame/attachment/allocator peaks overlap and must not be added. RSS includes CPU/driver process storage.',
@@ -103,6 +110,7 @@ def main():
             folder = output / name; folder.mkdir()
             command = list(map(str, [hz.binaries(args.config) / 'MetalM1Smoke/MetalM1Smoke', folder,
                                     '--benchmark-metal', args.resources.resolve(), args.project.resolve(), quality]))
+            if args.taa:command.append('--taa')
             start = time.monotonic(); rss = []
             with (folder / 'run.log').open('w') as log:
                 process = subprocess.Popen(command, cwd=hz.ROOT, env=env, stdout=log, stderr=subprocess.STDOUT)

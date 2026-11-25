@@ -67,11 +67,11 @@ A packaged editor can edit/save and play prepared content without a source SDK. 
 
 ## Development-branch Metal packages
 
-On `feature/3d-foundations`, macOS `package` additionally produces the ten engine
-shader artifacts and the Dear ImGui native library from authoritative sources.
+On `feature/3d-foundations`, macOS `package` additionally produces the engine raster
+shader artifacts and the Dear ImGui, XeGTAO and TemporalAA native libraries from authoritative sources.
 Build Release first; the ordinary macOS app targets also build `MetalShaderTools`.
 Packaging requires the full Xcode shader toolchain; running the bundle does not.
-OpenGL GLSL remains included for explicit OpenGL selection and Automatic on platforms without native Metal 4. The ImGui MSL source and
+OpenGL GLSL remains included for explicit OpenGL selection and Automatic on platforms without native Metal 4. Native MSL authoring sources and
 producer tools are excluded from the bundle.
 
 Select Metal explicitly from any working directory:

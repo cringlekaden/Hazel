@@ -16,6 +16,7 @@ namespace Hazel {
 class MetalShader;
 class MetalComputePipeline;
 struct MetalAOPass;
+struct MetalTemporalPass;
 struct MetalFramebufferAttachments;
 struct MetalRenderer2DDraw
 {
@@ -40,7 +41,7 @@ struct MetalRenderer2DFrame
     std::shared_ptr<MetalShader> OutputShader;
     NS::SharedPtr<MTL::SamplerState> OutputSampler;
     NS::SharedPtr<MTL4::ArgumentTable> OutputArguments;
-    bool Readback = true, EditorPicking = false;
+    bool Readback = true, EditorPicking = false, QueueOrderedTemporalProducer = false;
     uint64_t PacketBytes = 0;
     std::shared_ptr<MetalRenderer2DFrame> World;
     std::shared_ptr<MetalShader> PresentationShader;
@@ -48,6 +49,8 @@ struct MetalRenderer2DFrame
     float Exposure = 0;
     std::shared_ptr<MetalRenderer2DFrame> AOSource;
     std::shared_ptr<MetalAOPass> AO;
+    std::shared_ptr<MetalTemporalPass> Temporal;
+    std::shared_ptr<MetalRenderer2DFrame> TemporalSource, MotionSource;
     std::shared_ptr<MetalRenderer2DFrame> ComputeSource;
     std::shared_ptr<MetalComputePipeline> Compute;
     std::vector<uint8_t> ComputeParameters;

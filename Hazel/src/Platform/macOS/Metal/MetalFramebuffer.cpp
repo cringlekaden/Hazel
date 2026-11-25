@@ -33,7 +33,7 @@ MetalFramebuffer::MetalFramebuffer(std::shared_ptr<MetalDevice> device, const Fr
     Check(bool(m_Device), "Metal framebuffer requires its renderer device");
     m_Attachments = Allocate(specification.Width, specification.Height);
 }
-std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(uint32_t width, uint32_t height) const
+std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(uint32_t width, uint32_t height, bool temporalHistory) const
 {
     Check(!m_Device->m_Stopped, "Cannot allocate framebuffer attachments after Metal device shutdown");
     auto pool = NS::TransferPtr(NS::AutoreleasePool::alloc()->init());
@@ -44,9 +44,9 @@ std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(ui
     descriptor->setStorageMode(MTL::StorageModePrivate); descriptor->setUsage(MTL::TextureUsageRenderTarget | MTL::TextureUsageShaderRead);
     const MTL::PixelFormat formats[] = {MTL::PixelFormatRGBA32Float, MTL::PixelFormatR32Sint, MTL::PixelFormatDepth32Float};
     const bool depthOnly=m_Specification.Attachments.Attachments.size()==1 && m_Specification.Attachments.Attachments[0].TextureFormat==FramebufferTextureFormat::DEPTH32F;
-    for (size_t i = depthOnly?2u:0u; i < (depthOnly?3u:m_Specification.Attachments.Attachments.size() == 1 ? 1u : 3u); ++i)
+    for (size_t i = depthOnly?2u:0u; i < (depthOnly?3u:temporalHistory?2u:m_Specification.Attachments.Attachments.size() == 1 ? 1u : 3u); ++i)
     {
-        descriptor->setUsage(MTL::TextureUsageRenderTarget | MTL::TextureUsageShaderRead | (i == 0 && m_Specification.Attachments.Attachments.size() == 3 ? MTL::TextureUsageShaderWrite : 0));
+        descriptor->setUsage(MTL::TextureUsageRenderTarget | MTL::TextureUsageShaderRead | ((i == 0 && m_Specification.Attachments.Attachments.size() == 3) || temporalHistory ? MTL::TextureUsageShaderWrite : 0));
         descriptor->setPixelFormat(!depthOnly && m_Specification.Attachments.Attachments.size() == 1 ? MTL::PixelFormatBGRA8Unorm : formats[i]);
         generation->Targets[i] = NS::TransferPtr(m_Device->NativeDevice()->newTexture(descriptor.get()));
         if (!generation->Targets[i]) throw std::runtime_error("Cannot allocate Metal framebuffer attachment generation");
@@ -69,7 +69,7 @@ MetalRendererAPI& MetalFramebuffer::Backend() const
     Check(backend && backend->Device() == m_Device, "Framebuffer belongs to a different or released Metal backend");
     return *backend;
 }
-void MetalFramebuffer::PrepareAmbientOcclusion(const Ref<Framebuffer>& depth, const SceneCameraView& camera, const AmbientOcclusionSettings& settings, unsigned debugView, const std::shared_ptr<AmbientOcclusionTiming>& timing)
+void MetalFramebuffer::PrepareAmbientOcclusion(const Ref<Framebuffer>& depth, const SceneCameraView& camera, const AmbientOcclusionSettings& settings, unsigned debugView, const std::shared_ptr<AmbientOcclusionTiming>& timing, unsigned temporalPhase)
 {
     auto source=std::dynamic_pointer_cast<MetalFramebuffer>(depth);
     Check(source && source.get()!=this && source->m_Device==m_Device && source->m_Frame && m_Frame &&
@@ -77,7 +77,8 @@ void MetalFramebuffer::PrepareAmbientOcclusion(const Ref<Framebuffer>& depth, co
         source->m_Frame->Width==m_Frame->Width && source->m_Frame->Height==m_Frame->Height &&
         source->m_Attachments->Targets[2] && m_Specification.Attachments.Attachments.size()==3,
         "XeGTAO requires an unbound depth producer and bound equal-size lighting target");
-    auto constants=AmbientOcclusionConstants(camera,settings,m_Frame->Width,m_Frame->Height);
+    auto constants=AmbientOcclusionConstants(camera,settings,m_Frame->Width,m_Frame->Height,temporalPhase);
+    constants.Quality.w=temporalPhase?288u*((temporalPhase-1)%64):0u;
     if(!source->m_AOPipelines)source->m_AOPipelines=std::make_shared<MetalAOPipelines>(*m_Device);
     std::shared_ptr<MetalAOResources> resources;
     for(auto& candidate:source->m_AOResources)
@@ -102,6 +103,10 @@ void MetalFramebuffer::Bind()
     auto& backend = Backend();
     Check(!backend.m_Stopped, "Cannot bind framebuffer after Metal backend shutdown");
     m_Device->Poll();
+    if (m_SubmittedGeneration && m_TemporalProducer) {
+        m_SubmittedGeneration=false;
+        std::lock_guard<std::mutex> lock(m_Device->m_Observer->Mutex);++m_Device->m_Observer->Value.AttachmentReuses;
+    }
     if (m_SubmittedGeneration) {
         m_Available.push_back(std::move(m_Attachments));
         m_SubmittedGeneration = false;
@@ -122,6 +127,7 @@ void MetalFramebuffer::Bind()
     frame->Width = generation->Width; frame->Height = generation->Height;
     frame->Attachments = generation;
     frame->Readback = bool(generation->Targets[0]);
+    frame->QueueOrderedTemporalProducer=m_TemporalProducer;
     backend.BindFramebuffer(frame);
     m_Frame = std::move(frame); m_Attachments = std::move(generation); m_SubmittedGeneration = false;
     m_Readback.reset(); // this pass must not expose an older generation as current pixels
@@ -154,6 +160,7 @@ void MetalFramebuffer::ClearAttachment(uint32_t attachment, int value)
 }
 Ref<const FramebufferReadback> MetalFramebuffer::Submit()
 {
+    Check(!m_TemporalProducer,"Private temporal scratch must be consumed by its resolve");
     Check(m_Frame && !Backend().IsFramebufferBound(m_Frame), "Unbind framebuffer after EndScene before submitting");
     Check(bool(m_Attachments->Targets[0]), "Depth-only preparation targets must be consumed by a lighting view");
     // Busy leaves this exact CPU packet/generation available for retry or cancellation.
@@ -186,6 +193,9 @@ void MetalFramebuffer::Resize(uint32_t width, uint32_t height)
     specification.Width = width; specification.Height = height;
     Validate(specification);
     if (width == m_Specification.Width && height == m_Specification.Height) return;
+    // Retired caches are disposable; keep the current target intact if allocation fails.
+    m_Available.erase(std::remove_if(m_Available.begin(),m_Available.end(),[](const auto& value){return value.use_count()==1;}),m_Available.end());
+    m_TemporalPrevious.reset();m_TemporalColors.clear();
     auto generation = Allocate(width, height); // publish only on complete allocation success
     m_Available.clear();
     m_Attachments = std::move(generation); m_Specification = specification;

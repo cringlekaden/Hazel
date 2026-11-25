@@ -3,6 +3,7 @@
 #include <Metal/Metal.hpp>
 #include <array>
 #include <memory>
+#include <atomic>
 
 namespace Hazel {
 class MetalDevice;
@@ -11,6 +12,10 @@ struct AmbientOcclusionTiming;
 struct AmbientOcclusionSettings;
 struct MetalAOPipelines;
 struct MetalAOResources;
+struct MetalTemporalPipeline;
+struct MetalTemporalHistory;
+struct MetalTemporalCounters;
+struct TemporalTiming;
 class MetalRendererAPI;
 struct MetalRenderer2DFrame;
 // Immutable attachment identity. Each submitted generation is completion-retained.
@@ -18,6 +23,7 @@ struct MetalFramebufferAttachments
 {
     uint32_t Width = 0, Height = 0;
     std::array<NS::SharedPtr<MTL::Texture>, 3> Targets;
+
 };
 class MetalFramebuffer final : public Framebuffer
 {
@@ -26,7 +32,11 @@ public:
     ~MetalFramebuffer() override = default;
     MetalFramebuffer(const MetalFramebuffer&) = delete;
     MetalFramebuffer& operator=(const MetalFramebuffer&) = delete;
-    void PrepareAmbientOcclusion(const Ref<Framebuffer>& depth, const SceneCameraView& camera, const AmbientOcclusionSettings& settings, unsigned debugView, const std::shared_ptr<AmbientOcclusionTiming>& timing);
+    void PrepareAmbientOcclusion(const Ref<Framebuffer>& depth, const SceneCameraView& camera, const AmbientOcclusionSettings& settings, unsigned debugView, const std::shared_ptr<AmbientOcclusionTiming>& timing, unsigned temporalPhase = 0);
+    void SetTemporalProducer(); // Private same-queue scratch; never a presentation/readback target.
+    void ResolveTemporal(const Ref<Framebuffer>& radiance, const Ref<Framebuffer>& motion,
+        glm::vec2 jitter, bool valid, unsigned debug, const glm::mat4& skyMotion, unsigned skyMode,
+        const std::shared_ptr<std::atomic<bool>>& submitted, const std::shared_ptr<TemporalTiming>& timing);
     void Bind() override;
     void Unbind() override;
     // Resume an unsubmitted CPU packet after a narrow producer pass.
@@ -54,7 +64,7 @@ public:
     std::shared_ptr<const MetalFramebufferAttachments> Snapshot() const { return m_Attachments; }
 private:
     static void Validate(const FramebufferSpecification& specification);
-    std::shared_ptr<const MetalFramebufferAttachments> Allocate(uint32_t width, uint32_t height) const;
+    std::shared_ptr<const MetalFramebufferAttachments> Allocate(uint32_t width, uint32_t height, bool temporalHistory = false) const;
     MetalRendererAPI& Backend() const;
     size_t ReadIndex(int x, int y);
     std::shared_ptr<MetalDevice> m_Device;
@@ -65,6 +75,11 @@ private:
     std::vector<Ref<const FramebufferReadback>> m_EditorPendingReadbacks;
     std::shared_ptr<MetalAOPipelines> m_AOPipelines;
     std::vector<std::shared_ptr<MetalAOResources>> m_AOResources;
+    std::shared_ptr<MetalTemporalPipeline> m_TemporalPipeline;
+    std::shared_ptr<MetalTemporalHistory> m_TemporalPrevious;
+    std::vector<std::shared_ptr<const MetalFramebufferAttachments>> m_TemporalColors;
+    std::vector<std::shared_ptr<MetalTemporalCounters>> m_TemporalCounters;
+    bool m_TemporalProducer=false;
     bool m_SubmittedGeneration = false;
     std::vector<std::shared_ptr<const MetalFramebufferAttachments>> m_Available;
 };

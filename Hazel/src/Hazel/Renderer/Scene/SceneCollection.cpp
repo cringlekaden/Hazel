@@ -9,7 +9,7 @@ namespace Hazel
 {
 namespace
 {
-bool Visible(const MeshBounds &bounds, const glm::mat4 &clip)
+bool Visible(const MeshBounds &bounds, const glm::mat4 &clip, glm::vec2 guard)
 {
     glm::vec4 corners[8];
     for (int i = 0; i < 8; ++i)
@@ -21,7 +21,7 @@ bool Visible(const MeshBounds &bounds, const glm::mat4 &clip)
         {
             bool outside = true;
             for (auto &p : corners)
-                outside &= side * p[axis] > p.w;
+                outside &= side * p[axis] > p.w*(axis<2?1+guard[axis]:1);
             if (outside)
                 return false;
         }
@@ -48,10 +48,11 @@ void SceneRenderer::ValidateMaterial(const MaterialDefinition &material,
         throw std::runtime_error(
             "Lit materials require Scene-referred presentation in Scene Settings");
 }
-SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &camera)
+SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &camera, glm::uvec2 physicalExtent)
 {
     SceneSubmission frame;
     frame.Camera = camera;
+    frame.SceneIdentity = scene.GetIdentity();
     frame.Presentation = scene.Presentation();
     frame.Presentation.Validate();
     frame.Assets = scene.GetAssets();
@@ -92,6 +93,7 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
         draw.Geometry = resolution.Accepted;
         draw.SetWorld(scene.GetWorldTransform(e));
         draw.Picking = int(h);
+        draw.Identity = uint64_t(e.GetUUID());
         for (auto &p : draw.Geometry->Geometry.Primitives)
         {
             auto slot = std::find_if(draw.Geometry->Definition.Slots.begin(),
@@ -105,7 +107,10 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
             ValidateMaterial(*material.Accepted, frame.Presentation);
             draw.Materials.push_back(material.Accepted);
         }
-        if (Visible(draw.Geometry->Geometry.Bounds, camera.ViewProjection * draw.World))
+        // Half-pixel maximum jitter requires one pixel of total NDC guard.
+        const auto guard=frame.Presentation.TemporalAA && physicalExtent.x && physicalExtent.y?
+            glm::vec2(1)/glm::vec2(physicalExtent):glm::vec2(0);
+        if (Visible(draw.Geometry->Geometry.Bounds, camera.ViewProjection * draw.World,guard))
             frame.Meshes.push_back(std::move(draw));
     }
     return frame;

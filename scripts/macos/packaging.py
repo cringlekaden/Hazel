@@ -60,7 +60,7 @@ def package(app, project, destination, archive_name=None):
     from macos.metal_shaders import produce
     shaders = hz.ROOT/'build/metal-shaders/Release'
     produced = produce('Release', shaders)
-    artifacts = [shaders/(name+('.metallib' if name in ('ImGui','XeGTAO') else '.hzmetal')) for name in produced]
+    artifacts = [shaders/(name+('.metallib' if name in ('ImGui','XeGTAO','TemporalAA') else '.hzmetal')) for name in produced]
     for name in (('Hazelnut','Nutella') if app=='all' else (app,)):
         tag=f'{archive_name or name}-macos-arm64-Release'
         with tempfile.TemporaryDirectory(prefix='.package-',dir=destination) as temporary:
@@ -75,6 +75,7 @@ def package(app, project, destination, archive_name=None):
             for shader in artifacts:
                 hz.copy_changed(shader,resources/'shaders/metal'/shader.name)
             (resources/'shaders/ImGui.metal').unlink()
+            (resources/'shaders/TemporalAA.metal').unlink()
             (resources/'shaders/XeGTAO/XeGTAO.metal').unlink()
 
             if name=='Hazelnut':
@@ -122,7 +123,8 @@ def package(app, project, destination, archive_name=None):
                       'metal_shaders': {p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(artifacts)},
                       'metal_shader_producer': {'fingerprint':(shaders/'producer.txt').read_text(),
                                                 'imgui':json.loads((shaders/'ImGui.json').read_text()),
-                                                'xegtao':json.loads((shaders/'XeGTAO.json').read_text())},
+                                                'xegtao':json.loads((shaders/'XeGTAO.json').read_text()),
+                                                'temporal_aa':json.loads((shaders/'TemporalAA.json').read_text())},
                       'source_dirty':bool(hz.output(['git','-C',hz.ROOT,'status','--porcelain'])),
                       'shader_tools':json.loads((hz.ROOT/'build/dependencies/install/Release-macos-arm64/shader-tools.json').read_text())}
             (resources/'build.json').write_text(json.dumps(metadata,indent=2)+'\n')

@@ -172,7 +172,10 @@ namespace Hazel {
             sample.Mouse[size_t(m_UIAdapter.Bindings().PointerButton)]=Input::IsMouseButtonPressed(MouseCode(m_UIAdapter.Bindings().PointerButton));
             RouteUIInput(sample,timestep.GetSeconds(),m_InputEnabled&&!m_Inspection);
             SceneCameraView inspection;
-            if(m_Inspection)inspection={m_Inspection->GetViewProjection(),m_Inspection->GetPosition(),-m_Inspection->GetForwardDirection(),false};
+            if(m_Inspection) {
+                inspection={m_Inspection->GetViewProjection(),m_Inspection->GetPosition(),-m_Inspection->GetForwardDirection(),false};
+                inspection.View=m_Inspection->GetViewMatrix();inspection.Projection=m_Inspection->GetProjection();
+            }
             m_Scene->OnUpdateRuntime(timestep, &m_View, m_Display,m_Inspection?&inspection:nullptr);
             m_Updating = false;
         }

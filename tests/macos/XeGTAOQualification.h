@@ -246,8 +246,8 @@ inline void XeGTAOQualification(const std::filesystem::path& output,
 
 // Isolated pass measurements while a visible desktop is unavailable. Readback
 // and synchronous completion are intentional and excluded from application claims.
-inline void XeGTAOOffscreenBenchmark(const std::filesystem::path& output,
-    const std::function<Hazel::Ref<const Hazel::FramebufferReadback>(const Hazel::Ref<Hazel::Framebuffer>&)>& capture)
+inline void SceneOffscreenBenchmark(const std::filesystem::path& output,
+    const std::function<Hazel::Ref<const Hazel::FramebufferReadback>(const Hazel::Ref<Hazel::Framebuffer>&)>& capture, bool temporalMatrix)
 {
     using namespace Hazel;
     using Clock=std::chrono::steady_clock;
@@ -257,12 +257,15 @@ inline void XeGTAOOffscreenBenchmark(const std::filesystem::path& output,
     FramebufferSpecification spec;spec.Attachments={FramebufferTextureFormat::RGBA32F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::DEPTH32F};
     SceneRenderView view;Ref<Framebuffer> target;
     std::ofstream csv(output/"offscreen-timings.csv");
-    csv<<"serial,quality,width,height,iteration,scene_ms,capture_wait_ms,frame_ms,depth_ms,prefilter_ms,main_ms,denoise_ms,forward_world_ms,working_bytes\n";
+    csv<<"serial,quality,width,height,iteration,scene_ms,capture_wait_ms,frame_ms,depth_ms,prefilter_ms,main_ms,denoise_ms,forward_world_ms,working_bytes,taa,resolve_ms,history_bytes,history_allocations,history_reuses,shading_ms,motion_ms\n";
     for(auto extent:{glm::uvec2(1280,720),glm::uvec2(1920,1080)}) {
         spec.Width=extent.x;spec.Height=extent.y;target=Framebuffer::Create(spec);
         session.Resize(extent.x,extent.y);session.ResizeFramebuffer(extent.x,extent.y);
         for(int quality=-1;quality<4;++quality) {
             auto& ao=session.GetScene()->Presentation().AmbientOcclusion;ao.Enabled=quality>=0;if(ao.Enabled)ao.Quality=unsigned(quality);
+            for(bool temporal:{false,true}) {
+            if(temporal && !temporalMatrix)continue;
+            session.GetScene()->Presentation().TemporalAA=temporal;view.Reset();
             for(unsigned iteration=0;iteration<160;++iteration) {
                 const auto start=Clock::now();target->Bind();target->Clear({0,0,0,1});target->ClearAttachment(1,-1);
                 session.GetScene()->OnUpdateRuntime(Timestep(0),&view,target);
@@ -276,9 +279,19 @@ inline void XeGTAOOffscreenBenchmark(const std::filesystem::path& output,
                     <<std::chrono::duration<double,std::milli>(completed-rendered).count()<<','
                     <<std::chrono::duration<double,std::milli>(completed-start).count();
                 for(auto value:timing.Milliseconds)csv<<','<<(ao.Enabled?value:0);
-                csv<<','<<(ao.Enabled?timing.WorkingBytes:0)<<'\n';
+                const auto& taa=*view.TemporalMetrics;
+                if(temporal&&!taa.Valid)throw std::runtime_error("Offscreen TAA benchmark has no GPU counters");
+                csv<<','<<(ao.Enabled?timing.WorkingBytes:0)<<','<<temporal<<','<<(temporal?taa.ResolveMilliseconds:0)<<','
+                    <<(temporal?taa.HistoryBytes:0)<<','<<(temporal?taa.Allocations:0)<<','<<(temporal?taa.Reuses:0)<<','<<(temporal?taa.ShadingMilliseconds:0)<<','<<(temporal?taa.MotionMilliseconds:0)<<'\n';
+            }
             }
         }
     }
     session.Stop();view.Reset();target.reset();Renderer3D::Shutdown();
 }
+inline void XeGTAOOffscreenBenchmark(const std::filesystem::path& output,
+    const std::function<Hazel::Ref<const Hazel::FramebufferReadback>(const Hazel::Ref<Hazel::Framebuffer>&)>& capture)
+{SceneOffscreenBenchmark(output,capture,false);}
+inline void TemporalAAOffscreenBenchmark(const std::filesystem::path& output,
+    const std::function<Hazel::Ref<const Hazel::FramebufferReadback>(const Hazel::Ref<Hazel::Framebuffer>&)>& capture)
+{SceneOffscreenBenchmark(output,capture,true);}

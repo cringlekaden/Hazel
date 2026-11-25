@@ -3,6 +3,7 @@
 #include "Hazel/Assets/Environment.h"
 #include "Hazel/Scene/SceneDefaults.h"
 #include <optional>
+#include <cstdint>
 namespace Hazel
 {
 class ProjectAssets;
@@ -32,6 +33,7 @@ struct SceneCameraView
     glm::mat4 ViewProjection{1};
     glm::vec3 Position{}, ToCamera{0, 0, 1};
     bool Orthographic = false;
+    glm::mat4 View{1}, Projection{1}; // Unjittered source matrices; VP is authoritative for direct submissions.
 };
 struct SubmittedMesh
 {
@@ -41,6 +43,9 @@ struct SubmittedMesh
     int Handedness = 1;
     void SetWorld(const glm::mat4 &world);
     int Picking = -1;
+    uint64_t Identity = 0; // Stable entity UUID; zero rejects object history.
+    glm::mat4 PreviousWorld{1};
+    bool PreviousValid = false;
 };
 struct SubmittedDirectional
 {
@@ -50,6 +55,9 @@ struct SubmittedDirectional
 struct SceneSubmission
 {
     SceneCameraView Camera;
+    uint64_t SceneIdentity = 0;
+    glm::mat4 PreviousViewProjection{1};
+    unsigned TemporalPhase = 0; // Zero preserves fixed AO noise; 1..64 temporal sequence.
     ScenePresentation Presentation;
     unsigned AmbientOcclusionView = 0; // 0 shaded, 1 visibility, 2 raw, 3 edges, 4 view depth.
     SurfaceView Debug = SurfaceView::Shaded;

@@ -60,6 +60,8 @@ private:
     NS::SharedPtr<MTL::Buffer> AcquireRenderer2DBuffer(size_t bytes, const void* data = nullptr);
     NS::SharedPtr<MTL::DepthStencilState> GetDepthState(const RasterState& raster);
     std::array<NS::SharedPtr<MTL::DepthStencilState>, 6> m_DepthStates;
+    void PrepareTemporal(const std::shared_ptr<MetalRenderer2DFrame>& frame);
+    void EncodeTemporal(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     void PrepareAmbientOcclusion(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     void EncodeAmbientOcclusion(const std::shared_ptr<MetalRenderer2DFrame>& frame);
     void PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& frame);

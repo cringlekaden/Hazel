@@ -32,6 +32,7 @@ static ApplicationSpecification Specification(const std::filesystem::path& outpu
     return s;
 }
 #include "MetalEditorConsumers.h"
+#include "TemporalEditorViews.h"
 class EventProof final : public Layer {
 public:
     unsigned Resizes=0;
@@ -39,7 +40,7 @@ public:
     RuntimeSession Session;
     Ref<Framebuffer> Display, Retirement;
     uint64_t Frames=0;
-    bool Benchmark=false, FP32Display=false;
+    bool Benchmark=false, FP32Display=false, TemporalAA=false;
     int AOQuality=-2; // -2 authored, -1 disabled, 0..3 explicit benchmark preset.
     struct Query {uint32_t ID=0;uint64_t Frame=0;bool Pending=false;};
     std::array<Query,16> Queries{};
@@ -50,6 +51,7 @@ public:
         Project::SetActive(QuadProject);
         Session.Resize(1280,720);
         Session.Start(QuadProject, QuadProject->LoadScene(QuadProject->GetConfig().StartScene));
+        if(TemporalAA)Session.GetScene()->Presentation().TemporalAA=true;
         if(AOQuality>=-1) {
             auto& ao=Session.GetScene()->Presentation().AmbientOcclusion;
             ao.Enabled=AOQuality>=0;
@@ -127,7 +129,7 @@ static void Print(const char* name,const MetalProofSnapshot& s) {
       <<" zero_present_time="<<s.ZeroPresentationTime<<" pixels="<<s.PixelWidth<<'x'<<s.PixelHeight<<" logical="<<s.LogicalWidth<<'x'<<s.LogicalHeight
       <<" backing_scale="<<s.BackingScale<<" vsync="<<s.VSync<<" errors="<<s.Errors<<std::endl;
 }
-static int Benchmark(const std::filesystem::path& output,const std::filesystem::path& resources,bool metal,bool fp32=false, const std::filesystem::path& project={}, int aoQuality=-2)
+static int Benchmark(const std::filesystem::path& output,const std::filesystem::path& resources,bool metal,bool fp32=false, const std::filesystem::path& project={}, int aoQuality=-2, bool temporal=false)
 {
     Log::Init();std::filesystem::create_directories(output);
     auto spec=Specification(output);spec.Name=metal?"M4 Metal benchmark":"M4 OpenGL benchmark";
@@ -140,7 +142,7 @@ static int Benchmark(const std::filesystem::path& output,const std::filesystem::
         Application app(spec);if(metal)observer=Backend().Observe();
         auto* window=static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());
         MetalM1Environment(window,(output/"environment.json").c_str());
-        auto layer=CreateScope<EventProof>();auto* proof=layer.get();layer->Benchmark=true;layer->FP32Display=fp32;layer->AOQuality=aoQuality;
+        auto layer=CreateScope<EventProof>();auto* proof=layer.get();layer->Benchmark=true;layer->FP32Display=fp32;layer->AOQuality=aoQuality;layer->TemporalAA=temporal;
         layer->QuadProject=Project::LoadCandidate(project.empty()?std::filesystem::absolute("examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj"):project);
         auto requests=layer->QuadProject->GetRendererRequests();requests.TextureSlots=4;requests.VSync=false;
         layer->QuadProject->GetConfig().Rendering=requests;
@@ -175,18 +177,20 @@ static int Benchmark(const std::filesystem::path& output,const std::filesystem::
 }
 int main(int argc,char** argv) {
     try {
+        if(argc==4 && std::string(argv[2])=="--taa-views")return TemporalViewProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]));
         if (argc == 4 && std::string(argv[2]) == "--editor-consumers-quick") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),100);
         if (argc == 4 && std::string(argv[2]) == "--editor-consumers") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]));
         if (argc == 4 && std::string(argv[2]) == "--editor-pending-shutdown") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),900,true);
         if (argc == 4 && std::string(argv[2]) == "--editor-encode-recovery") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),900,false,true,true);
         if (argc == 4 && std::string(argv[2]) == "--editor-encode-abort") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),900,false,true);
-        if(argc==6 && std::string(argv[2])=="--benchmark-metal") {
+        if((argc==6 || argc==7) && std::string(argv[2])=="--benchmark-metal") {
             const int quality=std::stoi(argv[5]);Check(quality>=-1 && quality<=3,"AO benchmark preset requires -1..3");
-            return Benchmark(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),true,false,std::filesystem::absolute(argv[4]),quality);
+            return Benchmark(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),true,false,std::filesystem::absolute(argv[4]),quality,argc==7 && std::string(argv[6])=="--taa");
         }
         if(argc==4 && (std::string(argv[2])=="--benchmark-metal" || std::string(argv[2])=="--benchmark-opengl" || std::string(argv[2])=="--benchmark-opengl-fp32"))
             return Benchmark(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),std::string(argv[2])=="--benchmark-metal",std::string(argv[2])=="--benchmark-opengl-fp32");
-        const bool xegtao=argc==4 && std::string(argv[2])=="--xegtao";
+        const bool temporalScene=argc==4 && std::string(argv[2])=="--taa";
+        const bool xegtao=temporalScene || (argc==4 && std::string(argv[2])=="--xegtao");
         const bool renderer3D=xegtao || (argc==4 && std::string(argv[2])=="--renderer3d");
         const bool runtime=renderer3D || (argc==4 && std::string(argv[2])=="--renderer2d");
         const bool quads=runtime || (argc==4 && std::string(argv[2])=="--quads");
@@ -217,7 +221,7 @@ int main(int argc,char** argv) {
             int initialWidth=0,initialHeight=0; glfwGetWindowSize(window,&initialWidth,&initialHeight);
             Check(glfwGetWindowAttrib(window,GLFW_CLIENT_API)==GLFW_NO_API&&glfwGetCurrentContext()==nullptr&&glad_glGetString==nullptr,
                   "Metal startup created or loaded OpenGL");
-            auto eventLayer=CreateScope<EventProof>(); auto* eventProof=eventLayer.get();
+            auto eventLayer=CreateScope<EventProof>(); auto* eventProof=eventLayer.get();eventLayer->TemporalAA=temporalScene;
             if(quads) eventLayer->QuadProject=Project::LoadCandidate(std::filesystem::absolute(xegtao ? "examples/RenderingReference/RenderingReference-XeGTAO.hproj" : renderer3D ? "examples/RenderingReference/RenderingReference-IBLQuality-Photo.hproj" : runtime ? "examples/Sandbox/Sandbox-Renderer2D.hproj" : "examples/Sandbox/Sandbox-Quads.hproj"));
             application.PushLayer(std::move(eventLayer));
             bool immutable=false; try { RenderCommand::Configure(RendererAPI::API::OpenGL); } catch(const std::logic_error&) { immutable=true; }
@@ -285,11 +289,11 @@ int main(int argc,char** argv) {
               "GPU resources or native owners survived Application shutdown");
         Check(events>0&&!Application::TryGet()&&!RenderCommand::IsConfigured(),"GLFW events or application ownership contract failed");
         Check(argc!=3||(captureStarted&&captureStopped&&std::filesystem::exists(argv[2])),"GPU capture missing");
-        // AO adds one depth-only framebuffer: three targets x four bounded
-        // generations per observed extent, plus the 8x8 retirement target. Count
+        // TAA uses three ordinary four-generation pools, two queue-ordered
+        // scratch targets and two history generations: sixteen per extent. Count
         // actual extents because the native window manager may clamp sizes.
         std::cout<<"M1_ATTACHMENTS extents="<<framebufferExtents<<" allocations="<<final.AttachmentAllocations<<" reuses="<<final.AttachmentReuses<<" live="<<final.AttachmentGenerations<<" bytes="<<final.AttachmentBytes<<std::endl;
-        if (quads) Check(final.AttachmentGenerations==0 && final.AttachmentBytes==0 && final.PeakAttachmentBytes>0 && final.AttachmentReuses>300 && final.AttachmentAllocations<=(xegtao?12u*framebufferExtents+1u:16u),
+        if (quads) Check(final.AttachmentGenerations==0 && final.AttachmentBytes==0 && final.PeakAttachmentBytes>0 && final.AttachmentReuses>300 && final.AttachmentAllocations<=(temporalScene?16u*framebufferExtents+1u:xegtao?12u*framebufferExtents+1u:16u),
                          "Scene framebuffer generations survived shutdown");
         // The same process must return to the default production OpenGL path after Metal.
         { ApplicationSpecification gl; gl.Name="M1 OpenGL recovery"; gl.EnableImGui=false;

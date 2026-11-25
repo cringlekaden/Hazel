@@ -71,16 +71,25 @@ namespace Hazel {
         ImGui::Begin("Scene Settings",&m_ShowSceneSettings);
         auto& scene=*m_Editor.m_EditorScene;
         if(m_PresentationScene!=scene.GetIdentity()){m_PresentationScene=scene.GetIdentity();m_ScenePresentationDraft=scene.Presentation();}
+        // Keep Apply/Revert visible as the renderer form grows; only fields scroll.
+        ImGui::BeginChild("Scene settings fields",{0,-ImGui::GetFrameHeightWithSpacing()*4});
         int mode = m_ScenePresentationDraft.SceneReferred ? 1 : 0;
         if (PropertyUI::Combo("presentation-mode", "World presentation", mode,
                               "Display-referred\0Scene-referred (Neutral)\0"))
         {
             m_ScenePresentationDraft.SceneReferred = mode == 1;
             m_ScenePresentationDraft.Exposure = 0;
+            if(!mode)m_ScenePresentationDraft.TemporalAA=false;
         }
         if (mode)
             PropertyUI::SliderFloat("scene-exposure", "Exposure (stops)",
                                     m_ScenePresentationDraft.Exposure, -16, 16);
+        ImGui::SeparatorText("Temporal antialiasing");
+        ImGui::BeginDisabled(!mode);
+        PropertyUI::Checkbox("taa-enable","HDR TAA (Metal 4)",m_ScenePresentationDraft.TemporalAA);
+        ImGui::EndDisabled();
+        ImGui::TextWrapped("Full-resolution rigid-mesh antialiasing. Requires scene-referred HDR. World 2D and screen UI stay unjittered. History rejects cuts and newly exposed geometry.");
+        if(Renderer::GetAPI()!=RendererAPI::API::Metal)ImGui::TextWrapped("TAA is unavailable on OpenGL; the saved request is inactive.");
         ImGui::SeparatorText("Screen-space ambient occlusion");
         auto& ao=m_ScenePresentationDraft.AmbientOcclusion;
         PropertyUI::Checkbox("ao-enable","XeGTAO (Metal 4)",ao.Enabled);
@@ -116,6 +125,7 @@ namespace Hazel {
             ImGui::TextWrapped("Background and lighting share orientation/gain. Hiding the image background keeps the authored solid background. Yaw/gain need no rebake; source/quality edits do.");
         }
         if(!mode&&!m_ScenePresentationDraft.Environment.Asset.empty()&&ImGui::Button("Clear scene environment"))m_ScenePresentationDraft.Environment={};
+        ImGui::EndChild();
         bool valid=true;try{m_ScenePresentationDraft.Validate();}catch(const std::exception &e){PropertyUI::Validation(e.what());valid=false;}
         const auto can=Availability(EditorAction::EditScene);ImGui::BeginDisabled(!can||!valid);
         if(ImGui::Button("Apply scene settings")) {

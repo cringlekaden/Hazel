@@ -22,6 +22,7 @@ void AmbientOcclusionSettings::Validate() const {
 void ScenePresentation::Validate() const {
     AmbientOcclusion.Validate();
     Environment.Validate();
+    if(TemporalAA && !SceneReferred)throw std::runtime_error("TAA requires scene-referred HDR presentation");
     if(!Environment.Asset.empty() && !SceneReferred)
         throw std::runtime_error("Prepared image environments require scene-referred presentation; unlit 2D remains independent");
     if (!std::isfinite(Exposure) || Exposure < -16 || Exposure > 16 ||
@@ -49,6 +50,7 @@ YAML::Node Encode(const ScenePresentation& value) {
     n["Mode"] = value.SceneReferred ? "SceneReferred" : "DisplayReferred";
     if (value.SceneReferred)
         n["Exposure"] = value.Exposure;
+    if(value.TemporalAA)n["TemporalAA"]=true;
     n["Background"]=std::vector<float>{value.Background.r,value.Background.g,value.Background.b,value.Background.a};
     n["Background"].SetStyle(YAML::EmitterStyle::Flow);
     if(!value.Environment.Asset.empty()) {
@@ -64,7 +66,7 @@ YAML::Node Encode(const ScenePresentation& value) {
     return n;
 }
 ScenePresentation ReadPresentation(const YAML::Node& n) {
-    DocumentSchema::Keys(n, {"Mode", "Background", "Exposure", "Environment", "AmbientOcclusion"}, "Presentation");
+    DocumentSchema::Keys(n, {"Mode", "Background", "Exposure", "Environment", "AmbientOcclusion", "TemporalAA"}, "Presentation");
     const auto mode = n["Mode"].as<std::string>();
     if (mode != "DisplayReferred" && mode != "SceneReferred")
         throw std::runtime_error("Unknown world presentation");
@@ -73,6 +75,7 @@ ScenePresentation ReadPresentation(const YAML::Node& n) {
     auto c=n["Background"]; if(!c.IsSequence() || c.size()!=4)throw std::runtime_error("Background requires four linear RGBA values");
     ScenePresentation result;
     result.SceneReferred = mode == "SceneReferred";
+    if(n["TemporalAA"])result.TemporalAA=n["TemporalAA"].as<bool>();
     if (result.SceneReferred)
         result.Exposure = n["Exposure"].as<float>();
     for (int i = 0; i < 4; ++i)

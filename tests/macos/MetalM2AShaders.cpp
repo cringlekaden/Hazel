@@ -11,7 +11,7 @@ int Translate(const std::filesystem::path& output)
     for (const auto& entry : std::filesystem::directory_iterator("Hazel/Resources/shaders"))
         if (entry.path().extension() == ".glsl") paths.push_back(entry.path());
     std::sort(paths.begin(), paths.end());
-    Check(paths.size() == 10, "Raster corpus changed: review qualification coverage");
+    Check(paths.size() == 11, "Raster corpus changed: review qualification coverage");
     for (const auto& path : paths)
         for (const uint32_t slots : path.stem() == "Renderer2D_Quad" ? std::vector<uint32_t>{16, 32} : std::vector<uint32_t>{32})
         {

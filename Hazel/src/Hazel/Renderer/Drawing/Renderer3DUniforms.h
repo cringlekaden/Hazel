@@ -14,6 +14,8 @@ struct alignas(16) ObjectData
     glm::mat4 Model, Normal;
     glm::ivec4 Identity;
 };
+struct alignas(16) MotionData {glm::mat4 PreviousMVP;glm::vec4 Valid;};
+static_assert(sizeof(MotionData)==80,"Motion std140 ABI");
 struct alignas(16) MaterialData
 {
     glm::vec4 Base, Emissive, Surface, Options;

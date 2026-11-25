@@ -23,6 +23,7 @@ Layout CPUContract(const std::string& name)
     using namespace Hazel::Renderer3DUniforms;
     if (name == "View") return {sizeof(ViewData), {offsetof(ViewData, VP), offsetof(ViewData, Eye), offsetof(ViewData, ToCamera), offsetof(ViewData, LightDirection), offsetof(ViewData, Incident)}};
     if (name == "Object") return {sizeof(ObjectData), {offsetof(ObjectData, Model), offsetof(ObjectData, Normal), offsetof(ObjectData, Identity)}};
+    if (name == "Motion") return {sizeof(MotionData), {offsetof(MotionData, PreviousMVP), offsetof(MotionData, Valid)}};
     if (name == "Material") return {sizeof(MaterialData), {offsetof(MaterialData, Base), offsetof(MaterialData, Emissive), offsetof(MaterialData, Surface), offsetof(MaterialData, Options)}};
     if (name == "Environment") return {sizeof(EnvironmentData), {offsetof(EnvironmentData, InverseVP), offsetof(EnvironmentData, RotationGain), offsetof(EnvironmentData, Options)}};
     if (name == "Camera") return {sizeof(glm::mat4), {0}};

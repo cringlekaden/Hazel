@@ -3,15 +3,80 @@
 #include "Hazel/Renderer/Drawing/Renderer3D.h"
 #include "Hazel/Renderer/Drawing/Renderer2D.h"
 #include "Hazel/Renderer/RenderCommand.h"
+#include <map>
+#include <cmath>
 #ifdef HZ_PLATFORM_MACOS
 #include "Platform/macOS/Metal/MetalFramebuffer.h"
+#include "Platform/macOS/Metal/MetalRendererAPI.h"
 #endif
 namespace Hazel
 {
+namespace {
+float Halton(unsigned index,unsigned base) {
+    float value=0,fraction=1;
+    while(index){fraction/=float(base);value+=fraction*float(index%base);index/=base;}return value;
+}
+bool ValidCamera(const glm::mat4& matrix) {
+    for(unsigned c=0;c<4;++c)for(unsigned r=0;r<4;++r)if(!std::isfinite(matrix[c][r]))return false;
+    return std::isfinite(glm::determinant(matrix))&&std::abs(glm::determinant(matrix))>1e-12f;
+}
+bool CameraCut(const SceneCameraView& current,const SceneCameraView& previous) {
+    if(current.Orthographic!=previous.Orthographic)return true;
+    auto mapping=previous.ViewProjection*glm::inverse(current.ViewProjection);
+    for(float z:{-1.f,0.f,.9f})for(float x:{-.8f,.8f})for(float y:{-.8f,.8f}) {
+        auto p=mapping*glm::vec4(x,y,z,1);
+        if(!std::isfinite(p.w)||p.w<=0||glm::length(glm::vec2(p)/p.w-glm::vec2(x,y))>.5f)return true;
+    }
+    return false;
+}
+}
+
 void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
                            const Ref<Framebuffer> &display, const std::function<void()> &world2D,
                            const std::function<void()> &screenUI)
 {
+#ifdef HZ_PLATFORM_MACOS
+    if(RendererAPI::GetAPI()==RendererAPI::API::Metal) {
+        auto device=static_cast<MetalRendererAPI&>(RenderCommand::Backend()).Device();
+        if(view.NativeDevice.lock()!=device){view.Reset();view.NativeDevice=device;}
+    } else if(!view.NativeDevice.expired()){view.Reset();view.NativeDevice.reset();}
+#endif
+    const bool temporal=frame.Presentation.TemporalAA && RendererAPI::GetAPI()==RendererAPI::API::Metal &&
+        frame.Presentation.SceneReferred && frame.Debug==SurfaceView::Shaded && frame.AmbientOcclusionView==0;
+    if(!temporal) {if(view.Temporal.Submitted)view.Radiance.reset();view.Temporal={};view.Jittered.reset();view.Motion.reset();view.TemporalMetrics->Valid=false;}
+    if(frame.Presentation.TemporalAA && RendererAPI::GetAPI()!=RendererAPI::API::Metal && !view.WarnedUnsupportedTAA) {
+        HZ_CORE_WARN("TAA request inactive: full-resolution temporal resolve requires Metal 4");view.WarnedUnsupportedTAA=true;
+    }
+    SceneSubmission sample,motion;
+    glm::vec2 jitter(0);
+    bool historyValid=false;
+    std::shared_ptr<std::atomic<bool>> submitted;
+    if(temporal) {
+        sample=frame;motion=frame;
+        if(!display || !ValidCamera(frame.Camera.ViewProjection) ||
+            !std::isfinite(glm::dot(frame.Camera.Position,frame.Camera.Position)) ||
+            !std::isfinite(glm::dot(frame.Camera.ToCamera,frame.Camera.ToCamera)) || glm::length(frame.Camera.ToCamera)<.5f) {view.Temporal={};throw std::runtime_error("TAA requires a finite invertible camera and explicit view target");}
+        const auto& extent=display->GetSpecification();auto& state=view.Temporal;
+        historyValid=state.Submitted && state.Submitted->load() && state.Width==extent.Width && state.Height==extent.Height &&
+            state.Previous.SceneIdentity==frame.SceneIdentity && state.Previous.Assets==frame.Assets &&
+            state.Previous.Presentation==frame.Presentation && !CameraCut(frame.Camera,state.Previous.Camera);
+        if(!historyValid)state.Phase=0;
+        jitter={Halton(state.Phase%64+1,2)-.5f,Halton(state.Phase%64+1,3)-.5f};
+        glm::mat4 offset(1);offset[3][0]=2*jitter.x/float(extent.Width);offset[3][1]=2*jitter.y/float(extent.Height);
+        sample.Camera.ViewProjection=offset*frame.Camera.ViewProjection;
+        sample.TemporalPhase=state.Phase%64+1;
+        motion.PreviousViewProjection=historyValid?state.Previous.Camera.ViewProjection:frame.Camera.ViewProjection;
+        std::map<std::pair<uint64_t,int>,const SubmittedMesh*> previous;
+        if(historyValid)for(const auto& old:state.Previous.Meshes)if(old.Identity)previous.emplace(std::make_pair(old.Identity,old.Picking),&old);
+        for(auto& draw:motion.Meshes) {
+            draw.PreviousValid=false;
+            auto old=previous.find({draw.Identity,draw.Picking});
+            if(old!=previous.end() && draw.Geometry==old->second->Geometry && draw.Materials==old->second->Materials) {
+                draw.PreviousWorld=old->second->World;draw.PreviousValid=true;
+            }
+        }
+        submitted=std::make_shared<std::atomic<bool>>(false);
+    }
     if(frame.AmbientOcclusionView>4)throw std::runtime_error("Unsupported ambient-occlusion inspection");
     if(!frame.Presentation.AmbientOcclusion.Enabled || frame.Meshes.empty())view.AmbientTiming->Valid=false;
     if (unsigned(frame.Debug) > unsigned(SurfaceView::NormalHorizon))
@@ -42,11 +107,11 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
                 else if(view.AmbientDepth->GetSpecification().Width!=size.Width || view.AmbientDepth->GetSpecification().Height!=size.Height)
                     view.AmbientDepth->Resize(size.Width,size.Height);
                 display->Unbind();view.AmbientDepth->Bind();view.AmbientDepth->Clear(glm::vec4(0));
-                Renderer3D::Render(frame,false,true);view.AmbientDepth->Unbind();
+                Renderer3D::Render(temporal?sample:frame,false,true);view.AmbientDepth->Unbind();
             } else view.AmbientDepth.reset();
             auto prepareAO=[&](const Ref<Framebuffer>& target) {
 #ifdef HZ_PLATFORM_MACOS
-                if(ao) std::static_pointer_cast<MetalFramebuffer>(target)->PrepareAmbientOcclusion(view.AmbientDepth,frame.Camera,frame.Presentation.AmbientOcclusion,frame.AmbientOcclusionView,view.AmbientTiming);
+                if(ao) std::static_pointer_cast<MetalFramebuffer>(target)->PrepareAmbientOcclusion(view.AmbientDepth,temporal?sample.Camera:frame.Camera,frame.Presentation.AmbientOcclusion,frame.AmbientOcclusionView,view.AmbientTiming,sample.TemporalPhase);
 #else
                 (void)target;
 #endif
@@ -58,10 +123,31 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
                 else if (view.Radiance->GetSpecification().Width != size.Width || view.Radiance->GetSpecification().Height != size.Height)
                     view.Radiance->Resize(size.Width, size.Height);
                 display->Cancel();
-                view.Radiance->Bind();
-                view.Radiance->Clear(frame.Presentation.Background);
-                prepareAO(view.Radiance);
-                Renderer3D::Render(frame, true);
+                if(temporal) {
+                    auto ensure=[&](Ref<Framebuffer>& target) {
+                        if(!target)target=Framebuffer::Create(size);
+                        else if(target->GetSpecification().Width!=size.Width || target->GetSpecification().Height!=size.Height)target->Resize(size.Width,size.Height);
+                    };
+                    ensure(view.Jittered);ensure(view.Motion);
+#ifdef HZ_PLATFORM_MACOS
+                    std::static_pointer_cast<MetalFramebuffer>(view.Jittered)->SetTemporalProducer();
+                    std::static_pointer_cast<MetalFramebuffer>(view.Motion)->SetTemporalProducer();
+#endif
+                    view.Jittered->Bind();view.Jittered->Clear(frame.Presentation.Background);
+                    prepareAO(view.Jittered);Renderer3D::Render(sample,true);view.Jittered->Unbind();
+                    view.Motion->Bind();view.Motion->Clear(glm::vec4(0));Renderer3D::Render(motion,false,false,true);view.Motion->Unbind();
+                    view.Radiance->Bind();
+#ifdef HZ_PLATFORM_MACOS
+                    glm::mat4 direction(1);direction[3]=glm::vec4(-frame.Camera.Position,0);
+                    auto skyMotion=motion.PreviousViewProjection*direction*glm::inverse(frame.Camera.ViewProjection);
+                    const unsigned skyMode=frame.Camera.Orthographic?
+                        (historyValid && frame.Camera.ToCamera==view.Temporal.Previous.Camera.ToCamera?2u:0u):1u;
+                    std::static_pointer_cast<MetalFramebuffer>(view.Radiance)->ResolveTemporal(view.Jittered,view.Motion,jitter,historyValid,view.TemporalDebug,skyMotion,skyMode,submitted,view.TemporalMetrics);
+#endif
+                } else {
+                    view.Radiance->Bind();view.Radiance->Clear(frame.Presentation.Background);
+                    prepareAO(view.Radiance);Renderer3D::Render(frame,true);
+                }
                 auto worldState = raster;
                 RenderCommand::SetRasterState(worldState);
                 world2D();
@@ -84,10 +170,18 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
                 world2D();
             }
             screenUI();
+            if(temporal) {
+                auto& state=view.Temporal;state.Previous=frame;state.Submitted=submitted;
+                state.Jitter=jitter;state.JitteredViewProjection=sample.Camera.ViewProjection;
+                state.Width=display->GetSpecification().Width;state.Height=display->GetSpecification().Height;++state.Phase;
+            }
         }
         catch (...)
         {
+            view.Temporal={};
             Renderer2D::CancelScene();
+            if(view.Jittered)view.Jittered->Cancel();
+            if(view.Motion)view.Motion->Cancel();
             if (view.AmbientDepth) view.AmbientDepth->Cancel();
             if (view.Radiance) view.Radiance->Cancel();
             display->Cancel();
