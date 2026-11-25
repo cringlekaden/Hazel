@@ -46,7 +46,7 @@ MetalTemporalPipeline::MetalTemporalPipeline(MetalDevice& device)
                 texture->access()==((index==7||index==8||index==11)?MTL::BindingAccessWriteOnly:MTL::BindingAccessReadOnly),"Temporal texture ABI differs");++textures;
         } else throw std::runtime_error("Unexpected temporal binding");
     }
-    Check(buffers==1&&textures==11&&State->maxTotalThreadsPerThreadgroup()>=64,"Temporal resource/threadgroup ABI differs");
+    Check(buffers==1&&textures==11&&State->maxTotalThreadsPerThreadgroup()>=128,"Temporal resource/threadgroup ABI differs");
 }
 MetalTemporalCounters::MetalTemporalCounters(MetalDevice& device)
 {
@@ -134,7 +134,8 @@ void MetalDevice::EncodeTemporal(const std::shared_ptr<MetalRenderer2DFrame>& fr
     compute->barrierAfterQueueStages(MTL::StageAll,MTL::StageDispatch|MTL::StageBlit,MTL4::VisibilityOptionDevice);
     if(pass.Counters)compute->writeTimestamp(MTL4::TimestampGranularityPrecise,pass.Counters.get(),2);
     compute->setComputePipelineState(pass.Pipeline->State.get());compute->setArgumentTable(pass.Arguments.get());
-    compute->dispatchThreads({frame->Width,frame->Height,1},{8,8,1});
+    // Contiguous rows improve the measured overlapping cubic-gather workload.
+    compute->dispatchThreads({frame->Width,frame->Height,1},{32,4,1});
     if(pass.Counters)compute->writeTimestamp(MTL4::TimestampGranularityPrecise,pass.Counters.get(),3);
     for(unsigned i=1;i<3;++i)compute->copyFromTexture(frame->MotionSource->Attachments->Targets[i].get(),frame->Attachments->Targets[i].get());
     compute->endEncoding();

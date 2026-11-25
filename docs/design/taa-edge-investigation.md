@@ -173,6 +173,10 @@ outside this Metal-specific correction. No merge, release or backend change.
 
 ## Executed acceptance and cost
 
+The costs below describe the correction checkpoint. The subsequent
+[performance follow-up](taa-performance.md) records an image-preserving
+optimization, newer measurements and its completed automated qualification.
+
 Debug/Release builds, front-facing/sloped edge fixtures and HDR/AO fixtures pass. Native API/GPU validation
 reports zero errors; 1x/2x lifecycle and independent two-view presentation pass
 in both configurations. Three-slot serialized-image equivalence and complete

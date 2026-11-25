@@ -35,7 +35,11 @@ kernel void temporalResolve(constant TemporalConstants& c [[buffer(0)]],
     float weights=0,count=0,surfaceWeight=0,totalWeight=0;
     // Reconstruct jittered radiance at the stable output grid. Cross-surface
     // samples encode silhouette coverage; IDs/depth remain unfiltered separately.
-    for(int y=-1;y<=2;++y)for(int x=-1;x<=2;++x) {
+    // Fixed tap loops let the compiler specialize the weights and tap tests.
+    #pragma unroll
+    for(int y=-1;y<=2;++y)
+    #pragma unroll
+    for(int x=-1;x<=2;++x) {
         uint2 q=boundPixel(base+int2(x,y),size);
         float4 radiance=current.read(q);
         float3 color=radiance.rgb;
@@ -70,18 +74,28 @@ kernel void temporalResolve(constant TemporalConstants& c [[buffer(0)]],
     // motion on both sides of that edge. These proxy IDs/depth belong only to
     // history; presentation/picking retain the original unfiltered attachments.
     uint2 velocityPixel=p;float historyDepth=d;
-    for(int y=-1;y<=1;++y)for(int x=-1;x<=1;++x) {
+    #pragma unroll
+    for(int y=-1;y<=1;++y)
+    #pragma unroll
+    for(int x=-1;x<=1;++x) {
         uint2 q=boundPixel(int2(p)+int2(x,y),size);float z=depth.read(q).x;
         if(z<historyDepth){historyDepth=z;velocityPixel=q;}
     }
-    int historyID=ids.read(velocityPixel).x;
+    int historyID=all(velocityPixel==p)?id:ids.read(velocityPixel).x;
     // A neighboring history tap lies at a different depth on a sloped face.
     // Bound that expected variation using only the same current surface ID;
     // background/other objects must not inflate the disocclusion tolerance.
     float depthSpan=0;
-    for(int y=-1;y<=1;++y)for(int x=-1;x<=1;++x) {
-        uint2 q=boundPixel(int2(velocityPixel)+int2(x,y),size);float z=depth.read(q).x;
-        if(z<1 && ids.read(q).x==historyID)depthSpan=max(depthSpan,abs(z-historyDepth));
+    // If the closest 3x3 depth is sky, every depth in this same footprint
+    // is >=1, so the slope scan cannot contribute.
+    if(historyDepth<1) {
+        #pragma unroll
+        for(int y=-1;y<=1;++y)
+        #pragma unroll
+        for(int x=-1;x<=1;++x) {
+            uint2 q=boundPixel(int2(velocityPixel)+int2(x,y),size);float z=depth.read(q).x;
+            if(z<1 && ids.read(q).x==historyID)depthSpan=max(depthSpan,abs(z-historyDepth));
+        }
     }
     depthSpan*=2; // Cubic history support reaches two pixels from its anchor.
     float4 previous=motion.read(velocityPixel);
@@ -106,7 +120,10 @@ kernel void temporalResolve(constant TemporalConstants& c [[buffer(0)]],
         // frame. Reconstruct it with the same bounded cubic kernel as current
         // radiance, retaining per-tap disocclusion tests. Central bilinear
         // support still determines validity, independently of signed weights.
-        for(int y=-1;y<=2;++y)for(int x=-1;x<=2;++x) {
+        #pragma unroll
+        for(int y=-1;y<=2;++y)
+        #pragma unroll
+        for(int x=-1;x<=2;++x) {
             int2 q=b+int2(x,y);if(any(q<0)||any(q>=int2(size)))continue;
             float4 sample=history.read(uint2(q));float z=sample.a;
             if(oldIDs.read(uint2(q)).x!=historyID || abs(z-previous.z)>max(max(2e-5f,.002f*(1-previous.z)),depthSpan))continue;
