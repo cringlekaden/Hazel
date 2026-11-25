@@ -3,10 +3,11 @@
 #include "Hazel/Core/FileSystem.h"
 #include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include "Hazel/Renderer/Drawing/Renderer3D.h"
+#include "Hazel/Renderer/Resources/EnvironmentResources.h"
 #include "Hazel/Scene/RuntimeSession.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Scene/Entity.h"
-#include "../migration/DirectBRDFReference.h"
+#include "../migration/MultiscatteringReference.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
 #include <filesystem>
@@ -25,6 +26,7 @@ inline void Renderer3DParity(const std::filesystem::path& output,
     std::filesystem::create_directories(output);
     const auto selected=FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT");
     const auto projectRoot=selected.empty()?std::filesystem::absolute("examples/RenderingReference"):selected.parent_path();
+    const auto runtimeBRDF=ReadRuntimeBRDF();
     const bool metal = RendererAPI::GetAPI() == RendererAPI::API::Metal;
     FramebufferSpecification spec;
     spec.Width = 320; spec.Height = 180;
@@ -72,7 +74,7 @@ inline void Renderer3DParity(const std::filesystem::path& output,
         for (float metallic : {0.f,.5f,1.f}) for (float roughness : {0.f,.1f,.25f,.5f,.75f,1.f}) {
             material->Metallic=metallic;material->Roughness=roughness;
             auto result=render(); const size_t pixel=size_t(spec.Height/2)*spec.Width+spec.Width/2;
-            const auto expected=OracleBRDF(glm::dvec3(material->BaseColor),metallic,roughness,{0,0,1},{0,0,1},glm::dvec3(light))*2.;
+            const auto expected=OracleMultiscatteringBRDF(glm::dvec3(material->BaseColor),metallic,roughness,{0,0,1},{0,0,1},glm::dvec3(light))*2.;
             for (int c=0;c<3;++c) if (!std::isfinite(result->Color[pixel][c]) || std::abs(result->Color[pixel][c]-expected[c])>.002)
                 throw std::runtime_error("Native direct FP64 oracle failed");
             if (result->Entity[pixel]!=draw.Picking || std::abs(result->Depth[pixel]-(2.5-.1)/9.9)>1e-6)
@@ -165,8 +167,9 @@ inline void Renderer3DParity(const std::filesystem::path& output,
         frame.Camera.ToCamera={0,0,1};
         frame.Debug=SurfaceView::DiffuseIBL;material->Metallic=0;
         auto diffuse=render();
-        for(unsigned c=0;c<3;++c)if(std::abs(diffuse->Color[pixel][c]-.25f*.96f*material->BaseColor[c])>.00001f)
-            throw std::runtime_error("Constant irradiance/Fview diffuse oracle failed");
+        const auto diffuseEnergy=ReferenceRuntimeTableEnergy(runtimeBRDF,glm::dvec3(.04),1,material->Roughness);
+        for(unsigned c=0;c<3;++c)if(std::abs(diffuse->Color[pixel][c]-.25*diffuseEnergy.Residual*material->BaseColor[c])>.00001f)
+            throw std::runtime_error("Complementary diffuse LUT oracle failed");
         material->Metallic=1;auto conductor=render();
         for(unsigned c=0;c<3;++c)if(std::abs(conductor->Color[pixel][c])>.000001f)
             throw std::runtime_error("Conductor diffuse must be zero");
@@ -178,7 +181,7 @@ inline void Renderer3DParity(const std::filesystem::path& output,
 
         frame.Debug=SurfaceView::DiffuseIBL;material->Metallic=0;frame.Presentation.Environment.Gain=2;
         auto gain=render();
-        for(unsigned c=0;c<3;++c)if(std::abs(gain->Color[pixel][c]-.5f*.96f*material->BaseColor[c])>.00001f)
+        for(unsigned c=0;c<3;++c)if(std::abs(gain->Color[pixel][c]-.5*ReferenceRuntimeTableEnergy(runtimeBRDF,glm::dvec3(.04),1,material->Roughness).Residual*material->BaseColor[c])>.00001f)
             throw std::runtime_error("Environment linear gain failed");
         frame.Environment.reset();frame.Debug=SurfaceView::Shaded;frame.LinearLightingInspection=false;
         material->Model=MaterialModel::Unlit;

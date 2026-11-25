@@ -66,14 +66,63 @@ vec3 resolveShadingNormal(vec3 N,vec3 Ng,vec3 V){
     else{si=sqrt(.5*(1+b/h));co=a/(2*h*si);}
     return normalize(Ng*co+tangent*si);
 }
-vec3 direct(vec3 base,float metal,float rough,vec3 N,vec3 V,vec3 L){
+// Multiscattering_v2: reciprocal Kulla-Conty plus scalar complementary diffuse.
+// RG is RuntimeBRDF_v2 A/B; BA holds matching cosine-weighted means.
+vec4 sampleBRDF(float nv,float rough){
+    vec2 size=vec2(textureSize(u_BRDF,0));
+    vec2 coordinate=vec2(sqrt(sqrt(nv)),(max(rough,.045)-.045)/.955);
+    return texture(u_BRDF,(coordinate*(size-1)+.5)/size);
+}
+struct SurfaceEnergy {
+    vec4 table;
+    vec3 multipleFresnel;
+    float missingView;
+    float missingAverage;
+    float diffuseK;
+    float diffuseScale;
+    float diffuseShape;
+    float diffuseAverage;
+};
+SurfaceEnergy surfaceEnergy(vec3 f0,vec4 table){
+    SurfaceEnergy energy;
+    energy.table=table;
+    energy.missingView=max(1-table.x-table.y,0);
+    energy.missingAverage=max(1-table.z-table.w,0);
+    float average=1-energy.missingAverage;
+    vec3 f=f0+(1-f0)/21;
+    // Algebraically equivalent denominator avoids subtracting near-equal values.
+    vec3 denominator=(1-f)+f*average;
+    for(int c=0;c<3;++c)
+        energy.multipleFresnel[c]=denominator[c]>0?f[c]*f[c]*average/denominator[c]:1;
+    float maximum=max(f0.x,max(f0.y,f0.z)),fm=maximum+(1-maximum)/21;
+    // Factor (1-F0max) out of q and qbar. Diffuse tends continuously to zero
+    // without dividing by a vanishing residual at the perfect-reflector limit.
+    float k=maximum<1?(20.0/21)*(1+fm*average)/((1-fm)+fm*average):0;
+    energy.diffuseK=k;
+    energy.diffuseScale=1-maximum;
+    energy.diffuseShape=table.x+k*energy.missingView;
+    energy.diffuseAverage=table.z+k*energy.missingAverage;
+    return energy;
+}
+vec3 direct(vec3 base,float metal,float rough,vec3 N,vec3 V,vec3 L,SurfaceEnergy energy){
     float nl=clamp(dot(N,L),0,1),nv=clamp(dot(N,V),0,1);if(nl<=0||nv<=0)return vec3(0);
     vec3 sum=V+L;if(dot(sum,sum)<1e-12)return vec3(0);vec3 H=normalize(sum);
     float nh=clamp(dot(N,H),0,1),vh=clamp(dot(V,H),0,1),a=pow(max(rough,.045),2),a2=a*a;
-    float f=max(1-nh*nh,0)+a2*nh*nh;float D=a2/(PI*f*f);
+    // Equivalent unit-vector GGX denominator; retain small tangent energy
+    // instead of cancelling nearly equal FP32 values at polished highlights.
+    vec3 tangentH=cross(N,H);float f=dot(tangentH,tangentH)+a2*nh*nh;float D=a2/(PI*f*f);
     float visibility=.5/(nl*sqrt(nv*nv*(1-a2)+a2)+nv*sqrt(nl*nl*(1-a2)+a2));
     vec3 F0=mix(vec3(.04),base,metal);vec3 F=F0+(1-F0)*pow(1-vh,5);
-    return ((1-metal)*(1-F)*base/PI+D*visibility*F)*nl;
+    vec2 lightAB=sampleBRDF(nl,rough).rg;
+    float missingLight=max(1-lightAB.x-lightAB.y,0);
+    float diffuseLight=lightAB.x+energy.diffuseK*missingLight;
+    // When average missing energy is exactly zero, both deficits vanish and
+    // the analytic compensation limit is zero. No roughness/view threshold.
+    vec3 multiple=energy.missingAverage>0?
+        energy.multipleFresnel*(energy.missingView*missingLight/(PI*energy.missingAverage)):vec3(0);
+    float diffuse=energy.diffuseAverage>0?
+        energy.diffuseScale*energy.diffuseShape*diffuseLight/(PI*energy.diffuseAverage):0;
+    return ((1-metal)*base*diffuse+D*visibility*F+multiple)*nl;
 }
 void main(){
     // Evaluate geometric derivatives before a potentially nonuniform mask discard.
@@ -93,15 +142,17 @@ void main(){
         horizonProbe=vec3(dot(N,V),dot(geometricNormal,V),dot(N,V));
         N=resolveShadingNormal(N,geometricNormal,V);
         horizonProbe.z=dot(N,V);
+        float nv=clamp(dot(N,V),0,1),r=max(rough,.045);
+        vec3 f0=mix(vec3(.04),base.rgb,metal);
+        SurfaceEnergy energy=surfaceEnergy(f0,sampleBRDF(nv,r));
         vec3 L=normalize(u_Light.xyz);
         if(dot(geometricNormal,V)>0&&dot(geometricNormal,L)>0)
-            directTerm=direct(base.rgb,metal,rough,N,V,L)*u_Incident.rgb;
+            directTerm=direct(base.rgb,metal,rough,N,V,L,energy)*u_Incident.rgb;
         if(u_EnvOptions.x>.5&&dot(geometricNormal,V)>0){
-            float nv=clamp(dot(N,V),0,1),r=max(rough,.045);
-            vec3 f0=mix(vec3(.04),base.rgb,metal),fview=f0+(1-f0)*pow(1-nv,5);
             float ao=mix(1,texture(u_Occlusion,v_UV).r,u_Surface.w);
-            diffuseTerm=texture(u_Irradiance,environmentDirection(N)).rgb*base.rgb*(1-metal)*(1-fview)/PI;
-            vec2 ab=texture(u_BRDF,vec2(nv,r)).rg;
+            vec3 irradiance=texture(u_Irradiance,environmentDirection(N)).rgb/PI;
+            diffuseTerm=irradiance*base.rgb*(1-metal)*energy.diffuseScale*energy.diffuseShape;
+            vec2 ab=energy.table.xy;
             // Interpolate roughness levels in FP32: Apple's GL4.1 sampler quantizes
             // fractional mip LOD even when textureLod receives an exact float.
             float lod=r*u_EnvRotationGain.w,level=floor(lod);
@@ -111,7 +162,8 @@ void main(){
             prefilteredProbe=prefiltered;brdfProbe=vec3(ab,nv);surfaceProbe=vec3(dot(N,V),rough,metal);
             // Retain the BRDF domain check after resolving the shading normal
             // against visible geometry; it is not a raster visibility cutoff.
-            specularTerm=dot(N,V)>0?prefiltered*(f0*ab.x+ab.y):vec3(0);
+            specularTerm=dot(N,V)>0?prefiltered*(f0*ab.x+ab.y)+
+                irradiance*energy.multipleFresnel*energy.missingView:vec3(0);
             float diffuseAO=ao;
 #ifdef HZ_METAL
             if(u_EnvOptions.y>0) diffuseAO=min(ao,mix(1,texelFetch(u_ScreenAO,ivec2(gl_FragCoord.xy),0).r,u_EnvOptions.y));

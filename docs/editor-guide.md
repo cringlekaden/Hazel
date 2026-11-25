@@ -72,6 +72,13 @@ menu overrides only projection, retaining the selected content/presentation defa
 Orthographic PBR and perspective unlit are supported. Lighting supports one
 directional key and prepared image-based lighting, with scene-referred
 exposure/Neutral presentation.
+The metallic–roughness BRDF includes reciprocal GGX multiscattering with
+coordinated diffuse energy accounting and an engine-owned converged BRDF table.
+Rough metals retain more reflected energy; material values and prepared
+environments keep their existing formats. Historical reference images remain
+versioned separately. See the [mathematics and qualification record](design/ggx-multiscattering.md)
+for measured numerical limits, pending owner visual acceptance and the unchanged
+directional split-sum approximation.
 
 Use the viewport Planar/Orbit selector to change editor navigation independently
 of runtime cameras. Planar pans with middle drag and zooms with the wheel; Orbit

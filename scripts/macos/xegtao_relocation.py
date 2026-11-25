@@ -43,6 +43,10 @@ def main():
                     raise RuntimeError('Exported shader hash differs: ' + artifact)
             if not (resources / 'licenses/XeGTAO/LICENSE').is_file() or list(resources.rglob('*.metal')):
                 raise RuntimeError('Exported XeGTAO license/authoring-source inventory differs')
+            brdf=resources/'BRDF/GGX-MS_v2.hlight'
+            canonical=hz.ROOT/'Hazel/Resources/BRDF/GGX-MS_v2.hlight'
+            if not brdf.is_file() or brdf.read_bytes()!=canonical.read_bytes():
+                raise RuntimeError('Exported canonical direct-only BRDF table differs')
             signed = subprocess.run(['codesign','--verify','--deep','--strict',str(bundle)], capture_output=True, text=True)
             if signed.returncode:
                 raise RuntimeError(signed.stderr)
@@ -83,6 +87,17 @@ def main():
             report['gates']['missing-library-rejection'] = dict(status='PASS', scope='Process-level rejection; no same-device recovery claim')
         finally:
             saved.rename(library)
+        brdf=resources/'BRDF/GGX-MS_v2.hlight'
+        absent=brdf.with_suffix('.absent');brdf.rename(absent)
+        try:
+            command=isolation_command([helper,resources,working/'missing-brdf','--taa' if args.taa else '--xegtao'],sdk,metal=True)
+            result=subprocess.run(command,cwd=working,env=env,capture_output=True,text=True,timeout=60)
+            text=result.stdout+result.stderr;(output/'missing-brdf.log').write_text(text)
+            if result.returncode!=1 or 'GGX-MS_v2.hlight' not in text:
+                raise RuntimeError('Missing canonical BRDF table did not reject explicitly')
+            report['gates']['missing-canonical-BRDF-rejection']=dict(status='PASS',scope='No zero-LUT or alternate-BRDF fallback')
+        finally:
+            absent.rename(brdf)
         result = subprocess.run(['codesign','--verify','--deep','--strict',str(bundles['Nutella'])], capture_output=True, text=True)
         if result.returncode:
             raise RuntimeError('Restored exported signature differs: ' + result.stderr)

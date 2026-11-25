@@ -1,0 +1,96 @@
+{
+  "debug-1x": {
+    "summary": "PASS Metal 4 integrated quad scene\nsubmitted=330\ncompleted=330\nverified=0\npresented=325\ncompleted_presented=325\npeak_inflight=3\nslot_reuses=327\npeak_resource_bytes=290068148\npeak_allocator_bytes=8957480\npeak_attachment_bytes=234553344\nattachment_allocations=27\nattachment_reuses=1668\npending_at_shutdown=3\nresize_events=1\nerrors=0\nIntegrated scene used actual native framebuffer dimensions; backing scale was 1.\n",
+    "final": "METAL_FINAL submitted=330 completed=330 presented=324 completed_presented=324 errors=0 peak_frame_bytes=290068148 peak_attachment_bytes=234553344 peak_allocator_bytes=8957480 live_attachment_generations=0 pending_bytes=0",
+    "positivePresented": 324
+  },
+  "debug-2x": {
+    "summary": "PASS Metal 4 integrated quad scene\nsubmitted=331\ncompleted=331\nverified=0\npresented=324\ncompleted_presented=324\npeak_inflight=3\nslot_reuses=328\npeak_resource_bytes=916805300\npeak_allocator_bytes=8957480\npeak_attachment_bytes=879230976\nattachment_allocations=33\nattachment_reuses=1727\npending_at_shutdown=3\nresize_events=1\nerrors=0\nIntegrated scene used actual native framebuffer dimensions; backing scale was 2.\n",
+    "final": "METAL_FINAL submitted=331 completed=331 presented=324 completed_presented=324 errors=0 peak_frame_bytes=916805300 peak_attachment_bytes=879230976 peak_allocator_bytes=8957480 live_attachment_generations=0 pending_bytes=0",
+    "positivePresented": 322,
+    "displayMode": {
+      "display": 2,
+      "before": {
+        "width": 2560,
+        "height": 1440,
+        "pixelWidth": 2560,
+        "pixelHeight": 1440,
+        "id": 112,
+        "refreshHz": 180.0
+      },
+      "restored": true,
+      "selected": {
+        "width": 1280,
+        "height": 720,
+        "pixelWidth": 2560,
+        "pixelHeight": 1440,
+        "id": 50,
+        "refreshHz": 180.0
+      },
+      "active": {
+        "width": 1280,
+        "height": 720,
+        "pixelWidth": 2560,
+        "pixelHeight": 1440,
+        "id": 50,
+        "refreshHz": 180.0
+      },
+      "after": {
+        "width": 2560,
+        "height": 1440,
+        "pixelWidth": 2560,
+        "pixelHeight": 1440,
+        "id": 112,
+        "refreshHz": 180.0
+      },
+      "restoreError": 0
+    }
+  },
+  "release-1x": {
+    "summary": "PASS Metal 4 integrated quad scene\nsubmitted=330\ncompleted=330\nverified=0\npresented=324\ncompleted_presented=324\npeak_inflight=3\nslot_reuses=327\npeak_resource_bytes=290068148\npeak_allocator_bytes=8957480\npeak_attachment_bytes=234553344\nattachment_allocations=30\nattachment_reuses=1650\npending_at_shutdown=3\nresize_events=1\nerrors=0\nIntegrated scene used actual native framebuffer dimensions; backing scale was 1.\n",
+    "final": "METAL_FINAL submitted=330 completed=330 presented=323 completed_presented=323 errors=0 peak_frame_bytes=290068148 peak_attachment_bytes=234553344 peak_allocator_bytes=8957480 live_attachment_generations=0 pending_bytes=0",
+    "positivePresented": 324
+  },
+  "release-2x": {
+    "summary": "PASS Metal 4 integrated quad scene\nsubmitted=331\ncompleted=331\nverified=0\npresented=324\ncompleted_presented=324\npeak_inflight=3\nslot_reuses=328\npeak_resource_bytes=916805300\npeak_allocator_bytes=8957480\npeak_attachment_bytes=879230976\nattachment_allocations=33\nattachment_reuses=1762\npending_at_shutdown=3\nresize_events=1\nerrors=0\nIntegrated scene used actual native framebuffer dimensions; backing scale was 2.\n",
+    "final": "METAL_FINAL submitted=331 completed=331 presented=324 completed_presented=324 errors=0 peak_frame_bytes=916805300 peak_attachment_bytes=879230976 peak_allocator_bytes=8957480 live_attachment_generations=0 pending_bytes=0",
+    "positivePresented": 323,
+    "displayMode": {
+      "display": 2,
+      "before": {
+        "width": 2560,
+        "height": 1440,
+        "pixelWidth": 2560,
+        "pixelHeight": 1440,
+        "id": 112,
+        "refreshHz": 180.0
+      },
+      "restored": true,
+      "selected": {
+        "width": 1280,
+        "height": 720,
+        "pixelWidth": 2560,
+        "pixelHeight": 1440,
+        "id": 50,
+        "refreshHz": 180.0
+      },
+      "active": {
+        "width": 1280,
+        "height": 720,
+        "pixelWidth": 2560,
+        "pixelHeight": 1440,
+        "id": 50,
+        "refreshHz": 180.0
+      },
+      "after": {
+        "width": 2560,
+        "height": 1440,
+        "pixelWidth": 2560,
+        "pixelHeight": 1440,
+        "id": 112,
+        "refreshHz": 180.0
+      },
+      "restoreError": 0
+    }
+  }
+}

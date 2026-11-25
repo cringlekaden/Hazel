@@ -5,7 +5,7 @@
 #include "Hazel/Scene/RuntimeSession.h"
 #include "GeometricNormalReference.h"
 #include <cmath>
-#include "DirectBRDFReference.h"
+#include "MultiscatteringReference.h"
 static void NearRGB(glm::vec3 actual, glm::dvec3 expected, double tolerance, const char *message)
 {
     for (int c = 0; c < 3; ++c)
@@ -100,7 +100,7 @@ static void DirectPBRChecks()
             material->Metallic = metallic;
             material->Roughness = roughness;
             render();
-            auto expected = OracleBRDF(glm::dvec3(material->BaseColor), metallic, roughness,
+            auto expected = OracleMultiscatteringBRDF(glm::dvec3(material->BaseColor), metallic, roughness,
                                        {0, 0, 1}, {0, 0, 1}, glm::dvec3(light)) *
                             2.;
             NearRGB(view.Radiance->ReadColorPixel(0, 64, 64), expected, .002,
@@ -116,7 +116,7 @@ static void DirectPBRChecks()
         frame.Camera.ToCamera = glm::vec3(std::sqrt(1 - nv * nv), 0, nv);
         render();
         NearRGB(view.Radiance->ReadColorPixel(0, 64, 64),
-                OracleBRDF(glm::dvec3(material->BaseColor), .5, .5, {0, 0, 1},
+                OracleMultiscatteringBRDF(glm::dvec3(material->BaseColor), .5, .5, {0, 0, 1},
                            glm::dvec3(frame.Camera.ToCamera), glm::dvec3(light)) *
                     2.,
                 .002, "Finite grazing direct BRDF");
@@ -193,7 +193,7 @@ static void DirectPBRChecks()
         frame.Meshes[0].World = glm::scale(glm::mat4(1), {mirror, .5f, 2});
         render();
         auto n = glm::normalize(glm::dvec3(mirror * (2. * 128 / 255 - 1), -1, 1));
-        auto expected = OracleBRDF(glm::dvec3(material->BaseColor), 0, .5, n, {0, 0, 1},
+        auto expected = OracleMultiscatteringBRDF(glm::dvec3(material->BaseColor), 0, .5, n, {0, 0, 1},
                                    glm::dvec3(frame.Light->ToLight)) *
                         2.;
         NearRGB(view.Radiance->ReadColorPixel(0, 64, 64), expected, .002,
@@ -218,7 +218,7 @@ static void DirectPBRChecks()
     render();
     Check(display->ReadPixel(1, 64, 64) == 123, "Double-sided backface missing");
     NearRGB(view.Radiance->ReadColorPixel(0, 64, 64),
-            OracleBRDF(glm::dvec3(material->BaseColor), 0, .5, {0, 0, 1}, {0, 0, 1},
+            OracleMultiscatteringBRDF(glm::dvec3(material->BaseColor), 0, .5, {0, 0, 1}, {0, 0, 1},
                        glm::dvec3(frame.Light->ToLight)) *
                 2.,
             .002, "Double-sided normal reversal");
@@ -267,7 +267,7 @@ static void DirectPBRChecks()
         frame.Debug=SurfaceView::Shaded;render();
         auto base = glm::dvec3(material->BaseColor) * glm::dvec3(.5, .25, .125);
         NearRGB(view.Radiance->ReadColorPixel(0, 64, 64),
-                OracleBRDF(base, 0, .5, resolved, {0, 0, 1}, glm::dvec3(frame.Light->ToLight)) * 2.,
+                OracleMultiscatteringBRDF(base, 0, .5, resolved, {0, 0, 1}, glm::dvec3(frame.Light->ToLight)) * 2.,
                 .002, "Independent tilted normal / nonuniform signed TBN / linear COLOR0");
     }
     frame.Meshes[0].Geometry = mesh.Accepted;
@@ -493,11 +493,11 @@ static void DirectPBRChecks()
     for (auto v : {glm::dvec3(0, 0, 1), glm::normalize(glm::dvec3(.8, 0, .2))})
     {
         auto l = glm::normalize(glm::dvec3(.2, .3, 1));
-        auto a = OracleBRDF({.2, .4, .7}, .5, .5, {0, 0, 1}, v, l) / l.z;
-        auto b = OracleBRDF({.2, .4, .7}, .5, .5, {0, 0, 1}, l, v) / v.z;
+        auto a = OracleMultiscatteringBRDF({.2, .4, .7}, .5, .5, {0, 0, 1}, v, l) / l.z;
+        auto b = OracleMultiscatteringBRDF({.2, .4, .7}, .5, .5, {0, 0, 1}, l, v) / v.z;
         Check(glm::length(a - b) < 1e-10, "Independent BRDF reciprocity");
     }
-    std::cout << "PASS: Direct_v1 FP64/GPU roughness-metal grid, finite FP32 highlights, light "
+    std::cout << "PASS: Multiscattering_v2 FP64/GPU roughness-metal grid, finite FP32 highlights, light "
                  "scaling/no ambient, Neutral/exposure/UI independence, masks, transforms, picking "
                  "and exception state restoration\n";
 }

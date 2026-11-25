@@ -1,0 +1,629 @@
+{
+  "order": "candidate then historical, opposite primary matrix",
+  "runs": {
+    "after": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/medium-repeat-after",
+        "--benchmark-metal",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/RenderingReference-XeGTAO.hproj",
+        "1",
+        "--taa"
+      ],
+      "peakRSSKiB": 161744,
+      "extents": {
+        "1280x720": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.31266649999999996,
+            "p95Ms": 0.532666
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.4300625,
+            "p95Ms": 0.727625
+          },
+          "wholeSubmissionGPU": {
+            "samples": 563,
+            "medianMs": 4.863874986767769,
+            "p95Ms": 5.107625009259209
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 4.173375,
+            "p95Ms": 8.375041
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 4.732854,
+            "p95Ms": 8.920959
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 221,
+            "medianMs": 0.028208,
+            "p95Ms": 0.194125
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 221,
+            "medianMs": 0.091,
+            "p95Ms": 0.11275
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 221,
+            "medianMs": 0.879292,
+            "p95Ms": 0.952292
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 221,
+            "medianMs": 0.262208,
+            "p95Ms": 0.274333
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 221,
+            "medianMs": 0.282333,
+            "p95Ms": 0.295833
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 545,
+            "medianMs": 2.183,
+            "p95Ms": 2.211625
+          },
+          "temporalHistoryPeakBytes": 38010880,
+          "temporalHistoryAllocations": 2,
+          "temporalHistoryReuses": 699,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 563,
+            "validOrderedRecords": 221,
+            "rejectedOrMissingRecords": 342
+          },
+          "AOTextureBytesPerGeneration": 15155200,
+          "GPUCompletionSpacing": {
+            "samples": 562,
+            "medianMs": 4.574374994263053,
+            "p95Ms": 9.222499997122213
+          },
+          "positivePresentationSpacing": {
+            "samples": 562,
+            "medianMs": 4.723499994724989,
+            "p95Ms": 11.135250009829178
+          }
+        },
+        "1920x1080": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.074458,
+            "p95Ms": 0.094625
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.109833,
+            "p95Ms": 0.144334
+          },
+          "wholeSubmissionGPU": {
+            "samples": 580,
+            "medianMs": 11.100937481387518,
+            "p95Ms": 11.205000017071143
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 9.950021,
+            "p95Ms": 17.997875
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 10.068542,
+            "p95Ms": 18.134708
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 86,
+            "medianMs": 0.0226875,
+            "p95Ms": 0.02725
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 86,
+            "medianMs": 0.2685835,
+            "p95Ms": 0.280917
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 86,
+            "medianMs": 1.953604,
+            "p95Ms": 1.964875
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 86,
+            "medianMs": 0.6139165,
+            "p95Ms": 0.621833
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 86,
+            "medianMs": 0.6435625,
+            "p95Ms": 0.654167
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 580,
+            "medianMs": 4.8940205,
+            "p95Ms": 4.940625
+          },
+          "temporalHistoryPeakBytes": 83558400,
+          "temporalHistoryAllocations": 4,
+          "temporalHistoryReuses": 1418,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 580,
+            "validOrderedRecords": 86,
+            "rejectedOrMissingRecords": 494
+          },
+          "AOTextureBytesPerGeneration": 32587776,
+          "GPUCompletionSpacing": {
+            "samples": 579,
+            "medianMs": 10.0856670178473,
+            "p95Ms": 12.803332996554673
+          },
+          "positivePresentationSpacing": {
+            "samples": 579,
+            "medianMs": 10.052208992419764,
+            "p95Ms": 20.10058402083814
+          }
+        }
+      },
+      "resourceSamples": [
+        {
+          "frame": 120,
+          "frameBytes": 305222820,
+          "attachmentBytes": 284688384,
+          "generations": 16,
+          "attachmentAllocations": 16,
+          "attachmentReuses": 766,
+          "bufferAllocations": 115,
+          "bufferReuses": 4205,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 240,
+          "frameBytes": 255087780,
+          "attachmentBytes": 284688384,
+          "generations": 16,
+          "attachmentAllocations": 16,
+          "attachmentReuses": 1366,
+          "bufferAllocations": 115,
+          "bufferReuses": 8525,
+          "allocatorBytes": 8826408,
+          "inflight": 2
+        },
+        {
+          "frame": 360,
+          "frameBytes": 305222820,
+          "attachmentBytes": 284688384,
+          "generations": 16,
+          "attachmentAllocations": 16,
+          "attachmentReuses": 1966,
+          "bufferAllocations": 115,
+          "bufferReuses": 12845,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 480,
+          "frameBytes": 255087780,
+          "attachmentBytes": 284688384,
+          "generations": 16,
+          "attachmentAllocations": 16,
+          "attachmentReuses": 2566,
+          "bufferAllocations": 115,
+          "bufferReuses": 17165,
+          "allocatorBytes": 8826408,
+          "inflight": 2
+        },
+        {
+          "frame": 600,
+          "frameBytes": 255087780,
+          "attachmentBytes": 284688384,
+          "generations": 16,
+          "attachmentAllocations": 16,
+          "attachmentReuses": 3166,
+          "bufferAllocations": 115,
+          "bufferReuses": 21485,
+          "allocatorBytes": 8826408,
+          "inflight": 2
+        },
+        {
+          "frame": 720,
+          "frameBytes": 620008612,
+          "attachmentBytes": 512196608,
+          "generations": 13,
+          "attachmentAllocations": 29,
+          "attachmentReuses": 3755,
+          "bufferAllocations": 115,
+          "bufferReuses": 25805,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 840,
+          "frameBytes": 620008612,
+          "attachmentBytes": 512196608,
+          "generations": 13,
+          "attachmentAllocations": 29,
+          "attachmentReuses": 4355,
+          "bufferAllocations": 115,
+          "bufferReuses": 30125,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 960,
+          "frameBytes": 510727332,
+          "attachmentBytes": 512196608,
+          "generations": 13,
+          "attachmentAllocations": 29,
+          "attachmentReuses": 4955,
+          "bufferAllocations": 115,
+          "bufferReuses": 34445,
+          "allocatorBytes": 8826408,
+          "inflight": 2
+        },
+        {
+          "frame": 1080,
+          "frameBytes": 620008612,
+          "attachmentBytes": 512196608,
+          "generations": 13,
+          "attachmentAllocations": 29,
+          "attachmentReuses": 5555,
+          "bufferAllocations": 115,
+          "bufferReuses": 38765,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 1200,
+          "frameBytes": 620008612,
+          "attachmentBytes": 512196608,
+          "generations": 13,
+          "attachmentAllocations": 29,
+          "attachmentReuses": 6155,
+          "bufferAllocations": 115,
+          "bufferReuses": 43085,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 1320,
+          "frameBytes": 620008612,
+          "attachmentBytes": 512196608,
+          "generations": 13,
+          "attachmentAllocations": 29,
+          "attachmentReuses": 6755,
+          "bufferAllocations": 115,
+          "bufferReuses": 47405,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        }
+      ],
+      "final": {
+        "submitted": 1404,
+        "completed": 1404,
+        "presented": 1373,
+        "completedPresented": 1373,
+        "errors": 0,
+        "peakFrameBytes": 620008612,
+        "peakAttachmentBytes": 512196608,
+        "peakAllocatorBytes": 8826408,
+        "liveAttachmentGenerations": 0,
+        "pendingBytes": 0
+      }
+    },
+    "before": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-evidence/historical-bin/MetalM1Smoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/medium-repeat-before",
+        "--benchmark-metal",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-evidence/single-release/single-resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/RenderingReference-XeGTAO.hproj",
+        "1",
+        "--taa"
+      ],
+      "peakRSSKiB": 159216,
+      "extents": {
+        "1280x720": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.073083,
+            "p95Ms": 0.088292
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.1061665,
+            "p95Ms": 0.127541
+          },
+          "wholeSubmissionGPU": {
+            "samples": 577,
+            "medianMs": 4.991124995285645,
+            "p95Ms": 5.024499987484887
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 4.520666500000001,
+            "p95Ms": 9.978708
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 4.6345835,
+            "p95Ms": 10.133
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 106,
+            "medianMs": 0.0236875,
+            "p95Ms": 0.028042
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 106,
+            "medianMs": 0.091146,
+            "p95Ms": 0.101125
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 106,
+            "medianMs": 0.8803540000000001,
+            "p95Ms": 0.888083
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 106,
+            "medianMs": 0.263583,
+            "p95Ms": 0.266917
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 106,
+            "medianMs": 0.2447915,
+            "p95Ms": 0.24875
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 542,
+            "medianMs": 2.1882710000000003,
+            "p95Ms": 2.210292
+          },
+          "temporalHistoryPeakBytes": 38010880,
+          "temporalHistoryAllocations": 2,
+          "temporalHistoryReuses": 700,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 577,
+            "validOrderedRecords": 106,
+            "rejectedOrMissingRecords": 471
+          },
+          "AOTextureBytesPerGeneration": 15155200,
+          "GPUCompletionSpacing": {
+            "samples": 576,
+            "medianMs": 4.523333496763371,
+            "p95Ms": 10.296749998815358
+          },
+          "positivePresentationSpacing": {
+            "samples": 576,
+            "medianMs": 4.602500004693866,
+            "p95Ms": 12.199541000882164
+          }
+        },
+        "1920x1080": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.073375,
+            "p95Ms": 0.09225
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.108292,
+            "p95Ms": 0.139
+          },
+          "wholeSubmissionGPU": {
+            "samples": 580,
+            "medianMs": 11.038312499294989,
+            "p95Ms": 11.16470800479874
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 9.9239165,
+            "p95Ms": 17.744417
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 10.043625,
+            "p95Ms": 17.866959
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 71,
+            "medianMs": 0.022625,
+            "p95Ms": 0.026375
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 71,
+            "medianMs": 0.27175,
+            "p95Ms": 0.365333
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 71,
+            "medianMs": 1.954875,
+            "p95Ms": 1.964083
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 71,
+            "medianMs": 0.603917,
+            "p95Ms": 0.608417
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 71,
+            "medianMs": 0.566917,
+            "p95Ms": 0.575458
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 580,
+            "medianMs": 4.902374999999999,
+            "p95Ms": 4.949167
+          },
+          "temporalHistoryPeakBytes": 83558400,
+          "temporalHistoryAllocations": 4,
+          "temporalHistoryReuses": 1418,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 580,
+            "validOrderedRecords": 71,
+            "rejectedOrMissingRecords": 509
+          },
+          "AOTextureBytesPerGeneration": 32587776,
+          "GPUCompletionSpacing": {
+            "samples": 579,
+            "medianMs": 10.018000000854954,
+            "p95Ms": 12.107125017791986
+          },
+          "positivePresentationSpacing": {
+            "samples": 579,
+            "medianMs": 10.048458992969245,
+            "p95Ms": 19.25349998055026
+          }
+        }
+      },
+      "resourceSamples": [
+        {
+          "frame": 120,
+          "frameBytes": 254170276,
+          "attachmentBytes": 284688384,
+          "generations": 16,
+          "attachmentAllocations": 16,
+          "attachmentReuses": 781,
+          "bufferAllocations": 115,
+          "bufferReuses": 4205,
+          "allocatorBytes": 8826408,
+          "inflight": 2
+        },
+        {
+          "frame": 240,
+          "frameBytes": 304305316,
+          "attachmentBytes": 284688384,
+          "generations": 16,
+          "attachmentAllocations": 16,
+          "attachmentReuses": 1381,
+          "bufferAllocations": 115,
+          "bufferReuses": 8525,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 360,
+          "frameBytes": 304305316,
+          "attachmentBytes": 284688384,
+          "generations": 16,
+          "attachmentAllocations": 16,
+          "attachmentReuses": 1981,
+          "bufferAllocations": 115,
+          "bufferReuses": 12845,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 480,
+          "frameBytes": 304305316,
+          "attachmentBytes": 284688384,
+          "generations": 16,
+          "attachmentAllocations": 16,
+          "attachmentReuses": 2581,
+          "bufferAllocations": 115,
+          "bufferReuses": 17165,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 600,
+          "frameBytes": 304305316,
+          "attachmentBytes": 284688384,
+          "generations": 16,
+          "attachmentAllocations": 16,
+          "attachmentReuses": 3181,
+          "bufferAllocations": 115,
+          "bufferReuses": 21485,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 720,
+          "frameBytes": 619091108,
+          "attachmentBytes": 512196608,
+          "generations": 13,
+          "attachmentAllocations": 29,
+          "attachmentReuses": 3770,
+          "bufferAllocations": 115,
+          "bufferReuses": 25805,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 840,
+          "frameBytes": 619091108,
+          "attachmentBytes": 512196608,
+          "generations": 13,
+          "attachmentAllocations": 29,
+          "attachmentReuses": 4370,
+          "bufferAllocations": 115,
+          "bufferReuses": 30125,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 960,
+          "frameBytes": 619091108,
+          "attachmentBytes": 512196608,
+          "generations": 13,
+          "attachmentAllocations": 29,
+          "attachmentReuses": 4970,
+          "bufferAllocations": 115,
+          "bufferReuses": 34445,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 1080,
+          "frameBytes": 619091108,
+          "attachmentBytes": 512196608,
+          "generations": 13,
+          "attachmentAllocations": 29,
+          "attachmentReuses": 5570,
+          "bufferAllocations": 115,
+          "bufferReuses": 38765,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 1200,
+          "frameBytes": 619091108,
+          "attachmentBytes": 512196608,
+          "generations": 13,
+          "attachmentAllocations": 29,
+          "attachmentReuses": 6170,
+          "bufferAllocations": 115,
+          "bufferReuses": 43085,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        },
+        {
+          "frame": 1320,
+          "frameBytes": 619091108,
+          "attachmentBytes": 512196608,
+          "generations": 13,
+          "attachmentAllocations": 29,
+          "attachmentReuses": 6770,
+          "bufferAllocations": 115,
+          "bufferReuses": 47405,
+          "allocatorBytes": 8826408,
+          "inflight": 3
+        }
+      ],
+      "final": {
+        "submitted": 1401,
+        "completed": 1401,
+        "presented": 1391,
+        "completedPresented": 1391,
+        "errors": 0,
+        "peakFrameBytes": 626660516,
+        "peakAttachmentBytes": 537198592,
+        "peakAllocatorBytes": 8826408,
+        "liveAttachmentGenerations": 0,
+        "pendingBytes": 0
+      }
+    }
+  }
+}

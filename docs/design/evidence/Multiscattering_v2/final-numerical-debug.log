@@ -1,0 +1,2 @@
+PASS: independent analytic direct energy sweep max 0.000301344
+PASS: Multiscattering_v2 independent FP64/packed sampler averages max 2.93509e-08; perfect furnace max 0; reciprocity max 6.20634e-17; colored absorption, residual budgets, floor/grazing endpoints, immutable runtime A/B

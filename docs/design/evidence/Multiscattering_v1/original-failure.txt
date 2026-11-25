@@ -1,0 +1,221 @@
+# GGX multiscattering v1
+
+Implementation baseline: feature/3d-foundations, 3b517f86ac3a5955136a2f26a2dc0e056f3550ac.
+Owner-authorized reciprocal Kulla–Conty specular and scalar complementary diffuse.
+Historical single-scattering assets/results remain immutable; no split-sum directional
+approximation research is reopened. Implementation is **uncommitted WIP**. The direct reflected-energy gate below
+**FAILS** with the preserved legacy LUT. No commit or push is permitted by the
+owner's correctness condition; a versioned LUT correction requires authorization.
+
+## Blocking finding: intrinsic direct energy
+
+The split-sum IBL furnace closes because both SS and compensation use the same
+legacy LUT moments. That does **not** establish conservation of the analytic
+lighting BRDF. Independent converged VNDF integration of the actual SS lobe,
+combined with separately integrated compensation/diffuse, finds:
+
+| Material / r / NoV | Intrinsic direct reflected energy | IBL furnace |
+| --- | ---: | ---: |
+| Perfect reflector / .045 / .01 | 1.02955095 | 1 |
+| White dielectric / .045 / .01 | 1.01437423 | 1 |
+| Perfect reflector / 1 / 1 | .99520578 | 1 |
+
+These fail the predeclared ±.003 reflected-energy gate. The r=1 normal-view
+analytic SS energy is exactly `1-ln(2)=.3068528194`, whereas the preserved
+sampled LUT gives approximately .3116532877. Compensating the LUT's missing
+energy leaves the direct lobe short. At low roughness, clipping small negative
+per-direction deficits while normalizing by `1-Abar-Bbar` additionally amplifies
+errors: the average clipped deficit differs from the raw deficit average.
+A small raw LUT overshoot is therefore not automatically a small lobe error.
+
+The implementation and the initial point/IBL checks were insufficient to detect
+this. A maintained production-shader direct-furnace integration now guards it.
+Do not weaken its tolerance, call IBL closure a full BRDF PASS, retint metals,
+or add a brightness correction. The requested preservation of current runtime
+A/B response prevents replacing that approximation without owner approval.
+A separately versioned, converged table can preserve all historical files and
+identities while deliberately changing the current runtime response. That is
+the recommended next decision, **not an authorized implementation here**.
+
+## Predeclared gates
+
+- Independent FP64 intrinsic reciprocity; converged directional/hemispherical albedo,
+  colored absorption and diffuse/specular allocation. Preserve historical 1-ln(2).
+- Ordinary GPU/model error <=.002; constant IBL energy error <=.003; perfect-reflector
+  furnace within .003 of unity; energy <=1.003. Separate LUT error, model approximation
+  against stochastic Smith transport, and nonuniform-environment factorization error.
+- Endpoints, grazing, normal/horizon restrictions, mixed metals, direct/IBL/combined,
+  neutral/structured HDR; immutable A/B bytes, correctly integrated sampler averages.
+- Native Metal/OpenGL Debug/Release, shader/cache/reflection, exact picking/depth,
+  AO diffuse/specular separation, TAA, failure/resize/in-flight retirement, source-free
+  exports and 1x/2x lifetime. Other platforms/hardware explicitly NOT RUN if unavailable.
+- Matched M4 Release 720p/1080p GPU median/p95, CPU and resource overhead. Provisional
+  budget <=5% forward-pass and <=.2 ms at 1080p; retain measurements if exceeded.
+- Versioned Multiscattering_v1 component/visual comparisons: gold/copper/aluminum,
+  dark/white dielectrics, roughness/grazing sweeps, HDR/exposure and moving highlights.
+  Owner visual acceptance is separate. No commit/push before applicable correctness gates.
+
+## Proposed equations and ownership
+
+Preserve fss=D*Vcorrelated*Fschlick, alpha=max(r,.045)^2 and F0=mix(.04,base,m).
+E=A+B; bars denote 2 integral_0^1 value(mu)*mu dmu. Fbar=F0+(1-F0)/21.
+C=Fbar^2*Ebar/(1-Fbar*(1-Ebar)).
+fms=C*(1-Ei)*(1-Eo)/(pi*(1-Ebar)). R=F0*A+B+C*(1-E).
+q=1-max(R.rgb); fd=(1-m)*base*qi*qo/(pi*qbar).
+IBL retains P(reflect(-V,N),r)*(F0*A+B), adds irradiance(N)/pi*C*(1-Eo),
+and uses irradiance(N)/pi*(1-m)*base*qo for diffuse. Nonuniform lighting uses
+an irradiance approximation for the new broad terms, independently of accepted SS error.
+
+Pack GPU RGBA=(A,B,Abar,Bbar) in existing EnvironmentResources. Integrate the
+actual normalized-coordinate, clamp-edge, piecewise-linear sampler in FP64 at
+realization; preserve disk RG32F and identities. Supply canonical immutable A/B
+through the existing fallback resource owner. No material/project format, binding,
+render ordering, environment convolution, geometric horizon, AO or TAA change.
+
+References: [Kulla–Conty](https://blog.selfshadow.com/publications/s2017-shading-course/imageworks/s2017_pbs_imageworks_slides_v2.pdf),
+[Heitz et al.](https://jo.dreggn.org/2016_microfacets.pdf),
+[Fdez-Agüera](https://jcgt.org/published/0008/01/03/paper.pdf),
+[DSPBR](https://dassaultsystemes-technology.github.io/EnterprisePBRShadingModel/spec-2022x.md.html).
+
+## Implemented numerical limits
+
+`ForwardPBR.glsl::surfaceEnergy` computes common per-surface values once;
+`direct` samples only light-direction A/B in addition. All single-scattering D/V/F
+expressions and the reflection-directed split sum are retained verbatim.
+
+The denominator for C is evaluated as `(1-Fbar)+Fbar*Ebar`. Deficits are
+`max(1-A-B,0)` and `max(1-Abar-Bbar,0)`; raw A/B remain unchanged for SS.
+At exactly zero average deficit the compensation lobe is its analytic zero limit.
+No epsilon roughness/view clamp or new threshold is used.
+
+For scalar f=maximum(F0), define t=f+(1-f)/21 and
+`k=(20/21)*(1+t*Ebar)/((1-t)+t*Ebar)`. Then
+`q=(1-f)*(A+k*missing)` and `qbar=(1-f)*(Abar+k*missingAverage)`.
+The direct diffuse coefficient factors out `(1-f)` before division:
+`(1-f)*(Ai+k*di)*(Ao+k*do)/(pi*(Abar+k*dbar))`.
+It tends continuously to zero at f=1; no division by a vanishing qbar occurs.
+Zero diffuse shape average returns zero. The exactly degenerate C denominator
+uses its unit-reflector limit. Real canonical tables have positive Ebar.
+Small inherited A/B overshoot can still create SS furnace error; new terms do
+not erase it. Numerical tolerances report that error rather than retint SS.
+
+`EnvironmentResources::PackBRDFTable` analytically integrates each linear segment
+against 2*mu, including constant clamped edge intervals; rows remain linearly
+interpolated in roughness. Independent Gauss quadrature checks every row and
+bit-compares every packed A/B pair. The canonical direct-only HZLIGHT1 resource
+is a byte-identical copy of the existing accepted table. No bake recipe, accepted
+identity, disk channel layout, environment filtering or material format changes.
+
+GPU memory: 256 KiB per 128x128 packed table versus 128 KiB previously. The
+fallback now also has a full 256 KiB table instead of eight bytes. A view using
+one realized environment therefore adds approximately 384 KiB over the historical
+implementation, not merely 128 KiB. Native allocation budgets account actual
+RGBA32F storage. The transient CPU packing vector is 256 KiB per realization;
+there is no table reduction or allocation per draw/frame.
+
+## Additive reference family and observed limits
+
+[Multiscattering_v1](../../examples/RenderingReference/Assets/Reference/Multiscattering_v1/README.md)
+contains explicit conditions. Raw evidence is under `build/ggx-ms-evidence/`;
+selected portable records are retained in [evidence](evidence/Multiscattering_v1/).
+The historical shader is loaded only by the test runner's `--single` study,
+using the same current executable and resource layout. Production has no toggle.
+
+| Single scattering | Compensated |
+| --- | --- |
+| ![Native historical sphere study](evidence/Multiscattering_v1/single.png) | ![Native compensated sphere study](evidence/Multiscattering_v1/compensated.png) |
+
+These are native Metal offscreen renderer readbacks at exposure zero, not product
+screenshots or owner visual acceptance. Seven columns: gold, copper, aluminum,
+dark/white dielectric, mixed metal, perfect reflector. Rows r=.045/.25/.6/1.
+Eight matched moving-light frames and raw direct/diffuse/specular FP32 components
+remain in the evidence directory. Component previews clamp to SDR; binaries/CSV
+are used for numerical acceptance.
+
+Initial Debug/Release packed-average error is 2.97933e-8, perfect-reflector
+furnace error 1.15685e-5, intrinsic FP64 reciprocity error 4.80741e-17.
+The expanded native Release study has 735 components per backend; exact-table
+implementation error 4.48616e-5 and component backend difference 1.1921e-7.
+The preserved table contributes up to .008445 output error against the continuous
+model in the added NoV=.01 floor-roughness white-dielectric direct case. This
+extreme case is reported separately from the ordinary .002 shader/model gate;
+no historical A/B bytes or tolerances were modified to conceal it.
+
+The independent upstream Smith tutorial is checksum-pinned, downloaded into the
+ignored evidence directory and promoted to FP64 by `ggx_smith_reference.py`.
+A derived test conductor accumulates RGB Schlick attenuation at each bounce.
+45 cases use 262144 paths each, seed 20261125, with per-channel standard errors.
+First-bounce agreement is checked against the independent FP64 integral (six
+standard errors plus .0005 for retained upstream sampling approximations).
+Kulla–Conty is not an exact Smith transport solution: largest sampled albedo
+difference is approximately .040531 at r=.25, NoV=.05 in gold's low-reflectance blue channel
+(KC .516038, Smith .556569, standard error .000401). This is model error,
+not a Metal/OpenGL difference. RGB F0 is an approximation to spectral conductors.
+The new IBL broad-lobe irradiance factorization and the older SS split-sum
+factorization remain separately approximate under structured HDR lighting.
+
+
+## Measured performance
+
+[Full five-preset matrix](ggx-multiscattering-performance.json), native Apple M4,
+Release, TAA enabled, identical current authored inputs/exposure, sequential
+historical/candidate runs with no overlapping build or GPU qualification.
+The historical binary was built from the two original renderer translation units
+in the existing checkout, copied into ignored evidence, then final source bytes
+were restored and the candidate rebuilt. Historical and current shader packages
+are matched to their respective RG32F/RGBA32F resource realizations. This measures
+the actual added work, not just a shader multiplier on already-expanded resources.
+
+Each extent/preset renders 720 frames; 120 warmup and 20 tail are excluded.
+Only positive presentation/ordered completed intervals count. Whole-submission
+and forward completion intervals are distinct, nonexclusive scopes. GPU phase
+records with invalid ordering are rejected; their smaller sample counts are
+retained rather than treated as 580 valid forward measurements.
+
+| Medium AO + TAA | Historical median / p95 ms | Compensated median / p95 ms | Valid samples before / after |
+| --- | ---: | ---: | ---: |
+| 720p forward interval | .246667 / .253000 | .263333 / .270042 | 300 / 102 |
+| 1080p forward interval | .575583 / .584000 | .613917 / .625208 | 81 / 69 |
+| 720p whole submission | 4.679667 / 5.002750 | 5.003167 / 5.036875 | 569 / 568 |
+| 1080p whole submission | 11.065979 / 11.154625 | 11.069813 / 11.162333 | 580 / 580 |
+
+1080p forward median adds .038334 ms (+6.66%). The provisional .2 ms absolute
+budget is met; the provisional 5% relative forward budget is **MISSED**. No
+quality reduction or timing-bound change was made. The larger 720p whole-commit
+median difference is retained; the scopes/data do not establish its cause or
+justify attributing it entirely to BRDF arithmetic. Across the matrix, AO-off
+TAA-on whole-submission medians are 3.215750→3.228375 ms at 720p and
+7.097687→7.116667 ms at 1080p. Do not add phase times or infer exclusive costs.
+Earlier exploratory measurements overlapped builds and are excluded from this
+primary comparison. No generic cross-backend speedup or other-GPU claim is made.
+
+
+## Qualification interpretation
+
+Existing regression, point-oracle, IBL furnace, shader/cache, AO/TAA, native
+lifecycle and package results are selective evidence. They do not override the
+failed intrinsic direct-energy gate. Overall status: **INCOMPLETE / correctness
+FAIL**, uncommitted. Owner visual acceptance is also pending, and the provisional
+relative performance target was missed. No merge, release, default change or
+next feature is authorized.
+
+The final FP64 reference uses deterministic Heitz-2018 VNDF quadrature with
+adaptive refinement to 1e-4, plus a separate 128/256/512 convergence matrix.
+Its largest 256→512 directional-albedo change is 3.42e-5; 32→64 view-quadrature
+hemispherical-average change is at most 2.01e-7. Independent NDF integration
+remains as the historical 1-ln(2) anchor and ordinary-domain cross-check. The
+older NDF quadrature has a poorly resolved extreme-grazing tail; failed diagnostic
+runs are retained. No production split-sum research was resumed or math changed
+by this reference correction.
+
+
+Native Release confirmation: the maintained 64-node direct-light integration
+measures **.995201376414 on Metal** and **.995201391547 on OpenGL** at r=1,
+NoV=1, F0=1. Both test processes reject this against the unchanged .003 bound.
+The [qualification manifest](ggx-multiscattering-qualification.json) records exact
+runtime source hashes, passed selective gates, failed gate, unrun platforms and
+why no commit/push is permitted. The [native furnace CSVs](evidence/Multiscattering_v1/metal-direct-furnace.csv)
+and independent [direct-energy study](evidence/Multiscattering_v1/direct-energy.csv)
+are retained alongside point captures. Matched [historical](evidence/Multiscattering_v1/single-motion.gif)
+and [compensated](evidence/Multiscattering_v1/compensated-motion.gif) moving-light
+captures remain observation evidence, not acceptance.

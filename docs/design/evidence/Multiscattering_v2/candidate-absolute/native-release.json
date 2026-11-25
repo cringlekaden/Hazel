@@ -1,0 +1,87 @@
+{
+  "family": "Multiscattering_v2",
+  "head": "3b517f86ac3a5955136a2f26a2dc0e056f3550ac",
+  "singleScattering": false,
+  "configuration": "Release",
+  "commands": {
+    "metal": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/furnaces-release/metal",
+      "--ggx-ms"
+    ],
+    "opengl": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+      "--ggx-ms",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/furnaces-release/opengl"
+    ]
+  },
+  "modelErrors": {
+    "metal": 7.934646640000466e-06,
+    "opengl": 2.135407362000019e-05
+  },
+  "sourceSHA256": "26ddaa0846ac2d66c3ddc72849ea9d91056d3090703591253d9823e845d46920",
+  "continuousModelErrors": {
+    "metal": 0.0037879748621520003,
+    "opengl": 0.003801394289132
+  },
+  "componentBackendMax": 1.3419426979999725e-05,
+  "images": {
+    "moving-highlight-5": {
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxRGB": 0.0001614689826965332
+    },
+    "moving-highlight-4": {
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxRGB": 0.0001614689826965332
+    },
+    "moving-highlight-6": {
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxRGB": 0.0001614689826965332
+    },
+    "moving-highlight-7": {
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxRGB": 0.0001614689826965332
+    },
+    "moving-highlight-3": {
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxRGB": 0.0001614689826965332
+    },
+    "linear-1": {
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxRGB": 6.616115570068359e-06
+    },
+    "linear-0": {
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxRGB": 1.1324882507324219e-05
+    },
+    "moving-highlight-2": {
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxRGB": 0.0001614689826965332
+    },
+    "moving-highlight-0": {
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxRGB": 0.0001614689826965332
+    },
+    "linear-2": {
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxRGB": 0.0001614689826965332
+    },
+    "moving-highlight-1": {
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxRGB": 0.0001614689826965332
+    }
+  },
+  "status": "PASS native numerical/components/parity/retirement; owner visual acceptance pending"
+}

@@ -32,7 +32,11 @@ with the implementation milestone records.
    [mesh geometry](../Hazel/src/Hazel/Renderer/Drawing/MeshGeometry.h),
    [environment resources](../Hazel/src/Hazel/Renderer/Resources/EnvironmentResources.h)
    and shared [resources](../Hazel/src/Hazel/Renderer/Resources) use the existing
-   factories. [RenderCommand](../Hazel/src/Hazel/Renderer/RenderCommand.h) delegates
+   factories. EnvironmentResources packs versioned engine-owned RuntimeBRDF_v2 A/B
+   and its interpolant hemispherical averages into the GPU BRDF table; historical
+   environment bake data stays immutable. The existing fallback bundle supplies
+   the same current table for direct-only lighting. Canonical GLSL owns single and multiple
+   scattering plus complementary diffuse on both backends. [RenderCommand](../Hazel/src/Hazel/Renderer/RenderCommand.h) delegates
    state/draws to RendererAPI. Allocation, GL bindings, cube face/mip upload and
    attachment copies live under [Platform/OpenGL](../Hazel/src/Platform/OpenGL).
 6. **Output.** Hosts call Framebuffer::EncodeOutput once. Hazelnut displays the

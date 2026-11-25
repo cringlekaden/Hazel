@@ -1,0 +1,15 @@
+{
+  "family": "Multiscattering_v2",
+  "baseline": "3b517f86ac3a5955136a2f26a2dc0e056f3550ac",
+  "fixtureRevision": "86c581c13fd5c944c2a06d720314a753d7607d8f",
+  "canonicalAB": "e992f5f8905d6d607e391bcfba71ac8e08abc83530322cf48988a1b254de0242",
+  "numericComponents": 735,
+  "rows": "roughness .045/.25/.6/1 top-to-bottom",
+  "columns": "gold,copper,aluminum,dark dielectric,white dielectric,mixed,perfect reflector",
+  "exposure": 0,
+  "AO": false,
+  "TAA": false,
+  "images": "Native Metal offscreen production captures, not editor/player screenshots; owner visual acceptance pending",
+  "runtimeBRDF": "73ad8ad87467a1d3d52cd3e99fca20c70905cef595ebb6824f3887835dec4fc5",
+  "intentionalChange": "Reciprocal Kulla-Conty, complementary diffuse, endpoint/mu4 converged RuntimeBRDF_v2. Immutable IBL_v1 convolution and legacy artifacts retained. Mathematically equivalent tangent-based GGX denominator removes proven FP32 polished-highlight energy gain."
+}

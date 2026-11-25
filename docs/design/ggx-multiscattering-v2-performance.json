@@ -1,0 +1,2180 @@
+{
+  "family": "Multiscattering_v2",
+  "baseline": "3b517f86ac3a5955136a2f26a2dc0e056f3550ac",
+  "hardware": "Apple M4 / 16 GiB",
+  "configuration": "Release",
+  "temporalAA": true,
+  "scope": "Serial historical then candidate five-preset matrix. 720 frames per physical extent; 120 warmup / 20 tail excluded. Positive presentation and ordered GPU records only. No overlapping builds or GPU qualification. Completion intervals are nonexclusive.",
+  "beforeExecutableSHA256": "6e53a4303d1d07eac12b622ef6a577ccbd8d7f94a3748f7adbc700e77725d4fc",
+  "afterExecutableSHA256": "229dbc132f8a5486696d66202a7fca2ca0a2dc7659abf73b8828b0471d1627e9",
+  "runtimeBRDFSHA256": "73ad8ad87467a1d3d52cd3e99fca20c70905cef595ebb6824f3887835dec4fc5",
+  "inputsMatched": true,
+  "projectInputs": {
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/RenderingReference-XeGTAO.hproj": "5ace86dc33340527f048dfccdf2b6fc11a7c4a94eab42b1f6b517602b0c014c8",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Scenes/XeGTAO-Contact.hazel": "e53842c6fdeeb5f5fc66de0ef9d4070914db085a072e8f2c925c962a8998a457",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Studies/XeGTAO/DarkMetal.hmat": "a588e84880d529c9c859eb162a45a3efe7606bbcab569016481ae31f9d8ff518",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Reference/IBL_v1/Photo.henv": "23ec202336c78a6a8c2f7cc3c515b3121bd26ef2342fe6a83647cdb88bfc3e02",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.accepted": "5e866725a98fd9e6a4261784892bbaffc0997a259813e3b4c0893631ba560e2c",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Native/Direct_v1/UnitCube.hprefab": "d612e0c2d02e5f0d65f67a94b91c8d0850242fddbd1a70662309df9a9058bbb8",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Native/Direct_v1/Surface.hmat": "284dc6817b8d8f4c258d45a062c9b5cd491d0a9e23c27a87db19efec652fedcc",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Native/Direct_v1/Source.generated": "e7d60ef899a51ae89a41d70bf1020e2faace2d028572b6898e8f9eb12d56e48e",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Native/Direct_v1/NOTICE.txt": "1564100a2a8bb63a07362f11c2fb0d279b729f8feadcca7850082213085db4c8",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Native/Direct_v1/UnitCube.hmesh": "269c99eefb87b56ad7d8483870f4a3e9c0dd777404cf637c068111b39ceb8bfb",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Native/Direct_v1/Import.himport": "481ddad7d922a15490807b62165bb36d6dafd59d85ed50370a1864a75ba379a8",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Native/Direct_v1/generations/0000000000000002/UnitCube.hgeom": "a16ef6f76711821386609af35a492bf1b680af802063786c9b8dd6f28b05a613",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/owner": "7fe853365d88cad3732c0756b7437e96a452511a3f4c8459bef57e2cd2026e9c",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/Background.hlight": "5b646c96e06e9f38091b7b1b7e449af820219839ddf2d7381eca2e810ee13d6a",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/Specular.hlight": "b0f1bcb878ec9f89ff98dee2e804c5408b5c2f3e792e8fdada195b45802a3588",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/Assets/Reference/IBL_v1/Photo.henv.prepared/89419d964e76d36a/Irradiance.hlight": "b1a4300271430dcaad7eeeb1b0dd61654c67df85d51366a22271f96a3ad3ff26"
+  },
+  "runs": {
+    "off": {
+      "1280x720": {
+        "before": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.24835400000000002,
+            "p95Ms": 0.3865
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.3241045,
+            "p95Ms": 0.519875
+          },
+          "wholeSubmissionGPU": {
+            "samples": 569,
+            "medianMs": 3.2094999914988875,
+            "p95Ms": 3.2968750165309757
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 3.4539999999999997,
+            "p95Ms": 7.873084
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 3.8737500000000002,
+            "p95Ms": 8.226917
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 0
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 0
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 0
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 0
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 0
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 569,
+            "medianMs": 2.172958,
+            "p95Ms": 2.194625
+          },
+          "temporalHistoryPeakBytes": 38010880,
+          "temporalHistoryAllocations": 2,
+          "temporalHistoryReuses": 700,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 0,
+            "validOrderedRecords": 0,
+            "rejectedOrMissingRecords": 0
+          },
+          "AOTextureBytesPerGeneration": 0,
+          "GPUCompletionSpacing": {
+            "samples": 568,
+            "medianMs": 3.7150209973333403,
+            "p95Ms": 8.541624993085861
+          },
+          "positivePresentationSpacing": {
+            "samples": 568,
+            "medianMs": 3.8745414785807952,
+            "p95Ms": 10.138417012058198
+          }
+        },
+        "after": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.173813,
+            "p95Ms": 0.353667
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.2231665,
+            "p95Ms": 0.475458
+          },
+          "wholeSubmissionGPU": {
+            "samples": 568,
+            "medianMs": 3.2455000036861748,
+            "p95Ms": 3.3332500024698675
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 3.3470625,
+            "p95Ms": 6.926209
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 3.643313,
+            "p95Ms": 7.169458
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 0
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 0
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 0
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 0
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 0
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 568,
+            "medianMs": 2.1713125,
+            "p95Ms": 2.193375
+          },
+          "temporalHistoryPeakBytes": 38010880,
+          "temporalHistoryAllocations": 2,
+          "temporalHistoryReuses": 699,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 0,
+            "validOrderedRecords": 0,
+            "rejectedOrMissingRecords": 0
+          },
+          "AOTextureBytesPerGeneration": 0,
+          "GPUCompletionSpacing": {
+            "samples": 567,
+            "medianMs": 3.4109999833162874,
+            "p95Ms": 7.529875001637265
+          },
+          "positivePresentationSpacing": {
+            "samples": 567,
+            "medianMs": 3.6305420217104256,
+            "p95Ms": 10.017332999268547
+          }
+        }
+      },
+      "1920x1080": {
+        "before": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.050208,
+            "p95Ms": 0.061083
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.07464599999999999,
+            "p95Ms": 0.094167
+          },
+          "wholeSubmissionGPU": {
+            "samples": 512,
+            "medianMs": 7.079812494339421,
+            "p95Ms": 7.152416976168752
+          },
+          "submitCPU": {
+            "samples": 513,
+            "medianMs": 6.977167,
+            "p95Ms": 11.839292
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 6.964624499999999,
+            "p95Ms": 11.882125
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 0
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 0
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 0
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 0
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 0
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 512,
+            "medianMs": 4.897603999999999,
+            "p95Ms": 4.944958
+          },
+          "temporalHistoryPeakBytes": 83558400,
+          "temporalHistoryAllocations": 4,
+          "temporalHistoryReuses": 1418,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 0,
+            "validOrderedRecords": 0,
+            "rejectedOrMissingRecords": 0
+          },
+          "AOTextureBytesPerGeneration": 0,
+          "GPUCompletionSpacing": {
+            "samples": 511,
+            "medianMs": 7.090291997883469,
+            "p95Ms": 10.290916980011389
+          },
+          "positivePresentationSpacing": {
+            "samples": 511,
+            "medianMs": 7.022875011898577,
+            "p95Ms": 13.651707995450124
+          }
+        },
+        "after": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.048583,
+            "p95Ms": 0.060625
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.073583,
+            "p95Ms": 0.092833
+          },
+          "wholeSubmissionGPU": {
+            "samples": 580,
+            "medianMs": 7.150270990678109,
+            "p95Ms": 7.209833012893796
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 7.071937500000001,
+            "p95Ms": 11.803417
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 7.151042,
+            "p95Ms": 11.885959
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 0
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 0
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 0
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 0
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 0
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 580,
+            "medianMs": 4.89775,
+            "p95Ms": 4.937333
+          },
+          "temporalHistoryPeakBytes": 83558400,
+          "temporalHistoryAllocations": 4,
+          "temporalHistoryReuses": 1418,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 0,
+            "validOrderedRecords": 0,
+            "rejectedOrMissingRecords": 0
+          },
+          "AOTextureBytesPerGeneration": 0,
+          "GPUCompletionSpacing": {
+            "samples": 579,
+            "medianMs": 7.159208005759865,
+            "p95Ms": 10.255750006763265
+          },
+          "positivePresentationSpacing": {
+            "samples": 579,
+            "medianMs": 7.143958006054163,
+            "p95Ms": 13.893834024202079
+          }
+        }
+      }
+    },
+    "low": {
+      "1280x720": {
+        "before": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.0770835,
+            "p95Ms": 0.098042
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.111208,
+            "p95Ms": 0.139875
+          },
+          "wholeSubmissionGPU": {
+            "samples": 563,
+            "medianMs": 4.671250004321337,
+            "p95Ms": 4.713792004622519
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 4.197521,
+            "p95Ms": 7.243958
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 4.33675,
+            "p95Ms": 7.38225
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 135,
+            "medianMs": 0.0225,
+            "p95Ms": 0.026625
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 135,
+            "medianMs": 0.090083,
+            "p95Ms": 0.162875
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 135,
+            "medianMs": 0.564833,
+            "p95Ms": 0.587417
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 135,
+            "medianMs": 0.264958,
+            "p95Ms": 0.273
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 135,
+            "medianMs": 0.247083,
+            "p95Ms": 0.2545
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 531,
+            "medianMs": 2.187583,
+            "p95Ms": 2.213625
+          },
+          "temporalHistoryPeakBytes": 38010880,
+          "temporalHistoryAllocations": 2,
+          "temporalHistoryReuses": 700,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 563,
+            "validOrderedRecords": 135,
+            "rejectedOrMissingRecords": 428
+          },
+          "AOTextureBytesPerGeneration": 15155200,
+          "GPUCompletionSpacing": {
+            "samples": 562,
+            "medianMs": 4.209291510051116,
+            "p95Ms": 8.411416987655684
+          },
+          "positivePresentationSpacing": {
+            "samples": 562,
+            "medianMs": 4.264312505256385,
+            "p95Ms": 11.135292006656528
+          }
+        },
+        "after": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.07375,
+            "p95Ms": 0.089584
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.10664599999999999,
+            "p95Ms": 0.128625
+          },
+          "wholeSubmissionGPU": {
+            "samples": 564,
+            "medianMs": 4.707250001956709,
+            "p95Ms": 4.740208009025082
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 4.2373545,
+            "p95Ms": 7.472584
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 4.354083,
+            "p95Ms": 7.591333
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 113,
+            "medianMs": 0.022417,
+            "p95Ms": 0.027667
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 113,
+            "medianMs": 0.089542,
+            "p95Ms": 0.139083
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 113,
+            "medianMs": 0.565542,
+            "p95Ms": 0.592208
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 113,
+            "medianMs": 0.264875,
+            "p95Ms": 0.268833
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 113,
+            "medianMs": 0.283125,
+            "p95Ms": 0.289542
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 535,
+            "medianMs": 2.185333,
+            "p95Ms": 2.207083
+          },
+          "temporalHistoryPeakBytes": 38010880,
+          "temporalHistoryAllocations": 2,
+          "temporalHistoryReuses": 699,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 564,
+            "validOrderedRecords": 113,
+            "rejectedOrMissingRecords": 451
+          },
+          "AOTextureBytesPerGeneration": 15155200,
+          "GPUCompletionSpacing": {
+            "samples": 563,
+            "medianMs": 4.241042013745755,
+            "p95Ms": 8.455417002551258
+          },
+          "positivePresentationSpacing": {
+            "samples": 563,
+            "medianMs": 4.356791992904618,
+            "p95Ms": 10.924208007054403
+          }
+        }
+      },
+      "1920x1080": {
+        "before": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.0776455,
+            "p95Ms": 0.097459
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.115896,
+            "p95Ms": 0.154916
+          },
+          "wholeSubmissionGPU": {
+            "samples": 580,
+            "medianMs": 10.35320850496646,
+            "p95Ms": 10.443708015372977
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 9.2109165,
+            "p95Ms": 16.511542
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 9.351104,
+            "p95Ms": 16.666125
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 65,
+            "medianMs": 0.022458,
+            "p95Ms": 0.037833
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 65,
+            "medianMs": 0.267458,
+            "p95Ms": 0.320875
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 65,
+            "medianMs": 1.258208,
+            "p95Ms": 1.2645
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 65,
+            "medianMs": 0.608,
+            "p95Ms": 0.615708
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 65,
+            "medianMs": 0.570125,
+            "p95Ms": 0.579417
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 580,
+            "medianMs": 4.913562499999999,
+            "p95Ms": 4.952708
+          },
+          "temporalHistoryPeakBytes": 83558400,
+          "temporalHistoryAllocations": 4,
+          "temporalHistoryReuses": 1418,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 580,
+            "validOrderedRecords": 65,
+            "rejectedOrMissingRecords": 515
+          },
+          "AOTextureBytesPerGeneration": 32587776,
+          "GPUCompletionSpacing": {
+            "samples": 579,
+            "medianMs": 9.331000008387491,
+            "p95Ms": 11.558375001186505
+          },
+          "positivePresentationSpacing": {
+            "samples": 579,
+            "medianMs": 9.326083003543317,
+            "p95Ms": 17.645041982177645
+          }
+        },
+        "after": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.07325,
+            "p95Ms": 0.093209
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.10925,
+            "p95Ms": 0.149625
+          },
+          "wholeSubmissionGPU": {
+            "samples": 580,
+            "medianMs": 10.40187501348555,
+            "p95Ms": 10.488375002751127
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 9.318896,
+            "p95Ms": 16.557084
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 9.442604,
+            "p95Ms": 16.716416
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 77,
+            "medianMs": 0.022625,
+            "p95Ms": 0.042583
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 77,
+            "medianMs": 0.26825,
+            "p95Ms": 0.324875
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 77,
+            "medianMs": 1.258417,
+            "p95Ms": 1.265083
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 77,
+            "medianMs": 0.604208,
+            "p95Ms": 0.610708
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 77,
+            "medianMs": 0.649667,
+            "p95Ms": 0.658625
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 580,
+            "medianMs": 4.886875,
+            "p95Ms": 4.934208
+          },
+          "temporalHistoryPeakBytes": 83558400,
+          "temporalHistoryAllocations": 4,
+          "temporalHistoryReuses": 1418,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 580,
+            "validOrderedRecords": 77,
+            "rejectedOrMissingRecords": 503
+          },
+          "AOTextureBytesPerGeneration": 32587776,
+          "GPUCompletionSpacing": {
+            "samples": 579,
+            "medianMs": 9.387041995069012,
+            "p95Ms": 11.826917005237192
+          },
+          "positivePresentationSpacing": {
+            "samples": 579,
+            "medianMs": 9.443333023227751,
+            "p95Ms": 18.406417017104104
+          }
+        }
+      }
+    },
+    "medium": {
+      "1280x720": {
+        "before": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.073583,
+            "p95Ms": 0.099083
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.10725,
+            "p95Ms": 0.141958
+          },
+          "wholeSubmissionGPU": {
+            "samples": 573,
+            "medianMs": 4.9913749971892685,
+            "p95Ms": 5.025124992243946
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 4.49475,
+            "p95Ms": 9.70125
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 4.6155,
+            "p95Ms": 9.836334
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 94,
+            "medianMs": 0.022896,
+            "p95Ms": 0.035292
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 94,
+            "medianMs": 0.0905,
+            "p95Ms": 0.136458
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 94,
+            "medianMs": 0.880854,
+            "p95Ms": 0.897125
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 94,
+            "medianMs": 0.266271,
+            "p95Ms": 0.271792
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 94,
+            "medianMs": 0.246417,
+            "p95Ms": 0.250625
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 507,
+            "medianMs": 2.188542,
+            "p95Ms": 2.211125
+          },
+          "temporalHistoryPeakBytes": 38010880,
+          "temporalHistoryAllocations": 2,
+          "temporalHistoryReuses": 699,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 573,
+            "validOrderedRecords": 94,
+            "rejectedOrMissingRecords": 479
+          },
+          "AOTextureBytesPerGeneration": 15155200,
+          "GPUCompletionSpacing": {
+            "samples": 572,
+            "medianMs": 4.5233959826873615,
+            "p95Ms": 9.756749990629032
+          },
+          "positivePresentationSpacing": {
+            "samples": 572,
+            "medianMs": 4.602520493790507,
+            "p95Ms": 11.832707998109981
+          }
+        },
+        "after": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.38827100000000003,
+            "p95Ms": 0.628209
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.5305420000000001,
+            "p95Ms": 0.804917
+          },
+          "wholeSubmissionGPU": {
+            "samples": 565,
+            "medianMs": 4.7015000018291175,
+            "p95Ms": 5.033583001932129
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 4.061542,
+            "p95Ms": 7.625084
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 4.7689995,
+            "p95Ms": 8.128708
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 299,
+            "medianMs": 0.079417,
+            "p95Ms": 0.19825
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 299,
+            "medianMs": 0.089458,
+            "p95Ms": 0.098083
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 299,
+            "medianMs": 0.878875,
+            "p95Ms": 0.95925
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 299,
+            "medianMs": 0.262583,
+            "p95Ms": 0.268583
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 299,
+            "medianMs": 0.282417,
+            "p95Ms": 0.2885
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 540,
+            "medianMs": 2.177042,
+            "p95Ms": 2.196792
+          },
+          "temporalHistoryPeakBytes": 38010880,
+          "temporalHistoryAllocations": 2,
+          "temporalHistoryReuses": 700,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 565,
+            "validOrderedRecords": 299,
+            "rejectedOrMissingRecords": 266
+          },
+          "AOTextureBytesPerGeneration": 15155200,
+          "GPUCompletionSpacing": {
+            "samples": 564,
+            "medianMs": 4.553229489829391,
+            "p95Ms": 9.45849998970516
+          },
+          "positivePresentationSpacing": {
+            "samples": 564,
+            "medianMs": 4.723520498373546,
+            "p95Ms": 11.135207983897999
+          }
+        }
+      },
+      "1920x1080": {
+        "before": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.07314599999999999,
+            "p95Ms": 0.088625
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.10860449999999999,
+            "p95Ms": 0.136666
+          },
+          "wholeSubmissionGPU": {
+            "samples": 580,
+            "medianMs": 11.035749994334765,
+            "p95Ms": 11.113250016933307
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 9.931979,
+            "p95Ms": 17.690167
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 10.052562,
+            "p95Ms": 17.809334
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 68,
+            "medianMs": 0.022375,
+            "p95Ms": 0.14475
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 68,
+            "medianMs": 0.26820849999999996,
+            "p95Ms": 0.276292
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 68,
+            "medianMs": 1.9568750000000001,
+            "p95Ms": 1.963208
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 68,
+            "medianMs": 0.6037079999999999,
+            "p95Ms": 0.611542
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 68,
+            "medianMs": 0.567458,
+            "p95Ms": 0.575083
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 580,
+            "medianMs": 4.914,
+            "p95Ms": 4.947
+          },
+          "temporalHistoryPeakBytes": 83558400,
+          "temporalHistoryAllocations": 4,
+          "temporalHistoryReuses": 1418,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 580,
+            "validOrderedRecords": 68,
+            "rejectedOrMissingRecords": 512
+          },
+          "AOTextureBytesPerGeneration": 32587776,
+          "GPUCompletionSpacing": {
+            "samples": 579,
+            "medianMs": 10.014375002356246,
+            "p95Ms": 11.355291993822902
+          },
+          "positivePresentationSpacing": {
+            "samples": 579,
+            "medianMs": 10.052166995592415,
+            "p95Ms": 18.648375000339
+          }
+        },
+        "after": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.39291699999999996,
+            "p95Ms": 0.538416
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.550583,
+            "p95Ms": 0.767041
+          },
+          "wholeSubmissionGPU": {
+            "samples": 580,
+            "medianMs": 11.138083005789667,
+            "p95Ms": 11.21779199456796
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 9.518646,
+            "p95Ms": 16.795292
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 10.196208500000001,
+            "p95Ms": 17.369625
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 78,
+            "medianMs": 0.0238125,
+            "p95Ms": 0.1845
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 78,
+            "medianMs": 0.277292,
+            "p95Ms": 0.332125
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 78,
+            "medianMs": 1.9541045000000001,
+            "p95Ms": 1.992042
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 78,
+            "medianMs": 0.6009789999999999,
+            "p95Ms": 0.612542
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 78,
+            "medianMs": 0.6519585,
+            "p95Ms": 0.660958
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 580,
+            "medianMs": 4.90825,
+            "p95Ms": 4.9565
+          },
+          "temporalHistoryPeakBytes": 83558400,
+          "temporalHistoryAllocations": 4,
+          "temporalHistoryReuses": 1417,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 580,
+            "validOrderedRecords": 78,
+            "rejectedOrMissingRecords": 502
+          },
+          "AOTextureBytesPerGeneration": 32587776,
+          "GPUCompletionSpacing": {
+            "samples": 579,
+            "medianMs": 10.119124985067174,
+            "p95Ms": 12.825416983105242
+          },
+          "positivePresentationSpacing": {
+            "samples": 579,
+            "medianMs": 10.173249989748001,
+            "p95Ms": 19.49554099701345
+          }
+        }
+      }
+    },
+    "high": {
+      "1280x720": {
+        "before": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.0742295,
+            "p95Ms": 0.088709
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.1078955,
+            "p95Ms": 0.128042
+          },
+          "wholeSubmissionGPU": {
+            "samples": 579,
+            "medianMs": 5.770124989794567,
+            "p95Ms": 5.8072500105481595
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 5.3581455,
+            "p95Ms": 10.349417
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 5.478604000000001,
+            "p95Ms": 10.480583
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 69,
+            "medianMs": 0.022708,
+            "p95Ms": 0.0275
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 69,
+            "medianMs": 0.090208,
+            "p95Ms": 0.141917
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 69,
+            "medianMs": 1.525,
+            "p95Ms": 1.532542
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 69,
+            "medianMs": 0.392208,
+            "p95Ms": 0.397083
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 69,
+            "medianMs": 0.245375,
+            "p95Ms": 0.249333
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 562,
+            "medianMs": 2.1873955,
+            "p95Ms": 2.210083
+          },
+          "temporalHistoryPeakBytes": 38010880,
+          "temporalHistoryAllocations": 2,
+          "temporalHistoryReuses": 700,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 579,
+            "validOrderedRecords": 69,
+            "rejectedOrMissingRecords": 510
+          },
+          "AOTextureBytesPerGeneration": 15155200,
+          "GPUCompletionSpacing": {
+            "samples": 578,
+            "medianMs": 5.298666510498151,
+            "p95Ms": 10.79950001440011
+          },
+          "positivePresentationSpacing": {
+            "samples": 578,
+            "medianMs": 5.359667004086077,
+            "p95Ms": 12.230583990458399
+          }
+        },
+        "after": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.0735625,
+            "p95Ms": 0.089875
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.1066665,
+            "p95Ms": 0.129875
+          },
+          "wholeSubmissionGPU": {
+            "samples": 580,
+            "medianMs": 5.801812498248182,
+            "p95Ms": 5.835791991557926
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 5.3541455,
+            "p95Ms": 10.229
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 5.4765630000000005,
+            "p95Ms": 10.358959
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 79,
+            "medianMs": 0.022542,
+            "p95Ms": 0.029167
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 79,
+            "medianMs": 0.090458,
+            "p95Ms": 0.162708
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 79,
+            "medianMs": 1.526083,
+            "p95Ms": 1.550833
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 79,
+            "medianMs": 0.393042,
+            "p95Ms": 0.398375
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 79,
+            "medianMs": 0.283833,
+            "p95Ms": 0.290167
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 561,
+            "medianMs": 2.182833,
+            "p95Ms": 2.204917
+          },
+          "temporalHistoryPeakBytes": 38010880,
+          "temporalHistoryAllocations": 2,
+          "temporalHistoryReuses": 700,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 580,
+            "validOrderedRecords": 79,
+            "rejectedOrMissingRecords": 501
+          },
+          "AOTextureBytesPerGeneration": 15155200,
+          "GPUCompletionSpacing": {
+            "samples": 579,
+            "medianMs": 5.332333006663248,
+            "p95Ms": 10.092500015161932
+          },
+          "positivePresentationSpacing": {
+            "samples": 579,
+            "medianMs": 5.359708011383191,
+            "p95Ms": 11.352499976055697
+          }
+        }
+      },
+      "1920x1080": {
+        "before": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.0731455,
+            "p95Ms": 0.091083
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.107771,
+            "p95Ms": 0.133375
+          },
+          "wholeSubmissionGPU": {
+            "samples": 580,
+            "medianMs": 12.774208502378315,
+            "p95Ms": 12.858916976256296
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 11.536125,
+            "p95Ms": 19.392
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 11.653833,
+            "p95Ms": 19.5045
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 32,
+            "medianMs": 0.0183335,
+            "p95Ms": 0.025833
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 32,
+            "medianMs": 0.266083,
+            "p95Ms": 0.272667
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 32,
+            "medianMs": 3.3893125,
+            "p95Ms": 3.398792
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 32,
+            "medianMs": 0.910833,
+            "p95Ms": 0.921417
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 32,
+            "medianMs": 0.5675,
+            "p95Ms": 0.575958
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 580,
+            "medianMs": 4.8972915,
+            "p95Ms": 4.944292
+          },
+          "temporalHistoryPeakBytes": 83558400,
+          "temporalHistoryAllocations": 4,
+          "temporalHistoryReuses": 1418,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 580,
+            "validOrderedRecords": 32,
+            "rejectedOrMissingRecords": 548
+          },
+          "AOTextureBytesPerGeneration": 32587776,
+          "GPUCompletionSpacing": {
+            "samples": 579,
+            "medianMs": 11.740750021999702,
+            "p95Ms": 11.857375007821247
+          },
+          "positivePresentationSpacing": {
+            "samples": 579,
+            "medianMs": 11.625540995737538,
+            "p95Ms": 19.495541986543685
+          }
+        },
+        "after": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.076458,
+            "p95Ms": 0.092167
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.10952100000000001,
+            "p95Ms": 0.136541
+          },
+          "wholeSubmissionGPU": {
+            "samples": 580,
+            "medianMs": 12.834083507186733,
+            "p95Ms": 12.92100001592189
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 11.6140005,
+            "p95Ms": 19.62825
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 11.7352915,
+            "p95Ms": 19.74925
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 32,
+            "medianMs": 0.016729,
+            "p95Ms": 0.023083
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 32,
+            "medianMs": 0.263479,
+            "p95Ms": 0.281042
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 32,
+            "medianMs": 3.3879795,
+            "p95Ms": 3.432958
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 32,
+            "medianMs": 0.913396,
+            "p95Ms": 0.921292
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 32,
+            "medianMs": 0.653167,
+            "p95Ms": 0.662708
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 580,
+            "medianMs": 4.891875000000001,
+            "p95Ms": 4.935375
+          },
+          "temporalHistoryPeakBytes": 83558400,
+          "temporalHistoryAllocations": 4,
+          "temporalHistoryReuses": 1418,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 580,
+            "validOrderedRecords": 32,
+            "rejectedOrMissingRecords": 548
+          },
+          "AOTextureBytesPerGeneration": 32587776,
+          "GPUCompletionSpacing": {
+            "samples": 579,
+            "medianMs": 11.80341700091958,
+            "p95Ms": 11.892999988049269
+          },
+          "positivePresentationSpacing": {
+            "samples": 579,
+            "medianMs": 11.746499978471547,
+            "p95Ms": 19.61666697752662
+          }
+        }
+      }
+    },
+    "ultra": {
+      "1280x720": {
+        "before": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.0769795,
+            "p95Ms": 0.090667
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.110125,
+            "p95Ms": 0.13275
+          },
+          "wholeSubmissionGPU": {
+            "samples": 580,
+            "medianMs": 8.281000016722828,
+            "p95Ms": 8.319375017890707
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 7.640416500000001,
+            "p95Ms": 13.672042
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 7.7630625,
+            "p95Ms": 13.806458
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 72,
+            "medianMs": 0.022646,
+            "p95Ms": 0.033542
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 72,
+            "medianMs": 0.090375,
+            "p95Ms": 0.156375
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 72,
+            "medianMs": 4.0301665,
+            "p95Ms": 4.055375
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 72,
+            "medianMs": 0.39512499999999995,
+            "p95Ms": 0.401833
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 72,
+            "medianMs": 0.24825,
+            "p95Ms": 0.251208
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 570,
+            "medianMs": 2.189208,
+            "p95Ms": 2.209375
+          },
+          "temporalHistoryPeakBytes": 38010880,
+          "temporalHistoryAllocations": 2,
+          "temporalHistoryReuses": 700,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 580,
+            "validOrderedRecords": 72,
+            "rejectedOrMissingRecords": 508
+          },
+          "AOTextureBytesPerGeneration": 15155200,
+          "GPUCompletionSpacing": {
+            "samples": 579,
+            "medianMs": 7.809125003404915,
+            "p95Ms": 9.99200000660494
+          },
+          "positivePresentationSpacing": {
+            "samples": 579,
+            "medianMs": 7.749083015369251,
+            "p95Ms": 14.620000001741573
+          }
+        },
+        "after": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.080792,
+            "p95Ms": 0.08925
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.1117705,
+            "p95Ms": 0.131208
+          },
+          "wholeSubmissionGPU": {
+            "samples": 580,
+            "medianMs": 8.311104000313208,
+            "p95Ms": 8.347874972969294
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 7.662646,
+            "p95Ms": 13.624875
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 7.7850835,
+            "p95Ms": 13.757166
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 60,
+            "medianMs": 0.022708,
+            "p95Ms": 0.028083
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 60,
+            "medianMs": 0.0919375,
+            "p95Ms": 0.119958
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 60,
+            "medianMs": 4.0243335,
+            "p95Ms": 4.057792
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 60,
+            "medianMs": 0.39791699999999997,
+            "p95Ms": 0.408042
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 60,
+            "medianMs": 0.28400000000000003,
+            "p95Ms": 0.291375
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 573,
+            "medianMs": 2.182583,
+            "p95Ms": 2.203208
+          },
+          "temporalHistoryPeakBytes": 38010880,
+          "temporalHistoryAllocations": 2,
+          "temporalHistoryReuses": 700,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 580,
+            "validOrderedRecords": 60,
+            "rejectedOrMissingRecords": 520
+          },
+          "AOTextureBytesPerGeneration": 15155200,
+          "GPUCompletionSpacing": {
+            "samples": 579,
+            "medianMs": 7.8388330002781,
+            "p95Ms": 9.561667015077546
+          },
+          "positivePresentationSpacing": {
+            "samples": 579,
+            "medianMs": 7.777833001455292,
+            "p95Ms": 14.25691699841991
+          }
+        }
+      },
+      "1920x1080": {
+        "before": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.075125,
+            "p95Ms": 0.090667
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.11039550000000001,
+            "p95Ms": 0.131583
+          },
+          "wholeSubmissionGPU": {
+            "samples": 580,
+            "medianMs": 18.342333496548235,
+            "p95Ms": 18.417166982544586
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 17.075333,
+            "p95Ms": 24.853125
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 17.2000625,
+            "p95Ms": 24.972542
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 1,
+            "medianMs": 0.014417,
+            "p95Ms": 0.014417
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 1,
+            "medianMs": 0.258958,
+            "p95Ms": 0.258958
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 1,
+            "medianMs": 8.955208,
+            "p95Ms": 8.955208
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 1,
+            "medianMs": 0.913375,
+            "p95Ms": 0.913375
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 1,
+            "medianMs": 0.5705,
+            "p95Ms": 0.5705
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 580,
+            "medianMs": 4.89025,
+            "p95Ms": 4.934208
+          },
+          "temporalHistoryPeakBytes": 83558400,
+          "temporalHistoryAllocations": 4,
+          "temporalHistoryReuses": 1418,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 580,
+            "validOrderedRecords": 1,
+            "rejectedOrMissingRecords": 579
+          },
+          "AOTextureBytesPerGeneration": 32587776,
+          "GPUCompletionSpacing": {
+            "samples": 579,
+            "medianMs": 17.307375004747882,
+            "p95Ms": 17.376875010086223
+          },
+          "positivePresentationSpacing": {
+            "samples": 579,
+            "medianMs": 17.196166998473927,
+            "p95Ms": 24.824207997880876
+          }
+        },
+        "after": {
+          "sceneCPU": {
+            "samples": 580,
+            "medianMs": 0.0800415,
+            "p95Ms": 0.095375
+          },
+          "layerCPU": {
+            "samples": 580,
+            "medianMs": 0.112583,
+            "p95Ms": 0.135
+          },
+          "wholeSubmissionGPU": {
+            "samples": 580,
+            "medianMs": 18.415416503557935,
+            "p95Ms": 18.50337500218302
+          },
+          "submitCPU": {
+            "samples": 580,
+            "medianMs": 17.160125,
+            "p95Ms": 24.240125
+          },
+          "cpuLoopInterval": {
+            "samples": 580,
+            "medianMs": 17.287124499999997,
+            "p95Ms": 24.353667
+          },
+          "depthPreparationGPUCompletionInterval": {
+            "samples": 1,
+            "medianMs": 0.014833,
+            "p95Ms": 0.014833
+          },
+          "depthPrefilterGPUCompletionInterval": {
+            "samples": 1,
+            "medianMs": 0.264917,
+            "p95Ms": 0.264917
+          },
+          "mainGPUCompletionInterval": {
+            "samples": 1,
+            "medianMs": 8.951292,
+            "p95Ms": 8.951292
+          },
+          "denoiseGPUCompletionInterval": {
+            "samples": 1,
+            "medianMs": 0.915583,
+            "p95Ms": 0.915583
+          },
+          "forwardWorldGPUCompletionInterval": {
+            "samples": 1,
+            "medianMs": 0.648208,
+            "p95Ms": 0.648208
+          },
+          "temporalResolveGPUCompletionInterval": {
+            "samples": 580,
+            "medianMs": 4.8831039999999994,
+            "p95Ms": 4.930292
+          },
+          "temporalHistoryPeakBytes": 83558400,
+          "temporalHistoryAllocations": 4,
+          "temporalHistoryReuses": 1418,
+          "phaseCounterSamples": {
+            "positivelyPresentedCandidates": 580,
+            "validOrderedRecords": 1,
+            "rejectedOrMissingRecords": 579
+          },
+          "AOTextureBytesPerGeneration": 32587776,
+          "GPUCompletionSpacing": {
+            "samples": 579,
+            "medianMs": 17.381749988999218,
+            "p95Ms": 17.460000002756715
+          },
+          "positivePresentationSpacing": {
+            "samples": 579,
+            "medianMs": 17.317165998974815,
+            "p95Ms": 24.309209024067968
+          }
+        }
+      }
+    }
+  },
+  "repeat": {
+    "order": "candidate then historical, opposite primary matrix",
+    "runs": {
+      "after": {
+        "command": [
+          "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/medium-repeat-after",
+          "--benchmark-metal",
+          "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "1",
+          "--taa"
+        ],
+        "peakRSSKiB": 161744,
+        "extents": {
+          "1280x720": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.31266649999999996,
+              "p95Ms": 0.532666
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.4300625,
+              "p95Ms": 0.727625
+            },
+            "wholeSubmissionGPU": {
+              "samples": 563,
+              "medianMs": 4.863874986767769,
+              "p95Ms": 5.107625009259209
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 4.173375,
+              "p95Ms": 8.375041
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 4.732854,
+              "p95Ms": 8.920959
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 221,
+              "medianMs": 0.028208,
+              "p95Ms": 0.194125
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 221,
+              "medianMs": 0.091,
+              "p95Ms": 0.11275
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 221,
+              "medianMs": 0.879292,
+              "p95Ms": 0.952292
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 221,
+              "medianMs": 0.262208,
+              "p95Ms": 0.274333
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 221,
+              "medianMs": 0.282333,
+              "p95Ms": 0.295833
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 545,
+              "medianMs": 2.183,
+              "p95Ms": 2.211625
+            },
+            "temporalHistoryPeakBytes": 38010880,
+            "temporalHistoryAllocations": 2,
+            "temporalHistoryReuses": 699,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 563,
+              "validOrderedRecords": 221,
+              "rejectedOrMissingRecords": 342
+            },
+            "AOTextureBytesPerGeneration": 15155200,
+            "GPUCompletionSpacing": {
+              "samples": 562,
+              "medianMs": 4.574374994263053,
+              "p95Ms": 9.222499997122213
+            },
+            "positivePresentationSpacing": {
+              "samples": 562,
+              "medianMs": 4.723499994724989,
+              "p95Ms": 11.135250009829178
+            }
+          },
+          "1920x1080": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.074458,
+              "p95Ms": 0.094625
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.109833,
+              "p95Ms": 0.144334
+            },
+            "wholeSubmissionGPU": {
+              "samples": 580,
+              "medianMs": 11.100937481387518,
+              "p95Ms": 11.205000017071143
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 9.950021,
+              "p95Ms": 17.997875
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 10.068542,
+              "p95Ms": 18.134708
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 86,
+              "medianMs": 0.0226875,
+              "p95Ms": 0.02725
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 86,
+              "medianMs": 0.2685835,
+              "p95Ms": 0.280917
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 86,
+              "medianMs": 1.953604,
+              "p95Ms": 1.964875
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 86,
+              "medianMs": 0.6139165,
+              "p95Ms": 0.621833
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 86,
+              "medianMs": 0.6435625,
+              "p95Ms": 0.654167
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 580,
+              "medianMs": 4.8940205,
+              "p95Ms": 4.940625
+            },
+            "temporalHistoryPeakBytes": 83558400,
+            "temporalHistoryAllocations": 4,
+            "temporalHistoryReuses": 1418,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 580,
+              "validOrderedRecords": 86,
+              "rejectedOrMissingRecords": 494
+            },
+            "AOTextureBytesPerGeneration": 32587776,
+            "GPUCompletionSpacing": {
+              "samples": 579,
+              "medianMs": 10.0856670178473,
+              "p95Ms": 12.803332996554673
+            },
+            "positivePresentationSpacing": {
+              "samples": 579,
+              "medianMs": 10.052208992419764,
+              "p95Ms": 20.10058402083814
+            }
+          }
+        },
+        "resourceSamples": [
+          {
+            "frame": 120,
+            "frameBytes": 305222820,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 766,
+            "bufferAllocations": 115,
+            "bufferReuses": 4205,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 240,
+            "frameBytes": 255087780,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 1366,
+            "bufferAllocations": 115,
+            "bufferReuses": 8525,
+            "allocatorBytes": 8826408,
+            "inflight": 2
+          },
+          {
+            "frame": 360,
+            "frameBytes": 305222820,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 1966,
+            "bufferAllocations": 115,
+            "bufferReuses": 12845,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 480,
+            "frameBytes": 255087780,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 2566,
+            "bufferAllocations": 115,
+            "bufferReuses": 17165,
+            "allocatorBytes": 8826408,
+            "inflight": 2
+          },
+          {
+            "frame": 600,
+            "frameBytes": 255087780,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 3166,
+            "bufferAllocations": 115,
+            "bufferReuses": 21485,
+            "allocatorBytes": 8826408,
+            "inflight": 2
+          },
+          {
+            "frame": 720,
+            "frameBytes": 620008612,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 3755,
+            "bufferAllocations": 115,
+            "bufferReuses": 25805,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 840,
+            "frameBytes": 620008612,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 4355,
+            "bufferAllocations": 115,
+            "bufferReuses": 30125,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 960,
+            "frameBytes": 510727332,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 4955,
+            "bufferAllocations": 115,
+            "bufferReuses": 34445,
+            "allocatorBytes": 8826408,
+            "inflight": 2
+          },
+          {
+            "frame": 1080,
+            "frameBytes": 620008612,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 5555,
+            "bufferAllocations": 115,
+            "bufferReuses": 38765,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1200,
+            "frameBytes": 620008612,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 6155,
+            "bufferAllocations": 115,
+            "bufferReuses": 43085,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1320,
+            "frameBytes": 620008612,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 6755,
+            "bufferAllocations": 115,
+            "bufferReuses": 47405,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          }
+        ],
+        "final": {
+          "submitted": 1404,
+          "completed": 1404,
+          "presented": 1373,
+          "completedPresented": 1373,
+          "errors": 0,
+          "peakFrameBytes": 620008612,
+          "peakAttachmentBytes": 512196608,
+          "peakAllocatorBytes": 8826408,
+          "liveAttachmentGenerations": 0,
+          "pendingBytes": 0
+        }
+      },
+      "before": {
+        "command": [
+          "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-evidence/historical-bin/MetalM1Smoke",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/medium-repeat-before",
+          "--benchmark-metal",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-evidence/single-release/single-resources",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/benchmark-project/RenderingReference/RenderingReference-XeGTAO.hproj",
+          "1",
+          "--taa"
+        ],
+        "peakRSSKiB": 159216,
+        "extents": {
+          "1280x720": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.073083,
+              "p95Ms": 0.088292
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.1061665,
+              "p95Ms": 0.127541
+            },
+            "wholeSubmissionGPU": {
+              "samples": 577,
+              "medianMs": 4.991124995285645,
+              "p95Ms": 5.024499987484887
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 4.520666500000001,
+              "p95Ms": 9.978708
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 4.6345835,
+              "p95Ms": 10.133
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 106,
+              "medianMs": 0.0236875,
+              "p95Ms": 0.028042
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 106,
+              "medianMs": 0.091146,
+              "p95Ms": 0.101125
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 106,
+              "medianMs": 0.8803540000000001,
+              "p95Ms": 0.888083
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 106,
+              "medianMs": 0.263583,
+              "p95Ms": 0.266917
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 106,
+              "medianMs": 0.2447915,
+              "p95Ms": 0.24875
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 542,
+              "medianMs": 2.1882710000000003,
+              "p95Ms": 2.210292
+            },
+            "temporalHistoryPeakBytes": 38010880,
+            "temporalHistoryAllocations": 2,
+            "temporalHistoryReuses": 700,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 577,
+              "validOrderedRecords": 106,
+              "rejectedOrMissingRecords": 471
+            },
+            "AOTextureBytesPerGeneration": 15155200,
+            "GPUCompletionSpacing": {
+              "samples": 576,
+              "medianMs": 4.523333496763371,
+              "p95Ms": 10.296749998815358
+            },
+            "positivePresentationSpacing": {
+              "samples": 576,
+              "medianMs": 4.602500004693866,
+              "p95Ms": 12.199541000882164
+            }
+          },
+          "1920x1080": {
+            "sceneCPU": {
+              "samples": 580,
+              "medianMs": 0.073375,
+              "p95Ms": 0.09225
+            },
+            "layerCPU": {
+              "samples": 580,
+              "medianMs": 0.108292,
+              "p95Ms": 0.139
+            },
+            "wholeSubmissionGPU": {
+              "samples": 580,
+              "medianMs": 11.038312499294989,
+              "p95Ms": 11.16470800479874
+            },
+            "submitCPU": {
+              "samples": 580,
+              "medianMs": 9.9239165,
+              "p95Ms": 17.744417
+            },
+            "cpuLoopInterval": {
+              "samples": 580,
+              "medianMs": 10.043625,
+              "p95Ms": 17.866959
+            },
+            "depthPreparationGPUCompletionInterval": {
+              "samples": 71,
+              "medianMs": 0.022625,
+              "p95Ms": 0.026375
+            },
+            "depthPrefilterGPUCompletionInterval": {
+              "samples": 71,
+              "medianMs": 0.27175,
+              "p95Ms": 0.365333
+            },
+            "mainGPUCompletionInterval": {
+              "samples": 71,
+              "medianMs": 1.954875,
+              "p95Ms": 1.964083
+            },
+            "denoiseGPUCompletionInterval": {
+              "samples": 71,
+              "medianMs": 0.603917,
+              "p95Ms": 0.608417
+            },
+            "forwardWorldGPUCompletionInterval": {
+              "samples": 71,
+              "medianMs": 0.566917,
+              "p95Ms": 0.575458
+            },
+            "temporalResolveGPUCompletionInterval": {
+              "samples": 580,
+              "medianMs": 4.902374999999999,
+              "p95Ms": 4.949167
+            },
+            "temporalHistoryPeakBytes": 83558400,
+            "temporalHistoryAllocations": 4,
+            "temporalHistoryReuses": 1418,
+            "phaseCounterSamples": {
+              "positivelyPresentedCandidates": 580,
+              "validOrderedRecords": 71,
+              "rejectedOrMissingRecords": 509
+            },
+            "AOTextureBytesPerGeneration": 32587776,
+            "GPUCompletionSpacing": {
+              "samples": 579,
+              "medianMs": 10.018000000854954,
+              "p95Ms": 12.107125017791986
+            },
+            "positivePresentationSpacing": {
+              "samples": 579,
+              "medianMs": 10.048458992969245,
+              "p95Ms": 19.25349998055026
+            }
+          }
+        },
+        "resourceSamples": [
+          {
+            "frame": 120,
+            "frameBytes": 254170276,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 781,
+            "bufferAllocations": 115,
+            "bufferReuses": 4205,
+            "allocatorBytes": 8826408,
+            "inflight": 2
+          },
+          {
+            "frame": 240,
+            "frameBytes": 304305316,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 1381,
+            "bufferAllocations": 115,
+            "bufferReuses": 8525,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 360,
+            "frameBytes": 304305316,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 1981,
+            "bufferAllocations": 115,
+            "bufferReuses": 12845,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 480,
+            "frameBytes": 304305316,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 2581,
+            "bufferAllocations": 115,
+            "bufferReuses": 17165,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 600,
+            "frameBytes": 304305316,
+            "attachmentBytes": 284688384,
+            "generations": 16,
+            "attachmentAllocations": 16,
+            "attachmentReuses": 3181,
+            "bufferAllocations": 115,
+            "bufferReuses": 21485,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 720,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 3770,
+            "bufferAllocations": 115,
+            "bufferReuses": 25805,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 840,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 4370,
+            "bufferAllocations": 115,
+            "bufferReuses": 30125,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 960,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 4970,
+            "bufferAllocations": 115,
+            "bufferReuses": 34445,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1080,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 5570,
+            "bufferAllocations": 115,
+            "bufferReuses": 38765,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1200,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 6170,
+            "bufferAllocations": 115,
+            "bufferReuses": 43085,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          },
+          {
+            "frame": 1320,
+            "frameBytes": 619091108,
+            "attachmentBytes": 512196608,
+            "generations": 13,
+            "attachmentAllocations": 29,
+            "attachmentReuses": 6770,
+            "bufferAllocations": 115,
+            "bufferReuses": 47405,
+            "allocatorBytes": 8826408,
+            "inflight": 3
+          }
+        ],
+        "final": {
+          "submitted": 1401,
+          "completed": 1401,
+          "presented": 1391,
+          "completedPresented": 1391,
+          "errors": 0,
+          "peakFrameBytes": 626660516,
+          "peakAttachmentBytes": 537198592,
+          "peakAllocatorBytes": 8826408,
+          "liveAttachmentGenerations": 0,
+          "pendingBytes": 0
+        }
+      }
+    }
+  },
+  "targets": {
+    "relativeForward5Percent": "MISSED",
+    "absoluteForward1080pPoint2Ms": "MET"
+  },
+  "warnings": [
+    "Forward counter sample counts are smaller than whole-submission counts. Ultra 1080p has only one valid forward record per run: retained, not a meaningful p95.",
+    "Medium CPU scene-interval increase is retained: 720p .073583 -> .388271 ms primary and .073083 -> .3126665 repeat. At 1080p .073146 -> .392917 primary did not repeat (.073375 -> .074458). Cause not established; not attributed to per-frame CPU BRDF arithmetic.",
+    "Steady buffer allocations remain 115 in both runs; no per-frame LUT upload/allocation growth. Environment GPU realization is cached. CPU scene/submit/GPU completion scopes cannot be added or treated as exclusive."
+  ]
+}

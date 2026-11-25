@@ -12,6 +12,8 @@ struct LightingSet
 LightingSet Prepare(const RadianceImage &source, const EnvironmentProfile &profile,
                     const Cancel &cancel = {});
 LightingImage IntegrateBRDF(const Cancel &cancel = {});
+// Engine-owned RuntimeBRDF_v2; independent of immutable environment bake recipes.
+LightingImage IntegrateRuntimeBRDF(unsigned side, const Cancel &cancel = {});
 std::string Producer();
 std::string LUTKey();
 // Native producer adapter/publication. Runtime never links this module.

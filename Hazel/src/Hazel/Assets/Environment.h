@@ -19,6 +19,10 @@ inline constexpr const char *RadianceEvaluation =
     "HDR-framing1-linearRec709D65-top";
 inline constexpr const char *IBLRecipe =
     "Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top";
+// Engine-owned current BRDF data; legacy IBLRecipe and accepted generations stay immutable.
+inline constexpr const char *RuntimeBRDFRecipe =
+    "Hazel.RuntimeBRDF_v2.GGX-correlated-Schlick.r045.mu4.endpoints.FP64GL-boundedNDF-VNDF-edge2.AB1e-7.loss1e-3";
+inline constexpr const char *RuntimeBRDFResource = "BRDF/GGX-MS_v2.hlight";
 inline constexpr unsigned EnvironmentProducerContract = 2;
 inline constexpr const char *EnvironmentPreparationRecipe =
     "Hazel.EnvPrepare_v2.SolidAngleBalancedMIS.BilinearSource.Tail4";

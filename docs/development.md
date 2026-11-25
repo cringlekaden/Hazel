@@ -331,3 +331,14 @@ Do not run other native qualification or change display modes concurrently.
 private example snapshot for regressions; it never changes the working examples.
 Use it only when reproducing a declared input baseline, and record the selected
 commit separately from the tested engine tree.
+
+### Runtime BRDF maintenance
+
+The current GGX model ships `Hazel/Resources/BRDF/GGX-MS_v2.hlight` and its
+provenance JSON. Runtime and environment preparation never silently rebake it.
+Maintainers can generate a **new output** with the native `HazelProject
+prepare-runtime-brdf OUTPUT.hlight 256` command (after building HazelProject);
+existing outputs are refused. A new active version requires independent numerical
+qualification and intentional visual-change evidence. Historical environment
+LUTs, bake identities and frozen references remain immutable. See the
+[GGX model record](design/ggx-multiscattering.md).

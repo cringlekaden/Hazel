@@ -1,0 +1,67 @@
+{
+  "status": "PASS applicable native correctness/integration; acceptance INCOMPLETE pending owner visual/performance review",
+  "branch": "feature/3d-foundations",
+  "baselineHEAD": "3b517f86ac3a5955136a2f26a2dc0e056f3550ac",
+  "commit": "Containing commit; qualification ran on its scoped production contents before commit, identified by productionSHA256",
+  "push": "Actual push outcome is reported in the delivery",
+  "hardware": "Apple M4 / native Metal 4 and Apple OpenGL 4.1",
+  "runtimeBRDF": {
+    "recipe": "Hazel.RuntimeBRDF_v2.GGX-correlated-Schlick.r045.mu4.endpoints.FP64GL-boundedNDF-VNDF-edge2.AB1e-7.loss1e-3",
+    "side": 256,
+    "channels": "RG32F Schlick A/B; GPU RGBA32F packs exact interpolant hemispherical averages",
+    "coordinates": "Endpoint knots NoV=(x/(side-1))^4; perceptual r=.045+.955*y/(side-1). Runtime pixel centers remapped explicitly.",
+    "integrator": "FP64 deterministic Gauss-Legendre radial / periodic azimuth. Boundary-split NDF if mu>=alpha; VNDF otherwise, disk-edge u=1-(1-t)^2 with Jacobian. Adaptive 32..4096; A/B delta<=1e-7 AND missing-energy delta<=max(1e-10,1e-3*missing).",
+    "sha256": "73ad8ad87467a1d3d52cd3e99fca20c70905cef595ebb6824f3887835dec4fc5",
+    "producerSourceSHA256": "9a70e7726e8a1782a45e7b6b0352201b950ebc97a74a3079f789aed59465cbb9",
+    "producer": "Apple clang / Xcode 27.3 beta / arm64 Release; precise FP64; six deterministic row workers; IEEE754 little endian HZLIGHT1",
+    "command": "HazelProject prepare-runtime-brdf OUTPUT.hlight 256",
+    "legacy": "All accepted environment A/B artifacts, identities and frozen outputs unchanged. New active rendering-model version.",
+    "rounding": "Directed B conversion only when separately rounded FP32 A+B exceeds one; adjustment below one unit-energy FP32 ulp (2^-23).",
+    "bakeSummary": "RuntimeBRDF_v2 side=256 maximum_order=4096 maximum_delta=9.99964e-08"
+  },
+  "productionSHA256": {
+    "Hazel/Resources/shaders/ForwardPBR.glsl": "342f1489398d00d8659b8c0009512525495935083ce0ff1e7b1b210e3d4f30bd",
+    "Hazel/Resources/shaders/metal/ForwardPBR.hzmetal": "7ac4425f6cbe7b19680465eb973c3a4c27142957901b9f7113d68b1030363db3",
+    "Hazel/src/Hazel/Assets/Environment.h": "7f3f87e85db40d0cff7fa0097b4ce5123469d613e58f2f38e9c755aef681fa7c",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer3D.cpp": "bad7576a4dd5916a7836733d10065ff9b10c11338d7c466a1821fee2c8813e84",
+    "Hazel/src/Hazel/Renderer/Resources/EnvironmentResources.cpp": "713c889756f46d2c056351e60ba9d40d8e3c14889e59ff04b3e0ef74ad895994",
+    "Hazel/src/Hazel/Renderer/Resources/EnvironmentResources.h": "87275a389cdce46f458927baa390cb2e46b75d84ea11340c2e91652885aa4c0a",
+    "Hazel/Resources/BRDF/GGX-MS_v2.hlight": "73ad8ad87467a1d3d52cd3e99fca20c70905cef595ebb6824f3887835dec4fc5",
+    "Hazel/Resources/BRDF/GGX-MS_v2.json": "e70c5b3493a55a6bd24bce68f5336b53dfa28565b37a7b24dbedf83a81fd6d8d",
+    "tools/HazelImport/Environment/RuntimeBRDF.cpp": "9a70e7726e8a1782a45e7b6b0352201b950ebc97a74a3079f789aed59465cbb9"
+  },
+  "gates": {
+    "buildDebugRelease": "PASS; full builds plus focused furnace fixture rebuilds",
+    "independentFP64": "PASS both configurations; direct energy sweep max .000301344, packed averages max 2.93509e-8, reciprocity max 6.20634e-17",
+    "LUTConvergence": "PASS; 128 max energy error .00108168 -> 256 .000301344; collocated A/B max 4.12448e-7; mean 64-to-128 change 9.15e-11 at floor",
+    "nativeMultiscattering": "PASS Debug/Release Metal/OpenGL, 735 FP32 components each, exact-table max 1.23053e-5; continuous-model max 9.99319e-5; strict .002 continuous-model postprocessing bound verified on all four retained datasets",
+    "nativeFurnaces": "PASS all unchanged +/- .003 bounds; rough-normal ~.999999, smooth-normal ~.999997, grazing ~.99964",
+    "historicalReference": "PASS dedicated private old shader/data study; no production branch",
+    "stochasticSmith": "PASS reference execution and first-bounce verification; KC maximum sampled model difference .04053096, not an equality gate",
+    "regressions": "PASS 18 Debug + 18 Release native executables",
+    "rendererParity": "PASS 135 captures per configuration; exact IDs and bounded depth; both native APIs",
+    "shaderCache": "PASS Debug/Release cold/warm/source-free/corrupt and 17 rejection cases",
+    "TAA": "PASS Debug/Release focused numerical/motion/HDR/lifetime checks; visual acceptance separate",
+    "packageInventoryAndOffscreenRelocation": "PASS signed editor/player inventories, current BRDF payload, source/SDK/compiler-denied temporal probe and missing-resource rejection",
+    "nativeWindowLifetimes": "PASS Debug/Release x 1x/2x, >320 completed submissions per run, positive presentation, restored display modes, zero final owners/errors",
+    "performance": "MEASURED complete five-preset matrix plus reversed-order Medium repeat. 1080p forward +.0845005 ms (+14.89%) primary / +.0766455 ms (+13.52%) repeat. Provisional 5% relative target MISSED; .2 ms absolute target MET. CPU timing concern retained; no assertion weakened.",
+    "pristineProducts": "PASS actual source/SDK-isolated signed Hazelnut and Nutella on Metal and OpenGL: guarded startup, frames, normal close, mapped closure, unchanged signatures",
+    "publicDocs": "PASS local link audit; branch CI/Windows/Linux execution NOT RUN",
+    "ownerVisual": "PENDING \u2014 distinct owner requirement"
+  },
+  "warnings": [
+    "No warnings from changed production paths in Debug/Release. Existing unrelated first-party/vendor/libtool warnings retained in raw build logs.",
+    "No new timing result or window-presentation PASS is inferred from offscreen GPU submissions.",
+    "KC colored-Fresnel approximation and nonuniform-environment irradiance/split-sum approximations remain documented.",
+    "Provisional relative performance target missed; 720p Medium CPU interval increase remains unexplained. Full raw primary and reverse-order repeat measurements retained."
+  ],
+  "evidenceRoot": "build/ggx-ms-v2-evidence",
+  "notes": [
+    "Original legacy LUT failures and first v2 candidate preserved separately.",
+    "Final LUT active SHA256 73ad8ad87467a1d3d52cd3e99fca20c70905cef595ebb6824f3887835dec4fc5",
+    "FP32 sharp-GGX cancellation corrected with mathematically equivalent cross-product denominator; native 1.00657198 -> .99999665 with identical LUT.",
+    "Both unrelated owner example edits remain byte-identical to original WIP inputs and excluded from scope.",
+    "Initial locked-console attempts were rejected; after owner unlock all remaining native gates passed. No locked/offscreen frame was counted as presented.",
+    "Final diagnostic-label/comment cleanup rebuilt Debug/Release Renderer2DSmoke and reran the independent numerical mode; no production or numerical-assertion change."
+  ]
+}

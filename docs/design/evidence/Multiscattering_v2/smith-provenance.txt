@@ -1,0 +1,4 @@
+URL https://drive.google.com/uc?export=download&id=0BzvWIdpUpRx_bTdXTEFfaWlQRUE&resourcekey=0-clibl9DJOShOiHqwVIe3vg
+SHA256 38fca8b662398676b13210611440c1ec47d937628c19e545e2945a7b330c9d8d
+262144 paths per case; seed 20261125; FP64 promotion; abstract-base virtual destructors and host macro repairs; upstream VNDF approximations retained.
+['clang++', '-std=c++17', '-O2', '-include', 'cfloat', '-I/Volumes/External/kadencringle/Projects/Hazel/Hazel/vendor/glm', '-I/Volumes/External/kadencringle/Projects/Hazel/tests/migration', '/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/smith-refined/reference.cpp', '-o', '/Volumes/External/kadencringle/Projects/Hazel/build/ggx-ms-v2-evidence/smith-refined/reference']

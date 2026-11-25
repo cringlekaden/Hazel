@@ -1,0 +1,22 @@
+{
+  "Hazelnut-Metal": {
+    "status": "PASS source/SDK-isolated real product startup, frames, normal close, closure and unchanged signature",
+    "log": "build/ggx-ms-v2-evidence/pristine-products/Hazelnut-Smoke-Metal.log",
+    "sha256": "ed8df2f420d64450d52e868fa978b89dce36a4aa5a29a86bc6a64320172087c9"
+  },
+  "Hazelnut-OpenGL": {
+    "status": "PASS source/SDK-isolated real product startup, frames, normal close, closure and unchanged signature",
+    "log": "build/ggx-ms-v2-evidence/pristine-products/Hazelnut-Smoke-OpenGL.log",
+    "sha256": "32002b4990e7451907d8c100532a3b572f159b3cb81f8d1db846e96655c2aec2"
+  },
+  "Nutella-Metal": {
+    "status": "PASS source/SDK-isolated real product startup, frames, normal close, closure and unchanged signature",
+    "log": "build/ggx-ms-v2-evidence/pristine-products/Nutella-Smoke-Metal.log",
+    "sha256": "34804688937aa31cf2bbde901f938f2903e177cdcd6ebb4bcf17b8daa2c44aad"
+  },
+  "Nutella-OpenGL": {
+    "status": "PASS source/SDK-isolated real product startup, frames, normal close, closure and unchanged signature",
+    "log": "build/ggx-ms-v2-evidence/pristine-products/Nutella-Smoke-OpenGL.log",
+    "sha256": "dab207088d32095456bcb9af255587fcf92326c5a7dc23e0d539221cb704f841"
+  }
+}

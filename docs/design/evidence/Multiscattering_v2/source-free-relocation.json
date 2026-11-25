@@ -1,0 +1,70 @@
+{
+  "gates": {
+    "Nutella-inventory-signature": {
+      "status": "PASS",
+      "artifacts": {
+        "DepthPBR.hzmetal": "1d70d04368e5b48056bb672c1588d7e57a4abbd8f2199bc09357b06bb29f098f",
+        "DisplayOutput.hzmetal": "8673d03228a2883189838f0d47ba8b25b51024e2eeac91c3bc5bd2445b2fcead",
+        "EntityOutline.hzmetal": "01ef441c3b77ab67b9d02aa739f1a7028df2b38b9d23fa1d9c85a87b70f1da56",
+        "EnvironmentSky.hzmetal": "ba159aa84517a9b3626851f37b7f6b5314a1ae2250dfd5d58e051d22d2c9c14a",
+        "ForwardPBR.hzmetal": "7ac4425f6cbe7b19680465eb973c3a4c27142957901b9f7113d68b1030363db3",
+        "ImGui.metallib": "ebd096577ba66f98f3d2ae9dc32a607ca23e7e5e3aa8243defe15a238c7ce167",
+        "MotionPBR.hzmetal": "45613286d38f7d974713f96718e2a6dbb527836150573f389735c324a01dbb19",
+        "Renderer2D_Circle.hzmetal": "4e51b4ef362be908924d84287eb1c92535cd080b03386d906e968a352251fce3",
+        "Renderer2D_Line.hzmetal": "0649cd9aa45d63604c35ca5def33e3e7bc1ab98f5c8f2325f56cf73ec0e2b154",
+        "Renderer2D_Quad-16.hzmetal": "39eea29c143507c211f13271cb3c4a77759910546ffce882a258502216fb35df",
+        "Renderer2D_Quad-32.hzmetal": "909978450633564664d3f6f5356aa80c497644ffb0fddeec85bacf9a975695eb",
+        "Renderer2D_Text.hzmetal": "f76ae76d70633ab911155803737fb8a76f14be5c0be12ff57c6ca10c21889ba5",
+        "TemporalAA.metallib": "a6fb1afc1bbb467b32fb49fdbcf0e7e932aa5a0fe2f3461c6b789a1e44b14a65",
+        "WorldPresentation.hzmetal": "6cf0ea9c2ca49ecd7f264e5a4df9e5f174c2c51e6b50543d5b8d7ebb2acfb164",
+        "XeGTAO.metallib": "524ef4611573fa9ee363915fab117e495dbae3e419e07ddba4269c74b0208368"
+      },
+      "sourceDirty": true
+    },
+    "Hazelnut-inventory-signature": {
+      "status": "PASS",
+      "artifacts": {
+        "DepthPBR.hzmetal": "1d70d04368e5b48056bb672c1588d7e57a4abbd8f2199bc09357b06bb29f098f",
+        "DisplayOutput.hzmetal": "8673d03228a2883189838f0d47ba8b25b51024e2eeac91c3bc5bd2445b2fcead",
+        "EntityOutline.hzmetal": "01ef441c3b77ab67b9d02aa739f1a7028df2b38b9d23fa1d9c85a87b70f1da56",
+        "EnvironmentSky.hzmetal": "ba159aa84517a9b3626851f37b7f6b5314a1ae2250dfd5d58e051d22d2c9c14a",
+        "ForwardPBR.hzmetal": "7ac4425f6cbe7b19680465eb973c3a4c27142957901b9f7113d68b1030363db3",
+        "ImGui.metallib": "ebd096577ba66f98f3d2ae9dc32a607ca23e7e5e3aa8243defe15a238c7ce167",
+        "MotionPBR.hzmetal": "45613286d38f7d974713f96718e2a6dbb527836150573f389735c324a01dbb19",
+        "Renderer2D_Circle.hzmetal": "4e51b4ef362be908924d84287eb1c92535cd080b03386d906e968a352251fce3",
+        "Renderer2D_Line.hzmetal": "0649cd9aa45d63604c35ca5def33e3e7bc1ab98f5c8f2325f56cf73ec0e2b154",
+        "Renderer2D_Quad-16.hzmetal": "39eea29c143507c211f13271cb3c4a77759910546ffce882a258502216fb35df",
+        "Renderer2D_Quad-32.hzmetal": "909978450633564664d3f6f5356aa80c497644ffb0fddeec85bacf9a975695eb",
+        "Renderer2D_Text.hzmetal": "f76ae76d70633ab911155803737fb8a76f14be5c0be12ff57c6ca10c21889ba5",
+        "TemporalAA.metallib": "a6fb1afc1bbb467b32fb49fdbcf0e7e932aa5a0fe2f3461c6b789a1e44b14a65",
+        "WorldPresentation.hzmetal": "6cf0ea9c2ca49ecd7f264e5a4df9e5f174c2c51e6b50543d5b8d7ebb2acfb164",
+        "XeGTAO.metallib": "524ef4611573fa9ee363915fab117e495dbae3e419e07ddba4269c74b0208368"
+      },
+      "sourceDirty": true
+    },
+    "isolated-exported-temporal-probe": {
+      "status": "PASS",
+      "command": [
+        "/usr/bin/sandbox-exec",
+        "-p",
+        "(version 1)(allow default)(deny file-read* (subpath \"/Volumes/External/kadencringle/Projects/Hazel\"))(deny file-read* (subpath \"/opt/homebrew\"))(deny file-read* (subpath \"/usr/local/Cellar\"))(deny file-read* (subpath \"/Library/Frameworks/Mono.framework\"))(deny file-read* (subpath \"/usr/local/lib/mono\"))(deny file-read* (subpath \"/Volumes/External/kadencringle/Projects/Hazel/build/dependencies/mono/macos-arm64/sdk\"))(deny process-exec (literal \"/usr/bin/xcrun\") (regex #\"/(metal|metallib)$\"))(deny file-read* (regex #\"\\.metal$\"))",
+        "/var/folders/z5/k8bw5zp574z03zqbsx8f0mb80000gn/T/Hazel XeGTAO relocated \u00fc 98ojm2v7/probe/MacOS/XeGTAOProbe",
+        "/var/folders/z5/k8bw5zp574z03zqbsx8f0mb80000gn/T/Hazel XeGTAO relocated \u00fc 98ojm2v7/Nutella/Nutella-macos-arm64-Release/Nutella.app/Contents/Resources",
+        "/var/folders/z5/k8bw5zp574z03zqbsx8f0mb80000gn/T/Hazel XeGTAO relocated \u00fc 98ojm2v7/probe-results",
+        "--taa"
+      ],
+      "helperSHA256": "01c82f0304b84faf7288e497bec4bd9871a0636548843a74d30716133cd3668d",
+      "scope": "Offscreen production AO/lighting/UI/ID/depth/lifetime checks, not a pristine product presentation"
+    },
+    "missing-library-rejection": {
+      "status": "PASS",
+      "scope": "Process-level rejection; no same-device recovery claim"
+    },
+    "missing-canonical-BRDF-rejection": {
+      "status": "PASS",
+      "scope": "No zero-LUT or alternate-BRDF fallback"
+    }
+  },
+  "productPresentation": "NOT RUN: separate unlocked native product gate",
+  "status": "PASS focused exported inventory/relocation probe; actual product acceptance remains separate"
+}

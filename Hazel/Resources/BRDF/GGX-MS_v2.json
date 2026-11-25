@@ -1,0 +1,14 @@
+{
+  "recipe": "Hazel.RuntimeBRDF_v2.GGX-correlated-Schlick.r045.mu4.endpoints.FP64GL-boundedNDF-VNDF-edge2.AB1e-7.loss1e-3",
+  "side": 256,
+  "channels": "RG32F Schlick A/B; GPU RGBA32F packs exact interpolant hemispherical averages",
+  "coordinates": "Endpoint knots NoV=(x/(side-1))^4; perceptual r=.045+.955*y/(side-1). Runtime pixel centers remapped explicitly.",
+  "integrator": "FP64 deterministic Gauss-Legendre radial / periodic azimuth. Boundary-split NDF if mu>=alpha; VNDF otherwise, disk-edge u=1-(1-t)^2 with Jacobian. Adaptive 32..4096; A/B delta<=1e-7 AND missing-energy delta<=max(1e-10,1e-3*missing).",
+  "sha256": "73ad8ad87467a1d3d52cd3e99fca20c70905cef595ebb6824f3887835dec4fc5",
+  "producerSourceSHA256": "9a70e7726e8a1782a45e7b6b0352201b950ebc97a74a3079f789aed59465cbb9",
+  "producer": "Apple clang / Xcode 27.3 beta / arm64 Release; precise FP64; six deterministic row workers; IEEE754 little endian HZLIGHT1",
+  "command": "HazelProject prepare-runtime-brdf OUTPUT.hlight 256",
+  "legacy": "All accepted environment A/B artifacts, identities and frozen outputs unchanged. New active rendering-model version.",
+  "rounding": "Directed B conversion only when separately rounded FP32 A+B exceeds one; adjustment below one unit-energy FP32 ulp (2^-23).",
+  "bakeSummary": "RuntimeBRDF_v2 side=256 maximum_order=4096 maximum_delta=9.99964e-08"
+}

@@ -1,0 +1,5 @@
+{
+  "shaderSHA256": "26ddaa0846ac2d66c3ddc72849ea9d91056d3090703591253d9823e845d46920",
+  "runtimeBRDFSHA256": "73ad8ad87467a1d3d52cd3e99fca20c70905cef595ebb6824f3887835dec4fc5",
+  "furnace": "final-acceptance/multiscattering-release/metal/smooth-normal-furnace.csv"
+}

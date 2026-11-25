@@ -28,6 +28,7 @@ static void IBLRenderingChecks()
             "IBL GPU qualification requires the maintained Rendering Reference selector");
     auto project = Project::LoadCandidate(selector);
     auto root = project->GetAssetRoot();
+    const auto runtimeBRDF=ReadRuntimeBRDF();
     auto constant = CreateRef<PreparedEnvironment>(
         ReadPreparedEnvironment(root, "Reference/IBL_v1/Constant.henv"));
     auto axes = CreateRef<PreparedEnvironment>(
@@ -76,8 +77,8 @@ static void IBLRenderingChecks()
         SceneRenderer::Render(frame, view, display, world, ui);
         Check(glGetError() == GL_NO_ERROR, "IBL OpenGL error");
     };
-    // Constant furnace: independently integrate the shader's single-scattering
-    // recipe. .003 covers the admitted .01 LUT bound times C=.25 plus FP32.
+    // Retain the historical .003 output bound. Current LUT integration and
+    // analytic direct-energy errors have separate, tighter multiscattering checks.
     for (float r : {0.f, .25f, .5f, 1.f})
         for (double nv : {.05, .25, .5, 1.})
         {
@@ -91,16 +92,15 @@ static void IBLRenderingChecks()
                 render();
                 auto base = glm::dvec3(material->BaseColor),
                      f0 = glm::mix(glm::dvec3(.04), base, double(metallic));
-                auto fview = f0 + (1. - f0) * std::pow(1 - nv, 5);
-                auto indirect =
-                    .25 * ((1 - double(metallic)) * (1. - fview) * base + f0 * ab.x + ab.y);
+                auto energy = ReferenceMultiscatteringEnergy(f0, ab, MultiscatteringAverage(r));
+                auto indirect = .25 * ((1 - double(metallic)) * energy.Residual * base + energy.Reflected);
                 NearRGB(view.Radiance->ReadColorPixel(0, 64, 64), indirect, .003,
                         "Independent FP64 IBL reconstruction / furnace");
                 Check(display->ReadPixel(1, 64, 64) == 123, "IBL mesh picking");
                 auto L = glm::normalize(glm::vec3(.3f, .4f, 1));
                 frame.Light = SubmittedDirectional{L, glm::vec3(2)};
                 render();
-                auto direct = OracleBRDF(base, metallic, r, {0, 0, 1},
+                auto direct = OracleMultiscatteringBRDF(base, metallic, r, {0, 0, 1},
                                          glm::dvec3(frame.Camera.ToCamera), glm::dvec3(L)) *
                               2.;
                 NearRGB(view.Radiance->ReadColorPixel(0, 64, 64), indirect + direct, .003,
@@ -215,7 +215,8 @@ static void IBLRenderingChecks()
             frame.Debug = SurfaceView::DiffuseIBL;
             material->Metallic = 0;
             render();
-            auto expected = (1. + lookup(glm::dvec3(d)) * (2. / 3)) * .18 * .96;
+            const auto energy = ReferenceRuntimeTableEnergy(runtimeBRDF, glm::dvec3(.04), 1, material->Roughness);
+            auto expected = (1. + lookup(glm::dvec3(d)) * (2. / 3)) * .18 * energy.Residual;
             NearRGB(display->ReadColorPixel(0, 64, 64), expected, .003,
                     "Diffuse and sky orientation disagreement");
             frame.Debug = SurfaceView::SpecularIBL;
@@ -239,7 +240,7 @@ static void IBLRenderingChecks()
     // the qualified direct path. A linear +Y data normal must tilt irradiance.
     std::string normalPixels(18,'\0');normalPixels[2]=2;normalPixels[12]=normalPixels[14]=1;normalPixels[16]=32;normalPixels[17]=0x28;normalPixels+=char(255);normalPixels+=char(180);normalPixels+=char(220);normalPixels+=char(255);FileSystem::WriteNewFile(fixture.Directory/"Normal.tga",normalPixels);
     camera({0,0,1});frame.Presentation.Environment.Yaw=0;frame.Presentation.Environment.Gain=1;frame.Debug=SurfaceView::DiffuseIBL;material->BaseColor=glm::vec4(.18f,.18f,.18f,1);material->Metallic=0;material->Textures[2].Image="Normal.tga";
-    for(float mirror:{1.f,-1.f}){draw.World=glm::scale(glm::mat4(1),{mirror,.5f,2});frame.Meshes={draw};render();auto N=glm::normalize(glm::dvec3(mirror*(2.*220/255-1),-(2.*180/255-1),1));double f=.04+.96*std::pow(1-N.z,5);NearRGB(display->ReadColorPixel(0,64,64),(1.+N*(2./3))*.18*(1-f),.003,"Indirect mapped normal / signed nonuniform TBN");}
+    for(float mirror:{1.f,-1.f}){draw.World=glm::scale(glm::mat4(1),{mirror,.5f,2});frame.Meshes={draw};render();auto N=glm::normalize(glm::dvec3(mirror*(2.*220/255-1),-(2.*180/255-1),1));double residual=ReferenceRuntimeTableEnergy(runtimeBRDF,glm::dvec3(.04),N.z,material->Roughness).Residual;NearRGB(display->ReadColorPixel(0,64,64),(1.+N*(2./3))*.18*residual,.003,"Indirect mapped normal / signed nonuniform TBN");}
     material->Textures[2].Image.clear();frame.Debug=SurfaceView::Shaded;
     // A photographic high-frequency source supplies an independent irradiance
     // and rough-conductor integral, separate from split-sum approximation error.
@@ -373,14 +374,17 @@ static void IBLRenderingChecks()
     diagnostic->Irradiance.Mips={std::vector<float>(32*32*18)};
     for(unsigned face=0;face<6;++face)for(unsigned i=0;i<32*32;++i)for(unsigned c=0;c<3;++c)
         diagnostic->Irradiance.Mips[0][(face*32*32+i)*3+c]=float(glm::pi<double>()*(1+.03125*face+.00390625*c));
-    for (size_t i=0;i<diagnostic->BRDF.Mips[0].size();i+=2)
-    { diagnostic->BRDF.Mips[0][i]=1;diagnostic->BRDF.Mips[0][i+1]=0; }
     frame.Environment=diagnostic;
     frame.Presentation.Environment.Lighting=true;
     frame.Presentation.Environment.Background=false;
     frame.Presentation.Environment.Gain=1;
     frame.Presentation.Environment.Yaw=0;
-    frame.Debug=SurfaceView::Shaded;
+    // Inspect the production prefilter directly: current BRDF data is engine-owned,
+    // so mutating a historical environment LUT cannot neutralize its response.
+    auto lodTarget=display->GetSpecification();
+    lodTarget.Attachments.Attachments[0].TextureFormat=FramebufferTextureFormat::RGBA32F;
+    display=Framebuffer::Create(lodTarget);
+    frame.Debug=SurfaceView::PrefilteredIBL;frame.LinearLightingInspection=true;
     material->BaseColor={1,1,1,1};material->Metallic=1;material->Textures={};
     draw.World=glm::mat4(1);frame.Meshes={draw};
     camera({0,0,1});
@@ -391,7 +395,7 @@ static void IBLRenderingChecks()
         double level=std::max(.045f,r)*3;
         glm::dvec3 expected(.25*(level+1)+.03125*4);
         expected.y+=.00390625;expected.z+=.0078125;
-        NearRGB(view.Radiance->ReadColorPixel(0,64,64),expected,.0001,
+        NearRGB(display->ReadColorPixel(0,64,64),expected,.0001,
             "Actual PBR roughness/floor/fractional explicit mip selection");
     }
     IBLSurfaceRenderingChecks(frame,draw,display);

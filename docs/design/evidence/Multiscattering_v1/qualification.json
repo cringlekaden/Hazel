@@ -1,0 +1,38 @@
+{
+  "status": "INCOMPLETE / FAIL intrinsic direct-energy qualification",
+  "branch": "feature/3d-foundations",
+  "baselineHEAD": "3b517f86ac3a5955136a2f26a2dc0e056f3550ac",
+  "commit": "NOT CREATED",
+  "push": "NOT RUN: owner requires passing correctness gates",
+  "hardware": "Apple M4; native Metal 4 and Apple OpenGL 4.1",
+  "productionSHA256": {
+    "Hazel/Resources/shaders/ForwardPBR.glsl": "c272fe3bcf40417c534deb498b2266eccf2fdddbb86dfb706e8e03aaa53e835d",
+    "Hazel/Resources/shaders/metal/ForwardPBR.hzmetal": "43c38efc2ee86ceaa5d4c8c7632f1f878b12e04499c806981f6d26d633f8a511",
+    "Hazel/src/Hazel/Renderer/Drawing/Renderer3D.cpp": "4bb42dd9ba8b39b601826cdd9d109a76a630c520a97600b241126daf64fa3ca4",
+    "Hazel/src/Hazel/Renderer/Resources/EnvironmentResources.cpp": "f0f49931e2cbf6f823a2121fce1565868af5fd14ef3db1166e9754e3d60a1a31",
+    "Hazel/src/Hazel/Renderer/Resources/EnvironmentResources.h": "409b910f8ab21e60fa3f1d046021b9cd3f99fbd9db46719c6b36eb56c3319a35",
+    "Hazel/Resources/BRDF/GGX-correlated-AB.hlight": "e992f5f8905d6d607e391bcfba71ac8e08abc83530322cf48988a1b254de0242"
+  },
+  "gates": {
+    "buildDebugRelease": "PASS; no new first-party production compiler/shader warnings; existing ScriptableEntity unused parameter and TextCompositingChecks missing-field warnings retained",
+    "existingRegressions": "PASS 18 Debug + 18 Release; affected Renderer2DSmoke rerun after VNDF oracle refinement",
+    "pointComponents": "PASS 735 per backend/configuration; exact-table max error 4.48616e-5, backend max 1.1921e-7; does not establish integrated direct energy",
+    "referenceConvergence": "PASS deterministic VNDF; directional 256-to-512 max 3.41612e-5; hemispherical 32-to-64 max 2.00314e-7",
+    "intrinsicDirectEnergy": "FAIL: actual native GPU r=1, NoV=1 perfect reflector Metal .995201376414 / OpenGL .995201391547; independent FP64 predicts grazing gain 1.02955095. Bound 1 +/- .003 unchanged",
+    "IBLFurnace": "PASS sampled unit-reflector closure; insufficient as a direct BRDF conservation test",
+    "shaderCache": "PASS Debug/Release, cold/warm/corrupt/source-free, 17 rejection cases",
+    "TAA": "PASS existing focused Debug/Release motion/HDR/ID/depth/lifetime fixtures; visual acceptance separate",
+    "lifecycles": "PASS Debug/Release x 1x/2x, >320 completed submissions per run, positive presentation, zero final owners/errors and OpenGL recovery",
+    "packaging": "PASS signed source/SDK/compiler-denied AO/TAA probe, missing-library and missing-canonical-table rejection, pristine exported Metal editor/player startup/normal close/closure/signatures",
+    "performance": "MEASURED; provisional 5% forward budget MISSED, 1080p .2 ms absolute target MET. Medium forward .575583 -> .613917 ms median (+6.66%)",
+    "ownerVisual": "INCOMPLETE / NOT ACCEPTED",
+    "WindowsLinuxOtherGPUsCI": "NOT RUN"
+  },
+  "evidenceRoot": "build/ggx-ms-evidence",
+  "notes": [
+    "Runtime fixture resource copy corrected to include canonical BRDF data; failed first run retained.",
+    "Pristine product first attempt used denied checkout path; external temporary relocation passed.",
+    "Historical A/B bytes and source identities untouched; two pre-existing owner example edits remain unchanged.",
+    "Required owner decision: authorize separately versioned converged runtime BRDF/albedo table while retaining historical assets/identities; no such data migration implemented."
+  ]
+}

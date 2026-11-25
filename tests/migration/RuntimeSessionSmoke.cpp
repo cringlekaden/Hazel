@@ -71,6 +71,7 @@ int main(int argc, char** argv) {
         std::filesystem::create_directories(resources.Root/"UI");
         std::filesystem::copy_file(Resources::Resolve("UI/Default.hstyle"),resources.Root/"UI/Default.hstyle");
         std::filesystem::copy(Resources::Resolve("shaders"),resources.Root/"shaders",std::filesystem::copy_options::recursive);
+        std::filesystem::copy(Resources::Resolve("BRDF"),resources.Root/"BRDF",std::filesystem::copy_options::recursive);
         Resources::Configure(resources);
         if(argc==4){IBLSurfaceChecks();std::filesystem::remove_all(directory);return 0;}
         ScriptEngine::Init(std::filesystem::u8path(argv[2]));

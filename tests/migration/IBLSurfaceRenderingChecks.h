@@ -1,6 +1,7 @@
 #pragma once
 #include "GeometricNormalReference.h"
 #include "IBLSurfaceReference.h"
+#include "MultiscatteringReference.h"
 // Probe the production PBR program, not a reimplementation in a test shader.
 // Orthographic coverage is fixed on a cube face; ToCamera supplies the desired
 // local BRDF direction independently of raster coverage.
@@ -74,23 +75,17 @@ static void IBLSurfaceRenderingChecks(SceneSubmission frame, SubmittedMesh draw,
               "Surface source quadrature did not converge");
         auto ab = IBLReferenceIntegral(glm::dot(s.N, s.V), 1);
         // Isolate angular reconstruction from the LUT's admitted quadrature /
-        // finite endpoint representation. Sample the accepted CPU RG artifact
-        // independently, with the GL normalized-coordinate pixel-center rule.
-        const auto &lut = studio->BRDF;
-        double px = glm::dot(s.N, s.V) * lut.Side - .5, py = lut.Side - .5;
-        int x = int(std::floor(px)), y = int(std::floor(py));
-        auto at = [&](int xx, int yy)
-        {
-            size_t p = (size_t(std::clamp(yy, 0, int(lut.Side) - 1)) * lut.Side +
-                        std::clamp(xx, 0, int(lut.Side) - 1)) *
-                       2;
-            return glm::dvec2(lut.Mips[0][p], lut.Mips[0][p + 1]);
-        };
-        auto sampledAB = glm::mix(glm::mix(at(x, y), at(x + 1, y), px - x),
-                                  glm::mix(at(x, y + 1), at(x + 1, y + 1), px - x), py - y);
+        // finite representation. Sample the current versioned CPU RG artifact
+        // independently, including its endpoint/mu^4 coordinate contract.
+        const auto lut=ReadRuntimeBRDF();
+        const auto sampledAB=ReferenceSampleRuntimeBRDF(lut,glm::dot(s.N,s.V),1);
         Check(glm::length(sampledAB - ab) < .01,
               "Accepted LUT exceeds the independent BRDF integration bound");
-        auto expected = fine[i].Prefilter * (s.Base * sampledAB.x + sampledAB.y);
+        const auto energy = ReferenceRuntimeTableEnergy(lut, s.Base, glm::dot(s.N,s.V), 1);
+        // NormalCosine is independently integrated irradiance/pi, unlike the
+        // retained reflection-directed endpoint prefilter.
+        auto expected = fine[i].Prefilter * (s.Base * sampledAB.x + sampledAB.y) +
+                        fine[i].NormalCosine * energy.C * std::max(0., 1-sampledAB.x-sampledAB.y);
         auto actual = render(s.N, s.V);
         double error = glm::length(actual - expected) / std::max(.02, glm::length(expected));
         std::cout << "Surface endpoint " << i << " expected " << expected.x << "," << expected.y
@@ -169,7 +164,7 @@ static void IBLSurfaceRenderingChecks(SceneSubmission frame, SubmittedMesh draw,
                     auto f0 =
                         glm::mix(glm::dvec3(.04), glm::dvec3(material->BaseColor), double(metal));
                     NearRGB(
-                        glm::vec4(render({0, 0, 1}, v), 1), .25 * (f0 * ab.x + ab.y), .003,
+                        glm::vec4(render({0, 0, 1}, v), 1), .25 * ReferenceMultiscatteringEnergy(f0, ab, MultiscatteringAverage(rough)).Reflected, .003,
                         "Geometric-normal repair lost Fresnel or changed constant-furnace energy");
                 }
             }

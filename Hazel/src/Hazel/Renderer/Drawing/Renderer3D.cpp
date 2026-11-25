@@ -68,6 +68,7 @@ void EnsureResources()
         image->Side = 1;
         image->Mips = {std::vector<float>(image->Channels() * image->Faces(), 0)};
     }
+    // EnvironmentResources supplies RuntimeBRDF_v2 even without an environment.
     auto complete = CreateRef<EnvironmentResources>(defaults);
     skyShader = std::move(sky);
     environmentBuffer = std::move(env);

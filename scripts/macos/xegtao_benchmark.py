@@ -82,6 +82,7 @@ def summarize(text):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--taa', action='store_true', help='Enable full-resolution temporal resolve for every preset')
+    parser.add_argument('--executable',type=Path,help='Explicit archived native benchmark executable for matched historical comparisons')
     parser.add_argument('--config', choices=('Debug', 'Release'), required=True)
     parser.add_argument('--resources', type=Path, required=True)
     parser.add_argument('--project', type=Path, required=True)
@@ -95,11 +96,12 @@ def main():
     for name in ('MTL_DEBUG_LAYER','MTL_SHADER_VALIDATION','MTL_CAPTURE_ENABLED'):
         env.pop(name, None)
     env.update(DYLD_LIBRARY_PATH=str(hz.mono_prefix() / 'lib'), HAZEL_METAL_TRACE='1')
+    executable=args.executable.resolve() if args.executable else hz.binaries(args.config)/'MetalM1Smoke/MetalM1Smoke'
     asset_root=args.project.parent/'Assets'
     inputs=[args.project,asset_root/'Scenes/XeGTAO-Contact.hazel',asset_root/'Studies/XeGTAO/DarkMetal.hmat',
             asset_root/'Reference/IBL_v1/Photo.henv',asset_root/'Reference/IBL_v1/Photo.henv.accepted']
-    inputs += [p for folder in (asset_root/'Native/Direct_v1',asset_root/'Reference/IBL_v1/Photo.henv.prepared',args.resources/'shaders/metal') for p in folder.rglob('*') if p.is_file()]
-    report = dict(configuration=args.config, temporalAA=args.taa, head=hz.output(['git', 'rev-parse', 'HEAD']),
+    inputs += [p for folder in (asset_root/'Native/Direct_v1',asset_root/'Reference/IBL_v1/Photo.henv.prepared',args.resources/'shaders/metal',args.resources/'BRDF') for p in folder.rglob('*') if p.is_file()]
+    report = dict(configuration=args.config, temporalAA=args.taa, executableSHA256=hashlib.sha256(executable.read_bytes()).hexdigest(), head=hz.output(['git', 'rev-parse', 'HEAD']),
                   worktree=hz.output(['git', 'status', '--short']), warmup=120, tail=20, framesPerExtent=720,
                   scopes='Scene CPU, native submission CPU, tick interval, whole commit feedback, and precise GPU phase completion intervals. Phase intervals include synchronization and are not exclusive/additive. No backend speedup claim.',
                   memory='AO texture bytes are per generation; tracked frame/attachment/allocator peaks overlap and must not be added. RSS includes CPU/driver process storage.',
@@ -108,7 +110,7 @@ def main():
     try:
         for quality, name in enumerate(('off','low','medium','high','ultra'), -1):
             folder = output / name; folder.mkdir()
-            command = list(map(str, [hz.binaries(args.config) / 'MetalM1Smoke/MetalM1Smoke', folder,
+            command = list(map(str, [executable, folder,
                                     '--benchmark-metal', args.resources.resolve(), args.project.resolve(), quality]))
             if args.taa:command.append('--taa')
             start = time.monotonic(); rss = []

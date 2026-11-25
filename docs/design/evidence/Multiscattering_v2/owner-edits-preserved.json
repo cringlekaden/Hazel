@@ -1,0 +1,12 @@
+{
+  "examples/RenderingReference/Assets/Scenes/XeGTAO-Contact.hazel": {
+    "sha256": "e53842c6fdeeb5f5fc66de0ef9d4070914db085a072e8f2c925c962a8998a457",
+    "unchangedSinceOriginalWIP": true,
+    "excludedFromCommit": true
+  },
+  "examples/RenderingReference/RenderingReference-XeGTAO.hproj": {
+    "sha256": "5ace86dc33340527f048dfccdf2b6fc11a7c4a94eab42b1f6b517602b0c014c8",
+    "unchangedSinceOriginalWIP": true,
+    "excludedFromCommit": true
+  }
+}

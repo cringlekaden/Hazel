@@ -1,6 +1,7 @@
 #include "Hazel/Core/Log.h"
 #include "Renderer2DParity.h"
 #include "Renderer3DParity.h"
+#include "MultiscatteringQualification.h"
 #include "XeGTAOQualification.h"
 #include "TemporalAAQualification.h"
 #include "TemporalEdgeQualification.h"
@@ -280,8 +281,9 @@ int main(int argc, char** argv)
         const bool temporal = argc == 4 && std::string(argv[3]) == "--taa";
         const bool ao = argc == 4 && std::string(argv[3]) == "--xegtao";
         const bool compute = argc == 4 && std::string(argv[3]) == "--compute";
+        const bool multiscattering = argc == 4 && std::string(argv[3]) == "--ggx-ms";
         const bool renderer3D = argc == 4 && std::string(argv[3]) == "--renderer3d-parity";
-        Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !renderer3D && !compute && !ao && !temporal && !edges && !temporalBenchmark && !offscreenBenchmark ? uint32_t(std::stoul(argv[3])) : 4;
+        Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !multiscattering && !renderer3D && !compute && !ao && !temporal && !edges && !temporalBenchmark && !offscreenBenchmark ? uint32_t(std::stoul(argv[3])) : 4;
         Check(settings.TextureSlots == 2 || settings.TextureSlots == 4,"Fixture supports two or four texture slots");
         const auto runtimeFrames=argc==5?std::stoul(argv[4]):80UL;
         Check(runtimeFrames>=80 && runtimeFrames<=6000,"Runtime frame count must be 80..6000");
@@ -308,6 +310,15 @@ int main(int argc, char** argv)
             framebuffer.reset(); Hazel::Renderer2D::Shutdown(); Hazel::RenderCommand::Shutdown();
             const auto state = observer->Snapshot();
             Check(state.Submitted == 3 && state.Completed == 3 && state.ResourceBytes == 0 && state.Errors == 0 && state.AttachmentGenerations == 0, "Compute shutdown did not retire production resources");
+            return 0;
+        }
+        if (multiscattering) {
+            MultiscatteringQualification(output, [&](const auto& target) {
+                auto result=Submit(target);Check(bool(result),"GGX submit busy");Wait(*target,result);return result;
+            });
+            MeshLifetime(backend,true);
+            framebuffer.reset();Hazel::Renderer2D::Shutdown();Hazel::RenderCommand::Shutdown();
+            Check(observer->Snapshot().Errors==0 && observer->Snapshot().ResourceBytes==0 && observer->Snapshot().AttachmentGenerations==0,"GGX retirement failed");
             return 0;
         }
         if (renderer3D) {

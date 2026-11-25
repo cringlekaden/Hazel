@@ -31,6 +31,7 @@ constexpr const char* Usage =
     "  import-glb PROJECT.hproj SOURCE.glb ASSET_FOLDER [--scene INDEX] [--cancel-file ABSOLUTE]\n"
     "  reimport-glb PROJECT.hproj ASSET_FOLDER/Import.himport [--cancel-file ABSOLUTE]\n"
     "  prepare-environment PROJECT.hproj ASSET.henv [--cancel-file ABSOLUTE]\n"
+    "  prepare-runtime-brdf OUTPUT.hlight SIDE  (maintainer RuntimeBRDF_v2 recipe)\n"
     "  validate PROJECT.hproj\n"
     "  slice-sheet ASSETS_ROOT SHEET IMAGE TILE_SIZE\n"
     "  add-clip ASSETS_ROOT SHEET NAME DURATION ORDINALS_CSV\n"
@@ -53,6 +54,13 @@ int main(int argc, char **argv) {
         }
         if (args.size() == 2 && args[1] == "--contract") {
             std::cout << "HAZEL_AUTHORING_CONTRACT=1\n";
+            return 0;
+        }
+        if(args.size()==4 && args[1]=="prepare-runtime-brdf") {
+            size_t used=0;const auto side=std::stoul(args[3],&used);
+            if(used!=args[3].size() || (side!=128 && side!=256 && side!=512))throw std::runtime_error("Runtime BRDF side must be 128, 256 or 512");
+            const auto image=Hazel::EnvironmentBake::IntegrateRuntimeBRDF(unsigned(side));
+            Hazel::FileSystem::WriteNewFile(std::filesystem::u8path(args[2]),Hazel::EncodeLightingImage(image));
             return 0;
         }
         if(args.size()==2 && args[1]=="--environment-contract"){std::cout<<"HAZEL_ENVIRONMENT_PREPARE_CONTRACT="<<Hazel::EnvironmentProducerContract<<"\n";return 0;}
