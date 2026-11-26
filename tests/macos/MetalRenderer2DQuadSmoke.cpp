@@ -498,6 +498,23 @@ int main(int argc, char** argv)
             (reflectionProbes?ReflectionProbeQualification:pointShadows?PointShadowQualification:spotShadows?SpotShadowQualification:shadows?DirectionalShadowQualification:localLights?LocalLightingQualification:MultiscatteringQualification)(output, [&](const auto& target) {
                 auto result=Submit(target);Check(bool(result),"GGX submit busy");Wait(*target,result);return result;
             });
+            if (reflectionProbes && Hazel::FileSystem::GetEnvironmentPath("HAZEL_REFLECTION_BENCHMARK") == "1")
+            {
+                using namespace Hazel;
+                auto project = Project::LoadCandidate(FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT"));
+                auto assets = CreateRef<ProjectAssets>(project->GetAssetRoot());
+                const auto warm = assets->Environment("ReflectionStudy/Warm.henv").Accepted;
+                const auto cool = assets->Environment("ReflectionStudy/Cool.henv").Accepted;
+                Check(warm && cool, "Probe allocation fixture is missing");
+                const auto device = backend.Device()->NativeDevice();
+                const auto before = device->currentAllocatedSize();
+                assets->RealizeReflectionProbe(warm);
+                assets->RealizeReflectionProbe(cool);
+                const auto after = device->currentAllocatedSize();
+                Check(after > before, "No physical Metal probe allocation recorded");
+                std::cout << "REFLECTION_ALLOCATION side=" << warm->Specular.Side
+                          << " twoProbeMetalBytes=" << after - before << '\n';
+            }
             if (reflectionProbes && Hazel::FileSystem::GetEnvironmentPath("HAZEL_REFLECTION_BENCHMARK").empty() &&
                 Hazel::FileSystem::GetEnvironmentPath("HAZEL_REFLECTION_DIAGNOSTIC").empty())
                 ReflectionProbeLifetime(backend);

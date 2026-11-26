@@ -79,7 +79,7 @@ template <class A, class B, class C, class F> void Fields(A &a, B &b, C &c, F f)
     COMPONENT(Probe)
     {
         FIELD(Probe, Environment); FIELD(Probe, Enabled); FIELD(Probe, InfluenceHalfSize);
-        FIELD(Probe, ProjectionOffset); FIELD(Probe, ProjectionHalfSize); FIELD(Probe, BlendDistance);
+        FIELD(Probe, ProjectionOffset); FIELD(Probe, ProjectionHalfSize); FIELD(Probe, BlendDistance); FIELD(Probe, BakeResolution);
     }
     COMPONENT(Mesh) {FIELD(Mesh,Mesh);FIELD(Mesh,Materials);}
     COMPONENT(Circle) {FIELD(Circle,Color);FIELD(Circle,Thickness);FIELD(Circle,Fade);}
@@ -381,7 +381,7 @@ FIELD(Light, Enabled);
     COMPONENT(Spot,SpotLightComponent) FIELD(Spot,Color);FIELD(Spot,Intensity);FIELD(Spot,Enabled);FIELD(Spot,Range);FIELD(Spot,InnerCone);FIELD(Spot,OuterCone);FIELD(Spot,CastShadows);FIELD(Spot,ShadowResolution);}
     COMPONENT(Probe, ReflectionProbeComponent)
         FIELD(Probe, Environment); FIELD(Probe, Enabled); FIELD(Probe, InfluenceHalfSize);
-        FIELD(Probe, ProjectionOffset); FIELD(Probe, ProjectionHalfSize); FIELD(Probe, BlendDistance);
+        FIELD(Probe, ProjectionOffset); FIELD(Probe, ProjectionHalfSize); FIELD(Probe, BlendDistance); FIELD(Probe, BakeResolution);
     }
     COMPONENT(Mesh,MeshRendererComponent) FIELD(Mesh,Mesh);FIELD(Mesh,Materials);}
     COMPONENT(Circle, CircleRendererComponent) FIELD(Circle,Color);FIELD(Circle,Thickness);FIELD(Circle,Fade);}

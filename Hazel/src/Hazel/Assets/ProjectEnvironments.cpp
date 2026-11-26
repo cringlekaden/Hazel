@@ -53,7 +53,14 @@ ProjectAssets::EnvironmentResolution ProjectAssets::Environment(const std::files
     if (it == m_Environments.end())
     {
         if (m_Environments.size() >= 8)
-            return {{}, "Environment entry limit (8); release inactive views and Refresh"};
+        {
+            auto victim = std::find_if(m_Environments.begin(), m_Environments.end(), [](const auto &entry) {
+                return !entry.second.Accepted || (entry.second.Error.empty() && entry.second.Accepted.use_count() == 1);
+            });
+            if (victim == m_Environments.end())
+                return {{}, "Environment entry limit (8 pinned versions); release inactive views and Refresh"};
+            m_Environments.erase(victim);
+        }
         it = m_Environments.emplace(key, EnvironmentEntry{}).first;
         ReloadEnvironment(key, it->second);
     }
@@ -85,20 +92,25 @@ Ref<ReflectionProbeResources> ProjectAssets::RealizeReflectionProbe(const Ref<co
         throw std::runtime_error("Reflection probe has no accepted environment");
     const auto key = environment->Identity + AssetKey(environment->Generation);
     if (const auto it = m_ReflectionProbeGPU.find(key); it != m_ReflectionProbeGPU.end())
-        return it->second;
-    // Each entry has a bounded face size. Views and queued Metal frames pin
-    // entries until retirement, so eviction includes in-flight generations.
-    constexpr size_t maxGenerations = 8;
-    if (m_ReflectionProbeGPU.size() == maxGenerations)
+        return it->second.Resource;
+    // Admission includes the frame-owned generations awaiting retirement.
+    // Account conservatively for RGBA32F backing on either backend.
+    constexpr size_t maxGenerations = 8, maxBytes = 128 * 1024 * 1024;
+    const size_t bytes = (environment->Specular.Bytes() + environment->Irradiance.Bytes()) / 3 * 4;
+    if (bytes > maxBytes)
+        throw std::runtime_error("Reflection probe exceeds GPU texture budget");
+    while (m_ReflectionProbeGPU.size() >= maxGenerations || m_ReflectionProbeGPUBytes + bytes > maxBytes)
     {
-        const auto victim = std::find_if(m_ReflectionProbeGPU.begin(), m_ReflectionProbeGPU.end(),
-                                         [](const auto &entry) { return entry.second.use_count() == 1; });
+        auto victim = std::find_if(m_ReflectionProbeGPU.begin(), m_ReflectionProbeGPU.end(),
+            [](const auto &entry) { return entry.second.Resource.use_count() == 1; });
         if (victim == m_ReflectionProbeGPU.end())
-            throw std::runtime_error("Reflection probe GPU cache exceeds eight pinned generations");
+            throw std::runtime_error("Reflection probe GPU cache exceeds eight pinned generations or 128 MiB");
+        m_ReflectionProbeGPUBytes -= victim->second.Bytes;
         m_ReflectionProbeGPU.erase(victim);
     }
     auto resource = CreateRef<ReflectionProbeResources>(*environment);
-    m_ReflectionProbeGPU.emplace(key, resource);
+    m_ReflectionProbeGPU.emplace(key, ProbeGPUEntry{resource, bytes});
+    m_ReflectionProbeGPUBytes += bytes;
     return resource;
 }
 void ProjectAssets::RefreshEnvironments()

@@ -52,7 +52,7 @@ def write_radiance(path, warm):
     path.write_bytes(data)
 
 
-def prepare(root, config, env, diagnostic=False):
+def prepare(root, config, env, diagnostic=False, probe_side=256, panorama_width=512):
     root.mkdir(parents=True)
     assets = root / "Assets"
     for name in ("Reference/Direct_v1", "Native/Direct_v1"):
@@ -88,8 +88,10 @@ def prepare(root, config, env, diagnostic=False):
     timings = {}
     tool = hz.binaries(config) / "HazelProject/HazelProject"
     for name in ("Warm", "Cool"):
-        hdr_writer = gallery.write_radiance if diagnostic else write_radiance
-        hdr_writer(folder / f"{name}.hdr", name == "Warm")
+        if diagnostic:
+            gallery.write_radiance(folder / f"{name}.hdr", name == "Warm", panorama_width)
+        else:
+            write_radiance(folder / f"{name}.hdr", name == "Warm")
         (folder / f"{name}.henv").write_text(f"""Environment:
   Version: 1
   Name: {name} reflection room
@@ -101,8 +103,8 @@ def prepare(root, config, env, diagnostic=False):
   Preparation:
     Recipe: Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top
     Background: 16
-    Specular: {256 if diagnostic else 128}
-    Irradiance: {64 if diagnostic else 32}
+    Specular: {probe_side if diagnostic else 128}
+    Irradiance: {64 if diagnostic and probe_side > 128 else 32}
     Samples: 1024
 """)
         start = time.perf_counter()
@@ -214,7 +216,7 @@ def timing_summary(path, count=3):
     return summary
 
 
-def qualify_archive(archive, out, report, offscreen_only):
+def qualify_archive(archive, out, report, offscreen_only, diagnostic=False):
     from internal.package_tests import extract_verified
     from macos.packaging import relocate_executable, sign
     from macos.qualification import isolation_command, product_acceptance
@@ -231,7 +233,10 @@ def qualify_archive(archive, out, report, offscreen_only):
         artifact = resources / "shaders/metal/ForwardPBR.hzmetal"
         if hashlib.sha256(artifact.read_bytes()).hexdigest() != meta["metal_shaders"][artifact.name]:
             raise RuntimeError("Packaged ForwardPBR artifact differs from its manifest")
-        if list((resources / "Project").rglob("*.hdr")):
+        runtime_assets = resources / "Project"
+        source_cubes = [p for p in runtime_assets.glob("**/CapturedReflections/**/*.hlight")
+                        if not any(part.endswith(".henv.prepared") for part in p.parts)]
+        if list(runtime_assets.rglob("*.hdr")) or source_cubes:
             raise RuntimeError("Runtime project archive retained HDR producer inputs")
         hz.run(["codesign", "--verify", "--deep", "--strict", bundle])
         report["relocation"]["archiveIntegrity"] = "PASS"
@@ -249,13 +254,15 @@ def qualify_archive(archive, out, report, offscreen_only):
             shutil.copy2(hz.binaries("Release") / binary / binary, exe)
             relocate_executable(exe)
             sign(exe)
-            project = resource_root / "Project" / PROJECT_NAME
+            project = resource_root / "Project" / (gallery.LOCAL_PROJECT if diagnostic else PROJECT_NAME)
             variables = {key: value for key, value in os.environ.items()
                          if not key.startswith(("HAZEL_", "MTL_", "DYLD_"))}
             variables.update(PATH="/usr/bin:/bin", DEVELOPER_DIR="/nonexistent",
                              HAZEL_DATA=str(working / (backend + "-probe-profile")),
                              HAZEL_RESOURCES=str(resource_root), HAZEL_RENDERING_REFERENCE_PROJECT=str(project),
                              MTL_DEBUG_LAYER="1", MTL_SHADER_VALIDATION="1")
+            if diagnostic:
+                variables.update(HAZEL_REFLECTION_DIAGNOSTIC="1", HAZEL_REFLECTION_GALLERY_CENTER="1")
             log = out / f"{backend}-source-free.log"
             captures = working / f"{backend}-source-free-captures"
             command = [exe, resource_root, captures, "--reflection-probes"] if backend == "metal" else [
@@ -290,6 +297,9 @@ def main():
     parser.add_argument("--backend", choices=("both", "metal", "opengl"), default="both")
     parser.add_argument("--project", type=Path, help="Reuse a previously prepared study project")
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument("--probe-side", type=int, choices=(128, 256, 512))
+    parser.add_argument("--panorama-width", type=int, choices=(512, 1024, 2048))
+    parser.add_argument("--center-only", action="store_true", help="Capture only the Gallery center pose")
     parser.add_argument("--diagnostic", action="store_true", help="Generate and capture the visual reflection gallery")
     parser.add_argument("--resources", type=Path, default=RESOURCES)
     parser.add_argument("--working-directory", type=Path, default=hz.ROOT)
@@ -298,7 +308,11 @@ def main():
     parser.add_argument("--offscreen-only", action="store_true", help="Use isolated archive render/readback without desktop smoke")
     parser.add_argument("--baseline", help="Benchmark the zero-probe path of this Git revision too")
     args = parser.parse_args()
-    if args.diagnostic and (args.archive or args.benchmark):
+    if (args.probe_side or args.panorama_width or args.center_only) and not args.diagnostic:
+        parser.error("Gallery options require --diagnostic")
+    if args.project and (args.probe_side or args.panorama_width):
+        parser.error("Source options apply when generating a new Gallery project")
+    if args.diagnostic and args.benchmark:
         parser.error("--diagnostic selects the visual study")
     if args.offscreen_only and not args.archive:
         parser.error("--offscreen-only requires --archive")
@@ -324,13 +338,14 @@ def main():
         parser.error("OpenGL requires canonical shader source")
     try:
         if args.archive:
-            qualify_archive(args.archive.resolve(), out, report, args.offscreen_only)
+            qualify_archive(args.archive.resolve(), out, report, args.offscreen_only, args.diagnostic)
             report["status"] = "PASS native reflection archive relocation"
             return
         if args.project:
             project = args.project.resolve()
         else:
-            report["bakeWallSeconds"] = prepare(out / "Study Project", args.config, env, args.diagnostic)
+            report["bakeWallSeconds"] = prepare(out / "Study Project", args.config, env, args.diagnostic,
+                                                      args.probe_side or 256, args.panorama_width or 512)
             project = out / "Study Project" / (gallery.LOCAL_PROJECT if args.diagnostic else PROJECT_NAME)
         report["project"] = str(project)
         if args.prepare_only:
@@ -339,7 +354,9 @@ def main():
         env["HAZEL_RENDERING_REFERENCE_PROJECT"] = str(project)
         if args.diagnostic:
             env["HAZEL_REFLECTION_DIAGNOSTIC"] = "1"
-        pose_count = gallery.POSES if args.diagnostic else 9
+        if args.center_only:
+            env["HAZEL_REFLECTION_GALLERY_CENTER"] = "1"
+        pose_count = (1 if args.center_only else gallery.POSES) if args.diagnostic else 9
         if args.benchmark:
             env["HAZEL_REFLECTION_BENCHMARK"] = "1"
         else:
@@ -425,7 +442,7 @@ def main():
                                                  "idDifferences": mismatched_ids}
                 if p99 > .015 or mismatched_ids > 460:
                     raise RuntimeError(f"Reflection study parity exceeded bounds in {name}")
-        if args.diagnostic:
+        if args.diagnostic and not args.center_only:
             media_backend = "opengl" if args.backend == "opengl" else "metal"
             gallery.write_motion(out / "matched-motion.png", out / media_backend, pixels)
         report["status"] = "PASS focused native reflection probes"

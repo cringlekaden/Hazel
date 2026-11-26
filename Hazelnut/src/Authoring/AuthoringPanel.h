@@ -18,6 +18,7 @@
 #include <unordered_map>
 namespace Hazel
 {
+class ReflectionProbeCapture;
 class EditorLayer;
 class Framebuffer;
 class AuthoringPanel
@@ -26,6 +27,7 @@ class AuthoringPanel
 
   public:
     explicit AuthoringPanel(EditorLayer &editor);
+    ~AuthoringPanel();
     void Menus();
     void Shortcuts();
     void RequestClose();
@@ -84,6 +86,11 @@ private:
     bool SaveRenderingRequests(const RuntimeRendererRequests& requests);
     void NewProject();
     void ImportAssets();
+    void StartProbeBake(Entity entity);
+    void AdvanceProbeBake();
+    void FinishProbeBake(bool prepared);
+    void CancelProbeBake();
+    std::string ProbeBakeStatus() const;
     void PrepareEnvironment(const std::filesystem::path &reference);
     void BeginImport(const std::filesystem::path& folder,const std::filesystem::path& source={});
     bool StartImport(bool reimport,const std::filesystem::path& manifest={});
@@ -132,6 +139,15 @@ private:
     std::string m_PreferenceSearch;
     SDKSelection m_SDK, m_DraftSDK;
     std::string m_CheckedDraftSDK;
+    struct ProbeBake
+    {
+        Ref<ReflectionProbeCapture> Capture;
+        uint64_t Scene = 0, Entity = 0, Component = 0;
+        glm::vec3 Position{0};
+        unsigned Resolution = 0;
+        std::filesystem::path Root, Reference, Previous;
+    };
+    Scope<ProbeBake> m_ProbeBake;
     ProjectTools m_Tools;
     ToolReport m_Report;
     ConsolePanel m_Console;

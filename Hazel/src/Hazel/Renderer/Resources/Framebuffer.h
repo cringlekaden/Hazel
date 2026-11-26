@@ -93,6 +93,7 @@ namespace Hazel {
         virtual Ref<const FramebufferReadback> Submit(); // null: busy; retry unchanged packet
         virtual void Poll(); // nonblocking; readback fields publish on the render thread
         virtual void Cancel(); // discard unsubmitted work; submitted work is never aborted
+        virtual std::vector<glm::vec4> ReadColorPixels(); // Synchronous single-sample float attachment 0.
         virtual float ReadDepthPixel(int x, int y);
         // Display-linear attachment 0 -> encoded RGBA8 output (or window).
         // Does not touch entity IDs. ImGui samples the encoded output unchanged.

@@ -75,7 +75,9 @@ private:
   struct EnvironmentEntry {Ref<const PreparedEnvironment> Accepted;std::string Error;};
   std::unordered_map<std::string,EnvironmentEntry> m_Environments;
   std::unordered_map<std::string,Ref<EnvironmentResources>> m_EnvironmentGPU;
-  std::unordered_map<std::string,Ref<ReflectionProbeResources>> m_ReflectionProbeGPU;
+  struct ProbeGPUEntry { Ref<ReflectionProbeResources> Resource; size_t Bytes; };
+  std::unordered_map<std::string, ProbeGPUEntry> m_ReflectionProbeGPU;
+  size_t m_ReflectionProbeGPUBytes = 0;
   void ReloadEnvironment(const std::string &key,EnvironmentEntry &entry);
   void RefreshEnvironments();
   struct GPUEntry

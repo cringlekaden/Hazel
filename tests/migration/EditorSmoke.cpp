@@ -1440,6 +1440,49 @@ private:
               probeHistory.Redo(*probeScene) && probe.Enabled && probe.Environment == direct->Presentation().Environment.Asset,
               "Reflection probe inspector Undo/Redo lost authored fields");
         std::cout << "PASS: Reflection probe inspector transaction and exact Undo/Redo\n";
+        if (std::getenv("HAZEL_TEST_PROBE_BAKE"))
+        {
+            auto bakeScene = e.m_EditorScene;
+            auto bakedEntity = bakeScene->CreateEntity("Static bake history");
+            bakedEntity.GetComponent<TransformComponent>().Translation = {0, 1, 2};
+            auto &value = bakedEntity.AddComponent<ReflectionProbeComponent>();
+            value.BakeResolution = 128;
+            auto bake = [&] {
+                a.StartProbeBake(bakedEntity);
+                Check(bool(a.m_ProbeBake), "Editor did not start probe capture");
+                const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(90);
+                while (a.m_ProbeBake)
+                {
+                    a.AdvanceProbeBake();
+                    a.PollTools();
+                    Check(std::chrono::steady_clock::now() < deadline, "Editor probe bake timed out");
+                    std::this_thread::sleep_for(std::chrono::milliseconds(3));
+                }
+                Check(a.m_Report.Success && !value.Environment.empty(), "Editor did not accept probe bake: " + a.m_Report.Output);
+            };
+            bake();
+            const auto first = value.Environment;
+            Check(a.m_SceneHistory.Undo(*bakeScene) && value.Environment.empty() &&
+                  a.m_SceneHistory.Redo(*bakeScene) && value.Environment == first,
+                  "First probe assignment did not round-trip through history");
+            bake();
+            const auto second = value.Environment;
+            Check(second != first && a.m_SceneHistory.Undo(*bakeScene) && value.Environment == first &&
+                  a.m_SceneHistory.Redo(*bakeScene) && value.Environment == second,
+                  "Rebake replaced the immutable asset or broke history");
+            a.StartProbeBake(bakedEntity);
+            Check(bool(a.m_ProbeBake), "Could not start cancellation fixture");
+            a.CancelProbeBake();
+            Check(!a.m_ProbeBake && value.Environment == second, "Cancelled editor capture changed accepted assignment");
+            const auto bytes = SceneSerializer(bakeScene).SerializeText();
+            auto reloaded = CreateRef<Scene>();
+            auto assetRoot = bakeScene->GetAssets();
+            SceneSerializer reader(reloaded, assetRoot->Root(), false, assetRoot);
+            Check(reader.DeserializeText(bytes, false) &&
+                  reloaded->GetEntityByUUID(bakedEntity.GetUUID()).GetComponent<ReflectionProbeComponent>().Environment == second,
+                  "Baked assignment did not survive scene reload");
+            std::cout << "PASS: Editor capture, preparation, rebake, cancellation, reload and Undo/Redo\n";
+        }
         a.m_NewStarter = 0;
         a.m_Preferences=preferences;a.RefreshSDK();Check(e.OpenProject(previousProject),"Native creation fixture restore failed");e.m_ActionError.clear();
         std::cout<<"PASS: production native create/Open without Python/SDK, content save/script-free Play, failed creation retention, later staged reload and prepared scripted Play/failed reload preservation\n";

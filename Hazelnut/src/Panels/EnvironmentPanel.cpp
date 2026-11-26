@@ -76,7 +76,8 @@ void EnvironmentPanel::BeginCreate(const std::filesystem::path &folder, bool dup
 {
     if (!CanEdit())
         return;
-    m_CreateValues = duplicate && m_Document ? m_Document->Draft() : EnvironmentDefinition{};
+    m_CreateValues = duplicate && m_Document && !m_Document->Draft().SceneCapture ?
+        m_Document->Draft() : EnvironmentDefinition{};
     if (duplicate)
         m_CreateValues.Name += " copy";
     if (!image.empty())
@@ -157,7 +158,7 @@ void EnvironmentPanel::Inspect()
             auto source = ReadAssetBytes(Project::ResolveOwnedAsset(m_Assets->Root(), d.Image),
                                          64 * 1024 * 1024);
             if (AssetHash(source) != resolution.Accepted->SourceHash)
-                m_Status += "\nSTALE SOURCE: HDR bytes changed. Prepare to accept a replacement; "
+                m_Status += "\nSTALE SOURCE: producer bytes changed. Prepare to accept a replacement; "
                             "accepted generation remains available.";
         }
         catch (const std::exception &e)
@@ -187,10 +188,17 @@ void EnvironmentPanel::Properties()
     PropertyUI::ActivityScope scope(activity);
     PropertyUI::Text("name", "Name", value.Name);
     ImGui::SeparatorText("Image source");
-    AssetPicker("source", "HDR source", value.Image, ".hdr", m_Assets, m_Picker);
-    ImGui::TextWrapped("Linear Rec.709 / D65 Radiance HDR; top-down equirectangular rows. Source "
-                       "is needed only to prepare, not to run accepted lighting.");
-    if (ImGui::TreeNode("Preparation quality"))
+    if (value.SceneCapture)
+    {
+        PropertyUI::ReadOnly("source", "Captured FP32 cube", value.Image.generic_u8string().c_str());
+        ImGui::TextWrapped("Bake the probe again from its scene Inspector to update the capture.");
+    }
+    else
+    {
+        AssetPicker("source", "HDR source", value.Image, ".hdr", m_Assets, m_Picker);
+        ImGui::TextWrapped("Linear Rec.709 / D65 Radiance HDR, top-down equirectangular rows.");
+    }
+    if (!value.SceneCapture && ImGui::TreeNode("Preparation quality"))
     {
         {
             PropertyUI::Row row("quality", "Quality");

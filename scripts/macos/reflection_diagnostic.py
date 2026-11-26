@@ -41,7 +41,7 @@ def wall_tiles(warm):
             yield left + x * dx, .23 + y * dy, dx, dy, color
 
 
-def write_radiance(path, warm):
+def write_radiance(path, warm, width=512):
     side = -1 if warm else 1
     capture = (side * CAPTURE_X, CAPTURE_Y, CAPTURE_Z)
     center = tuple(a + b for a, b in zip(capture, PROJECTION_OFFSET))
@@ -49,7 +49,7 @@ def write_radiance(path, warm):
     high = tuple(a + b for a, b in zip(center, PROJECTION_SIZE))
     tiles = list(wall_tiles(warm))
     palette = WARM if warm else COOL
-    width, height = 512, 256
+    height = width // 2
     content = bytearray(f"#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y {height} +X {width}\n".encode())
     azimuth = [2 * math.pi * ((x + .5) / width - .5) for x in range(width)]
     horizontal = [(math.cos(a), math.sin(a)) for a in azimuth]

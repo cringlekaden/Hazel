@@ -5,6 +5,9 @@ The implementation starts from the integrated shadow checkpoint
 See the [combined-shadow record](combined-shadow-quality.md) for the historical
 qualification limits and the owner's visual checkpoint.
 
+The [static baking checkpoint](static-probe-baking.md) extends the production
+authoring workflow. This record describes the original imported-probe milestone.
+
 ## Design
 
 Hazel already prepares a linear HDR panorama into a world-oriented background,

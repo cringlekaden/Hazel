@@ -70,7 +70,8 @@ class SceneRenderer
   public:
     static void ValidateMaterial(const MaterialDefinition &material,
                                  const ScenePresentation &presentation);
-    static SceneSubmission Collect(Scene &scene, const SceneCameraView &camera, glm::uvec2 physicalExtent = glm::uvec2(0));
+    static SceneSubmission Collect(Scene &scene, const SceneCameraView &camera, glm::uvec2 physicalExtent = glm::uvec2(0),
+                                   bool captureRadiance = false);
     static void Render(const SceneSubmission &frame, SceneRenderView &view,
                        const Ref<Framebuffer> &display, const std::function<void()> &world2D,
                        const std::function<void()> &screenUI);

@@ -76,6 +76,13 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
     PointShadowLayout pointLayout;
     SceneSubmission shadowed;
     try {
+        if (input.CaptureRadiance &&
+            (!display || !input.Presentation.SceneReferred || input.Presentation.TemporalAA ||
+             input.Presentation.AmbientOcclusion.Enabled || !input.ReflectionProbes.empty() ||
+             (input.Environment && input.Environment->SceneCapture) || input.Debug != SurfaceView::Shaded ||
+             display->GetSpecification().Samples != 1 || display->GetSpecification().Attachments.Attachments.empty() ||
+             display->GetSpecification().Attachments.Attachments[0].TextureFormat != FramebufferTextureFormat::RGBA32F))
+            throw std::runtime_error("Probe capture requires a private single-sample FP32 radiance view");
         if (input.ReflectionProbes.size() > MaxReflectionProbes ||
             (!input.ReflectionProbes.empty() && (!input.Assets || !input.Presentation.SceneReferred)))
             throw std::runtime_error("Reflection probes require project assets, scene-referred presentation and at most two probes");
@@ -304,7 +311,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                 (void)target;
 #endif
             };
-            if (frame.Presentation.SceneReferred && frame.Debug == SurfaceView::Shaded && (!ao || frame.AmbientOcclusionView==0))
+            if (!frame.CaptureRadiance && frame.Presentation.SceneReferred && frame.Debug == SurfaceView::Shaded && (!ao || frame.AmbientOcclusionView==0))
             {
                 auto size = display->GetSpecification();
                 if (!view.Radiance) view.Radiance = Framebuffer::Create(size);
@@ -356,7 +363,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
 #endif
                 }
                 prepareLighting(display);
-                Renderer3D::Render(frame,false,false,false,&view.ReflectionProbes);
+                Renderer3D::Render(frame,frame.CaptureRadiance,false,false,&view.ReflectionProbes);
                 RenderCommand::SetRasterState(raster);
                 world2D();
             }
@@ -421,7 +428,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         renderShadows();display->Bind();
         RenderCommand::SetRasterState(raster);
     }
-    const bool hdr = frame.Presentation.SceneReferred && frame.Debug == SurfaceView::Shaded;
+    const bool hdr = !frame.CaptureRadiance && frame.Presentation.SceneReferred && frame.Debug == SurfaceView::Shaded;
     if (hdr)
     {
         if (!display)
@@ -446,7 +453,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
     else
         view.Radiance.reset();
     if (anyShadows) prepareShadowDepth(hdr ? view.Radiance : display);
-    Renderer3D::Render(frame,hdr,false,false,&view.ReflectionProbes);
+    Renderer3D::Render(frame,hdr || frame.CaptureRadiance,false,false,&view.ReflectionProbes);
     raster = RenderCommand::GetRasterState();
     raster.Cull = CullFace::None;
     raster.Clockwise = false;

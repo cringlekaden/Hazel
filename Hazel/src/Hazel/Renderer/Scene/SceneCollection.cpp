@@ -50,13 +50,22 @@ void SceneRenderer::ValidateMaterial(const MaterialDefinition &material,
         throw std::runtime_error(
             "Lit materials require Scene-referred presentation in Scene Settings");
 }
-SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &camera, glm::uvec2 physicalExtent)
+SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &camera, glm::uvec2 physicalExtent,
+                                       bool captureRadiance)
 {
     SceneSubmission frame;
     frame.Camera = camera;
     frame.SceneIdentity = scene.GetIdentity();
     frame.Presentation = scene.Presentation();
     frame.Presentation.Validate();
+    frame.CaptureRadiance = captureRadiance;
+    if (captureRadiance)
+    {
+        if (!frame.Presentation.SceneReferred)
+            throw std::runtime_error("Probe capture requires scene-referred presentation");
+        frame.Presentation.AmbientOcclusion.Enabled = false;
+        frame.Presentation.TemporalAA = false;
+    }
     frame.Assets = scene.GetAssets();
     if (!frame.Presentation.Environment.Asset.empty())
     {
@@ -65,8 +74,12 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
         auto environment = frame.Assets->Environment(frame.Presentation.Environment.Asset);
         if (!environment.Accepted)
             throw std::runtime_error(environment.Error);
-        frame.Environment = environment.Accepted;
+        // A captured asset may also have been assigned as the global
+        // environment. Exclude it from subsequent captures as well.
+        if (!captureRadiance || !environment.Accepted->SceneCapture)
+            frame.Environment = environment.Accepted;
     }
+    if (!captureRadiance)
     for (auto h : scene.GetAllEntitiesWith<ReflectionProbeComponent>())
     {
         Entity entity(h, &scene);

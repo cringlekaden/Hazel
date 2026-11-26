@@ -56,7 +56,9 @@ YAML::Node ParseAcceptance(const std::string &bytes)
              "Unsupported environment preparation revision; use a matching producer");
     else
         Need(!n["PreparationRecipe"], "Version 1 acceptance cannot contain future preparation data");
-    Need(n["Evaluation"].as<std::string>()==RadianceEvaluation,"Unsupported HDR source evaluation identity");
+    const auto evaluation = n["Evaluation"].as<std::string>();
+    Need(evaluation == RadianceEvaluation || (version == 2 && evaluation == CaptureRadianceEvaluation),
+         "Unsupported HDR source evaluation identity");
     auto outputs=n["Outputs"];
     DocumentSchema::Keys(outputs,{"Background","Irradiance","Specular","BRDF"},"lighting outputs");
     for(auto name:{"Background","Irradiance","Specular","BRDF"})DocumentSchema::Keys(outputs[name],{"Path","Hash"},"lighting output");
@@ -85,13 +87,13 @@ void EnvironmentDefinition::Validate() const
 {
     AssetName(Name);
     AssetNotice(Notice);
-    AssetPath(Image, ".hdr");
+    AssetPath(Image, SceneCapture ? ".hlight" : ".hdr");
     Profile.Validate();
 }
 bool EnvironmentDefinition::operator==(const EnvironmentDefinition &b) const
 {
     return Name == b.Name && Notice == b.Notice && Image == b.Image &&
-           Profile == b.Profile;
+           Profile == b.Profile && SceneCapture == b.SceneCapture;
 }
 EnvironmentDefinition ReadEnvironmentText(const std::string &bytes)
 {
@@ -105,9 +107,12 @@ EnvironmentDefinition ReadEnvironmentText(const std::string &bytes)
     d.Notice = n["Notice"].as<std::string>();
     auto s = n["Source"];
     DocumentSchema::Keys(s, {"Kind", "Image", "Interpretation"}, "environment source");
-    Need(s["Kind"].as<std::string>() == "RadianceHDR" &&
-             s["Interpretation"].as<std::string>() == "LinearRec709D65TopDown",
-         "Only linear Rec.709/D65 top-down Radiance HDR source interpretation is supported");
+    const auto kind = s["Kind"].as<std::string>();
+    const auto interpretation = s["Interpretation"].as<std::string>();
+    d.SceneCapture = kind == "SceneCapture";
+    Need((kind == "RadianceHDR" && interpretation == "LinearRec709D65TopDown") ||
+         (d.SceneCapture && interpretation == "LinearRec709D65Cube"),
+         "Unsupported environment source kind or orientation");
     d.Image = std::filesystem::u8path(s["Image"].as<std::string>());
     auto p = n["Preparation"];
     DocumentSchema::Keys(p, {"Recipe", "Background", "Specular", "Irradiance", "Samples"},
@@ -126,9 +131,9 @@ std::string WriteEnvironmentText(const EnvironmentDefinition &d)
     n["Version"] = 1;
     n["Name"] = d.Name;
     n["Notice"] = d.Notice;
-    n["Source"]["Kind"] = "RadianceHDR";
+    n["Source"]["Kind"] = d.SceneCapture ? "SceneCapture" : "RadianceHDR";
     n["Source"]["Image"] = d.Image.generic_u8string();
-    n["Source"]["Interpretation"] = "LinearRec709D65TopDown";
+    n["Source"]["Interpretation"] = d.SceneCapture ? "LinearRec709D65Cube" : "LinearRec709D65TopDown";
     auto p = n["Preparation"];
     p["Recipe"] = IBLRecipe;
     p["Background"] = d.Profile.Background;
@@ -152,7 +157,8 @@ std::string EnvironmentIntent(const EnvironmentDefinition &value)
     return AssetHash(WriteEnvironmentText(semantic));
 }
 std::string EnvironmentCacheIdentity(const std::string &source, const std::string &intent,
-    const std::string &producer, const std::string &lut, const std::string &preparation)
+    const std::string &producer, const std::string &lut, const std::string &preparation,
+    const std::string &evaluation)
 {
     // Decode the frozen v1 identity; the old producer/renderer is not retained.
     const auto algorithm = preparation == EnvironmentPreparationRecipe
@@ -160,7 +166,7 @@ std::string EnvironmentCacheIdentity(const std::string &source, const std::strin
         : std::string("/RGB32F-Hammersley-normalized-v1/");
     Need(preparation == EnvironmentPreparationRecipe || preparation == "Hazel.EnvPrepare_v1.PointHammersley.FullTail1",
          "Unsupported preparation identity");
-    return AssetHash(source + intent + producer + RadianceEvaluation + algorithm + lut);
+    return AssetHash(source + intent + producer + evaluation + algorithm + lut);
 }
 EnvironmentDefinition ReadEnvironment(const std::filesystem::path &path)
 {
@@ -292,6 +298,9 @@ PreparedEnvironment ReadPreparedEnvironmentCandidate(const std::filesystem::path
     auto accepted = EnvironmentAcceptance(reference);
     auto n=ParseAcceptance(acceptedBytes);
     PreparedEnvironment e;
+    e.SceneCapture = d.SceneCapture;
+    const std::string evaluation = d.SceneCapture ? CaptureRadianceEvaluation : RadianceEvaluation;
+    Need(n["Evaluation"].as<std::string>() == evaluation, "Source evaluation differs from environment intent");
     e.Generation = ReadAssetKey(n["Generation"].as<std::string>());
     e.Identity = n["Identity"].as<std::string>();
     e.IntentHash = n["IntentHash"].as<std::string>();
@@ -316,7 +325,7 @@ PreparedEnvironment ReadPreparedEnvironmentCandidate(const std::filesystem::path
     Need(e.LUTIdentity ==
              AssetHash(std::string(IBLRecipe) + "/LUT128-RG32F-Hammersley4096-v1/" + e.Producer),
          "LUT identity does not match the BRDF recipe/producer");
-    Need(e.Identity == EnvironmentCacheIdentity(e.SourceHash,e.IntentHash,e.Producer,e.LUTIdentity,e.PreparationRecipe),
+    Need(e.Identity == EnvironmentCacheIdentity(e.SourceHash,e.IntentHash,e.Producer,e.LUTIdentity,e.PreparationRecipe,evaluation),
          "Environment identity does not match source, preparation and producer");
     e.Dependencies = {reference, accepted};
     auto outputs = n["Outputs"];

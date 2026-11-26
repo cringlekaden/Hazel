@@ -98,3 +98,7 @@ at least one linear display channel. Changing the projection to the distant
 control changed 13,246 pixels by the same threshold. Both project descriptors
 passed native schema validation. Captures are offscreen readbacks.
 [Qualification results](evidence/ReflectionGallery_v1/results.json)
+
+The [static probe baking study](static-probe-baking.md) provides a Gallery
+captured in-engine and an imported comparison at matched face resolution.
+It also documents the higher-resolution Gallery source options.

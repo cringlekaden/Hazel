@@ -188,7 +188,7 @@ std::string SceneSerializer::CaptureAuthoredState(Entity only, const std::type_i
         });
         state.Component<ReflectionProbeComponent>(e, [&](auto &c) {
             state.Value(c.Environment);state.Value(c.InfluenceHalfSize);state.Value(c.ProjectionOffset);
-            state.Value(c.ProjectionHalfSize);state.Value(c.BlendDistance);state.Value(c.Enabled);
+            state.Value(c.ProjectionHalfSize);state.Value(c.BlendDistance);state.Value(c.Enabled);state.Value(c.BakeResolution);
         });
         state.Component<MeshRendererComponent>(e,[&](auto& c){state.Value(c.Mesh);state.Value(uint64_t(c.Materials.size()));for(auto& m:c.Materials){state.Value(m.first);state.Value(m.second);}});
         state.Component<CircleRendererComponent>(e, [&](auto &c) {

@@ -17,6 +17,7 @@ RadianceImage DecodeRadianceHDR(const std::string &bytes);
 inline constexpr const char *RadianceEvaluation =
     "stb_image-2.23-29b5d519a3eae19a0cf30a79e35e456a067b2f0279d27a5a9b3015c1d25b74d8/"
     "HDR-framing1-linearRec709D65-top";
+inline constexpr const char *CaptureRadianceEvaluation = "Hazel.SceneCapture.FP32Cube.BilinearLatLong1";
 inline constexpr const char *IBLRecipe =
     "Hazel.IBL_v1.GGX-correlated-single.r045.E-pi.AB-NoV-r.cube-top";
 // Engine-owned current BRDF data; legacy IBLRecipe and accepted generations stay immutable.
@@ -42,12 +43,14 @@ struct EnvironmentDefinition
     std::string Name = "Image environment", Notice;
     std::filesystem::path Image;
     EnvironmentProfile Profile;
+    bool SceneCapture = false;
     void Validate() const;
     bool operator==(const EnvironmentDefinition &other) const;
 };
 std::string EnvironmentIntent(const EnvironmentDefinition &value);
 std::string EnvironmentCacheIdentity(const std::string &source, const std::string &intent,
-    const std::string &producer, const std::string &lut, const std::string &preparation);
+    const std::string &producer, const std::string &lut, const std::string &preparation,
+    const std::string &evaluation = RadianceEvaluation);
 EnvironmentDefinition ReadEnvironmentText(const std::string &bytes);
 std::string WriteEnvironmentText(const EnvironmentDefinition &value);
 EnvironmentDefinition ReadEnvironment(const std::filesystem::path &path);
@@ -86,6 +89,7 @@ struct PreparedEnvironment
     LightingImage Background, Irradiance, Specular, BRDF;
     std::vector<std::filesystem::path> Dependencies;
     uint64_t Generation = 0;
+    bool SceneCapture = false;
     double Seconds = 0;
     uint64_t PeakBytes = 0;
 };

@@ -283,6 +283,21 @@ glm::vec4 OpenGLFramebuffer::ReadColorPixel(uint32_t attachment, int x, int y)
             FramebufferTextureFormat::RED_INTEGER ||
         x < 0 || y < 0 || x >= int(m_Specification.Width) || y >= int(m_Specification.Height))
         throw std::runtime_error("Invalid float color readback");
+    glm::vec4 color;
+    ReadFloatColors(attachment, x, y, 1, 1, &color);
+    return color;
+}
+std::vector<glm::vec4> OpenGLFramebuffer::ReadColorPixels()
+{
+    if (m_Specification.Samples != 1 || m_ColorAttachmentSpecifications.empty() ||
+        m_ColorAttachmentSpecifications[0].TextureFormat != FramebufferTextureFormat::RGBA32F)
+        throw std::runtime_error("Bulk HDR readback requires a single-sample RGBA32F attachment");
+    std::vector<glm::vec4> pixels(size_t(m_Specification.Width) * m_Specification.Height);
+    ReadFloatColors(0, 0, 0, int(m_Specification.Width), int(m_Specification.Height), pixels.data());
+    return pixels;
+}
+void OpenGLFramebuffer::ReadFloatColors(uint32_t attachment, int x, int y, int width, int height, glm::vec4 *pixels)
+{
     Resolve();
     Utils::FramebufferState state;
     GLint pack, alignment, oldRead, rowLength, skipRows, skipPixels;
@@ -300,15 +315,13 @@ glm::vec4 OpenGLFramebuffer::ReadColorPixel(uint32_t attachment, int x, int y)
     glPixelStorei(GL_PACK_SKIP_ROWS, 0);
     glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
     glReadBuffer(GL_COLOR_ATTACHMENT0 + attachment);
-    glm::vec4 color;
-    glReadPixels(x, y, 1, 1, GL_RGBA, GL_FLOAT, &color.x);
+    glReadPixels(x, y, width, height, GL_RGBA, GL_FLOAT, pixels);
     glReadBuffer(oldRead);
     glPixelStorei(GL_PACK_ALIGNMENT, alignment);
     glPixelStorei(GL_PACK_ROW_LENGTH, rowLength);
     glPixelStorei(GL_PACK_SKIP_ROWS, skipRows);
     glPixelStorei(GL_PACK_SKIP_PIXELS, skipPixels);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, pack);
-    return color;
 }
 void OpenGLFramebuffer::CompositeWorldTo(const Ref<Framebuffer> &destination, float exposure)
 {

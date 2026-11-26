@@ -20,6 +20,7 @@ namespace Hazel {
     Ref<const FramebufferReadback> Framebuffer::Submit() { AsyncUnavailable(); }
     void Framebuffer::Poll() { AsyncUnavailable(); }
     void Framebuffer::Cancel() { AsyncUnavailable(); }
+    std::vector<glm::vec4> Framebuffer::ReadColorPixels() { AsyncUnavailable(); }
     float Framebuffer::ReadDepthPixel(int, int) { AsyncUnavailable(); }
 
 

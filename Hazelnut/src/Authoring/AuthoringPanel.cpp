@@ -65,6 +65,10 @@ static bool Contained(const std::filesystem::path &root, const std::filesystem::
 AuthoringPanel::AuthoringPanel(EditorLayer &editor) : m_Editor(editor), m_Console(editor.m_Console)
 {
     m_Console.DocumentProblems=[this]{RecoveryControls();};
+    auto &hierarchy = m_Editor.m_SceneHierarchyPanel;
+    hierarchy.BakeProbe = [this](Entity entity) { StartProbeBake(entity); };
+    hierarchy.ProbeBakeStatus = [this] { return ProbeBakeStatus(); };
+    hierarchy.CancelProbeBake = [this] { CancelProbeBake(); };
     m_Preferences = EditorPreferences::Load(m_PreferenceRecovery);
     m_Tools.SetConsole(editor.m_Console);
     m_Console.CaptureLevel=m_Preferences.ConsoleCapture;
@@ -99,7 +103,7 @@ ActionAvailability AuthoringPanel::Availability(EditorAction action) const
 {
     if(m_Editor.m_Loading && m_Editor.m_Loading->Busy() && !m_Editor.m_Loading->Running() && action!=EditorAction::Browse)
         return {"A workspace operation is queued"};
-    const auto available=EditorActionAvailability({static_cast<EditorMode>(m_Editor.m_SceneState), m_Tools.Busy(),
+    const auto available=EditorActionAvailability({static_cast<EditorMode>(m_Editor.m_SceneState), m_Tools.Busy() || bool(m_ProbeBake),
                                      bool(Project::GetActive()), bool(m_Editor.m_EditorScene),
                                      m_Documents.Pending() && !m_ResolvingDocumentAction},
                                     action);
@@ -424,6 +428,7 @@ void AuthoringPanel::Start(std::string label, std::vector<std::string> args,
 void AuthoringPanel::Tick(double timestep)
 {
     if(m_RestoreAssetsPending && !m_Documents.Pending() && !m_Tools.Busy())RestoreWorkspace(false);
+    AdvanceProbeBake();
     m_Sprites.Tick(timestep);
     m_StateClock+=std::isfinite(timestep)?std::clamp(timestep,0.,1.):0.;
     if(m_StateClock-m_StatePolled<.5)return;
@@ -440,6 +445,8 @@ void AuthoringPanel::PollTools()
     const ToolOwner owner{m_ProjectGeneration, m_Editor.m_ProjectPath};
     if (!m_Tools.Poll(m_Report, &owner))
         return;
+    if (m_Report.Request.Completion == ToolCompletion::ApplyReflectionBake && !m_Report.Success)
+        FinishProbeBake(false);
     if (m_Report.Success)
     {
         try
@@ -450,6 +457,8 @@ void AuthoringPanel::PollTools()
                 if(!Require(EditorAction::ReloadScripts))throw std::runtime_error("Assembly follow-up is unavailable; previous domain retained");
                 ScriptEngine::Init(Project::GetAssetFileSystemPath(Project::GetActive()->GetConfig().ScriptModulePath));
             }
+            else if (m_Report.Request.Completion == ToolCompletion::ApplyReflectionBake)
+                FinishProbeBake(true);
             else if(m_Report.Request.Completion==ToolCompletion::RefreshImportedAssets){
                 if(Project::GetActive())Project::GetActive()->GetAssets()->Refresh();
                 if(m_Editor.m_ContentBrowserPanel){m_Editor.m_ContentBrowserPanel->Refresh();m_Editor.m_ContentBrowserPanel->Reveal(m_Report.Request.Artifact);}

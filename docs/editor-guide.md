@@ -101,7 +101,7 @@ costs and an earlier-revision diagnostic. Accepted lighting loads without the or
 In a scene with **Scene-referred** presentation, add a **Reflection Probe**
 component to an entity. Import a linear Radiance HDR panorama captured at the
 entity position. Create an Environment asset for it, choose **Preview** or a
-custom specular face size up to 256 px, and select **Prepare**. Assign the
+custom specular face size up to 512 px, and select **Prepare**. Assign the
 prepared `.henv` in the probe Inspector, then enable the component. You can
 author several probes and enable up to two in the same scene.
 
@@ -118,6 +118,12 @@ The scene environment still supplies diffuse light and the optional sky.
 Probe settings participate in scene Undo/Redo. Player assets need the
 accepted `.henv` generation and its dependencies. Keep the HDR source
 in the authoring project for future preparation.
+
+To capture the scene in Hazelnut, select **Bake face size** and click **Bake Static
+Probe**. The inspector offers 128, 256 and 512 px per face. The completed bake
+becomes the probe's environment assignment and participates in Undo/Redo.
+Rebake explicitly after changing the scene. See the
+[static probe bake workflow and Gallery comparison](design/static-probe-baking.md).
 
 The [static reflection study](design/static-reflection-probes.md) includes
 reproduction commands, captures, and current qualification results.

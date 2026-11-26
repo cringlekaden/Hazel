@@ -109,6 +109,7 @@ struct SceneSubmission
     unsigned ShadowView = 0; // Transient CSM inspection; never authored.
     unsigned LocalLightingView = 0; // 1 local radiance, 2 tile occupancy, 3 overflow.
     SurfaceView Debug = SurfaceView::Shaded;
+    bool CaptureRadiance = false; // Private FP32 mesh/sky view before display processing.
     bool LinearLightingInspection = false; // Scoped FP32 diagnostic readback, not authored.
     Ref<ProjectAssets> Assets;
     std::vector<SubmittedMesh> Meshes;

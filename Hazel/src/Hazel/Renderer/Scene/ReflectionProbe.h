@@ -8,7 +8,7 @@ namespace YAML { class Node; class Emitter; }
 namespace Hazel
 {
 inline constexpr unsigned MaxReflectionProbes = 2;
-inline constexpr unsigned MaxReflectionProbeSide = 256;
+inline constexpr unsigned MaxReflectionProbeSide = 512;
 struct PreparedEnvironment;
 void ValidateReflectionProbeEnvironment(const PreparedEnvironment &environment);
 
@@ -19,6 +19,7 @@ struct ReflectionProbe
     glm::vec3 ProjectionOffset{0}, ProjectionHalfSize{4};
     float BlendDistance = 1;
     bool Enabled = false;
+    unsigned BakeResolution = 256;
 
     void Validate() const;
     void ValidatePosition(const glm::vec3 &position) const;

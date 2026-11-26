@@ -1382,12 +1382,32 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             ImGui::TextWrapped("Up to four enabled, emitting spotlights cast shadows, ordered by entity ID.");
         }
     });
+    bool requestProbeBake = false;
     DrawUIComponent<ReflectionProbeComponent>(
         "Reflection Probe", entity, m_Sections, m_RestoreSections, [&](auto &probe) {
             const auto assets = m_Context->GetAssets();
             AssetPicker("probe-cubemap", "Prepared HDR", probe.Environment, ".henv", assets,
                         m_AssetPickers[ImGui::GetID("probe-picker")], OpenAsset);
             PropertyUI::Checkbox("probe-enabled", "Enabled", probe.Enabled);
+            if (BakeProbe)
+            {
+                int resolution = probe.BakeResolution == 128 ? 0 : probe.BakeResolution == 256 ? 1 : 2;
+                if (PropertyUI::Combo("probe-bake-size", "Bake face size", resolution, "128\0" "256\0" "512\0"))
+                    probe.BakeResolution = 128u << resolution;
+                const auto status = ProbeBakeStatus ? ProbeBakeStatus() : std::string{};
+                if (status.empty())
+                {
+                    ImGui::BeginDisabled(Availability && !Availability(EditorAction::StartTool));
+                    requestProbeBake = ImGui::Button("Bake Static Probe");
+                    ImGui::EndDisabled();
+                }
+                else
+                {
+                    ImGui::TextUnformatted(status.c_str());
+                    if (CancelProbeBake && ImGui::Button("Cancel Probe Bake"))
+                        CancelProbeBake();
+                }
+            }
             PropertyUI::Vector("influence-size", "Influence half size", &probe.InfluenceHalfSize.x, 3);
             PropertyUI::DragFloat("blend-distance", "Blend distance", probe.BlendDistance, .05f);
             PropertyUI::Vector("projection-size", "Projection half size", &probe.ProjectionHalfSize.x, 3);
@@ -1402,6 +1422,8 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
                     ImGui::Text("%u px specular faces", environment.Accepted->Specular.Side);
             }
         });
+    if (requestProbeBake)
+        BakeProbe(entity);
     DrawUIComponent<MeshRendererComponent>(
         "Mesh Renderer", entity, m_Sections, m_RestoreSections, [&, entity](auto &c) mutable {
             ImGui::TextWrapped("Indexed static geometry. Lit materials require scene-referred "

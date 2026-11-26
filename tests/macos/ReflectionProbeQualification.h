@@ -2,6 +2,8 @@
 
 #include "Renderer3DParity.h"
 #include "Hazel/Core/FileDocument.h"
+#include "Hazel/Renderer/Scene/ReflectionProbeCapture.h"
+#include <thread>
 #include "Hazel/Scene/SceneSerializer.h"
 #include <algorithm>
 #include <cmath>
@@ -109,6 +111,112 @@ inline void ReflectionProbeQualification(const std::filesystem::path &output,
     std::filesystem::create_directories(output);
     const auto project = Project::LoadCandidate(FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT"));
     auto assets = CreateRef<ProjectAssets>(project->GetAssetRoot());
+    const auto captureSide = FileSystem::GetEnvironmentPath("HAZEL_PROBE_CAPTURE_SIDE").generic_u8string();
+    if (!captureSide.empty())
+    {
+        const unsigned side = unsigned(std::stoul(captureSide));
+        auto scene = CreateRef<Scene>();
+        SceneSerializer reader(scene, assets->Root(), false, assets);
+        if (!reader.DeserializeText(FileDocument::Read(Project::ResolveOwnedAsset(
+                assets->Root(), project->GetConfig().StartScene)), false))
+            throw std::runtime_error(reader.Report().Error);
+        std::vector<Entity> probes;
+        for (auto handle : scene->GetAllEntitiesWith<ReflectionProbeComponent>())
+            probes.emplace_back(handle, scene.get());
+        std::sort(probes.begin(), probes.end(), [](Entity a, Entity b) { return a.GetUUID() < b.GetUUID(); });
+        if (probes.size() != 2)
+            throw std::runtime_error("Capture qualification expects two Gallery probes");
+
+        // The second capture changes presentation and removes all usable probe
+        // inputs. HDR source pixels must be independent of those view settings.
+        auto snapshot = Scene::CopyForAuthoring(scene);
+        snapshot->Presentation().Exposure = -8;
+        snapshot->Presentation().AmbientOcclusion.Enabled = true;
+        snapshot->Presentation().TemporalAA = true;
+        for (auto handle : snapshot->GetAllEntitiesWith<ReflectionProbeComponent>())
+            Entity(handle, snapshot.get()).GetComponent<ReflectionProbeComponent>().Environment = "Absent.henv";
+
+        auto record = [&](const Ref<Scene> &input, glm::vec3 position) {
+            ReflectionProbeCapture job(input, position, side);
+            while (!job.Advance())
+                if (metal) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            return job.Image();
+        };
+        if (side == 128)
+        {
+            auto axes = CreateRef<Scene>();
+            axes->SetAssets(CreateRef<ProjectAssets>(FileSystem::GetEnvironmentPath("HAZEL_PROBE_AXIS_ROOT")));
+            axes->Presentation().SceneReferred = true;
+            axes->Presentation().Environment.Asset = "Reference/IBL_v1/AsymmetricAxes.henv";
+            axes->Presentation().Environment.Background = true;
+            const auto image = record(axes, glm::vec3(.3f, 1.f, -.6f));
+            const auto &rgb = image.Mips[0];
+            double maximum = 0;
+            for (unsigned face = 0; face < 6; ++face)
+                for (unsigned y : {0u, 29u, 64u, 93u, 127u})
+                    for (unsigned x : {0u, 23u, 64u, 101u, 127u})
+                    {
+                        const auto expected = 1. + CubeDirection(face, (x + .5) / side, (y + .5) / side);
+                        const size_t pixel = (size_t(face) * side + y) * side + x;
+                        for (unsigned channel = 0; channel < 3; ++channel)
+                            maximum = std::max(maximum, std::abs(expected[channel] - rgb[pixel * 3 + channel]));
+                    }
+            const float peak = *std::max_element(rgb.begin(), rgb.end());
+            if (maximum > .02 || peak < 1.95f)
+                throw std::runtime_error("FP32 probe face axes, edge directions or HDR range failed");
+            std::cout << "REFLECTION_CAPTURE_AXES maximum=" << maximum << " peak=" << peak << '\n';
+
+            auto card = axes->CreateEntity("Mask capture control");
+            card.GetComponent<TransformComponent>().Translation = {0, 0, -2};
+            card.GetComponent<TransformComponent>().Scale = {2, 2, .08f};
+            auto &binding = card.AddComponent<MeshRendererComponent>();
+            binding.Mesh = "Native/Direct_v1/UnitCube.hmesh";
+            binding.Materials[7] = "Reference/Direct_v1/Surfaces/Mask.hmat";
+            const auto origin = glm::vec3(0);
+            const auto mask = record(axes, origin);
+            card.RemoveComponent<MeshRendererComponent>();
+            const auto sky = record(axes, origin);
+            const auto faceOffset = size_t(5) * side * side * 3;
+            unsigned visible = 0, clipped = 0;
+            for (unsigned y = 40; y < 88; ++y)
+                for (unsigned x = 40; x < 88; ++x)
+                {
+                    const auto at = faceOffset + (size_t(y) * side + x) * 3;
+                    if (mask.Mips[0][at] == sky.Mips[0][at]) ++clipped;
+                    else ++visible;
+                }
+            if (visible < 100 || clipped < 100)
+                throw std::runtime_error("Masked capture did not preserve both occlusion and cutouts");
+            std::cout << "REFLECTION_CAPTURE_MASK visible=" << visible << " cutout=" << clipped << '\n';
+
+            auto shadows = Scene::CopyForAuthoring(scene);
+            auto pointLights = shadows->GetAllEntitiesWith<PointLightComponent>();
+            for (auto handle : pointLights)
+                Entity(handle, shadows.get()).GetComponent<PointLightComponent>().CastShadows = true;
+            const auto position = glm::vec3(scene->GetWorldTransform(probes.front())[3]);
+            const auto off = record(scene, position), on = record(shadows, position);
+            size_t shadowed = 0;
+            for (size_t pixel = 0; pixel < on.Mips[0].size(); ++pixel)
+                shadowed += off.Mips[0][pixel] > on.Mips[0][pixel] + .01f;
+            if (shadowed < 100)
+                throw std::runtime_error("Shadowed geometry did not affect probe capture");
+            std::cout << "REFLECTION_CAPTURE_SHADOW samples=" << shadowed << '\n';
+        }
+        for (size_t i = 0; i < probes.size(); ++i)
+        {
+            const glm::vec3 position(scene->GetWorldTransform(probes[i])[3]);
+            const auto start = std::chrono::steady_clock::now();
+            const auto image = record(scene, position);
+            const double ms = std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now() - start).count();
+            auto control = record(snapshot, position);
+            if (image.Mips.front() != control.Mips.front())
+                throw std::runtime_error("Probe capture depends on exposure, AO/TAA or local probe state");
+            FileSystem::WriteNewFile(output / (i == 0 ? "Warm.hlight" : "Cool.hlight"), EncodeLightingImage(image));
+            std::cout << "REFLECTION_CAPTURE side=" << side << " index=" << i << " milliseconds=" << ms
+                      << " bytes=" << image.Bytes() << " presentationAndProbeInvariance=pass\n";
+        }
+        return;
+    }
     const auto global = assets->Environment("Reference/IBL_v1/Constant.henv").Accepted;
     const auto cube = assets->Mesh("Native/Direct_v1/UnitCube.hmesh").Accepted;
     if (!global || !cube)
@@ -343,11 +451,13 @@ inline void ReflectionProbeQualification(const std::filesystem::path &output,
         serializer.CaptureAuthoredState() != reader.CaptureAuthoredState())
         throw std::runtime_error("Reflection study did not survive authored round trip");
     const auto dependencies = AuditSpriteAssets(project->GetAssetRoot(), {project->GetConfig().StartScene});
-    for (const auto &referencePath : {std::filesystem::path("ReflectionStudy/Warm.henv"),
-                                     std::filesystem::path("ReflectionStudy/Cool.henv")})
-        for (const auto &dependency : AuditEnvironment(assets->Root(), referencePath))
+    for (auto handle : roundTrip->GetAllEntitiesWith<ReflectionProbeComponent>())
+    {
+        const auto &probe = Entity(handle, roundTrip.get()).GetComponent<ReflectionProbeComponent>();
+        for (const auto &dependency : AuditEnvironment(assets->Root(), probe.Environment))
             if (std::find(dependencies.begin(), dependencies.end(), dependency) == dependencies.end())
                 throw std::runtime_error("Reflection environment absent from scene dependency closure");
+    }
 
     target->Resize(640, 360);
     auto save = [&](const char *mode, unsigned pose, const Ref<const FramebufferReadback> &result) {
@@ -393,10 +503,11 @@ inline void ReflectionProbeQualification(const std::filesystem::path &output,
         const auto &lens = camera.GetComponent<CameraComponent>().Camera;
         const glm::vec3 center(world[3]);
         const glm::vec3 focus = center - 10.f * glm::vec3(world[2]);
-        constexpr unsigned poses = 33;
+        const bool centerOnly = !FileSystem::GetEnvironmentPath("HAZEL_REFLECTION_GALLERY_CENTER").empty();
+        const unsigned poses = centerOnly ? 1 : 33;
         for (unsigned pose = 0; pose < poses; ++pose)
         {
-            const float x = 9.f * (float(pose) / float(poses - 1) - .5f);
+            const float x = centerOnly ? 0.f : 9.f * (float(pose) / float(poses - 1) - .5f);
             SceneCameraView viewCamera;
             viewCamera.Position = center + glm::vec3(x, 0, 0);
             viewCamera.View = pose == poses / 2 ? glm::inverse(world) :
@@ -417,6 +528,23 @@ inline void ReflectionProbeQualification(const std::filesystem::path &output,
             save("local", pose, b);
             if (pose == poses / 2)
             {
+                if (metal && std::any_of(local.ReflectionProbes.begin(), local.ReflectionProbes.end(),
+                                        [](const auto &probe) { return probe.Environment->SceneCapture; }))
+                {
+                    auto temporal = local;
+                    temporal.Presentation.TemporalAA = true;
+                    temporal.Presentation.AmbientOcclusion.Enabled = true;
+                    render(temporal, SurfaceView::Shaded);
+                    save("temporal-ao", pose, render(temporal, SurfaceView::Shaded));
+                    if (view.Temporal.Phase != 2)
+                        throw std::runtime_error("Baked probes did not accumulate with AO/TAA enabled");
+                    temporal.ReflectionProbes.pop_back();
+                    render(temporal, SurfaceView::Shaded);
+                    if (view.Temporal.Phase != 1)
+                        throw std::runtime_error("Changing baked probes did not invalidate temporal history");
+                    view.Reset();
+                    std::cout << "REFLECTION_CAPTURED_TEMPORAL AO/TAA=pass invalidation=pass\n";
+                }
                 // An oversized proxy approaches a distant environment lookup
                 // while keeping each capture and its influence weights intact.
                 for (auto &probe : local.ReflectionProbes)

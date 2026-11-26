@@ -44,6 +44,9 @@ class SceneHierarchyPanel
     std::function<void(const std::string &)> ReportError;
     std::function<void(const std::string &)> EditScript;
     OpenAssetAction OpenAsset;
+    std::function<void(Entity)> BakeProbe;
+    std::function<std::string()> ProbeBakeStatus;
+    std::function<void()> CancelProbeBake;
     std::function<ActionAvailability(EditorAction)> Availability;
     EditorAction EditOperation = EditorAction::EditScene;
     void DrawAssetProperties(Entity entity);

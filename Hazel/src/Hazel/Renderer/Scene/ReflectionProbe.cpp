@@ -11,12 +11,14 @@ namespace Hazel
 void ValidateReflectionProbeEnvironment(const PreparedEnvironment &environment)
 {
     if (environment.Specular.Side > MaxReflectionProbeSide || environment.Irradiance.Side > MaxReflectionProbeSide)
-        throw std::runtime_error("Reflection probe cubemaps are limited to 256 pixels per face");
+        throw std::runtime_error("Reflection probe cubemaps are limited to 512 pixels per face");
 }
 
 void ReflectionProbe::Validate() const
 {
     AssetPath(Environment, ".henv", !Enabled);
+    if (BakeResolution != 128 && BakeResolution != 256 && BakeResolution != 512)
+        throw std::runtime_error("Probe bake resolution requires 128, 256 or 512 pixels per face");
     for (int axis = 0; axis < 3; ++axis)
     {
         const float size = InfluenceHalfSize[axis], extent = ProjectionHalfSize[axis];
@@ -43,7 +45,7 @@ void ReflectionProbe::ValidatePosition(const glm::vec3 &position) const
 ReflectionProbe ReadReflectionProbe(const YAML::Node &node)
 {
     DocumentSchema::Keys(node, {"Environment", "InfluenceHalfSize", "ProjectionOffset",
-                               "ProjectionHalfSize", "BlendDistance", "Enabled"}, "ReflectionProbeComponent");
+                               "ProjectionHalfSize", "BlendDistance", "Enabled", "BakeResolution"}, "ReflectionProbeComponent");
     auto vector = [&](const char *name) {
         const auto value = node[name];
         if (!value.IsSequence() || value.size() != 3)
@@ -57,6 +59,7 @@ ReflectionProbe ReadReflectionProbe(const YAML::Node &node)
     probe.ProjectionHalfSize = vector("ProjectionHalfSize");
     probe.BlendDistance = node["BlendDistance"].as<float>();
     probe.Enabled = node["Enabled"].as<bool>();
+    if (auto size = node["BakeResolution"]) probe.BakeResolution = size.as<unsigned>();
     probe.Validate();
     return probe;
 }
@@ -73,6 +76,9 @@ void WriteReflectionProbe(YAML::Emitter &out, const ReflectionProbe &probe)
     vector("ProjectionOffset", probe.ProjectionOffset);
     vector("ProjectionHalfSize", probe.ProjectionHalfSize);
     out << YAML::Key << "BlendDistance" << YAML::Value << probe.BlendDistance
-        << YAML::Key << "Enabled" << YAML::Value << probe.Enabled << YAML::EndMap;
+        << YAML::Key << "Enabled" << YAML::Value << probe.Enabled;
+    if (probe.BakeResolution != 256)
+        out << YAML::Key << "BakeResolution" << YAML::Value << probe.BakeResolution;
+    out << YAML::EndMap;
 }
 }

@@ -24,6 +24,75 @@ void Check(const Cancel &c)
         throw std::runtime_error(
             "Environment preparation cancelled; last accepted generation retained");
 }
+// Direct mip-zero retention avoids a cube/lat-long round trip on the
+// sharpest level. The lat-long proposal reuses the qualified MIS integrator
+// for the filtered levels and diffuse endpoint.
+RadianceImage CapturePanorama(const LightingImage &cube, const Cancel &cancel)
+{
+    if (cube.Kind != LightingImageKind::Background || cube.Mips.size() != 1 ||
+        (cube.Side != 128 && cube.Side != 256 && cube.Side != 512))
+        throw std::runtime_error("Expected a 128, 256 or 512 pixel FP32 scene cube");
+    const int side = int(cube.Side);
+    struct CubeUV { unsigned Face; double U, V; };
+    auto coordinates = [](glm::dvec3 d) -> CubeUV {
+        auto a = glm::abs(d);
+        double major = std::max({a.x, a.y, a.z});
+        glm::dvec2 uv;
+        unsigned face;
+        if (major == a.x)
+        {
+            face = d.x > 0 ? 0 : 1;
+            uv = {face == 0 ? -d.z : d.z, -d.y};
+        }
+        else if (major == a.y)
+        {
+            face = d.y > 0 ? 2 : 3;
+            uv = {d.x, face == 2 ? d.z : -d.z};
+        }
+        else
+        {
+            face = d.z > 0 ? 4 : 5;
+            uv = {face == 4 ? d.x : -d.x, -d.y};
+        }
+        return {face, .5 + .5 * uv.x / major, .5 + .5 * uv.y / major};
+    };
+    auto texel = [&](unsigned face, int x, int y) {
+        if (x < 0 || y < 0 || x >= side || y >= side)
+        {
+            const auto neighbor = coordinates(CubeDirection(face, (x + .5) / side, (y + .5) / side));
+            face = neighbor.Face;
+            x = std::clamp(int(neighbor.U * side), 0, side - 1);
+            y = std::clamp(int(neighbor.V * side), 0, side - 1);
+        }
+        const size_t index = 3 * ((size_t(face) * side + y) * side + x);
+        const auto &rgb = cube.Mips[0];
+        return glm::dvec3(rgb[index], rgb[index + 1], rgb[index + 2]);
+    };
+    RadianceImage image;
+    image.Width = cube.Side * 4;
+    image.Height = cube.Side * 2;
+    image.RGB.reserve(size_t(image.Width) * image.Height * 3);
+    for (unsigned y = 0; y < image.Height; ++y)
+    {
+        Check(cancel);
+        const auto theta = Pi * (y + .5) / image.Height;
+        const auto sine = std::sin(theta), cosine = std::cos(theta);
+        for (unsigned x = 0; x < image.Width; ++x)
+        {
+            const auto phi = 2 * Pi * ((x + .5) / image.Width - .5);
+            const auto uv = coordinates({sine * std::cos(phi), cosine, sine * std::sin(phi)});
+            const double u = uv.U * side - .5, v = uv.V * side - .5;
+            const int ix = int(std::floor(u)), iy = int(std::floor(v));
+            const auto c = glm::mix(glm::mix(texel(uv.Face, ix, iy), texel(uv.Face, ix + 1, iy), u - ix),
+                                    glm::mix(texel(uv.Face, ix, iy + 1), texel(uv.Face, ix + 1, iy + 1), u - ix),
+                                    v - iy);
+            for (int channel = 0; channel < 3; ++channel)
+                image.RGB.push_back(float(c[channel]));
+        }
+    }
+    return image;
+}
+
 double Radical(uint32_t b)
 {
     b = (b << 16) | (b >> 16);
@@ -244,7 +313,9 @@ void PrepareImage(const std::filesystem::path &assets, const std::filesystem::pa
     auto source = Project::ResolveOwnedAsset(root, d.Image);
     auto sourceBytes = ReadAssetBytes(source, 64 * 1024 * 1024);
     auto sourceHash = AssetHash(sourceBytes), intent = EnvironmentIntent(d), lutKey = LUTKey();
-    auto identity = EnvironmentCacheIdentity(sourceHash, intent, Producer(), lutKey, EnvironmentPreparationRecipe);
+    const std::string evaluation = d.SceneCapture ? CaptureRadianceEvaluation : RadianceEvaluation;
+    auto identity = EnvironmentCacheIdentity(sourceHash, intent, Producer(), lutKey, EnvironmentPreparationRecipe,
+                                             evaluation);
     auto acceptedRef = EnvironmentAcceptance(reference);
     auto acceptedPath = Project::ResolveOwnedAsset(root, acceptedRef);
     FileDocument accepted;
@@ -286,8 +357,17 @@ void PrepareImage(const std::filesystem::path &assets, const std::filesystem::pa
     Put(stage.Path / "owner", "Hazel.EnvironmentBake.v1\n");
     auto start = std::chrono::steady_clock::now();
     Check(cancel);
-    auto sourceImage = DecodeRadianceHDR(sourceBytes);
-    auto set = Prepare(sourceImage, d.Profile, cancel);
+    LightingSet set;
+    if (d.SceneCapture)
+    {
+        auto cube = DecodeLightingImage(sourceBytes);
+        if (cube.Side != d.Profile.Specular)
+            throw std::runtime_error("Captured specular resolution must equal the source face size");
+        set = Prepare(CapturePanorama(cube, cancel), d.Profile, cancel);
+        set.Specular.Mips.front() = std::move(cube.Mips.front());
+    }
+    else
+        set = Prepare(DecodeRadianceHDR(sourceBytes), d.Profile, cancel);
     auto lutFolder = std::filesystem::path("Prepared/BRDF") / lutKey;
     auto lutRoot = Project::ResolveOwnedAsset(root, lutFolder);
     std::filesystem::create_directories(lutRoot);
@@ -338,7 +418,7 @@ void PrepareImage(const std::filesystem::path &assets, const std::filesystem::pa
     n["Generation"] = AssetKey(generationID);
     n["IntentHash"] = intent;
     n["SourceHash"] = sourceHash;
-    n["Evaluation"] = RadianceEvaluation;
+    n["Evaluation"] = evaluation;
     n["Producer"] = Producer();
     n["LUTIdentity"] = lutKey;
     unsigned i = 0;

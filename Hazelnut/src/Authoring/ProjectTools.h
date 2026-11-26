@@ -10,7 +10,8 @@ enum class ToolCompletion
     None,
     ReloadScripts,
     OpenCreatedProject,
-    RefreshImportedAssets
+    RefreshImportedAssets,
+    ApplyReflectionBake
 };
 struct ToolRequest
 {
