@@ -9,7 +9,7 @@ namespace Hazel
 {
 namespace
 {
-const std::array<std::type_index, 25> UIHistoryComponents = {
+const std::array<std::type_index, 26> UIHistoryComponents = {
     typeid(UICanvasComponent),     typeid(UIRectComponent),          typeid(UILayoutComponent),
     typeid(UITextStyleComponent),  typeid(UINineSliceComponent),     typeid(UIButtonComponent),
     typeid(TextComponent),         typeid(SpriteRendererComponent),  typeid(UIRadioGroupComponent),
@@ -18,7 +18,7 @@ const std::array<std::type_index, 25> UIHistoryComponents = {
     typeid(UITooltipComponent),    typeid(UITextEntryComponent),     typeid(UIAppearanceComponent),
     typeid(TransformComponent),    typeid(CircleRendererComponent),  typeid(CameraComponent),
     typeid(MeshRendererComponent), typeid(DirectionalLightComponent),
-    typeid(PointLightComponent), typeid(SpotLightComponent)};
+    typeid(PointLightComponent), typeid(SpotLightComponent), typeid(ReflectionProbeComponent)};
 void Strip(SpriteSource &source)
 {
     if (auto t = std::get_if<TextureSpriteSource>(&source))
@@ -76,6 +76,11 @@ template <class A, class B, class C, class F> void Fields(A &a, B &b, C &c, F f)
     }
     COMPONENT(Point) {FIELD(Point,Color);FIELD(Point,Intensity);FIELD(Point,Enabled);FIELD(Point,Range);FIELD(Point,CastShadows);FIELD(Point,ShadowResolution);}
     COMPONENT(Spot) {FIELD(Spot,Color);FIELD(Spot,Intensity);FIELD(Spot,Enabled);FIELD(Spot,Range);FIELD(Spot,InnerCone);FIELD(Spot,OuterCone);FIELD(Spot,CastShadows);FIELD(Spot,ShadowResolution);}
+    COMPONENT(Probe)
+    {
+        FIELD(Probe, Environment); FIELD(Probe, Enabled); FIELD(Probe, InfluenceHalfSize);
+        FIELD(Probe, ProjectionOffset); FIELD(Probe, ProjectionHalfSize); FIELD(Probe, BlendDistance);
+    }
     COMPONENT(Mesh) {FIELD(Mesh,Mesh);FIELD(Mesh,Materials);}
     COMPONENT(Circle) {FIELD(Circle,Color);FIELD(Circle,Thickness);FIELD(Circle,Fade);}
     COMPONENT(Camera) {FIELD(Camera,Projection);FIELD(Camera,FOV);FIELD(Camera,Near);FIELD(Camera,Far);FIELD(Camera,Size);FIELD(Camera,OrthoNear);FIELD(Camera,OrthoFar);FIELD(Camera,Primary);FIELD(Camera,FixedAspect);}
@@ -246,6 +251,7 @@ void Validate(Scene &scene, const UIEditValues &v, const UIEditValues &old)
         v.Light->Validate();
     if(v.Point)v.Point->Validate();
     if(v.Spot)v.Spot->Validate();
+    if(v.Probe)v.Probe->Validate();
     if(v.Mesh){v.Mesh->Validate();if(!v.Mesh->Mesh.empty()&&(!old.Mesh||!(*v.Mesh==*old.Mesh))){if(!scene.GetAssets())throw std::runtime_error("Open a project before assigning mesh assets");AuditMeshBinding(scene.GetAssets()->Root(),*v.Mesh);}}
     if(v.Transform){Finite(v.Transform->Translation);Finite(v.Transform->Rotation);Finite(v.Transform->Scale);}
     if(v.Circle){Finite(v.Circle->Color);Positive(v.Circle->Thickness);Positive(v.Circle->Fade);}
@@ -373,6 +379,10 @@ FIELD(Light, Enabled);
 }
     COMPONENT(Point,PointLightComponent) FIELD(Point,Color);FIELD(Point,Intensity);FIELD(Point,Enabled);FIELD(Point,Range);FIELD(Point,CastShadows);FIELD(Point,ShadowResolution);}
     COMPONENT(Spot,SpotLightComponent) FIELD(Spot,Color);FIELD(Spot,Intensity);FIELD(Spot,Enabled);FIELD(Spot,Range);FIELD(Spot,InnerCone);FIELD(Spot,OuterCone);FIELD(Spot,CastShadows);FIELD(Spot,ShadowResolution);}
+    COMPONENT(Probe, ReflectionProbeComponent)
+        FIELD(Probe, Environment); FIELD(Probe, Enabled); FIELD(Probe, InfluenceHalfSize);
+        FIELD(Probe, ProjectionOffset); FIELD(Probe, ProjectionHalfSize); FIELD(Probe, BlendDistance);
+    }
     COMPONENT(Mesh,MeshRendererComponent) FIELD(Mesh,Mesh);FIELD(Mesh,Materials);}
     COMPONENT(Circle, CircleRendererComponent) FIELD(Circle,Color);FIELD(Circle,Thickness);FIELD(Circle,Fade);}
     if(old.Camera && next.Camera) {
@@ -501,6 +511,7 @@ UIEditValues UIEditValues::Capture(Entity e)
     CAPTURE(DirectionalLightComponent, Light);
     CAPTURE(PointLightComponent, Point);
     CAPTURE(SpotLightComponent, Spot);
+    CAPTURE(ReflectionProbeComponent, Probe);
     CAPTURE(CameraComponent,Camera);
     CAPTURE(UICanvasComponent, Canvas);
     CAPTURE(UIRectComponent, Rect);
@@ -636,6 +647,23 @@ void UIEditCommand::Publish(Scene &scene, const UIEditValues &current, UIEditVal
         for (int i = 0; i < 5; ++i)
             preserveGenerated(e.GetComponent<UIButtonComponent>().Images[i], current.Button->Images[i], next.Button->Images[i]);
     Validate(scene, next, current);
+    if (next.Probe && current.Probe && next.Probe->Enabled &&
+        (!current.Probe->Enabled || current.Probe->Environment != next.Probe->Environment))
+    {
+        unsigned count = 1;
+        for (auto handle : scene.GetAllEntitiesWith<ReflectionProbeComponent>())
+            if (Entity(handle, &scene) != e && Entity(handle, &scene).GetComponent<ReflectionProbeComponent>().Enabled)
+                ++count;
+        if (count > MaxReflectionProbes)
+            throw std::runtime_error("Only two enabled reflection probes are supported");
+        const auto assets = scene.GetAssets();
+        if (!assets || !scene.Presentation().SceneReferred)
+            throw std::runtime_error("Enabled reflection probes require scene-referred presentation and project assets");
+        const auto environment = assets->Environment(next.Probe->Environment);
+        if (!environment.Accepted)
+            throw std::runtime_error(environment.Error);
+        ValidateReflectionProbeEnvironment(*environment.Accepted);
+    }
     auto restore = next;     // all allocations precede mutation
     Write(e, current, next); // next now contains the old values for changed fields
     try
@@ -732,6 +760,7 @@ void UIEditCommand::Cancel(Scene &scene)
     KEEP(Light, DirectionalLightComponent, 22);
     KEEP(Point, PointLightComponent, 23);
     KEEP(Spot, SpotLightComponent, 24);
+    KEEP(Probe, ReflectionProbeComponent, 25);
     KEEP(Canvas, UICanvasComponent, 0);
     KEEP(Rect, UIRectComponent, 1);
     KEEP(Flow, UILayoutComponent, 2);
@@ -762,6 +791,7 @@ void UIEditCommand::Cancel(Scene &scene)
     RESTORE(Light);
     RESTORE(Point);
     RESTORE(Spot);
+    RESTORE(Probe);
     RESTORE(Canvas);
     RESTORE(Rect);
     RESTORE(Flow);

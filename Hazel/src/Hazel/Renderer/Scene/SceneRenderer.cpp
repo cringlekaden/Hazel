@@ -1,6 +1,7 @@
 #include "hzpch.h"
 #include "SceneRenderer.h"
 #include "Hazel/Renderer/Drawing/Renderer3D.h"
+#include "Hazel/Assets/ProjectAssets.h"
 #include "Hazel/Renderer/Drawing/Renderer2D.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include <map>
@@ -75,6 +76,15 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
     PointShadowLayout pointLayout;
     SceneSubmission shadowed;
     try {
+        if (input.ReflectionProbes.size() > MaxReflectionProbes ||
+            (!input.ReflectionProbes.empty() && (!input.Assets || !input.Presentation.SceneReferred)))
+            throw std::runtime_error("Reflection probes require project assets, scene-referred presentation and at most two probes");
+        view.ReflectionProbes = {};
+        ViewReflectionProbes probes;
+        if (!input.Meshes.empty())
+            for (size_t i = 0; i < input.ReflectionProbes.size(); ++i)
+                probes[i] = input.Assets->RealizeReflectionProbe(input.ReflectionProbes[i].Environment);
+        view.ReflectionProbes = std::move(probes);
         if (input.LocalLights.size() > MaxLocalLights)
             throw std::runtime_error("Submission exceeds 320 local lights; no lights were truncated");
         spotLayout = FitSpotShadows(input);
@@ -210,7 +220,8 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         const auto& extent=display->GetSpecification();auto& state=view.Temporal;
         historyValid=state.Submitted && state.Submitted->load() && state.Width==extent.Width && state.Height==extent.Height &&
             state.Previous.SceneIdentity==frame.SceneIdentity && state.Previous.Assets==frame.Assets &&
-            state.Previous.Presentation==frame.Presentation && !CameraCut(frame,state.Previous.Camera);
+            state.Previous.Presentation==frame.Presentation &&
+            state.Previous.ReflectionProbes==frame.ReflectionProbes && !CameraCut(frame,state.Previous.Camera);
         if (historyValid) {
             // A different admission or map resolution is an abrupt lighting edit.
             for (unsigned slot = 0; slot < MaxSpotShadows; ++slot) {
@@ -314,7 +325,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                     std::static_pointer_cast<MetalFramebuffer>(view.Motion)->SetTemporalProducer();
 #endif
                     view.Jittered->Bind();view.Jittered->Clear(frame.Presentation.Background);
-                    prepareLighting(view.Jittered);Renderer3D::Render(sample,true);view.Jittered->Unbind();
+                    prepareLighting(view.Jittered);Renderer3D::Render(sample,true,false,false,&view.ReflectionProbes);view.Jittered->Unbind();
                     view.Motion->Bind();view.Motion->Clear(glm::vec4(0));Renderer3D::Render(motion,false,false,true);view.Motion->Unbind();
                     view.Radiance->Bind();
 #ifdef HZ_PLATFORM_MACOS
@@ -326,7 +337,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
 #endif
                 } else {
                     view.Radiance->Bind();view.Radiance->Clear(frame.Presentation.Background);
-                    prepareLighting(view.Radiance);Renderer3D::Render(frame,true);
+                    prepareLighting(view.Radiance);Renderer3D::Render(frame,true,false,false,&view.ReflectionProbes);
                 }
                 auto worldState = raster;
                 RenderCommand::SetRasterState(worldState);
@@ -345,7 +356,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
 #endif
                 }
                 prepareLighting(display);
-                Renderer3D::Render(frame, false);
+                Renderer3D::Render(frame,false,false,false,&view.ReflectionProbes);
                 RenderCommand::SetRasterState(raster);
                 world2D();
             }
@@ -435,7 +446,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
     else
         view.Radiance.reset();
     if (anyShadows) prepareShadowDepth(hdr ? view.Radiance : display);
-    Renderer3D::Render(frame, hdr);
+    Renderer3D::Render(frame,hdr,false,false,&view.ReflectionProbes);
     raster = RenderCommand::GetRasterState();
     raster.Cull = CullFace::None;
     raster.Clockwise = false;

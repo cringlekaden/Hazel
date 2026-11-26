@@ -54,7 +54,16 @@ layout(binding=7) uniform sampler2D u_BRDF;
 #ifdef HZ_METAL
 layout(binding=8) uniform sampler2D u_ScreenAO;
 #endif
-layout(std140,binding=6) uniform Environment {mat4 u_InverseVP;vec4 u_EnvRotationGain;vec4 u_EnvOptions;};
+layout(binding=13) uniform samplerCube u_ProbeSpecular0;
+layout(binding=14) uniform samplerCube u_ProbeSpecular1;
+#ifdef HZ_METAL
+layout(binding=15) uniform samplerCube u_ProbeCosine0;
+layout(binding=16) uniform samplerCube u_ProbeCosine1;
+#else
+layout(binding=8) uniform samplerCube u_ProbeCosine0;
+layout(binding=9) uniform samplerCube u_ProbeCosine1;
+#endif
+layout(std140,binding=6) uniform Environment {mat4 u_InverseVP;vec4 u_EnvRotationGain;vec4 u_EnvOptions;vec4 u_ReflectionProbes[8];};
 vec3 environmentDirection(vec3 d){float c=u_EnvRotationGain.x,s=u_EnvRotationGain.y;return vec3(c*d.x-s*d.z,d.y,s*d.x+c*d.z);}
 const float PI=3.141592653589793;
 vec3 specularLevel(vec3 direction,float level){
@@ -64,6 +73,44 @@ vec3 specularLevel(vec3 direction,float level){
     // lobe, HDR energy and LUT; no new bake, extra blur or lighting model.
     if(level>=u_EnvRotationGain.w)return textureLod(u_Irradiance,direction,0).rgb/PI;
     return textureLod(u_Specular,direction,level).rgb;
+}
+// The influence box is contained by the proxy, and the capture lies inside both.
+vec3 probeDirection(vec3 relativePosition, vec3 direction, vec3 center, vec3 halfSize)
+{
+    vec3 exitFace = mix(center - halfSize, center + halfSize, greaterThan(direction, vec3(0)));
+    vec3 speed = abs(direction);
+    vec3 span = max((exitFace - relativePosition) * sign(direction), vec3(0));
+    float distance = 1e30;
+    // Compare before dividing to avoid division by zero and overflow even
+    // when the nearest face is almost parallel to the outgoing ray.
+    for (int axis = 0; axis < 3; ++axis)
+        if (span[axis] < distance * speed[axis])
+            distance = span[axis] / speed[axis];
+    vec3 projected = relativePosition + distance * direction;
+    return dot(projected, projected) > 1e-12 ? projected : direction;
+}
+vec3 probePrefilter(samplerCube specular, samplerCube cosine, vec3 direction, float roughness, float lastLevel)
+{
+    float lod = roughness * lastLevel, level = floor(lod);
+    if (level >= lastLevel)
+        return textureLod(cosine, direction, 0).rgb / PI;
+    vec3 lower = textureLod(specular, direction, level).rgb;
+    vec3 upper = level + 1 >= lastLevel ? textureLod(cosine, direction, 0).rgb / PI :
+                                        textureLod(specular, direction, level + 1).rgb;
+    return mix(lower, upper, fract(lod));
+}
+vec4 sampleProbe(int slot, samplerCube specular, samplerCube cosine, vec3 direction, float roughness)
+{
+    vec4 capture = u_ReflectionProbes[slot];
+    vec4 influence = u_ReflectionProbes[slot + 1];
+    vec3 position = v_Position - capture.xyz;
+    vec3 margin = influence.xyz - abs(position);
+    float weight = smoothstep(0, capture.w, min(min(margin.x, margin.y), margin.z));
+    if (weight <= 0)
+        return vec4(0);
+    vec3 corrected = probeDirection(position, direction, u_ReflectionProbes[slot + 2].xyz,
+                                    u_ReflectionProbes[slot + 3].xyz);
+    return vec4(probePrefilter(specular, cosine, corrected, roughness, influence.w) * weight, weight);
 }
 vec3 resolveShadingNormal(vec3 N,vec3 Ng,vec3 V){
     // Raster coverage belongs to the geometric surface. Interpolated/mapped
@@ -402,30 +449,55 @@ void main(){
         if(u_LocalMeta.y==2)localProbe=vec3(float(useTiles?tileCount:uint(localCount))/64,0.1,0);
         if(u_LocalMeta.y==3)localProbe=useTiles&&tileCount>64u?vec3(1,0,1):vec3(0);
 #endif
-        if(u_EnvOptions.x>.5){
+        if(u_EnvOptions.x>.5 || u_EnvOptions.w>0){
             float nv=clamp(dot(N,V),0,1);
             SurfaceEnergy energy=surfaceEnergy(f0,sampleBRDF(nv,r));
             if(dot(geometricNormal,V)>0){
                 float ao=mix(1,texture(u_Occlusion,v_UV).r,u_Surface.w);
-                vec3 irradiance=texture(u_Irradiance,environmentDirection(N)).rgb/PI;
+                bool globalEnabled=u_EnvOptions.x>.5;
+                float globalGain=globalEnabled?u_EnvRotationGain.z:0;
+                vec3 worldReflection=reflect(-V,N);
+                vec4 localSpecular=vec4(0);
+                if (u_EnvOptions.w > 0 && dot(N,V) > 0)
+                {
+                    localSpecular = sampleProbe(0, u_ProbeSpecular0, u_ProbeCosine0, worldReflection, r);
+                    if (u_EnvOptions.w > 1)
+                        localSpecular += sampleProbe(4, u_ProbeSpecular1, u_ProbeCosine1, worldReflection, r);
+                }
+                vec3 irradiance=globalEnabled?texture(u_Irradiance,environmentDirection(N)).rgb/PI:vec3(0);
                 diffuseTerm=irradiance*base.rgb*(1-metal)*energy.diffuseScale*energy.diffuseShape;
                 vec2 ab=energy.table.xy;
-                // Interpolate roughness levels in FP32: Apple's GL4.1 sampler quantizes
-                // fractional mip LOD even when textureLod receives an exact float.
-                float lod=r*u_EnvRotationGain.w,level=floor(lod);
-                vec3 reflection=environmentDirection(reflect(-V,N));
-                vec3 prefiltered=mix(specularLevel(reflection,level),
-                    specularLevel(reflection,min(level+1,u_EnvRotationGain.w)),fract(lod));
-                prefilteredProbe=prefiltered;brdfProbe=vec3(ab,nv);surfaceProbe=vec3(dot(N,V),rough,metal);
+                vec3 prefiltered=vec3(0);
+                if (globalEnabled && localSpecular.w < 1)
+                {
+                    // Apple's GL 4.1 sampler quantizes fractional mip LOD.
+                    float lod=r*u_EnvRotationGain.w,level=floor(lod);
+                    vec3 reflection=environmentDirection(worldReflection);
+                    prefiltered=mix(specularLevel(reflection,level),
+                        specularLevel(reflection,min(level+1,u_EnvRotationGain.w)),fract(lod));
+                }
+                if (globalEnabled || localSpecular.w > 0)
+                {
+                    prefilteredProbe=prefiltered;brdfProbe=vec3(ab,nv);surfaceProbe=vec3(dot(N,V),rough,metal);
+                }
                 // Retain the BRDF domain check after resolving the shading normal
                 // against visible geometry; it is not a raster visibility cutoff.
-                specularTerm=dot(N,V)>0?prefiltered*(f0*ab.x+ab.y)+
-                    irradiance*energy.multipleFresnel*energy.missingView:vec3(0);
+                vec3 multiple=irradiance*energy.multipleFresnel*energy.missingView;
+                specularTerm=dot(N,V)>0?(prefiltered*(f0*ab.x+ab.y)+multiple)*ao*globalGain:vec3(0);
+                if (localSpecular.w > 0)
+                {
+                    // Normalize overlapping local radiance and spend any remaining
+                    // weight on global radiance. Diffuse and its multiple-scatter
+                    // contribution still use the global environment.
+                    prefilteredProbe = prefiltered * globalGain * max(1 - localSpecular.w, 0) +
+                                       localSpecular.rgb / max(1, localSpecular.w);
+                    specularTerm = (prefilteredProbe * (f0 * ab.x + ab.y) + multiple * globalGain) * ao;
+                }
                 float diffuseAO=ao;
     #ifdef HZ_METAL
                 if(u_EnvOptions.y>0) diffuseAO=min(ao,mix(1,texelFetch(u_ScreenAO,ivec2(gl_FragCoord.xy),0).r,u_EnvOptions.y));
     #endif
-                diffuseTerm*=diffuseAO*u_EnvRotationGain.z;specularTerm*=ao*u_EnvRotationGain.z;
+                diffuseTerm*=diffuseAO*globalGain;
             }
         }
         result=directTerm+diffuseTerm+specularTerm+u_EmissionCutoff.rgb*texture(u_Emissive,v_UV).rgb;

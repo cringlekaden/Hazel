@@ -4,12 +4,16 @@
 #include "Hazel/Scene/SceneDefaults.h"
 #include "SpotShadows.h"
 #include "PointShadows.h"
+#include "ReflectionProbe.h"
+#include <array>
 #include <optional>
 #include <cstdint>
 #include <memory>
 namespace Hazel
 {
 class ProjectAssets;
+struct ReflectionProbeResources;
+using ViewReflectionProbes = std::array<Ref<ReflectionProbeResources>, MaxReflectionProbes>;
 enum class SurfaceView
 {
     Shaded,
@@ -76,6 +80,20 @@ struct SubmittedLocalLight
     unsigned ShadowResolution = 512;
     glm::vec3 ShadowUp{0}; // Authored local +Y keeps the filter aligned as the light rotates.
 };
+struct SubmittedReflectionProbe
+{
+    uint64_t Identity = 0;
+    glm::vec3 Position{0}, InfluenceHalfSize{0}, ProjectionOffset{0}, ProjectionHalfSize{0};
+    float BlendDistance = 0;
+    Ref<const PreparedEnvironment> Environment;
+    bool operator==(const SubmittedReflectionProbe &other) const
+    {
+        return Identity == other.Identity && Position == other.Position &&
+            InfluenceHalfSize == other.InfluenceHalfSize && ProjectionOffset == other.ProjectionOffset &&
+            ProjectionHalfSize == other.ProjectionHalfSize && BlendDistance == other.BlendDistance &&
+            Environment == other.Environment;
+    }
+};
 // Accepted semantic CPU inputs, independent of the forward backend and importers.
 struct SceneSubmission
 {
@@ -103,5 +121,6 @@ struct SceneSubmission
     double LightCollectionMilliseconds=0;
     std::shared_ptr<LocalLightingMetrics> LocalMetrics;
     Ref<const PreparedEnvironment> Environment;
+    std::vector<SubmittedReflectionProbe> ReflectionProbes;
 };
 } // namespace Hazel

@@ -8,6 +8,7 @@
 #include "Hazel/Project/RendererRequestsSerializer.h"
 #include "Hazel/Project/RuntimeStorage.h"
 #include "Hazel/Renderer/Scene/Lighting.h"
+#include "Hazel/Renderer/Scene/ReflectionProbe.h"
 #include "Hazel/Scripting/ScriptEngine.h"
 #include "Hazel/Text/TextSpanSerialization.h"
 #include "Hazel/UI/RuntimeUIConfig.h"
@@ -74,6 +75,7 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
     bool legacy = !hierarchy || !entities;
     std::set<uint64_t> ids;
     size_t checked=0;
+    unsigned enabledProbes = 0;
     for (auto entity : entities)
     {
         if(checked%64==0)OperationProgress::Report("Validate entity schema",checked,entities.size());
@@ -85,7 +87,7 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
               "CameraComponent",
               "ScriptComponent",
               "DirectionalLightComponent", "PointLightComponent", "SpotLightComponent",
-              "MeshRendererComponent",
+              "MeshRendererComponent", "ReflectionProbeComponent",
               "SpriteRendererComponent",
               "SpriteAnimationComponent",
               "CircleRendererComponent",
@@ -208,6 +210,9 @@ bool Scene(const YAML::Node& root, bool prefabDocument)
         };
         readLocal(PointLight{}, "PointLightComponent");
         readLocal(SpotLight{}, "SpotLightComponent");
+        if (auto n = entity["ReflectionProbeComponent"]; n && ReadReflectionProbe(n).Enabled &&
+            ++enabledProbes > MaxReflectionProbes)
+            throw std::runtime_error("Only two enabled reflection probes are supported");
         if(auto n=entity["MeshRendererComponent"])ReadMeshBinding(n);
         if (auto n = entity["CircleRendererComponent"])
         {

@@ -613,7 +613,8 @@ namespace Hazel {
 		}
 
         if(m_SceneState!=SceneState::Play &&
-            (!m_ActiveScene->GetAllEntitiesWith<PointLightComponent>().empty() || !m_ActiveScene->GetAllEntitiesWith<SpotLightComponent>().empty())) {
+            (!m_ActiveScene->GetAllEntitiesWith<PointLightComponent>().empty() || !m_ActiveScene->GetAllEntitiesWith<SpotLightComponent>().empty() ||
+             !m_ActiveScene->GetAllEntitiesWith<ReflectionProbeComponent>().empty())) {
         Renderer2D::EndScene(); // Finish passive overlays before enabling ID writes.
         RenderCommand::SetPickingMask(glm::bvec4(true));beginOverlay();
         // Scene-owned light gizmos write their entity ID for normal viewport selection.
@@ -656,10 +657,45 @@ namespace Hazel {
             }
         };
         lightGizmos(PointLightComponent{});lightGizmos(SpotLightComponent{});
+        for (auto handle : m_ActiveScene->GetAllEntitiesWith<ReflectionProbeComponent>())
+        {
+            Entity entity(handle, m_ActiveScene.get());
+            const auto &probe = entity.GetComponent<ReflectionProbeComponent>();
+            const glm::vec3 position(m_ActiveScene->GetWorldTransform(entity)[3]);
+            try { probe.Validate(); probe.ValidatePosition(position); }
+            catch (const std::exception &) { continue; }
+            const bool selected = entity == m_SceneHierarchyPanel.GetSelectedEntity();
+            const glm::vec4 influence(.25f, .85f, 1.f, probe.Enabled ? 1.f : .45f);
+            for (int axis = 0; axis < 3; ++axis)
+            {
+                glm::vec3 delta(0);
+                delta[axis] = .15f;
+                Renderer2D::DrawLine(position - delta, position + delta, influence, int(handle));
+            }
+            if (!selected)
+                continue;
+            auto drawBox = [&](glm::vec3 center, glm::vec3 extent, const glm::vec4 &color) {
+                for (int corner = 0; corner < 8; ++corner)
+                {
+                    const auto start = center + extent * glm::vec3(
+                        corner & 1 ? 1.f : -1.f, corner & 2 ? 1.f : -1.f, corner & 4 ? 1.f : -1.f);
+                    for (int axis = 0; axis < 3; ++axis)
+                        if (!(corner & (1 << axis)))
+                        {
+                            auto end = start;
+                            end[axis] += 2 * extent[axis];
+                            Renderer2D::DrawLine(start, end, color, int(handle));
+                        }
+                }
+            };
+            if (probe.ProjectionOffset != glm::vec3(0) || probe.ProjectionHalfSize != probe.InfluenceHalfSize)
+                drawBox(position + probe.ProjectionOffset, probe.ProjectionHalfSize, glm::vec4(1.f, .6f, .2f, influence.a));
+            drawBox(position, probe.InfluenceHalfSize, influence);
+        }
         Renderer2D::EndScene();RenderCommand::SetPickingMask(glm::bvec4(false));beginOverlay();
         }
 		// Draw selected entity outline
-		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity(); selectedEntity && !selectedEntity.HasComponent<PointLightComponent>() && !selectedEntity.HasComponent<SpotLightComponent>() && !selectedEntity.HasComponent<MeshRendererComponent>() && !selectedEntity.HasComponent<UIRectComponent>() && !selectedEntity.HasComponent<UICanvasComponent>())
+		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity(); selectedEntity && !selectedEntity.HasComponent<PointLightComponent>() && !selectedEntity.HasComponent<SpotLightComponent>() && !selectedEntity.HasComponent<ReflectionProbeComponent>() && !selectedEntity.HasComponent<MeshRendererComponent>() && !selectedEntity.HasComponent<UIRectComponent>() && !selectedEntity.HasComponent<UICanvasComponent>())
 		{
 			const auto transform = m_ActiveScene->GetWorldTransform(selectedEntity);
             if(auto* sprite=m_ActiveScene->RenderedSprite(selectedEntity)) {

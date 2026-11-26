@@ -99,7 +99,7 @@ private:
     std::weak_ptr<MetalRenderer2DFrame> m_Renderer2DFrame;
     std::unordered_map<std::string, std::shared_ptr<Shader>> m_Shaders;
     std::array<std::weak_ptr<const std::vector<uint8_t>>, 8> m_Uniforms;
-    std::array<std::shared_ptr<const MetalTextureVersion>, 8> m_Textures;
+    std::array<std::shared_ptr<const MetalTextureVersion>, 17> m_Textures;
     std::string m_BoundShader;
     RasterState m_Raster;
     std::vector<RasterState> m_StateStack;

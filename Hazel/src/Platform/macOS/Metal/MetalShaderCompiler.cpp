@@ -28,7 +28,7 @@ Layout CPUContract(const std::string& name)
     if (name == "Object") return {sizeof(ObjectData), {offsetof(ObjectData, Model), offsetof(ObjectData, Normal), offsetof(ObjectData, Identity)}};
     if (name == "Motion") return {sizeof(MotionData), {offsetof(MotionData, PreviousMVP), offsetof(MotionData, Valid)}};
     if (name == "Material") return {sizeof(MaterialData), {offsetof(MaterialData, Base), offsetof(MaterialData, Emissive), offsetof(MaterialData, Surface), offsetof(MaterialData, Options)}};
-    if (name == "Environment") return {sizeof(EnvironmentData), {offsetof(EnvironmentData, InverseVP), offsetof(EnvironmentData, RotationGain), offsetof(EnvironmentData, Options)}};
+    if (name == "Environment") return {sizeof(EnvironmentData), {offsetof(EnvironmentData, InverseVP), offsetof(EnvironmentData, RotationGain), offsetof(EnvironmentData, Options), offsetof(EnvironmentData, Probes)}};
     if (name == "Camera") return {sizeof(glm::mat4), {0}};
     if (name == "DirectionalShadows") return {sizeof(DirectionalShadowData), {offsetof(DirectionalShadowData,VP), offsetof(DirectionalShadowData,Splits),
         offsetof(DirectionalShadowData,Eye), offsetof(DirectionalShadowData,Forward), offsetof(DirectionalShadowData,Parameters),
@@ -97,7 +97,9 @@ void Reflect(spirv_cross::CompilerMSL& cross, std::ostream& output)
         for (uint32_t i = 0; i < count; ++i)
             Check(textures.insert(binding + i).second && samplers.insert(binding + i).second,
                 "Colliding texture/sampler binding");
-        output << "sampled_image " << resource.name << " texture=" << binding << " sampler=" << binding
+        const bool cosine = resource.name == "u_ProbeCosine0" || resource.name == "u_ProbeCosine1";
+        output << "sampled_image " << resource.name << " texture=" << binding
+            << " sampler=" << (cosine ? "constexpr-linear-clamp" : std::to_string(binding))
             << " count=" << count << " dimension=" << type.image.dim
             << " arrayed=" << type.image.arrayed << " sample_type=" << cross.get_type(type.image.type).basetype << '\n';
     }
@@ -203,6 +205,16 @@ MetalShaderArtifact CompileMetalShader(const std::string& name, const std::strin
                     mapping.msl_buffer = binding; mapping.msl_texture = binding; mapping.msl_sampler = argumentBuffer ? 32 + binding : binding;
                     cross.add_msl_resource_binding(mapping);
                 }
+            // Both local cosine endpoints are single-mip linear HDR cubes.
+            // Metal exposes sixteen direct sampler slots; these two use the
+            // same filtering as MetalTextureCube with a static sampler.
+            for (const auto &resource : reflected.sampled_images)
+                if (resource.name == "u_ProbeCosine0" || resource.name == "u_ProbeCosine1")
+                {
+                    spirv_cross::MSLConstexprSampler sampler;
+                    sampler.min_filter = sampler.mag_filter = spirv_cross::MSL_SAMPLER_FILTER_LINEAR;
+                    cross.remap_constexpr_sampler(resource.id, sampler);
+                }
             const auto msl = cross.compile();
             // Cross reports actual assigned indices after compile; fail on a mismatch.
             const auto resources = cross.get_shader_resources();
@@ -211,6 +223,7 @@ MetalShaderArtifact CompileMetalShader(const std::string& name, const std::strin
             for (const auto& resource : resources.sampled_images)
             {
                 Check(cross.get_automatic_msl_resource_binding(resource.id) == cross.get_decoration(resource.id, spv::DecorationBinding), "MSL texture mapping differs");
+                if (resource.name == "u_ProbeCosine0" || resource.name == "u_ProbeCosine1") continue;
                 Check(cross.get_automatic_msl_resource_binding_secondary(resource.id) == (argumentBuffer ? 32u : 0u) + cross.get_decoration(resource.id, spv::DecorationBinding), "MSL sampler mapping differs");
             }
             auto& data = artifact.Stages[stage == "vertex" ? 0 : 1];

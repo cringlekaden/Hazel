@@ -79,6 +79,28 @@ Ref<EnvironmentResources> ProjectAssets::RealizeEnvironment(const Ref<const Prep
     m_EnvironmentGPU.emplace(key, resource);
     return resource;
 }
+Ref<ReflectionProbeResources> ProjectAssets::RealizeReflectionProbe(const Ref<const PreparedEnvironment> &environment)
+{
+    if (!environment)
+        throw std::runtime_error("Reflection probe has no accepted environment");
+    const auto key = environment->Identity + AssetKey(environment->Generation);
+    if (const auto it = m_ReflectionProbeGPU.find(key); it != m_ReflectionProbeGPU.end())
+        return it->second;
+    // Each entry has a bounded face size. Views and queued Metal frames pin
+    // entries until retirement, so eviction includes in-flight generations.
+    constexpr size_t maxGenerations = 8;
+    if (m_ReflectionProbeGPU.size() == maxGenerations)
+    {
+        const auto victim = std::find_if(m_ReflectionProbeGPU.begin(), m_ReflectionProbeGPU.end(),
+                                         [](const auto &entry) { return entry.second.use_count() == 1; });
+        if (victim == m_ReflectionProbeGPU.end())
+            throw std::runtime_error("Reflection probe GPU cache exceeds eight pinned generations");
+        m_ReflectionProbeGPU.erase(victim);
+    }
+    auto resource = CreateRef<ReflectionProbeResources>(*environment);
+    m_ReflectionProbeGPU.emplace(key, resource);
+    return resource;
+}
 void ProjectAssets::RefreshEnvironments()
 {
     // Retain accepted versions through failed/stale refresh, including unpinned

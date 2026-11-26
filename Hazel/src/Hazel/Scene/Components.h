@@ -1,5 +1,6 @@
 #pragma once
 #include "Hazel/Renderer/Scene/Lighting.h"
+#include "Hazel/Renderer/Scene/ReflectionProbe.h"
 #include "Hazel/UI/Dropdown.h"
 #include "Hazel/UI/ScrollView.h"
 #include "Hazel/UI/Slider.h"
@@ -109,6 +110,7 @@ namespace Hazel {
     };
     struct PointLightComponent : PointLight {};
     struct SpotLightComponent : SpotLight {};
+    struct ReflectionProbeComponent : ReflectionProbe {};
     struct MeshRendererComponent : MeshBinding {}; // authored references only; no stage-2 drawing
 
 	struct CircleRendererComponent
@@ -315,7 +317,7 @@ namespace Hazel {
 	};
 
     using AllComponents = ComponentGroup<
-        TransformComponent, DirectionalLightComponent, PointLightComponent, SpotLightComponent, MeshRendererComponent,
+        TransformComponent, DirectionalLightComponent, PointLightComponent, SpotLightComponent, ReflectionProbeComponent, MeshRendererComponent,
         SpriteRendererComponent, SpriteAnimationComponent, AudioSourceComponent,
         CircleRendererComponent, CameraComponent, ScriptComponent, NativeScriptComponent,
         Rigidbody2DComponent, BoxCollider2DComponent, CircleCollider2DComponent, TextComponent,

@@ -31,6 +31,7 @@ struct UIEditValues
     std::optional<DirectionalLight> Light;
     std::optional<PointLight> Point;
     std::optional<SpotLight> Spot;
+    std::optional<ReflectionProbe> Probe;
     std::optional<CameraEditValue> Camera;
     std::optional<UICanvasComponent> Canvas;
     std::optional<UIRectComponent> Rect;
@@ -61,6 +62,8 @@ struct UIEditValues
             Point = static_cast<const PointLight &>(value);
         else if constexpr (std::is_same_v<T, SpotLightComponent>)
             Spot = static_cast<const SpotLight &>(value);
+        else if constexpr (std::is_same_v<T, ReflectionProbeComponent>)
+            Probe = static_cast<const ReflectionProbe &>(value);
         else if constexpr (std::is_same_v<T, DirectionalLightComponent>)
             Light = static_cast<const DirectionalLight &>(value);
         else if constexpr (std::is_same_v<T,MeshRendererComponent>)Mesh=static_cast<const MeshBinding&>(value);
@@ -128,7 +131,7 @@ class UIEditCommand final : public DocumentCommand
                  bool cancelling = false) const;
     uint64_t m_Document, m_Entity;
     std::vector<std::pair<uint64_t, uint64_t>> m_Guards;
-    std::array<uint64_t, 25> m_ComponentVersions{};
+    std::array<uint64_t, 26> m_ComponentVersions{};
     std::string m_Name;
     UIEditValues m_Before, m_After;
 };

@@ -1,0 +1,415 @@
+{
+  "checkpoint": "489a4bc732c7ea870ead0b2a09a3faea4af4629d",
+  "host": "Apple M4, macOS 27.3, 2560\u00d71440 display at 1\u00d7",
+  "glDriver": "Apple OpenGL 4.1 Metal - 91.7",
+  "forwardGlslSHA256": "b1f0ab368a4850e65e1f88d3b36b1ea62be635737a73933edc1db1dc2f68d70d",
+  "forwardMetalArtifactSHA256": "644d69785913abe341d8c6b81cf3d5772d8e7d82e3a69af75b55fa2a5d8d2f1f",
+  "native": {
+    "Debug": {
+      "scope": "PASS focused native reflection probes",
+      "testResults": {
+        "metal": [
+          "REFLECTION_REFERENCE samples=175560 overlap=41160 residual=130192 faces=63 radiance=0.000101215 energy=4.91462e-05 diffuse=0",
+          "REFLECTION_MOTION poses=9 retainedTAA=pass stationaryVsMovingP99=0.0361023",
+          "REFLECTION_STUDY poses=9 serialization=pass dependencies=pass AO/TAA=pass",
+          "REFLECTION_LIFETIME queued=3 allocatedMetalBytes=4587520 finalOwners=0"
+        ],
+        "opengl": [
+          "REFLECTION_REFERENCE samples=175560 overlap=41160 residual=130192 faces=63 radiance=0.000101185 energy=4.91313e-05 diffuse=0",
+          "REFLECTION_STUDY poses=9 serialization=pass dependencies=pass"
+        ]
+      },
+      "matchedPoseParity": {
+        "global-0": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 8.27014446258545e-06,
+          "idDifferences": 0
+        },
+        "global-1": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 5.21540641784668e-06,
+          "idDifferences": 0
+        },
+        "global-2": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 1.2367963790893555e-05,
+          "idDifferences": 0
+        },
+        "global-3": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 1.874566078186035e-05,
+          "idDifferences": 0
+        },
+        "global-4": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 8.32974910736084e-06,
+          "idDifferences": 0
+        },
+        "global-5": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 8.612871170043945e-06,
+          "idDifferences": 1
+        },
+        "global-6": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 8.717179298400879e-06,
+          "idDifferences": 0
+        },
+        "global-7": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 8.940696716308594e-06,
+          "idDifferences": 0
+        },
+        "global-8": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 7.703900337219238e-06,
+          "idDifferences": 2
+        },
+        "local-0": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 6.80088996887207e-05,
+          "idDifferences": 0
+        },
+        "local-1": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 1.3649463653564453e-05,
+          "idDifferences": 0
+        },
+        "local-2": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 0.00036469101905822754,
+          "idDifferences": 0
+        },
+        "local-3": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 0.00010269880294799805,
+          "idDifferences": 0
+        },
+        "local-4": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 7.492303848266602e-05,
+          "idDifferences": 0
+        },
+        "local-5": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 0.0002868175506591797,
+          "idDifferences": 1
+        },
+        "local-6": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 5.123019218444824e-05,
+          "idDifferences": 0
+        },
+        "local-7": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 0.0010676383972167969,
+          "idDifferences": 0
+        },
+        "local-8": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 3.3408403396606445e-05,
+          "idDifferences": 2
+        }
+      }
+    },
+    "Release": {
+      "scope": "PASS focused native reflection probes",
+      "testResults": {
+        "metal": [
+          "REFLECTION_REFERENCE samples=175560 overlap=41160 residual=130192 faces=63 radiance=0.000101215 energy=4.91462e-05 diffuse=0",
+          "REFLECTION_MOTION poses=9 retainedTAA=pass stationaryVsMovingP99=0.0361023",
+          "REFLECTION_STUDY poses=9 serialization=pass dependencies=pass AO/TAA=pass",
+          "REFLECTION_LIFETIME queued=3 allocatedMetalBytes=4587520 finalOwners=0"
+        ],
+        "opengl": [
+          "REFLECTION_REFERENCE samples=175560 overlap=41160 residual=130192 faces=63 radiance=0.000101185 energy=4.91313e-05 diffuse=0",
+          "REFLECTION_STUDY poses=9 serialization=pass dependencies=pass"
+        ]
+      },
+      "matchedPoseParity": {
+        "global-0": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 8.27014446258545e-06,
+          "idDifferences": 0
+        },
+        "global-1": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 5.21540641784668e-06,
+          "idDifferences": 0
+        },
+        "global-2": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 1.2367963790893555e-05,
+          "idDifferences": 0
+        },
+        "global-3": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 1.874566078186035e-05,
+          "idDifferences": 0
+        },
+        "global-4": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 8.32974910736084e-06,
+          "idDifferences": 0
+        },
+        "global-5": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 8.612871170043945e-06,
+          "idDifferences": 1
+        },
+        "global-6": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 8.717179298400879e-06,
+          "idDifferences": 0
+        },
+        "global-7": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 8.940696716308594e-06,
+          "idDifferences": 0
+        },
+        "global-8": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 7.703900337219238e-06,
+          "idDifferences": 2
+        },
+        "local-0": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 6.80088996887207e-05,
+          "idDifferences": 0
+        },
+        "local-1": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 1.3649463653564453e-05,
+          "idDifferences": 0
+        },
+        "local-2": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 0.00036469101905822754,
+          "idDifferences": 0
+        },
+        "local-3": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 0.00010269880294799805,
+          "idDifferences": 0
+        },
+        "local-4": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 7.492303848266602e-05,
+          "idDifferences": 0
+        },
+        "local-5": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 0.0002868175506591797,
+          "idDifferences": 1
+        },
+        "local-6": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 5.123019218444824e-05,
+          "idDifferences": 0
+        },
+        "local-7": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 0.0010676383972167969,
+          "idDifferences": 0
+        },
+        "local-8": {
+          "sameSurfaceRGBp99": 2.9802322387695312e-08,
+          "sameSurfaceRGBMax": 3.3408403396606445e-05,
+          "idDifferences": 2
+        }
+      }
+    }
+  },
+  "editorHistory": {
+    "OpenGL Debug": "PASS",
+    "OpenGL Release": "PASS",
+    "Metal Release": "PASS"
+  },
+  "legacyRegressions": {
+    "frozen OpenGL IBL Debug/Release": "PASS",
+    "GGX maximum Metal/OpenGL component delta": 8.660368620000154e-06,
+    "Metal XeGTAO focused": "PASS",
+    "Metal TAA focused": "PASS"
+  },
+  "preparationWallSecondsRelease": {
+    "Warm": 2.193,
+    "Cool": 2.188
+  },
+  "preparationProducerSecondsRelease": {
+    "Warm": 2.18051,
+    "Cool": 2.17658
+  },
+  "preparationPeakResidentBytes": {
+    "Warm": 19660800,
+    "Cool": 19628032
+  },
+  "logicalTwoProbePayloadBytes": {
+    "Metal": 4399488,
+    "OpenGL": 3292416
+  },
+  "measuredMetalTwoProbeAllocationBytes": 4587520,
+  "metalForwardTiming": {
+    "warmups": 5,
+    "samplesPerCase": 15,
+    "current": {
+      "1280x720": {
+        "medianGPUms": [
+          1.10146,
+          1.26954,
+          1.43021
+        ],
+        "p95GPUms": [
+          1.96725,
+          2.22671,
+          2.52738
+        ],
+        "pairedDeltaMedianGPUms": [
+          0.15311999999999992,
+          0.33104
+        ]
+      },
+      "1920x1080": {
+        "medianGPUms": [
+          1.98121,
+          2.25158,
+          2.53992
+        ],
+        "p95GPUms": [
+          2.84379,
+          3.20396,
+          3.33233
+        ],
+        "pairedDeltaMedianGPUms": [
+          0.26620999999999984,
+          0.5896699999999999
+        ]
+      },
+      "2560x1440": {
+        "medianGPUms": [
+          2.62954,
+          2.99196,
+          3.36954
+        ],
+        "p95GPUms": [
+          3.10304,
+          3.54933,
+          3.85508
+        ],
+        "pairedDeltaMedianGPUms": [
+          0.36430000000000007,
+          0.7381700000000002
+        ]
+      }
+    },
+    "checkpoint": {
+      "revision": "489a4bc732c7ea870ead0b2a09a3faea4af4629d",
+      "abi": "checkpoint shading source with matching environment UBO padding",
+      "timing": {
+        "1280x720": {
+          "medianGPUms": [
+            0.934875
+          ],
+          "p95GPUms": [
+            2.04175
+          ],
+          "pairedDeltaMedianGPUms": []
+        },
+        "1920x1080": {
+          "medianGPUms": [
+            2.28696
+          ],
+          "p95GPUms": [
+            2.7915
+          ],
+          "pairedDeltaMedianGPUms": []
+        },
+        "2560x1440": {
+          "medianGPUms": [
+            2.37688
+          ],
+          "p95GPUms": [
+            2.90233
+          ],
+          "pairedDeltaMedianGPUms": []
+        }
+      }
+    }
+  },
+  "relocation": {
+    "archiveIntegrity": "PASS",
+    "metalSourceFree": {
+      "exitCode": 0,
+      "results": [
+        "REFLECTION_REFERENCE samples=175560 overlap=41160 residual=130192 faces=63 radiance=0.000101215 energy=4.91462e-05 diffuse=0",
+        "REFLECTION_MOTION poses=9 retainedTAA=pass stationaryVsMovingP99=0.0361023",
+        "REFLECTION_STUDY poses=9 serialization=pass dependencies=pass AO/TAA=pass",
+        "REFLECTION_LIFETIME queued=3 allocatedMetalBytes=4587520 finalOwners=0"
+      ]
+    },
+    "openglSourceFree": {
+      "exitCode": 0,
+      "results": [
+        "REFLECTION_REFERENCE samples=175560 overlap=41160 residual=130192 faces=63 radiance=0.000101185 energy=4.91313e-05 diffuse=0",
+        "REFLECTION_STUDY poses=9 serialization=pass dependencies=pass"
+      ]
+    }
+  },
+  "packagedDesktop": {
+    "metalPlayer": "BLOCKED: intended native GUI console is locked or unavailable",
+    "openglPlayer": "BLOCKED: intended native GUI console is locked or unavailable"
+  },
+  "openGLWorldAndCompositeTiming": {
+    "warmups": 5,
+    "samplesPerCase": 15,
+    "current": {
+      "1280x720": {
+        "medianGPUms": [
+          1.55175,
+          1.57021,
+          1.61
+        ],
+        "p95GPUms": [
+          1.83013,
+          2.50012,
+          1.85938
+        ],
+        "pairedDeltaMedianGPUms": [
+          0.009500000000000064,
+          0.050960000000000116
+        ]
+      },
+      "1920x1080": {
+        "medianGPUms": [
+          3.74758,
+          3.91387,
+          3.9965
+        ],
+        "p95GPUms": [
+          4.38912,
+          4.53767,
+          4.38162
+        ],
+        "pairedDeltaMedianGPUms": [
+          0.1485000000000003,
+          0.22324999999999973
+        ]
+      },
+      "2560x1440": {
+        "medianGPUms": [
+          6.88258,
+          6.99862,
+          7.07892
+        ],
+        "p95GPUms": [
+          7.8565,
+          7.72329,
+          7.77475
+        ],
+        "pairedDeltaMedianGPUms": [
+          0.1677900000000001,
+          0.12295999999999996
+        ]
+      }
+    }
+  }
+}

@@ -47,6 +47,7 @@ class SceneRenderView
     unsigned LocalLightingView = 0;
     std::shared_ptr<LocalLightingMetrics> LocalMetrics=std::make_shared<LocalLightingMetrics>();
     SurfaceView Debug = SurfaceView::Shaded; // Private view inspection; never scene/history.
+    ViewReflectionProbes ReflectionProbes;
     Ref<Framebuffer> ShadowDepth, SpotShadowDepth, PointShadowDepth;
     Ref<Framebuffer> AmbientDepth; // Per-view masked mesh depth preparation.
     Ref<Framebuffer> Radiance; // Optional per-view world target, never authored/history.
@@ -54,6 +55,7 @@ class SceneRenderView
     {
         LocalMetrics=std::make_shared<LocalLightingMetrics>();
         Radiance.reset();
+        ReflectionProbes = {};
         Jittered.reset();Motion.reset();Temporal={};
         TemporalMetrics=std::make_shared<TemporalTiming>();
         WarnedUnsupportedTAA=false;

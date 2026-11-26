@@ -90,7 +90,9 @@ std::string ValidateReflection(MTL::RenderPipelineState* pipeline, const MetalSh
             }
             Check(found, "Native texture binding missing");
             // Integer texelFetch needs no sampler. Float sampled images use a paired sampler.
-            if (source.get_type(type.image.type).basetype == spirv_cross::SPIRType::Float)
+            if (resource.name == "u_ProbeCosine0" || resource.name == "u_ProbeCosine1")
+                Check(!samplerFound, "Local cosine cube requires a static sampler");
+            else if (source.get_type(type.image.type).basetype == spirv_cross::SPIRType::Float)
                 Check(samplerFound, "Native sampler binding missing");
         }
         if (name == "Renderer2D_Quad-32" && stage == "fragment")

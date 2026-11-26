@@ -67,6 +67,28 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
             throw std::runtime_error(environment.Error);
         frame.Environment = environment.Accepted;
     }
+    for (auto h : scene.GetAllEntitiesWith<ReflectionProbeComponent>())
+    {
+        Entity entity(h, &scene);
+        const auto &probe = entity.GetComponent<ReflectionProbeComponent>();
+        probe.Validate();
+        if (!probe.Enabled)
+            continue;
+        if (frame.ReflectionProbes.size() == MaxReflectionProbes)
+            throw std::runtime_error("Only two enabled reflection probes are supported");
+        if (!frame.Assets || !frame.Presentation.SceneReferred)
+            throw std::runtime_error("Enabled reflection probes require scene-referred presentation and project assets");
+        const glm::vec3 position(scene.GetWorldTransform(entity)[3]);
+        probe.ValidatePosition(position);
+        const auto environment = frame.Assets->Environment(probe.Environment);
+        if (!environment.Accepted)
+            throw std::runtime_error(environment.Error);
+        ValidateReflectionProbeEnvironment(*environment.Accepted);
+        frame.ReflectionProbes.push_back({uint64_t(entity.GetUUID()), position, probe.InfluenceHalfSize,
+            probe.ProjectionOffset, probe.ProjectionHalfSize, probe.BlendDistance, environment.Accepted});
+    }
+    std::sort(frame.ReflectionProbes.begin(), frame.ReflectionProbes.end(),
+              [](const auto &a, const auto &b) { return a.Identity < b.Identity; });
     for (auto h : scene.GetAllEntitiesWith<DirectionalLightComponent>())
     {
         Entity e(h, &scene);

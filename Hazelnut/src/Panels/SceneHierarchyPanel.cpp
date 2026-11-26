@@ -525,7 +525,8 @@ void SceneHierarchyPanel::DrawUIComponent(const std::string &name,Entity entity,
         !std::is_same_v<T, SpriteRendererComponent> &&
         !std::is_same_v<T, CircleRendererComponent> && !std::is_same_v<T, CameraComponent> &&
         !std::is_same_v<T, MeshRendererComponent> &&
-        !std::is_same_v<T, DirectionalLightComponent> && !std::is_same_v<T, PointLightComponent> && !std::is_same_v<T, SpotLightComponent> && !entity.HasComponent<UIRectComponent>() &&
+        !std::is_same_v<T, DirectionalLightComponent> && !std::is_same_v<T, PointLightComponent> && !std::is_same_v<T, SpotLightComponent> &&
+        !std::is_same_v<T, ReflectionProbeComponent> && !entity.HasComponent<UIRectComponent>() &&
         !entity.HasComponent<UICanvasComponent>())
     {
         DrawComponent<T>(name,entity,sections,restore,ui,report);return;
@@ -597,6 +598,7 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
         DisplayAddComponentEntry<DirectionalLightComponent>("Directional Light");
         DisplayAddComponentEntry<PointLightComponent>("Point Light");
         DisplayAddComponentEntry<SpotLightComponent>("Spot Light");
+        DisplayAddComponentEntry<ReflectionProbeComponent>("Reflection Probe");
         DisplayAddComponentEntry<Rigidbody2DComponent>("Rigidbody 2D");
         DisplayAddComponentEntry<BoxCollider2DComponent>("Box Collider 2D");
         DisplayAddComponentEntry<CircleCollider2DComponent>("Circle Collider 2D");
@@ -1380,6 +1382,26 @@ void SceneHierarchyPanel::DrawComponents(Entity entity)
             ImGui::TextWrapped("Up to four enabled, emitting spotlights cast shadows, ordered by entity ID.");
         }
     });
+    DrawUIComponent<ReflectionProbeComponent>(
+        "Reflection Probe", entity, m_Sections, m_RestoreSections, [&](auto &probe) {
+            const auto assets = m_Context->GetAssets();
+            AssetPicker("probe-cubemap", "Prepared HDR", probe.Environment, ".henv", assets,
+                        m_AssetPickers[ImGui::GetID("probe-picker")], OpenAsset);
+            PropertyUI::Checkbox("probe-enabled", "Enabled", probe.Enabled);
+            PropertyUI::Vector("influence-size", "Influence half size", &probe.InfluenceHalfSize.x, 3);
+            PropertyUI::DragFloat("blend-distance", "Blend distance", probe.BlendDistance, .05f);
+            PropertyUI::Vector("projection-size", "Projection half size", &probe.ProjectionHalfSize.x, 3);
+            PropertyUI::Vector("projection-offset", "Projection offset", &probe.ProjectionOffset.x, 3);
+            ImGui::TextWrapped("The entity position is the capture point and influence center. Box dimensions "
+                               "and projection offset use world axes. The projection box must enclose the influence box.");
+            if (assets && !probe.Environment.empty())
+            {
+                const auto environment = assets->Environment(probe.Environment);
+                PropertyUI::Validation(environment.Error.c_str());
+                if (environment.Accepted)
+                    ImGui::Text("%u px specular faces", environment.Accepted->Specular.Side);
+            }
+        });
     DrawUIComponent<MeshRendererComponent>(
         "Mesh Renderer", entity, m_Sections, m_RestoreSections, [&, entity](auto &c) mutable {
             ImGui::TextWrapped("Indexed static geometry. Lit materials require scene-referred "

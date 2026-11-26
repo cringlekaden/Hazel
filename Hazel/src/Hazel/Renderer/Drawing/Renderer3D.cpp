@@ -38,9 +38,9 @@ void EnsureResources()
     if (shader)
         return;
     const auto &caps = RenderCommand::GetCapabilities();
-    if (caps.MaxTextureSlots < 13 || caps.MaxUniformBindings < 8 ||
+    if (caps.MaxTextureSlots < 15 || caps.MaxUniformBindings < 8 ||
         caps.MaxUniformBlockBytes < sizeof(LocalLightData) || caps.MaxVertexAttributes < 5)
-        throw std::runtime_error("PBR/IBL/CSM needs thirteen texture slots, five vertex attributes, eight "
+        throw std::runtime_error("PBR/IBL/CSM needs fifteen texture slots, five vertex attributes, eight "
                                  "uniform bindings and a 15376-byte uniform block");
     auto candidate = Shader::Create(
         (Hazel::Resources::Get().Root / "shaders/ForwardPBR.glsl").generic_u8string());
@@ -103,7 +103,8 @@ void Renderer3D::Shutdown()
     motionBuffer.reset();
     shadowBuffer.reset();
 }
-void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground, bool depthOnly, bool motionOnly)
+void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground, bool depthOnly, bool motionOnly,
+                        const ViewReflectionProbes *probes)
 {
     auto raster = RenderCommand::GetRasterState();
     if(depthOnly && !depthShader)
@@ -125,6 +126,26 @@ void Renderer3D::Render(const SceneSubmission &frame, bool drawBackground, bool 
             {frame.Environment && instance.Lighting ? 1.f : 0.f,
              !depthOnly && RendererAPI::GetAPI()==RendererAPI::API::Metal && frame.Presentation.AmbientOcclusion.Enabled ? frame.Presentation.AmbientOcclusion.Strength : 0.f,
              !depthOnly && frame.Presentation.AmbientOcclusion.Enabled ? float(frame.AmbientOcclusionView) : 0.f, 0}};
+        if (!frame.Meshes.empty())
+        {
+            const unsigned cosineSlot = RendererAPI::GetAPI() == RendererAPI::API::Metal ? 15 : 8;
+            for (unsigned i = 0; i < MaxReflectionProbes; ++i)
+            {
+                const auto resource = probes ? (*probes)[i] : nullptr;
+                if (resource)
+                {
+                    Retain(resource);
+                    const auto &probe = frame.ReflectionProbes[i];
+                    env.Probes[4 * i] = glm::vec4(probe.Position, probe.BlendDistance);
+                    env.Probes[4 * i + 1] = glm::vec4(probe.InfluenceHalfSize, float(probe.Environment->Specular.Mips.size() - 1));
+                    env.Probes[4 * i + 2] = glm::vec4(probe.ProjectionOffset, 0);
+                    env.Probes[4 * i + 3] = glm::vec4(probe.ProjectionHalfSize, 0);
+                    env.Options.w += 1;
+                }
+                (resource ? resource->Specular : emptyEnvironment->Specular)->Bind(13 + i);
+                (resource ? resource->Cosine : emptyEnvironment->Irradiance)->Bind(cosineSlot + i);
+            }
+        }
         environmentBuffer->Bind();
         environmentBuffer->SetData(&env, sizeof(env));
         if (drawBackground && frame.Environment && instance.Background)

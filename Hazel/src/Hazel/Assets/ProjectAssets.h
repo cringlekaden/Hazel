@@ -34,11 +34,13 @@ struct FamilyResolution {
 };
 class MeshGeometry;
 class EnvironmentResources;
+struct ReflectionProbeResources;
 class ProjectAssets {
 public:
   struct EnvironmentResolution {Ref<const PreparedEnvironment> Accepted;std::string Error;};
   EnvironmentResolution Environment(const std::filesystem::path &reference);
   Ref<EnvironmentResources> RealizeEnvironment(const Ref<const PreparedEnvironment> &environment);
+  Ref<ReflectionProbeResources> RealizeReflectionProbe(const Ref<const PreparedEnvironment> &environment);
   Ref<MeshGeometry> RealizeMesh(const Ref<const MeshAsset> &mesh);
   explicit ProjectAssets(std::filesystem::path root)
       : m_Root(std::filesystem::weakly_canonical(root))
@@ -73,6 +75,7 @@ private:
   struct EnvironmentEntry {Ref<const PreparedEnvironment> Accepted;std::string Error;};
   std::unordered_map<std::string,EnvironmentEntry> m_Environments;
   std::unordered_map<std::string,Ref<EnvironmentResources>> m_EnvironmentGPU;
+  std::unordered_map<std::string,Ref<ReflectionProbeResources>> m_ReflectionProbeGPU;
   void ReloadEnvironment(const std::string &key,EnvironmentEntry &entry);
   void RefreshEnvironments();
   struct GPUEntry

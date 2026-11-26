@@ -96,6 +96,32 @@ Preparation quality offers Preview, Production and High, with explicit offline
 costs and an earlier-revision diagnostic. Accepted lighting loads without the original HDR. See the
 [environment contract and qualification](design/3d-environment-stage4.md).
 
+### Static reflection probes
+
+In a scene with **Scene-referred** presentation, add a **Reflection Probe**
+component to an entity. Import a linear Radiance HDR panorama captured at the
+entity position. Create an Environment asset for it, choose **Preview** or a
+custom specular face size up to 256 px, and select **Prepare**. Assign the
+prepared `.henv` in the probe Inspector, then enable the component. You can
+author several probes and enable up to two in the same scene.
+
+The entity's world position is both the capture point and the center of the
+influence box. Box sizes are half extents in world units. The projection box
+approximates the room's walls and must enclose the influence box. Its offset
+lets you place the capture off-center. The viewport shows the capture point
+and the selected boxes. Use the blend distance to fade the influence near the
+edges and overlap the two volumes around a doorway. Probe boxes are aligned
+to world axes and the panorama must use Hazel's world orientation.
+
+Probes blend the local prefiltered radiance into the existing specular IBL.
+The scene environment still supplies diffuse light and the optional sky.
+Probe settings participate in scene Undo/Redo. Player assets need the
+accepted `.henv` generation and its dependencies. Keep the HDR source
+in the authoring project for future preparation.
+
+The [static reflection study](design/static-reflection-probes.md) includes
+reproduction commands, captures, and current qualification results.
+
 ## Navigate the viewport
 
 The navigation selector changes only the private editor view, in both Edit and

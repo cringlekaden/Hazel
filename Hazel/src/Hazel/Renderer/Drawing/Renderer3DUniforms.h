@@ -1,6 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include "Hazel/Renderer/Scene/Lighting.h"
+#include "Hazel/Renderer/Scene/ReflectionProbe.h"
 #include <array>
 
 // Shared CPU ABI for the existing GLSL std140 blocks; no backend-specific shading data.
@@ -34,6 +35,7 @@ struct alignas(16) EnvironmentData
 {
     glm::mat4 InverseVP;
     glm::vec4 RotationGain, Options;
+    std::array<glm::vec4, MaxReflectionProbes * 4> Probes{};
 };
-static_assert(sizeof(EnvironmentData) == 96, "std140 environment layout");
+static_assert(sizeof(EnvironmentData) == 224, "std140 environment layout");
 }

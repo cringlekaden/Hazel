@@ -369,6 +369,11 @@ namespace Hazel {
         };
         writeLocal(PointLightComponent{}, "PointLightComponent");
         writeLocal(SpotLightComponent{}, "SpotLightComponent");
+        if (entity.HasComponent<ReflectionProbeComponent>())
+        {
+            out << YAML::Key << "ReflectionProbeComponent" << YAML::Value;
+            WriteReflectionProbe(out, entity.GetComponent<ReflectionProbeComponent>());
+        }
         if(entity.HasComponent<MeshRendererComponent>()) {
             out<<YAML::Key<<"MeshRendererComponent"<<YAML::Value;
             WriteMeshBinding(out,entity.GetComponent<MeshRendererComponent>());
@@ -706,6 +711,9 @@ namespace Hazel {
                 };
                 readLocal(PointLightComponent{}, "PointLightComponent");
                 readLocal(SpotLightComponent{}, "SpotLightComponent");
+                if (auto node = entity["ReflectionProbeComponent"])
+                    static_cast<ReflectionProbe &>(deserializedEntity.AddComponent<ReflectionProbeComponent>()) =
+                        ReadReflectionProbe(node);
                 if(auto node=entity["MeshRendererComponent"])
                     static_cast<MeshBinding&>(deserializedEntity.AddComponent<MeshRendererComponent>())=ReadMeshBinding(node);
 
@@ -817,6 +825,24 @@ namespace Hazel {
         if(resources==ResourceLoading::Resolve && !staged->Presentation().Environment.Asset.empty())try{
             AuditEnvironment(m_AssetRoot,staged->Presentation().Environment.Asset);
         }catch(const std::exception &error){if(!m_Repair)throw;m_Report.Problems.push_back({0,"Environment",error.what(),m_AssetRoot/staged->Presentation().Environment.Asset});}
+        if (resources == ResourceLoading::Resolve)
+            for (auto handle : staged->GetAllEntitiesWith<ReflectionProbeComponent>())
+            {
+                Entity entity(handle, staged.get());
+                const auto &probe = entity.GetComponent<ReflectionProbeComponent>();
+                if (probe.Environment.empty())
+                    continue;
+                try
+                {
+                    ValidateReflectionProbeEnvironment(ReadPreparedEnvironment(m_AssetRoot, probe.Environment));
+                }
+                catch (const std::exception &error)
+                {
+                    if (!m_Repair && probe.Enabled) throw;
+                    m_Report.Problems.push_back({entity.GetUUID(), "Reflection probe", error.what(),
+                                                 m_AssetRoot / probe.Environment});
+                }
+            }
         for(auto handle:staged->GetAllEntitiesWith<MeshRendererComponent>()) {
             Entity entity(handle,staged.get());auto& binding=entity.GetComponent<MeshRendererComponent>();
             if(resources==ResourceLoading::Resolve)try{AuditMeshBinding(m_AssetRoot,binding);}

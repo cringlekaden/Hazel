@@ -432,6 +432,15 @@ namespace Hazel {
             };
             countLocal(m_Registry);countLocal(staged->m_Registry);
             if(localCount > MaxLocalLights) throw std::runtime_error("Prefab would exceed 320 enabled local lights");
+            unsigned probes = 0;
+            auto countProbes = [&](const auto &registry) {
+                for (auto h : registry.template view<const ReflectionProbeComponent>())
+                    probes += registry.template get<ReflectionProbeComponent>(h).Enabled ? 1 : 0;
+            };
+            countProbes(m_Registry);
+            countProbes(staged->m_Registry);
+            if (probes > MaxReflectionProbes)
+                throw std::runtime_error("Prefab would exceed two enabled reflection probes");
             unsigned lights = 0;
             for (auto h : m_Registry.view<const DirectionalLightComponent>())
                 lights += m_Registry.get<DirectionalLightComponent>(h).Enabled ? 1 : 0;
@@ -1081,6 +1090,26 @@ namespace Hazel {
             if(!m_Assets)throw std::runtime_error("Environment requires project-owned prepared assets");
             AuditEnvironment(m_Assets->Root(),m_Presentation.Environment.Asset);
         }
+        unsigned probes = 0;
+        for (auto h : m_Registry.view<const ReflectionProbeComponent>())
+        {
+            const auto &probe = m_Registry.get<ReflectionProbeComponent>(h);
+            probe.Validate();
+            if (probe.Enabled)
+            {
+                if (++probes > MaxReflectionProbes)
+                    throw std::runtime_error("Only two enabled reflection probes are supported");
+                if (!m_Presentation.SceneReferred || !m_Assets)
+                    throw std::runtime_error("Enabled reflection probes require scene-referred presentation and project assets");
+                probe.ValidatePosition(glm::vec3(GetWorldTransform(Entity(h, const_cast<Scene *>(this)))[3]));
+            }
+            if (!probe.Environment.empty())
+            {
+                if (!m_Assets)
+                    throw std::runtime_error("Reflection probe requires a project asset root");
+                ValidateReflectionProbeEnvironment(ReadPreparedEnvironment(m_Assets->Root(), probe.Environment));
+            }
+        }
         unsigned localCount = 0;
         auto validateLocal = [&](auto component) {
             using T = decltype(component);
@@ -1129,6 +1158,7 @@ namespace Hazel {
     }
     template<> void Scene::OnComponentAdded<PointLightComponent>(Entity,PointLightComponent&) {}
     template<> void Scene::OnComponentAdded<SpotLightComponent>(Entity,SpotLightComponent&) {}
+    template<> void Scene::OnComponentAdded<ReflectionProbeComponent>(Entity,ReflectionProbeComponent&) {}
     template<> void Scene::OnComponentAdded<MeshRendererComponent>(Entity,MeshRendererComponent&) {}
     template<> void Scene::OnComponentAdded<UICanvasComponent>(Entity,UICanvasComponent&) {}
     template<> void Scene::OnComponentAdded<UIRectComponent>(Entity,UIRectComponent&) {}

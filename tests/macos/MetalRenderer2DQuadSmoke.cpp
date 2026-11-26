@@ -1,6 +1,7 @@
 #include "Hazel/Core/Log.h"
 #include "Renderer2DParity.h"
 #include "Renderer3DParity.h"
+#include "ReflectionProbeQualification.h"
 #include "MultiscatteringQualification.h"
 #include "LocalLightingQualification.h"
 #include "DirectionalShadowQualification.h"
@@ -21,6 +22,7 @@
 #include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include "Hazel/Renderer/Drawing/Renderer2D.h"
 #include "Platform/macOS/Metal/MetalRendererAPI.h"
+#include "Platform/macOS/Metal/MetalDevice.h"
 #include "Hazel/Renderer/Resources/Framebuffer.h"
 #include "Hazel/Renderer/Resources/ComputePipeline.h"
 #include <cstring>
@@ -290,6 +292,90 @@ void ShadowAtlasLifetime(Hazel::MetalRendererAPI& backend, bool temporal=false, 
     std::cout<<"PASS lit moving-shadow serialized/three-slot equivalence, shared atlas storage, resolution replacement, busy cancellation and view destruction/retirement spot="<<spot<<" point="<<point<<" TAA="<<temporal<<'\n';
 }
 
+void ReflectionProbeLifetime(Hazel::MetalRendererAPI &backend)
+{
+    using namespace Hazel;
+    const auto project = Project::LoadCandidate(FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT"));
+    auto assets = CreateRef<ProjectAssets>(project->GetAssetRoot());
+    auto target = Framebuffer::Create(TargetSpecification(64, 64));
+    SceneRenderView view;
+    SceneSubmission frame;
+    frame.Assets = assets;
+    frame.Presentation.SceneReferred = true;
+    frame.LinearLightingInspection = true;
+    frame.Debug = SurfaceView::SpecularIBL;
+    frame.Camera.Orthographic = true;
+    frame.Camera.Position = {0, 0, 3};
+    frame.Camera.ViewProjection = glm::ortho(-1.f, 1.f, -1.f, 1.f, .1f, 10.f) *
+        glm::lookAt(frame.Camera.Position, glm::vec3(0), glm::vec3(0, 1, 0));
+    const auto mesh = assets->Mesh("Native/Direct_v1/UnitCube.hmesh").Accepted;
+    auto material = CreateRef<MaterialDefinition>();
+    material->Metallic = 1;
+    material->Roughness = .4f;
+    SubmittedMesh draw;
+    draw.Geometry = mesh;
+    draw.Materials = {material};
+    draw.Picking = 301;
+    frame.Meshes = {draw};
+
+    const auto warm = assets->Environment("ReflectionStudy/Warm.henv").Accepted;
+    const auto cool = assets->Environment("ReflectionStudy/Cool.henv").Accepted;
+    Check(bool(mesh && warm && cool), "Missing lifetime fixture");
+    const auto before = backend.Device()->NativeDevice()->currentAllocatedSize();
+    auto warmGPU = assets->RealizeReflectionProbe(warm), coolGPU = assets->RealizeReflectionProbe(cool);
+    const auto allocation = backend.Device()->NativeDevice()->currentAllocatedSize() - before;
+    std::array<std::weak_ptr<ReflectionProbeResources>, 2> owners{warmGPU, coolGPU};
+    warmGPU.reset();
+    coolGPU.reset();
+
+    auto render = [&](unsigned index) {
+        frame.ReflectionProbes.clear();
+        if (index < 2)
+            frame.ReflectionProbes.push_back({index + 1, {0, 0, .5f}, {2, 2, 2}, {0, 0, 0},
+                {2, 2, 2}, .5f, index ? cool : warm});
+        Begin(target, 64, 64);
+        SceneRenderer::Render(frame, view, target, [] {}, [] {});
+        return Submit(target);
+    };
+    std::array<Ref<const FramebufferReadback>, 3> expected, queued;
+    for (unsigned i = 0; i < expected.size(); ++i)
+    {
+        expected[i] = render(i);
+        Check(bool(expected[i]), "Serialized probe submission busy");
+        Wait(*target, expected[i]);
+    }
+    auto gate = backend.GateQueueForTesting();
+    for (unsigned i = 0; i < queued.size(); ++i)
+    {
+        queued[i] = render(i);
+        Check(queued[i] && !queued[i]->Completed, "Probe frame was not gated");
+    }
+    view.Reset();
+    frame = {};
+    assets.reset();
+    target->Resize(71, 59);
+    for (const auto &owner : owners)
+        Check(!owner.expired(), "Probe GPU generation retired before queued draw completed");
+    Check(backend.Observe()->Snapshot().InFlight == 3, "Probe lifetime did not exercise all three queues");
+    gate();
+    for (unsigned i = 0; i < queued.size(); ++i)
+    {
+        Wait(*target, queued[i]);
+        const size_t p = 32 * 64 + 32;
+        Check(queued[i]->Entity == expected[i]->Entity && queued[i]->Entity[p] == 301,
+              "Queued probe changed picking coverage");
+        for (unsigned c = 0; c < 3; ++c)
+            Check(std::abs(queued[i]->Color[p][c] - expected[i]->Color[p][c]) < 1e-6f,
+                  "Queued probe sampled a replacement generation");
+    }
+    Check(glm::length(expected[0]->Color[32 * 64 + 32] - expected[1]->Color[32 * 64 + 32]) > .01f &&
+          glm::length(glm::vec3(expected[2]->Color[32 * 64 + 32])) < 1e-7f,
+          "Local-only environments or disabled fallback were not distinguished");
+    for (const auto &owner : owners)
+        Check(owner.expired(), "Probe GPU generation was retained after completion");
+    std::cout << "REFLECTION_LIFETIME queued=3 allocatedMetalBytes=" << allocation << " finalOwners=0\n";
+}
+
 void MeshLifetime(Hazel::MetalRendererAPI& backend, bool ambientOcclusion=false, bool shadows=false)
 {
     using namespace Hazel;
@@ -371,7 +457,8 @@ int main(int argc, char** argv)
         const bool spotTemporalLifetime = argc == 4 && std::string(argv[3]) == "--spot-shadow-taa-lifetime";
         const bool spotShadows = argc == 4 && std::string(argv[3]) == "--spot-shadows";
         const bool localLights = argc == 4 && std::string(argv[3]) == "--local-lights";
-        const bool multiscattering = pointShadows || pointLifetime || pointTemporalLifetime || atlasTemporal || atlasLifetime || shadowTemporal || shadows || spotShadows || spotLifetime || spotTemporalLifetime || localLights || (argc == 4 && std::string(argv[3]) == "--ggx-ms");
+        const bool reflectionProbes = argc == 4 && std::string(argv[3]) == "--reflection-probes";
+        const bool multiscattering = reflectionProbes || pointShadows || pointLifetime || pointTemporalLifetime || atlasTemporal || atlasLifetime || shadowTemporal || shadows || spotShadows || spotLifetime || spotTemporalLifetime || localLights || (argc == 4 && std::string(argv[3]) == "--ggx-ms");
         const bool renderer3D = argc == 4 && std::string(argv[3]) == "--renderer3d-parity";
         Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !multiscattering && !renderer3D && !compute && !ao && !temporal && !edges && !temporalBenchmark && !offscreenBenchmark ? uint32_t(std::stoul(argv[3])) : 4;
         Check(settings.TextureSlots == 2 || settings.TextureSlots == 4,"Fixture supports two or four texture slots");
@@ -408,10 +495,12 @@ int main(int argc, char** argv)
             else if (pointLifetime || pointTemporalLifetime) ShadowAtlasLifetime(backend, pointTemporalLifetime, Hazel::ShadowMapKind::Point);
             else if(shadowTemporal)TemporalLifetime(backend,true);
             else {
-            (pointShadows?PointShadowQualification:spotShadows?SpotShadowQualification:shadows?DirectionalShadowQualification:localLights?LocalLightingQualification:MultiscatteringQualification)(output, [&](const auto& target) {
+            (reflectionProbes?ReflectionProbeQualification:pointShadows?PointShadowQualification:spotShadows?SpotShadowQualification:shadows?DirectionalShadowQualification:localLights?LocalLightingQualification:MultiscatteringQualification)(output, [&](const auto& target) {
                 auto result=Submit(target);Check(bool(result),"GGX submit busy");Wait(*target,result);return result;
             });
-            if (!spotShadows && !pointShadows) MeshLifetime(backend,true,shadows);
+            if (reflectionProbes && Hazel::FileSystem::GetEnvironmentPath("HAZEL_REFLECTION_BENCHMARK").empty())
+                ReflectionProbeLifetime(backend);
+            if (!spotShadows && !pointShadows && !reflectionProbes) MeshLifetime(backend,true,shadows);
             }
             framebuffer.reset();Hazel::Renderer2D::Shutdown();Hazel::RenderCommand::Shutdown();
             Check(observer->Snapshot().Errors==0 && observer->Snapshot().ResourceBytes==0 && observer->Snapshot().AttachmentGenerations==0,"GGX retirement failed");

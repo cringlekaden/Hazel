@@ -1418,6 +1418,28 @@ private:
         e.OnSceneStop();
         Check(SceneSerializer(e.m_EditorScene).CaptureAuthoredState() == directState,
               "Native direct Play/Stop changed authored inputs");
+        auto probeScene = CreateRef<Scene>();
+        probeScene->SetAssets(direct->GetAssets());
+        probeScene->Presentation().SceneReferred = true;
+        auto probeEntity = probeScene->CreateEntity("Reflection probe history");
+        auto &probe = probeEntity.AddComponent<ReflectionProbeComponent>();
+        DocumentHistory probeHistory;
+        probeHistory.Bind(probeScene->GetIdentity());
+        UIInspectorEditing probeEdit;
+        auto before = UIEditValues::Capture(probeEntity), after = before;
+        after.Probe->Environment = direct->Presentation().Environment.Asset;
+        after.Probe->ProjectionOffset = {1, 0, 0};
+        after.Probe->ProjectionHalfSize = {5, 4, 4};
+        after.Probe->Enabled = true;
+        PropertyUI::EditActivity committed;
+        committed.Changed = committed.Committed = true;
+        Check(probeEdit.Edit(*probeScene, &probeHistory, probeEntity.GetUUID(), "Reflection Probe",
+                             before, after, committed, 0) && probe.Enabled &&
+              probe.ProjectionOffset.x == 1 && probeHistory.Undo(*probeScene) && !probe.Enabled &&
+              probe.ProjectionOffset.x == 0 && probe.Environment.empty() &&
+              probeHistory.Redo(*probeScene) && probe.Enabled && probe.Environment == direct->Presentation().Environment.Asset,
+              "Reflection probe inspector Undo/Redo lost authored fields");
+        std::cout << "PASS: Reflection probe inspector transaction and exact Undo/Redo\n";
         a.m_NewStarter = 0;
         a.m_Preferences=preferences;a.RefreshSDK();Check(e.OpenProject(previousProject),"Native creation fixture restore failed");e.m_ActionError.clear();
         std::cout<<"PASS: production native create/Open without Python/SDK, content save/script-free Play, failed creation retention, later staged reload and prepared scripted Play/failed reload preservation\n";

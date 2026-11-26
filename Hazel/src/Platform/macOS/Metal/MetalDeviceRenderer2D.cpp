@@ -254,7 +254,7 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     quad->Buffers.push_back(AcquireRenderer2DBuffer(indices.size() * sizeof(uint32_t), indices.data()));
     auto args = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
     args->setInitializeBindings(true); args->setMaxBufferBindCount(17);
-    args->setMaxTextureBindCount(13); args->setMaxSamplerStateBindCount(13);
+    args->setMaxTextureBindCount(17); args->setMaxSamplerStateBindCount(15);
     for (auto &pass:quad->LocalLights) {
         pass->Shadowed=bool(quad->ShadowSource);
         pass->SpotShadowed=bool(quad->SpotShadowSource);
@@ -330,10 +330,10 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
                 fragment->setTexture(draw.LocalLights->Tiles->gpuResourceID(),9);
             }
             if (draw.MeshVertices) vertex->setAddress(draw.MeshVertices->gpuAddress(), 16);
-            for (size_t binding = 0; binding < 8; ++binding) if (auto texture = draw.Textures[binding]) {
+            for (size_t binding = 0; binding < 17; ++binding) if (auto texture = draw.Textures[binding]) {
                 Check(texture->Texture->device() == m_Device.get(), "Material texture belongs to another device");
                 fragment->setTexture(texture->Texture->gpuResourceID(), binding);
-                fragment->setSamplerState(texture->Sampler->gpuResourceID(), binding);
+                if (binding < 15) fragment->setSamplerState(texture->Sampler->gpuResourceID(), binding);
                 if (textures.insert(texture->Texture.get()).second) quad->Residency->addAllocation(texture->Texture.get());
             }
             if(draw.LocalLights && draw.Textures[0]) {

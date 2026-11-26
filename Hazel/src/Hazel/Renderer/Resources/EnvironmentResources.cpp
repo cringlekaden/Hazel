@@ -2,6 +2,7 @@
 #include "Hazel/Renderer/Resources/EnvironmentResources.h"
 #include "Platform/OpenGL/OpenGLTextureCube.h"
 #include "Hazel/Renderer/Renderer.h"
+#include "Hazel/Renderer/Scene/ReflectionProbe.h"
 #include "Hazel/Core/Resources.h"
 #include <cmath>
 #ifdef HZ_PLATFORM_MACOS
@@ -67,6 +68,13 @@ std::vector<float> PackBRDFTable(const LightingImage &image)
     }
     return packed;
 }
+ReflectionProbeResources::ReflectionProbeResources(const PreparedEnvironment &environment)
+{
+    ValidateReflectionProbeEnvironment(environment);
+    Specular = TextureCube::Create(environment.Specular);
+    Cosine = TextureCube::Create(environment.Irradiance);
+}
+
 EnvironmentResources::EnvironmentResources(const PreparedEnvironment &a)
 {
     Background = TextureCube::Create(a.Background);

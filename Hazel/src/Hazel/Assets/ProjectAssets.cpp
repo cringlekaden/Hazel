@@ -279,6 +279,16 @@ std::vector<std::filesystem::path> AuditSpriteAssets(const std::filesystem::path
         auto environment=SceneDefaults::ReadPresentation(doc["Presentation"]).Environment.Asset;
         if(!environment.empty())for(auto &dep:AuditEnvironment(root,environment))dependencies.insert(dep);
         for(auto e:doc["Entities"]) {
+            if (auto n = e["ReflectionProbeComponent"])
+            {
+                const auto probe = ReadReflectionProbe(n);
+                if (!probe.Environment.empty())
+                {
+                    const auto environment = ReadPreparedEnvironment(root, probe.Environment);
+                    ValidateReflectionProbeEnvironment(environment);
+                    dependencies.insert(environment.Dependencies.begin(), environment.Dependencies.end());
+                }
+            }
             if(auto n=e["MeshRendererComponent"])for(auto& dep:AuditMeshBinding(root,ReadMeshBinding(n)))dependencies.insert(dep);
             // Python consumes this same dependency closure for package inventory
             // exclusions; it does not carry a second prefab-reference schema.
