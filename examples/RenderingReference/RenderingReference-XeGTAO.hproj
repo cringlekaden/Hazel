@@ -6,12 +6,32 @@ Project:
     Presentation:
       Mode: SceneReferred
       Exposure: 0
-      Background:
-      - 0.0100228256
-      - 0.0100228256
-      - 0.0100228256
-      - 1
+      TemporalAA: true
+      Background: [0.0100228256, 0.0100228256, 0.0100228256, 1]
     Content: DirectPBR
+  UIBindings:
+    Version: 3
+    PointerButton: 0
+    Stick: 0
+    DeadZone: 0.550000012
+    NeutralZone: 0.25
+    RepeatDelay: 0.349999994
+    RepeatInterval: 0.100000001
+    Actions:
+      Up: [265, -1, 11, 0]
+      Down: [264, -1, 13, 0]
+      Left: [263, -1, 14, 0]
+      Right: [262, -1, 12, 0]
+      Next: [258, -1, -1, 1]
+      Previous: [258, -1, -1, 2]
+      Accept: [257, 32, 0, 0]
+      Cancel: [256, -1, 1, 0]
+      AdjustDecrease: [263, 264, 14, 0]
+      AdjustIncrease: [262, 265, 12, 0]
+      ScrollUp: [266, -1, 4, 0]
+      ScrollDown: [267, -1, 5, 0]
+      ScrollLeft: [268, -1, -1, 0]
+      ScrollRight: [269, -1, -1, 0]
   ScriptProject: RenderingReference
   AuthoringVersion: 1
   Name: XeGTAO contact study
