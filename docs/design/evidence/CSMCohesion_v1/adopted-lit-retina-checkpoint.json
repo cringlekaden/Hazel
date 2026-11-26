@@ -1,0 +1,46 @@
+[
+  {
+    "name": "lit-atlas-taa",
+    "config": "Release",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/lit-atlas-taa-release",
+      "--shadow-atlas-taa-lifetime"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "adopted-retina",
+    "config": "Release",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-retina-release",
+      "--shadow-editor-settings",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "lit-atlas-taa",
+    "config": "Debug",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/lit-atlas-taa-debug",
+      "--shadow-atlas-taa-lifetime"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "adopted-retina",
+    "config": "Debug",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-retina-debug",
+      "--shadow-editor-settings",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+    ],
+    "exit": 0
+  }
+]

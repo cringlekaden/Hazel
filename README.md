@@ -86,6 +86,8 @@ local-light terminator correction at `c36fd1a`; point/spot shadows remain deferr
 
 An opt-in [directional CSM foundation](docs/design/directional-shadows.md) is under
 qualification, with a [separate shadow study](examples/RenderingReference/README.md#directional-shadow-study).
+Cascade settings include 2048 (Ultra); transient inspection separates cascade
+visibility, overlap and receiver bias. See the linked record for measured limits.
 Production qualification and owner visual acceptance are pending.
 
 The development branch also includes [Metal XeGTAO ambient occlusion](docs/design/xegtao.md)

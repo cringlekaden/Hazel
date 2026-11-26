@@ -6,6 +6,28 @@ its direct BRDF, authored-surface visibility and independent indirect lighting.
 
 Status: cohesive first foundation implemented; **production milestone INCOMPLETE**.
 
+## CSM cohesion follow-up: qualification contract
+
+The owner accepted the TAA entry correction `878303e` separately. This follow-up
+investigates physical PCF/bias differences before and throughout an overlap,
+including edge position and 10–90% contour width. The original epsilon split
+crossing test remains required, but cannot by itself detect a softness band.
+
+Before running the expanded fixtures, retain the existing analytic visibility
+limit .02, RGB backend parity .003, exact IDs, depth parity 1e-6 and split/fade
+crossing limit .01. Add an independent FP64 ray/box depth-grid integration check
+against .02 visibility error, plus a contact-edge allowance of one projected
+coarser-map texel plus the explicitly calculated receiver displacement. Report
+per-boundary map disagreement, 50% contour displacement and 10–90% widths as
+measurements, rather than inventing a production visual threshold from the data.
+Use fixed exposure/viewpoints and preserve all frozen references. Owner acceptance
+and untested platform/configuration coverage remain separate gates.
+
+The expanded fixture covers 512/1024/2048, distances 40/80, low/high camera poses,
+flat/tilted receivers and ordinary/grazing lights. Native combined AO/TAA motion,
+reconfiguration and 3200×1800 presented editor checks are required. PCSS remains
+design-only and is not authorized by this follow-up.
+
 ## Audit and selected design
 
 `Scene::DrawView` → `SceneRenderer::Collect/Render` → `Renderer3D::Render` is the
@@ -308,3 +330,271 @@ visible native desktop (replace Debug paths/configuration for Release):
 python3 scripts/hazel.py build --config Debug --tests --target MetalM1Smoke
 DYLD_LIBRARY_PATH="$PWD/build/dependencies/mono/macos-arm64/sdk/lib" MTL_DEBUG_LAYER=1 MTL_SHADER_VALIDATION=1 bin/Debug-macos-arm64/MetalM1Smoke/MetalM1Smoke build/NEW_SHADOW_EDITOR_EVIDENCE --shadow-editor-settings Hazel/Resources
 ```
+
+## CSM cohesion investigation and Ultra
+
+Follow-up to foundation `dd85be4` and owner-accepted TAA correction `878303e`.
+Adopted scope: **2048 Ultra, private-atlas storage reuse and transient diagnostics**.
+The tested continuous-footprint sampling change was **rejected**, and production
+retains the established per-cascade PCF/bias. This investigation did not resolve
+the owner-reported visual defects. The measured bias/footprint/grid mechanisms
+explain the diagnostic contacts; they do not establish every cause in the owner's
+unspecified smooth/masked mesh-edge observation. No PCSS is implemented; production qualification
+and owner acceptance remain incomplete.
+
+### Diagnosis and implementation
+
+The old PCF and both receiver biases were expressed in each sampled map's texels.
+For the 80-unit perspective fixture at 512, cascade texels measure approximately
+.04047/.08291/.16014/.41996 world units. Consequently an overlap blended different
+physical kernels and different displaced receiver points. Smoothstep only made
+that mixture continuous; it did not make the two shadows agree. Grazing incidence
+amplifies normal displacement into a larger ground-contact shift. A zero-bias
+ablation must leave fitting unchanged: changing authored NormalBias also changes
+projection padding, which otherwise confounds the experiment.
+
+**Rejected experiment (not production).** The experiment constructs one continuous world receiver scale from the stable
+projection's texel-density anchors. Cascade zero uses its native texel width.
+In interval c>0, interpolate the preceding/current widths over the physical view
+interval; at each split the two interval expressions agree exactly. Both maps in
+an overlap receive that same scale and geometric receiver. Normal and depth bias
+retain the authored values and angular/receiver-plane semantics, using this scale.
+The physical PCF box width is three times the scale. Integrate its overlap with
+map texel cells exactly, rather than changing the physical box with map selection.
+Its width is never above three texels in either participating map, so the same
+4×4/16 explicit fetches suffice. Relative cell coordinates avoid cancellation in
+small area weights at 2048. The old three-texel box is recovered at density anchors.
+The [archived experiment patch](evidence/CSMCohesion_v1/rejected-filter.patch)
+reproduces this proposed sampling in isolated resources only.
+This reduces coarse-map filtering between anchors; it does not add blur, widen
+blend bands, change incident energy, or reinterpret the AA footprint as a penumbra.
+
+In both the experiment and adopted implementation, bounding-sphere fitting, radius quantization, texel snapping, overlap fitting,
+conservative off-frustum caster collection and light-depth spans are unchanged.
+The same 400-byte GPU block uses previously reserved Range.w for transient shadow
+inspection. Canonical GLSL still owns all raster math. Inspection disables TAA
+history, like other numerical inspections. Current/next/blend occupy RGB; individual
+maps, native world texels, receiver displacement and an unbiased pair are available.
+The unbiased pair changes only receiver bias, keeping the same depth atlas.
+[Canonical math hashes](evidence/CSMCohesion_v1/canonical-math.json) independently
+confirm exact preservation of accepted direct GGX, surface energy, smooth-normal
+visibility, BRDF lookup and the entire indirect IBL block against `c36fd1a`.
+
+**2048 (Ultra)** is an authored per-cascade option, without changing defaults.
+Its four tiles form a 4096² Depth32F atlas (64 MiB). Metal permits up to 16M pixels
+only for depth-only targets; color/readback targets retain the 8M limit and the
+renderer retains its total 2 GiB budget. Native OpenGL 4.1 renders the same atlas.
+
+The first Ultra Retina test failed the existing budget at an AO/TAA toggle. Private
+shadow maps previously accumulated idle/in-flight atlas generations. They now reuse
+one storage generation per view, with the **existing** all-stage queue barrier
+contract: each parent encodes its captured depth producer immediately before its
+forward consumer on the single queue. The atlas cannot be read back or presented
+directly. CPU packets, draw/uniform versions, and replaced-size generations remain
+completion-retained. AO storage, public output/readback generations, and TAA history
+ownership are unchanged. A dedicated lit moving-shadow test checks serialized vs
+three queued frames, actual shadow changes, shared Ultra storage, replacement,
+busy cancellation, destruction before completion, and final retirement. The older
+unlit lifetime tests alone could not prove this read/write dependency.
+
+### Captures and numerical results
+
+The additive fixture uses fixed exposure 0, matching camera transforms and a long
+wall casting onto a flat or tilted floor. It exercises all three internal boundaries,
+near/far views, distances 40/80, 512/1024/2048, ordinary/grazing light (flat-receiver N·L approximately .845/.302), and geometric
+contact. Extreme grazing beyond the slope/denominator clamps and light motion
+across the basis-selection threshold remain unqualified. The authored study adds hard, smooth, mirrored, masked and thin geometry.
+Twelve study states cover AO/TAA independently off/on and moving camera translation,
+rotation, light and caster with both AO/TAA on and both off. Saved steps 0/7/15 make
+motion reproducible; they are observations, not a frozen visual-quality oracle.
+
+| Native Metal measurement | Baseline | Rejected experiment |
+|---|---:|---:|
+| Overlap ground samples | 611,232 | 611,232 |
+| Mean absolute current/next visibility disagreement | .001995 | .000904 |
+| Median coarse/fine 10–90% contour-width ratio | 1.9435 | 1.0000 |
+| Mean absolute width mismatch, world units | .23988 | .01389 |
+| Mean 50% contour disagreement, world units | .02614 | .03494 |
+| Maximum 50% contour disagreement | .28899 | .44335 |
+| Mean absolute analytic contact-edge error | .01792 | .02090 |
+| Maximum analytic contact-edge error | .33491 | .25153 |
+
+These are 474 contour rows from 24 cases; [per-case/boundary data](evidence/CSMCohesion_v1/continuous-release-v2-metal-continuity.json)
+and [matching comparison](evidence/CSMCohesion_v1/continuity-comparison.json) retain
+all results. OpenGL measurements agree closely. **Width cohesion improves, but
+mean contour alignment does not.** Point-sampled caster silhouettes on different
+stable grids still have different edge phases. The old bias sometimes accidentally
+cancelled that error. Matching the receiver/filter removes that accidental
+compensation and exposes sharper coarse-grid quantization. No claim that mesh-edge
+misalignment is completely fixed is supported. All measured contact contours stay
+within the declared projected-coarse-texel plus receiver-displacement allowance;
+that numerical bound is not a visual acceptance threshold.
+
+1024 baseline / rejected experiment, raw visibility at the same pose:
+
+![Before: per-map PCF/bias scale](images/csm-cohesion/before-1024.png)
+![Rejected experiment: common continuous receiver/filter scale](images/csm-cohesion/after-1024.png)
+
+Adopted baseline sampling at 2048 Ultra, same pose:
+
+![Adopted Ultra: established PCF at higher map density](images/csm-cohesion/adopted-ultra.png)
+
+Rejected experiment at 2048 Ultra, same pose:
+
+![Ultra: remaining silhouette phase at higher map density](images/csm-cohesion/after-ultra.png)
+
+Authored study, baseline / rejected experiment, fixed exposure 0 and identical camera, AO/TAA off:
+
+![Authored study before](images/csm-cohesion/before-study.png)
+![Authored study with rejected experiment](images/csm-cohesion/after-study.png)
+
+The FP64 oracle independently ray-traces the geometry at projected texel centers
+and integrates cell areas; it uses measured matrices as inputs, not production
+fitting/depth/PCF helpers. Existing analytic corner/grid tests independently test
+fitting. There are 95,880 visibility probes per backend/configuration. Exact-center
+reference error reaches .04448 in the experiment (.11111 baseline) where a native
+rasterizer covers a subpixel edge that the exact ray misses. The retained oracle
+therefore also reports an explicit ±1/256 shadow-texel coverage interval for failing
+probes, rather than discarding them or changing .02. Two experimental probes and twelve
+baseline probes need that interval. Maximum error outside it is .01412 experimental
+and .01790 baseline, below the unchanged .02 bound. This is a scoped raster-coverage
+uncertainty model, not certification of every GPU's raster precision.
+
+**New stress full-frame inspection parity is INCOMPLETE.** The strict .003 RGB /
+1e-6 depth / exact-ID check was not weakened: it fails in both baseline and experiment.
+There are up to three floor/wall camera-coverage ID differences per image, depth
+roundoff up to 1.97e-6 in these wide perspective fixtures, and large differences in
+unused coarse-map inspection channels on wall edges. Even common-ground final
+visibility has one experimental contact pixel at .0046604 (.0004205 maximum baseline
+in that case), above .003. These results are retained in
+[stress results](evidence/CSMCohesion_v1/stress-release-results.json) and
+[ground visibility parity](evidence/CSMCohesion_v1/stress-ground-parity.json).
+They must not be represented as a production parity PASS or hidden by an aggregate
+image score. The established analytic/rendered RGB suite still passes its original
+thresholds; visibility diagnostics and radiance have different numerical scales.
+
+Higher resolution and shorter shadow distance reduce quantization, at explicit
+memory/coverage cost. Increasing fine-map blur to match the coarse grid would hide
+some phase error and spend extra fetches; it was not selected. Recovering subtexel
+caster coverage/planes from the existing depth-only samples is not generally exact.
+A coverage/depth representation change needs a separate measured design decision.
+The sampling candidate is retained only as an isolated experiment. It is not
+shipped: restoring filter-width cohesion by sharpening coarser maps worsened
+contour phase/alignment and did not establish temporal visual quality. Do not
+replace the baseline merely because average visibility disagreement improved.
+The next design must address subtexel coverage/edge phase or explicitly select a
+world-footprint/filter-cost tradeoff with evidence. Ultra and diagnostics are
+independently useful; **the requested visual milestone remains blocked**.
+
+The concrete prerequisite is not a new render graph or a different camera fitter.
+With fine/coarse texels T and U>T, a common box at least three coarse texels wide
+needs `3*U/T` fine texels per axis. Exact cell integration generally exceeds the
+existing 4×4 fetch budget. Keeping that budget by narrowing the coarse kernel is
+the rejected experiment above. A wider physical filter cannot be adopted merely
+to conceal the mismatch. The smallest next comparison should explicitly evaluate
+a bounded 36/64-fetch matched-support reconstruction against a coverage-preserving
+depth representation. A small multisample depth/coverage prototype is one concrete
+alternative, but changes both backend sample/format admission and atlas memory
+(four Depth32F samples would be 256 MiB at Ultra before other resources). Neither
+alternative is selected or implemented here. Predeclare contour/temporal/contact
+gates and cost bounds before choosing; preserve current fitting/caster semantics
+unless those measurements identify a coverage failure.
+
+### Qualification, performance and reproduction
+
+Adopted production sampling remains the baseline. Two isolated Release Metal runs
+(pooling 40 measured samples per case, 5 warmups per run) measured:
+
+| Output / cascade | Atlas generation median / p95 ms | Forward median / p95 ms | Forward on−off median ms |
+|---|---:|---:|---:|
+| 720p / 512 | .0135 / .0199 | .9199 / 1.1928 | .2930 |
+| 720p / 1024 | .0935 / .1603 | 1.0280 / 1.2503 | .3885 |
+| 720p / 2048 | .3140 / .4341 | .9651 / 1.2690 | .3328 |
+| 1080p / 512 | .0229 / .0387 | 2.0451 / 2.6885 | .4872 |
+| 1080p / 1024 | .0473 / .0885 | 2.2409 / 2.6883 | .9551 |
+| 1080p / 2048 | .3009 / .3855 | 2.3487 / 2.7568 | .8186 |
+
+[Performance records](evidence/CSMCohesion_v1/performance-summary.json) include the
+33-mesh workload, raw per-run summaries and scope. The pre-change 1024 baseline
+measured generation/forward .0671/1.0383 ms at 720p and .0530/2.2108 ms at 1080p.
+Those separate runs do not establish a speedup/regression or presented throughput.
+Forward on−off includes sampling and pass differences, not isolated shader clocks.
+The rejected experiment's 1080p forward medians were 2.724–2.726 ms at 512/1024,
+versus adopted-run ranges 1.991–2.305 ms. It did not justify its extra filtering ALU
+with improved contour correctness. OpenGL pass cost and Retina performance remain
+NOT MEASURED; the 3200×1800 test establishes presentation/lifetime, not FPS.
+
+The final [qualification manifest](evidence/CSMCohesion_v1/qualification.json) lists
+exact commands, hashes, configurations and individual PASS/INCOMPLETE/NOT RUN gates.
+Native macOS uses Apple M4 Metal 4 and Apple OpenGL 4.1; no software GL is substituted.
+Windows/Linux and non-Apple GPUs, long sessions, detached Ultra views and final
+interactive owner acceptance remain unverified. Existing frozen references and
+thresholds are unchanged. Raw captures, validation logs and discarded experiments
+remain under `build/csm-cohesion/`.
+
+```sh
+python3 scripts/macos/shadow_continuity.py --config Release --resources Hazel/Resources --output NEW_BEFORE --baseline
+python3 scripts/macos/shadow_continuity.py --config Release --resources Hazel/Resources --output NEW_EXPERIMENT --experiment --compare NEW_BEFORE
+python3 scripts/macos/directional_shadows.py --config Debug --resources Hazel/Resources --output NEW_DEBUG
+python3 scripts/macos/directional_shadows.py --config Release --resources Hazel/Resources --output NEW_RELEASE
+python3 scripts/macos/directional_shadows.py --config Release --resources Hazel/Resources --backend metal --benchmark --output NEW_TIMING
+```
+
+The baseline command creates isolated resources using historical `878303e` sampling
+plus neutral transient inspection; it never changes production/frozen resources.
+The experiment command applies the archived patch only to isolated resources.
+Both stress runs intentionally return nonzero on the unresolved strict full-frame
+inspection-parity gate. Compare saved `continuity.json` despite that reported failure.
+`--capture-only` records fixtures without claiming numerical qualification;
+`--inspect-only --model baseline` evaluates previously saved baseline captures.
+
+### PCSS recommendation — design only
+
+The current ownership, linear orthographic depth atlas and canonical shader path
+can support a small directional PCSS experiment. **This investigation has not established
+the visual/contact/parity readiness needed to proceed.** Obtain owner acceptance of
+the CSM tradeoffs and explicit implementation authorization first.
+
+Use one directional-light angular **half-radius in radians**, independent of shadow
+resolution and quality. For receiver/blocker separation d along light travel,
+penumbra radius is `tan(angularHalfRadius) * max(d,0)` in world units. Decode d as
+normalized depth difference times the cascade's light-depth span; do not use a
+perspective point-light depth ratio or compare normalized depths from different
+spans. If averaging blockers across maps, decode world light depth using VP's depth
+translation/span first. Shadow visibility must continue to attenuate incident direct
+RGB only. The accepted BRDF/IBL/energy math remains outside shadow filtering.
+
+Start with a bounded 16-sample blocker search and 16 bilinear-comparison filter
+locations in canonical GLSL, a fixed light-space disk pattern and a documented
+maximum world penumbra/search radius. This is roughly 16+64 depth fetches per map,
+up to twice that in overlaps; measure before choosing budgets. Keep the current
+16-fetch PCF mode as a quality/performance option. Ultra specifies resolution,
+not angular light size. Avoid frame-randomized patterns initially; TAA must remain
+optional and must not be required to conceal blocker-search noise. No new compute,
+render graph, atlas type, mip hierarchy, or platform-specific shading model is needed
+for this first experiment. OpenGL 4.1 bounded loops and explicit texel fetches are
+feasible; native shader compilation and cost still require measurement.
+
+Both maps must use the same physical search/filter support and receiver bias in an
+overlap. Their blocker estimates may disagree; qualify that disagreement explicitly
+before selecting a radius-combination rule. A finite **world** search/filter bound
+also requires larger stable fitting/caster-coverage margins than today's two-texel
+PCF padding. Reject unbounded requests; document clipping rather than silently
+missing off-frustum blockers. Do not implement PCSS inside current padding unchanged.
+Keep geometric receiver-plane correction for filter taps, separately qualify blocker
+classification bias, reject clear-depth samples as blockers, and demonstrate contact
+radius tending to zero without introducing self blockers or detached shadows.
+
+Predeclare FP64 parallel-plane blocker/separation/radius references, thin and multiple
+blockers, no-blocker/fully-blocked limits, equal world penumbrae across every split,
+contact 50% position/10–90% width and temporal edge-motion bounds, fixed-pattern
+camera/light/caster motion with AO/TAA off/on, and full filter-support coverage at
+cascade/atlas edges. Preserve the existing .02 analytic/.003 RGB/depth/ID gates,
+and resolve the new stress failures rather than broadening them. Measure generation,
+blocker search and filtering separately at 720p/1080p/Retina and 512/1024/2048 before
+proposing a modest preset. Owner visual acceptance is required independently.
+
+References: NVIDIA's [PCSS integration guide](https://developer.download.nvidia.com/assets/gamedev/docs/PCSS_Integration.pdf)
+and [blocker-search description](https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-8-summed-area-variance-shadow-maps#86-percentage-closer-soft-shadows).
+The angular directional-light specialization and Hazel ownership/padding choices
+above are this proposal, not claims that the perspective-light sample implements them.

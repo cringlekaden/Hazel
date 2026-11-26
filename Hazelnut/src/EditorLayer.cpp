@@ -333,6 +333,14 @@ namespace Hazel {
                 ImGui::EndPopup();
             }
             ImGui::SameLine();
+            if(ImGui::Button("Shadows..."))ImGui::OpenPopup("Directional shadow inspection");
+            if(ImGui::BeginPopup("Directional shadow inspection")) {
+                int inspection=int(m_RenderView.ShadowView);
+                if(ImGui::Combo("View",&inspection,"Shaded\0Visibility\0Cascade / overlap\0Cascade 0\0Cascade 1\0Cascade 2\0Cascade 3\0Current / next / blend\0World texel width\0Normal offset (world)\0Unbiased current / next / blend\0"))m_RenderView.ShadowView=unsigned(inspection);
+                ImGui::TextUnformatted("Transient inspection; TAA history is inactive while inspecting shadows.");
+                ImGui::EndPopup();
+            }
+            ImGui::SameLine();
             if(ImGui::Button("AO..."))ImGui::OpenPopup("Ambient occlusion inspection");
             if(ImGui::BeginPopup("Ambient occlusion inspection")) {
                 int aoInspect=int(m_RenderView.AmbientOcclusionView);

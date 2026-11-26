@@ -81,7 +81,7 @@ private:
     std::shared_ptr<MetalTemporalHistory> m_TemporalPrevious;
     std::vector<std::shared_ptr<const MetalFramebufferAttachments>> m_TemporalColors;
     std::vector<std::shared_ptr<MetalTemporalCounters>> m_TemporalCounters;
-    bool m_TemporalProducer=false, m_WorldProducer=false;
+    bool m_TemporalProducer=false, m_WorldProducer=false, m_ShadowProducer=false;
     bool m_SubmittedGeneration = false;
     std::vector<std::shared_ptr<const MetalFramebufferAttachments>> m_Available;
 };

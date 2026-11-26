@@ -114,6 +114,7 @@ public:
         Project=Hazel::Project::LoadCandidate(std::filesystem::absolute("examples/RenderingReference/RenderingReference-Shadows.hproj"));
         Scene=Project->LoadScene(Project->GetConfig().StartScene);Scene->OnViewportResize(1600,900);
         Scene->SetUIFramebufferSize({3200,1800});Camera.SetViewportSize(1600,900);
+        Scene->Presentation().Shadows.Resolution=2048;
         Camera.RestoreOrbit({-20.0864868f,14.6694498f,-25.6105156f},.609317422f,-4.08032942f,10);
         auto radicalInverse=[](unsigned index,unsigned base) {
             double value=0,weight=1;while(index){weight/=base;value+=weight*(index%base);index/=base;}return value;

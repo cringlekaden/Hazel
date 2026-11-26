@@ -1,0 +1,63 @@
+[
+  {
+    "name": "adopted-source-free-corrected",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/Adopted Source Free \u03a9/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-source-free-corrected",
+      "--shadows"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "timing-adopted",
+    "command": [
+      "python3",
+      "scripts/macos/directional_shadows.py",
+      "--config",
+      "Release",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/timing-adopted",
+      "--backend",
+      "metal",
+      "--benchmark"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "timing-experiment",
+    "command": [
+      "python3",
+      "scripts/macos/directional_shadows.py",
+      "--config",
+      "Release",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/CandidateResources",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/timing-experiment",
+      "--backend",
+      "metal",
+      "--benchmark"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "timing-adopted-repeat",
+    "command": [
+      "python3",
+      "scripts/macos/directional_shadows.py",
+      "--config",
+      "Release",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/timing-adopted-repeat",
+      "--backend",
+      "metal",
+      "--benchmark"
+    ],
+    "exit": 0
+  }
+]

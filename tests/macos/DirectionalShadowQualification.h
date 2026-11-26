@@ -1,5 +1,6 @@
 #pragma once
 #include "Renderer3DParity.h"
+#include "ShadowContinuityChecks.h"
 #include "Hazel/Scene/SceneDefaults.h"
 #include "Hazel/Renderer/Cameras/NavigationCamera.h"
 #include "Hazel/Renderer/Drawing/Renderer2D.h"
@@ -16,9 +17,9 @@ inline void DirectionalShadowCPUChecks()
     SceneSubmission frame;frame.Presentation.Shadows.Enabled=true;
     frame.Presentation.Shadows.Distance=80;
     frame.Light=SubmittedDirectional{glm::normalize(glm::vec3(.3f,1,.2f)),glm::vec3(1)};
-    std::array<std::array<float,4>,3> scales{};
+    std::array<std::array<float,4>,4> scales{};
     unsigned checked=0;
-    for(float yaw:{0.f,.3f,1.5f,3.f})for(float move:{0.f,.001f,1.f,100.f})for(unsigned res:{256u,512u,1024u}) {
+    for(float yaw:{0.f,.3f,1.5f,3.f})for(float move:{0.f,.001f,1.f,100.f})for(unsigned res:{256u,512u,1024u,2048u}) {
         auto& camera=frame.Camera;camera.Position={move,2,4};
         const glm::vec3 forward(std::sin(yaw),0,-std::cos(yaw));camera.ToCamera=-forward;
         const auto right=glm::cross(glm::dvec3(forward),glm::dvec3(0,1,0));
@@ -29,7 +30,7 @@ inline void DirectionalShadowCPUChecks()
         double previous=.1;
         for(unsigned c=0;c<4;++c) {
             const auto scale=glm::length(glm::vec3(fit.VP[c][0][0],fit.VP[c][1][0],fit.VP[c][2][0]));
-            auto& referenceScale=scales[res==256?0:res==512?1:2][c];
+            auto& referenceScale=scales[res==256?0:res==512?1:res==1024?2:3][c];
             if(referenceScale==0)referenceScale=scale;
             ShadowCheck(std::abs(scale/referenceScale-1)<1e-5f,"CSM scale changed under camera rotation");
             const double t=double(c+1)/4,expected=(.1+(80-.1)*t)*.35+.1*std::pow(800.,t)*.65;
@@ -84,6 +85,7 @@ inline void DirectionalShadowQualification(const std::filesystem::path& output,
     const std::function<Hazel::Ref<const Hazel::FramebufferReadback>(const Hazel::Ref<Hazel::Framebuffer>&)>& capture)
 {
     using namespace Hazel;
+    if(!FileSystem::GetEnvironmentPath("HAZEL_SHADOW_CONTINUITY").empty()){ShadowContinuityChecks(output,capture);return;}
     DirectionalShadowCPUChecks();std::filesystem::create_directories(output);
     auto selected=FileSystem::GetEnvironmentPath("HAZEL_RENDERING_REFERENCE_PROJECT");
     auto project=Project::LoadCandidate(selected);auto assets=CreateRef<ProjectAssets>(project->GetAssetRoot());
@@ -116,7 +118,7 @@ inline void DirectionalShadowQualification(const std::filesystem::path& output,
         }
         frame.ShadowCasters=frame.Meshes;
         std::ofstream timing(output/"benchmark.csv");timing<<"width,height,resolution,enabled,sample,shadowGPUms,forwardGPUms,serializedFrameMs\n";
-        for(auto extent:{glm::uvec2(1280,720),glm::uvec2(1920,1080)})for(unsigned resolution:{512u,1024u})for(bool enabled:{false,true}) {
+        for(auto extent:{glm::uvec2(1280,720),glm::uvec2(1920,1080)})for(unsigned resolution:{512u,1024u,2048u})for(bool enabled:{false,true}) {
             target->Resize(extent.x,extent.y);frame.Presentation.Shadows.Resolution=resolution;
             frame.Camera.ViewProjection=glm::perspective(glm::radians(55.f),float(extent.x)/float(extent.y),.1f,100.f)*
                 glm::lookAt(frame.Camera.Position,glm::vec3(0),glm::vec3(0,1,0));
@@ -133,7 +135,7 @@ inline void DirectionalShadowQualification(const std::filesystem::path& output,
     }
     std::ofstream csv(output/"shadows.csv");csv<<"case,resolution,lit,shadowed,maximumInteriorError\n";
     unsigned caseNumber=0;
-    for(unsigned res:{256u,512u,1024u})for(unsigned variant=0;variant<6;++variant) {
+    for(unsigned res:{256u,512u,1024u,2048u})for(unsigned variant=0;variant<6;++variant) {
         frame.Presentation.Shadows.Resolution=res;
         const bool offscreen=variant==5;
         const auto light=glm::normalize(offscreen?glm::vec3(1,1,0):variant==4?glm::vec3(0,1,0):glm::vec3(-.5f,1,.35f));
@@ -155,7 +157,7 @@ inline void DirectionalShadowQualification(const std::filesystem::path& output,
         unsigned lit=0,shadow=0;double maximum=0;
         // Exclude a conservative footprint around analytic edges. Interior
         // samples independently classify visibility; images retain edge behavior.
-        const double margin=res==256?1.5:res==512?.8:.4;
+        const double margin=res==256?1.5:res==512?.8:res==1024?.4:.2;
         const glm::dvec3 lo=glm::dvec3(centre-scale*.5f),hi=glm::dvec3(centre+scale*.5f);
         for(size_t i=0;i<positions->Color.size();++i) {
             ShadowCheck(shaded->Entity[i]==unshadowed->Entity[i] && shaded->Depth[i]==unshadowed->Depth[i],"CSM changed authoritative IDs/depth");
@@ -255,7 +257,8 @@ inline void DirectionalShadowQualification(const std::filesystem::path& output,
         frame.Presentation.TemporalAA=true;frame.Presentation.AmbientOcclusion.Enabled=true;
         const auto original=frame.Camera;
         for(unsigned step=0;step<16;++step) {
-            if(step==4)frame.Presentation.Shadows.Resolution=512;
+            if(step==4)frame.Presentation.Shadows.Resolution=2048;
+            if(step==6)frame.Presentation.Shadows.Resolution=512;
             if(step==8)target->Resize(640,360);
             frame.Camera.Position=original.Position+glm::vec3(float(step)*.01f,0,0);
             frame.Camera.ViewProjection=original.ViewProjection*glm::translate(glm::mat4(1),{-float(step)*.01f,0,0});

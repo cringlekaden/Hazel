@@ -93,12 +93,13 @@ namespace Hazel {
         ImGui::SeparatorText("Directional shadows");
         auto& shadows=m_ScenePresentationDraft.Shadows;
         PropertyUI::Checkbox("shadows-enable","Cascaded shadows",shadows.Enabled);
-        int shadowResolution=shadows.Resolution==256?0:shadows.Resolution==512?1:2;
-        if(PropertyUI::Combo("shadow-resolution","Cascade resolution",shadowResolution,"256\0 512\0 1024\0"))shadows.Resolution=256u<<shadowResolution;
+        int shadowResolution=shadows.Resolution==256?0:shadows.Resolution==512?1:shadows.Resolution==1024?2:3;
+        if(PropertyUI::Combo("shadow-resolution","Cascade resolution",shadowResolution,"256\0 512\0 1024\0 2048 (Ultra)\0"))shadows.Resolution=256u<<shadowResolution;
         PropertyUI::DragFloat("shadow-distance","Shadow distance",shadows.Distance,.1f,.1f,10000);
         PropertyUI::SliderFloat("shadow-split","Split distribution",shadows.SplitLambda,0,1);
         PropertyUI::SliderFloat("shadow-normal","Normal bias (texels)",shadows.NormalBias,0,2);
         PropertyUI::SliderFloat("shadow-depth","Depth bias (texels)",shadows.DepthBias,0,1);
+        ImGui::TextWrapped("Ultra uses four 2048 maps in a 64 MiB depth atlas. Bias values use each cascade's world texel size.");
         PropertyUI::SliderFloat("shadow-blend","Cascade blend / fade",shadows.Blend,.01f,.25f);
         ImGui::TextWrapped("Four cascades with fixed PCF for the directional key. Static opaque and masked meshes cast and receive shadows on Metal and OpenGL.");
         ImGui::SeparatorText("Screen-space ambient occlusion");

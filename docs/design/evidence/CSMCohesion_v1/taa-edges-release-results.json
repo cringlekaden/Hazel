@@ -1,0 +1,203 @@
+{
+  "configuration": "Release",
+  "head": "878303e5270254d2e214230df0dfbf10ebf87f83",
+  "worktree": "M .DS_Store\n M Hazel/Resources/shaders/ForwardPBR.glsl\n M Hazel/Resources/shaders/metal/ForwardPBR.hzmetal\n M Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.cpp\n M Hazel/src/Hazel/Renderer/Scene/DirectionalShadows.h\n M Hazel/src/Hazel/Renderer/Scene/SceneRenderer.cpp\n M Hazel/src/Hazel/Renderer/Scene/SceneRenderer.h\n M Hazel/src/Hazel/Renderer/Scene/SceneSubmission.h\n M Hazel/src/Hazel/Scene/Scene.cpp\n M Hazel/src/Platform/macOS/Metal/MetalFramebuffer.cpp\n M Hazelnut/src/Authoring/RenderingSettings.cpp\n M Hazelnut/src/EditorLayer.cpp\n M docs/design/directional-shadows.md\n M examples/.DS_Store\n M examples/RenderingReference/Assets/Scenes/XeGTAO-Contact.hazel\n M examples/RenderingReference/RenderingReference-XeGTAO.hproj\n M tests/macos/DirectionalShadowQualification.h\n M tests/macos/TemporalEditorViews.h\n?? scripts/macos/shadow_continuity.py\n?? tests/macos/ShadowContinuityChecks.h",
+  "command": [
+    "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+    "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/taa-release-edges/captures",
+    "--taa-edges"
+  ],
+  "status": "PASS",
+  "scope": "AO-free analytic silhouettes, projection jitter and serialized/three-slot equivalence. Owner visual acceptance pending.",
+  "shaders": {
+    "ForwardPBR.hzmetal": "b614b2c2631c1ccfed28d8c265c53cd670b619a08e259100fc53f332aa70860e",
+    "producer.txt": "3adf77fe1deff3d0d6cd64e5d94093697067bf3661383af61af35e853b87f53f",
+    "EntityOutline.hzmetal": "01ef441c3b77ab67b9d02aa739f1a7028df2b38b9d23fa1d9c85a87b70f1da56",
+    "Renderer2D_Line.hzmetal": "0649cd9aa45d63604c35ca5def33e3e7bc1ab98f5c8f2325f56cf73ec0e2b154",
+    "Renderer2D_Quad-16.hzmetal": "39eea29c143507c211f13271cb3c4a77759910546ffce882a258502216fb35df",
+    "LocalLightCull.metallib": "68e9364883b123d9ff24bf121f5200c8fc35c7d278ecf6332db2c908dd489a3e",
+    "LocalLightCull.json": "d47d2b5177a439077a977d5b2319b0324f206252c1f7f34924c4bc9eebd93876",
+    "ImGui.json": "d36612bb5f238ec1c4bab9b2e85fc77d3c63c860debd011c0596d9da253cc280",
+    "XeGTAO.metallib": "524ef4611573fa9ee363915fab117e495dbae3e419e07ddba4269c74b0208368",
+    "MotionPBR.hzmetal": "45613286d38f7d974713f96718e2a6dbb527836150573f389735c324a01dbb19",
+    "Renderer2D_Quad-32.hzmetal": "909978450633564664d3f6f5356aa80c497644ffb0fddeec85bacf9a975695eb",
+    "WorldPresentation.hzmetal": "6cf0ea9c2ca49ecd7f264e5a4df9e5f174c2c51e6b50543d5b8d7ebb2acfb164",
+    "XeGTAO.json": "a7ce46cda7d523f9eb4a968317e967f638e83ea70b3d329b9c4b62b2e7d8b20d",
+    "EnvironmentSky.hzmetal": "ba159aa84517a9b3626851f37b7f6b5314a1ae2250dfd5d58e051d22d2c9c14a",
+    "ImGui.metallib": "ebd096577ba66f98f3d2ae9dc32a607ca23e7e5e3aa8243defe15a238c7ce167",
+    "Renderer2D_Circle.hzmetal": "4e51b4ef362be908924d84287eb1c92535cd080b03386d906e968a352251fce3",
+    "DepthPBR.hzmetal": "1d70d04368e5b48056bb672c1588d7e57a4abbd8f2199bc09357b06bb29f098f",
+    "Renderer2D_Text.hzmetal": "f76ae76d70633ab911155803737fb8a76f14be5c0be12ff57c6ca10c21889ba5",
+    "TemporalAA.metallib": "a6fb1afc1bbb467b32fb49fdbcf0e7e932aa5a0fe2f3461c6b789a1e44b14a65",
+    "DisplayOutput.hzmetal": "8673d03228a2883189838f0d47ba8b25b51024e2eeac91c3bc5bd2445b2fcead",
+    "TemporalAA.json": "72a7ec6047a1f8d2c4324b03626e3c807178be4711ecdebf18791ac83e71b990"
+  },
+  "edgeQuality": {
+    "scope": "Analytic geometric-AA gates for the native AO-free diagonal-edge fixture.\n\nCoverage units: zero is background and one is the opaque unlit rectangle.\nResidual changes subtract analytic per-frame coverage, retaining alias/flicker\nrather than the intended change in geometry. Soft width is 5%-95% coverage pixel\ncount divided by projected perimeter. It detects recursive interpolation blur.\nThese local gates do not replace owner visual acceptance.\n",
+    "criteria": "Declared for the final candidate after diagnostic ablations, before final Debug/Release acceptance; mean settled frames 16-63. No universal image-quality claim.",
+    "status": "PASS",
+    "sequences": [
+      {
+        "projection": "perspective",
+        "motion": "static",
+        "offRMSE": 0.161482,
+        "taaRMSE": 0.04496553958333333,
+        "offResidualChange": 0.0,
+        "taaResidualChange": 0.014652003541666667,
+        "acceptedFraction": 1.0,
+        "softWidth": 1.1361964583333333,
+        "referenceSoftWidth": 0.924507,
+        "meanHistoryWeight": 0.9187105625,
+        "checks": {
+          "improvesGeometricError": true,
+          "stationaryStable": true,
+          "converges": true,
+          "retainsEdgeWidth": true,
+          "rasterJitterMatches": true
+        },
+        "earlyRMSE": 0.119121275,
+        "lateRMSE": 0.05040833125,
+        "status": "PASS"
+      },
+      {
+        "projection": "perspective",
+        "motion": "camera_translation",
+        "offRMSE": 0.1619544375,
+        "taaRMSE": 0.09248228958333334,
+        "offResidualChange": 0.11671527083333333,
+        "taaResidualChange": 0.043286639583333335,
+        "acceptedFraction": 0.9822358333333333,
+        "softWidth": 1.514395,
+        "referenceSoftWidth": 0.92530575,
+        "meanHistoryWeight": 0.8235927083333333,
+        "checks": {
+          "improvesGeometricError": true,
+          "improvesMovingResidual": true,
+          "retainsEdgeWidth": true,
+          "rasterJitterMatches": true
+        },
+        "status": "PASS"
+      },
+      {
+        "projection": "perspective",
+        "motion": "camera_rotation",
+        "offRMSE": 0.16194664583333335,
+        "taaRMSE": 0.08031542291666667,
+        "offResidualChange": 0.17555235416666667,
+        "taaResidualChange": 0.05112625,
+        "acceptedFraction": 0.9625646875,
+        "softWidth": 1.42228875,
+        "referenceSoftWidth": 0.9262065,
+        "meanHistoryWeight": 0.7956543541666666,
+        "checks": {
+          "improvesGeometricError": true,
+          "improvesMovingResidual": true,
+          "retainsEdgeWidth": true,
+          "rasterJitterMatches": true
+        },
+        "status": "PASS"
+      },
+      {
+        "projection": "perspective",
+        "motion": "independent_object",
+        "offRMSE": 0.1608943125,
+        "taaRMSE": 0.08943941875,
+        "offResidualChange": 0.15538072916666668,
+        "taaResidualChange": 0.04773539375,
+        "acceptedFraction": 0.9714330208333334,
+        "softWidth": 1.5763929166666666,
+        "referenceSoftWidth": 0.932805875,
+        "meanHistoryWeight": 0.8127235833333334,
+        "checks": {
+          "improvesGeometricError": true,
+          "improvesMovingResidual": true,
+          "retainsEdgeWidth": true,
+          "rasterJitterMatches": true
+        },
+        "status": "PASS"
+      },
+      {
+        "projection": "ortho",
+        "motion": "static",
+        "offRMSE": 0.161496,
+        "taaRMSE": 0.04481587708333333,
+        "offResidualChange": 0.0,
+        "taaResidualChange": 0.014412245833333334,
+        "acceptedFraction": 1.0,
+        "softWidth": 1.13922125,
+        "referenceSoftWidth": 0.924493,
+        "meanHistoryWeight": 0.9185375625,
+        "checks": {
+          "improvesGeometricError": true,
+          "stationaryStable": true,
+          "converges": true,
+          "retainsEdgeWidth": true,
+          "rasterJitterMatches": true
+        },
+        "earlyRMSE": 0.11962044999999999,
+        "lateRMSE": 0.050469481249999996,
+        "status": "PASS"
+      },
+      {
+        "projection": "ortho",
+        "motion": "camera_translation",
+        "offRMSE": 0.16194620833333334,
+        "taaRMSE": 0.09242816041666667,
+        "offResidualChange": 0.11635591666666667,
+        "taaResidualChange": 0.043045585416666664,
+        "acceptedFraction": 0.9822693125,
+        "softWidth": 1.511036875,
+        "referenceSoftWidth": 0.9256575833333334,
+        "meanHistoryWeight": 0.8239909375,
+        "checks": {
+          "improvesGeometricError": true,
+          "improvesMovingResidual": true,
+          "retainsEdgeWidth": true,
+          "rasterJitterMatches": true
+        },
+        "status": "PASS"
+      },
+      {
+        "projection": "ortho",
+        "motion": "camera_rotation",
+        "offRMSE": 0.16192204166666666,
+        "taaRMSE": 0.07999025625,
+        "offResidualChange": 0.17136304166666666,
+        "taaResidualChange": 0.046751860416666666,
+        "acceptedFraction": 0.9100784166666667,
+        "softWidth": 1.41107875,
+        "referenceSoftWidth": 0.9262373125,
+        "meanHistoryWeight": 0.7618244375,
+        "checks": {
+          "improvesGeometricError": true,
+          "improvesMovingResidual": true,
+          "retainsEdgeWidth": true,
+          "rasterJitterMatches": true
+        },
+        "status": "PASS"
+      },
+      {
+        "projection": "ortho",
+        "motion": "independent_object",
+        "offRMSE": 0.1609818125,
+        "taaRMSE": 0.08925156875,
+        "offResidualChange": 0.15509197916666667,
+        "taaResidualChange": 0.04755878125,
+        "acceptedFraction": 0.9711800833333333,
+        "softWidth": 1.578224375,
+        "referenceSoftWidth": 0.9318386041666666,
+        "meanHistoryWeight": 0.812956,
+        "checks": {
+          "improvesGeometricError": true,
+          "improvesMovingResidual": true,
+          "retainsEdgeWidth": true,
+          "rasterJitterMatches": true
+        },
+        "status": "PASS"
+      }
+    ]
+  },
+  "edgeGeometry": "front-facing",
+  "edgeCameraMotion": "slow constant motion"
+}

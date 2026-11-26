@@ -300,10 +300,15 @@ Use `--opengl` for the OpenGL 4.1 path. **Scene Settings → Directional shadows
 controls resolution, distance, splits, bias and cascade blending. Inspect static
 contacts first, then translate/rotate the camera and directional key and move
 casters with the existing transform gizmos. Move a tall caster out of the camera
-while retaining its shadow. Compare 512/1024 cascades, near/far crossings and
+while retaining its shadow. Compare 512/1024 and **2048 (Ultra)** cascades, near/far crossings and
 shadows off; enable AO/TAA independently on Metal. Smooth normals do not change
 actual triangular caster geometry. Watch grazing self-shadow terminators, thin
 surface leaks and detached contacts; report them against the exact settings.
+Use **Shadows... → Current / next / blend** to inspect the two map visibilities
+and blend weight in RGB. Inspect **Visibility** and the individual maps at a
+matching camera pose; the unbiased pair keeps projection fitting unchanged.
+Ultra uses a 64 MiB depth atlas. The [cohesion follow-up](../../docs/design/directional-shadows.md#csm-cohesion-investigation-and-ultra)
+records a rejected filter experiment and the unresolved contour/coverage limitations.
 
 This is an experimental foundation, pending owner visual acceptance and the
 remaining gates in the [CSM record](../../docs/design/directional-shadows.md).

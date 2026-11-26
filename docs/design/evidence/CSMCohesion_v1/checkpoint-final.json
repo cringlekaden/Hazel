@@ -1,0 +1,151 @@
+[
+  {
+    "name": "directional-shadows-release-final",
+    "command": [
+      "python3",
+      "scripts/macos/directional_shadows.py",
+      "--config",
+      "Release",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/directional-shadows-release-final"
+    ],
+    "exit": 0,
+    "seconds": 7.595024108886719
+  },
+  {
+    "name": "directional_shadows-debug",
+    "command": [
+      "python3",
+      "scripts/macos/directional_shadows.py",
+      "--config",
+      "Debug",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/directional_shadows-debug",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+    ],
+    "exit": 0,
+    "seconds": 16.986943006515503
+  },
+  {
+    "name": "local_lighting-debug",
+    "command": [
+      "python3",
+      "scripts/macos/local_lighting.py",
+      "--config",
+      "Debug",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/local_lighting-debug",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+    ],
+    "exit": 0,
+    "seconds": 25.44369912147522
+  },
+  {
+    "name": "xegtao-debug",
+    "command": [
+      "python3",
+      "scripts/macos/xegtao.py",
+      "--config",
+      "Debug",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/xegtao-debug",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+    ],
+    "exit": 0,
+    "seconds": 8.67427396774292
+  },
+  {
+    "name": "taa-debug",
+    "command": [
+      "python3",
+      "scripts/macos/taa.py",
+      "--config",
+      "Debug",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/taa-debug",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+    ],
+    "exit": 0,
+    "seconds": 20.72233009338379
+  },
+  {
+    "name": "taa-debug-edges",
+    "command": [
+      "python3",
+      "scripts/macos/taa.py",
+      "--config",
+      "Debug",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/taa-debug-edges",
+      "--edges",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+    ],
+    "exit": 0,
+    "seconds": 33.812320947647095
+  },
+  {
+    "name": "ggx_multiscattering-debug",
+    "command": [
+      "python3",
+      "scripts/macos/ggx_multiscattering.py",
+      "--config",
+      "Debug",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/ggx_multiscattering-debug",
+      "--project",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/RenderingReference.hproj"
+    ],
+    "exit": 0,
+    "seconds": 257.63510489463806
+  },
+  {
+    "name": "pbr-ibl-debug-metal",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/pbr-ibl-debug-metal",
+      "--renderer3d-parity"
+    ],
+    "exit": 0,
+    "seconds": 49.86616492271423
+  },
+  {
+    "name": "pbr-ibl-debug-opengl",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+      "--renderer3d-parity",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/pbr-ibl-debug-opengl"
+    ],
+    "exit": 0,
+    "seconds": 53.46025800704956
+  },
+  {
+    "name": "retina-ultra-debug",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/retina-ultra-debug",
+      "--shadow-editor-settings",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+    ],
+    "exit": 0,
+    "seconds": 6.254641056060791
+  },
+  {
+    "name": "source-free-release",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/Source Free \u03a9/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/source-free-release",
+      "--shadows"
+    ],
+    "exit": 0,
+    "seconds": 1.0409867763519287
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "head": "878303e5270254d2e214230df0dfbf10ebf87f83",
+  "baseline": null,
+  "model": "continuous",
+  "configuration": "Debug",
+  "sourceSHA256": "08f88ab87b1d9222acb2b00ffc9354f7f1818b9299f1cbdb87be776486e95102",
+  "backends": {
+    "metal": {
+      "cases": 24,
+      "probes": 95880,
+      "maxFP64VisibilityError": 0.044479595565987906,
+      "maxErrorOutsideRasterInterval": 0.014120784487805738,
+      "rasterAmbiguousProbes": 2,
+      "contacts": {
+        "PASS": 24,
+        "FAIL": 0,
+        "INCOMPLETE": 0
+      }
+    }
+  },
+  "status": "PASS scoped FP64 visibility/contact gates; owner visual acceptance separate"
+}

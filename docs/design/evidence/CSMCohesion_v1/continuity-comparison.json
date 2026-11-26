@@ -1,0 +1,50 @@
+{
+  "metal": {
+    "before": {
+      "overlapGroundPixels": 611232,
+      "meanMapDisagreement": 0.0019947053782237516,
+      "contourRows": 474,
+      "meanContour50Disagreement": 0.026137538262942888,
+      "maxContour50Disagreement": 0.28898896801035256,
+      "meanAnalyticEdgeError": 0.01791848263622809,
+      "maxAnalyticEdgeError": 0.33491444164785733,
+      "medianCoarseFineWidthRatio": 1.9435066907204017,
+      "meanWidthDifference": 0.2398833206357346
+    },
+    "after": {
+      "overlapGroundPixels": 611232,
+      "meanMapDisagreement": 0.0009042990465486615,
+      "contourRows": 474,
+      "meanContour50Disagreement": 0.03493613228233556,
+      "maxContour50Disagreement": 0.4433457407085406,
+      "meanAnalyticEdgeError": 0.02090037133972145,
+      "maxAnalyticEdgeError": 0.25152961032855536,
+      "medianCoarseFineWidthRatio": 0.9999986398905534,
+      "meanWidthDifference": 0.013885951910451581
+    }
+  },
+  "opengl": {
+    "before": {
+      "overlapGroundPixels": 611220,
+      "meanMapDisagreement": 0.001991133762274409,
+      "contourRows": 474,
+      "meanContour50Disagreement": 0.026139457221929435,
+      "maxContour50Disagreement": 0.28899010259584124,
+      "meanAnalyticEdgeError": 0.017920585340133147,
+      "maxAnalyticEdgeError": 0.3350611711254867,
+      "medianCoarseFineWidthRatio": 1.943510440729983,
+      "meanWidthDifference": 0.23988231634904578
+    },
+    "after": {
+      "overlapGroundPixels": 611220,
+      "meanMapDisagreement": 0.0009030994329035079,
+      "contourRows": 474,
+      "meanContour50Disagreement": 0.03493799170185633,
+      "maxContour50Disagreement": 0.4433126300516914,
+      "meanAnalyticEdgeError": 0.02090312830075681,
+      "maxAnalyticEdgeError": 0.2515633059266218,
+      "medianCoarseFineWidthRatio": 0.9999959651402197,
+      "meanWidthDifference": 0.01387545704678421
+    }
+  }
+}

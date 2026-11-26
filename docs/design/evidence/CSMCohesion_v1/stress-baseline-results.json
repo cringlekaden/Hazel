@@ -1,0 +1,180 @@
+{
+  "head": "878303e5270254d2e214230df0dfbf10ebf87f83",
+  "model": "baseline",
+  "configuration": "Release",
+  "sourceSHA256": "ebd8a53a5efe5b65c4f1fb34846d5a91f355d7c404ba1275f3dc2368ff598470",
+  "backends": {
+    "metal": {
+      "cases": 24,
+      "probes": 95880,
+      "maxFP64VisibilityError": 0.11110935521269172,
+      "maxErrorOutsideRasterInterval": 0.017902148387431926,
+      "rasterAmbiguousProbes": 12,
+      "contacts": {
+        "PASS": 24,
+        "FAIL": 0,
+        "INCOMPLETE": 0
+      }
+    },
+    "opengl": {
+      "cases": 24,
+      "probes": 95880,
+      "maxFP64VisibilityError": 0.1111148203493586,
+      "maxErrorOutsideRasterInterval": 0.017896535908410727,
+      "rasterAmbiguousProbes": 12,
+      "contacts": {
+        "PASS": 24,
+        "FAIL": 0,
+        "INCOMPLETE": 0
+      }
+    }
+  },
+  "parity": [
+    {
+      "name": "boundary-0-7",
+      "idMismatches": 3,
+      "maxDepth": 4.172325134277344e-07,
+      "maxRGB": 0.3600260615348816
+    },
+    {
+      "name": "boundary-1-7",
+      "idMismatches": 0,
+      "maxDepth": 1.2516975402832031e-06,
+      "maxRGB": 0.0006857141852378845
+    },
+    {
+      "name": "boundary-10-7",
+      "idMismatches": 3,
+      "maxDepth": 2.980232238769531e-07,
+      "maxRGB": 0.19681881368160248
+    },
+    {
+      "name": "boundary-11-7",
+      "idMismatches": 1,
+      "maxDepth": 1.9669532775878906e-06,
+      "maxRGB": 0.014132355339825153
+    },
+    {
+      "name": "boundary-12-7",
+      "idMismatches": 3,
+      "maxDepth": 4.172325134277344e-07,
+      "maxRGB": 0.39715576171875
+    },
+    {
+      "name": "boundary-13-7",
+      "idMismatches": 0,
+      "maxDepth": 1.2516975402832031e-06,
+      "maxRGB": 0.001190185546875
+    },
+    {
+      "name": "boundary-14-7",
+      "idMismatches": 3,
+      "maxDepth": 2.980232238769531e-07,
+      "maxRGB": 0.3691609799861908
+    },
+    {
+      "name": "boundary-15-7",
+      "idMismatches": 1,
+      "maxDepth": 1.9669532775878906e-06,
+      "maxRGB": 0.053053118288517
+    },
+    {
+      "name": "boundary-16-7",
+      "idMismatches": 3,
+      "maxDepth": 4.172325134277344e-07,
+      "maxRGB": 0.0496823750436306
+    },
+    {
+      "name": "boundary-17-7",
+      "idMismatches": 0,
+      "maxDepth": 1.2516975402832031e-06,
+      "maxRGB": 0.002156585454940796
+    },
+    {
+      "name": "boundary-18-7",
+      "idMismatches": 3,
+      "maxDepth": 2.980232238769531e-07,
+      "maxRGB": 0.111111119389534
+    },
+    {
+      "name": "boundary-19-7",
+      "idMismatches": 1,
+      "maxDepth": 1.9669532775878906e-06,
+      "maxRGB": 0.0008951425552368164
+    },
+    {
+      "name": "boundary-2-7",
+      "idMismatches": 3,
+      "maxDepth": 2.980232238769531e-07,
+      "maxRGB": 0.3651004433631897
+    },
+    {
+      "name": "boundary-20-7",
+      "idMismatches": 3,
+      "maxDepth": 4.172325134277344e-07,
+      "maxRGB": 0.3476155698299408
+    },
+    {
+      "name": "boundary-21-7",
+      "idMismatches": 0,
+      "maxDepth": 1.2516975402832031e-06,
+      "maxRGB": 0.0016621947288513184
+    },
+    {
+      "name": "boundary-22-7",
+      "idMismatches": 3,
+      "maxDepth": 2.980232238769531e-07,
+      "maxRGB": 0.16975310444831848
+    },
+    {
+      "name": "boundary-23-7",
+      "idMismatches": 1,
+      "maxDepth": 1.9669532775878906e-06,
+      "maxRGB": 0.0014376938343048096
+    },
+    {
+      "name": "boundary-3-7",
+      "idMismatches": 1,
+      "maxDepth": 1.9669532775878906e-06,
+      "maxRGB": 0.2429962307214737
+    },
+    {
+      "name": "boundary-4-7",
+      "idMismatches": 3,
+      "maxDepth": 4.172325134277344e-07,
+      "maxRGB": 0.4624939262866974
+    },
+    {
+      "name": "boundary-5-7",
+      "idMismatches": 0,
+      "maxDepth": 1.2516975402832031e-06,
+      "maxRGB": 0.0008884072303771973
+    },
+    {
+      "name": "boundary-6-7",
+      "idMismatches": 3,
+      "maxDepth": 2.980232238769531e-07,
+      "maxRGB": 0.4154358208179474
+    },
+    {
+      "name": "boundary-7-7",
+      "idMismatches": 1,
+      "maxDepth": 1.9669532775878906e-06,
+      "maxRGB": 0.2285054624080658
+    },
+    {
+      "name": "boundary-8-7",
+      "idMismatches": 3,
+      "maxDepth": 4.172325134277344e-07,
+      "maxRGB": 0.19952739775180817
+    },
+    {
+      "name": "boundary-9-7",
+      "idMismatches": 0,
+      "maxDepth": 1.2516975402832031e-06,
+      "maxRGB": 0.001969277858734131
+    }
+  ],
+  "status": "INCOMPLETE",
+  "error": "Overlap backend parity failed"
+}

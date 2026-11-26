@@ -1,0 +1,40 @@
+[
+  {
+    "name": "adopted-pbr-release-metal",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-pbr-release-metal",
+      "--renderer3d-parity"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "adopted-pbr-release-opengl",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+      "--renderer3d-parity",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-pbr-release-opengl"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "adopted-pbr-debug-metal",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-pbr-debug-metal",
+      "--renderer3d-parity"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "adopted-pbr-debug-opengl",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+      "--renderer3d-parity",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-pbr-debug-opengl"
+    ],
+    "exit": 0
+  }
+]

@@ -1,0 +1,192 @@
+{
+  "sourceSHA256": "4cb57fbbb6b27cfd47267f1bf0c38ae8a682ce9e759dae9b596753de847f6bdd",
+  "benchmark": true,
+  "head": "878303e5270254d2e214230df0dfbf10ebf87f83",
+  "configuration": "Release",
+  "commands": {
+    "metal": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/timing-adopted-repeat/metal",
+      "--shadows"
+    ]
+  },
+  "backends": {
+    "metal": {
+      "samples": 20,
+      "warmup": 5,
+      "cases": {
+        "1280/720/512/0": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 0.641875,
+            "p95": 0.839708
+          },
+          "serializedFrameMs": {
+            "median": 6.239065,
+            "p95": 6.82567
+          }
+        },
+        "1280/720/512/1": {
+          "shadowGPUms": {
+            "median": 0.0141667,
+            "p95": 0.0175833
+          },
+          "forwardGPUms": {
+            "median": 1.007625,
+            "p95": 1.19275
+          },
+          "serializedFrameMs": {
+            "median": 8.5595,
+            "p95": 10.2024
+          }
+        },
+        "1280/720/1024/0": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 0.634479,
+            "p95": 0.832542
+          },
+          "serializedFrameMs": {
+            "median": 7.977375,
+            "p95": 8.39254
+          }
+        },
+        "1280/720/1024/1": {
+          "shadowGPUms": {
+            "median": 0.09345835,
+            "p95": 0.147083
+          },
+          "forwardGPUms": {
+            "median": 1.04025,
+            "p95": 1.25029
+          },
+          "serializedFrameMs": {
+            "median": 8.852105,
+            "p95": 10.6321
+          }
+        },
+        "1280/720/2048/0": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 0.651375,
+            "p95": 0.835958
+          },
+          "serializedFrameMs": {
+            "median": 7.95479,
+            "p95": 8.41425
+          }
+        },
+        "1280/720/2048/1": {
+          "shadowGPUms": {
+            "median": 0.33360449999999997,
+            "p95": 0.428292
+          },
+          "forwardGPUms": {
+            "median": 0.9865625,
+            "p95": 1.23037
+          },
+          "serializedFrameMs": {
+            "median": 8.973144999999999,
+            "p95": 10.6585
+          }
+        },
+        "1920/1080/512/0": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 1.748395,
+            "p95": 1.90013
+          },
+          "serializedFrameMs": {
+            "median": 11.53755,
+            "p95": 11.7786
+          }
+        },
+        "1920/1080/512/1": {
+          "shadowGPUms": {
+            "median": 0.01866665,
+            "p95": 0.0340833
+          },
+          "forwardGPUms": {
+            "median": 1.990685,
+            "p95": 2.68854
+          },
+          "serializedFrameMs": {
+            "median": 11.9113,
+            "p95": 13.4171
+          }
+        },
+        "1920/1080/1024/0": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 1.07648,
+            "p95": 1.60158
+          },
+          "serializedFrameMs": {
+            "median": 9.784395,
+            "p95": 11.257
+          }
+        },
+        "1920/1080/1024/1": {
+          "shadowGPUms": {
+            "median": 0.0455,
+            "p95": 0.0765833
+          },
+          "forwardGPUms": {
+            "median": 2.126125,
+            "p95": 2.46004
+          },
+          "serializedFrameMs": {
+            "median": 11.867899999999999,
+            "p95": 13.0002
+          }
+        },
+        "1920/1080/2048/0": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 1.403855,
+            "p95": 1.60096
+          },
+          "serializedFrameMs": {
+            "median": 11.2882,
+            "p95": 12.02
+          }
+        },
+        "1920/1080/2048/1": {
+          "shadowGPUms": {
+            "median": 0.302167,
+            "p95": 0.4125
+          },
+          "forwardGPUms": {
+            "median": 2.4199349999999997,
+            "p95": 2.68754
+          },
+          "serializedFrameMs": {
+            "median": 12.42425,
+            "p95": 13.7109
+          }
+        }
+      },
+      "scope": "32 cube casters plus ground; serialized offscreen readback. GPU generation/forward counters available only on native Metal; forward-on minus forward-off includes PCF. Not presentation or frame pacing."
+    }
+  },
+  "status": "MEASURED scoped native pass timing; not presentation or a performance acceptance gate"
+}

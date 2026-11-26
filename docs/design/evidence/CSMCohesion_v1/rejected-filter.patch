@@ -1,0 +1,82 @@
+--- a/ForwardPBR.glsl
++++ b/ForwardPBR.glsl
+@@ -143,13 +143,23 @@
+         energy.diffuseScale*energy.diffuseShape*diffuseLight/(PI*energy.diffuseAverage):0;
+     return ((1-metal)*base*diffuse+D*visibility*F+multiple)*nl;
+ }
+-float cascadeVisibility(int cascade,vec3 position,vec3 Ng,vec3 L){
++// One physical receiver/filter scale for both maps in an overlap. Anchor at
++// each split and interpolate through the following interval, rather than
++// changing the kernel and displaced receiver when the selected map changes.
++// This is an antialiasing footprint, not a light-size/penumbra model.
++float shadowReceiverScale(float depth,int cascade){
++    if(cascade==0)return u_ShadowTexelDepth[0].x;
++    float begin=u_ShadowSplits[cascade-1],end=u_ShadowSplits[cascade];
++    float t=clamp((depth-begin)/(end-begin),0,1);
++    return mix(u_ShadowTexelDepth[cascade-1].x,u_ShadowTexelDepth[cascade].x,t);
++}
++float cascadeVisibility(int cascade,vec3 position,vec3 Ng,vec3 L,float receiverScale){
+     float texel=u_ShadowTexelDepth[cascade].x, inverseDepth=u_ShadowTexelDepth[cascade].y;
+     float cosine=dot(Ng,L);
+     float bias=u_ShadowRange.w==10?0:1;
+     // Receiver offset uses actual geometry, never a mapped/smooth BRDF normal.
+     vec3 normal=cosine<0?-Ng:Ng;
+-    vec3 offset=normal*(bias*u_ShadowParameters.y*texel*sqrt(max(1-cosine*cosine,0)));
++    vec3 offset=normal*(bias*u_ShadowParameters.y*receiverScale*sqrt(max(1-cosine*cosine,0)));
+     mat4 matrix=u_ShadowVP[cascade];
+     vec3 p=(matrix*vec4(position+offset,1)).xyz*.5+.5;
+     if(any(lessThan(p,vec3(0)))||any(greaterThan(p,vec3(1))))return 1;
+@@ -164,15 +174,21 @@
+     float denominator=abs(cosine)>.05?cosine:(cosine<0?-.05:.05);
+     vec2 slope=clamp(vec2(dot(Ng,right),dot(Ng,up))/denominator,vec2(-8),vec2(8));
+     float visibility=0;
+-    // Average nine bilinear comparison lookups with their shared 4x4 footprint.
+-    // The separable weights sum to one and remain continuous at texel boundaries.
++    // Integrate the same world-space box against each map's piecewise-constant
++    // visibility. The width is <= three texels in either sampled map, so its
++    // exact area weights still need only the existing 4x4 fetch footprint.
+     // Explicit comparisons keep Metal/OpenGL sampling identical without relying
+     // on backend-specific hardware comparison samplers (16 depth fetches).
++    float width=3*receiverScale/texel;
++    // Relative cell coordinates avoid subtracting large atlas coordinates when
++    // computing small areas (especially at Ultra resolution).
++    vec2 lo=fraction+.5-width*.5,hi=lo+width;
+     for(int y=-1;y<=2;++y)for(int x=-1;x<=2;++x){
+         ivec2 tap=clamp(centre+ivec2(x,y),ivec2(0),ivec2(resolution-1));
+         vec2 displacement=(vec2(tap)+.5-p.xy*float(resolution))*texel;
+-        float receiver=p.z+dot(slope,displacement)*inverseDepth-bias*u_ShadowParameters.z*texel*inverseDepth;
+-        vec2 weight=vec2(x==-1?1-fraction.x:x==2?fraction.x:1,y==-1?1-fraction.y:y==2?fraction.y:1)/3;
++        float receiver=p.z+dot(slope,displacement)*inverseDepth-bias*u_ShadowParameters.z*receiverScale*inverseDepth;
++        vec2 cell=vec2(x,y);
++        vec2 weight=max(min(cell+1,hi)-max(cell,lo),vec2(0))/width;
+         visibility+=(receiver<=texelFetch(u_ShadowAtlas,origin+tap,0).r?1:0)*weight.x*weight.y;
+     }
+     return visibility;
+@@ -185,8 +201,9 @@
+     float begin=cascade==0?u_ShadowRange.x:u_ShadowSplits[cascade-1];
+     float end=u_ShadowSplits[cascade];
+     float blend=smoothstep(end-(end-begin)*u_ShadowParameters.w,end,depth);
+-    float visibility=cascadeVisibility(cascade,position,Ng,L);
+-    if(blend>0)visibility=mix(visibility,cascade==3?1:cascadeVisibility(cascade+1,position,Ng,L),blend);
++    float scale=shadowReceiverScale(depth,cascade);
++    float visibility=cascadeVisibility(cascade,position,Ng,L,scale);
++    if(blend>0)visibility=mix(visibility,cascade==3?1:cascadeVisibility(cascade+1,position,Ng,L,scale),blend);
+     return visibility;
+ }
+ vec3 shadowInspection(vec3 position,vec3 Ng,vec3 L){
+@@ -195,12 +212,12 @@
+     int cascade=depth>u_ShadowSplits.z?3:depth>u_ShadowSplits.y?2:depth>u_ShadowSplits.x?1:0;
+     float begin=cascade==0?u_ShadowRange.x:u_ShadowSplits[cascade-1],end=u_ShadowSplits[cascade];
+     float blend=smoothstep(end-(end-begin)*u_ShadowParameters.w,end,depth);
+-    float scale=u_ShadowTexelDepth[cascade].x;
++    float scale=shadowReceiverScale(depth,cascade);
+     int mode=int(u_ShadowRange.w);
+     if(mode==1)return vec3(directionalVisibility(position,Ng,L));
+     if(mode==2){vec3 colors[4]=vec3[](vec3(1,.15,.1),vec3(.1,1,.15),vec3(.1,.2,1),vec3(1,.8,.1));return mix(colors[cascade],vec3(1),blend*.6);}
+-    if(mode>=3&&mode<=6)return vec3(cascadeVisibility(mode-3,position,Ng,L));
+-    if(mode==7||mode==10)return vec3(cascadeVisibility(cascade,position,Ng,L),cascade==3?1:cascadeVisibility(cascade+1,position,Ng,L),blend);
++    if(mode>=3&&mode<=6)return vec3(cascadeVisibility(mode-3,position,Ng,L,min(scale,u_ShadowTexelDepth[mode-3].x)));
++    if(mode==7||mode==10)return vec3(cascadeVisibility(cascade,position,Ng,L,scale),cascade==3?1:cascadeVisibility(cascade+1,position,Ng,L,scale),blend);
+     if(mode==8)return vec3(u_ShadowTexelDepth[cascade].x,cascade==3?u_ShadowTexelDepth[cascade].x:u_ShadowTexelDepth[cascade+1].x,depth);
+     float cosine=dot(Ng,L);return vec3(u_ShadowParameters.y*scale*sqrt(max(1-cosine*cosine,0)),u_ShadowParameters.z*scale,depth);
+ }

@@ -43,6 +43,16 @@ def main():
                 with (out/'temporal-lifetime.log').open('w') as log:
                     checked=subprocess.run(list(map(str,temporal)),cwd=hz.ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,timeout=120)
                 if checked.returncode:raise RuntimeError('Shadow + TAA lifetime failed')
+                atlas=[hz.binaries(args.config)/'MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke',args.resources.resolve(),folder/'atlas-lifetime','--shadow-atlas-lifetime']
+                report['commands']['atlasLifetime']=list(map(str,atlas))
+                with (out/'atlas-lifetime.log').open('w') as log:
+                    checked=subprocess.run(list(map(str,atlas)),cwd=hz.ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,timeout=120)
+                if checked.returncode:raise RuntimeError('Lit private shadow atlas lifetime failed')
+                atlasTemporal=[*atlas[:-1],'--shadow-atlas-taa-lifetime']
+                report['commands']['atlasTemporalLifetime']=list(map(str,atlasTemporal))
+                with (out/'atlas-taa-lifetime.log').open('w') as log:
+                    checked=subprocess.run(list(map(str,atlasTemporal)),cwd=hz.ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,timeout=120)
+                if checked.returncode:raise RuntimeError('Lit private shadow atlas + TAA lifetime failed')
             if args.benchmark:
                 groups={}
                 for row in csv.DictReader((folder/'benchmark.csv').open()):

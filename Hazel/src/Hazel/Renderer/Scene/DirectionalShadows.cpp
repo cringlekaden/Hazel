@@ -9,13 +9,13 @@
 namespace Hazel {
 void DirectionalShadowSettings::Validate() const
 {
-    if((Resolution!=256 && Resolution!=512 && Resolution!=1024) ||
+    if((Resolution!=256 && Resolution!=512 && Resolution!=1024 && Resolution!=2048) ||
        !std::isfinite(Distance) || Distance<.1f || Distance>10000 ||
        !std::isfinite(SplitLambda) || SplitLambda<0 || SplitLambda>1 ||
        !std::isfinite(NormalBias) || NormalBias<0 || NormalBias>2 ||
        !std::isfinite(DepthBias) || DepthBias<0 || DepthBias>1 ||
        !std::isfinite(Blend) || Blend<.01f || Blend>.25f)
-        throw std::runtime_error("CSM requires resolution 256/512/1024, distance .1..10000, split 0..1, normal bias 0..2, depth bias 0..1 texels and blend .01...25");
+        throw std::runtime_error("CSM requires resolution 256/512/1024/2048, distance .1..10000, split 0..1, normal bias 0..2, depth bias 0..1 texels and blend .01...25");
 }
 bool ShadowCasterVisible(const glm::vec3& minimum,const glm::vec3& maximum,const glm::mat4& clip)
 {

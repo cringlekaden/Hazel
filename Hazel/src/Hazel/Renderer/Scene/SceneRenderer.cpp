@@ -69,12 +69,13 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         if(view.NativeDevice.lock()!=device){view.Reset();view.NativeDevice=device;}
     } else if(!view.NativeDevice.expired()){view.Reset();view.NativeDevice.reset();}
 #endif
+    if(input.ShadowView>10)throw std::runtime_error("Unsupported directional shadow inspection");
     const bool shadows=input.Presentation.Shadows.Enabled && input.Light.has_value();
     SceneSubmission shadowed;
     if(shadows) {
         try {
             if(!display)throw std::runtime_error("Directional shadows require an explicit view target");
-            shadowed=input;shadowed.Shadows=FitDirectionalShadows(input);
+            shadowed=input;shadowed.Shadows=FitDirectionalShadows(input);shadowed.Shadows.Range.w=float(input.ShadowView);
         } catch(...) {
             view.Temporal={};
             if(display && RendererAPI::GetAPI()==RendererAPI::API::Metal)display->Cancel();
@@ -106,7 +107,7 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         view.ShadowDepth->Unbind();
     };
     const bool temporal=frame.Presentation.TemporalAA && RendererAPI::GetAPI()==RendererAPI::API::Metal &&
-        frame.Presentation.SceneReferred && frame.Debug==SurfaceView::Shaded && frame.AmbientOcclusionView==0 && frame.LocalLightingView==0;
+        frame.Presentation.SceneReferred && frame.Debug==SurfaceView::Shaded && frame.AmbientOcclusionView==0 && frame.LocalLightingView==0 && frame.ShadowView==0;
     if(!temporal) {if(view.Temporal.Submitted)view.Radiance.reset();view.Temporal={};view.Jittered.reset();view.Motion.reset();view.TemporalMetrics->Valid=false;}
     if(frame.Presentation.TemporalAA && RendererAPI::GetAPI()!=RendererAPI::API::Metal && !view.WarnedUnsupportedTAA) {
         HZ_CORE_WARN("TAA request inactive: full-resolution temporal resolve requires Metal 4");view.WarnedUnsupportedTAA=true;

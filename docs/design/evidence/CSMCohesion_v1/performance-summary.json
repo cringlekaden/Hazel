@@ -1,0 +1,191 @@
+{
+  "scope": "Apple M4 native Metal; 32 cube casters plus ground; serialized offscreen readback, no API/GPU validation. 5 warmup +20 samples per run/case, two adopted runs pooled (40). Forward on-off includes sampling and pass differences; not isolated shader clocks or presented throughput. No concurrent GPU qualification/benchmarks during these runs.",
+  "cases": {
+    "1280/720/512": {
+      "0": {
+        "shadowGPUms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "forwardGPUms": {
+          "median": 0.6269585,
+          "p95": 0.838958
+        },
+        "serializedFrameMs": {
+          "median": 6.2082049999999995,
+          "p95": 6.82183
+        }
+      },
+      "1": {
+        "shadowGPUms": {
+          "median": 0.0135417,
+          "p95": 0.019875
+        },
+        "forwardGPUms": {
+          "median": 0.9199165,
+          "p95": 1.19275
+        },
+        "serializedFrameMs": {
+          "median": 8.24125,
+          "p95": 9.97488
+        }
+      },
+      "forwardOnMinusOffMs": 0.29295800000000005
+    },
+    "1280/720/1024": {
+      "0": {
+        "shadowGPUms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "forwardGPUms": {
+          "median": 0.6395625,
+          "p95": 0.847417
+        },
+        "serializedFrameMs": {
+          "median": 8.012934999999999,
+          "p95": 8.59829
+        }
+      },
+      "1": {
+        "shadowGPUms": {
+          "median": 0.09345835,
+          "p95": 0.16025
+        },
+        "forwardGPUms": {
+          "median": 1.02804,
+          "p95": 1.25029
+        },
+        "serializedFrameMs": {
+          "median": 8.692125,
+          "p95": 10.5698
+        }
+      },
+      "forwardOnMinusOffMs": 0.38847750000000003
+    },
+    "1280/720/2048": {
+      "0": {
+        "shadowGPUms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "forwardGPUms": {
+          "median": 0.63225,
+          "p95": 0.835958
+        },
+        "serializedFrameMs": {
+          "median": 7.97483,
+          "p95": 8.48221
+        }
+      },
+      "1": {
+        "shadowGPUms": {
+          "median": 0.31395850000000003,
+          "p95": 0.434083
+        },
+        "forwardGPUms": {
+          "median": 0.9650835,
+          "p95": 1.269
+        },
+        "serializedFrameMs": {
+          "median": 9.043395,
+          "p95": 10.7931
+        }
+      },
+      "forwardOnMinusOffMs": 0.3328335
+    },
+    "1920/1080/512": {
+      "0": {
+        "shadowGPUms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "forwardGPUms": {
+          "median": 1.557915,
+          "p95": 1.8885
+        },
+        "serializedFrameMs": {
+          "median": 11.443000000000001,
+          "p95": 11.7256
+        }
+      },
+      "1": {
+        "shadowGPUms": {
+          "median": 0.02291665,
+          "p95": 0.0386667
+        },
+        "forwardGPUms": {
+          "median": 2.045065,
+          "p95": 2.68854
+        },
+        "serializedFrameMs": {
+          "median": 11.99605,
+          "p95": 13.6629
+        }
+      },
+      "forwardOnMinusOffMs": 0.4871500000000002
+    },
+    "1920/1080/1024": {
+      "0": {
+        "shadowGPUms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "forwardGPUms": {
+          "median": 1.28571,
+          "p95": 1.84917
+        },
+        "serializedFrameMs": {
+          "median": 11.10615,
+          "p95": 11.5495
+        }
+      },
+      "1": {
+        "shadowGPUms": {
+          "median": 0.0472708,
+          "p95": 0.0885
+        },
+        "forwardGPUms": {
+          "median": 2.240855,
+          "p95": 2.68829
+        },
+        "serializedFrameMs": {
+          "median": 11.95075,
+          "p95": 13.4237
+        }
+      },
+      "forwardOnMinusOffMs": 0.9551449999999999
+    },
+    "1920/1080/2048": {
+      "0": {
+        "shadowGPUms": {
+          "median": 0.0,
+          "p95": 0.0
+        },
+        "forwardGPUms": {
+          "median": 1.5300850000000001,
+          "p95": 1.91808
+        },
+        "serializedFrameMs": {
+          "median": 11.40955,
+          "p95": 11.9086
+        }
+      },
+      "1": {
+        "shadowGPUms": {
+          "median": 0.300875,
+          "p95": 0.3855
+        },
+        "forwardGPUms": {
+          "median": 2.3487099999999996,
+          "p95": 2.75679
+        },
+        "serializedFrameMs": {
+          "median": 12.07015,
+          "p95": 13.8418
+        }
+      },
+      "forwardOnMinusOffMs": 0.8186249999999995
+    }
+  }
+}

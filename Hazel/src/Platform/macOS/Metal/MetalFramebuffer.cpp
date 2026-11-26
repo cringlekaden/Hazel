@@ -19,12 +19,13 @@ void Check(bool value, const char* message) { if (!value) throw std::logic_error
 void MetalFramebuffer::Validate(const FramebufferSpecification& specification)
 {
     const auto& attachments = specification.Attachments.Attachments;
-    Check(specification.Width && specification.Height && specification.Width <= 4096 && specification.Height <= 4096 && uint64_t(specification.Width) * specification.Height <= 8388608 &&
+    const bool depthOnly=attachments.size()==1 && attachments[0].TextureFormat==FramebufferTextureFormat::DEPTH32F;
+    Check(specification.Width && specification.Height && specification.Width <= 4096 && specification.Height <= 4096 && uint64_t(specification.Width) * specification.Height <= (depthOnly?16777216u:8388608u) &&
         specification.Samples == 1 && !specification.SwapChainTarget && ((attachments.size() == 1 && (attachments[0].TextureFormat == FramebufferTextureFormat::RGBA8 || attachments[0].TextureFormat == FramebufferTextureFormat::DEPTH32F)) || (attachments.size() == 3 &&
         attachments[0].TextureFormat == FramebufferTextureFormat::RGBA32F &&
         attachments[1].TextureFormat == FramebufferTextureFormat::RED_INTEGER &&
         attachments[2].TextureFormat == FramebufferTextureFormat::DEPTH32F)),
-        "Metal framebuffer requires 1..4096 extent / at most 8M pixels, one sample, ordered RGBA32F/R32Sint/Depth32F, depth-only preparation or RGBA8 output attachments and no swapchain target");
+        "Metal framebuffer requires 1..4096 extent / at most 8M color or 16M depth-only pixels, one sample, ordered RGBA32F/R32Sint/Depth32F, depth-only preparation or RGBA8 output attachments and no swapchain target");
 }
 MetalFramebuffer::MetalFramebuffer(std::shared_ptr<MetalDevice> device, const FramebufferSpecification& specification)
     : m_Device(std::move(device)), m_Specification(specification)
@@ -103,7 +104,7 @@ void MetalFramebuffer::Bind()
     auto& backend = Backend();
     Check(!backend.m_Stopped, "Cannot bind framebuffer after Metal backend shutdown");
     m_Device->Poll();
-    if (m_SubmittedGeneration && (m_TemporalProducer || m_WorldProducer)) {
+    if (m_SubmittedGeneration && (m_TemporalProducer || m_WorldProducer || m_ShadowProducer)) {
         m_SubmittedGeneration=false;
         std::lock_guard<std::mutex> lock(m_Device->m_Observer->Mutex);++m_Device->m_Observer->Value.AttachmentReuses;
     }
@@ -127,7 +128,7 @@ void MetalFramebuffer::Bind()
     frame->Width = generation->Width; frame->Height = generation->Height;
     frame->Attachments = generation;
     frame->Readback = bool(generation->Targets[0]);
-    frame->QueueOrderedProducer=m_TemporalProducer || m_WorldProducer;
+    frame->QueueOrderedProducer=m_TemporalProducer || m_WorldProducer || m_ShadowProducer;
     backend.BindFramebuffer(frame);
     m_Frame = std::move(frame); m_Attachments = std::move(generation); m_SubmittedGeneration = false;
     m_Readback.reset(); // this pass must not expose an older generation as current pixels
@@ -142,6 +143,11 @@ void MetalFramebuffer::PrepareDirectionalShadows(const Ref<Framebuffer>& depth)
         !source->m_Attachments->Targets[0] && !m_Frame->ShadowSource,
         "Directional shadows require an unbound depth-only producer and bound lighting view");
     m_Frame->ShadowSource=std::move(source->m_Frame);
+    // A private atlas has no direct readback/editor consumers. Each captured
+    // parent encodes its own depth producer immediately before sampling it on
+    // the same queue. Reuse storage with the existing all-stage queue barrier;
+    // packets, uniforms and resized generations still retain their own lifetime.
+    source->m_ShadowProducer=true;m_Frame->ShadowSource->QueueOrderedProducer=true;
     m_Frame->ShadowSource->Readback=false;source->m_SubmittedGeneration=true;
 }
 void MetalFramebuffer::Resume()

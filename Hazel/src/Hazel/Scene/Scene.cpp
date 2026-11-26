@@ -911,6 +911,7 @@ namespace Hazel {
         if (view) {
             frame.Debug = view->Debug;
             frame.LocalLightingView = view->LocalLightingView;
+            frame.ShadowView = view->ShadowView;
             frame.LocalMetrics = view->LocalMetrics;
             frame.AmbientOcclusionView = view->AmbientOcclusionView;
         }

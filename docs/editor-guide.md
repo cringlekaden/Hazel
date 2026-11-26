@@ -182,11 +182,20 @@ for a reproducible scene and launch commands, and its linked qualification statu
 
 On `feature/3d-foundations`, **Scene Settings → Directional shadows** enables an
 opt-in four-cascade mesh shadow atlas. Apply/Save uses the existing scene history.
-Choose 256/512/1024 texels per cascade and a finite world shadow distance; split
+Choose 256/512/1024 or **2048 (Ultra)** texels per cascade and a finite world shadow distance; split
 distribution trades near resolution against uniform coverage. Bias values are in
 world texels: use the smallest normal/depth bias that avoids self-shadowing on
 representative geometry. Cascade blend also controls the fade at shadow distance.
-PCF is a fixed continuous 3×3 bilinear kernel (16 shared depth fetches). Camera jitter does not move the atlas.
+PCF retains the established three-texel box per cascade (16 explicit depth
+fetches per map). Camera jitter does not move the atlas. Ultra's 4096×4096 depth
+atlas uses 64 MiB per view, plus pending resized generations and other view resources.
+
+Enable shadows and a directional key before inspecting. The viewport **Shadows...**
+menu inspects visibility, cascade/overlap selection,
+individual maps and current/next/blend in RGB. World-texel and normal-offset views
+also expose raw numerical channels for capture tools. The unbiased pair keeps
+the same fitted atlas and removes only receiver bias. Inspection is transient;
+TAA history is inactive until returning to Shaded. Use fixed exposure for comparisons; capture tools can request raw linear channels.
 
 Opaque and masked static meshes participate, including off-camera casters.
 World 2D, sprites, point/spot lights and screen UI do not cast these shadows.

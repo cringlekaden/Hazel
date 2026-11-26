@@ -1,0 +1,14 @@
+{
+  "accepted": "c36fd1a15e2774a3e0d6bdf15f7fe38163b5104f",
+  "unchanged": {
+    "vec3 direct(": "59c7a9cedd8dfd7eafeb67aa6379a34c6ece769537dfdfe0d7cadec3f70dfbb1",
+    "vec3 resolveShadingNormal(": "046bd5ab3cfe4a38bfdf8ef42ba1db1f6e094f1e91328cf0c5bf90c3e546137b",
+    "float surfaceVisibility(": "7cac40ba062897722f811f55656e65e824875b4153f930a73c20d5c4f8b6e4d9",
+    "SurfaceEnergy surfaceEnergy(": "fc5dde7019f37556a3e3e44ab03231c2628ad66b985e9a1a65cc13c04cc2185b",
+    "vec4 sampleBRDF(": "11c84d2485c040f29206dfebe0db0a22eda5a7ccdf8c26ca7a221647bc98c4e0",
+    "if(u_EnvOptions.x>.5){": "e74ddd63a743423d43e5695446b604417aebc92fe382197030fa6f638d98546f"
+  },
+  "Hazel/Resources/shaders/ForwardPBR.glsl": "4cb57fbbb6b27cfd47267f1bf0c38ae8a682ce9e759dae9b596753de847f6bdd",
+  "Hazel/Resources/shaders/metal/ForwardPBR.hzmetal": "3b20f363aeabb868a432b1a02658b60e9e7968ea7320d9b73baf0fb0440dc28f",
+  "ordinarySamplingEquals878303eWithNeutralInspection": true
+}

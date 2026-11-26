@@ -1,0 +1,458 @@
+[
+  {
+    "case": 0,
+    "baseline-release-v2": {
+      "maxGround": 0.0003418661653995514,
+      "pixel": [
+        479,
+        214
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0006186366081237793,
+      "pixel": [
+        523,
+        228
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 1,
+    "baseline-release-v2": {
+      "maxGround": 0.0004734992980957031,
+      "pixel": [
+        553,
+        263
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.000527501106262207,
+      "pixel": [
+        517,
+        244
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 2,
+    "baseline-release-v2": {
+      "maxGround": 0.0003648996353149414,
+      "pixel": [
+        496,
+        214
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0006991028785705566,
+      "pixel": [
+        518,
+        248
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 3,
+    "baseline-release-v2": {
+      "maxGround": 0.0002237558364868164,
+      "pixel": [
+        211,
+        168
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0003914833068847656,
+      "pixel": [
+        9,
+        111
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 4,
+    "baseline-release-v2": {
+      "maxGround": 0.00022027641534805298,
+      "pixel": [
+        485,
+        216
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0005524754524230957,
+      "pixel": [
+        523,
+        265
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 5,
+    "baseline-release-v2": {
+      "maxGround": 0.0005133748054504395,
+      "pixel": [
+        549,
+        263
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0005137324333190918,
+      "pixel": [
+        548,
+        263
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 6,
+    "baseline-release-v2": {
+      "maxGround": 0.00030009448528289795,
+      "pixel": [
+        475,
+        210
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0006645917892456055,
+      "pixel": [
+        522,
+        266
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 7,
+    "baseline-release-v2": {
+      "maxGround": 0.00011360645294189453,
+      "pixel": [
+        561,
+        226
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.00017979741096496582,
+      "pixel": [
+        348,
+        49
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 8,
+    "baseline-release-v2": {
+      "maxGround": 0.0006011724472045898,
+      "pixel": [
+        516,
+        214
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0012706518173217773,
+      "pixel": [
+        535,
+        248
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 9,
+    "baseline-release-v2": {
+      "maxGround": 0.0005244016647338867,
+      "pixel": [
+        476,
+        229
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0012156665325164795,
+      "pixel": [
+        512,
+        242
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 10,
+    "baseline-release-v2": {
+      "maxGround": 0.0007256865501403809,
+      "pixel": [
+        493,
+        213
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0014082789421081543,
+      "pixel": [
+        524,
+        255
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 11,
+    "baseline-release-v2": {
+      "maxGround": 0.00045099854469299316,
+      "pixel": [
+        212,
+        168
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0007949322462081909,
+      "pixel": [
+        6,
+        111
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 12,
+    "baseline-release-v2": {
+      "maxGround": 0.0004204660654067993,
+      "pixel": [
+        476,
+        211
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.004660445265471935,
+      "pixel": [
+        360,
+        72
+      ],
+      "countAbove003": 1
+    }
+  },
+  {
+    "case": 13,
+    "baseline-release-v2": {
+      "maxGround": 0.0004734992980957031,
+      "pixel": [
+        553,
+        263
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0007627308368682861,
+      "pixel": [
+        495,
+        251
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 14,
+    "baseline-release-v2": {
+      "maxGround": 0.0005244612693786621,
+      "pixel": [
+        565,
+        214
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0011611878871917725,
+      "pixel": [
+        569,
+        232
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 15,
+    "baseline-release-v2": {
+      "maxGround": 0.0002136528491973877,
+      "pixel": [
+        561,
+        224
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0003584623336791992,
+      "pixel": [
+        362,
+        59
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 16,
+    "baseline-release-v2": {
+      "maxGround": 0.0012139678001403809,
+      "pixel": [
+        514,
+        213
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0024887919425964355,
+      "pixel": [
+        535,
+        247
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 17,
+    "baseline-release-v2": {
+      "maxGround": 0.0010478496551513672,
+      "pixel": [
+        475,
+        229
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.002276778221130371,
+      "pixel": [
+        515,
+        243
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 18,
+    "baseline-release-v2": {
+      "maxGround": 0.001444503664970398,
+      "pixel": [
+        491,
+        212
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.002763092517852783,
+      "pixel": [
+        516,
+        245
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 19,
+    "baseline-release-v2": {
+      "maxGround": 0.0008951425552368164,
+      "pixel": [
+        231,
+        173
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0015361905097961426,
+      "pixel": [
+        14,
+        113
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 20,
+    "baseline-release-v2": {
+      "maxGround": 0.0007595568895339966,
+      "pixel": [
+        524,
+        269
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0015986040234565735,
+      "pixel": [
+        536,
+        283
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 21,
+    "baseline-release-v2": {
+      "maxGround": 0.0010657906532287598,
+      "pixel": [
+        544,
+        263
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.001086592674255371,
+      "pixel": [
+        544,
+        263
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 22,
+    "baseline-release-v2": {
+      "maxGround": 0.0009630918502807617,
+      "pixel": [
+        563,
+        208
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.002367466688156128,
+      "pixel": [
+        567,
+        225
+      ],
+      "countAbove003": 0
+    }
+  },
+  {
+    "case": 23,
+    "baseline-release-v2": {
+      "maxGround": 0.0004204213619232178,
+      "pixel": [
+        561,
+        223
+      ],
+      "countAbove003": 0
+    },
+    "continuous-release-v2": {
+      "maxGround": 0.0006876587867736816,
+      "pixel": [
+        352,
+        52
+      ],
+      "countAbove003": 0
+    }
+  }
+]

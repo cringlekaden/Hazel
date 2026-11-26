@@ -1,0 +1,40 @@
+[
+  {
+    "name": "adopted-shadows-release",
+    "command": [
+      "python3",
+      "scripts/macos/directional_shadows.py",
+      "--config",
+      "Release",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-shadows-release"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "adopted-shadows-debug",
+    "command": [
+      "python3",
+      "scripts/macos/directional_shadows.py",
+      "--config",
+      "Debug",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-shadows-debug"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "adopted-source-free",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/Adopted Source Free \u03a9/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-source-free",
+      "--shadows"
+    ],
+    "exit": -11
+  }
+]

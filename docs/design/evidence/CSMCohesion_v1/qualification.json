@@ -1,0 +1,556 @@
+{
+  "baseCommit": "878303e5270254d2e214230df0dfbf10ebf87f83",
+  "branch": "feature/3d-foundations",
+  "tree": "working tree before scoped commit; hashes identify inputs",
+  "platform": {
+    "os": "macOS 27.3 26C5047e",
+    "toolchain": "Xcode 27.3 27C5020n",
+    "gpu": "Apple M4",
+    "metal": "native Metal 4, API/GPU validation for functional tests",
+    "opengl": "native Apple OpenGL 4.1 Metal - 91.7, not software GL"
+  },
+  "status": "INCOMPLETE production visual milestone; scoped Ultra/atlas ownership/diagnostics qualified",
+  "adopted": [
+    "2048 per-cascade Ultra, 4096-square Depth32F atlas, 64 MiB",
+    "Depth-only 16M-pixel Metal admission; existing 8M color and total 2 GiB guards retained",
+    "One private queue-ordered atlas generation per view; replaced generations and packet/uniform versions completion-retained",
+    "Transient inspection, fixed-fit unbiased diagnostic, additive reference/motion fixtures; canonical shader artifact rebuilt"
+  ],
+  "notAdopted": [
+    "Continuous receiver/filter scale: width agreement improved but mean contour/contact alignment worsened",
+    "PCSS, point/spot shadows, generalized render graph, backend default or frozen-reference changes"
+  ],
+  "sha256": {
+    "Hazel/Resources/shaders/ForwardPBR.glsl": "4cb57fbbb6b27cfd47267f1bf0c38ae8a682ce9e759dae9b596753de847f6bdd",
+    "Hazel/Resources/shaders/metal/ForwardPBR.hzmetal": "3b20f363aeabb868a432b1a02658b60e9e7968ea7320d9b73baf0fb0440dc28f",
+    "Hazel/src/Platform/macOS/Metal/MetalFramebuffer.cpp": "f312cbaca1f8348cfe3e503d4e91725ddb512bbdf5ede0be1c44819ba9d96fa5",
+    "Hazel/src/Platform/macOS/Metal/MetalFramebuffer.h": "ebfedf3ee90e7c7e02350a4966cae89776490ec0bf00fc12aba3579026da0b57",
+    "scripts/macos/shadow_continuity.py": "5df77c7410c6862049716f83ed966a5d8bca20ac14b0f52b290ecfb4d400bac8",
+    "tests/macos/ShadowContinuityChecks.h": "f667331d5be97ff3133d984bc07cafe6626815fee7470aef781e08daae577005",
+    "tests/macos/MetalRenderer2DQuadSmoke.cpp": "fecf960207ac897d4097fc37f2b70e9eb28f986c58a114d24d25c941eaadee80"
+  },
+  "gates": {
+    "builds": {
+      "status": "PASS",
+      "configurations": [
+        "Debug",
+        "Release"
+      ],
+      "targets": [
+        "Hazelnut",
+        "Nutella",
+        "MetalM1Smoke",
+        "MetalRenderer2DQuadSmoke",
+        "MigrationRenderer2DSmoke"
+      ],
+      "logs": [
+        "build-adopted-release.log",
+        "build-adopted-debug.log",
+        "build-lit-taa-release.log",
+        "build-lit-taa-debug.log"
+      ],
+      "newWarnings": 0,
+      "existingWarnings": "Scene/Components deprecated-copy, unused parameters/misleading indentation, migration text initializer, vendor and Xcode phase/libtool diagnostics remain; no blanket suppression added"
+    },
+    "adoptedCSM": {
+      "status": "PASS scoped established gates",
+      "configurations": [
+        "Debug",
+        "Release"
+      ],
+      "backends": [
+        "Metal",
+        "OpenGL"
+      ],
+      "casesPerBackend": 24,
+      "FP64CornersPerProcess": 2048,
+      "visibilityLimit": 0.02,
+      "RGBParityLimit": 0.003,
+      "depthParityLimit": 1e-06,
+      "exactIDs": true,
+      "summaries": [
+        "adopted-shadows-release-results.json",
+        "adopted-shadows-debug-results.json"
+      ]
+    },
+    "litAtlasLifetime": {
+      "status": "PASS",
+      "TAA": [
+        false,
+        true
+      ],
+      "configurations": [
+        "Debug",
+        "Release"
+      ],
+      "checks": "Moving lit shadows: serialized vs three queued frames <1e-6, shared Ultra storage, 2048->512 replacement, fourth busy cancellation, view destruction, final retirement",
+      "commands": [
+        {
+          "name": "lit-atlas-taa",
+          "config": "Release",
+          "command": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+            "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+            "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/lit-atlas-taa-release",
+            "--shadow-atlas-taa-lifetime"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "adopted-retina",
+          "config": "Release",
+          "command": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+            "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-retina-release",
+            "--shadow-editor-settings",
+            "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "lit-atlas-taa",
+          "config": "Debug",
+          "command": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+            "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+            "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/lit-atlas-taa-debug",
+            "--shadow-atlas-taa-lifetime"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "adopted-retina",
+          "config": "Debug",
+          "command": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+            "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-retina-debug",
+            "--shadow-editor-settings",
+            "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    "retina": {
+      "status": "PASS scoped presentation/lifetime, not visual acceptance or FPS",
+      "extent": [
+        3200,
+        1800
+      ],
+      "resolution": 2048,
+      "configurations": {
+        "release": {
+          "cpuFrames": 60,
+          "positivePresentations": 38,
+          "errors": 0,
+          "resources": 0,
+          "attachments": 0
+        },
+        "debug": {
+          "cpuFrames": 60,
+          "positivePresentations": 58,
+          "errors": 0,
+          "resources": 0,
+          "attachments": 0
+        }
+      },
+      "peakBytes": 1789431016,
+      "shutdownResourceBytes": 0,
+      "shutdownAttachments": 0
+    },
+    "regressions": {
+      "status": "PASS scoped tests before rejecting filter experiment; final adopted PBR checks recorded separately",
+      "reports": {
+        "local_lighting-release": "local_lighting-release-results.json",
+        "xegtao-release": "xegtao-release-results.json",
+        "taa-release": "taa-release-results.json",
+        "taa-edges-release": "taa-edges-release-results.json",
+        "ggx_multiscattering-release": "ggx_multiscattering-release-results.json",
+        "local_lighting-debug": "local_lighting-debug-results.json",
+        "xegtao-debug": "xegtao-debug-results.json",
+        "taa-debug": "taa-debug-results.json",
+        "taa-edges-debug": "taa-edges-debug-results.json",
+        "ggx_multiscattering-debug": "ggx_multiscattering-debug-results.json"
+      },
+      "qualificationShader": "08f88ab87b1d9222acb2b00ffc9354f7f1818b9299f1cbdb87be776486e95102",
+      "note": "These tests do not enable CSM; accepted direct/IBL math and AO/TAA sources unchanged. Final production per-cascade sampling restored and 528 stress captures byte-identical to baseline."
+    },
+    "newStress": {
+      "status": "INCOMPLETE",
+      "cases": 24,
+      "visibilityProbesPerBackend": 95880,
+      "contactRows": 474,
+      "FP64ExactCentre": "Unqualified at raster edge coverage: baseline max .11111, experiment .04450",
+      "conditionalCoverageModel": "Explicit +/-1/256 texel ray coverage envelope for 12 baseline /2 experimental probes; .02 error threshold unchanged; not every GPU precision certified",
+      "strictInspectionParity": "FAIL in baseline and experiment: up to 3 ID mismatches/image, max depth ~1.97e-6; unused next-map edge differences. Experimental common-ground final visibility one pixel .0046604 vs baseline case max .0004205. No tolerance relaxed."
+    },
+    "sourceFree": {
+      "status": "PASS scoped relocated shader resources, not full export",
+      "path": "build/csm-cohesion/Adopted Source Free \u03a9/Resources",
+      "glslFilesRemoved": true,
+      "command": {
+        "name": "adopted-source-free-corrected",
+        "command": [
+          "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/Adopted Source Free \u03a9/Resources",
+          "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-source-free-corrected",
+          "--shadows"
+        ],
+        "exit": 0
+      }
+    },
+    "shaderPackaging": {
+      "status": "PASS offline canonical compilation/reflection and native source-free load",
+      "runtimeCompilerAdded": false,
+      "cacheCheck": "+ /opt/homebrew/opt/python@3.15/bin/python3.15 /Volumes/External/kadencringle/Projects/Hazel/scripts/macos/prepare-mono-sdk.py\nVerified existing checksum-pinned native Mono SDK: /Volumes/External/kadencringle/Projects/Hazel/build/dependencies/mono/macos-arm64/sdk\n{\n  \"DepthPBR\": \"HIT\",\n  \"DisplayOutput\": \"HIT\",\n  \"EntityOutline\": \"HIT\",\n  \"EnvironmentSky\": \"HIT\",\n  \"ForwardPBR\": \"HIT\",\n  \"MotionPBR\": \"HIT\",\n  \"Renderer2D_Circle\": \"HIT\",\n  \"Renderer2D_Line\": \"HIT\",\n  \"Renderer2D_Quad-16\": \"HIT\",\n  \"Renderer2D_Quad-32\": \"HIT\",\n  \"Renderer2D_Text\": \"HIT\",\n  \"WorldPresentation\": \"HIT\",\n  \"ImGui\": \"HIT\",\n  \"XeGTAO\": \"HIT\",\n  \"TemporalAA\": \"HIT\",\n  \"LocalLightCull\": \"HIT\"\n}"
+    },
+    "publicDocs": {
+      "status": "PASS scoped static links and affected editor/example/README review",
+      "output": "Checked 89 Markdown files, 787 local links/images; 0 finding(s).",
+      "CI": "No new branch run dispatched; prior failures not treated as current coverage"
+    },
+    "ownerVisualAcceptance": {
+      "status": "NOT READY for corrected visual milestone",
+      "reason": "Rejected filter experiment worsened contour alignment; baseline width/bias mismatches and grid-phase/coverage limitations remain."
+    },
+    "platformsNotRun": [
+      "Windows",
+      "Linux",
+      "Intel/AMD/NVIDIA GPUs",
+      "long-session and detached Ultra view stress",
+      "full new export/package campaign",
+      "OpenGL GPU pass timings",
+      "Retina GPU performance"
+    ],
+    "finalAdoptedPBR": {
+      "status": "PASS",
+      "configurations": [
+        "Debug",
+        "Release"
+      ],
+      "backends": [
+        "native Metal 4",
+        "native OpenGL 4.1"
+      ],
+      "checks": "Production Renderer3D direct FP64 anchors, IBL/prepared resources, signed IDs/depth, captures and retirement",
+      "commands": [
+        {
+          "name": "adopted-pbr-release-metal",
+          "command": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+            "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+            "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-pbr-release-metal",
+            "--renderer3d-parity"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "adopted-pbr-release-opengl",
+          "command": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+            "--renderer3d-parity",
+            "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-pbr-release-opengl"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "adopted-pbr-debug-metal",
+          "command": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+            "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+            "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-pbr-debug-metal",
+            "--renderer3d-parity"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "adopted-pbr-debug-opengl",
+          "command": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+            "--renderer3d-parity",
+            "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-pbr-debug-opengl"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    "configurationsNotRun": [
+      "Extreme grazing below the receiver-plane slope/denominator clamps",
+      "Light motion across the light-basis pole-selection threshold",
+      "Owner-specific smooth/masked edge misalignment isolation",
+      "Temporal perceptual acceptance beyond saved short sequences"
+    ]
+  },
+  "commands": [
+    {
+      "name": "adopted-shadows-release",
+      "command": [
+        "python3",
+        "scripts/macos/directional_shadows.py",
+        "--config",
+        "Release",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-shadows-release"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "adopted-shadows-debug",
+      "command": [
+        "python3",
+        "scripts/macos/directional_shadows.py",
+        "--config",
+        "Debug",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-shadows-debug"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "adopted-source-free",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/Adopted Source Free \u03a9/Resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-source-free",
+        "--shadows"
+      ],
+      "exit": -11
+    },
+    {
+      "name": "adopted-source-free-corrected",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/Adopted Source Free \u03a9/Resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-source-free-corrected",
+        "--shadows"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "timing-adopted",
+      "command": [
+        "python3",
+        "scripts/macos/directional_shadows.py",
+        "--config",
+        "Release",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/timing-adopted",
+        "--backend",
+        "metal",
+        "--benchmark"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "timing-experiment",
+      "command": [
+        "python3",
+        "scripts/macos/directional_shadows.py",
+        "--config",
+        "Release",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/CandidateResources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/timing-experiment",
+        "--backend",
+        "metal",
+        "--benchmark"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "timing-adopted-repeat",
+      "command": [
+        "python3",
+        "scripts/macos/directional_shadows.py",
+        "--config",
+        "Release",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/timing-adopted-repeat",
+        "--backend",
+        "metal",
+        "--benchmark"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "lit-atlas-taa",
+      "config": "Release",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/lit-atlas-taa-release",
+        "--shadow-atlas-taa-lifetime"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "adopted-retina",
+      "config": "Release",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-retina-release",
+        "--shadow-editor-settings",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "lit-atlas-taa",
+      "config": "Debug",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/lit-atlas-taa-debug",
+        "--shadow-atlas-taa-lifetime"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "adopted-retina",
+      "config": "Debug",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-retina-debug",
+        "--shadow-editor-settings",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "adopted-pbr-release-metal",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-pbr-release-metal",
+        "--renderer3d-parity"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "adopted-pbr-release-opengl",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+        "--renderer3d-parity",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-pbr-release-opengl"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "adopted-pbr-debug-metal",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-pbr-debug-metal",
+        "--renderer3d-parity"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "adopted-pbr-debug-opengl",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+        "--renderer3d-parity",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/adopted-pbr-debug-opengl"
+      ],
+      "exit": 0
+    }
+  ],
+  "rejectedOrInvalidRuns": [
+    "Retina Ultra before atlas reuse failed the unchanged 2 GiB budget at frame 44; corrected policy passed without increasing the cap",
+    "Initial zero-bias diagnostic changed fitting padding; replaced by transient fixed-fit zero receiver bias",
+    "First exact-ray oracle discrepancy traced to texel centre .00145 world units beyond a silhouette; raw discrepancies retained with explicit coverage interval",
+    "First adopted source-free invocation omitted required HAZEL_RENDERING_REFERENCE_PROJECT and exited -11 in test harness; corrected invocation passed; no production workaround added"
+  ],
+  "CI": {
+    "status": "NOT RUN for this working tree/new scoped commit",
+    "priorRuns": [
+      {
+        "conclusion": "failure",
+        "headSha": "e2ce4c96cd0340304da1881f3653c602201d62b7",
+        "status": "completed",
+        "url": "https://github.com/cringlekaden/Hazel/actions/runs/44824148613"
+      },
+      {
+        "conclusion": "failure",
+        "headSha": "8f12458f400070a3728bf1efa52c9af89c672699",
+        "status": "completed",
+        "url": "https://github.com/cringlekaden/Hazel/actions/runs/44818859646"
+      },
+      {
+        "conclusion": "cancelled",
+        "headSha": "4c0a42eb40976b02983a0efe4ad6b43e0544ab0d",
+        "status": "completed",
+        "url": "https://github.com/cringlekaden/Hazel/actions/runs/44817149412"
+      }
+    ],
+    "note": "Latest listed prior SHA e2ce4c9 passed macOS/Linux jobs and failed Windows. Not evidence for current source; no workflow dispatched."
+  },
+  "rawEvidenceRoot": "build/csm-cohesion",
+  "frozenReferences": "unchanged",
+  "unrelatedOwnerChangesPreserved": [
+    ".DS_Store",
+    "examples/.DS_Store",
+    "examples/RenderingReference/Assets/Scenes/XeGTAO-Contact.hazel",
+    "examples/RenderingReference/RenderingReference-XeGTAO.hproj"
+  ],
+  "logs": {
+    "build-adopted-release.log": {
+      "sha256": "53a6218af9bb3f56bbabc9eca0f9997d307a710435075f2c16e2c895ec21d22b",
+      "bytes": 737807
+    },
+    "build-adopted-debug.log": {
+      "sha256": "44cfb25f4a1b048d4f55198f9f5f32361cb57f7cd6bee3cba1bdb53b273fcb2c",
+      "bytes": 756124
+    },
+    "build-lit-taa-release.log": {
+      "sha256": "f65996b0ea2c3c293fcbed8ab42a0c31d91190dd26d0005c0d3840f065670813",
+      "bytes": 19057
+    },
+    "build-lit-taa-debug.log": {
+      "sha256": "608cf2a237e21de0db6efc03bfd31b62512075baba9c94ce87d9be97b6f1bf50",
+      "bytes": 19245
+    },
+    "adopted-source-free-corrected.log": {
+      "sha256": "13356dbd88b0a33730d623c7bbe3c8a4ad54a2c164678e6e24465172f403e10a",
+      "bytes": 861,
+      "archivedText": "adopted-source-free-corrected.txt"
+    },
+    "adopted-retina-release.log": {
+      "sha256": "db82ab913ddd5bc9e76334edf9df115de12e0e0ff844ca18eadb2e61c4bb9618",
+      "bytes": 1042,
+      "archivedText": "adopted-retina-release.txt"
+    },
+    "adopted-retina-debug.log": {
+      "sha256": "d7f6b278f0243225f4a3c59271f370ff1df43a6b037c53a7b49e40fe5275437b",
+      "bytes": 1042,
+      "archivedText": "adopted-retina-debug.txt"
+    },
+    "lit-atlas-taa-release.log": {
+      "sha256": "3acd4f1d51bdc210b1f5995db8d1d8de822d14deaff204cc28adbaafee85b3fb",
+      "bytes": 499,
+      "archivedText": "lit-atlas-taa-release.txt"
+    },
+    "lit-atlas-taa-debug.log": {
+      "sha256": "6717e6e5c62749d045666073e5843e43e459f657b14e24f9e998cffc4f2379b2",
+      "bytes": 499,
+      "archivedText": "lit-atlas-taa-debug.txt"
+    },
+    "public-docs-final-check.log": {
+      "sha256": "7e1c3da17909743896f76d49817ff09e1027bb56355f6b4c800dbad987f3ee4a",
+      "bytes": 65
+    },
+    "package-final-check.log": {
+      "sha256": "cbed1178d48961c95319d9281abf3345b8342ec83a87a2e97d02f6db46996191",
+      "bytes": 677
+    }
+  }
+}

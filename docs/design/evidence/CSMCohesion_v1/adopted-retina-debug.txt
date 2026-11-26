@@ -1,0 +1,13 @@
+[22:19:32] HAZEL: Renderer launch: requested Automatic, active Metal 4 (selected before window initialization)
+2026-11-25 22:19:32.571 MetalM1Smoke[80569:3928874] Metal API Validation Enabled
+2026-11-25 22:19:32.571 MetalM1Smoke[80569:3928874] Metal GPU Validation Enabled
+[22:19:32] HAZEL: Metal 4 device: Apple M4; one MTL4CommandQueue, three allocators; OpenGL not initialized
+[22:19:32] HAZEL: Creating window Hazel shadow settings regression (1280, 720)
+[22:19:32] HAZEL: Initializing GLFW
+[22:19:32] HAZEL: Main-window requested swap interval: 1 (submitted; driver/compositor timing unmeasured)
+[22:19:32] HAZEL: Renderer2D texture slots: 32
+PASS all 64 Retina editor jitter phases against independent camera pose axes
+SHADOW_EDITOR cpu_frames=60
+[22:19:37] HAZEL: Terminating GLFW
+SHADOW_EDITOR presented=58 errors=0 resources=0 attachments=0 peak_resources=1789431016 peak_attachments=1601470464
+PASS 3200x1800 editor shadow/AO/TAA toggles and overlays; positive presentations=58 peak_resources=1789431016 peak_attachments=1601470464

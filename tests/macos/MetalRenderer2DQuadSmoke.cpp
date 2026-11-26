@@ -221,6 +221,55 @@ void TemporalLifetime(Hazel::MetalRendererAPI& backend, bool shadows=false) {
     std::cout<<"PASS temporal three-slot dependencies and serialized diagonal-edge equivalence, busy cancellation and view destruction before completion\n";
 }
 
+// Lit moving shadows make atlas read-after-write errors visible. The older
+// lifetime probes intentionally use unlit materials and cannot establish this.
+void ShadowAtlasLifetime(Hazel::MetalRendererAPI& backend, bool temporal=false) {
+    using namespace Hazel;
+    auto project=Project::LoadCandidate(std::filesystem::absolute("examples/RenderingReference/RenderingReference.hproj"));
+    SceneSubmission frame;frame.Assets=CreateRef<ProjectAssets>(project->GetAssetRoot());
+    auto mesh=frame.Assets->Mesh("Native/Direct_v1/UnitCube.hmesh");Check(bool(mesh.Accepted),mesh.Error);
+    auto material=CreateRef<MaterialDefinition>();material->BaseColor={.5f,.5f,.5f,1};material->Roughness=.8f;
+    SubmittedMesh ground;ground.Geometry=mesh.Accepted;ground.Materials={material};ground.Identity=11;ground.Picking=11;
+    ground.SetWorld(glm::translate(glm::mat4(1),{0,-.05f,0})*glm::scale(glm::mat4(1),{5,.1f,5}));
+    SubmittedMesh caster=ground;caster.Identity=12;caster.Picking=12;
+    frame.Presentation.SceneReferred=true;frame.Presentation.Shadows.Enabled=true;frame.Presentation.Shadows.Distance=20;
+    frame.Presentation.TemporalAA=temporal;frame.Debug=temporal?SurfaceView::Shaded:SurfaceView::Direct;frame.LinearLightingInspection=!temporal;
+    frame.Light=SubmittedDirectional{glm::normalize(glm::vec3(1,1,0)),glm::vec3(2)};
+    frame.Camera.Orthographic=true;frame.Camera.Position={0,10,0};frame.Camera.ToCamera={0,1,0};
+    frame.Camera.ViewProjection=glm::ortho(-2.f,2.f,-2.f,2.f,.1f,20.f)*glm::lookAt(frame.Camera.Position,glm::vec3(0),glm::vec3(0,0,-1));
+    auto target=Framebuffer::Create(TargetSpecification(64,64));SceneRenderView view;
+    auto render=[&](unsigned index) {
+        frame.Presentation.Shadows.Resolution=index==2?512:2048;
+        caster.SetWorld(glm::translate(glm::mat4(1),{1+float(index)*.4f,1,0})*glm::scale(glm::mat4(1),glm::vec3(.6f)));
+        frame.Meshes=frame.ShadowCasters={ground,caster};
+        Begin(target,64,64);SceneRenderer::Render(frame,view,target,[]{},[]{});return Submit(target);
+    };
+    std::array<Ref<const FramebufferReadback>,3> expected,queued;
+    for(unsigned i=0;i<3;++i){expected[i]=render(i);Check(bool(expected[i]),"Serialized shadow atlas busy");Wait(*target,expected[i]);}
+    double changed=0;for(size_t p=0;p<expected[0]->Color.size();++p)if(expected[0]->Entity[p]==11 && expected[1]->Entity[p]==11)
+        changed=std::max(changed,double(glm::length(expected[0]->Color[p]-expected[1]->Color[p])));
+    Check(changed>.1,"Atlas lifetime fixture did not move visible lit shadows");
+    view.Reset();
+    std::weak_ptr<const MetalFramebufferAttachments> first,last;
+    struct Release {std::function<void()> Call;~Release(){if(Call)Call();}} gate{backend.GateQueueForTesting()};
+    for(unsigned i=0;i<3;++i) {
+        queued[i]=render(i);Check(bool(queued[i]),"Queued shadow atlas busy");
+        auto snapshot=std::static_pointer_cast<MetalFramebuffer>(view.ShadowDepth)->Snapshot();
+        if(i==0)first=snapshot;
+        if(i==1)Check(first.lock()==snapshot,"Private Ultra atlas storage was multiplied for queued frames");
+        if(i==2)last=snapshot;
+    }
+    Check(!render(3),"Fourth gated shadow atlas submission was not busy");target->Cancel();view.Reset();
+    Check(!first.expired() && !last.expired(),"Queued shadow atlases retired before completion");
+    gate.Call();gate.Call={};
+    for(unsigned i=0;i<3;++i) {
+        Wait(*target,queued[i]);Check(queued[i]->Entity==expected[i]->Entity && queued[i]->Depth==expected[i]->Depth,"Queued shadow camera coverage changed");
+        for(size_t p=0;p<queued[i]->Color.size();++p)Check(glm::length(queued[i]->Color[p]-expected[i]->Color[p])<1e-6f,"Queue-ordered atlas overwrote an earlier lit shadow");
+    }
+    Check(first.expired() && last.expired(),"Completed private shadow atlas generation retained");
+    std::cout<<"PASS lit moving-shadow serialized/three-slot equivalence, shared Ultra storage, resolution replacement, busy cancellation and view destruction/retirement TAA="<<temporal<<'\n';
+}
+
 void MeshLifetime(Hazel::MetalRendererAPI& backend, bool ambientOcclusion=false, bool shadows=false)
 {
     using namespace Hazel;
@@ -292,9 +341,11 @@ int main(int argc, char** argv)
         const bool ao = argc == 4 && std::string(argv[3]) == "--xegtao";
         const bool compute = argc == 4 && std::string(argv[3]) == "--compute";
         const bool shadowTemporal = argc == 4 && std::string(argv[3]) == "--shadow-temporal-lifetime";
+        const bool atlasTemporal = argc == 4 && std::string(argv[3]) == "--shadow-atlas-taa-lifetime";
+        const bool atlasLifetime = argc == 4 && std::string(argv[3]) == "--shadow-atlas-lifetime";
         const bool shadows = argc == 4 && std::string(argv[3]) == "--shadows";
         const bool localLights = argc == 4 && std::string(argv[3]) == "--local-lights";
-        const bool multiscattering = shadowTemporal || shadows || localLights || (argc == 4 && std::string(argv[3]) == "--ggx-ms");
+        const bool multiscattering = atlasTemporal || atlasLifetime || shadowTemporal || shadows || localLights || (argc == 4 && std::string(argv[3]) == "--ggx-ms");
         const bool renderer3D = argc == 4 && std::string(argv[3]) == "--renderer3d-parity";
         Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !multiscattering && !renderer3D && !compute && !ao && !temporal && !edges && !temporalBenchmark && !offscreenBenchmark ? uint32_t(std::stoul(argv[3])) : 4;
         Check(settings.TextureSlots == 2 || settings.TextureSlots == 4,"Fixture supports two or four texture slots");
@@ -326,7 +377,8 @@ int main(int argc, char** argv)
             return 0;
         }
         if (multiscattering) {
-            if(shadowTemporal)TemporalLifetime(backend,true);
+            if(atlasLifetime || atlasTemporal)ShadowAtlasLifetime(backend,atlasTemporal);
+            else if(shadowTemporal)TemporalLifetime(backend,true);
             else {
             (shadows?DirectionalShadowQualification:localLights?LocalLightingQualification:MultiscatteringQualification)(output, [&](const auto& target) {
                 auto result=Submit(target);Check(bool(result),"GGX submit busy");Wait(*target,result);return result;

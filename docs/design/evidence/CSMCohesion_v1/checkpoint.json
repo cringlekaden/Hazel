@@ -1,0 +1,125 @@
+[
+  {
+    "name": "directional_shadows-release",
+    "command": [
+      "python3",
+      "scripts/macos/directional_shadows.py",
+      "--config",
+      "Release",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/directional_shadows-release",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+    ],
+    "exit": 0,
+    "seconds": 7.439929962158203
+  },
+  {
+    "name": "local_lighting-release",
+    "command": [
+      "python3",
+      "scripts/macos/local_lighting.py",
+      "--config",
+      "Release",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/local_lighting-release",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+    ],
+    "exit": 0,
+    "seconds": 5.921622037887573
+  },
+  {
+    "name": "xegtao-release",
+    "command": [
+      "python3",
+      "scripts/macos/xegtao.py",
+      "--config",
+      "Release",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/xegtao-release",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+    ],
+    "exit": 0,
+    "seconds": 4.065827131271362
+  },
+  {
+    "name": "taa-release",
+    "command": [
+      "python3",
+      "scripts/macos/taa.py",
+      "--config",
+      "Release",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/taa-release",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+    ],
+    "exit": 0,
+    "seconds": 13.998244047164917
+  },
+  {
+    "name": "taa-release-edges",
+    "command": [
+      "python3",
+      "scripts/macos/taa.py",
+      "--config",
+      "Release",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/taa-release-edges",
+      "--edges",
+      "--resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+    ],
+    "exit": 0,
+    "seconds": 15.878044128417969
+  },
+  {
+    "name": "ggx_multiscattering-release",
+    "command": [
+      "python3",
+      "scripts/macos/ggx_multiscattering.py",
+      "--config",
+      "Release",
+      "--output",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/ggx_multiscattering-release",
+      "--project",
+      "/Volumes/External/kadencringle/Projects/Hazel/examples/RenderingReference/RenderingReference.hproj"
+    ],
+    "exit": 0,
+    "seconds": 157.7232141494751
+  },
+  {
+    "name": "pbr-ibl-release-metal",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/pbr-ibl-release-metal",
+      "--renderer3d-parity"
+    ],
+    "exit": 0,
+    "seconds": 12.912472009658813
+  },
+  {
+    "name": "pbr-ibl-release-opengl",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+      "--renderer3d-parity",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/pbr-ibl-release-opengl"
+    ],
+    "exit": 0,
+    "seconds": 13.120508909225464
+  },
+  {
+    "name": "retina-ultra-release",
+    "command": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-cohesion/retina-ultra-release",
+      "--shadow-editor-settings",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+    ],
+    "exit": 1,
+    "seconds": 0.8503532409667969
+  }
+]
