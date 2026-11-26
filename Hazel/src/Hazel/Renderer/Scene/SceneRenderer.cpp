@@ -59,7 +59,7 @@ bool CameraCut(const SceneSubmission& frame,const SceneCameraView& previous) {
 }
 }
 
-void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
+void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                            const Ref<Framebuffer> &display, const std::function<void()> &world2D,
                            const std::function<void()> &screenUI)
 {
@@ -69,6 +69,42 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
         if(view.NativeDevice.lock()!=device){view.Reset();view.NativeDevice=device;}
     } else if(!view.NativeDevice.expired()){view.Reset();view.NativeDevice.reset();}
 #endif
+    const bool shadows=input.Presentation.Shadows.Enabled && input.Light.has_value();
+    SceneSubmission shadowed;
+    if(shadows) {
+        try {
+            if(!display)throw std::runtime_error("Directional shadows require an explicit view target");
+            shadowed=input;shadowed.Shadows=FitDirectionalShadows(input);
+        } catch(...) {
+            view.Temporal={};
+            if(display && RendererAPI::GetAPI()==RendererAPI::API::Metal)display->Cancel();
+            throw;
+        }
+    }
+    const auto& frame=shadows?shadowed:input;
+    if(!shadows)view.ShadowDepth.reset();
+    auto renderShadows=[&] {
+        if(!shadows)return;
+        const unsigned resolution=frame.Presentation.Shadows.Resolution;
+        FramebufferSpecification size;size.Width=size.Height=resolution*2;
+        size.Attachments={FramebufferTextureFormat::DEPTH32F};
+        if(!view.ShadowDepth || view.ShadowDepth->GetSpecification().Width!=size.Width)
+            view.ShadowDepth=Framebuffer::Create(size);
+        view.ShadowDepth->Bind();
+        if(RendererAPI::GetAPI()==RendererAPI::API::Metal)view.ShadowDepth->Clear(glm::vec4(0));
+        else {RenderCommand::SetClearColor(glm::vec4(0));RenderCommand::Clear();}
+        SceneSubmission depth;depth.Assets=frame.Assets;
+        for(unsigned cascade=0;cascade<4;++cascade) {
+            RenderCommand::SetViewport((cascade%2)*resolution,(cascade/2)*resolution,resolution,resolution);
+            depth.Camera.ViewProjection=frame.Shadows.VP[cascade];depth.Meshes.clear();
+            for(const auto& draw:frame.ShadowCasters) {
+                const auto& bounds=draw.Geometry->Geometry.Bounds;
+                if(ShadowCasterVisible(bounds.Min,bounds.Max,depth.Camera.ViewProjection*draw.World))depth.Meshes.push_back(draw);
+            }
+            Renderer3D::Render(depth,false,true);
+        }
+        view.ShadowDepth->Unbind();
+    };
     const bool temporal=frame.Presentation.TemporalAA && RendererAPI::GetAPI()==RendererAPI::API::Metal &&
         frame.Presentation.SceneReferred && frame.Debug==SurfaceView::Shaded && frame.AmbientOcclusionView==0 && frame.LocalLightingView==0;
     if(!temporal) {if(view.Temporal.Submitted)view.Radiance.reset();view.Temporal={};view.Jittered.reset();view.Motion.reset();view.TemporalMetrics->Valid=false;}
@@ -131,17 +167,20 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
         try
         {
             const bool ao=frame.Presentation.AmbientOcclusion.Enabled && !frame.Meshes.empty();
+            if(shadows || ao)display->Unbind();
+            renderShadows();
             if(ao) {
                 auto size=display->GetSpecification();
                 size.Attachments={FramebufferTextureFormat::DEPTH32F};
                 if(!view.AmbientDepth)view.AmbientDepth=Framebuffer::Create(size);
                 else if(view.AmbientDepth->GetSpecification().Width!=size.Width || view.AmbientDepth->GetSpecification().Height!=size.Height)
                     view.AmbientDepth->Resize(size.Width,size.Height);
-                display->Unbind();view.AmbientDepth->Bind();view.AmbientDepth->Clear(glm::vec4(0));
+                view.AmbientDepth->Bind();view.AmbientDepth->Clear(glm::vec4(0));
                 Renderer3D::Render(temporal?sample:frame,false,true);view.AmbientDepth->Unbind();
             } else view.AmbientDepth.reset();
-            auto prepareAO=[&](const Ref<Framebuffer>& target) {
+            auto prepareLighting=[&](const Ref<Framebuffer>& target) {
 #ifdef HZ_PLATFORM_MACOS
+                if(shadows)target->PrepareDirectionalShadows(view.ShadowDepth);
                 if(ao) std::static_pointer_cast<MetalFramebuffer>(target)->PrepareAmbientOcclusion(view.AmbientDepth,temporal?sample.Camera:frame.Camera,frame.Presentation.AmbientOcclusion,frame.AmbientOcclusionView,view.AmbientTiming,sample.TemporalPhase);
 #else
                 (void)target;
@@ -165,7 +204,7 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
                     std::static_pointer_cast<MetalFramebuffer>(view.Motion)->SetTemporalProducer();
 #endif
                     view.Jittered->Bind();view.Jittered->Clear(frame.Presentation.Background);
-                    prepareAO(view.Jittered);Renderer3D::Render(sample,true);view.Jittered->Unbind();
+                    prepareLighting(view.Jittered);Renderer3D::Render(sample,true);view.Jittered->Unbind();
                     view.Motion->Bind();view.Motion->Clear(glm::vec4(0));Renderer3D::Render(motion,false,false,true);view.Motion->Unbind();
                     view.Radiance->Bind();
 #ifdef HZ_PLATFORM_MACOS
@@ -177,7 +216,7 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
 #endif
                 } else {
                     view.Radiance->Bind();view.Radiance->Clear(frame.Presentation.Background);
-                    prepareAO(view.Radiance);Renderer3D::Render(frame,true);
+                    prepareLighting(view.Radiance);Renderer3D::Render(frame,true);
                 }
                 auto worldState = raster;
                 RenderCommand::SetRasterState(worldState);
@@ -188,14 +227,14 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
             }
             else {
                 view.Radiance.reset();
-                if(ao) {
+                if(shadows || ao) {
 #ifdef HZ_PLATFORM_MACOS
                     auto target=std::static_pointer_cast<MetalFramebuffer>(display);
                     if(frame.AmbientOcclusionView)target->Resume(glm::vec4(frame.AmbientOcclusionView==3?0.f:1.f));
                     else target->Resume();
 #endif
                 }
-                prepareAO(display);
+                prepareLighting(display);
                 Renderer3D::Render(frame, false);
                 RenderCommand::SetRasterState(raster);
                 world2D();
@@ -214,6 +253,7 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
             if(view.Jittered)view.Jittered->Cancel();
             if(view.Motion)view.Motion->Cancel();
             if (view.AmbientDepth) view.AmbientDepth->Cancel();
+            if (view.ShadowDepth) view.ShadowDepth->Cancel();
             if (view.Radiance) view.Radiance->Cancel();
             display->Cancel();
             throw;
@@ -254,6 +294,11 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
             }
         }
     } worldBinding;
+    if(shadows) {
+        if(!display)throw std::runtime_error("Directional shadows require an explicit view target");
+        renderShadows();display->Bind();
+        RenderCommand::SetRasterState(raster);
+    }
     const bool hdr = frame.Presentation.SceneReferred && frame.Debug == SurfaceView::Shaded;
     if (hdr)
     {
@@ -278,6 +323,7 @@ void SceneRenderer::Render(const SceneSubmission &frame, SceneRenderView &view,
     }
     else
         view.Radiance.reset();
+    if(shadows)(hdr?view.Radiance:display)->PrepareDirectionalShadows(view.ShadowDepth);
     Renderer3D::Render(frame, hdr);
     raster = RenderCommand::GetRasterState();
     raster.Cull = CullFace::None;

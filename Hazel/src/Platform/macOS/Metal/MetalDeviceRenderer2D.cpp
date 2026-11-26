@@ -38,6 +38,7 @@ void MetalRenderer2DFrame::CollectAllocations(std::set<const MTL::Allocation*>& 
         for (const auto& texture : draw.Textures) if (texture) allocations.insert(texture->Texture.get());
     }
     if (AOSource) AOSource->CollectAllocations(allocations);
+    if (ShadowSource) ShadowSource->CollectAllocations(allocations);
     if (AO) {const auto& r=*AO->Resources;for(auto texture:{r.Depth,r.Raw,r.Edges,r.Scratch,r.Visibility})allocations.insert(texture.get());}
     if(Temporal) {
         for(auto history:{Temporal->Current,Temporal->Previous})if(history)
@@ -52,6 +53,7 @@ void MetalRenderer2DFrame::CollectAllocations(std::set<const MTL::Allocation*>& 
 void MetalRenderer2DFrame::MarkMipmapsSubmitted() const
 {
     if (AOSource) AOSource->MarkMipmapsSubmitted();
+    if (ShadowSource) ShadowSource->MarkMipmapsSubmitted();
     if(Temporal)Temporal->Current->Submitted->store(true);
     if(TemporalSource)TemporalSource->MarkMipmapsSubmitted();
     if(MotionSource)MotionSource->MarkMipmapsSubmitted();
@@ -64,6 +66,7 @@ void MetalRenderer2DFrame::ResolveAmbientOcclusionTimings()
 {
     for(auto &pass:LocalLights)pass->Resolve();
     if(AO)AO->ResolveTimings();
+    if(ShadowSource)ShadowSource->ResolveAmbientOcclusionTimings();
     if(Temporal)Temporal->ResolveTimings();
     if(TemporalSource)TemporalSource->ResolveAmbientOcclusionTimings();
     if(MotionSource)MotionSource->ResolveAmbientOcclusionTimings();
@@ -75,11 +78,16 @@ void MetalLocalLightPass::Resolve()
 {
     if(Resolved || !Timing || !Counters || !Frequency)return;
     Resolved=true;
-    auto values=NS::RetainPtr(Counters->resolveCounterRange(NS::Range::Make(0,4)));
-    if(!values || values->length()!=4*sizeof(MTL4::TimestampHeapEntry))return;
-    MTL4::TimestampHeapEntry entries[4];std::memcpy(entries,values->bytes(),sizeof(entries));
+    auto values=NS::RetainPtr(Counters->resolveCounterRange(NS::Range::Make(0,6)));
+    if(!values || values->length()!=6*sizeof(MTL4::TimestampHeapEntry))return;
+    MTL4::TimestampHeapEntry entries[6];std::memcpy(entries,values->bytes(),sizeof(entries));
     if(!entries[2].timestamp || entries[3].timestamp<entries[2].timestamp)return;
     Timing->ForwardMilliseconds=double(entries[3].timestamp-entries[2].timestamp)*1000/double(Frequency);
+    Timing->ShadowMilliseconds=0;
+    if(Shadowed) {
+        if(!entries[4].timestamp || entries[5].timestamp<entries[4].timestamp)return;
+        Timing->ShadowMilliseconds=double(entries[5].timestamp-entries[4].timestamp)*1000/double(Frequency);
+    }
     Timing->CullMilliseconds=0;Timing->OverflowTiles=0;Timing->Candidates=0;Timing->Tiles=0;
     if(Tiled) {
         if(!entries[0].timestamp || entries[1].timestamp<entries[0].timestamp)return;
@@ -201,6 +209,7 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     if(quad->TemporalSource)PrepareRenderer2DFrame(quad->TemporalSource);
     if(quad->MotionSource)PrepareRenderer2DFrame(quad->MotionSource);
     if (quad->AOSource) PrepareRenderer2DFrame(quad->AOSource);
+    if (quad->ShadowSource) PrepareRenderer2DFrame(quad->ShadowSource);
     if (quad->ComputeSource) PrepareRenderer2DFrame(quad->ComputeSource);
     if (quad->World) PrepareRenderer2DFrame(quad->World);
     if (quad->DisplaySource) PrepareRenderer2DFrame(quad->DisplaySource);
@@ -227,8 +236,9 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
     quad->Buffers.push_back(AcquireRenderer2DBuffer(indices.size() * sizeof(uint32_t), indices.data()));
     auto args = NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
     args->setInitializeBindings(true); args->setMaxBufferBindCount(17);
-    args->setMaxTextureBindCount(10); args->setMaxSamplerStateBindCount(10);
+    args->setMaxTextureBindCount(11); args->setMaxSamplerStateBindCount(11);
     for (auto &pass:quad->LocalLights) {
+        pass->Shadowed=bool(quad->ShadowSource);
         const auto lightStart=std::chrono::steady_clock::now();
         pass->Buffer=AcquireRenderer2DBuffer(pass->Lights->size(),pass->Lights->data());
         quad->Buffers.push_back(pass->Buffer);quad->Residency->addAllocation(pass->Buffer.get());
@@ -248,12 +258,12 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
             auto &slot=m_Frames[m_Next];
             if(slot.LocalLightCursor==slot.LocalLightCounters.size()) {
                 auto counters=NS::TransferPtr(MTL4::CounterHeapDescriptor::alloc()->init());
-                counters->setType(MTL4::CounterHeapTypeTimestamp);counters->setCount(4);
+                counters->setType(MTL4::CounterHeapTypeTimestamp);counters->setCount(6);
                 slot.LocalLightCounters.push_back(NS::TransferPtr(m_Device->newCounterHeap(counters.get(),&error)));
             }
             pass->Counters=slot.LocalLightCounters[slot.LocalLightCursor++];
             Check(bool(pass->Counters),"Cannot allocate local lighting timestamps");
-            pass->Counters->invalidateCounterRange(NS::Range::Make(0,4));pass->Frequency=m_Device->queryTimestampFrequency();
+            pass->Counters->invalidateCounterRange(NS::Range::Make(0,6));pass->Frequency=m_Device->queryTimestampFrequency();
         }
         if(pass->Tiled) {
             auto table=NS::TransferPtr(MTL4::ArgumentTableDescriptor::alloc()->init());
@@ -305,6 +315,12 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
                 fragment->setTexture(texture->Texture->gpuResourceID(), binding);
                 fragment->setSamplerState(texture->Sampler->gpuResourceID(), binding);
                 if (textures.insert(texture->Texture.get()).second) quad->Residency->addAllocation(texture->Texture.get());
+            }
+            if(draw.LocalLights && draw.Textures[0]) {
+                auto shadow=quad->ShadowSource?quad->ShadowSource->Attachments->Targets[2]:draw.Textures[0]->Texture;
+                fragment->setTexture(shadow->gpuResourceID(),10);
+                fragment->setSamplerState(draw.Textures[0]->Sampler->gpuResourceID(),10);
+                if(quad->ShadowSource)quad->Residency->addAllocation(shadow.get());
             }
             if(draw.MeshVertices && draw.Textures[0]) {
                 auto aoTexture=draw.Textures[0]->Texture;
@@ -412,6 +428,12 @@ void MetalDevice::PrepareRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFr
 }
 void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFrame>& quad)
 {
+    if(quad->ShadowSource) {
+        for(const auto& pass:quad->LocalLights)if(pass->Counters)m_Commands->writeTimestampIntoHeap(pass->Counters.get(),4);
+        m_Commands->useResidencySet(quad->ShadowSource->Residency.get());
+        EncodeRenderer2DFrame(quad->ShadowSource);
+        for(const auto& pass:quad->LocalLights)if(pass->Counters)m_Commands->writeTimestampIntoHeap(pass->Counters.get(),5);
+    }
     if(quad->AO) EncodeAmbientOcclusion(quad);
     if(quad->Temporal)EncodeTemporal(quad);
     for (const auto &pass:quad->LocalLights) if(pass->Tiled) {
@@ -493,7 +515,7 @@ void MetalDevice::EncodeRenderer2DFrame(const std::shared_ptr<MetalRenderer2DFra
     auto* render = m_Commands->renderCommandEncoder(pass.get());
     if (!render) { m_Commands->endCommandBuffer(); throw std::runtime_error("Cannot create quad encoder"); }
     if(quad->QueueOrderedTemporalProducer)render->barrierAfterQueueStages(MTL::StageAll,MTL::StageAll,MTL4::VisibilityOptionDevice);
-    if (!quad->LocalLights.empty() || quad->AO || quad->World || quad->Temporal || !mipmaps.empty()) render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
+    if (!quad->LocalLights.empty() || quad->ShadowSource || quad->AO || quad->World || quad->Temporal || !mipmaps.empty()) render->barrierAfterQueueStages(MTL::StageAll, MTL::StageFragment, MTL4::VisibilityOptionDevice);
     auto* boundPipeline = quad->World ? quad->PresentationShader->Pipeline() : nullptr;
     if (boundPipeline) render->setRenderPipelineState(boundPipeline);
     // Metal starts each encoder with full-target viewport/scissor, no culling,

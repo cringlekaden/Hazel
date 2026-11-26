@@ -1,0 +1,55 @@
+{
+  "baseCommit": "c36fd1a15e2774a3e0d6bdf15f7fe38163b5104f",
+  "status": "INCOMPLETE production milestone; scoped foundation implemented",
+  "platform": "Apple M4, macOS 27.3 (26C5047e), Xcode 27.3 (27C5020n); native Metal 4 and Apple OpenGL 4.1 GLSL 410",
+  "qualification": {
+    "debug/metal": {
+      "cases": 18,
+      "interiorSamples": 891815,
+      "maximumVisibilityError": 0.0146844
+    },
+    "debug/opengl": {
+      "cases": 18,
+      "interiorSamples": 891814,
+      "maximumVisibilityError": 0.0146844
+    },
+    "release/metal": {
+      "cases": 18,
+      "interiorSamples": 891815,
+      "maximumVisibilityError": 0.0146844
+    },
+    "release/opengl": {
+      "cases": 18,
+      "interiorSamples": 891814,
+      "maximumVisibilityError": 0.0146844
+    }
+  },
+  "gates": {
+    "nativeDirectionalMathVisibilityParity": "PASS Debug/Release; independent FP64 rays/splits, 1536 corners per process, rotation-scale and texel-grid checks; 18 analytic cases per backend",
+    "nativeMetalLifetime": "PASS Debug/Release API/GPU validation; atlas + AO three gated frames, TAA three gated successors in a separate process; busy cancellation and view destruction; exercised resources retire",
+    "litCombinedMotionResize": "PASS exercised finite lit output, camera/light/caster motion, AO+TAA, target resize and atlas resolution replacement; no motion-quality claim",
+    "sourceInvariant": "PASS direct, surfaceVisibility and view-normal repair functions byte-identical to accepted baseline; frozen assets and thresholds untouched",
+    "GGX_IBL": "PASS Debug both backends on the nearest-PCF iteration; PASS final Release continuous-PCF shader on both native backends (735 components plus white-furnace/model/parity/retirement gates). Frozen references unchanged.",
+    "localTerminatorForwardPlus": "PASS Debug/Release both native backends; final continuous-PCF Release rerun PASS",
+    "AO_TAA": "PASS focused Debug native Metal with final continuous-PCF shader; frozen reference thresholds unchanged",
+    "builds": "PASS Debug/Release shader tools, Metal/GL fixture executables, Hazelnut and Nutella; new direct-include shadow header syntax check PASS; existing unrelated warnings remain",
+    "performance": "MEASURED Release native Metal, 33 meshes, four cascades, 512/1024 at 720p/1080p; warmup 5, samples 20; generation and forward completion intervals, no presentation",
+    "publicDocs": "PASS local README link check: 89 Markdown files, 771 local links/images, zero findings; affected editor/example/design docs updated; CI not dispatched",
+    "ownerVisual": "NOT RUN; study capture observed, no production visual acceptance",
+    "crossPlatform": "NOT RUN Windows/Linux builds and execution, Intel/AMD/NVIDIA GPU coverage",
+    "shippingLongSession": "NOT RUN new source-free relocation/export campaign, detached editor view stress, long-session presentation and interactive editor/player acceptance"
+  },
+  "limitations": [
+    "Finite standard-Z non-oblique cameras only; no infinite/reversed-Z projection support claimed",
+    "Four fixed cascades; 256/512/1024 texels per cascade; fixed 3x3 bilinear-equivalent PCF (16 shared depth fetches)",
+    "Rigid opaque/MASK meshes only; actual triangles cast shadows; smooth-normal terminators, contact bias and thin-surface quality need owner review",
+    "All overlapping caster bounds extend depth, including downstream casters; large scenes/outliers can reduce precision and collection/fitting cost is not optimized",
+    "Fixed-light/projection stability only; moving light basis can switch near its up-axis threshold; FOV/split/distance changes can reallocate/rescale",
+    "No point/spot shadows, PCSS, contact hardening, world-2D casting or production update cache"
+  ],
+  "provenance": [
+    "Preliminary nearest-PCF strict parity failed at four edge pixels; continuous PCF fixed it without loosening the .003 RGB gate",
+    "An initial benchmark read the reset view metrics object and produced zero timings; discarded. performance-qualified reads frame-owned completed counters, checks validity, and is the only reported timing campaign",
+    "Raw local logs/traces and intermediate failed fixture runs retained in build/csm-evidence; committed summaries/CSVs/images here are from the named completed runs"
+  ]
+}

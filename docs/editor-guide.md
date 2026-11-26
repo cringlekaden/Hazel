@@ -174,6 +174,23 @@ Light gizmos support viewport picking; selection shows the influence sphere or
 inner/outer cones. **Lights...** in the viewport opens transient radiance,
 occupancy/overflow and timing inspection. Metal uses Forward+; OpenGL 4.1 evaluates
 the same lighting with a bounded loop. The shared limit is 320 enabled local lights;
-excess submission reports an error. Lights do not cast shadows in this milestone.
+excess submission reports an error. Point and spot lights do not cast shadows.
 See [the local-light gallery](../examples/RenderingReference/README.md#locallights_v1-authored-point-and-spot-gallery)
 for a reproducible scene and launch commands, and its linked qualification status.
+
+## Directional cascaded shadows (development foundation)
+
+On `feature/3d-foundations`, **Scene Settings → Directional shadows** enables an
+opt-in four-cascade mesh shadow atlas. Apply/Save uses the existing scene history.
+Choose 256/512/1024 texels per cascade and a finite world shadow distance; split
+distribution trades near resolution against uniform coverage. Bias values are in
+world texels: use the smallest normal/depth bias that avoids self-shadowing on
+representative geometry. Cascade blend also controls the fade at shadow distance.
+PCF is a fixed continuous 3×3 bilinear kernel (16 shared depth fetches). Camera jitter does not move the atlas.
+
+Opaque and masked static meshes participate, including off-camera casters.
+World 2D, sprites, point/spot lights and screen UI do not cast these shadows.
+The [separate shadow study](../examples/RenderingReference/README.md#directional-shadow-study)
+and [design/qualification record](design/directional-shadows.md) describe the
+current limits. This foundation is under qualification; it has no owner visual
+acceptance yet. Windows/Linux and Intel GPU execution require separate evidence.

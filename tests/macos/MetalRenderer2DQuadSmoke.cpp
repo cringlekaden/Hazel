@@ -3,6 +3,7 @@
 #include "Renderer3DParity.h"
 #include "MultiscatteringQualification.h"
 #include "LocalLightingQualification.h"
+#include "DirectionalShadowQualification.h"
 #include "XeGTAOQualification.h"
 #include "TemporalAAQualification.h"
 #include "TemporalEdgeQualification.h"
@@ -164,10 +165,12 @@ void ComputeDependencies(Hazel::MetalRendererAPI& backend, const std::filesystem
     Check(backend.Observe()->Snapshot().Errors == 0, "Native compute validation failed");
     std::cout << "PASS production render-compute-readback and render-compute-render-readback: three gated slots, immutable constants, signed IDs/depth, odd extent, pending destruction and retirement\n";
 }
-void TemporalLifetime(Hazel::MetalRendererAPI& backend) {
+void TemporalLifetime(Hazel::MetalRendererAPI& backend, bool shadows=false) {
     using namespace Hazel;
     auto target=Framebuffer::Create(TargetSpecification());SceneRenderView view;
     SceneSubmission frame;frame.Presentation.SceneReferred=true;frame.Presentation.TemporalAA=true;
+    frame.Presentation.Shadows.Enabled=shadows;
+    if(shadows)frame.Light=SubmittedDirectional{glm::vec3(0,0,1),glm::vec3(1)};
     auto project=Project::LoadCandidate(std::filesystem::absolute("examples/RenderingReference/RenderingReference-Direct-PerspectivePBR.hproj"));
     frame.Assets=CreateRef<ProjectAssets>(project->GetAssetRoot());auto mesh=frame.Assets->Mesh("Native/Direct_v1/UnitCube.hmesh");
     Check(bool(mesh.Accepted),mesh.Error);
@@ -181,6 +184,7 @@ void TemporalLifetime(Hazel::MetalRendererAPI& backend) {
         material->BaseColor={.1f+float(index)*.2f,.2f,.3f,1};
         frame.Meshes[0].SetWorld(glm::translate(glm::mat4(1),{float(index)*.01f,0,0})*
             glm::rotate(glm::mat4(1),.37f,{0,0,1})*glm::scale(glm::mat4(1),{1.3f,.6f,.1f}));
+        if(shadows)frame.ShadowCasters=frame.Meshes;
     };
     auto referenceTarget=Framebuffer::Create(TargetSpecification());SceneRenderView referenceView;
     std::array<Ref<const FramebufferReadback>,3> expectedFrames;
@@ -217,7 +221,7 @@ void TemporalLifetime(Hazel::MetalRendererAPI& backend) {
     std::cout<<"PASS temporal three-slot dependencies and serialized diagonal-edge equivalence, busy cancellation and view destruction before completion\n";
 }
 
-void MeshLifetime(Hazel::MetalRendererAPI& backend, bool ambientOcclusion=false)
+void MeshLifetime(Hazel::MetalRendererAPI& backend, bool ambientOcclusion=false, bool shadows=false)
 {
     using namespace Hazel;
     auto wideSpec=Specification();wideSpec.Width=8192;wideSpec.Height=1;
@@ -233,11 +237,14 @@ void MeshLifetime(Hazel::MetalRendererAPI& backend, bool ambientOcclusion=false)
     auto second=CreateRef<MaterialDefinition>(*material);second->BaseColor={0,0,1,1};
     SceneSubmission frame;frame.Assets=assets;frame.Camera.Orthographic=true;
     frame.Presentation.AmbientOcclusion.Enabled=ambientOcclusion;
+    frame.Presentation.Shadows.Enabled=shadows;
+    if(shadows)frame.Light=SubmittedDirectional{glm::vec3(0,0,1),glm::vec3(1)};
     frame.Camera.Position={0,0,3};frame.Camera.ViewProjection=glm::ortho(-1.f,1.f,-1.f,1.f,-1.f,1.f);
     SubmittedMesh draw;draw.Geometry=mesh.Accepted;draw.Materials={material};draw.Picking=-2000000003;
     draw.SetWorld(glm::translate(glm::mat4(1),{-.5f,0,0})*glm::scale(glm::mat4(1),{.5f,1,1}));
     frame.Meshes={draw};draw.Materials={second};draw.Picking=2000000003;
     draw.SetWorld(glm::translate(glm::mat4(1),{.5f,0,0})*glm::scale(glm::mat4(1),{.5f,1,1}));frame.Meshes.push_back(draw);
+    if(shadows)frame.ShadowCasters=frame.Meshes;
     auto target=Framebuffer::Create(TargetSpecification());SceneRenderView view;
     std::array<Ref<const FramebufferReadback>,3> results;
     struct QueueRelease { std::function<void()> Release; ~QueueRelease(){if(Release)Release();} } gate{backend.GateQueueForTesting()};
@@ -248,12 +255,12 @@ void MeshLifetime(Hazel::MetalRendererAPI& backend, bool ambientOcclusion=false)
         Begin(target,32,32);
         const auto before=RenderCommand::GetDrawSubmissionCount();
         SceneRenderer::Render(frame,view,target,[]{},[]{});
-        Check(RenderCommand::GetDrawSubmissionCount()==before+(ambientOcclusion?4:2),"Indexed/prepass draw submissions were counted incorrectly");
+        Check(RenderCommand::GetDrawSubmissionCount()==before+2+(ambientOcclusion?2:0)+(shadows?8:0),"Indexed/prepass draw submissions were counted incorrectly");
         results[i]=Submit(target);Check(bool(results[i]),"Gated mesh submit unexpectedly busy");
     }
     frame.Meshes.clear();frame.Assets.reset();assets.reset();project.reset();mesh.Accepted.reset();
     Check(!generation.expired(),"Pending mesh generation escaped cache admission accounting");
-    if(ambientOcclusion)view.Reset(); // Pending frames retain AO generations after view destruction.
+    if(ambientOcclusion || shadows)view.Reset(); // Pending frames retain AO generations after view destruction.
     Renderer3D::Shutdown(); // Native draws own all shader/texture/uniform versions already captured.
     Check(backend.Observe()->Snapshot().InFlight==3,"Three mesh frames were not held by completion gate");
     gate.Release();gate.Release={};
@@ -284,8 +291,10 @@ int main(int argc, char** argv)
         const bool temporal = argc == 4 && std::string(argv[3]) == "--taa";
         const bool ao = argc == 4 && std::string(argv[3]) == "--xegtao";
         const bool compute = argc == 4 && std::string(argv[3]) == "--compute";
+        const bool shadowTemporal = argc == 4 && std::string(argv[3]) == "--shadow-temporal-lifetime";
+        const bool shadows = argc == 4 && std::string(argv[3]) == "--shadows";
         const bool localLights = argc == 4 && std::string(argv[3]) == "--local-lights";
-        const bool multiscattering = localLights || (argc == 4 && std::string(argv[3]) == "--ggx-ms");
+        const bool multiscattering = shadowTemporal || shadows || localLights || (argc == 4 && std::string(argv[3]) == "--ggx-ms");
         const bool renderer3D = argc == 4 && std::string(argv[3]) == "--renderer3d-parity";
         Hazel::RendererSettings settings; settings.TextureSlots = argc >= 4 && !multiscattering && !renderer3D && !compute && !ao && !temporal && !edges && !temporalBenchmark && !offscreenBenchmark ? uint32_t(std::stoul(argv[3])) : 4;
         Check(settings.TextureSlots == 2 || settings.TextureSlots == 4,"Fixture supports two or four texture slots");
@@ -317,10 +326,13 @@ int main(int argc, char** argv)
             return 0;
         }
         if (multiscattering) {
-            (localLights?LocalLightingQualification:MultiscatteringQualification)(output, [&](const auto& target) {
+            if(shadowTemporal)TemporalLifetime(backend,true);
+            else {
+            (shadows?DirectionalShadowQualification:localLights?LocalLightingQualification:MultiscatteringQualification)(output, [&](const auto& target) {
                 auto result=Submit(target);Check(bool(result),"GGX submit busy");Wait(*target,result);return result;
             });
-            MeshLifetime(backend,true);
+            MeshLifetime(backend,true,shadows);
+            }
             framebuffer.reset();Hazel::Renderer2D::Shutdown();Hazel::RenderCommand::Shutdown();
             Check(observer->Snapshot().Errors==0 && observer->Snapshot().ResourceBytes==0 && observer->Snapshot().AttachmentGenerations==0,"GGX retirement failed");
             return 0;

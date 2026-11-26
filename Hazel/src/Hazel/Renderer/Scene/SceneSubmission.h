@@ -54,7 +54,7 @@ struct SubmittedDirectional
 };
 struct LocalLightingMetrics
 {
-    double CollectionMilliseconds=0, UploadMilliseconds=0, CullMilliseconds=0, ForwardMilliseconds=0;
+    double CollectionMilliseconds=0, UploadMilliseconds=0, CullMilliseconds=0, ForwardMilliseconds=0, ShadowMilliseconds=0;
     uint64_t LightBytes=0, TileBytes=0, Candidates=0, OverflowTiles=0;
     unsigned Count=0, Tiles=0;
     bool Valid=false;
@@ -82,6 +82,8 @@ struct SceneSubmission
     bool LinearLightingInspection = false; // Scoped FP32 diagnostic readback, not authored.
     Ref<ProjectAssets> Assets;
     std::vector<SubmittedMesh> Meshes;
+    std::vector<SubmittedMesh> ShadowCasters; // Same collection; never camera-frustum culled.
+    DirectionalShadowData Shadows;
     std::optional<SubmittedDirectional> Light;
     std::vector<SubmittedLocalLight> LocalLights;
     double LightCollectionMilliseconds=0;

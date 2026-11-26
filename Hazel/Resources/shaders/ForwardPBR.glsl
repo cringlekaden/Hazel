@@ -27,6 +27,11 @@ layout(std140,binding=2) uniform View {mat4 u_VP;vec4 u_Eye;vec4 u_ToCamera;vec4
 layout(std140,binding=3) uniform Object {mat4 u_Model;mat4 u_NormalMatrix;ivec4 u_Identity;};
 layout(std140,binding=4) uniform Material {vec4 u_BaseFactor;vec4 u_EmissionCutoff;vec4 u_Surface;vec4 u_Options;};
 layout(std140,binding=7) uniform LocalLights {vec4 u_LocalMeta;vec4 u_LocalLights[960];};
+layout(std140,binding=5) uniform DirectionalShadows {
+    mat4 u_ShadowVP[4];vec4 u_ShadowSplits;vec4 u_ShadowEye;vec4 u_ShadowForward;
+    vec4 u_ShadowParameters;vec4 u_ShadowRange;vec4 u_ShadowTexelDepth[4];
+};
+layout(binding=10) uniform sampler2D u_ShadowAtlas;
 #ifdef HZ_METAL
 layout(binding=9) uniform usampler2D u_LightTiles;
 #endif
@@ -138,6 +143,51 @@ vec3 direct(vec3 base,float metal,float rough,vec3 N,vec3 V,vec3 L,SurfaceEnergy
         energy.diffuseScale*energy.diffuseShape*diffuseLight/(PI*energy.diffuseAverage):0;
     return ((1-metal)*base*diffuse+D*visibility*F+multiple)*nl;
 }
+float cascadeVisibility(int cascade,vec3 position,vec3 Ng,vec3 L){
+    float texel=u_ShadowTexelDepth[cascade].x, inverseDepth=u_ShadowTexelDepth[cascade].y;
+    float cosine=dot(Ng,L);
+    // Receiver offset uses actual geometry, never a mapped/smooth BRDF normal.
+    vec3 normal=cosine<0?-Ng:Ng;
+    vec3 offset=normal*(u_ShadowParameters.y*texel*sqrt(max(1-cosine*cosine,0)));
+    mat4 matrix=u_ShadowVP[cascade];
+    vec3 p=(matrix*vec4(position+offset,1)).xyz*.5+.5;
+    if(any(lessThan(p,vec3(0)))||any(greaterThan(p,vec3(1))))return 1;
+    int resolution=int(u_ShadowParameters.x);
+    ivec2 origin=ivec2(cascade%2,cascade/2)*resolution;
+    vec2 coordinate=p.xy*float(resolution)-.5;
+    ivec2 centre=ivec2(floor(coordinate));vec2 fraction=fract(coordinate);
+    vec3 right=normalize(vec3(matrix[0][0],matrix[1][0],matrix[2][0]));
+    vec3 up=normalize(vec3(matrix[0][1],matrix[1][1],matrix[2][1]));
+    // Receiver-plane correction evaluates PCF taps on the geometric plane.
+    // Bound grazing slopes to avoid singular offsets and unbounded light leaks.
+    float denominator=abs(cosine)>.05?cosine:(cosine<0?-.05:.05);
+    vec2 slope=clamp(vec2(dot(Ng,right),dot(Ng,up))/denominator,vec2(-8),vec2(8));
+    float visibility=0;
+    // Average nine bilinear comparison lookups with their shared 4x4 footprint.
+    // The separable weights sum to one and remain continuous at texel boundaries.
+    // Explicit comparisons keep Metal/OpenGL sampling identical without relying
+    // on backend-specific hardware comparison samplers (16 depth fetches).
+    for(int y=-1;y<=2;++y)for(int x=-1;x<=2;++x){
+        ivec2 tap=clamp(centre+ivec2(x,y),ivec2(0),ivec2(resolution-1));
+        vec2 displacement=(vec2(tap)+.5-p.xy*float(resolution))*texel;
+        float receiver=p.z+dot(slope,displacement)*inverseDepth-u_ShadowParameters.z*texel*inverseDepth;
+        vec2 weight=vec2(x==-1?1-fraction.x:x==2?fraction.x:1,y==-1?1-fraction.y:y==2?fraction.y:1)/3;
+        visibility+=(receiver<=texelFetch(u_ShadowAtlas,origin+tap,0).r?1:0)*weight.x*weight.y;
+    }
+    return visibility;
+}
+float directionalVisibility(vec3 position,vec3 Ng,vec3 L){
+    if(u_ShadowRange.z<.5)return 1;
+    float depth=dot(position-u_ShadowEye.xyz,u_ShadowForward.xyz);
+    if(depth<u_ShadowRange.x||depth>=u_ShadowRange.y)return 1;
+    int cascade=depth>u_ShadowSplits.z?3:depth>u_ShadowSplits.y?2:depth>u_ShadowSplits.x?1:0;
+    float begin=cascade==0?u_ShadowRange.x:u_ShadowSplits[cascade-1];
+    float end=u_ShadowSplits[cascade];
+    float blend=smoothstep(end-(end-begin)*u_ShadowParameters.w,end,depth);
+    float visibility=cascadeVisibility(cascade,position,Ng,L);
+    if(blend>0)visibility=mix(visibility,cascade==3?1:cascadeVisibility(cascade+1,position,Ng,L),blend);
+    return visibility;
+}
 void main(){
     // Evaluate geometric derivatives before a potentially nonuniform mask discard.
     vec3 geometricNormal=normalize(cross(dFdx(v_Position),dFdy(v_Position)));
@@ -167,7 +217,7 @@ void main(){
         SurfaceEnergy directEnergy=surfaceEnergy(f0,sampleBRDF(clamp(dot(directNormal,V),0,1),r));
         vec3 L=normalize(u_Light.xyz);
         if(dot(surfaceNormal,V)>0&&dot(surfaceNormal,L)>0)
-            directTerm=direct(base.rgb,metal,rough,directNormal,V,L,directEnergy)*u_Incident.rgb*((maps&4)!=0?surfaceVisibility(surfaceNormal,directNormal,L):1);
+            directTerm=direct(base.rgb,metal,rough,directNormal,V,L,directEnergy)*(u_Incident.rgb*directionalVisibility(v_Position,geometricNormal,L))*((maps&4)!=0?surfaceVisibility(surfaceNormal,directNormal,L):1);
         vec3 directionalTerm=directTerm;
         int localCount=int(u_LocalMeta.x),listCount=localCount;
 #ifdef HZ_METAL

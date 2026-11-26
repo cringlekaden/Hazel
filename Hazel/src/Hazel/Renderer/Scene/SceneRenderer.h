@@ -46,6 +46,7 @@ class SceneRenderView
     unsigned LocalLightingView = 0;
     std::shared_ptr<LocalLightingMetrics> LocalMetrics=std::make_shared<LocalLightingMetrics>();
     SurfaceView Debug = SurfaceView::Shaded; // Private view inspection; never scene/history.
+    Ref<Framebuffer> ShadowDepth;
     Ref<Framebuffer> AmbientDepth; // Per-view masked mesh depth preparation.
     Ref<Framebuffer> Radiance; // Optional per-view world target, never authored/history.
     void Reset()
@@ -56,6 +57,7 @@ class SceneRenderView
         TemporalMetrics=std::make_shared<TemporalTiming>();
         WarnedUnsupportedTAA=false;
         AmbientDepth.reset();
+        ShadowDepth.reset();
         AmbientTiming=std::make_shared<AmbientOcclusionTiming>();
         WarnedUnsupportedAO=false;
     }

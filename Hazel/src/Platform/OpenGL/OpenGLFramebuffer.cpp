@@ -19,7 +19,7 @@ static void CreateTextures(bool, uint32_t* outID,uint32_t count) {
     for (uint32_t i=0;i<count;++i) if (!outID[i]) throw std::runtime_error("Failed to create framebuffer texture");
 }
 static void BindTexture(bool multisampled,uint32_t id) { glBindTexture(TextureTarget(multisampled),id); }
-static bool IsDepthFormat(FramebufferTextureFormat format) { return format==FramebufferTextureFormat::DEPTH24STENCIL8; }
+static bool IsDepthFormat(FramebufferTextureFormat format) { return format==FramebufferTextureFormat::DEPTH24STENCIL8 || format==FramebufferTextureFormat::DEPTH32F; }
 struct FramebufferState {
     GLint Draw=0,Read=0;
     FramebufferState() { glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&Draw); glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&Read); }
@@ -60,7 +60,8 @@ static void AttachDepthTexture(uint32_t id,int samples,GLenum format,GLenum atta
     if (multisampled) glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,samples,format,width,height,GL_FALSE);
     else {
         // glTexStorage2D is 4.2; equivalent depth/stencil storage retains the 4.1 path.
-        glTexImage2D(GL_TEXTURE_2D,0,format,width,height,0,GL_DEPTH_STENCIL,GL_UNSIGNED_INT_24_8,nullptr);
+        glTexImage2D(GL_TEXTURE_2D,0,format,width,height,0,format==GL_DEPTH_COMPONENT32F?GL_DEPTH_COMPONENT:GL_DEPTH_STENCIL,
+            format==GL_DEPTH_COMPONENT32F?GL_FLOAT:GL_UNSIGNED_INT_24_8,nullptr);
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
@@ -160,7 +161,8 @@ void OpenGLFramebuffer::Invalidate()
         }
         if (m_DepthAttachmentSpecification.TextureFormat!=FramebufferTextureFormat::None) {
             Utils::CreateTextures(multisampled,&m_DepthAttachment,1);
-            Utils::AttachDepthTexture(m_DepthAttachment,m_Specification.Samples,GL_DEPTH24_STENCIL8,GL_DEPTH_STENCIL_ATTACHMENT,
+            const bool depth32=m_DepthAttachmentSpecification.TextureFormat==FramebufferTextureFormat::DEPTH32F;
+            Utils::AttachDepthTexture(m_DepthAttachment,m_Specification.Samples,depth32?GL_DEPTH_COMPONENT32F:GL_DEPTH24_STENCIL8,depth32?GL_DEPTH_ATTACHMENT:GL_DEPTH_STENCIL_ATTACHMENT,
                                      m_Specification.Width,m_Specification.Height);
         }
         Utils::SetDrawBuffers(m_ColorAttachments.size());
@@ -476,5 +478,19 @@ uint32_t OpenGLFramebuffer::GetColorAttachmentRendererID(uint32_t index) const
     if (index>=m_ColorAttachments.size()) throw std::out_of_range("Framebuffer attachment index");
     Resolve();
     return m_ResolveRendererID ? m_ResolveColorAttachments[index] : m_ColorAttachments[index];
+}
+}
+
+namespace Hazel {
+void OpenGLFramebuffer::PrepareDirectionalShadows(const Ref<Framebuffer>& depth)
+{
+    auto source=std::dynamic_pointer_cast<OpenGLFramebuffer>(depth);
+    GLint bound=0;glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&bound);
+    if(!source || source.get()==this || bound!=GLint(m_RendererID) || !source->m_ColorAttachments.empty() ||
+       !source->m_DepthAttachment || source->m_Specification.Samples!=1)
+        throw std::logic_error("Directional shadows require a distinct depth-only producer and bound lighting view");
+    GLint active=0;glGetIntegerv(GL_ACTIVE_TEXTURE,&active);
+    glActiveTexture(GL_TEXTURE10);glBindTexture(GL_TEXTURE_2D,source->m_DepthAttachment);glBindSampler(10,0);
+    glActiveTexture(active);
 }
 }

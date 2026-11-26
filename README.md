@@ -81,8 +81,12 @@ response, with Metal tiled Forward+ and a bounded OpenGL 4.1 fallback. Smooth
 authored normals provide continuous direct-light transitions; IBL retains its
 geometric reflection-horizon protection. See the
 [local-light gallery](examples/RenderingReference/README.md#locallights_v1-authored-point-and-spot-gallery)
-and [qualification status](docs/design/local-lighting.md). Local-light shadows
-are reserved for the next milestone; owner visual approval remains separate.
+and [qualification status](docs/design/local-lighting.md). The owner accepted the
+local-light terminator correction at `c36fd1a`; point/spot shadows remain deferred.
+
+An opt-in [directional CSM foundation](docs/design/directional-shadows.md) is under
+qualification, with a [separate shadow study](examples/RenderingReference/README.md#directional-shadow-study).
+Production qualification and owner visual acceptance are pending.
 
 The development branch also includes [Metal XeGTAO ambient occlusion](docs/design/xegtao.md)
 for diffuse IBL, with editor controls and a separate contact-study scene. Functional

@@ -1,0 +1,136 @@
+{
+  "benchmark": true,
+  "head": "c36fd1a15e2774a3e0d6bdf15f7fe38163b5104f",
+  "configuration": "Release",
+  "commands": {
+    "metal": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-evidence/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-evidence/performance-qualified/metal",
+      "--shadows"
+    ]
+  },
+  "backends": {
+    "metal": {
+      "samples": 20,
+      "warmup": 5,
+      "cases": {
+        "1280/720/512/0": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 0.660042,
+            "p95": 0.889917
+          },
+          "serializedFrameMs": {
+            "median": 6.629665,
+            "p95": 7.325
+          }
+        },
+        "1280/720/512/1": {
+          "shadowGPUms": {
+            "median": 0.016375,
+            "p95": 0.030375
+          },
+          "forwardGPUms": {
+            "median": 1.024585,
+            "p95": 1.19342
+          },
+          "serializedFrameMs": {
+            "median": 8.479915,
+            "p95": 10.1479
+          }
+        },
+        "1280/720/1024/0": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 0.6513329999999999,
+            "p95": 0.867667
+          },
+          "serializedFrameMs": {
+            "median": 7.138059999999999,
+            "p95": 8.14921
+          }
+        },
+        "1280/720/1024/1": {
+          "shadowGPUms": {
+            "median": 0.08389585,
+            "p95": 0.156292
+          },
+          "forwardGPUms": {
+            "median": 1.07856,
+            "p95": 2.08288
+          },
+          "serializedFrameMs": {
+            "median": 8.77496,
+            "p95": 10.8429
+          }
+        },
+        "1920/1080/512/0": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 1.653605,
+            "p95": 1.94771
+          },
+          "serializedFrameMs": {
+            "median": 11.8734,
+            "p95": 12.5542
+          }
+        },
+        "1920/1080/512/1": {
+          "shadowGPUms": {
+            "median": 0.021124999999999998,
+            "p95": 0.0433333
+          },
+          "forwardGPUms": {
+            "median": 2.266625,
+            "p95": 2.67238
+          },
+          "serializedFrameMs": {
+            "median": 12.1419,
+            "p95": 13.8397
+          }
+        },
+        "1920/1080/1024/0": {
+          "shadowGPUms": {
+            "median": 0.0,
+            "p95": 0.0
+          },
+          "forwardGPUms": {
+            "median": 1.395375,
+            "p95": 1.93992
+          },
+          "serializedFrameMs": {
+            "median": 10.9709,
+            "p95": 11.5756
+          }
+        },
+        "1920/1080/1024/1": {
+          "shadowGPUms": {
+            "median": 0.0445,
+            "p95": 0.0695833
+          },
+          "forwardGPUms": {
+            "median": 2.1354550000000003,
+            "p95": 2.79867
+          },
+          "serializedFrameMs": {
+            "median": 11.82895,
+            "p95": 13.4737
+          }
+        }
+      },
+      "scope": "32 cube casters plus ground; serialized offscreen readback. GPU generation/forward counters available only on native Metal; forward-on minus forward-off includes PCF. Not presentation or frame pacing."
+    }
+  },
+  "status": "MEASURED scoped Metal pass intervals; not presentation or a performance acceptance gate",
+  "sourceSHA256": "b967c23472e178cfcb4b2ebf5237429a9deec5c099175c3c553eb6bdf2949625"
+}

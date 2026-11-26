@@ -18,6 +18,7 @@ namespace Hazel {
 
 		virtual void Bind() override;
 		virtual void Unbind() override;
+        void PrepareDirectionalShadows(const Ref<Framebuffer>& depth) override;
 
 		virtual void EncodeOutput(const Ref<Framebuffer>& destination = {}) override;
         virtual void Resize(uint32_t width, uint32_t height) override;

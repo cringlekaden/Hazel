@@ -279,3 +279,32 @@ frozen fixtures must not be regenerated to accept this new scene.
 
 This is an actual native Metal capture of the static authored camera, before the
 warm light's script motion. Owner visual acceptance remains a separate gate.
+
+## Directional shadow study
+
+`RenderingReference-Shadows.hproj` opens the separate
+`Assets/Scenes/DirectionalShadows_v1.hazel` study on `feature/3d-foundations`.
+Regenerate it with `python3 tools/assets/generate_directional_shadows.py`.
+It contains a contact receiver, hard cube, smooth sphere, mirrored nonuniform
+cube, thin/tall and masked casters, plus blocks at increasing camera distances.
+Existing accepted lighting/AO/TAA scenes remain separate.
+
+After building and staging [offline Metal shaders](../../docs/development.md#experimental-metal-shader-resources):
+
+```sh
+python3 scripts/hazel.py run Hazelnut --config Release --metal --no-restore --project examples/RenderingReference/RenderingReference-Shadows.hproj
+python3 scripts/hazel.py run Nutella --config Release --metal --inspect-camera --project examples/RenderingReference/RenderingReference-Shadows.hproj
+```
+
+Use `--opengl` for the OpenGL 4.1 path. **Scene Settings → Directional shadows**
+controls resolution, distance, splits, bias and cascade blending. Inspect static
+contacts first, then translate/rotate the camera and directional key and move
+casters with the existing transform gizmos. Move a tall caster out of the camera
+while retaining its shadow. Compare 512/1024 cascades, near/far crossings and
+shadows off; enable AO/TAA independently on Metal. Smooth normals do not change
+actual triangular caster geometry. Watch grazing self-shadow terminators, thin
+surface leaks and detached contacts; report them against the exact settings.
+
+This is an experimental foundation, pending owner visual acceptance and the
+remaining gates in the [CSM record](../../docs/design/directional-shadows.md).
+Native macOS evidence does not qualify Windows/Linux or Intel hardware.

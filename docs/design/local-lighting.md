@@ -1,5 +1,10 @@
 # Authored local lights and Metal Forward+
 
+Owner status, 2026-11-25: the owner visually accepted the local-light terminator
+correction at `c36fd1a15e2774a3e0d6bdf15f7fe38163b5104f` before beginning the
+[directional shadow milestone](directional-shadows.md). Earlier pending-approval
+statements below describe their recorded historical checkpoints.
+
 **Terminator correction: PASS scoped native automated qualification. Milestone: INCOMPLETE pending owner visual approval.**
 The owner rejected the original `b492560` gallery; the final correction below is awaiting visual acceptance.
 Windows/Linux execution and their CI are NOT RUN at this macOS checkpoint.

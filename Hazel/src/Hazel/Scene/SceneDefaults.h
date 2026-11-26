@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
+#include "Hazel/Renderer/Scene/DirectionalShadows.h"
 #include <string>
 #include <cstring>
 #include <filesystem>
@@ -34,6 +35,7 @@ namespace Hazel {
         glm::vec4 Background{0.010022826f, 0.010022826f, 0.010022826f, 1};
         SceneEnvironment Environment;
         AmbientOcclusionSettings AmbientOcclusion;
+        DirectionalShadowSettings Shadows;
         bool operator==(const ScenePresentation &b) const
         {
             if (SceneReferred != b.SceneReferred || TemporalAA != b.TemporalAA ||
@@ -42,7 +44,7 @@ namespace Hazel {
             for (int i = 0; i < 4; ++i)
                 if (std::memcmp(&Background[i], &b.Background[i], sizeof(float)))
                     return false;
-            return Environment==b.Environment && AmbientOcclusion==b.AmbientOcclusion;
+            return Environment==b.Environment && AmbientOcclusion==b.AmbientOcclusion && Shadows==b.Shadows;
         }
         bool operator!=(const ScenePresentation& b) const { return !(*this==b); }
         void Validate() const;

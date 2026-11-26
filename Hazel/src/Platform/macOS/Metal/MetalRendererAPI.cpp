@@ -1,4 +1,5 @@
 #include "MetalRendererAPI.h"
+#include "MetalFramebuffer.h"
 #include "MetalRenderer2DFrame.h"
 #include "MetalDevice.h"
 #include "MetalShader.h"
@@ -60,7 +61,11 @@ void MetalRendererAPI::BeginTextCompositing() { Unavailable(); }
 void MetalRendererAPI::SetTextCompositing(bool) { Unavailable(); }
 void MetalRendererAPI::EndTextCompositing() { Unavailable(); }
 void MetalRendererAPI::SetViewport(uint32_t x,uint32_t y,uint32_t width,uint32_t height) {
-    if (!m_Renderer2DFrame.expired()) throw std::logic_error("Metal framebuffer viewport is fixed by its attachment extent");
+    if (auto frame=m_Renderer2DFrame.lock()) {
+        if(frame->Attachments->Targets[0] || !width || !height || x>frame->Width || y>frame->Height ||
+           width>frame->Width-x || height>frame->Height-y)
+            throw std::logic_error("Metal color framebuffer viewport is fixed; depth-only viewports must fit their attachment extent");
+    }
     m_Raster.Viewport={x,y,width,height};
 }
 void MetalRendererAPI::SetClearColor(const glm::vec4& color) {

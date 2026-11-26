@@ -21,6 +21,7 @@ void AmbientOcclusionSettings::Validate() const {
 }
 void ScenePresentation::Validate() const {
     AmbientOcclusion.Validate();
+    Shadows.Validate();
     Environment.Validate();
     if(TemporalAA && !SceneReferred)throw std::runtime_error("TAA requires scene-referred HDR presentation");
     if(!Environment.Asset.empty() && !SceneReferred)
@@ -63,10 +64,15 @@ YAML::Node Encode(const ScenePresentation& value) {
         a["Enabled"]=v.Enabled;a["Quality"]=v.Quality;a["Radius"]=v.Radius;
         a["Strength"]=v.Strength;a["Falloff"]=v.Falloff;
     }
+    if (!(value.Shadows==DirectionalShadowSettings{})) {
+        auto a=n["Shadows"];const auto& v=value.Shadows;
+        a["Enabled"]=v.Enabled;a["Resolution"]=v.Resolution;a["Distance"]=v.Distance;
+        a["SplitLambda"]=v.SplitLambda;a["NormalBias"]=v.NormalBias;a["DepthBias"]=v.DepthBias;a["Blend"]=v.Blend;
+    }
     return n;
 }
 ScenePresentation ReadPresentation(const YAML::Node& n) {
-    DocumentSchema::Keys(n, {"Mode", "Background", "Exposure", "Environment", "AmbientOcclusion", "TemporalAA"}, "Presentation");
+    DocumentSchema::Keys(n, {"Mode", "Background", "Exposure", "Environment", "AmbientOcclusion", "TemporalAA", "Shadows"}, "Presentation");
     const auto mode = n["Mode"].as<std::string>();
     if (mode != "DisplayReferred" && mode != "SceneReferred")
         throw std::runtime_error("Unknown world presentation");
@@ -91,6 +97,12 @@ ScenePresentation ReadPresentation(const YAML::Node& n) {
         DocumentSchema::Keys(a,{"Enabled","Quality","Radius","Strength","Falloff"},"ambient occlusion");
         auto& v=result.AmbientOcclusion;v.Enabled=a["Enabled"].as<bool>();v.Quality=a["Quality"].as<unsigned>();
         v.Radius=a["Radius"].as<float>();v.Strength=a["Strength"].as<float>();v.Falloff=a["Falloff"].as<float>();
+    }
+    if(auto a=n["Shadows"]) {
+        DocumentSchema::Keys(a,{"Enabled","Resolution","Distance","SplitLambda","NormalBias","DepthBias","Blend"},"directional shadows");
+        auto& v=result.Shadows;v.Enabled=a["Enabled"].as<bool>();v.Resolution=a["Resolution"].as<unsigned>();
+        v.Distance=a["Distance"].as<float>();v.SplitLambda=a["SplitLambda"].as<float>();
+        v.NormalBias=a["NormalBias"].as<float>();v.DepthBias=a["DepthBias"].as<float>();v.Blend=a["Blend"].as<float>();
     }
     result.Validate();
     return result;

@@ -1,6 +1,7 @@
 #include "hzpch.h"
 #include "MetalShaderArtifact.h"
 #include "Hazel/Renderer/Drawing/Renderer3DUniforms.h"
+#include "Hazel/Renderer/Scene/DirectionalShadows.h"
 #include <shaderc/shaderc.hpp>
 #include <spirv-tools/libspirv.hpp>
 #include <spirv_cross/spirv_msl.hpp>
@@ -27,6 +28,9 @@ Layout CPUContract(const std::string& name)
     if (name == "Material") return {sizeof(MaterialData), {offsetof(MaterialData, Base), offsetof(MaterialData, Emissive), offsetof(MaterialData, Surface), offsetof(MaterialData, Options)}};
     if (name == "Environment") return {sizeof(EnvironmentData), {offsetof(EnvironmentData, InverseVP), offsetof(EnvironmentData, RotationGain), offsetof(EnvironmentData, Options)}};
     if (name == "Camera") return {sizeof(glm::mat4), {0}};
+    if (name == "DirectionalShadows") return {sizeof(DirectionalShadowData), {offsetof(DirectionalShadowData,VP), offsetof(DirectionalShadowData,Splits),
+        offsetof(DirectionalShadowData,Eye), offsetof(DirectionalShadowData,Forward), offsetof(DirectionalShadowData,Parameters),
+        offsetof(DirectionalShadowData,Range), offsetof(DirectionalShadowData,TexelDepth)}};
     if (name == "LocalLights") return {sizeof(Renderer3DUniforms::LocalLightData), {0, 16}};
     if (name == "Presentation") return {sizeof(glm::vec4), {0}};
     if (name == "Outline") return {32, {0, 4, 8, 16}}; // Explicit declaration-only legacy adaptation.

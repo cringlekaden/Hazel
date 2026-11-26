@@ -142,6 +142,7 @@ SceneSubmission SceneRenderer::Collect(Scene &scene, const SceneCameraView &came
         // Half-pixel maximum jitter requires one pixel of total NDC guard.
         const auto guard=frame.Presentation.TemporalAA && physicalExtent.x && physicalExtent.y?
             glm::vec2(1)/glm::vec2(physicalExtent):glm::vec2(0);
+        if(frame.Presentation.Shadows.Enabled && frame.Light)frame.ShadowCasters.push_back(draw);
         if (Visible(draw.Geometry->Geometry.Bounds, camera.ViewProjection * draw.World,guard))
             frame.Meshes.push_back(std::move(draw));
     }

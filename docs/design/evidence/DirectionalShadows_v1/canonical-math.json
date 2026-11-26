@@ -1,0 +1,10 @@
+{
+  "baseline": "c36fd1a15e2774a3e0d6bdf15f7fe38163b5104f",
+  "unchanged": {
+    "vec3 direct(": "70a35cb15c0d6a58ae7228e4c03453ecae3908cda2b5a127a34182b98700086d",
+    "float surfaceVisibility(": "ea9a099f97ca27d6b01eed906c80fa0a29d92a5caef4a1886f00583fb4027cca",
+    "vec3 resolveShadingNormal(": "ab77f1b5e16adb5cf2fc49144264d17438816bc4ab3b7e4420ca9be4128201d2"
+  },
+  "sourceSHA256": "b967c23472e178cfcb4b2ebf5237429a9deec5c099175c3c553eb6bdf2949625",
+  "metalArtifactSHA256": "7a657c8ace3be5713d7a43b5b6747f963ffd05b8d604e6d65e255973fb40bb6b"
+}

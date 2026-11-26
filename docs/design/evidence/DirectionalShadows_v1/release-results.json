@@ -1,0 +1,144 @@
+{
+  "benchmark": false,
+  "head": "c36fd1a15e2774a3e0d6bdf15f7fe38163b5104f",
+  "configuration": "Release",
+  "commands": {
+    "metal": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-evidence/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-evidence/release-checkpoint/metal",
+      "--shadows"
+    ],
+    "temporalLifetime": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-evidence/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-evidence/release-checkpoint/metal/temporal",
+      "--shadow-temporal-lifetime"
+    ],
+    "opengl": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+      "--shadows",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/csm-evidence/release-checkpoint/opengl"
+    ]
+  },
+  "backends": {
+    "metal": {
+      "cases": 18
+    },
+    "opengl": {
+      "cases": 18
+    }
+  },
+  "parity": [
+    {
+      "name": "case-0",
+      "idMismatches": 0,
+      "maxDepth": 2.384185791015625e-07,
+      "maxRGB": 7.7858567237854e-05
+    },
+    {
+      "name": "case-1",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 8.642673492431641e-07
+    },
+    {
+      "name": "case-10",
+      "idMismatches": 0,
+      "maxDepth": 9.834766387939453e-07,
+      "maxRGB": 0.00012937188148498535
+    },
+    {
+      "name": "case-11",
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 2.816319465637207e-06
+    },
+    {
+      "name": "case-12",
+      "idMismatches": 0,
+      "maxDepth": 2.384185791015625e-07,
+      "maxRGB": 0.0003178715705871582
+    },
+    {
+      "name": "case-13",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 8.642673492431641e-07
+    },
+    {
+      "name": "case-14",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 7.450580596923828e-07
+    },
+    {
+      "name": "case-15",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 0.00011098384857177734
+    },
+    {
+      "name": "case-16",
+      "idMismatches": 0,
+      "maxDepth": 9.834766387939453e-07,
+      "maxRGB": 0.0002626478672027588
+    },
+    {
+      "name": "case-17",
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 5.617737770080566e-06
+    },
+    {
+      "name": "case-2",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 8.493661880493164e-07
+    },
+    {
+      "name": "case-3",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 2.944469451904297e-05
+    },
+    {
+      "name": "case-4",
+      "idMismatches": 0,
+      "maxDepth": 9.834766387939453e-07,
+      "maxRGB": 6.058812141418457e-05
+    },
+    {
+      "name": "case-5",
+      "idMismatches": 0,
+      "maxDepth": 0.0,
+      "maxRGB": 2.757646143436432e-06
+    },
+    {
+      "name": "case-6",
+      "idMismatches": 0,
+      "maxDepth": 2.384185791015625e-07,
+      "maxRGB": 0.0001589357852935791
+    },
+    {
+      "name": "case-7",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 8.642673492431641e-07
+    },
+    {
+      "name": "case-8",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 7.450580596923828e-07
+    },
+    {
+      "name": "case-9",
+      "idMismatches": 0,
+      "maxDepth": 1.1920928955078125e-07,
+      "maxRGB": 5.996227264404297e-05
+    }
+  ],
+  "status": "PASS scoped analytic visibility and deterministic captures; full milestone gates separate",
+  "sourceSHA256": "b967c23472e178cfcb4b2ebf5237429a9deec5c099175c3c553eb6bdf2949625"
+}

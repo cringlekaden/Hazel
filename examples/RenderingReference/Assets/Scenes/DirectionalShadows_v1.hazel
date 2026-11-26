@@ -1,0 +1,198 @@
+SceneVersion: 3
+Scene: Directional CSM / contacts and cascade distance
+Presentation:
+  Mode: SceneReferred
+  Exposure: 0
+  Background: [0.008, 0.008, 0.012, 1]
+  Environment:
+    Asset: Reference/IBL_v1/Constant.henv
+    Yaw: 0
+    Gain: 0.2
+    Lighting: true
+    Background: false
+  Shadows:
+    Enabled: true
+    Resolution: 1024
+    Distance: 100
+    SplitLambda: 0.65
+    NormalBias: 0.2
+    DepthBias: 0.05
+    Blend: 0.1
+Entities:
+  - Entity: 1
+    Relationship:
+      Parent: 0
+      Order: 0
+    TagComponent:
+      Tag: CSM perspective camera
+    TransformComponent:
+      Translation: [10, 8, 14]
+      Rotation: [-0.435, 0.620, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 0.785398185
+        PerspectiveNear: 0.100000001
+        PerspectiveFar: 100
+        OrthographicSize: 10
+        OrthographicNear: -1
+        OrthographicFar: 1
+      Primary: true
+      FixedAspectRatio: false
+  - Entity: 2
+    Relationship:
+      Parent: 0
+      Order: 1
+    TagComponent:
+      Tag: CSM directional key
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [-0.9, 0.5, 0]
+      Scale: [1, 1, 1]
+    DirectionalLightComponent:
+      Color: [1, 1, 1]
+      Intensity: 3
+      Enabled: true
+  - Entity: 10
+    Relationship:
+      Parent: 0
+      Order: 2
+    TagComponent:
+      Tag: Contact receiver / large ground
+    TransformComponent:
+      Translation: [0, -0.1, -25]
+      Rotation: [0, 0, 0]
+      Scale: [100, 0.2, 100]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials: []
+  - Entity: 11
+    Relationship:
+      Parent: 0
+      Order: 3
+    TagComponent:
+      Tag: Hard cube contact
+    TransformComponent:
+      Translation: [-3, 1, 0]
+      Rotation: [0, 0, 0]
+      Scale: [2, 2, 2]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials: []
+  - Entity: 12
+    Relationship:
+      Parent: 0
+      Order: 4
+    TagComponent:
+      Tag: Authored smooth sphere contact
+    TransformComponent:
+      Translation: [0, 1, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials: []
+  - Entity: 13
+    Relationship:
+      Parent: 0
+      Order: 5
+    TagComponent:
+      Tag: Mirrored nonuniform cube
+    TransformComponent:
+      Translation: [3, 1, 0]
+      Rotation: [0, 0.4, 0]
+      Scale: [-2, 2, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials: []
+  - Entity: 14
+    Relationship:
+      Parent: 0
+      Order: 6
+    TagComponent:
+      Tag: Thin tall caster / light leak study
+    TransformComponent:
+      Translation: [-4, 3, -7]
+      Rotation: [0, 0, 0]
+      Scale: [0.1, 6, 4]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials: []
+  - Entity: 15
+    Relationship:
+      Parent: 0
+      Order: 7
+    TagComponent:
+      Tag: Masked caster
+    TransformComponent:
+      Translation: [4, 2, -5]
+      Rotation: [0, 0, 0]
+      Scale: [3, 4, 0.1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials:
+        - Slot: 0000000000000007
+          Material: Reference/Direct_v1/Surfaces/Mask.hmat
+  - Entity: 20
+    Relationship:
+      Parent: 0
+      Order: 8
+    TagComponent:
+      Tag: Cascade distance 15
+    TransformComponent:
+      Translation: [0, 2, -15]
+      Rotation: [0, 0, 0]
+      Scale: [4, 4, 4]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials: []
+  - Entity: 21
+    Relationship:
+      Parent: 0
+      Order: 9
+    TagComponent:
+      Tag: Cascade distance 30
+    TransformComponent:
+      Translation: [0, 2, -30]
+      Rotation: [0, 0, 0]
+      Scale: [4, 4, 4]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials: []
+  - Entity: 22
+    Relationship:
+      Parent: 0
+      Order: 10
+    TagComponent:
+      Tag: Cascade distance 50
+    TransformComponent:
+      Translation: [0, 2, -50]
+      Rotation: [0, 0, 0]
+      Scale: [4, 4, 4]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials: []
+  - Entity: 23
+    Relationship:
+      Parent: 0
+      Order: 11
+    TagComponent:
+      Tag: Cascade distance 70
+    TransformComponent:
+      Translation: [0, 2, -70]
+      Rotation: [0, 0, 0]
+      Scale: [4, 4, 4]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials: []
