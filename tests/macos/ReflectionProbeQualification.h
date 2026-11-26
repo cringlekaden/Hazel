@@ -364,6 +364,74 @@ inline void ReflectionProbeQualification(const std::filesystem::path &output,
         if (!file)
             throw std::runtime_error("Could not write reflection study capture");
     };
+    if (!FileSystem::GetEnvironmentPath("HAZEL_REFLECTION_DIAGNOSTIC").empty())
+    {
+        auto control = CreateRef<Scene>();
+        SceneSerializer controlReader(control, project->GetAssetRoot(), false, assets);
+        if (!controlReader.DeserializeText(FileDocument::Read(Project::ResolveOwnedAsset(
+                project->GetAssetRoot(), "Scenes/ReflectionGallery-Global.hazel")), false))
+            throw std::runtime_error(controlReader.Report().Error);
+        const auto controlProbes = control->GetAllEntitiesWith<ReflectionProbeComponent>();
+        if (controlProbes.size() != MaxReflectionProbes)
+            throw std::runtime_error("Reflection gallery requires two authored control probes");
+        for (const auto handle : controlProbes)
+        {
+            auto &probe = Entity(handle, control.get()).GetComponent<ReflectionProbeComponent>();
+            if (probe.Enabled)
+                throw std::runtime_error("Global-only gallery enables a local probe");
+            probe.Enabled = true;
+        }
+        if (reader.CaptureAuthoredState() != controlReader.CaptureAuthoredState())
+            throw std::runtime_error("Gallery variants differ beyond probe enablement");
+        for (const auto handle : controlProbes)
+            Entity(handle, control.get()).GetComponent<ReflectionProbeComponent>().Enabled = false;
+
+        auto camera = roundTrip->GetPrimaryCameraEntity();
+        if (!camera)
+            throw std::runtime_error("Gallery primary camera missing");
+        const auto world = roundTrip->GetWorldTransform(camera);
+        const auto &lens = camera.GetComponent<CameraComponent>().Camera;
+        const glm::vec3 center(world[3]);
+        const glm::vec3 focus = center - 10.f * glm::vec3(world[2]);
+        constexpr unsigned poses = 33;
+        for (unsigned pose = 0; pose < poses; ++pose)
+        {
+            const float x = 9.f * (float(pose) / float(poses - 1) - .5f);
+            SceneCameraView viewCamera;
+            viewCamera.Position = center + glm::vec3(x, 0, 0);
+            viewCamera.View = pose == poses / 2 ? glm::inverse(world) :
+                glm::lookAt(viewCamera.Position, focus + glm::vec3(.38f * x, 0, 0), glm::vec3(0, 1, 0));
+            viewCamera.ToCamera = glm::vec3(glm::inverse(viewCamera.View)[2]);
+            viewCamera.Projection = glm::perspective(lens.GetPerspectiveVerticalFOV(), 640.f / 360.f,
+                lens.GetPerspectiveNearClip(), lens.GetPerspectiveFarClip());
+            viewCamera.ViewProjection = viewCamera.Projection * viewCamera.View;
+            auto globalOnly = SceneRenderer::Collect(*control, viewCamera, {640, 360});
+            auto local = SceneRenderer::Collect(*roundTrip, viewCamera, {640, 360});
+            if (!globalOnly.ReflectionProbes.empty() || local.ReflectionProbes.size() != MaxReflectionProbes)
+                throw std::runtime_error("Unexpected gallery probe admission");
+            const auto a = render(globalOnly, SurfaceView::Shaded);
+            const auto b = render(local, SurfaceView::Shaded);
+            if (a->Entity != b->Entity || a->Depth != b->Depth)
+                throw std::runtime_error("Gallery changed coverage between matched variants");
+            save("global", pose, a);
+            save("local", pose, b);
+            if (pose == poses / 2)
+            {
+                // An oversized proxy approaches a distant environment lookup
+                // while keeping each capture and its influence weights intact.
+                for (auto &probe : local.ReflectionProbes)
+                {
+                    probe.ProjectionOffset = glm::vec3(0);
+                    probe.ProjectionHalfSize = glm::vec3(10000.f);
+                }
+                save("distant", pose, render(local, SurfaceView::Shaded));
+            }
+        }
+        std::cout << "REFLECTION_GALLERY poses=" << poses
+                  << " matchedAuthoring=pass coverage=pass exposure=" << roundTrip->Presentation().Exposure << '\n';
+        return;
+    }
+
     std::vector<SceneSubmission> motionSequence;
     std::vector<Ref<const FramebufferReadback>> settled;
     for (unsigned pose = 0; pose < 9; ++pose)

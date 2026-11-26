@@ -84,6 +84,10 @@ zero local texture reads.
 
 ## Reproduce the study
 
+For visual inspection, the [Reflection Gallery](reflection-gallery.md) provides
+matched playable projects, distinctive wall patterns and a parallax comparison
+in motion. The commands below reproduce the original qualification fixture.
+
 Generate two HDR captures and a small two-room project, then collect matched
 fixed-exposure camera poses through the existing renderer. The script produces
 warm and cool captures with a different wall color and panel placement. The

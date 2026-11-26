@@ -498,7 +498,8 @@ int main(int argc, char** argv)
             (reflectionProbes?ReflectionProbeQualification:pointShadows?PointShadowQualification:spotShadows?SpotShadowQualification:shadows?DirectionalShadowQualification:localLights?LocalLightingQualification:MultiscatteringQualification)(output, [&](const auto& target) {
                 auto result=Submit(target);Check(bool(result),"GGX submit busy");Wait(*target,result);return result;
             });
-            if (reflectionProbes && Hazel::FileSystem::GetEnvironmentPath("HAZEL_REFLECTION_BENCHMARK").empty())
+            if (reflectionProbes && Hazel::FileSystem::GetEnvironmentPath("HAZEL_REFLECTION_BENCHMARK").empty() &&
+                Hazel::FileSystem::GetEnvironmentPath("HAZEL_REFLECTION_DIAGNOSTIC").empty())
                 ReflectionProbeLifetime(backend);
             if (!spotShadows && !pointShadows && !reflectionProbes) MeshLifetime(backend,true,shadows);
             }

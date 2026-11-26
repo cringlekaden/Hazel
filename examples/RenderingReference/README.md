@@ -197,6 +197,14 @@ experimental run does not qualify Hazelnut Metal ImGui or general Metal export.
 The packaging commands above retain their established OpenGL scope.
 
 
+### Static Reflection Gallery
+
+Compare orange bars and cyan checks reflected in chrome, satin metal and a
+mirror rail spanning two probe volumes. The paired projects start at the same
+camera and exposure. The gallery includes a matched moving sequence and a
+distant-lookup control for judging parallax.
+[Generate, launch and inspect the Reflection Gallery](../../docs/design/reflection-gallery.md).
+
 ## XeGTAO contact study (Metal 4)
 
 `RenderingReference-XeGTAO.hproj` opens a separate contact/crevice study with a
