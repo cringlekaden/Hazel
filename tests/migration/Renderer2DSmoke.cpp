@@ -355,6 +355,11 @@ int main(int argc,char** argv) {
             }
             if(argc==3 && std::string(argv[1])=="--line-coverage-probe"){LineCoverageProbe(std::filesystem::absolute(argv[2]));return 0;}
             RenderingControls(application,requests);
+            if(argc==2 && std::string(argv[1])=="--ibl-horizon"){
+                IBLRenderingChecks();
+                std::cout<<"PASS unchanged IBL horizon regressions\n";
+                return 0;
+            }
             if(argc>1 && std::string(argv[1])=="--ibl-integration-probe")return IBLIntegrationProbe(argc,argv);
             if((argc==2 && std::string(argv[1])=="--geometric-edges") || !FileSystem::GetEnvironmentPath("HAZEL_UNLIT_INTERPOLATION_PROBE").empty()){GeometricNormalChecks();std::cout<<"NOT EXECUTED: other graphics regressions (focused geometric-edge mode)\n";return 0;}
             if(argc==2 && std::string(argv[1])=="--profile-overflow"){TextOverflowProfile();return 0;}

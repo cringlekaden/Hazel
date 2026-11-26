@@ -1,0 +1,601 @@
+{
+  "sourceSHA256": "46e975ee068a74ba4f8968006f544d64ddbbec0929b05bafe8a0c68e53ebf48d",
+  "gates": {
+    "opengl-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/hazel.py",
+        "test",
+        "--config",
+        "Debug",
+        "--only",
+        "Renderer2DSmoke",
+        "--only",
+        "SceneGPUSmoke",
+        "--only",
+        "RuntimeSessionSmoke",
+        "--only",
+        "EditorSmoke"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 282.57266041700495
+    },
+    "native-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/native-debug",
+        "--smooth-terminator"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 25.132762207998894
+    },
+    "ggx-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/ggx_multiscattering.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/ggx-debug",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/ablation/reference/RenderingReference.hproj"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 249.8080762909958
+    },
+    "ao-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/xegtao.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/ao-debug",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 8.475475957995513
+    },
+    "taa-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/taa.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/taa-debug"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 20.51411029099836
+    },
+    "parity-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m4.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/parity-debug",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 112.00152791599976
+    },
+    "consumers-debug-1x": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m5.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/consumers-debug-1x",
+        "--only",
+        "consumers"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 8.048140208993573
+    },
+    "consumers-debug-2x": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m5.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/consumers-debug-2x",
+        "--only",
+        "consumers",
+        "--native-2x"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 9.970475000009174
+    },
+    "shutdown-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m5.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/shutdown-debug",
+        "--only",
+        "shutdown"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.8253126250056084
+    },
+    "views-debug": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/views-debug",
+        "--local-light-views",
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/Hazelnut/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 3.81586416598293
+    },
+    "gallery-scripts-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/hazel.py",
+        "script-build",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-debug/RenderingReference-LocalLights.hproj",
+        "--config",
+        "Debug"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.66842012500274
+    },
+    "gallery-debug-Hazelnut-metal": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/Hazelnut/Hazelnut",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-debug/RenderingReference-LocalLights.hproj",
+        "--metal",
+        "--no-restore"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.2737487500126008,
+      "native": {
+        "status": "PASS",
+        "submitted": 74,
+        "completed": 74,
+        "positivePresentationsAtSnapshot": 69,
+        "completedPositivePresentationsAtSnapshot": 69
+      }
+    },
+    "gallery-debug-Hazelnut-opengl": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/Hazelnut/Hazelnut",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-debug/RenderingReference-LocalLights.hproj",
+        "--opengl",
+        "--no-restore"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.753255625022575
+    },
+    "gallery-debug-Nutella-metal": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/Nutella/Nutella",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-debug/RenderingReference-LocalLights.hproj",
+        "--metal"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.4667514579778071,
+      "native": {
+        "status": "PASS",
+        "submitted": 65,
+        "completed": 65,
+        "positivePresentationsAtSnapshot": 63,
+        "completedPositivePresentationsAtSnapshot": 63
+      }
+    },
+    "gallery-debug-Nutella-opengl": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/Nutella/Nutella",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-debug/RenderingReference-LocalLights.hproj",
+        "--opengl"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 5.085838333005086
+    },
+    "opengl-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/hazel.py",
+        "test",
+        "--config",
+        "Release",
+        "--only",
+        "Renderer2DSmoke",
+        "--only",
+        "SceneGPUSmoke",
+        "--only",
+        "RuntimeSessionSmoke",
+        "--only",
+        "EditorSmoke"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 56.44554958300432
+    },
+    "native-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/native-release",
+        "--smooth-terminator"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 6.550839832983911
+    },
+    "ggx-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/ggx_multiscattering.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/ggx-release",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/ablation/reference/RenderingReference.hproj"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 184.53644454097957
+    },
+    "ao-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/xegtao.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/ao-release",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 3.990962416981347
+    },
+    "taa-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/taa.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/taa-release"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 14.087566290982068
+    },
+    "parity-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m4.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/parity-release",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 35.479130958003225
+    },
+    "consumers-release-1x": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m5.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/consumers-release-1x",
+        "--only",
+        "consumers"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 7.958789999975124
+    },
+    "consumers-release-2x": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m5.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/consumers-release-2x",
+        "--only",
+        "consumers",
+        "--native-2x"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 9.358516125008464
+    },
+    "shutdown-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m5.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/shutdown-release",
+        "--only",
+        "shutdown"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.689872250019107
+    },
+    "views-release": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/views-release",
+        "--local-light-views",
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/Hazelnut/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 3.5665120409976225
+    },
+    "gallery-scripts-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/hazel.py",
+        "script-build",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-release/RenderingReference-LocalLights.hproj",
+        "--config",
+        "Release"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.5203709999914281
+    },
+    "gallery-release-Hazelnut-metal": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/Hazelnut/Hazelnut",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-release/RenderingReference-LocalLights.hproj",
+        "--metal",
+        "--no-restore"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.6977316249976866,
+      "native": {
+        "status": "PASS",
+        "submitted": 74,
+        "completed": 74,
+        "positivePresentationsAtSnapshot": 69,
+        "completedPositivePresentationsAtSnapshot": 69
+      }
+    },
+    "gallery-release-Hazelnut-opengl": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/Hazelnut/Hazelnut",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-release/RenderingReference-LocalLights.hproj",
+        "--opengl",
+        "--no-restore"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.3798763749946374
+    },
+    "gallery-release-Nutella-metal": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/Nutella/Nutella",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-release/RenderingReference-LocalLights.hproj",
+        "--metal"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.7061889590113424,
+      "native": {
+        "status": "PASS",
+        "submitted": 66,
+        "completed": 66,
+        "positivePresentationsAtSnapshot": 64,
+        "completedPositivePresentationsAtSnapshot": 64
+      }
+    },
+    "gallery-release-Nutella-opengl": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/Nutella/Nutella",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-release/RenderingReference-LocalLights.hproj",
+        "--opengl"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.349731292022625
+    },
+    "performance-0-baseline": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/performance-0-baseline",
+        "--benchmark",
+        "--benchmark-focus",
+        "--backend",
+        "metal",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/baseline-resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.4506726669787895
+    },
+    "performance-0-current": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/performance-0-current",
+        "--benchmark",
+        "--benchmark-focus",
+        "--backend",
+        "metal",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.680632125004195
+    },
+    "performance-1-current": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/performance-1-current",
+        "--benchmark",
+        "--benchmark-focus",
+        "--backend",
+        "metal",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.633516999980202
+    },
+    "performance-1-baseline": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/performance-1-baseline",
+        "--benchmark",
+        "--benchmark-focus",
+        "--backend",
+        "metal",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/baseline-resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.394503792020259
+    },
+    "performance-2-baseline": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/performance-2-baseline",
+        "--benchmark",
+        "--benchmark-focus",
+        "--backend",
+        "metal",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/baseline-resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.390365541999927
+    },
+    "performance-2-current": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/performance-2-current",
+        "--benchmark",
+        "--benchmark-focus",
+        "--backend",
+        "metal",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.646808332996443
+    },
+    "package-gallery": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/hazel.py",
+        "package",
+        "--app",
+        "all",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-release/RenderingReference-LocalLights.hproj",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/archives"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 23.40959575001034
+    },
+    "relocation": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting_relocation.py",
+        "--archives",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/archives",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/relocation"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 11.252126375009539
+    }
+  },
+  "status": "PASS selected correction integration gates; HEAD frozen fixture failure and owner approval remain separate"
+}

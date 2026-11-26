@@ -1,0 +1,1318 @@
+{
+  "status": "INCOMPLETE pending owner visual approval; scoped native correction qualification PASS",
+  "baseline": "b49256001bd6d13422fa4c88d0a52a96ac3b5c42",
+  "branch": "feature/3d-foundations",
+  "qualificationWorkingTree": true,
+  "sourceSHA256": "46e975ee068a74ba4f8968006f544d64ddbbec0929b05bafe8a0c68e53ebf48d",
+  "metalArtifactSHA256": "3ef4f922246d9042b8b0b786e7f85aaf522bb60f83f38112cd108eca8703ce21",
+  "hardware": "Native Apple M4 Metal 4 and Apple OpenGL 4.1; no software GL",
+  "immutableFixtureRevision": "86c581c13fd5c944c2a06d720314a753d7607d8f",
+  "defaultHEADSuite": "FAIL pre-existing Frozen IBLQuality_v2 bytes changed; 16 Debug executables passed before RuntimeSessionSmoke failed. No reference bytes/hashes reset.",
+  "maintainedRegressions": "PASS all 18 collectively Debug and all 18 Release; final guarded shader reran all four affected graphics suites in both configurations. Unchanged CPU/2D gates retained.",
+  "rootCause": "Global replacement of the resolveShadingNormal horizon changed indirect N, reflected direction and view-energy lookup. Single-line ablation reproduces historical IBL failure without changing direct-light gates or BRDF.",
+  "policy": "Actual derivative normal for raster/IBL protection; continuous authored normal for direct surface horizon; mapped normal repaired separately for each consumer. One canonical BRDF; bounded map-only visibility. Unmapped identity fast path; indirect energy evaluated only inside uniform IBL-enable branch.",
+  "physicalLimit": "Smooth proxy may admit light behind a planar facet. Original gallery maximum face/vertex deviation 5.29579296 degrees, negative-face cosine extension bounded by 0.0922974744. Large authored deviations imply larger approximation. Silhouette/depth/picking remain polygonal. Map visibility is empirical, not a new reciprocal transport model.",
+  "ownerVisualApproval": "PENDING; no merge, release or shadows authorized by this qualification",
+  "platformGaps": [
+    "Windows/Linux native execution NOT RUN",
+    "Current-fix hosted platform CI NOT RUN",
+    "Physical multi-monitor NOT REQUIRED; four detached consumers tested on one display at native 1x/2x",
+    "OpenGL forward-pass timings NOT MEASURED; the accepted matched workload benchmark is Metal-only."
+  ],
+  "warnings": "No new first-party compiler or shader warnings identified. Existing ScriptableEntity unused ts, TextCompositingChecks missing BaseFace initializer and Xcode script-phase warnings retained.",
+  "rawEvidence": "build/qualification/terminator-finish; final runs under final/. Prior rejected experiments retained separately.",
+  "gates": {
+    "opengl-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/hazel.py",
+        "test",
+        "--config",
+        "Debug",
+        "--only",
+        "Renderer2DSmoke",
+        "--only",
+        "SceneGPUSmoke",
+        "--only",
+        "RuntimeSessionSmoke",
+        "--only",
+        "EditorSmoke"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 282.57266041700495
+    },
+    "native-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/native-debug",
+        "--smooth-terminator"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 25.132762207998894
+    },
+    "ggx-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/ggx_multiscattering.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/ggx-debug",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/ablation/reference/RenderingReference.hproj"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 249.8080762909958
+    },
+    "ao-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/xegtao.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/ao-debug",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 8.475475957995513
+    },
+    "taa-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/taa.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/taa-debug"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 20.51411029099836
+    },
+    "parity-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m4.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/parity-debug",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 112.00152791599976
+    },
+    "consumers-debug-1x": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m5.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/consumers-debug-1x",
+        "--only",
+        "consumers"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 8.048140208993573
+    },
+    "consumers-debug-2x": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m5.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/consumers-debug-2x",
+        "--only",
+        "consumers",
+        "--native-2x"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 9.970475000009174
+    },
+    "shutdown-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m5.py",
+        "--config",
+        "Debug",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/shutdown-debug",
+        "--only",
+        "shutdown"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.8253126250056084
+    },
+    "views-debug": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/views-debug",
+        "--local-light-views",
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/Hazelnut/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 3.81586416598293
+    },
+    "gallery-scripts-debug": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/hazel.py",
+        "script-build",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-debug/RenderingReference-LocalLights.hproj",
+        "--config",
+        "Debug"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.66842012500274
+    },
+    "gallery-debug-Hazelnut-metal": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/Hazelnut/Hazelnut",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-debug/RenderingReference-LocalLights.hproj",
+        "--metal",
+        "--no-restore"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.2737487500126008,
+      "native": {
+        "status": "PASS",
+        "submitted": 74,
+        "completed": 74,
+        "positivePresentationsAtSnapshot": 69,
+        "completedPositivePresentationsAtSnapshot": 69
+      }
+    },
+    "gallery-debug-Hazelnut-opengl": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/Hazelnut/Hazelnut",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-debug/RenderingReference-LocalLights.hproj",
+        "--opengl",
+        "--no-restore"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.753255625022575
+    },
+    "gallery-debug-Nutella-metal": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/Nutella/Nutella",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-debug/RenderingReference-LocalLights.hproj",
+        "--metal"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.4667514579778071,
+      "native": {
+        "status": "PASS",
+        "submitted": 65,
+        "completed": 65,
+        "positivePresentationsAtSnapshot": 63,
+        "completedPositivePresentationsAtSnapshot": 63
+      }
+    },
+    "gallery-debug-Nutella-opengl": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/Nutella/Nutella",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-debug/RenderingReference-LocalLights.hproj",
+        "--opengl"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 5.085838333005086
+    },
+    "opengl-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/hazel.py",
+        "test",
+        "--config",
+        "Release",
+        "--only",
+        "Renderer2DSmoke",
+        "--only",
+        "SceneGPUSmoke",
+        "--only",
+        "RuntimeSessionSmoke",
+        "--only",
+        "EditorSmoke"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 56.44554958300432
+    },
+    "native-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/native-release",
+        "--smooth-terminator"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 6.550839832983911
+    },
+    "ggx-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/ggx_multiscattering.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/ggx-release",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/ablation/reference/RenderingReference.hproj"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 184.53644454097957
+    },
+    "ao-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/xegtao.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/ao-release",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 3.990962416981347
+    },
+    "taa-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/taa.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/taa-release"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 14.087566290982068
+    },
+    "parity-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m4.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/parity-release",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 35.479130958003225
+    },
+    "consumers-release-1x": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m5.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/consumers-release-1x",
+        "--only",
+        "consumers"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 7.958789999975124
+    },
+    "consumers-release-2x": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m5.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/consumers-release-2x",
+        "--only",
+        "consumers",
+        "--native-2x"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 9.358516125008464
+    },
+    "shutdown-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/metal_m5.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/shutdown-release",
+        "--only",
+        "shutdown"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.689872250019107
+    },
+    "views-release": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/views-release",
+        "--local-light-views",
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/Hazelnut/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 3.5665120409976225
+    },
+    "gallery-scripts-release": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/hazel.py",
+        "script-build",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-release/RenderingReference-LocalLights.hproj",
+        "--config",
+        "Release"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.5203709999914281
+    },
+    "gallery-release-Hazelnut-metal": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/Hazelnut/Hazelnut",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-release/RenderingReference-LocalLights.hproj",
+        "--metal",
+        "--no-restore"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.6977316249976866,
+      "native": {
+        "status": "PASS",
+        "submitted": 74,
+        "completed": 74,
+        "positivePresentationsAtSnapshot": 69,
+        "completedPositivePresentationsAtSnapshot": 69
+      }
+    },
+    "gallery-release-Hazelnut-opengl": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/Hazelnut/Hazelnut",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-release/RenderingReference-LocalLights.hproj",
+        "--opengl",
+        "--no-restore"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.3798763749946374
+    },
+    "gallery-release-Nutella-metal": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/Nutella/Nutella",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-release/RenderingReference-LocalLights.hproj",
+        "--metal"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 0.7061889590113424,
+      "native": {
+        "status": "PASS",
+        "submitted": 66,
+        "completed": 66,
+        "positivePresentationsAtSnapshot": 64,
+        "completedPositivePresentationsAtSnapshot": 64
+      }
+    },
+    "gallery-release-Nutella-opengl": {
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/Nutella/Nutella",
+        "--smoke-test",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-release/RenderingReference-LocalLights.hproj",
+        "--opengl"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 1.349731292022625
+    },
+    "performance-0-baseline": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/performance-0-baseline",
+        "--benchmark",
+        "--benchmark-focus",
+        "--backend",
+        "metal",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/baseline-resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.4506726669787895
+    },
+    "performance-0-current": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/performance-0-current",
+        "--benchmark",
+        "--benchmark-focus",
+        "--backend",
+        "metal",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.680632125004195
+    },
+    "performance-1-current": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/performance-1-current",
+        "--benchmark",
+        "--benchmark-focus",
+        "--backend",
+        "metal",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.633516999980202
+    },
+    "performance-1-baseline": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/performance-1-baseline",
+        "--benchmark",
+        "--benchmark-focus",
+        "--backend",
+        "metal",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/baseline-resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.394503792020259
+    },
+    "performance-2-baseline": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/performance-2-baseline",
+        "--benchmark",
+        "--benchmark-focus",
+        "--backend",
+        "metal",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/baseline-resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.390365541999927
+    },
+    "performance-2-current": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting.py",
+        "--config",
+        "Release",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/performance-2-current",
+        "--benchmark",
+        "--benchmark-focus",
+        "--backend",
+        "metal",
+        "--resources",
+        "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 4.646808332996443
+    },
+    "package-gallery": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/hazel.py",
+        "package",
+        "--app",
+        "all",
+        "--project",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/gallery-release/RenderingReference-LocalLights.hproj",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/archives"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 23.40959575001034
+    },
+    "relocation": {
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "/Volumes/External/kadencringle/Projects/Hazel/scripts/macos/local_lighting_relocation.py",
+        "--archives",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/archives",
+        "--output",
+        "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/relocation"
+      ],
+      "status": "PASS",
+      "returncode": 0,
+      "seconds": 11.252126375009539
+    }
+  },
+  "numeric": {
+    "sharedEdges": {
+      "status": "PASS analytic sphere cosine and FP64 radiance limits",
+      "failingEdges": 26,
+      "radianceCases": 156,
+      "maxRadianceLimitError": 0,
+      "maxBaselineRadianceJump": 0.03255331915452779,
+      "maxSphereCosineError": 0,
+      "maxMovingLightStep": 0.0030801404583687144,
+      "maximumFaceVertexDeviationDegrees": 5.29579296002465,
+      "maximumNegativeFaceCosine": 0.09229747441958826,
+      "minimumEdgeRadius": 0.497865783530552,
+      "sharedEdgeLimitError": 0,
+      "transformedLimitError": 0,
+      "positions": [
+        [
+          -3.5216444581747055,
+          2.0966767393863677,
+          0.2002624273300171
+        ],
+        [
+          -3.8092545699328184,
+          2.0966767393863677,
+          0.2978929132223129
+        ],
+        [
+          -3.8758901841938496,
+          2.0751150869644164,
+          0.30392593145370483
+        ],
+        [
+          -3.906037800014019,
+          2.053553434542465,
+          0.3164135068655014
+        ],
+        [
+          -3.937557451426983,
+          2.028967099717903,
+          0.3248591870069504
+        ],
+        [
+          -3.9699098616838455,
+          2.004380764893341,
+          0.32911843061447144
+        ],
+        [
+          -4.002541437745094,
+          1.9771904223478318,
+          0.32911840081214905
+        ],
+        [
+          -4.034893780946732,
+          1.9500000798023225,
+          0.3248591721057892
+        ],
+        [
+          -3.306351974606514,
+          1.9206709512389184,
+          0.058407364413142204
+        ],
+        [
+          -3.290036216378212,
+          1.8913418226755143,
+          0.030147617682814598
+        ],
+        [
+          -4.084073439240456,
+          1.8603757344997407,
+          0.33407361805438995
+        ],
+        [
+          -4.112333238124847,
+          1.829409646323967,
+          0.3177578002214432
+        ],
+        [
+          -3.256398096680641,
+          1.7652631723201753,
+          -0.032352463776980755
+        ],
+        [
+          -4.14497983455658,
+          1.7326316002322406,
+          0.30307869613170624
+        ],
+        [
+          -3.256398096680641,
+          1.6673685151649684,
+          -0.06498418375849724
+        ],
+        [
+          -3.264843761920929,
+          1.602663765183735,
+          -0.06387228518724442
+        ],
+        [
+          -3.2773313224315643,
+          1.570590528181839,
+          -0.09401983767747879
+        ],
+        [
+          -4.159154802560806,
+          1.5396244698083879,
+          0.23622578382492065
+        ],
+        [
+          -3.349290817975998,
+          1.4228097298062325,
+          -0.1073698103427887
+        ],
+        [
+          -4.0965611189603806,
+          1.3710330449855805,
+          0.1435503363609314
+        ],
+        [
+          -4.053925961256027,
+          1.3248850726402284,
+          0.12589027360081673
+        ],
+        [
+          -4.0376101434230804,
+          1.3033233904159547,
+          0.09763051569461823
+        ],
+        [
+          -3.963151752948761,
+          1.2525238566911698,
+          0.05711385793983936
+        ],
+        [
+          -3.9372633546590805,
+          1.238060297898102,
+          0.03724901843816042
+        ],
+        [
+          -3.909003607928753,
+          1.2275487207687379,
+          0.02093324437737465
+        ],
+        [
+          -3.8788560032844543,
+          1.2170371436393739,
+          0.008445671690809231
+        ]
+      ]
+    },
+    "iblAblation": {
+      "baseline": "b49256001bd6d13422fa4c88d0a52a96ac3b5c42",
+      "analytic": {
+        "baseline": {
+          "normal": [
+            -0.00999850038738316,
+            0.0,
+            0.9999500137456889
+          ],
+          "nv": 0.009998500387383164,
+          "reflectionGeometryCosine": 0.0
+        },
+        "resolve-only": {
+          "normal": [
+            -0.09950371902099893,
+            0.0,
+            0.9950371902099893
+          ],
+          "nv": -0.0795870593963428,
+          "reflectionGeometryCosine": -0.17838016911722504
+        },
+        "separated": {
+          "normal": [
+            -0.00999850038738316,
+            0.0,
+            0.9999500137456889
+          ],
+          "nv": 0.009998500387383164,
+          "reflectionGeometryCosine": 0.0
+        }
+      },
+      "configuration": "Debug",
+      "gates": {
+        "baseline": {
+          "returncode": 0,
+          "expected": 0,
+          "sourceSHA256": "786f616246c7c35ebe22a28299a42621c47b6133777d13737ec083beb8fbd478",
+          "command": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+            "--ibl-horizon"
+          ],
+          "status": "PASS"
+        },
+        "resolve-only": {
+          "returncode": 1,
+          "expected": 1,
+          "sourceSHA256": "188aafde8c671ecfd29cf45746361b8c9632fad7072bae8acc8402ab41426c37",
+          "command": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+            "--ibl-horizon"
+          ],
+          "status": "PASS expected failure reproduced"
+        },
+        "separated": {
+          "returncode": 0,
+          "expected": 0,
+          "sourceSHA256": "e03c5b5961eba81e4bb10eb9121625ec95806141114a94518668cae977b882cc",
+          "command": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+            "--ibl-horizon"
+          ],
+          "status": "PASS"
+        }
+      },
+      "status": "PASS localized to indirect resolve input; historical IBL checks unchanged"
+    },
+    "debug": {
+      "local": {
+        "smoothTerminator": true,
+        "terminator": false,
+        "head": "b49256001bd6d13422fa4c88d0a52a96ac3b5c42",
+        "configuration": "Debug",
+        "benchmark": false,
+        "sourceSHA256": "46e975ee068a74ba4f8968006f544d64ddbbec0929b05bafe8a0c68e53ebf48d",
+        "commands": {
+          "metal": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+            "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+            "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/native-debug/metal",
+            "--local-lights"
+          ],
+          "opengl": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+            "--local-lights",
+            "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/native-debug/opengl"
+          ]
+        },
+        "backends": {
+          "metal": {
+            "cases": 40,
+            "maximumFP64Error": 1.02809119742e-05,
+            "maximumOrderAndCullingError": 1.23977661133e-05,
+            "maximumOverflowTiles": 20
+          },
+          "opengl": {
+            "cases": 40,
+            "maximumFP64Error": 9.84876134069e-06,
+            "maximumOrderAndCullingError": 1.33514404297e-05,
+            "maximumOverflowTiles": 0
+          }
+        },
+        "showcaseParity": {
+          "idMismatches": 0,
+          "maxDepth": 1.7881393432617188e-07,
+          "maxRGB": 9.074807167053223e-06
+        },
+        "status": "PASS scoped numerical/culling/parity; full milestone gates are separate"
+      },
+      "ggx": {
+        "modelErrors": {
+          "metal": 7.92219890000112e-06,
+          "opengl": 1.2305225380000034e-05
+        },
+        "continuousModelErrors": {
+          "metal": 9.993186269999926e-05,
+          "opengl": 9.990578559999908e-05
+        },
+        "componentBackendMax": 8.660368620000154e-06,
+        "status": "PASS native numerical/components/parity/retirement; owner visual acceptance pending"
+      },
+      "furnaces": {
+        "metal": {
+          "direct": [
+            {
+              "rough": "1",
+              "NoV": "1",
+              "r": "0.999998849214",
+              "g": "0.999998849214",
+              "b": "0.999998849214"
+            }
+          ],
+          "smooth-normal": [
+            {
+              "rough": ".045",
+              "NoV": "1",
+              "r": "0.999996653584",
+              "g": "0.999996653584",
+              "b": "0.999996653584"
+            }
+          ],
+          "grazing": [
+            {
+              "rough": ".045",
+              "NoV": ".01",
+              "r": "0.99964943061",
+              "g": "0.99964943061",
+              "b": "0.99964943061"
+            }
+          ]
+        },
+        "opengl": {
+          "direct": [
+            {
+              "rough": "1",
+              "NoV": "1",
+              "r": "0.999998855362",
+              "g": "0.999998855362",
+              "b": "0.999998855362"
+            }
+          ],
+          "smooth-normal": [
+            {
+              "rough": ".045",
+              "NoV": "1",
+              "r": "0.999996597276",
+              "g": "0.999996597276",
+              "b": "0.999996597276"
+            }
+          ],
+          "grazing": [
+            {
+              "rough": ".045",
+              "NoV": ".01",
+              "r": "0.999634960765",
+              "g": "0.999634960765",
+              "b": "0.999634960765"
+            }
+          ]
+        }
+      },
+      "materials": {
+        "metal": {
+          "directCases": 216,
+          "indirectNormalReadbacks": 72,
+          "maximumRadianceError": 6.07627e-08,
+          "maximumIndirectNormalError": 1.57796e-07,
+          "normalScales": [
+            0,
+            1,
+            8
+          ],
+          "mirroredNonuniform": true,
+          "doubleSidedAndCulledBacks": true,
+          "cameraPositions": 3
+        },
+        "opengl": {
+          "directCases": 216,
+          "indirectNormalReadbacks": 72,
+          "maximumRadianceError": 6.17138e-08,
+          "maximumIndirectNormalError": 1.98831e-07,
+          "normalScales": [
+            0,
+            1,
+            8
+          ],
+          "mirroredNonuniform": true,
+          "doubleSidedAndCulledBacks": true,
+          "cameraPositions": 3
+        }
+      },
+      "productionParity": {
+        "captures": 135,
+        "idMismatches": 0,
+        "maxDepthError": 1.7881393432617188e-07,
+        "status": "PASS runner bounds"
+      }
+    },
+    "release": {
+      "local": {
+        "smoothTerminator": true,
+        "terminator": false,
+        "head": "b49256001bd6d13422fa4c88d0a52a96ac3b5c42",
+        "configuration": "Release",
+        "benchmark": false,
+        "sourceSHA256": "46e975ee068a74ba4f8968006f544d64ddbbec0929b05bafe8a0c68e53ebf48d",
+        "commands": {
+          "metal": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+            "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+            "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/native-release/metal",
+            "--local-lights"
+          ],
+          "opengl": [
+            "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+            "--local-lights",
+            "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/native-release/opengl"
+          ]
+        },
+        "backends": {
+          "metal": {
+            "cases": 40,
+            "maximumFP64Error": 1.02809119742e-05,
+            "maximumOrderAndCullingError": 1.23977661133e-05,
+            "maximumOverflowTiles": 20
+          },
+          "opengl": {
+            "cases": 40,
+            "maximumFP64Error": 9.84876134069e-06,
+            "maximumOrderAndCullingError": 1.33514404297e-05,
+            "maximumOverflowTiles": 0
+          }
+        },
+        "showcaseParity": {
+          "idMismatches": 0,
+          "maxDepth": 1.7881393432617188e-07,
+          "maxRGB": 9.074807167053223e-06
+        },
+        "status": "PASS scoped numerical/culling/parity; full milestone gates are separate"
+      },
+      "ggx": {
+        "modelErrors": {
+          "metal": 7.92219890000112e-06,
+          "opengl": 1.2305225380000034e-05
+        },
+        "continuousModelErrors": {
+          "metal": 9.993186269999926e-05,
+          "opengl": 9.990578559999908e-05
+        },
+        "componentBackendMax": 8.660368620000154e-06,
+        "status": "PASS native numerical/components/parity/retirement; owner visual acceptance pending"
+      },
+      "furnaces": {
+        "metal": {
+          "direct": [
+            {
+              "rough": "1",
+              "NoV": "1",
+              "r": "0.999998849214",
+              "g": "0.999998849214",
+              "b": "0.999998849214"
+            }
+          ],
+          "smooth-normal": [
+            {
+              "rough": ".045",
+              "NoV": "1",
+              "r": "0.999996653584",
+              "g": "0.999996653584",
+              "b": "0.999996653584"
+            }
+          ],
+          "grazing": [
+            {
+              "rough": ".045",
+              "NoV": ".01",
+              "r": "0.99964943061",
+              "g": "0.99964943061",
+              "b": "0.99964943061"
+            }
+          ]
+        },
+        "opengl": {
+          "direct": [
+            {
+              "rough": "1",
+              "NoV": "1",
+              "r": "0.999998855362",
+              "g": "0.999998855362",
+              "b": "0.999998855362"
+            }
+          ],
+          "smooth-normal": [
+            {
+              "rough": ".045",
+              "NoV": "1",
+              "r": "0.999996597276",
+              "g": "0.999996597276",
+              "b": "0.999996597276"
+            }
+          ],
+          "grazing": [
+            {
+              "rough": ".045",
+              "NoV": ".01",
+              "r": "0.999634960765",
+              "g": "0.999634960765",
+              "b": "0.999634960765"
+            }
+          ]
+        }
+      },
+      "materials": {
+        "metal": {
+          "directCases": 216,
+          "indirectNormalReadbacks": 72,
+          "maximumRadianceError": 6.07627e-08,
+          "maximumIndirectNormalError": 1.57796e-07,
+          "normalScales": [
+            0,
+            1,
+            8
+          ],
+          "mirroredNonuniform": true,
+          "doubleSidedAndCulledBacks": true,
+          "cameraPositions": 3
+        },
+        "opengl": {
+          "directCases": 216,
+          "indirectNormalReadbacks": 72,
+          "maximumRadianceError": 6.17138e-08,
+          "maximumIndirectNormalError": 1.98831e-07,
+          "normalScales": [
+            0,
+            1,
+            8
+          ],
+          "mirroredNonuniform": true,
+          "doubleSidedAndCulledBacks": true,
+          "cameraPositions": 3
+        }
+      },
+      "productionParity": {
+        "captures": 135,
+        "idMismatches": 0,
+        "maxDepthError": 1.7881393432617188e-07,
+        "status": "PASS runner bounds"
+      }
+    }
+  },
+  "performance": {
+    "scope": "Release native Metal, 1920x1080, tiled 16, same executable and unmapped cube. Alternating point/spot sources. AO/TAA off. GPU validation disabled. Serialized offscreen completion/readback; no presentation pacing claim.",
+    "warmupPerCase": 5,
+    "samplesPerRun": 20,
+    "repeats": 3,
+    "cases": {
+      "32 sparse": {
+        "forwardGPUms": {
+          "baseline": {
+            "samples": 60,
+            "median": 1.892166666665,
+            "p95": 2.03445833333
+          },
+          "current": {
+            "samples": 60,
+            "median": 2.019541666665,
+            "p95": 2.30579166667
+          }
+        },
+        "runs": {
+          "baseline": [
+            {
+              "median": 1.92147916667,
+              "p95": 2.04175
+            },
+            {
+              "median": 1.8442083333350001,
+              "p95": 2.02791666667
+            },
+            {
+              "median": 1.8672499999999999,
+              "p95": 2.02070833333
+            }
+          ],
+          "current": [
+            {
+              "median": 2.0442708333299997,
+              "p95": 2.18170833333
+            },
+            {
+              "median": 1.9972499999999997,
+              "p95": 2.30579166667
+            },
+            {
+              "median": 2.0369375,
+              "p95": 2.25758333333
+            }
+          ]
+        },
+        "medianPercentChange": 6.731700872022128
+      },
+      "128 sparse": {
+        "forwardGPUms": {
+          "baseline": {
+            "samples": 60,
+            "median": 3.88202083333,
+            "p95": 4.16108333333
+          },
+          "current": {
+            "samples": 60,
+            "median": 4.197520833335,
+            "p95": 4.36020833333
+          }
+        },
+        "runs": {
+          "baseline": [
+            {
+              "median": 3.89808333333,
+              "p95": 4.35308333333
+            },
+            {
+              "median": 3.8500625,
+              "p95": 4.16108333333
+            },
+            {
+              "median": 3.8753333333300004,
+              "p95": 3.96345833333
+            }
+          ],
+          "current": [
+            {
+              "median": 4.180166666665,
+              "p95": 4.35991666667
+            },
+            {
+              "median": 4.197520833335,
+              "p95": 4.35108333333
+            },
+            {
+              "median": 4.22097916667,
+              "p95": 4.43166666667
+            }
+          ]
+        },
+        "medianPercentChange": 8.127210377033546
+      },
+      "320 dense": {
+        "forwardGPUms": {
+          "baseline": {
+            "samples": 60,
+            "median": 139.1846875,
+            "p95": 146.348291667
+          },
+          "current": {
+            "samples": 60,
+            "median": 147.15975,
+            "p95": 156.871125
+          }
+        },
+        "runs": {
+          "baseline": [
+            {
+              "median": 139.402125,
+              "p95": 146.052541667
+            },
+            {
+              "median": 139.2493541665,
+              "p95": 145.003416667
+            },
+            {
+              "median": 137.6633958335,
+              "p95": 147.299875
+            }
+          ],
+          "current": [
+            {
+              "median": 149.9665833335,
+              "p95": 157.971333333
+            },
+            {
+              "median": 146.1836875,
+              "p95": 155.5325
+            },
+            {
+              "median": 147.77612499999998,
+              "p95": 155.96025
+            }
+          ]
+        },
+        "medianPercentChange": 5.729841869278918
+      }
+    },
+    "historicalAcceptedBaselineGPUms": {
+      "32 sparse": 1.71395833333,
+      "128 sparse": 3.868875,
+      "320 dense": 138.81825
+    },
+    "investigation": "Unmapped identity path avoids per-light visibility. Moving IBL normal/energy after direct loop alone did not establish a useful dense-case gain. Uniformly guarding unused IBL energy reduced single-probe medians from 2.106/4.369/153.350 to 2.009/4.218/149.497 ms; final paired data above. No fixed performance budget or speedup is asserted."
+  },
+  "publicDocs": {
+    "status": "PASS",
+    "markdownFiles": 88,
+    "localLinksAndImages": 756,
+    "findings": 0,
+    "CI": "Current fix NOT RUN; existing workflow/badges remain branch-scoped as documented."
+  },
+  "builds": {
+    "status": "PASS",
+    "configurations": [
+      "Debug",
+      "Release"
+    ],
+    "scope": "Full MacOSQualification plus focused final test-header builds; final canonical GLSL offline generation and application staging verified.",
+    "newFirstPartyWarnings": 0,
+    "evidence": [
+      "build/qualification/terminator-finish/integration/build-Debug.log",
+      "build/qualification/terminator-finish/build-release.log",
+      "build/qualification/terminator-finish/build-probe-api-debug.log",
+      "build/qualification/terminator-finish/build-probe-api-release.log",
+      "build/qualification/terminator-finish/final/shader-production.log",
+      "build/qualification/terminator-finish/final/staging.log"
+    ]
+  },
+  "ownerEditsPreserved": {
+    "examples/RenderingReference/Assets/Scenes/XeGTAO-Contact.hazel": "e53842c6fdeeb5f5fc66de0ef9d4070914db085a072e8f2c925c962a8998a457",
+    "examples/RenderingReference/RenderingReference-XeGTAO.hproj": "5ace86dc33340527f048dfccdf2b6fc11a7c4a94eab42b1f6b517602b0c014c8"
+  },
+  "exportedArtifactMatchesCanonical": {
+    "Hazelnut": true,
+    "Nutella": true
+  }
+}

@@ -266,8 +266,16 @@ static void DirectPBRChecks()
                 "Independent raw signed TBN / geometric / resolved normal");
         frame.Debug=SurfaceView::Shaded;render();
         auto base = glm::dvec3(material->BaseColor) * glm::dvec3(.5, .25, .125);
+        // Direct lighting uses the continuous authored horizon. The probe
+        // above independently retains the accepted indirect geometric repair.
+        const auto directNormal = GeometricNormalReference(mapped, n, {0, 0, 1});
+        const glm::dvec3 light(frame.Light->ToLight);
+        const double cosine = glm::dot(n, light);
+        const double projected = glm::dot(directNormal, light) * glm::dot(n, directNormal);
+        const double g = cosine <= 0 ? 0 : cosine >= projected ? 1 : cosine / projected;
+        const double visibility = g + g*g - g*g*g;
         NearRGB(view.Radiance->ReadColorPixel(0, 64, 64),
-                OracleMultiscatteringBRDF(base, 0, .5, resolved, {0, 0, 1}, glm::dvec3(frame.Light->ToLight)) * 2.,
+                OracleMultiscatteringBRDF(base, 0, .5, directNormal, {0, 0, 1}, light) * (2. * visibility),
                 .002, "Independent tilted normal / nonuniform signed TBN / linear COLOR0");
     }
     frame.Meshes[0].Geometry = mesh.Accepted;

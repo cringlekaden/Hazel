@@ -1,0 +1,6 @@
+{
+  "brdf": "9443aa3a21defd0c3d5242b442dcc72aa48802ffef26e95c383586e4123e9ac6",
+  "iblRepair": "ab77f1b5e16adb5cf2fc49144264d17438816bc4ab3b7e4420ca9be4128201d2",
+  "iblLightingBodyIgnoringIndentation": "e2a71fe4f2042bdf8f5dfb9fb1a6bbf55a252717394e459fd85a73b68c546ca8",
+  "iblEnergyScheduling": "Same constructor and inputs, now inside uniform IBL-enabled branch, before the unchanged geometric view gate."
+}

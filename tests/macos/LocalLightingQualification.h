@@ -1,5 +1,6 @@
 #pragma once
 #include "Renderer3DParity.h"
+#include "../migration/GeometricNormalReference.h"
 #include "Hazel/Scene/SceneSerializer.h"
 #include <iomanip>
 #include <algorithm>
@@ -46,7 +47,7 @@ inline void LocalLightingQualification(const std::filesystem::path &output,
     SubmittedMesh draw;draw.Geometry=mesh.Accepted;draw.Materials={material};draw.Picking=4242;frame.Meshes={draw};
     SceneRenderView view;frame.LocalMetrics=view.LocalMetrics;
     auto render=[&](SurfaceView debug) {
-        frame.Debug=debug;frame.LinearLightingInspection=true;target->Bind();
+        frame.Debug=debug;frame.LinearLightingInspection=debug!=SurfaceView::Normal;target->Bind();
         if(RendererAPI::GetAPI()==RendererAPI::API::Metal)target->Clear({0,0,0,1});
         else {RenderCommand::SetClearColor({0,0,0,1});RenderCommand::Clear();}
         target->ClearAttachment(1,-1);SceneRenderer::Render(frame,view,target,[]{},[]{});
@@ -60,6 +61,9 @@ inline void LocalLightingQualification(const std::filesystem::path &output,
         for(auto extent:{glm::uvec2(1280,720),glm::uvec2(1920,1080)})for(unsigned count:{0u,1u,8u,32u,128u,256u,320u})
           for(bool sparse:{false,true})for(bool culling:{false,true})for(unsigned tileSize:{16u,32u}) {
             if(!culling && tileSize==32)continue;
+            if(FileSystem::GetEnvironmentPath("HAZEL_LOCAL_BENCHMARK")=="terminator" &&
+                (extent.x!=1920 || !culling || tileSize!=16 ||
+                 !((count==32 && sparse) || (count==128 && sparse) || (count==320 && !sparse))))continue;
             if(FileSystem::GetEnvironmentPath("HAZEL_LOCAL_BENCHMARK")=="zero" && count)continue;
             target->Resize(extent.x,extent.y);
             auto scene=CreateRef<Scene>();scene->Presentation().SceneReferred=true;
@@ -156,6 +160,250 @@ inline void LocalLightingQualification(const std::filesystem::path &output,
         for(unsigned c=0;c<3;++c)if(!std::isfinite(result->Color[center][c]) ||
             std::abs(result->Color[center][c]-expected[c])>.003+2e-5*std::abs(expected[c]))
             throw std::runtime_error("Local near-source/range FP64 oracle failed at "+std::to_string(distance));
+    }
+    if (!FileSystem::GetEnvironmentPath("HAZEL_LOCAL_TERMINATOR_DIAGNOSTIC").empty()) {
+        // The front face is analytic (+Z). Tilt its shading normals toward a
+        // light crossing the geometric horizon while keeping N.V and N.L positive.
+        auto tilted = CreateRef<MeshAsset>(*mesh.Accepted);
+        ++tilted->Generation;
+        for (auto &vertex : tilted->Geometry.Vertices)
+            if (vertex.Normal.z > .99f) {
+                vertex.Normal = glm::vec3(.5f, 0, std::sqrt(.75f));
+                const glm::vec3 tangent(vertex.Tangent);
+                vertex.Tangent = glm::vec4(glm::normalize(tangent - vertex.Normal * glm::dot(vertex.Normal, tangent)),
+                    vertex.Tangent.w);
+            }
+        frame.Meshes[0].Geometry = tilted;
+        for (float metallic : {0.f, 1.f}) {
+            material->Metallic = metallic;
+            for (bool spot : {false, true}) {
+                SubmittedLocalLight source;
+                source.Range = 4;
+                source.Incident = glm::vec3(1);
+                if (spot) {
+                    source.Direction = {-1, 0, 0};
+                    source.InnerCos = .9f;
+                    source.OuterCos = .8f;
+                }
+                const auto sample = [&](float height) {
+                    source.Position = glm::vec3(centerPosition) + glm::vec3(1, 0, height);
+                    frame.LocalLights = {source};
+                    const auto lit = render(SurfaceView::Direct);
+                    if (lit->Entity[center] != draw.Picking || lit->Depth[center] != positions->Depth[center])
+                        throw std::runtime_error("Terminator fixture changed center ID/depth");
+                    return lit->Color[center].r;
+                };
+                const float lit = sample(.1f), grazing = sample(.001f), behind = sample(-.001f);
+                std::cout << "LOCAL_TERMINATOR metal=" << metallic << " spot=" << spot
+                          << " lit=" << lit << " grazing=" << grazing << " behind=" << behind << std::endl;
+                if (!(lit > .001f && grazing >= 0 && grazing < lit * .03f && behind == 0))
+                    throw std::runtime_error("Local geometric horizon must approach zero continuously");
+            }
+        }
+        frame.Meshes[0].Geometry = mesh.Accepted;
+    }
+    if (!FileSystem::GetEnvironmentPath("HAZEL_SMOOTH_TERMINATOR_DIAGNOSTIC").empty()) {
+        auto sphere = assets->Mesh("Reference/Direct_v1/Sphere.hmesh");
+        if (!sphere.Accepted) throw std::runtime_error(sphere.Error);
+        for (unsigned segments : {0u, 16u, 64u}) for (bool perspective : {false, true}) {
+        auto geometry = CreateRef<MeshAsset>(*sphere.Accepted);
+        geometry->Generation += 10000 + segments * 2 + unsigned(perspective);
+        if (segments) {
+            auto &data = geometry->Geometry;
+            data.Vertices.clear(); data.Indices.clear();
+            const unsigned rings = segments / 2;
+            for (unsigned row = 0; row <= rings; ++row) for (unsigned column = 0; column <= segments; ++column) {
+                const double latitude = -glm::pi<double>() / 2 + glm::pi<double>() * row / rings;
+                const double longitude = 2 * glm::pi<double>() * column / segments;
+                MeshVertex vertex;
+                vertex.Normal = {std::cos(latitude)*std::cos(longitude), std::sin(latitude),
+                    std::cos(latitude)*std::sin(longitude)};
+                vertex.Position = vertex.Normal * .5f;
+                vertex.Tangent = glm::vec4(-std::sin(longitude), 0, std::cos(longitude), 1);
+                data.Vertices.push_back(vertex);
+            }
+            for (unsigned row = 0; row < rings; ++row) for (unsigned column = 0; column < segments; ++column) {
+                const unsigned a = row * (segments + 1) + column, b = a + segments + 1;
+                if (row) data.Indices.insert(data.Indices.end(), {a, b, a+1});
+                if (row + 1 < rings) data.Indices.insert(data.Indices.end(), {a+1, b, b+1});
+            }
+            data.Primitives.resize(1);
+            data.Primitives[0].FirstIndex = 0;
+            data.Primitives[0].IndexCount = uint32_t(data.Indices.size());
+            data.UpdateBounds();
+        }
+        frame.Meshes[0].Geometry = geometry;
+        frame.Camera.Orthographic = !perspective;
+        frame.Camera.Position = {0, 0, 3};
+        frame.Camera.ViewProjection = (perspective ? glm::perspective(.9f, 257.f/193.f, .1f, 10.f) :
+            glm::ortho(-.8f,.8f,-.6f,.6f,.1f,10.f)) *
+            glm::lookAt(frame.Camera.Position, glm::vec3(0), glm::vec3(0,1,0));
+        target->Resize(257, 193);
+        const auto surfacePositions = render(SurfaceView::WorldPosition);
+        const auto faceNormals = render(SurfaceView::GeometricNormal);
+        unsigned crossedSamples = 0;
+        for (float metallic : {0.f, 1.f}) {
+            material->Metallic = metallic;
+            for (unsigned step = 0; step < 12; ++step) {
+                SubmittedLocalLight source;
+                source.Position = {1.5f, -.7f + float(step) * .13f, .1f};
+                source.Range = 4;
+                source.Incident = glm::vec3(.3f);
+                if (step % 2) {
+                    source.Direction = glm::normalize(-source.Position);
+                    source.InnerCos = std::cos(.5f);
+                    source.OuterCos = std::cos(.9f);
+                }
+                const bool directional = step >= 8;
+                frame.LocalLights = directional ? std::vector<SubmittedLocalLight>{} :
+                    std::vector<SubmittedLocalLight>{source};
+                frame.Light = directional ? std::optional<SubmittedDirectional>(
+                    SubmittedDirectional{glm::normalize(source.Position), source.Incident}) : std::nullopt;
+                const auto lit = render(SurfaceView::Direct);
+                if (metallic == 0 && segments == 0 && !perspective) {
+                    std::ofstream image(output / ("terminator-motion-" + std::to_string(step) + ".bin"),
+                        std::ios::binary);
+                    for (size_t pixel = 0; pixel < lit->Color.size(); ++pixel) {
+                        image.write(reinterpret_cast<const char*>(&lit->Color[pixel]), 16);
+                        image.write(reinterpret_cast<const char*>(&lit->Entity[pixel]), 4);
+                        image.write(reinterpret_cast<const char*>(&lit->Depth[pixel]), 4);
+                    }
+                }
+                for (size_t pixel = 0; pixel < lit->Color.size(); ++pixel) {
+                    if (surfacePositions->Entity[pixel] != draw.Picking) continue;
+                    const glm::dvec3 position(surfacePositions->Color[pixel]);
+                    const auto N = glm::normalize(position);
+                    const auto V = perspective ? glm::normalize(glm::dvec3(frame.Camera.Position) - position) :
+                        glm::dvec3(0, 0, 1);
+                    const double nv = glm::dot(N, V);
+                    if (nv < .05) continue;
+                    const auto delta = glm::dvec3(source.Position) - position;
+                    const double distance = glm::length(delta);
+                    const auto L = directional ? glm::normalize(glm::dvec3(source.Position)) : delta / distance;
+                    const double nl = glm::dot(N, L);
+                    glm::dvec3 expected(0);
+                    if (nl > 0) {
+                        double attenuation = directional ? 1 : LocalReferenceAttenuation(distance, source.Range);
+                        if (!directional && source.OuterCos >= 0)
+                            attenuation *= LocalReferenceCone(glm::dot(-L, glm::dvec3(source.Direction)),
+                                source.InnerCos, source.OuterCos);
+                        expected = ReferenceMultiscatteringBRDF(glm::dvec3(material->BaseColor), metallic, .5,
+                            N, V, L, ReferenceSampleRuntimeBRDF(brdf, nv, .5),
+                            ReferenceSampleRuntimeBRDF(brdf, nl, .5), average) *
+                            glm::dvec3(source.Incident) * attenuation;
+                        if (glm::dot(glm::dvec3(faceNormals->Color[pixel]), L) <= 0 &&
+                            expected.r > .0001) ++crossedSamples;
+                    }
+                    if (lit->Entity[pixel] != surfacePositions->Entity[pixel] ||
+                        lit->Depth[pixel] != surfacePositions->Depth[pixel])
+                        throw std::runtime_error("Smooth horizon changed IDs/depth");
+                    for (unsigned c = 0; c < 3; ++c)
+                        if (!std::isfinite(lit->Color[pixel][c]) ||
+                            std::abs(lit->Color[pixel][c] - expected[c]) > .0002 + .002 * std::abs(expected[c]))
+                            throw std::runtime_error("Analytic sphere horizon oracle failed");
+                }
+            }
+        }
+        if (crossedSamples < 10) throw std::runtime_error("Smooth horizon did not cross triangle horizons");
+        std::cout << "SMOOTH_TERMINATOR PASS analytic sphere, moving point/spot, crossed samples="
+                  << crossedSamples << " segments=" << segments << " perspective=" << perspective << std::endl;
+        }
+        // A single open face distinguishes real backfaces from closed-cube
+        // coverage. Split cube normals, material mapping and signed transforms
+        // have independent FP64 expectations, rather than image tolerances.
+        auto plane = CreateRef<MeshAsset>(*mesh.Accepted);
+        plane->Generation += 20000;
+        plane->Geometry.Vertices.resize(4);
+        plane->Geometry.Indices.resize(6);
+        plane->Geometry.Primitives[0].IndexCount = 6;
+        plane->Geometry.UpdateBounds();
+        target->Resize(65, 49);
+        frame.Meshes[0].Geometry = plane;
+        material->Metallic = 0;
+        unsigned checked = 0;
+        double maximumError = 0, maximumNormalError = 0;
+        for (bool smooth : {false, true}) for (float mapping : {0.f, 1.f, 8.f})
+        for (float mirror : {1.f, -1.f}) for (bool back : {false, true}) {
+            const auto authored = smooth ? glm::normalize(glm::dvec3(.3, .4, 1)) : glm::dvec3(0, 0, 1);
+            const auto tangent = glm::normalize(glm::dvec3(authored.z, 0, -authored.x));
+            ++plane->Generation;
+            for (auto &vertex : plane->Geometry.Vertices) {
+                vertex.Normal = glm::vec3(authored);
+                vertex.Tangent = glm::vec4(glm::vec3(tangent), 1);
+                vertex.UV = {.25f, .25f}; // Uniform +Y region, away from the fixture seam.
+            }
+            material->Textures[2].Image = mapping ? "Reference/Direct_v1/Surfaces/NormalPlusY.tga" : "";
+            material->NormalScale = mapping;
+            const auto world = glm::rotate(glm::mat4(1), back ? glm::pi<float>() : 0.f, glm::vec3(0,1,0)) *
+                glm::scale(glm::mat4(1), glm::vec3(mirror * .7f, 1.3f, .8f));
+            frame.Meshes[0].SetWorld(world);
+            const auto normalMatrix = glm::transpose(glm::inverse(glm::dmat3(world)));
+            auto surface = glm::normalize(normalMatrix * authored);
+            auto T = glm::dmat3(world) * tangent;
+            T = glm::normalize(T - surface * glm::dot(surface, T));
+            const auto B = glm::cross(surface, T) * double(mirror);
+            // Existing uniform data-normal fixture is RGB=(128,192,255).
+            auto mapped = mapping ? glm::normalize(T * ((2.*128/255-1)*mapping) +
+                B * ((2.*192/255-1)*mapping) + surface) : surface;
+            if (back) { surface = -surface; mapped = -mapped; }
+            for (unsigned camera = 0; camera < 3; ++camera) {
+                const auto eye = glm::vec3(.15f * float(camera), -.1f * float(camera), 3);
+                frame.Camera = {glm::ortho(-.8f,.8f,-.6f,.6f,.1f,10.f) *
+                    glm::lookAt(eye,glm::vec3(0),glm::vec3(0,1,0)), eye, glm::normalize(eye), true};
+                material->DoubleSided = false;
+                const auto single = render(SurfaceView::Direct);
+                if (back && single->Entity[center] != -1)
+                    throw std::runtime_error("Single-sided terminator backface was drawn");
+                material->DoubleSided = true;
+                const auto positionImage = render(SurfaceView::WorldPosition);
+                const auto V = glm::normalize(glm::dvec3(eye));
+                const auto resolved = GeometricNormalReference(mapped, surface, V);
+                auto geometric = glm::normalize(normalMatrix * glm::dvec3(0,0,1));
+                if (glm::dot(geometric,V) < 0) geometric = -geometric;
+                const auto indirect = GeometricNormalReference(mapped, geometric, V);
+                const auto normalImage = render(SurfaceView::Normal);
+                const auto actualNormal = glm::dvec3(normalImage->Color[center])*2.-1.;
+                const double normalError = glm::length(actualNormal-indirect);
+                maximumNormalError = std::max(maximumNormalError,normalError);
+                if (normalError > 2e-5 || glm::dot(glm::reflect(-V,actualNormal),geometric) < -2e-5)
+                    throw std::runtime_error("Direct terminator changed indirect geometric normal repair");
+                for (const auto direction : {glm::dvec3(1,0,.1), glm::dvec3(1,0,-.1), glm::dvec3(0,0,-1)}) {
+                    const auto L = glm::normalize(direction);
+                    frame.LocalLights.clear();
+                    frame.Light = SubmittedDirectional{glm::vec3(L), glm::vec3(.3f)};
+                    const auto lit = render(SurfaceView::Direct);
+                    const double cosine = glm::dot(surface, L), projected = glm::dot(resolved, L)*glm::dot(surface,resolved);
+                    const double g = cosine <= 0 ? 0 : cosine >= projected ? 1 : cosine / projected;
+                    glm::dvec3 expected(0);
+                    const double nv = glm::dot(resolved,V), nl = glm::dot(resolved,L);
+                    if (cosine > 0 && glm::dot(surface,V) > 0 && nv > 0 && nl > 0)
+                        expected = ReferenceMultiscatteringBRDF(glm::dvec3(material->BaseColor), 0, .5,
+                            resolved,V,L,ReferenceSampleRuntimeBRDF(brdf,nv,.5),
+                            ReferenceSampleRuntimeBRDF(brdf,nl,.5),average) * (.3*(g+g*g-g*g*g));
+                    if (lit->Entity[center] != draw.Picking || lit->Depth[center] != positionImage->Depth[center])
+                        throw std::runtime_error("Mapped/double-sided terminator changed ID/depth");
+                    for (unsigned c=0;c<3;++c) {
+                        const double error = std::abs(lit->Color[center][c]-expected[c]);
+                        maximumError = std::max(maximumError,error);
+                        if (!std::isfinite(lit->Color[center][c]) || error > .0002 + .002*std::abs(expected[c]))
+                            throw std::runtime_error("Mapped/double-sided terminator FP64 oracle failed smooth=" + std::to_string(smooth) +
+                                " mapping=" + std::to_string(mapping) + " mirror=" + std::to_string(mirror) +
+                                " back=" + std::to_string(back) + " camera=" + std::to_string(camera) +
+                                " lightZ=" + std::to_string(L.z) + " actual=" + std::to_string(lit->Color[center][c]) +
+                                " expected=" + std::to_string(expected[c]));
+                    }
+                    ++checked;
+                }
+            }
+        }
+        std::cout << "TERMINATOR_MATERIAL PASS cases=" << checked << " maximumError=" << maximumError << " indirectNormalError=" << maximumNormalError << std::endl;
+        material->DoubleSided = false;
+        material->NormalScale = 1;
+        material->Textures[2].Image.clear();
+        frame.Meshes[0].SetWorld(glm::mat4(1));
+        frame.Camera.ToCamera = {0,0,1};
+        frame.Meshes[0].Geometry = mesh.Accepted;
+        frame.Light.reset();
     }
     // Matched full-loop comparisons isolate culling through projection changes,
     // camera cuts, near intersections, object/light motion, tile edges and resize.

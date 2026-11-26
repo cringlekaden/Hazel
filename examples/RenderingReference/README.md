@@ -263,6 +263,11 @@ error and never truncates the submitted lights. Metal uses tiled compute culling
 a tile with more than 64 candidates evaluates the complete loop, preserving all
 contributions at higher shading cost. OpenGL 4.1 uses the bounded complete loop
 with the same GLSL BRDF/attenuation. Neither backend has local-light shadows yet.
+Direct-light transitions follow the unperturbed authored normals: smooth normals
+produce continuous lighting across triangle edges, while split/flat normals retain
+hard edges. Normal maps perturb the material response within that surface horizon.
+IBL keeps its geometric reflection-horizon protection. Polygonal silhouettes and
+occlusion geometry remain unchanged; see the linked correction record for limits.
 
 Maintainers can regenerate only this additive scene/project with
 `python3 tools/assets/generate_local_lighting.py`. See the

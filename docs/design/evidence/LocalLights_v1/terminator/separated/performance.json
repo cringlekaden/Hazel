@@ -1,0 +1,149 @@
+{
+  "scope": "Release native Metal, 1920x1080, tiled 16, same executable and unmapped cube. Alternating point/spot sources. AO/TAA off. GPU validation disabled. Serialized offscreen completion/readback; no presentation pacing claim.",
+  "warmupPerCase": 5,
+  "samplesPerRun": 20,
+  "repeats": 3,
+  "cases": {
+    "32 sparse": {
+      "forwardGPUms": {
+        "baseline": {
+          "samples": 60,
+          "median": 1.892166666665,
+          "p95": 2.03445833333
+        },
+        "current": {
+          "samples": 60,
+          "median": 2.019541666665,
+          "p95": 2.30579166667
+        }
+      },
+      "runs": {
+        "baseline": [
+          {
+            "median": 1.92147916667,
+            "p95": 2.04175
+          },
+          {
+            "median": 1.8442083333350001,
+            "p95": 2.02791666667
+          },
+          {
+            "median": 1.8672499999999999,
+            "p95": 2.02070833333
+          }
+        ],
+        "current": [
+          {
+            "median": 2.0442708333299997,
+            "p95": 2.18170833333
+          },
+          {
+            "median": 1.9972499999999997,
+            "p95": 2.30579166667
+          },
+          {
+            "median": 2.0369375,
+            "p95": 2.25758333333
+          }
+        ]
+      },
+      "medianPercentChange": 6.731700872022128
+    },
+    "128 sparse": {
+      "forwardGPUms": {
+        "baseline": {
+          "samples": 60,
+          "median": 3.88202083333,
+          "p95": 4.16108333333
+        },
+        "current": {
+          "samples": 60,
+          "median": 4.197520833335,
+          "p95": 4.36020833333
+        }
+      },
+      "runs": {
+        "baseline": [
+          {
+            "median": 3.89808333333,
+            "p95": 4.35308333333
+          },
+          {
+            "median": 3.8500625,
+            "p95": 4.16108333333
+          },
+          {
+            "median": 3.8753333333300004,
+            "p95": 3.96345833333
+          }
+        ],
+        "current": [
+          {
+            "median": 4.180166666665,
+            "p95": 4.35991666667
+          },
+          {
+            "median": 4.197520833335,
+            "p95": 4.35108333333
+          },
+          {
+            "median": 4.22097916667,
+            "p95": 4.43166666667
+          }
+        ]
+      },
+      "medianPercentChange": 8.127210377033546
+    },
+    "320 dense": {
+      "forwardGPUms": {
+        "baseline": {
+          "samples": 60,
+          "median": 139.1846875,
+          "p95": 146.348291667
+        },
+        "current": {
+          "samples": 60,
+          "median": 147.15975,
+          "p95": 156.871125
+        }
+      },
+      "runs": {
+        "baseline": [
+          {
+            "median": 139.402125,
+            "p95": 146.052541667
+          },
+          {
+            "median": 139.2493541665,
+            "p95": 145.003416667
+          },
+          {
+            "median": 137.6633958335,
+            "p95": 147.299875
+          }
+        ],
+        "current": [
+          {
+            "median": 149.9665833335,
+            "p95": 157.971333333
+          },
+          {
+            "median": 146.1836875,
+            "p95": 155.5325
+          },
+          {
+            "median": 147.77612499999998,
+            "p95": 155.96025
+          }
+        ]
+      },
+      "medianPercentChange": 5.729841869278918
+    }
+  },
+  "historicalAcceptedBaselineGPUms": {
+    "32 sparse": 1.71395833333,
+    "128 sparse": 3.868875,
+    "320 dense": 138.81825
+  },
+  "investigation": "Unmapped identity path avoids per-light visibility. Moving IBL normal/energy after direct loop alone did not establish a useful dense-case gain. Uniformly guarding unused IBL energy reduced single-probe medians from 2.106/4.369/153.350 to 2.009/4.218/149.497 ms; final paired data above. No fixed performance budget or speedup is asserted."
+}

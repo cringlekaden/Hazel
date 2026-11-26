@@ -1,0 +1,97 @@
+{
+  "configuration": "Debug",
+  "suite": "all",
+  "selected": [
+    "TypographySmoke",
+    "GameUIModelSmoke",
+    "GameUIIntegrationSmoke",
+    "ShaderToolsSmoke",
+    "ImportDependencySmoke",
+    "SpriteSmoke",
+    "SceneFoundationSmoke",
+    "ProjectPhysicsSmoke",
+    "MonoSmoke",
+    "SceneSmoke",
+    "CoreSmoke",
+    "RendererSmoke",
+    "RendererFeaturesSmoke",
+    "Renderer2DSmoke",
+    "FontSmoke",
+    "SceneGPUSmoke",
+    "RuntimeSessionSmoke",
+    "EditorSmoke"
+  ],
+  "tests": {
+    "TypographySmoke": {
+      "seconds": 1.435307792009553,
+      "returncode": 0
+    },
+    "GameUIModelSmoke": {
+      "seconds": 0.09057695901719853,
+      "returncode": 0
+    },
+    "GameUIIntegrationSmoke": {
+      "seconds": 10.50698674999876,
+      "returncode": 0
+    },
+    "ShaderToolsSmoke": {
+      "seconds": 0.7654795419948641,
+      "returncode": 0
+    },
+    "ImportDependencySmoke": {
+      "seconds": 0.057944250002037734,
+      "returncode": 0
+    },
+    "SpriteSmoke": {
+      "seconds": 2.6685824589803815,
+      "returncode": 0
+    },
+    "SceneFoundationSmoke": {
+      "seconds": 20.001723624998704,
+      "returncode": 0
+    },
+    "ProjectPhysicsSmoke": {
+      "seconds": 0.6104555419879034,
+      "returncode": 0
+    },
+    "MonoSmoke": {
+      "seconds": 0.07301075002760626,
+      "returncode": 0
+    },
+    "SceneSmoke": {
+      "seconds": 3.8102507920120843,
+      "returncode": 0
+    },
+    "CoreSmoke": {
+      "seconds": 5.2569244999904186,
+      "returncode": 0
+    },
+    "RendererSmoke": {
+      "seconds": 0.7435256250028033,
+      "returncode": 0
+    },
+    "RendererFeaturesSmoke": {
+      "seconds": 4.023759166011587,
+      "returncode": 0
+    },
+    "Renderer2DSmoke": {
+      "seconds": 125.75084879100905,
+      "returncode": 0
+    },
+    "FontSmoke": {
+      "seconds": 7.6010700420010835,
+      "returncode": 0
+    },
+    "SceneGPUSmoke": {
+      "seconds": 3.4224324169917963,
+      "returncode": 0
+    },
+    "RuntimeSessionSmoke": {
+      "seconds": 32.46397162502399,
+      "returncode": 1
+    }
+  },
+  "products": {},
+  "setupSeconds": 6.850801333988784,
+  "wallSeconds": 226.13942958400003
+}

@@ -1,0 +1,20 @@
+{
+  "status": "INCOMPLETE",
+  "productionShader": "restored byte-for-byte to b49256001bd6d13422fa4c88d0a52a96ac3b5c42",
+  "candidate": "rejected global authored-surface horizon",
+  "independent26Edges": "PASS analytic cosine continuity",
+  "nativeSphereOracle": "PASS Metal/OpenGL directional, moving point/spot; baseline FAIL",
+  "nativeGGX": "PASS scoped native numerical/components/parity/retirement",
+  "focusedXeGTAO": "PASS",
+  "focusedTAA": "PASS",
+  "rendererIntegration": "FAIL IBLSurfaceRenderingChecks geometric-horizon normal constraint",
+  "missingQualification": [
+    "controlled low/high tessellation GPU sweep",
+    "perspective and camera motion",
+    "double-sided GPU matrix",
+    "editor/player",
+    "source-free exports"
+  ],
+  "commitAndPush": "not performed because no qualified correction",
+  "ownerVisualApproval": "pending"
+}

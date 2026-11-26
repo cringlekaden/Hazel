@@ -1,0 +1,103 @@
+diff --git a/Hazel/Resources/shaders/ForwardPBR.glsl b/Hazel/Resources/shaders/ForwardPBR.glsl
+index a9864cb..02880c2 100644
+--- a/Hazel/Resources/shaders/ForwardPBR.glsl
++++ b/Hazel/Resources/shaders/ForwardPBR.glsl
+@@ -70,6 +70,16 @@ vec3 resolveShadingNormal(vec3 N,vec3 Ng,vec3 V){
+     else{si=sqrt(.5*(1+b/h));co=a/(2*h*si);}
+     return normalize(Ng*co+tangent*si);
+ }
++// Chiang et al. 2019, applied only to material-normal deviation from
++// the continuous authored surface. It is identity for unmapped normals.
++float surfaceVisibility(vec3 surfaceNormal,vec3 N,vec3 L){
++    float cosine=dot(surfaceNormal,L);
++    if(cosine<=0)return 0;
++    float projected=dot(N,L)*dot(surfaceNormal,N);
++    if(cosine>=projected)return 1;
++    float g=cosine/projected;
++    return g*(1+g*(1-g));
++}
+ // Multiscattering_v2: reciprocal Kulla-Conty plus scalar complementary diffuse.
+ // RG is RuntimeBRDF_v2 A/B; BA holds matching cosine-weighted means.
+ vec4 sampleBRDF(float nv,float rough){
+@@ -143,15 +153,20 @@ void main(){
+     if(u_Options.x<.5){
+         if((maps&4)!=0){vec3 sampleN=texture(u_Normal,v_UV).xyz*2-1;sampleN.xy*=u_Surface.z;if(dot(sampleN,sampleN)>1e-12)N=normalize(mat3(T,B,N)*normalize(sampleN));}
+         if(u_Options.w>.5&&!gl_FrontFacing)N=-N;
++        // The authored unperturbed normal defines the smooth surface horizon.
++        // Split vertex normals retain hard edges. Raster culling still owns
++        // actual backface coverage, including mirrored and two-sided draws.
++        vec3 surfaceNormal=baseNormal;
++        if(u_Options.w>.5&&!gl_FrontFacing)surfaceNormal=-surfaceNormal;
+         horizonProbe=vec3(dot(N,V),dot(geometricNormal,V),dot(N,V));
+-        N=resolveShadingNormal(N,geometricNormal,V);
++        N=resolveShadingNormal(N,surfaceNormal,V);
+         horizonProbe.z=dot(N,V);
+         float nv=clamp(dot(N,V),0,1),r=max(rough,.045);
+         vec3 f0=mix(vec3(.04),base.rgb,metal);
+         SurfaceEnergy energy=surfaceEnergy(f0,sampleBRDF(nv,r));
+         vec3 L=normalize(u_Light.xyz);
+-        if(dot(geometricNormal,V)>0&&dot(geometricNormal,L)>0)
+-            directTerm=direct(base.rgb,metal,rough,N,V,L,energy)*u_Incident.rgb;
++        if(dot(surfaceNormal,V)>0&&dot(surfaceNormal,L)>0)
++            directTerm=direct(base.rgb,metal,rough,N,V,L,energy)*u_Incident.rgb*surfaceVisibility(surfaceNormal,N,L);
+         vec3 directionalTerm=directTerm;
+         int localCount=int(u_LocalMeta.x),listCount=localCount;
+ #ifdef HZ_METAL
+@@ -162,7 +177,7 @@ void main(){
+         bool tiled=useTiles && tileCount<=64u;
+         if(tiled)listCount=int(tileCount);
+ #endif
+-        if(dot(geometricNormal,V)>0)for(int entry=0;entry<listCount;++entry){
++        if(dot(surfaceNormal,V)>0)for(int entry=0;entry<listCount;++entry){
+             int index=entry;
+ #ifdef HZ_METAL
+             if(tiled){int word=entry+1;uvec4 packed=texelFetch(u_LightTiles,ivec2(tile.x*17+word/4,tile.y),0);index=int(packed[word%4]);}
+@@ -172,7 +187,7 @@ void main(){
+             float distanceSquared=dot(delta,delta),rangeSquared=positionRange.w*positionRange.w;
+             if(distanceSquared>=rangeSquared || distanceSquared==0)continue;
+             vec3 localL=delta*inversesqrt(distanceSquared);
+-            if(dot(geometricNormal,localL)<=0)continue;
++            if(dot(surfaceNormal,localL)<=0)continue;
+             // Smooth finite range and smooth finite source core (one centimetre).
+             // No max-distance brightness step; the undefined direction at exact coincidence
+             // is assigned zero, with a continuous zero-energy limit inside the source core.
+@@ -184,7 +199,7 @@ void main(){
+                 attenuation*=cone*cone*(3-2*cone);
+             }
+             if(attenuation<=0)continue;
+-            directTerm+=direct(base.rgb,metal,rough,N,V,localL,energy)*incidentInner.rgb*attenuation;
++            directTerm+=direct(base.rgb,metal,rough,N,V,localL,energy)*incidentInner.rgb*attenuation*surfaceVisibility(surfaceNormal,N,localL);
+         }
+         localProbe=directTerm-directionalTerm;
+ #ifdef HZ_METAL
+diff --git a/tests/migration/DirectPBRChecks.h b/tests/migration/DirectPBRChecks.h
+index d695be4..6fa640a 100644
+--- a/tests/migration/DirectPBRChecks.h
++++ b/tests/migration/DirectPBRChecks.h
+@@ -258,16 +258,22 @@ static void DirectPBRChecks()
+         auto bitangent = glm::cross(n, tangent) * (sx < 0 ? 1. : -1.);
+         auto mapped = glm::normalize(tangent * (2. * 128 / 255 - 1) + bitangent + n);
+         auto geometric=rotate({0,0,1});
+-        auto resolved=GeometricNormalReference(mapped,geometric,{0,0,1});
+-        // Keep the signed/nonuniform raw TBN check independent of the new
+-        // geometric constraint, then evaluate the BRDF on the resolved normal.
++        auto resolved=GeometricNormalReference(mapped,n,{0,0,1});
++        // Retain the signed geometric probe while resolving mapped normals
++        // against the authored smooth surface under signed nonuniform scale.
+         frame.Debug=SurfaceView::NormalHorizon;render();
+         NearRGB(display->ReadColorPixel(0,64,64),{mapped.z,geometric.z,resolved.z},.002,
+                 "Independent raw signed TBN / geometric / resolved normal");
+         frame.Debug=SurfaceView::Shaded;render();
+         auto base = glm::dvec3(material->BaseColor) * glm::dvec3(.5, .25, .125);
++        const glm::dvec3 light(frame.Light->ToLight);
++        const double surfaceCosine = glm::dot(n, light);
++        const double projectedCosine = glm::dot(resolved, light) * glm::dot(n, resolved);
++        const double g = surfaceCosine <= 0 ? 0 :
++            surfaceCosine >= projectedCosine ? 1 : surfaceCosine / projectedCosine;
++        const double visibility = g + g*g - g*g*g;
+         NearRGB(view.Radiance->ReadColorPixel(0, 64, 64),
+-                OracleMultiscatteringBRDF(base, 0, .5, resolved, {0, 0, 1}, glm::dvec3(frame.Light->ToLight)) * 2.,
++                OracleMultiscatteringBRDF(base, 0, .5, resolved, {0, 0, 1}, light) * (2. * visibility),
+                 .002, "Independent tilted normal / nonuniform signed TBN / linear COLOR0");
+     }
+     frame.Meshes[0].Geometry = mesh.Accepted;

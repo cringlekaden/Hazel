@@ -1,0 +1,66 @@
+{
+  "baseline": "b49256001bd6d13422fa4c88d0a52a96ac3b5c42",
+  "analytic": {
+    "baseline": {
+      "normal": [
+        -0.00999850038738316,
+        0.0,
+        0.9999500137456889
+      ],
+      "nv": 0.009998500387383164,
+      "reflectionGeometryCosine": 0.0
+    },
+    "resolve-only": {
+      "normal": [
+        -0.09950371902099893,
+        0.0,
+        0.9950371902099893
+      ],
+      "nv": -0.0795870593963428,
+      "reflectionGeometryCosine": -0.17838016911722504
+    },
+    "separated": {
+      "normal": [
+        -0.00999850038738316,
+        0.0,
+        0.9999500137456889
+      ],
+      "nv": 0.009998500387383164,
+      "reflectionGeometryCosine": 0.0
+    }
+  },
+  "configuration": "Debug",
+  "gates": {
+    "baseline": {
+      "returncode": 0,
+      "expected": 0,
+      "sourceSHA256": "786f616246c7c35ebe22a28299a42621c47b6133777d13737ec083beb8fbd478",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+        "--ibl-horizon"
+      ],
+      "status": "PASS"
+    },
+    "resolve-only": {
+      "returncode": 1,
+      "expected": 1,
+      "sourceSHA256": "188aafde8c671ecfd29cf45746361b8c9632fad7072bae8acc8402ab41426c37",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+        "--ibl-horizon"
+      ],
+      "status": "PASS expected failure reproduced"
+    },
+    "separated": {
+      "returncode": 0,
+      "expected": 0,
+      "sourceSHA256": "e03c5b5961eba81e4bb10eb9121625ec95806141114a94518668cae977b882cc",
+      "command": [
+        "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+        "--ibl-horizon"
+      ],
+      "status": "PASS"
+    }
+  },
+  "status": "PASS localized to indirect resolve input; historical IBL checks unchanged"
+}

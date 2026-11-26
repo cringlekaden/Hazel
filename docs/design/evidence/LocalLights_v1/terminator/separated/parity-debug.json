@@ -1,0 +1,1383 @@
+{
+  "configuration": "Debug",
+  "head": "b49256001bd6d13422fa4c88d0a52a96ac3b5c42",
+  "captures": {
+    "Direct-OrthographicPBR-linear-10": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "d080fda45cb773553b4d5a5c7d64690ff39e0669c82bc7d0a2e6e417ec0f6bcb",
+      "openGLSHA256": "d080fda45cb773553b4d5a5c7d64690ff39e0669c82bc7d0a2e6e417ec0f6bcb",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-OrthographicPBR-linear-11": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "d080fda45cb773553b4d5a5c7d64690ff39e0669c82bc7d0a2e6e417ec0f6bcb",
+      "openGLSHA256": "d080fda45cb773553b4d5a5c7d64690ff39e0669c82bc7d0a2e6e417ec0f6bcb",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-OrthographicPBR-linear-12": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "bdda33c19293255f00a69712b123edfea9332aa765479203d1be2f09e71a54fb",
+      "openGLSHA256": "bdda33c19293255f00a69712b123edfea9332aa765479203d1be2f09e71a54fb",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-OrthographicPBR-linear-13": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxColorError": 1.1920928955078125e-07,
+      "maxFloorRelativeColorError": 2.1875706175139966e-07,
+      "nativeSHA256": "81de2888b50be351ddd353f1130d3456f9b929eb023ffb89e5aa65f576209fde",
+      "openGLSHA256": "ea8e00cdd97b3062e26835e1157d9d456fe129168c99cc0e2dbe58999dd22a48",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-OrthographicPBR-linear-14": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxColorError": 8.642673492431641e-07,
+      "maxFloorRelativeColorError": 3.699155764579386e-06,
+      "nativeSHA256": "9a592b6e1c2435cfc2c675fa51186ea8e9a59930d438e7ab968a40608a058435",
+      "openGLSHA256": "83dc59bbca823994214d4afecd601b5818bcc23eed7953c5c42ef5a16224ef9b",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-OrthographicPBR-linear-15": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxColorError": 8.642673492431641e-07,
+      "maxFloorRelativeColorError": 3.699155764579386e-06,
+      "nativeSHA256": "c07f06e01b06196edf7d2c3f8975b8c7cd14b493db6e5546964d8aea05c687e7",
+      "openGLSHA256": "a2bff13aba2a29f4f22f898b19555d405963f9ef15500521d0f9daa2828c9801",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-OrthographicPBR-linear-6": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxColorError": 1.996755599975586e-06,
+      "maxFloorRelativeColorError": 8.779844098798144e-06,
+      "nativeSHA256": "756ef3023f2a8f09a5a4228f9e888cef33049638ddae50990010d09d45b69557",
+      "openGLSHA256": "6dcebddacbe6b65771530430d516b2986d852226ca7600becbe53d44c8bcf2de",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-OrthographicPBR-linear-7": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "d080fda45cb773553b4d5a5c7d64690ff39e0669c82bc7d0a2e6e417ec0f6bcb",
+      "openGLSHA256": "d080fda45cb773553b4d5a5c7d64690ff39e0669c82bc7d0a2e6e417ec0f6bcb",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-OrthographicPBR-linear-8": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "d080fda45cb773553b4d5a5c7d64690ff39e0669c82bc7d0a2e6e417ec0f6bcb",
+      "openGLSHA256": "d080fda45cb773553b4d5a5c7d64690ff39e0669c82bc7d0a2e6e417ec0f6bcb",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-OrthographicPBR-linear-9": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "d080fda45cb773553b4d5a5c7d64690ff39e0669c82bc7d0a2e6e417ec0f6bcb",
+      "openGLSHA256": "d080fda45cb773553b4d5a5c7d64690ff39e0669c82bc7d0a2e6e417ec0f6bcb",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-OrthographicPBR": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxColorError": 0.00048738718032836914,
+      "maxDepthError": 0.0,
+      "nativeSHA256": "09258c248a0fe82bd0d1fc88f3ff0fa5019d5f2b07e6ee8a39f57e6aa4a4c3a9",
+      "openGLSHA256": "31c521313f93f51169bb3e5020f85084c8ad07c841e106c3df80ef13573fbec1",
+      "halfFloatBoundFailures": 0,
+      "maxEncoded8BitDelta": 1,
+      "colorBound": "3 FP16 ULP per channel plus 2e-5 FP32 shader bound; encoded RGB <= 1 level",
+      "verdict": "PASS"
+    },
+    "Direct-PerspectivePBR-linear-10": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "53b1185230c45042aab8162aad136ff482a11b3b461ad068a79d2a167d9a78e1",
+      "openGLSHA256": "04dd68f809c27f33eab4f90a41d633a27ea7488e4b0be86651b9a3288c4283fd",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectivePBR-linear-11": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "53b1185230c45042aab8162aad136ff482a11b3b461ad068a79d2a167d9a78e1",
+      "openGLSHA256": "04dd68f809c27f33eab4f90a41d633a27ea7488e4b0be86651b9a3288c4283fd",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectivePBR-linear-12": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "50a051b918ee1e95da5123237e1f795b01effd0a2f28cf461e67c62b35f1abd5",
+      "openGLSHA256": "edc7eaf717d6dc265978fc52bed0e1dd0d1ea892f8eeb4cee013ba6e0a395f51",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectivePBR-linear-13": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.1920928955078125e-07,
+      "maxFloorRelativeColorError": 2.283222050993253e-07,
+      "nativeSHA256": "bf09f9081e9144066e13192ece5a46a816d266d2a16bb8891bba171516eba3d1",
+      "openGLSHA256": "a4f4ce90f1f533988716897c20960e5dacbe95768539053ac2fc0357a1365792",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectivePBR-linear-14": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.8030405044555664e-06,
+      "maxFloorRelativeColorError": 1.658383616943537e-05,
+      "nativeSHA256": "201c723664bcec4ba4d15df4834694fce34e8471eb5eebff0500a46dc93ffd45",
+      "openGLSHA256": "f4727837e228142849f7bf885a084a083e34039486862248c9dd1aff44adbb76",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectivePBR-linear-15": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 5.093170329928398e-05,
+      "nativeSHA256": "b49200158d31d03a0ef15b494e1c13f8355e442de038f2447af245a73bc4ab92",
+      "openGLSHA256": "6613f6b3d496e08902918c4c162d9d0f40a4d49e3ab8a116f1d32b22ced4c8ee",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectivePBR-linear-6": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 4.827976226806641e-06,
+      "maxFloorRelativeColorError": 2.898581225803304e-05,
+      "nativeSHA256": "ae419380793171d147afc3d3f5cd252cbd3a82c4977d25b8637b86131bbedc58",
+      "openGLSHA256": "03d33048a2dd7cf2ff12717dbdee45e43df03a9619d34952f3e7720d36413c83",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectivePBR-linear-7": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "53b1185230c45042aab8162aad136ff482a11b3b461ad068a79d2a167d9a78e1",
+      "openGLSHA256": "04dd68f809c27f33eab4f90a41d633a27ea7488e4b0be86651b9a3288c4283fd",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectivePBR-linear-8": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "53b1185230c45042aab8162aad136ff482a11b3b461ad068a79d2a167d9a78e1",
+      "openGLSHA256": "04dd68f809c27f33eab4f90a41d633a27ea7488e4b0be86651b9a3288c4283fd",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectivePBR-linear-9": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "53b1185230c45042aab8162aad136ff482a11b3b461ad068a79d2a167d9a78e1",
+      "openGLSHA256": "04dd68f809c27f33eab4f90a41d633a27ea7488e4b0be86651b9a3288c4283fd",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectivePBR": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxColorError": 0.0004871487617492676,
+      "maxDepthError": 1.7881393432617188e-07,
+      "nativeSHA256": "8f29ba910ad1be2e7b39047be8a0830f9a0179dc9bd98af76e1b5bfd0f39d276",
+      "openGLSHA256": "a25bcffd9e49ce35b6baa5c4c16e841a83b3598ae23f99fccdfb87ea3a25dbd8",
+      "halfFloatBoundFailures": 0,
+      "maxEncoded8BitDelta": 1,
+      "colorBound": "3 FP16 ULP per channel plus 2e-5 FP32 shader bound; encoded RGB <= 1 level",
+      "verdict": "PASS"
+    },
+    "Direct-PerspectiveUnlit-linear-10": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "53b1185230c45042aab8162aad136ff482a11b3b461ad068a79d2a167d9a78e1",
+      "openGLSHA256": "04dd68f809c27f33eab4f90a41d633a27ea7488e4b0be86651b9a3288c4283fd",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectiveUnlit-linear-11": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "53b1185230c45042aab8162aad136ff482a11b3b461ad068a79d2a167d9a78e1",
+      "openGLSHA256": "04dd68f809c27f33eab4f90a41d633a27ea7488e4b0be86651b9a3288c4283fd",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectiveUnlit-linear-12": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "50a051b918ee1e95da5123237e1f795b01effd0a2f28cf461e67c62b35f1abd5",
+      "openGLSHA256": "edc7eaf717d6dc265978fc52bed0e1dd0d1ea892f8eeb4cee013ba6e0a395f51",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectiveUnlit-linear-13": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.1920928955078125e-07,
+      "maxFloorRelativeColorError": 2.283222050993253e-07,
+      "nativeSHA256": "bf09f9081e9144066e13192ece5a46a816d266d2a16bb8891bba171516eba3d1",
+      "openGLSHA256": "a4f4ce90f1f533988716897c20960e5dacbe95768539053ac2fc0357a1365792",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectiveUnlit-linear-14": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.8030405044555664e-06,
+      "maxFloorRelativeColorError": 1.658383616943537e-05,
+      "nativeSHA256": "201c723664bcec4ba4d15df4834694fce34e8471eb5eebff0500a46dc93ffd45",
+      "openGLSHA256": "f4727837e228142849f7bf885a084a083e34039486862248c9dd1aff44adbb76",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectiveUnlit-linear-15": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 5.093170329928398e-05,
+      "nativeSHA256": "2d3559416ce1a2303429805089a6e016f7fd507eab21adac6ea08a0b530941d1",
+      "openGLSHA256": "ed2503a64c745ab57d270fc83ef2e0f7980a5087101e4fc0dd3c4b242c70624d",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectiveUnlit-linear-6": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "53b1185230c45042aab8162aad136ff482a11b3b461ad068a79d2a167d9a78e1",
+      "openGLSHA256": "04dd68f809c27f33eab4f90a41d633a27ea7488e4b0be86651b9a3288c4283fd",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectiveUnlit-linear-7": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "53b1185230c45042aab8162aad136ff482a11b3b461ad068a79d2a167d9a78e1",
+      "openGLSHA256": "04dd68f809c27f33eab4f90a41d633a27ea7488e4b0be86651b9a3288c4283fd",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectiveUnlit-linear-8": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "53b1185230c45042aab8162aad136ff482a11b3b461ad068a79d2a167d9a78e1",
+      "openGLSHA256": "04dd68f809c27f33eab4f90a41d633a27ea7488e4b0be86651b9a3288c4283fd",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectiveUnlit-linear-9": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "53b1185230c45042aab8162aad136ff482a11b3b461ad068a79d2a167d9a78e1",
+      "openGLSHA256": "04dd68f809c27f33eab4f90a41d633a27ea7488e4b0be86651b9a3288c4283fd",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-PerspectiveUnlit": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxColorError": 1.7136335372924805e-05,
+      "maxDepthError": 1.7881393432617188e-07,
+      "nativeSHA256": "6f26dd6ec4c613fee200136026e7138e25094d9799e7cc2be3962279bad303f5",
+      "openGLSHA256": "726b9ba7fca72bf5e5e405a62765adc96ecbd1682f609ee71cf9b4054650c669",
+      "verdict": "PASS"
+    },
+    "Direct-SurfaceConventions-linear-10": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "81faed7bc8e4f925f3f000bd626127a99ad27531f1f88fbfdc56b8404d0100d0",
+      "openGLSHA256": "c07f4ea26539dea6b54aef7153e83df676adb5181600a98900842eb93271ba50",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-SurfaceConventions-linear-11": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "81faed7bc8e4f925f3f000bd626127a99ad27531f1f88fbfdc56b8404d0100d0",
+      "openGLSHA256": "c07f4ea26539dea6b54aef7153e83df676adb5181600a98900842eb93271ba50",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-SurfaceConventions-linear-12": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "02843d36afa09ab54878581c7c7f0c6d911ba48f6bbe21bdd6eddcd540f0b11d",
+      "openGLSHA256": "c2aa92a1adb948e002c5b0e090ed46aedcf0c29be56f7244b2c1b4f2d0e0266e",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-SurfaceConventions-linear-13": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.1920928955078125e-07,
+      "maxFloorRelativeColorError": 2.1718238433680643e-07,
+      "nativeSHA256": "65b60f59c37f1e27292ed919ae8f042775b85f44bbc9d6bcb9f6f983ce233317",
+      "openGLSHA256": "55bbd21bc96cee9f337828fd73b647342f2b07c4ea3f5663b79b4304613d6575",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-SurfaceConventions-linear-14": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.2814998626708984e-06,
+      "maxFloorRelativeColorError": 3.818422555923462e-05,
+      "nativeSHA256": "25541b88e7ca4ce00bc63b5e4205340735ad595bb9d376cc9a9cef6486ffecec",
+      "openGLSHA256": "3e32ecb0ab28828349cc95027f03fb2aa8b1bd90a0e8d9e0f40125b9dcd6dd54",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-SurfaceConventions-linear-15": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.1026859283447266e-06,
+      "maxFloorRelativeColorError": 3.3574178814888e-05,
+      "nativeSHA256": "3820df6b0fd5038b145643ae7ee4a49faa6098c28cf18c81d2f4bfa15ef40600",
+      "openGLSHA256": "327123ba93a17e2562f629e4eb818d1c8a54dda10eefed7f403f3668b6bbb390",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-SurfaceConventions-linear-6": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 2.473592758178711e-06,
+      "maxFloorRelativeColorError": 1.2397114456044035e-05,
+      "nativeSHA256": "07e358a416e1e18e0410a8293b149f706b984f0d43eca22bb922eccb2d57c56a",
+      "openGLSHA256": "d03657c7e439b6030fc8f8fc92d12c38f921614d302cd01eb154c4835e027c0b",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-SurfaceConventions-linear-7": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "81faed7bc8e4f925f3f000bd626127a99ad27531f1f88fbfdc56b8404d0100d0",
+      "openGLSHA256": "c07f4ea26539dea6b54aef7153e83df676adb5181600a98900842eb93271ba50",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-SurfaceConventions-linear-8": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "81faed7bc8e4f925f3f000bd626127a99ad27531f1f88fbfdc56b8404d0100d0",
+      "openGLSHA256": "c07f4ea26539dea6b54aef7153e83df676adb5181600a98900842eb93271ba50",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-SurfaceConventions-linear-9": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "81faed7bc8e4f925f3f000bd626127a99ad27531f1f88fbfdc56b8404d0100d0",
+      "openGLSHA256": "c07f4ea26539dea6b54aef7153e83df676adb5181600a98900842eb93271ba50",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "Direct-SurfaceConventions": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxColorError": 0.0004881620407104492,
+      "maxDepthError": 1.7881393432617188e-07,
+      "nativeSHA256": "feeaa64b110bfa1f3b478b4b5ce67ce0c7e6ff6104f6c72410c32894f89d2004",
+      "openGLSHA256": "1f0b4af7b2ff51c8ed27c5927bd1c6fbc9f054a3926a635326b58bcf8e14cc29",
+      "halfFloatBoundFailures": 0,
+      "maxEncoded8BitDelta": 1,
+      "colorBound": "3 FP16 ULP per channel plus 2e-5 FP32 shader bound; encoded RGB <= 1 level",
+      "verdict": "PASS"
+    },
+    "IBL-AxesYaw90-linear-10": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 3.808736801147461e-05,
+      "maxFloorRelativeColorError": 0.0003891365448487061,
+      "nativeSHA256": "dc4b4bec1e55f1caab44b4c0c4632650a6cccfce3d6ba657d4e258af5b48bf79",
+      "openGLSHA256": "40d6e961be50fa5be5725acfd501cbc0cdef13153028ef6ccf9505a57aadb4cb",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-AxesYaw90-linear-11": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 2.226136820585057e-05,
+      "nativeSHA256": "571bdba468041077b5ad9ad7ccd13cd67a97382e9fd53d77f4d8e51802b54bb2",
+      "openGLSHA256": "279cf9ab7243a9eaa2d50294bf56382e2143cdb1185442f99c4d99856ec7a21c",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-AxesYaw90-linear-12": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "b5940df4bdf19d1611533266eaaf2351f809d6172bdc7a84b2133863551e2cb1",
+      "openGLSHA256": "59c72e4420266f7e57c6f468d5b7e420b3237508c24cdacdf8d896a612d8ad3f",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-AxesYaw90-linear-13": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.1920928955078125e-07,
+      "maxFloorRelativeColorError": 2.283222050993253e-07,
+      "nativeSHA256": "7708e8992380e6b0ca907286cf183baec92276a025c4c3a789b1aad1d6dc5538",
+      "openGLSHA256": "b472c65d4a0a07b7f02739eb1982807961e2a39dc6733dfd857d8939229a8f6a",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-AxesYaw90-linear-14": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.8030405044555664e-06,
+      "maxFloorRelativeColorError": 1.658383616943537e-05,
+      "nativeSHA256": "1b6a1aafb4b85da274adce87b527ec1c66fcaf405fdcb7150ff3c8444e155983",
+      "openGLSHA256": "bd570d9c643d2964baf266ee34f7333fd37cdda5b5929c572e0f77c67a6b6864",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-AxesYaw90-linear-15": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 5.093170329928398e-05,
+      "nativeSHA256": "79fdf920093ec5939f3578d93d8a9da887c05e45a9ced687df1808fd89d0a59f",
+      "openGLSHA256": "86211b80fbd5b6b2b64eff133c2a50bb791ea3fbcabf46f3ae108f2168f8e946",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-AxesYaw90-linear-6": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "49e018265f012467d5bb18d7539fe226e6d580fc8d531278a3cb2a2af9b07b97",
+      "openGLSHA256": "4db55ccff5b0b402aab9c6582ba8043a059428a9425ba03fcec0d2bb65e3cf22",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-AxesYaw90-linear-7": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.5527009963989258e-05,
+      "maxFloorRelativeColorError": 0.0001334372402207759,
+      "nativeSHA256": "e30cc75266276ffc6767d47d56ae6722a47a147954e8967a0ce017e7151fbf6b",
+      "openGLSHA256": "36e008cd3ef03c723bdf3440d5ac7dc6d3227900810a26aa328580c7a9b32d89",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-AxesYaw90-linear-8": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.00029340386390686035,
+      "maxFloorRelativeColorError": 0.0009271840765058242,
+      "nativeSHA256": "234919b9a55f0da323f4f7cbfc0df34c4e4cf794d5031cda1dc0653d42071cd2",
+      "openGLSHA256": "0cbfb1492197bd721f3f91a780181b8d8c07e88ca9699d1d11257f690c94d87b",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-AxesYaw90-linear-9": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0009253025054931641,
+      "maxFloorRelativeColorError": 0.0010608598281207535,
+      "nativeSHA256": "a1cf471cc1e618fb83832aea455aa43f8456f16dcf35a03b812d50617df61204",
+      "openGLSHA256": "7443226c1b782b5fa724309bca6eef330005a3a808ec1af59fdae23a053013c0",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-AxesYaw90": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxColorError": 0.0005120038986206055,
+      "maxDepthError": 1.7881393432617188e-07,
+      "nativeSHA256": "4b50ef10ec415f66acc805f3277ed943da98dd0b9da1bc9aea725925339cac95",
+      "openGLSHA256": "b41794e26cabafa2fe1601160b44c612f90f14604ec2faa6a999e3ec298d0df4",
+      "halfFloatBoundFailures": 0,
+      "maxEncoded8BitDelta": 1,
+      "colorBound": "3 FP16 ULP per channel plus 2e-5 FP32 shader bound; encoded RGB <= 1 level",
+      "verdict": "PASS"
+    },
+    "IBL-Combined-linear-10": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 3.808736801147461e-05,
+      "maxFloorRelativeColorError": 0.0003891365448487061,
+      "nativeSHA256": "dc4b4bec1e55f1caab44b4c0c4632650a6cccfce3d6ba657d4e258af5b48bf79",
+      "openGLSHA256": "40d6e961be50fa5be5725acfd501cbc0cdef13153028ef6ccf9505a57aadb4cb",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Combined-linear-11": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 2.226136820585057e-05,
+      "nativeSHA256": "571bdba468041077b5ad9ad7ccd13cd67a97382e9fd53d77f4d8e51802b54bb2",
+      "openGLSHA256": "279cf9ab7243a9eaa2d50294bf56382e2143cdb1185442f99c4d99856ec7a21c",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Combined-linear-12": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "b5940df4bdf19d1611533266eaaf2351f809d6172bdc7a84b2133863551e2cb1",
+      "openGLSHA256": "59c72e4420266f7e57c6f468d5b7e420b3237508c24cdacdf8d896a612d8ad3f",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Combined-linear-13": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.1920928955078125e-07,
+      "maxFloorRelativeColorError": 2.283222050993253e-07,
+      "nativeSHA256": "7708e8992380e6b0ca907286cf183baec92276a025c4c3a789b1aad1d6dc5538",
+      "openGLSHA256": "b472c65d4a0a07b7f02739eb1982807961e2a39dc6733dfd857d8939229a8f6a",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Combined-linear-14": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.8030405044555664e-06,
+      "maxFloorRelativeColorError": 1.658383616943537e-05,
+      "nativeSHA256": "1b6a1aafb4b85da274adce87b527ec1c66fcaf405fdcb7150ff3c8444e155983",
+      "openGLSHA256": "bd570d9c643d2964baf266ee34f7333fd37cdda5b5929c572e0f77c67a6b6864",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Combined-linear-15": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 5.093170329928398e-05,
+      "nativeSHA256": "79fdf920093ec5939f3578d93d8a9da887c05e45a9ced687df1808fd89d0a59f",
+      "openGLSHA256": "86211b80fbd5b6b2b64eff133c2a50bb791ea3fbcabf46f3ae108f2168f8e946",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Combined-linear-6": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 4.827976226806641e-06,
+      "maxFloorRelativeColorError": 2.898581225803304e-05,
+      "nativeSHA256": "957e62b1d84c948ddebc28c0bb452a2e29827145612d50acbbf053d1d89ece9b",
+      "openGLSHA256": "a2cc4d64527d9a780ddf6f4a8b760dc1cb579caf8a80b33f1be5c877cb4dddb4",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Combined-linear-7": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 6.079673767089844e-06,
+      "maxFloorRelativeColorError": 8.530914783477783e-05,
+      "nativeSHA256": "aee3c208265c77a56806b7ffcd7a6155e52f42eed267575f09bef12db9ccefd3",
+      "openGLSHA256": "3c5927f5dbe7da8dba70e4e311f35e831f36fadf948a628c1cd5c4df1a131432",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Combined-linear-8": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 3.357604146003723e-05,
+      "maxFloorRelativeColorError": 0.0007549799737227097,
+      "nativeSHA256": "355f9baa8190f13a9be41cfea1019a861ad38e1e4317543c7a34db6b8f5c266e",
+      "openGLSHA256": "1d57ba0a3cb2cb267a204255032b36a4773ecb481c719a60379e34d8134bb7da",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Combined-linear-9": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0009251832962036133,
+      "maxFloorRelativeColorError": 0.0008243414509174291,
+      "nativeSHA256": "b948640670649f81dba410c48273371973185ae5eef57802c514e3d0b8412ef8",
+      "openGLSHA256": "97ca24fe51ee0cedf88bb78eeeb898e821e18be69ff1b7377d8fba7a6a996f2a",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Combined": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxColorError": 0.0005196332931518555,
+      "maxDepthError": 1.7881393432617188e-07,
+      "nativeSHA256": "bcf2b1be3c496df808efc5aa6f83507640fbce477603ccee034c554969c1e694",
+      "openGLSHA256": "da55fd7a1e3954accc7dc48e68303a2e60917aae782e2e526e2712b1af0988e2",
+      "halfFloatBoundFailures": 0,
+      "maxEncoded8BitDelta": 1,
+      "colorBound": "3 FP16 ULP per channel plus 2e-5 FP32 shader bound; encoded RGB <= 1 level",
+      "verdict": "PASS"
+    },
+    "IBL-DirectOnly-linear-10": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "49e018265f012467d5bb18d7539fe226e6d580fc8d531278a3cb2a2af9b07b97",
+      "openGLSHA256": "4db55ccff5b0b402aab9c6582ba8043a059428a9425ba03fcec0d2bb65e3cf22",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-DirectOnly-linear-11": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "49e018265f012467d5bb18d7539fe226e6d580fc8d531278a3cb2a2af9b07b97",
+      "openGLSHA256": "4db55ccff5b0b402aab9c6582ba8043a059428a9425ba03fcec0d2bb65e3cf22",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-DirectOnly-linear-12": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "b5940df4bdf19d1611533266eaaf2351f809d6172bdc7a84b2133863551e2cb1",
+      "openGLSHA256": "59c72e4420266f7e57c6f468d5b7e420b3237508c24cdacdf8d896a612d8ad3f",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-DirectOnly-linear-13": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.1920928955078125e-07,
+      "maxFloorRelativeColorError": 2.283222050993253e-07,
+      "nativeSHA256": "7708e8992380e6b0ca907286cf183baec92276a025c4c3a789b1aad1d6dc5538",
+      "openGLSHA256": "b472c65d4a0a07b7f02739eb1982807961e2a39dc6733dfd857d8939229a8f6a",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-DirectOnly-linear-14": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.8030405044555664e-06,
+      "maxFloorRelativeColorError": 1.658383616943537e-05,
+      "nativeSHA256": "1b6a1aafb4b85da274adce87b527ec1c66fcaf405fdcb7150ff3c8444e155983",
+      "openGLSHA256": "bd570d9c643d2964baf266ee34f7333fd37cdda5b5929c572e0f77c67a6b6864",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-DirectOnly-linear-15": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 5.093170329928398e-05,
+      "nativeSHA256": "79fdf920093ec5939f3578d93d8a9da887c05e45a9ced687df1808fd89d0a59f",
+      "openGLSHA256": "86211b80fbd5b6b2b64eff133c2a50bb791ea3fbcabf46f3ae108f2168f8e946",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-DirectOnly-linear-6": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 4.827976226806641e-06,
+      "maxFloorRelativeColorError": 2.898581225803304e-05,
+      "nativeSHA256": "957e62b1d84c948ddebc28c0bb452a2e29827145612d50acbbf053d1d89ece9b",
+      "openGLSHA256": "a2cc4d64527d9a780ddf6f4a8b760dc1cb579caf8a80b33f1be5c877cb4dddb4",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-DirectOnly-linear-7": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "49e018265f012467d5bb18d7539fe226e6d580fc8d531278a3cb2a2af9b07b97",
+      "openGLSHA256": "4db55ccff5b0b402aab9c6582ba8043a059428a9425ba03fcec0d2bb65e3cf22",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-DirectOnly-linear-8": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "49e018265f012467d5bb18d7539fe226e6d580fc8d531278a3cb2a2af9b07b97",
+      "openGLSHA256": "4db55ccff5b0b402aab9c6582ba8043a059428a9425ba03fcec0d2bb65e3cf22",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-DirectOnly-linear-9": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "49e018265f012467d5bb18d7539fe226e6d580fc8d531278a3cb2a2af9b07b97",
+      "openGLSHA256": "4db55ccff5b0b402aab9c6582ba8043a059428a9425ba03fcec0d2bb65e3cf22",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-DirectOnly": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxColorError": 0.0004871487617492676,
+      "maxDepthError": 1.7881393432617188e-07,
+      "nativeSHA256": "9439cb5b6eb517eb1ffcb4b238903cd94c0888ca46a326351b6b7970b8e433f2",
+      "openGLSHA256": "20e76f457c46a948d1c7d73167e0530456157db0e50a61116e85110bfec6e572",
+      "halfFloatBoundFailures": 0,
+      "maxEncoded8BitDelta": 1,
+      "colorBound": "3 FP16 ULP per channel plus 2e-5 FP32 shader bound; encoded RGB <= 1 level",
+      "verdict": "PASS"
+    },
+    "IBL-IBLOnly-linear-10": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 3.808736801147461e-05,
+      "maxFloorRelativeColorError": 0.0003891365448487061,
+      "nativeSHA256": "dc4b4bec1e55f1caab44b4c0c4632650a6cccfce3d6ba657d4e258af5b48bf79",
+      "openGLSHA256": "40d6e961be50fa5be5725acfd501cbc0cdef13153028ef6ccf9505a57aadb4cb",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-IBLOnly-linear-11": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 2.226136820585057e-05,
+      "nativeSHA256": "571bdba468041077b5ad9ad7ccd13cd67a97382e9fd53d77f4d8e51802b54bb2",
+      "openGLSHA256": "279cf9ab7243a9eaa2d50294bf56382e2143cdb1185442f99c4d99856ec7a21c",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-IBLOnly-linear-12": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "b5940df4bdf19d1611533266eaaf2351f809d6172bdc7a84b2133863551e2cb1",
+      "openGLSHA256": "59c72e4420266f7e57c6f468d5b7e420b3237508c24cdacdf8d896a612d8ad3f",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-IBLOnly-linear-13": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.1920928955078125e-07,
+      "maxFloorRelativeColorError": 2.283222050993253e-07,
+      "nativeSHA256": "7708e8992380e6b0ca907286cf183baec92276a025c4c3a789b1aad1d6dc5538",
+      "openGLSHA256": "b472c65d4a0a07b7f02739eb1982807961e2a39dc6733dfd857d8939229a8f6a",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-IBLOnly-linear-14": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.8030405044555664e-06,
+      "maxFloorRelativeColorError": 1.658383616943537e-05,
+      "nativeSHA256": "1b6a1aafb4b85da274adce87b527ec1c66fcaf405fdcb7150ff3c8444e155983",
+      "openGLSHA256": "bd570d9c643d2964baf266ee34f7333fd37cdda5b5929c572e0f77c67a6b6864",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-IBLOnly-linear-15": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 5.093170329928398e-05,
+      "nativeSHA256": "79fdf920093ec5939f3578d93d8a9da887c05e45a9ced687df1808fd89d0a59f",
+      "openGLSHA256": "86211b80fbd5b6b2b64eff133c2a50bb791ea3fbcabf46f3ae108f2168f8e946",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-IBLOnly-linear-6": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "49e018265f012467d5bb18d7539fe226e6d580fc8d531278a3cb2a2af9b07b97",
+      "openGLSHA256": "4db55ccff5b0b402aab9c6582ba8043a059428a9425ba03fcec0d2bb65e3cf22",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-IBLOnly-linear-7": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.3560056686401367e-06,
+      "maxFloorRelativeColorError": 1.1666390711655603e-05,
+      "nativeSHA256": "af743f0fad87e230ca43635ff9ef1c1f2f76b821f1e0324a70282b363f6a1f64",
+      "openGLSHA256": "a4aded0f87b609755b425c4d9c5906a8c25b05a04af4addd1c480c9d223893c7",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-IBLOnly-linear-8": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 8.985400199890137e-06,
+      "maxFloorRelativeColorError": 0.0001360662281513214,
+      "nativeSHA256": "7a260578214a2ed8c460bf4f3e4536b9ccc1a6663abba671d3f347573ec9d960",
+      "openGLSHA256": "1522c6771ffebc411591002438fb93e9ccad521a0abbf361b29fba10d4bdbb85",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-IBLOnly-linear-9": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "5d146523b21101a7e23f66a63743d04383f0eb4ea9ec026013ac719de0d9fc5a",
+      "openGLSHA256": "0396fb062e2833e169e2f957ca5a45ee018baff731a8f842e90962055da5bee2",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-IBLOnly": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxColorError": 0.00048083066940307617,
+      "maxDepthError": 1.7881393432617188e-07,
+      "nativeSHA256": "395d389068313e40bad93300e35b6ee085d79d44c39145b7643e8a7dc61a1cfc",
+      "openGLSHA256": "895291d0dc80a8f85f3e277c0275a576e572715555b9704d526ef0d8d7141a4e",
+      "halfFloatBoundFailures": 0,
+      "maxEncoded8BitDelta": 1,
+      "colorBound": "3 FP16 ULP per channel plus 2e-5 FP32 shader bound; encoded RGB <= 1 level",
+      "verdict": "PASS"
+    },
+    "IBL-Photo-linear-10": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 3.808736801147461e-05,
+      "maxFloorRelativeColorError": 0.0003891365448487061,
+      "nativeSHA256": "dc4b4bec1e55f1caab44b4c0c4632650a6cccfce3d6ba657d4e258af5b48bf79",
+      "openGLSHA256": "40d6e961be50fa5be5725acfd501cbc0cdef13153028ef6ccf9505a57aadb4cb",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Photo-linear-11": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 2.226136820585057e-05,
+      "nativeSHA256": "571bdba468041077b5ad9ad7ccd13cd67a97382e9fd53d77f4d8e51802b54bb2",
+      "openGLSHA256": "279cf9ab7243a9eaa2d50294bf56382e2143cdb1185442f99c4d99856ec7a21c",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Photo-linear-12": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "b5940df4bdf19d1611533266eaaf2351f809d6172bdc7a84b2133863551e2cb1",
+      "openGLSHA256": "59c72e4420266f7e57c6f468d5b7e420b3237508c24cdacdf8d896a612d8ad3f",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Photo-linear-13": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.1920928955078125e-07,
+      "maxFloorRelativeColorError": 2.283222050993253e-07,
+      "nativeSHA256": "7708e8992380e6b0ca907286cf183baec92276a025c4c3a789b1aad1d6dc5538",
+      "openGLSHA256": "b472c65d4a0a07b7f02739eb1982807961e2a39dc6733dfd857d8939229a8f6a",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Photo-linear-14": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.8030405044555664e-06,
+      "maxFloorRelativeColorError": 1.658383616943537e-05,
+      "nativeSHA256": "1b6a1aafb4b85da274adce87b527ec1c66fcaf405fdcb7150ff3c8444e155983",
+      "openGLSHA256": "bd570d9c643d2964baf266ee34f7333fd37cdda5b5929c572e0f77c67a6b6864",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Photo-linear-15": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 5.093170329928398e-05,
+      "nativeSHA256": "79fdf920093ec5939f3578d93d8a9da887c05e45a9ced687df1808fd89d0a59f",
+      "openGLSHA256": "86211b80fbd5b6b2b64eff133c2a50bb791ea3fbcabf46f3ae108f2168f8e946",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Photo-linear-6": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "49e018265f012467d5bb18d7539fe226e6d580fc8d531278a3cb2a2af9b07b97",
+      "openGLSHA256": "4db55ccff5b0b402aab9c6582ba8043a059428a9425ba03fcec0d2bb65e3cf22",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Photo-linear-7": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 5.841255187988281e-06,
+      "maxFloorRelativeColorError": 1.8719583749771118e-05,
+      "nativeSHA256": "27324b6589423ffeaec4ec5cc09dc3c8f1432e49340438b9fc5d31a87ee439cc",
+      "openGLSHA256": "d26d376e43c2a1057e791d255268ef5422eb669d1e3f4135bd3def179f2fe8c7",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Photo-linear-8": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.00018462538719177246,
+      "maxFloorRelativeColorError": 0.0009928235862193015,
+      "nativeSHA256": "8c59ab1d2b57ee04b5cbfe57622e5662ed5c0f63436c53ef055c50cad04d132b",
+      "openGLSHA256": "ae81ad9534206764136595dd8cc9b3b4bfe0e2fb33e899d937db8982aacf1534",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Photo-linear-9": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0005822181701660156,
+      "maxFloorRelativeColorError": 0.0010415848951909233,
+      "nativeSHA256": "3dc89e001e877119a9b6f36e768b52af64116c717ea33a3f4ce5cd82c4158084",
+      "openGLSHA256": "e859bab53f8a5b9740110e5f25b5fed69b12d02c4a15340168f8aaa2dea0deca",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBL-Photo": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxColorError": 0.0005072951316833496,
+      "maxDepthError": 1.7881393432617188e-07,
+      "nativeSHA256": "89fdc60bd9f74a1e2eb2d735c25a6e071fd9ca601bab07b91c33a0f4a0e951e2",
+      "openGLSHA256": "e54ae101d502dbf0ea0a2cb978f8eb3497e8466b5836bc27671e499316b2500d",
+      "halfFloatBoundFailures": 0,
+      "maxEncoded8BitDelta": 1,
+      "colorBound": "3 FP16 ULP per channel plus 2e-5 FP32 shader bound; encoded RGB <= 1 level",
+      "verdict": "PASS"
+    },
+    "IBLQuality-Constant-linear-10": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 3.808736801147461e-05,
+      "maxFloorRelativeColorError": 0.0003891365448487061,
+      "nativeSHA256": "dc4b4bec1e55f1caab44b4c0c4632650a6cccfce3d6ba657d4e258af5b48bf79",
+      "openGLSHA256": "40d6e961be50fa5be5725acfd501cbc0cdef13153028ef6ccf9505a57aadb4cb",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Constant-linear-11": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 2.226136820585057e-05,
+      "nativeSHA256": "571bdba468041077b5ad9ad7ccd13cd67a97382e9fd53d77f4d8e51802b54bb2",
+      "openGLSHA256": "279cf9ab7243a9eaa2d50294bf56382e2143cdb1185442f99c4d99856ec7a21c",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Constant-linear-12": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "b5940df4bdf19d1611533266eaaf2351f809d6172bdc7a84b2133863551e2cb1",
+      "openGLSHA256": "59c72e4420266f7e57c6f468d5b7e420b3237508c24cdacdf8d896a612d8ad3f",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Constant-linear-13": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.1920928955078125e-07,
+      "maxFloorRelativeColorError": 2.283222050993253e-07,
+      "nativeSHA256": "7708e8992380e6b0ca907286cf183baec92276a025c4c3a789b1aad1d6dc5538",
+      "openGLSHA256": "b472c65d4a0a07b7f02739eb1982807961e2a39dc6733dfd857d8939229a8f6a",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Constant-linear-14": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.8030405044555664e-06,
+      "maxFloorRelativeColorError": 1.658383616943537e-05,
+      "nativeSHA256": "1b6a1aafb4b85da274adce87b527ec1c66fcaf405fdcb7150ff3c8444e155983",
+      "openGLSHA256": "bd570d9c643d2964baf266ee34f7333fd37cdda5b5929c572e0f77c67a6b6864",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Constant-linear-15": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 5.093170329928398e-05,
+      "nativeSHA256": "79fdf920093ec5939f3578d93d8a9da887c05e45a9ced687df1808fd89d0a59f",
+      "openGLSHA256": "86211b80fbd5b6b2b64eff133c2a50bb791ea3fbcabf46f3ae108f2168f8e946",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Constant-linear-6": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "49e018265f012467d5bb18d7539fe226e6d580fc8d531278a3cb2a2af9b07b97",
+      "openGLSHA256": "4db55ccff5b0b402aab9c6582ba8043a059428a9425ba03fcec0d2bb65e3cf22",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Constant-linear-7": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.9073486328125e-06,
+      "maxFloorRelativeColorError": 1.1721333715619749e-05,
+      "nativeSHA256": "52ca23effa3fc65268efa77292770332ad81e1954f224b0d8da97b5541d7c6e2",
+      "openGLSHA256": "1fc171e48c9fe8ef421223ccbeef76b0b661aa6a0b521fae5e3de35e817ac5c6",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Constant-linear-8": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 7.7858567237854e-06,
+      "maxFloorRelativeColorError": 0.0001360662281513214,
+      "nativeSHA256": "f4810c8b079a02f4b4ea5bc41049d3b6095054cd559d38c3a1963a53b2871790",
+      "openGLSHA256": "4fc433dac6ccb34eb0dbd4576a8543b3b1a5724b57193331f8b1d5fd871f4dcf",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Constant-linear-9": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "5d146523b21101a7e23f66a63743d04383f0eb4ea9ec026013ac719de0d9fc5a",
+      "openGLSHA256": "0396fb062e2833e169e2f957ca5a45ee018baff731a8f842e90962055da5bee2",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Constant": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxColorError": 0.0004892945289611816,
+      "maxDepthError": 1.7881393432617188e-07,
+      "nativeSHA256": "ce8ffba01014c1e6a70d54d66bfa1320c9bd1633d4356b87fae469770760833a",
+      "openGLSHA256": "8262b5190bbab5690beb2f8dcc52e25409ce61dc83a732fcdc43b0ee15c4f10e",
+      "halfFloatBoundFailures": 0,
+      "maxEncoded8BitDelta": 1,
+      "colorBound": "3 FP16 ULP per channel plus 2e-5 FP32 shader bound; encoded RGB <= 1 level",
+      "verdict": "PASS"
+    },
+    "IBLQuality-Photo-1280x720": {
+      "pixels": 921600,
+      "idMismatches": 0,
+      "maxColorError": 0.00052642822265625,
+      "maxDepthError": 1.7881393432617188e-07,
+      "nativeSHA256": "204c359a3ba5ba0fd7db0d5eca06c345890a6ab53faab454740c0816acb7ee64",
+      "openGLSHA256": "90d58e86e91444fdeb8cad8cb9fefcf24ccd13de5048436f97dbe7a080dbc1d2",
+      "halfFloatBoundFailures": 0,
+      "maxEncoded8BitDelta": 1,
+      "colorBound": "3 FP16 ULP per channel plus 2e-5 FP32 shader bound; encoded RGB <= 1 level",
+      "verdict": "PASS"
+    },
+    "IBLQuality-Photo-1920x1080": {
+      "pixels": 2073600,
+      "idMismatches": 0,
+      "maxColorError": 0.0005330443382263184,
+      "maxDepthError": 1.7881393432617188e-07,
+      "nativeSHA256": "a8d959fc67749670fdbe5a4f1735d3d9d0b6f873193d7ea9f5ebd6ed0b1b8620",
+      "openGLSHA256": "c2d953a02f583a2ffb2c8155c1b38ca2316a8876ae727022e27d850d217f84bf",
+      "halfFloatBoundFailures": 0,
+      "maxEncoded8BitDelta": 1,
+      "colorBound": "3 FP16 ULP per channel plus 2e-5 FP32 shader bound; encoded RGB <= 1 level",
+      "verdict": "PASS"
+    },
+    "IBLQuality-Photo-linear-10": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 3.808736801147461e-05,
+      "maxFloorRelativeColorError": 0.0003891365448487061,
+      "nativeSHA256": "dc4b4bec1e55f1caab44b4c0c4632650a6cccfce3d6ba657d4e258af5b48bf79",
+      "openGLSHA256": "40d6e961be50fa5be5725acfd501cbc0cdef13153028ef6ccf9505a57aadb4cb",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Photo-linear-11": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 2.226136820585057e-05,
+      "nativeSHA256": "571bdba468041077b5ad9ad7ccd13cd67a97382e9fd53d77f4d8e51802b54bb2",
+      "openGLSHA256": "279cf9ab7243a9eaa2d50294bf56382e2143cdb1185442f99c4d99856ec7a21c",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Photo-linear-12": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "b5940df4bdf19d1611533266eaaf2351f809d6172bdc7a84b2133863551e2cb1",
+      "openGLSHA256": "59c72e4420266f7e57c6f468d5b7e420b3237508c24cdacdf8d896a612d8ad3f",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Photo-linear-13": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.1920928955078125e-07,
+      "maxFloorRelativeColorError": 2.283222050993253e-07,
+      "nativeSHA256": "7708e8992380e6b0ca907286cf183baec92276a025c4c3a789b1aad1d6dc5538",
+      "openGLSHA256": "b472c65d4a0a07b7f02739eb1982807961e2a39dc6733dfd857d8939229a8f6a",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Photo-linear-14": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.8030405044555664e-06,
+      "maxFloorRelativeColorError": 1.658383616943537e-05,
+      "nativeSHA256": "1b6a1aafb4b85da274adce87b527ec1c66fcaf405fdcb7150ff3c8444e155983",
+      "openGLSHA256": "bd570d9c643d2964baf266ee34f7333fd37cdda5b5929c572e0f77c67a6b6864",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Photo-linear-15": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 5.093170329928398e-05,
+      "nativeSHA256": "79fdf920093ec5939f3578d93d8a9da887c05e45a9ced687df1808fd89d0a59f",
+      "openGLSHA256": "86211b80fbd5b6b2b64eff133c2a50bb791ea3fbcabf46f3ae108f2168f8e946",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Photo-linear-6": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "49e018265f012467d5bb18d7539fe226e6d580fc8d531278a3cb2a2af9b07b97",
+      "openGLSHA256": "4db55ccff5b0b402aab9c6582ba8043a059428a9425ba03fcec0d2bb65e3cf22",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Photo-linear-7": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 7.808208465576172e-06,
+      "maxFloorRelativeColorError": 1.920412564819944e-05,
+      "nativeSHA256": "bbbac2f6ade5cc2d53f16ba2887f94d74aa5582364f2e28d919e40d492edee64",
+      "openGLSHA256": "dc533a61d94178048924553f8a0fd7cc71a74529ac3a1bf70c4e963431e6c34a",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Photo-linear-8": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 5.0187110900878906e-05,
+      "maxFloorRelativeColorError": 0.00012930034737804666,
+      "nativeSHA256": "53b6eb59052f023902b36f2350a10197bf3f01a5fb39f8588601222ee83b613f",
+      "openGLSHA256": "a9614e27594a592a6eb0df9449290b813263090383afda02980f51b00b6f0b80",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Photo-linear-9": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.00012683868408203125,
+      "maxFloorRelativeColorError": 0.0002345070242881775,
+      "nativeSHA256": "9efbf69bbf108f2d7b0893949d6e002832ac59b49fad25a8155949b9fa97e626",
+      "openGLSHA256": "6a09d47b3e1827ba8062e73db84810e9b3c5032fdbfd343f00a6518df6548163",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-Photo": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxColorError": 0.0005010366439819336,
+      "maxDepthError": 1.7881393432617188e-07,
+      "nativeSHA256": "cbc823e8544afbb95821194a9c84c1ab4670b0dc7de57f16878f3aa1c8fe292b",
+      "openGLSHA256": "ef56c12bd42f90f247afe50d3825353fc0068fcc705f580958039a1a4742365c",
+      "halfFloatBoundFailures": 0,
+      "maxEncoded8BitDelta": 1,
+      "colorBound": "3 FP16 ULP per channel plus 2e-5 FP32 shader bound; encoded RGB <= 1 level",
+      "verdict": "PASS"
+    },
+    "IBLQuality-TinyEmitter-linear-10": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 3.808736801147461e-05,
+      "maxFloorRelativeColorError": 0.0003891365448487061,
+      "nativeSHA256": "dc4b4bec1e55f1caab44b4c0c4632650a6cccfce3d6ba657d4e258af5b48bf79",
+      "openGLSHA256": "40d6e961be50fa5be5725acfd501cbc0cdef13153028ef6ccf9505a57aadb4cb",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-TinyEmitter-linear-11": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 2.226136820585057e-05,
+      "nativeSHA256": "571bdba468041077b5ad9ad7ccd13cd67a97382e9fd53d77f4d8e51802b54bb2",
+      "openGLSHA256": "279cf9ab7243a9eaa2d50294bf56382e2143cdb1185442f99c4d99856ec7a21c",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-TinyEmitter-linear-12": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "b5940df4bdf19d1611533266eaaf2351f809d6172bdc7a84b2133863551e2cb1",
+      "openGLSHA256": "59c72e4420266f7e57c6f468d5b7e420b3237508c24cdacdf8d896a612d8ad3f",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-TinyEmitter-linear-13": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.1920928955078125e-07,
+      "maxFloorRelativeColorError": 2.283222050993253e-07,
+      "nativeSHA256": "7708e8992380e6b0ca907286cf183baec92276a025c4c3a789b1aad1d6dc5538",
+      "openGLSHA256": "b472c65d4a0a07b7f02739eb1982807961e2a39dc6733dfd857d8939229a8f6a",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-TinyEmitter-linear-14": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.8030405044555664e-06,
+      "maxFloorRelativeColorError": 1.658383616943537e-05,
+      "nativeSHA256": "1b6a1aafb4b85da274adce87b527ec1c66fcaf405fdcb7150ff3c8444e155983",
+      "openGLSHA256": "bd570d9c643d2964baf266ee34f7333fd37cdda5b5929c572e0f77c67a6b6864",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-TinyEmitter-linear-15": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 1.780688762664795e-06,
+      "maxFloorRelativeColorError": 5.093170329928398e-05,
+      "nativeSHA256": "79fdf920093ec5939f3578d93d8a9da887c05e45a9ced687df1808fd89d0a59f",
+      "openGLSHA256": "86211b80fbd5b6b2b64eff133c2a50bb791ea3fbcabf46f3ae108f2168f8e946",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-TinyEmitter-linear-6": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 0.0,
+      "maxFloorRelativeColorError": 0.0,
+      "nativeSHA256": "49e018265f012467d5bb18d7539fe226e6d580fc8d531278a3cb2a2af9b07b97",
+      "openGLSHA256": "4db55ccff5b0b402aab9c6582ba8043a059428a9425ba03fcec0d2bb65e3cf22",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-TinyEmitter-linear-7": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 8.702278137207031e-06,
+      "maxFloorRelativeColorError": 1.3152560416673114e-05,
+      "nativeSHA256": "ff03fef6aaff17901a55dfdea11b477b6dc3a92eb36f0459f045d7ead30b3e5a",
+      "openGLSHA256": "cff85071dd218401098a65a1b184332f0cdc875be617f85ed3220975dc562b12",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-TinyEmitter-linear-8": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 5.7056546211242676e-05,
+      "maxFloorRelativeColorError": 0.000693541438277545,
+      "nativeSHA256": "e586a1cce1758233b9df916ec99ac1b38c4c89b5ab66db4179e4d4823555db34",
+      "openGLSHA256": "95ff2a063320268a316980461725a14aa2925dbb778707c406695b2db7ab723b",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-TinyEmitter-linear-9": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 1.7881393432617188e-07,
+      "maxColorError": 9.256601333618164e-05,
+      "maxFloorRelativeColorError": 0.000981450242826779,
+      "nativeSHA256": "6b8119c219961bd11dd4043c8aa9090a501c2a67a383068c0f4b84c6f56a3a5d",
+      "openGLSHA256": "d3f56afc4aa7407b55e36770c9d0c0a7c9540909632bf654c994cb862f84cba3",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    },
+    "IBLQuality-TinyEmitter": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxColorError": 0.00048786401748657227,
+      "maxDepthError": 1.7881393432617188e-07,
+      "nativeSHA256": "89d309d2b8cddc5a78e714dc2aa0b9b840e0530622a75cb92bd6180adc76d8f6",
+      "openGLSHA256": "95517ef9dfa86a2ee097294b6faea2a1a095a3f9581defb0ff0b2a7a1af77ad1",
+      "halfFloatBoundFailures": 0,
+      "maxEncoded8BitDelta": 1,
+      "colorBound": "3 FP16 ULP per channel plus 2e-5 FP32 shader bound; encoded RGB <= 1 level",
+      "verdict": "PASS"
+    },
+    "independent-hdr": {
+      "pixels": 57600,
+      "idMismatches": 0,
+      "maxDepthError": 0.0,
+      "maxColorError": 4.0,
+      "maxFloorRelativeColorError": 3.2206233258797375e-07,
+      "nativeSHA256": "6ce729e876f194677e537c929e2bae45a4aa9983eba50e047e510ae80c9b7ec8",
+      "openGLSHA256": "6c5e0390edbe25ddb4be5d74f8650d0f5417f35a432e56e55a1dc277bf1b5d05",
+      "colorStatus": "MEASURED: independent per-case oracle gates run inside both executables"
+    }
+  },
+  "independentOracles": "PASS in both native executables",
+  "milestone": "INCOMPLETE: this runner does not qualify real windows or extended resource stability"
+}

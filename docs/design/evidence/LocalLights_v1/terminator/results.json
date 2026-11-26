@@ -1,0 +1,39 @@
+{
+  "baseline": "b49256001bd6d13422fa4c88d0a52a96ac3b5c42",
+  "status": "INCOMPLETE",
+  "ownerVisualReview": "FAIL on baseline",
+  "device": "Apple M4",
+  "authoredSharedEdges": {
+    "visibleMismatchesOnFirstSphereWithWarmKey": 26,
+    "exampleWorldPosition": [-4.0840734392, 1.8603757345, 0.3340736181],
+    "shadingNL": 0.0521923345,
+    "geometricNL": [-0.0035248564, 0.1077091564],
+    "candidateVisibility": [0, 1],
+    "candidateContinuity": "FAIL"
+  },
+  "grazingDiagnostic": {
+    "configuration": "Debug",
+    "components": "combined direct RGB, red channel sampled",
+    "backends": ["native Metal", "native OpenGL"],
+    "sampleOrder": ["lit", "grazing", "behind"],
+    "baseline": {"status": "FAIL", "dielectricPoint": [0.144616, 0.12098, 0]},
+    "candidate": {
+      "status": "PASS",
+      "dielectricPointAndSpot": [0.0329677, 0.000279547, 0],
+      "roughMetalPointAndSpot": [0.0826449, 0.000582478, 0]
+    }
+  },
+  "candidateGalleryParity": {"status": "PASS", "idMismatches": 0, "maxDepthDelta": 1.7881393432617188e-7, "maxRGBDelta": 9.000301361083984e-6},
+  "candidateVersusBaselineMetal": {"idMismatches": 0, "maxDepthDelta": 0, "maxRGBDelta": 0.021266847848892212},
+  "candidateLocalFP64AndCulling": "PASS on native Metal and OpenGL",
+  "forwardMedianGPUms": {
+    "configuration": "Release, 1920x1080, native Metal tiled16, AO/TAA off",
+    "warmups": 5,
+    "samples": 20,
+    "columnOrder": ["baseline", "candidate"],
+    "32Sparse": [1.71395833333, 1.7078125],
+    "128Sparse": [3.868875, 3.999083333335],
+    "320Dense": [138.81825, 144.0138333335]
+  },
+  "fullRegressionAndVisualMatrix": "NOT RUN for rejected candidate"
+}

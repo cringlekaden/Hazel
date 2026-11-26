@@ -60,5 +60,11 @@
     "Hazelnut/src/EditorLayer.cpp": "b25dee597c9c7e85defa88475e18bff89a300c60bc04902ea04d27cb19555dac",
     "Hazelnut/src/Panels/SceneHierarchyPanel.cpp": "ceef642ce614debf235a673a99ac58d77431571ef5b721c3a04dccb3e7832a9c",
     "Hazelnut/src/Panels/SceneHierarchyPanel.h": "c5b404adf19892cb1d9d08d213b6eb27a404d0ff6e4c9c1699b12897ef152a2a"
+  },
+  "terminatorCorrection": {
+    "record": "evidence/LocalLights_v1/terminator/separated/qualification.json",
+    "status": "PASS scoped native correction; milestone INCOMPLETE pending owner visual approval",
+    "originalOwnerVisualReview": "FAIL at b49256001bd6d13422fa4c88d0a52a96ac3b5c42",
+    "sourceSHA256": "46e975ee068a74ba4f8968006f544d64ddbbec0929b05bafe8a0c68e53ebf48d"
   }
 }

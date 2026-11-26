@@ -70,6 +70,16 @@ vec3 resolveShadingNormal(vec3 N,vec3 Ng,vec3 V){
     else{si=sqrt(.5*(1+b/h));co=a/(2*h*si);}
     return normalize(Ng*co+tangent*si);
 }
+// Chiang et al. 2019, applied only to material-normal deviation from
+// the continuous authored surface. It is identity for unmapped normals.
+float surfaceVisibility(vec3 surfaceNormal,vec3 N,vec3 L){
+    float cosine=dot(surfaceNormal,L);
+    if(cosine<=0)return 0;
+    float projected=dot(N,L)*dot(surfaceNormal,N);
+    if(cosine>=projected)return 1;
+    float g=cosine/projected;
+    return g*(1+g*(1-g));
+}
 // Multiscattering_v2: reciprocal Kulla-Conty plus scalar complementary diffuse.
 // RG is RuntimeBRDF_v2 A/B; BA holds matching cosine-weighted means.
 vec4 sampleBRDF(float nv,float rough){
@@ -144,14 +154,20 @@ void main(){
         if((maps&4)!=0){vec3 sampleN=texture(u_Normal,v_UV).xyz*2-1;sampleN.xy*=u_Surface.z;if(dot(sampleN,sampleN)>1e-12)N=normalize(mat3(T,B,N)*normalize(sampleN));}
         if(u_Options.w>.5&&!gl_FrontFacing)N=-N;
         horizonProbe=vec3(dot(N,V),dot(geometricNormal,V),dot(N,V));
+        // Direct lighting follows the authored smooth surface. Split normals
+        // retain hard edges, while raster state still controls backface coverage.
+        vec3 surfaceNormal=baseNormal;
+        if(u_Options.w>.5&&!gl_FrontFacing)surfaceNormal=-surfaceNormal;
+        vec3 directNormal=(maps&4)!=0?resolveShadingNormal(N,surfaceNormal,V):surfaceNormal;
+        // Indirect reflection retains its accepted geometric-horizon repair.
         N=resolveShadingNormal(N,geometricNormal,V);
         horizonProbe.z=dot(N,V);
-        float nv=clamp(dot(N,V),0,1),r=max(rough,.045);
+        float r=max(rough,.045);
         vec3 f0=mix(vec3(.04),base.rgb,metal);
-        SurfaceEnergy energy=surfaceEnergy(f0,sampleBRDF(nv,r));
+        SurfaceEnergy directEnergy=surfaceEnergy(f0,sampleBRDF(clamp(dot(directNormal,V),0,1),r));
         vec3 L=normalize(u_Light.xyz);
-        if(dot(geometricNormal,V)>0&&dot(geometricNormal,L)>0)
-            directTerm=direct(base.rgb,metal,rough,N,V,L,energy)*u_Incident.rgb;
+        if(dot(surfaceNormal,V)>0&&dot(surfaceNormal,L)>0)
+            directTerm=direct(base.rgb,metal,rough,directNormal,V,L,directEnergy)*u_Incident.rgb*((maps&4)!=0?surfaceVisibility(surfaceNormal,directNormal,L):1);
         vec3 directionalTerm=directTerm;
         int localCount=int(u_LocalMeta.x),listCount=localCount;
 #ifdef HZ_METAL
@@ -162,7 +178,7 @@ void main(){
         bool tiled=useTiles && tileCount<=64u;
         if(tiled)listCount=int(tileCount);
 #endif
-        if(dot(geometricNormal,V)>0)for(int entry=0;entry<listCount;++entry){
+        if(dot(surfaceNormal,V)>0)for(int entry=0;entry<listCount;++entry){
             int index=entry;
 #ifdef HZ_METAL
             if(tiled){int word=entry+1;uvec4 packed=texelFetch(u_LightTiles,ivec2(tile.x*17+word/4,tile.y),0);index=int(packed[word%4]);}
@@ -172,7 +188,7 @@ void main(){
             float distanceSquared=dot(delta,delta),rangeSquared=positionRange.w*positionRange.w;
             if(distanceSquared>=rangeSquared || distanceSquared==0)continue;
             vec3 localL=delta*inversesqrt(distanceSquared);
-            if(dot(geometricNormal,localL)<=0)continue;
+            if(dot(surfaceNormal,localL)<=0)continue;
             // Smooth finite range and smooth finite source core (one centimetre).
             // No max-distance brightness step; the undefined direction at exact coincidence
             // is assigned zero, with a continuous zero-energy limit inside the source core.
@@ -184,34 +200,38 @@ void main(){
                 attenuation*=cone*cone*(3-2*cone);
             }
             if(attenuation<=0)continue;
-            directTerm+=direct(base.rgb,metal,rough,N,V,localL,energy)*incidentInner.rgb*attenuation;
+            directTerm+=direct(base.rgb,metal,rough,directNormal,V,localL,directEnergy)*incidentInner.rgb*attenuation*((maps&4)!=0?surfaceVisibility(surfaceNormal,directNormal,localL):1);
         }
         localProbe=directTerm-directionalTerm;
 #ifdef HZ_METAL
         if(u_LocalMeta.y==2)localProbe=vec3(float(useTiles?tileCount:uint(localCount))/64,0.1,0);
         if(u_LocalMeta.y==3)localProbe=useTiles&&tileCount>64u?vec3(1,0,1):vec3(0);
 #endif
-        if(u_EnvOptions.x>.5&&dot(geometricNormal,V)>0){
-            float ao=mix(1,texture(u_Occlusion,v_UV).r,u_Surface.w);
-            vec3 irradiance=texture(u_Irradiance,environmentDirection(N)).rgb/PI;
-            diffuseTerm=irradiance*base.rgb*(1-metal)*energy.diffuseScale*energy.diffuseShape;
-            vec2 ab=energy.table.xy;
-            // Interpolate roughness levels in FP32: Apple's GL4.1 sampler quantizes
-            // fractional mip LOD even when textureLod receives an exact float.
-            float lod=r*u_EnvRotationGain.w,level=floor(lod);
-            vec3 reflection=environmentDirection(reflect(-V,N));
-            vec3 prefiltered=mix(specularLevel(reflection,level),
-                specularLevel(reflection,min(level+1,u_EnvRotationGain.w)),fract(lod));
-            prefilteredProbe=prefiltered;brdfProbe=vec3(ab,nv);surfaceProbe=vec3(dot(N,V),rough,metal);
-            // Retain the BRDF domain check after resolving the shading normal
-            // against visible geometry; it is not a raster visibility cutoff.
-            specularTerm=dot(N,V)>0?prefiltered*(f0*ab.x+ab.y)+
-                irradiance*energy.multipleFresnel*energy.missingView:vec3(0);
-            float diffuseAO=ao;
-#ifdef HZ_METAL
-            if(u_EnvOptions.y>0) diffuseAO=min(ao,mix(1,texelFetch(u_ScreenAO,ivec2(gl_FragCoord.xy),0).r,u_EnvOptions.y));
-#endif
-            diffuseTerm*=diffuseAO*u_EnvRotationGain.z;specularTerm*=ao*u_EnvRotationGain.z;
+        if(u_EnvOptions.x>.5){
+            float nv=clamp(dot(N,V),0,1);
+            SurfaceEnergy energy=surfaceEnergy(f0,sampleBRDF(nv,r));
+            if(dot(geometricNormal,V)>0){
+                float ao=mix(1,texture(u_Occlusion,v_UV).r,u_Surface.w);
+                vec3 irradiance=texture(u_Irradiance,environmentDirection(N)).rgb/PI;
+                diffuseTerm=irradiance*base.rgb*(1-metal)*energy.diffuseScale*energy.diffuseShape;
+                vec2 ab=energy.table.xy;
+                // Interpolate roughness levels in FP32: Apple's GL4.1 sampler quantizes
+                // fractional mip LOD even when textureLod receives an exact float.
+                float lod=r*u_EnvRotationGain.w,level=floor(lod);
+                vec3 reflection=environmentDirection(reflect(-V,N));
+                vec3 prefiltered=mix(specularLevel(reflection,level),
+                    specularLevel(reflection,min(level+1,u_EnvRotationGain.w)),fract(lod));
+                prefilteredProbe=prefiltered;brdfProbe=vec3(ab,nv);surfaceProbe=vec3(dot(N,V),rough,metal);
+                // Retain the BRDF domain check after resolving the shading normal
+                // against visible geometry; it is not a raster visibility cutoff.
+                specularTerm=dot(N,V)>0?prefiltered*(f0*ab.x+ab.y)+
+                    irradiance*energy.multipleFresnel*energy.missingView:vec3(0);
+                float diffuseAO=ao;
+    #ifdef HZ_METAL
+                if(u_EnvOptions.y>0) diffuseAO=min(ao,mix(1,texelFetch(u_ScreenAO,ivec2(gl_FragCoord.xy),0).r,u_EnvOptions.y));
+    #endif
+                diffuseTerm*=diffuseAO*u_EnvRotationGain.z;specularTerm*=ao*u_EnvRotationGain.z;
+            }
         }
         result=directTerm+diffuseTerm+specularTerm+u_EmissionCutoff.rgb*texture(u_Emissive,v_UV).rgb;
     }

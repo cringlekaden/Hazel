@@ -1,6 +1,7 @@
 # Authored local lights and Metal Forward+
 
-**Native automated feature qualification: PASS. Owner visual approval: PENDING.**
+**Terminator correction: PASS scoped native automated qualification. Milestone: INCOMPLETE pending owner visual approval.**
+The owner rejected the original `b492560` gallery; the final correction below is awaiting visual acceptance.
 Windows/Linux execution and their CI are NOT RUN at this macOS checkpoint.
 Starting revision: `3a4647c8f0ad7f2b6cba9dd6534fb491d530796f`,
 `feature/3d-foundations`. Qualification ran on the scoped working tree; exact
@@ -20,7 +21,7 @@ No shadow resources, depth passes or sampling filters were added.
   cancellation, component retirement and validation. Legacy directional ownership remains.
 - `Renderer3D.cpp` packs the shared std140 block. `ForwardPBR.glsl::direct` remains
   the single accepted Multiscattering_v2 BRDF, byte-identical to starting HEAD.
-  Local contributions share its shading-normal/geometric horizons, complementary
+  Local contributions share its authored direct-light horizon, complementary
   diffuse and HDR accumulation. Direct light stays independent of material AO/XeGTAO.
   Emissive, IBL and TAA semantics remain intact.
 - Metal records **one immutable CPU light snapshot per scene submission**, shared
@@ -29,6 +30,334 @@ No shadow resources, depth passes or sampling filters were added.
   work through existing frame packets, residency and three-slot buffer retirement.
   Editor, player and offscreen paths reset/reuse the counter pool; drain releases it.
   No second scene graph, alternate material model or general render graph exists.
+
+## Point and spot terminator investigation
+
+The owner reported triangular light-to-dark transitions on the authored gallery at
+`b49256001bd6d13422fa4c88d0a52a96ac3b5c42`. The native offscreen captures use
+the authored primary camera at 1280×720, exposure 0 and static authored light
+transforms. Metal and OpenGL reproduce the same lighting. See the
+[matched baseline and experimental crop](evidence/LocalLights_v1/terminator/matched-crop.png)
+with baseline on the left.
+
+The geometric normal from world-position derivatives is constant on each planar
+face, while the shading normal is continuous across smooth edges. The local loop
+sets radiance to zero when geometric N·L is nonpositive, even when the accepted
+GGX evaluation at shading N·L would return positive radiance. On the first
+gallery sphere, the authored warm point key straddles that gate at 26 visible
+shared-edge midpoints where the shading normal is light-facing and the view
+reflection horizon leaves it unchanged on both faces. One midpoint has shading
+N·L 0.05219 and geometric N·L −0.00352 and +0.10771 on the two faces. Point
+attenuation is continuous across that edge, and the point source has no cone.
+
+An experimental local-light [Chiang visibility factor](https://www.yiningkarlli.com/projects/shadowterminator/shadow_terminator_v1_1.pdf)
+multiplied incident radiance by `g * (1 + g * (1 - g))`, with
+`g = min(1, geometricNL / (shadingNL * dot(Ng, N)))` for positive denominators.
+The geometric backface test and the existing GGX energy equations were retained.
+This smooths the approach to the light horizon *within* a face. At the measured
+edge above, the lit face still gets full weight because its geometric cosine
+exceeds the shading cosine, and its neighbor still gets zero. The candidate
+therefore fails the shared-edge continuity requirement. It was tested in an
+isolated resource directory and is excluded from production.
+
+The opt-in maintained diagnostic renders a plane with analytic +Z geometry and
+normals tilted 30° toward a grazing source. It requires exact center IDs/depth,
+zero radiance behind the plane, and grazing radiance below 3% of the reference
+lit sample. The baseline fails on both native backends. The experiment passes
+for point and spot sources and for a dielectric and a rough metal, but the
+plane test cannot certify continuity across two faces.
+
+| 1080p, Metal tiled 16 | Baseline forward median | Experimental forward median |
+| --- | ---: | ---: |
+| 32 sparse lights | 1.714 ms | 1.708 ms |
+| 128 sparse lights | 3.869 ms | 3.999 ms |
+| 320 dense lights | 138.818 ms | 144.014 ms |
+
+Each timing uses 20 samples and five warmups in one matched offscreen run per
+version. The experimental gallery preserves exact Metal IDs/depth versus
+baseline. Experimental Metal/OpenGL parity has zero ID mismatches, max depth
+delta 1.79e-7 and max RGB delta 9.00e-6. The full-loop/tiled and FP64 local-light
+checks pass for the experiment on both backends. At that checkpoint, no correction was qualified.
+The wider moving-light, tessellation, normal-map, double-sided, AO/TAA,
+projection, editor/player and source-free export matrix was not rerun for the
+rejected candidate. Frozen references were preserved.
+
+Reproduce the baseline diagnostic with `python3 scripts/macos/local_lighting.py
+--config Debug --backend metal --terminator --output NEW_EVIDENCE_DIRECTORY`
+and repeat with `--backend opengl`. Local logs, full gallery captures, candidate
+GLSL and its generated Metal package, the edge scan, and timing CSVs are under
+`build/qualification/terminator-*/`. See the
+[qualification evidence](evidence/LocalLights_v1/terminator/results.json) for
+sample values and gate status.
+
+## Continuous authored-surface horizon experiment
+
+The subsequent candidate distinguishes the flat derivative normal, the
+unperturbed authored vertex normal, and the mapped material normal.
+Existing vertex normals supply the surface contract. Equal endpoint normals
+on a shared edge define a continuous smooth surface, while split normals
+retain intentionally hard edges. No mesh format or normal-generation policy
+changes are required. The fragment stage normalizes the interpolated authored
+normal and flips it with the material normal for explicitly two-sided backs.
+
+Directional, point and spot lights use that continuous surface horizon.
+Mapped normals resolve their reflection horizon against this surface, and a
+Chiang visibility term accounts for material-normal deviation from it.
+With an unmapped surface the visibility factor is identity. The accepted
+Kulla–Conty equations and LUT are unchanged. The BRDF source block SHA256 is
+`9443aa3a21defd0c3d5242b442dcc72aa48802ffef26e95c383586e4123e9ac6`,
+identical to the baseline. Flat surfaces with aligned vertex normals retain
+their original horizon and energy behavior.
+
+This is a smooth-surface lighting approximation on the existing raster mesh.
+It intentionally permits illumination below an individual triangle's light
+horizon when the authored smooth surface faces the light. Raster culling,
+winding and signed transforms still determine coverage. The model rejects
+light below the authored surface horizon and rejects direct evaluation when
+that surface faces away from the camera. Mesh silhouettes, positions, depth,
+picking and occlusion geometry remain polygonal. Authored normals with large
+deviations describe a correspondingly larger approximation and require
+author review. The gallery sphere's maximum face/vertex-normal deviation is
+5.2958°, bounding this extension to a negative flat-face cosine of 0.09230.
+Edge midpoint radius is at least 0.497866 for the intended radius 0.5.
+
+The independent analytic reference checks all original 26 shared edges.
+Its radial-sphere cosine error and shared-edge limiting error are zero.
+It also verifies matching limits after nonuniform and mirrored normal
+transforms. A 2,001-step moving-direction sweep has a maximum cosine step
+of 0.003081. This reference proves the cosine model and its continuity,
+and does not replace GPU qualification of the full BRDF.
+
+The maintained native sphere oracle independently derives radial normals from
+world positions, evaluates the FP64 multiscattering reference, and checks
+moving point/spot and directional direct radiance for dielectrics and rough
+metals. It includes 3,276 positive-radiance samples below flat face horizons
+per backend. Baseline Metal/OpenGL fail this oracle. The candidate passes
+on both backends, including exact IDs/depth. An experimental signed/nonuniform mapped-normal expectation evaluated the
+mapped normal against the authored surface. That expectation is retained in
+the rejected candidate patch. The maintained baseline expectation and all
+historical references are preserved.
+
+- [Matched gallery crop](evidence/LocalLights_v1/terminator/continuous/matched-crop.png)
+  shows baseline on the left and the continuous candidate on the right.
+- [Moving-light contact sheet](evidence/LocalLights_v1/terminator/continuous/moving-light.png)
+  retains twelve direct-component fixture frames in row-major order.
+- [Analytic edge evidence](evidence/LocalLights_v1/terminator/continuous/reference.json),
+  [native local-light results](evidence/LocalLights_v1/terminator/continuous/native-local.json),
+  and [GGX results](evidence/LocalLights_v1/terminator/continuous/ggx.json)
+  retain the measured scoped results.
+
+Native Debug GGX numerical/components/parity/retirement, focused XeGTAO and
+focused TAA suites pass. Debug/Release qualification targets compiled during the experiment.
+The final native local-light fixture passes FP64 accumulation, culling/order,
+signed IDs/depth and gallery parity with max RGB delta 9.08e-6.
+The full requested controlled tessellation, perspective/camera-motion,
+double-sided, export/relocation and editor/player matrix is still unqualified.
+The candidate is **rejected as a production change**. The maintained
+Renderer2DSmoke fails in IBLSurfaceRenderingChecks with "Shading normal differs
+from independent geometric-horizon constraint". Its extreme-normal fixtures
+require view/reflection repair against actual raster geometry. Replacing that
+normal globally also changes IBL, and a smooth-sphere direct-light oracle does
+not prove the preserved IBL contract. The production GLSL, Metal artifact and
+mapped-normal regression expectation were restored to baseline after retaining
+the candidate patch and native resources. The new opt-in sphere diagnostic
+remains a failing baseline regression. Overall status is **INCOMPLETE**.
+
+The measured 1080p forward medians for baseline/candidate are 1.714/1.748 ms
+at 32 sparse lights, 3.869/4.067 ms at 128 sparse lights, and
+138.818/147.142 ms at 320 dense lights. These use the same benchmark cases,
+five warmups and twenty samples. The maintained benchmark renders an unmapped cube with aligned face normals;
+these workloads do not add smooth-horizon illumination. They measure added
+shader work and implementation effects without isolating the visibility helper. See [timing summary](evidence/LocalLights_v1/terminator/continuous/performance-summary.json).
+Public command and packaging documentation remains deferred while the
+candidate is unqualified. The rejected patch is retained in
+[the experiment record](evidence/LocalLights_v1/terminator/continuous/rejected-global-horizon.patch).
+At the end of that rejected experiment, production shading remained at baseline. The subsequent separated correction is recorded below.
+
+Reproduce with `python3 scripts/macos/terminator_reference.py` and
+`python3 scripts/macos/local_lighting.py --config Debug --smooth-terminator
+--output NEW_EVIDENCE_DIRECTORY`. The old `--terminator` test retains its
+historical strict flat-face interpretation for the rejected experiment.
+It is incompatible with intentionally treating its tilted authored normals
+as a smooth surface. Raw logs and matched motion frames remain in
+`build/qualification/terminator-continuous*/` and
+`build/qualification/terminator-smooth*/`.
+
+## Separated direct-light and indirect reflection horizons
+
+The final correction keeps three normals with distinct responsibilities. The
+actual raster normal remains the derivative cross product; winding, culling,
+positions, depth and picking are unchanged. The normalized, unperturbed authored
+vertex normal defines the continuous direct-light surface. The mapped material
+normal evaluates the same canonical GGX/Kulla–Conty BRDF after view-horizon repair
+against that authored surface. Split vertex normals preserve hard edges; a
+flat-shaded mesh retains its per-face horizon. Two-sided backs reverse both
+authored and mapped normals together. Signed inverse-transpose normals and
+signed tangent handedness retain the established transform contract.
+
+For direct lights, reject an authored surface facing away from the view or
+light. Evaluate the single existing `direct()` function on the direct normal,
+with its matching view-dependent energy table. For normal maps only, multiply
+by the existing experiment's bounded Chiang visibility polynomial:
+`G = g + g² - g³`, where `g = min(1, Ns·L / ((N·L)(Ns·N)))` when
+`Ns·L > 0` and the projected cosine exceeds it; otherwise use one, or zero
+below the authored horizon. This branch formulation never divides by a
+nonpositive denominator. `G` is in [0,1], approaches zero at the authored horizon,
+and cannot amplify a given BRDF evaluation. Unmapped normals have `G=1`
+exactly and bypass both material-normal repair and per-light visibility work.
+All directional, point and spot sources use this policy, after the unchanged
+range and cone attenuation. No second BRDF, texture/LUT generation, mesh-normal
+generation, culling policy or submission path was introduced.
+
+Indirect lighting separately calls the original
+`resolveShadingNormal(N, geometricNormal, V)` and computes the original IBL
+energy from that normal only when IBL is enabled. The uniform enable guard
+keeps the LUT sample in uniform control flow, before the existing geometric
+view gate; direct-only draws avoid an unused second energy-table evaluation.
+The repair function, texture lookups, geometric view gate, reflection direction,
+AO and multiscattering equations are unchanged. The
+`Normal` / `NormalHorizon` diagnostics continue to expose this indirect repair.
+
+### Reproduced integration failure and ablation
+
+The rejected candidate changed the *input to the shared normal repair* globally,
+so its result also drove IBL reflection and the view-dependent energy lookup.
+This is sufficient to reproduce the historical extreme-normal regression:
+changing only that repair's horizon from actual geometry to the authored normal
+fails `IBLSurfaceRenderingChecks` with its original expectations. The direct
+light-facing gates, visibility factor and direct GGX equations need not change
+for this failure to occur. Baseline and the separated correction pass that same
+unchanged suite. `scripts/macos/terminator_ablation.py` stages independent resource
+directories and records shader hashes, commands and expected failure outcomes.
+
+For the independent analytic case `N=normalize(-.1,0,1)`, `Ng=(0,0,1)` and
+`V=normalize(1,0,.02)`, the global authored horizon leaves `N` unchanged because
+its own view cosine is negative. This produces `N·V=-0.07958706` and
+`reflect(-V,N)·Ng=-0.17838017`. The geometric repair produces
+`N=(-0.00999850,0,0.99995001)`, `N·V=0.00999850` and reflection cosine zero.
+The direct/indirect split preserves that result without using a per-triangle
+normal to cut smooth direct radiance.
+
+### Physical scope and limitations
+
+Shared-edge continuity and exact zero illumination behind each planar triangle
+cannot both hold for the 26 measured edges: the same continuous point and
+normal straddle opposite face classifications. The chosen approximation lights
+the authored smooth surface while rasterizing its polygonal approximation.
+It admits light below an individual face only where the authored surface is
+light-facing. It never overrides raster backface coverage. The original gallery
+sphere has maximum face/vertex deviation 5.29579°, giving a geometric extension
+bound of 0.0922975 in cosine. Large authored deviations permit larger extensions;
+there is no hidden angle clamp or assumption that arbitrary normals describe a
+sphere. Mesh authors retain responsibility for their smooth/flat normal intent.
+Silhouettes and future shadow occlusion still follow actual geometry.
+
+The normal-map visibility term is an empirical masking approximation. It can
+reduce mapped-normal grazing energy, and is not a new reciprocal microfacet
+model or a claim of exact light transport. The canonical reciprocal
+multiscattering BRDF and RuntimeBRDF_v2 remain unchanged. Unit visibility on
+unmapped surfaces preserves their accepted energy behavior relative to the
+authored smooth surface; geometrically admitted energy necessarily differs from
+the rejected per-face gate. No screen-space filtering conceals this difference.
+
+### Qualification and review artifacts
+
+The final working-tree shader SHA256 is
+`46e975ee068a74ba4f8968006f544d64ddbbec0929b05bafe8a0c68e53ebf48d`.
+Debug/Release native Metal and OpenGL pass the smooth-sphere and mapped-material
+oracles, GGX components/furnaces, AO/TAA, 135-capture production parity per
+configuration, four detached consumers on one display at native 1×/2×, pending
+shutdown, 600 independently lit temporal-view frames per configuration, and
+actual Hazelnut/Nutella gallery startup/teardown on both backends. Signed gallery
+exports pass source/SDK/compiler-isolated light diagnostics, missing-library
+rejection, and relocated Metal/OpenGL editor/player execution from a Unicode/
+space path. These are local native checks, not hosted Windows/Linux CI or a
+visual acceptance claim.
+
+All 26 original edges pass 156 independent FP64 BRDF-limit cases (three
+roughnesses, dielectric/metal), with zero limiting/reference radiance difference.
+The native sphere oracle covers the original mesh plus 16/64-segment spheres,
+orthographic/perspective cameras and moving directional/point/spot sources;
+it checks radiance against the independent radial-sphere reference at
+`N·V >= .05`, with tolerance `.0002 + .002*abs(expected)`. Original-mesh
+orthographic cases include 3,276 illuminated samples below flat-face horizons
+per backend. The additional material fixture checks 216 direct-radiance cases
+and 72 indirect-normal readbacks per backend/configuration: flat/smooth authored
+normals, map scales 0/1/8, signed nonuniform transforms, culled/two-sided backs,
+and three camera positions. Maximum material radiance error is 6.18e-8;
+maximum repaired-normal error is 1.99e-7. Native local accumulation error is
+at most 1.03e-5. Gallery backend parity has zero ID mismatches, max depth delta
+1.79e-7, and max display RGB delta 9.08e-6. Before/after Metal gallery IDs/depth
+are exact; the IBL energy scheduling optimization changes no gallery pixels.
+
+GGX component errors remain at most 1.24e-5 against the independent table model
+and 1.00e-4 against the independent continuous model. Perfect-reflector GPU
+furnaces return approximately 0.999999 (rough), 0.999997 (roughness floor), and
+0.99963–0.99965 (grazing `N·V=.01`), within the unchanged 0.003 bound. RuntimeBRDF_v2
+and historical reference bytes remain unchanged.
+
+The default HEAD full-suite command still reproduces the **pre-existing**
+`Frozen IBLQuality_v2 bytes changed` failure. Sixteen Debug executables passed
+before it. The established immutable fixture revision
+`86c581c13fd5c944c2a06d720314a753d7607d8f` passes the remaining Debug checks and
+all 18 Release executables. After the final energy scheduling change, all four
+affected graphics suites were rerun in both configurations; unchanged CPU/2D
+gates were retained. No frozen hash or asset was reset. No new first-party or
+shader warnings were identified; existing unused-parameter/missing-initializer
+and Xcode script-phase warnings remain. Windows/Linux execution and current-fix
+hosted CI are **NOT RUN**. The owner's two XeGTAO example edits are preserved and
+excluded from the correction.
+
+The [paired performance record](evidence/LocalLights_v1/terminator/separated/performance.json)
+uses Release native Metal, 1920×1080, tiled 16, identical unmapped cube and light
+workloads, AO/TAA and GPU validation off, five warmups and 20 samples per case,
+three alternating baseline/current runs (60 measured samples per version/case).
+These are GPU forward-pass intervals in serialized offscreen captures, not
+presented frame pacing. No OpenGL pass-timing or fixed frame-budget claim is made.
+
+| Workload | Matched `b492560` median | Correction median | Change |
+| --- | ---: | ---: | ---: |
+| 32 sparse | 1.892 ms | 2.020 ms | +6.7% |
+| 128 sparse | 3.882 ms | 4.198 ms | +8.1% |
+| 320 dense | 139.185 ms | 147.160 ms | +5.7% |
+
+The accepted historical baseline medians were 1.714/3.869/138.818 ms; the current
+paired baseline above controls for run conditions. This is a measured cost,
+not a speedup. The benchmark's aligned flat normals add no new illumination.
+Investigation removed unmapped per-light visibility work and moved unused IBL
+energy behind its uniform enable condition. Merely moving IBL work after the
+light loop did not establish a useful dense-case gain. The retained guard reduced
+a single matched probe from 2.106/4.369/153.350 to 2.009/4.218/149.497 ms. Remaining
+normal/visibility-path cost is recorded rather than hidden; raw samples and p95
+are retained. Owner visual approval remains the final milestone gate. No shadow
+implementation, merge or release was performed.
+
+The [separated correction record](evidence/LocalLights_v1/terminator/separated/qualification.json)
+contains final gate status, shader identities, numerical errors, timings and
+remaining gaps. It supersedes neither the historical rejected-candidate results
+nor the owner's visual acceptance gate.
+
+- [Matched gallery crop](evidence/LocalLights_v1/terminator/separated/matched-crop.png):
+  identical native Metal camera, exposure and static lights; baseline left,
+  separated correction right; nearest-neighbor enlargement.
+- [Full current gallery](evidence/LocalLights_v1/terminator/separated/gallery.png).
+- [Moving-light contact sheet](evidence/LocalLights_v1/terminator/separated/moving-light.png)
+  and [animation](evidence/LocalLights_v1/terminator/separated/moving-light.gif):
+  direct component, point/spot followed by directional frames, fixed exposure.
+  Separate [point](evidence/LocalLights_v1/terminator/separated/moving-point.gif),
+  [spot](evidence/LocalLights_v1/terminator/separated/moving-spot.gif) and
+  [directional](evidence/LocalLights_v1/terminator/separated/moving-directional.gif)
+  loops avoid switching source types within a clip.
+
+Reproduce the analytic 26-edge cosine and complete FP64 radiance limits with
+`python3 scripts/macos/terminator_reference.py`. Run the native low/high
+tessellation, perspective, material mapping, signed transform, backface and
+camera-motion cases with `python3 scripts/macos/local_lighting.py --config Debug
+--smooth-terminator --output NEW_DIRECTORY`, then repeat Release. The historical
+`--terminator` option remains a diagnostic of the rejected strict per-face
+policy, not a passing acceptance requirement for an intentionally tilted smooth
+surface. Matched focused timings use `--benchmark --benchmark-focus --backend
+metal`, with `--resources` selecting isolated baseline resources.
 
 ## Mathematics and limits
 

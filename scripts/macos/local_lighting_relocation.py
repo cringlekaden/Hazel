@@ -43,7 +43,7 @@ def main():
         resources=bundles['Nutella']/'Contents/Resources';sdk=hz.mono_prefix()
         env={k:v for k,v in os.environ.items() if not k.startswith(('HAZEL_','DYLD_','MTL_'))}
         env.update(PATH='/nonexistent',DEVELOPER_DIR='/nonexistent',MTL_DEBUG_LAYER='1',MTL_SHADER_VALIDATION='1',
-            HAZEL_RENDERING_REFERENCE_PROJECT=str(descriptor),HAZEL_DATA=str(working/'profile'),HAZEL_SAVE_ROOT=str(working/'saves'))
+            HAZEL_SMOOTH_TERMINATOR_DIAGNOSTIC='1',HAZEL_RENDERING_REFERENCE_PROJECT=str(descriptor),HAZEL_DATA=str(working/'profile'),HAZEL_SAVE_ROOT=str(working/'saves'))
         cmd=isolation_command([helper,resources,working/'probe-results','--local-lights'],sdk,metal=True)
         with (out/'probe.log').open('w') as log:r=subprocess.run(cmd,cwd=working,env=env,stdout=log,stderr=subprocess.STDOUT,timeout=180)
         if r.returncode:raise RuntimeError('Isolated local-light probe failed')

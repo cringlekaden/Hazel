@@ -1,0 +1,20 @@
+{
+  "baseline": "b49256001bd6d13422fa4c88d0a52a96ac3b5c42",
+  "sourceSHA256": "46e975ee068a74ba4f8968006f544d64ddbbec0929b05bafe8a0c68e53ebf48d",
+  "width": 1280,
+  "height": 720,
+  "exposure": 0,
+  "staticAuthoredCameraAndLights": true,
+  "idMismatches": 0,
+  "maxDepthDelta": 0.0,
+  "maxDisplayRGBDelta": 0.09167331457138062,
+  "maxRGBDeltaFromPreEnergyGuard": 0.0,
+  "cropTopLeftPixels": [
+    325,
+    195,
+    620,
+    385
+  ],
+  "enlargement": "2x nearest-neighbor",
+  "ownerVisualApproval": "PENDING"
+}

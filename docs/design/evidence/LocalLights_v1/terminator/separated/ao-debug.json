@@ -1,0 +1,157 @@
+{
+  "configuration": "Debug",
+  "head": "b49256001bd6d13422fa4c88d0a52a96ac3b5c42",
+  "worktree": "M Hazel/Resources/shaders/ForwardPBR.glsl\n M Hazel/Resources/shaders/metal/ForwardPBR.hzmetal\n M README.md\n M docs/design/images/local-lighting/gallery.png\n M docs/design/local-lighting.md\n M examples/RenderingReference/Assets/Scenes/XeGTAO-Contact.hazel\n M examples/RenderingReference/README.md\n M examples/RenderingReference/RenderingReference-XeGTAO.hproj\n M scripts/macos/local_lighting.py\n M scripts/macos/local_lighting_relocation.py\n M tests/macos/LocalLightingQualification.h\n M tests/migration/DirectPBRChecks.h\n M tests/migration/Renderer2DSmoke.cpp\n?? docs/design/evidence/LocalLights_v1/terminator/\n?? scripts/macos/terminator_ablation.py\n?? scripts/macos/terminator_reference.py",
+  "command": [
+    "/Volumes/External/kadencringle/Projects/Hazel/bin/Debug-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+    "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+    "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/ao-debug/captures",
+    "--xegtao"
+  ],
+  "nativeStatus": "PASS",
+  "shaderHashes": {
+    "ForwardPBR.hzmetal": "3ef4f922246d9042b8b0b786e7f85aaf522bb60f83f38112cd108eca8703ce21",
+    "producer.txt": "3adf77fe1deff3d0d6cd64e5d94093697067bf3661383af61af35e853b87f53f",
+    "EntityOutline.hzmetal": "01ef441c3b77ab67b9d02aa739f1a7028df2b38b9d23fa1d9c85a87b70f1da56",
+    "Renderer2D_Line.hzmetal": "0649cd9aa45d63604c35ca5def33e3e7bc1ab98f5c8f2325f56cf73ec0e2b154",
+    "Renderer2D_Quad-16.hzmetal": "39eea29c143507c211f13271cb3c4a77759910546ffce882a258502216fb35df",
+    "LocalLightCull.metallib": "68e9364883b123d9ff24bf121f5200c8fc35c7d278ecf6332db2c908dd489a3e",
+    "LocalLightCull.json": "d47d2b5177a439077a977d5b2319b0324f206252c1f7f34924c4bc9eebd93876",
+    "ImGui.json": "d36612bb5f238ec1c4bab9b2e85fc77d3c63c860debd011c0596d9da253cc280",
+    "XeGTAO.metallib": "524ef4611573fa9ee363915fab117e495dbae3e419e07ddba4269c74b0208368",
+    "MotionPBR.hzmetal": "45613286d38f7d974713f96718e2a6dbb527836150573f389735c324a01dbb19",
+    "Renderer2D_Quad-32.hzmetal": "909978450633564664d3f6f5356aa80c497644ffb0fddeec85bacf9a975695eb",
+    "WorldPresentation.hzmetal": "6cf0ea9c2ca49ecd7f264e5a4df9e5f174c2c51e6b50543d5b8d7ebb2acfb164",
+    "XeGTAO.json": "a7ce46cda7d523f9eb4a968317e967f638e83ea70b3d329b9c4b62b2e7d8b20d",
+    "EnvironmentSky.hzmetal": "ba159aa84517a9b3626851f37b7f6b5314a1ae2250dfd5d58e051d22d2c9c14a",
+    "ImGui.metallib": "ebd096577ba66f98f3d2ae9dc32a607ca23e7e5e3aa8243defe15a238c7ce167",
+    "Renderer2D_Circle.hzmetal": "4e51b4ef362be908924d84287eb1c92535cd080b03386d906e968a352251fce3",
+    "DepthPBR.hzmetal": "1d70d04368e5b48056bb672c1588d7e57a4abbd8f2199bc09357b06bb29f098f",
+    "Renderer2D_Text.hzmetal": "f76ae76d70633ab911155803737fb8a76f14be5c0be12ff57c6ca10c21889ba5",
+    "TemporalAA.metallib": "a6fb1afc1bbb467b32fb49fdbcf0e7e932aa5a0fe2f3461c6b789a1e44b14a65",
+    "DisplayOutput.hzmetal": "8673d03228a2883189838f0d47ba8b25b51024e2eeac91c3bc5bd2445b2fcead",
+    "TemporalAA.json": "72a7ec6047a1f8d2c4324b03626e3c807178be4711ecdebf18791ac83e71b990"
+  },
+  "milestone": "INCOMPLETE: focused offscreen checks exclude real editor/player, display scaling, packaging and sustained benchmarks",
+  "geometricReference": {
+    "samplesPerProbe": 16384,
+    "probes": [
+      {
+        "pixel": [
+          174,
+          90
+        ],
+        "world": [
+          0.2636009087213223,
+          0.009089686507631776,
+          0.05
+        ],
+        "expected": 0.8569783519068666,
+        "measured": 0.8202582465277778,
+        "error": -0.03672010537908876
+      },
+      {
+        "pixel": [
+          175,
+          90
+        ],
+        "world": [
+          0.2817802817365862,
+          0.009089686507631776,
+          0.05
+        ],
+        "expected": 0.7272139136091922,
+        "measured": 0.6518825954861112,
+        "error": -0.07533131812308103
+      },
+      {
+        "pixel": [
+          176,
+          90
+        ],
+        "world": [
+          0.29995965475184944,
+          0.009089686507631776,
+          0.05
+        ],
+        "expected": 0.6103352650780894,
+        "measured": 0.5056694878472222,
+        "error": -0.10466577723086723
+      },
+      {
+        "pixel": [
+          178,
+          90
+        ],
+        "world": [
+          0.3363184007823772,
+          0.009089686507631776,
+          0.05
+        ],
+        "expected": 0.6862540979368954,
+        "measured": 0.6310221354166666,
+        "error": -0.05523196252022877
+      },
+      {
+        "pixel": [
+          180,
+          90
+        ],
+        "world": [
+          0.3726771468129043,
+          0.009089686507631776,
+          0.05
+        ],
+        "expected": 0.7557121541496424,
+        "measured": 0.7555881076388888,
+        "error": -0.00012404651075359485
+      },
+      {
+        "pixel": [
+          184,
+          90
+        ],
+        "world": [
+          0.4453946388739585,
+          0.009089686507631776,
+          0.05
+        ],
+        "expected": 0.8693648782970124,
+        "measured": 0.9091796875,
+        "error": 0.03981480920298763
+      },
+      {
+        "pixel": [
+          188,
+          90
+        ],
+        "world": [
+          0.5181121309350134,
+          0.009089686507631776,
+          0.05
+        ],
+        "expected": 0.9392135093999302,
+        "measured": 0.9651692708333334,
+        "error": 0.02595576143340317
+      },
+      {
+        "pixel": [
+          192,
+          90
+        ],
+        "world": [
+          0.5908296229960676,
+          0.009089686507631776,
+          0.05
+        ],
+        "expected": 0.9762733037777749,
+        "measured": 0.9861111111111112,
+        "error": 0.00983780733333628
+      }
+    ],
+    "rms": 0.05406522294936046,
+    "limit": 0.15,
+    "status": "PASS",
+    "scope": "Independent physical-radius cosine hemisphere visibility; screen-space approximation, high quality only"
+  }
+}

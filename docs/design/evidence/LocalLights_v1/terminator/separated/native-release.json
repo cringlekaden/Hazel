@@ -1,0 +1,41 @@
+{
+  "smoothTerminator": true,
+  "terminator": false,
+  "head": "b49256001bd6d13422fa4c88d0a52a96ac3b5c42",
+  "configuration": "Release",
+  "benchmark": false,
+  "sourceSHA256": "46e975ee068a74ba4f8968006f544d64ddbbec0929b05bafe8a0c68e53ebf48d",
+  "commands": {
+    "metal": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+      "/Volumes/External/kadencringle/Projects/Hazel/Hazel/Resources",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/native-release/metal",
+      "--local-lights"
+    ],
+    "opengl": [
+      "/Volumes/External/kadencringle/Projects/Hazel/bin/Release-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+      "--local-lights",
+      "/Volumes/External/kadencringle/Projects/Hazel/build/qualification/terminator-finish/final/native-release/opengl"
+    ]
+  },
+  "backends": {
+    "metal": {
+      "cases": 40,
+      "maximumFP64Error": 1.02809119742e-05,
+      "maximumOrderAndCullingError": 1.23977661133e-05,
+      "maximumOverflowTiles": 20
+    },
+    "opengl": {
+      "cases": 40,
+      "maximumFP64Error": 9.84876134069e-06,
+      "maximumOrderAndCullingError": 1.33514404297e-05,
+      "maximumOverflowTiles": 0
+    }
+  },
+  "showcaseParity": {
+    "idMismatches": 0,
+    "maxDepth": 1.7881393432617188e-07,
+    "maxRGB": 9.074807167053223e-06
+  },
+  "status": "PASS scoped numerical/culling/parity; full milestone gates are separate"
+}
