@@ -341,3 +341,18 @@ python3 scripts/hazel.py run Nutella --config Release --project examples/Renderi
 ```
 
 See the [point-shadow design and evidence](../../docs/design/point-shadows.md).
+
+## Combined shadow study
+
+Open `RenderingReference-CombinedShadows.hproj` in Hazelnut and press **Play**.
+The scene combines CSM, two shadowed spots, one shadowed point, and ten fill
+lights. Inspect the contact block, the smooth sphere and the shadow cast by
+the thin texture cutout. Toggle the light shadow controls or change the map
+resolutions to compare edge definition and resource use.
+
+```sh
+python3 scripts/hazel.py run Nutella --config Release --project examples/RenderingReference/RenderingReference-CombinedShadows.hproj
+```
+
+The [combined shadow qualification record](../../docs/design/combined-shadow-quality.md)
+includes the moving fixture, timings and TAA-off filter comparison.

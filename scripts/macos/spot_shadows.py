@@ -115,7 +115,7 @@ def main():
     print(report['status'])
 
 
-def verify_archives(archives, output, binaries, sdk, env, report, mode="spot", offscreen_only=False):
+def verify_archives(archives, output, binaries, sdk, env, report, mode="spot", offscreen_only=False, probe_env=None):
     from internal.package_tests import extract_verified
     from macos.packaging import relocate_executable, sign
     from macos.qualification import isolation_command, native_console
@@ -127,9 +127,11 @@ def verify_archives(archives, output, binaries, sdk, env, report, mode="spot", o
     with tempfile.TemporaryDirectory(prefix=f'Hazel {mode} shadow relocation ü ') as temporary:
         working = Path(temporary)
 
-        def run(name, command, project=None):
+        def run(name, command, project=None, extra_env=None):
             variables = {**clean, 'HAZEL_DATA': str(working / (name + '-profile')),
                          'HAZEL_SAVE_ROOT': str(working / (name + '-saves'))}
+            if extra_env:
+                variables.update(extra_env)
             if project:
                 variables['HAZEL_RENDERING_REFERENCE_PROJECT'] = str(project)
             with (output / (name + '.log')).open('w') as log:
@@ -170,7 +172,7 @@ def verify_archives(archives, output, binaries, sdk, env, report, mode="spot", o
                 source_free = working / 'Source-free Resources'
                 shutil.copytree(resources, source_free, ignore=shutil.ignore_patterns('*.glsl', '*.metal'))
                 descriptor = source_free / 'Project' / project.name
-                run('metal-source-free', [probe, source_free, working / 'source-free-captures', f'--{mode}-shadows'], descriptor)
+                run('metal-source-free', [probe, source_free, working / 'source-free-captures', f'--{mode}-shadows'], descriptor, probe_env)
 
 
 if __name__ == '__main__':

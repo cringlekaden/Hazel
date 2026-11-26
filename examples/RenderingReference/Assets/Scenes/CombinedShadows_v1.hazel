@@ -1,0 +1,333 @@
+SceneVersion: 3
+Scene: Combined shadow quality study
+Presentation:
+  Mode: SceneReferred
+  Exposure: 0
+  Background: [0.008, 0.008, 0.012, 1]
+  Environment:
+    Asset: Reference/IBL_v1/Constant.henv
+    Yaw: 0
+    Gain: 0.16
+    Lighting: true
+    Background: false
+  Shadows:
+    Enabled: true
+    Resolution: 1024
+    Distance: 20
+    SplitLambda: 0.65
+    NormalBias: 0.2
+    DepthBias: 0.05
+    Blend: 0.1
+Entities:
+  - Entity: 1
+    Relationship:
+      Parent: 0
+      Order: 0
+    TagComponent:
+      Tag: Perspective camera
+    TransformComponent:
+      Translation: [0, -3, 6]
+      Rotation: [0.4636476090008061, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 0.69
+        PerspectiveNear: 0.1
+        PerspectiveFar: 30
+        OrthographicSize: 10
+        OrthographicNear: -1
+        OrthographicFar: 1
+      Primary: true
+      FixedAspectRatio: false
+  - Entity: 2
+    Relationship:
+      Parent: 0
+      Order: 1
+    TagComponent:
+      Tag: Amber point light
+    TransformComponent:
+      Translation: [-2.6, 0.75, 2.8]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [1, 0.48, 0.18]
+      Intensity: 45
+      Enabled: true
+      Range: 7
+      CastShadows: true
+      ShadowResolution: 512
+  - Entity: 3
+    Relationship:
+      Parent: 0
+      Order: 2
+    TagComponent:
+      Tag: Blue spotlight
+    TransformComponent:
+      Translation: [2.5, -0.8, 3.3]
+      Rotation: [0.19088185032128066, 0.6483319890872608, 0]
+      Scale: [1, 1, 1]
+    SpotLightComponent:
+      Color: [0.22, 0.57, 1]
+      Intensity: 45
+      Enabled: true
+      Range: 7
+      InnerCone: 0.38
+      OuterCone: 0.65
+      CastShadows: true
+      ShadowResolution: 1024
+  - Entity: 10
+    Relationship:
+      Parent: 0
+      Order: 3
+    TagComponent:
+      Tag: Receiver
+    TransformComponent:
+      Translation: [0, 0, -0.08]
+      Rotation: [0, 0, 0]
+      Scale: [10, 8, 0.16]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials: []
+  - Entity: 11
+    Relationship:
+      Parent: 0
+      Order: 4
+    TagComponent:
+      Tag: Contact block
+    TransformComponent:
+      Translation: [-0.45, 0.25, 0.5]
+      Rotation: [0, 0, 0.25]
+      Scale: [1.05, 0.72, 1]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials: []
+  - Entity: 12
+    Relationship:
+      Parent: 0
+      Order: 5
+    TagComponent:
+      Tag: Mirrored block
+    TransformComponent:
+      Translation: [1.13, 0.12, 0.36]
+      Rotation: [0, 0, -0.38]
+      Scale: [-0.5, 0.85, 0.72]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials: []
+  - Entity: 13
+    Relationship:
+      Parent: 0
+      Order: 6
+    TagComponent:
+      Tag: Floating texture cutout
+    TransformComponent:
+      Translation: [0.35, 1.25, 1.0]
+      Rotation: [0, 0, 0.12]
+      Scale: [0.93, 1.14, 0.09]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Native/Direct_v1/UnitCube.hmesh
+      Materials:
+        - Slot: 0000000000000007
+          Material: Reference/Direct_v1/Surfaces/Mask.hmat
+  - Entity: 14
+    Relationship:
+      Parent: 0
+      Order: 7
+    TagComponent:
+      Tag: Smooth sphere
+    TransformComponent:
+      Translation: [-1.55, -0.75, 0.48]
+      Rotation: [0, 0, 0]
+      Scale: [0.92, 0.92, 0.92]
+    MeshRendererComponent:
+      Version: 1
+      Mesh: Reference/Direct_v1/Sphere.hmesh
+      Materials: []
+  - Entity: 15
+    Relationship:
+      Parent: 0
+      Order: 8
+    TagComponent:
+      Tag: Sun
+    TransformComponent:
+      Translation: [0, 0, 4]
+      Rotation: [0.52, -0.6, 0]
+      Scale: [1, 1, 1]
+    DirectionalLightComponent:
+      Color: [1, 0.94, 0.86]
+      Intensity: 0.75
+      Enabled: true
+  - Entity: 16
+    Relationship:
+      Parent: 0
+      Order: 9
+    TagComponent:
+      Tag: Green spotlight
+    TransformComponent:
+      Translation: [-1.25, -2.75, 2.8]
+      Rotation: [0.68, -0.38, 0]
+      Scale: [1, 1, 1]
+    SpotLightComponent:
+      Color: [0.25, 1, 0.34]
+      Intensity: 20
+      Enabled: true
+      Range: 6
+      InnerCone: 0.44
+      OuterCone: 0.72
+      CastShadows: true
+      ShadowResolution: 1024
+  - Entity: 20
+    Relationship:
+      Parent: 0
+      Order: 10
+    TagComponent:
+      Tag: Fill point light 1
+    TransformComponent:
+      Translation: [-3.0, -1.75, 1.7]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [0.65, 0.75, 1]
+      Intensity: 0.28
+      Enabled: true
+      Range: 3.5
+  - Entity: 21
+    Relationship:
+      Parent: 0
+      Order: 11
+    TagComponent:
+      Tag: Fill point light 2
+    TransformComponent:
+      Translation: [-1.5, -1.75, 1.7]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [0.65, 0.75, 1]
+      Intensity: 0.28
+      Enabled: true
+      Range: 3.5
+  - Entity: 22
+    Relationship:
+      Parent: 0
+      Order: 12
+    TagComponent:
+      Tag: Fill point light 3
+    TransformComponent:
+      Translation: [0.0, -1.75, 1.7]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [0.65, 0.75, 1]
+      Intensity: 0.28
+      Enabled: true
+      Range: 3.5
+  - Entity: 23
+    Relationship:
+      Parent: 0
+      Order: 13
+    TagComponent:
+      Tag: Fill point light 4
+    TransformComponent:
+      Translation: [1.5, -1.75, 1.7]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [0.65, 0.75, 1]
+      Intensity: 0.28
+      Enabled: true
+      Range: 3.5
+  - Entity: 24
+    Relationship:
+      Parent: 0
+      Order: 14
+    TagComponent:
+      Tag: Fill point light 5
+    TransformComponent:
+      Translation: [3.0, -1.75, 1.7]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [0.65, 0.75, 1]
+      Intensity: 0.28
+      Enabled: true
+      Range: 3.5
+  - Entity: 25
+    Relationship:
+      Parent: 0
+      Order: 15
+    TagComponent:
+      Tag: Fill point light 6
+    TransformComponent:
+      Translation: [-3.0, 1.75, 1.7]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [0.65, 0.75, 1]
+      Intensity: 0.28
+      Enabled: true
+      Range: 3.5
+  - Entity: 26
+    Relationship:
+      Parent: 0
+      Order: 16
+    TagComponent:
+      Tag: Fill point light 7
+    TransformComponent:
+      Translation: [-1.5, 1.75, 1.7]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [0.65, 0.75, 1]
+      Intensity: 0.28
+      Enabled: true
+      Range: 3.5
+  - Entity: 27
+    Relationship:
+      Parent: 0
+      Order: 17
+    TagComponent:
+      Tag: Fill point light 8
+    TransformComponent:
+      Translation: [0.0, 1.75, 1.7]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [0.65, 0.75, 1]
+      Intensity: 0.28
+      Enabled: true
+      Range: 3.5
+  - Entity: 28
+    Relationship:
+      Parent: 0
+      Order: 18
+    TagComponent:
+      Tag: Fill point light 9
+    TransformComponent:
+      Translation: [1.5, 1.75, 1.7]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [0.65, 0.75, 1]
+      Intensity: 0.28
+      Enabled: true
+      Range: 3.5
+  - Entity: 29
+    Relationship:
+      Parent: 0
+      Order: 19
+    TagComponent:
+      Tag: Fill point light 10
+    TransformComponent:
+      Translation: [3.0, 1.75, 1.7]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Color: [0.65, 0.75, 1]
+      Intensity: 0.28
+      Enabled: true
+      Range: 3.5

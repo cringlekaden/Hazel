@@ -1,0 +1,228 @@
+{
+  "baseline-presented": {
+    "head": "075608ce4d448f5493fc31ea0abe75390f8f8a0f",
+    "configuration": "Release",
+    "mode": "presented",
+    "cases": {
+      "metal": {
+        "command": [
+          "<checkout>/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "<checkout>/build/integrated-shadow-quality/baseline-presented/metal",
+          "--benchmark-metal",
+          "<checkout>/Hazel/Resources",
+          "<checkout>/examples/RenderingReference/RenderingReference-CombinedShadows.hproj",
+          "-1"
+        ],
+        "exitCode": 0,
+        "summary": [
+          "PASS production window benchmark, authored camera/assets, four texture slots, VSync-off request, 120 positive presentations per extent"
+        ]
+      }
+    },
+    "shaderSHA256": "2e36e1a02bc491896c01f6f402ec1248d0b0ea3f1dc4bbfa8b91d2f6e8258ea4",
+    "metalArtifactSHA256": "1f5471b9727abdc9fceec0c4d5d319f9ea19e5d6ae5e70e5e07ddbfef4cb46de",
+    "presentation": {
+      "1280x720": {
+        "positiveFrames": 92,
+        "gpuWholeFrameMs": {
+          "samples": 92,
+          "median": 6.335187528748065,
+          "p95": 7.043041987344623
+        },
+        "sceneCPUms": {
+          "samples": 92,
+          "median": 0.45225000000000004,
+          "p95": 0.540666
+        },
+        "layerCPUms": {
+          "samples": 92,
+          "median": 0.5696875,
+          "p95": 0.6965
+        },
+        "presentedIntervalMs": {
+          "samples": 91,
+          "median": 6.296834035310894,
+          "p95": 13.046665990259498
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 13.456249958835542,
+          "p95": 13.722457981202751
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 0.466459,
+          "p95": 0.587458
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 0.687375,
+          "p95": 0.847083
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 13.307229004567489,
+          "p95": 22.610916988924146
+        }
+      }
+    },
+    "final": [
+      "METAL_FINAL submitted=245 completed=245 presented=242 completed_presented=242 errors=0 peak_frame_bytes=250322360 peak_attachment_bytes=233308160 peak_allocator_bytes=9645608 live_attachment_generations=0 pending_bytes=0"
+    ],
+    "displayBackingScale": 1
+  },
+  "candidate-presented": {
+    "head": "075608ce4d448f5493fc31ea0abe75390f8f8a0f",
+    "configuration": "Release",
+    "mode": "presented",
+    "cases": {
+      "metal": {
+        "command": [
+          "<checkout>/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "<checkout>/build/integrated-shadow-quality/candidate-presented/metal",
+          "--benchmark-metal",
+          "<checkout>/build/integrated-shadow-quality/candidate-resources",
+          "<checkout>/examples/RenderingReference/RenderingReference-CombinedShadows.hproj",
+          "-1"
+        ],
+        "exitCode": 0,
+        "summary": [
+          "PASS production window benchmark, authored camera/assets, four texture slots, VSync-off request, 120 positive presentations per extent"
+        ]
+      }
+    },
+    "shaderSHA256": "4bace86a8f955431eb755585ceff9d770b76e6501d4734a77d2483261be084c4",
+    "metalArtifactSHA256": "8e65c2604c30eadb239bd511181b5e0328d71083f943d8b6afc727237a89b494",
+    "presentation": {
+      "1280x720": {
+        "positiveFrames": 92,
+        "gpuWholeFrameMs": {
+          "samples": 92,
+          "median": 7.521062507294118,
+          "p95": 7.921167009044439
+        },
+        "sceneCPUms": {
+          "samples": 92,
+          "median": 0.4442505,
+          "p95": 0.530458
+        },
+        "layerCPUms": {
+          "samples": 92,
+          "median": 0.5514795,
+          "p95": 0.778084
+        },
+        "presentedIntervalMs": {
+          "samples": 91,
+          "median": 7.507083006203175,
+          "p95": 16.9230829924345
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 91,
+        "gpuWholeFrameMs": {
+          "samples": 91,
+          "median": 15.996125002857298,
+          "p95": 16.32599998265505
+        },
+        "sceneCPUms": {
+          "samples": 91,
+          "median": 0.457416,
+          "p95": 0.520125
+        },
+        "layerCPUms": {
+          "samples": 91,
+          "median": 0.673708,
+          "p95": 0.76
+        },
+        "presentedIntervalMs": {
+          "samples": 90,
+          "median": 15.936000010697171,
+          "p95": 25.913375022355467
+        }
+      }
+    },
+    "final": [
+      "METAL_FINAL submitted=246 completed=246 presented=242 completed_presented=242 errors=0 peak_frame_bytes=250322360 peak_attachment_bytes=233308160 peak_allocator_bytes=9645608 live_attachment_generations=0 pending_bytes=0"
+    ],
+    "displayBackingScale": 1
+  },
+  "baseline-presented-effects": {
+    "head": "075608ce4d448f5493fc31ea0abe75390f8f8a0f",
+    "configuration": "Release",
+    "mode": "presented",
+    "cases": {
+      "metal": {
+        "command": [
+          "<checkout>/bin/Release-macos-arm64/MetalM1Smoke/MetalM1Smoke",
+          "<checkout>/build/integrated-shadow-quality/baseline-presented-effects/metal",
+          "--benchmark-metal",
+          "<checkout>/Hazel/Resources",
+          "<checkout>/examples/RenderingReference/RenderingReference-CombinedShadows.hproj",
+          "2",
+          "--taa"
+        ],
+        "exitCode": 0,
+        "summary": [
+          "PASS production window benchmark, authored camera/assets, four texture slots, VSync-off request, 120 positive presentations per extent"
+        ]
+      }
+    },
+    "shaderSHA256": "2e36e1a02bc491896c01f6f402ec1248d0b0ea3f1dc4bbfa8b91d2f6e8258ea4",
+    "metalArtifactSHA256": "1f5471b9727abdc9fceec0c4d5d319f9ea19e5d6ae5e70e5e07ddbfef4cb46de",
+    "presentation": {
+      "1280x720": {
+        "positiveFrames": 93,
+        "gpuWholeFrameMs": {
+          "samples": 93,
+          "median": 12.32549996348098,
+          "p95": 12.588457961101085
+        },
+        "sceneCPUms": {
+          "samples": 93,
+          "median": 0.633791,
+          "p95": 0.715709
+        },
+        "layerCPUms": {
+          "samples": 93,
+          "median": 0.791542,
+          "p95": 0.931917
+        },
+        "presentedIntervalMs": {
+          "samples": 92,
+          "median": 12.049020500853658,
+          "p95": 20.34270897274837
+        }
+      },
+      "1920x1080": {
+        "positiveFrames": 90,
+        "gpuWholeFrameMs": {
+          "samples": 90,
+          "median": 27.046000002883375,
+          "p95": 27.343249996192753
+        },
+        "sceneCPUms": {
+          "samples": 90,
+          "median": 0.6743965000000001,
+          "p95": 0.707542
+        },
+        "layerCPUms": {
+          "samples": 90,
+          "median": 0.9293130000000001,
+          "p95": 1.046167
+        },
+        "presentedIntervalMs": {
+          "samples": 89,
+          "median": 27.642417000606656,
+          "p95": 33.635124971624464
+        }
+      }
+    },
+    "final": [
+      "METAL_FINAL submitted=247 completed=247 presented=243 completed_presented=243 errors=0 peak_frame_bytes=557931328 peak_attachment_bytes=444923904 peak_allocator_bytes=10890792 live_attachment_generations=0 pending_bytes=0"
+    ],
+    "displayBackingScale": 1
+  }
+}

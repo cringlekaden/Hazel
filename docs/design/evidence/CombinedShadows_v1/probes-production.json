@@ -1,0 +1,163 @@
+{
+  "head": "075608ce4d448f5493fc31ea0abe75390f8f8a0f",
+  "configuration": "Release",
+  "mode": "probes",
+  "cases": {
+    "spot-metal": {
+      "command": [
+        "<checkout>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<checkout>/Hazel/Resources",
+        "<checkout>/build/integrated-shadow-quality/baseline-probes/spot-metal",
+        "--spot-shadows"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "PASS spot FP64 projection cone samples=1296 maxDepthError=3.66931e-08",
+        "SPOT referenceError=3.95772e-07 loopError=0 redBlocked=3273/3273 greenBlocked=3793/3793 redLit=24769/24769 greenLit=23561/23561 overlap=1178 contact=48 outsideCone=36108 outsideRange=39975",
+        "SPOT mask revealed=166 retained=1879",
+        "SPOT slopeError=1.19267e-07",
+        "PASS spotlight shadows, mixed maps, motion, resize, disable and authored study",
+        "SPOT_RESOURCES peak=74117232 attachments=35381504 final=0"
+      ]
+    },
+    "spot-gl": {
+      "command": [
+        "<checkout>/bin/Release-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+        "--spot-shadows",
+        "<checkout>/build/integrated-shadow-quality/baseline-probes/spot-gl"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "Renderer: Apple M4; Version: 4.1 Metal - 91.7",
+        "PASS spot FP64 projection cone samples=1296 maxDepthError=3.66931e-08",
+        "SPOT referenceError=4.07995e-07 loopError=0 redBlocked=3273/3273 greenBlocked=3793/3793 redLit=24769/24769 greenLit=23561/23561 overlap=1178 contact=48 outsideCone=36108 outsideRange=39975",
+        "SPOT mask revealed=166 retained=1879",
+        "SPOT slopeError=8.97169e-08",
+        "PASS spotlight shadows, mixed maps, motion, resize, disable and authored study"
+      ]
+    },
+    "point-metal": {
+      "command": [
+        "<checkout>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+        "<checkout>/Hazel/Resources",
+        "<checkout>/build/integrated-shadow-quality/baseline-probes/point-metal",
+        "--point-shadows"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "POINT maxDepthError=2.28882e-08",
+        "POINT -1_-1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=468 seamBlocked=217",
+        "POINT 0_-1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_-1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=459 seamBlocked=226",
+        "POINT -1_0_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT 0_0_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_0_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT -1_1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT 0_1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT -1_-1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=328 seamBlocked=135",
+        "POINT 0_-1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_-1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=298 seamBlocked=162",
+        "POINT -1_0_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_0_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT -1_1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=298 seamBlocked=162",
+        "POINT 0_1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=328 seamBlocked=135",
+        "POINT -1_-1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT 0_-1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_-1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT -1_0_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT 0_0_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_0_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT -1_1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=459 seamBlocked=226",
+        "POINT 0_1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=468 seamBlocked=217",
+        "POINT orientations=26 referenceSamples=1064518",
+        "POINT mask revealed=278 retained=7318",
+        "POINT contactSamples=63 grazingError=0",
+        "PASS point projection, face interiors and seams, MASK, clipping, light exhaustion, culling and motion",
+        "POINT_RESOURCES peak=60818024 attachments=36299008 final=0"
+      ]
+    },
+    "point-gl": {
+      "command": [
+        "<checkout>/bin/Release-macos-arm64/MigrationRenderer2DSmoke/MigrationRenderer2DSmoke",
+        "--point-shadows",
+        "<checkout>/build/integrated-shadow-quality/baseline-probes/point-gl"
+      ],
+      "exitCode": 0,
+      "summary": [
+        "Renderer: Apple M4; Version: 4.1 Metal - 91.7",
+        "POINT maxDepthError=2.28882e-08",
+        "POINT -1_-1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=468 seamBlocked=217",
+        "POINT 0_-1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_-1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=459 seamBlocked=226",
+        "POINT -1_0_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT 0_0_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_0_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT -1_1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT 0_1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_1_-1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT -1_-1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=328 seamBlocked=135",
+        "POINT 0_-1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_-1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=298 seamBlocked=162",
+        "POINT -1_0_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_0_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT -1_1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=298 seamBlocked=162",
+        "POINT 0_1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_1_0 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=328 seamBlocked=135",
+        "POINT -1_-1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT 0_-1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_-1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=485 seamBlocked=167",
+        "POINT -1_0_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT 0_0_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=0 seamBlocked=0",
+        "POINT 1_0_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=435 seamBlocked=213",
+        "POINT -1_1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=459 seamBlocked=226",
+        "POINT 0_1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=384 seamBlocked=282",
+        "POINT 1_1_1 lit=34269/34269 blocked=6674/6674 exterior=13406 seamLit=468 seamBlocked=217",
+        "POINT orientations=26 referenceSamples=1064518",
+        "POINT mask revealed=278 retained=7318",
+        "POINT contactSamples=63 grazingError=2.98023e-08",
+        "PASS point projection, face interiors and seams, MASK, clipping, light exhaustion, culling and motion"
+      ]
+    }
+  },
+  "shaderSHA256": "2e36e1a02bc491896c01f6f402ec1248d0b0ea3f1dc4bbfa8b91d2f6e8258ea4",
+  "metalArtifactSHA256": "1f5471b9727abdc9fceec0c4d5d319f9ea19e5d6ae5e70e5e07ddbfef4cb46de",
+  "profiles": {
+    "spot-metal": {
+      "widthPx": {
+        "median": 1.6733690036511462,
+        "p95": 2.445400058450815
+      }
+    },
+    "spot-gl": {
+      "widthPx": {
+        "median": 1.6733518807445762,
+        "p95": 2.4454224761331034
+      }
+    },
+    "point-metal": {
+      "widthPx": {
+        "median": 1.659322889661695,
+        "p95": 2.0646854183064534
+      },
+      "edgeMotionErrorPx": {
+        "median": 0.48592064113014244,
+        "p95": 0.7300037149055125
+      },
+      "maxEdgeMotionErrorPx": 0.7301061449353252
+    },
+    "point-gl": {
+      "widthPx": {
+        "median": 1.6592980317100228,
+        "p95": 2.0646852875148625
+      },
+      "edgeMotionErrorPx": {
+        "median": 0.4859204862117603,
+        "p95": 0.7300037040499543
+      },
+      "maxEdgeMotionErrorPx": 0.7301061342709314
+    }
+  }
+}

@@ -1,0 +1,614 @@
+{
+  "production": {
+    "head": "075608ce4d448f5493fc31ea0abe75390f8f8a0f",
+    "configuration": "Release",
+    "mode": "timing",
+    "cases": {
+      "metal": {
+        "command": [
+          "<checkout>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+          "<checkout>/Hazel/Resources",
+          "<checkout>/build/integrated-shadow-quality/baseline-timing-v2/metal",
+          "--point-shadows"
+        ],
+        "exitCode": 0,
+        "summary": [
+          "PASS matched combined atlas and forward GPU intervals",
+          "POINT_RESOURCES peak=345106288 attachments=233660672 final=0"
+        ]
+      }
+    },
+    "shaderSHA256": "2e36e1a02bc491896c01f6f402ec1248d0b0ea3f1dc4bbfa8b91d2f6e8258ea4",
+    "metalArtifactSHA256": "1f5471b9727abdc9fceec0c4d5d319f9ea19e5d6ae5e70e5e07ddbfef4cb46de",
+    "warmups": 5,
+    "samples": 15,
+    "timing": {
+      "1280/256": {
+        "atlasBytes": 3145728,
+        "atlasTotal": {
+          "median": 0.044041699999999996,
+          "p95": 0.2407497
+        },
+        "csm_ms": {
+          "median": 0.0229167,
+          "p95": 0.037125
+        },
+        "spot_ms": {
+          "median": 0.00841667,
+          "p95": 0.0440417
+        },
+        "point_ms": {
+          "median": 0.005625,
+          "p95": 0.174708
+        },
+        "cull_ms": {
+          "median": 0.0182917,
+          "p95": 0.019
+        },
+        "forward_ms": {
+          "median": 5.54796,
+          "p95": 5.83212
+        },
+        "controlForward": {
+          "median": 3.67454,
+          "p95": 3.749
+        },
+        "pairedForwardDelta": {
+          "median": 1.84829,
+          "p95": 2.1174999999999997
+        }
+      },
+      "1280/512": {
+        "atlasBytes": 12582912,
+        "atlasTotal": {
+          "median": 0.036125,
+          "p95": 0.236042
+        },
+        "csm_ms": {
+          "median": 0.0234167,
+          "p95": 0.0301667
+        },
+        "spot_ms": {
+          "median": 0.00791667,
+          "p95": 0.0125833
+        },
+        "point_ms": {
+          "median": 0.005,
+          "p95": 0.193292
+        },
+        "cull_ms": {
+          "median": 0.01775,
+          "p95": 0.0189167
+        },
+        "forward_ms": {
+          "median": 5.5715,
+          "p95": 5.71363
+        },
+        "controlForward": {
+          "median": 3.66883,
+          "p95": 3.86292
+        },
+        "pairedForwardDelta": {
+          "median": 1.8800399999999997,
+          "p95": 1.9946300000000003
+        }
+      },
+      "1280/1024": {
+        "atlasBytes": 31457280,
+        "atlasTotal": {
+          "median": 0.0646249,
+          "p95": 0.2659997
+        },
+        "csm_ms": {
+          "median": 0.0135417,
+          "p95": 0.0243333
+        },
+        "spot_ms": {
+          "median": 0.0085,
+          "p95": 0.195833
+        },
+        "point_ms": {
+          "median": 0.0158333,
+          "p95": 0.197583
+        },
+        "cull_ms": {
+          "median": 0.0184167,
+          "p95": 0.01975
+        },
+        "forward_ms": {
+          "median": 5.48933,
+          "p95": 5.61888
+        },
+        "controlForward": {
+          "median": 3.66167,
+          "p95": 3.86342
+        },
+        "pairedForwardDelta": {
+          "median": 1.80071,
+          "p95": 1.99167
+        }
+      },
+      "1280/2048": {
+        "atlasBytes": 81788928,
+        "atlasTotal": {
+          "median": 0.20775,
+          "p95": 0.30745799999999995
+        },
+        "csm_ms": {
+          "median": 0.1445,
+          "p95": 0.221625
+        },
+        "spot_ms": {
+          "median": 0.0385417,
+          "p95": 0.0410417
+        },
+        "point_ms": {
+          "median": 0.026875,
+          "p95": 0.126708
+        },
+        "cull_ms": {
+          "median": 0.0184583,
+          "p95": 0.019
+        },
+        "forward_ms": {
+          "median": 5.55417,
+          "p95": 5.85671
+        },
+        "controlForward": {
+          "median": 3.66688,
+          "p95": 3.7695
+        },
+        "pairedForwardDelta": {
+          "median": 1.9085,
+          "p95": 2.1913799999999997
+        }
+      },
+      "1920/256": {
+        "atlasBytes": 3145728,
+        "atlasTotal": {
+          "median": 0.04350004,
+          "p95": 0.20737499999999998
+        },
+        "csm_ms": {
+          "median": 0.0302917,
+          "p95": 0.03875
+        },
+        "spot_ms": {
+          "median": 0.00770833,
+          "p95": 0.0119583
+        },
+        "point_ms": {
+          "median": 0.00495833,
+          "p95": 0.17325
+        },
+        "cull_ms": {
+          "median": 0.0273333,
+          "p95": 0.028375
+        },
+        "forward_ms": {
+          "median": 12.0767,
+          "p95": 12.4461
+        },
+        "controlForward": {
+          "median": 7.90983,
+          "p95": 8.11808
+        },
+        "pairedForwardDelta": {
+          "median": 4.16384,
+          "p95": 4.53989
+        }
+      },
+      "1920/512": {
+        "atlasBytes": 12582912,
+        "atlasTotal": {
+          "median": 0.036208370000000004,
+          "p95": 0.21495799999999998
+        },
+        "csm_ms": {
+          "median": 0.02325,
+          "p95": 0.0333333
+        },
+        "spot_ms": {
+          "median": 0.00783333,
+          "p95": 0.0122917
+        },
+        "point_ms": {
+          "median": 0.00508333,
+          "p95": 0.177333
+        },
+        "cull_ms": {
+          "median": 0.0270417,
+          "p95": 0.0276667
+        },
+        "forward_ms": {
+          "median": 12.0639,
+          "p95": 12.2178
+        },
+        "controlForward": {
+          "median": 7.91662,
+          "p95": 8.13513
+        },
+        "pairedForwardDelta": {
+          "median": 4.14373,
+          "p95": 4.319380000000001
+        }
+      },
+      "1920/1024": {
+        "atlasBytes": 31457280,
+        "atlasTotal": {
+          "median": 0.03725,
+          "p95": 0.37558333
+        },
+        "csm_ms": {
+          "median": 0.0227917,
+          "p95": 0.212083
+        },
+        "spot_ms": {
+          "median": 0.00775,
+          "p95": 0.158667
+        },
+        "point_ms": {
+          "median": 0.00483333,
+          "p95": 0.180708
+        },
+        "cull_ms": {
+          "median": 0.0275833,
+          "p95": 0.0279583
+        },
+        "forward_ms": {
+          "median": 12.0819,
+          "p95": 12.2865
+        },
+        "controlForward": {
+          "median": 7.91413,
+          "p95": 8.04692
+        },
+        "pairedForwardDelta": {
+          "median": 4.1642,
+          "p95": 4.38879
+        }
+      },
+      "1920/2048": {
+        "atlasBytes": 81788928,
+        "atlasTotal": {
+          "median": 0.218083,
+          "p95": 0.3160417
+        },
+        "csm_ms": {
+          "median": 0.158083,
+          "p95": 0.243125
+        },
+        "spot_ms": {
+          "median": 0.0401667,
+          "p95": 0.130542
+        },
+        "point_ms": {
+          "median": 0.0275,
+          "p95": 0.0305417
+        },
+        "cull_ms": {
+          "median": 0.027375,
+          "p95": 0.0284167
+        },
+        "forward_ms": {
+          "median": 12.0872,
+          "p95": 12.3033
+        },
+        "controlForward": {
+          "median": 7.92396,
+          "p95": 8.05633
+        },
+        "pairedForwardDelta": {
+          "median": 4.161490000000001,
+          "p95": 4.39922
+        }
+      }
+    }
+  },
+  "wider": {
+    "head": "075608ce4d448f5493fc31ea0abe75390f8f8a0f",
+    "configuration": "Release",
+    "mode": "timing",
+    "cases": {
+      "metal": {
+        "command": [
+          "<checkout>/bin/Release-macos-arm64/MetalRenderer2DQuadSmoke/MetalRenderer2DQuadSmoke",
+          "<checkout>/build/integrated-shadow-quality/candidate-resources",
+          "<checkout>/build/integrated-shadow-quality/candidate-timing-v2/metal",
+          "--point-shadows"
+        ],
+        "exitCode": 0,
+        "summary": [
+          "PASS matched combined atlas and forward GPU intervals",
+          "POINT_RESOURCES peak=345106288 attachments=233660672 final=0"
+        ]
+      }
+    },
+    "shaderSHA256": "4bace86a8f955431eb755585ceff9d770b76e6501d4734a77d2483261be084c4",
+    "metalArtifactSHA256": "8e65c2604c30eadb239bd511181b5e0328d71083f943d8b6afc727237a89b494",
+    "warmups": 5,
+    "samples": 15,
+    "timing": {
+      "1280/256": {
+        "atlasBytes": 3145728,
+        "atlasTotal": {
+          "median": 0.0432083,
+          "p95": 0.06533333
+        },
+        "csm_ms": {
+          "median": 0.031,
+          "p95": 0.0415833
+        },
+        "spot_ms": {
+          "median": 0.00766667,
+          "p95": 0.00883333
+        },
+        "point_ms": {
+          "median": 0.005125,
+          "p95": 0.0175417
+        },
+        "cull_ms": {
+          "median": 0.0175833,
+          "p95": 0.020625
+        },
+        "forward_ms": {
+          "median": 6.68108,
+          "p95": 6.93325
+        },
+        "controlForward": {
+          "median": 3.73121,
+          "p95": 3.82521
+        },
+        "pairedForwardDelta": {
+          "median": 2.9857099999999996,
+          "p95": 3.20204
+        }
+      },
+      "1280/512": {
+        "atlasBytes": 12582912,
+        "atlasTotal": {
+          "median": 0.03954164,
+          "p95": 0.3077497
+        },
+        "csm_ms": {
+          "median": 0.0252917,
+          "p95": 0.208083
+        },
+        "spot_ms": {
+          "median": 0.00829167,
+          "p95": 0.193417
+        },
+        "point_ms": {
+          "median": 0.00541667,
+          "p95": 0.179583
+        },
+        "cull_ms": {
+          "median": 0.01775,
+          "p95": 0.0193333
+        },
+        "forward_ms": {
+          "median": 6.54321,
+          "p95": 7.04792
+        },
+        "controlForward": {
+          "median": 3.706,
+          "p95": 3.94075
+        },
+        "pairedForwardDelta": {
+          "median": 2.84746,
+          "p95": 3.3317100000000006
+        }
+      },
+      "1280/1024": {
+        "atlasBytes": 31457280,
+        "atlasTotal": {
+          "median": 0.22175040000000001,
+          "p95": 0.3736254
+        },
+        "csm_ms": {
+          "median": 0.0149167,
+          "p95": 0.0315417
+        },
+        "spot_ms": {
+          "median": 0.0279583,
+          "p95": 0.336417
+        },
+        "point_ms": {
+          "median": 0.0222917,
+          "p95": 0.189167
+        },
+        "cull_ms": {
+          "median": 0.018,
+          "p95": 0.0189583
+        },
+        "forward_ms": {
+          "median": 6.74104,
+          "p95": 6.96992
+        },
+        "controlForward": {
+          "median": 3.70717,
+          "p95": 3.97758
+        },
+        "pairedForwardDelta": {
+          "median": 3.02616,
+          "p95": 3.26275
+        }
+      },
+      "1280/2048": {
+        "atlasBytes": 81788928,
+        "atlasTotal": {
+          "median": 0.2105,
+          "p95": 0.28375
+        },
+        "csm_ms": {
+          "median": 0.15575,
+          "p95": 0.216875
+        },
+        "spot_ms": {
+          "median": 0.0385417,
+          "p95": 0.0397917
+        },
+        "point_ms": {
+          "median": 0.0266667,
+          "p95": 0.0280833
+        },
+        "cull_ms": {
+          "median": 0.018,
+          "p95": 0.0185417
+        },
+        "forward_ms": {
+          "median": 6.74525,
+          "p95": 6.93762
+        },
+        "controlForward": {
+          "median": 3.70467,
+          "p95": 3.77046
+        },
+        "pairedForwardDelta": {
+          "median": 3.0572100000000004,
+          "p95": 3.2794499999999998
+        }
+      },
+      "1920/256": {
+        "atlasBytes": 3145728,
+        "atlasTotal": {
+          "median": 0.050208369999999995,
+          "p95": 0.2439587
+        },
+        "csm_ms": {
+          "median": 0.028625,
+          "p95": 0.0391667
+        },
+        "spot_ms": {
+          "median": 0.00770833,
+          "p95": 0.0450417
+        },
+        "point_ms": {
+          "median": 0.00520833,
+          "p95": 0.175417
+        },
+        "cull_ms": {
+          "median": 0.0272917,
+          "p95": 0.0290833
+        },
+        "forward_ms": {
+          "median": 14.599,
+          "p95": 14.809
+        },
+        "controlForward": {
+          "median": 7.9885,
+          "p95": 8.10675
+        },
+        "pairedForwardDelta": {
+          "median": 6.60325,
+          "p95": 6.849539999999999
+        }
+      },
+      "1920/512": {
+        "atlasBytes": 12582912,
+        "atlasTotal": {
+          "median": 0.0410417,
+          "p95": 0.21166703
+        },
+        "csm_ms": {
+          "median": 0.023375,
+          "p95": 0.038875
+        },
+        "spot_ms": {
+          "median": 0.00758333,
+          "p95": 0.01075
+        },
+        "point_ms": {
+          "median": 0.004875,
+          "p95": 0.181667
+        },
+        "cull_ms": {
+          "median": 0.027375,
+          "p95": 0.0285417
+        },
+        "forward_ms": {
+          "median": 14.6078,
+          "p95": 15.1446
+        },
+        "controlForward": {
+          "median": 7.99238,
+          "p95": 8.14
+        },
+        "pairedForwardDelta": {
+          "median": 6.59454,
+          "p95": 7.158390000000001
+        }
+      },
+      "1920/1024": {
+        "atlasBytes": 31457280,
+        "atlasTotal": {
+          "median": 0.03562497,
+          "p95": 0.2739586
+        },
+        "csm_ms": {
+          "median": 0.0229583,
+          "p95": 0.0480833
+        },
+        "spot_ms": {
+          "median": 0.0075,
+          "p95": 0.0782083
+        },
+        "point_ms": {
+          "median": 0.00504167,
+          "p95": 0.181792
+        },
+        "cull_ms": {
+          "median": 0.0274583,
+          "p95": 0.0284583
+        },
+        "forward_ms": {
+          "median": 14.6288,
+          "p95": 15.2319
+        },
+        "controlForward": {
+          "median": 7.99604,
+          "p95": 8.10562
+        },
+        "pairedForwardDelta": {
+          "median": 6.62834,
+          "p95": 7.2541899999999995
+        }
+      },
+      "1920/2048": {
+        "atlasBytes": 81788928,
+        "atlasTotal": {
+          "median": 0.214375,
+          "p95": 0.327208
+        },
+        "csm_ms": {
+          "median": 0.145917,
+          "p95": 0.260458
+        },
+        "spot_ms": {
+          "median": 0.0399583,
+          "p95": 0.0425
+        },
+        "point_ms": {
+          "median": 0.0275833,
+          "p95": 0.0494583
+        },
+        "cull_ms": {
+          "median": 0.027375,
+          "p95": 0.0286667
+        },
+        "forward_ms": {
+          "median": 14.6155,
+          "p95": 14.9134
+        },
+        "controlForward": {
+          "median": 7.98854,
+          "p95": 8.13696
+        },
+        "pairedForwardDelta": {
+          "median": 6.57526,
+          "p95": 6.90278
+        }
+      }
+    }
+  }
+}

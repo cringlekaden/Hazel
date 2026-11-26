@@ -119,7 +119,16 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
         atlas->Bind();
         try {
             if (RendererAPI::GetAPI() == RendererAPI::API::Metal) atlas->Clear(glm::vec4(0));
-            else { RenderCommand::SetClearColor(glm::vec4(0)); RenderCommand::Clear(); }
+            else {
+                // GL clears respect the scissor and depth write mask. A
+                // preceding atlas may have left its last tile's scissor active.
+                auto clearRaster = RenderCommand::GetRasterState();
+                clearRaster.ClipEnabled = false;
+                clearRaster.DepthWrite = true;
+                RenderCommand::SetRasterState(clearRaster);
+                RenderCommand::SetClearColor(glm::vec4(0));
+                RenderCommand::Clear();
+            }
             SceneSubmission depth;
             depth.Assets = frame.Assets;
             for (unsigned index = 0; index < count; ++index) {

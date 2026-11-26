@@ -86,12 +86,14 @@ local-light terminator correction at `c36fd1a`. Up to four spotlights and
 one point light per view can cast shadows. See the
 [spotlight design record](docs/design/spotlight-shadows.md) and the
 [point and spot shadow study](examples/RenderingReference/README.md#point-and-spot-shadow-study).
+The [combined shadow study](examples/RenderingReference/README.md#combined-shadow-study)
+shows the three shadow types together.
 
 An opt-in [directional CSM foundation](docs/design/directional-shadows.md) is under
 qualification, with a [separate shadow study](examples/RenderingReference/README.md#directional-shadow-study).
 Cascade settings include 2048 (Ultra); transient inspection separates cascade
 visibility, overlap and receiver bias. See the linked record for measured limits.
-The owner accepted the CSM and spotlight appearance for continued development. Broader qualification remains open.
+The owner accepted the CSM, spotlight and point shadow foundations for continued development. Broader qualification remains open.
 
 The development branch also includes [Metal XeGTAO ambient occlusion](docs/design/xegtao.md)
 for diffuse IBL, with editor controls and a separate contact-study scene. Functional

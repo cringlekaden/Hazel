@@ -1,5 +1,6 @@
 #pragma once
 #include "LocalLightingQualification.h"
+#include "CombinedShadowQualification.h"
 #include "Hazel/Renderer/Scene/DirectionalShadows.h"
 #include <glm/gtx/quaternion.hpp>
 
@@ -87,6 +88,10 @@ inline void PointShadowQualification(const std::filesystem::path& output,
     const std::function<Hazel::Ref<const Hazel::FramebufferReadback>(const Hazel::Ref<Hazel::Framebuffer>&)>& capture)
 {
     using namespace Hazel;
+    if (!FileSystem::GetEnvironmentPath("HAZEL_COMBINED_SHADOW_QUALIFICATION").empty()) {
+        CombinedShadowQualification(output, capture);
+        return;
+    }
     PointProjectionChecks();
     std::filesystem::create_directories(output);
     const bool metal = RendererAPI::GetAPI() == RendererAPI::API::Metal;
@@ -255,6 +260,19 @@ inline void PointShadowQualification(const std::filesystem::path& output,
         samples += lit + blocked;
     }
     std::cout << "POINT orientations=26 referenceSamples=" << samples << '\n';
+
+    if (!FileSystem::GetEnvironmentPath("HAZEL_SHADOW_EDGE_PROBES").empty()) {
+        place({0, 0, -1});
+        frame.LocalLights = {light};
+        save("profile-clear", render());
+        frame.LocalLights[0].CastShadows = true;
+        for (unsigned step = 0; step <= 8; ++step) {
+            caster.SetWorld(pose * glm::translate(glm::mat4(1), center + glm::vec3(.004f * step, 0, 0)) *
+                glm::scale(glm::mat4(1), 2.f * halfExtent));
+            frame.ShadowCasters = {receiver, caster};
+            save("profile-" + std::to_string(step), render());
+        }
+    }
 
     place({-1, 0, -1});
     frame.LocalLights = {light};
