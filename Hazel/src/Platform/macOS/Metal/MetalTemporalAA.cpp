@@ -57,7 +57,7 @@ MetalTemporalCounters::MetalTemporalCounters(MetalDevice& device)
 }
 void MetalFramebuffer::SetTemporalProducer()
 {
-    Check(!m_Frame && m_Specification.Attachments.Attachments.size()==3,"Temporal scratch requires an empty HDR framebuffer");
+    Check(!m_Frame && !m_WorldProducer && m_Specification.Attachments.Attachments.size()==3,"Temporal scratch requires an empty HDR framebuffer");
     if(!m_TemporalProducer)Check(!m_SubmittedGeneration&&m_Available.empty(),"Temporal scratch must be configured before first use");
     m_TemporalProducer=true;
 }

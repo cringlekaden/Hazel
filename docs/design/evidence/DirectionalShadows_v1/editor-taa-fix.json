@@ -1,0 +1,64 @@
+{
+  "baseline": "dd85be4feb25dde94b28f6dafcab3a822fb17dd0",
+  "status": "PASS scoped editor TAA crash regression; production milestone INCOMPLETE",
+  "platform": "Apple M4, native Metal 4, macOS 27.3, API/GPU validation enabled",
+  "native": {
+    "Debug": {
+      "positivePresented": 23,
+      "errors": 0,
+      "shutdownResourceBytes": 0,
+      "shutdownAttachmentGenerations": 0,
+      "peakActiveResourceBytes": 1631095160,
+      "peakAllAttachmentBytes": 1277689856,
+      "cpuFrames": 3666,
+      "all64JitterPhasesAgainstPoseAxes": "PASS"
+    },
+    "Release": {
+      "positivePresented": 44,
+      "errors": 0,
+      "shutdownResourceBytes": 0,
+      "shutdownAttachmentGenerations": 0,
+      "peakActiveResourceBytes": 1772522728,
+      "peakAllAttachmentBytes": 1601470464,
+      "cpuFrames": 60,
+      "all64JitterPhasesAgainstPoseAxes": "PASS"
+    }
+  },
+  "reproductions": [
+    "3200x1800 full editor presentation exceeded the former 1 GiB budget (AO-only frame 5 also reproduced the limit).",
+    "After storage admission, valid saved editor pose failed XeGTAO orthogonality at TAA phase 6 (frame 13).",
+    "SceneRenderer cancellation left editor error UI/overlays without a host packet, masking the primary exception."
+  ],
+  "changes": [
+    "FP64 CPU AO camera reconstruction, unchanged FP32 GPU ABI and orthogonality tolerance.",
+    "One queue-ordered generation for private HDR world intermediate; direct readback/presentation rejected. Public targets retain completion versions.",
+    "Shared 2 GiB idle/in-flight resource bound, unchanged 64 MiB allocator bound.",
+    "Editor error path clears/rebinds host packet, preserves primary error and clears stale picking IDs."
+  ],
+  "tests": {
+    "AO_TAA": "PASS Debug/Release focused native geometry, lighting separation, independent AO reference, TAA and lifetime suites.",
+    "CSM": "PASS Debug/Release Metal/OpenGL analytic cases/parity; editor entry/overlays, invalid-distance error recovery, three-slot immutable output/retirement and shadow+TAA queued successor equivalence.",
+    "builds": "PASS Debug/Release Hazelnut, Nutella, MetalM1Smoke, MetalRenderer2DQuadSmoke and MigrationRenderer2DSmoke.",
+    "shaderMath": "No shader source/artifact or BRDF changes in this fix.",
+    "warnings": "No new first-party warnings identified; existing component-copy/unused-parameter/build-phase warnings remain.",
+    "performance": "NOT MEASURED for this fix; preceding CSM timings remain historical.",
+    "unverified": "Windows/Linux and other GPUs, multi-view Retina stress and owner visual acceptance remain unverified."
+  },
+  "rawLogs": [
+    "editor-taa-debug.log",
+    "editor-taa-release.log",
+    "Local focused build/qualification and initial failure logs: build/csm-taa-fix/"
+  ],
+  "productionSHA256": {
+    "Hazel/src/Hazel/Renderer/Scene/SceneRenderer.cpp": "53907ffa5debe6cfb4a727b4fed319354e28345d4f84518b319fc1dd1123eba6",
+    "Hazel/src/Hazel/Scene/Scene.cpp": "0261f3c62207e668cb4386865692727c6d18d79be2ece576502f5384c08f53f1",
+    "Hazel/src/Platform/macOS/Metal/MetalAmbientOcclusion.cpp": "d011ca02b68f374a030157ce21077a94189239c61783051f61ac3ac4a15279d5",
+    "Hazel/src/Platform/macOS/Metal/MetalDevice.cpp": "b770e1eb4a6761542c514ac7a2e55c20934fae4bc51a531f3320fc39f8ace4e8",
+    "Hazel/src/Platform/macOS/Metal/MetalDevice.h": "b152fb19041106174f2ba617382fbf76ecc5ad0125cf0b57cd66e8ad8706e92d",
+    "Hazel/src/Platform/macOS/Metal/MetalDeviceRenderer2D.cpp": "f6bf6d0f9403547bfdd4bcc4fa2cedfe3d0b40041c4c528f46176a7bb04b044e",
+    "Hazel/src/Platform/macOS/Metal/MetalFramebuffer.cpp": "37f1e14b259a17cf3706d0e1a6ae3a39aa1f4cf3cc4632a6add812bc53f191dd",
+    "Hazel/src/Platform/macOS/Metal/MetalFramebuffer.h": "af00d4dc9965a9900e126d46ce43a94b0d00d2a0b7e3b1f56491723781b32e5e",
+    "Hazel/src/Platform/macOS/Metal/MetalRenderer2DFrame.h": "1ec61482694fd94bc5b4b7e211b7c87d43523606e8aff16611a2a3adabd8871d",
+    "Hazel/src/Platform/macOS/Metal/MetalTemporalAA.cpp": "232ab875b4cc3b0ce2e2ebab884d453b80f6ccf69d86e04cad18a3112a00d5e0"
+  }
+}

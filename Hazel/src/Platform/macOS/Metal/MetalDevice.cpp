@@ -18,7 +18,7 @@ namespace {
 MetalStartupFailure s_Failure=MetalStartupFailure::None;
 constexpr size_t WordBytes=256, Side=8, RowBytes=256, ImageBytes=Side*RowBytes;
 constexpr size_t TextureBase=2*WordBytes, ProofBytes=TextureBase+2*ImageBytes;
-constexpr uint64_t ResourceLimit=1024ULL*1024*1024, AllocatorLimit=64*1024*1024;
+constexpr uint64_t AllocatorLimit=64*1024*1024;
 NS::String* Label(const char* text) { return NS::String::string(text,NS::UTF8StringEncoding); }
 uint32_t Pattern(uint64_t serial,unsigned version,size_t word) {
     return uint32_t(serial*2654435761ULL) ^ (0x9e3779b9u*(version+1)) ^ uint32_t(word*0x45d9f3bu);
@@ -140,7 +140,7 @@ void MetalDevice::Account(const MetalRenderer2DFrame* preparing) {
         for(const auto& target:generation->Targets)if(target)ownedAllocations.insert(target.get());
     uint64_t ownedBytes=0;for(const auto* allocation:ownedAllocations)ownedBytes+=allocation->allocatedSize();
     const uint64_t uiBytes = m_Editor ? ImGui_ImplMetal4_ResourceBytes() : 0;
-    Require(ownedBytes+uiBytes<=ResourceLimit&&allocators<=AllocatorLimit,"M1 bounded GPU storage limit exceeded");
+    Require(ownedBytes+uiBytes<=ResourceLimit&&allocators<=AllocatorLimit,"Metal renderer storage budget exceeded (2 GiB resources / 64 MiB allocators, including idle and in-flight storage)");
     uint64_t attachmentBytes = 0, generations = 0;
     for (const auto& weak : m_AttachmentGenerations) if (auto generation = weak.lock()) {
         ++generations;

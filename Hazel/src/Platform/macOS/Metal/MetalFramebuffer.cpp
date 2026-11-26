@@ -57,7 +57,7 @@ std::shared_ptr<const MetalFramebufferAttachments> MetalFramebuffer::Allocate(ui
     for (const auto& weak : live) if (auto current = weak.lock())
         for (const auto& target : current->Targets) if (target) bytes += target->allocatedSize();
     for (const auto& target : generation->Targets) if (target) bytes += target->allocatedSize();
-    Check(bytes <= 1024ULL * 1024 * 1024, "Metal framebuffer owner/in-flight attachment budget exceeds 1 GiB");
+    Check(bytes <= MetalDevice::ResourceLimit, "Metal framebuffer owner/in-flight attachments exceed the 2 GiB renderer budget");
     live.push_back(generation);
     { std::lock_guard<std::mutex> lock(m_Device->m_Observer->Mutex); ++m_Device->m_Observer->Value.AttachmentAllocations; }
     m_Device->Account();
@@ -103,7 +103,7 @@ void MetalFramebuffer::Bind()
     auto& backend = Backend();
     Check(!backend.m_Stopped, "Cannot bind framebuffer after Metal backend shutdown");
     m_Device->Poll();
-    if (m_SubmittedGeneration && m_TemporalProducer) {
+    if (m_SubmittedGeneration && (m_TemporalProducer || m_WorldProducer)) {
         m_SubmittedGeneration=false;
         std::lock_guard<std::mutex> lock(m_Device->m_Observer->Mutex);++m_Device->m_Observer->Value.AttachmentReuses;
     }
@@ -127,7 +127,7 @@ void MetalFramebuffer::Bind()
     frame->Width = generation->Width; frame->Height = generation->Height;
     frame->Attachments = generation;
     frame->Readback = bool(generation->Targets[0]);
-    frame->QueueOrderedTemporalProducer=m_TemporalProducer;
+    frame->QueueOrderedProducer=m_TemporalProducer || m_WorldProducer;
     backend.BindFramebuffer(frame);
     m_Frame = std::move(frame); m_Attachments = std::move(generation); m_SubmittedGeneration = false;
     m_Readback.reset(); // this pass must not expose an older generation as current pixels
@@ -171,7 +171,7 @@ void MetalFramebuffer::ClearAttachment(uint32_t attachment, int value)
 }
 Ref<const FramebufferReadback> MetalFramebuffer::Submit()
 {
-    Check(!m_TemporalProducer,"Private temporal scratch must be consumed by its resolve");
+    Check(!m_TemporalProducer && !m_WorldProducer,"Private scratch must be consumed by its resolve or world composite");
     Check(m_Frame && !Backend().IsFramebufferBound(m_Frame), "Unbind framebuffer after EndScene before submitting");
     Check(bool(m_Attachments->Targets[0]), "Depth-only preparation targets must be consumed by a lighting view");
     // Busy leaves this exact CPU packet/generation available for retry or cancellation.
@@ -232,6 +232,7 @@ int MetalFramebuffer::ReadPixel(uint32_t attachment, int x, int y)
 float MetalFramebuffer::ReadDepthPixel(int x, int y) { const auto index = ReadIndex(x, y); return m_Readback->Depth[index]; }
 void MetalFramebuffer::EncodeOutput(const Ref<Framebuffer>& destination)
 {
+    Check(!m_TemporalProducer && !m_WorldProducer,"Private scratch cannot be presented directly");
     Check(m_Specification.Attachments.Attachments.size()==3,"Display encoding requires a color/depth/ID scene target");
     if (destination) {
         Poll();
@@ -298,6 +299,13 @@ void MetalFramebuffer::DispatchColorTo(const Ref<Framebuffer>& destination, cons
     target->m_Frame->Compute = std::move(compute);
     target->m_Frame->ComputeParameters = parameters;
     m_SubmittedGeneration = true;
+}
+void MetalFramebuffer::SetWorldProducer()
+{
+    Check(!m_Frame && !m_TemporalProducer && m_Specification.Attachments.Attachments.size()==3,
+        "Private world scratch requires an empty HDR framebuffer");
+    if(!m_WorldProducer)Check(!m_SubmittedGeneration && m_Available.empty(),"World scratch must be configured before first use");
+    m_WorldProducer=true;
 }
 void MetalFramebuffer::CompositeWorldTo(const Ref<Framebuffer>& destination, float exposure)
 {

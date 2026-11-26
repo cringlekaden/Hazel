@@ -183,6 +183,7 @@ static int Benchmark(const std::filesystem::path& output,const std::filesystem::
 }
 int main(int argc,char** argv) {
     try {
+        if(argc==4 && std::string(argv[2])=="--shadow-editor-settings")return ShadowEditorSettingsProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]));
         if(argc==4 && std::string(argv[2])=="--local-light-views")return TemporalViewProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),true);
         if(argc==4 && std::string(argv[2])=="--taa-views")return TemporalViewProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]));
         if (argc == 4 && std::string(argv[2]) == "--editor-consumers-quick") return EditorConsumerProof(std::filesystem::absolute(argv[1]),std::filesystem::absolute(argv[3]),100);

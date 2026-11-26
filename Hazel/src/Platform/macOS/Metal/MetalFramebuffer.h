@@ -34,6 +34,7 @@ public:
     MetalFramebuffer& operator=(const MetalFramebuffer&) = delete;
     void PrepareAmbientOcclusion(const Ref<Framebuffer>& depth, const SceneCameraView& camera, const AmbientOcclusionSettings& settings, unsigned debugView, const std::shared_ptr<AmbientOcclusionTiming>& timing, unsigned temporalPhase = 0);
     void SetTemporalProducer(); // Private same-queue scratch; never a presentation/readback target.
+    void SetWorldProducer(); // Private world intermediate, consumed only by CompositeWorldTo.
     void ResolveTemporal(const Ref<Framebuffer>& radiance, const Ref<Framebuffer>& motion,
         glm::vec2 jitter, bool valid, unsigned debug, const glm::mat4& skyMotion, unsigned skyMode,
         const std::shared_ptr<std::atomic<bool>>& submitted, const std::shared_ptr<TemporalTiming>& timing);
@@ -80,7 +81,7 @@ private:
     std::shared_ptr<MetalTemporalHistory> m_TemporalPrevious;
     std::vector<std::shared_ptr<const MetalFramebufferAttachments>> m_TemporalColors;
     std::vector<std::shared_ptr<MetalTemporalCounters>> m_TemporalCounters;
-    bool m_TemporalProducer=false;
+    bool m_TemporalProducer=false, m_WorldProducer=false;
     bool m_SubmittedGeneration = false;
     std::vector<std::shared_ptr<const MetalFramebufferAttachments>> m_Available;
 };

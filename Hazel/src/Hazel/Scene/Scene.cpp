@@ -7,6 +7,7 @@
 #include "Hazel/Core/OperationProgress.h"
 #include "Hazel/Project/Project.h"
 #include "Hazel/Renderer/Scene/SceneRenderer.h"
+#include "Hazel/Renderer/RendererAPI.h"
 #include "Hazel/UI/RuntimeUI.h"
 #include "Hazel/UI/RuntimeUIConfig.h"
 #include "RuntimeSession.h"
@@ -891,6 +892,13 @@ namespace Hazel {
         catch (const std::exception &e)
         {
             m_RenderError = e.what();
+            // SceneRenderer cancels failed Metal packets. Restore the host's
+            // target before fallback UI and the editor's later overlay pass.
+            if(display && RendererAPI::GetAPI()==RendererAPI::API::Metal) {
+                Renderer2D::CancelScene();
+                display->Cancel();display->Bind();display->ClearEditor(m_Presentation.Background);
+                display->ClearAttachment(1,-1);
+            }
             RenderUI();
         }
     }

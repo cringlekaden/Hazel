@@ -62,7 +62,7 @@ struct MetalRenderer2DFrame
     std::shared_ptr<MetalShader> OutputShader;
     NS::SharedPtr<MTL::SamplerState> OutputSampler;
     NS::SharedPtr<MTL4::ArgumentTable> OutputArguments;
-    bool Readback = true, EditorPicking = false, QueueOrderedTemporalProducer = false;
+    bool Readback = true, EditorPicking = false, QueueOrderedProducer = false;
     uint64_t PacketBytes = 0;
     std::shared_ptr<MetalRenderer2DFrame> World;
     std::shared_ptr<MetalShader> PresentationShader;

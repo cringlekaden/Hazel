@@ -2,6 +2,10 @@
 #include "Hazel/Renderer/Scene/SceneRenderer.h"
 #include "Hazel/Renderer/Drawing/Renderer3D.h"
 #include "Hazel/Assets/ProjectAssets.h"
+#include "Hazel/Renderer/Cameras/NavigationCamera.h"
+#include "Hazel/Renderer/Drawing/Renderer2D.h"
+#include "Hazel/Scene/Scene.h"
+#include "Platform/macOS/Metal/MetalAmbientOcclusion.h"
 class TemporalEditorViews final : public Hazel::Layer {
 public:
     std::array<Hazel::SceneRenderView,2> Views;
@@ -93,4 +97,78 @@ static int TemporalViewProof(const std::filesystem::path& output,const std::file
     auto proof=observer->Snapshot();Check(proof.CompletedPresented>=100&&proof.Errors==0&&proof.ResourceBytes==0&&proof.AttachmentGenerations==0,"Temporal active-view presentation/retirement failed");
     if(localLighting)std::cout<<"PASS 600 local-light frames, independent lit drawable samples, 320x180 to 640x360 resize, stable resources after warmup\n";
     std::cout<<"PASS two independently moving temporal views, actual drawable samples, positive presentation and retirement\n";return 0;
+}
+
+// Real editor-style presentation avoids full FP32 test readbacks, whose three
+// retained staging buffers would change the Retina memory workload materially.
+class ShadowEditorSettings final : public Hazel::Layer {
+public:
+    Hazel::Ref<Hazel::Project> Project;
+    Hazel::Ref<Hazel::Scene> Scene;
+    Hazel::Ref<Hazel::Framebuffer> Source,Output;
+    Hazel::SceneRenderView View;
+    Hazel::NavigationCamera Camera{30,1600.f/900.f,.1f,1000};
+    unsigned Frames=0;
+    void OnAttach() override {
+        using namespace Hazel;
+        Project=Hazel::Project::LoadCandidate(std::filesystem::absolute("examples/RenderingReference/RenderingReference-Shadows.hproj"));
+        Scene=Project->LoadScene(Project->GetConfig().StartScene);Scene->OnViewportResize(1600,900);
+        Scene->SetUIFramebufferSize({3200,1800});Camera.SetViewportSize(1600,900);
+        Camera.RestoreOrbit({-20.0864868f,14.6694498f,-25.6105156f},.609317422f,-4.08032942f,10);
+        auto radicalInverse=[](unsigned index,unsigned base) {
+            double value=0,weight=1;while(index){weight/=base;value+=weight*(index%base);index/=base;}return value;
+        };
+        for(unsigned phase=1;phase<=64;++phase) {
+            glm::mat4 offset(1);offset[3][0]=float(2*(radicalInverse(phase,2)-.5)/3200);
+            offset[3][1]=float(2*(radicalInverse(phase,3)-.5)/1800);
+            SceneCameraView camera{offset*Camera.GetViewProjection(),Camera.GetPosition(),-Camera.GetForwardDirection(),false};
+            const auto constants=AmbientOcclusionConstants(camera,Scene->Presentation().AmbientOcclusion,3200,1800,phase);
+            for(unsigned axis=0;axis<3;++axis) {
+                const auto reference=axis==0?Camera.GetRightDirection():axis==1?Camera.GetUpDirection():Camera.GetForwardDirection();
+                const glm::vec3 actual(constants.WorldToView[0][axis],constants.WorldToView[1][axis],constants.WorldToView[2][axis]);
+                Check(glm::length(actual-reference)<1e-5f,"Jittered AO basis differs from independent editor pose axes");
+            }
+        }
+        std::cout<<"PASS all 64 Retina editor jitter phases against independent camera pose axes\n";
+        FramebufferSpecification spec;spec.Width=3200;spec.Height=1800;
+        spec.Attachments={FramebufferTextureFormat::RGBA32F,FramebufferTextureFormat::RED_INTEGER,FramebufferTextureFormat::DEPTH32F};
+        Source=Framebuffer::Create(spec);spec.Attachments={FramebufferTextureFormat::RGBA8};Output=Framebuffer::CreateEditor(spec);
+        auto* window=static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());glfwSetWindowSize(window,800,450);
+    }
+    void OnUpdate(Hazel::Timestep) override {
+        using namespace Hazel;++Frames;
+        Scene->Presentation().AmbientOcclusion.Enabled=Frames>=4 && (Frames<48 || Frames>=52);
+        Scene->Presentation().TemporalAA=Frames>=8 && (Frames<40 || Frames>=44);
+        Source->Bind();Source->ClearEditor(Scene->Presentation().Background);Source->ClearAttachment(1,-1);
+        Scene->OnUpdateEditor(Timestep(0),Camera,&View,Source);
+        if(!Scene->RenderError().empty())throw std::runtime_error("Retina shadow editor frame "+std::to_string(Frames)+": "+Scene->RenderError());
+        Renderer2D::BeginScene(Camera);Renderer2D::EndScene(); // Actual editor overlay entry contract.
+        Source->Unbind();Source->EncodeOutput(Output);
+        if(Frames>=60 && Backend().Observe()->Snapshot().CompletedPresented>=20)Application::Get().GetWindow().RequestClose();
+    }
+    void OnImGuiRender() override {
+        ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
+        ImGui::SetNextWindowPos({10,30},ImGuiCond_Always);ImGui::SetNextWindowSize({760,390},ImGuiCond_Always);
+        ImGui::Begin("Retina shadow / AO / TAA settings");
+        Hazel::ImGuiLayer::Image(Output->GetEditorTexture(),640,360);ImGui::End();
+    }
+    void OnDetach() override {
+        std::cout<<"SHADOW_EDITOR cpu_frames="<<Frames<<'\n';
+        if(Source)Source->Cancel();View.Reset();Source.reset();Output.reset();Scene.reset();Project.reset();
+    }
+};
+static int ShadowEditorSettingsProof(const std::filesystem::path& output,const std::filesystem::path& resources) {
+    using namespace Hazel;Log::Init();std::filesystem::create_directories(output);
+    auto spec=Specification(output);spec.Name="Hazel shadow settings regression";spec.EnableImGui=true;
+    spec.RendererMode=RendererInitialization::Drawing;spec.Resources.Root=resources;
+    std::shared_ptr<MetalProofObserver> observer;
+    {Application app(spec);observer=Backend().Observe();app.PushLayer(CreateScope<ShadowEditorSettings>());
+        auto start=Clock::now();app.SetBackgroundTick([&]{Check(Clock::now()-start<std::chrono::seconds(120),"Shadow editor settings timeout");});app.Run();}
+    const auto proof=observer->Snapshot();
+    std::cout<<"SHADOW_EDITOR presented="<<proof.CompletedPresented<<" errors="<<proof.Errors<<" resources="<<proof.ResourceBytes
+        <<" attachments="<<proof.AttachmentGenerations<<" peak_resources="<<proof.PeakResourceBytes
+        <<" peak_attachments="<<proof.PeakAttachmentBytes<<'\n';
+    Check(proof.CompletedPresented>=20 && proof.Errors==0 && proof.ResourceBytes==0 && proof.AttachmentGenerations==0,"Shadow editor presentation/retirement failed");
+    std::cout<<"PASS 3200x1800 editor shadow/AO/TAA toggles and overlays; positive presentations="<<proof.CompletedPresented
+        <<" peak_resources="<<proof.PeakResourceBytes<<" peak_attachments="<<proof.PeakAttachmentBytes<<'\n';return 0;
 }

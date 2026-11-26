@@ -91,25 +91,31 @@ MetalAOResources::MetalAOResources(MetalDevice& device,std::shared_ptr<MetalAOPi
 MetalAOConstants AmbientOcclusionConstants(const SceneCameraView& camera,const AmbientOcclusionSettings& settings,uint32_t width,uint32_t height,unsigned temporalPhase)
 {
     settings.Validate();
-    MetalAOConstants c;c.InverseVP=glm::inverse(camera.ViewProjection);
-    auto point=[&](glm::vec3 p) {auto v=c.InverseVP*glm::vec4(p,1);return glm::vec3(v)/v.w;};
+    // Near-plane rays can be only centimetres apart at an editor pose tens of
+    // metres from the origin. FP32 world-point subtraction made valid jittered
+    // cameras fail the orthogonality check. Keep CPU reconstruction in FP64;
+    // the GPU ABI and shader arithmetic remain FP32.
+    const auto inverseVP=glm::inverse(glm::dmat4(camera.ViewProjection));
+    MetalAOConstants c;c.InverseVP=glm::mat4(inverseVP);
+    auto point=[&](glm::dvec3 p) {auto v=inverseVP*glm::dvec4(p,1);return glm::dvec3(v)/v.w;};
     const auto origin=point({0,0,-1});
     const auto right=glm::normalize(point({1,0,-1})-origin);
     const auto up=glm::normalize(point({0,1,-1})-origin);
-    const auto forward=temporalPhase?-glm::normalize(camera.ToCamera):glm::normalize(point({0,0,0})-origin);
+    const auto forward=temporalPhase?-glm::normalize(glm::dvec3(camera.ToCamera)):glm::normalize(point({0,0,0})-origin);
     Check(std::isfinite(glm::dot(forward,forward)) && std::abs(glm::dot(right,up))<1e-4f &&
         std::abs(glm::dot(right,forward))<1e-4f && std::abs(glm::dot(up,forward))<1e-4f,
         "XeGTAO requires a finite symmetric perspective or orthographic camera");
     // Positive view Z, right/up matching Hazel's lower-left attachment rows.
-    c.WorldToView=glm::mat4(1);
-    for(int i=0;i<3;++i) {c.WorldToView[i][0]=right[i];c.WorldToView[i][1]=up[i];c.WorldToView[i][2]=forward[i];}
-    const auto eye=camera.Orthographic?origin-forward*.001f:camera.Position;
-    c.WorldToView[3]=glm::vec4(-glm::dot(right,eye),-glm::dot(up,eye),-glm::dot(forward,eye),1);
-    const auto bottomLeft=glm::vec3(c.WorldToView*glm::vec4(point({-1,-1,-1}),1));
-    const auto topRight=glm::vec3(c.WorldToView*glm::vec4(point({1,1,-1}),1));
-    const float projectionScale=camera.Orthographic?1.f:bottomLeft.z;
+    glm::dmat4 worldToView(1);
+    for(int i=0;i<3;++i) {worldToView[i][0]=right[i];worldToView[i][1]=up[i];worldToView[i][2]=forward[i];}
+    const auto eye=camera.Orthographic?origin-forward*.001:glm::dvec3(camera.Position);
+    worldToView[3]=glm::dvec4(-glm::dot(right,eye),-glm::dot(up,eye),-glm::dot(forward,eye),1);
+    c.WorldToView=glm::mat4(worldToView);
+    const auto bottomLeft=glm::dvec3(worldToView*glm::dvec4(point({-1,-1,-1}),1));
+    const auto topRight=glm::dvec3(worldToView*glm::dvec4(point({1,1,-1}),1));
+    const double projectionScale=camera.Orthographic?1.:bottomLeft.z;
     Check(std::isfinite(projectionScale) && projectionScale>0,"XeGTAO requires positive finite near depth");
-    c.PositionScaleBias=glm::vec4((glm::vec2(topRight)-glm::vec2(bottomLeft))/projectionScale,glm::vec2(bottomLeft)/projectionScale);
+    c.PositionScaleBias=glm::vec4(glm::dvec4((glm::dvec2(topRight)-glm::dvec2(bottomLeft))/projectionScale,glm::dvec2(bottomLeft)/projectionScale));
     c.ExtentRadius={float(width),float(height),settings.Radius,settings.Falloff};
     constexpr unsigned slices[]={1,2,3,9},steps[]={2,2,3,3};
     c.Quality={slices[settings.Quality],steps[settings.Quality],camera.Orthographic?1u:0u,0};

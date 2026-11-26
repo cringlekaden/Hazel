@@ -49,6 +49,9 @@ public:
 private:
     friend class MetalRendererAPI;
     friend class MetalFramebuffer;
+    // Includes idle view generations, in-flight storage, uploads and editor UI.
+    // Full-resolution Retina HDR + AO + TAA exceeds the original M1 proof's 1 GiB.
+    static constexpr uint64_t ResourceLimit=2ULL*1024*1024*1024;
     void PresentEditor(CA::MetalLayer* layer, bool visible);
     std::shared_ptr<MetalEditorCapture> m_EditorCapture;
     bool m_EditorReadbackEnabled = false;

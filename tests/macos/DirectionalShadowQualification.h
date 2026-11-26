@@ -1,6 +1,8 @@
 #pragma once
 #include "Renderer3DParity.h"
 #include "Hazel/Scene/SceneDefaults.h"
+#include "Hazel/Renderer/Cameras/NavigationCamera.h"
+#include "Hazel/Renderer/Drawing/Renderer2D.h"
 #include <iomanip>
 #include <iostream>
 #include <chrono>
@@ -220,6 +222,36 @@ inline void DirectionalShadowQualification(const std::filesystem::path& output,
     std::ofstream studyFile(output/"study.bin",std::ios::binary);
     for(size_t i=0;i<studyImage->Color.size();++i){studyFile.write(reinterpret_cast<const char*>(&studyImage->Color[i]),16);studyFile.write(reinterpret_cast<const char*>(&studyImage->Entity[i]),4);studyFile.write(reinterpret_cast<const char*>(&studyImage->Depth[i]),4);}
     if(RendererAPI::GetAPI()==RendererAPI::API::Metal) {
+        // Exercise the host scene entry point and editor lens, including real
+        // world-2D/UI callbacks. Surface the primary render error before overlays
+        // can replace it with an unbound-framebuffer exception.
+        NavigationCamera editorCamera(30,1280.f/720.f,.1f,1000);
+        editorCamera.SetViewportSize(1280,720);
+        editorCamera.RestoreOrbit({-20.0864868f,14.6694498f,-25.6105156f},.609317422f,-4.08032942f,10);
+        study->Presentation().AmbientOcclusion.Enabled=false;
+        study->Presentation().TemporalAA=false;
+        for(unsigned setting=0;setting<3;++setting) {
+            study->Presentation().AmbientOcclusion.Enabled=setting>=1;
+            study->Presentation().TemporalAA=setting==2;
+            target->Bind();target->Clear(study->Presentation().Background);target->ClearAttachment(1,-1);
+            study->OnUpdateEditor(Timestep(0),editorCamera,&view,target);
+            if(!study->RenderError().empty())throw std::runtime_error("Shadow editor settings stage "+std::to_string(setting)+": "+study->RenderError());
+            Renderer2D::BeginScene(editorCamera);Renderer2D::EndScene();
+            const auto image=capture(target);
+            ShadowCheck(image && image->Completed && image->Error.empty(),"Shadow editor capture failed");
+        }
+        // A failed producer must leave a valid host packet for error UI/overlays.
+        study->Presentation().Shadows.Distance=1;
+        NavigationCamera rejectedCamera(30,1280.f/720.f,2,1000);
+        target->Bind();target->Clear(study->Presentation().Background);
+        study->OnUpdateEditor(Timestep(0),rejectedCamera,&view,target);
+        ShadowCheck(study->RenderError().find("distance must exceed")!=std::string::npos,"Original shadow failure was lost");
+        Renderer2D::BeginScene(rejectedCamera);Renderer2D::EndScene();
+        const auto rejectedImage=capture(target);
+        ShadowCheck(rejectedImage && rejectedImage->Completed && rejectedImage->Error.empty(),"Editor failure recovery did not submit");
+        for(auto id:rejectedImage->Entity)ShadowCheck(id==-1,"Editor failure recovery retained stale picking IDs");
+        study->Presentation().Shadows.Distance=100;
+        std::cout<<"PASS editor shadow -> AO -> TAA entry/overlay and original-error recovery\n";
         frame.Presentation.TemporalAA=true;frame.Presentation.AmbientOcclusion.Enabled=true;
         const auto original=frame.Camera;
         for(unsigned step=0;step<16;++step) {

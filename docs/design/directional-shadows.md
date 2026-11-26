@@ -233,3 +233,78 @@ The cohesive first foundation is implemented and independently testable.
 but automated numerical/lifetime checks and this one observed image do not
 establish production visual acceptance. No PCSS, point/spot shadows or next-stage
 work is authorized by these results.
+
+## Owner-found editor TAA failure — follow-up to dd85be4
+
+The owner reported enabling XeGTAO and then TAA in the shadow reference editor
+crashed with `Bind a qualified framebuffer before Renderer2D::BeginScene`.
+The initial authored-camera offscreen fixture missed the actual editor lens,
+saved orbit pose, Retina footprint and host error/overlay path.
+
+Three concrete problems were reproduced:
+
+1. Large Retina views could exceed the original M1 proof's 1 GiB aggregate
+   storage ceiling. A native 3200×1800 presentation fixture also exceeded it
+   with AO alone. Private HDR world intermediates unnecessarily retained
+   completion-versioned attachment pools despite having no external readers.
+2. After memory admission, jitter phase 6 at the saved off-origin editor pose
+   failed XeGTAO's orthogonality check. Subtracting nearby near-plane points in
+   FP32 lost accuracy with a 30-degree lens and .1/1000 clip range. This is a
+   false rejection of a valid camera, not evidence for relaxing the threshold.
+3. SceneRenderer cancelled failed Metal packets; Scene::RenderScene attempted
+   fallback UI and Hazelnut then attempted overlays without a bound host packet.
+   The secondary BeginScene exception masked the primary rendering error.
+
+The fix reconstructs the AO camera basis and projection constants in FP64 on
+CPU, then narrows to the existing FP32 GPU ABI. The orthogonality tolerance and
+shader algorithm are unchanged. Independent camera-pose axes now cover all
+64 jitter phases at the failing lens/pose/extent.
+
+Private world intermediates are configured before first use and reuse one
+attachment generation on the existing single queue. Queue-stage barriers protect
+previous consumers before new writes, including the temporal compute path's
+existing compute/blit barrier. Direct presentation/readback of private scratch
+is rejected. Public view targets and atlas completion ownership stay versioned.
+At 3200×1800, avoiding two redundant HDR/ID/depth world generations saves up to
+approximately 264 MiB compared with three slots. This follows the existing private
+TAA producer contract, rather than permitting arbitrary render-target aliasing.
+
+Memory admission now shares an explicit **2 GiB** resource ceiling between
+framebuffer allocation and aggregate device accounting. Idle/in-flight storage,
+uploads and editor UI remain counted; the separate 64 MiB allocator bound remains.
+Reuse alone does not make the full Retina AO/TAA footprint fit the old proof's
+ceiling. The bound is retained, not disabled; larger/multiple views can still
+require more memory than admitted and are not universally qualified.
+
+On an editor rendering failure, Scene::RenderScene restores and clears its host
+packet before fallback UI and overlays. The original RenderError remains visible;
+failed frames clear stale picking IDs. A regression deliberately rejects an
+invalid shadow distance and verifies the original error, a subsequent overlay
+BeginScene and completed fallback readback.
+
+Focused qualification and native-window results for this follow-up are recorded
+in the [follow-up qualification](evidence/DirectionalShadows_v1/editor-taa-fix.json). The new window fixture
+uses the actual scene editor entry point, saved orbit pose, 3200×1800 scene target,
+ImGui presentation, live shadow → AO → TAA toggles and repeated off/on changes.
+It waits for positive presentation evidence rather than treating CPU updates as
+presented frames. The original performance table predates this ownership fix;
+no new GPU timing claim is made here. Production visual acceptance remains separate.
+
+The follow-up passes native Debug/Release at 3200×1800 with API/GPU validation:
+23/44 positive completed presentations, zero validation errors and zero remaining
+exercised resources/attachment generations after shutdown. Debug executed 3,666
+CPU ticks while waiting for positive presentation; Release executed 60. These
+counts are not interchangeable or an FPS benchmark. Tracked active resources
+peaked at 1.52/1.65 GiB respectively; all attachment storage peaked at 1.19/1.49
+GiB (overlapping accounting scopes, not additive). Focused CSM parity, AO/TAA,
+editor-error recovery and queued-output lifetime checks pass in Debug/Release.
+Hazelnut and Nutella are rebuilt in both configurations. Windows/Linux and other
+GPUs remain unverified; this scoped fix does not close production visual review.
+
+Reproduce the presentation regression from the repository root on an unlocked,
+visible native desktop (replace Debug paths/configuration for Release):
+
+```sh
+python3 scripts/hazel.py build --config Debug --tests --target MetalM1Smoke
+DYLD_LIBRARY_PATH="$PWD/build/dependencies/mono/macos-arm64/sdk/lib" MTL_DEBUG_LAYER=1 MTL_SHADER_VALIDATION=1 bin/Debug-macos-arm64/MetalM1Smoke/MetalM1Smoke build/NEW_SHADOW_EDITOR_EVIDENCE --shadow-editor-settings Hazel/Resources
+```

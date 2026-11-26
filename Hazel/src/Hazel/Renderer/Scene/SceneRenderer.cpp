@@ -192,6 +192,9 @@ void SceneRenderer::Render(const SceneSubmission &input, SceneRenderView &view,
                 if (!view.Radiance) view.Radiance = Framebuffer::Create(size);
                 else if (view.Radiance->GetSpecification().Width != size.Width || view.Radiance->GetSpecification().Height != size.Height)
                     view.Radiance->Resize(size.Width, size.Height);
+#ifdef HZ_PLATFORM_MACOS
+                std::static_pointer_cast<MetalFramebuffer>(view.Radiance)->SetWorldProducer();
+#endif
                 display->Cancel();
                 if(temporal) {
                     auto ensure=[&](Ref<Framebuffer>& target) {
